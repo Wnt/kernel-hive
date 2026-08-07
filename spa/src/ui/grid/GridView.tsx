@@ -213,6 +213,15 @@ export default function GridView() {
         ))}
         <footer className="grid-foot">
           {groups.length} eras · {streamable.length} operating systems
+          {' · '}
+          <a
+            className="grid-foot-link"
+            href="https://github.com/Wnt/kernel-hive"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Source on GitHub
+          </a>
         </footer>
       </div>
     </div>
