@@ -3,7 +3,8 @@
 #
 # Boots the PRODUCTION configuration (the tile's own launcher, tile.env, golden
 # and tap networking) in a namespaced clone, waits for the exhibit's resting
-# state (the login chooser), then captures the (savestate, disk) pair ATOMICALLY
+# state (the login chooser, or — with --login — a logged-in 4Dwm desktop), then
+# captures the (savestate, disk) pair ATOMICALLY
 # inside a pause window and installs it under $ASSETS/state/ with a provenance
 # file binding it to the exact MAME binary. x11-runtime.sh refuses to restore a
 # state whose provenance does not list the running binary's md5 — a MAME rebuild
@@ -11,6 +12,14 @@
 # MAME PROMOTION: stop the tile, run this, start the tile.
 #
 #   bake-golden.sh [--state NAME] [--cpus LIST] [--settle S] [--keep]
+#                  [--login USER] [--login-wait S]
+#
+# --login USER types USER into the iconlogin chooser (one character per tick —
+# the Login-name widget drops fast natkeyboard input) plus Enter, waits
+# --login-wait seconds for the session to paint, and REQUIRES the 4Dwm Toolchest
+# on the real framebuffer before saving. The exhibit then restores straight into
+# that user's desktop instead of the chooser. Accounts with a password cannot be
+# baked this way (nothing types one); `demos` is passwordless in the golden.
 #
 # Run ON the box, with streamhost@irix STOPPED (it refuses otherwise).
 set -u
@@ -19,8 +28,23 @@ STATE=golden
 CPUS=6,14
 SETTLE=120
 KEEP=0
+LOGIN=""
+LOGIN_WAIT=50
+# Content-based desktop test, from irix-park-desktop.sh: full-frame statistics
+# cannot separate "logged in, bare X root" (toolchest-crop sd 0.095) from
+# "logged in, 4Dwm up" (0.257), so crop the Toolchest and require contrast.
+TOOLCHEST_CROP=130x230+0+30
+TOOLCHEST_SD_MIN=0.18
 while [ $# -gt 0 ]; do
   case "$1" in
+    --login)
+      LOGIN="$2"
+      shift 2
+      ;;
+    --login-wait)
+      LOGIN_WAIT="$2"
+      shift 2
+      ;;
     --state)
       STATE="$2"
       shift 2
@@ -171,6 +195,32 @@ while :; do
 done
 say "chooser up at t=$(($(date +%s) - t0))s; settling ${SETTLE}s"
 sleep "$SETTLE"
+
+# Typing into the chooser before the machine has finished coming up panics IRIX
+# (PANIC: bad istack, deterministic) — the $SETTLE floor above is that guard,
+# so the login goes AFTER it, never on a shorter timer of its own.
+if [ -n "$LOGIN" ]; then
+  say "logging in as '$LOGIN' (one char per tick; the widget drops fast input)"
+  i=0
+  while [ "$i" -lt "${#LOGIN}" ]; do
+    ch="${LOGIN:$i:1}"
+    i=$((i + 1))
+    mctl POST "$ch" >/dev/null || die "POST '$ch' not acknowledged"
+    sleep 0.8
+  done
+  sleep 2
+  mctl CODE '{ENTER}' >/dev/null || die "CODE {ENTER} not acknowledged"
+  say "waiting ${LOGIN_WAIT}s for the session to paint"
+  sleep "$LOGIN_WAIT"
+  python3 "$SHMPNG" "$V/fb.shm" "$V/login.png" >/dev/null 2>&1 ||
+    die "no frame after login (see $V/mame.log)"
+  convert "$V/login.png" -crop "$TOOLCHEST_CROP" +repage "$V/tc.png" ||
+    die "could not crop the Toolchest region out of $V/login.png"
+  tcsd="$(identify -format '%[fx:standard_deviation]' "$V/tc.png" 2>/dev/null)"
+  awk -v s="${tcsd:-0}" -v m="$TOOLCHEST_SD_MIN" 'BEGIN { exit !(s > m) }' ||
+    die "no 4Dwm Toolchest ${LOGIN_WAIT}s after login (crop sd=${tcsd:-none}, need >$TOOLCHEST_SD_MIN) — look at $V/login.png"
+  say "desktop confirmed for '$LOGIN' (toolchest-crop sd=$tcsd)"
+fi
 
 say "pausing + saving state '$STATE' (acked over ctl.sock)"
 mctl PAUSE || die "PAUSE not acknowledged"
