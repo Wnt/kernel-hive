@@ -1,0 +1,17 @@
+# Built in-guest agent artifacts — outputs of `make` here (see Makefile).
+# Sources (.c/.py/.HC) are tracked; binaries are rebuilt on the box.
+*.exe
+*.EXE
+*.obj
+*.OBJ
+*.o
+*.err
+# OpenWatcom side-products
+*.map
+*.sym
+# Plan 9 in-guest objects (6c/6l)
+*.6
+*.8
+# Python bytecode (solaris agent syntax checks)
+*.pyc
+__pycache__/

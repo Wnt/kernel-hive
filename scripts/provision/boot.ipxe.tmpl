@@ -1,0 +1,12 @@
+#!ipxe
+
+# Generated-PXE artifact directory. Do not point this at files extracted by
+# hand: use proxmox-auto-install-assistant as described in README.md.
+dhcp
+set pve_base {{HTTP_BASE_URL}}/{{PVE_PXE_SUBDIR}}
+
+echo Loading the Proxmox VE automated installer...
+kernel ${pve_base}/vmlinuz ramdisk_size=16777216 rw quiet initrd=initrd.img splash=silent proxmox-start-auto-installer
+initrd ${pve_base}/initrd.img
+initrd ${pve_base}/{{PVE_PREPARED_ISO}} proxmox.iso
+boot

@@ -1,0 +1,117 @@
+import type { ArchetypeId, Transport } from './three/archetypeRegistry';
+
+// Runtime public exhibit + transport row from /gallery-manifest.json.
+export interface VMManifestEntry {
+  id: string;
+  /** Curated year represented by the physical exhibit; drives hall sections. */
+  era_year?: number;
+  displayName: string;
+  year: number | string;
+  lineage: string;
+  arch: string;
+  ramMB?: number;
+  /** Memory for machines under a megabyte, where ramMB rounds to a wrong 0. */
+  ramKB?: number;
+  notes?: string;
+
+  // OPTIONAL curated museum metadata (used for placards). We enrich from a
+  // local catalog when absent.
+  accent?: string;         // hex accent for the exhibit unit
+  era?: string;            // e.g. "1990s"
+  eraSoftware?: string[];  // period software titles
+  periodBrowser?: string;  // the period web browser
+  iconicApps?: string[];   // iconic games/apps
+  blurb?: string;          // one-line curator note
+
+  // Runtime lineup/binding fields. SceneV2 selects its model assembly from
+  // archetypeId; the grid uses the same metadata for stream/poster behavior.
+  order?: number;
+  archetypeId?: ArchetypeId;
+  transport?: Transport;
+  eraLabel?: string;
+  signalEndpoint?: string | null;
+  endpoint?: string;
+  pointerRel?: boolean;
+  hardwareInput?: boolean;
+  coldBoot?: boolean;
+
+  // OPTIONAL boot-video replay descriptor, merged at runtime from
+  // /boot/index.json (BOOT-VIDEO-REPLAY-SPEC §4). Additive: absent ⇒ today's
+  // behaviour. Carries the durations/paths the SPA can use without a rebuild;
+  // the mp4 path also drives the runtime binding's boot-video badge/mount.
+  bootVideo?: {
+    mp4: string;
+    poster?: string;
+    sprite?: string;
+    vtt?: string;
+    durationMs?: number;
+    width?: number;
+    height?: number;
+    hasAudio?: boolean;
+  };
+}
+
+/** Fully validated row stored by the app after loading the runtime manifest. */
+export interface RuntimeVMManifestEntry extends VMManifestEntry {
+  era_year: number;
+  accent: string;
+  era: string;
+  eraSoftware: string[];
+  periodBrowser: string;
+  iconicApps: string[];
+  blurb: string;
+  order: number;
+  archetypeId: ArchetypeId;
+  transport: Transport;
+  eraLabel: string;
+}
+
+export type EnrichedVM = RuntimeVMManifestEntry;
+
+export type PosterInlineRun =
+  | { kind: 'text'; text: string }
+  | { kind: 'emphasis'; children: PosterInlineRun[] }
+  | { kind: 'strong'; children: PosterInlineRun[] }
+  | { kind: 'link'; href: string; children: PosterInlineRun[] };
+
+export type PosterBlock =
+  | { kind: 'heading'; level: 2 | 3; runs: PosterInlineRun[] }
+  | { kind: 'paragraph'; runs: PosterInlineRun[] }
+  | { kind: 'list'; items: PosterInlineRun[][] }
+  | { kind: 'quote'; runs: PosterInlineRun[] }
+  | { kind: 'image'; src: string; alt: string };
+
+export interface PosterImage {
+  src: string;
+  alt: string;
+  caption: string;
+  credit?: string;
+}
+
+export interface PosterDoc {
+  title: string;
+  subtitle: string;
+  hero?: string;
+  images: PosterImage[];
+  blocks: PosterBlock[];
+}
+
+/** A type-in demo listing for a tile (registry: demoProgram), typed into the
+ *  live guest by the stage menu. The visitor presses ENTER to run it. */
+export interface DemoProgram {
+  /** Menu label, e.g. "Type in a demo program". */
+  label: string;
+  /** The listing, one BASIC line per entry (no trailing newline). */
+  readonly lines: readonly string[];
+  /** Typed after the listing, WITHOUT a newline — the visitor presses ENTER. */
+  runCommand: string;
+}
+
+/** How a machine's keyboard differs from a PC's (registry `keyboard` block). */
+export interface GuestKeyboard {
+  /** Guest character -> the host character whose keystroke produces it. */
+  readonly charMap?: Readonly<Record<string, string>>;
+  /** 'upper-only': no lower case, and the shifted letter row is symbols, so
+   *  letters must be sent UNSHIFTED or they arrive as punctuation. */
+  readonly letterCase?: 'upper-only';
+}

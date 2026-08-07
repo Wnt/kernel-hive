@@ -1,0 +1,100 @@
+# Cross-cutting quality gate — the single "green-before-done" job every branch
+# intended for main must pass (see docs/lab/AGENT-CI-EXIT-RULE.md and the
+# "Code quality gate" section of AGENTS.md).
+#
+# The `static` job runs, in order:
+#   1. per-language lint (TS eslint+knip, Rust fmt+clippy, Python ruff,
+#      Bash shfmt+shellcheck) — the exact canonical commands; their configs are
+#      owned by the sibling quality/{ts,rust,python,bash} branches, so these
+#      steps only go fully green once those land,
+#   2. node scripts/check-file-size.mjs --strict (this branch's file-size budget),
+#   3. the generated-file drift gate (this branch).
+#
+# The per-language test jobs stay in their own workflows: rust.yml (cargo test),
+# spa.yml (tsc+vite build), tile-registry.yml (registry byte-parity).
+name: Quality gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: spa/package-lock.json
+
+      - name: Install system libraries (libx264 linkage + bindgen's libclang)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libx264-dev libopus-dev libclang-dev pkg-config
+
+      - name: Install shfmt (mold optional; shellcheck is preinstalled)
+        run: |
+          SHFMT_VERSION=v3.10.0
+          sudo curl -sSfL -o /usr/local/bin/shfmt \
+            "https://github.com/mvdan/sh/releases/download/${SHFMT_VERSION}/shfmt_${SHFMT_VERSION}_linux_amd64"
+          sudo chmod +x /usr/local/bin/shfmt
+
+      - name: Install ruff (pinned; bump deliberately with ruff.toml)
+        run: pipx install ruff==0.15.21
+
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: streamhost
+
+      - name: Install SPA deps (eslint + knip configs live in spa/)
+        working-directory: spa
+        run: npm ci
+
+      # ---- 1. per-language lint (configs owned by sibling quality/* branches) ----
+      - name: TS/JS lint (ESLint + knip)
+        working-directory: spa
+        run: |
+          npx eslint . --max-warnings=0
+          npx knip
+
+      - name: Validate generated gallery manifest with the SPA validator
+        working-directory: spa
+        run: npm run test:manifest
+
+      - name: Rust lint (rustfmt + clippy)
+        working-directory: streamhost
+        run: |
+          cargo fmt --all --check
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Python lint (ruff)
+        run: |
+          ruff check scripts
+          ruff format --check scripts
+
+      - name: Bash lint (shfmt + shellcheck)
+        run: |
+          # shellcheck disable=SC2046  # intentional word-split of the file list
+          shfmt -d $(bash scripts/lint/shell-sources.sh)
+          # shellcheck disable=SC2046
+          shellcheck $(bash scripts/lint/shell-sources.sh)
+
+      # ---- 2. cross-cutting file-size budget ----
+      - name: File-size budget (strict)
+        run: node scripts/check-file-size.mjs --strict
+
+      # ---- 3. generated-file drift ----
+      - name: Generated-file drift
+        run: ./scripts/check-generated-drift.sh --regen

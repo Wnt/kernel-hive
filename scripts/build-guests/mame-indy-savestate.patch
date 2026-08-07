@@ -1,0 +1,544 @@
+diff -ruN mame-src-pristine/src/devices/bus/gio64/newport.cpp mame-src/src/devices/bus/gio64/newport.cpp
+--- a/src/devices/bus/gio64/newport.cpp	2026-08-04 01:39:44.715788604 +0000
++++ b/src/devices/bus/gio64/newport.cpp	2026-08-04 02:23:28.350356881 +0000
+@@ -887,6 +887,30 @@
+ 	m_buf_ptr = &m_rgbci[0];
+ }
+ 
++void rb2_device::device_post_load()
++{
++	// m_dest_buf/m_buf_ptr are raw pointers into m_rgbci/m_cidaux and cannot
++	// be saved; recompute from the saved m_plane_enable (same switch as
++	// set_flags).
++	switch (m_plane_enable)
++	{
++		case 1: // RGB/CI planes
++		case 2: // RGBA planes
++			m_dest_buf = &m_rgbci[0];
++			break;
++		case 4: // Overlay planes
++		case 5: // Popup planes
++		case 6: // CID planes
++			m_dest_buf = &m_cidaux[0];
++			break;
++		default:
++			m_dest_buf = &m_rgbci[0];
++			break;
++	}
++	m_buf_ptr = m_dest_buf;
++	m_fb_dirty = true; // belt-and-braces with newport's m_regs_dirty
++}
++
+ void rb2_device::serialize(FILE *file)
+ {
+ 	fwrite(&m_global_mask, sizeof(uint32_t), 1, file);
+@@ -1127,6 +1151,8 @@
+ 	save_item(NAME(m_rex3.m_sfactor));
+ 	save_item(NAME(m_rex3.m_dfactor));
+ 	save_item(NAME(m_rex3.m_store_shift));
++	save_item(NAME(m_rex3.m_host_shift));  // in-flight host dataport unpack position
++	save_item(NAME(m_rex3.m_blend_back));  // runtime blend-source flag (else derived from DRAWMODE1 bit 25)
+ 	save_item(NAME(m_rex3.m_write_width));
+ 	save_item(NAME(m_rex3.m_ls_mode));
+ 	save_item(NAME(m_rex3.m_ls_pattern));
+@@ -1231,6 +1257,19 @@
+ #endif
+ }
+ 
++void newport_base_device::device_post_load()
++{
++	// Local dirty-frame-cache patch: force the first post-load screen_update
++	// to re-render from restored VRAM (never blit the pre-load m_cache_bitmap)
++	// and publish_shm(..., true) with full-frame damage so the host shm
++	// consumer receives the restored desktop immediately.
++	m_cache_valid = false;
++	m_regs_dirty = true;
++	// Make the FIRST post-load frame a full-visarea repaint rather than a
++	// partial continuation of the pre-load scan position.
++	m_screen->reset_partial_updates();
++}
++
+ void newport_base_device::mem_map(address_map &map)
+ {
+ 	map(0x000f0000, 0x000f1fff).rw(FUNC(newport_base_device::rex3_r), FUNC(newport_base_device::rex3_w));
+diff -ruN mame-src-pristine/src/devices/bus/gio64/newport.h mame-src/src/devices/bus/gio64/newport.h
+--- a/src/devices/bus/gio64/newport.h	2026-08-04 01:39:44.715788604 +0000
++++ b/src/devices/bus/gio64/newport.h	2026-08-04 02:05:39.884247158 +0000
+@@ -256,6 +256,7 @@
+ 	// device_t overrides
+ 	virtual void device_start() override ATTR_COLD;
+ 	virtual void device_reset() override ATTR_COLD;
++	virtual void device_post_load() override;
+ 
+ 	void logic_pixel(uint32_t src);
+ 	void store_pixel(uint32_t value);
+@@ -317,6 +318,7 @@
+ 	virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
+ 	virtual void device_start() override ATTR_COLD;
+ 	virtual void device_reset() override ATTR_COLD;
++	virtual void device_post_load() override;
+ 
+ 	void device_add_mconfig(machine_config &config, uint32_t xmap_revision, uint32_t cmap_revision, uint32_t global_mask);
+ 	void mem_map(address_map &map) override;
+diff -ruN mame-src-pristine/src/devices/bus/nscsi/cd.cpp mame-src/src/devices/bus/nscsi/cd.cpp
+--- a/src/devices/bus/nscsi/cd.cpp	2026-08-04 01:39:44.715788604 +0000
++++ b/src/devices/bus/nscsi/cd.cpp	2026-08-04 02:07:50.350970360 +0000
+@@ -140,6 +140,10 @@
+ 	save_item(NAME(m_write_length));
+ 	save_item(NAME(m_write_offset));
+ 	save_item(NAME(m_write_is_setup));
++	save_item(NAME(mode_data));           // MODE SELECT parameter buffer
++	save_item(NAME(cdda_sotc));
++	save_item(NAME(m_removal_prevented));
++	save_item(NAME(m_xfer_buffer));       // fixed 64KiB, sized once above
+ }
+ 
+ void nscsi_cdrom_device::device_reset()
+@@ -149,6 +153,17 @@
+ 	lba = 0;
+ 	cur_sector = -1;
+ 	mode_data_size = 12;
++	cdda_sotc = 0; // also fixes latent read-before-write independent of savestates
++}
++
++void nscsi_cdrom_device::device_post_load()
++{
++	// Resync the guest-side media-change mirror from the HOST-side counter
++	// (device_image_interface::m_sequence_counter, which is never saved).
++	// DO NOT save_item sequence_counter -- saving it would GUARANTEE one
++	// spurious UNIT ATTENTION after every load, because the host-side
++	// counter it mirrors is unsaved.
++	sequence_counter = image->sequence_counter();
+ }
+ 
+ void nscsi_cdrom_device::device_add_mconfig(machine_config &config)
+@@ -239,7 +254,15 @@
+ 				uint64_t filesize;
+ 
+ 				LOG("flushing [%s] to disk at %08x\n", m_write_path.c_str(), m_write_offset * 512);
+-				osd_file::open(m_write_path, OPEN_FLAG_WRITE, file, filesize);
++				// m_write_path is unsaveable host state and may be empty after a
++				// mid-transfer state restore; abort instead of dereferencing a
++				// null file handle.
++				if (osd_file::open(m_write_path, OPEN_FLAG_WRITE, file, filesize) || !file) {
++					LOG("Open for write failed for [%s]\n", m_write_path.c_str());
++					scsi_status_complete(SS_CHECK_CONDITION);
++					sense(false, SK_HARDWARE_ERROR);
++					return;
++				}
+ 				file->write(&m_xfer_buffer[0], m_write_offset * 512, m_write_length, actualWritten);
+ 
+ 				if (actualWritten != m_write_length) {
+diff -ruN mame-src-pristine/src/devices/bus/nscsi/cd.h mame-src/src/devices/bus/nscsi/cd.h
+--- a/src/devices/bus/nscsi/cd.h	2026-08-04 01:39:44.715788604 +0000
++++ b/src/devices/bus/nscsi/cd.h	2026-08-04 02:07:27.232665012 +0000
+@@ -37,6 +37,7 @@
+ 
+ 	virtual void device_start() override ATTR_COLD;
+ 	virtual void device_reset() override ATTR_COLD;
++	virtual void device_post_load() override ATTR_COLD;
+ 	virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
+ 
+ 	virtual void scsi_command() override;
+diff -ruN mame-src-pristine/src/devices/bus/nscsi/hd.cpp mame-src/src/devices/bus/nscsi/hd.cpp
+--- a/src/devices/bus/nscsi/hd.cpp	2026-08-04 01:39:44.715788604 +0000
++++ b/src/devices/bus/nscsi/hd.cpp	2026-08-04 02:07:54.868030021 +0000
+@@ -45,6 +45,7 @@
+ 	save_item(NAME(cur_lba));
+ 	save_item(NAME(blocks));
+ 	save_item(NAME(bytes_per_sector));
++	save_item(NAME(m_last_cylinder)); // seek-timing model head position; inert while the model is unset
+ }
+ 
+ void nscsi_harddisk_device::device_reset()
+diff -ruN mame-src-pristine/src/devices/bus/pc_kbd/hle_mouse.cpp mame-src/src/devices/bus/pc_kbd/hle_mouse.cpp
+--- a/src/devices/bus/pc_kbd/hle_mouse.cpp	2026-08-04 01:39:44.716788617 +0000
++++ b/src/devices/bus/pc_kbd/hle_mouse.cpp	2026-08-04 02:06:38.064015595 +0000
+@@ -103,6 +103,8 @@
+ 	save_item(NAME(m_mouse_y));
+ 	save_item(NAME(m_mouse_b));
+ 
++	save_item(NAME(m_clock_changed)); // attotime: 100us inhibit / 50us holdoff detection
++
+ 	set_pc_kbdc_device();
+ 
+ 	m_serial = timer_alloc(FUNC(hle_ps2_mouse_device::serial), this);
+@@ -133,6 +135,17 @@
+ 	m_pc_kbdc->clock_write_from_kb(1);
+ }
+ 
++void hle_ps2_mouse_device::device_post_load()
++{
++	// Re-baseline m_mouse_x/y/b against the CURRENT host-session ioport
++	// relative accumulators (which restart at 0 in a fresh process). Without
++	// this, the first sample() manufactures a spurious delta of up to ±32767
++	// which the local carry patch then replays IN FULL at 255 counts/report —
++	// the restored 4Dwm cursor flies across the screen. update() discards the
++	// stale offset; motion resumes on the next real host movement.
++	update();
++}
++
+ void hle_ps2_mouse_device::clock_write(int state)
+ {
+ 	// record when the clock signal last changed state
+diff -ruN mame-src-pristine/src/devices/bus/pc_kbd/hle_mouse.h mame-src/src/devices/bus/pc_kbd/hle_mouse.h
+--- a/src/devices/bus/pc_kbd/hle_mouse.h	2026-08-04 01:39:44.716788617 +0000
++++ b/src/devices/bus/pc_kbd/hle_mouse.h	2026-08-04 02:06:29.267899415 +0000
+@@ -20,6 +20,7 @@
+ 	virtual ioport_constructor device_input_ports() const override ATTR_COLD;
+ 	virtual void device_start() override ATTR_COLD;
+ 	virtual void device_reset() override ATTR_COLD;
++	virtual void device_post_load() override;
+ 
+ 	// device_pc_kbd_interface overrides
+ 	virtual void clock_write(int state) override;
+diff -ruN mame-src-pristine/src/devices/cpu/mips/mips3.cpp mame-src/src/devices/cpu/mips/mips3.cpp
+--- a/src/devices/cpu/mips/mips3.cpp	2026-08-04 01:39:44.716788617 +0000
++++ b/src/devices/cpu/mips/mips3.cpp	2026-08-04 02:13:47.928693233 +0000
+@@ -537,6 +537,9 @@
+ 	save_item(NAME(m_core->ccr));
+ 	save_item(NAME(m_core->llbit));
+ 	save_item(NAME(m_core->count_zero_time));
++	save_item(NAME(m_core->mode));          // DRC hash key / privilege / FR selector
++	save_item(NAME(m_core->compare_armed)); // Count/Compare interrupt arming flag
++	save_item(NAME(m_cf));                  // interpreter COP condition flags (u8[4][8])
+ 	for (int tlbindex = 0; tlbindex < m_tlbentries; tlbindex++)
+ 	{
+ 		save_item(NAME(m_tlb[tlbindex].page_mask), tlbindex);
+@@ -1158,6 +1161,29 @@
+ }
+ 
+ 
++void mips3_device::device_post_load()
++{
++	// Belt-and-braces: recompute mode from the restored Status register per
++	// generate_update_mode semantics, in addition to the saved copy. mode
++	// selects the DRC hash bucket, the memory accessor privilege set, and
++	// FPR pairing (FR bit) — device_reset forced kernel mode, which is
++	// wrong for a state saved at the IRIX user-mode desktop.
++	uint32_t const sr = m_core->cpr[0][COP0_Status];
++	m_core->mode = ((sr & (SR_EXL | SR_ERL)) ? 0 : ((sr >> 2) & 0x06)) | ((sr >> 26) & 1);
++
++	// All translated code + hash table were compiled against PRE-load RAM and
++	// mode; with block validation only checking the first opcode of each
++	// sequence, stale tails would execute. The flag is checked at execute_run
++	// entry — safe context, one-time recompile warm-up after load.
++	m_drc_cache_dirty = true;
++
++	// Re-derive compare-interrupt timer arming coherently from restored
++	// count_zero_time / Compare / SR / compare_armed. Protects IRQ5 (the IRIX
++	// scheduler clock) from a stale-flag disarm on the first SR/Compare write.
++	mips3com_update_cycle_counting();
++}
++
++
+ bool mips3_device::memory_translate(int spacenum, int intention, offs_t &address, address_space *&target_space)
+ {
+ 	target_space = &space(spacenum);
+diff -ruN mame-src-pristine/src/devices/cpu/mips/mips3.h mame-src/src/devices/cpu/mips/mips3.h
+--- a/src/devices/cpu/mips/mips3.h	2026-08-04 01:39:44.717788630 +0000
++++ b/src/devices/cpu/mips/mips3.h	2026-08-04 02:13:29.826454141 +0000
+@@ -324,6 +324,7 @@
+ 	virtual void device_start() override ATTR_COLD;
+ 	virtual void device_reset() override ATTR_COLD;
+ 	virtual void device_stop() override ATTR_COLD;
++	virtual void device_post_load() override ATTR_COLD;
+ 
+ 	// device_execute_interface overrides
+ 	virtual uint32_t execute_min_cycles() const noexcept override { return 1; }
+diff -ruN mame-src-pristine/src/devices/machine/ds1386.cpp mame-src/src/devices/machine/ds1386.cpp
+--- a/src/devices/machine/ds1386.cpp	2026-08-04 01:39:44.718788643 +0000
++++ b/src/devices/machine/ds1386.cpp	2026-08-04 02:06:44.553101303 +0000
+@@ -89,6 +89,17 @@
+ 	save_item(NAME(m_tod_alarm));
+ 	save_item(NAME(m_watchdog_alarm));
+ 	save_item(NAME(m_square));
++	save_item(NAME(m_hundredths));
++	save_item(NAME(m_seconds));
++	save_item(NAME(m_minutes));
++	save_item(NAME(m_minutes_alarm));
++	save_item(NAME(m_hours));
++	save_item(NAME(m_hours_alarm));
++	save_item(NAME(m_days));
++	save_item(NAME(m_days_alarm));
++	save_item(NAME(m_date));
++	save_item(NAME(m_months_enables));
++	save_item(NAME(m_years));
+ 
+ 	m_ram = std::make_unique<uint8_t[]>(m_ram_size);
+ 	save_pointer(NAME(m_ram), m_ram_size);
+diff -ruN mame-src-pristine/src/devices/machine/edlc.cpp mame-src/src/devices/machine/edlc.cpp
+--- a/src/devices/machine/edlc.cpp	2026-08-04 01:39:44.718788643 +0000
++++ b/src/devices/machine/edlc.cpp	2026-08-04 02:05:00.692729517 +0000
+@@ -59,8 +59,12 @@
+ 	save_item(NAME(m_tx_status));
+ 	save_item(NAME(m_rx_command));
+ 	save_item(NAME(m_tx_command));
+-	//save_item(NAME(m_rx_fifo));
+-	//save_item(NAME(m_tx_fifo));
++	m_rx_fifo_length = 0;
++	m_tx_fifo_length = 0;
++	save_item(NAME(m_rx_fifo_length));
++	save_item(NAME(m_rx_fifo_data));
++	save_item(NAME(m_tx_fifo_length));
++	save_item(NAME(m_tx_fifo_data));
+ 
+ 	m_tx_timer = timer_alloc(FUNC(seeq8003_device::transmit), this);
+ 	m_int_timer = timer_alloc(FUNC(seeq8003_device::interrupt), this);
+@@ -88,6 +92,35 @@
+ 	interrupt();
+ }
+ 
++void seeq8003_device::device_pre_save()
++{
++	// Non-destructive drain+re-enqueue: logical fifo content is unchanged.
++	m_rx_fifo_length = 0;
++	while (!m_rx_fifo.empty())
++		m_rx_fifo_data[m_rx_fifo_length++] = m_rx_fifo.dequeue();
++	for (u16 i = 0; i < m_rx_fifo_length; i++)
++		m_rx_fifo.enqueue(m_rx_fifo_data[i]);
++
++	m_tx_fifo_length = 0;
++	while (!m_tx_fifo.empty())
++		m_tx_fifo_data[m_tx_fifo_length++] = m_tx_fifo.dequeue();
++	for (u16 i = 0; i < m_tx_fifo_length; i++)
++		m_tx_fifo.enqueue(m_tx_fifo_data[i]);
++}
++
++void seeq8003_device::device_post_load()
++{
++	// clear() first is load-bearing: it purges stale live-session bytes that
++	// a plain rebuild would otherwise leave enqueued ahead of restored data.
++	m_rx_fifo.clear();
++	for (u16 i = 0; i < m_rx_fifo_length; i++)
++		m_rx_fifo.enqueue(m_rx_fifo_data[i]);
++
++	m_tx_fifo.clear();
++	for (u16 i = 0; i < m_tx_fifo_length; i++)
++		m_tx_fifo.enqueue(m_tx_fifo_data[i]);
++}
++
+ int seeq8003_device::recv_start_cb(u8 *buf, int length)
+ {
+ 	// check receiver disabled
+diff -ruN mame-src-pristine/src/devices/machine/edlc.h mame-src/src/devices/machine/edlc.h
+--- a/src/devices/machine/edlc.h	2026-08-04 01:39:44.718788643 +0000
++++ b/src/devices/machine/edlc.h	2026-08-04 02:04:50.121589893 +0000
+@@ -41,6 +41,8 @@
+ 	// device_t implementation
+ 	virtual void device_start() override ATTR_COLD;
+ 	virtual void device_reset() override ATTR_COLD;
++	virtual void device_pre_save() override;
++	virtual void device_post_load() override;
+ 
+ 	// device_network_interface implementation
+ 	virtual int recv_start_cb(u8 *buf, int length) override;
+@@ -137,6 +139,12 @@
+ 
+ 	util::fifo<u8, MAX_FRAME_SIZE> m_rx_fifo;
+ 	util::fifo<u8, MAX_FRAME_SIZE> m_tx_fifo;
++
++	// savestate shadows for the util::fifo members (not save_item-compatible)
++	u16 m_rx_fifo_length;
++	u8 m_rx_fifo_data[MAX_FRAME_SIZE];
++	u16 m_tx_fifo_length;
++	u8 m_tx_fifo_data[MAX_FRAME_SIZE];
+ };
+ 
+ class seeq80c03_device : public seeq8003_device
+diff -ruN mame-src-pristine/src/devices/machine/z80scc.cpp mame-src/src/devices/machine/z80scc.cpp
+--- a/src/devices/machine/z80scc.cpp	2026-08-04 01:39:44.720788669 +0000
++++ b/src/devices/machine/z80scc.cpp	2026-08-04 02:08:27.059455204 +0000
+@@ -1006,14 +1006,13 @@
+ 		m_extint_latch(0),
+ 		m_extint_states(0),
+ 		m_rxd(0),
++		m_ri(0),
+ 		m_tx_clock(0),
+ 		m_tx_int_disarm(0),
+ 		m_dtr(0),
+ 		m_rts(0),
+-		m_sync_pattern(0)
+-#if START_BIT_HUNT
+-		,m_rcv_mode(RCV_IDLE)
+-#endif
++		m_sync_pattern(0),
++		m_rcv_mode(RCV_IDLE)
+ {
+ 	LOG("%s\n",FUNCNAME);
+ 
+diff -ruN mame-src-pristine/src/mame/sgi/hal2.cpp mame-src/src/mame/sgi/hal2.cpp
+--- a/src/mame/sgi/hal2.cpp	2026-08-04 01:39:44.798789695 +0000
++++ b/src/mame/sgi/hal2.cpp	2026-08-04 02:04:48.920574030 +0000
+@@ -43,6 +43,9 @@
+ 	save_item(NAME(m_bres_clock_inc));
+ 	save_item(NAME(m_bres_clock_modctrl));
+ 	save_item(NAME(m_bres_clock_freq));
++	save_item(NAME(m_bres_clock_rate[0]));
++	save_item(NAME(m_bres_clock_rate[1]));
++	save_item(NAME(m_bres_clock_rate[2]));
+ 	save_item(NAME(m_curr_dac));
+ }
+ 
+diff -ruN mame-src-pristine/src/mame/sgi/indy_indigo2.cpp mame-src/src/mame/sgi/indy_indigo2.cpp
+--- a/src/mame/sgi/indy_indigo2.cpp	2026-08-04 01:39:44.798789695 +0000
++++ b/src/mame/sgi/indy_indigo2.cpp	2026-08-04 02:04:44.122510657 +0000
+@@ -119,6 +119,7 @@
+ 
+ 	uint8_t volume_r(offs_t offset);
+ 	void volume_w(offs_t offset, uint8_t data);
++	void volume_post_load();
+ 
+ 	void ip24_map(address_map &map) ATTR_COLD;
+ 	void ip24_base_map(address_map &map) ATTR_COLD;
+@@ -216,6 +217,16 @@
+ 	}
+ }
+ 
++void ip24_state::volume_post_load()
++{
++	// m_volume_l/r bytes are saved, but volume_w also mirrors them into DAC
++	// sound-stream output gain (hal2 set_*_volume -> set_output_gain), which
++	// is not savestate-covered. Re-push so restored audio level matches the
++	// restored registers. Idempotent.
++	m_hal2->set_left_volume(m_volume_l);
++	m_hal2->set_right_volume(m_volume_r);
++}
++
+ void ip24_state::ip24_base_map(address_map &map)
+ {
+ 	map(0x1f000000, 0x1f9fffff).rw(m_gio64, FUNC(gio64_device::read), FUNC(gio64_device::write));
+@@ -271,6 +282,7 @@
+ {
+ 	save_item(NAME(m_volume_l));
+ 	save_item(NAME(m_volume_r));
++	machine().save().register_postload(save_prepost_delegate(FUNC(ip24_state::volume_post_load), this));
+ }
+ 
+ void ip24_state::machine_reset()
+@@ -540,7 +552,7 @@
+ 
+ 
+ //    YEAR  NAME          PARENT     COMPAT  MACHINE       INPUT CLASS       INIT        COMPANY                 FULLNAME                   FLAGS
+-COMP( 1993, indy_4610,    0,         0,      indy_4610,    ip24, ip24_state, empty_init, "Silicon Graphics Inc", "Indy (R4600, 100MHz)",    MACHINE_IMPERFECT_GRAPHICS | MACHINE_IMPERFECT_SOUND | MACHINE_NODEVICE_MICROPHONE )
++COMP( 1993, indy_4610,    0,         0,      indy_4610,    ip24, ip24_state, empty_init, "Silicon Graphics Inc", "Indy (R4600, 100MHz)",    MACHINE_IMPERFECT_GRAPHICS | MACHINE_IMPERFECT_SOUND | MACHINE_NODEVICE_MICROPHONE | MACHINE_SUPPORTS_SAVE )
+ COMP( 1993, indy_4613,    indy_4610, 0,      indy_4613,    ip24, ip24_state, empty_init, "Silicon Graphics Inc", "Indy (R4600, 133MHz)",    MACHINE_IMPERFECT_GRAPHICS | MACHINE_IMPERFECT_SOUND | MACHINE_NODEVICE_MICROPHONE )
+ COMP( 1996, indy_5015,    indy_4610, 0,      indy_5015,    ip24, ip24_state, empty_init, "Silicon Graphics Inc", "Indy (R5000, 150MHz)",    MACHINE_IMPERFECT_GRAPHICS | MACHINE_IMPERFECT_SOUND | MACHINE_NODEVICE_MICROPHONE )
+ COMP( 1993, indigo2_4415, 0,         0,      indigo2_4415, ip24, ip22_state, empty_init, "Silicon Graphics Inc", "Indigo2 (R4400, 150MHz)", MACHINE_NOT_WORKING )
+diff -ruN mame-src-pristine/src/mame/sgi/mc.cpp mame-src/src/mame/sgi/mc.cpp
+--- a/src/mame/sgi/mc.cpp	2026-08-04 01:39:44.799789708 +0000
++++ b/src/mame/sgi/mc.cpp	2026-08-04 02:26:37.558854458 +0000
+@@ -11,6 +11,8 @@
+ #include "emu.h"
+ #include "mc.h"
+ 
++#include <algorithm>
++
+ #define LOG_UNKNOWN     (1U << 1)
+ #define LOG_READS       (1U << 2)
+ #define LOG_WRITES      (1U << 3)
+@@ -118,6 +120,30 @@
+ 	save_item(NAME(m_dma_run));
+ 	save_item(NAME(m_eeprom_ctrl));
+ 	save_item(NAME(m_semaphore));
++
++	// Allocate RAM banks at start (NOT reset) so save registration stays valid,
++	// and register each populated bank. indy_4610 256MB patch: SIMMS=0x00ee ->
++	// banks 0/1 = 128MiB each (size code 6, 1U<<27), banks 2/3 empty.
++	//
++	// Live ioport reads are illegal at init time ("Input ports cannot be read
++	// at init time!"), so size the banks from the port's CONFIG-TIME default
++	// value instead -- the composed field defaults, which is what a live read
++	// returns anyway for a DIP port nothing ever toggles at runtime.
++	u16 simms = 0;
++	for (ioport_field &field : m_simms->fields())
++		simms = (simms & ~field.mask()) | (field.defvalue() & field.mask());
++	for (unsigned bank = 0; bank < 4; bank++)
++	{
++		u32 const size = BIT(simms, bank * 4, 3);
++		if (size)
++		{
++			u32 const bytes = 1U << (size + 21);
++			m_ram[bank] = std::make_unique<u8[]>(bytes);
++			// MUST use the indexed form: NAME(m_ram[bank]) stringizes identically
++			// for all banks and would collide (startup fatalerror on dup names).
++			save_pointer(&m_ram[bank][0], "m_ram", bytes, bank);
++		}
++	}
+ }
+ 
+ void sgi_mc_device::device_reset()
+@@ -163,24 +189,11 @@
+ 	m_space = &m_maincpu->space(AS_PROGRAM);
+ 
+ 	u16 const simms = m_simms->read();
+-
+-	// allocate installed memory
+ 	for (unsigned bank = 0; bank < 4; bank++)
+ 	{
+ 		u32 const size = BIT(simms, bank * 4, 3);
+-
+-		switch (size)
+-		{
+-		case 0:
+-			LOG("ram bank %c empty\n", bank + 'A');
+-			m_ram[bank].reset();
+-			break;
+-		default:
+-			LOG("ram bank %c size %dM (%s rank)\n",
+-				bank + 'A', 1U << (size + 1), BIT(simms, bank * 4 + 3) ? "dual" : "single");
+-			m_ram[bank] = std::make_unique<u8[]>(1U << (size + 21));
+-			break;
+-		}
++		if (size && m_ram[bank])
++			std::fill_n(&m_ram[bank][0], 1U << (size + 21), 0);
+ 	}
+ 
+ 	// assume memory configuration is invalidated by reset
+@@ -188,6 +201,20 @@
+ 	memcfg_w(1, 0);
+ }
+ 
++void sgi_mc_device::device_post_load()
++{
++	// Replay the PROM's memcfg mapping from the restored m_memcfg values:
++	// reinstalls every bank/rank window (install_ram with mirror masks,
++	// cf. memcfg_w below) and the low-512KiB alias of the 0x08000000 segment.
++	// Idempotent: the unmap phase reads the current m_memcfg[offset], which
++	// post-load already equals the restored value; unmapping a not-yet-mapped
++	// range is harmless.
++	// Side benefit: install_ram invalidates the address-space direct-access
++	// caches, flushing mips3 DRC cached RAM pointers for these regions.
++	for (offs_t offset = 0; offset < 2; offset++)
++		memcfg_w(offset, m_memcfg[offset]);
++}
++
+ void sgi_mc_device::set_cpu_buserr(uint32_t address, uint64_t mem_mask)
+ {
+ 	m_cpu_error_addr = address;
+diff -ruN mame-src-pristine/src/mame/sgi/mc.h mame-src/src/mame/sgi/mc.h
+--- a/src/mame/sgi/mc.h	2026-08-04 01:39:44.799789708 +0000
++++ b/src/mame/sgi/mc.h	2026-08-04 02:05:30.504123266 +0000
+@@ -39,6 +39,7 @@
+ 	// device_t implementation
+ 	virtual void device_start() override ATTR_COLD;
+ 	virtual void device_reset() override ATTR_COLD;
++	virtual void device_post_load() override;
+ 	virtual ioport_constructor device_input_ports() const override ATTR_COLD;
+ 
+ private:
+diff -ruN mame-src-pristine/src/mame/sgi/vino.cpp mame-src/src/mame/sgi/vino.cpp
+--- a/src/mame/sgi/vino.cpp	2026-08-04 01:39:44.799789708 +0000
++++ b/src/mame/sgi/vino.cpp	2026-08-04 02:07:46.505919574 +0000
+@@ -90,6 +90,11 @@
+ 		save_item(NAME(m_channels[i].m_field_pixels_remaining[0]), i);
+ 		save_item(NAME(m_channels[i].m_field_pixels_remaining[1]), i);
+ 		save_item(NAME(m_channels[i].m_end_of_field), i);
++		save_item(NAME(m_channels[i].m_decimation), i);   // % divisor — SIGFPE if garbage while capturing
++		save_item(NAME(m_channels[i].m_field_width), i);
++		save_item(NAME(m_channels[i].m_field_height), i); // uint32_t[2]
++		save_item(NAME(m_channels[i].m_field_x), i);      // in-flight scan position, not derivable
++		save_item(NAME(m_channels[i].m_field_y), i);
+ 
+ 		m_channels[i].m_fetch_timer->adjust(attotime::never);
+ 	}

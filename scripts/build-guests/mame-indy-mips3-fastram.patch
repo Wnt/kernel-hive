@@ -1,0 +1,321 @@
+Give the Indy's R4600BE a fastram fast path over its main memory.
+
+*** DO NOT PUT THIS IN THE TILE BUILD YET -- IT IS BLOCKED. ***
+With `-ioc2:rs232a pty`, which the tile passes on every launch, a guest built
+with this patch stops at "Memory diagnostic *FAILED* / Check or replace: SIMM
+S7" and never reaches the login chooser; the same binary without that one flag
+boots normally, and the shipped binary with that flag boots normally. Bisect
+table, framebuffer evidence and the leading hypothesis (the fastram map only
+takes effect at the next DRC reset, and IRIX's memory diagnostic remaps memcfg
+while it is executing) are in docs/guests/irix.md.
+
+APPLY ORDER: after mame-mc-dma-ptbase-mask.patch. The first version of this
+patch carried that fix's mc.cpp hunk as well, so the two could not both be
+applied to one tree -- the stack in docs/guests/irix.md would have failed at
+this patch. The hunk is gone from here; the DMA page-table mask lives in its
+own patch, where it belongs.
+
+APPLY ORDER: after mame-mc-dma-ptbase-mask.patch. The first version of this
+patch carried that fix's mc.cpp hunk as well, so the two could not both be
+applied to one tree -- the stack in docs/guests/irix.md would have failed at
+this patch. The hunk is gone from here; the DMA page-table mask lives in its
+own patch, where it belongs.
+
+MIPS3's DRC already knows how to turn a guest load/store into an inline bounds
+check plus a single host load ("fastram"), but nothing in src/mame/sgi ever
+registered a region, so every guest memory access on indy_4610 went out of line
+into the generic memory-system dispatch. Read straight out of `-drc_log_native`,
+the mode-2 read32 stub was 10 instructions of vtlb translation followed by 22
+instructions of dispatch -- an `ldmxcsr`, an address swizzle, a rip-relative
+dispatch-table base, a dependent table load, a vtable load, an INDIRECT VIRTUAL
+`call` into `handler_entry_read_memory<3,0>::read`, and a second `ldmxcsr` to
+restore FP mode -- before the `ret`. Loads are 36.6% and stores 6.0% of the
+compiled guest instruction stream (IRIX's 64-bit register save/restore alone
+makes `ld` 23.3%), so that dispatch is paid 0.426 times per guest instruction.
+
+With the region registered the same stub ends in
+
+    cmp ebx,0Bffffffh / ja / cmp ebx,8000000h / jb / xor ebx,4 / movsxd / mov / ret
+
+TWO BUGS HAD TO BE FIXED FIRST, BOTH IN static_generate_fastram_accessor.
+
+The host buffer behind a fastram region is laid out by the MEMORY SYSTEM, for
+the width and endianness of the CPU's program space. The generator hardcoded the
+32-bit-space swizzles (BYTE4_XOR_BE/WORD_XOR_BE, and a dword-pair `DROR` for
+qwords) while the interpreter fastram path in mips3.cpp has always used
+m_byte_xor/m_word_xor/m_dword_xor, which are 64-bit-aware. On a 64-bit
+big-endian space -- R4600BE and R5000BE, i.e. every SGI IP22/IP24 machine -- a
+byte lives at host offset `A^7` not `A^3`, a dword at `A^4` not `A`, and a guest
+qword already occupies one host qword and must NOT be half-rotated. Registering
+fastram without this fix returns scrambled bytes. The generator now uses the
+device's own xors and emits the dword-pair rotate only for a 32-bit big-endian
+space, so every existing 32-bit fastram user (kinst, the SH2/PPC-style
+drivers' MIPS equivalents) emits byte-for-byte the same code as before.
+
+MIPS3_MAX_FASTRAM was 3. A 256 MB Indy configures four 64 MB ranks, and
+add_fastram() silently drops anything past the limit, so a quarter of RAM would
+have kept falling through to the dispatch path. Consecutive ranks of a bank are
+contiguous in both the guest map and the host buffer, so mc.cpp coalesces them
+(256 MB becomes two entries, not four) and the limit is raised to 4 for headroom.
+Entries are not free: each one adds a cmp/jcc pair to EVERY accessor stub.
+
+Correctness constraints encoded in sgi_mc_device::remap_fastram():
+
+  * The map is rebuilt from scratch on every memcfg write, never incrementally.
+    RAM is remapped by the guest at runtime, and a stale host pointer left
+    behind by an unmap would be a use-after-free.
+  * Only ranges where the installed size fills the configured size are eligible.
+    install_ram() MIRRORS a short bank across its configured range and fastram
+    has no mirror support, so a mirrored bank must keep falling through.
+  * The 0x00000000-0x0007ffff low alias of the first 512 KiB is deliberately not
+    registered -- it would be a second entry pointing at an already-registered
+    host buffer, for 512 KiB of PROM-era aliasing.
+  * DRC self-modifying-code detection is not at risk: mips3 uses entry checksums
+    (generate_checksum_block), not write watchpoints, so bypassing the memory
+    system on writes changes nothing.
+  * HPC3/SCSI DMA writes the same host buffers through the memory system, so
+    coherency is preserved.
+
+MEASURED on indy_4610 -gio64_gfx xl24, 256 MB, -video none -nothrottle, one
+binary carrying the registration behind an env gate so control and treatment
+share the same build. Six interleaved rounds on one pinned core pair, within-run
+windowing between emulated-time marks (differencing separate runs is invalid --
+IRIX boot diverges from t~120 s), metric emulated_secs/(cycles/2.5e9), median of
+PAIRED within-round ratios with a 20k-resample bootstrap CI:
+
+    window (emulated)      control   fastram   paired median   95% CI
+    40-120 s  boot/active   58.5%     65.5%       +8.9%        +3.7..+22.6
+    120-200 s transition   115.1%    139.5%      +15.7%        +7.4..+36.0
+    200-300 s idle/chooser 140.3%    166.9%      +19.1%        +4.7..+23.5
+
+All 18 paired comparisons are positive. The exhibit still does not reach 100% of
+real time in the active regime on this change alone -- 58.5% -> 65.5% -- so this
+is a large step, not the finish line.
+
+Framebuffer verified, not inferred: the deterministic checkpoint at emulated
+t=100 s renders byte-identically to control (PNG md5
+0086feeeb211e75d270cae7dffb8a5ce), and a t=600 s soak lands on the iconlogin
+chooser with md5 5bbf4cbed33441c8741cd455df1166ed, one of the two frames a
+CONTROL boot is already known to produce there.
+
+diff --git a/src/devices/cpu/mips/mips3.h b/src/devices/cpu/mips/mips3.h
+index bcf6891b..5d9dd75c 100644
+--- a/src/devices/cpu/mips/mips3.h
++++ b/src/devices/cpu/mips/mips3.h
+@@ -284,7 +284,7 @@ protected:
+ 		MIPS3_TYPE_RM7000
+ 	};
+ 
+-	static inline constexpr unsigned MIPS3_MAX_FASTRAM      = 3;
++	static inline constexpr unsigned MIPS3_MAX_FASTRAM      = 4;
+ 	static inline constexpr unsigned MIPS3_MAX_HOTSPOTS     = 16;
+ 
+ 	static inline constexpr unsigned MIPS3_MAX_TLB_ENTRIES  = 48;
+diff --git a/src/devices/cpu/mips/mips3drc.cpp b/src/devices/cpu/mips/mips3drc.cpp
+index ca0bc821..8f671fa2 100644
+--- a/src/devices/cpu/mips/mips3drc.cpp
++++ b/src/devices/cpu/mips/mips3drc.cpp
+@@ -839,6 +839,15 @@ void mips3_device::static_generate_memory_mode_checks(drcuml_block &block, uml::
+ 
+ void mips3_device::static_generate_fastram_accessor(drcuml_block &block, int &label, int size, bool iswrite, bool ismasked)
+ {
++	// The host buffer behind a fastram region is laid out by the MEMORY SYSTEM,
++	// i.e. for the width and endianness of this CPU's program space -- so the
++	// swizzles here must be the same ones the interpreter fastram path uses
++	// (m_byte_xor/m_word_xor/m_dword_xor), not the 32-bit-space constants that
++	// were hardcoded. On a 64-bit big-endian space (R4600BE/R5000BE, e.g. the
++	// SGI Indy) a guest qword already sits in one host qword, so the dword-pair
++	// rotate that a 32-bit big-endian space needs must NOT be emitted.
++	bool const fastram_dword_pair = (m_program_config.data_width() != 64) && m_bigendian;
++
+ 	if (!debugger_enabled())
+ 	{
+ 		for (int ramnum = 0; ramnum < m_fastram_select; ramnum++)
+@@ -861,25 +870,27 @@ void mips3_device::static_generate_fastram_accessor(drcuml_block &block, int &la
+ 				{
+ 					if (size == 1)
+ 					{
+-						UML_XOR(block, I0, I0, m_bigendian ? BYTE4_XOR_BE(0) : BYTE4_XOR_LE(0));
+-																					// xor     i0,i0,bytexor
++						if (m_byte_xor)
++							UML_XOR(block, I0, I0, m_byte_xor);                     // xor     i0,i0,bytexor
+ 						UML_LOAD(block, I0, fastbase, I0, SIZE_BYTE, SCALE_x1);     // load    i0,fastbase,i0,byte
+ 					}
+ 					else if (size == 2)
+ 					{
+-						UML_XOR(block, I0, I0, m_bigendian ? WORD_XOR_BE(0) : WORD_XOR_LE(0));
+-																					// xor     i0,i0,wordxor
++						if (m_word_xor)
++							UML_XOR(block, I0, I0, m_word_xor);                     // xor     i0,i0,wordxor
+ 						UML_LOAD(block, I0, fastbase, I0, SIZE_WORD, SCALE_x1);     // load    i0,fastbase,i0,word_x1
+ 					}
+ 					else if (size == 4)
+ 					{
++						if (m_dword_xor)
++							UML_XOR(block, I0, I0, m_dword_xor);                    // xor     i0,i0,dwordxor
+ 						UML_LOAD(block, I0, fastbase, I0, SIZE_DWORD, SCALE_x1);    // load    i0,fastbase,i0,dword_x1
+ 					}
+ 					else if (size == 8)
+ 					{
+ 						UML_DLOAD(block, I0, fastbase, I0, SIZE_QWORD, SCALE_x1);   // dload   i0,fastbase,i0,qword_x1
+-						UML_DROR(block, I0, I0, 32 * (m_bigendian ? BYTE_XOR_BE(0) : BYTE_XOR_LE(0)));
+-																					// dror    i0,i0,32*bytexor
++						if (fastram_dword_pair)
++							UML_DROR(block, I0, I0, 32);                            // dror    i0,i0,32
+ 					}
+ 					UML_RET(block);                                                 // ret
+ 				}
+@@ -887,18 +898,20 @@ void mips3_device::static_generate_fastram_accessor(drcuml_block &block, int &la
+ 				{
+ 					if (size == 1)
+ 					{
+-						UML_XOR(block, I0, I0, m_bigendian ? BYTE4_XOR_BE(0) : BYTE4_XOR_LE(0));
+-																					// xor     i0,i0,bytexor
++						if (m_byte_xor)
++							UML_XOR(block, I0, I0, m_byte_xor);                     // xor     i0,i0,bytexor
+ 						UML_STORE(block, fastbase, I0, I1, SIZE_BYTE, SCALE_x1);    // store   fastbase,i0,i1,byte
+ 					}
+ 					else if (size == 2)
+ 					{
+-						UML_XOR(block, I0, I0, m_bigendian ? WORD_XOR_BE(0) : WORD_XOR_LE(0));
+-																					// xor     i0,i0,wordxor
++						if (m_word_xor)
++							UML_XOR(block, I0, I0, m_word_xor);                     // xor     i0,i0,wordxor
+ 						UML_STORE(block, fastbase, I0, I1, SIZE_WORD, SCALE_x1);    // store   fastbase,i0,i1,word_x1
+ 					}
+ 					else if (size == 4)
+ 					{
++						if (m_dword_xor)
++							UML_XOR(block, I0, I0, m_dword_xor);                    // xor     i0,i0,dwordxor
+ 						if (ismasked)
+ 						{
+ 							UML_LOAD(block, I3, fastbase, I0, SIZE_DWORD, SCALE_x1);    // load    i3,fastbase,i0,dword_x1
+@@ -910,12 +923,12 @@ void mips3_device::static_generate_fastram_accessor(drcuml_block &block, int &la
+ 					}
+ 					else if (size == 8)
+ 					{
+-						UML_DROR(block, I1, I1, 32 * (m_bigendian ? BYTE_XOR_BE(0) : BYTE_XOR_LE(0)));
+-																						// dror    i1,i1,32*bytexor
++						if (fastram_dword_pair)
++							UML_DROR(block, I1, I1, 32);                                // dror    i1,i1,32
+ 						if (ismasked)
+ 						{
+-							UML_DROR(block, I2, I2, 32 * (m_bigendian ? BYTE_XOR_BE(0) : BYTE_XOR_LE(0)));
+-																						// dror    i2,i2,32*bytexor
++							if (fastram_dword_pair)
++								UML_DROR(block, I2, I2, 32);                            // dror    i2,i2,32
+ 							UML_DLOAD(block, I3, fastbase, I0, SIZE_QWORD, SCALE_x1);   // dload   i3,fastbase,i0,qword_x1
+ 							UML_DROLINS(block, I3, I1, 0, I2);                          // drolins i3,i1,0,i2
+ 							UML_DSTORE(block, fastbase, I0, I3, SIZE_QWORD, SCALE_x1);  // dstore  fastbase,i0,i3,qword_x1
+diff --git a/src/mame/sgi/mc.cpp b/src/mame/sgi/mc.cpp
+index 79186754..03c61224 100644
+--- a/src/mame/sgi/mc.cpp
++++ b/src/mame/sgi/mc.cpp
+@@ -25,6 +25,10 @@
+ #define VERBOSE         (0)
+ #include "logmacro.h"
+ 
++#include "cpu/mips/mips3.h"
++
++#include <vector>
++
+ DEFINE_DEVICE_TYPE(SGI_MC, sgi_mc_device, "sgi_mc", "SGI Memory Controller")
+ 
+ sgi_mc_device::sgi_mc_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+@@ -817,6 +821,81 @@ void sgi_mc_device::memcfg_w(offs_t offset, u32 data)
+ 		if (conf_base == 0x0800'0000U)
+ 			m_space->install_ram(0x0000'0000, 0x0007'ffff, &m_ram[offset * 2 + bank][0]);
+ 	}
++
++	remap_fastram();
++}
++
++/*
++ * Republish the whole current RAM map to the MIPS3 DRC as fastram. Rebuilt from
++ * scratch on EVERY memcfg write (not incrementally) because a stale host
++ * pointer left behind by an unmap would be a use-after-free, and because
++ * clear_fastram() has no per-entry granularity.
++ *
++ * Only ranges where the installed size fills the configured size are eligible:
++ * install_ram() MIRRORS a short bank across its configured range and fastram
++ * has no mirror support, so a mirrored bank must keep falling through to the
++ * memory system. The 0x00000000-0x0007ffff low alias is likewise left alone --
++ * it is 512 KiB of PROM-era aliasing of memory that is already registered.
++ */
++void sgi_mc_device::remap_fastram()
++{
++	mips3_device *const cpu = dynamic_cast<mips3_device *>(m_maincpu.target());
++	if (!cpu)
++		return;
++
++	cpu->clear_fastram(0);
++
++	struct range { u32 start; u32 end; u8 *host; };
++	std::vector<range> ranges;
++
++	u16 const simms = m_simms->read();
++
++	for (unsigned reg = 0; reg < 2; reg++)
++	{
++		for (unsigned bank = 0; bank < 2; bank++)
++		{
++			if (!BIT(m_memcfg[reg], 29 - bank * 16))
++				continue;
++			if (!BIT(simms, (reg * 2 + bank) * 4, 3))
++				continue;
++
++			u32 const conf_base = BIT(m_memcfg[reg], 16 - bank * 16, 8) << 22;
++			unsigned const conf_rank = BIT(m_memcfg[reg], 30 - bank * 16);
++			u32 const conf_size = (BIT(m_memcfg[reg], 24 - bank * 16, 5) + 1) << (22 - conf_rank);
++
++			unsigned const inst_rank = BIT(simms, (reg * 2 + bank) * 4 + 3);
++			u32 const inst_size = 1U << (BIT(simms, (reg * 2 + bank) * 4, 3) + 21 - inst_rank);
++
++			unsigned const ranks = std::min(conf_rank, inst_rank) + 1;
++			u32 const size = std::min(conf_size, inst_size);
++
++			if (size != conf_size)
++				continue;
++
++			for (unsigned rank = 0; rank < ranks; rank++)
++			{
++				u32 const start = conf_base + conf_size * rank;
++				u8 *const host = &m_ram[reg * 2 + bank][size * rank];
++
++				// Coalesce: consecutive ranks of a bank are contiguous in BOTH
++				// the guest map and the host buffer, so 256 MB of RAM becomes
++				// two fastram entries rather than four. Entries are not free --
++				// every one of them adds a cmp/jcc pair to EVERY accessor stub,
++				// and MIPS3_MAX_FASTRAM is small.
++				if (!ranges.empty() && ranges.back().end + 1 == start
++					&& ranges.back().host + (ranges.back().end - ranges.back().start + 1) == host)
++					ranges.back().end = start + size - 1;
++				else
++					ranges.push_back({ start, start + size - 1, host });
++			}
++		}
++	}
++
++	for (range const &r : ranges)
++	{
++		LOGMASKED(LOG_MEMCFG, "fastram 0x%08x-0x%08x -> %p\n", r.start, r.end, (void *)r.host);
++		cpu->add_fastram(r.start, r.end, false, r.host);
++	}
+ }
+ 
+ static INPUT_PORTS_START(mc)
+diff --git a/src/mame/sgi/mc.h b/src/mame/sgi/mc.h
+index 4cf2dd77..3843799f 100644
+--- a/src/mame/sgi/mc.h
++++ b/src/mame/sgi/mc.h
+@@ -75,6 +75,10 @@ private:
+ 
+ 	address_space *m_space;
+ 
++	// Publish the installed RAM to the MIPS3 DRC as fastram, so a guest
++	// load/store becomes an inline bounds check plus one host load.
++	void remap_fastram();
++
+ 	emu_timer *m_dma_timer;
+ 
+ 	attotime m_last_update_time;

@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "id": "redstar3",
+  "era_year": 2013,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 31,
+        "prelude": "",
+        "line": "  \"redstar3    |redstar3.sh    |RedStar3    |retro    |~15-30m |vision |redstar3.qcow2|media\"\n",
+        "value": {
+          "key": "redstar3",
+          "script": "redstar3.sh",
+          "outputDir": "RedStar3",
+          "class": "retro",
+          "estimated": "~15-30m",
+          "automation": "vision",
+          "produces": "redstar3.qcow2",
+          "flags": [
+            "media"
+          ]
+        },
+        "defaultOrder": {
+          "group": 1,
+          "position": 8
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "redstar3",
+      "value": {
+        "os": "Red Star OS 3.0 Desktop",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            12,
+            12
+          ],
+          "b": [
+            1906,
+            1068
+          ]
+        },
+        "kbd": "alt+F2",
+        "kbd_reset": "Escape",
+        "kbd_note": "Alt+F2 opens KDE's visible Run Command dialog; Escape closes it",
+        "audio_trigger": "none",
+        "validated": true,
+        "note": "1920x1080 std VGA (Xorg vesa + ShadowFB packed-linear); absolute USB tablet; air-gapped with no guest NIC"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/redstar3",
+      "qmp": "/data/vms/streamhost/tiles/redstar3/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54121,
+      "notes": "air-gapped guest: no NIC and no exec/SSH channel; framebuffer/QMP only"
+    }
+  },
+  "render": {
+    "signalOrder": 31,
+    "tilesManifestOrder": 29,
+    "tilesManifestPrelude": "\n# redstar3 (VMID 121) — private Red Star OS 3.0 Desktop preservation tile.\n#   KVM/i440fx, stable Nehalem CPU, std VGA (Xorg vesa + ShadowFB, 1920x1080),\n#   IDE, USB tablet, no audio.\n#   -nodefaults is mandatory: it prevents QEMU's implicit e1000; zero guest NICs.\n",
+    "tilesManifestInvocation": "emit redstar3 \\\n  --tile redstar3 --vmid 121 --udp 54121 --pointer abs --audio off --fps 30 \\\n  --input-dev usb --mem 1024 --smp 1 --machine pc-i440fx-11.0 --cpu Nehalem,kvm=off --vga std \\\n  --disk-raw \"-drive file=/data/gallery-guests/RedStar3/redstar3.qcow2,format=qcow2,if=ide,index=0,media=disk -drive if=ide,index=2,media=cdrom\" \\\n  --boot c --extra \"-nodefaults -loadvm golden\" \\\n  --env-append-file \"$T/redstar3/tile.env.fixture\"\n",
+    "bringUpGroup": 2,
+    "bindingOrder": 34,
+    "bindingPrelude": "",
+    "bindingLine": "  redstar3:    { osId: 'redstar3',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#b3202a', eraLabel: '2013 · Red Star OS 3.0', bootVideo: '/boot/redstar3/boot.mp4' },\n",
+    "museumOrder": 29,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'redstar3', displayName: 'Red Star OS 3.0 Desktop', year: 2013,\n    lineage: 'Linux (Fedora lineage)', arch: 'i386', ramMB: 1024,    era: '2010s', accent: '#b3202a',\n    eraSoftware: ['KDE desktop', 'Naenara browser', 'Red Star file manager', 'system tools'],\n    periodBrowser: 'Naenara (Firefox-derived)',\n    iconicApps: ['Naenara', 'File Manager', 'System Preferences'],\n    blurb: 'A macOS-styled desktop distribution from the DPRK: Fedora/KDE foundations reshaped into a tightly controlled national-computing environment.',\n    notes: 'Private air-gapped preservation exhibit. The guest has no emulated network interface.',\n  },\n",
+    "goldenOrder": 29,
+    "actionMapOrder": 27
+  },
+  "tileDir": "redstar3",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54121,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 121
+  },
+  "guestDoc": "docs/guests/redstar3.md",
+  "credentialsRef": "guest/redstar3",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "redstar3",
+      "SH_QMP": "/data/vms/streamhost/tiles/redstar3/qmp.sock",
+      "SH_PORT": "54121",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "off",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/redstar3/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/redstar3/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_FIXTURE_DESC": "\"Logged-in idle Red Star OS 3.0 Desktop; complete 1920x1080 menubar, wallpaper, and dock; absolute USB-tablet and keyboard ready\"",
+      "SH_BASE_BACKUP": "/data/gallery-guests/RedStar3/redstar3.qcow2.bak-pre-redstar3"
+    },
+    "vmidLabel": 121,
+    "qemu": {
+      "mode": "generic",
+      "emitArgs": [
+        "--tile",
+        "redstar3",
+        "--vmid",
+        "121",
+        "--udp",
+        "54121",
+        "--pointer",
+        "abs",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--input-dev",
+        "usb",
+        "--mem",
+        "1024",
+        "--smp",
+        "1",
+        "--machine",
+        "pc-i440fx-11.0",
+        "--cpu",
+        "Nehalem,kvm=off",
+        "--vga",
+        "std",
+        "--disk-raw",
+        "-drive file=/data/gallery-guests/RedStar3/redstar3.qcow2,format=qcow2,if=ide,index=0,media=disk -drive if=ide,index=2,media=cdrom",
+        "--boot",
+        "c",
+        "--extra",
+        "-nodefaults -loadvm golden",
+        "--env-append-file",
+        "$T/redstar3/tile.env.fixture"
+      ],
+      "deviceSetId": "redstar3-airgapped-v2-stdvga",
+      "machine": "pc-i440fx-11.0",
+      "cpu": "Nehalem,kvm=off",
+      "vga": "std",
+      "memoryMB": 1024,
+      "smp": 1,
+      "inputDevice": "usb",
+      "boot": "c",
+      "extraArgs": "-nodefaults -loadvm golden",
+      "accel": "kvm",
+      "binary": "qemu-system-x86_64",
+      "deviceSetSummary": [
+        "-name streamhost-redstar3",
+        "-nodefaults -enable-kvm -m 1024 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu Nehalem,kvm=off",
+        "-rtc base=localtime",
+        "-drive file=/data/gallery-guests/RedStar3/redstar3.qcow2,format=qcow2,if=ide,index=0,media=disk -drive if=ide,index=2,media=cdrom -boot c",
+        "-vga std",
+        "-display dbus,p2p=on",
+        "-usb -device usb-tablet",
+        "-loadvm golden",
+        "-qmp unix:/data/vms/streamhost/tiles/redstar3/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/tiles/redstar3/qemu.pid"
+      ],
+      "envFixture": "streamhost/tiles/redstar3/tile.env.fixture",
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "Nehalem,kvm=off",
+        "memoryMB": 1024,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-nodefaults",
+          "pc-i440fx-11.0",
+          "Nehalem,kvm=off",
+          "std (vesa+ShadowFB 1920x1080)",
+          "IDE disk + empty IDE CD",
+          "usb-tablet",
+          "no audio",
+          "no network device",
+          "-loadvm golden"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "generic emitter and golden bake enumerate the same guest-visible devices; display backend only differs"
+      }
+    },
+    "bringUpOrder": 29
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#b3202a",
+    "eraLabel": "2013 · Red Star OS 3.0",
+    "bootVideo": "/boot/redstar3/boot.mp4"
+  },
+  "museum": {
+    "id": "redstar3",
+    "displayName": "Red Star OS 3.0 Desktop",
+    "year": 2013,
+    "lineage": "Linux (Fedora lineage)",
+    "arch": "i386",
+    "ramMB": 1024,
+    "era": "2010s",
+    "accent": "#b3202a",
+    "eraSoftware": [
+      "KDE desktop",
+      "Naenara browser",
+      "Red Star file manager",
+      "system tools"
+    ],
+    "periodBrowser": "Naenara (Firefox-derived)",
+    "iconicApps": [
+      "Naenara",
+      "File Manager",
+      "System Preferences"
+    ],
+    "blurb": "A macOS-styled desktop distribution from the DPRK: Fedora/KDE foundations reshaped into a tightly controlled national-computing environment.",
+    "notes": "Private air-gapped preservation exhibit. The guest has no emulated network interface."
+  },
+  "reset": {
+    "tileDir": "redstar3",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Logged-in idle Red Star OS 3.0 desktop at 1920x1080 with complete menubar, wallpaper, and dock; no wizard, modal, or screensaver."
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "id": "tinycore",
+  "era_year": 2009,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 10,
+        "prelude": "",
+        "line": "  \"tinycore    |tinycore.sh    |TinyCore    |fast     |~2-3m   |full   |TinyCore.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
+        "value": {
+          "key": "tinycore",
+          "script": "tinycore.sh",
+          "outputDir": "TinyCore",
+          "class": "fast",
+          "estimated": "~2-3m",
+          "automation": "full",
+          "produces": "TinyCore.iso -> /data/isos/ (ssh-golden LiveCD)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 10
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "tinycore",
+      "value": {
+        "os": "Tiny Core Linux (FLWM)",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            120,
+            300
+          ],
+          "b": [
+            500,
+            200
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "FLWM has no Start menu; keyboard photon unverified (may 5/5 miss). Prefer mouse + right-click menu.",
+        "audio_trigger": "tone",
+        "note": "1600x1200 (4:3) FLWM desktop; relative-mouse pointer, cursor_scale 0.783 (1:1 gain, edge re-homing)"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/tinycore",
+      "qmp": "/data/vms/streamhost/tiles/tinycore/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5882,
+      "exec_port": 5882,
+      "exec_kind": "ssh",
+      "exec_user": "tc",
+      "exec_key": "/root/.ssh/gallery_guest_key",
+      "console": "fb",
+      "udp_port": 54082,
+      "notes": "exec: labctl exec tinycore \"<cmd>\" (ssh tc@:5882, key gallery_guest_key)"
+    }
+  },
+  "render": {
+    "signalOrder": 4,
+    "tilesManifestOrder": 1,
+    "tilesManifestPrelude": "\n# tinycore (VMID 82) — TinyCore LiveCD + golden fixture. VERBATIM LAUNCHER:\n#   state.qcow2 (3G virtio) for the golden snapshot; conditional -loadvm golden;\n#   post-boot QMP hostfwd_add 127.0.0.1:5882 -> guest :22 (user 'tc').\n#   ISO at /data/isos/TinyCore.iso (canonical; old /data/vms/spikeA path\n#   whitelisted). Resolution 1600x1200x32 (4:3, under the 1920x1200 cap; set in\n#   the guest .xsession Xvesa -screen). Cursor calibration (2026-07): TinyCore's\n#   Xvesa reads a RELATIVE PS/2 mouse (/dev/input/mice), so the daemon-abs path\n#   is relative tracking with edge re-homing (clamp at screen edges). The single\n#   cursor_scale sets the 1:1 GAIN (measured transfer A~1.28 per axis, equal at\n#   4:3); the offset is a neutral origin. scale=0.783 off=(0,0) tracks 1:1 within\n#   ~1-2px after any edge touch (live-client + framebuffer verified). Re-verify\n#   after any TinyCore major bump or resolution change.\n",
+    "tilesManifestInvocation": "emit tinycore \\\n  --tile tinycore --vmid 82 --udp 54082 --pointer abs \\\n  --cursor-scale 0.783 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/tinycore/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/tinycore/tile.env.fixture\"\n",
+    "bringUpGroup": 0,
+    "bindingOrder": 9,
+    "bindingPrelude": "",
+    "bindingLine": "  tinycore:    { osId: 'tinycore',    archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#4a9fd6', eraLabel: '2009 · Tiny Core' },\n",
+    "museumOrder": 7,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'tinycore', displayName: 'Tiny Core Linux', year: 2009,\n    lineage: 'BusyBox Linux', arch: 'i386', ramMB: 128,    era: '2000s', accent: '#4a9fd6',\n    eraSoftware: ['FLTK/FLWM desktop', 'tce-load', 'BusyBox'],\n    periodBrowser: 'dillo / Firefox extension',\n    iconicApps: ['App Browser', 'Terminal', 'Text editor'],\n    blurb: 'A complete graphical Linux in ~16 MB — the whole OS lives in RAM.',\n  },\n",
+    "goldenOrder": 1,
+    "actionMapOrder": 3
+  },
+  "tileDir": "tinycore",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54082,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 0.783,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 82
+  },
+  "guestDoc": "docs/guests/tinycore.md",
+  "credentialsRef": "guest/tinycore",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "tinycore",
+      "SH_QMP": "/data/vms/streamhost/tiles/tinycore/qmp.sock",
+      "SH_PORT": "54082",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_CURSOR_SCALE": "0.783",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/tinycore/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/tinycore/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 82,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "tinycore",
+        "--vmid",
+        "82",
+        "--udp",
+        "54082",
+        "--pointer",
+        "abs",
+        "--cursor-scale",
+        "0.783",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/tinycore/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/tinycore/tile.env.fixture"
+      ],
+      "deviceSetId": "tinycore-current",
+      "launcher": "streamhost/tiles/tinycore/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/tinycore/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-tinycore",
+        "-enable-kvm -m 768 -smp 2",
+        "-machine pc -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$STATE\",if=virtio,format=qcow2 -cdrom /data/isos/TinyCore.iso -boot d",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb -device usb-tablet",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-tinycore",
+          "-enable-kvm -m 768 -smp 2",
+          "-machine pc -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$STATE\",if=virtio,format=qcow2 -cdrom /data/isos/TinyCore.iso -boot d",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb -device usb-tablet",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 1
+  },
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#4a9fd6",
+    "eraLabel": "2009 · Tiny Core"
+  },
+  "museum": {
+    "id": "tinycore",
+    "displayName": "Tiny Core Linux",
+    "year": 2009,
+    "lineage": "BusyBox Linux",
+    "arch": "i386",
+    "ramMB": 128,
+    "era": "2000s",
+    "accent": "#4a9fd6",
+    "eraSoftware": [
+      "FLTK/FLWM desktop",
+      "tce-load",
+      "BusyBox"
+    ],
+    "periodBrowser": "dillo / Firefox extension",
+    "iconicApps": [
+      "App Browser",
+      "Terminal",
+      "Text editor"
+    ],
+    "blurb": "A complete graphical Linux in ~16 MB — the whole OS lives in RAM."
+  },
+  "reset": {
+    "tileDir": "tinycore",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "SKIP",
+    "fixture": "Tiny Core FLWM desktop; no terminal focused so typed text has nowhere to echo."
+  },
+  "migrationExceptions": [
+    "legacy-machine-alias"
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "id": "win98se",
+  "era_year": 1999,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 15,
+        "prelude": "",
+        "line": "  \"win98       |win98.sh       |Win98SE     |retro    |~15-25m |1-click|win98se.qcow2 + games qcow2\"\n",
+        "value": {
+          "key": "win98",
+          "script": "win98.sh",
+          "outputDir": "Win98SE",
+          "class": "retro",
+          "estimated": "~15-25m",
+          "automation": "1-click",
+          "produces": "win98se.qcow2 + games qcow2",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 1,
+          "position": 4
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "win98se",
+      "value": {
+        "os": "Windows 98 SE",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            150,
+            450
+          ],
+          "b": [
+            600,
+            180
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "Super opens Start menu",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/win98se",
+      "qmp": "/data/vms/streamhost/tiles/win98se/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54092,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 8,
+    "tilesManifestOrder": 15,
+    "tilesManifestPrelude": "\n# win98se (VMID 92) — Win98SE, sb16, two qcow2 disks (system + games), pcnet,\n#   usb-tablet. VERBATIM LAUNCHER: golden snapshot lives INSIDE the base disks\n#   (NO -snapshot); conditional -loadvm golden.\n# POINTER=abs via usb-tablet — BAKED + LIVE 2026-07-12. WINNING accel = KVM +\n# acpi=on + -cpu pentium3 (apic ON, default irqchip): acpi=on is REQUIRED for\n# PCI enumeration (this golden is an ACPI-HAL install; acpi=off left it on the\n# fail-safe PnP BIOS with no PCI/NIC/USB). hidusb.sys staged from the base cabs\n# by scripts/build-guests/win98.sh. Full evidence: docs/guests/win9x.md.\n",
+    "tilesManifestInvocation": "emit win98se \\\n  --tile win98se --vmid 92 --udp 54092 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/win98se/qemu-streamhost.sh\" \\\n  --aux-file \"$T/win98se/golden-bake.sh\" \\\n  --aux-file \"$T/win98se/qmp.py\" \\\n  --aux-file \"$T/win98se/shot.sh\" \\\n  --aux-file \"$T/win98se/sk.py\" \\\n  --env-append-file \"$T/win98se/tile.env.fixture\"\n",
+    "bringUpGroup": 4,
+    "bindingOrder": 5,
+    "bindingPrelude": "",
+    "bindingLine": "  win98se:     { osId: 'win98se',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3a7fc9', eraLabel: '1999 · Windows 98 SE', bootVideo: '/boot/win98se/boot.mp4' },\n",
+    "museumOrder": 2,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'win98se', displayName: 'Windows 98 SE', year: 1999,\n    lineage: 'Windows 9x', arch: 'i386', ramMB: 96,    era: '1990s', accent: '#3a7fc9',\n    eraSoftware: ['Active Desktop', 'IE5', 'Outlook Express', 'Media Player 6'],\n    periodBrowser: 'Internet Explorer 5',\n    iconicApps: ['3D Pinball Space Cadet', 'Minesweeper', 'Solitaire'],\n    blurb: 'The polished peak of the 9x line — USB, Active Desktop, and Space Cadet pinball.',\n  },\n",
+    "goldenOrder": 5,
+    "actionMapOrder": 7
+  },
+  "tileDir": "win98se",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54092,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 92
+  },
+  "guestDoc": "docs/guests/win9x.md",
+  "credentialsRef": "guest/win98se",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "win98se",
+      "SH_QMP": "/data/vms/streamhost/tiles/win98se/qmp.sock",
+      "SH_PORT": "54092",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/win98se/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win98se/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 92,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "win98se",
+        "--vmid",
+        "92",
+        "--udp",
+        "54092",
+        "--pointer",
+        "abs",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/win98se/qemu-streamhost.sh",
+        "--aux-file",
+        "$T/win98se/golden-bake.sh",
+        "--aux-file",
+        "$T/win98se/qmp.py",
+        "--aux-file",
+        "$T/win98se/shot.sh",
+        "--aux-file",
+        "$T/win98se/sk.py",
+        "--env-append-file",
+        "$T/win98se/tile.env.fixture"
+      ],
+      "deviceSetId": "win98se-current",
+      "launcher": "streamhost/tiles/win98se/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/win98se/tile.env.fixture",
+      "auxFiles": [
+        "streamhost/tiles/win98se/golden-bake.sh",
+        "streamhost/tiles/win98se/qmp.py",
+        "streamhost/tiles/win98se/shot.sh",
+        "streamhost/tiles/win98se/sk.py"
+      ],
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,acpi=on",
+      "accel": "kvm",
+      "cpu": "pentium3",
+      "memoryMB": 384,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-win98se",
+        "-enable-kvm -m 384 -smp 1",
+        "-machine pc-i440fx-11.0,acpi=on -cpu pentium3",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-drive file=\"$KVM\",format=qcow2,if=ide",
+        "-drive file=\"$GAMES\",format=qcow2,if=ide,index=1",
+        "-netdev user,id=n0 -device pcnet,netdev=n0",
+        "-usb -device usb-tablet,id=tab0",
+        "-qmp unix:$B/qmp.sock,server=on,wait=off",
+        "-pidfile $B/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,acpi=on",
+        "accel": "kvm",
+        "cpu": "pentium3",
+        "memoryMB": 384,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-win98se",
+          "-enable-kvm -m 384 -smp 1",
+          "-machine pc-i440fx-11.0,acpi=on -cpu pentium3",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+          "-drive file=\"$KVM\",format=qcow2,if=ide",
+          "-drive file=\"$GAMES\",format=qcow2,if=ide,index=1",
+          "-netdev user,id=n0 -device pcnet,netdev=n0",
+          "-usb -device usb-tablet,id=tab0",
+          "-qmp unix:$B/qmp.sock,server=on,wait=off",
+          "-pidfile $B/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,acpi=on, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 15
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#3a7fc9",
+    "eraLabel": "1999 · Windows 98 SE",
+    "bootVideo": "/boot/win98se/boot.mp4"
+  },
+  "museum": {
+    "id": "win98se",
+    "displayName": "Windows 98 SE",
+    "year": 1999,
+    "lineage": "Windows 9x",
+    "arch": "i386",
+    "ramMB": 96,
+    "era": "1990s",
+    "accent": "#3a7fc9",
+    "eraSoftware": [
+      "Active Desktop",
+      "IE5",
+      "Outlook Express",
+      "Media Player 6"
+    ],
+    "periodBrowser": "Internet Explorer 5",
+    "iconicApps": [
+      "3D Pinball Space Cadet",
+      "Minesweeper",
+      "Solitaire"
+    ],
+    "blurb": "The polished peak of the 9x line — USB, Active Desktop, and Space Cadet pinball."
+  },
+  "reset": {
+    "tileDir": "win98se",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Windows 98 SE desktop; focused editor; Start-menu closed."
+  },
+  "migrationExceptions": []
+}

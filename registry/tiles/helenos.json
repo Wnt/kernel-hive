@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "id": "helenos",
+  "era_year": 2006,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 2,
+        "prelude": "",
+        "line": "  \"helenos     |helenos.sh     |HelenOS     |fast     |~3m     |full   |HelenOS-0.14.1-ia32.iso (live)\"\n",
+        "value": {
+          "key": "helenos",
+          "script": "helenos.sh",
+          "outputDir": "HelenOS",
+          "class": "fast",
+          "estimated": "~3m",
+          "automation": "full",
+          "produces": "HelenOS-0.14.1-ia32.iso (live)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 2
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "helenos",
+      "value": {
+        "os": "HelenOS",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            600,
+            200
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "unverified",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/helenos",
+      "qmp": "/data/vms/streamhost/tiles/helenos/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54099,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 13,
+    "tilesManifestOrder": 6,
+    "tilesManifestPrelude": "\n# helenos (VMID 99) — ia32 LiveCD on -cpu qemu32, intel-hda. GENERIC.\n# POINTER=abs (2026-07-13): HelenOS's upstream USB HID stack binds the QEMU\n# usb-tablet over the default PIIX3 UHCI controller (`--input-dev usb` -> `-usb\n# -device usb-tablet`) and consumes absolute coordinates 1:1 — verified on a\n# clone then live via QMP-abs framebuffer tracking. The golden snapshot was\n# re-baked with the tablet present. golden.qcow2 (--extra) holds the savevm\n# 'golden' snapshot for the diskless LiveCD; loadvm needs this exact device set.\n",
+    "tilesManifestInvocation": "emit helenos \\\n  --tile helenos --vmid 99 --udp 54099 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --audio-dev hda \\\n  --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu qemu32 --vga std --fps 30 \\\n  --cdrom /data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso --boot d \\\n  --extra \"-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk\" \\\n  --env-append-file \"$T/helenos/tile.env.fixture\"\n",
+    "bringUpGroup": 1,
+    "bindingOrder": 11,
+    "bindingPrelude": "",
+    "bindingLine": "  helenos:     { osId: 'helenos',     archetypeId: 'mono-terminal',   transport: 'streamhost',  accentColor: '#b58fd6', eraLabel: '2006 · HelenOS' },\n",
+    "museumOrder": 9,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'helenos', displayName: 'HelenOS', year: 2006,\n    lineage: 'Microkernel multiserver OS', arch: 'x86_64', ramMB: 512,    era: '2000s', accent: '#b58fd6',\n    eraSoftware: ['spartan microkernel', 'HelenOS GUI', 'bdsh shell'],\n    periodBrowser: 'no period browser (research OS)',\n    iconicApps: ['Terminal', 'Calculator', 'Viewer'],\n    blurb: 'A from-scratch microkernel research OS — a whole desktop built on message passing.',\n  },\n",
+    "goldenOrder": 12,
+    "actionMapOrder": 14
+  },
+  "tileDir": "helenos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54099,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 99
+  },
+  "guestDoc": "docs/guests/helenos.md",
+  "credentialsRef": "guest/helenos",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "helenos",
+      "SH_QMP": "/data/vms/streamhost/tiles/helenos/qmp.sock",
+      "SH_PORT": "54099",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/helenos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/helenos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_GOLDEN_DISK": "/data/vms/streamhost/tiles/helenos/golden.qcow2",
+      "SH_GOLDEN_RESET_CMD": "loadvm golden",
+      "SH_GOLDEN_MANIFEST": "/data/vms/streamhost/tiles/helenos/golden-manifest.json"
+    },
+    "vmidLabel": 99,
+    "qemu": {
+      "mode": "generic",
+      "emitArgs": [
+        "--tile",
+        "helenos",
+        "--vmid",
+        "99",
+        "--udp",
+        "54099",
+        "--pointer",
+        "abs",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--audio-dev",
+        "hda",
+        "--input-dev",
+        "usb",
+        "--mem",
+        "512",
+        "--smp",
+        "1",
+        "--machine",
+        "pc-i440fx-11.0",
+        "--cpu",
+        "qemu32",
+        "--vga",
+        "std",
+        "--fps",
+        "30",
+        "--cdrom",
+        "/data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso",
+        "--boot",
+        "d",
+        "--extra",
+        "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
+        "--env-append-file",
+        "$T/helenos/tile.env.fixture"
+      ],
+      "deviceSetId": "helenos-current",
+      "machine": "pc-i440fx-11.0",
+      "cpu": "qemu32",
+      "vga": "std",
+      "memoryMB": 512,
+      "smp": 1,
+      "audioDevice": "hda",
+      "inputDevice": "usb",
+      "boot": "d",
+      "extraArgs": "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
+      "cdrom": "/data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso",
+      "accel": "kvm",
+      "binary": "qemu-system-x86_64",
+      "deviceSetSummary": [
+        "-name streamhost-helenos",
+        "-enable-kvm -m 512 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu qemu32",
+        "-rtc base=localtime",
+        "-cdrom /data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso -boot d",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device intel-hda -device hda-output,audiodev=snd0",
+        "-usb -device usb-tablet",
+        "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
+        "-qmp unix:/data/vms/streamhost/tiles/helenos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/tiles/helenos/qemu.pid"
+      ],
+      "envFixture": "streamhost/tiles/helenos/tile.env.fixture",
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "qemu32",
+        "memoryMB": 512,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-helenos",
+          "-enable-kvm -m 512 -smp 1",
+          "-machine pc-i440fx-11.0 -cpu qemu32",
+          "-rtc base=localtime",
+          "-cdrom /data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso -boot d",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device intel-hda -device hda-output,audiodev=snd0",
+          "-usb -device usb-tablet",
+          "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
+          "-qmp unix:/data/vms/streamhost/tiles/helenos/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/tiles/helenos/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 6
+  },
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "streamhost",
+    "accentColor": "#b58fd6",
+    "eraLabel": "2006 · HelenOS"
+  },
+  "museum": {
+    "id": "helenos",
+    "displayName": "HelenOS",
+    "year": 2006,
+    "lineage": "Microkernel multiserver OS",
+    "arch": "x86_64",
+    "ramMB": 512,
+    "era": "2000s",
+    "accent": "#b58fd6",
+    "eraSoftware": [
+      "spartan microkernel",
+      "HelenOS GUI",
+      "bdsh shell"
+    ],
+    "periodBrowser": "no period browser (research OS)",
+    "iconicApps": [
+      "Terminal",
+      "Calculator",
+      "Viewer"
+    ],
+    "blurb": "A from-scratch microkernel research OS — a whole desktop built on message passing."
+  },
+  "reset": {
+    "tileDir": "helenos",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "SKIP",
+    "fixture": "HelenOS mixed console/GUI; HW cursor uncaptured, no reliably-focused shell for echo."
+  },
+  "migrationExceptions": []
+}

@@ -1,0 +1,24 @@
+# DESTRUCTIVE TEMPLATE: replace every {{PLACEHOLDER}} and validate the result
+# before booting it. INSTALL_DISK_SERIAL must identify only the intended PLP OS
+# disk (the Kingston DC2000B in this lab), never the bulk gallery NVMe.
+
+[global]
+keyboard = "{{KEYBOARD_LAYOUT}}"
+country = "{{COUNTRY_CODE}}"
+fqdn = "{{PVE_FQDN}}"
+mailto = "{{ADMIN_EMAIL}}"
+timezone = "{{TIMEZONE}}"
+root-password-hashed = "{{ROOT_PASSWORD_HASH}}"
+root-ssh-keys = ["{{ROOT_SSH_PUBLIC_KEY}}"]
+reboot-on-error = false
+
+[network]
+source = "from-answer"
+cidr = "{{PVE_ADDRESS_CIDR}}"
+dns = "{{DNS_SERVER}}"
+gateway = "{{DEFAULT_GATEWAY}}"
+filter.ID_NET_NAME_MAC = "*{{INSTALL_NIC_MAC_NO_COLONS}}"
+
+[disk-setup]
+filesystem = "ext4"
+filter.ID_SERIAL_SHORT = "{{INSTALL_DISK_SERIAL}}"

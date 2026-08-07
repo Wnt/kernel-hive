@@ -1,0 +1,3 @@
+icon=mines
+run=exec mines.krk
+title=Mines

@@ -1,0 +1,58 @@
+# Rust CI for the streamhost daemon (the streamhost/ cargo workspace).
+#
+# Runs only when the crate (or this workflow) changes. x264-sys runs bindgen
+# at build time against the system <x264.h>, so the runner needs libx264-dev
+# plus libclang; libopus-dev + pkg-config let audiopus_sys skip its bundled
+# cmake build. Cargo.lock is committed, so Swatinem/rust-cache is effective.
+#
+# The fmt gate is ON: the tree is rustfmt-clean since the one-shot
+# `cargo fmt` commit (config in streamhost/rustfmt.toml). Clippy starts at
+# correctness+suspicious as errors; tighten to -D warnings after a baseline
+# pass.
+name: Rust
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'streamhost/**'
+      - '.github/workflows/rust.yml'
+  pull_request:
+    paths:
+      - 'streamhost/**'
+      - '.github/workflows/rust.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: streamhost
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install system libraries (libx264 linkage + bindgen's libclang)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libx264-dev libopus-dev libclang-dev pkg-config
+
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: streamhost
+
+      - name: Format check
+        run: cargo fmt --all --check
+
+      - name: Clippy (correctness + suspicious are errors)
+        run: cargo clippy --workspace --all-targets -- -D clippy::correctness -D clippy::suspicious
+
+      - name: Tests
+        run: cargo test --workspace

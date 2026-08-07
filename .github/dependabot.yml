@@ -1,0 +1,43 @@
+# Weekly, grouped dependency PRs — one PR per ecosystem per week.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /spa
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        dependency-type: development
+      prod-dependencies:
+        dependency-type: production
+
+  # The gallery server's third-party Python (WebAuthn). requirements.txt is
+  # compiled from requirements.in with hashes; Dependabot understands that
+  # pip-compile layout and regenerates both the pins and the hashes.
+  - package-ecosystem: pip
+    directory: /scripts/serve
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ['*']
+
+  - package-ecosystem: cargo
+    directory: /streamhost
+    schedule:
+      interval: weekly
+    groups:
+      cargo:
+        patterns: ['*']
+    ignore:
+      # Pinned exactly: bindgen dispatch is ABI-matched to the box's system
+      # libx264 build 164 (see streamhost/streamhost/Cargo.toml).
+      - dependency-name: x264-sys

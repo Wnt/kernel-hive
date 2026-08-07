@@ -1,0 +1,3 @@
+#!/bin/sh
+# TCP X11 is reachable only through QEMU's 127.0.0.1 host forward.
+exec /usr/lib/xorg/Xorg -listen tcp -ac "$@"

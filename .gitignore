@@ -1,0 +1,108 @@
+# ============================================================================
+#  kernel-hive monorepo — .gitignore
+# ============================================================================
+
+# ---- Dependencies / build output ----
+node_modules/
+**/node_modules/
+dist/
+build/
+.vite/
+.cache/
+/target/
+**/target/
+
+# Box-only cargo build tuning (shared warm target-dir + mold) belongs in the
+# box's GLOBAL ~/.cargo/config.toml, never here: a committed absolute target-dir
+# breaks CI (the f0c6316 regression — clippy can't create the box path).
+streamhost/.cargo/config.toml
+
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.venv-assets/
+venv/
+*.egg-info/
+
+# ---- OS / editor cruft ----
+.DS_Store
+*.swp
+*~
+
+# ---- Backups / logs ----
+*.bak
+*.bak-*
+*.log
+
+# ---- Agent state / worktrees ----
+# Ignore all agent scratch (worktrees/, settings) but track the
+# committed git hooks under .claude/hooks/ (the pre-push quality gate).
+.claude/*
+!.claude/hooks/
+!.claude/hooks/**
+
+# ---- Test artifacts (Playwright) ----
+test-results*/
+playwright-report/
+
+# ---- Large disk images (re-fetched/rebuilt by scripts/build-guests) ----
+*.iso
+*.img
+*.qcow2
+*.qcow
+*.vdi
+*.vmdk
+
+# ---- Retro firmware / floppy images (fetched at build time by
+#      scripts/build-guests — never commit) ----
+*.adf
+*.rom
+Kickstart*.rom
+kick*.rom
+
+# ============================================================================
+#  SECRETS — never commit (looked up from server env at runtime instead)
+# ============================================================================
+uptoken
+unifitoken
+*.token
+docs/gallery-credentials.md
+scripts/serve/pki/
+**/pki/
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+lab_key*
+# Live per-OS VM credentials — provide locally from credentials.example.ts.
+# Never publish.
+spa/src/data/credentials.ts
+
+# Deployment-local operator values (real host IP etc.) — provide locally from
+# registry/local.env.example. Never publish; registry/index.json must keep the
+# placeholder for tile-registry-check determinism.
+registry/local.env
+
+# ---- Dev/debug screenshots & scratch (not needed to build or run) ----
+spa/screenshot-*.png
+spa/scratch-*.png
+**/*proof*.png
+spa/tsconfig.tsbuildinfo
+
+# boot-video record debug artifacts (never commit)
+scripts/coldboot/evidence-*/
+scripts/coldboot/*-evidence/
+
+# ephemeral working area (briefs, temp analysis)
+/scratchpad/
+
+# ---- Third-party build payloads not redistributed with the repo (operator
+#      supplies locally, or the builder fetches at build time; see
+#      docs/guests/freedos.md / docs/guests/winxp.md) ----
+scripts/build-guests/assets/freedos/cosmo.zip
+scripts/build-guests/assets/freedos/jill.zip
+scripts/build-guests/assets/winxp/Winamp-2.95-installed.tar.gz

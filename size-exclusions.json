@@ -1,0 +1,20 @@
+{
+  "_README": "Bidirectional file-size budget ledger for scripts/check-file-size.mjs. path -> one-line reason. Every entry MUST still be over its dialect hard cap; when a file drops to/under the cap its exclusion goes STALE and --strict fails, forcing you to delete the entry so the budget re-arms. Do not add a file here to dodge a split \u2014 add it only with a real reason and a plan.",
+  "streamhost/scripts/streamhost-tile.sh": "651L; shfmt reformat pushed it just over the 600 hard cap; split candidate",
+  "streamhost/tiles/irix/x11-runtime.sh": "781L; tile launcher (boot + 2 watchdogs + instant-restore #44 + audio fifo + mamectl socket plane #45); cohesive lifecycle unit, split candidate",
+  "scripts/build-guests/os2warp.sh": "620L golden builder, just over the 600 hard cap; split candidate",
+  "spa/src/three/useStreamControl.ts": "602L, just over hard cap; trim or fold into the streamClient split (#13)",
+  "scripts/tiles-registry.py": "registry generator (867L); split candidate",
+  "scripts/serve/osgallery-https-server.py": "HTTPS static/dev server (700L); split candidate",
+  "scripts/labctl": "unified box CLI (1079L); split candidate, kept byte-identical with the box copy",
+  "scripts/build-guests/win95.sh": "golden builder (1065L); long install script, split candidate",
+  "scripts/build-guests/freedos.sh": "golden builder (812L); split candidate",
+  "scripts/build-guests/9front.sh": "golden builder (803L); split candidate",
+  "scripts/build-guests/win2000.sh": "golden builder (785L); split candidate",
+  "scripts/build-guests/winxp.sh": "golden builder (782L); split candidate",
+  "scripts/build-guests/solaris-cde.sh": "golden builder (759L); split candidate",
+  "scripts/build-guests/win98.sh": "golden builder (724L); split candidate",
+  "scripts/build-guests/win311.sh": "golden builder (647L); split candidate",
+  "scripts/build-guests/android-x86.sh": "golden builder (625L); split candidate",
+  "streamhost/streamhost/src/mame_sock.rs": "mamectl socket sink (~840L incl. temporary SH_MAMESOCK_TRACE campaign instrumentation); drops back under the cap when the trace knob is removed"
+}

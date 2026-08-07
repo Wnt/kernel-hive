@@ -1,0 +1,29 @@
+# Strict-but-pragmatic quality gate for the HOST-SIDE Python tooling in
+# scripts/**.py (the tile registry generator, install-vision harness, dev
+# CLIs, provisioning helpers). Nested config: ruff resolves the config
+# closest to each file, so anything under scripts/ uses this file instead of
+# the repo-root ruff.toml — the root config stays untouched and keeps linting
+# the rest of the tree (streamhost/**.py guest agents, spa/scripts/**.py)
+# at its existing, more permissive baseline. `extend` pulls in shared
+# settings (target-version, line-length, the Python-2.6 Solaris exclude).
+extend = "../ruff.toml"
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "W"]
+# Same rationale as the root config: these box/lab CLIs deliberately use a
+# dense one-liner style (comma imports + semicolon statements) for tight
+# QMP/socket/geometry code, and short l/I names show up in framebuffer math.
+# Narrowing here rather than reformatting ~60 lines of working, low-level
+# protocol code into multi-statement blocks (E741 in particular guards
+# against renaming variables that mirror on-the-wire field names).
+ignore = ["E401", "E701", "E702", "E741"]
+
+[lint.per-file-ignores]
+# labctl has no .py extension but lives in this directory, so the nested
+# config above would otherwise apply to it too. It's the box's live unified
+# CLI (AGENTS.md: "keep byte-identical" with /usr/local/bin/labctl) and is
+# explicitly out of scope for this scripts/**.py quality-gate pass — leave it
+# on the repo-wide baseline (E4/E7/E9/F, the same rules the whole-tree CI job
+# already enforced for it) rather than pulling ~700 lines of unrelated
+# behavior-risking modernization into an unrelated change.
+"labctl" = ["I", "UP", "B", "SIM", "W"]

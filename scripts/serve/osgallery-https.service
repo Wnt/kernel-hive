@@ -1,0 +1,53 @@
+[Unit]
+Description=osgallery single-origin HTTPS SPA + signaling server (:8443)
+After=network-online.target
+Wants=network-online.target
+# The server code, webroot, certs, tiles.json and golden-manifest all live on
+# the /data/vms ZFS pool — wait for it to be imported + mounted before starting,
+# or a boot-race leaves python unable to find its own script.
+RequiresMountsFor=/data/vms/streamhost/serve
+
+[Service]
+Type=simple
+# Fixed defaults mirror scripts/serve/restart-https.sh. The runtime
+# EnvironmentFile is loaded LAST so it wins; restart-https.sh writes the
+# per-restart overrides (incl. OSG_ADMIN_EVAL) there. It lives on tmpfs (/run)
+# so a power cycle always comes back with eval OFF — arbitrary in-browser JS
+# never survives a reboot.
+Environment=WEBROOT=/data/vms/streamhost/serve/webroot
+Environment=SIGNAL_CONFIG=/data/vms/streamhost/serve/tiles.json
+Environment=CERT=/data/vms/streamhost/serve/pki/leaf.crt
+Environment=KEY=/data/vms/streamhost/serve/pki/leaf.key
+Environment=SIGNAL_HOST=192.0.2.10
+Environment=BIND_IP=0.0.0.0
+Environment=PORT=8443
+Environment=OSG_ADMIN_EVAL=0
+Environment=RESET_SCRIPT=/data/vms/streamhost/serve/reset-tile.sh
+Environment=GOLDEN_MANIFEST=/data/vms/streamhost/serve/golden-manifest.json
+# The public gallery. PUBLIC_PORT brings up a SECOND, plaintext listener on
+# loopback that the forwarder-agent proxies gallery.example.com to; every
+# request on it is session-gated (scripts/serve/auth/gate.py) and its signaling
+# advertises the relay host. Unset PUBLIC_PORT and none of it exists — the LAN
+# listener on :8443 is unaffected either way.
+Environment=PUBLIC_PORT=8081
+Environment=PUBLIC_BIND=127.0.0.1
+Environment=PUBLIC_HOST=gallery.example.com
+Environment=AUTH_STATE=/data/vms/streamhost/serve/auth-state.json
+Environment=STREAM_KEY_FILE=/data/vms/streamhost/serve/pki/stream-ticket.key
+EnvironmentFile=-/run/osgallery-https.env
+# The project's own virtualenv, NOT /usr/bin/python3: the WebAuthn library is
+# pinned by scripts/serve/requirements.txt and installed by sync-venv.sh, so the
+# box tracks upstream security fixes instead of Debian's backport schedule.
+# ExecStartPre keeps the venv in step with the lock on every (re)start, which is
+# also what makes a Dependabot bump land by restarting the unit.
+ExecStartPre=/data/vms/streamhost/serve/sync-venv.sh
+ExecStart=/data/vms/streamhost/serve/.venv/bin/python /data/vms/streamhost/serve/osgallery-https-server.py
+# Preserve the log path existing tooling/docs tail; append keeps crash history
+# across Restart=on-failure loops (journald also captures via the file).
+StandardOutput=append:/data/vms/streamhost/serve/https-server.log
+StandardError=append:/data/vms/streamhost/serve/https-server.log
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

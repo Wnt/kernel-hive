@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "id": "aros",
+  "era_year": 2024,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 7,
+        "prelude": "",
+        "line": "  \"amigaos     |amigaos.sh     |AmigaOS     |fast     |~3-5m   |full   |aros-pc-i386.iso (AROS live CD)\"\n",
+        "value": {
+          "key": "amigaos",
+          "script": "amigaos.sh",
+          "outputDir": "AmigaOS",
+          "class": "fast",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "aros-pc-i386.iso (AROS live CD)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 7
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "amigaos",
+      "value": {
+        "os": "AmigaOS",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            600,
+            200
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "Workbench; unverified",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/amigaos",
+      "qmp": "/data/vms/streamhost/tiles/amigaos/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54110,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 21,
+    "tilesManifestOrder": 5,
+    "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP B — legacy guests with explicit input handling. 9front uses bare i8042\n#           PS/2; AROS binds Poseidon hid.class to a QEMU USB HID tablet.\n# ---------------------------------------------------------------------------\n\n# amigaos / osId \"aros\" (VMID 110) — AROS LiveCD, AC97, usb-tablet, abs pointer.\n#   VERBATIM LAUNCHER: golden-scratch.qcow2 holds the diskless LiveCD savevm.\n#   The device-set-matched golden preserves `AddUSBHardware pciusb.device 0` and\n#   is auto-loaded so AROS owns the absolute tablet immediately after launch.\n",
+    "tilesManifestInvocation": "emit amigaos \\\n  --tile amigaos --vmid 110 --udp 54110 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/amigaos/qemu-streamhost.sh\"\n",
+    "bringUpGroup": 1,
+    "bindingOrder": 23,
+    "bindingPrelude": "",
+    "bindingLine": "  aros:        { osId: 'aros',         archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#e87a17', eraLabel: '2024 · AROS (Amiga)' }, // ideal: Amiga wedge\n",
+    "museumOrder": 20,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'aros', displayName: 'AROS', year: 2024,\n    lineage: 'Commodore Amiga → AROS', arch: 'i386', ramMB: 256,    era: '2020s', accent: '#e87a17',\n    eraSoftware: ['Workbench', 'Wanderer desktop', 'RAM Disk', 'AmigaDOS'],\n    periodBrowser: 'no bundled browser (live CD)',\n    iconicApps: ['Workbench', 'Wanderer', 'AmigaDOS shell'],\n    blurb: 'The free, from-scratch AmigaOS — Wanderer brings back the Workbench desktop with no copyrighted Kickstart ROM required.',\n    notes: 'Live streamhost tile. Official AROS pc-i386 live CD. Archetype: beige-tower-crt; a bespoke Amiga wedge (the low-profile Amiga 500/1200 keyboard-box) would be the ideal era-accurate model.',\n  },\n",
+    "goldenOrder": 21,
+    "actionMapOrder": 24
+  },
+  "tileDir": "amigaos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54110,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 110
+  },
+  "guestDoc": "docs/guests/aros.md",
+  "credentialsRef": "guest/aros",
+  "aliases": {
+    "publicId": "aros",
+    "tileDir": "amigaos"
+  },
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "amigaos",
+      "SH_QMP": "/data/vms/streamhost/tiles/amigaos/qmp.sock",
+      "SH_PORT": "54110",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/amigaos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/amigaos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 110,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "amigaos",
+        "--vmid",
+        "110",
+        "--udp",
+        "54110",
+        "--pointer",
+        "abs",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/amigaos/qemu-streamhost.sh"
+      ],
+      "deviceSetId": "amigaos-usb-tablet",
+      "launcher": "streamhost/tiles/amigaos/qemu-streamhost.sh",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 512,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-amigaos",
+        "-enable-kvm -m 512 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-cdrom /data/gallery-guests/AmigaOS/aros-pc-i386.iso -boot d",
+        "-drive file=\"$BASE/golden-scratch.qcow2\",format=qcow2,if=ide,index=0,media=disk",
+        "-vga std",
+        "-usb -device usb-tablet,id=tab0",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-qmp unix:\"$BASE/qmp.sock\",server=on,wait=off",
+        "-pidfile \"$BASE/qemu.pid\""
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 512,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-amigaos",
+          "-enable-kvm -m 512 -smp 1",
+          "-machine pc-i440fx-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-cdrom /data/gallery-guests/AmigaOS/aros-pc-i386.iso -boot d",
+          "-drive file=\"$BASE/golden-scratch.qcow2\",format=qcow2,if=ide,index=0,media=disk",
+          "-vga std",
+          "-usb -device usb-tablet,id=tab0",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-qmp unix:\"$BASE/qmp.sock\",server=on,wait=off",
+          "-pidfile \"$BASE/qemu.pid\""
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 5
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#e87a17",
+    "eraLabel": "2024 · AROS (Amiga)"
+  },
+  "museum": {
+    "id": "aros",
+    "displayName": "AROS",
+    "year": 2024,
+    "lineage": "Commodore Amiga → AROS",
+    "arch": "i386",
+    "ramMB": 256,
+    "era": "2020s",
+    "accent": "#e87a17",
+    "eraSoftware": [
+      "Workbench",
+      "Wanderer desktop",
+      "RAM Disk",
+      "AmigaDOS"
+    ],
+    "periodBrowser": "no bundled browser (live CD)",
+    "iconicApps": [
+      "Workbench",
+      "Wanderer",
+      "AmigaDOS shell"
+    ],
+    "blurb": "The free, from-scratch AmigaOS — Wanderer brings back the Workbench desktop with no copyrighted Kickstart ROM required.",
+    "notes": "Live streamhost tile. Official AROS pc-i386 live CD. Archetype: beige-tower-crt; a bespoke Amiga wedge (the low-profile Amiga 500/1200 keyboard-box) would be the ideal era-accurate model."
+  },
+  "reset": {
+    "tileDir": "amigaos",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "SKIP",
+    "fixture": "AROS ('AmigaOS') Wanderer desktop, 1024x768; Poseidon hid.class bound to QEMU USB Tablet in the device-set-matched golden. NOTE osId 'aros' -> tileDir 'amigaos'."
+  },
+  "migrationExceptions": []
+}

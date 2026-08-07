@@ -1,0 +1,153 @@
+Cache the last rendered Newport frame and reuse it when nothing changed.
+
+newport_base_device::screen_update() regenerates all 1280x1024 pixels every
+frame -- ~15.7 MB of memory traffic plus a random-access palette lookup per
+pixel -- even when the guest has not touched the framebuffer. It is the single
+largest cost in the Indy driver (31% of an uncontended profile) and it is
+memory-bound, so micro-optimising the inner loop does nothing (measured: hoisting
+the per-pixel cursor test and the RAMDAC LUT out removed 10.6% of instructions
+for 0.0% of time). The only thing that helps is not doing the work.
+
+Invalidation has exactly two sources and both are single choke points:
+  * rb2_device::store_pixel() is the ONLY path that mutates m_rgbci/m_cidaux.
+  * newport_base_device::mem_map() installs ONE rw() entry over the whole
+    register window, so rex3_w() is the only route for register writes --
+    rex3, xmap, cmap, vc2 and the RAMDAC LUT all arrive there.
+So there is no set of handlers left to enumerate and miss.
+
+Caching the whole frame (rather than skipping clean scanlines) is required
+because screen_device double-buffers m_bitmap[2]: a skipped row would display
+two-frames-ago content. Partial update_partial() cliprects bypass the cache
+entirely, since they would leave untouched cache rows inconsistent.
+
+Measured on indy_4610 -gio64_gfx xl24 at 1280x1024, cycle-normalised to
+2.5 GHz, per-run pristine disk:
+  emulated t=0-150s   (booting, screen changing) 42.2% -> 55.1%  (+30.6%)
+  emulated t=150-300s (X up, static screen)      63.6% -> 110.8% (+74.1%)
+Output is bit-identical: MAME snapshots at emulated t=60 and t=150 match the
+unpatched build byte for byte (md5 b0e5c43b..., c34406fe...).
+
+diff --git a/src/devices/bus/gio64/newport.cpp b/src/devices/bus/gio64/newport.cpp
+index 4123d16f..4ffb18e8 100644
+--- a/src/devices/bus/gio64/newport.cpp
++++ b/src/devices/bus/gio64/newport.cpp
+@@ -862,6 +862,7 @@ void rb2_device::device_start()
+ 
+ void rb2_device::device_reset()
+ {
++	m_fb_dirty = true;
+ 	m_write_mask = 0;
+ 	m_blend = false;
+ 	m_fast_clear = false;
+@@ -1063,6 +1064,7 @@ void rb2_device::logic_pixel(uint32_t src)
+ 
+ void rb2_device::store_pixel(uint32_t value)
+ {
++	m_fb_dirty = true;
+ 	const uint32_t write_mask = m_write_mask & m_global_mask;
+ 	*m_buf_ptr &= ~write_mask;
+ 	*m_buf_ptr |= value & write_mask;
+@@ -1203,6 +1205,8 @@ void newport_base_device::device_start()
+ 
+ void newport_base_device::device_reset()
+ {
++	m_cache_valid = false;
++	m_regs_dirty = true;
+ 	memset(&m_rex3, 0, sizeof(rex3_t));
+ 	memset(m_ramdac_lut_r, 0, sizeof(uint32_t) * 256);
+ 	memset(m_ramdac_lut_g, 0, sizeof(uint32_t) * 256);
+@@ -1276,6 +1280,24 @@ TIMER_CALLBACK_MEMBER(newport_base_device::dcb_timeout_tick)
+ 
+ uint32_t newport_base_device::screen_update(screen_device &device, bitmap_rgb32 &bitmap, const rectangle &cliprect)
+ {
++	// Only cache whole-frame updates: a partial update_partial() cliprect would
++	// leave the untouched cache rows inconsistent with the dirty flags.
++	const rectangle &visarea = m_screen->visible_area();
++	const bool full_frame = cliprect.min_x == visarea.min_x && cliprect.max_x == visarea.max_x
++		&& cliprect.min_y == visarea.min_y && cliprect.max_y == visarea.max_y;
++	const bool dirty = m_rb2->take_dirty() || m_regs_dirty;
++	m_regs_dirty = false;
++	const size_t row_bytes = (size_t)cliprect.width() * sizeof(uint32_t);
++
++	if (!dirty && full_frame && m_cache_valid
++		&& m_cache_bitmap.width() >= bitmap.width() && m_cache_bitmap.height() >= bitmap.height())
++	{
++		for (int y = cliprect.min_y; y <= cliprect.max_y; y++)
++			std::memcpy(&bitmap.pix(y, cliprect.min_x), &m_cache_bitmap.pix(y, cliprect.min_x), row_bytes);
++		return 0;
++	}
++	m_cache_valid = false;
++
+ 	const uint16_t cursor_msb = (uint16_t)m_xmap[0]->cursor_cmap() << 5;
+ 	const uint16_t popup_msb = (uint16_t)m_xmap[0]->popup_cmap() << 5;
+ 	const uint32_t *palette = m_cmap[0]->palette_base();
+@@ -1512,6 +1534,15 @@ uint32_t newport_base_device::screen_update(screen_device &device, bitmap_rgb32
+ 		}
+ 	}
+ 
++	if (full_frame)
++	{
++		if (m_cache_bitmap.width() < bitmap.width() || m_cache_bitmap.height() < bitmap.height())
++			m_cache_bitmap.allocate(bitmap.width(), bitmap.height());
++		for (int y = cliprect.min_y; y <= cliprect.max_y; y++)
++			std::memcpy(&m_cache_bitmap.pix(y, cliprect.min_x), &bitmap.pix(y, cliprect.min_x), row_bytes);
++		m_cache_valid = true;
++	}
++
+ #if ENABLE_NEWVIEW_LOG
+ 	if (machine().input().code_pressed_once(KEYCODE_TILDE))
+ 	{
+@@ -3582,6 +3613,9 @@ void newport_base_device::write_y_end(int32_t val)
+ 
+ void newport_base_device::rex3_w(offs_t offset, uint64_t data, uint64_t mem_mask)
+ {
++	// mem_map() has a single rw() entry for the whole register window, so this
++	// is the ONLY route for register writes (rex3/xmap/cmap/vc2/RAMDAC LUT).
++	m_regs_dirty = true;
+ #if ENABLE_NEWVIEW_LOG
+ 	if (m_newview_log != nullptr)
+ 	{
+diff --git a/src/devices/bus/gio64/newport.h b/src/devices/bus/gio64/newport.h
+index 46def4fe..ec8de4b3 100644
+--- a/src/devices/bus/gio64/newport.h
++++ b/src/devices/bus/gio64/newport.h
+@@ -233,6 +233,14 @@ public:
+ 	const uint32_t *rgbci(int y) const { return &m_rgbci[1344 * y]; }
+ 	const uint32_t *cidaux(int y) const { return &m_cidaux[1344 * y]; }
+ 	uint32_t store_shift() { return m_src_shift; }
++	// Framebuffer-content dirty flag. store_pixel() is the ONLY path that
++	// mutates m_rgbci/m_cidaux, so setting it there catches every pixel write.
++	bool take_dirty()
++	{
++		const bool d = m_fb_dirty;
++		m_fb_dirty = false;
++		return d;
++	}
+ 
+ 	// callbacks
+ 	void set_write_mask(uint32_t data);
+@@ -255,6 +263,7 @@ private:
+ 
+ 	void set_global_mask(uint32_t global_mask) { m_global_mask = global_mask; }
+ 
++	bool      m_fb_dirty;
+ 	uint32_t  m_global_mask;
+ 	uint32_t  m_write_mask;
+ 	bool      m_blend;
+@@ -495,6 +504,16 @@ protected:
+ 	required_device<vc2_device> m_vc2;
+ 	required_device<rb2_device> m_rb2;
+ 
++	// Cached last rendered frame. screen_update() regenerates 1280x1024 pixels
++	// (~15.7 MB of traffic) every frame even when nothing changed; on an idle
++	// desktop that is pure waste. When neither the framebuffer nor any register
++	// has been written since the last frame we blit this cache instead.
++	// A cache (rather than skipping rows) is required because screen_device
++	// double-buffers m_bitmap[2]: a skipped row would show two-frames-ago data.
++	bitmap_rgb32 m_cache_bitmap;
++	bool m_cache_valid;
++	bool m_regs_dirty;
++
+ 	uint32_t m_ramdac_lut_r[256];
+ 	uint32_t m_ramdac_lut_g[256];
+ 	uint32_t m_ramdac_lut_b[256];

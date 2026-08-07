@@ -1,0 +1,16 @@
+#!/bin/sh
+# svc-dtlogin -- REPLACED for the boot-video zero-input auto-login (clone only).
+# Original saved as /lib/svc/method/svc-dtlogin.orig. The cde-login SMF service
+# runs this method; instead of the dtlogin greeter it starts the X server and
+# runs the CDE session directly as root (zero guest input). cde-login stays
+# "online" so SMF is happy and console-login stays offline as normal (no
+# maintenance mode). Xsession restores the saved CDE session (/.dt/sessions ->
+# golden-fixture dtterm + warpd) and sources Xsession.d (9999.golden-fixture).
+. /lib/svc/share/smf_include.sh 2>/dev/null || true
+HOME=/; USER=root; LOGNAME=root; export HOME USER LOGNAME
+PATH=/usr/dt/bin:/usr/openwin/bin:/usr/X11/bin:/usr/bin:/usr/sbin:/sbin
+export PATH
+/usr/openwin/bin/xinit /usr/dt/bin/Xsession -- \
+    /usr/X11/bin/Xserver :0 -nobanner -depth 24 \
+    >/var/tmp/autocde.log 2>&1 &
+exit 0

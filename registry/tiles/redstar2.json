@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "id": "redstar2",
+  "era_year": 2009,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 30,
+        "prelude": "",
+        "line": "  \"redstar2     |redstar2.sh     |RedStar2    |heavy    |~45-90m |vision |redstar2.qcow2 (air-gapped install + golden)\"\n",
+        "value": {
+          "key": "redstar2",
+          "script": "redstar2.sh",
+          "outputDir": "RedStar2",
+          "class": "heavy",
+          "estimated": "~45-90m",
+          "automation": "vision",
+          "produces": "redstar2.qcow2 (air-gapped install + golden)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 5
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "redstar2",
+      "value": {
+        "os": "Red Star OS 2.0",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            100,
+            100
+          ],
+          "b": [
+            1800,
+            1100
+          ]
+        },
+        "kbd": "type:x",
+        "kbd_reset": "BackSpace",
+        "kbd_note": "KDM auto-login lands in the gallery account's curated KDE desktop",
+        "audio_trigger": "none",
+        "validated": true,
+        "note": "1920x1200 std VGA (Xorg vesa + ShadowFB packed-linear) / evdev USB-tablet path; four corners, click, drag and key make/break framebuffer-proven"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/redstar2",
+      "qmp": "/data/vms/streamhost/tiles/redstar2/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": "none",
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54120,
+      "notes": "air-gapped guest: no emulated NIC and no exec channel; framebuffer/QMP/HMP only"
+    }
+  },
+  "render": {
+    "signalOrder": 30,
+    "tilesManifestOrder": 28,
+    "tilesManifestPrelude": "\n# redstar2 (VMID 120) — Red Star OS 2.0 i386 KDE desktop. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk,\n#   std VGA (Xorg vesa + ShadowFB, 1920x1200), absolute USB tablet, no audio.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
+    "tilesManifestInvocation": "emit redstar2 \\\n  --tile redstar2 --vmid 120 --udp 54120 --pointer abs --audio off --fps 30 \\\n  --input-dev usb \\\n  --launcher-file \"$T/redstar2/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/redstar2/tile.env.fixture\"\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 33,
+    "bindingPrelude": "",
+    "bindingLine": "  redstar2:    { osId: 'redstar2',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#c8102e', eraLabel: '2009 · Red Star OS 2.0', bootVideo: '/boot/redstar2/boot.mp4' },\n",
+    "museumOrder": 28,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'redstar2', displayName: 'Red Star OS 2.0', year: 2009,\n    lineage: 'Linux (Red Hat/Fedora lineage)', arch: 'i386', ramMB: 1024,    era: '2000s', accent: '#c8102e',\n    eraSoftware: ['KDE 3.5', 'Naenara', 'Uri 2.0', 'OpenOffice.org'],\n    periodBrowser: 'Naenara (Firefox-derived)',\n    iconicApps: ['Naenara', 'Uri 2.0 office suite', 'KDE Control Center'],\n    blurb: 'A preserved KDE-era North Korean desktop distribution, presented offline with no network hardware.',\n  },\n",
+    "goldenOrder": 28,
+    "actionMapOrder": 28
+  },
+  "tileDir": "redstar2",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54120,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 120
+  },
+  "guestDoc": "docs/guests/redstar2.md",
+  "credentialsRef": "guest/redstar2",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "redstar2",
+      "SH_QMP": "/data/vms/streamhost/tiles/redstar2/qmp.sock",
+      "SH_PORT": "54120",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/redstar2/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/redstar2/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_RESET_MONITOR": "/data/vms/streamhost/tiles/redstar2/reset-hmp.sock",
+      "SH_FIXTURE_DESC": "\"Red Star OS 2.0 gallery auto-login; curated 1920x1200 KDE desktop; input-ready\"",
+      "SH_BASE_BACKUP": "/data/gallery-guests/RedStar2/redstar2.qcow2.bak-pre-golden"
+    },
+    "vmidLabel": 120,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "redstar2",
+        "--vmid",
+        "120",
+        "--udp",
+        "54120",
+        "--pointer",
+        "abs",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--input-dev",
+        "usb",
+        "--launcher-file",
+        "$T/redstar2/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/redstar2/tile.env.fixture"
+      ],
+      "deviceSetId": "redstar2-airgapped-golden-stdvga",
+      "launcher": "streamhost/tiles/redstar2/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/redstar2/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 1024,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-redstar2 -nodefaults",
+        "-enable-kvm -machine pc-i440fx-11.0 -cpu host",
+        "-m 1024 -smp 1 -rtc base=localtime",
+        "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -boot order=c -loadvm golden",
+        "-vga std",
+        "-usb -device usb-tablet",
+        "-display dbus,p2p=on",
+        "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
+        "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
+        "-pidfile \"$T/qemu.pid\""
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 1024,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-redstar2 -nodefaults",
+          "-enable-kvm -machine pc-i440fx-11.0 -cpu host",
+          "-m 1024 -smp 1 -rtc base=localtime",
+          "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -boot order=c -loadvm golden",
+          "-vga std",
+          "-usb -device usb-tablet",
+          "-display dbus,p2p=on",
+          "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
+          "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
+          "-pidfile \"$T/qemu.pid\""
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher is the production device ledger; zero guest network devices"
+      }
+    },
+    "bringUpOrder": 28
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#c8102e",
+    "eraLabel": "2009 · Red Star OS 2.0",
+    "bootVideo": "/boot/redstar2/boot.mp4"
+  },
+  "museum": {
+    "id": "redstar2",
+    "displayName": "Red Star OS 2.0",
+    "year": 2009,
+    "lineage": "Linux (Red Hat/Fedora lineage)",
+    "arch": "i386",
+    "ramMB": 1024,
+    "era": "2000s",
+    "accent": "#c8102e",
+    "eraSoftware": [
+      "KDE 3.5",
+      "Naenara",
+      "Uri 2.0",
+      "OpenOffice.org"
+    ],
+    "periodBrowser": "Naenara (Firefox-derived)",
+    "iconicApps": [
+      "Naenara",
+      "Uri 2.0 office suite",
+      "KDE Control Center"
+    ],
+    "blurb": "A preserved KDE-era North Korean desktop distribution, presented offline with no network hardware."
+  },
+  "reset": {
+    "tileDir": "redstar2",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Red Star OS 2.0 logged in as gallery on a curated 1920x1200 KDE desktop; KDM auto-login, no modal, wizard, screensaver, or clock."
+  }
+}

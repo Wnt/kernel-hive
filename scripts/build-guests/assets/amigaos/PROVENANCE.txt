@@ -1,0 +1,50 @@
+amigaos tile — desktop games/apps assets (consumed by build-guests/amigaos.sh, step 5)
+=====================================================================================
+
+WHAT THIS IS
+  The AmigaOS gallery tile is AROS (pc-i386 live CD). These files let amigaos.sh bake
+  freely-distributable, native AROS games onto the live-CD Wanderer desktop as VISIBLE
+  double-click icons, and surface three stock apps as icons too. The build script pulls
+  the game binaries from the SAME-nightly pc-i386 "contrib" archive on the same
+  SourceForge project the boot ISO comes from, drops in these pre-made .info icons +
+  .backdrop, and remasters the ISO with `xorriso ... -boot_image any replay` (original
+  El Torito BIOS+UEFI GRUB boot record replayed byte-for-byte intact — only files added).
+
+FILES
+  backdrop                      -> becomes /.backdrop on the CD root. Lists the icons
+                                   Wanderer "leaves out" onto the desktop backdrop (the
+                                   same mechanism the stock InstallAROS desktop icon uses).
+  icons/Games.info              -> /Games.info  (drawer icon for the new Games drawer)
+  icons/game_icons/*.info       -> /Games/<Name>/<Name>.info  (WBTOOL launch icons)
+  icons/Tools/Calculator.info   -> /Tools/Calculator.info     (stock app, repositioned)
+  icons/Tools/Editor.info       -> /Tools/Editor.info         (stock app, repositioned)
+  icons/Utilities/MultiView.info-> /Utilities/MultiView.info  (stock app, repositioned)
+
+ICONS — how they were made (all valid Amiga DiskObject, magic 0xE310)
+  Each .info is a copy of a known-good icon already present in the AROS build (or a real
+  game icon from the same contrib archive), byte-patched at three fixed DiskObject
+  offsets so the icon renders in-build AND lands at a tidy, non-overlapping backdrop
+  position:
+      offset 48  do_Type      : 3 = WBTOOL (launch the same-named file) / 2 = WBDRAWER
+      offset 58  do_CurrentX  : big-endian LONG  (leftout X on the backdrop)
+      offset 62  do_CurrentY  : big-endian LONG  (leftout Y on the backdrop)
+  Sources / positions:
+      Games.info        <- Utilities.info (drawer)   type2  (380,40)
+      Soliton.info      <- Tools/WiMP.info           type3  (380,150)
+      MUIMine.info      <- contrib Board/AmiChess.info type3 (500,150)
+      XInvaders3D.info  <- Tools/BoingIconBar.info   type3  (620,150)
+      Moria3D.info      <- contrib Fps/Doom/Doom.info type3  (740,150)
+      Calculator.info   <- Tools/Calculator.info     type3  (380,300)
+      Editor.info       <- Tools/Editor.info         type3  (500,300)
+      MultiView.info    <- Utilities/MultiView.info  type3  (620,300)
+
+GAMES (native AROS i386 ELF, self-contained, FREE/redistributable, launch-verified on KVM)
+  Soliton      Extras/Games/Card/Soliton/Soliton          Klondike solitaire (MUI/Zune)
+  MUIMine      Extras/Games/Board/MUIMine/MUIMine          Minesweeper        (MUI/Zune)
+  XInvaders3D  Extras/Games/Action/XInvaders3D/XInvaders3D wireframe Space Invaders
+  Moria3D      Extras/Games/Fps/Moria3D/Moria3D            raycaster dungeon crawler
+  (from AROS-<DATE>-pc-i386-contrib.tar.bz2; Wanderer sets each tool's CurrentDir to its
+   own drawer on launch, so per-game data — Graphics/, Images/, Levels/, Textures/ — loads.)
+
+The game binaries are NOT vendored here (contrib archive is ~400 MB): amigaos.sh downloads
+them at build time from the same upstream nightly as the ISO, keeping them in lockstep.

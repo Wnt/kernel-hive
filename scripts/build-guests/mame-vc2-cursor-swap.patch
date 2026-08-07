@@ -1,0 +1,139 @@
+diff -ruN mame-src-pristine/src/devices/bus/gio64/newport.h mame-src/src/devices/bus/gio64/newport.h
+--- a/src/devices/bus/gio64/newport.h
++++ b/src/devices/bus/gio64/newport.h
+@@ -176,6 +176,29 @@
+ 	uint16_t m_cursor_entry;
+ 	uint16_t m_cursor_x;
+ 	uint16_t m_cursor_y;
++
++	// CURSOR-SWAP ACCOUNTING (mamectl, issue #45). X programs the cursor
++	// register as pointer + 31 - hotspot, so swapping the cursor GLYPH forces
++	// a compensating write to that register with the pointer standing still.
++	// The hotspot itself is X server software state and appears in no
++	// register, but that compensating write IS the hotspot delta, exactly.
++	// Recording it here -- at the write, where motion cannot be interleaved
++	// with it -- turns a statistical inference at sample rate into a reading.
++	// m_cs_dx/dy accumulate the delta over the session and m_cs_seq counts
++	// the swaps, so a sampler at any rate reads what happened since it last
++	// looked without having to catch it in the act.
++	uint32_t m_cs_seq;
++	int32_t m_cs_dx;
++	int32_t m_cs_dy;
++	bool m_cs_dirty;      // sprite written, compensating write not seen yet
++	uint16_t m_cs_x0;     // cursor register when the sprite was written
++	uint16_t m_cs_y0;
++	attotime m_cs_t0;     // and WHEN, so a later write is not mistaken for it
++	// diagnostics: which writes X actually makes when it swaps a cursor
++	uint32_t m_cs_n_sprite;
++	uint32_t m_cs_n_entry;
++	uint32_t m_cs_n_pos;
++	uint32_t m_cs_n_late;
+ 	uint16_t m_cur_cursor_x;
+ 	uint16_t m_did_entry;
+ 	uint16_t m_scanline_len;
+diff -ruN mame-src-pristine/src/devices/bus/gio64/newport.cpp mame-src/src/devices/bus/gio64/newport.cpp
+--- a/src/devices/bus/gio64/newport.cpp
++++ b/src/devices/bus/gio64/newport.cpp
+@@ -313,6 +313,13 @@
+ 	save_item(NAME(m_cursor_entry));
+ 	save_item(NAME(m_cursor_x));
+ 	save_item(NAME(m_cursor_y));
++	save_item(NAME(m_cs_seq));
++	save_item(NAME(m_cs_dx));
++	save_item(NAME(m_cs_dy));
++	save_item(NAME(m_cs_n_sprite));
++	save_item(NAME(m_cs_n_entry));
++	save_item(NAME(m_cs_n_pos));
++	save_item(NAME(m_cs_n_late));
+ 	save_item(NAME(m_cur_cursor_x));
+ 	save_item(NAME(m_did_entry));
+ 	save_item(NAME(m_scanline_len));
+@@ -344,6 +351,17 @@
+ void vc2_device::device_reset()
+ {
+ 	m_vid_entry = 0;
++	m_cs_seq = 0;
++	m_cs_dx = 0;
++	m_cs_dy = 0;
++	m_cs_dirty = false;
++	m_cs_x0 = 0;
++	m_cs_y0 = 0;
++	m_cs_t0 = attotime::zero;
++	m_cs_n_sprite = 0;
++	m_cs_n_entry = 0;
++	m_cs_n_pos = 0;
++	m_cs_n_late = 0;
+ 	m_cursor_entry = 0;
+ 	m_cursor_x = 0;
+ 	m_cursor_y = 0;
+@@ -456,6 +474,27 @@
+ 		if (offset == 3)
+ 		{
+ 			LOGMASKED(LOG_VC2, "RAM Write: %04x = %08x\n", m_ram_addr, (uint16_t)data);
++			if (m_ram_addr >= m_cursor_entry && m_ram_addr < m_cursor_entry + 128)
++				m_cs_n_sprite++;
++			if (m_ram_addr >= m_cursor_entry && m_ram_addr < m_cursor_entry + 128)
++			{
++				// RE-ARM ON EVERY SPRITE WORD, never only when not already
++				// armed. Arming once and waiting meant a single sprite write
++				// with no position write behind it wedged the flag on and
++				// blocked every later swap for the rest of the session --
++				// seven swaps recorded during boot and then nothing, through
++				// four cursor changes. The sprite arrives as a ~128-word
++				// burst with the pointer stationary, so re-arming per word
++				// costs nothing and leaves t0 sitting at the END of the
++				// burst, which is where the compensating write follows.
++				m_cs_t0 = machine().time();
++				// the cursor sprite is being rewritten: remember where the
++				// cursor register stood before X compensates for the new
++				// hotspot
++				m_cs_dirty = true;
++				m_cs_x0 = m_cursor_x;
++				m_cs_y0 = m_cursor_y;
++			}
+ 			m_ram[m_ram_addr] = (uint16_t)data;
+ 			m_ram_addr++;
+ 			if (m_ram_addr >= RAM_SIZE)
+@@ -484,6 +523,15 @@
+ 					update_screen_size();
+ 					break;
+ 				case 0x01:
++					if (m_reg_data != m_cursor_entry)
++						m_cs_n_entry++;
++					if (m_reg_data != m_cursor_entry)
++					{
++						m_cs_t0 = machine().time();
++						m_cs_dirty = true;
++						m_cs_x0 = m_cursor_x;
++						m_cs_y0 = m_cursor_y;
++					}
+ 					m_cursor_entry = m_reg_data;
+ 					LOGMASKED(LOG_VC2, "Register Write: Cursor Entry Pointer, %04x\n", m_cursor_entry);
+ 					break;
+@@ -493,6 +541,26 @@
+ 					break;
+ 				case 0x03:
+ 					m_cursor_y = m_reg_data;
++					m_cs_n_pos++;
++					if (m_cs_dirty
++							&& (machine().time() - m_cs_t0) > attotime::from_usec(500))
++					{
++						// too late to be the swap-s own compensation: this is
++						// ordinary pointer motion
++						m_cs_n_late++;
++						m_cs_dirty = false;
++					}
++					else if (m_cs_dirty)
++					{
++						// first position write after the sprite changed: this
++						// is the hotspot compensation, not pointer motion --
++						// motion would have written the register before the
++						// sprite, or after this one
++						m_cs_dx += (int32_t)m_cursor_x - (int32_t)m_cs_x0;
++						m_cs_dy += (int32_t)m_cursor_y - (int32_t)m_cs_y0;
++						m_cs_seq++;
++						m_cs_dirty = false;
++					}
+ 					LOGMASKED(LOG_VC2, "Register Write: Cursor Y, %04x\n", m_cursor_y);
+ 					m_cur_cursor_x = m_cursor_x;
+ 					break;

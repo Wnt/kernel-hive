@@ -1,0 +1,49 @@
+Give the Indy's R4600 a 256 MB DRC code cache instead of 32 MB.
+
+IRIX 6.5 sitting IDLE at a 4Dwm desktop spends 60-76% of MAME's runtime in
+mips3_device::code_compile_block -- re-JITting MIPS code that has not changed,
+because the stock 32 MB cache fills and is flushed over and over. Two profiles
+of the same idle login screen three minutes apart measured 61.2% and 75.9%
+children, rising rather than decaying, so this is sustained thrash and not
+translation warm-up.
+
+Measured on indy_4610 -gio64_gfx xl24 at 1280x1024, -frameskip 6, idle window
+(emulated t=150-300s), within-run via perf stat -I between emulated-time marks,
+cycle-normalised to 2.5 GHz:
+
+    32 MB (stock)   112.4%, 114.5%   mean 113.5%
+    256 MB          130.0%, 130.7%   mean 130.4%   (+14.9%)
+    1024 MB         126.7%                          (no better)
+
+so this is not simply bigger-is-better; 256 MB is the knee. Note the profile
+SHARE of code_compile_block is a noisy metric -- it swung 61%->76% on identical
+config -- so the ranking above rests on the speed measurement, not the share.
+
+Only indy_4610 is changed; the other IP24/IP22 machines keep the stock cache.
+The +0x800000 slack mirrors what mips3.cpp's own constructor reserves alongside
+DRC_CACHE_SIZE, so 256 MB here means the same thing 32 MB means there.
+
+ARCHITECTURE CONSTRAINT: x86-64 only. AArch64's B instruction has a +/-128 MB
+reach, so a 256 MB code cache can place two blocks further apart than a branch
+can encode and MAME aborts at runtime with
+    Fatal error: asmjit error 48: InvalidDisplacement: b <huge>
+a few seconds into the IRIX boot (observed on Apple Silicon). x86-64's jmp
+rel32 reaches +/-2 GB, which is why the lab box does not hit it. Do not apply
+this patch on arm64; the 256 MB RAM patch is unaffected and still wanted.
+
+diff --git a/src/mame/sgi/indy_indigo2.cpp b/src/mame/sgi/indy_indigo2.cpp
+--- a/src/mame/sgi/indy_indigo2.cpp
++++ b/src/mame/sgi/indy_indigo2.cpp
+@@ -405,6 +407,12 @@ void ip24_state::indy_4610(machine_config &config)
+ 	constexpr uint32_t system_clock = 50'000'000;
+ 	ip24(config, system_clock);
+ 	R4600BE(config, m_maincpu, 2 * system_clock);
++	// IRIX 6.5 sitting at an idle 4Dwm desktop thrashes the stock 32 MB DRC code
++	// cache: MAME spends 60-76% of its time in code_compile_block re-JITting the
++	// same code after repeated cache flushes. Raising the cache is worth ~+15% of
++	// real time at idle (112-115% -> 130% at 2.5 GHz on an Indy at 1280x1024).
++	// 1 GB measured no better than 256 MB, so this is not simply bigger-is-better.
++	m_maincpu->set_drc_cache_size(256 * 1024 * 1024 + 0x800000 + 0x10000);
+ 	m_maincpu->set_system_clock(system_clock);
+ 	m_maincpu->set_icache_size(0x4000);
+ 	m_maincpu->set_dcache_size(0x4000);

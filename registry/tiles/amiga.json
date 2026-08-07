@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "id": "amiga",
+  "era_year": 1987,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 29,
+        "prelude": "",
+        "line": "  \"amiga        |amiga.sh       |bridge/amiga   |retro    |~3-5m   |full   |tiles/amiga overlay + golden (Kickstart 1.3 + Workbench 1.3)\"\n",
+        "value": {
+          "key": "amiga",
+          "script": "amiga.sh",
+          "outputDir": "bridge/amiga",
+          "class": "retro",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "tiles/amiga overlay + golden (Kickstart 1.3 + Workbench 1.3)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 4
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/amiga",
+      "qmp": "/data/vms/streamhost/tiles/amiga/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5818,
+      "exec_port": 5818,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54118,
+      "notes": "exec: labctl exec amiga \"<cmd>\" (ssh root@:5818, key bridge_key)"
+    }
+  },
+  "render": {
+    "signalOrder": 29,
+    "tilesManifestOrder": 27,
+    "tilesManifestPrelude": "\n# amiga (VMID 218) — FS-UAE -> Amiga 500 -> Kickstart 1.3 + Workbench 1.3.\n#   ssh 5818. Fixture stanza also pins SH_IDLE_PAUSE_SECS=0 (never QMP-freeze\n#   the kiosk out from under the watcher).\n",
+    "tilesManifestInvocation": "emit amiga \\\n  --tile amiga --vmid 218 --udp 54118 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/amiga/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/amiga/tile.env.fixture\"\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 29,
+    "bindingPrelude": "",
+    "bindingLine": "  amiga:       { osId: 'amiga',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#0055AA', eraLabel: '1987 · Amiga Workbench 1.3', bootVideo: '/boot/amiga/boot.mp4' },\n",
+    "museumOrder": 27,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'amiga', displayName: 'Amiga 500 — Workbench 1.3', year: 1987,\n    lineage: 'Commodore Amiga / AmigaOS',\n    arch: 'Motorola 68000 (16/32-bit)', ramMB: 0, ramKB: 512,    era: '1980s', accent: '#0055AA',\n    eraSoftware: ['Workbench 1.3', 'AmigaDOS CLI', 'Deluxe Paint', 'Extras 1.3 / AmigaBASIC'],\n    periodBrowser: 'none — pre-web (AmigaOS 1.3)',\n    iconicApps: ['Workbench 1.3 desktop', 'AmigaDOS Shell/CLI', 'the insert-disk hand', 'the floppy-drive click'],\n    blurb: 'A 1987 home computer whose custom chips (blitter + copper + 4-channel Paula sound) gave it colour multitasking and arcade graphics the PC and Mac couldn’t touch for years — booting the real Kickstart 1.3 + Workbench 1.3 on a genuine 68000.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Amiga emulator full-screen booting the real Kickstart 1.3 + Workbench 1.3; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Amiga 500 wedge). See streamhost/docs/BRIDGE.md.',\n  },\n",
+    "goldenOrder": 27
+  },
+  "tileDir": "amiga",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54118,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 118
+  },
+  "guestDoc": "docs/guests/amiga500.md",
+  "credentialsRef": "guest/amiga",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "amiga",
+      "SH_QMP": "/data/vms/streamhost/tiles/amiga/qmp.sock",
+      "SH_PORT": "54118",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/amiga/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/amiga/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_FIXTURE_DESC": "Amiga 500 (68000) Workbench 1.3 desktop in FS-UAE; Kickstart 1.3; Paula->ALSA->AC97.",
+      "SH_IDLE_PAUSE_SECS": "0"
+    },
+    "vmidLabel": 218,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "amiga",
+        "--vmid",
+        "218",
+        "--udp",
+        "54118",
+        "--pointer",
+        "abs",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/amiga/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/amiga/tile.env.fixture"
+      ],
+      "deviceSetId": "amiga-current",
+      "launcher": "streamhost/tiles/amiga/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/amiga/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 1536,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-amiga",
+        "-enable-kvm -m 1536 -smp 2 -machine pc-i440fx-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb -device usb-tablet",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5818-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 1536,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-amiga",
+          "-enable-kvm -m 1536 -smp 2 -machine pc-i440fx-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb -device usb-tablet",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5818-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 27
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#0055AA",
+    "eraLabel": "1987 · Amiga Workbench 1.3",
+    "bootVideo": "/boot/amiga/boot.mp4"
+  },
+  "museum": {
+    "id": "amiga",
+    "displayName": "Amiga 500 — Workbench 1.3",
+    "year": 1987,
+    "lineage": "Commodore Amiga / AmigaOS",
+    "arch": "Motorola 68000 (16/32-bit)",
+    "ramMB": 0,
+    "ramKB": 512,
+    "era": "1980s",
+    "accent": "#0055AA",
+    "eraSoftware": [
+      "Workbench 1.3",
+      "AmigaDOS CLI",
+      "Deluxe Paint",
+      "Extras 1.3 / AmigaBASIC"
+    ],
+    "periodBrowser": "none — pre-web (AmigaOS 1.3)",
+    "iconicApps": [
+      "Workbench 1.3 desktop",
+      "AmigaDOS Shell/CLI",
+      "the insert-disk hand",
+      "the floppy-drive click"
+    ],
+    "blurb": "A 1987 home computer whose custom chips (blitter + copper + 4-channel Paula sound) gave it colour multitasking and arcade graphics the PC and Mac couldn’t touch for years — booting the real Kickstart 1.3 + Workbench 1.3 on a genuine 68000.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Amiga emulator full-screen booting the real Kickstart 1.3 + Workbench 1.3; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Amiga 500 wedge). See streamhost/docs/BRIDGE.md."
+  },
+  "reset": {
+    "tileDir": "amiga",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "Amiga 500 (68000) Workbench 1.3 desktop in FS-UAE; Kickstart 1.3; Paula->ALSA->AC97. Emulator-bridge tile added 2026-07-08."
+  },
+  "migrationExceptions": []
+}

@@ -1,0 +1,291 @@
+--- a/src/Frame.cpp
++++ b/src/Frame.cpp
+@@ -428,32 +428,34 @@
+           if (g_nAppMode == MODE_DEBUG)
+             DebuggerMouseClick(x, y);
+           else
++          if (sg_Mouse.Active()) {
++            // Kiosk/absolute-pointer: the emulated mouse card tracks the host
++            // cursor position directly (see SDL_MOUSEMOTION) - clicks go
++            // straight through, no capture/grab step that would eat the first
++            // click and switch SDL into warp-based relative mode (broken with
++            // absolute tablet input).
++            sg_Mouse.SetButton(BUTTON0, BUTTON_DOWN);
++          }
++          else
+           if (usingcursor) {
+             KeybUpdateCtrlShiftStatus(); // if either of ALT, SHIFT or CTRL is pressed
+             if (g_bShiftKey | g_bCtrlKey) {
+               SetUsingCursor(0); // release mouse cursor for user
+             } else {
+-              if (sg_Mouse.Active()) {
+-                sg_Mouse.SetButton(BUTTON0, BUTTON_DOWN);
+-              } else {
+-                JoySetButton(BUTTON0, BUTTON_DOWN);
+-              }
++              JoySetButton(BUTTON0, BUTTON_DOWN);
+             }
+           } // we do not use mouse
+           else
+-          if ((((g_nAppMode == MODE_RUNNING) || (g_nAppMode == MODE_STEPPING))) ||
+-              (sg_Mouse.Active())) {
+-            SetUsingCursor(1); // capture cursor
++          if (((g_nAppMode == MODE_RUNNING) || (g_nAppMode == MODE_STEPPING))) {
++            SetUsingCursor(1); // capture cursor (joystick-as-mouse only)
+           }
+         }
+       } // If left mouse button down
+       else if (e->button.button == SDL_BUTTON_RIGHT) {
+-        if (usingcursor) {
+-          if (sg_Mouse.Active()) {
+-            sg_Mouse.SetButton(BUTTON1, BUTTON_DOWN);
+-          } else {
+-            JoySetButton(BUTTON1, BUTTON_DOWN);
+-          }
++        if (sg_Mouse.Active()) {
++          sg_Mouse.SetButton(BUTTON1, BUTTON_DOWN);
++        } else if (usingcursor) {
++          JoySetButton(BUTTON1, BUTTON_DOWN);
+         }
+       }
+ 
+@@ -461,33 +463,36 @@
+ 
+     case SDL_MOUSEBUTTONUP:
+       if (e->button.button == SDL_BUTTON_LEFT) {
+-        if (usingcursor) {
+-          if (sg_Mouse.Active()) {
+-            sg_Mouse.SetButton(BUTTON0, BUTTON_UP);
+-          } else {
+-            JoySetButton(BUTTON0, BUTTON_UP);
+-          }
++        if (sg_Mouse.Active()) {
++          sg_Mouse.SetButton(BUTTON0, BUTTON_UP);
++        } else if (usingcursor) {
++          JoySetButton(BUTTON0, BUTTON_UP);
+         }
+       } else if (e->button.button == SDL_BUTTON_RIGHT) {
+-        if (usingcursor) {
+-          if (sg_Mouse.Active()) {
+-            sg_Mouse.SetButton(BUTTON1, BUTTON_UP);
+-          } else {
+-            JoySetButton(BUTTON1, BUTTON_UP);
+-          }
++        if (sg_Mouse.Active()) {
++          sg_Mouse.SetButton(BUTTON1, BUTTON_UP);
++        } else if (usingcursor) {
++          JoySetButton(BUTTON1, BUTTON_UP);
+         }
+       }
+       break;
+ 
+     case SDL_MOUSEMOTION:
+-      x = e->motion.x; // Get relative coordinates of mouse cursor
++      x = e->motion.x; // window coordinates of mouse cursor
+       y = e->motion.y;
+-      if (usingcursor) {
+-        if (sg_Mouse.Active()) {
+-          sg_Mouse.SetPosition(x, VIEWPORTCX - 4, y, VIEWPORTCY - 4);
+-        } else {
+-          JoySetPosition(x, VIEWPORTCX - 4, y, VIEWPORTCY - 4);
+-        }
++      if (sg_Mouse.Active()) {
++        // Kiosk/absolute-pointer: feed the mouse card the ABSOLUTE window
++        // position, scaled over the REAL (Screen-factor-scaled) window size
++        // (the stock code passed VIEWPORTCX/CY = the unscaled 560x384, which
++        // pins the card at ~55% of a 1.8x window). No usingcursor gate, no
++        // SDL grab: with grab+hidden cursor SDL1.2 goes into warp-based
++        // relative mode, which is broken with absolute tablet input.
++        // The emulated OS (GEOS) draws its own arrow, so keep the host
++        // cursor hidden over the window.
++        if (SDL_ShowCursor(SDL_QUERY) == SDL_ENABLE) SDL_ShowCursor(SDL_DISABLE);
++        sg_Mouse.SetPosition(x, g_ScreenWidth - 1, y, g_ScreenHeight - 1);
++      } else if (usingcursor) {
++        JoySetPosition(x, VIEWPORTCX - 4, y, VIEWPORTCY - 4);
+       }
+       break;
+ 
+--- a/src/Video.cpp
++++ b/src/Video.cpp
+@@ -246,25 +246,17 @@
+   int bytesleft;
+   while (ysize--) {
+     bytesleft = xsize;
++    // Kiosk: scanline blanking DISABLED for all modes (stock: every other
++    // line black for videotype >= VT_COLOR_TVEMU). Blank alternate lines turn
++    // into heavy moire striping once the window is Screen-factor-scaled and
++    // then H.264-encoded for streaming - render solid lines instead.
+     while (bytesleft & 3) {
+       --bytesleft;
+-      // GPH Provide scanlines for all but first couple of modes
+-      // TODO: Optimize
+-      if (ysize & 1 || VT_COLOR_TVEMU > g_videotype) {
+-        *(currdestptr + bytesleft) = *(currsourceptr + bytesleft);
+-      } else {
+-        *(currdestptr + bytesleft) = 0;
+-      }
++      *(currdestptr + bytesleft) = *(currsourceptr + bytesleft);
+     }
+     while (bytesleft) {
+       bytesleft -= 4;
+-      // GPH Provide scanlines for all but first couple of modes
+-      // TODO: Optimize
+-      if (ysize & 1 || VT_COLOR_TVEMU > g_videotype) {
+-        *(uint32_t*)(currdestptr + bytesleft) = *(uint32_t*)(currsourceptr + bytesleft);
+-      } else {
+-        *(currdestptr + bytesleft) = 0;
+-      }
++      *(uint32_t*)(currdestptr + bytesleft) = *(uint32_t*)(currsourceptr + bytesleft);
+     }
+     currdestptr += framebufferpitch; // we are going top to bottom, as all normal people do! ^_^ (bb)
+     currsourceptr += SRCOFFS_TOTAL;
+--- a/src/MouseInterface.cpp
++++ b/src/MouseInterface.cpp
+@@ -36,6 +36,28 @@
+ #define BIT7    0x80
+ 
+ 
++// Host-pointer -> GEOS-arrow sync state (see SetPosition(x,xrange,y,yrange)).
++// GEOS consumes (READ - centre) as a delta and re-homes the card each poll,
++// so absolute tracking needs a synchronisation handshake:
++//   NEED_PIN  -> on the next host motion, feed a huge negative delta that
++//                pins the GEOS arrow at the top-left corner, then
++//   WAIT_HOME -> wait until GEOS has consumed it (observed as its next
++//                MOUSE_POS re-home), then
++//   SYNCED    -> arrow position == our estimate; feed exact correction
++//                deltas towards the host pointer position every motion.
++// Reset to NEED_PIN whenever the guest software (re)initialises the card so
++// the handshake only runs once the in-guest mouse driver is live.
++#define A2_SYNC_NEED_PIN  0
++#define A2_SYNC_WAIT_HOME 1
++#define A2_SYNC_SYNCED    2
++static int s_sync = A2_SYNC_NEED_PIN;
++static int s_estX = 0, s_estY = 0;
++static int s_pinRead = 0; // 1: last READ during WAIT_HOME returned the pin
++// Card position snapshot at the last MOUSE_READ: any host deltas applied
++// AFTER the read but BEFORE the driver's re-home would be silently wiped by
++// the re-home write - carry them forward instead (lossless delta channel).
++static int s_readX = 0, s_readY = 0;
++
+ char MouseInterface_rom[] = "\x2C\x58\xFF\x70\x1B\x38\x90\x18\xB8\x50\x15\x01\x20\xF4\xF4\xF4"
+                             "\xF4\x00\xB3\xC4\x9B\xA4\xC0\x8A\xDD\xBC\x48\xF0\x53\xE1\xE6\xEC"
+                             "\x08\x78\x8D\xF8\x07\x48\x98\x48\x8A\x48\x20\x58\xFF\xBA\xBD\x00"
+@@ -317,6 +339,11 @@
+       m_byState &= 0x20;
+       m_nX = m_iX;
+       m_nY = m_iY;
++      if (s_sync == A2_SYNC_WAIT_HOME) {
++        s_pinRead = (m_iX == (unsigned int) m_iMinX && m_iY == (unsigned int) m_iMinY) ? 1 : -1;
++      }
++      s_readX = (int) m_iX;
++      s_readY = (int) m_iY;
+       if (m_bBtn0) {
+         m_byState |= 0x40;      // Previous Button 0
+       }
+@@ -401,11 +428,28 @@
+         ClampY(nMin, nMax);
+       else          // Clamp X
+         ClampX(nMin, nMax);
++      s_sync = A2_SYNC_NEED_PIN; // driver (re)init: re-run the sync handshake
+       break;
+     case MOUSE_POS:
+       m_nX = (m_byBuff[2] << 8) | m_byBuff[1];
+       m_nY = (m_byBuff[4] << 8) | m_byBuff[3];
+-      SetPosition(m_nX, m_nY);
++      // Re-apply host deltas that arrived after the driver's last READ (they
++      // are not part of what the driver consumed and would otherwise be lost).
++      SetPosition(m_nX + ((int) m_iX - s_readX), m_nY + ((int) m_iY - s_readY));
++      s_readX = (int) m_iX;
++      s_readY = (int) m_iY;
++      if (s_sync == A2_SYNC_WAIT_HOME) {
++        if (s_pinRead == 1) {
++          // GEOS consumed the pin delta and re-homed: arrow is at (0,0) now.
++          s_estX = 0;
++          s_estY = 0;
++          s_sync = A2_SYNC_SYNCED;
++        } else {
++          // Re-home raced past our pin (or read a pre-pin value): pin again.
++          s_sync = A2_SYNC_NEED_PIN;
++        }
++        s_pinRead = 0;
++      }
+       break;
+     case MOUSE_INIT:
+       m_nX = 0;
+@@ -413,6 +457,7 @@
+       ClampX(0, 1023);
+       ClampY(0, 1023);
+       SetPosition(0, 0);
++      s_sync = A2_SYNC_NEED_PIN; // driver (re)init: re-run the sync handshake
+       break;
+   }
+ }
+@@ -493,21 +538,59 @@
+ }
+ 
+ void CMouseInterface::SetPosition(int xvalue, int yvalue) {
+-  if ((m_iRangeX == 0) || (m_iRangeY == 0)) {
+-    m_nX = m_iX = m_iMinX;
+-    m_nY = m_iY = m_iMinY;
+-    return;
+-  }
+-
+-  m_iX = (unsigned int)((xvalue * m_iMaxX) / m_iRangeX);
+-  m_iY = (unsigned int)((yvalue * m_iMaxY) / m_iRangeY);
++  // Kiosk fix: xvalue/yvalue are ABSOLUTE positions in the card's own
++  // clamp space (MOUSE_POS / MOUSE_HOME / MOUSE_INIT / Reset callers).
++  // The stock code re-scaled them by clampmax/hostrange, so e.g. GEOS
++  // homing the cursor to (16384,16384) inside its 0..32767 clamps set
++  // m_iX to 16384*32767/1007 = 533122 - far outside the clamp range -
++  // and the GEOS arrow stayed pinned at the corner. Just clamp.
++  if (xvalue < (int) m_iMinX) xvalue = m_iMinX;
++  else if (xvalue > (int) m_iMaxX) xvalue = m_iMaxX;
++  if (yvalue < (int) m_iMinY) yvalue = m_iMinY;
++  else if (yvalue > (int) m_iMaxY) yvalue = m_iMaxY;
++  m_iX = (unsigned int) xvalue;
++  m_iY = (unsigned int) yvalue;
+ }
+ 
+ void CMouseInterface::SetPosition(int xvalue, int xrange, int yvalue, int yrange) {
++  // Host-window pointer position (from SDL_MOUSEMOTION).
++  //
++  // GEOS's mouse driver is DELTA-based: every poll it READs the card,
++  // interprets (pos - centre) as a movement delta, then re-homes the card
++  // to the clamp centre with a MOUSE_POS write. Feeding absolute positions
++  // therefore makes its arrow race off to a corner. Feed 1:1 scaled DELTAS
++  // instead: the arrow mirrors the absolute host pointer trajectory, and
++  // clamping at the screen edges keeps the two in sync long-term.
+   m_iRangeX = (unsigned int) xrange;
+   m_iRangeY = (unsigned int) yrange;
++  if (xrange == 0 || yrange == 0) {
++    return;
++  }
+ 
+-  SetPosition(xvalue, yvalue);
++  // GEOS consumes (READ value - clamp centre) as a movement delta in raw
++  // Apple-screen pixels (560x192 DHGR space; measured: delta 204 moved the
++  // arrow 204 DHGR px), then re-homes the card. To give ABSOLUTE tracking
++  // over that delta channel, mirror GEOS's own arrow arithmetic: keep an
++  // estimate of the arrow position and feed the exact delta that brings it
++  // to the host pointer's position. On the first event, feed a huge
++  // negative delta to pin the arrow (and the estimate) at the top-left
++  // corner - from then on estimate == arrow, and any screen-edge clamp
++  // re-syncs the two for free.
++  int tx = (int) ((int64_t) xvalue * 560 / xrange);
++  int ty = (int) ((int64_t) yvalue * 192 / yrange);
++  if (tx > 559) tx = 559;
++  if (ty > 191) ty = 191;
++  if (tx < 0) tx = 0;
++  if (ty < 0) ty = 0;
++  if (s_sync == A2_SYNC_NEED_PIN) {
++    SetPosition((int) m_iX - 32767, (int) m_iY - 32767); // pin arrow at 0,0
++    s_sync = A2_SYNC_WAIT_HOME;
++  } else if (s_sync == A2_SYNC_SYNCED) {
++    SetPosition((int) m_iX + (tx - s_estX), (int) m_iY + (ty - s_estY));
++    s_estX = tx;
++    s_estY = ty;
++  } // WAIT_HOME: drop motions until GEOS consumed the pin (absolute feed,
++    // nothing is lost - the next synced motion goes straight to the target).
+   OnMouseEvent();
+ }
+ 

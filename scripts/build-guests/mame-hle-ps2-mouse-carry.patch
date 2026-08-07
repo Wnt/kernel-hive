@@ -1,0 +1,61 @@
+--- a/src/devices/bus/pc_kbd/hle_mouse.cpp
++++ b/src/devices/bus/pc_kbd/hle_mouse.cpp
+@@ -37,6 +37,8 @@
+ #include "emu.h"
+ #include "hle_mouse.h"
+ 
++#include <algorithm>
++
+ #define LOG_RXTX    (1U << 1)
+ #define LOG_COMMAND (1U << 2)
+ #define LOG_REPORT  (1U << 3)
+@@ -490,11 +492,30 @@
+ 	{
+ 		LOGMASKED(LOG_REPORT, "data report dx %d dy %d db %d\n", dx, dy, db);
+ 
+-		// compute sign and overflow
+-		u8 const sx = (dx < 0) ? 0x10 : 0x00;
+-		u8 const sy = (dy < 0) ? 0x20 : 0x00;
+-		u8 const ox = ((dx < -256) || (dx > 255)) ? 0x40 : 0x00;
+-		u8 const oy = ((dy < -256) || (dy > 255)) ? 0x80 : 0x00;
++		// CARRY, don't truncate. The 9-bit wire field cannot express a delta
++		// outside -256..255, and a guest driver that meets one may never
++		// recover: SGI IRIX 6.5 stops applying pointer motion entirely after a
++		// single over-range report. A real mouse never produces one -- 255
++		// counts in a 10 ms sample is far beyond any hand -- so the overflow
++		// flags are effectively untested territory in every guest driver, and
++		// the accurate-looking behaviour is the dangerous one. Emit the delta
++		// CLAMPED and keep the remainder for the next sample instead: the
++		// motion is delivered whole, a few samples later, and the overflow
++		// bits are never set at all.
++		s16 const cx = std::clamp<s16>(dx, -255, 255);
++		s16 const cy = std::clamp<s16>(dy, -255, 255);
++
++		// compute sign (overflow can no longer occur)
++		u8 const sx = (cx < 0) ? 0x10 : 0x00;
++		u8 const sy = (cy < 0) ? 0x20 : 0x00;
++		u8 const ox = 0x00;
++		u8 const oy = 0x00;
++
++		// the carry: advance the recorded state only by what was actually sent
++		s16 const rx = m_mouse_x + cx;
++		s16 const ry = m_mouse_y - cy;
++		dx = cx;
++		dy = cy;
+ 
+ 		// apply scaling
+ 		if (m_mode & SCALE)
+@@ -512,9 +533,10 @@
+ 		m_tx_buf[m_tx_len++] = u8(dy);
+ 		m_tx_pos = 0;
+ 
+-		// record mouse state
+-		m_mouse_x = x;
+-		m_mouse_y = y;
++		// record mouse state (position advances by the CLAMPED delta, so any
++		// remainder is reported by the next sample rather than being lost)
++		m_mouse_x = rx;
++		m_mouse_y = ry;
+ 		m_mouse_b = b;
+ 
+ 		// resume serial communication

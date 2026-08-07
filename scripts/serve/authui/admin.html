@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Kernel Hive — people</title>
+<link rel="stylesheet" href="/ui/app.css">
+</head>
+<body>
+<main class="wide">
+  <h1>People</h1>
+  <p class="sub">Who can reach the gallery, and on which devices.</p>
+
+  <h2>Invite someone</h2>
+  <div class="panel">
+    <label for="inv-name">Their name</label>
+    <input id="inv-name" maxlength="40" placeholder="e.g. Jane">
+    <label for="inv-role">Role</label>
+    <select id="inv-role">
+      <option value="viewer">Viewer — can watch and use the exhibits</option>
+      <option value="admin">Admin — can also manage people</option>
+    </select>
+    <button id="invite">Create invite code</button>
+    <div id="issued" class="hidden">
+      <div class="code-out" id="issued-code"></div>
+      <div class="copy-row">
+        <input id="issued-url" class="grow" readonly spellcheck="false">
+        <button id="copy-url" class="icon" title="Copy the invite link" aria-label="Copy the invite link">⧉</button>
+      </div>
+      <p class="meta" id="issued-note"></p>
+    </div>
+  </div>
+
+  <h2>Members</h2>
+  <div class="panel" id="users"></div>
+
+  <h2>Unredeemed invites</h2>
+  <div class="panel" id="invites"></div>
+
+  <div id="msg" class="msg"></div>
+  <footer><a href="/">← Back to the gallery</a> · <a href="/account">Your account &amp; devices</a></footer>
+</main>
+<script type="module" src="/ui/admin.js"></script>
+</body>
+</html>

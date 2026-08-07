@@ -1,0 +1,12 @@
+[package]
+name = "ghid-inject"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[profile.release]
+strip = true
+lto = true
+
+# Keep this standalone tool out of the parent streamhost workspace.
+[workspace]

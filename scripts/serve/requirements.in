@@ -1,0 +1,22 @@
+# Third-party Python the gallery server needs, declared. This is the file a
+# human edits; requirements.txt beside it is the compiled, fully-pinned,
+# hash-checked lock and is the file that actually gets installed.
+#
+# Regenerate the lock after touching this (from a checkout, any Linux):
+#
+#   python3 -m venv /tmp/pc && /tmp/pc/bin/pip -q install pip-tools
+#   /tmp/pc/bin/pip-compile --generate-hashes --allow-unsafe \
+#       --output-file scripts/serve/requirements.txt scripts/serve/requirements.in
+#
+# Why a lock rather than the distro's python3-fido2: WebAuthn verification is
+# security-critical, and the box should not have to wait for a Debian point
+# release to pick up a fix. Dependabot watches this pair (.github/dependabot.yml)
+# and opens the upgrade PR itself.
+
+# WebAuthn/FIDO2 server-side ceremonies (Yubico).
+fido2
+
+# QR rendering for "link another device". Pure Python, no dependencies of its
+# own, and it emits SVG we can inline — so the page needs no canvas library and
+# the code never travels as a separate image request.
+segno

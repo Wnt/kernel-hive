@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "id": "c64",
+  "era_year": 1982,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 26,
+        "prelude": "",
+        "line": "  \"c64          |c64.sh         |bridge/c64     |retro    |~3-5m   |full   |tiles/c64 overlay + golden (VICE x64sc → GEOS 2.0)\"\n",
+        "value": {
+          "key": "c64",
+          "script": "c64.sh",
+          "outputDir": "bridge/c64",
+          "class": "retro",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "tiles/c64 overlay + golden (VICE x64sc → GEOS 2.0)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 1
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/c64",
+      "qmp": "/data/vms/streamhost/tiles/c64/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5814,
+      "exec_port": 5814,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54114,
+      "notes": "exec: labctl exec c64 \"<cmd>\" (ssh root@:5814, key bridge_key)"
+    }
+  },
+  "render": {
+    "signalOrder": 26,
+    "tilesManifestOrder": 24,
+    "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP G — emulator-bridge retro home computers (c64, atarist, apple2, amiga).\n#   Each tile is a captured Debian 12 \"bridge\" kiosk (shared read-only base\n#   /data/vms/bridge/bridge-base.qcow2 + a thin per-tile overlay.qcow2) running\n#   a period emulator full-screen; streamhost captures the Linux framebuffer +\n#   AC97 audio exactly like every other tile. See streamhost/docs/BRIDGE.md and\n#   docs/guests/c64.md. Atari ST/Apple II/Amiga use usb-tablet ABS; C64 keeps\n#   browser coordinates absolute but streamhost translates them to PS/2 REL for\n#   VICE's SDL/1351 path (vmport=off, no tablet). All four use AC97, KVM,\n#   -m 1536 -smp 2 -cpu host -vga std. VERBATIM LAUNCHERS: overlay.qcow2 (ide,\n#   holds the INTERNAL golden snapshot — NEVER delete), e1000 NIC with an ssh\n#   hostfwd (c64:5814 atarist:5816 apple2:5817 amiga:5818 -> guest :22), and a\n#   CONDITIONAL -loadvm golden. tile.env carries the golden-fixture stanza\n#   (SH_RESET_MODE=loadvm etc.) via the tracked fixture files.\n# ---------------------------------------------------------------------------\n\n# c64 (VMID 214) — VICE x64sc -> Commodore 64 -> GEOS 2.0 deskTop. ssh 5814.\n",
+    "tilesManifestInvocation": "emit c64 \\\n  --tile c64 --vmid 214 --udp 54114 --pointer rel \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/c64/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/c64/tile.env.fixture\"\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 26,
+    "bindingPrelude": "\n  // ---- emulator-bridge retro home computers (captured-Linux kiosk running a\n  //      period emulator; streamhost captures the Linux framebuffer + AC97.\n  //      See streamhost/docs/BRIDGE.md. beige-tower-crt is the closest era\n  //      archetype; bespoke breadbin/wedge/all-in-one models are the ideal\n  //      follow-ups). ----\n",
+    "bindingLine": "  c64:         { osId: 'c64',         archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#6c5eb5', eraLabel: '1982 · C64 + GEOS' },\n",
+    "museumOrder": 24,
+    "museumPrelude": "\n  // ---- emulator-bridge retro home computers ----\n",
+    "museumBlock": "  {\n    id: 'c64', displayName: 'Commodore 64 — GEOS 2.0', year: 1982,\n    lineage: 'Commodore 64 / GEOS',\n    arch: 'MOS 6510 (6502), 1 MHz, 64 KB', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#6c5eb5',\n    eraSoftware: ['GEOS 2.0 deskTop', 'geoWrite', 'geoPaint', 'Preference Manager', 'the 1541 drive'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['GEOS deskTop', 'geoWrite', 'geoPaint', 'the 1541 disk drive'],\n    blurb: 'A full windows-icons-menus desktop (GEOS) running on a 1 MHz, 64 KB home computer — the 8-bit era’s answer to the Macintosh.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x64sc) full-screen emulating a C64 that auto-boots the GEOS 2.0 deskTop; streamhost captures the Linux framebuffer + AC97 audio (the C64 SID routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke C64 breadbin + 1541 + CRT). See streamhost/docs/BRIDGE.md.',\n  },\n",
+    "goldenOrder": 24
+  },
+  "tileDir": "c64",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54114,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "device": "ps2-mouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 114
+  },
+  "guestDoc": "docs/guests/c64.md",
+  "credentialsRef": "guest/c64",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "c64",
+      "SH_QMP": "/data/vms/streamhost/tiles/c64/qmp.sock",
+      "SH_PORT": "54114",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "rel",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/c64/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/c64/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_FIXTURE_DESC": "C64 GEOS 2.0 deskTop with COMM 1351 active; browser absolute coordinates translated to tablet-free PS/2 REL (vmport=off); SID->ALSA->AC97."
+    },
+    "vmidLabel": 214,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "c64",
+        "--vmid",
+        "214",
+        "--udp",
+        "54114",
+        "--pointer",
+        "rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/c64/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/c64/tile.env.fixture"
+      ],
+      "deviceSetId": "c64-current",
+      "launcher": "streamhost/tiles/c64/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/c64/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 1536,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-c64",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5814-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 1536,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-c64",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5814-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 24
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#6c5eb5",
+    "eraLabel": "1982 · C64 + GEOS"
+  },
+  "museum": {
+    "id": "c64",
+    "displayName": "Commodore 64 — GEOS 2.0",
+    "year": 1982,
+    "lineage": "Commodore 64 / GEOS",
+    "arch": "MOS 6510 (6502), 1 MHz, 64 KB",
+    "ramMB": 0,
+    "ramKB": 64,
+    "era": "1980s",
+    "accent": "#6c5eb5",
+    "eraSoftware": [
+      "GEOS 2.0 deskTop",
+      "geoWrite",
+      "geoPaint",
+      "Preference Manager",
+      "the 1541 drive"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "GEOS deskTop",
+      "geoWrite",
+      "geoPaint",
+      "the 1541 disk drive"
+    ],
+    "blurb": "A full windows-icons-menus desktop (GEOS) running on a 1 MHz, 64 KB home computer — the 8-bit era’s answer to the Macintosh.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x64sc) full-screen emulating a C64 that auto-boots the GEOS 2.0 deskTop; streamhost captures the Linux framebuffer + AC97 audio (the C64 SID routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke C64 breadbin + 1541 + CRT). See streamhost/docs/BRIDGE.md."
+  },
+  "reset": {
+    "tileDir": "c64",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "UNVERIFIED",
+    "fixture": "C64 GEOS 2.0 deskTop with COMM 1351 active in VICE x64sc; browser absolute coordinates translated to tablet-free PS/2 relative motion (vmport=off); cursor tracking and CONFIGURE-icon click certified 2026-07-16."
+  },
+  "migrationExceptions": [
+    "spa-pointer-rel"
+  ]
+}

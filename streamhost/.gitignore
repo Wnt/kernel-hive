@@ -1,0 +1,30 @@
+# Rust
+/target/
+**/target/
+Cargo.lock.bak
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Node / web
+node_modules/
+dist/
+.cache/
+
+# OS / editor
+.DS_Store
+*.swp
+*~
+
+# Local secrets / keys (never commit)
+*.pem
+*.key
+id_rsa*
+*.p12
+*.pfx
+lab_key
+*.token

@@ -1,0 +1,21 @@
+diff --git a/hw/misc/Kconfig b/hw/misc/Kconfig
+--- a/hw/misc/Kconfig
++++ b/hw/misc/Kconfig
+@@ -36,0 +37,5 @@
++config GALLERY_HID
++    bool
++    default y if PCI_DEVICES
++    depends on PCI
++
+diff --git a/hw/misc/meson.build b/hw/misc/meson.build
+--- a/hw/misc/meson.build
++++ b/hw/misc/meson.build
+@@ -2,0 +3 @@
++system_ss.add(when: 'CONFIG_GALLERY_HID', if_true: files('gallery-hid-pci.c'))
+diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
+--- a/tests/qtest/meson.build
++++ b/tests/qtest/meson.build
+@@ -40 +40,2 @@
+-  (config_all_devices.has_key('CONFIG_IVSHMEM_DEVICE') ? ['ivshmem-test'] : [])
++  (config_all_devices.has_key('CONFIG_IVSHMEM_DEVICE') ? ['ivshmem-test'] : []) +           \
++  (config_all_devices.has_key('CONFIG_GALLERY_HID') ? ['gallery-hid-test'] : [])

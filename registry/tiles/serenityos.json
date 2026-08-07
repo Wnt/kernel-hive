@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "id": "serenityos",
+  "era_year": 2018,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 22,
+        "prelude": "",
+        "line": "  \"serenityos  |serenityos.sh  |SerenityOS  |heavy    |~20-60m |full   |_disk_image + Kernel (compiled)\"\n",
+        "value": {
+          "key": "serenityos",
+          "script": "serenityos.sh",
+          "outputDir": "SerenityOS",
+          "class": "heavy",
+          "estimated": "~20-60m",
+          "automation": "full",
+          "produces": "_disk_image + Kernel (compiled)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 2,
+          "position": 4
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "serenityos",
+      "value": {
+        "os": "SerenityOS",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            600,
+            200
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "has a taskbar menu; unverified",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/serenityos",
+      "qmp": "/data/vms/streamhost/tiles/serenityos/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54102,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 11,
+    "tilesManifestOrder": 22,
+    "tilesManifestPrelude": "\n# serenityos (VMID 102) — -kernel direct boot off an NVMe-attached qcow2\n#   overlay over the read-only golden raw ext2 root (_disk_image); the Ext2FS\n#   root must mount RW or the kernel panics. VERBATIM LAUNCHER: recreates the\n#   overlay FRESH on every boot (rm + qemu-img create -b) — resetMode=restart;\n#   the launcher is self-contained, no external pre-seed step needed.\n# NOTE: pointer=ABS even though there is no usb-tablet. SerenityOS reads\n# absolute pointer position (verified live: dbus SetAbsPosition lands 1:1; a\n# relative delta is ignored). Do NOT switch this to rel.\n",
+    "tilesManifestInvocation": "emit serenityos \\\n  --tile serenityos --vmid 102 --udp 54102 --pointer abs --audio on --fps 60 \\\n  --launcher-file \"$T/serenityos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/serenityos/tile.env.fixture\"\n",
+    "bringUpGroup": 5,
+    "bindingOrder": 15,
+    "bindingPrelude": "",
+    "bindingLine": "  serenityos:  { osId: 'serenityos',  archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#c95a8f', eraLabel: '2018 · SerenityOS' },\n",
+    "museumOrder": 11,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'serenityos', displayName: 'SerenityOS', year: 2018,\n    lineage: 'From-scratch Unix-like', arch: 'x86_64', ramMB: 1024,    era: '2010s', accent: '#c95a8f',\n    eraSoftware: ['LibGUI desktop', 'Ladybird browser', 'Assistant', 'Terminal'],\n    periodBrowser: 'Ladybird',\n    iconicApps: ['Solitaire', 'Minesweeper', 'PixelPaint'],\n    blurb: 'A love letter to the late-90s desktop, written entirely from scratch on YouTube.',\n  },\n",
+    "goldenOrder": 15,
+    "actionMapOrder": 17
+  },
+  "tileDir": "serenityos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54102,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 102
+  },
+  "guestDoc": "docs/guests/serenityos.md",
+  "credentialsRef": "guest/serenityos",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "serenityos",
+      "SH_QMP": "/data/vms/streamhost/tiles/serenityos/qmp.sock",
+      "SH_PORT": "54102",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/serenityos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/serenityos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "GOLDEN_RESET_MODE": "restart",
+      "GOLDEN_RESET_CMD": "bash /data/vms/streamhost/tiles/serenityos/qemu-streamhost.sh",
+      "GOLDEN_DISK": "/data/gallery-guests/SerenityOS/_disk_image",
+      "GOLDEN_FIXTURE": "SerenityOS desktop; autostarted focused Terminal (anon@courage) with clean prompt and steady non-blinking block cursor; resource-graph applets removed; taskbar clock date-only; idle screen 100 percent static."
+    },
+    "vmidLabel": 102,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "serenityos",
+        "--vmid",
+        "102",
+        "--udp",
+        "54102",
+        "--pointer",
+        "abs",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/serenityos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/serenityos/tile.env.fixture"
+      ],
+      "deviceSetId": "serenityos-current",
+      "launcher": "streamhost/tiles/serenityos/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/serenityos/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-q35-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 2048,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-serenityos",
+        "-enable-kvm -m 2048 -smp 2",
+        "-machine pc-q35-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-kernel /data/gallery-guests/SerenityOS/Kernel/Kernel -append root=nvme0:1:0 -drive file=/data/vms/streamhost/tiles/serenityos/serenity.qcow2,if=none,format=qcow2,id=boot-drive -device i82801b11-bridge,id=bridge4 -device nvme,serial=deadbeef,drive=boot-drive,bus=bridge4,logical_block_size=4096,physical_block_size=4096",
+        "-qmp unix:/data/vms/streamhost/tiles/serenityos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/tiles/serenityos/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-q35-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 2048,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-serenityos",
+          "-enable-kvm -m 2048 -smp 2",
+          "-machine pc-q35-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-kernel /data/gallery-guests/SerenityOS/Kernel/Kernel -append root=nvme0:1:0 -drive file=/data/vms/streamhost/tiles/serenityos/serenity.qcow2,if=none,format=qcow2,id=boot-drive -device i82801b11-bridge,id=bridge4 -device nvme,serial=deadbeef,drive=boot-drive,bus=bridge4,logical_block_size=4096,physical_block_size=4096",
+          "-qmp unix:/data/vms/streamhost/tiles/serenityos/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/tiles/serenityos/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 22
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#c95a8f",
+    "eraLabel": "2018 · SerenityOS"
+  },
+  "museum": {
+    "id": "serenityos",
+    "displayName": "SerenityOS",
+    "year": 2018,
+    "lineage": "From-scratch Unix-like",
+    "arch": "x86_64",
+    "ramMB": 1024,
+    "era": "2010s",
+    "accent": "#c95a8f",
+    "eraSoftware": [
+      "LibGUI desktop",
+      "Ladybird browser",
+      "Assistant",
+      "Terminal"
+    ],
+    "periodBrowser": "Ladybird",
+    "iconicApps": [
+      "Solitaire",
+      "Minesweeper",
+      "PixelPaint"
+    ],
+    "blurb": "A love letter to the late-90s desktop, written entirely from scratch on YouTube."
+  },
+  "reset": {
+    "tileDir": "serenityos",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "restart",
+    "snapshot": null,
+    "mouse": "PASS",
+    "keyboard": "SKIP",
+    "fixture": "SerenityOS desktop. Boots from a fresh qcow2 over the base image on each launch -> cold-boot reset (no vmstate snapshot)."
+  }
+}

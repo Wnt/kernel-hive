@@ -1,0 +1,46 @@
+# Repo-wide lint: shell scripts, Python tooling, and the workflows themselves.
+#
+# No paths filter — these gates are cheap and cover files spread across the
+# whole tree. shellcheck honors the repo .shellcheckrc; ruff reads ruff.toml
+# (py39 target, warpd.py py2 agent excluded). scripts/labctl is a python3
+# script without a .py extension, so it must be passed to ruff explicitly.
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # shellcheck is preinstalled on ubuntu-latest runners.
+      - name: shellcheck (warning severity, .shellcheckrc applies)
+        run: git ls-files '*.sh' | xargs -r shellcheck -S warning
+
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Pinned so a new ruff release can't break CI out of the blue;
+      # bump deliberately together with ruff.toml.
+      - name: ruff check (config in ruff.toml)
+        run: pipx run ruff==0.15.21 check . scripts/labctl
+
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: actionlint (workflow files)
+        run: |
+          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.9/scripts/download-actionlint.bash) 1.7.9
+          ./actionlint -color

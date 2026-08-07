@@ -1,0 +1,247 @@
+MAME Newport: publish each finished frame into a shared-memory framebuffer.
+
+WHY
+
+The SGI IRIX gallery exhibit captures MAME's output and streams it to a browser.
+Doing that through a WINDOW costs a second software rasterisation of every
+frame: MAME rasterises the Newport framebuffer into an RGB32 bitmap, uploads it
+to an SDL texture, SDL_RenderCopy's that through Mesa llvmpipe into an X window,
+and the capture daemon reads the same pixels back out again. A 1280x1024x4 frame
+is software-rasterised twice in series and pushed through X in between, and it
+measured 226-257 Gcyc -- ~1.5-1.7 Gcyc per emulated second, 32-43% of host time.
+
+Every cheap fix was measured dead before this one was written:
+`SDL_RENDER_DRIVER=software` changes nothing (so llvmpipe was never the cost --
+it is raw pixel movement on a memory-bound path), `-nofilter` is worth ~1.8%, a
+bigger unscaled Xvfb is worse, and throttling is neutral.
+
+Publishing the finished frame here lets MAME run `-video none` -- no window, no
+X server at all -- and hands the consumer the EXACT emulated framebuffer instead
+of a window-scaled resample. That last part is a fidelity fix as much as a speed
+one: MAME's X window was 1272x954 on a 1280x1024 Xvfb and auto-scaled with the
+display, while the emulated Newport framebuffer is 1288x1024 once IRIX programs
+the VC2 (about 85 frames into boot).
+
+MEASURED (interleaved A/B, both arms off ONE binary since this is env-gated, so
+the only difference is the display path; cycle-normalised emulated_seconds /
+(cycles/2.5e9) over the emulated 150-300 s window, attributed within each run):
+
+  -video soft on an Xvfb   754.8 / 780.4 Gcyc   49.7% / 48.1% @2.5GHz
+  -video none + this       535.0 / 547.1 Gcyc   70.1% / 68.5% @2.5GHz
+  -video none, publisher off 509.0 / 520.9 Gcyc 73.7% / 72.0% @2.5GHz
+
++41.0% and +42.4% within-round against the windowed path, with the publisher
+itself costing a consistent 4.9% against the no-display ceiling -- i.e. ~85% of
+the maximum available win. The 226 Gcyc saved over the 150 s window is 1.51 Gcyc
+per emulated second, matching the independently profiled cost of the display
+path.
+
+DESIGN
+
+Env-gated on IRIX_SHM_PATH: with the variable unset the first statement of
+publish_shm() returns, so this is completely inert for every other use of MAME.
+
+Wire format is a 64-byte header (magic 'IFB1', version, width, height, stride,
+bpp, u64 sequence, dirty rect) followed by width*height RGB32 pixels. RGB32 is
+host-endian XRGB8888, i.e. B,G,R,X in memory on x86, which is byte-identical to
+what a BGRA consumer expects -- there is no per-pixel conversion anywhere on the
+path, and one would eat the entire win.
+
+Synchronisation is a seqlock: the sequence goes ODD before the pixels are
+touched and EVEN after, both with release ordering, and a reader takes it with
+acquire, copies, re-reads, and retries on odd-or-changed. One producer, any
+number of readers, readers never write. Validated under maximum write pressure:
+200 accepted samples, 3,005 torn reads correctly rejected, every accepted sample
+internally self-consistent.
+
+Damage comes free. The frame is published from BOTH paths of screen_update() --
+the cache hit and the fresh render -- and the dirty flag is the one the
+whole-frame cache (mame-newport-dirty-frame-cache.patch) already maintains, so
+an unchanged frame is published with an EMPTY dirty rect and a consumer can skip
+it exactly as XDamage would. What the header does not carry is sub-frame
+granularity; a consumer that wants a real bbox diffs successive frames itself.
+
+DEPENDS ON mame-newport-dirty-frame-cache.patch (it uses that patch's dirty
+flag and publishes from its cache-hit path). Apply it after that one.
+
+The consumer is streamhost's `SH_CAPTURE=shm` backend,
+streamhost/streamhost/src/capture/shm.rs.
+
+--- a/src/devices/bus/gio64/newport.cpp
++++ b/src/devices/bus/gio64/newport.cpp
+@@ -37,6 +37,14 @@
+ #include "emu.h"
+ #include "newport.h"
+ 
++#include <atomic>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <fcntl.h>
++#include <sys/mman.h>
++#include <unistd.h>
++
+ #define LOG_UNKNOWN     (1U << 1)
+ #define LOG_VC2         (1U << 2)
+ #define LOG_CMAP        (1U << 3)
+@@ -1278,6 +1286,128 @@
+ 	m_rex3.m_status &= ~STATUS_BACKBUSY;
+ }
+ 
++//============================================================
++//  publish_shm - export the finished frame over shared memory
++//============================================================
++//
++//  Env-gated on IRIX_SHM_PATH, so this is completely inert for every other use
++//  of MAME: with the variable unset the first statement returns.
++//
++//  WHY: the SGI IRIX gallery exhibit captures MAME's output and streams it to a
++//  browser. Going through a window costs a second software rasterisation of
++//  every frame -- MAME renders the Newport framebuffer, uploads it to an SDL
++//  texture, blits that through Mesa llvmpipe into an X window, and the capture
++//  daemon reads the same pixels back out -- which measured 32-43% of host time.
++//  Publishing the finished frame here lets MAME run `-video none` with no window
++//  and no X server at all, and hands the consumer the EXACT emulated
++//  framebuffer rather than a window-scaled resample.
++//
++//  Layout: a 64-byte header followed by width*height RGB32 pixels.
++//    0  u32 magic 'IFB1'   16 u32 stride    32 u32 dirty_x0   48 pad
++//    4  u32 version        20 u32 bpp       36 u32 dirty_y0
++//    8  u32 width          24 u64 sequence  40 u32 dirty_x1
++//    12 u32 height                          44 u32 dirty_y1
++//
++//  Synchronisation is a seqlock, which is sufficient here because there is
++//  exactly one producer (this thread) and any number of readers, and readers
++//  never write. The producer makes the sequence ODD before touching pixels and
++//  EVEN after, both with release ordering. A reader takes the sequence
++//  (acquire), copies, then re-reads: if it was odd, or changed, the copy may be
++//  torn and is retried. A reader can therefore never observe a half-written
++//  frame as valid -- the worst case is a retry. Validated under maximum write
++//  pressure: 200 accepted samples, 3,005 torn reads correctly rejected, every
++//  accepted sample internally self-consistent.
++
++void newport_base_device::publish_shm(bitmap_rgb32 &bitmap, const rectangle &cliprect, bool dirty)
++{
++	static constexpr size_t HEADER = 64;
++	const int w = cliprect.width();
++	const int h = cliprect.height();
++
++	// Looked up once: this runs on every rendered frame.
++	static const char *const path = std::getenv("IRIX_SHM_PATH");
++	static const bool trace = std::getenv("IRIX_SHM_TRACE") != nullptr;
++	if (!path || !*path)
++		return;
++
++	static int s_calls = 0;
++	static int s_bail = 0;
++	s_calls++;
++
++	// (Re)map whenever the geometry changes. The emulated screen is reconfigured
++	// during boot (update_screen_size) -- IRIX programs the VC2 about 85 frames
++	// in and the screen goes 1280x1024 to 1288x1024 -- so a mapping sized from
++	// the first frame would be wrong, and bailing out on a size mismatch would
++	// silently stop publishing forever, which is exactly what the first version
++	// of this did.
++	const size_t want = HEADER + size_t(w) * size_t(h) * 4;
++	if (!m_shm || m_shm_size != want)
++	{
++		if (m_shm)
++		{
++			::munmap(m_shm, m_shm_size);
++			m_shm = nullptr;
++			m_shm_size = 0;
++		}
++		const int fd = ::open(path, O_RDWR | O_CREAT, 0644);
++		if (fd < 0)
++		{
++			if (trace && s_bail++ < 4)
++				std::fprintf(stderr, "[shm] open failed (call %d)\n", s_calls);
++			return;
++		}
++		if (::ftruncate(fd, off_t(want)) == 0)
++		{
++			void *const p = ::mmap(nullptr, want, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++			if (p != MAP_FAILED)
++			{
++				m_shm = static_cast<uint8_t *>(p);
++				m_shm_size = want;
++				std::memset(m_shm, 0, HEADER);
++				uint32_t *const hdr = reinterpret_cast<uint32_t *>(m_shm);
++				hdr[0] = 0x31424649; // 'IFB1'
++				hdr[1] = 1;
++				hdr[2] = uint32_t(w);
++				hdr[3] = uint32_t(h);
++				hdr[4] = uint32_t(w * 4);
++				hdr[5] = 32;
++				if (trace)
++					std::fprintf(stderr, "[shm] mapped %dx%d (%zu bytes) at call %d\n", w, h, want, s_calls);
++			}
++		}
++		::close(fd);
++	}
++	if (!m_shm)
++	{
++		if (trace && s_bail++ < 4)
++			std::fprintf(stderr, "[shm] no mapping (call %d)\n", s_calls);
++		return;
++	}
++	if (trace && (s_calls % 300) == 0)
++		std::fprintf(stderr, "[shm] publish #%d %dx%d dirty=%d\n", s_calls, w, h, dirty ? 1 : 0);
++
++	uint32_t *const hdr = reinterpret_cast<uint32_t *>(m_shm);
++	std::atomic_ref<uint64_t> seq(*reinterpret_cast<uint64_t *>(m_shm + 24));
++
++	const uint64_t start = seq.load(std::memory_order_relaxed);
++	seq.store(start + 1, std::memory_order_release); // odd: write in progress
++
++	uint8_t *dst = m_shm + HEADER;
++	for (int y = cliprect.min_y; y <= cliprect.max_y; y++, dst += size_t(w) * 4)
++		std::memcpy(dst, &bitmap.pix(y, cliprect.min_x), size_t(w) * 4);
++
++	// Whole-frame damage when anything changed, empty when it did not, so a
++	// consumer can skip encoding an unchanged frame exactly as XDamage would.
++	// The flag is free: it is the same dirty bit the frame cache above already
++	// maintains.
++	hdr[8] = dirty ? 0u : 1u;
++	hdr[9] = dirty ? 0u : 1u;
++	hdr[10] = dirty ? uint32_t(w) : 0u;
++	hdr[11] = dirty ? uint32_t(h) : 0u;
++
++	seq.store(start + 2, std::memory_order_release); // even: frame complete
++}
++
+ uint32_t newport_base_device::screen_update(screen_device &device, bitmap_rgb32 &bitmap, const rectangle &cliprect)
+ {
+ 	// Only cache whole-frame updates: a partial update_partial() cliprect would
+@@ -1294,6 +1424,7 @@
+ 	{
+ 		for (int y = cliprect.min_y; y <= cliprect.max_y; y++)
+ 			std::memcpy(&bitmap.pix(y, cliprect.min_x), &m_cache_bitmap.pix(y, cliprect.min_x), row_bytes);
++		publish_shm(bitmap, cliprect, false);
+ 		return 0;
+ 	}
+ 	m_cache_valid = false;
+@@ -1542,6 +1673,7 @@
+ 			std::memcpy(&m_cache_bitmap.pix(y, cliprect.min_x), &bitmap.pix(y, cliprect.min_x), row_bytes);
+ 		m_cache_valid = true;
+ 	}
++	publish_shm(bitmap, cliprect, true);
+ 
+ #if ENABLE_NEWVIEW_LOG
+ 	if (machine().input().code_pressed_once(KEYCODE_TILDE))
+--- a/src/devices/bus/gio64/newport.h
++++ b/src/devices/bus/gio64/newport.h
+@@ -511,6 +511,13 @@
+ 	// A cache (rather than skipping rows) is required because screen_device
+ 	// double-buffers m_bitmap[2]: a skipped row would show two-frames-ago data.
+ 	bitmap_rgb32 m_cache_bitmap;
++	// Shared-memory framebuffer export (IRIX_SHM_PATH). Lets a capture client
++	// read the finished RGB32 frame directly, so MAME can run -video none and
++	// skip the SDL texture upload, the llvmpipe rasterisation and the X round
++	// trip that a screen-scraping capture would otherwise require.
++	void publish_shm(bitmap_rgb32 &bitmap, const rectangle &cliprect, bool dirty);
++	uint8_t *m_shm = nullptr;
++	size_t m_shm_size = 0;
+ 	bool m_cache_valid;
+ 	bool m_regs_dirty;
+ 

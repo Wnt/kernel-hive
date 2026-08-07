@@ -1,0 +1,70 @@
+MAME ds1386: load the day-of-month register from `day`, not from `second`.
+
+THE BUG
+
+`ds1386_device::rtc_clock_updated()` is the device_rtc_interface callback MAME
+uses to seed a battery-backed RTC from the host clock. It assigns:
+
+    m_days           = make_bcd(day_of_week);
+    m_date           = make_bcd(second);     // <-- day-of-month from SECONDS
+    m_months_enables = ...make_bcd(month)...;
+    m_years          = make_bcd(year);
+
+The `day` parameter is never used anywhere in the function. `m_date` is the
+day-of-month register, and it is being loaded with the seconds field, so the
+emulated machine's day-of-month is whatever second of the minute MAME happened
+to start on.
+
+WHY IT MATTERED HERE (SGI Indy / IRIX 6.5 exhibit)
+
+The tile's boots were intermittently and inexplicably nondeterministic: a
+black-screen boot hang appeared at ~7% with no discoverable trigger, hang rates
+varied a lot between measurement sessions, and retrying a failed boot usually
+worked. Reading the guest's own `/var/adm/SYSLOG` out of preserved write
+overlays showed why -- boots started from BYTE-IDENTICAL nvram reported dates
+years apart:
+
+    golden (as built)   Jul  3 23:47
+    healthy trial       Jul 12 03:00
+    hung trial          Aug 16 06:01
+    live tile           Aug 24 03:59
+
+None matched the host date, and none matched the date deliberately baked into
+the golden nvram by the install procedure (`date 0730120026`). Two separate
+things were going on, and both are worth knowing:
+
+  1. `running_machine::start()` calls `set_rtc_datetime()` AFTER `nvram_load()`,
+     with the comment "this may overwrite parts of NVRAM". For a device that
+     does not override `rtc_battery_backed()` -- ds1386 does not -- the
+     nvram-restored clock is therefore always overwritten by the host clock. A
+     date baked into nvram is silently discarded.
+  2. This bug then scrambles the result, putting the host's SECONDS into the
+     guest's day-of-month, which is what makes the guest date jump around from
+     one launch to the next.
+
+IRIX startup branches on time in several places, so a per-launch pseudo-random
+date is a real nondeterminism source in a boot everyone had assumed was
+deterministic.
+
+WORKAROUND WITHOUT PATCHING
+
+MAME's `-rtc YYYYMMDDhhmmss` option pins `m_base_time`, which makes the seeding
+deterministic even with the bug present. Verified: two independent boots with
+`-rtc 19960704120000` both reported `Jul 12 03:00:18` -- identical to the
+second, where unpinned boots differed by weeks. (Note the guest reads back
+Jul *12*, not the Jul *4* requested: that is this bug, deterministically.)
+
+Apply from the MAME source root:
+  patch -p1 -d src/devices/machine < mame-ds1386-date-from-day.patch
+
+--- a/ds1386.cpp
++++ b/ds1386.cpp
+@@ -110,7 +110,7 @@
+ 	else
+ 		m_hours = time_helper::make_bcd(hour);
+ 	m_days = time_helper::make_bcd(day_of_week);
+-	m_date = time_helper::make_bcd(second);
++	m_date = time_helper::make_bcd(day);
+ 	m_months_enables = (time_helper::make_bcd(month) & 0x1f) | (m_months_enables & 0xc0);
+ 	m_years = time_helper::make_bcd(year);
+ 

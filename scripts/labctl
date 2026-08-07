@@ -1,0 +1,1355 @@
+#!/usr/bin/env python3
+# labctl — unified single-box lab CLI for the streamhost gallery tiles.
+#
+# SOURCE OF TRUTH: scripts/labctl (osgallery repo)
+# LIVE COPY:       /usr/local/bin/labctl (on the lab box)
+# These two files MUST stay byte-identical. Edit the repo copy, then sync to the
+# box (scp / pipe over ssh) — same SESSION-STATE reproducibility rule as the tile
+# launchers. labctl runs ON THE BOX (it shells out to /root/cdrv.py and
+# /root/qmp_hmp.py and reads /data/vms/streamhost/tiles.json).
+#
+# Capability matrix: /data/vms/streamhost/tiles.json (one entry per tile:
+#   {dir,qmp,pointer_mode,warpd_port,warpd_addr,ssh_port,exec_port,exec_kind,
+#    exec_user,exec_key,console,udp_port,golden_snapshot,ctl,notes}). exec_kind
+#   routes 'labctl exec': "ssh" (per-tile user + gallery key) | "warpd_e" (solaris
+#    E verb via /root/gexec.py) | "serial_e" (irix: irixser/2 over MAME's emulated
+#    serial line, via /root/irixexec.py — no port, the pty is discovered from the
+#    tile dir) | null (no channel). ctl (present only when tile.env sets
+#   SH_MAMECTL_SOCK; irix) is the mamectl/1 unix socket of the compiled-in MAME
+#   ctlsock module (issue #45): 'labctl mctl' passes raw verbs through
+#   /root/mctl.py, and type/sh/reset route over it instead of the legacy Lua
+#   cmd file (which the module does not tail). Regenerate with:  labctl gen
+#
+# GUARDRAILS (hard-coded, non-negotiable):
+#   * Never drives CT112 (labctl only ever touches tiles listed in tiles.json).
+#     riscos and
+#     windows11 are ordinary gallery tiles (policy 2026-07-08) but are not
+#     streamhost tiles (no tile dir / QMP socket), so they never appear in the
+#     matrix — there is no hard-block anymore.
+#   * Kills VMs only by pidfile (labctl never kills; clone/reset go through the
+#     existing tooling which is pidfile-based).
+#
+# IDLE AUTO-PAUSE (streamhost, 2026-07-12): with zero browser sessions the
+# daemon freezes its guest's vCPUs (QMP stop) after a grace period
+# (SH_IDLE_PAUSE_SECS, default 60 s). Every driving verb below (shot / type /
+# key / sh / exec / reset) therefore issues an idempotent HMP `cont` first —
+# screendumps, console typing and in-guest ssh would otherwise hang on frozen
+# vCPUs. The daemon re-freezes an idle guest within <= grace + 60 s, so no
+# cleanup is needed after driving.
+#
+# Subcommands:
+#   labctl ls                     tiles + capability summary + service state
+#   labctl health [tile]           read-only live-plane health (or one detail)
+#   labctl assert <tile> --text S  OCR-assert a live framebuffer screendump
+#   labctl assert <tile> --template PNG | --settle
+#   labctl shot  <tile> [out.png] screendump -> PNG (default /tmp/<tile>.png)
+#   labctl type  <tile> "<text>"  type text into the guest (no Enter; --verify
+#                                 also screendumps afterwards)
+#   labctl key   <tile> <qcode..> send one key chord (e.g. ctrl c ; or: ret)
+#   labctl sh    <tile> "<cmd>"   type a shell line + Enter (BLIND — no capture)
+#   labctl exec  <tile> "<cmd>"   REAL exec w/ captured stdout+exit (ssh tiles);
+#                                 errors with alternatives where unavailable
+#   labctl mctl  <tile> "<verb>"  raw mamectl/1 verb passthrough (ctl tiles only)
+#   labctl reset <tile>           loadvm golden (restore tile to golden snapshot)
+#   labctl clone <tile> <N>       wrap existing clone tooling (solaris) else recipe
+#   labctl gen                    regenerate tiles.json from tile.env + launchers
+#
+# KEYSTROKE PACING: type/key/sh honour the tile's own SH_KEY_MIN_HOLD_MS /
+# SH_KEY_MIN_GAP_MS (tile.env, the same knobs the daemon applies to the browser
+# stream path) — emulators sample their keyboard once per emulated frame, so an
+# unpaced burst is silently swallowed. See the block above cmd_type.
+import json, os, re, shutil, signal, socket, subprocess, sys, tempfile, time
+
+TILES_JSON = os.environ.get("LABCTL_TILES_JSON", "/data/vms/streamhost/tiles.json")
+TILES_DIR = os.environ.get("LABCTL_TILES_DIR", "/data/vms/streamhost/tiles")
+CDRV = os.environ.get("LABCTL_CDRV", "/root/cdrv.py")
+QMP_HMP = os.environ.get("LABCTL_QMP_HMP", "/root/qmp_hmp.py")
+SOL_CLONE = "/data/vms/soltest/launch-clone.sh"
+GENERIC_CLONE = "/data/vms/soltest/clone-tile.sh"
+X11SPIKE = os.environ.get("LABCTL_X11SPIKE", "/data/vms/streamhost/build/target/release/x11spike")
+SHMSHOT = os.environ.get("LABCTL_SHMSHOT", "/root/shmshot.py")
+MCTL = os.environ.get("LABCTL_MCTL", "/root/mctl.py")
+VISION_DIR = os.environ.get("LABCTL_VISION_DIR", "/data/vms/streamhost/build/scripts/install-vision")
+
+
+def die(msg, code=2):
+    sys.stderr.write("labctl: " + msg + "\n")
+    sys.exit(code)
+
+
+def load_matrix():
+    try:
+        with open(TILES_JSON) as f:
+            return json.load(f)
+    except OSError:
+        die("cannot read %s — run 'labctl gen' first" % TILES_JSON)
+
+
+def tile_conf(name):
+    m = load_matrix()
+    tiles = m.get("tiles", {})
+    if name not in tiles:
+        die("unknown tile '%s'. known: %s" % (name, ", ".join(sorted(tiles))))
+    return tiles[name]
+
+
+def is_x11_tile(c):
+    """x11-capture runtime tiles (SH_CAPTURE=x11, IRIX/issue #20) have no
+    QEMU/QMP: screendump/type/key/reset go through the X display + Lua cmd file,
+    not the QMP monitor. Keyed on the matrix console/qmp fields."""
+    return c.get("console") == "x11" or not c.get("qmp")
+
+
+def x11_display(c, name):
+    """The X display an x11 tile serves + streamhost captures (SH_X11_DISPLAY)."""
+    tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
+    env = read_env(os.path.join(tile_dir, "tile.env"))
+    return env.get("SH_X11_DISPLAY", ":40")
+
+
+def is_shm_tile(c, name):
+    """Tiles whose emulator publishes frames into a mapping (SH_CAPTURE=shm).
+
+    These run `-video none`: no window, no X server, no QMP. They are a SUBSET
+    of is_x11_tile() — input still goes through the Lua cmd file — so this must
+    be tested FIRST wherever the two dispatch differently."""
+    tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
+    return read_env(os.path.join(tile_dir, "tile.env")).get("SH_CAPTURE") == "shm"
+
+
+def shm_path(c, name):
+    """The framebuffer file a shm tile's emulator publishes into."""
+    tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
+    env = read_env(os.path.join(tile_dir, "tile.env"))
+    return env.get("SH_SHM_PATH", os.path.join(tile_dir, "fb.shm"))
+
+
+def x11_cmd_file(c, name):
+    """The legacy Lua-agent command file. Only a valid input route while the
+    tile runs the Lua agent, i.e. has no ctl socket — the compiled-in mamectl
+    module does not tail this file, so writes there would be silently dead."""
+    tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
+    env = read_env(os.path.join(tile_dir, "tile.env"))
+    return env.get("SH_X11_CMD_FILE", os.path.join(tile_dir, "irix_cmd"))
+
+
+def pause_pidfile(c, name):
+    """The process streamhost's idle auto-pause freezes on a NON-QEMU tile
+    (SH_IDLE_PAUSE_PIDFILE in tile.env), or None. QEMU tiles have no such file:
+    they freeze their vCPUs over the QMP monitor instead."""
+    tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
+    return read_env(os.path.join(tile_dir, "tile.env")).get("SH_IDLE_PAUSE_PIDFILE")
+
+
+def proc_stopped(pidfile):
+    """(pid, is_stopped) for a pidfile, or (None, False) when there is no
+    usable pid. The state comes from /proc, so it is the kernel's answer and
+    not a flag some other process claims to have set."""
+    try:
+        with open(pidfile) as fh:
+            pid = int(fh.read().strip())
+        with open("/proc/%d/stat" % pid) as fh:
+            stat = fh.read()
+    except (OSError, ValueError):
+        return None, False
+    # The state letter is the first field AFTER the ')' closing comm, which may
+    # itself contain spaces and parens. T = stopped, t = trace-stopped.
+    try:
+        state = stat.rsplit(")", 1)[1].split()[0]
+    except IndexError:
+        return pid, False
+    return pid, state in ("T", "t")
+
+
+def ctl_sock(c, name):
+    """The mamectl/1 control socket of the compiled-in MAME ctlsock module
+    (issue #45), or None. tile.env's SH_MAMECTL_SOCK is the live truth — the
+    matrix 'ctl' field is labctl-gen's snapshot of the same var — so an env
+    flip takes effect before the next 'labctl gen'."""
+    tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
+    env = read_env(os.path.join(tile_dir, "tile.env"))
+    return env.get("SH_MAMECTL_SOCK") or c.get("ctl")
+
+
+def mctl_run(sock, verb=None, timeout=None, lines=None):
+    """Shell out to the mamectl/1 client (/root/mctl.py): one request line
+    (verb) or a batch over a single connection (lines, via --stdin). The
+    client's exit discipline passes through unchanged: 0 OK ack / 1 ERR ack /
+    2 badverb|unsupported / 125 channel down."""
+    cmd = ["python3", MCTL, sock]
+    if timeout is not None:
+        cmd += ["--timeout", str(timeout)]
+    if lines is not None:
+        cmd.append("--stdin")
+        return subprocess.run(cmd, input="\n".join(lines) + "\n", capture_output=True, text=True)
+    return subprocess.run(cmd + [verb], capture_output=True, text=True)
+
+
+def cdrv(qmp, *args):
+    return subprocess.run(["python3", CDRV, qmp, *args], capture_output=True, text=True, timeout=30)
+
+
+def hmp(qmp, cmdline, timeout=200):
+    return subprocess.run(["python3", QMP_HMP, qmp, cmdline], capture_output=True, text=True, timeout=timeout)
+
+
+def ensure_running(c, name):
+    """Resume a guest paused by streamhost idle auto-pause (zero viewers), so
+    the operation about to run is not driving a frozen guest.
+
+    Two mechanisms, because the tiles have two: a QEMU tile is stopped over the
+    QMP monitor and thawed with HMP 'cont'; an x11/shm emulator tile has no
+    monitor at all and is SIGSTOPped by pidfile, so it is thawed with SIGCONT
+    (SH_IDLE_PAUSE_PIDFILE — see streamhost/src/idle.rs). Both arms MUST be
+    covered here: a frozen emulator never processes an injected verb and never
+    answers its mamectl socket, so type/sh/exec against one would time out
+    instead of failing honestly.
+
+    Idempotent and best-effort on both arms: on failure we fall through and let
+    the actual operation report its own error. The daemon's reconciler
+    re-asserts the pause within ~60 s of the last visitor either way."""
+    try:
+        if c.get("qmp"):
+            hmp(c["qmp"], "cont", timeout=10)
+            return
+        pidfile = pause_pidfile(c, name)
+        if not pidfile:
+            return
+        pid, stopped = proc_stopped(pidfile)
+        if pid and stopped:
+            os.kill(pid, signal.SIGCONT)
+    except Exception:
+        pass
+
+
+def svc_state(name):
+    r = subprocess.run(["systemctl", "is-active", "streamhost@%s.service" % name], capture_output=True, text=True)
+    return r.stdout.strip() or "unknown"
+
+
+class QmpConn:
+    """One negotiated QMP connection. Kept open so a paced key sequence pays
+    the connect + capabilities handshake once instead of once per keystroke —
+    the whole point of the pacing is that the delay between keys is the value
+    we chose, not whatever the socket setup happened to cost."""
+
+    def __init__(self, path, timeout=3):
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.settimeout(timeout)
+        self.sock.connect(path)
+        self.stream = self.sock.makefile("rwb", buffering=0)
+        self._read(want_greeting=True)
+        self.execute("qmp_capabilities")
+
+    def _read(self, want_greeting=False):
+        for _ in range(64):
+            raw = self.stream.readline()
+            if not raw:
+                raise RuntimeError("QMP EOF")
+            msg = json.loads(raw.decode("utf-8", "replace"))
+            if want_greeting and "QMP" in msg:
+                return msg
+            if "event" in msg and "return" not in msg and "error" not in msg:
+                continue
+            if "error" in msg:
+                raise RuntimeError("QMP error: %s" % msg["error"].get("desc", msg["error"]))
+            if "return" in msg:
+                return msg["return"]
+        raise RuntimeError("QMP reply limit exceeded")
+
+    def execute(self, command, arguments=None):
+        request = {"execute": command}
+        if arguments:
+            request["arguments"] = arguments
+        self.stream.write((json.dumps(request, separators=(",", ":")) + "\n").encode())
+        return self._read()
+
+    def close(self):
+        try:
+            self.sock.close()
+        except OSError:
+            pass
+
+
+def qmp_command(path, command, arguments=None, timeout=3):
+    """Execute one QMP command on a fresh connection. Health uses only the
+    read-only query-status command; the generic helper keeps parsing structured
+    QMP instead of scraping HMP prose."""
+    conn = QmpConn(path, timeout=timeout)
+    try:
+        return conn.execute(command, arguments)
+    finally:
+        conn.close()
+
+
+def read_env(path):
+    """Read simple KEY=VALUE settings without sourcing a tile.env file."""
+    values = {}
+    try:
+        with open(path, errors="replace") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+                    values[key] = value.strip().strip("\"'")
+    except OSError:
+        pass
+    return values
+
+
+def journal_health(name):
+    """Read the daemon's existing systemd journal surface for its current
+    invocation. SESSION_ACCEPTED/SESSION_ENDED are paired by the daemon. The
+    most recent capture/encoder activity record is the available last-damage
+    evidence (the daemon intentionally does not log every damage rectangle)."""
+    state = {
+        "encoder_up": False,
+        "sessions": 0,
+        "last_damage_us": None,
+        "guard_base_mb": None,
+        "guard_mb": None,
+        "journal_error": None,
+    }
+    try:
+        r = subprocess.run(
+            ["journalctl", "-u", "streamhost@%s.service" % name, "-b", "--no-pager", "-o", "json"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        state["journal_error"] = str(exc)
+        return state
+    if r.returncode != 0:
+        state["journal_error"] = r.stderr.strip() or "journalctl failed"
+        return state
+    for raw in r.stdout.splitlines():
+        try:
+            row = json.loads(raw)
+            message = str(row.get("MESSAGE", ""))
+            stamp = int(row.get("__REALTIME_TIMESTAMP", 0)) or None
+        except (ValueError, TypeError):
+            continue
+        if message.startswith("[streamhost] tile="):
+            state.update(encoder_up=False, sessions=0, last_damage_us=None, guard_base_mb=None, guard_mb=None)
+        if message == "[streamhost] encoder up":
+            state["encoder_up"] = True
+            if stamp:
+                state["last_damage_us"] = stamp
+        if "SESSION_ACCEPTED" in message or "WebRTC session lease started" in message:
+            state["sessions"] += 1
+        elif "SESSION_ENDED" in message or "WebRTC session lease ended" in message:
+            state["sessions"] = max(0, state["sessions"] - 1)
+        if (
+            message.startswith("[encode] enc latency")
+            or message.startswith("[capture] Scanout")
+            or message.startswith("[capture] v1 Scanout")
+        ) and stamp:
+            state["last_damage_us"] = stamp
+        match = re.search(r"rss-guard ON: qemu pid=\d+ anon=(\d+) MB, trip at \+(\d+) MB", message)
+        if match:
+            state["guard_base_mb"] = int(match.group(1))
+            state["guard_mb"] = int(match.group(2))
+        match = re.search(r"low-water re-?baselined at (\d+) MB", message)
+        if match:
+            state["guard_base_mb"] = int(match.group(1))
+    return state
+
+
+def proc_rss_mb(tile_dir):
+    try:
+        with open(os.path.join(tile_dir, "qemu.pid")) as f:
+            pid = int(f.read().strip())
+        values = {}
+        with open("/proc/%d/status" % pid) as f:
+            for line in f:
+                if line.startswith(("RssAnon:", "VmRSS:")):
+                    key, raw = line.split(":", 1)
+                    values[key] = int(raw.strip().split()[0]) / 1024.0
+        return pid, values.get("RssAnon"), values.get("VmRSS")
+    except (OSError, ValueError, IndexError):
+        return None, None, None
+
+
+def age_text(seconds):
+    if seconds is None:
+        return "?"
+    seconds = max(0, int(seconds))
+    if seconds < 60:
+        return "%ds" % seconds
+    if seconds < 3600:
+        return "%dm%02ds" % divmod(seconds, 60)
+    hours, rest = divmod(seconds, 3600)
+    return "%dh%02dm" % (hours, rest // 60)
+
+
+def tile_health(name, c):
+    service = svc_state(name)
+    log = journal_health(name)
+    qemu = "unknown"
+    qmp_error = None
+    x11 = is_x11_tile(c)
+    if x11:
+        # No QEMU/QMP: query-status is not applicable. Health is service+encoder.
+        # Idle auto-pause still applies though — it SIGSTOPs the emulator here —
+        # and a frozen exhibit reads as a dead one to anyone who cannot see the
+        # difference, so report it. Read-only: this must never thaw anything.
+        qemu = "x11"
+        pidfile = pause_pidfile(c, name)
+        if pidfile and proc_stopped(pidfile)[1]:
+            qemu = "x11 (paused)"
+    else:
+        try:
+            answer = qmp_command(c["qmp"], "query-status")
+            qemu = answer.get("status", "unknown") if isinstance(answer, dict) else "unknown"
+        except Exception as exc:
+            qmp_error = str(exc)
+    env = read_env(os.path.join(c.get("dir", os.path.join(TILES_DIR, name)), "tile.env"))
+    guard_mb = log["guard_mb"]
+    if guard_mb is None:
+        try:
+            guard_mb = int(env.get("SH_QEMU_RSS_GUARD_MB", "2048"))
+        except ValueError:
+            guard_mb = 2048
+    pid, anon_mb, rss_mb = proc_rss_mb(c.get("dir", os.path.join(TILES_DIR, name)))
+    base_mb = log["guard_base_mb"]
+    trip_mb = (base_mb + guard_mb) if base_mb is not None and guard_mb else None
+    headroom_mb = (trip_mb - anon_mb) if trip_mb is not None and anon_mb is not None else None
+    stamp = log["last_damage_us"]
+    damage_age = (time.time() - stamp / 1_000_000.0) if stamp else None
+    encoder = bool(service == "active" and log["encoder_up"])
+    healthy = bool(service == "active" and encoder and qemu != "unknown")
+    if headroom_mb is not None and headroom_mb < 0:
+        healthy = False
+    return {
+        "tile": name,
+        "service": service,
+        "sessions": log["sessions"],
+        "encoder_up": encoder,
+        "last_damage_age_s": (round(damage_age, 1) if damage_age is not None else None),
+        "qemu_status": qemu,
+        "paused": qemu in ("paused", "x11 (paused)"),
+        "idle": log["sessions"] == 0,
+        "qemu_pid": pid,
+        "qemu_rss_anon_mb": (round(anon_mb, 1) if anon_mb is not None else None),
+        "qemu_rss_mb": (round(rss_mb, 1) if rss_mb is not None else None),
+        "rss_guard_base_mb": base_mb,
+        "rss_guard_growth_mb": guard_mb,
+        "rss_guard_trip_mb": trip_mb,
+        "rss_guard_headroom_mb": (round(headroom_mb, 1) if headroom_mb is not None else None),
+        "healthy": healthy,
+        "qmp_error": qmp_error,
+        "journal_error": log["journal_error"],
+    }
+
+
+# ---- PPM -> PNG (robust: PIL, then pnmtopng, then ffmpeg) -------------------
+def ppm_to_png(ppm, png):
+    try:
+        from PIL import Image
+
+        Image.open(ppm).save(png)
+        return
+    except Exception:
+        pass
+    if shutil.which("pnmtopng"):
+        with open(png, "wb") as out:
+            if subprocess.run(["pnmtopng", ppm], stdout=out, stderr=subprocess.DEVNULL).returncode == 0:
+                return
+    if shutil.which("ffmpeg"):
+        if (
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", ppm, png], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            ).returncode
+            == 0
+        ):
+            return
+    raise RuntimeError("no PPM->PNG converter worked (PIL/pnmtopng/ffmpeg)")
+
+
+# ---- subcommands -----------------------------------------------------------
+def cmd_ls(argv):
+    m = load_matrix()
+    tiles = m.get("tiles", {})
+    hdr = "%-13s %-6s %-6s %-6s %-6s %-4s %-7s %-9s %s" % (
+        "TILE",
+        "PTR",
+        "WARPD",
+        "SSH",
+        "EXEC",
+        "CON",
+        "GOLDEN",
+        "SERVICE",
+        "NOTES",
+    )
+    print(hdr)
+    print("-" * len(hdr))
+    for name in sorted(tiles):
+        c = tiles[name]
+        g = (
+            "cold"
+            if c.get("reset_mode") == "restart"
+            else {True: "yes", False: "NO", None: "?"}.get(c.get("golden_snapshot"))
+        )
+        note = c.get("notes", "")
+        if len(note) > 46:
+            note = note[:43] + "..."
+        print(
+            "%-13s %-6s %-6s %-6s %-6s %-4s %-7s %-9s %s"
+            % (
+                name,
+                c.get("pointer_mode", "?"),
+                c.get("warpd_port") or "-",
+                c.get("ssh_port") or "-",
+                c.get("exec_port") or ("serial" if c.get("exec_kind") == "serial_e" else "-"),
+                c.get("console", "?"),
+                g,
+                svc_state(name),
+                note,
+            )
+        )
+
+
+def rss_summary(h):
+    current = h["qemu_rss_anon_mb"]
+    growth = h["rss_guard_growth_mb"]
+    trip = h["rss_guard_trip_mb"]
+    if current is None:
+        return "?"
+    if not growth:
+        return "%.0f/off" % current
+    if trip is None:
+        return "%.0f/+%s" % (current, growth)
+    return "%.0f/%.0f" % (current, trip)
+
+
+def cmd_health(argv):
+    """Read-only fleet health. It never calls ensure_running and all QMP
+    interaction is query-status."""
+    json_mode = False
+    names = []
+    for arg in argv:
+        if arg == "--json":
+            json_mode = True
+        elif arg.startswith("-"):
+            die("usage: labctl health [<tile>] [--json]")
+        else:
+            names.append(arg)
+    if len(names) > 1:
+        die("usage: labctl health [<tile>] [--json]")
+    matrix = load_matrix().get("tiles", {})
+    if names:
+        name = names[0]
+        if name not in matrix:
+            tile_conf(name)  # emits the canonical unknown-tile error
+        rows = [tile_health(name, matrix[name])]
+    else:
+        rows = [tile_health(name, matrix[name]) for name in sorted(matrix)]
+    if json_mode:
+        print(json.dumps(rows[0] if names else {"tiles": rows}, sort_keys=True))
+    elif names:
+        h = rows[0]
+        print("Tile:              %s" % h["tile"])
+        print("Service:           %s" % h["service"])
+        print("Client sessions:   %s" % h["sessions"])
+        print("Idle:              %s" % ("yes (zero sessions)" if h["idle"] else "no"))
+        print("Encoder:           %s" % ("up" if h["encoder_up"] else "DOWN/unknown"))
+        print("Last damage*:      %s ago" % age_text(h["last_damage_age_s"]))
+        print("QEMU state:        %s%s" % (h["qemu_status"], " (idle-paused)" if h["paused"] and h["idle"] else ""))
+        print("QEMU RSS anon:     %s MiB" % (h["qemu_rss_anon_mb"] if h["qemu_rss_anon_mb"] is not None else "?"))
+        if h["rss_guard_growth_mb"] == 0:
+            print("RSS guard:         disabled (SH_QEMU_RSS_GUARD_MB=0)")
+        else:
+            base = h["rss_guard_base_mb"]
+            trip = h["rss_guard_trip_mb"]
+            headroom = h["rss_guard_headroom_mb"]
+            if base is None:
+                print("RSS guard:         +%s MiB growth (baseline unavailable)" % h["rss_guard_growth_mb"])
+            else:
+                print(
+                    "RSS guard:         base %s + %s = %s MiB trip; %s MiB headroom"
+                    % (base, h["rss_guard_growth_mb"], trip, headroom)
+                )
+        print("Overall:           %s" % ("HEALTHY" if h["healthy"] else "UNHEALTHY"))
+        print("* age of the daemon's latest capture/encoder activity record; individual")
+        print("  damage rectangles are intentionally not journaled")
+        if h["qmp_error"]:
+            print("QMP error:          %s" % h["qmp_error"])
+        if h["journal_error"]:
+            print("Journal error:      %s" % h["journal_error"])
+    else:
+        hdr = "%-13s %-9s %4s %-7s %-9s %-14s %-10s %s" % (
+            "TILE",
+            "SERVICE",
+            "SESS",
+            "ENCODER",
+            "DAMAGE*",
+            "QEMU",
+            "RSS/TRIP",
+            "HEALTH",
+        )
+        print(hdr)
+        print("-" * len(hdr))
+        for h in rows:
+            qemu = h["qemu_status"]
+            if h["idle"]:
+                qemu = "idle/%s" % qemu
+            else:
+                qemu = "active/%s" % qemu
+            print(
+                "%-13s %-9s %4s %-7s %-9s %-14s %-10s %s"
+                % (
+                    h["tile"],
+                    h["service"],
+                    h["sessions"],
+                    "up" if h["encoder_up"] else "DOWN",
+                    age_text(h["last_damage_age_s"]),
+                    qemu,
+                    rss_summary(h),
+                    "ok" if h["healthy"] else "FAIL",
+                )
+            )
+        print("* latest daemon capture/encoder activity; RSS/TRIP is QEMU RssAnon MiB")
+    if any(not row["healthy"] for row in rows):
+        sys.exit(1)
+
+
+def capture_png(name, c, out, resume):
+    if resume:
+        ensure_running(c, name)
+    ppm = os.path.join(os.path.dirname(out), ".labctl-%s-%d.ppm" % (name, os.getpid()))
+    r = cdrv(c["qmp"], "dump", ppm)
+    if r.returncode != 0 or not os.path.exists(ppm):
+        raise RuntimeError("screendump failed: %s" % (r.stderr.strip() or r.stdout.strip() or "no PPM produced"))
+    try:
+        ppm_to_png(ppm, out)
+    finally:
+        try:
+            os.remove(ppm)
+        except OSError:
+            pass
+
+
+def capture_png_x11(name, c, out):
+    """Screendump an x11-capture tile via x11spike (GetImage on the X root of
+    SH_X11_DISPLAY) -> PPM -> PNG. No QMP, no cont/resume."""
+    if not os.path.exists(X11SPIKE):
+        raise RuntimeError("x11spike not found at %s (set LABCTL_X11SPIKE)" % X11SPIKE)
+    disp = x11_display(c, name)
+    ppm = os.path.join(os.path.dirname(out) or ".", ".labctl-%s-%d.ppm" % (name, os.getpid()))
+    env = dict(os.environ, DISPLAY=disp)
+    r = subprocess.run([X11SPIKE, "capture", ppm], capture_output=True, text=True, env=env, timeout=30)
+    if r.returncode != 0 or not os.path.exists(ppm):
+        raise RuntimeError("x11spike capture failed: %s" % (r.stderr.strip() or r.stdout.strip() or "no PPM"))
+    try:
+        ppm_to_png(ppm, out)
+    finally:
+        try:
+            os.remove(ppm)
+        except OSError:
+            pass
+
+
+def capture_png_shm(name, c, out):
+    """Screendump a shm-capture tile by reading the framebuffer its emulator
+    publishes (SH_SHM_PATH) -> PPM -> PNG. No QMP, no X server, no window.
+
+    Dispatching this to the x11 path instead does not fail — x11spike happily
+    captures the tile's unused SH_X11_DISPLAY and returns an all-black image
+    with exit 0. That silent wrong answer is what this backend fixes."""
+    fb = shm_path(c, name)
+    ppm = os.path.join(os.path.dirname(out) or ".", ".labctl-%s-%d.ppm" % (name, os.getpid()))
+    r = subprocess.run(["python3", SHMSHOT, fb, ppm], capture_output=True, text=True, timeout=30)
+    if r.returncode != 0 or not os.path.exists(ppm):
+        raise RuntimeError("shm capture failed: %s" % (r.stderr.strip() or r.stdout.strip() or "no PPM"))
+    try:
+        ppm_to_png(ppm, out)
+    finally:
+        try:
+            os.remove(ppm)
+        except OSError:
+            pass
+
+
+def capture_png_any(name, c, out, resume):
+    """Screendump via whichever backend the tile actually uses.
+
+    One dispatcher so `shot` and `assert` cannot drift apart — `assert` used to
+    call the QMP path unconditionally, which cannot work on a tile that has no
+    QMP monitor."""
+    # A frozen guest's last frame IS its current screen, on either mechanism, so
+    # `resume` stays the caller's choice rather than a requirement here: the
+    # assert path deliberately passes False to compare two frames without
+    # waking anything.
+    if resume:
+        ensure_running(c, name)
+    if is_shm_tile(c, name):
+        capture_png_shm(name, c, out)
+    elif is_x11_tile(c):
+        capture_png_x11(name, c, out)
+    else:
+        capture_png(name, c, out, resume=False)
+
+
+def cmd_shot(argv):
+    if not argv:
+        die("usage: labctl shot <tile> [out.png]")
+    name = argv[0]
+    c = tile_conf(name)
+    out = argv[1] if len(argv) > 1 else "/tmp/%s.png" % name
+    if not out.endswith(".png"):
+        out += ".png"
+    try:
+        capture_png_any(name, c, out, resume=True)
+    except (RuntimeError, subprocess.TimeoutExpired) as exc:
+        die(str(exc))
+    print(out)
+
+
+def vision_python():
+    override = os.environ.get("LABCTL_VISION_PYTHON")
+    candidates = [override] if override else []
+    candidates += [os.path.join(VISION_DIR, ".venv", "bin", "python"), sys.executable]
+    for path in candidates:
+        if path and os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    die("no Python interpreter for install-vision; run scripts/install-vision/install.sh")
+
+
+def run_vision(script, args):
+    path = os.path.join(VISION_DIR, script)
+    if not os.path.isfile(path):
+        die("install-vision primitive missing: %s" % path)
+    try:
+        return subprocess.run([vision_python(), path, *args], capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        die("install-vision %s timed out" % script)
+
+
+def cmd_assert(argv):
+    if len(argv) < 2:
+        die("usage: labctl assert <tile> --text <s> | --template <png> | --settle")
+    name = argv[0]
+    c = tile_conf(name)
+    mode = argv[1]
+    if mode in ("--text", "--template"):
+        if len(argv) != 3 or not argv[2]:
+            die("usage: labctl assert <tile> %s <value>" % mode)
+        value = argv[2]
+    elif mode == "--settle":
+        if len(argv) != 2:
+            die("usage: labctl assert <tile> --settle")
+        value = None
+    else:
+        die("usage: labctl assert <tile> --text <s> | --template <png> | --settle")
+
+    # HARD READ-ONLY invariant: unlike shot/type/exec, assert must not call
+    # ensure_running. A QMP screendump of a paused guest reads its current VGA
+    # surface without cont, reset, or input injection.
+    with tempfile.TemporaryDirectory(prefix="labctl-assert-%s-" % name) as work:
+        first = os.path.join(work, "frame-a.png")
+        try:
+            capture_png_any(name, c, first, resume=False)
+        except (RuntimeError, subprocess.TimeoutExpired) as exc:
+            die(str(exc))
+        if mode == "--text":
+            result = run_vision("find_text.py", [first, value])
+        elif mode == "--template":
+            if not os.path.isfile(value):
+                die("template not found: %s" % value)
+            result = run_vision("find_template.py", [first, value])
+        else:
+            result = None
+            for attempt in range(1, 6):
+                time.sleep(1)
+                second = os.path.join(work, "frame-b.png")
+                try:
+                    capture_png_any(name, c, second, resume=False)
+                except (RuntimeError, subprocess.TimeoutExpired) as exc:
+                    die(str(exc))
+                result = run_vision("settle.py", [first, second])
+                if result.returncode == 0:
+                    break
+                os.replace(second, first)
+            assert result is not None
+        if result.stdout:
+            sys.stdout.write(result.stdout)
+        if result.returncode != 0:
+            detail = result.stderr.strip()
+            if detail:
+                sys.stderr.write(detail + "\n")
+            sys.exit(result.returncode)
+
+
+def x11_cmd_append(c, name, lines):
+    """Append Lua-agent commands (POST/CODE/CLICK1/...) to an x11 tile's cmd
+    file; the in-emulator agent consumes+truncates them."""
+    path = x11_cmd_file(c, name)
+    try:
+        with open(path, "a") as f:
+            for line in lines:
+                f.write(line + "\n")
+    except OSError as exc:
+        die("cannot write x11 cmd file %s: %s" % (path, exc))
+
+
+def x11_cmd_send(c, name, lines):
+    """Deliver agent-syntax input lines (POST/CODE/CLICK1/... — the mamectl
+    module parses the same command language as the Lua agent) to an x11 tile.
+    Socket-first: with a ctl socket the module is the ONLY injector and does
+    not tail the cmd file, so a file append there would be silently dead —
+    failures stay loud instead of falling back. The file append remains the
+    route only for tiles without a ctl socket (Lua-agent arm). Returns the
+    route taken, for user messages."""
+    sock = ctl_sock(c, name)
+    if not sock:
+        x11_cmd_append(c, name, lines)
+        return "x11 Lua agent cmd file"
+    r = mctl_run(sock, lines=lines)
+    if r.returncode:
+        detail = (r.stderr or "").strip() or (r.stdout or "").strip() or "no detail"
+        die("mamectl input via %s failed:\n%s" % (sock, detail), code=r.returncode)
+    return "mamectl socket"
+
+
+# --- paced keystroke delivery -------------------------------------------------
+#
+# An emulator samples its keyboard ports ONCE PER EMULATED FRAME. What has to
+# survive a frame is therefore the RELEASE->PRESS GAP between successive keys,
+# not the key hold: with no gap the guest sees one continuous press and the
+# second key never registers. Measured on mpf2 (MAME, 60 Hz) typing 16 keys:
+# gap 0 ms -> 0/16 landed, 8 ms -> 4/16, 12 ms -> 12/16, 16 ms (one frame) ->
+# 16/16. streamhost already solves this for the browser stream path with the
+# per-tile SH_KEY_MIN_HOLD_MS / SH_KEY_MIN_GAP_MS knobs (mpf2 32/32,
+# amstradcpc 40/40 for its 50 Hz scan); labctl drives QMP directly and used to
+# bypass them entirely, so `labctl type mpf2 "PRINT 123456"` printed
+# "ok: typed 12 chars" while the guest received "343456".
+#
+# So: where the tile declares those knobs, honour them here — QMP send-key's
+# own hold-time argument for the hold, a real sleep for the gap. Where a tile
+# declares nothing, behaviour is unchanged (the cdrv.py route).
+PLAIN_QCODE = {
+    " ": "spc",
+    "\n": "ret",
+    "\t": "tab",
+    "-": "minus",
+    "=": "equal",
+    "[": "bracket_left",
+    "]": "bracket_right",
+    "\\": "backslash",
+    ";": "semicolon",
+    "'": "apostrophe",
+    "`": "grave_accent",
+    ",": "comma",
+    ".": "dot",
+    "/": "slash",
+}
+SHIFT_QCODE = {
+    "!": "1",
+    "@": "2",
+    "#": "3",
+    "$": "4",
+    "%": "5",
+    "^": "6",
+    "&": "7",
+    "*": "8",
+    "(": "9",
+    ")": "0",
+    "_": "minus",
+    "+": "equal",
+    "{": "bracket_left",
+    "}": "bracket_right",
+    "|": "backslash",
+    ":": "semicolon",
+    '"': "apostrophe",
+    "~": "grave_accent",
+    "<": "comma",
+    ">": "dot",
+    "?": "slash",
+}
+
+
+def key_pacing(c, name):
+    """(hold_ms, gap_ms) declared by the tile, or (None, None) when it declares
+    nothing. Source of truth is the live tile.env — the same file the daemon
+    reads — so labctl and the stream path cannot drift apart."""
+    tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
+    env = read_env(os.path.join(tile_dir, "tile.env"))
+
+    def ms(key):
+        raw = env.get(key)
+        if raw in (None, ""):
+            return None
+        try:
+            return max(0, int(raw))
+        except ValueError:
+            return None
+
+    return ms("SH_KEY_MIN_HOLD_MS"), ms("SH_KEY_MIN_GAP_MS")
+
+
+def key_remap(c, name):
+    """Per-tile guest-char -> host-char remap, for keyboards whose layout does
+    not match a PC one (the MPF-II puts '=' on Shift+O and '-' on Shift+I, and
+    its shifted number row is offset by one key). Declared as tile.env
+    SH_KEY_MAP="=:O,-:I,+:P" or as a 'key_map' object in the tiles.json entry;
+    absent on every tile today, so nothing is remapped unless it is declared."""
+    tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
+    raw = read_env(os.path.join(tile_dir, "tile.env")).get("SH_KEY_MAP")
+    mapping = {}
+    if isinstance(c.get("key_map"), dict):
+        mapping.update({str(k): str(v) for k, v in c["key_map"].items()})
+    for pair in (raw or "").split(","):
+        if ":" in pair:
+            guest, host = pair.split(":", 1)
+            if guest and host:
+                mapping[guest] = host
+    return mapping
+
+
+def char_chord(ch):
+    """The qcode chord that produces one character on a PC layout, or None."""
+    if ch.isalpha() and ch.isupper():
+        return ["shift", ch.lower()]
+    if (ch.isalpha() or ch.isdigit()) and ch.isascii():
+        return [ch.lower()]
+    if ch in PLAIN_QCODE:
+        return [PLAIN_QCODE[ch]]
+    if ch in SHIFT_QCODE:
+        return ["shift", SHIFT_QCODE[ch]]
+    return None
+
+
+def text_chords(text, mapping):
+    """Chords for a string. Unmappable characters are a hard error rather than
+    the silent substitution the old path did — a keystroke that cannot be sent
+    must not be reported as sent."""
+    chords, bad = [], []
+    for ch in text:
+        chord = char_chord(mapping.get(ch, ch))
+        if chord is None:
+            bad.append(ch)
+        else:
+            chords.append(chord)
+    if bad:
+        die("cannot map character(s) %s to a key chord" % " ".join(repr(b) for b in bad))
+    return chords
+
+
+def send_chords_paced(qmp, chords, hold_ms, gap_ms):
+    """Send chords over ONE QMP connection, holding each for hold_ms and
+    leaving gap_ms of released keyboard between them."""
+    conn = QmpConn(qmp, timeout=10)
+    try:
+        for index, chord in enumerate(chords):
+            args = {"keys": [{"type": "qcode", "data": q} for q in chord]}
+            if hold_ms:
+                args["hold-time"] = hold_ms
+            conn.execute("send-key", args)
+            if gap_ms and index != len(chords) - 1:
+                time.sleep(gap_ms / 1000.0)
+    finally:
+        conn.close()
+
+
+def looks_like_emulator_bridge(c, name):
+    """Tiles whose keystrokes end up inside an EMULATOR (a MAME/emulator bridge
+    guest, or an x11/shm emulator tile) — the ones where an unpaced burst is
+    silently swallowed by the emulated input scan."""
+    if is_x11_tile(c):
+        return True
+    haystack = " ".join(str(c.get(k) or "") for k in ("dir", "exec_key", "notes"))
+    return "bridge" in haystack.lower()
+
+
+def warn_unpaced(c, name):
+    if looks_like_emulator_bridge(c, name):
+        sys.stderr.write(
+            "labctl: WARNING — %s declares no SH_KEY_MIN_HOLD_MS/SH_KEY_MIN_GAP_MS "
+            "in its tile.env, and it drives an emulator that samples its keyboard "
+            "once per emulated frame. Keys sent back-to-back CAN be silently "
+            "dropped or merged, so a success line here is NOT proof the guest got "
+            "the text — verify with 'labctl shot %s'.\n" % (name, name)
+        )
+
+
+def type_text(c, name, text, trailing=None):
+    """Type text (optionally plus a trailing chord, e.g. ret) with the tile's
+    declared pacing, falling back to the historical cdrv route when the tile
+    declares none. Returns a short description of the route taken."""
+    hold_ms, gap_ms = key_pacing(c, name)
+    if hold_ms is None and gap_ms is None:
+        warn_unpaced(c, name)
+        r = cdrv(c["qmp"], "sh" if trailing == ["ret"] else "type", text)
+        if r.returncode != 0:
+            die("type failed: %s" % r.stderr.strip())
+        return "unpaced QMP send-key (tile declares no pacing)"
+    chords = text_chords(text, key_remap(c, name))
+    if trailing:
+        chords.append(trailing)
+    try:
+        send_chords_paced(c["qmp"], chords, hold_ms, gap_ms)
+    except (OSError, RuntimeError) as exc:
+        die("type failed: %s" % exc)
+    return "paced QMP send-key (hold %sms, gap %sms)" % (hold_ms or 0, gap_ms or 0)
+
+
+def cmd_type(argv):
+    if len(argv) < 2:
+        die('usage: labctl type <tile> "<text>" [--verify]')
+    verify = "--verify" in argv[2:]
+    name = argv[0]
+    c = tile_conf(name)
+    ensure_running(c, name)
+    if is_x11_tile(c):
+        warn_unpaced(c, name)
+        route = x11_cmd_send(c, name, ["POST " + argv[1]])
+        print("ok: queued POST (%d chars) to %s via the %s" % (len(argv[1]), name, route))
+        return
+    route = type_text(c, name, argv[1])
+    print("ok: typed %d chars into %s via %s" % (len(argv[1]), name, route))
+    if verify:
+        shot = "/tmp/%s-type-verify.png" % name
+        time.sleep(1.0)
+        cmd_shot([name, shot])
+
+
+# QMP qcode -> MAME natkeyboard coded token, for the x11/mamectl CODE route.
+# Only keys natkeyboard expresses as one coded token; modifier chords have no
+# coded form (raw matrix edges: labctl mctl <tile> "KEY <0|1> <port> <field>").
+X11_KEY_CODES = {
+    "ret": "{ENTER}",
+    "kp_enter": "{ENTER}",
+    "esc": "{ESC}",
+    "tab": "{TAB}",
+    "backspace": "{BACKSPACE}",
+    "spc": "{SPACE}",
+    "delete": "{DEL}",
+    "insert": "{INS}",
+    "up": "{UP}",
+    "down": "{DOWN}",
+    "left": "{LEFT}",
+    "right": "{RIGHT}",
+    "home": "{HOME}",
+    "end": "{END}",
+    "pgup": "{PGUP}",
+    "pgdn": "{PGDN}",
+}
+X11_KEY_CODES.update({"f%d" % n: "{F%d}" % n for n in range(1, 13)})
+
+
+def cmd_key(argv):
+    if len(argv) < 2:
+        die("usage: labctl key <tile> <qcode> [qcode ...]   (e.g. ctrl c ; or: ret)")
+    name = argv[0]
+    c = tile_conf(name)
+    ensure_running(c, name)
+    if is_x11_tile(c):
+        keys = argv[1:]
+        if len(keys) == 1 and keys[0] in X11_KEY_CODES and ctl_sock(c, name):
+            route = x11_cmd_send(c, name, ["CODE " + X11_KEY_CODES[keys[0]]])
+            print("ok: sent %s to %s via the %s" % (X11_KEY_CODES[keys[0]], name, route))
+            return
+        die(
+            "x11 tile '%s' has no QMP send-key. Single mappable qcodes (%s) go "
+            "over the mamectl socket when the tile has one; anything else routes "
+            'by hand: labctl mctl %s "CODE {ENTER}" / "KEY <0|1> <port> <field>" '
+            "(KEYDUMP lists ports), or the Lua cmd file (%s) on the rollback arm. "
+            "'labctl type %s \"<text>\"' does POST for you."
+            % (name, " ".join(sorted(X11_KEY_CODES)), name, x11_cmd_file(c, name), name)
+        )
+    keys = argv[1:]
+    hold_ms, gap_ms = key_pacing(c, name)
+    if hold_ms is None and gap_ms is None:
+        r = cdrv(c["qmp"], "key", *keys)
+        if r.returncode != 0:
+            die("key failed: %s" % r.stderr.strip())
+    else:
+        # One chord: the hold is what matters (the emulator must sample the
+        # port while the key is down). The gap still applies after it, so a
+        # following key from the next labctl invocation is not merged in.
+        try:
+            send_chords_paced(c["qmp"], [keys], hold_ms, gap_ms)
+            if gap_ms:
+                time.sleep(gap_ms / 1000.0)
+        except (OSError, RuntimeError) as exc:
+            die("key failed: %s" % exc)
+    print("ok: sent key chord [%s] to %s" % (" ".join(keys), argv[0]))
+
+
+def cmd_sh(argv):
+    if len(argv) < 2:
+        die('usage: labctl sh <tile> "<cmd>"')
+    name = argv[0]
+    c = tile_conf(name)
+    ensure_running(c, name)
+    if is_x11_tile(c):
+        route = x11_cmd_send(c, name, ["POST " + argv[1], "CODE {ENTER}"])
+        sys.stderr.write(
+            "labctl: WARNING — x11 'sh' is BLIND: it POSTs the line + Enter through "
+            "natkeyboard (%s) with NO stdout/exit capture. For real captured "
+            "output use 'labctl exec %s ...' where a channel exists.\n" % (route, name)
+        )
+        print("ok: POSTed shell line + Enter into %s (blind, via the %s)" % (name, route))
+        return
+    type_text(c, name, argv[1], trailing=["ret"])
+    sys.stderr.write(
+        "labctl: WARNING — 'sh' is BLIND: it types the line into the guest "
+        "console and presses Enter, but captures NO stdout/exit code. For real "
+        "captured output use 'labctl exec %s ...' where a channel exists "
+        "(see 'labctl ls' EXEC column).\n" % name
+    )
+    print("ok: typed shell line into %s console (blind)" % name)
+
+
+GEXEC = "/root/gexec.py"
+IRIXEXEC = os.environ.get("LABCTL_IRIXEXEC", "/root/irixexec.py")
+
+
+def cmd_exec(argv):
+    if len(argv) < 2:
+        die('usage: labctl exec <tile> "<cmd>"')
+    name = argv[0]
+    c = tile_conf(name)
+    # Every exec channel — in-guest ssh/warpd on a QEMU tile, the emulated
+    # serial line on an x11 one — needs the guest actually executing.
+    ensure_running(c, name)
+    cmdline = argv[1]
+    kind = c.get("exec_kind")
+    port = c.get("exec_port")
+    if kind == "serial_e":
+        # irix: irixser/2 to the in-guest agent over MAME's -ioc2:rs232a pty.
+        # There is no port — the client scrapes the pty out of MAME's fd table,
+        # which is authoritative across relaunches. Extra argv is passed through
+        # so operators can reach --detach / --fast / --timeout.
+        r = subprocess.run(["python3", IRIXEXEC, c["dir"], cmdline, *argv[2:]])
+        sys.exit(r.returncode)
+    if kind == "warpd_e" and port:
+        # real captured exec over warpd's 'E' verb (gexec.py frames the reply and
+        # exits with the guest's exit code)
+        r = subprocess.run(["python3", GEXEC, str(port), cmdline])
+        sys.exit(r.returncode)
+    if kind == "ssh" and port:
+        user = c.get("exec_user") or "root"
+        key = c.get("exec_key")
+        cmd = [
+            "ssh",
+            "-p",
+            str(port),
+            "-o",
+            "StrictHostKeyChecking=no",
+            "-o",
+            "UserKnownHostsFile=/dev/null",
+            "-o",
+            "ConnectTimeout=10",
+        ]
+        if key:
+            cmd += ["-i", key]
+        cmd += ["%s@127.0.0.1" % user, cmdline]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        sys.stdout.write(r.stdout)
+        if r.stderr:
+            sys.stderr.write(r.stderr)
+        sys.exit(r.returncode)
+    # no wired exec channel — print tile-specific alternatives
+    alt = [
+        "This tile has NO exec channel (no live ssh; warpd is a fire-and-forget pointer agent with no exec/E verb).",
+        "Alternatives:",
+        '  * labctl sh %s "<cmd>"   (BLIND — types into console, no capture)' % name,
+    ]
+    if name == "solariscde":
+        alt.append(
+            "  * labctl clone solariscde <N>  then: ssh -p $((2300+N)) root@127.0.0.1 '<cmd>'  (clone has ssh 22)"
+        )
+    alt.append(
+        "  * to add a live ssh channel safely: qmp_hmp.py <qmp> "
+        "'hostfwd_add net0 tcp:127.0.0.1:<port>-:22' (adds to the "
+        "EXISTING -netdev user; does NOT change the device set) — "
+        "requires sshd running in the guest."
+    )
+    die("\n".join(alt))
+
+
+def cmd_reset(argv):
+    if not argv:
+        die("usage: labctl reset <tile>")
+    name = argv[0]
+    c = tile_conf(name)
+    # x11 relaunch: a service restart runs ExecStop (stop-tile-x11 kills MAME+Xvfb
+    # by pidfile) then ExecStartPre (ensure-tile-x11 relaunches a pristine Xvfb+
+    # MAME) synchronously before ExecStart, so no QMP wait — the runtime is up
+    # when systemctl returns.
+    if c.get("reset_mode") == "relaunch" or (is_x11_tile(c) and c.get("reset_mode") != "restart"):
+        # mamectl-first: with a ctl socket and a baked savestate (IRIX_STATE is
+        # the launcher's own restore name) reset is an in-place "LOADST <name>"
+        # — ~5 s, no Xvfb+MAME relaunch. The ack is COMPLETION of a ~12 s
+        # worst-case stop-the-world load, hence timeout 60. Fall back to the
+        # relaunch ONLY on a downed channel (exit 125); an ERR ack is a real
+        # failure and stays loud.
+        sock = ctl_sock(c, name)
+        tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
+        state = read_env(os.path.join(tile_dir, "tile.env")).get("IRIX_STATE")
+        if sock and state:
+            r = mctl_run(sock, verb="LOADST " + state, timeout=60)
+            if r.returncode == 0:
+                print("ok: %s restored to '%s' savestate (mamectl LOADST)" % (name, state))
+                return
+            if r.returncode != 125:
+                die("reset failed (mamectl LOADST %s):\n%s" % (state, (r.stderr or r.stdout).strip()), code=1)
+            sys.stderr.write("labctl: mamectl socket down (%s) — falling back to relaunch\n" % sock)
+        unit = "streamhost@%s.service" % name
+        r = subprocess.run(["systemctl", "restart", unit], capture_output=True, text=True)
+        if r.returncode:
+            die("reset failed (x11 relaunch):\n%s" % (r.stderr or r.stdout).strip())
+        print("ok: %s relaunched through %s (pristine RAM overlay)" % (name, unit))
+        return
+    if c.get("reset_mode") == "restart":
+        unit = "streamhost@%s.service" % name
+        r = subprocess.run(["systemctl", "restart", unit], capture_output=True, text=True)
+        if r.returncode:
+            die("reset failed (cold service restart):\n%s" % (r.stderr or r.stdout).strip())
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
+            if os.path.exists(c["qmp"]):
+                print("ok: %s cold-restarted through %s" % (name, unit))
+                return
+            time.sleep(0.5)
+        die("reset failed: %s restarted but QMP did not return" % unit)
+    if c.get("golden_snapshot") is False:
+        die("tile '%s' has NO 'golden' snapshot — it boots cold; 'reset' cannot restore it. (see tiles.json)" % name)
+    # Resume first: loadvm works on a paused guest but would leave it paused;
+    # cont-then-loadvm guarantees the restored golden state is RUNNING.
+    ensure_running(c, name)
+    r = hmp(c["qmp"], "loadvm golden")
+    out = (r.stdout or "") + (r.stderr or "")
+    # HMP loadvm prints nothing on success; any 'Error'/'no such' means failure.
+    if re.search(r"[Ee]rror|no such|does not|Device", out):
+        die("reset failed:\n%s" % out.strip())
+    print("ok: %s restored to golden snapshot (loadvm golden)" % name)
+
+
+def cmd_mctl(argv):
+    """Raw mamectl/1 verb passthrough for tiles with a ctl socket. The client's
+    output and exit discipline (0/1/2/125) stream through untouched; per-ack
+    timeout matters for SAVEST/LOADST (completion acks, use --timeout 60+)."""
+    usage = 'usage: labctl mctl <tile> "<verb line>" [--timeout S]'
+    if len(argv) < 2:
+        die(usage)
+    name = argv[0]
+    timeout = None
+    verb = []
+    i = 1
+    while i < len(argv):
+        a = argv[i]
+        if a == "--timeout" and i + 1 < len(argv):
+            timeout = argv[i + 1]
+            i += 2
+            continue
+        if a.startswith("--timeout="):
+            timeout = a.split("=", 1)[1]
+            i += 1
+            continue
+        verb.append(a)
+        i += 1
+    if not verb:
+        die(usage)
+    c = tile_conf(name)
+    sock = ctl_sock(c, name)
+    if not sock:
+        die(
+            "tile '%s' has no mamectl control socket (no SH_MAMECTL_SOCK in its "
+            "tile.env, no 'ctl' field in tiles.json). See 'labctl exec/sh/type' "
+            "for this tile's wired channels." % name
+        )
+    cmd = ["python3", MCTL, sock]
+    if timeout is not None:
+        cmd += ["--timeout", timeout]
+    cmd.append(" ".join(verb))
+    sys.exit(subprocess.run(cmd).returncode)
+
+
+def cmd_clone(argv):
+    if len(argv) < 2:
+        die("usage: labctl clone <tile> <N>   (N should be a fresh id >= 40 for solaris)")
+    name, n = argv[0], argv[1]
+    tile_conf(name)  # validate + guardrail
+    if name == "solariscde":
+        if not os.path.exists(SOL_CLONE):
+            die("solaris clone tool missing: %s" % SOL_CLONE)
+        r = subprocess.run(["bash", SOL_CLONE, str(n)], capture_output=True, text=True)
+        sys.stdout.write(r.stdout)
+        if r.returncode != 0:
+            die("clone failed:\n%s" % r.stderr.strip())
+        return
+    # No dedicated clone tool for other tiles.
+    print("No dedicated clone tool for tile '%s'. Manual recipe:" % name)
+    print("  The generic helper %s derives a clone dir + copies the golden qcow2" % GENERIC_CLONE)
+    print("  but requires per-tile adaptation of the qemu line (disk/qmp/pidfile,")
+    print("  hostfwds). Use the solaris launch-clone.sh as the reference pattern:")
+    print("    %s" % SOL_CLONE)
+    print("  Steps: cp the tile's golden qcow2 to a fresh work dir, reproduce the")
+    print("  EXACT device set from %s/%s/qemu-streamhost.sh (so 'loadvm golden'" % (TILES_DIR, name))
+    print("  still matches), swap in a private qmp.sock + pidfile, add any hostfwd")
+    print("  you need on the EXISTING -netdev user, and launch with a fresh VMID.")
+
+
+def cmd_gen(argv):
+    gen = "/root/gen_tiles_json.py"
+    if not os.path.exists(gen):
+        die("generator %s not found on box" % gen)
+    r = subprocess.run(["python3", gen], capture_output=True, text=True)
+    sys.stdout.write(r.stdout)
+    if r.returncode != 0:
+        die(r.stderr.strip())
+
+
+USAGE = """usage: labctl <command> [args]
+
+Read-only inspection:
+  labctl ls
+  labctl health [<tile>] [--json]
+  labctl assert <tile> --text <s> | --template <png> | --settle
+
+Framebuffer and guest operations:
+  labctl shot <tile> [out.png]
+  labctl type <tile> <text> [--verify]
+  labctl key <tile> <qcode> [qcode ...]
+  labctl sh <tile> <cmd>
+  labctl exec <tile> <cmd>
+  labctl mctl <tile> "<verb line>" [--timeout S]
+  labctl reset <tile>
+  labctl clone <tile> <N>
+  labctl gen
+"""
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print(USAGE)
+        return
+    cmd = sys.argv[1]
+    rest = sys.argv[2:]
+    table = {
+        "ls": cmd_ls,
+        "health": cmd_health,
+        "assert": cmd_assert,
+        "shot": cmd_shot,
+        "type": cmd_type,
+        "key": cmd_key,
+        "sh": cmd_sh,
+        "exec": cmd_exec,
+        "mctl": cmd_mctl,
+        "reset": cmd_reset,
+        "clone": cmd_clone,
+        "gen": cmd_gen,
+    }
+    fn = table.get(cmd)
+    if not fn:
+        die("unknown subcommand '%s'. try: %s" % (cmd, ", ".join(table)))
+    fn(rest)
+
+
+if __name__ == "__main__":
+    main()

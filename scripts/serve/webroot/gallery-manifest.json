@@ -1,0 +1,1193 @@
+{
+  "_generated": "scripts/tiles-registry.py generate; PUBLIC DATA ONLY; DO NOT EDIT",
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "freedos",
+      "era_year": 1994,
+      "displayName": "FreeDOS",
+      "year": 1994,
+      "lineage": "MS-DOS compatible, open source",
+      "arch": "i386",
+      "accent": "#5fa85f",
+      "archetypeId": "beige-ibm-pc",
+      "transport": "streamhost",
+      "order": 0,
+      "eraLabel": "1994 · DOS era",
+      "signalEndpoint": "/signal/freedos.json",
+      "ramMB": 64,
+      "notes": "The living continuation of the DOS command line, still shipping today.",
+      "era": "1990s",
+      "eraSoftware": [
+        "EDIT",
+        "FDISK",
+        "4DOS",
+        "Arachne browser"
+      ],
+      "periodBrowser": "Arachne / Lynx (DOS)",
+      "iconicApps": [
+        "Rogue",
+        "Nibbles",
+        "DOOM (shareware)"
+      ],
+      "blurb": "The DOS command prompt that never died — C:\\> is still alive and well.",
+      "pointerRel": true
+    },
+    {
+      "id": "kolibrios",
+      "era_year": 2004,
+      "displayName": "KolibriOS",
+      "year": 2004,
+      "lineage": "MenuetOS / hand-written x86 assembly",
+      "arch": "i386",
+      "accent": "#39c6d6",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 1,
+      "eraLabel": "2004 · asm GUI OS",
+      "signalEndpoint": "/signal/kolibrios.json",
+      "ramMB": 128,
+      "notes": "Entire GUI OS in assembly; boots off a floppy in under a second.",
+      "era": "2000s",
+      "eraSoftware": [
+        "KolibriOS desktop",
+        "TinyBasic",
+        "Fasm IDE",
+        "Animage paint"
+      ],
+      "periodBrowser": "WebView (HTMLv)",
+      "iconicApps": [
+        "Fara (dungeon crawler)",
+        "MineSweeper",
+        "3D Cube demo"
+      ],
+      "blurb": "A complete graphical OS that fits on a single floppy — written in pure asm."
+    },
+    {
+      "id": "toaruos",
+      "era_year": 2011,
+      "displayName": "ToaruOS",
+      "year": 2011,
+      "lineage": "Hobby UNIX-like, built from scratch",
+      "arch": "x86_64",
+      "accent": "#c98b3a",
+      "archetypeId": "putty-lcd",
+      "transport": "streamhost",
+      "order": 2,
+      "eraLabel": "2011 · hobby UNIX",
+      "signalEndpoint": "/signal/toaruos.json",
+      "ramMB": 512,
+      "notes": "Fully self-hosting hobby OS with its own compositing window manager.",
+      "era": "2010s",
+      "eraSoftware": [
+        "Yutani compositor",
+        "Bim editor",
+        "Kuroko shell",
+        "Terminal"
+      ],
+      "periodBrowser": "no period browser (demo apps)",
+      "iconicApps": [
+        "Julia fractal viewer",
+        "Bomberman-style demo",
+        "Clock widget"
+      ],
+      "blurb": "One developer's from-scratch UNIX with a real windowing compositor."
+    },
+    {
+      "id": "win311",
+      "era_year": 1993,
+      "displayName": "Windows 3.11",
+      "year": 1993,
+      "lineage": "MS-DOS + Windows 3.x",
+      "arch": "i386",
+      "accent": "#7fb0d6",
+      "archetypeId": "beige-ibm-pc",
+      "transport": "streamhost",
+      "order": 3,
+      "eraLabel": "1993 · Windows 3.11",
+      "signalEndpoint": "/signal/win311.json",
+      "ramMB": 16,
+      "era": "1990s",
+      "eraSoftware": [
+        "Program Manager",
+        "File Manager",
+        "Write",
+        "Paintbrush"
+      ],
+      "periodBrowser": "Mosaic / early Netscape",
+      "iconicApps": [
+        "Solitaire",
+        "Minesweeper",
+        "Reversi"
+      ],
+      "blurb": "Windows for Workgroups — the tiled Program Manager era, riding on top of DOS."
+    },
+    {
+      "id": "win95",
+      "era_year": 1995,
+      "displayName": "Windows 95",
+      "year": 1995,
+      "lineage": "Windows 9x",
+      "arch": "i386",
+      "accent": "#2f8f5b",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 4,
+      "eraLabel": "1995 · Windows 95",
+      "signalEndpoint": "/signal/win95.json",
+      "ramMB": 64,
+      "era": "1990s",
+      "eraSoftware": [
+        "Start menu",
+        "Explorer",
+        "Internet Explorer 1",
+        "Notepad"
+      ],
+      "periodBrowser": "Internet Explorer / Netscape Navigator",
+      "iconicApps": [
+        "Minesweeper",
+        "FreeCell",
+        "Hover!"
+      ],
+      "blurb": "The Start button that changed everything — the desktop metaphor that defined a decade.",
+      "bootVideo": "/boot/win95/boot.mp4"
+    },
+    {
+      "id": "win98se",
+      "era_year": 1999,
+      "displayName": "Windows 98 SE",
+      "year": 1999,
+      "lineage": "Windows 9x",
+      "arch": "i386",
+      "accent": "#3a7fc9",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 5,
+      "eraLabel": "1999 · Windows 98 SE",
+      "signalEndpoint": "/signal/win98se.json",
+      "ramMB": 96,
+      "era": "1990s",
+      "eraSoftware": [
+        "Active Desktop",
+        "IE5",
+        "Outlook Express",
+        "Media Player 6"
+      ],
+      "periodBrowser": "Internet Explorer 5",
+      "iconicApps": [
+        "3D Pinball Space Cadet",
+        "Minesweeper",
+        "Solitaire"
+      ],
+      "blurb": "The polished peak of the 9x line — USB, Active Desktop, and Space Cadet pinball.",
+      "bootVideo": "/boot/win98se/boot.mp4"
+    },
+    {
+      "id": "win2000",
+      "era_year": 2000,
+      "displayName": "Windows 2000",
+      "year": 2000,
+      "lineage": "Windows NT 5.0",
+      "arch": "i386",
+      "accent": "#5b6fc9",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 6,
+      "eraLabel": "2000 · Windows 2000",
+      "signalEndpoint": "/signal/win2000.json",
+      "ramMB": 128,
+      "era": "2000s",
+      "eraSoftware": [
+        "NTFS",
+        "Active Directory",
+        "IE5.5",
+        "MMC"
+      ],
+      "periodBrowser": "Internet Explorer 5.5",
+      "iconicApps": [
+        "Pinball",
+        "Solitaire",
+        "Paint"
+      ],
+      "blurb": "NT stability meets the 9x desktop — the professional workstation of the millennium.",
+      "bootVideo": "/boot/win2000/boot.mp4"
+    },
+    {
+      "id": "winxp",
+      "era_year": 2001,
+      "displayName": "Windows XP",
+      "year": 2001,
+      "lineage": "Windows NT 5.1",
+      "arch": "i386",
+      "accent": "#5aa832",
+      "archetypeId": "putty-lcd",
+      "transport": "streamhost",
+      "order": 7,
+      "eraLabel": "2001 · Windows XP",
+      "signalEndpoint": "/signal/winxp.json",
+      "ramMB": 256,
+      "era": "2000s",
+      "eraSoftware": [
+        "Luna theme",
+        "IE6",
+        "Windows Media Player 8",
+        "Movie Maker"
+      ],
+      "periodBrowser": "Internet Explorer 6",
+      "iconicApps": [
+        "Bliss wallpaper",
+        "Pinball",
+        "Solitaire"
+      ],
+      "blurb": "Bliss. The green hill and blue taskbar the whole world remembers."
+    },
+    {
+      "id": "alpine",
+      "era_year": 2005,
+      "displayName": "Alpine Linux",
+      "year": 2005,
+      "lineage": "musl + BusyBox Linux",
+      "arch": "x86_64",
+      "accent": "#0d597f",
+      "archetypeId": "putty-lcd",
+      "transport": "streamhost",
+      "order": 8,
+      "eraLabel": "2005 · Alpine Linux",
+      "signalEndpoint": "/signal/alpine.json",
+      "ramMB": 256,
+      "era": "2000s",
+      "eraSoftware": [
+        "apk",
+        "OpenRC",
+        "BusyBox",
+        "musl libc"
+      ],
+      "periodBrowser": "no default GUI browser (server distro)",
+      "iconicApps": [
+        "ash shell",
+        "vi",
+        "doas"
+      ],
+      "blurb": "The tiny, security-focused distro that quietly runs half the containers on Earth."
+    },
+    {
+      "id": "tinycore",
+      "era_year": 2009,
+      "displayName": "Tiny Core Linux",
+      "year": 2009,
+      "lineage": "BusyBox Linux",
+      "arch": "i386",
+      "accent": "#4a9fd6",
+      "archetypeId": "putty-lcd",
+      "transport": "streamhost",
+      "order": 9,
+      "eraLabel": "2009 · Tiny Core",
+      "signalEndpoint": "/signal/tinycore.json",
+      "ramMB": 128,
+      "era": "2000s",
+      "eraSoftware": [
+        "FLTK/FLWM desktop",
+        "tce-load",
+        "BusyBox"
+      ],
+      "periodBrowser": "dillo / Firefox extension",
+      "iconicApps": [
+        "App Browser",
+        "Terminal",
+        "Text editor"
+      ],
+      "blurb": "A complete graphical Linux in ~16 MB — the whole OS lives in RAM."
+    },
+    {
+      "id": "ninefront",
+      "era_year": 2011,
+      "displayName": "9front (Plan 9)",
+      "year": 2011,
+      "lineage": "Plan 9 from Bell Labs",
+      "arch": "x86_64",
+      "accent": "#c9c05b",
+      "archetypeId": "mono-terminal",
+      "transport": "streamhost",
+      "order": 10,
+      "eraLabel": "2011 · 9front (Plan 9)",
+      "signalEndpoint": "/signal/ninefront.json",
+      "ramMB": 512,
+      "era": "2010s",
+      "eraSoftware": [
+        "rio",
+        "acme",
+        "stats",
+        "catclock",
+        "rc shell",
+        "9P"
+      ],
+      "periodBrowser": "mothra / abaco",
+      "iconicApps": [
+        "acme editor",
+        "stats",
+        "catclock",
+        "rio windows",
+        "sam"
+      ],
+      "blurb": "Bell Labs’ successor to Unix, still alive — everything is a file, over the network.",
+      "bootVideo": "/boot/ninefront/boot.mp4"
+    },
+    {
+      "id": "helenos",
+      "era_year": 2006,
+      "displayName": "HelenOS",
+      "year": 2006,
+      "lineage": "Microkernel multiserver OS",
+      "arch": "x86_64",
+      "accent": "#b58fd6",
+      "archetypeId": "mono-terminal",
+      "transport": "streamhost",
+      "order": 11,
+      "eraLabel": "2006 · HelenOS",
+      "signalEndpoint": "/signal/helenos.json",
+      "ramMB": 512,
+      "era": "2000s",
+      "eraSoftware": [
+        "spartan microkernel",
+        "HelenOS GUI",
+        "bdsh shell"
+      ],
+      "periodBrowser": "no period browser (research OS)",
+      "iconicApps": [
+        "Terminal",
+        "Calculator",
+        "Viewer"
+      ],
+      "blurb": "A from-scratch microkernel research OS — a whole desktop built on message passing."
+    },
+    {
+      "id": "solaris",
+      "era_year": 1994,
+      "displayName": "Solaris CDE",
+      "year": 1994,
+      "lineage": "SunOS / System V Unix",
+      "arch": "SPARC",
+      "accent": "#d68a3a",
+      "archetypeId": "sparc-pizzabox",
+      "transport": "streamhost",
+      "order": 12,
+      "eraLabel": "1994 · Solaris CDE",
+      "signalEndpoint": "/signal/solaris.json",
+      "ramMB": 512,
+      "era": "1990s",
+      "eraSoftware": [
+        "CDE (Common Desktop Environment)",
+        "dtterm",
+        "OpenWindows"
+      ],
+      "periodBrowser": "HotJava / early Netscape",
+      "iconicApps": [
+        "Front Panel",
+        "File Manager",
+        "dtterm"
+      ],
+      "blurb": "The workstation Unix of the 90s — CDE’s front panel on classic Sun hardware.",
+      "hardwareInput": true,
+      "bootVideo": "/boot/solariscde/boot.mp4"
+    },
+    {
+      "id": "nt351",
+      "era_year": 1995,
+      "displayName": "Windows NT 3.51",
+      "year": 1995,
+      "lineage": "Windows NT 3.x",
+      "arch": "i386",
+      "accent": "#3a6ea5",
+      "archetypeId": "beige-ibm-pc",
+      "transport": "streamhost",
+      "order": 13,
+      "eraLabel": "1995 · Windows NT 3.51",
+      "signalEndpoint": "/signal/nt351.json",
+      "ramMB": 64,
+      "era": "1990s",
+      "eraSoftware": [
+        "Program Manager",
+        "File Manager",
+        "Control Panel",
+        "Paintbrush"
+      ],
+      "periodBrowser": "Internet Explorer 2 / early Netscape",
+      "iconicApps": [
+        "Program Manager",
+        "File Manager",
+        "Minesweeper"
+      ],
+      "blurb": "The last workstation NT built around Program Manager — compact, blue, and unmistakably mid-1990s."
+    },
+    {
+      "id": "serenityos",
+      "era_year": 2018,
+      "displayName": "SerenityOS",
+      "year": 2018,
+      "lineage": "From-scratch Unix-like",
+      "arch": "x86_64",
+      "accent": "#c95a8f",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 15,
+      "eraLabel": "2018 · SerenityOS",
+      "signalEndpoint": "/signal/serenityos.json",
+      "ramMB": 1024,
+      "era": "2010s",
+      "eraSoftware": [
+        "LibGUI desktop",
+        "Ladybird browser",
+        "Assistant",
+        "Terminal"
+      ],
+      "periodBrowser": "Ladybird",
+      "iconicApps": [
+        "Solitaire",
+        "Minesweeper",
+        "PixelPaint"
+      ],
+      "blurb": "A love letter to the late-90s desktop, written entirely from scratch on YouTube."
+    },
+    {
+      "id": "android",
+      "era_year": 2008,
+      "displayName": "Android",
+      "year": 2008,
+      "lineage": "Linux (AOSP)",
+      "arch": "ARM / x86",
+      "accent": "#3ddc84",
+      "archetypeId": "touch-phone",
+      "transport": "streamhost",
+      "order": 16,
+      "eraLabel": "2008 · Android",
+      "signalEndpoint": "/signal/android.json",
+      "ramMB": 2048,
+      "era": "2000s",
+      "eraSoftware": [
+        "Launcher",
+        "WebView",
+        "Dalvik/ART",
+        "Play-era apps"
+      ],
+      "periodBrowser": "Android Browser / Chrome",
+      "iconicApps": [
+        "Maps",
+        "Camera",
+        "Messaging"
+      ],
+      "blurb": "The pocket Linux that ate the world — the original touchscreen candybar."
+    },
+    {
+      "id": "postmarketos",
+      "era_year": 2017,
+      "displayName": "postmarketOS",
+      "year": 2017,
+      "lineage": "Alpine Linux mobile",
+      "arch": "ARM",
+      "accent": "#008b4b",
+      "archetypeId": "touch-phone",
+      "transport": "streamhost",
+      "order": 17,
+      "eraLabel": "2017 · postmarketOS",
+      "signalEndpoint": "/signal/postmarketos.json",
+      "ramMB": 2048,
+      "era": "2010s",
+      "eraSoftware": [
+        "Phosh / Plasma Mobile",
+        "apk",
+        "PulseAudio"
+      ],
+      "periodBrowser": "Firefox / GNOME Web",
+      "iconicApps": [
+        "Phosh shell",
+        "Terminal",
+        "Settings"
+      ],
+      "blurb": "Real mainline Linux on the phone — a ten-year lifecycle for the PinePhone era."
+    },
+    {
+      "id": "sailfishos",
+      "era_year": 2013,
+      "displayName": "Sailfish OS",
+      "year": 2013,
+      "lineage": "Mer / MeeGo (Jolla)",
+      "arch": "ARM",
+      "accent": "#e60d42",
+      "archetypeId": "touch-phone",
+      "transport": "streamhost",
+      "order": 18,
+      "eraLabel": "2013 · Sailfish (Jolla)",
+      "signalEndpoint": "/signal/sailfishos.json",
+      "ramMB": 2048,
+      "era": "2010s",
+      "eraSoftware": [
+        "Lipstick UI",
+        "Silica",
+        "Android app support"
+      ],
+      "periodBrowser": "Sailfish Browser (Gecko)",
+      "iconicApps": [
+        "Gesture deck",
+        "Clock",
+        "Media"
+      ],
+      "blurb": "MeeGo’s heir from Jolla — the gesture-driven Nordic take on the smartphone."
+    },
+    {
+      "id": "templeos",
+      "era_year": 2013,
+      "displayName": "TempleOS",
+      "year": 2013,
+      "lineage": "Terry A. Davis / from-scratch",
+      "arch": "x86_64",
+      "accent": "#f2c14e",
+      "archetypeId": "beige-ibm-pc",
+      "transport": "streamhost",
+      "order": 19,
+      "eraLabel": "2013 · TempleOS",
+      "signalEndpoint": "/signal/templeos.json",
+      "ramMB": 1024,
+      "notes": "Live streamhost tile. PS/2 input only — TempleOS has no USB stack. Ring-0, single-address-space, no networking by design; CD-only ephemeral live boot.",
+      "era": "2010s",
+      "eraSoftware": [
+        "HolyC",
+        "The Oracle",
+        "After Egypt",
+        "built-in editor"
+      ],
+      "periodBrowser": "none — no networking by design",
+      "iconicApps": [
+        "HolyC REPL",
+        "The Oracle",
+        "After Egypt"
+      ],
+      "blurb": "Terry Davis’ divine 640x480 16-colour temple — a ring-0, single-address-space OS written from scratch in HolyC."
+    },
+    {
+      "id": "reactos",
+      "era_year": 2024,
+      "displayName": "ReactOS 0.4.14",
+      "year": 2024,
+      "lineage": "Windows NT / ReactOS",
+      "arch": "i386",
+      "accent": "#2f6fba",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 20,
+      "eraLabel": "2024 · ReactOS 0.4.14",
+      "signalEndpoint": "/signal/reactos.json",
+      "ramMB": 512,
+      "notes": "Live streamhost tile. ReactOS 0.4.14 live CD (0.4.15 hangs QEMU 11 kernel init). Archetype: beige-tower-crt (a Windows-2000-era beige tower is the right period fit).",
+      "era": "2020s",
+      "eraSoftware": [
+        "ReactOS Explorer",
+        "Start menu / taskbar",
+        "App Manager",
+        "ReactOS Shell"
+      ],
+      "periodBrowser": "no bundled browser (NT 5.x live CD)",
+      "iconicApps": [
+        "ReactOS Explorer",
+        "Command Prompt",
+        "App Manager",
+        "Winefile"
+      ],
+      "blurb": "The open-source Windows-2000 — a from-scratch, binary-compatible reimplementation of the NT 5.x kernel and Win32."
+    },
+    {
+      "id": "haiku",
+      "era_year": 2024,
+      "displayName": "Haiku R1/beta5",
+      "year": 2024,
+      "lineage": "Be Inc. BeOS → Haiku",
+      "arch": "x86_64",
+      "accent": "#ffca3a",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 21,
+      "eraLabel": "2024 · Haiku R1/beta5",
+      "signalEndpoint": "/signal/haiku.json",
+      "ramMB": 2048,
+      "notes": "Live streamhost tile. Official haiku-r1beta5 anyboot live CD. Archetype: beige-tower-crt; a bespoke BeBox (the dual-CPU BeOS workstation) would be the ideal era-accurate model.",
+      "era": "2020s",
+      "eraSoftware": [
+        "Tracker",
+        "Deskbar",
+        "the yellow window tabs",
+        "HaikuDepot"
+      ],
+      "periodBrowser": "WebPositive",
+      "iconicApps": [
+        "Tracker",
+        "Deskbar",
+        "WebPositive",
+        "HaikuDepot"
+      ],
+      "blurb": "The MIT-licensed, still-maintained successor to BeOS — the iconic yellow window tabs, faithfully reborn.",
+      "bootVideo": "/boot/haiku/boot.mp4"
+    },
+    {
+      "id": "os2warp",
+      "era_year": 1996,
+      "displayName": "OS/2 Warp 4",
+      "year": 1996,
+      "lineage": "IBM/Microsoft OS/2",
+      "arch": "i386",
+      "accent": "#1e5aa8",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 22,
+      "eraLabel": "1996 · OS/2 Warp 4",
+      "signalEndpoint": "/signal/os2warp.json",
+      "ramMB": 256,
+      "notes": "Live streamhost tile at 1024x768x64k (IBM GENGRADD on QEMU std VGA). Runs under TCG — it broke under KVM and was reverted — but remains fully interactive. Archetype: beige-tower-crt.",
+      "era": "1990s",
+      "eraSoftware": [
+        "Workplace Shell",
+        "LaunchPad",
+        "WebExplorer",
+        "System Editor"
+      ],
+      "periodBrowser": "IBM WebExplorer",
+      "iconicApps": [
+        "Workplace Shell",
+        "LaunchPad",
+        "WebExplorer"
+      ],
+      "blurb": "IBM’s 1996 \"Merlin\" — the object-oriented Workplace Shell that was famously \"a better DOS than DOS, a better Windows than Windows\".",
+      "bootVideo": "/boot/os2warp/boot.mp4"
+    },
+    {
+      "id": "aros",
+      "era_year": 2024,
+      "displayName": "AROS",
+      "year": 2024,
+      "lineage": "Commodore Amiga → AROS",
+      "arch": "i386",
+      "accent": "#e87a17",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 23,
+      "eraLabel": "2024 · AROS (Amiga)",
+      "signalEndpoint": "/signal/aros.json",
+      "ramMB": 256,
+      "notes": "Live streamhost tile. Official AROS pc-i386 live CD. Archetype: beige-tower-crt; a bespoke Amiga wedge (the low-profile Amiga 500/1200 keyboard-box) would be the ideal era-accurate model.",
+      "era": "2020s",
+      "eraSoftware": [
+        "Workbench",
+        "Wanderer desktop",
+        "RAM Disk",
+        "AmigaDOS"
+      ],
+      "periodBrowser": "no bundled browser (live CD)",
+      "iconicApps": [
+        "Workbench",
+        "Wanderer",
+        "AmigaDOS shell"
+      ],
+      "blurb": "The free, from-scratch AmigaOS — Wanderer brings back the Workbench desktop with no copyrighted Kickstart ROM required."
+    },
+    {
+      "id": "qnx",
+      "era_year": 2010,
+      "displayName": "QNX Neutrino 6.5",
+      "year": 2010,
+      "lineage": "QNX/BlackBerry",
+      "arch": "i386",
+      "accent": "#1b6fb5",
+      "archetypeId": "putty-lcd",
+      "transport": "streamhost",
+      "order": 24,
+      "eraLabel": "2010 · QNX Neutrino 6.5",
+      "signalEndpoint": "/signal/qnx.json",
+      "ramMB": 256,
+      "notes": "Live streamhost tile with a true 1:1 relative mouse — the guest owns a PS/2 pointer, so under pointer lock the SPA ships raw deltas straight to it. QNX 6.5.0 self-hosting live CD. Archetype: putty-lcd (early-2000s embedded/industrial panel-PC fit).",
+      "era": "2010s",
+      "eraSoftware": [
+        "Photon microGUI",
+        "the app shelf",
+        "pterm",
+        "Voyager"
+      ],
+      "periodBrowser": "Voyager",
+      "iconicApps": [
+        "Photon microGUI",
+        "the app shelf",
+        "Voyager"
+      ],
+      "blurb": "A hard-real-time microkernel OS whose Photon microGUI once fit a web browser and a whole desktop onto a single floppy.",
+      "pointerRel": true
+    },
+    {
+      "id": "msdoswin1",
+      "era_year": 1985,
+      "displayName": "MS-DOS 6.22 + Windows 1.0",
+      "year": 1994,
+      "lineage": "Microsoft MS-DOS / Windows",
+      "arch": "i386",
+      "accent": "#c8a24a",
+      "archetypeId": "beige-ibm-pc",
+      "transport": "streamhost",
+      "order": 25,
+      "eraLabel": "1994 · MS-DOS 6.22 + Win 1.0",
+      "signalEndpoint": "/signal/msdoswin1.json",
+      "ramMB": 16,
+      "notes": "Live streamhost tile. One combined image: boots MS-DOS 6.22 to C:\\> and launches Windows 1.01 via WIN — presented here as a single exhibit. Archetype: beige-ibm-pc (the boxy DOS-era CRT + IBM-PC fit).",
+      "era": "1990s",
+      "eraSoftware": [
+        "COMMAND.COM",
+        "MS-DOS Executive",
+        "EDIT",
+        "QBASIC"
+      ],
+      "periodBrowser": "none — pre-web (1985/1994)",
+      "iconicApps": [
+        "COMMAND.COM",
+        "Windows 1.0 tiled windows",
+        "EDIT",
+        "QBASIC"
+      ],
+      "blurb": "The C:\\> prompt of MS-DOS 6.22 (1994) with Microsoft’s first Windows 1.0 (1985) layered on top — the tiled-window dawn before the desktop metaphor.",
+      "pointerRel": true
+    },
+    {
+      "id": "c64",
+      "era_year": 1982,
+      "displayName": "Commodore 64 — GEOS 2.0",
+      "year": 1982,
+      "lineage": "Commodore 64 / GEOS",
+      "arch": "MOS 6510 (6502), 1 MHz, 64 KB",
+      "accent": "#6c5eb5",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 26,
+      "eraLabel": "1982 · C64 + GEOS",
+      "signalEndpoint": "/signal/c64.json",
+      "ramMB": 0,
+      "ramKB": 64,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x64sc) full-screen emulating a C64 that auto-boots the GEOS 2.0 deskTop; streamhost captures the Linux framebuffer + AC97 audio (the C64 SID routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke C64 breadbin + 1541 + CRT). See streamhost/docs/BRIDGE.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "GEOS 2.0 deskTop",
+        "geoWrite",
+        "geoPaint",
+        "Preference Manager",
+        "the 1541 drive"
+      ],
+      "periodBrowser": "none — pre-web 8-bit era",
+      "iconicApps": [
+        "GEOS deskTop",
+        "geoWrite",
+        "geoPaint",
+        "the 1541 disk drive"
+      ],
+      "blurb": "A full windows-icons-menus desktop (GEOS) running on a 1 MHz, 64 KB home computer — the 8-bit era’s answer to the Macintosh."
+    },
+    {
+      "id": "atarist",
+      "era_year": 1985,
+      "displayName": "Atari ST (EmuTOS GEM)",
+      "year": 1985,
+      "lineage": "Atari ST / Digital Research GEM",
+      "arch": "Motorola 68000 (m68k)",
+      "accent": "#E4002B",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 27,
+      "eraLabel": "1985 · Atari ST (GEM)",
+      "signalEndpoint": "/signal/atarist.json",
+      "ramMB": 0,
+      "ramKB": 1024,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the hatari Atari ST emulator full-screen (EmuTOS → GEM desktop); streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Atari ST wedge). See streamhost/docs/BRIDGE.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "GEM desktop (TOS)",
+        "NEODESK",
+        "Cubase / Notator (MIDI)",
+        "Degas Elite",
+        "First Word / First Word Plus"
+      ],
+      "periodBrowser": "none — pre-web 16-bit era",
+      "iconicApps": [
+        "GEM desktop (DISK A/B, TRASH, PRINTER)",
+        "GEM file manager",
+        "Atari BASIC / GFA BASIC",
+        "Cubase MIDI sequencer"
+      ],
+      "blurb": "The 16-bit “Jackintosh” — a 68000 with the GEM windows-icons-menus desktop and built-in MIDI, shown here booting the open-source EmuTOS straight to the classic monochrome GEM desktop."
+    },
+    {
+      "id": "apple2",
+      "era_year": 1988,
+      "displayName": "Apple II — GEOS",
+      "year": 1988,
+      "lineage": "Apple II / GEOS",
+      "arch": "MOS 65C02 (Apple //e enhanced), 1 MHz, 128 KB",
+      "accent": "#8A8577",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 28,
+      "eraLabel": "1988 · Apple II — GEOS",
+      "signalEndpoint": "/signal/apple2.json",
+      "ramMB": 0,
+      "ramKB": 128,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Apple //e emulator full-screen booting Apple GEOS; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke platinum Apple //e all-in-one). See streamhost/docs/BRIDGE.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "Apple GEOS deskTop",
+        "geoWrite",
+        "geoPaint",
+        "ProDOS",
+        "DeskTop file manager"
+      ],
+      "periodBrowser": "none — pre-web 8-bit era",
+      "iconicApps": [
+        "geoWrite",
+        "geoPaint",
+        "GEOS deskTop",
+        "Preference Manager"
+      ],
+      "blurb": "A windows-icons-menus desktop (GEOS) with geoWrite & geoPaint running on a 1 MHz Apple //e — the 8-bit era’s Macintosh, on Apple hardware."
+    },
+    {
+      "id": "amiga",
+      "era_year": 1987,
+      "displayName": "Amiga 500 — Workbench 1.3",
+      "year": 1987,
+      "lineage": "Commodore Amiga / AmigaOS",
+      "arch": "Motorola 68000 (16/32-bit)",
+      "accent": "#0055AA",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 29,
+      "eraLabel": "1987 · Amiga Workbench 1.3",
+      "signalEndpoint": "/signal/amiga.json",
+      "ramMB": 0,
+      "ramKB": 512,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Amiga emulator full-screen booting the real Kickstart 1.3 + Workbench 1.3; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Amiga 500 wedge). See streamhost/docs/BRIDGE.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "Workbench 1.3",
+        "AmigaDOS CLI",
+        "Deluxe Paint",
+        "Extras 1.3 / AmigaBASIC"
+      ],
+      "periodBrowser": "none — pre-web (AmigaOS 1.3)",
+      "iconicApps": [
+        "Workbench 1.3 desktop",
+        "AmigaDOS Shell/CLI",
+        "the insert-disk hand",
+        "the floppy-drive click"
+      ],
+      "blurb": "A 1987 home computer whose custom chips (blitter + copper + 4-channel Paula sound) gave it colour multitasking and arcade graphics the PC and Mac couldn’t touch for years — booting the real Kickstart 1.3 + Workbench 1.3 on a genuine 68000.",
+      "bootVideo": "/boot/amiga/boot.mp4"
+    },
+    {
+      "id": "win11",
+      "era_year": 2021,
+      "displayName": "Windows 11",
+      "year": 2021,
+      "lineage": "Windows NT 10.0",
+      "arch": "x86_64",
+      "accent": "#2d9bd6",
+      "archetypeId": "apple-studio",
+      "transport": "streamhost",
+      "order": 30,
+      "eraLabel": "2021 · Windows 11",
+      "signalEndpoint": "/signal/win11.json",
+      "ramMB": 4096,
+      "era": "2020s",
+      "eraSoftware": [
+        "Centered taskbar",
+        "Edge",
+        "Fluent design",
+        "Widgets"
+      ],
+      "periodBrowser": "Microsoft Edge (Chromium)",
+      "iconicApps": [
+        "Snipping Tool",
+        "Terminal",
+        "Solitaire Collection"
+      ],
+      "blurb": "The rounded, centered present day, running on the same wall as the machines it descends from."
+    },
+    {
+      "id": "riscos",
+      "era_year": 2022,
+      "displayName": "RISC OS 5.30",
+      "year": 2022,
+      "lineage": "Acorn RISC OS",
+      "arch": "ARM",
+      "accent": "#4a7c3a",
+      "archetypeId": "beige-tower-crt",
+      "transport": "showcase",
+      "order": 31,
+      "eraLabel": "2022 · RISC OS 5.30",
+      "signalEndpoint": null,
+      "ramMB": 256,
+      "notes": "Showcase poster: RISC OS is ARM (the retired tile ran RPCEmu, not QEMU), so it has had no streamhost tile since the neko plane was deleted — poster + placard only for now. ROOL 5.30 softload ROM + HardDisc4. Archetype: beige-tower-crt; a bespoke Acorn RiscPC (the stackable slab that ran RISC OS) would be the ideal era-accurate model.",
+      "era": "2020s",
+      "eraSoftware": [
+        "icon bar",
+        "pinboard",
+        "Filer",
+        "!Draw"
+      ],
+      "periodBrowser": "NetSurf",
+      "iconicApps": [
+        "icon bar + pinboard",
+        "!Draw",
+        "!Paint",
+        "StrongED"
+      ],
+      "blurb": "Acorn’s ARM desktop, still shipping from RISC OS Open — the icon bar and pinboard that defined British computing."
+    },
+    {
+      "id": "macos",
+      "era_year": 2024,
+      "displayName": "macOS Sequoia",
+      "year": 2024,
+      "lineage": "Darwin / XNU",
+      "arch": "arm64",
+      "accent": "#a0a0a8",
+      "archetypeId": "apple-studio",
+      "transport": "showcase",
+      "order": 32,
+      "eraLabel": "2024 · macOS Sequoia",
+      "signalEndpoint": null,
+      "ramMB": 8192,
+      "notes": "Showcase poster: VM 925 (the macOS guest) and the VNC->WebSocket bridge that fronted it were destroyed on 2026-07-14, so there is nothing to connect to; a rebuilt macOS tile is the pending fix.",
+      "era": "2020s",
+      "eraSoftware": [
+        "Aqua",
+        "Finder",
+        "Safari",
+        "Continuity"
+      ],
+      "periodBrowser": "Safari",
+      "iconicApps": [
+        "Finder",
+        "Launchpad",
+        "Terminal"
+      ],
+      "blurb": "The modern Apple desktop on a Studio Display — currently a showcase poster awaiting a rebuilt guest."
+    },
+    {
+      "id": "redstar2",
+      "era_year": 2009,
+      "displayName": "Red Star OS 2.0",
+      "year": 2009,
+      "lineage": "Linux (Red Hat/Fedora lineage)",
+      "arch": "i386",
+      "accent": "#c8102e",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 33,
+      "eraLabel": "2009 · Red Star OS 2.0",
+      "signalEndpoint": "/signal/redstar2.json",
+      "ramMB": 1024,
+      "era": "2000s",
+      "eraSoftware": [
+        "KDE 3.5",
+        "Naenara",
+        "Uri 2.0",
+        "OpenOffice.org"
+      ],
+      "periodBrowser": "Naenara (Firefox-derived)",
+      "iconicApps": [
+        "Naenara",
+        "Uri 2.0 office suite",
+        "KDE Control Center"
+      ],
+      "blurb": "A preserved KDE-era North Korean desktop distribution, presented offline with no network hardware.",
+      "bootVideo": "/boot/redstar2/boot.mp4"
+    },
+    {
+      "id": "redstar3",
+      "era_year": 2013,
+      "displayName": "Red Star OS 3.0 Desktop",
+      "year": 2013,
+      "lineage": "Linux (Fedora lineage)",
+      "arch": "i386",
+      "accent": "#b3202a",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 34,
+      "eraLabel": "2013 · Red Star OS 3.0",
+      "signalEndpoint": "/signal/redstar3.json",
+      "ramMB": 1024,
+      "notes": "Private air-gapped preservation exhibit. The guest has no emulated network interface.",
+      "era": "2010s",
+      "eraSoftware": [
+        "KDE desktop",
+        "Naenara browser",
+        "Red Star file manager",
+        "system tools"
+      ],
+      "periodBrowser": "Naenara (Firefox-derived)",
+      "iconicApps": [
+        "Naenara",
+        "File Manager",
+        "System Preferences"
+      ],
+      "blurb": "A macOS-styled desktop distribution from the DPRK: Fedora/KDE foundations reshaped into a tightly controlled national-computing environment.",
+      "bootVideo": "/boot/redstar3/boot.mp4"
+    },
+    {
+      "id": "amstradcpc",
+      "era_year": 1985,
+      "displayName": "Amstrad CPC 6128 — Locomotive BASIC",
+      "year": 1985,
+      "lineage": "Amstrad CPC / Locomotive BASIC",
+      "arch": "Zilog Z80A, 4 MHz, 128 KB",
+      "accent": "#F0C000",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 35,
+      "eraLabel": "1985 · CPC 6128 (Locomotive BASIC)",
+      "signalEndpoint": "/signal/amstradcpc.json",
+      "ramMB": 0,
+      "ramKB": 128,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Caprice32 (cap32) in a verified scale-3 SDL/X11 window emulating an Amstrad CPC 6128 that boots Locomotive BASIC; streamhost captures the Linux framebuffer + AC97 audio (the CPC AY-3-8912 routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke CPC 6128 + CTM monitor). See streamhost/docs/BRIDGE.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "Locomotive BASIC 1.1",
+        "AMSDOS / CP/M Plus",
+        "Protext",
+        "The Advanced OCP Art Studio",
+        "CPC games (Head over Heels, Chase H.Q.)"
+      ],
+      "periodBrowser": "none — pre-web 8-bit era",
+      "iconicApps": [
+        "Locomotive BASIC",
+        "AMSDOS",
+        "CP/M Plus",
+        "The Advanced OCP Art Studio"
+      ],
+      "blurb": "The British 8-bit all-in-one — an integrated Z80 micro with monitor and disk drive that boots to the iconic yellow-on-blue Locomotive BASIC Ready prompt."
+    },
+    {
+      "id": "nt4",
+      "era_year": 1996,
+      "displayName": "Windows NT 4.0",
+      "year": 1996,
+      "lineage": "Windows NT 4.0",
+      "arch": "i386",
+      "accent": "#1f7a7a",
+      "archetypeId": "putty-lcd",
+      "transport": "streamhost",
+      "order": 36,
+      "eraLabel": "1996 · Windows NT 4.0",
+      "signalEndpoint": "/signal/nt4.json",
+      "ramMB": 128,
+      "era": "1990s",
+      "eraSoftware": [
+        "Explorer shell",
+        "Internet Explorer 2.0",
+        "Solitaire",
+        "Paint"
+      ],
+      "periodBrowser": "Internet Explorer 2.0",
+      "iconicApps": [
+        "Solitaire",
+        "Minesweeper",
+        "Paint"
+      ],
+      "blurb": "The classic Explorer shell on the NT kernel. The teal desktop that brought the Windows 95 look to enterprise NT."
+    },
+    {
+      "id": "openvms",
+      "era_year": 2024,
+      "displayName": "OpenVMS x86-64 9.2 — DECwindows",
+      "year": 2024,
+      "lineage": "VMS / OpenVMS",
+      "arch": "x86_64",
+      "accent": "#00a6d6",
+      "archetypeId": "putty-lcd",
+      "transport": "streamhost",
+      "order": 37,
+      "eraLabel": "2024 · OpenVMS 9.2 · DECwindows",
+      "signalEndpoint": "/signal/openvms.json",
+      "ramMB": 8960,
+      "notes": "A two-VM graphical bridge: OpenVMS supplies MWM and the applications while a private lean-X Debian guest supplies only the captured Xorg scanout and absolute tablet input.",
+      "era": "2020s",
+      "eraSoftware": [
+        "DECwindows Motif",
+        "DCL",
+        "FileView",
+        "DECterm"
+      ],
+      "periodBrowser": "none — DECwindows desktop exhibit",
+      "iconicApps": [
+        "DECterm",
+        "FileView",
+        "Clock",
+        "Calculator"
+      ],
+      "blurb": "The durable VMS lineage on modern x86-64, presented as its classic network-transparent DECwindows Motif desktop."
+    },
+    {
+      "id": "irix",
+      "era_year": 1993,
+      "displayName": "SGI Indy — IRIX 6.5",
+      "year": 1993,
+      "lineage": "SGI IRIX / System V Unix",
+      "arch": "MIPS R4600 (MIPS III, 64-bit)",
+      "accent": "#5B8FA8",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 38,
+      "eraLabel": "1993 · SGI Indy — IRIX 6.5",
+      "signalEndpoint": "/signal/irix.json",
+      "ramMB": 256,
+      "notes": "Live streamhost tile — the FIRST non-QEMU tile: an Xvfb + MAME(indy_4610) emulator captured directly by streamhost’s SH_CAPTURE=shm backend (MAME’s SGI Indy emulation kernel-panics under a KVM vCPU, so it runs on the bare-metal CPU, not a QEMU VM). archetype beige-tower-crt. See docs/history/irix-tile-issue20-handoff.md.",
+      "era": "1990s",
+      "eraSoftware": [
+        "Indigo Magic Desktop (4Dwm)",
+        "IRIX Interactive Desktop / toolchest",
+        "showcasedemos (gr_osview, buttonfly)",
+        "WorldView / SGI demos",
+        "Netscape for IRIX"
+      ],
+      "periodBrowser": "Netscape Navigator / Communicator for IRIX",
+      "iconicApps": [
+        "4Dwm Indigo Magic teal desktop",
+        "the SGI toolchest",
+        "IconCatalog",
+        "File System Navigator"
+      ],
+      "blurb": "SGI’s 1993 Indy brought real workstation Unix — 64-bit MIPS, hardware 24-bit graphics, and the gorgeous teal Indigo Magic Desktop — to a friendly blue pizza-box. IRIX 6.5 was the definitive SGI Unix, booting to the 4Dwm desktop.",
+      "bootVideo": "/boot/irix/boot.mp4"
+    },
+    {
+      "id": "mpf2",
+      "era_year": 1982,
+      "displayName": "Multitech Microprofessor II — MPF-II BASIC",
+      "year": 1982,
+      "lineage": "Multitech / Apple II clone",
+      "arch": "MOS 6502, 1 MHz, 64 KB RAM, 16 KB ROM",
+      "accent": "#8B4513",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 39,
+      "eraLabel": "1982 · MPF-II BASIC",
+      "signalEndpoint": "/signal/mpf2.json",
+      "ramMB": 0,
+      "ramKB": 64,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME (mpf2 driver) emulating a Multitech MPF-II that boots its ROM BASIC; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Keyboard-only exhibit (no pointing device — the real machine had none); uses the beige-tower-crt fallback until a bespoke MPF-II archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/mpf2.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "MPF-II BASIC in ROM",
+        "the built-in machine-language monitor",
+        "cassette titles: Blitz, Snake, Head On, Reverse, Sabotage",
+        "type-in listings from the computer magazines"
+      ],
+      "periodBrowser": "none — pre-web 8-bit era",
+      "iconicApps": [
+        "MPF-II BASIC",
+        "the machine-language monitor"
+      ],
+      "blurb": "Taiwan's first mass-market home computer — a chiclet-keyboard Apple II clone that boots straight to BASIC, in 6 colours on a television set."
+    }
+  ]
+}

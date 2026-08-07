@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kernelhive.local/schema/tile-v1.schema.json",
+  "title": "Kernel Hive canonical tile registry entry",
+  "x-posterAssociation": {
+    "source": "registry/posters/{id}.md",
+    "optional": true,
+    "orphanPolicy": "warn-and-skip"
+  },
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "era_year",
+    "lifecycle",
+    "enabled",
+    "stream",
+    "museum",
+    "spa",
+    "operator",
+    "build",
+    "render"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "era_year": { "type": "integer", "minimum": 1970 },
+    "tileDir": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "lifecycle": { "enum": ["production", "experiment", "showcase", "candidate"] },
+    "enabled": { "type": "boolean" },
+    "aliases": { "type": "object" },
+    "display": {
+      "type": "object",
+      "required": ["width", "height", "bitsPerPixel", "colors"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "bitsPerPixel": { "type": "integer", "minimum": 1 },
+        "colors": { "type": "integer", "minimum": 2 }
+      }
+    },
+    "build": { "type": "object", "required": ["rows"] },
+    "museum": {
+      "type": "object",
+      "required": ["id", "displayName", "year", "lineage", "arch", "accent"],
+      "properties": {
+        "id": { "type": "string" },
+        "displayName": { "type": "string" },
+        "year": { "type": "integer" },
+        "lineage": { "type": "string" },
+        "arch": { "type": "string" },
+        "accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+      }
+    },
+    "stream": {
+      "type": "object",
+      "required": ["transport"],
+      "properties": {
+        "transport": { "enum": ["streamhost", "showcase"] },
+        "udpPort": { "type": "integer", "minimum": 1 },
+        "slot": { "type": "integer", "minimum": 0 },
+        "experimentSlot": { "type": "integer", "minimum": 0 },
+        "fps": { "type": "integer", "minimum": 1 },
+        "audio": { "type": "boolean" },
+        "touch": { "type": "boolean" },
+        "pointer": {
+          "type": "object",
+          "required": ["transport", "device", "scale", "offset"],
+          "properties": {
+            "transport": { "enum": ["abs", "rel", "warpd", "none"] },
+            "backend": { "enum": ["disabled", "dbus-abs", "dbus-rel", "warpd", "gallery-hid", "x11test", "mamecmd", "mamesock"] },
+            "device": { "type": "string" },
+            "scale": { "type": "number" },
+            "offset": { "type": "array", "items": { "type": "integer" } }
+          }
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "qemu": {
+          "type": "object",
+          "required": ["mode", "deviceSetSummary"],
+          "properties": {
+            "mode": { "enum": ["generic", "verbatim", "pve"] },
+            "launcher": { "type": "string" },
+            "deviceSetSummary": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "pve": {
+          "type": "object",
+          "required": ["vmid"],
+          "properties": {
+            "vmid": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "x11": {
+          "type": "object",
+          "required": ["display", "geometry", "launcher", "resetMode"],
+          "properties": {
+            "display": { "type": "string", "pattern": "^:[0-9]+$" },
+            "geometry": { "type": "string" },
+            "launcher": { "type": "string" },
+            "resetMode": { "enum": ["relaunch", "criu"] },
+            "capture": { "enum": ["x11", "shm"] },
+            "emitArgs": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "qemu": {
+                "properties": { "mode": { "const": "pve" } },
+                "required": ["mode"]
+              }
+            },
+            "required": ["qemu"]
+          },
+          "then": {
+            "required": ["pve"],
+            "properties": {
+              "qemu": {
+                "properties": { "launcher": false }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "reset": {
+      "type": "object",
+      "properties": {
+        "resetMode": { "enum": ["loadvm", "restart", "pve-rollback", "relaunch", "criu"] },
+        "postRestoreKeys": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "operator": { "type": "object" },
+    "spa": {
+      "type": "object",
+      "required": ["archetypeId", "transport", "accentColor", "eraLabel"]
+    },
+    "keyboard": {
+      "type": "object",
+      "description": "How this MACHINE's keyboard differs from a PC's. Consumed by the SPA typist and by labctl (via SH_KEY_MAP in tile.env). Derive it with scripts/dev/mame-keymap.py.",
+      "properties": {
+        "charMap": {
+          "type": "object",
+          "description": "Guest character -> the host character whose keystroke produces it.",
+          "additionalProperties": { "type": "string" }
+        },
+        "letterCase": {
+          "enum": ["upper-only"],
+          "description": "upper-only: the machine has no lower case and its shifted letter row is symbols, so letters must be sent unshifted."
+        }
+      },
+      "additionalProperties": false
+    },
+    "demoProgram": {
+      "type": "object",
+      "description": "Optional type-in listing the SPA can type into this guest (stage menu → 'Type in a demo program').",
+      "required": ["label", "lines", "runCommand"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "lines": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "runCommand": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "credentialsRef": { "type": "string", "pattern": "^guest/[a-z0-9-]+$" },
+    "guestDoc": { "type": "string" },
+    "migrationExceptions": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "array", "items": { "type": "string" } },
+    "render": { "type": "object" }
+  }
+}

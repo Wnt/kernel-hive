@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "id": "freedos",
+  "era_year": 1994,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 11,
+        "prelude": "",
+        "line": "  \"freedos     |freedos.sh     |FreeDOS     |retro    |~10-15m |full*  |freedos.qcow2 (games+Arachne)\"\n",
+        "value": {
+          "key": "freedos",
+          "script": "freedos.sh",
+          "outputDir": "FreeDOS",
+          "class": "retro",
+          "estimated": "~10-15m",
+          "automation": "full*",
+          "produces": "freedos.qcow2 (games+Arachne)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 1,
+          "position": 0
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "freedos",
+      "value": {
+        "os": "FreeDOS 1.3",
+        "win": "qemu",
+        "mouse": null,
+        "kbd": "type:dir\r",
+        "kbd_reset": "",
+        "kbd_note": "DOS text: at a C:\\ prompt a typed char echoes. NOTE this tile boots to a 'Pick a game' single-key menu that consumes a keypress and LAUNCHES -> for a clean echo test drive it to a command prompt first; default here is a soft 'dir' which is destructive to the menu.",
+        "audio_trigger": "tone",
+        "note": "SB16; text mode -> mouse N/A"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/freedos",
+      "qmp": "/data/vms/streamhost/tiles/freedos/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54095,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 9,
+    "tilesManifestOrder": 16,
+    "tilesManifestPrelude": "\n# freedos (VMID 95) — sb16 + routed PC-speaker audio, pc-i440fx-11.0,acpi=off, cirrus, ne2k NIC, PS/2 relative.\n#   VERBATIM LAUNCHER: golden fixture — NO -snapshot (writes persist in\n#   freedos.qcow2) and boots straight into the baked snapshot via an\n#   unconditional -loadvm golden (fixture = the retro-games CHOICE menu).\n",
+    "tilesManifestInvocation": "emit freedos \\\n  --tile freedos --vmid 95 --udp 54095 --pointer rel --audio on --fps 30 \\\n  --launcher-file \"$T/freedos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/freedos/tile.env.fixture\"\n",
+    "bringUpGroup": 4,
+    "bindingOrder": 0,
+    "bindingPrelude": "  // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----\n",
+    "bindingLine": "  freedos:     { osId: 'freedos',     archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },\n",
+    "mockManifestOrder": 2,
+    "catalogOrder": 2,
+    "catalogPrelude": "",
+    "catalogBlock": "  freedos: {\n    accent: '#5fa85f',\n    era: '1990s',\n    eraSoftware: ['EDIT', 'FDISK', '4DOS', 'Arachne browser'],\n    periodBrowser: 'Arachne / Lynx (DOS)',\n    iconicApps: ['Rogue', 'Nibbles', 'DOOM (shareware)'],\n    blurb: \"The DOS command prompt that never died — C:\\\\> is still alive and well.\",\n  },\n",
+    "goldenOrder": 8,
+    "actionMapOrder": 10
+  },
+  "tileDir": "freedos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54095,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 95
+  },
+  "guestDoc": "docs/guests/freedos.md",
+  "credentialsRef": "guest/freedos",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "freedos",
+      "SH_QMP": "/data/vms/streamhost/tiles/freedos/qmp.sock",
+      "SH_PORT": "54095",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "rel",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/freedos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/freedos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_FIXTURE_DESC": "clean-freedos-games-menu"
+    },
+    "vmidLabel": 95,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "freedos",
+        "--vmid",
+        "95",
+        "--udp",
+        "54095",
+        "--pointer",
+        "rel",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/freedos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/freedos/tile.env.fixture"
+      ],
+      "deviceSetId": "freedos-current",
+      "launcher": "streamhost/tiles/freedos/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/freedos/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 64,
+      "smp": 2,
+      "vga": "cirrus",
+      "deviceSetSummary": [
+        "-name streamhost-freedos",
+        "-enable-kvm -m 64 -smp 2",
+        "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga cirrus",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-drive file=/data/gallery-guests/FreeDOS/freedos.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device ne2k_pci,netdev=n0",
+        "-qmp unix:/data/vms/streamhost/tiles/freedos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/tiles/freedos/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 64,
+        "smp": 2,
+        "vga": "cirrus",
+        "deviceSetSummary": [
+          "-name streamhost-freedos",
+          "-enable-kvm -m 64 -smp 2",
+          "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga cirrus",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+          "-drive file=/data/gallery-guests/FreeDOS/freedos.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device ne2k_pci,netdev=n0",
+          "-qmp unix:/data/vms/streamhost/tiles/freedos/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/tiles/freedos/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,acpi=off with backend-only PC-speaker routing, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 16
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#5fa85f",
+    "eraLabel": "1994 · DOS era",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "freedos",
+    "displayName": "FreeDOS",
+    "year": 1994,
+    "lineage": "MS-DOS compatible, open source",
+    "arch": "i386",
+    "ramMB": 64,
+    "notes": "The living continuation of the DOS command line, still shipping today.",
+    "accent": "#5fa85f",
+    "era": "1990s",
+    "eraSoftware": [
+      "EDIT",
+      "FDISK",
+      "4DOS",
+      "Arachne browser"
+    ],
+    "periodBrowser": "Arachne / Lynx (DOS)",
+    "iconicApps": [
+      "Rogue",
+      "Nibbles",
+      "DOOM (shareware)"
+    ],
+    "blurb": "The DOS command prompt that never died — C:\\> is still alive and well."
+  },
+  "reset": {
+    "tileDir": "freedos",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "PASS",
+    "fixture": "FreeDOS 1.3 FreeCOM prompt C:\\>; text console, no pointer surface."
+  },
+  "migrationExceptions": []
+}

@@ -1,0 +1,28 @@
+Give the MAME `indy_4610` (SGI Indy) driver 256 MB of RAM instead of 16 MB.
+
+MAME's ip24 driver leaves RAM bank A at its port default "4x4M" (16 MB) and
+bank B "Empty". IRIX 6.5 + 4Dwm pages continuously in 16 MB. `VALID` is already
+0x03 (banks A and B enabled), so banks A+B at "4x32M" (128 MB each) give 256 MB
+-- exactly a real Indy's maximum.
+
+NOTE: this CANNOT be done from a cfg/<system>.cfg <configuration> entry.
+MAME accepts and round-trips such an entry but the value never reaches the
+field (verified at runtime: `ioport.ports[":memctrl:SIMMS"]:read()` still
+returned 3). ioport.cpp applies DEVICE_INPUT_DEFAULTS only on an EXACT mask
+match (`def->mask == m_mask`), hence two entries with per-field masks below --
+a single 0x00ff entry is silently ignored.
+
+Verified: IRIX 6.5 `hinv -c memory` -> "Main memory size: 256 Mbytes".
+
+diff --git a/src/mame/sgi/indy_indigo2.cpp b/src/mame/sgi/indy_indigo2.cpp
+--- a/src/mame/sgi/indy_indigo2.cpp
++++ b/src/mame/sgi/indy_indigo2.cpp
+@@ -294,6 +294,8 @@ DEVICE_INPUT_DEFAULTS_END
+ 
+ static DEVICE_INPUT_DEFAULTS_START(ip24_mc)
+ 	DEVICE_INPUT_DEFAULTS("VALID", 0x0f, 0x03)
++	DEVICE_INPUT_DEFAULTS("SIMMS", 0x000f, 0x000e)
++	DEVICE_INPUT_DEFAULTS("SIMMS", 0x00f0, 0x00e0)
+ DEVICE_INPUT_DEFAULTS_END
+ 
+ void ip24_state::ip24_base(machine_config &config, uint32_t system_clock)

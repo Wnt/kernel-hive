@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "id": "templeos",
+  "era_year": 2013,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 6,
+        "prelude": "",
+        "line": "  \"templeos    |templeos.sh    |TempleOS    |fast     |~2-3m   |full   |TempleOS.ISO (live CD)\"\n",
+        "value": {
+          "key": "templeos",
+          "script": "templeos.sh",
+          "outputDir": "TempleOS",
+          "class": "fast",
+          "estimated": "~2-3m",
+          "automation": "full",
+          "produces": "TempleOS.ISO (live CD)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 6
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "templeos",
+      "value": {
+        "os": "TempleOS",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            600,
+            200
+          ]
+        },
+        "kbd": "type:x",
+        "kbd_reset": "BackSpace",
+        "kbd_note": "HolyC REPL echoes typed chars",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/templeos",
+      "qmp": "/data/vms/streamhost/tiles/templeos/qmp.sock",
+      "pointer_mode": "warpd",
+      "warpd_port": null,
+      "warpd_addr": "unix:/data/vms/streamhost/tiles/templeos/serial.sock",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54105,
+      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/templeos/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 19,
+    "tilesManifestOrder": 21,
+    "tilesManifestPrelude": "\n# templeos (VMID 105) — LiveCD (TempleOS.ISO), audio OFF, PS/2, plain std VGA.\n#   VERBATIM LAUNCHER: state.qcow2 (create-if-missing) holds the savevm\n#   'golden' snapshot (TempleOS is ISO/RAM-only); conditional -loadvm golden;\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (2026-07-13): TempleOS has NO USB stack and its PS/2 mouse is\n# relative. Fix (guest-agents/templeos/warpd.HC): an in-guest HolyC task WS()\n# polls the 16550 UART directly (ring-0, no serial driver needed), parses the\n# warpd M/P/R/B protocol, and writes motion straight to the global mouse state\n# ms.pos.x/y + clicks to ms.lb/ms.rb (framebuffer-verified). The agent is\n# Spawn()ed at the T:/Home> REPL and BAKED into the golden RAM snapshot.\n",
+    "tilesManifestInvocation": "emit templeos \\\n  --tile templeos --vmid 105 --udp 54105 --pointer warpd \\\n  --warpd-addr unix:/data/vms/streamhost/tiles/templeos/serial.sock \\\n  --audio off --fps 30 \\\n  --launcher-file \"$T/templeos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/templeos/tile.env.fixture\"\n",
+    "bringUpGroup": 5,
+    "bindingOrder": 19,
+    "bindingPrelude": "",
+    "bindingLine": "  templeos:    { osId: 'templeos',    archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#f2c14e', eraLabel: '2013 · TempleOS' },\n",
+    "museumOrder": 15,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'templeos', displayName: 'TempleOS', year: 2013,\n    lineage: 'Terry A. Davis / from-scratch', arch: 'x86_64', ramMB: 1024,    era: '2010s', accent: '#f2c14e',\n    eraSoftware: ['HolyC', 'The Oracle', 'After Egypt', 'built-in editor'],\n    periodBrowser: 'none — no networking by design',\n    iconicApps: ['HolyC REPL', 'The Oracle', 'After Egypt'],\n    blurb: 'Terry Davis’ divine 640x480 16-colour temple — a ring-0, single-address-space OS written from scratch in HolyC.',\n    notes: 'Live streamhost tile. PS/2 input only — TempleOS has no USB stack. Ring-0, single-address-space, no networking by design; CD-only ephemeral live boot.',\n  },\n",
+    "goldenOrder": 18,
+    "actionMapOrder": 20
+  },
+  "tileDir": "templeos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54105,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "warpd",
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "agentAddress": "unix:/data/vms/streamhost/tiles/templeos/serial.sock"
+    },
+    "slot": 105
+  },
+  "guestDoc": "docs/guests/templeos.md",
+  "credentialsRef": "guest/templeos",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "templeos",
+      "SH_QMP": "/data/vms/streamhost/tiles/templeos/qmp.sock",
+      "SH_PORT": "54105",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "warpd",
+      "SH_WARPD_ADDR": "unix:/data/vms/streamhost/tiles/templeos/serial.sock",
+      "SH_AUDIO": "off",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/templeos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/templeos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_GOLDEN_STATE_DISK": "/data/vms/streamhost/tiles/templeos/state.qcow2",
+      "SH_FIXTURE_DESC": "clean-templeos-holyc-prompt"
+    },
+    "vmidLabel": 105,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "templeos",
+        "--vmid",
+        "105",
+        "--udp",
+        "54105",
+        "--pointer",
+        "warpd",
+        "--warpd-addr",
+        "unix:/data/vms/streamhost/tiles/templeos/serial.sock",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/templeos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/templeos/tile.env.fixture"
+      ],
+      "deviceSetId": "templeos-current",
+      "launcher": "streamhost/tiles/templeos/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/templeos/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 1024,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-templeos",
+        "-enable-kvm -m 1024 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-cdrom /data/gallery-guests/TempleOS/TempleOS.ISO -boot d",
+        "-drive file=\"$STATE\",if=ide,format=qcow2",
+        "-vga std",
+        "-display dbus,p2p=on",
+        "-chardev socket,id=ser0,path=$BASE/serial.sock,server=on,wait=off",
+        "-serial chardev:ser0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 1024,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-templeos",
+          "-enable-kvm -m 1024 -smp 1",
+          "-machine pc-i440fx-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-cdrom /data/gallery-guests/TempleOS/TempleOS.ISO -boot d",
+          "-drive file=\"$STATE\",if=ide,format=qcow2",
+          "-vga std",
+          "-display dbus,p2p=on",
+          "-chardev socket,id=ser0,path=$BASE/serial.sock,server=on,wait=off",
+          "-serial chardev:ser0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 21
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#f2c14e",
+    "eraLabel": "2013 · TempleOS"
+  },
+  "museum": {
+    "id": "templeos",
+    "displayName": "TempleOS",
+    "year": 2013,
+    "lineage": "Terry A. Davis / from-scratch",
+    "arch": "x86_64",
+    "ramMB": 1024,
+    "era": "2010s",
+    "accent": "#f2c14e",
+    "eraSoftware": [
+      "HolyC",
+      "The Oracle",
+      "After Egypt",
+      "built-in editor"
+    ],
+    "periodBrowser": "none — no networking by design",
+    "iconicApps": [
+      "HolyC REPL",
+      "The Oracle",
+      "After Egypt"
+    ],
+    "blurb": "Terry Davis’ divine 640x480 16-colour temple — a ring-0, single-address-space OS written from scratch in HolyC.",
+    "notes": "Live streamhost tile. PS/2 input only — TempleOS has no USB stack. Ring-0, single-address-space, no networking by design; CD-only ephemeral live boot."
+  },
+  "reset": {
+    "tileDir": "templeos",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "SKIP",
+    "fixture": "TempleOS desktop; continuously animates (idle cf ~6e-3) so neither pointer nor key reaction can be separated from animation."
+  }
+}

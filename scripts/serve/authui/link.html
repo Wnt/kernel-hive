@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>The Kernel Hive — link device</title>
+<link rel="stylesheet" href="/ui/app.css">
+</head>
+<body>
+<main>
+  <h1>Link device</h1>
+  <p class="sub" id="lead">Checking the code…</p>
+
+  <div class="panel hidden" id="ready">
+    <p class="sub" id="who"></p>
+    <button id="link">Create a passkey on device</button>
+  </div>
+
+  <div class="panel hidden" id="dead">
+    <p class="sub">Codes are only valid for one minute. Scan a fresh one from a device you are
+      already signed in on — <b>Account → Link another device</b> — and scan it again.</p>
+    <button id="retry" class="secondary">Try again</button>
+  </div>
+
+  <div id="msg" class="msg"></div>
+  <footer><a href="/login">Sign in another way</a></footer>
+</main>
+<script type="module" src="/ui/link.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Enum\ACPI\QEMU0002\3&267a616a&0]
+"ConfigFlags"=dword:00000002
+
+[HKEY_LOCAL_MACHINE\SYSTEM\ControlSet002\Enum\ACPI\QEMU0002\3&267a616a&0]
+"ConfigFlags"=dword:00000002

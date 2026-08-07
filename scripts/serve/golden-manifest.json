@@ -1,0 +1,376 @@
+{
+ "_generated": "scripts/tiles-registry.py generate; DO NOT EDIT; run `make tile-registry-generate`",
+ "_comment": "Golden reset manifest for the 26 streamhost input-regression tiles plus the 4 emulator-bridge retro tiles (c64/atarist/apple2/amiga; on those, mouse/keyboard 'UNVERIFIED' = input verdicts not yet pixel-certified). Keyed by osId (the SPA ?streamhost=<osId> id, the /signal/<osId>.json key, and the /restore/<osId> path segment). resetMode=loadvm restores the in-qcow2 live `golden` snapshot via QMP (fast, no restart, RAM+devices exact); resetMode=restart cold-boots the tile's curated fixture by re-running qemu-streamhost.sh + restarting streamhost@ (for tiles whose backing store cannot hold a vmstate snapshot). NON-DESTRUCTIVE: reset only restores/relaunches, it never runs savevm. mouse/keyboard = the visually-certified per-input verdict (PASS = a reaction was pixel-verified on the guest's QMP framebuffer by an agent reading before/after PNGs; SKIP = input IS delivered over the open control channel but a documented guest limitation prevents pixel-verification off the captured VGA framebuffer).",
+ "tiles": {
+  "reactos": {
+   "tileDir": "reactos",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "ReactOS 0.4.14 LiveCD clean desktop; focused empty Notepad (caret = keyboard surface); pointer on clear desktop; taskbar clock hidden."
+  },
+  "tinycore": {
+   "tileDir": "tinycore",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "SKIP",
+   "fixture": "Tiny Core FLWM desktop; no terminal focused so typed text has nowhere to echo."
+  },
+  "alpine": {
+   "tileDir": "alpine",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "PASS",
+   "fixture": "Alpine Linux text console at a login/shell prompt; no pointer surface."
+  },
+  "win311": {
+   "tileDir": "win311",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "SKIP",
+   "fixture": "Windows 3.11 Program Manager at 1024x768x8 (vbesvga.drv on -vga std); software cursor captured in the scanout; root has no keyboard-echo field."
+  },
+  "win95": {
+   "tileDir": "win95",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Windows 95 desktop; Notepad focused; Start-menu closed (Ctrl+Esc probe is a clean closed->open)."
+  },
+  "win98se": {
+   "tileDir": "win98se",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Windows 98 SE desktop; focused editor; Start-menu closed."
+  },
+  "win2000": {
+   "tileDir": "win2000",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "PASS",
+   "fixture": "Windows 2000 desktop at 1600x1200 True Color (VBEMP-NT/framebuf std VGA; software cursor now captured). Clean idle desktop, no open window."
+  },
+  "winxp": {
+   "tileDir": "winxp",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Windows XP; empty Notepad, caret top-left (Line 1 Col 1), pointer parked right."
+  },
+  "freedos": {
+   "tileDir": "freedos",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "PASS",
+   "fixture": "FreeDOS 1.3 FreeCOM prompt C:\\>; text console, no pointer surface."
+  },
+  "ninefront": {
+   "tileDir": "ninefront",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Settled 9front rio desktop with acme, stats, catclock, and a focused rc terminal; golden restores directly into the fully painted, keyboard-ready fixture."
+  },
+  "kolibrios": {
+   "tileDir": "kolibrios",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "SKIP",
+   "fixture": "KolibriOS desktop; continuously animates (idle cf ~0.14) so a keypress cannot be separated from the animation."
+  },
+  "toaruos": {
+   "tileDir": "toaruos",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "restart",
+   "snapshot": null,
+   "mouse": "SKIP",
+   "keyboard": "PASS",
+   "fixture": "ToaruOS LiveCD; closed Applications menu, focused Terminal with solid caret. Backing store holds no vmstate -> cold-boot reset."
+  },
+  "helenos": {
+   "tileDir": "helenos",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "SKIP",
+   "fixture": "HelenOS mixed console/GUI; HW cursor uncaptured, no reliably-focused shell for echo."
+  },
+  "solaris": {
+   "tileDir": "solariscde",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "SKIP",
+   "fixture": "Solaris CDE desktop restored from the gallery-hid VMState golden; native HW input reaches the full 1920x1200 framebuffer. NOTE osId 'solaris' -> tileDir 'solariscde'."
+  },
+  "android": {
+   "tileDir": "android",
+   "pointer": "abs",
+   "touch": true,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "SKIP",
+   "fixture": "Android-x86 9.0-r2 Terminal Emulator at a shell prompt; home screen static (nothing to scroll), no HW-keyboard field."
+  },
+  "serenityos": {
+   "tileDir": "serenityos",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "restart",
+   "snapshot": null,
+   "mouse": "PASS",
+   "keyboard": "SKIP",
+   "fixture": "SerenityOS desktop. Boots from a fresh qcow2 over the base image on each launch -> cold-boot reset (no vmstate snapshot)."
+  },
+  "postmarketos": {
+   "tileDir": "postmarketos",
+   "pointer": "abs",
+   "touch": true,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "SKIP",
+   "fixture": "postmarketOS v26.06 phosh; GNOME Console (kgx) maximized + focused ash prompt, 720x1440 portrait. Touch/swipe pixel-verifies; no HW-keyboard field."
+  },
+  "sailfishos": {
+   "tileDir": "sailfishos",
+   "pointer": "abs",
+   "touch": true,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "SKIP",
+   "fixture": "Sailfish OS home screen; static under a centre swipe, no HW-keyboard field."
+  },
+  "templeos": {
+   "tileDir": "templeos",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "SKIP",
+   "fixture": "TempleOS desktop; continuously animates (idle cf ~6e-3) so neither pointer nor key reaction can be separated from animation."
+  },
+  "haiku": {
+   "tileDir": "haiku",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "PASS",
+   "fixture": "Haiku R1/beta5 desktop; focused Terminal echoes keys; app_server HW cursor uncaptured."
+  },
+  "os2warp": {
+   "tileDir": "os2warp",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "SKIP",
+   "fixture": "OS/2 Warp 4.52 Workplace Shell at 1024x768; no window holds keyboard focus so echo is state-dependent."
+  },
+  "aros": {
+   "tileDir": "amigaos",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "SKIP",
+   "fixture": "AROS ('AmigaOS') Wanderer desktop, 1024x768; Poseidon hid.class bound to QEMU USB Tablet in the device-set-matched golden. NOTE osId 'aros' -> tileDir 'amigaos'."
+  },
+  "qnx": {
+   "tileDir": "qnx",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "SKIP",
+   "fixture": "QNX Neutrino 6.5 Photon 1024x768, 64K devg-svga on -vga cirrus, tablet-free golden (2026-07-15 re-bake): PS/2 relative pointer driven 1:1 via pointer-lock type=4; HW cursor overlay uncaptured; no focused echo field."
+  },
+  "msdoswin1": {
+   "tileDir": "msdoswin1",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "SKIP",
+   "keyboard": "PASS",
+   "fixture": "MS-DOS 6.22 GALLERY MENU text screen, live COMMAND.COM at C:\\>; text console, no pointer surface."
+  },
+  "c64": {
+   "tileDir": "c64",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "UNVERIFIED",
+   "fixture": "C64 GEOS 2.0 deskTop with COMM 1351 active in VICE x64sc; browser absolute coordinates translated to tablet-free PS/2 relative motion (vmport=off); cursor tracking and CONFIGURE-icon click certified 2026-07-16."
+  },
+  "atarist": {
+   "tileDir": "atarist",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "UNVERIFIED",
+   "keyboard": "UNVERIFIED",
+   "fixture": "Atari ST EmuTOS GEM desktop (menu bar, DISK A/B, TRASH, PRINTER) in Hatari, mono ST-high; YM2149->ALSA->AC97. Emulator-bridge tile added 2026-07-08."
+  },
+  "apple2": {
+   "tileDir": "apple2",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "UNVERIFIED",
+   "keyboard": "UNVERIFIED",
+   "fixture": "Apple GEOS deskTop (BIGWON disk window open) in LinApple 2.3.0 on an Apple //e; speaker->ALSA->AC97. Emulator-bridge tile added 2026-07-08."
+  },
+  "amiga": {
+   "tileDir": "amiga",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "UNVERIFIED",
+   "keyboard": "UNVERIFIED",
+   "fixture": "Amiga 500 (68000) Workbench 1.3 desktop in FS-UAE; Kickstart 1.3; Paula->ALSA->AC97. Emulator-bridge tile added 2026-07-08."
+  },
+  "redstar2": {
+   "tileDir": "redstar2",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Red Star OS 2.0 logged in as gallery on a curated 1920x1200 KDE desktop; KDM auto-login, no modal, wizard, screensaver, or clock."
+  },
+  "redstar3": {
+   "tileDir": "redstar3",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Logged-in idle Red Star OS 3.0 desktop at 1920x1080 with complete menubar, wallpaper, and dock; no wizard, modal, or screensaver."
+  },
+  "amstradcpc": {
+   "tileDir": "amstradcpc",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "Amstrad CPC 6128 Locomotive BASIC Ready prompt (yellow on blue) in Caprice32 (cap32); explicit key down/up path certified with PRINT \"HELLO\", RETURN, RUN, and framebuffer output on 2026-07-27; keyboard-only exhibit (no mouse); AY-3-8912 -> ALSA -> AC97."
+  },
+  "nt351": {
+   "tileDir": "nt351",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Windows NT 3.51 Program Manager at accelerated Cirrus 1024x768x65536 colors (16bpp) with the Main group maximized and focused; screensaver off, caret blink slowest, mouse tracking speed slowest, pointer parked lower-right."
+  },
+  "nt4": {
+   "tileDir": "nt4",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Windows NT 4.0 Workstation SP6a; Administrator auto-logon; clean idle accelerated Cirrus 1024x768x65536-color desktop; pointer parked lower-right."
+  },
+  "openvms": {
+   "tileDir": "openvms",
+   "pointer": "PASS (usb-tablet 1:1 at 20%, 50%, 80%)",
+   "touch": false,
+   "resetMode": "restart",
+   "snapshot": null,
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "OpenVMS DECwindows Motif desktop at 1024x768 with DECterm at a DCL $ prompt, FileView, Clock, and Calculator. Cold service restart starts fresh Xorg and OpenVMS SLIRP processes, restores leanx-preconnect, and replays the fixture."
+  },
+  "irix": {
+   "tileDir": "irix",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "relaunch",
+   "snapshot": null,
+   "mouse": "UNVERIFIED",
+   "keyboard": "UNVERIFIED",
+   "fixture": "SGI Indy (MIPS R4600 100MHz) IRIX 6.5 4Dwm Indigo Magic desktop in MAME indy_4610; xl24 24-bit graphics, exact emulated framebuffer 1288x1024; captured via streamhost SH_CAPTURE=shm (MAME -video none, no X server) + mamesock ioport input (mamectl ctl.sock, issue #45). x11-runtime (Xvfb/MAME) tile added 2026-07-30 (issue #20)."
+  },
+  "mpf2": {
+   "tileDir": "mpf2",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "Multitech Microprofessor II 560x192 @ 60 Hz composite (6-colour artifact) drawn fullscreen with aspect correction on a 1024x768 X root in MAME mpf2; golden INTERNAL snapshot restores X (-nocursor) + MAME showing the MPF-II banner and BASIC prompt exactly as baked from a cold boot. No post-restore keys: driving a MAME soft reset to replay the ROM power-on beep raced the restore and intermittently left the screen scrolled with the banner gone and two prompts stacked. Keyboard-only exhibit (no mouse); AC97 audio."
+  },
+  "win11": {
+   "tileDir": "win11",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Windows 11 Pro 25H2 desktop, auto-logged in as WIN11\\lab, empty desktop, no dialogs; network isolated (no default route)."
+  }
+ }
+}

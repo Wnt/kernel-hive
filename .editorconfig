@@ -1,0 +1,29 @@
+# EditorConfig — https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Python and Rust follow their ecosystem default of 4 spaces.
+[*.{py,rs}]
+indent_size = 4
+
+# Markdown: trailing double-space is a hard line break.
+[*.md]
+trim_trailing_whitespace = false
+
+[Makefile]
+indent_style = tab
+
+# shfmt (Bash quality gate, quality/bash) reads EditorConfig directly — with
+# no CLI flags, `shfmt -d`/`-w` on this repo matches `-i 2 -ci`: 2-space indent
+# (inherited from the [*] section above) plus indented `case`/`esac` arms via
+# the shfmt-specific `switch_case_indent` key below. Keep in sync with any
+# future shfmt flag changes.
+[*.sh]
+switch_case_indent = true

@@ -1,0 +1,39 @@
+Section "ServerLayout"
+    Identifier  "GalleryLayout"
+    Screen      0 "GalleryScreen" 0 0
+    InputDevice "GalleryKeyboard" "CoreKeyboard"
+    InputDevice "GalleryMouse" "CorePointer"
+EndSection
+
+Section "InputDevice"
+    Identifier "GalleryKeyboard"
+    Driver     "kbd"
+EndSection
+
+Section "InputDevice"
+    Identifier "GalleryMouse"
+    Driver     "mouse"
+    Option     "Protocol" "VUID"
+    Option     "Device" "/dev/gallerymouse"
+    Option     "Buttons" "3"
+EndSection
+
+Section "Monitor"
+    Identifier "QEMUMonitor"
+EndSection
+
+Section "Device"
+    Identifier "QEMUVESA"
+    Driver     "vesa"
+EndSection
+
+Section "Screen"
+    Identifier   "GalleryScreen"
+    Device       "QEMUVESA"
+    Monitor      "QEMUMonitor"
+    DefaultDepth 24
+    SubSection "Display"
+        Depth 24
+        Modes "1920x1200"
+    EndSubSection
+EndSection

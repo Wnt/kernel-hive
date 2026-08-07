@@ -1,0 +1,174 @@
+Re-derive the SGI VC2 video-timing table when its RAM is written, not only when
+register 0x00 is written.
+
+STATUS (2026-08-02): this corrects a REAL emulation inaccuracy, but it does NOT
+fix the intermittent black-screen boot hang it was written for, and it is NOT in
+the production build. Read both sections below before using it.
+
+THE INACCURACY (proven, and what this patch fixes)
+
+A real VC2 re-reads its video-timing table out of its own RAM continuously, on
+every frame. MAME instead DECODES that table once, in
+`vc2_device::update_screen_size()`, and calls it from exactly one place: a write
+to VC2 register 0x00 (video entry pointer). Instrumenting a cold boot (log the
+emulated timestamp of every register-0x00 write and count the RAM words written
+between them):
+
+    2.785  REG0 vid=0400 ramw=150   readout=386,41..1674,1065 size=1288x1024
+    3.586  REG0 vid=0400 ramw=1455  readout=386,41..1674,1065 size=1288x1024
+   10.865  REG0 vid=0400 ramw=2760  readout=386,41..1674,1065 size=1288x1024
+   57.830  REG0 vid=0400 ramw=4066  readout=386,41..1674,1065 size=1288x1024
+   59.510  RAMW n=7408 addr=1000
+   61.940  RAMW n=8564 addr=0500
+
+The last register-0x00 write is at emulated t=57.8 s; IRIX then writes ~4,500
+further timing-RAM words and never touches register 0x00 again. Every frame for
+the rest of the session is scanned out from a decode of a table that no longer
+exists. That is a genuine divergence from the hardware and worth fixing on its
+own merits.
+
+WHAT IT DOES NOT FIX (measured, do not re-litigate)
+
+The hypothesis was that a stale decode would sometimes leave a DEGENERATE
+rectangle -- `set_size()` blanking the screen with no way back -- and that this
+was the intermittent black-screen boot hang. That is wrong:
+
+  * A captured hang shows the emulated screen geometry reading 1288x1024 for
+    every one of 180 samples, straight through the blackout. The screen is black
+    while set_size() is perfectly healthy.
+  * In a 60-trial controlled A/B (control and treatment built from ONE tree,
+    differing only in this patch) the treatment cell hung anyway, with the
+    identical signature: black at emulated t=59, geometry constant, emulated
+    clock still advancing.
+
+So the blackness lives elsewhere -- framebuffer contents, the CMAP palette, the
+XMAP mode entries, or the guest's X server -- and the mitigation that actually
+works is the boot watchdog in `streamhost/tiles/irix/x11-runtime.sh`.
+
+THE CHANGE
+
+Mark the table dirty on any write to the timing RAM and re-derive it at vblank,
+which is what the hardware effectively does. Two details keep it cheap and
+behaviour-preserving:
+
+  * Throttled to one re-decode per 8 vblanks, because `decode_vt_table()` clears
+    a 16 MB scratch table. The dirty flag is only ever set while software is
+    actively programming the timing RAM (four short bursts in a whole IRIX
+    boot), so the steady-state cost is ZERO re-decodes.
+  * `update_screen_size()` now signals `m_screen_timing_changed` only when the
+    derived rectangle actually MOVED, so a routine that previously ran ~4 times
+    per boot does not reconfigure the screen every frame during a mode set.
+
+Both new members are `save_item()`-registered. Measured cost: nil -- paired
+trials of control vs patched reached the same emulated time in 272 s vs 274 s.
+
+Apply from the MAME source root:
+  patch -p1 -d src/devices/bus/gio64 < mame-newport-vc2-restale-timing.patch
+
+--- a/newport.cpp	2026-07-31 11:44:24.501411689 +0300
++++ b/newport.cpp	2026-07-31 11:44:24.526067872 +0300
+@@ -339,6 +339,9 @@
+ 	save_item(NAME(m_readout_y1));
+ 
+ 	save_item(NAME(m_enable_cursor));
++
++	save_item(NAME(m_vt_dirty));
++	save_item(NAME(m_vt_dirty_wait));
+ }
+ 
+ void vc2_device::device_reset()
+@@ -372,6 +375,9 @@
+ 	m_readout_x1 = 0;
+ 	m_readout_y1 = 0;
+ 
++	m_vt_dirty = false;
++	m_vt_dirty_wait = 0;
++
+ 	m_enable_cursor = false;
+ }
+ 
+@@ -456,6 +462,7 @@
+ 		if (offset == 3)
+ 		{
+ 			LOGMASKED(LOG_VC2, "RAM Write: %04x = %08x\n", m_ram_addr, (uint16_t)data);
++			m_vt_dirty = true;
+ 			m_ram[m_ram_addr] = (uint16_t)data;
+ 			m_ram_addr++;
+ 			if (m_ram_addr >= RAM_SIZE)
+@@ -723,6 +730,11 @@
+ 
+ void vc2_device::update_screen_size()
+ {
++	const int old_x0 = m_readout_x0;
++	const int old_y0 = m_readout_y0;
++	const int old_x1 = m_readout_x1;
++	const int old_y1 = m_readout_y1;
++
+ 	decode_vt_table();
+ 
+ 	bool x_started = false;
+@@ -771,7 +783,15 @@
+ 		}
+ 	}
+ 
+-	m_screen_timing_changed(1);
++	// Only disturb the screen when the derived geometry actually moved: this
++	// now runs whenever the timing RAM is written, not just on a register-0x00
++	// write, and re-configuring the screen every frame would be both wasteful
++	// and visible.
++	if (m_readout_x0 != old_x0 || m_readout_y0 != old_y0
++		|| m_readout_x1 != old_x1 || m_readout_y1 != old_y1)
++	{
++		m_screen_timing_changed(1);
++	}
+ }
+ 
+ bool vc2_device::is_cursor_active(int x, int y)
+@@ -817,6 +837,33 @@
+ {
+ 	if (state)
+ 	{
++		// The real VC2 re-reads its video-timing table out of its own RAM on
++		// every frame; this emulation decoded it once, and only when register
++		// 0x00 (video entry pointer) was written. IRIX does NOT rewrite that
++		// register after it reprograms the table: instrumenting a boot shows
++		// the last 0x00 write at emulated t=57.8 s followed by ~4,500 further
++		// timing-RAM words and no further 0x00 write ever. The decode is
++		// therefore permanently stale, and when the table happened to be
++		// incomplete at the moment 0x00 was written, update_screen_size()
++		// derived a degenerate rectangle, set_size() blanked the screen and
++		// nothing could ever un-blank it -- the intermittent black-screen boot
++		// hang on the SGI Indy.
++		//
++		// So re-derive when the table has been written. Throttled to one
++		// re-decode per DIRTY_VBLANKS frames because decode_vt_table() clears a
++		// 16 MB scratch table; the flag is only set while software is actually
++		// programming the timing RAM, so the steady-state cost is zero.
++		if (m_vt_dirty)
++		{
++			static constexpr int DIRTY_VBLANKS = 8;
++			if (++m_vt_dirty_wait >= DIRTY_VBLANKS)
++			{
++				m_vt_dirty = false;
++				m_vt_dirty_wait = 0;
++				update_screen_size();
++			}
++		}
++
+ 		if (BIT(m_display_ctrl, 0))
+ 		{
+ 			m_vert_int(1);
+--- a/newport.h	2026-07-31 11:44:24.504411729 +0300
++++ b/newport.h	2026-07-31 11:44:24.526210658 +0300
+@@ -203,6 +203,11 @@
+ 
+ 	bool m_enable_cursor;
+ 
++	// Set by any write to the video-timing RAM; consumed at vblank. See the
++	// comment on vblank_w() in newport.cpp.
++	bool m_vt_dirty;
++	int m_vt_dirty_wait;
++
+ 	devcb_write_line m_vert_int;
+ 	devcb_write_line m_screen_timing_changed;
+ 

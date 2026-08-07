@@ -1,0 +1,55 @@
+# verify-emit-allow.diffpatterns — intentional emit-vs-live deltas, each justified.
+#
+# Consumed by scripts/dev/verify-emit.sh. Line format:
+#     <tile>|<file>|<extended-regex>
+# tile = tile-dir name or *;  file = tile.env | qemu-streamhost.sh | *.
+# The regex matches a whole diff CONTENT line INCLUDING its prefix:
+#     "< " = the line exists only in the LIVE file (superseded by the repo)
+#     "> " = the line exists only in the EMITTED/repo file (repo is ahead)
+# Every entry must carry a one-line justification comment directly above it.
+# An unexplained diff line fails the gate — do NOT add entries without a reason.
+
+# ---------------------------------------------------------------------------
+# GLOBAL: launcher comment drift. The generic-template tiles' live launchers
+# were emitted by the pre-2026-07 emitter whose header still described the
+# neko pilot cutover (neko is gone) and used the short fast-poll comment; the
+# current emitter's text supersedes both. Pure comments — zero functional
+# content. Clears on the next legitimate live re-emit.
+*|qemu-streamhost.sh|^< # Kill only by pidfile\. This REPLACES the neko capture for this one tile during$
+*|qemu-streamhost.sh|^< # its pilot; neko is restored by ROLLBACK\.md\.$
+*|qemu-streamhost.sh|^> # Kill only by pidfile\. Stop/restore procedure for this one tile: ROLLBACK\.md\.$
+*|qemu-streamhost.sh|^< # streamhost display fast-poll \(pve-qemu 0047\): dbus poll every SH_DBUS_UPDATE_MS ms\.$
+*|qemu-streamhost.sh|^> # streamhost QEMU display-capture fast-poll \(pve-qemu 0047 patch\): dbus display$
+*|qemu-streamhost.sh|^> # polls every SH_DBUS_UPDATE_MS ms \(default 4; clamp 1\.\.29; 0/unset = stock 30 ms\)\.$
+*|qemu-streamhost.sh|^> # Overridable per-tile by exporting SH_DBUS_UPDATE_MS before this launcher runs\.$
+
+# ---------------------------------------------------------------------------
+# alpine: ISO canonicalized to /data/isos/Alpine.iso — the live launcher still
+# points into retired CT110's rootfs subvol (CT110 is gone; the builder lands
+# the ISO at /data/isos/).
+alpine|qemu-streamhost.sh|^< +-cdrom /data/subvol-110-disk-0/opt/osgallery/guests/Alpine\.iso -boot d \\$
+alpine|qemu-streamhost.sh|^> +-cdrom /data/isos/Alpine\.iso -boot d \\$
+
+# tinycore: ISO canonicalized to /data/isos/TinyCore.iso — live still points at
+# the old /data/vms/spikeA/iso/ spike dir (retired; builder lands at /data/isos/).
+tinycore|qemu-streamhost.sh|^<   -drive file="\$STATE",if=virtio,format=qcow2 -cdrom /data/vms/spikeA/iso/TinyCore\.iso -boot d \\$
+tinycore|qemu-streamhost.sh|^>   -drive file="\$STATE",if=virtio,format=qcow2 -cdrom /data/isos/TinyCore\.iso -boot d \\$
+
+# reactos: golden-snapshot store canonicalized to /data/gallery-guests/ReactOS/
+# (live still uses the ad-hoc /data/reactos-golden/ dir) — launcher GDIR= +
+# three header-comment mentions, and the tile.env GOLDEN_* metadata paths.
+reactos|qemu-streamhost.sh|^< .*/data/reactos-golden
+reactos|qemu-streamhost.sh|^> .*/data/gallery-guests/ReactOS
+reactos|tile.env|^< GOLDEN_(SNAPSHOT_STORE|MANIFEST)=/data/reactos-golden/
+reactos|tile.env|^> GOLDEN_(SNAPSHOT_STORE|MANIFEST)=/data/gallery-guests/ReactOS/
+
+# apple2: the live bridge launcher was hand-patched before the fast-poll export
+# became fleet standard and never gained it (stock 30 ms dbus poll — an
+# oversight, not a choice); the repo launcher restores the standard 4 ms poll.
+apple2|qemu-streamhost.sh|^> # streamhost display fast-poll \(pve-qemu 0047\): dbus poll every SH_DBUS_UPDATE_MS ms\.$
+apple2|qemu-streamhost.sh|^> export SH_DBUS_UPDATE_MS="\$\{SH_DBUS_UPDATE_MS:-4\}"$
+
+# win98se: same fast-poll-export gap as apple2 (launcher rewritten during the
+# 2026-07-12 acpi=on re-bake and the export was dropped); repo restores it.
+win98se|qemu-streamhost.sh|^> # streamhost display fast-poll \(pve-qemu 0047\): dbus poll every SH_DBUS_UPDATE_MS ms\.$
+win98se|qemu-streamhost.sh|^> export SH_DBUS_UPDATE_MS="\$\{SH_DBUS_UPDATE_MS:-4\}"$

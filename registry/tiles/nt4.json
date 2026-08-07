@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "id": "nt4",
+  "era_year": 1996,
+  "tileDir": "nt4",
+  "lifecycle": "production",
+  "enabled": true,
+  "display": {
+    "width": 1024,
+    "height": 768,
+    "bitsPerPixel": 16,
+    "colors": 65536
+  },
+  "build": {
+    "rows": [
+      {
+        "order": 32,
+        "prelude": "",
+        "line": "  \"nt4         |nt4.sh         |Nt4           |fast     |~2-5m   |full    |nt4-golden.qcow2 (prebuilt VMware VM -> qcow2 + boot.ini scsi->multi fix)\"\n",
+        "value": {
+          "key": "nt4",
+          "script": "nt4.sh",
+          "outputDir": "Nt4",
+          "class": "fast",
+          "estimated": "~2-5m",
+          "automation": "full",
+          "produces": "nt4-golden.qcow2 (prebuilt VMware VM -> qcow2 + boot.ini scsi->multi fix)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "nt4",
+      "value": {
+        "os": "Windows NT 4.0 Workstation SP6a",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            102,
+            77
+          ],
+          "b": [
+            922,
+            691
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "Super opens the NT4 Start menu",
+        "audio_trigger": "none",
+        "validated": true,
+        "note": "1024x768x65536-color (16bpp) accelerated ISA Cirrus desktop; true absolute 1:1 VMware pointing device via pc vmport=on. Requires /opt/qemu-cirrusfix2 with Cirrus patches 0004+0005."
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/nt4",
+      "qmp": "/data/vms/streamhost/tiles/nt4/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54089,
+      "notes": "true absolute vmmouse pointer; no exec channel: use labctl keyboard/pointer/framebuffer operations"
+    }
+  },
+  "render": {
+    "signalOrder": 18,
+    "tilesManifestOrder": 30,
+    "tilesManifestPrelude": "\n# nt4 (VMID 89) — Windows NT 4.0 Workstation SP6a, accelerated ISA Cirrus\n#   1024x768x65536 colors (16bpp), pcnet device, audio off. VERBATIM launcher:\n#   boots the tile-local nt4-golden.qcow2 without -snapshot; conditional\n#   -loadvm golden. Pins /opt/qemu-cirrusfix2 with patches 0004 (ROP1 fill) and\n#   0005 (ISA Cirrus vmstate substructure restore); rebuild and reverify on a\n#   packaged-QEMU version change. pc vmport=on auto-instantiates vmmouse, which\n#   the preserved NT4 driver consumes as true absolute 1:1 input.\n",
+    "tilesManifestInvocation": "emit nt4 \\\n  --tile nt4 --vmid 89 --udp 54089 --pointer abs --audio off --fps 30 \\\n  --launcher-file \"$T/nt4/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/nt4/tile.env.fixture\"\n",
+    "bringUpGroup": 3,
+    "bindingOrder": 36,
+    "bindingPrelude": "",
+    "bindingLine": "  nt4:         { osId: 'nt4',         archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#1f7a7a', eraLabel: '1996 · Windows NT 4.0' },\n",
+    "museumOrder": 30,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'nt4', displayName: 'Windows NT 4.0', year: 1996,\n    lineage: 'Windows NT 4.0', arch: 'i386', ramMB: 128,    era: '1990s', accent: '#1f7a7a',\n    eraSoftware: ['Explorer shell', 'Internet Explorer 2.0', 'Solitaire', 'Paint'],\n    periodBrowser: 'Internet Explorer 2.0',\n    iconicApps: ['Solitaire', 'Minesweeper', 'Paint'],\n    blurb: 'The classic Explorer shell on the NT kernel. The teal desktop that brought the Windows 95 look to enterprise NT.',\n  },\n",
+    "goldenOrder": 30,
+    "actionMapOrder": 29
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54089,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "vmmouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 89
+  },
+  "guestDoc": "docs/guests/nt4.md",
+  "credentialsRef": "guest/nt4",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "nt4",
+      "SH_QMP": "/data/vms/streamhost/tiles/nt4/qmp.sock",
+      "SH_PORT": "54089",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/nt4/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nt4/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_GOLDEN_DISKS": "nt4-golden.qcow2"
+    },
+    "vmidLabel": 89,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "nt4",
+        "--vmid",
+        "89",
+        "--udp",
+        "54089",
+        "--pointer",
+        "abs",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/nt4/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/nt4/tile.env.fixture"
+      ],
+      "deviceSetId": "nt4-i440fx11-isacirrus-1024x768-rop1-vmstate",
+      "launcher": "streamhost/tiles/nt4/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/nt4/tile.env.fixture",
+      "binary": "/opt/qemu-cirrusfix2/bin/qemu-system-i386",
+      "machine": "pc-i440fx-11.0,hpet=off,vmport=on",
+      "accel": "kvm",
+      "cpu": "pentium3",
+      "memoryMB": 128,
+      "smp": 1,
+      "vga": "isa-cirrus-vga",
+      "deviceSetSummary": [
+        "/opt/qemu-cirrusfix2/bin/qemu-system-i386 -L /usr/share/kvm",
+        "-name streamhost-nt4",
+        "-enable-kvm -m 128 -smp 1",
+        "-machine pc-i440fx-11.0,hpet=off,vmport=on -cpu pentium3",
+        "-rtc base=localtime",
+        "-device isa-cirrus-vga,global-vmstate=on",
+        "-drive file=$D/nt4-golden.qcow2,format=qcow2,if=ide",
+        "-netdev user,id=n0 -device pcnet,netdev=n0",
+        "-display dbus,p2p=on",
+        "conditional -loadvm golden",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off",
+        "-pidfile $D/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "/opt/qemu-cirrusfix2/bin/qemu-system-i386",
+        "machine": "pc-i440fx-11.0,hpet=off,vmport=on",
+        "accel": "kvm",
+        "cpu": "pentium3",
+        "memoryMB": 128,
+        "smp": 1,
+        "vga": "isa-cirrus-vga",
+        "deviceSetSummary": [
+          "/opt/qemu-cirrusfix2/bin/qemu-system-i386 -L /usr/share/kvm",
+          "-name streamhost-nt4",
+          "-enable-kvm -m 128 -smp 1",
+          "-machine pc-i440fx-11.0,hpet=off,vmport=on -cpu pentium3",
+          "-rtc base=localtime",
+          "-device isa-cirrus-vga,global-vmstate=on",
+          "-drive file=$D/nt4-golden.qcow2,format=qcow2,if=ide",
+          "-netdev user,id=n0 -device pcnet,netdev=n0",
+          "-display dbus,p2p=on",
+          "conditional -loadvm golden",
+          "-qmp unix:$D/qmp.sock,server=on,wait=off",
+          "-pidfile $D/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals the deployed NT4 launcher; the golden was baked with the same guest-visible device set and the dedicated Cirrus ROP1/vmstate-fix QEMU"
+      }
+    },
+    "bringUpOrder": 31
+  },
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#1f7a7a",
+    "eraLabel": "1996 · Windows NT 4.0"
+  },
+  "museum": {
+    "id": "nt4",
+    "displayName": "Windows NT 4.0",
+    "year": 1996,
+    "lineage": "Windows NT 4.0",
+    "arch": "i386",
+    "ramMB": 128,
+    "era": "1990s",
+    "accent": "#1f7a7a",
+    "eraSoftware": [
+      "Explorer shell",
+      "Internet Explorer 2.0",
+      "Solitaire",
+      "Paint"
+    ],
+    "periodBrowser": "Internet Explorer 2.0",
+    "iconicApps": [
+      "Solitaire",
+      "Minesweeper",
+      "Paint"
+    ],
+    "blurb": "The classic Explorer shell on the NT kernel. The teal desktop that brought the Windows 95 look to enterprise NT."
+  },
+  "reset": {
+    "tileDir": "nt4",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Windows NT 4.0 Workstation SP6a; Administrator auto-logon; clean idle accelerated Cirrus 1024x768x65536-color desktop; pointer parked lower-right."
+  },
+  "notes": [
+    "production slot 89/UDP 54089; streamhost transport at 30 fps, audio off",
+    "media: archive.org prebuilt NT4 Workstation SP6 VMware VMDK -> qemu-img convert -> qcow2; boot.ini ARC path scsi(0)->multi(0) so NTLDR reads the IDE disk under QEMU",
+    "SP6a level verified offline by installed hotfix key Q246009 (the OS continues to report Service Pack 6)",
+    "Stage 2 2026-07-27: VMwareService/Tray/User disabled; screensaver off; Administrator auto-logon; unused failing archive drivers disabled for a clean desktop",
+    "true absolute 1:1 pointer: pc vmport=on auto-instantiates QEMU vmmouse; preserved NT4 VMware vmmouse.sys replaces i8042prt and consumes absolute coordinates",
+    "1024x768x65536-color accelerated Cirrus display uses the SP6a cirrus.sys/cirrus.dll driver and -device isa-cirrus-vga,global-vmstate=on",
+    "requires /opt/qemu-cirrusfix2/bin/qemu-system-i386 with streamhost QEMU patches 0004 (Cirrus ROP1 fill) and 0005 (ISA Cirrus vmstate substructure restore); rebuild and framebuffer-reverify whenever the packaged QEMU version changes",
+    "golden savevm/loadvm verified byte-identical across three fresh processes on the final pc-i440fx-11.0,hpet=off,vmport=on / pentium3 / smp1 / ISA Cirrus / IDE / pcnet device set"
+  ],
+  "migrationExceptions": []
+}

@@ -1,0 +1,91 @@
+version: 1
+name: redstar3-install
+fixtures_dir: templates/redstar3
+
+defaults:
+  detect_timeout: 90
+  detect_interval: 2
+  template_threshold: 0.72
+  scales: "1.0"
+  key_delay: 0.12
+
+steps:
+  - name: welcome-next
+    tap_template:
+      template: redstar3-welcome.png
+      at: [715, 561]
+      timeout: 180
+    checkpoint: {template: redstar3-disk-init.png, timeout: 60}
+
+  - name: initialize-disk
+    tap_template:
+      template: redstar3-disk-init.png
+      at: [657, 423]
+    checkpoint: {template: redstar3-partition.png, timeout: 60}
+
+  - name: select-disk
+    tap_template:
+      template: redstar3-partition.png
+      at: [350, 280]
+    checkpoint: {template: redstar3-partition.png, timeout: 15}
+
+  - name: partition-next
+    tap_template:
+      template: redstar3-partition.png
+      at: [715, 561]
+    checkpoint: {template: redstar3-account.png, timeout: 60}
+
+  - name: focus-account
+    tap_template:
+      template: redstar3-account.png
+      at: [480, 285]
+    checkpoint: {template: redstar3-account.png, timeout: 15}
+
+  - name: type-full-name
+    type: gallery
+  - name: account-name
+    key: tab
+  - name: type-account-name
+    type: gallery
+  - name: password
+    key: tab
+  - name: type-password
+    type: "${REDSTAR3_PASSWORD}"
+  - name: confirm-password
+    key: tab
+  - name: type-confirm-password
+    type: "${REDSTAR3_PASSWORD}"
+  - name: password-hint
+    key: [tab, tab]
+  - name: submit-account
+    key: ret
+    checkpoint: {template: redstar3-zone.png, timeout: 60}
+
+  - name: zone-next
+    tap_template:
+      template: redstar3-zone.png
+      at: [715, 561]
+    checkpoint: {template: redstar3-timezone.png, timeout: 60}
+
+  - name: timezone-next
+    tap_template:
+      template: redstar3-timezone.png
+      at: [715, 561]
+    checkpoint: {template: redstar3-confirm.png, timeout: 60}
+
+  - name: confirm-install
+    tap_template:
+      template: redstar3-confirm.png
+      at: [715, 561]
+    checkpoint: {template: redstar3-progress.png, timeout: 60}
+
+  - name: wait-for-completion
+    wait_template:
+      template: redstar3-done.png
+      timeout: 1200
+      interval: 3
+    checkpoint: {template: redstar3-done.png, timeout: 5}
+
+  - name: install-complete
+    screenshot: install-complete
+    checkpoint: {template: redstar3-done.png, timeout: 5}

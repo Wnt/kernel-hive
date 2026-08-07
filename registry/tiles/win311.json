@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "id": "win311",
+  "era_year": 1993,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 13,
+        "prelude": "",
+        "line": "  \"win311      |win311.sh      |Win311      |retro    |~10m    |full   |hda.img + games.img\"\n",
+        "value": {
+          "key": "win311",
+          "script": "win311.sh",
+          "outputDir": "Win311",
+          "class": "retro",
+          "estimated": "~10m",
+          "automation": "full",
+          "produces": "hda.img + games.img",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 1,
+          "position": 2
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "win311",
+      "value": {
+        "os": "Windows 3.11",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            120,
+            360
+          ],
+          "b": [
+            480,
+            150
+          ]
+        },
+        "kbd": "ctrl+Escape",
+        "kbd_reset": "Escape",
+        "kbd_note": "Ctrl+Esc opens Task List (no Super key in 3.x)",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/win311",
+      "qmp": "/data/vms/streamhost/tiles/win311/qmp.sock",
+      "pointer_mode": "warpd",
+      "warpd_port": null,
+      "warpd_addr": "unix:/data/vms/streamhost/tiles/win311/serial.sock",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54090,
+      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/win311/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 5,
+    "tilesManifestOrder": 13,
+    "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP E — Win9x / DOS / OS/2: PS/2-only (usb=off), Sound Blaster 16 (only\n#           inbox codec that works), acpi=off/kernel-irqchip=off, legacy\n#           -cpu pentium*. rel/warpd pointer. ALL VERBATIM (golden fixtures).\n# ---------------------------------------------------------------------------\n\n# win311 (VMID 90) — Windows 3.11, sb16, two golden qcow2 disks (tile-local,\n#   NO -snapshot; savevm/loadvm 'golden' persists). VERBATIM LAUNCHER with the\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (hybrid): usb=off => PS/2 RELATIVE-only mouse, and the Win3.x\n# DOS mouse driver applies acceleration so an abs->rel bridge desyncs. Fix\n# (guest-agents/win311/agent.c): an in-guest Win16 agent OpenComm(\"COM1\")s and\n# SetCursorPos()es the cursor absolutely from the warpd M/P/R/B protocol over\n# COM1. SH_WARPD_BUTTONS=qemu keeps MOTION on the agent but routes BUTTONS\n# through the real QEMU PS/2 device for true window-manager semantics. The COM1\n# device comes from machine 'pc'; -serial chardev:ser0 only redirects its\n# BACKEND so the guest device set is UNCHANGED and loadvm golden still matches.\n# LAG+DRAG FIX (baked 2026-07-08): AGENT.EXE coalesces moves per COM1 drain\n# batch; the two-channel race is closed by SH_WARPD_BUTTON_DELAY_MS=80 with\n# SH_WARPD_PACE_MS=8 write pacing (empirical floor 50; 80 = 0 races observed).\n",
+    "tilesManifestInvocation": "emit win311 \\\n  --tile win311 --vmid 90 --udp 54090 --pointer warpd \\\n  --warpd-addr unix:/data/vms/streamhost/tiles/win311/serial.sock \\\n  --warpd-buttons qemu --warpd-pace-ms 8 --warpd-button-delay-ms 80 \\\n  --audio on --fps 30 \\\n  --launcher-file \"$T/win311/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/win311/tile.env.fixture\"\n",
+    "bringUpGroup": 4,
+    "bindingOrder": 3,
+    "bindingPrelude": "",
+    "bindingLine": "  win311:      { osId: 'win311',      archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#7fb0d6', eraLabel: '1993 · Windows 3.11' },\n",
+    "museumOrder": 0,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'win311', displayName: 'Windows 3.11', year: 1993,\n    lineage: 'MS-DOS + Windows 3.x', arch: 'i386', ramMB: 16,    era: '1990s', accent: '#7fb0d6',\n    eraSoftware: ['Program Manager', 'File Manager', 'Write', 'Paintbrush'],\n    periodBrowser: 'Mosaic / early Netscape',\n    iconicApps: ['Solitaire', 'Minesweeper', 'Reversi'],\n    blurb: 'Windows for Workgroups — the tiled Program Manager era, riding on top of DOS.',\n  },\n",
+    "goldenOrder": 3,
+    "actionMapOrder": 5
+  },
+  "tileDir": "win311",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54090,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "warpd",
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "agentAddress": "unix:/data/vms/streamhost/tiles/win311/serial.sock",
+      "buttons": "qemu",
+      "paceMs": 8,
+      "buttonDelayMs": 80
+    },
+    "slot": 90
+  },
+  "guestDoc": "docs/guests/UNDOCUMENTED.md",
+  "credentialsRef": "guest/win311",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "win311",
+      "SH_QMP": "/data/vms/streamhost/tiles/win311/qmp.sock",
+      "SH_PORT": "54090",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "warpd",
+      "SH_WARPD_ADDR": "unix:/data/vms/streamhost/tiles/win311/serial.sock",
+      "SH_WARPD_BUTTONS": "qemu",
+      "SH_WARPD_PACE_MS": "8",
+      "SH_WARPD_BUTTON_DELAY_MS": "80",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/win311/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win311/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_GOLDEN_DISKS": "win311-golden.qcow2,games-golden.qcow2"
+    },
+    "vmidLabel": 90,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "win311",
+        "--vmid",
+        "90",
+        "--udp",
+        "54090",
+        "--pointer",
+        "warpd",
+        "--warpd-addr",
+        "unix:/data/vms/streamhost/tiles/win311/serial.sock",
+        "--warpd-buttons",
+        "qemu",
+        "--warpd-pace-ms",
+        "8",
+        "--warpd-button-delay-ms",
+        "80",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/win311/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/win311/tile.env.fixture"
+      ],
+      "deviceSetId": "win311-current",
+      "launcher": "streamhost/tiles/win311/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/win311/tile.env.fixture",
+      "binary": "qemu-system-i386",
+      "machine": "pc-i440fx-11.0",
+      "accel": "tcg",
+      "cpu": "pentium",
+      "memoryMB": 64,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-win311",
+        "-accel tcg -m 64 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu pentium",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-drive file=$D/win311-golden.qcow2,format=qcow2,if=ide -drive file=$D/games-golden.qcow2,format=qcow2,if=ide,index=1 -nic user,ipv6=off,model=ne2k_pci",
+        "-chardev socket,id=ser0,path=$D/serial.sock,server=on,wait=off",
+        "-serial chardev:ser0",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off",
+        "-pidfile $D/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-i386",
+        "machine": "pc-i440fx-11.0",
+        "accel": "tcg",
+        "cpu": "pentium",
+        "memoryMB": 64,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-win311",
+          "-accel tcg -m 64 -smp 1",
+          "-machine pc-i440fx-11.0 -cpu pentium",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+          "-drive file=$D/win311-golden.qcow2,format=qcow2,if=ide -drive file=$D/games-golden.qcow2,format=qcow2,if=ide,index=1 -nic user,ipv6=off,model=ne2k_pci",
+          "-chardev socket,id=ser0,path=$D/serial.sock,server=on,wait=off",
+          "-serial chardev:ser0",
+          "-qmp unix:$D/qmp.sock,server=on,wait=off",
+          "-pidfile $D/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 13
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#7fb0d6",
+    "eraLabel": "1993 · Windows 3.11"
+  },
+  "museum": {
+    "id": "win311",
+    "displayName": "Windows 3.11",
+    "year": 1993,
+    "lineage": "MS-DOS + Windows 3.x",
+    "arch": "i386",
+    "ramMB": 16,
+    "era": "1990s",
+    "accent": "#7fb0d6",
+    "eraSoftware": [
+      "Program Manager",
+      "File Manager",
+      "Write",
+      "Paintbrush"
+    ],
+    "periodBrowser": "Mosaic / early Netscape",
+    "iconicApps": [
+      "Solitaire",
+      "Minesweeper",
+      "Reversi"
+    ],
+    "blurb": "Windows for Workgroups — the tiled Program Manager era, riding on top of DOS."
+  },
+  "reset": {
+    "tileDir": "win311",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "SKIP",
+    "fixture": "Windows 3.11 Program Manager at 1024x768x8 (vbesvga.drv on -vga std); software cursor captured in the scanout; root has no keyboard-echo field."
+  }
+}

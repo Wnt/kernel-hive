@@ -1,0 +1,1155 @@
+Index: b/hw/misc/Kconfig
+===================================================================
+--- a/hw/misc/Kconfig
++++ b/hw/misc/Kconfig
+@@ -263,3 +263,8 @@ config XLNX_VERSAL_TRNG
+     bool
+ 
+ source macio/Kconfig
++
++config GALLERY_HID
++    bool
++    default y if PCI_DEVICES
++    depends on PCI
+Index: b/hw/misc/gallery-hid-pci.c
+===================================================================
+--- /dev/null
++++ b/hw/misc/gallery-hid-pci.c
+@@ -0,0 +1,592 @@
++/*
++ * Gallery low-latency input device.
++ *
++ * Copyright (c) 2026 osgallery contributors
++ * SPDX-License-Identifier: GPL-2.0-or-later
++ */
++
++#include "qemu/osdep.h"
++#include "chardev/char-fe.h"
++#include "hw/core/qdev-properties-system.h"
++#include "hw/misc/gallery-hid.h"
++#include "hw/pci/pci_device.h"
++#include "migration/vmstate.h"
++#include "qemu/atomic.h"
++#include "qemu/bswap.h"
++#include "qemu/error-report.h"
++#include "qemu/log.h"
++#include "qemu/module.h"
++
++#define TYPE_GALLERY_HID_PCI "gallery-hid-pci"
++OBJECT_DECLARE_SIMPLE_TYPE(GalleryHIDState, GALLERY_HID_PCI)
++
++struct GalleryHIDState {
++    PCIDevice parent_obj;
++    MemoryRegion bar0;
++    MemoryRegion bar2;
++    CharFrontend chr;
++    uint8_t *ram;
++
++    uint32_t irq_status;
++    uint32_t irq_mask;
++    uint32_t epoch;
++    uint32_t producer;
++    uint32_t protocol_errors;
++    uint32_t ring_stalls;
++    uint32_t saved_consumer;
++    uint16_t next_sequence;
++    bool backend_connected;
++    bool driver_ready;
++    bool reset_required;
++    bool stalled;
++    bool hello_done;
++    bool irq_level;
++    bool rearm_required;
++
++    uint8_t input[GHID_FRAME_SIZE];
++    unsigned input_have;
++    uint8_t staged[GHID_RECORD_SIZE];
++    bool staged_valid;
++};
++
++static uint32_t gallery_status(GalleryHIDState *s)
++{
++    uint32_t status = 0;
++
++    status |= s->backend_connected ? GHID_STATUS_CONNECTED : 0;
++    status |= s->driver_ready ? GHID_STATUS_DRIVER_READY : 0;
++    status |= (s->reset_required || s->rearm_required) ?
++              GHID_STATUS_RESET_REQ : 0;
++    status |= s->stalled ? GHID_STATUS_STALLED : 0;
++    return status;
++}
++
++static void gallery_update_irq(GalleryHIDState *s)
++{
++    s->irq_level = (s->irq_status & s->irq_mask) != 0;
++    pci_set_irq(&s->parent_obj, s->irq_level);
++}
++
++static uint32_t gallery_consumer(GalleryHIDState *s)
++{
++    uint32_t *p = (uint32_t *)(s->ram + GHID_RING_OFF_CONSUMER);
++
++    return le32_to_cpu(qatomic_load_acquire(p));
++}
++
++static void gallery_store_producer(GalleryHIDState *s)
++{
++    uint32_t *p = (uint32_t *)(s->ram + GHID_RING_OFF_PRODUCER);
++
++    qatomic_store_release(p, cpu_to_le32(s->producer));
++}
++
++static void gallery_write_header(GalleryHIDState *s)
++{
++    stl_le_p(s->ram + GHID_RING_OFF_MAGIC, GHID_RING_MAGIC);
++    stw_le_p(s->ram + GHID_RING_OFF_MAJOR, 1);
++    stw_le_p(s->ram + GHID_RING_OFF_MINOR, 0);
++    stw_le_p(s->ram + GHID_RING_OFF_HDR_BYTES, GHID_HEADER_SIZE);
++    stw_le_p(s->ram + GHID_RING_OFF_REC_BYTES, GHID_RECORD_SIZE);
++    stw_le_p(s->ram + GHID_RING_OFF_ENTRIES, GHID_RING_ENTRIES);
++    stl_le_p(s->ram + GHID_RING_OFF_FEATURES, GHID_FEATURES);
++    stl_le_p(s->ram + GHID_RING_OFF_EPOCH, s->epoch);
++    gallery_store_producer(s);
++    stw_le_p(s->ram + GHID_RING_OFF_NEXT_SEQ, s->next_sequence);
++    stl_le_p(s->ram + GHID_RING_OFF_PROTO_ERRS, s->protocol_errors);
++    stl_le_p(s->ram + GHID_RING_OFF_STALLS, s->ring_stalls);
++}
++
++static void gallery_ring_reset(GalleryHIDState *s, bool clear_counters)
++{
++    memset(s->ram, 0, GHID_BAR2_SIZE);
++    s->epoch++;
++    if (s->epoch == 0) {
++        s->epoch = 1;
++    }
++    s->producer = 0;
++    s->next_sequence = 0;
++    s->driver_ready = false;
++    s->reset_required = true;
++    s->stalled = false;
++    s->staged_valid = false;
++    if (clear_counters) {
++        s->protocol_errors = 0;
++        s->ring_stalls = 0;
++    }
++    gallery_write_header(s);
++    s->irq_status = GHID_IRQ_RESET;
++    gallery_update_irq(s);
++}
++
++static void gallery_protocol_reset(GalleryHIDState *s)
++{
++    s->protocol_errors++;
++    gallery_ring_reset(s, false);
++}
++
++static bool gallery_consumer_valid(GalleryHIDState *s, uint32_t consumer)
++{
++    if (s->producer - consumer <= GHID_RING_ENTRIES) {
++        return true;
++    }
++    gallery_protocol_reset(s);
++    return false;
++}
++
++static bool gallery_record_valid(const uint8_t *r)
++{
++    uint16_t key;
++
++    if (lduw_le_p(r + 2) != 0) {
++        return false;
++    }
++    switch (r[0]) {
++    case GHID_EVENT_POINTER_ABS:
++        return r[1] == 0 && lduw_le_p(r + 4) <= 32767 &&
++               lduw_le_p(r + 6) <= 32767 &&
++               (lduw_le_p(r + 8) & ~0x1fU) == 0;
++    case GHID_EVENT_KEY:
++        key = lduw_le_p(r + 4);
++        return (r[1] & ~0x03U) == 0 &&
++               (key <= 0x007f ||
++                ((key & 0xff00) == 0xe000 && (key & 0xff) <= 0x7f) ||
++                key == 0xe145) &&
++               lduw_le_p(r + 6) <= 0x00ff &&
++               ldl_le_p(r + 8) == 0;
++    case GHID_EVENT_RELEASE_ALL:
++        return (r[1] & ~0x07U) == 0 &&
++               ldl_le_p(r + 4) == 0 && ldl_le_p(r + 8) == 0;
++    default:
++        return false;
++    }
++}
++
++static bool gallery_publish(GalleryHIDState *s, const uint8_t *host_record)
++{
++    uint8_t record[GHID_RECORD_SIZE];
++    uint32_t consumer = gallery_consumer(s);
++    uint32_t occupancy;
++    uint8_t *slot;
++
++    if (!gallery_consumer_valid(s, consumer)) {
++        return false;
++    }
++    occupancy = s->producer - consumer;
++    if (occupancy == GHID_RING_ENTRIES) {
++        if (!s->staged_valid) {
++            memcpy(s->staged, host_record, GHID_RECORD_SIZE);
++            s->staged_valid = true;
++            s->ring_stalls++;
++            stl_le_p(s->ram + GHID_RING_OFF_STALLS, s->ring_stalls);
++        }
++        s->stalled = true;
++        return false;
++    }
++
++    memcpy(record, host_record, sizeof(record));
++    stw_le_p(record + 2, s->next_sequence++);
++    slot = s->ram + GHID_RING_OFF_RECORDS +
++           ((s->producer & GHID_RING_MASK) * GHID_RECORD_SIZE);
++    memcpy(slot, record, sizeof(record));
++    smp_wmb();
++    s->producer++;
++    gallery_store_producer(s);
++    stw_le_p(s->ram + GHID_RING_OFF_NEXT_SEQ, s->next_sequence);
++    s->irq_status |= GHID_IRQ_RING;
++    s->stalled = (s->producer - consumer == GHID_RING_ENTRIES);
++    gallery_update_irq(s);
++    return true;
++}
++
++static void gallery_retry_staged(GalleryHIDState *s)
++{
++    uint8_t record[GHID_RECORD_SIZE];
++
++    if (!s->staged_valid) {
++        return;
++    }
++    memcpy(record, s->staged, sizeof(record));
++    s->staged_valid = false;
++    if (!gallery_publish(s, record) && !s->staged_valid) {
++        memcpy(s->staged, record, sizeof(record));
++        s->staged_valid = true;
++    }
++}
++
++static void gallery_recheck(GalleryHIDState *s)
++{
++    uint32_t consumer = gallery_consumer(s);
++
++    if (!gallery_consumer_valid(s, consumer)) {
++        return;
++    }
++    gallery_retry_staged(s);
++    consumer = gallery_consumer(s);
++    if (!gallery_consumer_valid(s, consumer)) {
++        return;
++    }
++    if (s->producer != consumer) {
++        s->irq_status |= GHID_IRQ_RING;
++    } else {
++        s->irq_status &= ~GHID_IRQ_RING;
++    }
++    s->stalled = s->staged_valid ||
++                 (s->producer - consumer == GHID_RING_ENTRIES);
++    gallery_update_irq(s);
++    qemu_chr_fe_accept_input(&s->chr);
++}
++
++static uint64_t gallery_bar0_read(void *opaque, hwaddr addr, unsigned size)
++{
++    GalleryHIDState *s = opaque;
++
++    if (size != 4 || (addr & 3)) {
++        s->protocol_errors++;
++        stl_le_p(s->ram + GHID_RING_OFF_PROTO_ERRS, s->protocol_errors);
++        return 0;
++    }
++    switch (addr) {
++    case GHID_REG_DEVICE_MAGIC:
++        return GHID_DEVICE_MAGIC;
++    case GHID_REG_ABI_VERSION:
++        return GHID_ABI_VERSION;
++    case GHID_REG_FEATURES:
++        return GHID_FEATURES;
++    case GHID_REG_STATUS:
++        return gallery_status(s);
++    case GHID_REG_IRQ_STATUS:
++        return s->irq_status;
++    case GHID_REG_IRQ_MASK:
++        return s->irq_mask;
++    default:
++        return 0;
++    }
++}
++
++static void gallery_bar0_write(void *opaque, hwaddr addr, uint64_t value,
++                               unsigned size)
++{
++    GalleryHIDState *s = opaque;
++    uint32_t val = value;
++
++    if (size != 4 || (addr & 3)) {
++        s->protocol_errors++;
++        stl_le_p(s->ram + GHID_RING_OFF_PROTO_ERRS, s->protocol_errors);
++        return;
++    }
++    switch (addr) {
++    case GHID_REG_IRQ_MASK:
++        s->irq_mask = val & GHID_IRQ_ALL;
++        gallery_update_irq(s);
++        break;
++    case GHID_REG_IRQ_ACK:
++        if (!gallery_consumer_valid(s, gallery_consumer(s))) {
++            break;
++        }
++        s->irq_status &= ~(val & GHID_IRQ_ALL);
++        if ((val & GHID_IRQ_RING) &&
++            s->producer != gallery_consumer(s)) {
++            s->irq_status |= GHID_IRQ_RING;
++        }
++        gallery_update_irq(s);
++        break;
++    case GHID_REG_DRIVER_READY:
++        if (val == s->epoch &&
++            ldl_le_p(s->ram + GHID_RING_OFF_MAGIC) == GHID_RING_MAGIC &&
++            gallery_consumer_valid(s, gallery_consumer(s))) {
++            s->driver_ready = true;
++            s->reset_required = false;
++            s->rearm_required = false;
++            gallery_recheck(s);
++        }
++        break;
++    case GHID_REG_GUEST_KICK:
++        gallery_recheck(s);
++        break;
++    default:
++        break;
++    }
++}
++
++static const MemoryRegionOps gallery_bar0_ops = {
++    .read = gallery_bar0_read,
++    .write = gallery_bar0_write,
++    .endianness = DEVICE_LITTLE_ENDIAN,
++    .valid = {
++        .min_access_size = 1,
++        .max_access_size = 4,
++        .unaligned = false,
++    },
++    .impl = {
++        .min_access_size = 1,
++        .max_access_size = 4,
++    },
++};
++
++static void gallery_bad_backend_input(GalleryHIDState *s)
++{
++    s->protocol_errors++;
++    stl_le_p(s->ram + GHID_RING_OFF_PROTO_ERRS, s->protocol_errors);
++}
++
++static bool gallery_hello_valid(const uint8_t *h)
++{
++    return memcmp(h, GHID_HELLO_MAGIC, 4) == 0 &&
++           lduw_le_p(h + 4) == GHID_BACKEND_MAJOR &&
++           lduw_le_p(h + 6) == GHID_BACKEND_MINOR &&
++           lduw_le_p(h + 8) == GHID_RECORD_SIZE &&
++           lduw_le_p(h + 10) == 0 &&
++           ldl_le_p(h + 12) == 0;
++}
++
++static void gallery_finish_hello(GalleryHIDState *s)
++{
++    uint8_t reply[GHID_FRAME_SIZE] = { 0 };
++
++    memcpy(reply, GHID_OK_MAGIC, 4);
++    stw_le_p(reply + 4, GHID_BACKEND_MAJOR);
++    stw_le_p(reply + 6, GHID_BACKEND_MINOR);
++    s->hello_done = true;
++    s->backend_connected = true;
++    s->irq_status |= GHID_IRQ_LINK;
++    gallery_update_irq(s);
++    stl_le_p(reply + 8, s->epoch);
++    stl_le_p(reply + 12, gallery_status(s));
++    if (qemu_chr_fe_write_all(&s->chr, reply, sizeof(reply)) != sizeof(reply)) {
++        qemu_chr_fe_disconnect(&s->chr);
++    }
++}
++
++static int gallery_can_receive(void *opaque)
++{
++    GalleryHIDState *s = opaque;
++
++    if (s->hello_done && (!s->driver_ready || s->rearm_required)) {
++        return 0;
++    }
++    if (s->hello_done && s->staged_valid) {
++        return 0;
++    }
++    return GHID_FRAME_SIZE - s->input_have;
++}
++
++static void gallery_receive(void *opaque, const uint8_t *buf, int size)
++{
++    GalleryHIDState *s = opaque;
++
++    while (size-- > 0) {
++        s->input[s->input_have++] = *buf++;
++        if (s->input_have != GHID_FRAME_SIZE) {
++            continue;
++        }
++        s->input_have = 0;
++        if (!s->hello_done) {
++            if (!gallery_hello_valid(s->input)) {
++                gallery_bad_backend_input(s);
++                qemu_chr_fe_disconnect(&s->chr);
++                return;
++            }
++            gallery_finish_hello(s);
++        } else if (!gallery_record_valid(s->input)) {
++            gallery_bad_backend_input(s);
++        } else {
++            gallery_publish(s, s->input);
++        }
++    }
++}
++
++static void gallery_chr_event(void *opaque, QEMUChrEvent event)
++{
++    GalleryHIDState *s = opaque;
++    bool was_connected = s->backend_connected;
++
++    switch (event) {
++    case CHR_EVENT_OPENED:
++        s->hello_done = false;
++        s->backend_connected = false;
++        s->input_have = 0;
++        if (was_connected) {
++            s->irq_status |= GHID_IRQ_LINK;
++            gallery_update_irq(s);
++        }
++        break;
++    case CHR_EVENT_CLOSED:
++        s->hello_done = false;
++        s->backend_connected = false;
++        s->input_have = 0;
++        if (was_connected) {
++            s->irq_status |= GHID_IRQ_LINK;
++            gallery_update_irq(s);
++        }
++        break;
++    default:
++        break;
++    }
++}
++
++static void gallery_reset(DeviceState *dev)
++{
++    GalleryHIDState *s = GALLERY_HID_PCI(dev);
++
++    pci_set_irq(&s->parent_obj, 0);
++    s->irq_level = false;
++    s->irq_mask = 0;
++    s->hello_done = false;
++    s->backend_connected = false;
++    s->input_have = 0;
++    s->rearm_required = false;
++    gallery_ring_reset(s, true);
++}
++
++static int gallery_pre_save(void *opaque)
++{
++    GalleryHIDState *s = opaque;
++
++    s->saved_consumer = gallery_consumer(s);
++    s->irq_level = (s->irq_status & s->irq_mask) != 0;
++    return 0;
++}
++
++static int gallery_post_load(void *opaque, int version_id)
++{
++    GalleryHIDState *s = opaque;
++    uint32_t ram_epoch = ldl_le_p(s->ram + GHID_RING_OFF_EPOCH);
++    uint32_t ram_producer = ldl_le_p(s->ram + GHID_RING_OFF_PRODUCER);
++    uint32_t ram_consumer = ldl_le_p(s->ram + GHID_RING_OFF_CONSUMER);
++    uint16_t ram_sequence = lduw_le_p(s->ram + GHID_RING_OFF_NEXT_SEQ);
++
++    /* The backend stream is a process-local transport, never VMState. */
++    pci_set_irq(&s->parent_obj, 0);
++    s->irq_level = false;
++
++    s->hello_done = false;
++    s->backend_connected = false;
++    s->input_have = 0;
++    s->staged_valid = false;
++
++    if (s->epoch == 0 || ram_epoch != s->epoch ||
++        ram_producer != s->producer || ram_consumer != s->saved_consumer ||
++        s->producer - ram_consumer > GHID_RING_ENTRIES ||
++        ram_sequence != s->next_sequence ||
++        ldl_le_p(s->ram + GHID_RING_OFF_MAGIC) != GHID_RING_MAGIC ||
++        lduw_le_p(s->ram + GHID_RING_OFF_MAJOR) != 1 ||
++        lduw_le_p(s->ram + GHID_RING_OFF_MINOR) != 0 ||
++        lduw_le_p(s->ram + GHID_RING_OFF_HDR_BYTES) != GHID_HEADER_SIZE ||
++        lduw_le_p(s->ram + GHID_RING_OFF_REC_BYTES) != GHID_RECORD_SIZE ||
++        lduw_le_p(s->ram + GHID_RING_OFF_ENTRIES) != GHID_RING_ENTRIES ||
++        ldl_le_p(s->ram + GHID_RING_OFF_FEATURES) != GHID_FEATURES ||
++        (s->irq_status & ~GHID_IRQ_ALL) != 0 ||
++        (s->irq_mask & ~GHID_IRQ_ALL) != 0 ||
++        (s->driver_ready &&
++         ldl_le_p(s->ram + GHID_RING_OFF_LAST_EPOCH) != s->epoch)) {
++        error_report("gallery-hid-pci: inconsistent VMState/BAR2 "
++                     "epoch=%u/%u producer=%u/%u consumer=%u/%u "
++                     "sequence=%u/%u",
++                     s->epoch, ram_epoch, s->producer, ram_producer,
++                     s->saved_consumer, ram_consumer,
++                     s->next_sequence, ram_sequence);
++        return -EINVAL;
++    }
++
++    /* Saved causes/INTA are stale until a fresh backend hello and guest rearm. */
++    s->irq_status = 0;
++    s->stalled = s->producer - ram_consumer == GHID_RING_ENTRIES;
++    s->rearm_required = true;
++    return 0;
++}
++
++static const VMStateDescription vmstate_gallery_hid = {
++    .name = TYPE_GALLERY_HID_PCI,
++    .version_id = 1,
++    .minimum_version_id = 1,
++    .pre_save = gallery_pre_save,
++    .post_load = gallery_post_load,
++    .fields = (const VMStateField[]) {
++        VMSTATE_PCI_DEVICE(parent_obj, GalleryHIDState),
++        VMSTATE_UINT32(irq_status, GalleryHIDState),
++        VMSTATE_UINT32(irq_mask, GalleryHIDState),
++        VMSTATE_UINT32(epoch, GalleryHIDState),
++        VMSTATE_UINT32(producer, GalleryHIDState),
++        VMSTATE_UINT32(protocol_errors, GalleryHIDState),
++        VMSTATE_UINT32(ring_stalls, GalleryHIDState),
++        VMSTATE_UINT32(saved_consumer, GalleryHIDState),
++        VMSTATE_UINT16(next_sequence, GalleryHIDState),
++        VMSTATE_BOOL(driver_ready, GalleryHIDState),
++        VMSTATE_BOOL(reset_required, GalleryHIDState),
++        VMSTATE_BOOL(stalled, GalleryHIDState),
++        VMSTATE_BOOL(irq_level, GalleryHIDState),
++        VMSTATE_END_OF_LIST()
++    },
++};
++
++static void gallery_realize(PCIDevice *pdev, Error **errp)
++{
++    GalleryHIDState *s = GALLERY_HID_PCI(pdev);
++
++    if (!qemu_chr_fe_backend_connected(&s->chr)) {
++        error_setg(errp, "gallery-hid-pci requires a chardev");
++        return;
++    }
++    pdev->config[PCI_INTERRUPT_PIN] = 1;
++    memory_region_init_io(&s->bar0, OBJECT(s), &gallery_bar0_ops, s,
++                          "gallery-hid-control", GHID_BAR0_SIZE);
++    memory_region_init_ram(&s->bar2, OBJECT(s), "gallery-hid-ring",
++                           GHID_BAR2_SIZE, errp);
++    if (*errp) {
++        return;
++    }
++    s->ram = memory_region_get_ram_ptr(&s->bar2);
++    pci_register_bar(pdev, 0, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->bar0);
++    pci_register_bar(pdev, 2, PCI_BASE_ADDRESS_SPACE_MEMORY |
++                     PCI_BASE_ADDRESS_MEM_PREFETCH, &s->bar2);
++    qemu_chr_fe_set_handlers(&s->chr, gallery_can_receive, gallery_receive,
++                             gallery_chr_event, NULL, s, NULL, true);
++}
++
++static void gallery_exit(PCIDevice *pdev)
++{
++    GalleryHIDState *s = GALLERY_HID_PCI(pdev);
++
++    qemu_chr_fe_set_handlers(&s->chr, NULL, NULL, NULL, NULL,
++                             NULL, NULL, false);
++    pci_set_irq(pdev, 0);
++}
++
++static const Property gallery_properties[] = {
++    DEFINE_PROP_CHR("chardev", GalleryHIDState, chr),
++};
++
++static void gallery_class_init(ObjectClass *klass, const void *data)
++{
++    DeviceClass *dc = DEVICE_CLASS(klass);
++    PCIDeviceClass *pc = PCI_DEVICE_CLASS(klass);
++
++    pc->realize = gallery_realize;
++    pc->exit = gallery_exit;
++    pc->vendor_id = GHID_PCI_VENDOR_ID;
++    pc->device_id = GHID_PCI_DEVICE_ID;
++    pc->revision = GHID_PCI_REVISION;
++    pc->class_id = GHID_PCI_CLASS;
++    dc->vmsd = &vmstate_gallery_hid;
++    device_class_set_legacy_reset(dc, gallery_reset);
++    device_class_set_props(dc, gallery_properties);
++    set_bit(DEVICE_CATEGORY_INPUT, dc->categories);
++}
++
++static const TypeInfo gallery_type_info = {
++    .name = TYPE_GALLERY_HID_PCI,
++    .parent = TYPE_PCI_DEVICE,
++    .instance_size = sizeof(GalleryHIDState),
++    .class_init = gallery_class_init,
++    .interfaces = (const InterfaceInfo[]) {
++        { INTERFACE_CONVENTIONAL_PCI_DEVICE },
++        { },
++    },
++};
++
++static void gallery_register_types(void)
++{
++    type_register_static(&gallery_type_info);
++}
++type_init(gallery_register_types)
+Index: b/hw/misc/meson.build
+===================================================================
+--- a/hw/misc/meson.build
++++ b/hw/misc/meson.build
+@@ -166,3 +166,4 @@ system_ss.add(when: 'CONFIG_SBSA_REF', i
+ 
+ # HPPA devices
+ system_ss.add(when: 'CONFIG_LASI', if_true: files('lasi.c'))
++system_ss.add(when: 'CONFIG_GALLERY_HID', if_true: files('gallery-hid-pci.c'))
+Index: b/include/hw/misc/gallery-hid.h
+===================================================================
+--- /dev/null
++++ b/include/hw/misc/gallery-hid.h
+@@ -0,0 +1,64 @@
++/* gallery-hid v1 guest/backend ABI.  All multibyte fields are little-endian. */
++#ifndef GALLERY_HID_PROTO_H
++#define GALLERY_HID_PROTO_H
++
++#define GHID_PCI_VENDOR_ID       0x1b36
++#define GHID_PCI_DEVICE_ID       0x0015
++#define GHID_PCI_REVISION        0x01
++#define GHID_PCI_CLASS           0xff00
++#define GHID_BAR0_SIZE           0x1000
++#define GHID_BAR2_SIZE           0x2000
++
++#define GHID_REG_DEVICE_MAGIC    0x000
++#define GHID_REG_ABI_VERSION     0x004
++#define GHID_REG_FEATURES        0x008
++#define GHID_REG_STATUS          0x00c
++#define GHID_REG_IRQ_STATUS      0x010
++#define GHID_REG_IRQ_MASK        0x014
++#define GHID_REG_IRQ_ACK         0x018
++#define GHID_REG_DRIVER_READY    0x01c
++#define GHID_REG_GUEST_KICK      0x020
++
++#define GHID_DEVICE_MAGIC        0x44494847U
++#define GHID_ABI_VERSION         0x00010000U
++#define GHID_FEATURES            0x0000000fU
++#define GHID_STATUS_CONNECTED    (1U << 0)
++#define GHID_STATUS_DRIVER_READY (1U << 1)
++#define GHID_STATUS_RESET_REQ    (1U << 2)
++#define GHID_STATUS_STALLED      (1U << 3)
++#define GHID_IRQ_RING            (1U << 0)
++#define GHID_IRQ_RESET           (1U << 1)
++#define GHID_IRQ_LINK            (1U << 2)
++#define GHID_IRQ_ALL             0x00000007U
++
++#define GHID_RING_MAGIC          0x4e494c47U
++#define GHID_HEADER_SIZE         0x0100
++#define GHID_RECORD_SIZE         16
++#define GHID_RING_ENTRIES        256
++#define GHID_RING_MASK           255
++#define GHID_RING_OFF_MAGIC      0x000
++#define GHID_RING_OFF_MAJOR      0x004
++#define GHID_RING_OFF_MINOR      0x006
++#define GHID_RING_OFF_HDR_BYTES  0x008
++#define GHID_RING_OFF_REC_BYTES  0x00a
++#define GHID_RING_OFF_ENTRIES    0x00c
++#define GHID_RING_OFF_FEATURES   0x010
++#define GHID_RING_OFF_EPOCH      0x014
++#define GHID_RING_OFF_PRODUCER   0x040
++#define GHID_RING_OFF_NEXT_SEQ   0x044
++#define GHID_RING_OFF_PROTO_ERRS 0x048
++#define GHID_RING_OFF_STALLS     0x04c
++#define GHID_RING_OFF_CONSUMER   0x080
++#define GHID_RING_OFF_LAST_EPOCH 0x084
++#define GHID_RING_OFF_RECORDS    0x100
++
++#define GHID_EVENT_POINTER_ABS   0x01
++#define GHID_EVENT_KEY           0x02
++#define GHID_EVENT_RELEASE_ALL   0x03
++#define GHID_HELLO_MAGIC         "GHIN"
++#define GHID_OK_MAGIC            "GHOK"
++#define GHID_BACKEND_MAJOR       1
++#define GHID_BACKEND_MINOR       0
++#define GHID_FRAME_SIZE          16
++
++#endif
+Index: b/tests/qtest/gallery-hid-test.c
+===================================================================
+--- /dev/null
++++ b/tests/qtest/gallery-hid-test.c
+@@ -0,0 +1,448 @@
++/*
++ * qtests for the gallery-hid-pci v1 transport.
++ * SPDX-License-Identifier: GPL-2.0-or-later
++ */
++
++#include "qemu/osdep.h"
++#include <sys/socket.h>
++#include <sys/un.h>
++#include <glib/gstdio.h>
++#include "hw/misc/gallery-hid.h"
++#include "hw/pci/pci.h"
++#include "libqos/libqos-pc.h"
++#include "libqtest.h"
++
++typedef struct TestState {
++    QOSState *qs;
++    QPCIDevice *dev;
++    QPCIBar bar0;
++    QPCIBar bar2;
++    char *dir;
++    char *sock;
++    int fd;
++} TestState;
++
++static void save_device(QPCIDevice *dev, int devfn, void *data)
++{
++    *(QPCIDevice **)data = dev;
++}
++
++static uint32_t bar0_read(TestState *s, uint32_t off)
++{
++    return qpci_io_readl(s->dev, s->bar0, off);
++}
++
++static void bar0_write(TestState *s, uint32_t off, uint32_t value)
++{
++    qpci_io_writel(s->dev, s->bar0, off, value);
++}
++
++static uint32_t ring_read32(TestState *s, uint32_t off)
++{
++    uint8_t data[4];
++
++    qpci_memread(s->dev, s->bar2, off, data, sizeof(data));
++    return ldl_le_p(data);
++}
++
++static uint16_t ring_read16(TestState *s, uint32_t off)
++{
++    uint8_t data[2];
++
++    qpci_memread(s->dev, s->bar2, off, data, sizeof(data));
++    return lduw_le_p(data);
++}
++
++static void ring_write32(TestState *s, uint32_t off, uint32_t value)
++{
++    uint8_t data[4];
++
++    stl_le_p(data, value);
++    qpci_memwrite(s->dev, s->bar2, off, data, sizeof(data));
++}
++
++static TestState *test_start_args(const char *extra_args)
++{
++    TestState *s = g_new0(TestState, 1);
++    uint64_t size;
++    g_autofree char *cmd = NULL;
++    g_autofree char *data_option = NULL;
++    const char *data_dir = g_getenv("QTEST_QEMU_DATA_DIR");
++
++    s->fd = -1;
++    s->dir = g_dir_make_tmp("gallery-hid-qtest-XXXXXX", NULL);
++    g_assert_nonnull(s->dir);
++    s->sock = g_build_filename(s->dir, "backend.sock", NULL);
++    data_option = data_dir ? g_strdup_printf("-L %s ", data_dir) :
++                             g_strdup("");
++    cmd = g_strdup_printf("%s-chardev socket,id=ghid0,path=%s,"
++                          "server=on,wait=off "
++                          "-device gallery-hid-pci,id=ghid0,"
++                          "chardev=ghid0,addr=1e.0 %s", data_option, s->sock,
++                          extra_args ? extra_args : "");
++    s->qs = qtest_pc_boot("%s", cmd);
++    qpci_device_foreach(s->qs->pcibus, GHID_PCI_VENDOR_ID,
++                        GHID_PCI_DEVICE_ID, save_device, &s->dev);
++    g_assert_nonnull(s->dev);
++    s->bar0 = qpci_iomap(s->dev, 0, &size);
++    g_assert_cmpuint(size, ==, GHID_BAR0_SIZE);
++    s->bar2 = qpci_iomap(s->dev, 2, &size);
++    g_assert_cmpuint(size, ==, GHID_BAR2_SIZE);
++    qpci_device_enable(s->dev);
++    return s;
++}
++
++static TestState *test_start(void)
++{
++    return test_start_args(NULL);
++}
++
++static void test_stop(TestState *s)
++{
++    if (s->fd >= 0) {
++        close(s->fd);
++    }
++    g_free(s->dev);
++    qtest_pc_shutdown(s->qs);
++    g_unlink(s->sock);
++    g_rmdir(s->dir);
++    g_free(s->sock);
++    g_free(s->dir);
++    g_free(s);
++}
++
++static int connect_backend(TestState *s)
++{
++    struct sockaddr_un addr = { .sun_family = AF_UNIX };
++    int fd;
++    int i;
++
++    g_assert_cmpuint(strlen(s->sock), <, sizeof(addr.sun_path));
++    g_strlcpy(addr.sun_path, s->sock, sizeof(addr.sun_path));
++    for (i = 0; i < 100; i++) {
++        fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
++        g_assert_cmpint(fd, >=, 0);
++        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == 0) {
++            return fd;
++        }
++        close(fd);
++        g_usleep(10000);
++    }
++    g_error("could not connect to %s: %s", s->sock, strerror(errno));
++}
++
++static void send_all(int fd, const void *data, size_t len)
++{
++    const uint8_t *p = data;
++
++    while (len) {
++        ssize_t n = send(fd, p, len, MSG_NOSIGNAL);
++
++        g_assert_cmpint(n, >, 0);
++        p += n;
++        len -= n;
++    }
++}
++
++static bool recv_all(int fd, void *data, size_t len)
++{
++    uint8_t *p = data;
++
++    while (len) {
++        ssize_t n = recv(fd, p, len, 0);
++
++        if (n <= 0) {
++            return false;
++        }
++        p += n;
++        len -= n;
++    }
++    return true;
++}
++
++static void hello(int fd, unsigned split)
++{
++    uint8_t request[GHID_FRAME_SIZE] = { 0 };
++    uint8_t reply[GHID_FRAME_SIZE];
++
++    memcpy(request, GHID_HELLO_MAGIC, 4);
++    stw_le_p(request + 4, GHID_BACKEND_MAJOR);
++    stw_le_p(request + 6, GHID_BACKEND_MINOR);
++    stw_le_p(request + 8, GHID_RECORD_SIZE);
++    if (split) {
++        send_all(fd, request, split);
++        g_usleep(10000);
++        send_all(fd, request + split, sizeof(request) - split);
++    } else {
++        send_all(fd, request, sizeof(request));
++    }
++    g_assert_true(recv_all(fd, reply, sizeof(reply)));
++    g_assert_cmpmem(reply, 4, GHID_OK_MAGIC, 4);
++    g_assert_cmpuint(lduw_le_p(reply + 4), ==, 1);
++    g_assert_cmpuint(lduw_le_p(reply + 6), ==, 0);
++    g_assert_cmpuint(ldl_le_p(reply + 8), !=, 0);
++    g_assert_cmpuint(ldl_le_p(reply + 12) & GHID_STATUS_CONNECTED, !=, 0);
++}
++
++static void make_pointer(uint8_t frame[GHID_RECORD_SIZE],
++                         uint16_t x, uint16_t y, uint32_t stamp)
++{
++    memset(frame, 0, GHID_RECORD_SIZE);
++    frame[0] = GHID_EVENT_POINTER_ABS;
++    stw_le_p(frame + 4, x);
++    stw_le_p(frame + 6, y);
++    stl_le_p(frame + 12, stamp);
++}
++
++static void wait_producer(TestState *s, uint32_t expected)
++{
++    int i;
++
++    for (i = 0; i < 200; i++) {
++        if (ring_read32(s, GHID_RING_OFF_PRODUCER) == expected) {
++            return;
++        }
++        g_usleep(5000);
++    }
++    g_assert_cmpuint(ring_read32(s, GHID_RING_OFF_PRODUCER), ==, expected);
++}
++
++static void arm_driver(TestState *s)
++{
++    uint32_t producer = ring_read32(s, GHID_RING_OFF_PRODUCER);
++    uint32_t epoch = ring_read32(s, GHID_RING_OFF_EPOCH);
++
++    ring_write32(s, GHID_RING_OFF_CONSUMER, producer);
++    ring_write32(s, GHID_RING_OFF_LAST_EPOCH, epoch);
++    bar0_write(s, GHID_REG_DRIVER_READY, epoch);
++    g_assert_cmpuint(bar0_read(s, GHID_REG_STATUS) &
++                     GHID_STATUS_DRIVER_READY, !=, 0);
++}
++
++/* Models the first two operations of a shared-INTx guest ISR. */
++static bool guest_isr_claims(TestState *s)
++{
++    uint32_t status = bar0_read(s, GHID_REG_IRQ_STATUS);
++    uint32_t mask = bar0_read(s, GHID_REG_IRQ_MASK);
++
++    return (status & mask) != 0;
++}
++
++static void test_ids_bars_header(void)
++{
++    TestState *s = test_start();
++    uint32_t bar0 = qpci_config_readl(s->dev, PCI_BASE_ADDRESS_0);
++    uint32_t bar1 = qpci_config_readl(s->dev, PCI_BASE_ADDRESS_1);
++    uint32_t bar2 = qpci_config_readl(s->dev, PCI_BASE_ADDRESS_2);
++
++    g_assert_cmphex(qpci_config_readw(s->dev, PCI_VENDOR_ID), ==,
++                    GHID_PCI_VENDOR_ID);
++    g_assert_cmphex(qpci_config_readw(s->dev, PCI_DEVICE_ID), ==,
++                    GHID_PCI_DEVICE_ID);
++    g_assert_cmphex(qpci_config_readb(s->dev, PCI_REVISION_ID), ==,
++                    GHID_PCI_REVISION);
++    g_assert_cmphex(qpci_config_readw(s->dev, PCI_CLASS_DEVICE), ==,
++                    GHID_PCI_CLASS);
++    g_assert_cmphex(qpci_config_readb(s->dev, PCI_HEADER_TYPE), ==, 0);
++    g_assert_cmphex(qpci_config_readb(s->dev, PCI_INTERRUPT_PIN), ==, 1);
++    g_assert_cmphex(bar0 & 0xf, ==, PCI_BASE_ADDRESS_SPACE_MEMORY);
++    g_assert_cmphex(bar0 & PCI_BASE_ADDRESS_MEM_PREFETCH, ==, 0);
++    g_assert_cmphex(bar1, ==, 0);
++    g_assert_cmphex(bar2 & PCI_BASE_ADDRESS_MEM_TYPE_MASK, ==,
++                    PCI_BASE_ADDRESS_MEM_TYPE_32);
++    g_assert_cmphex(bar2 & PCI_BASE_ADDRESS_MEM_PREFETCH, !=, 0);
++    g_assert_cmphex(bar0_read(s, GHID_REG_DEVICE_MAGIC), ==,
++                    GHID_DEVICE_MAGIC);
++    g_assert_cmphex(bar0_read(s, GHID_REG_ABI_VERSION), ==,
++                    GHID_ABI_VERSION);
++    g_assert_cmphex(bar0_read(s, GHID_REG_FEATURES), ==, GHID_FEATURES);
++    g_assert_cmphex(ring_read32(s, GHID_RING_OFF_MAGIC), ==,
++                    GHID_RING_MAGIC);
++    g_assert_cmpuint(ring_read16(s, GHID_RING_OFF_HDR_BYTES), ==,
++                     GHID_HEADER_SIZE);
++    g_assert_cmpuint(ring_read16(s, GHID_RING_OFF_REC_BYTES), ==,
++                     GHID_RECORD_SIZE);
++    g_assert_cmpuint(ring_read16(s, GHID_RING_OFF_ENTRIES), ==,
++                     GHID_RING_ENTRIES);
++    test_stop(s);
++}
++
++static void test_hello_split_malformed(void)
++{
++    TestState *s = test_start();
++    uint8_t bad[GHID_FRAME_SIZE] = { 0 };
++    uint8_t byte;
++
++    s->fd = connect_backend(s);
++    memcpy(bad, "NOPE", 4);
++    send_all(s->fd, bad, sizeof(bad));
++    g_assert_cmpint(recv(s->fd, &byte, 1, 0), ==, 0);
++    close(s->fd);
++    s->fd = connect_backend(s);
++    hello(s->fd, 3);
++    g_assert_cmpuint(ring_read32(s, GHID_RING_OFF_PROTO_ERRS), ==, 1);
++    test_stop(s);
++}
++
++static void test_level_irq_and_ack_race(void)
++{
++    TestState *s = test_start();
++    uint8_t frame[GHID_RECORD_SIZE];
++    uint32_t status_before;
++    uint32_t producer_before;
++
++    /* Shared line, no enabled cause: ISR returns UNCLAIMED, no side effect. */
++    status_before = bar0_read(s, GHID_REG_IRQ_STATUS);
++    producer_before = ring_read32(s, GHID_RING_OFF_PRODUCER);
++    g_assert_false(guest_isr_claims(s));
++    g_assert_cmphex(bar0_read(s, GHID_REG_IRQ_STATUS), ==, status_before);
++    g_assert_cmpuint(ring_read32(s, GHID_RING_OFF_PRODUCER), ==,
++                     producer_before);
++
++    arm_driver(s);
++    s->fd = connect_backend(s);
++    hello(s->fd, 0);
++    bar0_write(s, GHID_REG_IRQ_MASK, 0);
++    g_assert_false(guest_isr_claims(s));
++    bar0_write(s, GHID_REG_IRQ_MASK, GHID_IRQ_LINK);
++    g_assert_true(guest_isr_claims(s));
++    bar0_write(s, GHID_REG_IRQ_MASK, 0);
++    g_assert_false(guest_isr_claims(s)); /* status is level-persistent */
++    bar0_write(s, GHID_REG_IRQ_MASK, GHID_IRQ_ALL);
++    g_assert_true(guest_isr_claims(s));
++    bar0_write(s, GHID_REG_IRQ_ACK, GHID_IRQ_LINK | GHID_IRQ_RESET);
++    g_assert_false(guest_isr_claims(s));
++
++    make_pointer(frame, 100, 200, 1);
++    send_all(s->fd, frame, sizeof(frame));
++    wait_producer(s, 1);
++    g_assert_true(guest_isr_claims(s));
++
++    /* Consumer update races a second enqueue before ACK: ACK must reassert. */
++    ring_write32(s, GHID_RING_OFF_CONSUMER, 1);
++    make_pointer(frame, 101, 201, 2);
++    send_all(s->fd, frame, sizeof(frame));
++    wait_producer(s, 2);
++    bar0_write(s, GHID_REG_IRQ_ACK, GHID_IRQ_RING);
++    g_assert_true(guest_isr_claims(s));
++    g_assert_cmphex(bar0_read(s, GHID_REG_IRQ_STATUS) & GHID_IRQ_RING, !=, 0);
++    ring_write32(s, GHID_RING_OFF_CONSUMER, 2);
++    bar0_write(s, GHID_REG_GUEST_KICK, 0);
++    bar0_write(s, GHID_REG_IRQ_ACK, GHID_IRQ_RING);
++    g_assert_false(guest_isr_claims(s));
++    test_stop(s);
++}
++
++static void test_wrap_full_backpressure(void)
++{
++    TestState *s = test_start();
++    uint8_t frame[GHID_RECORD_SIZE];
++    unsigned i;
++
++    arm_driver(s);
++    s->fd = connect_backend(s);
++    hello(s->fd, 0);
++    bar0_write(s, GHID_REG_IRQ_MASK, GHID_IRQ_ALL);
++    bar0_write(s, GHID_REG_IRQ_ACK, GHID_IRQ_LINK | GHID_IRQ_RESET);
++    for (i = 0; i < GHID_RING_ENTRIES + 1; i++) {
++        make_pointer(frame, i & 0x7fff, (i * 3) & 0x7fff, i);
++        send_all(s->fd, frame, sizeof(frame));
++    }
++    wait_producer(s, GHID_RING_ENTRIES);
++    g_assert_cmpuint(bar0_read(s, GHID_REG_STATUS) &
++                     GHID_STATUS_STALLED, !=, 0);
++    g_assert_cmpuint(ring_read32(s, GHID_RING_OFF_STALLS), ==, 1);
++    g_assert_true(guest_isr_claims(s));
++
++    /* Free slot 0, kick, and prove the staged record wraps into that slot. */
++    ring_write32(s, GHID_RING_OFF_CONSUMER, 1);
++    bar0_write(s, GHID_REG_GUEST_KICK, 0);
++    wait_producer(s, GHID_RING_ENTRIES + 1);
++    g_assert_cmpuint(ring_read16(s, GHID_RING_OFF_RECORDS + 2), ==,
++                     GHID_RING_ENTRIES);
++    g_assert_cmpuint(bar0_read(s, GHID_REG_STATUS) &
++                     GHID_STATUS_STALLED, !=, 0);
++    ring_write32(s, GHID_RING_OFF_CONSUMER, GHID_RING_ENTRIES + 1);
++    bar0_write(s, GHID_REG_GUEST_KICK, 0);
++    bar0_write(s, GHID_REG_IRQ_ACK, GHID_IRQ_RING);
++    g_assert_cmpuint(bar0_read(s, GHID_REG_STATUS) &
++                     GHID_STATUS_STALLED, ==, 0);
++    g_assert_false(guest_isr_claims(s));
++    test_stop(s);
++}
++
++static void test_vmstate_save_load(void)
++{
++    TestState *src = test_start();
++    TestState *dst;
++    uint8_t frame[GHID_RECORD_SIZE];
++    g_autofree char *mig_sock = g_build_filename(src->dir, "migrate.sock",
++                                                  NULL);
++    g_autofree char *uri = g_strdup_printf("unix:%s", mig_sock);
++    g_autofree char *incoming = g_strdup_printf("-incoming %s", uri);
++    uint32_t epoch;
++
++    arm_driver(src);
++    src->fd = connect_backend(src);
++    hello(src->fd, 0);
++    bar0_write(src, GHID_REG_IRQ_MASK, GHID_IRQ_ALL);
++    bar0_write(src, GHID_REG_IRQ_ACK, GHID_IRQ_LINK | GHID_IRQ_RESET);
++    make_pointer(frame, 1234, 5678, 42);
++    send_all(src->fd, frame, sizeof(frame));
++    wait_producer(src, 1);
++    g_assert_true(guest_isr_claims(src));
++    epoch = ring_read32(src, GHID_RING_OFF_EPOCH);
++
++    dst = test_start_args(incoming);
++    migrate(src->qs, dst->qs, uri);
++
++    /* PCI/BAR2/programmed state migrated, but backend and stale INTA did not. */
++    g_assert_cmpuint(ring_read32(dst, GHID_RING_OFF_EPOCH), ==, epoch);
++    g_assert_cmpuint(ring_read32(dst, GHID_RING_OFF_PRODUCER), ==, 1);
++    g_assert_cmpuint(ring_read32(dst, GHID_RING_OFF_CONSUMER), ==, 0);
++    g_assert_cmpuint(ring_read16(dst, GHID_RING_OFF_NEXT_SEQ), ==, 1);
++    g_assert_cmpuint(ring_read16(dst, GHID_RING_OFF_RECORDS + 4), ==, 1234);
++    g_assert_cmpuint(ring_read16(dst, GHID_RING_OFF_RECORDS + 6), ==, 5678);
++    g_assert_cmpuint(bar0_read(dst, GHID_REG_IRQ_MASK), ==, GHID_IRQ_ALL);
++    g_assert_cmpuint(bar0_read(dst, GHID_REG_IRQ_STATUS), ==, 0);
++    g_assert_false(guest_isr_claims(dst));
++    g_assert_cmpuint(bar0_read(dst, GHID_REG_STATUS) &
++                     GHID_STATUS_CONNECTED, ==, 0);
++    g_assert_cmpuint(bar0_read(dst, GHID_REG_STATUS) &
++                     GHID_STATUS_DRIVER_READY, !=, 0);
++    g_assert_cmpuint(bar0_read(dst, GHID_REG_STATUS) &
++                     GHID_STATUS_RESET_REQ, !=, 0);
++
++    /* Fresh hello raises LINK; the guest rearm write unlocks new frames. */
++    dst->fd = connect_backend(dst);
++    hello(dst->fd, 0);
++    g_assert_true(guest_isr_claims(dst));
++    arm_driver(dst);
++    bar0_write(dst, GHID_REG_IRQ_ACK, GHID_IRQ_ALL);
++    g_assert_cmpuint(bar0_read(dst, GHID_REG_STATUS) &
++                     GHID_STATUS_RESET_REQ, ==, 0);
++    make_pointer(frame, 2222, 7777, 43);
++    send_all(dst->fd, frame, sizeof(frame));
++    wait_producer(dst, 2);
++    g_assert_cmpuint(ring_read16(dst, GHID_RING_OFF_RECORDS +
++                                GHID_RECORD_SIZE + 2), ==, 1);
++
++    g_unlink(mig_sock);
++    test_stop(src);
++    test_stop(dst);
++}
++
++int main(int argc, char **argv)
++{
++    g_test_init(&argc, &argv, NULL);
++    g_test_add_func("/gallery-hid/ids-bars-header", test_ids_bars_header);
++    g_test_add_func("/gallery-hid/hello-split-malformed",
++                    test_hello_split_malformed);
++    g_test_add_func("/gallery-hid/level-irq-ack-race",
++                    test_level_irq_and_ack_race);
++    g_test_add_func("/gallery-hid/wrap-full-backpressure",
++                    test_wrap_full_backpressure);
++    g_test_add_func("/gallery-hid/vmstate-save-load",
++                    test_vmstate_save_load);
++    return g_test_run();
++}
+Index: b/tests/qtest/meson.build
+===================================================================
+--- a/tests/qtest/meson.build
++++ b/tests/qtest/meson.build
+@@ -37,7 +37,8 @@ endif
+ 
+ qtests_pci = \
+   (config_all_devices.has_key('CONFIG_VGA') ? ['display-vga-test'] : []) +                  \
+-  (config_all_devices.has_key('CONFIG_IVSHMEM_DEVICE') ? ['ivshmem-test'] : [])
++  (config_all_devices.has_key('CONFIG_IVSHMEM_DEVICE') ? ['ivshmem-test'] : []) +           \
++  (config_all_devices.has_key('CONFIG_GALLERY_HID') ? ['gallery-hid-test'] : [])
+ 
+ qtests_cxl = \
+   (config_all_devices.has_key('CONFIG_CXL') ? ['cxl-test'] : [])

@@ -1,0 +1,86 @@
+Fix the SGI MC's DMA page-table base mask, which truncates every DMA mapping
+whose page table lives above physical 0x0fffffff -- i.e. every one in the upper
+half of a 256 MB Indy.
+
+THE DEFECT THIS FIXES
+
+  PANIC: bad istack sp:8835afa8
+
+IRIX 6.5 on `indy_4610` died with that panic -- byte-identical stack pointer
+across every sighting -- when a visitor opened Toolchest -> Help -> "Welcome to
+SGI" (which launches Netscape). It killed the live exhibit and it needed a
+manual restart. Reproduced 8 times out of 9 on clones of the shipped golden.
+
+ROOT CAUSE
+
+`sgi_mc_device::dma_translate()` walks a guest-supplied page table to translate
+a GIO/DMA address. The two address fields it decodes are encoded identically --
+bits 6..25, scaled by 4096 -- but they are masked differently:
+
+	const uint32_t pte = m_space->read_dword(((m_dma_tlb_entry_lo[entry] & 0x003fffc0) << 6) + (vpn_lo << 2));
+	                                                                       ^^^^^^^^^^ 16 bits
+	return ((pte & 0x03ffffc0) << 6) + offset;
+	              ^^^^^^^^^^ 20 bits
+
+`0x003fffc0 << 6` spans bits 12..27, so the page-table base saturates at
+0x0fffffff. IP24 main memory starts at physical 0x0800'0000, so:
+
+- with <= 128 MB installed, RAM ends at 0x0fff'ffff and the narrow mask is a
+  no-op -- every address it can produce is correct;
+- with 256 MB installed (RAM 0x0800'0000-0x17ff'ffff), any page table the guest
+  places in the upper half is read from the WRONG physical address. Instrumented
+  on a live boot, IRIX put one at **0x17de7000** (entry_lo 0x005f79c2) and MAME
+  read it from **0x07de7000** -- below the start of RAM, i.e. unmapped. The
+  resulting garbage PTEs send the DMA engine's reads and writes to arbitrary
+  physical addresses, scribbling on kernel memory until something structural
+  breaks. The same corruption also shows up mildly as a garbled Netscape window
+  on a run that happens not to panic.
+
+That is the whole RAM-size dependence, and it is measured:
+
+| RAM (our SIMMS default) | result |
+|---|---|
+| 256 MB (banks A+B 4x32M) — what the tile shipped | **PANIC 8/9** |
+| 192 MB (A 4x32M + B 4x16M) | no panic |
+| 128 MB (A 4x32M, B empty) | no panic (3/3) |
+| 128 MB (A+B 4x16M) | no panic |
+| 64 MB, 16 MB (stock MAME) | no panic |
+
+so it is OUR `mame-indy-256mb-ram.patch` that exposed a latent upstream bug --
+one nobody upstream would meet, because stock MAME ships this machine with
+16 MB. The bug is present in MAME 0.288 and unchanged in 0.289 and on master.
+
+Ruled out along the way, each by experiment rather than by argument: the DRC
+code-cache size, the Newport/shm/ds1386 patches (the pre-shm binary
+`sgi.prev-a33944d3` panics identically), `MIPS3DRC_STRICT_VERIFY` and
+`MIPS3DRC_COMPATIBLE_OPTIONS`, and a genuine but unrelated MIPS3 DRC bug (the
+software-interrupt check in `generate_update_cycles()` omits the `Status.IE` /
+`EXL` / `ERL` guards that the interpreter and the DRC's own full-interrupt check
+both apply -- adding them changes nothing here, and it is still worth reporting
+upstream separately).
+
+NOTE, not fixed here: `dma_translate()` returns physical **0** when no DMA TLB
+entry matches, and physical 0 is install_ram'd as an alias of the first 512 KiB
+of RAM -- i.e. the start of the kernel image. That fires during boot in every
+configuration, including stock 16 MB, so it is neither this panic nor something
+our RAM patch introduced; it is logged as a separate upstream concern.
+
+diff --git a/src/mame/sgi/mc.cpp b/src/mame/sgi/mc.cpp
+index 79186754..0d21af2a 100644
+--- a/src/mame/sgi/mc.cpp
++++ b/src/mame/sgi/mc.cpp
+@@ -210,7 +210,13 @@ uint32_t sgi_mc_device::dma_translate(uint32_t address)
+ 		if ((address & 0xffc00000) == (m_dma_tlb_entry_hi[entry] & 0xffc00000))
+ 		{
+ 			const uint32_t vpn_lo = (address & 0x003ff000) >> 12;
+-			const uint32_t pte = m_space->read_dword(((m_dma_tlb_entry_lo[entry] & 0x003fffc0) << 6) + (vpn_lo << 2));
++			// The page-table base field is encoded exactly like the PTE field
++			// below (bits 6..25, scaled by 4096), so it must use the SAME mask.
++			// 0x003fffc0 drops bits 22..25 and truncates any page table above
++			// physical 0x0fffffff -- i.e. every one in the upper half of a
++			// 256 MB machine, which then reads below the start of RAM.
++			const uint32_t ptbase = (m_dma_tlb_entry_lo[entry] & 0x03ffffc0) << 6;
++			const uint32_t pte = m_space->read_dword(ptbase + (vpn_lo << 2));
+ 			const uint32_t offset = address & 0xfff;
+ 			return ((pte & 0x03ffffc0) << 6) + offset;
+ 		}

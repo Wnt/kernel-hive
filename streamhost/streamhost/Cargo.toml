@@ -1,0 +1,65 @@
+[package]
+name = "streamhost"
+version = "0.1.0"
+edition = "2021"
+description = "Per-VM low-latency streaming daemon: QEMU dbus display capture -> in-process libx264 -> WebTransport/WebCodecs, with Opus audio and input injection"
+repository = "https://github.com/Wnt/kernel-hive"
+# GPL because we link the SYSTEM libx264 (GPL-2.0-or-later) via x264-sys bindgen.
+license = "GPL-2.0-or-later"
+
+[[bin]]
+name = "streamhost"
+path = "src/main.rs"
+
+# Minimal library surface (capture + audio + clock + config) so the boot-recorder
+# sidecar can reuse the daemon's dbus display/audio tap. The daemon binary above does
+# NOT use this lib (main.rs keeps its own private mods), so its build is unchanged.
+[lib]
+name = "streamhost"
+path = "src/lib.rs"
+
+# bootrec-tap — box-only companion for scripts/coldboot/record-boot.sh's SH_DBUS_TAP:
+# taps QEMU dbus display+audio, normalises every scanout to a constant BGRA canvas
+# paced to <fps> on the video fifo and writes s16le PCM to the audio fifo.
+[[bin]]
+name = "bootrec-tap"
+path = "src/bin/bootrec-tap.rs"
+
+[dependencies]
+# X11 capture (Xvfb root GetImage/XDamage) + XTEST input for LXC emulator-bridge
+# tiles (e.g. IRIX/MAME, which panics under a KVM vCPU). Pure-Rust backend, no C
+# libs. Only the SH_CAPTURE=x11 path uses it; the QEMU fleet never touches it.
+x11rb = { version = "0.13", features = ["damage", "xtest"] }
+# capture + input (QEMU -display dbus p2p)
+zbus = { version = "5", default-features = false, features = ["tokio", "p2p"] }
+nix = { version = "0.31", features = ["socket", "uio"] }
+libc = "0.2"
+# QMP
+serde_json = "1"
+# transport (WebTransport / QUIC)
+wtransport = { version = "0.7", features = ["quinn"] }
+rcgen = { version = "0.14", features = ["x509-parser"] }
+sha2 = "0.11"
+base64 = "0.23"
+time = { version = "0.3", features = ["formatting"] }
+# audio (guest PCM over dbus -> Opus low-latency)
+opus = "0.3"
+# in-process H.264 (libx264) — replaces the ffmpeg child + pipe-drain AU detection.
+# Pinned EXACT: x264-sys 0.2.3 is a thin -sys crate whose build.rs runs bindgen at
+# BUILD TIME against the SYSTEM <x264.h> (its data/x264.h is just
+# `#include <inttypes.h>` + `#include <x264.h>`), so the generated `x264_param_t`
+# is ABI-correct for the installed libx264 build (Debian trixie = build 164) with
+# NO hand-rolled struct — exactly what the encode.rs PROTOTYPE NOTE asked for. It
+# also emits a stable `x264_encoder_open()` wrapper that dispatches to the
+# version-mangled `x264_encoder_open_164` symbol. Chosen over the safe `x264`
+# wrapper crate (its builder does not expose i_rc_method / CQP / VBV / per-frame
+# force-IDR / b_sliced_threads) and over `x264-dev` (which vendors + compiles its
+# own libx264 from a bundled tarball instead of linking the system lib).
+x264-sys = "=0.2.3"
+# Bundled Google libyuv conversion kernels. The crate statically builds libyuv
+# and runtime-dispatches C/SSE/AVX2 (and architecture equivalents), so deployment
+# does not depend on a host libyuv package or a single compile-time CPU target.
+yuv-sys = "=0.3.14"
+# runtime + misc
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"

@@ -1,0 +1,47 @@
+# systemd template unit — one streamhost daemon per gallery tile.
+#   Instance name %i = tile name, e.g. streamhost@reactos.
+#   Per-tile config lives in /data/vms/streamhost/tiles/%i/tile.env, emitted by
+#   scripts/streamhost-tile.sh. streamhost attaches to that tile's QEMU QMP
+#   socket and serves WebTransport on that tile's dedicated UDP port.
+#
+# The versioned binary is selected independently for every tile.  The symlink
+# is changed atomically by scripts/dev/build-deploy.sh; "previous" beside it is
+# the instant rollback target.
+#
+# One-time install is deliberately supervised:
+#   scripts/dev/migrate-to-versioned.sh --apply
+# Do not copy this unit directly over the legacy live template.
+
+[Unit]
+Description=streamhost per-tile streaming host (%i)
+After=network.target
+# ExecStartPre starts the tile's QEMU only when its pidfile/QMP are not live.
+
+[Service]
+Type=simple
+EnvironmentFile=/data/vms/streamhost/tiles/%i/tile.env
+ExecStart=/usr/local/lib/streamhost/tiles/%i/current
+ExecStartPre=/data/vms/streamhost/build/streamhost/scripts/ensure-tile-qemu.sh %i
+ExecStop=/data/vms/streamhost/build/streamhost/scripts/stop-tile-qemu.sh %i
+Restart=on-failure
+# ExecStop owns the bounded, ORDERED teardown by pidfile (watchdogs, then the
+# guest). KillMode is the sweep behind it, not the plan: `process` used to leave
+# every backgrounded descendant of the launcher alive in this cgroup, so anything
+# ExecStop's pidfile pass missed simply survived the stop. It did — an orphaned
+# `x11-runtime.sh --livewatch` outlived `systemctl stop streamhost@irix` and
+# would have relaunched the guest by itself. `mixed` still signals only the
+# daemon on SIGTERM (ExecStop is what stops the guest gracefully), then SIGKILLs
+# whatever is left in the cgroup, so "the tile is stopped" is finally a fact
+# rather than a hope. Tiles that put their guest in a qcap scope are covered
+# separately: those scopes are BindsTo= this unit (ensure-tile-{qemu,x11}.sh).
+KillMode=mixed
+
+RestartSec=2
+# Be gentle: the compute host is GPU-less and runs the registry production fleet. Idle tiles are
+# damage-gated (~0 CPU); cap a runaway busy tile so it can't starve the box.
+Nice=5
+CPUWeight=100
+# streamhost reads SH_* from the EnvironmentFile (SH_QMP, SH_PORT, SH_TILE, ...).
+
+[Install]
+WantedBy=multi-user.target

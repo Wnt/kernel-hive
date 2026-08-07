@@ -1,0 +1,396 @@
+/* ============================================================================
+   MUSEUM DAYLIGHT — the gallery's one and only colour scheme.
+   ---------------------------------------------------------------------------
+   Surfaces are paper, text is ink, signage is terracotta: the same printed
+   language as the exhibit posters and the 3D hall (its clear colour is #e8e6e0),
+   so the chrome now reads as the room the machines stand in.
+
+   There is no dark scheme and no prefers-color-scheme branch anywhere in the
+   SPA — one theme, one set of tokens. What stays dark is never chrome: the guest
+   picture itself, the faux-CRT screen inside a card poster, and the cold-boot
+   tube animation are pictures OF screens, and a screen that is off is black.
+   ============================================================================ */
+:root {
+  color-scheme: light;       /* UA widgets (scrollbars, controls) stay light too */
+  --paper: #f3f0e7;          /* the room: page ground */
+  --paper-raised: #fbf9f3;   /* cards, panels, menus */
+  --paper-sunken: #e7e2d5;   /* wells, strips, inputs */
+  --ink: #201d17;            /* primary text */
+  --ink-soft: #4b4539;       /* secondary text */
+  --ink-muted: #6f6857;      /* labels, captions */
+  --line: rgba(46, 38, 26, 0.18);
+  --line-strong: rgba(46, 38, 26, 0.34);
+  --tint-1: rgba(33, 28, 22, 0.05);   /* hover wash on paper */
+  --tint-2: rgba(33, 28, 22, 0.09);
+  --tint-3: rgba(33, 28, 22, 0.14);
+  --accent: #9c4f35;         /* signage terracotta (per-card OS accents override) */
+  --accent-ink: #82402a;     /* accent at text weight on paper */
+  --accent-wash: rgba(156, 79, 53, 0.12);
+  --accent-line: rgba(156, 79, 53, 0.4);
+  --ok: #1d7a4c;
+  --warn: #8f6407;
+  --danger: #b23a2c;
+  --info: #2f6d9c;
+  --panel: rgba(251, 249, 243, 0.88);
+  --panel-border: var(--line);
+  --shadow-1: 0 1px 2px rgba(58, 48, 32, 0.10), 0 6px 18px rgba(58, 48, 32, 0.10);
+  --shadow-2: 0 12px 34px rgba(58, 48, 32, 0.18);
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+canvas { display: block; touch-action: none; }
+
+.app-root { position: relative; width: 100%; height: 100%; }
+.scene-v2 { position: absolute; inset: 0; }
+.scene-v2-loading {
+  position: absolute; left: 50%; bottom: 84px; z-index: 12;
+  transform: translateX(-50%);
+  padding: 7px 11px; border: 1px solid var(--line);
+  border-radius: 999px; background: rgba(251, 249, 243, 0.82);
+  box-shadow: var(--shadow-1);
+  color: var(--ink-soft); font-family: var(--font-mono); font-size: 11px;
+  pointer-events: none;
+}
+
+.scene-info-card {
+  --exhibit-accent: var(--accent);
+  position: absolute; z-index: 25; right: clamp(18px, 3vw, 48px); bottom: clamp(18px, 4vh, 44px);
+  width: min(390px, calc(100vw - 36px)); padding: 26px 30px 24px;
+  color: #25231e; background:
+    linear-gradient(90deg, var(--exhibit-accent) 0 7px, transparent 7px),
+    linear-gradient(150deg, #f7f4e9, #e6e0d0);
+  border: 1px solid var(--line-strong); border-radius: 2px;
+  box-shadow: 0 20px 52px rgba(42, 36, 27, 0.22), 0 2px 8px rgba(42, 36, 27, 0.14);
+}
+.scene-info-card::after {
+  content: ''; position: absolute; right: 22px; bottom: -18px; width: 74px; height: 18px;
+  background: linear-gradient(135deg, rgba(62, 55, 44, 0.24), transparent 58%);
+  clip-path: polygon(0 0, 100% 0, 82% 100%, 16% 100%);
+}
+.scene-info-index {
+  position: absolute; top: 11px; right: 44px; color: var(--ink-muted);
+  font: 600 9px/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.scene-info-close {
+  position: absolute; top: 7px; right: 8px; width: 32px; height: 32px; padding: 0;
+  border: 0; color: var(--ink-soft); background: transparent; cursor: pointer;
+  font: 300 25px/30px var(--font-ui);
+}
+.scene-info-close:hover, .scene-info-close:focus-visible { color: var(--ink); }
+.scene-info-kicker {
+  margin: 0 0 9px; color: var(--exhibit-accent);
+  font: 700 9px/1.2 var(--font-mono); letter-spacing: 0.18em; text-transform: uppercase;
+}
+.scene-info-card h1 {
+  margin: 0; color: #1f1d19; font: 650 clamp(22px, 3vw, 31px)/1.04 Georgia, serif;
+  letter-spacing: -0.025em;
+}
+.scene-info-meta {
+  margin: 10px 0 17px; color: var(--ink-muted);
+  font: 600 10px/1.3 var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase;
+}
+.scene-info-meta span { margin: 0 5px; color: var(--exhibit-accent); }
+.scene-info-blurb { margin: 0; color: #343129; font: 15px/1.55 Georgia, serif; }
+.scene-info-lineage {
+  margin: 18px 0 0; padding-top: 12px; border-top: 1px solid var(--line);
+  color: var(--ink-soft); font: 11px/1.4 var(--font-ui);
+}
+.scene-info-lineage span {
+  margin-right: 7px; color: var(--exhibit-accent);
+  font: 700 9px/1 var(--font-mono); letter-spacing: 0.11em; text-transform: uppercase;
+}
+@media (max-width: 600px) {
+  .scene-info-card { right: 12px; bottom: 12px; width: calc(100vw - 24px); padding: 22px 24px 20px; }
+  .scene-info-card h1 { padding-right: 22px; }
+  .scene-info-blurb { font-size: 14px; line-height: 1.45; }
+}
+
+.seg { display: inline-flex; background: var(--tint-1); border-radius: 10px; padding: 3px; }
+.seg button, .seg a {
+  border: 0; background: transparent; color: var(--ink-soft); text-decoration: none;
+  font-family: var(--font-ui); font-size: 12px; font-weight: 600;
+  padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: all 0.15s;
+}
+.seg button.active, .seg a.active { background: var(--accent); color: var(--paper-raised); }
+.seg button:hover:not(.active), .seg a:hover:not(.active) { color: var(--accent-ink); }
+
+.btn {
+  border: 0; cursor: pointer; font-weight: 700; font-size: 13px;
+  padding: 9px 14px; border-radius: 10px; font-family: var(--font-ui);
+  transition: transform 0.1s, filter 0.15s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-ghost { background: var(--paper-raised); color: var(--ink); border: 1px solid var(--line); }
+.btn-ghost:hover { background: var(--paper-sunken); }
+
+/* ============================================================================
+   2D GRID UI (default view): top app bar, era sections, OS cards, stream view
+   ============================================================================ */
+
+/* ---- App bar (title + Grid/3D toggle + Fullscreen) ---- */
+.appbar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 30;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 12px 20px;
+  background: linear-gradient(180deg, rgba(243,240,231,0.96), rgba(243,240,231,0.78) 70%, rgba(243,240,231,0));
+  backdrop-filter: blur(8px);
+}
+.appbar-brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.appbar-brand h1 {
+  margin: 0; font-size: 19px; font-weight: 800; letter-spacing: 0.02em;
+  color: var(--accent-ink); white-space: nowrap;
+}
+/* Rotating tagline. All 5 items are stacked in the SAME grid cell (grid-area
+   1/1 below) rather than positioned absolutely: an absolutely-positioned box
+   is removed from flow and contributes nothing to its ancestor's size, so the
+   bar would collapse to zero width. Stacked-in-a-cell items stay in normal
+   grid flow, so the implicit track auto-sizes to the widest of the 5 — "space
+   for the longest tagline" falls out of the layout for free, no measuring.
+
+   Cycle is one shared @keyframes (tagline-cycle) reused by all 5 items via
+   negative animation-delay, not 5 separate keyframe rules: delaying an
+   identical infinite animation by -N*30s makes it start N*30s into its own
+   timeline, so item i's "on" window lands exactly at real time i*30s. Only
+   valid for exactly 5 items at a 30s slot — add/remove a tagline in config.ts
+   and update both the nth-child delays and the keyframe percentages below.
+
+   Math (5 items, 30s each, 150s/loop, ~0.5s fade each way):
+     slot  = 100/5            = 20%    of the 150s loop
+     fade  = 0.5s / 150s      ≈ 0.333% of the loop
+   So one item's local timeline is: 0% invisible -> fade in by 0.333% -> hold
+   -> fade out from 19.667% -> invisible by 20% -> stays invisible to 100%
+   (while the other 4 items take their turn) -> wraps to 0% and repeats. Two
+   adjacent items' fade windows touch exactly at each slot boundary, which is
+   what makes the swap read as one continuous ~1s fade rather than a blink. */
+.appbar-tag { display: inline-grid; font-size: 12px; color: var(--ink-muted); }
+.appbar-tag-item {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  opacity: 0;
+  animation: tagline-cycle 150s infinite;
+}
+.appbar-tag-item:nth-child(1) { animation-delay: 0s; }
+.appbar-tag-item:nth-child(2) { animation-delay: -30s; }
+.appbar-tag-item:nth-child(3) { animation-delay: -60s; }
+.appbar-tag-item:nth-child(4) { animation-delay: -90s; }
+.appbar-tag-item:nth-child(5) { animation-delay: -120s; }
+
+@keyframes tagline-cycle {
+  0% { opacity: 0; }
+  0.333% { opacity: 1; }
+  19.667% { opacity: 1; }
+  20% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appbar-tag-item { animation: none; opacity: 0; }
+  .appbar-tag-item:first-child { opacity: 1; }
+}
+.appbar-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.appbar-source {
+  font-family: var(--font-mono); font-size: 11px; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--accent-line); background: var(--accent-wash); color: var(--accent-ink);
+}
+.appbar-seg { border: 1px solid var(--line); }
+.appbar .btn.appbar-fs { padding: 6px 12px; font-size: 12px; }
+
+/* ---- Scrollable grid region ---- */
+.grid-view {
+  position: absolute; inset: 0; z-index: 10;
+  overflow-y: auto; overflow-x: hidden;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(156,79,53,0.07), transparent 70%),
+    var(--paper);
+  -webkit-overflow-scrolling: touch;
+}
+.grid-view-inner {
+  max-width: 1360px; margin: 0 auto;
+  padding: 84px 24px 48px;   /* top clears the fixed app bar */
+}
+.grid-empty {
+  display: flex; align-items: center; justify-content: center; height: 60vh;
+  color: var(--ink-muted); font-family: var(--font-mono); font-size: 14px;
+}
+
+/* ---- Era section ---- */
+.era-section { margin: 0 0 40px; }
+.era-header {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding: 0 2px 12px; margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.era-header h2 {
+  margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0.01em;
+  color: var(--ink);
+}
+.era-header .era-sub { font-size: 13px; color: var(--ink-muted); }
+.era-header .era-count {
+  margin-left: auto; font-family: var(--font-mono); font-size: 12px;
+  color: var(--accent-ink); padding: 2px 10px; border-radius: 999px;
+  border: 1px solid var(--accent-line); background: var(--accent-wash);
+}
+
+/* ---- Card grid (responsive) ---- */
+.card-grid {
+  display: grid; gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+/* ---- OS card ----
+   The card is a printed label on a light wall; the poster inside it is the
+   MACHINE — a warm bezel around a dark CRT face. Per-OS accents arrive as an
+   inline `--accent` from GridView and fall back to the signage terracotta. */
+.os-card {
+  display: flex; flex-direction: column; text-align: left; text-decoration: none;
+  padding: 0; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--paper-raised); color: var(--ink); cursor: pointer; overflow: hidden;
+  font-family: var(--font-ui);
+  transition: transform 0.14s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  box-shadow: var(--shadow-1);
+}
+.os-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line-strong));
+  box-shadow: var(--shadow-2), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.os-card:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent), var(--shadow-2);
+}
+.os-card:active { transform: translateY(-1px); }
+
+/* Poster: the machine's bezel, tinted by the OS accent, framing a dark screen. */
+.os-poster {
+  position: relative; display: block; aspect-ratio: 4 / 3;
+  background:
+    radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--accent) 22%, #f0ece0), #ded8c8 82%);
+  border-bottom: 1px solid var(--line);
+}
+.os-poster-screen {
+  position: absolute; inset: 14px; border-radius: 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--accent) 30%, #07121a), #05060a 85%);
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.75), 0 1px 0 rgba(255,255,255,0.5);
+  overflow: hidden; padding: 8px;
+}
+.os-poster-screen::after {   /* subtle scanlines */
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0, rgba(0,0,0,0.16) 1px, transparent 2px, transparent 3px);
+  mix-blend-mode: multiply;
+}
+/* Real OS screenshot (re-uses the exhibit-poster hero) shown ON the faux-CRT screen */
+.os-poster-shot {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  background: #05060a;
+}
+/* Inside the screen the type is phosphor, not ink — it is lit, not printed. */
+.os-poster-name {
+  position: relative; z-index: 1; text-align: center;
+  font-weight: 800; font-size: 16px; line-height: 1.15;
+  color: #fff; text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 80%, transparent), 0 1px 2px rgba(0,0,0,0.8);
+}
+.os-poster-year {
+  position: relative; z-index: 1;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--accent) 45%, #e9e3d4);
+}
+.os-badge {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+  padding: 2px 7px; border-radius: 999px;
+  background: rgba(251,249,243,0.92); border: 1px solid var(--line); color: var(--accent-ink);
+  backdrop-filter: blur(4px);
+}
+/* Boot-capture badge — sits top-LEFT so it never collides with the
+   top-right HW-input slot. */
+.os-badge--bootvid {
+  right: auto; left: 8px; color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 40%, var(--line));
+}
+.os-badge--hwinput {
+  color: var(--info);
+  border-color: color-mix(in srgb, var(--info) 40%, var(--line));
+}
+
+.os-card-body { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px 14px; }
+.os-card-name { font-size: 15px; font-weight: 700; color: var(--ink); }
+.os-card-meta {
+  font-size: 12px; color: var(--ink-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.os-card-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.os-chip {
+  font-family: var(--font-mono); font-size: 10.5px; padding: 2px 7px; border-radius: 6px;
+  background: var(--tint-1); border: 1px solid var(--line); color: var(--ink-soft);
+}
+
+.grid-foot {
+  margin-top: 12px; text-align: center;
+  font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted);
+}
+
+/* ---- StreamView fallback stub (Agent-B ships the real live view) ---- */
+.stream-view { position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; background: var(--paper); }
+.stream-view-bar {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.stream-view-title { font-family: var(--font-mono); color: var(--accent-ink); font-size: 13px; margin: 0 auto; }
+.stream-view-stub-body {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  color: var(--ink); text-align: center; padding: 24px;
+}
+.stream-view-stub-note { color: var(--ink-muted); font-size: 13px; }
+.stream-view-stub-note code { font-family: var(--font-mono); color: var(--accent-ink); }
+
+/* ---- Responsive tuning ---- */
+@media (max-width: 640px) {
+  .appbar-tag { display: none; }
+  .grid-view-inner { padding: 96px 14px 40px; }
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .era-header h2 { font-size: 21px; }
+  .era-header .era-sub { flex-basis: 100%; }
+}
+
+/* ---- Root render-error fallback: usable even when the gallery cannot mount ---- */
+.fatal-error {
+  min-height: 100vh; display: grid; place-items: center; padding: 24px;
+  color: #202124; background: #f3f4f6; font-family: system-ui, sans-serif;
+}
+.fatal-error-card {
+  width: min(100%, 560px); padding: 32px; border: 1px solid #c8cbd0;
+  border-radius: 14px; background: #fff; box-shadow: 0 16px 50px rgba(0, 0, 0, 0.12);
+}
+.fatal-error-card h1 { margin: 0 0 10px; font-size: clamp(24px, 5vw, 34px); }
+.fatal-error-card p { margin: 0 0 20px; color: #555b63; }
+.fatal-error-card pre {
+  margin: 0 0 24px; padding: 12px; overflow-wrap: anywhere; white-space: pre-wrap;
+  border-radius: 8px; color: #7d2020; background: #f5e9e9; font: 13px/1.5 ui-monospace, monospace;
+}
+.fatal-error-card button {
+  padding: 10px 18px; border: 0; border-radius: 8px; color: #fff;
+  background: #34383e; font: 600 15px system-ui, sans-serif; cursor: pointer;
+}
+.fatal-error-card button:hover { background: #17191c; }
+/* The fatal-error card deliberately uses plain system greys rather than the
+   museum tokens: it is the screen shown when the gallery itself has failed, so
+   it must render even if the token layer never applied. */

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+    <link rel="icon" href="/assets/generated/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/generated/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/generated/favicon-16.png" />
+    <link rel="apple-touch-icon" href="/assets/generated/apple-touch-icon.png" />
+    <!-- One scheme, museum daylight (spa/src/index.css). color-scheme pins the
+         UA's own widgets — scrollbars, form controls, the mobile browser bar —
+         to light too, so a dark-mode OS cannot paint dark chrome around it. -->
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f3f0e7" />
+    <title>The Kernel Hive</title>
+    <meta name="description" content="A 3D virtual computer museum — inspect vintage machines, then step in and remote-control a live guest OS." />
+    <!-- No CSP meta/header forbids inline scripts. This classic script must stay
+         before the module entry so module-evaluation failures are observable. -->
+    <script>
+      (() => {
+        try {
+          const seen = Object.create(null);
+          let sent = 0;
+          const text = (value, fallback = '') => {
+            try {
+              if (typeof value === 'string') return value;
+              if (value == null) return fallback;
+              return String(value);
+            } catch {
+              return fallback;
+            }
+          };
+          const clip = (value, limit) => {
+            try {
+              const valueText = text(value);
+              return valueText.length > limit ? `${valueText.slice(0, limit - 1)}…` : valueText;
+            } catch {
+              return '';
+            }
+          };
+          let sessionId = '';
+          try {
+            const bytes = new Uint8Array(4);
+            crypto.getRandomValues(bytes);
+            sessionId = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+          } catch {
+            try {
+              sessionId = Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, '0');
+            } catch {
+              sessionId = 'unknown';
+            }
+          }
+          const report = (input) => {
+            try {
+              if (sent >= 10) return;
+              const message = clip(input && input.message, 1024) || 'Unknown client error';
+              const source = clip(input && input.source, 512);
+              const key = `${message}\n${source}`;
+              if (seen[key]) return;
+              seen[key] = true;
+              sent += 1;
+              const record = {
+                event: input && input.event === 'unhandled-rejection'
+                  ? 'unhandled-rejection'
+                  : input && input.event === 'react-error' ? 'react-error' : 'client-error',
+                message,
+                stack: clip(input && input.stack, 4096),
+                source,
+                lineno: Number.isFinite(input && input.lineno) ? input.lineno : 0,
+                colno: Number.isFinite(input && input.colno) ? input.colno : 0,
+                href: (() => { try { return clip(location.href, 1024); } catch { return ''; } })(),
+                ua: (() => { try { return clip(navigator.userAgent, 512); } catch { return ''; } })(),
+                clientTs: (() => { try { return Date.now(); } catch { return 0; } })(),
+                sessionId,
+              };
+              if (input && input.componentStack) record.componentStack = clip(input.componentStack, 4096);
+              fetch('/clientlog', {
+                method: 'POST',
+                keepalive: true,
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(record),
+              }).catch(() => {});
+            } catch {
+              // Reporting must never become another application error.
+            }
+          };
+          try {
+            window.__kernelHiveReportError = report;
+            window.__kernelHiveErrorSessionId = sessionId;
+          } catch {}
+          window.addEventListener('error', (event) => {
+            try {
+              const error = (() => { try { return event.error; } catch { return null; } })();
+              report({
+                event: 'client-error',
+                message: (() => { try { return event.message || (error && error.message); } catch { return ''; } })(),
+                stack: (() => { try { return error && error.stack; } catch { return ''; } })(),
+                source: (() => { try { return event.filename; } catch { return ''; } })(),
+                lineno: (() => { try { return event.lineno; } catch { return 0; } })(),
+                colno: (() => { try { return event.colno; } catch { return 0; } })(),
+              });
+            } catch {}
+          }, true);
+          window.addEventListener('unhandledrejection', (event) => {
+            try {
+              const reason = (() => { try { return event.reason; } catch { return null; } })();
+              report({
+                event: 'unhandled-rejection',
+                message: (() => { try { return reason && reason.message ? reason.message : text(reason, 'Unhandled rejection'); } catch { return 'Unhandled rejection'; } })(),
+                stack: (() => { try { return reason && reason.stack; } catch { return ''; } })(),
+                source: 'promise',
+              });
+            } catch {}
+          });
+        } catch {
+          // The boot reporter is strictly best-effort and must never block boot.
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

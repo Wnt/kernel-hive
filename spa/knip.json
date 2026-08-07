@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["index.html"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignoreDependencies": [
+    "@gltf-transform/core",
+    "@gltf-transform/extensions",
+    "@gltf-transform/functions",
+    "meshoptimizer",
+    "sharp"
+  ],
+  "ignore": [
+    "src/data/museumCatalog.ts",
+    "src/data/posters.ts",
+    "src/data/catalog.ts"
+  ]
+}

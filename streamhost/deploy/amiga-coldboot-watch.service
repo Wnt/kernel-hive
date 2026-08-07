@@ -1,0 +1,18 @@
+[Unit]
+# Cold-boot-on-visit lifecycle for the Amiga 500 bridge tile. Watches the
+# streamhost@amiga daemon's session log and cold-boots / powers off FS-UAE inside
+# the kiosk over ssh. See scripts/coldboot/amiga-coldboot-watch.sh.
+Description=Amiga 500 cold-boot-on-visit watcher (streamhost bridge tile)
+After=streamhost@amiga.service
+Wants=streamhost@amiga.service
+
+[Service]
+Type=simple
+# IDLE_GRACE: seconds after the last visitor leaves before the emulator powers off.
+Environment=IDLE_GRACE=60
+ExecStart=/usr/local/bin/amiga-coldboot-watch.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+--- src/evdev_axes.c.orig	2006-12-14 00:00:00.000000000 +0000
++++ src/evdev_axes.c	2006-12-14 00:00:00.000000000 +0000
+@@ -287,2 +287,3 @@
+-	EvdevConvert (pInfo, 0, 2, state->abs->v[0], state->abs->v[1],
+-		0, 0, 0, 0, &conv_x, &conv_y);
++    /* Feed EvdevConvert the screen-scaled USB-tablet coordinates. */
++    EvdevConvert (pInfo, 0, 2, state->axes->v[0], state->axes->v[1],
++        0, 0, 0, 0, &conv_x, &conv_y);

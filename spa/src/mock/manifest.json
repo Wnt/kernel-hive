@@ -1,0 +1,47 @@
+[
+  {
+    "id": "kolibrios",
+    "displayName": "KolibriOS",
+    "year": 2004,
+    "lineage": "MenuetOS / hand-written x86 assembly",
+    "arch": "i386",
+    "ramMB": 128,
+    "notes": "Entire GUI OS in assembly; boots off a floppy in under a second.",
+    "accent": "#39c6d6",
+    "era": "2000s",
+    "eraSoftware": ["KolibriOS desktop", "TinyBasic", "Fasm IDE", "Animage paint"],
+    "periodBrowser": "WebView (HTMLv)",
+    "iconicApps": ["Fara (dungeon crawler)", "MineSweeper", "3D Cube demo"],
+    "blurb": "A complete graphical OS that fits on a single floppy — written in pure asm."
+  },
+  {
+    "id": "toaruos",
+    "displayName": "ToaruOS",
+    "year": 2011,
+    "lineage": "Hobby UNIX-like, built from scratch",
+    "arch": "x86_64",
+    "ramMB": 512,
+    "notes": "Fully self-hosting hobby OS with its own compositing window manager.",
+    "accent": "#c98b3a",
+    "era": "2010s",
+    "eraSoftware": ["Yutani compositor", "Bim editor", "Kuroko shell", "Terminal"],
+    "periodBrowser": "no period browser (demo apps)",
+    "iconicApps": ["Julia fractal viewer", "Bomberman-style demo", "Clock widget"],
+    "blurb": "One developer's from-scratch UNIX with a real windowing compositor."
+  },
+  {
+    "id": "freedos",
+    "displayName": "FreeDOS",
+    "year": 1994,
+    "lineage": "MS-DOS compatible, open source",
+    "arch": "i386",
+    "ramMB": 64,
+    "notes": "The living continuation of the DOS command line, still shipping today.",
+    "accent": "#5fa85f",
+    "era": "1990s",
+    "eraSoftware": ["EDIT", "FDISK", "4DOS", "Arachne browser"],
+    "periodBrowser": "Arachne / Lynx (DOS)",
+    "iconicApps": ["Rogue", "Nibbles", "DOOM (shareware)"],
+    "blurb": "The DOS command prompt that never died — C:\\> is still alive and well."
+  }
+]

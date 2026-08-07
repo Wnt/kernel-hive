@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "id": "kolibrios",
+  "era_year": 2004,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 0,
+        "prelude": "",
+        "line": "  \"kolibrios   |kolibrios.sh   |KolibriOS   |fast     |~2-3m   |full   |kolibri.iso (live CD)\"\n",
+        "value": {
+          "key": "kolibrios",
+          "script": "kolibrios.sh",
+          "outputDir": "KolibriOS",
+          "class": "fast",
+          "estimated": "~2-3m",
+          "automation": "full",
+          "produces": "kolibri.iso (live CD)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 0
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "kolibrios",
+      "value": {
+        "os": "KolibriOS",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            600,
+            200
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "VERIFIED under KVM: super opens the KolibriOS Start menu (64.8% photon vs 12% ambient).",
+        "audio_trigger": "tone",
+        "mask_note": "Default idle screensaver = full-screen animating rainbow-spiral (~97% frame churn) that drowns the byte-diff photon detector. MASK: send one keystroke (super/Escape) before probing — it dismisses the screensaver to a static desktop and doubles as the input proof.",
+        "accel": "kvm"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/kolibrios",
+      "qmp": "/data/vms/streamhost/tiles/kolibrios/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54097,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 15,
+    "tilesManifestOrder": 7,
+    "tilesManifestPrelude": "\n# kolibrios (VMID 97) — LiveCD, usb-tablet, AC97. VERBATIM LAUNCHER:\n#   state.qcow2 (virtio) holds the golden snapshot; conditional -loadvm golden.\n# POINTER=abs (Pattern A): KolibriOS's native USB HID stack consumes usb-tablet\n# absolute coordinates 1:1; golden re-baked 2026-07-13 with the tablet present.\n",
+    "tilesManifestInvocation": "emit kolibrios \\\n  --tile kolibrios --vmid 97 --udp 54097 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/kolibrios/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/kolibrios/tile.env.fixture\"\n",
+    "bringUpGroup": 1,
+    "bindingOrder": 1,
+    "bindingPrelude": "",
+    "bindingLine": "  kolibrios:   { osId: 'kolibrios',   archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#39c6d6', eraLabel: '2004 · asm GUI OS' },\n",
+    "mockManifestOrder": 0,
+    "catalogOrder": 0,
+    "catalogPrelude": "",
+    "catalogBlock": "  kolibrios: {\n    accent: '#39c6d6',\n    era: '2000s',\n    eraSoftware: ['KolibriOS desktop', 'TinyBasic', 'Fasm IDE', 'Animage paint'],\n    periodBrowser: 'WebView (HTMLv)',\n    iconicApps: ['Fara (dungeon crawler)', 'MineSweeper', '3D Cube demo'],\n    blurb: 'A complete graphical OS that fits on a single floppy — written in pure asm.',\n  },\n",
+    "goldenOrder": 10,
+    "actionMapOrder": 12
+  },
+  "tileDir": "kolibrios",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54097,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 97
+  },
+  "guestDoc": "docs/guests/kolibrios.md",
+  "credentialsRef": "guest/kolibrios",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "kolibrios",
+      "SH_QMP": "/data/vms/streamhost/tiles/kolibrios/qmp.sock",
+      "SH_PORT": "54097",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/kolibrios/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/kolibrios/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 97,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "kolibrios",
+        "--vmid",
+        "97",
+        "--udp",
+        "54097",
+        "--pointer",
+        "abs",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/kolibrios/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/kolibrios/tile.env.fixture"
+      ],
+      "deviceSetId": "kolibrios-current",
+      "launcher": "streamhost/tiles/kolibrios/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/kolibrios/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 256,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-kolibrios",
+        "-enable-kvm -m 256 -smp 2",
+        "-machine pc-i440fx-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-cdrom /data/gallery-guests/KolibriOS/kolibri.iso -boot d",
+        "-vga std",
+        "-usb -device usb-tablet",
+        "-drive file=\"$BASE/state.qcow2\",if=virtio,format=qcow2",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-qmp unix:\"$BASE/qmp.sock\",server=on,wait=off",
+        "-pidfile \"$BASE/qemu.pid\""
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 256,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-kolibrios",
+          "-enable-kvm -m 256 -smp 2",
+          "-machine pc-i440fx-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-cdrom /data/gallery-guests/KolibriOS/kolibri.iso -boot d",
+          "-vga std",
+          "-usb -device usb-tablet",
+          "-drive file=\"$BASE/state.qcow2\",if=virtio,format=qcow2",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-qmp unix:\"$BASE/qmp.sock\",server=on,wait=off",
+          "-pidfile \"$BASE/qemu.pid\""
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 7
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#39c6d6",
+    "eraLabel": "2004 · asm GUI OS"
+  },
+  "museum": {
+    "id": "kolibrios",
+    "displayName": "KolibriOS",
+    "year": 2004,
+    "lineage": "MenuetOS / hand-written x86 assembly",
+    "arch": "i386",
+    "ramMB": 128,
+    "notes": "Entire GUI OS in assembly; boots off a floppy in under a second.",
+    "accent": "#39c6d6",
+    "era": "2000s",
+    "eraSoftware": [
+      "KolibriOS desktop",
+      "TinyBasic",
+      "Fasm IDE",
+      "Animage paint"
+    ],
+    "periodBrowser": "WebView (HTMLv)",
+    "iconicApps": [
+      "Fara (dungeon crawler)",
+      "MineSweeper",
+      "3D Cube demo"
+    ],
+    "blurb": "A complete graphical OS that fits on a single floppy — written in pure asm."
+  },
+  "reset": {
+    "tileDir": "kolibrios",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "SKIP",
+    "fixture": "KolibriOS desktop; continuously animates (idle cf ~0.14) so a keypress cannot be separated from the animation."
+  }
+}

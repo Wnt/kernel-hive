@@ -1,0 +1,116 @@
+Memoize osd_get_cache_line_size() -- it is called once per compiled DRC block.
+
+WHAT IS WRONG UPSTREAM
+
+drcbex64.cpp generate() (and drcbearm64.cpp) calls osd_get_cache_line_size()
+unconditionally, for one purpose: the block-start alignment mask. On Linux
+osdlib_unix.cpp implements it as fopen/fscanf/fclose on
+
+    /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size
+
+with no caching anywhere in between. So MAME opens, reads and closes a sysfs
+file EVERY TIME the recompiler emits a block, to re-learn a constant. Present
+since ff92d10a048.
+
+THE CALL RATE IS NOT SMALL (measured, not assumed)
+
+Three kernel uprobes placed by raw ELF offset on the SHIPPED, unmodified
+production binary -- no instrumented build, no ptrace -- counted
+
+    mips3_device::code_compile_block   ==   drcbe_x64::generate
+                                       ==   osd_get_cache_line_size
+                                       ==   syscalls:sys_enter_openat
+
+all four exactly 12832 in the same 20 s window. Two things follow. First the
+chain is 1:1:1, so this really is once per block. Second, MAME's openat count
+IS its block-compile rate: in this workload the emulator opens no other file,
+which makes `perf stat -e syscalls:sys_enter_openat -p <pid>` a zero-overhead
+blocks-per-second meter. (Do not use `strace -c` for this. Its ptrace stops
+cost 30-100 us apiece and distort both the rate and the share.)
+
+Measured rate on indy_4610, IRIX 6.5.22, golden v3, -frameskip 6:
+
+    regime                            blocks/s      blocks per 1e9 cycles
+    cold boot, active                 3150-4400          1270-1780
+    console -> iconlogin chooser       620-2670           260-1100
+    settled idle 4Dwm desktop            3-11               1.4-4.6
+
+The idle desktop compiles essentially nothing -- with the 256 MB DRC cache the
+working set stops being evicted -- so this patch is worth nothing there. Boot
+is where it pays, and boot is the regime that is below 100% and therefore not
+clamped by the tile's throttle.
+
+WHAT THE TRIPLE COSTS
+
+The lab box runs IBRS + PTI + MDS "clear CPU buffers" mitigations, which is why
+three syscalls are not cheap here. Two independent measurements agree:
+
+  * a standalone microbenchmark of exactly this fopen/fscanf/fclose, pinned to
+    the same core pair: 10.3-11.2 us/call, ~25 000 cycles/call;
+  * inside MAME, differencing kernel cycles between the two builds over the
+    same emulated window: ~33 000-38 000 cycles per call.
+
+DIRECT EFFECT, MEASURED IN MAME (see docs/lab/irix-cache-line-size-memo.md)
+
+cycles:k is where the whole triple lands, so the arms separate there far more
+cleanly than in end-to-end speed on a shared box. Five runs per arm, arms
+interleaved, one core pair, one source tree for both arms (only osdlib_unix.cpp
+differed between the two links), same golden, same flags, 2.42-2.47 GHz:
+
+    window                          stock kshare   memoized kshare   removed
+    whole boot, emu 0-190 s            4.01 %          1.40 %        2.61 %
+    compile-heavy phase, emu 0-70 s    5.78 %          1.73 %        4.05 %
+
+i.e. 2.6 % of everything the emulator burns across a boot -- and 4 % of it while
+the recompiler is working hardest -- was this one constant being re-read.
+Per-run spread of the difference 2.28-3.05 %. Nothing measurable at the idle
+desktop, as the rate table predicts. End-to-end cycnorm% could not resolve it:
+the box was carrying five sibling agents at load 12-15 and foreign occupancy on
+the claimed core pair reached 103 %, so the speed A/B is reported in the doc as
+corroboration only, not as the claim.
+
+The fix is one function-local static. The value cannot change while the process
+lives. It is upstreamable as-is -- nothing in it is lab-specific, and it fixes
+drcbearm64.cpp for free -- and should be sent to mamedev/mame.
+
+diff --git a/src/osd/modules/lib/osdlib_unix.cpp b/src/osd/modules/lib/osdlib_unix.cpp
+--- a/src/osd/modules/lib/osdlib_unix.cpp
++++ b/src/osd/modules/lib/osdlib_unix.cpp
+@@ -122,17 +122,26 @@ void osd_break_into_debugger(const char *message)
+ std::pair<std::error_condition, unsigned> osd_get_cache_line_size() noexcept
+ {
+ #if defined(__linux__)
+-	FILE *const f = std::fopen("/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size", "r");
+-	if (!f)
+-		return std::make_pair(std::error_condition(errno, std::generic_category()), 0U);
+-
+-	unsigned result = 0;
+-	auto const cnt = std::fscanf(f, "%u", &result);
+-	std::fclose(f);
+-	if (1 == cnt)
+-		return std::make_pair(std::error_condition(), result);
+-	else
+-		return std::make_pair(std::errc::io_error, 0U);
++	// Cached: the DRC back-ends call this once per compiled block (see
++	// drcbex64.cpp generate(), drcbearm64.cpp generate()), and the value
++	// cannot change while the process is running.  Without the cache every
++	// block compiled costs an open/read/close of sysfs plus the stdio
++	// machinery around it.
++	static std::pair<std::error_condition, unsigned> const s_cached = [] () noexcept
++			{
++				FILE *const f = std::fopen("/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size", "r");
++				if (!f)
++					return std::make_pair(std::error_condition(errno, std::generic_category()), 0U);
++
++				unsigned result = 0;
++				auto const cnt = std::fscanf(f, "%u", &result);
++				std::fclose(f);
++				if (1 == cnt)
++					return std::make_pair(std::error_condition(), result);
++				else
++					return std::make_pair(std::error_condition(std::errc::io_error), 0U);
++			}();
++	return s_cached;
+ #else // defined(__linux__)
+ 	return std::make_pair(std::errc::not_supported, 0U);
+ #endif

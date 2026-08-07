@@ -1,0 +1,19 @@
+[Unit]
+Description=osgallery platform WebRTC bridge (all streamhost tiles)
+After=network.target
+
+[Service]
+Type=simple
+RuntimeDirectory=osgallery-webrtc
+RuntimeDirectoryMode=0755
+ExecStart=/data/vms/streamhost/webrtc/bin/osgallery-webrtc-bridge \
+  -socket /run/osgallery-webrtc/feeds.sock \
+  -http 127.0.0.1:18080 \
+  -udp-port 55950 \
+  -mtu 1188 \
+  -profile-level-id 64001f
+Restart=on-failure
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

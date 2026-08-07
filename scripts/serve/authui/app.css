@@ -1,0 +1,191 @@
+/* Sign-in and people management for the public gallery.
+   Deliberately tiny and dependency-free: this is what a signed-out visitor
+   downloads, and it should not be a web app. */
+
+:root {
+  color-scheme: dark light;
+  --bg: #0d1013;
+  --panel: #161b21;
+  --line: #262f39;
+  --ink: #e7edf3;
+  --dim: #92a1b0;
+  --accent: #58b6ff;
+  --danger: #ff6b6b;
+  --ok: #5fd3a0;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f6f8;
+    --panel: #fff;
+    --line: #dde3e9;
+    --ink: #16202a;
+    --dim: #5b6b7a;
+    --accent: #0a68c4;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+main { width: 100%; max-width: 460px; }
+main.wide { max-width: 760px; }
+
+h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
+h2 { font-size: 15px; margin: 28px 0 10px; color: var(--dim); font-weight: 600; }
+.sub { color: var(--dim); margin: 0 0 24px; }
+
+/* Rotating tagline on the sign-in page — same grid-stack-plus-shared-keyframe
+   technique as .appbar-tag in spa/src/index.css (see the derivation there);
+   duplicated rather than shared because this page has no build step linking
+   it to the SPA bundle. Keep both in sync: same 5 phrases, same math. */
+.tagline { display: grid; }
+.tagline-item {
+  grid-area: 1 / 1;
+  opacity: 0;
+  animation: tagline-cycle 150s infinite;
+}
+.tagline-item:nth-child(1) { animation-delay: 0s; }
+.tagline-item:nth-child(2) { animation-delay: -30s; }
+.tagline-item:nth-child(3) { animation-delay: -60s; }
+.tagline-item:nth-child(4) { animation-delay: -90s; }
+.tagline-item:nth-child(5) { animation-delay: -120s; }
+
+@keyframes tagline-cycle {
+  0% { opacity: 0; }
+  0.333% { opacity: 1; }
+  19.667% { opacity: 1; }
+  20% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagline-item { animation: none; opacity: 0; }
+  .tagline-item:first-child { opacity: 1; }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  color: #071018;
+  background: var(--accent);
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 16px;
+  cursor: pointer;
+  width: 100%;
+}
+button:hover { filter: brightness(1.08); }
+button:disabled { opacity: 0.5; cursor: default; filter: none; }
+button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button.small { width: auto; padding: 6px 11px; font-size: 13px; }
+button.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+
+label { display: block; font-size: 13px; color: var(--dim); margin: 0 0 6px; }
+
+input, select {
+  font: inherit;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+input#code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 19px;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.rule { display: flex; align-items: center; gap: 12px; color: var(--dim); font-size: 13px; margin: 22px 0; }
+.rule::before, .rule::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+.msg { margin-top: 14px; font-size: 14px; min-height: 20px; }
+.msg.err { color: var(--danger); }
+.msg.ok { color: var(--ok); }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.row:last-child { border-bottom: 0; }
+.row .grow { flex: 1; min-width: 180px; }
+.row .name { font-weight: 600; }
+.row .meta { color: var(--dim); font-size: 13px; }
+.tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--dim);
+}
+
+.qr {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  background: #fff; /* quiet zone must stay light for the scanner, in both themes */
+  border-radius: 10px;
+}
+/* Intrinsically sized by the server (scale=6); only ever shrink it. */
+.qr svg { max-width: 100%; height: auto; }
+
+.code-out {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 21px;
+  letter-spacing: 0.1em;
+  text-align: center;
+  padding: 16px;
+  border: 1px dashed var(--accent);
+  border-radius: 10px;
+  margin: 12px 0;
+  user-select: all;
+  word-break: break-all;
+}
+
+/* An invite URL beside the button that copies it. The field is readonly rather
+   than plain text so it can still be selected and copied by hand when the
+   clipboard API is refused, and it scrolls rather than wraps — a wrapped URL
+   invites someone to copy half of one. */
+.copy-row { display: flex; align-items: flex-start; gap: 8px; }
+.copy-row input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+button.icon {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+a { color: var(--accent); }
+footer { margin-top: 20px; text-align: center; color: var(--dim); font-size: 13px; }
+.hidden { display: none; }

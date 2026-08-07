@@ -1,0 +1,85 @@
+From: Kernel Hive lab <lab@localhost>
+Subject: [PATCH] cirrus: fix ISA vmstate to descend into the embedded CirrusVGAState
+
+The ISA Cirrus device (`isa-cirrus-vga`) pointed `dc->vmsd` straight at
+`vmstate_cirrus_vga`.  That VMSD's fields are declared against `CirrusVGAState`
+(e.g. `VMSTATE_UINT8(cirrus_hidden_dac_data, CirrusVGAState)`), but a device's
+vmsd is resolved against the *device* object.  For the ISA device that object
+is `ISACirrusVGAState { ISADevice parent_obj; CirrusVGAState cirrus_vga; }`,
+where `cirrus_vga` sits 160 bytes past the base (measured on this build).  So
+every field was saved and restored 160 bytes off.
+
+The `VGACommonState`-relative fields happened to round-trip (their offsets from
+the wrong base still landed on live, stable memory), which masked the bug for
+low-colour modes such as the nt351 tile.  But the cirrus-direct fields --
+`cirrus_hidden_dac_data`, `cirrus_hidden_dac_lockindex`, `cirrus_shadow_gr0/1`
+-- were saved and restored from the wrong location.  For the nt4 hi-res hybrid
+(i440fx + isa-cirrus-vga at 1024x768x16bpp) this dropped the hidden-DAC depth
+selector on `loadvm`: `cirrus_get_bpp16_depth()` fell back from 16bpp (565) to
+15bpp (555), reinterpreting the restored framebuffer one green bit off -- the
+deterministic blue/lavender corruption seen on both KVM and TCG.
+
+Fix it exactly like the PCI variant (`vmstate_pci_cirrus_vga`): wrap the device
+vmsd in a `VMSTATE_STRUCT` that descends into the `cirrus_vga` member, so the
+substate opaque is the real `CirrusVGAState`.  The wire format and the section
+name ("cirrus_vga") are unchanged; a fresh-process `loadvm golden` now restores
+a byte-identical 1024x768x16bpp framebuffer (verified KVM+TCG, 3x each).
+
+Proven with an instrumented build: pre-save `cirrus_hidden_dac_data=0xe1`
+(565), post-restore `0x00` (reset) before the fix; `0xe1` after.  The
+save/restore opaque delta was 160 before the fix and 0 after.
+---
+ hw/display/cirrus_vga_isa.c | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/hw/display/cirrus_vga_isa.c b/hw/display/cirrus_vga_isa.c
+index 3d2b1a0c4e..7f8e9a0b1c 100644
+--- a/hw/display/cirrus_vga_isa.c
++++ b/hw/display/cirrus_vga_isa.c
+@@ -29,6 +29,7 @@
+ #include "hw/core/loader.h"
+ #include "hw/core/qdev-properties.h"
+ #include "hw/isa/isa.h"
++#include "migration/vmstate.h"
+ #include "cirrus_vga_internal.h"
+ #include "qom/object.h"
+ #include "ui/console.h"
+@@ -77,11 +78,35 @@
+                      cirrus_vga.vga.global_vmstate, false),
+ };
+ 
++/*
++ * vmstate fix (angle=trace): the ISA device's vmsd must descend into the
++ * embedded CirrusVGAState.  Pointing dc->vmsd straight at vmstate_cirrus_vga
++ * resolves that VMSD's CirrusVGAState field offsets against the *device*
++ * (ISACirrusVGAState) base, which is 160 bytes before cirrus_vga.  The
++ * VGACommonState-relative fields still round-tripped, but the cirrus-direct
++ * fields (cirrus_hidden_dac_data / _lockindex, cirrus_shadow_gr0/1) were saved
++ * and restored from the wrong location, so the hi-colour DAC depth was lost on
++ * loadvm (16bpp 565 -> 15bpp 555 = the blue/lavender corruption).  Wrap exactly
++ * like the PCI variant (vmstate_pci_cirrus_vga) so the substate opaque is the
++ * real CirrusVGAState.  Wire format and section name ("cirrus_vga") are
++ * unchanged.
++ */
++static const VMStateDescription vmstate_isa_cirrus_vga = {
++    .name = "cirrus_vga",
++    .version_id = 2,
++    .minimum_version_id = 1,
++    .fields = (const VMStateField[]) {
++        VMSTATE_STRUCT(cirrus_vga, ISACirrusVGAState, 0,
++                       vmstate_cirrus_vga, CirrusVGAState),
++        VMSTATE_END_OF_LIST()
++    }
++};
++
+ static void isa_cirrus_vga_class_init(ObjectClass *klass, const void *data)
+ {
+     DeviceClass *dc = DEVICE_CLASS(klass);
+ 
+-    dc->vmsd  = &vmstate_cirrus_vga;
++    dc->vmsd  = &vmstate_isa_cirrus_vga;
+     dc->realize = isa_cirrus_vga_realizefn;
+     device_class_set_props(dc, isa_cirrus_vga_properties);
+     set_bit(DEVICE_CATEGORY_DISPLAY, dc->categories);
+-- 
+2.43.0

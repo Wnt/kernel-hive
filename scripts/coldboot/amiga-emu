@@ -1,0 +1,30 @@
+#!/bin/bash
+# /usr/local/bin/amiga-emu — cold-boot control for the Amiga 500 bridge tile's FS-UAE.
+# Invoked over ssh (bridge_key, root@127.0.0.1:5818) by the streamhost visit/idle
+# lifecycle. Toggles the emu-on flag that /etc/bridge/launch.sh's supervisor watches.
+#   boot : COLD-restart the emulator (Kickstart hand -> disk seek -> Workbench), fresh ADF.
+#   stop : power off the emulator (idle -> black bare-X root).
+set -u
+BUSER=bridge
+BUID=$(id -u "$BUSER")
+RUN="/run/user/${BUID}/amiga"
+FLAG="$RUN/emu-on"
+mkdir -p "$RUN"; chown "$BUSER:$BUSER" "$RUN" 2>/dev/null || true
+case "${1:-}" in
+  boot)
+    : > "$FLAG"; chown "$BUSER:$BUSER" "$FLAG" 2>/dev/null || true
+    # Force a COLD boot even if FS-UAE is already up: kill it; the supervisor (flag
+    # set) immediately relaunches from a fresh ephemeral ADF. On the 0->1 visit
+    # transition FS-UAE is normally already stopped, so this just starts it.
+    pkill -u "$BUSER" fs-uae 2>/dev/null || true
+    ;;
+  stop)
+    rm -f "$FLAG"
+    pkill -u "$BUSER" fs-uae 2>/dev/null || true
+    ;;
+  status)
+    if [ -f "$FLAG" ]; then echo "emu-on"; else echo "idle"; fi
+    pgrep -u "$BUSER" -a fs-uae || true
+    ;;
+  *) echo "usage: amiga-emu {boot|stop|status}" >&2; exit 2;;
+esac

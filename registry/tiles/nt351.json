@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "id": "nt351",
+  "era_year": 1995,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 32,
+        "prelude": "",
+        "line": "  \"nt351       |nt351.sh       |Nt351         |installed|~15-30m |partial |nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)\"\n",
+        "value": {
+          "key": "nt351",
+          "script": "nt351.sh",
+          "outputDir": "Nt351",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "nt351",
+      "value": {
+        "os": "Windows NT Workstation 3.51",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            120,
+            360
+          ],
+          "b": [
+            480,
+            150
+          ]
+        },
+        "kbd": "ctrl+Escape",
+        "kbd_reset": "Escape",
+        "kbd_note": "Ctrl+Esc opens Task List in the Program Manager shell; keyboard, click, and drag are framebuffer-verified.",
+        "audio_trigger": "tone",
+        "note": "1024x768x65536-color (16bpp) accelerated Cirrus desktop; requires /opt/qemu-cirrusfix. PS/2 relative mouse is driven through daemon abs coordinates with edge re-homing and calibrated cursor_scale."
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/nt351",
+      "qmp": "/data/vms/streamhost/tiles/nt351/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54083,
+      "notes": "no exec channel; PS/2 relative guest pointer is calibrated through streamhost's abs-coordinate path"
+    }
+  },
+  "render": {
+    "signalOrder": 32,
+    "tilesManifestOrder": 30,
+    "tilesManifestPrelude": "\n# nt351 (VMID 83) — Windows NT Workstation 3.51 on the ISA-only machine.\n#   TCG/486/64 MiB, 480 MiB FAT16 IDE disk, ISA Cirrus, SB16, NE2000 at\n#   0x300/IRQ9. VERBATIM launcher with conditional -loadvm golden. The disk is\n#   deliberately below the legacy 504 MiB CHS boundary: a 1 GiB install reaches\n#   the desktop during Setup but cannot cold-boot through isapc's 16-head BIOS.\n# DISPLAY: accelerated Cirrus 1024x768x65536 colors (16bpp). The launcher pins\n#   /opt/qemu-cirrusfix with patch 0004-cirrus-blt-rop1-fill.patch; the stock\n#   QEMU drops source-independent row fills and corrupts scroll/window redraws.\n#   Rebuild the pinned binary whenever the packaged QEMU version changes.\n#   Program Manager and Main are maximized; dirty -> loadvm restores cleanly.\n# POINTER: NT reads only the relative PS/2 mouse. Streamhost receives absolute\n#   browser coordinates, homes the relative guest at an edge, then applies the\n#   measured cursor_scale for 1:1 tracking. Recalibrate after a resolution or\n#   mouse-control-panel change.\n",
+    "tilesManifestInvocation": "emit nt351 \\\n  --tile nt351 --vmid 83 --udp 54083 --pointer abs --input-backend dbus-rel \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 \\\n  --launcher-file \"$T/nt351/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/nt351/tile.env.fixture\"\n",
+    "bringUpGroup": 3,
+    "bindingOrder": 13,
+    "bindingPrelude": "",
+    "bindingLine": "  nt351:       { osId: 'nt351',       archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#3a6ea5', eraLabel: '1995 · Windows NT 3.51' },\n",
+    "museumOrder": 5,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'nt351', displayName: 'Windows NT 3.51', year: 1995,\n    lineage: 'Windows NT 3.x', arch: 'i386', ramMB: 64,    era: '1990s', accent: '#3a6ea5',\n    eraSoftware: ['Program Manager', 'File Manager', 'Control Panel', 'Paintbrush'],\n    periodBrowser: 'Internet Explorer 2 / early Netscape',\n    iconicApps: ['Program Manager', 'File Manager', 'Minesweeper'],\n    blurb: 'The last workstation NT built around Program Manager — compact, blue, and unmistakably mid-1990s.',\n  },\n",
+    "goldenOrder": 30,
+    "actionMapOrder": 4
+  },
+  "tileDir": "nt351",
+  "lifecycle": "production",
+  "display": {
+    "width": 1024,
+    "height": 768,
+    "bitsPerPixel": 16,
+    "colors": 65536
+  },
+  "notes": [
+    "Requires /opt/qemu-cirrusfix/bin/qemu-system-i386 with streamhost/qemu-patches/0004-cirrus-blt-rop1-fill.patch.",
+    "The validated 1024x768 surface retains 30 fps with the ultrafast encoder preset."
+  ],
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54083,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 83
+  },
+  "guestDoc": "docs/guests/nt351.md",
+  "credentialsRef": "guest/nt351",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "nt351",
+      "SH_QMP": "/data/vms/streamhost/tiles/nt351/qmp.sock",
+      "SH_PORT": "54083",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_INPUT_BACKEND": "dbus-rel",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/nt351/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nt351/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_GOLDEN_DISKS": "nt351-golden.qcow2"
+    },
+    "vmidLabel": 83,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "nt351",
+        "--vmid",
+        "83",
+        "--udp",
+        "54083",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/nt351/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/nt351/tile.env.fixture"
+      ],
+      "deviceSetId": "nt351-isacirrus-1024x768-rop1fix",
+      "launcher": "streamhost/tiles/nt351/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/nt351/tile.env.fixture",
+      "binary": "/opt/qemu-cirrusfix/bin/qemu-system-i386",
+      "machine": "isapc",
+      "accel": "tcg",
+      "cpu": "486",
+      "memoryMB": 64,
+      "smp": 1,
+      "vga": "isa-cirrus-vga",
+      "deviceSetSummary": [
+        "/opt/qemu-cirrusfix/bin/qemu-system-i386 -L /usr/share/kvm",
+        "-name streamhost-nt351",
+        "-accel tcg -m 64 -smp 1",
+        "-machine isapc -cpu 486",
+        "-rtc base=localtime",
+        "-cdrom /data/gallery-guests/Nt351/NTWKS351_UPD.iso -boot order=c,menu=off",
+        "-device isa-cirrus-vga,global-vmstate=on",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-drive file=$D/nt351-golden.qcow2,format=qcow2,if=ide -net nic,model=ne2k_isa -net user",
+        "$LOADVM",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off",
+        "-pidfile $D/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "/opt/qemu-cirrusfix/bin/qemu-system-i386",
+        "machine": "isapc",
+        "accel": "tcg",
+        "cpu": "486",
+        "memoryMB": 64,
+        "smp": 1,
+        "vga": "isa-cirrus-vga",
+        "deviceSetSummary": [
+          "/opt/qemu-cirrusfix/bin/qemu-system-i386 -L /usr/share/kvm",
+          "-name streamhost-nt351",
+          "-accel tcg -m 64 -smp 1",
+          "-machine isapc -cpu 486",
+          "-rtc base=localtime",
+          "-cdrom /data/gallery-guests/Nt351/NTWKS351_UPD.iso -boot order=c,menu=off",
+          "-device isa-cirrus-vga,global-vmstate=on",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+          "-drive file=$D/nt351-golden.qcow2,format=qcow2,if=ide -net nic,model=ne2k_isa -net user",
+          "$LOADVM",
+          "-qmp unix:$D/qmp.sock,server=on,wait=off",
+          "-pidfile $D/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals the live launcher; the golden was baked with the same guest-visible device set and the pinned Cirrus ROP1-fix QEMU"
+      }
+    },
+    "bringUpOrder": 32
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#3a6ea5",
+    "eraLabel": "1995 · Windows NT 3.51"
+  },
+  "museum": {
+    "id": "nt351",
+    "displayName": "Windows NT 3.51",
+    "year": 1995,
+    "lineage": "Windows NT 3.x",
+    "arch": "i386",
+    "ramMB": 64,
+    "era": "1990s",
+    "accent": "#3a6ea5",
+    "eraSoftware": [
+      "Program Manager",
+      "File Manager",
+      "Control Panel",
+      "Paintbrush"
+    ],
+    "periodBrowser": "Internet Explorer 2 / early Netscape",
+    "iconicApps": [
+      "Program Manager",
+      "File Manager",
+      "Minesweeper"
+    ],
+    "blurb": "The last workstation NT built around Program Manager — compact, blue, and unmistakably mid-1990s."
+  },
+  "reset": {
+    "tileDir": "nt351",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Windows NT 3.51 Program Manager at accelerated Cirrus 1024x768x65536 colors (16bpp) with the Main group maximized and focused; screensaver off, caret blink slowest, mouse tracking speed slowest, pointer parked lower-right."
+  },
+  "migrationExceptions": []
+}

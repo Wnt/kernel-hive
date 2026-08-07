@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>The Kernel Hive — sign in</title>
+<link rel="stylesheet" href="/ui/app.css">
+</head>
+<body>
+<main>
+  <h1>The Kernel Hive</h1>
+  <p class="sub tagline" aria-hidden="true">
+    <span class="tagline-item">Thirty operating systems. One hive.</span>
+    <span class="tagline-item">Explore · Experience · Break · Restore to golden</span>
+    <span class="tagline-item">The internet's weirdest server room.</span>
+    <span class="tagline-item">Vintage systems you can actually play with.</span>
+    <span class="tagline-item">Your granpa's favourite OS. Still running.</span>
+  </p>
+
+  <!-- An invite LINK landed here with its code in the fragment: the visitor is
+       already signed in by the time this shows, and the passkey is an offer
+       rather than a toll gate. It is offered on every visit UNTIL they take
+       it — once they have a passkey the invite link is no longer special, so
+       login.js routes straight past this panel to the ordinary #signed-in one. -->
+  <div class="panel hidden" id="invited">
+    <p class="sub" id="inv-who"></p>
+    <p class="meta" id="inv-validity"></p>
+    <button id="inv-passkey">Register a passkey for permanent access</button>
+    <p></p>
+    <button id="inv-skip" class="secondary">Maybe later, just let me in!</button>
+  </div>
+
+  <div class="panel" id="signed-out">
+    <button id="signin">Sign in with a passkey</button>
+
+    <div class="rule">or</div>
+
+    <label for="code">Invite code</label>
+    <input id="code" maxlength="17" autocomplete="one-time-code" autocapitalize="characters"
+           spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX">
+    <div id="name-field" class="hidden">
+      <label for="name">Your name</label>
+      <input id="name" maxlength="40" autocomplete="name" placeholder="e.g. Jane">
+    </div>
+    <button id="redeem" class="secondary">Redeem invite</button>
+  </div>
+
+  <div class="panel hidden" id="signed-in">
+    <p id="who" class="sub"></p>
+    <button id="enter">Enter the gallery</button>
+    <p></p>
+    <button id="manage" class="secondary hidden">Manage people</button>
+    <p></p>
+    <button id="signout" class="secondary">Sign out</button>
+  </div>
+
+  <div id="msg" class="msg"></div>
+  <footer id="foot"></footer>
+</main>
+<script type="module" src="/ui/login.js"></script>
+</body>
+</html>

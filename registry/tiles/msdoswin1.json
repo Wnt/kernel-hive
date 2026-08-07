@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "id": "msdoswin1",
+  "era_year": 1985,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 12,
+        "prelude": "",
+        "line": "  \"msdos-win1  |msdos-win1.sh  |MSDOSWin1   |retro    |~10-15m |full   |msdos-win1.qcow2 (DOS 6.22 + Windows 1.01, from real floppies)\"\n",
+        "value": {
+          "key": "msdos-win1",
+          "script": "msdos-win1.sh",
+          "outputDir": "MSDOSWin1",
+          "class": "retro",
+          "estimated": "~10-15m",
+          "automation": "full",
+          "produces": "msdos-win1.qcow2 (DOS 6.22 + Windows 1.01, from real floppies)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 1,
+          "position": 1
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "msdoswin1",
+      "value": {
+        "os": "MS-DOS + Windows 1.x",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            500,
+            200
+          ]
+        },
+        "kbd": "type:x",
+        "kbd_reset": "BackSpace",
+        "kbd_note": "DOS prompt echoes chars; Win1 is mouse-driven",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/msdoswin1",
+      "qmp": "/data/vms/streamhost/tiles/msdoswin1/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54113,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 10,
+    "tilesManifestOrder": 17,
+    "tilesManifestPrelude": "\n# msdoswin1 (VMID 113) — MS-DOS 6.22 + Windows 1.01, tiny 16MB, PS/2, ide disk.\n#   VERBATIM LAUNCHER: golden fixture — no -snapshot; post-boot `loadvm golden`\n#   + `cont` via the tile-local qmpc.py helper (installed via --aux-file).\n#   2026-07-13/14 streamhost fixes (docs/guests/msdos-win1.md):\n#   - SOUND: PC-speaker only — `-machine pc,pcspk-audiodev=snd0` (backend-only).\n#   - KEYBOARD: SH_LEGACY_KBD=1 — input.rs remaps the cursor cluster to bare\n#     keypad scancodes for this pre-1986 guest.\n#   - MOUSE: genuine Win 1.01 re-SETUP with the Windows 2.03 MOUSE.DRV (PS/2)\n#     + SETVER entries baked into the golden (\"Option B — PROMOTED LIVE\").\n",
+    "tilesManifestInvocation": "emit msdoswin1 \\\n  --tile msdoswin1 --vmid 113 --udp 54113 --pointer rel --legacy-kbd 1 \\\n  --audio on --fps 60 \\\n  --launcher-file \"$T/msdoswin1/qemu-streamhost.sh\" \\\n  --aux-file \"$T/msdoswin1/qmpc.py\"\n",
+    "bringUpGroup": 4,
+    "bindingOrder": 25,
+    "bindingPrelude": "",
+    "bindingLine": "  msdoswin1:   { osId: 'msdoswin1',    archetypeId: 'beige-ibm-pc',    transport: 'streamhost', accentColor: '#c8a24a', eraLabel: '1994 · MS-DOS 6.22 + Win 1.0', pointerRel: true },\n",
+    "museumOrder": 23,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'msdoswin1', displayName: 'MS-DOS 6.22 + Windows 1.0', year: 1994,\n    lineage: 'Microsoft MS-DOS / Windows', arch: 'i386', ramMB: 16,    era: '1990s', accent: '#c8a24a',\n    eraSoftware: ['COMMAND.COM', 'MS-DOS Executive', 'EDIT', 'QBASIC'],\n    periodBrowser: 'none — pre-web (1985/1994)',\n    iconicApps: ['COMMAND.COM', 'Windows 1.0 tiled windows', 'EDIT', 'QBASIC'],\n    blurb: 'The C:\\\\> prompt of MS-DOS 6.22 (1994) with Microsoft’s first Windows 1.0 (1985) layered on top — the tiled-window dawn before the desktop metaphor.',\n    notes: 'Live streamhost tile. One combined image: boots MS-DOS 6.22 to C:\\\\> and launches Windows 1.01 via WIN — presented here as a single exhibit. Archetype: beige-ibm-pc (the boxy DOS-era CRT + IBM-PC fit).',\n  },\n",
+    "goldenOrder": 23,
+    "actionMapOrder": 25
+  },
+  "tileDir": "msdoswin1",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54113,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 113
+  },
+  "guestDoc": "docs/guests/msdos-win1.md",
+  "credentialsRef": "guest/msdoswin1",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "msdoswin1",
+      "SH_QMP": "/data/vms/streamhost/tiles/msdoswin1/qmp.sock",
+      "SH_PORT": "54113",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "rel",
+      "SH_LEGACY_KBD": "1",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/msdoswin1/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/msdoswin1/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 113,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "msdoswin1",
+        "--vmid",
+        "113",
+        "--udp",
+        "54113",
+        "--pointer",
+        "rel",
+        "--legacy-kbd",
+        "1",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/msdoswin1/qemu-streamhost.sh",
+        "--aux-file",
+        "$T/msdoswin1/qmpc.py"
+      ],
+      "deviceSetId": "msdoswin1-current",
+      "launcher": "streamhost/tiles/msdoswin1/qemu-streamhost.sh",
+      "auxFiles": [
+        "streamhost/tiles/msdoswin1/qmpc.py"
+      ],
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,pcspk-audiodev=snd0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 16,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-msdoswin1",
+        "-enable-kvm -m 16 -smp 1",
+        "-machine pc-i440fx-11.0,pcspk-audiodev=snd0 -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+        "-drive file=/data/gallery-guests/MSDOSWin1/msdos-win1.qcow2,format=qcow2,if=ide",
+        "-qmp unix:\"$S\",server=on,wait=off",
+        "-pidfile \"$TILEDIR/qemu.pid\""
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,pcspk-audiodev=snd0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 16,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-msdoswin1",
+          "-enable-kvm -m 16 -smp 1",
+          "-machine pc-i440fx-11.0,pcspk-audiodev=snd0 -cpu host",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+          "-drive file=/data/gallery-guests/MSDOSWin1/msdos-win1.qcow2,format=qcow2,if=ide",
+          "-qmp unix:\"$S\",server=on,wait=off",
+          "-pidfile \"$TILEDIR/qemu.pid\""
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,pcspk-audiodev=snd0, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 17
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#c8a24a",
+    "eraLabel": "1994 · MS-DOS 6.22 + Win 1.0",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "msdoswin1",
+    "displayName": "MS-DOS 6.22 + Windows 1.0",
+    "year": 1994,
+    "lineage": "Microsoft MS-DOS / Windows",
+    "arch": "i386",
+    "ramMB": 16,
+    "era": "1990s",
+    "accent": "#c8a24a",
+    "eraSoftware": [
+      "COMMAND.COM",
+      "MS-DOS Executive",
+      "EDIT",
+      "QBASIC"
+    ],
+    "periodBrowser": "none — pre-web (1985/1994)",
+    "iconicApps": [
+      "COMMAND.COM",
+      "Windows 1.0 tiled windows",
+      "EDIT",
+      "QBASIC"
+    ],
+    "blurb": "The C:\\> prompt of MS-DOS 6.22 (1994) with Microsoft’s first Windows 1.0 (1985) layered on top — the tiled-window dawn before the desktop metaphor.",
+    "notes": "Live streamhost tile. One combined image: boots MS-DOS 6.22 to C:\\> and launches Windows 1.01 via WIN — presented here as a single exhibit. Archetype: beige-ibm-pc (the boxy DOS-era CRT + IBM-PC fit)."
+  },
+  "reset": {
+    "tileDir": "msdoswin1",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "PASS",
+    "fixture": "MS-DOS 6.22 GALLERY MENU text screen, live COMMAND.COM at C:\\>; text console, no pointer surface."
+  },
+  "migrationExceptions": []
+}

@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "id": "alpine",
+  "era_year": 2005,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 9,
+        "prelude": "",
+        "line": "  \"alpine      |alpine.sh      |Alpine      |fast     |~2-3m   |full   |Alpine.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
+        "value": {
+          "key": "alpine",
+          "script": "alpine.sh",
+          "outputDir": "Alpine",
+          "class": "fast",
+          "estimated": "~2-3m",
+          "automation": "full",
+          "produces": "Alpine.iso -> /data/isos/ (ssh-golden LiveCD)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 9
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "alpine",
+      "value": {
+        "os": "Alpine Linux (console)",
+        "win": "qemu",
+        "mouse": null,
+        "kbd": "type:x",
+        "kbd_reset": "BackSpace",
+        "kbd_note": "char echoes at login/tty prompt",
+        "audio_trigger": "tone",
+        "validated": true,
+        "note": "text console: no mouse cursor rendered -> mouse N/A (expect 5/5 misses)"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/alpine",
+      "qmp": "/data/vms/streamhost/tiles/alpine/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5881,
+      "exec_port": 5881,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/root/.ssh/gallery_guest_key",
+      "console": "fb",
+      "udp_port": 54081,
+      "notes": "exec: labctl exec alpine \"<cmd>\" (ssh root@:5881, key gallery_guest_key)"
+    }
+  },
+  "render": {
+    "signalOrder": 3,
+    "tilesManifestOrder": 0,
+    "tilesManifestPrelude": "# ---------------------------------------------------------------------------\n\n# alpine (VMID 81) — Alpine LiveCD + golden fixture. VERBATIM LAUNCHER\n#   (tiles/alpine/qemu-streamhost.sh): state.qcow2 (2G ide, create-if-missing)\n#   holds the savevm 'golden' snapshot; conditional -loadvm golden; post-boot\n#   QMP hostfwd_add re-adds the ssh forward 127.0.0.1:5881 -> guest :22 (SLIRP\n#   state is host-side, NOT in the snapshot; QMP add keeps the device set\n#   loadvm-exact). Needs /root/qmp_hmp.py (source: scripts/qmp_hmp.py here).\n#   ISO at /data/isos/Alpine.iso (canonical; the retired CT110 subvol path the\n#   pre-2026-07-14 live launcher used is whitelisted in verify-emit).\n",
+    "tilesManifestInvocation": "emit alpine \\\n  --tile alpine --vmid 81 --udp 54081 --pointer abs --audio on --fps 60 \\\n  --launcher-file \"$T/alpine/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/alpine/tile.env.fixture\"\n",
+    "bringUpGroup": 0,
+    "bindingOrder": 8,
+    "bindingPrelude": "",
+    "bindingLine": "  alpine:      { osId: 'alpine',      archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#0d597f', eraLabel: '2005 · Alpine Linux' },\n",
+    "museumOrder": 6,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'alpine', displayName: 'Alpine Linux', year: 2005,\n    lineage: 'musl + BusyBox Linux', arch: 'x86_64', ramMB: 256,    era: '2000s', accent: '#0d597f',\n    eraSoftware: ['apk', 'OpenRC', 'BusyBox', 'musl libc'],\n    periodBrowser: 'no default GUI browser (server distro)',\n    iconicApps: ['ash shell', 'vi', 'doas'],\n    blurb: 'The tiny, security-focused distro that quietly runs half the containers on Earth.',\n  },\n",
+    "goldenOrder": 2,
+    "actionMapOrder": 2
+  },
+  "tileDir": "alpine",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54081,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 81
+  },
+  "guestDoc": "docs/guests/alpine.md",
+  "credentialsRef": "guest/alpine",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "alpine",
+      "SH_QMP": "/data/vms/streamhost/tiles/alpine/qmp.sock",
+      "SH_PORT": "54081",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/alpine/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/alpine/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 81,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "alpine",
+        "--vmid",
+        "81",
+        "--udp",
+        "54081",
+        "--pointer",
+        "abs",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/alpine/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/alpine/tile.env.fixture"
+      ],
+      "deviceSetId": "alpine-current",
+      "launcher": "streamhost/tiles/alpine/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/alpine/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 1024,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-alpine",
+        "-enable-kvm -m 1024 -smp 2",
+        "-cpu host",
+        "-rtc base=localtime",
+        "-cdrom /data/isos/Alpine.iso -boot d",
+        "-drive file=\"$STATE\",if=ide,format=qcow2",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb -device usb-tablet",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": null,
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 1024,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-alpine",
+          "-enable-kvm -m 1024 -smp 2",
+          "-cpu host",
+          "-rtc base=localtime",
+          "-cdrom /data/isos/Alpine.iso -boot d",
+          "-drive file=\"$STATE\",if=ide,format=qcow2",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb -device usb-tablet",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 0
+  },
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#0d597f",
+    "eraLabel": "2005 · Alpine Linux"
+  },
+  "museum": {
+    "id": "alpine",
+    "displayName": "Alpine Linux",
+    "year": 2005,
+    "lineage": "musl + BusyBox Linux",
+    "arch": "x86_64",
+    "ramMB": 256,
+    "era": "2000s",
+    "accent": "#0d597f",
+    "eraSoftware": [
+      "apk",
+      "OpenRC",
+      "BusyBox",
+      "musl libc"
+    ],
+    "periodBrowser": "no default GUI browser (server distro)",
+    "iconicApps": [
+      "ash shell",
+      "vi",
+      "doas"
+    ],
+    "blurb": "The tiny, security-focused distro that quietly runs half the containers on Earth."
+  },
+  "reset": {
+    "tileDir": "alpine",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "PASS",
+    "fixture": "Alpine Linux text console at a login/shell prompt; no pointer surface."
+  },
+  "migrationExceptions": [
+    "legacy-machine-alias"
+  ]
+}

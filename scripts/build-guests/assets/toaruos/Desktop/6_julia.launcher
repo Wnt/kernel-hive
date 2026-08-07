@@ -1,0 +1,3 @@
+icon=julia
+run=exec julia
+title=Julia Fractals

@@ -1,0 +1,88 @@
+Give the IP24 machines an explicit device-interleaving quantum.
+
+REQUIRED PAIR with mame-pit8253-idle-strobe-rearm.patch. Do not apply one
+without the other, in either direction. The PIT patch is a pure win on its own
+terms — it deletes 1.67 million dead timer callbacks per emulated second — but
+those callbacks were also, accidentally, the only thing interleaving this
+driver's CPU with the rest of its machine, and deleting them without putting a
+quantum in their place BREAKS THE GUEST.
+
+WHAT BREAKS
+-----------
+MAME ends a timeslice at the earlier of the next timer expiry and the scheduling
+quantum. `ip24_base()` never called `set_maximum_quantum()`, so the machine ran
+on MAME's 1/60 s default -- and got away with it only because the idle 8254
+re-armed an update timer twice per microsecond, which ended every timeslice long
+before the quantum could. Cycles per `execute_run()` were 88.9.
+
+Remove the storm and that number rises to ~673, the IOC2 keyboard controller and
+the main CPU start running in long alternating blocks, and IRIX's PS/2
+diagnostic fails outright:
+
+    PC keyboard/mouse controller diagnostic    *FAILED*
+            Check or replace:  CPU base board
+    Cannot connect to keyboard -- check the cable.
+    Cannot open keyboard() for input
+
+The desktop still comes up. It has no keyboard and no mouse. Verified from a
+real framebuffer screendump, not from a log.
+
+Note the DIRECTION of this change. 8 us is far finer than the 16.67 ms MAME
+would otherwise use here, so an explicit quantum on this driver TIGHTENS device
+interleaving relative to stock MAME rather than relaxing it. It is closer to the
+storm's own ~0.5 us cadence than the default ever was.
+
+WHY 8 us, AND THE CLIFF ABOVE IT
+--------------------------------
+There is a hard correctness boundary between 16 and 32 microseconds. Cold boots
+of golden v3 on `indy_4610`, one binary with the quantum set from the
+environment so nothing but the knob differs, scored as "reached the 4Dwm
+desktop" from framebuffer signatures:
+
+    quantum      boots OK
+      4 us         2 / 2
+      8 us         2 / 2
+     16 us         4 / 4
+     32 us         0 / 4      black framebuffer, never recovers
+     64 us         0 / 1      "
+    128 us         0 / 1      "
+    default        0 / 1      keyboard/mouse diagnostic FAILED (above)
+
+8 of 8 below the boundary, 0 of 6 above it (Fisher exact p ~ 3e-4). The known
+background rate of that black cold-boot hang on this image is 2 in 10, so the
+failures above 32 us are not it.
+
+8 us is therefore chosen as the largest value with MORE THAN ONE OCTAVE of
+margin below a measured cliff. 16 us is faster in the measurements taken and
+would have been the tempting choice; it sits exactly one octave under a wall,
+and this driver's failure mode at the wall is a guest that never finishes
+booting.
+
+WHAT IS NOT ESTABLISHED
+-----------------------
+The SPEED difference between 4, 8 and 16 us is NOT established. Those runs were
+taken on a box carrying 47-82% foreign CPU on the claimed core pair, and the
+apparent ordering tracks the contention rather than the knob. Re-measure that on
+a quiet box before treating 8 us as final; it is the one number between this
+patch and promoting a binary to the tile.
+
+diff --git a/src/mame/sgi/indy_indigo2.cpp b/src/mame/sgi/indy_indigo2.cpp
+--- a/src/mame/sgi/indy_indigo2.cpp
++++ b/src/mame/sgi/indy_indigo2.cpp
+@@ -298,6 +298,16 @@
+ 
+ void ip24_state::ip24_base(machine_config &config, uint32_t system_clock)
+ {
++	// Explicit device-interleaving quantum. Until the 8254 idle re-arm storm was
++	// fixed (mame-pit8253-idle-strobe-rearm.patch) this driver had one by
++	// accident: an idle counter re-armed its update timer twice per microsecond,
++	// and MAME ends a timeslice at the next timer expiry. With that gone the
++	// machine falls back to MAME's 1/60 s default, the IOC2 keyboard controller
++	// is no longer interleaved finely enough, and IRIX's PS/2 diagnostic fails
++	// with "Cannot connect to keyboard". Boots break outright at 32 us and
++	// above; 8 us keeps more than an octave of margin under that.
++	config.set_maximum_quantum(attotime::from_usec(8));
++
+ 	SGI_MC(config, m_mem_ctrl, m_maincpu, m_eeprom, system_clock);
+ 	m_mem_ctrl->int_dma_done_cb().set(m_ioc2, FUNC(ioc2_device::mc_dma_done_w));
+ 	m_mem_ctrl->eisa_present().set_constant(1);

@@ -1,0 +1,84 @@
+Stop an idle 8254 counter in mode 4/5 from re-arming its update timer forever.
+
+UPSTREAM DEFECT, not an IRIX or SGI one. This patch is written to be sent to
+mamedev as-is: it touches only src/devices/machine/pit8253.cpp, it adds one
+line, and it makes modes 4 and 5 behave the way modes 0 and 1 already do.
+
+WHAT IS WRONG
+-------------
+`pit_counter_device::simulate()` ends every mode by choosing how many input
+clocks remain until the next OUTPUT transition, in `cycles_to_output`, which is
+initialised to 0 and only assigned inside a per-mode `switch (m_phase)`.  The
+caller treats 0 as "the output changes right now":
+
+	if (cycles_to_output == CYCLES_NEVER || m_clockin == 0)
+		adjust_timer(attotime::never);
+	else
+		adjust_timer(m_last_updated + cycles_to_output * m_clock_period);
+
+Modes 4 and 5 (software- and hardware-triggered strobe) reach phase 0 in normal
+operation: after the one-clock strobe, `simulate()` sets `m_phase = 0`, raises
+the output, and the counter free-runs with the output HIGH until the guest
+writes a new count.  MAME's own phase table in that file documents it —
+
+	    0|high  |infinity|0..1 |0   |waiting for count/counting down
+
+— "infinity", next phase 0.  But the mode 4/5 `switch (m_phase)` has cases 1, 2
+and 3 only.  Phase 0 falls through it with `cycles_to_output` still 0, so the
+update timer is armed at `m_last_updated + 0`, i.e. immediately.  It fires,
+`update()` computes `elapsed_cycles == 0` and takes its other arm,
+`adjust_timer(m_last_updated + m_clock_period)`, which fires one clock later and
+lands back in `simulate()` in phase 0.  The counter therefore re-arms TWICE PER
+INPUT CLOCK, forever, and not one of those re-arms ever changes the output or
+raises an interrupt.
+
+Modes 0 and 1 do not have the bug: mode 0 tests `m_phase == 0` explicitly and
+mode 1's switch ends in `default: cycles_to_output = CYCLES_NEVER`.  Modes 2 and
+3 cannot reach phase 0 inside the branch that runs the switch — they handle it
+in the preceding `if (m_gate == 0 || m_phase == 0)` arm — so modes 4 and 5 are
+the whole of the defect.  The fix is mode 1's idiom, applied to modes 4/5.
+
+HOW IT SHOWS UP
+---------------
+Any driver whose guest leaves an 8253/8254 counter in mode 4 or 5 without a
+count pays for it in host CPU forever.  On MAME's `indy_4610` (SGI Indy) it is
+the dominant timer event in the machine: IRIX 6.5 programs IOC2 counter 2 to
+mode 4 about two emulated seconds into the boot (control byte 0xb8) and never
+takes it out, and from then on the counter re-arms
+
+    2,000,000 times per emulated second   (1 MHz counter clock, twice per clock)
+
+measured directly with a per-(counter, mode, phase) histogram in adjust_timer().
+That is 90.4% of all timer events the machine raises.  With this patch the same
+counter contributes 74 update_tick calls per 20 emulated seconds.
+
+CAUTION FOR ANY DRIVER ADOPTING THIS
+------------------------------------
+The storm is expensive, but on a driver that sets no scheduling quantum of its
+own it is also doing a job: MAME breaks a timeslice at the next timer expiry, so
+a timer firing every half microsecond is what interleaves the CPU with the rest
+of the machine.  Removing it raises `indy_4610`'s cycles per `execute_run()`
+from 88.9 to ~673 and lets the CPU run to MAME's default 1/60 s quantum.  On
+this driver that is paired with an explicit `set_maximum_quantum()`; see
+mame-indy-scheduling-quantum.patch.  Guest-visible timing is unaffected either
+way — the removed re-arms never drove an output edge, and the counter's VALUE is
+still brought up to date lazily by `update()` on every read, gate change and
+control write.
+
+diff --git a/src/devices/machine/pit8253.cpp b/src/devices/machine/pit8253.cpp
+--- a/src/devices/machine/pit8253.cpp
++++ b/src/devices/machine/pit8253.cpp
+@@ -705,12 +705,13 @@
+
+ 			switch (m_phase)
+ 			{
+ 			case 1:  cycles_to_output = 1; break;
+ 			case 2:  cycles_to_output = adjusted_count(); break;
+ 			case 3:  cycles_to_output = 1; break;
++			default: cycles_to_output = CYCLES_NEVER; break;
+ 			}
+ 		}
+ 		break;
+ 	}
+
+ 	if (cycles_to_output == CYCLES_NEVER || m_clockin == 0)

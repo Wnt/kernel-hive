@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = ["streamhost"]
+
+# Member-level profiles are ignored by cargo; the release profile lives here.
+[profile.release]
+opt-level = 2
+
+# Iteration profile for the lab build box.  Keep release as the deployment
+# default; scripts/dev/build-deploy.sh --fast selects this profile explicitly.
+[profile.dev-fast]
+inherits = "dev"
+opt-level = 1
+incremental = true
+codegen-units = 256

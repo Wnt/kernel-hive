@@ -1,0 +1,32 @@
+# shellcheck config for the kernel-hive repo.
+#
+# Two gates read this file:
+#   - .github/workflows/lint.yml    `shellcheck -S warning` (existing CI job)
+#   - quality/bash's exit rule       `shellcheck $(git ls-files '*.sh')`
+#     (full default severity — style/info/warning/error all shown; see
+#     docs/lab/AGENT-CI-EXIT-RULE.md and AGENTS.md "Code quality gate")
+#
+# Repo-wide disables below are deliberate, documented exceptions — NOT a
+# "quiet everything" list. Anything narrower is a scoped inline
+# `# shellcheck disable=SCxxxx` at the call site instead (see individual
+# scripts for those, each with its own justification comment).
+#
+# SC2034 (unused variable): builder scripts define intentional config/env vars
+#   (RUN_TAG, GUEST_KEY, VMID bands, ...) that document the tile shape even when
+#   a given build path doesn't read them.
+# SC2054 (commas in array elements): QEMU command lines are arrays whose
+#   elements legitimately contain commas (-device foo,bar=x) — systematic
+#   false positive in tile launchers.
+# SC2015 (`A && B || C` is not if/then/else): used pervasively and
+#   deliberately across ~65 files as a compact "do X, else log/fallback Y"
+#   idiom (install/build/coldboot/verify scripts). The pitfall (C also runs if
+#   A succeeds but B fails) is real in the abstract, but rewriting every site
+#   to `if/then/else` is a large, high-risk diff across scripts that build and
+#   drive live VM tiles, for a benefit that's purely a possibly-misleading log
+#   line in the vast majority of instances (the common shape is
+#   `cond && action || log "fallback message"`, and the great majority of the
+#   rest end in `|| true` — a no-op that only resets $? regardless of which
+#   branch fired). Accepted repo-wide rather than touched file-by-file under
+#   the "behavior-preserving only" rule for scripts that drive the live lab.
+disable=SC2034,SC2054,SC2015
+external-sources=true

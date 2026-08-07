@@ -1,0 +1,352 @@
+IRIX 6.5.22 tile — Track A (apps + demos), ORDERED INSTALL PLAN
+===============================================================
+Phase 1 (inventory / acquisition / harness) completed 2026-07-31.
+Everything below runs in /data/vms/soltest/irix-apps. NEVER touch
+/data/vms/streamhost/tiles/irix or the chmod-444 golden irix65.chd.
+
+WHAT THE GUIDE ASKS FOR vs WHAT THE IMAGE ALREADY HAS
+-----------------------------------------------------
+The prebuilt irix65.chd was itself built from https://sgi.neocities.org/installguide,
+so the guide's base install is DONE: eoe/x_eoe/desktop_*/4Dwm, and every extra
+`inst` line it lists is already present (verified in /var/inst + /var/inst/hist):
+  eoe.sw.fonttools  eoe.sw.uucp  eoe.sw.xlv  eoe.sw.spell  ftn_eoe
+  inventor_eoe.sw64  ifl_eoe.sw64  dmedia_eoe.sw64
+plus the Applications CD "standard" set: acrobat cosmoplayer flash5 imgtools
+infosearch insight java2/java3d java_eoe macromedia media_warehouse mozilla mpi
+mpt nedit netscape outbox print scsl sgi_apache sgimeeting sgsearch showcase
+sitemgr sma sysadmdesktop sysmon Teleffect websetup webviewer.
+
+THE DELTA still to install (this is Track A's actual payload):
+  A. demos          SGI General Demos 6.5.12   ~206 MiB packed  (demos1.iso)
+  B. nfs + onc3_eoe ONC3/NFS v3                ~34 MiB packed   (nfs3.iso)
+  C. gnu, accessx, impr_base, impr_print, impr_rip, impr_rip_printers,
+     impr_scan                                 ~23 MiB packed   (apps2003.iso)
+  (demos_O2 / demos_octane / demos_octane2 are O2- and Octane-only: the guide
+   says untick them on an Indy. demos2.iso is Octane-only — DO NOT install.)
+
+DISK HEADROOM — the blocker, already solved host-side
+-----------------------------------------------------
+Golden CHD: 128x16x2000x512 = 2.00 GB; SGI label part0 = XFS 1870 MiB with only
+704 MiB free (1166 MiB used), 512-byte blocks, XFS V4 (0x30b4, dirv2), 8 AGs.
+Not enough headroom for a comfortable install, so make-work-chd.sh produced
+  /data/vms/soltest/irix-apps/work.chd   128x16x6000x512 = 6.29 GB
+with the SGI volume header rewritten (secs/track, capacity, part0 + part10
+lengths, checksum). THE FILESYSTEM IS NOT GROWN YET — grow it IN-GUEST at
+step 2 (`xfs_growfs /`), because Linux cannot replay IRIX's XFS log
+("dirty log written in incompatible format"); forcing it with `xfs_repair -L`
+works but dumps ~20 live inodes into lost+found.
+Expected after growfs: 5870 MiB total, ~4.6 GiB free.
+
+THE RIG
+-------
+  make-work-chd.sh                 rebuild work.chd from the golden (idempotent)
+  irix-apps-launch.sh [iso]        Xvfb :41 + MAME on the WRITABLE work.chd
+  irix-apps-cmd.sh <verb> [arg]    drive it (line/slow/code/click*/cd/snap/exit)
+  irix-apps-shot.sh out.png        REAL framebuffer PNG (MAME snapshot)
+  irix-apps-kill.sh                clone-guard pidfile kill (last resort)
+MAME CD attach at launch:  -cdrm1 /data/vms/soltest/irix-apps/media/<x>.iso
+  (scsibus:1 = harddisk = -hard1, scsibus:6 = SCSI CD-ROM SGI = -cdrm1;
+   -cdrm6/-cdrom6 are rejected by the option parser.)
+Hot CD swap without restarting MAME:  irix-apps-cmd.sh cd <basename>
+  (Lua image:unload()/load(); confirm the device tag once with `cdinfo`.)
+Pointer motion: XTest relative via /data/vms/soltest/irix-mame/relmove on
+DISPLAY=:41, after `xset m 0 0` in-guest (RECIPE.txt). Buttons + keyboard go
+through the Lua agent — SDL never delivers them on a WM-less full-screen Xvfb.
+
+ORDERED STEPS
+-------------
+0. PRECONDITION: no benchmark window in progress; the live irix tile owns :40,
+   this rig owns :41. `cp work.chd work.chd.stage0` before starting.
+1. Boot: `irix-apps-launch.sh` (no CD). Wait ~3-4 min (cold boot ~44% realtime;
+   /etc/rc2.d/S77sysevent burns 1-2 min). SHOT to confirm the login screen.
+   Log in: `irix-apps-cmd.sh slow root` then `code {ENTER}` (the login-name
+   widget drops fast natkeyboard chars). SHOT to confirm 4Dwm.
+   Open a shell: Toolchest > Desktop > Open Unix Shell (press-drag-release:
+   down1 / relmove / up1). Then `line "xset m 0 0"`.
+2. GROW THE FILESYSTEM:  line "df -k /"  → SHOT (expect 1.8 GB)
+                         line "xfs_growfs /"
+                         line "df -k /"  → SHOT (expect ~5.8 GB, ~4.6 GB free)
+   CHECKPOINT: clean `exit` verb, then `cp work.chd work.chd.grown`.
+   If growfs fails, fall back to IRIX `fx` (relabel) or rebuild work.chd with
+   IRIX_HOST_GROWFS=1 and accept lost+found.
+3. ONC3/NFS (smallest, proves the CD path):
+     relaunch with `irix-apps-launch.sh nfs3.iso`, log in, shell, then
+     line "mkdir -p /CDROM"          (usually already there)
+     line "mount -t iso9660 -o setx /dev/scsi/sc0d6l0 /CDROM"   ← if EFS CD:
+     line "mount -t efs /dev/scsi/sc0d6l0 /CDROM"
+     (or just let mediad automount to /CDROM; `ls /CDROM` to confirm — SHOT)
+     line "inst -f /CDROM/dist/dist6.5"
+     at the inst prompt:  install nfs   /  install onc3_eoe  / go  / quit
+   CHECKPOINT SHOT of the inst summary + `versions nfs`. Clean exit, back up.
+4. Applications CD leftovers:  relaunch with apps2003.iso (or hot-swap `cd`),
+     line "inst -f /CDROM/dist"
+     keep *
+     install gnu
+     install accessx
+     install impr_base impr_print impr_rip impr_rip_printers impr_scan
+     install prereqs
+     go
+     quit
+   If inst demands a Foundation/Overlay CD for a prerequisite, hot-swap
+   (`irix-apps-cmd.sh cd found1.iso` / found2 / ovl1 / ovl2 / ovl3) and
+   continue — do NOT Control-C. CHECKPOINT SHOT + backup.
+5. SGI General Demos (the headline item):  relaunch with demos1.iso
+     line "inst -f /CDROM/install"          ← NOTE: install/, not dist/
+     keep *
+     install demos
+     keep demos_O2                          ← O2-only, incompatible with XL24
+     install prereqs
+     go
+     quit
+   Expect ~350 MiB installed into /usr/demos. CHECKPOINT SHOT.
+   Verify by RUNNING one: line "/usr/demos/bin/ideas" (or buttonfly) → SHOT.
+   Toolchest > Demos should now be populated after a logout/login — SHOT that.
+6. Exhibit polish (cheap, big visual payoff):
+     line "chkconfig esp off"                (guide: halves boot time)
+     Optionally the guide's 24-bit background support: edit
+     /var/X11/xdm/Xservers to add "-class TrueColor -depth 24", and add
+     entries to /usr/lib/X11/system.backgrounds.
+     Leave a couple of demo windows open if the golden is captured live.
+7. FINALISE the new golden:
+     `irix-apps-cmd.sh exit`  (clean MAME shutdown flushes work.chd — NEVER
+     SIGKILL a writable CHD: that is what corrupted the golden once already)
+     chdman verify -i work.chd
+     cp work.chd irix65-apps.chd && chmod 444 irix65-apps.chd
+     Hand off to the tile swap: point the irix tile's x11-runtime.sh
+     IRIX_ASSETS/CHD at the new golden, restart streamhost@irix, verify by
+     screenshot through the SPA. Keep the old golden until that is green.
+
+RISKS / WATCH-OUTS
+------------------
+* Writable CHD + SIGKILL = corruption. Always use the `exit` verb; keep the
+  per-stage work.chd.<stage> backups (2 GB each, cheap on this pool).
+* `xfs_growfs /` on a 512-byte-block V4 XFS is the one unproven step. Backup
+  before it; fallbacks listed in step 2.
+* inst prerequisite chains can demand Foundation 1/2 and Overlay 1-3 mid-run —
+  all five are staged, hot-swap rather than aborting.
+* Some demos are IMPACT/O2/Octane-only and will either be unticked (guide) or
+  crash on XL24; treat a crash as expected, not as install failure.
+* Emulated PS/2 keyboard is slow (~150 ms holds) and the natkeyboard drops
+  characters in some widgets — verify every typed line with a SHOT before
+  sending the next one. NEVER infer progress from logs or disk state.
+* Disk exhaustion: re-check `df -k /` at every checkpoint. 4.6 GiB free after
+  the grow, ~450 MiB of payload, so there is ample margin.
+* Perf: everything runs at ~44-75% of a real Indy; `inst` of the demos CD will
+  take tens of minutes. Budget hours, not minutes.
+* FLEXlm: none of the delta products are licence-gated (the licensed ones —
+  compilers, Performer dev — are not part of this plan).
+
+
+================================================================================
+PHASE 2 OUTCOME (2026-07-31) -- EXECUTED. Golden built: irix65-apps.chd
+================================================================================
+md5 09e51dbc9080e90785149bbec7a0dd64, 2,241,536,000 bytes on disk, 6.29 GB
+logical (128x16x6000x512). Immutable reference copy: irix65-apps.chd.pristine.
+
+WHAT LANDED
+  * root XFS grown IN-GUEST to 5.87 GiB ("data blocks changed from 3829760 to
+    12021760"); 4.41 GiB free after everything.
+  * SGI General Demos 6.5.12 -- 28 demos in /usr/demos/General_Demos: 3da,
+    SoundTrackDemo, amesh, atlantis, blast, boink, buttonfly, bz, bzflag,
+    cycles, desktopDemo, doom, flight, i3dm, ideas, impression, ipaint, mandel,
+    mediarecorder, moviemaker, mview, polyVideo, powerflip, seahaven, snoop,
+    solidview, vroom, xmj. "Installations and removals were successful."
+  * accessx 1.1.5 (Access for Movement-Impaired Users) from the Applications CD.
+  * Boot time halved: chkconfig esp off (proved on the framebuffer by
+    "S95availmon: esp chkconfig flag is off. No action."). chkconfig sysevent
+    off also took -- /etc/config/sysevent is `off` and in-guest
+    `chkconfig | grep sysevent` prints `sysevent  off`. It is NOT a 989x loop:
+    see the PHASE 2 AUDIT below.
+
+WHAT WAS DELIBERATELY NOT INSTALLED
+  * ONC3/NFS v3, Impressario (impr_*): the CD builds (1274627333/1274627335)
+    are INCOMPATIBLE with the image's 6.5.22 eoe.sw.base (1289434520). inst
+    only offers "open a new distribution" -- they need the 6.5.22 Overlays
+    scanned alongside, i.e. the guide's full multi-CD scan. NFS also has no
+    value here (the tile has no networking) and Impressario is a print RIP.
+  * gnu: the Applications CD's `gnu` product is only pointers into the SGI
+    Freeware CDs (fw_readline, fw_less, fw_ed, fw_diffutils, fw_emacs), which
+    the guide does not list. ~1 MiB of stubs, nothing to gain.
+  * demos_O2 / demos_octane*: O2- and Octane-only, per the guide.
+  * demos.sw.{tex_cube,pointblank,mirrors,Brushing,VisFly,SynthToolsDemo,
+    MIDIblob}: refuse to install on XL24 (GFXBOARD!=EXPRESS/LIGHT/NEWPRESS) or
+    need dmedia synth from another CD. Resolved with `conflicts Na`.
+
+*** THE GOLDEN MUST NEVER BE HANDED TO MAME DIRECTLY ***
+MAME opens -hard1 READ-WRITE and the rig runs as root, so `chmod 444` does NOT
+protect it: one verification boot changed the file's md5 AND its size. `chattr
++i` does protect it but then MAME refuses to start ("Operation not permitted").
+The working pattern is a ZFS copy-on-write clone per launch --
+`cp --reflink=always` copies 2.24 GB in ~0.13 s:
+    run-golden.sh   ->   cp --reflink=always irix65-apps.chd run.chd
+                         then launch MAME on run.chd
+Verified: golden md5 unchanged across a full boot-to-desktop on the clone.
+The LIVE tile's x11-runtime.sh points -hard1 straight at its golden and has the
+same exposure (the original irix65.chd md5 has already drifted once).
+
+TOOLING BUILT THIS PHASE (all in this directory, mirrored on the box)
+  keys.py    Full-ASCII keyboard. MAME's natkeyboard on indy_4610 drops EVERY
+             shifted character (uppercase silently lowercases; _ | ~ " < > ? :
+             vanish) because it drives a PC "Microsoft Natural" keyboard through
+             an SGI keymap -- fatal for `inst` (underscored subsystem names) and
+             for shell redirection. Fix: drive the :ioc2:kbd:ms_naturl ioport
+             MATRIX directly and hold Left Shift ourselves. Timing lives in a
+             Lua key queue in the guest because the agent consumes a whole
+             command file per frame. Also gives real Ctrl-C. Caps Lock, oddly,
+             was the one shifted key that already worked.
+  point.py   Closed-loop absolute pointer: home into the (0,0) corner (exact
+             regardless of IRIX's ~1.5x acceleration), then locate the cursor by
+             COLOUR (it is the only bright red thing on an SGI-blue desktop) and
+             correct. A `near` hint is required because dialogs draw bigger red
+             icons than the cursor. Every read waits out guest-side lag.
+  irix-apps-agent.lua  gained KBSGI/KBPS2/KBDINFO and a LUA eval verb -- the
+             agent can now be extended without a 4-minute reboot.
+
+DRIVING inst (hard-won)
+  * A heredoc is NOT reliable: the prompt sequence depends on install history
+    ("Previous installation sites" appears only sometimes), and any unmatched
+    prompt eats every remaining command line. Drive it interactively, one
+    command per screenshot.
+  * The "run the optional installation startup script?" prompt fires AFTER the
+    first command, not before. Answer 2, then re-issue the command.
+  * `conflicts 1a 2a 3a` is rejected WHOLESALE if any single id is invalid.
+  * CD swap that actually works: umount /CDROM -> agent eject -> agent cd <iso>
+    -> /etc/init.d/mediad stop ; /etc/init.d/mediad start. mediad does not
+    reliably notice a MAME media change on its own, and it owns the
+    /dev/dsk/dks0d6s7 node that EFS mounts need.
+
+================================================================================
+PHASE 2 AUDIT (2026-07-31) -- demos confirmed present; irix65-apps-v2.chd built
+================================================================================
+Triggered by a report that the General Demos were missing from the live image.
+They are not missing. Ground truth on the SHIPPED golden irix65-apps.chd
+(md5 09e51dbc9080e90785149bbec7a0dd64):
+  * offline XFS mount: /usr/demos/General_Demos exists, 28 entries, 164 MiB
+  * real framebuffer: `ls /usr/demos` shows General_Demos; `versions demos`
+    lists every demos.sw.* subsystem as "I = Installed"; Seahaven Towers and
+    the GL `ideas` demo both render.
+The false report came from booting the WRONG image: /data/vms/soltest/irix-perf/
+run-clone.sh clones master.chd == the BASE irix65.chd (md5 430bf0ba...), whose
+/usr/demos holds only Performer and whose only `atlantis` is the screensaver
+/usr/lib/X11/savers/defaults/atlantis -- exactly the symptoms reported. The perf
+tree's copy of the apps golden is master-apps.chd (used only by drc-trial.sh).
+
+INSPECTING A CHD WITHOUT BOOTING IT (minutes -> seconds)
+  cp --reflink=always <golden>.chd <yours>/x.chd     # never open the golden
+  chdman extractraw -i x.chd -o x.raw                # ~6 s
+  mount -t xfs -o ro,norecovery,nouuid,loop,offset=136314880 x.raw mnt
+  (partition 0 = XFS root at LBA 266240. The SGI partition table is 16 x
+   {nblks, first_lbn, type} big-endian ints at byte 312 of sector 0.)
+  norecovery is mandatory -- IRIX's XFS log is "written in incompatible format"
+  for Linux, so a READ-WRITE mount is impossible even after a clean IRIX halt.
+  nouuid is mandatory -- every image descends from one install.
+  Caveat: norecovery shows the pre-log state, so a file the guest wrote just
+  before an unclean MAME exit can read as stale or torn.
+
+THE S77sysevent NOISE WAS NEVER A SERVICE
+  `chkconfig sysevent off` DID take (/etc/config/sysevent = off, and in-guest
+  `chkconfig | grep sysevent` prints "sysevent  off"). The boot wall of
+  "/etc/rc2.d/S77sysevent.989[131]: unix:  not found" comes from an ORPHAN FILE:
+  /etc/init.d/Sysevent writes its merged notifier config to KMSG_TMP=$0.$$, and
+  one ancient boot as PID 989 left /etc/rc2.d/S77sysevent.989 behind -- a
+  12551-byte DATA file (mode 644) full of `unix irix 4194320 KERN_NONE ".*"`
+  rules. rc2 executes every /etc/rc2.d/S* it finds, so the shell tries to run
+  each rule as a command. It is inherited from the base irix65.chd.
+  FIX: rm /etc/rc2.d/S77sysevent.989.
+
+NEW GOLDEN
+  /data/vms/soltest/irix-demos-audit/irix65-apps-v2.chd
+  md5 7ef955e262bcd31cd9f7062ef975697e, 2,241,540,096 bytes, 444 + chattr +i.
+  Diff vs irix65-apps.chd: the orphan deleted, plus a CLEAN IRIX shutdown
+  (/etc/shutdown -y -g0 -i0) before the MAME `exit` verb.
+  Verified ON THIS ARTIFACT, from a reflink clone: no sysevent wall on the boot
+  console, "S95availmon: esp chkconfig flag is off", 28 demos listed,
+  `chkconfig | grep sysevent` -> off, seahaven + ideas running on the
+  framebuffer. Evidence PNGs in ../evidence/ of that directory.
+  KNOWN DIFFERENCE: the clean shutdown let 4Dwm write a valid
+  /.desktop-IRIS/0.0/4Dwmsession, so logging in as root now also restores one
+  winterm. (The shipped golden's copy of that file is torn binary garbage from
+  its unclean exit, which is why it restored nothing.) To get a bare desktop
+  back, re-bake with `rm -f /.desktop-IRIS/0.0/4Dwmsession` as the LAST in-guest
+  step and finish with sync + the MAME `exit` verb -- /etc/shutdown re-saves it.
+
+RIG USED (namespaced clone of the Track A harness)
+  /data/vms/soltest/irix-demos-audit/ -- own Xvfb :43, own pidfiles, own command
+  file, MAME pinned to cores 6,7,14,15, env.sh carrying the overrides. It reads
+  roms/nvram/uicfg/mame/glibc from the PRODUCTION asset tree and never opens a
+  production golden (both are 444 + chattr +i and their md5s were re-checked
+  unchanged afterwards).
+
+4Dwm POINTER-FOCUS BITES EVERY DEMO RUN
+  Launching a demo puts a big window under the pointer, so the NEXT typed line
+  goes to the demo, not the shell. Either move the pointer back onto a visible
+  strip of the winterm first, or drag the demo's title bar aside (point.py drag)
+  -- a raise-click on the desktop root does not work.
+
+================================================================================
+V3 GOLDEN (2026-08-02) -- bare desktop + 1:1 pointer. STAGED, NOT WIRED IN.
+================================================================================
+/data/vms/streamhost/assets/irix/irix65-apps-v3.chd
+md5 368fcfb9b56fb4165a4e456238dc1a18, 2,241,560,576 bytes, 444 + chattr +i.
+IRIX_GOLDEN still points at irix65-apps.chd -- the cutover is a separate step
+owned by whoever holds x11-runtime.sh.
+
+DIFF vs irix65-apps.chd (all deliberate)
+  * /etc/rc2.d/S77sysevent.989 orphan deleted (boot-console noise).
+  * /usr/lib/X11/app-defaults/4DWm : *SG_autoSave: false
+    (*SG_manageSession stays true -- see the startconsole trap below).
+  * /.desktop-IRIS/0.0/4Dwmsession reduced to the single command-less ToolChest
+    stanza, so `4Dwm -launch` has nothing to relaunch.
+  * /.sgisession = "/usr/bin/X11/xset m 1/1 0", mode 644.
+  * IRIX halted cleanly with /etc/shutdown -y -g0 -i0 before the MAME exit verb.
+
+THE SESSION MECHANISM (source of truth: /var/X11/xdm/Xsession.dt)
+  * toolchest and `fm -b` are started UNCONDITIONALLY -- emptying the session
+    file cannot cost you the Toolchest or the desktop icons. (Xsession.dt even
+    comments that toolchest sets no WM_COMMAND, so SM would never restore it.)
+  * `4Dwm -launch` relaunches only session entries that carry a `command` key.
+  * TRAP 1 -- the session file must stay NON-EMPTY. The gate is
+      if [ -r $wmsession -a -s $wmsession ]
+    and the else branch runs `/usr/sbin/startconsole -iconic`. DELETING
+    4Dwmsession gives you an iconified console, not a bare desktop.
+  * TRAP 2 -- SG_autoSave is read at 4Dwm STARTUP. Editing the resource and
+    logging out in the same session still auto-saves the session, because that
+    4Dwm instance still has autoSave=true. The bake needs TWO logins: one to
+    install the resource, a second (4Dwm now starts with autoSave=false) to fix
+    4Dwmsession and shut down. Verified: after the second login's clean
+    shutdown the session file was still the ToolChest-only version.
+  * 4Dwmdesks is rewritten by 4Dwm continuously (it also rotates a .bak).
+    Not worth fighting -- it records placement only and launches nothing.
+
+POINTER
+  * Use `xset m 1/1 0`, NOT `xset m 0 0`. The latter reports acceleration 0/1
+    (zero numerator, ambiguous); the former reports 1/1 threshold 0. Measured
+    gain is identical, so ship the unambiguous one.
+  * /.sgisession is left mode 644 ON PURPOSE: Xsession.dt runs it via /bin/sh
+    when readable-but-not-executable, so it needs no shebang.
+  * Measured with XTest relmove(200,150) on v3:
+      idle bare desktop      gain 0.995 / 0.993   <- 1:1
+      with two demos running gain 0.880 / 0.840   <- dropped motion events in
+                                                     the XTest->PS/2 path under
+                                                     load, NOT acceleration
+    IRIX default before the change is ~2.75x horizontal / ~1.77x vertical.
+
+VERIFIED ON THE EXACT ARTIFACT, TWICE (independent cp --reflink clones)
+  * bare desktop BOTH times; the two framebuffer captures are md5-identical
+    (a714c1e37241b168a8acb96b124ea459).
+  * boot console free of the S77sysevent wall; esp still off.
+  * xset q -> acceleration 1/1, threshold 0, applied automatically at login.
+  * 28 demos present; seahaven (2D) + ideas (GL) both launched and rendering.
+  * Evidence: /data/vms/soltest/irix-demos-audit/evidence/v3-*.png
+  * One boot hit the known black-screen cold-boot hang at the console->iconlogin
+    handover (X root painted then black, MAME alive at 109% CPU). Relaunching
+    cleared it -- that is the documented ~8% hang, not an image property.
+
+DRIVING THE GUEST -- COORDINATE FRAMES DO NOT MATCH
+  `import -window root` on the Xvfb and MAME's own snapshot do NOT share an
+  origin, and MAME's frame is 1288x1024 (the VC2 reprograms the screen from
+  1280 about 85 frames into boot). Coordinates read off an `import` capture land
+  tens of pixels out. point.py closes its loop on MAME snapshots -- measure on
+  those. Also: dragging from the Toolchest straight down to a menu item slides
+  along the Toolchest column and switches menus; go RIGHT into the menu first,
+  THEN down.

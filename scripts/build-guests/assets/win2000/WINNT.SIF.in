@@ -1,0 +1,47 @@
+[Data]
+    AutoPartition=1
+    MsDosInitiated=0
+    UnattendedInstall=Yes
+
+[Unattended]
+    UnattendMode=FullUnattended
+    OemSkipEula=Yes
+    OemPreinstall=No
+    TargetPath=\WINNT
+    FileSystem=ConvertNTFS
+    Repartition=Yes
+    WaitForReboot=No
+    DriverSigningPolicy=Ignore
+
+[GuiUnattended]
+    AdminPassword="@@ADMIN_PASSWORD@@"
+    EncryptedAdminPassword=No
+    OEMSkipRegional=1
+    TimeZone=0
+    OemSkipWelcome=1
+    AutoLogon=Yes
+    AutoLogonCount=1
+
+[UserData]
+    ProductID="@@PRODUCT_KEY@@"
+    FullName="Retro"
+    OrgName="KernelHive"
+    ComputerName="RETRO2K"
+
+[Display]
+    BitsPerPel=16
+    Xresolution=1024
+    Yresolution=768
+    Vrefresh=60
+
+[Identification]
+    JoinWorkgroup=RETRO
+
+[Networking]
+    InstallDefaultComponents=Yes
+
+[RegionalSettings]
+    LanguageGroup=1
+    SystemLocale=00000409
+    UserLocale=00000409
+    InputLocale=0409:00000409

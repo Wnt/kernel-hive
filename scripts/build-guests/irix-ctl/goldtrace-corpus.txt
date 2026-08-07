@@ -1,0 +1,121 @@
+# goldtrace-corpus.txt — the production-shaped golden-trace corpus (issue #45
+# Stage 1). Executed verbatim by goldtrace-record.py against BOTH arms (Lua
+# agent via the irix_cmd file; mamectl via ctl.sock) on identically prepared
+# clones: same patched binary, same golden, same cold-boot-or-restore recipe.
+#
+# Recorded at the golden CHOOSER state on a FRESH restore: the first MOVEA
+# below is genuinely the session's first (the post-restore transient case the
+# Stage-0 verdict made binding), and the (300,500) hop is the deterministic
+# chooser give-up that settles at ~(186,386). Bug-for-bug parity means the
+# module must REPRODUCE that give-up, not fix it (fixing is out of parity
+# scope — a follow-up on the A3 track).
+#
+# Expected giveups delta over this corpus: 3 (one from chooser-giveup, two
+# from giveup-tap-inherit: the original verdict + the restatement behind the
+# deferred press inheriting it). goldtrace-compare.py checks the two arms
+# report the SAME delta, not the absolute.
+#
+# Directives (harness-side, never sent to the arm) start with "!":
+#   !label NAME                       name the following steps in the trace
+#   !wait MS                          wall-clock pause
+#   !settle [TIMEOUT_S]               sample the shm cursor centroid until stable
+#   !expect converged|gaveup|any [X Y]  classify the last MOVEA vs its target
+#   !sig LABEL [WxH+X+Y]              framebuffer mean/sd signature probe
+# Anything else is a verb line injected into the arm unchanged.
+#
+# All cursor targets sit in the y>=340 band: above it the EZsetup icon
+# (y 214..306) pollutes the red-mask cursor sensor at the chooser (Stage-0).
+# Only (1050,850) [converges, res=1,0] and (300,500) [gives up at (186,386)]
+# are Stage-0 convergence-validated; unvalidated waypoints carry `!expect any`
+# — the cross-arm settle equality in goldtrace-compare.py is their gate.
+
+!sig restore-baseline
+
+# Binding corpus case 1: the session's FIRST MOVEA, straight off the restore.
+!label post-restore-first-movea
+MOVEA 1050 850
+!settle 8
+!expect converged
+
+# Binding corpus case 2: the deterministic chooser give-up. The !wait lets the
+# 40-window cap (1.6 s emulated) expire so the give-up VERDICT completes
+# before the next command arrives.
+!label chooser-giveup-300-500
+MOVEA 300 500
+!settle 8
+!wait 2500
+!expect gaveup 186 386
+
+# A later fresh target starts clean and recovers.
+!label recover-fresh-target
+MOVEA 1050 850
+!settle 8
+!expect converged
+
+# Give-up with a tap behind it: the press defers behind the in-flight target,
+# streamhost's restate-before-edge rides behind the press, and when the
+# original target gives up the restatement INHERITS the verdict (counted as a
+# second give-up) so the buttons release immediately instead of after another
+# full cap.
+!label giveup-tap-inherit
+MOVEA 300 500
+!wait 300
+DOWN1
+MOVEA 300 500
+UP1
+!settle 8
+!wait 2500
+!expect gaveup 186 386
+!sig after-giveup-tap
+
+# The mobile TAP shape at a validated target: sizeable jump with button edges
+# right behind it — the edges must fire only after the target completes.
+!label tap-at-converged-target
+MOVEA 1050 850
+DOWN1
+UP1
+!settle 8
+!expect converged
+!sig after-tap
+!wait 400
+
+# Drag shape: press then a NEW target then release. The press must never be
+# coalesced across (press-at-A then move-to-B is a drag).
+!label press-drag-release
+MOVEA 640 480
+!wait 250
+DOWN1
+MOVEA 900 700
+UP1
+!settle 8
+!expect any
+!sig after-drag
+!wait 400
+
+# KEY chords, straight off streamhost's KEY_MATRIX test vectors: Shift+"-"
+# (the underscore natkeyboard cannot deliver), then Ctrl-C. Hold/gap pacing
+# (0.10/0.05 s emulated) lives in the arm, so the waits cover the drain.
+!label key-chords
+KEY 1 P1.7 Left Shift
+KEY 1 P2.2 -
+KEY 0 P2.2 -
+KEY 0 P1.7 Left Shift
+!wait 600
+KEY 1 P1.1 Left Ctrl
+KEY 1 P1.4 C
+KEY 0 P1.4 C
+KEY 0 P1.1 Left Ctrl
+!wait 600
+!sig after-keys
+
+# natkeyboard POST text (the labctl `type` path).
+!label post-text
+POST hello from goldtrace
+!wait 1500
+!sig after-post
+
+# Park somewhere deterministic so a follow-on corpus starts from a known spot.
+!label park
+MOVEA 644 512
+!settle 8
+!expect any

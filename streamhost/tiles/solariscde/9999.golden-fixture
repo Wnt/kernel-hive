@@ -1,0 +1,17 @@
+#!/bin/sh
+# solariscde GOLDEN TEST FIXTURE (sourced by /usr/dt/bin/Xsession via Xsession.d).
+# Makes each CDE login deterministic + animation-free and opens a reactive surface.
+# Backgrounded so it never blocks login.
+(
+  sleep 14
+  /usr/openwin/bin/xset s off
+  /usr/openwin/bin/xset s noblank
+  /usr/openwin/bin/xset -dpms
+  /usr/bin/pkill -x sdtperfmeter
+  /usr/bin/pkill dtperfmeter
+  /usr/bin/pkill dtclock
+  /usr/bin/pkill dtfile
+  /usr/bin/pkill dthelpview
+  sleep 1
+  /usr/dt/bin/dtterm -xrm "Dtterm*blinkRate: 0" -geometry 92x30+140+110 -title GOLDEN-FIXTURE-TERMINAL &
+) &

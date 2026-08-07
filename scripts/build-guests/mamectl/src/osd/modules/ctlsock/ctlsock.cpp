@@ -1,0 +1,2785 @@
+// license:BSD-3-Clause
+// copyright-holders:osgallery lab
+/***************************************************************************
+
+    ctlsock.cpp — mamectl: compiled-in guest-control module (osgallery #45)
+
+    A unix SOCK_STREAM control channel for the Kernel Hive MAME tiles,
+    serving protocol mamectl/1 (design section 3) on MAME_CTL_SOCK
+    (convention: <tile-dir>/ctl.sock, beside qmp.sock). The relative-
+    pointer, key and button engines are ports — ALGORITHM-IDENTICAL,
+    bug-for-bug — of the proven Lua agent
+    streamhost/tiles/irix/irixagent.lua; that file stays in the repo as
+    the rollback arm. The MOVEA absolute engine is V2 — dead-reckoned
+    open loop in PIXELS, with a learned per-axis counts->px gain and
+    settle-time delta verification (see the engine block)
+    — NOT a port: the Lua closed loop's mid-flight recompute against the
+    lagging cursor reading is the retired defect (rubber-banding, glyph-
+    hotspot limit cycles) and must never be reintroduced. Structural
+    precedent for an OSD module owning a persistent acceptor + worker
+    thread: src/osd/modules/output/network.cpp.
+
+    ONE RULE governs the threading (design section 2): the socket thread
+    parses lines and enqueues; the EMU thread applies. The socket thread
+    never touches the machine. Two emu-thread drains, both load-bearing:
+
+      1. one persistent 1 kHz emulated-time timer — the latency path
+         while running (pickup <= 1 ms emulated);
+      2. the MACHINE_NOTIFY_FRAME notifier — the paused-path pump: while
+         paused the scheduler (and so the timer) is frozen, but the main
+         loop still runs frame_update, so verbs stay serviceable at frame
+         pace. Paused-window verb pickup is therefore ~40-50 ms, not 1 ms
+         (Stage-0 V3, measured). PAUSE is never the last command.
+
+    ========================== COVENANT 1 =============================
+    THE ONE PERSISTENT TIMER. This module allocates exactly ONE
+    persistent emu_timer, UNCONDITIONALLY (env or no env), with the
+    frozen callback name "ctlsock_module::tick". A persistent timer
+    registers NINE save entries (m_param, m_enabled, m_period.{s,as},
+    m_start.{s,as}, m_expire.{s,as}, m_index — Stage-0 V4, measured, NOT
+    the six the design first predicted), and the savestate signature is
+    a CRC over registered entry names+shape (save.cpp:503-521). So:
+      - adding a SECOND persistent timer, or RENAMING this callback (or
+        the class), CHANGES THE SIGNATURE => mandatory golden rebake;
+      - TEMPORARY timers are banned outright: device_scheduler::can_save
+        fails while one is armed (schedule.cpp:346-359) — a SAVEST /
+        rebake landmine;
+      - because the timer is unconditional, the enabled and disabled
+        arms share ONE signature: one binary + one golden serve both A/B
+        arms and every rollback tier (Stage-0 V4: cross-loads in both
+        directions succeed);
+      - ENGINE V2 STATE (pointer belief, bias, round bookkeeping) is
+        ordinary member state, NOT save-registered — registering any of
+        it would change the signature. Keep it that way.
+    Notifier subscriptions and save presave/postload callbacks register
+    NO save entries and are signature-neutral.
+    ========================== COVENANT 2 =============================
+    schedule_save / schedule_load ARE BANNED IN THIS MODULE. Both
+    resume() the machine as a side effect (machine.cpp:676) — that
+    silently breaks the PAUSE window the bake flow depends on. SAVEST
+    uses running_machine::immediate_save ONLY, LOADST uses
+    running_machine::immediate_load ONLY: both jump straight into
+    handle_saveload() without the resume(), stay paused, and return only
+    on completion (Stage-0 V5, proven: machine stays paused, .sta md5
+    stable at return). Measured cost for the 44 MB tile state: ~12 s
+    STOP-THE-WORLD — both drains are frozen inside our own callback for
+    the duration, so clients must use an ack timeout >= 60 s for SAVEST/
+    LOADST, and a ~12 s EV-STATS heartbeat gap during a save is expected
+    and documented, not a hang.
+    ===================================================================
+
+    Digital inputs are re-latched mid-frame after set_value via the
+    public ioport_port::frame_update() (ioport.h:787) — proven on the
+    mouse-button port (Stage-0 V6: applied immediately, holds, no
+    asserts). The kbd matrix ports use the same mechanism and are
+    flagged for a one-time re-check in the Stage-1 harness. CONSTRAINT:
+    the per-port call bypasses -record/-playback accounting; this tile
+    never uses those options, and no tile carrying this patch may.
+
+    Init-hook wiring and computed_signature() are reused from the proven
+    Stage-0 spike (lab:/data/vms/soltest/v456-spike/ctlsock/): the spike
+    validated init at machine_phase::INIT visibility and reproduced the
+    savestate header signature byte-for-byte via the public save_manager
+    registration walk. computed_signature() is kept behind STAT
+    (sig=/entries=) as the PERMANENT signature-regression probe.
+
+    Env config (all optional except the gate):
+      MAME_CTL_SOCK          listener path; unset => listener, tail and
+                             engines all stay OFF (module + timer still
+                             created — covenant 1)
+      MAME_CTL_CMD_FILE      legacy irix_cmd file to tail (single-
+                             injector rule: only active while the
+                             listener is; the launcher interlock keeps
+                             the Lua agent off when MAME_CTL_SOCK is set)
+      MAME_CTL_PTR_PORTS     pointer device tag suffix   [:hle_ps2_mouse]
+      MAME_CTL_CURSOR_ITEMS  comma-separated save-item suffixes for the
+                             hardware-cursor X,Y[,ENABLE] registers; on
+                             the irix tile:
+                               :vc2/0/m_cursor_x,:vc2/0/m_cursor_y,:vc2/0/m_enable_cursor
+                             ABSENT => MOVEA degrades to open loop
+      MAME_CTL_CAL_X/Y       cursor register -> pixel calibration  [-31]
+      MAME_CTL_MOVE_STEP     pacing budget, counts per window      [120]
+      MAME_CTL_MOVE_WINDOW   pacing window, EMULATED ms             [40]
+      MAME_CTL_KEY_HOLD/GAP  key edge pacing, EMULATED ms       [100/50]
+      MAME_CTL_MOVEA_TRIES   accepted, INERT since engine V2 (V2
+                             flights terminate by construction)     [40]
+      MAME_CTL_SWAP_ITEMS    "<seq>,<dx>,<dy>": the VC2 cursor-swap
+                             accumulators from mame-vc2-cursor-swap.patch,
+                             which is where a cursor GLYPH's hotspot can be
+                             read exactly. On the irix tile:
+                               :vc2/0/m_cs_seq,:vc2/0/m_cs_dx,:vc2/0/m_cs_dy
+                             ABSENT => the hotspot is never tracked and the
+                             pointer lands a hotspot off under every cursor
+                             but the arrow. setup logs swap=<resolved>.
+      MAME_CTL_DEADBAND      MOVEA convergence deadband, px          [2]
+      MAME_CTL_INFL_DECAY    per-window geometric decay of the
+                             issued-but-unobserved px estimate; < 1
+                             so a gain over-estimate self-clears    [0.5]
+      MAME_CTL_SCREEN        WxH clamp surface + HELLO       [1288x1024]
+      MAME_CTL_STAT_PERIOD   EV STATS / heartbeat period, wall s    [15]
+      MAME_CTL_TRACE         1 => single-line engine trace on stderr
+                             ("CTLTRACE <wall ms> <emu s> ..."; debug
+                             knob for the gain campaign, remove after)  [0]
+      MAME_CTL_GAIN_MARGIN   conservative-issuance margin (user rule:
+                             never extrapolate the cursor ahead of real
+                             movement): step counts sized against
+                             gain*margin so a full-gain guest cannot
+                             pass the target                        [1.10]
+
+***************************************************************************/
+
+#include "emu.h"
+
+#include "ctlsock.h"
+
+#include "emuopts.h"
+#include "fileio.h"
+#include "main.h"
+#include "natkeyboard.h"
+#include "screen.h"
+#include "video.h"
+
+#include "corefile.h"
+#include "util/endianness.h"
+#include "util/hashing.h"
+
+#include <fcntl.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+#include <algorithm>
+#include <atomic>
+#include <cerrno>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <deque>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <unordered_map>
+#include <vector>
+
+namespace {
+
+using steady_tp = std::chrono::steady_clock::time_point;
+
+constexpr char PROTO_ID[] = "mamectl/1";
+constexpr size_t MAX_LINE = 8192;            // overlong request line => ERR badline
+constexpr size_t MAX_CONN_OUT = 1 << 20;     // stalled reader backlog cap => drop conn
+                                             // (the SH_QEMU_RSS lesson: bound the
+                                             // display/event backlog at the source)
+constexpr size_t TAIL_TRUNC_AT = 1048576;    // legacy tail: truncate once per MiB (Lua parity)
+constexpr long SPRITE_MAX = 31;              // px: the hardware cursor is 32x32, so a
+                                             // hotspot offset cannot exceed this and a
+                                             // larger "swap delta" is not a hotspot at all
+constexpr int OSC_FLIPS = 3;                 // sign reversals of the correction within ONE
+                                             // target before the loop latches: a pointer that
+                                             // keeps missing corrects one way, a hotspot that
+                                             // flips with the pointer corrects both ways
+                                             // forever (the resize-cursor "repelling magnet")
+constexpr double GAIN_ALPHA_UP = 0.50;       // gain EMA, asymmetric: a partly absorbed step
+constexpr double GAIN_ALPHA_DOWN = 0.15;     // reads LOW, and a gain estimated too low
+                                             // over-issues -- the one direction the
+                                             // no-overshoot rule forbids. Rise fast, fall slow.
+constexpr long GAIN_MIN_COUNTS = 24;         // counts: a step issuing less teaches nothing
+                                             // about gain — guest acceleration is THRESHOLD-
+                                             // based (~2x only above a few counts/sample), so
+                                             // small rounds measure the 1:1 leg, not the
+                                             // flight gain
+constexpr double GAIN_LO = 0.25;             // learnable counts->px band; a measured ratio
+constexpr double GAIN_HI = 4.0;              // OUTSIDE it is a corrupt measurement (absorption
+                                             // still in flight, foreign motion), never a real
+                                             // gain — wait it out, do not learn it
+constexpr long GAIN_EDGE_MARGIN = 3;         // px: a reading this close to a surface edge is
+                                             // (or may be) the guest's clamp, which
+                                             // masquerades as low gain — never exact-learn
+                                             // against an edge
+
+// ---------------------------------------------------------------------------
+// small env helpers
+
+long env_long(const char *name, long defval)
+{
+	char const *const v = std::getenv(name);
+	if (!v || !*v)
+		return defval;
+	char *end = nullptr;
+	long const r = std::strtol(v, &end, 10);
+	return (end && *end == '\0') ? r : defval;
+}
+
+std::string env_str(const char *name)
+{
+	char const *const v = std::getenv(name);
+	return (v && *v) ? std::string(v) : std::string();
+}
+
+double env_double(const char *name, double defval)
+{
+	char const *const v = std::getenv(name);
+	if (!v || !*v)
+		return defval;
+	char *end = nullptr;
+	double const r = std::strtod(v, &end);
+	return (end && end != v && *end == '\0') ? r : defval;
+}
+
+bool has_suffix(std::string_view s, std::string_view suffix)
+{
+	return s.size() >= suffix.size() && s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+// ---------------------------------------------------------------------------
+// a cached raw save-item handle: the exact mechanism Lua's emu.item uses
+// (save_manager::indexed_item exposes the base pointer), resolved ONCE after
+// save registration closes, then a plain memory load per read.
+
+struct save_item_handle
+{
+	void *base = nullptr;
+	u32 size = 0;
+	u32 count = 1;
+
+	bool ok() const { return base != nullptr; }
+
+	s64 read() const { return read_at(0); }
+
+	s64 read_at(u32 i) const
+	{
+		if (!base || i >= count)
+			return 0;
+		switch (size)
+		{
+		case 1: return s64(reinterpret_cast<u8 const *>(base)[i]);
+		case 2: return s64(reinterpret_cast<u16 const *>(base)[i]);
+		case 4: return s64(reinterpret_cast<u32 const *>(base)[i]);
+		case 8: return s64(reinterpret_cast<u64 const *>(base)[i]);
+		}
+		return 0;
+	}
+};
+
+// ---------------------------------------------------------------------------
+
+class ctlsock_module
+{
+public:
+	ctlsock_module(running_machine &machine) : m_machine(machine) { }
+
+	~ctlsock_module()
+	{
+		// belt-and-braces: on_exit normally tears the worker down first
+		stop_worker();
+	}
+
+	void init()
+	{
+		// COVENANT 1: the ONE unconditional persistent timer, frozen name.
+		m_timer = m_machine.scheduler().timer_alloc(
+				timer_expired_delegate(FUNC(ctlsock_module::tick), this));
+		m_timer->adjust(attotime::from_hz(1000), 0, attotime::from_hz(1000));
+
+		m_machine.add_notifier(MACHINE_NOTIFY_FRAME,
+				machine_notify_delegate(&ctlsock_module::on_frame, this));
+		m_machine.add_notifier(MACHINE_NOTIFY_EXIT,
+				machine_notify_delegate(&ctlsock_module::on_exit, this));
+		m_machine.add_notifier(MACHINE_NOTIFY_PAUSE,
+				machine_notify_delegate(&ctlsock_module::on_pause, this));
+		m_machine.add_notifier(MACHINE_NOTIFY_RESUME,
+				machine_notify_delegate(&ctlsock_module::on_resume, this));
+
+		// presave/postload markers: how SAVEST/LOADST detect that the save
+		// manager actually ran (immediate_save returns void), and how the
+		// module learns of ANY restore — including the launcher's startup
+		// `-state` restore — to re-seed the pointer accumulator (Stage-0
+		// binding correction; the Lua agent never could do this).
+		m_machine.save().register_presave(
+				save_prepost_delegate(FUNC(ctlsock_module::on_state_presave), this));
+		m_machine.save().register_postload(
+				save_prepost_delegate(FUNC(ctlsock_module::on_state_postload), this));
+
+		// knobs (see file header)
+		m_move_step = env_long("MAME_CTL_MOVE_STEP", 120);
+		m_move_window = double(env_long("MAME_CTL_MOVE_WINDOW", 40)) / 1e3;
+		m_key_hold = double(env_long("MAME_CTL_KEY_HOLD", 100)) / 1e3;
+		m_key_gap = double(env_long("MAME_CTL_KEY_GAP", 50)) / 1e3;
+		m_cal_x = env_long("MAME_CTL_CAL_X", -31);
+		m_cal_y = env_long("MAME_CTL_CAL_Y", -31);
+		m_movea_tries = int(env_long("MAME_CTL_MOVEA_TRIES", 40));
+		m_stat_period = std::chrono::seconds(env_long("MAME_CTL_STAT_PERIOD", 15));
+		m_ptr_suffix = env_str("MAME_CTL_PTR_PORTS");
+		if (m_ptr_suffix.empty())
+			m_ptr_suffix = ":hle_ps2_mouse";
+		m_cursor_items = env_str("MAME_CTL_CURSOR_ITEMS");
+		m_swap_items = env_str("MAME_CTL_SWAP_ITEMS");
+		m_tail_path = env_str("MAME_CTL_CMD_FILE");
+		m_trace = env_long("MAME_CTL_TRACE", 0) != 0;
+		m_gain_margin = env_double("MAME_CTL_GAIN_MARGIN", 1.10);
+		if (m_gain_margin < 1.0 || m_gain_margin > 2.0)
+			m_gain_margin = 1.10;
+		m_dead = env_long("MAME_CTL_DEADBAND", 2);
+		if (m_dead < 0 || m_dead > 64)
+			m_dead = 2;
+		m_infl_decay = env_double("MAME_CTL_INFL_DECAY", 0.5);
+		if (m_infl_decay < 0.0 || m_infl_decay >= 1.0)
+			m_infl_decay = 0.5;
+
+		m_surf_w = 1288;
+		m_surf_h = 1024;
+		std::string const scr = env_str("MAME_CTL_SCREEN");
+		if (!scr.empty())
+		{
+			long w = 0, h = 0;
+			char const *const xp = std::strchr(scr.c_str(), 'x');
+			if (xp)
+			{
+				w = std::strtol(scr.c_str(), nullptr, 10);
+				h = std::strtol(xp + 1, nullptr, 10);
+			}
+			if (w > 0 && h > 0)
+			{
+				m_surf_w = w;
+				m_surf_h = h;
+			}
+		}
+
+		std::string const sock = env_str("MAME_CTL_SOCK");
+		std::fprintf(stderr, "ctlsock: init machine=%s phase=%d sock=%s\n",
+				m_machine.system().name, int(m_machine.phase()),
+				sock.empty() ? "(unset: disabled arm)" : sock.c_str());
+		std::fflush(stderr);
+
+		if (!sock.empty())
+			start_listener(sock);
+	}
+
+private:
+	static unsigned long long ull(u64 v) { return (unsigned long long)v; }
+
+	double emu_now() const { return m_machine.time().as_double(); }
+
+	// MAME_CTL_TRACE=1: single-line engine trace on stderr (lands in the
+	// tile's mame.log). Debug knob for the live gain campaign — off by
+	// default, emu-thread callers only, no save items, no timers
+	// (covenant-neutral); remove after the campaign.
+	template <typename... Params>
+	void trace(char const *fmt, Params &&... args)
+	{
+		if (!m_trace)
+			return;
+		unsigned long long const wall_ms = (unsigned long long)
+				std::chrono::duration_cast<std::chrono::milliseconds>(
+						std::chrono::system_clock::now().time_since_epoch()).count();
+		std::fprintf(stderr, "CTLTRACE %llu %.3f %s\n", wall_ms, emu_now(),
+				util::string_format(fmt, std::forward<Params>(args)...).c_str());
+		std::fflush(stderr);
+	}
+
+	// ---- cross-thread plumbing --------------------------------------------
+
+	// where a reply must go once the command has been applied
+	struct ack_ref
+	{
+		u64 conn = 0;           // 0 = no reply channel (legacy tail)
+		std::string seq = "-";  // "-" = fire-and-forget
+		steady_tp rx{};         // receipt stamp (the histogram's t0)
+
+		bool wants_reply() const { return conn != 0 && seq != "-"; }
+	};
+
+	// parsed by the socket thread (seq split only), applied by the emu thread
+	struct pending_cmd
+	{
+		u64 conn;
+		std::string seq;
+		std::string line;
+		steady_tp rx;
+	};
+
+	// ---- engine state (EMU THREAD ONLY beyond this point) -----------------
+
+	struct move_entry      // pending relative move (a QUEUE, not an accumulator)
+	{
+		long x, y;
+		ack_ref ack;       // fires when the entry is fully drained
+	};
+
+	struct key_entry       // one key edge awaiting the hold/gap-paced drain
+	{
+		std::string port;  // wire port name (resolved lazily, like the Lua drain)
+		std::string field;
+		int val;
+		ack_ref ack;
+	};
+
+	struct click_entry     // synthetic press/release, frame-counted like Lua ticks
+	{
+		int btn;           // 0=Left 1=Right 2=Middle
+		int val;
+		int frames;
+		ack_ref ack;       // rides the RELEASE entry; fires at its set_button
+	};
+
+	struct defer_entry     // action parked behind an in-flight MOVEA target
+	{
+		char kind;         // 'b' edge, 'c' click, 't' restated target
+		int btn = 0;
+		int val = 0;
+		int down_f = 0, up_f = 0;
+		long x = 0, y = 0;
+		ack_ref ack;
+		std::string seq = "-";  // for 't': the restating command's seq (EV routing)
+	};
+
+	struct target_state
+	{
+		long x, y;
+		int tries;
+		double t_next;
+		std::string seq;   // accepting command's seq, "-" if fire-and-forget
+	};
+
+	// ---- listener ----------------------------------------------------------
+
+	void start_listener(std::string const &path)
+	{
+		m_listen_fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+		if (m_listen_fd < 0)
+		{
+			std::fprintf(stderr, "ctlsock: socket() failed: %s\n", std::strerror(errno));
+			return;
+		}
+		sockaddr_un addr;
+		std::memset(&addr, 0, sizeof(addr));
+		addr.sun_family = AF_UNIX;
+		if (path.length() >= sizeof(addr.sun_path))
+		{
+			std::fprintf(stderr, "ctlsock: socket path too long: %s\n", path.c_str());
+			::close(m_listen_fd);
+			m_listen_fd = -1;
+			return;
+		}
+		std::strcpy(addr.sun_path, path.c_str());
+		::unlink(path.c_str());  // unlink-on-bind (design section 3); the launcher
+		                         // additionally pre-cleans a stale inode
+		if (::bind(m_listen_fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0
+				|| ::listen(m_listen_fd, 8) < 0)
+		{
+			std::fprintf(stderr, "ctlsock: bind/listen failed on %s: %s\n",
+					path.c_str(), std::strerror(errno));
+			::close(m_listen_fd);
+			m_listen_fd = -1;
+			return;  // FAIL LOUDLY, no fallback: with MAME_CTL_SOCK set the
+			         // launcher has dropped the Lua agent, so a dead listener
+			         // must be visible, not silently papered over
+		}
+		if (::pipe(m_wake_pipe) != 0)
+		{
+			std::fprintf(stderr, "ctlsock: pipe() failed: %s\n", std::strerror(errno));
+			::close(m_listen_fd);
+			m_listen_fd = -1;
+			return;
+		}
+		for (int i : { 0, 1 })
+			::fcntl(m_wake_pipe[i], F_SETFL, O_NONBLOCK);  // a full pipe is a wake too
+
+		// the banner is composed HERE, on the emu thread at init, so the
+		// socket thread never touches the machine. caps= declares intent
+		// from env; if the cursor-item walk later fails, MOVEA announces its
+		// open-loop degradation once (log + STAT movea_mode), the banner is
+		// not rewritten.
+		std::string caps = "natkbd,savest,shot,relatch";
+		if (!m_cursor_items.empty())
+			caps += ",movea";
+		if (!m_tail_path.empty())
+			caps += ",tail";
+		m_banner = util::string_format("HELLO %s %s %s caps=%s screen=%dx%d\n",
+				PROTO_ID, emulator_info::get_bare_build_version(),
+				m_machine.system().name, caps, int(m_surf_w), int(m_surf_h));
+
+		m_enabled = true;
+		m_tail_active = !m_tail_path.empty();
+		m_worker = std::thread([this] { worker(); });
+		std::fprintf(stderr, "ctlsock: listening on %s (tail=%s)\n",
+				path.c_str(), m_tail_active ? m_tail_path.c_str() : "off");
+		std::fflush(stderr);
+	}
+
+	void wake_worker()
+	{
+		if (m_wake_pipe[1] >= 0)
+		{
+			char const b = 'w';
+			if (::write(m_wake_pipe[1], &b, 1) < 0) { /* full pipe is a wake too */ }
+		}
+	}
+
+	void stop_worker()
+	{
+		if (!m_worker.joinable())
+			return;
+		m_stop.store(true);
+		wake_worker();
+		m_worker.join();
+		if (m_listen_fd >= 0)
+		{
+			::close(m_listen_fd);
+			m_listen_fd = -1;
+		}
+		for (int i : { 0, 1 })
+			if (m_wake_pipe[i] >= 0)
+			{
+				::close(m_wake_pipe[i]);
+				m_wake_pipe[i] = -1;
+			}
+	}
+
+	// ---- socket worker thread ---------------------------------------------
+	// Parses LINES (seq split) and enqueues; formats nothing but carries the
+	// pre-built banner. It never touches m_machine (design section 2).
+
+	struct connection
+	{
+		int fd;
+		u64 id;
+		std::string in;
+		std::string out;
+		bool overlong = false;  // discarding until the next newline
+		bool dead = false;
+	};
+
+	void worker()
+	{
+		std::vector<connection> conns;
+		u64 next_id = 1;
+
+		while (!m_stop.load())
+		{
+			std::vector<pollfd> pfds;
+			pfds.push_back({ m_listen_fd, POLLIN, 0 });
+			pfds.push_back({ m_wake_pipe[0], POLLIN, 0 });
+			for (connection &c : conns)
+				pfds.push_back({ c.fd, short(POLLIN | (c.out.empty() ? 0 : POLLOUT)), 0 });
+
+			if (::poll(pfds.data(), pfds.size(), -1) < 0)
+			{
+				if (errno == EINTR)
+					continue;
+				break;
+			}
+
+			if (pfds[1].revents & POLLIN)
+			{
+				char buf[64];
+				while (::read(m_wake_pipe[0], buf, sizeof(buf)) > 0) { }
+			}
+
+			// route queued outbound (replies + EV broadcasts) into per-conn buffers
+			{
+				std::lock_guard<std::mutex> lock(m_out_mutex);
+				for (auto &item : m_out_queue)
+				{
+					for (connection &c : conns)
+						if ((item.first == 0 || item.first == c.id) && c.out.size() < MAX_CONN_OUT)
+							c.out += item.second;
+				}
+				m_out_queue.clear();
+			}
+
+			// pfds[2+i] maps to conns[i] for the pre-accept population; the
+			// accept below only APPENDS, so mark-dead-then-sweep keeps the
+			// mapping stable
+			size_t const polled = pfds.size() - 2;
+			for (size_t i = 0; i < polled; ++i)
+			{
+				connection &c = conns[i];
+				pollfd const &p = pfds[2 + i];
+				if (p.revents & (POLLERR | POLLHUP | POLLNVAL))
+					c.dead = true;
+				if (!c.dead && (p.revents & POLLIN))
+					c.dead = !read_conn(c);
+				if (!c.dead && !c.out.empty())
+					c.dead = !flush_conn(c);
+				if (c.out.size() >= MAX_CONN_OUT)
+					c.dead = true;  // stalled reader: bound the backlog, drop
+			}
+
+			if (pfds[0].revents & POLLIN)
+			{
+				int const fd = ::accept(m_listen_fd, nullptr, nullptr);
+				if (fd >= 0)
+				{
+					::fcntl(fd, F_SETFL, O_NONBLOCK);  // a slow client must
+					                                   // never stall the worker
+					connection c{ fd, next_id++, std::string(), std::string() };
+					c.out = m_banner;
+					conns.push_back(std::move(c));
+					m_accepts.fetch_add(1);
+				}
+			}
+
+			for (size_t i = 0; i < conns.size(); )
+			{
+				if (conns[i].dead)
+				{
+					::close(conns[i].fd);
+					conns.erase(conns.begin() + i);
+				}
+				else
+					++i;
+			}
+			m_conns.store(conns.size());
+		}
+
+		// teardown: best-effort flush of pending replies (an EXIT ack must
+		// reach its client), then close everything
+		steady_tp const deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
+		{
+			std::lock_guard<std::mutex> lock(m_out_mutex);
+			for (auto &item : m_out_queue)
+				for (connection &c : conns)
+					if ((item.first == 0 || item.first == c.id) && c.out.size() < MAX_CONN_OUT)
+						c.out += item.second;
+			m_out_queue.clear();
+		}
+		for (connection &c : conns)
+		{
+			while (!c.out.empty() && std::chrono::steady_clock::now() < deadline)
+				if (!flush_conn(c))
+					break;
+			::close(c.fd);
+		}
+		m_conns.store(0);
+	}
+
+	// returns false when the connection died
+	bool read_conn(connection &c)
+	{
+		char buf[4096];
+		ssize_t const n = ::read(c.fd, buf, sizeof(buf));
+		if (n <= 0)
+			return n < 0 && (errno == EAGAIN || errno == EINTR);
+		c.in.append(buf, size_t(n));
+
+		size_t nl;
+		while ((nl = c.in.find('\n')) != std::string::npos)
+		{
+			std::string line = c.in.substr(0, nl);
+			c.in.erase(0, nl + 1);
+			if (!line.empty() && line.back() == '\r')
+				line.pop_back();
+			if (c.overlong)
+			{
+				c.overlong = false;  // discarded through the newline
+				continue;
+			}
+			if (line.empty())
+				continue;
+			enqueue_line(c.id, std::move(line));
+		}
+		if (c.in.size() > MAX_LINE)
+		{
+			c.overlong = true;
+			c.in.clear();
+			enqueue_line(c.id, std::string());  // empty => ERR badline from the drain
+		}
+		return true;
+	}
+
+	bool flush_conn(connection &c)
+	{
+		ssize_t const n = ::write(c.fd, c.out.data(), c.out.size());
+		if (n < 0)
+			return errno == EAGAIN || errno == EINTR;
+		c.out.erase(0, size_t(n));
+		return true;
+	}
+
+	void enqueue_line(u64 conn, std::string &&line)
+	{
+		pending_cmd cmd;
+		cmd.conn = conn;
+		cmd.rx = std::chrono::steady_clock::now();
+		if (line.empty())
+		{
+			cmd.seq = "0";
+			// empty verb => the drain replies ERR badline
+		}
+		else
+		{
+			size_t const sp = line.find(' ');
+			std::string const tok = line.substr(0, sp == std::string::npos ? line.size() : sp);
+			bool numeric = !tok.empty();
+			for (char ch : tok)
+				if (ch < '0' || ch > '9')
+					numeric = false;
+			if (numeric || tok == "-")
+			{
+				cmd.seq = tok;
+				cmd.line = (sp == std::string::npos) ? std::string() : line.substr(sp + 1);
+			}
+			else
+			{
+				cmd.seq = "0";  // no valid seq token: ERR badline under seq 0
+				cmd.line = std::string();
+			}
+		}
+		{
+			std::lock_guard<std::mutex> lock(m_in_mutex);
+			m_in_queue.push_back(std::move(cmd));
+		}
+	}
+
+	// ---- outbound (called on the emu thread) ------------------------------
+
+	void send_to(u64 conn, std::string const &payload)
+	{
+		{
+			std::lock_guard<std::mutex> lock(m_out_mutex);
+			m_out_queue.emplace_back(conn, payload);
+		}
+		wake_worker();
+	}
+
+	void reply_ok(ack_ref const &ack, std::string const &data = std::string())
+	{
+		if (ack.wants_reply())
+			send_to(ack.conn, data.empty()
+					? util::string_format("%s OK\n", ack.seq)
+					: util::string_format("%s OK %s\n", ack.seq, data));
+	}
+
+	void reply_err(ack_ref const &ack, char const *code, std::string const &text)
+	{
+		++m_errs;
+		if (ack.wants_reply())
+			send_to(ack.conn, util::string_format("%s ERR %s %s\n", ack.seq, code, text));
+	}
+
+	void reply_data(ack_ref const &ack, std::string const &text)
+	{
+		if (ack.wants_reply())
+			send_to(ack.conn, util::string_format("%s D %s\n", ack.seq, text));
+	}
+
+	void emit_ev(std::string const &line)
+	{
+		if (m_conns.load() > 0)
+			send_to(0, "EV " + line + "\n");
+	}
+
+	// receipt->apply histogram: the module's own pickup+apply contribution
+	// (t_rx at socket parse -> the moment the command's effect first reaches
+	// an engine or the machine). Pacing that follows (key hold/gap, MOVEA
+	// convergence) is ALGORITHM, not latency, and is deliberately outside
+	// the histogram — this is the A2 evidence STAT exports.
+	void hist_apply(ack_ref const &ack)
+	{
+		if (ack.rx == steady_tp{})
+			return;
+		double const ms = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - ack.rx).count();
+		static double const edge[7] = { 1, 2, 5, 10, 20, 50, 100 };
+		int b = 7;
+		for (int i = 0; i < 7; i++)
+			if (ms < edge[i])
+			{
+				b = i;
+				break;
+			}
+		++m_hist[b];
+	}
+
+	// ---- emu-thread drains -------------------------------------------------
+
+	void tick(s32)
+	{
+		++m_ticks;
+		// the running-machine latency path; while paused this timer is frozen
+		// and on_frame carries the pump (Stage-0 V3)
+		if (!m_enabled || !m_setup_done || m_machine.paused())
+			return;
+		drain_pass();
+	}
+
+	void on_frame()
+	{
+		++m_frames;
+		if (m_enabled)
+		{
+			// The FRAME notifier first fires from INSIDE running_machine::
+			// start() (video_manager's startup calls frame_update before the
+			// machine is fully constructed — natkeyboard() does not exist
+			// yet; measured as a startup SIGSEGV, not a theory). Defer setup
+			// and every engine until the machine reaches RUNNING. The Lua
+			// agent had this guarantee for free: emu.register_periodic only
+			// fires once the machine runs.
+			if (!m_setup_done && m_machine.phase() != machine_phase::RUNNING)
+				return;
+			if (!m_setup_done)
+				setup();
+			// Lua agent_tick order, kept verbatim: esc -> probe -> clicks ->
+			// poll. A file-parsed CLICK enqueues THIS frame and takes its
+			// press edge on the NEXT click_frame (process_queue runs before
+			// poll() in the Lua agent), and when PROBE and a click land on
+			// the same frame the click's set_button wins, as it does there.
+			esc_frame();
+			probe_frame();
+			click_frame();     // Lua process_queue: click hold/release in FRAMES
+			poll_cmd_file();   // legacy tail rides the frame drain (design section 7:
+			                   // legacy writers were tick-quantised anyway)
+			if (m_machine.paused())
+				drain_pass();  // the paused pump: ~40-50 ms pickup, documented
+			stats_frame();
+		}
+		heartbeat();
+	}
+
+	void on_pause()  { emit_ev("PAUSED"); }
+	void on_resume() { emit_ev("RESUMED"); }
+
+	void on_exit()
+	{
+		std::fprintf(stderr,
+				"ctlsock: exit frames=%llu ticks=%llu accepts=%llu cmds=%llu sig=%08x entries=%d\n",
+				ull(m_frames), ull(m_ticks), ull(m_accepts.load()), ull(m_cmds),
+				computed_signature(), m_machine.save().registration_count());
+		std::fflush(stderr);
+		stop_worker();
+		if (m_tail_fp)
+		{
+			std::fclose(m_tail_fp);
+			m_tail_fp = nullptr;
+		}
+	}
+
+	// SAVEST/LOADST completion markers (see init())
+	void on_state_presave()  { ++m_presaves; }
+
+	void on_state_postload()
+	{
+		++m_postloads;
+		if (m_setup_done)
+			reseed_after_restore();
+		else
+			m_reseed_pending = true;  // startup -state restore can land before
+			                          // the first frame's setup(); setup seeds
+			                          // from the restored items in that case
+	}
+
+	// ---- setup -------------------------------------------------------------
+	// Runs on the first frame, like the Lua agent's first periodic tick: save
+	// registration has closed and the entry list is sorted, so save-item
+	// handles resolved here are final for the session.
+
+	void setup()
+	{
+		m_setup_done = true;
+
+		natural_keyboard &nat = m_machine.natkeyboard();
+		nat.set_in_use(true);
+
+		// pointer ports by tag suffix (default :hle_ps2_mouse — see header)
+		for (auto const &p : m_machine.ioport().ports())
+		{
+			std::string const &tag = p.first;
+			if (has_suffix(tag, m_ptr_suffix + ":mouse_buttons"))
+				m_btn_port = p.second.get();
+			else if (has_suffix(tag, m_ptr_suffix + ":mouse_x_axis"))
+				m_x_port = p.second.get();
+			else if (has_suffix(tag, m_ptr_suffix + ":mouse_y_axis"))
+				m_y_port = p.second.get();
+		}
+		if (m_btn_port)
+			for (ioport_field &f : m_btn_port->fields())
+			{
+				std::string const n = f.name();
+				if (n == "Left Button")
+					m_btn_field[0] = &f;
+				else if (n == "Right Button")
+					m_btn_field[1] = &f;
+				else if (n == "Middle Button")
+					m_btn_field[2] = &f;
+			}
+		if (m_x_port)
+			for (ioport_field &f : m_x_port->fields())
+				if (f.name() == "Mouse X")
+					m_x_field = &f;
+		if (m_y_port)
+			for (ioport_field &f : m_y_port->fields())
+				if (f.name() == "Mouse Y")
+					m_y_field = &f;
+
+		// MOVEA's SENSOR: raw handles onto the hardware-cursor registers
+		// (on irix: the Newport VC2's m_cursor_x/y — upstream save items
+		// since forever). Reading them turns pointer motion from dead
+		// reckoning into a closed loop.
+		if (!m_cursor_items.empty())
+		{
+			std::string sx, sy, se;
+			size_t const c1 = m_cursor_items.find(',');
+			size_t const c2 = (c1 == std::string::npos) ? std::string::npos : m_cursor_items.find(',', c1 + 1);
+			if (c1 != std::string::npos)
+			{
+				sx = m_cursor_items.substr(0, c1);
+				sy = (c2 == std::string::npos) ? m_cursor_items.substr(c1 + 1)
+						: m_cursor_items.substr(c1 + 1, c2 - c1 - 1);
+				if (c2 != std::string::npos)
+					se = m_cursor_items.substr(c2 + 1);
+			}
+			if (!sx.empty())
+				m_cur_x = find_item(sx);
+			if (!sy.empty())
+				m_cur_y = find_item(sy);
+			if (!se.empty())
+				m_cur_en = find_item(se);
+		}
+		if (!m_swap_items.empty())
+		{
+			size_t const c1 = m_swap_items.find(',');
+			size_t const c2 = (c1 == std::string::npos)
+					? std::string::npos : m_swap_items.find(',', c1 + 1);
+			if (c2 != std::string::npos)
+			{
+				m_cs_seq = find_item(m_swap_items.substr(0, c1));
+				m_cs_dx = find_item(m_swap_items.substr(c1 + 1, c2 - c1 - 1));
+				m_cs_dy = find_item(m_swap_items.substr(c2 + 1));
+			}
+		}
+		m_movea_ok = m_cur_x.ok() && m_cur_y.ok();
+		swap_rebase();
+		if (m_movea_ok)
+		{
+			// engine V2 initial anchor: a trusted boot reading seats the
+			// belief; otherwise it starts at 0,0 and the first settle
+			// verification walks it in
+			long rpx = 0, rpy = 0;
+			bool tr = false;
+			if (reading_now(rpx, rpy, tr) && tr)
+			{
+				m_bx = clamp_px_x(rpx);
+				m_by = clamp_px_y(rpy);
+			}
+		}
+
+		// the device counters the postload re-seed reads (Stage-0 binding):
+		// hle_ps2_mouse differentiates its next sample against m_mouse_x/y
+		m_dev_mx = find_item(m_ptr_suffix + "/0/m_mouse_x");
+		m_dev_my = find_item(m_ptr_suffix + "/0/m_mouse_y");
+
+		if (m_reseed_pending)
+		{
+			m_reseed_pending = false;
+			reseed_after_restore();
+		}
+		// else: FRESH-BOOT SEEDING STAYS 0, and that is not cosmetic — the
+		// device seeds m_mouse_x from these very ioports (default 0) at reset
+		// and the guest's last boot-time mouse command freezes it there; a
+		// nonzero seed presents a ~full-range delta to a 9-bit wire field on
+		// the session's first move (measured: OVERFLOW dx=-32668).
+		// See irixagent.lua's accumulator commentary — ported verbatim.
+
+		std::fprintf(stderr,
+				"ctlsock: setup btns=%d axes=%d movea=%d devxy=%d swap=%d "
+				"sig=%08x entries=%d\n",
+				(m_btn_field[0] != nullptr), (m_x_field && m_y_field), int(m_movea_ok),
+				(m_dev_mx.ok() && m_dev_my.ok()),
+				int(m_cs_seq.ok() && m_cs_dx.ok() && m_cs_dy.ok()),
+				computed_signature(), m_machine.save().registration_count());
+		std::fflush(stderr);
+	}
+
+	save_item_handle find_item(std::string const &suffix) const
+	{
+		save_item_handle h;
+		save_manager &sm = m_machine.save();
+		for (int i = 0; i < sm.registration_count(); i++)
+		{
+			void *base;
+			u32 valsize, valcount, blockcount, stride;
+			char const *const name = sm.indexed_item(i, base, valsize, valcount, blockcount, stride);
+			if (!name)
+				break;
+			if (has_suffix(name, suffix))
+			{
+				h.base = base;
+				h.size = valsize;
+				h.count = std::max(1u, valcount) * std::max(1u, blockcount);
+				return h;
+			}
+		}
+		return h;
+	}
+
+	// After ANY restore (LOADST, or the launcher's startup -state): re-seed
+	// the pointer accumulator FROM THE RESTORED DEVICE STATE, not 0, and slam
+	// the analog fields to it so the device's next 100 Hz sample differences
+	// to zero. The ioport fields themselves have no save entries, so after a
+	// restore they revert to defaults while the device's m_mouse_x/y hold the
+	// restored counters — the mismatch is exactly the post-restore transient
+	// Stage-0 measured (accumulator ringing for seconds, queued=4700,
+	// give-ups). Postload callbacks run before the scheduler resumes, so the
+	// slam always beats the device's next sample. In-flight paced state is
+	// meaningless across a restore and is dropped (owners get ERR busy).
+	void reseed_after_restore()
+	{
+		// A RESTORE IS NOT MOTION AND NOT A GLYPH CHANGE. It rewrites the
+		// cursor registers, the sprite, the swap accumulators and the device
+		// accumulators in one step, so nothing sampled before it can be
+		// differenced against anything after. Re-baseline and re-observe
+		// from scratch; the golden parks a plain arrow, the glyph the CAL
+		// constants calibrate.
+		swap_rebase();
+		m_infl_x = 0.0;
+		m_infl_y = 0.0;
+		m_obs_valid = false;
+		if (m_dev_mx.ok() && m_dev_my.ok())
+		{
+			m_mx = long(u16(m_dev_mx.read()));
+			m_my = long(u16(m_dev_my.read()));
+		}
+		else
+		{
+			m_mx = 0;
+			m_my = 0;
+		}
+		if (m_x_field)
+			m_x_field->set_value(u32(m_mx));
+		if (m_y_field)
+			m_y_field->set_value(u32(m_my));
+		// engine V2: the restored VC2 registers ARE the restored pointer
+		// (goldens park a plain arrow cursor) — anchor the belief there and
+		// zero the bias; without a trusted reading the belief resets to 0,0
+		// (deterministic; the first settle verification walks it in)
+		{
+			long rpx = 0, rpy = 0;
+			bool tr = false;
+			if (reading_now(rpx, rpy, tr) && tr)
+			{
+				m_bx = clamp_px_x(rpx);
+				m_by = clamp_px_y(rpy);
+			}
+			else
+			{
+				m_bx = 0;
+				m_by = 0;
+			}
+			m_bias_x = 0;
+			m_bias_y = 0;
+		}
+		// the learned gain describes the guest screen the session was ON
+		// (chooser accel vs desktop 1:1), which the restored state need not
+		// match: deterministic 1.0, the first big epoch re-learns
+		m_gx = 1.0;
+		m_gy = 1.0;
+		// deterministic button state: all up (streamhost resets its button
+		// diff on reconnect for the same reason; goldens park buttons-up)
+		for (ioport_field *f : m_btn_field)
+			if (f)
+				f->set_value(0);
+		if (m_btn_port)
+			m_btn_port->frame_update();
+
+		drop_paced_state("dropped by state load");
+		m_machine.natkeyboard().set_in_use(true);
+		++m_reseeds;
+		trace("reseed n=%s mx=%d my=%d B=%d,%d gain=1.00,1.00",
+				std::to_string(m_reseeds), int(m_mx), int(m_my), int(m_bx), int(m_by));
+	}
+
+	void drop_paced_state(char const *why)
+	{
+		for (move_entry const &e : m_mq)
+			reply_err(e.ack, "busy", why);
+		m_mq.clear();
+		for (key_entry const &e : m_kq)
+			reply_err(e.ack, "busy", why);
+		m_kq.clear();
+		m_kwant.clear();
+		for (click_entry const &e : m_clickq)
+			reply_err(e.ack, "busy", why);
+		m_clickq.clear();
+		m_click_cur_active = false;
+		for (defer_entry const &e : m_aq)
+			reply_err(e.ack, "busy", why);
+		m_aq.clear();
+		// an in-flight target is cancelled WITHOUT a verdict (its accept ack
+		// went out long ago; no EV MOVEA is emitted for a load-cancelled target)
+		m_ta_active = false;
+		target_reset();
+		m_latch_valid = false;
+		m_latch_seen = false;
+		swap_rebase();
+		m_rest_t = -1.0;
+		m_obs_valid = false;
+		m_infl_x = 0.0;
+		m_infl_y = 0.0;
+		for (ack_ref const &s : m_syncs)
+			reply_err(s, "busy", why);
+		m_syncs.clear();
+		m_win_t0 = -1.0;
+		m_k_next = -1.0;
+		m_esc_frames = 0;
+		m_probe_frames = 0;
+	}
+
+	// ---- the drain pass (order ported from irixagent.lua's agent_tick) ----
+
+	void drain_pass()
+	{
+		process_commands();
+		// Hotspot first: a cursor swap the guest has just made changes where
+		// the pointer IS relative to the reading, so the step below has to
+		// size itself against the corrected offset, not the stale one.
+		glyph_sample();
+		// after command intake so a MOVEA parsed this pass takes its first
+		// step this pass, and before drain_move so that step reaches the
+		// ioport this pass — the no-added-latency-for-the-common-case rule
+		movea_step();
+		movea_rest();
+		drain_move();
+		drain_keys();
+		check_syncs();
+	}
+
+	void process_commands()
+	{
+		std::deque<pending_cmd> batch;
+		{
+			std::lock_guard<std::mutex> lock(m_in_mutex);
+			batch.swap(m_in_queue);
+		}
+		for (pending_cmd &cmd : batch)
+		{
+			++m_cmds;
+			if (cmd.conn == 0)
+				++m_file_cmds;
+			exec_cmd(cmd);
+		}
+	}
+
+	// ---- pointer engine (algorithm-identical port of irixagent.lua) -------
+	//
+	// IPT_MOUSE_X/Y are RELATIVE: the device differentiates successive field
+	// values, so we keep our own accumulators and hand it a moving absolute
+	// number, wrapping in the field's 16-bit space.
+
+	void move_rel(long dx, long dy)
+	{
+		if (!m_x_field || !m_y_field)
+			return;
+		// engine V2 dead reckoning: EVERY issued count moves the belief —
+		// in PX through the learned gain — clamped to the screen exactly
+		// as the guest clamps the pointer. Counts issued while a MOVEA
+		// belief is BOOKKEEPING ONLY under V7 (STAT, and the open-loop
+		// degradation used when the cursor registers cannot be read): the
+		// closed loop sizes every step from the reading, never from B.
+		m_bx = clamp_px_x(m_bx + long(std::llround(double(dx) * m_gx)));
+		m_by = clamp_px_y(m_by + long(std::llround(double(dy) * m_gy)));
+		// The un-landed ledger is fed HERE, not from the MOVEA step: this is
+		// the one choke point every count passes through, whoever issued it.
+		// Feeding it from the step alone missed MOVEP, MOVE and the sink's
+		// one-time homing slam — and the slam is precisely what then got
+		// booked as a cursor hotspot (measured: d=-178 against a ledger
+		// holding only the 62 px the step path knew about).
+		m_ax += std::abs(dx);
+		m_ay += std::abs(dy);
+		m_cum_ax += std::abs(dx);
+		m_cum_ay += std::abs(dy);
+		m_mx = ((m_mx + dx) % 65536 + 65536) % 65536;
+		m_my = ((m_my + dy) % 65536 + 65536) % 65536;
+		m_x_field->set_value(u32(m_mx));
+		m_y_field->set_value(u32(m_my));
+		// analog path: set_value lands in m_adjoverride and the very next
+		// ioport read returns it — no re-latch needed (design section 2)
+	}
+
+	// PACED relative move. The budget is per EMULATED-TIME WINDOW, not per
+	// drain call: this drain runs far more often than the device's 100 Hz
+	// sampler, and a per-call budget merges several steps into one oversized
+	// device delta (measured on the Lua agent: a -8192 homing slam plus a
+	// +200 move produced +148 px instead of a corner slam). MOVE_STEP=120
+	// per 40 ms window leaves room for two windows to merge into one device
+	// sample and still stay inside the +-255 wire field (the hle-ps2-mouse
+	// carry patch clamps+carries anything larger).
+	//
+	// Pending moves are a QUEUE drained head-first, not one accumulator: an
+	// edge-clamp overshoot must die against the guest's clamp, not cancel
+	// counts of the next real move (measured: 13 px short otherwise).
+	//
+	// (Two overloads, not a default argument: GCC rejects `ack = ack_ref()`
+	// as a default while the enclosing class is incomplete, because ack_ref
+	// carries default member initializers. A member-function body is a
+	// complete-class context, so the forwarding overload is legal.)
+	void move_paced(long dx, long dy) { move_paced(dx, dy, ack_ref()); }
+
+	void move_paced(long dx, long dy, ack_ref ack)
+	{
+		if (dx == 0 && dy == 0)
+		{
+			// zero counts move nothing; queueing one would park the head-first
+			// drain forever (its budget share is always 0). Guest-visible
+			// behavior is identical to the Lua agent, which is never sent one.
+			hist_apply(ack);
+			reply_ok(ack);
+			return;
+		}
+		m_qx += std::abs(dx);
+		m_qy += std::abs(dy);
+		m_mq.push_back(move_entry{ dx, dy, std::move(ack) });
+	}
+
+	long clamp_budget(long pend, long used) const
+	{
+		long const room = m_move_step - used;
+		if (room <= 0)
+			return 0;
+		return std::max(-room, std::min(room, pend));
+	}
+
+	void drain_move()
+	{
+		if (m_mq.empty())
+			return;
+		double const now = emu_now();
+		if (m_win_t0 < 0 || (now - m_win_t0) >= m_move_window)
+		{
+			m_win_t0 = now;
+			m_win_x = 0;
+			m_win_y = 0;
+		}
+		while (!m_mq.empty())
+		{
+			move_entry &h = m_mq.front();
+			long const sx = clamp_budget(h.x, m_win_x);
+			long const sy = clamp_budget(h.y, m_win_y);
+			if (sx == 0 && sy == 0)
+				return;
+			m_win_x += std::abs(sx);
+			m_win_y += std::abs(sy);
+			h.x -= sx;
+			h.y -= sy;
+			move_rel(sx, sy);
+			if (h.x == 0 && h.y == 0)
+			{
+				hist_apply(h.ack);
+				reply_ok(h.ack);  // MOVEP acks when its entry is fully drained
+				m_mq.pop_front();
+			}
+		}
+	}
+
+	// ---- key engine (matrix ports, never natkeyboard — see irixagent.lua
+	// for why natkeyboard:post drops every shifted character on this tile).
+	// A FIFO drained at most one edge per pass, never faster than KEY_HOLD
+	// (after a press) / KEY_GAP (after a release) of EMULATED time; setting
+	// a field down and up inside one device scan is invisible to the guest.
+
+	void key_enqueue(std::string port, std::string field, int val, ack_ref ack)
+	{
+		// coalesce against the queued state, not the applied one: browser
+		// auto-repeat resends keydown with no keyup, and IRIX does its own
+		// repeat from the held matrix bit. Lua parity, exactly
+		// `(kwant[name] or 0) == val`: a field never enqueued counts as
+		// RELEASED, so a stray first KEY 0 (keyup for a key pressed before
+		// the session attached) coalesces too instead of burning a KEY_GAP
+		// pacing slot on a no-op edge.
+		auto const it = m_kwant.find(field);
+		int const want = (it != m_kwant.end()) ? it->second : 0;
+		if (want == val)
+		{
+			hist_apply(ack);
+			reply_ok(ack, "coalesced");
+			return;
+		}
+		m_kwant[field] = val;
+		m_kq.push_back(key_entry{ std::move(port), std::move(field), val, std::move(ack) });
+	}
+
+	void drain_keys()
+	{
+		if (m_kq.empty())
+			return;
+		double const now = emu_now();
+		if (m_k_next >= 0 && now < m_k_next)
+			return;
+		key_entry e = std::move(m_kq.front());
+		m_kq.pop_front();
+		ioport_port *const pt = resolve_port(e.port);
+		ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;
+		if (f)
+		{
+			f->set_value(u32(e.val));
+			pt->frame_update();  // mid-frame re-latch (V6-proven on the button
+			                     // port; kbd matrix re-checked in the harness)
+			trace("verb KEY seq=%s %s|%s=%d applied", e.ack.seq, e.port, e.field, e.val);
+			hist_apply(e.ack);
+			reply_ok(e.ack);
+		}
+		else
+			reply_err(e.ack, "noport", "no port/field " + e.port + " | " + e.field);
+		m_k_next = now + (e.val == 1 ? m_key_hold : m_key_gap);
+	}
+
+	// wire port name -> ioport_port: exact tag when it starts with ':',
+	// else suffix-match ":"+name (tile-agnostic; the irix wire carries
+	// "P1.7" and the port lives at :ioc2:kbd:ms_naturl:P1.7)
+	ioport_port *resolve_port(std::string const &name)
+	{
+		auto const cached = m_port_cache.find(name);
+		if (cached != m_port_cache.end())
+			return cached->second;
+		ioport_port *found = nullptr;
+		auto const &plist = m_machine.ioport().ports();
+		if (!name.empty() && name[0] == ':')
+		{
+			auto const it = plist.find(name);
+			if (it != plist.end())
+				found = it->second.get();
+		}
+		else
+		{
+			std::string const suffix = ":" + name;
+			for (auto const &p : plist)
+				if (has_suffix(p.first, suffix))
+				{
+					found = p.second.get();
+					break;
+				}
+		}
+		m_port_cache[name] = found;  // negative results cached too
+		return found;
+	}
+
+	static ioport_field *find_field(ioport_port *port, std::string const &name)
+	{
+		for (ioport_field &f : port->fields())
+			if (f.name() == name)
+				return &f;
+		return nullptr;
+	}
+
+	// ---- buttons -----------------------------------------------------------
+
+	void set_button(int btn, int val)
+	{
+		ioport_field *const f = m_btn_field[btn];
+		if (!f)
+			return;
+		f->set_value(u32(val));
+		if (m_btn_port)
+			m_btn_port->frame_update();  // V6: applied immediately mid-frame
+	}
+
+	// Every button verb routes through these so a click can wait for the
+	// cursor: while a MOVEA target is converging, button verbs are deferred
+	// (in arrival order) and released when the target completes — the common
+	// mobile TAP is a sizeable jump with DOWN1/UP1 right behind it, and
+	// applied at parse time they would click mid-flight.
+	void btn_edge(int btn, int val, ack_ref ack)
+	{
+		if (m_ta_active)
+		{
+			defer_entry d;
+			d.kind = 'b';
+			d.btn = btn;
+			d.val = val;
+			d.ack = std::move(ack);
+			m_aq.push_back(std::move(d));
+		}
+		else
+		{
+			set_button(btn, val);
+			trace("verb BTN seq=%s btn=%d val=%d applied=immediate", ack.seq, btn, val);
+			hist_apply(ack);
+			reply_ok(ack);
+		}
+	}
+
+	void btn_click(int btn, int down_f, int up_f, ack_ref ack)
+	{
+		if (m_ta_active)
+		{
+			defer_entry d;
+			d.kind = 'c';
+			d.btn = btn;
+			d.down_f = down_f;
+			d.up_f = up_f;
+			d.ack = std::move(ack);
+			m_aq.push_back(std::move(d));
+		}
+		else
+			enqueue_click(btn, down_f, up_f, std::move(ack));
+	}
+
+	void enqueue_click(int btn, int down_f, int up_f, ack_ref ack)
+	{
+		m_clickq.push_back(click_entry{ btn, 1, down_f, ack_ref() });
+		m_clickq.push_back(click_entry{ btn, 0, up_f, std::move(ack) });
+	}
+
+	// Lua process_queue: clicks hold/release in FRAMES (the Lua periodic was
+	// frame-locked — Stage-0 V1 — so its "ticks" are frames; counting frames
+	// here keeps click durations identical to the shipped behavior)
+	void click_frame()
+	{
+		if (!m_click_cur_active && !m_clickq.empty())
+		{
+			m_click_cur = std::move(m_clickq.front());
+			m_clickq.pop_front();
+			m_click_cur_active = true;
+			set_button(m_click_cur.btn, m_click_cur.val);
+			trace("verb CLICK btn=%d val=%d frames=%d applied",
+					m_click_cur.btn, m_click_cur.val, m_click_cur.frames);
+			hist_apply(m_click_cur.ack);
+			reply_ok(m_click_cur.ack);  // CLICKn acks when its release edge applies
+			m_click_cur.ack = ack_ref();
+		}
+		if (m_click_cur_active)
+		{
+			if (--m_click_cur.frames <= 0)
+				m_click_cur_active = false;
+		}
+	}
+
+	// ---- MOVEA engine V7: reading-closed loop ------------------------------
+	// Targets are emulated framebuffer pixels; the reading is
+	// cursor_register + CAL (the registers hold the sprite's bottom-right
+	// corner, so the standard arrow hotspot puts the pointer at reg-31 on
+	// both axes, and a glyph with a different hotspot reads up to ~16 px
+	// off — see THE LATCH over movea_step).
+	//
+	// The control law itself, its measured motivation, and the three rules
+	// that keep it from overshooting are documented in one block directly
+	// above movea_step(). What lives here is the shared machinery: target
+	// acceptance and coalescing, the defer queue that parks button edges
+	// behind a converging target, and the open-loop degradation used when
+	// the cursor registers cannot be read at all.
+	//
+	// V2-V6 (dead-reckoned belief + settle-time verification, gain learned
+	// at settle, hot-target hold-off, one-shot exact close) are GONE. They
+	// are recoverable from git; do not reintroduce a control path that
+	// issues counts from a belief rather than from the reading.
+
+	long clamp_px_x(long v) const { return std::max(0L, std::min(m_surf_w - 1, v)); }
+	long clamp_px_y(long v) const { return std::max(0L, std::min(m_surf_h - 1, v)); }
+
+	// pixel-space reading; trusted only while the cursor is displayed (a
+	// hidden cursor's registers do not track the pointer)
+	bool reading_now(long &rpx, long &rpy, bool &trusted) const
+	{
+		if (!m_cur_x.ok() || !m_cur_y.ok())
+			return false;
+		rpx = long(m_cur_x.read()) + m_cal_x;
+		rpy = long(m_cur_y.read()) + m_cal_y;
+		trusted = !m_cur_en.ok() || m_cur_en.read() != 0;
+		return true;
+	}
+
+	// Per-target bookkeeping. The in-flight estimate and the observation
+	// anchor deliberately SURVIVE a target change: counts already on the
+	// wire do not care which target queued them, and a sweep retargets
+	// faster than the guest absorbs.
+	void target_reset()
+	{
+		m_windows = 0;
+		m_osc_sx = 0;
+		m_osc_sy = 0;
+		m_osc_nx = 0;
+		m_osc_ny = 0;
+	}
+
+	void epoch_start(long x, long y, std::string seq)
+	{
+		m_ta = target_state{ x, y, m_movea_tries, -1.0, std::move(seq) };
+		m_ta_active = true;
+		trace("epoch seq=%s tgt=%d,%d r=%d,%d gain=%.2f,%.2f",
+				m_ta.seq, int(x), int(y), int(m_obs_x), int(m_obs_y), m_gx, m_gy);
+		target_reset();
+	}
+
+	void movea_target(long x, long y, std::string seq, ack_ref const &ack)
+	{
+		x = std::max(0L, std::min(m_surf_w - 1, x));
+		y = std::max(0L, std::min(m_surf_h - 1, y));
+		hist_apply(ack);
+		reply_ok(ack);  // MOVEA acks on target-accept; completion is EV MOVEA
+		trace("verb MOVEA seq=%s tgt=%d,%d", seq, int(x), int(y));
+
+		if (!m_movea_ok)
+		{
+			// Degraded mode (cursor items unavailable/unconfigured): each
+			// target is a DELTA from the previous one — open-loop dead
+			// reckoning — announced ONCE so nobody debugs a "converging"
+			// loop that cannot read the cursor.
+			if (!m_fb_logged)
+			{
+				m_fb_logged = true;
+				std::fprintf(stderr, "ctlsock: MOVEA unsupported (no cursor items); "
+						"interpreting MOVEA as open-loop relative from the last target\n");
+				std::fflush(stderr);
+			}
+			if (!m_fl_valid)
+			{
+				// no origin yet: home into the top-left clamp first, like the
+				// streamhost sink's one-time slam, then move as if from (0,0).
+				// TWO queue entries on purpose — the overshoot must die
+				// against the guest's edge clamp before the real move starts;
+				// and the slam is a whole number of windows so its tail can
+				// never merge into the real move's first window (measured in
+				// the Lua sim harness: 2048 % 120 = 8 px short, permanently)
+				move_paced(-(18 * m_move_step), -(18 * m_move_step));
+				move_paced(x, y);
+			}
+			else
+				move_paced(x - m_flx, y - m_fly);
+			m_flx = x;
+			m_fly = y;
+			m_fl_valid = true;
+			return;
+		}
+
+		if (!m_ta_active)
+			epoch_start(x, y, std::move(seq));
+		else if (m_aq.empty())
+		{
+			// Nothing deferred behind the pending target: latest-wins. A
+			// finger in motion streams targets faster than they converge,
+			// so a value change gets a fresh window budget and a fresh
+			// oscillation history; the superseded target gets no EV.
+			// t_next is deliberately NOT reset — the one-step-per-window
+			// cadence is what keeps the loop from issuing counts it has not
+			// yet seen land.
+			if (x != m_ta.x || y != m_ta.y)
+			{
+				m_ta.x = x;
+				m_ta.y = y;
+				target_reset();
+			}
+			m_ta.seq = std::move(seq);
+			trace("retarget seq=%s tgt=%d,%d r=%d,%d infl=%.1f,%.1f",
+					m_ta.seq, int(x), int(y), int(m_obs_x), int(m_obs_y),
+					m_infl_x, m_infl_y);
+		}
+		else
+		{
+			defer_entry *const tail = &m_aq.back();
+			if (tail->kind == 't')
+			{
+				tail->x = x;
+				tail->y = y;
+				tail->seq = std::move(seq);
+			}
+			else
+			{
+				defer_entry d;
+				d.kind = 't';
+				d.x = x;
+				d.y = y;
+				d.seq = std::move(seq);
+				m_aq.push_back(std::move(d));
+			}
+		}
+	}
+
+	// Complete the in-flight target and release what queued behind it, up to
+	// the next target (which then takes over). A restated give-up target
+	// INHERITS the verdict: streamhost restates the target before every
+	// button edge on purpose, so a pinned cursor would otherwise park each
+	// click behind a fresh full cap — no new information can exist in the
+	// same instant the original verdict was reached. A LATER fresh target
+	// starts clean, which is what lets the loop recover when a grab lifts.
+	void movea_done(long ex, long ey, bool gaveup)
+	{
+		long const tx = m_ta.x, ty = m_ta.y;
+		std::string const done_seq = m_ta.seq;
+		m_res_x = ex;
+		m_res_y = ey;
+		if (gaveup)
+			++m_giveups;
+		m_ta_active = false;
+		trace("done seq=%s %s res=%d,%d", done_seq.empty() ? "-" : done_seq,
+				gaveup ? "gaveup" : "converged", int(ex), int(ey));
+		if (!done_seq.empty())
+			emit_ev(util::string_format("MOVEA %s %s %d %d",
+					done_seq, gaveup ? "gaveup" : "converged", int(ex), int(ey)));
+
+		while (!m_aq.empty())
+		{
+			defer_entry a = std::move(m_aq.front());
+			m_aq.pop_front();
+			if (a.kind == 'b')
+			{
+				// DEFERRED-EDGE PACING (v6): edges released here route
+				// through the click pacer (>= 2 emulated frames apart),
+				// never applied back-to-back in this drain — a DOWN+UP
+				// pair landing inside one 10 ms PS/2 sample window is
+				// invisible to the guest (the dead chooser clicks). The
+				// ack fires when the edge actually applies (click_frame).
+				trace("verb BTN seq=%s btn=%d val=%d applied=defer-paced",
+						a.ack.seq, a.btn, a.val);
+				m_clickq.push_back(click_entry{ a.btn, a.val, 2, std::move(a.ack) });
+			}
+			else if (a.kind == 'c')
+				enqueue_click(a.btn, a.down_f, a.up_f, std::move(a.ack));
+			else if (!m_movea_ok)
+			{
+				// the closed loop died with targets still queued: apply them
+				// open-loop so neither the motion nor the buttons behind it
+				// are ever dropped
+				move_paced(a.x - m_flx, a.y - m_fly);
+				m_flx = a.x;
+				m_fly = a.y;
+				m_fl_valid = true;
+			}
+			else if (gaveup && std::abs(a.x - tx) <= 1 && std::abs(a.y - ty) <= 1)
+			{
+				// the target that just GAVE UP, restated: inherits the verdict
+				++m_giveups;
+				emit_ev(util::string_format("MOVEA %s gaveup %d %d", a.seq, int(ex), int(ey)));
+			}
+			else
+			{
+				epoch_start(a.x, a.y, std::move(a.seq));
+				break;
+			}
+		}
+	}
+
+	// ---- MOVEA engine V7: closed loop over the reading --------------------
+	//
+	// V7 restores the Lua agent's control law and demotes the V5/V6 gain
+	// model to a STEP SIZER. V2-V6 dead-reckoned a belief (B += counts*gain)
+	// and consulted the reading only at a settle; while the target kept
+	// changing — i.e. for the whole of any real mouse sweep — the settle
+	// never ran, so gain error accumulated with NO BOUND. Measured in the
+	// field: belief 1228,997 with the pointer actually at 649,516, the engine
+	// issuing nothing because B said it had already arrived. A steady 200 px
+	// host sweep landed 100 px and a 500 px sweep 250 px — the guest's true
+	// counts->px ratio during a sweep is nothing like the ~1.9 that the login
+	// chooser's small accelerated corrections taught the learner.
+	//
+	// So the reading is consulted EVERY window and the error recomputed from
+	// it:  err = target - reading - in-flight.  A wrong gain now costs
+	// convergence SPEED, never accuracy — it sizes the step and the in-flight
+	// estimate, and both are re-derived from the truth one window later. That
+	// is exactly why the Lua agent tracked well with no gain model at all: it
+	// walked the measured error down at MOVE_STEP per window. V7 keeps that
+	// guarantee and adds the gain-sized step, so a large error closes in ONE
+	// window instead of ceil(err/MOVE_STEP) — which is what the rubber-band
+	// at the end of a fast sweep actually was.
+	//
+	// USER-SET DESIGN CONSTRAINT, BINDING: never extrapolate the guest cursor
+	// ahead of real movement. Steps are sized against gain*MARGIN so even a
+	// full-gain guest cannot pass the target; in-flight px are subtracted
+	// before sizing so counts already on the wire are never issued twice; and
+	// a step may never oppose the sign of the MEASURED error.
+	//
+	// IN-FLIGHT. The reading trails issuance by about a window (the paced
+	// queue drains over one MOVE_WINDOW; the device samples at 100 Hz) but
+	// not by a CONSTANT — the chooser's X server showed multi-window dead
+	// time. Issued px are therefore held in m_infl, retired by every observed
+	// pixel and decayed geometrically (MAME_CTL_INFL_DECAY), so a gain
+	// OVER-estimate cannot park a phantom balance in front of the loop
+	// forever. Decay < 1 makes the term self-clearing within a few windows;
+	// the closed loop re-derives the truth either way.
+	//
+	// THE RESIZE-CURSOR "repelling magnet" the Lua loop had is killed by
+	// measuring the glyph hotspot (see the block over glyph_sample), not by
+	// refusing to correct. V7 originally latched per TARGET VALUE — a target
+	// equal to the last accepted one completed without issuing — and that
+	// was wrong: the pointer LEAVES a position, so a target it had converged
+	// on minutes ago completed instantly from 237 px away (measured live,
+	// seq 130). A target is finished when the READING says so, never because
+	// its coordinates look familiar. The remaining backstop against a limit
+	// cycle is the per-target oscillation detector below.
+
+	// One closed-loop step per MOVE_WINDOW while a target is active.
+	void movea_step()
+	{
+		if (!m_ta_active)
+			return;
+		if (!m_movea_ok)
+		{
+			// unreachable by construction (a target only becomes active while
+			// the loop is closed), but a wedge here is total pointer loss:
+			// release the buttons parked behind it (Lua parity)
+			if (!m_fl_valid)
+			{
+				m_flx = m_ta.x;
+				m_fly = m_ta.y;
+				m_fl_valid = true;
+			}
+			movea_done(0, 0, true);
+			return;
+		}
+		if (!m_cur_x.ok() || !m_cur_y.ok())
+		{
+			// the cached handle went bad mid-session — drop to open loop for
+			// good, seeded from the last target (the best estimate left)
+			m_movea_ok = false;
+			m_fb_logged = true;
+			std::fprintf(stderr, "ctlsock: MOVEA cursor item read failed; open-loop fallback\n");
+			std::fflush(stderr);
+			m_flx = m_ta.x;
+			m_fly = m_ta.y;
+			m_fl_valid = true;
+			movea_done(0, 0, true);
+			return;
+		}
+		// A BUTTON EDGE OWNS THE POINTER UNTIL IT LANDS. Edges deferred
+		// behind a converging target are released into the click pacer (>= 2
+		// emulated frames, so a DOWN+UP pair cannot vanish inside one 10 ms
+		// PS/2 sample), but movea_done starts the NEXT queued target in the
+		// same drain — so without this gate the pointer moves before the
+		// edge applies, and a release lands wherever the user has swept to
+		// since. Measured live: a 120,120-count step (~230 px) issued
+		// between an UP being deferred and the UP applying.
+		if (!m_clickq.empty() || m_click_cur_active)
+			return;
+		// Never inject while the previous correction is still on the wire
+		// (the Lua rule): a window is four device samples, so by the next
+		// injection the last step is in the registers and the fresh error
+		// already accounts for it.
+		if (!m_mq.empty())
+			return;
+		double const now = emu_now();
+		if (m_ta.t_next >= 0 && now < m_ta.t_next)
+			return;
+		m_ta.t_next = now + m_move_window;
+
+		long rpx = 0, rpy = 0;
+		bool tr = false;
+		bool const have = reading_now(rpx, rpy, tr) && tr;
+		if (!have)
+		{
+			// no trustworthy reading (cursor hidden or disabled): run this
+			// window off the dead-reckoned belief so a hidden pointer still
+			// moves, and let the give-up cap bound it. The belief is in
+			// POINTER space, so undo the hotspot the loop will re-apply.
+			rpx = m_bx - m_hot_x;
+			rpy = m_by - m_hot_y;
+		}
+
+		observe(rpx, rpy, have);
+
+		long const ex = m_ta.x - rpx - m_hot_x;
+		long const ey = m_ta.y - rpy - m_hot_y;
+
+		if (std::abs(ex) <= m_dead && std::abs(ey) <= m_dead)
+		{
+			if (have)
+			{
+				m_bx = clamp_px_x(rpx + m_hot_x);
+				m_by = clamp_px_y(rpy + m_hot_y);
+				m_bias_x = m_hot_x;
+				m_bias_y = m_hot_y;
+			}
+			trace("closed act=converge r=%d,%d err=%d,%d g=%.2f,%.2f",
+					int(rpx), int(rpy), int(ex), int(ey), m_gx, m_gy);
+			movea_accept(ex, ey, false);
+			return;
+		}
+		if (++m_windows > m_movea_tries)
+		{
+			trace("closed act=giveup r=%d,%d err=%d,%d w=%d",
+					int(rpx), int(rpy), int(ex), int(ey), m_windows);
+			movea_accept(ex, ey, true);
+			return;
+		}
+
+		long const cx = step_counts(ex - long(std::llround(m_infl_x)), ex, m_gx);
+		long const cy = step_counts(ey - long(std::llround(m_infl_y)), ey, m_gy);
+		bool const ox = osc_latch(cx, m_osc_sx, m_osc_nx);
+		bool const oy = osc_latch(cy, m_osc_sy, m_osc_ny);
+		if (ox || oy)
+		{
+			// the correction keeps reversing: that is a reading which moves
+			// WITH the pointer (a glyph hotspot flipping as the pointer
+			// crosses the region that selects it), not a pointer that keeps
+			// missing its target. Accept where we are — see THE LATCH above.
+			trace("closed act=osc-accept r=%d,%d err=%d,%d flips=%d,%d",
+					int(rpx), int(rpy), int(ex), int(ey), m_osc_nx, m_osc_ny);
+			movea_accept(ex, ey, false);
+			return;
+		}
+		if (cx == 0 && cy == 0)
+		{
+			// everything still outstanding is already on the wire: observe
+			// next window rather than issue it twice
+			trace("closed act=wait r=%d,%d err=%d,%d infl=%.1f,%.1f",
+					int(rpx), int(rpy), int(ex), int(ey), m_infl_x, m_infl_y);
+			return;
+		}
+		m_last_cx = cx;
+		m_last_cy = cy;
+		m_infl_x += double(cx) * m_gx;
+		m_infl_y += double(cy) * m_gy;
+		move_paced(cx, cy);
+		trace("closed act=step r=%d,%d err=%d,%d c=%d,%d infl=%.1f,%.1f g=%.2f,%.2f w=%d",
+				int(rpx), int(rpy), int(ex), int(ey), int(cx), int(cy),
+				m_infl_x, m_infl_y, m_gx, m_gy, m_windows);
+	}
+
+	// ---- cursor hotspot: READ, not inferred ------------------------------
+	//
+	// X programs the cursor register as pointer + 31 - hotspot, so the
+	// reading is pointer - hotspot and the CAL constants calibrate exactly
+	// ONE glyph (the arrow, hotspot 0,0). Every other cursor the OS installs
+	// -- a mirrored menu arrow, an I-beam, a resize handle, a showcase pencil
+	// whose tip sits at the bottom of its sprite -- reads a hotspot away from
+	// the true pointer, and driving the READING onto the target then parks
+	// the POINTER that far off. With a large hotspot the pointer reaches the
+	// guest's clamp while the visitor still has 30 px of travel left.
+	//
+	// The hotspot is X server software state: no register holds it, and the
+	// VC2 has only cursor x/y, the sprite pointer and the table pointer. But
+	// swapping the glyph FORCES a compensating write to the cursor register
+	// with the pointer standing still, and that write IS the hotspot delta,
+	// exactly. mame-vc2-cursor-swap.patch records it AT THE WRITE, where no
+	// motion can be interleaved with it, accumulating (m_cs_dx, m_cs_dy)
+	// behind a sequence counter -- so this sampler reads what happened since
+	// it last looked, at any rate, without having to catch it in the act.
+	//
+	// Everything that used to live here went with it: sprite fingerprinting,
+	// a per-glyph hotspot table, quiet windows, stillness gates,
+	// plausibility clamps, and calibrating by shoving the pointer into a
+	// screen edge. All of it reconstructed, from samples and statistics, one
+	// number the guest writes down.
+	// Shift the hotspot and keep the observer honest: the pointer estimate is
+	// reading + hot, so observe() must see the hotspot step added back to the
+	// raw reading delta, or it books a sprite jump as pointer motion.
+	void hot_shift(long nx, long ny, long rpx, long rpy)
+	{
+		if (nx == m_hot_x && ny == m_hot_y)
+			return;
+		trace("hot %d,%d -> %d,%d r=%d,%d", int(m_hot_x), int(m_hot_y),
+				int(nx), int(ny), int(rpx), int(rpy));
+		m_obs_x -= nx - m_hot_x;
+		m_obs_y -= ny - m_hot_y;
+		m_hot_x = nx;
+		m_hot_y = ny;
+		m_latch_valid = false;  // the last accepted target is unfinished again
+		m_hot_dirty = true;     // ... and movea_rest owes it a correction
+	}
+
+	void glyph_sample()
+	{
+		if (!m_movea_ok || !m_cs_seq.ok())
+			return;
+		u64 const seq = u64(m_cs_seq.read());
+		if (seq == m_cs_last_seq)
+			return;
+		m_cs_last_seq = seq;
+		long const dx = long(s32(m_cs_dx.read()));
+		long const dy = long(s32(m_cs_dy.read()));
+		// dreg = -dhotspot: the register moved to keep a motionless pointer
+		// under the new glyph's hotspot
+		long const sx = dx - m_cs_last_dx;
+		long const sy = dy - m_cs_last_dy;
+		m_cs_last_dx = dx;
+		m_cs_last_dy = dy;
+		if (std::abs(sx) > SPRITE_MAX || std::abs(sy) > SPRITE_MAX)
+		{
+			// A hotspot lives inside the 32x32 sprite, so a step larger than
+			// that is not one -- most likely a position write that landed
+			// inside the swap window while the pointer really was moving.
+			// Declining is safe: the next swap re-reads the offset outright,
+			// because the ledger the guest keeps is cumulative.
+			trace("swap seq=%s implausible d=%d,%d — ignored",
+					std::to_string(seq), int(sx), int(sy));
+			return;
+		}
+		long const nx = m_hot_x - sx;
+		long const ny = m_hot_y - sy;
+		long rpx = 0, rpy = 0;
+		bool tr = false;
+		reading_now(rpx, rpy, tr);
+		trace("swap seq=%s cum=%d,%d hot=%d,%d->%d,%d", std::to_string(seq),
+				int(dx), int(dy), int(m_hot_x), int(m_hot_y), int(nx), int(ny));
+		hot_shift(nx, ny, rpx, rpy);
+	}
+
+	// Re-baseline against the device's counters. Used at setup and after any
+	// restore: the accumulators are saved with the machine, so a restored
+	// pair says nothing about the hotspot in force now, and the golden parks
+	// a plain arrow -- the glyph the CAL constants calibrate.
+	void swap_rebase()
+	{
+		m_hot_x = 0;
+		m_hot_y = 0;
+		m_hot_dirty = false;
+		m_cs_last_seq = m_cs_seq.ok() ? u64(m_cs_seq.read()) : 0;
+		m_cs_last_dx = m_cs_dx.ok() ? long(s32(m_cs_dx.read())) : 0;
+		m_cs_last_dy = m_cs_dy.ok() ? long(s32(m_cs_dy.read())) : 0;
+	}
+
+	// ONE observation of the cursor registers, shared by the active loop and
+	// the at-rest observer.
+	//
+	// GLYPH-HOTSPOT TRACKING. The registers hold the cursor SPRITE, so the
+	// reading is pointer - hotspot, and the CAL constants calibrate the
+	// standard arrow (hotspot 0,0). Any other glyph — the mirrored menu
+	// arrow, an I-beam, a resize handle — shifts the reading the instant X
+	// swaps the sprite, with the pointer motionless. Driving the READING
+	// onto the target then parks the POINTER a hotspot away from the user's
+	// cursor (measured: 13 px right, in menus), and crossing the boundary
+	// that selects the glyph makes it twitch back and forth.
+	//
+	// So a reading step the issued counts CANNOT explain is booked to
+	// m_hot instead of to motion: the pointer estimate is reading + m_hot,
+	// and the loop keeps controlling the POINTER. The attribution is
+	// deliberately conservative — it fires only when essentially nothing was
+	// commanded (nothing in flight, no counts last window), which is the
+	// case that matters, because X swaps the glyph when the pointer ARRIVES
+	// somewhere. Per axis, because the measured menu jump was X-only.
+	void observe(long rpx, long rpy, bool trusted)
+	{
+		if (m_obs_valid)
+		{
+			long dx = rpx - m_obs_x;
+			long dy = rpy - m_obs_y;
+			m_infl_x -= double(dx);
+			m_infl_y -= double(dy);
+			if (trusted)
+			{
+				learn_gain('x', m_last_cx, dx, rpx <= GAIN_EDGE_MARGIN,
+						rpx >= m_surf_w - 1 - GAIN_EDGE_MARGIN, m_gx);
+				learn_gain('y', m_last_cy, dy, rpy <= GAIN_EDGE_MARGIN,
+						rpy >= m_surf_h - 1 - GAIN_EDGE_MARGIN, m_gy);
+			}
+		}
+		m_infl_x *= m_infl_decay;
+		m_infl_y *= m_infl_decay;
+		m_obs_x = rpx;
+		m_obs_y = rpy;
+		m_obs_valid = true;
+		m_last_cx = 0;
+		m_last_cy = 0;
+	}
+
+	// The at-rest observer. X swaps the cursor glyph when the pointer ARRIVES
+	// somewhere — after the loop has converged and gone idle — so without a
+	// pass that runs with no target active, every hotspot change would be
+	// invisible until the pointer next moved, which is exactly when it is too
+	// late. On a detected jump the latched target is RE-ARMED internally (an
+	// empty seq, so no EV goes out for a target the client never sent) and
+	// the loop puts the pointer back under the user's cursor immediately.
+	void movea_rest()
+	{
+		if (m_ta_active || !m_movea_ok || !m_cur_x.ok() || !m_cur_y.ok())
+			return;
+		if (!m_clickq.empty() || m_click_cur_active || !m_mq.empty())
+			return;
+		double const now = emu_now();
+		if (m_rest_t >= 0 && now < m_rest_t)
+			return;
+		m_rest_t = now + m_move_window;
+		long rpx = 0, rpy = 0;
+		bool tr = false;
+		if (!reading_now(rpx, rpy, tr) || !tr)
+			return;
+		long const lx = m_latch_x, ly = m_latch_y;
+		bool const dirty = m_hot_dirty && m_latch_seen;
+		m_hot_dirty = false;
+		observe(rpx, rpy, true);
+		// A hotspot shift moved the POINTER estimate out from under the last
+		// accepted target, so put it back without waiting for the visitor's
+		// next mouse move. glyph_sample runs earlier in the same drain pass,
+		// which is why this rides a flag rather than the latch itself.
+		if (dirty
+				&& (std::abs(lx - rpx - m_hot_x) > m_dead
+					|| std::abs(ly - rpy - m_hot_y) > m_dead))
+			epoch_start(lx, ly, std::string());
+	}
+
+	// Size one step. `eff` is the error with in-flight px removed, `raw` the
+	// measured error. A step may never oppose the measured error — an
+	// over-estimated in-flight balance must cost a window of waiting, never a
+	// backwards move — and the gain margin keeps a full-gain guest short of
+	// the target rather than past it (the binding no-overshoot rule).
+	long step_counts(long eff, long raw, double g) const
+	{
+		if (std::abs(eff) <= m_dead)
+			return 0;
+		long c = long(std::trunc(double(eff) / (g * m_gain_margin)));
+		if (c == 0)
+			c = (eff > 0) ? 1 : -1;  // sub-gain residue: one count is the
+			                         // smallest motion the wire can express
+		if ((c > 0 && raw <= 0) || (c < 0 && raw >= 0))
+			return 0;
+		return std::max(-m_move_step, std::min(m_move_step, c));
+	}
+
+	// Per-axis sign-reversal counter behind the oscillation latch.
+	static bool osc_latch(long c, int &lastsign, int &flips)
+	{
+		if (c == 0)
+			return false;
+		int const s = (c > 0) ? 1 : -1;
+		if (lastsign != 0 && s != lastsign)
+			++flips;
+		lastsign = s;
+		return flips >= OSC_FLIPS;
+	}
+
+	// Gain learning, closed-loop safe: the loop's ACCURACY never depends on
+	// g, only its speed, so this is a cheap EMA over the last step's
+	// observed/issued ratio. ASYMMETRIC on purpose — a step only PARTLY
+	// absorbed when the next window samples reads LOW, and a gain estimated
+	// too low over-issues, the one direction the no-overshoot rule forbids.
+	// So g rises fast and falls slowly.
+	void learn_gain(char ax, long c, long d, bool lo_edge, bool hi_edge, double &g)
+	{
+		if (std::abs(c) < GAIN_MIN_COUNTS)
+			return;
+		if (lo_edge || hi_edge)
+			return;  // the guest clamped: a lower bound, not a measurement
+		double const r = double(d) / double(c);
+		if (r < GAIN_LO || r > GAIN_HI)
+			return;  // corrupt measurement (partial absorption, glyph step)
+		g += ((r > g) ? GAIN_ALPHA_UP : GAIN_ALPHA_DOWN) * (r - g);
+		trace("gain %c obs=%.3f g=%.3f", ax, r, g);
+	}
+
+	// Finish a target: latch its VALUE first, so a restatement (streamhost
+	// restates the target before every button edge) cannot re-open the chase
+	// against a hotspot-shifted reading. A give-up does NOT latch — a pointer
+	// freed from a modal grab must be able to try again.
+	void movea_accept(long ex, long ey, bool gaveup)
+	{
+		if (!gaveup)
+		{
+			m_latch_x = m_ta.x;
+			m_latch_y = m_ta.y;
+			m_latch_valid = true;
+			m_latch_seen = true;
+		}
+		movea_done(ex, ey, gaveup);
+	}
+
+	// ---- frame-counted helpers (ESC nag, button probe) --------------------
+
+	void esc_frame()
+	{
+		if (m_esc_frames <= 0)
+			return;
+		--m_esc_frames;
+		if ((m_esc_frames % 20) == 0)
+			m_machine.natkeyboard().post_coded("{ESC}");
+	}
+
+	void probe_frame()
+	{
+		if (m_probe_frames <= 0)
+			return;
+		--m_probe_frames;
+		set_button(0, (m_probe_frames > 7) ? 1 : 0);
+	}
+
+	// ---- SYNC fence --------------------------------------------------------
+	// OK once every input enqueued before it has been applied and re-latched:
+	// the pending-move queue, the key FIFO and the click queue are empty.
+	// Deliberately EXCLUDED: an in-flight MOVEA target and the actions
+	// deferred behind it — MOVEA completion is EV MOVEA's job (design
+	// section 3: SYNC does not wait for convergence).
+
+	void check_syncs()
+	{
+		if (m_syncs.empty())
+			return;
+		if (!m_mq.empty() || !m_kq.empty() || !m_clickq.empty() || m_click_cur_active)
+			return;
+		for (ack_ref const &s : m_syncs)
+		{
+			hist_apply(s);
+			reply_ok(s);
+		}
+		m_syncs.clear();
+	}
+
+	// ---- legacy command-file tail (port of irixagent.lua poll()) ----------
+	// Single-injector transition mechanism (design section 7): every legacy
+	// irix_cmd writer (watchdog nudges, benches, ops scripts, the mamecmd
+	// rollback backend) keeps working, consumed by the module instead of the
+	// Lua agent — which the launcher interlock keeps OFF while MAME_CTL_SOCK
+	// is set. One read handle held open, own position tracked (writers only
+	// ever append); truncation under us (a relaunch does `: >$CMD`) restarts
+	// from 0; the file is truncated once per MiB to bound growth.
+
+	void poll_cmd_file()
+	{
+		if (!m_tail_active)
+			return;
+		if (!m_tail_fp)
+		{
+			m_tail_fp = std::fopen(m_tail_path.c_str(), "r");
+			if (!m_tail_fp)
+				return;
+			m_tail_pos = 0;
+		}
+		if (std::fseek(m_tail_fp, 0, SEEK_END) != 0)
+			return;
+		long const size = std::ftell(m_tail_fp);
+		if (size < 0)
+			return;
+		if (size < m_tail_pos)
+			m_tail_pos = 0;
+		if (size == m_tail_pos)
+			return;
+		std::string chunk(size_t(size - m_tail_pos), '\0');
+		if (std::fseek(m_tail_fp, m_tail_pos, SEEK_SET) != 0)
+			return;
+		size_t const got = std::fread(chunk.data(), 1, chunk.size(), m_tail_fp);
+		chunk.resize(got);
+		m_tail_pos += long(got);
+
+		// Lua parity: gmatch("[^\n]+") — a trailing unterminated fragment is
+		// processed as a line (writers append whole lines)
+		size_t start = 0;
+		while (start < chunk.size())
+		{
+			size_t nl = chunk.find('\n', start);
+			if (nl == std::string::npos)
+				nl = chunk.size();
+			if (nl > start)
+			{
+				pending_cmd cmd;
+				cmd.conn = 0;
+				cmd.seq = "-";
+				cmd.line = chunk.substr(start, nl - start);
+				cmd.rx = std::chrono::steady_clock::now();
+				++m_cmds;
+				++m_file_cmds;
+				exec_cmd(cmd);
+			}
+			start = nl + 1;
+		}
+
+		if (m_tail_pos > long(TAIL_TRUNC_AT))
+		{
+			std::fclose(m_tail_fp);
+			m_tail_fp = nullptr;
+			std::FILE *const w = std::fopen(m_tail_path.c_str(), "w");
+			if (w)
+				std::fclose(w);
+		}
+	}
+
+	// ---- verb dispatch -----------------------------------------------------
+
+	static bool parse_two_longs(std::string const &s, long &a, long &b)
+	{
+		char *end = nullptr;
+		errno = 0;
+		a = std::strtol(s.c_str(), &end, 10);
+		if (end == s.c_str() || *end != ' ')
+			return false;
+		char const *const p = end + 1;
+		b = std::strtol(p, &end, 10);
+		return end != p && (*end == '\0' || *end == ' ');
+	}
+
+	void exec_cmd(pending_cmd const &cmd)
+	{
+		ack_ref ack;
+		ack.conn = cmd.conn;
+		ack.seq = cmd.seq;
+		ack.rx = cmd.rx;
+
+		if (cmd.line.empty())
+		{
+			reply_err(ack, "badline", "empty or malformed request line");
+			return;
+		}
+		size_t const sp = cmd.line.find(' ');
+		std::string const verb = cmd.line.substr(0, sp == std::string::npos ? cmd.line.size() : sp);
+		std::string const rest = (sp == std::string::npos) ? std::string() : cmd.line.substr(sp + 1);
+
+		// input verbs stamp the last-input clock (livewatch activity signal)
+		auto const input_seen = [this] { m_last_input = std::chrono::steady_clock::now(); };
+
+		if (verb == "MOVE")
+		{
+			long dx, dy;
+			if (!parse_two_longs(rest, dx, dy))
+			{
+				reply_err(ack, "badarg", "MOVE dx dy");
+				return;
+			}
+			++m_c_move;
+			++m_p_move;
+			input_seen();
+			move_rel(dx, dy);
+			hist_apply(ack);
+			reply_ok(ack);
+		}
+		else if (verb == "MOVEP")
+		{
+			long dx, dy;
+			if (!parse_two_longs(rest, dx, dy))
+			{
+				reply_err(ack, "badarg", "MOVEP dx dy");
+				return;
+			}
+			++m_c_movep;
+			++m_p_movep;
+			input_seen();
+			move_paced(dx, dy, std::move(ack));  // acks when fully drained
+		}
+		else if (verb == "MOVEA")
+		{
+			long x, y;
+			if (!parse_two_longs(rest, x, y))
+			{
+				reply_err(ack, "badarg", "MOVEA x y");
+				return;
+			}
+			++m_c_movea;
+			++m_p_movea;
+			input_seen();
+			movea_target(x, y, cmd.seq, ack);
+		}
+		else if (verb == "DOWN1" || verb == "UP1" || verb == "DOWN2" || verb == "UP2"
+				|| verb == "DOWN3" || verb == "UP3")
+		{
+			input_seen();
+			int const btn = verb.back() - '1';
+			btn_edge(btn, verb[0] == 'D' ? 1 : 0, std::move(ack));
+		}
+		else if (verb == "CLICK1")
+		{
+			input_seen();
+			btn_click(0, 10, 6, std::move(ack));
+		}
+		else if (verb == "DCLICK1")
+		{
+			input_seen();
+			btn_click(0, 10, 8, ack_ref());
+			btn_click(0, 10, 6, std::move(ack));
+		}
+		else if (verb == "CLICK2")
+		{
+			input_seen();
+			btn_click(1, 10, 6, std::move(ack));
+		}
+		else if (verb == "CLICK3")
+		{
+			input_seen();
+			btn_click(2, 10, 6, std::move(ack));
+		}
+		else if (verb == "KEY")
+		{
+			// KEY <0|1> <port> <field name>; the field name is the rest of
+			// the line because MAME names contain spaces ("Left Shift")
+			if (rest.size() < 5 || (rest[0] != '0' && rest[0] != '1') || rest[1] != ' ')
+			{
+				reply_err(ack, "badarg", "KEY <0|1> <port> <field>");
+				return;
+			}
+			size_t const psp = rest.find(' ', 2);
+			if (psp == std::string::npos || psp + 1 >= rest.size())
+			{
+				reply_err(ack, "badarg", "KEY <0|1> <port> <field>");
+				return;
+			}
+			++m_c_key;
+			++m_p_key;
+			input_seen();
+			key_enqueue(rest.substr(2, psp - 2), rest.substr(psp + 1),
+					rest[0] - '0', std::move(ack));
+		}
+		else if (verb == "KEYDUMP")
+		{
+			int n = 0;
+			for (auto const &p : m_machine.ioport().ports())
+			{
+				if (p.first.find(":kbd:") == std::string::npos)
+					continue;
+				for (ioport_field &f : p.second->fields())
+				{
+					reply_data(ack, p.first + " | " + f.name());
+					++n;
+				}
+			}
+			reply_ok(ack, util::string_format("%d", n));
+		}
+		else if (verb == "POST")
+		{
+			++m_c_post;
+			input_seen();
+			m_machine.natkeyboard().post_utf8(rest);
+			hist_apply(ack);
+			reply_ok(ack);
+		}
+		else if (verb == "CODE")
+		{
+			++m_c_post;
+			input_seen();
+			m_machine.natkeyboard().post_coded(rest);
+			hist_apply(ack);
+			reply_ok(ack);
+		}
+		else if (verb == "PROBE")
+		{
+			m_probe_frames = 14;
+			reply_ok(ack);
+		}
+		else if (verb == "ESCON")
+		{
+			m_esc_frames = 3600;
+			reply_ok(ack);
+		}
+		else if (verb == "ESCOFF")
+		{
+			m_esc_frames = 0;
+			reply_ok(ack);
+		}
+		else if (verb == "DUMP")
+		{
+			natural_keyboard &nat = m_machine.natkeyboard();
+			reply_data(ack, util::string_format("canpost=%d isposting=%d",
+					nat.can_post() ? 1 : 0, nat.is_posting() ? 1 : 0));
+			reply_data(ack, util::string_format("mq=%d kq=%d aq=%d clickq=%d ta=%s",
+					int(m_mq.size()), int(m_kq.size()), int(m_aq.size()), int(m_clickq.size()),
+					m_ta_active ? util::string_format("%d,%d", int(m_ta.x), int(m_ta.y)) : std::string("-")));
+			reply_data(ack, util::string_format("movea_mode=%s accum=%d,%d",
+					m_movea_ok ? "closed" : "open", int(m_mx), int(m_my)));
+			reply_ok(ack, "3");
+		}
+		else if (verb == "PING")
+		{
+			hist_apply(ack);
+			reply_ok(ack, util::string_format("mtime=%.6f paused=%d",
+					emu_now(), m_machine.paused() ? 1 : 0));
+		}
+		else if (verb == "ITEM")
+		{
+			// Read any save item by name suffix. A diagnostic, and a
+			// load-bearing one: it is the only way to see what the guest is
+			// doing to a device without a rebuild-and-rebake cycle per
+			// question.
+			hist_apply(ack);
+			if (rest.empty())
+			{
+				reply_err(ack, "badarg", "ITEM <save-item-name-suffix>");
+			}
+			else
+			{
+				save_item_handle const h = find_item(rest);
+				if (!h.ok())
+					reply_err(ack, "nosuchitem", rest);
+				else
+					reply_ok(ack, util::string_format("v=%s size=%u count=%u",
+							std::to_string(h.read()), h.size, h.count));
+			}
+		}
+		else if (verb == "CUR")
+		{
+			// Read-only cursor probe: the hardware-cursor registers in
+			// pixels, no engine side effect whatsoever. The counterpart to
+			// MOVEP for calibration — measuring the guest's counts->pixels
+			// response needs a reader that does not itself move the pointer
+			// (every MOVEA runs a settle, so MOVEA cannot be that reader).
+			hist_apply(ack);
+			long rpx = 0, rpy = 0;
+			bool tr = false;
+			if (reading_now(rpx, rpy, tr))
+				reply_ok(ack, util::string_format(
+						"x=%d y=%d trusted=%d mtime=%.6f bel=%d,%d",
+						int(rpx), int(rpy), tr ? 1 : 0, emu_now(),
+						int(m_bx), int(m_by)));
+			else
+				reply_err(ack, "nocursor", "MAME_CTL_CURSOR_ITEMS unset or unresolved");
+		}
+		else if (verb == "STAT")
+		{
+			hist_apply(ack);
+			reply_ok(ack, stat_line());
+		}
+		else if (verb == "SYNC")
+		{
+			m_syncs.push_back(std::move(ack));  // acked by check_syncs()
+		}
+		else if (verb == "SHOT")
+		{
+			do_shot(rest, ack);
+		}
+		else if (verb == "PAUSE")
+		{
+			m_machine.pause();  // EV PAUSED rides the notifier
+			hist_apply(ack);
+			reply_ok(ack, "paused=1");
+		}
+		else if (verb == "RESUME")
+		{
+			m_machine.resume();
+			hist_apply(ack);
+			reply_ok(ack, "paused=0");
+		}
+		else if (verb == "SAVEST")
+		{
+			do_savest(rest, ack);
+		}
+		else if (verb == "LOADST")
+		{
+			do_loadst(rest, ack);
+		}
+		else if (verb == "RESET")
+		{
+			reply_ok(ack);  // ack first: the reset tears this listener down
+			m_machine.schedule_hard_reset();
+		}
+		else if (verb == "EXIT")
+		{
+			reply_ok(ack);
+			m_machine.schedule_exit();
+		}
+		else
+			reply_err(ack, "badverb", verb);
+	}
+
+	// ---- SHOT / SAVEST / LOADST -------------------------------------------
+
+	void do_shot(std::string const &path, ack_ref const &ack)
+	{
+		if (path.empty() || path[0] != '/')
+		{
+			reply_err(ack, "badarg", "SHOT needs an absolute path");
+			return;
+		}
+		screen_device *const screen = screen_device_enumerator(m_machine.root_device()).first();
+		if (!screen)
+		{
+			reply_err(ack, "unsupported", "no screen");
+			return;
+		}
+		util::core_file::ptr file;
+		std::error_condition const err = util::core_file::open(path,
+				OPEN_FLAG_WRITE | OPEN_FLAG_CREATE, file);
+		if (err)
+		{
+			reply_err(ack, "badarg", "open failed: " + err.message());
+			return;
+		}
+		m_machine.video().save_snapshot(screen, *file);
+		file.reset();
+		hist_apply(ack);
+		reply_ok(ack, path);
+	}
+
+	// SAVEST: immediate_save ONLY (COVENANT 2). The ack means COMPLETED:
+	// immediate_save is synchronous, and the presave marker plus a readback
+	// probe distinguish "ran" from the one silent failure mode (pending
+	// anonymous timers leave the operation deferred — PAUSE first; the bake
+	// flow always does). ~12 s stop-the-world; clients use timeout >= 60 s.
+	void do_savest(std::string const &name, ack_ref const &ack)
+	{
+		if (name.empty())
+		{
+			reply_err(ack, "badarg", "SAVEST <name>");
+			return;
+		}
+		u64 const before = m_presaves;
+		auto const t0 = std::chrono::steady_clock::now();
+		m_machine.immediate_save(name);
+		double const ms = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - t0).count();
+		if (m_presaves == before)
+		{
+			reply_err(ack, "busy",
+					"save deferred (pending anonymous timers) — PAUSE first, then SAVEST");
+			return;
+		}
+		// readback probe through the same search-path logic the save used
+		char const *searchpath = nullptr;
+		std::string const composed = m_machine.compose_saveload_filename(std::string(name), &searchpath);
+		emu_file probe(searchpath ? searchpath : "", OPEN_FLAG_READ);
+		if (probe.open(std::string(composed)))
+		{
+			reply_err(ack, "busy", "save did not materialize: " + composed);
+			return;
+		}
+		u64 const bytes = probe.size();
+		probe.close();
+		reply_ok(ack, util::string_format("ms=%d bytes=%d paused=%d",
+				int(ms), int(bytes), m_machine.paused() ? 1 : 0));
+	}
+
+	// LOADST: immediate_load ONLY (COVENANT 2). The postload marker is the
+	// completion proof — it fires only after a full successful read; on any
+	// failure (missing file, signature mismatch) it stays silent and MAME
+	// logs the reason. A successful load re-seeds the pointer accumulator
+	// via on_state_postload -> reseed_after_restore().
+	void do_loadst(std::string const &name, ack_ref const &ack)
+	{
+		if (name.empty())
+		{
+			reply_err(ack, "badarg", "LOADST <name>");
+			return;
+		}
+		u64 const before = m_postloads;
+		auto const t0 = std::chrono::steady_clock::now();
+		m_machine.immediate_load(name);
+		double const ms = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - t0).count();
+		if (m_postloads == before)
+		{
+			reply_err(ack, "badarg", "state did not load (missing or incompatible): " + name);
+			return;
+		}
+		reply_ok(ack, util::string_format("ms=%d paused=%d",
+				int(ms), m_machine.paused() ? 1 : 0));
+		emit_ev("LOADED " + name);
+	}
+
+	// ---- STAT / EV STATS / heartbeat --------------------------------------
+
+	// Public-API recomputation of save_manager::signature() (save.cpp:503-521,
+	// private): CRC32 over each entry's name bytes + typesize/typecount/
+	// blockcount + a zero pad word. Reproduced the header signature
+	// byte-for-byte in the Stage-0 spike; kept behind STAT as the permanent
+	// signature-regression probe (V4).
+	u32 computed_signature() const
+	{
+		save_manager &sm = m_machine.save();
+		util::crc32_creator crc;
+		for (int i = 0; i < sm.registration_count(); i++)
+		{
+			void *base;
+			u32 valsize, valcount, blockcount, stride;
+			char const *const name = sm.indexed_item(i, base, valsize, valcount, blockcount, stride);
+			if (!name)
+				break;
+			crc.append(name, std::strlen(name));
+			u32 temp[4];
+			temp[0] = little_endianize_int32(valsize);
+			temp[1] = little_endianize_int32(valcount);
+			temp[2] = little_endianize_int32(blockcount);
+			temp[3] = 0;
+			crc.append(&temp[0], sizeof(temp));
+		}
+		return crc.finish();
+	}
+
+	std::string stat_line()
+	{
+		double const last_in_ms = (m_last_input == steady_tp{}) ? -1.0
+				: std::chrono::duration<double, std::milli>(
+						std::chrono::steady_clock::now() - m_last_input).count();
+		std::string s = util::string_format(
+				"ver=1 paused=%d mtime=%.3f frames=%s ticks=%s conns=%d accepts=%s "
+				"cmds=%s filecmds=%s errs=%s movep=%s move=%s movea=%s key=%s post=%s "
+				"applied=%s,%s mq=%d kq=%d aq=%d clickq=%d tgt=%s res=%d,%d giveups=%s "
+				"movea_mode=%s reseeds=%s last_in_ms=%d bel=%d,%d bias=%d,%d gain=%.2f,%.2f",
+				m_machine.paused() ? 1 : 0, emu_now(),
+				std::to_string(m_frames), std::to_string(m_ticks),
+				int(m_conns.load()), std::to_string(m_accepts.load()),
+				std::to_string(m_cmds), std::to_string(m_file_cmds), std::to_string(m_errs),
+				std::to_string(m_c_movep), std::to_string(m_c_move),
+				std::to_string(m_c_movea), std::to_string(m_c_key), std::to_string(m_c_post),
+				std::to_string(m_cum_ax), std::to_string(m_cum_ay),
+				int(m_mq.size()), int(m_kq.size()), int(m_aq.size()), int(m_clickq.size()),
+				m_ta_active ? util::string_format("%d,%d", int(m_ta.x), int(m_ta.y)) : std::string("-"),
+				int(m_res_x), int(m_res_y), std::to_string(m_giveups),
+				m_movea_ok ? "closed" : "open", std::to_string(m_reseeds),
+				int(last_in_ms), int(m_bx), int(m_by), int(m_bias_x), int(m_bias_y),
+				m_gx, m_gy);
+		static char const *const hname[8] =
+				{ "h_lt1", "h_lt2", "h_lt5", "h_lt10", "h_lt20", "h_lt50", "h_lt100", "h_ge100" };
+		for (int i = 0; i < 8; i++)
+			s += util::string_format(" %s=%s", hname[i], std::to_string(m_hist[i]));
+		s += util::string_format(" sig=%08x entries=%d",
+				computed_signature(), m_machine.save().registration_count());
+		return s;
+	}
+
+	// EV STATS: the Lua stats line's per-period counters on the wire, every
+	// STAT_PERIOD wall seconds (an unchanging heartbeat with empty queues and
+	// a dead channel must not look the same — the lesson the Lua agent's
+	// header tells in full). Counters reset per period; giveups cumulative.
+	// During a ~12 s SAVEST both drains are frozen: a heartbeat gap there is
+	// expected (see COVENANT 2).
+	void stats_frame()
+	{
+		auto const now = std::chrono::steady_clock::now();
+		if (m_last_stats == steady_tp{})
+		{
+			m_last_stats = now;
+			return;
+		}
+		if (now - m_last_stats < m_stat_period)
+			return;
+		m_last_stats = now;
+		emit_ev(util::string_format(
+				"STATS movep=%s move=%s movea=%s key=%s queued=%s,%s applied=%s,%s "
+				"mq=%d kq=%d aq=%d tgt=%s res=%d,%d giveups=%s emu=%d",
+				std::to_string(m_p_movep), std::to_string(m_p_move),
+				std::to_string(m_p_movea), std::to_string(m_p_key),
+				std::to_string(m_qx), std::to_string(m_qy),
+				std::to_string(m_ax), std::to_string(m_ay),
+				int(m_mq.size()), int(m_kq.size()), int(m_aq.size()),
+				m_ta_active ? util::string_format("%d,%d", int(m_ta.x), int(m_ta.y)) : std::string("-"),
+				int(m_res_x), int(m_res_y), std::to_string(m_giveups), int(emu_now())));
+		m_p_movep = m_p_move = m_p_movea = m_p_key = 0;
+		m_qx = m_qy = m_ax = m_ay = 0;
+	}
+
+	void heartbeat()
+	{
+		auto const now = std::chrono::steady_clock::now();
+		if (now - m_last_hb < m_stat_period)
+			return;
+		m_last_hb = now;
+		std::fprintf(stderr,
+				"ctlsock: hb frames=%llu ticks=%llu conns=%d cmds=%llu paused=%d mtime=%.3f\n",
+				ull(m_frames), ull(m_ticks), int(m_conns.load()), ull(m_cmds),
+				m_machine.paused() ? 1 : 0, emu_now());
+		std::fflush(stderr);
+	}
+
+	// ---- state -------------------------------------------------------------
+
+	running_machine &m_machine;
+	emu_timer *m_timer = nullptr;
+
+	// config
+	bool m_enabled = false;
+	bool m_trace = false;
+	long m_move_step = 120;
+	double m_move_window = 0.04;
+	double m_key_hold = 0.10;
+	double m_key_gap = 0.05;
+	long m_cal_x = -31;
+	long m_cal_y = -31;
+	int m_movea_tries = 40;
+	long m_surf_w = 1288;
+	long m_surf_h = 1024;
+	std::chrono::seconds m_stat_period{ 15 };
+	std::string m_ptr_suffix;
+	std::string m_cursor_items;
+	std::string m_tail_path;
+	std::string m_banner;
+
+	// socket plumbing
+	int m_listen_fd = -1;
+	int m_wake_pipe[2] = { -1, -1 };
+	std::thread m_worker;
+	std::atomic<bool> m_stop{ false };
+	std::atomic<u64> m_accepts{ 0 };
+	std::atomic<size_t> m_conns{ 0 };
+	std::mutex m_in_mutex;
+	std::deque<pending_cmd> m_in_queue;
+	std::mutex m_out_mutex;
+	std::deque<std::pair<u64, std::string>> m_out_queue;  // conn 0 = broadcast
+
+	// engines (emu thread only)
+	bool m_setup_done = false;
+	ioport_port *m_btn_port = nullptr;
+	ioport_port *m_x_port = nullptr;
+	ioport_port *m_y_port = nullptr;
+	ioport_field *m_btn_field[3] = { nullptr, nullptr, nullptr };
+	ioport_field *m_x_field = nullptr;
+	ioport_field *m_y_field = nullptr;
+	std::unordered_map<std::string, ioport_port *> m_port_cache;
+
+	long m_mx = 0, m_my = 0;                 // pointer accumulators (seed rules above)
+	std::deque<move_entry> m_mq;
+	double m_win_t0 = -1.0;
+	long m_win_x = 0, m_win_y = 0;
+
+	std::deque<key_entry> m_kq;
+	std::unordered_map<std::string, int> m_kwant;
+	double m_k_next = -1.0;
+
+	std::deque<click_entry> m_clickq;
+	click_entry m_click_cur{};
+	bool m_click_cur_active = false;
+
+	bool m_movea_ok = false;
+	save_item_handle m_cur_x, m_cur_y, m_cur_en;
+	save_item_handle m_dev_mx, m_dev_my;
+	target_state m_ta{};
+	bool m_ta_active = false;
+
+	// engine V2 belief + round bookkeeping (emu thread only; deliberately
+	// NOT save-registered — COVENANT 1)
+	long m_bx = 0, m_by = 0;             // believed true pointer, px
+	long m_bias_x = 0, m_bias_y = 0;     // reading - belief (glyph hotspot)
+	long m_last_cx = 0, m_last_cy = 0;   // counts issued by the last step
+	double m_infl_x = 0.0, m_infl_y = 0.0;  // px issued but not yet observed
+	double m_infl_decay = 0.5;           // MAME_CTL_INFL_DECAY, per window
+	long m_obs_x = 0, m_obs_y = 0;       // reading at the last observation
+	bool m_obs_valid = false;
+	long m_dead = 2;                     // MAME_CTL_DEADBAND, px
+	long m_windows = 0;                  // windows spent on the current target
+	int m_osc_sx = 0, m_osc_sy = 0;      // sign of the last correction, per axis
+	int m_osc_nx = 0, m_osc_ny = 0;      // sign reversals within this target
+	long m_latch_x = 0, m_latch_y = 0;   // last ACCEPTED target value
+	bool m_latch_valid = false;
+	bool m_latch_seen = false;           // a target has been accepted at all
+	bool m_hot_dirty = false;            // a hotspot shift owes a correction
+	long m_hot_x = 0, m_hot_y = 0;       // glyph hotspot offset: pointer = reading + hot
+	save_item_handle m_cs_seq, m_cs_dx, m_cs_dy;  // VC2 cursor-swap counters
+	std::string m_swap_items;
+	u64 m_cs_last_seq = 0;
+	long m_cs_last_dx = 0, m_cs_last_dy = 0;
+	double m_rest_t = -1.0;              // next at-rest observation, emu time
+	double m_gx = 1.0, m_gy = 1.0;       // learned counts->px gain per axis
+	double m_gain_margin = 1.10;         // MAME_CTL_GAIN_MARGIN (user rule)
+	std::deque<defer_entry> m_aq;
+	long m_flx = 0, m_fly = 0;               // open-loop fallback origin
+	bool m_fl_valid = false;
+	bool m_fb_logged = false;
+	long m_res_x = 0, m_res_y = 0;
+
+	int m_esc_frames = 0;
+	int m_probe_frames = 0;
+	std::vector<ack_ref> m_syncs;
+
+	// legacy tail
+	bool m_tail_active = false;
+	std::FILE *m_tail_fp = nullptr;
+	long m_tail_pos = 0;
+
+	// restore bookkeeping
+	u64 m_presaves = 0;
+	u64 m_postloads = 0;
+	u64 m_reseeds = 0;
+	bool m_reseed_pending = false;
+
+	// counters: cumulative (STAT) and per-period (EV STATS, Lua parity)
+	u64 m_frames = 0, m_ticks = 0;
+	u64 m_cmds = 0, m_file_cmds = 0, m_errs = 0;
+	u64 m_c_move = 0, m_c_movep = 0, m_c_movea = 0, m_c_key = 0, m_c_post = 0;
+	u64 m_p_move = 0, m_p_movep = 0, m_p_movea = 0, m_p_key = 0;
+	u64 m_qx = 0, m_qy = 0, m_ax = 0, m_ay = 0;   // per-period queued/applied counts
+	u64 m_cum_ax = 0, m_cum_ay = 0;
+	u64 m_giveups = 0;                            // cumulative (rare; must survive)
+	u64 m_hist[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };   // receipt->apply ms buckets
+	steady_tp m_last_input{};
+	steady_tp m_last_stats{};
+	steady_tp m_last_hb = std::chrono::steady_clock::now();
+};
+
+ctlsock_module *g_ctlsock = nullptr;
+
+} // anonymous namespace
+
+void ctlsock_init(running_machine &machine)
+{
+	// One module per machine. A hard reset (RESET verb, UI) tears the old
+	// machine down — MACHINE_NOTIFY_EXIT joins the old worker — and re-enters
+	// OSD init on the new one; the old instance is reclaimed here and a fresh
+	// listener binds over the same path (clients see EOF and reconnect —
+	// streamhost reconnects forever, labctl connects per command).
+	delete g_ctlsock;
+	g_ctlsock = new ctlsock_module(machine);
+	g_ctlsock->init();
+}

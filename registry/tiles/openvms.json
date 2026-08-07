@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "id": "openvms",
+  "era_year": 2024,
+  "tileDir": "openvms",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 33,
+        "prelude": "",
+        "line": "  \"openvms     |openvms.sh     |OpenVMS       |licensed |~3-8m   |full    |OpenVMS disks; openvms-decwindows-bridge.sh builds lean-X bridge\"\n",
+        "value": {
+          "key": "openvms",
+          "script": "openvms.sh",
+          "outputDir": "OpenVMS",
+          "class": "licensed",
+          "estimated": "~3-8m",
+          "automation": "full",
+          "produces": "OpenVMS disks; openvms-decwindows-bridge.sh builds lean-X bridge",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "openvms",
+      "value": {
+        "os": "OpenVMS x86-64 V9.2-3",
+        "win": "qemu",
+        "kbd": "type:X",
+        "kbd_reset": "BackSpace",
+        "kbd_note": "Keyboard focus starts in DECterm at a DCL $ prompt",
+        "audio_trigger": "none",
+        "validated": true,
+        "note": "DECwindows Motif desktop through the captured lean-X bridge; absolute pointer is 1:1"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/openvms",
+      "qmp": "/data/vms/streamhost/tiles/openvms/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 59284,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54084,
+      "notes": "dual-VM DECwindows bridge; qmp is the captured Xorg bridge; reset_mode=restart cold-replays fresh X connections"
+    }
+  },
+  "render": {
+    "signalOrder": 33,
+    "tilesManifestOrder": 31,
+    "tilesManifestPrelude": "\n# openvms (slot 84) — TWO-VM DECwindows bridge. A captured 1024x768 Debian\n#   bridge runs lean Xorg only (no Linux WM/DM) with usb-tablet. OpenVMS is an\n#   independent SLIRP X client restored from leanx-preconnect, then replays the\n#   DECterm/FileView/Clock/Calculator fixture. Reset is a cold service restart;\n#   warm loadvm is forbidden because it restores dead X sockets.\n",
+    "tilesManifestInvocation": "emit openvms \\\n  --tile openvms --vmid 84 --udp 54084 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off --fps 30 \\\n  --launcher-file \"$T/openvms/qemu-streamhost.sh\" \\\n  --aux-file \"$T/openvms/bridge-launch.sh\" \\\n  --aux-file \"$T/openvms/bridge-xserverrc\" \\\n  --aux-file \"$T/openvms/DECW_FIXTURE.COM\" \\\n  --env-append-file \"$T/openvms/tile.env.fixture\"\n",
+    "bringUpGroup": 3,
+    "bindingOrder": 37,
+    "bindingPrelude": "",
+    "bindingLine": "  openvms:     { osId: 'openvms',     archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#00a6d6', eraLabel: '2024 · OpenVMS 9.2 · DECwindows' },\n",
+    "museumOrder": 31,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'openvms', displayName: 'OpenVMS x86-64 9.2 — DECwindows', year: 2024,\n    lineage: 'VMS / OpenVMS', arch: 'x86_64', ramMB: 8960,    era: '2020s', accent: '#00a6d6',\n    eraSoftware: ['DECwindows Motif', 'DCL', 'FileView', 'DECterm'],\n    periodBrowser: 'none — DECwindows desktop exhibit',\n    iconicApps: ['DECterm', 'FileView', 'Clock', 'Calculator'],\n    blurb: 'The durable VMS lineage on modern x86-64, presented as its classic network-transparent DECwindows Motif desktop.',\n    notes: 'A two-VM graphical bridge: OpenVMS supplies MWM and the applications while a private lean-X Debian guest supplies only the captured Xorg scanout and absolute tablet input.',\n  },\n",
+    "goldenOrder": 31,
+    "actionMapOrder": 30
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54084,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet in captured Xorg bridge",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 84
+  },
+  "display": {
+    "width": 1024,
+    "height": 768,
+    "bitsPerPixel": 24,
+    "colors": 16777216
+  },
+  "guestDoc": "docs/guests/openvms.md",
+  "credentialsRef": "guest/openvms",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "openvms",
+      "SH_QMP": "/data/vms/streamhost/tiles/openvms/qmp.sock",
+      "SH_PORT": "54084",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/openvms/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/openvms/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "restart",
+      "SH_GOLDEN_SNAPSHOT": "leanx-preconnect",
+      "SH_GOLDEN_DISKS": "openvms-community.qcow2 OVMF_VARS.qcow2 openvms-decwindows-bridge.qcow2",
+      "SH_FIXTURE_DESC": "OpenVMS DECwindows Motif at 1024x768; DECterm DCL prompt, FileView, Clock, Calculator; cold service restart replays fresh X connections"
+    },
+    "vmidLabel": 84,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "openvms",
+        "--vmid",
+        "84",
+        "--udp",
+        "54084",
+        "--pointer",
+        "abs",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/openvms/qemu-streamhost.sh",
+        "--aux-file",
+        "$T/openvms/bridge-launch.sh",
+        "--aux-file",
+        "$T/openvms/bridge-xserverrc",
+        "--aux-file",
+        "$T/openvms/DECW_FIXTURE.COM",
+        "--env-append-file",
+        "$T/openvms/tile.env.fixture"
+      ],
+      "deviceSetId": "openvms-decwindows-bridge-xorg",
+      "launcher": "streamhost/tiles/openvms/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/openvms/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "dual: pc-i440fx-11.0 bridge + pc-q35-11.0 OpenVMS",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 8960,
+      "smp": 3,
+      "vga": "std",
+      "deviceSetSummary": [
+        "supervisor PID in $D/qemu.pid owns both QEMU processes",
+        "bridge: pc-i440fx-11.0, 768 MiB, std VGA, dbus display, usb-tablet, e1000",
+        "bridge: hostfwd 127.0.0.1:59284->:22 and 127.0.0.1:6610->:6000; lean Xorg -listen tcp -ac; no Linux WM/DM",
+        "OpenVMS: pc-q35-11.0, 8192 MiB, OVMF, AHCI DKA0, e1000, display none",
+        "OpenVMS: independent SLIRP reaches bridge through 10.0.2.2:6610",
+        "OpenVMS: unconditional -loadvm leanx-preconnect",
+        "captured bridge QMP: $D/qmp.sock; OpenVMS control QMP: $D/openvms-qmp.sock"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "dual: pc-i440fx-11.0 bridge + pc-q35-11.0 OpenVMS",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 8960,
+        "smp": 3,
+        "vga": "std",
+        "deviceSetSummary": [
+          "supervisor PID in $D/qemu.pid owns both QEMU processes",
+          "bridge: pc-i440fx-11.0, 768 MiB, std VGA, dbus display, usb-tablet, e1000",
+          "bridge: hostfwd 127.0.0.1:59284->:22 and 127.0.0.1:6610->:6000; lean Xorg -listen tcp -ac; no Linux WM/DM",
+          "OpenVMS: pc-q35-11.0, 8192 MiB, OVMF, AHCI DKA0, e1000, display none",
+          "OpenVMS: independent SLIRP reaches bridge through 10.0.2.2:6610",
+          "OpenVMS: unconditional -loadvm leanx-preconnect",
+          "captured bridge QMP: $D/qmp.sock; OpenVMS control QMP: $D/openvms-qmp.sock"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher is the production dual-VM stack and cold-reset authority"
+      }
+    },
+    "bringUpOrder": 33
+  },
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#00a6d6",
+    "eraLabel": "2024 · OpenVMS 9.2 · DECwindows"
+  },
+  "museum": {
+    "id": "openvms",
+    "displayName": "OpenVMS x86-64 9.2 — DECwindows",
+    "year": 2024,
+    "lineage": "VMS / OpenVMS",
+    "arch": "x86_64",
+    "ramMB": 8960,
+    "era": "2020s",
+    "accent": "#00a6d6",
+    "eraSoftware": [
+      "DECwindows Motif",
+      "DCL",
+      "FileView",
+      "DECterm"
+    ],
+    "periodBrowser": "none — DECwindows desktop exhibit",
+    "iconicApps": [
+      "DECterm",
+      "FileView",
+      "Clock",
+      "Calculator"
+    ],
+    "blurb": "The durable VMS lineage on modern x86-64, presented as its classic network-transparent DECwindows Motif desktop.",
+    "notes": "A two-VM graphical bridge: OpenVMS supplies MWM and the applications while a private lean-X Debian guest supplies only the captured Xorg scanout and absolute tablet input."
+  },
+  "reset": {
+    "tileDir": "openvms",
+    "pointer": "PASS (usb-tablet 1:1 at 20%, 50%, 80%)",
+    "touch": false,
+    "resetMode": "restart",
+    "snapshot": null,
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "OpenVMS DECwindows Motif desktop at 1024x768 with DECterm at a DCL $ prompt, FileView, Clock, and Calculator. Cold service restart starts fresh Xorg and OpenVMS SLIRP processes, restores leanx-preconnect, and replays the fixture."
+  },
+  "notes": [
+    "production slot 84/UDP 54084/bindingOrder 37/bringUpOrder 33 retained",
+    "graphical bridge is a new two-QEMU tile pattern: captured lean Xorg bridge plus OpenVMS network X client",
+    "Xorg -ac is reachable only behind QEMU host-loopback NAT at 127.0.0.1:6610",
+    "warm loadvm is forbidden because it restores dead X sockets; reset is a cold streamhost service restart",
+    "absolute pointer and keyboard are injected into the captured bridge; OpenVMS supplies DECW$MWM and all visible apps"
+  ],
+  "migrationExceptions": []
+}

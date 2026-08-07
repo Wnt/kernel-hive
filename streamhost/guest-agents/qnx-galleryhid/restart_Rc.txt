@@ -1,0 +1,6 @@
+slay -f devi-elo 2>/dev/null
+sleep 1
+devi-elo -G smartset -R fd -d/dev/ser1 -s abs -c &
+sleep 3
+echo RC_STARTED
+pidin -p devi-elo 2>/dev/null | head -3

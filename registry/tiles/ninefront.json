@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "id": "ninefront",
+  "era_year": 2011,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 3,
+        "prelude": "",
+        "line": "  \"9front      |9front.sh      |9front      |fast     |~5-8m   |full   |9front-11554.amd64.qcow2\"\n",
+        "value": {
+          "key": "9front",
+          "script": "9front.sh",
+          "outputDir": "9front",
+          "class": "fast",
+          "estimated": "~5-8m",
+          "automation": "full",
+          "produces": "9front-11554.amd64.qcow2",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 3
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "ninefront",
+      "value": {
+        "os": "9front (Plan 9, rio)",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            600,
+            200
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "rio is mouse-driven; keyboard photon unverified",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/ninefront",
+      "qmp": "/data/vms/streamhost/tiles/ninefront/qmp.sock",
+      "pointer_mode": "warpd",
+      "warpd_port": 57793,
+      "warpd_addr": "127.0.0.1:57793",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54096,
+      "notes": "warpd agent on host port 57793 (guest :7777); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 14,
+    "tilesManifestOrder": 8,
+    "tilesManifestPrelude": "\n# ninefront / 9front (VMID 96) — q35 disk, PS/2, intel-hda. GENERIC. Disk is a\n#   virtio-less ide-hd on bus ide.0; whole drive+net string + the baked\n#   `-loadvm golden` (the golden lives INSIDE the 9front qcow2; the disk runs\n#   WITHOUT -snapshot so savevm persists) goes in --extra.\n# POINTER=warpd: 9front's kernel devmouse accepts true absolute injection via\n# /dev/mousein \"A x y buttons msec\" lines. In-guest agent /amd64/bin/warpd\n# (guest-agents/ninefront/warpd.c, compiled IN-GUEST with 6c/6l) listens on\n# tcp!*!7777; autostarted at boot by /cfg/cirno/termrc. The daemon reaches it\n# via the hostfwd baked onto the EXISTING -netdev user below (host\n# 127.0.0.1:57793 -> guest :7777; a netdev backend property, NOT a -device =>\n# loadvm golden matches). Agent BAKED into the golden qcow2 disk AND the settled\n# rio/app RAM snapshot with boot replay (2026-07-15).\n",
+    "tilesManifestInvocation": "emit ninefront \\\n  --tile ninefront --vmid 96 --udp 54096 --pointer warpd --warpd-addr 127.0.0.1:57793 --audio on --audio-dev hda \\\n  --input-dev ps2 --mem 1024 --smp 2 --machine pc-q35-11.0 --cpu host --vga std --fps 60 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0 -loadvm golden\"\n",
+    "bringUpGroup": 1,
+    "bindingOrder": 10,
+    "bindingPrelude": "",
+    "bindingLine": "  ninefront:   { osId: 'ninefront',   archetypeId: 'mono-terminal',   transport: 'streamhost',  accentColor: '#c9c05b', eraLabel: '2011 · 9front (Plan 9)', bootVideo: '/boot/ninefront/boot.mp4' },\n",
+    "museumOrder": 8,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'ninefront', displayName: '9front (Plan 9)', year: 2011,\n    lineage: 'Plan 9 from Bell Labs', arch: 'x86_64', ramMB: 512,    era: '2010s', accent: '#c9c05b',\n    eraSoftware: ['rio', 'acme', 'stats', 'catclock', 'rc shell', '9P'],\n    periodBrowser: 'mothra / abaco',\n    iconicApps: ['acme editor', 'stats', 'catclock', 'rio windows', 'sam'],\n    blurb: 'Bell Labs’ successor to Unix, still alive — everything is a file, over the network.',\n  },\n",
+    "goldenOrder": 9,
+    "actionMapOrder": 11
+  },
+  "tileDir": "ninefront",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54096,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "warpd",
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "agentAddress": "127.0.0.1:57793"
+    },
+    "slot": 96
+  },
+  "guestDoc": "docs/guests/ninefront.md",
+  "credentialsRef": "guest/ninefront",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "ninefront",
+      "SH_QMP": "/data/vms/streamhost/tiles/ninefront/qmp.sock",
+      "SH_PORT": "54096",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "warpd",
+      "SH_WARPD_ADDR": "127.0.0.1:57793",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/ninefront/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/ninefront/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 96,
+    "qemu": {
+      "mode": "generic",
+      "emitArgs": [
+        "--tile",
+        "ninefront",
+        "--vmid",
+        "96",
+        "--udp",
+        "54096",
+        "--pointer",
+        "warpd",
+        "--warpd-addr",
+        "127.0.0.1:57793",
+        "--audio",
+        "on",
+        "--audio-dev",
+        "hda",
+        "--input-dev",
+        "ps2",
+        "--mem",
+        "1024",
+        "--smp",
+        "2",
+        "--machine",
+        "pc-q35-11.0",
+        "--cpu",
+        "host",
+        "--vga",
+        "std",
+        "--fps",
+        "60",
+        "--boot",
+        "c",
+        "--extra",
+        "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0 -loadvm golden"
+      ],
+      "deviceSetId": "ninefront-current",
+      "machine": "pc-q35-11.0",
+      "cpu": "host",
+      "vga": "std",
+      "memoryMB": 1024,
+      "smp": 2,
+      "audioDevice": "hda",
+      "inputDevice": "ps2",
+      "boot": "c",
+      "extraArgs": "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0 -loadvm golden",
+      "accel": "kvm",
+      "binary": "qemu-system-x86_64",
+      "deviceSetSummary": [
+        "-name streamhost-ninefront",
+        "-enable-kvm -m 1024 -smp 2",
+        "-machine pc-q35-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device intel-hda -device hda-output,audiodev=snd0",
+        "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0 -loadvm golden",
+        "-qmp unix:/data/vms/streamhost/tiles/ninefront/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/tiles/ninefront/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-q35-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 1024,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-ninefront",
+          "-enable-kvm -m 1024 -smp 2",
+          "-machine pc-q35-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device intel-hda -device hda-output,audiodev=snd0",
+          "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0 -loadvm golden",
+          "-qmp unix:/data/vms/streamhost/tiles/ninefront/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/tiles/ninefront/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-q35-11.0, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 8
+  },
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "streamhost",
+    "accentColor": "#c9c05b",
+    "eraLabel": "2011 · 9front (Plan 9)",
+    "bootVideo": "/boot/ninefront/boot.mp4"
+  },
+  "museum": {
+    "id": "ninefront",
+    "displayName": "9front (Plan 9)",
+    "year": 2011,
+    "lineage": "Plan 9 from Bell Labs",
+    "arch": "x86_64",
+    "ramMB": 512,
+    "era": "2010s",
+    "accent": "#c9c05b",
+    "eraSoftware": [
+      "rio",
+      "acme",
+      "stats",
+      "catclock",
+      "rc shell",
+      "9P"
+    ],
+    "periodBrowser": "mothra / abaco",
+    "iconicApps": [
+      "acme editor",
+      "stats",
+      "catclock",
+      "rio windows",
+      "sam"
+    ],
+    "blurb": "Bell Labs’ successor to Unix, still alive — everything is a file, over the network."
+  },
+  "reset": {
+    "tileDir": "ninefront",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Settled 9front rio desktop with acme, stats, catclock, and a focused rc terminal; golden restores directly into the fully painted, keyboard-ready fixture."
+  },
+  "migrationExceptions": []
+}

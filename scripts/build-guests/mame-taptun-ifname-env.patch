@@ -1,0 +1,69 @@
+MAME taptun (Linux): attach to a NAMED tap interface, not one global name.
+
+WHY
+
+Upstream hardcodes the tap device name as `tap-mess-<uid>-0`, so every MAME
+process running as the same user competes for one interface — and MAME runs as
+root here. The gallery needs a tap per tile (and namespaced taps for the clone
+experiments under /data/vms/soltest, which run beside the live exhibit), and
+TUNSETIFF only ever attaches to the one name it is given.
+
+`MAME_TAP_IFNAME` selects the interface. Unset keeps upstream's name byte for
+byte, so this is inert for every other MAME use — the same env-gating rule
+`IRIX_SHM_PATH` follows in mame-newport-shm-framebuffer.patch.
+
+`m_ifname` is widened to IFNAMSIZ while we are here: at char[10] the existing
+`strncpy` could neither hold a full-length interface name nor NUL-terminate one.
+
+Note what this patch is NOT: the host interface a device is bound to is still
+selected by MAME's machine cfg file (`<system><network><device tag interface/>`
+in <cfg_directory>/<system>.cfg), which is what makes networking work at all
+with `-video none` and no UI. This patch only decides WHICH host tap the
+taptun provider's single device opens.
+
+diff --git a/src/osd/modules/netdev/taptun.cpp b/src/osd/modules/netdev/taptun.cpp
+index b765a667..ffc84f65 100644
+--- a/src/osd/modules/netdev/taptun.cpp
++++ b/src/osd/modules/netdev/taptun.cpp
+@@ -14,6 +14,7 @@
+ #include "util/hashing.h" // crc32_creator
+ #include "util/unicode.h"
+ 
++#include <cstdlib>
+ #include <memory>
+ #include <vector>
+ 
+@@ -94,7 +95,7 @@ private:
+ 	bool m_receive_pending;
+ #else
+ 	int m_fd = -1;
+-	char m_ifname[10];
++	char m_ifname[IFNAMSIZ];
+ #endif
+ 	uint8_t m_buf[2048];
+ };
+@@ -112,7 +113,14 @@ netdev_tap::netdev_tap(const char *name, network_handler &handler)
+ 	struct ifreq ifr;
+ 	memset(&ifr, 0, sizeof(ifr));
+ 	ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
+-	sprintf(ifr.ifr_name, "tap-mess-%d-0", getuid());
++	// Interface name: MAME_TAP_IFNAME when set, so several MAME instances on one
++	// host can each own their own tap device (upstream hardcodes ONE global
++	// name per uid). Unset keeps upstream behaviour byte for byte.
++	char const *const env_ifname = std::getenv("MAME_TAP_IFNAME");
++	if (env_ifname && *env_ifname)
++		snprintf(ifr.ifr_name, IFNAMSIZ, "%s", env_ifname);
++	else
++		snprintf(ifr.ifr_name, IFNAMSIZ, "tap-mess-%d-0", getuid());
+ 	if(ioctl(m_fd, TUNSETIFF, (void *)&ifr) == -1) {
+ 		osd_printf_verbose("tap: ioctl failed %d\n", errno);
+ 		close(m_fd);
+@@ -120,7 +128,7 @@ netdev_tap::netdev_tap(const char *name, network_handler &handler)
+ 		return;
+ 	}
+ 	osd_printf_verbose("netdev_tap: network up!\n");
+-	strncpy(m_ifname, ifr.ifr_name, 10);
++	snprintf(m_ifname, IFNAMSIZ, "%s", ifr.ifr_name);
+ 	fcntl(m_fd, F_SETFL, O_NONBLOCK);
+ #elif defined(_WIN32)
+ 	std::wstring device_path(L"" USERMODEDEVICEDIR);

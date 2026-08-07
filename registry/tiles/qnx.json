@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "id": "qnx",
+  "era_year": 2010,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 8,
+        "prelude": "",
+        "line": "  \"qnx         |qnx.sh         |QNX         |fast     |~5-10m  |full   |QNX650Live.iso (drives Photon first-run to desktop)\"\n",
+        "value": {
+          "key": "qnx",
+          "script": "qnx.sh",
+          "outputDir": "QNX",
+          "class": "fast",
+          "estimated": "~5-10m",
+          "automation": "full",
+          "produces": "QNX650Live.iso (drives Photon first-run to desktop)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 8
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/qnx",
+      "qmp": "/data/vms/streamhost/tiles/qnx/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54112,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 22,
+    "tilesManifestOrder": 19,
+    "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP F — SPECIAL tiles (non-standard boot/firmware/overlay). Read the notes.\n# ---------------------------------------------------------------------------\n\n# qnx (VMID 112) — QNX 6.5 LiveCD, Cirrus VGA, AC97, TABLET-FREE (PS/2 relative).\n#   VERBATIM LAUNCHER: golden.qcow2 (ide, the savevm store — the LiveCD still\n#   boots via -boot d) + the legacy HMP monitor on tcp 7112 (bring-up guest\n#   keystrokes). Re-baked 2026-07-15 (docs/guests/qnx.md \"LIVE PROMOTION\"): the\n#   usb-tablet made qemu_input_is_absolute() true and dbus RelMotion refuse,\n#   freezing the pointer; the tablet-free golden is 1024x768 Photon with\n#   SH_POINTER=rel driving the built-in i8042 PS/2 mouse 1:1 (SPA pointer-lock\n#   type=4 direct-rel). loadvm needs exactly this device set: NO usb, NO tablet.\n",
+    "tilesManifestInvocation": "emit qnx \\\n  --tile qnx --vmid 112 --udp 54112 --pointer rel --audio on --fps 30 \\\n  --launcher-file \"$T/qnx/qemu-streamhost.sh\"\n",
+    "bringUpGroup": 5,
+    "bindingOrder": 24,
+    "bindingPrelude": "",
+    "bindingLine": "  qnx:         { osId: 'qnx',          archetypeId: 'putty-lcd',       transport: 'streamhost', accentColor: '#1b6fb5', eraLabel: '2010 · QNX Neutrino 6.5', pointerRel: true },\n",
+    "museumOrder": 22,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'qnx', displayName: 'QNX Neutrino 6.5', year: 2010,\n    lineage: 'QNX/BlackBerry', arch: 'i386', ramMB: 256,    era: '2010s', accent: '#1b6fb5',\n    eraSoftware: ['Photon microGUI', 'the app shelf', 'pterm', 'Voyager'],\n    periodBrowser: 'Voyager',\n    iconicApps: ['Photon microGUI', 'the app shelf', 'Voyager'],\n    blurb: 'A hard-real-time microkernel OS whose Photon microGUI once fit a web browser and a whole desktop onto a single floppy.',\n    notes: 'Live streamhost tile with a true 1:1 relative mouse — the guest owns a PS/2 pointer, so under pointer lock the SPA ships raw deltas straight to it. QNX 6.5.0 self-hosting live CD. Archetype: putty-lcd (early-2000s embedded/industrial panel-PC fit).',\n  },\n",
+    "goldenOrder": 22
+  },
+  "tileDir": "qnx",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54112,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 112
+  },
+  "guestDoc": "docs/guests/qnx.md",
+  "credentialsRef": "guest/qnx",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "qnx",
+      "SH_QMP": "/data/vms/streamhost/tiles/qnx/qmp.sock",
+      "SH_PORT": "54112",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "rel",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/qnx/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/qnx/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 112,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "qnx",
+        "--vmid",
+        "112",
+        "--udp",
+        "54112",
+        "--pointer",
+        "rel",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/qnx/qemu-streamhost.sh"
+      ],
+      "deviceSetId": "qnx-current",
+      "launcher": "streamhost/tiles/qnx/qemu-streamhost.sh",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 512,
+      "smp": 1,
+      "vga": "cirrus",
+      "deviceSetSummary": [
+        "-name streamhost-qnx",
+        "-enable-kvm -m 512 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$STATE\",if=ide,index=0,media=disk,format=qcow2,cache=writeback",
+        "-cdrom /data/gallery-guests/QNX/QNX650Live.iso -boot d",
+        "-vga cirrus",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-monitor tcp:127.0.0.1:7112,server,nowait",
+        "-qmp unix:/data/vms/streamhost/tiles/qnx/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/tiles/qnx/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 512,
+        "smp": 1,
+        "vga": "cirrus",
+        "deviceSetSummary": [
+          "-name streamhost-qnx",
+          "-enable-kvm -m 512 -smp 1",
+          "-machine pc-i440fx-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$STATE\",if=ide,index=0,media=disk,format=qcow2,cache=writeback",
+          "-cdrom /data/gallery-guests/QNX/QNX650Live.iso -boot d",
+          "-vga cirrus",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-monitor tcp:127.0.0.1:7112,server,nowait",
+          "-qmp unix:/data/vms/streamhost/tiles/qnx/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/tiles/qnx/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 19
+  },
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#1b6fb5",
+    "eraLabel": "2010 · QNX Neutrino 6.5",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "qnx",
+    "displayName": "QNX Neutrino 6.5",
+    "year": 2010,
+    "lineage": "QNX/BlackBerry",
+    "arch": "i386",
+    "ramMB": 256,
+    "era": "2010s",
+    "accent": "#1b6fb5",
+    "eraSoftware": [
+      "Photon microGUI",
+      "the app shelf",
+      "pterm",
+      "Voyager"
+    ],
+    "periodBrowser": "Voyager",
+    "iconicApps": [
+      "Photon microGUI",
+      "the app shelf",
+      "Voyager"
+    ],
+    "blurb": "A hard-real-time microkernel OS whose Photon microGUI once fit a web browser and a whole desktop onto a single floppy.",
+    "notes": "Live streamhost tile with a true 1:1 relative mouse — the guest owns a PS/2 pointer, so under pointer lock the SPA ships raw deltas straight to it. QNX 6.5.0 self-hosting live CD. Archetype: putty-lcd (early-2000s embedded/industrial panel-PC fit)."
+  },
+  "reset": {
+    "tileDir": "qnx",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "SKIP",
+    "fixture": "QNX Neutrino 6.5 Photon 1024x768, 64K devg-svga on -vga cirrus, tablet-free golden (2026-07-15 re-bake): PS/2 relative pointer driven 1:1 via pointer-lock type=4; HW cursor overlay uncaptured; no focused echo field."
+  },
+  "migrationExceptions": []
+}

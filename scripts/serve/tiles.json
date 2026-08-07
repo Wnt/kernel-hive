@@ -1,0 +1,150 @@
+{
+  "reactos": {
+    "udpPort": 4433,
+    "hashFile": "/data/vms/streamhost/tiles/reactos/cert_hash_b64.txt"
+  },
+  "win95": {
+    "udpPort": 54091,
+    "hashFile": "/data/vms/streamhost/tiles/win95/cert_hash_b64.txt"
+  },
+  "haiku": {
+    "udpPort": 54107,
+    "hashFile": "/data/vms/streamhost/tiles/haiku/cert_hash_b64.txt"
+  },
+  "alpine": {
+    "udpPort": 54081,
+    "hashFile": "/data/vms/streamhost/tiles/alpine/cert_hash_b64.txt"
+  },
+  "tinycore": {
+    "udpPort": 54082,
+    "hashFile": "/data/vms/streamhost/tiles/tinycore/cert_hash_b64.txt"
+  },
+  "win311": {
+    "udpPort": 54090,
+    "hashFile": "/data/vms/streamhost/tiles/win311/cert_hash_b64.txt"
+  },
+  "win2000": {
+    "udpPort": 54093,
+    "hashFile": "/data/vms/streamhost/tiles/win2000/cert_hash_b64.txt"
+  },
+  "winxp": {
+    "udpPort": 54094,
+    "hashFile": "/data/vms/streamhost/tiles/winxp/cert_hash_b64.txt"
+  },
+  "win98se": {
+    "udpPort": 54092,
+    "hashFile": "/data/vms/streamhost/tiles/win98se/cert_hash_b64.txt"
+  },
+  "freedos": {
+    "udpPort": 54095,
+    "hashFile": "/data/vms/streamhost/tiles/freedos/cert_hash_b64.txt"
+  },
+  "msdoswin1": {
+    "udpPort": 54113,
+    "hashFile": "/data/vms/streamhost/tiles/msdoswin1/cert_hash_b64.txt"
+  },
+  "serenityos": {
+    "udpPort": 54102,
+    "hashFile": "/data/vms/streamhost/tiles/serenityos/cert_hash_b64.txt"
+  },
+  "toaruos": {
+    "udpPort": 54098,
+    "hashFile": "/data/vms/streamhost/tiles/toaruos/cert_hash_b64.txt"
+  },
+  "helenos": {
+    "udpPort": 54099,
+    "hashFile": "/data/vms/streamhost/tiles/helenos/cert_hash_b64.txt"
+  },
+  "ninefront": {
+    "udpPort": 54096,
+    "hashFile": "/data/vms/streamhost/tiles/ninefront/cert_hash_b64.txt"
+  },
+  "kolibrios": {
+    "udpPort": 54097,
+    "hashFile": "/data/vms/streamhost/tiles/kolibrios/cert_hash_b64.txt"
+  },
+  "solaris": {
+    "udpPort": 54100,
+    "hashFile": "/data/vms/streamhost/tiles/solariscde/cert_hash_b64.txt"
+  },
+  "nt4": {
+    "udpPort": 54089,
+    "hashFile": "/data/vms/streamhost/tiles/nt4/cert_hash_b64.txt"
+  },
+  "templeos": {
+    "udpPort": 54105,
+    "hashFile": "/data/vms/streamhost/tiles/templeos/cert_hash_b64.txt"
+  },
+  "os2warp": {
+    "udpPort": 54108,
+    "hashFile": "/data/vms/streamhost/tiles/os2warp/cert_hash_b64.txt"
+  },
+  "aros": {
+    "udpPort": 54110,
+    "hashFile": "/data/vms/streamhost/tiles/amigaos/cert_hash_b64.txt"
+  },
+  "qnx": {
+    "udpPort": 54112,
+    "hashFile": "/data/vms/streamhost/tiles/qnx/cert_hash_b64.txt"
+  },
+  "postmarketos": {
+    "udpPort": 54103,
+    "hashFile": "/data/vms/streamhost/tiles/postmarketos/cert_hash_b64.txt"
+  },
+  "android": {
+    "udpPort": 54101,
+    "hashFile": "/data/vms/streamhost/tiles/android/cert_hash_b64.txt"
+  },
+  "sailfishos": {
+    "udpPort": 54104,
+    "hashFile": "/data/vms/streamhost/tiles/sailfishos/cert_hash_b64.txt"
+  },
+  "c64": {
+    "udpPort": 54114,
+    "hashFile": "/data/vms/streamhost/tiles/c64/cert_hash_b64.txt"
+  },
+  "atarist": {
+    "udpPort": 54116,
+    "hashFile": "/data/vms/streamhost/tiles/atarist/cert_hash_b64.txt"
+  },
+  "apple2": {
+    "udpPort": 54117,
+    "hashFile": "/data/vms/streamhost/tiles/apple2/cert_hash_b64.txt"
+  },
+  "amiga": {
+    "udpPort": 54118,
+    "hashFile": "/data/vms/streamhost/tiles/amiga/cert_hash_b64.txt"
+  },
+  "redstar2": {
+    "udpPort": 54120,
+    "hashFile": "/data/vms/streamhost/tiles/redstar2/cert_hash_b64.txt"
+  },
+  "redstar3": {
+    "udpPort": 54121,
+    "hashFile": "/data/vms/streamhost/tiles/redstar3/cert_hash_b64.txt"
+  },
+  "amstradcpc": {
+    "udpPort": 54119,
+    "hashFile": "/data/vms/streamhost/tiles/amstradcpc/cert_hash_b64.txt"
+  },
+  "nt351": {
+    "udpPort": 54083,
+    "hashFile": "/data/vms/streamhost/tiles/nt351/cert_hash_b64.txt"
+  },
+  "openvms": {
+    "udpPort": 54084,
+    "hashFile": "/data/vms/streamhost/tiles/openvms/cert_hash_b64.txt"
+  },
+  "irix": {
+    "udpPort": 54122,
+    "hashFile": "/data/vms/streamhost/tiles/irix/cert_hash_b64.txt"
+  },
+  "mpf2": {
+    "udpPort": 54124,
+    "hashFile": "/data/vms/streamhost/tiles/mpf2/cert_hash_b64.txt"
+  },
+  "win11": {
+    "udpPort": 54123,
+    "hashFile": "/data/vms/streamhost/tiles/win11/cert_hash_b64.txt"
+  }
+}

@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "id": "reactos",
+  "era_year": 2024,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 4,
+        "prelude": "",
+        "line": "  \"reactos     |reactos.sh     |ReactOS     |fast     |~3-5m   |full   |ReactOS.iso (live CD)\"\n",
+        "value": {
+          "key": "reactos",
+          "script": "reactos.sh",
+          "outputDir": "ReactOS",
+          "class": "fast",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "ReactOS.iso (live CD)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 4
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "reactos",
+      "value": {
+        "os": "ReactOS",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            120,
+            120
+          ],
+          "b": [
+            560,
+            300
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "Super opens Start menu (Windows-like)",
+        "audio_trigger": "tone",
+        "validated": true,
+        "note": "2026-07-04 KVM-flip retune: X:99 coords are NOT 1:1 with guest px (zoom-to-fit scale/offset; e.g. X:99 560,300 lands the guest cursor near frame 445,190). Pair a=[120,120]/b=[560,300] verified to sweep the cursor across contrasting regions -> reliable input->photon (97.8% frame-byte delta). Prior a=[120,360]/b=[480,150] sat in a low-delta zone under contention (report 0/5)."
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/reactos",
+      "qmp": "/data/vms/streamhost/tiles/reactos/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 4433,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 0,
+    "tilesManifestOrder": 2,
+    "tilesManifestPrelude": "\n# reactos (VMID 106) — NT-era LiveCD + golden fixture. UDP 4433. VERBATIM\n#   LAUNCHER: boots the LiveCD (-boot d) with reactos-golden.qcow2 attached\n#   solely to hold the savevm 'golden' snapshot (no -snapshot, no floppy —\n#   matches the baked device set). Golden store canonical at\n#   /data/gallery-guests/ReactOS/ (old /data/reactos-golden whitelisted).\n",
+    "tilesManifestInvocation": "emit reactos \\\n  --tile reactos --vmid 106 --udp 4433 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/reactos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/reactos/tile.env.fixture\"\n",
+    "bringUpGroup": 0,
+    "bindingOrder": 20,
+    "bindingPrelude": "",
+    "bindingLine": "  reactos:     { osId: 'reactos',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#2f6fba', eraLabel: '2024 · ReactOS 0.4.14' },\n",
+    "museumOrder": 17,
+    "museumPrelude": "\n  // ---- 7 newest gallery OSes ----\n",
+    "museumBlock": "  {\n    id: 'reactos', displayName: 'ReactOS 0.4.14', year: 2024,\n    lineage: 'Windows NT / ReactOS', arch: 'i386', ramMB: 512,    era: '2020s', accent: '#2f6fba',\n    eraSoftware: ['ReactOS Explorer', 'Start menu / taskbar', 'App Manager', 'ReactOS Shell'],\n    periodBrowser: 'no bundled browser (NT 5.x live CD)',\n    iconicApps: ['ReactOS Explorer', 'Command Prompt', 'App Manager', 'Winefile'],\n    blurb: 'The open-source Windows-2000 — a from-scratch, binary-compatible reimplementation of the NT 5.x kernel and Win32.',\n    notes: 'Live streamhost tile. ReactOS 0.4.14 live CD (0.4.15 hangs QEMU 11 kernel init). Archetype: beige-tower-crt (a Windows-2000-era beige tower is the right period fit).',\n  },\n",
+    "goldenOrder": 0,
+    "actionMapOrder": 21
+  },
+  "tileDir": "reactos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 4433,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "legacyPortException": true,
+    "slot": 106
+  },
+  "guestDoc": "docs/guests/reactos.md",
+  "credentialsRef": "guest/reactos",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "reactos",
+      "SH_QMP": "/data/vms/streamhost/tiles/reactos/qmp.sock",
+      "SH_PORT": "4433",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/reactos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/reactos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "GOLDEN_RESET_MODE": "loadvm",
+      "GOLDEN_SNAPSHOT": "golden",
+      "GOLDEN_SNAPSHOT_STORE": "/data/gallery-guests/ReactOS/reactos-golden.qcow2",
+      "GOLDEN_MANIFEST": "/data/gallery-guests/ReactOS/golden-manifest.json"
+    },
+    "vmidLabel": 106,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "reactos",
+        "--vmid",
+        "106",
+        "--udp",
+        "4433",
+        "--pointer",
+        "abs",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/reactos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/reactos/tile.env.fixture"
+      ],
+      "deviceSetId": "reactos-current",
+      "launcher": "streamhost/tiles/reactos/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/reactos/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 512,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-reactos",
+        "-enable-kvm -m 512 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-cdrom /data/gallery-guests/ReactOS/ReactOS.iso -boot d",
+        "-drive file=$GDIR/reactos-golden.qcow2,if=ide,index=0,media=disk,format=qcow2",
+        "-loadvm golden",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb -device usb-tablet",
+        "-qmp unix:/data/vms/streamhost/tiles/reactos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/tiles/reactos/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 512,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-reactos",
+          "-enable-kvm -m 512 -smp 1",
+          "-machine pc-i440fx-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-cdrom /data/gallery-guests/ReactOS/ReactOS.iso -boot d",
+          "-drive file=$GDIR/reactos-golden.qcow2,if=ide,index=0,media=disk,format=qcow2",
+          "-loadvm golden",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb -device usb-tablet",
+          "-qmp unix:/data/vms/streamhost/tiles/reactos/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/tiles/reactos/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 2
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#2f6fba",
+    "eraLabel": "2024 · ReactOS 0.4.14"
+  },
+  "museum": {
+    "id": "reactos",
+    "displayName": "ReactOS 0.4.14",
+    "year": 2024,
+    "lineage": "Windows NT / ReactOS",
+    "arch": "i386",
+    "ramMB": 512,
+    "era": "2020s",
+    "accent": "#2f6fba",
+    "eraSoftware": [
+      "ReactOS Explorer",
+      "Start menu / taskbar",
+      "App Manager",
+      "ReactOS Shell"
+    ],
+    "periodBrowser": "no bundled browser (NT 5.x live CD)",
+    "iconicApps": [
+      "ReactOS Explorer",
+      "Command Prompt",
+      "App Manager",
+      "Winefile"
+    ],
+    "blurb": "The open-source Windows-2000 — a from-scratch, binary-compatible reimplementation of the NT 5.x kernel and Win32.",
+    "notes": "Live streamhost tile. ReactOS 0.4.14 live CD (0.4.15 hangs QEMU 11 kernel init). Archetype: beige-tower-crt (a Windows-2000-era beige tower is the right period fit)."
+  },
+  "reset": {
+    "tileDir": "reactos",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "ReactOS 0.4.14 LiveCD clean desktop; focused empty Notepad (caret = keyboard surface); pointer on clear desktop; taskbar clock hidden."
+  }
+}

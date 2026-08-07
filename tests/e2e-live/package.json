@@ -1,0 +1,17 @@
+{
+  "name": "kernel-hive-e2e",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "qa:lap": "node qa-lap.mjs",
+    "test:firefox": "playwright test -c e2e/firefoxSmoke.config.ts",
+    "test:input": "playwright test -c e2e/streamhostInput.config.ts",
+    "test:boot": "playwright test -c e2e/bootVideo.config.ts",
+    "test:scene": "playwright test -c e2e/sceneInteractions.config.ts",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
+  }
+}

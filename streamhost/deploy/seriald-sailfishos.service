@@ -1,0 +1,13 @@
+[Unit]
+Description=sailfishos serial console daemon (seriald, reconnecting) — idle-CPU fix
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /data/vms/streamhost/tiles/sailfishos/seriald.py /data/vms/streamhost/tiles/sailfishos/serial.sock /data/vms/streamhost/tiles/sailfishos
+Restart=on-failure
+RestartSec=2
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

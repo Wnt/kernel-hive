@@ -1,0 +1,18 @@
+assets/toaruos/Desktop/*.launcher
+==================================
+Six ToaruOS desktop launcher stubs that surface built-in ToaruOS apps/games as
+visible desktop icons (G2 gallery content pass). Each is a 3-line text file that
+references a binary ALREADY shipped inside the stock ToaruOS v2.3.2 image.iso
+ramdisk (mines.krk, pong, julia, plasma, calculator, imgviewer) plus a stock
+icon name — no third-party/binary game assets are added.
+
+LICENSE: ToaruOS is free software under the NCSA/University of Illinois license
+(github.com/klange/toaruos). These launcher stubs are trivially reproducible
+config and are freely distributable.
+
+Baked into the live tile by toaruos.sh -> bake_desktop_games(): the stock ISO's
+/ramdisk.igz (gzip ustar) is extracted, these files are appended under
+home/local/Desktop/, the ramdisk is re-gzipped, and the ISO is remastered with
+xorriso replaying the original El-Torito boot record. Verified 2026-07-06: a
+from-STOCK rebuild boots to the Yutani desktop with all six icons visible
+(Mines, Pong, Julia Fractals, Plasma, Calculator, Image Viewer).

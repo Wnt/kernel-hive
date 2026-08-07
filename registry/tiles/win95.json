@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "id": "win95",
+  "era_year": 1995,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 14,
+        "prelude": "",
+        "line": "  \"win95       |win95.sh       |Win95       |retro    |~15-25m |1-click|win95-osr2.qcow2\"\n",
+        "value": {
+          "key": "win95",
+          "script": "win95.sh",
+          "outputDir": "Win95",
+          "class": "retro",
+          "estimated": "~15-25m",
+          "automation": "1-click",
+          "produces": "win95-osr2.qcow2",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 1,
+          "position": 3
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "win95",
+      "value": {
+        "os": "Windows 95 OSR2",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            150,
+            450
+          ],
+          "b": [
+            600,
+            180
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "Super opens Start menu",
+        "audio_trigger": "tone",
+        "validated": true,
+        "note": "800x600 full-screen guest; SB16"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/win95",
+      "qmp": "/data/vms/streamhost/tiles/win95/qmp.sock",
+      "pointer_mode": "warpd",
+      "warpd_port": 57791,
+      "warpd_addr": "127.0.0.1:57791",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54091,
+      "notes": "warpd agent on host port 57791 (guest :7777); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 1,
+    "tilesManifestOrder": 14,
+    "tilesManifestPrelude": "\n# win95 (VMID 91) — Win95 OSR2, sb16, pcnet NIC; machine carries accel=kvm.\n#   VERBATIM LAUNCHER: boots the tile-LOCAL win95-golden.qcow2 (gallery\n#   Win95/win95-osr2-kvm.qcow2 stays pristine) WITHOUT -snapshot; conditional\n#   -loadvm golden.\n# POINTER=warpd: usb=off => PS/2 RELATIVE-only mouse + Win9x pointer\n# acceleration make an abs->rel bridge drift. Fix (guest-agents/win9x/\n# warpnet.c): an in-guest Win32 agent SetCursorPos()s absolutely over Winsock\n# TCP :7777, reached via the hostfwd 127.0.0.1:57791 on the launcher's -netdev.\n# BUTTONS ride the real QEMU PS/2 device (--warpd-buttons qemu, 2026-07-14): a\n# warpnet mouse_event click is a WINDOWS-level click that punches through a\n# fullscreen DOS box's input ownership (killed GTA/Duke/Quake with \"VESA\n# function 5h failed\"); PS/2 buttons land in whoever owns the mouse. Motion\n# stays on the agent (absolute, drift-free).\n",
+    "tilesManifestInvocation": "emit win95 \\\n  --tile win95 --vmid 91 --udp 54091 --pointer warpd --warpd-addr 127.0.0.1:57791 \\\n  --warpd-buttons qemu --audio on --fps 30 \\\n  --launcher-file \"$T/win95/qemu-streamhost.sh\" \\\n  --aux-file \"$T/win95/drive.py\" \\\n  --aux-file \"$T/win95/golden-bake.sh\" \\\n  --env-append-file \"$T/win95/tile.env.fixture\"\n",
+    "bringUpGroup": 4,
+    "bindingOrder": 4,
+    "bindingPrelude": "",
+    "bindingLine": "  win95:       { osId: 'win95',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#2f8f5b', eraLabel: '1995 · Windows 95', bootVideo: '/boot/win95/boot.mp4' },\n",
+    "museumOrder": 1,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'win95', displayName: 'Windows 95', year: 1995,\n    lineage: 'Windows 9x', arch: 'i386', ramMB: 64,    era: '1990s', accent: '#2f8f5b',\n    eraSoftware: ['Start menu', 'Explorer', 'Internet Explorer 1', 'Notepad'],\n    periodBrowser: 'Internet Explorer / Netscape Navigator',\n    iconicApps: ['Minesweeper', 'FreeCell', 'Hover!'],\n    blurb: 'The Start button that changed everything — the desktop metaphor that defined a decade.',\n  },\n",
+    "goldenOrder": 4,
+    "actionMapOrder": 6
+  },
+  "tileDir": "win95",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54091,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "warpd",
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "agentAddress": "127.0.0.1:57791",
+      "buttons": "qemu"
+    },
+    "slot": 91
+  },
+  "guestDoc": "docs/guests/win9x.md",
+  "credentialsRef": "guest/win95",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "win95",
+      "SH_QMP": "/data/vms/streamhost/tiles/win95/qmp.sock",
+      "SH_PORT": "54091",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "warpd",
+      "SH_WARPD_ADDR": "127.0.0.1:57791",
+      "SH_WARPD_BUTTONS": "qemu",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/win95/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win95/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_GOLDEN_DISK": "win95-golden.qcow2",
+      "SH_GOLDEN_MANIFEST": "tiles/win95/golden.json"
+    },
+    "vmidLabel": 91,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "win95",
+        "--vmid",
+        "91",
+        "--udp",
+        "54091",
+        "--pointer",
+        "warpd",
+        "--warpd-addr",
+        "127.0.0.1:57791",
+        "--warpd-buttons",
+        "qemu",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/win95/qemu-streamhost.sh",
+        "--aux-file",
+        "$T/win95/drive.py",
+        "--aux-file",
+        "$T/win95/golden-bake.sh",
+        "--env-append-file",
+        "$T/win95/tile.env.fixture"
+      ],
+      "deviceSetId": "win95-current",
+      "launcher": "streamhost/tiles/win95/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/win95/tile.env.fixture",
+      "auxFiles": [
+        "streamhost/tiles/win95/drive.py",
+        "streamhost/tiles/win95/golden-bake.sh"
+      ],
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,acpi=off,usb=off,kernel-irqchip=off,accel=kvm",
+      "accel": "kvm",
+      "cpu": "pentium,-apic",
+      "memoryMB": 256,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-win95",
+        "-enable-kvm -m 256 -smp 1",
+        "-machine pc-i440fx-11.0,acpi=off,usb=off,kernel-irqchip=off,accel=kvm -cpu pentium,-apic",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-drive file=\"$DISK\",format=qcow2,if=ide -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57791-:7777 -device pcnet,netdev=n0",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off",
+        "-pidfile $D/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,acpi=off,usb=off,kernel-irqchip=off,accel=kvm",
+        "accel": "kvm",
+        "cpu": "pentium,-apic",
+        "memoryMB": 256,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-win95",
+          "-enable-kvm -m 256 -smp 1",
+          "-machine pc-i440fx-11.0,acpi=off,usb=off,kernel-irqchip=off,accel=kvm -cpu pentium,-apic",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+          "-drive file=\"$DISK\",format=qcow2,if=ide -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57791-:7777 -device pcnet,netdev=n0",
+          "-qmp unix:$D/qmp.sock,server=on,wait=off",
+          "-pidfile $D/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 14
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#2f8f5b",
+    "eraLabel": "1995 · Windows 95",
+    "bootVideo": "/boot/win95/boot.mp4"
+  },
+  "museum": {
+    "id": "win95",
+    "displayName": "Windows 95",
+    "year": 1995,
+    "lineage": "Windows 9x",
+    "arch": "i386",
+    "ramMB": 64,
+    "era": "1990s",
+    "accent": "#2f8f5b",
+    "eraSoftware": [
+      "Start menu",
+      "Explorer",
+      "Internet Explorer 1",
+      "Notepad"
+    ],
+    "periodBrowser": "Internet Explorer / Netscape Navigator",
+    "iconicApps": [
+      "Minesweeper",
+      "FreeCell",
+      "Hover!"
+    ],
+    "blurb": "The Start button that changed everything — the desktop metaphor that defined a decade."
+  },
+  "reset": {
+    "tileDir": "win95",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Windows 95 desktop; Notepad focused; Start-menu closed (Ctrl+Esc probe is a clean closed->open)."
+  }
+}

@@ -1,0 +1,354 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>streamhost client</title>
+<style>
+  body{font-family:system-ui,sans-serif;margin:0;background:#111;color:#ddd}
+  #wrap{display:flex;gap:12px;padding:12px}
+  canvas{background:#000;image-rendering:pixelated;border:1px solid #333;cursor:crosshair}
+  #hud{font:12px/1.5 monospace;white-space:pre;min-width:340px}
+  b{color:#7fd}
+</style>
+<div id="wrap">
+  <canvas id="cv" width="640" height="480" tabindex="0"></canvas>
+  <div id="hud">connecting…</div>
+</div>
+<script>
+const CERT_HASH_B64 = "__CERT_HASH__";
+const SERVER_URL    = "__SERVER_URL__";
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d', { willReadFrequently: true });
+const hud = document.getElementById('hud');
+
+const SH = {
+  connected:false, lastError:'-', framesRecv:0, framesDecoded:0, framesDrawn:0,
+  res:'-', decodeMsEma:0, rxRenderMsEma:0, fps:0,
+  guestW:640, guestH:480,
+  _dgWriter:null, _inputWriter:null, _pingWaiters:new Map(), _pingSeq:1,
+  _measure:null,
+};
+window.SH = SH;
+
+// ---- fps counter ----
+let _fCount=0, _fT=performance.now();
+function tickFps(){ _fCount++; const n=performance.now(); if(n-_fT>=1000){ SH.fps=+(_fCount*1000/(n-_fT)).toFixed(1); _fCount=0; _fT=n; } }
+
+// ---- H.264 decoder (Annex-B, low latency) ----
+let decoder=null, decoderReady=false;
+function setupDecoder(){
+  decoder = new VideoDecoder({
+    output: (frame)=>{
+      const t=performance.now();
+      if(cv.width!==frame.displayWidth||cv.height!==frame.displayHeight){
+        cv.width=frame.displayWidth; cv.height=frame.displayHeight;
+        SH.guestW=frame.displayWidth; SH.guestH=frame.displayHeight;
+      }
+      ctx.drawImage(frame,0,0);
+      frame.close();
+      SH.framesDecoded++; SH.framesDrawn++;
+      SH.res = cv.width+'x'+cv.height;
+      tickFps();
+      if(SH._measure) SH._measure.onFrame(t);
+    },
+    error:(e)=>{ SH.lastError = String(e); }
+  });
+  // constrained-baseline; annexb (no description) — proven in Spike B
+  decoder.configure({ codec:'avc1.42e01e', optimizeForLatency:true, hardwareAcceleration:'prefer-hardware' });
+  decoderReady=true;
+}
+
+// Every uni-stream now leads with a 1-byte KIND tag:
+//   kind=1 video: [1 | frame_id u32 | au_type u8 | capture_ts u32 | AnnexB]
+//   kind=2 audio: [2 | seq u32       | ts_us u32               | Opus     ]
+function onUniStream(bytes){
+  if(bytes.length<1) return;
+  const kind=bytes[0];
+  if(kind===1) feedVideo(bytes);
+  else if(kind===2) feedAudio(bytes);
+}
+
+function feedVideo(bytes){
+  const dv=new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const isKey = dv.getUint8(5)===1;
+  const ts = dv.getUint32(6,true);
+  const au = bytes.subarray(10);
+  SH.framesRecv++;
+  if(!decoderReady){ if(isKey) setupDecoder(); else return; }
+  try{
+    decoder.decode(new EncodedVideoChunk({ type:isKey?'key':'delta', timestamp:ts, data:au }));
+  }catch(e){ SH.lastError=String(e); }
+}
+
+// ---- audio: Opus over its own uni-streams -> WebCodecs AudioDecoder -> WebAudio ----
+let actx=null, playhead=0, audioDec=null, audioReady=false;
+SH.audioPkts=0;
+function ensureAudioCtx(){ if(!actx){ actx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000,latencyHint:'interactive'}); } if(actx.state==='suspended') actx.resume(); }
+function setupAudioDecoder(){
+  audioDec=new AudioDecoder({
+    output:(ad)=>{
+      try{
+        const nch=ad.numberOfChannels, nframes=ad.numberOfFrames, sr=ad.sampleRate;
+        const buf=actx.createBuffer(nch,nframes,sr);
+        for(let c=0;c<nch;c++){ const f=new Float32Array(nframes); ad.copyTo(f,{planeIndex:c,format:'f32-planar'}); buf.copyToChannel(f,c); }
+        const s=actx.createBufferSource(); s.buffer=buf; s.connect(actx.destination);
+        const now=actx.currentTime;
+        if(playhead < now+0.02) playhead = now+0.06;   // (re)prebuffer if we fell behind
+        s.start(playhead); playhead += nframes/sr;
+      }catch(e){ SH.lastError='audio '+e; } finally{ ad.close(); }
+    },
+    error:(e)=>{ SH.lastError='audioDec '+e; }
+  });
+  audioDec.configure({ codec:'opus', sampleRate:48000, numberOfChannels:2 });
+  audioReady=true;
+}
+function feedAudio(bytes){
+  SH.audioPkts++;
+  if(SH.audioMuted) return;
+  ensureAudioCtx();
+  if(!audioReady) setupAudioDecoder();
+  const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+  const ts=dv.getUint32(5,true);
+  const data=bytes.subarray(9);
+  try{ audioDec.decode(new EncodedAudioChunk({type:'key',timestamp:ts,data})); }catch(e){ SH.lastError='audio decode '+e; }
+}
+SH.audioMuted=false;
+SH.setAudioEnabled=(on)=>{ SH.audioMuted=!on; if(on) ensureAudioCtx(); };
+
+// ---- read a whole uni-stream into one Uint8Array ----
+async function readStream(rs){
+  const reader=rs.getReader();
+  const chunks=[]; let total=0;
+  for(;;){ const {value,done}=await reader.read(); if(done)break; chunks.push(value); total+=value.length; }
+  const out=new Uint8Array(total); let o=0; for(const c of chunks){ out.set(c,o); o+=c.length; }
+  return out;
+}
+
+async function connect(){
+  try{
+    const hashBytes = Uint8Array.from(atob(CERT_HASH_B64), c=>c.charCodeAt(0));
+    const wt = new WebTransport(SERVER_URL, { serverCertificateHashes:[{algorithm:'sha-256', value:hashBytes.buffer}] });
+    await wt.ready;
+    SH.connected=true; SH.lastError='-';
+    SH._dgWriter = wt.datagrams.writable.getWriter();
+    // reliable input stream (bidi)
+    const bidi = await wt.createBidirectionalStream();
+    SH._inputWriter = bidi.writable.getWriter();
+    // datagram reader: RTT echoes
+    (async()=>{ const r=wt.datagrams.readable.getReader();
+      for(;;){ const {value,done}=await r.read(); if(done)break; onDatagram(value); } })();
+    // incoming video uni-streams
+    (async()=>{ const r=wt.incomingUnidirectionalStreams.getReader();
+      for(;;){ const {value,done}=await r.read(); if(done)break;
+        readStream(value).then(onUniStream).catch(e=>SH.lastError=String(e)); } })();
+  }catch(e){ SH.lastError='connect: '+e; SH.connected=false; }
+}
+
+function onDatagram(bytes){
+  if(bytes.length>=1 && bytes[0]===9){
+    const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+    const seq=dv.getUint32(1,true);
+    const w=SH._pingWaiters.get(seq);
+    if(w){ w(performance.now()); SH._pingWaiters.delete(seq); }
+  }
+}
+
+// ---- input senders ----
+function sendMoveAbs(x,y){
+  if(!SH._dgWriter)return;
+  const b=new Uint8Array(5); b[0]=1;
+  new DataView(b.buffer).setUint16(1,x|0,true);
+  new DataView(b.buffer).setUint16(3,y|0,true);
+  SH._dgWriter.write(b);
+}
+function sendReliable(rec){
+  if(!SH._inputWriter)return;
+  const b=new Uint8Array(2+rec.length);
+  new DataView(b.buffer).setUint16(0,rec.length,true);
+  b.set(rec,2);
+  SH._inputWriter.write(b);
+}
+function sendMoveRel(dx,dy){
+  if(!SH._dgWriter)return;
+  const b=new Uint8Array(5); b[0]=4;
+  const dv=new DataView(b.buffer); dv.setInt16(1,dx|0,true); dv.setInt16(3,dy|0,true);
+  return SH._dgWriter.write(b);
+}
+SH.sendMoveRel=sendMoveRel;
+function sendButton(btn,down){ sendReliable(new Uint8Array([2,btn,down?1:0])); }
+function sendKey(code,down){ const b=new Uint8Array(4); b[0]=3; b[1]=down?1:0; new DataView(b.buffer).setUint16(2,code,true); sendReliable(b); }
+function sendWheel(dx,dy){ const b=new Uint8Array(5); b[0]=5; const dv=new DataView(b.buffer); dv.setInt16(1,dx|0,true); dv.setInt16(3,dy|0,true); sendReliable(b); }
+// kind: 0 begin, 1 update, 2 end, 3 cancel ; slot 0..; x,y guest px
+function sendTouch(kind,slot,x,y){ const b=new Uint8Array(7); b[0]=6; b[1]=kind; b[2]=slot&0xff; const dv=new DataView(b.buffer); dv.setUint16(3,x|0,true); dv.setUint16(5,y|0,true); sendReliable(b); }
+SH.sendWheel=sendWheel; SH.sendTouch=sendTouch;
+
+// KeyboardEvent.code -> XT set1 scancode (subset; enough for typing + measurement)
+const XT={
+  KeyA:0x1e,KeyB:0x30,KeyC:0x2e,KeyD:0x20,KeyE:0x12,KeyF:0x21,KeyG:0x22,KeyH:0x23,KeyI:0x17,
+  KeyJ:0x24,KeyK:0x25,KeyL:0x26,KeyM:0x32,KeyN:0x31,KeyO:0x18,KeyP:0x19,KeyQ:0x10,KeyR:0x13,
+  KeyS:0x1f,KeyT:0x14,KeyU:0x16,KeyV:0x2f,KeyW:0x11,KeyX:0x2d,KeyY:0x15,KeyZ:0x2c,
+  Digit1:0x02,Digit2:0x03,Digit3:0x04,Digit4:0x05,Digit5:0x06,Digit6:0x07,Digit7:0x08,Digit8:0x09,Digit9:0x0a,Digit0:0x0b,
+  Enter:0x1c,Space:0x39,Backspace:0x0e,Tab:0x0f,Escape:0x01,Minus:0x0c,Equal:0x0d,
+  Period:0x34,Comma:0x33,Slash:0x35,Semicolon:0x27,ShiftLeft:0x2a,ControlLeft:0x1d,
+};
+window.XT=XT;
+
+// ---- manual control wiring ----
+function canvasToGuest(ev){
+  const r=cv.getBoundingClientRect();
+  const x=Math.max(0,Math.min(SH.guestW-1,Math.round((ev.clientX-r.left)*SH.guestW/r.width)));
+  const y=Math.max(0,Math.min(SH.guestH-1,Math.round((ev.clientY-r.top)*SH.guestH/r.height)));
+  return [x,y];
+}
+cv.addEventListener('mousemove',e=>{
+  // relative motion (works on guests that only read /dev/input/mice)
+  if(e.movementX||e.movementY) sendMoveRel(e.movementX,e.movementY);
+});
+cv.addEventListener('mousedown',e=>{ const [x,y]=canvasToGuest(e); sendMoveAbs(x,y); sendButton(e.button===2?2:e.button===1?1:0,true); e.preventDefault(); });
+cv.addEventListener('mouseup',e=>{ sendButton(e.button===2?2:e.button===1?1:0,false); e.preventDefault(); });
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('keydown',e=>{ const c=XT[e.code]; if(c){ sendKey(c,true); e.preventDefault(); } });
+cv.addEventListener('keyup',e=>{ const c=XT[e.code]; if(c){ sendKey(c,false); e.preventDefault(); } });
+cv.addEventListener('click',()=>{ cv.focus(); ensureAudioCtx(); });
+cv.addEventListener('wheel',e=>{ sendWheel(e.deltaX, e.deltaY); e.preventDefault(); }, {passive:false});
+// touch (phone tiles): map each active touch to a slot; coords -> guest px
+function touchXY(t){ const r=cv.getBoundingClientRect();
+  return [Math.max(0,Math.min(SH.guestW-1,Math.round((t.clientX-r.left)*SH.guestW/r.width))),
+          Math.max(0,Math.min(SH.guestH-1,Math.round((t.clientY-r.top)*SH.guestH/r.height)))]; }
+function emitTouches(list,kind){ for(const t of list){ const [x,y]=touchXY(t); sendTouch(kind, t.identifier&0xff, x, y); } }
+cv.addEventListener('touchstart',e=>{ emitTouches(e.changedTouches,0); e.preventDefault(); },{passive:false});
+cv.addEventListener('touchmove', e=>{ emitTouches(e.changedTouches,1); e.preventDefault(); },{passive:false});
+cv.addEventListener('touchend',  e=>{ emitTouches(e.changedTouches,2); e.preventDefault(); },{passive:false});
+cv.addEventListener('touchcancel',e=>{ emitTouches(e.changedTouches,3); e.preventDefault(); },{passive:false});
+
+// ---- measurement API ----
+SH.stats = ()=>({connected:SH.connected,lastError:SH.lastError,res:SH.res,fps:SH.fps,
+  framesRecv:SH.framesRecv,framesDecoded:SH.framesDecoded,framesDrawn:SH.framesDrawn});
+
+SH.rttPing = async (n=30)=>{
+  const rtts=[];
+  for(let i=0;i<n;i++){
+    const seq=SH._pingSeq++;
+    const b=new Uint8Array(5); b[0]=9; new DataView(b.buffer).setUint32(1,seq,true);
+    const t0=performance.now();
+    const p=new Promise(res=>SH._pingWaiters.set(seq,res));
+    SH._dgWriter.write(b);
+    const t1=await Promise.race([p,new Promise(r=>setTimeout(()=>r(-1),500))]);
+    if(t1>0) rtts.push(t1-t0);
+    await new Promise(r=>setTimeout(r,20));
+  }
+  return summ(rtts);
+};
+
+function summ(a){ if(!a.length)return{n:0}; const s=[...a].sort((x,y)=>x-y);
+  const m=x=>+s[Math.min(s.length-1,Math.floor(x*s.length))].toFixed(2);
+  return {n:s.length, min:+s[0].toFixed(2), median:m(0.5), mean:+(a.reduce((p,c)=>p+c,0)/a.length).toFixed(2), p95:m(0.95), max:+s[s.length-1].toFixed(2)}; }
+
+// Read a watched rect of the canvas as a luma array.
+function rectLuma(x,y,w,h){
+  const d=ctx.getImageData(x,y,w,h).data; const out=new Float32Array(w*h);
+  for(let i=0,j=0;i<d.length;i+=4,j++) out[j]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+  return out;
+}
+function lumaChanged(base,cur,thr){ let c=0; for(let i=0;i<base.length;i++) if(Math.abs(base[i]-cur[i])>thr) c++; return c; }
+
+// Generic: arm a photon watcher on a rect, run an action at T0, resolve at the
+// first rendered frame whose rect pixels changed. Single clock (performance.now).
+async function photonTrial(bx,by,bw,bh, action, {thr=24,changedPx=25,timeout=800}={}){
+  const base=rectLuma(bx,by,bw,bh);
+  let done=false;
+  const result=new Promise(resolve=>{
+    SH._measure={ onFrame:(t)=>{ if(done)return;
+      const cur=rectLuma(bx,by,bw,bh);
+      if(lumaChanged(base,cur,thr)>=changedPx){ done=true; SH._measure=null; resolve(t); } }};
+  });
+  const t0=performance.now();
+  await action();
+  const t1=await Promise.race([result,new Promise(r=>setTimeout(()=>{done=true;SH._measure=null;r(-1);},timeout))]);
+  return t1>0 ? t1-t0 : -1;
+}
+
+// Move-to-photon (RELATIVE): park cursor to the far left (empty), then a single
+// relative jab moves it into a watched vertical band; time until the band changes.
+SH.measureMoveToPhoton = async (opts={})=>{
+  const N=opts.n||40, settle=opts.settle||160, jab=opts.jab||320;
+  const bx=opts.bx??260, bw=opts.bw??520, by=opts.by??150, bh=opts.bh??470;
+  const samples=[];
+  for(let i=0;i<N;i++){
+    // park hard-left (x->~0); y unchanged so cursor stays in the band's y-range
+    await sendMoveRel(-3000,0);
+    await new Promise(r=>setTimeout(r,settle));
+    const d = await photonTrial(bx,by,bw,bh, ()=>sendMoveRel(jab,0), {thr:opts.thr||24, changedPx:opts.changedPx||22, timeout:opts.timeout||800});
+    if(d>0) samples.push(d);
+    await new Promise(r=>setTimeout(r,50));
+  }
+  const res=summ(samples); res.method='move-to-photon(rel-jab)'; res.hits=samples.length; res.trials=N;
+  window.SH_LAST_MOVE=res; return res;
+};
+
+// Key-to-photon: press+release a key and time until a watched rect (e.g. a
+// terminal line where the char echoes) changes. Caller supplies the watch rect.
+SH.measureKeyToPhoton = async (code, bx,by,bw,bh, opts={})=>{
+  const N=opts.n||20;
+  const samples=[];
+  for(let i=0;i<N;i++){
+    const d = await photonTrial(bx,by,bw,bh, async ()=>{ sendKey(code,true); sendKey(code,false); },
+      {thr:opts.thr||30, changedPx:opts.changedPx||8, timeout:opts.timeout||800});
+    if(d>0) samples.push(d);
+    await new Promise(r=>setTimeout(r,120));
+  }
+  const res=summ(samples); res.method='key-to-photon'; res.hits=samples.length; res.trials=N;
+  window.SH_LAST_KEY=res; return res;
+};
+
+// find the lowest canvas row that has rendered text (the active console line)
+function lastContentRow(){
+  for(let y=cv.height-2;y>=0;y--){
+    const d=ctx.getImageData(0,y,cv.width,1).data; let s=0;
+    for(let i=0;i<d.length;i+=4){ s+=d[i]+d[i+1]+d[i+2]; if(s>4000) return y; }
+  }
+  return Math.floor(cv.height/2);
+}
+
+// Console keystroke-to-photon: type a printable char (photon = it echoes on the
+// active line), then Backspace to reset the cell so position stays fixed.
+// code defaults to 'x' (0x2d). Single clock (performance.now).
+SH.measureConsoleKey = async (opts={})=>{
+  const N=opts.n||40, code=opts.code??0x2d, bs=0x0e;
+  const row=lastContentRow();
+  const by=Math.max(0,row-14), bh=Math.min(18,cv.height-by);
+  const bx=60, bw=Math.min(360,cv.width-bx);   // active-line band, right of prompt
+  const samples=[];
+  for(let i=0;i<N;i++){
+    const d=await photonTrial(bx,by,bw,bh, async ()=>{ sendKey(code,true); sendKey(code,false); },
+      {thr:opts.thr||40, changedPx:opts.changedPx||6, timeout:opts.timeout||800});
+    if(d>0) samples.push(d);
+    // reset: backspace removes the char so the cursor cell is unchanged next trial
+    sendKey(bs,true); sendKey(bs,false);
+    await new Promise(r=>setTimeout(r,140));
+  }
+  const res=summ(samples); res.method='console-key-to-photon'; res.hits=samples.length; res.trials=N;
+  res.band={bx,by,bw,bh,row};
+  window.SH_LAST_KEY=res; return res;
+};
+
+// helpers exposed for interactive driving
+SH.sendKey=sendKey; SH.sendButton=sendButton; SH.sendMoveAbs=sendMoveAbs; SH.lastContentRow=lastContentRow;
+
+// ---- HUD ----
+setInterval(()=>{
+  const s=SH.stats();
+  hud.textContent =
+`streamhost client
+connected : ${s.connected}
+error     : ${s.lastError}
+res       : ${s.res}
+fps       : ${s.fps}
+recv AUs  : ${s.framesRecv}
+decoded   : ${s.framesDecoded}
+drawn     : ${s.framesDrawn}
+audio pkt : ${SH.audioPkts} ${SH.audioMuted?'(muted)':''}
+--- click canvas: focus keys + enable audio ---`;
+},250);
+
+connect();
+</script>

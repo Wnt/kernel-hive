@@ -1,0 +1,21 @@
+#
+# FSN -- SGI's 3D File System Navigator (fsn.tar.Z, ftp.sgi.com:/sgi/fsn/).
+# FSN ships no inst subsystem and no file-type rule, so the desktop typed
+# /usr/sbin/fsn as a nameless executable and drew the generic page icon.
+#
+# The icon picture is FSN's OWN artwork: Fsn.icon, the SGI RGB image in the
+# tarball, redrawn as icon geometry because the IRIX icon language has no
+# raster primitive (see iconlib/Fsn.fti).
+#
+TYPE FsnExecutable
+	MATCH		glob("fsn");
+	LEGEND		File System Navigator
+	SUPERTYPE	Executable
+	# /usr is what the golden's baked scan database covers; opening anything
+	# else makes the visitor wait out a full tree walk before the landscape
+	# appears.
+	CMD OPEN	/usr/sbin/fsn /usr &
+	CMD ALTOPEN	/usr/sbin/fsn /usr &
+	ICON	{
+		include("iconlib/Fsn.fti");
+	}

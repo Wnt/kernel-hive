@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "id": "sailfishos",
+  "era_year": 2013,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 20,
+        "prelude": "",
+        "line": "  \"sailfishos  |sailfishos.sh  |SailfishOS  |heavy    |~15-30m |supplied|sailfishos.qcow2 (STAGE 1; needs Sailfish SDK emulator VDI/archive)|media\"\n",
+        "value": {
+          "key": "sailfishos",
+          "script": "sailfishos.sh",
+          "outputDir": "SailfishOS",
+          "class": "heavy",
+          "estimated": "~15-30m",
+          "automation": "supplied",
+          "produces": "sailfishos.qcow2 (STAGE 1; needs Sailfish SDK emulator VDI/archive)",
+          "flags": [
+            "media"
+          ]
+        },
+        "defaultOrder": {
+          "group": 2,
+          "position": 2
+        }
+      },
+      {
+        "order": 21,
+        "prelude": "",
+        "line": "  \"sailfishos-gui|sailfishos-gui.sh|SailfishOS|heavy  |~20-40m |full   |sailfishos-gui.qcow2 (STAGE 2 bochs-drm KMS; run after sailfishos)|media\"\n",
+        "value": {
+          "key": "sailfishos-gui",
+          "script": "sailfishos-gui.sh",
+          "outputDir": "SailfishOS",
+          "class": "heavy",
+          "estimated": "~20-40m",
+          "automation": "full",
+          "produces": "sailfishos-gui.qcow2 (STAGE 2 bochs-drm KMS; run after sailfishos)",
+          "flags": [
+            "media"
+          ]
+        },
+        "defaultOrder": {
+          "group": 2,
+          "position": 3
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "sailfish",
+      "value": {
+        "os": "Sailfish OS (mobile)",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            400,
+            500
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "gesture UI; use mouse",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/sailfishos",
+      "qmp": "/data/vms/streamhost/tiles/sailfishos/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54104,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 25,
+    "tilesManifestOrder": 20,
+    "tilesManifestPrelude": "\n# sailfishos (VMID 104) — audio OFF, usb-tablet + usb-kbd, ide disk, e1000 NIC.\n#   GENERIC (+ -snapshot: ephemeral; no golden — labctl reset refuses it).\n",
+    "tilesManifestInvocation": "emit sailfishos \\\n  --tile sailfishos --vmid 104 --udp 54104 --pointer abs --audio off \\\n  --input-dev usb --mem 1536 --smp 2 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot\"\n",
+    "bringUpGroup": 5,
+    "bindingOrder": 18,
+    "bindingPrelude": "",
+    "bindingLine": "  sailfishos:  { osId: 'sailfishos',  archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#e60d42', eraLabel: '2013 · Sailfish (Jolla)' },\n",
+    "museumOrder": 14,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'sailfishos', displayName: 'Sailfish OS', year: 2013,\n    lineage: 'Mer / MeeGo (Jolla)', arch: 'ARM', ramMB: 2048,    era: '2010s', accent: '#e60d42',\n    eraSoftware: ['Lipstick UI', 'Silica', 'Android app support'],\n    periodBrowser: 'Sailfish Browser (Gecko)',\n    iconicApps: ['Gesture deck', 'Clock', 'Media'],\n    blurb: 'MeeGo’s heir from Jolla — the gesture-driven Nordic take on the smartphone.',\n  },\n",
+    "goldenOrder": 17,
+    "actionMapOrder": 19
+  },
+  "tileDir": "sailfishos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54104,
+    "fps": 30,
+    "audio": false,
+    "touch": true,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 104
+  },
+  "guestDoc": "docs/guests/sailfish.md",
+  "credentialsRef": "guest/sailfishos",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "sailfishos",
+      "SH_QMP": "/data/vms/streamhost/tiles/sailfishos/qmp.sock",
+      "SH_PORT": "54104",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "off",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/sailfishos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/sailfishos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 104,
+    "qemu": {
+      "mode": "generic",
+      "emitArgs": [
+        "--tile",
+        "sailfishos",
+        "--vmid",
+        "104",
+        "--udp",
+        "54104",
+        "--pointer",
+        "abs",
+        "--audio",
+        "off",
+        "--input-dev",
+        "usb",
+        "--mem",
+        "1536",
+        "--smp",
+        "2",
+        "--machine",
+        "pc-i440fx-11.0",
+        "--cpu",
+        "host",
+        "--vga",
+        "std",
+        "--fps",
+        "30",
+        "--boot",
+        "c",
+        "--extra",
+        "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot"
+      ],
+      "deviceSetId": "sailfishos-current",
+      "machine": "pc-i440fx-11.0",
+      "cpu": "host",
+      "vga": "std",
+      "memoryMB": 1536,
+      "smp": 2,
+      "inputDevice": "usb",
+      "boot": "c",
+      "extraArgs": "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot",
+      "accel": "kvm",
+      "binary": "qemu-system-x86_64",
+      "deviceSetSummary": [
+        "-name streamhost-sailfishos",
+        "-enable-kvm -m 1536 -smp 2",
+        "-machine pc-i440fx-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on",
+        "-usb -device usb-tablet",
+        "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot",
+        "-qmp unix:/data/vms/streamhost/tiles/sailfishos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/tiles/sailfishos/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 1536,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-sailfishos",
+          "-enable-kvm -m 1536 -smp 2",
+          "-machine pc-i440fx-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga std",
+          "-display dbus,p2p=on",
+          "-usb -device usb-tablet",
+          "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot",
+          "-qmp unix:/data/vms/streamhost/tiles/sailfishos/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/tiles/sailfishos/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 20
+  },
+  "spa": {
+    "archetypeId": "touch-phone",
+    "transport": "streamhost",
+    "accentColor": "#e60d42",
+    "eraLabel": "2013 · Sailfish (Jolla)"
+  },
+  "museum": {
+    "id": "sailfishos",
+    "displayName": "Sailfish OS",
+    "year": 2013,
+    "lineage": "Mer / MeeGo (Jolla)",
+    "arch": "ARM",
+    "ramMB": 2048,
+    "era": "2010s",
+    "accent": "#e60d42",
+    "eraSoftware": [
+      "Lipstick UI",
+      "Silica",
+      "Android app support"
+    ],
+    "periodBrowser": "Sailfish Browser (Gecko)",
+    "iconicApps": [
+      "Gesture deck",
+      "Clock",
+      "Media"
+    ],
+    "blurb": "MeeGo’s heir from Jolla — the gesture-driven Nordic take on the smartphone."
+  },
+  "reset": {
+    "tileDir": "sailfishos",
+    "pointer": "abs",
+    "touch": true,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "SKIP",
+    "fixture": "Sailfish OS home screen; static under a centre swipe, no HW-keyboard field."
+  },
+  "migrationExceptions": []
+}

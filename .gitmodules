@@ -1,0 +1,12 @@
+[submodule "third_party/mame-irix"]
+	path = third_party/mame-irix
+	url = https://github.com/Wnt/mame.git
+	branch = irix
+[submodule "third_party/mame-mpf2"]
+	path = third_party/mame-mpf2
+	url = https://github.com/Wnt/mame.git
+	branch = mpf2
+[submodule "third_party/qemu-kernel-hive"]
+	path = third_party/qemu-kernel-hive
+	url = https://github.com/Wnt/qemu.git
+	branch = kernel-hive

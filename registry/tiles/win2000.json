@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "id": "win2000",
+  "era_year": 2000,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 16,
+        "prelude": "",
+        "line": "  \"win2000     |win2000.sh     |Win2000     |retro    |~15-30m |full*  |win2k-pro.qcow2\"\n",
+        "value": {
+          "key": "win2000",
+          "script": "win2000.sh",
+          "outputDir": "Win2000",
+          "class": "retro",
+          "estimated": "~15-30m",
+          "automation": "full*",
+          "produces": "win2k-pro.qcow2",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 1,
+          "position": 5
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "win2000",
+      "value": {
+        "os": "Windows 2000",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            300,
+            900
+          ],
+          "b": [
+            1200,
+            375
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "Super opens Start menu",
+        "audio_trigger": "tone",
+        "validated": true,
+        "note": "1600x1200 std VGA (VBEMP-NT / framebuf packed-linear, True Color 32-bit); AC97"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/win2000",
+      "qmp": "/data/vms/streamhost/tiles/win2000/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54093,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 6,
+    "tilesManifestOrder": 11,
+    "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP D — Windows NT family (usb-tablet + AC97), abs pointer.\n# ---------------------------------------------------------------------------\n\n# win2000 (VMID 93) — std VGA (VBEMP-NT/framebuf, 1600x1200x32), AC97,\n#   usb-tablet, rtl8139 NIC. GENERIC.\n#   Golden fixture: the disk runs WITHOUT -snapshot so the savevm 'golden'\n#   snapshot persists inside win2k-pro.qcow2 (resetMode=loadvm).\n",
+    "tilesManifestInvocation": "emit win2000 \\\n  --tile win2000 --vmid 93 --udp 54093 --pointer abs --audio on --audio-dev ac97 \\\n  --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden\" \\\n  --env-append-file \"$T/win2000/tile.env.fixture\"\n",
+    "bringUpGroup": 3,
+    "bindingOrder": 6,
+    "bindingPrelude": "",
+    "bindingLine": "  win2000:     { osId: 'win2000',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#5b6fc9', eraLabel: '2000 · Windows 2000', bootVideo: '/boot/win2000/boot.mp4' },\n",
+    "museumOrder": 3,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'win2000', displayName: 'Windows 2000', year: 2000,\n    lineage: 'Windows NT 5.0', arch: 'i386', ramMB: 128,    era: '2000s', accent: '#5b6fc9',\n    eraSoftware: ['NTFS', 'Active Directory', 'IE5.5', 'MMC'],\n    periodBrowser: 'Internet Explorer 5.5',\n    iconicApps: ['Pinball', 'Solitaire', 'Paint'],\n    blurb: 'NT stability meets the 9x desktop — the professional workstation of the millennium.',\n  },\n",
+    "goldenOrder": 6,
+    "actionMapOrder": 8
+  },
+  "tileDir": "win2000",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54093,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 93
+  },
+  "guestDoc": "docs/guests/win2000.md",
+  "credentialsRef": "guest/win2000",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "win2000",
+      "SH_QMP": "/data/vms/streamhost/tiles/win2000/qmp.sock",
+      "SH_PORT": "54093",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/win2000/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win2000/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_GOLDEN_MANIFEST": "/data/vms/streamhost/tiles/win2000/golden-manifest.json"
+    },
+    "vmidLabel": 93,
+    "qemu": {
+      "mode": "generic",
+      "emitArgs": [
+        "--tile",
+        "win2000",
+        "--vmid",
+        "93",
+        "--udp",
+        "54093",
+        "--pointer",
+        "abs",
+        "--audio",
+        "on",
+        "--audio-dev",
+        "ac97",
+        "--input-dev",
+        "usb",
+        "--mem",
+        "512",
+        "--smp",
+        "1",
+        "--machine",
+        "pc-i440fx-11.0",
+        "--cpu",
+        "host",
+        "--vga",
+        "std",
+        "--fps",
+        "30",
+        "--boot",
+        "c",
+        "--extra",
+        "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden",
+        "--env-append-file",
+        "$T/win2000/tile.env.fixture"
+      ],
+      "deviceSetId": "win2000-stdvga-vbemp-1600",
+      "machine": "pc-i440fx-11.0",
+      "cpu": "host",
+      "vga": "std",
+      "memoryMB": 512,
+      "smp": 1,
+      "audioDevice": "ac97",
+      "inputDevice": "usb",
+      "boot": "c",
+      "extraArgs": "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden",
+      "accel": "kvm",
+      "binary": "qemu-system-x86_64",
+      "deviceSetSummary": [
+        "-name streamhost-win2000",
+        "-enable-kvm -m 512 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb -device usb-tablet",
+        "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden",
+        "-qmp unix:/data/vms/streamhost/tiles/win2000/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/tiles/win2000/qemu.pid"
+      ],
+      "envFixture": "streamhost/tiles/win2000/tile.env.fixture",
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 512,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-win2000",
+          "-enable-kvm -m 512 -smp 1",
+          "-machine pc-i440fx-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb -device usb-tablet",
+          "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden",
+          "-qmp unix:/data/vms/streamhost/tiles/win2000/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/tiles/win2000/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0, matching the running/golden-compatible QEMU 11 machine"
+      }
+    },
+    "bringUpOrder": 11
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#5b6fc9",
+    "eraLabel": "2000 · Windows 2000",
+    "bootVideo": "/boot/win2000/boot.mp4"
+  },
+  "museum": {
+    "id": "win2000",
+    "displayName": "Windows 2000",
+    "year": 2000,
+    "lineage": "Windows NT 5.0",
+    "arch": "i386",
+    "ramMB": 128,
+    "era": "2000s",
+    "accent": "#5b6fc9",
+    "eraSoftware": [
+      "NTFS",
+      "Active Directory",
+      "IE5.5",
+      "MMC"
+    ],
+    "periodBrowser": "Internet Explorer 5.5",
+    "iconicApps": [
+      "Pinball",
+      "Solitaire",
+      "Paint"
+    ],
+    "blurb": "NT stability meets the 9x desktop — the professional workstation of the millennium."
+  },
+  "reset": {
+    "tileDir": "win2000",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "PASS",
+    "fixture": "Windows 2000 desktop at 1600x1200 True Color (VBEMP-NT/framebuf std VGA; software cursor now captured). Clean idle desktop, no open window."
+  },
+  "migrationExceptions": []
+}

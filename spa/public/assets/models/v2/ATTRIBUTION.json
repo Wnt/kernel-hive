@@ -1,0 +1,222 @@
+{
+ "note": "De-sourced July 2026: every shipped museum model is now a project-original parametric Blender export; all downloaded GLBs and their attribution records were removed.",
+ "models": [
+  {
+   "file": "param/c64-a.glb",
+   "title": "Parametric C64-class breadbin keyboard-computer, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_c64.py"
+  },
+  {
+   "file": "param/amiga-a.glb",
+   "title": "Parametric Amiga 500-class keyboard-computer, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_amiga.py"
+  },
+  {
+   "file": "param/8bitwedge-a.glb",
+   "title": "Parametric generic 8-bit home-computer wedge, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_8bitwedge.py"
+  },
+  {
+   "file": "param/homecrt-a.glb",
+   "title": "Parametric 1980s RGB home-computer CRT, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_homecrt.py"
+  },
+  {
+   "file": "param/homecrt-b.glb",
+   "title": "Parametric 1980s composite home-computer CRT, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_homecrt.py"
+  },
+  {
+   "file": "param/lcd-a.glb",
+   "title": "Parametric early 15-inch LCD monitor, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_lcd.py"
+  },
+  {
+   "file": "param/lcd-b.glb",
+   "title": "Parametric modern 23.8-inch LCD monitor, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_lcd.py"
+  },
+  {
+   "file": "param/compact-a.glb",
+   "title": "Parametric generic classic compact all-in-one, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_compact.py"
+  },
+  {
+   "file": "param/keyboard-a.glb",
+   "title": "Parametric compact full-size keyboard, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_keyboard.py"
+  },
+  {
+   "file": "param/keyboard-b.glb",
+   "title": "Parametric two-tone full-size keyboard, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_keyboard.py"
+  },
+  {
+   "file": "param/tower-b.glb",
+   "title": "Parametric mid-90s tower, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original (parametric, blender/gen_tower.py)",
+   "source": "blender/gen_tower.py"
+  },
+  {
+   "file": "param/crt-b.glb",
+   "title": "Parametric 14-inch CRT, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original (parametric, blender/gen_crt.py)",
+   "source": "blender/gen_crt.py"
+  },
+  {
+   "file": "param/keyboard-c.glb",
+   "title": "Parametric 102-key keyboard, variant C",
+   "author": "Kernel Hive project",
+   "license": "project-original (parametric, blender/gen_keyboard.py)",
+   "source": "blender/gen_keyboard.py"
+  },
+  {
+   "file": "param/pizzabox-a.glb",
+   "title": "Parametric IBM PC/XT-class desktop, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_pizzabox.py"
+  },
+  {
+   "file": "param/pizzabox-b.glb",
+   "title": "Parametric slim desktop, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_pizzabox.py"
+  },
+  {
+   "file": "param/pizzabox-c.glb",
+   "title": "Parametric SPARC workstation case, variant C",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_pizzabox.py"
+  },
+  {
+   "file": "param/terminal-a.glb",
+   "title": "Parametric VT100-class terminal, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_terminal.py"
+  },
+  {
+   "file": "param/terminal-b.glb",
+   "title": "Parametric VT220-class terminal, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_terminal.py"
+  },
+  {
+   "file": "param/terminal-c.glb",
+   "title": "Parametric ADM-3A-class terminal, variant C",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_terminal.py"
+  },
+  {
+   "file": "param/mouse-a.glb",
+   "title": "Parametric 1980s two-button ball mouse, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_mouse.py"
+  },
+  {
+   "file": "param/mouse-b.glb",
+   "title": "Parametric 1990s two-button ball mouse, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_mouse.py"
+  },
+  {
+   "file": "param/mouse-c.glb",
+   "title": "Parametric one-button workstation mouse, variant C",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_mouse.py"
+  },
+  {
+   "file": "param/phone-a.glb",
+   "title": "Parametric 2008-class handset and dock, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_phone.py"
+  },
+  {
+   "file": "param/phone-b.glb",
+   "title": "Parametric 2013-class handset and dock, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_phone.py"
+  },
+  {
+   "file": "param/phone-c.glb",
+   "title": "Parametric repairable handset and dock, variant C",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_phone.py"
+  },
+  {
+   "file": "param/modern-a.glb",
+   "title": "Parametric modern airflow tower, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_modern.py"
+  },
+  {
+   "file": "param/modern-b.glb",
+   "title": "Parametric logo-free compact ARM desktop, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_modern.py"
+  },
+  {
+   "file": "param/modern-c.glb",
+   "title": "Parametric industrial fanless computer, variant C",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_modern.py"
+  },
+  {
+   "file": "param/atarist.glb",
+   "title": "Parametric Atari ST-class home micro, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_atarist.py"
+  },
+  {
+   "file": "param/amstradcpc.glb",
+   "title": "Parametric Amstrad CPC 6128-class home micro, variant B",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_amstradcpc.py"
+  },
+  {
+   "file": "param/acorn.glb",
+   "title": "Parametric Acorn A3000-class home micro, variant A",
+   "author": "Kernel Hive project",
+   "license": "project-original parametric",
+   "source": "blender/gen_acorn.py"
+  }
+ ]
+}
