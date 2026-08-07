@@ -29,7 +29,7 @@ path = "src/bin/bootrec-tap.rs"
 # X11 capture (Xvfb root GetImage/XDamage) + XTEST input for LXC emulator-bridge
 # tiles (e.g. IRIX/MAME, which panics under a KVM vCPU). Pure-Rust backend, no C
 # libs. Only the SH_CAPTURE=x11 path uses it; the QEMU fleet never touches it.
-x11rb = { version = "0.13", features = ["damage", "xtest"] }
+x11rb = { version = "0.14", features = ["damage", "xtest"] }
 # capture + input (QEMU -display dbus p2p)
 zbus = { version = "5", default-features = false, features = ["tokio", "p2p"] }
 nix = { version = "0.31", features = ["socket", "uio"] }
