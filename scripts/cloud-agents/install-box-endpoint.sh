@@ -19,7 +19,10 @@
 # CI download).
 set -euo pipefail
 
-FORWARDER_HOST="${FORWARDER_HOST:-tunnel.example.com}"
+# shellcheck disable=SC1091
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/local-env.sh"
+
+FORWARDER_HOST="${FORWARDER_HOST:-${SH_TUNNEL_HOST:-tunnel.example.com}}"
 # Arrays, because these are commands with arguments, not single words.
 read -r -a LAB <<<"${LAB_SSH:-ssh lab}"
 read -r -a VPS <<<"${FORWARDER_SSH:-ssh root@$FORWARDER_HOST}"

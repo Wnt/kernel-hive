@@ -6,7 +6,9 @@
 # Usage: run/serve_client.sh [host] [port] [serve_port]
 set -e
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-HOST="${1:-192.0.2.10}"
+# shellcheck disable=SC1091
+. "$HERE/../scripts/lib/local-env.sh"
+HOST="${1:-${SH_HOST_IP:-192.0.2.10}}"
 PORT="${2:-4433}"
 SERVE_PORT="${3:-8971}"
 KEY="${LAB_KEY:-$HOME/.ssh/lab_key}"

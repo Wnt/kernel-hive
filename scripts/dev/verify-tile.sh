@@ -7,6 +7,9 @@
 # opts into the manifest's restore action only after a zero-session health gate.
 set -uo pipefail
 
+# shellcheck disable=SC1091
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/local-env.sh"
+
 OSID="${1:-}"
 if [ -z "$OSID" ] || [ "$OSID" = "-h" ] || [ "$OSID" = "--help" ]; then
   echo "usage: verify-tile.sh <osId> [--restore] [--evidence DIR]" >&2
@@ -36,7 +39,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 LABCTL="${LABCTL:-labctl}"
-BASE_URL="${VERIFY_TILE_BASE_URL:-https://192.0.2.10:8443}"
+BASE_URL="${VERIFY_TILE_BASE_URL:-https://${SH_HOST_IP:-192.0.2.10}:8443}"
 MATRIX="${LABCTL_TILES_JSON:-/data/vms/streamhost/tiles.json}"
 MANIFEST="${GOLDEN_MANIFEST:-/data/vms/streamhost/serve/golden-manifest.json}"
 RESET_TOOL="${RESET_TOOL:-/data/vms/streamhost/serve/reset-tile.sh}"

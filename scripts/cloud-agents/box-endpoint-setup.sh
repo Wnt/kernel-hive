@@ -27,7 +27,7 @@ set -euo pipefail
 
 CA_PUBKEY="${CA_PUBKEY:?set CA_PUBKEY to the cloud-agent public key line}"
 CA_TOKEN="${CA_TOKEN:?set CA_TOKEN to the forwarder shared agent token}"
-CA_CONTROL_HOST="${CA_CONTROL_HOST:-tunnel.example.com}"
+CA_CONTROL_HOST="${CA_CONTROL_HOST:-${SH_TUNNEL_HOST:-tunnel.example.com}}"
 CA_PUBLIC_PORT="${CA_PUBLIC_PORT:-10022}" # public TCP port on the forwarder VPS
 CA_SSHD_PORT="${CA_SSHD_PORT:-2222}"      # loopback port of the extra sshd
 CA_TUNNEL_ID="${CA_TUNNEL_ID:-labssh}"
@@ -37,7 +37,7 @@ CA_AGENT_BIN="${CA_AGENT_BIN:-/usr/local/bin/forwarder-agent}"
 # edge and the agent hands the request to the HTTPS server's plaintext loopback
 # listener (PUBLIC_PORT in scripts/serve/osgallery-https.service), which is the
 # session-gated one. Set GALLERY_HOST= to leave the gallery unpublished.
-GALLERY_HOST="${GALLERY_HOST-gallery.example.com}"
+GALLERY_HOST="${GALLERY_HOST-${SH_GALLERY_HOST:-gallery.example.com}}"
 GALLERY_LOCAL_PORT="${GALLERY_LOCAL_PORT:-8081}"
 GALLERY_TUNNEL_ID="${GALLERY_TUNNEL_ID:-gallery}"
 

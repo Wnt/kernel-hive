@@ -26,6 +26,10 @@ UNIT_SRC="$REPO/deploy/streamhost@.service"
 SERVE="$REPO/serve"
 TILESDIR="$REPO/tiles"
 DRY_RUN="${DRY_RUN:-0}"
+# SIGNAL_HOST defaults to the repo's public placeholder (RFC 5737, unroutable).
+# Export the real value first (e.g. `set -a; . /path/to/repo/registry/local.env;
+# set +a` — see registry/README.md) or pass SIGNAL_HOST= on the command line.
+SIGNAL_HOST="${SIGNAL_HOST:-${SH_HOST_IP:-192.0.2.10}}"
 
 run() {
   echo "+ $*"
@@ -176,17 +180,17 @@ if [ "$DRY_RUN" != 1 ]; then
     SIGNAL_CONFIG="$REPO/serve/tiles.json" \
     CERT="$REPO/serve/pki/leaf.crt" \
     KEY="$REPO/serve/pki/leaf.key" \
-    SIGNAL_HOST=192.0.2.10 PORT=8443 BIND_IP=0.0.0.0 \
+    SIGNAL_HOST="$SIGNAL_HOST" PORT=8443 BIND_IP=0.0.0.0 \
     nohup python3 "$SERVE/osgallery-https-server.py" \
     >"$REPO/serve/https-server.log" 2>&1 &
   echo "  https server pid=$!  (log: $REPO/serve/https-server.log)"
 fi
 
-cat <<'NOTE'
+cat <<NOTE
 
 == done ==
 Open the gallery:
-    https://192.0.2.10:8443/
+    https://$SIGNAL_HOST:8443/
 (streamhost is the committed live transport for the gallery tiles —
 spa/src/three/archetypeRegistry.ts.)
 

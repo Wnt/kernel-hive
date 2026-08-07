@@ -24,12 +24,20 @@ resolve, and do not "fix" one — it is not wrong, it is not yours.
 
 The real values for an actual deployment live **only** in gitignored,
 operator-supplied files, never in the repo: `registry/local.env` (template at
-`registry/local.env.example`) supplies `SH_HOST_IP`, sourced by
-`streamhost/scripts/streamhost-tile.sh` at tile.env emit time unless
-`--host-ip`/`$SH_HOST_IP` overrides it; SSH keys, PKI material, API tokens
-(`uptoken`, `unifitoken`) and `spa/src/data/credentials.ts` are the other
-gitignored operator-local categories (see `.gitignore`). An unchanged
-placeholder builds and boots but is unreachable — tiles advertise an
+`registry/local.env.example`) supplies `SH_HOST_IP`/`SH_TUNNEL_HOST`/
+`SH_GALLERY_HOST`, loaded by the shared helper `scripts/lib/local-env.sh` and
+consumed — with the repo placeholder as fallback — by every tool that needs a
+real address: `streamhost/scripts/streamhost-tile.sh` (tile.env emit),
+`scripts/serve-https-spa.sh`, `scripts/serve/restart-https.sh`,
+`scripts/serve/gen-local-ca.sh`, `scripts/dev/verify-tile.sh`,
+`scripts/dev/mobile-netem.sh`, `streamhost/run/serve_client.sh`,
+`streamhost/bring-up-all.sh`, and `scripts/cloud-agents/`. Precedence is always
+explicit CLI flag / pre-set environment variable > `registry/local.env` > repo
+placeholder — see `registry/README.md` for the full mechanism and
+`registry/local.env.example` for what each key documents. SSH keys, PKI
+material, API tokens (`uptoken`, `unifitoken`) and `spa/src/data/credentials.ts`
+are the other gitignored operator-local categories (see `.gitignore`). An
+unchanged placeholder builds and boots but is unreachable — tiles advertise an
 unroutable address in `signaling.json`. Never commit real addresses,
 hostnames, MACs, serials or domains back into the repo.
 

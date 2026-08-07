@@ -10,21 +10,32 @@ python3 scripts/tiles-registry.py count
 
 The schema is `registry/schema/tile-v1.schema.json`.
 
-## Deployment-local values (host IP)
+## Deployment-local values (the `registry/local.env` mechanism)
 
-Every tile's `runtime.tileEnv.SH_HOST_IP` / `SH_ADVERTISE_HOST` in the registry
-source (and therefore in the generated `registry/index.json`) is the placeholder
-`192.0.2.10` (RFC 5737 TEST-NET-1) — a real address is deployment-specific, not
-part of the public repo, and `make tile-registry-check` requires the generated
-output to be deterministic across machines.
+The public repo was scrubbed for release: the operator's real LAN IP, box
+hostname, and public domains were replaced with RFC 5737 / documentation
+placeholders (`192.0.2.10`, `labhost`, `example.com`, `gallery.example.com`,
+`tunnel.example.com`). Every tool keeps its placeholder as the DEFAULT so a
+fresh public clone works out of the box and `make tile-registry-check` stays
+deterministic across machines — `registry/index.json` and every other
+generated artifact keep the placeholder regardless of local configuration.
 
-The real value is supplied at *emit* time, not at *generate* time: copy
+The real values are supplied at *run/deploy* time, not at *generate* time: copy
 `registry/local.env.example` to `registry/local.env` (gitignored) on the box and
-set `SH_HOST_IP` to the box's real LAN address. `streamhost/scripts/streamhost-tile.sh`
-sources that file automatically when it is present, unless an explicit
-`--host-ip` flag was passed (which always wins). `registry/local.env` never
-affects `scripts/tiles-registry.py generate` output — the substitution happens
-only in the per-tile `tile.env` files written under `/data/vms/streamhost/tiles/`.
+fill in the keys documented there (`SH_HOST_IP`, `SH_TUNNEL_HOST`,
+`SH_GALLERY_HOST`). The shared helper `scripts/lib/local-env.sh` locates and
+sources that file for every consumer, and is a no-op when the file is absent —
+see the header comment in that file for the exact precedence rule (explicit CLI
+flag / pre-set environment variable > `registry/local.env` > repo placeholder).
+`streamhost/scripts/streamhost-tile.sh` was the first, tile.env-emitting
+consumer (`SH_HOST_IP`, overridden by an explicit `--host-ip` flag); the same
+mechanism now also backs `scripts/serve-https-spa.sh`,
+`scripts/serve/restart-https.sh`, `scripts/serve/gen-local-ca.sh`,
+`scripts/dev/verify-tile.sh`, `scripts/dev/mobile-netem.sh`,
+`streamhost/run/serve_client.sh`, `streamhost/bring-up-all.sh` (generated from
+`registry/templates/bring-up-all.sh.in` — edit the template, not the generated
+file), and the `scripts/cloud-agents/` tunnel-endpoint tooling.
+`registry/local.env` never affects `scripts/tiles-registry.py generate` output.
 
 ## Exhibit posters
 

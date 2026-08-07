@@ -26,8 +26,11 @@
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
-HOST="${HOST:-192.0.2.10}"
-LAN_IP="${LAN_IP:-192.0.2.10}"
+# shellcheck disable=SC1091
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/local-env.sh"
+
+HOST="${HOST:-${SH_HOST_IP:-192.0.2.10}}"
+LAN_IP="${LAN_IP:-${SH_HOST_IP:-192.0.2.10}}"
 HTTPS_PORT="${HTTPS_PORT:-8443}"
 # ssh transport, portable across machines:
 #   * LAB_KEY set        -> explicit key + root@$HOST   (full override)

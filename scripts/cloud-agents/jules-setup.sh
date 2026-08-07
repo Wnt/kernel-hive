@@ -16,7 +16,11 @@
 # Nothing here ever prints key material.
 set -uo pipefail
 
-LAB_SSH_HOST="${LAB_SSH_HOST:-tunnel.example.com}"
+# shellcheck disable=SC1091
+[ -f "$(dirname "${BASH_SOURCE[0]}")/../lib/local-env.sh" ] &&
+  . "$(dirname "${BASH_SOURCE[0]}")/../lib/local-env.sh"
+
+LAB_SSH_HOST="${LAB_SSH_HOST:-${SH_TUNNEL_HOST:-tunnel.example.com}}"
 LAB_SSH_PORT="${LAB_SSH_PORT:-10022}"
 LAB_SSH_USER="${LAB_SSH_USER:-root}"
 KEY="$HOME/.ssh/lab_cloudagent"

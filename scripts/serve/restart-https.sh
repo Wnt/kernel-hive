@@ -19,7 +19,7 @@ export WEBROOT="${WEBROOT:-$SERVE/webroot}"
 export SIGNAL_CONFIG="${SIGNAL_CONFIG:-$SERVE/tiles.json}"
 export CERT="${CERT:-$SERVE/pki/leaf.crt}"
 export KEY="${KEY:-$SERVE/pki/leaf.key}"
-export SIGNAL_HOST="${SIGNAL_HOST:-192.0.2.10}"
+export SIGNAL_HOST="${SIGNAL_HOST:-${SH_HOST_IP:-192.0.2.10}}"
 export BIND_IP="${BIND_IP:-0.0.0.0}"
 export PORT="${PORT:-8443}"
 # Arbitrary browser JavaScript stays off unless the operator opts in for this restart.

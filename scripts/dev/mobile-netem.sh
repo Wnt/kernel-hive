@@ -38,7 +38,7 @@ set -euo pipefail
 CTID="${MN_CTID:-950}"
 VETH="veth${CTID}i0"
 IFB="ifbmn${CTID}"
-BOX_IP="${MN_BOX_IP:-192.0.2.10}"
+BOX_IP="${MN_BOX_IP:-${SH_HOST_IP:-192.0.2.10}}"
 RATE_DOWN="${MN_RATE_DOWN:-40mbit}"
 RATE_UP="${MN_RATE_UP:-29mbit}"
 DELAY="${MN_DELAY:-45ms}"

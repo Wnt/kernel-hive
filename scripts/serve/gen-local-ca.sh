@@ -26,7 +26,7 @@
 set -euo pipefail
 
 PKI="${PKI:-/data/vms/streamhost/serve/pki}"
-LAN_IP="${LAN_IP:-192.0.2.10}"
+LAN_IP="${LAN_IP:-${SH_HOST_IP:-192.0.2.10}}"
 DAYS_LEAF="${DAYS_LEAF:-365}" # normal one-year lifetime for a user-trusted local leaf
 DAYS_CA="${DAYS_CA:-3650}"
 ALT_DNS="${ALT_DNS:-osgallery.lab}" # optional friendly hostname (add to /etc/hosts)

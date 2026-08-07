@@ -9,7 +9,10 @@
 # the SSH login itself.
 set -uo pipefail
 
-HOST="${FORWARDER_HOST:-tunnel.example.com}"
+# shellcheck disable=SC1091
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/local-env.sh"
+
+HOST="${FORWARDER_HOST:-${SH_TUNNEL_HOST:-tunnel.example.com}}"
 PORT="${CLOUD_AGENT_PORT:-10022}"
 KEY=""
 # An array, because LAB_SSH is a command with arguments ("ssh lab"), not a word.
