@@ -371,6 +371,16 @@
    "mouse": "PASS",
    "keyboard": "PASS",
    "fixture": "Windows 11 Pro 25H2 desktop, auto-logged in as WIN11\\lab, empty desktop, no dialogs; network isolated (no default route)."
+  },
+  "vic20": {
+   "tileDir": "vic20",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "Commodore VIC-20 (PAL) CBM BASIC V2 READY prompt in VICE xvic, double-size on an 800x600 X root; golden INTERNAL snapshot restores X (-nocursor) + xvic showing the power-on banner and READY prompt exactly as baked from an untouched cold boot. No post-restore keys (the mpf2 add proved they race the restore). Keyboard path certified 2026-08-08 by typing PRINT 3 through QMP at the tile’s production pacing and reading 3 back off the framebuffer. Keyboard-only exhibit (no mouse); AC97 audio."
   }
  }
 }

@@ -765,6 +765,20 @@ change did not work.
 - **Tiles idle-pause with no viewer attached**, so a raw `ssh` into a bridge
   guest simply hangs. `labctl` auto-resumes and is the supported path. A
   freshly-resumed VM also swallows the first characters sent to it.
+- **A silent emulator segfault reads as an X or systemd fault.** On the vic20
+  add, `xvic` died instantly with no output; what was observable was X exiting a
+  second after it started and `getty@tty1` looping to `start-limit-hit`, with no
+  `(EE)` in the Xorg log and nothing from the emulator in the startx log.
+  **VICE 3.9 segfaults in `vice_banner()` whenever its stdout is not a
+  terminal** (`log_helper()` hands a NULL to `strlen`), so copying mpf2's
+  `exec startx … >"$HOME"/startx.log 2>&1` — correct and harmless for MAME —
+  kills a VICE tile. Leave stdout on tty1, as the stock bridge profile and the
+  c64/vic20 tiles do. A *second*, independent fault has the same signature: VICE's
+  `make install` skips some ROM data files and the emulator segfaults with no
+  output when one is missing (the C64 BASIC ROM for c64, `basic-901486-01.bin`
+  for vic20). Reach for `script -qec '<cmd>' /dev/null` (a pty makes the first
+  fault vanish) and gdb, not for the X log. See
+  [`docs/guests/vic20.md`](../guests/vic20.md).
 - **A `/proc` scan matches the shell running it.** The `pkill -f` self-match trap
   in `AGENTS.md` applies equally to
   `for p in /proc/*/cmdline; do grep <pattern> ...`: it reported 9 stray

@@ -467,6 +467,21 @@
       "udp_port": 54098,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "vic20": {
+      "dir": "/data/vms/streamhost/tiles/vic20",
+      "qmp": "/data/vms/streamhost/tiles/vic20/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5821,
+      "exec_port": 5821,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54085,
+      "notes": "exec: labctl exec vic20 \"<cmd>\" (ssh root@:5821, key bridge_key)"
+    },
     "win11": {
       "dir": "/data/vms/streamhost/tiles/win11",
       "qmp": "/data/vms/streamhost/tiles/win11/qmp.sock",

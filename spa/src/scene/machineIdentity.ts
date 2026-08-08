@@ -173,6 +173,12 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d8cfbb', accentTint: '#7d2e2a', tintMix: 0.38,
     badge: 'MPF-II', spec: '6502 • 1982', kit: 'eightBit',
   },
+  // Same breadbin shell as c64, so the tint stays in that family; the cyan
+  // accent is the VIC-20's own screen border.
+  vic20: {
+    caseTint: '#8b6746', accentTint: '#3fbfc7', tintMix: 0.45,
+    badge: 'VIC-20', spec: '5K • 1980', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

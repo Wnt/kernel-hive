@@ -13,6 +13,9 @@ const KEYBOARDS = {
       "*": ")"
     },
     "letterCase": "upper-only"
+  },
+  "vic20": {
+    "letterCase": "upper-only"
   }
 } as const satisfies Record<string, GuestKeyboard>;
 

@@ -38,6 +38,17 @@ const DEMO_PROGRAMS = {
       "100 goto 30"
     ],
     "runCommand": "run"
+  },
+  "vic20": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 print chr$(147)",
+      "20 x=int(rnd(1)*506)",
+      "30 poke 7680+x,81",
+      "40 poke 38400+x,int(rnd(1)*8)",
+      "50 goto 20"
+    ],
+    "runCommand": "run"
   }
 } as const satisfies Record<string, DemoProgram>;
 

@@ -420,6 +420,12 @@ export const ASSEMBLIES_BY_TILE = {
   mpf2: {
     kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtD',
   },
+  // The VIC-20 shares the breadbin shell with the c64 tile because the real
+  // machines did: the Commodore 64 reused the VIC-20's case, keyboard and port
+  // layout wholesale. No mouse — the VIC-20's only other input was a joystick.
+  vic20: {
+    kind: 'homeMicro', body: 'c64A', monitor: 'homeCrtD',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

@@ -294,6 +294,9 @@ export const OS_FAMILY: Record<string, Family> = {
   ninefront: 'plan9',
   android: 'android',
   c64: 'c64',
+  // Same keyboard as the c64 (Commodore reused the VIC-20's), and the same VICE
+  // bindings drive it: RUN/STOP is Esc, RESTORE is PageUp, C= is Tab.
+  vic20: 'c64',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',

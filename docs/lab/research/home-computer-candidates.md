@@ -1,9 +1,21 @@
 # Home-computer candidates: Commodore, the Britons, and the GDR
 
-Status: **research only, 2026-08-08.** No registry entries, no slots claimed,
-nothing built. This is the feasibility study behind an operator-proposed
-expansion of the lineup, in the form
-[`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expects.
+Status: **research, 2026-08-08 — one machine has since been built.** This is the
+feasibility study behind an operator-proposed expansion of the lineup, in the
+form [`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expects.
+
+**Built since:** the **VIC-20** (§4.1) is live as the production tile `vic20`
+(slot 85, udp 54085) — see [`docs/guests/vic20.md`](../../guests/vic20.md). It
+was taken first because it is the cheapest item in the whole study: `xvic` is
+already in the frozen bridge base (VICE is built from source there for the `c64`
+tile and `make install` ships the entire family), VICE bundles the Commodore
+ROMs, and an unexpanded VIC-20 needs no media at all — so it required no staged
+asset, no checksum gate and no new emulator build, only a launcher, a golden and
+a registry entry. §2's "VICE covers the whole Commodore 8-bit wishlist" claim is
+now proven rather than predicted. Two costs the study did not predict are
+recorded in the guest doc: VICE segfaults when its stdout is not a terminal, and
+the base's installed VIC20 ROM set is missing its BASIC ROM. Everything else
+below remains unbuilt.
 
 Companion study for the minicomputer end of the same wishlist:
 [`pdp11-add.md`](pdp11-add.md).

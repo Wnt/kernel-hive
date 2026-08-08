@@ -4,11 +4,11 @@ import type { VMManifestEntry } from '../types';
 import { OS_BINDINGS } from '../three/archetypeRegistry';
 
 // ============================================================================
-//  MUSEUM CATALOG — placard metadata for the full OS lineup (39 bindings)
+//  MUSEUM CATALOG — placard metadata for the full OS lineup (40 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 37 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 38 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 34 of those 37 have their placard entries in this
+//  WebTransport + WebCodecs. 35 of those 38 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,8 +17,8 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 36 entries
-//  so all 39 exhibits render, each with an era-accurate archetype + accent.
+//  This file provides rich, period-accurate placard metadata for its 37 entries
+//  so all 40 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
 //  top of these entries, so every osId in OS_BINDINGS becomes an exhibit.
@@ -343,6 +343,16 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['MPF-II BASIC', 'the machine-language monitor'],
     blurb: 'Taiwan\'s first mass-market home computer — a chiclet-keyboard Apple II clone that boots straight to BASIC, in 6 colours on a television set.',
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME (mpf2 driver) emulating a Multitech MPF-II that boots its ROM BASIC; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Keyboard-only exhibit (no pointing device — the real machine had none); uses the beige-tower-crt fallback until a bespoke MPF-II archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/mpf2.md.',
+  },
+  {
+    id: 'vic20', displayName: 'Commodore VIC-20 — CBM BASIC V2', year: 1980,
+    lineage: 'Commodore 8-bit (MOS 6502)',
+    arch: 'MOS 6502, 1.108 MHz (PAL), 5 KB RAM, 20 KB ROM', ramMB: 0, ramKB: 5,    era: '1980s', accent: '#3FBFC7',
+    eraSoftware: ['CBM BASIC V2 in ROM', 'cartridge games: Jelly Monsters, Radar Rat Race, Gorf, Omega Race', 'Scott Adams text adventures on cassette', 'the VIC-1530 Datasette and the VIC-1541 disk drive', 'type-in listings from Compute!’s Gazette'],
+    periodBrowser: 'none — pre-web 8-bit era',
+    iconicApps: ['CBM BASIC V2', 'VIC-20 cartridge games', 'the Datasette'],
+    blurb: 'The first computer of any kind to sell a million: 5 KB of memory, 22 columns of blue text on a television set, and William Shatner asking why you would buy just a video game.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xvic) emulating a PAL VIC-20 that boots its ROM to the CBM BASIC V2 READY prompt; streamhost captures the Linux framebuffer + AC97 audio (the VIC-I sound routed through ALSA) exactly like every other tile. VICE is already in the frozen bridge base (built from source for the c64 tile) and bundles the Commodore ROMs, so this tile needs no external media at all. Keyboard-only exhibit (the machine’s other input was a joystick); uses the beige-tower-crt fallback until a bespoke VIC-20 archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/vic20.md.',
   },
 ];
 

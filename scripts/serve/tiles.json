@@ -146,5 +146,9 @@
   "win11": {
     "udpPort": 54123,
     "hashFile": "/data/vms/streamhost/tiles/win11/cert_hash_b64.txt"
+  },
+  "vic20": {
+    "udpPort": 54085,
+    "hashFile": "/data/vms/streamhost/tiles/vic20/cert_hash_b64.txt"
   }
 }
