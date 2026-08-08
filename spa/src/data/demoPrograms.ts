@@ -21,7 +21,8 @@ const DEMO_PROGRAMS = {
       "100 next",
       "110 goto 20"
     ],
-    "runCommand": "run"
+    "runCommand": "run",
+    "perCharMs": 90
   },
   "mpf2": {
     "label": "Type in a demo program",
@@ -48,7 +49,8 @@ const DEMO_PROGRAMS = {
       "40 poke 38400+x,int(rnd(1)*8)",
       "50 goto 20"
     ],
-    "runCommand": "run"
+    "runCommand": "run",
+    "perCharMs": 170
   }
 } as const satisfies Record<string, DemoProgram>;
 

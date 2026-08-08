@@ -41,7 +41,8 @@ builder's only external input is the frozen bridge base.
 - **Pointer:** none. `--pointer none --input-backend disabled`; X runs with
   `-nocursor`. The real machine had no pointing device (its other input was a
   joystick), so there is nothing to emulate and nothing to calibrate.
-- **Keyboard:** PS/2 only, paced at 40 ms hold / 40 ms gap.
+- **Keyboard:** PS/2 only, paced at 80 ms hold / 80 ms gap (measured — see
+  "Why four frames" below).
 - **Login:** none. `credentialsRef` is `guest/vic20` for form only; the guest
   Debian kiosk is reached with the shared bridge key, never a password.
 
@@ -134,11 +135,15 @@ getty — is why the builder asserts both conditions explicitly.
 
 ## Keyboard
 
-- **Pacing: `SH_KEY_MIN_HOLD_MS=40`, `SH_KEY_MIN_GAP_MS=40`.** VICE samples the
-  emulated keyboard matrix once per emulated PAL frame (50 Hz → 20 ms), so a
-  press/release pair that completes inside one frame is never observed. Two
-  frames of margin, derived from the frame period exactly as playbook §5.1
-  requires — the same numbers `amstradcpc` uses, for the same 50 Hz reason.
+- **Pacing: `SH_KEY_MIN_HOLD_MS=80`, `SH_KEY_MIN_GAP_MS=80`** — four PAL frames
+  each way, twice the playbook's usual two. See "Why four frames" below; the
+  short version is that the failure this guards against is a host scheduling
+  stall, not frame quantisation, so it does not scale with the frame period.
+- **`demoProgram.perCharMs: 170`.** The SPA typist waits `line.length *
+  perCharMs` before submitting the next line, and this tile drains typed keys at
+  hold+gap = 160 ms/char — more than twice the fleet default's assumed 70.
+  `validate_demo_pacing` in `scripts/tiles-registry.py` fails the build if the
+  budget that applies is below a tile's drain rate, so the two cannot drift.
 - **No `SH_KEY_MAP`.** Unlike the MPF-II, this matrix does not have to be
   re-derived: VICE's default SDL **symbolic** keymap (`sdl_sym.vkm`) already
   maps host ASCII onto the Commodore key that produces that character.
@@ -148,6 +153,52 @@ getty — is why the builder asserts both conditions explicitly.
   keyboard — Commodore reused the VIC-20's case, keyboard and ports for the C64
   — and the same VICE bindings drive it (RUN/STOP = Esc, RESTORE = PageUp,
   C= = Tab).
+
+## Why four frames, not two — the pacing bisect (2026-08-08)
+
+The tile shipped at 40/40 (the playbook's two frames) and a visitor's type-in
+came back corrupted: `PRINT CHR(147)` for `CHR$(147)`, `GOTO 0` for `GOTO 20`,
+and therefore `?BAD SUBSCRIPT ERROR IN 10`. Two characters lost out of ~85.
+
+Bisected on a `/data/vms/soltest` clone with
+`scripts/dev/emu-key-pacing-bisect.py`: restore golden, type one fixed 40-character
+line (`print chr$(147)+int(rnd(1)*8)-abcdefghij`, which exercises the same
+shifted set the listing uses) with explicit press → hold → release → gap
+events, screendump, compare against a slow-paced reference.
+
+| hold / gap | corrupted lines (40 chars each) |
+|---|---|
+| 40 / 40 | **1 of 22** — intermittent, and it tracks host load |
+| 60 / 60 | 0 of 14 |
+| 80 / 80 | 0 of 22 |
+
+**The mechanism is not frame quantisation.** Two frames covers that, which is
+why 40/40 works most of the time. This box runs 30+ emulators; when VICE's
+thread is starved for longer than the hold, the press *and* the release both
+land between two of its input pumps and the key is never observed at all. The
+margin has to cover a worst-case host stall, so it does not scale with the
+machine's frame period the way playbook §5.1's rule of thumb assumes.
+
+Two measurement traps cost most of the time here, and both made the instrument
+lossier than the thing being measured:
+
+- **`send-key` with `hold-time` releases asynchronously.** QEMU returns as soon
+  as the press is queued and releases on its own timer, so back-to-back calls
+  overlap on that timer — at 250 ms hold with a 250 ms sleep this harness still
+  lost 6 of 40 characters. Use explicit `input-send-event` press/release pairs
+  with real sleeps, which is what the daemon does.
+- **The cursor blinks**, so a raw frame compare calls every trial corrupt.
+  Capture the reference several times and mask the pixels that differ between
+  those captures.
+
+**`labctl type` has the first bug too, and one of its own.**
+`send_chords_paced` issues `send-key` with `hold-time=hold_ms` and then sleeps
+only `gap_ms`, so the true release→press gap it leaves is `gap - hold` = **0 ms**
+at any tile that declares hold == gap (vic20, amstradcpc, mpf2). That is a
+second, independent reason the playbook is right that `labctl type` is not a
+fair test of a guest's keyboard — it is not merely unpaced, it actively
+overlaps keys. Not fixed here; recorded so the next person does not measure
+with it.
 
 ## Verification (2026-08-08)
 

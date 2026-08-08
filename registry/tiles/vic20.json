@@ -98,8 +98,8 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_RESET_MODE": "loadvm",
       "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "40",
-      "SH_KEY_MIN_GAP_MS": "40",
+      "SH_KEY_MIN_HOLD_MS": "80",
+      "SH_KEY_MIN_GAP_MS": "80",
       "SH_FIXTURE_DESC": "Commodore VIC-20 (PAL) ROM BASIC power-on screen — \"**** CBM BASIC V2 **** / 3583 BYTES FREE / READY.\" in blue on white paper inside a cyan border, drawn double-size (-VICdsize) by VICE xvic on an 800x600 X root; golden snapshot restores X (-nocursor) + xvic at the READY prompt exactly as baked from an untouched cold boot; keyboard-only exhibit; no pointer device; VIC-I sound -> ALSA -> AC97."
     },
     "vmidLabel": 221,
@@ -201,7 +201,8 @@
       "40 poke 38400+x,int(rnd(1)*8)",
       "50 goto 20"
     ],
-    "runCommand": "run"
+    "runCommand": "run",
+    "perCharMs": 170
   },
   "museum": {
     "id": "vic20",

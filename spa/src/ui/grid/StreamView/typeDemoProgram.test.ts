@@ -63,6 +63,26 @@ describe('typeDemoProgram', () => {
     expect(DEMO_ENTER_DELAY_MS).toBeGreaterThan(DEMO_LINE_DELAY_MS);
   });
 
+  it('honours a tile-declared perCharMs over the fleet default', async () => {
+    // vic20 paces 80 ms hold + 80 ms gap, so its characters reach the guest at
+    // half the fleet default's assumed rate. Waiting the default would submit
+    // each line before the previous one finished arriving.
+    const slow: DemoProgram = { ...PROGRAM, perCharMs: 170 };
+    const r = recorder();
+    await typeDemoProgram({ program: slow, handle: r.handle, sleep: r.sleep });
+    expect(r.waits[0]).toBe(PROGRAM.lines[0].length * 170);
+    expect(r.waits[r.waits.length - 1]).toBe(PROGRAM.runCommand.length * 170);
+  });
+
+  it('lets an explicit perCharMs argument override even a tile-declared one', async () => {
+    const r = recorder();
+    await typeDemoProgram({
+      program: { ...PROGRAM, perCharMs: 170 }, handle: r.handle, sleep: r.sleep,
+      delayMs: 1, enterDelayMs: 1, perCharMs: 0,
+    });
+    expect(r.waits).toEqual([1, 1, 1, 1, 0]);
+  });
+
   it('stops mid-listing when cancelled and never sends the run command', async () => {
     const r = recorder();
     const done = await typeDemoProgram({

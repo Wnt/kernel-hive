@@ -96,7 +96,8 @@
       "100 next",
       "110 goto 20"
     ],
-    "runCommand": "run"
+    "runCommand": "run",
+    "perCharMs": 90
   },
   "runtime": {
     "tileEnv": {

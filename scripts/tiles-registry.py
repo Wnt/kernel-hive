@@ -304,6 +304,48 @@ def validate_schema_shape(rows: list[dict[str, Any]], errors: list[str]) -> None
                 fail(errors, row, "demoProgram.lines must be a non-empty list of non-blank strings")
 
 
+# spa/src/ui/grid/StreamView/typeDemoProgram.ts DEMO_PER_CHAR_MS -- what the SPA
+# typist assumes when the entry declares no perCharMs of its own.
+SPA_DEFAULT_PER_CHAR_MS = 70
+
+
+def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
+    """The typist's per-character budget must not undercut the daemon's pacing.
+
+    streamhost drains typed keys at SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS per
+    character. The SPA waits line.length * perCharMs before submitting the next
+    line, so a perCharMs below that rate builds a backlog across the listing: the
+    ENTER arrives late and the next line's first characters land while BASIC is
+    still tokenising, which the visitor sees as randomly missing characters. The
+    two numbers live in different files, so pin them together here rather than
+    rediscovering the drift on the exhibit floor.
+    """
+    for row in rows:
+        demo = row.get("demoProgram")
+        if not demo:
+            continue
+        env = (row.get("runtime") or {}).get("tileEnv", {})
+
+        def ms(key: str, env: dict[str, Any] = env) -> int:
+            try:
+                return int(env.get(key, 0))
+            except (TypeError, ValueError):
+                return 0
+
+        drain = ms("SH_KEY_MIN_HOLD_MS") + ms("SH_KEY_MIN_GAP_MS")
+        if drain == 0:
+            continue
+        budget = demo.get("perCharMs", SPA_DEFAULT_PER_CHAR_MS)
+        if budget < drain:
+            fail(
+                errors,
+                row,
+                f"demoProgram.perCharMs={budget} is below the tile's typed drain rate "
+                f"({drain} ms/char = SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS); the typist "
+                f"would out-run the guest and lose characters",
+            )
+
+
 def validate_keyboard_env(rows: list[dict[str, Any]], errors: list[str]) -> None:
     """`keyboard.charMap` is the single source; SH_KEY_MAP is how labctl consumes it.
 
@@ -392,6 +434,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     validate_schema_shape(rows, errors)
     validate_exhibit_assets(rows, errors)
     validate_keyboard_env(rows, errors)
+    validate_demo_pacing(rows, errors)
     validate_fleet_encoder(globals_doc, errors)
     ids: dict[str, str] = {}
     unique: dict[str, dict[Any, str]] = {

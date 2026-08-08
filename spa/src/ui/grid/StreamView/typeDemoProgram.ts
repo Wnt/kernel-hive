@@ -36,6 +36,11 @@ export const DEMO_LINE_DELAY_MS = 260;
  * lines therefore submits faster than the guest can consume, the backlog grows,
  * and characters are lost -- seen as the first digit of a line number going
  * missing partway down a listing. Scale the wait by line length instead.
+ *
+ * This is only the DEFAULT. A tile whose drain rate exceeds it declares its own
+ * `demoProgram.perCharMs` in the registry (vic20 paces 80+80, so 170), and
+ * `validate_demo_pacing` in scripts/tiles-registry.py fails the build if the
+ * value that applies is below that tile's hold+gap.
  */
 export const DEMO_PER_CHAR_MS = 70;
 
@@ -97,11 +102,14 @@ export async function typeDemoProgram({
   sleep?: (ms: number) => Promise<void>;
   cancelled?: () => boolean;
 }): Promise<boolean> {
+  // The tile's own drain rate wins over the fleet default; an explicit caller
+  // argument (tests) still wins over both.
+  const charMs = perCharMs === DEMO_PER_CHAR_MS ? (program.perCharMs ?? perCharMs) : perCharMs;
   for (const line of program.lines) {
     if (cancelled()) return false;
     handle.typeText(applyKeyboard(line, keyboard));
     // Long enough for the whole line to have actually reached the guest.
-    await sleep(Math.max(delayMs, line.length * perCharMs));
+    await sleep(Math.max(delayMs, line.length * charMs));
     if (cancelled()) return false;
     // ENTER commits the line; give the guest time to tokenise it before the
     // next character arrives.
@@ -111,6 +119,6 @@ export async function typeDemoProgram({
   if (cancelled()) return false;
   // No newline: the visitor supplies it.
   handle.typeText(applyKeyboard(program.runCommand, keyboard));
-  await sleep(program.runCommand.length * perCharMs);
+  await sleep(program.runCommand.length * charMs);
   return true;
 }

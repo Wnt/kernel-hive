@@ -429,6 +429,29 @@ An earlier empirical 80/250/500 ms triple also worked but was never bisected and
 is roughly 6× the physical requirement — extrapolating from it makes every
 type-in glacial.
 
+**Two frames is a floor, not an answer — measure it.** vic20 shipped at the
+frame-derived `40`/`40` and a visitor's type-in still came back with two
+characters missing. Bisected with
+[`scripts/dev/emu-key-pacing-bisect.py`](../../scripts/dev/emu-key-pacing-bisect.py)
+on a clone: 40/40 corrupted 1 line in 22, 60/60 and 80/80 none in 14 and 22.
+The residual failure is **host scheduling, not frame quantisation** — this box
+runs 30+ emulators, and when the emulator's thread is starved for longer than
+the hold, the press *and* the release land between two of its input pumps and
+the key is never sampled at all. That margin does not scale with the frame
+period, so derive a starting value from the frame period and then *measure* on
+a clone before shipping. Two traps make the measurement lie: QEMU's `send-key
+hold-time` releases asynchronously and overlapping calls lose characters on
+their own (use explicit `input-send-event` press/release pairs), and the
+guest's cursor blinks, so mask the pixels that differ between repeated
+reference captures before comparing frames.
+
+**Raising the pacing obliges the typist to slow down too.** The SPA waits
+`line.length * perCharMs` before submitting the next line; below the tile's
+hold+gap drain rate a backlog builds and BASIC loses the characters that arrive
+while it is tokenising. Declare `demoProgram.perCharMs` in the registry when a
+tile drains slower than the fleet default — `validate_demo_pacing` in
+`scripts/tiles-registry.py` fails the build if the two disagree.
+
 **A guest's keyboard is not necessarily laid out like a PC's.** The SPA's
 `typeText()` maps ASCII to US set1 scancodes. The MPF-II's 8×8 matrix puts `=` on
 Shift+O, `-` on Shift+I and `+` on Shift+P, and its shifted number row is offset

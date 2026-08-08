@@ -138,6 +138,11 @@ export interface DemoProgram {
   readonly lines: readonly string[];
   /** Typed after the listing, WITHOUT a newline — the visitor presses ENTER. */
   runCommand: string;
+  /** Milliseconds one character takes to REACH this guest (streamhost's
+   *  SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS). Omitted where the SPA default
+   *  DEMO_PER_CHAR_MS already covers the tile; the registry validates that
+   *  whichever applies is not below the daemon's drain rate. */
+  readonly perCharMs?: number;
 }
 
 /** How a machine's keyboard differs from a PC's (registry `keyboard` block). */
