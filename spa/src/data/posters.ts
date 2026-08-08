@@ -203,7 +203,7 @@ export const POSTERS = {
       "images": [
         {
           "src": "/posters/amiga/gallery/01-amiga500-system.webp",
-          "alt": "An Amiga 500 keyboard computer with attached disk drive, photographed from above",
+          "alt": "An Amiga 500 keyboard computer with attached disk drive and monitor, photographed from the front",
           "caption": "The Amiga 500 arrived in 1987 with a Motorola 68000 processor and custom chips for graphics, sound, and animation.",
           "author": "Bill Bertram",
           "license": "CC BY-SA 2.5",
@@ -254,8 +254,8 @@ export const POSTERS = {
           "shareAlike": false,
           "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Amiga_500_(RetroMadrid_2018).jpg",
           "sourceName": "Wikimedia Commons",
-          "width": 1600,
-          "height": 1067
+          "width": 1067,
+          "height": 1600
         },
         {
           "src": "/posters/amiga/gallery/05-amiga-500.webp",
@@ -575,8 +575,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/android/gallery/03-htc-dream-flipside.webp",
-          "alt": "Rear view of a white HTC Dream smartphone, showing the back panel and camera",
-          "caption": "The HTC Dream's back panel and integrated camera, the first smartphone in the Android ecosystem.",
+          "alt": "Rear of a white HTC Dream smartphone with its back cover removed, exposing the battery and camera module",
+          "caption": "The HTC Dream with its rear cover off, exposing the battery compartment and camera module of the first commercially released Android phone.",
           "author": "Marcus Sümnick",
           "license": "CC BY 3.0",
           "licenseId": "cc-by-3.0",
@@ -1150,7 +1150,7 @@ export const POSTERS = {
         {
           "src": "/posters/c64/gallery/01-commodore-64-computer-fl.webp",
           "alt": "A beige Commodore 64 home computer in its breadbin case, photographed from the front-left",
-          "caption": "The Commodore 64 in its original plastic case, as introduced by Commodore in 1982.",
+          "caption": "The breadbin case integrated keyboard, processor, and power supply electronics into a single unit under seventeen inches wide, with joystick ports on this right-hand edge.",
           "author": "Evan-Amos",
           "license": "Public domain",
           "licenseId": "pd",
@@ -1164,7 +1164,7 @@ export const POSTERS = {
         {
           "src": "/posters/c64/gallery/02-commodore-64-computer-bl.webp",
           "alt": "The back-left view of a Commodore 64 showing ports and the cartridge slot",
-          "caption": "The cartridge port and external connections at the rear of the breadbin case.",
+          "caption": "The cartridge expansion slot and, beside it, the serial and cassette ports at the rear supported games, musical instruments, and external storage.",
           "author": "Evan-Amos",
           "license": "Public domain",
           "licenseId": "pd",
@@ -1178,7 +1178,7 @@ export const POSTERS = {
         {
           "src": "/posters/c64/gallery/03-commodore-64-computer-br.webp",
           "alt": "The back-right side of the Commodore 64, showing power and video connectors",
-          "caption": "Power and video outputs enabled the 64 to connect to standard home television sets.",
+          "caption": "Composite video and audio outputs connected directly to home television sets, bypassing the need for a separate monitor.",
           "author": "Evan-Amos",
           "license": "Public domain",
           "licenseId": "pd",
@@ -2109,7 +2109,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/mpf2/gallery/02-multitechmpf-ii.webp",
-          "alt": "A Microprofessor II with an external keyboard attached, showing the compact main unit",
+          "alt": "A Microprofessor II main unit sitting on top of its separate add-on keyboard accessory",
           "caption": "The MPF-II with an optional keyboard accessory, photographed at Retro Gathering in Stockholm.",
           "author": "liftarn",
           "license": "CC BY-SA 2.0",
@@ -2249,7 +2249,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/msdoswin1/gallery/02-ibm-pc-at.webp",
-          "alt": "An IBM PC AT system unit, viewed from above",
+          "alt": "An IBM PC AT system unit at a three-quarter angle, with its monitor, keyboard, and mouse, on display at a museum",
           "caption": "The IBM PC AT introduced the 80286 processor and the Advanced Technology standard in 1984, forming the hardware foundation for Windows 1.0 and Windows 3.x.",
           "author": "MBlairMartin",
           "license": "CC BY-SA 4.0",
@@ -2263,8 +2263,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/msdoswin1/gallery/03-ibm-pc-xt-02.webp",
-          "alt": "A beige IBM PC XT tower system unit",
-          "caption": "A complete IBM PC XT chassis, representative of the XT architecture that expanded computing beyond the original 5150.",
+          "alt": "A beige IBM PC XT desktop system unit with monitor on top and keyboard in front, the screen showing Prince of Persia",
+          "caption": "A complete IBM PC XT setup running the CGA game Prince of Persia, representative of the XT architecture that expanded computing beyond the original 5150.",
           "author": "Hidalgo944",
           "license": "CC0",
           "licenseId": "cc0",
@@ -2277,8 +2277,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/msdoswin1/gallery/04-ibm-5170-pc-at-8861873514.webp",
-          "alt": "The motherboard and system board of an IBM PC AT",
-          "caption": "The system board of an IBM PC AT, showing the 80286 processor and support circuitry that powered the era of Windows 3.x.",
+          "alt": "A closed IBM PC AT system unit with floppy drive and IBM keyboard on a cluttered restorer's workbench, its monitor displaying a DOS program with an on-screen piano keyboard and a menu of tunes",
+          "caption": "An IBM PC AT on a restorer's bench, its CRT running a DOS program that plays back tunes like the Funeral March of a Marionette through an on-screen piano keyboard.",
           "author": "htomari",
           "license": "CC BY-SA 2.0",
           "licenseId": "cc-by-sa-2.0",
@@ -2305,8 +2305,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/msdoswin1/gallery/06-ibm-model-f-122-key-keyboard.webp",
-          "alt": "An IBM Model F mechanical keyboard with 122 keys, photographed from above",
-          "caption": "The IBM Model F mechanical keyboard, whose legendary key feel and durability defined the user experience of DOS and Windows computing.",
+          "alt": "An IBM Model F mechanical keyboard with 122 keys, built for the IBM 3179 terminal, photographed from above",
+          "caption": "The IBM Model F switch mechanism, seen here on a 122-key terminal keyboard, shared its legendary key feel and durability with the smaller Model F keyboards IBM shipped with the PC, XT, and AT.",
           "author": "Themavery",
           "license": "CC BY-SA 4.0",
           "licenseId": "cc-by-sa-4.0",
@@ -2636,13 +2636,13 @@ export const POSTERS = {
           "shareAlike": true,
           "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_AlphaStation_600A_(cropped).jpg",
           "sourceName": "Wikimedia Commons",
-          "width": 1600,
-          "height": 1055
+          "width": 1055,
+          "height": 1600
         },
         {
           "src": "/posters/nt351/gallery/02-alphastation-500-400-4139803972.webp",
-          "alt": "A DEC AlphaStation 500/400 desktop workstation case",
-          "caption": "Alpha workstations like this 500/400 targeted engineering and scientific users who needed more integer and floating-point throughput than any Pentium of 1995 could offer.",
+          "alt": "The opened case of a DEC AlphaStation 500/400, showing its motherboard, RAM modules, drive bays and power supply",
+          "caption": "An AlphaStation 500/400 with its cover off; workstations like this targeted engineering and scientific users who needed more integer and floating-point throughput than any Pentium of 1995 could offer.",
           "author": "htomari",
           "license": "CC BY-SA 2.0",
           "licenseId": "cc-by-sa-2.0",
@@ -2816,7 +2816,7 @@ export const POSTERS = {
       "images": [
         {
           "src": "/posters/nt4/gallery/01-compaq-deskpro-466-front-view.webp",
-          "alt": "The front panel of a beige Compaq Deskpro tower desktop computer",
+          "alt": "The front panel of a beige Compaq Deskpro 466 desktop computer, a low-profile case with a monitor stacked on top",
           "caption": "Compaq's Deskpro line was a common sight running NT 4.0 Workstation in mid-90s offices, valued for the manageability features Compaq built into its business desktops.",
           "author": "Jim Leonard",
           "license": "CC BY 3.0",
@@ -2830,7 +2830,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/nt4/gallery/02-compaq-deskpro-6333-crop.webp",
-          "alt": "A Compaq Deskpro desktop tower computer, beige plastic case",
+          "alt": "A Compaq Deskpro tower computer, beige plastic case, with CD-ROM and floppy drive bays visible",
           "caption": "A Pentium-class Deskpro of the kind IT departments standardized on when they moved from Windows NT 3.51 to the Explorer-shelled NT 4.0 in 1996.",
           "author": "Demache at English Wikipedia",
           "license": "Public domain",
@@ -2844,7 +2844,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/nt4/gallery/03-hp-pc-workstation-x-class-16.webp",
-          "alt": "An HP PC Workstation X-Class beige tower case with front drive bays",
+          "alt": "An HP PC Workstation X-Class grey tower case with front drive bays and HP Visualize branding",
           "caption": "Workstation-class PCs like this HP X-Class targeted the Pentium Pro/II buyers NT 4.0 Workstation was built for: engineers running CAD and technical software that needed real multitasking.",
           "author": "Thomas Schanz",
           "license": "CC BY-SA 4.0",
@@ -3007,13 +3007,13 @@ export const POSTERS = {
           "shareAlike": false,
           "sourceUrl": "https://commons.wikimedia.org/wiki/File:VAX_11_780_CPU_Backplane.jpg",
           "sourceName": "Wikimedia Commons",
-          "width": 1600,
-          "height": 1200
+          "width": 1200,
+          "height": 1600
         },
         {
           "src": "/posters/openvms/gallery/03-vax-4000-300-en-r400x.webp",
-          "alt": "A VAX 4000-300, a compact desktop VAX system in a low grey cabinet",
-          "caption": "The VAX 4000-300, a later desktop implementation of the VAX architecture, bringing minicomputer computing to smaller spaces.",
+          "alt": "Two beige pedestal-cabinet VAX systems side by side under a workbench, labeled VAX 4000-300 and R400X",
+          "caption": "A VAX 4000-300 alongside a companion R400X unit, later pedestal-cabinet VAX systems that brought minicomputer computing into smaller server rooms.",
           "author": "Wikidevnl",
           "license": "CC BY-SA 4.0",
           "licenseId": "cc-by-sa-4.0",
@@ -3026,8 +3026,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/openvms/gallery/04-vax-11-780-2.webp",
-          "alt": "Another view of a VAX 11-780 floor-standing cabinet system",
-          "caption": "Another angle on the VAX 11-780, showing the cabinet form factor that housed DEC's architectural landmark.",
+          "alt": "Close-up of the \"digital VAX 11/780\" nameplate on the cabinet's front trim",
+          "caption": "The nameplate on a VAX 11/780 cabinet, identifying DEC's original high-end VAX.",
           "author": "Emiliano Russo, Associazione Culturale VerdeBinario",
           "license": "Public domain",
           "licenseId": "pd",
@@ -3180,7 +3180,7 @@ export const POSTERS = {
       "images": [
         {
           "src": "/posters/os2warp/gallery/01-ibm-ps-2-model-30-286-front-view.webp",
-          "alt": "An IBM Personal System/2 Model 30 286 desktop computer with its keyboard",
+          "alt": "Close-up of the front bezel of an IBM Personal System/2 Model 30 286 desktop computer, showing the floppy drive and IBM badge",
           "caption": "OS/2 was born on IBM's PS/2 line: the Model 30 286 belongs to the family of machines the joint IBM/Microsoft project targeted before IBM continued OS/2 alone.",
           "author": "DigitalIceAge",
           "license": "CC BY 4.0",
@@ -3208,7 +3208,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/os2warp/gallery/03-thinkpad-701.webp",
-          "alt": "An IBM ThinkPad 701C laptop, closed, showing its compact black case",
+          "alt": "An IBM ThinkPad 701C laptop, open, showing its screen and expanding butterfly keyboard",
           "caption": "IBM's ThinkPad line, introduced in 1992, was the flagship hardware for IBM's own operating system through the OS/2 Warp years of the mid-1990s.",
           "author": "nakashi",
           "license": "CC BY-SA 2.0",
@@ -3411,8 +3411,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/postmarketos/gallery/04-nokia-n900.webp",
-          "alt": "Nokia N900 photographed from a flat angle, showing the slide-out QWERTY keyboard fully visible",
-          "caption": "The Nokia N900's slide-out QWERTY keyboard and capacitive touchscreen, 2009.",
+          "alt": "Nokia N900 photographed straight-on, closed, with its screen off and keyboard slid shut",
+          "caption": "The Nokia N900 closed, its slide-out QWERTY keyboard hidden beneath the touchscreen, 2009.",
           "author": "Georgy90",
           "license": "CC BY-SA 3.0",
           "licenseId": "cc-by-sa-3.0",
@@ -3983,8 +3983,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/riscos/gallery/02-riscpc-slice-back-01.webp",
-          "alt": "Another architectural view of the RiscPC internals, showing the internal layout and component positions",
-          "caption": "The RiscPC's internal organization, documenting how Acorn arranged the RISC processor, memory, and expansion slots in a compact form.",
+          "alt": "The rear of a single case slice from the Acorn RiscPC's modular stacking case, showing two blank expansion-slot backplates",
+          "caption": "The RiscPC's case was built from stackable modular slices; this is the back of one slice, with expansion-slot covers for its two internal card bays.",
           "author": "Teewurzler",
           "license": "CC0",
           "licenseId": "cc0",
@@ -3997,8 +3997,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/riscos/gallery/03-acorn-riscpc-pc-card.webp",
-          "alt": "An Acorn RiscPC PC Card, a processor expansion module that fits into the RiscPC's PCMCIA slot",
-          "caption": "A PC Card module for the RiscPC, one of the expansion options that extended the machine's capabilities.",
+          "alt": "An Acorn RiscPC PC Card, a heatsinked x86 co-processor card that plugs into the RiscPC's internal expansion connector",
+          "caption": "A PC CPU card for the RiscPC, a second-processor expansion that let the machine run PC-compatible software alongside RISC OS.",
           "author": "Flibble",
           "license": "CC BY-SA 3.0",
           "licenseId": "cc-by-sa-3.0",
@@ -4123,8 +4123,8 @@ export const POSTERS = {
       "images": [
         {
           "src": "/posters/sailfishos/gallery/01-jolla-phone-white-top-01.webp",
-          "alt": "Jolla phone photographed from above, showing the top edge with the distinctive rounded white case",
-          "caption": "The Jolla Phone from above, with its characteristic white \"Other Half\" modular back cover.",
+          "alt": "Close-up of the Jolla Phone's top edge, showing the headphone jack, micro-USB port and the jolla logotype",
+          "caption": "The Jolla Phone's top edge, with a sliver of its characteristic white \"Other Half\" modular back cover visible below.",
           "author": "Erik Lundin",
           "license": "CC BY-SA 3.0",
           "licenseId": "cc-by-sa-3.0",
@@ -4165,7 +4165,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/sailfishos/gallery/04-jolla-tablet-16928861447.webp",
-          "alt": "Jolla Tablet photographed at an angle, showing the front screen and aluminum back panel",
+          "alt": "Jolla Tablet resting at an angle, showing its front screen and thin side edge",
           "caption": "The Jolla Tablet, extending Sailfish OS to a larger 7.85-inch form factor.",
           "author": "Maurizio Pesce from Milan, Italia",
           "license": "CC BY 2.0",
@@ -4436,7 +4436,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/solaris/gallery/02-sparcstation-51332334771.webp",
-          "alt": "A SPARCstation desktop workstation photographed at an angle showing its front and side",
+          "alt": "A SPARCstation 5 on a museum display stand with its CRT monitor, keyboard, and mouse, the screen showing a text console",
           "caption": "A SPARCstation in its working context, designed to deliver Unix workstation performance at a practical price.",
           "author": "Steve Elliott from UK",
           "license": "CC BY-SA 2.0",
@@ -4450,8 +4450,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/solaris/gallery/03-sun-sparcstation-ipx-prototype.webp",
-          "alt": "A Sun SPARCstation IPX prototype workstation, a compact pizza-box form with front panel vents",
-          "caption": "The SPARCstation IPX, Sun's entry-level SPARC workstation, bringing Unix graphics to a wider audience.",
+          "alt": "A prototype Sun SPARCstation IPX workstation in a stopgap lunchbox-style enclosure borrowed from its predecessor, the SPARCstation IPC, with a floppy drive slot and asset-tag stickers",
+          "caption": "A prototype SPARCstation IPX, Sun's entry-level SPARC workstation, housed in the lunchbox-style case originally built for the earlier SPARCstation IPC.",
           "author": "NapoliRoma",
           "license": "CC BY-SA 3.0",
           "licenseId": "cc-by-sa-3.0",
@@ -4979,8 +4979,8 @@ export const POSTERS = {
       "images": [
         {
           "src": "/posters/win2000/gallery/01-ibm-netvista-desktop-pc-pentium-4.webp",
-          "alt": "An IBM NetVista desktop PC with a flat-panel monitor, a beige tower case with front-facing ports",
-          "caption": "The IBM NetVista, a business-class desktop system shipping with Windows 2000 and Intel Pentium 4 processors, defines the corporate workstation of the early 2000s.",
+          "alt": "An IBM NetVista desktop PC in a black slim-tower case, with Intel Pentium 4 and Windows badges on the front panel",
+          "caption": "The IBM NetVista, a business-class desktop with Intel Pentium 4 processors, was IBM's corporate workstation of the early 2000s, sold with a choice of Windows 2000 Professional or Windows XP.",
           "author": "https://www.flickr.com/photos/brownpau",
           "license": "CC BY 2.0",
           "licenseId": "cc-by-2.0",
@@ -4993,8 +4993,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win2000/gallery/02-ibm-netvista-a21i-a21i-front.webp",
-          "alt": "Front view of an IBM NetVista A21i desktop computer, showing the beige chassis and front panel",
-          "caption": "The NetVista A21i, a compact business desktop, represented IBM's commitment to affordable, reliable systems for enterprise deployment.",
+          "alt": "Front view of an IBM NetVista A21i desktop computer, showing the black tower chassis with a \"Designed for Microsoft Windows 2000 Professional\" badge",
+          "caption": "The NetVista A21i, a compact business desktop tower badged for Windows 2000 Professional, represented IBM's commitment to affordable, reliable systems for enterprise deployment.",
           "author": "The Serial Port",
           "license": "CC BY-SA 4.0",
           "licenseId": "cc-by-sa-4.0",
@@ -5007,8 +5007,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win2000/gallery/03-compaq-deskpro-en-c300a-img-5581.webp",
-          "alt": "A Compaq Deskpro EN C300A desktop computer photographed from the front, showing the silver-gray chassis and front panel",
-          "caption": "The Compaq Deskpro EN series brought enterprise-grade construction and expansion slots to mid-range Windows 2000 deployments.",
+          "alt": "Close-up inside a Compaq Deskpro EN C300A of its Western Digital Caviar hard drive label, with drive parameters and jumper settings",
+          "caption": "The Western Digital hard drive fitted inside a Compaq Deskpro EN C300A, a mid-range enterprise desktop of the Windows 2000 era.",
           "author": "The Serial Port",
           "license": "CC BY-SA 4.0",
           "licenseId": "cc-by-sa-4.0",
@@ -5021,8 +5021,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win2000/gallery/04-compaq-deskpro-en-c300a-img-5582.webp",
-          "alt": "Side angle view of a Compaq Deskpro EN C300A, showing the case profile and ventilation design",
-          "caption": "Built for workgroup and office environments, the Deskpro EN emphasized thermal management and modular upgrade paths.",
+          "alt": "The opened interior of a Compaq Deskpro EN C300A, showing the motherboard, expansion slots, and cooling fan",
+          "caption": "Inside the Deskpro EN C300A: the motherboard, PCI expansion slots, and cooling fan of a machine built for workgroup and office deployment.",
           "author": "The Serial Port",
           "license": "CC BY-SA 4.0",
           "licenseId": "cc-by-sa-4.0",
@@ -5147,8 +5147,8 @@ export const POSTERS = {
       "images": [
         {
           "src": "/posters/win311/gallery/01-escom-greymate-486-lid-closed.webp",
-          "alt": "A sealed Escom Greymate 486 tower system unit with beige plastic case",
-          "caption": "The Escom Greymate 486, a tower-case system representing the mid-1990s standard configuration for Windows 3.11 in European offices.",
+          "alt": "A closed beige 1990s clamshell laptop with a ribbed lid, twin latches and an Escom badge, resting on a desk",
+          "caption": "The Escom Greymate 486 closed: a notebook sold under the badge of Escom, the German high-street PC retailer, in the years when a 486 was comfortably above what Windows 3.11 required.",
           "author": "Tech for PC & Mac",
           "license": "CC BY 3.0",
           "licenseId": "cc-by-3.0",
@@ -5161,8 +5161,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win311/gallery/02-escom-greymate-486-lid-open.webp",
-          "alt": "An Escom Greymate 486 with the side panel removed, showing internal components",
-          "caption": "The open chassis reveals the 486 processor, ISA expansion slots, and memory architecture that ran Windows for Workgroups 3.11.",
+          "alt": "The same laptop open, showing a monochrome LCD panel, a full keyboard, an integrated trackball and a Mitac badge",
+          "caption": "Opened, it reveals a monochrome LCD, an integrated trackball in place of a desk mouse, and the badge of Mitac, the Taiwanese manufacturer that actually built it — along with a previous owner’s BIOS key sequence written on the palm rest.",
           "author": "Tech for PC & Mac",
           "license": "CC BY 3.0",
           "licenseId": "cc-by-3.0",
@@ -5175,7 +5175,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win311/gallery/03-deskpro-386s.webp",
-          "alt": "A Compaq DeskPro 386S tower system unit with beige plastic case",
+          "alt": "A Compaq DeskPro 386S desktop system unit with its monitor on top, displaying Microsoft PowerPoint",
           "caption": "The Compaq DeskPro 386S, a standard desktop configuration from the 386 era that provided the processing power for Windows 3.x.",
           "author": "MBlairMartin",
           "license": "CC BY-SA 4.0",
@@ -5189,7 +5189,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win311/gallery/04-compaq-deskpro-386-16mhz.webp",
-          "alt": "A Compaq Deskpro 386 16MHz tower system, photographed against a plain background",
+          "alt": "A Compaq Deskpro 386 16MHz desktop system with its monitor on top and keyboard alongside, photographed in a room corner",
           "caption": "The Compaq Deskpro 386 at 16 MHz, representing the era when 386 processors became standard in business desktops running Windows 3.11.",
           "author": "Tecnoxarxa",
           "license": "CC0",
@@ -5198,12 +5198,12 @@ export const POSTERS = {
           "shareAlike": false,
           "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_386_16Mhz.jpg",
           "sourceName": "Wikimedia Commons",
-          "width": 1600,
-          "height": 1200
+          "width": 1200,
+          "height": 1600
         },
         {
           "src": "/posters/win311/gallery/05-confident-system-720-personal-computer-in-finland-20200125-002.webp",
-          "alt": "A Confident System-720 tower computer with beige case",
+          "alt": "The rear panel of a Confident System-720 desktop computer, showing its COM, LPT, game and video ports",
           "caption": "The Confident System-720, a regional European PC variant from the 1990s showing how desktop computing hardware was manufactured and configured beyond the major OEMs.",
           "author": "Methem (Mikko J. Putkonen)",
           "license": "CC BY 4.0",
@@ -5342,8 +5342,8 @@ export const POSTERS = {
       "images": [
         {
           "src": "/posters/win95/gallery/01-20230425-161207-re-pc-hp-pavilion-6335-microsoft-windows-95.webp",
-          "alt": "An HP Pavilion 6335 desktop computer running Windows 95, showing the beige tower case typical of mid-1990s systems",
-          "caption": "The HP Pavilion 6335, a mid-1990s home and office desktop, exemplified the mass-market PCs that made Windows 95 ubiquitous.",
+          "alt": "A beige HP Pavilion 6335 desktop tower at a computer resale shop, its spec sticker reading '13GB HDD with 98SE', next to a boxed set of Windows 95 install floppy disks",
+          "caption": "This HP Pavilion 6335, seen at a Seattle resale shop, is labeled as configured with Windows 98 SE, but sits beside a boxed set of the Windows 95 install floppies this exhibit represents.",
           "author": "Gayest Frogs",
           "license": "CC BY-SA 4.0",
           "licenseId": "cc-by-sa-4.0",
@@ -5351,12 +5351,12 @@ export const POSTERS = {
           "shareAlike": true,
           "sourceUrl": "https://commons.wikimedia.org/wiki/File:20230425_161207_RE-PC_-_HP_Pavilion_6335,_Microsoft_Windows_95.jpg",
           "sourceName": "Wikimedia Commons",
-          "width": 1600,
-          "height": 1200
+          "width": 1200,
+          "height": 1600
         },
         {
           "src": "/posters/win95/gallery/02-windows-95-installation-disks-2025-03-01.webp",
-          "alt": "A complete set of Windows 95 installation floppy disks and CD-ROM media, showing the original retail packaging",
+          "alt": "A stack of Microsoft Windows 95 3.5-inch installation floppy disks, several visible loose on top",
           "caption": "Windows 95 shipped initially on floppy disks, requiring multiple 3.5-inch media for installation on computers without CD-ROM drives.",
           "author": "Asanagi",
           "license": "CC0",
@@ -5370,7 +5370,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win95/gallery/03-gateway-2000-p5-120-front-view.webp",
-          "alt": "A Gateway 2000 P5-120, a beige desktop tower featuring a Pentium 120 MHz processor, photographed from the front",
+          "alt": "A Gateway 2000 P5-120, a beige tower computer featuring a Pentium 120 MHz processor, photographed from the front",
           "caption": "The Gateway 2000 P5-120 brought Pentium performance to the mass market, exemplifying the systems Windows 95 was designed for.",
           "author": "Jim Leonard",
           "license": "CC BY 3.0",
@@ -5384,7 +5384,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win95/gallery/04-pc-compaq-prolinea-466.webp",
-          "alt": "A Compaq ProLinea 466 desktop computer, a beige tower system from the early-to-mid 1990s",
+          "alt": "A Compaq ProLinea 466 low-profile desktop computer with a CRT monitor on top, on a museum display pedestal",
           "caption": "The Compaq ProLinea 466 brought 486-class performance to business offices and schools during Windows 95's launch year.",
           "author": "Jamshid Nurkulov",
           "license": "CC BY 4.0",
@@ -5393,12 +5393,12 @@ export const POSTERS = {
           "shareAlike": false,
           "sourceUrl": "https://commons.wikimedia.org/wiki/File:PC_Compaq_ProLinea_466.jpg",
           "sourceName": "Wikimedia Commons",
-          "width": 1600,
-          "height": 1200
+          "width": 1200,
+          "height": 1600
         },
         {
           "src": "/posters/win95/gallery/05-gateway-2000.webp",
-          "alt": "A Gateway 2000 desktop computer system, showing the characteristic beige tower case of the early 1990s",
+          "alt": "A Gateway 2000 desktop computer with its CrystalScan CRT monitor mounted on top of the low-profile beige system unit",
           "caption": "Gateway 2000, the PC maker famous for mail-order direct sales to consumers, became a household name alongside Windows 95.",
           "author": "MBlairMartin",
           "license": "CC BY-SA 4.0",
@@ -5524,8 +5524,8 @@ export const POSTERS = {
       "images": [
         {
           "src": "/posters/win98se/gallery/01-dell-dimension-2100-d2100-1.webp",
-          "alt": "A Dell Dimension 2100 desktop computer, a beige tower system from the late 1990s, photographed against a neutral background",
-          "caption": "The Dell Dimension 2100, a budget commodity desktop of 2001, sold in the final years when Windows 98 SE was still offered alongside its successors.",
+          "alt": "A Dell Dimension 2100 desktop computer, a dark grey tower system with a \"Designed for Windows XP\" badge, photographed against a neutral background",
+          "caption": "The Dell Dimension 2100, a budget commodity desktop from 2001, represents the tail end of the era when Windows 98 SE machines were still common in homes alongside newer Windows XP systems like this one.",
           "author": "The Serial Port",
           "license": "CC BY-SA 4.0",
           "licenseId": "cc-by-sa-4.0",
@@ -5538,8 +5538,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win98se/gallery/02-compaq-presario-5000.webp",
-          "alt": "A Compaq Presario 5000 desktop computer tower, a beige system from the late 1990s, shown from the front",
-          "caption": "The Compaq Presario 5000 series defined late-1990s consumer desktop aesthetics and hardware configuration.",
+          "alt": "A Compaq Presario 5000 desktop computer tower in white and translucent blue, shown from the front with its CD-RW, floppy, and USB bays",
+          "caption": "The Compaq Presario 5000 series brought translucent, iMac-influenced styling to the consumer desktop tower around 2000-2001.",
           "author": "Erickarroqui",
           "license": "CC BY 3.0",
           "licenseId": "cc-by-3.0",
@@ -5552,8 +5552,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/win98se/gallery/03-compaq-presario-top-down.webp",
-          "alt": "A top-down view of a Compaq Presario desktop computer, showing the beige tower case from above",
-          "caption": "A Compaq Presario photographed from above reveals the compact rectangular form factor standard to PCs of the Windows 98 era.",
+          "alt": "A full Compaq Presario desktop setup: beige CRT monitor running Microsoft Works, tower case, keyboard, mouse, and an Epson inkjet printer",
+          "caption": "A complete Compaq Presario desktop setup of the Windows 98 era, monitor, tower, keyboard, and printer, as it would have sat on a home desk.",
           "author": "Rderijcke",
           "license": "CC BY-SA 4.0",
           "licenseId": "cc-by-sa-4.0",
@@ -5563,20 +5563,6 @@ export const POSTERS = {
           "sourceName": "Wikimedia Commons",
           "width": 1600,
           "height": 1200
-        },
-        {
-          "src": "/posters/win98se/gallery/04-packard-bell-computer-1.webp",
-          "alt": "A Packard Bell desktop computer, a beige tower system from the late 1990s, photographed from the front",
-          "caption": "Packard Bell computers were ubiquitous in home and small-office environments of the late 1990s, built on standard PC architecture.",
-          "author": "Alan_D",
-          "license": "CC BY 2.0",
-          "licenseId": "cc-by-2.0",
-          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
-          "shareAlike": false,
-          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Packard_Bell_computer_(1).jpg",
-          "sourceName": "Wikimedia Commons",
-          "width": 1200,
-          "height": 1600
         }
       ]
     }
@@ -5706,8 +5692,8 @@ export const POSTERS = {
         },
         {
           "src": "/posters/winxp/gallery/02-ibm-thinkcentre-a30-img-4399.webp",
-          "alt": "Front-facing view of an IBM ThinkCentre A30 desktop, showing the black chassis and front panel controls",
-          "caption": "ThinkCentre systems delivered Windows XP with the durability and serviceability that defined IBM's professional imaging.",
+          "alt": "The back panel of an opened IBM ThinkCentre A30 case, showing its floppy and optical drives, rear fan grille and USB ports from behind",
+          "caption": "An opened ThinkCentre A30 case, showing the drive bays and serviceable layout that defined IBM's professional desktops of the Windows XP era.",
           "author": "The Serial Port",
           "license": "CC BY-SA 4.0",
           "licenseId": "cc-by-sa-4.0",
@@ -5734,7 +5720,7 @@ export const POSTERS = {
         },
         {
           "src": "/posters/winxp/gallery/04-ibm-thinkpad-a31p-transnote-and-two-workpads.webp",
-          "alt": "An IBM ThinkPad A31p laptop positioned with two smaller computing devices, all in black, photographed from above",
+          "alt": "An IBM ThinkPad A31p laptop with a transNote and two WorkPad handhelds stacked behind it on a table, the A31p's screen showing a BBS terminal login",
           "caption": "The ThinkPad A31p, a professional-class mobile workstation, brought Windows XP performance to designers, engineers, and road warriors.",
           "author": "FAndrey",
           "license": "CC BY 2.0",

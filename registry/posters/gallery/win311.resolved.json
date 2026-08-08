@@ -4,8 +4,8 @@
   "images": [
     {
       "src": "/posters/win311/gallery/01-escom-greymate-486-lid-closed.webp",
-      "alt": "A sealed Escom Greymate 486 tower system unit with beige plastic case",
-      "caption": "The Escom Greymate 486, a tower-case system representing the mid-1990s standard configuration for Windows 3.11 in European offices.",
+      "alt": "A closed beige 1990s clamshell laptop with a ribbed lid, twin latches and an Escom badge, resting on a desk",
+      "caption": "The Escom Greymate 486 closed: a notebook sold under the badge of Escom, the German high-street PC retailer, in the years when a 486 was comfortably above what Windows 3.11 required.",
       "author": "Tech for PC & Mac",
       "license": "CC BY 3.0",
       "licenseId": "cc-by-3.0",
@@ -19,8 +19,8 @@
     },
     {
       "src": "/posters/win311/gallery/02-escom-greymate-486-lid-open.webp",
-      "alt": "An Escom Greymate 486 with the side panel removed, showing internal components",
-      "caption": "The open chassis reveals the 486 processor, ISA expansion slots, and memory architecture that ran Windows for Workgroups 3.11.",
+      "alt": "The same laptop open, showing a monochrome LCD panel, a full keyboard, an integrated trackball and a Mitac badge",
+      "caption": "Opened, it reveals a monochrome LCD, an integrated trackball in place of a desk mouse, and the badge of Mitac, the Taiwanese manufacturer that actually built it — along with a previous owner’s BIOS key sequence written on the palm rest.",
       "author": "Tech for PC & Mac",
       "license": "CC BY 3.0",
       "licenseId": "cc-by-3.0",
@@ -34,7 +34,7 @@
     },
     {
       "src": "/posters/win311/gallery/03-deskpro-386s.webp",
-      "alt": "A Compaq DeskPro 386S tower system unit with beige plastic case",
+      "alt": "A Compaq DeskPro 386S desktop system unit with its monitor on top, displaying Microsoft PowerPoint",
       "caption": "The Compaq DeskPro 386S, a standard desktop configuration from the 386 era that provided the processing power for Windows 3.x.",
       "author": "MBlairMartin",
       "license": "CC BY-SA 4.0",
@@ -49,7 +49,7 @@
     },
     {
       "src": "/posters/win311/gallery/04-compaq-deskpro-386-16mhz.webp",
-      "alt": "A Compaq Deskpro 386 16MHz tower system, photographed against a plain background",
+      "alt": "A Compaq Deskpro 386 16MHz desktop system with its monitor on top and keyboard alongside, photographed in a room corner",
       "caption": "The Compaq Deskpro 386 at 16 MHz, representing the era when 386 processors became standard in business desktops running Windows 3.11.",
       "author": "Tecnoxarxa",
       "license": "CC0",
@@ -58,13 +58,13 @@
       "shareAlike": false,
       "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_386_16Mhz.jpg",
       "sourceName": "Wikimedia Commons",
-      "sha256": "b7345a94fd8e1da155c8c8170892492acd17f44380fb40ecaaf76a0d79465328",
-      "width": 1600,
-      "height": 1200
+      "sha256": "ef0d90d18ca43be03de95eda2f076be26651b51829a950b6e2457f55b32dc89b",
+      "width": 1200,
+      "height": 1600
     },
     {
       "src": "/posters/win311/gallery/05-confident-system-720-personal-computer-in-finland-20200125-002.webp",
-      "alt": "A Confident System-720 tower computer with beige case",
+      "alt": "The rear panel of a Confident System-720 desktop computer, showing its COM, LPT, game and video ports",
       "caption": "The Confident System-720, a regional European PC variant from the 1990s showing how desktop computing hardware was manufactured and configured beyond the major OEMs.",
       "author": "Methem (Mikko J. Putkonen)",
       "license": "CC BY 4.0",

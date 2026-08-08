@@ -10,7 +10,7 @@ mechanically against the Commons API by `scripts/tools/fetch-poster-gallery.py`,
 which refuses any license outside a fixed free-license allowlist. Re-check the
 shipped set at any time with `make poster-gallery-verify`.
 
-**101 images across 23 exhibits.** 46 of them are share-alike
+**100 images across 23 exhibits.** 46 of them are share-alike
 (CC BY-SA): if you redistribute a modified version of one of those images, you
 must license the modification under the same terms. The images are not combined
 with the source code and do not affect the MIT license of the code itself.
@@ -19,7 +19,7 @@ Period advertisements and sales posters are essentially never freely licensed.
 None are redistributed here; where one is relevant it is referenced as an
 outbound link only (2 such link(s) below).
 
-License breakdown: CC BY-SA 4.0 (24), CC BY 3.0 (14), Public domain (12), CC BY 2.0 (12), CC0 (11), CC BY-SA 3.0 (11), CC BY-SA 2.0 (10), CC BY 4.0 (6), CC BY-SA 2.5 (1).
+License breakdown: CC BY-SA 4.0 (24), CC BY 3.0 (14), Public domain (12), CC0 (11), CC BY-SA 3.0 (11), CC BY 2.0 (11), CC BY-SA 2.0 (10), CC BY 4.0 (6), CC BY-SA 2.5 (1).
 
 ## amiga
 
@@ -232,7 +232,6 @@ Period advertising, referenced by outbound link only (not redistributed here):
 | `01-dell-dimension-2100-d2100-1.webp` | The Serial Port | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Dell_Dimension_2100_(D2100_1).jpg) |
 | `02-compaq-presario-5000.webp` | Erickarroqui | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Compaq_Presario_5000.jpg) |
 | `03-compaq-presario-top-down.webp` | Rderijcke | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Compaq_Presario_top_down.jpg) |
-| `04-packard-bell-computer-1.webp` | Alan_D | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Packard_Bell_computer_(1).jpg) |
 
 ## winxp
 

@@ -19,7 +19,7 @@
     },
     {
       "src": "/posters/solaris/gallery/02-sparcstation-51332334771.webp",
-      "alt": "A SPARCstation desktop workstation photographed at an angle showing its front and side",
+      "alt": "A SPARCstation 5 on a museum display stand with its CRT monitor, keyboard, and mouse, the screen showing a text console",
       "caption": "A SPARCstation in its working context, designed to deliver Unix workstation performance at a practical price.",
       "author": "Steve Elliott from UK",
       "license": "CC BY-SA 2.0",
@@ -34,8 +34,8 @@
     },
     {
       "src": "/posters/solaris/gallery/03-sun-sparcstation-ipx-prototype.webp",
-      "alt": "A Sun SPARCstation IPX prototype workstation, a compact pizza-box form with front panel vents",
-      "caption": "The SPARCstation IPX, Sun's entry-level SPARC workstation, bringing Unix graphics to a wider audience.",
+      "alt": "A prototype Sun SPARCstation IPX workstation in a stopgap lunchbox-style enclosure borrowed from its predecessor, the SPARCstation IPC, with a floppy drive slot and asset-tag stickers",
+      "caption": "A prototype SPARCstation IPX, Sun's entry-level SPARC workstation, housed in the lunchbox-style case originally built for the earlier SPARCstation IPC.",
       "author": "NapoliRoma",
       "license": "CC BY-SA 3.0",
       "licenseId": "cc-by-sa-3.0",

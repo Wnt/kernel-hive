@@ -4,26 +4,20 @@
   "images": [
     {
       "commonsFile": "File:Dell Dimension 2100 (D2100 1).jpg",
-      "alt": "A Dell Dimension 2100 desktop computer, a beige tower system from the late 1990s, photographed against a neutral background",
-      "caption": "The Dell Dimension 2100, a budget commodity desktop of 2001, sold in the final years when Windows 98 SE was still offered alongside its successors.",
+      "alt": "A Dell Dimension 2100 desktop computer, a dark grey tower system with a \"Designed for Windows XP\" badge, photographed against a neutral background",
+      "caption": "The Dell Dimension 2100, a budget commodity desktop from 2001, represents the tail end of the era when Windows 98 SE machines were still common in homes alongside newer Windows XP systems like this one.",
       "role": "photo"
     },
     {
       "commonsFile": "File:Compaq Presario 5000.jpg",
-      "alt": "A Compaq Presario 5000 desktop computer tower, a beige system from the late 1990s, shown from the front",
-      "caption": "The Compaq Presario 5000 series defined late-1990s consumer desktop aesthetics and hardware configuration.",
+      "alt": "A Compaq Presario 5000 desktop computer tower in white and translucent blue, shown from the front with its CD-RW, floppy, and USB bays",
+      "caption": "The Compaq Presario 5000 series brought translucent, iMac-influenced styling to the consumer desktop tower around 2000-2001.",
       "role": "photo"
     },
     {
       "commonsFile": "File:Compaq Presario top down.jpg",
-      "alt": "A top-down view of a Compaq Presario desktop computer, showing the beige tower case from above",
-      "caption": "A Compaq Presario photographed from above reveals the compact rectangular form factor standard to PCs of the Windows 98 era.",
-      "role": "photo"
-    },
-    {
-      "commonsFile": "File:Packard Bell computer (1).jpg",
-      "alt": "A Packard Bell desktop computer, a beige tower system from the late 1990s, photographed from the front",
-      "caption": "Packard Bell computers were ubiquitous in home and small-office environments of the late 1990s, built on standard PC architecture.",
+      "alt": "A full Compaq Presario desktop setup: beige CRT monitor running Microsoft Works, tower case, keyboard, mouse, and an Epson inkjet printer",
+      "caption": "A complete Compaq Presario desktop setup of the Windows 98 era, monitor, tower, keyboard, and printer, as it would have sat on a home desk.",
       "role": "photo"
     }
   ]

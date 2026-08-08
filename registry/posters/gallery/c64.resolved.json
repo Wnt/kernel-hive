@@ -5,7 +5,7 @@
     {
       "src": "/posters/c64/gallery/01-commodore-64-computer-fl.webp",
       "alt": "A beige Commodore 64 home computer in its breadbin case, photographed from the front-left",
-      "caption": "The Commodore 64 in its original plastic case, as introduced by Commodore in 1982.",
+      "caption": "The breadbin case integrated keyboard, processor, and power supply electronics into a single unit under seventeen inches wide, with joystick ports on this right-hand edge.",
       "author": "Evan-Amos",
       "license": "Public domain",
       "licenseId": "pd",
@@ -20,7 +20,7 @@
     {
       "src": "/posters/c64/gallery/02-commodore-64-computer-bl.webp",
       "alt": "The back-left view of a Commodore 64 showing ports and the cartridge slot",
-      "caption": "The cartridge port and external connections at the rear of the breadbin case.",
+      "caption": "The cartridge expansion slot and, beside it, the serial and cassette ports at the rear supported games, musical instruments, and external storage.",
       "author": "Evan-Amos",
       "license": "Public domain",
       "licenseId": "pd",
@@ -35,7 +35,7 @@
     {
       "src": "/posters/c64/gallery/03-commodore-64-computer-br.webp",
       "alt": "The back-right side of the Commodore 64, showing power and video connectors",
-      "caption": "Power and video outputs enabled the 64 to connect to standard home television sets.",
+      "caption": "Composite video and audio outputs connected directly to home television sets, bypassing the need for a separate monitor.",
       "author": "Evan-Amos",
       "license": "Public domain",
       "licenseId": "pd",

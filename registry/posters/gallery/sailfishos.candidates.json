@@ -4,8 +4,8 @@
   "images": [
     {
       "commonsFile": "File:Jolla phone white top 01.jpg",
-      "alt": "Jolla phone photographed from above, showing the top edge with the distinctive rounded white case",
-      "caption": "The Jolla Phone from above, with its characteristic white \"Other Half\" modular back cover.",
+      "alt": "Close-up of the Jolla Phone's top edge, showing the headphone jack, micro-USB port and the jolla logotype",
+      "caption": "The Jolla Phone's top edge, with a sliver of its characteristic white \"Other Half\" modular back cover visible below.",
       "role": "photo"
     },
     {
@@ -22,7 +22,7 @@
     },
     {
       "commonsFile": "File:Jolla Tablet (16928861447).jpg",
-      "alt": "Jolla Tablet photographed at an angle, showing the front screen and aluminum back panel",
+      "alt": "Jolla Tablet resting at an angle, showing its front screen and thin side edge",
       "caption": "The Jolla Tablet, extending Sailfish OS to a larger 7.85-inch form factor.",
       "role": "photo"
     },

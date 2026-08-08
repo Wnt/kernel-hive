@@ -19,8 +19,8 @@
     },
     {
       "src": "/posters/riscos/gallery/02-riscpc-slice-back-01.webp",
-      "alt": "Another architectural view of the RiscPC internals, showing the internal layout and component positions",
-      "caption": "The RiscPC's internal organization, documenting how Acorn arranged the RISC processor, memory, and expansion slots in a compact form.",
+      "alt": "The rear of a single case slice from the Acorn RiscPC's modular stacking case, showing two blank expansion-slot backplates",
+      "caption": "The RiscPC's case was built from stackable modular slices; this is the back of one slice, with expansion-slot covers for its two internal card bays.",
       "author": "Teewurzler",
       "license": "CC0",
       "licenseId": "cc0",
@@ -34,8 +34,8 @@
     },
     {
       "src": "/posters/riscos/gallery/03-acorn-riscpc-pc-card.webp",
-      "alt": "An Acorn RiscPC PC Card, a processor expansion module that fits into the RiscPC's PCMCIA slot",
-      "caption": "A PC Card module for the RiscPC, one of the expansion options that extended the machine's capabilities.",
+      "alt": "An Acorn RiscPC PC Card, a heatsinked x86 co-processor card that plugs into the RiscPC's internal expansion connector",
+      "caption": "A PC CPU card for the RiscPC, a second-processor expansion that let the machine run PC-compatible software alongside RISC OS.",
       "author": "Flibble",
       "license": "CC BY-SA 3.0",
       "licenseId": "cc-by-sa-3.0",

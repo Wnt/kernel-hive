@@ -13,14 +13,14 @@
       "shareAlike": true,
       "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_AlphaStation_600A_(cropped).jpg",
       "sourceName": "Wikimedia Commons",
-      "sha256": "586048969a71435dc3540c254cbccce1d099cbfcb66676b557b024c868c3aabe",
-      "width": 1600,
-      "height": 1055
+      "sha256": "251724668a30a1303f905117b82050e532b385c1a01428d8bae901bd7843ad9b",
+      "width": 1055,
+      "height": 1600
     },
     {
       "src": "/posters/nt351/gallery/02-alphastation-500-400-4139803972.webp",
-      "alt": "A DEC AlphaStation 500/400 desktop workstation case",
-      "caption": "Alpha workstations like this 500/400 targeted engineering and scientific users who needed more integer and floating-point throughput than any Pentium of 1995 could offer.",
+      "alt": "The opened case of a DEC AlphaStation 500/400, showing its motherboard, RAM modules, drive bays and power supply",
+      "caption": "An AlphaStation 500/400 with its cover off; workstations like this targeted engineering and scientific users who needed more integer and floating-point throughput than any Pentium of 1995 could offer.",
       "author": "htomari",
       "license": "CC BY-SA 2.0",
       "licenseId": "cc-by-sa-2.0",

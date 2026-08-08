@@ -4,8 +4,8 @@
   "images": [
     {
       "src": "/posters/win2000/gallery/01-ibm-netvista-desktop-pc-pentium-4.webp",
-      "alt": "An IBM NetVista desktop PC with a flat-panel monitor, a beige tower case with front-facing ports",
-      "caption": "The IBM NetVista, a business-class desktop system shipping with Windows 2000 and Intel Pentium 4 processors, defines the corporate workstation of the early 2000s.",
+      "alt": "An IBM NetVista desktop PC in a black slim-tower case, with Intel Pentium 4 and Windows badges on the front panel",
+      "caption": "The IBM NetVista, a business-class desktop with Intel Pentium 4 processors, was IBM's corporate workstation of the early 2000s, sold with a choice of Windows 2000 Professional or Windows XP.",
       "author": "https://www.flickr.com/photos/brownpau",
       "license": "CC BY 2.0",
       "licenseId": "cc-by-2.0",
@@ -19,8 +19,8 @@
     },
     {
       "src": "/posters/win2000/gallery/02-ibm-netvista-a21i-a21i-front.webp",
-      "alt": "Front view of an IBM NetVista A21i desktop computer, showing the beige chassis and front panel",
-      "caption": "The NetVista A21i, a compact business desktop, represented IBM's commitment to affordable, reliable systems for enterprise deployment.",
+      "alt": "Front view of an IBM NetVista A21i desktop computer, showing the black tower chassis with a \"Designed for Microsoft Windows 2000 Professional\" badge",
+      "caption": "The NetVista A21i, a compact business desktop tower badged for Windows 2000 Professional, represented IBM's commitment to affordable, reliable systems for enterprise deployment.",
       "author": "The Serial Port",
       "license": "CC BY-SA 4.0",
       "licenseId": "cc-by-sa-4.0",
@@ -34,8 +34,8 @@
     },
     {
       "src": "/posters/win2000/gallery/03-compaq-deskpro-en-c300a-img-5581.webp",
-      "alt": "A Compaq Deskpro EN C300A desktop computer photographed from the front, showing the silver-gray chassis and front panel",
-      "caption": "The Compaq Deskpro EN series brought enterprise-grade construction and expansion slots to mid-range Windows 2000 deployments.",
+      "alt": "Close-up inside a Compaq Deskpro EN C300A of its Western Digital Caviar hard drive label, with drive parameters and jumper settings",
+      "caption": "The Western Digital hard drive fitted inside a Compaq Deskpro EN C300A, a mid-range enterprise desktop of the Windows 2000 era.",
       "author": "The Serial Port",
       "license": "CC BY-SA 4.0",
       "licenseId": "cc-by-sa-4.0",
@@ -49,8 +49,8 @@
     },
     {
       "src": "/posters/win2000/gallery/04-compaq-deskpro-en-c300a-img-5582.webp",
-      "alt": "Side angle view of a Compaq Deskpro EN C300A, showing the case profile and ventilation design",
-      "caption": "Built for workgroup and office environments, the Deskpro EN emphasized thermal management and modular upgrade paths.",
+      "alt": "The opened interior of a Compaq Deskpro EN C300A, showing the motherboard, expansion slots, and cooling fan",
+      "caption": "Inside the Deskpro EN C300A: the motherboard, PCI expansion slots, and cooling fan of a machine built for workgroup and office deployment.",
       "author": "The Serial Port",
       "license": "CC BY-SA 4.0",
       "licenseId": "cc-by-sa-4.0",

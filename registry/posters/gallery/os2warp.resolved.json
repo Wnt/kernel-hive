@@ -4,7 +4,7 @@
   "images": [
     {
       "src": "/posters/os2warp/gallery/01-ibm-ps-2-model-30-286-front-view.webp",
-      "alt": "An IBM Personal System/2 Model 30 286 desktop computer with its keyboard",
+      "alt": "Close-up of the front bezel of an IBM Personal System/2 Model 30 286 desktop computer, showing the floppy drive and IBM badge",
       "caption": "OS/2 was born on IBM's PS/2 line: the Model 30 286 belongs to the family of machines the joint IBM/Microsoft project targeted before IBM continued OS/2 alone.",
       "author": "DigitalIceAge",
       "license": "CC BY 4.0",
@@ -34,7 +34,7 @@
     },
     {
       "src": "/posters/os2warp/gallery/03-thinkpad-701.webp",
-      "alt": "An IBM ThinkPad 701C laptop, closed, showing its compact black case",
+      "alt": "An IBM ThinkPad 701C laptop, open, showing its screen and expanding butterfly keyboard",
       "caption": "IBM's ThinkPad line, introduced in 1992, was the flagship hardware for IBM's own operating system through the OS/2 Warp years of the mid-1990s.",
       "author": "nakashi",
       "license": "CC BY-SA 2.0",

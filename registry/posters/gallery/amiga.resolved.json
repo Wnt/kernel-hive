@@ -4,7 +4,7 @@
   "images": [
     {
       "src": "/posters/amiga/gallery/01-amiga500-system.webp",
-      "alt": "An Amiga 500 keyboard computer with attached disk drive, photographed from above",
+      "alt": "An Amiga 500 keyboard computer with attached disk drive and monitor, photographed from the front",
       "caption": "The Amiga 500 arrived in 1987 with a Motorola 68000 processor and custom chips for graphics, sound, and animation.",
       "author": "Bill Bertram",
       "license": "CC BY-SA 2.5",
@@ -58,9 +58,9 @@
       "shareAlike": false,
       "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Amiga_500_(RetroMadrid_2018).jpg",
       "sourceName": "Wikimedia Commons",
-      "sha256": "e877988abacd6162e89dfcc744aaee169ad6a73ef7e66eb2e810ed71a3067cfe",
-      "width": 1600,
-      "height": 1067
+      "sha256": "2b29386c11e0089da9f9affbcdc3de19bf144d0cc7fbcac105b4642a14629058",
+      "width": 1067,
+      "height": 1600
     },
     {
       "src": "/posters/amiga/gallery/05-amiga-500.webp",

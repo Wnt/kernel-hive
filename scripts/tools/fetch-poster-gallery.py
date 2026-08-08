@@ -175,16 +175,28 @@ def download_bytes(url: str, *, what: str) -> bytes:
     return _urlopen_with_retry(req, what=what)
 
 
-def to_webp(original: bytes, *, what: str) -> tuple[bytes, int, int]:
+def to_webp(original: bytes, *, what: str, rotate: int = 0) -> tuple[bytes, int, int]:
     """Downscale to MAX_LONG_EDGE, strip metadata, encode WebP under the
     TARGET_MAX_BYTES budget (stepping quality down as needed). Returns
-    (webp_bytes, width, height)."""
+    (webp_bytes, width, height).
+
+    Orientation is BAKED IN before the metadata is dropped. A camera stores a
+    portrait shot as landscape pixels plus an EXIF orientation flag; stripping
+    the EXIF without first applying that flag leaves the picture lying on its
+    side in the browser, which is how several gallery images shipped sideways.
+    `rotate` is the manual escape hatch, in degrees clockwise, for sources that
+    are sideways on Commons with no EXIF flag to honour.
+    """
     from io import BytesIO
 
-    from PIL import Image
+    from PIL import Image, ImageOps
 
     with Image.open(BytesIO(original)) as im:
         im.load()
+        im = ImageOps.exif_transpose(im)
+        if rotate:
+            # Pillow's rotate() is counter-clockwise; `rotate` is clockwise.
+            im = im.rotate(-rotate, expand=True)
         if im.mode in ("P", "RGBA", "LA"):
             im = im.convert("RGBA") if "A" in im.mode or im.mode == "P" else im.convert("RGB")
         if im.mode not in ("RGB", "RGBA"):
@@ -242,7 +254,10 @@ def fetch_tile(tile_id: str, candidates: dict[str, Any]) -> dict[str, Any]:
 
         original_url = imageinfo["url"]
         original_bytes = download_bytes(original_url, what=f"original image for {commons_file}")
-        webp_bytes, width, height = to_webp(original_bytes, what=commons_file)
+        rotate = entry.get("rotate", 0)
+        if rotate not in (0, 90, 180, 270):
+            raise FetchError(f"{tile_id}: {commons_file}: rotate must be one of 0, 90, 180, 270 (degrees clockwise)")
+        webp_bytes, width, height = to_webp(original_bytes, what=commons_file, rotate=rotate)
 
         gallery_dir.mkdir(parents=True, exist_ok=True)
         out_path = gallery_dir / filename

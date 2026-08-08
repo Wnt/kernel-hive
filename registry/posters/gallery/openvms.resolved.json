@@ -28,14 +28,14 @@
       "shareAlike": false,
       "sourceUrl": "https://commons.wikimedia.org/wiki/File:VAX_11_780_CPU_Backplane.jpg",
       "sourceName": "Wikimedia Commons",
-      "sha256": "04bf90c65396d5ace998a1ed0a7a5f14dfa2d0f764a9f899e266c00dc9b53ad1",
-      "width": 1600,
-      "height": 1200
+      "sha256": "2bb93dd1526bae2b10b60e7cabb214e27106ea6aeb6c18a5d3457b4a186a727c",
+      "width": 1200,
+      "height": 1600
     },
     {
       "src": "/posters/openvms/gallery/03-vax-4000-300-en-r400x.webp",
-      "alt": "A VAX 4000-300, a compact desktop VAX system in a low grey cabinet",
-      "caption": "The VAX 4000-300, a later desktop implementation of the VAX architecture, bringing minicomputer computing to smaller spaces.",
+      "alt": "Two beige pedestal-cabinet VAX systems side by side under a workbench, labeled VAX 4000-300 and R400X",
+      "caption": "A VAX 4000-300 alongside a companion R400X unit, later pedestal-cabinet VAX systems that brought minicomputer computing into smaller server rooms.",
       "author": "Wikidevnl",
       "license": "CC BY-SA 4.0",
       "licenseId": "cc-by-sa-4.0",
@@ -49,8 +49,8 @@
     },
     {
       "src": "/posters/openvms/gallery/04-vax-11-780-2.webp",
-      "alt": "Another view of a VAX 11-780 floor-standing cabinet system",
-      "caption": "Another angle on the VAX 11-780, showing the cabinet form factor that housed DEC's architectural landmark.",
+      "alt": "Close-up of the \"digital VAX 11/780\" nameplate on the cabinet's front trim",
+      "caption": "The nameplate on a VAX 11/780 cabinet, identifying DEC's original high-end VAX.",
       "author": "Emiliano Russo, Associazione Culturale VerdeBinario",
       "license": "Public domain",
       "licenseId": "pd",

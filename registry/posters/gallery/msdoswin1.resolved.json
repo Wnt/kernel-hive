@@ -19,7 +19,7 @@
     },
     {
       "src": "/posters/msdoswin1/gallery/02-ibm-pc-at.webp",
-      "alt": "An IBM PC AT system unit, viewed from above",
+      "alt": "An IBM PC AT system unit at a three-quarter angle, with its monitor, keyboard, and mouse, on display at a museum",
       "caption": "The IBM PC AT introduced the 80286 processor and the Advanced Technology standard in 1984, forming the hardware foundation for Windows 1.0 and Windows 3.x.",
       "author": "MBlairMartin",
       "license": "CC BY-SA 4.0",
@@ -34,8 +34,8 @@
     },
     {
       "src": "/posters/msdoswin1/gallery/03-ibm-pc-xt-02.webp",
-      "alt": "A beige IBM PC XT tower system unit",
-      "caption": "A complete IBM PC XT chassis, representative of the XT architecture that expanded computing beyond the original 5150.",
+      "alt": "A beige IBM PC XT desktop system unit with monitor on top and keyboard in front, the screen showing Prince of Persia",
+      "caption": "A complete IBM PC XT setup running the CGA game Prince of Persia, representative of the XT architecture that expanded computing beyond the original 5150.",
       "author": "Hidalgo944",
       "license": "CC0",
       "licenseId": "cc0",
@@ -49,8 +49,8 @@
     },
     {
       "src": "/posters/msdoswin1/gallery/04-ibm-5170-pc-at-8861873514.webp",
-      "alt": "The motherboard and system board of an IBM PC AT",
-      "caption": "The system board of an IBM PC AT, showing the 80286 processor and support circuitry that powered the era of Windows 3.x.",
+      "alt": "A closed IBM PC AT system unit with floppy drive and IBM keyboard on a cluttered restorer's workbench, its monitor displaying a DOS program with an on-screen piano keyboard and a menu of tunes",
+      "caption": "An IBM PC AT on a restorer's bench, its CRT running a DOS program that plays back tunes like the Funeral March of a Marionette through an on-screen piano keyboard.",
       "author": "htomari",
       "license": "CC BY-SA 2.0",
       "licenseId": "cc-by-sa-2.0",
@@ -79,8 +79,8 @@
     },
     {
       "src": "/posters/msdoswin1/gallery/06-ibm-model-f-122-key-keyboard.webp",
-      "alt": "An IBM Model F mechanical keyboard with 122 keys, photographed from above",
-      "caption": "The IBM Model F mechanical keyboard, whose legendary key feel and durability defined the user experience of DOS and Windows computing.",
+      "alt": "An IBM Model F mechanical keyboard with 122 keys, built for the IBM 3179 terminal, photographed from above",
+      "caption": "The IBM Model F switch mechanism, seen here on a 122-key terminal keyboard, shared its legendary key feel and durability with the smaller Model F keyboards IBM shipped with the PC, XT, and AT.",
       "author": "Themavery",
       "license": "CC BY-SA 4.0",
       "licenseId": "cc-by-sa-4.0",
