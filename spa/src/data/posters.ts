@@ -4912,7 +4912,81 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/vic20/gallery/01-commodore-vic-20-fl.webp",
+          "alt": "A cream-coloured Commodore VIC-20 home computer photographed from the front-left against a white background",
+          "caption": "The case, keyboard and port layout the Commodore 64 would inherit two years later. Colour names run along the number row and graphics characters are printed on the front face of the keys, so pictures could be drawn out of type.",
+          "author": "Evan-Amos",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-VIC-20-FL.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 904
+        },
+        {
+          "src": "/posters/vic20/gallery/02-vic-20-display.webp",
+          "alt": "A museum display case holding a VIC-20 connected to a small television, with a cassette recorder, cartridge boxes, a modem and a manual arranged around it",
+          "caption": "The machine as a household actually met it: a television standing in for a monitor, a Datasette for storage, cartridge boxes, an open manual — and a VICMODEM beside the telephone it plugged into.",
+          "author": "Traverson",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:VIC-20_Display.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1564,
+          "height": 1600
+        },
+        {
+          "src": "/posters/vic20/gallery/03-commodore-founder-jack-tramiel-and-vic20-product-manager-michael-tomczyk-celebrated-the-first-million-units-in-1982-which-jump-started-the-home-computer-revolution.webp",
+          "alt": "A black-and-white photograph of two men in suits standing in front of a banner reading CELEBRATING 1 MILLION VIC-20 COMPUTERS",
+          "caption": "Jack Tramiel, who founded Commodore, and Michael Tomczyk, the VIC-20's product manager, at the 1982 event marking the millionth machine — the first computer of any kind to reach that number.",
+          "author": "Michael Tomczyk",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Founder_Jack_Tramiel_and_VIC20_Product_Manager_Michael_Tomczyk_celebrated_the_first_million_units_in_1982_which_jump-started_the_home_computer_revolution.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1452,
+          "height": 1000
+        },
+        {
+          "src": "/posters/vic20/gallery/04-vic-1001-keyboard.webp",
+          "alt": "Close view of a Commodore VIC-1001 keyboard, its keycaps carrying katakana characters alongside the Latin letters",
+          "caption": "The Japanese VIC-1001, which reached shops in 1980, a year before the machine was sold as the VIC-20 elsewhere. Katakana sits beside the Latin letters on every keycap, and the number row carries a yen sign.",
+          "author": "Darklanlan",
+          "license": "CC BY 4.0",
+          "licenseId": "cc-by-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:VIC-1001_keyboard.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 900
+        },
+        {
+          "src": "/posters/vic20/gallery/05-commodore-vic-20-video-rf-adapter.webp",
+          "alt": "A small black metal radio-frequency adapter box with an attached cable ending in a round DIN plug",
+          "caption": "The radio-frequency adapter that made the whole thing affordable: it turned the computer's video output into a signal an ordinary television aerial socket would accept, so no monitor had to be bought.",
+          "author": "Evan-Amos",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-VIC-20-Video-RF-Adapter.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 709
+        }
+      ]
+    }
   },
   "win11": {
     "title": "Windows 11",

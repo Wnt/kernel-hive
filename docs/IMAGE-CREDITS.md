@@ -10,7 +10,7 @@ mechanically against the Commons API by `scripts/tools/fetch-poster-gallery.py`,
 which refuses any license outside a fixed free-license allowlist. Re-check the
 shipped set at any time with `make poster-gallery-verify`.
 
-**100 images across 23 exhibits.** 46 of them are share-alike
+**105 images across 24 exhibits.** 48 of them are share-alike
 (CC BY-SA): if you redistribute a modified version of one of those images, you
 must license the modification under the same terms. The images are not combined
 with the source code and do not affect the MIT license of the code itself.
@@ -19,7 +19,7 @@ Period advertisements and sales posters are essentially never freely licensed.
 None are redistributed here; where one is relevant it is referenced as an
 outbound link only (2 such link(s) below).
 
-License breakdown: CC BY-SA 4.0 (24), CC BY 3.0 (14), Public domain (12), CC0 (11), CC BY-SA 3.0 (11), CC BY 2.0 (11), CC BY-SA 2.0 (10), CC BY 4.0 (6), CC BY-SA 2.5 (1).
+License breakdown: CC BY-SA 4.0 (26), CC BY 3.0 (14), Public domain (14), CC0 (11), CC BY-SA 3.0 (11), CC BY 2.0 (11), CC BY-SA 2.0 (10), CC BY 4.0 (7), CC BY-SA 2.5 (1).
 
 ## amiga
 
@@ -195,6 +195,16 @@ Period advertising, referenced by outbound link only (not redistributed here):
 | `01-sun-sparcstation-5.webp` | NapoliRoma | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Sun_SPARCstation_5.JPG) |
 | `02-sparcstation-51332334771.webp` | Steve Elliott from UK | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SPARCStation_(51332334771).jpg) |
 | `03-sun-sparcstation-ipx-prototype.webp` | NapoliRoma | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Sun_SPARCstation_IPX_prototype.JPG) |
+
+## vic20
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-commodore-vic-20-fl.webp` | Evan-Amos | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore-VIC-20-FL.jpg) |
+| `02-vic-20-display.webp` | Traverson | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:VIC-20_Display.jpg) |
+| `03-commodore-founder-jack-tramiel-and-vic20-product-manager-michael-tomczyk-celebrated-the-first-million-units-in-1982-which-jump-started-the-home-computer-revolution.webp` | Michael Tomczyk | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_Founder_Jack_Tramiel_and_VIC20_Product_Manager_Michael_Tomczyk_celebrated_the_first_million_units_in_1982_which_jump-started_the_home_computer_revolution.jpg) |
+| `04-vic-1001-keyboard.webp` | Darklanlan | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:VIC-1001_keyboard.jpg) |
+| `05-commodore-vic-20-video-rf-adapter.webp` | Evan-Amos | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore-VIC-20-Video-RF-Adapter.jpg) |
 
 ## win2000
 

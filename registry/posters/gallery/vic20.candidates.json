@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "vic20",
+  "images": [
+    {
+      "commonsFile": "File:Commodore-VIC-20-FL.jpg",
+      "alt": "A cream-coloured Commodore VIC-20 home computer photographed from the front-left against a white background",
+      "caption": "The case, keyboard and port layout the Commodore 64 would inherit two years later. Colour names run along the number row and graphics characters are printed on the front face of the keys, so pictures could be drawn out of type.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:VIC-20 Display.jpg",
+      "alt": "A museum display case holding a VIC-20 connected to a small television, with a cassette recorder, cartridge boxes, a modem and a manual arranged around it",
+      "caption": "The machine as a household actually met it: a television standing in for a monitor, a Datasette for storage, cartridge boxes, an open manual — and a VICMODEM beside the telephone it plugged into.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore Founder Jack Tramiel and VIC20 Product Manager Michael Tomczyk celebrated the first million units in 1982 which jump-started the home computer revolution.jpg",
+      "alt": "A black-and-white photograph of two men in suits standing in front of a banner reading CELEBRATING 1 MILLION VIC-20 COMPUTERS",
+      "caption": "Jack Tramiel, who founded Commodore, and Michael Tomczyk, the VIC-20's product manager, at the 1982 event marking the millionth machine — the first computer of any kind to reach that number.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:VIC-1001 keyboard.jpg",
+      "alt": "Close view of a Commodore VIC-1001 keyboard, its keycaps carrying katakana characters alongside the Latin letters",
+      "caption": "The Japanese VIC-1001, which reached shops in 1980, a year before the machine was sold as the VIC-20 elsewhere. Katakana sits beside the Latin letters on every keycap, and the number row carries a yen sign.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore-VIC-20-Video-RF-Adapter.jpg",
+      "alt": "A small black metal radio-frequency adapter box with an attached cable ending in a round DIN plug",
+      "caption": "The radio-frequency adapter that made the whole thing affordable: it turned the computer's video output into a signal an ordinary television aerial socket would accept, so no monitor had to be bought.",
+      "role": "photo"
+    }
+  ]
+}
