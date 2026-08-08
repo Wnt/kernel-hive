@@ -10,7 +10,7 @@ mechanically against the Commons API by `scripts/tools/fetch-poster-gallery.py`,
 which refuses any license outside a fixed free-license allowlist. Re-check the
 shipped set at any time with `make poster-gallery-verify`.
 
-**105 images across 24 exhibits.** 48 of them are share-alike
+**109 images across 25 exhibits.** 52 of them are share-alike
 (CC BY-SA): if you redistribute a modified version of one of those images, you
 must license the modification under the same terms. The images are not combined
 with the source code and do not affect the MIT license of the code itself.
@@ -19,7 +19,7 @@ Period advertisements and sales posters are essentially never freely licensed.
 None are redistributed here; where one is relevant it is referenced as an
 outbound link only (2 such link(s) below).
 
-License breakdown: CC BY-SA 4.0 (26), CC BY 3.0 (14), Public domain (14), CC0 (11), CC BY-SA 3.0 (11), CC BY 2.0 (11), CC BY-SA 2.0 (10), CC BY 4.0 (7), CC BY-SA 2.5 (1).
+License breakdown: CC BY-SA 4.0 (26), CC BY 3.0 (14), Public domain (14), CC0 (11), CC BY-SA 3.0 (13), CC BY 2.0 (11), CC BY-SA 2.0 (12), CC BY 4.0 (7), CC BY-SA 2.5 (1).
 
 ## amiga
 
@@ -160,6 +160,15 @@ Period advertising, referenced by outbound link only (not redistributed here):
 Period advertising, referenced by outbound link only (not redistributed here):
 
 - ["This is OS/2 Warp" — IBM television advertisement](https://archive.org/details/IMOS4753) — Internet Archive
+
+## plus4
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-commodore-plus-4-t-cont-angle-left.webp` | Thomas Conté | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_Plus-4_(T_Cont%C3%A9)_(angle_left).jpg) |
+| `02-commodore-plus-4-with-1551.webp` | Jumbo1435 | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_Plus-4_with_1551.jpg) |
+| `03-commodore-plus-4-t-cont-keyboard-lower-right.webp` | Thomas Conté | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_Plus-4_(T_Cont%C3%A9)_(keyboard_lower_right).jpg) |
+| `04-commodore-plus-4.webp` | Jumbo1435 | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_Plus-4.jpg) |
 
 ## postmarketos
 

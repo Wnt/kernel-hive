@@ -179,6 +179,11 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#8b6746', accentTint: '#3fbfc7', tintMix: 0.45,
     badge: 'VIC-20', spec: '5K • 1980', kit: 'eightBit',
   },
+  // Charcoal case, and the accent is the yellow the ROM suite draws in.
+  plus4: {
+    caseTint: '#4a4a4e', accentTint: '#c2cf5f', tintMix: 0.5,
+    badge: 'PLUS/4', spec: '3-PLUS-1 • 1984', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

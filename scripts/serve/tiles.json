@@ -150,5 +150,9 @@
   "vic20": {
     "udpPort": 54085,
     "hashFile": "/data/vms/streamhost/tiles/vic20/cert_hash_b64.txt"
+  },
+  "plus4": {
+    "udpPort": 54086,
+    "hashFile": "/data/vms/streamhost/tiles/plus4/cert_hash_b64.txt"
   }
 }

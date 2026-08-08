@@ -302,6 +302,21 @@
       "udp_port": 54108,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "plus4": {
+      "dir": "/data/vms/streamhost/tiles/plus4",
+      "qmp": "/data/vms/streamhost/tiles/plus4/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5822,
+      "exec_port": 5822,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54086,
+      "notes": "exec: labctl exec plus4 \"<cmd>\" (ssh root@:5822, key bridge_key)"
+    },
     "postmarketos": {
       "dir": "/data/vms/streamhost/tiles/postmarketos",
       "qmp": "/data/vms/streamhost/tiles/postmarketos/qmp.sock",

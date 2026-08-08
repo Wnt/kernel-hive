@@ -38,7 +38,7 @@ import { XK } from '../../three/useStreamControl';
 
 export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
-  | 'suncde' | 'plan9' | 'android' | 'c64' | 'appleii' | 'atarist' | 'amiga';
+  | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'appleii' | 'atarist' | 'amiga';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -68,6 +68,9 @@ const fkeyRow = (from: number, to: number): KeyRow => {
   for (let n = from; n <= to; n++) row.push(tap(`f${n}`, `F${n}`, F(n)));
   return row;
 };
+
+/** C= held across a C — the Plus/4 suite's "open the command prompt" chord. */
+const CBM_C: MacroStep[] = [dn(XK.Tab), ...press(0x63), up(XK.Tab)];
 
 /** mod↓ · key↓↑ · mod↑ */
 const chord = (id: string, label: string, mod: number, keysym: number, hint?: string): KeyDef =>
@@ -225,6 +228,36 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     moreRows: [fkeyRow(1, 8)],
   },
 
+  // Plus/4: the c64 row plus the thing this machine is actually FOR. Its four
+  // ROM applications are reached only through the suite's own command prompt,
+  // which is opened with C= + C and closes again after one command — so every
+  // module switch needs the Commodore key, and on a Mac, a PC or a phone there
+  // is no such key (it is Tab, which nobody guesses). These three buttons send
+  // the whole documented sequence as one tap: C= + C, then "to Word" / "to
+  // Calculator" / "to File manager", then RETURN. Verified end to end on the
+  // live tile.
+  plus4: {
+    family: 'plus4',
+    rows: [[
+      macro('to-word', 'Word', [...CBM_C, ...press(0x74), ...press(0x77), ...press(XK.Return)],
+        { hint: 'C= C then tw — the ROM word processor' }),
+      macro('to-calc', 'Calc', [...CBM_C, ...press(0x74), ...press(0x63), ...press(XK.Return)],
+        { hint: 'C= C then tc — the ROM spreadsheet' }),
+      macro('to-file', 'File', [...CBM_C, ...press(0x74), ...press(0x66), ...press(XK.Return)],
+        { hint: 'C= C then tf — the ROM file manager' }),
+      tap('cbm', 'C=', XK.Tab, { hint: 'Commodore key (VICE: Tab)' }),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+    moreRows: [[
+      tap('runstop', 'RUN/STOP', XK.Escape, { hint: 'RUN/STOP (VICE: Esc)' }),
+      tap('restore', 'RESTORE', XK.Prior, { hint: 'RESTORE (VICE: PageUp)' }),
+      latch('ctrl', 'Ctrl', XK.Control_L),
+      macro('suite', '3-PLUS-1', [...press(F(1)), ...press(XK.Return)],
+        { hint: 'F1 then RETURN — what the power-on screen tells you to press' }),
+    ], fkeyRow(1, 8)],
+  },
+
   appleii: {
     family: 'appleii',
     rows: [[
@@ -294,6 +327,7 @@ export const OS_FAMILY: Record<string, Family> = {
   ninefront: 'plan9',
   android: 'android',
   c64: 'c64',
+  plus4: 'plus4',
   // Same keyboard as the c64 (Commodore reused the VIC-20's), and the same VICE
   // bindings drive it: RUN/STOP is Esc, RESTORE is PageUp, C= is Tab.
   vic20: 'c64',

@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/tiles/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (38 of the 40
+//    - transport   : how its LIVE framebuffer texture is obtained (39 of the 41
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -100,7 +100,7 @@ export interface OSBinding {
   bootVideo?: string;
 }
 
-// One entry per OS. 38 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 39 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos',     archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -157,6 +157,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   irix:        { osId: 'irix',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#5B8FA8', eraLabel: '1993 · SGI Indy — IRIX 6.5', bootVideo: '/boot/irix/boot.mp4' },
   mpf2:        { osId: 'mpf2',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#8B4513', eraLabel: '1982 · MPF-II BASIC' },
   vic20:       { osId: 'vic20',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3FBFC7', eraLabel: '1980 · VIC-20 (CBM BASIC V2)' },
+  plus4:       { osId: 'plus4',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#C2CF5F', eraLabel: '1984 · Plus/4 (3-plus-1 in ROM)' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

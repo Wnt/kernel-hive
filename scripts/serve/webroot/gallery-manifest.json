@@ -1220,6 +1220,37 @@
         "the Datasette"
       ],
       "blurb": "The first computer of any kind to sell a million: 5 KB of memory, 22 columns of blue text on a television set, and William Shatner asking why you would buy just a video game."
+    },
+    {
+      "id": "plus4",
+      "era_year": 1980,
+      "displayName": "Commodore Plus/4 — 3-plus-1 in ROM",
+      "year": 1984,
+      "lineage": "Commodore 264 series (MOS 7501, TED)",
+      "arch": "MOS 7501, 1.77 MHz (PAL), 64 KB RAM, 32 KB application ROM",
+      "accent": "#C2CF5F",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 41,
+      "eraLabel": "1984 · Plus/4 (3-plus-1 in ROM)",
+      "signalEndpoint": "/signal/plus4.json",
+      "ramMB": 0,
+      "ramKB": 64,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xplus4) emulating a PAL Plus/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs INCLUDING both 3-plus-1 banks, so this tile needs no external media. The golden is curated INTO the suite (F1+RETURN, then C= C and tc) and rests in the spreadsheet. The suite’s command prompt is one-shot — C= + C opens it, one command runs, it closes — so module switching needs the Commodore key (Tab under VICE’s symbolic keymap); the SPA’s plus4 on-screen keyboard therefore carries one-tap Word/Calc/File buttons that send the whole sequence. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/plus4.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "3-plus-1: a word processor, spreadsheet, database and graphing package, in ROM",
+        "Commodore BASIC V3.5, with a machine-language monitor built in",
+        "the 264-series cartridges and the 1531 Datasette",
+        "a small, mostly European software scene it never grew out of"
+      ],
+      "periodBrowser": "none — pre-web 8-bit era",
+      "iconicApps": [
+        "the 3-plus-1 word processor",
+        "the 3-plus-1 spreadsheet",
+        "Commodore BASIC V3.5"
+      ],
+      "blurb": "Commodore’s misfire, and the reason it is worth looking at: an office suite — word processor, spreadsheet, database, graphing — burned into ROM and running one second after you switch the machine on, with no disk in sight."
     }
   ]
 }

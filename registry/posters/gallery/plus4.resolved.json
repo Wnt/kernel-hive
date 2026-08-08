@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "plus4",
+  "images": [
+    {
+      "src": "/posters/plus4/gallery/01-commodore-plus-4-t-cont-angle-left.webp",
+      "alt": "A dark grey Commodore Plus/4 home computer photographed from above and to the left, showing its ribbed top, four function keys and cream keyboard",
+      "caption": "Nothing about it looks like the Commodore 64 it was priced against: a charcoal wedge with a ribbed top, cream keys, four dual-function keys along a colour stripe and a diamond of separate cursor arrows.",
+      "author": "Thomas Conté",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4_(T_Cont%C3%A9)_(angle_left).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ae7d9f290327751af9f27445990d91669d31daa9be2e0baa7428472913a37da4",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/plus4/gallery/02-commodore-plus-4-with-1551.webp",
+      "alt": "A Commodore Plus/4 beside a Commodore 1551 disk drive, with a small power supply and cable between them",
+      "caption": "The Plus/4 with its matching 1551 drive — which connected through the cartridge port rather than the serial bus, and so worked with almost nothing else Commodore sold.",
+      "author": "Jumbo1435",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4_with_1551.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ae790f72b69799fbc2f91943b4be4e53664ecd2729db92ac21378c7dbefb8842",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/plus4/gallery/03-commodore-plus-4-t-cont-keyboard-lower-right.webp",
+      "alt": "Close view of the Plus/4's cream keycaps, showing graphics symbols on the key fronts, Flash On and Flash Off legends, and four separate arrow keys arranged as a diamond",
+      "caption": "Graphics characters on the key fronts, in the Commodore tradition — but the four cursor arrows are their own keys here, not a shifted pair, and BASIC gained words like FLASH to reach the hardware directly.",
+      "author": "Thomas Conté",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4_(T_Cont%C3%A9)_(keyboard_lower_right).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "799a48054325b28a1d3e87e3c3edaa2e2c6fc97fda11b6e7790a6462052d9d53",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/plus4/gallery/04-commodore-plus-4.webp",
+      "alt": "A Commodore Plus/4 photographed straight down on a grey background, showing the full keyboard and the commodore plus/4 badge",
+      "caption": "The badge that named the machine: plus/4, for the four applications waiting in ROM. It is the only Commodore home computer whose name is a specification of its software.",
+      "author": "Jumbo1435",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "8528d5be20c76a9dc5f523258ee7ab8806770ee4f1af96af91f01044308e9592",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}

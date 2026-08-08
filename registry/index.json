@@ -4529,6 +4529,219 @@
     },
     {
       "schemaVersion": 1,
+      "id": "plus4",
+      "era_year": 1980,
+      "enabled": true,
+      "build": {
+        "rows": [
+          {
+            "order": 36,
+            "prelude": "",
+            "line": "  \"plus4        |plus4.sh       |bridge/plus4    |retro    |~2-4m   |full   |tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)\"\n",
+            "value": {
+              "key": "plus4",
+              "script": "plus4.sh",
+              "outputDir": "bridge/plus4",
+              "class": "retro",
+              "estimated": "~2-4m",
+              "automation": "full",
+              "produces": "tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)",
+              "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 9
+            }
+          }
+        ]
+      },
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/plus4",
+          "qmp": "/data/vms/streamhost/tiles/plus4/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5822,
+          "exec_port": 5822,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54086,
+          "notes": "exec: labctl exec plus4 \"<cmd>\" (ssh root@:5822, key bridge_key)"
+        }
+      },
+      "tileDir": "plus4",
+      "lifecycle": "production",
+      "stream": {
+        "transport": "streamhost",
+        "udpPort": 54086,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "slot": 86
+      },
+      "guestDoc": "docs/guests/plus4.md",
+      "credentialsRef": "guest/plus4",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "plus4",
+          "SH_QMP": "/data/vms/streamhost/tiles/plus4/qmp.sock",
+          "SH_PORT": "54086",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/plus4/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/plus4/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "40",
+          "SH_KEY_MIN_GAP_MS": "40",
+          "SH_FIXTURE_DESC": "Commodore Plus/4 (PAL) curated INTO its built-in 3-plus-1 ROM suite and resting in the SPREADSHEET (yellow ruled grid on black, cell R1C1, NUMERIC), drawn double-size (-TEDdsize) by VICE xplus4 on an 800x600 X root. Reached from the machine's own UI: F1+RETURN (the power-on screen's own hint, = SYS 1525), then C= + C and tc. The suite's command prompt is ONE-SHOT, so every module switch needs C= + C again; the SPA's plus4 on-screen keyboard sends that whole sequence from one Word/Calc/File button. Keyboard-only exhibit; no pointer device; TED sound -> ALSA -> AC97."
+        },
+        "vmidLabel": 222,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "plus4",
+            "--vmid",
+            "222",
+            "--udp",
+            "54086",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/plus4/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/plus4/tile.env.fixture"
+          ],
+          "deviceSetId": "plus4-current",
+          "launcher": "streamhost/tiles/plus4/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/plus4/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 1536,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-plus4",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5822-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 1536,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-plus4",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5822-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 38
+      },
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "streamhost",
+        "accentColor": "#C2CF5F",
+        "eraLabel": "1984 · Plus/4 (3-plus-1 in ROM)"
+      },
+      "museum": {
+        "id": "plus4",
+        "displayName": "Commodore Plus/4 — 3-plus-1 in ROM",
+        "year": 1984,
+        "lineage": "Commodore 264 series (MOS 7501, TED)",
+        "arch": "MOS 7501, 1.77 MHz (PAL), 64 KB RAM, 32 KB application ROM",
+        "ramMB": 0,
+        "ramKB": 64,
+        "era": "1980s",
+        "accent": "#C2CF5F",
+        "eraSoftware": [
+          "3-plus-1: a word processor, spreadsheet, database and graphing package, in ROM",
+          "Commodore BASIC V3.5, with a machine-language monitor built in",
+          "the 264-series cartridges and the 1531 Datasette",
+          "a small, mostly European software scene it never grew out of"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "the 3-plus-1 word processor",
+          "the 3-plus-1 spreadsheet",
+          "Commodore BASIC V3.5"
+        ],
+        "blurb": "Commodore’s misfire, and the reason it is worth looking at: an office suite — word processor, spreadsheet, database, graphing — burned into ROM and running one second after you switch the machine on, with no disk in sight.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xplus4) emulating a PAL Plus/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs INCLUDING both 3-plus-1 banks, so this tile needs no external media. The golden is curated INTO the suite (F1+RETURN, then C= C and tc) and rests in the spreadsheet. The suite’s command prompt is one-shot — C= + C opens it, one command runs, it closes — so module switching needs the Commodore key (Tab under VICE’s symbolic keymap); the SPA’s plus4 on-screen keyboard therefore carries one-tap Word/Calc/File buttons that send the whole sequence. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/plus4.md."
+      },
+      "reset": {
+        "tileDir": "plus4",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Commodore Plus/4 (PAL) 3-plus-1 spreadsheet in VICE xplus4, double-size on an 800x600 X root; golden INTERNAL snapshot restores the suite exactly as curated from an untouched cold boot (F1+RETURN, then C= C and tc). No post-restore keys. Keyboard path certified 2026-08-09 by driving the real visitor action after the bake — C= + C then tw — and asserting the framebuffer LEFT the spreadsheet for the word processor, not merely that it changed. Keyboard-only exhibit (no mouse); AC97 audio."
+      }
+    },
+    {
+      "schemaVersion": 1,
       "id": "postmarketos",
       "era_year": 2017,
       "enabled": true,

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "plus4",
+  "images": [
+    {
+      "commonsFile": "File:Commodore Plus-4 (T Conté) (angle left).jpg",
+      "alt": "A dark grey Commodore Plus/4 home computer photographed from above and to the left, showing its ribbed top, four function keys and cream keyboard",
+      "caption": "Nothing about it looks like the Commodore 64 it was priced against: a charcoal wedge with a ribbed top, cream keys, four dual-function keys along a colour stripe and a diamond of separate cursor arrows.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore Plus-4 with 1551.jpg",
+      "alt": "A Commodore Plus/4 beside a Commodore 1551 disk drive, with a small power supply and cable between them",
+      "caption": "The Plus/4 with its matching 1551 drive — which connected through the cartridge port rather than the serial bus, and so worked with almost nothing else Commodore sold.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore Plus-4 (T Conté) (keyboard lower right).jpg",
+      "alt": "Close view of the Plus/4's cream keycaps, showing graphics symbols on the key fronts, Flash On and Flash Off legends, and four separate arrow keys arranged as a diamond",
+      "caption": "Graphics characters on the key fronts, in the Commodore tradition — but the four cursor arrows are their own keys here, not a shifted pair, and BASIC gained words like FLASH to reach the hardware directly.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore Plus-4.jpg",
+      "alt": "A Commodore Plus/4 photographed straight down on a grey background, showing the full keyboard and the commodore plus/4 badge",
+      "caption": "The badge that named the machine: plus/4, for the four applications waiting in ROM. It is the only Commodore home computer whose name is a specification of its software.",
+      "role": "photo"
+    }
+  ]
+}

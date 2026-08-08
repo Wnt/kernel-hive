@@ -3258,6 +3258,210 @@ export const POSTERS = {
       ]
     }
   },
+  "plus4": {
+    "title": "Commodore Plus/4 — 3-plus-1 in ROM",
+    "subtitle": "1984 · Plus/4 (3-plus-1 in ROM)",
+    "hero": "/posters/plus4/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/plus4/desktop.webp",
+        "alt": "The Plus/4's built-in spreadsheet — a yellow ruled grid on black, columns C 1 to C 3 and rows R1 to R12",
+        "caption": "A spreadsheet with no disk in the machine, because it was never on a disk. This is ROM."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The Plus/4 came out of a decision that made sense on a spreadsheet and nowhere else. Commodore's engineers had built a new chip, the TED, which did the work of the C64's video and sound chips in one part and cost far less to make. Around it grew a family — the 264 series — meant to occupy the cheap end of the market that the VIC-20 was vacating."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Then the plan drifted. The low-cost machine acquired a full-travel keyboard, 64 KB of memory, and 32 KB of application software in ROM, and arrived priced against the Commodore 64: the company's own bestseller, with which it shared no software, no cartridges, no joystick pinout and no disk drive. Jack Tramiel, who had ordered the family into existence, resigned in January 1984, before any of the machines reached the shops. What shipped was a range nobody left at Commodore could explain."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It sold poorly in the United States and rather better in Europe, particularly in Britain, Germany and Hungary, where the cheaper C16 in the same family found a real audience."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The interesting thing about the Plus/4 is not that it failed. It is what \"plus 4\" means: four applications — a word processor, a spreadsheet, a database and a graphing package — burned into read-only memory and available about a second after the power switch, on a machine with no disk drive attached and none required."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "That was a genuinely radical idea in 1984, and it is not a small piece of software. It sits in 32 KB of ROM alongside the operating system and BASIC, and it is integrated: one command line moves between the modules, and they hand data to one another. A home computer of the period normally meant a BASIC prompt and a cassette recorder. This one meant a text you could type, a sheet you could calculate and a file you could search, from cold."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The suite's reputation is mixed and mostly deserved. It is cramped, its word processor holds a short document, and its command language is terse. But the ambition — that productivity software is part of the machine, not a purchase — is one the industry took another decade to return to, and then only with the arrival of software burned into phones."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The spreadsheet, live, with the cursor in cell R1C1. The row and column headings, the status line and the command line at the bottom are all the machine's own."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The applications are reached through a command prompt the suite opens when you hold the Commodore key and press C; from there `tw`, `tc` and `tf` move to the word processor, the calculator and the file manager. The exhibit's on-screen keyboard has a button for each, because no modern keyboard has a Commodore key on it."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The 264 series was withdrawn within about a year, and Commodore returned to selling the machine it had tried to replace; the C64 outlived the Plus/4 by nearly a decade. The TED chip's real memorial is the C16, its cheap sibling, which did what the family was designed to do and sold respectably in Europe."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What survives here is the argument the machine was making. Every computer since has had to answer the question of what should be built in and what should be bought, and the Plus/4 answered it more literally than anything before or since: it put the office in the ROM and sold the whole thing for the price of a games computer."
+          }
+        ]
+      }
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/plus4/gallery/01-commodore-plus-4-t-cont-angle-left.webp",
+          "alt": "A dark grey Commodore Plus/4 home computer photographed from above and to the left, showing its ribbed top, four function keys and cream keyboard",
+          "caption": "Nothing about it looks like the Commodore 64 it was priced against: a charcoal wedge with a ribbed top, cream keys, four dual-function keys along a colour stripe and a diamond of separate cursor arrows.",
+          "author": "Thomas Conté",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4_(T_Cont%C3%A9)_(angle_left).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/plus4/gallery/02-commodore-plus-4-with-1551.webp",
+          "alt": "A Commodore Plus/4 beside a Commodore 1551 disk drive, with a small power supply and cable between them",
+          "caption": "The Plus/4 with its matching 1551 drive — which connected through the cartridge port rather than the serial bus, and so worked with almost nothing else Commodore sold.",
+          "author": "Jumbo1435",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4_with_1551.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/plus4/gallery/03-commodore-plus-4-t-cont-keyboard-lower-right.webp",
+          "alt": "Close view of the Plus/4's cream keycaps, showing graphics symbols on the key fronts, Flash On and Flash Off legends, and four separate arrow keys arranged as a diamond",
+          "caption": "Graphics characters on the key fronts, in the Commodore tradition — but the four cursor arrows are their own keys here, not a shifted pair, and BASIC gained words like FLASH to reach the hardware directly.",
+          "author": "Thomas Conté",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4_(T_Cont%C3%A9)_(keyboard_lower_right).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/plus4/gallery/04-commodore-plus-4.webp",
+          "alt": "A Commodore Plus/4 photographed straight down on a grey background, showing the full keyboard and the commodore plus/4 badge",
+          "caption": "The badge that named the machine: plus/4, for the four applications waiting in ROM. It is the only Commodore home computer whose name is a specification of its software.",
+          "author": "Jumbo1435",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Plus-4.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        }
+      ]
+    }
+  },
   "postmarketos": {
     "title": "postmarketOS",
     "subtitle": "2017 · Alpine Linux mobile",

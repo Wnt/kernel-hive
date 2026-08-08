@@ -107,6 +107,7 @@ MANIFEST=(
   "openvms     |openvms.sh     |OpenVMS       |licensed |~3-8m   |full    |OpenVMS disks; openvms-decwindows-bridge.sh builds lean-X bridge"
   "mpf2         |mpf2.sh        |bridge/mpf2     |retro    |~3-5m   |full   |tiles/mpf2 cold-boot overlay (MAME mpf2 → Applesoft BASIC)"
   "vic20        |vic20.sh       |bridge/vic20    |retro    |~2-4m   |full   |tiles/vic20 overlay + golden (VICE xvic → CBM BASIC V2)"
+  "plus4        |plus4.sh       |bridge/plus4    |retro    |~2-4m   |full   |tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
@@ -116,7 +117,7 @@ MANIFEST=(
 DEFAULT_ORDER=(kolibrios toaruos helenos 9front reactos haiku templeos amigaos qnx alpine tinycore
   freedos msdos-win1 win311 win95 win98 win2000 os2warp redstar3
   android-x86 postmarketos sailfishos sailfishos-gui serenityos
-  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20)
+  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4)
 
 # ---------------------------------------------------------------------------
 c_reset=$'\e[0m'

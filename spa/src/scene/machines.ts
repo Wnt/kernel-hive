@@ -426,6 +426,12 @@ export const ASSEMBLIES_BY_TILE = {
   vic20: {
     kind: 'homeMicro', body: 'c64A', monitor: 'homeCrtD',
   },
+  // The Plus/4 shares nothing with the breadbin: a charcoal wedge with cream
+  // keys, not beige. Same wedge silhouette as apple2/mpf2, distinguished by its
+  // identity tint below rather than by a bespoke asset.
+  plus4: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtB',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

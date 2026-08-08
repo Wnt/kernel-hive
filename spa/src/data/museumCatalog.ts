@@ -4,11 +4,11 @@ import type { VMManifestEntry } from '../types';
 import { OS_BINDINGS } from '../three/archetypeRegistry';
 
 // ============================================================================
-//  MUSEUM CATALOG — placard metadata for the full OS lineup (40 bindings)
+//  MUSEUM CATALOG — placard metadata for the full OS lineup (41 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 38 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 39 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 35 of those 38 have their placard entries in this
+//  WebTransport + WebCodecs. 36 of those 39 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,8 +17,8 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 37 entries
-//  so all 40 exhibits render, each with an era-accurate archetype + accent.
+//  This file provides rich, period-accurate placard metadata for its 38 entries
+//  so all 41 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
 //  top of these entries, so every osId in OS_BINDINGS becomes an exhibit.
@@ -353,6 +353,16 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['CBM BASIC V2', 'VIC-20 cartridge games', 'the Datasette'],
     blurb: 'The first computer of any kind to sell a million: 5 KB of memory, 22 columns of blue text on a television set, and William Shatner asking why you would buy just a video game.',
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xvic) emulating a PAL VIC-20 that boots its ROM to the CBM BASIC V2 READY prompt; streamhost captures the Linux framebuffer + AC97 audio (the VIC-I sound routed through ALSA) exactly like every other tile. VICE is already in the frozen bridge base (built from source for the c64 tile) and bundles the Commodore ROMs, so this tile needs no external media at all. Keyboard-only exhibit (the machine’s other input was a joystick); uses the beige-tower-crt fallback until a bespoke VIC-20 archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/vic20.md.',
+  },
+  {
+    id: 'plus4', displayName: 'Commodore Plus/4 — 3-plus-1 in ROM', year: 1984,
+    lineage: 'Commodore 264 series (MOS 7501, TED)',
+    arch: 'MOS 7501, 1.77 MHz (PAL), 64 KB RAM, 32 KB application ROM', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#C2CF5F',
+    eraSoftware: ['3-plus-1: a word processor, spreadsheet, database and graphing package, in ROM', 'Commodore BASIC V3.5, with a machine-language monitor built in', 'the 264-series cartridges and the 1531 Datasette', 'a small, mostly European software scene it never grew out of'],
+    periodBrowser: 'none — pre-web 8-bit era',
+    iconicApps: ['the 3-plus-1 word processor', 'the 3-plus-1 spreadsheet', 'Commodore BASIC V3.5'],
+    blurb: 'Commodore’s misfire, and the reason it is worth looking at: an office suite — word processor, spreadsheet, database, graphing — burned into ROM and running one second after you switch the machine on, with no disk in sight.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xplus4) emulating a PAL Plus/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs INCLUDING both 3-plus-1 banks, so this tile needs no external media. The golden is curated INTO the suite (F1+RETURN, then C= C and tc) and rests in the spreadsheet. The suite’s command prompt is one-shot — C= + C opens it, one command runs, it closes — so module switching needs the Commodore key (Tab under VICE’s symbolic keymap); the SPA’s plus4 on-screen keyboard therefore carries one-tap Word/Calc/File buttons that send the whole sequence. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/plus4.md.',
   },
 ];
 
