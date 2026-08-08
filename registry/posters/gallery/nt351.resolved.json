@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "id": "nt351",
+  "images": [
+    {
+      "src": "/posters/nt351/gallery/01-dec-alphastation-600a-cropped.webp",
+      "alt": "A DEC AlphaStation 600A workstation, a beige tower case with front-panel drive bays",
+      "caption": "NT 3.51 was never an x86-only system: the AlphaStation 600A ran it natively on DEC's 64-bit Alpha AXP processor, one of three non-Intel architectures the release supported.",
+      "author": "htomari",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_AlphaStation_600A_(cropped).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "586048969a71435dc3540c254cbccce1d099cbfcb66676b557b024c868c3aabe",
+      "width": 1600,
+      "height": 1055
+    },
+    {
+      "src": "/posters/nt351/gallery/02-alphastation-500-400-4139803972.webp",
+      "alt": "A DEC AlphaStation 500/400 desktop workstation case",
+      "caption": "Alpha workstations like this 500/400 targeted engineering and scientific users who needed more integer and floating-point throughput than any Pentium of 1995 could offer.",
+      "author": "htomari",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:AlphaStation_500_400_(4139803972).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "573410b779cfe9aa3e544745e1e6c7e3aa015c76941474fc50c286f3c5aea9eb",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "src": "/posters/nt351/gallery/03-digital-alphastation-200-1.webp",
+      "alt": "A Digital AlphaStation 200 desktop computer with its DEC branding visible",
+      "caption": "The entry-level AlphaStation 200 brought RISC performance to NT desktops at a price closer to a high-end PC, part of Digital's push to make Alpha a mainstream NT platform.",
+      "author": "leighklotz",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Digital_AlphaStation_200_(1).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "cf28ab88c5d8386bb1be85810d7e6a7975aaec1d04852f2dd6d2b430ee0a7a9a",
+      "width": 1600,
+      "height": 972
+    },
+    {
+      "src": "/posters/nt351/gallery/04-dec-alphaserver-1000a-5-400.webp",
+      "alt": "A DEC AlphaServer 1000A tower server case with front bezel and drive bays",
+      "caption": "On the server side, the AlphaServer 1000A ran Windows NT Server 3.51 alongside Alpha's native OpenVMS and Digital Unix, courting departments that needed one box for both.",
+      "author": "walknboston",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_AlphaServer_1000A_5-400.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "17b805ead943d6abddc5ac3fe98d659c2cd1c4529d208ab86f495555184b2207",
+      "width": 1341,
+      "height": 1600
+    },
+    {
+      "src": "/posters/nt351/gallery/05-decalphaserver2100aped.webp",
+      "alt": "A DEC AlphaServer 2100A pedestal server case, tall and beige with a locking front door",
+      "caption": "The pedestal-mount AlphaServer 2100A scaled Alpha further up, into the multiprocessor server tier NT 3.51 could address thanks to its portable, hardware-abstracted kernel.",
+      "author": "WhiteTimberwolf",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DECAlphaServer2100APed.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "6939a9d30cff13326e9ca85e997daa8ba1720d8dc6094f479ea1b1c4b4b5612c",
+      "width": 1498,
+      "height": 1600
+    }
+  ],
+  "adLinks": [
+    {
+      "title": "DEC AlphaServer 1000A System — sales brochure (scan)",
+      "url": "https://www.bitsavers.org/pdf/dec/brochures/DEC-AlphaServer-1000A-System.pdf",
+      "source": "bitsavers.org"
+    }
+  ]
+}

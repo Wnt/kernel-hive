@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "winxp",
+  "images": [
+    {
+      "commonsFile": "File:IBM_ThinkCentre_A30_(8191).jpg",
+      "alt": "An IBM ThinkCentre A30 desktop computer in black, photographed from a three-quarter angle showing the compact form factor",
+      "caption": "The IBM ThinkCentre A30 brought the ThinkPad design language to desktops, offering business users a sleek alternative to beige tower cases.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM_ThinkCentre_A30_(IMG_4399).jpeg",
+      "alt": "Front-facing view of an IBM ThinkCentre A30 desktop, showing the black chassis and front panel controls",
+      "caption": "ThinkCentre systems delivered Windows XP with the durability and serviceability that defined IBM's professional imaging.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM_thinkcentre_a50_1.jpeg",
+      "alt": "An IBM ThinkCentre A50 desktop computer in black, photographed from a three-quarter view",
+      "caption": "The A50 generation refined the desktop ThinkCentre design, shipping with upgraded processors and integrated graphics for the Windows XP era.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM_ThinkPad_A31p,_transNote_and_two_WorkPads.jpg",
+      "alt": "An IBM ThinkPad A31p laptop positioned with two smaller computing devices, all in black, photographed from above",
+      "caption": "The ThinkPad A31p, a professional-class mobile workstation, brought Windows XP performance to designers, engineers, and road warriors.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Dell_Latitude_D610.jpg",
+      "alt": "A Dell Latitude D610 laptop photographed in three-quarter view, showing the silver chassis and keyboard",
+      "caption": "Dell's Latitude D610 defined enterprise mobility for Windows XP deployments, balancing performance, durability, and battery life.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Dell_Inspiron_6000_and_Latitude_D610.jpg",
+      "alt": "Two Dell laptops side-by-side, a consumer Inspiron 6000 on the left and an enterprise Latitude D610 on the right",
+      "caption": "Side by side, the Inspiron for home users and Latitude for business showed Windows XP's reach across consumer and enterprise markets.",
+      "role": "photo"
+    }
+  ]
+}

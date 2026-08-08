@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "win311",
+  "images": [
+    {
+      "commonsFile": "File:Escom Greymate 486 lid closed.jpg",
+      "alt": "A sealed Escom Greymate 486 tower system unit with beige plastic case",
+      "caption": "The Escom Greymate 486, a tower-case system representing the mid-1990s standard configuration for Windows 3.11 in European offices.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Escom Greymate 486 lid open.jpg",
+      "alt": "An Escom Greymate 486 with the side panel removed, showing internal components",
+      "caption": "The open chassis reveals the 486 processor, ISA expansion slots, and memory architecture that ran Windows for Workgroups 3.11.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:DeskPro 386S.jpg",
+      "alt": "A Compaq DeskPro 386S tower system unit with beige plastic case",
+      "caption": "The Compaq DeskPro 386S, a standard desktop configuration from the 386 era that provided the processing power for Windows 3.x.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Compaq Deskpro 386 16Mhz.jpg",
+      "alt": "A Compaq Deskpro 386 16MHz tower system, photographed against a plain background",
+      "caption": "The Compaq Deskpro 386 at 16 MHz, representing the era when 386 processors became standard in business desktops running Windows 3.11.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Confident System-720 personal computer in Finland 20200125 002.jpg",
+      "alt": "A Confident System-720 tower computer with beige case",
+      "caption": "The Confident System-720, a regional European PC variant from the 1990s showing how desktop computing hardware was manufactured and configured beyond the major OEMs.",
+      "role": "photo"
+    }
+  ]
+}

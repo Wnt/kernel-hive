@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "id": "os2warp",
+  "images": [
+    {
+      "src": "/posters/os2warp/gallery/01-ibm-ps-2-model-30-286-front-view.webp",
+      "alt": "An IBM Personal System/2 Model 30 286 desktop computer with its keyboard",
+      "caption": "OS/2 was born on IBM's PS/2 line: the Model 30 286 belongs to the family of machines the joint IBM/Microsoft project targeted before IBM continued OS/2 alone.",
+      "author": "DigitalIceAge",
+      "license": "CC BY 4.0",
+      "licenseId": "cc-by-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_PS-2_Model_30_286_front_view.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2eb7ef53c8a53676c891e3554f871372d780ad98bb116c81a095519f3a19751e",
+      "width": 1600,
+      "height": 386
+    },
+    {
+      "src": "/posters/os2warp/gallery/02-ibm-ps2-p70-2.webp",
+      "alt": "An IBM PS/2 Model P70 portable computer, a boxy luggable with a built-in plasma screen",
+      "caption": "The luggable PS/2 P70 shows the range of IBM-branded hardware OS/2 was built to run on, from desktop towers to field-portable workstations.",
+      "author": "Wikström, Johan",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_PS2_P70_(2).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "273128a4c77828901f0b51b9c4781cd488ca8c782e27d185e189940c1d4fba86",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/os2warp/gallery/03-thinkpad-701.webp",
+      "alt": "An IBM ThinkPad 701C laptop, closed, showing its compact black case",
+      "caption": "IBM's ThinkPad line, introduced in 1992, was the flagship hardware for IBM's own operating system through the OS/2 Warp years of the mid-1990s.",
+      "author": "nakashi",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Thinkpad_701.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "d79a0a0a9ee78e4a86249f92b6ae8090308beb282e935544ca6ca99d73ecd978",
+      "width": 1600,
+      "height": 1359
+    },
+    {
+      "src": "/posters/os2warp/gallery/04-ibm-thinkpad-701c-keyboard.webp",
+      "alt": "Close-up of the IBM ThinkPad 701C's expanding butterfly keyboard, unfolded to full width",
+      "caption": "The ThinkPad 701C's butterfly keyboard expanded past the width of its own case when opened, IBM engineering showmanship on the same machines that shipped with OS/2.",
+      "author": "Raymangold22",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_ThinkPad_701C_keyboard.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "f4f86f22b50f7b7a299bb82f5d3e140c4ea477b24f753df209a8c11cda14a333",
+      "width": 1500,
+      "height": 1125
+    },
+    {
+      "src": "/posters/os2warp/gallery/05-os2-warp-4-installation-cd-ja-2025-02-22.webp",
+      "alt": "A CD-ROM disc for OS/2 Warp 4 installation media",
+      "caption": "Warp 4, released in 1996, shipped on CD-ROM as IBM's last major consumer push for OS/2 against the coming wave of Windows 95 and NT desktops.",
+      "author": "Asanagi",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:OS2_Warp_4_installation_CD_(Ja)_2025-02-22.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "31af34f2d52d3b8c05d4027113572663ba4420a7222802ab5ec5e75b07404832",
+      "width": 1600,
+      "height": 1600
+    }
+  ],
+  "adLinks": [
+    {
+      "title": "\"This is OS/2 Warp\" — IBM television advertisement",
+      "url": "https://archive.org/details/IMOS4753",
+      "source": "Internet Archive"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "win95",
+  "images": [
+    {
+      "commonsFile": "File:20230425 161207 RE-PC - HP Pavilion 6335, Microsoft Windows 95.jpg",
+      "alt": "An HP Pavilion 6335 desktop computer running Windows 95, showing the beige tower case typical of mid-1990s systems",
+      "caption": "The HP Pavilion 6335, a mid-1990s home and office desktop, exemplified the mass-market PCs that made Windows 95 ubiquitous.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Windows 95 installation disks 2025-03-01.jpg",
+      "alt": "A complete set of Windows 95 installation floppy disks and CD-ROM media, showing the original retail packaging",
+      "caption": "Windows 95 shipped initially on floppy disks, requiring multiple 3.5-inch media for installation on computers without CD-ROM drives.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Gateway 2000 P5-120 front view.jpg",
+      "alt": "A Gateway 2000 P5-120, a beige desktop tower featuring a Pentium 120 MHz processor, photographed from the front",
+      "caption": "The Gateway 2000 P5-120 brought Pentium performance to the mass market, exemplifying the systems Windows 95 was designed for.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:PC Compaq ProLinea 466.jpg",
+      "alt": "A Compaq ProLinea 466 desktop computer, a beige tower system from the early-to-mid 1990s",
+      "caption": "The Compaq ProLinea 466 brought 486-class performance to business offices and schools during Windows 95's launch year.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Gateway 2000.jpg",
+      "alt": "A Gateway 2000 desktop computer system, showing the characteristic beige tower case of the early 1990s",
+      "caption": "Gateway 2000, the PC maker famous for mail-order direct sales to consumers, became a household name alongside Windows 95.",
+      "role": "photo"
+    }
+  ]
+}

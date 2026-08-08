@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "win98se",
+  "images": [
+    {
+      "commonsFile": "File:Dell Dimension 2100 (D2100 1).jpg",
+      "alt": "A Dell Dimension 2100 desktop computer, a beige tower system from the late 1990s, photographed against a neutral background",
+      "caption": "The Dell Dimension 2100, a budget commodity desktop of 2001, sold in the final years when Windows 98 SE was still offered alongside its successors.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Compaq Presario 5000.jpg",
+      "alt": "A Compaq Presario 5000 desktop computer tower, a beige system from the late 1990s, shown from the front",
+      "caption": "The Compaq Presario 5000 series defined late-1990s consumer desktop aesthetics and hardware configuration.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Compaq Presario top down.jpg",
+      "alt": "A top-down view of a Compaq Presario desktop computer, showing the beige tower case from above",
+      "caption": "A Compaq Presario photographed from above reveals the compact rectangular form factor standard to PCs of the Windows 98 era.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Packard Bell computer (1).jpg",
+      "alt": "A Packard Bell desktop computer, a beige tower system from the late 1990s, photographed from the front",
+      "caption": "Packard Bell computers were ubiquitous in home and small-office environments of the late 1990s, built on standard PC architecture.",
+      "role": "photo"
+    }
+  ]
+}

@@ -215,3 +215,39 @@ Per assigned tile, produce `registry/posters/gallery/<id>.candidates.json`.
 - `README.md` + a `## Third-party media` note appended to `LICENSE`: code is
   MIT; bundled images are third-party under their own licenses, listed in
   `docs/IMAGE-CREDITS.md`; CC BY-SA items carry share-alike terms.
+
+## Round 2 scope — PC-era software exhibits
+
+These exhibits are operating systems, not machines, so the gallery shows the
+**era hardware they ran on** and their **retail packaging**, not the OS itself.
+The live tile already shows the running desktop; a photo of a screen adds
+nothing and, worse, usually is not free.
+
+| tile id | what to look for |
+|---|---|
+| `msdoswin1` | IBM PC 5150 / PC XT / PC AT — the machines MS-DOS and Windows 1.0 ran on |
+| `win311` | 386/486 desktop PCs, IBM PS/2, Compaq Deskpro; Windows 3.x retail boxes |
+| `win95` | mid-90s Pentium desktops; Windows 95 retail box; the 1995 launch |
+| `win98se` | late-90s beige PC systems, CRT + tower + peripherals |
+| `win2000` | 2000-era business desktops, workstations and servers |
+| `winxp` | early-2000s desktops and laptops (ThinkPad, Dell, Compaq) |
+| `nt351` | workstation/server hardware of 1995; **NT's non-x86 ports (DEC Alpha, MIPS, PowerPC) are a strong angle** |
+| `nt4` | 1996 workstation/server hardware, rack and tower servers |
+| `os2warp` | IBM PS/2, IBM ThinkPad, IBM-branded hardware; OS/2 Warp retail box |
+| `ninefront` | Bell Labs context: the Blit / Gnot / DMD terminals, Bell Labs Murray Hill, the Glenda mascot, Plan 9 people and hardware |
+
+Extra rules for this round, on top of the licensing policy above:
+
+- **Reject pure screenshots.** An image whose content is essentially the OS user
+  interface is both redundant with the live tile and rarely free. A machine
+  photographed with something on screen is fine when the Commons license covers
+  the whole image; a screen grab is not.
+- **Retail boxes and magazine scans are allowed only through the same
+  mechanical check** — Commons-hosted with an allowlisted license. Box artwork
+  and magazine pages are usually still in copyright, so expect most to fail;
+  that is the correct outcome, not a research failure.
+- Period advertisements that are NOT free go in `adLinks` as outbound links.
+  This round is the most likely to yield those, so look for stable ones
+  (Internet Archive item pages, museum collection pages) rather than blog posts.
+- Caption in the museum-label voice, and say what the hardware IS — the reader
+  is looking at a photo of a machine while running the OS in the next panel.

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "win2000",
+  "images": [
+    {
+      "commonsFile": "File:IBM_NetVista_Desktop_PC_Pentium_4.jpeg",
+      "alt": "An IBM NetVista desktop PC with a flat-panel monitor, a beige tower case with front-facing ports",
+      "caption": "The IBM NetVista, a business-class desktop system shipping with Windows 2000 and Intel Pentium 4 processors, defines the corporate workstation of the early 2000s.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM_NetVista_A21i_(a21i_front).jpeg",
+      "alt": "Front view of an IBM NetVista A21i desktop computer, showing the beige chassis and front panel",
+      "caption": "The NetVista A21i, a compact business desktop, represented IBM's commitment to affordable, reliable systems for enterprise deployment.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Compaq_Deskpro_EN_C300A_(IMG_5581).jpeg",
+      "alt": "A Compaq Deskpro EN C300A desktop computer photographed from the front, showing the silver-gray chassis and front panel",
+      "caption": "The Compaq Deskpro EN series brought enterprise-grade construction and expansion slots to mid-range Windows 2000 deployments.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Compaq_Deskpro_EN_C300A_(IMG_5582).jpeg",
+      "alt": "Side angle view of a Compaq Deskpro EN C300A, showing the case profile and ventilation design",
+      "caption": "Built for workgroup and office environments, the Deskpro EN emphasized thermal management and modular upgrade paths.",
+      "role": "photo"
+    }
+  ]
+}

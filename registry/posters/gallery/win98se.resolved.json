@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "win98se",
+  "images": [
+    {
+      "src": "/posters/win98se/gallery/01-dell-dimension-2100-d2100-1.webp",
+      "alt": "A Dell Dimension 2100 desktop computer, a beige tower system from the late 1990s, photographed against a neutral background",
+      "caption": "The Dell Dimension 2100, a budget commodity desktop of 2001, sold in the final years when Windows 98 SE was still offered alongside its successors.",
+      "author": "The Serial Port",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dell_Dimension_2100_(D2100_1).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "746f2fbfac5ac96b330d137247e3208f9204d705a77b41ccc6678cab6ecb4acd",
+      "width": 1600,
+      "height": 1020
+    },
+    {
+      "src": "/posters/win98se/gallery/02-compaq-presario-5000.webp",
+      "alt": "A Compaq Presario 5000 desktop computer tower, a beige system from the late 1990s, shown from the front",
+      "caption": "The Compaq Presario 5000 series defined late-1990s consumer desktop aesthetics and hardware configuration.",
+      "author": "Erickarroqui",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Presario_5000.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "4ef10b0319dc2238b6126de572ebc7457d31096328ed73642491462c60d8b18c",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/win98se/gallery/03-compaq-presario-top-down.webp",
+      "alt": "A top-down view of a Compaq Presario desktop computer, showing the beige tower case from above",
+      "caption": "A Compaq Presario photographed from above reveals the compact rectangular form factor standard to PCs of the Windows 98 era.",
+      "author": "Rderijcke",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Presario_top_down.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "515479e520275a23aab9f373d02eb418e9908991eff493d7448992c7f21de5d1",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/win98se/gallery/04-packard-bell-computer-1.webp",
+      "alt": "A Packard Bell desktop computer, a beige tower system from the late 1990s, photographed from the front",
+      "caption": "Packard Bell computers were ubiquitous in home and small-office environments of the late 1990s, built on standard PC architecture.",
+      "author": "Alan_D",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Packard_Bell_computer_(1).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b053ffe345f46e0f497c39178d8506950cf0027e4d3e7098f3201d2662088813",
+      "width": 1200,
+      "height": 1600
+    }
+  ]
+}

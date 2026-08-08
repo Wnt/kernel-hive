@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "win311",
+  "images": [
+    {
+      "src": "/posters/win311/gallery/01-escom-greymate-486-lid-closed.webp",
+      "alt": "A sealed Escom Greymate 486 tower system unit with beige plastic case",
+      "caption": "The Escom Greymate 486, a tower-case system representing the mid-1990s standard configuration for Windows 3.11 in European offices.",
+      "author": "Tech for PC & Mac",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Escom_Greymate_486_lid_closed.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "be11624826834d0f0845144da9e600f5bca5df62b2b1d7e1b27e7216ad2cb9d7",
+      "width": 1120,
+      "height": 624
+    },
+    {
+      "src": "/posters/win311/gallery/02-escom-greymate-486-lid-open.webp",
+      "alt": "An Escom Greymate 486 with the side panel removed, showing internal components",
+      "caption": "The open chassis reveals the 486 processor, ISA expansion slots, and memory architecture that ran Windows for Workgroups 3.11.",
+      "author": "Tech for PC & Mac",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Escom_Greymate_486_lid_open.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "d41d26307b21a35db4dd1df3a9e0968ed96f058c45833338aab518e5642a37c4",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "src": "/posters/win311/gallery/03-deskpro-386s.webp",
+      "alt": "A Compaq DeskPro 386S tower system unit with beige plastic case",
+      "caption": "The Compaq DeskPro 386S, a standard desktop configuration from the 386 era that provided the processing power for Windows 3.x.",
+      "author": "MBlairMartin",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DeskPro_386S.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "3145753c0bbf2ea5d68e3ca4f5bf39e65d7fc46b70a57b91d82d7c6c96979d40",
+      "width": 1600,
+      "height": 1513
+    },
+    {
+      "src": "/posters/win311/gallery/04-compaq-deskpro-386-16mhz.webp",
+      "alt": "A Compaq Deskpro 386 16MHz tower system, photographed against a plain background",
+      "caption": "The Compaq Deskpro 386 at 16 MHz, representing the era when 386 processors became standard in business desktops running Windows 3.11.",
+      "author": "Tecnoxarxa",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_386_16Mhz.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b7345a94fd8e1da155c8c8170892492acd17f44380fb40ecaaf76a0d79465328",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/win311/gallery/05-confident-system-720-personal-computer-in-finland-20200125-002.webp",
+      "alt": "A Confident System-720 tower computer with beige case",
+      "caption": "The Confident System-720, a regional European PC variant from the 1990s showing how desktop computing hardware was manufactured and configured beyond the major OEMs.",
+      "author": "Methem (Mikko J. Putkonen)",
+      "license": "CC BY 4.0",
+      "licenseId": "cc-by-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Confident_System-720_personal_computer_in_Finland_20200125_002.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "35c0f682b9b4cfee41b9e950b50804e9e63e8b40fec20efc9661b874f1c45987",
+      "width": 1200,
+      "height": 1600
+    }
+  ]
+}

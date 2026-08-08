@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "ninefront",
+  "images": [
+    {
+      "commonsFile": "File:Teletype DMD 5620.jpg",
+      "alt": "An AT&T Teletype DMD 5620 terminal, a beige CRT unit with a small keyboard",
+      "caption": "The 5620 line descends from the Blit, the bitmapped terminal Rob Pike and colleagues built at Bell Labs; Plan 9's windowing ideas trace back to programs written for machines like this one.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:VT52, ADM-3a and AT&T 5620 terminals On Display.jpg",
+      "alt": "Three vintage computer terminals on display: a VT52, an ADM-3A, and an AT&T 5620",
+      "caption": "The AT&T 5620 (right) alongside earlier character terminals shows the leap it represented: a real bitmap display and local CPU, able to run multiple windowed programs Unix mainframes could not.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:AT&T Murray Hill.jpg",
+      "alt": "Aerial view of the AT&T Bell Laboratories complex at Murray Hill, New Jersey",
+      "caption": "Bell Labs' Murray Hill, New Jersey campus is where Unix, C, and later Plan 9 were built by the Computing Sciences Research Center through the 1970s and 1980s.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Brian Kernighan and Ken Thompson.jpg",
+      "alt": "Brian Kernighan and Ken Thompson standing together at an event",
+      "caption": "Ken Thompson (right), co-creator of Unix, was also a member of the Computing Sciences Research Center team that built Plan 9, the operating system 9front continues today.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Dennis Ritchie in a chalet in the mountains surrounding Salt Lake City, Utah--Summer 1984, Usenix conference.jpg",
+      "alt": "Dennis Ritchie at a 1984 USENIX conference gathering in the mountains near Salt Lake City",
+      "caption": "Dennis Ritchie, co-creator of Unix and the C language, worked in the same Bell Labs research group that later produced Plan 9 and, from it, 9front.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Glenda bunny mascot of plan 9 from bell white.jpg",
+      "alt": "Glenda, the rabbit mascot of Plan 9 from Bell Labs, a simple line-drawn white rabbit",
+      "caption": "Glenda, drawn by Bell Labs researcher Renée French, has been Plan 9's mascot since the 1990s and still appears throughout 9front's tools and documentation.",
+      "role": "photo"
+    }
+  ]
+}

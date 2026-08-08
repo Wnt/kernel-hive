@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "os2warp",
+  "images": [
+    {
+      "commonsFile": "File:IBM PS-2 Model 30 286 front view.jpg",
+      "alt": "An IBM Personal System/2 Model 30 286 desktop computer with its keyboard",
+      "caption": "OS/2 was born on IBM's PS/2 line: the Model 30 286 belongs to the family of machines the joint IBM/Microsoft project targeted before IBM continued OS/2 alone.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM PS2 P70 (2).jpg",
+      "alt": "An IBM PS/2 Model P70 portable computer, a boxy luggable with a built-in plasma screen",
+      "caption": "The luggable PS/2 P70 shows the range of IBM-branded hardware OS/2 was built to run on, from desktop towers to field-portable workstations.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Thinkpad 701.jpg",
+      "alt": "An IBM ThinkPad 701C laptop, closed, showing its compact black case",
+      "caption": "IBM's ThinkPad line, introduced in 1992, was the flagship hardware for IBM's own operating system through the OS/2 Warp years of the mid-1990s.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM ThinkPad 701C keyboard.jpg",
+      "alt": "Close-up of the IBM ThinkPad 701C's expanding butterfly keyboard, unfolded to full width",
+      "caption": "The ThinkPad 701C's butterfly keyboard expanded past the width of its own case when opened, IBM engineering showmanship on the same machines that shipped with OS/2.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:OS2 Warp 4 installation CD (Ja) 2025-02-22.jpg",
+      "alt": "A CD-ROM disc for OS/2 Warp 4 installation media",
+      "caption": "Warp 4, released in 1996, shipped on CD-ROM as IBM's last major consumer push for OS/2 against the coming wave of Windows 95 and NT desktops.",
+      "role": "photo"
+    }
+  ],
+  "adLinks": [
+    {
+      "title": "\"This is OS/2 Warp\" — IBM television advertisement",
+      "url": "https://archive.org/details/IMOS4753",
+      "source": "Internet Archive"
+    }
+  ]
+}

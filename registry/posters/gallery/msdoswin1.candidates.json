@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "msdoswin1",
+  "images": [
+    {
+      "commonsFile": "File:IBM PC XT color.jpg",
+      "alt": "An IBM PC XT system unit photographed from the front-left angle",
+      "caption": "The IBM PC XT added a hard drive and faster processor to the original 5150, establishing the extended architecture that defined business computing in the mid-1980s.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM PC AT.jpg",
+      "alt": "An IBM PC AT system unit, viewed from above",
+      "caption": "The IBM PC AT introduced the 80286 processor and the Advanced Technology standard in 1984, forming the hardware foundation for Windows 1.0 and Windows 3.x.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM PC XT 02.jpg",
+      "alt": "A beige IBM PC XT tower system unit",
+      "caption": "A complete IBM PC XT chassis, representative of the XT architecture that expanded computing beyond the original 5150.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM 5170 (PC AT) (8861873514).jpg",
+      "alt": "The motherboard and system board of an IBM PC AT",
+      "caption": "The system board of an IBM PC AT, showing the 80286 processor and support circuitry that powered the era of Windows 3.x.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM Personal Computer XT with 5153 Color Monitor (53998049768).jpg",
+      "alt": "A complete IBM PC XT system with a color CRT monitor and keyboard",
+      "caption": "A complete IBM PC XT configuration with color monitor, as configured for business environments running MS-DOS and Windows.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IBM Model F 122-key Keyboard.jpg",
+      "alt": "An IBM Model F mechanical keyboard with 122 keys, photographed from above",
+      "caption": "The IBM Model F mechanical keyboard, whose legendary key feel and durability defined the user experience of DOS and Windows computing.",
+      "role": "photo"
+    }
+  ]
+}

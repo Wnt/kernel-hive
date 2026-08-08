@@ -2230,7 +2230,95 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/msdoswin1/gallery/01-ibm-pc-xt-color.webp",
+          "alt": "An IBM PC XT system unit photographed from the front-left angle",
+          "caption": "The IBM PC XT added a hard drive and faster processor to the original 5150, establishing the extended architecture that defined business computing in the mid-1980s.",
+          "author": "Ruben de Rijcke - http://dendmedia.com/vintage/",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_PC_XT_color.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1202
+        },
+        {
+          "src": "/posters/msdoswin1/gallery/02-ibm-pc-at.webp",
+          "alt": "An IBM PC AT system unit, viewed from above",
+          "caption": "The IBM PC AT introduced the 80286 processor and the Advanced Technology standard in 1984, forming the hardware foundation for Windows 1.0 and Windows 3.x.",
+          "author": "MBlairMartin",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_PC_AT.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1068
+        },
+        {
+          "src": "/posters/msdoswin1/gallery/03-ibm-pc-xt-02.webp",
+          "alt": "A beige IBM PC XT tower system unit",
+          "caption": "A complete IBM PC XT chassis, representative of the XT architecture that expanded computing beyond the original 5150.",
+          "author": "Hidalgo944",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_PC_XT_02.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1569
+        },
+        {
+          "src": "/posters/msdoswin1/gallery/04-ibm-5170-pc-at-8861873514.webp",
+          "alt": "The motherboard and system board of an IBM PC AT",
+          "caption": "The system board of an IBM PC AT, showing the 80286 processor and support circuitry that powered the era of Windows 3.x.",
+          "author": "htomari",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_5170_(PC_AT)_(8861873514).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/msdoswin1/gallery/05-ibm-personal-computer-xt-with-5153-color-monitor-53998049768.webp",
+          "alt": "A complete IBM PC XT system with a color CRT monitor and keyboard",
+          "caption": "A complete IBM PC XT configuration with color monitor, as configured for business environments running MS-DOS and Windows.",
+          "author": "Ethan Long",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_Personal_Computer_XT_with_5153_Color_Monitor_(53998049768).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        },
+        {
+          "src": "/posters/msdoswin1/gallery/06-ibm-model-f-122-key-keyboard.webp",
+          "alt": "An IBM Model F mechanical keyboard with 122 keys, photographed from above",
+          "caption": "The IBM Model F mechanical keyboard, whose legendary key feel and durability defined the user experience of DOS and Windows computing.",
+          "author": "Themavery",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_Model_F_122-key_Keyboard.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 915
+        }
+      ]
+    }
   },
   "ninefront": {
     "title": "9front",
@@ -2338,7 +2426,95 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/ninefront/gallery/01-teletype-dmd-5620.webp",
+          "alt": "An AT&T Teletype DMD 5620 terminal, a beige CRT unit with a small keyboard",
+          "caption": "The 5620 line descends from the Blit, the bitmapped terminal Rob Pike and colleagues built at Bell Labs; Plan 9's windowing ideas trace back to programs written for machines like this one.",
+          "author": "Marcin Wichary",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Teletype_DMD_5620.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1214,
+          "height": 996
+        },
+        {
+          "src": "/posters/ninefront/gallery/02-vt52-adm-3a-and-at-t-5620-terminals-on-display.webp",
+          "alt": "Three vintage computer terminals on display: a VT52, an ADM-3A, and an AT&T 5620",
+          "caption": "The AT&T 5620 (right) alongside earlier character terminals shows the leap it represented: a real bitmap display and local CPU, able to run multiple windowed programs Unix mainframes could not.",
+          "author": "Seth Morabito",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:VT52,_ADM-3a_and_AT%26T_5620_terminals_On_Display.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/ninefront/gallery/03-at-t-murray-hill.webp",
+          "alt": "Aerial view of the AT&T Bell Laboratories complex at Murray Hill, New Jersey",
+          "caption": "Bell Labs' Murray Hill, New Jersey campus is where Unix, C, and later Plan 9 were built by the Computing Sciences Research Center through the 1970s and 1980s.",
+          "author": "United States Geological Survey (USGS)",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:AT%26T_Murray_Hill.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1000,
+          "height": 800
+        },
+        {
+          "src": "/posters/ninefront/gallery/04-brian-kernighan-and-ken-thompson.webp",
+          "alt": "Brian Kernighan and Ken Thompson standing together at an event",
+          "caption": "Ken Thompson (right), co-creator of Unix, was also a member of the Computing Sciences Research Center team that built Plan 9, the operating system 9front continues today.",
+          "author": "A.C.Diller",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Brian_Kernighan_and_Ken_Thompson.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1280,
+          "height": 960
+        },
+        {
+          "src": "/posters/ninefront/gallery/05-dennis-ritchie-in-a-chalet-in-the-mountains-surrounding-salt-lake-city-utah-summer-1984-usenix-conference.webp",
+          "alt": "Dennis Ritchie at a 1984 USENIX conference gathering in the mountains near Salt Lake City",
+          "caption": "Dennis Ritchie, co-creator of Unix and the C language, worked in the same Bell Labs research group that later produced Plan 9 and, from it, 9front.",
+          "author": "Perry Kivolowitz",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dennis_Ritchie_in_a_chalet_in_the_mountains_surrounding_Salt_Lake_City,_Utah--Summer_1984,_Usenix_conference.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 529,
+          "height": 800
+        },
+        {
+          "src": "/posters/ninefront/gallery/06-glenda-bunny-mascot-of-plan-9-from-bell-white.webp",
+          "alt": "Glenda, the rabbit mascot of Plan 9 from Bell Labs, a simple line-drawn white rabbit",
+          "caption": "Glenda, drawn by Bell Labs researcher Renée French, has been Plan 9's mascot since the 1990s and still appears throughout 9front's tools and documentation.",
+          "author": "Renée French",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Glenda_bunny_mascot_of_plan_9_from_bell_white.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1376,
+          "height": 1492
+        }
+      ]
+    }
   },
   "nt351": {
     "title": "Windows NT 3.51 Workstation",
@@ -2446,7 +2622,88 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/nt351/gallery/01-dec-alphastation-600a-cropped.webp",
+          "alt": "A DEC AlphaStation 600A workstation, a beige tower case with front-panel drive bays",
+          "caption": "NT 3.51 was never an x86-only system: the AlphaStation 600A ran it natively on DEC's 64-bit Alpha AXP processor, one of three non-Intel architectures the release supported.",
+          "author": "htomari",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_AlphaStation_600A_(cropped).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1055
+        },
+        {
+          "src": "/posters/nt351/gallery/02-alphastation-500-400-4139803972.webp",
+          "alt": "A DEC AlphaStation 500/400 desktop workstation case",
+          "caption": "Alpha workstations like this 500/400 targeted engineering and scientific users who needed more integer and floating-point throughput than any Pentium of 1995 could offer.",
+          "author": "htomari",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:AlphaStation_500_400_(4139803972).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1024,
+          "height": 768
+        },
+        {
+          "src": "/posters/nt351/gallery/03-digital-alphastation-200-1.webp",
+          "alt": "A Digital AlphaStation 200 desktop computer with its DEC branding visible",
+          "caption": "The entry-level AlphaStation 200 brought RISC performance to NT desktops at a price closer to a high-end PC, part of Digital's push to make Alpha a mainstream NT platform.",
+          "author": "leighklotz",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Digital_AlphaStation_200_(1).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 972
+        },
+        {
+          "src": "/posters/nt351/gallery/04-dec-alphaserver-1000a-5-400.webp",
+          "alt": "A DEC AlphaServer 1000A tower server case with front bezel and drive bays",
+          "caption": "On the server side, the AlphaServer 1000A ran Windows NT Server 3.51 alongside Alpha's native OpenVMS and Digital Unix, courting departments that needed one box for both.",
+          "author": "walknboston",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_AlphaServer_1000A_5-400.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1341,
+          "height": 1600
+        },
+        {
+          "src": "/posters/nt351/gallery/05-decalphaserver2100aped.webp",
+          "alt": "A DEC AlphaServer 2100A pedestal server case, tall and beige with a locking front door",
+          "caption": "The pedestal-mount AlphaServer 2100A scaled Alpha further up, into the multiprocessor server tier NT 3.51 could address thanks to its portable, hardware-abstracted kernel.",
+          "author": "WhiteTimberwolf",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:DECAlphaServer2100APed.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1498,
+          "height": 1600
+        }
+      ],
+      "adLinks": [
+        {
+          "title": "DEC AlphaServer 1000A System — sales brochure (scan)",
+          "url": "https://www.bitsavers.org/pdf/dec/brochures/DEC-AlphaServer-1000A-System.pdf",
+          "source": "bitsavers.org"
+        }
+      ]
+    }
   },
   "nt4": {
     "title": "Windows NT 4.0 Workstation",
@@ -2554,7 +2811,67 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/nt4/gallery/01-compaq-deskpro-466-front-view.webp",
+          "alt": "The front panel of a beige Compaq Deskpro tower desktop computer",
+          "caption": "Compaq's Deskpro line was a common sight running NT 4.0 Workstation in mid-90s offices, valued for the manageability features Compaq built into its business desktops.",
+          "author": "Jim Leonard",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_466_front_view.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 595
+        },
+        {
+          "src": "/posters/nt4/gallery/02-compaq-deskpro-6333-crop.webp",
+          "alt": "A Compaq Deskpro desktop tower computer, beige plastic case",
+          "caption": "A Pentium-class Deskpro of the kind IT departments standardized on when they moved from Windows NT 3.51 to the Explorer-shelled NT 4.0 in 1996.",
+          "author": "Demache at English Wikipedia",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_6333(crop).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 872,
+          "height": 1209
+        },
+        {
+          "src": "/posters/nt4/gallery/03-hp-pc-workstation-x-class-16.webp",
+          "alt": "An HP PC Workstation X-Class beige tower case with front drive bays",
+          "caption": "Workstation-class PCs like this HP X-Class targeted the Pentium Pro/II buyers NT 4.0 Workstation was built for: engineers running CAD and technical software that needed real multitasking.",
+          "author": "Thomas Schanz",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:HP-PC-Workstation-X-Class_16.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/nt4/gallery/04-compaq-proliant-2500.webp",
+          "alt": "A Compaq ProLiant 2500 tower server case, beige with front bezel and status lights",
+          "caption": "On the server side, towers like the Compaq ProLiant 2500 ran Windows NT Server 4.0 as file, print, and early web servers, a role NT was rapidly winning from Novell NetWare in the late 1990s.",
+          "author": "Tommy Karlsson",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Proliant_2500.JPG",
+          "sourceName": "Wikimedia Commons",
+          "width": 1198,
+          "height": 1600
+        }
+      ]
+    }
   },
   "openvms": {
     "title": "OpenVMS x86-64 9.2",
@@ -2858,7 +3175,88 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/os2warp/gallery/01-ibm-ps-2-model-30-286-front-view.webp",
+          "alt": "An IBM Personal System/2 Model 30 286 desktop computer with its keyboard",
+          "caption": "OS/2 was born on IBM's PS/2 line: the Model 30 286 belongs to the family of machines the joint IBM/Microsoft project targeted before IBM continued OS/2 alone.",
+          "author": "DigitalIceAge",
+          "license": "CC BY 4.0",
+          "licenseId": "cc-by-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_PS-2_Model_30_286_front_view.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 386
+        },
+        {
+          "src": "/posters/os2warp/gallery/02-ibm-ps2-p70-2.webp",
+          "alt": "An IBM PS/2 Model P70 portable computer, a boxy luggable with a built-in plasma screen",
+          "caption": "The luggable PS/2 P70 shows the range of IBM-branded hardware OS/2 was built to run on, from desktop towers to field-portable workstations.",
+          "author": "Wikström, Johan",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_PS2_P70_(2).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        },
+        {
+          "src": "/posters/os2warp/gallery/03-thinkpad-701.webp",
+          "alt": "An IBM ThinkPad 701C laptop, closed, showing its compact black case",
+          "caption": "IBM's ThinkPad line, introduced in 1992, was the flagship hardware for IBM's own operating system through the OS/2 Warp years of the mid-1990s.",
+          "author": "nakashi",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Thinkpad_701.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1359
+        },
+        {
+          "src": "/posters/os2warp/gallery/04-ibm-thinkpad-701c-keyboard.webp",
+          "alt": "Close-up of the IBM ThinkPad 701C's expanding butterfly keyboard, unfolded to full width",
+          "caption": "The ThinkPad 701C's butterfly keyboard expanded past the width of its own case when opened, IBM engineering showmanship on the same machines that shipped with OS/2.",
+          "author": "Raymangold22",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_ThinkPad_701C_keyboard.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1500,
+          "height": 1125
+        },
+        {
+          "src": "/posters/os2warp/gallery/05-os2-warp-4-installation-cd-ja-2025-02-22.webp",
+          "alt": "A CD-ROM disc for OS/2 Warp 4 installation media",
+          "caption": "Warp 4, released in 1996, shipped on CD-ROM as IBM's last major consumer push for OS/2 against the coming wave of Windows 95 and NT desktops.",
+          "author": "Asanagi",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:OS2_Warp_4_installation_CD_(Ja)_2025-02-22.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1600
+        }
+      ],
+      "adLinks": [
+        {
+          "title": "\"This is OS/2 Warp\" — IBM television advertisement",
+          "url": "https://archive.org/details/IMOS4753",
+          "source": "Internet Archive"
+        }
+      ]
+    }
   },
   "postmarketos": {
     "title": "postmarketOS",
@@ -4576,7 +4974,67 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/win2000/gallery/01-ibm-netvista-desktop-pc-pentium-4.webp",
+          "alt": "An IBM NetVista desktop PC with a flat-panel monitor, a beige tower case with front-facing ports",
+          "caption": "The IBM NetVista, a business-class desktop system shipping with Windows 2000 and Intel Pentium 4 processors, defines the corporate workstation of the early 2000s.",
+          "author": "https://www.flickr.com/photos/brownpau",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_NetVista_Desktop_PC_Pentium_4.jpeg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/win2000/gallery/02-ibm-netvista-a21i-a21i-front.webp",
+          "alt": "Front view of an IBM NetVista A21i desktop computer, showing the beige chassis and front panel",
+          "caption": "The NetVista A21i, a compact business desktop, represented IBM's commitment to affordable, reliable systems for enterprise deployment.",
+          "author": "The Serial Port",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_NetVista_A21i_(a21i_front).jpeg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1381
+        },
+        {
+          "src": "/posters/win2000/gallery/03-compaq-deskpro-en-c300a-img-5581.webp",
+          "alt": "A Compaq Deskpro EN C300A desktop computer photographed from the front, showing the silver-gray chassis and front panel",
+          "caption": "The Compaq Deskpro EN series brought enterprise-grade construction and expansion slots to mid-range Windows 2000 deployments.",
+          "author": "The Serial Port",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_EN_C300A_(IMG_5581).jpeg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1200,
+          "height": 1600
+        },
+        {
+          "src": "/posters/win2000/gallery/04-compaq-deskpro-en-c300a-img-5582.webp",
+          "alt": "Side angle view of a Compaq Deskpro EN C300A, showing the case profile and ventilation design",
+          "caption": "Built for workgroup and office environments, the Deskpro EN emphasized thermal management and modular upgrade paths.",
+          "author": "The Serial Port",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_EN_C300A_(IMG_5582).jpeg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        }
+      ]
+    }
   },
   "win311": {
     "title": "Windows 3.11",
@@ -4684,7 +5142,81 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/win311/gallery/01-escom-greymate-486-lid-closed.webp",
+          "alt": "A sealed Escom Greymate 486 tower system unit with beige plastic case",
+          "caption": "The Escom Greymate 486, a tower-case system representing the mid-1990s standard configuration for Windows 3.11 in European offices.",
+          "author": "Tech for PC & Mac",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Escom_Greymate_486_lid_closed.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1120,
+          "height": 624
+        },
+        {
+          "src": "/posters/win311/gallery/02-escom-greymate-486-lid-open.webp",
+          "alt": "An Escom Greymate 486 with the side panel removed, showing internal components",
+          "caption": "The open chassis reveals the 486 processor, ISA expansion slots, and memory architecture that ran Windows for Workgroups 3.11.",
+          "author": "Tech for PC & Mac",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Escom_Greymate_486_lid_open.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1080,
+          "height": 1080
+        },
+        {
+          "src": "/posters/win311/gallery/03-deskpro-386s.webp",
+          "alt": "A Compaq DeskPro 386S tower system unit with beige plastic case",
+          "caption": "The Compaq DeskPro 386S, a standard desktop configuration from the 386 era that provided the processing power for Windows 3.x.",
+          "author": "MBlairMartin",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:DeskPro_386S.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1513
+        },
+        {
+          "src": "/posters/win311/gallery/04-compaq-deskpro-386-16mhz.webp",
+          "alt": "A Compaq Deskpro 386 16MHz tower system, photographed against a plain background",
+          "caption": "The Compaq Deskpro 386 at 16 MHz, representing the era when 386 processors became standard in business desktops running Windows 3.11.",
+          "author": "Tecnoxarxa",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_386_16Mhz.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/win311/gallery/05-confident-system-720-personal-computer-in-finland-20200125-002.webp",
+          "alt": "A Confident System-720 tower computer with beige case",
+          "caption": "The Confident System-720, a regional European PC variant from the 1990s showing how desktop computing hardware was manufactured and configured beyond the major OEMs.",
+          "author": "Methem (Mikko J. Putkonen)",
+          "license": "CC BY 4.0",
+          "licenseId": "cc-by-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Confident_System-720_personal_computer_in_Finland_20200125_002.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1200,
+          "height": 1600
+        }
+      ]
+    }
   },
   "win95": {
     "title": "Windows 95",
@@ -4805,7 +5337,81 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/win95/gallery/01-20230425-161207-re-pc-hp-pavilion-6335-microsoft-windows-95.webp",
+          "alt": "An HP Pavilion 6335 desktop computer running Windows 95, showing the beige tower case typical of mid-1990s systems",
+          "caption": "The HP Pavilion 6335, a mid-1990s home and office desktop, exemplified the mass-market PCs that made Windows 95 ubiquitous.",
+          "author": "Gayest Frogs",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:20230425_161207_RE-PC_-_HP_Pavilion_6335,_Microsoft_Windows_95.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/win95/gallery/02-windows-95-installation-disks-2025-03-01.webp",
+          "alt": "A complete set of Windows 95 installation floppy disks and CD-ROM media, showing the original retail packaging",
+          "caption": "Windows 95 shipped initially on floppy disks, requiring multiple 3.5-inch media for installation on computers without CD-ROM drives.",
+          "author": "Asanagi",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Windows_95_installation_disks_2025-03-01.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 900
+        },
+        {
+          "src": "/posters/win95/gallery/03-gateway-2000-p5-120-front-view.webp",
+          "alt": "A Gateway 2000 P5-120, a beige desktop tower featuring a Pentium 120 MHz processor, photographed from the front",
+          "caption": "The Gateway 2000 P5-120 brought Pentium performance to the mass market, exemplifying the systems Windows 95 was designed for.",
+          "author": "Jim Leonard",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gateway_2000_P5-120_front_view.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 512,
+          "height": 1104
+        },
+        {
+          "src": "/posters/win95/gallery/04-pc-compaq-prolinea-466.webp",
+          "alt": "A Compaq ProLinea 466 desktop computer, a beige tower system from the early-to-mid 1990s",
+          "caption": "The Compaq ProLinea 466 brought 486-class performance to business offices and schools during Windows 95's launch year.",
+          "author": "Jamshid Nurkulov",
+          "license": "CC BY 4.0",
+          "licenseId": "cc-by-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:PC_Compaq_ProLinea_466.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/win95/gallery/05-gateway-2000.webp",
+          "alt": "A Gateway 2000 desktop computer system, showing the characteristic beige tower case of the early 1990s",
+          "caption": "Gateway 2000, the PC maker famous for mail-order direct sales to consumers, became a household name alongside Windows 95.",
+          "author": "MBlairMartin",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gateway_2000.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1307,
+          "height": 1425
+        }
+      ]
+    }
   },
   "win98se": {
     "title": "Windows 98 Second Edition",
@@ -4913,7 +5519,67 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/win98se/gallery/01-dell-dimension-2100-d2100-1.webp",
+          "alt": "A Dell Dimension 2100 desktop computer, a beige tower system from the late 1990s, photographed against a neutral background",
+          "caption": "The Dell Dimension 2100, a budget commodity desktop of 2001, sold in the final years when Windows 98 SE was still offered alongside its successors.",
+          "author": "The Serial Port",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dell_Dimension_2100_(D2100_1).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1020
+        },
+        {
+          "src": "/posters/win98se/gallery/02-compaq-presario-5000.webp",
+          "alt": "A Compaq Presario 5000 desktop computer tower, a beige system from the late 1990s, shown from the front",
+          "caption": "The Compaq Presario 5000 series defined late-1990s consumer desktop aesthetics and hardware configuration.",
+          "author": "Erickarroqui",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Presario_5000.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1200,
+          "height": 1600
+        },
+        {
+          "src": "/posters/win98se/gallery/03-compaq-presario-top-down.webp",
+          "alt": "A top-down view of a Compaq Presario desktop computer, showing the beige tower case from above",
+          "caption": "A Compaq Presario photographed from above reveals the compact rectangular form factor standard to PCs of the Windows 98 era.",
+          "author": "Rderijcke",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Presario_top_down.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/win98se/gallery/04-packard-bell-computer-1.webp",
+          "alt": "A Packard Bell desktop computer, a beige tower system from the late 1990s, photographed from the front",
+          "caption": "Packard Bell computers were ubiquitous in home and small-office environments of the late 1990s, built on standard PC architecture.",
+          "author": "Alan_D",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Packard_Bell_computer_(1).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1200,
+          "height": 1600
+        }
+      ]
+    }
   },
   "winxp": {
     "title": "Windows XP",
@@ -5021,7 +5687,95 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/winxp/gallery/01-ibm-thinkcentre-a30-8191.webp",
+          "alt": "An IBM ThinkCentre A30 desktop computer in black, photographed from a three-quarter angle showing the compact form factor",
+          "caption": "The IBM ThinkCentre A30 brought the ThinkPad design language to desktops, offering business users a sleek alternative to beige tower cases.",
+          "author": "Piotr Doroszewski",
+          "license": "CC BY 4.0",
+          "licenseId": "cc-by-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_ThinkCentre_A30_(8191).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1065
+        },
+        {
+          "src": "/posters/winxp/gallery/02-ibm-thinkcentre-a30-img-4399.webp",
+          "alt": "Front-facing view of an IBM ThinkCentre A30 desktop, showing the black chassis and front panel controls",
+          "caption": "ThinkCentre systems delivered Windows XP with the durability and serviceability that defined IBM's professional imaging.",
+          "author": "The Serial Port",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_ThinkCentre_A30_(IMG_4399).jpeg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/winxp/gallery/03-ibm-thinkcentre-a50-1.webp",
+          "alt": "An IBM ThinkCentre A50 desktop computer in black, photographed from a three-quarter view",
+          "caption": "The A50 generation refined the desktop ThinkCentre design, shipping with upgraded processors and integrated graphics for the Windows XP era.",
+          "author": "The Serial Port",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_thinkcentre_a50_1.jpeg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1297
+        },
+        {
+          "src": "/posters/winxp/gallery/04-ibm-thinkpad-a31p-transnote-and-two-workpads.webp",
+          "alt": "An IBM ThinkPad A31p laptop positioned with two smaller computing devices, all in black, photographed from above",
+          "caption": "The ThinkPad A31p, a professional-class mobile workstation, brought Windows XP performance to designers, engineers, and road warriors.",
+          "author": "FAndrey",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_ThinkPad_A31p,_transNote_and_two_WorkPads.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1066,
+          "height": 1600
+        },
+        {
+          "src": "/posters/winxp/gallery/05-dell-latitude-d610.webp",
+          "alt": "A Dell Latitude D610 laptop photographed in three-quarter view, showing the silver chassis and keyboard",
+          "caption": "Dell's Latitude D610 defined enterprise mobility for Windows XP deployments, balancing performance, durability, and battery life.",
+          "author": "zencat7",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dell_Latitude_D610.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/winxp/gallery/06-dell-inspiron-6000-and-latitude-d610.webp",
+          "alt": "Two Dell laptops side-by-side, a consumer Inspiron 6000 on the left and an enterprise Latitude D610 on the right",
+          "caption": "Side by side, the Inspiron for home users and Latitude for business showed Windows XP's reach across consumer and enterprise markets.",
+          "author": "Craig Wyzik from Olympia, WA, USA",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dell_Inspiron_6000_and_Latitude_D610.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1148
+        }
+      ]
+    }
   }
 } as const satisfies Record<string, PosterDoc>;
 

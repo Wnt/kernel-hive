@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "nt351",
+  "images": [
+    {
+      "commonsFile": "File:DEC AlphaStation 600A (cropped).jpg",
+      "alt": "A DEC AlphaStation 600A workstation, a beige tower case with front-panel drive bays",
+      "caption": "NT 3.51 was never an x86-only system: the AlphaStation 600A ran it natively on DEC's 64-bit Alpha AXP processor, one of three non-Intel architectures the release supported.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:AlphaStation 500 400 (4139803972).jpg",
+      "alt": "A DEC AlphaStation 500/400 desktop workstation case",
+      "caption": "Alpha workstations like this 500/400 targeted engineering and scientific users who needed more integer and floating-point throughput than any Pentium of 1995 could offer.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Digital AlphaStation 200 (1).jpg",
+      "alt": "A Digital AlphaStation 200 desktop computer with its DEC branding visible",
+      "caption": "The entry-level AlphaStation 200 brought RISC performance to NT desktops at a price closer to a high-end PC, part of Digital's push to make Alpha a mainstream NT platform.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:DEC AlphaServer 1000A 5-400.jpg",
+      "alt": "A DEC AlphaServer 1000A tower server case with front bezel and drive bays",
+      "caption": "On the server side, the AlphaServer 1000A ran Windows NT Server 3.51 alongside Alpha's native OpenVMS and Digital Unix, courting departments that needed one box for both.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:DECAlphaServer2100APed.jpg",
+      "alt": "A DEC AlphaServer 2100A pedestal server case, tall and beige with a locking front door",
+      "caption": "The pedestal-mount AlphaServer 2100A scaled Alpha further up, into the multiprocessor server tier NT 3.51 could address thanks to its portable, hardware-abstracted kernel.",
+      "role": "photo"
+    }
+  ],
+  "adLinks": [
+    {
+      "title": "DEC AlphaServer 1000A System — sales brochure (scan)",
+      "url": "https://www.bitsavers.org/pdf/dec/brochures/DEC-AlphaServer-1000A-System.pdf",
+      "source": "bitsavers.org"
+    }
+  ]
+}

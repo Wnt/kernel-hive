@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "win2000",
+  "images": [
+    {
+      "src": "/posters/win2000/gallery/01-ibm-netvista-desktop-pc-pentium-4.webp",
+      "alt": "An IBM NetVista desktop PC with a flat-panel monitor, a beige tower case with front-facing ports",
+      "caption": "The IBM NetVista, a business-class desktop system shipping with Windows 2000 and Intel Pentium 4 processors, defines the corporate workstation of the early 2000s.",
+      "author": "https://www.flickr.com/photos/brownpau",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_NetVista_Desktop_PC_Pentium_4.jpeg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2b4d94b48929fb7e18357f5dd086c04891692f771b3f97585a2f6c17c6938d3c",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/win2000/gallery/02-ibm-netvista-a21i-a21i-front.webp",
+      "alt": "Front view of an IBM NetVista A21i desktop computer, showing the beige chassis and front panel",
+      "caption": "The NetVista A21i, a compact business desktop, represented IBM's commitment to affordable, reliable systems for enterprise deployment.",
+      "author": "The Serial Port",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:IBM_NetVista_A21i_(a21i_front).jpeg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "3635bc7478110a2ba1f4d230b9daddc324e5ab7836989615195be778de2f4eea",
+      "width": 1600,
+      "height": 1381
+    },
+    {
+      "src": "/posters/win2000/gallery/03-compaq-deskpro-en-c300a-img-5581.webp",
+      "alt": "A Compaq Deskpro EN C300A desktop computer photographed from the front, showing the silver-gray chassis and front panel",
+      "caption": "The Compaq Deskpro EN series brought enterprise-grade construction and expansion slots to mid-range Windows 2000 deployments.",
+      "author": "The Serial Port",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_EN_C300A_(IMG_5581).jpeg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "dd2ec66fcf6c110cbc1bef33e4b8f31a2506535603dd4a3718ca166f3cfcde99",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/win2000/gallery/04-compaq-deskpro-en-c300a-img-5582.webp",
+      "alt": "Side angle view of a Compaq Deskpro EN C300A, showing the case profile and ventilation design",
+      "caption": "Built for workgroup and office environments, the Deskpro EN emphasized thermal management and modular upgrade paths.",
+      "author": "The Serial Port",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Deskpro_EN_C300A_(IMG_5582).jpeg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "5f17d3df1c44dd1ef67531e86bc143ebfbd99282e197497379ad769a464efb24",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}
