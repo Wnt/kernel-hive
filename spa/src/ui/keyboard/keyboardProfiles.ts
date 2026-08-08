@@ -228,33 +228,37 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     moreRows: [fkeyRow(1, 8)],
   },
 
-  // Plus/4: the c64 row plus the thing this machine is actually FOR. Its four
-  // ROM applications are reached only through the suite's own command prompt,
-  // which is opened with C= + C and closes again after one command — so every
-  // module switch needs the Commodore key, and on a Mac, a PC or a phone there
-  // is no such key (it is Tab, which nobody guesses). These three buttons send
-  // the whole documented sequence as one tap: C= + C, then "to Word" / "to
-  // Calculator" / "to File manager", then RETURN. Verified end to end on the
-  // live tile.
+  // Plus/4: the c64 row plus the thing this machine is actually FOR — its four
+  // applications in ROM. THE ORDER OF THESE BUTTONS IS THE ORDER A VISITOR USES
+  // THEM. The tile rests on the machine's power-on screen, which prints
+  // "3-PLUS-1 ON KEY F1", so the first button does exactly that; the next three
+  // switch module once the suite is up.
+  //
+  // Each of those three has to open the suite's command prompt first, and that
+  // needs the Commodore key — which does not exist on a Mac, a PC or a phone
+  // (it is Tab under VICE's symbolic keymap, which nobody would guess). So the
+  // whole documented sequence rides in one macro: C= + C, then "to Word" / "to
+  // Calculator" / "to File manager", then RETURN. The sequences are the ones
+  // scripts/build-guests/plus4.sh proves against the live guest on every build.
   plus4: {
     family: 'plus4',
     rows: [[
+      macro('suite', '3-PLUS-1', [...press(F(1)), ...press(XK.Return)],
+        { hint: 'F1 then RETURN — what the power-on screen tells you to press' }),
       macro('to-word', 'Word', [...CBM_C, ...press(0x74), ...press(0x77), ...press(XK.Return)],
         { hint: 'C= C then tw — the ROM word processor' }),
       macro('to-calc', 'Calc', [...CBM_C, ...press(0x74), ...press(0x63), ...press(XK.Return)],
         { hint: 'C= C then tc — the ROM spreadsheet' }),
       macro('to-file', 'File', [...CBM_C, ...press(0x74), ...press(0x66), ...press(XK.Return)],
         { hint: 'C= C then tf — the ROM file manager' }),
-      tap('cbm', 'C=', XK.Tab, { hint: 'Commodore key (VICE: Tab)' }),
       tap('ret', '⏎', XK.Return),
       ...ARROWS,
     ]],
     moreRows: [[
+      tap('cbm', 'C=', XK.Tab, { hint: 'Commodore key (VICE: Tab)' }),
       tap('runstop', 'RUN/STOP', XK.Escape, { hint: 'RUN/STOP (VICE: Esc)' }),
       tap('restore', 'RESTORE', XK.Prior, { hint: 'RESTORE (VICE: PageUp)' }),
       latch('ctrl', 'Ctrl', XK.Control_L),
-      macro('suite', '3-PLUS-1', [...press(F(1)), ...press(XK.Return)],
-        { hint: 'F1 then RETURN — what the power-on screen tells you to press' }),
     ], fkeyRow(1, 8)],
   },
 

@@ -3265,8 +3265,8 @@ export const POSTERS = {
     "images": [
       {
         "src": "/posters/plus4/desktop.webp",
-        "alt": "The Plus/4's built-in spreadsheet — a yellow ruled grid on black, columns C 1 to C 3 and rows R1 to R12",
-        "caption": "A spreadsheet with no disk in the machine, because it was never on a disk. This is ROM."
+        "alt": "The Plus/4's power-on screen — COMMODORE BASIC V3.5, 60671 BYTES FREE, 3-PLUS-1 ON KEY F1, READY",
+        "caption": "The second line is the whole argument for this machine: an office suite is one keypress away, and it is already inside the computer."
       }
     ],
     "blocks": [
@@ -3359,7 +3359,7 @@ export const POSTERS = {
         "runs": [
           {
             "kind": "text",
-            "text": "The spreadsheet, live, with the cursor in cell R1C1. The row and column headings, the status line and the command line at the bottom are all the machine's own."
+            "text": "The machine exactly as it wakes up, and its second line is doing something no other computer here does: `3-PLUS-1 ON KEY F1` is the ROM telling you that a word processor, a spreadsheet, a database and a graphing package are one keypress away."
           }
         ]
       },
@@ -3368,7 +3368,59 @@ export const POSTERS = {
         "runs": [
           {
             "kind": "text",
-            "text": "The applications are reached through a command prompt the suite opens when you hold the Commodore key and press C; from there `tw`, `tc` and `tf` move to the word processor, the calculator and the file manager. The exhibit's on-screen keyboard has a button for each, because no modern keyboard has a Commodore key on it."
+            "text": "Press it — or the exhibit's "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "3-PLUS-1"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " button — and the suite opens in the word processor. From inside, hold the Commodore key and press C to get a one-line command prompt, then `tw`, `tc` or `tf` for the word processor, the calculator or the file manager. The prompt runs one command and closes, so each switch needs that combination again; the on-screen keyboard's "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Word"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Calc"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " and "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "File"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " buttons send the whole thing at a tap, because no modern keyboard has a Commodore key on it."
           }
         ]
       },

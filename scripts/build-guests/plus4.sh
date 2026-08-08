@@ -37,14 +37,20 @@
 #   is no persistent chooser state to bake into, and every module switch needs
 #   the Commodore key.
 #
-#   That is a problem for a visitor on a Mac, a PC or a phone, where no
-#   Commodore key exists (it is Tab under VICE's symbolic keymap, which is not
-#   discoverable). The exhibit therefore solves the choice OUTSIDE the guest:
-#   the SPA's plus4 on-screen keyboard carries one-tap Word / Calc / File
-#   buttons, each sending this exact sequence as a single macro —
-#   C=(hold) c, then tw / tc / tf, then RETURN — plus a labelled C= key for
-#   anyone who wants to drive it by hand. The golden is baked in the
-#   SPREADSHEET, the module that shows at a glance what this machine had in ROM.
+#   THE GOLDEN IS THE MACHINE'S OWN POWER-ON SCREEN, nothing curated. An earlier
+#   version baked inside the suite, resting in the spreadsheet, and it was wrong
+#   on the exhibit floor: a visitor arrived in the middle of one application,
+#   with no idea what it was, how it got there or how to leave. The power-on
+#   screen is both the machine's honest empty state AND its own launcher — the
+#   ROM prints "3-PLUS-1 ON KEY F1", which tells the visitor exactly what to do
+#   next. Nothing the gallery could invent says it better.
+#
+#   The choice of application is then made OUTSIDE the guest, because the C= key
+#   a module switch needs does not exist on a Mac, a PC or a phone (it is Tab
+#   under VICE's symbolic keymap, which nobody would guess). The SPA's plus4
+#   on-screen keyboard carries a 3-PLUS-1 button (F1, RETURN — what the screen
+#   asks for) and then one-tap Word / Calc / File buttons, each sending
+#   C=(hold) c, then tw / tc / tf, then RETURN as a single macro.
 #
 #   KNOWN COSMETIC ARTEFACT: under VICE's symbolic keymap, C= + C *also*
 #   delivers a literal "c" — measured 0 clean chords out of 11 across 0.30 s and
@@ -232,16 +238,22 @@ def chord(modifier, qcode):
     time.sleep(GAP)
 
 
-tap("f1")
-time.sleep(0.6)
-tap("ret")
-time.sleep(6)
-chord("tab", "c")  # C= is Tab under VICE's symbolic keymap
-time.sleep(2.5)
-for qcode in ("t", "c", "ret"):  # "to Calculator"
-    tap(qcode)
-time.sleep(3)
-print("fixture: 3-plus-1 spreadsheet with the C> chooser open")
+mode = sys.argv[2] if len(sys.argv) > 2 else "--all"
+
+if mode in ("--all", "--suite-only"):
+    tap("f1")  # the ROM's own hint: "3-PLUS-1 ON KEY F1"
+    time.sleep(0.6)
+    tap("ret")
+    time.sleep(6)
+    print("3-plus-1 entered (word processor)")
+
+if mode in ("--all", "--calc-only"):
+    chord("tab", "c")  # C= is Tab under VICE's symbolic keymap
+    time.sleep(2.5)
+    for qcode in ("t", "c", "ret"):  # "to Calculator"
+        tap(qcode)
+    time.sleep(3)
+    print("switched to the spreadsheet")
 EOS
 
 repair_plus4_roms() {
@@ -431,59 +443,50 @@ sleep 6
 wait_for_basic ready-basic-prompt
 guest "pgrep -x xplus4 >/dev/null" || die "xplus4 exited after cold boot"
 
-log "driving the fixture: F1+RETURN -> 3-plus-1 -> C= C chooser -> tc spreadsheet"
-python3 "$FIXTURE_DRIVER" "$QMP"
-sleep 2
-wait_for_spreadsheet ready-before-golden
-
+# NOTHING IS TYPED BEFORE THE BAKE. The fixture is the untouched power-on
+# screen; the driver below is kept only to prove, after the bake, that the
+# route it advertises actually works.
+capture ready-before-golden
 bake_golden
 sleep 3
-wait_for_spreadsheet golden-restored
+wait_for_basic golden-restored
 
 # Keyboard proof runs AFTER the bake, against the restored fixture, so nothing
-# it types can ever reach the golden. It drives the REAL visitor action -- the
-# same sequence the SPA's "Word" button sends -- and asserts the module actually
-# changed: C= + C, then tw, then RETURN must leave the spreadsheet for the word
-# processor. An earlier version asserted only "the framebuffer changed" and
-# passed while doing nothing of the sort: its keystrokes went into the cell
-# editor and entered a 0 in R1C1. A proof that cannot fail is not a proof.
+# it types can ever reach the golden. It walks the WHOLE route the exhibit
+# advertises -- F1+RETURN into the suite (what the power-on screen tells the
+# visitor, and what the SPA's 3-PLUS-1 button sends), then C= + C and tc (what
+# its Calc button sends) -- and asserts each step by what is actually on the
+# screen: the suite is black where BASIC is a white page, and the spreadsheet's
+# ruled grid is an order of magnitude more ink than an empty document. An
+# earlier version asserted only "the framebuffer changed" and passed while its
+# keystrokes went into the cell editor and typed a 0 into R1C1. A proof that
+# cannot fail is not a proof.
 keyboard_proof() {
   local base_hash proof_hash
-  local ink
-  python3 - "$QMP" <<'PY'
-import json, socket, sys, time
-sock = socket.socket(socket.AF_UNIX); sock.settimeout(60); sock.connect(sys.argv[1])
-conn = sock.makefile("rwb"); conn.readline()
-def cmd(execute, **args):
-    payload = {"execute": execute}
-    if args: payload["arguments"] = args
-    conn.write((json.dumps(payload) + "\n").encode()); conn.flush()
-    while True:
-        msg = json.loads(conn.readline())
-        if "return" in msg or "error" in msg: return msg
-cmd("qmp_capabilities")
-def key(q, down):
-    cmd("input-send-event", events=[{"type": "key", "data": {"down": down, "key": {"type": "qcode", "data": q}}}])
-def tap(q):
-    key(q, True); time.sleep(0.12); key(q, False); time.sleep(0.14)
-key("tab", True); time.sleep(0.30)          # C= held, then C: open the prompt
-key("c", True); time.sleep(0.15); key("c", False); time.sleep(0.10)
-key("tab", False); time.sleep(2.0)
-for k in ("t", "w", "ret"):                  # "to Word"
-    tap(k)
-PY
-  sleep 4
-  capture keyboard-tw-wordprocessor
-  ink=$(ppmhist "$EVIDENCE/keyboard-tw-wordprocessor.ppm" 2>/dev/null |
+  local white ink
+  python3 "$FIXTURE_DRIVER" "$QMP" --suite-only
+  sleep 3
+  capture keyboard-1-suite
+  white=$(ppmhist "$EVIDENCE/keyboard-1-suite.ppm" 2>/dev/null |
+    awk '$1 > 200 && $2 > 200 && $3 > 200 { sum += $5 } END { print sum + 0 }')
+  [ "$white" -lt 20000 ] ||
+    die "F1+RETURN did not enter 3-plus-1 (white=$white; still the BASIC page)"
+  log "keyboard proof 1/2: F1+RETURN entered the suite (white=$white)"
+
+  python3 "$FIXTURE_DRIVER" "$QMP" --calc-only
+  sleep 3
+  capture keyboard-2-spreadsheet
+  ink=$(ppmhist "$EVIDENCE/keyboard-2-spreadsheet.ppm" 2>/dev/null |
     awk '$1 + $2 + $3 > 60 { sum += $5 } END { print sum + 0 }')
-  [ "$ink" -lt 25000 ] ||
-    die "C= C then 'tw' did not leave the spreadsheet (ink=$ink; the grid is still drawn)"
-  log "keyboard proof: C= C + tw reached the word processor (ink=$ink)"
+  [ "$ink" -gt 25000 ] ||
+    die "C= C then 'tc' did not reach the spreadsheet (ink=$ink; no grid drawn)"
+  log "keyboard proof 2/2: C= C + tc reached the spreadsheet (ink=$ink)"
+
   hmp "loadvm golden" >/dev/null
   sleep 3
-  wait_for_spreadsheet golden-restored-after-keyboard
+  wait_for_basic golden-restored-after-keyboard
 }
 keyboard_proof
 
-log "PASS: Plus/4 3-plus-1 spreadsheet + chooser, keyboard path, quiet console, golden"
+log "PASS: Plus/4 power-on fixture, 3-plus-1 route proven, quiet console, golden"
 log "tile=$TILE vmid=$VMID udp=$UDP ssh=$SSH_PORT web=$WEB_PORT evidence=$EVIDENCE"

@@ -1,16 +1,16 @@
 # Commodore Plus/4 (PAL) — gallery tile notes (udp/54086)
 
 **Guest:** a captured **Debian 12 x86_64 kiosk** running **VICE `xplus4`**,
-emulating a **PAL Commodore Plus/4** curated into the **3-plus-1** office suite
-that lives in the machine's ROM. An **"emulator bridge"** tile — streamhost
+emulating a **PAL Commodore Plus/4** at its power-on screen, one keypress from
+the **3-plus-1** office suite that lives in the machine's ROM. An **"emulator bridge"** tile — streamhost
 captures the Linux framebuffer + AC97 audio exactly like every other tile. See
 **`streamhost/docs/BRIDGE.md`**.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` — already contains the
 whole VICE family.
 **Build script (tile):** `scripts/build-guests/plus4.sh` — thin overlay + kiosk
-`launch.sh` + ROM repair + quiet console + fixture drive + golden bake +
-framebuffer/keyboard proof, fully automated, ~2 minutes.
+`launch.sh` + ROM repair + quiet console + golden bake + a two-step
+framebuffer proof of the suite route, fully automated, ~2 minutes.
 **Tile dir (host):** `/data/vms/streamhost/tiles/plus4/`.
 **Registry entry:** `registry/tiles/plus4.json` (slot 86, udp 54086, VMID 222,
 ssh hostfwd 127.0.0.1:5822).
@@ -28,9 +28,20 @@ no external media, no licensed image and no `check-assets.sh` row.
 
 ## The fixture, and how a visitor drives it
 
-The golden rests **inside the suite, in the spreadsheet**: a yellow ruled grid
-on black, cell R1C1. Everything used to get there is the machine's own UI,
-verified on a clone by framebuffer:
+The golden is **the machine's own untouched power-on screen** —
+`COMMODORE BASIC V3.5 / 60671 BYTES FREE / 3-PLUS-1 ON KEY F1 / READY.` —
+black on a white page inside a lavender border. Nothing is curated and nothing
+is typed into it.
+
+**An earlier golden was curated INSIDE the suite, resting in the spreadsheet,
+and it was wrong.** On the exhibit floor a visitor arrived in the middle of one
+application with no idea what it was, how it got there, or how to leave: it was
+neither the machine's honest empty state nor a launcher. The power-on screen is
+both, because the ROM's own second line tells you which key opens the suite.
+That is the general lesson: prefer the state the machine itself chose, and put
+the affordances in the exhibit UI around it.
+
+From there, everything is the machine's own UI, verified by framebuffer:
 
 | Step | Keys | Result |
 |---|---|---|
@@ -47,12 +58,19 @@ Commodore key again.
 ### Which key is the Commodore key
 
 **`Tab`**, under VICE's symbolic keymap. That is not discoverable, and on a
-phone there is no Tab at all, so the exhibit does not rely on it: the SPA's
-**`plus4` on-screen keyboard profile** carries one-tap **Word / Calc / File**
-buttons, each sending the whole documented sequence as a single macro (`C=`
-held, `c`, then `tw`/`tc`/`tf`, then `RETURN`), plus a labelled `C=` key and a
-`3-PLUS-1` button (`F1`,`RETURN`) for anyone who has left the suite. A visitor
-on a Mac, a PC or a phone therefore never needs to know about Tab.
+phone there is no Tab at all, so the exhibit does not rely on it. The SPA's
+**`plus4` on-screen keyboard profile** puts the whole route on its base row, in
+the order a visitor uses it:
+
+| Button | Sends | From |
+|---|---|---|
+| `3-PLUS-1` | `F1`, `RETURN` | the power-on screen |
+| `Word` | `C=`+`c`, `t`, `w`, `RETURN` | inside the suite |
+| `Calc` | `C=`+`c`, `t`, `c`, `RETURN` | inside the suite |
+| `File` | `C=`+`c`, `t`, `f`, `RETURN` | inside the suite |
+
+with the bare `C=` key on the overflow row for anyone driving it by hand. Two
+taps reach any application from the fixture, on any platform.
 
 ### Known cosmetic artefact
 
@@ -105,25 +123,25 @@ Evidence in `/data/vms/streamhost/tiles/plus4/evidence/`:
 
 | Artifact | Shows |
 |---|---|
-| `ready-basic-prompt.png` | the untouched cold boot — `COMMODORE BASIC V3.5 / 3-PLUS-1 ON KEY F1` |
-| `ready-before-golden.png` | the curated fixture: the 3-plus-1 spreadsheet, the frame that was baked |
-| `keyboard-tw-wordprocessor.png` | the real visitor action after the bake — `C=`+`C` then `tw` — landing in the word processor |
-| `golden-restored-after-keyboard.png` | `loadvm golden` returning to the exact baked spreadsheet |
+| `ready-before-golden.png` | the untouched power-on screen — the frame that was baked |
+| `keyboard-1-suite.png` | `F1`+`RETURN` after the bake, leaving the white BASIC page for the suite |
+| `keyboard-2-spreadsheet.png` | `C=`+`C` then `tc`, drawing the spreadsheet grid |
+| `golden-restored-after-keyboard.png` | `loadvm golden` returning to the exact baked power-on screen |
 
-The keyboard proof asserts the **module actually changed** (ink count drops
-from the spreadsheet's ~36k to the word processor's ~3k), not merely that the
-framebuffer differed. An earlier version asserted only "something changed" and
-passed while its keystrokes went into the cell editor and typed a `0` into
-R1C1 — a proof that cannot fail is not a proof.
+The proof walks the **whole advertised route** and asserts each step by what is
+on the screen — the suite is black where BASIC is a white page (white pixels
+20000 → 131), and the spreadsheet's grid is an order of magnitude more ink than
+an empty document (29713 > 25000). An earlier version asserted only "the
+framebuffer changed" and passed while its keystrokes went into the cell editor
+and typed a `0` into R1C1 — a proof that cannot fail is not a proof.
 
 ## Cold boot and rollback
 
-Zero input is genuine: the ROM reaches its BASIC prompt unattended. Note that a
-**cold boot lands at BASIC, not in the suite** — the suite is a curated state
-that only `loadvm golden` restores, which is exactly why `resetMode` is
-`loadvm`. See `scripts/coldboot/plus4-zero-input-prep.md`.
+Zero input is genuine, and since the golden is now the power-on screen itself,
+a cold boot and a restore reach the same place. See
+`scripts/coldboot/plus4-zero-input-prep.md`.
 
 To withdraw the tile: `systemctl stop streamhost@plus4`, set `enabled: false`,
 regenerate, republish the two runtime documents. To rebuild:
 `scripts/build-guests/plus4.sh --force`, which replaces `overlay.qcow2` and so
-**destroys the golden inside it**, then re-curates and re-proves a new one.
+**destroys the golden inside it**, then bakes and re-proves a new one.
