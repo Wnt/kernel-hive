@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "riscos",
+  "images": [
+    {
+      "commonsFile": "File:Acorn Archimedes A310 with mouse and keyboard.jpg",
+      "alt": "An Acorn Archimedes A310 desktop workstation with its original mouse and keyboard",
+      "caption": "The Acorn Archimedes A310, Acorn's entry into the market for 32-bit desktop computers based on its own RISC processor.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:RiscPC-slice-back 01.png",
+      "alt": "Another architectural view of the RiscPC internals, showing the internal layout and component positions",
+      "caption": "The RiscPC's internal organization, documenting how Acorn arranged the RISC processor, memory, and expansion slots in a compact form.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Acorn-RiscPC-PC-Card.jpg",
+      "alt": "An Acorn RiscPC PC Card, a processor expansion module that fits into the RiscPC's PCMCIA slot",
+      "caption": "A PC Card module for the RiscPC, one of the expansion options that extended the machine's capabilities.",
+      "role": "photo"
+    }
+  ]
+}

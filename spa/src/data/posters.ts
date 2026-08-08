@@ -198,7 +198,81 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/amiga/gallery/01-amiga500-system.webp",
+          "alt": "An Amiga 500 keyboard computer with attached disk drive, photographed from above",
+          "caption": "The Amiga 500 arrived in 1987 with a Motorola 68000 processor and custom chips for graphics, sound, and animation.",
+          "author": "Bill Bertram",
+          "license": "CC BY-SA 2.5",
+          "licenseId": "cc-by-sa-2.5",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amiga500_system.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1242
+        },
+        {
+          "src": "/posters/amiga/gallery/02-commodore-amiga-a500-badge-against-black-case-34501878294.webp",
+          "alt": "A close-up view of an Amiga 500 showing the Commodore badge and wedge-shaped case in three-quarter angle",
+          "caption": "The A500 case integrated keyboard, power, and expansion in a compact wedge, designed for living rooms and bedrooms.",
+          "author": "Werner Ziegelwanger",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Amiga_A500_badge_against_black_case_(34501878294).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1065
+        },
+        {
+          "src": "/posters/amiga/gallery/03-2019-08-04-commodore-amiga-personal-computer.webp",
+          "alt": "A museum display of the Amiga 500 as a personal computer exhibit, showing the full system with peripherals",
+          "caption": "Amiga 500 systems paired with external drives and monitors became creative workstations for pixel art, music, and desktop publishing.",
+          "author": "Maksym Kozlenko",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:2019-08-04_Commodore_Amiga_personal_computer.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1265
+        },
+        {
+          "src": "/posters/amiga/gallery/04-commodore-amiga-500-retromadrid-2018.webp",
+          "alt": "An Amiga 500 shown in a museum or exhibition setting, displayed to show the machine at an angle",
+          "caption": "The Amiga's custom architecture and Workbench desktop made it a platform for serious graphic design, games, and demoscene production.",
+          "author": "AUIC Oficial",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Amiga_500_(RetroMadrid_2018).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        },
+        {
+          "src": "/posters/amiga/gallery/05-amiga-500.webp",
+          "alt": "A detailed view of an Amiga 500, showing the keyboard layout and overall design of the system",
+          "caption": "Amiga Kickstart ROM and pre-emptive multitasking in AmigaOS let applications run simultaneously, rare among 1987 home computers.",
+          "author": "Wikideas1 Original:dark_igorek",
+          "license": "CC BY 4.0",
+          "licenseId": "cc-by-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amiga_500.webp",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 810
+        }
+      ]
+    }
   },
   "amstradcpc": {
     "title": "Amstrad CPC 6128",
@@ -319,7 +393,67 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/amstradcpc/gallery/01-amstrad-cpc-6128-solo-macchina.webp",
+          "alt": "An Amstrad CPC 6128 computer displayed on a plain background",
+          "caption": "The Amstrad CPC 6128, flagship model with 128 KB RAM and built-in 3-inch disk drive.",
+          "author": "A7N8X",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amstrad_CPC_6128_solo_macchina.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 625
+        },
+        {
+          "src": "/posters/amstradcpc/gallery/02-amstrad-cpc-6128-esposto-in-fiera.webp",
+          "alt": "An Amstrad CPC 6128 on display at a computer exhibition",
+          "caption": "The CPC 6128 at a retro computing fair, showcasing its integrated keyboard and drive.",
+          "author": "A7N8X",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amstrad_CPC_6128_esposto_in_fiera.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 977
+        },
+        {
+          "src": "/posters/amstradcpc/gallery/03-amstrad-cpc-6128.webp",
+          "alt": "An Amstrad CPC 6128 home computer with beige case and integrated peripherals",
+          "caption": "The CPC 6128 in profile, the most capable entry in Amstrad's European home computer line.",
+          "author": "NaSH",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amstrad_CPC_6128.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 927,
+          "height": 826
+        },
+        {
+          "src": "/posters/amstradcpc/gallery/04-amstrad-cpc6128-keyboard-removed.webp",
+          "alt": "An Amstrad CPC 6128 with its keyboard detached, showing the main unit",
+          "caption": "A CPC 6128 with keyboard removed, revealing the compact 128 KB main unit.",
+          "author": "Jesus Abizanda",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amstrad_CPC6128,_keyboard_removed.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        }
+      ]
+    }
   },
   "android": {
     "title": "Android",
@@ -408,7 +542,67 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/android/gallery/01-htc-dream-opened.webp",
+          "alt": "A white HTC Dream smartphone with its slide-open QWERTY keyboard exposed",
+          "caption": "The HTC Dream in its slide-open configuration, revealing the QWERTY keyboard beneath the touchscreen.",
+          "author": "Marcus Sümnick",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:HTC_Dream_opened.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1269
+        },
+        {
+          "src": "/posters/android/gallery/02-htc-dream-front-view.webp",
+          "alt": "Front view of a white HTC Dream smartphone, showing the display and capacitive buttons",
+          "caption": "The HTC Dream's front face, with its 3.2-inch touchscreen and touch-sensitive navigation buttons.",
+          "author": "Marcus Sümnick",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:HTC_Dream_(front_view).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 924,
+          "height": 1600
+        },
+        {
+          "src": "/posters/android/gallery/03-htc-dream-flipside.webp",
+          "alt": "Rear view of a white HTC Dream smartphone, showing the back panel and camera",
+          "caption": "The HTC Dream's back panel and integrated camera, the first smartphone in the Android ecosystem.",
+          "author": "Marcus Sümnick",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:HTC_Dream_flipside.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 876
+        },
+        {
+          "src": "/posters/android/gallery/04-htc-dream-right-side.webp",
+          "alt": "Right side view of a white HTC Dream showing the open SD card slot",
+          "caption": "The HTC Dream's right edge with open microSD card slot, enabling storage expansion.",
+          "author": "Marcus Sümnick",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:HTC_Dream_(right_side).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 703
+        }
+      ]
+    }
   },
   "apple2": {
     "title": "Apple GEOS",
@@ -497,7 +691,81 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/apple2/gallery/01-apple-iie.webp",
+          "alt": "A beige Apple IIe computer photographed from above, showing the keyboard and case",
+          "caption": "The Apple IIe, introduced in 1983 as an enhanced revision of the original Apple II.",
+          "author": "Bilby",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_IIe.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1600
+        },
+        {
+          "src": "/posters/apple2/gallery/02-apple-platinum-iie.webp",
+          "alt": "An Apple IIe Platinum variant computer with a platinum-colored case",
+          "caption": "The IIe Platinum, a late-1980s variant with a sleeker design and improved specifications.",
+          "author": "Bilby",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_Platinum_IIe.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1600
+        },
+        {
+          "src": "/posters/apple2/gallery/03-apple-iie-disk-ii-drives-apple-monitor-ii.webp",
+          "alt": "An Apple IIe computer positioned next to two Disk II drives and an Apple Monitor II display",
+          "caption": "A complete Apple II system: the IIe, dual Disk II drives for 5.25-inch floppy storage, and an external monitor.",
+          "author": "Mystère Martin",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_IIe_%2B_Disk_II_drives_%2B_Apple_Monitor_II.JPG",
+          "sourceName": "Wikimedia Commons",
+          "width": 1200,
+          "height": 1600
+        },
+        {
+          "src": "/posters/apple2/gallery/04-apple-iie-deutsches-museum-40219954572.webp",
+          "alt": "An Apple IIe displayed in a museum case at the Deutsches Museum in Munich",
+          "caption": "The Apple IIe as a museum piece, recognizing its place in computing history.",
+          "author": "FaceMePLS from The Hague, The Netherlands",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_IIe_-_Deutsches_Museum_(40219954572).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/apple2/gallery/05-apple-museum-prague-apple-iie-enhanced-1985.webp",
+          "alt": "An Apple IIe Enhanced computer displayed in the Apple Museum in Prague",
+          "caption": "The Enhanced Apple IIe, the final major revision of the II line, on display in Prague.",
+          "author": "Benoît Prieur",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_Museum_(Prague)_Apple_IIe_Enhanced_(1985).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        }
+      ]
+    }
   },
   "aros": {
     "title": "AROS",
@@ -722,7 +990,53 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/atarist/gallery/01-atari-520-st-with-monochrome-monitor-sm-124.webp",
+          "alt": "An Atari 520ST computer with its compact SM124 monochrome monitor, shown from a three-quarter view",
+          "caption": "The 520ST paired with its matching SM124 monitor, the standard setup for high-resolution GEM desktop work and MIDI production.",
+          "author": "Felix Winkelnkemper",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_520_ST_%2B_with_monochrome_monitor_SM_124.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 826
+        },
+        {
+          "src": "/posters/atarist/gallery/02-atari-520st-tietokonemuseo.webp",
+          "alt": "A 520ST computer system displayed in a museum setting, showing the distinctive beige case and keyboard",
+          "caption": "The wedge-shaped 520ST case housed a Motorola 68000 processor and dedicated MIDI ports, making it a favorite in European music studios.",
+          "author": "MKFI",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_520ST_Tietokonemuseo.JPG",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        },
+        {
+          "src": "/posters/atarist/gallery/03-atari-520st-2102314521.webp",
+          "alt": "A museum photograph of the Atari 520ST showing the keyboard and main unit from an angled view",
+          "caption": "The integrated keyboard and processor made the ST compact and affordable, bringing the 68000 generation within reach of home users.",
+          "author": "vonguard from Oakland, Nmibia",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_520ST_(2102314521).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1061
+        }
+      ]
+    }
   },
   "c64": {
     "title": "Commodore 64 — GEOS 2.0",
@@ -830,7 +1144,53 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/c64/gallery/01-commodore-64-computer-fl.webp",
+          "alt": "A beige Commodore 64 home computer in its breadbin case, photographed from the front-left",
+          "caption": "The Commodore 64 in its original plastic case, as introduced by Commodore in 1982.",
+          "author": "Evan-Amos",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-FL.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 904
+        },
+        {
+          "src": "/posters/c64/gallery/02-commodore-64-computer-bl.webp",
+          "alt": "The back-left view of a Commodore 64 showing ports and the cartridge slot",
+          "caption": "The cartridge port and external connections at the rear of the breadbin case.",
+          "author": "Evan-Amos",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-BL.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 904
+        },
+        {
+          "src": "/posters/c64/gallery/03-commodore-64-computer-br.webp",
+          "alt": "The back-right side of the Commodore 64, showing power and video connectors",
+          "caption": "Power and video outputs enabled the 64 to connect to standard home television sets.",
+          "author": "Evan-Amos",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-BR.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 904
+        }
+      ]
+    }
   },
   "freedos": {
     "title": "FreeDOS 1.3",
@@ -1329,7 +1689,67 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/irix/gallery/01-sgi-indy-open.webp",
+          "alt": "The SGI Indy workstation with its case open, revealing the R4600 processor and graphics subsystems",
+          "caption": "The Indy's internal architecture revealed: the MIPS R4600 processor and XL framebuffer that powered its 24-bit colour display and video capture capabilities.",
+          "author": "Rules666",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:SGI_indy_open.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        },
+        {
+          "src": "/posters/irix/gallery/02-sgi-indy-front.webp",
+          "alt": "An SGI Indy workstation photographed from the front, showing its distinctive low blue-violet pizza-box chassis",
+          "caption": "The Indy's unmistakable industrial design: a low blue-violet pizza-box chassis that stood out distinctly on an engineering workbench in the 1990s.",
+          "author": "Rules666",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:SGI_indy_front.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        },
+        {
+          "src": "/posters/irix/gallery/03-sgi-indy-back.webp",
+          "alt": "Rear view of the SGI Indy showing its connector panel with video, audio, and networking ports",
+          "caption": "The rear panel of the Indy, displaying the Ethernet, video, and audio connections that made it a genuine networked Unix workstation.",
+          "author": "Rules666",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:SGI_indy_back.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        },
+        {
+          "src": "/posters/irix/gallery/04-silicon-graphics-indy.webp",
+          "alt": "A full view of the SGI Indy workstation positioned with its typical desktop configuration",
+          "caption": "The Indy in its working context, equipped to bring SGI's graphics tradition to universities, broadcast facilities, and design studios.",
+          "author": "Bilby",
+          "license": "CC BY 3.0",
+          "licenseId": "cc-by-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Silicon_Graphics_Indy.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1038
+        }
+      ]
+    }
   },
   "kolibrios": {
     "title": "KolibriOS",
@@ -1670,7 +2090,39 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/mpf2/gallery/01-multitech-microprofessor-ii-tietokonemuseo-cropped.webp",
+          "alt": "A close-up view of the Microprofessor II single-board computer and control panel",
+          "caption": "The Multitech Microprofessor II, a Taiwanese educational computer and Apple II clone, photographed at a Finnish computer museum.",
+          "author": "Multitech_Microprofessor_II_Tietokonemuseo.JPG: MKFI *Derivative work (non-creditable changes): Ubcule",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Multitech_Microprofessor_II_Tietokonemuseo_(cropped).JPG",
+          "sourceName": "Wikimedia Commons",
+          "width": 1577,
+          "height": 1349
+        },
+        {
+          "src": "/posters/mpf2/gallery/02-multitechmpf-ii.webp",
+          "alt": "A Microprofessor II with an external keyboard attached, showing the compact main unit",
+          "caption": "The MPF-II with an optional keyboard accessory, photographed at Retro Gathering in Stockholm.",
+          "author": "liftarn",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:MultitechMPF-II.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1521,
+          "height": 1600
+        }
+      ]
+    }
   },
   "msdoswin1": {
     "title": "MS-DOS 6.22 + Windows 1.0",
@@ -2210,7 +2662,95 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/openvms/gallery/01-vax-11-780-intero.webp",
+          "alt": "An early VAX 11-780 system, a large floor-standing cabinet with the characteristic tall profile",
+          "caption": "The VAX 11-780, the original high-end VAX that established the architecture in 1978.",
+          "author": "Emiliano Russo, Associazione Culturale VerdeBinario",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:VAX_11-780_intero.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1188,
+          "height": 1600
+        },
+        {
+          "src": "/posters/openvms/gallery/02-vax-11-780-cpu-backplane.webp",
+          "alt": "A CPU backplane from a VAX 11-780, showing the complex card connector array and circuitry",
+          "caption": "The processor and memory backplane of the VAX 11-780, the electrical fabric that carried the 32-bit architecture.",
+          "author": "Mbrickn",
+          "license": "CC BY 4.0",
+          "licenseId": "cc-by-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:VAX_11_780_CPU_Backplane.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "src": "/posters/openvms/gallery/03-vax-4000-300-en-r400x.webp",
+          "alt": "A VAX 4000-300, a compact desktop VAX system in a low grey cabinet",
+          "caption": "The VAX 4000-300, a later desktop implementation of the VAX architecture, bringing minicomputer computing to smaller spaces.",
+          "author": "Wikidevnl",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:VAX_4000-300_en_R400X.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        },
+        {
+          "src": "/posters/openvms/gallery/04-vax-11-780-2.webp",
+          "alt": "Another view of a VAX 11-780 floor-standing cabinet system",
+          "caption": "Another angle on the VAX 11-780, showing the cabinet form factor that housed DEC's architectural landmark.",
+          "author": "Emiliano Russo, Associazione Culturale VerdeBinario",
+          "license": "Public domain",
+          "licenseId": "pd",
+          "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vax_11-780_(2).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1280,
+          "height": 960
+        },
+        {
+          "src": "/posters/openvms/gallery/05-vax-11-750-donostiako-informatika-fakultatea-1988-01.webp",
+          "alt": "A VAX 11-750 system photographed in a museum or academic setting, a tall cabinet with front panel controls",
+          "caption": "The VAX 11-750, a mid-range VAX model, preserved in an academic computer collection.",
+          "author": "Donostiako Informatika Fakultatea, eta Eduardo Mena",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:VAX_11-750_Donostiako_Informatika_Fakultatea_1988_01.png",
+          "sourceName": "Wikimedia Commons",
+          "width": 1259,
+          "height": 803
+        },
+        {
+          "src": "/posters/openvms/gallery/06-computer-history-museum-vax-11-780-313530644.webp",
+          "alt": "A VAX 11-780 on museum display at the Computer History Museum, showing the full cabinet profile",
+          "caption": "The VAX 11-780 at the Computer History Museum, a monument to the minicomputer era and the architecture that survived it.",
+          "author": "Takuya Oikawa",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Computer_History_Museum_VAX_11_780_(313530644).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        }
+      ]
+    }
   },
   "os2warp": {
     "title": "OS/2 Warp 4",
@@ -2426,7 +2966,67 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/postmarketos/gallery/01-pinephone-pro-plasma-mobile.webp",
+          "alt": "PinePhone Pro displaying Plasma Mobile interface on its screen",
+          "caption": "The PinePhone Pro running Plasma Mobile, emphasizing privacy with dedicated hardware kill switches for sensors.",
+          "author": "MartijnBraam",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:PinePhone-Pro-Plasma-Mobile.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 900,
+          "height": 1600
+        },
+        {
+          "src": "/posters/postmarketos/gallery/02-pinephone-beta-edition.webp",
+          "alt": "Rendered illustration of PinePhone Beta Edition in black, angled view",
+          "caption": "The PinePhone Beta Edition, the affordable Linux smartphone bringing postmarketOS to a mass-market form factor.",
+          "author": "Funeral",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:PinePhone_Beta_Edition.png",
+          "sourceName": "Wikimedia Commons",
+          "width": 1194,
+          "height": 887
+        },
+        {
+          "src": "/posters/postmarketos/gallery/03-nokia-n900-1.webp",
+          "alt": "Nokia N900 communicator held at an angle, showing the full device with keyboard visible",
+          "caption": "The Nokia N900 internet tablet, the original postmarketOS revival target, running Linux and supporting package management.",
+          "author": "User:Ilya Voyager",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nokia_N900-1.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1218
+        },
+        {
+          "src": "/posters/postmarketos/gallery/04-nokia-n900.webp",
+          "alt": "Nokia N900 photographed from a flat angle, showing the slide-out QWERTY keyboard fully visible",
+          "caption": "The Nokia N900's slide-out QWERTY keyboard and capacitive touchscreen, 2009.",
+          "author": "Georgy90",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nokia_N900.JPG",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1200
+        }
+      ]
+    }
   },
   "qnx": {
     "title": "QNX Neutrino 6.5",
@@ -2966,7 +3566,53 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/riscos/gallery/01-acorn-archimedes-a310-with-mouse-and-keyboard.webp",
+          "alt": "An Acorn Archimedes A310 desktop workstation with its original mouse and keyboard",
+          "caption": "The Acorn Archimedes A310, Acorn's entry into the market for 32-bit desktop computers based on its own RISC processor.",
+          "author": "mikkohoo",
+          "license": "CC BY-SA 4.0",
+          "licenseId": "cc-by-sa-4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Acorn_Archimedes_A310_with_mouse_and_keyboard.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1068
+        },
+        {
+          "src": "/posters/riscos/gallery/02-riscpc-slice-back-01.webp",
+          "alt": "Another architectural view of the RiscPC internals, showing the internal layout and component positions",
+          "caption": "The RiscPC's internal organization, documenting how Acorn arranged the RISC processor, memory, and expansion slots in a compact form.",
+          "author": "Teewurzler",
+          "license": "CC0",
+          "licenseId": "cc0",
+          "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:RiscPC-slice-back_01.png",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 691
+        },
+        {
+          "src": "/posters/riscos/gallery/03-acorn-riscpc-pc-card.webp",
+          "alt": "An Acorn RiscPC PC Card, a processor expansion module that fits into the RiscPC's PCMCIA slot",
+          "caption": "A PC Card module for the RiscPC, one of the expansion options that extended the machine's capabilities.",
+          "author": "Flibble",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Acorn-RiscPC-PC-Card.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1066
+        }
+      ]
+    }
   },
   "sailfishos": {
     "title": "Sailfish OS",
@@ -3074,7 +3720,81 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/sailfishos/gallery/01-jolla-phone-white-top-01.webp",
+          "alt": "Jolla phone photographed from above, showing the top edge with the distinctive rounded white case",
+          "caption": "The Jolla Phone from above, with its characteristic white \"Other Half\" modular back cover.",
+          "author": "Erik Lundin",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_phone_white_top_01.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 747
+        },
+        {
+          "src": "/posters/sailfishos/gallery/02-jolla-phone-white-back-01.webp",
+          "alt": "Rear view of the Jolla phone showing the camera and white back panel",
+          "caption": "The Jolla Phone's back, highlighting its innovative modular design and swappable cover system.",
+          "author": "Erik Lundin",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_phone_white_back_01.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 894,
+          "height": 1600
+        },
+        {
+          "src": "/posters/sailfishos/gallery/03-jolla-phone-white-right-01.webp",
+          "alt": "Jolla phone viewed from the right side, showing volume buttons and the edge profile",
+          "caption": "The Jolla Phone's right edge and distinctive profile, 2013.",
+          "author": "Erik Lundin",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_phone_white_right_01.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 342
+        },
+        {
+          "src": "/posters/sailfishos/gallery/04-jolla-tablet-16928861447.webp",
+          "alt": "Jolla Tablet photographed at an angle, showing the front screen and aluminum back panel",
+          "caption": "The Jolla Tablet, extending Sailfish OS to a larger 7.85-inch form factor.",
+          "author": "Maurizio Pesce from Milan, Italia",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_Tablet_(16928861447).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        },
+        {
+          "src": "/posters/sailfishos/gallery/05-jolla-sailfish-tablet-mwc-2015.webp",
+          "alt": "Jolla Tablet displayed at an angle, showing its compact size and rounded form",
+          "caption": "The Jolla Tablet at Mobile World Congress 2015, demonstrating Sailfish OS on tablet hardware.",
+          "author": "Kārlis Dambrāns",
+          "license": "CC BY 2.0",
+          "licenseId": "cc-by-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+          "shareAlike": false,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_Sailfish_tablet_-_MWC_2015.jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1067
+        }
+      ]
+    }
   },
   "serenityos": {
     "title": "SerenityOS",
@@ -3299,7 +4019,53 @@ export const POSTERS = {
           }
         ]
       }
-    ]
+    ],
+    "gallery": {
+      "images": [
+        {
+          "src": "/posters/solaris/gallery/01-sun-sparcstation-5.webp",
+          "alt": "A Sun SPARCstation 5 desktop workstation, a white and grey compact pizza-box form factor",
+          "caption": "The SPARCstation 5, Sun's mainstream desktop workstation of the 1990s, in its characteristic low-profile chassis.",
+          "author": "NapoliRoma",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sun_SPARCstation_5.JPG",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 592
+        },
+        {
+          "src": "/posters/solaris/gallery/02-sparcstation-51332334771.webp",
+          "alt": "A SPARCstation desktop workstation photographed at an angle showing its front and side",
+          "caption": "A SPARCstation in its working context, designed to deliver Unix workstation performance at a practical price.",
+          "author": "Steve Elliott from UK",
+          "license": "CC BY-SA 2.0",
+          "licenseId": "cc-by-sa-2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:SPARCStation_(51332334771).jpg",
+          "sourceName": "Wikimedia Commons",
+          "width": 1511,
+          "height": 1600
+        },
+        {
+          "src": "/posters/solaris/gallery/03-sun-sparcstation-ipx-prototype.webp",
+          "alt": "A Sun SPARCstation IPX prototype workstation, a compact pizza-box form with front panel vents",
+          "caption": "The SPARCstation IPX, Sun's entry-level SPARC workstation, bringing Unix graphics to a wider audience.",
+          "author": "NapoliRoma",
+          "license": "CC BY-SA 3.0",
+          "licenseId": "cc-by-sa-3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+          "shareAlike": true,
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sun_SPARCstation_IPX_prototype.JPG",
+          "sourceName": "Wikimedia Commons",
+          "width": 1600,
+          "height": 1198
+        }
+      ]
+    }
   },
   "templeos": {
     "title": "TempleOS",

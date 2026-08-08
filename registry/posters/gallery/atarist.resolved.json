@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "atarist",
+  "images": [
+    {
+      "src": "/posters/atarist/gallery/01-atari-520-st-with-monochrome-monitor-sm-124.webp",
+      "alt": "An Atari 520ST computer with its compact SM124 monochrome monitor, shown from a three-quarter view",
+      "caption": "The 520ST paired with its matching SM124 monitor, the standard setup for high-resolution GEM desktop work and MIDI production.",
+      "author": "Felix Winkelnkemper",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_520_ST_%2B_with_monochrome_monitor_SM_124.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "c5f3566da09edc002fba1dba1185cb372649380601da6a01577988f4b394cb61",
+      "width": 1600,
+      "height": 826
+    },
+    {
+      "src": "/posters/atarist/gallery/02-atari-520st-tietokonemuseo.webp",
+      "alt": "A 520ST computer system displayed in a museum setting, showing the distinctive beige case and keyboard",
+      "caption": "The wedge-shaped 520ST case housed a Motorola 68000 processor and dedicated MIDI ports, making it a favorite in European music studios.",
+      "author": "MKFI",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_520ST_Tietokonemuseo.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b95ff6ca5df300efd9d0fbda8ede83c0b6d8c81d4a7645c5a10a0b2b9046f41f",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/atarist/gallery/03-atari-520st-2102314521.webp",
+      "alt": "A museum photograph of the Atari 520ST showing the keyboard and main unit from an angled view",
+      "caption": "The integrated keyboard and processor made the ST compact and affordable, bringing the 68000 generation within reach of home users.",
+      "author": "vonguard from Oakland, Nmibia",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atari_520ST_(2102314521).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "87b7756e41342870dc042bbc9f4fe341952513ffac94509c0b4a12e30b27a763",
+      "width": 1600,
+      "height": 1061
+    }
+  ]
+}

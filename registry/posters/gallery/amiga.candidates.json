@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "amiga",
+  "images": [
+    {
+      "commonsFile": "File:Amiga500 system.jpg",
+      "alt": "An Amiga 500 keyboard computer with attached disk drive, photographed from above",
+      "caption": "The Amiga 500 arrived in 1987 with a Motorola 68000 processor and custom chips for graphics, sound, and animation.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore Amiga A500 badge against black case (34501878294).jpg",
+      "alt": "A close-up view of an Amiga 500 showing the Commodore badge and wedge-shaped case in three-quarter angle",
+      "caption": "The A500 case integrated keyboard, power, and expansion in a compact wedge, designed for living rooms and bedrooms.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:2019-08-04 Commodore Amiga personal computer.jpg",
+      "alt": "A museum display of the Amiga 500 as a personal computer exhibit, showing the full system with peripherals",
+      "caption": "Amiga 500 systems paired with external drives and monitors became creative workstations for pixel art, music, and desktop publishing.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore Amiga 500 (RetroMadrid 2018).jpg",
+      "alt": "An Amiga 500 shown in a museum or exhibition setting, displayed to show the machine at an angle",
+      "caption": "The Amiga's custom architecture and Workbench desktop made it a platform for serious graphic design, games, and demoscene production.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Amiga 500.webp",
+      "alt": "A detailed view of an Amiga 500, showing the keyboard layout and overall design of the system",
+      "caption": "Amiga Kickstart ROM and pre-emptive multitasking in AmigaOS let applications run simultaneously, rare among 1987 home computers.",
+      "role": "photo"
+    }
+  ]
+}

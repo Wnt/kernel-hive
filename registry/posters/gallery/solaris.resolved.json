@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "solaris",
+  "images": [
+    {
+      "src": "/posters/solaris/gallery/01-sun-sparcstation-5.webp",
+      "alt": "A Sun SPARCstation 5 desktop workstation, a white and grey compact pizza-box form factor",
+      "caption": "The SPARCstation 5, Sun's mainstream desktop workstation of the 1990s, in its characteristic low-profile chassis.",
+      "author": "NapoliRoma",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sun_SPARCstation_5.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "a400c38998bc54a63353ccbafb7b5c24309f26d5aebb907f659e801a7959063e",
+      "width": 1600,
+      "height": 592
+    },
+    {
+      "src": "/posters/solaris/gallery/02-sparcstation-51332334771.webp",
+      "alt": "A SPARCstation desktop workstation photographed at an angle showing its front and side",
+      "caption": "A SPARCstation in its working context, designed to deliver Unix workstation performance at a practical price.",
+      "author": "Steve Elliott from UK",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SPARCStation_(51332334771).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "06c916fef774ec60cd4c49fd59c5be3eb0d89c0fa0d8303591324ce16e448c54",
+      "width": 1511,
+      "height": 1600
+    },
+    {
+      "src": "/posters/solaris/gallery/03-sun-sparcstation-ipx-prototype.webp",
+      "alt": "A Sun SPARCstation IPX prototype workstation, a compact pizza-box form with front panel vents",
+      "caption": "The SPARCstation IPX, Sun's entry-level SPARC workstation, bringing Unix graphics to a wider audience.",
+      "author": "NapoliRoma",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sun_SPARCstation_IPX_prototype.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "5a2a9afcccc48d3c2996ead0a761e2ad9aedce54d2f4dfbb27b01d3027ff1c10",
+      "width": 1600,
+      "height": 1198
+    }
+  ]
+}

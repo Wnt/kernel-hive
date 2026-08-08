@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "irix",
+  "images": [
+    {
+      "src": "/posters/irix/gallery/01-sgi-indy-open.webp",
+      "alt": "The SGI Indy workstation with its case open, revealing the R4600 processor and graphics subsystems",
+      "caption": "The Indy's internal architecture revealed: the MIPS R4600 processor and XL framebuffer that powered its 24-bit colour display and video capture capabilities.",
+      "author": "Rules666",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SGI_indy_open.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "a6853c1a37ba5bd0743b31824ed55e3069ad2b9eaf45c89630a92847c5d4cfcf",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/irix/gallery/02-sgi-indy-front.webp",
+      "alt": "An SGI Indy workstation photographed from the front, showing its distinctive low blue-violet pizza-box chassis",
+      "caption": "The Indy's unmistakable industrial design: a low blue-violet pizza-box chassis that stood out distinctly on an engineering workbench in the 1990s.",
+      "author": "Rules666",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SGI_indy_front.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "e92658b066d7be0ac1bb7cb30167a380b7bd17a4427498c2714a8378f148692a",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/irix/gallery/03-sgi-indy-back.webp",
+      "alt": "Rear view of the SGI Indy showing its connector panel with video, audio, and networking ports",
+      "caption": "The rear panel of the Indy, displaying the Ethernet, video, and audio connections that made it a genuine networked Unix workstation.",
+      "author": "Rules666",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SGI_indy_back.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "531d1e01abe4e906a1887134d03c873dce0301cf158d14b07142af634562075f",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/irix/gallery/04-silicon-graphics-indy.webp",
+      "alt": "A full view of the SGI Indy workstation positioned with its typical desktop configuration",
+      "caption": "The Indy in its working context, equipped to bring SGI's graphics tradition to universities, broadcast facilities, and design studios.",
+      "author": "Bilby",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Silicon_Graphics_Indy.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "e7914b0e132ac1d5ba10ace845bf8525d6abf10171a994f66d94a0d23595d24a",
+      "width": 1600,
+      "height": 1038
+    }
+  ]
+}

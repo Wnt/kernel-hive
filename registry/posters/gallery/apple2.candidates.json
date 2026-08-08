@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "apple2",
+  "images": [
+    {
+      "commonsFile": "File:Apple IIe.jpg",
+      "alt": "A beige Apple IIe computer photographed from above, showing the keyboard and case",
+      "caption": "The Apple IIe, introduced in 1983 as an enhanced revision of the original Apple II.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Apple Platinum IIe.jpg",
+      "alt": "An Apple IIe Platinum variant computer with a platinum-colored case",
+      "caption": "The IIe Platinum, a late-1980s variant with a sleeker design and improved specifications.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Apple IIe + Disk II drives + Apple Monitor II.JPG",
+      "alt": "An Apple IIe computer positioned next to two Disk II drives and an Apple Monitor II display",
+      "caption": "A complete Apple II system: the IIe, dual Disk II drives for 5.25-inch floppy storage, and an external monitor.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Apple IIe - Deutsches Museum (40219954572).jpg",
+      "alt": "An Apple IIe displayed in a museum case at the Deutsches Museum in Munich",
+      "caption": "The Apple IIe as a museum piece, recognizing its place in computing history.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Apple Museum (Prague) Apple IIe Enhanced (1985).jpg",
+      "alt": "An Apple IIe Enhanced computer displayed in the Apple Museum in Prague",
+      "caption": "The Enhanced Apple IIe, the final major revision of the II line, on display in Prague.",
+      "role": "photo"
+    }
+  ]
+}

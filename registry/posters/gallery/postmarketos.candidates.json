@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "postmarketos",
+  "images": [
+    {
+      "commonsFile": "File:PinePhone-Pro-Plasma-Mobile.jpg",
+      "alt": "PinePhone Pro displaying Plasma Mobile interface on its screen",
+      "caption": "The PinePhone Pro running Plasma Mobile, emphasizing privacy with dedicated hardware kill switches for sensors.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:PinePhone Beta Edition.png",
+      "alt": "Rendered illustration of PinePhone Beta Edition in black, angled view",
+      "caption": "The PinePhone Beta Edition, the affordable Linux smartphone bringing postmarketOS to a mass-market form factor.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Nokia N900-1.jpg",
+      "alt": "Nokia N900 communicator held at an angle, showing the full device with keyboard visible",
+      "caption": "The Nokia N900 internet tablet, the original postmarketOS revival target, running Linux and supporting package management.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Nokia N900.JPG",
+      "alt": "Nokia N900 photographed from a flat angle, showing the slide-out QWERTY keyboard fully visible",
+      "caption": "The Nokia N900's slide-out QWERTY keyboard and capacitive touchscreen, 2009.",
+      "role": "photo"
+    }
+  ]
+}

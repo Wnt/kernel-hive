@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "amstradcpc",
+  "images": [
+    {
+      "commonsFile": "File:Amstrad CPC 6128 solo macchina.jpg",
+      "alt": "An Amstrad CPC 6128 computer displayed on a plain background",
+      "caption": "The Amstrad CPC 6128, flagship model with 128 KB RAM and built-in 3-inch disk drive.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Amstrad CPC 6128 esposto in fiera.jpg",
+      "alt": "An Amstrad CPC 6128 on display at a computer exhibition",
+      "caption": "The CPC 6128 at a retro computing fair, showcasing its integrated keyboard and drive.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Amstrad CPC 6128.jpg",
+      "alt": "An Amstrad CPC 6128 home computer with beige case and integrated peripherals",
+      "caption": "The CPC 6128 in profile, the most capable entry in Amstrad's European home computer line.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Amstrad CPC6128, keyboard removed.jpg",
+      "alt": "An Amstrad CPC 6128 with its keyboard detached, showing the main unit",
+      "caption": "A CPC 6128 with keyboard removed, revealing the compact 128 KB main unit.",
+      "role": "photo"
+    }
+  ]
+}

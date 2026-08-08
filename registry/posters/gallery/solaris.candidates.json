@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "solaris",
+  "images": [
+    {
+      "commonsFile": "File:Sun SPARCstation 5.JPG",
+      "alt": "A Sun SPARCstation 5 desktop workstation, a white and grey compact pizza-box form factor",
+      "caption": "The SPARCstation 5, Sun's mainstream desktop workstation of the 1990s, in its characteristic low-profile chassis.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:SPARCStation (51332334771).jpg",
+      "alt": "A SPARCstation desktop workstation photographed at an angle showing its front and side",
+      "caption": "A SPARCstation in its working context, designed to deliver Unix workstation performance at a practical price.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Sun SPARCstation IPX prototype.JPG",
+      "alt": "A Sun SPARCstation IPX prototype workstation, a compact pizza-box form with front panel vents",
+      "caption": "The SPARCstation IPX, Sun's entry-level SPARC workstation, bringing Unix graphics to a wider audience.",
+      "role": "photo"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "amiga",
+  "images": [
+    {
+      "src": "/posters/amiga/gallery/01-amiga500-system.webp",
+      "alt": "An Amiga 500 keyboard computer with attached disk drive, photographed from above",
+      "caption": "The Amiga 500 arrived in 1987 with a Motorola 68000 processor and custom chips for graphics, sound, and animation.",
+      "author": "Bill Bertram",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amiga500_system.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "5607345a6d03f6c9162d517adc3bcb158674044e408feeae7aa6053fad25fcfc",
+      "width": 1600,
+      "height": 1242
+    },
+    {
+      "src": "/posters/amiga/gallery/02-commodore-amiga-a500-badge-against-black-case-34501878294.webp",
+      "alt": "A close-up view of an Amiga 500 showing the Commodore badge and wedge-shaped case in three-quarter angle",
+      "caption": "The A500 case integrated keyboard, power, and expansion in a compact wedge, designed for living rooms and bedrooms.",
+      "author": "Werner Ziegelwanger",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Amiga_A500_badge_against_black_case_(34501878294).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "482ff4825d9c96c36ce72bd782fac86125f3867fca4284c77a57dba3392d915f",
+      "width": 1600,
+      "height": 1065
+    },
+    {
+      "src": "/posters/amiga/gallery/03-2019-08-04-commodore-amiga-personal-computer.webp",
+      "alt": "A museum display of the Amiga 500 as a personal computer exhibit, showing the full system with peripherals",
+      "caption": "Amiga 500 systems paired with external drives and monitors became creative workstations for pixel art, music, and desktop publishing.",
+      "author": "Maksym Kozlenko",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:2019-08-04_Commodore_Amiga_personal_computer.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "0c1bdbac2d566930b1deb799e9ef974231c07307703222cdac5568815b141fb8",
+      "width": 1600,
+      "height": 1265
+    },
+    {
+      "src": "/posters/amiga/gallery/04-commodore-amiga-500-retromadrid-2018.webp",
+      "alt": "An Amiga 500 shown in a museum or exhibition setting, displayed to show the machine at an angle",
+      "caption": "The Amiga's custom architecture and Workbench desktop made it a platform for serious graphic design, games, and demoscene production.",
+      "author": "AUIC Oficial",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_Amiga_500_(RetroMadrid_2018).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "e877988abacd6162e89dfcc744aaee169ad6a73ef7e66eb2e810ed71a3067cfe",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/amiga/gallery/05-amiga-500.webp",
+      "alt": "A detailed view of an Amiga 500, showing the keyboard layout and overall design of the system",
+      "caption": "Amiga Kickstart ROM and pre-emptive multitasking in AmigaOS let applications run simultaneously, rare among 1987 home computers.",
+      "author": "Wikideas1 Original:dark_igorek",
+      "license": "CC BY 4.0",
+      "licenseId": "cc-by-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amiga_500.webp",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "59b4335d66e0e447e34decaf497a3e30641001a43b3758fbefeab4a050f2bb01",
+      "width": 1600,
+      "height": 810
+    }
+  ]
+}

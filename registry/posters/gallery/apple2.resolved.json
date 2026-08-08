@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "apple2",
+  "images": [
+    {
+      "src": "/posters/apple2/gallery/01-apple-iie.webp",
+      "alt": "A beige Apple IIe computer photographed from above, showing the keyboard and case",
+      "caption": "The Apple IIe, introduced in 1983 as an enhanced revision of the original Apple II.",
+      "author": "Bilby",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_IIe.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2c53a0a8a3d0d7e1d1147186cba0854d4b769effd79d0c94b3541c1d7166bdbf",
+      "width": 1600,
+      "height": 1600
+    },
+    {
+      "src": "/posters/apple2/gallery/02-apple-platinum-iie.webp",
+      "alt": "An Apple IIe Platinum variant computer with a platinum-colored case",
+      "caption": "The IIe Platinum, a late-1980s variant with a sleeker design and improved specifications.",
+      "author": "Bilby",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_Platinum_IIe.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "fcf4a2fb10db90aad8534ae7dec86a1e3c0a8b5120150bc9a93926c908c568f9",
+      "width": 1600,
+      "height": 1600
+    },
+    {
+      "src": "/posters/apple2/gallery/03-apple-iie-disk-ii-drives-apple-monitor-ii.webp",
+      "alt": "An Apple IIe computer positioned next to two Disk II drives and an Apple Monitor II display",
+      "caption": "A complete Apple II system: the IIe, dual Disk II drives for 5.25-inch floppy storage, and an external monitor.",
+      "author": "Mystère Martin",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_IIe_%2B_Disk_II_drives_%2B_Apple_Monitor_II.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "fdff8d2f8f006dda0556e27abd55568fc1bcd4ac61c0fb3e4fd1d6c889eee897",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/apple2/gallery/04-apple-iie-deutsches-museum-40219954572.webp",
+      "alt": "An Apple IIe displayed in a museum case at the Deutsches Museum in Munich",
+      "caption": "The Apple IIe as a museum piece, recognizing its place in computing history.",
+      "author": "FaceMePLS from The Hague, The Netherlands",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_IIe_-_Deutsches_Museum_(40219954572).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b91d5ecf27569124e219462a32242faefcec458fef586ca316703bcc5640fdd0",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/apple2/gallery/05-apple-museum-prague-apple-iie-enhanced-1985.webp",
+      "alt": "An Apple IIe Enhanced computer displayed in the Apple Museum in Prague",
+      "caption": "The Enhanced Apple IIe, the final major revision of the II line, on display in Prague.",
+      "author": "Benoît Prieur",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_Museum_(Prague)_Apple_IIe_Enhanced_(1985).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "1e1875476fd9a1addbaf9e54400edd8233fa6b68f4cb9c1c5ec2fda12a0c150c",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}

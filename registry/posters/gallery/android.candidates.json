@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "android",
+  "images": [
+    {
+      "commonsFile": "File:HTC Dream opened.jpg",
+      "alt": "A white HTC Dream smartphone with its slide-open QWERTY keyboard exposed",
+      "caption": "The HTC Dream in its slide-open configuration, revealing the QWERTY keyboard beneath the touchscreen.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:HTC Dream (front view).jpg",
+      "alt": "Front view of a white HTC Dream smartphone, showing the display and capacitive buttons",
+      "caption": "The HTC Dream's front face, with its 3.2-inch touchscreen and touch-sensitive navigation buttons.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:HTC Dream flipside.jpg",
+      "alt": "Rear view of a white HTC Dream smartphone, showing the back panel and camera",
+      "caption": "The HTC Dream's back panel and integrated camera, the first smartphone in the Android ecosystem.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:HTC Dream (right side).jpg",
+      "alt": "Right side view of a white HTC Dream showing the open SD card slot",
+      "caption": "The HTC Dream's right edge with open microSD card slot, enabling storage expansion.",
+      "role": "photo"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "openvms",
+  "images": [
+    {
+      "commonsFile": "File:VAX 11-780 intero.jpg",
+      "alt": "An early VAX 11-780 system, a large floor-standing cabinet with the characteristic tall profile",
+      "caption": "The VAX 11-780, the original high-end VAX that established the architecture in 1978.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:VAX 11 780 CPU Backplane.jpg",
+      "alt": "A CPU backplane from a VAX 11-780, showing the complex card connector array and circuitry",
+      "caption": "The processor and memory backplane of the VAX 11-780, the electrical fabric that carried the 32-bit architecture.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:VAX 4000-300 en R400X.jpg",
+      "alt": "A VAX 4000-300, a compact desktop VAX system in a low grey cabinet",
+      "caption": "The VAX 4000-300, a later desktop implementation of the VAX architecture, bringing minicomputer computing to smaller spaces.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Vax 11-780 (2).jpg",
+      "alt": "Another view of a VAX 11-780 floor-standing cabinet system",
+      "caption": "Another angle on the VAX 11-780, showing the cabinet form factor that housed DEC's architectural landmark.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:VAX 11-750 Donostiako Informatika Fakultatea 1988 01.png",
+      "alt": "A VAX 11-750 system photographed in a museum or academic setting, a tall cabinet with front panel controls",
+      "caption": "The VAX 11-750, a mid-range VAX model, preserved in an academic computer collection.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Computer History Museum VAX 11 780 (313530644).jpg",
+      "alt": "A VAX 11-780 on museum display at the Computer History Museum, showing the full cabinet profile",
+      "caption": "The VAX 11-780 at the Computer History Museum, a monument to the minicomputer era and the architecture that survived it.",
+      "role": "photo"
+    }
+  ]
+}

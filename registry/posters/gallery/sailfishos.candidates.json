@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "sailfishos",
+  "images": [
+    {
+      "commonsFile": "File:Jolla phone white top 01.jpg",
+      "alt": "Jolla phone photographed from above, showing the top edge with the distinctive rounded white case",
+      "caption": "The Jolla Phone from above, with its characteristic white \"Other Half\" modular back cover.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Jolla phone white back 01.jpg",
+      "alt": "Rear view of the Jolla phone showing the camera and white back panel",
+      "caption": "The Jolla Phone's back, highlighting its innovative modular design and swappable cover system.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Jolla phone white right 01.jpg",
+      "alt": "Jolla phone viewed from the right side, showing volume buttons and the edge profile",
+      "caption": "The Jolla Phone's right edge and distinctive profile, 2013.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Jolla Tablet (16928861447).jpg",
+      "alt": "Jolla Tablet photographed at an angle, showing the front screen and aluminum back panel",
+      "caption": "The Jolla Tablet, extending Sailfish OS to a larger 7.85-inch form factor.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Jolla Sailfish tablet - MWC 2015.jpg",
+      "alt": "Jolla Tablet displayed at an angle, showing its compact size and rounded form",
+      "caption": "The Jolla Tablet at Mobile World Congress 2015, demonstrating Sailfish OS on tablet hardware.",
+      "role": "photo"
+    }
+  ]
+}

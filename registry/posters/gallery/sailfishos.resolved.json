@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "sailfishos",
+  "images": [
+    {
+      "src": "/posters/sailfishos/gallery/01-jolla-phone-white-top-01.webp",
+      "alt": "Jolla phone photographed from above, showing the top edge with the distinctive rounded white case",
+      "caption": "The Jolla Phone from above, with its characteristic white \"Other Half\" modular back cover.",
+      "author": "Erik Lundin",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_phone_white_top_01.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "661afa38af5ef669f8b5abc03f952952cf1863418db6c955db016e03678febe1",
+      "width": 1600,
+      "height": 747
+    },
+    {
+      "src": "/posters/sailfishos/gallery/02-jolla-phone-white-back-01.webp",
+      "alt": "Rear view of the Jolla phone showing the camera and white back panel",
+      "caption": "The Jolla Phone's back, highlighting its innovative modular design and swappable cover system.",
+      "author": "Erik Lundin",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_phone_white_back_01.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b7f55ac4cfb7522b8f26f62764dcf6b8ff0a1d275b1d810d6cb4a34edefdaef7",
+      "width": 894,
+      "height": 1600
+    },
+    {
+      "src": "/posters/sailfishos/gallery/03-jolla-phone-white-right-01.webp",
+      "alt": "Jolla phone viewed from the right side, showing volume buttons and the edge profile",
+      "caption": "The Jolla Phone's right edge and distinctive profile, 2013.",
+      "author": "Erik Lundin",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_phone_white_right_01.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "c9ad9d118df308502b4b658936dfa6729bd0154b0d505aa03b7ec17d9104e266",
+      "width": 1600,
+      "height": 342
+    },
+    {
+      "src": "/posters/sailfishos/gallery/04-jolla-tablet-16928861447.webp",
+      "alt": "Jolla Tablet photographed at an angle, showing the front screen and aluminum back panel",
+      "caption": "The Jolla Tablet, extending Sailfish OS to a larger 7.85-inch form factor.",
+      "author": "Maurizio Pesce from Milan, Italia",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_Tablet_(16928861447).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "6876be2e40f257d2266855a56da80dd53cb355daa2c0202fdf9e73cd0f2c87df",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/sailfishos/gallery/05-jolla-sailfish-tablet-mwc-2015.webp",
+      "alt": "Jolla Tablet displayed at an angle, showing its compact size and rounded form",
+      "caption": "The Jolla Tablet at Mobile World Congress 2015, demonstrating Sailfish OS on tablet hardware.",
+      "author": "Kārlis Dambrāns",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jolla_Sailfish_tablet_-_MWC_2015.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "3beb4bd4988a6a78c746da7e78cc36e2645531c56a535ed4907fab59bdbac0a9",
+      "width": 1600,
+      "height": 1067
+    }
+  ]
+}

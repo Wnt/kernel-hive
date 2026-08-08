@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "postmarketos",
+  "images": [
+    {
+      "src": "/posters/postmarketos/gallery/01-pinephone-pro-plasma-mobile.webp",
+      "alt": "PinePhone Pro displaying Plasma Mobile interface on its screen",
+      "caption": "The PinePhone Pro running Plasma Mobile, emphasizing privacy with dedicated hardware kill switches for sensors.",
+      "author": "MartijnBraam",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:PinePhone-Pro-Plasma-Mobile.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "5804d03b68a096809945ccedfccb919e0afcfb6b02ea3eeb326a6b4c9a7e2e8e",
+      "width": 900,
+      "height": 1600
+    },
+    {
+      "src": "/posters/postmarketos/gallery/02-pinephone-beta-edition.webp",
+      "alt": "Rendered illustration of PinePhone Beta Edition in black, angled view",
+      "caption": "The PinePhone Beta Edition, the affordable Linux smartphone bringing postmarketOS to a mass-market form factor.",
+      "author": "Funeral",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:PinePhone_Beta_Edition.png",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "4e1d6e12e15bf4d9259bf3a39b54af4c5d33b41a410d2e131f4755e9ebbf4bbc",
+      "width": 1194,
+      "height": 887
+    },
+    {
+      "src": "/posters/postmarketos/gallery/03-nokia-n900-1.webp",
+      "alt": "Nokia N900 communicator held at an angle, showing the full device with keyboard visible",
+      "caption": "The Nokia N900 internet tablet, the original postmarketOS revival target, running Linux and supporting package management.",
+      "author": "User:Ilya Voyager",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nokia_N900-1.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "f6c63f69c50cd4a16597b47407689e8cac7d83b0d5473b7146f978ecfdb8742b",
+      "width": 1600,
+      "height": 1218
+    },
+    {
+      "src": "/posters/postmarketos/gallery/04-nokia-n900.webp",
+      "alt": "Nokia N900 photographed from a flat angle, showing the slide-out QWERTY keyboard fully visible",
+      "caption": "The Nokia N900's slide-out QWERTY keyboard and capacitive touchscreen, 2009.",
+      "author": "Georgy90",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nokia_N900.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "cdffeeb32f7965352379296088effb8b5ec55bd25b071757024facbb0fabbc56",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}

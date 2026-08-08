@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "android",
+  "images": [
+    {
+      "src": "/posters/android/gallery/01-htc-dream-opened.webp",
+      "alt": "A white HTC Dream smartphone with its slide-open QWERTY keyboard exposed",
+      "caption": "The HTC Dream in its slide-open configuration, revealing the QWERTY keyboard beneath the touchscreen.",
+      "author": "Marcus Sümnick",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HTC_Dream_opened.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "a1ac9e79d806ec542d3c4cbeef57e2c6c1cd2cccf60e848f7f5272799d26f80a",
+      "width": 1600,
+      "height": 1269
+    },
+    {
+      "src": "/posters/android/gallery/02-htc-dream-front-view.webp",
+      "alt": "Front view of a white HTC Dream smartphone, showing the display and capacitive buttons",
+      "caption": "The HTC Dream's front face, with its 3.2-inch touchscreen and touch-sensitive navigation buttons.",
+      "author": "Marcus Sümnick",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HTC_Dream_(front_view).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "7a9c4235d32421b64dd7fc413786ff608de91dd8558a5cb570ef62586788ed4a",
+      "width": 924,
+      "height": 1600
+    },
+    {
+      "src": "/posters/android/gallery/03-htc-dream-flipside.webp",
+      "alt": "Rear view of a white HTC Dream smartphone, showing the back panel and camera",
+      "caption": "The HTC Dream's back panel and integrated camera, the first smartphone in the Android ecosystem.",
+      "author": "Marcus Sümnick",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HTC_Dream_flipside.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ca89ea447f9763a5e5ab70871b000dac2666755f87f97df5ccf82c6f8a4373f3",
+      "width": 1600,
+      "height": 876
+    },
+    {
+      "src": "/posters/android/gallery/04-htc-dream-right-side.webp",
+      "alt": "Right side view of a white HTC Dream showing the open SD card slot",
+      "caption": "The HTC Dream's right edge with open microSD card slot, enabling storage expansion.",
+      "author": "Marcus Sümnick",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HTC_Dream_(right_side).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "85e0db19a27c3724d002fa00e334e24679358b211b4c803b945a053b110801e8",
+      "width": 1600,
+      "height": 703
+    }
+  ]
+}

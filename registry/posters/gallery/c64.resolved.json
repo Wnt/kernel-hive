@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "c64",
+  "images": [
+    {
+      "src": "/posters/c64/gallery/01-commodore-64-computer-fl.webp",
+      "alt": "A beige Commodore 64 home computer in its breadbin case, photographed from the front-left",
+      "caption": "The Commodore 64 in its original plastic case, as introduced by Commodore in 1982.",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-FL.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "94891c93093394f5ed181c626b2cabae684a588a7f03c34d873cdc4e3fc26238",
+      "width": 1600,
+      "height": 904
+    },
+    {
+      "src": "/posters/c64/gallery/02-commodore-64-computer-bl.webp",
+      "alt": "The back-left view of a Commodore 64 showing ports and the cartridge slot",
+      "caption": "The cartridge port and external connections at the rear of the breadbin case.",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-BL.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "7f96194b21c93f15399884c22c2db5c9b3c5743c4397e97996d6d844be26427e",
+      "width": 1600,
+      "height": 904
+    },
+    {
+      "src": "/posters/c64/gallery/03-commodore-64-computer-br.webp",
+      "alt": "The back-right side of the Commodore 64, showing power and video connectors",
+      "caption": "Power and video outputs enabled the 64 to connect to standard home television sets.",
+      "author": "Evan-Amos",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-BR.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "f79c98d932c07258946ac7546df724ad5e47d10089d5617d67029ddaa4a0c1af",
+      "width": 1600,
+      "height": 904
+    }
+  ]
+}

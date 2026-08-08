@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "atarist",
+  "images": [
+    {
+      "commonsFile": "File:Atari 520 ST + with monochrome monitor SM 124.jpg",
+      "alt": "An Atari 520ST computer with its compact SM124 monochrome monitor, shown from a three-quarter view",
+      "caption": "The 520ST paired with its matching SM124 monitor, the standard setup for high-resolution GEM desktop work and MIDI production.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Atari 520ST Tietokonemuseo.JPG",
+      "alt": "A 520ST computer system displayed in a museum setting, showing the distinctive beige case and keyboard",
+      "caption": "The wedge-shaped 520ST case housed a Motorola 68000 processor and dedicated MIDI ports, making it a favorite in European music studios.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Atari 520ST (2102314521).jpg",
+      "alt": "A museum photograph of the Atari 520ST showing the keyboard and main unit from an angled view",
+      "caption": "The integrated keyboard and processor made the ST compact and affordable, bringing the 68000 generation within reach of home users.",
+      "role": "photo"
+    }
+  ]
+}

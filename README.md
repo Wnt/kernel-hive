@@ -154,7 +154,16 @@ shipped in the default stack), and `mpf2`. The fork exists to support Kernel Hiv
 
 ## License
 
-The repository is MIT-licensed (see `LICENSE`), with one exception:
-`streamhost/` is **GPL-2.0-or-later** (see `streamhost/LICENSE`) because the
-daemon links the system libx264, which is GPL. The two trees are independent
-— nothing outside `streamhost/` links against it.
+The repository is MIT-licensed (see `LICENSE`), with two exceptions:
+
+- `streamhost/` is **GPL-2.0-or-later** (see `streamhost/LICENSE`) because the
+  daemon links the system libx264, which is GPL. The two trees are independent
+  — nothing outside `streamhost/` links against it.
+- The historical photographs under `spa/public/posters/*/gallery/` are
+  third-party works reused under free licenses (public domain, CC0, CC BY,
+  CC BY-SA) and remain their authors' property. Every image's author, license
+  and source page is listed in [`docs/IMAGE-CREDITS.md`](docs/IMAGE-CREDITS.md);
+  the licenses are enforced mechanically against the Wikimedia Commons API by
+  `scripts/tools/fetch-poster-gallery.py` (re-check with
+  `make poster-gallery-verify`). CC BY-SA images carry share-alike obligations
+  on modified redistribution.

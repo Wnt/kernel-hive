@@ -19,3 +19,15 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Third-party media
+
+The MIT license above covers the source code in this repository. It does NOT
+cover the historical photographs bundled under `spa/public/posters/*/gallery/`.
+
+Those images are third-party works reused under free licenses (public domain,
+CC0, CC BY, CC BY-SA) and remain the property of their respective authors. Each
+image's author, license and source page is listed in `docs/IMAGE-CREDITS.md`.
+Images under CC BY-SA carry share-alike obligations on modified redistribution.

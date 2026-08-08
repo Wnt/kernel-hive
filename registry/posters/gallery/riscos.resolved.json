@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "riscos",
+  "images": [
+    {
+      "src": "/posters/riscos/gallery/01-acorn-archimedes-a310-with-mouse-and-keyboard.webp",
+      "alt": "An Acorn Archimedes A310 desktop workstation with its original mouse and keyboard",
+      "caption": "The Acorn Archimedes A310, Acorn's entry into the market for 32-bit desktop computers based on its own RISC processor.",
+      "author": "mikkohoo",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Acorn_Archimedes_A310_with_mouse_and_keyboard.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "4018fcd5e7fdb81058f5eeab361c561ac105b325aab4b57a51a98bebde8af271",
+      "width": 1600,
+      "height": 1068
+    },
+    {
+      "src": "/posters/riscos/gallery/02-riscpc-slice-back-01.webp",
+      "alt": "Another architectural view of the RiscPC internals, showing the internal layout and component positions",
+      "caption": "The RiscPC's internal organization, documenting how Acorn arranged the RISC processor, memory, and expansion slots in a compact form.",
+      "author": "Teewurzler",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:RiscPC-slice-back_01.png",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "142aa2221e7c261ac4f0db12952d5494cea8d32f4a521543e09c2987675c7d52",
+      "width": 1600,
+      "height": 691
+    },
+    {
+      "src": "/posters/riscos/gallery/03-acorn-riscpc-pc-card.webp",
+      "alt": "An Acorn RiscPC PC Card, a processor expansion module that fits into the RiscPC's PCMCIA slot",
+      "caption": "A PC Card module for the RiscPC, one of the expansion options that extended the machine's capabilities.",
+      "author": "Flibble",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Acorn-RiscPC-PC-Card.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "001f5f0b1d301848babe84146694ea132aba6ca442b96539cbe87698ff384f91",
+      "width": 1600,
+      "height": 1066
+    }
+  ]
+}

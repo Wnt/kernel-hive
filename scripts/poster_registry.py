@@ -11,6 +11,83 @@ from typing import Any
 POSTER_KEYS = frozenset(("title", "subtitle", "hero", "images"))
 IMAGE_KEYS = frozenset(("src", "alt", "caption", "credit"))
 SAFE_TARGET = re.compile(r"^(?:https?://|mailto:|/|#)")
+HTTP_URL = re.compile(r"^https?://\S+$")
+
+# Poster image gallery (docs/lab/POSTER-GALLERY-SPEC.md). Only the resolved
+# file is read here -- candidates are authored/consumed by
+# scripts/tools/fetch-poster-gallery.py and never touch this loader.
+GALLERY_TOP_KEYS = frozenset(("schemaVersion", "id", "images", "adLinks"))
+GALLERY_IMAGE_KEYS = frozenset(
+    (
+        "src",
+        "alt",
+        "caption",
+        "author",
+        "license",
+        "licenseId",
+        "licenseUrl",
+        "shareAlike",
+        "sourceUrl",
+        "sourceName",
+        "sha256",
+        "width",
+        "height",
+    )
+)
+# PosterGalleryImage in spa/src/types.ts carries every field above minus
+# sha256 -- that field is a build-time integrity check only.
+# Explicit ORDER, not a set comprehension: this tuple fixes the key order of
+# every gallery image emitted into the generated spa/src/data/posters.ts.
+# Deriving it by iterating the GALLERY_IMAGE_KEYS frozenset made that order
+# depend on the interpreter's per-process hash seed, so two runs of
+# `make tile-registry-generate` produced byte-different output and the
+# generated-file drift gate failed at random. sha256 is deliberately absent --
+# it guards the shipped asset, and the SPA type does not carry it.
+GALLERY_IMAGE_TS_KEYS = (
+    "src",
+    "alt",
+    "caption",
+    "author",
+    "license",
+    "licenseId",
+    "licenseUrl",
+    "shareAlike",
+    "sourceUrl",
+    "sourceName",
+    "width",
+    "height",
+)
+GALLERY_IMAGE_STRING_KEYS = (
+    "src",
+    "alt",
+    "caption",
+    "author",
+    "license",
+    "licenseId",
+    "licenseUrl",
+    "sourceUrl",
+    "sourceName",
+    "sha256",
+)
+AD_LINK_KEYS = frozenset(("title", "url", "source"))
+
+# docs/lab/POSTER-GALLERY-SPEC.md "Licensing policy": the mechanical allowlist.
+# Anything else -- including any value containing nc/nd/fairuse/nonfree -- is a
+# hard failure, never a warning.
+ALLOWED_LICENSE_IDS = frozenset(
+    (
+        "pd",
+        "cc0",
+        "cc-by-2.0",
+        "cc-by-2.5",
+        "cc-by-3.0",
+        "cc-by-4.0",
+        "cc-by-sa-2.0",
+        "cc-by-sa-2.5",
+        "cc-by-sa-3.0",
+        "cc-by-sa-4.0",
+    )
+)
 
 
 class PosterError(Exception):
@@ -112,6 +189,104 @@ def parse_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
 def _validate_image_src(src: str, where: str) -> None:
     if not src.startswith("/posters/") or not re.fullmatch(r"/[A-Za-z0-9_./-]+", src):
         raise PosterError(f"{where}: image paths must be safe same-origin /posters/... paths")
+
+
+def _validate_gallery_src(src: str, tile_id: str, where: str) -> None:
+    prefix = f"/posters/{tile_id}/gallery/"
+    if not src.startswith(prefix) or not re.fullmatch(r"/[A-Za-z0-9_./-]+", src):
+        raise PosterError(f"{where}: image src must be a safe {prefix}... path")
+
+
+def _validate_http_url(url: str, where: str, field: str) -> None:
+    if not HTTP_URL.match(url):
+        raise PosterError(f"{where}: {field} must be an http(s) URL")
+
+
+def _gallery_image(raw: Any, number: int, tile_id: str, path: Path) -> OrderedDict[str, Any]:
+    where = f"{path}: image {number}"
+    if not isinstance(raw, dict):
+        raise PosterError(f"{where}: must be an object")
+    missing = GALLERY_IMAGE_KEYS - set(raw)
+    if missing:
+        raise PosterError(f"{where}: missing fields: {sorted(missing)}")
+    unknown = set(raw) - GALLERY_IMAGE_KEYS
+    if unknown:
+        raise PosterError(f"{where}: unsupported fields: {sorted(unknown)}")
+    for key in GALLERY_IMAGE_STRING_KEYS:
+        if not isinstance(raw[key], str) or not raw[key].strip():
+            raise PosterError(f"{where}: {key} must be a non-empty string")
+    if not isinstance(raw["shareAlike"], bool):
+        raise PosterError(f"{where}: shareAlike must be a boolean")
+    for key in ("width", "height"):
+        value = raw[key]
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise PosterError(f"{where}: {key} must be a positive integer")
+    if raw["licenseId"] not in ALLOWED_LICENSE_IDS:
+        raise PosterError(f"{where}: licenseId {raw['licenseId']!r} is not an allowed free license")
+    _validate_gallery_src(raw["src"], tile_id, where)
+    _validate_http_url(raw["licenseUrl"], where, "licenseUrl")
+    _validate_http_url(raw["sourceUrl"], where, "sourceUrl")
+    if not re.fullmatch(r"[0-9a-f]{64}", raw["sha256"]):
+        raise PosterError(f"{where}: sha256 must be a 64-character lowercase hex digest")
+    return OrderedDict((key, raw[key]) for key in GALLERY_IMAGE_TS_KEYS)
+
+
+def _gallery_ad_link(raw: Any, number: int, path: Path) -> OrderedDict[str, Any]:
+    where = f"{path}: adLinks[{number}]"
+    if not isinstance(raw, dict):
+        raise PosterError(f"{where}: must be an object")
+    missing = AD_LINK_KEYS - set(raw)
+    if missing:
+        raise PosterError(f"{where}: missing fields: {sorted(missing)}")
+    unknown = set(raw) - AD_LINK_KEYS
+    if unknown:
+        raise PosterError(f"{where}: unsupported fields: {sorted(unknown)}")
+    for key in AD_LINK_KEYS:
+        if not isinstance(raw[key], str) or not raw[key].strip():
+            raise PosterError(f"{where}: {key} must be a non-empty string")
+    _validate_http_url(raw["url"], where, "url")
+    return OrderedDict((key, raw[key]) for key in ("title", "url", "source"))
+
+
+def load_gallery(path: Path, tile_id: str) -> OrderedDict[str, Any] | None:
+    """Load+validate `<id>.resolved.json`; absent file is the normal case.
+
+    A malformed or non-free entry is a hard load error, never a warning --
+    nothing else authors this file, so drift here means the generator that
+    wrote it (or a hand edit) broke the contract.
+    """
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise PosterError(f"{path}: invalid JSON") from exc
+    if not isinstance(data, dict):
+        raise PosterError(f"{path}: must be a JSON object")
+    unknown = set(data) - GALLERY_TOP_KEYS
+    if unknown:
+        raise PosterError(f"{path}: unsupported fields: {sorted(unknown)}")
+    if data.get("schemaVersion") != 1:
+        raise PosterError(f"{path}: schemaVersion must be 1")
+    if data.get("id") != tile_id:
+        raise PosterError(f"{path}: id {data.get('id')!r} does not match tile {tile_id!r}")
+
+    raw_images = data.get("images")
+    if not isinstance(raw_images, list) or not raw_images:
+        raise PosterError(f"{path}: images must be a non-empty list")
+    images = [_gallery_image(image, number, tile_id, path) for number, image in enumerate(raw_images, 1)]
+
+    gallery: OrderedDict[str, Any] = OrderedDict((("images", images),))
+    if "adLinks" in data:
+        raw_ads = data["adLinks"]
+        if not isinstance(raw_ads, list):
+            raise PosterError(f"{path}: adLinks must be a list")
+        if len(raw_ads) > 2:
+            raise PosterError(f"{path}: adLinks allows at most 2 entries")
+        ad_links = [_gallery_ad_link(ad, number, path) for number, ad in enumerate(raw_ads, 1)]
+        if ad_links:
+            gallery["adLinks"] = ad_links
+    return gallery
 
 
 def parse_inline(text: str, where: str) -> list[dict[str, Any]]:
@@ -238,5 +413,8 @@ def load_posters(directory: Path, tile_ids: set[str]) -> tuple[OrderedDict[str, 
             poster["hero"] = front["hero"]
         poster["images"] = front["images"]
         poster["blocks"] = parse_markdown(body, path)
+        gallery = load_gallery(directory / "gallery" / f"{path.stem}.resolved.json", path.stem)
+        if gallery is not None:
+            poster["gallery"] = gallery
         posters[path.stem] = poster
     return posters, warnings

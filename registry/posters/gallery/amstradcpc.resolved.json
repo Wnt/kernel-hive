@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "amstradcpc",
+  "images": [
+    {
+      "src": "/posters/amstradcpc/gallery/01-amstrad-cpc-6128-solo-macchina.webp",
+      "alt": "An Amstrad CPC 6128 computer displayed on a plain background",
+      "caption": "The Amstrad CPC 6128, flagship model with 128 KB RAM and built-in 3-inch disk drive.",
+      "author": "A7N8X",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amstrad_CPC_6128_solo_macchina.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "0031cabd6305d70ddb020bfa7f0d667bb490482f2590e875bc0670decf353949",
+      "width": 1600,
+      "height": 625
+    },
+    {
+      "src": "/posters/amstradcpc/gallery/02-amstrad-cpc-6128-esposto-in-fiera.webp",
+      "alt": "An Amstrad CPC 6128 on display at a computer exhibition",
+      "caption": "The CPC 6128 at a retro computing fair, showcasing its integrated keyboard and drive.",
+      "author": "A7N8X",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amstrad_CPC_6128_esposto_in_fiera.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "fb4b2547a1b5ca1fa068ad8fd82bfb050c71979cdded506a9cc81ea533b81cbe",
+      "width": 1600,
+      "height": 977
+    },
+    {
+      "src": "/posters/amstradcpc/gallery/03-amstrad-cpc-6128.webp",
+      "alt": "An Amstrad CPC 6128 home computer with beige case and integrated peripherals",
+      "caption": "The CPC 6128 in profile, the most capable entry in Amstrad's European home computer line.",
+      "author": "NaSH",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amstrad_CPC_6128.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b7942d92c389a0d08aedf3f4ff92dc02e646b6cd26111ee3a0df8c3b4bf3a362",
+      "width": 927,
+      "height": 826
+    },
+    {
+      "src": "/posters/amstradcpc/gallery/04-amstrad-cpc6128-keyboard-removed.webp",
+      "alt": "An Amstrad CPC 6128 with its keyboard detached, showing the main unit",
+      "caption": "A CPC 6128 with keyboard removed, revealing the compact 128 KB main unit.",
+      "author": "Jesus Abizanda",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amstrad_CPC6128,_keyboard_removed.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "07ae015906b3c34b0b0bb39d3ebf046f92b9a4794b3f904e25e3d5e46813ca52",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}

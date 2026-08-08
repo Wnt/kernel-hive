@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "mpf2",
+  "images": [
+    {
+      "commonsFile": "File:Multitech Microprofessor II Tietokonemuseo (cropped).JPG",
+      "alt": "A close-up view of the Microprofessor II single-board computer and control panel",
+      "caption": "The Multitech Microprofessor II, a Taiwanese educational computer and Apple II clone, photographed at a Finnish computer museum.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:MultitechMPF-II.jpg",
+      "alt": "A Microprofessor II with an external keyboard attached, showing the compact main unit",
+      "caption": "The MPF-II with an optional keyboard accessory, photographed at Retro Gathering in Stockholm.",
+      "role": "photo"
+    }
+  ]
+}

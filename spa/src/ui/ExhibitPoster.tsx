@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { posterFor } from '../data/posters';
 import type {
@@ -8,6 +8,8 @@ import type {
   PosterInlineRun,
 } from '../types';
 import './ExhibitPoster.css';
+import PosterGalleryCarousel from './PosterGalleryCarousel';
+import { gallerySlotIndex } from './posterGallerySection';
 
 function renderRuns(runs: PosterInlineRun[], keyPrefix: string): ReactNode {
   return runs.map((run, index) => {
@@ -164,6 +166,8 @@ export default function ExhibitPoster({
   const remainingImages = poster.images.filter((image) => image.src !== poster.hero);
   const style = { '--poster-accent': vm.accent } as CSSProperties;
   const titleId = `exhibit-poster-title-${osId}`;
+  const gallery = poster.gallery;
+  const galleryAfterIndex = gallerySlotIndex(poster.blocks, gallery);
 
   return createPortal((
     <div
@@ -211,7 +215,18 @@ export default function ExhibitPoster({
         {heroImage && <PosterFigure image={heroImage} hero />}
 
         <div className="exhibit-poster-essay">
-          {poster.blocks.map((block, index) => <Block key={index} block={block} index={index} />)}
+          {poster.blocks.map((block, index) => (
+            <Fragment key={index}>
+              <Block block={block} index={index} />
+              {gallery && index === galleryAfterIndex && (
+                <PosterGalleryCarousel
+                  images={gallery.images}
+                  adLinks={gallery.adLinks}
+                  idPrefix={`exhibit-poster-${osId}`}
+                />
+              )}
+            </Fragment>
+          ))}
           {remainingImages.map((image) => <PosterFigure key={image.src} image={image} />)}
         </div>
 

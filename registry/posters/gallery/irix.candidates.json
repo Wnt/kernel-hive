@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "irix",
+  "images": [
+    {
+      "commonsFile": "File:SGI indy open.jpg",
+      "alt": "The SGI Indy workstation with its case open, revealing the R4600 processor and graphics subsystems",
+      "caption": "The Indy's internal architecture revealed: the MIPS R4600 processor and XL framebuffer that powered its 24-bit colour display and video capture capabilities.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:SGI indy front.jpg",
+      "alt": "An SGI Indy workstation photographed from the front, showing its distinctive low blue-violet pizza-box chassis",
+      "caption": "The Indy's unmistakable industrial design: a low blue-violet pizza-box chassis that stood out distinctly on an engineering workbench in the 1990s.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:SGI indy back.jpg",
+      "alt": "Rear view of the SGI Indy showing its connector panel with video, audio, and networking ports",
+      "caption": "The rear panel of the Indy, displaying the Ethernet, video, and audio connections that made it a genuine networked Unix workstation.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Silicon Graphics Indy.jpg",
+      "alt": "A full view of the SGI Indy workstation positioned with its typical desktop configuration",
+      "caption": "The Indy in its working context, equipped to bring SGI's graphics tradition to universities, broadcast facilities, and design studios.",
+      "role": "photo"
+    }
+  ]
+}
