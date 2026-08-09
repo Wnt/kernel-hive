@@ -25,9 +25,23 @@ reach a **graphical UI**, either at boot or via one simple documented command.
 
 ## Known-shared facts (read before you start)
 
-- **MP 8000 is Pilot's normal run state, not a hang.** The bouncing-keyboard
-  screen is "logged off — press a key". The wake key is **`Ctrl+N`** (Xerox
-  NEXT) under Dwarf. One study lost 25 minutes calling this a stall.
+- **MP codes are not a progress bar, and a still screen is not a dead machine.**
+  Three separate near-misses in this project, all the same mistake:
+  1. **MP 8000 on Draco** was called a stall for 25 minutes. It is Pilot's
+     normal *run* state — the bouncing keyboard means "logged off, press a key".
+     The wake key is **`Ctrl+N`** (Xerox NEXT).
+  2. **MP 7800 on Darkstar** *was* a real stall — but the cause was the
+     **Dec-1997 time lock**, not the emulator. TOD 1997-12-01 fixes it.
+  3. **MP 7600 on Darkstar sat for ~35 minutes** on a blank white screen with
+     zero disk I/O, matching every symptom of upstream issue #22 — then
+     advanced on its own. **Slow, not hung.**
+
+  Consequences, in order of how much time they save:
+  - **Do not call a Darkstar boot dead inside an hour.**
+  - **"No disk I/O" proves nothing here.** The 65 MB hard-disk image is fully
+    page-cached after the first pass, so a *healthy* boot also shows zero reads.
+  - Distinguish the three before diagnosing: a wrong TOD wedges, low speed
+    crawls, and a logged-off desktop just waits for a keystroke.
 - **`Tab` is not NEXT.** ViewPoint runs on Xerox Level-V keys (NEXT, OPEN,
   PROPERTIES, MOVE, COPY, AGAIN, UNDO, DELETE, HELP, SKIP, DEFAULTS). The logon
   sheet cannot be completed without NEXT. Agents B and C both need this;
