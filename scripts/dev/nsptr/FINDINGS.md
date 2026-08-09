@@ -95,3 +95,22 @@ open-loop-batched and confirmed once. That should bring the worst case to
 the robustness sweep after guest-driven cursor motion (criterion 2), the
 `loadvm golden` re-check (criterion 3), the compiled artifact (criterion 4),
 and the input->photon latency measurement (criterion 5).
+
+## CORRECTION (2026-08-09): majority-voting the three RAM shadows is UNSAFE
+
+This file's reader takes the majority of three RAM offsets that shadow the
+NeXTSTEP cursor position. The `previous-patch` angle tested that independently
+and found **the shadows do not agree often enough for a majority to be
+trustworthy**: agreement was 2/5, 3/5 and 2/5 at three of six placements. A
+majority vote over disagreeing shadows is not a consensus, it is a coin toss
+that happens to look stable on a quiet screen.
+
+What makes a read trustworthy is **write-through proof**: write a probe value,
+read it back, and only believe the offset that returns exactly what you wrote.
+That is how the authoritative word — the one the Mach event driver itself
+re-reads on every mouse packet — is distinguished from passive mirrors and
+stale event-queue records.
+
+This matters to anyone resuming `closed-loop`, whose controller trusts the
+majority reader. It does NOT affect the shipped exhibit: the winning angle
+(`docs/lab/NEXTSTEP-ABSOLUTE-POINTER.md`) reads no RAM at all.
