@@ -197,6 +197,21 @@
       "udp_port": 54109,
       "notes": "exec: labctl exec cbm8032 \"<cmd>\" (ssh root@:5825, key bridge_key) — that reaches the Debian KIOSK, not the emulated PET; the 8032 itself is keyboard-only and is driven with labctl type/key + labctl shot"
     },
+    "daybreak": {
+      "dir": "/data/vms/streamhost/tiles/daybreak",
+      "qmp": "/data/vms/streamhost/tiles/daybreak/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5839,
+      "exec_port": 5839,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54139,
+      "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5839, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
+    },
     "decos": {
       "dir": "/data/vms/streamhost/tiles/decos",
       "qmp": "/data/vms/streamhost/tiles/decos/qmp.sock",

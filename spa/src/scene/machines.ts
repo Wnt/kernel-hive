@@ -569,6 +569,18 @@ export const ASSEMBLIES_BY_TILE = {
   armeval: {
     kind: 'homeMicro', body: 'acornA3000', monitor: 'crtE',
   },
+  // Xerox 6085 "Daybreak": a low flat processor case that lived UNDER the desk,
+  // a large landscape monochrome display, a wide keyboard whose left-hand column
+  // carries the Level-V verb keys, and a two-button mouse. pizzaBox is the right
+  // kind, and pizzaBoxD|crtD is a combination nothing else in the hall holds —
+  // deliberately distinct from solaris (pizzaBoxC|crtE) and from nt351
+  // (pizzaBoxD|crtC), which share one part each. keyboardE is the widest board
+  // in the kit, which is what the Level-V column needs; paramMouseC keeps the
+  // two-button silhouette away from the workstation mouse nextstep holds.
+  daybreak: {
+    kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
+    keyboard: 'keyboardE', mouse: 'paramMouseC',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

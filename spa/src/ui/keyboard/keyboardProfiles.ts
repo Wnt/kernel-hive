@@ -41,7 +41,7 @@ export type Family =
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
   | 'zxspectrum' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
-  | 'bbcmicro' | 'armeval';
+  | 'bbcmicro' | 'armeval' | 'xerox-dwarf';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -160,6 +160,82 @@ export const ALT_LATCH = latch('alt', 'Alt', XK.Alt_L);
 // … and onto the modifier row, where it reads as what it is and — unlike the
 // tail of the NAV row — needs no horizontal scroll to reach on a phone.
 const MODS: KeyRow = [latch('shift', 'Shift', XK.Shift_L), CTRL_LATCH, ALT_LATCH, CAD];
+
+// ---- the Xerox Level-V function block -------------------------------------
+// ViewPoint/Star are unusable without it: on a real Xerox keyboard the verbs of
+// the interface are KEYS, not menu items, and `Tab` is not NEXT — the logon
+// sheet cannot even be completed without NEXT.
+//
+// ONE family, a PER-MACHINE keycode map. The same logical buttons carry the
+// same labels for the visitor, but the two Xerox machines in the lineup expose
+// them through completely different host keys — Dwarf/Draco (the 6085) uses
+// Ctrl+letter, while Darkstar (the 8010 Star) uses plain PC function keys. A
+// single fixed key set would be silently dead on one of the two, so a machine
+// contributes a BINDING table and the rows are built from it. A logical key the
+// machine has no binding for is simply absent: a dead button is worse than a
+// missing one.
+type LevelVKey =
+  | 'next' | 'open' | 'props' | 'move' | 'copy' | 'same'
+  | 'again' | 'find' | 'undo' | 'help' | 'stop' | 'delete'
+  | 'skip' | 'defaults' | 'expand';
+
+const LEVEL_V_META: Record<LevelVKey, { label: string; hint: string }> = {
+  next: { label: 'NEXT', hint: 'NEXT — move to the next field. The logon sheet asks for this key by name' },
+  open: { label: 'OPEN', hint: 'OPEN the selected icon or document' },
+  props: { label: 'PROPS', hint: 'PROPERTIES — the property sheet for the selection' },
+  move: { label: 'MOVE', hint: 'MOVE the selection, then indicate where' },
+  copy: { label: 'COPY', hint: 'COPY the selection, then indicate where' },
+  same: { label: 'SAME', hint: 'SAME — give the selection the properties of the next thing you point at' },
+  again: { label: 'AGAIN', hint: 'AGAIN — repeat the last action' },
+  find: { label: 'FIND', hint: 'FIND' },
+  undo: { label: 'UNDO', hint: 'UNDO the last action' },
+  help: { label: 'HELP', hint: 'HELP' },
+  stop: { label: 'STOP', hint: 'STOP the operation in progress' },
+  delete: { label: 'DELETE', hint: 'DELETE the selection' },
+  skip: { label: 'SKIP', hint: 'SKIP to the next field without filling this one' },
+  defaults: { label: 'DEFAULTS', hint: 'DEFAULTS — restore this sheet to its default values' },
+  expand: { label: 'EXPAND', hint: 'EXPAND / DEFN — expand the abbreviation at the caret' },
+};
+
+/** How one machine emits one Level-V key. */
+type LevelVEmit = (id: string, label: string, hint: string) => KeyDef;
+type LevelVBinding = Partial<Record<LevelVKey, LevelVEmit>>;
+
+const levelVRow = (bind: LevelVBinding, keys: readonly LevelVKey[]): KeyRow =>
+  keys.flatMap((k) => {
+    const emit = bind[k];
+    return emit ? [emit(`lv-${k}`, LEVEL_V_META[k].label, LEVEL_V_META[k].hint)] : [];
+  });
+
+/** Level-V verb bound to Ctrl + a letter — Dwarf's documented `Ctrl!<letter>`. */
+const lvCtrl = (c: string): LevelVEmit => (id, label, hint) => ctrlChar(id, label, c, hint);
+/** Level-V verb bound to a bare key. */
+const lvTap = (keysym: number): LevelVEmit => (id, label, hint) => tap(id, label, keysym, { hint });
+
+// Dwarf/Draco (Xerox 6085 "Daybreak"). Ctrl is Dwarf's `xeroxControlKeyCode`,
+// and these letters are exactly the rows this tile's own keyboard map declares
+// (scripts/build-guests/tiles/daybreak.sh writes kbd_linux_en_US.map). SKIP,
+// DEFAULTS and EXPAND are deliberately unbound: Dwarf's map has no Ctrl binding
+// for them, so a button would be dead.
+const DWARF_LEVEL_V: LevelVBinding = {
+  next: lvCtrl('n'), open: lvCtrl('o'), props: lvCtrl('p'), move: lvCtrl('m'),
+  copy: lvCtrl('c'), same: lvCtrl('s'), again: lvCtrl('a'), find: lvCtrl('f'),
+  undo: lvCtrl('u'), help: lvCtrl('h'),
+  stop: lvTap(XK.Escape), delete: lvTap(XK.Delete),
+};
+
+/**
+ * The ViewPoint text-property keys. These are real keys on the 6085 keyboard's
+ * top row and the only way to style text in the VP Document Editor; Dwarf maps
+ * them onto F2..F11 (F1 and F12 are deliberately left free upstream).
+ */
+const VP_TEXT_PROPERTIES: KeyRow = [
+  tap('vp-bold', 'BOLD', F(3)), tap('vp-italic', 'ITALIC', F(4)),
+  tap('vp-underline', 'UNDERLINE', F(7)), tap('vp-center', 'CENTER', F(2)),
+  tap('vp-case', 'CASE', F(5)), tap('vp-strikeout', 'STRIKEOUT', F(6)),
+  tap('vp-supersub', 'SUPER/SUB', F(8)), tap('vp-smaller', 'SMALLER', F(9)),
+  tap('vp-margins', 'MARGINS', F(10)), tap('vp-font', 'FONT', F(11)),
+];
 
 const ALT_TAB = chord('alt-tab', 'Alt+Tab', XK.Alt_L, XK.Tab, 'Switch task');
 const ALT_F4 = chord('alt-f4', 'Alt+F4', XK.Alt_L, F(4), 'Close window');
@@ -685,6 +761,30 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
       sym('sp-pound', '£', 'x'),
     ]],
   },
+
+  // Xerox 6085 "Daybreak" under Dwarf/Draco. The two base rows ARE the Level-V
+  // function block, because on this machine that block is not a set of
+  // shortcuts — it is the interface. There are no arrows and no Ctrl latch: the
+  // 6085 keyboard has no cursor keys, and Ctrl is the Xerox modifier itself, so
+  // a bare Ctrl would emit nothing the guest can use.
+  'xerox-dwarf': {
+    family: 'xerox-dwarf',
+    rows: [
+      levelVRow(DWARF_LEVEL_V, ['next', 'open', 'props', 'move', 'copy', 'same']),
+      levelVRow(DWARF_LEVEL_V, ['again', 'find', 'undo', 'help', 'stop', 'delete']),
+    ],
+    moreRows: [
+      VP_TEXT_PROPERTIES,
+      [
+        tap('para-tab', 'PARA TAB', XK.Tab, { hint: 'The Xerox tab key' }),
+        tap('new-para', 'NEW PARA', XK.Return, { hint: 'The Xerox return key — a new paragraph, not a new line' }),
+        tap('bs', '⌫', XK.BackSpace, { repeat: true }),
+        latch('shift', 'Shift', XK.Shift_L),
+        tap('lock', 'LOCK', XK.Caps_Lock),
+        tap('space', 'Space', 0x20, { repeat: true, wide: true }),
+      ],
+    ],
+  },
 };
 
 // Every production streamhost tile, EXPLICITLY (test-enforced vs the registry).
@@ -778,6 +878,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // 40-key matrix has no punctuation, no cursor keys and no Ctrl, and its two
   // shifts do different jobs from a PC's.
   zxspectrum: 'zxspectrum',
+  // Xerox 6085 under Dwarf/Draco. The only profile in this file whose base rows
+  // are entirely machine-specific verbs; see the Level-V block above for why it
+  // is built from a per-machine binding table rather than a fixed key set.
+  daybreak: 'xerox-dwarf',
 };
 
 export function keyboardProfileFor(osId: string): KeyboardProfile {

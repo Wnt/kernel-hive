@@ -551,6 +551,16 @@
    "mouse": "N/A",
    "keyboard": "PASS",
    "fixture": "Acorn ARM Evaluation System at the ARM BBC Basic V 1.00 prompt (ARM Second Processor 4096K / Acorn ADFS / BASIC / A* *LIB $ / A* AB / ARM BBC Basic V version 1.00 ... / >) in MAME 0.289 `bbcb -tube arm`, fullscreen with -keepaspect -artwork_crop on an 800x600 X root; golden INTERNAL snapshot restores it. Reset verified 2026-08-09 with the VM STOPPED — stop / loadvm golden / stop / screendump / cont — because MODE 7 blinks its cursor and a wall-clock sample of the same restored state differs by one ~40 px cell. Two such cycles before the keyboard proof and two after it all hash to sha256 bc8ba12ebb064f00ca23304dc9aef1aca26f80bc2be4fd5ad8e1fbba083bdb56. Keyboard route certified the same day AFTER the bake, against the restored fixture: the registry demoProgram's three lines and RUN typed at the tile's shipped 80/80 pacing print \"20000 LOOPS 0.22\", asserted by lit-pixel count; LIST, RUN and ESCAPE were each driven separately by framebuffer, and ESCAPE additionally asserts that MAME is still alive afterwards because Esc is also MAME's own UI cancel key. Keyboard-only exhibit (no mouse); AC97 audio."
+  },
+  "daybreak": {
+   "tileDir": "daybreak",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Xerox 6085 \"Daybreak\" at the logged-in ViewPoint 2.0.5 desktop under Dwarf/Draco; golden INTERNAL snapshot restores the running desktop with no Pilot boot, no Ctrl+N and no logon sheet. Route certified 2026-08-09 in framebuffer-asserted steps: boot to the logged-off bouncing keyboard (~90 s), Ctrl+N to the Logon Option Sheet, guest/guest, START, \"Do you want a new Desktop created for you?\" YES, desktop. Mouse PASS (400 ms dwell actuates the sheet's Start button); keyboard PASS (400 ms hold, 5/5 typed characters). Bridge tile added 2026-08-09."
   }
  }
 }
