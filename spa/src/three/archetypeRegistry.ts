@@ -176,7 +176,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   oricatmos:   { osId: 'oricatmos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8402F', eraLabel: '1984 · Oric Atmos (Extended BASIC V1.1)' },
   kc854:       { osId: 'kc854', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3FD8D0', eraLabel: '1988 · KC 85/4 (CAOS 4.2)' },
   sinclairql:  { osId: 'sinclairql', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2EE65A', eraLabel: '1984 · Sinclair QL (QDOS · SuperBASIC)' },
-  nextstep:    { osId: 'nextstep', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#8C8C8C', eraLabel: '1995 · NeXTSTEP 3.3 (NeXTcube)', pointerRel: true },
+  nextstep:    { osId: 'nextstep', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#8C8C8C', eraLabel: '1995 · NeXTSTEP 3.3 (NeXTcube)' },
   armeval:     { osId: 'armeval', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#0000FF', eraLabel: '1986 · ARM Evaluation System (ARM BBC Basic V)' },
 };
 

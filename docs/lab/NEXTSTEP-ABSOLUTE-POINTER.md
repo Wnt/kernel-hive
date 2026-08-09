@@ -1,8 +1,12 @@
 # NeXTSTEP absolute pointer — the native tablet path
 
-**Status: PROVEN on a clone (2026-08-09), NOT YET PROMOTED.** Angle
-`native-tablet` of the `nextstep` pointer problem. Method:
-[HARD-PROBLEM-METHODOLOGY.md](HARD-PROBLEM-METHODOLOGY.md).
+**Status: PROMOTED (2026-08-10).** Angle `native-tablet` of the `nextstep`
+pointer problem, method [HARD-PROBLEM-METHODOLOGY.md](HARD-PROBLEM-METHODOLOGY.md).
+This page is the winning angle's own write-up, kept as the record of *why*; what
+actually ships, and how a rebuild reproduces it, is in
+[`docs/guests/nextstep.md`](../guests/nextstep.md) §4 and
+`scripts/build-guests/tiles/nextstep.sh` +
+`scripts/build-guests/nextstep-tablet-install.py`.
 
 ## The result in one line
 
@@ -119,13 +123,24 @@ by eye, across four different desktop states, and it degrades gracefully at
 screen edges by matching only the in-bounds portion. Its one known blind spot is
 that NeXTSTEP swaps in an I-beam over text views, which is not the arrow.
 
-## Unproven
+## What the promotion closed, and what it did not
 
-- The whole browser → WebTransport → streamhost → `usb-tablet` → X leg. This
-  angle drove the kiosk's X pointer directly with `xdotool mousemove`, which is
-  what an absolute USB tablet produces, but the real client path was not run.
-- The 4 ms figure (above).
-- Buttons and drag through the tablet path (`tablet_pen_button` exists and is
-  wired; clicks were used to drive the installer, but not measured).
+Closed during promotion (see the guest doc for the evidence):
+
+- **Buttons and drag.** A single click selects a Workspace icon; a press-drag-
+  release on the File Viewer's title bar moves the window by exactly the
+  commanded offset and lands where it was let go, round trip.
+- **The install is now automated and reproducible**, not hand-driven:
+  `nextstep-tablet-install.py`, invoked by the builder between its last cold boot
+  and `savevm golden`, and re-runnable by an operator after any cold boot.
+- **The cold-boot asymmetry** is written down where it will be read (guest doc
+  §4, `scripts/coldboot/nextstep-zero-input-prep.md`) rather than left implicit.
+
+Still unproven:
+
+- The 4 ms serial-report figure. It is read out of `tablet.c` +
+  `cycInt.c`, not measured: this tile's only input→photon instrument is a
+  screendump poll loop with a floor three orders of magnitude coarser, and the
+  box was carrying a load average of ~10-12 from the rest of the fleet.
 - Only MM 1201 was tried. The WACOM types report a finer coordinate range and
   might behave differently at the edges; there was no need to look.

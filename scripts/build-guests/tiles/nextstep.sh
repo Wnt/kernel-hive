@@ -13,27 +13,14 @@
 #         INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- WHY PREVIOUS AND NOT QEMU (the route decision, made on evidence) -------
-#   docs/guests/nextstep.md records, at length, that NeXTSTEP 3.3 for INTEL
-#   installs and runs only on QEMU <= 0.9.x: its 1994 SCSI/IDE drivers never get
-#   reliable completion interrupts out of a modern QEMU, and the install dies
-#   with `Bus Reset Detected; FATAL` / `interrupt timeout` / `errno 5` under both
-#   TCG and KVM, across five controller permutations. That is not re-run here.
-#   The two candidate routes were costed before a line was written:
-#     (a) Previous + a NeXT ROM + an m68k NeXTSTEP disk;
-#     (b) build QEMU 0.9.0 inside the overlay and sit through the 1994 Intel
-#         installer once.
-#   (a) won on all three axes and is what this script does:
-#     * AUTHENTICITY — a real matte-black NeXTcube with a MegaPixel display is
-#       the machine Tim Berners-Lee wrote WorldWideWeb on. (b) is a PC clone.
-#     * COST — the emulator builds in ~9 minutes and the disk image is a
-#       PRE-INSTALLED NeXTSTEP 3.3, so there is no multi-hour interactive
-#       install to drive blind. (b) has one, on an emulator that also has to be
-#       built, and then a second unknown: whether the installed disk boots
-#       anywhere useful.
-#     * MEDIA — the ROMs ship INSIDE the Previous source tree
-#       (src/Rev_2.5_v66.BIN, sha256 1b753890…), byte-identical to the ones in
-#       the archive.org bundle, so no separate ROM hunt at all. Only the disk
-#       image is fetched.
+#   docs/guests/nextstep.md §1 records the full costing and the QEMU-10 dead end
+#   in detail; the short version is that NeXTSTEP 3.3 for INTEL installs and runs
+#   only on QEMU <= 0.9.x (its 1994 SCSI/IDE drivers never get reliable
+#   completion interrupts out of a modern QEMU, across five controller
+#   permutations, under both TCG and KVM), while Previous emulates a real
+#   matte-black NeXTcube, builds in ~9 minutes, boots a PRE-INSTALLED disk image
+#   with no 1994 installer to drive blind, and ships the ROM inside its own
+#   source tree (src/Rev_2.5_v66.BIN) so only the disk image is fetched.
 #
 # ---- WHAT IS BUILT INTO THE OVERLAY (the frozen base has none of it) --------
 #   1. SDL3 3.4.14 from source. Previous 4.4 requires SDL3 >= 3.2 and Debian 12
@@ -47,21 +34,17 @@
 #      boots, finds the disk, and dies on its first write. The kiosk runs as
 #      `bridge`, and a root-owned 0644 disk image opens read-only — the same
 #      trap the pdp11 tile hit with its MSCP pack. chown the image to `bridge`.
-#   2. `SDL screen scale: 0.971`. Previous asks SDL for the window border
-#      thickness, and when SDL cannot answer it ASSUMES a decorated desktop
-#      (50 px top and bottom, 25 px each side) and shrinks the emulated screen
-#      to fit. There is no window manager here, so it always assumed them, and
-#      the 1120x832 MegaPixel display was resampled to 1088x808 — blurring a
-#      1-bit-crisp Display PostScript UI and destroying the 1:1 pixel mapping
-#      the relative pointer depends on. Patched: see
-#      previous-wmless-window-borders.patch.
+#   2. `SDL screen scale: 0.971`. With no window manager to answer, Previous
+#      ASSUMES a decorated desktop (50 px top and bottom, 25 px each side) and
+#      shrinks the emulated screen to fit, resampling 1120x832 down to 1088x808
+#      — blurring a 1-bit-crisp Display PostScript UI and destroying the 1:1
+#      pixel map the pointer depends on. Patched: see
+#      ../patches/previous-wmless-window-borders.patch.
 #   3. NO INPUT AT ALL, for hours. With no window manager nobody ever calls
-#      XSetInputFocus, so the X input focus stays None and SDL3 hands Previous
-#      no key events; and because the pointer is already inside the window when
-#      it is mapped, no EnterNotify is generated either, so SDL never acquires a
-#      mouse focus. A perfectly live NeXTSTEP that ignores every keystroke and
-#      never moves its cursor. Fixed by nextstep-kiosk-frame.sh, which focuses
-#      the window and walks the pointer out and back in.
+#      XSetInputFocus, so the X focus stays None and SDL3 hands Previous no key
+#      events; and with the pointer already inside the window when it is mapped
+#      there is no EnterNotify either, so SDL never takes a mouse focus. A live
+#      NeXTSTEP that ignores everything. Fixed by nextstep-kiosk-frame.sh.
 #   4. STILL no input reaching the MACHINE, while Previous's own F12 menu
 #      answered. Previous 4.4 built with ENABLE_RENDERING_THREAD=0 (the default
 #      everywhere except macOS) pushes guest key/mouse events onto an internal
@@ -71,27 +54,30 @@
 #      handed to Keymap_KeyDown/Keymap_MouseMove directly, and the NeXT cursor
 #      moved on the next try. THE TILE MUST BE BUILT WITH THAT FLAG.
 #   5. 135% of CPU in four llvmpipe threads, and a keystroke taking 5-33 s to
-#      appear. SDL_RENDER_DRIVER=software was already set and the renderer
-#      really was "software" (SDL3 says so with SDL_LOGGING=render=verbose) —
-#      but SDL3 still PRESENTED it through an accelerated window surface, which
-#      on this GPU-less host means llvmpipe. SDL_FRAMEBUFFER_ACCELERATION=0
+#      appear. SDL_RENDER_DRIVER=software was already set and the renderer really
+#      was "software", but SDL3 still PRESENTED through an accelerated window
+#      surface — llvmpipe, on a GPU-less host. SDL_FRAMEBUFFER_ACCELERATION=0
 #      drops it to XPutImage: no llvmpipe thread, RSS 375 MB -> 106 MB, and the
-#      same keystroke lands in 0.58 s (the measurement floor of a screendump
-#      poll loop). Do not remove that variable.
+#      same keystroke lands in 0.58 s. Do not remove that variable.
 #
-# ---- POINTER: RELATIVE, NOT THE TABLET --------------------------------------
-#   Previous consumes SDL xrel/yrel and moves the emulated NeXT mouse by them
-#   (src/gui-sdl/sdlkeymap.c -> kms_mouse_move), so this is the playbook's
-#   "Class B relative-only inner emulator" and the tile takes the c64/qnx path:
-#   `--pointer rel`, `-usb` with NO usb-tablet, and `vmport=off` so QEMU's
-#   implicit VMware absolute mouse cannot swallow the relative events. The X
-#   root is made EXACTLY 1120x832 so the host pointer and the NeXT arrow clamp
-#   at the same edges, and Xorg pointer acceleration is turned off for every
-#   pointer so the browser's movementX/Y survive unscaled.
-#   The NeXT KMS mouse register carries a SIGNED 6-BIT delta: a single event
-#   cannot move the cursor more than 63 px, and Previous sums all queued motion
-#   before applying it. Ordinary pointer-lock movement is far below that; a fast
-#   flick is not, and under-moves. Recorded in docs/guests/nextstep.md.
+# ---- POINTER: ABSOLUTE, THROUGH THE MACHINE'S OWN TABLET --------------------
+#   Previous also emulates a graphics tablet: src/tablet.c simulates a
+#   SummaGraphics digitiser on the NeXT SCC serial port B, and sdlevent.c feeds
+#   it the host's ABSOLUTE window coordinates whenever `[Tablet] nTabletType` is
+#   non-zero AND the guest driver has enabled it — only otherwise does it fall
+#   back to the relative kms_mouse_move(). NeXTSTEP 3.3 ships the matching driver
+#   on the disk (/NextAdmin/InstallTablet.app, setuid root), so NOTHING is
+#   compiled: this golden carries no m68k toolchain and does not need one.
+#   So: nTabletType = 2 (SummaGraphics MM 1201), `-usb -device usb-tablet`,
+#   SH_INPUT_BACKEND=dbus-abs, and a golden baked with the driver ATTACHED —
+#   nextstep-tablet-install.py does that below and re-proves the 1:1 map.
+#   `vmport=off` STAYS: QEMU's implicit VMware mouse would otherwise be a second
+#   absolute pointer competing with the usb-tablet. The X root being EXACTLY
+#   1120x832 at +0+0 is now LOAD-BEARING for that 1:1 map, not cosmetic.
+#   The driver is a kernel server loaded at install time and does NOT survive a
+#   COLD boot — which is precisely why the exhibit's reset model fits: `loadvm
+#   golden` restores RAM and device state rather than booting. A cold boot lands
+#   on the old relative path until the installer is run again.
 #
 # ---- KEY PACING: NOT APPLICABLE ---------------------------------------------
 #   This is a GUI exhibit, not a type-in exhibit. There is no emulated keyboard
@@ -189,8 +175,10 @@ LOG=/tmp/nextstep-launch.log
   echo "=== launch $(date -Is) DISPLAY=$DISPLAY"
   OUT=$(xrandr 2>&1 | awk '/ connected/{print $1; exit}')
   # The NeXT MegaPixel display is 1120x832 and no stock mode is that size. Make
-  # the X root EXACTLY the emulated screen: that is what keeps host pixels and
-  # guest pixels 1:1 and makes both cursors clamp together at the same edges.
+  # the X root EXACTLY the emulated screen. DO NOT CHANGE THIS GEOMETRY: it is
+  # load-bearing, not cosmetic. The absolute pointer is a straight 1:1 map from
+  # this root to the NeXT tablet's coordinate space, so any other size silently
+  # scales every visitor's click; it also keeps both cursors clamping together.
   xrandr --newmode 1120x832 76.00 1120 1184 1304 1488 832 835 845 852 -hsync +vsync 2>&1
   xrandr --addmode "$OUT" 1120x832 2>&1
   xrandr --output "$OUT" --mode 1120x832 2>&1
@@ -229,7 +217,10 @@ fLinScale = 1.333333
 fExpScale = 1.0
 
 [Tablet]
-nTabletType = 0
+# 2 = SummaGraphics MM 1201. Non-zero is what makes Previous route the host's
+# ABSOLUTE window coordinates to tablet_pen_move() once the guest driver is
+# attached; 0 (the old value) forced the relative kms_mouse_move() path.
+nTabletType = 2
 
 [Sound]
 bEnableMicrophone = FALSE
@@ -301,10 +292,12 @@ bMMU = TRUE
 EOS
 
 read -r -d '' XORG_PTR <<'EOS' || true
-# nextstep tile: the exhibit is driven by RELATIVE pointer deltas that must
-# reach the emulator unchanged (browser movementX -> streamhost RelMotion ->
-# QEMU PS/2 -> Xorg -> SDL xrel -> NeXT KMS). Any pointer acceleration in Xorg
-# would rescale them, so every pointer on this kiosk is flat and unaccelerated.
+# nextstep tile: the exhibit is driven by ABSOLUTE coordinates that must reach
+# the emulator unscaled (browser -> streamhost dbus-abs -> QEMU usb-tablet ->
+# Xorg -> SDL -> Previous tablet.c -> the NeXT tabletdriver). Acceleration does
+# not apply to an absolute device, but this stanza stays: it also covers the
+# relative PS/2 pointer a COLD boot falls back to before the driver is attached,
+# and any Xorg rescaling there would corrupt the install automation.
 Section "InputClass"
     Identifier   "nextstep-flat-pointer"
     MatchIsPointer "on"
@@ -343,7 +336,7 @@ boot_tile() {
     -display dbus,p2p=on,audiodev=snd0 \
     -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 \
     -device AC97,audiodev=snd0 \
-    -usb \
+    -usb -device usb-tablet \
     -netdev user,id=n0,hostfwd=tcp:127.0.0.1:"$SSH_PORT"-:22 \
     -device e1000,netdev=n0 \
     $LOADVM \
@@ -538,11 +531,11 @@ PV
   log "installing the kiosk launcher, the frame watcher, and previous.cfg"
   printf '%s\n' "$LAUNCH" | guest "cat > /etc/bridge/launch.sh && chmod 755 /etc/bridge/launch.sh"
   put "$HERE/../stages/nextstep-kiosk-frame.sh" /usr/local/bin/nextstep-kiosk-frame.sh
-  guest "chmod 755 /usr/local/bin/nextstep-kiosk-frame.sh"
-  printf '%s\n' "$PREVIOUS_CFG" |
-    guest "cat > /home/bridge/.config/previous/previous.cfg &&
-      chown -R bridge:bridge /home/bridge/.config"
-  printf '%s\n' "$XORG_PTR" | guest "cat > /etc/X11/xorg.conf.d/20-nextstep-pointer.conf"
+  # nstel.py is the only captured-output exec channel into NeXTSTEP itself:
+  # Previous publishes a fixed SLIRP redirect from the kiosk's :42323 to the
+  # NeXT's telnet port. The tablet install needs it; operators do too.
+  put "$HERE/../nextstep-nstel.py" /usr/local/bin/nstel.py
+  guest "chmod 755 /usr/local/bin/nextstep-kiosk-frame.sh /usr/local/bin/nstel.py"
 
   # First light. NeXTSTEP 3.3 runs its own first-boot Welcome panel (language +
   # keyboard) exactly once, on the very first boot of this disk image; RETURN
@@ -559,6 +552,20 @@ PV
   wait_for_workspace cold-boot-workspace
 fi
 
+# Rewritten on EVERY run, not only for a new overlay: they carry the tablet
+# settings, and an overlay built before those existed must pick them up.
+if [ "$NEW_OVERLAY" -eq 0 ]; then
+  log "refreshing previous.cfg and the Xorg pointer stanza"
+  boot_tile
+  wait_ssh
+fi
+printf '%s\n' "$PREVIOUS_CFG" |
+  guest "cat > /home/bridge/.config/previous/previous.cfg &&
+    chown -R bridge:bridge /home/bridge/.config"
+printf '%s\n' "$XORG_PTR" | guest "cat > /etc/X11/xorg.conf.d/20-nextstep-pointer.conf"
+put "$HERE/../nextstep-nstel.py" /usr/local/bin/nstel.py
+guest "chmod 755 /usr/local/bin/nstel.py"
+
 # One clean cold boot with everything in place, then bake the golden from the
 # state the machine itself chose: its own Workspace, nothing curated, nothing
 # typed. (The Plus/4 lesson: a golden baked inside an application drops a
@@ -571,6 +578,14 @@ wait_for_workspace ready-before-golden
 guest "pgrep -x previous >/dev/null" || die "the Previous emulator is not running"
 guest "grep -q 'window=' /tmp/nextstep-frame.log" ||
   die "the frame watcher never found the Previous window (input and geometry would both be wrong)"
+
+# Attach NeXTSTEP's own tablet driver and prove the 1:1 map BEFORE the snapshot:
+# the driver is a kernel server that a cold boot does not carry, so the golden is
+# the only thing that can keep it. This also leaves the desktop pixel-diffed back
+# onto the fixture it started from.
+log "attaching the NeXTSTEP tablet driver (absolute pointer) before the bake"
+python3 "$HERE/../nextstep-tablet-install.py" --dir "$TILE_DIR" --ssh-port "$SSH_PORT" \
+  --key "$KEY" --evidence "$EVIDENCE" || die "the tablet driver did not attach"
 
 hmp "savevm golden" >/dev/null
 qemu-img snapshot -l "$OVERLAY" | grep -qw golden || die "savevm golden did not land"

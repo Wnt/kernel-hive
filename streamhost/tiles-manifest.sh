@@ -713,10 +713,10 @@ emit sinclairql \
   --fps 60 --launcher-file "$T/sinclairql/qemu-streamhost.sh" \
   --env-append-file "$T/sinclairql/tile.env.fixture"
 emit nextstep \
-  --tile nextstep --vmid 237 --udp 54134 --pointer rel --cursor-scale 1.0 \
-  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 --launcher-file \
-  "$T/nextstep/qemu-streamhost.sh" --env-append-file \
-  "$T/nextstep/tile.env.fixture"
+  --tile nextstep --vmid 237 --udp 54134 --pointer abs --input-backend dbus-abs \
+  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \
+  --launcher-file "$T/nextstep/qemu-streamhost.sh" \
+  --env-append-file "$T/nextstep/tile.env.fixture"
 emit armeval \
   --tile armeval --vmid 238 --udp 54135 --pointer none --input-backend \
   disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \

@@ -76,25 +76,74 @@ mode is that size — and makes the root exactly that. This is deliberate:
 - the host pointer and the NeXT arrow clamp at the *same* edges, which is what a
   relative pointer needs to stay in registration.
 
-## 4. Pointer: relative, the c64/qnx path
+## 4. Pointer: absolute, through the machine's own tablet
 
-Previous consumes SDL `xrel`/`yrel` and moves the emulated NeXT mouse by them
-(`src/gui-sdl/sdlkeymap.c` → `kms_mouse_move`). It is the playbook's *Class B
-relative-only inner emulator*, so the tile ships:
+Previous emulates more than a mouse. `src/tablet.c` simulates a SummaGraphics
+MM 961/MM 1201 digitiser (and the WACOM SD series) on the NeXT **SCC serial port
+B**, and `src/gui-sdl/sdlevent.c` feeds it the host's **absolute** window
+coordinates whenever `[Tablet] nTabletType` is non-zero *and* the guest driver
+has enabled the tablet; only otherwise does it fall back to the relative
+`kms_mouse_move()`. NeXTSTEP 3.3 ships the matching driver on the disk the tile
+already uses — `/NextAdmin/InstallTablet.app`, setuid root, 21 Oct 1994 — which
+writes a kernel-server relocatable to `/usr/lib/kern_loader/Tablet/`, loads it,
+creates `/dev/tableta`+`/dev/tabletb`, probes `/dev/ttyb` and attaches. Nothing
+is compiled: this golden carries no m68k toolchain at all.
 
-- `--pointer rel` (`SH_POINTER=rel`, backend `dbus-rel`), SPA `pointerRel: true`;
-- `-usb` with **no** `usb-tablet`, and `-machine …,vmport=off` — without that,
-  QEMU's implicit VMware absolute mouse becomes the active handler and silently
-  swallows the relative events;
-- `/etc/X11/xorg.conf.d/20-nextstep-pointer.conf`, which turns pointer
-  acceleration off for every pointer so the browser's `movementX/Y` survive
-  unscaled.
+So the tile ships:
 
-**Known limit, measured:** the NeXT KMS mouse register carries a *signed 6-bit*
-delta, so a single event can move the cursor at most 63 px, and Previous sums all
-queued motion before applying it. Ordinary pointer-lock movement is far below
-that; a fast flick is not, and under-moves. Build-time scripted moves that jump
-hundreds of pixels at once are therefore not a fair test of the production path.
+- `nTabletType = 2` in `previous.cfg` (SummaGraphics MM 1201);
+- `-usb -device usb-tablet`, `SH_INPUT_BACKEND=dbus-abs`, SPA `pointerRel`
+  absent, `stream.pointer.method = qemu-usb-tablet`;
+- `-machine …,vmport=off` still pinned — it used to protect the relative path,
+  and it now keeps QEMU's implicit VMware mouse from being a *second* absolute
+  pointer competing with the tablet;
+- an X root of **exactly 1120x832 at +0+0**. That is now load-bearing: the whole
+  chain is a straight 1:1 map from the X root to the NeXT screen, so any other
+  root size silently scales every visitor's click.
+
+**Measured, on the production tile:** 24 of 24 acceptance targets (corners inset
+8 px, edge midpoints, centre, and 15 scattered points) landed at **0 px** error,
+one commanded move each, located by an exact glyph match on the framebuffer.
+Click and drag were proven the same way — a Workspace icon selects, and the File
+Viewer's title bar drags 1:1 and lands where it was let go.
+
+**The one asymmetry, stated plainly.** The driver is a kernel server loaded at
+install time; Previous's own README warns it must be reinstalled after every
+*boot*. `loadvm golden` is not a boot — it restores RAM and device state — so the
+golden keeps the driver for every visitor and every reset, which is exactly why
+this fits the exhibit's reset model. **A COLD boot does not have it** and falls
+back to Previous's relative mouse, which against an absolute usb-tablet is not a
+usable pointer. The tile only ever cold-boots when the golden is missing (i.e.
+the fixture is gone and the tile is being rebuilt anyway), and the recovery is
+one command:
+
+```bash
+ssh lab 'python3 scripts/build-guests/nextstep-tablet-install.py'   # from a repo copy on the box
+```
+
+which is the same automation `scripts/build-guests/tiles/nextstep.sh` runs
+between its last cold boot and `savevm golden`. It is deliberately NOT wired into
+the kiosk's boot path: it drives the guest GUI, and nothing should be clicking
+around inside an exhibit a visitor may already be watching.
+
+**How the install is driven, since it cannot be scripted from a shell.**
+NeXTSTEP refuses a DPS connection to a telnet session (`DPS client library
+error: Could not form connection, host local host`), so `InstallTablet` cannot be
+launched from `nstel.py`; and its panel never becomes the *key* window, so its
+default button cannot be reached with RETURN either. The working sequence, all
+framebuffer-verified: symlink the app into `/me`, reboot NeXTSTEP so the File
+Viewer rescans, **type-select** `Install` in the viewer and press RETURN to open
+it, then walk the still-relative pointer onto the panel's Install button with a
+closed loop on the cursor glyph and click once. From that click on, the pointer
+is absolute and the rest (quit, unlink, refresh, pixel-diff back to the fixture)
+is exact.
+
+**Historical, kept because it explains the old wiring:** before the tablet the
+tile ran `--pointer rel` with no usb-tablet, and the NeXT KMS mouse register's
+*signed 6-bit* delta capped a single event at 63 px, so a fast flick under-moved.
+That limit is no longer on the visitor's path — the tablet reports a position,
+not a delta — but it still applies to anything driving the guest before the
+driver is attached.
 
 ## 5. Key pacing: not applicable
 
@@ -162,11 +211,14 @@ visibly backed up.
 
 ## 8. Golden fixture and reset
 
-`SH_RESET_MODE=loadvm`, snapshot `golden`, baked 2026-08-09 from an **untouched
-cold boot**: the grey Workspace, the Workspace menu at the top left, the File
-Viewer NeXTSTEP opens for itself at login, and the Dock down the right-hand
-edge. Nothing curated, nothing typed — this is where the machine stops on its
-own. Restore was verified by framebuffer in the same run.
+`SH_RESET_MODE=loadvm`, snapshot `golden`: the grey Workspace, the Workspace
+menu at the top left, the File Viewer NeXTSTEP opens for itself at login, and the
+Dock down the right-hand edge. Nothing is curated — this is where the machine
+stops on its own — but the snapshot is **not** taken on an untouched boot any
+more: it is taken after §4's tablet-driver install, because a kernel server is
+the one thing a cold boot cannot carry. The install automation ends by pixel-
+diffing the desktop back onto the frame it started from, and refuses to continue
+if too much differs. Restore is verified by framebuffer in the same run.
 
 Evidence in `/data/vms/streamhost/tiles/nextstep/evidence/`:
 `coldboot-desktop.png` (the state that was baked), `golden-baked.png`,
@@ -181,12 +233,12 @@ lands on the Workspace with no input at all.
 
 ## 9. Open items — stated honestly
 
-- **`reset.mouse` and `reset.keyboard` are `UNVERIFIED`, not `PASS`.** Both were
-  proven to reach the emulated machine by framebuffer (the NeXT cursor moved;
-  RETURN drove the Welcome panel through two dialogs), but the full
-  browser → WebTransport → streamhost → PS/2 → X → SDL → KMS path was never
-  exercised end to end, and no click was shown selecting a Workspace object.
-  That is the first thing to close on this tile.
+- The **cold-boot pointer asymmetry** in §4: a cold-booted tile has no tablet
+  driver and no usable pointer until the installer is re-run. Documented and
+  one command away, deliberately not automatic.
+- Only `nTabletType = 2` (SummaGraphics MM 1201) was tried. The WACOM types
+  report a finer coordinate range and might behave differently at the edges;
+  there was no reason to look.
 - Guest-input latency was measured only through Previous's own F12 menu
   (0.58 s, at the floor of a screendump poll loop) and only while the box was
   carrying a load average of 20-45 from concurrent build agents. It should be
@@ -197,7 +249,19 @@ lands on the Workspace with no input at all.
 ## 10. Operator notes
 
 - `labctl exec nextstep "<cmd>"` reaches the **Debian kiosk**, not NeXTSTEP.
-  There is no exec channel into the NeXT side.
+  For NeXTSTEP itself there *is* now a captured-output channel: Previous
+  publishes a fixed SLIRP redirect from the kiosk's `127.0.0.1:42323` to the
+  NeXT's telnet port, and `/usr/local/bin/nstel.py` (source
+  `scripts/build-guests/nextstep-nstel.py`) drives it. Log in as `me` — NeXTSTEP
+  refuses `root` on a pseudo-terminal — and the client `su`s for you; neither
+  needs a password.
+
+  ```bash
+  ssh lab 'labctl exec nextstep "python3 /usr/local/bin/nstel.py me \"uname -a\""'
+  ```
+
+  It is a shell, not a window server: GUI apps launched through it die with
+  `DPS client library error: Could not form connection`.
 - NeXTSTEP logs in automatically as the user `me`. There is no password prompt
   in the fixture.
 - The kiosk writes `/tmp/nextstep-launch.log` (X mode) and
