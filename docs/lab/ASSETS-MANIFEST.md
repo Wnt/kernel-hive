@@ -103,7 +103,9 @@ fetches: stage the bits on the box; no builder may fetch them at build time.**
 | Windows 3.11 prebuilt `hda.img` | sha256 `0aa6e4a593e4cc762306a9dfcfe262001672185bc66ba17ae69b593925e62340` *(measured)* | 268 435 456 | `win311.sh` | `/data/gallery-guests/Win311/hda.img` — **PRESENT** | fetched from `rtts.eu/download/win311/hda.img` — third-party mirror, **single point of failure** |
 | OS/2 Warp 4 prebuilt `os2.qcow2` | sha256 `2b166b8d75912feb189945ee77480b2889f3c2554ca16fdf39e432e6656653bc` *(measured)* | 501 809 152 | `os2warp.sh` | `/data/gallery-guests/OS2Warp/os2.qcow2` — **PRESENT**, but **evolved in place**: it IS the live golden lineage, not the pristine download | archive.org item `os2warp4_20240227`; IBM-copyrighted, used privately here |
 | QNX 6.5.0 live ISO `QNX650Live.iso` | sha256 `e22a2a75b2f4ec4be4a933590fd2bf9c9d8b6466b7c0b3553521d6ef005e4077` *(pin, measured-match)* | 111 167 488 | `qnx.sh` | `/data/gallery-guests/QNX/QNX650Live.iso` — **PRESENT + verified** | archive.org item `qnx-650-live` |
-| NeXTSTEP 3.3 User ISO | none | ~640 MB | `nextstep.sh` | **not located on the box** — builder exists but the guest is not part of the 28-tile fleet (never staged/built here) | archive.org item `NeXTSTEP33CISC` |
+| NeXTSTEP 3.3 for m68k, pre-installed disk `NS33_2GB.dd` | sha256 `6381423b066c33c24c9c9ec519086708b9cf3b2f11882fed5319cfb6a3422f1b` *(measured)*; enclosing `.7z` sha256 `6940df2a00cc9cc1f8849667deeb7d30c6fb4aced2e31d44d719df32db059b47`, 60 508 875 B | 2 012 774 400 (sparse, ~232 MB on disk) | `nextstep.sh` | nextstep kiosk guest `/opt/bridge/media/nextstep/NS33_2GB.dd` — **PRESENT in-guest** (inside the tile overlay + its golden; re-fetched by the builder) | archive.org item `nextstep-3.3-hd-image-with-previous.-7z`; NeXT/Apple-copyrighted, preservation class, RUN privately here, never re-distributed |
+| NeXT ROM Rev 2.5 v66 `Rev_2.5_v66.BIN` | sha256 `1b753890b67095b73e104c939ddf62eca9e7d0aedde5108e3893b0ed9d8000a4` *(measured)* | 131 072 | `nextstep.sh` | nextstep kiosk guest `/opt/bridge/media/nextstep/Rev_2.5_v66.BIN` — **PRESENT in-guest**; taken from the Previous source tree (`src/Rev_2.5_v66.BIN`, SVN r1847), byte-identical to the archive.org copy | SourceForge `previous` SVN; NeXT/Apple-copyrighted, RUN privately here, never re-distributed |
+| NeXTSTEP 3.3 **Intel** User ISO | none | ~356 MB | *(historical)* | **not staged** — the Intel route is a documented dead end (QEMU-10 SCSI/IDE I/O wall); the live tile is the m68k route above | archive.org item `NeXTSTEP33CISC` |
 | Amiga Kickstart 1.3 ROM `kick13.rom` | md5 `82a21c1890cae844b3df741f2762d48d` *(pin, measured-match in-kiosk)* | 262 144 | `amiga.sh` (+ URL also in `bridge-base.sh`) | amiga kiosk guest `/opt/bridge/media/amiga/kick13.rom` — **PRESENT in-guest** (baked into the bridge overlay golden; re-fetched by the builder) | archive.org item `commodore-amiga-firmware`; Amiga ROMs are Cloanto/Amiga-copyrighted |
 | Workbench 1.3 boot ADF `workbench13.adf` | md5 `d10f4907697c4eafcf976b4ef6ea829b` *(pin, measured-match in-kiosk)* | 901 120 | `amiga.sh` | kiosk `/opt/bridge/media/amiga/workbench13.adf` — **PRESENT in-guest** | amigamuseum.emu-france.info mirror |
 | GEOS 2.0 for C64 `.d64` | md5 `709bec31c3502cbcf5d4761c38dcfa9e` *(pin)* | ~170 KB | `bridge-base.sh` / `c64.sh` | c64 kiosk media dir (in-guest) | archive.org item `geos64_J1AD`; Berkeley Softworks. VICE itself bundles the C64 kernal/basic ROMs (fetched as VICE 3.x source from SourceForge) |
@@ -170,7 +172,7 @@ mirrors. **Review before ANY public release of this repo:**
   validated against a `GRTMPVOL_EN` SP3+IE8 repack).
 - Win95/Win98SE/Win2000 source archives — fetch caches purged post-build
   (URLs + the win95 md5 pin remain in the builders).
-- Sailfish SDK emulator VDI; NeXTSTEP 3.3 ISO (builder never exercised here).
+- Sailfish SDK emulator VDI.
 
 ## 6. out-of-scope builders (not `build-guests/`)
 
