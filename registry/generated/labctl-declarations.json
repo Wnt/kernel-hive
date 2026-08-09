@@ -272,6 +272,21 @@
       "udp_port": 54122,
       "notes": "x11 runtime (MAME indy_4610, -video none + shm capture); no QMP; input = streamhost mamesock -> mamectl OSD module unix socket ctl.sock (pointer + keys; rollback SH_INPUT_BACKEND=mamecmd + module file tail, deep rollback IRIX_CTL=off = Lua agent); exec = serial_e — irixser/2 over MAME -ioc2:rs232a pty to irixagent.pl baked into the golden, host client /root/irixexec.py, no port; reset = relaunch"
     },
+    "kc854": {
+      "dir": "/data/vms/streamhost/tiles/kc854",
+      "qmp": "/data/vms/streamhost/tiles/kc854/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5835,
+      "exec_port": 5835,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54132,
+      "notes": "exec: labctl exec kc854 \"<cmd>\" (ssh root@:5835, key bridge_key). Reaches the DEBIAN kiosk, not the emulated KC."
+    },
     "kolibrios": {
       "dir": "/data/vms/streamhost/tiles/kolibrios",
       "qmp": "/data/vms/streamhost/tiles/kolibrios/qmp.sock",
@@ -316,6 +331,21 @@
       "console": "fb",
       "udp_port": 54113,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    },
+    "nextstep": {
+      "dir": "/data/vms/streamhost/tiles/nextstep",
+      "qmp": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5837,
+      "exec_port": 5837,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54134,
+      "notes": "exec: labctl exec nextstep \"<cmd>\" (ssh root@:5837, key bridge_key) reaches the DEBIAN KIOSK, not NeXTSTEP; the NeXT side has no exec channel"
     },
     "ninefront": {
       "dir": "/data/vms/streamhost/tiles/ninefront",
@@ -376,6 +406,21 @@
       "console": "fb",
       "udp_port": 54084,
       "notes": "dual-VM DECwindows bridge; qmp is the captured Xorg bridge; reset_mode=restart cold-replays fresh X connections"
+    },
+    "oricatmos": {
+      "dir": "/data/vms/streamhost/tiles/oricatmos",
+      "qmp": "/data/vms/streamhost/tiles/oricatmos/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5834,
+      "exec_port": 5834,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54131,
+      "notes": "exec: labctl exec oricatmos \"<cmd>\" (ssh root@:5834, key bridge_key) — reaches the Debian kiosk, not the emulated Oric"
     },
     "os2warp": {
       "dir": "/data/vms/streamhost/tiles/os2warp",
@@ -542,6 +587,21 @@
       "udp_port": 54102,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "sinclairql": {
+      "dir": "/data/vms/streamhost/tiles/sinclairql",
+      "qmp": "/data/vms/streamhost/tiles/sinclairql/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5836,
+      "exec_port": 5836,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54133,
+      "notes": "exec: labctl exec sinclairql \"<cmd>\" (ssh root@:5836, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated QL — drive the machine with labctl type/key and read it with labctl shot."
+    },
     "solariscde": {
       "dir": "/data/vms/streamhost/tiles/solariscde",
       "qmp": "/data/vms/streamhost/tiles/solariscde/qmp.sock",
@@ -706,6 +766,36 @@
       "console": "fb",
       "udp_port": 54094,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    },
+    "zx81": {
+      "dir": "/data/vms/streamhost/tiles/zx81",
+      "qmp": "/data/vms/streamhost/tiles/zx81/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5831,
+      "exec_port": 5831,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54128,
+      "notes": "exec: labctl exec zx81 \"<cmd>\" (ssh root@:5831, key bridge_key) — reaches the Debian kiosk, not the emulated ZX81"
+    },
+    "zxspectrum": {
+      "dir": "/data/vms/streamhost/tiles/zxspectrum",
+      "qmp": "/data/vms/streamhost/tiles/zxspectrum/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5830,
+      "exec_port": 5830,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54127,
+      "notes": "exec: labctl exec zxspectrum \"<cmd>\" (ssh root@:5830, key bridge_key)"
     }
   }
 }

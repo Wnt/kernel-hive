@@ -6,9 +6,9 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 // ============================================================================
 //  MUSEUM CATALOG — placard metadata for the full OS lineup (56 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 46 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 53 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 43 of those 46 have their placard entries in this
+//  WebTransport + WebCodecs. 50 of those 53 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,7 +17,7 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 45 entries
+//  This file provides rich, period-accurate placard metadata for its 52 entries
 //  so all 56 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
@@ -433,6 +433,76 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['the RT-11 keyboard monitor', 'MCR, the RSX-11M command interpreter', 'BASIC-PLUS under RSTS/E'],
     blurb: 'One machine and three of the operating systems DEC sold for it — a real-time monitor, a real-time executive and a timesharing system — because in 1975 you did not buy a computer with an operating system, you bought a computer and then chose one.',
     notes: 'Live streamhost tile, and the oldest machine in the collection. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs one fullscreen green-on-black xterm whose only program is a chooser, and pressing 1, 2 or 3 boots RT-11 V5.3, RSX-11M V4.2 BL38 or RSTS/E V9.6 under Open SIMH (pinned at commit a1f57fa3 and built INTO this tile\'s overlay, the amiga.sh precedent, because the frozen bridge base predates it). ONE tile rather than three because a visitor cannot tell RT-11\'s “.” from RSX-11M\'s “>” from RSTS/E\'s “Ready”, and three near-identical terminals would read as one exhibit cloned by accident; the chooser is the placard. THE VERSIONS ARE THE MENTEC CEILINGS: the 1997 hobbyist grant covers RT-11 V5.3, RSTS/E V9.6, RSX-11M V4.3 and RSX-11M-PLUS V3.0 “or prior”, which is exactly why they are hard to find. RSX-11M is V4.2 and the exhibit says V4.2 — V4.3 media is not reachable anywhere today, and the community\'s RSX-11M-PLUS V4.6 and RSTS/E V10.1 are outside the grant. RSTS/E is installed as far as its media allows: the pack boots to timesharing and a working DCL $ prompt, but DEC\'s procedure ends by asking for a second “Library” tape that is not in the kit and is not obtainable, so START.COM and the packaged CCL commands are absent — the chooser says so in three lines of its own text rather than leaving a visitor to discover it. The golden idles AT the chooser with no simulator running, so a tile nobody is watching costs nothing, and each system runs on a fresh sparse copy of its pack. Keyboard-only exhibit; mono-terminal archetype. The arc worth reading aloud: the “>” of RSX-11M is the prompt whose authors, under Dave Cutler, went on to write VMS and then Windows NT, both of which are already in this gallery. See streamhost/docs/BRIDGE.md and docs/guests/decos.md.',
+  },
+  {
+    id: 'zxspectrum', displayName: 'Sinclair ZX Spectrum 48K', year: 1982,
+    lineage: 'Sinclair Research (ZX80 → ZX81 → ZX Spectrum)',
+    arch: 'Zilog Z80A, 3.5 MHz, 48 KB RAM, 16 KB ROM, Ferranti ULA', ramMB: 0, ramKB: 48,    era: '1980s', accent: '#CD0000',
+    eraSoftware: ['Sinclair BASIC in ROM, with a whole keyword on every key', 'Manic Miner and Jet Set Willy, written by Matthew Smith', 'Ultimate Play the Game\'s isometric Filmation titles: Knight Lore, Alien 8', 'Elite, The Hobbit, Lords of Midnight, Chuckie Egg, Skool Daze', 'cassette tapes, the ZX Microdrive, and type-in listings from Your Sinclair and CRASH'],
+    periodBrowser: 'none — pre-web 8-bit era',
+    iconicApps: ['Sinclair BASIC', 'Manic Miner', 'Knight Lore'],
+    blurb: 'The machine that taught Britain to program: £175, forty rubber keys, and a whole BASIC keyword printed on each one — press P and the word PRINT appears. Its eight colours are stored one pair per 8×8 cell, so sprites drag their colours across each other, and a generation grew up calling that attribute clash rather than a fault.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Debian\'s own MAME 0.251 (`spectrum` driver, `-bios en`) emulating a 48K ZX Spectrum; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The one external input is the 16 KB Sinclair ROM, taken from Debian\'s `spectrum-roms` package under Amstrad\'s 1999 emulator permission and never committed (docs/lab/ASSETS-MANIFEST.md). MAME runs fullscreen with -keepaspect on the stock 1024x768 X root, which the 4:3 picture fills exactly. The golden is the machine\'s own untouched power-on screen. KEYWORD ENTRY is the exhibit and the catch: at the K cursor one keypress enters a whole token, so the registry demoProgram is written as the KEYSTROKES a person presses, not as the listing they produce. The 40-key matrix has no punctuation keys at all — every symbol is SYMBOL SHIFT plus a letter — so the SPA\'s zxspectrum on-screen keyboard carries CAPS SHIFT / SYMBOL SHIFT latches, EXTENDED MODE, and the symbol chords a type-in cannot reach. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/zxspectrum.md.',
+  },
+  {
+    id: 'zx81', displayName: 'Sinclair ZX81', year: 1981,
+    lineage: 'Sinclair Research (ZX80 → ZX81 → ZX Spectrum)',
+    arch: 'Zilog Z80A at 3.25 MHz, 1 KB RAM, 8 KB ROM, 32×24 characters, monochrome', ramMB: 0, ramKB: 1,    era: '1980s', accent: '#D8462F',
+    eraSoftware: ['Sinclair BASIC in 8 KB of ROM, entered one keyword per keypress', '3D Monster Maze — a first-person maze with a pursuing Tyrannosaurus, in 16 KB', 'Mazogs, Flight Simulation and the rest of a cassette-tape software trade sold by post', 'the ZX Printer\'s silver spark-eroded paper, and hundreds of type-in listings from magazines'],
+    periodBrowser: 'none — pre-web 8-bit era',
+    iconicApps: ['Sinclair BASIC', '3D Monster Maze', 'type-in listings from Sinclair User and ZX Computing'],
+    blurb: 'The machine that put a computer in a British newsagent: £69.95 in kit form, a Z80, a membrane keyboard, one kilobyte of memory, no sound and no colour — and a million and a half of them sold.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289 (SUBTARGET=zx81, pinned upstream commit f34f0250, built in the Bookworm chroot by scripts/build-guests/build-mame-zx81.sh); streamhost captures the Linux framebuffer + AC97 audio exactly like every other bridge tile. The ROM is the second revision (-bios 2nd, zx81a.rom, sha1 7b143ee9…), which is what almost every shipped ZX81 contained; it is preservation-source material copyright Nine Tiles Networks Ltd, staged on the box and never committed. RAM is pinned to the machine as sold, -ramsize 1K, rather than MAME\'s 16K default. The golden is the untouched power-on screen — a white field with one inverse K — and readiness is decided GEOMETRICALLY, not by counting bright pixels, because this machine blanks its display while it computes and a photometric test cannot tell that frame from the fixture. Keyboard-only exhibit; the ZX81 has no sound hardware. See streamhost/docs/BRIDGE.md and docs/guests/zx81.md.',
+  },
+  {
+    id: 'dragon32', displayName: 'Dragon 32', year: 1982,
+    lineage: 'Dragon Data (Port Talbot, Wales) — Motorola 6809 / MC6847, Tandy CoCo lineage',
+    arch: 'Motorola MC6809E, 0.89 MHz, 32 KB RAM, 16 KB ROM', ramMB: 0, ramKB: 32,    era: '1980s', accent: '#30D200',
+    eraSoftware: ['Microsoft 16K Extended Color BASIC in ROM', 'cassette games from Microdeal, Salamander and Dragon Data itself', 'DragonDOS on the optional disk interface', 'OS-9 Level 1, a real multitasking Unix-alike on a home micro', 'Dragon User magazine and its monthly type-in listings'],
+    periodBrowser: 'none — pre-web 8-bit era',
+    iconicApps: ['Microsoft Extended Color BASIC', 'Telewriter, the word processor that gave the Dragon lower case', 'Microdeal\'s cassette games'],
+    blurb: 'Britain\'s Welsh-built answer to the home-computer boom: a Motorola 6809 — the best 8-bit processor anyone shipped — wired to a video chip that could draw nine colours and no lower-case letters, and sold against the Spectrum.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289\'s dragon32 driver, built from the same pinned upstream commit the mpf2 tile ships; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. THE LAUNCHER MUST EMPTY THE `ext` SLOT (-ext ""): its default is dragon_fdc, which boots DRAGONDOS instead of BASIC, and -verifyroms demands the FDC ROM that causes it. The romset is assembled BY SHA1 and gated against the shipped binary\'s own -listxml (0.276 declares one 16 KB d32.rom, 0.289 the same bits as two 8 KB halves named after their chips), and the build asserts the banner by OCR plus a text-pixel count of the framebuffer. Driver status is `good`, so MAME never raises its red "doesn\'t work" panel. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/dragon32.md.',
+  },
+  {
+    id: 'oricatmos', displayName: 'Oric Atmos', year: 1984,
+    lineage: 'Tangerine Computer Systems / Oric Products International (UK)',
+    arch: 'MOS 6502A, 1 MHz, 48 KB RAM, ULA video (40x28 text / 240x200 HIRES, 8 colours), AY-3-8912 sound', ramMB: 0, ramKB: 48,    era: '1980s', accent: '#D8402F',
+    eraSoftware: ['Oric Extended BASIC V1.1, with ZAP, PING, SHOOT and EXPLODE as language keywords', 'Tansoft\'s own range — Oric Base, Oric Calc, Zorgon\'s Revenge', 'a large French catalogue: the Atmos sold better in France than anywhere else', 'the 3-inch Microdisc drive and its Sedoric disc operating system', 'a demoscene that is still writing new Oric software four decades later'],
+    periodBrowser: 'none — pre-web 8-bit era',
+    iconicApps: ['Oric Extended BASIC V1.1', 'Zorgon\'s Revenge', 'Sedoric on the Microdisc'],
+    blurb: 'The ZX Spectrum\'s most direct British rival, and the one that won France: a black wedge with a red stripe, eight colours, three-voice sound, and a BASIC in which the words ZAP, PING, SHOOT and EXPLODE each make the noise they are named after.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME\'s `orica` driver emulating an Oric Atmos; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The emulator is a pinned MAME 0.289 built for oric.cpp only in the Bookworm chroot (scripts/build-guests/build-mame-oricatmos.sh) — the lab host\'s packaged 0.276 is trixie-ABI and Bookworm\'s own is 0.251. One 16 KB preservation-source ROM (basic11b.rom, Extended BASIC V1.1) is staged outside the repo and gated by asking the shipped binary\'s own -listxml which sha1 it demands for bios ver11. Drawn fullscreen with aspect correction on an 800x600 X root, which is 4:3 — the shape the machine drew on a television, and the mode that measured 1.6x cheaper to blit than 1024x768 on this box. The golden is the machine\'s own untouched power-on screen; the interaction is the registry demoProgram. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/oricatmos.md.',
+  },
+  {
+    id: 'kc854', displayName: 'KC 85/4', year: 1988,
+    lineage: 'VEB Mikroelektronik "Wilhelm Pieck" Mühlhausen — HC 900 / KC 85 line',
+    arch: 'U880 (Z80 clone), 1.77 MHz, 64 KB RAM + 64 KB screen RAM, 320x256 in 16 colours', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#3FD8D0',
+    eraSoftware: ['CAOS 4.2 — the machine\'s own operating system, in ROM, which prints its command menu at power-on', 'HC-BASIC, also in ROM', 'module cartridges: RAM, ROM, the D004 floppy interface, the TypeStar word processor', 'cassette software from schools, clubs and the KC user scene'],
+    periodBrowser: 'none — pre-web 8-bit era',
+    iconicApps: ['CAOS 4.2', 'HC-BASIC', 'TypeStar (M033 module)'],
+    blurb: 'East Germany\'s flagship school computer, and the one machine here whose operating system introduces itself: CAOS prints its own list of commands on the screen at power-on, because it was designed for a room of fourteen-year-olds who did not yet know the magic word.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs a purpose-built MAME 0.289 (SUBTARGET=kc85, src/mame/ddr/kc.cpp, tag mame0289) emulating the KC 85/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The romset is assembled BY SHA1 from a staged merged preservation zip, against the shipping binary\'s own -listxml: MAME\'s `basic_c0.854` is stored in that archive under the name `kc85_3/basic_c0.853` and no member called `basic_c0.854` exists, so a filename-driven assembly silently yields a set with no BASIC. -verifyroms is NOT the gate (kc85_4 is BIOS-selectable, so it objects to the absent caos41 alternative); the build asserts the sha1 of the three ROMs the tile pins. The driver is `preliminary`, so the binary carries the skip-warnings patch and ui.ini sets skip_warnings 1 — otherwise the exhibit is a red error panel for ever. The golden is the machine\'s own untouched CAOS 4.2 power-on screen. German keyboard: keyboard.charMap is derived mechanically from src/mame/ddr/kc_keyb.cpp with scripts/dev/mame-keymap.py, and includes the letter row because this machine\'s UNSHIFTED letters are CAPITALS. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/kc854.md.',
+  },
+  {
+    id: 'sinclairql', displayName: 'Sinclair QL', year: 1984,
+    lineage: 'Sinclair Research (post-ZX Spectrum, Motorola 68008)',
+    arch: 'Motorola 68008, 7.5 MHz, 128 KB RAM, two Microdrive tape loops', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#2EE65A',
+    eraSoftware: ['QDOS with SuperBASIC — multitasking in 48 KB of ROM', 'Psion\'s Quill, Abacus, Archive and Easel, bundled on Microdrive cartridges', 'Microdrives: 100 KB endless tape loops, the machine\'s only built-in storage', 'a small, stubborn developer scene that outlived Sinclair itself'],
+    periodBrowser: 'none — pre-web 8/16-bit era',
+    iconicApps: ['SuperBASIC', 'Quill (word processor)', 'Abacus (spreadsheet)'],
+    blurb: 'Sinclair\'s serious machine, launched before it was finished: a 68008 workstation-in-a-wedge announced twelve days before the Macintosh, sold months before it could be delivered, and shipped with firmware that did not fit — the earliest buyers got the missing part on a ROM cartridge hanging out of the back.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.251\'s `ql` driver; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The romset is a preservation-source set reduced by SHA1 to the four entries the default JS v1.10 BIOS needs, and re-verified at build time against the shipped binary\'s own -listxml; the QL\'s hal16l8.ic38 PLD has never been dumped anywhere, so MAME reports it missing on every boot and puts up an imperfect-dump warning, which the builder answers before baking. The golden is the machine\'s own 80-column monitor-mode screen, one keystroke past the `F1...monitor / F2...TV` chooser it insists on at power-on; the chooser is kept as the poster image. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/sinclairql.md.',
+  },
+  {
+    id: 'nextstep', displayName: 'NeXTSTEP 3.3', year: 1995,
+    lineage: 'NeXT Computer (Mach + 4.3BSD + Display PostScript)',
+    arch: 'Motorola 68040, 25 MHz (NeXTcube), 64 MB RAM, 1120x832 MegaPixel display', ramMB: 64,    era: '1990s', accent: '#8C8C8C',
+    eraSoftware: ['Workspace Manager, the Dock and the File Viewer', 'Interface Builder and Project Builder', 'Mail.app, Edit, Terminal and the Digital Librarian', 'WorldWideWeb — the first web browser, written on a machine like this one'],
+    periodBrowser: 'WorldWideWeb / OmniWeb (NeXTSTEP was where the web browser was invented)',
+    iconicApps: ['Workspace Manager', 'the right-hand Dock', 'Interface Builder', 'Digital Librarian'],
+    blurb: 'The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile\'s own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU\'s SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is relative (SPA pointer lock, the c64/qnx path); the guest draws its own arrow. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md.',
   },
 ];
 

@@ -3,8 +3,8 @@
   "id": "bbcmicro",
   "era_year": 1981,
   "tileDir": "bbcmicro",
-  "lifecycle": "production",
-  "enabled": true,
+  "lifecycle": "candidate",
+  "enabled": false,
   "build": {
     "rows": [
       {
@@ -45,22 +45,9 @@
       "notes": "exec: labctl exec bbcmicro \"<cmd>\" (ssh root@:5832, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro"
     }
   },
-  "render": {
-    "signalOrder": 45,
-    "tilesManifestOrder": 43,
-    "tilesManifestPrelude": "\n# bbcmicro (VMID 232) — MAME 0.289 bbcb (Acorn BBC Micro Model B, 1981) -> BBC BASIC II. ssh 5832. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit bbcmicro \\\n  --tile bbcmicro --vmid 232 --udp 54129 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/bbcmicro/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/bbcmicro/tile.env.fixture\"\n",
-    "bringUpGroup": 6,
-    "bindingOrder": 49,
-    "bindingPrelude": "",
-    "bindingLine": "  bbcmicro:    { osId: 'bbcmicro', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8442F', eraLabel: '1981 · BBC Micro Model B (BBC BASIC II)' },\n",
-    "museumOrder": 43,
-    "goldenOrder": 43,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'bbcmicro', displayName: 'Acorn BBC Micro Model B', year: 1981,\n    lineage: 'Acorn Computers (Cambridge) — Atom, BBC Micro, Archimedes, ARM',\n    arch: 'MOS 6502A, 2 MHz, 32 KB RAM, 32 KB ROM (MOS 1.20 + BBC BASIC II), SAA5050 teletext, SN76489 sound', ramMB: 0, ramKB: 32,    era: '1980s', accent: '#D8442F',\n    eraSoftware: ['BBC BASIC II, with named procedures and a 6502 assembler built into the language', 'Elite — written on this machine by two Cambridge undergraduates', 'Acornsoft\\'s educational range, and the BBC\\'s own Computer Literacy Project programmes', 'the Acorn DFS and a 5.25-inch drive, or a cassette for everyone else', 'Econet, which networked a classroom before networking was a consumer idea'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['BBC BASIC II', 'Elite', 'the built-in 6502 assembler'],\n    blurb: 'The machine the BBC specified and Acorn built, half-funded into every British school, and the only home computer whose BASIC had a 6502 assembler inside it — so the distance from a first program to writing machine code was a pair of square brackets. The team that finished it went on to design the ARM.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs a purpose-built MAME 0.289 `bbcb` (SUBTARGET=bbcb, SOURCES=src/mame/acorn, built in the Bookworm chroot so its ABI matches the bridge); streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Unlike the VICE tiles this one keeps the base\\'s full 1024x768 X root and runs MAME fullscreen with -keepaspect and -artwork_crop, which drops the driver\\'s keyboard-LED strip. The five ROM dumps are preservation-source with NO authorised URL and are staged by the operator, gated on SHA-1 and assembled into three MAME zips by the builder; MAME\\'s own defaults are shipped, so the Acorn 8271 disc interface is fitted and the banner carries its DFS line. The golden is the machine\\'s own untouched power-on screen. Keyboard-only exhibit; thirteen characters sit on different keys from a PC (keyboard.charMap, derived from the driver\\'s PORT_CHAR table) and CAPS LOCK is on at reset. A sibling exhibit, armeval, will show the ARM Evaluation System on this same driver via `bbcb -tube arm`. See streamhost/docs/BRIDGE.md and docs/guests/bbcmicro.md.',\n  },\n"
-  },
+  "render": {},
   "stream": {
-    "transport": "streamhost",
+    "transport": "showcase",
     "udpPort": 54129,
     "fps": 60,
     "audio": true,
@@ -100,7 +87,7 @@
       "SH_GOLDEN_SNAPSHOT": "golden",
       "SH_KEY_MIN_HOLD_MS": "80",
       "SH_KEY_MIN_GAP_MS": "80",
-      "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+::,^:=,~:+,_:`,::',*:\"",
+      "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+:%3A,^:=,~:+,_:`,%3A:',*:\"",
       "SH_FIXTURE_DESC": "Acorn BBC Micro Model B (1981) at its own untouched power-on screen: \"BBC Computer 32K / Acorn DFS / BASIC / >\" in white MODE 7 teletext on black, drawn fullscreen with aspect correction by a purpose-built MAME 0.289 `bbcb` on the bridge base's stock 1024x768 X root. Nothing is curated and nothing is typed. The machine is MAME's own default configuration — MOS 1.20, BBC BASIC II, and the Acorn 8271 disc interface with DNFS 1.20, which is what prints the \"Acorn DFS\" line. -artwork_crop removes the driver's LED strip so the exhibit is the picture and nothing else. CAPS LOCK is on at reset (the MOS switches it on), so unshifted letters arrive upper case, which is what BASIC's tokeniser needs; thirteen characters sit on different keys from a US PC and are translated by SH_KEY_MAP. Keyboard-only exhibit; no pointer device; SN76489 sound -> ALSA -> AC97."
     },
     "vmidLabel": 232,
@@ -181,8 +168,7 @@
         "status": "semantic-identical",
         "reason": "registry source pins pc-i440fx-11.0,vmport=off and 768 MB, matching the QEMU 11 device set the golden was baked under"
       }
-    },
-    "bringUpOrder": 49
+    }
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
@@ -257,6 +243,7 @@
   },
   "notes": [
     "Preservation-source ROMs with NO authorised fetch URL: the operator stages five blobs at /data/assets-staging/bbcmicro/ and the builder gates each on SHA-1. Never commit the bits.",
-    "The `saa5050` teletext character generator is a THIRD MAME zip, in no BIOS set; without it MODE 7 has no glyphs and MAME refuses to start."
+    "The `saa5050` teletext character generator is a THIRD MAME zip, in no BIOS set; without it MODE 7 has no glyphs and MAME refuses to start.",
+    "disabled candidate: the build wave was interrupted before the golden bake. The tile dir exists on the box but has NO golden snapshot and the service is not running, so it is not a shippable exhibit. Re-run scripts/build-guests/bbcmicro.sh."
   ]
 }

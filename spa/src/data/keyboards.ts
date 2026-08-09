@@ -3,6 +3,23 @@
 import type { GuestKeyboard } from '../types';
 
 const KEYBOARDS = {
+  "bbcmicro": {
+    "charMap": {
+      "\"": "@",
+      "'": "&",
+      "&": "^",
+      "(": "*",
+      ")": "(",
+      "=": "_",
+      "@": "\\",
+      "+": ":",
+      "^": "=",
+      "~": "+",
+      "_": "`",
+      ":": "'",
+      "*": "\""
+    }
+  },
   "dragon32": {
     "charMap": {
       "@": "[",
@@ -19,6 +36,76 @@ const KEYBOARDS = {
     },
     "letterCase": "upper-only"
   },
+  "kc854": {
+    "charMap": {
+      "W": "w",
+      "w": "W",
+      "A": "a",
+      "a": "A",
+      "\"": "@",
+      "-": "=",
+      "=": "+",
+      "Y": "y",
+      "y": "Y",
+      "E": "e",
+      "e": "E",
+      "S": "s",
+      "s": "S",
+      "^": "[",
+      ":": "-",
+      "*": "_",
+      "X": "x",
+      "x": "X",
+      "T": "t",
+      "t": "T",
+      "F": "f",
+      "f": "F",
+      "P": "p",
+      "p": "P",
+      "@": ")",
+      "V": "v",
+      "v": "V",
+      "U": "u",
+      "u": "U",
+      "H": "h",
+      "h": "H",
+      "'": "&",
+      "O": "o",
+      "o": "O",
+      ")": "(",
+      "N": "n",
+      "n": "N",
+      "I": "i",
+      "i": "I",
+      "J": "j",
+      "j": "J",
+      "(": "*",
+      "K": "k",
+      "k": "K",
+      "M": "m",
+      "m": "M",
+      "Z": "z",
+      "z": "Z",
+      "G": "g",
+      "g": "G",
+      "&": "^",
+      "L": "l",
+      "l": "L",
+      "B": "b",
+      "b": "B",
+      "R": "r",
+      "r": "R",
+      "D": "d",
+      "d": "D",
+      "|": "\"",
+      "+": ";",
+      ";": ":",
+      "C": "c",
+      "c": "C",
+      "Q": "q",
+      "q": "Q"
+    }
+  },
   "mpf2": {
     "charMap": {
       "=": "O",
@@ -34,6 +121,9 @@ const KEYBOARDS = {
     "letterCase": "upper-only"
   },
   "vic20": {
+    "letterCase": "upper-only"
+  },
+  "zxspectrum": {
     "letterCase": "upper-only"
   }
 } as const satisfies Record<string, GuestKeyboard>;

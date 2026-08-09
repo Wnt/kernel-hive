@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/tiles/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (46 of the 56
+//    - transport   : how its LIVE framebuffer texture is obtained (53 of the 56
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -100,7 +100,7 @@ export interface OSBinding {
   bootVideo?: string;
 }
 
-// One entry per OS. 46 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 53 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos',     archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -165,6 +165,13 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   pdp11:       { osId: 'pdp11', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#9A4F96', eraLabel: '1975 · PDP-11/70 (2.11BSD)' },
   gt40:        { osId: 'gt40', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#3BE84B', eraLabel: '1973 · GT40 (VT11 vector, light pen)' },
   decos:       { osId: 'decos', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#7A5CC4', eraLabel: '1970 · PDP-11 · RT-11 / RSX-11M / RSTS-E' },
+  zxspectrum:  { osId: 'zxspectrum', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CD0000', eraLabel: '1982 · ZX Spectrum 48K' },
+  zx81:        { osId: 'zx81', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8462F', eraLabel: '1981 · ZX81 (1 KB, black and white)' },
+  dragon32:    { osId: 'dragon32', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#30D200', eraLabel: '1982 · Dragon 32 (Microsoft BASIC)' },
+  oricatmos:   { osId: 'oricatmos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8402F', eraLabel: '1984 · Oric Atmos (Extended BASIC V1.1)' },
+  kc854:       { osId: 'kc854', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3FD8D0', eraLabel: '1988 · KC 85/4 (CAOS 4.2)' },
+  sinclairql:  { osId: 'sinclairql', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2EE65A', eraLabel: '1984 · Sinclair QL (QDOS · SuperBASIC)' },
+  nextstep:    { osId: 'nextstep', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#8C8C8C', eraLabel: '1995 · NeXTSTEP 3.3 (NeXTcube)', pointerRel: true },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

@@ -45,7 +45,20 @@
       "notes": "exec: labctl exec kc854 \"<cmd>\" (ssh root@:5835, key bridge_key). Reaches the DEBIAN kiosk, not the emulated KC."
     }
   },
-  "render": {},
+  "render": {
+    "tilesManifestOrder": 47,
+    "bindingOrder": 53,
+    "museumOrder": 47,
+    "goldenOrder": 47,
+    "bringUpGroup": 6,
+    "signalOrder": 49,
+    "tilesManifestInvocation": "emit kc854 \\\n  --tile kc854 --vmid 235 --udp 54132 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/kc854/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/kc854/tile.env.fixture\"\n",
+    "bindingLine": "  kc854:       { osId: 'kc854', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3FD8D0', eraLabel: '1988 · KC 85/4 (CAOS 4.2)' },\n",
+    "museumBlock": "  {\n    id: 'kc854', displayName: 'KC 85/4', year: 1988,\n    lineage: 'VEB Mikroelektronik \"Wilhelm Pieck\" Mühlhausen — HC 900 / KC 85 line',\n    arch: 'U880 (Z80 clone), 1.77 MHz, 64 KB RAM + 64 KB screen RAM, 320x256 in 16 colours', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#3FD8D0',\n    eraSoftware: ['CAOS 4.2 — the machine\\'s own operating system, in ROM, which prints its command menu at power-on', 'HC-BASIC, also in ROM', 'module cartridges: RAM, ROM, the D004 floppy interface, the TypeStar word processor', 'cassette software from schools, clubs and the KC user scene'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['CAOS 4.2', 'HC-BASIC', 'TypeStar (M033 module)'],\n    blurb: 'East Germany\\'s flagship school computer, and the one machine here whose operating system introduces itself: CAOS prints its own list of commands on the screen at power-on, because it was designed for a room of fourteen-year-olds who did not yet know the magic word.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs a purpose-built MAME 0.289 (SUBTARGET=kc85, src/mame/ddr/kc.cpp, tag mame0289) emulating the KC 85/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The romset is assembled BY SHA1 from a staged merged preservation zip, against the shipping binary\\'s own -listxml: MAME\\'s `basic_c0.854` is stored in that archive under the name `kc85_3/basic_c0.853` and no member called `basic_c0.854` exists, so a filename-driven assembly silently yields a set with no BASIC. -verifyroms is NOT the gate (kc85_4 is BIOS-selectable, so it objects to the absent caos41 alternative); the build asserts the sha1 of the three ROMs the tile pins. The driver is `preliminary`, so the binary carries the skip-warnings patch and ui.ini sets skip_warnings 1 — otherwise the exhibit is a red error panel for ever. The golden is the machine\\'s own untouched CAOS 4.2 power-on screen. German keyboard: keyboard.charMap is derived mechanically from src/mame/ddr/kc_keyb.cpp with scripts/dev/mame-keymap.py, and includes the letter row because this machine\\'s UNSHIFTED letters are CAPITALS. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/kc854.md.',\n  },\n",
+    "tilesManifestPrelude": "",
+    "bindingPrelude": "",
+    "museumPrelude": ""
+  },
   "stream": {
     "transport": "streamhost",
     "udpPort": 54132,
@@ -169,7 +182,7 @@
         "reason": "registry source pins pc-i440fx-11.0,vmport=off and -m 768, matching the QEMU 11 device set the golden was baked under"
       }
     },
-    "bringUpOrder": 51
+    "bringUpOrder": 53
   },
   "spa": {
     "archetypeId": "beige-tower-crt",

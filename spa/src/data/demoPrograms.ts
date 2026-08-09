@@ -24,6 +24,18 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 90
   },
+  "bbcmicro": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 mode 1",
+      "20 for i=0 to 1279 step 16",
+      "30 gcol 0,1+i mod 3",
+      "40 move 640,512:draw i,1023",
+      "50 next"
+    ],
+    "runCommand": "run",
+    "perCharMs": 170
+  },
   "cbm8032": {
     "label": "Type in a demo program",
     "lines": [
@@ -66,6 +78,20 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run"
   },
+  "oricatmos": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 cls",
+      "20 for c=0 to 6",
+      "30 paper c:ink 7-c",
+      "40 print \"oric atmos 1984\"",
+      "50 ping:wait 40",
+      "60 next c",
+      "70 paper 7:ink 0"
+    ],
+    "runCommand": "run",
+    "perCharMs": 160
+  },
   "pet2001": {
     "label": "Type in a demo program",
     "lines": [
@@ -88,6 +114,18 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run",
     "perCharMs": 170
+  },
+  "zxspectrum": {
+    "label": "Type in a demo program (one key = one keyword)",
+    "lines": [
+      "10 b1",
+      "20 b2",
+      "30 b6",
+      "40 b5",
+      "50 g10"
+    ],
+    "runCommand": "r",
+    "perCharMs": 400
   }
 } as const satisfies Record<string, DemoProgram>;
 

@@ -1531,54 +1531,249 @@
     {
       "schemaVersion": 1,
       "id": "bbcmicro",
-      "era_year": 2026,
+      "era_year": 1981,
       "tileDir": "bbcmicro",
       "lifecycle": "candidate",
       "enabled": false,
       "build": {
         "rows": [
           {
-            "order": 46,
+            "order": 44,
             "prelude": "",
-            "line": "  \"bbcmicro    |bbcmicro.sh    |Bbcmicro      |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"bbcmicro    |bbcmicro.sh    |bridge/bbcmicro |retro    |~6-10m  |full   |tiles/bbcmicro overlay + golden (MAME 0.289 bbcb → BBC BASIC II)\"\n",
             "value": {
               "key": "bbcmicro",
               "script": "bbcmicro.sh",
-              "outputDir": "Bbcmicro",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "outputDir": "bridge/bbcmicro",
+              "class": "retro",
+              "estimated": "~6-10m",
+              "automation": "full",
+              "produces": "tiles/bbcmicro overlay + golden (MAME 0.289 bbcb → BBC BASIC II)",
               "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 14
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/bbcmicro",
+          "qmp": "/data/vms/streamhost/tiles/bbcmicro/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5832,
+          "exec_port": 5832,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54129,
+          "notes": "exec: labctl exec bbcmicro \"<cmd>\" (ssh root@:5832, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro"
+        }
+      },
       "stream": {
         "transport": "showcase",
         "udpPort": 54129,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 129
       },
       "guestDoc": "docs/guests/bbcmicro.md",
       "credentialsRef": "guest/bbcmicro",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "bbcmicro",
+          "SH_QMP": "/data/vms/streamhost/tiles/bbcmicro/qmp.sock",
+          "SH_PORT": "54129",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/bbcmicro/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/bbcmicro/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "80",
+          "SH_KEY_MIN_GAP_MS": "80",
+          "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+:%3A,^:=,~:+,_:`,%3A:',*:\"",
+          "SH_FIXTURE_DESC": "Acorn BBC Micro Model B (1981) at its own untouched power-on screen: \"BBC Computer 32K / Acorn DFS / BASIC / >\" in white MODE 7 teletext on black, drawn fullscreen with aspect correction by a purpose-built MAME 0.289 `bbcb` on the bridge base's stock 1024x768 X root. Nothing is curated and nothing is typed. The machine is MAME's own default configuration — MOS 1.20, BBC BASIC II, and the Acorn 8271 disc interface with DNFS 1.20, which is what prints the \"Acorn DFS\" line. -artwork_crop removes the driver's LED strip so the exhibit is the picture and nothing else. CAPS LOCK is on at reset (the MOS switches it on), so unshifted letters arrive upper case, which is what BASIC's tokeniser needs; thirteen characters sit on different keys from a US PC and are translated by SH_KEY_MAP. Keyboard-only exhibit; no pointer device; SN76489 sound -> ALSA -> AC97."
+        },
+        "vmidLabel": 232,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "bbcmicro",
+            "--vmid",
+            "232",
+            "--udp",
+            "54129",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/bbcmicro/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/bbcmicro/tile.env.fixture"
+          ],
+          "deviceSetId": "bbcmicro-current",
+          "launcher": "streamhost/tiles/bbcmicro/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/bbcmicro/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "deviceSetSummary": [
+            "-name streamhost-bbcmicro",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5832-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-bbcmicro",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5832-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off and 768 MB, matching the QEMU 11 device set the golden was baked under"
+          }
+        }
+      },
       "spa": {
         "archetypeId": "beige-tower-crt",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · bbcmicro"
+        "transport": "streamhost",
+        "accentColor": "#D8442F",
+        "eraLabel": "1981 · BBC Micro Model B (BBC BASIC II)"
+      },
+      "keyboard": {
+        "charMap": {
+          "\"": "@",
+          "'": "&",
+          "&": "^",
+          "(": "*",
+          ")": "(",
+          "=": "_",
+          "@": "\\",
+          "+": ":",
+          "^": "=",
+          "~": "+",
+          "_": "`",
+          ":": "'",
+          "*": "\""
+        }
+      },
+      "demoProgram": {
+        "label": "Type in a demo program",
+        "lines": [
+          "10 mode 1",
+          "20 for i=0 to 1279 step 16",
+          "30 gcol 0,1+i mod 3",
+          "40 move 640,512:draw i,1023",
+          "50 next"
+        ],
+        "runCommand": "run",
+        "perCharMs": 170
       },
       "museum": {
         "id": "bbcmicro",
-        "displayName": "bbcmicro",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "Acorn BBC Micro Model B",
+        "year": 1981,
+        "lineage": "Acorn Computers (Cambridge) — Atom, BBC Micro, Archimedes, ARM",
+        "arch": "MOS 6502A, 2 MHz, 32 KB RAM, 32 KB ROM (MOS 1.20 + BBC BASIC II), SAA5050 teletext, SN76489 sound",
+        "ramMB": 0,
+        "ramKB": 32,
+        "era": "1980s",
+        "accent": "#D8442F",
+        "eraSoftware": [
+          "BBC BASIC II, with named procedures and a 6502 assembler built into the language",
+          "Elite — written on this machine by two Cambridge undergraduates",
+          "Acornsoft's educational range, and the BBC's own Computer Literacy Project programmes",
+          "the Acorn DFS and a 5.25-inch drive, or a cassette for everyone else",
+          "Econet, which networked a classroom before networking was a consumer idea"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "BBC BASIC II",
+          "Elite",
+          "the built-in 6502 assembler"
+        ],
+        "blurb": "The machine the BBC specified and Acorn built, half-funded into every British school, and the only home computer whose BASIC had a 6502 assembler inside it — so the distance from a first program to writing machine code was a pair of square brackets. The team that finished it went on to design the ARM.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs a purpose-built MAME 0.289 `bbcb` (SUBTARGET=bbcb, SOURCES=src/mame/acorn, built in the Bookworm chroot so its ABI matches the bridge); streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Unlike the VICE tiles this one keeps the base's full 1024x768 X root and runs MAME fullscreen with -keepaspect and -artwork_crop, which drops the driver's keyboard-LED strip. The five ROM dumps are preservation-source with NO authorised URL and are staged by the operator, gated on SHA-1 and assembled into three MAME zips by the builder; MAME's own defaults are shipped, so the Acorn 8271 disc interface is fitted and the banner carries its DFS line. The golden is the machine's own untouched power-on screen. Keyboard-only exhibit; thirteen characters sit on different keys from a PC (keyboard.charMap, derived from the driver's PORT_CHAR table) and CAPS LOCK is on at reset. A sibling exhibit, armeval, will show the ARM Evaluation System on this same driver via `bbcb -tube arm`. See streamhost/docs/BRIDGE.md and docs/guests/bbcmicro.md."
+      },
+      "reset": {
+        "tileDir": "bbcmicro",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Acorn BBC Micro Model B power-on screen (BBC Computer 32K / Acorn DFS / BASIC / >) in MAME 0.289 `bbcb`, fullscreen with -keepaspect -artwork_crop on the bridge base's stock 1024x768 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated and no post-restore keys are sent. Keyboard route certified 2026-08-09 AFTER the bake, against the restored fixture: the registry demoProgram's five lines typed at the tile's shipped 80/80 pacing and RUN paint a MODE 1 fan of coloured lines, asserted by lit-pixel count — a listing corrupted by an unmapped '=' or bracket leaves the screen a teletext banner full of 'Mistake' and fails. Keyboard-only exhibit (no mouse); AC97 audio."
       },
       "notes": [
-        "new-os Tier 2 scaffold; reserved slot 129/UDP 54129",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+        "Preservation-source ROMs with NO authorised fetch URL: the operator stages five blobs at /data/assets-staging/bbcmicro/ and the builder gates each on SHA-1. Never commit the bits.",
+        "The `saa5050` teletext character generator is a THIRD MAME zip, in no BIOS set; without it MODE 7 has no glyphs and MAME refuses to start.",
+        "disabled candidate: the build wave was interrupted before the golden bake. The tile dir exists on the box but has NO golden snapshot and the service is not running, so it is not a shippable exhibit. Re-run scripts/build-guests/bbcmicro.sh."
       ]
     },
     {
@@ -2657,55 +2852,247 @@
     {
       "schemaVersion": 1,
       "id": "dragon32",
-      "era_year": 2026,
-      "tileDir": "dragon32",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "era_year": 1980,
+      "enabled": true,
       "build": {
         "rows": [
           {
-            "order": 47,
+            "order": 45,
             "prelude": "",
-            "line": "  \"dragon32    |dragon32.sh    |Dragon32      |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"dragon32     |dragon32.sh    |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)\"\n",
             "value": {
               "key": "dragon32",
               "script": "dragon32.sh",
-              "outputDir": "Dragon32",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "outputDir": "bridge/dragon32",
+              "class": "retro",
+              "estimated": "~4-6m",
+              "automation": "full",
+              "produces": "tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)",
               "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 14
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/dragon32",
+          "qmp": "/data/vms/streamhost/tiles/dragon32/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5833,
+          "exec_port": 5833,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54130,
+          "notes": "exec: labctl exec dragon32 \"<cmd>\" (ssh root@:5833, key bridge_key)"
+        }
+      },
+      "tileDir": "dragon32",
+      "lifecycle": "production",
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
         "udpPort": 54130,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 130
       },
       "guestDoc": "docs/guests/dragon32.md",
       "credentialsRef": "guest/dragon32",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "dragon32",
+          "SH_QMP": "/data/vms/streamhost/tiles/dragon32/qmp.sock",
+          "SH_PORT": "54130",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/dragon32/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/dragon32/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "80",
+          "SH_KEY_MIN_GAP_MS": "80",
+          "SH_KEY_MAP": "@:[,\":@,&:^,':&,(:*,):(,%3A:-,*:_,+:%3A,-:=,=:+",
+          "SH_FIXTURE_DESC": "Dragon 32 (PAL) at its own untouched power-on screen: \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\", dark green on the MC6847's bright green page, drawn fullscreen with aspect correction by MAME 0.289's dragon32 driver on a 1024x768 X root (the dark surround is the Dragon's own border, not letterboxing). The launcher empties the driver's `ext` slot with -ext \"\": with the default dragon_fdc cartridge the machine boots DRAGONDOS 1.0 instead, and -verifyroms actively demands the FDC ROM that produces that wrong screen. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; 6-bit DAC sound -> ALSA -> AC97."
+        },
+        "vmidLabel": 233,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "dragon32",
+            "--vmid",
+            "233",
+            "--udp",
+            "54130",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/dragon32/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/dragon32/tile.env.fixture"
+          ],
+          "deviceSetId": "dragon32-current",
+          "launcher": "streamhost/tiles/dragon32/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/dragon32/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-dragon32",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5833-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-dragon32",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5833-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 51
+      },
       "spa": {
         "archetypeId": "beige-tower-crt",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · dragon32"
+        "transport": "streamhost",
+        "accentColor": "#30D200",
+        "eraLabel": "1982 · Dragon 32 (Microsoft BASIC)"
+      },
+      "keyboard": {
+        "charMap": {
+          "@": "[",
+          "\"": "@",
+          "&": "^",
+          "'": "&",
+          "(": "*",
+          ")": "(",
+          ":": "-",
+          "*": "_",
+          "+": ":",
+          "-": "=",
+          "=": "+"
+        },
+        "letterCase": "upper-only"
+      },
+      "demoProgram": {
+        "label": "Type in a demo program",
+        "lines": [
+          "10 pmode 3,1",
+          "20 pcls",
+          "30 screen 1,0",
+          "40 for r=2 to 90 step 4",
+          "50 circle(128,96),r,rnd(4)",
+          "60 next r",
+          "70 goto 40"
+        ],
+        "runCommand": "run",
+        "perCharMs": 170
       },
       "museum": {
         "id": "dragon32",
-        "displayName": "dragon32",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "Dragon 32",
+        "year": 1982,
+        "lineage": "Dragon Data (Port Talbot, Wales) — Motorola 6809 / MC6847, Tandy CoCo lineage",
+        "arch": "Motorola MC6809E, 0.89 MHz, 32 KB RAM, 16 KB ROM",
+        "ramMB": 0,
+        "ramKB": 32,
+        "era": "1980s",
+        "accent": "#30D200",
+        "eraSoftware": [
+          "Microsoft 16K Extended Color BASIC in ROM",
+          "cassette games from Microdeal, Salamander and Dragon Data itself",
+          "DragonDOS on the optional disk interface",
+          "OS-9 Level 1, a real multitasking Unix-alike on a home micro",
+          "Dragon User magazine and its monthly type-in listings"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "Microsoft Extended Color BASIC",
+          "Telewriter, the word processor that gave the Dragon lower case",
+          "Microdeal's cassette games"
+        ],
+        "blurb": "Britain's Welsh-built answer to the home-computer boom: a Motorola 6809 — the best 8-bit processor anyone shipped — wired to a video chip that could draw nine colours and no lower-case letters, and sold against the Spectrum.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289's dragon32 driver, built from the same pinned upstream commit the mpf2 tile ships; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. THE LAUNCHER MUST EMPTY THE `ext` SLOT (-ext \"\"): its default is dragon_fdc, which boots DRAGONDOS instead of BASIC, and -verifyroms demands the FDC ROM that causes it. The romset is assembled BY SHA1 and gated against the shipped binary's own -listxml (0.276 declares one 16 KB d32.rom, 0.289 the same bits as two 8 KB halves named after their chips), and the build asserts the banner by OCR plus a text-pixel count of the framebuffer. Driver status is `good`, so MAME never raises its red \"doesn't work\" panel. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/dragon32.md."
       },
-      "notes": [
-        "new-os Tier 2 scaffold; reserved slot 130/UDP 54130",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-      ]
+      "reset": {
+        "tileDir": "dragon32",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Dragon 32 (PAL) power-on screen — \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\" — in MAME 0.289's dragon32 driver with the `ext` slot emptied, fullscreen on a 1024x768 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated: the Plus/4's rejected in-application golden is the reason. No post-restore keys. The banner is asserted by OCR of the framebuffer at every stage of the build, because the wrong screen (DRAGONDOS 1.0, what the driver's default slot produces) is the same two greens and a pixel histogram cannot tell them apart. Keyboard proof certified 2026-08-09 after the bake: PRINT 3*7 answered 21, which also proves the shifted matrix — the Dragon puts '*' on SHIFT+the key a PC labels '-'. Keyboard-only exhibit (no mouse); AC97 audio."
+      }
     },
     {
       "schemaVersion": 1,
@@ -3790,55 +4177,286 @@
     {
       "schemaVersion": 1,
       "id": "kc854",
-      "era_year": 2026,
+      "era_year": 1980,
       "tileDir": "kc854",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "lifecycle": "production",
+      "enabled": true,
       "build": {
         "rows": [
           {
-            "order": 49,
+            "order": 44,
             "prelude": "",
-            "line": "  \"kc854       |kc854.sh       |Kc854         |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"kc854       |kc854.sh       |bridge/kc854    |retro    |~6-10m  |full   |tiles/kc854 overlay + golden (MAME kc85_4 → CAOS 4.2)\"\n",
             "value": {
               "key": "kc854",
               "script": "kc854.sh",
-              "outputDir": "Kc854",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "outputDir": "bridge/kc854",
+              "class": "retro",
+              "estimated": "~6-10m",
+              "automation": "full",
+              "produces": "tiles/kc854 overlay + golden (MAME kc85_4 → CAOS 4.2)",
               "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 14
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/kc854",
+          "qmp": "/data/vms/streamhost/tiles/kc854/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5835,
+          "exec_port": 5835,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54132,
+          "notes": "exec: labctl exec kc854 \"<cmd>\" (ssh root@:5835, key bridge_key). Reaches the DEBIAN kiosk, not the emulated KC."
+        }
+      },
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
         "udpPort": 54132,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 132
       },
       "guestDoc": "docs/guests/kc854.md",
       "credentialsRef": "guest/kc854",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "kc854",
+          "SH_QMP": "/data/vms/streamhost/tiles/kc854/qmp.sock",
+          "SH_PORT": "54132",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/kc854/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/kc854/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "80",
+          "SH_KEY_MIN_GAP_MS": "80",
+          "SH_KEY_MAP": "W:w,w:W,A:a,a:A,\":@,-:=,=:+,Y:y,y:Y,E:e,e:E,S:s,s:S,^:[,%3A:-,*:_,X:x,x:X,T:t,t:T,F:f,f:F,P:p,p:P,@:),V:v,v:V,U:u,u:U,H:h,h:H,':&,O:o,o:O,):(,N:n,n:N,I:i,i:I,J:j,j:J,(:*,K:k,k:K,M:m,m:M,Z:z,z:Z,G:g,g:G,&:^,L:l,l:L,B:b,b:B,R:r,r:R,D:d,d:D,|:\",+:;,;:%3A,C:c,c:C,Q:q,q:Q",
+          "SH_FIXTURE_DESC": "KC 85/4 (VEB Mikroelektronik \"Wilhelm Pieck\" Mühlhausen, 1988) at its own untouched power-on screen: CAOS 4.2's command menu and prompt, drawn by MAME 0.289 kc85_4 (-bios caos42) fullscreen with aspect correction on a 1024x768 X root. Nothing is curated and nothing is typed — the operating system prints the list of things a visitor can type, which makes the machine's honest idle screen its own launcher. BASIC starts HC-BASIC from the second ROM; MENU brings the list back. Keyboard-only exhibit; no pointer device; KC speaker -> ALSA -> AC97. THE DRIVER IS `preliminary`, so a stock MAME would open it with a full-screen red \"THIS SYSTEM DOESN'T WORK\" panel that -skip_gameinfo does not suppress: the shipped binary carries mame-irix-skip-warnings.patch and /opt/kc854/ui.ini sets skip_warnings 1. If red ever appears in this fixture, the deployment has regressed."
+        },
+        "vmidLabel": 235,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "kc854",
+            "--vmid",
+            "235",
+            "--udp",
+            "54132",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/kc854/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/kc854/tile.env.fixture"
+          ],
+          "deviceSetId": "kc854-current",
+          "launcher": "streamhost/tiles/kc854/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/kc854/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "deviceSetSummary": [
+            "-name streamhost-kc854",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5835-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-kc854",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5835-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off and -m 768, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 53
+      },
       "spa": {
         "archetypeId": "beige-tower-crt",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · kc854"
+        "transport": "streamhost",
+        "accentColor": "#3FD8D0",
+        "eraLabel": "1988 · KC 85/4 (CAOS 4.2)"
+      },
+      "keyboard": {
+        "charMap": {
+          "W": "w",
+          "w": "W",
+          "A": "a",
+          "a": "A",
+          "\"": "@",
+          "-": "=",
+          "=": "+",
+          "Y": "y",
+          "y": "Y",
+          "E": "e",
+          "e": "E",
+          "S": "s",
+          "s": "S",
+          "^": "[",
+          ":": "-",
+          "*": "_",
+          "X": "x",
+          "x": "X",
+          "T": "t",
+          "t": "T",
+          "F": "f",
+          "f": "F",
+          "P": "p",
+          "p": "P",
+          "@": ")",
+          "V": "v",
+          "v": "V",
+          "U": "u",
+          "u": "U",
+          "H": "h",
+          "h": "H",
+          "'": "&",
+          "O": "o",
+          "o": "O",
+          ")": "(",
+          "N": "n",
+          "n": "N",
+          "I": "i",
+          "i": "I",
+          "J": "j",
+          "j": "J",
+          "(": "*",
+          "K": "k",
+          "k": "K",
+          "M": "m",
+          "m": "M",
+          "Z": "z",
+          "z": "Z",
+          "G": "g",
+          "g": "G",
+          "&": "^",
+          "L": "l",
+          "l": "L",
+          "B": "b",
+          "b": "B",
+          "R": "r",
+          "r": "R",
+          "D": "d",
+          "d": "D",
+          "|": "\"",
+          "+": ";",
+          ";": ":",
+          "C": "c",
+          "c": "C",
+          "Q": "q",
+          "q": "Q"
+        }
       },
       "museum": {
         "id": "kc854",
-        "displayName": "kc854",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "KC 85/4",
+        "year": 1988,
+        "lineage": "VEB Mikroelektronik \"Wilhelm Pieck\" Mühlhausen — HC 900 / KC 85 line",
+        "arch": "U880 (Z80 clone), 1.77 MHz, 64 KB RAM + 64 KB screen RAM, 320x256 in 16 colours",
+        "ramMB": 0,
+        "ramKB": 64,
+        "era": "1980s",
+        "accent": "#3FD8D0",
+        "eraSoftware": [
+          "CAOS 4.2 — the machine's own operating system, in ROM, which prints its command menu at power-on",
+          "HC-BASIC, also in ROM",
+          "module cartridges: RAM, ROM, the D004 floppy interface, the TypeStar word processor",
+          "cassette software from schools, clubs and the KC user scene"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "CAOS 4.2",
+          "HC-BASIC",
+          "TypeStar (M033 module)"
+        ],
+        "blurb": "East Germany's flagship school computer, and the one machine here whose operating system introduces itself: CAOS prints its own list of commands on the screen at power-on, because it was designed for a room of fourteen-year-olds who did not yet know the magic word.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs a purpose-built MAME 0.289 (SUBTARGET=kc85, src/mame/ddr/kc.cpp, tag mame0289) emulating the KC 85/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The romset is assembled BY SHA1 from a staged merged preservation zip, against the shipping binary's own -listxml: MAME's `basic_c0.854` is stored in that archive under the name `kc85_3/basic_c0.853` and no member called `basic_c0.854` exists, so a filename-driven assembly silently yields a set with no BASIC. -verifyroms is NOT the gate (kc85_4 is BIOS-selectable, so it objects to the absent caos41 alternative); the build asserts the sha1 of the three ROMs the tile pins. The driver is `preliminary`, so the binary carries the skip-warnings patch and ui.ini sets skip_warnings 1 — otherwise the exhibit is a red error panel for ever. The golden is the machine's own untouched CAOS 4.2 power-on screen. German keyboard: keyboard.charMap is derived mechanically from src/mame/ddr/kc_keyb.cpp with scripts/dev/mame-keymap.py, and includes the letter row because this machine's UNSHIFTED letters are CAPITALS. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/kc854.md."
       },
-      "notes": [
-        "new-os Tier 2 scaffold; reserved slot 132/UDP 54132",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-      ]
+      "reset": {
+        "tileDir": "kc854",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "UNVERIFIED",
+        "fixture": "KC 85/4 CAOS 4.2 power-on screen (the operating system's own command menu and prompt) in MAME 0.289 kc85_4, fullscreen with aspect correction on a 1024x768 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated and no post-restore keys are sent. Keyboard-only exhibit (no mouse); AC97 audio."
+      }
     },
     {
       "schemaVersion": 1,
@@ -4577,55 +5195,212 @@
     {
       "schemaVersion": 1,
       "id": "nextstep",
-      "era_year": 2026,
+      "era_year": 1995,
       "tileDir": "nextstep",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "lifecycle": "production",
+      "enabled": true,
       "build": {
         "rows": [
           {
-            "order": 45,
+            "order": 44,
             "prelude": "",
-            "line": "  \"nextstep        |nextstep.sh        |Zx81          |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"nextstep    |nextstep.sh    |bridge/nextstep|graphical|~25-40m |full   |tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)\"\n",
             "value": {
               "key": "nextstep",
               "script": "nextstep.sh",
-              "outputDir": "nextstep",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "outputDir": "bridge/nextstep",
+              "class": "graphical",
+              "estimated": "~25-40m",
+              "automation": "full",
+              "produces": "tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)",
               "flags": []
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/nextstep",
+          "qmp": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
+          "pointer_mode": "rel",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5837,
+          "exec_port": 5837,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54134,
+          "notes": "exec: labctl exec nextstep \"<cmd>\" (ssh root@:5837, key bridge_key) reaches the DEBIAN KIOSK, not NeXTSTEP; the NeXT side has no exec channel"
+        }
+      },
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
         "udpPort": 54134,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "rel",
+          "device": "ps2-mouse",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 134
       },
       "guestDoc": "docs/guests/nextstep.md",
       "credentialsRef": "guest/nextstep",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "nextstep",
+          "SH_QMP": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
+          "SH_PORT": "54134",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_POINTER": "rel",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/nextstep/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nextstep/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "NeXTcube (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) running NeXTSTEP 3.3 for m68k under the Previous emulator, resting on the Workspace the machine brings up for itself at login: grey workspace, the Workspace menu down the top left, the File Viewer showing the home directory, and the Dock along the right-hand edge with the recycler at the bottom. Nothing is curated and nothing is typed; this is where an untouched cold boot stops. 1120x832 MegaPixel display, pixel-exact on a 1120x832 X root. Pointer is RELATIVE (SPA pointer lock): the guest draws its own arrow.",
+          "SH_IDLE_PAUSE_SECS": "0"
+        },
+        "vmidLabel": 237,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "nextstep",
+            "--vmid",
+            "237",
+            "--udp",
+            "54134",
+            "--pointer",
+            "rel",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/nextstep/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/nextstep/tile.env.fixture"
+          ],
+          "deviceSetId": "nextstep-current",
+          "launcher": "streamhost/tiles/nextstep/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/nextstep/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 1536,
+          "smp": 4,
+          "vga": "std",
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "deviceSetSummary": [
+            "-name streamhost-nextstep",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 4 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5837-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 1536,
+            "smp": 4,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-nextstep",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 4 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5837-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off with -m 1536 -smp 4 and no usb-tablet, matching the device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 55
+      },
       "spa": {
         "archetypeId": "mono-terminal",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · nextstep"
+        "transport": "streamhost",
+        "accentColor": "#8C8C8C",
+        "eraLabel": "1995 · NeXTSTEP 3.3 (NeXTcube)",
+        "pointerRel": true
       },
       "museum": {
         "id": "nextstep",
-        "displayName": "nextstep",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "NeXTSTEP 3.3",
+        "year": 1995,
+        "lineage": "NeXT Computer (Mach + 4.3BSD + Display PostScript)",
+        "arch": "Motorola 68040, 25 MHz (NeXTcube), 64 MB RAM, 1120x832 MegaPixel display",
+        "ramMB": 64,
+        "era": "1990s",
+        "accent": "#8C8C8C",
+        "eraSoftware": [
+          "Workspace Manager, the Dock and the File Viewer",
+          "Interface Builder and Project Builder",
+          "Mail.app, Edit, Terminal and the Digital Librarian",
+          "WorldWideWeb — the first web browser, written on a machine like this one"
+        ],
+        "periodBrowser": "WorldWideWeb / OmniWeb (NeXTSTEP was where the web browser was invented)",
+        "iconicApps": [
+          "Workspace Manager",
+          "the right-hand Dock",
+          "Interface Builder",
+          "Digital Librarian"
+        ],
+        "blurb": "The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile's own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU's SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is relative (SPA pointer lock, the c64/qnx path); the guest draws its own arrow. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md."
+      },
+      "reset": {
+        "tileDir": "nextstep",
+        "pointer": "rel",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "UNVERIFIED",
+        "keyboard": "UNVERIFIED",
+        "fixture": "NeXTSTEP 3.3 Workspace on an emulated NeXTcube: grey workspace, the Workspace menu at the top left, the File Viewer the machine opens for itself at login, and the Dock down the right-hand edge. Baked 2026-08-09 from an untouched cold boot with nothing typed and nothing curated, and restore-verified by framebuffer in the same run (evidence/coldboot-desktop.png, golden-baked.png, golden-restored.png). Pointer and keyboard are recorded UNVERIFIED, not PASS: motion and keystrokes were both proven to reach the emulated machine by framebuffer, but the end-to-end browser path was not exercised and the NeXT KMS mouse register clamps a single delta to 63 px, so a fast flick under-moves. See docs/guests/nextstep.md."
       },
       "notes": [
-        "new-os Tier 2 scaffold; reserved slot 134/UDP 54134",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups",
-        "supersedes the 2025 QEMU-0.9/neko R&D in docs/guests/nextstep.md"
+        "Bridge tile: Debian 12 kiosk + Previous 4.4 (SVN r1847) emulating a NeXTcube",
+        "Previous MUST be built with -DENABLE_RENDERING_THREAD=1 or guest input is silently dropped",
+        "media (NeXT ROM + NeXTSTEP disk image) is fetched at build time and never committed"
       ]
     },
     {
@@ -5577,55 +6352,230 @@
     {
       "schemaVersion": 1,
       "id": "oricatmos",
-      "era_year": 2026,
+      "era_year": 1980,
       "tileDir": "oricatmos",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "lifecycle": "production",
+      "enabled": true,
       "build": {
         "rows": [
           {
-            "order": 48,
+            "order": 44,
             "prelude": "",
-            "line": "  \"oricatmos   |oricatmos.sh   |Oricatmos     |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"oricatmos   |oricatmos.sh   |bridge/oricatmos|retro    |~4-8m   |full   |tiles/oricatmos overlay + golden (MAME 0.289 orica → Oric Extended BASIC V1.1)\"\n",
             "value": {
               "key": "oricatmos",
               "script": "oricatmos.sh",
-              "outputDir": "Oricatmos",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "outputDir": "bridge/oricatmos",
+              "class": "retro",
+              "estimated": "~4-8m",
+              "automation": "full",
+              "produces": "tiles/oricatmos overlay + golden (MAME 0.289 orica → Oric Extended BASIC V1.1)",
               "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 14
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/oricatmos",
+          "qmp": "/data/vms/streamhost/tiles/oricatmos/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5834,
+          "exec_port": 5834,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54131,
+          "notes": "exec: labctl exec oricatmos \"<cmd>\" (ssh root@:5834, key bridge_key) — reaches the Debian kiosk, not the emulated Oric"
+        }
+      },
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
         "udpPort": 54131,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 131
       },
       "guestDoc": "docs/guests/oricatmos.md",
       "credentialsRef": "guest/oricatmos",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "oricatmos",
+          "SH_QMP": "/data/vms/streamhost/tiles/oricatmos/qmp.sock",
+          "SH_PORT": "54131",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/oricatmos/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/oricatmos/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "80",
+          "SH_KEY_MIN_GAP_MS": "80",
+          "SH_FIXTURE_DESC": "Oric Atmos (1984) at its own untouched power-on screen: \"ORIC EXTENDED BASIC V1.1 / (c) 1983 TANGERINE / 37631 BYTES FREE / Ready\" in black on a white page, with the machine's own CAPS marker in the top-right corner, drawn fullscreen with aspect correction by MAME 0.289's `orica` driver on an 800x600 X root — 4:3, the shape the Atmos drew on a television, and measured 1.6x cheaper to blit than 1024x768 on this box. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; AY-3-8912 sound -> ALSA -> AC97. The interaction is the registry demoProgram, a colour-and-sound listing in Oric Extended BASIC that the SPA types and the visitor runs."
+        },
+        "vmidLabel": 234,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "oricatmos",
+            "--vmid",
+            "234",
+            "--udp",
+            "54131",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/oricatmos/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/oricatmos/tile.env.fixture"
+          ],
+          "deviceSetId": "oricatmos-current",
+          "launcher": "streamhost/tiles/oricatmos/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/oricatmos/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-oricatmos",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5834-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-oricatmos",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5834-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off and 768 MB, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 52
+      },
       "spa": {
         "archetypeId": "beige-tower-crt",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · oricatmos"
+        "transport": "streamhost",
+        "accentColor": "#D8402F",
+        "eraLabel": "1984 · Oric Atmos (Extended BASIC V1.1)"
+      },
+      "demoProgram": {
+        "label": "Type in a demo program",
+        "lines": [
+          "10 cls",
+          "20 for c=0 to 6",
+          "30 paper c:ink 7-c",
+          "40 print \"oric atmos 1984\"",
+          "50 ping:wait 40",
+          "60 next c",
+          "70 paper 7:ink 0"
+        ],
+        "runCommand": "run",
+        "perCharMs": 160
       },
       "museum": {
         "id": "oricatmos",
-        "displayName": "oricatmos",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "Oric Atmos",
+        "year": 1984,
+        "lineage": "Tangerine Computer Systems / Oric Products International (UK)",
+        "arch": "MOS 6502A, 1 MHz, 48 KB RAM, ULA video (40x28 text / 240x200 HIRES, 8 colours), AY-3-8912 sound",
+        "ramMB": 0,
+        "ramKB": 48,
+        "era": "1980s",
+        "accent": "#D8402F",
+        "eraSoftware": [
+          "Oric Extended BASIC V1.1, with ZAP, PING, SHOOT and EXPLODE as language keywords",
+          "Tansoft's own range — Oric Base, Oric Calc, Zorgon's Revenge",
+          "a large French catalogue: the Atmos sold better in France than anywhere else",
+          "the 3-inch Microdisc drive and its Sedoric disc operating system",
+          "a demoscene that is still writing new Oric software four decades later"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "Oric Extended BASIC V1.1",
+          "Zorgon's Revenge",
+          "Sedoric on the Microdisc"
+        ],
+        "blurb": "The ZX Spectrum's most direct British rival, and the one that won France: a black wedge with a red stripe, eight colours, three-voice sound, and a BASIC in which the words ZAP, PING, SHOOT and EXPLODE each make the noise they are named after.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME's `orica` driver emulating an Oric Atmos; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The emulator is a pinned MAME 0.289 built for oric.cpp only in the Bookworm chroot (scripts/build-guests/build-mame-oricatmos.sh) — the lab host's packaged 0.276 is trixie-ABI and Bookworm's own is 0.251. One 16 KB preservation-source ROM (basic11b.rom, Extended BASIC V1.1) is staged outside the repo and gated by asking the shipped binary's own -listxml which sha1 it demands for bios ver11. Drawn fullscreen with aspect correction on an 800x600 X root, which is 4:3 — the shape the machine drew on a television, and the mode that measured 1.6x cheaper to blit than 1024x768 on this box. The golden is the machine's own untouched power-on screen; the interaction is the registry demoProgram. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/oricatmos.md."
       },
-      "notes": [
-        "new-os Tier 2 scaffold; reserved slot 131/UDP 54131",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-      ]
+      "reset": {
+        "tileDir": "oricatmos",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Oric Atmos power-on screen (ORIC EXTENDED BASIC V1.1, (c) 1983 TANGERINE, 37631 BYTES FREE, Ready) under MAME 0.289 `orica -bios ver11`, fullscreen with aspect correction on an 800x600 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated into the fixture and no post-restore keys are sent. Keyboard proof runs AFTER the bake against the restored fixture — PRINT 6502*7 echoes and is answered — so nothing typed can reach the golden. Keyboard-only exhibit (no mouse); AC97 audio."
+      }
     },
     {
       "schemaVersion": 1,
@@ -8147,55 +9097,211 @@
     {
       "schemaVersion": 1,
       "id": "sinclairql",
-      "era_year": 2026,
-      "tileDir": "sinclairql",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "era_year": 1984,
+      "enabled": true,
       "build": {
         "rows": [
           {
-            "order": 50,
+            "order": 44,
             "prelude": "",
-            "line": "  \"sinclairql  |sinclairql.sh  |Sinclairql    |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"sinclairql   |sinclairql.sh  |bridge/sinclairql|retro    |~8-12m  |full   |tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)\"\n",
             "value": {
               "key": "sinclairql",
               "script": "sinclairql.sh",
-              "outputDir": "Sinclairql",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "outputDir": "bridge/sinclairql",
+              "class": "retro",
+              "estimated": "~8-12m",
+              "automation": "full",
+              "produces": "tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)",
               "flags": []
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/sinclairql",
+          "qmp": "/data/vms/streamhost/tiles/sinclairql/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5836,
+          "exec_port": 5836,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54133,
+          "notes": "exec: labctl exec sinclairql \"<cmd>\" (ssh root@:5836, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated QL — drive the machine with labctl type/key and read it with labctl shot."
+        }
+      },
+      "tileDir": "sinclairql",
+      "lifecycle": "production",
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
         "udpPort": 54133,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 133
       },
       "guestDoc": "docs/guests/sinclairql.md",
       "credentialsRef": "guest/sinclairql",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "sinclairql",
+          "SH_QMP": "/data/vms/streamhost/tiles/sinclairql/qmp.sock",
+          "SH_PORT": "54133",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/sinclairql/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/sinclairql/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "120",
+          "SH_KEY_MIN_GAP_MS": "120",
+          "SH_FIXTURE_DESC": "Sinclair QL (1984) in MAME's `ql` driver, resting where the machine itself stops: the 80-column MONITOR-mode SuperBASIC screen it draws once F1 is answered — window #2 a white page on the left, window #1 red on the right, the black command window along the bottom with nothing typed in it. 512x256 drawn at an exact 2x3 integer scale on the kiosk's 1024x768 X root, so every QL pixel is one identical block and the picture keeps the machine's 4:3 shape. The `F1...monitor / F2...TV` chooser that precedes it, and MAME's imperfect-dump warning before that (the QL's hal16l8.ic38 PLD has never been dumped anywhere), are both answered during the bake and never seen by a visitor; the chooser is the exhibit's poster image instead. Keyboard-only exhibit; no pointer device; QL beeper -> ALSA -> AC97."
+        },
+        "vmidLabel": 236,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "sinclairql",
+            "--vmid",
+            "236",
+            "--udp",
+            "54133",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/sinclairql/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/sinclairql/tile.env.fixture"
+          ],
+          "deviceSetId": "sinclairql-current",
+          "launcher": "streamhost/tiles/sinclairql/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/sinclairql/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-sinclairql",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5836-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-sinclairql",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5836-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 54
+      },
       "spa": {
         "archetypeId": "beige-tower-crt",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · sinclairql"
+        "transport": "streamhost",
+        "accentColor": "#2EE65A",
+        "eraLabel": "1984 · Sinclair QL (QDOS · SuperBASIC)"
       },
       "museum": {
         "id": "sinclairql",
-        "displayName": "sinclairql",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "Sinclair QL",
+        "year": 1984,
+        "lineage": "Sinclair Research (post-ZX Spectrum, Motorola 68008)",
+        "arch": "Motorola 68008, 7.5 MHz, 128 KB RAM, two Microdrive tape loops",
+        "ramMB": 0,
+        "ramKB": 128,
+        "era": "1980s",
+        "accent": "#2EE65A",
+        "eraSoftware": [
+          "QDOS with SuperBASIC — multitasking in 48 KB of ROM",
+          "Psion's Quill, Abacus, Archive and Easel, bundled on Microdrive cartridges",
+          "Microdrives: 100 KB endless tape loops, the machine's only built-in storage",
+          "a small, stubborn developer scene that outlived Sinclair itself"
+        ],
+        "periodBrowser": "none — pre-web 8/16-bit era",
+        "iconicApps": [
+          "SuperBASIC",
+          "Quill (word processor)",
+          "Abacus (spreadsheet)"
+        ],
+        "blurb": "Sinclair's serious machine, launched before it was finished: a 68008 workstation-in-a-wedge announced twelve days before the Macintosh, sold months before it could be delivered, and shipped with firmware that did not fit — the earliest buyers got the missing part on a ROM cartridge hanging out of the back.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.251's `ql` driver; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The romset is a preservation-source set reduced by SHA1 to the four entries the default JS v1.10 BIOS needs, and re-verified at build time against the shipped binary's own -listxml; the QL's hal16l8.ic38 PLD has never been dumped anywhere, so MAME reports it missing on every boot and puts up an imperfect-dump warning, which the builder answers before baking. The golden is the machine's own 80-column monitor-mode screen, one keystroke past the `F1...monitor / F2...TV` chooser it insists on at power-on; the chooser is kept as the poster image. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/sinclairql.md."
       },
-      "notes": [
-        "new-os Tier 2 scaffold; reserved slot 133/UDP 54133",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-      ]
+      "reset": {
+        "tileDir": "sinclairql",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Sinclair QL 80-column MONITOR-mode SuperBASIC screen (white window #2, red window #1, empty black command window) in MAME's `ql` driver at an exact 2x3 scale on a 1024x768 X root; golden INTERNAL snapshot restores it. No post-restore keys. The two keystrokes that reach it — a letter to clear MAME's imperfect-dump warning and F1 to answer the QL's monitor/TV chooser — happen once, during the bake, and the fixture is asserted to carry no typed text (a clean command window has exactly zero green pixels). Keyboard proved after the bake against the restored fixture: PRINT 7 at the tile's production pacing echoed in the command window, then loadvm restored the empty one."
+      }
     },
     {
       "schemaVersion": 1,
@@ -10770,107 +11876,450 @@
     {
       "schemaVersion": 1,
       "id": "zx81",
-      "era_year": 2026,
+      "era_year": 1981,
       "tileDir": "zx81",
-      "lifecycle": "candidate",
-      "enabled": false,
-      "build": {
-        "rows": [
-          {
-            "order": 45,
-            "prelude": "",
-            "line": "  \"zx81        |zx81.sh        |Zx81          |installed|~15-30m |partial |TODO\"\n",
-            "value": {
-              "key": "zx81",
-              "script": "zx81.sh",
-              "outputDir": "Zx81",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
-              "flags": []
-            }
-          }
-        ]
-      },
-      "operator": {},
-      "stream": {
-        "transport": "showcase",
-        "udpPort": 54128,
-        "slot": 128
-      },
-      "guestDoc": "docs/guests/zx81.md",
-      "credentialsRef": "guest/zx81",
-      "spa": {
-        "archetypeId": "beige-tower-crt",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · zx81"
-      },
-      "museum": {
-        "id": "zx81",
-        "displayName": "zx81",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
-      },
-      "notes": [
-        "new-os Tier 2 scaffold; reserved slot 128/UDP 54128",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-      ]
-    },
-    {
-      "schemaVersion": 1,
-      "id": "zxspectrum",
-      "era_year": 2026,
-      "tileDir": "zxspectrum",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "lifecycle": "production",
+      "enabled": true,
       "build": {
         "rows": [
           {
             "order": 44,
             "prelude": "",
-            "line": "  \"zxspectrum  |zxspectrum.sh  |Zxspectrum    |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"zx81        |zx81.sh        |bridge/zx81     |retro    |~6-10m  |full   |tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)\"\n",
             "value": {
-              "key": "zxspectrum",
-              "script": "zxspectrum.sh",
-              "outputDir": "Zxspectrum",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "key": "zx81",
+              "script": "zx81.sh",
+              "outputDir": "bridge/zx81",
+              "class": "retro",
+              "estimated": "~6-10m",
+              "automation": "full",
+              "produces": "tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)",
               "flags": []
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/zx81",
+          "qmp": "/data/vms/streamhost/tiles/zx81/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5831,
+          "exec_port": 5831,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54128,
+          "notes": "exec: labctl exec zx81 \"<cmd>\" (ssh root@:5831, key bridge_key) — reaches the Debian kiosk, not the emulated ZX81"
+        }
+      },
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
+        "udpPort": 54128,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "slot": 128
+      },
+      "guestDoc": "docs/guests/zx81.md",
+      "credentialsRef": "guest/zx81",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "zx81",
+          "SH_QMP": "/data/vms/streamhost/tiles/zx81/qmp.sock",
+          "SH_PORT": "54128",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/zx81/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/zx81/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "100",
+          "SH_KEY_MIN_GAP_MS": "100",
+          "SH_FIXTURE_DESC": "Sinclair ZX81 (1981) at its own untouched power-on screen: a white field with a single inverse-video K in the bottom-left corner and nothing else — no banner, no memory count, no copyright line. K is the machine telling you it is in keyword mode, where one keypress enters a whole BASIC word (P gives PRINT). MAME 0.289 zx81 with -bios 2nd and -ramsize 1K, drawn fullscreen with aspect correction on the bridge kiosk's 1024x768 X root, which is exactly the 4:3 of the television the machine was sold to be plugged into. Keyboard-only exhibit; no pointer device; the ZX81 has no sound hardware, so the AC97 stream is silent by design."
+        },
+        "vmidLabel": 231,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "zx81",
+            "--vmid",
+            "231",
+            "--udp",
+            "54128",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/zx81/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/zx81/tile.env.fixture"
+          ],
+          "deviceSetId": "zx81-current",
+          "launcher": "streamhost/tiles/zx81/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/zx81/tile.env.fixture",
+          "auxFiles": [
+            "streamhost/tiles/zx81/zx81-frame.py",
+            "streamhost/tiles/zx81/type-qmp.py"
+          ],
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "deviceSetSummary": [
+            "-name streamhost-zx81",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5831-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-zx81",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5831-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 50
+      },
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "streamhost",
+        "accentColor": "#D8462F",
+        "eraLabel": "1981 · ZX81 (1 KB, black and white)"
+      },
+      "museum": {
+        "id": "zx81",
+        "displayName": "Sinclair ZX81",
+        "year": 1981,
+        "lineage": "Sinclair Research (ZX80 → ZX81 → ZX Spectrum)",
+        "arch": "Zilog Z80A at 3.25 MHz, 1 KB RAM, 8 KB ROM, 32×24 characters, monochrome",
+        "ramMB": 0,
+        "ramKB": 1,
+        "era": "1980s",
+        "accent": "#D8462F",
+        "eraSoftware": [
+          "Sinclair BASIC in 8 KB of ROM, entered one keyword per keypress",
+          "3D Monster Maze — a first-person maze with a pursuing Tyrannosaurus, in 16 KB",
+          "Mazogs, Flight Simulation and the rest of a cassette-tape software trade sold by post",
+          "the ZX Printer's silver spark-eroded paper, and hundreds of type-in listings from magazines"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "Sinclair BASIC",
+          "3D Monster Maze",
+          "type-in listings from Sinclair User and ZX Computing"
+        ],
+        "blurb": "The machine that put a computer in a British newsagent: £69.95 in kit form, a Z80, a membrane keyboard, one kilobyte of memory, no sound and no colour — and a million and a half of them sold.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289 (SUBTARGET=zx81, pinned upstream commit f34f0250, built in the Bookworm chroot by scripts/build-guests/build-mame-zx81.sh); streamhost captures the Linux framebuffer + AC97 audio exactly like every other bridge tile. The ROM is the second revision (-bios 2nd, zx81a.rom, sha1 7b143ee9…), which is what almost every shipped ZX81 contained; it is preservation-source material copyright Nine Tiles Networks Ltd, staged on the box and never committed. RAM is pinned to the machine as sold, -ramsize 1K, rather than MAME's 16K default. The golden is the untouched power-on screen — a white field with one inverse K — and readiness is decided GEOMETRICALLY, not by counting bright pixels, because this machine blanks its display while it computes and a photometric test cannot tell that frame from the fixture. Keyboard-only exhibit; the ZX81 has no sound hardware. See streamhost/docs/BRIDGE.md and docs/guests/zx81.md."
+      },
+      "reset": {
+        "tileDir": "zx81",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Sinclair ZX81 power-on screen: an empty white field with a single inverse-video K cursor in the bottom-left of the 32×24 grid, drawn fullscreen by MAME 0.289 zx81 (-bios 2nd, -ramsize 1K) on the kiosk's 1024x768 X root. The golden INTERNAL snapshot restores that untouched cold boot; no post-restore keys. Baking anything else was never on the table — this machine prints no banner at all, so its power-on screen is the only state that is unambiguously the machine's own rather than a previous visitor's. Keyboard-only exhibit (no mouse); AC97 audio is present but silent, because the ZX81 had no sound hardware."
+      },
+      "notes": [
+        "slot 128 / UDP 54128 / VMID 231 / ssh 5831",
+        "readiness predicate: streamhost/tiles/zx81/zx81-frame.py (geometric, validated against a dead emulator, an empty white field and a typed line)"
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "zxspectrum",
+      "era_year": 1982,
+      "enabled": true,
+      "build": {
+        "rows": [
+          {
+            "order": 44,
+            "prelude": "",
+            "line": "  \"zxspectrum  |zxspectrum.sh  |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)\"\n",
+            "value": {
+              "key": "zxspectrum",
+              "script": "zxspectrum.sh",
+              "outputDir": "bridge/zxspectrum",
+              "class": "retro",
+              "estimated": "~6-12m",
+              "automation": "full",
+              "produces": "tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)",
+              "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 13
+            }
+          }
+        ]
+      },
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/zxspectrum",
+          "qmp": "/data/vms/streamhost/tiles/zxspectrum/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5830,
+          "exec_port": 5830,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54127,
+          "notes": "exec: labctl exec zxspectrum \"<cmd>\" (ssh root@:5830, key bridge_key)"
+        }
+      },
+      "tileDir": "zxspectrum",
+      "lifecycle": "production",
+      "stream": {
+        "transport": "streamhost",
         "udpPort": 54127,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 127
       },
       "guestDoc": "docs/guests/zxspectrum.md",
       "credentialsRef": "guest/zxspectrum",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "zxspectrum",
+          "SH_QMP": "/data/vms/streamhost/tiles/zxspectrum/qmp.sock",
+          "SH_PORT": "54127",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/zxspectrum/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/zxspectrum/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "200",
+          "SH_KEY_MIN_GAP_MS": "200",
+          "SH_FIXTURE_DESC": "Sinclair ZX Spectrum 48K at its own untouched power-on screen: the whole 352x296 raster — border included — in the machine's non-bright white, with one line of black text, \"© 1982 Sinclair Research Ltd\", along the bottom. Drawn by MAME 0.251's `spectrum` driver fullscreen with -keepaspect on the bridge base's stock 1024x768 X root, which the Spectrum's 4:3 picture fills exactly. Nothing is curated and nothing is typed; the copyright line the ROM prints is also the condition under which Amstrad permits the ROM to be emulated at all. Keyboard-only exhibit; no pointer device; 1-bit beeper -> ALSA -> AC97."
+        },
+        "vmidLabel": 230,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "zxspectrum",
+            "--vmid",
+            "230",
+            "--udp",
+            "54127",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/zxspectrum/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/zxspectrum/tile.env.fixture"
+          ],
+          "deviceSetId": "zxspectrum-current",
+          "launcher": "streamhost/tiles/zxspectrum/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/zxspectrum/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-zxspectrum",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5830-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-zxspectrum",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5830-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 49
+      },
       "spa": {
         "archetypeId": "beige-tower-crt",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · zxspectrum"
+        "transport": "streamhost",
+        "accentColor": "#CD0000",
+        "eraLabel": "1982 · ZX Spectrum 48K"
+      },
+      "keyboard": {
+        "letterCase": "upper-only"
+      },
+      "demoProgram": {
+        "label": "Type in a demo program (one key = one keyword)",
+        "lines": [
+          "10 b1",
+          "20 b2",
+          "30 b6",
+          "40 b5",
+          "50 g10"
+        ],
+        "runCommand": "r",
+        "perCharMs": 400
       },
       "museum": {
         "id": "zxspectrum",
-        "displayName": "zxspectrum",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "Sinclair ZX Spectrum 48K",
+        "year": 1982,
+        "lineage": "Sinclair Research (ZX80 → ZX81 → ZX Spectrum)",
+        "arch": "Zilog Z80A, 3.5 MHz, 48 KB RAM, 16 KB ROM, Ferranti ULA",
+        "ramMB": 0,
+        "ramKB": 48,
+        "era": "1980s",
+        "accent": "#CD0000",
+        "eraSoftware": [
+          "Sinclair BASIC in ROM, with a whole keyword on every key",
+          "Manic Miner and Jet Set Willy, written by Matthew Smith",
+          "Ultimate Play the Game's isometric Filmation titles: Knight Lore, Alien 8",
+          "Elite, The Hobbit, Lords of Midnight, Chuckie Egg, Skool Daze",
+          "cassette tapes, the ZX Microdrive, and type-in listings from Your Sinclair and CRASH"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "Sinclair BASIC",
+          "Manic Miner",
+          "Knight Lore"
+        ],
+        "blurb": "The machine that taught Britain to program: £175, forty rubber keys, and a whole BASIC keyword printed on each one — press P and the word PRINT appears. Its eight colours are stored one pair per 8×8 cell, so sprites drag their colours across each other, and a generation grew up calling that attribute clash rather than a fault.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Debian's own MAME 0.251 (`spectrum` driver, `-bios en`) emulating a 48K ZX Spectrum; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The one external input is the 16 KB Sinclair ROM, taken from Debian's `spectrum-roms` package under Amstrad's 1999 emulator permission and never committed (docs/lab/ASSETS-MANIFEST.md). MAME runs fullscreen with -keepaspect on the stock 1024x768 X root, which the 4:3 picture fills exactly. The golden is the machine's own untouched power-on screen. KEYWORD ENTRY is the exhibit and the catch: at the K cursor one keypress enters a whole token, so the registry demoProgram is written as the KEYSTROKES a person presses, not as the listing they produce. The 40-key matrix has no punctuation keys at all — every symbol is SYMBOL SHIFT plus a letter — so the SPA's zxspectrum on-screen keyboard carries CAPS SHIFT / SYMBOL SHIFT latches, EXTENDED MODE, and the symbol chords a type-in cannot reach. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/zxspectrum.md."
+      },
+      "reset": {
+        "tileDir": "zxspectrum",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Sinclair ZX Spectrum 48K power-on screen — the machine's own white paper across the whole raster with \"© 1982 Sinclair Research Ltd\" in black along the bottom — drawn by MAME 0.251 `spectrum` fullscreen on a 1024x768 X root; golden INTERNAL snapshot restores X (-nocursor) + MAME exactly as baked from an untouched cold boot. Deliberately NOT curated inside a program: the Plus/4 add proved a visitor arriving mid-application cannot tell what it is, and here the untouched screen is also the licence condition Amstrad attaches to the ROM. No post-restore keys (the mpf2 add proved they race the restore). Keyboard path certified 2026-08-09 after the bake by typing `10 b2` through QMP at the tile's production pacing and reading BORDER — a whole keyword from one keypress — off the framebuffer. Keyboard-only exhibit (no mouse); AC97 audio."
       },
       "notes": [
-        "new-os Tier 2 scaffold; reserved slot 127/UDP 54127",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+        "No operator.actionMap: no other retro bridge tile (c64, vic20, plus4, mpf2, cbm8032) carries one, and the entry written during the build wave used a flat shape the generator cannot read (it wants {key, value:{...}}). The keyboard note it held -- one keypress is a whole BASIC keyword in K mode, so 'b'+'2' gives BORDER 2 -- lives in docs/guests/zxspectrum.md instead."
       ]
     }
   ]

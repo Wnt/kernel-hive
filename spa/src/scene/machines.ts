@@ -483,6 +483,69 @@ export const ASSEMBLIES_BY_TILE = {
   // Sinclair. No mouse and no keyboard model: the keyboard IS the machine, and
   // no pointing device was ever made for it.
   zxspectrum: { kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtA' },
+  // The smallest object in the collection: a ZX81 is a black wedge the size of
+  // a paperback with a printed membrane where the keys should be, plugged into
+  // whatever television was free. eightBitWedgeA is the narrowest wedge in the
+  // kit and homeCrtC the smallest set, which is as close as the parametric
+  // assets get to that pairing; the black-plastic tint below is what stops it
+  // reading as another beige home micro. No mouse and no joystick: the ZX81's
+  // only other port was a cassette recorder.
+  zx81: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtC',
+  },
+  // The Dragon 32 is a chunky sloped wedge with the keyboard in the lid and a
+  // television behind it — the same silhouette family as apple2/mpf2/plus4, so
+  // it takes the shared wedge body and the one home CRT that wedge has not yet
+  // been paired with (homeCrtA is otherwise only under the Amiga's separate
+  // desktop case). No keyboard and no mouse: the keys are in the machine, and
+  // the Dragon's only other port took a pair of analogue joysticks.
+  // homeCrtE (the largest set) rather than homeCrtA: the Dragon was sold to be
+  // plugged into the family television, and zxspectrum already holds
+  // eightBitWedgeA|homeCrtA. Every exhibit needs a distinct hardware signature.
+  dragon32: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtE',
+  },
+  // The Oric Atmos is a small wedge — the same silhouette family as apple2,
+  // mpf2 and plus4 — so it takes the generic 8-bit wedge body and is told apart
+  // by the one home television nothing else is paired with (homeCrtA belongs to
+  // the amiga's assembly, not to that CRT alone) and by its identity tint: a
+  // BLACK case with a red stripe, which is what the Atmos actually looked like.
+  // No mouse: the Atmos's other ports were tape, printer and expansion.
+  // compactA keeps this distinct from the other wedge machines -- zxspectrum
+  // holds homeCrtA, zx81 homeCrtC and dragon32 homeCrtE. A small set also
+  // suits the Atmos, a compact machine sold against the Spectrum.
+  oricatmos: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'compactA',
+  },
+  // KC 85/4: NOT a home-micro wedge. The Mühlhausen machine is a flat, dark
+  // slab with its module slots on the right-hand side, a DETACHED keyboard on a
+  // cable, and a monitor standing on top of the case — a pizza-box station, and
+  // the only 8-bit one in the lineup, which is also what keeps its silhouette
+  // distinct from the Commodore wedges. No mouse: the KC's pointing devices
+  // were a light pen and a joystick module, neither of which this tile streams.
+  kc854: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'homeCrtA', keyboard: 'keyboardD',
+  },
+  // The Sinclair QL is a long, flat, matt-black wedge with the keyboard in the
+  // chassis and two microdrive slots on the right cheek — much closer in
+  // silhouette to the Atari ST body than to any Commodore breadbin, which is
+  // why it takes atariSt rather than another eightBitWedge. The ST pairs that
+  // body with homeCrtC; the QL takes the dedicated monitor homeCrtE, which is
+  // also the exhibit's own subject matter: the first thing the machine asks is
+  // whether it is plugged into a monitor or a television, and this one answered
+  // monitor. No mouse — the QL shipped without a pointing device of any kind.
+  sinclairql: { kind: 'homeMicro', body: 'atariSt', monitor: 'homeCrtE' },
+  // The NeXTcube is a one-foot matte-black magnesium box with a separate
+  // MegaPixel monitor, keyboard and two-button mouse — a workstation
+  // silhouette, not a home micro and not a pizza box. towerE is the shortest
+  // tower in the kit and the closest thing to a cube; crtE plus the wide Unix
+  // keyboard and workstation mouse keep the signature distinct from gt40
+  // (towerE|crtE and nothing else) and from solaris/irix, which share crtE but
+  // sit on pizza-box bodies. The right long-term asset is a bespoke black cube.
+  nextstep: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

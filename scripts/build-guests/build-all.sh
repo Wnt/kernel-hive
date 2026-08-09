@@ -115,14 +115,14 @@ MANIFEST=(
   "pdp11        |pdp11.sh       |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)"
   "gt40         |gt40.sh        |bridge/gt40     |retro    |~5-8m   |full   |tiles/gt40 overlay + golden (Open SIMH pdp11 VT11 → Lunar Lander)"
   "decos        |decos.sh       |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)"
-  "zxspectrum  |zxspectrum.sh  |Zxspectrum    |installed|~15-30m |partial |TODO"
-  "nextstep        |nextstep.sh        |Zx81          |installed|~15-30m |partial |TODO"
-  "zx81        |zx81.sh        |Zx81          |installed|~15-30m |partial |TODO"
-  "bbcmicro    |bbcmicro.sh    |Bbcmicro      |installed|~15-30m |partial |TODO"
-  "dragon32    |dragon32.sh    |Dragon32      |installed|~15-30m |partial |TODO"
-  "oricatmos   |oricatmos.sh   |Oricatmos     |installed|~15-30m |partial |TODO"
-  "kc854       |kc854.sh       |Kc854         |installed|~15-30m |partial |TODO"
-  "sinclairql  |sinclairql.sh  |Sinclairql    |installed|~15-30m |partial |TODO"
+  "bbcmicro    |bbcmicro.sh    |bridge/bbcmicro |retro    |~6-10m  |full   |tiles/bbcmicro overlay + golden (MAME 0.289 bbcb → BBC BASIC II)"
+  "kc854       |kc854.sh       |bridge/kc854    |retro    |~6-10m  |full   |tiles/kc854 overlay + golden (MAME kc85_4 → CAOS 4.2)"
+  "nextstep    |nextstep.sh    |bridge/nextstep|graphical|~25-40m |full   |tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)"
+  "oricatmos   |oricatmos.sh   |bridge/oricatmos|retro    |~4-8m   |full   |tiles/oricatmos overlay + golden (MAME 0.289 orica → Oric Extended BASIC V1.1)"
+  "sinclairql   |sinclairql.sh  |bridge/sinclairql|retro    |~8-12m  |full   |tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)"
+  "zx81        |zx81.sh        |bridge/zx81     |retro    |~6-10m  |full   |tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)"
+  "zxspectrum  |zxspectrum.sh  |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)"
+  "dragon32     |dragon32.sh    |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
@@ -132,7 +132,7 @@ MANIFEST=(
 DEFAULT_ORDER=(kolibrios toaruos helenos 9front reactos haiku templeos amigaos qnx alpine tinycore
   freedos msdos-win1 win311 win95 win98 win2000 os2warp redstar3
   android-x86 postmarketos sailfishos sailfishos-gui serenityos
-  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos)
+  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos zxspectrum bbcmicro dragon32 kc854 oricatmos)
 
 # ---------------------------------------------------------------------------
 c_reset=$'\e[0m'

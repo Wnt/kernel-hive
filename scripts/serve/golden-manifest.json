@@ -462,6 +462,26 @@
    "keyboard": "PASS",
    "fixture": "The PDP-11 chooser: a green-on-black 80x31 xterm on a 1024x768 X root naming RT-11 V5.3, RSX-11M V4.2 and RSTS/E V9.6 with the prompt each answers with, over “Press 1, 2 or 3. Reset returns you to this screen.” The RSTS/E line carries its own three-line caveat about the missing Library tape. The golden holds NO running simulator, so reset both returns the visitor to the placard and throws away the session. Certified 2026-08-09 after the bake, by framebuffer: the 80-column rule measured x=3..962 of 1024 on the cold boot, on the restore, and again after the keyboard proof; pressing 1 through QMP input-send-event left the chooser and started a pdp11 process at RT-11FB V05.03, pressing 3 reached RSTS/E V9.6 timesharing and a DCL $, and loadvm golden brought the bare chooser back with no simulator running. Keyboard-only exhibit (no pointer device); AC97 present but the guest makes no sound."
   },
+  "zxspectrum": {
+   "tileDir": "zxspectrum",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "Sinclair ZX Spectrum 48K power-on screen — the machine's own white paper across the whole raster with \"© 1982 Sinclair Research Ltd\" in black along the bottom — drawn by MAME 0.251 `spectrum` fullscreen on a 1024x768 X root; golden INTERNAL snapshot restores X (-nocursor) + MAME exactly as baked from an untouched cold boot. Deliberately NOT curated inside a program: the Plus/4 add proved a visitor arriving mid-application cannot tell what it is, and here the untouched screen is also the licence condition Amstrad attaches to the ROM. No post-restore keys (the mpf2 add proved they race the restore). Keyboard path certified 2026-08-09 after the bake by typing `10 b2` through QMP at the tile's production pacing and reading BORDER — a whole keyword from one keypress — off the framebuffer. Keyboard-only exhibit (no mouse); AC97 audio."
+  },
+  "zx81": {
+   "tileDir": "zx81",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "Sinclair ZX81 power-on screen: an empty white field with a single inverse-video K cursor in the bottom-left of the 32×24 grid, drawn fullscreen by MAME 0.289 zx81 (-bios 2nd, -ramsize 1K) on the kiosk's 1024x768 X root. The golden INTERNAL snapshot restores that untouched cold boot; no post-restore keys. Baking anything else was never on the table — this machine prints no banner at all, so its power-on screen is the only state that is unambiguously the machine's own rather than a previous visitor's. Keyboard-only exhibit (no mouse); AC97 audio is present but silent, because the ZX81 had no sound hardware."
+  },
   "dragon32": {
    "tileDir": "dragon32",
    "pointer": "none",
@@ -471,6 +491,46 @@
    "mouse": "N/A",
    "keyboard": "PASS",
    "fixture": "Dragon 32 (PAL) power-on screen — \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\" — in MAME 0.289's dragon32 driver with the `ext` slot emptied, fullscreen on a 1024x768 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated: the Plus/4's rejected in-application golden is the reason. No post-restore keys. The banner is asserted by OCR of the framebuffer at every stage of the build, because the wrong screen (DRAGONDOS 1.0, what the driver's default slot produces) is the same two greens and a pixel histogram cannot tell them apart. Keyboard proof certified 2026-08-09 after the bake: PRINT 3*7 answered 21, which also proves the shifted matrix — the Dragon puts '*' on SHIFT+the key a PC labels '-'. Keyboard-only exhibit (no mouse); AC97 audio."
+  },
+  "oricatmos": {
+   "tileDir": "oricatmos",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "Oric Atmos power-on screen (ORIC EXTENDED BASIC V1.1, (c) 1983 TANGERINE, 37631 BYTES FREE, Ready) under MAME 0.289 `orica -bios ver11`, fullscreen with aspect correction on an 800x600 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated into the fixture and no post-restore keys are sent. Keyboard proof runs AFTER the bake against the restored fixture — PRINT 6502*7 echoes and is answered — so nothing typed can reach the golden. Keyboard-only exhibit (no mouse); AC97 audio."
+  },
+  "kc854": {
+   "tileDir": "kc854",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "UNVERIFIED",
+   "fixture": "KC 85/4 CAOS 4.2 power-on screen (the operating system's own command menu and prompt) in MAME 0.289 kc85_4, fullscreen with aspect correction on a 1024x768 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated and no post-restore keys are sent. Keyboard-only exhibit (no mouse); AC97 audio."
+  },
+  "sinclairql": {
+   "tileDir": "sinclairql",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "Sinclair QL 80-column MONITOR-mode SuperBASIC screen (white window #2, red window #1, empty black command window) in MAME's `ql` driver at an exact 2x3 scale on a 1024x768 X root; golden INTERNAL snapshot restores it. No post-restore keys. The two keystrokes that reach it — a letter to clear MAME's imperfect-dump warning and F1 to answer the QL's monitor/TV chooser — happen once, during the bake, and the fixture is asserted to carry no typed text (a clean command window has exactly zero green pixels). Keyboard proved after the bake against the restored fixture: PRINT 7 at the tile's production pacing echoed in the command window, then loadvm restored the empty one."
+  },
+  "nextstep": {
+   "tileDir": "nextstep",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "UNVERIFIED",
+   "keyboard": "UNVERIFIED",
+   "fixture": "NeXTSTEP 3.3 Workspace on an emulated NeXTcube: grey workspace, the Workspace menu at the top left, the File Viewer the machine opens for itself at login, and the Dock down the right-hand edge. Baked 2026-08-09 from an untouched cold boot with nothing typed and nothing curated, and restore-verified by framebuffer in the same run (evidence/coldboot-desktop.png, golden-baked.png, golden-restored.png). Pointer and keyboard are recorded UNVERIFIED, not PASS: motion and keystrokes were both proven to reach the emulated machine by framebuffer, but the end-to-end browser path was not exercised and the NeXT KMS mouse register clamps a single delta to 63 px, so a fast flick under-moves. See docs/guests/nextstep.md."
   }
  }
 }

@@ -45,7 +45,20 @@
       "notes": "exec: labctl exec oricatmos \"<cmd>\" (ssh root@:5834, key bridge_key) — reaches the Debian kiosk, not the emulated Oric"
     }
   },
-  "render": {},
+  "render": {
+    "tilesManifestOrder": 46,
+    "bindingOrder": 52,
+    "museumOrder": 46,
+    "goldenOrder": 46,
+    "bringUpGroup": 6,
+    "signalOrder": 48,
+    "tilesManifestInvocation": "emit oricatmos \\\n  --tile oricatmos --vmid 234 --udp 54131 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/oricatmos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/oricatmos/tile.env.fixture\"\n",
+    "bindingLine": "  oricatmos:   { osId: 'oricatmos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8402F', eraLabel: '1984 · Oric Atmos (Extended BASIC V1.1)' },\n",
+    "museumBlock": "  {\n    id: 'oricatmos', displayName: 'Oric Atmos', year: 1984,\n    lineage: 'Tangerine Computer Systems / Oric Products International (UK)',\n    arch: 'MOS 6502A, 1 MHz, 48 KB RAM, ULA video (40x28 text / 240x200 HIRES, 8 colours), AY-3-8912 sound', ramMB: 0, ramKB: 48,    era: '1980s', accent: '#D8402F',\n    eraSoftware: ['Oric Extended BASIC V1.1, with ZAP, PING, SHOOT and EXPLODE as language keywords', 'Tansoft\\'s own range — Oric Base, Oric Calc, Zorgon\\'s Revenge', 'a large French catalogue: the Atmos sold better in France than anywhere else', 'the 3-inch Microdisc drive and its Sedoric disc operating system', 'a demoscene that is still writing new Oric software four decades later'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['Oric Extended BASIC V1.1', 'Zorgon\\'s Revenge', 'Sedoric on the Microdisc'],\n    blurb: 'The ZX Spectrum\\'s most direct British rival, and the one that won France: a black wedge with a red stripe, eight colours, three-voice sound, and a BASIC in which the words ZAP, PING, SHOOT and EXPLODE each make the noise they are named after.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME\\'s `orica` driver emulating an Oric Atmos; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The emulator is a pinned MAME 0.289 built for oric.cpp only in the Bookworm chroot (scripts/build-guests/build-mame-oricatmos.sh) — the lab host\\'s packaged 0.276 is trixie-ABI and Bookworm\\'s own is 0.251. One 16 KB preservation-source ROM (basic11b.rom, Extended BASIC V1.1) is staged outside the repo and gated by asking the shipped binary\\'s own -listxml which sha1 it demands for bios ver11. Drawn fullscreen with aspect correction on an 800x600 X root, which is 4:3 — the shape the machine drew on a television, and the mode that measured 1.6x cheaper to blit than 1024x768 on this box. The golden is the machine\\'s own untouched power-on screen; the interaction is the registry demoProgram. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/oricatmos.md.',\n  },\n",
+    "tilesManifestPrelude": "",
+    "bindingPrelude": "",
+    "museumPrelude": ""
+  },
   "stream": {
     "transport": "streamhost",
     "udpPort": 54131,
@@ -168,7 +181,7 @@
         "reason": "registry source pins pc-i440fx-11.0,vmport=off and 768 MB, matching the QEMU 11 device set the golden was baked under"
       }
     },
-    "bringUpOrder": 49
+    "bringUpOrder": 52
   },
   "spa": {
     "archetypeId": "beige-tower-crt",

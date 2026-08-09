@@ -128,6 +128,26 @@ ROWS=(
   "opt-file|templeos|TempleOS ISO|$GALLERY_ROOT/TempleOS/TempleOS.ISO|sha256:5d0fc944e5d89c155c0fc17c148646715bc1db6fa5750c0b913772cfec19ba26|freely-fetchable-pinned"
   "opt-file|helenos|HelenOS 0.14.1 ISO|$GALLERY_ROOT/HelenOS/HelenOS-0.14.1-ia32.iso|sha256:1b15da0459cbfe28a6d3058675c2c20a4b03584cfb4d034c0ccb17b521791ccb|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
+  # ZX81 ROM, second revision. NOT covered by the 1986 Amstrad permission --
+  # Amstrad bought the Spectrum and QL rights only; Nine Tiles Networks Ltd wrote
+  # and still holds the ZX80/ZX81 ROM copyright. Preservation source, private.
+  "req-file|zx81|Sinclair ZX81 ROM (2nd revision, zx81a.rom)|$ASSET_STAGING/zx81/zx81a.rom|sha256:14ad84f4243efcd41587ff46ab932d11087043e8d455a1ed2a227b9657828dfa|preservation-source"
+  # dragon32.sh re-fetches and re-hashes this itself if it is missing, so the
+  # check is here to fail a long build early rather than to gate the fetch.
+  "req-file|dragon32|Dragon 32 monitor + Microsoft Extended Color BASIC ROM|$ASSET_STAGING/dragon32/d32.rom|sha1:f2dab125673e653995a83bf6b793e3390ec7f65a|preservation-source"
+  # oricatmos.sh fetches this itself from the pinned archive.org item when it is
+  # absent, so it is opt-file rather than req-file; the row exists so a staged
+  # copy is hash-checked before a build spends time on it.
+  "opt-file|oricatmos|Oric Atmos Extended BASIC V1.1 ROM (MAME orica bios ver11)|$ASSET_STAGING/oricatmos/basic11b.rom|sha256:ed28568574716eef5d7c0fde2568d7a47a6e4b1fbca81daff3be05e45723466d|preservation-source"
+  "req-file|kc854|KC 85 family merged MAME romset (CAOS 4.2 + HC-BASIC extracted by sha1)|$ASSET_STAGING/kc854/kc85_2.zip|sha256:ed5b8a567232beb89a5f78fea4066160aec2ba0f2a67555439c20785d6a096ab|preservation-source"
+  "req-file|sinclairql|Sinclair QL MAME romset (merged ql.zip; builder extracts 4 members by sha1)|$ASSET_STAGING/sinclairql/ql-mame0224-merged.zip|sha256:c4c39530c7abe6518f90b0df9d4eec9201434a905c77f05f490137007e420b03|preservation-source"
+  # -- in-overlay media (nextstep): these two live INSIDE the tile's own qcow2
+  # overlay at /opt/bridge/media/nextstep/, not on the host filesystem, so the
+  # host paths below never exist and these rows read "will fetch". They are
+  # here for the hash record; nextstep.sh re-verifies both sha256s in-guest on
+  # every run and refuses to continue on a mismatch. Never committed.
+  "opt-file|nextstep|NeXTSTEP 3.3 m68k pre-installed disk (fetched + verified in-guest)|$ASSET_STAGING/nextstep/NS33_2GB.dd|sha256:6381423b066c33c24c9c9ec519086708b9cf3b2f11882fed5319cfb6a3422f1b|preservation-source"
+  "opt-file|nextstep|NeXT ROM Rev 2.5 v66 (ships inside the Previous source tree)|$ASSET_STAGING/nextstep/Rev_2.5_v66.BIN|sha256:1b753890b67095b73e104c939ddf62eca9e7d0aedde5108e3893b0ed9d8000a4|preservation-source"
 )
 
 # ---- impl ---------------------------------------------------------------------

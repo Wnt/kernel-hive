@@ -234,6 +234,50 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#26262a', accentTint: '#cd0000', tintMix: 0.5,
     badge: 'ZX SPECTRUM', spec: '48K • 1982', kit: 'eightBit',
   },
+  // Matt black plastic and the red ZX81 legend strip — the only machine here
+  // that is not some shade of beige, grey or DEC blue.
+  zx81: {
+    caseTint: '#1c1a19', accentTint: '#d8462f', tintMix: 0.62,
+    badge: 'ZX81', spec: '1 KB • MONO • 1981', kit: 'eightBit',
+  },
+  // Welsh-built beige, and the accent is the machine's own page colour — the
+  // MC6847's bright green, sampled from this tile's framebuffer at #30d200
+  // rather than picked. It is the loudest screen in the collection and it is
+  // what a visitor remembers about a Dragon.
+  dragon32: {
+    caseTint: '#c9c3b2', accentTint: '#30d200', tintMix: 0.4,
+    badge: 'DRAGON 32', spec: '6809E • 32K • 1982', kit: 'eightBit',
+  },
+  // The Atmos is the darkest home micro in the collection — a matt black wedge
+  // with a red stripe across the front, which is the accent. It shares its body
+  // model with three beige wedges, so this tint is what stops it reading as one
+  // of them.
+  oricatmos: {
+    caseTint: '#26262a', accentTint: '#d8402f', tintMix: 0.62,
+    badge: 'ORIC ATMOS', spec: '48K • 1984', kit: 'eightBit',
+  },
+  // Anthracite plastic, the colour East German industrial equipment was
+  // actually moulded in, and nothing like the beige of every Western machine
+  // beside it. The accent is not chosen: a ppmhist of the tile's own golden
+  // frame contains exactly TWO colours, RGB(0,0,160) and white, so #0000A0 is
+  // literally the only colour this exhibit emits.
+  kc854: {
+    caseTint: '#3f4247', accentTint: '#0000a0', tintMix: 0.5,
+    badge: 'KC 85/4', spec: 'CAOS 4.2 • 1988', kit: 'eightBit',
+  },
+  // Sinclair's matt black, and the accent is the QL's own screen: SuperBASIC
+  // types in green on black in the command window, so that is the colour the
+  // exhibit actually emits rather than one the gallery chose.
+  sinclairql: {
+    caseTint: '#2b2b2d', accentTint: '#2ee65a', tintMix: 0.5,
+    badge: 'SINCLAIR QL', spec: '68008 QDOS • 1984', kit: 'eightBit',
+  },
+  // NeXT's matte-black magnesium, which is the whole visual identity of the
+  // machine, and a neutral accent because the display itself is greyscale.
+  nextstep: {
+    caseTint: '#26262a', accentTint: '#8c8c8c', tintMix: 0.62,
+    badge: 'NeXTcube', spec: '68040 • MEGAPIXEL • 1990', kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

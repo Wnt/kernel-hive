@@ -1038,6 +1038,238 @@ export const POSTERS = {
       ]
     }
   },
+  "bbcmicro": {
+    "title": "Acorn BBC Micro Model B — the machine that taught Britain to program",
+    "subtitle": "1981 · BBC Micro Model B (BBC BASIC II)",
+    "hero": "/posters/bbcmicro/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/bbcmicro/desktop.webp",
+        "alt": "The BBC Micro's power-on screen — BBC Computer 32K, Acorn DFS, BASIC, and a blinking > prompt in white teletext on black",
+        "caption": "Four lines and a prompt. The machine tells you how much memory it has, what filing system is fitted, what language it speaks, and then waits for you."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "In 1980 the BBC decided to make a television series about computers, and then made an unusual decision about it: rather than film whatever machines happened to be on sale, it would specify a computer of its own and put the corporation's name on it. The Computer Literacy Project needed a machine that could demonstrate everything the programmes wanted to cover — graphics, sound, networking, control of external hardware, several programming languages — and that schools could actually buy."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The specification went out to British manufacturers. Acorn Computers, a small Cambridge firm founded by Hermann Hauser and Chris Curry, had an unfinished successor to its Atom in the drawer. The story of the week that followed is well attested: Acorn's engineers, Sophie Wilson and Steve Furber among them, built a working prototype of a machine that did not yet exist in time for the BBC's visit, reportedly getting it running in the small hours of the morning the delegation arrived. Acorn won the contract."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The BBC Microcomputer shipped in December 1981 in two versions; the Model B, with 32 KB of memory and the full complement of ports, is the one that mattered. It was expensive — around £335 at launch, well over the price of a Sinclair — and the government paid half the cost for schools. Acorn had estimated it might sell twelve thousand. It sold well over a million."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The BBC Micro is the most thoroughly "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "educational"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " computer ever mass-produced, in a specific and unfashionable sense: it was designed on the assumption that the person using it would want to know how it worked."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "BBC BASIC, written by Sophie Wilson, is the best BASIC of the eight-bit era and it is not close. It had named procedures and functions with local variables, `REPEAT…UNTIL` and `IF…THEN…ELSE`, long variable names, and — the thing no rival had — a "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "built-in 6502 assembler"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", invoked with square brackets in the middle of an ordinary BASIC program. A child could write a game in BASIC, find one loop too slow, and rewrite that loop in machine code without leaving the language or buying anything. The distance from beginner to systems programmer, on this machine, was a pair of brackets."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The hardware matched the ambition. Eight screen modes, from teletext to 640×256; a four-channel sound chip; an analogue port, a user port, a 1 MHz bus and a printer port, all documented and all meant to be wired to things. Econet networked a classroom before networking was a consumer idea. And the Tube — a buffered interface that let a "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "second processor"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " take over as the main CPU while the 6502 handled input, output and the screen — was the most forward-looking port on any home computer, and the one that mattered most to what came next."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine exactly as it wakes up, in MODE 7: white teletext characters on black, and a prompt that expects you to type a program."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "`BBC Computer 32K` is the memory count. `Acorn DFS` means the disc filing system is fitted — this is the school configuration, a Model B with the Acorn disc interface, not the bare cassette machine. `BASIC` is the language currently selected from the sideways ROM sockets. The `>` is BBC BASIC waiting."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Two things are worth knowing before you type. "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "CAPS LOCK is on"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " — the operating system switches it on at reset, because BASIC's keywords must be upper case, so unshifted letters arrive as capitals. And this keyboard is not a PC's: `\"` lives on Shift+2 and `=` on Shift+`-`, as on any British machine of the period. The exhibit translates for you."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The type-in demo draws a fan of coloured lines in MODE 1. It is five lines long, and it is the shortest honest demonstration of what a million British children did with this machine after school."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Acorn's engineers finished the BBC Micro and immediately faced the question of what to put in it next. Nothing on the market satisfied them, so in 1983 Sophie Wilson and Steve Furber began designing a processor of their own — a small team, no prior CPU experience, and a deliberately reduced instruction set."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The first ARM silicon arrived on 26 April 1985 and ran correctly the first time it was switched on, which is not how first silicon usually behaves. Then somebody looked at the ammeter wired in series with the chip's supply. It read zero. The evaluation board had a fault and had never connected the processor's power pins at all: the ARM1 had been running on leakage current through its I/O pins. The design was so frugal that its designers had accidentally proved it before they meant to."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "That processor was developed on a board plugged into this machine's Tube interface, and the gallery's `armeval` exhibit shows exactly that — the same emulated BBC Micro, with an ARM second processor fitted, announcing itself in blue where this one is white. Roughly thirty billion ARM cores now ship every year, and the line runs from the machine on this bench."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The other legacy is quieter and closer to home. A generation of British programmers learned on this keyboard, and when the Raspberry Pi Foundation set out in 2012 to do the same thing again — a cheap, open, deliberately unfinished computer for children — it was founded in Cambridge by people who had learned on a BBC Micro, and the first Pi ran an ARM chip."
+          }
+        ]
+      }
+    ]
+  },
   "c128": {
     "title": "Commodore 128 — 80 columns, and CP/M",
     "subtitle": "1985 · C128 (80-column BASIC 7.0 · CP/M 3.0)",
@@ -3055,6 +3287,285 @@ export const POSTERS = {
       ]
     }
   },
+  "kc854": {
+    "title": "KC 85/4 — the computer East Germany built for its schools",
+    "subtitle": "1988 · KC 85/4 (CAOS 4.2)",
+    "hero": "/posters/kc854/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/kc854/desktop.webp",
+        "alt": "The KC 85/4's power-on screen — the CAOS 4.2 command menu in white on the machine's deep blue, with the operating system's own list of commands and a % prompt",
+        "caption": "CAOS puts its whole command vocabulary on the screen at power-on. There is no manual to look up: the operating system introduces itself."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine began life in 1984 in Mühlhausen, Thuringia, as the "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "HC 900"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " — "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Heimcomputer 900"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " — built by VEB Mikroelektronik \"Wilhelm Pieck\", one of the combines the GDR had assembled to close the electronics gap with the West. Its processor was a U880, an East German Z80 clone produced without a licence from Zilog, and the machine around it was designed the way a state planning system designs things: as a chassis with slots, so one product could be extended rather than replaced."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Within a year the name went away. The GDR standardised its computers under the label "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Kleincomputer"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", and the HC 900 became the "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "KC 85/2"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ". The KC 85/3 followed in 1986 with BASIC added to the ROM, and the KC 85/4 in 1988: 64 KB of main memory, a second 64 KB devoted entirely to the screen, finer colour, and CAOS 4.2. The old name is still in the dumps — one of the ROM images in the preservation set is called `hc900.852`."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "The naming is the single most confusing thing about East German computing, and it is worth getting straight."
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " VEB Robotron, a different and much larger combine, had its own machine, the Z9001 — and in the same standardisation it was renamed "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "KC 85/1"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", with the "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "KC 87"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " as its successor. So \"KC 85/1\" and \"KC 85/2\" are not two revisions of one computer. They are products of two rival enterprises, with different processors' worth of software, incompatible ROMs and nothing shared but a prefix imposed from above. Robotron's Z1013 single-board kit and its A5105 education machine belong to that other family. This exhibit is the Mühlhausen line."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The KC 85/4 was not a home computer in the sense the West meant. Production was small and most of it went where the plan sent it: into schools, into "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Stationen Junger Techniker"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " — the after-school technical clubs — and into enterprises. Private buyers waited, and often waited in vain. That allocation is the point of the machine rather than a footnote to it: this was a computer designed to be taught with, and it shows in what happens when you switch it on."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "CAOS — the Cassette Aided Operating System — does not present a prompt and wait for you to know something. It prints its own menu of commands and then the prompt, so the first screen is also the documentation. Type a name from the list and it runs. The design assumes a room full of fourteen-year-olds and one teacher, and it optimises for the moment where nobody knows the magic word yet."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The slots do the same job in hardware. A KC 85 was meant to grow: RAM modules, ROM modules, a floppy interface, an assembler, a word processor called TypeStar — each one a cartridge you pushed into the side of the machine, with a switch and an indicator on the module itself. In an economy where you could not simply buy a new computer, an expandable one was not a marketing feature. It was the only realistic upgrade path anyone had."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine exactly as it wakes up: CAOS 4.2's command menu — `"
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": " KC-CAOS 4.2 "
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": "` and the twenty commands it will answer to — in white on the machine's deep blue, with the `%` prompt underneath it. Nothing has been typed and nothing has been arranged — this is the screen the ROM draws on its own."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Try the commands it is offering you. `BASIC` starts the HC-BASIC interpreter that lives in the second ROM, which greets you by asking `MEMORY END ?` — press RETURN to accept all of it. `MENU` brings the list back."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Two things about the keyboard will surprise you, and both are the real machine rather than the emulation. Its unshifted letters come out in "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "UPPER case"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " — shift is what gives you lower case, the opposite of the convention every later computer settled on. And the punctuation is not where a modern keyboard puts it: this is a German machine, and the exhibit quietly translates for you, so the key you press for `+` is the one your keyboard labels `;`, and `:` comes from the key labelled `-`. The full translation table was read straight out of the machine's key matrix."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The Mühlhausen combine outlived its country by a few months. A KC 85/5 with 256 KB shipped in 1989; then the Wall came down, the internal market for a 1.77 MHz Z80 machine evaporated overnight against imported PCs, and the enterprise was broken up and privatised. Nothing succeeded the line."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What it left behind is a preservation community that is unusually vigorous for a machine that never sold in quantity — schools kept theirs, clubs kept theirs, and the people who learned to program on them wrote the emulators and re-dumped the ROMs. It is also a useful corrective to a story that is usually told only from one side. The GDR's electronics industry is remembered for being behind, and it was. It was also building a computer whose operating system explained itself to the child sitting in front of it, at a moment when the machines it was behind mostly did not."
+          }
+        ]
+      }
+    ]
+  },
   "kolibrios": {
     "title": "KolibriOS",
     "subtitle": "2004 · Assembly-language desktop",
@@ -3623,6 +4134,199 @@ export const POSTERS = {
         }
       ]
     }
+  },
+  "nextstep": {
+    "title": "NeXTSTEP 3.3 — the operating system that outlived its computer",
+    "subtitle": "1995 · NeXTSTEP 3.3 (NeXTcube)",
+    "hero": "/posters/nextstep/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/nextstep/desktop.webp",
+        "alt": "The grey NeXTSTEP Workspace with the Workspace menu at the top left, a File Viewer window and the Dock down the right-hand edge",
+        "caption": "The Workspace as the machine brings it up for itself. The column of icons on the right is the Dock — this is where it was invented."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Steve Jobs was forced out of Apple in September 1985 and started NeXT within weeks."
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " The plan was a workstation for universities: better than a personal computer, cheaper than the Unix machines from Sun and Apollo, and built to a standard nobody in the education market had asked for. The result, unveiled in 1988, was a one-foot magnesium cube finished in matte black, with a 25 MHz Motorola 68030, a digital signal processor, an optical drive instead of a hard disk, and a 17-inch greyscale monitor whose 1120x832 display had square pixels at a time when very few did."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The hardware was late, expensive and strange. The optical drive was too slow to boot from comfortably; the machine arrived at $6,500 in a market that wanted $3,000; the education-only rule was quietly dropped. NeXT sold roughly fifty thousand computers in total and stopped making them in 1993, four and a half years after the launch."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The software was the part that worked. NeXTSTEP put a Mach microkernel and a 4.3BSD Unix userland underneath a windowing system built on Display PostScript — the same page-description language the printer used, so what appeared on the screen and what came out of the LaserWriter were generated from one description. On top of that sat an application framework written in Objective-C, a language NeXT licensed and then made its own, and Interface Builder, which let you assemble a program's windows by dragging objects onto them and wiring their connections with the mouse. In 1989 that was closer to science fiction than to normal practice."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Two things happened on machines like this one that changed what computers are for."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The first is the web. Tim Berners-Lee wrote his proposal for a hypertext system at CERN in 1989 and was given a NeXTcube to develop it on. The first web browser, WorldWideWeb — which was also the first web "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "editor"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " — the first web server, and the first web pages were all built on NeXTSTEP, and Berners-Lee said afterwards that the framework was why one person could produce a working browser in a few months rather than a few years. The cube he used is in a museum with a hand-written label on it: "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "This machine is a server. DO NOT POWER IT DOWN!!"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The second is everything Apple sells today. When Apple's own attempts at a modern operating system collapsed, it bought NeXT in December 1996 for about $429 million, brought Jobs back with the purchase, and made NeXTSTEP the foundation of Mac OS X. That inheritance is not metaphorical. Cocoa is the NeXTSTEP application framework with a new name, which is why its classes are still called `NSString`, `NSWindow` and `NSObject` — NS for NeXTSTEP, in code written this morning, on iPhones, thirty years after the company that chose the prefix stopped making hardware."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Along the way the Dock, the column of application icons down the right-hand edge of this screen, moved to the bottom of every Mac; the app bundle — a program that is really a folder pretending to be a file — became how Mac software is installed; and Objective-C carried the whole message-passing style of NeXT's frameworks into two decades of Apple development."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "A NeXTcube: 68040, 64 MB of memory, and the MegaPixel display's 1120x832 greyscale, resting on the Workspace exactly as an untouched login leaves it. Nothing here has been arranged for the exhibit."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Top left is the Workspace menu — NeXTSTEP menus are not a bar across the top of the screen, they are floating panels you can tear off and leave wherever you like. The window is the File Viewer, showing the home directory of the user the machine logs in as; the horizontal column browser inside it is another NeXT idea that survives in the Finder to this day. Down the right-hand edge is the Dock, with the recycler at the bottom."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The greyscale is not a limitation of the exhibit. The original cube's display was two bits deep — black, white and two greys — and the entire interface was designed around that constraint, which is a large part of why it still looks calm."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "NeXT the hardware company is a footnote: fifty thousand machines, most of them in universities and financial-trading rooms, and a final year spent selling the operating system alone for ordinary Intel PCs. NeXTSTEP the software is the most consequential operating system almost nobody used. It is the direct ancestor of macOS, iOS, iPadOS, watchOS and tvOS, which between them run on well over a billion devices; its framework survives class-for-class; and the first thing anyone ever browsed the web with was written on it."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine here is emulated, but the software is not a reconstruction. It is NeXTSTEP 3.3, the release from 1995, running the same Workspace Manager that Berners-Lee had open while he invented the browser."
+          }
+        ]
+      }
+    ]
   },
   "ninefront": {
     "title": "9front",
@@ -4372,6 +5076,154 @@ export const POSTERS = {
         }
       ]
     }
+  },
+  "oricatmos": {
+    "title": "Oric Atmos — the other British micro",
+    "subtitle": "1984 · Oric Atmos (Extended BASIC V1.1)",
+    "hero": "/posters/oricatmos/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/oricatmos/desktop.webp",
+        "alt": "The Oric Atmos power-on screen — ORIC EXTENDED BASIC V1.1, (c) 1983 TANGERINE, 37631 BYTES FREE, Ready",
+        "caption": "Four lines and a cursor. The copyright line still says Tangerine, the company that built the machine before the company that sold it existed."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Tangerine Computer Systems was a small British firm in Ely, Cambridgeshire, whose earlier product was the Microtan 65 — a single-board 6502 kit for people who wanted to solder. In 1982 its founders set up a separate company, Oric Products International, to build something quite different: a finished home computer, in a case, aimed at the shop shelf rather than the workbench."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The Oric-1 arrived in January 1983 at £129 for 16 KB and £169 for 48 KB, straight into the fight the ZX Spectrum was already winning. It had a 6502A at 1 MHz, a proper eight-colour display, three-voice sound from an AY-3-8912, and a keyboard of small hard calculator keys that reviewers disliked immediately and buyers complained about for two years."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The Atmos, in February 1984, was the answer to the complaint. Same processor, same memory, same chips — but a new black case with a red stripe, and a real keyboard with keys that moved. Inside, the ROM was new too: version 1.1 of Oric Extended BASIC, which fixed a long list of faults in the Oric-1's 1.0 and became the version everything was written for afterwards."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The Oric mattered most where you might not expect. In Britain it was a solid seller and a permanent runner-up. In "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "France"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " it was a phenomenon: distributed energetically, priced well against the Spectrum, and adopted by a home-computing press and a software industry that treated it as a first-class machine rather than an also-ran. A very large share of all Orics ever made were sold there."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Technically it is a machine of sharp compromises. Its colour is set by control codes that occupy the text cells they act on, so a colour change costs you a character — a different disease from the Spectrum's attribute clash, and an equally recognisable one when you look at Oric screens. Against that, the sound hardware was genuinely better than its rival's, and Oric BASIC exposed it in a way that is hard not to like: alongside `PLAY` and `MUSIC` the language has four ready-made noises called `ZAP`, `PING`, `SHOOT` and `EXPLODE`. A twelve-year-old could make an arcade sound in one word."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine exactly as it wakes up: `ORIC EXTENDED BASIC V1.1`, the 1983 Tangerine copyright, `37631 BYTES FREE`, and `Ready`. The `CAPS` marker in the top corner is the Atmos's own — the machine boots in capitals, and tells you so."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Nothing has been loaded and nothing is waiting. That was the honest state of a home computer in 1984, and the whole exhibit is what you can do from it: 40 columns of text, eight colours, `HIRES` for a 240×200 bitmap, and four sound effects with names. The type-in demo in the stage menu writes a short colour-and-sound program the way a magazine listing would have, and leaves you to press RETURN on `RUN` yourself."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Oric Products International went into receivership at the start of 1985, and — fittingly — was bought by a French company, Eureka Informatique, which went on building Orics and in 1986 produced the Telestrat, a late and rather strange descendant aimed at videotex terminals. The Minitel country kept the machine alive after the country that invented it had moved on."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It never stopped. The Oric scene in France is still active four decades later: new demos, new games, a maintained cross-development kit, and meet-ups where people bring the black wedge with the red stripe. Very few losing machines from 1984 can say that, and it is the reason this one is in the gallery rather than a footnote about the Spectrum."
+          }
+        ]
+      }
+    ]
   },
   "os2warp": {
     "title": "OS/2 Warp 4",
@@ -6243,6 +7095,206 @@ export const POSTERS = {
       }
     ]
   },
+  "sinclairql": {
+    "title": "Sinclair QL — the serious machine, shipped early",
+    "subtitle": "1984 · Sinclair QL (QDOS · SuperBASIC)",
+    "hero": "/posters/sinclairql/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/sinclairql/desktop.webp",
+        "alt": "The Sinclair QL's power-on screen — a green-bordered box reading \"F1...monitor / F2...TV\" above a red bar reading \"(c) 1983 Sinclair Research Ltd\"",
+        "caption": "Before the QL will draw anything else it asks what it is plugged into. This exhibit answered F1."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Sinclair Research announced the QL on 12 January 1984, twelve days before Apple announced the Macintosh, and the timing was not an accident: this was the machine with which Clive Sinclair intended to leave the toy market behind. \"QL\" stood for Quantum Leap. Inside a flat black wedge the size of a keyboard sat a Motorola 68008 — a 68000 with an eight-bit bus, so a 32-bit processor at a price Sinclair could bear — 128 KB of memory, two Microdrive tape cartridges for storage, and an operating system called QDOS that could genuinely run several programs at once, on a machine costing £399. Psion wrote four applications to go with it: a word processor, a spreadsheet, a database and a business graphics package."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It was not finished. Orders were taken from January with a promise of delivery in twenty-eight days; the first machines went out around April, and supply only became normal in the second half of the year. "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "The firmware did not fit."
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " The QL's ROM had grown past the space on the board, and the earliest machines were shipped with the overflow on a small circuit board plugged into the expansion connector at the back — a ROM cartridge, universally nicknamed the \"kludge\", sticking out of the machine like an afterthought, because it was one. Later revisions of the firmware fitted inside, and Sinclair swapped them out; the ones already sold kept their dongles."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Strip away the launch and the QL is a genuinely interesting computer, and it was interesting in ways the rest of 1984 was not."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "QDOS multitasked pre-emptively in 48 KB of ROM, at a time when the Macintosh and the IBM PC both ran one program at a time. SuperBASIC, its built-in language, had proper procedures and functions with parameters, local variables and recursion, and no line numbers were required to call any of it — a structured language in the ROM of a home computer. The screen was addressable as two graphics modes and as independently scrolling windows, which is why this exhibit shows three coloured panels rather than one blank page: the QL divides its display before you have typed anything."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Its weakness was where its data lived. The Microdrive was Sinclair's answer to the floppy disc: a continuous loop of video tape in a cartridge the size of a matchbox, holding about 100 KB, spinning past a fixed head. It was cheap and it was fast for tape, and it was not reliable enough for work you cared about, which is the single fact most people who owned a QL will mention first."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine one keystroke after power-on. The QL's very first act is to ask whether it is connected to a monitor or a television, because the two need different screen widths; the placard image above is that question, and this exhibit answered "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "F1"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " for the 80-column monitor mode."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What is left is a SuperBASIC screen with nothing on it: a white window, a red window, and a black command strip along the bottom. There is no `READY.` — the QL simply waits. Type into the command strip and it answers, and the on-screen keyboard offers the three lines worth knowing: "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "MODE 8"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " drops the display into the eight-colour television mode the machine was usually seen in, "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "MODE 4"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " brings back the sharp 512-pixel monitor mode, and "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "CLS"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " clears the strip. The QL's own F1–F5 keys are there too, along with its BREAK (Ctrl+Space)."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Sinclair sold his computer business to Amstrad in April 1986, and the QL — some 150,000 of them made — was discontinued within months. It never became the office machine it was built to be."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It kept working on people, though. The Psion suite's descendants ran on Psion's own organisers and, through them, on Symbian phones for two decades. And a Finnish student bought a QL in 1987, found QDOS too closed to modify, wrote his own machine-code tools for it, and later described the experience as the reason he wanted an operating system whose source he could change. His next computer was a 386, and what he wrote on it was Linux."
+          }
+        ]
+      }
+    ]
+  },
   "solaris": {
     "title": "Solaris CDE",
     "subtitle": "1994 · SunOS / System V Unix",
@@ -7903,6 +8955,434 @@ export const POSTERS = {
         }
       ]
     }
+  },
+  "zx81": {
+    "title": "Sinclair ZX81 — one kilobyte, and a K",
+    "subtitle": "1981 · ZX81 (1 KB, black and white)",
+    "hero": "/posters/zx81/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/zx81/desktop.webp",
+        "alt": "The ZX81's power-on screen — an empty white field with a single inverse-video K cursor in the bottom-left corner",
+        "caption": "The entire power-on screen. No banner, no memory count, no copyright line: one inverse K, meaning the machine is ready and the next key you press will be a whole BASIC word."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Clive Sinclair's company had been selling calculators, hi-fi kits and a pocket television, and in 1980 it sold a computer: the ZX80, a white wedge the size of a paperback, £79.95 as a kit. It worked, in the sense that it ran BASIC, but it was built from twenty-one chips and it could not think and draw at the same time — the Z80 generated the television picture itself, in software, so the screen went blank every time you touched a key."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The ZX81, launched in March 1981, is that machine reduced. Jim Westwood's redesign folded most of the logic into a single Ferranti uncommitted logic array, taking the part count from twenty-one to four, and Rick Dickinson wrapped it in a matt black wedge with a printed membrane instead of keys. The 4 KB ROM grew to 8 KB and learned floating-point arithmetic; a new SLOW mode let the machine keep drawing while it computed, at a third of its speed. The price went the other way: £49.95 as a kit, £69.95 built."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "The important number is not the price but the shop."
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " Sinclair sold by mail order, and then W H Smith — a newsagent and stationer on every British high street — began stocking the ZX81 next to the magazines. That is how roughly a million and a half of them were sold, and how a generation of British programmers met a computer without anyone in the family deciding to buy one."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "One kilobyte of memory is not a limitation, it is a design. The ZX81's BASIC does not store your program as text: every keyword is a single byte, which is why the machine will not let you spell one out. At the `K` cursor it is in keyword mode, and pressing "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "P"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " does not type a letter — it enters the whole word `PRINT`. The key caps carry the words, three or four to a key, and learning the machine largely means learning where they live."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The same parsimony runs through the hardware. The display file shrinks to fit what is actually on screen, so an empty screen costs almost nothing. There is no sound chip and no colour. There is no disk, no cartridge and no monitor: the machine drives an ordinary television and stores programs on cassette tape, at 250 baud, with an audible screech."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "And it stops. Run something arithmetical and the picture vanishes — that is the machine handing the whole processor to your program, exactly as the ZX80 always did, because generating a television signal in software costs about three quarters of the CPU. A blank screen on a ZX81 is not a crash. It is the computer thinking, and it is the single most characteristic thing this machine does."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The famous accessory is the 16 KB RAM pack, which plugged into the rear edge connector and turned a toy into something you could write a game on. It also wobbled. A knock to the desk broke the contact, the machine reset, and an evening's typing was gone; the received wisdom was Blu-Tack."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "An untouched ZX81, one second after switch-on, with the memory it was sold with: one kilobyte, which leaves you a little under 800 bytes for a program."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The whole screen is that inverse `K` in the bottom-left corner. Nothing else is displayed because there is nothing else to say — this machine has no startup banner. Press "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "P"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " and the word `PRINT` appears complete; the cursor changes to `L`, because after a keyword the machine expects letters. Shift and a key gives you the red symbol printed on it. `NEWLINE` runs the line, and a two-part report code at the bottom of the screen tells you how it went: `0/0` means fine."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Beside it on the placard is its predecessor. "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "The ZX80's idle screen is indistinguishable from this one"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " — the same white field, the same single inverse `K`, the same 384×311 picture — which is why there is one machine here and not two. The difference is invisible until you ask it to do something: the ZX80 has no SLOW mode, so its screen blanks on every keystroke, and no floating point, so it can only count in whole numbers."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The ZX Spectrum arrived in April 1982 with colour, sound and rubber keys, and it is the machine Britain remembers. But the Spectrum is the ZX81's argument taken one step further, not a different argument: the same one-key keywords, the same television, the same cassette recorder, the same insistence that a computer could cost less than a bicycle."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Sinclair sold the computer business to Amstrad in 1986. What Amstrad bought were the Spectrum and QL rights — the ZX80 and ZX81 ROMs remain the copyright of Nine Tiles Networks Ltd, who wrote them, which is why the code running behind this glass is treated here as preservation material rather than as something free to pass on."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "In the United States the same machine was sold by Timex as the Timex Sinclair 1000, with a second kilobyte of memory, for $99.95, and briefly outsold everything else in the country. Both versions taught the same lesson, and it is one worth standing in front of a nearly empty white screen to remember: nearly every constraint that made this computer strange also made it cheap enough to be somebody's first."
+          }
+        ]
+      }
+    ]
+  },
+  "zxspectrum": {
+    "title": "Sinclair ZX Spectrum 48K — one keyword per key",
+    "subtitle": "1982 · ZX Spectrum 48K",
+    "hero": "/posters/zxspectrum/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/zxspectrum/desktop.webp",
+        "alt": "The ZX Spectrum's power-on screen — an empty white field with \"© 1982 Sinclair Research Ltd\" in black along the bottom",
+        "caption": "The whole boot message. No prompt, no menu, no version banner — just a copyright line and a machine waiting for the first key."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Sinclair Research had already sold Britain two computers before this one. The ZX80 of 1980 and the ZX81 of 1981 were remarkable for their price rather than their ability: black-and-white, a membrane keyboard, one kilobyte of memory, and a video circuit that switched off while the processor thought. They worked because Clive Sinclair was willing to remove anything a computer could survive without."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The ZX Spectrum, launched on 23 April 1982 at £125 for 16 KB and £175 for 48 KB, was the same instinct applied to a machine that could finally do something. Colour arrived, and sound, and a keyboard of forty rubber keys that Rick Dickinson designed to be moulded in one piece. Richard Altwasser did the hardware; Steve Vickers, at Nine Tiles, wrote the 16 KB ROM and the BASIC inside it. A single Ferranti uncommitted logic array — the ULA — replaced most of what would otherwise have been a board full of chips, and gave the machine both its cheapness and its personality."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "The Spectrum's defining decision is the one you can see the moment you press a key."
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " Sinclair BASIC does not have you spell out keywords. Each key carries a whole command printed on it, and at the start of a line one press enters the entire word: P is `PRINT`, G is `GO TO`, R is `RUN`. Steve Vickers designed it that way partly to spare the rubber keyboard and partly because a tokenised line cannot contain a spelling mistake — the machine simply cannot accept `PRNIT`. It made the Spectrum extraordinary to learn on and faintly maddening to type on, and every British programmer of a certain age can still find `RANDOMIZE` by muscle memory."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The other famous decision was forced by memory. The screen holds 256×192 pixels, but its colour is stored separately and coarsely: one ink and one paper colour for each 8×8 block of pixels. Two objects that overlap a block must share its colours, so sprites smear their colour across each other as they move. That is attribute clash, and it is the reason a Spectrum game is recognisable across a room. Six and a half kilobytes bought a colour display in 1982; the price was paid in every frame."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine as it wakes: an empty white field and one line of black text, `© 1982 Sinclair Research Ltd`. There is no prompt and no cursor until you press something."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Type a digit and the line editor appears with a flashing "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "K"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " — keyword mode. Press `B` and the whole word `BORDER` arrives; add a digit and press ENTER and you have a program line. The exhibit's "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Type in a demo program"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " button does exactly that, five lines of it, and the border starts cycling through the Spectrum's colours."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Because the real keyboard has no punctuation keys at all — every symbol is SYMBOL SHIFT held with a letter — the on-screen keyboard carries the machine's own modifiers instead: "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "CAPS SHIFT"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "SYMBOL SHIFT"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", the quote and comma and equals that would otherwise be unreachable, "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "EXTENDED MODE"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " for the second layer of keywords, and the four cursor arrows that live on the 5, 6, 7 and 8 keys."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The Spectrum outsold every other British computer and became the platform a national games industry was built on. Manic Miner and Jet Set Willy were written on it by a teenager; Ultimate Play the Game invented an isometric look on it that people still copy; Elite, The Hobbit and Lords of Midnight all found their largest audiences there. The cassette tape was the distribution medium, and the loading screen — painted in stripes as the bytes arrived — became a form of its own."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Sinclair sold the computer business to Amstrad in 1986, and Amstrad kept the machine in production for another six years. In 1999 Amstrad's Cliff Lawson posted the permission that keeps the machine alive in software: emulator authors may distribute the ROM images, provided nobody charges for them and the copyright messages are not altered. That message is the line at the bottom of this screen — which makes this exhibit's idle state, quite literally, the terms of its own existence."
+          }
+        ]
+      }
+    ]
   }
 } as const satisfies Record<string, PosterDoc>;
 

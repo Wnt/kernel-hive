@@ -186,5 +186,29 @@
   "dragon32": {
     "udpPort": 54130,
     "hashFile": "/data/vms/streamhost/tiles/dragon32/cert_hash_b64.txt"
+  },
+  "zxspectrum": {
+    "udpPort": 54127,
+    "hashFile": "/data/vms/streamhost/tiles/zxspectrum/cert_hash_b64.txt"
+  },
+  "zx81": {
+    "udpPort": 54128,
+    "hashFile": "/data/vms/streamhost/tiles/zx81/cert_hash_b64.txt"
+  },
+  "oricatmos": {
+    "udpPort": 54131,
+    "hashFile": "/data/vms/streamhost/tiles/oricatmos/cert_hash_b64.txt"
+  },
+  "kc854": {
+    "udpPort": 54132,
+    "hashFile": "/data/vms/streamhost/tiles/kc854/cert_hash_b64.txt"
+  },
+  "sinclairql": {
+    "udpPort": 54133,
+    "hashFile": "/data/vms/streamhost/tiles/sinclairql/cert_hash_b64.txt"
+  },
+  "nextstep": {
+    "udpPort": 54134,
+    "hashFile": "/data/vms/streamhost/tiles/nextstep/cert_hash_b64.txt"
   }
 }

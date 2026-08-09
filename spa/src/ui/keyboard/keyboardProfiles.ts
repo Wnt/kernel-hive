@@ -40,7 +40,7 @@ export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
-  | 'zxspectrum';
+  | 'zxspectrum' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -345,6 +345,146 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ]],
   },
 
+  // Sinclair ZX81. The ZX81's 40-key membrane has no Esc, no Backspace, no
+  // cursor keys and no punctuation of its own: everything beyond the letters
+  // and the one-key BASIC keywords is SHIFT plus another key, and the words are
+  // printed above the keys rather than anywhere a modern visitor would look.
+  // MAME passes host SHIFT straight through to the emulated SHIFT, so each of
+  // these is an honest chord and not a gallery invention.
+  //
+  // EVERY ROW HERE WAS PROVED ON THE LIVE FRAMEBUFFER (clone of the tile,
+  // 2026-08-09): RUBOUT deleted the whole PRINT token and the cursor returned
+  // to `K`; FUNCTION changed the cursor glyph from `K` to `F`; BREAK visibly
+  // changed the screen at rest. NEWLINE is proved by the builder's own
+  // keyboard proof.
+  //
+  // WHAT IS DELIBERATELY ABSENT, and why: the ZX81's cursor keys (SHIFT+5/6/7/8)
+  // and EDIT (SHIFT+1). Not because they are believed broken — because they
+  // could not be POSITIVELY verified. The ZX81 draws its cursor as an inverse
+  // block sitting BETWEEN characters, so moving it left shifts the rest of the
+  // line right by one cell and leaves the frame's total ink identical; the
+  // framebuffer proof could not tell "moved" from "ignored", and a key that
+  // might be dead does not go on the exhibit. Plain arrow keys are absent for
+  // a different and firmer reason: the ZX81 has no such keys at all, so they
+  // would be four buttons that cannot work.
+  zx81: {
+    family: 'zx81',
+    rows: [[
+      latch('shift', 'SHIFT', XK.Shift_L, 'SHIFT — the red symbol on each key'),
+      tap('newline', 'NEWLINE', XK.Return, { hint: 'NEWLINE — the ZX81 has no Enter key' }),
+      macro('rubout', 'RUBOUT', [dn(XK.Shift_L), ...press(0x30), up(XK.Shift_L)],
+        { hint: 'SHIFT+0 — the only way to delete; a keyword goes whole' }),
+      macro('zx-function', 'FUNCTION', [dn(XK.Shift_L), ...press(XK.Return), up(XK.Shift_L)],
+        { hint: 'SHIFT+NEWLINE — then a key gives the word printed BELOW it' }),
+      macro('break', 'BREAK', [dn(XK.Shift_L), ...press(0x20), up(XK.Shift_L)],
+        { hint: 'SHIFT+SPACE — stops a running program' }),
+    ]],
+  },
+
+  // Dragon 32. Microsoft Extended Color BASIC and nothing else, so there is no
+  // shell to profile — but the machine has two keys a PC keyboard does not
+  // label, and both are things a visitor will want. BREAK stops a running
+  // program (the Dragon's equivalent of Ctrl+C) and CLEAR wipes the screen;
+  // MAME's dragon32 matrix binds them to Esc and Home, which is what these two
+  // buttons send. The arrows are the Dragon's own cursor keys.
+  dragon: {
+    family: 'dragon',
+    rows: [[
+      tap('break', 'Break', XK.Escape, { hint: 'BREAK — stops a running BASIC program' }),
+      tap('clear', 'Clear', XK.Home, { hint: 'CLEAR — clears the screen' }),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+  },
+
+
+  // KC 85/4 — a GERMAN keyboard with an East German operating system, and the
+  // only exhibit here where the on-screen keyboard has to apologise for the
+  // host's layout rather than just add a missing modifier.
+  //
+  // Base row: the two words CAOS itself is offering on the screen the tile rests
+  // at. Every letter is sent UNSHIFTED on purpose — this machine's unshifted
+  // letter row is UPPER case and shift gives lower case, which is the opposite
+  // of every later convention (MAME's src/mame/ddr/kc_keyb.cpp declares
+  // PORT_CHAR('B') PORT_CHAR('b'), in that order, for all 26). A visitor who
+  // types basic in lower case gets BASIC, and one who "helpfully" holds shift
+  // gets basic and an error.
+  //
+  // The named keys are the KC's own, read from the same matrix: Brk is Esc,
+  // Stop is End, Clr is Backspace, and Shift Lock is Caps Lock.
+  //
+  // The symbol row is the German layout made reachable. Six of these characters
+  // sit on keys a US keyboard puts something else on, so the label is what the
+  // KC prints and the keysym is the host key that gets you there — ':' really
+  // is the '-' key, '+' really is the ';' key. The registry's keyboard.charMap
+  // does the same translation for typed text; these buttons are for the visitor
+  // hunting one character on a phone. '^' (host '[') is included because CAOS
+  // uses it and no visitor would ever find it.
+  kc854: {
+    family: 'kc854',
+    rows: [[
+      macro('caos-basic', 'BASIC',
+        [...press(0x62), ...press(0x61), ...press(0x73), ...press(0x69), ...press(0x63),
+          ...press(XK.Return)],
+        { hint: 'BASIC — starts HC-BASIC from ROM (typed unshifted: this machine’s plain letters are CAPITALS)' }),
+      macro('caos-menu', 'MENU',
+        [...press(0x6d), ...press(0x65), ...press(0x6e), ...press(0x75), ...press(XK.Return)],
+        { hint: 'MENU — brings back the CAOS command list' }),
+      tap('brk', 'Brk', XK.Escape, { hint: 'BRK (the KC’s break key)' }),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+    moreRows: [[
+      tap('clr', 'Clr', XK.BackSpace, { repeat: true, hint: 'CLR' }),
+      tap('ins', 'Ins', XK.Insert),
+      tap('del', 'Del', XK.Delete),
+      tap('stop', 'Stop', XK.End, { hint: 'STOP' }),
+      latch('shiftlock', 'Shift Lock', XK.Caps_Lock, 'SHIFT LOCK — and remember shift gives LOWER case here'),
+    ], [
+      tap('kc-plus', '+', 0x3b, { hint: 'German layout: the host ; key' }),
+      tap('kc-colon', ':', 0x2d, { hint: 'German layout: the host - key' }),
+      tap('kc-minus', '-', 0x3d, { hint: 'German layout: the host = key' }),
+      tap('kc-caret', '^', 0x5b, { hint: 'German layout: the host [ key' }),
+      chord('kc-star', '*', XK.Shift_L, 0x2d, 'Shift + the host - key'),
+      chord('kc-equal', '=', XK.Shift_L, 0x3d, 'Shift + the host = key'),
+      chord('kc-quote', '"', XK.Shift_L, 0x32, 'Shift + 2'),
+      chord('kc-at', '@', XK.Shift_L, 0x30, 'Shift + 0'),
+      chord('kc-apos', '\'', XK.Shift_L, 0x37, 'Shift + 7'),
+      chord('kc-amp', '&', XK.Shift_L, 0x36, 'Shift + 6'),
+    ], fkeyRow(1, 6)],
+  },
+
+  // Sinclair QL. The fixture is the machine's own idle SuperBASIC screen, which
+  // says nothing and offers nothing — the QL does not even print READY — so the
+  // affordances have to come from here. All three macros are SuperBASIC lines
+  // the machine answers immediately and visibly:
+  //   MODE 8  the 256-pixel-wide eight-colour mode the QL used on a television
+  //   MODE 4  back to the 512-pixel four-colour mode this exhibit rests in
+  //   CLS     clears the command window, which is the only way to tidy up
+  // F1..F5 are the QL's own function keys: F1/F2 are what the machine asks for
+  // at power-on (monitor or TV — already answered in the golden), and QL
+  // software of the period hangs its menus off all five.
+  sinclairql: {
+    family: 'sinclairql',
+    rows: [[
+      macro('mode8', 'MODE 8', [...press(0x6d), ...press(0x6f), ...press(0x64), ...press(0x65),
+        ...press(0x20), ...press(0x38), ...press(XK.Return)],
+      { hint: 'MODE 8 — the QL’s eight-colour television mode' }),
+      macro('mode4', 'MODE 4', [...press(0x6d), ...press(0x6f), ...press(0x64), ...press(0x65),
+        ...press(0x20), ...press(0x34), ...press(XK.Return)],
+      { hint: 'MODE 4 — back to 512-pixel monitor mode' }),
+      macro('cls', 'CLS', [...press(0x63), ...press(0x6c), ...press(0x73), ...press(XK.Return)],
+        { hint: 'CLS — clear the command window' }),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+    moreRows: [[
+      chord('break', 'Break', XK.Control_L, 0x20,
+        'CTRL+SPACE — the QL’s BREAK, stops a running program'),
+      tap('esc', 'Esc', XK.Escape),
+    ], fkeyRow(1, 5)],
+  },
+
   appleii: {
     family: 'appleii',
     rows: [[
@@ -503,11 +643,31 @@ export const OS_FAMILY: Record<string, Family> = {
   // satisfy the coverage test; the on-screen keyboard sends nothing the guest
   // will act on.
   gt40: 'generic',
+  // Sinclair ZX81. Its keyboard is genuinely unlike a PC's, but the hard part
+  // is not a mapping problem: at the `K` cursor the machine is in KEYWORD mode,
+  // so one keypress enters a whole BASIC word (P gives PRINT). What a visitor
+  // cannot find are the SHIFT chords — RUBOUT, EDIT, BREAK, the cursor keys —
+  // which is exactly what the zx81 profile above puts on screen.
+  zx81: 'zx81',
+  // Dragon 32: BASIC only, but BREAK and CLEAR are real keys with no PC label,
+  // so it takes its own two-button family rather than the generic rows.
+  dragon32: 'dragon',
   // Oric Atmos: a BASIC prompt and nothing else, and no key a PC keyboard
   // lacks — MAME maps the host's keys onto the Oric matrix by position, and the
   // Atmos layout is ASCII-shaped. Its two extra keys (FUNCT and the Oric's own
   // CTRL) do nothing at the READY prompt, so the generic rows already cover it.
   oricatmos: 'generic',
+  // The only German keyboard in the lineup, and the only machine whose plain
+  // letter row is upper case. Both need their own profile.
+  kc854: 'kc854',
+  // The QL's own keys, and three SuperBASIC one-liners: the machine's idle
+  // screen is completely mute, so the buttons are the only invitation.
+  sinclairql: 'sinclairql',
+  // NeXTSTEP takes the generic Unix rows. The Workspace's own chords hang off
+  // the NeXT Command key, which Previous maps to Alt and which the generic rows
+  // already expose; the machine's real interface is the mouse, and a bespoke
+  // profile would only duplicate what the on-screen menus already show.
+  nextstep: 'generic',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',
