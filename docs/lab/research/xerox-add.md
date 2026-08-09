@@ -6,9 +6,13 @@ slot is claimed. This is the feasibility study
 candidate enters the backlog.
 
 Scope: Alto I, Alto II, the Star (8010 "Dandelion") / Pilot, and the Daybreak
-(6085) / ViewPoint / GlobalView. **Only the Alto section below is complete** —
-the Star and Daybreak studies were still running when this file was written and
-their sections are placeholders. See "Open sections" at the end.
+(6085) / ViewPoint / GlobalView. **All three sections are complete.**
+
+**Short version:** all three are feasible and none is blocked on media. Ship
+**`gvwin` (§3)** first — Tier 2, 0.19 GB, no new emulator — then **`alto` (§1)**.
+The **Star (§2)** is real but gated on one 30-minute speed measurement, and it
+lands on the same ViewPoint desktop `gvwin` already gives you. Full reasoning in
+"Recommendation across all three" at the end.
 
 ---
 
@@ -154,14 +158,123 @@ three mouse buttons on the same clone.
 
 ---
 
-## 2. Star / Pilot — OPEN
+## 2. Star / Pilot — FEASIBLE-WITH-CAVEATS, Tier 3, gated on one speed measurement
 
-Study in flight at the time of writing. The crux is expected to be **media**:
-Star/Pilot/ViewPoint software is far scarcer than Alto software and Xerox never
-released it the way CHM released the Alto stack. The emulator candidate is
-**Darkstar** (also Josh Dersch). If no bootable image is obtainable the honest
-answer is BLOCKED-ON-MEDIA, and the fallback the operator named — "or another
-Pilot OS tile" — becomes the question.
+Verdict: **the 8010 Star is buildable and was booted here** — but Darkstar runs
+at only **43–65 % of real-Star speed** on this host, and upstream attributes
+ViewPoint boot hangs precisely to sub-100 % speed. That single number decides
+between the Star and its successor.
+
+**The expected blocker did not materialise.** Media is settled, fetched and
+hashed on the box:
+
+| file | size | sha256 |
+|---|---|---|
+| `bitsavers .../8010/8010_hd_images.zip` | 14 020 559 | `d9fb1136…a438e` |
+| `ViewPoint-2.0-11-9-1990-18-38.img` | 65 433 601 | `a7ead97a…f7020` |
+| `XDE-5.0.img` | 65 433 601 | `e37c61ed…3e5cb887` |
+| `Interlisp-D-Harmony.img` | 65 433 601 | `bb297e2c…b278766` |
+
+Preservation class — Xerox never released ViewPoint/Pilot and there is no
+licence grant. URL + hash + class only. Note the emulator repo itself **ships
+Xerox bits** (Dandelion IOP PROM dumps `537P030xx.bin`, CP microcode): BSD-2 on
+Dersch's code, Xerox copyright on those files. No separate ROM hunt needed.
+
+### 2.1 Darkstar builds and runs on Debian — with two undocumented fixes
+
+`livingcomputermuseum/Darkstar`, HEAD 2026-04-08, still maintained. **C#, .NET
+Framework 4.5, WinForms + SDL2** — and the SDL surface is embedded in a WinForms
+window (`SDL_CreateWindowFrom`), so **Mono's WinForms X11 driver is a hard
+dependency**. `dotnet`/CoreCLR is not an option.
+
+Built clean in a Debian container: `mono-complete 6.12` + `mono-xbuild` +
+`nuget restore` → `xbuild /p:Configuration=Release` → 0 errors, 2.8 s. There is
+no `msbuild` in Debian; `xbuild` works. Cost in the overlay is ~155 packages
+plus `libgdiplus`.
+
+Two fixes the builder must carry, or it dies with `DllNotFoundException`:
+delete the bundled Windows `SDL2.dll`, and add `SDL2-CS.dll.config` with
+`<dllmap dll="SDL2.dll" target="libSDL2-2.0.so.0"/>`.
+
+Runs under bare `Xvfb`, no WM (one non-fatal `BadMatch` on
+`SDL_CreateRenderer`, then renders fine). No GL, so llvmpipe costs ~45 % of a
+core purely for blitting — the same tax a bridge tile already pays.
+
+### 2.2 The Dec-1997 time lock is the number-one boot gotcha
+
+Xerox **time-locked** the software ("Product Factoring"). Darkstar's readme
+publishes perpetual option keys and requires the TOD clock set to **December
+1997**. Confirmed empirically, and it is not subtle:
+
+- TOD `1990-11-09` → **boot stalled at MP 7800 for >12 min**, twice.
+- TOD `1997-12-01` → proceeded normally.
+
+### 2.3 First boot is interactive — which is exactly why the golden matters
+
+Pilot has no text console; boot progress is a 4-digit **MP code** on an emulated
+front-panel LED, climbing `0910 → 7600 → 7700 → 7800 → 8000`. Then Pilot runs
+the **Set Time Utility**, a teletype-style dialogue that **needs keystrokes**,
+then the logged-off bouncing-keyboard screen, then the **Logon Option Sheet**.
+With no XNS Clearinghouse it offers a temporary desktop → the ViewPoint desktop.
+
+First boot: roughly **25–35 min** at ~50 % speed (upstream says 10–15 at 100 %).
+**A golden baked at the logged-on desktop erases all of it** — reset returns in
+seconds and no visitor ever sees Set Time or the logon. Without that, a visitor
+sees a black screen and a bouncing keyboard. This is the difference between an
+exhibit and a fault report.
+
+### 2.4 Input — the macro row is not optional, and this is now proven twice
+
+The Logon Option Sheet **cannot be completed without the NEXT key**: clicking a
+field does not move the caret, and typing without NEXT concatenates everything
+into `Name`. Darkstar already defines the full Star mapping (`Again F1, Delete
+F2, Find F3, Copy F4, Same F5, Move F6, Open F7, Props F8 …`); Dwarf maps the
+same set to `Ctrl+letter`.
+
+So the SPA needs a **~10-button per-machine macro row** — `NEXT/SKIP`, `OPEN`,
+`PROPERTIES`, `MOVE`, `COPY`, `DELETE`, `AGAIN`, `UNDO`, `STOP`, `HELP` — well
+within what it already does, and **shared with §3**, which found the identical
+requirement independently. Build it once.
+
+Two input details for the SPA path: **clicks need real dwell** (a zero-dwell
+click did nothing in the option sheet; `mousedown; sleep 0.4; mouseup` actuated
+reliably — relevant to the tap path in `INPUT-DEBUGGING.md`), and keys landed at
+120–150 ms while a burst of `Return`s dropped, so expect the §5.1
+`SH_KEY_MIN_HOLD_MS`/`GAP_MS` work.
+
+### 2.5 Display — no surprises
+
+1024×808 visible in a 1088×860 frame, 1-bit monochrome, **landscape ≈1.26:1**;
+measured window 1091×915. Draco is 1152×861. Both squarer than 4:3, so the SPA
+pillarboxes slightly. **None of the Alto's portrait problem** (§1.5).
+
+### 2.6 Cost, and the decision
+
+| | Darkstar / Star 8010 | Draco / 6085 |
+|---|---|---|
+| Tier | **3** | **2–3** |
+| Effort | ~2–4 days | ~1–2 days |
+| RSS | **258 MB**, **96 % of one core sustained** | **338 MB**, **3.5 % of a core idle** |
+| Boot | 25–35 min first boot, interactive | **~60 s**, hands-off |
+| Time lock | Dec-1997 TOD dance | none (internal time service) |
+| Speed | **43–65 % of real** — the risk | no real-time requirement |
+
+### 2.7 Biggest risk, and the 30-minute experiment that retires it
+
+**A tile that boots on a quiet box and hangs when six MAME tiles are streaming
+is worse than no tile.** Upstream issue #22 is literally "Darkstar stuck booting
+ViewPoint on Linux" at low CPU, and the MP 7800 stall above is consistent with
+it.
+
+**One quiesce window, ~30 min:** run the already-built Darkstar pinned with
+`taskset` to an asserted-idle core pair per `MEASUREMENT-METHODOLOGY.md`, boot
+ViewPoint with TOD 1997-12-01 and `AltBootMode=Rigid`, and read `Fields/Sec` off
+the status bar. **≥78 f/s → risk retired, build the Star. <78 f/s → ship Draco
+instead** and label it honestly as the Star's successor.
+
+Evidence: `/data/vms/soltest/XEROX-star/` (84 MB, inert) — the hashed zip and
+frames showing MP codes advancing, the Xerox Set Time Utility banner, and the
+live ViewPoint desktop on Draco.
 
 ## 3. Daybreak / ViewPoint / GlobalView — FEASIBLE, Tier 2, and it is the CHEAPEST Xerox exhibit
 
@@ -255,19 +368,38 @@ Daybreak / Dove) and **Duchess** (the Mesa machine from inside GVWin) — and it
 ships a working ViewPoint 2.0.5 disk in-repo. Predecessors: Woodward's **Dawn**,
 and `gcasa/Mesa`. (Darkstar is the 8010 Star — §2's subject, not this one.)
 
-It starts: 1152×861 monochrome window, authentic Xerox toolbar, status line with
-MP code and instruction counts, ~19 780 sectors read in ~3 min — then **parks at
-MP 8000 on the bouncing-keyboard idle graphic** and never leaves, across ~25 min
-and three input strategies. **Input reaching X is excluded** as a cause: Dwarf's
-own toolbar buttons respond instantly. The missing-nethub hypothesis is also
-excluded (the internal time responder answered, `network rcv: 1`). Remaining
-candidates: the boot switches in `vp2.0.5.properties`, the shipped **German**
-keymap default, or AWT canvas focus. The author's own readme warns Draco's
-rigid-disk emulation is imperfect for Pilot.
+**CORRECTION — Draco was never stalled.** The first study reported it "parking at
+MP 8000 on the bouncing-keyboard graphic" and never leaving across ~25 min and
+three input strategies, and concluded Tier 3–4. The §2 study then **drove the
+same emulator to a live ViewPoint desktop**, and its screenshot's status bar
+reads `8000`. So:
 
-Route A would also need a **new backend shape** — a JRE + Swing app in a
-captured-Linux bridge — and bridge-class memory. Tier 3 if it is a config
-one-liner, Tier 4 if it is Draco's disk emulation.
+- **MP 8000 is Pilot's normal run state, not a hang.** The bouncing keyboard is
+  the *logged-off screen* — "press a key to log on". The machine was healthy and
+  waiting the whole time.
+- The wake key is **`Ctrl+N`** (Dwarf maps the Xerox **NEXT** key there). Ordinary
+  clicks and XTEST keys do not advance it — which is also why the first study's
+  "input reaches X" check was true and irrelevant: Swing took the input, Pilot
+  wanted a key it never received. Dwarf's shipped default keymap is **German**,
+  which makes guessing worse.
+- **`-draco vp2.0.5` boots to the logged-off screen in ~60 s** with
+  `autostart = true`, under bare Xvfb, no WM, software rendering — not the ~3 min
+  plus indefinite stall first reported.
+
+Revised Route A cost: **Tier 2–3**, `openjdk 21` (the readme says Java 8; 21 ran
+it unchanged), **338 MB RSS and 3.5 % of a core idling at the desktop**. It still
+needs a new backend shape — a JRE + Swing app in a captured-Linux bridge — but it
+is no longer an unsolved research problem.
+
+Two real caveats remain: one **unexplained JVM exit** mid-session, not reproduced
+(soak test before shipping), and the disk readme's warning that shutting down
+from inside ViewPoint can corrupt the disk — which a `loadvm golden` tile
+sidesteps entirely.
+
+**The lesson worth keeping: a status code you cannot read is not evidence.** An
+unfamiliar idle screen held for 25 minutes read as a hang, and the fix was one
+keystroke. Cross-checking two independent agents on the same emulator is what
+caught it.
 
 The 6085 media is licence-split and worth stating precisely: the *container* is
 BSD-3, **the ViewPoint contents are not** — Xerox-copyright Pilot software, and
@@ -334,19 +466,36 @@ overlay, the Dwarf/JRE tree). Delete when the space is wanted.
 
 | Section | State |
 |---|---|
-| 1. Alto | **Complete** — feasible, one tile, cheapest experiment identified |
-| 2. Star / Pilot | Research in flight; fold the report in when it lands |
+| 1. Alto | **Complete** — feasible, Tier 2, one tile |
+| 2. Star / Pilot | **Complete** — Tier 3, gated on one 30-min speed measurement |
 | 3. Daybreak / ViewPoint | **Complete** — feasible, Tier 2, **ship this one first** |
 
-**Recommendation across the study so far:** `gvwin` (§3) then `alto` (§1). Two
-tiles, ~0.19 GB and ~1.0–1.3 GB respectively, no shared dependencies, and
-neither blocks the other.
+## Recommendation across all three
+
+**One Pilot exhibit, not two.** §2 and §3 both end at the same ViewPoint desktop
+and would look nearly identical on the wall; §3's own study reached that desktop
+on §2's emulator. Pick by cost:
+
+1. **`gvwin` (§3) — ship first.** Tier 2, **0.19 GB**, no new emulator or
+   backend, `win311.sh` is the template, boot→login→golden→reset proven.
+2. **`alto` (§1) — ship second.** Tier 2, ~1.0–1.3 GB, genuinely different on
+   screen (the 1973 machine, portrait tube), no dependency on the others.
+3. **The Star (§2) — only if the speed measurement passes.** It is the famous
+   machine and the frames are real, but at 43–65 % of real speed it risks
+   hanging under fleet load, and Draco reaches the same desktop in 60 s at 3.5 %
+   of a core. If §2.7 fails, the Pilot slot is already filled by `gvwin`.
+
+**Shared work, build once:** the Xerox **Level-V macro row** (NEXT, OPEN,
+PROPERTIES, MOVE, COPY, DELETE, AGAIN, UNDO, STOP, HELP). §2 and §3 discovered
+independently that ViewPoint is unusable without it — `Tab` is not NEXT.
 
 ## Sources
 
 - [Contralto2](https://github.com/jdersch/Contralto2) ·
+  [Darkstar (8010 Star)](https://github.com/livingcomputermuseum/Darkstar) ·
   [ContrAlto (LCM)](https://github.com/livingcomputermuseum/ContrAlto)
-- [bitsavers Alto disk images](https://bitsavers.org/bits/Xerox/Alto/disk_images/) ·
+- [bitsavers Xerox 8010 hd images](https://bitsavers.org/bits/Xerox/8010/) ·
+  [bitsavers Alto disk images](https://bitsavers.org/bits/Xerox/Alto/disk_images/) ·
   [Alto firmware](https://bitsavers.org/bits/Xerox/Alto/firmware/)
 - [CHM Xerox Alto file system archive](http://xeroxalto.computerhistory.org/index.html) ·
   [CHM Alto source code release](https://computerhistory.org/blog/xerox-alto-source-code/)
