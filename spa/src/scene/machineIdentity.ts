@@ -227,6 +227,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
     badge: 'PDP-11', spec: 'RT-11 / RSX / RSTS • 1970', kit: 'workstation',
   },
+  // Welsh-built beige, and the accent is the machine's own page colour — the
+  // MC6847's bright green, sampled from this tile's framebuffer at #30d200
+  // rather than picked. It is the loudest screen in the collection and it is
+  // what a visitor remembers about a Dragon.
+  dragon32: {
+    caseTint: '#c9c3b2', accentTint: '#30d200', tintMix: 0.4,
+    badge: 'DRAGON 32', spec: '6809E • 32K • 1982', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

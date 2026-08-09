@@ -4,11 +4,11 @@ import type { VMManifestEntry } from '../types';
 import { OS_BINDINGS } from '../three/archetypeRegistry';
 
 // ============================================================================
-//  MUSEUM CATALOG — placard metadata for the full OS lineup (48 bindings)
+//  MUSEUM CATALOG — placard metadata for the full OS lineup (49 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 46 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 47 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 43 of those 46 have their placard entries in this
+//  WebTransport + WebCodecs. 44 of those 47 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,8 +17,8 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 45 entries
-//  so all 48 exhibits render, each with an era-accurate archetype + accent.
+//  This file provides rich, period-accurate placard metadata for its 46 entries
+//  so all 49 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
 //  top of these entries, so every osId in OS_BINDINGS becomes an exhibit.
@@ -433,6 +433,16 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['the RT-11 keyboard monitor', 'MCR, the RSX-11M command interpreter', 'BASIC-PLUS under RSTS/E'],
     blurb: 'One machine and three of the operating systems DEC sold for it — a real-time monitor, a real-time executive and a timesharing system — because in 1975 you did not buy a computer with an operating system, you bought a computer and then chose one.',
     notes: 'Live streamhost tile, and the oldest machine in the collection. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs one fullscreen green-on-black xterm whose only program is a chooser, and pressing 1, 2 or 3 boots RT-11 V5.3, RSX-11M V4.2 BL38 or RSTS/E V9.6 under Open SIMH (pinned at commit a1f57fa3 and built INTO this tile\'s overlay, the amiga.sh precedent, because the frozen bridge base predates it). ONE tile rather than three because a visitor cannot tell RT-11\'s “.” from RSX-11M\'s “>” from RSTS/E\'s “Ready”, and three near-identical terminals would read as one exhibit cloned by accident; the chooser is the placard. THE VERSIONS ARE THE MENTEC CEILINGS: the 1997 hobbyist grant covers RT-11 V5.3, RSTS/E V9.6, RSX-11M V4.3 and RSX-11M-PLUS V3.0 “or prior”, which is exactly why they are hard to find. RSX-11M is V4.2 and the exhibit says V4.2 — V4.3 media is not reachable anywhere today, and the community\'s RSX-11M-PLUS V4.6 and RSTS/E V10.1 are outside the grant. RSTS/E is installed as far as its media allows: the pack boots to timesharing and a working DCL $ prompt, but DEC\'s procedure ends by asking for a second “Library” tape that is not in the kit and is not obtainable, so START.COM and the packaged CCL commands are absent — the chooser says so in three lines of its own text rather than leaving a visitor to discover it. The golden idles AT the chooser with no simulator running, so a tile nobody is watching costs nothing, and each system runs on a fresh sparse copy of its pack. Keyboard-only exhibit; mono-terminal archetype. The arc worth reading aloud: the “>” of RSX-11M is the prompt whose authors, under Dave Cutler, went on to write VMS and then Windows NT, both of which are already in this gallery. See streamhost/docs/BRIDGE.md and docs/guests/decos.md.',
+  },
+  {
+    id: 'dragon32', displayName: 'Dragon 32', year: 1982,
+    lineage: 'Dragon Data (Port Talbot, Wales) — Motorola 6809 / MC6847, Tandy CoCo lineage',
+    arch: 'Motorola MC6809E, 0.89 MHz, 32 KB RAM, 16 KB ROM', ramMB: 0, ramKB: 32,    era: '1980s', accent: '#30D200',
+    eraSoftware: ['Microsoft 16K Extended Color BASIC in ROM', 'cassette games from Microdeal, Salamander and Dragon Data itself', 'DragonDOS on the optional disk interface', 'OS-9 Level 1, a real multitasking Unix-alike on a home micro', 'Dragon User magazine and its monthly type-in listings'],
+    periodBrowser: 'none — pre-web 8-bit era',
+    iconicApps: ['Microsoft Extended Color BASIC', 'Telewriter, the word processor that gave the Dragon lower case', 'Microdeal\'s cassette games'],
+    blurb: 'Britain\'s Welsh-built answer to the home-computer boom: a Motorola 6809 — the best 8-bit processor anyone shipped — wired to a video chip that could draw nine colours and no lower-case letters, and sold against the Spectrum.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289\'s dragon32 driver, built from the same pinned upstream commit the mpf2 tile ships; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. THE LAUNCHER MUST EMPTY THE `ext` SLOT (-ext ""): its default is dragon_fdc, which boots DRAGONDOS instead of BASIC, and -verifyroms demands the FDC ROM that causes it. The romset is assembled BY SHA1 and gated against the shipped binary\'s own -listxml (0.276 declares one 16 KB d32.rom, 0.289 the same bits as two 8 KB halves named after their chips), and the build asserts the banner by OCR plus a text-pixel count of the framebuffer. Driver status is `good`, so MAME never raises its red "doesn\'t work" panel. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/dragon32.md.',
   },
 ];
 

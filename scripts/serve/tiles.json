@@ -182,5 +182,9 @@
   "decos": {
     "udpPort": 54126,
     "hashFile": "/data/vms/streamhost/tiles/decos/cert_hash_b64.txt"
+  },
+  "dragon32": {
+    "udpPort": 54130,
+    "hashFile": "/data/vms/streamhost/tiles/dragon32/cert_hash_b64.txt"
   }
 }

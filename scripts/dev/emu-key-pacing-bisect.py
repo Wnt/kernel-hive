@@ -29,6 +29,17 @@ import time
 # ($ ( ) * +) mixed with unshifted letters and digits.
 LINE = os.environ.get("PACE_LINE", "print chr$(147)+int(rnd(1)*8)-abcdefghij")
 
+# The pacings to try, as "hold:gap" pairs. The default is the three the vic20
+# bisect used. Override it to measure a machine whose frame period puts the
+# two-frame floor somewhere else -- and, at least once per tile, to run a
+# NEGATIVE CONTROL: a frame compare that never reports a mismatch is
+# indistinguishable from a tile that never drops a key, so prove the instrument
+# can fail by including a pacing that is obviously too fast (PACE_PAIRS=0:0).
+PAIRS = tuple(
+    tuple(int(part) for part in pair.split(":"))
+    for pair in os.environ.get("PACE_PAIRS", "40:40,60:60,80:80").split(",")
+)
+
 PLAIN = {" ": "spc", "-": "minus", ".": "dot", ",": "comma"}
 SHIFT = {"$": "4", "(": "9", ")": "0", "*": "8", "+": "equal"}
 
@@ -148,7 +159,7 @@ def main():
     ref = refs[0]
     print(f"reference captured; cursor mask = {len(mask)} bytes", flush=True)
 
-    for hold, gap in ((40, 40), (60, 60), (80, 80)):
+    for hold, gap in PAIRS:
         bad = 0
         for i in range(trials):
             got = trial(q, out_dir, f"h{hold}g{gap}-{i:02d}", hold, gap)[0]

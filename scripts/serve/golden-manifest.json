@@ -461,6 +461,16 @@
    "mouse": "N/A",
    "keyboard": "PASS",
    "fixture": "The PDP-11 chooser: a green-on-black 80x31 xterm on a 1024x768 X root naming RT-11 V5.3, RSX-11M V4.2 and RSTS/E V9.6 with the prompt each answers with, over “Press 1, 2 or 3. Reset returns you to this screen.” The RSTS/E line carries its own three-line caveat about the missing Library tape. The golden holds NO running simulator, so reset both returns the visitor to the placard and throws away the session. Certified 2026-08-09 after the bake, by framebuffer: the 80-column rule measured x=3..962 of 1024 on the cold boot, on the restore, and again after the keyboard proof; pressing 1 through QMP input-send-event left the chooser and started a pdp11 process at RT-11FB V05.03, pressing 3 reached RSTS/E V9.6 timesharing and a DCL $, and loadvm golden brought the bare chooser back with no simulator running. Keyboard-only exhibit (no pointer device); AC97 present but the guest makes no sound."
+  },
+  "dragon32": {
+   "tileDir": "dragon32",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "Dragon 32 (PAL) power-on screen — \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\" — in MAME 0.289's dragon32 driver with the `ext` slot emptied, fullscreen on a 1024x768 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated: the Plus/4's rejected in-application golden is the reason. No post-restore keys. The banner is asserted by OCR of the framebuffer at every stage of the build, because the wrong screen (DRAGONDOS 1.0, what the driver's default slot produces) is the same two greens and a pixel histogram cannot tell them apart. Keyboard proof certified 2026-08-09 after the bake: PRINT 3*7 answered 21, which also proves the shifted matrix — the Dragon puts '*' on SHIFT+the key a PC labels '-'. Keyboard-only exhibit (no mouse); AC97 audio."
   }
  }
 }

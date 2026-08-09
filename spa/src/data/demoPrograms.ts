@@ -36,6 +36,20 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 170
   },
+  "dragon32": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 pmode 3,1",
+      "20 pcls",
+      "30 screen 1,0",
+      "40 for r=2 to 90 step 4",
+      "50 circle(128,96),r,rnd(4)",
+      "60 next r",
+      "70 goto 40"
+    ],
+    "runCommand": "run",
+    "perCharMs": 170
+  },
   "mpf2": {
     "label": "Type in a demo program",
     "lines": [

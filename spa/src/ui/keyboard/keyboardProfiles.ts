@@ -39,7 +39,7 @@ import { XK } from '../../three/useStreamControl';
 export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga';
+  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga' | 'dragon';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -351,6 +351,22 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ]],
   },
 
+  // Dragon 32. Microsoft Extended Color BASIC and nothing else, so there is no
+  // shell to profile — but the machine has two keys a PC keyboard does not
+  // label, and both are things a visitor will want. BREAK stops a running
+  // program (the Dragon's equivalent of Ctrl+C) and CLEAR wipes the screen;
+  // MAME's dragon32 matrix binds them to Esc and Home, which is what these two
+  // buttons send. The arrows are the Dragon's own cursor keys.
+  dragon: {
+    family: 'dragon',
+    rows: [[
+      tap('break', 'Break', XK.Escape, { hint: 'BREAK — stops a running BASIC program' }),
+      tap('clear', 'Clear', XK.Home, { hint: 'CLEAR — clears the screen' }),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+  },
+
   atarist: {
     family: 'atarist',
     rows: [[
@@ -433,6 +449,9 @@ export const OS_FAMILY: Record<string, Family> = {
   // satisfy the coverage test; the on-screen keyboard sends nothing the guest
   // will act on.
   gt40: 'generic',
+  // Dragon 32: BASIC only, but BREAK and CLEAR are real keys with no PC label,
+  // so it takes its own two-button family rather than the generic rows.
+  dragon32: 'dragon',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',

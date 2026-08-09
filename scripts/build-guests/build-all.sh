@@ -115,6 +115,7 @@ MANIFEST=(
   "pdp11        |pdp11.sh       |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)"
   "gt40         |gt40.sh        |bridge/gt40     |retro    |~5-8m   |full   |tiles/gt40 overlay + golden (Open SIMH pdp11 VT11 → Lunar Lander)"
   "decos        |decos.sh       |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)"
+  "dragon32     |dragon32.sh    |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
@@ -124,7 +125,7 @@ MANIFEST=(
 DEFAULT_ORDER=(kolibrios toaruos helenos 9front reactos haiku templeos amigaos qnx alpine tinycore
   freedos msdos-win1 win311 win95 win98 win2000 os2warp redstar3
   android-x86 postmarketos sailfishos sailfishos-gui serenityos
-  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos)
+  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos dragon32)
 
 # ---------------------------------------------------------------------------
 c_reset=$'\e[0m'

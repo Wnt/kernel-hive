@@ -346,6 +346,20 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
             )
 
 
+def keymap_escape(ch: str) -> str:
+    """Percent-encode the three characters SH_KEY_MAP's wire format cannot carry.
+
+    The value is `guest:host` pairs joined by commas, so a guest or host
+    character that IS a colon or a comma has no literal spelling: the Dragon 32
+    puts ':' on the host key a PC labels '-', which would render as `::-`, and
+    labctl's split(':', 1) then yields an empty guest and DROPS the mapping
+    silently -- one missing character, not an error. Only '%', ',' and ':' are
+    touched, so every map written before this existed renders unchanged;
+    labctl's keymap_unescape() is the other half.
+    """
+    return ch.replace("%", "%25").replace(",", "%2C").replace(":", "%3A")
+
+
 def validate_keyboard_env(rows: list[dict[str, Any]], errors: list[str]) -> None:
     """`keyboard.charMap` is the single source; SH_KEY_MAP is how labctl consumes it.
 
@@ -368,7 +382,7 @@ def validate_keyboard_env(rows: list[dict[str, Any]], errors: list[str]) -> None
         if env and not charmap:
             fail(errors, row, "SH_KEY_MAP set in runtime.tileEnv with no keyboard.charMap to derive it from")
             continue
-        expected = ",".join(f"{g}:{h}" for g, h in charmap.items())
+        expected = ",".join(f"{keymap_escape(g)}:{keymap_escape(h)}" for g, h in charmap.items())
         if env != expected:
             fail(errors, row, f"SH_KEY_MAP does not match keyboard.charMap (expected {expected!r}, found {env!r})")
 

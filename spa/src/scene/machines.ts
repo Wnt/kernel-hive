@@ -473,6 +473,15 @@ export const ASSEMBLIES_BY_TILE = {
   gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
   // Three DEC operating systems behind one chooser, on the biggest rack.
   decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
+  // The Dragon 32 is a chunky sloped wedge with the keyboard in the lid and a
+  // television behind it — the same silhouette family as apple2/mpf2/plus4, so
+  // it takes the shared wedge body and the one home CRT that wedge has not yet
+  // been paired with (homeCrtA is otherwise only under the Amiga's separate
+  // desktop case). No keyboard and no mouse: the keys are in the machine, and
+  // the Dragon's only other port took a pair of analogue joysticks.
+  dragon32: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtA',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {
