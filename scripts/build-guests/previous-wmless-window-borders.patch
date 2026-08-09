@@ -1,0 +1,39 @@
+Previous 4.4 (SourceForge SVN trunk r1847) — do not reserve imaginary
+window-manager decorations when there is no window manager.
+
+Screen_SetWindowSize() asks SDL how thick the window's border is and, when SDL
+cannot answer, assumes a decorated desktop: 50 px of titlebar, 50 px of bottom
+frame and 25 px each side. It then shrinks the emulated NeXT screen until it
+fits inside `usable bounds - borders`. On the gallery's bridge kiosk there is no
+window manager at all, so SDL_GetWindowBordersSize() always returns false and
+the 1120x832 MegaPixel display was scaled to 0.971 — a non-integer downscale
+that resamples every glyph of a 1-bit-crisp Display PostScript UI, and destroys
+the 1:1 host-pixel-to-guest-pixel mapping this tile's relative pointer path
+depends on.
+
+Measured on the tile, both runs on a 1120x832 X root:
+  before   stderr "SDL screen scale: 0.971", window 1088x808, blurred text
+  after    no scale line, window 1120x832, exact pixels, no letterbox
+
+A window with no decorations genuinely has zero-thickness borders, so zero is
+also the honest answer for any WM-less session.
+
+Apply with: patch -p0 -d <previous-code checkout> < this file
+
+Index: src/gui-sdl/sdlscreen.c
+===================================================================
+--- src/gui-sdl/sdlscreen.c	(revision 1847)
++++ src/gui-sdl/sdlscreen.c	(working copy)
+@@ -379,8 +379,10 @@
+ 		int top, left, bottom, right;
+ 		float hscale, wscale;
+ 		if (SDL_GetWindowBordersSize(sdlWindow, &top, &left, &bottom, &right) == false) {
+-			top = bottom = 50;
+-			left = right = 25;
++			/* No window manager: the window really has no decorations,
++			 * so do not shrink the emulated screen to make room for
++			 * imaginary ones (kernel-hive bridge kiosk). */
++			top = bottom = left = right = 0;
+ 		} else if (!ConfigureParams.Screen.bShowStatusbar) {
+ 			bottom += 24; /* make sure there is enough space to show statusbar */
+ 		}

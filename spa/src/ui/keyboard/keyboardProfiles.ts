@@ -433,6 +433,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // satisfy the coverage test; the on-screen keyboard sends nothing the guest
   // will act on.
   gt40: 'generic',
+  // NeXTSTEP takes the generic Unix rows. The Workspace's own chords hang off
+  // the NeXT Command key, which Previous maps to Alt and which the generic rows
+  // already expose; the machine's real interface is the mouse, and a bespoke
+  // profile would only duplicate what the on-screen menus already show.
+  nextstep: 'generic',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',

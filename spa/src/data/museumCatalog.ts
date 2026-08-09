@@ -4,7 +4,7 @@ import type { VMManifestEntry } from '../types';
 import { OS_BINDINGS } from '../three/archetypeRegistry';
 
 // ============================================================================
-//  MUSEUM CATALOG — placard metadata for the full OS lineup (48 bindings)
+//  MUSEUM CATALOG — placard metadata for the full OS lineup (49 bindings)
 //  ---------------------------------------------------------------------------
 //  TODAY'S ARCHITECTURE: 46 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
@@ -18,7 +18,7 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
 //  This file provides rich, period-accurate placard metadata for its 45 entries
-//  so all 48 exhibits render, each with an era-accurate archetype + accent.
+//  so all 49 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
 //  top of these entries, so every osId in OS_BINDINGS becomes an exhibit.

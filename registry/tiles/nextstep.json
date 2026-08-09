@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "id": "nextstep",
+  "era_year": 1995,
+  "tileDir": "nextstep",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 44,
+        "prelude": "",
+        "line": "  \"nextstep    |nextstep.sh    |bridge/nextstep|graphical|~25-40m |full   |tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)\"\n",
+        "value": {
+          "key": "nextstep",
+          "script": "nextstep.sh",
+          "outputDir": "bridge/nextstep",
+          "class": "graphical",
+          "estimated": "~25-40m",
+          "automation": "full",
+          "produces": "tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/nextstep",
+      "qmp": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5837,
+      "exec_port": 5837,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54134,
+      "notes": "exec: labctl exec nextstep \"<cmd>\" (ssh root@:5837, key bridge_key) reaches the DEBIAN KIOSK, not NeXTSTEP; the NeXT side has no exec channel"
+    }
+  },
+  "render": {},
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54134,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "device": "ps2-mouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 134
+  },
+  "guestDoc": "docs/guests/nextstep.md",
+  "credentialsRef": "guest/nextstep",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "nextstep",
+      "SH_QMP": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
+      "SH_PORT": "54134",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "rel",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/nextstep/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nextstep/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_FIXTURE_DESC": "NeXTcube (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) running NeXTSTEP 3.3 for m68k under the Previous emulator, resting on the Workspace the machine brings up for itself at login: grey workspace, the Workspace menu down the top left, the File Viewer showing the home directory, and the Dock along the right-hand edge with the recycler at the bottom. Nothing is curated and nothing is typed; this is where an untouched cold boot stops. 1120x832 MegaPixel display, pixel-exact on a 1120x832 X root. Pointer is RELATIVE (SPA pointer lock): the guest draws its own arrow.",
+      "SH_IDLE_PAUSE_SECS": "0"
+    },
+    "vmidLabel": 237,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "nextstep",
+        "--vmid",
+        "237",
+        "--udp",
+        "54134",
+        "--pointer",
+        "rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/nextstep/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/nextstep/tile.env.fixture"
+      ],
+      "deviceSetId": "nextstep-current",
+      "launcher": "streamhost/tiles/nextstep/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/nextstep/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 1536,
+      "smp": 4,
+      "vga": "std",
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "deviceSetSummary": [
+        "-name streamhost-nextstep",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 4 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5837-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 1536,
+        "smp": 4,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-nextstep",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 4 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5837-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off with -m 1536 -smp 4 and no usb-tablet, matching the device set the golden was baked under"
+      }
+    }
+  },
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "streamhost",
+    "accentColor": "#8C8C8C",
+    "eraLabel": "1995 · NeXTSTEP 3.3 (NeXTcube)",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "nextstep",
+    "displayName": "NeXTSTEP 3.3",
+    "year": 1995,
+    "lineage": "NeXT Computer (Mach + 4.3BSD + Display PostScript)",
+    "arch": "Motorola 68040, 25 MHz (NeXTcube), 64 MB RAM, 1120x832 MegaPixel display",
+    "ramMB": 64,
+    "era": "1990s",
+    "accent": "#8C8C8C",
+    "eraSoftware": [
+      "Workspace Manager, the Dock and the File Viewer",
+      "Interface Builder and Project Builder",
+      "Mail.app, Edit, Terminal and the Digital Librarian",
+      "WorldWideWeb — the first web browser, written on a machine like this one"
+    ],
+    "periodBrowser": "WorldWideWeb / OmniWeb (NeXTSTEP was where the web browser was invented)",
+    "iconicApps": [
+      "Workspace Manager",
+      "the right-hand Dock",
+      "Interface Builder",
+      "Digital Librarian"
+    ],
+    "blurb": "The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile's own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU's SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is relative (SPA pointer lock, the c64/qnx path); the guest draws its own arrow. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md."
+  },
+  "reset": {
+    "tileDir": "nextstep",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "NeXTSTEP 3.3 Workspace on an emulated NeXTcube: grey workspace, the Workspace menu at the top left, the File Viewer the machine opens for itself at login, and the Dock down the right-hand edge. Baked 2026-08-09 from an untouched cold boot with nothing typed and nothing curated, and restore-verified by framebuffer in the same run (evidence/coldboot-desktop.png, golden-baked.png, golden-restored.png). Pointer and keyboard are recorded UNVERIFIED, not PASS: motion and keystrokes were both proven to reach the emulated machine by framebuffer, but the end-to-end browser path was not exercised and the NeXT KMS mouse register clamps a single delta to 63 px, so a fast flick under-moves. See docs/guests/nextstep.md."
+  },
+  "notes": [
+    "Bridge tile: Debian 12 kiosk + Previous 4.4 (SVN r1847) emulating a NeXTcube",
+    "Previous MUST be built with -DENABLE_RENDERING_THREAD=1 or guest input is silently dropped",
+    "media (NeXT ROM + NeXTSTEP disk image) is fetched at build time and never committed"
+  ]
+}

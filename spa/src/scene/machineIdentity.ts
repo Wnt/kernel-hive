@@ -227,6 +227,12 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
     badge: 'PDP-11', spec: 'RT-11 / RSX / RSTS • 1970', kit: 'workstation',
   },
+  // NeXT's matte-black magnesium, which is the whole visual identity of the
+  // machine, and a neutral accent because the display itself is greyscale.
+  nextstep: {
+    caseTint: '#26262a', accentTint: '#8c8c8c', tintMix: 0.62,
+    badge: 'NeXTcube', spec: '68040 • MEGAPIXEL • 1990', kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

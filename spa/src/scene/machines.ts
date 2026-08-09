@@ -473,6 +473,17 @@ export const ASSEMBLIES_BY_TILE = {
   gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
   // Three DEC operating systems behind one chooser, on the biggest rack.
   decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
+  // The NeXTcube is a one-foot matte-black magnesium box with a separate
+  // MegaPixel monitor, keyboard and two-button mouse — a workstation
+  // silhouette, not a home micro and not a pizza box. towerE is the shortest
+  // tower in the kit and the closest thing to a cube; crtE plus the wide Unix
+  // keyboard and workstation mouse keep the signature distinct from gt40
+  // (towerE|crtE and nothing else) and from solaris/irix, which share crtE but
+  // sit on pizza-box bodies. The right long-term asset is a bespoke black cube.
+  nextstep: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

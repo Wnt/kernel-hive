@@ -4417,6 +4417,59 @@
     },
     {
       "schemaVersion": 1,
+      "id": "nextstep",
+      "era_year": 2026,
+      "tileDir": "nextstep",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 44,
+            "prelude": "",
+            "line": "  \"nextstep    |nextstep.sh    |Nextstep      |graphical|~30-90m |vision  |TODO\"\n",
+            "value": {
+              "key": "nextstep",
+              "script": "nextstep.sh",
+              "outputDir": "Nextstep",
+              "class": "graphical",
+              "estimated": "~30-90m",
+              "automation": "vision",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54134,
+        "slot": 134
+      },
+      "guestDoc": "docs/guests/nextstep.md",
+      "credentialsRef": "guest/nextstep",
+      "spa": {
+        "archetypeId": "mono-terminal",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · nextstep"
+      },
+      "museum": {
+        "id": "nextstep",
+        "displayName": "nextstep",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 3 scaffold; reserved slot 134/UDP 54134",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
+    },
+    {
+      "schemaVersion": 1,
       "id": "ninefront",
       "era_year": 2011,
       "enabled": true,
