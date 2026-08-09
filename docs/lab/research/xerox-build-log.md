@@ -32,9 +32,13 @@ reach a **graphical UI**, either at boot or via one simple documented command.
      The wake key is **`Ctrl+N`** (Xerox NEXT).
   2. **MP 7800 on Darkstar** *was* a real stall — but the cause was the
      **Dec-1997 time lock**, not the emulator. TOD 1997-12-01 fixes it.
-  3. **MP 7600 on Darkstar sat for ~35 minutes** on a blank white screen with
-     zero disk I/O, matching every symptom of upstream issue #22 — then
-     advanced on its own. **Slow, not hung.**
+  3. **MP 7600 on Darkstar sat for ~8 minutes** (02:12→02:20 box clock) on a
+     blank white screen with zero disk I/O, matching every symptom of upstream
+     issue #22 — then advanced to 7700 on its own. **Slow, not hung.**
+     *(Correction, Agent B: this was first logged as "~35 minutes". That figure
+     was wrong — it came from counting work-turns instead of reading the clock.
+     Timestamp every observation from the box's `date`, not from how long it
+     felt.)*
 
   Consequences, in order of how much time they save:
   - **Do not call a Darkstar boot dead inside an hour.**
@@ -123,14 +127,21 @@ carriage returns**, not a data-entry session.
 
 **The ViewPoint volume boot is SLOW, not hung — and telling the two apart takes
 over half an hour.** After `Starting ViewPoint......` the machine restarts into
-the ViewPoint volume and sat at **MP 7600 for ~35 minutes** on a blank white
-page, with zero disk I/O in any 30-second sample and the emulator perfectly
-healthy (32–53 f/s, ~175 % CPU, 233 MB RSS). Every symptom of the upstream
-issue-#22 hang. It then advanced to **MP 7700 on its own.** So on this box
-`0910 → 7600 → 7700 → 7800 → 8000` is real but the dwell at each step is tens
-of minutes at ~50 % speed. **Do not call a Darkstar boot hung inside an hour**,
-and note that "no disk I/O" proves nothing here — the 65 MB image is entirely
-page-cached after the first pass. The study's `e5.png` "live ViewPoint desktop"
+the ViewPoint volume. Measured against the box clock, on a ~72 %-loaded host:
+
+| box clock | state |
+|---|---|
+| 02:05:06 | Darkstar started (`Start=true`, `AltBootMode=Rigid`, TOD 1997-12-01) |
+| 02:09:49 | **Set Time Utility 2.0 banner** — 4 min 43 s from cold start |
+| 02:12:28 | five CRs answered → `Starting ViewPoint......` |
+| 02:13 | MP 0960, grey stipple |
+| 02:14 – 02:20 | **MP 7600**, blank white page, zero disk I/O — ~6–8 min |
+| 02:20:37 | MP 7700 |
+
+Every symptom of the upstream issue-#22 hang, and it was simply the next step
+of a slow boot. So `0910 → 7600 → 7700 → 7800 → 8000` is real, each step takes
+minutes at ~50 % speed, and "no disk I/O" proves nothing — the 65 MB image is
+entirely page-cached after the first pass. The study's `e5.png` "live ViewPoint desktop"
 frame is **Draco/6085, not Darkstar**; the Star had not reached its desktop on
 this box before this run.
 
