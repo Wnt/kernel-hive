@@ -1,6 +1,7 @@
 # NeXTSTEP 3.3 — live streamhost tile `nextstep` (VMID 237, udp 54134)
 
-**Status: LIVE.** A captured Debian-12 kiosk runs the **Previous** emulator as a
+**Status: LIVE (relative pointer). The absolute-tablet promotion is landed in
+the repo but NOT deployed — see §9.** A captured Debian-12 kiosk runs the **Previous** emulator as a
 **NeXTcube** (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) booting **NeXTSTEP
 3.3 for m68k**, and streamhost captures the Linux framebuffer + AC97 audio like
 every other bridge tile (`streamhost/docs/BRIDGE.md`). The acceptance fixture —
@@ -233,6 +234,18 @@ lands on the Workspace with no input at all.
 
 ## 9. Open items — stated honestly
 
+- **NOT YET PROMOTED (2026-08-10).** Everything in §4 is proven, and the install
+  automation passes end to end on a clone (`driver attached; absolute probe max
+  error 0 px`, fixture restored) — but the last step does not converge on the
+  TILE. The pre-driver relative closed loop that puts the pointer on the Install
+  button lands ~56 px past it, deterministically, where the identical code
+  converged twice on the clone. The tile is back on its original golden, still
+  `SH_POINTER=rel`; the repo carries the absolute wiring, unde­ployed. Next
+  person: instrument `goto()` per step on the tile (it prints nothing today) and
+  compare the measured per-event gain against the clone's — the suspicion is that
+  NeXTSTEP's acceleration curve is being driven into its superlinear region by a
+  step size that is safe on one machine's timing and not the other's, in which
+  case the fix is a fixed small step with no proportional term at all.
 - The **cold-boot pointer asymmetry** in §4: a cold-booted tile has no tablet
   driver and no usable pointer until the installer is re-run. Documented and
   one command away, deliberately not automatic.
