@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "bbcmicro",
+  "era_year": 2026,
+  "tileDir": "bbcmicro",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 46,
+        "prelude": "",
+        "line": "  \"bbcmicro    |bbcmicro.sh    |Bbcmicro      |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "bbcmicro",
+          "script": "bbcmicro.sh",
+          "outputDir": "Bbcmicro",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54129,
+    "slot": 129
+  },
+  "guestDoc": "docs/guests/bbcmicro.md",
+  "credentialsRef": "guest/bbcmicro",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · bbcmicro"
+  },
+  "museum": {
+    "id": "bbcmicro",
+    "displayName": "bbcmicro",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 129/UDP 54129",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

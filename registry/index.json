@@ -1530,6 +1530,59 @@
     },
     {
       "schemaVersion": 1,
+      "id": "bbcmicro",
+      "era_year": 2026,
+      "tileDir": "bbcmicro",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 46,
+            "prelude": "",
+            "line": "  \"bbcmicro    |bbcmicro.sh    |Bbcmicro      |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "bbcmicro",
+              "script": "bbcmicro.sh",
+              "outputDir": "Bbcmicro",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54129,
+        "slot": 129
+      },
+      "guestDoc": "docs/guests/bbcmicro.md",
+      "credentialsRef": "guest/bbcmicro",
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · bbcmicro"
+      },
+      "museum": {
+        "id": "bbcmicro",
+        "displayName": "bbcmicro",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 129/UDP 54129",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
+    },
+    {
+      "schemaVersion": 1,
       "id": "c128",
       "era_year": 1985,
       "enabled": true,
@@ -2600,6 +2653,59 @@
         "keyboard": "PASS",
         "fixture": "The PDP-11 chooser: a green-on-black 80x31 xterm on a 1024x768 X root naming RT-11 V5.3, RSX-11M V4.2 and RSTS/E V9.6 with the prompt each answers with, over “Press 1, 2 or 3. Reset returns you to this screen.” The RSTS/E line carries its own three-line caveat about the missing Library tape. The golden holds NO running simulator, so reset both returns the visitor to the placard and throws away the session. Certified 2026-08-09 after the bake, by framebuffer: the 80-column rule measured x=3..962 of 1024 on the cold boot, on the restore, and again after the keyboard proof; pressing 1 through QMP input-send-event left the chooser and started a pdp11 process at RT-11FB V05.03, pressing 3 reached RSTS/E V9.6 timesharing and a DCL $, and loadvm golden brought the bare chooser back with no simulator running. Keyboard-only exhibit (no pointer device); AC97 present but the guest makes no sound."
       }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "dragon32",
+      "era_year": 2026,
+      "tileDir": "dragon32",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 47,
+            "prelude": "",
+            "line": "  \"dragon32    |dragon32.sh    |Dragon32      |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "dragon32",
+              "script": "dragon32.sh",
+              "outputDir": "Dragon32",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54130,
+        "slot": 130
+      },
+      "guestDoc": "docs/guests/dragon32.md",
+      "credentialsRef": "guest/dragon32",
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · dragon32"
+      },
+      "museum": {
+        "id": "dragon32",
+        "displayName": "dragon32",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 130/UDP 54130",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
     },
     {
       "schemaVersion": 1,
@@ -3683,6 +3789,59 @@
     },
     {
       "schemaVersion": 1,
+      "id": "kc854",
+      "era_year": 2026,
+      "tileDir": "kc854",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 49,
+            "prelude": "",
+            "line": "  \"kc854       |kc854.sh       |Kc854         |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "kc854",
+              "script": "kc854.sh",
+              "outputDir": "Kc854",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54132,
+        "slot": 132
+      },
+      "guestDoc": "docs/guests/kc854.md",
+      "credentialsRef": "guest/kc854",
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · kc854"
+      },
+      "museum": {
+        "id": "kc854",
+        "displayName": "kc854",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 132/UDP 54132",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
+    },
+    {
+      "schemaVersion": 1,
       "id": "kolibrios",
       "era_year": 2004,
       "enabled": true,
@@ -4414,6 +4573,60 @@
         "fixture": "MS-DOS 6.22 GALLERY MENU text screen, live COMMAND.COM at C:\\>; text console, no pointer surface."
       },
       "migrationExceptions": []
+    },
+    {
+      "schemaVersion": 1,
+      "id": "nextstep",
+      "era_year": 2026,
+      "tileDir": "nextstep",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 45,
+            "prelude": "",
+            "line": "  \"nextstep        |nextstep.sh        |Zx81          |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "nextstep",
+              "script": "nextstep.sh",
+              "outputDir": "nextstep",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54134,
+        "slot": 134
+      },
+      "guestDoc": "docs/guests/nextstep.md",
+      "credentialsRef": "guest/nextstep",
+      "spa": {
+        "archetypeId": "mono-terminal",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · nextstep"
+      },
+      "museum": {
+        "id": "nextstep",
+        "displayName": "nextstep",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 134/UDP 54134",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups",
+        "supersedes the 2025 QEMU-0.9/neko R&D in docs/guests/nextstep.md"
+      ]
     },
     {
       "schemaVersion": 1,
@@ -5360,6 +5573,59 @@
         "absolute pointer and keyboard are injected into the captured bridge; OpenVMS supplies DECW$MWM and all visible apps"
       ],
       "migrationExceptions": []
+    },
+    {
+      "schemaVersion": 1,
+      "id": "oricatmos",
+      "era_year": 2026,
+      "tileDir": "oricatmos",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 48,
+            "prelude": "",
+            "line": "  \"oricatmos   |oricatmos.sh   |Oricatmos     |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "oricatmos",
+              "script": "oricatmos.sh",
+              "outputDir": "Oricatmos",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54131,
+        "slot": 131
+      },
+      "guestDoc": "docs/guests/oricatmos.md",
+      "credentialsRef": "guest/oricatmos",
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · oricatmos"
+      },
+      "museum": {
+        "id": "oricatmos",
+        "displayName": "oricatmos",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 131/UDP 54131",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
     },
     {
       "schemaVersion": 1,
@@ -7877,6 +8143,59 @@
         "keyboard": "SKIP",
         "fixture": "SerenityOS desktop. Boots from a fresh qcow2 over the base image on each launch -> cold-boot reset (no vmstate snapshot)."
       }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "sinclairql",
+      "era_year": 2026,
+      "tileDir": "sinclairql",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 50,
+            "prelude": "",
+            "line": "  \"sinclairql  |sinclairql.sh  |Sinclairql    |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "sinclairql",
+              "script": "sinclairql.sh",
+              "outputDir": "Sinclairql",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54133,
+        "slot": 133
+      },
+      "guestDoc": "docs/guests/sinclairql.md",
+      "credentialsRef": "guest/sinclairql",
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · sinclairql"
+      },
+      "museum": {
+        "id": "sinclairql",
+        "displayName": "sinclairql",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 133/UDP 54133",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
     },
     {
       "schemaVersion": 1,
@@ -10447,6 +10766,112 @@
         "fixture": "Windows XP; empty Notepad, caret top-left (Line 1 Col 1), pointer parked right."
       },
       "migrationExceptions": []
+    },
+    {
+      "schemaVersion": 1,
+      "id": "zx81",
+      "era_year": 2026,
+      "tileDir": "zx81",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 45,
+            "prelude": "",
+            "line": "  \"zx81        |zx81.sh        |Zx81          |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "zx81",
+              "script": "zx81.sh",
+              "outputDir": "Zx81",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54128,
+        "slot": 128
+      },
+      "guestDoc": "docs/guests/zx81.md",
+      "credentialsRef": "guest/zx81",
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · zx81"
+      },
+      "museum": {
+        "id": "zx81",
+        "displayName": "zx81",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 128/UDP 54128",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "zxspectrum",
+      "era_year": 2026,
+      "tileDir": "zxspectrum",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 44,
+            "prelude": "",
+            "line": "  \"zxspectrum  |zxspectrum.sh  |Zxspectrum    |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "zxspectrum",
+              "script": "zxspectrum.sh",
+              "outputDir": "Zxspectrum",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54127,
+        "slot": 127
+      },
+      "guestDoc": "docs/guests/zxspectrum.md",
+      "credentialsRef": "guest/zxspectrum",
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · zxspectrum"
+      },
+      "museum": {
+        "id": "zxspectrum",
+        "displayName": "zxspectrum",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 127/UDP 54127",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
     }
   ]
 }

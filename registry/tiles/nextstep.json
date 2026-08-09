@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "nextstep",
+  "era_year": 2026,
+  "tileDir": "nextstep",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 45,
+        "prelude": "",
+        "line": "  \"nextstep        |nextstep.sh        |Zx81          |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "nextstep",
+          "script": "nextstep.sh",
+          "outputDir": "nextstep",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54134,
+    "slot": 134
+  },
+  "guestDoc": "docs/guests/nextstep.md",
+  "credentialsRef": "guest/nextstep",
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · nextstep"
+  },
+  "museum": {
+    "id": "nextstep",
+    "displayName": "nextstep",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 134/UDP 54134",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups",
+    "supersedes the 2025 QEMU-0.9/neko R&D in docs/guests/nextstep.md"
+  ]
+}

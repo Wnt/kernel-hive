@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "sinclairql",
+  "era_year": 2026,
+  "tileDir": "sinclairql",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 50,
+        "prelude": "",
+        "line": "  \"sinclairql  |sinclairql.sh  |Sinclairql    |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "sinclairql",
+          "script": "sinclairql.sh",
+          "outputDir": "Sinclairql",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54133,
+    "slot": 133
+  },
+  "guestDoc": "docs/guests/sinclairql.md",
+  "credentialsRef": "guest/sinclairql",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · sinclairql"
+  },
+  "museum": {
+    "id": "sinclairql",
+    "displayName": "sinclairql",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 133/UDP 54133",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

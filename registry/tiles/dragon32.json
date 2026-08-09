@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "dragon32",
+  "era_year": 2026,
+  "tileDir": "dragon32",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 47,
+        "prelude": "",
+        "line": "  \"dragon32    |dragon32.sh    |Dragon32      |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "dragon32",
+          "script": "dragon32.sh",
+          "outputDir": "Dragon32",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54130,
+    "slot": 130
+  },
+  "guestDoc": "docs/guests/dragon32.md",
+  "credentialsRef": "guest/dragon32",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · dragon32"
+  },
+  "museum": {
+    "id": "dragon32",
+    "displayName": "dragon32",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 130/UDP 54130",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

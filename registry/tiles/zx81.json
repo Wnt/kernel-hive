@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "zx81",
+  "era_year": 2026,
+  "tileDir": "zx81",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 45,
+        "prelude": "",
+        "line": "  \"zx81        |zx81.sh        |Zx81          |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "zx81",
+          "script": "zx81.sh",
+          "outputDir": "Zx81",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54128,
+    "slot": 128
+  },
+  "guestDoc": "docs/guests/zx81.md",
+  "credentialsRef": "guest/zx81",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · zx81"
+  },
+  "museum": {
+    "id": "zx81",
+    "displayName": "zx81",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 128/UDP 54128",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

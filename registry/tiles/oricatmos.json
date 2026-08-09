@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "oricatmos",
+  "era_year": 2026,
+  "tileDir": "oricatmos",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 48,
+        "prelude": "",
+        "line": "  \"oricatmos   |oricatmos.sh   |Oricatmos     |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "oricatmos",
+          "script": "oricatmos.sh",
+          "outputDir": "Oricatmos",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54131,
+    "slot": 131
+  },
+  "guestDoc": "docs/guests/oricatmos.md",
+  "credentialsRef": "guest/oricatmos",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · oricatmos"
+  },
+  "museum": {
+    "id": "oricatmos",
+    "displayName": "oricatmos",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 131/UDP 54131",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "kc854",
+  "era_year": 2026,
+  "tileDir": "kc854",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 49,
+        "prelude": "",
+        "line": "  \"kc854       |kc854.sh       |Kc854         |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "kc854",
+          "script": "kc854.sh",
+          "outputDir": "Kc854",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54132,
+    "slot": 132
+  },
+  "guestDoc": "docs/guests/kc854.md",
+  "credentialsRef": "guest/kc854",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · kc854"
+  },
+  "museum": {
+    "id": "kc854",
+    "displayName": "kc854",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 132/UDP 54132",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

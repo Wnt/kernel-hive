@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "zxspectrum",
+  "era_year": 2026,
+  "tileDir": "zxspectrum",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 44,
+        "prelude": "",
+        "line": "  \"zxspectrum  |zxspectrum.sh  |Zxspectrum    |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "zxspectrum",
+          "script": "zxspectrum.sh",
+          "outputDir": "Zxspectrum",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54127,
+    "slot": 127
+  },
+  "guestDoc": "docs/guests/zxspectrum.md",
+  "credentialsRef": "guest/zxspectrum",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · zxspectrum"
+  },
+  "museum": {
+    "id": "zxspectrum",
+    "displayName": "zxspectrum",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 127/UDP 54127",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}
