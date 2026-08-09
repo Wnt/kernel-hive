@@ -473,6 +473,16 @@ export const ASSEMBLIES_BY_TILE = {
   gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
   // Three DEC operating systems behind one chooser, on the biggest rack.
   decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
+  // The ZX Spectrum is the smallest object in the hall — a 23 cm rubber-keyed
+  // slab that plugged into the family television. The kit has no body that
+  // small, so it takes the smallest wedge (eightBitWedgeA, shared with
+  // apple2/mpf2/plus4) paired with the LARGEST home CRT, which is the honest
+  // relationship: the machine was tiny and the telly was not. That pairing is
+  // free — amiga holds amigaA|homeCrtA — so the signature stays distinct, and
+  // the black case and rainbow-flash red in machineIdentity.ts are what read as
+  // Sinclair. No mouse and no keyboard model: the keyboard IS the machine, and
+  // no pointing device was ever made for it.
+  zxspectrum: { kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtA' },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

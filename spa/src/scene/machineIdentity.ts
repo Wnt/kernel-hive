@@ -227,6 +227,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
     badge: 'PDP-11', spec: 'RT-11 / RSX / RSTS • 1970', kit: 'workstation',
   },
+  // Sinclair black, and the accent is the first stripe of the rainbow flash
+  // moulded into the case — which is also the machine's own non-bright red,
+  // RGB 205,0,0, the colour MAME's spectrum driver actually puts on screen.
+  zxspectrum: {
+    caseTint: '#26262a', accentTint: '#cd0000', tintMix: 0.5,
+    badge: 'ZX SPECTRUM', spec: '48K • 1982', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

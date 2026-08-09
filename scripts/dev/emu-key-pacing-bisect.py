@@ -121,9 +121,18 @@ def shot(q, out_dir, tag):
         return fh.read()
 
 
+# Seconds to wait after `loadvm` before typing. 2.5 s is enough for the VICE
+# tiles this harness was written for. It is NOT enough for MAME: on zxspectrum,
+# keys sent ~4 s after a restore were swallowed OUTRIGHT by an emulator that was
+# demonstrably live before and after, which turns every trial into a false
+# "corrupted" and makes the instrument lossier than the thing measured. Raise it
+# with PACE_SETTLE_S when the guest's emulator is slow to resume.
+SETTLE_S = float(os.environ.get("PACE_SETTLE_S", "2.5"))
+
+
 def trial(q, out_dir, tag, hold_ms, gap_ms, shots=1):
     q.hmp("loadvm golden")
-    time.sleep(2.5)
+    time.sleep(SETTLE_S)
     type_line(q, hold_ms, gap_ms)
     time.sleep(1.5)
     return [shot(q, out_dir, f"{tag}-{n}") for n in range(shots)]
@@ -133,8 +142,30 @@ def differing(a, b):
     return {i for i, (x, y) in enumerate(zip(a, b)) if x != y}
 
 
+def grid():
+    """The (hold, gap) pairs to try, in order.
+
+    The default is the VICE tiles' 40/60/80. A tile whose emulator runs BELOW
+    real time under host load needs a coarser sweep -- zxspectrum's MAME managed
+    69% of real time with the kiosk up, and its ROM's LAST-K debounce makes a
+    REPEATED character the worst case, so it was swept at 80..250. Override with
+    e.g. PACE_GRID="80,120,160,200,250" (hold=gap) or "80x120,200x200".
+    """
+    spec = os.environ.get("PACE_GRID")
+    if not spec:
+        return ((40, 40), (60, 60), (80, 80))
+    pairs = []
+    for item in spec.split(","):
+        hold, _, gap = item.strip().partition("x")
+        pairs.append((int(hold), int(gap or hold)))
+    return tuple(pairs)
+
+
 def main():
-    qmp_path, out_dir = sys.argv[1], sys.argv[2]
+    qmp_path = sys.argv[1]
+    # ABSOLUTE: `screendump` is executed by QEMU, so a relative path lands in
+    # QEMU's cwd and the harness then cannot find its own capture.
+    out_dir = os.path.abspath(sys.argv[2])
     trials = int(sys.argv[3]) if len(sys.argv) > 3 else 10
     os.makedirs(out_dir, exist_ok=True)
     q = Qmp(qmp_path)
@@ -148,7 +179,7 @@ def main():
     ref = refs[0]
     print(f"reference captured; cursor mask = {len(mask)} bytes", flush=True)
 
-    for hold, gap in ((40, 40), (60, 60), (80, 80)):
+    for hold, gap in grid():
         bad = 0
         for i in range(trials):
             got = trial(q, out_dir, f"h{hold}g{gap}-{i:02d}", hold, gap)[0]

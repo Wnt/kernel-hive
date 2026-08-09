@@ -1,54 +1,235 @@
 {
   "schemaVersion": 1,
   "id": "zxspectrum",
-  "era_year": 2026,
-  "tileDir": "zxspectrum",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "era_year": 1982,
+  "enabled": true,
   "build": {
     "rows": [
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"zxspectrum  |zxspectrum.sh  |Zxspectrum    |installed|~15-30m |partial |TODO\"\n",
+        "line": "  \"zxspectrum  |zxspectrum.sh  |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)\"\n",
         "value": {
           "key": "zxspectrum",
           "script": "zxspectrum.sh",
-          "outputDir": "Zxspectrum",
-          "class": "installed",
-          "estimated": "~15-30m",
-          "automation": "partial",
-          "produces": "TODO",
+          "outputDir": "bridge/zxspectrum",
+          "class": "retro",
+          "estimated": "~6-12m",
+          "automation": "full",
+          "produces": "tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)",
           "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 13
         }
       }
     ]
   },
-  "operator": {},
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/zxspectrum",
+      "qmp": "/data/vms/streamhost/tiles/zxspectrum/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5830,
+      "exec_port": 5830,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54127,
+      "notes": "exec: labctl exec zxspectrum \"<cmd>\" (ssh root@:5830, key bridge_key)"
+    },
+    "actionMap": {
+      "key": "zxspectrum",
+      "mouse": null,
+      "keys": "b2 → BORDER 2 (one keypress is a whole BASIC keyword in K mode)"
+    }
+  },
   "render": {},
+  "tileDir": "zxspectrum",
+  "lifecycle": "production",
   "stream": {
-    "transport": "showcase",
+    "transport": "streamhost",
     "udpPort": 54127,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
     "slot": 127
   },
   "guestDoc": "docs/guests/zxspectrum.md",
   "credentialsRef": "guest/zxspectrum",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "zxspectrum",
+      "SH_QMP": "/data/vms/streamhost/tiles/zxspectrum/qmp.sock",
+      "SH_PORT": "54127",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/zxspectrum/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/zxspectrum/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "200",
+      "SH_KEY_MIN_GAP_MS": "200",
+      "SH_FIXTURE_DESC": "Sinclair ZX Spectrum 48K at its own untouched power-on screen: the whole 352x296 raster — border included — in the machine's non-bright white, with one line of black text, \"© 1982 Sinclair Research Ltd\", along the bottom. Drawn by MAME 0.251's `spectrum` driver fullscreen with -keepaspect on the bridge base's stock 1024x768 X root, which the Spectrum's 4:3 picture fills exactly. Nothing is curated and nothing is typed; the copyright line the ROM prints is also the condition under which Amstrad permits the ROM to be emulated at all. Keyboard-only exhibit; no pointer device; 1-bit beeper -> ALSA -> AC97."
+    },
+    "vmidLabel": 230,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "zxspectrum",
+        "--vmid",
+        "230",
+        "--udp",
+        "54127",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/zxspectrum/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/zxspectrum/tile.env.fixture"
+      ],
+      "deviceSetId": "zxspectrum-current",
+      "launcher": "streamhost/tiles/zxspectrum/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/zxspectrum/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-zxspectrum",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5830-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-zxspectrum",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5830-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+      }
+    },
+    "bringUpOrder": 49
+  },
   "spa": {
     "archetypeId": "beige-tower-crt",
-    "transport": "showcase",
-    "accentColor": "#64748b",
-    "eraLabel": "TBD · zxspectrum"
+    "transport": "streamhost",
+    "accentColor": "#CD0000",
+    "eraLabel": "1982 · ZX Spectrum 48K"
+  },
+  "keyboard": {
+    "letterCase": "upper-only"
+  },
+  "demoProgram": {
+    "label": "Type in a demo program (one key = one keyword)",
+    "lines": [
+      "10 b1",
+      "20 b2",
+      "30 b6",
+      "40 b5",
+      "50 g10"
+    ],
+    "runCommand": "r",
+    "perCharMs": 400
   },
   "museum": {
     "id": "zxspectrum",
-    "displayName": "zxspectrum",
-    "year": 2026,
-    "lineage": "TODO",
-    "arch": "TODO",
-    "accent": "#64748b"
+    "displayName": "Sinclair ZX Spectrum 48K",
+    "year": 1982,
+    "lineage": "Sinclair Research (ZX80 → ZX81 → ZX Spectrum)",
+    "arch": "Zilog Z80A, 3.5 MHz, 48 KB RAM, 16 KB ROM, Ferranti ULA",
+    "ramMB": 0,
+    "ramKB": 48,
+    "era": "1980s",
+    "accent": "#CD0000",
+    "eraSoftware": [
+      "Sinclair BASIC in ROM, with a whole keyword on every key",
+      "Manic Miner and Jet Set Willy, written by Matthew Smith",
+      "Ultimate Play the Game's isometric Filmation titles: Knight Lore, Alien 8",
+      "Elite, The Hobbit, Lords of Midnight, Chuckie Egg, Skool Daze",
+      "cassette tapes, the ZX Microdrive, and type-in listings from Your Sinclair and CRASH"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "Sinclair BASIC",
+      "Manic Miner",
+      "Knight Lore"
+    ],
+    "blurb": "The machine that taught Britain to program: £175, forty rubber keys, and a whole BASIC keyword printed on each one — press P and the word PRINT appears. Its eight colours are stored one pair per 8×8 cell, so sprites drag their colours across each other, and a generation grew up calling that attribute clash rather than a fault.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Debian's own MAME 0.251 (`spectrum` driver, `-bios en`) emulating a 48K ZX Spectrum; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The one external input is the 16 KB Sinclair ROM, taken from Debian's `spectrum-roms` package under Amstrad's 1999 emulator permission and never committed (docs/lab/ASSETS-MANIFEST.md). MAME runs fullscreen with -keepaspect on the stock 1024x768 X root, which the 4:3 picture fills exactly. The golden is the machine's own untouched power-on screen. KEYWORD ENTRY is the exhibit and the catch: at the K cursor one keypress enters a whole token, so the registry demoProgram is written as the KEYSTROKES a person presses, not as the listing they produce. The 40-key matrix has no punctuation keys at all — every symbol is SYMBOL SHIFT plus a letter — so the SPA's zxspectrum on-screen keyboard carries CAPS SHIFT / SYMBOL SHIFT latches, EXTENDED MODE, and the symbol chords a type-in cannot reach. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/zxspectrum.md."
   },
-  "notes": [
-    "new-os Tier 2 scaffold; reserved slot 127/UDP 54127",
-    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-  ]
+  "reset": {
+    "tileDir": "zxspectrum",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Sinclair ZX Spectrum 48K power-on screen — the machine's own white paper across the whole raster with \"© 1982 Sinclair Research Ltd\" in black along the bottom — drawn by MAME 0.251 `spectrum` fullscreen on a 1024x768 X root; golden INTERNAL snapshot restores X (-nocursor) + MAME exactly as baked from an untouched cold boot. Deliberately NOT curated inside a program: the Plus/4 add proved a visitor arriving mid-application cannot tell what it is, and here the untouched screen is also the licence condition Amstrad attaches to the ROM. No post-restore keys (the mpf2 add proved they race the restore). Keyboard path certified 2026-08-09 after the bake by typing `10 b2` through QMP at the tile's production pacing and reading BORDER — a whole keyword from one keypress — off the framebuffer. Keyboard-only exhibit (no mouse); AC97 audio."
+  }
 }

@@ -39,7 +39,8 @@ import { XK } from '../../three/useStreamControl';
 export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga';
+  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
+  | 'zxspectrum';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -72,6 +73,15 @@ const fkeyRow = (from: number, to: number): KeyRow => {
 
 /** C= held across a C — the Plus/4 suite's "open the command prompt" chord. */
 const CBM_C: MacroStep[] = [dn(XK.Tab), ...press(0x63), up(XK.Tab)];
+
+/** ZX Spectrum SYMBOL SHIFT (host right shift) held across one unshifted key. */
+const sym = (id: string, label: string, c: string): KeyDef =>
+  macro(id, label, [dn(XK.Shift_R), ...press(c.charCodeAt(0)), up(XK.Shift_R)],
+    { hint: `SYMBOL SHIFT + ${c.toUpperCase()}` });
+/** ZX Spectrum CAPS SHIFT (host left shift) held across one unshifted key. */
+const caps = (id: string, label: string, c: string): KeyDef =>
+  macro(id, label, [dn(XK.Shift_L), ...press(c.charCodeAt(0)), up(XK.Shift_L)],
+    { hint: `CAPS SHIFT + ${c.toUpperCase()}` });
 
 /** mod↓ · key↓↑ · mod↑ */
 const chord = (id: string, label: string, mod: number, keysym: number, hint?: string): KeyDef =>
@@ -379,6 +389,66 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ]],
     moreRows: [fkeyRow(1, 10)],
   },
+
+  // ZX Spectrum 48K — the profile that carries the most weight in this file,
+  // because the machine's 40-key matrix HAS NO PUNCTUATION KEYS AT ALL. Every
+  // symbol is SYMBOL SHIFT plus a letter or digit, every editing action is CAPS
+  // SHIFT plus a digit, and MAME's `spectrum` driver maps SYMBOL SHIFT to the
+  // host's RIGHT shift. typeText() only ever sends US scancodes with LEFT
+  // shift, so a visitor with a PC keyboard cannot produce `"` `;` `=` or even a
+  // cursor arrow — those characters simply do not exist on the wire. This
+  // profile IS the affordance for them, which is why the symbol chords are
+  // spelled out rather than left to the QWERTY row.
+  //
+  // Every macro is (SYMBOL|CAPS) SHIFT held across one unshifted key, taken
+  // from the driver's own PORT_NAME columns in src/mame/sinclair/spectrum.cpp
+  // ("p P \" TAB (c) PRINT" -> SYMBOL SHIFT + P is `"`). The letters are sent as
+  // lower-case code points because the profile invariant requires printable
+  // keysyms to be UNSHIFTED — CAPS SHIFT + a letter is a capital on this
+  // machine, which is exactly what we must NOT send here.
+  //
+  // The two latches stay as well: held across a key the visitor types on the
+  // QWERTY row, they reach every remaining combination the exhibit has.
+  zxspectrum: {
+    family: 'zxspectrum',
+    rows: [[
+      latch('sym', 'SYM SHIFT', XK.Shift_R, 'SYMBOL SHIFT — the red symbols under the keys'),
+      latch('caps', 'CAPS SHIFT', XK.Shift_L, 'CAPS SHIFT — capitals, and the white symbols'),
+      sym('quote', '"', 'p'),
+      sym('semi', ';', 'o'),
+      sym('comma', ',', 'n'),
+      sym('stop', '.', 'm'),
+      tap('ret', '⏎', XK.Return),
+      // The Spectrum's cursor keys ARE CAPS SHIFT + 5/6/7/8, printed as arrows
+      // on those keys. A bare Up/Down/Left/Right reaches the matrix as nothing.
+      caps('sp-left', '←', '5'),
+      caps('sp-down', '↓', '6'),
+      caps('sp-up', '↑', '7'),
+      caps('sp-right', '→', '8'),
+    ]],
+    moreRows: [[
+      // EXTENDED MODE is both shifts at once — the E cursor, which is how you
+      // reach RND, INKEY$, PI and the colour statements.
+      macro('extmode', 'EXT MODE',
+        [dn(XK.Shift_L), dn(XK.Shift_R), up(XK.Shift_R), up(XK.Shift_L)],
+        { hint: 'CAPS SHIFT + SYMBOL SHIFT — the E cursor (RND, INKEY$, PI…)' }),
+      caps('sp-delete', 'DELETE', '0'),
+      caps('sp-edit', 'EDIT', '1'),
+      caps('sp-capslock', 'CAPS LOCK', '2'),
+      sym('sp-eq', '=', 'l'),
+      sym('sp-plus', '+', 'k'),
+      sym('sp-minus', '-', 'j'),
+      sym('sp-star', '*', 'b'),
+      sym('sp-slash', '/', 'v'),
+      sym('sp-lt', '<', 'r'),
+      sym('sp-gt', '>', 't'),
+      sym('sp-query', '?', 'c'),
+      sym('sp-colon', ':', 'z'),
+      sym('sp-open', '(', '8'),
+      sym('sp-close', ')', '9'),
+      sym('sp-pound', '£', 'x'),
+    ]],
+  },
 };
 
 // Every production streamhost tile, EXPLICITLY (test-enforced vs the registry).
@@ -436,6 +506,10 @@ export const OS_FAMILY: Record<string, Family> = {
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',
+  // The ZX Spectrum needs a profile of its own and could not borrow one: its
+  // 40-key matrix has no punctuation, no cursor keys and no Ctrl, and its two
+  // shifts do different jobs from a PC's.
+  zxspectrum: 'zxspectrum',
 };
 
 export function keyboardProfileFor(osId: string): KeyboardProfile {
