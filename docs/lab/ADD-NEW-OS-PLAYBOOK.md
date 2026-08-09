@@ -442,8 +442,20 @@ period, so derive a starting value from the frame period and then *measure* on
 a clone before shipping. Two traps make the measurement lie: QEMU's `send-key
 hold-time` releases asynchronously and overlapping calls lose characters on
 their own (use explicit `input-send-event` press/release pairs), and the
-guest's cursor blinks, so mask the pixels that differ between repeated
-reference captures before comparing frames.
+guest's cursor blinks, so two captures of the *same* state hash differently.
+
+Do not mask the differing pixels — **sample at a fixed machine instant**, which
+is exact rather than fuzzy:
+
+```
+stop ; loadvm golden ; stop ; screendump out.ppm ; cont
+```
+
+On `armeval` that turns "two hashes across three samples, differing by exactly
+one ~40 px cursor cell" into four byte-identical captures — taken before and
+after the keyboard proof, from two separately baked goldens. Any MODE 7 or
+text-prompt exhibit (`bbcmicro` too) needs it; it is a property of the machine,
+not of one add.
 
 **Turn X's auto-repeat OFF in any kiosk driven by synthetic keys — before you
 touch the pacing at all.** On the Oric Atmos add (2026-08-09) the pacing was
