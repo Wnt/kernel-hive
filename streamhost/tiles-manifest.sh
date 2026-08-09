@@ -724,7 +724,7 @@ emit armeval \
   --env-append-file "$T/armeval/tile.env.fixture"
 
 # daybreak (VMID 239) — Dwarf/Draco (Java, OpenJDK 17) -> Xerox 6085 "Daybreak"
-#   -> ViewPoint 2.0.5, logged in. ssh 5839. Silent exhibit (no Xerox sound
+#   -> ViewPoint 2.0.5, logged in. ssh 5849. Silent exhibit (no Xerox sound
 #   hardware in Dwarf). Fixture stanza pins SH_IDLE_PAUSE_SECS=0 (never
 #   QMP-freeze the kiosk out from under the watcher) and a 400 ms key hold.
 emit daybreak \

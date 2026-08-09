@@ -2960,14 +2960,14 @@
           "pointer_mode": "abs",
           "warpd_port": null,
           "warpd_addr": null,
-          "ssh_port": 5839,
-          "exec_port": 5839,
+          "ssh_port": 5849,
+          "exec_port": 5849,
           "exec_kind": "ssh",
           "exec_user": "root",
           "exec_key": "/data/vms/bridge/bridge_key",
           "console": "fb",
           "udp_port": 54139,
-          "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5839, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
+          "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5849, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
         }
       },
       "tileDir": "daybreak",
@@ -3000,6 +3000,7 @@
           "SH_QMP": "/data/vms/streamhost/tiles/daybreak/qmp.sock",
           "SH_PORT": "54139",
           "SH_FPS": "60",
+          "SH_ENCODER_PRESET": "veryfast",
           "SH_HOST_IP": "192.0.2.10",
           "SH_ADVERTISE_HOST": "192.0.2.10",
           "SH_POINTER": "abs",
@@ -3007,6 +3008,7 @@
           "SH_CURSOR_OFF_X": "0",
           "SH_CURSOR_OFF_Y": "0",
           "SH_AUDIO": "off",
+          "SH_AUDIO_BITRATE": "96000",
           "SH_HASH_FILE": "/data/vms/streamhost/tiles/daybreak/cert_hash_b64.txt",
           "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/daybreak/signaling.json",
           "SH_CERT_ROTATE_DAYS": "10",
@@ -3062,7 +3064,7 @@
             "-display dbus,p2p=on,audiodev=snd0",
             "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
             "-usb -device usb-tablet",
-            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5839-:22 -device e1000,netdev=n0",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5849-:22 -device e1000,netdev=n0",
             "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
             "-pidfile $BASE/qemu.pid"
           ],
@@ -3083,7 +3085,7 @@
               "-display dbus,p2p=on,audiodev=snd0",
               "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
               "-usb -device usb-tablet",
-              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5839-:22 -device e1000,netdev=n0",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5849-:22 -device e1000,netdev=n0",
               "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
               "-pidfile $BASE/qemu.pid"
             ]

@@ -36,7 +36,7 @@ nohup qemu-system-x86_64 \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0 \
   -usb -device usb-tablet \
-  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:5839-:22 -device e1000,netdev=n0 \
+  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:5849-:22 -device e1000,netdev=n0 \
   $LOADVM \
   -qmp unix:$BASE/qmp.sock,server=on,wait=off \
   -pidfile $BASE/qemu.pid \
@@ -45,4 +45,4 @@ for i in $(seq 1 40); do
   [ -S "$BASE/qmp.sock" ] && [ -f "$BASE/qemu.pid" ] && break
   sleep 0.5
 done
-echo "tile daybreak qemu pid=$(cat $BASE/qemu.pid 2>/dev/null) qmp=$BASE/qmp.sock udp=54139 ssh=127.0.0.1:5839 loadvm='${LOADVM:-<none: cold boot>}'"
+echo "tile daybreak qemu pid=$(cat $BASE/qemu.pid 2>/dev/null) qmp=$BASE/qmp.sock udp=54139 ssh=127.0.0.1:5849 loadvm='${LOADVM:-<none: cold boot>}'"

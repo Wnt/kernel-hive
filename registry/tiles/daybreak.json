@@ -33,20 +33,20 @@
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5839,
-      "exec_port": 5839,
+      "ssh_port": 5849,
+      "exec_port": 5849,
       "exec_kind": "ssh",
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "console": "fb",
       "udp_port": 54139,
-      "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5839, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
+      "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5849, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
     }
   },
   "render": {
     "signalOrder": 56,
     "tilesManifestOrder": 54,
-    "tilesManifestPrelude": "\n# daybreak (VMID 239) — Dwarf/Draco (Java, OpenJDK 17) -> Xerox 6085 \"Daybreak\"\n#   -> ViewPoint 2.0.5, logged in. ssh 5839. Silent exhibit (no Xerox sound\n#   hardware in Dwarf). Fixture stanza pins SH_IDLE_PAUSE_SECS=0 (never\n#   QMP-freeze the kiosk out from under the watcher) and a 400 ms key hold.\n",
+    "tilesManifestPrelude": "\n# daybreak (VMID 239) — Dwarf/Draco (Java, OpenJDK 17) -> Xerox 6085 \"Daybreak\"\n#   -> ViewPoint 2.0.5, logged in. ssh 5849. Silent exhibit (no Xerox sound\n#   hardware in Dwarf). Fixture stanza pins SH_IDLE_PAUSE_SECS=0 (never\n#   QMP-freeze the kiosk out from under the watcher) and a 400 ms key hold.\n",
     "tilesManifestInvocation": "emit daybreak \\\n  --tile daybreak --vmid 239 --udp 54139 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off --fps 60 \\\n  --launcher-file \"$T/daybreak/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/daybreak/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 60,
@@ -87,6 +87,7 @@
       "SH_QMP": "/data/vms/streamhost/tiles/daybreak/qmp.sock",
       "SH_PORT": "54139",
       "SH_FPS": "60",
+      "SH_ENCODER_PRESET": "veryfast",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "abs",
@@ -94,6 +95,7 @@
       "SH_CURSOR_OFF_X": "0",
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "off",
+      "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/daybreak/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/daybreak/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
@@ -149,7 +151,7 @@
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
         "-usb -device usb-tablet",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5839-:22 -device e1000,netdev=n0",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5849-:22 -device e1000,netdev=n0",
         "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
         "-pidfile $BASE/qemu.pid"
       ],
@@ -170,7 +172,7 @@
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
           "-usb -device usb-tablet",
-          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5839-:22 -device e1000,netdev=n0",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5849-:22 -device e1000,netdev=n0",
           "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
           "-pidfile $BASE/qemu.pid"
         ]

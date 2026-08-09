@@ -53,7 +53,7 @@ set -euo pipefail
 TILE=daybreak
 VMID=239
 UDP=54139
-SSH_PORT=5839
+SSH_PORT=5849
 BRIDGE_BASE="/data/vms/bridge/bridge-base.qcow2"
 KEY="/data/vms/bridge/bridge_key"
 TILE_DIR="/data/vms/streamhost/tiles/${TILE}"

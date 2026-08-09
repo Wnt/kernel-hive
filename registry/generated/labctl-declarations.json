@@ -203,14 +203,14 @@
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5839,
-      "exec_port": 5839,
+      "ssh_port": 5849,
+      "exec_port": 5849,
       "exec_kind": "ssh",
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "console": "fb",
       "udp_port": 54139,
-      "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5839, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
+      "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5849, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
     },
     "decos": {
       "dir": "/data/vms/streamhost/tiles/decos",

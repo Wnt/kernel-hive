@@ -13,7 +13,7 @@ in the base; `openjdk-17-jre` is installed **into this tile's overlay**.
 kiosk `launch.sh`, then a documented manual logon and golden bake.
 **Tile dir (host):** `/data/vms/streamhost/tiles/daybreak/`.
 **Registry entry:** `registry/tiles/daybreak.json` (slot 139, udp 54139,
-VMID 239, ssh hostfwd 127.0.0.1:5839).
+VMID 239, ssh hostfwd 127.0.0.1:5849).
 
 This is **not** the GlobalView-on-Windows-3.1 route that an earlier feasibility
 study recommended. There is no second emulation layer and no Windows host: this
