@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/solaris-cde.sh  —  reproducible from-scratch build of the
+# build-guests/tiles/solaris-cde.sh  —  reproducible from-scratch build of the
 # "Solaris 10 CDE" Kernel Hive guest.
 #
 # GOAL: on a fresh Proxmox host that already has the gallery infra, rebuild the
@@ -757,7 +757,7 @@ write_manifest() {
 
 Golden disk: solaris.qcow2 (real Oracle Solaris 10 x86, ~1.5 GiB actual / 12 GiB virtual).
 Boots disk-only to dtlogin -> CDE. Login: root / solaris. Default session: CDE.
-Built by: scripts/build-guests/solaris-cde.sh
+Built by: scripts/build-guests/tiles/solaris-cde.sh
 
 ## neko-qemu runtime args (disk-only; neko's launch-qemu.sh provides PulseAudio)
   qemu-system-x86_64 \\

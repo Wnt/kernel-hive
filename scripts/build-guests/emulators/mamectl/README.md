@@ -28,7 +28,7 @@ pointer, keys, buttons, savestate verbs) and runs the MOVEA closed loop that
 puts the guest cursor under the visitor's cursor. It replaced the Lua
 `irixagent.lua` agent and its 1 kHz command-file poll.
 
-**`src/` is the source of truth.** `scripts/build-guests/mame-ctlsock.patch`
+**`src/` is the source of truth.** `scripts/build-guests/patches/mame-ctlsock.patch`
 is GENERATED from it by `regen-patch.sh` — never hand-edit the patch.
 
     src/osd/modules/ctlsock/    the module — ctlsock.cpp is the whole engine

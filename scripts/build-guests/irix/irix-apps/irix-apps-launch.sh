@@ -24,7 +24,7 @@ AGENT="$D/irix-apps-agent.lua"
 ISO="${1:-}"
 
 XVFB_ALLOC_LIB="${XVFB_ALLOC_LIB:-/usr/local/bin/xvfb-alloc}"
-[ -f "$XVFB_ALLOC_LIB" ] || XVFB_ALLOC_LIB="$(dirname "$0")/../../lib/xvfb-alloc.sh"
+[ -f "$XVFB_ALLOC_LIB" ] || XVFB_ALLOC_LIB="$(dirname "$0")/../../../lib/xvfb-alloc.sh"
 # shellcheck disable=SC1090,SC1091 # resolved at run time (box copy or repo copy)
 source "$XVFB_ALLOC_LIB" || {
   echo "FATAL: cannot source xvfb-alloc ($XVFB_ALLOC_LIB)" >&2

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/qnx.sh — from-scratch, reproducible build of the QNX Neutrino
+# build-guests/tiles/qnx.sh — from-scratch, reproducible build of the QNX Neutrino
 # gallery tile for the neko+QEMU Kernel Hive.
 #
 # GUEST : QNX Neutrino RTOS 6.5.0 — the "self-hosting" LiveCD (boots the Photon
@@ -43,7 +43,7 @@
 # Idempotent + re-runnable. Safe to run repeatedly on the real NVMe.
 #
 # Usage:
-#   build-guests/qnx.sh [--dir DIR] [--force] [--no-verify] [--keep] [-h]
+#   build-guests/tiles/qnx.sh [--dir DIR] [--force] [--no-verify] [--keep] [-h]
 #     --dir DIR      output/guest dir      (default /data/gallery-guests/QNX)
 #     --force        re-download even if a valid ISO is already present
 #     --no-verify    just fetch the ISO; skip the drive-to-desktop framebuffer proof

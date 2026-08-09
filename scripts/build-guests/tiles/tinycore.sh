@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #===============================================================================
-# build-guests/tinycore.sh — reproduce the TinyCore Kernel Hive tile from upstream
+# build-guests/tiles/tinycore.sh — reproduce the TinyCore Kernel Hive tile from upstream
 #===============================================================================
 #
 # GUEST : tinycore (streamhost VMID 82, udp/54082)
@@ -70,7 +70,7 @@
 #   - OUT_DIR / WORK_DIR / ISO_DIR / ports are env-overridable for fully namespaced trials.
 #
 # Usage:
-#   scripts/build-guests/tinycore.sh
+#   scripts/build-guests/tiles/tinycore.sh
 #     OUT_DIR=…        artifact dir           (default /data/gallery-guests/TinyCore)
 #     WORK_DIR=…       disposable work dir    (default: a private dir under TMPDIR)
 #     ISO_DIR=…        ISO cache dir          (default /data/isos)
@@ -298,7 +298,7 @@ echo $! >"$HTTPPID"
 #==============================================================================
 # STEP 6 — shared build-time QMP driver (runtime /root/cdrv.py stays separate)
 #==============================================================================
-LABQMP="$(cd "$(dirname "$0")/../lib" && pwd)/labqmp.py"
+LABQMP="$(cd "$(dirname "$0")/../../lib" && pwd)/labqmp.py"
 [[ -f "$LABQMP" ]] || die "shared QMP helper missing: $LABQMP"
 QDRV_BIN=(python3 "$LABQMP" "$QMP_SOCK")
 qdrv() { "${QDRV_BIN[@]}" "$@"; }
@@ -517,7 +517,7 @@ teardown
 trap - EXIT
 
 cat >"${OUT_DIR}/BUILD-INFO.txt" <<EOF
-tinycore tile artifact — built $(date -u +%Y-%m-%dT%H:%M:%SZ) by scripts/build-guests/tinycore.sh
+tinycore tile artifact — built $(date -u +%Y-%m-%dT%H:%M:%SZ) by scripts/build-guests/tiles/tinycore.sh
   guest      : Tiny Core Linux ${TC_VERSION} ${TC_ARCH} GUI LiveCD (FLWM+wbar, RAM-only)
   iso        : ${ISO_PATH}
   iso md5    : ${ISO_MD5:-unverified}

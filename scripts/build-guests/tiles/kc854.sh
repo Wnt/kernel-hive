@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/kc854.sh — build the KC 85/4 (VEB Mikroelektronik "Wilhelm
+# build-guests/tiles/kc854.sh — build the KC 85/4 (VEB Mikroelektronik "Wilhelm
 # Pieck" Mühlhausen, 1988) streamhost tile as a thin overlay on the frozen
-# bridge base (scripts/build-guests/bridge-base.sh).
+# bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 X kiosk running a purpose-built MAME `kc85_4`
 #         that boots CAOS 4.2 from ROM. streamhost captures the Linux
@@ -130,7 +130,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # KC 85/4 (CAOS 4.2) kiosk launcher (bridge tile).
-# See scripts/build-guests/kc854.sh for the flag rationale.
+# See scripts/build-guests/tiles/kc854.sh for the flag rationale.
 # 320x256 @ 50.08 Hz, drawn FULLSCREEN with aspect correction on the stock
 # 1024x768 X root, so the captured frame is the 4:3 picture the machine drew
 # on a television rather than a 320x256 strip in a black surround.

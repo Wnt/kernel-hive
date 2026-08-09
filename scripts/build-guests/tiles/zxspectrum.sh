@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/zxspectrum.sh — build the Sinclair ZX Spectrum 48K (1982)
+# build-guests/tiles/zxspectrum.sh — build the Sinclair ZX Spectrum 48K (1982)
 # streamhost tile as a thin overlay on the frozen bridge base
-# (scripts/build-guests/bridge-base.sh).
+# (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running MAME's `spectrum` driver, which
 #         boots the 16 KB Sinclair ROM straight to its power-on screen —
@@ -157,7 +157,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Sinclair ZX Spectrum 48K (1982) ROM BASIC kiosk launcher (bridge tile).
-# See scripts/build-guests/zxspectrum.sh for the flag rationale.
+# See scripts/build-guests/tiles/zxspectrum.sh for the flag rationale.
 # Xorg needs a moment to settle its root mode on a fresh QEMU boot.
 sleep 2
 exec /usr/games/mame spectrum \

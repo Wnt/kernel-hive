@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/dragon32.sh — build the Dragon 32 (1982) streamhost tile as a
-# thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/dragon32.sh — build the Dragon 32 (1982) streamhost tile as a
+# thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 X kiosk running MAME's `dragon32` driver, resting
 #         at the machine's own untouched power-on screen.
@@ -70,7 +70,7 @@
 # ---- MAME BINARY PROVENANCE -------------------------------------------------
 #   Debian 12 packages MAME 0.251 and the lab host's 0.276 is not a Debian 12
 #   binary, so this tile ships MAME 0.289 built in the Bookworm chroot by
-#   scripts/build-guests/build-mame-dragon32.sh — the same upstream commit mpf2
+#   scripts/build-guests/emulators/build-mame-dragon32.sh — the same upstream commit mpf2
 #   ships, so the gallery runs one MAME version and not two. Unlike mpf2's it is
 #   PRISTINE upstream: dragon32 is `<driver status="good" emulation="good">` and
 #   never raises MAME's red "THIS SYSTEM DOESN'T WORK" panel, so there is no
@@ -183,7 +183,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Dragon 32 (1982) Microsoft Extended Color BASIC kiosk launcher (bridge tile).
-# See scripts/build-guests/dragon32.sh for the flag rationale.
+# See scripts/build-guests/tiles/dragon32.sh for the flag rationale.
 #
 #   -ext ""      EMPTY the cartridge/expansion slot. Without this the driver
 #                defaults to `dragon_fdc` and the machine boots DRAGONDOS, not
@@ -496,7 +496,7 @@ $(screen_text keyboard-print-3x7)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -x "$MAME" ] ||
   die "missing pinned MAME 0.289 binary: $MAME
-    (build it with scripts/build-guests/build-mame-dragon32.sh)"
+    (build it with scripts/build-guests/emulators/build-mame-dragon32.sh)"
 command -v tesseract >/dev/null ||
   die "tesseract is required: the build reads the Dragon's banner off the
     framebuffer, and a pixel histogram cannot tell BASIC from DragonDOS"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/win11.sh — zero-click Windows 11 (25H2) install under RAW QEMU.
+# build-guests/tiles/win11.sh — zero-click Windows 11 (25H2) install under RAW QEMU.
 #
 # WHAT THIS BUILD IS (read before editing):
 #   The Proxmox-era recipe (scripts/provision/pve-win11-vm.sh, VM 900, since deleted) built

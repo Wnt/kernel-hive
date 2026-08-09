@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/kolibrios.sh — from-scratch, reproducible build of the KolibriOS
+# build-guests/tiles/kolibrios.sh — from-scratch, reproducible build of the KolibriOS
 # tile for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the KolibriOS
@@ -38,7 +38,7 @@
 #
 # Usage:
 #   OUT_DIR=/isolated/output WORK_DIR=/isolated/work \
-#     build-guests/kolibrios.sh [--dir DIR] [--force] [--no-verify] [-h]
+#     build-guests/tiles/kolibrios.sh [--dir DIR] [--force] [--no-verify] [-h]
 #     --dir DIR      output/guest dir      (default: OUT_DIR or /data/gallery-guests/KolibriOS)
 #     --force        re-download even if a valid kolibri.iso is already present
 #     --no-verify    skip the headless framebuffer boot check (just fetch/unpack)
@@ -53,7 +53,7 @@ set -euo pipefail
 GUEST_DIR="${OUT_DIR:-/data/gallery-guests/KolibriOS}"
 ISO_NAME="kolibri.iso"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 TILE_DIR="${TILE_DIR:-/data/vms/streamhost/tiles/kolibrios}"
 # Upstream nightly live ISO. NOTE the path is /en_US/ — the /eng/ path 404s.
 SRC_URL="${SRC_URL:-https://builds.kolibrios.org/en_US/latest-iso.7z}"

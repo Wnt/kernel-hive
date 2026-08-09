@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-VISION_DIR=${VISION_DIR:-$SCRIPT_DIR/../install-vision}
+VISION_DIR=${VISION_DIR:-$SCRIPT_DIR/../../install-vision}
 VISION_PY=${VISION_PY:-$VISION_DIR/.venv/bin/python}
 DRIVER=$VISION_DIR/redstar3.py
 FLOW=$VISION_DIR/redstar3.flow.yaml
@@ -151,7 +151,7 @@ if [ ! -f "$HELPER_MARK" ]; then
   helper_tree=$WORK_DIR/helper-tree
   rm -rf "$helper_tree"
   mkdir -p "$helper_tree"
-  cp "$SCRIPT_DIR/redstar3-offline-apply.sh" "$helper_tree/apply.sh"
+  cp "$SCRIPT_DIR/../stages/redstar3-offline-apply.sh" "$helper_tree/apply.sh"
   truncate -s 16M "$HELPER"
   mke2fs -q -t ext2 -F -d "$helper_tree" "$HELPER"
   rm -rf "$helper_tree"

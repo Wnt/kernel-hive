@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #===============================================================================
-# build-guests/alpine.sh — reproduce the Alpine Kernel Hive tile from upstream
+# build-guests/tiles/alpine.sh — reproduce the Alpine Kernel Hive tile from upstream
 #===============================================================================
 #
 # GUEST : alpine (streamhost VMID 81, udp/54081)
@@ -70,7 +70,7 @@
 #     namespaced (e.g. under /data/vms/soltest/).
 #
 # Usage:
-#   scripts/build-guests/alpine.sh
+#   scripts/build-guests/tiles/alpine.sh
 #     OUT_DIR=…        artifact dir           (default /data/gallery-guests/Alpine)
 #     WORK_DIR=…       disposable work dir    (default: a private dir under TMPDIR)
 #     ISO_DIR=…        ISO cache dir          (default /data/isos)
@@ -303,7 +303,7 @@ echo $! >"$HTTPPID"
 #==============================================================================
 # STEP 6 — shared build-time QMP driver (runtime /root/cdrv.py stays separate)
 #==============================================================================
-LABQMP="$(cd "$(dirname "$0")/../lib" && pwd)/labqmp.py"
+LABQMP="$(cd "$(dirname "$0")/../../lib" && pwd)/labqmp.py"
 [[ -f "$LABQMP" ]] || die "shared QMP helper missing: $LABQMP"
 QDRV_BIN=(python3 "$LABQMP" "$QMP_SOCK")
 qdrv() { "${QDRV_BIN[@]}" "$@"; }
@@ -478,7 +478,7 @@ teardown
 trap - EXIT
 
 cat >"${OUT_DIR}/BUILD-INFO.txt" <<EOF
-alpine tile artifact — built $(date -u +%Y-%m-%dT%H:%M:%SZ) by scripts/build-guests/alpine.sh
+alpine tile artifact — built $(date -u +%Y-%m-%dT%H:%M:%SZ) by scripts/build-guests/tiles/alpine.sh
   guest      : Alpine Linux ${ALPINE_VERSION} ${ALPINE_FLAVOR} ${ALPINE_ARCH} LiveCD (RAM-only)
   iso        : ${ISO_PATH}
   iso sha256 : ${ISO_SHA256}

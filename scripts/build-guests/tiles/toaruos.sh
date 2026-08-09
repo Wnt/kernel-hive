@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/toaruos.sh — reproduce the ToaruOS gallery tile from source
+# build-guests/tiles/toaruos.sh — reproduce the ToaruOS gallery tile from source
 #
 # GUEST : ToaruOS v2.3.2 (klange/toaruos) — composited "Yutani" desktop
 # TYPE  : LIVE ISO, no disk/install. The prebuilt release ISO boots straight to
@@ -67,7 +67,7 @@ STOCK_ISO="${GUEST_DIR}/image.stock.iso" # pristine upstream download (SHA-verif
 # ramdisk (mines.krk/pong/julia/plasma/calculator/imgviewer) — no third-party
 # game binaries are added, so this stays fully freely-distributable (ToaruOS =
 # NCSA license). See assets/toaruos/PROVENANCE.txt.
-ASSETS_DIR="${ASSETS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/assets/toaruos}"
+ASSETS_DIR="${ASSETS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../assets/toaruos}"
 DESKTOP_LAUNCHERS=(4_mines 5_pong 6_julia 7_plasma 8_calculator 9_viewer)
 
 # Verify-boot knobs

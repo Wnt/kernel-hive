@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/postmarketos-fixture.sh — complete the raw postmarketOS builder
+# build-guests/tiles/postmarketos-fixture.sh — complete the raw postmarketOS builder
 # output into the streamhost artifact: qcow2 disk + offline fixture provision +
 # writable qcow2 OVMF varstore + internal `golden` savevm snapshot.
 #
 # Default one-command path:
-#   scripts/build-guests/postmarketos-fixture.sh
+#   scripts/build-guests/tiles/postmarketos-fixture.sh
 #
 # It first runs postmarketos.sh (download/decompress/framebuffer proof), then
 # invokes the faithfully-vendored tile helpers. The fixture provisioner converts
@@ -32,8 +32,8 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$HERE/../.." && pwd)"
-RAW_BUILDER="$HERE/postmarketos.sh"
+REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
+RAW_BUILDER="$HERE/../stages/postmarketos.sh"
 FIXTURE_DIR="$REPO_ROOT/streamhost/tiles/postmarketos"
 PROVISION="$FIXTURE_DIR/golden-fixture-provision.sh"
 LAUNCHER="$FIXTURE_DIR/qemu-streamhost.sh"

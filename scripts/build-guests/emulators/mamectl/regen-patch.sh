@@ -1,5 +1,5 @@
 #!/bin/bash
-# Regenerate ../mame-ctlsock.patch, byte-compatible with the house a/b -p1
+# Regenerate ../../patches/mame-ctlsock.patch, byte-compatible with the house a/b -p1
 # format the original was written in.
 #
 # The patch has two kinds of hunk and they come from different places:
@@ -14,7 +14,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-OUT=../mame-ctlsock.patch
+OUT=../../patches/mame-ctlsock.patch
 : >"$OUT"
 
 emit() { # emit <relpath> [new]

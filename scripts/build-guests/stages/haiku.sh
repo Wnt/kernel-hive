@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/haiku.sh — from-scratch, reproducible build of the Haiku tile
+# build-guests/stages/haiku.sh — from-scratch, reproducible build of the Haiku tile
 # (Haiku, the open-source BeOS-compatible OS) for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the Haiku guest
@@ -40,7 +40,7 @@
 # guests, CTID 110, VM 900/925, or sibling build agents.
 #
 # Usage:
-#   build-guests/haiku.sh [--dir DIR] [--arch x86_64|x86_gcc2h] [--force]
+#   build-guests/stages/haiku.sh [--dir DIR] [--arch x86_64|x86_gcc2h] [--force]
 #                         [--no-verify] [-h]
 #     --dir DIR      output/guest dir   (default /data/gallery-guests/Haiku)
 #     --arch A       x86_64 (default) or x86_gcc2h (32-bit gcc2, classic look)

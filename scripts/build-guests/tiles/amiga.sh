@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/amiga.sh — build the Commodore Amiga 500 + Workbench 1.3 streamhost
-# tile as a thin overlay on the shared bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/amiga.sh — build the Commodore Amiga 500 + Workbench 1.3 streamhost
+# tile as a thin overlay on the shared bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk that runs FS-UAE (WINDOWED) emulating a REAL
 #         Commodore Amiga 500 (Motorola 68000) auto-booting Workbench 1.3 off a

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/winxp-vbemp-hires.sh
+# build-guests/stages/winxp-vbemp-hires.sh
 #   Bake 1920x1200x32 display + "show window contents while dragging = OFF" into
 #   the post-install Windows XP gallery golden (winxp.qcow2), reproducibly.
 #   (Fleet resolution target raised 1024x768 -> 1920x1200 on 2026-07-27; the

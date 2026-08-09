@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# build-guests/build-mame-oricatmos.sh — build the MAME binary the Oric Atmos
+# build-guests/emulators/build-mame-oricatmos.sh — build the MAME binary the Oric Atmos
 # tile ships, from a pinned upstream RELEASE commit, inside the Bookworm chroot.
 #
 # WHY A BUILD AND NOT A PACKAGE. The tile's emulator runs inside the Debian 12

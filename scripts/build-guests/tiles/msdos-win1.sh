@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/msdos-win1.sh — reproduce the MS-DOS 6.22 + Windows 1.01 gallery
+# build-guests/tiles/msdos-win1.sh — reproduce the MS-DOS 6.22 + Windows 1.01 gallery
 #                              tile FROM SOURCE on a fresh Proxmox host.
 #
 # GUEST : MS-DOS 6.22 (Microsoft, 1994) that boots straight to the C:\> prompt,

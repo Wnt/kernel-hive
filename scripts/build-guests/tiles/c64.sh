@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/c64.sh — build the Commodore 64 + GEOS deskTop streamhost tile
-# as a thin overlay on the shared bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/c64.sh — build the Commodore 64 + GEOS deskTop streamhost tile
+# as a thin overlay on the shared bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk that runs VICE `x64sc` full-screen emulating
 #         a Commodore 64 auto-booting the GEOS 2.0 deskTop. streamhost captures

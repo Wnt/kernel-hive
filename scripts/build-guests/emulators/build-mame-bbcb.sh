@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# build-guests/build-mame-bbcb.sh — build the shipping BBC Micro MAME binary
+# build-guests/emulators/build-mame-bbcb.sh — build the shipping BBC Micro MAME binary
 # from a pinned upstream RELEASE, in the Bookworm chroot.
 #
 # WHY A PURPOSE-BUILT BINARY AND NOT THE DISTRO PACKAGE (the provenance rule):
@@ -33,7 +33,7 @@
 # makes the existing `skip_warnings` UI option actually gate that stage.
 #
 # Usage:
-#   scripts/build-guests/build-mame-bbcb.sh [work-dir] [output-binary]
+#   scripts/build-guests/emulators/build-mame-bbcb.sh [work-dir] [output-binary]
 # =============================================================================
 set -euo pipefail
 
@@ -45,7 +45,7 @@ UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"
 JOBS="${JOBS:-$(nproc)}"
 MAME_TAG=mame0289
 MAME_BBCB_BASE=f34f02505e32c1993c6a782b6814232cbfc74e36
-PATCH="$HERE/mame-irix-skip-warnings.patch"
+PATCH="$HERE/../patches/mame-irix-skip-warnings.patch"
 
 say() { printf '\n== %s\n' "$*"; }
 

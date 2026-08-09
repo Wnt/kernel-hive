@@ -284,7 +284,7 @@ keyboard_proof() {
 [ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -s "$ROM" ] || die "missing staged ROM: $ROM"
-[ -x "$MAME" ] || die "missing MPF-II MAME 0.289 binary: $MAME (build with scripts/build-guests/build-mame-mpf2.sh)"
+[ -x "$MAME" ] || die "missing MPF-II MAME 0.289 binary: $MAME (build with scripts/build-guests/emulators/build-mame-mpf2.sh)"
 [ "$(sha1sum "$ROM" | awk '{print $1}')" = "$ROM_SHA1" ] ||
   die "staged ROM SHA1 does not match MPF-II pin"
 if systemctl is-active --quiet "streamhost@$TILE"; then

@@ -75,7 +75,7 @@ pre-review build, kept for provenance). Final patch re-verified freestanding
 
 ## What exists now
 
-- `scripts/build-guests/mame-ctlsock.patch` — patch #14, appended LAST in
+- `scripts/build-guests/patches/mame-ctlsock.patch` — patch #14, appended LAST in
   `irix-mame-stack.sh`. Freestanding: dry-run-applies clean on the PRISTINE
   pinned tree (verified 2026-08-04 against lab
   `/data/vms/soltest/trixie-chroot/build/mame` at 8f21e978, git-clean).
@@ -102,9 +102,9 @@ chroot, and prefer a namespaced copy under `/data/vms/soltest/` for anything
 destructive. NEVER build in a live tile directory.
 
 `bookworm-chroot` (gcc-12) is retired **for the IRIX build** but is NOT
-deletable: `scripts/build-guests/build-mame-mpf2.sh` builds there on purpose, so
+deletable: `scripts/build-guests/emulators/build-mame-mpf2.sh` builds there on purpose, so
 that binary's glibc/libstdc++ ABI matches the Debian 12 bridge base it runs
-inside (`scripts/build-guests/bridge-base.sh` — frozen at bookworm, four
+inside (`scripts/build-guests/lib/bridge-base.sh` — frozen at bookworm, four
 overlays depend on it byte-for-byte). Deleting the chroot breaks that build.
 Any future bridge-hosted MAME target has the same constraint.
 
@@ -112,7 +112,7 @@ Any future bridge-hosted MAME target has the same constraint.
 
 Canonical reproducer (fresh clone, applies the whole stack incl. #14):
 
-    scripts/build-guests/build-mame-irix.sh [work-dir]
+    scripts/build-guests/emulators/build-mame-irix.sh [work-dir]
 
 Incremental on the pinned chroot tree (after the stack is applied) — the
 PROVEN trixie-chroot flag set (2026-08-04 cold build clean, smoke
@@ -160,7 +160,7 @@ irixagent.lua`. Two injectors fight over pacing budgets/accumulators.
    `state header check failed: Incompatible save file (signature X, expected
    Y)` (the save.cpp hunk guarantees the reason line) and falls back to cold
    boot; cross-loads en<->dis both directions succeed.
-2. **Golden-trace differential** — `scripts/build-guests/irix-ctl/`
+2. **Golden-trace differential** — `scripts/build-guests/irix/irix-ctl/`
    (goldtrace-record.py both arms, goldtrace-compare.py). The corpus already
    encodes the two BINDING cases: post-restore first-MOVEA, and the
    deterministic (300,500) chooser give-up settling ~(186,386) — the module
@@ -190,7 +190,7 @@ irixagent.lua`. Two injectors fight over pacing budgets/accumulators.
 
 ## Wire quick-reference (for smoke tests)
 
-    printf '1 PING\n'  | ... # or: scripts/build-guests/irix-ctl/mctl-probe.py <sock> PING
+    printf '1 PING\n'  | ... # or: scripts/build-guests/irix/irix-ctl/mctl-probe.py <sock> PING
     HELLO mamectl/1 <build> indy_4610 caps=natkbd,savest,shot,relatch[,movea][,tail] screen=1288x1024
     seq VERB args -> seq OK [data] | seq ERR code text ; seq "-" = no reply
     EV STATS ... / EV MOVEA <seq> converged|gaveup <ex> <ey> / EV LOADED <name> / EV PAUSED / EV RESUMED

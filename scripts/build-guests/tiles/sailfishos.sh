@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/sailfishos.sh
+# build-guests/tiles/sailfishos.sh
 #
 # From-scratch, reproducible build of the Kernel Hive "Sailfish OS" tile (:8104).
 # Runs on a fresh Proxmox host that already has the gallery infra

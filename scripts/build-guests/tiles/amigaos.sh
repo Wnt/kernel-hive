@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/amigaos.sh — from-scratch, reproducible build of the AmigaOS tile
+# build-guests/tiles/amigaos.sh — from-scratch, reproducible build of the AmigaOS tile
 # for the neko+QEMU Kernel Hive, using the FREE/OPEN AROS path.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the "AmigaOS"
@@ -54,7 +54,7 @@
 # CTID 110, VM 900/925, or the sibling OS builders.
 #
 # Usage:
-#   build-guests/amigaos.sh [--dir DIR] [--force] [--no-verify] [-h]
+#   build-guests/tiles/amigaos.sh [--dir DIR] [--force] [--no-verify] [-h]
 #     --dir DIR      output/guest dir      (default /data/gallery-guests/AmigaOS)
 #     --force        rebuild the ISO from sha256-verified pinned inputs
 #     --no-verify    skip only the redundant TCG ISO smoke check (golden gate stays)
@@ -104,7 +104,7 @@ done
 ISO_PATH="${GUEST_DIR}/${ISO_NAME}"
 CACHE_DIR="${GUEST_DIR}/.cache"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 TILE_DIR="${TILE_DIR:-/data/vms/streamhost/tiles/amigaos}"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/amigaos-build.XXXXXX")"
 PIDFILE="${WORK}/qemu.pid"
@@ -224,7 +224,7 @@ fi
 #   Surfaced stock apps (already on the ISO, just leftout as icons):
 #     Calculator, Editor (text editor), MultiView (image/text viewer).
 # =============================================================================
-ASSETS_DIR="${ASSETS_DIR:-$SCRIPT_DIR/assets/amigaos}"
+ASSETS_DIR="${ASSETS_DIR:-$SCRIPT_DIR/../assets/amigaos}"
 
 iso_has_games() { xorriso -indev "$1" -lsl /Games 2>/dev/null | grep -qi 'Soliton'; }
 

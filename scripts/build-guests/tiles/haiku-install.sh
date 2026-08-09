@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/haiku-install.sh — install the fetched Haiku anyboot ISO onto the
+# build-guests/tiles/haiku-install.sh — install the fetched Haiku anyboot ISO onto the
 # persistent streamhost disk, provision sshd + the gallery key, apply the
 # deterministic fixture settings, and bake the internal `golden` savevm point.
 #
@@ -9,7 +9,7 @@
 # and after clean reboot; `savevm golden`; dirty input; `loadvm golden` restored
 # x<1000 byte-exactly; stopped qcow2 passed qemu-img check. Repro dir deleted.
 #
-# Input (produced by build-guests/haiku.sh):
+# Input (produced by build-guests/stages/haiku.sh):
 #   /data/gallery-guests/Haiku/haiku.iso
 # Output (consumed by streamhost/tiles-manifest.sh):
 #   /data/vms/streamhost/tiles/haiku/haiku-persist.qcow2
@@ -28,8 +28,8 @@
 #   * an existing output is refused unless FORCE=1 (then it is backed up).
 #
 # Usage:
-#   scripts/build-guests/haiku.sh
-#   scripts/build-guests/haiku-install.sh
+#   scripts/build-guests/stages/haiku.sh
+#   scripts/build-guests/tiles/haiku-install.sh
 #
 # Useful overrides:
 #   HAIKU_ISO=... HAIKU_OUTPUT_DISK=... HAIKU_WORK_DIR=...
@@ -54,8 +54,8 @@ DISK="$WORK/haiku-persist.qcow2"
 QMP="$WORK/qmp.sock"
 PIDFILE="$WORK/qemu.pid"
 QEMU_LOG="$WORK/qemu.log"
-ASSET_B64="$(cd "$(dirname "$0")" && pwd)/assets/haiku/fixture-settings.tar.base64"
-ISO_BUILDER="$(cd "$(dirname "$0")" && pwd)/haiku.sh"
+ASSET_B64="$(cd "$(dirname "$0")" && pwd)/../assets/haiku/fixture-settings.tar.base64"
+ISO_BUILDER="$(cd "$(dirname "$0")" && pwd)/../stages/haiku.sh"
 FIXTURE_TAR="$WORK/fixture-settings.tar"
 FIXTURE_SHA="d9073d23f4ef2574724d6085ba1993878f2e4903ac4cf9d0f83dda85c88de5a8"
 

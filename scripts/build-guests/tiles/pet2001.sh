@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/pet2001.sh — build the Commodore PET 2001 (1977) streamhost tile
-# as a thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/pet2001.sh — build the Commodore PET 2001 (1977) streamhost tile
+# as a thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running VICE `xpet -model 2001`, emulating
 #         the ORIGINAL PET 2001: MOS 6502 at 1 MHz, 8 KB RAM, 40x25 characters
@@ -118,7 +118,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Commodore PET 2001 (1977) ROM BASIC kiosk launcher (bridge tile).
-# See scripts/build-guests/pet2001.sh for the flag rationale. The X root is
+# See scripts/build-guests/tiles/pet2001.sh for the flag rationale. The X root is
 # dropped to 800x600 because VICE's SDL window here is a fixed 768x532
 # (measured with xwininfo) and there is no window manager to place it.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)

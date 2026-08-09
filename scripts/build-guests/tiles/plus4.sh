@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/plus4.sh — build the Commodore Plus/4 (1984) streamhost tile as a
-# thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/plus4.sh — build the Commodore Plus/4 (1984) streamhost tile as a
+# thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running VICE `xplus4` emulating a PAL
 #         Commodore Plus/4, curated into its built-in ROM office suite.
@@ -137,7 +137,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Commodore Plus/4 (PAL) ROM-software kiosk launcher (bridge tile).
-# See scripts/build-guests/plus4.sh for the flag rationale.
+# See scripts/build-guests/tiles/plus4.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software
 export SDL_VIDEODRIVER=x11

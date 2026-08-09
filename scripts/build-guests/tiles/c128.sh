@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/c128.sh — build the Commodore 128 (1985) streamhost tile as a
-# thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/c128.sh — build the Commodore 128 (1985) streamhost tile as a
+# thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running VICE `x128` emulating a PAL
 #         Commodore 128 in its NATIVE 80-column mode, resting at the machine's
@@ -189,7 +189,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Commodore 128 (PAL, 80-column VDC) kiosk launcher (bridge tile).
-# See scripts/build-guests/c128.sh for the flag rationale — in particular why
+# See scripts/build-guests/tiles/c128.sh for the flag rationale — in particular why
 # the CP/M disk is NOT on this command line (it would autoboot at reset).
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software

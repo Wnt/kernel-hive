@@ -43,9 +43,9 @@ hash_of() { sha256sum "$1" | awk '{print $1}'; }
 build_decwindows_bridge() {
   local args=()
   [ "$FORCE" -eq 0 ] || args+=(--force)
-  [ -x "$HERE/openvms-decwindows-bridge.sh" ] ||
+  [ -x "$HERE/../stages/openvms-decwindows-bridge.sh" ] ||
     die "DECwindows bridge builder missing: $HERE/openvms-decwindows-bridge.sh"
-  "$HERE/openvms-decwindows-bridge.sh" "${args[@]}"
+  "$HERE/../stages/openvms-decwindows-bridge.sh" "${args[@]}"
 }
 
 command -v curl >/dev/null || die "curl not found"

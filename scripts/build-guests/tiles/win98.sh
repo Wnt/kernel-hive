@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/win98.sh — from-scratch, reproducible build of the Windows 98 SE
+# build-guests/tiles/win98.sh — from-scratch, reproducible build of the Windows 98 SE
 # tile for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the Win98 SE
@@ -66,7 +66,7 @@
 # fan-out VMIDs.
 #
 # Usage:
-#   OUT_DIR=DIR WORK_DIR=DIR build-guests/win98.sh [--dir DIR] [--force] [--no-verify]
+#   OUT_DIR=DIR WORK_DIR=DIR build-guests/tiles/win98.sh [--dir DIR] [--force] [--no-verify]
 #                         [--skip-system] [--skip-games] [--vbemp-floppy [OUT]] [-h]
 #     --dir DIR      output/guest dir   (default $OUT_DIR or /data/gallery-guests/Win98SE)
 #     --force        re-download sources and rebuild both disks from scratch
@@ -560,7 +560,7 @@ write_manifest() {
 {
   "os": "Windows 98 SE",
   "priority": 1,
-  "built_by": "scripts/build-guests/win98.sh",
+  "built_by": "scripts/build-guests/tiles/win98.sh",
   "status": "built-needs-one-time-pnp-settle",
   "disks": {
     "system": {

@@ -18,7 +18,7 @@
 # never raises that panel — verified on the frame by zx81.sh, not assumed here.
 #
 # Usage:
-#   scripts/build-guests/build-mame-zx81.sh [work-dir] [output-binary]
+#   scripts/build-guests/emulators/build-mame-zx81.sh [work-dir] [output-binary]
 #
 # Env:
 #   MAME_BOOKWORM_CHROOT  chroot to build in (default /data/vms/soltest/bookworm-chroot)
@@ -34,7 +34,7 @@ WORK="${1:-$CHROOT/build/mame-zx81-build-$$}"
 OUT="${2:-/data/vms/streamhost/assets/zx81/mame/zx81}"
 UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"
 JOBS="${JOBS:-$(nproc)}"
-# MAME 0.289. The same commit scripts/build-guests/build-mame-mpf2.sh pins.
+# MAME 0.289. The same commit scripts/build-guests/emulators/build-mame-mpf2.sh pins.
 MAME_ZX81_BASE="f34f02505e32c1993c6a782b6814232cbfc74e36"
 LOCAL_REF="${MAME_LOCAL_REF:-}"
 

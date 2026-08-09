@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/cbm2.sh — build the Commodore CBM 610 (1982) streamhost tile as a
-# thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/cbm2.sh — build the Commodore CBM 610 (1982) streamhost tile as a
+# thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running VICE `xcbm2 -model 610`, emulating
 #         a PAL Commodore CBM 610 that boots its ROM straight to
@@ -137,7 +137,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Commodore CBM 610 (PAL) ROM BASIC kiosk launcher (bridge tile).
-# See scripts/build-guests/cbm2.sh for the flag rationale and the measured
+# See scripts/build-guests/tiles/cbm2.sh for the flag rationale and the measured
 # window geometry: the native window is 704x528 and is centred by SDL on the
 # 800x600 root (88% fill); -CRTCdsize would make it 1408x1056 and be silently
 # clipped by every root this fleet uses.

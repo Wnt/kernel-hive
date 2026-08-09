@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/serenityos.sh
+# build-guests/tiles/serenityos.sh
 #
 # FROM-SOURCE reproducer for the "SerenityOS" Kernel Hive guest.
 # Rebuilds the guest end-to-end on a FRESH Proxmox host that already has the
@@ -398,7 +398,7 @@ cat >"$OUT_DIR/MANIFEST.md" <<MANIFEST
   - $OUT_DIR/_disk_image       (raw ext2 root fs, no partition table, no bootloader)
   - $OUT_DIR/Kernel/Kernel     (x86_64 multiboot kernel)
   - $OUT_DIR/Kernel/Kernel.efi (UEFI kernel, unused by this boot path, if present)
-- Reproducer: scripts/build-guests/serenityos.sh (this file's source of truth).
+- Reproducer: scripts/build-guests/tiles/serenityos.sh (this file's source of truth).
 - Desktop shortcuts: /home/anon/Desktop holds fast symlinks -> /bin/<App> for the shipped
   games (Solitaire, Minesweeper, Snake, Chess, 2048, Spider) + Calculator & PixelPaint,
   alongside the stock Browser/Text Editor/Help/Home. Added offline with debugfs (step 4c);

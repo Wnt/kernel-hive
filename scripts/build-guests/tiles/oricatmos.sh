@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/oricatmos.sh — build the Oric Atmos (1984) streamhost tile as a
-# thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/oricatmos.sh — build the Oric Atmos (1984) streamhost tile as a
+# thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running MAME's `orica` driver, emulating an
 #         Oric Atmos that boots its ROM straight to the Oric Extended BASIC V1.1
@@ -139,7 +139,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Oric Atmos (1984) ROM BASIC kiosk launcher (bridge tile).
-# See scripts/build-guests/oricatmos.sh for the flag rationale.
+# See scripts/build-guests/tiles/oricatmos.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_VIDEODRIVER=x11
 export SDL_AUDIODRIVER=alsa
@@ -444,7 +444,7 @@ EOS
 [ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -x "$MAME" ] ||
-  die "missing pinned MAME 0.289 oric binary: $MAME (build it with scripts/build-guests/build-mame-oricatmos.sh)"
+  die "missing pinned MAME 0.289 oric binary: $MAME (build it with scripts/build-guests/emulators/build-mame-oricatmos.sh)"
 if systemctl is-active --quiet "streamhost@$TILE"; then
   die "streamhost@$TILE is active; stop only this tile before rebuilding"
 fi

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-LABQMP="$HERE/../lib/labqmp.py"
+LABQMP="$HERE/../../lib/labqmp.py"
 OS_ID="nt351"
 TILE_DIR="nt351"
 WORK="${WORK:-/data/vms/build-${OS_ID}}"

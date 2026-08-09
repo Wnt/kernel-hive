@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/atarist.sh — build the Atari ST + EmuTOS GEM-desktop streamhost
-# tile as a thin overlay on the shared bridge base (build-guests/bridge-base.sh).
+# build-guests/tiles/atarist.sh — build the Atari ST + EmuTOS GEM-desktop streamhost
+# tile as a thin overlay on the shared bridge base (build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk that runs Hatari (WINDOWED) emulating an
 #         Atari ST that boots EmuTOS straight to the GEM desktop. streamhost

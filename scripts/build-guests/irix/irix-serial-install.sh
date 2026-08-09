@@ -21,7 +21,7 @@ set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 RIG="${IRIX_SERIAL_RIG:-$HERE/irix-serial-rig.sh}"
-SRC="${IRIX_AGENT_SRC:-$HERE/../../streamhost/guest-agents/irix}"
+SRC="${IRIX_AGENT_SRC:-$HERE/../../../streamhost/guest-agents/irix}"
 ROOT="${IRIX_SERIAL_ROOT:-/data/vms/soltest/irix-serial}"
 # Seconds between console lines. The guest's ttyd1 runs at 9600 baud in
 # canonical mode, so a ~70-character line needs ~75 ms on the wire plus the

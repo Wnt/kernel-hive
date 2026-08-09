@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/decos.sh — the DEC PDP-11 tile: ONE machine and THREE of the
+# build-guests/tiles/decos.sh — the DEC PDP-11 tile: ONE machine and THREE of the
 # operating systems DEC sold for it, behind a chooser, as a thin overlay on the
-# frozen bridge base (scripts/build-guests/bridge-base.sh).
+# frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running ONE fullscreen xterm, green on
 #         black, whose only program is /opt/decos/chooser.sh. Pressing 1, 2 or 3

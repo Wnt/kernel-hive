@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  build-guests/android-x86.sh
+#  build-guests/tiles/android-x86.sh
 #  Reproducible from-scratch build of the "Android-x86" Kernel Hive tile.
 #
 #  GOAL: on a FRESH Proxmox host that already has the gallery infra
@@ -104,7 +104,7 @@ FORCE="${FORCE:-0}"
 KEEP_ISO="${KEEP_ISO:-1}"
 PHASE="${PHASE:-all}"                 # all|download|disk|install|wizard|verify
 INSTALL_VISION="${INSTALL_VISION:-0}" # 1 = OCR/template wizard driver
-VISION_DIR="${VISION_DIR:-$SCRIPT_DIR/../install-vision}"
+VISION_DIR="${VISION_DIR:-$SCRIPT_DIR/../../install-vision}"
 VISION_PY="${VISION_PY:-$VISION_DIR/.venv/bin/python}"
 
 ISO_PATH="$WORK_DIR/$ISO_NAME"

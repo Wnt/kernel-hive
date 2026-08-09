@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/freedos.sh — reproduce the FreeDOS 1.3 retro-games gallery tile
+# build-guests/tiles/freedos.sh — reproduce the FreeDOS 1.3 retro-games gallery tile
 #                           FROM SOURCE on a fresh Proxmox host.
 #
 # GUEST : FreeDOS 1.3 — boots straight (no login/installer) to a CHOICE-driven
@@ -138,7 +138,7 @@ JILL_EXPECT_SHA256="ab09c4674f7c43e3ea80b9e22b250da442f471c3877e5d5410c9ba6c1366
 # build-guests/assets/freedos/{cosmo,jill}.zip (NOT shipped in the repo — see
 # docs/guests/freedos.md), it is used instead of fetching. Otherwise fetched
 # from archive.org above and verified against *_EXPECT_SHA256.
-ASSETS_DIR="${ASSETS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/assets/freedos}"
+ASSETS_DIR="${ASSETS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../assets/freedos}"
 
 UA="Mozilla/5.0 (FreeDKernel Hive-build)"
 

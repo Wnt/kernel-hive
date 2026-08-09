@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/winxp.sh — reproduce the "Windows XP Professional" Kernel Hive
+# build-guests/tiles/winxp.sh — reproduce the "Windows XP Professional" Kernel Hive
 #                         retro guest FROM SOURCE on a fresh Proxmox host.
 #
 # GUEST : Windows XP Professional SP3 (built from the validated integrated-SP3
@@ -658,7 +658,7 @@ inject_autologon
 #   docs/guests/winxp.md for what it is and how to build one. Without it, the
 #   Winamp desktop shortcut is simply skipped (WARN, not fatal).
 ###############################################################################
-ASSETS_DIR="$(cd "$(dirname "$0")" && pwd)/assets/winxp"
+ASSETS_DIR="$(cd "$(dirname "$0")" && pwd)/../assets/winxp"
 WINAMP_TARBALL="${ASSETS_DIR}/Winamp-2.95-installed.tar.gz"
 WINAMP_EXPECT_SHA256="cd0bbbc4ceebfc2fd8c9b22d63a03fdb3c7a182be680af6dcea032f33c2a8dd9"
 MK_SHORTCUTS="${ASSETS_DIR}/make_shortcuts.py"
@@ -785,7 +785,7 @@ bake_desktop_shortcuts
 #     Set HIRES=0 to skip.
 HIRES="${HIRES:-1}"
 if [[ "$HIRES" == "1" ]]; then
-  _hires="$(dirname "$0")/winxp-vbemp-hires.sh"
+  _hires="$(dirname "$0")/../stages/winxp-vbemp-hires.sh"
   if [[ -x "$_hires" || -f "$_hires" ]]; then
     log "baking 1920x1200 VBEMP display + drag-off (winxp-vbemp-hires.sh)"
     DISK="$DISK_IMG" bash "$_hires" || log "WARN: hi-res display step failed — golden stays 640x480 std VGA"

@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-# build-guests/postmarketos.sh
+# build-guests/stages/postmarketos.sh
 #
 # From-scratch, reproducible build of the Kernel Hive "postmarketOS" tile.
 # Runs on a fresh Proxmox host that already has the gallery infra

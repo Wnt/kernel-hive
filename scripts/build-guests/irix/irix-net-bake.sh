@@ -8,12 +8,12 @@
 #      (streamhost/tiles/irix/x11-runtime.sh does the tap + cfg seeding).
 #   2. Log in on the real framebuffer, Toolchest -> Desktop -> Open Unix Shell,
 #      and type ONE command through the key matrix (natkeyboard drops shifted
-#      characters -- see scripts/build-guests/irix-apps/keys.py):
+#      characters -- see scripts/build-guests/irix/irix-apps/keys.py):
 #        ifconfig ec0 inet 172.31.20.2 netmask 0xfffffffc up
 #      This is the bootstrap and the only step that needs the GUI: until the
 #      hosts file below is fixed, IRIX brings the interface up and then takes it
 #      straight back down in standalone mode.
-#   3. From the host: scripts/build-guests/irix-net-exec.py <ip> root --push
+#   3. From the host: scripts/build-guests/irix/irix-net-exec.py <ip> root --push
 #      THIS FILE  (telnet, because ftpd refuses root).
 #   4. /etc/shutdown -y -g0 -i0, wait for "Okay to power off", kill MAME by
 #      pidfile, and promote the clone's disk.chd.

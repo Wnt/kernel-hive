@@ -22,7 +22,7 @@ fi
 # display, then clears the display's lock/socket/ledger so nobody inherits a
 # half-dead :NN.
 XVFB_ALLOC_LIB="${XVFB_ALLOC_LIB:-/usr/local/bin/xvfb-alloc}"
-[ -f "$XVFB_ALLOC_LIB" ] || XVFB_ALLOC_LIB="$(dirname "$0")/../../lib/xvfb-alloc.sh"
+[ -f "$XVFB_ALLOC_LIB" ] || XVFB_ALLOC_LIB="$(dirname "$0")/../../../lib/xvfb-alloc.sh"
 if [ -f "$D/xvfb.pid" ] && [ -f "$XVFB_ALLOC_LIB" ]; then
   # shellcheck disable=SC1090,SC1091 # resolved at run time (box copy or repo copy)
   source "$XVFB_ALLOC_LIB"

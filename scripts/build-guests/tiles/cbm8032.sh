@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/cbm8032.sh — build the Commodore CBM 8032 (1980) streamhost tile
-# as a thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/cbm8032.sh — build the Commodore CBM 8032 (1980) streamhost tile
+# as a thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running VICE `xpet -model 8032`, emulating
 #         the 80-column business PET, which boots its ROM straight to
@@ -143,7 +143,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Commodore CBM 8032 (1980) ROM BASIC 4.0 kiosk launcher (bridge tile).
-# See scripts/build-guests/cbm8032.sh for the flag rationale.
+# See scripts/build-guests/tiles/cbm8032.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software
 export SDL_VIDEODRIVER=x11

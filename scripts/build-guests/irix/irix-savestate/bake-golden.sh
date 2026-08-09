@@ -80,7 +80,7 @@ SHMPNG="${IRIX_SHMPNG:-$RIG/shmpng.py}"
 MCTL="${IRIX_MCTL:-}"
 if [ -z "$MCTL" ]; then
   for c in "$RIG/mctl.py" /root/mctl.py \
-    "$RIG/../../../streamhost/guest-agents/irix/mctl.py" \
+    "$RIG/../../../../streamhost/guest-agents/irix/mctl.py" \
     "$RIG/mctl-probe.py" "$RIG/../irix-ctl/mctl-probe.py"; do
     if [ -f "$c" ]; then
       MCTL="$c"

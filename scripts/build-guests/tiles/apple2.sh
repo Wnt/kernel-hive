@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/apple2.sh — build the Apple //e + Apple GEOS deskTop streamhost
-# tile as a thin overlay on the shared bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/apple2.sh — build the Apple //e + Apple GEOS deskTop streamhost
+# tile as a thin overlay on the shared bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk that runs LinApple 2.3.0 `linapple` full-screen
 #         emulating an Apple //e (enhanced) auto-booting the Apple GEOS deskTop off a
@@ -102,7 +102,7 @@ PID="${TILE_DIR}/qemu.pid"
 MEM=1536
 HDV="/opt/bridge/media/geos.hdv"
 CONF="/opt/bridge/media/linapple.conf"
-ASSETS_DIR="${ASSETS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/assets/apple2}"
+ASSETS_DIR="${ASSETS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../assets/apple2}"
 # Asimov mirror; GEOS-mouse HDV is the AppleWin-tailored (== LinApple) mouse build.
 GEOS_URL="https://mirrors.apple2.org.za/ftp.apple.asimov.net/images/masters/other_os/gui/geos/GEOS-mouse%20supported%20by%20APPLEWIN.hdv.zip"
 

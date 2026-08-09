@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/templeos.sh — from-scratch, reproducible build of the TempleOS
+# build-guests/tiles/templeos.sh — from-scratch, reproducible build of the TempleOS
 # tile for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), (re)fetch the real
@@ -54,7 +54,7 @@
 # gallery guests, CTID 110, the live KVM VMs, or sibling build agents.
 #
 # Usage:
-#   build-guests/templeos.sh [--dir DIR] [--force] [--no-verify] [-h]
+#   build-guests/tiles/templeos.sh [--dir DIR] [--force] [--no-verify] [-h]
 #     --dir DIR      output/guest dir      (default /data/gallery-guests/TempleOS)
 #     --force        re-download even if a valid TempleOS.ISO is already present
 #     --no-verify    skip the headless framebuffer boot check (just fetch/verify)

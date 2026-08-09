@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/reactos.sh — from-scratch, reproducible build of the ReactOS
+# build-guests/tiles/reactos.sh — from-scratch, reproducible build of the ReactOS
 # tile for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the ReactOS
@@ -48,7 +48,7 @@
 # CTID 110, VM 900/925, or the macOS fan-out VMIDs.
 #
 # Usage:
-#   build-guests/reactos.sh [--dir DIR] [--force] [--no-verify] [-h]
+#   build-guests/tiles/reactos.sh [--dir DIR] [--force] [--no-verify] [-h]
 #     --dir DIR      output/guest dir      (default /data/gallery-guests/ReactOS)
 #     --force        re-download even if a valid ReactOS.iso is already present
 #     --no-verify    skip the separate portable-TCG ISO check; golden proof remains
@@ -321,7 +321,7 @@ verify_boot() {
 # The helper generates its own settings floppy, drives the two-page wizard,
 # customizes the desktop, ejects the floppy, saves `golden`, and proves loadvm.
 # =============================================================================
-GOLDEN_BAKE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/streamhost/tiles/reactos/golden-bake.sh"
+GOLDEN_BAKE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/streamhost/tiles/reactos/golden-bake.sh"
 [ -x "$GOLDEN_BAKE" ] || die "missing golden bake helper: $GOLDEN_BAKE"
 log "baking curated golden from the freshly produced LiveCD (no restore input)…"
 GUEST_DIR="$GUEST_DIR" REACTOS_ISO="$ISO_PATH" QEMU_BIN="$QEMU_BIN" bash "$GOLDEN_BAKE"

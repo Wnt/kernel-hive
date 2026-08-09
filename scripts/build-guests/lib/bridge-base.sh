@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/bridge-base.sh — reproducible build of the SHARED "emulator
+# build-guests/lib/bridge-base.sh — reproducible build of the SHARED "emulator
 # bridge" base image for the streamhost retro-OS gallery.
 #
 # WHAT THIS IS: a lean Debian 12 (bookworm) x86_64 guest that boots straight to
@@ -89,7 +89,7 @@ VICE_VER="3.9"
 GEOS_URL="https://archive.org/download/geos64_J1AD/geos64_J1AD.d64"
 GEOS_MD5="709bec31c3502cbcf5d4761c38dcfa9e"
 EMUTOS_URL="https://sourceforge.net/projects/emutos/files/emutos/1.3/emutos-1024k-1.3.zip/download"
-# Amiga 500 tile (scripts/build-guests/amiga.sh) media — copyrighted, free to use in
+# Amiga 500 tile (scripts/build-guests/tiles/amiga.sh) media — copyrighted, free to use in
 # this private collection; fetched here so a from-scratch NVMe rebuild bakes it in
 # (NEVER committed to the GitHub repo).
 AMIGA_KICK_URL="https://archive.org/download/commodore-amiga-firmware/Kickstart%20v1.3%20r34.005%20%281987-12%29%28Commodore%29%28A500-A1000-A2000-CDTV%29%5B%21%5D.zip"
@@ -269,7 +269,7 @@ write_files:
         flex bison xa65 dos2unix libreadline-dev libvorbis-dev libflac-dev \\
         libcurl4-openssl-dev libfreetype-dev libglew-dev
       command -v hatari >/dev/null && HATARI_OK=yes
-      # ---- FS-UAE (Amiga 500 tile; scripts/build-guests/amiga.sh). In Debian main.
+      # ---- FS-UAE (Amiga 500 tile; scripts/build-guests/tiles/amiga.sh). In Debian main.
       # Installed WITH recommends so it pulls libopenal (Paula audio) + mesa (llvmpipe
       # software GL for the GPU-less host). Not part of the original 4-emulator set;
       # baked here so the amiga tile needs no per-tile fs-uae install on a fresh base.
@@ -317,7 +317,7 @@ write_files:
         curl -fsSL -o /tmp/emutos.zip "${EMUTOS_URL}" || true
         (cd /tmp && unzip -o emutos.zip >/dev/null 2>&1 && find . -name 'etos1024k.img' -exec cp {} ${MEDIA_DIR}/etos1024k.img \\;) || true
       fi
-      # ---- Amiga 500 tile media (scripts/build-guests/amiga.sh): Kickstart 1.3 ROM
+      # ---- Amiga 500 tile media (scripts/build-guests/tiles/amiga.sh): Kickstart 1.3 ROM
       # + Workbench 1.3 Boot ADF. Copyrighted, free to use in this private collection — NEVER committed;
       # baked into /opt/bridge/media/amiga/ so the amiga tile needs no per-tile fetch.
       mkdir -p ${MEDIA_DIR}/amiga

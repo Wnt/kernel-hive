@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/9front.sh  —  reproducible from-scratch build of the 9front
+# build-guests/tiles/9front.sh  —  reproducible from-scratch build of the 9front
 # (Plan 9) Kernel Hive guest.
 #
 # GOAL: on a fresh Proxmox host that already has the gallery infra, rebuild the
@@ -49,7 +49,7 @@ GUEST_DIR="${GUEST_DIR:-/data/gallery-guests/${KEY}}"
 IMG="${GUEST_DIR}/${IMG_BASENAME}" # final golden disk
 CACHE_GZ="${GUEST_DIR}/.cache/${IMG_BASENAME}.gz"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 AGENT_DIR="${REPO_ROOT}/streamhost/guest-agents/ninefront"
 AGENT_SRC="${AGENT_DIR}/warpd.c"
 TILE_DIR="${TILE_DIR:-/data/vms/streamhost/tiles/ninefront}"
@@ -816,7 +816,7 @@ write_manifest() {
 Image: ${IMG_BASENAME} (release ${RELEASE}, ${ARCH})
 Source: ${SRC_URL}
 Source archive sha256: ${SRC_GZ_SHA256}
-Built by: scripts/build-guests/9front.sh
+Built by: scripts/build-guests/tiles/9front.sh
 
 Customization:
 - plan9.ini in 9fat rewritten for unattended ${VGASIZE} VESA/rio boot.

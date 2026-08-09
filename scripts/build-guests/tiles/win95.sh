@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/win95.sh — reproduce the Windows 95 OSR2 gallery tile from source
+# build-guests/tiles/win95.sh — reproduce the Windows 95 OSR2 gallery tile from source
 #
 # GUEST : Windows 95 OSR2 (retro-gallery tile, priority 1)
 # TYPE  : PRE-INSTALLED PRESERVATION IMAGE + era-software injection.
@@ -132,7 +132,7 @@ GTA1_URL="${GTA1_URL:-}" # full gtados+gtadata ZIP only
 # tile's Pentium CPU model does not implement; -march=pentium is load-bearing.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WARPNET="${WARPNET:-1}"
-WARPNET_SRC="${WARPNET_SRC:-${SCRIPT_DIR}/../../streamhost/guest-agents/win9x/warpnet.c}"
+WARPNET_SRC="${WARPNET_SRC:-${SCRIPT_DIR}/../../../streamhost/guest-agents/win9x/warpnet.c}"
 WARPNET_EXE="${WARPNET_EXE:-}"
 WARPNET_CC="${WARPNET_CC:-i686-w64-mingw32-gcc}"
 

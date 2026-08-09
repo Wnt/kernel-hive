@@ -3,7 +3,7 @@
 against each other over a pair of ptys, with a relay in the middle that can
 corrupt the wire on demand.
 
-    scripts/build-guests/irix-serial-selftest.py [-v] [NAME ...]
+    scripts/build-guests/irix/irix-serial-selftest.py [-v] [NAME ...]
 
 Why this exists: the acceptance evidence for the IRIX exec channel used to be
 prose in a commit message, so a re-bake (agent change, an SCC fix, a new base
@@ -13,7 +13,7 @@ exercised here in a couple of seconds, on any box with perl.
 
 WHAT IT CANNOT COVER: the guest's perl is 5.004 and the wire is MAME's SCC.
 Syntax that a modern perl accepts and 5.004 does not, and the SCC's byte
-dropping itself, still need a booted clone (scripts/build-guests/irix-serial-rig.sh).
+dropping itself, still need a booted clone (scripts/build-guests/irix/irix-serial-rig.sh).
 What it DOES cover is every protocol decision — framing, checksums in both
 directions, replay, NAK/resend, abort, truncation, byte-exactness — including
 the four corruption cases that a wire test can only produce by luck.

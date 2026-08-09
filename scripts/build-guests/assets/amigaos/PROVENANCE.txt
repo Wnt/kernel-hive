@@ -1,4 +1,4 @@
-amigaos tile — desktop games/apps assets (consumed by build-guests/amigaos.sh, step 5)
+amigaos tile — desktop games/apps assets (consumed by build-guests/tiles/amigaos.sh, step 5)
 =====================================================================================
 
 WHAT THIS IS

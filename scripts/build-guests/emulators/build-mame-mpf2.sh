@@ -5,7 +5,7 @@
 # tk2000.cpp (which owns mpf2) in a namespaced soltest worktree.
 #
 # Usage:
-#   scripts/build-guests/build-mame-mpf2.sh [work-dir] [output-binary]
+#   scripts/build-guests/emulators/build-mame-mpf2.sh [work-dir] [output-binary]
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,12 +16,12 @@ OUT="${2:-/data/vms/streamhost/assets/mpf2/mame/mpf2}"
 UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"
 JOBS="${JOBS:-$(nproc)}"
 MAME_MPF2_BASE="f34f02505e32c1993c6a782b6814232cbfc74e36"
-PATCH="$HERE/mame-irix-skip-warnings.patch"
+PATCH="$HERE/../patches/mame-irix-skip-warnings.patch"
 # Published fork submodule (github.com/Wnt/mame, branch `mpf2`): the same
 # warning-suppression patch, already committed there. If it's checked out,
 # seed the chroot build from it instead of cloning upstream + patching --
 # see scripts/build-guests/README.md for which form to edit.
-REPO_ROOT="$(cd "$HERE/../.." && pwd)"
+REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 SUBMODULE="$REPO_ROOT/third_party/mame-mpf2"
 
 say() { printf '\n== %s\n' "$*"; }

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/gt40.sh — build the DEC GT40 / VT11 "Lunar Lander" (1973)
+# build-guests/tiles/gt40.sh — build the DEC GT40 / VT11 "Lunar Lander" (1973)
 # streamhost tile as a thin overlay on the frozen bridge base
-# (scripts/build-guests/bridge-base.sh).
+# (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running Open SIMH's `pdp11` with the VT11
 #         vector display, executing the original 1973 GT40 Lunar Lander paper
@@ -122,7 +122,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # DEC GT40 / VT11 Lunar Lander kiosk launcher (bridge tile).
-# See scripts/build-guests/gt40.sh for the flag and measurement rationale.
+# See scripts/build-guests/tiles/gt40.sh for the flag and measurement rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software
 export SDL_VIDEODRIVER=x11

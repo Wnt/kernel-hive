@@ -54,7 +54,7 @@ AGENT_SRC="${IRIX_AGENT:-/data/vms/streamhost/tiles/irix/irixagent.lua}"
 CG="${CLONE_GUARD:-/usr/local/bin/clone-guard}"
 
 # Framebuffer signatures. NOTE these are NOT the numbers in
-# scripts/build-guests/irix-park-desktop.sh: that script grabs the Xvfb root,
+# scripts/build-guests/irix/irix-park-desktop.sh: that script grabs the Xvfb root,
 # which is the emulated frame SCALED into a 1272x954 window inside a 1280x1024
 # root with black borders. This rig reads the shm mapping, i.e. the EXACT
 # 1288x1024 emulated framebuffer with no borders and no resample, and the
@@ -102,7 +102,7 @@ phase() { # phase <name> <seconds>
 }
 
 # The workloads themselves — see workloads.sh.
-# shellcheck source=scripts/build-guests/irix-bench/workloads.sh
+# shellcheck source=scripts/build-guests/irix/irix-bench/workloads.sh
 . "$RIG/workloads.sh"
 
 # The `sweep` phase — the MMIO-heavy regime.

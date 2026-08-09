@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/bbcmicro.sh — build the Acorn BBC Micro Model B (1981) streamhost
+# build-guests/tiles/bbcmicro.sh — build the Acorn BBC Micro Model B (1981) streamhost
 # tile as a thin overlay on the frozen bridge base (bridge-base.sh).
 #
 # GUEST : a captured Debian-12 X kiosk running a purpose-built MAME `bbcb`
@@ -17,7 +17,7 @@
 # a blinking prompt on a machine whose entire point was that you programmed it.
 #
 # ---- WHY A PURPOSE-BUILT MAME, AND WHICH ONE --------------------------------
-#   scripts/build-guests/build-mame-bbcb.sh builds MAME **0.289** (tag
+#   scripts/build-guests/emulators/build-mame-bbcb.sh builds MAME **0.289** (tag
 #   `mame0289` == f34f02505e32c1993c6a782b6814232cbfc74e36, the newest stable tag
 #   at the time of the add) in the Bookworm chroot, SUBTARGET=bbcb,
 #   SOURCES=src/mame/acorn. The host's /usr/games/mame is 0.276 against Debian
@@ -112,7 +112,7 @@ OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
 EVIDENCE="$TILE_DIR/evidence"
-TYPE_DRIVER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bbcmicro-type-qmp.py"
+TYPE_DRIVER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/bbcmicro-type-qmp.py"
 # 768 MB. Measured in-guest with X + MAME up (see the assertion near the end):
 # MemAvailable stays comfortably above the 200 MB floor while host QEMU RSS is
 # roughly half what the 1536 MB VICE tiles cost. MAME's bbcb is a much smaller
@@ -544,7 +544,7 @@ keyboard_proof() {
 [ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -x "$MAME" ] ||
-  die "missing the pinned BBC MAME binary: $MAME (build with scripts/build-guests/build-mame-bbcb.sh)"
+  die "missing the pinned BBC MAME binary: $MAME (build with scripts/build-guests/emulators/build-mame-bbcb.sh)"
 if systemctl is-active --quiet "streamhost@$TILE"; then
   die "streamhost@$TILE is active; stop only this tile before rebuilding"
 fi

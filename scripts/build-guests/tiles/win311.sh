@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/win311.sh — reproduce the Windows for Workgroups 3.11 gallery
+# build-guests/tiles/win311.sh — reproduce the Windows for Workgroups 3.11 gallery
 #                          guest FROM SOURCE on a fresh Proxmox host.
 #
 # GUEST : Windows for Workgroups 3.11 + MS-DOS 6.22 (the "Win311" retro tile).
@@ -81,9 +81,9 @@ DIR_NAME="Win311"
 
 # Repo-local assets (prebuilt binaries that cannot be fetched/scripted).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ASSET_DIR="${SCRIPT_DIR}/assets/win311"
+ASSET_DIR="${SCRIPT_DIR}/../assets/win311"
 GALLERY_GRP_ASSET="${ASSET_DIR}/GALLERY.GRP" # Program Manager "Gallery Games" group
-AGENT_SRC="${SCRIPT_DIR}/../../streamhost/guest-agents/win311/agent.c"
+AGENT_SRC="${SCRIPT_DIR}/../../../streamhost/guest-agents/win311/agent.c"
 WATCOM_ROOT="${WATCOM:-/opt/watcom}"
 
 # --- C: base image (rtts/win311 prebuilt WfW 3.11 + MS-DOS 6.22) -------------

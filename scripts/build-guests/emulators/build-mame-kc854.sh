@@ -23,7 +23,7 @@
 #   be baked at a genuinely untouched CAOS boot screen.
 #
 # Usage:
-#   scripts/build-guests/build-mame-kc854.sh [work-dir] [output-binary]
+#   scripts/build-guests/emulators/build-mame-kc854.sh [work-dir] [output-binary]
 # =============================================================================
 set -euo pipefail
 
@@ -42,7 +42,7 @@ MAME_KC854_BASE="${MAME_KC854_BASE:-d0b7160e54874fa58f553614db373d73100d5ecb}"
 # build asserts the path exists rather than trusting it, because MAME moves
 # driver files between directories across releases.
 DRIVER_SRC="src/mame/ddr/kc.cpp"
-PATCH="$HERE/mame-irix-skip-warnings.patch"
+PATCH="$HERE/../patches/mame-irix-skip-warnings.patch"
 
 say() { printf '\n== %s\n' "$*"; }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/nt4.sh — reproducible build of the Windows NT 4.0 Workstation
+# build-guests/tiles/nt4.sh — reproducible build of the Windows NT 4.0 Workstation
 # SP6 tile for the Kernel Hive (GH #23, catalog §4).
 #
 # WHAT THIS BUILD IS (read before editing):

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #===============================================================================
-# build-guests/helenos.sh — reproduce the HelenOS Kernel Hive tile from source
+# build-guests/tiles/helenos.sh — reproduce the HelenOS Kernel Hive tile from source
 #===============================================================================
 #
 # GUEST : helenos

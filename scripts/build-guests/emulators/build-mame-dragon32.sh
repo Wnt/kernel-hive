@@ -20,7 +20,7 @@
 # set; the whole MAME core/devices/OSD still build, so budget ~1 hour.
 #
 # Usage:
-#   scripts/build-guests/build-mame-dragon32.sh [work-dir] [output-binary]
+#   scripts/build-guests/emulators/build-mame-dragon32.sh [work-dir] [output-binary]
 # Env:
 #   MAME_BOOKWORM_CHROOT  chroot root (default /data/vms/soltest/bookworm-chroot)
 #   MAME_SEED_REPO        optional local MAME git tree to clone from instead of

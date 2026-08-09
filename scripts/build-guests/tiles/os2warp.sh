@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/os2warp.sh — reproduce the IBM OS/2 Warp 4 gallery guest
+# build-guests/tiles/os2warp.sh — reproduce the IBM OS/2 Warp 4 gallery guest
 #                           FROM SOURCE on a fresh Proxmox host.
 #
 # GUEST : IBM OS/2 Warp 4 (1996, "Merlin") — the Workplace Shell tile (:8108).
@@ -67,7 +67,7 @@
 # and the pinned-machine `golden` snapshot are refreshed on every run.
 #
 # Usage:
-#   build-guests/os2warp.sh [--dir DIR] [--force] [--no-verify] [-h]
+#   build-guests/tiles/os2warp.sh [--dir DIR] [--force] [--no-verify] [-h]
 #     --dir DIR     guest/output dir       (default /data/gallery-guests/OS2Warp)
 #     --force       rebuild the golden image even if a valid one is present
 #     --no-verify   skip the final framebuffer boot check
@@ -97,7 +97,7 @@ VERIFY="${VERIFY:-1}"
 QEMU_BIN="${QEMU_BIN:-qemu-system-x86_64}"
 QEMU_MACHINE="${QEMU_MACHINE:-pc-i440fx-11.0}"
 WATCOM_ROOT="${WATCOM_ROOT:-/opt/watcom}"
-REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 AGENT_DIR="${REPO_ROOT}/streamhost/guest-agents/os2"
 AGENT_EXE="${AGENT_DIR}/WARPD.EXE"
 DESKTOP_OBJECTS_CMD="${REPO_ROOT}/scripts/build-guests/assets/os2warp/create-desktop-objects.cmd"

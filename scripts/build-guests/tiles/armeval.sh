@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/armeval.sh — build the Acorn ARM Evaluation System (1986)
+# build-guests/tiles/armeval.sh — build the Acorn ARM Evaluation System (1986)
 # streamhost tile as a thin overlay on the frozen bridge base (bridge-base.sh).
 #
 # GUEST : a captured Debian-12 X kiosk running the SAME purpose-built MAME
@@ -40,7 +40,7 @@
 #
 # ---- THE ROMS ---------------------------------------------------------------
 #   Five of the six blobs are the bbcmicro tile's, unchanged and for the same
-#   reasons (see build-guests/bbcmicro.sh for the full derivation: `saa5050` is
+#   reasons (see build-guests/tiles/bbcmicro.sh for the full derivation: `saa5050` is
 #   a third zip and MODE 7 has no glyphs without it; the Acorn 8271 disc
 #   interface is the driver's own default and cannot simply be left out).
 #   The SIXTH is the ARM Evaluation System's own bootstrap:
@@ -132,7 +132,7 @@ OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
 EVIDENCE="$TILE_DIR/evidence"
-TYPE_DRIVER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bbcmicro-type-qmp.py"
+TYPE_DRIVER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/bbcmicro-type-qmp.py"
 
 # Guest ROM name -> SHA1, asserted against the shipped binary's own -listxml
 # before anything is copied into the guest.
@@ -499,7 +499,7 @@ keyboard_proof() {
 [ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -x "$MAME" ] ||
-  die "missing the pinned BBC MAME binary: $MAME (build with scripts/build-guests/build-mame-bbcb.sh)"
+  die "missing the pinned BBC MAME binary: $MAME (build with scripts/build-guests/emulators/build-mame-bbcb.sh)"
 if systemctl is-active --quiet "streamhost@$TILE"; then
   die "streamhost@$TILE is active; stop only this tile before rebuilding"
 fi

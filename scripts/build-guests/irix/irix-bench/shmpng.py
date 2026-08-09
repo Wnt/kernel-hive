@@ -8,7 +8,7 @@ shm path needs its own screendump. This is it.
 
 Also prints `mean sd` (and, with a crop, the crop's `sd`) because the boot /
 login / desktop state machine on this exhibit is decided from those numbers —
-see scripts/build-guests/irix-park-desktop.sh for the measured signatures.
+see scripts/build-guests/irix/irix-park-desktop.sh for the measured signatures.
 
   shmpng.py <fb.shm> [out.png] [--crop WxH+X+Y]
 

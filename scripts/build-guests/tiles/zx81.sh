@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/zx81.sh — build the Sinclair ZX81 (1981) streamhost tile as a
-# thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/zx81.sh — build the Sinclair ZX81 (1981) streamhost tile as a
+# thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running a purpose-built MAME `zx81`
 #         emulating a 1 KB ZX81 with the second-revision (`-bios 2nd`) ROM,
@@ -157,7 +157,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Sinclair ZX81 (1981) kiosk launcher (bridge tile).
-# See scripts/build-guests/zx81.sh for the rationale behind every flag.
+# See scripts/build-guests/tiles/zx81.sh for the rationale behind every flag.
 # 384x311 raster at 50.655 Hz drawn FULLSCREEN with aspect correction on the
 # bridge base's stock 1024x768 root, which is exactly 4:3 — the shape of the
 # television the machine was designed to be plugged into.
@@ -201,7 +201,7 @@ EOS
 #                  not a fair test of a guest keyboard — it drives QMP with no
 #                  pacing and drops characters while printing "ok" — so the
 #                  proof owns its typist and types at the tile's declared rate.
-SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../streamhost/tiles/zx81" && pwd)"
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../streamhost/tiles/zx81" && pwd)"
 
 # Quiet every text-producing stage of a cold boot (GRUB -> kernel -> agetty).
 quiet_console() {
@@ -437,7 +437,7 @@ bake_golden() {
 [ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -x "$MAME" ] ||
-  die "missing pinned ZX81 MAME binary: $MAME (build with scripts/build-guests/build-mame-zx81.sh)"
+  die "missing pinned ZX81 MAME binary: $MAME (build with scripts/build-guests/emulators/build-mame-zx81.sh)"
 if systemctl is-active --quiet "streamhost@$TILE"; then
   die "streamhost@$TILE is active; stop only this tile before rebuilding"
 fi

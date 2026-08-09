@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/riscos.sh — from-scratch, reproducible build of the RISC OS 5
+# build-guests/tiles/riscos.sh — from-scratch, reproducible build of the RISC OS 5
 # tile (:8111) for the neko Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the RISC OS 5
@@ -60,7 +60,7 @@
 # CTID 110's other services. Kills nothing by name.
 #
 # Usage:
-#   build-guests/riscos.sh [--dir DIR] [--force] [--no-verify] [--host H] [-h]
+#   build-guests/tiles/riscos.sh [--dir DIR] [--force] [--no-verify] [--host H] [-h]
 #     --dir DIR      guest data dir       (default /data/gallery-guests/RISCOS)
 #     --force        re-download even if valid artifacts are present
 #     --no-verify    skip the live-tile framebuffer screenshot check

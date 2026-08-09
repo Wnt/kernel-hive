@@ -5,7 +5,7 @@ set -euo pipefail
 umask 077
 
 SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-ASSET_DIR="$SELF_DIR/assets/redstar2"
+ASSET_DIR="$SELF_DIR/../assets/redstar2"
 STAMP=${REDSTAR2_BUILD_DATE:-$(date +%Y%m%d)}
 WORK=${REDSTAR2_WORK:-/data/vms/soltest/redstar2-build-$STAMP}
 STAGE=/data/assets-staging/redstar2

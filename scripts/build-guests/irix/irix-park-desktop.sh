@@ -47,7 +47,7 @@ AGENT_SRC="${IRIX_AGENT:-$ASSETS/irixagent.lua}"
 # mandatory: hand-picked display numbers are what let one park silently drive
 # another park's framebuffer.
 XVFB_ALLOC_LIB="${XVFB_ALLOC_LIB:-/usr/local/bin/xvfb-alloc}"
-[ -f "$XVFB_ALLOC_LIB" ] || XVFB_ALLOC_LIB="$(dirname "$0")/../lib/xvfb-alloc.sh"
+[ -f "$XVFB_ALLOC_LIB" ] || XVFB_ALLOC_LIB="$(dirname "$0")/../../lib/xvfb-alloc.sh"
 # shellcheck disable=SC1090,SC1091 # resolved at run time (box copy or repo copy)
 source "$XVFB_ALLOC_LIB" || {
   echo "irix-park-desktop: cannot source xvfb-alloc ($XVFB_ALLOC_LIB)" >&2

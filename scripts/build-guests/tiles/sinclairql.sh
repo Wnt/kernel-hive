@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/sinclairql.sh — build the Sinclair QL (1984) streamhost tile as a
-# thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/sinclairql.sh — build the Sinclair QL (1984) streamhost tile as a
+# thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running MAME's `ql` driver (68008 @ 7.5 MHz,
 #         128 KB RAM, QDOS/SuperBASIC in ROM, two Microdrives). streamhost
@@ -141,7 +141,7 @@ read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Sinclair QL (1984) QDOS/SuperBASIC kiosk launcher (bridge tile).
 # 512x256 monitor mode drawn at an exact 2x3 integer scale on the 1024x768 X
-# root. See scripts/build-guests/sinclairql.sh for the flag rationale.
+# root. See scripts/build-guests/tiles/sinclairql.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_VIDEODRIVER=x11
 export SDL_RENDER_DRIVER=software

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/sailfishos-gui.sh   (OPTION B: QEMU-drivable KMS driver)
+# build-guests/tiles/sailfishos-gui.sh   (OPTION B: QEMU-drivable KMS driver)
 #
 # THE WINNER — this is the builder behind the live :8104 Sailfish tile
 # (bochs-drm KMS injection; authority: sailfish-kms-notes, now in
-# docs/guests/). Build chain: build-guests/sailfishos.sh first (produces the
+# docs/guests/). Build chain: build-guests/tiles/sailfishos.sh first (produces the
 # golden sailfishos.qcow2 base), then this script patches a COPY of it into
 # sailfishos-gui.qcow2. The competing OPTION A (VirtualBox,
 # sailfishos-vbox.sh) lost and was deleted in the 2026-07 restructure —

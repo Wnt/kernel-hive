@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/win2000.sh — from-scratch, reproducible build of the
+# build-guests/tiles/win2000.sh — from-scratch, reproducible build of the
 # Windows 2000 Professional SP4 tile for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the Win2000
@@ -84,7 +84,7 @@
 # claimed.
 #
 # Usage:
-#   build-guests/win2000.sh [--dir DIR] [--src-url URL] [--force]
+#   build-guests/tiles/win2000.sh [--dir DIR] [--src-url URL] [--force]
 #                           [--no-software] [--no-verify] [-h]
 #     --dir DIR       output/guest dir      (default /data/gallery-guests/Win2000)
 #     --src-url URL   override the WinWorld VMware VM .7z URL
@@ -429,7 +429,7 @@ Windows Registry Editor Version 5.00
 "AutoReboot"=dword:00000000
 REG
 
-QUIET_PNP_REG="${SCRIPT_DIR}/assets/win2000/qemu0002-failedinstall.reg"
+QUIET_PNP_REG="${SCRIPT_DIR}/../assets/win2000/qemu0002-failedinstall.reg"
 [ -f "$QUIET_PNP_REG" ] || die "missing QEMU0002 registry payload: $QUIET_PNP_REG"
 
 # hivexregedit merges the .reg paths (rooted at HKLM\SYSTEM) into the hive.

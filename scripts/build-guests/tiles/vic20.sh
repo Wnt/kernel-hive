@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/vic20.sh — build the Commodore VIC-20 (1980) streamhost tile as a
-# thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/vic20.sh — build the Commodore VIC-20 (1980) streamhost tile as a
+# thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running VICE `xvic` emulating a PAL VIC-20
 #         that boots its ROM straight to the "**** CBM BASIC V2 ****" screen.
@@ -92,7 +92,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Commodore VIC-20 (PAL) ROM BASIC kiosk launcher (bridge tile).
-# See scripts/build-guests/vic20.sh for the flag rationale.
+# See scripts/build-guests/tiles/vic20.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software
 export SDL_VIDEODRIVER=x11

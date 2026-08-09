@@ -17,7 +17,7 @@ PATCH_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # checkout this script lives in has it initialized, build from it directly
 # instead of cloning upstream + applying loose patches -- see
 # scripts/build-guests/README.md for which form (patch vs. fork branch) to edit.
-REPO_ROOT="$(cd "$PATCH_SRC/../.." && pwd)"
+REPO_ROOT="$(cd "$PATCH_SRC/../../.." && pwd)"
 SUBMODULE="$REPO_ROOT/third_party/mame-irix"
 
 say() { printf '\n=== %s\n' "$*"; }
@@ -75,13 +75,13 @@ else
   # the arch and OS gates in that file skip the 256 MB DRC cache patch (arm64
   # branches cannot reach across a 256 MB code cache) and the taptun interface
   # patch (Linux tap devices only). Everything else is exactly what ships.
-  # shellcheck source=scripts/build-guests/irix-mame-stack.sh
-  . "$PATCH_SRC/irix-mame-stack.sh"
+  # shellcheck source=scripts/build-guests/irix/irix-mame-stack.sh
+  . "$PATCH_SRC/../irix/irix-mame-stack.sh"
   [ "$BASE_COMMIT" = "$IRIX_MAME_BASE" ] || {
     echo "base commit drift: this script says $BASE_COMMIT, the stack says $IRIX_MAME_BASE" >&2
     exit 1
   }
-  irix_mame_apply "$WORK/mame" "$PATCH_SRC"
+  irix_mame_apply "$WORK/mame" "$PATCH_SRC/../patches"
 fi
 
 say "building (this takes 30-60 min the first time)"

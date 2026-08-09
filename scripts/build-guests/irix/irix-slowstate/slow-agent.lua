@@ -1,6 +1,6 @@
 -- slow-agent.lua — the baseline rig's bench agent plus a guest-PC/ASID sampler.
 --
--- Layering, deliberately: this file loads scripts/build-guests/irix-bench/
+-- Layering, deliberately: this file loads scripts/build-guests/irix/irix-bench/
 -- bench-agent.lua (IRIX_SLOW_BENCH), which in turn loads the PRODUCTION
 -- irixagent.lua. So the input path and the emulated-time trace are shared with
 -- the baseline rig rather than forked, and the only thing this file adds is a

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/nextstep.sh — build the NeXTcube / NeXTSTEP 3.3 streamhost tile
-# as a thin overlay on the frozen bridge base (scripts/build-guests/bridge-base.sh).
+# build-guests/tiles/nextstep.sh — build the NeXTcube / NeXTSTEP 3.3 streamhost tile
+# as a thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running the **Previous** emulator (NeXT
 #         hardware, SourceForge SVN trunk r1847 == release 4.4) as a NeXTcube:
@@ -419,7 +419,7 @@ wait_for_workspace() {
 
 [ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
-[ -f "$HERE/previous-wmless-window-borders.patch" ] ||
+[ -f "$HERE/../patches/previous-wmless-window-borders.patch" ] ||
   die "missing patch: $HERE/previous-wmless-window-borders.patch"
 if systemctl is-active --quiet "streamhost@$TILE"; then
   die "streamhost@$TILE is active; stop only this tile before rebuilding"
@@ -481,7 +481,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 
   # Previous. ENABLE_RENDERING_THREAD=1 is REQUIRED — see trap 4 in the header.
   log "checking out and building Previous r$PREVIOUS_REV (~9 min at -j2)"
-  put "$HERE/previous-wmless-window-borders.patch" /tmp/previous-borders.patch
+  put "$HERE/../patches/previous-wmless-window-borders.patch" /tmp/previous-borders.patch
   guest "set -e
     cd /usr/local/src
     [ -d previous-code ] || svn checkout -q -r $PREVIOUS_REV \
@@ -537,7 +537,7 @@ PV
 
   log "installing the kiosk launcher, the frame watcher, and previous.cfg"
   printf '%s\n' "$LAUNCH" | guest "cat > /etc/bridge/launch.sh && chmod 755 /etc/bridge/launch.sh"
-  put "$HERE/nextstep-kiosk-frame.sh" /usr/local/bin/nextstep-kiosk-frame.sh
+  put "$HERE/../stages/nextstep-kiosk-frame.sh" /usr/local/bin/nextstep-kiosk-frame.sh
   guest "chmod 755 /usr/local/bin/nextstep-kiosk-frame.sh"
   printf '%s\n' "$PREVIOUS_CFG" |
     guest "cat > /home/bridge/.config/previous/previous.cfg &&

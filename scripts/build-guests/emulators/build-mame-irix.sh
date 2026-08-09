@@ -9,14 +9,14 @@
 # untrusted and should be rebuilt, not patched around.
 #
 # Usage:
-#   scripts/build-guests/build-mame-irix.sh [work-dir]
+#   scripts/build-guests/emulators/build-mame-irix.sh [work-dir]
 # Default work-dir is /data/vms/soltest/mame-irix-build-$$ -- namespaced under
 # soltest on purpose. NEVER build in a live tile directory.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/build-guests/irix-mame-stack.sh
-. "$HERE/irix-mame-stack.sh"
+# shellcheck source=scripts/build-guests/irix/irix-mame-stack.sh
+. "$HERE/../irix/irix-mame-stack.sh"
 
 WORK="${1:-/data/vms/soltest/mame-irix-build-$$}"
 UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"
@@ -26,7 +26,7 @@ JOBS="${JOBS:-$(nproc)}"
 # build from it directly instead of cloning upstream + applying loose patches
 # -- both paths produce the same tree, but the submodule is the published,
 # reviewable form. See scripts/build-guests/README.md for which one to edit.
-REPO_ROOT="$(cd "$HERE/../.." && pwd)"
+REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 SUBMODULE="$REPO_ROOT/third_party/mame-irix"
 
 say() { printf '\n== %s\n' "$*"; }
@@ -58,7 +58,7 @@ else
   git clean -qfd # NOT -x: keeps build objects, which makes a rebuild minutes not an hour
 
   say "applying the patch stack"
-  irix_mame_apply "$WORK/mame" "$HERE"
+  irix_mame_apply "$WORK/mame" "$HERE/../patches"
 fi
 
 say "building with $JOBS jobs (30-60 min from cold, a few minutes incremental)"

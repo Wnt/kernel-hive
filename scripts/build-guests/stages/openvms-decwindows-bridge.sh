@@ -4,7 +4,7 @@
 set -euo pipefail
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "$HERE/../.." && pwd)"
+REPO_ROOT="$(cd -- "$HERE/../../.." && pwd)"
 BRIDGE_BASE="${BRIDGE_BASE:-/data/vms/bridge/bridge-base.qcow2}"
 BRIDGE_KEY="${BRIDGE_KEY:-/data/vms/bridge/bridge_key}"
 OUT_BRIDGE="${OUT_BRIDGE:-/data/gallery-guests/OpenVMS/openvms-decwindows-bridge.qcow2}"
