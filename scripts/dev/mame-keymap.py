@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Derive a tile's `demoProgram.keyMap` from a MAME driver's keyboard matrix.
+"""Derive a tile's `keyboard.charMap` from a MAME driver's keyboard matrix.
 
 WHY THIS EXISTS
 ---------------
@@ -26,9 +26,19 @@ USAGE
     scripts/dev/mame-keymap.py --file tk2000.cpp # or read a local copy
     scripts/dev/mame-keymap.py tk2000 --json     # paste-ready registry block
 
-Paste the JSON under the tile's `demoProgram` in registry/tiles/<id>.json, then
-`make tile-registry-generate`. Characters the guest agrees with a PC about are
-omitted -- the map should be as small as the machine's actual differences.
+Paste the map as the tile's top-level `keyboard.charMap` in
+registry/tiles/<id>.json AND mirror it into `runtime.tileEnv.SH_KEY_MAP` as
+comma-separated `guest:host` pairs (labctl drives QMP directly and cannot read
+the registry; `validate_keyboard_env` fails the build if the two drift). Then
+run `make tile-registry-generate`. Characters the guest agrees with a PC about
+are omitted -- the map should be as small as the machine's actual differences.
+
+ONE MATRIX AT A TIME. Some driver files declare several INPUT_PORTS_START
+blocks for machine variants that share a source file (bbc_kbd.cpp carries the
+Model B, the Master, the Compact and more), and this tool reads whatever it is
+given. Feeding it the whole file merges incompatible matrices and prints
+nonsense; slice out the one port block your machine uses first, e.g.
+`sed -n '36,157p' bbc_kbd.cpp > modelb.cpp`, then pass that with --file.
 
 The mapping is `guest character` -> `host character to send`.
 """
@@ -119,7 +129,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("machine", nargs="?", help="MAME machine short name, e.g. tk2000")
     ap.add_argument("--file", help="read a local driver .cpp instead of fetching")
-    ap.add_argument("--json", action="store_true", help="print only the keyMap JSON")
+    ap.add_argument("--json", action="store_true", help="print only the charMap JSON")
     args = ap.parse_args()
 
     if args.file:
@@ -133,7 +143,7 @@ def main() -> int:
     keymap, rows = derive(source)
 
     if args.json:
-        print(json.dumps({"keyMap": keymap}, indent=2, ensure_ascii=False))
+        print(json.dumps({"charMap": keymap}, indent=2, ensure_ascii=False))
         return 0
 
     if not rows:
@@ -148,8 +158,8 @@ def main() -> int:
 
     print()
     if keymap:
-        print(f"{len(keymap)} character(s) need translating. Add to the tile's demoProgram:")
-        print(json.dumps({"keyMap": keymap}, indent=2, ensure_ascii=False))
+        print(f"{len(keymap)} character(s) need translating. Add as the tile's keyboard.charMap:")
+        print(json.dumps({"charMap": keymap}, indent=2, ensure_ascii=False))
     else:
         print("No translation needed: this guest agrees with a US keyboard.")
     return 0
