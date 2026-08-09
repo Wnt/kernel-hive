@@ -163,20 +163,170 @@ released it the way CHM released the Alto stack. The emulator candidate is
 answer is BLOCKED-ON-MEDIA, and the fallback the operator named — "or another
 Pilot OS tile" — becomes the question.
 
-## 3. Daybreak / ViewPoint / GlobalView — OPEN
+## 3. Daybreak / ViewPoint / GlobalView — FEASIBLE, Tier 2, and it is the CHEAPEST Xerox exhibit
 
-Study in flight. Two routes, an order of magnitude apart in cost:
-- **A: emulate the 6085.** Emulator maturity expected to be well behind
-  ContrAlto/Darkstar.
-- **B: GlobalView on hardware the gallery already emulates.** Xerox ported the
-  ViewPoint environment to commodity hardware as GlobalView for Windows. The
-  gallery already runs `win311`, `win95`, `win98se`, `win2000`, `winxp` and
-  `nt4` as production tiles with proven goldens and builders to copy. If
-  GlobalView 2.x runs on one of them this needs **no new emulator at all**, and
-  it is a genuine Mesa/Pilot environment rather than a lookalike.
+Verdict: **build `gvwin`** — GlobalView 2.1 for Windows inside a QEMU Windows 3.1
+guest. It was booted, logged into, driven by mouse and keyboard, and `savevm`/
+`loadvm`-cycled in a single research session. Of the three Xerox candidates it is
+the only one driven to a working desktop, and it is the smallest tile in the
+lineup.
 
-If Route B works it is very likely the cheapest way to get the Xerox desktop
-lineage onto the wall, and it may be worth doing *before* the Alto.
+### 3.1 Why this is not a consolation prize
+
+GlobalView is **not a reimplementation**. It is the real Mesa/Pilot environment
+with a *software* Mesa emulator hosted on the PC — earlier versions needed a
+hardware Mesa CPU board; 2.1 is pure software. It boots a **Pilot 15.3** virtual
+disk (`C:\GVWIN001.DSK`, 52 MB). So the tile is a 1996 PC emulating a 1985
+workstation, inside a 2026 host emulating the 1996 PC — which is itself the
+placard.
+
+### 3.2 Proven on the box
+
+Pre-built image `davidar/gvwin` (MS-DOS + Windows 3.1 + GlobalView 2.1,
+autostarts GV, credentials `user`/`pass`), run on a **qcow2 overlay** with
+essentially the `win311` device set (`qemu-system-i386 -accel tcg -m 64 -smp 1
+-machine pc-i440fx-11.0 -cpu pentium -vga std`, IDE, `ne2k_pci`).
+`clone-guard check-launcher` passed.
+
+| Step | Result |
+|---|---|
+| Cold boot → ViewPoint **Logon Option Sheet** | ~115 s; stable and idle-safe for ~40 min, no screensaver |
+| Logon → **desktop** | ~45 s after clicking Start |
+| Double-click → **Directory window** | `Workstation` / `Workspace` / `Network`, scrollbars, `Close`/`Redisplay` |
+| `savevm golden` → `loadvm golden` | Restores the logged-in desktop bit-for-bit; 13.1 MiB VM state |
+| **RSS** | **181–194 MB** with `-m 64` |
+
+That memory figure is the headline: roughly **an eighth of a bridge tile**
+(0.70–1.66 GB), about a seventh of `c64`. The cheapest exhibit per gigabyte in
+the lineup.
+
+### 3.3 What the exhibit shows — the Star's grammar, intact
+
+A persistent **message area** across the top narrating the system in prose
+(`Please type your user-name and then press <NEXT>`, `Icon could not be
+opened.`, `23387 Free Disk Pages`); document and folder icons on a desktop that
+is literally a desk, the paper icon with a folded corner; windows with a named
+**title tab** instead of a title bar, and verbs as header buttons (`Close`,
+`Redisplay`, `Start`, `Cancel`) instead of menus; property sheets as the
+universal settings idiom. The direct ancestor of everything else on the wall,
+looking like none of it.
+
+Rest state: the logged-in desktop (proven stable, instantly restorable). The
+30-second interaction is Directory → Workspace, one click per step, each
+narrating itself in the message area.
+
+### 3.4 Input — the one piece of real SPA work
+
+- **Two-button machine** (SELECT / ADJUST → PC left/right). Declare a two-button
+  **relative** pointer: the guest has a PS/2 mouse, Win3.1 has no USB, so there
+  is no `usb-tablet` and this tile earns the `Rel. pointer` badge.
+  Windows 3.1 acceleration measured as a **clean factor of 2**, so
+  `move(target/2)` after homing lands pixel-accurate — verified over three
+  clicks.
+- **ViewPoint runs on dedicated Xerox Level-V keys** — **NEXT** (field advance;
+  the logon banner instructs the visitor to press it), OPEN, PROPERTIES, MOVE,
+  COPY, AGAIN, UNDO, DELETE, HELP, SKIP, DEFAULTS. **`Tab` is not NEXT.** Budget
+  one `keyboardProfiles.ts` family for the Xerox function block — the most
+  exhibit-defining piece of SPA work in this add. Dwarf ships explicit keymap
+  files for exactly this reason.
+
+### 3.5 The trap: GVWin's display config is bound to the Pilot disk
+
+Do not hand-edit it. Three separate hangs prove the point:
+- workspace raised to 1024×768 → Mesa **maintenance-panel codes** (8888 → 0606 →
+  0223 → 9999) for 19 min, never reaching the logon sheet;
+- VBE driver installed, workspace back at 640×480 → same, 8+ min;
+- `[Display] Mode=1` → `Mode=0` (monochrome, the historically right look) → hard
+  hang at **MP 7649**, 11 min.
+
+Notably **Windows itself comes up perfectly at 1024×768×8** under the shipped
+`win311` VBE recipe (`vbesvga.drv` v1.0-beta4) — it is GlobalView that refuses.
+Mechanism UNVERIFIED, but the conclusion is actionable: display mode must be
+chosen through **GVWin's own Setup at install time**, which reconfigures the
+`.DSK`. As it stands the pre-built image is fixed at **640×480, 16 colour**,
+with a magenta desktop background.
+
+### 3.6 Route A — emulate the 6085 — is alive, but Tier 3–4
+
+Assumption corrected: it is **not** true that nothing usable exists.
+**Dwarf** (`devhawala/dwarf`, **BSD-3-Clause**, disks refreshed 2025-01-11) is a
+maintained Java Mesa emulator with two relevant machines — **Draco** (6085 /
+Daybreak / Dove) and **Duchess** (the Mesa machine from inside GVWin) — and it
+ships a working ViewPoint 2.0.5 disk in-repo. Predecessors: Woodward's **Dawn**,
+and `gcasa/Mesa`. (Darkstar is the 8010 Star — §2's subject, not this one.)
+
+It starts: 1152×861 monochrome window, authentic Xerox toolbar, status line with
+MP code and instruction counts, ~19 780 sectors read in ~3 min — then **parks at
+MP 8000 on the bouncing-keyboard idle graphic** and never leaves, across ~25 min
+and three input strategies. **Input reaching X is excluded** as a cause: Dwarf's
+own toolbar buttons respond instantly. The missing-nethub hypothesis is also
+excluded (the internal time responder answered, `network rcv: 1`). Remaining
+candidates: the boot switches in `vp2.0.5.properties`, the shipped **German**
+keymap default, or AWT canvas focus. The author's own readme warns Draco's
+rigid-disk emulation is imperfect for Pilot.
+
+Route A would also need a **new backend shape** — a JRE + Swing app in a
+captured-Linux bridge — and bridge-class memory. Tier 3 if it is a config
+one-liner, Tier 4 if it is Draco's disk emulation.
+
+The 6085 media is licence-split and worth stating precisely: the *container* is
+BSD-3, **the ViewPoint contents are not** — Xerox-copyright Pilot software, and
+its Software Options are unlocked but **bound to processor id
+`10-00-FE-31-AB-21`**, so changing the MAC re-locks the applications.
+
+### 3.7 Media and licence
+
+Posture unchanged and non-negotiable: private passkey-gated exhibit, stream
+pixels only, **URL + measured sha256 + class in `ASSETS-MANIFEST.md`, never the
+bits, and never a download affordance.**
+
+| item | sha256 | class |
+|---|---|---|
+| `gvwin.img.xz` (github.com/davidar/gvwin), 85 642 196 B | `090e86ab…e9e1` | preservation-source |
+| `gvwin.img` decompressed, FAT16, 268 435 456 B | `89bcd7e3…16d05` | preservation-source |
+| `globalview.zip` — original GV 2.1 media, archive.org `win3_globalview_21` | not fetched (UNVERIFIED) | preservation-source |
+| Dwarf `dist.zip` | `67f84b77…cf75` | **BSD-3-Clause**, redistributable |
+| `vp2.0.5.zdisk` (ViewPoint 2.0.5) | `02bdb53b…f872` | preservation-source (Xerox) |
+| `vbesvga-release.zip` v1.0-beta4 | `e4272c94…a770f` | free/open, already manifested |
+
+MS-DOS + Windows 3.1 inside the image are Microsoft-licensed — the same
+acceptance already made for `win311`. The archive.org item carries **no explicit
+rights statement**; `softwarelibrary_win3_shareware` is a collection label, not
+a licence.
+
+### 3.8 Biggest risk, and the experiment that retires it
+
+**Risk: the working artifact is a single opaque third-party disk image** of
+Xerox-copyrighted software. Unknown provenance, unauditable contents, a display
+config provably un-editable by hand, locked at 640×480/16-colour with a magenta
+desktop and no path to the authentic monochrome look. Building a museum golden
+on that means the tile is not reproducible from a hashed input.
+
+**One afternoon retires all of it:** clone the **existing `win311` golden**
+(`qemu-img convert -U -l golden` — never open the live disk) and install
+GlobalView 2.1 **from the original media** through GVWin's own Setup, choosing
+display mode and workspace size at install time. Gate on one framebuffer
+screenshot of the ViewPoint desktop. That single run settles provenance,
+resolution, and the monochrome question at once, and proves reproducibility from
+a hashed input — with the pre-built image still there as fallback if it fails.
+
+**Worth an hour if Route A is ever revisited:** run Dwarf's
+**`duchess-gvwin-color`** config — the same GVWin Mesa machine driven natively by
+Dwarf, no Windows and no QEMU. If Duchess boots where Draco stalls, Routes A and
+B collapse into something simpler *and* higher-resolution than either.
+
+### 3.9 Curatorial ordering
+
+**Ship GlobalView first.** It is the cheapest Xerox exhibit by a wide margin, the
+only one driven to a working desktop, and it needs no new emulator, backend or
+capture path — `scripts/build-guests/tiles/win311.sh` is the template. Estimate
+**1–2 days**. Alto (ContrAlto) and Star (Darkstar) are the deeper archaeology to
+follow; the three are complementary, not redundant. If only one Xerox exhibit is
+ever built, this is the one achievable this month.
+
+Evidence: `/data/vms/soltest/XEROX-viewpoint/` on the box (595 MB, inert —
+screenshots `s*.png` `g*.png` `h*.png` `m*.png` `routeA/*.png`, the `golden`
+overlay, the Dwarf/JRE tree). Delete when the space is wanted.
 
 ---
 
@@ -186,7 +336,11 @@ lineage onto the wall, and it may be worth doing *before* the Alto.
 |---|---|
 | 1. Alto | **Complete** — feasible, one tile, cheapest experiment identified |
 | 2. Star / Pilot | Research in flight; fold the report in when it lands |
-| 3. Daybreak / ViewPoint | Research in flight; fold the report in when it lands |
+| 3. Daybreak / ViewPoint | **Complete** — feasible, Tier 2, **ship this one first** |
+
+**Recommendation across the study so far:** `gvwin` (§3) then `alto` (§1). Two
+tiles, ~0.19 GB and ~1.0–1.3 GB respectively, no shared dependencies, and
+neither blocks the other.
 
 ## Sources
 
@@ -197,5 +351,8 @@ lineage onto the wall, and it may be worth doing *before* the Alto.
 - [CHM Xerox Alto file system archive](http://xeroxalto.computerhistory.org/index.html) ·
   [CHM Alto source code release](https://computerhistory.org/blog/xerox-alto-source-code/)
 - [MAME `xerox/alto2.cpp`](https://github.com/mamedev/mame/blob/mame0276/src/mame/xerox/alto2.cpp)
+- [Dwarf — Mesa emulators (Draco/Duchess)](https://github.com/devhawala/dwarf) ·
+  [gvwin pre-built image](https://github.com/davidar/gvwin) ·
+  [archive.org `win3_globalview_21`](https://archive.org/details/win3_globalview_21)
 - Evidence from this study: `/data/vms/soltest/XEROX-alto/` on the box (1.8 GB,
   inert — delete when the space is wanted).
