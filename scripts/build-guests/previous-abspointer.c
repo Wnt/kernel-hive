@@ -299,9 +299,20 @@ void AbsPointer_Poll(void) {
 			kms_mouse_move(0, 0);
 			break;
 		case ABSQ_ABS:
-			absPendX     = it.a;
-			absPendY     = it.b;
-			absPendValid = true;
+			/* Place in the very tick the command is drained whenever the
+			 * pacing allows it, so an isolated placement is scheduled exactly
+			 * like the relative motion it replaces and costs no extra tick.
+			 * Only a placement that arrives inside the cooldown is deferred,
+			 * and then the most recent target wins. */
+			if (absCooldown == 0) {
+				abs_place(it.a, it.b);
+				absCooldown  = ABS_MIN_TICKS;
+				absPendValid = false;
+			} else {
+				absPendX     = it.a;
+				absPendY     = it.b;
+				absPendValid = true;
+			}
 			break;
 		case ABSQ_DISC:
 			absDiscResult = 1;
