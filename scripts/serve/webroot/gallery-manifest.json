@@ -1251,6 +1251,132 @@
         "Commodore BASIC V3.5"
       ],
       "blurb": "Commodore’s misfire, and the reason it is worth looking at: an office suite — word processor, spreadsheet, database, graphing — burned into ROM and running one second after you switch the machine on, with no disk in sight."
+    },
+    {
+      "id": "c128",
+      "era_year": 1985,
+      "displayName": "Commodore 128 — 80 columns, and CP/M",
+      "year": 1985,
+      "lineage": "Commodore 8-bit line (MOS 8502 + Zilog Z80, VIC-II + VDC)",
+      "arch": "MOS 8502 at 2.04/1.02 MHz (PAL) + Zilog Z80A, 128 KB RAM, 64 KB VDC video RAM",
+      "accent": "#7FD4C1",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 42,
+      "eraLabel": "1985 · C128 (80-column BASIC 7.0 · CP/M 3.0)",
+      "signalEndpoint": "/signal/c128.json",
+      "ramMB": 0,
+      "ramKB": 128,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x128) emulating a PAL C128; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. In VICE's SDL2 build the VDC 80-column output is a SECOND canvas — `-80col` makes it the visible one (and chooses the boot display); `-dualwindow` never becomes visible under a kiosk with no window manager. No -VDCdsize: the 1:1 window is 789x576 and fills the 800x600 X root, where the doubled one is 1578x1152 and is clipped even at 1920x1080. VICE bundles the C128 ROMs but not the CP/M system DISK, which is staged in-guest and attached to drive 8 ~10 s AFTER reset — the KERNAL boots any CP/M disk it finds at power-on, and this tile's fixture is the untouched BASIC 7.0 screen. The visitor types BOOT (one SPA keyboard button) to reach CP/M 3.0. No C64 button: GO64 works but paints the VIC-II while the visible VDC canvas freezes (measured — two byte-identical frames 10 s apart against a blinking-cursor control). Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/c128.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "CP/M Plus (3.0) on the Z80 — WordStar, dBASE II, Turbo Pascal",
+        "Commodore BASIC 7.0, with sprite, sound and graphics commands built in",
+        "GEOS 128, which used the 80-column screen and the extra memory",
+        "the entire Commodore 64 library, unchanged, in C64 mode"
+      ],
+      "periodBrowser": "none — pre-web 8-bit era",
+      "iconicApps": [
+        "CP/M 3.0 on the Commodore 128",
+        "Commodore BASIC 7.0",
+        "the 80-column VDC text screen"
+      ],
+      "blurb": "Three computers in one case: an 80-column business machine, a Commodore 64, and a CP/M box with a second CPU. The one exhibit here that can show you CP/M — the operating system that ran the office before MS-DOS did."
+    },
+    {
+      "id": "pet2001",
+      "era_year": 1977,
+      "displayName": "Commodore PET 2001 — COMMODORE BASIC",
+      "year": 1977,
+      "lineage": "Commodore PET / CBM (MOS 6502)",
+      "arch": "MOS 6502, 1 MHz, 8 KB RAM, 40×25 characters, no CRTC",
+      "accent": "#AEB8F0",
+      "archetypeId": "mono-terminal",
+      "transport": "streamhost",
+      "order": 43,
+      "eraLabel": "1977 · PET 2001 (COMMODORE BASIC)",
+      "signalEndpoint": "/signal/pet2001.json",
+      "ramMB": 0,
+      "ramKB": 8,
+      "notes": "Live streamhost tile, and the oldest machine in the gallery. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xpet -model 2001) emulating the ORIGINAL 1977 PET; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media. VICE's model 2001 is the real machine and not a badge — RamSize=8, Crtc=0 (it predates the 6545 CRTC every later PET used), VideoSize=40, the chiclet graphics keyboard, the 2001-blueish phosphor palette. The golden is the machine's own untouched power-on screen; the exhibit's interaction is the SPA type-in demo, four lines of PET BASIC that POKE characters straight into screen memory at 32768, which is how the PET drew everything. Keyboard-only exhibit (unshifted keys give upper case, SHIFT gives the graphics set, hence keyboard.letterCase=upper-only). See streamhost/docs/BRIDGE.md and docs/guests/pet2001.md.",
+      "era": "1970s",
+      "eraSoftware": [
+        "Commodore BASIC 1.0 in ROM — the first Microsoft BASIC Commodore shipped",
+        "programs loaded from the built-in Datassette, at 1500 baud if you were lucky",
+        "PET screen POKEs at 32768: the machine had no graphics mode, so games drew with characters",
+        "Microchess, Space Invaders clones, and a decade of school-lab type-in listings",
+        "later, VisiCalc and WordPro made the PET the first Commodore in an office"
+      ],
+      "periodBrowser": "none — pre-web, and pre-almost-everything",
+      "iconicApps": [
+        "Commodore BASIC 1.0",
+        "the built-in Datassette",
+        "Microchess"
+      ],
+      "blurb": "One of the three machines that started the personal-computer industry in 1977, and the only one that arrived as a single sealed box: screen, keyboard and cassette deck welded into one sheet-metal trapezoid you could carry home and switch on."
+    },
+    {
+      "id": "cbm8032",
+      "era_year": 1980,
+      "displayName": "Commodore CBM 8032 — 80-column BASIC 4.0",
+      "year": 1980,
+      "lineage": "Commodore PET / CBM 8000 series (MOS 6502)",
+      "arch": "MOS 6502, 1 MHz, 32 KB RAM, 80x25 monochrome CRTC, 12-inch integrated green monitor",
+      "accent": "#41FF00",
+      "archetypeId": "mono-terminal",
+      "transport": "streamhost",
+      "order": 44,
+      "eraLabel": "1980 · CBM 8032 (BASIC 4.0, 80 columns)",
+      "signalEndpoint": "/signal/cbm8032.json",
+      "ramMB": 0,
+      "ramKB": 32,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xpet -model 8032) emulating a CBM 8032; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media — BASIC 4.0, KERNAL 4, the 80-column business editor and the character generator all come from the emulator's own data tree. The golden is the machine's own untouched power-on screen; the exhibit's interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns. Drawn double-size (-CRTCdsize) on a 1600x1200 X root, the tightest advertised mode that contains the 1408x1064 SDL window. Keyboard-only exhibit; mono-terminal archetype — the 8032 is an all-in-one with an integrated 12-inch green monitor, which is what that archetype models. See streamhost/docs/BRIDGE.md and docs/guests/cbm8032.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "Commodore BASIC 4.0, with the PET's disk commands built into the language",
+        "WordPro — the word processor that sold 8032s to offices",
+        "VisiCalc and Silicon Office on the 8000 series",
+        "the 8050 dual floppy and the 4022 tractor printer on the IEEE-488 bus",
+        "Waterloo microSystems' languages, from the SuperPET side of the family"
+      ],
+      "periodBrowser": "none — pre-web 8-bit era",
+      "iconicApps": [
+        "Commodore BASIC 4.0",
+        "WordPro",
+        "the built-in machine-language monitor"
+      ],
+      "blurb": "Commodore's office computer: 80 columns of green text, 32 KB, a proper business keyboard, and no colour, no sprites and no sound chip at all. Everything its home-computer siblings are famous for is deliberately missing."
+    },
+    {
+      "id": "cbm2",
+      "era_year": 1982,
+      "displayName": "Commodore CBM 610 — the business machine nobody bought",
+      "year": 1982,
+      "lineage": "Commodore CBM-II / B-series (MOS 6509, 6545 CRTC, SID)",
+      "arch": "MOS 6509, 2 MHz, 128 KB RAM banked out of a 1 MB address space, 80x25 monochrome",
+      "accent": "#55D544",
+      "archetypeId": "beige-ibm-pc",
+      "transport": "streamhost",
+      "order": 45,
+      "eraLabel": "1982 · CBM 610 (BASIC 128, 6509)",
+      "signalEndpoint": "/signal/cbm2.json",
+      "ramMB": 0,
+      "ramKB": 128,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xcbm2 -model 610) emulating a PAL CBM 610; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the CBM-II ROMs, so this tile needs no external media — the 610 boots to BASIC with nothing attached. NOT A NEAR-DUPLICATE OF cbm8032, and the placard says why: same green 80-column CBM banner, but a 6509 bank-switching a megabyte instead of a 6502 with 32 KB, a low-profile box with a detached monitor instead of an all-in-one, and a business market Commodore reached for and missed. The golden is the machine's own untouched power-on screen; the visitor types at the BASIC prompt through the SPA on-screen keyboard. Keyboard-only exhibit; native 704x528 window on an 800x600 X root (the doubled window is silently clipped by every root this fleet uses). See streamhost/docs/BRIDGE.md and docs/guests/cbm2.md. The screen reads \"commodore basic 128\": that name predates the Commodore 128 of 1985 and shares nothing with it.",
+      "era": "1980s",
+      "eraSoftware": [
+        "Commodore BASIC 128 v4.0 in ROM, with the PET disk commands built in",
+        "CP/M via the optional 8088/Z80 coprocessor board — the machine's other, stranger half",
+        "the IEEE-488 business peripherals: 8050/8250 drives, 8023 printer",
+        "a handful of ports of the PET business software it was meant to succeed"
+      ],
+      "periodBrowser": "none — pre-web 8-bit era",
+      "iconicApps": [
+        "Commodore BASIC 128 v4.0",
+        "the built-in machine-language monitor",
+        "PET-lineage business software over IEEE-488"
+      ],
+      "blurb": "Not a Commodore 128, despite what the screen says. This is the CBM-II — Commodore's 1982 attempt to sell a serious business computer, built on a 6509 that reaches a full megabyte by bank-switching, and cancelled almost immediately."
     }
   ]
 }

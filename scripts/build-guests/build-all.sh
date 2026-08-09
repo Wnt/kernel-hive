@@ -108,6 +108,13 @@ MANIFEST=(
   "mpf2         |mpf2.sh        |bridge/mpf2     |retro    |~3-5m   |full   |tiles/mpf2 cold-boot overlay (MAME mpf2 → Applesoft BASIC)"
   "vic20        |vic20.sh       |bridge/vic20    |retro    |~2-4m   |full   |tiles/vic20 overlay + golden (VICE xvic → CBM BASIC V2)"
   "plus4        |plus4.sh       |bridge/plus4    |retro    |~2-4m   |full   |tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)"
+  "c128         |c128.sh        |bridge/c128     |retro    |~3-5m   |full   |tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)"
+  "pet2001     |pet2001.sh     |bridge/pet2001  |retro    |~2-4m   |full   |tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)"
+  "cbm8032      |cbm8032.sh     |bridge/cbm8032  |retro    |~2-4m   |full   |tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)"
+  "cbm2         |cbm2.sh        |bridge/cbm2     |retro    |~2-4m   |full   |tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)"
+  "pdp11       |pdp11.sh       |Pdp11         |installed|~15-30m |partial |TODO"
+  "gt40        |gt40.sh        |Gt40          |installed|~15-30m |partial |TODO"
+  "decos       |decos.sh       |Decos         |installed|~15-30m |partial |TODO"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
@@ -117,7 +124,7 @@ MANIFEST=(
 DEFAULT_ORDER=(kolibrios toaruos helenos 9front reactos haiku templeos amigaos qnx alpine tinycore
   freedos msdos-win1 win311 win95 win98 win2000 os2warp redstar3
   android-x86 postmarketos sailfishos sailfishos-gui serenityos
-  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4)
+  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032)
 
 # ---------------------------------------------------------------------------
 c_reset=$'\e[0m'

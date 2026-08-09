@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "id": "cbm2",
+  "era_year": 1982,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 40,
+        "prelude": "",
+        "line": "  \"cbm2         |cbm2.sh        |bridge/cbm2     |retro    |~2-4m   |full   |tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)\"\n",
+        "value": {
+          "key": "cbm2",
+          "script": "cbm2.sh",
+          "outputDir": "bridge/cbm2",
+          "class": "retro",
+          "estimated": "~2-4m",
+          "automation": "full",
+          "produces": "tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/cbm2",
+      "qmp": "/data/vms/streamhost/tiles/cbm2/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5826,
+      "exec_port": 5826,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54111,
+      "notes": "exec: labctl exec cbm2 \"<cmd>\" (ssh root@:5826, key bridge_key) — reaches the Debian kiosk, not the emulated 6509"
+    }
+  },
+  "render": {
+    "tilesManifestOrder": 39,
+    "bindingOrder": 45,
+    "museumOrder": 39,
+    "goldenOrder": 39,
+    "bringUpGroup": 6,
+    "signalOrder": 41,
+    "tilesManifestInvocation": "emit cbm2 \\\n  --tile cbm2 --vmid 226 --udp 54111 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/cbm2/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/cbm2/tile.env.fixture\"\n",
+    "bindingLine": "  cbm2:        { osId: 'cbm2', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#55D544', eraLabel: '1982 · CBM 610 (BASIC 128, 6509)' },\n",
+    "museumBlock": "  {\n    id: 'cbm2', displayName: 'Commodore CBM 610 — the business machine nobody bought', year: 1982,\n    lineage: 'Commodore CBM-II / B-series (MOS 6509, 6545 CRTC, SID)',\n    arch: 'MOS 6509, 2 MHz, 128 KB RAM banked out of a 1 MB address space, 80x25 monochrome', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#55D544',\n    eraSoftware: ['Commodore BASIC 128 v4.0 in ROM, with the PET disk commands built in', 'CP/M via the optional 8088/Z80 coprocessor board — the machine\\'s other, stranger half', 'the IEEE-488 business peripherals: 8050/8250 drives, 8023 printer', 'a handful of ports of the PET business software it was meant to succeed'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['Commodore BASIC 128 v4.0', 'the built-in machine-language monitor', 'PET-lineage business software over IEEE-488'],\n    blurb: 'Not a Commodore 128, despite what the screen says. This is the CBM-II — Commodore\\'s 1982 attempt to sell a serious business computer, built on a 6509 that reaches a full megabyte by bank-switching, and cancelled almost immediately.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xcbm2 -model 610) emulating a PAL CBM 610; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the CBM-II ROMs, so this tile needs no external media — the 610 boots to BASIC with nothing attached. NOT A NEAR-DUPLICATE OF cbm8032, and the placard says why: same green 80-column CBM banner, but a 6509 bank-switching a megabyte instead of a 6502 with 32 KB, a low-profile box with a detached monitor instead of an all-in-one, and a business market Commodore reached for and missed. The golden is the machine\\'s own untouched power-on screen; the visitor types at the BASIC prompt through the SPA on-screen keyboard. Keyboard-only exhibit; native 704x528 window on an 800x600 X root (the doubled window is silently clipped by every root this fleet uses). See streamhost/docs/BRIDGE.md and docs/guests/cbm2.md. The screen reads \"commodore basic 128\": that name predates the Commodore 128 of 1985 and shares nothing with it.',\n  },\n",
+    "tilesManifestPrelude": "",
+    "bindingPrelude": "",
+    "museumPrelude": ""
+  },
+  "tileDir": "cbm2",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54111,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 111
+  },
+  "guestDoc": "docs/guests/cbm2.md",
+  "credentialsRef": "guest/cbm2",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "cbm2",
+      "SH_QMP": "/data/vms/streamhost/tiles/cbm2/qmp.sock",
+      "SH_PORT": "54111",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/cbm2/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/cbm2/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "80",
+      "SH_KEY_MIN_GAP_MS": "80",
+      "SH_FIXTURE_DESC": "Commodore CBM 610 (PAL, 1982) at its own untouched power-on screen: \"*** commodore basic 128, v4.0 ***\" and \"ready.\" with the block cursor beneath it, green on black at 80 columns, drawn by VICE xcbm2 -model 610 at NATIVE size (704x528 window, no -CRTCdsize) and centred by SDL on an 800x600 X root. This is the CBM-II / B-series business machine — a MOS 6509 bank-switching a megabyte, not the Commodore 128 of 1985, which merely took the same number. Nothing is typed: BASIC 128 v4.0 is the whole machine as sold with no disk attached, and the visitor types at the prompt through the SPA's on-screen keyboard. Keyboard-only exhibit; no pointer device; SID audio -> ALSA -> AC97."
+    },
+    "vmidLabel": 226,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "cbm2",
+        "--vmid",
+        "226",
+        "--udp",
+        "54111",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/cbm2/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/cbm2/tile.env.fixture"
+      ],
+      "deviceSetId": "cbm2-current",
+      "launcher": "streamhost/tiles/cbm2/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/cbm2/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-cbm2",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5826-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-cbm2",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5826-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+      }
+    },
+    "bringUpOrder": 45
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#55D544",
+    "eraLabel": "1982 · CBM 610 (BASIC 128, 6509)"
+  },
+  "museum": {
+    "id": "cbm2",
+    "displayName": "Commodore CBM 610 — the business machine nobody bought",
+    "year": 1982,
+    "lineage": "Commodore CBM-II / B-series (MOS 6509, 6545 CRTC, SID)",
+    "arch": "MOS 6509, 2 MHz, 128 KB RAM banked out of a 1 MB address space, 80x25 monochrome",
+    "ramMB": 0,
+    "ramKB": 128,
+    "era": "1980s",
+    "accent": "#55D544",
+    "eraSoftware": [
+      "Commodore BASIC 128 v4.0 in ROM, with the PET disk commands built in",
+      "CP/M via the optional 8088/Z80 coprocessor board — the machine's other, stranger half",
+      "the IEEE-488 business peripherals: 8050/8250 drives, 8023 printer",
+      "a handful of ports of the PET business software it was meant to succeed"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "Commodore BASIC 128 v4.0",
+      "the built-in machine-language monitor",
+      "PET-lineage business software over IEEE-488"
+    ],
+    "blurb": "Not a Commodore 128, despite what the screen says. This is the CBM-II — Commodore's 1982 attempt to sell a serious business computer, built on a 6509 that reaches a full megabyte by bank-switching, and cancelled almost immediately.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xcbm2 -model 610) emulating a PAL CBM 610; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the CBM-II ROMs, so this tile needs no external media — the 610 boots to BASIC with nothing attached. NOT A NEAR-DUPLICATE OF cbm8032, and the placard says why: same green 80-column CBM banner, but a 6509 bank-switching a megabyte instead of a 6502 with 32 KB, a low-profile box with a detached monitor instead of an all-in-one, and a business market Commodore reached for and missed. The golden is the machine's own untouched power-on screen; the visitor types at the BASIC prompt through the SPA on-screen keyboard. Keyboard-only exhibit; native 704x528 window on an 800x600 X root (the doubled window is silently clipped by every root this fleet uses). See streamhost/docs/BRIDGE.md and docs/guests/cbm2.md. The screen reads \"commodore basic 128\": that name predates the Commodore 128 of 1985 and shares nothing with it."
+  },
+  "reset": {
+    "tileDir": "cbm2",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Commodore CBM 610 (PAL) power-on screen — \"*** commodore basic 128, v4.0 ***\" and \"ready.\" in green on black at 80 columns — in VICE xcbm2 -model 610, native size on an 800x600 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated and nothing is typed before the bake, and no keys are sent after the restore. Keyboard certified 2026-08-09 AFTER the bake against the restored fixture: PRINT 3 at the tile's own 80/80 pacing extended the lit text from rows 100..162 to rows 100..226 (BASIC echoed the line, printed \" 3\" and painted a second \"ready.\"), then loadvm golden returned the frame to the baked bounding box exactly. A pixel-count test was rejected as unfalsifiable here — the blinking cursor gives back what the new lines add (456 -> 454). Keyboard-only exhibit (no mouse); AC97 audio."
+  }
+}

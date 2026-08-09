@@ -432,6 +432,29 @@ export const ASSEMBLIES_BY_TILE = {
   plus4: {
     kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtB',
   },
+  // The C128 is not a breadbin: a wide, low wedge with a full numeric keypad,
+  // closer in silhouette to the Amiga 500 than to the c64 tile's case. amigaA is
+  // the widest wedge body in the kit, so it carries the machine; the identity
+  // tint below is what keeps it from reading as an Amiga. Keyboard-only.
+  c128: {
+    kind: 'homeMicro', body: 'amigaA', monitor: 'homeCrtC',
+  },
+  // The PET 2001 is one sealed object — a 9-inch CRT, a chiclet keyboard and a
+  // cassette deck in a single sheet-metal trapezoid — so it takes a terminal
+  // assembly rather than a body with a separate monitor behind it.
+  pet2001: { kind: 'terminal', body: 'terminalC' },
+  // The CBM 8032 is not a home micro either: an all-in-one steel case with a
+  // 12-inch green monitor and a business keyboard built in. No mouse — the PET
+  // had no pointing device and no port for one.
+  cbm8032: { kind: 'terminal', body: 'terminalB' },
+  // The CBM 610 is the deliberate contrast to the 8032 above: a low-profile
+  // business box with the keyboard in the chassis and a DETACHED office CRT on
+  // top. The two machines stream near-identical green 80-column text, so the
+  // 3D exhibit is what has to tell them apart — hence a different silhouette
+  // and a boxy office monitor rather than another all-in-one.
+  cbm2: {
+    kind: 'homeMicro', body: 'amigaA', monitor: 'crtA',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

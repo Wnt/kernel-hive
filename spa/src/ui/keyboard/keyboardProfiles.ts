@@ -38,7 +38,8 @@ import { XK } from '../../three/useStreamControl';
 
 export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
-  | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'appleii' | 'atarist' | 'amiga';
+  | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
+  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -262,6 +263,78 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ], fkeyRow(1, 8)],
   },
 
+  // C128: the c64 keys (Commodore reused the keyboard) plus the one thing no
+  // other tile in the lineup can do. The fixture is the machine's untouched
+  // 80-column BASIC 7.0 power-on screen with the CP/M 3.0 system disk already
+  // in drive 8, so its second CPU is exactly one BASIC keyword away — but only
+  // if you know the keyword, which is why it is a button. The load is slow
+  // (CP/M Plus comes in through an emulated 1541) and the screen narrates it,
+  // so the hint says so rather than letting it read as a hang.
+  //
+  // THERE IS DELIBERATELY NO C64 BUTTON. GO64 works and freezes the picture:
+  // C64 mode paints the VIC-II while the visible canvas is the VDC. Measured
+  // 2026-08-09 — two byte-identical frames 10 s apart, against a control pair
+  // that differs as the cursor blinks — and re-measured by
+  // scripts/build-guests/c128.sh on every build.
+  c128: {
+    family: 'c128',
+    rows: [[
+      macro('boot-cpm', 'CP/M',
+        [...press(0x62), ...press(0x6f), ...press(0x6f), ...press(0x74), ...press(XK.Return)],
+        { hint: 'BOOT — starts CP/M 3.0 on the Z80; the load takes about a minute' }),
+      tap('runstop', 'RUN/STOP', XK.Escape, { hint: 'RUN/STOP (VICE: Esc)' }),
+      tap('cbm', 'C=', XK.Tab, { hint: 'Commodore key (VICE: Tab)' }),
+      latch('ctrl', 'Ctrl', XK.Control_L),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+    // HELP and 40/80 DISPLAY are absent on purpose: neither has a verified
+    // end-to-end scancode path on this tile yet, and a dead key is silent
+    // through the whole pipeline.
+    moreRows: [[
+      tap('restore', 'RESTORE', XK.Prior, { hint: 'RESTORE (VICE: PageUp)' }),
+    ], fkeyRow(1, 8)],
+  },
+
+  // PET 2001 — the 1977 chiclet machine. NOT the c64 profile: no Commodore key,
+  // no RESTORE, no function keys. RUN/STOP is the key that matters, because the
+  // exhibit's type-in demo is an infinite loop and without it a visitor who runs
+  // the demo can only get back to READY. by resetting the tile. Verified on the
+  // live tile: Esc gave "BREAK IN 30 / READY.".
+  //
+  // Backspace is DELIBERATELY ABSENT: it does not reach the PET's INST/DEL under
+  // VICE's graphics-keyboard symbolic keymap ("PRINT 1234" survived two presses
+  // unchanged), and a dead key is silent through the whole pipeline.
+  pet: {
+    family: 'pet',
+    rows: [[
+      tap('runstop', 'RUN/STOP', XK.Escape,
+        { hint: 'RUN/STOP — stops a running program (VICE: Esc)' }),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+  },
+
+  // CBM 8032 — the business PET, and a SEPARATE family from the 2001 above even
+  // though both are PETs. VICE selects its keymap from the model's kbd_type, and
+  // -model 8032 is KBD_TYPE_BUSINESS_UK: a different physical keyboard with keys
+  // the chiclet machine does not have. These five are read from that keymap
+  // (sdl_buuk_sym.vkm in the guest's own /usr/local/share/vice/PET/). No F-key
+  // row: the business keyboard has no function keys, and the keymap spends host
+  // F1/F2 on the machine's own ESC and RVS OFF instead.
+  petbusiness: {
+    family: 'petbusiness',
+    rows: [[
+      tap('runstop', 'RUN/STOP', XK.Escape, { hint: 'RUN/STOP (VICE: Esc)' }),
+      tap('pet-esc', 'ESC', F(1), { hint: "the business keyboard's own ESC (VICE: F1)" }),
+      tap('clrhome', 'CLR/HOME', XK.Home, { hint: 'CLR/HOME (VICE: Home)' }),
+      tap('rvsoff', 'RVS OFF', XK.Prior, { hint: 'Reverse off (VICE: PageUp)' }),
+      tap('rpt', 'RPT', XK.Next, { hint: 'RPT — key repeat (VICE: PageDown)' }),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+  },
+
   appleii: {
     family: 'appleii',
     rows: [[
@@ -335,6 +408,19 @@ export const OS_FAMILY: Record<string, Family> = {
   // Same keyboard as the c64 (Commodore reused the VIC-20's), and the same VICE
   // bindings drive it: RUN/STOP is Esc, RESTORE is PageUp, C= is Tab.
   vic20: 'c64',
+  // Same keyboard again, plus a CP/M button — the Z80 is what this tile is for.
+  c128: 'c128',
+  // The two PETs take DIFFERENT families on purpose: VICE picks the keymap from
+  // each model's kbd_type, and the 1977 chiclet machine and the 1980 business
+  // machine genuinely have different keys. Neither can take the c64 family —
+  // the Commodore key and RESTORE are both C64-era additions, so two of that
+  // row's buttons would be dead. See docs/guests/pet2001.md and cbm8032.md.
+  pet2001: 'pet',
+  cbm8032: 'petbusiness',
+  // CBM 610: a BASIC prompt and nothing else. Unlike the c64/plus4 machines this
+  // keyboard has no key a PC lacks — there is no Commodore key on a CBM-II and
+  // its numeric pad is ordinary digits — so the generic rows already cover it.
+  cbm2: 'generic',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',

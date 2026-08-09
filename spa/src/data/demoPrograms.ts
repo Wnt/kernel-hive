@@ -24,6 +24,18 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 90
   },
+  "cbm8032": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 print chr$(147)",
+      "20 for r=1 to 12",
+      "30 for c=1 to 8",
+      "40 print tab((c-1)*10);r*c;",
+      "50 next c:print:next r"
+    ],
+    "runCommand": "run",
+    "perCharMs": 170
+  },
   "mpf2": {
     "label": "Type in a demo program",
     "lines": [
@@ -39,6 +51,17 @@ const DEMO_PROGRAMS = {
       "100 goto 30"
     ],
     "runCommand": "run"
+  },
+  "pet2001": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 print chr$(147)",
+      "20 x=int(rnd(1)*1000)",
+      "30 poke 32768+x,81",
+      "40 goto 20"
+    ],
+    "runCommand": "run",
+    "perCharMs": 180
   },
   "vic20": {
     "label": "Type in a demo program",

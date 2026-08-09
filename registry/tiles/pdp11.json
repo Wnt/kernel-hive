@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "pdp11",
+  "era_year": 2026,
+  "tileDir": "pdp11",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 41,
+        "prelude": "",
+        "line": "  \"pdp11       |pdp11.sh       |Pdp11         |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "pdp11",
+          "script": "pdp11.sh",
+          "outputDir": "Pdp11",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54115,
+    "slot": 115
+  },
+  "guestDoc": "docs/guests/pdp11.md",
+  "credentialsRef": "guest/pdp11",
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · pdp11"
+  },
+  "museum": {
+    "id": "pdp11",
+    "displayName": "pdp11",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 115/UDP 54115",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

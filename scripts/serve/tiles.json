@@ -154,5 +154,21 @@
   "plus4": {
     "udpPort": 54086,
     "hashFile": "/data/vms/streamhost/tiles/plus4/cert_hash_b64.txt"
+  },
+  "c128": {
+    "udpPort": 54087,
+    "hashFile": "/data/vms/streamhost/tiles/c128/cert_hash_b64.txt"
+  },
+  "pet2001": {
+    "udpPort": 54088,
+    "hashFile": "/data/vms/streamhost/tiles/pet2001/cert_hash_b64.txt"
+  },
+  "cbm8032": {
+    "udpPort": 54109,
+    "hashFile": "/data/vms/streamhost/tiles/cbm8032/cert_hash_b64.txt"
+  },
+  "cbm2": {
+    "udpPort": 54111,
+    "hashFile": "/data/vms/streamhost/tiles/cbm2/cert_hash_b64.txt"
   }
 }

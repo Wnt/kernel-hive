@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "id": "pet2001",
+  "era_year": 1977,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 38,
+        "prelude": "",
+        "line": "  \"pet2001     |pet2001.sh     |bridge/pet2001  |retro    |~2-4m   |full   |tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)\"\n",
+        "value": {
+          "key": "pet2001",
+          "script": "pet2001.sh",
+          "outputDir": "bridge/pet2001",
+          "class": "retro",
+          "estimated": "~2-4m",
+          "automation": "full",
+          "produces": "tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 11
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/pet2001",
+      "qmp": "/data/vms/streamhost/tiles/pet2001/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5824,
+      "exec_port": 5824,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54088,
+      "notes": "exec: labctl exec pet2001 \"<cmd>\" (ssh root@:5824, key bridge_key) — reaches the Debian kiosk, not the emulated PET"
+    }
+  },
+  "render": {
+    "tilesManifestOrder": 37,
+    "bindingOrder": 43,
+    "museumOrder": 37,
+    "goldenOrder": 37,
+    "bringUpGroup": 6,
+    "signalOrder": 39,
+    "tilesManifestInvocation": "emit pet2001 \\\n  --tile pet2001 --vmid 224 --udp 54088 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/pet2001/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/pet2001/tile.env.fixture\"\n",
+    "bindingLine": "  pet2001:     { osId: 'pet2001', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#AEB8F0', eraLabel: '1977 · PET 2001 (COMMODORE BASIC)' },\n",
+    "museumBlock": "  {\n    id: 'pet2001', displayName: 'Commodore PET 2001 — COMMODORE BASIC', year: 1977,\n    lineage: 'Commodore PET / CBM (MOS 6502)',\n    arch: 'MOS 6502, 1 MHz, 8 KB RAM, 40×25 characters, no CRTC', ramMB: 0, ramKB: 8,    era: '1970s', accent: '#AEB8F0',\n    eraSoftware: ['Commodore BASIC 1.0 in ROM — the first Microsoft BASIC Commodore shipped', 'programs loaded from the built-in Datassette, at 1500 baud if you were lucky', 'PET screen POKEs at 32768: the machine had no graphics mode, so games drew with characters', 'Microchess, Space Invaders clones, and a decade of school-lab type-in listings', 'later, VisiCalc and WordPro made the PET the first Commodore in an office'],\n    periodBrowser: 'none — pre-web, and pre-almost-everything',\n    iconicApps: ['Commodore BASIC 1.0', 'the built-in Datassette', 'Microchess'],\n    blurb: 'One of the three machines that started the personal-computer industry in 1977, and the only one that arrived as a single sealed box: screen, keyboard and cassette deck welded into one sheet-metal trapezoid you could carry home and switch on.',\n    notes: 'Live streamhost tile, and the oldest machine in the gallery. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xpet -model 2001) emulating the ORIGINAL 1977 PET; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media. VICE\\'s model 2001 is the real machine and not a badge — RamSize=8, Crtc=0 (it predates the 6545 CRTC every later PET used), VideoSize=40, the chiclet graphics keyboard, the 2001-blueish phosphor palette. The golden is the machine\\'s own untouched power-on screen; the exhibit\\'s interaction is the SPA type-in demo, four lines of PET BASIC that POKE characters straight into screen memory at 32768, which is how the PET drew everything. Keyboard-only exhibit (unshifted keys give upper case, SHIFT gives the graphics set, hence keyboard.letterCase=upper-only). See streamhost/docs/BRIDGE.md and docs/guests/pet2001.md.',\n  },\n",
+    "tilesManifestPrelude": "",
+    "bindingPrelude": "",
+    "museumPrelude": ""
+  },
+  "tileDir": "pet2001",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54088,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 88
+  },
+  "guestDoc": "docs/guests/pet2001.md",
+  "credentialsRef": "guest/pet2001",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "pet2001",
+      "SH_QMP": "/data/vms/streamhost/tiles/pet2001/qmp.sock",
+      "SH_PORT": "54088",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/pet2001/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/pet2001/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "80",
+      "SH_KEY_MIN_GAP_MS": "80",
+      "SH_FIXTURE_DESC": "Commodore PET 2001 (1977) at its own untouched cold power-on screen: \"*** COMMODORE BASIC *** / 7167 BYTES FREE / READY.\" in blue-white on black, 40x25 characters drawn double-size (-CRTCdsize) by VICE xpet -model 2001 as a 768x532 SDL window on an 800x600 X root. VICE's model 2001 is the 1977 original and not a badge: RamSize=8, Crtc=0 (the machine predates the 6545 CRTC every later PET used), VideoSize=40, KeyboardType=4 (the chiclet graphics keyboard), palette 2001-blueish.vpl. Keyboard-only exhibit; no pointer device; PET CB2 sound -> ALSA -> AC97 (the 1977 machine shipped with no sound hardware at all, so this is silent in practice)."
+    },
+    "vmidLabel": 224,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "pet2001",
+        "--vmid",
+        "224",
+        "--udp",
+        "54088",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/pet2001/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/pet2001/tile.env.fixture"
+      ],
+      "deviceSetId": "pet2001-current",
+      "launcher": "streamhost/tiles/pet2001/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/pet2001/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-pet2001",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5824-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-pet2001",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5824-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "the tracked streamhost/tiles/pet2001/qemu-streamhost.sh is installed verbatim by the emitter and is the device-set ledger the golden was baked under"
+      }
+    },
+    "bringUpOrder": 43
+  },
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "streamhost",
+    "accentColor": "#AEB8F0",
+    "eraLabel": "1977 · PET 2001 (COMMODORE BASIC)"
+  },
+  "keyboard": {
+    "letterCase": "upper-only"
+  },
+  "demoProgram": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 print chr$(147)",
+      "20 x=int(rnd(1)*1000)",
+      "30 poke 32768+x,81",
+      "40 goto 20"
+    ],
+    "runCommand": "run",
+    "perCharMs": 180
+  },
+  "museum": {
+    "id": "pet2001",
+    "displayName": "Commodore PET 2001 — COMMODORE BASIC",
+    "year": 1977,
+    "lineage": "Commodore PET / CBM (MOS 6502)",
+    "arch": "MOS 6502, 1 MHz, 8 KB RAM, 40×25 characters, no CRTC",
+    "ramMB": 0,
+    "ramKB": 8,
+    "era": "1970s",
+    "accent": "#AEB8F0",
+    "eraSoftware": [
+      "Commodore BASIC 1.0 in ROM — the first Microsoft BASIC Commodore shipped",
+      "programs loaded from the built-in Datassette, at 1500 baud if you were lucky",
+      "PET screen POKEs at 32768: the machine had no graphics mode, so games drew with characters",
+      "Microchess, Space Invaders clones, and a decade of school-lab type-in listings",
+      "later, VisiCalc and WordPro made the PET the first Commodore in an office"
+    ],
+    "periodBrowser": "none — pre-web, and pre-almost-everything",
+    "iconicApps": [
+      "Commodore BASIC 1.0",
+      "the built-in Datassette",
+      "Microchess"
+    ],
+    "blurb": "One of the three machines that started the personal-computer industry in 1977, and the only one that arrived as a single sealed box: screen, keyboard and cassette deck welded into one sheet-metal trapezoid you could carry home and switch on.",
+    "notes": "Live streamhost tile, and the oldest machine in the gallery. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xpet -model 2001) emulating the ORIGINAL 1977 PET; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media. VICE's model 2001 is the real machine and not a badge — RamSize=8, Crtc=0 (it predates the 6545 CRTC every later PET used), VideoSize=40, the chiclet graphics keyboard, the 2001-blueish phosphor palette. The golden is the machine's own untouched power-on screen; the exhibit's interaction is the SPA type-in demo, four lines of PET BASIC that POKE characters straight into screen memory at 32768, which is how the PET drew everything. Keyboard-only exhibit (unshifted keys give upper case, SHIFT gives the graphics set, hence keyboard.letterCase=upper-only). See streamhost/docs/BRIDGE.md and docs/guests/pet2001.md."
+  },
+  "reset": {
+    "tileDir": "pet2001",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Commodore PET 2001 (1977) cold power-on screen (\"*** COMMODORE BASIC *** / 7167 BYTES FREE / READY.\") in VICE xpet -model 2001, double-size on an 800x600 X root; golden INTERNAL snapshot restores the untouched cold boot, and nothing is typed before the bake or after the restore. Keyboard proven 2026-08-09 AFTER the bake, against the restored fixture and at the tile's shipped 80/80 pacing: the four-line demo program typed and LISTed correctly (lit phosphor 1841 → 6077), then RUN plotted into screen RAM (→ 10285), then loadvm golden returned the frame to the baked 1841. Keyboard-only exhibit (no mouse); AC97 audio (silent — the 1977 machine had no sound hardware)."
+  }
+}

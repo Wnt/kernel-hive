@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/tiles/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (39 of the 41
+//    - transport   : how its LIVE framebuffer texture is obtained (43 of the 48
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -100,7 +100,7 @@ export interface OSBinding {
   bootVideo?: string;
 }
 
-// One entry per OS. 39 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 43 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos',     archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -158,6 +158,10 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   mpf2:        { osId: 'mpf2',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#8B4513', eraLabel: '1982 · MPF-II BASIC' },
   vic20:       { osId: 'vic20',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3FBFC7', eraLabel: '1980 · VIC-20 (CBM BASIC V2)' },
   plus4:       { osId: 'plus4',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#C2CF5F', eraLabel: '1984 · Plus/4 (3-plus-1 in ROM)' },
+  c128:        { osId: 'c128', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7FD4C1', eraLabel: '1985 · C128 (80-column BASIC 7.0 · CP/M 3.0)' },
+  pet2001:     { osId: 'pet2001', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#AEB8F0', eraLabel: '1977 · PET 2001 (COMMODORE BASIC)' },
+  cbm8032:     { osId: 'cbm8032', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#41FF00', eraLabel: '1980 · CBM 8032 (BASIC 4.0, 80 columns)' },
+  cbm2:        { osId: 'cbm2', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#55D544', eraLabel: '1982 · CBM 610 (BASIC 128, 6509)' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

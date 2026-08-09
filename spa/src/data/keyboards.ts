@@ -14,6 +14,9 @@ const KEYBOARDS = {
     },
     "letterCase": "upper-only"
   },
+  "pet2001": {
+    "letterCase": "upper-only"
+  },
   "vic20": {
     "letterCase": "upper-only"
   }

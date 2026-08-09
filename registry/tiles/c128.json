@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "id": "c128",
+  "era_year": 1985,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 37,
+        "prelude": "",
+        "line": "  \"c128         |c128.sh        |bridge/c128     |retro    |~3-5m   |full   |tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)\"\n",
+        "value": {
+          "key": "c128",
+          "script": "c128.sh",
+          "outputDir": "bridge/c128",
+          "class": "retro",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 10
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/c128",
+      "qmp": "/data/vms/streamhost/tiles/c128/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5823,
+      "exec_port": 5823,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54087,
+      "notes": "exec: labctl exec c128 \"<cmd>\" (ssh root@:5823, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated C128 — drive the machine with labctl type/key and read it with labctl shot."
+    }
+  },
+  "render": {
+    "tilesManifestOrder": 36,
+    "bindingOrder": 42,
+    "museumOrder": 36,
+    "goldenOrder": 36,
+    "bringUpGroup": 6,
+    "signalOrder": 38,
+    "tilesManifestInvocation": "emit c128 \\\n  --tile c128 --vmid 223 --udp 54087 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/c128/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/c128/tile.env.fixture\"\n",
+    "bindingLine": "  c128:        { osId: 'c128', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7FD4C1', eraLabel: '1985 · C128 (80-column BASIC 7.0 · CP/M 3.0)' },\n",
+    "museumBlock": "  {\n    id: 'c128', displayName: 'Commodore 128 — 80 columns, and CP/M', year: 1985,\n    lineage: 'Commodore 8-bit line (MOS 8502 + Zilog Z80, VIC-II + VDC)',\n    arch: 'MOS 8502 at 2.04/1.02 MHz (PAL) + Zilog Z80A, 128 KB RAM, 64 KB VDC video RAM', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#7FD4C1',\n    eraSoftware: ['CP/M Plus (3.0) on the Z80 — WordStar, dBASE II, Turbo Pascal', 'Commodore BASIC 7.0, with sprite, sound and graphics commands built in', 'GEOS 128, which used the 80-column screen and the extra memory', 'the entire Commodore 64 library, unchanged, in C64 mode'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['CP/M 3.0 on the Commodore 128', 'Commodore BASIC 7.0', 'the 80-column VDC text screen'],\n    blurb: 'Three computers in one case: an 80-column business machine, a Commodore 64, and a CP/M box with a second CPU. The one exhibit here that can show you CP/M — the operating system that ran the office before MS-DOS did.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x128) emulating a PAL C128; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. In VICE\\'s SDL2 build the VDC 80-column output is a SECOND canvas — `-80col` makes it the visible one (and chooses the boot display); `-dualwindow` never becomes visible under a kiosk with no window manager. No -VDCdsize: the 1:1 window is 789x576 and fills the 800x600 X root, where the doubled one is 1578x1152 and is clipped even at 1920x1080. VICE bundles the C128 ROMs but not the CP/M system DISK, which is staged in-guest and attached to drive 8 ~10 s AFTER reset — the KERNAL boots any CP/M disk it finds at power-on, and this tile\\'s fixture is the untouched BASIC 7.0 screen. The visitor types BOOT (one SPA keyboard button) to reach CP/M 3.0. No C64 button: GO64 works but paints the VIC-II while the visible VDC canvas freezes (measured — two byte-identical frames 10 s apart against a blinking-cursor control). Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/c128.md.',\n  },\n",
+    "tilesManifestPrelude": "",
+    "bindingPrelude": "",
+    "museumPrelude": ""
+  },
+  "tileDir": "c128",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54087,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 87
+  },
+  "guestDoc": "docs/guests/c128.md",
+  "credentialsRef": "guest/c128",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "c128",
+      "SH_QMP": "/data/vms/streamhost/tiles/c128/qmp.sock",
+      "SH_PORT": "54087",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/c128/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/c128/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "80",
+      "SH_KEY_MIN_GAP_MS": "80",
+      "SH_FIXTURE_DESC": "Commodore 128 (PAL) at its own untouched 80-column power-on screen: \"COMMODORE BASIC V7.0 122365 BYTES FREE / (C)1986 COMMODORE ELECTRONICS, LTD. / (C)1977 MICROSOFT CORP. / ALL RIGHTS RESERVED / READY.\" in the VDC's cyan on black, drawn 1:1 (no -VDCdsize) by VICE x128 in a 789x576 window that fills an 800x600 X root. The VDC is a SECOND canvas in VICE's SDL2 build and -80col is what makes it the visible one; -dualwindow never shows it under a kiosk with no window manager. The CP/M 3.0 system disk is in drive 8 but deliberately NOT on the command line - the KERNAL boots any CP/M disk it finds at reset, so the kiosk attaches it ~10 s later over VICE's guest-local text monitor. The visitor reaches CP/M by typing BOOT, which the SPA's c128 on-screen keyboard sends from one labelled button. No C64 button: GO64 works but paints the VIC-II, and with -80col the visible VDC canvas freezes. Keyboard-only exhibit; no pointer device; SID sound -> ALSA -> AC97."
+    },
+    "vmidLabel": 223,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "c128",
+        "--vmid",
+        "223",
+        "--udp",
+        "54087",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/c128/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/c128/tile.env.fixture"
+      ],
+      "deviceSetId": "c128-current",
+      "launcher": "streamhost/tiles/c128/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/c128/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-c128",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5823-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-c128",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5823-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under; 768 MB is half the other VICE tiles and was verified in-guest (MemAvailable 387 MB of 708 MB with x128 running)"
+      }
+    },
+    "bringUpOrder": 42
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#7FD4C1",
+    "eraLabel": "1985 · C128 (80-column BASIC 7.0 · CP/M 3.0)"
+  },
+  "museum": {
+    "id": "c128",
+    "displayName": "Commodore 128 — 80 columns, and CP/M",
+    "year": 1985,
+    "lineage": "Commodore 8-bit line (MOS 8502 + Zilog Z80, VIC-II + VDC)",
+    "arch": "MOS 8502 at 2.04/1.02 MHz (PAL) + Zilog Z80A, 128 KB RAM, 64 KB VDC video RAM",
+    "ramMB": 0,
+    "ramKB": 128,
+    "era": "1980s",
+    "accent": "#7FD4C1",
+    "eraSoftware": [
+      "CP/M Plus (3.0) on the Z80 — WordStar, dBASE II, Turbo Pascal",
+      "Commodore BASIC 7.0, with sprite, sound and graphics commands built in",
+      "GEOS 128, which used the 80-column screen and the extra memory",
+      "the entire Commodore 64 library, unchanged, in C64 mode"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "CP/M 3.0 on the Commodore 128",
+      "Commodore BASIC 7.0",
+      "the 80-column VDC text screen"
+    ],
+    "blurb": "Three computers in one case: an 80-column business machine, a Commodore 64, and a CP/M box with a second CPU. The one exhibit here that can show you CP/M — the operating system that ran the office before MS-DOS did.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x128) emulating a PAL C128; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. In VICE's SDL2 build the VDC 80-column output is a SECOND canvas — `-80col` makes it the visible one (and chooses the boot display); `-dualwindow` never becomes visible under a kiosk with no window manager. No -VDCdsize: the 1:1 window is 789x576 and fills the 800x600 X root, where the doubled one is 1578x1152 and is clipped even at 1920x1080. VICE bundles the C128 ROMs but not the CP/M system DISK, which is staged in-guest and attached to drive 8 ~10 s AFTER reset — the KERNAL boots any CP/M disk it finds at power-on, and this tile's fixture is the untouched BASIC 7.0 screen. The visitor types BOOT (one SPA keyboard button) to reach CP/M 3.0. No C64 button: GO64 works but paints the VIC-II while the visible VDC canvas freezes (measured — two byte-identical frames 10 s apart against a blinking-cursor control). Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/c128.md."
+  },
+  "reset": {
+    "tileDir": "c128",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Commodore 128 (PAL) 80-column power-on screen (BASIC V7.0, 122365 bytes free, READY.) in VICE x128 at 1:1 on an 800x600 X root, with the CP/M 3.0 system disk in drive 8 but unbooted; golden INTERNAL snapshot restores the untouched cold boot. No post-restore keys. Route certified 2026-08-09 AFTER the bake, against the restored fixture: BOOT + RETURN at the tile's production pacing (80/80) brings up \"CP/M 3.0 On the Commodore 128 / 80 column display / A>\", asserted by colour (CP/M paints magenta, native BASIC cyan) rather than by \"the framebuffer changed\". GO64 was measured and deliberately NOT shipped as a button: it switches the machine to C64 mode on the VIC-II and freezes the visible VDC canvas. Keyboard-only exhibit (no mouse); AC97 audio."
+  }
+}

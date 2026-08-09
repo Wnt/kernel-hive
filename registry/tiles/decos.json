@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "decos",
+  "era_year": 2026,
+  "tileDir": "decos",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 43,
+        "prelude": "",
+        "line": "  \"decos       |decos.sh       |Decos         |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "decos",
+          "script": "decos.sh",
+          "outputDir": "Decos",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54126,
+    "slot": 126
+  },
+  "guestDoc": "docs/guests/decos.md",
+  "credentialsRef": "guest/decos",
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · decos"
+  },
+  "museum": {
+    "id": "decos",
+    "displayName": "decos",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 126/UDP 54126",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

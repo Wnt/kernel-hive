@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "gt40",
+  "era_year": 2026,
+  "tileDir": "gt40",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 42,
+        "prelude": "",
+        "line": "  \"gt40        |gt40.sh        |Gt40          |installed|~15-30m |partial |TODO\"\n",
+        "value": {
+          "key": "gt40",
+          "script": "gt40.sh",
+          "outputDir": "Gt40",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54125,
+    "slot": 125
+  },
+  "guestDoc": "docs/guests/gt40.md",
+  "credentialsRef": "guest/gt40",
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · gt40"
+  },
+  "museum": {
+    "id": "gt40",
+    "displayName": "gt40",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 2 scaffold; reserved slot 125/UDP 54125",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

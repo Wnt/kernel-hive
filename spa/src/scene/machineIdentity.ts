@@ -184,6 +184,31 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#4a4a4e', accentTint: '#c2cf5f', tintMix: 0.5,
     badge: 'PLUS/4', spec: '3-PLUS-1 • 1984', kit: 'eightBit',
   },
+  // Commodore's late-8-bit beige, and the accent is the VDC's own 80-column
+  // text colour rather than anything the gallery picked.
+  c128: {
+    caseTint: '#c6bda6', accentTint: '#7fd4c1', tintMix: 0.42,
+    badge: 'C128', spec: '8502 + Z80 • 1985', kit: 'eightBit',
+  },
+  // Beige sheet metal, and the accent is the machine's own blue-white phosphor:
+  // VICE's 2001-blueish palette, which is the 1977 machine's actual CRT.
+  pet2001: {
+    caseTint: '#b9b2a4', accentTint: '#aeb8f0', tintMix: 0.42,
+    badge: 'PET 2001', spec: '8K • 1977', kit: 'eightBit',
+  },
+  // Commodore's office beige; the accent is the phosphor — #41ff00 is the
+  // foreground of VICE's green.vpl, which is what xpet actually renders in.
+  cbm8032: {
+    caseTint: '#c8c0aa', accentTint: '#41ff00', tintMix: 0.42,
+    badge: 'CBM 8032', spec: '32K • 80 COL • 1980', kit: 'eightBit',
+  },
+  // Cream business case; the accent is the 610's own phosphor, sampled from the
+  // live tile's framebuffer — a different green from the 8032's, which is part
+  // of how the two are told apart.
+  cbm2: {
+    caseTint: '#cdc4ae', accentTint: '#55d544', tintMix: 0.42,
+    badge: 'CBM 610', spec: '6509 • 1982', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

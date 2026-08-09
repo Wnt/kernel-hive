@@ -1038,6 +1038,233 @@ export const POSTERS = {
       ]
     }
   },
+  "c128": {
+    "title": "Commodore 128 — 80 columns, and CP/M",
+    "subtitle": "1985 · C128 (80-column BASIC 7.0 · CP/M 3.0)",
+    "hero": "/posters/c128/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/c128/desktop.webp",
+        "alt": "A Commodore 128 — the wide beige wedge with a full numeric keypad — beside a colour monitor showing its 80-column power-on screen",
+        "caption": "One case, three computers. The screen you are looking at is the 80-column one; a second CPU inside the same box runs CP/M."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "By 1984 Commodore had a problem that most companies would envy and none would want: the Commodore 64 was the best-selling computer in the world, and nothing the company designed could be allowed to break it. The 264 series had just tried to replace the C64 with something incompatible, and the market had refused."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "So the next machine was built to be a C64 as well as its own successor. A small hardware team led by Bil Herd designed the Commodore 128 against a punishing schedule — the goal was a working machine for the January 1985 Consumer Electronics Show, and the design was done in a matter of months rather than years. What they produced was less a computer than three of them sharing a case, a keyboard and a power supply."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "In "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "C128 mode"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " an 8502 processor runs at up to 2 MHz with 128 KB of memory and BASIC 7.0, and drives a second video chip — the 8563 VDC — that puts 80 columns of crisp text on an RGBI monitor. In "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "C64 mode"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " the machine is a Commodore 64, not an approximation of one: the same VIC-II, the same SID, the same memory map, so the entire C64 library simply runs. And in "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "CP/M mode"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " a Zilog Z80A takes over the bus and boots CP/M Plus 3.0 from disk."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The Z80 was not an afterthought. It sits on the board partly because the C64's own ill-fated CP/M cartridge had failed, and partly because the C128's designers had to run the Z80 at power-on anyway to decide which personality to start in."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The 80-column screen is what changed what the machine was for. Eight-bit home computers were 40-column devices, which is fine for BASIC listings and impossible for a spreadsheet or a business letter. The VDC gave the C128 a genuine text display with its own 16 KB — later 64 KB — of dedicated video memory, and GEOS 128, word processors and databases used it."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "CP/M is the part worth stopping for. Before MS-DOS, CP/M was "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "the"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " operating system of business microcomputing: a standard that let the same WordStar, dBASE II or Turbo Pascal run on machines from dozens of unrelated manufacturers. The C128 arrived after that world had begun to fade, but it arrived with a real implementation — Digital Research's CP/M Plus, not a subset — and with a disk drive, the 1571, that could read the actual MFM disk formats other CP/M machines wrote. A home computer bought for games could read an office's floppies."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It was not fast. CP/M on the C128 has a deserved reputation for slow disk access, and it was never the reason anyone bought the machine. But it was there, it was complete, and it was the last mass-market appearance of the operating system that taught the industry what an operating system standard was worth."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine as it wakes up, in the mode that made it different: 80 columns of VDC text, `COMMODORE BASIC V7.0`, and 122 365 bytes free."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "In the disk drive, unbooted, is the CP/M 3.0 system disk. Type `BOOT` — or press the exhibit's "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "CP/M"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " button — and the Z80 takes the bus, the screen fills with the loader's report of what it is putting where, and after a minute or so of honest 1541-speed disk access you are at `A>`, in the operating system that ran the office before MS-DOS did."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "There is no button here for C64 mode. `GO64` works on the real machine, but C64 mode paints the 40-column VIC-II chip, and this exhibit is watching the 80-column one — so the picture would simply freeze. The Commodore 64 has its own tile in this gallery; visit it there."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The C128 sold in the millions and was still a footnote beside its own C64 mode: most owners, by every account of the period, spent most of their time in the machine the new one was pretending to be. Commodore discontinued it in 1989, and it stands as the company's last 8-bit computer — the end of a line that began with the PET in 1977."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What it left behind is an argument about compatibility. The Plus/4 tried to replace the C64 and failed; the C128 carried it along and succeeded, at the cost of being three machines that never quite added up to one. Every platform since has faced the same choice, and most have made it the C128's way."
+          }
+        ]
+      }
+    ]
+  },
   "c64": {
     "title": "Commodore 64 — GEOS 2.0",
     "subtitle": "1988 · Commodore 64",
@@ -1191,6 +1418,382 @@ export const POSTERS = {
         }
       ]
     }
+  },
+  "cbm2": {
+    "title": "Commodore CBM 610 — the business machine nobody bought",
+    "subtitle": "1982 · CBM 610 (BASIC 128, 6509)",
+    "hero": "/posters/cbm2/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/cbm2/desktop.webp",
+        "alt": "A Commodore CBM 610 — a low, wide beige business machine with an integrated keyboard and a separate monochrome monitor sitting on top of it",
+        "caption": "Low-profile box, detached green screen, IEEE-488 on the back. This is what Commodore thought an office computer should look like in 1982."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "By 1982 Commodore had two successes and a problem. The PET had made it the machine of schools and laboratories; the VIC-20 was about to make it the machine of living rooms. What it did not have was the office, where a business would rather buy an IBM."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The answer was the CBM-II — the B series in the United States, the CBM 6x0 and 7x0 in Europe. At its centre is a chip built for the occasion: the "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "MOS 6509"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", a 6502 with two extra registers that page one of sixteen 64 KB banks into view, so a 1975 processor design could address a full megabyte. Around it went 128 or 256 KB of RAM, an 80-column monochrome screen, a SID for sound, IEEE-488 for the business drives and printers Commodore already sold, and a full business keyboard with a numeric pad. The low-profile 6x0 models put that keyboard in the case and left the monitor detached; the 7x0 models bolted a screen on top."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The range was designed under Jack Tramiel and largely abandoned after him. It arrived expensive, incompatible with everything Commodore already sold, and into the teeth of the IBM PC. The higher-end P-series variants for the home were cancelled outright; the business machines were quietly discontinued, having sold in the tens of thousands rather than the millions."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The CBM-II matters as the moment Commodore tried, seriously and expensively, to be a business computer company, and discovered that it could not."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Everything about the machine is a reasonable answer to the wrong question. Banking a megabyte through a 6502 was genuinely clever engineering, but the market had already decided that the future of the office was a 16-bit processor with a flat address space. IEEE-488 was the right bus for Commodore's own peripherals and the wrong one for everybody else's. An optional coprocessor board — an 8088, or a Z80 for CP/M — could be fitted, which tells you plainly that the machine's own software library was not the argument for buying it."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What it left behind is more interesting than what it sold. The CBM-II's SID, its keyboard layout and parts of its ROM lineage all run forward into other Commodore machines, and the bank-switching scheme is the direct ancestor of the memory management in the Commodore 128 of 1985 — a machine that took this one's screen name and none of its hardware."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine as it wakes up, with nothing plugged into it. Green on black, eighty columns, two lines:"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "`"
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "* commodore basic 128, v4.0 "
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": "*` and `ready.`"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "That \"128\" is a coincidence, and worth pausing on: it counts kilobytes of RAM, three years before the Commodore 128 existed. This is not that machine, and shares no hardware, no ROM and no software with it."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It also is not the PET on the next plinth, however similar the screen looks. Behind this banner is a 6509 paging a megabyte, in a low business box with the monitor separate, sold to a market Commodore reached for and missed — where the 8032 is a 6502 with a flat 64 KB, an all-in-one bolted together for schools, and a machine that actually sold. Two green screens, two completely different bets."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Type at the prompt. BASIC 4.0's disk commands, the built-in machine-language monitor and the `BANK` command that switches those sixteen banks are all here, from cold, with no disk in the building."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The CBM-II was withdrawn quickly and is now among the rarest Commodore machines to find working. Its practical descendant is the Commodore 128, which inherited the bank-switching idea and the number on the screen; its commercial lesson was one Commodore learned the expensive way and then acted on, retreating to the home market where the C64 was already making it more money than any business line ever would."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It is worth a plinth for the same reason a failed prototype is worth a case: it shows what the company believed the future of computing looked like in 1982, and how completely the industry disagreed."
+          }
+        ]
+      }
+    ]
+  },
+  "cbm8032": {
+    "title": "Commodore CBM 8032 — 80-column BASIC 4.0",
+    "subtitle": "1980 · CBM 8032 (BASIC 4.0, 80 columns)",
+    "hero": "/posters/cbm8032/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/cbm8032/desktop.webp",
+        "alt": "The CBM 8032's power-on screen — *** commodore basic 4.0 ***, 31743 bytes free, ready.",
+        "caption": "Three lines of green text on an otherwise empty 80-column screen. No colour, no sound, no logo. This is a machine that expects you to have work to do."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Commodore's first computer was the PET 2001 of 1977 — one of the three machines, alongside the Apple II and the TRS-80, that turned the microprocessor into an appliance you could buy assembled. It was a wedge of sheet steel with a small monitor, a cassette deck and a calculator keyboard, and it was designed by Chuck Peddle, who had also designed the 6502 inside it."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What happened next is the interesting part. The Apple II went towards colour, sound and games. The PET went the other way. Over three years Commodore replaced the toy keyboard with a full one, doubled the memory, moved the display from 40 columns to 80, and rewrote the ROM as BASIC 4.0 — a dialect whose additions are almost entirely about disk files. By 1980 the result was the 8000 series, and the CBM 8032 was its centre: 32 KB of memory, 80 columns by 25 lines of green text on a 12-inch screen built into the case, a business keyboard with a numeric keypad, and an IEEE-488 bus on the back for disk drives and printers borrowed straight from laboratory instrumentation."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The name changed too. Outside North America the machines were badged CBM rather than PET, the PET name being unavailable in some European markets, and it is Europe — Britain and Germany above all — where the 8032 did best, in offices, laboratories and a great many schools."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "This is the machine in the gallery with the least to show you, and that is the point."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It has no colour. It has no sprites. It has no sound generator of any kind — the PET's only noise was a beeper you could wire to a user-port line yourself. It cannot draw a picture; its graphics are the PETSCII characters in its character ROM and nothing else. Every one of the things its Commodore siblings down the row are remembered for is absent here, on purpose, because they cost money and an office did not want them."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What it has instead is 80 columns. That number is not arbitrary: it is the width of a punched card and of a printed line, and it is the width at which a screen can show you a document or a table the way it will actually come out of the printer. Getting 80 columns onto a domestic-priced computer in 1980 meant a dedicated CRT controller and a monitor built into the case rather than a television, and it is the single feature that separated a business machine from a home one."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "So the software was business software. WordPro, Steve Punter's word processor, sold 8032s on its own. VisiCalc came across from the Apple II. Silicon Office and a shelf of accounting packages followed, all of them talking to Commodore's own disk drives over IEEE-488. BASIC 4.0's new keywords — the disk commands, the directory, the error channel — exist because this machine's normal working day involved files rather than cassettes."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machine as it wakes up, and it wakes up in about a second: `"
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "* commodore basic 4.0 "
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": "*`, the free memory, and `ready.` — three short lines at the top left of a screen that is otherwise entirely empty, with a solid block cursor waiting under them."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "There is nothing else. No menu, no logo, no application, no hint. On this machine the prompt genuinely is the user interface: you type a BASIC statement and it runs, or you type a line number in front of it and it is stored. The exhibit's "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Type in a demo program"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " button does exactly what a person sat here in 1980 would have done — enters a five-line listing a character at a time, and leaves the final RETURN to you. It prints a times table eight columns wide, which is a plain enough thing to want and takes the full 80 characters to say."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The 8000 series was the end of the PET line rather than the start of anything. Within two years Commodore's future was the VIC-20 and the Commodore 64, machines built on precisely the features the 8032 had refused — colour, sound, sprites, a television for a monitor, and a price low enough to sell in a toy shop. The company that made the office computer became the company that made the games computer, and it never went back."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The 8032 outlived its own product line anyway, quietly, in the places that had bought it for work: school labs, small offices and technical benches where an IEEE-488 port and a screen you could read were worth more than novelty. It is a fair reminder that in 1980 nobody yet knew whether the personal computer was going to be an instrument or an entertainment, and that this was the serious answer."
+          }
+        ]
+      }
+    ]
   },
   "freedos": {
     "title": "FreeDOS 1.3",
@@ -3257,6 +3860,194 @@ export const POSTERS = {
         }
       ]
     }
+  },
+  "pet2001": {
+    "title": "Commodore PET 2001 — COMMODORE BASIC",
+    "subtitle": "1977 · PET 2001 (COMMODORE BASIC)",
+    "hero": "/posters/pet2001/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/pet2001/desktop.webp",
+        "alt": "A Commodore PET 2001 — sheet-metal trapezoid with a 9-inch monochrome screen, calculator-style chiclet keyboard and a cassette deck built into the front",
+        "caption": "Screen, keyboard, cassette deck and computer in one sealed box. In 1977 nothing else you could buy arrived like this."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The PET began with a chip. Chuck Peddle had designed the MOS 6502 — a microprocessor that sold for $25 when Intel and Motorola were asking several hundred — and when Commodore bought MOS Technology in 1976 it acquired Peddle along with it. His argument to Jack Tramiel was that the calculator business Commodore was in was about to be destroyed by the very chips it was buying, and that the way out was to sell a whole computer."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It was shown in January 1977 and shipped later that year, and the name was a joke that stuck: Personal Electronic Transactor, reverse-engineered out of \"PET\" while pet rocks were still in the shops. Commodore licensed BASIC from a very small Microsoft for a flat fee — a few tens of thousands of dollars, with no per-machine royalty — which is why the banner on this screen says COMMODORE BASIC and not Microsoft's name."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What arrived was a single sheet-metal box on a trapezoid base: a 9-inch monochrome monitor, a cassette deck, a calculator-style chiclet keyboard with its own numeric keypad, a 1 MHz 6502 and 4 or 8 KB of memory. There was no expansion slot to fill, no monitor to buy, no cassette recorder to wire up. You carried it home, put it on a table and switched it on."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "1977 produced three machines that turned a hobby into an industry — the Apple II, the Tandy TRS-80 Model I and this one — and the PET was the one that treated the computer as an appliance. The other two were a board in a case you completed with your own television and tape recorder. The PET was finished."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It was also the machine that put Commodore into schools. Cheap, sealed, hard to break and impossible to unplug in the wrong order, it filled classrooms in Canada, Britain, Germany and the Nordic countries through the late 1970s, and a generation of European programmers met a computer for the first time in front of one of these screens."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Its limitations shaped the way people wrote for it. There was no graphics mode at all, and on this first model no sound hardware either. What there was instead was a character ROM full of lines, corners, shades and card suits — PETSCII — and a screen you could write to directly by poking bytes at address 32768. Every PET game is characters moved around a text grid. That constraint travelled: the same character set, the same POKE-the-screen habit and much of the same BASIC went on into the VIC-20 and the Commodore 64, where they met an audience of millions."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The chiclet keyboard, it must be said, was hated. Commodore replaced it in 1979 with a proper full-travel keyboard and moved the cassette deck outside, and every later PET and CBM followed that shape. The machine on this screen is the original."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "A cold PET 2001 with 8 KB of memory, exactly as it wakes up: three lines of blue-white phosphor reading `"
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "* COMMODORE BASIC "
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": "*`, `7167 BYTES FREE`, `READY.`, and a blinking block cursor. Nothing has been loaded, and nothing is running. This is the whole user interface the machine had."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The exhibit's "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "type-in demo"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " does what everyone did with a PET: it POKEs characters straight into screen memory. Four lines, and the screen begins filling with circles in random places — a program of the kind that filled magazine listings and school exercise books, running on the machine that invented the habit."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The keyboard is worth a moment. The PET's letter keys give capitals unshifted and graphics characters when you hold shift, which is the reverse of everything since; the on-screen keyboard sends unshifted keys so the letters arrive as letters."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Commodore sold PETs and their CBM successors into offices and schools for another half-decade, then aimed the same ideas at the living room. The VIC-20 and the Commodore 64 inherited the PET's BASIC, its character set, its screen-poking culture and its serial-bus peripherals, and sold in numbers the PET never approached."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What the PET itself established was subtler and has outlasted all of them: that a computer could be a complete object rather than a kit — that the reasonable thing to sell someone is a machine, not a machine plus a list of things they still need to buy. Every all-in-one on the floor after this one is arguing the same case."
+          }
+        ]
+      }
+    ]
   },
   "plus4": {
     "title": "Commodore Plus/4 — 3-plus-1 in ROM",

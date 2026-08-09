@@ -1530,6 +1530,219 @@
     },
     {
       "schemaVersion": 1,
+      "id": "c128",
+      "era_year": 1985,
+      "enabled": true,
+      "build": {
+        "rows": [
+          {
+            "order": 37,
+            "prelude": "",
+            "line": "  \"c128         |c128.sh        |bridge/c128     |retro    |~3-5m   |full   |tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)\"\n",
+            "value": {
+              "key": "c128",
+              "script": "c128.sh",
+              "outputDir": "bridge/c128",
+              "class": "retro",
+              "estimated": "~3-5m",
+              "automation": "full",
+              "produces": "tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)",
+              "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 10
+            }
+          }
+        ]
+      },
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/c128",
+          "qmp": "/data/vms/streamhost/tiles/c128/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5823,
+          "exec_port": 5823,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54087,
+          "notes": "exec: labctl exec c128 \"<cmd>\" (ssh root@:5823, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated C128 — drive the machine with labctl type/key and read it with labctl shot."
+        }
+      },
+      "tileDir": "c128",
+      "lifecycle": "production",
+      "stream": {
+        "transport": "streamhost",
+        "udpPort": 54087,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "slot": 87
+      },
+      "guestDoc": "docs/guests/c128.md",
+      "credentialsRef": "guest/c128",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "c128",
+          "SH_QMP": "/data/vms/streamhost/tiles/c128/qmp.sock",
+          "SH_PORT": "54087",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/c128/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/c128/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "80",
+          "SH_KEY_MIN_GAP_MS": "80",
+          "SH_FIXTURE_DESC": "Commodore 128 (PAL) at its own untouched 80-column power-on screen: \"COMMODORE BASIC V7.0 122365 BYTES FREE / (C)1986 COMMODORE ELECTRONICS, LTD. / (C)1977 MICROSOFT CORP. / ALL RIGHTS RESERVED / READY.\" in the VDC's cyan on black, drawn 1:1 (no -VDCdsize) by VICE x128 in a 789x576 window that fills an 800x600 X root. The VDC is a SECOND canvas in VICE's SDL2 build and -80col is what makes it the visible one; -dualwindow never shows it under a kiosk with no window manager. The CP/M 3.0 system disk is in drive 8 but deliberately NOT on the command line - the KERNAL boots any CP/M disk it finds at reset, so the kiosk attaches it ~10 s later over VICE's guest-local text monitor. The visitor reaches CP/M by typing BOOT, which the SPA's c128 on-screen keyboard sends from one labelled button. No C64 button: GO64 works but paints the VIC-II, and with -80col the visible VDC canvas freezes. Keyboard-only exhibit; no pointer device; SID sound -> ALSA -> AC97."
+        },
+        "vmidLabel": 223,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "c128",
+            "--vmid",
+            "223",
+            "--udp",
+            "54087",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/c128/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/c128/tile.env.fixture"
+          ],
+          "deviceSetId": "c128-current",
+          "launcher": "streamhost/tiles/c128/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/c128/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-c128",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5823-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-c128",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5823-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under; 768 MB is half the other VICE tiles and was verified in-guest (MemAvailable 387 MB of 708 MB with x128 running)"
+          }
+        },
+        "bringUpOrder": 42
+      },
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "streamhost",
+        "accentColor": "#7FD4C1",
+        "eraLabel": "1985 · C128 (80-column BASIC 7.0 · CP/M 3.0)"
+      },
+      "museum": {
+        "id": "c128",
+        "displayName": "Commodore 128 — 80 columns, and CP/M",
+        "year": 1985,
+        "lineage": "Commodore 8-bit line (MOS 8502 + Zilog Z80, VIC-II + VDC)",
+        "arch": "MOS 8502 at 2.04/1.02 MHz (PAL) + Zilog Z80A, 128 KB RAM, 64 KB VDC video RAM",
+        "ramMB": 0,
+        "ramKB": 128,
+        "era": "1980s",
+        "accent": "#7FD4C1",
+        "eraSoftware": [
+          "CP/M Plus (3.0) on the Z80 — WordStar, dBASE II, Turbo Pascal",
+          "Commodore BASIC 7.0, with sprite, sound and graphics commands built in",
+          "GEOS 128, which used the 80-column screen and the extra memory",
+          "the entire Commodore 64 library, unchanged, in C64 mode"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "CP/M 3.0 on the Commodore 128",
+          "Commodore BASIC 7.0",
+          "the 80-column VDC text screen"
+        ],
+        "blurb": "Three computers in one case: an 80-column business machine, a Commodore 64, and a CP/M box with a second CPU. The one exhibit here that can show you CP/M — the operating system that ran the office before MS-DOS did.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x128) emulating a PAL C128; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. In VICE's SDL2 build the VDC 80-column output is a SECOND canvas — `-80col` makes it the visible one (and chooses the boot display); `-dualwindow` never becomes visible under a kiosk with no window manager. No -VDCdsize: the 1:1 window is 789x576 and fills the 800x600 X root, where the doubled one is 1578x1152 and is clipped even at 1920x1080. VICE bundles the C128 ROMs but not the CP/M system DISK, which is staged in-guest and attached to drive 8 ~10 s AFTER reset — the KERNAL boots any CP/M disk it finds at power-on, and this tile's fixture is the untouched BASIC 7.0 screen. The visitor types BOOT (one SPA keyboard button) to reach CP/M 3.0. No C64 button: GO64 works but paints the VIC-II while the visible VDC canvas freezes (measured — two byte-identical frames 10 s apart against a blinking-cursor control). Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/c128.md."
+      },
+      "reset": {
+        "tileDir": "c128",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Commodore 128 (PAL) 80-column power-on screen (BASIC V7.0, 122365 bytes free, READY.) in VICE x128 at 1:1 on an 800x600 X root, with the CP/M 3.0 system disk in drive 8 but unbooted; golden INTERNAL snapshot restores the untouched cold boot. No post-restore keys. Route certified 2026-08-09 AFTER the bake, against the restored fixture: BOOT + RETURN at the tile's production pacing (80/80) brings up \"CP/M 3.0 On the Commodore 128 / 80 column display / A>\", asserted by colour (CP/M paints magenta, native BASIC cyan) rather than by \"the framebuffer changed\". GO64 was measured and deliberately NOT shipped as a button: it switches the machine to C64 mode on the VIC-II and freezes the visible VDC canvas. Keyboard-only exhibit (no mouse); AC97 audio."
+      }
+    },
+    {
+      "schemaVersion": 1,
       "id": "c64",
       "era_year": 1982,
       "enabled": true,
@@ -1739,6 +1952,494 @@
       },
       "migrationExceptions": [
         "spa-pointer-rel"
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "cbm2",
+      "era_year": 1982,
+      "enabled": true,
+      "build": {
+        "rows": [
+          {
+            "order": 40,
+            "prelude": "",
+            "line": "  \"cbm2         |cbm2.sh        |bridge/cbm2     |retro    |~2-4m   |full   |tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)\"\n",
+            "value": {
+              "key": "cbm2",
+              "script": "cbm2.sh",
+              "outputDir": "bridge/cbm2",
+              "class": "retro",
+              "estimated": "~2-4m",
+              "automation": "full",
+              "produces": "tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/cbm2",
+          "qmp": "/data/vms/streamhost/tiles/cbm2/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5826,
+          "exec_port": 5826,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54111,
+          "notes": "exec: labctl exec cbm2 \"<cmd>\" (ssh root@:5826, key bridge_key) — reaches the Debian kiosk, not the emulated 6509"
+        }
+      },
+      "tileDir": "cbm2",
+      "lifecycle": "production",
+      "stream": {
+        "transport": "streamhost",
+        "udpPort": 54111,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "slot": 111
+      },
+      "guestDoc": "docs/guests/cbm2.md",
+      "credentialsRef": "guest/cbm2",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "cbm2",
+          "SH_QMP": "/data/vms/streamhost/tiles/cbm2/qmp.sock",
+          "SH_PORT": "54111",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/cbm2/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/cbm2/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "80",
+          "SH_KEY_MIN_GAP_MS": "80",
+          "SH_FIXTURE_DESC": "Commodore CBM 610 (PAL, 1982) at its own untouched power-on screen: \"*** commodore basic 128, v4.0 ***\" and \"ready.\" with the block cursor beneath it, green on black at 80 columns, drawn by VICE xcbm2 -model 610 at NATIVE size (704x528 window, no -CRTCdsize) and centred by SDL on an 800x600 X root. This is the CBM-II / B-series business machine — a MOS 6509 bank-switching a megabyte, not the Commodore 128 of 1985, which merely took the same number. Nothing is typed: BASIC 128 v4.0 is the whole machine as sold with no disk attached, and the visitor types at the prompt through the SPA's on-screen keyboard. Keyboard-only exhibit; no pointer device; SID audio -> ALSA -> AC97."
+        },
+        "vmidLabel": 226,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "cbm2",
+            "--vmid",
+            "226",
+            "--udp",
+            "54111",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/cbm2/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/cbm2/tile.env.fixture"
+          ],
+          "deviceSetId": "cbm2-current",
+          "launcher": "streamhost/tiles/cbm2/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/cbm2/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-cbm2",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5826-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-cbm2",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5826-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 45
+      },
+      "spa": {
+        "archetypeId": "beige-ibm-pc",
+        "transport": "streamhost",
+        "accentColor": "#55D544",
+        "eraLabel": "1982 · CBM 610 (BASIC 128, 6509)"
+      },
+      "museum": {
+        "id": "cbm2",
+        "displayName": "Commodore CBM 610 — the business machine nobody bought",
+        "year": 1982,
+        "lineage": "Commodore CBM-II / B-series (MOS 6509, 6545 CRTC, SID)",
+        "arch": "MOS 6509, 2 MHz, 128 KB RAM banked out of a 1 MB address space, 80x25 monochrome",
+        "ramMB": 0,
+        "ramKB": 128,
+        "era": "1980s",
+        "accent": "#55D544",
+        "eraSoftware": [
+          "Commodore BASIC 128 v4.0 in ROM, with the PET disk commands built in",
+          "CP/M via the optional 8088/Z80 coprocessor board — the machine's other, stranger half",
+          "the IEEE-488 business peripherals: 8050/8250 drives, 8023 printer",
+          "a handful of ports of the PET business software it was meant to succeed"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "Commodore BASIC 128 v4.0",
+          "the built-in machine-language monitor",
+          "PET-lineage business software over IEEE-488"
+        ],
+        "blurb": "Not a Commodore 128, despite what the screen says. This is the CBM-II — Commodore's 1982 attempt to sell a serious business computer, built on a 6509 that reaches a full megabyte by bank-switching, and cancelled almost immediately.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xcbm2 -model 610) emulating a PAL CBM 610; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the CBM-II ROMs, so this tile needs no external media — the 610 boots to BASIC with nothing attached. NOT A NEAR-DUPLICATE OF cbm8032, and the placard says why: same green 80-column CBM banner, but a 6509 bank-switching a megabyte instead of a 6502 with 32 KB, a low-profile box with a detached monitor instead of an all-in-one, and a business market Commodore reached for and missed. The golden is the machine's own untouched power-on screen; the visitor types at the BASIC prompt through the SPA on-screen keyboard. Keyboard-only exhibit; native 704x528 window on an 800x600 X root (the doubled window is silently clipped by every root this fleet uses). See streamhost/docs/BRIDGE.md and docs/guests/cbm2.md. The screen reads \"commodore basic 128\": that name predates the Commodore 128 of 1985 and shares nothing with it."
+      },
+      "reset": {
+        "tileDir": "cbm2",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Commodore CBM 610 (PAL) power-on screen — \"*** commodore basic 128, v4.0 ***\" and \"ready.\" in green on black at 80 columns — in VICE xcbm2 -model 610, native size on an 800x600 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated and nothing is typed before the bake, and no keys are sent after the restore. Keyboard certified 2026-08-09 AFTER the bake against the restored fixture: PRINT 3 at the tile's own 80/80 pacing extended the lit text from rows 100..162 to rows 100..226 (BASIC echoed the line, printed \" 3\" and painted a second \"ready.\"), then loadvm golden returned the frame to the baked bounding box exactly. A pixel-count test was rejected as unfalsifiable here — the blinking cursor gives back what the new lines add (456 -> 454). Keyboard-only exhibit (no mouse); AC97 audio."
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "cbm8032",
+      "era_year": 1980,
+      "enabled": true,
+      "build": {
+        "rows": [
+          {
+            "order": 39,
+            "prelude": "",
+            "line": "  \"cbm8032      |cbm8032.sh     |bridge/cbm8032  |retro    |~2-4m   |full   |tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)\"\n",
+            "value": {
+              "key": "cbm8032",
+              "script": "cbm8032.sh",
+              "outputDir": "bridge/cbm8032",
+              "class": "retro",
+              "estimated": "~2-4m",
+              "automation": "full",
+              "produces": "tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)",
+              "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 12
+            }
+          }
+        ]
+      },
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/cbm8032",
+          "qmp": "/data/vms/streamhost/tiles/cbm8032/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5825,
+          "exec_port": 5825,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54109,
+          "notes": "exec: labctl exec cbm8032 \"<cmd>\" (ssh root@:5825, key bridge_key) — that reaches the Debian KIOSK, not the emulated PET; the 8032 itself is keyboard-only and is driven with labctl type/key + labctl shot"
+        }
+      },
+      "tileDir": "cbm8032",
+      "lifecycle": "production",
+      "stream": {
+        "transport": "streamhost",
+        "udpPort": 54109,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "slot": 109
+      },
+      "guestDoc": "docs/guests/cbm8032.md",
+      "credentialsRef": "guest/cbm8032",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "cbm8032",
+          "SH_QMP": "/data/vms/streamhost/tiles/cbm8032/qmp.sock",
+          "SH_PORT": "54109",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/cbm8032/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/cbm8032/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "80",
+          "SH_KEY_MIN_GAP_MS": "80",
+          "SH_FIXTURE_DESC": "Commodore CBM 8032 (1980) at its own untouched power-on screen: \"*** commodore basic 4.0 *** / 31743 bytes free / ready.\" in green on black with a solid block cursor, 80 columns wide, drawn double-size (-CRTCdsize) by VICE xpet on a 1600x1200 X root — the tightest advertised mode that contains the 1408x1064 SDL window, and the 4:3 shape of the machine's own 12-inch monitor. No colour, no sprites and no sound generator: the 8032 had none. Keyboard-only exhibit; no pointer device. The interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns, typed by the SPA and started by the visitor's own RETURN."
+        },
+        "vmidLabel": 225,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "cbm8032",
+            "--vmid",
+            "225",
+            "--udp",
+            "54109",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/cbm8032/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/cbm8032/tile.env.fixture"
+          ],
+          "deviceSetId": "cbm8032-current",
+          "launcher": "streamhost/tiles/cbm8032/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/cbm8032/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-cbm8032",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5825-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-cbm8032",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5825-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off and -m 768, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 44
+      },
+      "spa": {
+        "archetypeId": "mono-terminal",
+        "transport": "streamhost",
+        "accentColor": "#41FF00",
+        "eraLabel": "1980 · CBM 8032 (BASIC 4.0, 80 columns)"
+      },
+      "demoProgram": {
+        "label": "Type in a demo program",
+        "lines": [
+          "10 print chr$(147)",
+          "20 for r=1 to 12",
+          "30 for c=1 to 8",
+          "40 print tab((c-1)*10);r*c;",
+          "50 next c:print:next r"
+        ],
+        "runCommand": "run",
+        "perCharMs": 170
+      },
+      "museum": {
+        "id": "cbm8032",
+        "displayName": "Commodore CBM 8032 — 80-column BASIC 4.0",
+        "year": 1980,
+        "lineage": "Commodore PET / CBM 8000 series (MOS 6502)",
+        "arch": "MOS 6502, 1 MHz, 32 KB RAM, 80x25 monochrome CRTC, 12-inch integrated green monitor",
+        "ramMB": 0,
+        "ramKB": 32,
+        "era": "1980s",
+        "accent": "#41FF00",
+        "eraSoftware": [
+          "Commodore BASIC 4.0, with the PET's disk commands built into the language",
+          "WordPro — the word processor that sold 8032s to offices",
+          "VisiCalc and Silicon Office on the 8000 series",
+          "the 8050 dual floppy and the 4022 tractor printer on the IEEE-488 bus",
+          "Waterloo microSystems' languages, from the SuperPET side of the family"
+        ],
+        "periodBrowser": "none — pre-web 8-bit era",
+        "iconicApps": [
+          "Commodore BASIC 4.0",
+          "WordPro",
+          "the built-in machine-language monitor"
+        ],
+        "blurb": "Commodore's office computer: 80 columns of green text, 32 KB, a proper business keyboard, and no colour, no sprites and no sound chip at all. Everything its home-computer siblings are famous for is deliberately missing.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xpet -model 8032) emulating a CBM 8032; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media — BASIC 4.0, KERNAL 4, the 80-column business editor and the character generator all come from the emulator's own data tree. The golden is the machine's own untouched power-on screen; the exhibit's interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns. Drawn double-size (-CRTCdsize) on a 1600x1200 X root, the tightest advertised mode that contains the 1408x1064 SDL window. Keyboard-only exhibit; mono-terminal archetype — the 8032 is an all-in-one with an integrated 12-inch green monitor, which is what that archetype models. See streamhost/docs/BRIDGE.md and docs/guests/cbm8032.md."
+      },
+      "reset": {
+        "tileDir": "cbm8032",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Commodore CBM 8032 power-on screen (*** commodore basic 4.0 ***, 31743 bytes free, ready.) in VICE xpet, double-size on a 1600x1200 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated and no post-restore keys are sent. Keyboard route certified 2026-08-09 AFTER the bake, against the restored fixture, in two framebuffer-asserted steps: the registry demoProgram's five lines typed at the tile's own 80/80 pacing take the green-pixel count from 1985 to 3861, and RUN then paints a 12x8 times table across all 80 columns at 7342. The readiness predicate is a BAND, not a floor — the PET's screen RAM is uninitialised at power-on and the CRTC paints it as a solid block of random glyphs (375726 green pixels), which an earlier floor-only predicate accepted as \"ready\". Keyboard-only exhibit (no mouse); AC97 audio, though the 8032 itself has no sound generator."
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "decos",
+      "era_year": 2026,
+      "tileDir": "decos",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 43,
+            "prelude": "",
+            "line": "  \"decos       |decos.sh       |Decos         |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "decos",
+              "script": "decos.sh",
+              "outputDir": "Decos",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54126,
+        "slot": 126
+      },
+      "guestDoc": "docs/guests/decos.md",
+      "credentialsRef": "guest/decos",
+      "spa": {
+        "archetypeId": "mono-terminal",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · decos"
+      },
+      "museum": {
+        "id": "decos",
+        "displayName": "decos",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 126/UDP 54126",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
       ]
     },
     {
@@ -1953,6 +2654,59 @@
         "fixture": "FreeDOS 1.3 FreeCOM prompt C:\\>; text console, no pointer surface."
       },
       "migrationExceptions": []
+    },
+    {
+      "schemaVersion": 1,
+      "id": "gt40",
+      "era_year": 2026,
+      "tileDir": "gt40",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 42,
+            "prelude": "",
+            "line": "  \"gt40        |gt40.sh        |Gt40          |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "gt40",
+              "script": "gt40.sh",
+              "outputDir": "Gt40",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54125,
+        "slot": 125
+      },
+      "guestDoc": "docs/guests/gt40.md",
+      "credentialsRef": "guest/gt40",
+      "spa": {
+        "archetypeId": "mono-terminal",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · gt40"
+      },
+      "museum": {
+        "id": "gt40",
+        "displayName": "gt40",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 125/UDP 54125",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
     },
     {
       "schemaVersion": 1,
@@ -4529,6 +5283,287 @@
     },
     {
       "schemaVersion": 1,
+      "id": "pdp11",
+      "era_year": 2026,
+      "tileDir": "pdp11",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 41,
+            "prelude": "",
+            "line": "  \"pdp11       |pdp11.sh       |Pdp11         |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "pdp11",
+              "script": "pdp11.sh",
+              "outputDir": "Pdp11",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54115,
+        "slot": 115
+      },
+      "guestDoc": "docs/guests/pdp11.md",
+      "credentialsRef": "guest/pdp11",
+      "spa": {
+        "archetypeId": "mono-terminal",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · pdp11"
+      },
+      "museum": {
+        "id": "pdp11",
+        "displayName": "pdp11",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 115/UDP 54115",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "pet2001",
+      "era_year": 1977,
+      "enabled": true,
+      "build": {
+        "rows": [
+          {
+            "order": 38,
+            "prelude": "",
+            "line": "  \"pet2001     |pet2001.sh     |bridge/pet2001  |retro    |~2-4m   |full   |tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)\"\n",
+            "value": {
+              "key": "pet2001",
+              "script": "pet2001.sh",
+              "outputDir": "bridge/pet2001",
+              "class": "retro",
+              "estimated": "~2-4m",
+              "automation": "full",
+              "produces": "tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)",
+              "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 11
+            }
+          }
+        ]
+      },
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/pet2001",
+          "qmp": "/data/vms/streamhost/tiles/pet2001/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5824,
+          "exec_port": 5824,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54088,
+          "notes": "exec: labctl exec pet2001 \"<cmd>\" (ssh root@:5824, key bridge_key) — reaches the Debian kiosk, not the emulated PET"
+        }
+      },
+      "tileDir": "pet2001",
+      "lifecycle": "production",
+      "stream": {
+        "transport": "streamhost",
+        "udpPort": 54088,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "slot": 88
+      },
+      "guestDoc": "docs/guests/pet2001.md",
+      "credentialsRef": "guest/pet2001",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "pet2001",
+          "SH_QMP": "/data/vms/streamhost/tiles/pet2001/qmp.sock",
+          "SH_PORT": "54088",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/pet2001/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/pet2001/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "80",
+          "SH_KEY_MIN_GAP_MS": "80",
+          "SH_FIXTURE_DESC": "Commodore PET 2001 (1977) at its own untouched cold power-on screen: \"*** COMMODORE BASIC *** / 7167 BYTES FREE / READY.\" in blue-white on black, 40x25 characters drawn double-size (-CRTCdsize) by VICE xpet -model 2001 as a 768x532 SDL window on an 800x600 X root. VICE's model 2001 is the 1977 original and not a badge: RamSize=8, Crtc=0 (the machine predates the 6545 CRTC every later PET used), VideoSize=40, KeyboardType=4 (the chiclet graphics keyboard), palette 2001-blueish.vpl. Keyboard-only exhibit; no pointer device; PET CB2 sound -> ALSA -> AC97 (the 1977 machine shipped with no sound hardware at all, so this is silent in practice)."
+        },
+        "vmidLabel": 224,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "pet2001",
+            "--vmid",
+            "224",
+            "--udp",
+            "54088",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/pet2001/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/pet2001/tile.env.fixture"
+          ],
+          "deviceSetId": "pet2001-current",
+          "launcher": "streamhost/tiles/pet2001/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/pet2001/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-pet2001",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5824-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-pet2001",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5824-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "byte-identical",
+            "reason": "the tracked streamhost/tiles/pet2001/qemu-streamhost.sh is installed verbatim by the emitter and is the device-set ledger the golden was baked under"
+          }
+        },
+        "bringUpOrder": 43
+      },
+      "spa": {
+        "archetypeId": "mono-terminal",
+        "transport": "streamhost",
+        "accentColor": "#AEB8F0",
+        "eraLabel": "1977 · PET 2001 (COMMODORE BASIC)"
+      },
+      "keyboard": {
+        "letterCase": "upper-only"
+      },
+      "demoProgram": {
+        "label": "Type in a demo program",
+        "lines": [
+          "10 print chr$(147)",
+          "20 x=int(rnd(1)*1000)",
+          "30 poke 32768+x,81",
+          "40 goto 20"
+        ],
+        "runCommand": "run",
+        "perCharMs": 180
+      },
+      "museum": {
+        "id": "pet2001",
+        "displayName": "Commodore PET 2001 — COMMODORE BASIC",
+        "year": 1977,
+        "lineage": "Commodore PET / CBM (MOS 6502)",
+        "arch": "MOS 6502, 1 MHz, 8 KB RAM, 40×25 characters, no CRTC",
+        "ramMB": 0,
+        "ramKB": 8,
+        "era": "1970s",
+        "accent": "#AEB8F0",
+        "eraSoftware": [
+          "Commodore BASIC 1.0 in ROM — the first Microsoft BASIC Commodore shipped",
+          "programs loaded from the built-in Datassette, at 1500 baud if you were lucky",
+          "PET screen POKEs at 32768: the machine had no graphics mode, so games drew with characters",
+          "Microchess, Space Invaders clones, and a decade of school-lab type-in listings",
+          "later, VisiCalc and WordPro made the PET the first Commodore in an office"
+        ],
+        "periodBrowser": "none — pre-web, and pre-almost-everything",
+        "iconicApps": [
+          "Commodore BASIC 1.0",
+          "the built-in Datassette",
+          "Microchess"
+        ],
+        "blurb": "One of the three machines that started the personal-computer industry in 1977, and the only one that arrived as a single sealed box: screen, keyboard and cassette deck welded into one sheet-metal trapezoid you could carry home and switch on.",
+        "notes": "Live streamhost tile, and the oldest machine in the gallery. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xpet -model 2001) emulating the ORIGINAL 1977 PET; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media. VICE's model 2001 is the real machine and not a badge — RamSize=8, Crtc=0 (it predates the 6545 CRTC every later PET used), VideoSize=40, the chiclet graphics keyboard, the 2001-blueish phosphor palette. The golden is the machine's own untouched power-on screen; the exhibit's interaction is the SPA type-in demo, four lines of PET BASIC that POKE characters straight into screen memory at 32768, which is how the PET drew everything. Keyboard-only exhibit (unshifted keys give upper case, SHIFT gives the graphics set, hence keyboard.letterCase=upper-only). See streamhost/docs/BRIDGE.md and docs/guests/pet2001.md."
+      },
+      "reset": {
+        "tileDir": "pet2001",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "Commodore PET 2001 (1977) cold power-on screen (\"*** COMMODORE BASIC *** / 7167 BYTES FREE / READY.\") in VICE xpet -model 2001, double-size on an 800x600 X root; golden INTERNAL snapshot restores the untouched cold boot, and nothing is typed before the bake or after the restore. Keyboard proven 2026-08-09 AFTER the bake, against the restored fixture and at the tile's shipped 80/80 pacing: the four-line demo program typed and LISTed correctly (lit phosphor 1841 → 6077), then RUN plotted into screen RAM (→ 10285), then loadvm golden returned the frame to the baked 1841. Keyboard-only exhibit (no mouse); AC97 audio (silent — the 1977 machine had no sound hardware)."
+      }
+    },
+    {
+      "schemaVersion": 1,
       "id": "plus4",
       "era_year": 1980,
       "enabled": true,
@@ -4613,8 +5648,8 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_KEY_MIN_HOLD_MS": "40",
-          "SH_KEY_MIN_GAP_MS": "40",
+          "SH_KEY_MIN_HOLD_MS": "80",
+          "SH_KEY_MIN_GAP_MS": "80",
           "SH_FIXTURE_DESC": "Commodore Plus/4 (PAL) at its own untouched power-on screen: \"COMMODORE BASIC V3.5 / 60671 BYTES FREE / 3-PLUS-1 ON KEY F1 / READY.\" in black on a white page inside a lavender border, drawn double-size (-TEDdsize) by VICE xplus4 on an 800x600 X root. Nothing is curated and nothing is typed: the ROM's own message is the exhibit's launcher, and F1+RETURN enters the built-in 3-plus-1 office suite. Module switching inside the suite needs C= + C (Tab under VICE's symbolic keymap) followed by tw/tc/tf, which the SPA's plus4 on-screen keyboard sends from one labelled button each. Keyboard-only exhibit; no pointer device; TED sound -> ALSA -> AC97."
         },
         "vmidLabel": 222,

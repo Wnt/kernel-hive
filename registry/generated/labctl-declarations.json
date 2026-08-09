@@ -107,6 +107,21 @@
       "udp_port": 54116,
       "notes": "exec: labctl exec atarist \"<cmd>\" (ssh root@:5816, key bridge_key)"
     },
+    "c128": {
+      "dir": "/data/vms/streamhost/tiles/c128",
+      "qmp": "/data/vms/streamhost/tiles/c128/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5823,
+      "exec_port": 5823,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54087,
+      "notes": "exec: labctl exec c128 \"<cmd>\" (ssh root@:5823, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated C128 — drive the machine with labctl type/key and read it with labctl shot."
+    },
     "c64": {
       "dir": "/data/vms/streamhost/tiles/c64",
       "qmp": "/data/vms/streamhost/tiles/c64/qmp.sock",
@@ -121,6 +136,36 @@
       "console": "fb",
       "udp_port": 54114,
       "notes": "exec: labctl exec c64 \"<cmd>\" (ssh root@:5814, key bridge_key)"
+    },
+    "cbm2": {
+      "dir": "/data/vms/streamhost/tiles/cbm2",
+      "qmp": "/data/vms/streamhost/tiles/cbm2/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5826,
+      "exec_port": 5826,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54111,
+      "notes": "exec: labctl exec cbm2 \"<cmd>\" (ssh root@:5826, key bridge_key) — reaches the Debian kiosk, not the emulated 6509"
+    },
+    "cbm8032": {
+      "dir": "/data/vms/streamhost/tiles/cbm8032",
+      "qmp": "/data/vms/streamhost/tiles/cbm8032/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5825,
+      "exec_port": 5825,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54109,
+      "notes": "exec: labctl exec cbm8032 \"<cmd>\" (ssh root@:5825, key bridge_key) — that reaches the Debian KIOSK, not the emulated PET; the 8032 itself is keyboard-only and is driven with labctl type/key + labctl shot"
     },
     "freedos": {
       "dir": "/data/vms/streamhost/tiles/freedos",
@@ -301,6 +346,21 @@
       "console": "fb",
       "udp_port": 54108,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    },
+    "pet2001": {
+      "dir": "/data/vms/streamhost/tiles/pet2001",
+      "qmp": "/data/vms/streamhost/tiles/pet2001/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5824,
+      "exec_port": 5824,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54088,
+      "notes": "exec: labctl exec pet2001 \"<cmd>\" (ssh root@:5824, key bridge_key) — reaches the Debian kiosk, not the emulated PET"
     },
     "plus4": {
       "dir": "/data/vms/streamhost/tiles/plus4",

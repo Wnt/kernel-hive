@@ -121,13 +121,22 @@ export function buildStationKitBindings(layout: HallLayout) {
     }
   }
 
+  // The spare keyboard belongs on a desk whose machine does NOT have one built
+  // in — a loose keyboard beside a PET or a C64 reads as clutter, not as period
+  // dressing. It is preferred in the first section, but the search FALLS BACK to
+  // the rest of the hall: adding the pre-1980 Commodores (pet2001, cbm8032) made
+  // the oldest section entirely all-in-one machines, and a first-section-only
+  // search silently dropped the prop from the scene altogether.
   const firstSection = layout.sections[0];
+  const eligible = (desk: HallDesk) => !hasIntegratedKeyboard(assemblyForTile(
+    desk.entry.assemblyId ?? desk.entry.id,
+  ));
+  const byDepth = (a: HallDesk, b: HallDesk) => b.pos[0] - a.pos[0];
   const spareKeyboardDesk = layout.desks
     .filter((desk) => desk.sectionKey === firstSection?.key)
-    .sort((a, b) => b.pos[0] - a.pos[0])
-    .find((desk) => !hasIntegratedKeyboard(assemblyForTile(
-      desk.entry.assemblyId ?? desk.entry.id,
-    )));
+    .sort(byDepth)
+    .find(eligible)
+    ?? [...layout.desks].sort(byDepth).find(eligible);
   if (spareKeyboardDesk) {
     heroes.push({
       asset: 'spareKeyboard',
