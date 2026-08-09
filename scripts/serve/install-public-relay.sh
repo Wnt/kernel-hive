@@ -14,7 +14,14 @@
 # with the edge
 # at 54080-54130 and UDP port = 54000+slot, slots 131+ streamed perfectly on the
 # LAN and were invisible through the edge (2026-08-09: oricatmos, kc854,
-# sinclairql, nextstep). This script is that missing source of truth.
+# sinclairql, nextstep).
+#
+# 2026-08-09: the durable owner of this rule is now the FORWARDER REPO —
+# UDP_RELAY_PORT_RANGE in Wnt/forwarder deploy/site.env. Its deploy rewrites
+# /etc/nftables.conf from that value on every push to its main, so anything this
+# script applies survives only until the next forwarder deploy. This script is
+# the emergency hotfix for when that CI path is unavailable; the durable change
+# is one commit to site.env (CI redeploys), and the two must be kept equal.
 #
 # DEFAULT MODE IS A DRY RUN. It prints the rules it matched and the exact nft
 # command it would run, and changes nothing. Pass --apply to execute.

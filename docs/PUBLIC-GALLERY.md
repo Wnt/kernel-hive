@@ -208,11 +208,16 @@ enabling the unit, and the unit re-syncs it on every start. The public listener
 exists only because `PUBLIC_PORT` is set in the unit; unset it and the whole
 public plane is gone, LAN untouched.
 
-Edge side is the forwarder's own deploy: set `UDP_RELAY_PEER_IP`,
-`UDP_RELAY_PEER_PUBKEY` and `UDP_RELAY_PORT_RANGE` in
-`/etc/forwarder/forwarder.env` and land a commit on that repo's `main` — CI
-redeploys. The tunnel itself is one entry in `FORWARDER_TUNNELS`, written by
-`scripts/cloud-agents/box-endpoint-setup.sh` (`GALLERY_HOST=` to unpublish).
+Edge side is the forwarder's own deploy, and its config has two homes.
+Non-secret keys — `UDP_RELAY_PORT_RANGE` above all — live in that repo's
+`deploy/site.env`, tracked in git: change it with one commit on `main` and CI
+redeploys, no shell on the edge (that is how the range was widened to 54200 on
+2026-08-09). Secrets and box-local values (`UDP_RELAY_PEER_IP`,
+`UDP_RELAY_PEER_PUBKEY`, the WireGuard private key, the agent token) stay in
+`/etc/forwarder/forwarder.env` on the edge; `site.env` is sourced after it and
+wins for the keys it sets. The tunnel itself is one entry in
+`FORWARDER_TUNNELS`, written by `scripts/cloud-agents/box-endpoint-setup.sh`
+(`GALLERY_HOST=` to unpublish).
 
 ## Testing it
 
@@ -254,7 +259,9 @@ UDP relay.
   path the packets take. `tiles-registry.py` now fails validation for any
   production tile whose `udpPort` falls outside `ports.publicRelayLow..High` in
   `registry/registry-v1.json`, which is the source of truth these three places
-  must agree on: that key, the edge's nftables rule, and this document.
+  must agree on: that key, `UDP_RELAY_PORT_RANGE` in the forwarder repo's
+  `deploy/site.env` (which renders the edge's nftables rule on every deploy —
+  the rule itself is derived, not authoritative), and this document.
 - **A tile's SPA id is not always its `SH_TILE`.** `solaris` runs as
   `solariscde`, `aros` as `amigaos`. The ticket is signed over the identity the
   DAEMON publishes in its `signaling.json`, not the signalling endpoint's key —
