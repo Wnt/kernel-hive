@@ -155,6 +155,25 @@ entirely page-cached after the first pass. The study's `e5.png` "live ViewPoint 
 frame is **Draco/6085, not Darkstar**; the Star had not reached its desktop on
 this box before this run.
 
+**THE STAR REACHES THE VIEWPOINT 2.0 DESKTOP. Cold start to desktop: 22
+minutes, on a ~72 %-loaded box.** Continuing the box-clock table above:
+
+| box clock | state |
+|---|---|
+| 02:26:37 | **MP 8000 + the bouncing-keyboard screen** (logged off) — 21 min 31 s from cold start |
+| 02:27:11 | **the ViewPoint 2.0 desktop**, after ONE `Home` (= Xerox NEXT) keypress with a 300 ms hold |
+
+**There was no Logon Option Sheet at all.** With no XNS Clearinghouse on the
+wire, this `ViewPoint-2.0-11-9-1990-18-38.img` wakes straight onto a logged-on
+**Workstation Administration** desktop — grey stipple ground, a
+`35176 Free Disk Pages` header strip, and a Workstation Administration window
+offering Desktop Creation / Desktop Deletion / Desktop Changes. So the study's
+warning that the logon sheet "cannot be completed without NEXT" is moot on this
+image: NEXT is still needed, but only as the single wake keystroke.
+
+Total interactive cost of a cold first boot is therefore **six keystrokes** —
+five CRs through Set Time and one NEXT — and 22 minutes of waiting.
+
 **Speed, under a loaded box (not the gate run):** 22 f/s (28 %) during boot,
 settling to **43–53 f/s (55–68 %)** at MP 8000, with the process taking ~178 %
 CPU (emulation + SDL blit). Box was ~72 % busy on all 16 logical CPUs. The
