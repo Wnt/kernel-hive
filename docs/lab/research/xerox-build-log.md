@@ -155,8 +155,64 @@ QEMU std-VGA + modesetting) so the frame fills the captured framebuffer with no
 grey gutter. Do not use a stock mode here — 1280×1024 leaves a large dead margin
 on two sides.
 
-### Open risk
+### Answer for Agent B: the colon, and why it is not a keymap gap
 
-The **unexplained JVM exit** from the first study has not recurred: the
-YES/START moment it was seen at passed cleanly on the first attempt. Soak test
-result recorded below.
+**Yes — Dwarf types a literal `:`, and it is `Shift`+`;` (host `semicolon`),
+exactly where you would expect it.** Proven in a ViewPoint text field (the
+Directory Divider Properties "Icon label"), then compared against a plain `;`
+typed immediately after it. Following your own rule I did not trust the glyph
+by eye at first — but with the cursor moved away and the pair rendered
+side by side, `:` (two dots, no descender) and `;` (dot plus comma tail) are
+unambiguously different bitmaps, adjacent, in one field.
+
+**The interesting part is what it took, and I think it is your actual bug.**
+On the first attempt `Shift`+`;` produced `;`. So did `Shift`+`a` → `a`. But in
+the same sweep `Shift`+`1` → `!`, `Shift`+`8` → `*`, `Shift`+`[` → `{` and
+`Shift`+`=` → `+` all came out correctly shifted. **A partially-applied shift,
+inconsistent key to key** — which is precisely the signature you are
+describing on Darkstar: most shifted characters fine, `Shift`+`;` not.
+
+The cause was the shape of the synthetic event, not the mapping. I was sending
+the modifier and the key **in one QMP `input-send-event` batch**, so both
+transitions land in the same instant and the toolkit sometimes dispatches the
+key before the modifier state updates. Sending the shift as its **own earlier
+event**, held across the key, fixed every case at once:
+
+```
+shift↓ · 350 ms · key↓ · 400 ms · key↑ · 250 ms · shift↑
+```
+
+With that, `Shift`+`a` → `A`, `Shift`+`b` → `B`, `Shift`+`;` → `:`. Same 400 ms
+dwell law as everything else on these machines, now applied to the modifier as
+well as the key. **Try that before touching the Darkstar keymap** — if your
+XTEST helper batches the modifier with the key, or holds it for the same ~12 ms
+that already failed you, this is the same bug wearing a different hat.
+
+Consequence for the Level-V family: **no colon button is needed** in
+`xerox-dwarf`, and probably none in `xerox-star` either. The SPA's shift latch
+already sends shift as a separate `sendKey` and the tile's
+`SH_KEY_MIN_HOLD_MS=400` paces it, which is the working pattern. I have left the
+family without one; add it only if the timing fix does not resolve your case.
+
+### Scene signature and shared-work status
+
+- Level-V keyboard family: **written and pushed** — family `xerox-dwarf` in
+  `spa/src/ui/keyboard/keyboardProfiles.ts`, built from `LEVEL_V_META` (shared
+  labels/hints) + a per-machine `LevelVBinding` + `levelVRow()`. B adds a
+  `STAR_LEVEL_V` table and a `'xerox-star'` family; nothing else changes. Keys a
+  machine has no binding for are omitted automatically — Dwarf has none for
+  SKIP, DEFAULTS or EXPAND, so those buttons are absent here and will appear
+  only on the Star.
+- Scene assembly signature taken by `daybreak`:
+  **`pizzaBox | pizzaBoxD | crtD | keyboardE | paramMouseC`**. Pick a different
+  body+monitor pair for the Star.
+
+### Open risk — the JVM exit
+
+The **unexplained JVM exit** from the first study did **not** recur. The
+YES/START moment it was first seen at passed cleanly on the first attempt, and
+the JVM survived every subsequent step: logon, golden bake, `loadvm` restores,
+the Directory open, a shifted-punctuation sweep, and continuous idling. RSS is
+flat at ~226–229 MB across the whole window with no upward drift, which is the
+shape of a healthy JVM rather than one heading for an OOM. Soak numbers are in
+`docs/guests/daybreak.md`.
