@@ -473,6 +473,16 @@ export const ASSEMBLIES_BY_TILE = {
   gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
   // Three DEC operating systems behind one chooser, on the biggest rack.
   decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
+  // The smallest object in the collection: a ZX81 is a black wedge the size of
+  // a paperback with a printed membrane where the keys should be, plugged into
+  // whatever television was free. eightBitWedgeA is the narrowest wedge in the
+  // kit and homeCrtC the smallest set, which is as close as the parametric
+  // assets get to that pairing; the black-plastic tint below is what stops it
+  // reading as another beige home micro. No mouse and no joystick: the ZX81's
+  // only other port was a cassette recorder.
+  zx81: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtC',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

@@ -227,6 +227,12 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
     badge: 'PDP-11', spec: 'RT-11 / RSX / RSTS • 1970', kit: 'workstation',
   },
+  // Matt black plastic and the red ZX81 legend strip — the only machine here
+  // that is not some shade of beige, grey or DEC blue.
+  zx81: {
+    caseTint: '#1c1a19', accentTint: '#d8462f', tintMix: 0.62,
+    badge: 'ZX81', spec: '1 KB • MONO • 1981', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

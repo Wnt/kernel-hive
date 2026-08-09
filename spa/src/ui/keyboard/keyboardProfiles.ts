@@ -39,7 +39,7 @@ import { XK } from '../../three/useStreamControl';
 export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga';
+  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga' | 'zx81';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -351,6 +351,42 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ]],
   },
 
+  // Sinclair ZX81. The ZX81's 40-key membrane has no Esc, no Backspace, no
+  // cursor keys and no punctuation of its own: everything beyond the letters
+  // and the one-key BASIC keywords is SHIFT plus another key, and the words are
+  // printed above the keys rather than anywhere a modern visitor would look.
+  // MAME passes host SHIFT straight through to the emulated SHIFT, so each of
+  // these is an honest chord and not a gallery invention.
+  //
+  // EVERY ROW HERE WAS PROVED ON THE LIVE FRAMEBUFFER (clone of the tile,
+  // 2026-08-09): RUBOUT deleted the whole PRINT token and the cursor returned
+  // to `K`; FUNCTION changed the cursor glyph from `K` to `F`; BREAK visibly
+  // changed the screen at rest. NEWLINE is proved by the builder's own
+  // keyboard proof.
+  //
+  // WHAT IS DELIBERATELY ABSENT, and why: the ZX81's cursor keys (SHIFT+5/6/7/8)
+  // and EDIT (SHIFT+1). Not because they are believed broken — because they
+  // could not be POSITIVELY verified. The ZX81 draws its cursor as an inverse
+  // block sitting BETWEEN characters, so moving it left shifts the rest of the
+  // line right by one cell and leaves the frame's total ink identical; the
+  // framebuffer proof could not tell "moved" from "ignored", and a key that
+  // might be dead does not go on the exhibit. Plain arrow keys are absent for
+  // a different and firmer reason: the ZX81 has no such keys at all, so they
+  // would be four buttons that cannot work.
+  zx81: {
+    family: 'zx81',
+    rows: [[
+      latch('shift', 'SHIFT', XK.Shift_L, 'SHIFT — the red symbol on each key'),
+      tap('newline', 'NEWLINE', XK.Return, { hint: 'NEWLINE — the ZX81 has no Enter key' }),
+      macro('rubout', 'RUBOUT', [dn(XK.Shift_L), ...press(0x30), up(XK.Shift_L)],
+        { hint: 'SHIFT+0 — the only way to delete; a keyword goes whole' }),
+      macro('zx-function', 'FUNCTION', [dn(XK.Shift_L), ...press(XK.Return), up(XK.Shift_L)],
+        { hint: 'SHIFT+NEWLINE — then a key gives the word printed BELOW it' }),
+      macro('break', 'BREAK', [dn(XK.Shift_L), ...press(0x20), up(XK.Shift_L)],
+        { hint: 'SHIFT+SPACE — stops a running program' }),
+    ]],
+  },
+
   atarist: {
     family: 'atarist',
     rows: [[
@@ -434,6 +470,12 @@ export const OS_FAMILY: Record<string, Family> = {
   // will act on.
   gt40: 'generic',
   apple2: 'appleii',
+  // Sinclair ZX81. Its keyboard is genuinely unlike a PC's, but the hard part
+  // is not a mapping problem: at the `K` cursor the machine is in KEYWORD mode,
+  // so one keypress enters a whole BASIC word (P gives PRINT). What a visitor
+  // cannot find are the SHIFT chords — RUBOUT, EDIT, BREAK, the cursor keys —
+  // which is exactly what the zx81 profile above puts on screen.
+  zx81: 'zx81',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',
 };

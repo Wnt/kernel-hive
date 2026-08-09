@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "id": "zx81",
+  "era_year": 1981,
+  "tileDir": "zx81",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 44,
+        "prelude": "",
+        "line": "  \"zx81        |zx81.sh        |bridge/zx81     |retro    |~6-10m  |full   |tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)\"\n",
+        "value": {
+          "key": "zx81",
+          "script": "zx81.sh",
+          "outputDir": "bridge/zx81",
+          "class": "retro",
+          "estimated": "~6-10m",
+          "automation": "full",
+          "produces": "tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/zx81",
+      "qmp": "/data/vms/streamhost/tiles/zx81/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5831,
+      "exec_port": 5831,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54128,
+      "notes": "exec: labctl exec zx81 \"<cmd>\" (ssh root@:5831, key bridge_key) — reaches the Debian kiosk, not the emulated ZX81"
+    }
+  },
+  "render": {},
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54128,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 128
+  },
+  "guestDoc": "docs/guests/zx81.md",
+  "credentialsRef": "guest/zx81",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "zx81",
+      "SH_QMP": "/data/vms/streamhost/tiles/zx81/qmp.sock",
+      "SH_PORT": "54128",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/zx81/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/zx81/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "100",
+      "SH_KEY_MIN_GAP_MS": "100",
+      "SH_FIXTURE_DESC": "Sinclair ZX81 (1981) at its own untouched power-on screen: a white field with a single inverse-video K in the bottom-left corner and nothing else — no banner, no memory count, no copyright line. K is the machine telling you it is in keyword mode, where one keypress enters a whole BASIC word (P gives PRINT). MAME 0.289 zx81 with -bios 2nd and -ramsize 1K, drawn fullscreen with aspect correction on the bridge kiosk's 1024x768 X root, which is exactly the 4:3 of the television the machine was sold to be plugged into. Keyboard-only exhibit; no pointer device; the ZX81 has no sound hardware, so the AC97 stream is silent by design."
+    },
+    "vmidLabel": 231,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "zx81",
+        "--vmid",
+        "231",
+        "--udp",
+        "54128",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/zx81/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/zx81/tile.env.fixture"
+      ],
+      "deviceSetId": "zx81-current",
+      "launcher": "streamhost/tiles/zx81/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/zx81/tile.env.fixture",
+      "auxFiles": [
+        "streamhost/tiles/zx81/zx81-frame.py",
+        "streamhost/tiles/zx81/type-qmp.py"
+      ],
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "deviceSetSummary": [
+        "-name streamhost-zx81",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5831-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-zx81",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5831-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+      }
+    },
+    "bringUpOrder": 49
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#D8462F",
+    "eraLabel": "1981 · ZX81 (1 KB, black and white)"
+  },
+  "museum": {
+    "id": "zx81",
+    "displayName": "Sinclair ZX81",
+    "year": 1981,
+    "lineage": "Sinclair Research (ZX80 → ZX81 → ZX Spectrum)",
+    "arch": "Zilog Z80A at 3.25 MHz, 1 KB RAM, 8 KB ROM, 32×24 characters, monochrome",
+    "ramMB": 0,
+    "ramKB": 1,
+    "era": "1980s",
+    "accent": "#D8462F",
+    "eraSoftware": [
+      "Sinclair BASIC in 8 KB of ROM, entered one keyword per keypress",
+      "3D Monster Maze — a first-person maze with a pursuing Tyrannosaurus, in 16 KB",
+      "Mazogs, Flight Simulation and the rest of a cassette-tape software trade sold by post",
+      "the ZX Printer's silver spark-eroded paper, and hundreds of type-in listings from magazines"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "Sinclair BASIC",
+      "3D Monster Maze",
+      "type-in listings from Sinclair User and ZX Computing"
+    ],
+    "blurb": "The machine that put a computer in a British newsagent: £69.95 in kit form, a Z80, a membrane keyboard, one kilobyte of memory, no sound and no colour — and a million and a half of them sold.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289 (SUBTARGET=zx81, pinned upstream commit f34f0250, built in the Bookworm chroot by scripts/build-guests/build-mame-zx81.sh); streamhost captures the Linux framebuffer + AC97 audio exactly like every other bridge tile. The ROM is the second revision (-bios 2nd, zx81a.rom, sha1 7b143ee9…), which is what almost every shipped ZX81 contained; it is preservation-source material copyright Nine Tiles Networks Ltd, staged on the box and never committed. RAM is pinned to the machine as sold, -ramsize 1K, rather than MAME's 16K default. The golden is the untouched power-on screen — a white field with one inverse K — and readiness is decided GEOMETRICALLY, not by counting bright pixels, because this machine blanks its display while it computes and a photometric test cannot tell that frame from the fixture. Keyboard-only exhibit; the ZX81 has no sound hardware. See streamhost/docs/BRIDGE.md and docs/guests/zx81.md."
+  },
+  "reset": {
+    "tileDir": "zx81",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Sinclair ZX81 power-on screen: an empty white field with a single inverse-video K cursor in the bottom-left of the 32×24 grid, drawn fullscreen by MAME 0.289 zx81 (-bios 2nd, -ramsize 1K) on the kiosk's 1024x768 X root. The golden INTERNAL snapshot restores that untouched cold boot; no post-restore keys. Baking anything else was never on the table — this machine prints no banner at all, so its power-on screen is the only state that is unambiguously the machine's own rather than a previous visitor's. Keyboard-only exhibit (no mouse); AC97 audio is present but silent, because the ZX81 had no sound hardware."
+  },
+  "notes": [
+    "slot 128 / UDP 54128 / VMID 231 / ssh 5831",
+    "readiness predicate: streamhost/tiles/zx81/zx81-frame.py (geometric, validated against a dead emulator, an empty white field and a typed line)"
+  ]
+}
