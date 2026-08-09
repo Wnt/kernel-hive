@@ -41,7 +41,7 @@ export type Family =
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
   | 'zxspectrum' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
-  | 'bbcmicro';
+  | 'bbcmicro' | 'armeval';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -83,6 +83,22 @@ const sym = (id: string, label: string, c: string): KeyDef =>
 const caps = (id: string, label: string, c: string): KeyDef =>
   macro(id, label, [dn(XK.Shift_L), ...press(c.charCodeAt(0)), up(XK.Shift_L)],
     { hint: `CAPS SHIFT + ${c.toUpperCase()}` });
+
+/**
+ * A whole supervisor command typed as ONE macro, then RETURN.
+ *
+ * Only for the armeval exhibit, and it works there for a specific reason: the
+ * ARM Evaluation System's supervisor takes bare words, and the host BBC's MOS
+ * has CAPS LOCK on at reset — so the LOWERCASE keysyms below (unshifted, as the
+ * profile invariant requires) arrive at the machine upper case, which is what
+ * the supervisor's parser wants. The steps go out through the normal sendKey
+ * path, so streamhost's per-tile SH_KEY_MIN_HOLD_MS/GAP_MS pacing applies to
+ * them exactly as it does to hand-typed keys.
+ */
+const cmd = (id: string, label: string, text: string, hint: string): KeyDef =>
+  macro(id, label,
+    [...text.toLowerCase().split('').flatMap((c) => press(c.charCodeAt(0))), ...press(XK.Return)],
+    { hint });
 
 /** mod↓ · key↓↑ · mod↑ */
 const chord = (id: string, label: string, mod: number, keysym: number, hint?: string): KeyDef =>
@@ -527,6 +543,43 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ],
   },
 
+  // The ARM Evaluation System has no operating system and no application — the
+  // exhibit IS its 16 KB supervisor ROM, so the keyboard is the whole exhibit
+  // and these four macros are its entire guided tour. Every one of them was
+  // driven against the restored golden by framebuffer before it shipped.
+  armeval: {
+    family: 'armeval',
+    rows: [[
+      cmd('sv-help', 'HELP', 'HELP',
+        'HELP — the firmware names and dates itself: Executive version 1.00 (14th August 1986)'),
+      cmd('sv-dis', 'DISASSEMBLE', 'DIS 3000000',
+        'DIS 3000000 — the supervisor\'s own ARM disassembler walking the bootstrap ROM. '
+        + 'It pages: press ⏎ to finish, any other key to continue'),
+      tap('ret', '⏎', XK.Return),
+      tap('esc', 'ESCAPE', XK.Escape, { hint: 'ESCAPE — stops a running program' }),
+      tap('bksp', '⌫', XK.BackSpace, { repeat: true }),
+      ...ARROWS,
+    ]],
+    moreRows: [
+      [
+        // NOT a way into BASIC — there is no ARM BASIC in this ROM. It is the
+        // machine's most famous failure mode, and the placard says so: the
+        // supervisor is handed the host's 6502 BASIC, refuses it, and prints a
+        // 1986 register dump. Measured safe: it returns to the A* prompt and
+        // the next command works, so it is not marked `danger`.
+        cmd('sv-basic', 'BASIC → register dump', 'BASIC',
+          'BASIC — hands the ARM the host\'s 6502 ROM. It refuses ("Not ARM code") and dumps '
+          + 'its registers. Harmless: the A* prompt comes straight back'),
+        cmd('sv-showregs', 'SHOWREGS', 'SHOWREGS',
+          'SHOWREGS — re-shows the registers saved by the last trap'),
+      ],
+      [
+        tap('break', 'BREAK', F(12),
+          { danger: true, hint: 'BREAK — soft-resets the machine to its banner; your work is lost' }),
+      ],
+    ],
+  },
+
   appleii: {
     family: 'appleii',
     rows: [[
@@ -714,6 +767,9 @@ export const OS_FAMILY: Record<string, Family> = {
   // machine's ten RED function keys, which MAME drives from F1..F10 offset by
   // one (host F1 is the BBC's f0). None of the three is findable by guessing.
   bbcmicro: 'bbcmicro',
+  // ARM Evaluation System: the same BBC host keyboard, but the exhibit is the
+  // ARM supervisor rather than BASIC, so the rows are its four commands.
+  armeval: 'armeval',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',
