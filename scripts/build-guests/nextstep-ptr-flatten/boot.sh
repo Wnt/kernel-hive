@@ -3,6 +3,7 @@
 set -euo pipefail
 D=/data/vms/soltest/NSPTR-flatten-accel
 SSH_PORT=5948
+# shellcheck source=/dev/null  # box-only HARD guard, installed at /usr/local/bin
 source /usr/local/bin/clone-guard
 clone_guard_assert_path "$D" || exit 1
 clone_guard_assert_qmp "$D/qmp.sock" || exit 1

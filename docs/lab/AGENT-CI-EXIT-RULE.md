@@ -16,6 +16,9 @@ cross-cutting gates, which every branch owes:
 - **file-size budget** — `node scripts/check-file-size.mjs --strict`
 - **generated-file drift** — `make tile-registry-check`
 
+Plus one gate CI cannot run, enforced by the pre-push hook whenever the box is
+reachable: **box-sync drift** — `scripts/dev/verify-box-sync.sh` (see below).
+
 The gate is strict on hygiene and debt (unused
 code/deps, file growth, stale generated artifacts), pragmatic on style,
 runtime-aware (Python-2.6 in-guest agents are held to their own reality, not the
@@ -49,6 +52,39 @@ scripts/check-generated-drift.sh --regen
 ( cd streamhost && cargo test --workspace )   # rust.yml
 ( cd spa && npm run build )                   # spa.yml (tsc + vite)
 ```
+
+## Box-sync drift — the one gate CI cannot run
+
+`scripts/dev/verify-box-sync.sh` MD5-gates every documented repo↔box mirror pair
+(see the "Box-sync pairs" table in [`scripts/README.md`](../../scripts/README.md)).
+It needs `ssh lab`, which GitHub Actions does not have, so it is **deliberately
+NOT in `.github/workflows/quality.yml`** — a job that can never reach the box
+would be permanently red, and a permanently-red job is worse than none.
+
+Instead it runs from `.claude/hooks/pre-push-gate.sh`, probe-gated:
+
+| Environment | Behaviour |
+|---|---|
+| Box reachable (`ssh lab` answers within 4 s) | Runs the check. **Any drift hard-fails the push.** |
+| Box unreachable (public clone, offline laptop, cloud VM without the door) | Prints `skip (ssh lab unreachable)`; never fails. |
+| GitHub Actions | Never runs it at all — the workflow has no box-sync job. |
+
+The check itself is placeholder-aware: pairs marked `scrub` are deployed with
+the operator's real address substituted in, so their box-side hash is taken
+**after** reversing the substitution, on the box, inside the one batched SSH
+session. Without `registry/local.env` those pairs report `UNCHECKED`, which does
+not fail the gate — they never silently pass and never spuriously fail.
+
+```sh
+scripts/dev/verify-box-sync.sh            # only rows needing attention, grouped
+scripts/dev/verify-box-sync.sh --all      # every row, including MATCH
+scripts/dev/verify-box-sync.sh --table    # TSV for scripting
+```
+
+Fix drift **per row**: the repo is authoritative for source; the box is
+authoritative for generated/live artifacts (`tiles.json`, the golden manifest's
+live reset allow-list). `MISSING_ON_BOX` means "never deployed"; `MISSING_IN_REPO`
+means "stale or scratch on the box" — delete it there rather than adopting it.
 
 Run them all locally in one shot with the pre-push hook
 (`.claude/hooks/pre-push-gate.sh`) — see below.

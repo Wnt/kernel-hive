@@ -534,7 +534,7 @@
   },
   "nextstep": {
    "tileDir": "nextstep",
-   "pointer": "rel",
+   "pointer": "abs",
    "touch": false,
    "resetMode": "loadvm",
    "snapshot": "golden",

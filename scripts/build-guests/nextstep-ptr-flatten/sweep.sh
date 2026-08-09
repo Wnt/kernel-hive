@@ -2,6 +2,8 @@
 # sweep.sh S N T_us [tag] — home the NeXT cursor into the top-left clamp, then
 # issue N relative events of (S,0) spaced T_us apart, and read the landed
 # cursor position off the framebuffer.
+# shellcheck disable=SC2086  # $FLAT/$D/$E/$TAG are unquoted on purpose (optional flags, no spaces)
+# shellcheck source=/dev/null  # box-only rig library, not in the repo
 source /data/vms/soltest/NSPTR-flatten-accel/lib.sh
 S=$1
 N=$2
