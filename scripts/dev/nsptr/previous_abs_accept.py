@@ -16,6 +16,7 @@ measurement:
 Usage:  previous_abs_accept.py <sweep|robust|latency|all> [tag]
 """
 import json
+import os
 import subprocess
 import sys
 import time
@@ -214,20 +215,31 @@ def sweep(loc, tag):
     return rows
 
 
-def guest_moves_cursor():
-    """Make the GUEST move the cursor: pop the main menu under the pointer with
-    the right button, walk into it, dismiss it with a click on the desktop."""
-    place(500, 400, 0.4)
-    nsc("btn 0 1")
-    time.sleep(0.5)
-    nsc("btn 0 0")
-    time.sleep(0.8)
-    nsc("slam 5 5 6")
-    time.sleep(1.0)
+def guest_moves_cursor(tag):
+    """Make the GUEST change state and move the cursor by a path that is not
+    the absolute write: click the Workspace menu's View item so its submenu
+    opens, walk the cursor with accelerated RELATIVE deltas (the driver's own
+    curve), then dismiss the submenu with a click on the desktop. Returns the
+    framebuffer proof that the submenu really opened and really closed."""
+    box = (0, 92, 160, 210)          # y0, x0, y1, x1 of the submenu
+    place(60, 111, 0.4)
+    before = shot(tag + "-menu-before")
     nsc("btn 1 1")
-    time.sleep(0.3)
+    time.sleep(0.35)
     nsc("btn 1 0")
     time.sleep(1.2)
+    opened = shot(tag + "-menu-open")
+    nsc("slam 5 5 6")                # the guest's own accelerated relative path
+    time.sleep(1.2)
+    place(60, 111, 0.4)              # click View again: the submenu toggles shut
+    nsc("btn 1 1")
+    time.sleep(0.35)
+    nsc("btn 1 0")
+    time.sleep(1.5)
+    closed = shot(tag + "-menu-closed")
+    y0, x0, y1, x1 = box
+    return {"submenu_opened": bool((before[y0:y1, x0:x1] != opened[y0:y1, x0:x1]).sum() > 500),
+            "submenu_closed": bool((closed[y0:y1, x0:x1] != opened[y0:y1, x0:x1]).sum() > 500)}
 
 
 def latency(tag, n=24):
@@ -268,10 +280,16 @@ def main():
     tag = sys.argv[2] if len(sys.argv) > 2 else what
     res = {"tag": tag}
 
-    st = discover()
-    print("discovery:", st)
-    if not st or st["result"] != "2":
-        raise SystemExit("FAIL: cursorLoc discovery did not converge: %s" % st)
+    if os.environ.get("NSPTR_NO_DISCOVER"):
+        st = dict(kv.split("=") for kv in nsc("status")[0].split()[1:])
+        print("discovery SKIPPED, restored state:", st)
+        if st["result"] != "2":
+            raise SystemExit("FAIL: no learned cursorLoc after restore: %s" % st)
+    else:
+        st = discover()
+        print("discovery:", st)
+        if not st or st["result"] != "2":
+            raise SystemExit("FAIL: cursorLoc discovery did not converge: %s" % st)
     res["discovery"] = st
 
     loc = build_locator(tag)
@@ -295,7 +313,8 @@ def main():
 
     if what in ("robust", "all"):
         print("\n--- criterion 2: robustness after the guest moved the cursor ---")
-        guest_moves_cursor()
+        res["guest_move"] = guest_moves_cursor(tag)
+        print("guest moved the cursor / changed state:", res["guest_move"])
         res["after_guest_move"] = {"ram": ram_pos(),
                                    "pixel": loc.locate(shot(tag + "-afterguest"))}
         print("cursor after the guest moved it:", res["after_guest_move"])

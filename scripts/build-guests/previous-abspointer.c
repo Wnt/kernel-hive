@@ -33,6 +33,12 @@ const char AbsPointer_fileid[] = "Previous abspointer.c";
 extern unsigned char *NEXTRam;
 #define ABS_RAM_LEN 0x04000000u
 
+/* The monochrome MegaPixel framebuffer, so a host measuring input-to-photon
+ * latency can watch the emulated PIXELS change instead of a host screendump
+ * (1120x832 at 2 bpp = 280 bytes per scanline). */
+extern unsigned char *NEXTVideo;
+#define ABS_VRAM_LEN 0x00040000u
+
 #define ABS_MAX_CAND 65536
 #define ABS_QLEN     4096
 
@@ -70,6 +76,22 @@ static int absDiscRound;
 #define ABS_PROBE_X(r) ((r) ? 800 : 300)
 #define ABS_PROBE_Y(r) ((r) ? 600 : 200)
 static int absDiscResult; /* 0 = never run, 1 = running, 2 = found, 3 = failed */
+
+/* Pending absolute target, and the cooldown that paces the unit KMS packets.
+ *
+ * The driver's acceleration is 1:1 for a delta of magnitude 1 only while the
+ * packets are at least ~10 ms apart; hammered at the 200 Hz drain rate it
+ * rises to about 1.9 and an absolute placement lands a few pixels long
+ * (measured: a burst of 30 back-to-back placements ended 7 px past its
+ * target). So placements are paced at one per 2 ticks == 100 Hz, and a burst
+ * arriving faster than that COALESCES to its most recent target -- which is
+ * what a pointer stream wants anyway, since the intermediate positions are
+ * already stale by the time they could be drawn. */
+static int absPendX;
+static int absPendY;
+static bool absPendValid;
+static int absCooldown;
+#define ABS_MIN_TICKS 2
 
 /* ------------------------------------------------------------------ */
 /* Guest RAM helpers                                                    */
@@ -254,6 +276,14 @@ void AbsPointer_Poll(void) {
 		return;
 	}
 
+	if (absCooldown > 0) absCooldown--;
+	if (absPendValid && absCooldown == 0) {
+		abs_place(absPendX, absPendY);
+		absPendValid = false;
+		absCooldown  = ABS_MIN_TICKS;
+		return;
+	}
+
 	if (!absq_get(&it)) return;
 
 	switch (it.type) {
@@ -269,7 +299,9 @@ void AbsPointer_Poll(void) {
 			kms_mouse_move(0, 0);
 			break;
 		case ABSQ_ABS:
-			abs_place(it.a, it.b);
+			absPendX     = it.a;
+			absPendY     = it.b;
+			absPendValid = true;
 			break;
 		case ABSQ_DISC:
 			absDiscResult = 1;
@@ -407,6 +439,16 @@ static void abs_command(int fd, char *line) {
 				NEXTRam[off + i] = (unsigned char)strtoul(b, NULL, 16);
 			}
 			abs_reply(fd, "ok\n");
+		}
+	} else if (!strcmp(tok[0], "vsum") && ntok >= 3) {
+		uint32_t off, sum = 0;
+		int len = atoi(tok[2]), i;
+		if (!abs_hex(tok[1], &off) || len <= 0 || off + (uint32_t)len > ABS_VRAM_LEN) {
+			abs_reply(fd, "err range\n");
+		} else {
+			for (i = 0; i < len; i++) sum = sum * 131u + NEXTVideo[off + i];
+			snprintf(reply, sizeof(reply), "ok %u\n", sum);
+			abs_reply(fd, reply);
 		}
 	} else if (!strcmp(tok[0], "scan") && ntok >= 5) {
 		abs_scan(atoi(tok[1]), atoi(tok[2]), atoi(tok[3]), atoi(tok[4]));
