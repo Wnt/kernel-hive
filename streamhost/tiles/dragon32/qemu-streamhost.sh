@@ -10,7 +10,7 @@
 # not here: `-ext ""`. MAME's dragon32 defaults its `ext` slot to `dragon_fdc`,
 # so without that flag the machine boots DRAGONDOS 1.0 instead of BASIC — and
 # `-verifyroms` demands the FDC ROM that causes it. See
-# scripts/build-guests/dragon32.sh, which asserts the banner by OCR.
+# scripts/build-guests/tiles/dragon32.sh, which asserts the banner by OCR.
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like mpf2/c64/plus4/vic20).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base

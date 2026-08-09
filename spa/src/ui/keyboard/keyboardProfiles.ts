@@ -274,7 +274,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   // (it is Tab under VICE's symbolic keymap, which nobody would guess). So the
   // whole documented sequence rides in one macro: C= + C, then "to Word" / "to
   // Calculator" / "to File manager", then RETURN. The sequences are the ones
-  // scripts/build-guests/plus4.sh proves against the live guest on every build.
+  // scripts/build-guests/tiles/plus4.sh proves against the live guest on every build.
   plus4: {
     family: 'plus4',
     rows: [[
@@ -309,7 +309,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   // C64 mode paints the VIC-II while the visible canvas is the VDC. Measured
   // 2026-08-09 — two byte-identical frames 10 s apart, against a control pair
   // that differs as the cursor blinks — and re-measured by
-  // scripts/build-guests/c128.sh on every build.
+  // scripts/build-guests/tiles/c128.sh on every build.
   c128: {
     family: 'c128',
     rows: [[

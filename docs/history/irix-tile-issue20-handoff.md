@@ -53,7 +53,7 @@ sgi indy_4610 -bios b10 -rompath <roms> -gio64_gfx xl24 \
 - **MAME must be 0.288+** (0.276 in Debian has a *different* fatal GIO2 emulation
   panic, unrelated to KVM — fixed in mainline by 0.288).
 - **`ui.ini` must contain `skip_warnings 1`** AND the binary must carry the
-  one-line patch `scripts/build-guests/mame-irix-skip-warnings.patch` (makes
+  one-line patch `scripts/build-guests/patches/mame-irix-skip-warnings.patch` (makes
   `-skip_warnings` skip the startup warning unconditionally). Without it the
   warning needs a keypress; dismissing it with a **mouse click** trips the GIO2
   panic during early boot, and keyboard dismissal in a WM-less kiosk is unreliable.
@@ -92,7 +92,7 @@ sgi indy_4610 -bios b10 -rompath <roms> -gio64_gfx xl24 \
   mips3.cpp, and the 2026-08-04 cold build here passed -Werror clean without it.
 - `bookworm-chroot/` — the gcc-12 chroot. Superseded by `trixie-chroot/` for
   the IRIX build, but **do not delete it**:
-  `scripts/build-guests/build-mame-mpf2.sh` builds there deliberately, to match
+  `scripts/build-guests/emulators/build-mame-mpf2.sh` builds there deliberately, to match
   the glibc/libstdc++ ABI of the frozen Debian 12 bridge base. Its gcc-12 MAME
   build panics under KVM like all builds; a clang-16 rebuild attempt failed to
   compile. Also used as an nspawn rootfs earlier (its /dev got polluted; prefer
@@ -115,11 +115,11 @@ sgi indy_4610 -bios b10 -rompath <roms> -gio64_gfx xl24 \
 
 ## Repo changes this session (see git log / this branch)
 
-- `scripts/build-guests/irix-bridge-install.sh`, `irix-bridge-launch.sh` — the
+- `scripts/build-guests/irix/irix-bridge-install.sh`, `irix-bridge-launch.sh` — the
   KVM-bridge install/launch scripts. **Superseded by the LXC approach** but kept
   (document the media staging, ui.ini, diff_directory, matchbox, the bundled-glibc
   launch, and the GIO2/skip_warnings rationale). Do not wire these to the registry.
-- `scripts/build-guests/mame-irix-skip-warnings.patch` — the MAME patch (apply to
+- `scripts/build-guests/patches/mame-irix-skip-warnings.patch` — the MAME patch (apply to
   any MAME build used for this tile).
 - `docs/lab/irix-tile-issue20-handoff.md` — this doc.
 
@@ -280,7 +280,7 @@ that, mid-session). Everything is now copied into the production tree
 - Shipped fix: golden is `444` + `chattr +i`, and `x11-runtime.sh` re-copies it
   to a throwaway per-launch `disk.chd` in the tile dir (~2 s). Verified: the
   golden md5 is byte-stable across four launches.
-- **RAM: 16 MB → 256 MB**, via `scripts/build-guests/mame-indy-256mb-ram.patch`
+- **RAM: 16 MB → 256 MB**, via `scripts/build-guests/patches/mame-indy-256mb-ram.patch`
   (banks A+B `4x32M`). Offline check on any binary:
   `sgi -listxml indy_4610` → `4x32M default="yes"` for banks A and B. Live proof
   is a framebuffer screenshot of `hinv -c memory` → `Main memory size: 256
@@ -454,7 +454,7 @@ at a baseline of ~8% no 14-trial arm on one core could have.
    DMA page-table addresses above physical 0x0fffffff**, so on a 256 MB machine
    (which only our own RAM patch creates) IRIX's DMA mappings are read from the
    wrong place and the DMA engine scribbles on kernel memory. Fixed by
-   `scripts/build-guests/mame-mc-dma-ptbase-mask.patch`; reproduction rig and the
+   `scripts/build-guests/patches/mame-mc-dma-ptbase-mask.patch`; reproduction rig and the
    A/B evidence are in `docs/guests/irix.md`. Trigger: Toolchest → Help →
    "Welcome to SGI". (Historic note: an earlier "5 panics out of 5 boots" run was
    a bug in the park script's own detector calling healthy logged-in sessions
@@ -753,7 +753,7 @@ patch and showed a 2x speed difference having nothing to do with the variable
 under test), `syncbatch.sh`, `probe.lua` (per-second emu/PC/geometry plus
 emulated-time snapshots), `results*.txt`, and 4 preserved `hang-disk.chd`
 overlays. `/data/vms/soltest/irix-forensics/hang-forensics.sh` reads a guest's
-logs out of any overlay. `scripts/build-guests/irix-park-desktop.sh` parks a
+logs out of any overlay. `scripts/build-guests/irix/irix-park-desktop.sh` parks a
 clone at a real 4Dwm desktop unattended.
 
 
@@ -817,7 +817,7 @@ launcher deploy + one golden swap + the registry flip, spelled out in
 `368fcfb9b56fb4165a4e456238dc1a18` and is what the exhibit runs.
 
 **`irixser/1` was withdrawn after review.** Four defects, all now covered by
-`scripts/build-guests/irix-serial-selftest.py` (which fails on /1 and passes on
+`scripts/build-guests/irix/irix-serial-selftest.py` (which fails on /1 and passes on
 /2): the framing sat outside the checksum, so a mangled id became a bogus
 timeout; `RESULT` replayed under the ORIGINAL id, so a client could return
 truncated output with a SUCCESS status; requests were not checksummed at all, so
@@ -874,7 +874,7 @@ bake rig wires it and uses it once, to type the agent in.
 
 ### Rig left behind (reusable)
 
-`scripts/build-guests/irix-serial-rig.sh` (boot / exec / console / shot / halt a
+`scripts/build-guests/irix/irix-serial-rig.sh` (boot / exec / console / shot / halt a
 namespaced clone with the channel wired, with black-screen-hang retries and
 readiness measured by the CHANNEL answering, not by a timer) and
 `irix-serial-install.sh` (bake + `cksum` verification on both sides). Clones live

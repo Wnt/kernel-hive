@@ -8,10 +8,10 @@
       {
         "order": 34,
         "prelude": "",
-        "line": "  \"mpf2         |mpf2.sh        |bridge/mpf2     |retro    |~3-5m   |full   |tiles/mpf2 cold-boot overlay (MAME mpf2 → Applesoft BASIC)\"\n",
+        "line": "  \"mpf2         |tiles/mpf2.sh                 |bridge/mpf2     |retro    |~3-5m   |full   |tiles/mpf2 cold-boot overlay (MAME mpf2 → Applesoft BASIC)\"\n",
         "value": {
           "key": "mpf2",
-          "script": "mpf2.sh",
+          "script": "tiles/mpf2.sh",
           "outputDir": "bridge/mpf2",
           "class": "retro",
           "estimated": "~3-5m",

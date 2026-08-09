@@ -29,7 +29,7 @@ the same framebuffer gate before an OS worker promotes a tile.
 The reusable builder is:
 
 ```
-scripts/build-guests/graphical-bridge.sh
+scripts/build-guests/lib/graphical-bridge.sh
 ```
 
 It is fail-closed to `/data/vms/soltest/<name>/`, sources
@@ -53,7 +53,7 @@ Required extension points:
 The reference build, run on the lab box from a synced repository, is:
 
 ```bash
-scripts/build-guests/graphical-bridge.sh \
+scripts/build-guests/lib/graphical-bridge.sh \
   --tile gbridge-issue16 --vmid 99916 \
   --udp 54996 --ssh-port 5896 --web-port 8296 \
   --out-dir /data/vms/soltest/gbridge-issue16 \

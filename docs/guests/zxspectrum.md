@@ -5,7 +5,7 @@ bridge SSH 5830). Emulator-in-captured-Linux **bridge** tile in the family of
 c64 / apple2 / atarist / amiga / mpf2 / vic20 / plus4 — see
 [`streamhost/docs/BRIDGE.md`](../../streamhost/docs/BRIDGE.md).
 
-Builder: [`scripts/build-guests/zxspectrum.sh`](../../scripts/build-guests/zxspectrum.sh)
+Builder: [`scripts/build-guests/tiles/zxspectrum.sh`](../../scripts/build-guests/tiles/zxspectrum.sh)
 (`--force` rebuilds the overlay from scratch; the whole thing is automated).
 
 ## What the exhibit is

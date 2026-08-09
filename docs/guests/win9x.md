@@ -157,8 +157,8 @@ mode set or the first transient repaint.
 
 ## Builder rebuild trial: Win95, then Win98SE (2026-07-14/15)
 
-This is the reproducible fixture-bake record for `scripts/build-guests/win95.sh`
-followed by `scripts/build-guests/win98.sh`. Everything ran below one disposable
+This is the reproducible fixture-bake record for `scripts/build-guests/tiles/win95.sh`
+followed by `scripts/build-guests/tiles/win98.sh`. Everything ran below one disposable
 `/data/vms/soltest/repro-win9x-<timestamp>/` namespace with unique QMP sockets,
 VNC displays, host-forward ports and pidfiles. The live tiles and
 `/data/gallery-guests` were read-only. Every state claim below was checked from a
@@ -381,7 +381,7 @@ though the guest is in 16-bit packed mode. Verify depth from the real framebuffe
 Display Properties → Settings text (or driver/mode state), not the PNG container's
 chosen encoding.
 
-The from-source automation in `scripts/build-guests/win95.sh` §6c downloads and
+The from-source automation in `scripts/build-guests/tiles/win95.sh` §6c downloads and
 hash-checks this archive, performs the CRLF-aware INF patch, stages `C:\VBEMP`, drives
 the Have-Disk selection on the KVM/std copy, cold-boots, imports `DRAG.REG`, and emits
 `verify-vbemp-640x480x16.ppm`. The live golden was re-baked under pinned
@@ -479,7 +479,7 @@ The display-driver swap is a one-time guest change. Two reproducible ways:
    (TCG boots fine). Win95 sees the hardware change and pops the *Update Device Driver
    Wizard* offering "Standard PCI Graphics Adapter (VGA)"; click Next→Finish→Restart
    (drivable headless with QMP `send-key ret`, like the existing PnP "settle" step in
-   `scripts/build-guests/win95.sh`). After the restart the image is KVM-ready and boots normally
+   `scripts/build-guests/tiles/win95.sh`). After the restart the image is KVM-ready and boots normally
    under `-vga std` + the KVM args above.
 2. **In Safe Mode:** boot Safe Mode under KVM (works), Device Manager → Display adapters
    → change driver to Standard PCI Graphics Adapter (VGA), reboot normal.
@@ -606,7 +606,7 @@ side `InputBackend::Warpd` is unchanged):
   old KVM timer/freeze — **no `FIX95CPU`, no `kernel-irqchip=off`, no `-apic` needed**. TCG +
   `acpi=on` is an equally-clean fallback (idle auto-pause covers the TCG idle cost).
 
-  **Bake recipe (baked into `scripts/build-guests/win98.sh`):** stage `hidusb.sys` + cabs
+  **Bake recipe (baked into `scripts/build-guests/tiles/win98.sh`):** stage `hidusb.sys` + cabs
   (above) → cold-boot `acpi=on` → drive the PnP cascade, pointing any "insert disk" copy prompt
   at `C:\WINDOWS\OPTIONS\CABS` (Win98 then remembers it) and Cancel/Finish-marking the handful
   of driverless ACPI stubs (ACPI Generic Bus/EIO Bus, PnP Monitor, IDE bus-master) → idle
@@ -1202,7 +1202,7 @@ desktop** — all icons + Start taskbar + clock — under TCG+smp1+800x600.
 Both games on the streamhost `win95` tile failed to start for gallery viewers.
 Root-caused with framebuffer evidence, fixed, clone-validated
 (`/data/vms/soltest/win95-c3/`), replayed on the live tile and baked with
-`savevm golden`. `scripts/build-guests/win95.sh` now stages all of it for a
+`savevm golden`. `scripts/build-guests/tiles/win95.sh` now stages all of it for a
 fresh bake (DUKE3D.CFG / DINO.BAT / STARTUP.INI / DIG.INI / desktop PIFs /
 AUTOEXEC BLASTER line are embedded verbatim in the script).
 
@@ -1241,7 +1241,7 @@ tested. User-reported as "starting GTA crashes the VM".
   (320×200 in-game; intro/menu unchanged). `GTA.pif` program path patched
   in-place in the FAT partition (raw byte patch at the PIF's program field —
   preserves the long-filename desktop label "GTA"), `DINO.BAT` → `gta24.exe`
-  for the K.EXE chain. `scripts/build-guests/win95.sh` §6 stages gta24 + the
+  for the K.EXE chain. `scripts/build-guests/tiles/win95.sh` §6 stages gta24 + the
   retargeted PIF for fresh bakes.
 - **Bake record:** pre-swap golden backed up as
   `tiles/win95/win95-golden.qcow2.bak-preGta24-1784042733`; old internal

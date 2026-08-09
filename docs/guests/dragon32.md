@@ -13,7 +13,7 @@ INTERNAL qcow2 snapshot inside a thin overlay on the frozen shared bridge base.
 | guest RAM | 768 MB |
 | X root | 1024×768 (bridge base stock) |
 | emulator | MAME 0.289, `SUBTARGET=dragon`, `/opt/dragon32/mame/dragon` |
-| builder | `scripts/build-guests/dragon32.sh` (+ `build-mame-dragon32.sh`) |
+| builder | `scripts/build-guests/tiles/dragon32.sh` (+ `build-mame-dragon32.sh`) |
 | pointer | none — keyboard-only exhibit |
 
 ## The trap: `-ext ""` is the exhibit
@@ -295,7 +295,7 @@ arm in `bootrec-tiles.conf` record the audit. No clip is published and
 
 Rollback: the overlay is a thin file on the frozen shared base and the golden
 lives inside it. To rebuild from scratch, stop `streamhost@dragon32`, run
-`scripts/build-guests/dragon32.sh --force` (which stops only this tile, replaces
+`scripts/build-guests/tiles/dragon32.sh --force` (which stops only this tile, replaces
 the overlay and re-bakes), then re-emit. Nothing outside
 `/data/vms/streamhost/tiles/dragon32/` and `/data/assets-staging/dragon32/` is
 touched.

@@ -11,7 +11,7 @@ Verified live on the dry-run box 2026-07-04. Written as a **merge hand-off** so 
 orchestrator could reconcile `gallery-integrate-all.sh` (neko-era, deleted;
 concurrently edited by sibling agents at the time).
 
-Reproducible image build: `scripts/build-guests/haiku.sh` (bash -n clean).
+Reproducible image build: `scripts/build-guests/stages/haiku.sh` (bash -n clean).
 
 ---
 
@@ -130,7 +130,7 @@ superseded by the streamhost tile before it (see the banner at the top).
 ## Reproduce from scratch (fresh NVMe)
 
 ```sh
-scripts/build-guests/haiku.sh              # fetch + SHA256-verify + headless GUI proof
+scripts/build-guests/stages/haiku.sh              # fetch + SHA256-verify + headless GUI proof
 #   --arch x86_gcc2h   32-bit classic build
 #   --force            re-download
 #   --no-verify        skip the boot check

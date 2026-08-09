@@ -8,10 +8,10 @@
       {
         "order": 28,
         "prelude": "",
-        "line": "  \"apple2       |apple2.sh      |bridge/apple2  |retro    |~3-5m   |full   |tiles/apple2 overlay + golden (Apple //e → GEOS)\"\n",
+        "line": "  \"apple2       |tiles/apple2.sh               |bridge/apple2  |retro    |~3-5m   |full   |tiles/apple2 overlay + golden (Apple //e → GEOS)\"\n",
         "value": {
           "key": "apple2",
-          "script": "apple2.sh",
+          "script": "tiles/apple2.sh",
           "outputDir": "bridge/apple2",
           "class": "retro",
           "estimated": "~3-5m",

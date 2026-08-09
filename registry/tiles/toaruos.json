@@ -8,10 +8,10 @@
       {
         "order": 1,
         "prelude": "",
-        "line": "  \"toaruos     |toaruos.sh     |toaruos     |fast     |~3m     |full   |image.iso (live CD)\"\n",
+        "line": "  \"toaruos     |tiles/toaruos.sh              |toaruos     |fast     |~3m     |full   |image.iso (live CD)\"\n",
         "value": {
           "key": "toaruos",
-          "script": "toaruos.sh",
+          "script": "tiles/toaruos.sh",
           "outputDir": "toaruos",
           "class": "fast",
           "estimated": "~3m",

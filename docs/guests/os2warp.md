@@ -2,7 +2,7 @@
 
 **Tile:** IBM OS/2 Warp 4 (1996, "Merlin") — Workplace Shell desktop
 **Port:** http://192.0.2.12:**8108**/?usr=guest&pwd=neko
-**Build script:** `scripts/build-guests/os2warp.sh` (from-scratch, reproducible, `bash -n` clean)
+**Build script:** `scripts/build-guests/tiles/os2warp.sh` (from-scratch, reproducible, `bash -n` clean)
 **Golden image (host):** `/data/gallery-guests/OS2Warp/os2.qcow2` → in container `/guests/OS2Warp/os2.qcow2`
 **Proof screenshot:** `/data/gallery-guests/OS2Warp/os2-warp4-desktop.png`
 **Status:** LIVE + framebuffer-verified. Now **Warp 4.52 (MCP2) at 1024×768×64k**
@@ -678,7 +678,7 @@ CRLF `C:\STARTUP.CMD`: start `WARPD.EXE`, wait 60 seconds for WPS to settle,
 destroy each gallery-owned object ID, and recreate it in `<WP_DESKTOP>` with
 `SysCreateObject` and the `U` flag. The browser entries are gallery-owned
 `WPShadow` objects, so the original system-owned launch data and icons stay
-authoritative. Both `scripts/build-guests/os2warp.sh` and
+authoritative. Both `scripts/build-guests/tiles/os2warp.sh` and
 `scripts/dev/os2-gengradd-hires.sh prep` install this same source; future base
 builds and hi-res re-bakes therefore use one inventory.
 

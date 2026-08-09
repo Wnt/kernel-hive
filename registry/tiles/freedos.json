@@ -8,10 +8,10 @@
       {
         "order": 11,
         "prelude": "",
-        "line": "  \"freedos     |freedos.sh     |FreeDOS     |retro    |~10-15m |full*  |freedos.qcow2 (games+Arachne)\"\n",
+        "line": "  \"freedos     |tiles/freedos.sh              |FreeDOS     |retro    |~10-15m |full*  |freedos.qcow2 (games+Arachne)\"\n",
         "value": {
           "key": "freedos",
-          "script": "freedos.sh",
+          "script": "tiles/freedos.sh",
           "outputDir": "FreeDOS",
           "class": "retro",
           "estimated": "~10-15m",

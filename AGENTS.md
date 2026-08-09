@@ -331,7 +331,7 @@ runtime-exempt from the modern budget.
   `docs/history/migration-reference.md`.
 - `docs/lab/MASTER-REPRODUCE.md` — full NVMe rebuild;
   `docs/lab/REMOTE-PROVISIONING-NOTES.md` — bare-metal gotchas;
-  `scripts/build-guests/<os>.sh` — per-guest golden builders; per-guest
+  `scripts/build-guests/tiles/<os>.sh` — per-guest golden builders; per-guest
   notes in `docs/guests/<os>.md`.
 - `streamhost/docs/` — daemon design, bridge protocol, latency/encoder
   notes, and the SH_* env-knob reference (CONFIG.md).

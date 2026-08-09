@@ -27,7 +27,7 @@ docs/guests/apple2.md) so the tile returns to a usable deskTop. A long
 cooldown prevents restart loops.
 
 Runs as root (systemd unit pointer-watchdog.service), python3 stdlib +
-xdotool only. Baked into the golden snapshot by scripts/build-guests/apple2.sh.
+xdotool only. Baked into the golden snapshot by scripts/build-guests/tiles/apple2.sh.
 """
 
 import collections

@@ -334,7 +334,7 @@ emit win95 \
 # acpi=on + -cpu pentium3 (apic ON, default irqchip): acpi=on is REQUIRED for
 # PCI enumeration (this golden is an ACPI-HAL install; acpi=off left it on the
 # fail-safe PnP BIOS with no PCI/NIC/USB). hidusb.sys staged from the base cabs
-# by scripts/build-guests/win98.sh. Full evidence: docs/guests/win9x.md.
+# by scripts/build-guests/tiles/win98.sh. Full evidence: docs/guests/win9x.md.
 emit win98se \
   --tile win98se --vmid 92 --udp 54092 --pointer abs --audio on --fps 30 \
   --launcher-file "$T/win98se/qemu-streamhost.sh" \

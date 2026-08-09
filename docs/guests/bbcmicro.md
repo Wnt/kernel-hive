@@ -18,12 +18,12 @@ MAME driver — see *The ARM angle* below for the division of labour.
 | Emulator | MAME **0.289** driver `bbcb`, purpose-built subtarget |
 | Guest | Debian 12 X kiosk on a thin overlay of the frozen bridge base |
 | Archetype | `beige-tower-crt` (fallback; no bespoke Acorn archetype exists) |
-| Builder | `scripts/build-guests/bbcmicro.sh` (+ `build-mame-bbcb.sh`) |
+| Builder | `scripts/build-guests/tiles/bbcmicro.sh` (+ `build-mame-bbcb.sh`) |
 | Credentials | none — the machine has no login (`guest/bbcmicro` is a placeholder) |
 
 ### The MAME binary, and why it is not the distro's
 
-`scripts/build-guests/build-mame-bbcb.sh` builds tag **`mame0289`**
+`scripts/build-guests/emulators/build-mame-bbcb.sh` builds tag **`mame0289`**
 (`f34f02505e32c1993c6a782b6814232cbfc74e36` — the newest stable tag when this
 tile was added, confirmed with `git ls-remote --tags`; the same release the mpf2
 tile ships) inside the Bookworm chroot at
@@ -45,7 +45,7 @@ the driver is split across `bbcb.cpp`, `bbc_kbd.cpp`, `bbc_v.cpp` and `bbc_m.cpp
 behind a shared `bbc.h`, and the directory form also brings in the Tube
 second-processor devices that `armeval` will need from the same binary.
 
-The build carries `scripts/build-guests/mame-irix-skip-warnings.patch` — see
+The build carries `scripts/build-guests/patches/mame-irix-skip-warnings.patch` — see
 *The warnings screen* below.
 
 ### ROMs — preservation-source, staged by the operator

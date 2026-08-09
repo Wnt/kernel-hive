@@ -23,7 +23,7 @@ twice over:
 
 A recording driver for this tile must therefore send `x`, wait for the chooser,
 send `f1`, and wait for monitor mode — the same three framebuffer-asserted steps
-`scripts/build-guests/sinclairql.sh` runs (`reach_monitor_mode`), including its
+`scripts/build-guests/tiles/sinclairql.sh` runs (`reach_monitor_mode`), including its
 retry loop: a lone injected key is occasionally never sampled on this contended
 box. **Do not blind-send on a timer.** Until such a driver exists, this arm
 records the honest thing — a clip that ends at the chooser — or nothing at all.

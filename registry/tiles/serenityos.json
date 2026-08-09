@@ -8,10 +8,10 @@
       {
         "order": 22,
         "prelude": "",
-        "line": "  \"serenityos  |serenityos.sh  |SerenityOS  |heavy    |~20-60m |full   |_disk_image + Kernel (compiled)\"\n",
+        "line": "  \"serenityos  |tiles/serenityos.sh           |SerenityOS  |heavy    |~20-60m |full   |_disk_image + Kernel (compiled)\"\n",
         "value": {
           "key": "serenityos",
-          "script": "serenityos.sh",
+          "script": "tiles/serenityos.sh",
           "outputDir": "SerenityOS",
           "class": "heavy",
           "estimated": "~20-60m",

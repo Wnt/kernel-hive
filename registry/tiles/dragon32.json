@@ -8,10 +8,10 @@
       {
         "order": 45,
         "prelude": "",
-        "line": "  \"dragon32     |dragon32.sh    |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)\"\n",
+        "line": "  \"dragon32     |tiles/dragon32.sh             |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)\"\n",
         "value": {
           "key": "dragon32",
-          "script": "dragon32.sh",
+          "script": "tiles/dragon32.sh",
           "outputDir": "bridge/dragon32",
           "class": "retro",
           "estimated": "~4-6m",

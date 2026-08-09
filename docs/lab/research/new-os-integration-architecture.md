@@ -155,7 +155,7 @@ This example is illustrative, not a frozen schema:
 
   "build": {
     "key": "exampleos",
-    "script": "scripts/build-guests/exampleos.sh",
+    "script": "scripts/build-guests/tiles/exampleos.sh",
     "class": "heavy",
     "automation": "full",
     "estimatedMinutes": [20, 40],
@@ -577,7 +577,7 @@ For a normal new guest using an existing archetype:
 ```bash
 # Author these:
 $EDITOR registry/tiles/<osId>.json
-$EDITOR scripts/build-guests/<osId>.sh
+$EDITOR scripts/build-guests/tiles/<osId>.sh
 $EDITOR docs/guests/<osId>.md
 # Optional only for a non-generic runtime:
 $EDITOR streamhost/tiles/<tileDir>/qemu-streamhost.sh

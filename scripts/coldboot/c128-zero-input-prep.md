@@ -18,7 +18,7 @@ a clip's last frame would hand off to the golden's first frame cleanly.
 **Do not shorten the hold to the first BASIC frame.** The kiosk attaches the
 CP/M system disk to drive 8 about **10 seconds after VICE starts**, over VICE's
 guest-local text monitor, and that attach is part of the fixture even though it
-changes nothing on screen (`scripts/build-guests/c128.sh` explains why the disk
+changes nothing on screen (`scripts/build-guests/tiles/c128.sh` explains why the disk
 cannot simply be passed as `-8`: the KERNAL boots any CP/M disk it finds at
 reset). A clip that ends before the attach would hand off to a golden whose
 drive contents differ from the recorded machine's. Hold at least 20 s past the

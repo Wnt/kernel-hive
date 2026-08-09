@@ -8,10 +8,10 @@
       {
         "order": 6,
         "prelude": "",
-        "line": "  \"templeos    |templeos.sh    |TempleOS    |fast     |~2-3m   |full   |TempleOS.ISO (live CD)\"\n",
+        "line": "  \"templeos    |tiles/templeos.sh             |TempleOS    |fast     |~2-3m   |full   |TempleOS.ISO (live CD)\"\n",
         "value": {
           "key": "templeos",
-          "script": "templeos.sh",
+          "script": "tiles/templeos.sh",
           "outputDir": "TempleOS",
           "class": "fast",
           "estimated": "~2-3m",

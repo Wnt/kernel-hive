@@ -35,7 +35,7 @@ Xorg's `-ac` is acceptable only behind the host-loopback NAT boundary.
 The bridge image is reproducible:
 
 ```sh
-scripts/build-guests/openvms-decwindows-bridge.sh
+scripts/build-guests/stages/openvms-decwindows-bridge.sh
 ```
 
 The launcher gates on the bridge listener before restoring OpenVMS from
@@ -50,7 +50,7 @@ processes and replays the fixture. See `docs/guests/openvms.md`.
 ## 1. The shared base image (build ONCE, freeze, never touch)
 
 `/data/vms/bridge/bridge-base.qcow2` — a lean Debian 12 (bookworm) x86_64 guest.
-Built deterministically by `scripts/build-guests/bridge-base.sh` from a **Debian
+Built deterministically by `scripts/build-guests/lib/bridge-base.sh` from a **Debian
 genericcloud qcow2 + a cloud-init NoCloud seed ISO** (reproducible on an NVMe
 rebuild). It contains, ready to use:
 
@@ -164,7 +164,7 @@ Per-machine swaps for the other machines:
 - **Apple //e / GEOS**: `linapple -f` with the ProDOS GEOS disk configured in
   `~/.linapple/linapple.conf` (LinApple bundles the //e ROM).
 - **Amiga 500 / Workbench**: `fs-uae` with a per-tile config — the deployed
-  `amiga` tile; see `scripts/build-guests/amiga.sh` for the exact launcher.
+  `amiga` tile; see `scripts/build-guests/tiles/amiga.sh` for the exact launcher.
 - **Amstrad CPC**: `cap32 -O fullscreen=true <disk.dsk>` (cap32 bundles CPC
   ROMs). *Available in the base image, not deployed as a gallery tile.*
 
@@ -231,8 +231,8 @@ For C64, use `--pointer rel` and the tablet-free/`vmport=off` exception above.
 ---
 
 ## 4. Files of the reference C64 tile
-- `scripts/build-guests/bridge-base.sh` — builds the shared base (this doc §1).
-- `scripts/build-guests/c64.sh` — overlay + kiosk `launch.sh` + golden + verify.
+- `scripts/build-guests/lib/bridge-base.sh` — builds the shared base (this doc §1).
+- `scripts/build-guests/tiles/c64.sh` — overlay + kiosk `launch.sh` + golden + verify.
 - `docs/guests/c64.md` — the C64-specific findings + live status.
 - `/data/vms/streamhost/tiles/c64/` — `overlay.qcow2`, `qemu-streamhost.sh`,
   `tile.env`, `qmp.sock`, `qemu.pid`.

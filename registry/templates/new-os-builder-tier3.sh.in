@@ -3,8 +3,8 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-LABQMP="$HERE/../lib/labqmp.py"
-VISION_DIR="$HERE/../install-vision"
+LABQMP="$HERE/../../lib/labqmp.py"
+VISION_DIR="$HERE/../../install-vision"
 OS_ID="@@OS_ID@@"
 TILE_DIR="@@TILE_DIR@@"
 WORK="${WORK:-/data/vms/build-${OS_ID}}"

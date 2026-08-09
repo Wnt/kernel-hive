@@ -8,10 +8,10 @@
       {
         "order": 40,
         "prelude": "",
-        "line": "  \"cbm2         |cbm2.sh        |bridge/cbm2     |retro    |~2-4m   |full   |tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)\"\n",
+        "line": "  \"cbm2         |tiles/cbm2.sh                 |bridge/cbm2     |retro    |~2-4m   |full   |tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)\"\n",
         "value": {
           "key": "cbm2",
-          "script": "cbm2.sh",
+          "script": "tiles/cbm2.sh",
           "outputDir": "bridge/cbm2",
           "class": "retro",
           "estimated": "~2-4m",

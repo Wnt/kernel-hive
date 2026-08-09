@@ -19,7 +19,7 @@ PC-speaker-only, while Cosmo auto-detects music and uses PC speaker for effects.
 
 ## Rebuild
 
-Run `scripts/build-guests/freedos.sh` as root on the QEMU build host. `OUT_DIR`
+Run `scripts/build-guests/tiles/freedos.sh` as root on the QEMU build host. `OUT_DIR`
 and `WORK_DIR` select non-canonical artifact and cache directories; their
 defaults remain `/data/gallery-guests/FreeDOS` and its `.build-work` directory.
 The host needs the tools checked by the script plus `id-shr-extract` (Debian

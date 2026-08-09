@@ -8,10 +8,10 @@
       {
         "order": 0,
         "prelude": "",
-        "line": "  \"kolibrios   |kolibrios.sh   |KolibriOS   |fast     |~2-3m   |full   |kolibri.iso (live CD)\"\n",
+        "line": "  \"kolibrios   |tiles/kolibrios.sh            |KolibriOS   |fast     |~2-3m   |full   |kolibri.iso (live CD)\"\n",
         "value": {
           "key": "kolibrios",
-          "script": "kolibrios.sh",
+          "script": "tiles/kolibrios.sh",
           "outputDir": "KolibriOS",
           "class": "fast",
           "estimated": "~2-3m",

@@ -8,10 +8,10 @@
       {
         "order": 8,
         "prelude": "",
-        "line": "  \"qnx         |qnx.sh         |QNX         |fast     |~5-10m  |full   |QNX650Live.iso (drives Photon first-run to desktop)\"\n",
+        "line": "  \"qnx         |tiles/qnx.sh                  |QNX         |fast     |~5-10m  |full   |QNX650Live.iso (drives Photon first-run to desktop)\"\n",
         "value": {
           "key": "qnx",
-          "script": "qnx.sh",
+          "script": "tiles/qnx.sh",
           "outputDir": "QNX",
           "class": "fast",
           "estimated": "~5-10m",

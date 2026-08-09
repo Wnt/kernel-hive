@@ -47,7 +47,7 @@ GOLDEN="${IRIX_GOLDEN:-$ASSETS/irix65-apps-v3.chd}"
 # garbage into a loud cold-boot fallback. After two restore launches without a
 # healthy guest (watchdog relaunches), the next launch cold-boots; livewatch
 # clears the counter on its first successful pointer probe. Bake states with
-# scripts/build-guests/irix-savestate/bake-golden.sh.
+# scripts/build-guests/irix/irix-savestate/bake-golden.sh.
 STATE="${IRIX_STATE:-}"
 STATE_DIR="${IRIX_STATE_DIR:-$ASSETS/state}"
 
@@ -151,7 +151,7 @@ WLOG="$D/bootwatch.log"
 # ordinary-looking frame forever. Seen twice on the exhibit as
 # `PANIC: bad istack sp:8835afa8` — root-caused to the SGI MC truncating DMA
 # page-table addresses above 128 MB and fixed by
-# scripts/build-guests/mame-mc-dma-ptbase-mask.patch. This watchdog is the
+# scripts/build-guests/patches/mame-mc-dma-ptbase-mask.patch. This watchdog is the
 # safety net BEHIND that fix, not the fix: it exists so no future guest-side
 # death needs a human to notice it.
 #

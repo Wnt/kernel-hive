@@ -8,10 +8,10 @@
       {
         "order": 37,
         "prelude": "",
-        "line": "  \"c128         |c128.sh        |bridge/c128     |retro    |~3-5m   |full   |tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)\"\n",
+        "line": "  \"c128         |tiles/c128.sh                 |bridge/c128     |retro    |~3-5m   |full   |tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)\"\n",
         "value": {
           "key": "c128",
-          "script": "c128.sh",
+          "script": "tiles/c128.sh",
           "outputDir": "bridge/c128",
           "class": "retro",
           "estimated": "~3-5m",

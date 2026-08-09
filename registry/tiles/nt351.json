@@ -8,10 +8,10 @@
       {
         "order": 32,
         "prelude": "",
-        "line": "  \"nt351       |nt351.sh       |Nt351         |installed|~15-30m |partial |nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)\"\n",
+        "line": "  \"nt351       |tiles/nt351.sh                |Nt351         |installed|~15-30m |partial |nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)\"\n",
         "value": {
           "key": "nt351",
-          "script": "nt351.sh",
+          "script": "tiles/nt351.sh",
           "outputDir": "Nt351",
           "class": "installed",
           "estimated": "~15-30m",

@@ -230,7 +230,7 @@ the largest with more than one octave of margin under a measured cliff.
 
 ## What the rig gained, and one bug it was hiding
 
-`scripts/build-guests/irix-bench/` now drives the interactive workloads the
+`scripts/build-guests/irix/irix-bench/` now drives the interactive workloads the
 baseline campaign recorded as impossible on golden v3. They were never
 impossible; the rig was driving the guest with the **wrong agent**.
 

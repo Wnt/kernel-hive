@@ -10,10 +10,10 @@
       {
         "order": 46,
         "prelude": "",
-        "line": "  \"armeval     |armeval.sh     |bridge/armeval  |retro    |~12-18m |full   |tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)\"\n",
+        "line": "  \"armeval     |tiles/armeval.sh     |bridge/armeval  |retro    |~12-18m |full   |tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)\"\n",
         "value": {
           "key": "armeval",
-          "script": "armeval.sh",
+          "script": "tiles/armeval.sh",
           "outputDir": "bridge/armeval",
           "class": "retro",
           "estimated": "~12-18m",

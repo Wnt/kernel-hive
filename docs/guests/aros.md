@@ -34,7 +34,7 @@ Live CD / InstallAROS icons + AROS logo).
   Win9x/XP/macOS tiles.
 
 ## Reproducible build
-- Script: `scripts/build-guests/amigaos.sh` (bash -n clean).
+- Script: `scripts/build-guests/tiles/amigaos.sh` (bash -n clean).
   - Resolves the LATEST `pc-i386-boot-iso` nightly from the AROS SourceForge
     listing (date-stamped dirs get pruned upstream), pinned fallback `20260701`.
   - Downloads + unzips → installs `aros-pc-i386.iso` to the guest dir; copies

@@ -17,14 +17,14 @@ Apple II emulators will not run it; `MAME mpf2` (clone of `tk2000`) is the only
 option.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built by
-`scripts/build-guests/bridge-base.sh`). The MPF-II builder installs the pinned
+`scripts/build-guests/lib/bridge-base.sh`). The MPF-II builder installs the pinned
 MAME 0.289 binary into its own thin overlay; the frozen shared base remains
 unchanged.
 
-**Build scripts:** `scripts/build-guests/build-mame-mpf2.sh` reproducibly builds
+**Build scripts:** `scripts/build-guests/emulators/build-mame-mpf2.sh` reproducibly builds
 the narrow MAME 0.289 `tk2000.cpp` subtarget in the Bookworm lab build chroot,
 then
-`scripts/build-guests/mpf2.sh` creates the thin overlay, kiosk `launch.sh`,
+`scripts/build-guests/tiles/mpf2.sh` creates the thin overlay, kiosk `launch.sh`,
 framebuffer checks, keyboard proof, and golden cold-restore.
 
 **Tile dir (host):** `/data/vms/streamhost/tiles/mpf2/` — `overlay.qcow2`

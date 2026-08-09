@@ -8,9 +8,9 @@ already measured and closed, with mechanism and ceiling — plus the one that wa
 closed in error and reopened), and
 [`lab/irix-baseline-2026-08-03.md`](../lab/irix-baseline-2026-08-03.md) (the
 numbers everything is judged against). The rig is
-[`scripts/build-guests/irix-bench/`](../../scripts/build-guests/irix-bench/README.md);
+[`scripts/build-guests/irix/irix-bench/`](../../scripts/build-guests/irix/irix-bench/README.md);
 the unshipped ~1.2 s CRIU reset procedure is
-[`scripts/build-guests/irix-criu/`](../../scripts/build-guests/irix-criu/README.md).
+[`scripts/build-guests/irix/irix-criu/`](../../scripts/build-guests/irix/irix-criu/README.md).
 
 The gallery's first **non-QEMU** streamhost tile. SGI's IRIX 6.5 runs inside
 **MAME** (the `indy_4610` SGI Indy driver) on an **Xvfb** framebuffer that
@@ -22,7 +22,7 @@ on the bare-metal host CPU.
 - Machine: SGI Indy, MIPS R4600 @ 100 MHz, **256 MB RAM**, XL 24-bit graphics,
   1280x1024. MAME's `indy_4610` ships 16 MB (bank A `4x4M`, bank B empty), which
   makes IRIX 6.5 + 4Dwm page continuously; the tile's MAME carries
-  `scripts/build-guests/mame-indy-256mb-ram.patch` (banks A+B at `4x32M` = a real
+  `scripts/build-guests/patches/mame-indy-256mb-ram.patch` (banks A+B at `4x32M` = a real
   Indy's 256 MB maximum). It CANNOT be done from a `cfg/` file — `ioport.cpp`
   applies `DEVICE_INPUT_DEFAULTS` only on an exact mask match, so the patch uses
   two per-field entries (`0x000f`/`0x00f0`). Verify a binary offline with
@@ -160,7 +160,7 @@ every SHIFTED character is silently dropped: uppercase arrives lowercase and
 
 So the browser drives the **key matrix** directly, one `:ioc2:kbd:ms_naturl`
 ioport field per physical key, exactly as the pointer drives the PS/2 axes.
-This is the proven route from `scripts/build-guests/irix-apps/keys.py`, ported.
+This is the proven route from `scripts/build-guests/irix/irix-apps/keys.py`, ported.
 
 - **Wire**: `KEY <0|1> <port> <field>` in the agent command file, e.g.
   `KEY 1 P1.7 Left Shift`. The field name is the rest of the line because MAME's
@@ -362,7 +362,7 @@ The chain, each link measured on a namespaced clone with an instrumented
 
 1. `irixagent.lua` seeds `mx, my = 0, 0`, matching the device. One line, and it
    removes a guaranteed over-range delta from every session.
-2. `scripts/build-guests/mame-hle-ps2-mouse-carry.patch` makes the device
+2. `scripts/build-guests/patches/mame-hle-ps2-mouse-carry.patch` makes the device
    **carry instead of truncate**: `sample()` clamps the reported delta to
    ±255 and advances `m_mouse_x/m_mouse_y` by only what it actually sent, so the
    remainder goes out on the following samples. The overflow flags can never be
@@ -591,7 +591,7 @@ short version:
 ### Acceptance suite
 
 ```
-scripts/build-guests/irix-serial-selftest.py     # ~25 s, needs only perl
+scripts/build-guests/irix/irix-serial-selftest.py     # ~25 s, needs only perl
 ```
 
 Runs the real agent and the real client against each other over a pair of ptys
@@ -648,7 +648,7 @@ process group and returns 124), and log in before launching anything graphical.
 ### Re-baking the agent into a golden
 
 ```
-scripts/build-guests/irix-serial-selftest.py            # protocol first, on any box
+scripts/build-guests/irix/irix-serial-selftest.py            # protocol first, on any box
 irix-serial-rig.sh boot bake1 --console --display 171   # ~5 min cold boot
 irix-serial-install.sh bake1                            # ~90 s, cksum-verified
 irix-serial-rig.sh ping bake1 --agent-src streamhost/guest-agents/irix/irixagent.pl
@@ -759,7 +759,7 @@ promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
   `8f21e978`) built with the tile's whole adopted patch stack.
 
   **The ordered stack lives in exactly one place:
-  [`scripts/build-guests/irix-mame-stack.sh`](../../scripts/build-guests/irix-mame-stack.sh).**
+  [`scripts/build-guests/irix/irix-mame-stack.sh`](../../scripts/build-guests/irix/irix-mame-stack.sh).**
   Do not copy the list into a second script or into this table — a stale second
   copy is what left `mame-taptun-ifname-env.patch` documented here as adopted
   while the shipped binary did not carry it, and that failure is silent (MAME
@@ -768,7 +768,7 @@ promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
   That wrong line cost a campaign its interactive measurements. Believe the
   `carrier` check `start_mame()` prints, not prose.
 
-  Rebuild it with [`scripts/build-guests/build-mame-irix.sh`](../../scripts/build-guests/build-mame-irix.sh)
+  Rebuild it with [`scripts/build-guests/emulators/build-mame-irix.sh`](../../scripts/build-guests/emulators/build-mame-irix.sh)
   (box, Linux/x86-64) or `build-mame-macos.sh` (dev Mac); both source the same
   stack file, so they cannot drift.
 
@@ -842,13 +842,13 @@ master + per-run clone cut it to 0.5%.
 Full design + hard-won findings: `docs/history/irix-tile-issue20-handoff.md` and the
 box recipe `/data/vms/soltest/irix-mame/RECIPE.txt`.
 
-## Track A — apps + demos install rig (`scripts/build-guests/irix-apps/`)
+## Track A — apps + demos install rig (`scripts/build-guests/irix/irix-apps/`)
 
 Issue #20 follow-on: install everything the official guide
 (https://sgi.neocities.org/installguide) recommends, so the exhibit is a
 lived-in IRIX desktop rather than a bare install. Phase 1 (inventory,
 acquisition, harness) landed 2026-07-31; the ordered plan with per-step
-checkpoints and risks is `scripts/build-guests/irix-apps/INSTALL-PLAN.txt`.
+checkpoints and risks is `scripts/build-guests/irix/irix-apps/INSTALL-PLAN.txt`.
 
 Findings that shape the work:
 
@@ -884,7 +884,7 @@ GL `ideas` demo), `accessx` added, and boot time cut from ~6 min to ~4.5 min by
 is a stray file, not a live service — see below). NFS, Impressario and `gnu`
 were deliberately skipped —
 the CD builds conflict with 6.5.22 `eoe.sw.base`, and `gnu` is only pointers into
-the Freeware CDs. Full record in `scripts/build-guests/irix-apps/INSTALL-PLAN.txt`.
+the Freeware CDs. Full record in `scripts/build-guests/irix/irix-apps/INSTALL-PLAN.txt`.
 
 #### `S77sysevent.989` is an orphan TEMP FILE, not a service that refused to stop
 
@@ -1082,7 +1082,7 @@ further 0x00 write ever:
 ```
 
 Real VC2 hardware re-reads that table every frame. So this is a genuine
-emulation inaccuracy, and `scripts/build-guests/mame-newport-vc2-restale-timing.patch`
+emulation inaccuracy, and `scripts/build-guests/patches/mame-newport-vc2-restale-timing.patch`
 corrects it (dirty-mark on RAM writes, re-derive at vblank, throttled 1-in-8
 frames, signal a timing change only when the rectangle actually moves).
 
@@ -1157,7 +1157,7 @@ Reading the panic message pays off, and two numbers in it are traps:
   is readable straight out of `/unix` on a mounted CHD with
   `nm`/`objdump -m mips` (install `binutils-multiarch`) — no boot required.
 
-**Fix**: `scripts/build-guests/mame-mc-dma-ptbase-mask.patch` — one mask,
+**Fix**: `scripts/build-guests/patches/mame-mc-dma-ptbase-mask.patch` — one mask,
 `0x003fffc0` → `0x03ffffc0`, making the page-table base decode identically to the
 PTE field beside it. Worth upstreaming.
 
@@ -1365,7 +1365,7 @@ sprintf(ifr.ifr_name, "tap-mess-%d-0", getuid());
 
 MAME runs as root here, so every MAME process on the box would compete for the
 single interface `tap-mess-0-0` — the live tile and any clone experiment beside
-it. `scripts/build-guests/mame-taptun-ifname-env.patch` adds
+it. `scripts/build-guests/patches/mame-taptun-ifname-env.patch` adds
 `MAME_TAP_IFNAME`; unset, upstream behaviour is unchanged, so it is inert for
 every other MAME use. The tile passes `irixtap0`.
 
@@ -1568,7 +1568,7 @@ all.
 `irix65-apps-v5.chd`, md5 `b8a20bbe27593889995ab57978ca75ae`,
 2,241,568,768 bytes — v3 plus the three config lines above and the three
 `chkconfig` changes. Built by booting a v3 clone, bringing `ec0` up by hand once
-through the GUI console, pushing `scripts/build-guests/irix-net-bake.sh` over
+through the GUI console, pushing `scripts/build-guests/irix/irix-net-bake.sh` over
 telnet, and halting with `/etc/shutdown -y -g0 -i0` (framebuffer confirmed at
 *"Okay to power off the system now"*, so no torn files).
 
@@ -1674,7 +1674,7 @@ connect *to* it, which is the exposure that would actually matter.
 
 ### The guest side — three files, all in the golden
 
-Baked by `scripts/build-guests/irix-net-egress-bake.sh` on top of v5, because
+Baked by `scripts/build-guests/irix/irix-net-egress-bake.sh` on top of v5, because
 a runtime hack would not survive a re-bake:
 
 | file | why |
@@ -2037,7 +2037,7 @@ byte is at `A^7` not `A^3`, a dword at `A^4` not `A`, and a guest qword already
 occupies one host qword and must not be half-rotated. And `MIPS3_MAX_FASTRAM`
 was 3 while a 256 MB Indy configures four 64 MB ranks, with `add_fastram()`
 silently dropping the overflow — a quarter of RAM would have kept falling
-through. Both are fixed in `scripts/build-guests/mame-indy-mips3-fastram.patch`
+through. Both are fixed in `scripts/build-guests/patches/mame-indy-mips3-fastram.patch`
 (the fix is a strict generalisation: 32-bit fastram users emit identical code),
 and `sgi_mc_device::remap_fastram()` coalesces the contiguous ranks so 256 MB
 costs two entries, not four.
@@ -2123,14 +2123,14 @@ above, which is the acceptance test.
 ### The landing attempt's own numbers (2026-08-03) — n=1, do not believe them
 
 The A/B was re-run on the production binary/golden/flags with a new
-**`sweep`** phase in `scripts/build-guests/irix-bench/irixbench.sh`: the pointer
+**`sweep`** phase in `scripts/build-guests/irix/irix-bench/irixbench.sh`: the pointer
 is dragged continuously across the 4Dwm root for the whole hold, so the guest is
 doing Newport register traffic rather than sitting in the kernel idle loop. That
 is the MMIO-heavy regime the coverage hazard (every extra fastram entry adds a
 `cmp/jcc` pair to EVERY accessor stub) would show up in as a loss.
 
 Five interleaved rounds ran, and the guards in
-`scripts/build-guests/irix-bench/bpair.py` threw nearly all of it away: five
+`scripts/build-guests/irix/irix-bench/bpair.py` threw nearly all of it away: five
 sibling agents were measuring at the same time, and windows came back at 16-22%
 foreign occupancy on the claimed core pair, with several runs at 2.57-2.59 GHz
 against a 2.493 GHz cohort median. One paired round survived per window:
@@ -2147,8 +2147,8 @@ all. The tile runs exactly one binary, so they had to become one build.
 
 **Result:** `/data/vms/streamhost/assets/irix/mame/sgi`, md5
 `de4eb969f8ff3d72fc5b23ae23a40056`, built by
-`scripts/build-guests/build-mame-irix.sh` from a pristine `8f21e978` plus the
-twelve patches in `scripts/build-guests/irix-mame-stack.sh`, in that order,
+`scripts/build-guests/emulators/build-mame-irix.sh` from a pristine `8f21e978` plus the
+twelve patches in `scripts/build-guests/irix/irix-mame-stack.sh`, in that order,
 nothing else. The outgoing binary is kept as `sgi.prev-0db27300`. `IRIX_MAME` is
 gone from `tile.env`, so the tile takes the default again.
 
@@ -2416,7 +2416,7 @@ a GL-like program of filled polygons — and the desktop draws an icon into
 screen-aligned 2x2 dither of two of those sixteen**. That table is documented
 nowhere on the guest, so it was measured: 17 probe icons, one colour per cell,
 rendered on the guest and read back off the framebuffer
-(`scripts/build-guests/irix-fsn-icon/icon-colour-table.json`; indices 0..15 are
+(`scripts/build-guests/irix/irix-fsn-icon/icon-colour-table.json`; indices 0..15 are
 pure, negatives are dithers; the desktop **drops an icon program's first
 `color()` call**, which is why the generator emits its opening quad twice).
 Transcribing the 85x67 `Fsn.icon` into 838 quads at that scale was built,
@@ -2425,7 +2425,7 @@ dithers become per-pixel speckle. What survives at 50 px is FSN's
 *composition*, so `drawfsn.py` draws that — light sky, dark green field, the
 ranked colour bars, the white pedestal slab — in 32 polygons.
 
-Repo copies: `scripts/build-guests/irix-fsn-icon/` (`Fsn.ftr`,
+Repo copies: `scripts/build-guests/irix/irix-fsn-icon/` (`Fsn.ftr`,
 `iconlib/Fsn.fti`, the generator, the measured colour table).
 
 | golden | md5 | size | contents |
@@ -2445,7 +2445,7 @@ Cutover to v9 was done 2026-08-04 (`IRIX_GOLDEN` in `tile.env`, harvested into
 
 The tile boots by **restoring a baked MAME savestate in ~5 s** instead of the
 ~390 s cold boot. `indy_4610` now carries `MACHINE_SUPPORTS_SAVE`, provided by
-`scripts/build-guests/mame-indy-savestate.patch` (last in the stack): the
+`scripts/build-guests/patches/mame-indy-savestate.patch` (last in the stack): the
 `sgi_mc` 256 MB RAM banks are allocated at `device_start` and registered with
 indexed `save_pointer`s, a `device_post_load` replays `memcfg_w` from the
 restored registers to rebuild the runtime RAM mapping, `mips3` re-derives its
@@ -2469,7 +2469,7 @@ inside the same pause window, and only then resumes. Restore is the reverse:
 reflink the paired disk over `disk.chd` and launch with `-state <name>` — no
 Lua, no QMP.
 
-- **Bake**: `scripts/build-guests/irix-savestate/bake-golden.sh` (tile
+- **Bake**: `scripts/build-guests/irix/irix-savestate/bake-golden.sh` (tile
   stopped): boots the PRODUCTION config (launcher, tile.env, tap) in a
   namespaced clone, waits for the chooser + settle, captures the pair, installs
   `$ASSETS/state/{sta/indy_4610/golden.sta, disk-golden.chd,
@@ -2516,7 +2516,7 @@ deterministic give-up on certain chooser targets, e.g. (300,500) landing at
 ## mamectl control plane — the socket is the input path (issue #45, 2026-08-04)
 
 The Lua agent is out of the input path. The `ctlsock` OSD module
-(`scripts/build-guests/mame-ctlsock.patch`, last in the stack) serves
+(`scripts/build-guests/patches/mame-ctlsock.patch`, last in the stack) serves
 mamectl/1 on `MAME_CTL_SOCK` = `<tile>/ctl.sock`, and streamhost's
 `mamesock` backend (`mame_sock.rs`, `SH_INPUT_BACKEND=mamesock` +
 `SH_MAMECTL_SOCK`) speaks it directly: seq-stamped `MOVEA`/edge/`KEY`

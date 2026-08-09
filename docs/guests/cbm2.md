@@ -8,7 +8,7 @@ other bridge tile. See **`streamhost/docs/BRIDGE.md`**.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` — already contains the
 whole VICE family.
-**Build script (tile):** `scripts/build-guests/cbm2.sh` — thin overlay + kiosk
+**Build script (tile):** `scripts/build-guests/tiles/cbm2.sh` — thin overlay + kiosk
 `launch.sh` + ROM repair/assert + quiet console + memory assertion + golden bake
 + a framebuffer-asserted keyboard proof, fully automated, ~2 minutes.
 **Tile dir (host):** `/data/vms/streamhost/tiles/cbm2/`.
@@ -181,5 +181,5 @@ cold boot and a restore reach the same place. See
 
 To withdraw the tile: `systemctl stop streamhost@cbm2`, set `enabled: false`,
 regenerate, republish the three runtime documents (tiles.json, gallery-manifest.json AND golden-manifest.json — the third is the reset allow-list). To rebuild:
-`scripts/build-guests/cbm2.sh --force`, which replaces `overlay.qcow2` and so
+`scripts/build-guests/tiles/cbm2.sh --force`, which replaces `overlay.qcow2` and so
 **destroys the golden inside it**, then bakes and re-proves a new one.

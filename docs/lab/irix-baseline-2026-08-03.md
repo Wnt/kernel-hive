@@ -5,7 +5,7 @@ the rig that produced it. Written first, before any of the six improvement
 workstreams ran, so that "did it get faster" has an answer that predates the
 answerer.
 
-Rig: `scripts/build-guests/irix-bench/`. Raw data and the production-state
+Rig: `scripts/build-guests/irix/irix-bench/`. Raw data and the production-state
 snapshot: `/data/vms/soltest/irix-baseline-b7f2/` on the box.
 
 ## 1. Box conditions when the baseline was taken
@@ -73,7 +73,7 @@ rather than discover it.
 
 ## 3. Measurement method
 
-`scripts/build-guests/irix-bench/irixbench.sh` boots a clone of the production
+`scripts/build-guests/irix/irix-bench/irixbench.sh` boots a clone of the production
 golden with the production binary and production flags, drives the login, and
 measures **within-run** windows.
 
@@ -158,7 +158,7 @@ substitute something easier and label it a scroll.
   whose motion verbs (`MOVE`, `MOVEP`) are **relative deltas**; landing the
   pointer on a named Toolchest menu item needs closed-loop absolute positioning
   against the framebuffer. That exists for the XTest era
-  (`scripts/build-guests/irix-apps/point.py`) and has no shm-path equivalent.
+  (`scripts/build-guests/irix/irix-apps/point.py`) and has no shm-path equivalent.
   Building one is a real piece of work, not a baseline detail.
 - **W3 Netscape** additionally depends on a session restore that is
   **non-deterministic between boots of the same image** (see the "Netscape

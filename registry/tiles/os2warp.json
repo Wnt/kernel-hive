@@ -8,10 +8,10 @@
       {
         "order": 17,
         "prelude": "",
-        "line": "  \"os2warp     |os2warp.sh     |OS2Warp     |retro    |~20-30m |full   |os2.qcow2 (Warp 4 prebuilt + first-boot taming; TCG)\"\n",
+        "line": "  \"os2warp     |tiles/os2warp.sh              |OS2Warp     |retro    |~20-30m |full   |os2.qcow2 (Warp 4 prebuilt + first-boot taming; TCG)\"\n",
         "value": {
           "key": "os2warp",
-          "script": "os2warp.sh",
+          "script": "tiles/os2warp.sh",
           "outputDir": "OS2Warp",
           "class": "retro",
           "estimated": "~20-30m",

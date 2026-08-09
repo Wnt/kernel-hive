@@ -3,7 +3,7 @@
 
 Box copy: /root/mctl.py — `labctl mctl <tile> ...` and labctl's socket-routed
 type/sh/reset shell out to it (sync pair in scripts/dev/verify-box-sync.sh).
-Supersedes scripts/build-guests/irix-ctl/mctl-probe.py for ops use; the probe
+Supersedes scripts/build-guests/irix/irix-ctl/mctl-probe.py for ops use; the probe
 stays in place because the Stage-1 rigs import MctlClient from it, and this
 file is self-contained (stdlib only) because the two are NOT deployed side by
 side on the box.

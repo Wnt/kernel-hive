@@ -10,10 +10,10 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"kc854       |kc854.sh       |bridge/kc854    |retro    |~6-10m  |full   |tiles/kc854 overlay + golden (MAME kc85_4 → CAOS 4.2)\"\n",
+        "line": "  \"kc854       |tiles/kc854.sh                |bridge/kc854    |retro    |~6-10m  |full   |tiles/kc854 overlay + golden (MAME kc85_4 → CAOS 4.2)\"\n",
         "value": {
           "key": "kc854",
-          "script": "kc854.sh",
+          "script": "tiles/kc854.sh",
           "outputDir": "bridge/kc854",
           "class": "retro",
           "estimated": "~6-10m",

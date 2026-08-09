@@ -3,7 +3,7 @@
 # BRIDGE tile: a captured Debian-12 kiosk running Caprice32 (cap32) in its
 # framebuffer-verified scale-3 SDL/X11 window, emulating an Amstrad CPC 6128
 # that boots Locomotive BASIC to the yellow-on-blue Ready prompt (see
-# scripts/build-guests/amstradcpc.sh and streamhost/docs/BRIDGE.md).
+# scripts/build-guests/tiles/amstradcpc.sh and streamhost/docs/BRIDGE.md).
 # Keyboard exhibit (no mouse; the AMX mouse was rare). Kill only by pidfile.
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/atarist). The overlay.qcow2 holds

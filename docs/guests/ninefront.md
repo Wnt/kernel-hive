@@ -63,7 +63,7 @@ Verified by framebuffer screendumps: cursor tracks `M x y` 1:1 at (60,60),
 
 ## Golden rebuild and fixture
 
-Run `nice -n15 scripts/build-guests/9front.sh` on the box. The builder starts
+Run `nice -n15 scripts/build-guests/tiles/9front.sh` on the box. The builder starts
 from the pinned official release, installs warpd, cold-boots the exact production
 device set at `VGASIZE` (default `1920x1080x32`, set in `plan9.ini`), and lays
 this deterministic rio composition on top of stock `riostart`'s tiny top-left
@@ -80,7 +80,7 @@ owns keyboard focus. The builder gates the real 1920×1080 framebuffer, parks th
 pointer at `PARK_X,PARK_Y` (`1580,916`) via warpd, issues QMP `stop`, saves the
 paused `golden`, resumes, and proves both the lively frame and `Q 1580 916 -> K`
 after `loadvm`. To re-res the tile, edit `VGASIZE` + `FIXTURE_COMMAND` (and, if
-the aspect changes, the fixture sample points) in `scripts/build-guests/9front.sh`.
+the aspect changes, the fixture sample points) in `scripts/build-guests/tiles/9front.sh`.
 Do not move the snapshot back to the former early-boot point; that deliberately
 imposed a post-reset rio/network delay.
 

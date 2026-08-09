@@ -14,7 +14,7 @@
 ### ⚠️ VERSION PIN — use 0.4.14, NOT 0.4.15
 The current stable **0.4.15** live CD **deterministically hangs in early kernel init on this host's QEMU 11.0.0** — frozen at ntoskrnl `EIP=0x8046e408` with a black 720x400 screen. Reproduced identically across **every** `-cpu` (qemu32/qemu64/pentium3/host), **TCG and KVM**, `acpi=on/off`, and `std`/`cirrus` VGA. It is a ReactOS-0.4.15-vs-QEMU-11 kernel regression, not a config knob. **0.4.14 boots cleanly to the GUI.** Re-test newer releases before bumping.
 
-**Build script:** `scripts/build-guests/reactos.sh` (bash -n clean). Fetches the official 0.4.14 live zip, unpacks the ISO to `/data/gallery-guests/ReactOS/ReactOS.iso`, and framebuffer-verifies the desktop via headless QEMU screendump (auto-clicks through the LiveCD wizard for the proof shot). Idempotent (`--force` to refetch). Re-runnable on the real NVMe.
+**Build script:** `scripts/build-guests/tiles/reactos.sh` (bash -n clean). Fetches the official 0.4.14 live zip, unpacks the ISO to `/data/gallery-guests/ReactOS/ReactOS.iso`, and framebuffer-verifies the desktop via headless QEMU screendump (auto-clicks through the LiveCD wizard for the proof shot). Idempotent (`--force` to refetch). Re-runnable on the real NVMe.
 
 **Guest image:** `/data/gallery-guests/ReactOS/ReactOS.iso` (~251 MB live CD). Pure live boot — no HDD, no install-to-disk (saves pool space).
 

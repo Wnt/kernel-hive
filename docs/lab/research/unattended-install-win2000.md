@@ -34,7 +34,7 @@ a substitute for an unattended install.
 
 Repository findings:
 
-- `scripts/build-guests/win2000.sh` downloads a WinWorld Windows 2000
+- `scripts/build-guests/tiles/win2000.sh` downloads a WinWorld Windows 2000
   Professional SP4 VMware `.7z`, converts its preinstalled VMDK, and applies
   offline disk/registry repairs. Its automation-honesty section explicitly says
   there is no installer, answer file, or install-time input.
@@ -239,7 +239,7 @@ must:
 - `scripts/build-guests/assets/win2000/README.md` — rendering/delivery rules.
 - `scripts/build-guests/assets/win2000/qemu0002-failedinstall.reg` — offline
   pre-seed payload for the known QEMU PnP device.
-- `scripts/build-guests/win2000.sh` — uses the pre-seed payload and corrects the
+- `scripts/build-guests/tiles/win2000.sh` — uses the pre-seed payload and corrects the
   older claim that the recurring dialog was caused by AC97/RTL8139.
 - This findings note.
 

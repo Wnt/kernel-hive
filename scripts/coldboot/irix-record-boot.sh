@@ -6,8 +6,8 @@
 # do not exist here. What DOES exist is the fb.shm framebuffer mapping the
 # patched MAME publishes (wire format + seqlock read protocol:
 # streamhost/streamhost/src/capture/shm.rs; python reader precedent:
-# scripts/build-guests/irix-bench/shmpng.py) and the (savestate, disk) golden
-# that scripts/build-guests/irix-savestate/bake-golden.sh captures inside a
+# scripts/build-guests/irix/irix-bench/shmpng.py) and the (savestate, disk) golden
+# that scripts/build-guests/irix/irix-savestate/bake-golden.sh captures inside a
 # pause window.
 #
 # So the recording RIDES a bake. The sampler beside this script streams fb.shm
@@ -63,7 +63,7 @@ fi
 command -v ffmpeg >/dev/null || die "ffmpeg not found"
 python3 -c 'import numpy' 2>/dev/null || die "python3+numpy required (the sampler needs it)"
 [ -f "$SAMPLER" ] || die "sampler not found: $SAMPLER"
-[ -f "$BAKE" ] || die "bake-golden.sh not found: $BAKE (deploy scripts/build-guests/irix-savestate/ there, or set RIG=)"
+[ -f "$BAKE" ] || die "bake-golden.sh not found: $BAKE (deploy scripts/build-guests/irix/irix-savestate/ there, or set RIG=)"
 
 D="/data/vms/soltest/irix-bootrec-$(date +%s)"
 CLONE="$D/clone" # becomes IRIX_BAKE_DIR — bake-golden.sh rm-rf's + creates it

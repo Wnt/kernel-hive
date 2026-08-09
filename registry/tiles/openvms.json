@@ -10,10 +10,10 @@
       {
         "order": 33,
         "prelude": "",
-        "line": "  \"openvms     |openvms.sh     |OpenVMS       |licensed |~3-8m   |full    |OpenVMS disks; openvms-decwindows-bridge.sh builds lean-X bridge\"\n",
+        "line": "  \"openvms     |tiles/openvms.sh              |OpenVMS       |licensed |~3-8m   |full    |OpenVMS disks; openvms-decwindows-bridge.sh builds lean-X bridge\"\n",
         "value": {
           "key": "openvms",
-          "script": "openvms.sh",
+          "script": "tiles/openvms.sh",
           "outputDir": "OpenVMS",
           "class": "licensed",
           "estimated": "~3-8m",

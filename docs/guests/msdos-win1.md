@@ -6,7 +6,7 @@ it to back both a "MS-DOS 6.22" exhibit and a "Windows 1.0" exhibit later.
 
 - **Live tile:** streamhost `msdoswin1` (the neko :8113 URL that used to sit here
   is historical — see the banner below)
-- **Build script:** `scripts/build-guests/msdos-win1.sh` (from-scratch, `bash -n` clean)
+- **Build script:** `scripts/build-guests/tiles/msdos-win1.sh` (from-scratch, `bash -n` clean)
 - **Artifact:** `/data/gallery-guests/MSDOSWin1/msdos-win1.qcow2` (120 MB virtual, ~2 MB real)
 - **Proof shots:** `/data/gallery-guests/MSDOSWin1/verify-dos-prompt.png` (C:\>),
   `verify-win101-gui.png` (Win 1.01 MS-DOS Executive GUI)
@@ -318,9 +318,9 @@ Suggested integrator row fields:
 ## Reproduce
 ```
 # on the Proxmox host (writes to /data/gallery-guests/MSDOSWin1/)
-bash scripts/build-guests/msdos-win1.sh          # download, build, verify
-FORCE=1 bash scripts/build-guests/msdos-win1.sh  # force full rebuild
-VERIFY=0 bash scripts/build-guests/msdos-win1.sh # skip the framebuffer boot
+bash scripts/build-guests/tiles/msdos-win1.sh          # download, build, verify
+FORCE=1 bash scripts/build-guests/tiles/msdos-win1.sh  # force full rebuild
+VERIFY=0 bash scripts/build-guests/tiles/msdos-win1.sh # skip the framebuffer boot
 ```
 
 ## Build gotchas (hard-won)

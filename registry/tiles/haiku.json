@@ -8,10 +8,10 @@
       {
         "order": 5,
         "prelude": "",
-        "line": "  \"haiku       |haiku-install.sh|Haiku       |fast     |~6-10m  |full   |haiku.iso -> tile haiku-persist.qcow2 + sshd/key + golden\"\n",
+        "line": "  \"haiku       |tiles/haiku-install.sh        |Haiku       |fast     |~6-10m  |full   |haiku.iso -> tile haiku-persist.qcow2 + sshd/key + golden\"\n",
         "value": {
           "key": "haiku",
-          "script": "haiku-install.sh",
+          "script": "tiles/haiku-install.sh",
           "outputDir": "Haiku",
           "class": "fast",
           "estimated": "~6-10m",

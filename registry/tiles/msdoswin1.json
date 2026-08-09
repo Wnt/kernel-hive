@@ -8,10 +8,10 @@
       {
         "order": 12,
         "prelude": "",
-        "line": "  \"msdos-win1  |msdos-win1.sh  |MSDOSWin1   |retro    |~10-15m |full   |msdos-win1.qcow2 (DOS 6.22 + Windows 1.01, from real floppies)\"\n",
+        "line": "  \"msdos-win1  |tiles/msdos-win1.sh           |MSDOSWin1   |retro    |~10-15m |full   |msdos-win1.qcow2 (DOS 6.22 + Windows 1.01, from real floppies)\"\n",
         "value": {
           "key": "msdos-win1",
-          "script": "msdos-win1.sh",
+          "script": "tiles/msdos-win1.sh",
           "outputDir": "MSDOSWin1",
           "class": "retro",
           "estimated": "~10-15m",

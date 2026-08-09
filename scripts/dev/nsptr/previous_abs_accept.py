@@ -15,6 +15,7 @@ measurement:
 
 Usage:  previous_abs_accept.py <sweep|robust|latency|all> [tag]
 """
+
 import json
 import os
 import subprocess
@@ -25,16 +26,34 @@ import numpy as np
 
 D = "/data/vms/soltest/NSPTR-previous-patch"
 W, H = 1120, 832
-VRAM_STRIDE = W // 4          # 1120 px at 2 bpp = 280 bytes per scanline
+VRAM_STRIDE = W // 4  # 1120 px at 2 bpp = 280 bytes per scanline
 VRAM_LEN = VRAM_STRIDE * H
 
 TARGETS = [
-    (8, 8), (1111, 8), (8, 823), (1111, 823),           # corners, inset 8 px
-    (560, 8), (560, 823), (8, 416), (1111, 416),        # edge midpoints
-    (560, 416),                                         # centre
-    (137, 92), (642, 101), (318, 477), (905, 233), (74, 610),
-    (511, 58), (860, 700), (229, 344), (703, 552), (401, 188),
-    (58, 742), (996, 415), (167, 266), (588, 633), (777, 119),
+    (8, 8),
+    (1111, 8),
+    (8, 823),
+    (1111, 823),  # corners, inset 8 px
+    (560, 8),
+    (560, 823),
+    (8, 416),
+    (1111, 416),  # edge midpoints
+    (560, 416),  # centre
+    (137, 92),
+    (642, 101),
+    (318, 477),
+    (905, 233),
+    (74, 610),
+    (511, 58),
+    (860, 700),
+    (229, 344),
+    (703, 552),
+    (401, 188),
+    (58, 742),
+    (996, 415),
+    (167, 266),
+    (588, 633),
+    (777, 119),
 ]
 
 
@@ -43,8 +62,7 @@ TARGETS = [
 
 
 def guest(cmd, timeout=300):
-    return subprocess.run([D + "/g", cmd], capture_output=True, text=True,
-                          timeout=timeout).stdout
+    return subprocess.run([D + "/g", cmd], capture_output=True, text=True, timeout=timeout).stdout
 
 
 def nsc(*cmds):
@@ -61,7 +79,7 @@ def load(path):
     with open(path, "rb") as f:
         d = f.read()
     i = d.index(b"255\n") + 4
-    a = np.frombuffer(d[i:i + W * H * 3], dtype=np.uint8).reshape(H, W, 3)
+    a = np.frombuffer(d[i : i + W * H * 3], dtype=np.uint8).reshape(H, W, 3)
     return a[:, :, 0].copy()
 
 
@@ -100,13 +118,12 @@ class Locator:
         for dy, dx, v in self.pts:
             sy, sx = oy - dy, ox - dx
             src = np.full((H + oy, W + ox), v, dtype=np.uint8)
-            src[sy:sy + H, sx:sx + W] = img
-            seen[sy:sy + H, sx:sx + W] += 1
+            src[sy : sy + H, sx : sx + W] = img
+            seen[sy : sy + H, sx : sx + W] += 1
             res &= src == v
         res &= seen * 2 >= len(self.pts)
         ys, xs = np.nonzero(res)
-        return [(int(x) - ox + self.hot[0], int(y) - oy + self.hot[1])
-                for x, y in zip(xs, ys)]
+        return [(int(x) - ox + self.hot[0], int(y) - oy + self.hot[1]) for x, y in zip(xs, ys)]
 
     def locate(self, img):
         m = self.find(img)
@@ -178,19 +195,16 @@ def validate_instruments(loc, tag):
     checks.append(("top-left clamp", "pixel=%s ram=%s" % (p, r), p == (0, 0) and r == (0, 0)))
     slam(63, 63, 40)
     p, r = loc.locate(shot(tag + "-vBR")), ram_pos()
-    checks.append(("bottom-right clamp (pixel blind here)", "pixel=%s ram=%s" % (p, r),
-                   r == (W - 1, H - 1)))
+    checks.append(("bottom-right clamp (pixel blind here)", "pixel=%s ram=%s" % (p, r), r == (W - 1, H - 1)))
     slam(-63, -63, 40)
     nsc("slam 1 0 50")
     time.sleep(1.5)
     p, r = loc.locate(shot(tag + "-v50")), ram_pos()
-    checks.append(("50 unit relative steps from the left clamp",
-                   "pixel=%s ram=%s" % (p, r), p is not None and p == r))
+    checks.append(("50 unit relative steps from the left clamp", "pixel=%s ram=%s" % (p, r), p is not None and p == r))
     for x, y in [(400, 300), (900, 700), (60, 60)]:
         place(x, y)
         p, r = loc.locate(shot(tag + "-v%d" % x)), ram_pos()
-        checks.append(("pixel vs ram at (%d,%d)" % (x, y), "pixel=%s ram=%s" % (p, r),
-                       p is not None and p == r))
+        checks.append(("pixel vs ram at (%d,%d)" % (x, y), "pixel=%s ram=%s" % (p, r), p is not None and p == r))
     return checks
 
 
@@ -206,12 +220,19 @@ def sweep(loc, tag):
         img = shot("%s-t%02d" % (tag, i))
         r = ram_pos()
         p = loc.locate(img)
-        rows.append({"cmd": [x, y], "ram": list(r) if r else None,
-                     "pixel": list(p) if p else None,
-                     "err_ram": max(abs(r[0] - x), abs(r[1] - y)) if r else None,
-                     "err_pixel": max(abs(p[0] - x), abs(p[1] - y)) if p else None})
-        print("%2d cmd (%4d,%4d)  ram %-12s err %-4s  pixel %-12s err %s" % (
-            i, x, y, r, rows[-1]["err_ram"], p, rows[-1]["err_pixel"]))
+        rows.append(
+            {
+                "cmd": [x, y],
+                "ram": list(r) if r else None,
+                "pixel": list(p) if p else None,
+                "err_ram": max(abs(r[0] - x), abs(r[1] - y)) if r else None,
+                "err_pixel": max(abs(p[0] - x), abs(p[1] - y)) if p else None,
+            }
+        )
+        print(
+            "%2d cmd (%4d,%4d)  ram %-12s err %-4s  pixel %-12s err %s"
+            % (i, x, y, r, rows[-1]["err_ram"], p, rows[-1]["err_pixel"])
+        )
     return rows
 
 
@@ -221,7 +242,7 @@ def guest_moves_cursor(tag):
     opens, walk the cursor with accelerated RELATIVE deltas (the driver's own
     curve), then dismiss the submenu with a click on the desktop. Returns the
     framebuffer proof that the submenu really opened and really closed."""
-    box = (0, 92, 160, 210)          # y0, x0, y1, x1 of the submenu
+    box = (0, 92, 160, 210)  # y0, x0, y1, x1 of the submenu
     place(60, 111, 0.4)
     before = shot(tag + "-menu-before")
     nsc("btn 1 1")
@@ -229,17 +250,19 @@ def guest_moves_cursor(tag):
     nsc("btn 1 0")
     time.sleep(1.2)
     opened = shot(tag + "-menu-open")
-    nsc("slam 5 5 6")                # the guest's own accelerated relative path
+    nsc("slam 5 5 6")  # the guest's own accelerated relative path
     time.sleep(1.2)
-    place(60, 111, 0.4)              # click View again: the submenu toggles shut
+    place(60, 111, 0.4)  # click View again: the submenu toggles shut
     nsc("btn 1 1")
     time.sleep(0.35)
     nsc("btn 1 0")
     time.sleep(1.5)
     closed = shot(tag + "-menu-closed")
     y0, x0, y1, x1 = box
-    return {"submenu_opened": bool((before[y0:y1, x0:x1] != opened[y0:y1, x0:x1]).sum() > 500),
-            "submenu_closed": bool((closed[y0:y1, x0:x1] != opened[y0:y1, x0:x1]).sum() > 500)}
+    return {
+        "submenu_opened": bool((before[y0:y1, x0:x1] != opened[y0:y1, x0:x1]).sum() > 500),
+        "submenu_closed": bool((closed[y0:y1, x0:x1] != opened[y0:y1, x0:x1]).sum() > 500),
+    }
 
 
 def latency(tag, n=24):
@@ -270,9 +293,12 @@ def latency(tag, n=24):
 def summarise(rows, key="err_pixel"):
     errs = [r[key] for r in rows if r[key] is not None]
     miss = len(rows) - len(errs)
-    return {"n": len(rows), "missing": miss,
-            "max": max(errs) if errs else None,
-            "mean": round(sum(errs) / len(errs), 3) if errs else None}
+    return {
+        "n": len(rows),
+        "missing": miss,
+        "max": max(errs) if errs else None,
+        "mean": round(sum(errs) / len(errs), 3) if errs else None,
+    }
 
 
 def main():
@@ -306,8 +332,10 @@ def main():
     if what in ("sweep", "all"):
         print("\n--- criterion 1: accuracy ---")
         res["sweep"] = sweep(loc, tag + "-s1")
-        res["sweep_summary"] = {"pixel": summarise(res["sweep"], "err_pixel"),
-                                "ram": summarise(res["sweep"], "err_ram")}
+        res["sweep_summary"] = {
+            "pixel": summarise(res["sweep"], "err_pixel"),
+            "ram": summarise(res["sweep"], "err_ram"),
+        }
         print(res["sweep_summary"])
         res["shadows_after_sweep"] = shadows()
 
@@ -315,12 +343,13 @@ def main():
         print("\n--- criterion 2: robustness after the guest moved the cursor ---")
         res["guest_move"] = guest_moves_cursor(tag)
         print("guest moved the cursor / changed state:", res["guest_move"])
-        res["after_guest_move"] = {"ram": ram_pos(),
-                                   "pixel": loc.locate(shot(tag + "-afterguest"))}
+        res["after_guest_move"] = {"ram": ram_pos(), "pixel": loc.locate(shot(tag + "-afterguest"))}
         print("cursor after the guest moved it:", res["after_guest_move"])
         res["sweep2"] = sweep(loc, tag + "-s2")
-        res["sweep2_summary"] = {"pixel": summarise(res["sweep2"], "err_pixel"),
-                                 "ram": summarise(res["sweep2"], "err_ram")}
+        res["sweep2_summary"] = {
+            "pixel": summarise(res["sweep2"], "err_pixel"),
+            "ram": summarise(res["sweep2"], "err_ram"),
+        }
         print(res["sweep2_summary"])
 
     if what in ("latency", "all"):

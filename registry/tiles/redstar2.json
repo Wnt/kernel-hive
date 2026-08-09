@@ -8,10 +8,10 @@
       {
         "order": 30,
         "prelude": "",
-        "line": "  \"redstar2     |redstar2.sh     |RedStar2    |heavy    |~45-90m |vision |redstar2.qcow2 (air-gapped install + golden)\"\n",
+        "line": "  \"redstar2     |tiles/redstar2.sh             |RedStar2    |heavy    |~45-90m |vision |redstar2.qcow2 (air-gapped install + golden)\"\n",
         "value": {
           "key": "redstar2",
-          "script": "redstar2.sh",
+          "script": "tiles/redstar2.sh",
           "outputDir": "RedStar2",
           "class": "heavy",
           "estimated": "~45-90m",

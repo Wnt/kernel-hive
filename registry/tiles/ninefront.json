@@ -8,10 +8,10 @@
       {
         "order": 3,
         "prelude": "",
-        "line": "  \"9front      |9front.sh      |9front      |fast     |~5-8m   |full   |9front-11554.amd64.qcow2\"\n",
+        "line": "  \"9front      |tiles/9front.sh               |9front      |fast     |~5-8m   |full   |9front-11554.amd64.qcow2\"\n",
         "value": {
           "key": "9front",
-          "script": "9front.sh",
+          "script": "tiles/9front.sh",
           "outputDir": "9front",
           "class": "fast",
           "estimated": "~5-8m",

@@ -8,10 +8,10 @@
       {
         "order": 27,
         "prelude": "",
-        "line": "  \"atarist      |atarist.sh     |bridge/atarist |retro    |~3-5m   |full   |tiles/atarist overlay + golden (hatari → EmuTOS GEM)\"\n",
+        "line": "  \"atarist      |tiles/atarist.sh              |bridge/atarist |retro    |~3-5m   |full   |tiles/atarist overlay + golden (hatari → EmuTOS GEM)\"\n",
         "value": {
           "key": "atarist",
-          "script": "atarist.sh",
+          "script": "tiles/atarist.sh",
           "outputDir": "bridge/atarist",
           "class": "retro",
           "estimated": "~3-5m",

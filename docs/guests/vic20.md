@@ -7,10 +7,10 @@ framebuffer + AC97 audio (the VIC-I sound routed through ALSA) exactly like
 every other tile. See **`streamhost/docs/BRIDGE.md`**.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built
-by `scripts/build-guests/bridge-base.sh`). It already contains the whole VICE
+by `scripts/build-guests/lib/bridge-base.sh`). It already contains the whole VICE
 family, `xvic` included — the base builds VICE from source for the `c64` tile
 and `make install` ships every emulator in the suite.
-**Build script (tile):** `scripts/build-guests/vic20.sh` — thin overlay + kiosk
+**Build script (tile):** `scripts/build-guests/tiles/vic20.sh` — thin overlay + kiosk
 `launch.sh` + quiet console + golden bake + framebuffer/keyboard proof, fully
 automated, ~2–4 minutes.
 **Tile dir (host):** `/data/vms/streamhost/tiles/vic20/` — `overlay.qcow2`
@@ -82,7 +82,7 @@ exec xvic -sounddev alsa -VICdsize -VICborders 0 -pal
 
 - **800×600, not the base's stock 1024×768.** VICE's SDL window is a fixed size
   and cannot grow; SDL real fullscreen (`-VICfull`) renders **black** under
-  std-VGA capture (the trap `scripts/build-guests/amstradcpc.sh` records). So
+  std-VGA capture (the trap `scripts/build-guests/tiles/amstradcpc.sh` records). So
   the root shrinks to the smallest advertised mode that contains the window,
   exactly as the `c64` tile does. The captured frame is then mostly picture,
   with thin black bands top and bottom.
@@ -229,6 +229,6 @@ kiosk underneath auto-logs in and execs `startx`. See
 The tile is a thin overlay on a read-only base and touches nothing else. To
 withdraw it: `systemctl stop streamhost@vic20`, set `enabled: false` in
 `registry/tiles/vic20.json`, regenerate, and republish the two runtime JSON
-documents. To rebuild it: `scripts/build-guests/vic20.sh --force`, which
+documents. To rebuild it: `scripts/build-guests/tiles/vic20.sh --force`, which
 replaces `overlay.qcow2` — and therefore **destroys the golden snapshot inside
 it** — then bakes and proves a new one. Never delete `overlay.qcow2` by hand.

@@ -16,6 +16,7 @@ what the absolute mechanism itself adds.
 'Photon' is the emulated NeXT framebuffer: NEXTVideo is hashed in C through the
 control channel until the hash changes.
 """
+
 import socket
 import statistics
 import sys
@@ -45,7 +46,7 @@ def trial(c, arm, sx, sy):
     time.sleep(0.40)
     base = c.vhash()
     if base != c.vhash():
-        return None                      # screen not quiet, discard
+        return None  # screen not quiet, discard
     t0 = time.perf_counter()
     c.cmd("rel 20 0" if arm == "REL" else "abs %d %d" % (sx + 200, sy))
     while True:
@@ -63,26 +64,27 @@ def main():
     t = time.perf_counter()
     for _ in range(200):
         c.vhash()
-    print("poll period %.3f ms (full-VRAM hash through the control channel)"
-          % ((time.perf_counter() - t) * 1000.0 / 200))
+    print(
+        "poll period %.3f ms (full-VRAM hash through the control channel)" % ((time.perf_counter() - t) * 1000.0 / 200)
+    )
 
-    for _ in range(4):                   # warm the plant, discard
+    for _ in range(4):  # warm the plant, discard
         trial(c, "REL", 300, 650)
         trial(c, "ABS", 300, 650)
 
     res = {"REL": [], "ABS": []}
     for i in range(n):
-        for arm in (("REL", "ABS") if i % 2 == 0 else ("ABS", "REL")):
+        for arm in ("REL", "ABS") if i % 2 == 0 else ("ABS", "REL"):
             v = trial(c, arm, 300 if i % 2 == 0 else 320, 650)
             if v is not None:
                 res[arm].append(v)
     for arm in ("REL", "ABS"):
         v = sorted(res[arm])
-        print("%s n=%d median %.2f ms  p25 %.2f  p75 %.2f  min %.2f  max %.2f"
-              % (arm, len(v), statistics.median(v), v[len(v) // 4], v[3 * len(v) // 4],
-                 v[0], v[-1]))
-    print("ABS - REL median delta %.2f ms"
-          % (statistics.median(res["ABS"]) - statistics.median(res["REL"])))
+        print(
+            "%s n=%d median %.2f ms  p25 %.2f  p75 %.2f  min %.2f  max %.2f"
+            % (arm, len(v), statistics.median(v), v[len(v) // 4], v[3 * len(v) // 4], v[0], v[-1])
+        )
+    print("ABS - REL median delta %.2f ms" % (statistics.median(res["ABS"]) - statistics.median(res["REL"])))
     print("RAW REL " + " ".join("%.2f" % x for x in res["REL"]))
     print("RAW ABS " + " ".join("%.2f" % x for x in res["ABS"]))
 

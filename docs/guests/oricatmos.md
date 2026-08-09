@@ -7,10 +7,10 @@ audio exactly like every other tile. See **`streamhost/docs/BRIDGE.md`**.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (frozen, read-only; the
 tile is a thin qcow2 overlay on it).
-**Build script (tile):** `scripts/build-guests/oricatmos.sh` — thin overlay +
+**Build script (tile):** `scripts/build-guests/tiles/oricatmos.sh` — thin overlay +
 ROM staging + kiosk `launch.sh` + quiet console + golden bake + a
 framebuffer-asserted keyboard proof, fully automated.
-**Emulator build:** `scripts/build-guests/build-mame-oricatmos.sh`.
+**Emulator build:** `scripts/build-guests/emulators/build-mame-oricatmos.sh`.
 **Tile dir (host):** `/data/vms/streamhost/tiles/oricatmos/`.
 **Registry entry:** `registry/tiles/oricatmos.json` (slot 131, udp 54131,
 VMID 234, ssh hostfwd 127.0.0.1:5834).

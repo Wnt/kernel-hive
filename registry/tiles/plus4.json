@@ -8,10 +8,10 @@
       {
         "order": 36,
         "prelude": "",
-        "line": "  \"plus4        |plus4.sh       |bridge/plus4    |retro    |~2-4m   |full   |tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)\"\n",
+        "line": "  \"plus4        |tiles/plus4.sh                |bridge/plus4    |retro    |~2-4m   |full   |tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)\"\n",
         "value": {
           "key": "plus4",
-          "script": "plus4.sh",
+          "script": "tiles/plus4.sh",
           "outputDir": "bridge/plus4",
           "class": "retro",
           "estimated": "~2-4m",

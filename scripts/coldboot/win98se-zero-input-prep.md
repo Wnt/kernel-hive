@@ -210,7 +210,7 @@ sendkey via `/root/cdrv.py`, screendump every step):
    *Details* before committing).
 2. File copy prompted for the *"Windows 98 Second Edition CD-ROM"* → point **"Copy files from"** at
    **`C:\WINDOWS\OPTIONS\CABS`** (the base CABs are already on disk, `SourcePath` too — see
-   `scripts/build-guests/win98.sh`). No media needed. → *Windows has finished installing…* → Finish.
+   `scripts/build-guests/tiles/win98.sh`). No media needed. → *Windows has finished installing…* → Finish.
 3. Accept the shutdown, cold-reboot the prep VM → driver active. The already-mapped *"The Microsoft
    Sound"* now fires on the shell load. **Clean Win98 shutdown**, kill by pidfile → pristine disk.
    (Enabling audio also flips *Show volume control on the taskbar* → a **static speaker icon** now

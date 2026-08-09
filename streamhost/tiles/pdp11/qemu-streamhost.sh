@@ -18,7 +18,7 @@
 #   * Keyboard exhibit: no pointing device, PS/2 keyboard only (vmport=off).
 #   * 512 MB is deliberate and measured: the simulated PDP-11 is 4 MB of core,
 #     the simulator's RSS is 21 MB, and the guest still reports 338 MB of
-#     MemAvailable at the login prompt. See scripts/build-guests/pdp11.sh.
+#     MemAvailable at the login prompt. See scripts/build-guests/tiles/pdp11.sh.
 #   * The AC97 card stays in the device set because the golden was baked with
 #     it; the exhibit itself is silent (a console terminal has nothing to say).
 set -e

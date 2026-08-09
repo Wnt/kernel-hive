@@ -13,7 +13,7 @@ intentionally skips `savevm`: every visit cold-boots the emulator.
 
 **Zero input is genuine, but only from the second boot of a given disk image
 onwards.** NeXTSTEP 3.3 runs a one-time Welcome panel (language + keyboard) the
-very first time a fresh install boots; `scripts/build-guests/nextstep.sh`
+very first time a fresh install boots; `scripts/build-guests/tiles/nextstep.sh`
 answers it with two RETURNs during the build, and it never appears again. From
 then on the machine boots to a Workspace with nothing to answer: NeXTSTEP logs
 in automatically as the user `me`, there is no password prompt, and no dialog

@@ -2,14 +2,14 @@
 
 **Status: SOLVED and verified on-box 2026-07-04.** The real Lipstick (Wayland)
 touch GUI now renders under plain QEMU (`-vga std`), no VirtualBox. Reproducible
-build: `scripts/build-guests/sailfishos-gui.sh`. This is a **merge hand-off** for
+build: `scripts/build-guests/tiles/sailfishos-gui.sh`. This is a **merge hand-off** for
 the orchestrator — it does NOT edit any shared script.
 
 > **Current state:** the live gallery runs this as the streamhost tile
 > **`sailfishos`** — see its stanza in `streamhost/tiles-manifest.sh` (disk
 > `/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2`, `streamhost@sailfishos`).
 > The neko-era material below is historical: `gallery-integrate-all.sh` and the
-> losing VirtualBox Option-A driver `scripts/build-guests/sailfishos-vbox.sh` are
+> losing VirtualBox Option-A driver `scripts/build-guests/tiles/sailfishos-vbox.sh` are
 > neko-era, deleted in the 2026-07 restructure — git history. The Option-B KMS
 > recipe and `sailfishos.sh`/`sailfishos-gui.sh` remain the live build path.
 
@@ -176,7 +176,7 @@ PIN. It is dismissed by asking MCE to set `tklock=unlocked`:
 
 `/etc/dbus-1/system.d/mce.conf` allows `req_tklock_mode_change` for the default
 context, so no privilege tricks are needed. Baked into the image (now part of
-`build-guests/sailfishos-gui.sh` `inject()` step 6):
+`build-guests/tiles/sailfishos-gui.sh` `inject()` step 6):
 
 - `/usr/bin/sailfish-kiosk-autounlock.sh` — self-healing loop: every 3 s, if
   tklock != unlocked, send `req_display_state_on` + `req_tklock_mode_change
@@ -244,7 +244,7 @@ Verified live on the dry-run box 2026-07-04. Written as a **merge hand-off** so 
 orchestrator could reconcile `gallery-integrate-all.sh` (neko-era, deleted;
 concurrently edited by sibling agents at the time).
 
-Reproducible image build: `scripts/build-guests/sailfishos.sh`.
+Reproducible image build: `scripts/build-guests/tiles/sailfishos.sh`.
 
 ---
 
@@ -318,7 +318,7 @@ does **not** need any edit for Sailfish — nothing to reconcile there.
 
 ## Hard dependency: the image must be the PATCHED qcow2
 
-`scripts/build-guests/sailfishos.sh` produces
+`scripts/build-guests/tiles/sailfishos.sh` produces
 `/data/gallery-guests/SailfishOS/sailfishos.qcow2` with three QEMU-compat patches
 baked in (idempotent, via `qemu-nbd`):
 
@@ -407,7 +407,7 @@ is reachable as a normal **RDP** endpoint via VirtualBox **VRDE** — which slot
 straight into the gallery's existing **neko-RDP** tile pattern (the Windows 11
 tile). This is the fix for the `:8104` tile being only a text console under QEMU.
 
-Reproducible driver: `scripts/build-guests/sailfishos-vbox.sh`
+Reproducible driver: `scripts/build-guests/tiles/sailfishos-vbox.sh`
 (`prep | l1 | vbox | l2 | shot | nekotile | stop | all`) — the losing option,
 neko-era, deleted in the 2026-07 restructure (git history); Option B (bochs-drm
 KMS, above) won and is the live path. This appendix is kept as the record of the

@@ -32,9 +32,9 @@ command.
 | `irixagent.sh` | guest `/usr/local/bin/irixagent.sh` | wrapper started by an `/etc/inittab` respawn entry |
 | `irixexec.py` | box `/root/irixexec.py` | host client. `labctl exec irix` shells out to it |
 | `../../tiles/irix/x11-runtime.sh` | box tile dir | adds `-ioc2:rs232a pty` and publishes the pty in `serial.pts` |
-| `../../../scripts/build-guests/irix-serial-rig.sh` | repo | boot / exec / shot / halt a namespaced clone with the channel wired |
-| `../../../scripts/build-guests/irix-serial-install.sh` | repo | bake the agent into a golden, over the guest's own console |
-| `../../../scripts/build-guests/irix-serial-selftest.py` | repo | the acceptance suite: real agent + real client over ptys, with a corrupting relay |
+| `../../../scripts/build-guests/irix/irix-serial-rig.sh` | repo | boot / exec / shot / halt a namespaced clone with the channel wired |
+| `../../../scripts/build-guests/irix/irix-serial-install.sh` | repo | bake the agent into a golden, over the guest's own console |
+| `../../../scripts/build-guests/irix/irix-serial-selftest.py` | repo | the acceptance suite: real agent + real client over ptys, with a corrupting relay |
 
 ## The wire
 
@@ -267,7 +267,7 @@ a wedge. Log in first (the browser, or the key-matrix channel), then launch.
 ## Verifying — the acceptance suite
 
 ```
-scripts/build-guests/irix-serial-selftest.py         # ~40 s, needs only perl
+scripts/build-guests/irix/irix-serial-selftest.py         # ~40 s, needs only perl
 ```
 
 It runs the real `irixagent.pl` and the real `irixexec.py` against each other

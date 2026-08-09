@@ -3,7 +3,7 @@
 **Status: LIVE.** Tile `alpine` (VMID 81, udp/54081) — Alpine Linux standard
 LiveCD, text-console golden test fixture, `resetMode=loadvm`, ssh exec channel
 on host port **5881** (user `root`, gallery key). Reproducible builder:
-**`scripts/build-guests/alpine.sh`** (fully automated, proven end-to-end
+**`scripts/build-guests/tiles/alpine.sh`** (fully automated, proven end-to-end
 2026-07-14 on Alpine 3.24.1).
 
 ## What this tile is
@@ -58,7 +58,7 @@ nothing on disk):
   off).
 - `/root/banner` + the painted clean screen (`clear; cat /root/banner`).
 
-## Builder (`scripts/build-guests/alpine.sh`)
+## Builder (`scripts/build-guests/tiles/alpine.sh`)
 
 Fully automated, zero human interaction:
 
@@ -112,6 +112,6 @@ ISO and converges `Alpine.iso` inside the selected `ISO_DIR`. It never touches
   kernel-cmdline change: append `video=1920x1200` to the ISO's isolinux `boot:`
   line (label `lts`) before the LiveCD boots. The golden RAM snapshot captures
   the 1920×1200 fbcon, so `loadvm golden` restores it live and the ssh channel
-  is unaffected. A from-scratch `build-guests/alpine.sh` rebuild boots the ISO
+  is unaffected. A from-scratch `build-guests/tiles/alpine.sh` rebuild boots the ISO
   default (1280×800) — re-add the `video=` param at the `boot:` prompt to
   reproduce 1920×1200 (device set / golden container are otherwise unchanged).

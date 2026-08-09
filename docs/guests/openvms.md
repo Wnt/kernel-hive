@@ -12,7 +12,7 @@ served:
 - `/data/gallery-guests/OpenVMS/community_2026.zip`
 - SHA-256
   `ceae51ded68e96861e7211b30ef837e8d101eb5d3a3ddb78c13d5d7619ddfb83`
-- builder: `scripts/build-guests/openvms.sh`
+- builder: `scripts/build-guests/tiles/openvms.sh`
 - output: `openvms-community.qcow2` plus snapshot-capable
   `OVMF_VARS.qcow2`
 
@@ -22,8 +22,8 @@ in Git, screenshots, serial logs, or build output.
 The X server guest is an overlay on the pinned Debian bridge base:
 
 ```sh
-scripts/build-guests/bridge-base.sh
-scripts/build-guests/openvms-decwindows-bridge.sh
+scripts/build-guests/lib/bridge-base.sh
+scripts/build-guests/stages/openvms-decwindows-bridge.sh
 ```
 
 The second builder installs only Xorg/Xinit and X11 utilities, installs the

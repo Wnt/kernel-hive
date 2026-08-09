@@ -60,7 +60,7 @@ restart QEMU (launcher) + `streamhost@helenos`.
 
 ## Fresh builder trial (2026-07-14)
 
-`scripts/build-guests/helenos.sh` was run with `OUT_DIR` pointing at an empty
+`scripts/build-guests/tiles/helenos.sh` was run with `OUT_DIR` pointing at an empty
 `/data/vms/soltest/repro-helenos-*` directory. The build took 70 seconds and
 produced the 25,792,512-byte HelenOS 0.14.1 ISO. A real QMP framebuffer capture
 showed the blue compositor, taskbar, and focused Terminal at the `/ #` prompt.

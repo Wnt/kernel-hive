@@ -8,10 +8,10 @@ the grey NeXTSTEP Workspace with the right-hand Dock — is reached on an
 untouched cold boot with zero input and is framebuffer-verified in
 `/data/vms/streamhost/tiles/nextstep/evidence/`.
 
-Builder: `scripts/build-guests/nextstep.sh` (fully automated, `--force`,
+Builder: `scripts/build-guests/tiles/nextstep.sh` (fully automated, `--force`,
 idempotent). Runtime sources: `streamhost/tiles/nextstep/`. Patch:
-`scripts/build-guests/previous-wmless-window-borders.patch`. Kiosk helper:
-`scripts/build-guests/nextstep-kiosk-frame.sh` == guest
+`scripts/build-guests/patches/previous-wmless-window-borders.patch`. Kiosk helper:
+`scripts/build-guests/stages/nextstep-kiosk-frame.sh` == guest
 `/usr/local/bin/nextstep-kiosk-frame.sh`.
 
 ---
@@ -114,7 +114,7 @@ and the tile does not need the pacing canary build.
    and bottom, 25 px each side) and shrinks the emulated screen to fit. There is
    no window manager here, so it always assumed them and resampled 1120x832 down
    to 1088x808. Fixed by
-   `scripts/build-guests/previous-wmless-window-borders.patch`.
+   `scripts/build-guests/patches/previous-wmless-window-borders.patch`.
 3. **No input at all.** With no window manager nobody ever calls
    `XSetInputFocus`, so the X input focus stays `None` and SDL3 hands Previous no
    key events; and because the pointer is already inside the window when it is

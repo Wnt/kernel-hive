@@ -9,7 +9,7 @@ captures the Linux framebuffer + AC97 audio exactly like every other tile. See
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` — does **not** contain
 SIMH; see [SIMH is built into the overlay](#simh-is-built-into-the-overlay).
-**Build script (tile):** `scripts/build-guests/decos.sh` — thin overlay + SIMH
+**Build script (tile):** `scripts/build-guests/tiles/decos.sh` — thin overlay + SIMH
 build + media staging + three pack preparations + kiosk + golden bake + a
 framebuffer-asserted keyboard proof.
 **Tile dir (host):** `/data/vms/streamhost/tiles/decos/`.
@@ -327,7 +327,7 @@ last frame would hand off to the golden's first frame cleanly. See
 
 To withdraw the tile: `systemctl stop streamhost@decos`, set `enabled: false`,
 regenerate, republish the three runtime documents (tiles.json, gallery-manifest.json AND golden-manifest.json — the third is the reset allow-list). To rebuild:
-`scripts/build-guests/decos.sh --force`, which replaces `overlay.qcow2` and so
+`scripts/build-guests/tiles/decos.sh --force`, which replaces `overlay.qcow2` and so
 **destroys the golden and all three prepared packs inside it**. Note that a
 plain re-run **deletes the existing golden snapshot first**, deliberately: a
 `-loadvm` boot restores the snapshot's *disk* as well as its RAM, so a re-run
