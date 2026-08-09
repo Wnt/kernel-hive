@@ -10,10 +10,10 @@
       {
         "order": 46,
         "prelude": "",
-        "line": "  \"armeval     |armeval.sh     |Armeval       |installed|~15-30m |partial |TODO\"\n",
+        "line": "  \"armeval     |tiles/armeval.sh              |Armeval       |installed|~15-30m |partial |TODO\"\n",
         "value": {
           "key": "armeval",
-          "script": "armeval.sh",
+          "script": "tiles/armeval.sh",
           "outputDir": "Armeval",
           "class": "installed",
           "estimated": "~15-30m",

@@ -8,10 +8,10 @@
       {
         "order": 29,
         "prelude": "",
-        "line": "  \"amiga        |amiga.sh       |bridge/amiga   |retro    |~3-5m   |full   |tiles/amiga overlay + golden (Kickstart 1.3 + Workbench 1.3)\"\n",
+        "line": "  \"amiga        |tiles/amiga.sh                |bridge/amiga   |retro    |~3-5m   |full   |tiles/amiga overlay + golden (Kickstart 1.3 + Workbench 1.3)\"\n",
         "value": {
           "key": "amiga",
-          "script": "amiga.sh",
+          "script": "tiles/amiga.sh",
           "outputDir": "bridge/amiga",
           "class": "retro",
           "estimated": "~3-5m",

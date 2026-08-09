@@ -8,10 +8,10 @@
       {
         "order": 23,
         "prelude": "",
-        "line": "  \"winxp       |winxp.sh       |WinXPpro    |licensed |~30-50m |supplied|winxp.qcow2 (needs XP ISO)\"\n",
+        "line": "  \"winxp       |tiles/winxp.sh                |WinXPpro    |licensed |~30-50m |supplied|winxp.qcow2 (needs XP ISO)\"\n",
         "value": {
           "key": "winxp",
-          "script": "winxp.sh",
+          "script": "tiles/winxp.sh",
           "outputDir": "WinXPpro",
           "class": "licensed",
           "estimated": "~30-50m",

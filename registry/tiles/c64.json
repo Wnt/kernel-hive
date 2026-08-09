@@ -8,10 +8,10 @@
       {
         "order": 26,
         "prelude": "",
-        "line": "  \"c64          |c64.sh         |bridge/c64     |retro    |~3-5m   |full   |tiles/c64 overlay + golden (VICE x64sc → GEOS 2.0)\"\n",
+        "line": "  \"c64          |tiles/c64.sh                  |bridge/c64     |retro    |~3-5m   |full   |tiles/c64 overlay + golden (VICE x64sc → GEOS 2.0)\"\n",
         "value": {
           "key": "c64",
-          "script": "c64.sh",
+          "script": "tiles/c64.sh",
           "outputDir": "bridge/c64",
           "class": "retro",
           "estimated": "~3-5m",

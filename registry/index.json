@@ -12,10 +12,10 @@
           {
             "order": 9,
             "prelude": "",
-            "line": "  \"alpine      |alpine.sh      |Alpine      |fast     |~2-3m   |full   |Alpine.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
+            "line": "  \"alpine      |tiles/alpine.sh               |Alpine      |fast     |~2-3m   |full   |Alpine.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
             "value": {
               "key": "alpine",
-              "script": "alpine.sh",
+              "script": "tiles/alpine.sh",
               "outputDir": "Alpine",
               "class": "fast",
               "estimated": "~2-3m",
@@ -224,10 +224,10 @@
           {
             "order": 29,
             "prelude": "",
-            "line": "  \"amiga        |amiga.sh       |bridge/amiga   |retro    |~3-5m   |full   |tiles/amiga overlay + golden (Kickstart 1.3 + Workbench 1.3)\"\n",
+            "line": "  \"amiga        |tiles/amiga.sh                |bridge/amiga   |retro    |~3-5m   |full   |tiles/amiga overlay + golden (Kickstart 1.3 + Workbench 1.3)\"\n",
             "value": {
               "key": "amiga",
-              "script": "amiga.sh",
+              "script": "tiles/amiga.sh",
               "outputDir": "bridge/amiga",
               "class": "retro",
               "estimated": "~3-5m",
@@ -436,10 +436,10 @@
           {
             "order": 32,
             "prelude": "",
-            "line": "  \"amstradcpc   |amstradcpc.sh  |bridge/amstradcpc|retro    |~3-5m   |full   |tiles/amstradcpc overlay + golden (cap32 → Locomotive BASIC)\"\n",
+            "line": "  \"amstradcpc   |tiles/amstradcpc.sh           |bridge/amstradcpc|retro    |~3-5m   |full   |tiles/amstradcpc overlay + golden (cap32 → Locomotive BASIC)\"\n",
             "value": {
               "key": "amstradcpc",
-              "script": "amstradcpc.sh",
+              "script": "tiles/amstradcpc.sh",
               "outputDir": "bridge/amstradcpc",
               "class": "retro",
               "estimated": "~3-5m",
@@ -672,10 +672,10 @@
           {
             "order": 18,
             "prelude": "",
-            "line": "  \"android-x86 |android-x86.sh |Android     |heavy    |~20-40m |1-click|android.qcow2\"\n",
+            "line": "  \"android-x86 |tiles/android-x86.sh          |Android     |heavy    |~20-40m |1-click|android.qcow2\"\n",
             "value": {
               "key": "android-x86",
-              "script": "android-x86.sh",
+              "script": "tiles/android-x86.sh",
               "outputDir": "Android",
               "class": "heavy",
               "estimated": "~20-40m",
@@ -896,10 +896,10 @@
           {
             "order": 28,
             "prelude": "",
-            "line": "  \"apple2       |apple2.sh      |bridge/apple2  |retro    |~3-5m   |full   |tiles/apple2 overlay + golden (Apple //e → GEOS)\"\n",
+            "line": "  \"apple2       |tiles/apple2.sh               |bridge/apple2  |retro    |~3-5m   |full   |tiles/apple2 overlay + golden (Apple //e → GEOS)\"\n",
             "value": {
               "key": "apple2",
-              "script": "apple2.sh",
+              "script": "tiles/apple2.sh",
               "outputDir": "bridge/apple2",
               "class": "retro",
               "estimated": "~3-5m",
@@ -1109,10 +1109,10 @@
           {
             "order": 46,
             "prelude": "",
-            "line": "  \"armeval     |armeval.sh     |Armeval       |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"armeval     |tiles/armeval.sh              |Armeval       |installed|~15-30m |partial |TODO\"\n",
             "value": {
               "key": "armeval",
-              "script": "armeval.sh",
+              "script": "tiles/armeval.sh",
               "outputDir": "Armeval",
               "class": "installed",
               "estimated": "~15-30m",
@@ -1160,10 +1160,10 @@
           {
             "order": 7,
             "prelude": "",
-            "line": "  \"amigaos     |amigaos.sh     |AmigaOS     |fast     |~3-5m   |full   |aros-pc-i386.iso (AROS live CD)\"\n",
+            "line": "  \"amigaos     |tiles/amigaos.sh              |AmigaOS     |fast     |~3-5m   |full   |aros-pc-i386.iso (AROS live CD)\"\n",
             "value": {
               "key": "amigaos",
-              "script": "amigaos.sh",
+              "script": "tiles/amigaos.sh",
               "outputDir": "AmigaOS",
               "class": "fast",
               "estimated": "~3-5m",
@@ -1380,10 +1380,10 @@
           {
             "order": 27,
             "prelude": "",
-            "line": "  \"atarist      |atarist.sh     |bridge/atarist |retro    |~3-5m   |full   |tiles/atarist overlay + golden (hatari → EmuTOS GEM)\"\n",
+            "line": "  \"atarist      |tiles/atarist.sh              |bridge/atarist |retro    |~3-5m   |full   |tiles/atarist overlay + golden (hatari → EmuTOS GEM)\"\n",
             "value": {
               "key": "atarist",
-              "script": "atarist.sh",
+              "script": "tiles/atarist.sh",
               "outputDir": "bridge/atarist",
               "class": "retro",
               "estimated": "~3-5m",
@@ -1593,10 +1593,10 @@
           {
             "order": 44,
             "prelude": "",
-            "line": "  \"bbcmicro    |bbcmicro.sh    |bridge/bbcmicro |retro    |~6-10m  |full   |tiles/bbcmicro overlay + golden (MAME 0.289 bbcb → BBC BASIC II)\"\n",
+            "line": "  \"bbcmicro    |tiles/bbcmicro.sh             |bridge/bbcmicro |retro    |~6-10m  |full   |tiles/bbcmicro overlay + golden (MAME 0.289 bbcb → BBC BASIC II)\"\n",
             "value": {
               "key": "bbcmicro",
-              "script": "bbcmicro.sh",
+              "script": "tiles/bbcmicro.sh",
               "outputDir": "bridge/bbcmicro",
               "class": "retro",
               "estimated": "~6-10m",
@@ -1839,10 +1839,10 @@
           {
             "order": 37,
             "prelude": "",
-            "line": "  \"c128         |c128.sh        |bridge/c128     |retro    |~3-5m   |full   |tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)\"\n",
+            "line": "  \"c128         |tiles/c128.sh                 |bridge/c128     |retro    |~3-5m   |full   |tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)\"\n",
             "value": {
               "key": "c128",
-              "script": "c128.sh",
+              "script": "tiles/c128.sh",
               "outputDir": "bridge/c128",
               "class": "retro",
               "estimated": "~3-5m",
@@ -2052,10 +2052,10 @@
           {
             "order": 26,
             "prelude": "",
-            "line": "  \"c64          |c64.sh         |bridge/c64     |retro    |~3-5m   |full   |tiles/c64 overlay + golden (VICE x64sc → GEOS 2.0)\"\n",
+            "line": "  \"c64          |tiles/c64.sh                  |bridge/c64     |retro    |~3-5m   |full   |tiles/c64 overlay + golden (VICE x64sc → GEOS 2.0)\"\n",
             "value": {
               "key": "c64",
-              "script": "c64.sh",
+              "script": "tiles/c64.sh",
               "outputDir": "bridge/c64",
               "class": "retro",
               "estimated": "~3-5m",
@@ -2265,10 +2265,10 @@
           {
             "order": 40,
             "prelude": "",
-            "line": "  \"cbm2         |cbm2.sh        |bridge/cbm2     |retro    |~2-4m   |full   |tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)\"\n",
+            "line": "  \"cbm2         |tiles/cbm2.sh                 |bridge/cbm2     |retro    |~2-4m   |full   |tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)\"\n",
             "value": {
               "key": "cbm2",
-              "script": "cbm2.sh",
+              "script": "tiles/cbm2.sh",
               "outputDir": "bridge/cbm2",
               "class": "retro",
               "estimated": "~2-4m",
@@ -2474,10 +2474,10 @@
           {
             "order": 39,
             "prelude": "",
-            "line": "  \"cbm8032      |cbm8032.sh     |bridge/cbm8032  |retro    |~2-4m   |full   |tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)\"\n",
+            "line": "  \"cbm8032      |tiles/cbm8032.sh              |bridge/cbm8032  |retro    |~2-4m   |full   |tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)\"\n",
             "value": {
               "key": "cbm8032",
-              "script": "cbm8032.sh",
+              "script": "tiles/cbm8032.sh",
               "outputDir": "bridge/cbm8032",
               "class": "retro",
               "estimated": "~2-4m",
@@ -2700,10 +2700,10 @@
           {
             "order": 43,
             "prelude": "",
-            "line": "  \"decos        |decos.sh       |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)\"\n",
+            "line": "  \"decos        |tiles/decos.sh                |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)\"\n",
             "value": {
               "key": "decos",
-              "script": "decos.sh",
+              "script": "tiles/decos.sh",
               "outputDir": "bridge/decos",
               "class": "retro",
               "estimated": "~20-70m",
@@ -2912,10 +2912,10 @@
           {
             "order": 45,
             "prelude": "",
-            "line": "  \"dragon32     |dragon32.sh    |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)\"\n",
+            "line": "  \"dragon32     |tiles/dragon32.sh             |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)\"\n",
             "value": {
               "key": "dragon32",
-              "script": "dragon32.sh",
+              "script": "tiles/dragon32.sh",
               "outputDir": "bridge/dragon32",
               "class": "retro",
               "estimated": "~4-6m",
@@ -3157,10 +3157,10 @@
           {
             "order": 11,
             "prelude": "",
-            "line": "  \"freedos     |freedos.sh     |FreeDOS     |retro    |~10-15m |full*  |freedos.qcow2 (games+Arachne)\"\n",
+            "line": "  \"freedos     |tiles/freedos.sh              |FreeDOS     |retro    |~10-15m |full*  |freedos.qcow2 (games+Arachne)\"\n",
             "value": {
               "key": "freedos",
-              "script": "freedos.sh",
+              "script": "tiles/freedos.sh",
               "outputDir": "FreeDOS",
               "class": "retro",
               "estimated": "~10-15m",
@@ -3370,10 +3370,10 @@
           {
             "order": 42,
             "prelude": "",
-            "line": "  \"gt40         |gt40.sh        |bridge/gt40     |retro    |~5-8m   |full   |tiles/gt40 overlay + golden (Open SIMH pdp11 VT11 → Lunar Lander)\"\n",
+            "line": "  \"gt40         |tiles/gt40.sh                 |bridge/gt40     |retro    |~5-8m   |full   |tiles/gt40 overlay + golden (Open SIMH pdp11 VT11 → Lunar Lander)\"\n",
             "value": {
               "key": "gt40",
-              "script": "gt40.sh",
+              "script": "tiles/gt40.sh",
               "outputDir": "bridge/gt40",
               "class": "retro",
               "estimated": "~5-8m",
@@ -3563,7 +3563,7 @@
         "snapshot": "golden",
         "mouse": "PASS",
         "keyboard": "N/A",
-        "fixture": "The first seconds of a fresh lunar descent — the LEM in the upper left with its engine firing, ~18000 feet, a full tank, the 75% throttle bar and the twelve-item telemetry menu down the right edge — in Open SIMH's VT11 at crt=vr17 scale=1 hspace=narrow, a 1024x1024 window centred on a 1280x1024 X root. The program restarts itself after each crash, so the bake rides that loop: scripts/build-guests/gt40.sh waits for the \"NO SURVIVORS\" message and then for the restart it triggers, which is why reset always hands a visitor a NEW GAME rather than the middle of somebody else's doomed trajectory. Light-pen route certified 2026-08-09 after the bake, by framebuffer: with the pointer parked the menu column is dead still (blink range 0 over 20 samples), a pen touch on ANGLE makes that item blink (range 376 — the program's own acknowledgement that the pen hit a vector), and loadvm golden clears the selection again (range 0). Pointer-only exhibit; no keyboard input of any kind; AC97 card present for device-set parity, but the GT40 is silent."
+        "fixture": "The first seconds of a fresh lunar descent — the LEM in the upper left with its engine firing, ~18000 feet, a full tank, the 75% throttle bar and the twelve-item telemetry menu down the right edge — in Open SIMH's VT11 at crt=vr17 scale=1 hspace=narrow, a 1024x1024 window centred on a 1280x1024 X root. The program restarts itself after each crash, so the bake rides that loop: scripts/build-guests/tiles/gt40.sh waits for the \"NO SURVIVORS\" message and then for the restart it triggers, which is why reset always hands a visitor a NEW GAME rather than the middle of somebody else's doomed trajectory. Light-pen route certified 2026-08-09 after the bake, by framebuffer: with the pointer parked the menu column is dead still (blink range 0 over 20 samples), a pen touch on ANGLE makes that item blink (range 376 — the program's own acknowledgement that the pen hit a vector), and loadvm golden clears the selection again (range 0). Pointer-only exhibit; no keyboard input of any kind; AC97 card present for device-set parity, but the GT40 is silent."
       },
       "notes": [
         "slot 125 / UDP 54125 / VMID 228 / ssh hostfwd 127.0.0.1:5828",
@@ -3581,10 +3581,10 @@
           {
             "order": 5,
             "prelude": "",
-            "line": "  \"haiku       |haiku-install.sh|Haiku       |fast     |~6-10m  |full   |haiku.iso -> tile haiku-persist.qcow2 + sshd/key + golden\"\n",
+            "line": "  \"haiku       |tiles/haiku-install.sh        |Haiku       |fast     |~6-10m  |full   |haiku.iso -> tile haiku-persist.qcow2 + sshd/key + golden\"\n",
             "value": {
               "key": "haiku",
-              "script": "haiku-install.sh",
+              "script": "tiles/haiku-install.sh",
               "outputDir": "Haiku",
               "class": "fast",
               "estimated": "~6-10m",
@@ -3825,10 +3825,10 @@
           {
             "order": 2,
             "prelude": "",
-            "line": "  \"helenos     |helenos.sh     |HelenOS     |fast     |~3m     |full   |HelenOS-0.14.1-ia32.iso (live)\"\n",
+            "line": "  \"helenos     |tiles/helenos.sh              |HelenOS     |fast     |~3m     |full   |HelenOS-0.14.1-ia32.iso (live)\"\n",
             "value": {
               "key": "helenos",
-              "script": "helenos.sh",
+              "script": "tiles/helenos.sh",
               "outputDir": "HelenOS",
               "class": "fast",
               "estimated": "~3m",
@@ -4239,10 +4239,10 @@
           {
             "order": 44,
             "prelude": "",
-            "line": "  \"kc854       |kc854.sh       |bridge/kc854    |retro    |~6-10m  |full   |tiles/kc854 overlay + golden (MAME kc85_4 → CAOS 4.2)\"\n",
+            "line": "  \"kc854       |tiles/kc854.sh                |bridge/kc854    |retro    |~6-10m  |full   |tiles/kc854 overlay + golden (MAME kc85_4 → CAOS 4.2)\"\n",
             "value": {
               "key": "kc854",
-              "script": "kc854.sh",
+              "script": "tiles/kc854.sh",
               "outputDir": "bridge/kc854",
               "class": "retro",
               "estimated": "~6-10m",
@@ -4521,10 +4521,10 @@
           {
             "order": 0,
             "prelude": "",
-            "line": "  \"kolibrios   |kolibrios.sh   |KolibriOS   |fast     |~2-3m   |full   |kolibri.iso (live CD)\"\n",
+            "line": "  \"kolibrios   |tiles/kolibrios.sh            |KolibriOS   |fast     |~2-3m   |full   |kolibri.iso (live CD)\"\n",
             "value": {
               "key": "kolibrios",
-              "script": "kolibrios.sh",
+              "script": "tiles/kolibrios.sh",
               "outputDir": "KolibriOS",
               "class": "fast",
               "estimated": "~2-3m",
@@ -4787,10 +4787,10 @@
           {
             "order": 34,
             "prelude": "",
-            "line": "  \"mpf2         |mpf2.sh        |bridge/mpf2     |retro    |~3-5m   |full   |tiles/mpf2 cold-boot overlay (MAME mpf2 → Applesoft BASIC)\"\n",
+            "line": "  \"mpf2         |tiles/mpf2.sh                 |bridge/mpf2     |retro    |~3-5m   |full   |tiles/mpf2 cold-boot overlay (MAME mpf2 → Applesoft BASIC)\"\n",
             "value": {
               "key": "mpf2",
-              "script": "mpf2.sh",
+              "script": "tiles/mpf2.sh",
               "outputDir": "bridge/mpf2",
               "class": "retro",
               "estimated": "~3-5m",
@@ -5031,10 +5031,10 @@
           {
             "order": 12,
             "prelude": "",
-            "line": "  \"msdos-win1  |msdos-win1.sh  |MSDOSWin1   |retro    |~10-15m |full   |msdos-win1.qcow2 (DOS 6.22 + Windows 1.01, from real floppies)\"\n",
+            "line": "  \"msdos-win1  |tiles/msdos-win1.sh           |MSDOSWin1   |retro    |~10-15m |full   |msdos-win1.qcow2 (DOS 6.22 + Windows 1.01, from real floppies)\"\n",
             "value": {
               "key": "msdos-win1",
-              "script": "msdos-win1.sh",
+              "script": "tiles/msdos-win1.sh",
               "outputDir": "MSDOSWin1",
               "class": "retro",
               "estimated": "~10-15m",
@@ -5257,10 +5257,10 @@
           {
             "order": 44,
             "prelude": "",
-            "line": "  \"nextstep    |nextstep.sh    |bridge/nextstep|graphical|~25-40m |full   |tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)\"\n",
+            "line": "  \"nextstep    |tiles/nextstep.sh             |bridge/nextstep|graphical|~25-40m |full   |tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)\"\n",
             "value": {
               "key": "nextstep",
-              "script": "nextstep.sh",
+              "script": "tiles/nextstep.sh",
               "outputDir": "bridge/nextstep",
               "class": "graphical",
               "estimated": "~25-40m",
@@ -5466,10 +5466,10 @@
           {
             "order": 3,
             "prelude": "",
-            "line": "  \"9front      |9front.sh      |9front      |fast     |~5-8m   |full   |9front-11554.amd64.qcow2\"\n",
+            "line": "  \"9front      |tiles/9front.sh               |9front      |fast     |~5-8m   |full   |9front-11554.amd64.qcow2\"\n",
             "value": {
               "key": "9front",
-              "script": "9front.sh",
+              "script": "tiles/9front.sh",
               "outputDir": "9front",
               "class": "fast",
               "estimated": "~5-8m",
@@ -5707,10 +5707,10 @@
           {
             "order": 32,
             "prelude": "",
-            "line": "  \"nt351       |nt351.sh       |Nt351         |installed|~15-30m |partial |nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)\"\n",
+            "line": "  \"nt351       |tiles/nt351.sh                |Nt351         |installed|~15-30m |partial |nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)\"\n",
             "value": {
               "key": "nt351",
-              "script": "nt351.sh",
+              "script": "tiles/nt351.sh",
               "outputDir": "Nt351",
               "class": "installed",
               "estimated": "~15-30m",
@@ -5957,10 +5957,10 @@
           {
             "order": 32,
             "prelude": "",
-            "line": "  \"nt4         |nt4.sh         |Nt4           |fast     |~2-5m   |full    |nt4-golden.qcow2 (prebuilt VMware VM -> qcow2 + boot.ini scsi->multi fix)\"\n",
+            "line": "  \"nt4         |tiles/nt4.sh                  |Nt4           |fast     |~2-5m   |full    |nt4-golden.qcow2 (prebuilt VMware VM -> qcow2 + boot.ini scsi->multi fix)\"\n",
             "value": {
               "key": "nt4",
-              "script": "nt4.sh",
+              "script": "tiles/nt4.sh",
               "outputDir": "Nt4",
               "class": "fast",
               "estimated": "~2-5m",
@@ -6185,10 +6185,10 @@
           {
             "order": 33,
             "prelude": "",
-            "line": "  \"openvms     |openvms.sh     |OpenVMS       |licensed |~3-8m   |full    |OpenVMS disks; openvms-decwindows-bridge.sh builds lean-X bridge\"\n",
+            "line": "  \"openvms     |tiles/openvms.sh              |OpenVMS       |licensed |~3-8m   |full    |OpenVMS disks; openvms-decwindows-bridge.sh builds lean-X bridge\"\n",
             "value": {
               "key": "openvms",
-              "script": "openvms.sh",
+              "script": "tiles/openvms.sh",
               "outputDir": "OpenVMS",
               "class": "licensed",
               "estimated": "~3-8m",
@@ -6414,10 +6414,10 @@
           {
             "order": 44,
             "prelude": "",
-            "line": "  \"oricatmos   |oricatmos.sh   |bridge/oricatmos|retro    |~4-8m   |full   |tiles/oricatmos overlay + golden (MAME 0.289 orica → Oric Extended BASIC V1.1)\"\n",
+            "line": "  \"oricatmos   |tiles/oricatmos.sh            |bridge/oricatmos|retro    |~4-8m   |full   |tiles/oricatmos overlay + golden (MAME 0.289 orica → Oric Extended BASIC V1.1)\"\n",
             "value": {
               "key": "oricatmos",
-              "script": "oricatmos.sh",
+              "script": "tiles/oricatmos.sh",
               "outputDir": "bridge/oricatmos",
               "class": "retro",
               "estimated": "~4-8m",
@@ -6617,7 +6617,7 @@
           "Sedoric on the Microdisc"
         ],
         "blurb": "The ZX Spectrum's most direct British rival, and the one that won France: a black wedge with a red stripe, eight colours, three-voice sound, and a BASIC in which the words ZAP, PING, SHOOT and EXPLODE each make the noise they are named after.",
-        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME's `orica` driver emulating an Oric Atmos; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The emulator is a pinned MAME 0.289 built for oric.cpp only in the Bookworm chroot (scripts/build-guests/build-mame-oricatmos.sh) — the lab host's packaged 0.276 is trixie-ABI and Bookworm's own is 0.251. One 16 KB preservation-source ROM (basic11b.rom, Extended BASIC V1.1) is staged outside the repo and gated by asking the shipped binary's own -listxml which sha1 it demands for bios ver11. Drawn fullscreen with aspect correction on an 800x600 X root, which is 4:3 — the shape the machine drew on a television, and the mode that measured 1.6x cheaper to blit than 1024x768 on this box. The golden is the machine's own untouched power-on screen; the interaction is the registry demoProgram. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/oricatmos.md."
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME's `orica` driver emulating an Oric Atmos; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The emulator is a pinned MAME 0.289 built for oric.cpp only in the Bookworm chroot (scripts/build-guests/emulators/build-mame-oricatmos.sh) — the lab host's packaged 0.276 is trixie-ABI and Bookworm's own is 0.251. One 16 KB preservation-source ROM (basic11b.rom, Extended BASIC V1.1) is staged outside the repo and gated by asking the shipped binary's own -listxml which sha1 it demands for bios ver11. Drawn fullscreen with aspect correction on an 800x600 X root, which is 4:3 — the shape the machine drew on a television, and the mode that measured 1.6x cheaper to blit than 1024x768 on this box. The golden is the machine's own untouched power-on screen; the interaction is the registry demoProgram. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/oricatmos.md."
       },
       "reset": {
         "tileDir": "oricatmos",
@@ -6640,10 +6640,10 @@
           {
             "order": 17,
             "prelude": "",
-            "line": "  \"os2warp     |os2warp.sh     |OS2Warp     |retro    |~20-30m |full   |os2.qcow2 (Warp 4 prebuilt + first-boot taming; TCG)\"\n",
+            "line": "  \"os2warp     |tiles/os2warp.sh              |OS2Warp     |retro    |~20-30m |full   |os2.qcow2 (Warp 4 prebuilt + first-boot taming; TCG)\"\n",
             "value": {
               "key": "os2warp",
-              "script": "os2warp.sh",
+              "script": "tiles/os2warp.sh",
               "outputDir": "OS2Warp",
               "class": "retro",
               "estimated": "~20-30m",
@@ -6877,10 +6877,10 @@
           {
             "order": 41,
             "prelude": "",
-            "line": "  \"pdp11        |pdp11.sh       |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)\"\n",
+            "line": "  \"pdp11        |tiles/pdp11.sh                |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)\"\n",
             "value": {
               "key": "pdp11",
-              "script": "pdp11.sh",
+              "script": "tiles/pdp11.sh",
               "outputDir": "bridge/pdp11",
               "class": "retro",
               "estimated": "~6-8m",
@@ -7091,10 +7091,10 @@
           {
             "order": 38,
             "prelude": "",
-            "line": "  \"pet2001     |pet2001.sh     |bridge/pet2001  |retro    |~2-4m   |full   |tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)\"\n",
+            "line": "  \"pet2001     |tiles/pet2001.sh              |bridge/pet2001  |retro    |~2-4m   |full   |tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)\"\n",
             "value": {
               "key": "pet2001",
-              "script": "pet2001.sh",
+              "script": "tiles/pet2001.sh",
               "outputDir": "bridge/pet2001",
               "class": "retro",
               "estimated": "~2-4m",
@@ -7319,10 +7319,10 @@
           {
             "order": 36,
             "prelude": "",
-            "line": "  \"plus4        |plus4.sh       |bridge/plus4    |retro    |~2-4m   |full   |tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)\"\n",
+            "line": "  \"plus4        |tiles/plus4.sh                |bridge/plus4    |retro    |~2-4m   |full   |tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)\"\n",
             "value": {
               "key": "plus4",
-              "script": "plus4.sh",
+              "script": "tiles/plus4.sh",
               "outputDir": "bridge/plus4",
               "class": "retro",
               "estimated": "~2-4m",
@@ -7532,10 +7532,10 @@
           {
             "order": 19,
             "prelude": "",
-            "line": "  \"postmarketos|postmarketos-fixture.sh|postmarketOS|heavy|~12-25m |full   |pmos-phosh.qcow2 + OVMF vars + golden\"\n",
+            "line": "  \"postmarketos|tiles/postmarketos-fixture.sh |postmarketOS|heavy|~12-25m |full   |pmos-phosh.qcow2 + OVMF vars + golden\"\n",
             "value": {
               "key": "postmarketos",
-              "script": "postmarketos-fixture.sh",
+              "script": "tiles/postmarketos-fixture.sh",
               "outputDir": "postmarketOS",
               "class": "heavy",
               "estimated": "~12-25m",
@@ -7755,10 +7755,10 @@
           {
             "order": 8,
             "prelude": "",
-            "line": "  \"qnx         |qnx.sh         |QNX         |fast     |~5-10m  |full   |QNX650Live.iso (drives Photon first-run to desktop)\"\n",
+            "line": "  \"qnx         |tiles/qnx.sh                  |QNX         |fast     |~5-10m  |full   |QNX650Live.iso (drives Photon first-run to desktop)\"\n",
             "value": {
               "key": "qnx",
-              "script": "qnx.sh",
+              "script": "tiles/qnx.sh",
               "outputDir": "QNX",
               "class": "fast",
               "estimated": "~5-10m",
@@ -7951,10 +7951,10 @@
           {
             "order": 4,
             "prelude": "",
-            "line": "  \"reactos     |reactos.sh     |ReactOS     |fast     |~3-5m   |full   |ReactOS.iso (live CD)\"\n",
+            "line": "  \"reactos     |tiles/reactos.sh              |ReactOS     |fast     |~3-5m   |full   |ReactOS.iso (live CD)\"\n",
             "value": {
               "key": "reactos",
-              "script": "reactos.sh",
+              "script": "tiles/reactos.sh",
               "outputDir": "ReactOS",
               "class": "fast",
               "estimated": "~3-5m",
@@ -8179,10 +8179,10 @@
           {
             "order": 30,
             "prelude": "",
-            "line": "  \"redstar2     |redstar2.sh     |RedStar2    |heavy    |~45-90m |vision |redstar2.qcow2 (air-gapped install + golden)\"\n",
+            "line": "  \"redstar2     |tiles/redstar2.sh             |RedStar2    |heavy    |~45-90m |vision |redstar2.qcow2 (air-gapped install + golden)\"\n",
             "value": {
               "key": "redstar2",
-              "script": "redstar2.sh",
+              "script": "tiles/redstar2.sh",
               "outputDir": "RedStar2",
               "class": "heavy",
               "estimated": "~45-90m",
@@ -8401,10 +8401,10 @@
           {
             "order": 31,
             "prelude": "",
-            "line": "  \"redstar3    |redstar3.sh    |RedStar3    |retro    |~15-30m |vision |redstar3.qcow2|media\"\n",
+            "line": "  \"redstar3    |tiles/redstar3.sh             |RedStar3    |retro    |~15-30m |vision |redstar3.qcow2|media\"\n",
             "value": {
               "key": "redstar3",
-              "script": "redstar3.sh",
+              "script": "tiles/redstar3.sh",
               "outputDir": "RedStar3",
               "class": "retro",
               "estimated": "~15-30m",
@@ -8689,10 +8689,10 @@
           {
             "order": 20,
             "prelude": "",
-            "line": "  \"sailfishos  |sailfishos.sh  |SailfishOS  |heavy    |~15-30m |supplied|sailfishos.qcow2 (STAGE 1; needs Sailfish SDK emulator VDI/archive)|media\"\n",
+            "line": "  \"sailfishos  |tiles/sailfishos.sh           |SailfishOS  |heavy    |~15-30m |supplied|sailfishos.qcow2 (STAGE 1; needs Sailfish SDK emulator VDI/archive)|media\"\n",
             "value": {
               "key": "sailfishos",
-              "script": "sailfishos.sh",
+              "script": "tiles/sailfishos.sh",
               "outputDir": "SailfishOS",
               "class": "heavy",
               "estimated": "~15-30m",
@@ -8710,10 +8710,10 @@
           {
             "order": 21,
             "prelude": "",
-            "line": "  \"sailfishos-gui|sailfishos-gui.sh|SailfishOS|heavy  |~20-40m |full   |sailfishos-gui.qcow2 (STAGE 2 bochs-drm KMS; run after sailfishos)|media\"\n",
+            "line": "  \"sailfishos-gui|tiles/sailfishos-gui.sh       |SailfishOS|heavy  |~20-40m |full   |sailfishos-gui.qcow2 (STAGE 2 bochs-drm KMS; run after sailfishos)|media\"\n",
             "value": {
               "key": "sailfishos-gui",
-              "script": "sailfishos-gui.sh",
+              "script": "tiles/sailfishos-gui.sh",
               "outputDir": "SailfishOS",
               "class": "heavy",
               "estimated": "~20-40m",
@@ -8940,10 +8940,10 @@
           {
             "order": 22,
             "prelude": "",
-            "line": "  \"serenityos  |serenityos.sh  |SerenityOS  |heavy    |~20-60m |full   |_disk_image + Kernel (compiled)\"\n",
+            "line": "  \"serenityos  |tiles/serenityos.sh           |SerenityOS  |heavy    |~20-60m |full   |_disk_image + Kernel (compiled)\"\n",
             "value": {
               "key": "serenityos",
-              "script": "serenityos.sh",
+              "script": "tiles/serenityos.sh",
               "outputDir": "SerenityOS",
               "class": "heavy",
               "estimated": "~20-60m",
@@ -9157,10 +9157,10 @@
           {
             "order": 44,
             "prelude": "",
-            "line": "  \"sinclairql   |sinclairql.sh  |bridge/sinclairql|retro    |~8-12m  |full   |tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)\"\n",
+            "line": "  \"sinclairql   |tiles/sinclairql.sh           |bridge/sinclairql|retro    |~8-12m  |full   |tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)\"\n",
             "value": {
               "key": "sinclairql",
-              "script": "sinclairql.sh",
+              "script": "tiles/sinclairql.sh",
               "outputDir": "bridge/sinclairql",
               "class": "retro",
               "estimated": "~8-12m",
@@ -9366,10 +9366,10 @@
           {
             "order": 24,
             "prelude": "",
-            "line": "  \"solaris-cde |solaris-cde.sh |SolarisCDE  |licensed |~40-60m |supplied|solaris.qcow2 (needs OTN ISO)\"\n",
+            "line": "  \"solaris-cde |tiles/solaris-cde.sh          |SolarisCDE  |licensed |~40-60m |supplied|solaris.qcow2 (needs OTN ISO)\"\n",
             "value": {
               "key": "solaris-cde",
-              "script": "solaris-cde.sh",
+              "script": "tiles/solaris-cde.sh",
               "outputDir": "SolarisCDE",
               "class": "licensed",
               "estimated": "~40-60m",
@@ -9603,10 +9603,10 @@
           {
             "order": 6,
             "prelude": "",
-            "line": "  \"templeos    |templeos.sh    |TempleOS    |fast     |~2-3m   |full   |TempleOS.ISO (live CD)\"\n",
+            "line": "  \"templeos    |tiles/templeos.sh             |TempleOS    |fast     |~2-3m   |full   |TempleOS.ISO (live CD)\"\n",
             "value": {
               "key": "templeos",
-              "script": "templeos.sh",
+              "script": "tiles/templeos.sh",
               "outputDir": "TempleOS",
               "class": "fast",
               "estimated": "~2-3m",
@@ -9829,10 +9829,10 @@
           {
             "order": 10,
             "prelude": "",
-            "line": "  \"tinycore    |tinycore.sh    |TinyCore    |fast     |~2-3m   |full   |TinyCore.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
+            "line": "  \"tinycore    |tiles/tinycore.sh             |TinyCore    |fast     |~2-3m   |full   |TinyCore.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
             "value": {
               "key": "tinycore",
-              "script": "tinycore.sh",
+              "script": "tiles/tinycore.sh",
               "outputDir": "TinyCore",
               "class": "fast",
               "estimated": "~2-3m",
@@ -10056,10 +10056,10 @@
           {
             "order": 1,
             "prelude": "",
-            "line": "  \"toaruos     |toaruos.sh     |toaruos     |fast     |~3m     |full   |image.iso (live CD)\"\n",
+            "line": "  \"toaruos     |tiles/toaruos.sh              |toaruos     |fast     |~3m     |full   |image.iso (live CD)\"\n",
             "value": {
               "key": "toaruos",
-              "script": "toaruos.sh",
+              "script": "tiles/toaruos.sh",
               "outputDir": "toaruos",
               "class": "fast",
               "estimated": "~3m",
@@ -10296,10 +10296,10 @@
           {
             "order": 35,
             "prelude": "",
-            "line": "  \"vic20        |vic20.sh       |bridge/vic20    |retro    |~2-4m   |full   |tiles/vic20 overlay + golden (VICE xvic → CBM BASIC V2)\"\n",
+            "line": "  \"vic20        |tiles/vic20.sh                |bridge/vic20    |retro    |~2-4m   |full   |tiles/vic20 overlay + golden (VICE xvic → CBM BASIC V2)\"\n",
             "value": {
               "key": "vic20",
-              "script": "vic20.sh",
+              "script": "tiles/vic20.sh",
               "outputDir": "bridge/vic20",
               "class": "retro",
               "estimated": "~2-4m",
@@ -10525,10 +10525,10 @@
           {
             "order": 25,
             "prelude": "",
-            "line": "  \"win11       |win11.sh       |Win11       |licensed |~20-25m |full    |win11.qcow2 (needs Win11 ISO)\"\n",
+            "line": "  \"win11       |tiles/win11.sh                |Win11       |licensed |~20-25m |full    |win11.qcow2 (needs Win11 ISO)\"\n",
             "value": {
               "key": "win11",
-              "script": "win11.sh",
+              "script": "tiles/win11.sh",
               "outputDir": "Win11",
               "class": "licensed",
               "estimated": "~20-25m",
@@ -10763,10 +10763,10 @@
           {
             "order": 16,
             "prelude": "",
-            "line": "  \"win2000     |win2000.sh     |Win2000     |retro    |~15-30m |full*  |win2k-pro.qcow2\"\n",
+            "line": "  \"win2000     |tiles/win2000.sh              |Win2000     |retro    |~15-30m |full*  |win2k-pro.qcow2\"\n",
             "value": {
               "key": "win2000",
-              "script": "win2000.sh",
+              "script": "tiles/win2000.sh",
               "outputDir": "Win2000",
               "class": "retro",
               "estimated": "~15-30m",
@@ -11006,10 +11006,10 @@
           {
             "order": 13,
             "prelude": "",
-            "line": "  \"win311      |win311.sh      |Win311      |retro    |~10m    |full   |hda.img + games.img\"\n",
+            "line": "  \"win311      |tiles/win311.sh               |Win311      |retro    |~10m    |full   |hda.img + games.img\"\n",
             "value": {
               "key": "win311",
-              "script": "win311.sh",
+              "script": "tiles/win311.sh",
               "outputDir": "Win311",
               "class": "retro",
               "estimated": "~10m",
@@ -11244,10 +11244,10 @@
           {
             "order": 14,
             "prelude": "",
-            "line": "  \"win95       |win95.sh       |Win95       |retro    |~15-25m |1-click|win95-osr2.qcow2\"\n",
+            "line": "  \"win95       |tiles/win95.sh                |Win95       |retro    |~15-25m |1-click|win95-osr2.qcow2\"\n",
             "value": {
               "key": "win95",
-              "script": "win95.sh",
+              "script": "tiles/win95.sh",
               "outputDir": "Win95",
               "class": "retro",
               "estimated": "~15-25m",
@@ -11482,10 +11482,10 @@
           {
             "order": 15,
             "prelude": "",
-            "line": "  \"win98       |win98.sh       |Win98SE     |retro    |~15-25m |1-click|win98se.qcow2 + games qcow2\"\n",
+            "line": "  \"win98       |tiles/win98.sh                |Win98SE     |retro    |~15-25m |1-click|win98se.qcow2 + games qcow2\"\n",
             "value": {
               "key": "win98",
-              "script": "win98.sh",
+              "script": "tiles/win98.sh",
               "outputDir": "Win98SE",
               "class": "retro",
               "estimated": "~15-25m",
@@ -11719,10 +11719,10 @@
           {
             "order": 23,
             "prelude": "",
-            "line": "  \"winxp       |winxp.sh       |WinXPpro    |licensed |~30-50m |supplied|winxp.qcow2 (needs XP ISO)\"\n",
+            "line": "  \"winxp       |tiles/winxp.sh                |WinXPpro    |licensed |~30-50m |supplied|winxp.qcow2 (needs XP ISO)\"\n",
             "value": {
               "key": "winxp",
-              "script": "winxp.sh",
+              "script": "tiles/winxp.sh",
               "outputDir": "WinXPpro",
               "class": "licensed",
               "estimated": "~30-50m",
@@ -11938,10 +11938,10 @@
           {
             "order": 44,
             "prelude": "",
-            "line": "  \"zx81        |zx81.sh        |bridge/zx81     |retro    |~6-10m  |full   |tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)\"\n",
+            "line": "  \"zx81        |tiles/zx81.sh                 |bridge/zx81     |retro    |~6-10m  |full   |tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)\"\n",
             "value": {
               "key": "zx81",
-              "script": "zx81.sh",
+              "script": "tiles/zx81.sh",
               "outputDir": "bridge/zx81",
               "class": "retro",
               "estimated": "~6-10m",
@@ -12126,7 +12126,7 @@
           "type-in listings from Sinclair User and ZX Computing"
         ],
         "blurb": "The machine that put a computer in a British newsagent: £69.95 in kit form, a Z80, a membrane keyboard, one kilobyte of memory, no sound and no colour — and a million and a half of them sold.",
-        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289 (SUBTARGET=zx81, pinned upstream commit f34f0250, built in the Bookworm chroot by scripts/build-guests/build-mame-zx81.sh); streamhost captures the Linux framebuffer + AC97 audio exactly like every other bridge tile. The ROM is the second revision (-bios 2nd, zx81a.rom, sha1 7b143ee9…), which is what almost every shipped ZX81 contained; it is preservation-source material copyright Nine Tiles Networks Ltd, staged on the box and never committed. RAM is pinned to the machine as sold, -ramsize 1K, rather than MAME's 16K default. The golden is the untouched power-on screen — a white field with one inverse K — and readiness is decided GEOMETRICALLY, not by counting bright pixels, because this machine blanks its display while it computes and a photometric test cannot tell that frame from the fixture. Keyboard-only exhibit; the ZX81 has no sound hardware. See streamhost/docs/BRIDGE.md and docs/guests/zx81.md."
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289 (SUBTARGET=zx81, pinned upstream commit f34f0250, built in the Bookworm chroot by scripts/build-guests/emulators/build-mame-zx81.sh); streamhost captures the Linux framebuffer + AC97 audio exactly like every other bridge tile. The ROM is the second revision (-bios 2nd, zx81a.rom, sha1 7b143ee9…), which is what almost every shipped ZX81 contained; it is preservation-source material copyright Nine Tiles Networks Ltd, staged on the box and never committed. RAM is pinned to the machine as sold, -ramsize 1K, rather than MAME's 16K default. The golden is the untouched power-on screen — a white field with one inverse K — and readiness is decided GEOMETRICALLY, not by counting bright pixels, because this machine blanks its display while it computes and a photometric test cannot tell that frame from the fixture. Keyboard-only exhibit; the ZX81 has no sound hardware. See streamhost/docs/BRIDGE.md and docs/guests/zx81.md."
       },
       "reset": {
         "tileDir": "zx81",
@@ -12153,10 +12153,10 @@
           {
             "order": 44,
             "prelude": "",
-            "line": "  \"zxspectrum  |zxspectrum.sh  |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)\"\n",
+            "line": "  \"zxspectrum  |tiles/zxspectrum.sh           |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)\"\n",
             "value": {
               "key": "zxspectrum",
-              "script": "zxspectrum.sh",
+              "script": "tiles/zxspectrum.sh",
               "outputDir": "bridge/zxspectrum",
               "class": "retro",
               "estimated": "~6-12m",

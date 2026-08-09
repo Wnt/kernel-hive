@@ -8,10 +8,10 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"sinclairql   |sinclairql.sh  |bridge/sinclairql|retro    |~8-12m  |full   |tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)\"\n",
+        "line": "  \"sinclairql   |tiles/sinclairql.sh           |bridge/sinclairql|retro    |~8-12m  |full   |tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)\"\n",
         "value": {
           "key": "sinclairql",
-          "script": "sinclairql.sh",
+          "script": "tiles/sinclairql.sh",
           "outputDir": "bridge/sinclairql",
           "class": "retro",
           "estimated": "~8-12m",

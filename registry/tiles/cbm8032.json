@@ -8,10 +8,10 @@
       {
         "order": 39,
         "prelude": "",
-        "line": "  \"cbm8032      |cbm8032.sh     |bridge/cbm8032  |retro    |~2-4m   |full   |tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)\"\n",
+        "line": "  \"cbm8032      |tiles/cbm8032.sh              |bridge/cbm8032  |retro    |~2-4m   |full   |tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)\"\n",
         "value": {
           "key": "cbm8032",
-          "script": "cbm8032.sh",
+          "script": "tiles/cbm8032.sh",
           "outputDir": "bridge/cbm8032",
           "class": "retro",
           "estimated": "~2-4m",

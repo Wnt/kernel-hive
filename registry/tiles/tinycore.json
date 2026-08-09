@@ -8,10 +8,10 @@
       {
         "order": 10,
         "prelude": "",
-        "line": "  \"tinycore    |tinycore.sh    |TinyCore    |fast     |~2-3m   |full   |TinyCore.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
+        "line": "  \"tinycore    |tiles/tinycore.sh             |TinyCore    |fast     |~2-3m   |full   |TinyCore.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
         "value": {
           "key": "tinycore",
-          "script": "tinycore.sh",
+          "script": "tiles/tinycore.sh",
           "outputDir": "TinyCore",
           "class": "fast",
           "estimated": "~2-3m",

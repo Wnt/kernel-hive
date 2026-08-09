@@ -8,10 +8,10 @@
       {
         "order": 14,
         "prelude": "",
-        "line": "  \"win95       |win95.sh       |Win95       |retro    |~15-25m |1-click|win95-osr2.qcow2\"\n",
+        "line": "  \"win95       |tiles/win95.sh                |Win95       |retro    |~15-25m |1-click|win95-osr2.qcow2\"\n",
         "value": {
           "key": "win95",
-          "script": "win95.sh",
+          "script": "tiles/win95.sh",
           "outputDir": "Win95",
           "class": "retro",
           "estimated": "~15-25m",

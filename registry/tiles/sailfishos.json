@@ -8,10 +8,10 @@
       {
         "order": 20,
         "prelude": "",
-        "line": "  \"sailfishos  |sailfishos.sh  |SailfishOS  |heavy    |~15-30m |supplied|sailfishos.qcow2 (STAGE 1; needs Sailfish SDK emulator VDI/archive)|media\"\n",
+        "line": "  \"sailfishos  |tiles/sailfishos.sh           |SailfishOS  |heavy    |~15-30m |supplied|sailfishos.qcow2 (STAGE 1; needs Sailfish SDK emulator VDI/archive)|media\"\n",
         "value": {
           "key": "sailfishos",
-          "script": "sailfishos.sh",
+          "script": "tiles/sailfishos.sh",
           "outputDir": "SailfishOS",
           "class": "heavy",
           "estimated": "~15-30m",
@@ -29,10 +29,10 @@
       {
         "order": 21,
         "prelude": "",
-        "line": "  \"sailfishos-gui|sailfishos-gui.sh|SailfishOS|heavy  |~20-40m |full   |sailfishos-gui.qcow2 (STAGE 2 bochs-drm KMS; run after sailfishos)|media\"\n",
+        "line": "  \"sailfishos-gui|tiles/sailfishos-gui.sh       |SailfishOS|heavy  |~20-40m |full   |sailfishos-gui.qcow2 (STAGE 2 bochs-drm KMS; run after sailfishos)|media\"\n",
         "value": {
           "key": "sailfishos-gui",
-          "script": "sailfishos-gui.sh",
+          "script": "tiles/sailfishos-gui.sh",
           "outputDir": "SailfishOS",
           "class": "heavy",
           "estimated": "~20-40m",

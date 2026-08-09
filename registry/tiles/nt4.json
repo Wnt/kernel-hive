@@ -16,10 +16,10 @@
       {
         "order": 32,
         "prelude": "",
-        "line": "  \"nt4         |nt4.sh         |Nt4           |fast     |~2-5m   |full    |nt4-golden.qcow2 (prebuilt VMware VM -> qcow2 + boot.ini scsi->multi fix)\"\n",
+        "line": "  \"nt4         |tiles/nt4.sh                  |Nt4           |fast     |~2-5m   |full    |nt4-golden.qcow2 (prebuilt VMware VM -> qcow2 + boot.ini scsi->multi fix)\"\n",
         "value": {
           "key": "nt4",
-          "script": "nt4.sh",
+          "script": "tiles/nt4.sh",
           "outputDir": "Nt4",
           "class": "fast",
           "estimated": "~2-5m",

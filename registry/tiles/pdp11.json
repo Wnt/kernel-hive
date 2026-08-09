@@ -8,10 +8,10 @@
       {
         "order": 41,
         "prelude": "",
-        "line": "  \"pdp11        |pdp11.sh       |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)\"\n",
+        "line": "  \"pdp11        |tiles/pdp11.sh                |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)\"\n",
         "value": {
           "key": "pdp11",
-          "script": "pdp11.sh",
+          "script": "tiles/pdp11.sh",
           "outputDir": "bridge/pdp11",
           "class": "retro",
           "estimated": "~6-8m",

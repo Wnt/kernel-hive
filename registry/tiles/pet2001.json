@@ -8,10 +8,10 @@
       {
         "order": 38,
         "prelude": "",
-        "line": "  \"pet2001     |pet2001.sh     |bridge/pet2001  |retro    |~2-4m   |full   |tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)\"\n",
+        "line": "  \"pet2001     |tiles/pet2001.sh              |bridge/pet2001  |retro    |~2-4m   |full   |tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)\"\n",
         "value": {
           "key": "pet2001",
-          "script": "pet2001.sh",
+          "script": "tiles/pet2001.sh",
           "outputDir": "bridge/pet2001",
           "class": "retro",
           "estimated": "~2-4m",

@@ -8,10 +8,10 @@
       {
         "order": 2,
         "prelude": "",
-        "line": "  \"helenos     |helenos.sh     |HelenOS     |fast     |~3m     |full   |HelenOS-0.14.1-ia32.iso (live)\"\n",
+        "line": "  \"helenos     |tiles/helenos.sh              |HelenOS     |fast     |~3m     |full   |HelenOS-0.14.1-ia32.iso (live)\"\n",
         "value": {
           "key": "helenos",
-          "script": "helenos.sh",
+          "script": "tiles/helenos.sh",
           "outputDir": "HelenOS",
           "class": "fast",
           "estimated": "~3m",

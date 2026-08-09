@@ -8,10 +8,10 @@
       {
         "order": 32,
         "prelude": "",
-        "line": "  \"amstradcpc   |amstradcpc.sh  |bridge/amstradcpc|retro    |~3-5m   |full   |tiles/amstradcpc overlay + golden (cap32 → Locomotive BASIC)\"\n",
+        "line": "  \"amstradcpc   |tiles/amstradcpc.sh           |bridge/amstradcpc|retro    |~3-5m   |full   |tiles/amstradcpc overlay + golden (cap32 → Locomotive BASIC)\"\n",
         "value": {
           "key": "amstradcpc",
-          "script": "amstradcpc.sh",
+          "script": "tiles/amstradcpc.sh",
           "outputDir": "bridge/amstradcpc",
           "class": "retro",
           "estimated": "~3-5m",

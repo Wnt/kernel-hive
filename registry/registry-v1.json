@@ -34,10 +34,10 @@
     {
       "order": 25,
       "prelude": "  # emulator-bridge retro home computers. bridge-base is a PREREQUISITE (shared\n  # read-only base image) — build it BEFORE c64/atarist/apple2/amiga (each is a\n  # thin overlay + golden bake over it). Artifacts land outside GALLERY_ROOT under\n  # /data/vms/bridge/ + /data/vms/streamhost/tiles/<tile>/. See streamhost/docs/BRIDGE.md.\n",
-      "line": "  \"bridge-base  |bridge-base.sh |bridge         |retro    |~20-30m |full   |/data/vms/bridge/bridge-base.qcow2 (VICE+hatari+cap32 bare-X kiosk base)\"\n",
+      "line": "  \"bridge-base  |lib/bridge-base.sh            |bridge         |retro    |~20-30m |full   |/data/vms/bridge/bridge-base.qcow2 (VICE+hatari+cap32 bare-X kiosk base)\"\n",
       "value": {
         "key": "bridge-base",
-        "script": "bridge-base.sh",
+        "script": "lib/bridge-base.sh",
         "outputDir": "bridge",
         "class": "retro",
         "estimated": "~20-30m",

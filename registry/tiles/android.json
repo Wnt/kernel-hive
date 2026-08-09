@@ -8,10 +8,10 @@
       {
         "order": 18,
         "prelude": "",
-        "line": "  \"android-x86 |android-x86.sh |Android     |heavy    |~20-40m |1-click|android.qcow2\"\n",
+        "line": "  \"android-x86 |tiles/android-x86.sh          |Android     |heavy    |~20-40m |1-click|android.qcow2\"\n",
         "value": {
           "key": "android-x86",
-          "script": "android-x86.sh",
+          "script": "tiles/android-x86.sh",
           "outputDir": "Android",
           "class": "heavy",
           "estimated": "~20-40m",

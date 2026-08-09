@@ -10,10 +10,10 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"nextstep    |nextstep.sh    |bridge/nextstep|graphical|~25-40m |full   |tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)\"\n",
+        "line": "  \"nextstep    |tiles/nextstep.sh             |bridge/nextstep|graphical|~25-40m |full   |tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)\"\n",
         "value": {
           "key": "nextstep",
-          "script": "nextstep.sh",
+          "script": "tiles/nextstep.sh",
           "outputDir": "bridge/nextstep",
           "class": "graphical",
           "estimated": "~25-40m",

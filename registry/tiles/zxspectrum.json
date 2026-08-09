@@ -8,10 +8,10 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"zxspectrum  |zxspectrum.sh  |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)\"\n",
+        "line": "  \"zxspectrum  |tiles/zxspectrum.sh           |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)\"\n",
         "value": {
           "key": "zxspectrum",
-          "script": "zxspectrum.sh",
+          "script": "tiles/zxspectrum.sh",
           "outputDir": "bridge/zxspectrum",
           "class": "retro",
           "estimated": "~6-12m",

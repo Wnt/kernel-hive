@@ -8,10 +8,10 @@
       {
         "order": 16,
         "prelude": "",
-        "line": "  \"win2000     |win2000.sh     |Win2000     |retro    |~15-30m |full*  |win2k-pro.qcow2\"\n",
+        "line": "  \"win2000     |tiles/win2000.sh              |Win2000     |retro    |~15-30m |full*  |win2k-pro.qcow2\"\n",
         "value": {
           "key": "win2000",
-          "script": "win2000.sh",
+          "script": "tiles/win2000.sh",
           "outputDir": "Win2000",
           "class": "retro",
           "estimated": "~15-30m",

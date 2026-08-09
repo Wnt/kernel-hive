@@ -8,10 +8,10 @@
       {
         "order": 24,
         "prelude": "",
-        "line": "  \"solaris-cde |solaris-cde.sh |SolarisCDE  |licensed |~40-60m |supplied|solaris.qcow2 (needs OTN ISO)\"\n",
+        "line": "  \"solaris-cde |tiles/solaris-cde.sh          |SolarisCDE  |licensed |~40-60m |supplied|solaris.qcow2 (needs OTN ISO)\"\n",
         "value": {
           "key": "solaris-cde",
-          "script": "solaris-cde.sh",
+          "script": "tiles/solaris-cde.sh",
           "outputDir": "SolarisCDE",
           "class": "licensed",
           "estimated": "~40-60m",

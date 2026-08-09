@@ -1148,7 +1148,7 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
         ]
     )
     rendered_line = (
-        f'  "{os_id:<12}|{os_id + ".sh":<15}|{output_dir:<14}|{build_class:<9}|{estimated:<8}|{automation:<8}|TODO"\n'
+        f'  "{os_id:<12}|{"tiles/" + os_id + ".sh":<30}|{output_dir:<14}|{build_class:<9}|{estimated:<8}|{automation:<8}|TODO"\n'
     )
     row = OrderedDict(
         [
@@ -1198,7 +1198,7 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
     )
 
     registry_path = TILES / f"{os_id}.json"
-    builder_path = REPO / "scripts/build-guests" / f"{os_id}.sh"
+    builder_path = REPO / "scripts/build-guests/tiles" / f"{os_id}.sh"
     guest_path = REPO / "docs/guests" / f"{os_id}.md"
     coldboot_path = REPO / "scripts/coldboot" / f"{os_id}-bootrec-arm.sh"
     for path in (registry_path, builder_path, guest_path, coldboot_path):
@@ -1234,7 +1234,7 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
         raise
     print(f"scaffolded {os_id}: tier={tier} archetype={archetype} slot={slot} udp={udp_port}")
     print(f"  registry/tiles/{os_id}.json")
-    print(f"  scripts/build-guests/{os_id}.sh")
+    print(f"  scripts/build-guests/tiles/{os_id}.sh")
     print(f"  docs/guests/{os_id}.md")
     print(f"  scripts/coldboot/{os_id}-bootrec-arm.sh")
     print("candidate is disabled; fill TODOs and prove its golden before promotion")

@@ -8,10 +8,10 @@
       {
         "order": 13,
         "prelude": "",
-        "line": "  \"win311      |win311.sh      |Win311      |retro    |~10m    |full   |hda.img + games.img\"\n",
+        "line": "  \"win311      |tiles/win311.sh               |Win311      |retro    |~10m    |full   |hda.img + games.img\"\n",
         "value": {
           "key": "win311",
-          "script": "win311.sh",
+          "script": "tiles/win311.sh",
           "outputDir": "Win311",
           "class": "retro",
           "estimated": "~10m",

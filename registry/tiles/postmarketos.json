@@ -8,10 +8,10 @@
       {
         "order": 19,
         "prelude": "",
-        "line": "  \"postmarketos|postmarketos-fixture.sh|postmarketOS|heavy|~12-25m |full   |pmos-phosh.qcow2 + OVMF vars + golden\"\n",
+        "line": "  \"postmarketos|tiles/postmarketos-fixture.sh |postmarketOS|heavy|~12-25m |full   |pmos-phosh.qcow2 + OVMF vars + golden\"\n",
         "value": {
           "key": "postmarketos",
-          "script": "postmarketos-fixture.sh",
+          "script": "tiles/postmarketos-fixture.sh",
           "outputDir": "postmarketOS",
           "class": "heavy",
           "estimated": "~12-25m",

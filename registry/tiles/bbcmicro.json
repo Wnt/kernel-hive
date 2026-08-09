@@ -10,10 +10,10 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"bbcmicro    |bbcmicro.sh    |bridge/bbcmicro |retro    |~6-10m  |full   |tiles/bbcmicro overlay + golden (MAME 0.289 bbcb → BBC BASIC II)\"\n",
+        "line": "  \"bbcmicro    |tiles/bbcmicro.sh             |bridge/bbcmicro |retro    |~6-10m  |full   |tiles/bbcmicro overlay + golden (MAME 0.289 bbcb → BBC BASIC II)\"\n",
         "value": {
           "key": "bbcmicro",
-          "script": "bbcmicro.sh",
+          "script": "tiles/bbcmicro.sh",
           "outputDir": "bridge/bbcmicro",
           "class": "retro",
           "estimated": "~6-10m",

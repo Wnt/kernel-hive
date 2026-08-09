@@ -8,10 +8,10 @@
       {
         "order": 15,
         "prelude": "",
-        "line": "  \"win98       |win98.sh       |Win98SE     |retro    |~15-25m |1-click|win98se.qcow2 + games qcow2\"\n",
+        "line": "  \"win98       |tiles/win98.sh                |Win98SE     |retro    |~15-25m |1-click|win98se.qcow2 + games qcow2\"\n",
         "value": {
           "key": "win98",
-          "script": "win98.sh",
+          "script": "tiles/win98.sh",
           "outputDir": "Win98SE",
           "class": "retro",
           "estimated": "~15-25m",

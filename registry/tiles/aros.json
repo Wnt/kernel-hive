@@ -8,10 +8,10 @@
       {
         "order": 7,
         "prelude": "",
-        "line": "  \"amigaos     |amigaos.sh     |AmigaOS     |fast     |~3-5m   |full   |aros-pc-i386.iso (AROS live CD)\"\n",
+        "line": "  \"amigaos     |tiles/amigaos.sh              |AmigaOS     |fast     |~3-5m   |full   |aros-pc-i386.iso (AROS live CD)\"\n",
         "value": {
           "key": "amigaos",
-          "script": "amigaos.sh",
+          "script": "tiles/amigaos.sh",
           "outputDir": "AmigaOS",
           "class": "fast",
           "estimated": "~3-5m",

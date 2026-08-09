@@ -8,10 +8,10 @@
       {
         "order": 9,
         "prelude": "",
-        "line": "  \"alpine      |alpine.sh      |Alpine      |fast     |~2-3m   |full   |Alpine.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
+        "line": "  \"alpine      |tiles/alpine.sh               |Alpine      |fast     |~2-3m   |full   |Alpine.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
         "value": {
           "key": "alpine",
-          "script": "alpine.sh",
+          "script": "tiles/alpine.sh",
           "outputDir": "Alpine",
           "class": "fast",
           "estimated": "~2-3m",

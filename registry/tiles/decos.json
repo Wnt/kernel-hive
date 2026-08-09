@@ -8,10 +8,10 @@
       {
         "order": 43,
         "prelude": "",
-        "line": "  \"decos        |decos.sh       |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)\"\n",
+        "line": "  \"decos        |tiles/decos.sh                |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)\"\n",
         "value": {
           "key": "decos",
-          "script": "decos.sh",
+          "script": "tiles/decos.sh",
           "outputDir": "bridge/decos",
           "class": "retro",
           "estimated": "~20-70m",

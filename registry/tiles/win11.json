@@ -8,10 +8,10 @@
       {
         "order": 25,
         "prelude": "",
-        "line": "  \"win11       |win11.sh       |Win11       |licensed |~20-25m |full    |win11.qcow2 (needs Win11 ISO)\"\n",
+        "line": "  \"win11       |tiles/win11.sh                |Win11       |licensed |~20-25m |full    |win11.qcow2 (needs Win11 ISO)\"\n",
         "value": {
           "key": "win11",
-          "script": "win11.sh",
+          "script": "tiles/win11.sh",
           "outputDir": "Win11",
           "class": "licensed",
           "estimated": "~20-25m",

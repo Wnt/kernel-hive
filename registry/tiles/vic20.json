@@ -8,10 +8,10 @@
       {
         "order": 35,
         "prelude": "",
-        "line": "  \"vic20        |vic20.sh       |bridge/vic20    |retro    |~2-4m   |full   |tiles/vic20 overlay + golden (VICE xvic → CBM BASIC V2)\"\n",
+        "line": "  \"vic20        |tiles/vic20.sh                |bridge/vic20    |retro    |~2-4m   |full   |tiles/vic20 overlay + golden (VICE xvic → CBM BASIC V2)\"\n",
         "value": {
           "key": "vic20",
-          "script": "vic20.sh",
+          "script": "tiles/vic20.sh",
           "outputDir": "bridge/vic20",
           "class": "retro",
           "estimated": "~2-4m",
