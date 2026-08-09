@@ -1,0 +1,477 @@
+{
+ "tag": "run5-afterloadvm",
+ "discovery": {
+  "state": "0",
+  "result": "2",
+  "cands": "5",
+  "addr": "1fa2020"
+ },
+ "template": {
+  "w": 11,
+  "h": 16,
+  "px": 96,
+  "hot": [
+   1,
+   1
+  ]
+ },
+ "instrument_checks": [
+  [
+   "top-left clamp",
+   "pixel=(0, 0) ram=(0, 0)",
+   true
+  ],
+  [
+   "bottom-right clamp (pixel blind here)",
+   "pixel=None ram=(1119, 831)",
+   true
+  ],
+  [
+   "50 unit relative steps from the left clamp",
+   "pixel=(95, 0) ram=(95, 0)",
+   true
+  ],
+  [
+   "pixel vs ram at (400,300)",
+   "pixel=(400, 300) ram=(400, 300)",
+   true
+  ],
+  [
+   "pixel vs ram at (900,700)",
+   "pixel=(900, 700) ram=(900, 700)",
+   true
+  ],
+  [
+   "pixel vs ram at (60,60)",
+   "pixel=(60, 60) ram=(60, 60)",
+   true
+  ]
+ ],
+ "sweep": [
+  {
+   "cmd": [
+    8,
+    8
+   ],
+   "ram": [
+    8,
+    8
+   ],
+   "pixel": [
+    8,
+    8
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    1111,
+    8
+   ],
+   "ram": [
+    1111,
+    8
+   ],
+   "pixel": [
+    1111,
+    8
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    8,
+    823
+   ],
+   "ram": [
+    8,
+    823
+   ],
+   "pixel": [
+    8,
+    823
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    1111,
+    823
+   ],
+   "ram": [
+    1111,
+    823
+   ],
+   "pixel": [
+    1111,
+    823
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    560,
+    8
+   ],
+   "ram": [
+    560,
+    8
+   ],
+   "pixel": [
+    560,
+    8
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    560,
+    823
+   ],
+   "ram": [
+    560,
+    823
+   ],
+   "pixel": [
+    560,
+    823
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    8,
+    416
+   ],
+   "ram": [
+    8,
+    416
+   ],
+   "pixel": [
+    8,
+    416
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    1111,
+    416
+   ],
+   "ram": [
+    1111,
+    416
+   ],
+   "pixel": [
+    1111,
+    416
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    560,
+    416
+   ],
+   "ram": [
+    560,
+    416
+   ],
+   "pixel": [
+    560,
+    416
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    137,
+    92
+   ],
+   "ram": [
+    137,
+    92
+   ],
+   "pixel": [
+    137,
+    92
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    642,
+    101
+   ],
+   "ram": [
+    642,
+    101
+   ],
+   "pixel": [
+    642,
+    101
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    318,
+    477
+   ],
+   "ram": [
+    318,
+    477
+   ],
+   "pixel": [
+    318,
+    477
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    905,
+    233
+   ],
+   "ram": [
+    905,
+    233
+   ],
+   "pixel": [
+    905,
+    233
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    74,
+    610
+   ],
+   "ram": [
+    74,
+    610
+   ],
+   "pixel": [
+    74,
+    610
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    511,
+    58
+   ],
+   "ram": [
+    511,
+    58
+   ],
+   "pixel": [
+    511,
+    58
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    860,
+    700
+   ],
+   "ram": [
+    860,
+    700
+   ],
+   "pixel": [
+    860,
+    700
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    229,
+    344
+   ],
+   "ram": [
+    229,
+    344
+   ],
+   "pixel": [
+    229,
+    344
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    703,
+    552
+   ],
+   "ram": [
+    703,
+    552
+   ],
+   "pixel": [
+    703,
+    552
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    401,
+    188
+   ],
+   "ram": [
+    401,
+    188
+   ],
+   "pixel": [
+    401,
+    188
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    58,
+    742
+   ],
+   "ram": [
+    58,
+    742
+   ],
+   "pixel": [
+    58,
+    742
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    996,
+    415
+   ],
+   "ram": [
+    996,
+    415
+   ],
+   "pixel": [
+    996,
+    415
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    167,
+    266
+   ],
+   "ram": [
+    167,
+    266
+   ],
+   "pixel": [
+    167,
+    266
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    588,
+    633
+   ],
+   "ram": [
+    588,
+    633
+   ],
+   "pixel": [
+    588,
+    633
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  },
+  {
+   "cmd": [
+    777,
+    119
+   ],
+   "ram": [
+    777,
+    119
+   ],
+   "pixel": [
+    777,
+    119
+   ],
+   "err_ram": 0,
+   "err_pixel": 0
+  }
+ ],
+ "sweep_summary": {
+  "pixel": {
+   "n": 24,
+   "missing": 0,
+   "max": 0,
+   "mean": 0.0
+  },
+  "ram": {
+   "n": 24,
+   "missing": 0,
+   "max": 0,
+   "mean": 0.0
+  }
+ },
+ "shadows_after_sweep": [
+  [
+   "1f9dcc0",
+   777,
+   119
+  ],
+  [
+   "1f9dcd4",
+   777,
+   119
+  ],
+  [
+   "1f9dce8",
+   777,
+   119
+  ],
+  [
+   "1fa2020",
+   777,
+   119
+  ],
+  [
+   "1fa2cee",
+   777,
+   119
+  ]
+ ]
+}
