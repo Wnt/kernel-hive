@@ -8,6 +8,7 @@ This measures the map in the regime a controller actually lives in: repeated
 events at a fixed cadence, first two discarded, median of the rest, both
 directions, edges avoided.
 """
+
 import json
 import sys
 import time
@@ -38,7 +39,7 @@ def run(d, sign):
     time.sleep(0.3)
     steps = []
     p = a.pos()
-    for i in range(9):
+    for _i in range(9):
         q.rel(sign * d, 0)
         time.sleep(GAP / 1000.0)
         n = settle()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """When is a move FINISHED? Poll the reader continuously for 300 ms after one
 event and print every change, then check the framebuffer agrees."""
+
 import sys
 import time
 
@@ -27,4 +28,4 @@ for d in (20, 12, 7, 5, 20, 12):
     q.dump("/data/vms/soltest/NSPTR-closed-loop/sp.ppm")
     hits = locate_ppm(read_ppm("/data/vms/soltest/NSPTR-closed-loop/sp.ppm"))
     print("d=%-3d from %s -> %s" % (d, p0, last), "fb=", hits)
-    print("     changes:", ["%.1fms %s" % (t, p) for t, p in seq], flush=True)
+    print("     changes:", [f"{t:.1f}ms {p}" for t, p in seq], flush=True)

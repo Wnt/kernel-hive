@@ -4,34 +4,39 @@
 Resolves the PIE load base of /usr/local/bin/previous, then the NEXTRam /
 NEXTVideo pointers, and exposes raw reads of emulated NeXT memory.
 """
-import os, re, struct, sys
+
+import contextlib
+import os
+import struct
 
 SYMS = {}
 
+
 def load_syms(binpath):
     import subprocess
+
     out = subprocess.run(["nm", "-S", binpath], capture_output=True, text=True).stdout
     for line in out.splitlines():
         p = line.split()
         if len(p) >= 3:
-            try:
+            with contextlib.suppress(ValueError):
                 SYMS[p[-1]] = int(p[0], 16)
-            except ValueError:
-                pass
+
 
 def pid_of(name="previous"):
     for d in os.listdir("/proc"):
         if d.isdigit():
             try:
-                if os.path.basename(os.readlink("/proc/%s/exe" % d)) == name:
+                if os.path.basename(os.readlink(f"/proc/{d}/exe")) == name:
                     return int(d)
             except OSError:
                 pass
     raise SystemExit("previous not running")
 
+
 def load_base(pid, binpath):
     st = os.stat(binpath)
-    key = "%02x:%02x %d" % (os.major(st.st_dev), os.minor(st.st_dev), st.st_ino)
+    "%02x:%02x %d" % (os.major(st.st_dev), os.minor(st.st_dev), st.st_ino)
     best = None
     for line in open("/proc/%d/maps" % pid):
         if binpath in line:
@@ -43,6 +48,7 @@ def load_base(pid, binpath):
                 best = a
     return best
 
+
 class Mem:
     def __init__(self, binpath="/usr/local/bin/previous"):
         self.bin = binpath
@@ -50,13 +56,17 @@ class Mem:
         self.pid = pid_of()
         self.base = load_base(self.pid, binpath)
         self.f = open("/proc/%d/mem" % self.pid, "rb", 0)
+
     def raw(self, addr, n):
         self.f.seek(addr)
         return self.f.read(n)
+
     def sym(self, name):
         return self.base + SYMS[name]
+
     def ptr(self, name):
         return struct.unpack("<Q", self.raw(self.sym(name), 8))[0]
+
 
 if __name__ == "__main__":
     m = Mem()

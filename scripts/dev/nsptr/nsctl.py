@@ -10,6 +10,7 @@ Three independent views of the same pointer, so no claim rests on one of them:
   * shot_locate()  - ground truth: a QEMU screendump plus a template match of
                      the NeXTSTEP arrow. Slow but independent.
 """
+
 import json
 import socket
 import time
@@ -55,7 +56,7 @@ class Qmp:
         while True:
             line = self.f.readline()
             if not line:
-                raise IOError("qmp closed")
+                raise OSError("qmp closed")
             m = json.loads(line)
             if "event" not in m:
                 return m
@@ -101,10 +102,7 @@ def read_ppm(path):
 
 
 PAT = [
-    (dx, dy, ARROW[dy][dx] == "#")
-    for dy in range(len(ARROW))
-    for dx in range(len(ARROW[0]))
-    if ARROW[dy][dx] != "."
+    (dx, dy, ARROW[dy][dx] == "#") for dy in range(len(ARROW)) for dx in range(len(ARROW[0])) if ARROW[dy][dx] != "."
 ]
 
 

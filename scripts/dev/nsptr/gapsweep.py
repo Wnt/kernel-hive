@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """How long after a move must a CORRECTION be injected for the plant to treat
 it as a fresh event? This sets the closed loop's minimum step period."""
+
 import sys
 import time
 

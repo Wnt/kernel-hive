@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Collect (framebuffer-verified cursor position, full RAM snapshot) pairs so a
 cursor-location offset can be required to match EVERY sample, not two."""
+
 import subprocess
 import sys
 import time

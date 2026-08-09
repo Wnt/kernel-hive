@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """NSPTR-previous-patch acceptance sweep. Runs ON the lab box against the clone."""
+
 import json
 import subprocess
 import sys
@@ -11,12 +12,30 @@ D = "/data/vms/soltest/NSPTR-previous-patch"
 W, H = 1120, 832
 
 TARGETS = [
-    (8, 8), (1111, 8), (8, 823), (1111, 823),          # corners, inset 8
-    (560, 8), (560, 823), (8, 416), (1111, 416),        # edge midpoints
-    (560, 416),                                         # centre
-    (137, 92), (642, 101), (318, 477), (905, 233), (74, 610),
-    (511, 58), (860, 700), (229, 344), (703, 552), (401, 188),
-    (58, 742), (996, 415), (167, 266), (588, 633), (777, 119),
+    (8, 8),
+    (1111, 8),
+    (8, 823),
+    (1111, 823),  # corners, inset 8
+    (560, 8),
+    (560, 823),
+    (8, 416),
+    (1111, 416),  # edge midpoints
+    (560, 416),  # centre
+    (137, 92),
+    (642, 101),
+    (318, 477),
+    (905, 233),
+    (74, 610),
+    (511, 58),
+    (860, 700),
+    (229, 344),
+    (703, 552),
+    (401, 188),
+    (58, 742),
+    (996, 415),
+    (167, 266),
+    (588, 633),
+    (777, 119),
 ]
 
 
@@ -25,27 +44,27 @@ def guest(cmd):
 
 
 def nsc(*cmds):
-    q = " ".join('"%s"' % c for c in cmds)
+    q = " ".join(f'"{c}"' for c in cmds)
     return guest("python3 /root/nsc.py " + q).strip()
 
 
 def shot(name):
     subprocess.run([D + "/shot", name], capture_output=True, text=True, timeout=60)
-    return load(D + "/shots/%s.ppm" % name)
+    return load(D + f"/shots/{name}.ppm")
 
 
 def load(path):
     with open(path, "rb") as f:
         d = f.read()
     i = d.index(b"255\n") + 4
-    a = np.frombuffer(d[i:i + W * H * 3], dtype=np.uint8).reshape(H, W, 3)
+    a = np.frombuffer(d[i : i + W * H * 3], dtype=np.uint8).reshape(H, W, 3)
     return a[:, :, 0].copy()
 
 
 class Locator:
     def __init__(self, pts, hot=(0, 0)):
-        self.pts = pts            # list of (dy, dx, value)
-        self.hot = hot            # (hx, hy): hotspot offset from template origin
+        self.pts = pts  # list of (dy, dx, value)
+        self.hot = hot  # (hx, hy): hotspot offset from template origin
         self.th = max(p[0] for p in pts) + 1
         self.tw = max(p[1] for p in pts) + 1
 
@@ -75,13 +94,12 @@ class Locator:
         for dy, dx, v in self.pts:
             sy, sx = oy - dy, ox - dx
             src = np.full((H + oy, W + ox), v, dtype=np.uint8)
-            src[sy:sy + H, sx:sx + W] = img
-            inframe[sy:sy + H, sx:sx + W] += 1
+            src[sy : sy + H, sx : sx + W] = img
+            inframe[sy : sy + H, sx : sx + W] += 1
             res &= src == v
         res &= inframe * 2 >= len(self.pts)
         ys, xs = np.nonzero(res)
-        return [(int(x) - ox + self.hot[0], int(y) - oy + self.hot[1])
-                for x, y in zip(xs, ys)]
+        return [(int(x) - ox + self.hot[0], int(y) - oy + self.hot[1]) for x, y in zip(xs, ys)]
 
     def locate(self, img):
         m = self.find(img)
@@ -128,10 +146,10 @@ def main():
 
     # ---- validate the locator against clamps it did not calibrate on --------
     checks = []
-    slam(0, 63, 40)          # bottom edge, x still 0
+    slam(0, 63, 40)  # bottom edge, x still 0
     v = loc.locate(shot(tag + "-edgeBL"))
     checks.append(("bottom-left clamp -> (0,831)", v, v == (0, H - 1)))
-    slam(63, 0, 40)          # right edge, y still at the bottom
+    slam(63, 0, 40)  # right edge, y still at the bottom
     v = loc.locate(shot(tag + "-edgeBR"))
     checks.append(("bottom-right clamp -> (1119,831)", v, v == (W - 1, H - 1)))
     slam(0, -63, 40)
@@ -144,8 +162,9 @@ def main():
     nsc("slam 1 0 50")
     time.sleep(1.2)
     v = loc.locate(shot(tag + "-unit50"))
-    checks.append(("50 unit relative steps from x=0 -> x == 50", v,
-                   v is not None and not isinstance(v[0], str) and v[0] == 50))
+    checks.append(
+        ("50 unit relative steps from x=0 -> x == 50", v, v is not None and not isinstance(v[0], str) and v[0] == 50)
+    )
     for name, v, ok in checks:
         print("locator check: %-42s %-22s %s" % (name, v, "OK" if ok else "FAIL"))
     out["locator_checks"] = [(n, str(v), bool(o)) for n, v, o in checks]
@@ -172,13 +191,12 @@ def main():
         print("FAIL: %d/%d targets not located" % (len(rows) - len(errs), len(rows)))
         out["verdict"] = "FAIL"
     else:
-        print("max error %d px, mean %.3f px over %d targets" %
-              (max(errs), sum(errs) / len(errs), len(errs)))
+        print("max error %d px, mean %.3f px over %d targets" % (max(errs), sum(errs) / len(errs), len(errs)))
         out["verdict"] = "PASS" if max(errs) <= 2 else "FAIL"
         out["max_err"] = max(errs)
         out["mean_err"] = sum(errs) / len(errs)
     print("VERDICT", out["verdict"])
-    with open("%s/%s-result.json" % (D, tag), "w") as f:
+    with open(f"{D}/{tag}-result.json", "w") as f:
         json.dump(out, f, indent=1)
     return 0
 

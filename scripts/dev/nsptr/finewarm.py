@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """The last-mile question: after a BIG move, how small a step can the plant
 still make, and how long must the acceleration state cool before it can?"""
+
 import sys
 import time
 

@@ -9,7 +9,9 @@ Subcommands
                        background
   locate T FRAME     - exact-match the template in FRAME; prints every hit
 """
+
 import sys
+
 import numpy as np
 from PIL import Image
 
@@ -44,10 +46,8 @@ def blobs(mask, gap=6):
         for i in range(len(boxes)):
             for j in range(i + 1, len(boxes)):
                 a, b = boxes[i], boxes[j]
-                if (a[0] - gap <= b[2] and b[0] - gap <= a[2]
-                        and a[1] - gap <= b[3] and b[1] - gap <= a[3]):
-                    boxes[i] = [min(a[0], b[0]), min(a[1], b[1]),
-                                max(a[2], b[2]), max(a[3], b[3])]
+                if a[0] - gap <= b[2] and b[0] - gap <= a[2] and a[1] - gap <= b[3] and b[1] - gap <= a[3]:
+                    boxes[i] = [min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3])]
                     boxes.pop(j)
                     merged = True
                     break
@@ -60,7 +60,7 @@ def cmd_blobs(argv):
     a, b = load(argv[0]), load(argv[1])
     m = changed(a, b)
     for x0, y0, x1, y1 in sorted(blobs(m), key=lambda r: (r[1], r[0])):
-        print(f"blob x[{x0}..{x1}] y[{y0}..{y1}] size {x1-x0+1}x{y1-y0+1}")
+        print(f"blob x[{x0}..{x1}] y[{y0}..{y1}] size {x1 - x0 + 1}x{y1 - y0 + 1}")
     print(f"changed_px {int(m.sum())}")
 
 
@@ -72,7 +72,7 @@ def cmd_mktemplate(argv):
     pixels in that box that differ from the surrounding background colour.
     """
     a, b, out = load(argv[0]), load(argv[1]), argv[2]
-    bx = sorted(blobs(changed(a, b)), key=lambda r: -( r[2]-r[0])*(r[3]-r[1]))
+    bx = sorted(blobs(changed(a, b)), key=lambda r: -(r[2] - r[0]) * (r[3] - r[1]))
     if len(bx) != 2:
         print(f"ERROR: expected 2 blobs, got {len(bx)}: {bx}", file=sys.stderr)
         sys.exit(1)
@@ -80,14 +80,13 @@ def cmd_mktemplate(argv):
         print(f"cand x[{x0}..{x1}] y[{y0}..{y1}]")
     # the cursor in B is the blob whose content differs from A's content there
     for x0, y0, x1, y1 in bx:
-        patch = b[y0:y1 + 1, x0:x1 + 1]
-        bg = np.bincount(a[y0:y1 + 1, x0:x1 + 1].reshape(-1, 3)[:, 0]).argmax()
-        mask = (patch[:, :, 0] != bg)
+        patch = b[y0 : y1 + 1, x0 : x1 + 1]
+        bg = np.bincount(a[y0 : y1 + 1, x0 : x1 + 1].reshape(-1, 3)[:, 0]).argmax()
+        mask = patch[:, :, 0] != bg
         if mask.sum() < 20:
             continue
         np.savez(out, patch=patch, mask=mask, x0=x0, y0=y0, bg=bg)
-        print(f"template {x1-x0+1}x{y1-y0+1} opaque={int(mask.sum())} "
-              f"at x[{x0}..{x1}] y[{y0}..{y1}] bg={bg}")
+        print(f"template {x1 - x0 + 1}x{y1 - y0 + 1} opaque={int(mask.sum())} at x[{x0}..{x1}] y[{y0}..{y1}] bg={bg}")
         return
     print("ERROR: no usable cursor blob", file=sys.stderr)
     sys.exit(1)
@@ -109,26 +108,26 @@ def locate(tpl, frame, tol=0, regions=None):
     H, W = f.shape[:2]
     SENT = -999
     g = np.full((H + 2 * th, W + 2 * tw, 3), SENT, dtype=np.int16)
-    g[th:th + H, tw:tw + W] = f
+    g[th : th + H, tw : tw + W] = f
     ys, xs = np.nonzero(mask)
     vals = patch[ys, xs]
-    oh, ow = H + th, W + tw          # origins from (-th,-tw) to (H-1,W-1)
+    oh, ow = H + th, W + tw  # origins from (-th,-tw) to (H-1,W-1)
     order = np.argsort(-np.abs(vals[:, 0] - int(d["bg"])))
     bad = np.zeros((oh, ow), dtype=np.int32)
     for k in order[:12]:
-        sub = g[ys[k]:ys[k] + oh, xs[k]:xs[k] + ow]
-        pad = (sub[:, :, 0] == SENT)
+        sub = g[ys[k] : ys[k] + oh, xs[k] : xs[k] + ow]
+        pad = sub[:, :, 0] == SENT
         bad += (~pad & (np.abs(sub - vals[k]).max(axis=2) > tol)).astype(np.int32)
     if regions is not None:
         sel = np.zeros((oh, ow), dtype=bool)
         for x0, y0, x1, y1 in regions:
-            sel[max(0, y0 + th):y1 + th + 1, max(0, x0 + tw):x1 + tw + 1] = True
-        bad = np.where(sel, bad, 10 ** 6)
+            sel[max(0, y0 + th) : y1 + th + 1, max(0, x0 + tw) : x1 + tw + 1] = True
+        bad = np.where(sel, bad, 10**6)
     keep = np.argwhere(bad <= bad.min() + 4)
     res = []
     for oy, ox in keep:
-        sub = g[oy:oy + th, ox:ox + tw][ys, xs]
-        pad = (sub[:, 0] == SENT)
+        sub = g[oy : oy + th, ox : ox + tw][ys, xs]
+        pad = sub[:, 0] == SENT
         vis = int((~pad).sum())
         if vis < MINPX:
             continue
@@ -154,7 +153,7 @@ def track(tpl, ref, frame, prev=None):
     regions = []
     for x0, y0, x1, y1 in blobs(changed(a, b)):
         if prev is not None and x0 - 2 <= prev[0] <= x1 + 2 and y0 - 2 <= prev[1] <= y1 + 2:
-            continue      # this blob is where the cursor CAME FROM
+            continue  # this blob is where the cursor CAME FROM
         regions.append((x0 - tw + 1, y0 - th + 1, x1, y1))
     if not regions:
         return "UNCHANGED", []
@@ -178,10 +177,10 @@ def cmd_locate(argv):
         return
     best, n, hits = r
     ok = "OK" if best <= 2 and len(hits) == 1 else "UNSURE"
-    print(f"{ok} pos={hits[0] if len(hits)==1 else hits[:4]} "
-          f"mismatch={best}/{n} hits={len(hits)}")
+    print(f"{ok} pos={hits[0] if len(hits) == 1 else hits[:4]} mismatch={best}/{n} hits={len(hits)}")
 
 
 if __name__ == "__main__":
-    {"blobs": cmd_blobs, "mktemplate": cmd_mktemplate,
-     "locate": cmd_locate, "track": cmd_track}[sys.argv[1]](sys.argv[2:])
+    {"blobs": cmd_blobs, "mktemplate": cmd_mktemplate, "locate": cmd_locate, "track": cmd_track}[sys.argv[1]](
+        sys.argv[2:]
+    )

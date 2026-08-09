@@ -3,7 +3,10 @@
 # issue N relative events of (S,0) spaced T_us apart, and read the landed
 # cursor position off the framebuffer.
 source /data/vms/soltest/NSPTR-flatten-accel/lib.sh
-S=$1; N=$2; T=$3; TAG=${4:-sw-$S-$N-$T}
+S=$1
+N=$2
+T=$3
+TAG=${4:-sw-$S-$N-$T}
 x "for i in \$(seq 1 30); do echo \"-63 -63 20000\"; done | relmove" >/dev/null 2>&1
 sleep 0.8
 shot "$TAG-ref"

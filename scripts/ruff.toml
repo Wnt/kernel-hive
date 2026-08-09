@@ -27,3 +27,19 @@ ignore = ["E401", "E701", "E702", "E741"]
 # already enforced for it) rather than pulling ~700 lines of unrelated
 # behavior-risking modernization into an unrelated change.
 "labctl" = ["I", "UP", "B", "SIM", "W"]
+
+# PAUSED-INVESTIGATION RESEARCH INSTRUMENTS. These are the measurement tools
+# from the five-angle NeXTSTEP absolute-pointer run (docs/lab/HARD-PROBLEM-
+# METHODOLOGY.md): cursor locators, acceleration-curve samplers, RAM readers
+# and acceptance harnesses. Four of the five angles are PAUSED and resumable,
+# so these files are frozen evidence of how a number was obtained — the same
+# argument the labctl entry above makes, and a stronger one here, because
+# rewriting %-format into f-strings inside a measurement tool changes code
+# whose output is already recorded in a report nobody can re-run cheaply.
+# They keep the repo-wide baseline (E4/E7/E9/F): real errors still fail.
+# DELETE THESE TWO LINES when the angles are resumed and the tools are either
+# promoted into the shipped input path (where they must be compiled anyway,
+# per the operator's hot-path rule) or discarded.
+"dev/nsptr/*.py" = ["I", "UP", "B", "SIM", "W"]
+"build-guests/accept.py" = ["I", "UP", "B", "SIM", "W"]
+"build-guests/patchsrc.py" = ["I", "UP", "B", "SIM", "W"]

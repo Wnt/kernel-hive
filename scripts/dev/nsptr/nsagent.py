@@ -17,6 +17,7 @@ Protocol, one line per request:
   A                        -> "<x0> <y0> <x1> <y1> <x2> <y2>"  (all offsets)
   W <x> <y> <timeout_ms>   -> "<x> <y> <ms>"  block until it differs
 """
+
 import os
 import socket
 import struct
@@ -88,7 +89,7 @@ def serve(c):
             elif k == b"X":
                 break
     except Exception as e:
-        sys.stderr.write("err %s\n" % e)
+        sys.stderr.write(f"err {e}\n")
     finally:
         c.close()
 

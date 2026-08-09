@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Full single-event displacement table (both signs, both axes) and the
 event-merging behaviour that decides how fast a closed loop may iterate."""
+
 import json
 import sys
 import time
@@ -44,8 +45,10 @@ for d in range(1, 41):
     p0 = home(1, 1)
     q.rel(0, -d)
     tab["y-"][d] = p0[1] - settle()[1]
-    print("d=%-3d x+=%-4d y+=%-4d x-=%-4d y-=%-4d"
-          % (d, tab["x+"][d], tab["y+"][d], tab["x-"][d], tab["y-"][d]), flush=True)
+    print(
+        "d=%-3d x+=%-4d y+=%-4d x-=%-4d y-=%-4d" % (d, tab["x+"][d], tab["y+"][d], tab["x-"][d], tab["y-"][d]),
+        flush=True,
+    )
 
 print(json.dumps(tab))
 

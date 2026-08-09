@@ -13,6 +13,7 @@ threshold the delta is strictly greater than.
 `--flat` assumes the flattened table (factor 1 everywhere), where the only
 constraint left is the NeXT KMS register's signed 6-bit delta limit of 63.
 """
+
 import sys
 
 THRESH = [(6, 10), (5, 8), (4, 6), (3, 4), (2, 2)]

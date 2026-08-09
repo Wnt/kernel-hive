@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Is the plant memoryless? Chain identical events and watch the per-event
 displacement, from a corner slam and from a quiet mid-screen rest."""
+
 import sys
 import time
 

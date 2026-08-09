@@ -5,6 +5,7 @@ acceleration curve (guest pixels moved per injected relative delta).
 Every position comes from the RAM reader, which was validated against the
 framebuffer; the framebuffer is re-checked at the end of the sweep.
 """
+
 import sys
 import time
 
@@ -65,9 +66,9 @@ for _ in range(15):
     lat.append((first, settled, p1[0] - p0[0]))
     print("  first_move_ms=%s settle_ms=%.1f dx=%d" % (first, settled, p1[0] - p0[0]))
 fm = [x[0] for x in lat if x[0]]
-print("  first-move ms: min %.1f med %.1f max %.1f" % (min(fm), sorted(fm)[len(fm) // 2], max(fm)))
+print(f"  first-move ms: min {min(fm):.1f} med {sorted(fm)[len(fm) // 2]:.1f} max {max(fm):.1f}")
 st = [x[1] for x in lat]
-print("  settle    ms: min %.1f med %.1f max %.1f" % (min(st), sorted(st)[len(st) // 2], max(st)))
+print(f"  settle    ms: min {min(st):.1f} med {sorted(st)[len(st) // 2]:.1f} max {max(st):.1f}")
 
 print("== acceleration curve: single rel(d,0) and rel(0,d) from the corner ==")
 print("  d    dx    dy   gain_x gain_y")

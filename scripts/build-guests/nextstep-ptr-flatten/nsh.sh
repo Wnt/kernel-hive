@@ -4,7 +4,9 @@
 # The line travels as a FILE all the way to xdotool --file, so nothing in it is
 # ever re-parsed by a shell.
 source /data/vms/soltest/NSPTR-flatten-accel/lib.sh
-F=$1; TAG=${2:-nsh}; S=${3:-4}
+F=$1
+TAG=${2:-nsh}
+S=${3:-4}
 cat "$F" | g "cat > /tmp/nsline"
 x "xdotool type --delay 90 --file /tmp/nsline; sleep 0.4; xdotool key Return" >/dev/null 2>&1
 sleep "$S"

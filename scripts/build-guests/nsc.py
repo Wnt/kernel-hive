@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Client for the Previous abspointer control socket (runs inside the kiosk guest)."""
+
 import socket
 import sys
 import time

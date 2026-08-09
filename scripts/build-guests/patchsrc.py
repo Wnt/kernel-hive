@@ -1,4 +1,3 @@
-import io, sys
 p = "src/CMakeLists.txt"
 s = open(p).read()
 if "abspointer.c" not in s:
@@ -11,7 +10,10 @@ if "abspointer.h" not in s:
 if "AbsPointer_Poll();" not in s:
     s = s.replace("\tTiming_Sync();", "\tAbsPointer_Poll();\n\n\tTiming_Sync();", 1)
 if "AbsPointer_Init();" not in s:
-    s = s.replace("\t/* Get an event ID for our special event */",
-                  "\tAbsPointer_Init();\n\n\t/* Get an event ID for our special event */", 1)
+    s = s.replace(
+        "\t/* Get an event ID for our special event */",
+        "\tAbsPointer_Init();\n\n\t/* Get an event ID for our special event */",
+        1,
+    )
 open(p, "w").write(s)
 print("patched")
