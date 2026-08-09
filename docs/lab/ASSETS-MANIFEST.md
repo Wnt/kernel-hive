@@ -78,6 +78,54 @@ fetches: stage the bits on the box; no builder may fetch them at build time.**
 | `basic11b.rom` (Oric Atmos **Extended BASIC V1.1**, the machine's whole ROM) | sha256 `ed28568574716eef5d7c0fde2568d7a47a6e4b1fbca81daff3be05e45723466d` *(locally measured 2026-08-09)*; SHA1 `9451a1a09d8f75944dbd6f91193fc360f1de80ac`, CRC32 `c3a92bef` *(MAME `orica` bios `ver11` pin, asserted at build time against the SHIPPED binary's own `-listxml`)* | 16 384 | `oricatmos.sh` | Extracted from `oric1.zip` (sha256 `9a9b227ea8f234ba99a9309fbddbf5506ae6333fbc357a5a3e8ab20f7f22b093`, 406 610 B), member `orica/basic11b.rom`, of the Internet Archive item [`MAME_0.224_ROMs_merged`](https://archive.org/details/MAME_0.224_ROMs_merged) — the item stores per-game zips at its root, so the builder fetches only that one 406 KB zip. **`orica` is a CLONE of `oric1`, so in a merged set its BIOS variants live in the PARENT's zip** under an `orica/` prefix. Staged `/data/assets-staging/oricatmos/basic11b.rom` with adjacent `MANIFEST.sha256` — **PRESENT + verified** | Tangerine Computer Systems / Oric Products International are both long defunct and no rights-holder can be identified; copyright status unclear. Private preservation exhibit only — the ROM is never committed and never served, only executed. |
 | `kc85_2.zip` (merged MAME romset for the KC 85 family from VEB Mikroelektronik Mühlhausen — 18 members covering `kc85_2`/`kc85_3`/`kc85_4`/`kc85_5`; `kc854.sh` extracts three of them **by SHA1**: `caos__c0.854` `774fc2496a59b77c7c392eb5aa46420e7722797e`, `caos__e0.854` `4300f7ff813c1fb2d5c928dbbf1c9e1fe52a9577` and the dump MAME calls `basic_c0.854` `c2e3af55c79e049e811607364f88c703b0285e2e`, which in this archive is stored under the name `kc85_3/basic_c0.853` — no member called `basic_c0.854` exists) | `ed5b8a567232beb89a5f78fea4066160aec2ba0f2a67555439c20785d6a096ab` *(locally measured 2026-08-09)* | 119 343 | `kc854.sh` | Internet Archive item [`MAME_0.224_ROMs_merged`](https://archive.org/details/MAME_0.224_ROMs_merged), file `kc85_2.zip` (merged set: the whole family lives in the parent's zip, so `kc85_4.zip` 404s). Staged `/data/assets-staging/kc854/kc85_2.zip` with adjacent `MANIFEST.sha256` — **PRESENT + verified** | CAOS and HC-BASIC were published by VEB Mikroelektronik "Wilhelm Pieck" Mühlhausen, a state combine that was wound up with the GDR in 1990; there is no successor who could grant or withhold a licence, and the images circulate freely in preservation archives and ship in MAME's own hash files. Copyright status is therefore unclear rather than permissive. Private preservation exhibit only; never commit or publicly serve the ROMs. |
 
+### MAME romset reservoir — archive.org bulk MAME dumps
+
+Individual MAME romsets are not staged one at a time by hand. The practical
+source is a bulk archive.org dump of an older MAME, fetched **per parent zip**
+(no need to mirror the whole thing) and re-assembled for the MAME the tile will
+actually ship:
+
+| item | contents | note |
+|---|---|---|
+| [`MAME_0.224_ROMs_merged`](https://archive.org/details/MAME_0.224_ROMs_merged) | 13 245 zips, 72.6 GB, **merged** (clones live inside the parent's zip) | the best-coverage item found so far; other MAME versions exist on archive.org and are worth trying when a member is missing |
+
+**Merged means clones are folded in**, so a machine having no zip of its own is
+usually not a gap: `specpls2`/`specpls3` are inside `spec128.zip`, `dragon64`
+inside `dragon32.zip`, `kc85_3`/`kc85_5` inside `kc85_2.zip`, `aa305`/`aa440`
+inside `aa310.zip`, `sx64` and `c64_se` inside `c64.zip`.
+
+**YOU CANNOT FEED THESE ZIPS STRAIGHT TO A NEWER MAME.** Use
+[`scripts/dev/mame-romset.py`](../../scripts/dev/mame-romset.py), which asks the
+MAME you will ship what it wants, indexes every member of every candidate zip by
+**SHA1 rather than filename**, and writes a set under the names that MAME
+expects. Three failure modes it exists to defeat, each observed here:
+
+- **Members get renamed between versions.** kim1's `6530-002.bin` became
+  `6530-002.u2`; the bytes are identical and a filename-based copy fails.
+  Demonstrated end to end: the 0.224 zip yields a 0.276-correct set that
+  `-verifyroms` calls good.
+- **Parent/clone splits move.** `kc85_4` was a `kc85_2` clone in 0.251 and is
+  its own parent in 0.276, needing `basic_c0.854` — a member that only ever
+  lived in the parent's zip. `--also <other-parent>` covers this.
+- **`-verifyroms` is not a usable gate** for computer drivers: it reports "bad"
+  purely because *alternative BIOS* entries are absent (spectrum carries ~30
+  third-party ROMs), and on `dragon32` it actively points the wrong way — it
+  demands the FDC ROM that makes the machine boot DRAGONDOS instead of
+  Microsoft BASIC. Gate on the framebuffer and on pinned SHA1s.
+
+`-listxml <driver>` also emits every machine reachable through the driver's
+**slots**, and those are not required: a bare `kim1` pulls in an Apple II
+Mockingboard, a Scorpion and four Sun keyboards. The tool treats the driver's
+own set as required and device sets as optional, so a set is not reported
+broken because an unrelated slot device is absent.
+
+Licence class for everything sourced this way: **preservation-source, no
+authorised URL** — a bulk romset dump is not an authorised distribution by
+anyone. Fine to RUN on this private passkey-gated exhibit; record the URL, the
+measured sha256 and the class, and **never commit the bits** — the repo is
+public.
+
+
 ---
 
 ## 1. licensed — user-supplied, staged by hand
