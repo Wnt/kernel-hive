@@ -102,11 +102,13 @@
 # idempotent, --force rebuilds. Touches ONLY the armeval tile dir; refuses to
 # run while streamhost@armeval is active.
 #
-# SANDBOX MODE (experiment/bake-off runs): set ARMEVAL_SANDBOX_DIR to a dir under
-# the clone root and ARMEVAL_SANDBOX_SSH_PORT to a free port. Both are EXPLICIT
-# and the dir is checked by `clone-guard assert-path`; there is deliberately no
-# `${D:-/data/vms/streamhost/tiles/…}` default, which is the footgun that once
-# killed a live tile (docs/lab/clone-guard.md).
+# SANDBOX RUNS. There is deliberately NO env-var override for TILE_DIR here.
+# `clone-guard check-launcher` refuses any script that can reach a production
+# tile path through an unset variable — that parameter-default is the exact
+# footgun that once killed a live tile (docs/lab/clone-guard.md) — so a bake-off
+# or experiment run is made by REWRITING the three constants below into a
+# /data/vms/soltest/<ns> copy, which then passes check-launcher on its own.
+# That is how this tile's angle-B evaluation was run (docs/guests/armeval.md).
 #
 # Usage: armeval.sh [--force] [-h]
 # =============================================================================
@@ -125,12 +127,6 @@ MAME=/data/vms/streamhost/assets/bbcmicro/mame/bbcb
 # 768 MB, the same as bbcmicro: the same binary, the same X root, and one more
 # 16 KB ROM. Asserted in-guest against the 200 MB MemAvailable floor below.
 MEM=768
-
-if [ -n "${ARMEVAL_SANDBOX_DIR:-}" ]; then
-  clone-guard assert-path "$ARMEVAL_SANDBOX_DIR"
-  TILE_DIR="$ARMEVAL_SANDBOX_DIR"
-  SSH_PORT="${ARMEVAL_SANDBOX_SSH_PORT:?ARMEVAL_SANDBOX_SSH_PORT must be set with ARMEVAL_SANDBOX_DIR}"
-fi
 
 OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
