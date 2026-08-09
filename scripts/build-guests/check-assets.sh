@@ -91,6 +91,7 @@ ROWS=(
   "req-file|redstar3|Red Star OS 3.0 Desktop install ISO|$ASSET_STAGING/redstar3/redstar_desktop3.0_sign.iso|sha256:895ad0e01ae0d35a65e9ac42dd34d0a1d685d6dfa331ce5b4f24bbc753439be3|preservation-source"
   "req-file|redstar2|Red Star OS 2.0 desktop install ISO|$ASSET_STAGING/redstar2/redstar.iso|sha256:69a45d07c302782cb777d03abd39c5b45b4099e5c994a74a77bb71ab5d229997|preservation-source"
   "req-file|mpf2|Multitech MPF-II Monitor + BASIC ROM|$ASSET_STAGING/mpf2/mpf_ii.rom|sha1:92378b0db561632b58a9b36a85f8fb00796198bb|preservation-source"
+  "req-file|sinclairql|Sinclair QL MAME romset (merged ql.zip; builder extracts 4 members by sha1)|$ASSET_STAGING/sinclairql/ql-mame0224-merged.zip|sha256:c4c39530c7abe6518f90b0df9d4eec9201434a905c77f05f490137007e420b03|preservation-source"
   # -- repo-tracked assets ------------------------------------------------------
   # NOTE: cosmo.zip/jill.zip/Winamp tarball are no longer shipped in the repo
   # (removed pre-publication, see docs/guests/freedos.md + docs/guests/winxp.md).

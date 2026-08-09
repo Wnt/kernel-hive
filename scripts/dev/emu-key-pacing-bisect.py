@@ -136,6 +136,10 @@ def differing(a, b):
 def main():
     qmp_path, out_dir = sys.argv[1], sys.argv[2]
     trials = int(sys.argv[3]) if len(sys.argv) > 3 else 10
+    # ABSOLUTE: `screendump` is resolved by QEMU against ITS cwd, not this
+    # script's, so a relative out-dir writes the frames somewhere else and the
+    # harness dies on FileNotFoundError reading them back.
+    out_dir = os.path.abspath(out_dir)
     os.makedirs(out_dir, exist_ok=True)
     q = Qmp(qmp_path)
 
@@ -148,7 +152,13 @@ def main():
     ref = refs[0]
     print(f"reference captured; cursor mask = {len(mask)} bytes", flush=True)
 
-    for hold, gap in ((40, 40), (60, 60), (80, 80)):
+    # Default ladder is the vic20's. PACE_PAIRS overrides it — the sinclairql
+    # add needed a slower rung (its keyboard is scanned by a separate 8049 IPC
+    # and relayed to the CPU, so it drops keys the VICE tiles keep).
+    pairs = [
+        tuple(int(v) for v in spec.split(",")) for spec in os.environ.get("PACE_PAIRS", "40,40 60,60 80,80").split()
+    ]
+    for hold, gap in pairs:
         bad = 0
         for i in range(trials):
             got = trial(q, out_dir, f"h{hold}g{gap}-{i:02d}", hold, gap)[0]

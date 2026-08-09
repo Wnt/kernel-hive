@@ -473,6 +473,15 @@ export const ASSEMBLIES_BY_TILE = {
   gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
   // Three DEC operating systems behind one chooser, on the biggest rack.
   decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
+  // The Sinclair QL is a long, flat, matt-black wedge with the keyboard in the
+  // chassis and two microdrive slots on the right cheek — much closer in
+  // silhouette to the Atari ST body than to any Commodore breadbin, which is
+  // why it takes atariSt rather than another eightBitWedge. The ST pairs that
+  // body with homeCrtC; the QL takes the dedicated monitor homeCrtE, which is
+  // also the exhibit's own subject matter: the first thing the machine asks is
+  // whether it is plugged into a monitor or a television, and this one answered
+  // monitor. No mouse — the QL shipped without a pointing device of any kind.
+  sinclairql: { kind: 'homeMicro', body: 'atariSt', monitor: 'homeCrtE' },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

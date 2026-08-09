@@ -227,6 +227,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
     badge: 'PDP-11', spec: 'RT-11 / RSX / RSTS • 1970', kit: 'workstation',
   },
+  // Sinclair's matt black, and the accent is the QL's own screen: SuperBASIC
+  // types in green on black in the command window, so that is the colour the
+  // exhibit actually emits rather than one the gallery chose.
+  sinclairql: {
+    caseTint: '#2b2b2d', accentTint: '#2ee65a', tintMix: 0.5,
+    badge: 'SINCLAIR QL', spec: '68008 QDOS • 1984', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
