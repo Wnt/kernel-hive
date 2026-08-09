@@ -123,7 +123,7 @@ MANIFEST=(
   "zx81        |zx81.sh        |bridge/zx81     |retro    |~6-10m  |full   |tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)"
   "zxspectrum  |zxspectrum.sh  |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)"
   "dragon32     |dragon32.sh    |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)"
-  "armeval     |armeval.sh     |Armeval       |installed|~15-30m |partial |TODO"
+  "armeval     |armeval.sh     |bridge/armeval  |retro    |~12-18m |full   |tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
@@ -133,7 +133,7 @@ MANIFEST=(
 DEFAULT_ORDER=(kolibrios toaruos helenos 9front reactos haiku templeos amigaos qnx alpine tinycore
   freedos msdos-win1 win311 win95 win98 win2000 os2warp redstar3
   android-x86 postmarketos sailfishos sailfishos-gui serenityos
-  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos zxspectrum bbcmicro dragon32 kc854 oricatmos)
+  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos zxspectrum bbcmicro dragon32 kc854 oricatmos armeval)
 
 # ---------------------------------------------------------------------------
 c_reset=$'\e[0m'

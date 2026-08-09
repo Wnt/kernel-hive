@@ -92,6 +92,21 @@
       "udp_port": 54117,
       "notes": "exec: labctl exec apple2 \"<cmd>\" (ssh root@:5817, key bridge_key)"
     },
+    "armeval": {
+      "dir": "/data/vms/streamhost/tiles/armeval",
+      "qmp": "/data/vms/streamhost/tiles/armeval/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5838,
+      "exec_port": 5838,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54135,
+      "notes": "exec: labctl exec armeval \"<cmd>\" (ssh root@:5838, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro or the ARM"
+    },
     "atarist": {
       "dir": "/data/vms/streamhost/tiles/atarist",
       "qmp": "/data/vms/streamhost/tiles/atarist/qmp.sock",

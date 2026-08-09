@@ -1731,6 +1731,38 @@
       "blurb": "The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one.",
       "pointerRel": true,
       "relativePointerOnly": true
+    },
+    {
+      "id": "armeval",
+      "era_year": 1986,
+      "displayName": "Acorn ARM Evaluation System",
+      "year": 1986,
+      "lineage": "Acorn Computers (Cambridge) — Atom, BBC Micro, ARM Evaluation System, Archimedes, ARM Ltd",
+      "arch": "Acorn ARM1, 8 MHz, 4 MB RAM on a BBC Micro Tube podule; MOS 1.20 6502A host with Acorn ADFS 1.30 and the 1770 disc interface",
+      "accent": "#0000FF",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 57,
+      "eraLabel": "1986 · ARM Evaluation System (ARM BBC Basic V)",
+      "signalEndpoint": "/signal/armeval.json",
+      "ramMB": 4,
+      "ramKB": 0,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile, and the sibling of bbcmicro: the SAME purpose-built MAME 0.289 `bbcb` binary (SUBTARGET=bbcb, built in the Bookworm chroot so its ABI matches the bridge), but with the ARM Evaluation System fitted to the BBC Micro's Tube. Three arguments are load-bearing and each cost an experiment: `-fdc acorn1770` because the ARM Evaluation System discs are ADFS .adl at 640 KB double density and the Acorn 8271 is single density and cannot read them at all; `-rom3` and specifically NOT `-rom1`, because ADFS in romimage1 kills the Tube and the banner falls back to \"BBC Computer 32K\" (romimage4 keeps the Tube but drops host BBC BASIC from the banner; romimage3 keeps both); and `skip_warnings 1` in ui.ini, which is a UI option and not a command-line one. The eight blobs are preservation-source with NO authorised URL and a disputed chain of title, staged by the operator, gated on SHA-1 and assembled BY SHA-1 against the shipped binary's own -listxml — the staged file is phroma.bin and the member MAME wants is cm62024.bin, so only the hash connects them. The golden is NOT the machine's untouched first screen (that is bbcmicro's rule and this machine has no language of its own to show): `*LIB $` and `AB` are baked in and left on screen as the prompt's provenance. Bake-time identity gates: the reverse-video A* field must carry blue pixels (a plain BBC Micro banner has zero) AND the frame must carry the ARM BASIC banner's ink. Keyboard-only exhibit; keyboard.charMap is bbcmicro's, unchanged, because it is the same MOS and the same keyboard matrix. The supervisor is NOT reachable from the ARM BASIC prompt — *QUIT, *DIS and *SHOWREGS all answer \"Bad command\" and BREAK (F12) does nothing — which is why the on-screen keyboard offers BASIC's row and not the supervisor's. See streamhost/docs/BRIDGE.md and docs/guests/armeval.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "ARM BBC Basic V 1.00 — BBC BASIC recompiled for a 32-bit RISC, on Disc 3 of the evaluation set",
+        "the ARM supervisor in ROM: a disassembler, a memory dump and a register dump, and nothing else",
+        "Cambridge LISP, PROLOG and FORTRAN 77, on discs 4, 5 and 6 of the same set",
+        "the floating-point emulator (fpe) and linker that shipped with it, for people writing real ARM code",
+        "and, two years later, everything the Archimedes ran — which is what the evaluation system existed to make possible"
+      ],
+      "periodBrowser": "none — pre-web",
+      "iconicApps": [
+        "ARM BBC Basic V",
+        "the ARM supervisor's disassembler",
+        "Cambridge LISP"
+      ],
+      "blurb": "The first ARM product ever sold: not a computer but a plug-in second processor for the BBC Micro, sold to developers in 1986 so they could write ARM code two years before the Archimedes existed. The board has no operating system — it has 16 KB of supervisor ROM and a floppy with a language on it. What you are looking at is that language, ARM BBC Basic V, running on the ARM while the 6502 that used to be the computer is reduced to a keyboard, a screen and a disc controller."
     }
   ]
 }

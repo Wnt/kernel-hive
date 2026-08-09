@@ -509,19 +509,6 @@ export const ASSEMBLIES_BY_TILE = {
   bbcmicro: {
     kind: 'homeMicro', body: 'acornA3000', monitor: 'homeCrtE',
   },
-  // The ARM Evaluation System IS a BBC Micro Model B — the ARM is a podule on
-  // the far end of its Tube — so it takes the same Acorn wedge, and the pair
-  // reading as the same case language is correct rather than a collision. What
-  // separates them is the DESK: bbcmicro is the school machine with the largest
-  // home set (a Microvitec Cub), and this one was a £4,500 developer's tool, so
-  // it gets crtE, the boxy office monitor. That keeps the signature distinct
-  // from both Acorn siblings (riscos holds acornA3000|crtA and has a mouse) and
-  // from every crtE user (solaris pizzaBoxC, nextstep towerE). No keyboard and
-  // no mouse for the same reason as bbcmicro: the keys are in the chassis and
-  // the Model B had no pointing device or port for one.
-  armeval: {
-    kind: 'homeMicro', body: 'acornA3000', monitor: 'crtE',
-  },
   // homeCrtE (the largest set) rather than homeCrtA: the Dragon was sold to be
   // plugged into the family television, and zxspectrum already holds
   // eightBitWedgeA|homeCrtA. Every exhibit needs a distinct hardware signature.
@@ -568,6 +555,19 @@ export const ASSEMBLIES_BY_TILE = {
   nextstep: {
     kind: 'towerSetup', body: 'towerE', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  // The ARM Evaluation System IS a BBC Micro Model B — the ARM is a podule on
+  // the far end of its Tube — so it takes the same Acorn wedge, and the pair
+  // reading as the same case language is correct rather than a collision. What
+  // separates them is the DESK: bbcmicro is the school machine with the largest
+  // home set (a Microvitec Cub), and this one was a £4,500 developer's tool, so
+  // it gets crtE, the boxy office monitor. That keeps the signature distinct
+  // from both Acorn siblings (riscos holds acornA3000|crtA and has a mouse) and
+  // from every crtE user (solaris pizzaBoxC, nextstep towerE). No keyboard and
+  // no mouse for the same reason as bbcmicro: the keys are in the chassis and
+  // the Model B had no pointing device or port for one.
+  armeval: {
+    kind: 'homeMicro', body: 'acornA3000', monitor: 'crtE',
   },
 } as const satisfies Record<string, Assembly>;
 

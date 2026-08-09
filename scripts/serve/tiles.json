@@ -214,5 +214,9 @@
   "nextstep": {
     "udpPort": 54134,
     "hashFile": "/data/vms/streamhost/tiles/nextstep/cert_hash_b64.txt"
+  },
+  "armeval": {
+    "udpPort": 54135,
+    "hashFile": "/data/vms/streamhost/tiles/armeval/cert_hash_b64.txt"
   }
 }

@@ -24,6 +24,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 90
   },
+  "armeval": {
+    "label": "Time 20000 loops on a 1986 ARM",
+    "lines": [
+      "10 T%=TIME",
+      "20 FOR I%=1 TO 20000:NEXT",
+      "30 PRINT\"20000 LOOPS \";(TIME-T%)/100"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 160
+  },
   "bbcmicro": {
     "label": "Type in a demo program",
     "lines": [

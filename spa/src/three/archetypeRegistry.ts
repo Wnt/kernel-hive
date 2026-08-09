@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/tiles/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (54 of the 57
+//    - transport   : how its LIVE framebuffer texture is obtained (55 of the 57
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -104,7 +104,7 @@ export interface OSBinding {
   bootVideo?: string;
 }
 
-// One entry per OS. 54 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 55 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos',     archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -177,6 +177,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   kc854:       { osId: 'kc854', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3FD8D0', eraLabel: '1988 · KC 85/4 (CAOS 4.2)' },
   sinclairql:  { osId: 'sinclairql', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2EE65A', eraLabel: '1984 · Sinclair QL (QDOS · SuperBASIC)' },
   nextstep:    { osId: 'nextstep', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#8C8C8C', eraLabel: '1995 · NeXTSTEP 3.3 (NeXTcube)', pointerRel: true },
+  armeval:     { osId: 'armeval', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#0000FF', eraLabel: '1986 · ARM Evaluation System (ARM BBC Basic V)' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */
