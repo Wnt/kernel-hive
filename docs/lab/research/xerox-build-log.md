@@ -118,6 +118,16 @@ several CRs. Practical consequence for the SPA: this is the §5.1
 `SH_KEY_MIN_HOLD_MS` case with an unusually large floor — budget **≥250 ms
 hold**, not two frames.
 
+**Where the keys actually have to go, and why (Agent A's PointerRoot note,
+checked against this rig).** The Xvfb root here is 1280x1024 and the Darkstar
+window is **1091x915** — smaller than the root — so with no WM, X focus is
+`PointerRoot` and keystrokes follow the pointer. But that is not the whole
+story on this emulator: with focus set explicitly, the **WinForms top-level
+`Darkstar` window** accepts keys and the **SDL child window (the 1088x860 one)
+does not**. Darkstar embeds SDL with `SDL_CreateWindowFrom`, and the key
+handling lives on the WinForms form, not on the SDL surface. So the rule for
+this tile is: aim at the top-level window, *and* keep the pointer inside it.
+
 **Set Time Utility, the whole dialogue, with `TODDateTime = 1997/12/01`:** five
 prompts, all answerable with a bare CR — Time-zone offset (`-8`), Minute offset
 (`0`), First day of DST (`98`), Last day of DST (`305`), then
