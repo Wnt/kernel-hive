@@ -515,11 +515,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             # (reactos sits on 4433) and the edge carries its own rule for them, so
             # the range check does not apply.
             in_range = low <= stream.get("udpPort", -1) <= high
-            if (
-                stream.get("transport") == "streamhost"
-                and not stream.get("legacyPortException")
-                and not in_range
-            ):
+            if stream.get("transport") == "streamhost" and not stream.get("legacyPortException") and not in_range:
                 fail(
                     errors,
                     row,
@@ -1047,9 +1043,26 @@ def check_gate_lists(output_keys: list[str]) -> list[str]:
     if not set(GENERATED_SHELL) <= keys:
         mismatches.append(f"GENERATED_SHELL not a subset of generated outputs: {sorted(set(GENERATED_SHELL) - keys)}")
 
+    # The edge's DNAT range lives in three places that must agree, and when they
+    # drift nothing on the box notices: the tile is active, its ticket is
+    # accepted, signalling is valid, and the daemon simply never sees a session.
+    # registry-v1.json is the source of truth; assert the installer matches it.
+    relay = json.loads((REGISTRY / "registry-v1.json").read_text())["ports"]
+    want = f'RELAY_RANGE_DEFAULT="{relay["publicRelayLow"]}-{relay["publicRelayHigh"]}"'
+    installer = REPO / "scripts/serve/install-public-relay.sh"
+    if installer.is_file() and want not in installer.read_text(encoding="utf-8"):
+        mismatches.append(
+            f"install-public-relay.sh does not carry {want} — the edge installer and "
+            f"registry-v1.json ports.publicRelay* must agree, or tiles ship unreachable"
+        )
+
     if mismatches:
         raise RegistryError("generated-path gate lists out of sync:\n  - " + "\n  - ".join(mismatches))
-    return [f"GATE-LISTS-IN-SYNC ({len(keys)} generated paths across 3 gate configs)"]
+    return [
+        f"GATE-LISTS-IN-SYNC ({len(keys)} generated paths across 3 gate configs)",
+        f"PUBLIC-RELAY-RANGE-IN-SYNC ({relay['publicRelayLow']}-{relay['publicRelayHigh']}"
+        " in registry-v1.json == install-public-relay.sh)",
+    ]
 
 
 def atomic_write(path: Path, data: bytes) -> None:
