@@ -227,6 +227,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
     badge: 'PDP-11', spec: 'RT-11 / RSX / RSTS • 1970', kit: 'workstation',
   },
+  // The Atmos is the darkest home micro in the collection — a matt black wedge
+  // with a red stripe across the front, which is the accent. It shares its body
+  // model with three beige wedges, so this tint is what stops it reading as one
+  // of them.
+  oricatmos: {
+    caseTint: '#26262a', accentTint: '#d8402f', tintMix: 0.62,
+    badge: 'ORIC ATMOS', spec: '48K • 1984', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

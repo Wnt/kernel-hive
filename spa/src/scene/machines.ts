@@ -473,6 +473,15 @@ export const ASSEMBLIES_BY_TILE = {
   gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
   // Three DEC operating systems behind one chooser, on the biggest rack.
   decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
+  // The Oric Atmos is a small wedge — the same silhouette family as apple2,
+  // mpf2 and plus4 — so it takes the generic 8-bit wedge body and is told apart
+  // by the one home television nothing else is paired with (homeCrtA belongs to
+  // the amiga's assembly, not to that CRT alone) and by its identity tint: a
+  // BLACK case with a red stripe, which is what the Atmos actually looked like.
+  // No mouse: the Atmos's other ports were tape, printer and expansion.
+  oricatmos: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtA',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

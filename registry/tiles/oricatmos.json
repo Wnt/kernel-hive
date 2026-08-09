@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "id": "oricatmos",
+  "era_year": 1980,
+  "tileDir": "oricatmos",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 44,
+        "prelude": "",
+        "line": "  \"oricatmos   |oricatmos.sh   |bridge/oricatmos|retro    |~4-8m   |full   |tiles/oricatmos overlay + golden (MAME 0.289 orica → Oric Extended BASIC V1.1)\"\n",
+        "value": {
+          "key": "oricatmos",
+          "script": "oricatmos.sh",
+          "outputDir": "bridge/oricatmos",
+          "class": "retro",
+          "estimated": "~4-8m",
+          "automation": "full",
+          "produces": "tiles/oricatmos overlay + golden (MAME 0.289 orica → Oric Extended BASIC V1.1)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 14
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/oricatmos",
+      "qmp": "/data/vms/streamhost/tiles/oricatmos/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5834,
+      "exec_port": 5834,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54131,
+      "notes": "exec: labctl exec oricatmos \"<cmd>\" (ssh root@:5834, key bridge_key) — reaches the Debian kiosk, not the emulated Oric"
+    }
+  },
+  "render": {},
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54131,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 131
+  },
+  "guestDoc": "docs/guests/oricatmos.md",
+  "credentialsRef": "guest/oricatmos",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "oricatmos",
+      "SH_QMP": "/data/vms/streamhost/tiles/oricatmos/qmp.sock",
+      "SH_PORT": "54131",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/oricatmos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/oricatmos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "80",
+      "SH_KEY_MIN_GAP_MS": "80",
+      "SH_FIXTURE_DESC": "Oric Atmos (1984) at its own untouched power-on screen: \"ORIC EXTENDED BASIC V1.1 / (c) 1983 TANGERINE / 37631 BYTES FREE / Ready\" in black on a white page, with the machine's own CAPS marker in the top-right corner, drawn fullscreen with aspect correction by MAME 0.289's `orica` driver on an 800x600 X root — 4:3, the shape the Atmos drew on a television, and measured 1.6x cheaper to blit than 1024x768 on this box. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; AY-3-8912 sound -> ALSA -> AC97. The interaction is the registry demoProgram, a colour-and-sound listing in Oric Extended BASIC that the SPA types and the visitor runs."
+    },
+    "vmidLabel": 234,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "oricatmos",
+        "--vmid",
+        "234",
+        "--udp",
+        "54131",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/oricatmos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/oricatmos/tile.env.fixture"
+      ],
+      "deviceSetId": "oricatmos-current",
+      "launcher": "streamhost/tiles/oricatmos/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/oricatmos/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-oricatmos",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5834-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-oricatmos",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5834-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off and 768 MB, matching the QEMU 11 device set the golden was baked under"
+      }
+    },
+    "bringUpOrder": 49
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#D8402F",
+    "eraLabel": "1984 · Oric Atmos (Extended BASIC V1.1)"
+  },
+  "demoProgram": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 cls",
+      "20 for c=0 to 6",
+      "30 paper c:ink 7-c",
+      "40 print \"oric atmos 1984\"",
+      "50 ping:wait 40",
+      "60 next c",
+      "70 paper 7:ink 0"
+    ],
+    "runCommand": "run",
+    "perCharMs": 160
+  },
+  "museum": {
+    "id": "oricatmos",
+    "displayName": "Oric Atmos",
+    "year": 1984,
+    "lineage": "Tangerine Computer Systems / Oric Products International (UK)",
+    "arch": "MOS 6502A, 1 MHz, 48 KB RAM, ULA video (40x28 text / 240x200 HIRES, 8 colours), AY-3-8912 sound",
+    "ramMB": 0,
+    "ramKB": 48,
+    "era": "1980s",
+    "accent": "#D8402F",
+    "eraSoftware": [
+      "Oric Extended BASIC V1.1, with ZAP, PING, SHOOT and EXPLODE as language keywords",
+      "Tansoft's own range — Oric Base, Oric Calc, Zorgon's Revenge",
+      "a large French catalogue: the Atmos sold better in France than anywhere else",
+      "the 3-inch Microdisc drive and its Sedoric disc operating system",
+      "a demoscene that is still writing new Oric software four decades later"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "Oric Extended BASIC V1.1",
+      "Zorgon's Revenge",
+      "Sedoric on the Microdisc"
+    ],
+    "blurb": "The ZX Spectrum's most direct British rival, and the one that won France: a black wedge with a red stripe, eight colours, three-voice sound, and a BASIC in which the words ZAP, PING, SHOOT and EXPLODE each make the noise they are named after.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME's `orica` driver emulating an Oric Atmos; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The emulator is a pinned MAME 0.289 built for oric.cpp only in the Bookworm chroot (scripts/build-guests/build-mame-oricatmos.sh) — the lab host's packaged 0.276 is trixie-ABI and Bookworm's own is 0.251. One 16 KB preservation-source ROM (basic11b.rom, Extended BASIC V1.1) is staged outside the repo and gated by asking the shipped binary's own -listxml which sha1 it demands for bios ver11. Drawn fullscreen with aspect correction on an 800x600 X root, which is 4:3 — the shape the machine drew on a television, and the mode that measured 1.6x cheaper to blit than 1024x768 on this box. The golden is the machine's own untouched power-on screen; the interaction is the registry demoProgram. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/oricatmos.md."
+  },
+  "reset": {
+    "tileDir": "oricatmos",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Oric Atmos power-on screen (ORIC EXTENDED BASIC V1.1, (c) 1983 TANGERINE, 37631 BYTES FREE, Ready) under MAME 0.289 `orica -bios ver11`, fullscreen with aspect correction on an 800x600 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated into the fixture and no post-restore keys are sent. Keyboard proof runs AFTER the bake against the restored fixture — PRINT 6502*7 echoes and is answered — so nothing typed can reach the golden. Keyboard-only exhibit (no mouse); AC97 audio."
+  }
+}

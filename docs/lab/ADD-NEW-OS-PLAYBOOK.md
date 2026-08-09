@@ -445,6 +445,35 @@ their own (use explicit `input-send-event` press/release pairs), and the
 guest's cursor blinks, so mask the pixels that differ between repeated
 reference captures before comparing frames.
 
+**Turn X's auto-repeat OFF in any kiosk driven by synthetic keys — before you
+touch the pacing at all.** On the Oric Atmos add (2026-08-09) the pacing was
+never the problem. Every key a bridge tile sees is an injected press/release
+pair, and when the release arrives late — this box runs thirty emulators — X's
+typematic repeat starts hammering the key that is still "held". The demo
+listing's line 40 came out as `PRINT "ORIC ATMOS 19999999999`: one late
+release, eleven nines. The flood then left the emulated machine **deaf** —
+nothing typed afterwards landed, until the next `loadvm` — and that symptom
+impersonates, in turn, frame quantisation, host starvation and an emulator
+freeze. `xset r off` in the tile's `/etc/bridge/launch.sh` fixes it; the golden
+must be re-baked afterwards, because the X state is inside it. Three cheap
+discriminators, in the order they pay off:
+
+1. the guest kernel's `/proc/interrupts` i8042 counter proves whether QEMU
+   delivered the keys at all (on that tile it always had);
+2. a screen that keeps changing while keys do nothing is an INPUT fault, not a
+   frozen emulator — but pick a test pattern that actually changes, since a
+   screen scrolling identical characters compares equal frame to frame;
+3. a tile with no viewer is idle-paused (`[idle] no sessions for 60s -> guest
+   paused`), and a paused guest swallows every key. A bare QMP harness must
+   send `cont` after each `loadvm`; `labctl` does it for you.
+
+**The bisect's 250/250 reference is an assumption, not a law.** On that same
+Oric tile a LONG hold was the failure mode: 40/40, 60/60 and 80/80 all typed a
+40-character line intact in 10 of 10 trials, while the harness's "pacing nobody
+disputes" reference dropped 7 characters of 40 — so
+`emu-key-pacing-bisect.py` reported every rung as corrupt against a reference
+that was itself broken. Look at the reference frame before believing a rung.
+
 **Raising the pacing obliges the typist to slow down too.** The SPA waits
 `line.length * perCharMs` before submitting the next line; below the tile's
 hold+gap drain rate a backlog builds and BASIC loses the characters that arrive

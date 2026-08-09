@@ -134,7 +134,11 @@ def differing(a, b):
 
 
 def main():
-    qmp_path, out_dir = sys.argv[1], sys.argv[2]
+    # QEMU resolves `screendump` against ITS OWN cwd, not ours, so a relative
+    # out-dir silently writes the frames somewhere else and every read fails
+    # with FileNotFoundError several minutes into the run. Absolute always.
+    qmp_path = sys.argv[1]
+    out_dir = os.path.abspath(sys.argv[2])
     trials = int(sys.argv[3]) if len(sys.argv) > 3 else 10
     os.makedirs(out_dir, exist_ok=True)
     q = Qmp(qmp_path)

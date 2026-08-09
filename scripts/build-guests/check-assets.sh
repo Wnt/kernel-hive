@@ -91,6 +91,10 @@ ROWS=(
   "req-file|redstar3|Red Star OS 3.0 Desktop install ISO|$ASSET_STAGING/redstar3/redstar_desktop3.0_sign.iso|sha256:895ad0e01ae0d35a65e9ac42dd34d0a1d685d6dfa331ce5b4f24bbc753439be3|preservation-source"
   "req-file|redstar2|Red Star OS 2.0 desktop install ISO|$ASSET_STAGING/redstar2/redstar.iso|sha256:69a45d07c302782cb777d03abd39c5b45b4099e5c994a74a77bb71ab5d229997|preservation-source"
   "req-file|mpf2|Multitech MPF-II Monitor + BASIC ROM|$ASSET_STAGING/mpf2/mpf_ii.rom|sha1:92378b0db561632b58a9b36a85f8fb00796198bb|preservation-source"
+  # oricatmos.sh fetches this itself from the pinned archive.org item when it is
+  # absent, so it is opt-file rather than req-file; the row exists so a staged
+  # copy is hash-checked before a build spends time on it.
+  "opt-file|oricatmos|Oric Atmos Extended BASIC V1.1 ROM (MAME orica bios ver11)|$ASSET_STAGING/oricatmos/basic11b.rom|sha256:ed28568574716eef5d7c0fde2568d7a47a6e4b1fbca81daff3be05e45723466d|preservation-source"
   # -- repo-tracked assets ------------------------------------------------------
   # NOTE: cosmo.zip/jill.zip/Winamp tarball are no longer shipped in the repo
   # (removed pre-publication, see docs/guests/freedos.md + docs/guests/winxp.md).
