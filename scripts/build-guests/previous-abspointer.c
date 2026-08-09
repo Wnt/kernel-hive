@@ -9,8 +9,9 @@
   pointed cannot express it. This file gives Previous a second, absolute input
   path: a line-oriented UNIX-socket control channel whose `abs X Y` places the
   NeXT cursor at an exact guest pixel by writing the event driver's own
-  cursorLoc in guest RAM and then letting the driver post its normal
-  zero-delta mouse event, so the WindowServer redraws from the driver's state.
+  cursorLoc in guest RAM one unit short of the target and then posting a single
+  unit KMS packet, so the driver clips, updates and posts through its normal
+  path and the WindowServer redraws the cursor exactly where it was asked to.
 
   Socket path: $PREVIOUS_ABS_SOCKET (default /tmp/previous-abs.sock).
 */
@@ -35,7 +36,7 @@ extern unsigned char *NEXTRam;
 #define ABS_MAX_CAND 65536
 #define ABS_QLEN     4096
 
-enum { ABSQ_REL = 1, ABSQ_BTN, ABSQ_NUDGE, ABSQ_ABS };
+enum { ABSQ_REL = 1, ABSQ_BTN, ABSQ_NUDGE, ABSQ_ABS, ABSQ_DISC };
 
 typedef struct {
 	int type;
@@ -54,6 +55,21 @@ static uint32_t absCands[ABS_MAX_CAND];
 static int absNumCands;
 static bool absLeftDown;
 static bool absRightDown;
+
+/* The NeXT MegaPixel display is 1120x832 on every machine Previous emulates
+ * (mono and colour alike), so the discovery windows below are exact. */
+#define ABS_SCR_W 1120
+#define ABS_SCR_H 832
+
+/* Discovery state machine, stepped once per Main_EventHandler tick. */
+static int absDiscState;
+static int absDiscTick;
+static int absDiscCand;
+static int absDiscRound;
+
+#define ABS_PROBE_X(r) ((r) ? 800 : 300)
+#define ABS_PROBE_Y(r) ((r) ? 600 : 200)
+static int absDiscResult; /* 0 = never run, 1 = running, 2 = found, 3 = failed */
 
 /* ------------------------------------------------------------------ */
 /* Guest RAM helpers                                                    */
@@ -97,12 +113,146 @@ static bool absq_get(absq_item *out) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Absolute placement.
+ *
+ * Measured on NeXTSTEP 3.3 (see docs/guests/nextstep.md): the Mach event
+ * driver computes the new cursor location by ADDING the accelerated delta to
+ * the cursorLoc it finds in its own shared area — it does not keep a private
+ * copy — and the acceleration curve is exactly 1:1 for a delta of magnitude 1
+ * (2 -> 4x, 3 -> 8x, >=5 -> 10x).  So writing cursorLoc to (target - 1) and
+ * posting a single unit KMS packet lands the cursor on target EXACTLY, in one
+ * event, with the driver doing its own clipping and its own event posting, so
+ * the WindowServer redraws through its normal path. */
+
+static void abs_place(int x, int y) {
+	int sx, sy;
+
+	if (absCursorOff < 0) return;
+	if (x < 0) x = 0;
+	if (y < 0) y = 0;
+	if (x > ABS_SCR_W - 1) x = ABS_SCR_W - 1;
+	if (y > ABS_SCR_H - 1) y = ABS_SCR_H - 1;
+
+	/* Step towards the target from the far side so the pre-compensated value
+	 * we write is always on-screen, even at x == 0 or y == 0. */
+	sx = (x > 0) ? 1 : -1;
+	sy = (y > 0) ? 1 : -1;
+
+	abs_wr16((uint32_t)absCursorOff, x - sx);
+	abs_wr16((uint32_t)absCursorOff + 2, y - sy);
+	kms_mouse_move(sx, sy);
+}
+
+/* ------------------------------------------------------------------ */
+/* Discovery: learn where this boot of NeXTSTEP keeps cursorLoc.
+ *
+ * Slam the cursor into the bottom-right corner (where the driver clamps it to
+ * a value we know exactly), scan all of guest RAM for a big-endian int16 pair
+ * holding it, then re-filter the survivors at the top-left corner and again at
+ * the top-right, which leaves only words that track the cursor.  Finally prove
+ * a survivor is the driver's own by writing through it and checking that every
+ * other survivor follows. */
+
+static void abs_scan(int xlo, int xhi, int ylo, int yhi);
+static void abs_filter(int xlo, int xhi, int ylo, int yhi);
+
+static void abs_discover_tick(void) {
+	int i, ok;
+
+	switch (absDiscState) {
+		case 1: /* drive into the bottom-right corner */
+			kms_mouse_move(63, 63);
+			if (++absDiscTick >= 40) { absDiscState = 2; absDiscTick = 0; }
+			break;
+		case 2:
+			if (++absDiscTick >= 10) {
+				abs_scan(ABS_SCR_W - 60, ABS_SCR_W - 1, ABS_SCR_H - 60, ABS_SCR_H - 1);
+				absDiscState = 3;
+				absDiscTick  = 0;
+			}
+			break;
+		case 3: /* drive into the top-left corner */
+			kms_mouse_move(-63, -63);
+			if (++absDiscTick >= 40) { absDiscState = 4; absDiscTick = 0; }
+			break;
+		case 4:
+			if (++absDiscTick >= 10) {
+				abs_filter(0, 40, 0, 40);
+				absDiscState = 5;
+				absDiscTick  = 0;
+			}
+			break;
+		case 5: /* drive right along the top edge */
+			kms_mouse_move(63, 0);
+			if (++absDiscTick >= 30) { absDiscState = 6; absDiscTick = 0; }
+			break;
+		case 6:
+			if (++absDiscTick >= 10) {
+				abs_filter(ABS_SCR_W - 200, ABS_SCR_W - 1, 0, 40);
+				absDiscTick  = 0;
+				absDiscCand  = 0;
+				absDiscRound = 0;
+				absDiscState = absNumCands ? 7 : 9;
+			}
+			break;
+		case 7: /* write through candidate absDiscCand and see whether the
+		         * driver picked our value up: only the driver's own copy comes
+		         * back as exactly the probe target. A passive mirror keeps the
+		         * value we wrote, a stale event record keeps it too, and a
+		         * mirror the WindowServer rewrites comes back as the REAL
+		         * cursor position instead. Two probes far apart, so a mirror
+		         * cannot pass by sitting one pixel short of the target. */
+			abs_wr16(absCands[absDiscCand], ABS_PROBE_X(absDiscRound) - 1);
+			abs_wr16(absCands[absDiscCand] + 2, ABS_PROBE_Y(absDiscRound) - 1);
+			kms_mouse_move(1, 1);
+			absDiscState = 8;
+			absDiscTick  = 0;
+			break;
+		case 8:
+			if (++absDiscTick >= 40) {
+				i  = (int)absCands[absDiscCand];
+				ok = (abs_rd16((uint32_t)i) == ABS_PROBE_X(absDiscRound) &&
+				      abs_rd16((uint32_t)i + 2) == ABS_PROBE_Y(absDiscRound));
+				if (ok && absDiscRound == 0) {
+					absDiscRound = 1;
+					absDiscState = 7;
+				} else if (ok) {
+					absCursorOff  = (int32_t)absCands[absDiscCand];
+					absDiscResult = 2;
+					absDiscState  = 0;
+					Log_Printf(LOG_WARN, "[AbsPointer] cursorLoc at NEXTRam+0x%x (%d candidates)",
+					           (unsigned)absCursorOff, absNumCands);
+				} else if (++absDiscCand < absNumCands) {
+					absDiscRound = 0;
+					absDiscState = 7;
+				} else {
+					absDiscState = 9;
+				}
+				absDiscTick = 0;
+			}
+			break;
+		case 9:
+			absDiscResult = 3;
+			absDiscState  = 0;
+			Log_Printf(LOG_WARN, "[AbsPointer] cursorLoc discovery FAILED");
+			break;
+		default:
+			break;
+	}
+}
+
+/* ------------------------------------------------------------------ */
 /* Executed on the emulation thread, one item per Main_EventHandler tick
  * (200 Hz) — the same scheduling point at which SDL input is drained, so
  * this adds no polling latency the pointer path did not already have. */
 
 void AbsPointer_Poll(void) {
 	absq_item it;
+
+	if (absDiscState) {
+		abs_discover_tick();
+		return;
+	}
 
 	if (!absq_get(&it)) return;
 
@@ -119,11 +269,14 @@ void AbsPointer_Poll(void) {
 			kms_mouse_move(0, 0);
 			break;
 		case ABSQ_ABS:
-			if (absCursorOff >= 0) {
-				abs_wr16((uint32_t)absCursorOff, it.a);
-				abs_wr16((uint32_t)absCursorOff + 2, it.b);
-			}
-			kms_mouse_move(0, 0);
+			abs_place(it.a, it.b);
+			break;
+		case ABSQ_DISC:
+			absDiscResult = 1;
+			absDiscState = 1;
+			absDiscTick  = 0;
+			absDiscCand  = 0;
+			absDiscRound = 0;
 			break;
 		default:
 			break;
@@ -205,8 +358,16 @@ static void abs_command(int fd, char *line) {
 		absq_put(ABSQ_NUDGE, 0, 0);
 		abs_reply(fd, "ok\n");
 	} else if (!strcmp(tok[0], "abs") && ntok >= 3) {
+		if (absCursorOff < 0 && absDiscResult == 0) absq_put(ABSQ_DISC, 0, 0);
 		absq_put(ABSQ_ABS, atoi(tok[1]), atoi(tok[2]));
 		abs_reply(fd, "ok\n");
+	} else if (!strcmp(tok[0], "discover")) {
+		absq_put(ABSQ_DISC, 0, 0);
+		abs_reply(fd, "ok\n");
+	} else if (!strcmp(tok[0], "status")) {
+		snprintf(reply, sizeof(reply), "ok state=%d result=%d cands=%d addr=%x\n", absDiscState,
+		         absDiscResult, absNumCands, (unsigned)absCursorOff);
+		abs_reply(fd, reply);
 	} else if (!strcmp(tok[0], "setaddr") && ntok >= 2) {
 		uint32_t v;
 		if (abs_hex(tok[1], &v) && v + 4 <= ABS_RAM_LEN) {
