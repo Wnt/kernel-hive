@@ -227,6 +227,15 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
     badge: 'PDP-11', spec: 'RT-11 / RSX / RSTS • 1970', kit: 'workstation',
   },
+  // Anthracite plastic, the colour East German industrial equipment was
+  // actually moulded in, and nothing like the beige of every Western machine
+  // beside it. The accent is not chosen: a ppmhist of the tile's own golden
+  // frame contains exactly TWO colours, RGB(0,0,160) and white, so #0000A0 is
+  // literally the only colour this exhibit emits.
+  kc854: {
+    caseTint: '#3f4247', accentTint: '#0000a0', tintMix: 0.5,
+    badge: 'KC 85/4', spec: 'CAOS 4.2 • 1988', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

@@ -17,6 +17,18 @@ Usage: emu-key-pacing-bisect.py <clone-qmp-sock> <out-dir> [trials] [line]
 Written for the vic20 add (2026-08-08), where the shipped two-frame pacing lost
 a character every few hundred; the defaults below are that tile's. Point it at
 any bridge clone whose guest echoes typed characters.
+
+THE 250/250 REFERENCE IS AN ASSUMPTION, NOT A GUARANTEE — CHECK IT.
+This harness treats "6+ frames each way" as a pacing nobody disputes and makes
+it the reference every trial is compared against. On the KC 85/4 (kc854,
+2026-08-09) that assumption is FALSE: the KC's keyboard is a separate serial
+device with its own repeat timing rather than a matrix the CPU scans, and a
+250 ms hold lost SEVEN of 32 characters while 80/80 lost none. The reference
+was the outlier, so the output read `12/12 corrupted` at every pacing and was
+worthless as printed. When every pacing reports the same corruption count with
+an identical unmasked-byte delta, suspect the reference: re-score the frames
+against the majority/consensus frame instead, and read that frame's characters
+off the framebuffer before trusting it.
 """
 
 import json

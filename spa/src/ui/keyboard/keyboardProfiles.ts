@@ -39,7 +39,7 @@ import { XK } from '../../three/useStreamControl';
 export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga';
+  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga' | 'kc854';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -379,6 +379,62 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ]],
     moreRows: [fkeyRow(1, 10)],
   },
+
+  // KC 85/4 — a GERMAN keyboard with an East German operating system, and the
+  // only exhibit here where the on-screen keyboard has to apologise for the
+  // host's layout rather than just add a missing modifier.
+  //
+  // Base row: the two words CAOS itself is offering on the screen the tile rests
+  // at. Every letter is sent UNSHIFTED on purpose — this machine's unshifted
+  // letter row is UPPER case and shift gives lower case, which is the opposite
+  // of every later convention (MAME's src/mame/ddr/kc_keyb.cpp declares
+  // PORT_CHAR('B') PORT_CHAR('b'), in that order, for all 26). A visitor who
+  // types basic in lower case gets BASIC, and one who "helpfully" holds shift
+  // gets basic and an error.
+  //
+  // The named keys are the KC's own, read from the same matrix: Brk is Esc,
+  // Stop is End, Clr is Backspace, and Shift Lock is Caps Lock.
+  //
+  // The symbol row is the German layout made reachable. Six of these characters
+  // sit on keys a US keyboard puts something else on, so the label is what the
+  // KC prints and the keysym is the host key that gets you there — ':' really
+  // is the '-' key, '+' really is the ';' key. The registry's keyboard.charMap
+  // does the same translation for typed text; these buttons are for the visitor
+  // hunting one character on a phone. '^' (host '[') is included because CAOS
+  // uses it and no visitor would ever find it.
+  kc854: {
+    family: 'kc854',
+    rows: [[
+      macro('caos-basic', 'BASIC',
+        [...press(0x62), ...press(0x61), ...press(0x73), ...press(0x69), ...press(0x63),
+          ...press(XK.Return)],
+        { hint: 'BASIC — starts HC-BASIC from ROM (typed unshifted: this machine’s plain letters are CAPITALS)' }),
+      macro('caos-menu', 'MENU',
+        [...press(0x6d), ...press(0x65), ...press(0x6e), ...press(0x75), ...press(XK.Return)],
+        { hint: 'MENU — brings back the CAOS command list' }),
+      tap('brk', 'Brk', XK.Escape, { hint: 'BRK (the KC’s break key)' }),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+    moreRows: [[
+      tap('clr', 'Clr', XK.BackSpace, { repeat: true, hint: 'CLR' }),
+      tap('ins', 'Ins', XK.Insert),
+      tap('del', 'Del', XK.Delete),
+      tap('stop', 'Stop', XK.End, { hint: 'STOP' }),
+      latch('shiftlock', 'Shift Lock', XK.Caps_Lock, 'SHIFT LOCK — and remember shift gives LOWER case here'),
+    ], [
+      tap('kc-plus', '+', 0x3b, { hint: 'German layout: the host ; key' }),
+      tap('kc-colon', ':', 0x2d, { hint: 'German layout: the host - key' }),
+      tap('kc-minus', '-', 0x3d, { hint: 'German layout: the host = key' }),
+      tap('kc-caret', '^', 0x5b, { hint: 'German layout: the host [ key' }),
+      chord('kc-star', '*', XK.Shift_L, 0x2d, 'Shift + the host - key'),
+      chord('kc-equal', '=', XK.Shift_L, 0x3d, 'Shift + the host = key'),
+      chord('kc-quote', '"', XK.Shift_L, 0x32, 'Shift + 2'),
+      chord('kc-at', '@', XK.Shift_L, 0x30, 'Shift + 0'),
+      chord('kc-apos', '\'', XK.Shift_L, 0x37, 'Shift + 7'),
+      chord('kc-amp', '&', XK.Shift_L, 0x36, 'Shift + 6'),
+    ], fkeyRow(1, 6)],
+  },
 };
 
 // Every production streamhost tile, EXPLICITLY (test-enforced vs the registry).
@@ -433,6 +489,9 @@ export const OS_FAMILY: Record<string, Family> = {
   // satisfy the coverage test; the on-screen keyboard sends nothing the guest
   // will act on.
   gt40: 'generic',
+  // The only German keyboard in the lineup, and the only machine whose plain
+  // letter row is upper case. Both need their own profile.
+  kc854: 'kc854',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',

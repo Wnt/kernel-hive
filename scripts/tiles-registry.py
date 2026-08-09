@@ -346,6 +346,28 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
             )
 
 
+def render_key_map(charmap: dict[str, str]) -> str:
+    """Render `keyboard.charMap` into the SH_KEY_MAP wire format.
+
+    The format is `guest:host` pairs joined by commas, so a guest or host
+    character that IS a colon or a comma cannot be written literally: ':' as a
+    guest char would render as `::-`, which labctl's `split(':', 1)` reads as an
+    empty guest and DROPS without complaint. The KC 85/4 is the first tile to
+    need it — a German keyboard puts ':' on the host '-' key — and the failure
+    would have been one silently missing character, not an error.
+
+    Only '%', ',' and ':' are escaped, so every map written before this existed
+    (mpf2's `=:O,-:I,+:P,(:*,):(,*:)`) renders byte-identically. The matching
+    decoder is `keymap_unescape` in scripts/labctl.
+    """
+    escapes = {"%": "%25", ",": "%2C", ":": "%3A"}
+
+    def tok(s: str) -> str:
+        return "".join(escapes.get(c, c) for c in s)
+
+    return ",".join(f"{tok(g)}:{tok(h)}" for g, h in charmap.items())
+
+
 def validate_keyboard_env(rows: list[dict[str, Any]], errors: list[str]) -> None:
     """`keyboard.charMap` is the single source; SH_KEY_MAP is how labctl consumes it.
 
@@ -368,7 +390,7 @@ def validate_keyboard_env(rows: list[dict[str, Any]], errors: list[str]) -> None
         if env and not charmap:
             fail(errors, row, "SH_KEY_MAP set in runtime.tileEnv with no keyboard.charMap to derive it from")
             continue
-        expected = ",".join(f"{g}:{h}" for g, h in charmap.items())
+        expected = render_key_map(charmap)
         if env != expected:
             fail(errors, row, f"SH_KEY_MAP does not match keyboard.charMap (expected {expected!r}, found {env!r})")
 

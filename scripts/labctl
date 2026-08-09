@@ -890,12 +890,31 @@ def key_pacing(c, name):
     return ms("SH_KEY_MIN_HOLD_MS"), ms("SH_KEY_MIN_GAP_MS")
 
 
+_KEYMAP_ESCAPES = {"%25": "%", "%2C": ",", "%3A": ":"}
+
+
+def keymap_unescape(tok):
+    """Undo the three escapes the wire format needs.
+
+    SH_KEY_MAP is `guest:host` pairs joined by commas, so a guest or host
+    character that IS a colon or a comma cannot be written literally: ':' as a
+    guest char renders as `::-`, whose split(':', 1) yields an empty guest and
+    is silently DROPPED. That bites any German-layout machine — the KC 85/4
+    puts ':' on the host '-' key — and it fails as one missing character rather
+    than as an error. scripts/tiles-registry.py percent-encodes exactly '%',
+    ',' and ':' when it renders the value; nothing else is touched, so every
+    map written before this existed parses unchanged.
+    """
+    return re.sub(r"%(25|2C|3A)", lambda m: _KEYMAP_ESCAPES["%" + m.group(1)], tok)
+
+
 def key_remap(c, name):
     """Per-tile guest-char -> host-char remap, for keyboards whose layout does
     not match a PC one (the MPF-II puts '=' on Shift+O and '-' on Shift+I, and
-    its shifted number row is offset by one key). Declared as tile.env
+    its shifted number row is offset by one key; the KC 85/4 is a German
+    keyboard whose plain letter row is UPPER case). Declared as tile.env
     SH_KEY_MAP="=:O,-:I,+:P" or as a 'key_map' object in the tiles.json entry;
-    absent on every tile today, so nothing is remapped unless it is declared."""
+    absent on most tiles, so nothing is remapped unless it is declared."""
     tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
     raw = read_env(os.path.join(tile_dir, "tile.env")).get("SH_KEY_MAP")
     mapping = {}
@@ -905,7 +924,7 @@ def key_remap(c, name):
         if ":" in pair:
             guest, host = pair.split(":", 1)
             if guest and host:
-                mapping[guest] = host
+                mapping[keymap_unescape(guest)] = keymap_unescape(host)
     return mapping
 
 

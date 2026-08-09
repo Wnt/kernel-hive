@@ -473,6 +473,15 @@ export const ASSEMBLIES_BY_TILE = {
   gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
   // Three DEC operating systems behind one chooser, on the biggest rack.
   decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
+  // KC 85/4: NOT a home-micro wedge. The Mühlhausen machine is a flat, dark
+  // slab with its module slots on the right-hand side, a DETACHED keyboard on a
+  // cable, and a monitor standing on top of the case — a pizza-box station, and
+  // the only 8-bit one in the lineup, which is also what keeps its silhouette
+  // distinct from the Commodore wedges. No mouse: the KC's pointing devices
+  // were a light pen and a joystick module, neither of which this tile streams.
+  kc854: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'homeCrtA', keyboard: 'keyboardD',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {
