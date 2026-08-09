@@ -101,6 +101,26 @@ Defn/Expand End, Stop PgDn, Help Up, Margins Left, Font Backslash,
 Keyboard Down`. So the SPA macro row for the Star emits ordinary qcodes; no
 `Ctrl+letter` layer is needed (that is Dwarf's idiom, Agent C's tile).
 
+**Keystrokes need DWELL, exactly like the clicks — and this is the single
+biggest input finding for both Star and Daybreak.** Under Xvfb, `xdotool key`
+(a ~12 ms XTEST press) landed **nothing** in the Set Time teletype: four
+presses across four candidate focus windows produced one advance, which reads
+as flaky focus but is not. `xdotool keydown Return; sleep 0.3–0.45;
+xdotool keyup Return` on the **top-level `Darkstar` window** lands every time.
+Focus target is the WinForms top-level (`xdotool search --name '^Darkstar$'`),
+**not** the SDL child window — focusing the child (the 1088x860 one) lands
+nothing. Turn X autorepeat off (`xset -r`) first or a 450 ms hold enters
+several CRs. Practical consequence for the SPA: this is the §5.1
+`SH_KEY_MIN_HOLD_MS` case with an unusually large floor — budget **≥250 ms
+hold**, not two frames.
+
+**Set Time Utility, the whole dialogue, with `TODDateTime = 1997/12/01`:** five
+prompts, all answerable with a bare CR — Time-zone offset (`-8`), Minute offset
+(`0`), First day of DST (`98`), Last day of DST (`305`), then
+`Current time: 1-Dec-97 1:06:53 / Do you wish to change the time? (Y/N): N`
+→ `Starting ViewPoint......`. So the "interactive first boot" is **five
+carriage returns**, not a data-entry session.
+
 **Speed, under a loaded box (not the gate run):** 22 f/s (28 %) during boot,
 settling to **43–53 f/s (55–68 %)** at MP 8000, with the process taking ~178 %
 CPU (emulation + SDL blit). Box was ~72 % busy on all 16 logical CPUs. The
