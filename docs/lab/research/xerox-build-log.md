@@ -121,6 +121,17 @@ prompts, all answerable with a bare CR — Time-zone offset (`-8`), Minute offse
 → `Starting ViewPoint......`. So the "interactive first boot" is **five
 carriage returns**, not a data-entry session.
 
+**IN FLIGHT — the ViewPoint volume boot is where the Star actually stalls, and
+it is MP 7600, not 7800.** After `Starting ViewPoint......` the machine
+restarts into the ViewPoint volume and has now sat at **MP 7600 for ~30 min**
+with the display a uniform blank page, the emulator healthy (32–53 f/s,
+~175 % CPU, 233 MB RSS) and **zero disk I/O** in the interval. The study's
+MP 7800 stall was the TOD-1990 time lock and is gone; this is a *different*
+wall, and it is consistent with upstream issue #22 (ViewPoint boot hangs on
+Linux at sub-100 % speed). Note the study's `e5.png` "live ViewPoint desktop"
+frame is **Draco/6085, not Darkstar** — nobody has yet reached the ViewPoint
+desktop on the Star on this box.
+
 **Speed, under a loaded box (not the gate run):** 22 f/s (28 %) during boot,
 settling to **43–53 f/s (55–68 %)** at MP 8000, with the process taking ~178 %
 CPU (emulation + SDL blit). Box was ~72 % busy on all 16 logical CPUs. The
