@@ -90,6 +90,9 @@
     "touch": false,
     "pointer": {
       "transport": "abs",
+      "method": "qemu-usb-tablet",
+      "absolute": true,
+      "present": true,
       "device": "usb-tablet",
       "scale": 1.0,
       "offset": [

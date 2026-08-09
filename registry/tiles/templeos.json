@@ -89,6 +89,9 @@
     "touch": false,
     "pointer": {
       "transport": "warpd",
+      "method": "warpd-agent",
+      "absolute": true,
+      "present": true,
       "device": "ps2",
       "scale": 1.0,
       "offset": [

@@ -346,6 +346,148 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
             )
 
 
+# stream.pointer.method -> (the SH_INPUT_BACKEND values that can deliver it,
+# device-ledger tokens the tile MUST carry, tokens it must NOT carry). The
+# backend column mirrors InputBackend in streamhost/streamhost/src/config/
+# backends.rs; the ledger columns are what the launcher/emitArgs must show.
+POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = {
+    "none": ({"disabled"}, (), ("usb-tablet", "vmmouse", "gallery-hid-pci")),
+    "qemu-usb-tablet": ({"dbus-abs"}, ("usb-tablet",), ()),
+    "qemu-vmmouse": ({"dbus-abs"}, ("vmmouse", "vmport=on"), ("usb-tablet",)),
+    "qemu-ps2-relative": ({"dbus-rel"}, (), ("usb-tablet",)),
+    "gallery-hid": ({"gallery-hid"}, ("gallery-hid-pci",), ()),
+    "warpd-agent": ({"warpd"}, (), ("usb-tablet",)),
+    "mame-ioport": ({"mamecmd", "mamesock"}, (), ()),
+    "x11-xtest": ({"x11test"}, (), ()),
+    "simh-light-pen": ({"dbus-abs"}, ("usb-tablet",), ()),
+}
+# `pointer_mode` in the labctl matrix is the daemon's own backend -> abs/rel/
+# warpd/none projection (InputBackend::pointer_mode()); labctl's `abs x y` and
+# the SPA's transport choice both key on it, so it must agree with `absolute`.
+POINTER_MODE_BY_BACKEND = {
+    "disabled": "none",
+    "dbus-rel": "rel",
+    "warpd": "warpd",
+    "dbus-abs": "abs",
+    "gallery-hid": "abs",
+    "x11test": "abs",
+    "mamecmd": "abs",
+    "mamesock": "abs",
+}
+LEGACY_POINTER_BACKEND = {"abs": "dbus-abs", "rel": "dbus-rel", "warpd": "warpd", "none": "disabled"}
+# serenityos gets QEMU's absolute VMware aux mouse from the q35 default
+# `vmport=auto`, so its device ledger names neither `vmmouse` nor `vmport=on`
+# (verified live: dbus SetAbsPosition lands 1:1, a relative delta is ignored).
+POINTER_LEDGER_EXCEPTION = "pointer-vmmouse-implicit"
+
+
+def device_ledger(row: dict[str, Any]) -> str:
+    """Every place this tile's emulated input devices are written down.
+
+    The in-repo launcher is the authoritative device ledger for a verbatim tile,
+    but only its COMMAND lines are: three launchers carry a `do NOT add
+    usb-tablet` comment, which a naive substring search reads as a tablet.
+    """
+    runtime = row.get("runtime", {})
+    qemu = runtime.get("qemu", {})
+    parts = list(qemu.get("deviceSetSummary", [])) + [str(a) for a in qemu.get("emitArgs", [])]
+    launcher = qemu.get("launcher") or runtime.get("x11", {}).get("launcher")
+    if launcher and (REPO / launcher).exists():
+        text = (REPO / launcher).read_text()
+        parts += [line for line in text.splitlines() if not line.lstrip().startswith("#")]
+    return "\n".join(parts)
+
+
+def validate_pointer_method(rows: list[dict[str, Any]], errors: list[str]) -> None:
+    """Pin the declared pointer METHOD to the runtime that actually delivers it.
+
+    `stream.pointer.method` / `absolute` / `present` are the human-facing answer
+    to "can a visitor point at this exhibit, and what makes that work". Nothing
+    at runtime reads them, so left alone they would rot the first time a tile
+    changed backend -- and a stale `absolute: true` is exactly the claim nobody
+    re-checks. So derive them here from the four places that DO decide, and fail
+    on any disagreement: the tile's SH_INPUT_BACKEND (or the legacy SH_POINTER it
+    is derived from), its emulated device ledger, and labctl's pointer_mode.
+    """
+    for row in rows:
+        ptr = row.get("stream", {}).get("pointer")
+        if not isinstance(ptr, dict):
+            fail(errors, row, "stream.pointer missing: every entry must declare its pointer, posters included")
+            continue
+        method = ptr.get("method")
+        if method not in POINTER_METHODS:
+            fail(errors, row, f"invalid stream.pointer.method {method!r}")
+            continue
+        backends, needs, forbids = POINTER_METHODS[method]
+        if row.get("stream", {}).get("transport") != "streamhost":
+            # No daemon, no devices: a poster or an unpromoted candidate.
+            if method != "none" or ptr.get("absolute") or ptr.get("present"):
+                fail(
+                    errors,
+                    row,
+                    "non-streamhost entry must declare pointer method none with "
+                    f"absolute false and present false, not {method!r}",
+                )
+            continue
+        env = row.get("runtime", {}).get("tileEnv", {})
+        backend = ptr.get("backend") or env.get("SH_INPUT_BACKEND") or LEGACY_POINTER_BACKEND.get(ptr.get("transport"))
+        if backend not in POINTER_MODE_BY_BACKEND:
+            fail(errors, row, f"cannot resolve an input backend for stream.pointer {ptr.get('transport')!r}")
+            continue
+        if backend not in backends:
+            fail(
+                errors,
+                row,
+                f"stream.pointer.method {method!r} is delivered by backend "
+                f"{'/'.join(sorted(backends))}, but this tile runs {backend!r} "
+                f"(stream.pointer.backend / runtime.tileEnv SH_INPUT_BACKEND / "
+                f"legacy SH_POINTER={ptr.get('transport')!r}). Correct the method or "
+                f"the backend -- the LIVE tile.env on the box is the truth about "
+                f"which one is wrong.",
+            )
+        present = backend != "disabled"
+        absolute = present and backend != "dbus-rel"
+        if ptr.get("present") is not present or ptr.get("absolute") is not absolute:
+            fail(
+                errors,
+                row,
+                f"stream.pointer absolute={ptr.get('absolute')!r}/present={ptr.get('present')!r} "
+                f"contradicts backend {backend!r}, which InputBackend::pointer_mode() "
+                f"(streamhost/streamhost/src/config/backends.rs) makes "
+                f"absolute={absolute}/present={present}",
+            )
+        pointer_mode = row.get("operator", {}).get("labctl", {}).get("pointer_mode")
+        expected_mode = POINTER_MODE_BY_BACKEND[backend]
+        if pointer_mode is not None and pointer_mode != expected_mode:
+            fail(
+                errors,
+                row,
+                f"operator.labctl.pointer_mode {pointer_mode!r} contradicts backend "
+                f"{backend!r} (expected {expected_mode!r}); labctl and the SPA both "
+                f"choose their pointer transport from it",
+            )
+        ledger = device_ledger(row)
+        exempt = POINTER_LEDGER_EXCEPTION in row.get("migrationExceptions", [])
+        if needs and not exempt and not any(token in ledger for token in needs):
+            fail(
+                errors,
+                row,
+                f"stream.pointer.method {method!r} needs one of "
+                f"{'/'.join(needs)} in the device ledger (runtime.qemu.launcher, "
+                f"deviceSetSummary, emitArgs), which names none of them",
+            )
+        hits = [token for token in forbids if token in ledger]
+        if hits:
+            fail(
+                errors,
+                row,
+                f"stream.pointer.method {method!r} is contradicted by {'/'.join(hits)} "
+                f"in the device ledger (runtime.qemu.launcher, deviceSetSummary, "
+                f"emitArgs): an absolute device is wired up that this method says "
+                f"is not the one in use",
+            )
+
+
 def keymap_escape(ch: str) -> str:
     """Percent-encode the three characters SH_KEY_MAP's wire format cannot carry.
 
@@ -448,6 +590,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     validate_schema_shape(rows, errors)
     validate_exhibit_assets(rows, errors)
     validate_keyboard_env(rows, errors)
+    validate_pointer_method(rows, errors)
     validate_demo_pacing(rows, errors)
     validate_fleet_encoder(globals_doc, errors)
     ids: dict[str, str] = {}

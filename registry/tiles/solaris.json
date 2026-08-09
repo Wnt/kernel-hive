@@ -86,6 +86,9 @@
     "pointer": {
       "transport": "abs",
       "backend": "gallery-hid",
+      "method": "gallery-hid",
+      "absolute": true,
+      "present": true,
       "device": "gallery-hid-pci",
       "scale": 1.0,
       "offset": [

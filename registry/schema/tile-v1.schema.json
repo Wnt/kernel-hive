@@ -65,10 +65,33 @@
         "touch": { "type": "boolean" },
         "pointer": {
           "type": "object",
-          "required": ["transport", "device", "scale", "offset"],
+          "description": "How a visitor's pointer reaches this guest. `transport`/`backend` name the DAEMON's delivery route (streamhost SH_POINTER / SH_INPUT_BACKEND); `method`/`absolute`/`present` name what the GUEST actually gets, and are cross-checked against the route, the device ledger and operator.labctl.pointer_mode by validate_pointer_method() in scripts/tiles-registry.py.",
+          "required": ["transport", "method", "absolute", "present", "device", "scale", "offset"],
           "properties": {
             "transport": { "enum": ["abs", "rel", "warpd", "none"] },
             "backend": { "enum": ["disabled", "dbus-abs", "dbus-rel", "warpd", "gallery-hid", "x11test", "mamecmd", "mamesock"] },
+            "method": {
+              "description": "The mechanism that puts the pointer where the visitor pointed. Finer wire detail is carried by existing siblings, not by extra enum values: `backend` separates mamecmd from mamesock, `agentAddress` separates a warpd agent on a hostfwd TCP port from one on a serial chardev. See registry/README.md for one sentence and an example tile per value.",
+              "enum": [
+                "none",
+                "qemu-usb-tablet",
+                "qemu-vmmouse",
+                "qemu-ps2-relative",
+                "gallery-hid",
+                "warpd-agent",
+                "mame-ioport",
+                "x11-xtest",
+                "simh-light-pen"
+              ]
+            },
+            "absolute": {
+              "type": "boolean",
+              "description": "The guest receives the visitor's position, not motion deltas. Mirrors InputBackend::pointer_mode() in streamhost/streamhost/src/config/backends.rs: true for every backend but dbus-rel and disabled."
+            },
+            "present": {
+              "type": "boolean",
+              "description": "Any pointer input at all reaches the guest. false is the keyboard-only exhibit (SH_INPUT_BACKEND=disabled) and the showcase poster."
+            },
             "device": { "type": "string" },
             "scale": { "type": "number" },
             "offset": { "type": "array", "items": { "type": "integer" } }
