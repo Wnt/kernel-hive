@@ -65,7 +65,46 @@ _(append findings here)_
 
 ## Agent B — Star / Pilot
 
-_(append findings here)_
+**Build rig (reproducible):** overlay chroot `xstarb` at
+`/data/vms/soltest/XEROX-star-b/` — `bookworm-chroot` as read-only lower,
+`apt install mono-complete mono-xbuild nuget libgdiplus xvfb imagemagick xdotool`.
+Debian *bookworm* ships **mono 6.8.0.105**, not 6.12; it builds and runs
+Darkstar fine. `nuget restore D.sln` → `xbuild /p:Configuration=Release D.sln`
+→ **0 errors, 18 warnings, 3.8 s** at HEAD `7ab55ff3` (2026-04-08).
+
+**Three Linux fixes, not two.** The study's two are right (delete the bundled
+Windows `SDL2.dll`; add `SDL2-CS.dll.config` with
+`<dllmap dll="SDL2.dll" target="libSDL2-2.0.so.0"/>`). The third is a
+*launcher* fix: **Darkstar resolves its PROM/microcode paths relative to the
+CWD** (`Path.Combine("IOP","PROM",name)`), so it must be started with
+`cd <bin/Release>` first — from any other CWD it dies with
+`FileNotFoundException: /IOP/PROM/537P03029.bin`. And **`-rompath` is not the
+tree root** — it replaces the whole `IOP/PROM` prefix, so `-rompath .` makes it
+look for `./537P03029.bin`. Simplest correct invocation: `cd bin/Release &&
+mono ./Darkstar.exe -config <cfg>`, no `-rompath`.
+
+**`AltBootMode = Rigid` is worth far more than "can save time".** With
+`TODSetMode = SpecificDateAndTime` / `TODDateTime = 1997/12/01 09:00:00` and
+`Start = true`, the machine went **0940 → MP 8000 and the Set Time Utility 2.0
+banner in ~3 minutes** on a *72 %-loaded* box — not the 25–35 min the study
+projected. The study's long first boot was the **TOD-1990 time lock plus
+`DiagnosticRigid`**, not an inherent cost. (Framebuffer-verified.)
+
+**MP 8000 + "System is running" is reached before the Set Time dialogue**, so
+MP 8000 really is the run state and not a completion signal for boot.
+
+**Keyboard: NEXT is `Home`, and the whole Level-V row is plain PC keys.**
+Darkstar's own table (README §3.2) — `Again F1, Delete F2, Find F3, Copy F4,
+Same F5, Move F6, Open F7/LCtrl, Props F8/RCtrl, Center F9, Bold F10,
+Italics F11, Underline F12, Defaults NumLock, **Skip/Next Home**, Undo PgUp,
+Defn/Expand End, Stop PgDn, Help Up, Margins Left, Font Backslash,
+Keyboard Down`. So the SPA macro row for the Star emits ordinary qcodes; no
+`Ctrl+letter` layer is needed (that is Dwarf's idiom, Agent C's tile).
+
+**Speed, under a loaded box (not the gate run):** 22 f/s (28 %) during boot,
+settling to **43–53 f/s (55–68 %)** at MP 8000, with the process taking ~178 %
+CPU (emulation + SDL blit). Box was ~72 % busy on all 16 logical CPUs. The
+quiesced pinned gate run is reported separately.
 
 ## Agent C — Daybreak / ViewPoint
 
