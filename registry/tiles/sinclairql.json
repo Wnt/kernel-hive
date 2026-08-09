@@ -1,54 +1,210 @@
 {
   "schemaVersion": 1,
   "id": "sinclairql",
-  "era_year": 2026,
-  "tileDir": "sinclairql",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "era_year": 1984,
+  "enabled": true,
   "build": {
     "rows": [
       {
-        "order": 50,
+        "order": 44,
         "prelude": "",
-        "line": "  \"sinclairql  |sinclairql.sh  |Sinclairql    |installed|~15-30m |partial |TODO\"\n",
+        "line": "  \"sinclairql   |sinclairql.sh  |bridge/sinclairql|retro    |~8-12m  |full   |tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)\"\n",
         "value": {
           "key": "sinclairql",
           "script": "sinclairql.sh",
-          "outputDir": "Sinclairql",
-          "class": "installed",
-          "estimated": "~15-30m",
-          "automation": "partial",
-          "produces": "TODO",
+          "outputDir": "bridge/sinclairql",
+          "class": "retro",
+          "estimated": "~8-12m",
+          "automation": "full",
+          "produces": "tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)",
           "flags": []
         }
       }
     ]
   },
-  "operator": {},
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/sinclairql",
+      "qmp": "/data/vms/streamhost/tiles/sinclairql/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5836,
+      "exec_port": 5836,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54133,
+      "notes": "exec: labctl exec sinclairql \"<cmd>\" (ssh root@:5836, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated QL — drive the machine with labctl type/key and read it with labctl shot."
+    }
+  },
   "render": {},
+  "tileDir": "sinclairql",
+  "lifecycle": "production",
   "stream": {
-    "transport": "showcase",
+    "transport": "streamhost",
     "udpPort": 54133,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
     "slot": 133
   },
   "guestDoc": "docs/guests/sinclairql.md",
   "credentialsRef": "guest/sinclairql",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "sinclairql",
+      "SH_QMP": "/data/vms/streamhost/tiles/sinclairql/qmp.sock",
+      "SH_PORT": "54133",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/sinclairql/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/sinclairql/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "120",
+      "SH_KEY_MIN_GAP_MS": "120",
+      "SH_FIXTURE_DESC": "Sinclair QL (1984) in MAME's `ql` driver, resting where the machine itself stops: the 80-column MONITOR-mode SuperBASIC screen it draws once F1 is answered — window #2 a white page on the left, window #1 red on the right, the black command window along the bottom with nothing typed in it. 512x256 drawn at an exact 2x3 integer scale on the kiosk's 1024x768 X root, so every QL pixel is one identical block and the picture keeps the machine's 4:3 shape. The `F1...monitor / F2...TV` chooser that precedes it, and MAME's imperfect-dump warning before that (the QL's hal16l8.ic38 PLD has never been dumped anywhere), are both answered during the bake and never seen by a visitor; the chooser is the exhibit's poster image instead. Keyboard-only exhibit; no pointer device; QL beeper -> ALSA -> AC97."
+    },
+    "vmidLabel": 236,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "sinclairql",
+        "--vmid",
+        "236",
+        "--udp",
+        "54133",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/sinclairql/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/sinclairql/tile.env.fixture"
+      ],
+      "deviceSetId": "sinclairql-current",
+      "launcher": "streamhost/tiles/sinclairql/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/sinclairql/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-sinclairql",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5836-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-sinclairql",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5836-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+      }
+    },
+    "bringUpOrder": 49
+  },
   "spa": {
     "archetypeId": "beige-tower-crt",
-    "transport": "showcase",
-    "accentColor": "#64748b",
-    "eraLabel": "TBD · sinclairql"
+    "transport": "streamhost",
+    "accentColor": "#2EE65A",
+    "eraLabel": "1984 · Sinclair QL (QDOS · SuperBASIC)"
   },
   "museum": {
     "id": "sinclairql",
-    "displayName": "sinclairql",
-    "year": 2026,
-    "lineage": "TODO",
-    "arch": "TODO",
-    "accent": "#64748b"
+    "displayName": "Sinclair QL",
+    "year": 1984,
+    "lineage": "Sinclair Research (post-ZX Spectrum, Motorola 68008)",
+    "arch": "Motorola 68008, 7.5 MHz, 128 KB RAM, two Microdrive tape loops",
+    "ramMB": 0,
+    "ramKB": 128,
+    "era": "1980s",
+    "accent": "#2EE65A",
+    "eraSoftware": [
+      "QDOS with SuperBASIC — multitasking in 48 KB of ROM",
+      "Psion's Quill, Abacus, Archive and Easel, bundled on Microdrive cartridges",
+      "Microdrives: 100 KB endless tape loops, the machine's only built-in storage",
+      "a small, stubborn developer scene that outlived Sinclair itself"
+    ],
+    "periodBrowser": "none — pre-web 8/16-bit era",
+    "iconicApps": [
+      "SuperBASIC",
+      "Quill (word processor)",
+      "Abacus (spreadsheet)"
+    ],
+    "blurb": "Sinclair's serious machine, launched before it was finished: a 68008 workstation-in-a-wedge announced twelve days before the Macintosh, sold months before it could be delivered, and shipped with firmware that did not fit — the earliest buyers got the missing part on a ROM cartridge hanging out of the back.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.251's `ql` driver; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The romset is a preservation-source set reduced by SHA1 to the four entries the default JS v1.10 BIOS needs, and re-verified at build time against the shipped binary's own -listxml; the QL's hal16l8.ic38 PLD has never been dumped anywhere, so MAME reports it missing on every boot and puts up an imperfect-dump warning, which the builder answers before baking. The golden is the machine's own 80-column monitor-mode screen, one keystroke past the `F1...monitor / F2...TV` chooser it insists on at power-on; the chooser is kept as the poster image. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/sinclairql.md."
   },
-  "notes": [
-    "new-os Tier 2 scaffold; reserved slot 133/UDP 54133",
-    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-  ]
+  "reset": {
+    "tileDir": "sinclairql",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Sinclair QL 80-column MONITOR-mode SuperBASIC screen (white window #2, red window #1, empty black command window) in MAME's `ql` driver at an exact 2x3 scale on a 1024x768 X root; golden INTERNAL snapshot restores it. No post-restore keys. The two keystrokes that reach it — a letter to clear MAME's imperfect-dump warning and F1 to answer the QL's monitor/TV chooser — happen once, during the bake, and the fixture is asserted to carry no typed text (a clean command window has exactly zero green pixels). Keyboard proved after the bake against the restored fixture: PRINT 7 at the tile's production pacing echoed in the command window, then loadvm restored the empty one."
+  }
 }
