@@ -151,7 +151,7 @@ WLOG="$D/bootwatch.log"
 # ordinary-looking frame forever. Seen twice on the exhibit as
 # `PANIC: bad istack sp:8835afa8` — root-caused to the SGI MC truncating DMA
 # page-table addresses above 128 MB and fixed by
-# scripts/build-guests/mame-mc-dma-ptbase-mask.patch. This watchdog is the
+# scripts/build-guests/patches/mame-mc-dma-ptbase-mask.patch. This watchdog is the
 # safety net BEHIND that fix, not the fix: it exists so no future guest-side
 # death needs a human to notice it.
 #

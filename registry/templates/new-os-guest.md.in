@@ -11,7 +11,7 @@ Status: **scaffold only** (Tier @@TIER@@, disabled candidate; not in the lineup)
 
 ## Build and device set
 
-- Builder: `scripts/build-guests/@@OS_ID@@.sh`
+- Builder: `scripts/build-guests/tiles/@@OS_ID@@.sh`
 - Canonical output: TODO
 - QEMU binary, machine, accelerator, CPU, RAM, display, storage, NIC, audio, and input: TODO
 - Ready framebuffer and bounded automation path: TODO

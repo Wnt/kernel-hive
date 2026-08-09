@@ -141,7 +141,7 @@ The compile share in the active regime has never been measured.
 
 | angle | verdict |
 | --- | --- |
-| **Guest display-path / Newport dirty-rectangle tracking** | **CLOSED. Do not reopen.** The per-row/hybrid cache was built, proven correct over 51,000 consecutive frames with 0 stale, and measured **worthless end-to-end**: active +0.4%, idle −1.5% (n=6 interleaved rounds, pairs swapped). Branch `irix-newport-per-row`, patch `scripts/build-guests/mame-newport-per-row-dirty-cache.patch`. Not promoted. |
+| **Guest display-path / Newport dirty-rectangle tracking** | **CLOSED. Do not reopen.** The per-row/hybrid cache was built, proven correct over 51,000 consecutive frames with 0 stale, and measured **worthless end-to-end**: active +0.4%, idle −1.5% (n=6 interleaved rounds, pairs swapped). Branch `irix-newport-per-row`, patch `scripts/build-guests/patches/mame-newport-per-row-dirty-cache.patch`. Not promoted. |
 | **`-frameskip` beyond fs6** | Ceiling **0**. fs6 is shipped and its +18% is already inside the baseline; the MAME-side present path does not exist under `-video none` with `DISPLAY` unset. (Also: `newport.cpp:4505`'s 60 Hz is only the power-on default — VC2 re-derives ~72 Hz at `:1743-1744`, so any 60 Hz frame arithmetic is 20% off.) |
 | **Micro-optimising Newport's inner loop** | Proven dead: cursor-hoist and RAMDAC-identity fast paths cut instructions 10.6% for **0.0% time**. Newport is MEMORY-bound — ~15.7 MB/frame at ~72 Hz, ~1.1 GB/s. |
 | **Terminal-window size as a lever** | Cost scales as **area^0.18, not linearly** — the scroll self-throttles, so shrinking the window makes the guest immediately draw 18.5% more lines. Reaching 100% this way needs a ~10-cell terminal. Scrollback (`-sl 0`) is a measured null (+2.4%, CI spans zero). |
@@ -177,7 +177,7 @@ guest-CPU work, so even a magic 3× CPU gives 1.44× overall.
 Both are dead ends for the CRIU work, on a criu rule about tun/tap fds, and both
 are *slower* than kernel veth + NAT (pasta by 50%). Full mechanism and the
 measured throughput table:
-[`scripts/build-guests/irix/irix-criu/README.md`](../../scripts/build-guests/irix-criu/README.md).
+[`scripts/build-guests/irix/irix-criu/README.md`](../../scripts/build-guests/irix/irix-criu/README.md).
 
 ---
 

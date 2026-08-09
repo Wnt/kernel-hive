@@ -3,7 +3,7 @@
 _Single ordered runbook. Each phase names the exact script/command and marks what is
 **automated** vs **interactive**. The design intent is: **rebuild every live streamhost
 guest from its upstream or explicitly supplied source media** — each has a
-self-contained `scripts/build-guests/<key>.sh` that obtains its source, drives the
+self-contained `scripts/build-guests/tiles/<key>.sh` that obtains its source, drives the
 install automation, injects the era software, and framebuffer-verifies the GUI
 (Phase 4). No image backups required. The old `zfs send` image-restore is retained
 below only as a **historical migration shortcut**; its source box no longer exists._
@@ -41,7 +41,7 @@ Legend:  🟢 automated (one command)   🟡 interactive / needs a human   ⚙�
 | 9 | **Perf rollout — DONE** (TCG→KVM + audio-buffer knob) | baked into the Phase-4 builders + Phase-5 tile launchers; results doc retired (see git history) | 🟢 (already in Phases 4–5) |
 
 > **Phase 9 (perf) is not a separate run** — its outputs are already carried by the Phase-4
-> `build-guests/*.sh` (per-OS `-enable-kvm`/`ACCEL=kvm` + the Win9x recipe) and the Phase-5
+> `build-guests/tiles/*.sh` (per-OS `-enable-kvm`/`ACCEL=kvm` + the Win9x recipe) and the Phase-5
 > per-tile launchers (`qemu-streamhost.sh`, emitted from `streamhost/tiles-manifest.sh`, which
 > carries each tile's `-enable-kvm -cpu host` + audio wiring). A fresh Phase 4→5 run reproduces
 > the tuned (KVM) gallery directly. In the neko era the same tuning lived in the
@@ -179,7 +179,7 @@ ad hoc. Tile wiring itself is Phase 5.
 ## Phase 4 — Build every live streamhost guest (THE PRIMARY PATH) 🟢
 
 This is the point of the whole kit: **reproducible install scripts, not image backups.**
-Each guest has a self-contained `scripts/build-guests/<key>.sh` that, on a fresh host with
+Each guest has a self-contained `scripts/build-guests/tiles/<key>.sh` that, on a fresh host with
 the Phase-2 infra, does the whole thing END TO END once any gated source is supplied:
 obtain the upstream ISO/image → create the disk → drive the install automation (answer
 file / autounattend / QEMU-monitor sendkeys / VNC taps / offline hive+FAT edits) → inject the era software →

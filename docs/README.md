@@ -41,7 +41,7 @@ and exists only on private working copies — keep it that way.
 
 Each file is the consolidated build/tile/automation record for one guest
 (tile notes + install notes + recipes; merge points marked with HTML comments).
-Reproducible builders live in `scripts/build-guests/<os>.sh`.
+Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 
 | Doc | Guest |
 |---|---|

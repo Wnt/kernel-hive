@@ -46,7 +46,7 @@
 # ---- THE MAME BINARY --------------------------------------------------------
 #   Built from PINNED upstream source (MAME 0.289, commit f34f0250 — the same
 #   commit mpf2 pins) as SUBTARGET=zx81 in the Bookworm chroot, by
-#   scripts/build-guests/build-mame-zx81.sh. The host's packaged MAME is 0.276
+#   scripts/build-guests/emulators/build-mame-zx81.sh. The host's packaged MAME is 0.276
 #   on Debian 13 and cannot be loaded by the Debian 12 bridge; Debian 12's own
 #   package is 0.251. Building keeps ONE MAME provenance across the collection.
 #   Unlike mpf2 there is NO patch: `-listxml zx81` reports status="good", so

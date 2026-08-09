@@ -9,7 +9,7 @@ Scope: the IRIX/MAME work drove all of it, but nothing here is IRIX-specific
 except the framebuffer signature table. Any A/B on a shared box owes these rules.
 
 The rig that implements them is `scripts/build-guests/irix/irix-bench/` (see its
-[README](../../scripts/build-guests/irix-bench/README.md)); the reference
+[README](../../scripts/build-guests/irix/irix-bench/README.md)); the reference
 numbers are in [irix-baseline-2026-08-03.md](irix-baseline-2026-08-03.md); the
 things already measured and closed are in
 [irix-closed-register.md](irix-closed-register.md).

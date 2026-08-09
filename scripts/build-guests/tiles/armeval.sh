@@ -192,7 +192,7 @@ read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Acorn ARM Evaluation System (1986) kiosk launcher (bridge tile).
 # MOS 1.20 + BBC BASIC II + Acorn DNFS 1.20 host, ARM1 second processor on the
-# Tube with Executive v1.00 (14th August 1986). See build-guests/armeval.sh.
+# Tube with Executive v1.00 (14th August 1986). See build-guests/tiles/armeval.sh.
 sleep 2
 OUT=$(xrandr 2>/dev/null | awk '/ connected/{print $1; exit}')
 [ -n "$OUT" ] && xrandr --output "$OUT" --mode 800x600 2>/dev/null || true

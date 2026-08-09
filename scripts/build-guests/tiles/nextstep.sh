@@ -172,7 +172,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # NeXTcube (68040) / NeXTSTEP 3.3 kiosk launcher — bridge tile 'nextstep'.
-# Every flag's rationale is in scripts/build-guests/nextstep.sh.
+# Every flag's rationale is in scripts/build-guests/tiles/nextstep.sh.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_VIDEODRIVER=x11
 # SDL_FRAMEBUFFER_ACCELERATION=0 is the expensive one to have found. The

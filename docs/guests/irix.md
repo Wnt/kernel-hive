@@ -8,9 +8,9 @@ already measured and closed, with mechanism and ceiling — plus the one that wa
 closed in error and reopened), and
 [`lab/irix-baseline-2026-08-03.md`](../lab/irix-baseline-2026-08-03.md) (the
 numbers everything is judged against). The rig is
-[`scripts/build-guests/irix/irix-bench/`](../../scripts/build-guests/irix-bench/README.md);
+[`scripts/build-guests/irix/irix-bench/`](../../scripts/build-guests/irix/irix-bench/README.md);
 the unshipped ~1.2 s CRIU reset procedure is
-[`scripts/build-guests/irix/irix-criu/`](../../scripts/build-guests/irix-criu/README.md).
+[`scripts/build-guests/irix/irix-criu/`](../../scripts/build-guests/irix/irix-criu/README.md).
 
 The gallery's first **non-QEMU** streamhost tile. SGI's IRIX 6.5 runs inside
 **MAME** (the `indy_4610` SGI Indy driver) on an **Xvfb** framebuffer that
@@ -759,7 +759,7 @@ promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
   `8f21e978`) built with the tile's whole adopted patch stack.
 
   **The ordered stack lives in exactly one place:
-  [`scripts/build-guests/irix/irix-mame-stack.sh`](../../scripts/build-guests/irix-mame-stack.sh).**
+  [`scripts/build-guests/irix/irix-mame-stack.sh`](../../scripts/build-guests/irix/irix-mame-stack.sh).**
   Do not copy the list into a second script or into this table — a stale second
   copy is what left `mame-taptun-ifname-env.patch` documented here as adopted
   while the shipped binary did not carry it, and that failure is silent (MAME
@@ -768,7 +768,7 @@ promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
   That wrong line cost a campaign its interactive measurements. Believe the
   `carrier` check `start_mame()` prints, not prose.
 
-  Rebuild it with [`scripts/build-guests/emulators/build-mame-irix.sh`](../../scripts/build-guests/build-mame-irix.sh)
+  Rebuild it with [`scripts/build-guests/emulators/build-mame-irix.sh`](../../scripts/build-guests/emulators/build-mame-irix.sh)
   (box, Linux/x86-64) or `build-mame-macos.sh` (dev Mac); both source the same
   stack file, so they cannot drift.
 

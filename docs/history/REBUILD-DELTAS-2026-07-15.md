@@ -354,7 +354,7 @@ no CLAUDE.md clobber was detected.
   reconcile its older-base versions separately after this current-main tile
   harvest · overlapping files:
   `docs/lab/REBUILD-DELTAS-2026-07-15.md`,
-  `scripts/build-guests/{9front,amigaos,os2warp,qnx,win311}.sh`,
+  `scripts/build-guests/tiles/{9front,amigaos,os2warp,qnx,win311}.sh`,
   `streamhost/tiles-manifest.sh`,
   `streamhost/tiles/amigaos/{golden-bake.sh,qemu-streamhost.sh}`,
   `streamhost/tiles/freedos/qemu-streamhost.sh`,

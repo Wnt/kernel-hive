@@ -1147,8 +1147,9 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
             ("flags", []),
         ]
     )
+    script_col = f"tiles/{os_id}.sh"
     rendered_line = (
-        f'  "{os_id:<12}|{"tiles/" + os_id + ".sh":<30}|{output_dir:<14}|{build_class:<9}|{estimated:<8}|{automation:<8}|TODO"\n'
+        f'  "{os_id:<12}|{script_col:<30}|{output_dir:<14}|{build_class:<9}|{estimated:<8}|{automation:<8}|TODO"\n'
     )
     row = OrderedDict(
         [

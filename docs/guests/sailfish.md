@@ -9,7 +9,7 @@ the orchestrator — it does NOT edit any shared script.
 > **`sailfishos`** — see its stanza in `streamhost/tiles-manifest.sh` (disk
 > `/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2`, `streamhost@sailfishos`).
 > The neko-era material below is historical: `gallery-integrate-all.sh` and the
-> losing VirtualBox Option-A driver `scripts/build-guests/sailfishos-vbox.sh` are
+> losing VirtualBox Option-A driver `scripts/build-guests/tiles/sailfishos-vbox.sh` are
 > neko-era, deleted in the 2026-07 restructure — git history. The Option-B KMS
 > recipe and `sailfishos.sh`/`sailfishos-gui.sh` remain the live build path.
 
@@ -407,7 +407,7 @@ is reachable as a normal **RDP** endpoint via VirtualBox **VRDE** — which slot
 straight into the gallery's existing **neko-RDP** tile pattern (the Windows 11
 tile). This is the fix for the `:8104` tile being only a text console under QEMU.
 
-Reproducible driver: `scripts/build-guests/sailfishos-vbox.sh`
+Reproducible driver: `scripts/build-guests/tiles/sailfishos-vbox.sh`
 (`prep | l1 | vbox | l2 | shot | nekotile | stop | all`) — the losing option,
 neko-era, deleted in the 2026-07 restructure (git history); Option B (bochs-drm
 KMS, above) won and is the live path. This appendix is kept as the record of the

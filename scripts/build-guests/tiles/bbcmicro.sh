@@ -200,11 +200,11 @@ read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Acorn BBC Micro Model B (1981) kiosk launcher (bridge tile).
 # MOS 1.20 + BBC BASIC II + Acorn DNFS 1.20, MAME driver `bbcb` with the
-# driver's own default slots. See scripts/build-guests/bbcmicro.sh.
+# driver's own default slots. See scripts/build-guests/tiles/bbcmicro.sh.
 # Xorg needs a moment to settle its root mode on a fresh QEMU boot.
 sleep 2
 # 800x600, NOT the bridge base's stock 1024x768. This is an emulation-SPEED
-# choice, not a picture choice: see scripts/build-guests/bbcmicro.sh.
+# choice, not a picture choice: see scripts/build-guests/tiles/bbcmicro.sh.
 OUT=$(xrandr 2>/dev/null | awk '/ connected/{print $1; exit}')
 [ -n "$OUT" ] && xrandr --output "$OUT" --mode 800x600 2>/dev/null || true
 # X'S OWN KEY AUTO-REPEAT IS PURE NOISE HERE, AND IT CORRUPTS TYPING. The
@@ -255,7 +255,7 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
 fi
 EOS
 # Host-side QMP typist for the post-bake keyboard proof, kept beside this
-# builder as scripts/build-guests/bbcmicro-type-qmp.py. It applies the SAME BBC
+# builder as scripts/build-guests/lib/bbcmicro-type-qmp.py. It applies the SAME BBC
 # charMap the registry declares, so the proof exercises the translation the SPA
 # will use rather than a private one. `labctl type` is not a fair test of this
 # path (it bypasses streamhost's pacing and drops characters while printing

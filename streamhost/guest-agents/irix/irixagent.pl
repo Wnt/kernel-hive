@@ -110,7 +110,7 @@
 #
 # INSTALLED as /usr/local/bin/irixagent.pl, started by irixagent.sh from an
 # /etc/inittab respawn line. Baked into the golden by
-# scripts/build-guests/irix-serial-install.sh. The PING reply carries a checksum
+# scripts/build-guests/irix/irix-serial-install.sh. The PING reply carries a checksum
 # of THIS FILE as the guest has it, so `irixexec.py --ping --agent-src <repo
 # copy>` says outright whether the baked agent is the one in the repo.
 

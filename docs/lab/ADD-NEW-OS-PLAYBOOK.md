@@ -184,7 +184,7 @@ The builder must download to a temporary filename, verify it, then atomically
 move it into the cache. A size-only check is a last resort and must be called
 out as a reproducibility gap.
 
-## 4. Author `scripts/build-guests/<os>.sh`
+## 4. Author `scripts/build-guests/tiles/<os>.sh`
 
 The scaffold has already copied a tier-specific starting file here. Fill its
 TODOs rather than copying another complete builder. Import `labqmp.QMPClient`
@@ -575,7 +575,7 @@ reviewing one entry's principal derived values.
   use its `order` and optional `defaultOrder` for the manifest/default sequence.
   Gate licensed media with class `licensed`; gate account media with the
   `media` flag. Regeneration writes `build-all.sh`.
-- `scripts/build-guests/<os>.sh` remains hand-managed: implement the complete
+- `scripts/build-guests/tiles/<os>.sh` remains hand-managed: implement the complete
   build, framebuffer verification, and golden/reset proof. The registry names
   the script but does not generate it.
 - `scripts/build-guests/check-assets.sh` and `docs/lab/ASSETS-MANIFEST.md`: add
@@ -758,7 +758,7 @@ runtime-driven.
 make tile-registry-validate
 make tile-registry-generate
 make tile-registry-check
-bash -n scripts/build-guests/<os>.sh
+bash -n scripts/build-guests/tiles/<os>.sh
 bash -n streamhost/tiles/<tileDir>/qemu-streamhost.sh  # if verbatim
 jq empty scripts/serve/tiles.json
 jq empty scripts/serve/golden-manifest.json

@@ -181,7 +181,7 @@ EOS
 # not shorten it. The golden idles in the read at the bottom, no simulator.
 read -r -d '' CHOOSER <<'EOS' || true
 #!/bin/bash
-# PDP-11 exhibit chooser (bridge tile 'decos'). Built by build-guests/decos.sh.
+# PDP-11 exhibit chooser (bridge tile 'decos'). Built by build-guests/tiles/decos.sh.
 set -u
 D=/opt/decos
 W=/tmp/decos   # NOT /run: root-owned, and the kiosk runs as 'bridge'
