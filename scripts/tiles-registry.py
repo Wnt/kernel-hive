@@ -422,7 +422,12 @@ def validate_pointer_method(rows: list[dict[str, Any]], errors: list[str]) -> No
         if row.get("stream", {}).get("transport") != "streamhost":
             # No daemon, no devices: a poster or an unpromoted candidate.
             if method != "none" or ptr.get("absolute") or ptr.get("present"):
-                fail(errors, row, f"non-streamhost entry must declare pointer method none/absolute false/present false, not {method!r}")
+                fail(
+                    errors,
+                    row,
+                    "non-streamhost entry must declare pointer method none with "
+                    f"absolute false and present false, not {method!r}",
+                )
             continue
         env = row.get("runtime", {}).get("tileEnv", {})
         backend = ptr.get("backend") or env.get("SH_INPUT_BACKEND") or LEGACY_POINTER_BACKEND.get(ptr.get("transport"))

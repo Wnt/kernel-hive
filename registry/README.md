@@ -142,6 +142,58 @@ is an OPTIONAL sibling of the legacy required `stream.pointer.transport` (enum
 NOT also emit the legacy `SH_POINTER`. solaris is the only backend user today;
 qnx is a latent second user (enum already accommodates it).
 
+### Pointer method, absolutivity and presence
+
+`stream.pointer.transport` / `.backend` say how the DAEMON delivers a pointer.
+Three further fields — required on **every** entry, posters included — say what
+the GUEST ends up with, which is the question a visitor, a poster author and a
+tile author all actually ask:
+
+- **`present`** — any pointer input at all reaches the guest. `false` is the
+  keyboard-only exhibit (`SH_INPUT_BACKEND=disabled`: the Commodore 8-bits,
+  mpf2, the Sinclair/Acorn/Dragon/Oric machines, pdp11, decos, kc854) and the
+  showcase poster.
+- **`absolute`** — the guest receives the visitor's POSITION, not motion deltas.
+  Mirrors `InputBackend::pointer_mode()` in `streamhost/streamhost/src/config/
+  backends.rs`: true for every backend except `dbus-rel` and `disabled`.
+- **`method`** — the mechanism that puts the pointer where the visitor pointed:
+
+| `method` | how it works | example |
+|---|---|---|
+| `none` | nothing is delivered: a keyboard-only exhibit, or a poster with no machine behind it | `pet2001`, `macos` |
+| `qemu-usb-tablet` | QEMU `-device usb-tablet` reports absolute HID coordinates and the guest's own USB HID driver consumes them — the ordinary x86 case | `winxp` |
+| `qemu-vmmouse` | QEMU's VMware-backdoor absolute aux mouse on the i8042, consumed by a VMware mouse driver inside the guest; no USB involved | `nt4` (explicit `vmport=on`), `serenityos` (implicit q35 default) |
+| `qemu-ps2-relative` | no absolute path exists: paced, bounded relative deltas into the emulated PS/2 mouse | `nextstep`, `qnx` |
+| `gallery-hid` | a bespoke `gallery-hid-pci` device in the locally patched QEMU plus its matching in-guest driver, taking absolute coordinates natively | `solaris` |
+| `warpd-agent` | an in-guest agent warps the guest's own cursor to the requested coordinate | `win95` |
+| `mame-ioport` | streamhost writes the EMULATOR's input ports, never the guest: closed-loop `MOVEA` targets to MAME's in-emulator control module | `irix` |
+| `x11-xtest` | XTEST fake-input into a captured X server (no tile today; the backend exists for one) | — |
+| `simh-light-pen` | the absolute tablet position plus button 1 IS Open SIMH's VT11 light pen — no cursor, and no keyboard input of any kind | `gt40` |
+
+Finer wire detail stays in the sibling fields rather than multiplying the enum:
+`backend` already separates `mamecmd` (Lua command file) from `mamesock`
+(ctlsock), and `agentAddress` already separates a warpd agent on a hostfwd TCP
+port (`win95`, `ninefront`) from one on a serial chardev (`win311`, `os2warp`,
+`templeos`).
+
+Nothing at runtime reads these three fields, so `validate_pointer_method()` in
+`scripts/tiles-registry.py` DERIVES all three from the places that do decide and
+fails on any disagreement: the effective `SH_INPUT_BACKEND` (or the legacy
+`SH_POINTER` it comes from), the tile's device ledger (launcher command lines,
+`deviceSetSummary`, `emitArgs`) and `operator.labctl.pointer_mode`. A tile
+declaring `absolute: true` while running `dbus-rel`, or the tablet method with
+no `usb-tablet` wired up, is a failed `validate`. The one exception token is
+`pointer-vmmouse-implicit` in `migrationExceptions`, for a guest whose absolute
+aux mouse comes from a machine-type default that no device ledger names
+(`serenityos`).
+
+The fields are not added to `registry/generated/labctl-declarations.json`:
+`LABCTL_KEYS` must stay in lockstep with the box's `tiles.json`, whose
+`pointer_mode` already carries the abs/rel/warpd/none projection labctl needs —
+so it is cross-checked here rather than duplicated. They ride into
+`registry/index.json` with the rest of each row, and are deliberately kept out
+of the SPA bundle, which renders none of them.
+
 ### Three hand-synced enforcement copies
 
 The input-backend and pve rules live in THREE places that are kept in sync by
