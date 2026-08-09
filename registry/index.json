@@ -1099,6 +1099,59 @@
     },
     {
       "schemaVersion": 1,
+      "id": "armeval",
+      "era_year": 2026,
+      "tileDir": "armeval",
+      "lifecycle": "candidate",
+      "enabled": false,
+      "build": {
+        "rows": [
+          {
+            "order": 46,
+            "prelude": "",
+            "line": "  \"armeval     |armeval.sh     |Armeval       |installed|~15-30m |partial |TODO\"\n",
+            "value": {
+              "key": "armeval",
+              "script": "armeval.sh",
+              "outputDir": "Armeval",
+              "class": "installed",
+              "estimated": "~15-30m",
+              "automation": "partial",
+              "produces": "TODO",
+              "flags": []
+            }
+          }
+        ]
+      },
+      "operator": {},
+      "stream": {
+        "transport": "showcase",
+        "udpPort": 54135,
+        "slot": 135
+      },
+      "guestDoc": "docs/guests/armeval.md",
+      "credentialsRef": "guest/armeval",
+      "spa": {
+        "archetypeId": "beige-tower-crt",
+        "transport": "showcase",
+        "accentColor": "#64748b",
+        "eraLabel": "TBD · armeval"
+      },
+      "museum": {
+        "id": "armeval",
+        "displayName": "armeval",
+        "year": 2026,
+        "lineage": "TODO",
+        "arch": "TODO",
+        "accent": "#64748b"
+      },
+      "notes": [
+        "new-os Tier 2 scaffold; reserved slot 135/UDP 54135",
+        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+      ]
+    },
+    {
+      "schemaVersion": 1,
       "id": "aros",
       "era_year": 2024,
       "enabled": true,

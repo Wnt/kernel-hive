@@ -123,6 +123,7 @@ MANIFEST=(
   "zx81        |zx81.sh        |bridge/zx81     |retro    |~6-10m  |full   |tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)"
   "zxspectrum  |zxspectrum.sh  |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)"
   "dragon32     |dragon32.sh    |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)"
+  "armeval     |armeval.sh     |Armeval       |installed|~15-30m |partial |TODO"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
