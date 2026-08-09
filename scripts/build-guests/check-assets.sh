@@ -156,6 +156,18 @@ ROWS=(
   "req-file|bbcmicro|TMS5220 speech PHROM (BBC Micro)|$ASSET_STAGING/bbcmicro/phroma.bin|sha1:b369809275cb67dfd8a749265e91adb2d2558ae6|preservation-source"
   "req-file|bbcmicro|SAA5050 teletext character generator (no glyphs in MODE 7 without it)|$ASSET_STAGING/bbcmicro/saa5050|sha1:6c8daba70374e5aa3a6402f24cdc5f8677d58a0f|preservation-source"
   "req-file|bbcmicro|Acorn DNFS 1.20 (the driver's default fdc slot needs it)|$ASSET_STAGING/bbcmicro/dnfs120.rom|sha1:7e3c536baeae84d6498a14e8405319e01ee78232|preservation-source"
+  # ARM Evaluation System: the bbcmicro blobs again in this tile's own staging
+  # dir, plus four of its own. armeval.sh never downloads either; note there is
+  # NO dnfs120 here — `-fdc acorn1770` replaces the 8271, because the ARM
+  # Evaluation System discs are ADFS double density and the 8271 cannot read them.
+  "req-file|armeval|Acorn MOS 1.20 (BBC Micro Model B host)|$ASSET_STAGING/armeval/os12.rom|sha1:0d9bcaf6a393c9ce2359ed700ddb53c232c2c45d|preservation-source"
+  "req-file|armeval|BBC BASIC II (host language, kept in the banner by -rom3)|$ASSET_STAGING/armeval/basic2.rom|sha1:4a7393f3a45ea309f744441c16723e2ef447a281|preservation-source"
+  "req-file|armeval|TMS5220 speech PHROM (zip member cm62024.bin)|$ASSET_STAGING/armeval/phroma.bin|sha1:b369809275cb67dfd8a749265e91adb2d2558ae6|preservation-source"
+  "req-file|armeval|SAA5050 teletext character generator (no glyphs in MODE 7 without it)|$ASSET_STAGING/armeval/saa5050|sha1:6c8daba70374e5aa3a6402f24cdc5f8677d58a0f|preservation-source"
+  "req-file|armeval|ARM Tube bootstrap, Executive v1.00 14 Aug 1986 (bbc_tube_arm BIOS 101)|$ASSET_STAGING/armeval/armeval_101.rom|sha1:f86bbc4894e62725b8ef22d44e7f44d37c98ac14|preservation-source"
+  "req-file|armeval|Acorn DFS 2.23 (bbc_acorn1770 BIOS dfs223)|$ASSET_STAGING/armeval/dfs v2.23,acorn.rom|sha1:0d7ed0b0b3852cb61970ada1993244f2896896aa|preservation-source"
+  "req-file|armeval|Acorn ADFS 1.30 (sideways socket 3 by path; socket 1 kills the Tube)|$ASSET_STAGING/armeval/Acorn-ADFS-1.30.rom|sha1:301fd05c475a629c4bec70510d4507256a5b00d8|preservation-source"
+  "req-file|armeval|ARM Evaluation System Disc 3 'Utilities 2 / BASIC' (carries $.AB, ARM BBC Basic V 1.00)|$ASSET_STAGING/armeval/armevaluationsystem-disc3.adl|sha1:f5114ff744f6f742da3959a91a1b98af0bd1db5d|preservation-source"
 )
 
 # ---- impl ---------------------------------------------------------------------

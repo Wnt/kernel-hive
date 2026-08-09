@@ -250,6 +250,18 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d3cab4', accentTint: '#d8442f', tintMix: 0.36,
     badge: 'BBC MODEL B', spec: '6502A • 32K • 1981', kit: 'eightBit',
   },
+  // Acorn's cream-beige again, because the case IS a BBC Micro — but the accent
+  // is not bbcmicro's red function-key row, it is SAMPLED. A ppmhist of this
+  // tile's baked golden contains exactly three colours: black, white, and pure
+  // RGB(0,0,255), the reverse-video teletext field behind the ARM supervisor's
+  // `A*` prompt. That blue is literally the only colour the exhibit emits, and
+  // it is also the bake-time identity gate — a plain BBC Micro banner has zero
+  // blue pixels — so it is the honest badge colour for "there is an ARM on the
+  // other end of the Tube".
+  armeval: {
+    caseTint: '#d3cab4', accentTint: '#0000ff', tintMix: 0.36,
+    badge: 'ARM EVALUATION SYSTEM', spec: 'ARM1 • 4M • 1986', kit: 'eightBit',
+  },
   // what a visitor remembers about a Dragon.
   dragon32: {
     caseTint: '#c9c3b2', accentTint: '#30d200', tintMix: 0.4,
