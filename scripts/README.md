@@ -12,7 +12,43 @@ these box-oriented tools.
 These repo files have live copies on the box. **Edit the repo copy, then sync
 in the same change** — never let them drift. Run `scripts/dev/verify-box-sync.sh`
 to MD5-gate every expanded row plus the source, launcher, labctl-matrix, and
-registry tree mirrors:
+registry tree mirrors.
+
+**This is a hard pre-push gate.** `.claude/hooks/pre-push-gate.sh` probes
+`ssh lab` (4 s `ConnectTimeout`); if the box answers, any drift **blocks the
+push**, and if it does not, the check skips with a message and never fails. It
+is intentionally absent from `.github/workflows/quality.yml` — CI cannot reach
+the box. See [`docs/lab/AGENT-CI-EXIT-RULE.md`](../docs/lab/AGENT-CI-EXIT-RULE.md).
+
+Output and flags:
+
+```sh
+scripts/dev/verify-box-sync.sh            # only rows needing attention, grouped by kind
+scripts/dev/verify-box-sync.sh --all      # every row, including MATCH
+scripts/dev/verify-box-sync.sh --table    # TSV: status<TAB>label<TAB>repo_md5<TAB>box_md5
+```
+
+Rows are classified so the fix is obvious: `DIFFERS` (content), `MISSING_ON_BOX`
+(in the repo, never deployed), `MISSING_IN_REPO` (box-only — stale or scratch;
+delete it there, do not silently adopt it), `MISSING_BOTH` (the pair definition
+itself is wrong). Direction of truth is **per row**: the repo is authoritative
+for source, the box for generated/live artifacts.
+
+**Placeholder awareness.** A few box copies are deployed with the operator's
+real LAN address / public hostnames substituted in for the repo's scrubbed
+placeholders (AGENTS.md, [`registry/README.md`](../registry/README.md)). Those
+pairs are marked `scrub`: their box-side hash is computed **after** reversing
+the substitution, with a `sed` program built from gitignored `registry/local.env`
+and run **on the box** inside the same batched SSH session — real values never
+reach a local file, an argv, or the output. Both sides are then canonicalised so
+a bare `192.0.2.10` and the local.env-aware `${SH_HOST_IP:-192.0.2.10}` compare
+equal. With no `registry/local.env` (a fresh public clone) those rows report
+`UNCHECKED`, which does not fail the gate.
+
+Not mirrored, by design: `registry/posters/**` (poster prose and image-candidate
+research — SPA build inputs only), `registry/local.env` (operator-local), and the
+tracked `streamhost/tiles/soltest-*/` launchers (clone scaffolds that run out of
+`/data/vms/soltest/`, never out of `/data/vms/streamhost/tiles/`).
 
 | repo file | box copy | sync note |
 |-----------|----------|-----------|
@@ -23,7 +59,7 @@ registry tree mirrors:
 | `scripts/tiles.json.sample` | `/data/vms/streamhost/tiles.json` | committed reference of the generated live labctl matrix |
 | `scripts/serve/*` five code files¹ | `/data/vms/streamhost/serve/*` | `restart-https.sh` hardcodes the box path; after server/auth changes sync every changed file, verify byte identity, then restart HTTPS. Branch-only work is **NOT DEPLOYED** until that handoff is completed; `test-clientlog.sh` + `README.md` are repo-only. |
 | `scripts/serve/*` two JSONs² | `/data/vms/streamhost/serve/*.json` | committed reference copies (signaling registry + golden manifest) |
-| `scripts/vm-idle-watch.sh` | `/data/vms/streamhost/serve/vm-idle-watch.sh` | idle auto-pause watcher; currently identical |
+| `scripts/vm-idle-watch.sh` | `/data/vms/streamhost/serve/vm-idle-watch.sh` | idle auto-pause watcher; installed 2026-08-09 (the pair had never been deployed) |
 | `streamhost/guest-agents/solaris/cdrv.py`, `gexec.py` | `/root/cdrv.py`, `/root/gexec.py` | labctl shells out to the box copies |
 | `streamhost/guest-agents/irix/irixexec.py` | `/root/irixexec.py` | `labctl exec irix` (`exec_kind: serial_e`) shells out to the box copy; speaks irixser/2 to `irixagent.pl` inside the guest over MAME's emulated serial line |
 | `streamhost/guest-agents/irix/mctl.py` | `/root/mctl.py` | mamectl/1 line client for the MAME ctlsock module's `SH_MAMECTL_SOCK` unix socket (issue #45); `labctl mctl` and the socket-routed `type`/`sh`/`reset` shell out to the box copy |
@@ -35,7 +71,7 @@ registry tree mirrors:
 | `streamhost/tiles/sailfishos/seriald.py` | `/data/vms/streamhost/tiles/sailfishos/seriald.py` | serial mux the `seriald-sailfishos.service` unit runs |
 | `streamhost/{Cargo.toml,Cargo.lock}` + `streamhost/streamhost/{Cargo.toml,src/}` | `/data/vms/streamhost/build/{Cargo.toml,Cargo.lock,streamhost/{Cargo.toml,src/}}` | exact workspace mirror used by `build-deploy.sh`; harvested as tree `src` |
 | tracked `streamhost/tiles/*/qemu-streamhost.sh` | `/data/vms/streamhost/tiles/*/qemu-streamhost.sh` | verbatim launcher mirrors; generated launchers are gated separately by `verify-emit.sh` |
-| `registry/` allowed source files | `/data/vms/streamhost/build/registry/` | registry tree union is checked so one-sided files report drift |
+| `registry/` allowed source files (`README.md`, `*.json`, `*.in`; **not** `posters/`) | `/data/vms/streamhost/build/registry/` | registry tree union is checked with the same filter on both sides, so one-sided files report drift |
 
 ¹ `clientcmd.sh`, `gen-local-ca.sh`, `osgallery-https-server.py`, `reset-tile.sh`, `restart-https.sh`.
 ² `tiles.json`, `golden-manifest.json`.

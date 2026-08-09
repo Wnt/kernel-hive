@@ -10,6 +10,10 @@
 # its toolchain is absent) then the two cross-cutting gates (file-size budget,
 # generated-file drift). Non-zero exit blocks the push.
 #
+# Plus one gate CI cannot run: repo/box sync drift (scripts/dev/verify-box-sync.sh).
+# It is probe-gated on `ssh lab` reachability, so it blocks a push only where the
+# box exists to check against, and silently skips everywhere else.
+#
 # OPTIONAL MANUAL polish gate (needs the box; deliberately never blocking here):
 #   npm --prefix tests/e2e-live run qa:lap
 #
@@ -123,6 +127,27 @@ if bash scripts/check-generated-drift.sh; then
 else
   echo "  FAIL"
   fail=1
+fi
+
+# --- box-sync drift (ONLY when the box is actually reachable) ---
+# A public clone, an offline laptop and GitHub Actions have no `ssh lab`, so
+# this is probe-gated: unreachable box => SKIP with a message, never a failure.
+# That is also why it is deliberately absent from .github/workflows/quality.yml
+# — a CI job that can never reach the box would be permanently red.
+# Reachable box + drift => hard fail, because that is exactly the state that let
+# 228 rows pile up unnoticed. Cost when it does run: one batched SSH session.
+echo "== box-sync drift =="
+if ssh -o ConnectTimeout=4 -o BatchMode=yes "${LAB:-lab}" true 2>/dev/null; then
+  if bash scripts/dev/verify-box-sync.sh; then
+    echo "  ok"
+  else
+    echo "  FAIL — repo and box have drifted; reconcile per-row (the box is"
+    echo "         authoritative for generated/live artifacts, the repo for source)."
+    echo "         Full table: scripts/dev/verify-box-sync.sh --all"
+    fail=1
+  fi
+else
+  echo "  skip (ssh ${LAB:-lab} unreachable — public clone, offline, or CI)"
 fi
 
 if [[ "$fail" != "0" ]]; then
