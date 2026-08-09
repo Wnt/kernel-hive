@@ -503,6 +503,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // satisfy the coverage test; the on-screen keyboard sends nothing the guest
   // will act on.
   gt40: 'generic',
+  // Oric Atmos: a BASIC prompt and nothing else, and no key a PC keyboard
+  // lacks — MAME maps the host's keys onto the Oric matrix by position, and the
+  // Atmos layout is ASCII-shaped. Its two extra keys (FUNCT and the Oric's own
+  // CTRL) do nothing at the READY prompt, so the generic rows already cover it.
+  oricatmos: 'generic',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',

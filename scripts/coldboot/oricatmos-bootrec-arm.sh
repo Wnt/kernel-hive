@@ -1,11 +1,26 @@
 #!/bin/bash
-# Draft case arm for scripts/coldboot/bootrec-tiles.conf.
-# Fill this function on clones, then move its assignments into bootrec_load_tile.
+# Reference copy of the `oricatmos)` case arm that LIVES IN
+# scripts/coldboot/bootrec-tiles.conf. The conf is the file record-boot.sh
+# reads; this one exists so the arm can be diffed and reviewed on its own.
+# Keep the two in step, or delete this file rather than let it rot.
 bootrec_scaffold_oricatmos() {
-  BR_BOOT_KIND="vmstate"                 # TODO: vmstate | bridge | restart
-  BR_CANVAS_W=1024; BR_CANVAS_H=768; BR_FPS=30
-  BR_HAS_AUDIO=0
-  BR_DISKS="TODO.qcow2"                  # every writable disk must be cloned
-  BR_DETECT_TIER=1; BR_CF_THRESHOLD="0.005"; BR_SETTLE_MS=3000
-  BR_MAX_MS=180000
+  BR_BOOT_KIND="bridge"
+  BR_CANVAS_W=800
+  BR_CANVAS_H=600
+  BR_FPS=30
+  BR_HAS_AUDIO=1
+  BR_AUDIO_RATE=48000
+  BR_AUDIO_CH=2
+  BR_HOSTFWD_ORIG=5834
+  BR_HOSTFWD_CLONE=6834
+  BR_DISKS="overlay.qcow2" # the frozen bridge base stays read-only
+  BR_DETECT_TIER=3
+  BR_TIER3_TIMER_MS=45000
+  BR_MAX_MS=90000
+  BR_EMU_SSH_PORT=6834
+  BR_EMU_SSH_KEY="/data/vms/bridge/bridge_key"
+  # Exact process name only: the MAME subtarget binary is called `oricatmos`,
+  # so `pkill -f oricatmos` would match the recording shell itself.
+  BR_EMU_PREP_CMD="systemctl stop getty@tty1; pkill -u bridge -x oricatmos 2>/dev/null || true"
+  BR_EMU_BOOT_CMD="systemctl start getty@tty1"
 }
