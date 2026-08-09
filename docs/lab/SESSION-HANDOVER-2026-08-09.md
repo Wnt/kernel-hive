@@ -25,32 +25,29 @@ Memory: ~38 GB available with agents' clones running; `--mem 768` proven for the
 
 ---
 
-## 2. THE ONE THING THAT IS STILL BROKEN FOR THE USER
+## 2. The edge DNAT cap — RESOLVED 2026-08-09, at the source
 
-**Four tiles are invisible in the public gallery and look perfectly healthy from
-the box.** The edge VPS DNATs only `udp 54080-54130`, and UDP port is
-`54000 + slot`, so slots 131+ never receive a packet: `oricatmos` (54131),
-`kc854` (54132), `sinclairql` (54133), `nextstep` (54134), and `armeval` (54135)
-when it is looked at. Services are active, tickets pass, signalling returns a
-valid path, the guests are fine — the daemons simply never see a session, while
-`bbcmicro` (54129) logs `SESSION_ACCEPTED` from the browser.
+Slots 131+ (`oricatmos` 54131, `kc854` 54132, `sinclairql` 54133, `nextstep`
+54134, `armeval` 54135) were publicly dark because the edge DNATed only
+`udp 54080-54130` while the UDP port is `54000 + slot`. Services were active,
+tickets passed, signalling returned a valid path — the daemons simply never saw
+a packet.
 
-**Everything on our side is done and pushed**: `registry-v1.json` gains
-`ports.publicRelayLow/High` (54080-54200) with a validator that fails any tile
-outside it, `docs/PUBLIC-GALLERY.md` is updated, and
-`scripts/serve/install-public-relay.sh` now exists (it never did, despite being
-cited as the source of truth for years).
+**Fixed by the operator in `16f5124`, better than the plan.** The rule is now
+owned by the forwarder repo (`Wnt/forwarder@e612f83`): a tracked
+`deploy/site.env` overlay widens `UDP_RELAY_PORT_RANGE` to 54080-54200, and CI
+rewrites `/etc/nftables.conf` from it on every push. So the edge rule is
+**derived**, and `scripts/serve/install-public-relay.sh` is demoted to an
+emergency hotfix rather than the source of truth.
 
-**REMAINING ACTION IS THE OPERATOR'S** — there is no key from the box to the
-edge (`publickey` denied). They must run, on `vm-control`:
+**The agreement set is now three-way** and anything that changes one must change
+all: registry `ports.publicRelayLow/High` == forwarder `site.env`
+`UDP_RELAY_PORT_RANGE` == `docs/PUBLIC-GALLERY.md`.
 
-```
-scp scripts/serve/install-public-relay.sh root@<edge>:/root/
-ssh root@<edge> '/root/install-public-relay.sh'          # dry run, changes nothing
-ssh root@<edge> '/root/install-public-relay.sh --apply'  # replaces the rule by handle, persists
-```
-
-Until then those tiles stay dark. **This is the highest-value pending item.**
+Verified end to end afterwards: `kc854`, `sinclairql` and `nextstep` have each
+logged **`SESSION_ACCEPTED`** with zero rejections — all above the old cap.
+`oricatmos` and `armeval` show no sessions, which means nobody has opened them,
+not that they fail.
 
 ---
 
@@ -127,7 +124,7 @@ read trustworthy. Recorded in `scripts/dev/nsptr/FINDINGS.md`.
 
 ## 6. Known-pending, not started
 
-1. **The edge DNAT rule** (§2) — operator action, highest value.
+1. ~~The edge DNAT rule~~ — **done**, see §2.
 2. **Consolidate the MAME builds.** Six of seven binaries pin the same
    `mame0289` and differ only in which single driver file they compiled
    (`bbcb` 116 MB, `dragon` 75, `oricatmos` 69, `mpf2` 68, `kc85` 66, `zx81` 64;
@@ -146,9 +143,11 @@ read trustworthy. Recorded in `scripts/dev/nsptr/FINDINGS.md`.
    already shipped and should become posters. Deferred by memory:
    `spectrum128` (first to add if space frees), `vic1001`, `vic20se`,
    `amiga3000`.
-4. **Xerox / Alpha** — studies in flight; `xerox-add.md` §1 (Alto) is complete
-   and recommends **one** tile, with a half-day experiment that retires its main
-   risk.
+4. **Xerox / Alpha** — `xerox-add.md` §1 (Alto) and §3 (GlobalView/ViewPoint) are
+   **complete**; §2 (Star/Pilot) and the Alpha study are still in flight, as is a
+   Longhorn/WinFS study (`longhorn-add.md`, not yet written). Recommendation so
+   far: ship **`gvwin` first** — Tier 2, ~0.19 GB, no new emulator or backend,
+   proven boot→login→golden→reset on a clone — then `alto`.
 5. `/data/vms/soltest` holds **339 GB** of inert research clones. Safe to delete
    once findings are accepted; `NSPTR-native-tablet/overlay.qcow2` is
    deliberately kept as the promotion source for the pointer fix.
