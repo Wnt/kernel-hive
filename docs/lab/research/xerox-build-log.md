@@ -174,6 +174,55 @@ image: NEXT is still needed, but only as the single wake keystroke.
 Total interactive cost of a cold first boot is therefore **six keystrokes** —
 five CRs through Set Time and one NEXT — and 22 minutes of waiting.
 
+**Interactive responsiveness on the live desktop — the number that actually
+decides this tile.** Measured by firing an action and polling the framebuffer
+until it changes (an `import` grab costs 0.19 s, so treat that as the floor),
+with the box at ~72 % load and Darkstar showing 45–52 f/s (58–67 % of real):
+
+| action | latency to first repaint |
+|---|---|
+| pointer move (Star cursor follows) | **0.19 s** — at the measurement floor, i.e. immediate |
+| click the `Desktop Creation` button (opens a form) | **1.08 s** |
+| click `Start` (validates, posts a message) | **0.89 s** |
+| click `Desktop Creation` again (collapses the form) | **0.59 s** |
+
+So the desktop is *slow but alive*: the cursor tracks the hand, and a button
+takes about a second to answer. A real 8010 was not brisk either, so this reads
+as period-authentic rather than broken — but it is measured at 58–67 %, not at
+100 %, and the pinned-idle gate run is still owed.
+
+**THE STAR'S MOUSE IS RELATIVE, AND THAT IS A TILE-DESIGN PROBLEM.**
+`DWindow-IO.cs` computes `dx = x - DisplayBox.Width/2`, feeds
+`IOP.Mouse.MouseMove(dx, dy)`, then `SDL_WarpMouseInWindow`s the host pointer
+back to the centre — with `SDL_SetWindowGrab` confining it. There is no
+absolute path. Every pointer tile in this gallery is absolute (`usb-tablet`),
+and streamhost sends absolute coordinates; fed to Darkstar those become deltas
+from the centre and the Star cursor runs away. **A Star tile needs either a
+relative pointer path or a patched/agent-driven Darkstar.** Budget for it.
+
+**A second mouse trap: the Star drops large deltas.** A single 985 px move
+applied only ~127 px; **50 px steps at 120 ms apply 1:1**. Any pointer driver
+for this machine has to walk, not jump.
+
+**Shift works, but `:` is not Shift+`;` on the Level-V keyboard.** Explicit
+`Shift_L`/`Shift_R` chords are honoured (`Shift+a` → `A`, and `" { } < > ? _ +
+| * ( )` all came through). But **Shift + the `;` key yields `;`, not `:`** —
+and no other shifted PC punctuation produces a colon either. This matters
+because ViewPoint's Desktop Creation sheet demands an XNS **three-part name**
+(`name:domain:organisation`), so a colon is unavoidable and the route to
+creating a user desktop is blocked on finding that key. Unresolved; the exhibit
+does not depend on it (see below), but Agent C should check whether Dwarf has
+the same gap.
+
+**What the exhibit actually rests on.** With no XNS Clearinghouse this image
+wakes onto the **Workstation Administration** desktop — grey stipple ground,
+the `35176 Free Disk Pages` header strip, and one ViewPoint window offering
+Desktop Creation / Deletion / Changes. It is a genuine, logged-on ViewPoint 2.0
+desktop with real Star window furniture (title bar, `Start`, the window-menu
+and close buttons, scroll bars), so it clears the "must reach a graphical UI"
+bar — but it is an *administrator's* desktop, not the iconic file-drawer
+desktop, and the route to the latter is behind the colon problem above.
+
 **Speed, under a loaded box (not the gate run):** 22 f/s (28 %) during boot,
 settling to **43–53 f/s (55–68 %)** at MP 8000, with the process taking ~178 %
 CPU (emulation + SDL blit). Box was ~72 % busy on all 16 logical CPUs. The
