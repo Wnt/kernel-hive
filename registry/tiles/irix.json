@@ -48,6 +48,9 @@
     "pointer": {
       "transport": "abs",
       "backend": "mamesock",
+      "method": "mame-ioport",
+      "absolute": true,
+      "present": true,
       "device": "ioport-ps2",
       "scale": 1.0,
       "offset": [

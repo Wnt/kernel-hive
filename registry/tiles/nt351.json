@@ -96,6 +96,10 @@
     "touch": false,
     "pointer": {
       "transport": "abs",
+      "backend": "dbus-rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
       "device": "ps2",
       "scale": 1.0,
       "offset": [
@@ -115,7 +119,6 @@
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
-      "SH_POINTER": "abs",
       "SH_INPUT_BACKEND": "dbus-rel",
       "SH_CURSOR_SCALE": "1.0",
       "SH_CURSOR_OFF_X": "0",

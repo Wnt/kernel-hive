@@ -89,6 +89,9 @@
     "touch": false,
     "pointer": {
       "transport": "abs",
+      "method": "qemu-vmmouse",
+      "absolute": true,
+      "present": true,
       "device": "ps2",
       "scale": 1.0,
       "offset": [
@@ -228,5 +231,8 @@
     "mouse": "PASS",
     "keyboard": "SKIP",
     "fixture": "SerenityOS desktop. Boots from a fresh qcow2 over the base image on each launch -> cold-boot reset (no vmstate snapshot)."
-  }
+  },
+  "migrationExceptions": [
+    "pointer-vmmouse-implicit"
+  ]
 }

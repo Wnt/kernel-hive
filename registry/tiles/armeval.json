@@ -29,7 +29,19 @@
   "stream": {
     "transport": "showcase",
     "udpPort": 54135,
-    "slot": 135
+    "slot": 135,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "none",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    }
   },
   "guestDoc": "docs/guests/armeval.md",
   "credentialsRef": "guest/armeval",

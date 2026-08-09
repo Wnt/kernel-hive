@@ -71,6 +71,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -269,6 +272,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -481,6 +487,9 @@
         "touch": false,
         "pointer": {
           "transport": "rel",
+          "method": "qemu-ps2-relative",
+          "absolute": false,
+          "present": true,
           "device": "ps2-mouse",
           "scale": 1.0,
           "offset": [
@@ -738,6 +747,9 @@
         "touch": true,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -941,6 +953,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -1127,7 +1142,19 @@
       "stream": {
         "transport": "showcase",
         "udpPort": 54135,
-        "slot": 135
+        "slot": 135,
+        "pointer": {
+          "transport": "none",
+          "method": "none",
+          "absolute": false,
+          "present": false,
+          "device": "none",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        }
       },
       "guestDoc": "docs/guests/armeval.md",
       "credentialsRef": "guest/armeval",
@@ -1226,6 +1253,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -1425,6 +1455,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -1637,6 +1670,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -1885,6 +1921,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -2097,6 +2136,9 @@
         "touch": false,
         "pointer": {
           "transport": "rel",
+          "method": "qemu-ps2-relative",
+          "absolute": false,
+          "present": true,
           "device": "ps2-mouse",
           "scale": 1.0,
           "offset": [
@@ -2307,6 +2349,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -2520,6 +2565,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -2746,6 +2794,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -2958,6 +3009,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -3215,6 +3269,9 @@
         "touch": false,
         "pointer": {
           "transport": "rel",
+          "method": "qemu-ps2-relative",
+          "absolute": false,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -3411,6 +3468,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "simh-light-pen",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -3647,6 +3707,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -3891,6 +3954,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -4104,6 +4170,9 @@
         "pointer": {
           "transport": "abs",
           "backend": "mamesock",
+          "method": "mame-ioport",
+          "absolute": true,
+          "present": true,
           "device": "ioport-ps2",
           "scale": 1.0,
           "offset": [
@@ -4283,6 +4352,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -4589,6 +4661,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -4742,7 +4817,19 @@
       "operator": {},
       "lifecycle": "showcase",
       "stream": {
-        "transport": "showcase"
+        "transport": "showcase",
+        "pointer": {
+          "transport": "none",
+          "method": "none",
+          "absolute": false,
+          "present": false,
+          "device": "none",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        }
       },
       "guestDoc": "docs/guests/macos.md",
       "credentialsRef": "guest/macos",
@@ -4833,6 +4920,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -5097,6 +5187,9 @@
         "touch": false,
         "pointer": {
           "transport": "rel",
+          "method": "qemu-ps2-relative",
+          "absolute": false,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -5296,6 +5389,9 @@
         "touch": false,
         "pointer": {
           "transport": "rel",
+          "method": "qemu-ps2-relative",
+          "absolute": false,
+          "present": true,
           "device": "ps2-mouse",
           "scale": 1.0,
           "offset": [
@@ -5532,6 +5628,9 @@
         "touch": false,
         "pointer": {
           "transport": "warpd",
+          "method": "warpd-agent",
+          "absolute": true,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -5780,6 +5879,10 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "backend": "dbus-rel",
+          "method": "qemu-ps2-relative",
+          "absolute": false,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -5799,7 +5902,6 @@
           "SH_FPS": "30",
           "SH_HOST_IP": "192.0.2.10",
           "SH_ADVERTISE_HOST": "192.0.2.10",
-          "SH_POINTER": "abs",
           "SH_INPUT_BACKEND": "dbus-rel",
           "SH_CURSOR_SCALE": "1.0",
           "SH_CURSOR_OFF_X": "0",
@@ -6019,6 +6121,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-vmmouse",
+          "absolute": true,
+          "present": true,
           "device": "vmmouse",
           "scale": 1.0,
           "offset": [
@@ -6237,6 +6342,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet in captured Xorg bridge",
           "scale": 1.0,
           "offset": [
@@ -6458,6 +6566,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -6706,6 +6817,9 @@
         "touch": false,
         "pointer": {
           "transport": "warpd",
+          "method": "warpd-agent",
+          "absolute": true,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -6919,6 +7033,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -7137,6 +7254,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -7365,6 +7485,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -7598,6 +7721,9 @@
         "touch": true,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -7800,6 +7926,9 @@
         "touch": false,
         "pointer": {
           "transport": "rel",
+          "method": "qemu-ps2-relative",
+          "absolute": false,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -8019,6 +8148,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -8247,6 +8379,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -8471,6 +8606,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -8643,7 +8781,19 @@
       "operator": {},
       "lifecycle": "showcase",
       "stream": {
-        "transport": "showcase"
+        "transport": "showcase",
+        "pointer": {
+          "transport": "none",
+          "method": "none",
+          "absolute": false,
+          "present": false,
+          "device": "none",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        }
       },
       "guestDoc": "docs/guests/riscos.md",
       "credentialsRef": "guest/riscos",
@@ -8778,6 +8928,9 @@
         "touch": true,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -9006,6 +9159,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-vmmouse",
+          "absolute": true,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -9145,7 +9301,10 @@
         "mouse": "PASS",
         "keyboard": "SKIP",
         "fixture": "SerenityOS desktop. Boots from a fresh qcow2 over the base image on each launch -> cold-boot reset (no vmstate snapshot)."
-      }
+      },
+      "migrationExceptions": [
+        "pointer-vmmouse-implicit"
+      ]
     },
     {
       "schemaVersion": 1,
@@ -9199,6 +9358,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -9429,6 +9591,9 @@
         "pointer": {
           "transport": "abs",
           "backend": "gallery-hid",
+          "method": "gallery-hid",
+          "absolute": true,
+          "present": true,
           "device": "gallery-hid-pci",
           "scale": 1.0,
           "offset": [
@@ -9669,6 +9834,9 @@
         "touch": false,
         "pointer": {
           "transport": "warpd",
+          "method": "warpd-agent",
+          "absolute": true,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -9896,6 +10064,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 0.783,
           "offset": [
@@ -10122,6 +10293,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -10342,6 +10516,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -10588,6 +10765,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -10831,6 +11011,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -11072,6 +11255,9 @@
         "touch": false,
         "pointer": {
           "transport": "warpd",
+          "method": "warpd-agent",
+          "absolute": true,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -11312,6 +11498,9 @@
         "touch": false,
         "pointer": {
           "transport": "warpd",
+          "method": "warpd-agent",
+          "absolute": true,
+          "present": true,
           "device": "ps2",
           "scale": 1.0,
           "offset": [
@@ -11548,6 +11737,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -11781,6 +11973,9 @@
         "touch": false,
         "pointer": {
           "transport": "abs",
+          "method": "qemu-usb-tablet",
+          "absolute": true,
+          "present": true,
           "device": "usb-tablet",
           "scale": 1.0,
           "offset": [
@@ -11978,6 +12173,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [
@@ -12199,6 +12397,9 @@
         "pointer": {
           "transport": "none",
           "backend": "disabled",
+          "method": "none",
+          "absolute": false,
+          "present": false,
           "device": "ps2-keyboard",
           "scale": 1.0,
           "offset": [

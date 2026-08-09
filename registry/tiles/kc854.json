@@ -68,6 +68,9 @@
     "pointer": {
       "transport": "none",
       "backend": "disabled",
+      "method": "none",
+      "absolute": false,
+      "present": false,
       "device": "ps2-keyboard",
       "scale": 1.0,
       "offset": [

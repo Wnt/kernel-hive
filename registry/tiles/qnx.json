@@ -67,6 +67,9 @@
     "touch": false,
     "pointer": {
       "transport": "rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
       "device": "ps2",
       "scale": 1.0,
       "offset": [
