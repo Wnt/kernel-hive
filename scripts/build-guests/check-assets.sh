@@ -91,6 +91,14 @@ ROWS=(
   "req-file|redstar3|Red Star OS 3.0 Desktop install ISO|$ASSET_STAGING/redstar3/redstar_desktop3.0_sign.iso|sha256:895ad0e01ae0d35a65e9ac42dd34d0a1d685d6dfa331ce5b4f24bbc753439be3|preservation-source"
   "req-file|redstar2|Red Star OS 2.0 desktop install ISO|$ASSET_STAGING/redstar2/redstar.iso|sha256:69a45d07c302782cb777d03abd39c5b45b4099e5c994a74a77bb71ab5d229997|preservation-source"
   "req-file|mpf2|Multitech MPF-II Monitor + BASIC ROM|$ASSET_STAGING/mpf2/mpf_ii.rom|sha1:92378b0db561632b58a9b36a85f8fb00796198bb|preservation-source"
+  # BBC Micro: five blobs, no authorised fetch URL anywhere (see ASSETS-MANIFEST).
+  # bbcmicro.sh never downloads; the operator stages these and the builder gates
+  # each on SHA-1, then assembles the three MAME zips itself.
+  "req-file|bbcmicro|Acorn MOS 1.20 (BBC Micro Model B)|$ASSET_STAGING/bbcmicro/os12.rom|sha1:0d9bcaf6a393c9ce2359ed700ddb53c232c2c45d|preservation-source"
+  "req-file|bbcmicro|BBC BASIC II|$ASSET_STAGING/bbcmicro/basic2.rom|sha1:4a7393f3a45ea309f744441c16723e2ef447a281|preservation-source"
+  "req-file|bbcmicro|TMS5220 speech PHROM (BBC Micro)|$ASSET_STAGING/bbcmicro/phroma.bin|sha1:b369809275cb67dfd8a749265e91adb2d2558ae6|preservation-source"
+  "req-file|bbcmicro|SAA5050 teletext character generator (no glyphs in MODE 7 without it)|$ASSET_STAGING/bbcmicro/saa5050|sha1:6c8daba70374e5aa3a6402f24cdc5f8677d58a0f|preservation-source"
+  "req-file|bbcmicro|Acorn DNFS 1.20 (the driver's default fdc slot needs it)|$ASSET_STAGING/bbcmicro/dnfs120.rom|sha1:7e3c536baeae84d6498a14e8405319e01ee78232|preservation-source"
   # -- repo-tracked assets ------------------------------------------------------
   # NOTE: cosmo.zip/jill.zip/Winamp tarball are no longer shipped in the repo
   # (removed pre-publication, see docs/guests/freedos.md + docs/guests/winxp.md).

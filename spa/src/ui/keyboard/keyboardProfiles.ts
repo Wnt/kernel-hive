@@ -39,7 +39,7 @@ import { XK } from '../../three/useStreamControl';
 export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga';
+  | 'pet' | 'petbusiness' | 'bbcmicro' | 'appleii' | 'atarist' | 'amiga';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -335,6 +335,47 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ]],
   },
 
+  // BBC Micro Model B. Three keys a visitor cannot find on their own keyboard,
+  // all read from the driver's own PORT_CHAR/PORT_CODE table
+  // (src/mame/acorn/bbc_kbd.cpp) and then verified on the live tile:
+  //
+  //  * ESCAPE stops a running BASIC program — the machine prints "Escape" and
+  //    returns to `>`. It is the one key a visitor who runs an accidental
+  //    infinite loop actually needs.
+  //  * BREAK is a separate physical key on a real Model B (top right, above
+  //    RETURN) and MAME puts it on host F12, which no visitor would guess. It
+  //    soft-resets the machine back to the power-on banner and loses the
+  //    program, hence `danger`.
+  //  * f0..f9 are the row of TEN RED KEYS along the top of the machine — its
+  //    single most recognisable feature — and MAME drives them from host
+  //    F1..F10, offset by one. Labelling them F1..F10 would be wrong on both
+  //    counts, so this profile builds the row by hand rather than using
+  //    fkeyRow().
+  //
+  // No Ctrl latch on the base row: BBC BASIC has no control chords a visitor
+  // would reach for, and MODS is not part of a home-computer profile.
+  bbcmicro: {
+    family: 'bbcmicro',
+    rows: [[
+      tap('esc', 'ESCAPE', XK.Escape, { hint: 'ESCAPE — stops a running program' }),
+      tap('ret', '⏎', XK.Return),
+      tap('bksp', '⌫', XK.BackSpace, { repeat: true }),
+      ...ARROWS,
+    ]],
+    moreRows: [
+      [
+        tap('break', 'BREAK', F(12),
+          { danger: true, hint: 'BREAK — soft-resets the machine to its banner; your program is lost' }),
+      ],
+      [
+        tap('f0', 'f0', F(1)), tap('f1', 'f1', F(2)), tap('f2', 'f2', F(3)),
+        tap('f3', 'f3', F(4)), tap('f4', 'f4', F(5)), tap('f5', 'f5', F(6)),
+        tap('f6', 'f6', F(7)), tap('f7', 'f7', F(8)), tap('f8', 'f8', F(9)),
+        tap('f9', 'f9', F(10)),
+      ],
+    ],
+  },
+
   appleii: {
     family: 'appleii',
     rows: [[
@@ -433,6 +474,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // satisfy the coverage test; the on-screen keyboard sends nothing the guest
   // will act on.
   gt40: 'generic',
+  // BBC Micro Model B: ESCAPE, the BREAK key MAME hides on host F12, and the
+  // machine's ten RED function keys, which MAME drives from F1..F10 offset by
+  // one (host F1 is the BBC's f0). None of the three is findable by guessing.
+  bbcmicro: 'bbcmicro',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',

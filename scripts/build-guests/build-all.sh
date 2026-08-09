@@ -115,6 +115,7 @@ MANIFEST=(
   "pdp11        |pdp11.sh       |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)"
   "gt40         |gt40.sh        |bridge/gt40     |retro    |~5-8m   |full   |tiles/gt40 overlay + golden (Open SIMH pdp11 VT11 → Lunar Lander)"
   "decos        |decos.sh       |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)"
+  "bbcmicro    |bbcmicro.sh    |Bbcmicro      |installed|~15-30m |partial |TODO"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

@@ -227,6 +227,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
     badge: 'PDP-11', spec: 'RT-11 / RSX / RSTS • 1970', kit: 'workstation',
   },
+  // Acorn's cream-beige, and the accent is the one flash of colour on the case:
+  // the row of ten RED function keys along the top of the Model B's keyboard.
+  // Not sampled from the screen, because the screen is white teletext on black.
+  bbcmicro: {
+    caseTint: '#d3cab4', accentTint: '#d8442f', tintMix: 0.36,
+    badge: 'BBC MODEL B', spec: '6502A • 32K • 1981', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

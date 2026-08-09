@@ -473,6 +473,16 @@ export const ASSEMBLIES_BY_TILE = {
   gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
   // Three DEC operating systems behind one chooser, on the biggest rack.
   decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
+  // The BBC Micro takes the Acorn wedge that riscos also uses, because it is
+  // Acorn's own case language and the closest silhouette in the kit to a Model
+  // B: a deep beige wedge with a full-travel keyboard in the chassis. The two
+  // stay distinct through the monitor — riscos pairs it with the boxy office
+  // crtA, this one with homeCrtE, the largest home CRT, which is what a
+  // Microvitec Cub was next to a school BBC. No mouse: the Model B had no
+  // pointing device and no port for one (its analogue port took joysticks).
+  bbcmicro: {
+    kind: 'homeMicro', body: 'acornA3000', monitor: 'homeCrtE',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {
