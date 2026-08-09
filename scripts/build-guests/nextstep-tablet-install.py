@@ -167,15 +167,14 @@ def park():
     time.sleep(0.8)
 
 
-def goto(tx, ty, tol=3, iters=60, parks=4):
+def goto(tx, ty, tol=3, iters=120, parks=4):
     """Walk the RELATIVE (pre-driver) pointer onto a target, closing the loop on
     the framebuffer. Returns where it actually landed; the caller checks."""
     cx = cy = -1
     for attempt in range(parks):
-        damp = (0.6, 0.45, 0.3, 0.2)[attempt]
+        damp = (0.5, 0.4, 0.3, 0.2)[attempt]
         park()
         hostx = hosty = 0
-        gain_x = gain_y = 1.3
         cx, cy = cursor()
         overshot = False
         for _ in range(iters):
@@ -185,8 +184,23 @@ def goto(tx, ty, tol=3, iters=60, parks=4):
             if ex < -tol or ey < -tol:
                 overshot = True  # past the target: only a re-park recovers
                 break
-            dx = min(STEP_CAP, max(0, int(round(ex * damp / gain_x)))) or (1 if ex > tol else 0)
-            dy = min(STEP_CAP, max(0, int(round(ey * damp / gain_y)))) or (1 if ey > tol else 0)
+            # Halve the remaining distance, in HOST pixels, assuming the worst
+            # case that the guest moves at least 1:1. The measured gain is
+            # 0.96-1.33, so this converges geometrically and CANNOT overshoot --
+            # which matters because the dead zone makes coming back impossible.
+            fx, fy = max(0.0, ex * damp), max(0.0, ey * damp)
+            # Clamp the two axes TOGETHER. Capping them independently walks the
+            # diagonal, so the near axis arrives and overshoots long before the
+            # far one -- and the dead zone means an overshoot never comes back.
+            # ... and shrink the cap on the run-in: NeXTSTEP accelerates a big
+            # single event superlinearly (a 24 px step measured ~2.3x), which is
+            # fine while crossing the screen and overshoots by 50 px at the end.
+            cap = STEP_CAP if max(ex, ey) > 150 else 6
+            biggest = max(fx, fy)
+            if biggest > cap:
+                fx, fy = fx * cap / biggest, fy * cap / biggest
+            dx = int(fx) or (1 if ex > tol else 0)
+            dy = int(fy) or (1 if ey > tol else 0)
             dx = min(dx, W - 1 - hostx)
             dy = min(dy, H - 1 - hosty)
             if dx == 0 and dy == 0:
@@ -195,12 +209,7 @@ def goto(tx, ty, tol=3, iters=60, parks=4):
             hostx += dx
             hosty += dy
             time.sleep(0.35)
-            nx, ny = cursor()
-            if dx and nx != cx:
-                gain_x = max(0.2, abs(nx - cx) / float(dx))
-            if dy and ny != cy:
-                gain_y = max(0.2, abs(ny - cy) / float(dy))
-            cx, cy = nx, ny
+            cx, cy = cursor()
         if not overshot and abs(tx - cx) <= tol and abs(ty - cy) <= tol:
             return cx, cy
     return cx, cy
@@ -311,24 +320,26 @@ def main():
     # while the emulator is still routing every motion to tablet_pen_move(): the
     # cursor freezes completely and nothing can be clicked. (Same trap live: if
     # anyone ever reboots NeXTSTEP inside the exhibit, reset the tile to golden.)
-    log("linking InstallTablet.app into /me and re-opening the home directory")
+    log("linking InstallTablet.app into /me")
     nextstep(
         "rm -f /me/InstallTablet.app",
         "ln -s /NextAdmin/InstallTablet.app /me/InstallTablet.app",
         "sync",
     )
-    landed = goto(*SHELF_HOME)
-    if max(abs(landed[0] - SHELF_HOME[0]), abs(landed[1] - SHELF_HOME[1])) > 8:
-        raise SystemExit(f"could not reach the shelf home icon: {landed} vs {SHELF_HOME}")
-    kiosk("xdotool click --repeat 2 --delay 90 1")
-    time.sleep(4)
 
-    # Type-select in the File Viewer, then RETURN opens the selection. RETURN can
-    # do no more than that: the app's panel never becomes the key window, so its
-    # default button cannot be reached from the keyboard.
     log("opening InstallTablet.app from the File Viewer")
     box = None
-    for _ in range(4):
+    for attempt in range(4):
+        # The Workspace only rescans a directory it re-opens. On the tile's own
+        # cold boot the listing is already fresh (the builder links the app in
+        # before that boot), so try the keyboard first and only fall back to
+        # double-clicking the shelf's home icon -- which needs the fragile
+        # pre-driver pointer -- if the app is genuinely not listed yet.
+        if attempt:
+            landed = goto(*SHELF_HOME)
+            if max(abs(landed[0] - SHELF_HOME[0]), abs(landed[1] - SHELF_HOME[1])) <= 8:
+                kiosk("xdotool click --repeat 2 --delay 90 1")
+                time.sleep(4)
         kiosk("xdotool type --delay 120 Install")
         time.sleep(1.5)
         kiosk("xdotool key Return")

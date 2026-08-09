@@ -13,14 +13,10 @@
 #         INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- WHY PREVIOUS AND NOT QEMU (the route decision, made on evidence) -------
-#   docs/guests/nextstep.md §1 records the full costing and the QEMU-10 dead end
-#   in detail; the short version is that NeXTSTEP 3.3 for INTEL installs and runs
-#   only on QEMU <= 0.9.x (its 1994 SCSI/IDE drivers never get reliable
-#   completion interrupts out of a modern QEMU, across five controller
-#   permutations, under both TCG and KVM), while Previous emulates a real
-#   matte-black NeXTcube, builds in ~9 minutes, boots a PRE-INSTALLED disk image
-#   with no 1994 installer to drive blind, and ships the ROM inside its own
-#   source tree (src/Rev_2.5_v66.BIN) so only the disk image is fetched.
+#   docs/guests/nextstep.md §1 has the full costing and the QEMU-10 dead end:
+#   NeXTSTEP 3.3 for INTEL runs only on QEMU <= 0.9.x, while Previous emulates a
+#   real NeXTcube, builds in ~9 min, boots a PRE-INSTALLED image, and ships the
+#   ROM in its own source tree (src/Rev_2.5_v66.BIN).
 #
 # ---- WHAT IS BUILT INTO THE OVERLAY (the frozen base has none of it) --------
 #   1. SDL3 3.4.14 from source. Previous 4.4 requires SDL3 >= 3.2 and Debian 12
@@ -46,13 +42,11 @@
 #      there is no EnterNotify either, so SDL never takes a mouse focus. A live
 #      NeXTSTEP that ignores everything. Fixed by nextstep-kiosk-frame.sh.
 #   4. STILL no input reaching the MACHINE, while Previous's own F12 menu
-#      answered. Previous 4.4 built with ENABLE_RENDERING_THREAD=0 (the default
-#      everywhere except macOS) pushes guest key/mouse events onto an internal
-#      ring buffer, and on this build nothing ever drained it: `[Keymap]` never
-#      logged once at nTextLogLevel=5, over a clean single-keystroke test.
-#      Rebuilt with -DENABLE_RENDERING_THREAD=1, where the same events are
-#      handed to Keymap_KeyDown/Keymap_MouseMove directly, and the NeXT cursor
-#      moved on the next try. THE TILE MUST BE BUILT WITH THAT FLAG.
+#      answered. Built with ENABLE_RENDERING_THREAD=0 (the default off macOS)
+#      Previous queues guest key/mouse events on a ring buffer nothing drained:
+#      `[Keymap]` never logged once at nTextLogLevel=5. Rebuilt with
+#      -DENABLE_RENDERING_THREAD=1 the events go straight to Keymap_KeyDown /
+#      Keymap_MouseMove. THE TILE MUST BE BUILT WITH THAT FLAG.
 #   5. 135% of CPU in four llvmpipe threads, and a keystroke taking 5-33 s to
 #      appear. SDL_RENDER_DRIVER=software was already set and the renderer really
 #      was "software", but SDL3 still PRESENTED through an accelerated window
@@ -321,10 +315,16 @@ stop_qemu() {
   rm -f "$QMP" "$PID"
 }
 
+# boot_tile [cold] — `cold` refuses -loadvm even when a golden exists. Every boot
+# in this script is COLD on purpose: `loadvm` restores the DISK as well as RAM, so
+# a config written before it is silently thrown away, and the emulator comes back
+# still running the settings the snapshot was taken with.
 boot_tile() {
   stop_qemu
   local LOADVM=""
-  qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden"
+  if [ "${1:-}" != "cold" ]; then
+    qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden"
+  fi
   # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish)
   nohup qemu-system-x86_64 \
     -name streamhost-nextstep \
@@ -556,7 +556,7 @@ fi
 # settings, and an overlay built before those existed must pick them up.
 if [ "$NEW_OVERLAY" -eq 0 ]; then
   log "refreshing previous.cfg and the Xorg pointer stanza"
-  boot_tile
+  boot_tile cold
   wait_ssh
 fi
 printf '%s\n' "$PREVIOUS_CFG" |
@@ -571,7 +571,7 @@ guest "chmod 755 /usr/local/bin/nstel.py"
 # typed. (The Plus/4 lesson: a golden baked inside an application drops a
 # visitor into the middle of something they cannot name or leave.)
 stop_qemu
-boot_tile
+boot_tile cold
 wait_ssh
 sleep 240
 wait_for_workspace ready-before-golden
@@ -587,6 +587,7 @@ log "attaching the NeXTSTEP tablet driver (absolute pointer) before the bake"
 python3 "$HERE/../nextstep-tablet-install.py" --dir "$TILE_DIR" --ssh-port "$SSH_PORT" \
   --key "$KEY" --evidence "$EVIDENCE" || die "the tablet driver did not attach"
 
+qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden && hmp "delvm golden" >/dev/null
 hmp "savevm golden" >/dev/null
 qemu-img snapshot -l "$OVERLAY" | grep -qw golden || die "savevm golden did not land"
 capture golden-baked
