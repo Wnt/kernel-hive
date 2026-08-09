@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2086  # $O is an ssh/scp OPTION LIST; it must word-split
 set -e
 D=/data/vms/soltest/NSPTR-previous-patch
 K=/data/vms/bridge/bridge_key
