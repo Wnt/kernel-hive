@@ -287,6 +287,21 @@
       "udp_port": 54099,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "indyr4400": {
+      "dir": "/data/vms/streamhost/tiles/indyr4400",
+      "qmp": "/data/vms/streamhost/tiles/indyr4400/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5839,
+      "exec_port": 5839,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54136,
+      "notes": "exec: labctl exec indyr4400 \"<cmd>\" (ssh root@:5839, key bridge_key) — reaches the Debian kiosk, NOT the emulated SGI Indy. The Indy itself is driven only through the framebuffer + PS/2. Pointer is RELATIVE: Iris grabs the pointer on the first left click inside its window and feeds the emulated Indy PS/2 deltas; Right-Ctrl releases the grab."
+    },
     "irix": {
       "dir": "/data/vms/streamhost/tiles/irix",
       "qmp": null,

@@ -551,6 +551,16 @@
    "mouse": "N/A",
    "keyboard": "PASS",
    "fixture": "Acorn ARM Evaluation System at the ARM BBC Basic V 1.00 prompt (ARM Second Processor 4096K / Acorn ADFS / BASIC / A* *LIB $ / A* AB / ARM BBC Basic V version 1.00 ... / >) in MAME 0.289 `bbcb -tube arm`, fullscreen with -keepaspect -artwork_crop on an 800x600 X root; golden INTERNAL snapshot restores it. Reset verified 2026-08-09 with the VM STOPPED — stop / loadvm golden / stop / screendump / cont — because MODE 7 blinks its cursor and a wall-clock sample of the same restored state differs by one ~40 px cell. Two such cycles before the keyboard proof and two after it all hash to sha256 bc8ba12ebb064f00ca23304dc9aef1aca26f80bc2be4fd5ad8e1fbba083bdb56. Keyboard route certified the same day AFTER the bake, against the restored fixture: the registry demoProgram's three lines and RUN typed at the tile's shipped 80/80 pacing print \"20000 LOOPS 0.22\", asserted by lit-pixel count; LIST, RUN and ESCAPE were each driven separately by framebuffer, and ESCAPE additionally asserts that MAME is still alive afterwards because Esc is also MAME's own UI cancel key. Keyboard-only exhibit (no mouse); AC97 audio."
+  },
+  "indyr4400": {
+   "tileDir": "indyr4400",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "UNVERIFIED",
+   "keyboard": "UNVERIFIED",
+   "fixture": "SGI Indy (MIPS R4400) IRIX 6.5.22 at the IRIS graphical login in Iris, 1280x1024 1:1. Emulator-bridge tile added 2026-08-10."
   }
  }
 }

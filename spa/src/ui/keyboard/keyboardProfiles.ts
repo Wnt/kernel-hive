@@ -707,6 +707,7 @@ export const OS_FAMILY: Record<string, Family> = {
   // are CDE's own (Help on F1, the CDE edit chords) rather than Indigo Magic's,
   // so it takes the generic Unix rows until an IRIX profile is worth writing.
   irix: 'generic',
+  indyr4400: 'generic',
   ninefront: 'plan9',
   android: 'android',
   c64: 'c64',

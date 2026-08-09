@@ -1763,6 +1763,40 @@
         "Cambridge LISP"
       ],
       "blurb": "The first ARM product ever sold: not a computer but a plug-in second processor for the BBC Micro, sold to developers in 1986 so they could write ARM code two years before the Archimedes existed. The board has no operating system — it has 16 KB of supervisor ROM and a floppy with a language on it. What you are looking at is that language, ARM BBC Basic V, running on the ARM while the 6502 that used to be the computer is reduced to a keyboard, a screen and a disc controller."
+    },
+    {
+      "id": "indyr4400",
+      "era_year": 1993,
+      "displayName": "SGI Indy R4400",
+      "year": 1993,
+      "lineage": "SGI IRIX / System V Unix",
+      "arch": "MIPS R4400 (MIPS III, 64-bit)",
+      "accent": "#3E6E9E",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 58,
+      "eraLabel": "1993 · SGI Indy R4400 — IRIX 6.5",
+      "signalEndpoint": "/signal/indyr4400.json",
+      "ramMB": 256,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Iris (techomancer/iris, BSD-3), a userspace Rust SGI Indy emulator, booting IRIX 6.5.22 on a 1280x1024 X root captured 1:1. The DELIBERATE pair to the irix tile: same museum machine, different silicon (R4400 vs R4600) and a different emulator, and unlike MAME — which kernel-panics under a KVM vCPU and forced the irix tile bare-metal — Iris runs happily inside KVM, so this one is an ordinary bridge tile with QEMU pointer, keyboard and loadvm-golden reset. Pointer is RELATIVE (Pointer Lock): Iris grabs on first click and feeds PS/2 deltas. Audio and networking are off in this phase. archetype beige-tower-crt. See streamhost/docs/BRIDGE.md and docs/guests/indyr4400.md.",
+      "era": "1990s",
+      "eraSoftware": [
+        "Indigo Magic Desktop (4Dwm)",
+        "the IRIS graphical login (clogin)",
+        "IRIX Interactive Desktop / toolchest",
+        "showcasedemos (gr_osview, buttonfly)",
+        "Netscape for IRIX"
+      ],
+      "periodBrowser": "Netscape Navigator / Communicator for IRIX",
+      "iconicApps": [
+        "the IRIS login chooser",
+        "4Dwm Indigo Magic teal desktop",
+        "the SGI toolchest",
+        "File System Navigator"
+      ],
+      "blurb": "The other Indy. SGI sold the 1993 pizza-box in several MIPS grades, and this is the R4400 — the faster, larger-cache sibling of the R4600 next to it in the hall, and the chip SGI put in the Indigo² and the Challenge servers. Same blue case, same 24-bit XL graphics, same IRIX 6.5; a different processor, and a different emulator drawing it.",
+      "pointerRel": true,
+      "relativePointerOnly": true
     }
   ]
 }
