@@ -54,8 +54,8 @@ Some assets are missing. Rebuild recipe (see docs/history/irix-tile-issue20-hand
 and /data/vms/soltest/irix-mame/RECIPE.txt):
   * Media from archive.org item 'irix65.7z' (bundles indy_4610.7z PROM + CHD):
       7z e -y irix65.7z && chmod 444 irix65.chd
-  * MAME 0.288+ built with scripts/build-guests/mame-irix-skip-warnings.patch
-    AND scripts/build-guests/mame-indy-256mb-ram.patch (256 MB, not 16 MB).
+  * MAME 0.288+ built with scripts/build-guests/patches/mame-irix-skip-warnings.patch
+    AND scripts/build-guests/patches/mame-indy-256mb-ram.patch (256 MB, not 16 MB).
     Verify offline: sgi -listxml indy_4610 | grep -A9 'RAM bank A' -> 4x32M
     must carry default="yes" (same for bank B).
 EOF

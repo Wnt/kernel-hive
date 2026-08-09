@@ -20,7 +20,7 @@ geometry, so it maps across the full 1920×1080 surface.
 
 Set two ways, kept in sync:
 
-- **Reproducible (builder):** `scripts/build-guests/serenityos.sh` step 4d edits
+- **Reproducible (builder):** `scripts/build-guests/tiles/serenityos.sh` step 4d edits
   `[Screen0]` Width→1920 / Height→1080 offline with `debugfs` on the packed
   `_disk_image` (same no-mount pattern as the desktop-shortcut step 4c), so a
   from-scratch rebuild comes up at 1920×1080.
@@ -40,7 +40,7 @@ intact.
 
 ## Source contract
 
-`scripts/build-guests/serenityos.sh` deliberately pins SerenityOS commit
+`scripts/build-guests/tiles/serenityos.sh` deliberately pins SerenityOS commit
 `55c5f6336d074a8fa2402fc897e859a9b7458ceb` (2026-07-02). SerenityOS is a
 rolling source project, so this known-good commit is retained rather than
 tracking `master`. The GitHub clone and all pinned-commit toolchain downloads

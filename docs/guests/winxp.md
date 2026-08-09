@@ -286,7 +286,7 @@ of a vCPU (the visible ~8% is mostly neko H.264 encoding), no pegged vCPU. No
 DOSidle/AmnHLT-class tool needed (that's a DOS/Win9x problem).
 
 **Reproducibility (baked in, from-scratch NVMe rebuild reproduces it):**
-- `scripts/build-guests/winxp-vbemp-hires.sh` — fetches VBEMP, builds the
+- `scripts/build-guests/stages/winxp-vbemp-hires.sh` — fetches VBEMP, builds the
   driver floppy, and replays the exact monitor-driven install + 1024×768 +
   drag-off + verify sequence. Called from `winxp.sh` after auto-logon injection
   (guard `HIRES=1`). This is the surviving reproducer; the guest runs today as
@@ -310,7 +310,7 @@ the **fleet resolution target was raised 1024×768 → 1920×1200** (packed-VBEM
 
 - **Media:** `/data/images/winxp-sp3-maherz.iso` — the same integrated-SP3 nLite +
   DriverPacks repack the builder targets (`GRTMPVOL_EN` / `WIN51IP.SP3`, Nov-2014,
-  654 MB). Install: `scripts/build-guests/winxp.sh` with `XP_ISO_LOCAL=<iso>` and
+  654 MB). Install: `scripts/build-guests/tiles/winxp.sh` with `XP_ISO_LOCAL=<iso>` and
   `WINXP_PRODUCT_KEY` = the key already embedded in the ISO's `I386\WINNT.SIF`
   (VLK; no activation). `WANT_GTA1=0` skips the 330 MB GTA download.
 - **Install automation reality:** the builder's `A:\WINNT.SIF` (FullUnattended)

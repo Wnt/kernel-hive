@@ -28,7 +28,7 @@ is really for the Debian boot underneath.
 
 **Do not redirect the kiosk session's stdout when adapting this arm.** VICE 3.9
 segfaults in `vice_banner()` whenever its stdout is not a terminal, before it
-prints anything at all — see `scripts/build-guests/vic20.sh` and
+prints anything at all — see `scripts/build-guests/tiles/vic20.sh` and
 `docs/guests/vic20.md`.
 
 Reject any capture that shows the Linux console, a black emulator window, or a

@@ -19,7 +19,7 @@ uninitialised at power-on and the CRTC paints all 2000 cells of random bytes as
 random glyphs for a moment before the KERNAL clears them, so a "there is green
 on the screen" test fires on a solid block of garbage (measured 375726 green
 pixels, against the banner's 1985). Any readiness gate added to this arm must
-test a BAND, the way `wait_for_basic()` in `scripts/build-guests/cbm8032.sh`
+test a BAND, the way `wait_for_basic()` in `scripts/build-guests/tiles/cbm8032.sh`
 does — and a clip that starts before that moment will contain the garbage frame,
 which is authentic but should not be the thumbnail.
 

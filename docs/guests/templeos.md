@@ -143,7 +143,7 @@ cmdline, with `/dev/kvm` + `kvm-vm` + `kvm-vcpu:0` fds open in the host qemu.)
 
 Source: `https://templeos.org/Downloads/TempleOS.ISO` (canonical public-domain mirror;
 archive.org's item was 503 at build time). Re-fetched + verified by
-`scripts/build-guests/templeos.sh`.
+`scripts/build-guests/tiles/templeos.sh`.
 
 ## Gallery index (:8080)
 Added a `TempleOS` card (`http://192.0.2.12:8105/?usr=guest&pwd=neko`) to
@@ -181,7 +181,7 @@ project. Backed up the prior compose to
 
 ## Fresh builder and agent trial (2026-07-14)
 
-`scripts/build-guests/templeos.sh --dir` was run against an empty
+`scripts/build-guests/tiles/templeos.sh --dir` was run against an empty
 `/data/vms/soltest/repro-templeos-*` directory. The build took 61 seconds and
 produced the pinned 17,350,656-byte ISO. QMP framebuffer captures were inspected
 through boot and showed the real RedSea desktop.

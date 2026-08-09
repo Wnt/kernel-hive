@@ -1,7 +1,7 @@
 #!/bin/bash
 # Launch tile 'apple2' (VMID 217) QEMU with the streamhost display wiring.
 # BRIDGE tile: a captured Debian-12 kiosk running LinApple 2.3.0 full-screen emulating
-# an Apple //e auto-booting the Apple GEOS deskTop (see scripts/build-guests/apple2.sh,
+# an Apple //e auto-booting the Apple GEOS deskTop (see scripts/build-guests/tiles/apple2.sh,
 # scripts/apple2-tile-notes.md, streamhost/BRIDGE.md). Kill only by pidfile.
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like alpine/haiku/c64). overlay.qcow2 holds

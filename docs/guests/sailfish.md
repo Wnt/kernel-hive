@@ -2,7 +2,7 @@
 
 **Status: SOLVED and verified on-box 2026-07-04.** The real Lipstick (Wayland)
 touch GUI now renders under plain QEMU (`-vga std`), no VirtualBox. Reproducible
-build: `scripts/build-guests/sailfishos-gui.sh`. This is a **merge hand-off** for
+build: `scripts/build-guests/tiles/sailfishos-gui.sh`. This is a **merge hand-off** for
 the orchestrator — it does NOT edit any shared script.
 
 > **Current state:** the live gallery runs this as the streamhost tile
@@ -176,7 +176,7 @@ PIN. It is dismissed by asking MCE to set `tklock=unlocked`:
 
 `/etc/dbus-1/system.d/mce.conf` allows `req_tklock_mode_change` for the default
 context, so no privilege tricks are needed. Baked into the image (now part of
-`build-guests/sailfishos-gui.sh` `inject()` step 6):
+`build-guests/tiles/sailfishos-gui.sh` `inject()` step 6):
 
 - `/usr/bin/sailfish-kiosk-autounlock.sh` — self-healing loop: every 3 s, if
   tklock != unlocked, send `req_display_state_on` + `req_tklock_mode_change
@@ -244,7 +244,7 @@ Verified live on the dry-run box 2026-07-04. Written as a **merge hand-off** so 
 orchestrator could reconcile `gallery-integrate-all.sh` (neko-era, deleted;
 concurrently edited by sibling agents at the time).
 
-Reproducible image build: `scripts/build-guests/sailfishos.sh`.
+Reproducible image build: `scripts/build-guests/tiles/sailfishos.sh`.
 
 ---
 
@@ -318,7 +318,7 @@ does **not** need any edit for Sailfish — nothing to reconcile there.
 
 ## Hard dependency: the image must be the PATCHED qcow2
 
-`scripts/build-guests/sailfishos.sh` produces
+`scripts/build-guests/tiles/sailfishos.sh` produces
 `/data/gallery-guests/SailfishOS/sailfishos.qcow2` with three QEMU-compat patches
 baked in (idempotent, via `qemu-nbd`):
 

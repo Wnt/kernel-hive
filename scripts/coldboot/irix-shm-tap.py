@@ -7,7 +7,7 @@ constant fps, clean EOF on SIGTERM. The IRIX exhibit has no QEMU dbus display
 to tap — MAME runs `-video none` and publishes finished frames into a
 file-backed mapping (wire format + seqlock:
 streamhost/streamhost/src/capture/shm.rs; proven minimal reader:
-scripts/build-guests/irix-bench/shmpng.py). This sampler bridges the two, so
+scripts/build-guests/irix/irix-bench/shmpng.py). This sampler bridges the two, so
 the downstream `-f rawvideo` encode line stays the house one, unchanged.
 
   irix-shm-tap.py <fb.shm> <WxH> <fps>        # e.g. fb.shm 1288x1024 30

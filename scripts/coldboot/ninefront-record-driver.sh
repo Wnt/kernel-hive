@@ -8,7 +8,7 @@ source "${BOOTREC_LIB:-$HERE/bootrec-lib.sh}"
 
 QMP="${1:?qmp.sock required}"
 WORK="${2:?workdir required}/ninefront-driver"
-# 1920x1080 curated fixture (must match scripts/build-guests/9front.sh FIXTURE_COMMAND
+# 1920x1080 curated fixture (must match scripts/build-guests/tiles/9front.sh FIXTURE_COMMAND
 # and the golden geometry, or the boot-video->live-golden seam breaks).
 FIXTURE_COMMAND="window -r 20 130 1250 1050 acme; window -r 1268 130 1900 430 stats; window -r 1268 442 1900 770 games/catclock; window -r 1268 782 1900 1050"
 # Golden pointer-park (matches 9front.sh PARK_X/PARK_Y); reached over the clone's

@@ -4,7 +4,7 @@
 A ZX81 at its power-on prompt is a WHITE field carrying exactly one mark: the
 inverse-video `K` cursor in the bottom-left of the 32x24 character grid. That
 makes every photometric predicate in the sibling builders useless here -- see
-the header of scripts/build-guests/zx81.sh -- so this one is geometric.
+the header of scripts/build-guests/tiles/zx81.sh -- so this one is geometric.
 
 WHAT IT MEASURES
 

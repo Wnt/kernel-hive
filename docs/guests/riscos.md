@@ -3,7 +3,7 @@
 Written as a **merge hand-off** so the orchestrator could reconcile the shared
 files (`gallery-integrate-all.sh` — neko-era, deleted in the 2026-07 restructure —
 git history; and the `:8080` index) without me hand-editing them. Reproducible
-build: `scripts/build-guests/riscos.sh` (bash -n clean).
+build: `scripts/build-guests/tiles/riscos.sh` (bash -n clean).
 
 > **Restructure note:** the reconciliation below never ran — the neko compose plane
 > was superseded by streamhost. RISC OS (RPCEmu, a plain X app — not a QEMU guest)
@@ -75,7 +75,7 @@ cmos.ram       # RPCEmu NVRAM seed
 ## The image: `neko-rpcemu:latest`
 
 `neko:base` (Debian **trixie/13**) + Qt5 + RPCEmu 0.9.5 built from source. Built
-by `scripts/build-guests/riscos.sh` (Dockerfile is emitted inline). Key points:
+by `scripts/build-guests/tiles/riscos.sh` (Dockerfile is emitted inline). Key points:
 
 - Trixie ships **Qt5** still: `qtbase5-dev qtmultimedia5-dev qtchooser qt5-qmake
   libqt5multimedia5-plugins` all resolve. Build = `qtchooser -run-tool=qmake

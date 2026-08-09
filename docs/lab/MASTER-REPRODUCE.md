@@ -411,7 +411,7 @@ writable or the kernel panics) — its launcher recreates the overlay itself on 
 launch. **postmarketOS** is UEFI (OVMF pflash) — the manifest seeds the writable
 `OVMF_VARS.qcow2` varstore once (qemu-img convert of `OVMF_VARS_4M.fd`; the launcher
 attaches it `format=qcow2`). **Sailfish IS wired now** (`sailfishos` tile, bochs-drm KMS GUI
-image from `scripts/build-guests/sailfishos-gui.sh`) — the old "renders black in plain
+image from `scripts/build-guests/tiles/sailfishos-gui.sh`) — the old "renders black in plain
 QEMU" blocker belonged to the deleted VirtualBox builder path. The four
 **emulator-bridge home computers (c64, atarist, apple2, amiga)** are captured-Linux
 bridge tiles — see `streamhost/docs/BRIDGE.md`.
@@ -494,8 +494,8 @@ steps still need a human:
    proves byte-parity with live. The seven formerly box-only bake drivers are now at
    `streamhost/tiles/{alpine,kolibrios,solariscde,templeos,tinycore,win95,win98se}/golden-bake.sh`
    with their tile-local QMP/setup auxiliaries; postmarketOS's two fixture helpers are
-   vendored beside its launcher and wired by `scripts/build-guests/postmarketos-fixture.sh`.
-   Haiku's formerly manual persistent install is `scripts/build-guests/haiku-install.sh`
+   vendored beside its launcher and wired by `scripts/build-guests/tiles/postmarketos-fixture.sh`.
+   Haiku's formerly manual persistent install is `scripts/build-guests/tiles/haiku-install.sh`
    (on-box proven through sshd/key persistence and dirty→`loadvm golden` restoration).
    The remaining curated first boots use these helpers/builders rather than unrecorded
    box state; Sailfish SDK media and licensed images still require their supplied
@@ -521,7 +521,7 @@ steps still need a human:
    laggy** (no Metal/GPU) — fine for headless build/CI, not interactive Simulator work; and
    the **iOS Simulator stays on a Mac** regardless.
 4. **postmarketOS tile host prep and bake are now one runnable path**:
-   `scripts/build-guests/postmarketos-fixture.sh` runs the existing upstream-image
+   `scripts/build-guests/tiles/postmarketos-fixture.sh` runs the existing upstream-image
    builder, converts `pmos-phosh.img` to the live qcow2, invokes the vendored offline
    provisioner, boots/unlocks phosh, and saves `golden`. It is UEFI (OVMF pflash); the
    writable **`OVMF_VARS.qcow2`** varstore is seeded by `tiles-manifest.sh` post-emit
@@ -542,7 +542,7 @@ steps still need a human:
    supply a SPA transport. RISC OS likewise has no streamhost tile after its RPCEmu/neko
    path was retired.
 8. **Sailfish OS is wired but its source media is gated.** The `sailfishos` streamhost
-   tile uses the bochs-drm KMS GUI image from `scripts/build-guests/sailfishos-gui.sh`;
+   tile uses the bochs-drm KMS GUI image from `scripts/build-guests/tiles/sailfishos-gui.sh`;
    the old "renders black in plain QEMU / VirtualBox-GPU-locked" blocker belonged to
    the retired VBox builder. A fresh build still requires an emulator VDI/archive from
    the Sailfish SDK/account flow, so the default orchestrator skips both stages until

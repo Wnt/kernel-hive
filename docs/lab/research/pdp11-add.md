@@ -101,7 +101,7 @@ make tile-registry-check
   writes to the 2.11BSD filesystem — and any unclean-shutdown fsck — vanish on
   reset.
 - **Hand-managed surfaces the registry does not generate**:
-  `scripts/build-guests/pdp11.sh`, `docs/guests/pdp11.md`,
+  `scripts/build-guests/tiles/pdp11.sh`, `docs/guests/pdp11.md`,
   `docs/lab/ASSETS-MANIFEST.md` + `check-assets.sh` rows (hash the TUHS tape
   locally; a size-only check is a reproducibility gap),
   `scripts/coldboot/bootrec-tiles.conf` arm, and the three compiled-in SPA

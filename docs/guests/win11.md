@@ -1,6 +1,6 @@
 # Fully-automated Windows 11 (25H2) — install notes & pitfalls
 
-Reusable automation: **`scripts/build-guests/win11.sh`** (one invocation, zero
+Reusable automation: **`scripts/build-guests/tiles/win11.sh`** (one invocation, zero
 clicks, raw QEMU). Media: `Win11_25H2_EnglishInternational_x64_v2.iso`
 (operator-supplied, Microsoft copyright) + `virtio-win 0.1.285`.
 
@@ -17,7 +17,7 @@ installs the VirtIO guest tools and enables RDP. Nobody touches a console.
 Every gallery exhibit is a raw QEMU process under `streamhost@<tile>`, so the
 build has to end in a **qcow2 a tile can boot**. The Proxmox-era builder
 (`scripts/provision/pve-win11-vm.sh`, VM 900) produced a zvol reached through an RDP bridge
-that no longer exists. `build-guests/win11.sh` keeps the hardware recipe
+that no longer exists. `build-guests/tiles/win11.sh` keeps the hardware recipe
 identical and swaps the wrapper:
 
 | Locked `qm` line | Raw-QEMU equivalent |

@@ -5,7 +5,7 @@ MAME `indy_4610`, one R4600, 256 MB, IRIX 6.5.22, golden v3
 (`368fcfb9b56fb4165a4e456238dc1a18`), `-video none` + shm publish, `-sound none`,
 `-frameskip 6`, `-nothrottle`, pinned to core pair 1,9.
 
-Patch: `scripts/build-guests/mame-osd-cache-line-size-memo.patch`.
+Patch: `scripts/build-guests/patches/mame-osd-cache-line-size-memo.patch`.
 Work dir on the box: `/data/vms/soltest/cacheline-memo-3d91/`.
 
 ## The defect

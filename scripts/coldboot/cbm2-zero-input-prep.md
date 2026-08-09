@@ -19,7 +19,7 @@ Ready means both lines painted in green on black with the block cursor present
 beneath `ready.`, inside the native 704×528 emulator window centred on the
 800×600 X root. Measured position of the lit text on the shipped geometry: rows
 100..178, columns 80..342 of the captured frame (see
-`scripts/build-guests/cbm2.sh`, `wait_for_basic`). Canvas is the QEMU kiosk's
+`scripts/build-guests/tiles/cbm2.sh`, `wait_for_basic`). Canvas is the QEMU kiosk's
 scanout at 30 fps; the X root is 800×600. SID audio flows via ALSA/AC97.
 
 **Do not add `-CRTCdsize` when adapting this arm.** With no window manager the

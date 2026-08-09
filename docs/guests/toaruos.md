@@ -13,7 +13,7 @@ which GitHub reported as the latest upstream release during this trial. The
 stock 7,483,392-byte ISO is checked against SHA-256
 `b1dc51bd48f2b4613237185c9acb1a9beb13ab6acdd2e01d9722f77343e4c9ea`.
 
-`scripts/build-guests/toaruos.sh` then injects the repo's six launcher stubs
+`scripts/build-guests/tiles/toaruos.sh` then injects the repo's six launcher stubs
 into `/ramdisk.igz`, exposing ToaruOS's built-in Mines, Pong, Julia Fractals,
 Plasma, Calculator, and Image Viewer applications on the desktop. The stubs add
 no third-party binaries. This xorriso remaster is content-repeatable but not

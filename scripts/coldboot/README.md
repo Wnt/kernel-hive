@@ -16,7 +16,7 @@ redeploys of `scripts/dev/build-deploy.sh`.
 > unit in `streamhost/deploy/amiga-coldboot-watch.service`), `amiga-emu` (kiosk:
 > `/usr/local/bin/amiga-emu`, boot/stop flag), `amiga-launch-coldboot.sh` (kiosk:
 > `/etc/bridge/launch.sh` supervisor variant — replaces the plain launcher that
-> `scripts/build-guests/amiga.sh` bakes), `install-amiga-coldboot.sh` (installer).
+> `scripts/build-guests/tiles/amiga.sh` bakes), `install-amiga-coldboot.sh` (installer).
 
 ## Files
 

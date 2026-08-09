@@ -47,7 +47,7 @@ GOLDEN="${IRIX_GOLDEN:-$ASSETS/irix65-apps-v3.chd}"
 # garbage into a loud cold-boot fallback. After two restore launches without a
 # healthy guest (watchdog relaunches), the next launch cold-boots; livewatch
 # clears the counter on its first successful pointer probe. Bake states with
-# scripts/build-guests/irix-savestate/bake-golden.sh.
+# scripts/build-guests/irix/irix-savestate/bake-golden.sh.
 STATE="${IRIX_STATE:-}"
 STATE_DIR="${IRIX_STATE_DIR:-$ASSETS/state}"
 

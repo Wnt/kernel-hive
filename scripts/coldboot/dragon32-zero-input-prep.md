@@ -23,7 +23,7 @@ and at idle it is silent — a clip of this boot has an audio track with nothing
 on it, which is correct.
 
 **The kiosk process is named `dragon`, not `mame`.** The shipped binary is a
-MAME 0.289 `SUBTARGET=dragon` build (scripts/build-guests/build-mame-dragon32.sh)
+MAME 0.289 `SUBTARGET=dragon` build (scripts/build-guests/emulators/build-mame-dragon32.sh)
 installed as `/opt/dragon32/mame/dragon`, so `pkill -u bridge mame` — the string
 the mpf2 arm uses — matches nothing here and the prep step would silently do
 nothing. `BR_EMU_PREP_CMD` below kills `dragon`.

@@ -20,7 +20,7 @@ as older notes below imply.
 
 ## Clean rebuild trial (2026-07-14)
 
-`scripts/build-guests/kolibrios.sh` was run from an empty, namespaced box
+`scripts/build-guests/tiles/kolibrios.sh` was run from an empty, namespaced box
 directory with both live-path overrides exercised:
 
 ```sh

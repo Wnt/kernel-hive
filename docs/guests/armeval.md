@@ -5,7 +5,7 @@ Built and gated as angle **B** of the armeval bake-off (the "bare supervisor
 prompt, zero extra media" angle) under
 `docs/lab/HARD-PROBLEM-METHODOLOGY.md`. Everything below was measured on
 2026-08-09 in `/data/vms/soltest/ARMEVAL-supervisor/`, which has since been torn
-down; the builder that reproduces it is `scripts/build-guests/armeval.sh`.
+down; the builder that reproduces it is `scripts/build-guests/tiles/armeval.sh`.
 
 ## What the machine is
 
@@ -29,7 +29,7 @@ that a visitor can make a 1986 ARM talk about itself.
 | Emulator | MAME **0.289**, driver `bbcb` **with `-tube arm`** — the *same* purpose-built binary the `bbcmicro` tile ships (`/data/vms/streamhost/assets/bbcmicro/mame/bbcb`), unmodified |
 | Guest | Debian 12 X kiosk on a thin overlay of the frozen bridge base, 768 MB, 2 vCPU |
 | X root | 800x600 (an emulation-**speed** choice inherited from `bbcmicro`, not a picture one) |
-| Builder | `scripts/build-guests/armeval.sh` |
+| Builder | `scripts/build-guests/tiles/armeval.sh` |
 | Reset | internal qcow2 `golden` snapshot, `resetMode=loadvm` |
 | Credentials | none — the machine has no login |
 

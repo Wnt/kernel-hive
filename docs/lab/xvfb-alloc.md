@@ -66,10 +66,10 @@ because **`:1` is the shared CT950 dev desktop** and `:0` is a real seat.
 
 | caller | before | after |
 |---|---|---|
-| `scripts/build-guests/irix-park-desktop.sh` | `--display`, default `:151`, `rm -f $XSOCK` | pool allocation; number recorded in `<park>/display`; failed park no longer leaks its Xvfb |
-| `scripts/build-guests/irix-apps/irix-apps-launch.sh` | fixed `:41` | pool allocation, recorded in `$D/display`; `IRIX_APPS_DISPLAY` still pins |
-| `scripts/build-guests/irix-apps/irix-apps-shot.sh` | fixed `:41` | reads `$D/display` (a shot can no longer be of another rig) |
-| `scripts/build-guests/irix-apps/irix-apps-kill.sh` | `clone-guard kill-pidfile xvfb.pid` | `xvfb_release` (proves ownership, then clears the display's files) |
+| `scripts/build-guests/irix/irix-park-desktop.sh` | `--display`, default `:151`, `rm -f $XSOCK` | pool allocation; number recorded in `<park>/display`; failed park no longer leaks its Xvfb |
+| `scripts/build-guests/irix/irix-apps/irix-apps-launch.sh` | fixed `:41` | pool allocation, recorded in `$D/display`; `IRIX_APPS_DISPLAY` still pins |
+| `scripts/build-guests/irix/irix-apps/irix-apps-shot.sh` | fixed `:41` | reads `$D/display` (a shot can no longer be of another rig) |
+| `scripts/build-guests/irix/irix-apps/irix-apps-kill.sh` | `clone-guard kill-pidfile xvfb.pid` | `xvfb_release` (proves ownership, then clears the display's files) |
 | `streamhost/tiles/irix/x11-runtime.sh` | fixed `:40` + socket test + `rm -f $XSOCK` | pinned claim via the allocator; the socket `rm` is gone |
 
 The production IRIX tile runs `IRIX_CAPTURE=shm` (`-video none`) and starts **no

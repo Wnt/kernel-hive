@@ -1,7 +1,7 @@
 #!/bin/bash
 # Launch tile 'atarist' (VMID 216) QEMU with the streamhost display wiring.
 # BRIDGE tile: a captured Debian-12 kiosk running Hatari (windowed) emulating
-# an Atari ST booting EmuTOS to the GEM desktop (see scripts/build-guests/atarist.sh,
+# an Atari ST booting EmuTOS to the GEM desktop (see scripts/build-guests/tiles/atarist.sh,
 # scripts/atarist-tile-notes.md, streamhost/BRIDGE.md). Kill only by pidfile.
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like alpine/haiku). The overlay.qcow2 holds

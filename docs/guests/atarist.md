@@ -7,9 +7,9 @@ tile) — streamhost captures the Linux framebuffer + AC97 audio (the ST **YM214
 routed through ALSA) exactly like every other tile.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built by
-`scripts/build-guests/bridge-base.sh`). Contains VICE(x64sc)+**hatari**+cap32 + the
+`scripts/build-guests/lib/bridge-base.sh`). Contains VICE(x64sc)+**hatari**+cap32 + the
 bare-X kiosk + `/opt/bridge/media/etos1024k.img`.
-**Build script (tile):** `scripts/build-guests/atarist.sh` (thin overlay + kiosk
+**Build script (tile):** `scripts/build-guests/tiles/atarist.sh` (thin overlay + kiosk
 `launch.sh` + golden bake + audio verify).
 **Tile dir (host):** `/data/vms/streamhost/tiles/atarist/` — `overlay.qcow2` (thin,
 on the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `tile.env`.

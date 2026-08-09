@@ -15,11 +15,11 @@ other tile. See **`streamhost/docs/BRIDGE.md`** for the reusable bridge pattern.
 > different era — two separate placards.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built by
-`scripts/build-guests/bridge-base.sh`). FS-UAE is **not** in the frozen base image
+`scripts/build-guests/lib/bridge-base.sh`). FS-UAE is **not** in the frozen base image
 that predates this tile — the build script installs it into the overlay (and
 `bridge-base.sh` has been updated to bake fs-uae + the media in on a from-scratch
 NVMe rebuild).
-**Build script (tile):** `scripts/build-guests/amiga.sh` (thin overlay + fs-uae
+**Build script (tile):** `scripts/build-guests/tiles/amiga.sh` (thin overlay + fs-uae
 install + media fetch + kiosk `launch.sh` + golden bake + verify).
 **Tile dir (host):** `/data/vms/streamhost/tiles/amiga/` — `overlay.qcow2` (thin, on
 the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `tile.env`.

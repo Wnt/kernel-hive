@@ -19,7 +19,7 @@ restore.
 so stock MAME opens it with a full-screen red "THIS SYSTEM DOESN'T WORK" panel
 that `-skip_gameinfo` does not suppress. The tile ships a patched binary in
 which `ui.ini`'s `skip_warnings 1` applies to that panel, and
-`scripts/build-guests/kc854.sh`'s readiness predicate asserts the panel's red is
+`scripts/build-guests/tiles/kc854.sh`'s readiness predicate asserts the panel's red is
 absent from the frame. If a future clip shows a red flash before the CAOS
 screen, the deployed binary or `/opt/kc854/ui.ini` has regressed — do not
 publish it, and do not "fix" it by trimming the clip.

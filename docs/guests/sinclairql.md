@@ -10,7 +10,7 @@ framebuffer + AC97 audio, exactly like c64/vic20/plus4/mpf2
 | public id / tileDir | `sinclairql` / `sinclairql` |
 | slot / UDP | 133 / 54133 |
 | VMID label / kiosk SSH | 236 / 127.0.0.1:5836 (bridge key) |
-| builder | `scripts/build-guests/sinclairql.sh` (`--force` rebuilds the overlay) |
+| builder | `scripts/build-guests/tiles/sinclairql.sh` (`--force` rebuilds the overlay) |
 | disk | `overlay.qcow2`, a THIN overlay on the frozen `/data/vms/bridge/bridge-base.qcow2` |
 | reset | `loadvm` of the INTERNAL `golden` snapshot |
 | pointer | none — keyboard-only exhibit (`--pointer none --input-backend disabled`) |

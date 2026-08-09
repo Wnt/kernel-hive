@@ -1,7 +1,7 @@
 #!/bin/bash
 # Launch tile 'c64' (VMID 214) QEMU with the streamhost display wiring.
 # BRIDGE tile: a captured Debian-12 kiosk running VICE x64sc full-screen emulating
-# a Commodore 64 auto-booting the GEOS 2.0 deskTop (see scripts/build-guests/c64.sh,
+# a Commodore 64 auto-booting the GEOS 2.0 deskTop (see scripts/build-guests/tiles/c64.sh,
 # scripts/c64-tile-notes.md, streamhost/BRIDGE.md). Kill only by pidfile.
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like alpine/haiku). The overlay.qcow2 holds

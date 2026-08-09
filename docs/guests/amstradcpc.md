@@ -10,10 +10,10 @@ tile — streamhost captures the Linux framebuffer + AC97 audio (the CPC
 **`docs/guests/c64.md`** for the reference (C64) recipe this tile forks.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built by
-`scripts/build-guests/bridge-base.sh`). Ships VICE(x64sc)+hatari+LinApple+**cap32**
+`scripts/build-guests/lib/bridge-base.sh`). Ships VICE(x64sc)+hatari+LinApple+**cap32**
 +fs-uae + the bare-X kiosk. cap32 is built from source (github ColinPitrat) in the
 base, so this tile needs NO base rebuild.
-**Build script (tile):** `scripts/build-guests/amstradcpc.sh` (thin overlay +
+**Build script (tile):** `scripts/build-guests/tiles/amstradcpc.sh` (thin overlay +
 kiosk `launch.sh` + framebuffer checks + keyboard proof + golden cold-restore).
 **Tile dir (host):** `/data/vms/streamhost/tiles/amstradcpc/` — `overlay.qcow2`
 (thin, on the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`,

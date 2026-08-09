@@ -13,7 +13,7 @@
 #  * NO floppy at runtime: the fixture was built with a generated settings floppy
 #    (reactos-settings.img) which was ejected before savevm, so the golden
 #    snapshot has an empty floppy0 — matched here by the pc machine's default
-#    empty floppy0 (no -fda). scripts/build-guests/reactos.sh invokes the fully
+#    empty floppy0 (no -fda). scripts/build-guests/tiles/reactos.sh invokes the fully
 #    automated streamhost/tiles/reactos/golden-bake.sh to rebuild it cold.
 set -e
 GDIR=/data/gallery-guests/ReactOS

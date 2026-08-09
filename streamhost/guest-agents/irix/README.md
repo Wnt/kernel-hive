@@ -267,7 +267,7 @@ a wedge. Log in first (the browser, or the key-matrix channel), then launch.
 ## Verifying — the acceptance suite
 
 ```
-scripts/build-guests/irix-serial-selftest.py         # ~40 s, needs only perl
+scripts/build-guests/irix/irix-serial-selftest.py         # ~40 s, needs only perl
 ```
 
 It runs the real `irixagent.pl` and the real `irixexec.py` against each other

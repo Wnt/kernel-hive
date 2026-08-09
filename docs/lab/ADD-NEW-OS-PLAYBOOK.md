@@ -277,7 +277,7 @@ captured surface is the kiosk's X root, so the emulator must fill it:
   window is a fixed 719×544 at `-VICIIdsize`, so the X root drops to the smallest
   advertised mode that contains it (800×600). Do not reach for SDL real
   fullscreen instead: it renders BLACK under std-VGA capture (see the note in
-  `scripts/build-guests/amstradcpc.sh`).
+  `scripts/build-guests/tiles/amstradcpc.sh`).
 - Any change to the launcher or the X geometry invalidates the golden. Re-bake
   it, or reset restores the old layout and the fix appears not to have worked.
 

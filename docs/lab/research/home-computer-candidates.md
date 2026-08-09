@@ -68,7 +68,7 @@ bridge pattern (`streamhost/docs/BRIDGE.md`):
 - **MAME** for everything VICE does not cover: KIM-1, the Britons, the GDR
   machines, and the big Amigas if FS-UAE is not used. Already on the box, and
   the daemon already has MAME-specific input plumbing
-  (`SH_INPUT_BACKEND=mamecmd`/`mamesock`, `mame_input.rs`, `scripts/build-guests/mamectl`).
+  (`SH_INPUT_BACKEND=mamecmd`/`mamesock`, `mame_input.rs`, `scripts/build-guests/emulators/mamectl`).
 - **FS-UAE** for the Amigas, continuing the `amiga` tile's path. Its model list
   covers A1000, A3000, A4000 and A4000T — but **not the A2000** (§4.4).
 

@@ -77,7 +77,7 @@ Run only on the lab host. The default work directory is namespaced as
 `/data/vms/soltest/redstar3-build-YYYYMMDD`; it never uses a live tile, a
 `soltest-*` tile, or `/mnt/poc`.
 
-The installer has no answer-file interface. `scripts/build-guests/redstar3.sh`
+The installer has no answer-file interface. `scripts/build-guests/tiles/redstar3.sh`
 boots the ISO and drives it as a bounded machine-vision state machine:
 
 1. capture the real framebuffer through QMP;
@@ -140,7 +140,7 @@ non-destructive and may load this tag; it must never save or replace it.
 Repository gates:
 
 ```bash
-bash -n scripts/build-guests/redstar3.sh
+bash -n scripts/build-guests/tiles/redstar3.sh
 scripts/build-guests/check-assets.sh --only redstar3
 make tile-registry-generate
 make tile-registry-check

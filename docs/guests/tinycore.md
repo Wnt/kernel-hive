@@ -4,7 +4,7 @@
 GUI LiveCD (FLWM + wbar desktop), golden test fixture with an open aterm
 terminal, `resetMode=loadvm`, ssh exec channel on host port **5882** (user
 `tc`, gallery key). Reproducible builder:
-**`scripts/build-guests/tinycore.sh`** (fully automated, proven end-to-end
+**`scripts/build-guests/tiles/tinycore.sh`** (fully automated, proven end-to-end
 2026-07-14 on Tiny Core 17.0).
 
 ## What this tile is
@@ -85,7 +85,7 @@ The golden snapshot records the QEMU device set; **every** launcher that wants
   curated. The open aterm is the same plain `aterm` the wbar Terminal icon
   execs.
 
-## Builder (`scripts/build-guests/tinycore.sh`)
+## Builder (`scripts/build-guests/tiles/tinycore.sh`)
 
 Fully automated, zero human interaction:
 

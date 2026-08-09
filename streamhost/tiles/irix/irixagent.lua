@@ -1,5 +1,5 @@
 -- IRIX MAME input agent (issue #20) — the Lua ROLLBACK arm of the compiled-in
--- mamectl module (issue #45, scripts/build-guests/mame-ctlsock.patch).
+-- mamectl module (issue #45, scripts/build-guests/patches/mame-ctlsock.patch).
 -- File-driven injection straight onto the emulated ioports, bypassing SDL
 -- entirely (a WM-less full-screen Xvfb never mouse-captures, so SDL drops
 -- everything): buttons and keys set ioport fields, and pointer MOTION is
@@ -228,7 +228,7 @@ end
 -- synthesised here at all, it is simply another field the browser already tells
 -- us to press (the SPA sends a real Shift make/break around a shifted char).
 -- That also gives Ctrl-C for free. Proven first in
--- scripts/build-guests/irix-apps/keys.py, which this ports.
+-- scripts/build-guests/irix/irix-apps/keys.py, which this ports.
 --
 -- TIMING lives in the guest, because a burst of command lines is consumed inside
 -- ONE periodic tick: setting a field down and up in the same tick is invisible to

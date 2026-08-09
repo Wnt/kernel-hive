@@ -16,7 +16,7 @@ hand off to the golden's first frame cleanly. Nothing is typed at any point.
 
 Ready means an **800×600** capture (not the 720×400 VGA text mode the Linux
 boot passes through) carrying those three lines of blue-white phosphor and the
-block cursor, and nothing else. `scripts/build-guests/pet2001.sh` states the
+block cursor, and nothing else. `scripts/build-guests/tiles/pet2001.sh` states the
 same predicate numerically: geometry exactly 800×600 **and** 1200–4000 lit
 pixels. The geometry half is not decoration — GRUB's `Booting 'Debian
 GNU/Linux'` screen sits inside the pixel band and was mistaken for the fixture

@@ -8,7 +8,7 @@
 #   host  : ../../streamhost/deploy/amiga-coldboot-watch.service -> systemd unit
 #   kiosk : amiga-emu                -> guest /usr/local/bin/amiga-emu  (boot|stop|status flag)
 #   kiosk : amiga-launch-coldboot.sh -> guest /etc/bridge/launch.sh    (supervisor loop;
-#           REPLACES the plain `exec fs-uae` launcher that scripts/build-guests/amiga.sh bakes)
+#           REPLACES the plain `exec fs-uae` launcher that scripts/build-guests/tiles/amiga.sh bakes)
 #
 # Requires tile.env SH_IDLE_PAUSE_SECS=0 for amiga (the daemon must never
 # QMP-freeze the kiosk out from under the watcher) — asserted below.

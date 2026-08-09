@@ -3,7 +3,7 @@
 # BRIDGE tile: a captured Debian-12 kiosk running the Previous emulator as a
 # NeXTcube (Motorola 68040, 25 MHz, 64 MB, Rev 2.5 v66 ROM) booting NeXTSTEP 3.3
 # for m68k off a SCSI disk image, drawn on an X root that is EXACTLY the size of
-# the NeXT MegaPixel display, 1120x832. See scripts/build-guests/nextstep.sh and
+# the NeXT MegaPixel display, 1120x832. See scripts/build-guests/tiles/nextstep.sh and
 # docs/guests/nextstep.md. Kill only by pidfile.
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/amiga/pdp11). overlay.qcow2 is

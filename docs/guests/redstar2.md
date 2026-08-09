@@ -64,7 +64,7 @@ the pointer stays 1:1 full-screen (calibration corners `a=[100,100]`,
 
 ## Machine-vision installation
 
-`scripts/build-guests/redstar2.sh` is fail-fast and uses a uniquely namespaced
+`scripts/build-guests/tiles/redstar2.sh` is fail-fast and uses a uniquely namespaced
 `/data/vms/soltest/redstar2-build-YYYYMMDD/` directory. It drives Anaconda with
 bounded QMP framebuffer state transitions, Korean/English OCR, and saved failure
 frames:
@@ -150,7 +150,7 @@ Run on the lab host with the password passed on fd 3 without printing it:
 
 ```bash
 scripts/build-guests/check-assets.sh --only redstar2
-scripts/build-guests/redstar2.sh 3</path/to/private-password-fd-source
+scripts/build-guests/tiles/redstar2.sh 3</path/to/private-password-fd-source
 ```
 
 The canonical output is `/data/gallery-guests/RedStar2/redstar2.qcow2`.

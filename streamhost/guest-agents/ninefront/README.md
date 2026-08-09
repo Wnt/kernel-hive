@@ -9,7 +9,7 @@ streamhost daemon's newline M/P/R/B protocol plus the bake-only acknowledged
 
 Run the guest-owned builder on the lab box:
 
-    nice -n15 scripts/build-guests/9front.sh
+    nice -n15 scripts/build-guests/tiles/9front.sh
 
 The builder starts from the pinned official
 `https://9front.org/iso/9front-11554.amd64.qcow2.gz` archive (sha256

@@ -19,7 +19,7 @@
 #     Device set MUST match the golden bake EXACTLY or -loadvm golden fails.
 #   * An internal snapshot carries the DISK too, so any change made inside the
 #     kiosk (a new /etc/bridge/launch.sh, say) is REVERTED by the next restore
-#     until it is re-baked. scripts/build-guests/gt40.sh therefore never boots
+#     until it is re-baked. scripts/build-guests/tiles/gt40.sh therefore never boots
 #     with -loadvm; only this production launcher does.
 #   * usb-tablet is REQUIRED: the VT11 light pen is mouse button 1 in Open SIMH
 #     (display/sim_ws.c: display_lp_sw = mev.b1_state), so the pen is on the

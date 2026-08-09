@@ -24,7 +24,7 @@ GH issue #23. Catalog: `docs/catalog/os-media-catalog.md` §4 "Windows NT rungs"
 
 ## Build and device set
 
-- Builder: `scripts/build-guests/nt4.sh` (download → convert → offline boot.ini
+- Builder: `scripts/build-guests/tiles/nt4.sh` (download → convert → offline boot.ini
   fix → framebuffer-verify).
 - Canonical output: `/data/gallery-guests/Nt4/nt4-golden.qcow2`.
 - Device set (catalog §4 recipe; pins matter — see gotchas):
@@ -122,7 +122,7 @@ On a namespaced clone under `/data/vms/soltest/` with the recipe above:
   (SHA-256
   `76f1fb0e11aee51ded7b8b75e203984f7a0b97d2fad5c2d3addd7b660684b487`).
 - Credentials reference only (never values): `guest/nt4`.
-- Rebuild/rollback source remains `scripts/build-guests/nt4.sh`; production
+- Rebuild/rollback source remains `scripts/build-guests/tiles/nt4.sh`; production
   always boots the tile-local copy under `/data/vms/streamhost/tiles/nt4/`.
 
 ## Patched-QEMU maintenance

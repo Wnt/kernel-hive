@@ -1,7 +1,7 @@
 # QNX Neutrino 6.5.0 — gallery tile notes (:8112)
 
 **Guest:** QNX Neutrino RTOS **6.5.0** self-hosting **LiveCD** → **Photon microGUI** desktop.
-**Build script:** `scripts/build-guests/qnx.sh` (fetches ISO + drives to desktop + framebuffer-proves it).
+**Build script:** `scripts/build-guests/tiles/qnx.sh` (fetches ISO + drives to desktop + framebuffer-proves it).
 **Image (host):** `/data/gallery-guests/QNX/QNX650Live.iso` (in CT 110 as `/guests/QNX/QNX650Live.iso`).
 **Proof:** `/data/gallery-guests/QNX/qnx-photon-desktop.png` (blue Photon desktop) + `qnx-photon-login.png`.
 **Live-tile proof (2026-07-04):** `/opt/osgallery/gallery-guests/QNX/qnx-photon-desktop-live.jpg` — the blue Photon

@@ -9,7 +9,7 @@ Linux framebuffer exactly like every other bridge tile. See
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` — does **not** contain
 SIMH (see the deviation below).
-**Build script (tile):** `scripts/build-guests/pdp11.sh` — thin overlay + SIMH
+**Build script (tile):** `scripts/build-guests/tiles/pdp11.sh` — thin overlay + SIMH
 build + pack staging + 2.11BSD curation + kiosk `launch.sh` + quiet console +
 golden bake + a framebuffer-asserted keyboard proof, fully automated, ~6 min.
 **Tile dir (host):** `/data/vms/streamhost/tiles/pdp11/`.
@@ -44,7 +44,7 @@ without; see "the focus trap" below.
 
 ### For a from-scratch NVMe rebuild
 
-`scripts/build-guests/bridge-base.sh` should bake both in, so the tile builder
+`scripts/build-guests/lib/bridge-base.sh` should bake both in, so the tile builder
 becomes pure configuration:
 
 ```bash
@@ -273,7 +273,7 @@ types `uname -a`.
 - `SH_RESET_MODE=loadvm`, snapshot `golden`, inside `overlay.qcow2`. **Never
   delete or recreate `overlay.qcow2`** — the golden *and* the 2.11BSD pack live
   inside it. The device set must match the bake exactly.
-- Re-bake with `scripts/build-guests/pdp11.sh --force` (stops only this tile,
+- Re-bake with `scripts/build-guests/tiles/pdp11.sh --force` (stops only this tile,
   refuses to run while `streamhost@pdp11` is active, re-uses the staged and
   hashed media).
 - Rollback: `systemctl stop streamhost@pdp11` — see the tile's `ROLLBACK.md`.

@@ -176,13 +176,13 @@ the internal snapshot and starts with `-loadvm golden`.
 
 ## Proposed builder change
 
-`scripts/build-guests/android-x86.sh` now contains the proposal behind
+`scripts/build-guests/tiles/android-x86.sh` now contains the proposal behind
 `INSTALL_VISION=1`:
 
 ```bash
 apt-get install -y tesseract-ocr python3-venv
 scripts/install-vision/install.sh
-INSTALL_VISION=1 scripts/build-guests/android-x86.sh
+INSTALL_VISION=1 scripts/build-guests/tiles/android-x86.sh
 ```
 
 The proposed path adds a unique QMP socket, waits for content instead of a

@@ -12,9 +12,9 @@ was not needed — LinApple reaches the GEOS deskTop reliably and bundles the //
 (no external ROM set required).
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built by
-`scripts/build-guests/bridge-base.sh`). Contains the bare-X kiosk + LinApple *source*
+`scripts/build-guests/lib/bridge-base.sh`). Contains the bare-X kiosk + LinApple *source*
 at `/usr/local/src/linapple` (its build had failed in the base).
-**Build script (tile):** `scripts/build-guests/apple2.sh` (thin overlay + LinApple
+**Build script (tile):** `scripts/build-guests/tiles/apple2.sh` (thin overlay + LinApple
 build fix + GEOS media + kiosk `launch.sh` + golden bake + verify).
 **Tile dir (host):** `/data/vms/streamhost/tiles/apple2/` — `overlay.qcow2` (thin, on
 the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `tile.env`.

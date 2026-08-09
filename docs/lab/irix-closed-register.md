@@ -177,7 +177,7 @@ guest-CPU work, so even a magic 3× CPU gives 1.44× overall.
 Both are dead ends for the CRIU work, on a criu rule about tun/tap fds, and both
 are *slower* than kernel veth + NAT (pasta by 50%). Full mechanism and the
 measured throughput table:
-[`scripts/build-guests/irix-criu/README.md`](../../scripts/build-guests/irix-criu/README.md).
+[`scripts/build-guests/irix/irix-criu/README.md`](../../scripts/build-guests/irix-criu/README.md).
 
 ---
 
