@@ -1471,6 +1471,38 @@
         "BASIC-PLUS under RSTS/E"
       ],
       "blurb": "One machine and three of the operating systems DEC sold for it — a real-time monitor, a real-time executive and a timesharing system — because in 1975 you did not buy a computer with an operating system, you bought a computer and then chose one."
+    },
+    {
+      "id": "dragon32",
+      "era_year": 1980,
+      "displayName": "Dragon 32",
+      "year": 1982,
+      "lineage": "Dragon Data (Port Talbot, Wales) — Motorola 6809 / MC6847, Tandy CoCo lineage",
+      "arch": "Motorola MC6809E, 0.89 MHz, 32 KB RAM, 16 KB ROM",
+      "accent": "#30D200",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 49,
+      "eraLabel": "1982 · Dragon 32 (Microsoft BASIC)",
+      "signalEndpoint": "/signal/dragon32.json",
+      "ramMB": 0,
+      "ramKB": 32,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289's dragon32 driver, built from the same pinned upstream commit the mpf2 tile ships; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. THE LAUNCHER MUST EMPTY THE `ext` SLOT (-ext \"\"): its default is dragon_fdc, which boots DRAGONDOS instead of BASIC, and -verifyroms demands the FDC ROM that causes it. The romset is assembled BY SHA1 and gated against the shipped binary's own -listxml (0.276 declares one 16 KB d32.rom, 0.289 the same bits as two 8 KB halves named after their chips), and the build asserts the banner by OCR plus a text-pixel count of the framebuffer. Driver status is `good`, so MAME never raises its red \"doesn't work\" panel. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/dragon32.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "Microsoft 16K Extended Color BASIC in ROM",
+        "cassette games from Microdeal, Salamander and Dragon Data itself",
+        "DragonDOS on the optional disk interface",
+        "OS-9 Level 1, a real multitasking Unix-alike on a home micro",
+        "Dragon User magazine and its monthly type-in listings"
+      ],
+      "periodBrowser": "none — pre-web 8-bit era",
+      "iconicApps": [
+        "Microsoft Extended Color BASIC",
+        "Telewriter, the word processor that gave the Dragon lower case",
+        "Microdeal's cassette games"
+      ],
+      "blurb": "Britain's Welsh-built answer to the home-computer boom: a Motorola 6809 — the best 8-bit processor anyone shipped — wired to a video chip that could draw nine colours and no lower-case letters, and sold against the Spectrum."
     }
   ]
 }

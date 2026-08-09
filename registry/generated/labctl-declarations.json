@@ -182,6 +182,21 @@
       "udp_port": 54126,
       "notes": "exec: labctl exec decos \"<cmd>\" (ssh root@:5829, key bridge_key) — lands in the Debian kiosk, not in the PDP-11. The simulator's console is the xterm; drive it with labctl type/key and read it with labctl shot."
     },
+    "dragon32": {
+      "dir": "/data/vms/streamhost/tiles/dragon32",
+      "qmp": "/data/vms/streamhost/tiles/dragon32/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5833,
+      "exec_port": 5833,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54130,
+      "notes": "exec: labctl exec dragon32 \"<cmd>\" (ssh root@:5833, key bridge_key)"
+    },
     "freedos": {
       "dir": "/data/vms/streamhost/tiles/freedos",
       "qmp": "/data/vms/streamhost/tiles/freedos/qmp.sock",

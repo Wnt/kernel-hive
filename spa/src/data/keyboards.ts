@@ -3,6 +3,22 @@
 import type { GuestKeyboard } from '../types';
 
 const KEYBOARDS = {
+  "dragon32": {
+    "charMap": {
+      "@": "[",
+      "\"": "@",
+      "&": "^",
+      "'": "&",
+      "(": "*",
+      ")": "(",
+      ":": "-",
+      "*": "_",
+      "+": ":",
+      "-": "=",
+      "=": "+"
+    },
+    "letterCase": "upper-only"
+  },
   "mpf2": {
     "charMap": {
       "=": "O",

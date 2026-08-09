@@ -1,54 +1,259 @@
 {
   "schemaVersion": 1,
   "id": "dragon32",
-  "era_year": 2026,
-  "tileDir": "dragon32",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "era_year": 1980,
+  "enabled": true,
   "build": {
     "rows": [
       {
-        "order": 47,
+        "order": 45,
         "prelude": "",
-        "line": "  \"dragon32    |dragon32.sh    |Dragon32      |installed|~15-30m |partial |TODO\"\n",
+        "line": "  \"dragon32     |dragon32.sh    |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)\"\n",
         "value": {
           "key": "dragon32",
           "script": "dragon32.sh",
-          "outputDir": "Dragon32",
-          "class": "installed",
-          "estimated": "~15-30m",
-          "automation": "partial",
-          "produces": "TODO",
+          "outputDir": "bridge/dragon32",
+          "class": "retro",
+          "estimated": "~4-6m",
+          "automation": "full",
+          "produces": "tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)",
           "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 14
         }
       }
     ]
   },
-  "operator": {},
-  "render": {},
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/dragon32",
+      "qmp": "/data/vms/streamhost/tiles/dragon32/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5833,
+      "exec_port": 5833,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54130,
+      "notes": "exec: labctl exec dragon32 \"<cmd>\" (ssh root@:5833, key bridge_key)"
+    }
+  },
+  "render": {
+    "signalOrder": 45,
+    "tilesManifestOrder": 43,
+    "tilesManifestPrelude": "\n# dragon32 (VMID 233) — MAME dragon32 -ext \"\" (Dragon 32, PAL, 1982) -> Microsoft Extended Color BASIC. ssh 5833. Keyboard-only.\n",
+    "tilesManifestInvocation": "emit dragon32 \\\n  --tile dragon32 --vmid 233 --udp 54130 --pointer none --input-backend disabled \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/dragon32/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/dragon32/tile.env.fixture\"\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 49,
+    "bindingPrelude": "",
+    "bindingLine": "  dragon32:    { osId: 'dragon32',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#30D200', eraLabel: '1982 · Dragon 32 (Microsoft BASIC)' },\n",
+    "museumOrder": 43,
+    "goldenOrder": 43,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'dragon32', displayName: 'Dragon 32', year: 1982,\n    lineage: 'Dragon Data (Port Talbot, Wales) — Motorola 6809 / MC6847, Tandy CoCo lineage',\n    arch: 'Motorola MC6809E, 0.89 MHz, 32 KB RAM, 16 KB ROM', ramMB: 0, ramKB: 32,    era: '1980s', accent: '#30D200',\n    eraSoftware: ['Microsoft 16K Extended Color BASIC in ROM', 'cassette games from Microdeal, Salamander and Dragon Data itself', 'DragonDOS on the optional disk interface', 'OS-9 Level 1, a real multitasking Unix-alike on a home micro', 'Dragon User magazine and its monthly type-in listings'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['Microsoft Extended Color BASIC', 'Telewriter, the word processor that gave the Dragon lower case', 'Microdeal\\'s cassette games'],\n    blurb: 'Britain\\'s Welsh-built answer to the home-computer boom: a Motorola 6809 — the best 8-bit processor anyone shipped — wired to a video chip that could draw nine colours and no lower-case letters, and sold against the Spectrum.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289\\'s dragon32 driver, built from the same pinned upstream commit the mpf2 tile ships; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. THE LAUNCHER MUST EMPTY THE `ext` SLOT (-ext \"\"): its default is dragon_fdc, which boots DRAGONDOS instead of BASIC, and -verifyroms demands the FDC ROM that causes it. The romset is assembled BY SHA1 and gated against the shipped binary\\'s own -listxml (0.276 declares one 16 KB d32.rom, 0.289 the same bits as two 8 KB halves named after their chips), and the build asserts the banner by OCR plus a text-pixel count of the framebuffer. Driver status is `good`, so MAME never raises its red \"doesn\\'t work\" panel. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/dragon32.md.',\n  },\n"
+  },
+  "tileDir": "dragon32",
+  "lifecycle": "production",
   "stream": {
-    "transport": "showcase",
+    "transport": "streamhost",
     "udpPort": 54130,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
     "slot": 130
   },
   "guestDoc": "docs/guests/dragon32.md",
   "credentialsRef": "guest/dragon32",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "dragon32",
+      "SH_QMP": "/data/vms/streamhost/tiles/dragon32/qmp.sock",
+      "SH_PORT": "54130",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/dragon32/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/dragon32/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "80",
+      "SH_KEY_MIN_GAP_MS": "80",
+      "SH_KEY_MAP": "@:[,\":@,&:^,':&,(:*,):(,%3A:-,*:_,+:%3A,-:=,=:+",
+      "SH_FIXTURE_DESC": "Dragon 32 (PAL) at its own untouched power-on screen: \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\", dark green on the MC6847's bright green page, drawn fullscreen with aspect correction by MAME 0.289's dragon32 driver on a 1024x768 X root (the dark surround is the Dragon's own border, not letterboxing). The launcher empties the driver's `ext` slot with -ext \"\": with the default dragon_fdc cartridge the machine boots DRAGONDOS 1.0 instead, and -verifyroms actively demands the FDC ROM that produces that wrong screen. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; 6-bit DAC sound -> ALSA -> AC97."
+    },
+    "vmidLabel": 233,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "dragon32",
+        "--vmid",
+        "233",
+        "--udp",
+        "54130",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/dragon32/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/dragon32/tile.env.fixture"
+      ],
+      "deviceSetId": "dragon32-current",
+      "launcher": "streamhost/tiles/dragon32/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/dragon32/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-dragon32",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5833-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-dragon32",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5833-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+      }
+    },
+    "bringUpOrder": 49
+  },
   "spa": {
     "archetypeId": "beige-tower-crt",
-    "transport": "showcase",
-    "accentColor": "#64748b",
-    "eraLabel": "TBD · dragon32"
+    "transport": "streamhost",
+    "accentColor": "#30D200",
+    "eraLabel": "1982 · Dragon 32 (Microsoft BASIC)"
+  },
+  "keyboard": {
+    "charMap": {
+      "@": "[",
+      "\"": "@",
+      "&": "^",
+      "'": "&",
+      "(": "*",
+      ")": "(",
+      ":": "-",
+      "*": "_",
+      "+": ":",
+      "-": "=",
+      "=": "+"
+    },
+    "letterCase": "upper-only"
+  },
+  "demoProgram": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 pmode 3,1",
+      "20 pcls",
+      "30 screen 1,0",
+      "40 for r=2 to 90 step 4",
+      "50 circle(128,96),r,rnd(4)",
+      "60 next r",
+      "70 goto 40"
+    ],
+    "runCommand": "run",
+    "perCharMs": 170
   },
   "museum": {
     "id": "dragon32",
-    "displayName": "dragon32",
-    "year": 2026,
-    "lineage": "TODO",
-    "arch": "TODO",
-    "accent": "#64748b"
+    "displayName": "Dragon 32",
+    "year": 1982,
+    "lineage": "Dragon Data (Port Talbot, Wales) — Motorola 6809 / MC6847, Tandy CoCo lineage",
+    "arch": "Motorola MC6809E, 0.89 MHz, 32 KB RAM, 16 KB ROM",
+    "ramMB": 0,
+    "ramKB": 32,
+    "era": "1980s",
+    "accent": "#30D200",
+    "eraSoftware": [
+      "Microsoft 16K Extended Color BASIC in ROM",
+      "cassette games from Microdeal, Salamander and Dragon Data itself",
+      "DragonDOS on the optional disk interface",
+      "OS-9 Level 1, a real multitasking Unix-alike on a home micro",
+      "Dragon User magazine and its monthly type-in listings"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "Microsoft Extended Color BASIC",
+      "Telewriter, the word processor that gave the Dragon lower case",
+      "Microdeal's cassette games"
+    ],
+    "blurb": "Britain's Welsh-built answer to the home-computer boom: a Motorola 6809 — the best 8-bit processor anyone shipped — wired to a video chip that could draw nine colours and no lower-case letters, and sold against the Spectrum.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289's dragon32 driver, built from the same pinned upstream commit the mpf2 tile ships; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. THE LAUNCHER MUST EMPTY THE `ext` SLOT (-ext \"\"): its default is dragon_fdc, which boots DRAGONDOS instead of BASIC, and -verifyroms demands the FDC ROM that causes it. The romset is assembled BY SHA1 and gated against the shipped binary's own -listxml (0.276 declares one 16 KB d32.rom, 0.289 the same bits as two 8 KB halves named after their chips), and the build asserts the banner by OCR plus a text-pixel count of the framebuffer. Driver status is `good`, so MAME never raises its red \"doesn't work\" panel. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/dragon32.md."
   },
-  "notes": [
-    "new-os Tier 2 scaffold; reserved slot 130/UDP 54130",
-    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-  ]
+  "reset": {
+    "tileDir": "dragon32",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Dragon 32 (PAL) power-on screen — \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\" — in MAME 0.289's dragon32 driver with the `ext` slot emptied, fullscreen on a 1024x768 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated: the Plus/4's rejected in-application golden is the reason. No post-restore keys. The banner is asserted by OCR of the framebuffer at every stage of the build, because the wrong screen (DRAGONDOS 1.0, what the driver's default slot produces) is the same two greens and a pixel histogram cannot tell them apart. Keyboard proof certified 2026-08-09 after the bake: PRINT 3*7 answered 21, which also proves the shifted matrix — the Dragon puts '*' on SHIFT+the key a PC labels '-'. Keyboard-only exhibit (no mouse); AC97 audio."
+  }
 }
