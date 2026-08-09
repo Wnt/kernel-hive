@@ -22,7 +22,7 @@ So the public deployment has two planes that reach the box by different routes:
   ┌──────────────────────── vm-control (the edge VPS) ─────────────────────────┐
   │  HAProxy :443 ──SNI──► Caddy (LE cert, /ask-gated) ──► forwarder :7080     │
   │                                                             │              │
-  │  nftables: udp 54080-54130 ──dnat──► 10.66.0.3 (same port)   │              │
+  │  nftables: udp 54080-54200 ──dnat──► 10.66.0.3 (same port)   │              │
   └──────────────────┬──────────────────────────────────────────┼──────────────┘
       WireGuard      │ (peer dials OUT, PersistentKeepalive)     │ yamux/wss
                      ▼                                          ▼
@@ -242,8 +242,19 @@ UDP relay.
   the visitor's own path to Helsinki). LAN visitors are unaffected — they still
   talk to the tile directly.
 - **The relay range is a firewall hole** to one host's ports, bounded by
-  nftables to `54080-54130` and the single WireGuard peer. It carries no auth of
+  nftables to `54080-54200` and the single WireGuard peer. It carries no auth of
   its own; the ticket gate behind it is what makes that acceptable.
+- **A tile outside that range is invisible to the public gallery and looks
+  healthy from the box.** UDP port is `54000 + slot`, so the range is also a cap
+  on the lineup. When the edge was capped at `54130`, slots 131-134
+  (`oricatmos`, `kc854`, `sinclairql`, `nextstep`) streamed fine on the LAN while
+  the daemon never saw a single session: service active, ticket accepted,
+  `/signal/<id>.json` returning a valid path, and nothing in the journal.
+  `check-stream-tickets.py` cannot see this — it validates the ticket, not the
+  path the packets take. `tiles-registry.py` now fails validation for any
+  production tile whose `udpPort` falls outside `ports.publicRelayLow..High` in
+  `registry/registry-v1.json`, which is the source of truth these three places
+  must agree on: that key, the edge's nftables rule, and this document.
 - **A tile's SPA id is not always its `SH_TILE`.** `solaris` runs as
   `solariscde`, `aros` as `amigaos`. The ticket is signed over the identity the
   DAEMON publishes in its `signaling.json`, not the signalling endpoint's key —

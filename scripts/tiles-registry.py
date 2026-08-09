@@ -505,6 +505,30 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                 fail(errors, row, "production entry missing bringUpOrder")
             if "reset" not in row:
                 fail(errors, row, "production entry missing reset policy")
+            # A tile outside the edge's DNAT range is unreachable from the public
+            # gallery while looking entirely healthy on the box -- service active,
+            # ticket accepted, signalling fine, and the daemon simply never sees a
+            # session. Four tiles shipped that way on 2026-08-09.
+            low = globals_doc["ports"]["publicRelayLow"]
+            high = globals_doc["ports"]["publicRelayHigh"]
+            # legacyPortException tiles are deliberately off the base+slot policy
+            # (reactos sits on 4433) and the edge carries its own rule for them, so
+            # the range check does not apply.
+            in_range = low <= stream.get("udpPort", -1) <= high
+            if (
+                stream.get("transport") == "streamhost"
+                and not stream.get("legacyPortException")
+                and not in_range
+            ):
+                fail(
+                    errors,
+                    row,
+                    f"udpPort {stream.get('udpPort')} is outside the public relay range "
+                    f"{low}-{high}: the tile would stream on the LAN but be unreachable "
+                    f"through the edge. Widen the range (nftables on vm-control, the "
+                    f"comment in /etc/wireguard/wg0.conf and docs/PUBLIC-GALLERY.md) or "
+                    f"pick a slot inside it.",
+                )
         elif row.get("lifecycle") == "experiment":
             expected = globals_doc["ports"]["experimentBase"] + stream.get("experimentSlot", -99999)
             if stream.get("udpPort") != expected:

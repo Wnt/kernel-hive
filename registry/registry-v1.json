@@ -2,7 +2,10 @@
   "schemaVersion": 1,
   "ports": {
     "productionBase": 54000,
-    "experimentBase": 54900
+    "experimentBase": 54900,
+    "publicRelayLow": 54080,
+    "publicRelayHigh": 54200,
+    "publicRelayWhy": "The edge VPS (vm-control) DNATs this UDP range to the WireGuard relay peer, so a production tile whose udpPort falls OUTSIDE it is unreachable from the public gallery while looking perfectly healthy on the box: the service is active, the ticket check passes, signalling returns a valid path, and the daemon simply never sees a session. That is exactly how oricatmos/kc854/sinclairql/nextstep (54131-54134) shipped broken on 2026-08-09 against an edge capped at 54130. Widened to 54200 (slot 200) to give the lineup real headroom. MUST match nftables on the edge and the range quoted in docs/PUBLIC-GALLERY.md."
   },
   "fleetEncoder": {
     "bufsizeRatio": 0.5,
