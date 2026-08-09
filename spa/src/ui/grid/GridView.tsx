@@ -196,6 +196,19 @@ export default function GridView() {
                       {b.hardwareInput && (
                         <span className="os-badge os-badge--hwinput" title="Native guest hardware input enabled">HW input</span>
                       )}
+                      {/* A graphical exhibit whose pointer is relative only. Not a
+                          fault — the machine never had an absolute pointer, or we
+                          have not built one for it yet — so it warns rather than
+                          errors, and it sits below the HW-input slot because a tile
+                          can never have both. */}
+                      {b.relativePointerOnly && (
+                        <span
+                          className="os-badge os-badge--relptr"
+                          title="Relative pointer only: the cursor moves by deltas, so it cannot track your finger 1:1"
+                        >
+                          Rel. pointer
+                        </span>
+                      )}
                     </span>
                     <span className="os-card-body">
                       <span className="os-card-name">{v.displayName}</span>

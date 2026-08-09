@@ -31,7 +31,8 @@
         "DOOM (shareware)"
       ],
       "blurb": "The DOS command prompt that never died — C:\\> is still alive and well.",
-      "pointerRel": true
+      "pointerRel": true,
+      "relativePointerOnly": true
     },
     {
       "id": "kolibrios",
@@ -417,7 +418,8 @@
         "File Manager",
         "Minesweeper"
       ],
-      "blurb": "The last workstation NT built around Program Manager — compact, blue, and unmistakably mid-1990s."
+      "blurb": "The last workstation NT built around Program Manager — compact, blue, and unmistakably mid-1990s.",
+      "relativePointerOnly": true
     },
     {
       "id": "serenityos",
@@ -716,7 +718,8 @@
         "Voyager"
       ],
       "blurb": "A hard-real-time microkernel OS whose Photon microGUI once fit a web browser and a whole desktop onto a single floppy.",
-      "pointerRel": true
+      "pointerRel": true,
+      "relativePointerOnly": true
     },
     {
       "id": "msdoswin1",
@@ -748,7 +751,8 @@
         "QBASIC"
       ],
       "blurb": "The C:\\> prompt of MS-DOS 6.22 (1994) with Microsoft’s first Windows 1.0 (1985) layered on top — the tiled-window dawn before the desktop metaphor.",
-      "pointerRel": true
+      "pointerRel": true,
+      "relativePointerOnly": true
     },
     {
       "id": "c64",
@@ -781,7 +785,8 @@
         "geoPaint",
         "the 1541 disk drive"
       ],
-      "blurb": "A full windows-icons-menus desktop (GEOS) running on a 1 MHz, 64 KB home computer — the 8-bit era’s answer to the Macintosh."
+      "blurb": "A full windows-icons-menus desktop (GEOS) running on a 1 MHz, 64 KB home computer — the 8-bit era’s answer to the Macintosh.",
+      "relativePointerOnly": true
     },
     {
       "id": "atarist",
@@ -1064,7 +1069,8 @@
         "CP/M Plus",
         "The Advanced OCP Art Studio"
       ],
-      "blurb": "The British 8-bit all-in-one — an integrated Z80 micro with monitor and disk drive that boots to the iconic yellow-on-blue Locomotive BASIC Ready prompt."
+      "blurb": "The British 8-bit all-in-one — an integrated Z80 micro with monitor and disk drive that boots to the iconic yellow-on-blue Locomotive BASIC Ready prompt.",
+      "relativePointerOnly": true
     },
     {
       "id": "nt4",
@@ -1723,7 +1729,8 @@
         "Digital Librarian"
       ],
       "blurb": "The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one.",
-      "pointerRel": true
+      "pointerRel": true,
+      "relativePointerOnly": true
     }
   ]
 }

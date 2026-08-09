@@ -330,6 +330,16 @@ canvas { display: block; touch-action: none; }
   color: var(--info);
   border-color: color-mix(in srgb, var(--info) 40%, var(--line));
 }
+/* Relative-pointer badge — NON-FATAL: --warn, not --danger. The exhibit works,
+   the pointer just cannot track 1:1. Same top-right slot as HW-input, which is
+   safe because the two are mutually exclusive (a tile with an absolute native
+   device is by definition not relative-only); a tinted fill lifts it slightly
+   above the plain badge so it reads as a caveat rather than a feature. */
+.os-badge--relptr {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--line));
+  background: color-mix(in srgb, var(--warn) 10%, rgba(251, 249, 243, 0.92));
+}
 
 .os-card-body { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px 14px; }
 .os-card-name { font-size: 15px; font-weight: 700; color: var(--ink); }

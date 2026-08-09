@@ -975,6 +975,14 @@ def emit_gallery_manifest(rows: list[dict[str, Any]]) -> bytes:
         for key in ("endpoint", "pointerRel", "hardwareInput", "coldBoot", "bootVideo"):
             if key in spa:
                 entry[key] = spa[key]
+        # Grid badge: a machine a visitor will TRY to point at, whose pointer is
+        # only relative. Derived from stream.pointer (the truth about the guest),
+        # NOT from spa.pointerRel — that flag is the SPA's input-MODEL hint and
+        # three relative tiles legitimately lack it, so keying the badge off it
+        # would quietly under-report.
+        pointer = row.get("stream", {}).get("pointer", {})
+        if pointer.get("present") and not pointer.get("absolute"):
+            entry["relativePointerOnly"] = True
         entries.append(entry)
 
     document = OrderedDict(

@@ -33,6 +33,9 @@ export interface VMManifestEntry {
   endpoint?: string;
   pointerRel?: boolean;
   hardwareInput?: boolean;
+  /** Graphical exhibit whose pointer is RELATIVE only — no absolute path to
+   *  the guest, so the cursor cannot track the visitor's finger 1:1. */
+  relativePointerOnly?: boolean;
   coldBoot?: boolean;
 
   // OPTIONAL boot-video replay descriptor, merged at runtime from

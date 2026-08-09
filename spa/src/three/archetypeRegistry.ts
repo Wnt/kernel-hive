@@ -84,6 +84,10 @@ export interface OSBinding {
   pointerRel?: boolean;
   /** Show the grid's hardware-input badge for a native guest input device. */
   hardwareInput?: boolean;
+  /** Show the grid's relative-pointer warning badge: the exhibit is graphical
+   *  and takes a pointer, but only a RELATIVE one, so the cursor cannot track
+   *  the visitor 1:1. Derived from stream.pointer, not from spa.pointerRel. */
+  relativePointerOnly?: boolean;
   /**
    * BOOT-VIDEO REPLAY — same-origin URL of this tile's recorded power-on clip
    * (`/boot/<osId>/boot.mp4`, baked out-of-band; NOT bundled/committed). When
@@ -189,6 +193,7 @@ export function bindingFromManifest(vm: RuntimeVMManifestEntry): OSBinding {
     coldBoot: vm.coldBoot,
     pointerRel: vm.pointerRel,
     hardwareInput: vm.hardwareInput,
+    relativePointerOnly: vm.relativePointerOnly,
     bootVideo: vm.bootVideo?.mp4,
   };
 }

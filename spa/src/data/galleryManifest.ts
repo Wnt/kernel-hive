@@ -24,6 +24,7 @@ const ENTRY_FIELDS = new Set([
   'accent', 'era', 'eraSoftware', 'periodBrowser', 'iconicApps', 'blurb',
   'archetypeId', 'transport', 'order', 'eraLabel', 'signalEndpoint',
   'endpoint', 'pointerRel', 'hardwareInput', 'coldBoot', 'bootVideo',
+  'relativePointerOnly',
 ]);
 const ID = /^[a-z0-9][a-z0-9-]*$/;
 const ACCENT = /^#[0-9a-f]{6}$/i;
@@ -68,6 +69,7 @@ function parseEntry(value: unknown): RuntimeVMManifestEntry | null {
   if (!Array.isArray(entry.eraSoftware) || !entry.eraSoftware.every((item) => typeof item === 'string')) return null;
   if (!Array.isArray(entry.iconicApps) || !entry.iconicApps.every((item) => typeof item === 'string')) return null;
   if (!optionalBoolean(entry.pointerRel) || !optionalBoolean(entry.hardwareInput) || !optionalBoolean(entry.coldBoot)) return null;
+  if (!optionalBoolean(entry.relativePointerOnly)) return null;
   if (entry.bootVideo !== undefined && typeof entry.bootVideo !== 'string') return null;
 
   const bootVideo = typeof entry.bootVideo === 'string' ? { mp4: entry.bootVideo } : undefined;
