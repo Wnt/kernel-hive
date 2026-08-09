@@ -132,18 +132,26 @@ to [`longhorn-add.md`](longhorn-add.md): it is strong evidence the build boots
 under emulation at all, and 4051 is a candidate even though the operator's
 reference screenshot is 4074. The list stops at 4051; **4074 is not there.**
 
-### DEC Alpha — a meaningful negative result
+### DEC Alpha — a negative result that was REFUTED, and the lesson from it
 
-They run Alpha (boot script `alphavm`, using **AlphaVM Free** from EmuVM, with a
-socat console and an optional X11 path) and catalogue **Tru64 UNIX 5.1B** and
-**OpenVMS Alpha 7.3-1**.
+They run Alpha (boot script `alphavm`, using **AlphaVM Free** from EmuVM) and
+catalogue **Tru64 UNIX 5.1B** and **OpenVMS Alpha 7.3-1** — but **no Windows NT
+or 2000 for Alpha**, while **NT 4 for MIPS** *is* there.
 
-**There is no Windows NT or Windows 2000 for Alpha in the catalogue** — while
-**NT 4 for MIPS** *is* there. A project with 1703 installations, an Alpha
-emulator already working, and the appetite to run NT4 on MIPS has not got NT on
-Alpha. That is not proof it is impossible, but it is the strongest available
-signal that Alpha NT is materially harder than Alpha Unix, and it should raise
-the bar on any optimistic feasibility claim.
+I read that as strong evidence Alpha NT was materially harder than Alpha Unix.
+**It was not.** [`alpha-nt-add.md`](alpha-nt-add.md) then built ES40-Emu/es40 on
+the box, flashed ARC/AlphaBIOS, and drove Windows 2000 RC2 for Alpha into its
+file-copy phase with a framebuffer screenshot of every step.
+
+The catalogue's silence had a mundane cause: **AlphaVM Free has no VGA at all**
+(EmuVM's FAQ: supported guests are *"OpenVMS and Tru64/Digital Unix"*), so it
+*cannot* boot NT, which needs ARC. VOM has no Alpha NT because of the emulator
+it happens to use.
+
+**The lesson, and it applies to every future use of this catalogue: absence is
+evidence about their toolchain, not about the world.** A hit here is a strong
+positive — someone has it working. A miss is only a hint, and it must never
+outrank an experiment.
 
 ### Xerox — Duchess confirmed, and a variant we missed
 
