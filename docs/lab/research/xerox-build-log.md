@@ -83,6 +83,15 @@ reach a **graphical UI**, either at boot or via one simple documented command.
   coalesces** and needs **400 ms hold + 150 ms gap**. Darkstar needs ~300 ms on
   the WinForms *top-level* window (the SDL child lands nothing). Three
   emulators, three answers.
+- **Never distinguish `:` from `;` by eye on a ViewPoint screen — test it
+  functionally.** The Star's bitmap font renders them nearly identically even at
+  400 % zoom, and Agent B lost time to that in *both* directions. The functional
+  test is whether the field accepts the value: ViewPoint's own template menu
+  inserts `user:star:xerox` and it is accepted, while a typed `star;star;xerox`
+  is rejected. This matters because Desktop Creation demands an XNS three-part
+  name (`name:domain:org`), and on Darkstar **`Shift+;` yields `;`** — no key
+  found that produces a colon, though other shifted punctuation
+  (`" { } < > ? _ + | * ( )`) comes through fine. Open question for Dwarf.
 - **Two-button mouse** (SELECT / ADJUST) on Star and Daybreak; Alto is three
   (RED/BLUE/YELLOW).
 - **Clicks need real dwell** — a zero-dwell synthetic click did nothing in the
