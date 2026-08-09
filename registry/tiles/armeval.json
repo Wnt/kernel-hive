@@ -1,54 +1,250 @@
 {
   "schemaVersion": 1,
   "id": "armeval",
-  "era_year": 2026,
+  "era_year": 1986,
   "tileDir": "armeval",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "lifecycle": "production",
+  "enabled": true,
   "build": {
     "rows": [
       {
         "order": 46,
         "prelude": "",
-        "line": "  \"armeval     |armeval.sh     |Armeval       |installed|~15-30m |partial |TODO\"\n",
+        "line": "  \"armeval     |armeval.sh     |bridge/armeval  |retro    |~12-18m |full   |tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)\"\n",
         "value": {
           "key": "armeval",
           "script": "armeval.sh",
-          "outputDir": "Armeval",
-          "class": "installed",
-          "estimated": "~15-30m",
-          "automation": "partial",
-          "produces": "TODO",
+          "outputDir": "bridge/armeval",
+          "class": "retro",
+          "estimated": "~12-18m",
+          "automation": "full",
+          "produces": "tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)",
           "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 15
         }
       }
     ]
   },
-  "operator": {},
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/armeval",
+      "qmp": "/data/vms/streamhost/tiles/armeval/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5838,
+      "exec_port": 5838,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54135,
+      "notes": "exec: labctl exec armeval \"<cmd>\" (ssh root@:5838, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro or the ARM"
+    }
+  },
   "render": {},
   "stream": {
-    "transport": "showcase",
+    "transport": "streamhost",
     "udpPort": 54135,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
     "slot": 135
   },
   "guestDoc": "docs/guests/armeval.md",
   "credentialsRef": "guest/armeval",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "armeval",
+      "SH_QMP": "/data/vms/streamhost/tiles/armeval/qmp.sock",
+      "SH_PORT": "54135",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/armeval/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/armeval/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "80",
+      "SH_KEY_MIN_GAP_MS": "80",
+      "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+:%3A,^:=,~:+,_:`,%3A:',*:\"",
+      "SH_FIXTURE_DESC": "Acorn ARM Evaluation System (1986) — the first ARM product ever sold — sitting at the prompt of ARM BBC Basic V version 1.00, running ON the ARM second processor. The screen reads \"ARM Second Processor 4096K / Acorn ADFS / BASIC\", then the two supervisor lines that got it there, \"A* *LIB $\" and \"A* AB\", then the ARM BASIC banner and a \">\" prompt. Those two A* lines are BAKED INTO the fixture, not typed by a visitor: the board has no operating system of its own, the language comes off Disc 3 of the ARM Evaluation System floppy set as $.AB, and the ADFS library is \"Unset\" on a cold boot so *LIB $ is required before AB resolves at all (both AB and *AB answer \"No directory (169)\" without it). They are left visible because they ARE the exhibit — a 1986 co-processor loading its language off a floppy while the 6502 host is demoted to a terminal and a disc controller. Drawn by the same purpose-built MAME 0.289 `bbcb` the bbcmicro tile ships, with `-tube arm`, the Acorn 1770 disc interface (the ADFS .adl discs are double density; the 8271 the bbcmicro tile ships cannot read them) and Acorn ADFS 1.30 in sideways socket 3 — socket 1 kills the Tube outright and the banner falls back to a plain \"BBC Computer 32K\", i.e. a bbcmicro duplicate. Fullscreen with aspect correction on an 800x600 X root; -artwork_crop removes the driver's keyboard-LED strip. The whole frame contains exactly three colours: black, white, and the pure #0000FF of the reverse-video A* supervisor field. CAPS LOCK is on at reset, so unshifted letters arrive upper case, which is what BASIC's tokeniser needs. Keyboard-only exhibit; no pointer device; sound -> ALSA -> AC97."
+    },
+    "vmidLabel": 238,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "armeval",
+        "--vmid",
+        "238",
+        "--udp",
+        "54135",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/armeval/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/armeval/tile.env.fixture"
+      ],
+      "deviceSetId": "armeval-current",
+      "launcher": "streamhost/tiles/armeval/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/armeval/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "deviceSetSummary": [
+        "-name streamhost-armeval",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5838-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-armeval",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5838-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off and 768 MB, matching the QEMU 11 device set the golden was baked under"
+      }
+    },
+    "bringUpOrder": 57
+  },
   "spa": {
     "archetypeId": "beige-tower-crt",
-    "transport": "showcase",
-    "accentColor": "#64748b",
-    "eraLabel": "TBD · armeval"
+    "transport": "streamhost",
+    "accentColor": "#0000FF",
+    "eraLabel": "1986 · ARM Evaluation System (ARM BBC Basic V)"
+  },
+  "keyboard": {
+    "charMap": {
+      "\"": "@",
+      "'": "&",
+      "&": "^",
+      "(": "*",
+      ")": "(",
+      "=": "_",
+      "@": "\\",
+      "+": ":",
+      "^": "=",
+      "~": "+",
+      "_": "`",
+      ":": "'",
+      "*": "\""
+    }
+  },
+  "demoProgram": {
+    "label": "Time 20000 loops on a 1986 ARM",
+    "lines": [
+      "10 T%=TIME",
+      "20 FOR I%=1 TO 20000:NEXT",
+      "30 PRINT\"20000 LOOPS \";(TIME-T%)/100"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 160
   },
   "museum": {
     "id": "armeval",
-    "displayName": "armeval",
-    "year": 2026,
-    "lineage": "TODO",
-    "arch": "TODO",
-    "accent": "#64748b"
+    "displayName": "Acorn ARM Evaluation System",
+    "year": 1986,
+    "lineage": "Acorn Computers (Cambridge) — Atom, BBC Micro, ARM Evaluation System, Archimedes, ARM Ltd",
+    "arch": "Acorn ARM1, 8 MHz, 4 MB RAM on a BBC Micro Tube podule; MOS 1.20 6502A host with Acorn ADFS 1.30 and the 1770 disc interface",
+    "ramMB": 4,
+    "ramKB": 0,
+    "era": "1980s",
+    "accent": "#0000FF",
+    "eraSoftware": [
+      "ARM BBC Basic V 1.00 — BBC BASIC recompiled for a 32-bit RISC, on Disc 3 of the evaluation set",
+      "the ARM supervisor in ROM: a disassembler, a memory dump and a register dump, and nothing else",
+      "Cambridge LISP, PROLOG and FORTRAN 77, on discs 4, 5 and 6 of the same set",
+      "the floating-point emulator (fpe) and linker that shipped with it, for people writing real ARM code",
+      "and, two years later, everything the Archimedes ran — which is what the evaluation system existed to make possible"
+    ],
+    "periodBrowser": "none — pre-web",
+    "iconicApps": [
+      "ARM BBC Basic V",
+      "the ARM supervisor's disassembler",
+      "Cambridge LISP"
+    ],
+    "blurb": "The first ARM product ever sold: not a computer but a plug-in second processor for the BBC Micro, sold to developers in 1986 so they could write ARM code two years before the Archimedes existed. The board has no operating system — it has 16 KB of supervisor ROM and a floppy with a language on it. What you are looking at is that language, ARM BBC Basic V, running on the ARM while the 6502 that used to be the computer is reduced to a keyboard, a screen and a disc controller.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile, and the sibling of bbcmicro: the SAME purpose-built MAME 0.289 `bbcb` binary (SUBTARGET=bbcb, built in the Bookworm chroot so its ABI matches the bridge), but with the ARM Evaluation System fitted to the BBC Micro's Tube. Three arguments are load-bearing and each cost an experiment: `-fdc acorn1770` because the ARM Evaluation System discs are ADFS .adl at 640 KB double density and the Acorn 8271 is single density and cannot read them at all; `-rom3` and specifically NOT `-rom1`, because ADFS in romimage1 kills the Tube and the banner falls back to \"BBC Computer 32K\" (romimage4 keeps the Tube but drops host BBC BASIC from the banner; romimage3 keeps both); and `skip_warnings 1` in ui.ini, which is a UI option and not a command-line one. The eight blobs are preservation-source with NO authorised URL and a disputed chain of title, staged by the operator, gated on SHA-1 and assembled BY SHA-1 against the shipped binary's own -listxml — the staged file is phroma.bin and the member MAME wants is cm62024.bin, so only the hash connects them. The golden is NOT the machine's untouched first screen (that is bbcmicro's rule and this machine has no language of its own to show): `*LIB $` and `AB` are baked in and left on screen as the prompt's provenance. Bake-time identity gates: the reverse-video A* field must carry blue pixels (a plain BBC Micro banner has zero) AND the frame must carry the ARM BASIC banner's ink. Keyboard-only exhibit; keyboard.charMap is bbcmicro's, unchanged, because it is the same MOS and the same keyboard matrix. The supervisor is NOT reachable from the ARM BASIC prompt — *QUIT, *DIS and *SHOWREGS all answer \"Bad command\" and BREAK (F12) does nothing — which is why the on-screen keyboard offers BASIC's row and not the supervisor's. See streamhost/docs/BRIDGE.md and docs/guests/armeval.md."
+  },
+  "reset": {
+    "tileDir": "armeval",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Acorn ARM Evaluation System at the ARM BBC Basic V 1.00 prompt (ARM Second Processor 4096K / Acorn ADFS / BASIC / A* *LIB $ / A* AB / ARM BBC Basic V version 1.00 ... / >) in MAME 0.289 `bbcb -tube arm`, fullscreen with -keepaspect -artwork_crop on an 800x600 X root; golden INTERNAL snapshot restores it. Reset verified 2026-08-09 with the VM STOPPED — stop / loadvm golden / stop / screendump / cont — because MODE 7 blinks its cursor and a wall-clock sample of the same restored state differs by one ~40 px cell. Two such cycles before the keyboard proof and two after it all hash to sha256 bc8ba12ebb064f00ca23304dc9aef1aca26f80bc2be4fd5ad8e1fbba083bdb56. Keyboard route certified the same day AFTER the bake, against the restored fixture: the registry demoProgram's three lines and RUN typed at the tile's shipped 80/80 pacing print \"20000 LOOPS 0.22\", asserted by lit-pixel count; LIST, RUN and ESCAPE were each driven separately by framebuffer, and ESCAPE additionally asserts that MAME is still alive afterwards because Esc is also MAME's own UI cancel key. Keyboard-only exhibit (no mouse); AC97 audio."
   },
   "notes": [
-    "new-os Tier 2 scaffold; reserved slot 135/UDP 54135",
-    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+    "Preservation-source media with NO authorised fetch URL and a disputed chain of title: the operator stages eight blobs at /data/assets-staging/armeval/ and the builder gates each on SHA-1. Never commit the bits.",
+    "`-rom3`, not `-rom1`: Acorn ADFS 1.30 in romimage1 stops the ARM Tube coming up and the tile silently becomes a bbcmicro duplicate. The bake-time blue-ink gate is what catches that.",
+    "`-fdc acorn1770`: the armevals discs are ADFS double density and the Acorn 8271 cannot read them. This swaps the device romset from bbc_acorn8271 (DNFS 1.20) to bbc_acorn1770 (DFS 2.23).",
+    "VMID label 238 and ssh 5838, not the scaffold's 235/5835 — both of those are the live kc854 tile's, and 5835 is a real hostfwd, so QEMU refused to start on it. Slot 135 gives 238/5838 under the fleet's own arithmetic (vmid = slot + 103, ssh = slot + 5703).",
+    "The ARM supervisor is NOT reachable from the shipped fixture: *QUIT, *DIS 3000000 and *SHOWREGS all answer \"Bad command\" from the ARM BASIC prompt, and BREAK (F12) does nothing at all. All four were driven by framebuffer before the on-screen keyboard's supervisor row was deleted."
   ]
 }
