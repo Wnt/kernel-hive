@@ -455,6 +455,24 @@ export const ASSEMBLIES_BY_TILE = {
   cbm2: {
     kind: 'homeMicro', body: 'amigaA', monitor: 'crtA',
   },
+  // The three DEC minicomputers are RACK PLUS TERMINAL, not bare glass TTYs.
+  // That is both historically right — a PDP-11 filled cabinets and you sat at a
+  // VT in front of it — and forced: every exhibit needs a distinct hardware
+  // signature, `terminalA/B/C` are already taken by openvms, cbm8032 and
+  // pet2001, and three identical terminals would read as one exhibit cloned
+  // three times. Each takes a different cabinet so they stay distinct from each
+  // other too.
+  //
+  // openvms deliberately stays a bare terminal: it is x86 VMS on modern iron,
+  // with no rack to draw.
+  pdp11: { kind: 'towerSetup', body: 'towerC', monitor: 'terminalA' },
+  // The GT40 is really one cabinet — a PDP-11/05, a VT11 and the CRT above it —
+  // so the tower stands in for that cabinet and the round CRT for the vector
+  // tube. No mouse: the pointing device was a LIGHT PEN, which the kit has no
+  // model for, and which is the whole point of this exhibit.
+  gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
+  // Three DEC operating systems behind one chooser, on the biggest rack.
+  decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

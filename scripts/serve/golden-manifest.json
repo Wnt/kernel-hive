@@ -431,6 +431,36 @@
    "mouse": "N/A",
    "keyboard": "PASS",
    "fixture": "Commodore CBM 610 (PAL) power-on screen — \"*** commodore basic 128, v4.0 ***\" and \"ready.\" in green on black at 80 columns — in VICE xcbm2 -model 610, native size on an 800x600 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated and nothing is typed before the bake, and no keys are sent after the restore. Keyboard certified 2026-08-09 AFTER the bake against the restored fixture: PRINT 3 at the tile's own 80/80 pacing extended the lit text from rows 100..162 to rows 100..226 (BASIC echoed the line, printed \" 3\" and painted a second \"ready.\"), then loadvm golden returned the frame to the baked bounding box exactly. A pixel-count test was rejected as unfalsifiable here — the blinking cursor gives back what the new lines add (456 -> 454). Keyboard-only exhibit (no mouse); AC97 audio."
+  },
+  "pdp11": {
+   "tileDir": "pdp11",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "2.11BSD's own multiuser `login:` prompt on a simulated PDP-11/70, with the tail of the machine's unattended cold boot above it and the banner \"2.11 BSD UNIX (pdp11) (console)\" naming the system; green phosphor, 80x24 xterm on a 1024x768 X root. Baked from an UNTOUCHED cold boot — nothing is typed into the golden and nothing is typed after the restore. A logged-in root shell was rejected as the fixture: it is a state a human typed into, it hides that this is a multiuser timesharing system, and it would hand each visitor whatever the last one left running. Route certified 2026-08-09 AFTER the bake, against the restored fixture, in framebuffer-asserted steps: `root` with no password reaches a shell, `uname -a` prints the 2.11BSD #19 kernel banner and `ls /usr/src` lists the source tree, with no lost characters at 40 ms/40 ms. Re-certified on the LIVE tile against a golden 15 minutes old: first keystroke echoed in 0.8 s. Keyboard-only exhibit (no mouse); silent."
+  },
+  "gt40": {
+   "tileDir": "gt40",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "N/A",
+   "fixture": "The first seconds of a fresh lunar descent — the LEM in the upper left with its engine firing, ~18000 feet, a full tank, the 75% throttle bar and the twelve-item telemetry menu down the right edge — in Open SIMH's VT11 at crt=vr17 scale=1 hspace=narrow, a 1024x1024 window centred on a 1280x1024 X root. The program restarts itself after each crash, so the bake rides that loop: scripts/build-guests/gt40.sh waits for the \"NO SURVIVORS\" message and then for the restart it triggers, which is why reset always hands a visitor a NEW GAME rather than the middle of somebody else's doomed trajectory. Light-pen route certified 2026-08-09 after the bake, by framebuffer: with the pointer parked the menu column is dead still (blink range 0 over 20 samples), a pen touch on ANGLE makes that item blink (range 376 — the program's own acknowledgement that the pen hit a vector), and loadvm golden clears the selection again (range 0). Pointer-only exhibit; no keyboard input of any kind; AC97 card present for device-set parity, but the GT40 is silent."
+  },
+  "decos": {
+   "tileDir": "decos",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "The PDP-11 chooser: a green-on-black 80x31 xterm on a 1024x768 X root naming RT-11 V5.3, RSX-11M V4.2 and RSTS/E V9.6 with the prompt each answers with, over “Press 1, 2 or 3. Reset returns you to this screen.” The RSTS/E line carries its own three-line caveat about the missing Library tape. The golden holds NO running simulator, so reset both returns the visitor to the placard and throws away the session. Certified 2026-08-09 after the bake, by framebuffer: the 80-column rule measured x=3..962 of 1024 on the cold boot, on the restore, and again after the keyboard proof; pressing 1 through QMP input-send-event left the chooser and started a pdp11 process at RT-11FB V05.03, pressing 3 reached RSTS/E V9.6 timesharing and a DCL $, and loadvm golden brought the bare chooser back with no simulator running. Keyboard-only exhibit (no pointer device); AC97 present but the guest makes no sound."
   }
  }
 }

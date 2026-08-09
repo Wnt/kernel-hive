@@ -167,6 +167,21 @@
       "udp_port": 54109,
       "notes": "exec: labctl exec cbm8032 \"<cmd>\" (ssh root@:5825, key bridge_key) — that reaches the Debian KIOSK, not the emulated PET; the 8032 itself is keyboard-only and is driven with labctl type/key + labctl shot"
     },
+    "decos": {
+      "dir": "/data/vms/streamhost/tiles/decos",
+      "qmp": "/data/vms/streamhost/tiles/decos/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5829,
+      "exec_port": 5829,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54126,
+      "notes": "exec: labctl exec decos \"<cmd>\" (ssh root@:5829, key bridge_key) — lands in the Debian kiosk, not in the PDP-11. The simulator's console is the xterm; drive it with labctl type/key and read it with labctl shot."
+    },
     "freedos": {
       "dir": "/data/vms/streamhost/tiles/freedos",
       "qmp": "/data/vms/streamhost/tiles/freedos/qmp.sock",
@@ -181,6 +196,21 @@
       "console": "fb",
       "udp_port": 54095,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    },
+    "gt40": {
+      "dir": "/data/vms/streamhost/tiles/gt40",
+      "qmp": "/data/vms/streamhost/tiles/gt40/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5828,
+      "exec_port": 5828,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54125,
+      "notes": "exec: labctl exec gt40 \"<cmd>\" (ssh root@:5828, key bridge_key) reaches the Debian KIOSK, not the PDP-11 — the simulated machine has no shell. Light-pen exhibit: labctl type/key do nothing here; drive it with tiles/gt40/pen-drive.py (QMP abs move + button 1)."
     },
     "haiku": {
       "dir": "/data/vms/streamhost/tiles/haiku",
@@ -346,6 +376,21 @@
       "console": "fb",
       "udp_port": 54108,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    },
+    "pdp11": {
+      "dir": "/data/vms/streamhost/tiles/pdp11",
+      "qmp": "/data/vms/streamhost/tiles/pdp11/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5827,
+      "exec_port": 5827,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54115,
+      "notes": "exec: labctl exec pdp11 \"<cmd>\" (ssh root@:5827, key bridge_key) reaches the Debian KIOSK, not the PDP-11. The simulated machine is driven only through its console: type into the tile, or read /tmp/pdp11-console.log in the kiosk for the full transcript."
     },
     "pet2001": {
       "dir": "/data/vms/streamhost/tiles/pet2001",

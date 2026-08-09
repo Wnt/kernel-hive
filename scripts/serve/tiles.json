@@ -170,5 +170,17 @@
   "cbm2": {
     "udpPort": 54111,
     "hashFile": "/data/vms/streamhost/tiles/cbm2/cert_hash_b64.txt"
+  },
+  "pdp11": {
+    "udpPort": 54115,
+    "hashFile": "/data/vms/streamhost/tiles/pdp11/cert_hash_b64.txt"
+  },
+  "gt40": {
+    "udpPort": 54125,
+    "hashFile": "/data/vms/streamhost/tiles/gt40/cert_hash_b64.txt"
+  },
+  "decos": {
+    "udpPort": 54126,
+    "hashFile": "/data/vms/streamhost/tiles/decos/cert_hash_b64.txt"
   }
 }

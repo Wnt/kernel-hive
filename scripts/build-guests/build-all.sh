@@ -112,9 +112,9 @@ MANIFEST=(
   "pet2001     |pet2001.sh     |bridge/pet2001  |retro    |~2-4m   |full   |tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)"
   "cbm8032      |cbm8032.sh     |bridge/cbm8032  |retro    |~2-4m   |full   |tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)"
   "cbm2         |cbm2.sh        |bridge/cbm2     |retro    |~2-4m   |full   |tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)"
-  "pdp11       |pdp11.sh       |Pdp11         |installed|~15-30m |partial |TODO"
-  "gt40        |gt40.sh        |Gt40          |installed|~15-30m |partial |TODO"
-  "decos       |decos.sh       |Decos         |installed|~15-30m |partial |TODO"
+  "pdp11        |pdp11.sh       |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)"
+  "gt40         |gt40.sh        |bridge/gt40     |retro    |~5-8m   |full   |tiles/gt40 overlay + golden (Open SIMH pdp11 VT11 → Lunar Lander)"
+  "decos        |decos.sh       |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
@@ -124,7 +124,7 @@ MANIFEST=(
 DEFAULT_ORDER=(kolibrios toaruos helenos 9front reactos haiku templeos amigaos qnx alpine tinycore
   freedos msdos-win1 win311 win95 win98 win2000 os2warp redstar3
   android-x86 postmarketos sailfishos sailfishos-gui serenityos
-  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032)
+  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos)
 
 # ---------------------------------------------------------------------------
 c_reset=$'\e[0m'

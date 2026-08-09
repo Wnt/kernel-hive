@@ -65,7 +65,7 @@
     "bindingLine": "  openvms:     { osId: 'openvms',     archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#00a6d6', eraLabel: '2024 · OpenVMS 9.2 · DECwindows' },\n",
     "museumOrder": 31,
     "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'openvms', displayName: 'OpenVMS x86-64 9.2 — DECwindows', year: 2024,\n    lineage: 'VMS / OpenVMS', arch: 'x86_64', ramMB: 8960,    era: '2020s', accent: '#00a6d6',\n    eraSoftware: ['DECwindows Motif', 'DCL', 'FileView', 'DECterm'],\n    periodBrowser: 'none — DECwindows desktop exhibit',\n    iconicApps: ['DECterm', 'FileView', 'Clock', 'Calculator'],\n    blurb: 'The durable VMS lineage on modern x86-64, presented as its classic network-transparent DECwindows Motif desktop.',\n    notes: 'A two-VM graphical bridge: OpenVMS supplies MWM and the applications while a private lean-X Debian guest supplies only the captured Xorg scanout and absolute tablet input.',\n  },\n",
+    "museumBlock": "  {\n    id: 'openvms', displayName: 'OpenVMS x86-64 9.2', year: 2024,\n    lineage: 'VMS / OpenVMS', arch: 'x86_64', ramMB: 8960,    era: '2020s', accent: '#00a6d6',\n    eraSoftware: ['DECwindows Motif', 'DCL', 'FileView', 'DECterm'],\n    periodBrowser: 'none — DECwindows desktop exhibit',\n    iconicApps: ['DECterm', 'FileView', 'Clock', 'Calculator'],\n    blurb: 'The durable VMS lineage on modern x86-64, presented as its classic network-transparent DECwindows Motif desktop.',\n    notes: 'A two-VM graphical bridge: OpenVMS supplies MWM and the applications while a private lean-X Debian guest supplies only the captured Xorg scanout and absolute tablet input.',\n  },\n",
     "goldenOrder": 31,
     "actionMapOrder": 30
   },
@@ -200,7 +200,7 @@
   },
   "museum": {
     "id": "openvms",
-    "displayName": "OpenVMS x86-64 9.2 — DECwindows",
+    "displayName": "OpenVMS x86-64 9.2",
     "year": 2024,
     "lineage": "VMS / OpenVMS",
     "arch": "x86_64",

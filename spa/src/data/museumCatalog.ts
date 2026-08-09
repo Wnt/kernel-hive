@@ -6,9 +6,9 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 // ============================================================================
 //  MUSEUM CATALOG — placard metadata for the full OS lineup (48 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 43 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 46 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 40 of those 43 have their placard entries in this
+//  WebTransport + WebCodecs. 43 of those 46 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,7 +17,7 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 42 entries
+//  This file provides rich, period-accurate placard metadata for its 45 entries
 //  so all 48 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
@@ -241,7 +241,7 @@ const ENTRIES: VMManifestEntry[] = [
 
   // ---- emulator-bridge retro home computers ----
   {
-    id: 'c64', displayName: 'Commodore 64 — GEOS 2.0', year: 1982,
+    id: 'c64', displayName: 'Commodore 64', year: 1982,
     lineage: 'Commodore 64 / GEOS',
     arch: 'MOS 6510 (6502), 1 MHz, 64 KB', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#6c5eb5',
     eraSoftware: ['GEOS 2.0 deskTop', 'geoWrite', 'geoPaint', 'Preference Manager', 'the 1541 drive'],
@@ -261,7 +261,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the hatari Atari ST emulator full-screen (EmuTOS → GEM desktop); streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Atari ST wedge). See streamhost/docs/BRIDGE.md.',
   },
   {
-    id: 'apple2', displayName: 'Apple II — GEOS', year: 1988,
+    id: 'apple2', displayName: 'Apple II', year: 1988,
     lineage: 'Apple II / GEOS',
     arch: 'MOS 65C02 (Apple //e enhanced), 1 MHz, 128 KB', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#8A8577',
     eraSoftware: ['Apple GEOS deskTop', 'geoWrite', 'geoPaint', 'ProDOS', 'DeskTop file manager'],
@@ -271,7 +271,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Apple //e emulator full-screen booting Apple GEOS; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke platinum Apple //e all-in-one). See streamhost/docs/BRIDGE.md.',
   },
   {
-    id: 'amiga', displayName: 'Amiga 500 — Workbench 1.3', year: 1987,
+    id: 'amiga', displayName: 'Amiga 500', year: 1987,
     lineage: 'Commodore Amiga / AmigaOS',
     arch: 'Motorola 68000 (16/32-bit)', ramMB: 0, ramKB: 512,    era: '1980s', accent: '#0055AA',
     eraSoftware: ['Workbench 1.3', 'AmigaDOS CLI', 'Deluxe Paint', 'Extras 1.3 / AmigaBASIC'],
@@ -298,7 +298,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Private air-gapped preservation exhibit. The guest has no emulated network interface.',
   },
   {
-    id: 'amstradcpc', displayName: 'Amstrad CPC 6128 — Locomotive BASIC', year: 1985,
+    id: 'amstradcpc', displayName: 'Amstrad CPC 6128', year: 1985,
     lineage: 'Amstrad CPC / Locomotive BASIC',
     arch: 'Zilog Z80A, 4 MHz, 128 KB', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#F0C000',
     eraSoftware: ['Locomotive BASIC 1.1', 'AMSDOS / CP/M Plus', 'Protext', 'The Advanced OCP Art Studio', 'CPC games (Head over Heels, Chase H.Q.)'],
@@ -316,7 +316,7 @@ const ENTRIES: VMManifestEntry[] = [
     blurb: 'The classic Explorer shell on the NT kernel. The teal desktop that brought the Windows 95 look to enterprise NT.',
   },
   {
-    id: 'openvms', displayName: 'OpenVMS x86-64 9.2 — DECwindows', year: 2024,
+    id: 'openvms', displayName: 'OpenVMS x86-64 9.2', year: 2024,
     lineage: 'VMS / OpenVMS', arch: 'x86_64', ramMB: 8960,    era: '2020s', accent: '#00a6d6',
     eraSoftware: ['DECwindows Motif', 'DCL', 'FileView', 'DECterm'],
     periodBrowser: 'none — DECwindows desktop exhibit',
@@ -325,7 +325,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'A two-VM graphical bridge: OpenVMS supplies MWM and the applications while a private lean-X Debian guest supplies only the captured Xorg scanout and absolute tablet input.',
   },
   {
-    id: 'irix', displayName: 'SGI Indy — IRIX 6.5', year: 1993,
+    id: 'irix', displayName: 'SGI Indy', year: 1993,
     lineage: 'SGI IRIX / System V Unix',
     arch: 'MIPS R4600 (MIPS III, 64-bit)', ramMB: 256,    era: '1990s', accent: '#5B8FA8',
     eraSoftware: ['Indigo Magic Desktop (4Dwm)', 'IRIX Interactive Desktop / toolchest', 'showcasedemos (gr_osview, buttonfly)', 'WorldView / SGI demos', 'Netscape for IRIX'],
@@ -335,7 +335,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Live streamhost tile — the FIRST non-QEMU tile: an Xvfb + MAME(indy_4610) emulator captured directly by streamhost’s SH_CAPTURE=shm backend (MAME’s SGI Indy emulation kernel-panics under a KVM vCPU, so it runs on the bare-metal CPU, not a QEMU VM). archetype beige-tower-crt. See docs/history/irix-tile-issue20-handoff.md.',
   },
   {
-    id: 'mpf2', displayName: 'Multitech Microprofessor II — MPF-II BASIC', year: 1982,
+    id: 'mpf2', displayName: 'Multitech Microprofessor II', year: 1982,
     lineage: 'Multitech / Apple II clone',
     arch: 'MOS 6502, 1 MHz, 64 KB RAM, 16 KB ROM', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#8B4513',
     eraSoftware: ['MPF-II BASIC in ROM', 'the built-in machine-language monitor', 'cassette titles: Blitz, Snake, Head On, Reverse, Sabotage', 'type-in listings from the computer magazines'],
@@ -345,7 +345,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME (mpf2 driver) emulating a Multitech MPF-II that boots its ROM BASIC; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Keyboard-only exhibit (no pointing device — the real machine had none); uses the beige-tower-crt fallback until a bespoke MPF-II archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/mpf2.md.',
   },
   {
-    id: 'vic20', displayName: 'Commodore VIC-20 — CBM BASIC V2', year: 1980,
+    id: 'vic20', displayName: 'Commodore VIC-20', year: 1980,
     lineage: 'Commodore 8-bit (MOS 6502)',
     arch: 'MOS 6502, 1.108 MHz (PAL), 5 KB RAM, 20 KB ROM', ramMB: 0, ramKB: 5,    era: '1980s', accent: '#3FBFC7',
     eraSoftware: ['CBM BASIC V2 in ROM', 'cartridge games: Jelly Monsters, Radar Rat Race, Gorf, Omega Race', 'Scott Adams text adventures on cassette', 'the VIC-1530 Datasette and the VIC-1541 disk drive', 'type-in listings from Compute!’s Gazette'],
@@ -355,7 +355,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xvic) emulating a PAL VIC-20 that boots its ROM to the CBM BASIC V2 READY prompt; streamhost captures the Linux framebuffer + AC97 audio (the VIC-I sound routed through ALSA) exactly like every other tile. VICE is already in the frozen bridge base (built from source for the c64 tile) and bundles the Commodore ROMs, so this tile needs no external media at all. Keyboard-only exhibit (the machine’s other input was a joystick); uses the beige-tower-crt fallback until a bespoke VIC-20 archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/vic20.md.',
   },
   {
-    id: 'plus4', displayName: 'Commodore Plus/4 — 3-plus-1 in ROM', year: 1984,
+    id: 'plus4', displayName: 'Commodore Plus/4', year: 1984,
     lineage: 'Commodore 264 series (MOS 7501, TED)',
     arch: 'MOS 7501, 1.77 MHz (PAL), 64 KB RAM, 32 KB application ROM', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#C2CF5F',
     eraSoftware: ['3-plus-1: a word processor, spreadsheet, database and graphing package, in ROM', 'Commodore BASIC V3.5, with a machine-language monitor built in', 'the 264-series cartridges and the 1531 Datasette', 'a small, mostly European software scene it never grew out of'],
@@ -365,7 +365,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xplus4) emulating a PAL Plus/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs INCLUDING both 3-plus-1 banks, so this tile needs no external media. The golden is the machine\'s own untouched power-on screen, whose ROM message “3-PLUS-1 ON KEY F1” is the exhibit\'s launcher. The suite’s command prompt is one-shot — C= + C opens it, one command runs, it closes — so module switching needs the Commodore key (Tab under VICE’s symbolic keymap); the SPA’s plus4 on-screen keyboard therefore carries one-tap Word/Calc/File buttons that send the whole sequence. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/plus4.md.',
   },
   {
-    id: 'c128', displayName: 'Commodore 128 — 80 columns, and CP/M', year: 1985,
+    id: 'c128', displayName: 'Commodore 128', year: 1985,
     lineage: 'Commodore 8-bit line (MOS 8502 + Zilog Z80, VIC-II + VDC)',
     arch: 'MOS 8502 at 2.04/1.02 MHz (PAL) + Zilog Z80A, 128 KB RAM, 64 KB VDC video RAM', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#7FD4C1',
     eraSoftware: ['CP/M Plus (3.0) on the Z80 — WordStar, dBASE II, Turbo Pascal', 'Commodore BASIC 7.0, with sprite, sound and graphics commands built in', 'GEOS 128, which used the 80-column screen and the extra memory', 'the entire Commodore 64 library, unchanged, in C64 mode'],
@@ -375,7 +375,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x128) emulating a PAL C128; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. In VICE\'s SDL2 build the VDC 80-column output is a SECOND canvas — `-80col` makes it the visible one (and chooses the boot display); `-dualwindow` never becomes visible under a kiosk with no window manager. No -VDCdsize: the 1:1 window is 789x576 and fills the 800x600 X root, where the doubled one is 1578x1152 and is clipped even at 1920x1080. VICE bundles the C128 ROMs but not the CP/M system DISK, which is staged in-guest and attached to drive 8 ~10 s AFTER reset — the KERNAL boots any CP/M disk it finds at power-on, and this tile\'s fixture is the untouched BASIC 7.0 screen. The visitor types BOOT (one SPA keyboard button) to reach CP/M 3.0. No C64 button: GO64 works but paints the VIC-II while the visible VDC canvas freezes (measured — two byte-identical frames 10 s apart against a blinking-cursor control). Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/c128.md.',
   },
   {
-    id: 'pet2001', displayName: 'Commodore PET 2001 — COMMODORE BASIC', year: 1977,
+    id: 'pet2001', displayName: 'Commodore PET 2001', year: 1977,
     lineage: 'Commodore PET / CBM (MOS 6502)',
     arch: 'MOS 6502, 1 MHz, 8 KB RAM, 40×25 characters, no CRTC', ramMB: 0, ramKB: 8,    era: '1970s', accent: '#AEB8F0',
     eraSoftware: ['Commodore BASIC 1.0 in ROM — the first Microsoft BASIC Commodore shipped', 'programs loaded from the built-in Datassette, at 1500 baud if you were lucky', 'PET screen POKEs at 32768: the machine had no graphics mode, so games drew with characters', 'Microchess, Space Invaders clones, and a decade of school-lab type-in listings', 'later, VisiCalc and WordPro made the PET the first Commodore in an office'],
@@ -385,7 +385,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Live streamhost tile, and the oldest machine in the gallery. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xpet -model 2001) emulating the ORIGINAL 1977 PET; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media. VICE\'s model 2001 is the real machine and not a badge — RamSize=8, Crtc=0 (it predates the 6545 CRTC every later PET used), VideoSize=40, the chiclet graphics keyboard, the 2001-blueish phosphor palette. The golden is the machine\'s own untouched power-on screen; the exhibit\'s interaction is the SPA type-in demo, four lines of PET BASIC that POKE characters straight into screen memory at 32768, which is how the PET drew everything. Keyboard-only exhibit (unshifted keys give upper case, SHIFT gives the graphics set, hence keyboard.letterCase=upper-only). See streamhost/docs/BRIDGE.md and docs/guests/pet2001.md.',
   },
   {
-    id: 'cbm8032', displayName: 'Commodore CBM 8032 — 80-column BASIC 4.0', year: 1980,
+    id: 'cbm8032', displayName: 'Commodore CBM 8032', year: 1980,
     lineage: 'Commodore PET / CBM 8000 series (MOS 6502)',
     arch: 'MOS 6502, 1 MHz, 32 KB RAM, 80x25 monochrome CRTC, 12-inch integrated green monitor', ramMB: 0, ramKB: 32,    era: '1980s', accent: '#41FF00',
     eraSoftware: ['Commodore BASIC 4.0, with the PET\'s disk commands built into the language', 'WordPro — the word processor that sold 8032s to offices', 'VisiCalc and Silicon Office on the 8000 series', 'the 8050 dual floppy and the 4022 tractor printer on the IEEE-488 bus', 'Waterloo microSystems\' languages, from the SuperPET side of the family'],
@@ -395,7 +395,7 @@ const ENTRIES: VMManifestEntry[] = [
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xpet -model 8032) emulating a CBM 8032; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media — BASIC 4.0, KERNAL 4, the 80-column business editor and the character generator all come from the emulator\'s own data tree. The golden is the machine\'s own untouched power-on screen; the exhibit\'s interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns. Drawn double-size (-CRTCdsize) on a 1600x1200 X root, the tightest advertised mode that contains the 1408x1064 SDL window. Keyboard-only exhibit; mono-terminal archetype — the 8032 is an all-in-one with an integrated 12-inch green monitor, which is what that archetype models. See streamhost/docs/BRIDGE.md and docs/guests/cbm8032.md.',
   },
   {
-    id: 'cbm2', displayName: 'Commodore CBM 610 — the business machine nobody bought', year: 1982,
+    id: 'cbm2', displayName: 'Commodore CBM 610', year: 1982,
     lineage: 'Commodore CBM-II / B-series (MOS 6509, 6545 CRTC, SID)',
     arch: 'MOS 6509, 2 MHz, 128 KB RAM banked out of a 1 MB address space, 80x25 monochrome', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#55D544',
     eraSoftware: ['Commodore BASIC 128 v4.0 in ROM, with the PET disk commands built in', 'CP/M via the optional 8088/Z80 coprocessor board — the machine\'s other, stranger half', 'the IEEE-488 business peripherals: 8050/8250 drives, 8023 printer', 'a handful of ports of the PET business software it was meant to succeed'],
@@ -403,6 +403,36 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['Commodore BASIC 128 v4.0', 'the built-in machine-language monitor', 'PET-lineage business software over IEEE-488'],
     blurb: 'Not a Commodore 128, despite what the screen says. This is the CBM-II — Commodore\'s 1982 attempt to sell a serious business computer, built on a 6509 that reaches a full megabyte by bank-switching, and cancelled almost immediately.',
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (xcbm2 -model 610) emulating a PAL CBM 610; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the CBM-II ROMs, so this tile needs no external media — the 610 boots to BASIC with nothing attached. NOT A NEAR-DUPLICATE OF cbm8032, and the placard says why: same green 80-column CBM banner, but a 6509 bank-switching a megabyte instead of a 6502 with 32 KB, a low-profile box with a detached monitor instead of an all-in-one, and a business market Commodore reached for and missed. The golden is the machine\'s own untouched power-on screen; the visitor types at the BASIC prompt through the SPA on-screen keyboard. Keyboard-only exhibit; native 704x528 window on an 800x600 X root (the doubled window is silently clipped by every root this fleet uses). See streamhost/docs/BRIDGE.md and docs/guests/cbm2.md. The screen reads "commodore basic 128": that name predates the Commodore 128 of 1985 and shares nothing with it.',
+  },
+  {
+    id: 'pdp11', displayName: 'DEC PDP-11/70 — 2.11BSD', year: 1975,
+    lineage: 'DEC PDP-11 (1970–1997); 2.11BSD (UC Berkeley, 1991), the last BSD for the PDP-11',
+    arch: 'DEC PDP-11/70, 16-bit with 22-bit addressing, 4 MB core, FP11 floating point (Open SIMH)', ramMB: 4, ramKB: 0,    era: '1970s', accent: '#9A4F96',
+    eraSoftware: ['2.11BSD: csh, vi, more, man pages and a 4.3BSD-derived TCP/IP stack, on a 16-bit machine', 'the complete operating system source tree in /usr/src, kernel included', 'the Seventh Edition toolchain — cc, as, ld, make, sccs — that C was invented for', 'adventure, rogue and the rest of /usr/games, still where they were left'],
+    periodBrowser: 'none — the ARPANET era; the web was two decades away',
+    iconicApps: ['the 2.11BSD kernel source in /usr/src/sys', 'vi and csh, in their original homes', 'cc — the C compiler, on the architecture C was designed for'],
+    blurb: 'The missing ancestor: the minicomputer Unix and C grew up on. Log in as root — there is no password — and the entire operating system\'s source code is sitting in /usr/src, on a 16-bit machine with four megabytes of memory.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Open SIMH\'s pdp11 simulator as a PDP-11/70 (4 MB of core, FP11) booting 2.11BSD off a 1 GB MSCP pack, drawn as green phosphor in a fixed 80x24 xterm; streamhost captures the Linux framebuffer exactly like every other bridge tile. SIMH is NOT in the frozen bridge base and Debian\'s package is 3.8.1 without SDL video, so the builder compiles Open SIMH from source into this tile\'s overlay (pin a1f57fa3, ~92 s), the amiga.sh precedent. THREE THINGS FUTURE WORK MUST NOT UNDO: build with `make pdp11 AIO_CCDEFS=` (the default async-I/O build DEADLOCKS across loadvm, both threads in futex_wait, every keystroke lost while the exhibit looks healthy); ship `set throttle 10%` and NOT `set cpu idle` (idle detection rides on a calibrated timer that a snapshot restore destroys permanently — 38-80 s per keystroke afterwards — and the price of avoiding it is 19.7% of a host core instead of 2.4%); and keep the launcher\'s xdotool focus helper, because with no window manager X\'s PointerRoot focus parks the pointer at (0,0) outside the terminal and swallows every key. The golden rests at 2.11BSD\'s own multiuser login prompt, the state an unattended cold boot reaches; root has no password, which the placard and the SPA hint carry because the screen cannot. Keyboard-only exhibit, silent, mono-terminal archetype. See streamhost/docs/BRIDGE.md and docs/guests/pdp11.md.',
+  },
+  {
+    id: 'gt40', displayName: 'DEC GT40', year: 1973,
+    lineage: 'DEC PDP-11/05 + VT11 display processor (GT40 graphics terminal)',
+    arch: 'DEC PDP-11/05, 16-bit; VT11 display processor drawing calligraphic vectors on a magnetic-deflection CRT; light pen', ramMB: 0, ramKB: 16,    era: '1970s', accent: '#3BE84B',
+    eraSoftware: ['Lunar Lander (Moonlander), written for this machine in 1973 by DEC\'s Jack Burness', 'DEC\'s GT40 demonstration display files', 'paper tapes read in through the absolute loader over the DL11 serial line', 'display files generated on a host PDP-10 or PDP-11 and shipped down the line'],
+    periodBrowser: 'none — the ARPANET era, two decades before the web',
+    iconicApps: ['Lunar Lander (Moonlander)', 'the VT11 display file', 'the light pen'],
+    blurb: 'A PDP-11 with a vector processor bolted to it and a light pen on a cord: no pixels, no keyboard worth using, just an electron beam drawing lines exactly where the program tells it. The 1973 Lunar Lander it is running was written to show the machine off, and it still does.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Open SIMH\'s pdp11 simulator with the VT11 vector display, executing the original lunar.lda paper tape that ships inside the MIT-licensed Open SIMH tree — no external media, no staged asset, nothing to license. The exhibit is self-sustaining: the LEM falls for about two minutes, crashes, and the program restarts itself, so the golden rests at the first seconds of a fresh descent. THE ONLY POINTER-ONLY EXHIBIT IN THE COLLECTION and the only one where a light pen is the historically correct input device: the telemetry menu, the rotation arrows and the throttle bar are all driven by pointing, and there is no keyboard input of any kind (Open SIMH wires the pen to mouse button 1, so the pen is on the glass only while the button is held). No archetype models a vector CRT with a light pen; mono-terminal is a deliberate fallback, chosen because it is the only monochrome DEC-style CRT in the set. Displayed on the larger VR17 tube (crt=vr17) rather than the GT40\'s own VR14, because SIMH\'s VR14 model clips the twelve-item menu mid-word. See streamhost/docs/BRIDGE.md and docs/guests/gt40.md.',
+  },
+  {
+    id: 'decos', displayName: 'DEC PDP-11 — RT-11, RSX-11M, RSTS/E', year: 1970,
+    lineage: 'Digital Equipment Corporation PDP-11 (16-bit minicomputer, 1970–1997)',
+    arch: 'PDP-11/73 (J-11) with 256 KB and an RL02 pack, and PDP-11/70 with 4 MB and RD52/RD54 disks, simulated by Open SIMH', ramMB: 4, ramKB: 0,    era: '1970s', accent: '#7A5CC4',
+    eraSoftware: ['RT-11 V5.3 (1985) — the single-user real-time monitor that ran lab instruments and machine tools', 'RSX-11M V4.2 (1987) — the multi-user real-time executive whose team went on to write VMS', 'RSTS/E V9.6 (1988) — the timesharing system that put a school\'s whole class on one machine', 'Unix Sixth and Seventh Edition, which were written on this machine', 'MACRO-11, FORTRAN IV, BASIC-PLUS, DIBOL and the DECUS tape library'],
+    periodBrowser: 'none — a decade before the web, on a glass teletype',
+    iconicApps: ['the RT-11 keyboard monitor', 'MCR, the RSX-11M command interpreter', 'BASIC-PLUS under RSTS/E'],
+    blurb: 'One machine and three of the operating systems DEC sold for it — a real-time monitor, a real-time executive and a timesharing system — because in 1975 you did not buy a computer with an operating system, you bought a computer and then chose one.',
+    notes: 'Live streamhost tile, and the oldest machine in the collection. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs one fullscreen green-on-black xterm whose only program is a chooser, and pressing 1, 2 or 3 boots RT-11 V5.3, RSX-11M V4.2 BL38 or RSTS/E V9.6 under Open SIMH (pinned at commit a1f57fa3 and built INTO this tile\'s overlay, the amiga.sh precedent, because the frozen bridge base predates it). ONE tile rather than three because a visitor cannot tell RT-11\'s “.” from RSX-11M\'s “>” from RSTS/E\'s “Ready”, and three near-identical terminals would read as one exhibit cloned by accident; the chooser is the placard. THE VERSIONS ARE THE MENTEC CEILINGS: the 1997 hobbyist grant covers RT-11 V5.3, RSTS/E V9.6, RSX-11M V4.3 and RSX-11M-PLUS V3.0 “or prior”, which is exactly why they are hard to find. RSX-11M is V4.2 and the exhibit says V4.2 — V4.3 media is not reachable anywhere today, and the community\'s RSX-11M-PLUS V4.6 and RSTS/E V10.1 are outside the grant. RSTS/E is installed as far as its media allows: the pack boots to timesharing and a working DCL $ prompt, but DEC\'s procedure ends by asking for a second “Library” tape that is not in the kit and is not obtainable, so START.COM and the packaged CCL commands are absent — the chooser says so in three lines of its own text rather than leaving a visitor to discover it. The golden idles AT the chooser with no simulator running, so a tile nobody is watching costs nothing, and each system runs on a fresh sparse copy of its pack. Keyboard-only exhibit; mono-terminal archetype. The arc worth reading aloud: the “>” of RSX-11M is the prompt whose authors, under Dave Cutler, went on to write VMS and then Windows NT, both of which are already in this gallery. See streamhost/docs/BRIDGE.md and docs/guests/decos.md.',
   },
 ];
 

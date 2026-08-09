@@ -390,7 +390,7 @@
       },
       "museum": {
         "id": "amiga",
-        "displayName": "Amiga 500 — Workbench 1.3",
+        "displayName": "Amiga 500",
         "year": 1987,
         "lineage": "Commodore Amiga / AmigaOS",
         "arch": "Motorola 68000 (16/32-bit)",
@@ -623,7 +623,7 @@
       },
       "museum": {
         "id": "amstradcpc",
-        "displayName": "Amstrad CPC 6128 — Locomotive BASIC",
+        "displayName": "Amstrad CPC 6128",
         "year": 1985,
         "lineage": "Amstrad CPC / Locomotive BASIC",
         "arch": "Zilog Z80A, 4 MHz, 128 KB",
@@ -1060,7 +1060,7 @@
       },
       "museum": {
         "id": "apple2",
-        "displayName": "Apple II — GEOS",
+        "displayName": "Apple II",
         "year": 1988,
         "lineage": "Apple II / GEOS",
         "arch": "MOS 65C02 (Apple //e enhanced), 1 MHz, 128 KB",
@@ -1707,7 +1707,7 @@
       },
       "museum": {
         "id": "c128",
-        "displayName": "Commodore 128 — 80 columns, and CP/M",
+        "displayName": "Commodore 128",
         "year": 1985,
         "lineage": "Commodore 8-bit line (MOS 8502 + Zilog Z80, VIC-II + VDC)",
         "arch": "MOS 8502 at 2.04/1.02 MHz (PAL) + Zilog Z80A, 128 KB RAM, 64 KB VDC video RAM",
@@ -1915,7 +1915,7 @@
       },
       "museum": {
         "id": "c64",
-        "displayName": "Commodore 64 — GEOS 2.0",
+        "displayName": "Commodore 64",
         "year": 1982,
         "lineage": "Commodore 64 / GEOS",
         "arch": "MOS 6510 (6502), 1 MHz, 64 KB",
@@ -2129,7 +2129,7 @@
       },
       "museum": {
         "id": "cbm2",
-        "displayName": "Commodore CBM 610 — the business machine nobody bought",
+        "displayName": "Commodore CBM 610",
         "year": 1982,
         "lineage": "Commodore CBM-II / B-series (MOS 6509, 6545 CRTC, SID)",
         "arch": "MOS 6509, 2 MHz, 128 KB RAM banked out of a 1 MB address space, 80x25 monochrome",
@@ -2354,7 +2354,7 @@
       },
       "museum": {
         "id": "cbm8032",
-        "displayName": "Commodore CBM 8032 — 80-column BASIC 4.0",
+        "displayName": "Commodore CBM 8032",
         "year": 1980,
         "lineage": "Commodore PET / CBM 8000 series (MOS 6502)",
         "arch": "MOS 6502, 1 MHz, 32 KB RAM, 80x25 monochrome CRTC, 12-inch integrated green monitor",
@@ -2392,55 +2392,214 @@
     {
       "schemaVersion": 1,
       "id": "decos",
-      "era_year": 2026,
-      "tileDir": "decos",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "era_year": 1970,
+      "enabled": true,
       "build": {
         "rows": [
           {
             "order": 43,
             "prelude": "",
-            "line": "  \"decos       |decos.sh       |Decos         |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"decos        |decos.sh       |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)\"\n",
             "value": {
               "key": "decos",
               "script": "decos.sh",
-              "outputDir": "Decos",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "outputDir": "bridge/decos",
+              "class": "retro",
+              "estimated": "~20-70m",
+              "automation": "full",
+              "produces": "tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)",
               "flags": []
+            },
+            "defaultOrder": {
+              "group": 3,
+              "position": 12
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/decos",
+          "qmp": "/data/vms/streamhost/tiles/decos/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5829,
+          "exec_port": 5829,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54126,
+          "notes": "exec: labctl exec decos \"<cmd>\" (ssh root@:5829, key bridge_key) — lands in the Debian kiosk, not in the PDP-11. The simulator's console is the xterm; drive it with labctl type/key and read it with labctl shot."
+        }
+      },
+      "tileDir": "decos",
+      "lifecycle": "production",
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
         "udpPort": 54126,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 126
       },
       "guestDoc": "docs/guests/decos.md",
       "credentialsRef": "guest/decos",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "decos",
+          "SH_QMP": "/data/vms/streamhost/tiles/decos/qmp.sock",
+          "SH_PORT": "54126",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/decos/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/decos/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "A DEC PDP-11 with three of its operating systems behind a chooser. The golden is the chooser itself: a green-on-black 80x31 xterm on a 1024x768 X root listing \"1 RT-11 V5.3 (single-user real-time monitor, 11/73, RL02)\", \"2 RSX-11M V4.2 (multi-user real-time executive, 11/70, RD52)\" and \"3 RSTS/E V9.6 (multi-user timesharing, 11/70, RD54)\", each with the prompt it answers with (. > $) spelled out beside it, over the line \"Press 1, 2 or 3. Reset returns you to this screen.\" The RSTS/E entry carries three extra lines saying plainly that its installer stops one step short, because the second \"Library\" tape it asks for no longer exists: DCL answers but the packaged commands were never wired up. One keypress boots the chosen system under Open SIMH (pinned to commit a1f57fa3, built into this tile's overlay because the frozen bridge base predates it). RSX-11M is V4.2 BL38, not the V4.3 ceiling of the Mentec grant, because no reachable copy of V4.3 exists; the chooser says V4.2 rather than pretending. Keyboard-only exhibit; no pointer device; the AC97 card is present because the bridge shape always carries it, but nothing inside the guest makes a sound."
+        },
+        "vmidLabel": 229,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "decos",
+            "--vmid",
+            "229",
+            "--udp",
+            "54126",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/decos/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/decos/tile.env.fixture"
+          ],
+          "deviceSetId": "decos-current",
+          "launcher": "streamhost/tiles/decos/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/decos/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-decos",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5829-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-decos",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5829-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 48
+      },
       "spa": {
         "archetypeId": "mono-terminal",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · decos"
+        "transport": "streamhost",
+        "accentColor": "#7A5CC4",
+        "eraLabel": "1970 · PDP-11 · RT-11 / RSX-11M / RSTS-E"
       },
       "museum": {
         "id": "decos",
-        "displayName": "decos",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "DEC PDP-11 — RT-11, RSX-11M, RSTS/E",
+        "year": 1970,
+        "lineage": "Digital Equipment Corporation PDP-11 (16-bit minicomputer, 1970–1997)",
+        "arch": "PDP-11/73 (J-11) with 256 KB and an RL02 pack, and PDP-11/70 with 4 MB and RD52/RD54 disks, simulated by Open SIMH",
+        "ramMB": 4,
+        "ramKB": 0,
+        "era": "1970s",
+        "accent": "#7A5CC4",
+        "eraSoftware": [
+          "RT-11 V5.3 (1985) — the single-user real-time monitor that ran lab instruments and machine tools",
+          "RSX-11M V4.2 (1987) — the multi-user real-time executive whose team went on to write VMS",
+          "RSTS/E V9.6 (1988) — the timesharing system that put a school's whole class on one machine",
+          "Unix Sixth and Seventh Edition, which were written on this machine",
+          "MACRO-11, FORTRAN IV, BASIC-PLUS, DIBOL and the DECUS tape library"
+        ],
+        "periodBrowser": "none — a decade before the web, on a glass teletype",
+        "iconicApps": [
+          "the RT-11 keyboard monitor",
+          "MCR, the RSX-11M command interpreter",
+          "BASIC-PLUS under RSTS/E"
+        ],
+        "blurb": "One machine and three of the operating systems DEC sold for it — a real-time monitor, a real-time executive and a timesharing system — because in 1975 you did not buy a computer with an operating system, you bought a computer and then chose one.",
+        "notes": "Live streamhost tile, and the oldest machine in the collection. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs one fullscreen green-on-black xterm whose only program is a chooser, and pressing 1, 2 or 3 boots RT-11 V5.3, RSX-11M V4.2 BL38 or RSTS/E V9.6 under Open SIMH (pinned at commit a1f57fa3 and built INTO this tile's overlay, the amiga.sh precedent, because the frozen bridge base predates it). ONE tile rather than three because a visitor cannot tell RT-11's “.” from RSX-11M's “>” from RSTS/E's “Ready”, and three near-identical terminals would read as one exhibit cloned by accident; the chooser is the placard. THE VERSIONS ARE THE MENTEC CEILINGS: the 1997 hobbyist grant covers RT-11 V5.3, RSTS/E V9.6, RSX-11M V4.3 and RSX-11M-PLUS V3.0 “or prior”, which is exactly why they are hard to find. RSX-11M is V4.2 and the exhibit says V4.2 — V4.3 media is not reachable anywhere today, and the community's RSX-11M-PLUS V4.6 and RSTS/E V10.1 are outside the grant. RSTS/E is installed as far as its media allows: the pack boots to timesharing and a working DCL $ prompt, but DEC's procedure ends by asking for a second “Library” tape that is not in the kit and is not obtainable, so START.COM and the packaged CCL commands are absent — the chooser says so in three lines of its own text rather than leaving a visitor to discover it. The golden idles AT the chooser with no simulator running, so a tile nobody is watching costs nothing, and each system runs on a fresh sparse copy of its pack. Keyboard-only exhibit; mono-terminal archetype. The arc worth reading aloud: the “>” of RSX-11M is the prompt whose authors, under Dave Cutler, went on to write VMS and then Windows NT, both of which are already in this gallery. See streamhost/docs/BRIDGE.md and docs/guests/decos.md."
       },
-      "notes": [
-        "new-os Tier 2 scaffold; reserved slot 126/UDP 54126",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-      ]
+      "reset": {
+        "tileDir": "decos",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "The PDP-11 chooser: a green-on-black 80x31 xterm on a 1024x768 X root naming RT-11 V5.3, RSX-11M V4.2 and RSTS/E V9.6 with the prompt each answers with, over “Press 1, 2 or 3. Reset returns you to this screen.” The RSTS/E line carries its own three-line caveat about the missing Library tape. The golden holds NO running simulator, so reset both returns the visitor to the placard and throws away the session. Certified 2026-08-09 after the bake, by framebuffer: the 80-column rule measured x=3..962 of 1024 on the cold boot, on the restore, and again after the keyboard proof; pressing 1 through QMP input-send-event left the chooser and started a pdp11 process at RT-11FB V05.03, pressing 3 reached RSTS/E V9.6 timesharing and a DCL $, and loadvm golden brought the bare chooser back with no simulator running. Keyboard-only exhibit (no pointer device); AC97 present but the guest makes no sound."
+      }
     },
     {
       "schemaVersion": 1,
@@ -2658,54 +2817,212 @@
     {
       "schemaVersion": 1,
       "id": "gt40",
-      "era_year": 2026,
-      "tileDir": "gt40",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "era_year": 1973,
+      "enabled": true,
       "build": {
         "rows": [
           {
             "order": 42,
             "prelude": "",
-            "line": "  \"gt40        |gt40.sh        |Gt40          |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"gt40         |gt40.sh        |bridge/gt40     |retro    |~5-8m   |full   |tiles/gt40 overlay + golden (Open SIMH pdp11 VT11 → Lunar Lander)\"\n",
             "value": {
               "key": "gt40",
               "script": "gt40.sh",
-              "outputDir": "Gt40",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "outputDir": "bridge/gt40",
+              "class": "retro",
+              "estimated": "~5-8m",
+              "automation": "full",
+              "produces": "tiles/gt40 overlay + golden (Open SIMH pdp11 VT11 → Lunar Lander)",
               "flags": []
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/gt40",
+          "qmp": "/data/vms/streamhost/tiles/gt40/qmp.sock",
+          "pointer_mode": "abs",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5828,
+          "exec_port": 5828,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54125,
+          "notes": "exec: labctl exec gt40 \"<cmd>\" (ssh root@:5828, key bridge_key) reaches the Debian KIOSK, not the PDP-11 — the simulated machine has no shell. Light-pen exhibit: labctl type/key do nothing here; drive it with tiles/gt40/pen-drive.py (QMP abs move + button 1)."
+        }
+      },
+      "tileDir": "gt40",
+      "lifecycle": "production",
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
         "udpPort": 54125,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "abs",
+          "device": "usb-tablet",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 125
       },
       "guestDoc": "docs/guests/gt40.md",
       "credentialsRef": "guest/gt40",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "gt40",
+          "SH_QMP": "/data/vms/streamhost/tiles/gt40/qmp.sock",
+          "SH_PORT": "54125",
+          "SH_FPS": "60",
+          "SH_ENCODER_PRESET": "veryfast",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_POINTER": "abs",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/gt40/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/gt40/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_IDLE_PAUSE_SECS": "60",
+          "SH_FIXTURE_DESC": "DEC GT40 (1973) at the first seconds of a fresh lunar descent: the LEM in the upper left with its descent engine firing, four telemetry readouts across the top (HEIGHT ~17000-19000 feet, DISTANCE ~-15000 to -21000, VER VEL ~-490, HOR VEL ~880 — the exact digits differ by a second or two of flight from bake to bake), the 75% throttle bar and the two pairs of rotation arrows down the right edge, the twelve-item telemetry menu (HEIGHT, ALTITUDE, DISTANCE, FUEL LEFT, WEIGHT, THRUST, ANGLE, VER VEL, HOR VEL, VER ACC, HOR ACC, SECONDS) under them, and the mountainous lunar horizon across the bottom — green vectors on black, drawn by Open SIMH's VT11 at crt=vr17 scale=1 hspace=narrow in a 1024x1024 SDL window centred on a 1280x1024 X root. The exhibit is self-sustaining: the LEM falls for about two minutes, crashes, and the program restarts itself, a 135 s loop. LIGHT-PEN exhibit: the menu, the rotation arrows and the throttle bar are all selected by pointing; there is no keyboard input of any kind."
+        },
+        "vmidLabel": 228,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "gt40",
+            "--vmid",
+            "228",
+            "--udp",
+            "54125",
+            "--pointer",
+            "abs",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/gt40/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/gt40/tile.env.fixture"
+          ],
+          "deviceSetId": "gt40-current",
+          "launcher": "streamhost/tiles/gt40/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/gt40/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 768,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-gt40",
+            "-enable-kvm -machine pc-i440fx-11.0 -m 768 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb -device usb-tablet",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5828-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 768,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-gt40",
+              "-enable-kvm -machine pc-i440fx-11.0 -m 768 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb -device usb-tablet",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5828-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0, matching the QEMU 11 device set the golden was baked under; usb-tablet is load-bearing (the VT11 light pen is mouse button 1)"
+          }
+        },
+        "bringUpOrder": 47
+      },
       "spa": {
         "archetypeId": "mono-terminal",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · gt40"
+        "transport": "streamhost",
+        "accentColor": "#3BE84B",
+        "eraLabel": "1973 · GT40 (VT11 vector, light pen)"
       },
       "museum": {
         "id": "gt40",
-        "displayName": "gt40",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "DEC GT40",
+        "year": 1973,
+        "lineage": "DEC PDP-11/05 + VT11 display processor (GT40 graphics terminal)",
+        "arch": "DEC PDP-11/05, 16-bit; VT11 display processor drawing calligraphic vectors on a magnetic-deflection CRT; light pen",
+        "ramMB": 0,
+        "ramKB": 16,
+        "era": "1970s",
+        "accent": "#3BE84B",
+        "eraSoftware": [
+          "Lunar Lander (Moonlander), written for this machine in 1973 by DEC's Jack Burness",
+          "DEC's GT40 demonstration display files",
+          "paper tapes read in through the absolute loader over the DL11 serial line",
+          "display files generated on a host PDP-10 or PDP-11 and shipped down the line"
+        ],
+        "periodBrowser": "none — the ARPANET era, two decades before the web",
+        "iconicApps": [
+          "Lunar Lander (Moonlander)",
+          "the VT11 display file",
+          "the light pen"
+        ],
+        "blurb": "A PDP-11 with a vector processor bolted to it and a light pen on a cord: no pixels, no keyboard worth using, just an electron beam drawing lines exactly where the program tells it. The 1973 Lunar Lander it is running was written to show the machine off, and it still does.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Open SIMH's pdp11 simulator with the VT11 vector display, executing the original lunar.lda paper tape that ships inside the MIT-licensed Open SIMH tree — no external media, no staged asset, nothing to license. The exhibit is self-sustaining: the LEM falls for about two minutes, crashes, and the program restarts itself, so the golden rests at the first seconds of a fresh descent. THE ONLY POINTER-ONLY EXHIBIT IN THE COLLECTION and the only one where a light pen is the historically correct input device: the telemetry menu, the rotation arrows and the throttle bar are all driven by pointing, and there is no keyboard input of any kind (Open SIMH wires the pen to mouse button 1, so the pen is on the glass only while the button is held). No archetype models a vector CRT with a light pen; mono-terminal is a deliberate fallback, chosen because it is the only monochrome DEC-style CRT in the set. Displayed on the larger VR17 tube (crt=vr17) rather than the GT40's own VR14, because SIMH's VR14 model clips the twelve-item menu mid-word. See streamhost/docs/BRIDGE.md and docs/guests/gt40.md."
+      },
+      "reset": {
+        "tileDir": "gt40",
+        "pointer": "abs",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "PASS",
+        "keyboard": "N/A",
+        "fixture": "The first seconds of a fresh lunar descent — the LEM in the upper left with its engine firing, ~18000 feet, a full tank, the 75% throttle bar and the twelve-item telemetry menu down the right edge — in Open SIMH's VT11 at crt=vr17 scale=1 hspace=narrow, a 1024x1024 window centred on a 1280x1024 X root. The program restarts itself after each crash, so the bake rides that loop: scripts/build-guests/gt40.sh waits for the \"NO SURVIVORS\" message and then for the restart it triggers, which is why reset always hands a visitor a NEW GAME rather than the middle of somebody else's doomed trajectory. Light-pen route certified 2026-08-09 after the bake, by framebuffer: with the pointer parked the menu column is dead still (blink range 0 over 20 samples), a pen touch on ANGLE makes that item blink (range 376 — the program's own acknowledgement that the pen hit a vector), and loadvm golden clears the selection again (range 0). Pointer-only exhibit; no keyboard input of any kind; AC97 card present for device-set parity, but the GT40 is silent."
       },
       "notes": [
-        "new-os Tier 2 scaffold; reserved slot 125/UDP 54125",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+        "slot 125 / UDP 54125 / VMID 228 / ssh hostfwd 127.0.0.1:5828",
+        "Open SIMH is built INTO the tile overlay (the amiga.sh precedent); the frozen bridge base does not carry it. bridge-base.sh needs the matching addition for a from-scratch NVMe rebuild — see docs/guests/gt40.md.",
+        "Open SIMH pinned at commit a1f57fa3738ed31148d31126ba1a7278ff845c6d; lunar.lda sha256 95f314570424a2d3a5e5e4684b78d5b5f519d6f16931854540dc736220340930, asserted at build time."
       ]
     },
     {
@@ -3328,7 +3645,7 @@
       },
       "museum": {
         "id": "irix",
-        "displayName": "SGI Indy — IRIX 6.5",
+        "displayName": "SGI Indy",
         "year": 1993,
         "lineage": "SGI IRIX / System V Unix",
         "arch": "MIPS R4600 (MIPS III, 64-bit)",
@@ -3838,7 +4155,7 @@
       },
       "museum": {
         "id": "mpf2",
-        "displayName": "Multitech Microprofessor II — MPF-II BASIC",
+        "displayName": "Multitech Microprofessor II",
         "year": 1982,
         "lineage": "Multitech / Apple II clone",
         "arch": "MOS 6502, 1 MHz, 64 KB RAM, 16 KB ROM",
@@ -5002,7 +5319,7 @@
       },
       "museum": {
         "id": "openvms",
-        "displayName": "OpenVMS x86-64 9.2 — DECwindows",
+        "displayName": "OpenVMS x86-64 9.2",
         "year": 2024,
         "lineage": "VMS / OpenVMS",
         "arch": "x86_64",
@@ -5284,54 +5601,215 @@
     {
       "schemaVersion": 1,
       "id": "pdp11",
-      "era_year": 2026,
-      "tileDir": "pdp11",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "era_year": 1970,
+      "enabled": true,
       "build": {
         "rows": [
           {
             "order": 41,
             "prelude": "",
-            "line": "  \"pdp11       |pdp11.sh       |Pdp11         |installed|~15-30m |partial |TODO\"\n",
+            "line": "  \"pdp11        |pdp11.sh       |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)\"\n",
             "value": {
               "key": "pdp11",
               "script": "pdp11.sh",
-              "outputDir": "Pdp11",
-              "class": "installed",
-              "estimated": "~15-30m",
-              "automation": "partial",
-              "produces": "TODO",
+              "outputDir": "bridge/pdp11",
+              "class": "retro",
+              "estimated": "~6-8m",
+              "automation": "full",
+              "produces": "tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)",
               "flags": []
             }
           }
         ]
       },
-      "operator": {},
+      "operator": {
+        "labctl": {
+          "dir": "/data/vms/streamhost/tiles/pdp11",
+          "qmp": "/data/vms/streamhost/tiles/pdp11/qmp.sock",
+          "pointer_mode": "none",
+          "warpd_port": null,
+          "warpd_addr": null,
+          "ssh_port": 5827,
+          "exec_port": 5827,
+          "exec_kind": "ssh",
+          "exec_user": "root",
+          "exec_key": "/data/vms/bridge/bridge_key",
+          "console": "fb",
+          "udp_port": 54115,
+          "notes": "exec: labctl exec pdp11 \"<cmd>\" (ssh root@:5827, key bridge_key) reaches the Debian KIOSK, not the PDP-11. The simulated machine is driven only through its console: type into the tile, or read /tmp/pdp11-console.log in the kiosk for the full transcript."
+        }
+      },
+      "tileDir": "pdp11",
+      "lifecycle": "production",
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
         "udpPort": 54115,
+        "fps": 60,
+        "audio": true,
+        "touch": false,
+        "pointer": {
+          "transport": "none",
+          "backend": "disabled",
+          "device": "ps2-keyboard",
+          "scale": 1.0,
+          "offset": [
+            0,
+            0
+          ]
+        },
         "slot": 115
       },
       "guestDoc": "docs/guests/pdp11.md",
       "credentialsRef": "guest/pdp11",
+      "runtime": {
+        "tileEnv": {
+          "SH_TILE": "pdp11",
+          "SH_QMP": "/data/vms/streamhost/tiles/pdp11/qmp.sock",
+          "SH_PORT": "54115",
+          "SH_FPS": "60",
+          "SH_HOST_IP": "192.0.2.10",
+          "SH_ADVERTISE_HOST": "192.0.2.10",
+          "SH_INPUT_BACKEND": "disabled",
+          "SH_CURSOR_SCALE": "1.0",
+          "SH_CURSOR_OFF_X": "0",
+          "SH_CURSOR_OFF_Y": "0",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_BITRATE": "96000",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/pdp11/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/pdp11/signaling.json",
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_RESET_MODE": "loadvm",
+          "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_KEY_MIN_HOLD_MS": "40",
+          "SH_KEY_MIN_GAP_MS": "40",
+          "SH_FIXTURE_DESC": "DEC PDP-11/70 (4 MB core, FP11) under Open SIMH, resting at 2.11BSD's own multiuser login prompt: the tail of the boot — \"Fast boot ... skipping disk checks\", \"Assuming non-networking system ...\", \"standard daemons: update cron accounting.\", the date, then \"2.11 BSD UNIX (pdp11) (console)\" and \"login:\" — in green phosphor on black, 80x24 at DejaVu Sans Mono 15 pt on a 1024x768 X root. LOG IN AS `root`, WITH NO PASSWORD: that is the one thing the screen cannot tell a visitor, so the placard and the SPA hint carry it. Then `uname -a` prints \"BSD pdp11 2.11 ... #19 ... /usr/src/sys/ZEKE\" and /usr/src holds the entire 2.11BSD kernel and userland source tree. Keyboard-only exhibit; no pointer device; silent (a console terminal has no audio)."
+        },
+        "vmidLabel": 227,
+        "qemu": {
+          "mode": "verbatim",
+          "emitArgs": [
+            "--tile",
+            "pdp11",
+            "--vmid",
+            "227",
+            "--udp",
+            "54115",
+            "--pointer",
+            "none",
+            "--input-backend",
+            "disabled",
+            "--cursor-scale",
+            "1.0",
+            "--cursor-off-x",
+            "0",
+            "--cursor-off-y",
+            "0",
+            "--audio",
+            "on",
+            "--fps",
+            "60",
+            "--launcher-file",
+            "$T/pdp11/qemu-streamhost.sh",
+            "--env-append-file",
+            "$T/pdp11/tile.env.fixture"
+          ],
+          "deviceSetId": "pdp11-current",
+          "launcher": "streamhost/tiles/pdp11/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/pdp11/tile.env.fixture",
+          "binary": "qemu-system-x86_64",
+          "accel": "kvm",
+          "cpu": "host",
+          "memoryMB": 512,
+          "smp": 2,
+          "vga": "std",
+          "deviceSetSummary": [
+            "-name streamhost-pdp11",
+            "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 512 -smp 2 -cpu host",
+            "-rtc base=localtime",
+            "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+            "-vga std",
+            "-display dbus,p2p=on,audiodev=snd0",
+            "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+            "-usb",
+            "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5827-:22 -device e1000,netdev=n0",
+            "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+            "-pidfile $BASE/qemu.pid"
+          ],
+          "sourceDeviceSet": {
+            "binary": "qemu-system-x86_64",
+            "machine": "pc-i440fx-11.0,vmport=off",
+            "accel": "kvm",
+            "cpu": "host",
+            "memoryMB": 512,
+            "smp": 2,
+            "vga": "std",
+            "deviceSetSummary": [
+              "-name streamhost-pdp11",
+              "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 512 -smp 2 -cpu host",
+              "-rtc base=localtime",
+              "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+              "-vga std",
+              "-display dbus,p2p=on,audiodev=snd0",
+              "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+              "-usb",
+              "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5827-:22 -device e1000,netdev=n0",
+              "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+              "-pidfile $BASE/qemu.pid"
+            ]
+          },
+          "machine": "pc-i440fx-11.0,vmport=off",
+          "launcherParity": {
+            "status": "semantic-identical",
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+          }
+        },
+        "bringUpOrder": 46
+      },
       "spa": {
         "archetypeId": "mono-terminal",
-        "transport": "showcase",
-        "accentColor": "#64748b",
-        "eraLabel": "TBD · pdp11"
+        "transport": "streamhost",
+        "accentColor": "#9A4F96",
+        "eraLabel": "1975 · PDP-11/70 (2.11BSD)"
       },
       "museum": {
         "id": "pdp11",
-        "displayName": "pdp11",
-        "year": 2026,
-        "lineage": "TODO",
-        "arch": "TODO",
-        "accent": "#64748b"
+        "displayName": "DEC PDP-11/70 — 2.11BSD",
+        "year": 1975,
+        "lineage": "DEC PDP-11 (1970–1997); 2.11BSD (UC Berkeley, 1991), the last BSD for the PDP-11",
+        "arch": "DEC PDP-11/70, 16-bit with 22-bit addressing, 4 MB core, FP11 floating point (Open SIMH)",
+        "ramMB": 4,
+        "ramKB": 0,
+        "era": "1970s",
+        "accent": "#9A4F96",
+        "eraSoftware": [
+          "2.11BSD: csh, vi, more, man pages and a 4.3BSD-derived TCP/IP stack, on a 16-bit machine",
+          "the complete operating system source tree in /usr/src, kernel included",
+          "the Seventh Edition toolchain — cc, as, ld, make, sccs — that C was invented for",
+          "adventure, rogue and the rest of /usr/games, still where they were left"
+        ],
+        "periodBrowser": "none — the ARPANET era; the web was two decades away",
+        "iconicApps": [
+          "the 2.11BSD kernel source in /usr/src/sys",
+          "vi and csh, in their original homes",
+          "cc — the C compiler, on the architecture C was designed for"
+        ],
+        "blurb": "The missing ancestor: the minicomputer Unix and C grew up on. Log in as root — there is no password — and the entire operating system's source code is sitting in /usr/src, on a 16-bit machine with four megabytes of memory.",
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Open SIMH's pdp11 simulator as a PDP-11/70 (4 MB of core, FP11) booting 2.11BSD off a 1 GB MSCP pack, drawn as green phosphor in a fixed 80x24 xterm; streamhost captures the Linux framebuffer exactly like every other bridge tile. SIMH is NOT in the frozen bridge base and Debian's package is 3.8.1 without SDL video, so the builder compiles Open SIMH from source into this tile's overlay (pin a1f57fa3, ~92 s), the amiga.sh precedent. THREE THINGS FUTURE WORK MUST NOT UNDO: build with `make pdp11 AIO_CCDEFS=` (the default async-I/O build DEADLOCKS across loadvm, both threads in futex_wait, every keystroke lost while the exhibit looks healthy); ship `set throttle 10%` and NOT `set cpu idle` (idle detection rides on a calibrated timer that a snapshot restore destroys permanently — 38-80 s per keystroke afterwards — and the price of avoiding it is 19.7% of a host core instead of 2.4%); and keep the launcher's xdotool focus helper, because with no window manager X's PointerRoot focus parks the pointer at (0,0) outside the terminal and swallows every key. The golden rests at 2.11BSD's own multiuser login prompt, the state an unattended cold boot reaches; root has no password, which the placard and the SPA hint carry because the screen cannot. Keyboard-only exhibit, silent, mono-terminal archetype. See streamhost/docs/BRIDGE.md and docs/guests/pdp11.md."
+      },
+      "reset": {
+        "tileDir": "pdp11",
+        "pointer": "none",
+        "touch": false,
+        "resetMode": "loadvm",
+        "snapshot": "golden",
+        "mouse": "N/A",
+        "keyboard": "PASS",
+        "fixture": "2.11BSD's own multiuser `login:` prompt on a simulated PDP-11/70, with the tail of the machine's unattended cold boot above it and the banner \"2.11 BSD UNIX (pdp11) (console)\" naming the system; green phosphor, 80x24 xterm on a 1024x768 X root. Baked from an UNTOUCHED cold boot — nothing is typed into the golden and nothing is typed after the restore. A logged-in root shell was rejected as the fixture: it is a state a human typed into, it hides that this is a multiuser timesharing system, and it would hand each visitor whatever the last one left running. Route certified 2026-08-09 AFTER the bake, against the restored fixture, in framebuffer-asserted steps: `root` with no password reaches a shell, `uname -a` prints the 2.11BSD #19 kernel banner and `ls /usr/src` lists the source tree, with no lost characters at 40 ms/40 ms. Re-certified on the LIVE tile against a golden 15 minutes old: first keystroke echoed in 0.8 s. Keyboard-only exhibit (no mouse); silent."
       },
       "notes": [
-        "new-os Tier 2 scaffold; reserved slot 115/UDP 54115",
-        "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+        "Oldest lineage in the collection and the ancestor of most of it: every Unix tile descends from PDP-11 Unix, and openvms' VMS was written by the RSX-11M team.",
+        "2.11BSD pack is PRESERVATION-SOURCE media: streamed as pixels only, never committed, never served, no download affordance. See docs/lab/ASSETS-MANIFEST.md.",
+        "Runs the SH_KEY_MIN_* canary streamhost build (same binary as vic20/plus4) so the declared 40/40 pacing actually applies."
       ]
     },
     {
@@ -5527,7 +6005,7 @@
       },
       "museum": {
         "id": "pet2001",
-        "displayName": "Commodore PET 2001 — COMMODORE BASIC",
+        "displayName": "Commodore PET 2001",
         "year": 1977,
         "lineage": "Commodore PET / CBM (MOS 6502)",
         "arch": "MOS 6502, 1 MHz, 8 KB RAM, 40×25 characters, no CRTC",
@@ -5741,7 +6219,7 @@
       },
       "museum": {
         "id": "plus4",
-        "displayName": "Commodore Plus/4 — 3-plus-1 in ROM",
+        "displayName": "Commodore Plus/4",
         "year": 1984,
         "lineage": "Commodore 264 series (MOS 7501, TED)",
         "arch": "MOS 7501, 1.77 MHz (PAL), 64 KB RAM, 32 KB application ROM",
@@ -8524,7 +9002,7 @@
       },
       "museum": {
         "id": "vic20",
-        "displayName": "Commodore VIC-20 — CBM BASIC V2",
+        "displayName": "Commodore VIC-20",
         "year": 1980,
         "lineage": "Commodore 8-bit (MOS 6502)",
         "arch": "MOS 6502, 1.108 MHz (PAL), 5 KB RAM, 20 KB ROM",

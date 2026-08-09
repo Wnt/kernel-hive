@@ -1,54 +1,228 @@
 {
   "schemaVersion": 1,
   "id": "pdp11",
-  "era_year": 2026,
-  "tileDir": "pdp11",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "era_year": 1970,
+  "enabled": true,
   "build": {
     "rows": [
       {
         "order": 41,
         "prelude": "",
-        "line": "  \"pdp11       |pdp11.sh       |Pdp11         |installed|~15-30m |partial |TODO\"\n",
+        "line": "  \"pdp11        |pdp11.sh       |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)\"\n",
         "value": {
           "key": "pdp11",
           "script": "pdp11.sh",
-          "outputDir": "Pdp11",
-          "class": "installed",
-          "estimated": "~15-30m",
-          "automation": "partial",
-          "produces": "TODO",
+          "outputDir": "bridge/pdp11",
+          "class": "retro",
+          "estimated": "~6-8m",
+          "automation": "full",
+          "produces": "tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)",
           "flags": []
         }
       }
     ]
   },
-  "operator": {},
-  "render": {},
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/pdp11",
+      "qmp": "/data/vms/streamhost/tiles/pdp11/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5827,
+      "exec_port": 5827,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54115,
+      "notes": "exec: labctl exec pdp11 \"<cmd>\" (ssh root@:5827, key bridge_key) reaches the Debian KIOSK, not the PDP-11. The simulated machine is driven only through its console: type into the tile, or read /tmp/pdp11-console.log in the kiosk for the full transcript."
+    }
+  },
+  "render": {
+    "tilesManifestOrder": 40,
+    "bindingOrder": 46,
+    "museumOrder": 40,
+    "goldenOrder": 40,
+    "bringUpGroup": 6,
+    "signalOrder": 42,
+    "tilesManifestInvocation": "emit pdp11 \\\n  --tile pdp11 --vmid 227 --udp 54115 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/pdp11/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/pdp11/tile.env.fixture\"\n",
+    "bindingLine": "  pdp11:       { osId: 'pdp11', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#9A4F96', eraLabel: '1975 · PDP-11/70 (2.11BSD)' },\n",
+    "museumBlock": "  {\n    id: 'pdp11', displayName: 'DEC PDP-11/70 — 2.11BSD', year: 1975,\n    lineage: 'DEC PDP-11 (1970–1997); 2.11BSD (UC Berkeley, 1991), the last BSD for the PDP-11',\n    arch: 'DEC PDP-11/70, 16-bit with 22-bit addressing, 4 MB core, FP11 floating point (Open SIMH)', ramMB: 4, ramKB: 0,    era: '1970s', accent: '#9A4F96',\n    eraSoftware: ['2.11BSD: csh, vi, more, man pages and a 4.3BSD-derived TCP/IP stack, on a 16-bit machine', 'the complete operating system source tree in /usr/src, kernel included', 'the Seventh Edition toolchain — cc, as, ld, make, sccs — that C was invented for', 'adventure, rogue and the rest of /usr/games, still where they were left'],\n    periodBrowser: 'none — the ARPANET era; the web was two decades away',\n    iconicApps: ['the 2.11BSD kernel source in /usr/src/sys', 'vi and csh, in their original homes', 'cc — the C compiler, on the architecture C was designed for'],\n    blurb: 'The missing ancestor: the minicomputer Unix and C grew up on. Log in as root — there is no password — and the entire operating system\\'s source code is sitting in /usr/src, on a 16-bit machine with four megabytes of memory.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Open SIMH\\'s pdp11 simulator as a PDP-11/70 (4 MB of core, FP11) booting 2.11BSD off a 1 GB MSCP pack, drawn as green phosphor in a fixed 80x24 xterm; streamhost captures the Linux framebuffer exactly like every other bridge tile. SIMH is NOT in the frozen bridge base and Debian\\'s package is 3.8.1 without SDL video, so the builder compiles Open SIMH from source into this tile\\'s overlay (pin a1f57fa3, ~92 s), the amiga.sh precedent. THREE THINGS FUTURE WORK MUST NOT UNDO: build with `make pdp11 AIO_CCDEFS=` (the default async-I/O build DEADLOCKS across loadvm, both threads in futex_wait, every keystroke lost while the exhibit looks healthy); ship `set throttle 10%` and NOT `set cpu idle` (idle detection rides on a calibrated timer that a snapshot restore destroys permanently — 38-80 s per keystroke afterwards — and the price of avoiding it is 19.7% of a host core instead of 2.4%); and keep the launcher\\'s xdotool focus helper, because with no window manager X\\'s PointerRoot focus parks the pointer at (0,0) outside the terminal and swallows every key. The golden rests at 2.11BSD\\'s own multiuser login prompt, the state an unattended cold boot reaches; root has no password, which the placard and the SPA hint carry because the screen cannot. Keyboard-only exhibit, silent, mono-terminal archetype. See streamhost/docs/BRIDGE.md and docs/guests/pdp11.md.',\n  },\n",
+    "tilesManifestPrelude": "",
+    "bindingPrelude": "",
+    "museumPrelude": ""
+  },
+  "tileDir": "pdp11",
+  "lifecycle": "production",
   "stream": {
-    "transport": "showcase",
+    "transport": "streamhost",
     "udpPort": 54115,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
     "slot": 115
   },
   "guestDoc": "docs/guests/pdp11.md",
   "credentialsRef": "guest/pdp11",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "pdp11",
+      "SH_QMP": "/data/vms/streamhost/tiles/pdp11/qmp.sock",
+      "SH_PORT": "54115",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/pdp11/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/pdp11/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_KEY_MIN_HOLD_MS": "40",
+      "SH_KEY_MIN_GAP_MS": "40",
+      "SH_FIXTURE_DESC": "DEC PDP-11/70 (4 MB core, FP11) under Open SIMH, resting at 2.11BSD's own multiuser login prompt: the tail of the boot — \"Fast boot ... skipping disk checks\", \"Assuming non-networking system ...\", \"standard daemons: update cron accounting.\", the date, then \"2.11 BSD UNIX (pdp11) (console)\" and \"login:\" — in green phosphor on black, 80x24 at DejaVu Sans Mono 15 pt on a 1024x768 X root. LOG IN AS `root`, WITH NO PASSWORD: that is the one thing the screen cannot tell a visitor, so the placard and the SPA hint carry it. Then `uname -a` prints \"BSD pdp11 2.11 ... #19 ... /usr/src/sys/ZEKE\" and /usr/src holds the entire 2.11BSD kernel and userland source tree. Keyboard-only exhibit; no pointer device; silent (a console terminal has no audio)."
+    },
+    "vmidLabel": 227,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "pdp11",
+        "--vmid",
+        "227",
+        "--udp",
+        "54115",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/pdp11/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/pdp11/tile.env.fixture"
+      ],
+      "deviceSetId": "pdp11-current",
+      "launcher": "streamhost/tiles/pdp11/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/pdp11/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 512,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-pdp11",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 512 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5827-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 512,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-pdp11",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 512 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5827-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+      }
+    },
+    "bringUpOrder": 46
+  },
   "spa": {
     "archetypeId": "mono-terminal",
-    "transport": "showcase",
-    "accentColor": "#64748b",
-    "eraLabel": "TBD · pdp11"
+    "transport": "streamhost",
+    "accentColor": "#9A4F96",
+    "eraLabel": "1975 · PDP-11/70 (2.11BSD)"
   },
   "museum": {
     "id": "pdp11",
-    "displayName": "pdp11",
-    "year": 2026,
-    "lineage": "TODO",
-    "arch": "TODO",
-    "accent": "#64748b"
+    "displayName": "DEC PDP-11/70 — 2.11BSD",
+    "year": 1975,
+    "lineage": "DEC PDP-11 (1970–1997); 2.11BSD (UC Berkeley, 1991), the last BSD for the PDP-11",
+    "arch": "DEC PDP-11/70, 16-bit with 22-bit addressing, 4 MB core, FP11 floating point (Open SIMH)",
+    "ramMB": 4,
+    "ramKB": 0,
+    "era": "1970s",
+    "accent": "#9A4F96",
+    "eraSoftware": [
+      "2.11BSD: csh, vi, more, man pages and a 4.3BSD-derived TCP/IP stack, on a 16-bit machine",
+      "the complete operating system source tree in /usr/src, kernel included",
+      "the Seventh Edition toolchain — cc, as, ld, make, sccs — that C was invented for",
+      "adventure, rogue and the rest of /usr/games, still where they were left"
+    ],
+    "periodBrowser": "none — the ARPANET era; the web was two decades away",
+    "iconicApps": [
+      "the 2.11BSD kernel source in /usr/src/sys",
+      "vi and csh, in their original homes",
+      "cc — the C compiler, on the architecture C was designed for"
+    ],
+    "blurb": "The missing ancestor: the minicomputer Unix and C grew up on. Log in as root — there is no password — and the entire operating system's source code is sitting in /usr/src, on a 16-bit machine with four megabytes of memory.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Open SIMH's pdp11 simulator as a PDP-11/70 (4 MB of core, FP11) booting 2.11BSD off a 1 GB MSCP pack, drawn as green phosphor in a fixed 80x24 xterm; streamhost captures the Linux framebuffer exactly like every other bridge tile. SIMH is NOT in the frozen bridge base and Debian's package is 3.8.1 without SDL video, so the builder compiles Open SIMH from source into this tile's overlay (pin a1f57fa3, ~92 s), the amiga.sh precedent. THREE THINGS FUTURE WORK MUST NOT UNDO: build with `make pdp11 AIO_CCDEFS=` (the default async-I/O build DEADLOCKS across loadvm, both threads in futex_wait, every keystroke lost while the exhibit looks healthy); ship `set throttle 10%` and NOT `set cpu idle` (idle detection rides on a calibrated timer that a snapshot restore destroys permanently — 38-80 s per keystroke afterwards — and the price of avoiding it is 19.7% of a host core instead of 2.4%); and keep the launcher's xdotool focus helper, because with no window manager X's PointerRoot focus parks the pointer at (0,0) outside the terminal and swallows every key. The golden rests at 2.11BSD's own multiuser login prompt, the state an unattended cold boot reaches; root has no password, which the placard and the SPA hint carry because the screen cannot. Keyboard-only exhibit, silent, mono-terminal archetype. See streamhost/docs/BRIDGE.md and docs/guests/pdp11.md."
+  },
+  "reset": {
+    "tileDir": "pdp11",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "2.11BSD's own multiuser `login:` prompt on a simulated PDP-11/70, with the tail of the machine's unattended cold boot above it and the banner \"2.11 BSD UNIX (pdp11) (console)\" naming the system; green phosphor, 80x24 xterm on a 1024x768 X root. Baked from an UNTOUCHED cold boot — nothing is typed into the golden and nothing is typed after the restore. A logged-in root shell was rejected as the fixture: it is a state a human typed into, it hides that this is a multiuser timesharing system, and it would hand each visitor whatever the last one left running. Route certified 2026-08-09 AFTER the bake, against the restored fixture, in framebuffer-asserted steps: `root` with no password reaches a shell, `uname -a` prints the 2.11BSD #19 kernel banner and `ls /usr/src` lists the source tree, with no lost characters at 40 ms/40 ms. Re-certified on the LIVE tile against a golden 15 minutes old: first keystroke echoed in 0.8 s. Keyboard-only exhibit (no mouse); silent."
   },
   "notes": [
-    "new-os Tier 2 scaffold; reserved slot 115/UDP 54115",
-    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+    "Oldest lineage in the collection and the ancestor of most of it: every Unix tile descends from PDP-11 Unix, and openvms' VMS was written by the RSX-11M team.",
+    "2.11BSD pack is PRESERVATION-SOURCE media: streamed as pixels only, never committed, never served, no download affordance. See docs/lab/ASSETS-MANIFEST.md.",
+    "Runs the SH_KEY_MIN_* canary streamhost build (same binary as vic20/plus4) so the declared 40/40 pacing actually applies."
   ]
 }

@@ -1,54 +1,226 @@
 {
   "schemaVersion": 1,
   "id": "decos",
-  "era_year": 2026,
-  "tileDir": "decos",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "era_year": 1970,
+  "enabled": true,
   "build": {
     "rows": [
       {
         "order": 43,
         "prelude": "",
-        "line": "  \"decos       |decos.sh       |Decos         |installed|~15-30m |partial |TODO\"\n",
+        "line": "  \"decos        |decos.sh       |bridge/decos    |retro    |~20-70m |full   |tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)\"\n",
         "value": {
           "key": "decos",
           "script": "decos.sh",
-          "outputDir": "Decos",
-          "class": "installed",
-          "estimated": "~15-30m",
-          "automation": "partial",
-          "produces": "TODO",
+          "outputDir": "bridge/decos",
+          "class": "retro",
+          "estimated": "~20-70m",
+          "automation": "full",
+          "produces": "tiles/decos overlay + golden (Open SIMH → RT-11 / RSX-11M / RSTS-E chooser)",
           "flags": []
+        },
+        "defaultOrder": {
+          "group": 3,
+          "position": 12
         }
       }
     ]
   },
-  "operator": {},
-  "render": {},
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/decos",
+      "qmp": "/data/vms/streamhost/tiles/decos/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5829,
+      "exec_port": 5829,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54126,
+      "notes": "exec: labctl exec decos \"<cmd>\" (ssh root@:5829, key bridge_key) — lands in the Debian kiosk, not in the PDP-11. The simulator's console is the xterm; drive it with labctl type/key and read it with labctl shot."
+    }
+  },
+  "render": {
+    "tilesManifestOrder": 42,
+    "bindingOrder": 48,
+    "museumOrder": 42,
+    "goldenOrder": 42,
+    "bringUpGroup": 6,
+    "signalOrder": 44,
+    "tilesManifestInvocation": "emit decos \\\n  --tile decos --vmid 229 --udp 54126 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/decos/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/decos/tile.env.fixture\"\n",
+    "bindingLine": "  decos:       { osId: 'decos', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#7A5CC4', eraLabel: '1970 · PDP-11 · RT-11 / RSX-11M / RSTS-E' },\n",
+    "museumBlock": "  {\n    id: 'decos', displayName: 'DEC PDP-11 — RT-11, RSX-11M, RSTS/E', year: 1970,\n    lineage: 'Digital Equipment Corporation PDP-11 (16-bit minicomputer, 1970–1997)',\n    arch: 'PDP-11/73 (J-11) with 256 KB and an RL02 pack, and PDP-11/70 with 4 MB and RD52/RD54 disks, simulated by Open SIMH', ramMB: 4, ramKB: 0,    era: '1970s', accent: '#7A5CC4',\n    eraSoftware: ['RT-11 V5.3 (1985) — the single-user real-time monitor that ran lab instruments and machine tools', 'RSX-11M V4.2 (1987) — the multi-user real-time executive whose team went on to write VMS', 'RSTS/E V9.6 (1988) — the timesharing system that put a school\\'s whole class on one machine', 'Unix Sixth and Seventh Edition, which were written on this machine', 'MACRO-11, FORTRAN IV, BASIC-PLUS, DIBOL and the DECUS tape library'],\n    periodBrowser: 'none — a decade before the web, on a glass teletype',\n    iconicApps: ['the RT-11 keyboard monitor', 'MCR, the RSX-11M command interpreter', 'BASIC-PLUS under RSTS/E'],\n    blurb: 'One machine and three of the operating systems DEC sold for it — a real-time monitor, a real-time executive and a timesharing system — because in 1975 you did not buy a computer with an operating system, you bought a computer and then chose one.',\n    notes: 'Live streamhost tile, and the oldest machine in the collection. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs one fullscreen green-on-black xterm whose only program is a chooser, and pressing 1, 2 or 3 boots RT-11 V5.3, RSX-11M V4.2 BL38 or RSTS/E V9.6 under Open SIMH (pinned at commit a1f57fa3 and built INTO this tile\\'s overlay, the amiga.sh precedent, because the frozen bridge base predates it). ONE tile rather than three because a visitor cannot tell RT-11\\'s “.” from RSX-11M\\'s “>” from RSTS/E\\'s “Ready”, and three near-identical terminals would read as one exhibit cloned by accident; the chooser is the placard. THE VERSIONS ARE THE MENTEC CEILINGS: the 1997 hobbyist grant covers RT-11 V5.3, RSTS/E V9.6, RSX-11M V4.3 and RSX-11M-PLUS V3.0 “or prior”, which is exactly why they are hard to find. RSX-11M is V4.2 and the exhibit says V4.2 — V4.3 media is not reachable anywhere today, and the community\\'s RSX-11M-PLUS V4.6 and RSTS/E V10.1 are outside the grant. RSTS/E is installed as far as its media allows: the pack boots to timesharing and a working DCL $ prompt, but DEC\\'s procedure ends by asking for a second “Library” tape that is not in the kit and is not obtainable, so START.COM and the packaged CCL commands are absent — the chooser says so in three lines of its own text rather than leaving a visitor to discover it. The golden idles AT the chooser with no simulator running, so a tile nobody is watching costs nothing, and each system runs on a fresh sparse copy of its pack. Keyboard-only exhibit; mono-terminal archetype. The arc worth reading aloud: the “>” of RSX-11M is the prompt whose authors, under Dave Cutler, went on to write VMS and then Windows NT, both of which are already in this gallery. See streamhost/docs/BRIDGE.md and docs/guests/decos.md.',\n  },\n",
+    "tilesManifestPrelude": "",
+    "bindingPrelude": "",
+    "museumPrelude": ""
+  },
+  "tileDir": "decos",
+  "lifecycle": "production",
   "stream": {
-    "transport": "showcase",
+    "transport": "streamhost",
     "udpPort": 54126,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
     "slot": 126
   },
   "guestDoc": "docs/guests/decos.md",
   "credentialsRef": "guest/decos",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "decos",
+      "SH_QMP": "/data/vms/streamhost/tiles/decos/qmp.sock",
+      "SH_PORT": "54126",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/decos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/decos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_FIXTURE_DESC": "A DEC PDP-11 with three of its operating systems behind a chooser. The golden is the chooser itself: a green-on-black 80x31 xterm on a 1024x768 X root listing \"1 RT-11 V5.3 (single-user real-time monitor, 11/73, RL02)\", \"2 RSX-11M V4.2 (multi-user real-time executive, 11/70, RD52)\" and \"3 RSTS/E V9.6 (multi-user timesharing, 11/70, RD54)\", each with the prompt it answers with (. > $) spelled out beside it, over the line \"Press 1, 2 or 3. Reset returns you to this screen.\" The RSTS/E entry carries three extra lines saying plainly that its installer stops one step short, because the second \"Library\" tape it asks for no longer exists: DCL answers but the packaged commands were never wired up. One keypress boots the chosen system under Open SIMH (pinned to commit a1f57fa3, built into this tile's overlay because the frozen bridge base predates it). RSX-11M is V4.2 BL38, not the V4.3 ceiling of the Mentec grant, because no reachable copy of V4.3 exists; the chooser says V4.2 rather than pretending. Keyboard-only exhibit; no pointer device; the AC97 card is present because the bridge shape always carries it, but nothing inside the guest makes a sound."
+    },
+    "vmidLabel": 229,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "decos",
+        "--vmid",
+        "229",
+        "--udp",
+        "54126",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/decos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/decos/tile.env.fixture"
+      ],
+      "deviceSetId": "decos-current",
+      "launcher": "streamhost/tiles/decos/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/decos/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 768,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-decos",
+        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5829-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 768,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-decos",
+          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 768 -smp 2 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5829-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
+      }
+    },
+    "bringUpOrder": 48
+  },
   "spa": {
     "archetypeId": "mono-terminal",
-    "transport": "showcase",
-    "accentColor": "#64748b",
-    "eraLabel": "TBD · decos"
+    "transport": "streamhost",
+    "accentColor": "#7A5CC4",
+    "eraLabel": "1970 · PDP-11 · RT-11 / RSX-11M / RSTS-E"
   },
   "museum": {
     "id": "decos",
-    "displayName": "decos",
-    "year": 2026,
-    "lineage": "TODO",
-    "arch": "TODO",
-    "accent": "#64748b"
+    "displayName": "DEC PDP-11 — RT-11, RSX-11M, RSTS/E",
+    "year": 1970,
+    "lineage": "Digital Equipment Corporation PDP-11 (16-bit minicomputer, 1970–1997)",
+    "arch": "PDP-11/73 (J-11) with 256 KB and an RL02 pack, and PDP-11/70 with 4 MB and RD52/RD54 disks, simulated by Open SIMH",
+    "ramMB": 4,
+    "ramKB": 0,
+    "era": "1970s",
+    "accent": "#7A5CC4",
+    "eraSoftware": [
+      "RT-11 V5.3 (1985) — the single-user real-time monitor that ran lab instruments and machine tools",
+      "RSX-11M V4.2 (1987) — the multi-user real-time executive whose team went on to write VMS",
+      "RSTS/E V9.6 (1988) — the timesharing system that put a school's whole class on one machine",
+      "Unix Sixth and Seventh Edition, which were written on this machine",
+      "MACRO-11, FORTRAN IV, BASIC-PLUS, DIBOL and the DECUS tape library"
+    ],
+    "periodBrowser": "none — a decade before the web, on a glass teletype",
+    "iconicApps": [
+      "the RT-11 keyboard monitor",
+      "MCR, the RSX-11M command interpreter",
+      "BASIC-PLUS under RSTS/E"
+    ],
+    "blurb": "One machine and three of the operating systems DEC sold for it — a real-time monitor, a real-time executive and a timesharing system — because in 1975 you did not buy a computer with an operating system, you bought a computer and then chose one.",
+    "notes": "Live streamhost tile, and the oldest machine in the collection. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs one fullscreen green-on-black xterm whose only program is a chooser, and pressing 1, 2 or 3 boots RT-11 V5.3, RSX-11M V4.2 BL38 or RSTS/E V9.6 under Open SIMH (pinned at commit a1f57fa3 and built INTO this tile's overlay, the amiga.sh precedent, because the frozen bridge base predates it). ONE tile rather than three because a visitor cannot tell RT-11's “.” from RSX-11M's “>” from RSTS/E's “Ready”, and three near-identical terminals would read as one exhibit cloned by accident; the chooser is the placard. THE VERSIONS ARE THE MENTEC CEILINGS: the 1997 hobbyist grant covers RT-11 V5.3, RSTS/E V9.6, RSX-11M V4.3 and RSX-11M-PLUS V3.0 “or prior”, which is exactly why they are hard to find. RSX-11M is V4.2 and the exhibit says V4.2 — V4.3 media is not reachable anywhere today, and the community's RSX-11M-PLUS V4.6 and RSTS/E V10.1 are outside the grant. RSTS/E is installed as far as its media allows: the pack boots to timesharing and a working DCL $ prompt, but DEC's procedure ends by asking for a second “Library” tape that is not in the kit and is not obtainable, so START.COM and the packaged CCL commands are absent — the chooser says so in three lines of its own text rather than leaving a visitor to discover it. The golden idles AT the chooser with no simulator running, so a tile nobody is watching costs nothing, and each system runs on a fresh sparse copy of its pack. Keyboard-only exhibit; mono-terminal archetype. The arc worth reading aloud: the “>” of RSX-11M is the prompt whose authors, under Dave Cutler, went on to write VMS and then Windows NT, both of which are already in this gallery. See streamhost/docs/BRIDGE.md and docs/guests/decos.md."
   },
-  "notes": [
-    "new-os Tier 2 scaffold; reserved slot 126/UDP 54126",
-    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-  ]
+  "reset": {
+    "tileDir": "decos",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "The PDP-11 chooser: a green-on-black 80x31 xterm on a 1024x768 X root naming RT-11 V5.3, RSX-11M V4.2 and RSTS/E V9.6 with the prompt each answers with, over “Press 1, 2 or 3. Reset returns you to this screen.” The RSTS/E line carries its own three-line caveat about the missing Library tape. The golden holds NO running simulator, so reset both returns the visitor to the placard and throws away the session. Certified 2026-08-09 after the bake, by framebuffer: the 80-column rule measured x=3..962 of 1024 on the cold boot, on the restore, and again after the keyboard proof; pressing 1 through QMP input-send-event left the chooser and started a pdp11 process at RT-11FB V05.03, pressing 3 reached RSTS/E V9.6 timesharing and a DCL $, and loadvm golden brought the bare chooser back with no simulator running. Keyboard-only exhibit (no pointer device); AC97 present but the guest makes no sound."
+  }
 }

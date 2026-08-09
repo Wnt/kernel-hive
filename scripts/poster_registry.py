@@ -382,7 +382,12 @@ def parse_markdown(body: str, path: Path) -> list[dict[str, Any]]:
             _validate_image_src(image.group(2), where)
             blocks.append({"kind": "image", "src": image.group(2), "alt": image.group(1)})
             continue
-        if line.startswith("#") or re.match(r"\s*[-*>]", line):
+        # Reject stray Markdown this renderer does not implement -- but a
+        # paragraph may legitimately OPEN with a bold run ("**Log in as root.**
+        # ..."), which parse_inline already handles. Only a real list bullet
+        # ("- ", "* ", "+ "), a blockquote (">") or a heading ("#") is an error,
+        # so "**" is matched before the bullet rule.
+        if line.startswith("#") or (not line.startswith("**") and re.match(r"\s*([-*+]|>)", line)):
             raise PosterError(f"{where}: unsupported Markdown syntax")
         paragraph.append(line)
     flush_paragraph()

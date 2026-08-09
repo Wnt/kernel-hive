@@ -1795,6 +1795,296 @@ export const POSTERS = {
       }
     ]
   },
+  "decos": {
+    "title": "DEC PDP-11 — RT-11, RSX-11M, RSTS/E",
+    "subtitle": "1970 · PDP-11 · RT-11 / RSX-11M / RSTS-E",
+    "hero": "/posters/decos/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/decos/desktop.webp",
+        "alt": "A DEC PDP-11 in a rack, its front panel a row of switches and lamps, with a terminal beside it",
+        "caption": "The hero photograph this poster wants is a PDP-11 in its cabinet — the switch-and-lamp front panel of an 11/70 or an 11/40, ideally with a VT52 or VT100 next to it and the two RL02 drives below. Not a bare board and not a museum plinth: the machine as it stood in a laboratory or a machine room, with cables."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Digital Equipment Corporation announced the PDP-11 in 1970. It was meant to be a small, cheap 16-bit machine, and it turned into the longest-lived computer architecture the company ever built: models kept shipping until 1997, twenty-seven years, and something on the order of half a million of them were sold."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Two ideas made it. The first was the Unibus, a single bus onto which memory, processor and every peripheral were attached as addresses; there were no special I/O instructions, because a disk controller was just some memory locations you could write to with the ordinary MOV. The second was an unusually regular instruction set — eight general registers, and addressing modes that worked the same way on all of them — which made the machine pleasant to write compilers for, and pleasant to write assembly for by hand."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It arrived at exactly the right size and price to be bought by people who were not computer departments: physics labs, hospitals, telephone exchanges, newspapers, machine shops, schools. That is the reason for the exhibit you are looking at."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "DEC did not sell you a computer with an operating system. It sold you a computer, and then you chose one — and the choice said what the machine was for."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "RT-11"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " was the single-user real-time monitor. It was small, it was fast, it got out of the way, and it is the one that ran the instrument in the corner of the laboratory: the spectrometer, the milling machine, the patient monitor. Its prompt is a full stop."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "RSX-11M"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " was the multi-user real-time executive: priority-scheduled tasks, several users, still hard enough real-time to run a factory. Its prompt is a right angle bracket."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "RSTS/E"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " was timesharing. Its point was to put a couple of dozen people on one PDP-11 at once, each at a terminal, most of them writing BASIC-PLUS, and in the 1970s and 1980s that meant a whole class in a school. Under BASIC-PLUS its prompt is a word: `Ready`; under DCL, which is what the console here comes up in, it is a dollar sign."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "There was a fourth choice, and it is the one history remembers. Ken Thompson and Dennis Ritchie wrote the Sixth and Seventh Editions of Unix on PDP-11s at Bell Labs, and the C language grew up on the same hardware. Unix's file abstraction and C's pointer arithmetic both carry the shape of this machine's address space. Every Unix and Linux tile in this gallery is descended from a program that first ran on a PDP-11."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "A chooser, and then whichever of the three you press. This is one exhibit rather than three because a visitor cannot be expected to tell `.` from `>` from `$`, and three identical green screens would look like an accident. The placard names each one, says what it was for, and prints the prompt to watch for."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Press "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "1"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " and RT-11 V5.3 boots off an RL02 pack in about two seconds and prints DEC's own welcome text. Press "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "2"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " and RSX-11M V4.2 comes up off an RD52, asks nothing (the exhibit answers its date and terminal-width questions for you) and leaves you at MCR. Press "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "3"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " for RSTS/E V9.6, and read the small print on the placard while you do: DEC's installation procedure ends by asking for a second “Library” tape, and no copy of that tape survives, so the system here boots and answers but its packaged commands were never wired up. It is shown that way rather than not shown at all."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The versions are not arbitrary. Mentec, which bought the PDP-11 software rights from DEC in 1994, granted a free non-commercial licence in 1997 covering "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "RT-11 V5.3 or prior, RSTS/E V9.6 or prior, RSX-11M V4.3 or prior"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " and RSX-11M-PLUS V3.0 or prior, for use with an emulator. Those exact ceilings are what runs here — which also means that the later versions the hobbyist community circulates most widely are not permitted, and are not used. One honest caveat is on the placard itself: "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "RSX-11M here is V4.2, not the V4.3 the licence would allow"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", because no reachable copy of V4.3 survives on the public internet."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The machines underneath are simulated by Open SIMH, the maintained free-software continuation of Bob Supnik's simulator: an 11/73 with 256 KB for RT-11, an 11/70 with 4 MB for the other two."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Follow the `>`."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "RSX-11M was built by a small group at DEC led by Dave Cutler. When DEC started designing the 32-bit machine that would replace the PDP-11, that group was given the operating system, and the result was VMS on the VAX — a system whose scheduling, its notion of a privileged executive, and much of its personality came from RSX-11. In 1988 Cutler left for Microsoft and led the team that built Windows NT, and NT's kernel is recognisably the work of the same people."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "This gallery has all three ends of that thread. The `>` you are looking at, `openvms` a few tiles away, and the Windows NT family after it are one continuous line of descent, and it starts on this machine."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The PDP-11 has one more quiet monument. When DEC finally stopped making them in 1997, the last customers were not hobbyists — they were nuclear power stations, steel mills and railway signalling systems, running RSX-11 and RT-11 code written decades earlier, because the machine did the job and nothing had happened to make it stop."
+          }
+        ]
+      }
+    ]
+  },
   "freedos": {
     "title": "FreeDOS 1.3",
     "subtitle": "2022 · DOS-compatible",
@@ -1907,6 +2197,255 @@ export const POSTERS = {
           {
             "kind": "text",
             "text": "FreeDOS has now existed far longer than the commercial DOS era that inspired it. Its endurance demonstrates the value of compatibility when software outlives vendors, machines, and distribution media. The project keeps a foundational stratum of PC culture executable, while its open implementation allows that history to be examined rather than merely replayed."
+          }
+        ]
+      }
+    ]
+  },
+  "gt40": {
+    "title": "DEC GT40 — VT11 vector display, Lunar Lander",
+    "subtitle": "1973 · GT40 (VT11 vector, light pen)",
+    "hero": "/posters/gt40/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/gt40/desktop.webp",
+        "alt": "A GT40 screen mid-descent — the lunar module in the upper left with its engine firing, four telemetry readouts across the top, a throttle bar and rotation arrows on the right, the twelve-item light-pen menu below them, and a mountainous horizon drawn in green vectors on black",
+        "caption": "Every line on this screen is a line the machine actually drew. There are no pixels here, and no keyboard — the pen in your hand is the only control."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Digital Equipment Corporation built the GT40 in 1972 as a graphics terminal you could also program: a PDP-11/05 and a VT11 display processor in one cabinet, with a monochrome CRT on top and a light pen on a cord."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The VT11 is the interesting half. It is not a framebuffer — there is no memory holding a picture. It reads a "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "display file"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " out of the PDP-11's core memory, one instruction at a time, and steers the electron beam along the lines it describes, over and over, fast enough that the phosphor never quite fades. Move a coordinate in memory and the line moves on the glass. That is why everything here is drawn in strokes rather than dots, and why the letters lean: they are handwriting, plotted the way a pen plotter would plot them."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The light pen is the other half of the idea. It is a photocell in a barrel: you hold it against the glass, and the moment the beam sweeps under it the pen fires an interrupt, and the display processor can say precisely which line it was in the middle of drawing. Pointing at something and the computer knowing what you pointed at — in 1972, with no mouse in sight."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The program on the screen is "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Lunar Lander"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", written in 1973 by Jack Burness at DEC, to show a GT40 off to customers. It succeeded so thoroughly that it escaped the sales floor: it spread across the PDP-11 world on paper tape, was reworked for other machines for a decade, and Atari's coin-op "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Lunar Lander"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " of 1979 — the first arcade cabinet in the vector-graphics wave that produced "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Asteroids"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " — descends from the same idea."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It is also a much better simulation than it needed to be. The instructions that came with the tape are blunt about it: "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "\"All numbers, speeds, weights, etc., are actual numbers. They are for real.\""
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " The descent engine is Grumman's, throttlable between 10 % and 100 % of 10 500 pounds of thrust and no lower, "
+          },
+          {
+            "kind": "emphasis",
+            "children": [
+              {
+                "kind": "text",
+                "text": "\"That is the way Grumman built it (actually the subcontractor).\""
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " Burning fuel makes the vehicle lighter, so it accelerates as it falls. Land above 10 feet per second sideways and you tip over; under 8 feet per second down is a good landing. The author admits to only one cheat — a little more fuel in the last stages than the real thing had, to make the game possible for an average person to play."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "And it is unusually generous about what it will tell you. Twelve quantities are available — height, altitude, angle, fuel, thrust, weight, both velocities, both accelerations, distance, elapsed seconds — of which any four can be on screen at once, in any arrangement you like, including the same one four times."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "A descent in progress, and every control on the screen is worked with the pen."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Down the right edge is the menu of twelve readouts. Point the pen at one and it starts blinking to say it is selected; point next at whichever of the four readouts along the top you want it to replace, and they swap. Above the menu are four arrows — two left, two right, a big one and a small one each way — which roll the ship fast or slow. Above those is a solid bar with a percentage beside it: that is the throttle, and you change it by sliding the pen up and down the bar."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Nothing here responds to a keyboard, because the machine this is running on had nothing worth typing at. Point at things."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The module comes in from the upper left, travelling down and to the right, and the first view is not to scale. Get below about 400 feet and the picture changes to a close-up of the landing site, drawn properly. There are three places on this landscape flat enough to put it down: the far left, a small shelf to the right of the mountains, and the wide plain on the right. If you crash — and the first several times, you will crash — the machine will tell you so in characteristically flat terms, wait a moment, and start again by itself."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Get down close enough to the plain on the right and you will find something drawn there that has no business being on the Moon: a pair of golden arches and a small building beside them. Burness put a McDonald's on the lunar surface, and it is still there, in the vectors, fifty years later."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The GT40 is the ancestor nobody in this gallery can quite escape. The PDP-11 underneath it is the machine Unix and C were shaped around; its display file, a list of drawing commands walked by dedicated hardware, is the direct grandparent of every display list and command buffer a graphics card has consumed since. And the light pen is the pointing device that lost: the mouse was cheaper, did not require holding your arm up against a screen all day, and worked on a raster display, which is what everything became."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What did not survive at all is the drawing method. A calligraphic display can only draw lines, but it draws them perfectly — infinitely thin, at any angle, with no staircase anywhere. Look at the horizon on this screen and then at any other exhibit in this room. Nothing since has been able to do that."
           }
         ]
       }
@@ -3860,6 +4399,190 @@ export const POSTERS = {
         }
       ]
     }
+  },
+  "pdp11": {
+    "title": "DEC PDP-11/70 — 2.11BSD",
+    "subtitle": "1975 · PDP-11/70 (2.11BSD, 1991)",
+    "hero": "/posters/pdp11/desktop.webp",
+    "images": [
+      {
+        "src": "/posters/pdp11/desktop.webp",
+        "alt": "A DEC PDP-11/70 in its tall cabinets, the purple and magenta operator's console with its rows of switches and indicator lamps at the top",
+        "caption": "The hero photograph should be a PDP-11/70 in its DEC cabinets, shot square on the operator's console — the magenta and purple front panel with its bank of address and data switches and the lamps above them — with the disk drives and a VT100 terminal in frame if possible. A machine that filled a room and ran twenty people at once."
+      }
+    ],
+    "blocks": [
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Origins"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Digital Equipment Corporation shipped the first PDP-11 in 1970. It was a 16-bit minicomputer, and its defining idea was that everything — memory, registers, the terminal, the disk — sat on one bus, the Unibus, at an address. There were no special instructions for input and output. A program wrote to a device the way it wrote to memory."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "That decision, plus a genuinely orthogonal instruction set, made the PDP-11 a pleasure to program and a natural target for a compiler. It was also cheap enough, by the standards of 1970, that a university department or a laboratory could own one outright rather than renting time on someone else's mainframe. DEC sold something like 600,000 of them, and kept the line alive until 1997."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The 11/70, announced in 1975, was the top of the range: 22-bit addressing for up to four megabytes of memory, a cache, a separate high-speed bus for the big disks, and the floating-point processor as standard. It is the machine most people picture when they picture a PDP-11 — two tall cabinets, a magenta console panel, washing-machine disk drives, and a room full of terminals."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Significance"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "In 1969 Ken Thompson had written the beginnings of an operating system on a cast-off PDP-7. In 1970 the work moved to a PDP-11, and it is on this architecture that both Unix and the C language grew up. Dennis Ritchie designed C between 1972 and 1973 with this instruction set in front of him; the kernel was rewritten in it, which is what eventually made Unix portable to anything else. Sixth Edition Unix (1975) and Seventh Edition (1979) — the versions that escaped Bell Labs into universities and shaped everything that followed — are PDP-11 operating systems."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The influence runs in more than one direction from here. DEC's own real-time system for the PDP-11, RSX-11M, was led by Dave Cutler; when DEC built the VAX as the PDP-11's 32-bit successor, Cutler's team wrote VMS for it, and Cutler later went to Microsoft and led Windows NT. Two of the three great operating system families in this gallery start in this cabinet."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you are looking at runs "
+          },
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "2.11BSD"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": ", released from the University of California, Berkeley in 1991 and maintained by volunteers ever since. It is the last BSD for the PDP-11: a backport of 4.3BSD's userland, networking and development tools onto a machine with a 64 KB address space per process, which is an extraordinary piece of engineering in its own right. By 1991 the PDP-11 was long obsolete and the people doing this work knew it. They did it anyway."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "What you're looking at"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The console of a PDP-11/70 a few seconds after it finished booting, with the tail of its own startup still on the screen and the machine waiting to be told who you are."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "Log in as `root`. There is no password."
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " This image is preserved exactly as it was distributed, and in 1991 a machine on a departmental network with no password on root was ordinary."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Then try the things that make it obviously a real Unix and not a picture of one: `uname -a` names the kernel and the day it was built; `ls /usr/src` is the complete source code of the operating system you are typing into, kernel included; `ls /usr/games` still has the games; `man cc` still works. The machine prints its own line-editing keys at every login — `erase, kill ^U, intr ^C` — and `^D` logs you out again."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "It is slow. It should be. Every character you type crosses a simulated serial line into a 16-bit machine with four megabytes of memory."
+          }
+        ]
+      },
+      {
+        "kind": "heading",
+        "level": 2,
+        "runs": [
+          {
+            "kind": "text",
+            "text": "Legacy"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The PDP-11 is the most consequential minicomputer ever built, and its descendants are all around it in this gallery. Every Unix and Linux tile here — Solaris, IRIX, 9front, Alpine, HelenOS, Android, postmarketOS — traces back through a chain of source and ideas to code written on this architecture. So does the C in which almost all of them are written. Its own successor, the VAX, gave rise to VMS, and VMS to Windows NT."
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "runs": [
+          {
+            "kind": "text",
+            "text": "The architecture outlived its own obsolescence in the least glamorous way possible: PDP-11s ran nuclear power stations, air traffic control and factory floors for decades after DEC stopped selling them, and a few are still running. The last new PDP-11 left the factory in 1997, twenty-seven years after the first."
+          }
+        ]
+      }
+    ]
   },
   "pet2001": {
     "title": "Commodore PET 2001 — COMMODORE BASIC",

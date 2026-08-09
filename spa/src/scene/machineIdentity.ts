@@ -209,6 +209,24 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cdc4ae', accentTint: '#55d544', tintMix: 0.42,
     badge: 'CBM 610', spec: '6509 • 1982', kit: 'eightBit',
   },
+  // DEC's own magenta/purple operator-console panel, against the beige of the
+  // terminal it drove.
+  pdp11: {
+    caseTint: '#cfc7b4', accentTint: '#9a4f96', tintMix: 0.38,
+    badge: 'PDP-11/70', spec: '2.11BSD • 1975', kit: 'workstation',
+  },
+  // The accent is the VT11's phosphor: this is the only vector display in the
+  // collection, and the only exhibit whose correct input device is a light pen.
+  gt40: {
+    caseTint: '#8e9491', accentTint: '#3be84b', tintMix: 0.38,
+    badge: 'PDP-11/05 GT40', spec: 'VT11 VECTOR • 1973', kit: 'workstation',
+  },
+  // DEC cabinet grey-blue; the accent is the phosphor the tile actually draws
+  // in, not a colour the gallery chose.
+  decos: {
+    caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
+    badge: 'PDP-11', spec: 'RT-11 / RSX / RSTS • 1970', kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

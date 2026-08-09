@@ -756,10 +756,18 @@ Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
 5. emit/deploy the new tile directory;
 6. launch only its `qemu-streamhost.sh`, wait for `qmp.sock`, then start
    `streamhost@<tileDir>`;
-7. publish the two runtime documents with
+7. publish the **three** runtime documents with
    `scripts/serve-https-spa.sh manifests` (or atomically copy generated
-   `scripts/serve/tiles.json` to the live `SIGNAL_CONFIG` path and
-   `scripts/serve/webroot/gallery-manifest.json` to the live webroot);
+   `scripts/serve/tiles.json` to the live `SIGNAL_CONFIG` path,
+   `scripts/serve/webroot/gallery-manifest.json` to the live webroot, and
+   `scripts/serve/golden-manifest.json` beside the HTTPS server).
+   **Do not skip the third.** Its keys are the allow-list for
+   `POST /restore/<osId>` (`_restore_osids()` in
+   `scripts/serve/osgallery-https-server.py`), so a tile missing from the
+   live copy streams perfectly while its "reset to golden" button returns
+   `404 unknown osId` — a failure that looks like a broken tile and is not.
+   This doc said "the two runtime documents" until 2026-08-09 and that is
+   exactly how the Commodore wave shipped with dead reset buttons;
 8. run `labctl gen` so the generated declarations are checked against the live
    runtime and observed state is added;
 9. do not rebuild the SPA for a tile that uses an existing archetype; a new

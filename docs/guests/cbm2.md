@@ -180,6 +180,6 @@ cold boot and a restore reach the same place. See
 `scripts/coldboot/cbm2-zero-input-prep.md`.
 
 To withdraw the tile: `systemctl stop streamhost@cbm2`, set `enabled: false`,
-regenerate, republish the two runtime documents. To rebuild:
+regenerate, republish the three runtime documents (tiles.json, gallery-manifest.json AND golden-manifest.json — the third is the reset allow-list). To rebuild:
 `scripts/build-guests/cbm2.sh --force`, which replaces `overlay.qcow2` and so
 **destroys the golden inside it**, then bakes and re-proves a new one.

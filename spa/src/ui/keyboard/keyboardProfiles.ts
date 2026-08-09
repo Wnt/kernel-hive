@@ -421,6 +421,18 @@ export const OS_FAMILY: Record<string, Family> = {
   // keyboard has no key a PC lacks — there is no Commodore key on a CBM-II and
   // its numeric pad is ordinary digits — so the generic rows already cover it.
   cbm2: 'generic',
+  // 2.11BSD on a DL11 console: a plain 7-bit tty with no window system and no
+  // chords beyond the line-editing keys the machine prints itself (erase, ^U,
+  // ^C, ^D), which the generic Unix rows already carry.
+  pdp11: 'generic',
+  // A chooser and three DEC keyboard monitors (RT-11 KMON, MCR, DCL). The
+  // exhibit's only required input is the digit 1, 2 or 3.
+  decos: 'generic',
+  // NOT a keyboard exhibit at all: the GT40's Lunar Lander reads the VT11 LIGHT
+  // PEN and nothing else, so there is no layout to profile. This row exists to
+  // satisfy the coverage test; the on-screen keyboard sends nothing the guest
+  // will act on.
+  gt40: 'generic',
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga',
