@@ -482,6 +482,16 @@
    "keyboard": "PASS",
    "fixture": "Sinclair ZX81 power-on screen: an empty white field with a single inverse-video K cursor in the bottom-left of the 32×24 grid, drawn fullscreen by MAME 0.289 zx81 (-bios 2nd, -ramsize 1K) on the kiosk's 1024x768 X root. The golden INTERNAL snapshot restores that untouched cold boot; no post-restore keys. Baking anything else was never on the table — this machine prints no banner at all, so its power-on screen is the only state that is unambiguously the machine's own rather than a previous visitor's. Keyboard-only exhibit (no mouse); AC97 audio is present but silent, because the ZX81 had no sound hardware."
   },
+  "bbcmicro": {
+   "tileDir": "bbcmicro",
+   "pointer": "none",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "N/A",
+   "keyboard": "PASS",
+   "fixture": "Acorn BBC Micro Model B power-on screen (BBC Computer 32K / Acorn DFS / BASIC / >) in MAME 0.289 `bbcb`, fullscreen with -keepaspect -artwork_crop on the bridge base's stock 1024x768 X root; golden INTERNAL snapshot restores the untouched cold boot. Nothing is curated and no post-restore keys are sent. Keyboard route certified 2026-08-09 AFTER the bake, against the restored fixture: the registry demoProgram's five lines typed at the tile's shipped 80/80 pacing and RUN paint a MODE 1 fan of coloured lines, asserted by lit-pixel count — a listing corrupted by an unmapped '=' or bracket leaves the screen a teletext banner full of 'Mistake' and fails. Keyboard-only exhibit (no mouse); AC97 audio."
+  },
   "dragon32": {
    "tileDir": "dragon32",
    "pointer": "none",

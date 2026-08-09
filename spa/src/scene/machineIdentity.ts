@@ -243,6 +243,13 @@ export const EXHIBIT_IDENTITIES = {
   // Welsh-built beige, and the accent is the machine's own page colour — the
   // MC6847's bright green, sampled from this tile's framebuffer at #30d200
   // rather than picked. It is the loudest screen in the collection and it is
+  // Acorn's cream-beige, and the accent is the one flash of colour on the case:
+  // the row of ten RED function keys along the top of the Model B's keyboard.
+  // Not sampled from the screen, because the screen is white teletext on black.
+  bbcmicro: {
+    caseTint: '#d3cab4', accentTint: '#d8442f', tintMix: 0.36,
+    badge: 'BBC MODEL B', spec: '6502A • 32K • 1981', kit: 'eightBit',
+  },
   // what a visitor remembers about a Dragon.
   dragon32: {
     caseTint: '#c9c3b2', accentTint: '#30d200', tintMix: 0.4,

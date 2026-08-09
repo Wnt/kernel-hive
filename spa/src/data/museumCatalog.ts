@@ -6,9 +6,9 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 // ============================================================================
 //  MUSEUM CATALOG — placard metadata for the full OS lineup (56 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 53 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 54 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 50 of those 53 have their placard entries in this
+//  WebTransport + WebCodecs. 51 of those 54 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,7 +17,7 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 52 entries
+//  This file provides rich, period-accurate placard metadata for its 53 entries
 //  so all 56 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
@@ -453,6 +453,16 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['Sinclair BASIC', '3D Monster Maze', 'type-in listings from Sinclair User and ZX Computing'],
     blurb: 'The machine that put a computer in a British newsagent: £69.95 in kit form, a Z80, a membrane keyboard, one kilobyte of memory, no sound and no colour — and a million and a half of them sold.',
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.289 (SUBTARGET=zx81, pinned upstream commit f34f0250, built in the Bookworm chroot by scripts/build-guests/build-mame-zx81.sh); streamhost captures the Linux framebuffer + AC97 audio exactly like every other bridge tile. The ROM is the second revision (-bios 2nd, zx81a.rom, sha1 7b143ee9…), which is what almost every shipped ZX81 contained; it is preservation-source material copyright Nine Tiles Networks Ltd, staged on the box and never committed. RAM is pinned to the machine as sold, -ramsize 1K, rather than MAME\'s 16K default. The golden is the untouched power-on screen — a white field with one inverse K — and readiness is decided GEOMETRICALLY, not by counting bright pixels, because this machine blanks its display while it computes and a photometric test cannot tell that frame from the fixture. Keyboard-only exhibit; the ZX81 has no sound hardware. See streamhost/docs/BRIDGE.md and docs/guests/zx81.md.',
+  },
+  {
+    id: 'bbcmicro', displayName: 'Acorn BBC Micro Model B', year: 1981,
+    lineage: 'Acorn Computers (Cambridge) — Atom, BBC Micro, Archimedes, ARM',
+    arch: 'MOS 6502A, 2 MHz, 32 KB RAM, 32 KB ROM (MOS 1.20 + BBC BASIC II), SAA5050 teletext, SN76489 sound', ramMB: 0, ramKB: 32,    era: '1980s', accent: '#D8442F',
+    eraSoftware: ['BBC BASIC II, with named procedures and a 6502 assembler built into the language', 'Elite — written on this machine by two Cambridge undergraduates', 'Acornsoft\'s educational range, and the BBC\'s own Computer Literacy Project programmes', 'the Acorn DFS and a 5.25-inch drive, or a cassette for everyone else', 'Econet, which networked a classroom before networking was a consumer idea'],
+    periodBrowser: 'none — pre-web 8-bit era',
+    iconicApps: ['BBC BASIC II', 'Elite', 'the built-in 6502 assembler'],
+    blurb: 'The machine the BBC specified and Acorn built, half-funded into every British school, and the only home computer whose BASIC had a 6502 assembler inside it — so the distance from a first program to writing machine code was a pair of square brackets. The team that finished it went on to design the ARM.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs a purpose-built MAME 0.289 `bbcb` (SUBTARGET=bbcb, SOURCES=src/mame/acorn, built in the Bookworm chroot so its ABI matches the bridge); streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Unlike the VICE tiles this one keeps the base\'s full 1024x768 X root and runs MAME fullscreen with -keepaspect and -artwork_crop, which drops the driver\'s keyboard-LED strip. The five ROM dumps are preservation-source with NO authorised URL and are staged by the operator, gated on SHA-1 and assembled into three MAME zips by the builder; MAME\'s own defaults are shipped, so the Acorn 8271 disc interface is fitted and the banner carries its DFS line. The golden is the machine\'s own untouched power-on screen. Keyboard-only exhibit; thirteen characters sit on different keys from a PC (keyboard.charMap, derived from the driver\'s PORT_CHAR table) and CAPS LOCK is on at reset. A sibling exhibit, armeval, will show the ARM Evaluation System on this same driver via `bbcb -tube arm`. See streamhost/docs/BRIDGE.md and docs/guests/bbcmicro.md.',
   },
   {
     id: 'dragon32', displayName: 'Dragon 32', year: 1982,

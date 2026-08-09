@@ -148,6 +148,14 @@ ROWS=(
   # every run and refuses to continue on a mismatch. Never committed.
   "opt-file|nextstep|NeXTSTEP 3.3 m68k pre-installed disk (fetched + verified in-guest)|$ASSET_STAGING/nextstep/NS33_2GB.dd|sha256:6381423b066c33c24c9c9ec519086708b9cf3b2f11882fed5319cfb6a3422f1b|preservation-source"
   "opt-file|nextstep|NeXT ROM Rev 2.5 v66 (ships inside the Previous source tree)|$ASSET_STAGING/nextstep/Rev_2.5_v66.BIN|sha256:1b753890b67095b73e104c939ddf62eca9e7d0aedde5108e3893b0ed9d8000a4|preservation-source"
+  # BBC Micro: five blobs, no authorised fetch URL anywhere (see ASSETS-MANIFEST).
+  # bbcmicro.sh never downloads; the operator stages these and the builder gates
+  # each on SHA-1, then assembles the three MAME zips itself.
+  "req-file|bbcmicro|Acorn MOS 1.20 (BBC Micro Model B)|$ASSET_STAGING/bbcmicro/os12.rom|sha1:0d9bcaf6a393c9ce2359ed700ddb53c232c2c45d|preservation-source"
+  "req-file|bbcmicro|BBC BASIC II|$ASSET_STAGING/bbcmicro/basic2.rom|sha1:4a7393f3a45ea309f744441c16723e2ef447a281|preservation-source"
+  "req-file|bbcmicro|TMS5220 speech PHROM (BBC Micro)|$ASSET_STAGING/bbcmicro/phroma.bin|sha1:b369809275cb67dfd8a749265e91adb2d2558ae6|preservation-source"
+  "req-file|bbcmicro|SAA5050 teletext character generator (no glyphs in MODE 7 without it)|$ASSET_STAGING/bbcmicro/saa5050|sha1:6c8daba70374e5aa3a6402f24cdc5f8677d58a0f|preservation-source"
+  "req-file|bbcmicro|Acorn DNFS 1.20 (the driver's default fdc slot needs it)|$ASSET_STAGING/bbcmicro/dnfs120.rom|sha1:7e3c536baeae84d6498a14e8405319e01ee78232|preservation-source"
 )
 
 # ---- impl ---------------------------------------------------------------------

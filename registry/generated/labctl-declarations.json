@@ -107,6 +107,21 @@
       "udp_port": 54116,
       "notes": "exec: labctl exec atarist \"<cmd>\" (ssh root@:5816, key bridge_key)"
     },
+    "bbcmicro": {
+      "dir": "/data/vms/streamhost/tiles/bbcmicro",
+      "qmp": "/data/vms/streamhost/tiles/bbcmicro/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5832,
+      "exec_port": 5832,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54129,
+      "notes": "exec: labctl exec bbcmicro \"<cmd>\" (ssh root@:5832, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro"
+    },
     "c128": {
       "dir": "/data/vms/streamhost/tiles/c128",
       "qmp": "/data/vms/streamhost/tiles/c128/qmp.sock",

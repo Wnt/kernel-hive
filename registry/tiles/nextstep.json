@@ -42,12 +42,12 @@
     }
   },
   "render": {
-    "tilesManifestOrder": 49,
-    "bindingOrder": 55,
-    "museumOrder": 49,
-    "goldenOrder": 49,
+    "tilesManifestOrder": 50,
+    "bindingOrder": 56,
+    "museumOrder": 50,
+    "goldenOrder": 50,
     "bringUpGroup": 6,
-    "signalOrder": 51,
+    "signalOrder": 52,
     "tilesManifestInvocation": "emit nextstep \\\n  --tile nextstep --vmid 237 --udp 54134 --pointer rel --cursor-scale 1.0 \\\n  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 --launcher-file \\\n  \"$T/nextstep/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/nextstep/tile.env.fixture\"\n",
     "bindingLine": "  nextstep:    { osId: 'nextstep', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#8C8C8C', eraLabel: '1995 · NeXTSTEP 3.3 (NeXTcube)', pointerRel: true },\n",
     "museumBlock": "  {\n    id: 'nextstep', displayName: 'NeXTSTEP 3.3', year: 1995,\n    lineage: 'NeXT Computer (Mach + 4.3BSD + Display PostScript)',\n    arch: 'Motorola 68040, 25 MHz (NeXTcube), 64 MB RAM, 1120x832 MegaPixel display', ramMB: 64,    era: '1990s', accent: '#8C8C8C',\n    eraSoftware: ['Workspace Manager, the Dock and the File Viewer', 'Interface Builder and Project Builder', 'Mail.app, Edit, Terminal and the Digital Librarian', 'WorldWideWeb — the first web browser, written on a machine like this one'],\n    periodBrowser: 'WorldWideWeb / OmniWeb (NeXTSTEP was where the web browser was invented)',\n    iconicApps: ['Workspace Manager', 'the right-hand Dock', 'Interface Builder', 'Digital Librarian'],\n    blurb: 'The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile\\'s own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU\\'s SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is relative (SPA pointer lock, the c64/qnx path); the guest draws its own arrow. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md.',\n  },\n",
@@ -173,7 +173,7 @@
         "reason": "registry source pins pc-i440fx-11.0,vmport=off with -m 1536 -smp 4 and no usb-tablet, matching the device set the golden was baked under"
       }
     },
-    "bringUpOrder": 55
+    "bringUpOrder": 56
   },
   "spa": {
     "archetypeId": "mono-terminal",

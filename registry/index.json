@@ -1533,8 +1533,8 @@
       "id": "bbcmicro",
       "era_year": 1981,
       "tileDir": "bbcmicro",
-      "lifecycle": "candidate",
-      "enabled": false,
+      "lifecycle": "production",
+      "enabled": true,
       "build": {
         "rows": [
           {
@@ -1576,7 +1576,7 @@
         }
       },
       "stream": {
-        "transport": "showcase",
+        "transport": "streamhost",
         "udpPort": 54129,
         "fps": 60,
         "audio": true,
@@ -1697,7 +1697,8 @@
             "status": "semantic-identical",
             "reason": "registry source pins pc-i440fx-11.0,vmport=off and 768 MB, matching the QEMU 11 device set the golden was baked under"
           }
-        }
+        },
+        "bringUpOrder": 51
       },
       "spa": {
         "archetypeId": "beige-tower-crt",
@@ -1772,8 +1773,7 @@
       },
       "notes": [
         "Preservation-source ROMs with NO authorised fetch URL: the operator stages five blobs at /data/assets-staging/bbcmicro/ and the builder gates each on SHA-1. Never commit the bits.",
-        "The `saa5050` teletext character generator is a THIRD MAME zip, in no BIOS set; without it MODE 7 has no glyphs and MAME refuses to start.",
-        "disabled candidate: the build wave was interrupted before the golden bake. The tile dir exists on the box but has NO golden snapshot and the service is not running, so it is not a shippable exhibit. Re-run scripts/build-guests/bbcmicro.sh."
+        "The `saa5050` teletext character generator is a THIRD MAME zip, in no BIOS set; without it MODE 7 has no glyphs and MAME refuses to start."
       ]
     },
     {
@@ -3019,7 +3019,7 @@
             "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
           }
         },
-        "bringUpOrder": 51
+        "bringUpOrder": 52
       },
       "spa": {
         "archetypeId": "beige-tower-crt",
@@ -4344,7 +4344,7 @@
             "reason": "registry source pins pc-i440fx-11.0,vmport=off and -m 768, matching the QEMU 11 device set the golden was baked under"
           }
         },
-        "bringUpOrder": 53
+        "bringUpOrder": 54
       },
       "spa": {
         "archetypeId": "beige-tower-crt",
@@ -5353,7 +5353,7 @@
             "reason": "registry source pins pc-i440fx-11.0,vmport=off with -m 1536 -smp 4 and no usb-tablet, matching the device set the golden was baked under"
           }
         },
-        "bringUpOrder": 55
+        "bringUpOrder": 56
       },
       "spa": {
         "archetypeId": "mono-terminal",
@@ -6518,7 +6518,7 @@
             "reason": "registry source pins pc-i440fx-11.0,vmport=off and 768 MB, matching the QEMU 11 device set the golden was baked under"
           }
         },
-        "bringUpOrder": 52
+        "bringUpOrder": 53
       },
       "spa": {
         "archetypeId": "beige-tower-crt",
@@ -9259,7 +9259,7 @@
             "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
           }
         },
-        "bringUpOrder": 54
+        "bringUpOrder": 55
       },
       "spa": {
         "archetypeId": "beige-tower-crt",
