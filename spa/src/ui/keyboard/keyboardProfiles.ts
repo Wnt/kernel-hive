@@ -85,15 +85,22 @@ const caps = (id: string, label: string, c: string): KeyDef =>
     { hint: `CAPS SHIFT + ${c.toUpperCase()}` });
 
 /**
- * A whole supervisor command typed as ONE macro, then RETURN.
+ * A whole BASIC keyword typed as ONE macro, then RETURN.
  *
  * Only for the armeval exhibit, and it works there for a specific reason: the
- * ARM Evaluation System's supervisor takes bare words, and the host BBC's MOS
- * has CAPS LOCK on at reset — so the LOWERCASE keysyms below (unshifted, as the
- * profile invariant requires) arrive at the machine upper case, which is what
- * the supervisor's parser wants. The steps go out through the normal sendKey
- * path, so streamhost's per-tile SH_KEY_MIN_HOLD_MS/GAP_MS pacing applies to
- * them exactly as it does to hand-typed keys.
+ * host BBC's MOS has CAPS LOCK on at reset — so the LOWERCASE keysyms below
+ * (unshifted, as the profile invariant requires) arrive at the machine upper
+ * case, which is what BASIC's tokeniser wants. The steps go out through the
+ * normal sendKey path, so streamhost's per-tile SH_KEY_MIN_HOLD_MS/GAP_MS
+ * pacing applies to them exactly as it does to hand-typed keys.
+ *
+ * IT CANNOT CARRY A `*` COMMAND. On this machine `*` is not where a US PC puts
+ * it (registry keyboard.charMap maps it to the `"` KEY, i.e. Shift+apostrophe),
+ * and a macro step is a bare keysym: the profile invariant rightly rejects
+ * shifted printables because sendKey discards the shift flag, and the charMap
+ * is applied only on the demoProgram path. So `*HELP` and `*CAT` — both real,
+ * both measured on the machine, both in docs/guests/armeval.md — are NOT
+ * buttons here. A dead button is worse than a missing one.
  */
 const cmd = (id: string, label: string, text: string, hint: string): KeyDef =>
   macro(id, label,
@@ -547,37 +554,31 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   // exhibit IS its 16 KB supervisor ROM, so the keyboard is the whole exhibit
   // and these four macros are its entire guided tour. Every one of them was
   // driven against the restored golden by framebuffer before it shipped.
+  // The exhibit rests INSIDE ARM BBC Basic V, not at the supervisor's `A*`
+  // prompt, so this profile is BASIC's, not the supervisor's. Every button
+  // below was driven against the restored golden by framebuffer before it was
+  // written down, and the supervisor's four commands were driven too and are
+  // gone because they FAILED there:
+  //   `*QUIT` / `*DIS 3000000` / `*SHOWREGS` -> "Bad command". DIS and SHOWREGS
+  //     are supervisor built-ins, not OSCLI commands, and *QUIT proves the
+  //     supervisor cannot be re-entered from BASIC at all.
+  //   BREAK (F12) -> NOTHING. No reset, no banner, not one pixel changed, and
+  //     no MAME snapshot appeared in the guest either. Driven twice, through
+  //     both the QMP sendkey and cdrv paths.
+  // `*HELP` and `*CAT` DO work on the machine and are the better facts, but a
+  // macro cannot type `*` here — see cmd() above.
   armeval: {
     family: 'armeval',
     rows: [[
-      cmd('sv-help', 'HELP', 'HELP',
-        'HELP — the firmware names and dates itself: Executive version 1.00 (14th August 1986)'),
-      cmd('sv-dis', 'DISASSEMBLE', 'DIS 3000000',
-        'DIS 3000000 — the supervisor\'s own ARM disassembler walking the bootstrap ROM. '
-        + 'It pages: press ⏎ to finish, any other key to continue'),
-      tap('ret', '⏎', XK.Return),
-      tap('esc', 'ESCAPE', XK.Escape, { hint: 'ESCAPE — stops a running program' }),
-      tap('bksp', '⌫', XK.BackSpace, { repeat: true }),
+      cmd('ab-list', 'LIST', 'LIST',
+        'LIST — the program back, re-listed from the tokens the ARM is holding'),
+      cmd('ab-run', 'RUN', 'RUN', 'RUN — run the program that is in memory'),
+      tap('ret', '\u23ce', XK.Return),
+      tap('esc', 'ESCAPE', XK.Escape,
+        { hint: 'ESCAPE \u2014 stops a running program ("Escape at line 20")' }),
+      tap('bksp', '\u232b', XK.BackSpace, { repeat: true }),
       ...ARROWS,
     ]],
-    moreRows: [
-      [
-        // NOT a way into BASIC — there is no ARM BASIC in this ROM. It is the
-        // machine's most famous failure mode, and the placard says so: the
-        // supervisor is handed the host's 6502 BASIC, refuses it, and prints a
-        // 1986 register dump. Measured safe: it returns to the A* prompt and
-        // the next command works, so it is not marked `danger`.
-        cmd('sv-basic', 'BASIC → register dump', 'BASIC',
-          'BASIC — hands the ARM the host\'s 6502 ROM. It refuses ("Not ARM code") and dumps '
-          + 'its registers. Harmless: the A* prompt comes straight back'),
-        cmd('sv-showregs', 'SHOWREGS', 'SHOWREGS',
-          'SHOWREGS — re-shows the registers saved by the last trap'),
-      ],
-      [
-        tap('break', 'BREAK', F(12),
-          { danger: true, hint: 'BREAK — soft-resets the machine to its banner; your work is lost' }),
-      ],
-    ],
   },
 
   appleii: {

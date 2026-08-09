@@ -149,10 +149,14 @@
 set -euo pipefail
 
 TILE=armeval
-VMID=235
+VMID=238
 UDP=54135
-SSH_PORT=5835
+SSH_PORT=5838
 WEB_PORT=8135
+# Slot 135 is this tile's; the VMID LABEL and the ssh hostfwd follow the fleet's
+# own arithmetic (vmid = slot + 103, ssh = slot + 5703), which puts them at 238
+# and 5838. The original scaffold reserved 235/5835 — both were already the LIVE
+# kc854 tile's, and 5835 is a real hostfwd, so QEMU refused to start on it.
 BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/armeval
@@ -470,7 +474,7 @@ ARM_BASIC_WHITE=${ARM_BASIC_WHITE:-9000}
 # Wait for the ARM supervisor's own power-on screen: white ink in range, at
 # least one blue `A*` cell, and no red panel.
 wait_for_banner() {
-  local name=$1 white red blue
+  local name=$1 white red blue black=0
   for _ in $(seq 1 90); do
     if capture "$name" 2>/dev/null; then
       white=$(white_ink "$name")
@@ -479,8 +483,18 @@ wait_for_banner() {
       if [ "$red" -gt 20000 ]; then
         die "MAME is showing its red startup WARNINGS panel (red=$red) — the shipped binary is missing the skip_warnings patch, or ui.ini was lost"
       fi
-      [ "$white" -eq 0 ] && guest "pgrep -x bbcb >/dev/null" 2>/dev/null &&
-        die "MAME is running but the captured root is BLACK — it has no X window (check /home/bridge/.Xauthority; see restart_kiosk)"
+      # A BLACK root with MAME already up is the zero-byte-cookie failure — but
+      # it is ALSO what the first second or two after `startx` looks like, so
+      # this must be PERSISTENT before it is fatal. Measured on this tile's own
+      # first build: MAME had been exec'd for ~11 s and the root was still black,
+      # and an eager one-frame check failed a build whose guest was perfect.
+      if [ "$white" -eq 0 ] && guest "pgrep -x bbcb >/dev/null" 2>/dev/null; then
+        black=$((black + 1))
+        [ "$black" -lt 20 ] ||
+          die "MAME has been running for 40 s and the captured root is still BLACK — it has no X window (check /home/bridge/.Xauthority; see restart_kiosk)"
+      else
+        black=0
+      fi
       if [ "$white" -gt "$ARM_MIN_WHITE" ] && [ "$white" -lt "$ARM_MAX_WHITE" ]; then
         [ "$blue" -gt "$ARM_MIN_BLUE" ] ||
           die "the banner has no blue A* supervisor prompt (blue=$blue) — this is a PLAIN BBC Micro screen, the ARM tube is not fitted"
@@ -559,7 +573,18 @@ load_arm_basic() {
   type_line '*LIB $\n'
   sleep 3
   type_line 'AB\n'
-  sleep 6
+  # `AB` is a 40 KB image coming off an emulated 1770 through ADFS, and the ARM
+  # prints its banner only when the whole thing has landed. Measured: 6 s is NOT
+  # enough — the frame at 6 s shows both A* lines and an empty cursor line, i.e.
+  # a load still in flight, which a fixed sleep would misreport as "no ARM
+  # BASIC". Poll for the banner instead.
+  local i white
+  for i in $(seq 1 30); do
+    sleep 3
+    capture fixture-armbasic >/dev/null
+    white=$(white_ink fixture-armbasic)
+    [ "$white" -gt "$ARM_BASIC_WHITE" ] && break
+  done
   assert_armbasic fixture-armbasic
 }
 
