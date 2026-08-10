@@ -148,6 +148,14 @@ ROWS=(
   # every run and refuses to continue on a mismatch. Never committed.
   "opt-file|nextstep|NeXTSTEP 3.3 m68k pre-installed disk (fetched + verified in-guest)|$ASSET_STAGING/nextstep/NS33_2GB.dd|sha256:6381423b066c33c24c9c9ec519086708b9cf3b2f11882fed5319cfb6a3422f1b|preservation-source"
   "opt-file|nextstep|NeXT ROM Rev 2.5 v66 (ships inside the Previous source tree)|$ASSET_STAGING/nextstep/Rev_2.5_v66.BIN|sha256:1b753890b67095b73e104c939ddf62eca9e7d0aedde5108e3893b0ed9d8000a4|preservation-source"
+  # -- in-overlay media (daybreak): same shape as nextstep above. Both live
+  # INSIDE the tile's own qcow2 overlay at /opt/bridge/media/daybreak/, so the
+  # host paths never exist and these rows read "will fetch". They are here for
+  # the hash record; daybreak.sh re-verifies both sha256s in-guest on every run
+  # and refuses to continue on a mismatch. Never committed. Note the split
+  # licence: the emulator is BSD-3, the Xerox disk it boots is NOT.
+  "opt-file|daybreak|Dwarf/Draco Mesa emulator dist.zip (fetched + verified in-guest)|$ASSET_STAGING/daybreak/dist.zip|sha256:67f84b77cbed6cba9d7d2485e84b8142e4fd2403243f8abd8f6e5a81ff6fcf75|freely-fetchable-pinned"
+  "opt-file|daybreak|Xerox ViewPoint 2.0.5 Pilot disk for the 6085 (fetched + verified in-guest)|$ASSET_STAGING/daybreak/vp2.0.5.zdisk|sha256:02bdb53ba7f7896a914fe43b7ca19a620907d0fdbf0f55317b7d1f39aab3f872|preservation-source"
   # BBC Micro: five blobs, no authorised fetch URL anywhere (see ASSETS-MANIFEST).
   # bbcmicro.sh never downloads; the operator stages these and the builder gates
   # each on SHA-1, then assembles the three MAME zips itself.

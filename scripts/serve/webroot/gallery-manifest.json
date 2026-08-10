@@ -1761,6 +1761,37 @@
         "Cambridge LISP"
       ],
       "blurb": "The first ARM product ever sold: not a computer but a plug-in second processor for the BBC Micro, sold to developers in 1986 so they could write ARM code two years before the Archimedes existed. The board has no operating system — it has 16 KB of supervisor ROM and a floppy with a language on it. What you are looking at is that language, ARM BBC Basic V, running on the ARM while the 6502 that used to be the computer is reduced to a keyboard, a screen and a disc controller."
+    },
+    {
+      "id": "daybreak",
+      "era_year": 1985,
+      "displayName": "Xerox 6085",
+      "year": 1985,
+      "lineage": "Xerox Star / Pilot-Mesa office workstations",
+      "arch": "Xerox Mesa processor (Daybreak/Dove), 1152×861 mono display",
+      "accent": "#C8102E",
+      "archetypeId": "sparc-pizzabox",
+      "transport": "streamhost",
+      "order": 60,
+      "eraLabel": "1985 · ViewPoint 2.0.5 on the 6085",
+      "signalEndpoint": "/signal/daybreak.json",
+      "ramMB": 4,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 bare-X kiosk runs Dwarf/Draco (Java, OpenJDK 17) emulating a real Xerox 6085 Mesa workstation booting the ViewPoint 2.0.5 Pilot disk shipped with Dwarf; streamhost captures the Linux framebuffer exactly like every other tile. Silent — Dwarf emulates no Xerox sound hardware. The golden is the LOGGED-IN desktop: logon runs once at bake time, so no visitor meets the logged-off bouncing keyboard or has to discover that Ctrl+N is the Xerox NEXT key. Product factoring on the disk is bound to processor id 10-00-FE-31-AB-21 and must never be changed. See streamhost/docs/BRIDGE.md and docs/guests/daybreak.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "ViewPoint 2.0.5 — the Star desktop, productised",
+        "VP Document Editor and VP Spreadsheet",
+        "VP NetCom, Office Accessories, File Converters",
+        "XDE 5.0, the Mesa development environment"
+      ],
+      "periodBrowser": "none — pre-web; XNS Courier over Ethernet instead",
+      "iconicApps": [
+        "the ViewPoint desktop",
+        "the VP Document Editor",
+        "the property sheet",
+        "the Directory icon"
+      ],
+      "blurb": "The machine that carried the Star’s ideas — icons, folders, property sheets, WYSIWYG documents — into something an office could actually buy, four years after the 8010 and still years before anyone else shipped them. Every window has a named tab instead of a title bar, every setting is a property sheet, and a line of prose across the top narrates what the system is doing."
     }
   ]
 }

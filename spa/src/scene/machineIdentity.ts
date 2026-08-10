@@ -297,6 +297,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d3cab4', accentTint: '#0000ff', tintMix: 0.36,
     badge: 'ARM EVALUATION SYSTEM', spec: 'ARM1 • 4M • 1986', kit: 'eightBit',
   },
+  // Xerox's own office grey-beige, a shade cooler and lighter than the PC
+  // beiges around it. The accent is Xerox red — the only colour anywhere near
+  // this machine, because the display itself emits exactly two: black and
+  // white, with every mid-tone dithered out of them.
+  daybreak: {
+    caseTint: '#cdc8bd', accentTint: '#c8102e', tintMix: 0.34,
+    badge: 'XEROX 6085', spec: 'MESA • VIEWPOINT • 1985', kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
