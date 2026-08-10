@@ -438,6 +438,7 @@ fi
 # and bake it. Bake from a curated COLD boot, never from a screen that has
 # carried verification output (the mpf2 add shipped one and had to re-bake).
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 sleep 6
 wait_for_basic ready-basic-prompt

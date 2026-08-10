@@ -736,6 +736,7 @@ fi
 # One clean cold boot with the quiet console in force. The red-nag sweep runs
 # across THIS boot, because it is the boot a visitor's reset reproduces.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 nag_sweep
 wait_for_ssh

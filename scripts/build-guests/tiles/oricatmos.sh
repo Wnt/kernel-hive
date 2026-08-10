@@ -508,6 +508,7 @@ fi
 # shipped one and restored for ever after to a scrolled screen with the banner
 # gone.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 sleep 8
 wait_for_banner ready-before-golden

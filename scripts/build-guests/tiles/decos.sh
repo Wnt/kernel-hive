@@ -567,6 +567,7 @@ wait_for_chooser cold-boot-chooser
 # One clean cold boot with the quiet console in force, then bake. Bake from a
 # curated COLD boot, never from a screen that has carried verification output.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile # see lib/bridge-coldboot; golden is already dropped above, so no --skip-if-golden needed
 boot_tile
 wait_ssh
 sleep 6

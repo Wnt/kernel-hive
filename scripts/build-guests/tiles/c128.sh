@@ -578,6 +578,7 @@ wait_for_basic80 cold-boot-basic80
 # `cold` is explicit: a rerun that let boot_tile pick up an existing golden
 # would re-bake a restored snapshot instead of a genuine power-on.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile cold
 wait_for_ssh
 wait_for_basic80 ready-before-golden

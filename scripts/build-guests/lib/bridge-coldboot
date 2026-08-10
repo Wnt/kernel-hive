@@ -33,34 +33,60 @@
 #      push a 70-120 MB binary over that round trip today.
 #   3. A CORRECTNESS GUARD, and this is the part that must be structural.
 #
-# WHICH TILES SHOULD HAVE ONE — AND WHY IT IS DELIBERATELY NOT ALL OF THEM
-#   The mechanism here is general: it works on any bridge overlay. Wiring it
-#   fleet-wide would be a mistake, and the cost analysis is the reason. A second
-#   internal snapshot is cheap in DISK clusters (see above) but the overlays it
-#   would go into are not empty — and the tiles worth checkpointing are exactly
-#   the ones whose overlays are already 0.8-1.6 GiB. Fleet-wide, `coldboot` buys
-#   ~15 GiB of duplicated state, much of it on tiles whose ENTIRE recipe is
-#   "boot the base, write one /etc/bridge/launch.sh" — for those, rebuilding IS
-#   the cheap path and a checkpoint saves nothing it costs.
-#   And note the failure mode a coldboot does NOT cover: a base rebuild
-#   invalidates every overlay AND every coldboot in it at once, which is
-#   precisely the event that forces a fleet re-bake. Coldboot is insurance
-#   against a bad `savevm golden` and a lever for offline mutation. It is not
-#   insurance against losing the base.
+# WHICH TILES SHOULD HAVE ONE — FLEET-WIDE (corrected 2026-08-10)
+#   An earlier draft of this section priced a second internal snapshot by
+#   SUMMING THE SAVEVM FIGURES quoted above — 424-1442 MiB of VM RAM per tile —
+#   across the overlays it judged "worth" checkpointing, and landed on "fleet-
+#   wide, `coldboot` buys ~15 GiB of duplicated state." That number is wrong
+#   because it is pricing the wrong operation: `savevm golden` writes the whole
+#   VM RAM image, but `coldboot` is `qemu-img snapshot -c` on a STOPPED VM (see
+#   "WHY IT IS CHEAP" above) — no RAM, and no full-overlay duplication either.
+#   It copies the L1 table and flips cluster refcounts, so every data cluster
+#   that has NOT changed since stays shared copy-on-write with `golden` and with
+#   the base. What a second snapshot costs is proportional to DIVERGENCE — the
+#   clusters written between `coldboot` and `golden` that can no longer be
+#   shared — never to the overlay's total size. Measured (see above): 65 KB and
+#   131 KB, four orders of magnitude below the RAM figures the old estimate
+#   summed. Pricing `coldboot` by overlay size is the same category error as
+#   pricing a git branch by the size of the repository it branched from.
 #
-#   WIRE IT (14 tiles):
-#     * the seven manual-bake tiles — atarist, amiga, apple2, c64, daybreak,
-#       star, indyr4400. Their bake is operator-triggered because no builder can
-#       check their "ready" state, so a bad golden is discovered late and the
-#       only way back is a multi-hour rebuild. This is the case coldboot pays for.
-#     * the seven MAME-in-chroot tiles — bbcmicro, armeval, mpf2, zx81,
-#       dragon32, kc854, oricatmos. These are the offline-mutation case: each
-#       pushes a 70-120 MB MAME binary into the guest over boot + wait-for-SSH +
-#       scp, and `revert` + `mutate` + one boot to bake removes that whole cycle.
-#   SKIP IT: the VICE six (c128, vic20, plus4, pet2001, cbm8032, cbm2) and
-#     amstradcpc. One launcher file each on top of a base that already ships the
-#     emulator; the rebuild is minutes and the checkpoint would cost more state
-#     than it saves. Do not "complete" this later without re-deriving that.
+#   Once the cost model is divergence, not size, the fleet-wide question stops
+#   being "how many GiB does a second snapshot cost" — the premise behind
+#   ~15 GiB does not hold for ANY tile, not just the small ones — and becomes
+#   "how much does the disk change between provisioning and `savevm golden`."
+#   For every bridge tile, manual-bake or auto-bake, VICE-simple or
+#   MAME-in-chroot, that window has the same shape: "boot and drive to exhibit
+#   state." No bridge tile's exhibit-driving phase installs an OS or writes
+#   gigabytes — the guest is a kiosk settling on a fixed screen. So the marginal
+#   cost is small fleet-wide, not only on the tiles the old draft singled out;
+#   overlay size was never the variable that mattered. Per-tile divergence has
+#   NOT been measured (the 65/131 KB figures above are two scratch-overlay data
+#   points, not a fleet survey) — say so rather than inventing a number — but
+#   the structural argument does not need one: "boot and drive" is a narrow
+#   window on every tile in the fleet, by construction of what a bridge tile is.
+#
+#   The operator's own framing (2026-08-10) generalizes this correctly: "with
+#   ZFS or similar techniques snapshotting and then editing the live copy
+#   doesn't have any practical disk space penalty." `qemu-img snapshot -c` on a
+#   stopped qcow2 overlay is exactly that technique. There is no tile-selection
+#   question left to answer on COST grounds. What still differs tile to tile is
+#   how much VALUE the checkpoint buys — a slow, operator-gated bake benefits
+#   more than a one-launcher-file rebuild that already takes minutes — but the
+#   THREE USES above (re-bake restart point, offline disk mutation, correctness
+#   guard) apply to every bridge tile, including the ones an earlier draft
+#   skipped as "not worth it": the correctness guard in particular (§3, this
+#   header's own decos.sh example) does not care how fast a rebuild is, only
+#   that a checkpoint exists before the guest is ever driven.
+#
+#   WIRE IT — every tile in registry/bridge-suites.json's `tiles` map (28 as of
+#   2026-08-10). That map is the authoritative bridge-tile list; a builder not
+#   named there is not a bridge tile and this helper does not apply to it.
+#
+#   And note the failure mode a coldboot does NOT cover, unchanged by this
+#   correction: a base rebuild invalidates every overlay AND every coldboot in
+#   it at once, which is precisely the event that forces a fleet re-bake.
+#   Coldboot is insurance against a bad `savevm golden` and a lever for offline
+#   mutation. It is not insurance against losing the base.
 #
 # THE TRAP `mutate` MAKES UNREPRESENTABLE
 #   A tile's launcher boots `-loadvm golden`, and `loadvm` restores the
@@ -89,16 +115,49 @@
 #     legitimate target here (use 1 IS a re-bake of a live tile) — so the guard
 #     is explicit opt-in, not refusal.
 #   * `snapshot` refuses an overlay that already has a `golden` unless
-#     `--retroactive`: the current disk state of a baked overlay is whatever the
-#     driving left behind, which is NOT the builder's cold output, and labelling
-#     it `coldboot` would launder a guess into a checkpoint.
+#     `--retroactive` or `--skip-if-golden` (see CALLING FROM A BUILDER below):
+#     the current disk state of a baked overlay is whatever the driving left
+#     behind, which is NOT the builder's cold output, and labelling it
+#     `coldboot` would launder a guess into a checkpoint. The refusal is the
+#     DEFAULT; both flags are explicit opt-ins, never the other way round.
+#
+# CALLING FROM A BUILDER — the one-line convention
+#   Same shim style as lib/bridge-base-for: an executable, not a sourced
+#   function, so the call costs ONE line at the site (see that header for why —
+#   the builders sit against the 600-line hard cap; this rationale is written
+#   ONCE here, not copy-pasted into every builder that calls it):
+#
+#     "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile [--skip-if-golden]
+#
+#   WHERE: after the disk is fully provisioned and the VM is stopped, and
+#   BEFORE the guest is driven any further toward exhibit state or
+#   `savevm golden` runs. Most auto-bake builders already stop and cold-boot
+#   once for a clean rehearsal right before baking ("one clean cold boot ...
+#   nothing is typed before the bake") — the call belongs in that existing gap,
+#   between the stop and the reboot. Manual-bake builders (the ones with a
+#   `--bake` flag) leave their provisioning VM running for the operator, so
+#   they need an explicit stop-snapshot-reboot sequence of their own instead of
+#   a bare one-liner; that sequence's rationale lives here too, not repeated at
+#   each call site.
+#
+#   --skip-if-golden: pass it when the stop-then-rehearse-then-bake cycle the
+#   call sits in runs UNCONDITIONALLY on every invocation of the builder, not
+#   only on a fresh build. Without it, a re-run of an already-baked tile hits
+#   the golden-present refusal above and fails where it used to succeed — the
+#   disk state at that point is whatever driving-plus-the-prior-bake left
+#   behind, which is honestly not a fresh cold output, so the right behaviour
+#   is a quiet no-op (logged, exit 0), not a `die`. OMIT the flag when the call
+#   site is already unreachable once `golden` exists — e.g. it sits inside an
+#   `if ! <has golden>` branch, as the manual-bake builders' insertion and a
+#   couple of the auto-bake ones do — because there the guard is structural and
+#   the flag would only hide it breaking if that gating ever changed.
 #
 # An EXECUTABLE rather than a sourced function, for the reason lib/bridge-base-for
 # and lib/bridge-bake-golden document: the per-tile builders sit against the
 # 600-line hard cap.
 #
 # Usage:
-#   bridge-coldboot snapshot <overlay> [--allow-tile] [--retroactive]
+#   bridge-coldboot snapshot <overlay> [--allow-tile] [--retroactive] [--skip-if-golden]
 #   bridge-coldboot revert   <overlay> [--allow-tile]
 #   bridge-coldboot status   <overlay>
 #   bridge-coldboot mutate   <overlay> [--allow-tile] [--continue] [-- <cmd> …]
@@ -132,6 +191,7 @@ shift
 OVERLAY=""
 ALLOW_TILE=0
 RETRO=0
+SKIP_IF_GOLDEN=0
 CONTINUE=0
 MUTATE_CMD=()
 while [ $# -gt 0 ]; do case "$1" in
@@ -145,6 +205,10 @@ while [ $# -gt 0 ]; do case "$1" in
     ;;
   --retroactive)
     RETRO=1
+    shift
+    ;;
+  --skip-if-golden)
+    SKIP_IF_GOLDEN=1
     shift
     ;;
   --)
@@ -235,11 +299,16 @@ cb_snapshot() {
   # guard below — so the refusal path destroyed the very checkpoint it exists to
   # protect. Order is load-bearing here: check, then act.
   if has_snapshot "$GOLD_TAG" && [ "$RETRO" -eq 0 ]; then
+    if [ "$SKIP_IF_GOLDEN" -eq 1 ]; then
+      log "'$GOLD_TAG' already present; skipping the $COLD_TAG checkpoint (--skip-if-golden) — this is a re-run, not a fresh build"
+      return 0
+    fi
     die "$OVERLAY already has a '$GOLD_TAG' snapshot, so its CURRENT disk state is
   whatever the driving and the running exhibit left behind — not the builder's
   cold output. Naming that '$COLD_TAG' would launder a guess into a checkpoint.
-  Either re-run the builder and snapshot before the bake, or pass --retroactive
-  if you have positively established what this disk state is."
+  Either re-run the builder and snapshot before the bake, pass --retroactive if
+  you have positively established what this disk state is, or pass
+  --skip-if-golden if the caller just wants a clean no-op on a re-run."
   fi
   if has_snapshot "$COLD_TAG"; then
     log "replacing the existing $COLD_TAG snapshot"

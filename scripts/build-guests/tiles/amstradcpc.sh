@@ -220,6 +220,14 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
     systemctl reset-failed getty@tty1
     systemctl restart getty@tty1"
   wait_for_cpc ready-before-golden
+  # Disk checkpoint before savevm golden below; see lib/bridge-coldboot. Unlike
+  # the VICE siblings, this tile has no pre-bake rehearsal boot to plug into
+  # (it bakes straight off the live provisioning VM), so one is added here.
+  stop_qemu
+  "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile
+  boot_tile
+  sleep 3
+  wait_for_cpc coldboot-rehearsal
   hmp "savevm golden" >"$EVIDENCE/savevm-golden.txt"
   hmp "info snapshots" >"$EVIDENCE/info-snapshots.txt"
   grep -qw golden "$EVIDENCE/info-snapshots.txt" ||

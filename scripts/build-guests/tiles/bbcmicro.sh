@@ -603,6 +603,7 @@ fi
 # be re-baked, and the Plus/4 shipped one curated inside an application and had
 # to be re-baked too.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 wait_for_ssh
 restart_kiosk

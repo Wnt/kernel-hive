@@ -490,6 +490,7 @@ fi
 # to be re-baked; plus4 shipped one curated deep inside an application and was
 # rejected on the exhibit floor).
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 wait_for_ssh
 wait_for_pet_ready ready-before-golden

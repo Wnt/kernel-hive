@@ -440,6 +440,7 @@ fi
 # the lesson the plus4 tile learned the hard way (its first golden rested inside
 # an application and dropped visitors into the middle of it).
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 sleep 6
 wait_for_basic ready-before-golden
