@@ -7,16 +7,16 @@ the file that actually specifies the behavior.
 
 ## The streaming path, end to end
 
-```
-QEMU / MAME / another emulator (one process per guest, "tile")
-  │  shared-memory scanout, or QMP screendumps, or a serial console
-  ▼
-streamhost — Rust daemon, one instance per tile
-  frame capture → damage tracking → H.264 (in-process libx264) + Opus
-  │  WebTransport (QUIC), one unidirectional stream per access unit
-  ▼
-browser — React SPA (spa/), WebCodecs VideoDecoder, live tile grid
-  ▲  pointer/keyboard events return over their own QUIC streams/datagrams
+```mermaid
+flowchart TD
+  G[QEMU or MAME or another emulator one process per guest tile]
+  G -->|dbus display scanout or shm mapping| S
+  S[streamhost Rust daemon one instance per tile]
+  S --> C[frame capture then damage tracking then H.264 in process libx264 plus Opus]
+  C -->|WebTransport QUIC one unidirectional stream per access unit| B
+  B[browser React SPA WebCodecs VideoDecoder live tile grid]
+  B -->|pointer and keyboard on their own QUIC streams and datagrams| S
+  S -->|inject by whichever channel the guest supports| G
 ```
 
 Each tile runs its own `streamhost` process; there is no shared fan-out
@@ -84,7 +84,32 @@ Turning a guest into a tile is the subject of
 install media, building a golden image, wiring the registry entry, and the
 acceptance checks a new tile has to pass before it ships.
 
+## Guest tiers
+
+The sentence above — "one process per guest" — hides the single most important
+structural fact about this system. There are **five different things that
+process can be**, and which one a tile is determines its input path, its
+capture backend and most of its cost:
+
+| Tier | Count | What runs | Layers to the exhibit |
+|---|---:|---|---|
+| **1 — direct QEMU** | 29 | The guest OS itself in one QEMU | 1 VM |
+| **2 — emulator bridge** | 28 | A Debian bare-X kiosk whose only job is to run one full-screen period emulator | 2 |
+| **3 — host-native** | 1 | MAME on the bare-metal host, no QEMU and no QMP (`irix`) | 1 |
+| **4 — two-QEMU X bridge** | 1 | Two sibling VMs; the captured one runs only Xorg (`openvms`) | 1, produced by a second VM |
+| **5 — showcase poster** | 2 | Nothing — no runtime, no unit | 0 |
+
+Tier is **derived, not declared** — there is no `tier` field. The full
+derivation, membership lists and per-guest table are in
+[`GUEST-TIERS.md`](GUEST-TIERS.md).
+
 ## Input paths
+
+Video and audio converge on one path; **input diverges into eight sinks**, which
+is why nearly every "it feels wrong" report is an input report. The per-path
+tables — pointer, keyboard, video, sound — are in
+[`IO-PATHS.md`](IO-PATHS.md), and what each costs is in
+[`OVERHEAD.md`](OVERHEAD.md).
 
 Guests fall into a few families depending on what channel they expose:
 
@@ -135,6 +160,9 @@ journal).
 
 | Area | Doc |
 | --- | --- |
+| **Guest execution tiers, membership, per-guest table** | [`GUEST-TIERS.md`](GUEST-TIERS.md) |
+| **Pointer / keyboard / video / sound paths** | [`IO-PATHS.md`](IO-PATHS.md) |
+| **Latency, CPU and memory cost per tier and path** | [`OVERHEAD.md`](OVERHEAD.md) |
 | Daemon design, encoder, transport internals | `streamhost/docs/DESIGN.md`, `streamhost/docs/LATENCY-NOTES.md`, `streamhost/docs/CONFIG.md` |
 | Bridge-tile pattern (period emulator inside a captured kiosk) | `streamhost/docs/BRIDGE.md`, `streamhost/docs/GRAPHICAL-BRIDGE.md` |
 | Capture fast-poll QEMU patch | `streamhost/docs/CAPTURE-FASTPOLL.md` |

@@ -6,8 +6,11 @@
 agent gets a stale copy.
 
 Single-box Proxmox home-lab ("living computer museum"): the canonical registry
-currently derives **39 lineup entries: 37 production streamhost tiles and 2
-showcase posters** (`python3 scripts/tiles-registry.py count`).
+currently derives **61 lineup entries: 59 production streamhost tiles and 2
+showcase posters** (`python3 scripts/tiles-registry.py count` — run it; this
+line has been stale before). Those 59 are not one architecture repeated: they
+fall into five structurally different execution tiers, mapped in
+[`docs/GUEST-TIERS.md`](docs/GUEST-TIERS.md).
 streamed by the Rust `streamhost` daemon to a React SPA. Repo:
 https://github.com/Wnt/kernel-hive (private; this dir is the git root).
 
@@ -278,8 +281,12 @@ answer was 0. Resolve each hit through `/proc/<pid>/exe` and check the binary.
 
 ## Hard guardrails
 
-- riscos/windows11 are showcase-only SPA exhibits (their neko/RDP backends are
-  gone; VM 900 was deleted — old protection removed 2026-07-08). During
+- **riscos/macos** are the showcase-only SPA exhibits (their neko/RDP backends
+  are gone; VM 900 was deleted — old protection removed 2026-07-08). This line
+  used to name `windows11`; that is wrong and was worth catching — **`win11` is
+  a live production tile**, so treating it as a poster means treating a running
+  exhibit as disposable. `python3 scripts/tiles-registry.py count` and
+  `lifecycle` in the registry are the authority, not this sentence. During
   measurement-quiesce windows the only essential guests are CT950 (the Claude
   dev box) and the tile(s) under test — everything else may be stopped and
   restored.
