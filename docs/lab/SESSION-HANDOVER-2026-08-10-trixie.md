@@ -1,6 +1,11 @@
 # Session handover — 2026-08-10 (bookworm → trixie guest migration)
 
-> **SUPERSEDED IN PART, later the same day.** §1 and §2 were written at **3 of
+> **SUPERSEDED — read
+> [`SESSION-HANDOVER-2026-08-10-evening.md`](SESSION-HANDOVER-2026-08-10-evening.md)
+> first; it is the current handover.** This file's §§3-9 (the system, the traps,
+> the deferred tiles, the Iris findings) remain accurate and are why it is kept.
+>
+> **Superseded in part, later the same day.** §1 and §2 were written at **3 of
 > 28** tiles; waves 1(retry), 2 and 4 then landed and it is **15 of 28**. Do not
 > take the state or the "next action" from this file any more:
 > - **live state** → `scripts/dev/bridge-suite-status.sh`
