@@ -84,8 +84,20 @@ new one — the numbers have to be comparable to what is already recorded.
   measures the frameskip controller.
 - **Idle auto-pause OFF in both arms.** A QMP-paused guest cannot be timed. It
   stays ON for the live gallery; this is a spike-only setting.
-- **Exactly one viewer**, the probe. Quiesce to CT950 plus the arm under test,
-  assert occupancy on the arm's own core pair, and record it.
+- **Exactly one viewer**, the probe. A second viewer on either arm doubles that
+  arm's encode work and is a real confound.
+- **No migration builds, and no other sustained CPU campaign.** This is the one
+  ambient-load rule that matters: a MAME compile or a golden re-bake is minutes
+  of saturated cores and will swamp a ~9 ms effect.
+
+  **A full fleet quiesce is NOT required** (operator, 2026-08-10). The tiles are
+  idle-paused when unwatched, the hourly `vms-snapshot` timer is `nice 10` /
+  `idle` I/O and does not register, and — the real reason — the **interleaved
+  A/B/A/B paired delta is what cancels ambient drift**. Both arms meet the same
+  conditions within each round, so a quiet-but-not-silent box costs a little
+  precision in the *absolute* numbers and nothing in the *delta*, which is the
+  number being claimed. Report the observed load range rather than asserting
+  quiescence.
 - **Turbo bin.** x264 smears ~1.07 cores over 8 physical cores and pins the
   package at ~2.47–2.50 GHz while streaming. Both arms inherit it; sample and
   report the achieved clock per arm and show they match.
