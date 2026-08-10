@@ -32,6 +32,19 @@
 //! Single-injector rule (BINDING): a tile launched with MAME_CTL_SOCK set must
 //! NOT also run `-autoboot_script irixagent.lua` — two injectors fight over the
 //! module's pacing budgets and accumulators.
+//!
+//! COUNT-GRID MODE (`SH_MAMESOCK_PTR_GRID`, unset by default and unset on irix,
+//! so everything above is exactly what irix still does). A guest with no
+//! hardware cursor gives the module nothing to read, and its MOVEA engine
+//! degrades to open loop: one ioport COUNT per pixel of target delta. That is
+//! an order of magnitude too many counts on a quadrature-encoder pointer like
+//! the Atari ST's, and with no reading to correct against the pointer runs away.
+//! Set the knob and targets are stated in COUNTS instead — see `ptr_grid` for
+//! the measurement and the arithmetic — with `MAME_CTL_SCREEN` set to the same
+//! grid so the module clamps where the guest does. The motion still rides
+//! `MOVEA` (absolute, acked on accept, safe to coalesce); only the homing slam
+//! and the edge slams that keep an open loop from drifting ride `MOVEP`, and
+//! those take the ordered queue so they can never be coalesced away.
 
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
@@ -45,6 +58,7 @@ use tokio::sync::Notify;
 use tokio::time::Instant;
 
 use crate::mame_input::matrix_key;
+use crate::ptr_grid::{GridReckon, GridStep, PtrGrid};
 use crate::realtime_input::{
     AcceptedSeq, KeyEvent, PointerAbs, RealtimeInputSink, Reject, SinkHealth,
 };
@@ -113,6 +127,17 @@ impl Cmd {
         }
     }
 
+    /// Relative counts. Only the count-grid slams use this; it is `paced`
+    /// because the module acks a MOVEP when its entry is fully DRAINED, and the
+    /// drain runs at the emulated device's own rate (~125 counts/s on the ST),
+    /// so a full-grid slam is comfortably over a second of ack latency.
+    fn movep(dx: i32, dy: i32) -> Self {
+        Self {
+            line: format!("MOVEP {dx} {dy}"),
+            paced: true,
+        }
+    }
+
     fn edge(verb: &str) -> Self {
         Self {
             line: verb.to_string(),
@@ -157,6 +182,9 @@ struct Pending {
     /// re-derived by the next accepted transition instead of silently lost —
     /// the guest's button state must never drift from the browser's.
     queued_buttons: u16,
+    /// Count-grid mode only: home/edge bookkeeping. Inert while `Shared::grid`
+    /// is None, which is every tile that does not set `SH_MAMESOCK_PTR_GRID`.
+    grid: GridReckon,
 }
 
 struct Shared {
@@ -165,6 +193,9 @@ struct Shared {
     health: AtomicU8,
     counters: Counters,
     closed: AtomicBool,
+    /// `SH_MAMESOCK_PTR_GRID`, frozen at construction. None = state targets in
+    /// surface pixels, exactly as before this knob existed.
+    grid: Option<PtrGrid>,
 }
 
 pub struct MameSockSink {
@@ -172,8 +203,14 @@ pub struct MameSockSink {
 }
 
 impl MameSockSink {
-    pub fn new(path: String) -> Arc<Self> {
-        eprintln!("[input-router] mamesock sink socket={path}");
+    pub fn new(path: String, grid: Option<PtrGrid>) -> Arc<Self> {
+        match grid {
+            Some(g) => eprintln!(
+                "[input-router] mamesock sink socket={path} count-grid {}x{}",
+                g.cols, g.rows
+            ),
+            None => eprintln!("[input-router] mamesock sink socket={path}"),
+        }
         let shared = Arc::new(Shared {
             pending: Mutex::new(Pending {
                 latest_move: None,
@@ -182,11 +219,13 @@ impl MameSockSink {
                 cur_y: 0,
                 cur_buttons: 0,
                 queued_buttons: 0,
+                grid: GridReckon::default(),
             }),
             notify: Notify::new(),
             health: AtomicU8::new(HEALTH_STARTING),
             counters: Counters::default(),
             closed: AtomicBool::new(false),
+            grid,
         });
         tokio::spawn(mamesock_task(path, shared.clone()));
         let log_shared = shared.clone();
@@ -238,10 +277,16 @@ impl RealtimeInputSink for MameSockSink {
         } else {
             self.lock_pending()?
         };
-        // Surface-clamped target, exactly like MameCmdSink abs mode. Retained
+        // Surface-clamped target, exactly like MameCmdSink abs mode — or, in
+        // count-grid mode, the grid cell the surface point falls in. Retained
         // even while the backend is down: it seeds the resync preamble.
-        let tx = event.x.min(event.width.saturating_sub(1));
-        let ty = event.y.min(event.height.saturating_sub(1));
+        let (tx, ty) = match self.shared.grid {
+            Some(g) => g.map(event.x, event.y),
+            None => (
+                event.x.min(event.width.saturating_sub(1)),
+                event.y.min(event.height.saturating_sub(1)),
+            ),
+        };
         if trace_on() {
             eprintln!(
                 "[mamesock-trace] rx seq={} raw={},{} clamped={},{} btn={} wheel={},{} ordered={}",
@@ -267,11 +312,19 @@ impl RealtimeInputSink for MameSockSink {
             return Err(Reject::BackendDown);
         }
 
+        // Count-grid home/edge bookkeeping. Advanced for EVERY sample, whether
+        // or not this one reaches the wire: which edge the pointer is on is a
+        // property of where it IS, not of what we happened to send.
+        let step = match self.shared.grid {
+            Some(g) => p.grid.step(tx, ty, g.cols, g.rows),
+            None => GridStep::default(),
+        };
+
         // Wheel deltas emit nothing (matching MameCmdSink), but a wheel event
         // still restates the target below via the ordered path.
         let mut edges = Vec::new();
         edge_cmds(p.queued_buttons, event.buttons, &mut edges);
-        if edges.is_empty() && !event.ordered {
+        if edges.is_empty() && !event.ordered && step.is_plain() {
             if p.latest_move.replace((tx, ty)).is_some() {
                 self.shared
                     .counters
@@ -279,7 +332,25 @@ impl RealtimeInputSink for MameSockSink {
                     .fetch_add(1, Ordering::Relaxed);
             }
         } else {
-            let needed = usize::from(p.latest_move.is_some()) + 1 + edges.len();
+            // Homing supersedes any queued target outright: the slam is about
+            // to pin the guest into the corner, so spending the pending move's
+            // counts first would only delay it.
+            let mut pre: Vec<Cmd> = Vec::new();
+            if let (true, Some(g)) = (step.home, self.shared.grid) {
+                p.latest_move = None;
+                let (hx, hy) = g.home_slam();
+                pre.push(Cmd::movep(hx, hy));
+                // The slam is RELATIVE, and the module's own last-target belief
+                // cannot see it. Restate the origin so the target below is
+                // differenced from where the guest now actually is.
+                pre.push(Cmd::movea(0, 0));
+            }
+            let mut post: Vec<Cmd> = Vec::new();
+            if step.slam_x != 0 || step.slam_y != 0 {
+                post.push(Cmd::movep(step.slam_x, step.slam_y));
+            }
+            let needed =
+                usize::from(p.latest_move.is_some()) + pre.len() + 1 + edges.len() + post.len();
             if p.ordered.len() + needed > ORDERED_CAPACITY {
                 self.shared
                     .counters
@@ -294,8 +365,10 @@ impl RealtimeInputSink for MameSockSink {
             if let Some((mx, my)) = p.latest_move.take() {
                 p.ordered.push_back(Cmd::movea(mx, my));
             }
+            p.ordered.extend(pre);
             p.ordered.push_back(Cmd::movea(tx, ty));
             p.ordered.extend(edges);
+            p.ordered.extend(post);
             p.queued_buttons = event.buttons;
         }
         self.shared
@@ -498,6 +571,10 @@ async fn run_connection(
         p.ordered.clear();
         p.latest_move = None;
         p.queued_buttons = p.cur_buttons;
+        // A new connection is a new module (or at least one whose open-loop
+        // last-target belief we cannot vouch for), so count-grid mode forgets
+        // its origin and the next sample re-homes.
+        p.grid.reset();
         (p.cur_x, p.cur_y, p.cur_buttons)
     };
     shared.health.store(HEALTH_HEALTHY, Ordering::Release);
@@ -667,7 +744,7 @@ mod tests {
         let log: Arc<Mutex<Vec<String>>> = Arc::default();
         spawn_module(listener, log.clone(), None);
 
-        let sink = MameSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string());
+        let sink = MameSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string(), None);
         wait_until("healthy after HELLO", || {
             sink.health() == SinkHealth::Healthy
         })
@@ -764,7 +841,7 @@ mod tests {
         // Drop connection 1 after the 4-line preamble + 1 move.
         spawn_module(listener, log.clone(), Some(5));
 
-        let sink = MameSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string());
+        let sink = MameSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string(), None);
         wait_until("healthy", || sink.health() == SinkHealth::Healthy).await;
         sink.try_pointer_abs(ev(1, 100, 50, 0)).unwrap();
         wait_until("first move on the wire", || log.lock().unwrap().len() >= 5).await;
@@ -798,6 +875,61 @@ mod tests {
             ]
         );
         assert_eq!(lines.iter().filter(|l| *l == "MOVEA 100 50").count(), 1);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Count-grid mode (`SH_MAMESOCK_PTR_GRID`): targets are stated in guest
+    /// mouse COUNTS, the first sample homes with a MOVEP slam and a restated
+    /// origin, plain motion still coalesces latest-wins, and entering a screen
+    /// edge carries a one-shot full-axis slam so a clamping guest and the
+    /// module's open-loop belief cannot drift apart.
+    #[tokio::test]
+    async fn count_grid_homes_states_counts_and_slams_each_edge_once() {
+        let (dir, listener) = bind("grid");
+        let log: Arc<Mutex<Vec<String>>> = Arc::default();
+        spawn_module(listener, log.clone(), None);
+
+        // The live Atari ST arm's measured map: surface x 134..891, y 63..692,
+        // on a 79 x 52 count grid.
+        let grid = PtrGrid::parse("134,63,891,692,79,52");
+        assert!(grid.is_some());
+        let sink = MameSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string(), grid);
+        wait_until("healthy after HELLO", || {
+            sink.health() == SinkHealth::Healthy
+        })
+        .await;
+        wait_until("resync preamble", || log.lock().unwrap().len() >= 4).await;
+
+        // Mid-screen: homes, restates the origin, then the grid target.
+        sink.try_pointer_abs(ev(1, 502, 209, 0)).unwrap();
+        wait_until("home + target", || log.lock().unwrap().len() >= 7).await;
+        // A plain move states a count target and nothing else.
+        sink.try_pointer_abs(ev(2, 307, 209, 0)).unwrap();
+        wait_until("plain move", || log.lock().unwrap().len() >= 8).await;
+        // Into the left edge: target, then the one-shot slam.
+        sink.try_pointer_abs(ev(3, 0, 209, 0)).unwrap();
+        wait_until("edge entry", || log.lock().unwrap().len() >= 10).await;
+        // Parked on it: no second slam.
+        sink.try_pointer_abs(ev(4, 0, 260, 0)).unwrap();
+        wait_until("parked on edge", || log.lock().unwrap().len() >= 11).await;
+
+        let lines = log.lock().unwrap().clone();
+        assert_eq!(
+            lines,
+            vec![
+                "UP1",
+                "UP2",
+                "UP3",
+                "MOVEA 0 0", // preamble
+                "MOVEP -87 -60",
+                "MOVEA 0 0", // origin restated after the relative slam
+                "MOVEA 38 12",
+                "MOVEA 18 12",
+                "MOVEA 0 12",
+                "MOVEP -79 0",
+                "MOVEA 0 16",
+            ]
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 
