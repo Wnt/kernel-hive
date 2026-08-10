@@ -157,7 +157,9 @@ runs the native **608x808** with no scaling (`[encode] geometry 608x808 tier=0
 
 Rest state: the **Alto Executive**, untouched, NOT inside Bravo — 10ae428's
 Plus/4 ruling applies unchanged, and the application choice went into the
-on-screen keyboard instead (?, BRAVO, DRAW, LAUREL, one Executive command each).
+on-screen keyboard instead (?, BRAVO, DRAW, one Executive command each; LAUREL
+is deliberately absent — the mail reader wants a Grapevine server this tile has
+no Ethernet for, and answers with a blank page and an hourglass).
 
 **Two traps that cost runs here, both likely to bite you as well:**
 

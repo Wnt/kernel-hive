@@ -606,8 +606,12 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
         'Bravo 7.5 -- the first WYSIWYG word processor. Takes about half a minute to load'),
       cmd('alto-draw', 'DRAW', 'draw',
         'Draw 5.2 -- the illustration program, with its icon palette down the left edge'),
-      cmd('alto-laurel', 'LAUREL', 'laurel',
-        'Laurel -- the mail reader the Alto invented the shape of'),
+      // NO LAUREL BUTTON, and it is a deliberate absence. Laurel is the mail
+      // reader, and it is the exhibit's most tempting third program -- but it
+      // wants a Grapevine mail server, this tile has no Ethernet, and it
+      // answers a visitor with a BLANK PAGE AND AN HOURGLASS with no way back
+      // (measured on the tile, 45 s, 0 ink pixels anywhere). A dead end is
+      // worse than an absent button.
       tap('ret', '\u23ce', XK.Return),
       tap('bksp', '\u232b', XK.BackSpace, { repeat: true }),
       ...ARROWS,

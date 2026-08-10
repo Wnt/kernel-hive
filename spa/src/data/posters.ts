@@ -233,7 +233,7 @@ export const POSTERS = {
         "runs": [
           {
             "kind": "text",
-            "text": "Three commands are one tap away on the exhibit's keyboard:"
+            "text": "Two commands are one tap away on the exhibit's keyboard:"
           }
         ]
       },
@@ -252,15 +252,6 @@ export const POSTERS = {
           {
             "kind": "text",
             "text": "Palettes down the left edge were not yet a convention. This is where they come from."
-          }
-        ]
-      },
-      {
-        "kind": "paragraph",
-        "runs": [
-          {
-            "kind": "text",
-            "text": "other mail all day."
           }
         ]
       },
@@ -295,21 +286,6 @@ export const POSTERS = {
             {
               "kind": "text",
               "text": " — the illustration program, with its icon palette down the left edge."
-            }
-          ],
-          [
-            {
-              "kind": "strong",
-              "children": [
-                {
-                  "kind": "text",
-                  "text": "LAUREL"
-                }
-              ]
-            },
-            {
-              "kind": "text",
-              "text": " — the mail reader, from a building where people already sent each"
             }
           ]
         ]

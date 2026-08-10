@@ -228,9 +228,16 @@ Alto case is not different enough to overturn that. So:
 - the fixture is the machine's own empty state, which is also its launcher;
 - the choice of application moves into the exhibit UI, exactly as `plus4`'s did.
   `spa/src/ui/keyboard/keyboardProfiles.ts` gives `alto` its own family whose
-  first row is **?**, **BRAVO**, **DRAW**, **LAUREL** — one Executive command
-  each, lower case because the Executive is case-insensitive, so no Shift ever
-  has to survive the wire.
+  first row is **?**, **BRAVO**, **DRAW** — one Executive command each, lower
+  case because the Executive is case-insensitive (verified on the tile: `bravo`
+  and `draw` both load), so no Shift ever has to survive the wire.
+
+**There is no LAUREL button, and that is a measured decision.** Laurel is the
+mail reader and the obvious third program to offer, but it wants a Grapevine
+mail server, this tile has no Ethernet, and on the tile it answers with a blank
+page and an hourglass cursor — 45 seconds, zero ink pixels anywhere, no way
+back to the Executive. A dead end is worse than an absent button. It stays in
+the placard's era-software list, where it belongs, and off the keyboard.
 
 `?` is on that row for a reason: the Executive's own directory listing is the
 machine answering "what can I run", and it is the closest thing the Alto has to

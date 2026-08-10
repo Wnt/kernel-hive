@@ -65,7 +65,7 @@ grid of identical cells. The Alto had no character generator. Every letter is
 pixels the software drew, which is precisely why it could draw any letter it
 liked, and precisely why Bravo could show you the page.
 
-Three commands are one tap away on the exhibit's keyboard:
+Two commands are one tap away on the exhibit's keyboard:
 
 - **BRAVO** — Bravo 7.5, the first WYSIWYG word processor. Charles Simonyi and
   Butler Lampson wrote it in 1974; Simonyi took the idea to Microsoft and it
@@ -76,8 +76,6 @@ Three commands are one tap away on the exhibit's keyboard:
 - **DRAW** — the illustration program, with its icon palette down the left edge.
   Palettes down the left edge were not yet a convention. This is where they come
   from.
-- **LAUREL** — the mail reader, from a building where people already sent each
-  other mail all day.
 
 And **?** asks the Executive to list what is on the disk, which is the machine's
 own answer to what else it can do.
