@@ -255,7 +255,7 @@ listed here because a tool nobody can find is not a tool.
 
 | Symptom | Read / run |
 |---|---|
-| **IN FLIGHT (2026-08-05)**: pen taps register as tiny drags on IRIX | [`docs/lab/PEN-TAP-PLAN.md`](docs/lab/PEN-TAP-PLAN.md) — agreed plan + the measurements behind it. Root cause: quantisation thresholds are in GUEST px while a hand wobbles in physical space (3.13 guest px per CSS px on IRIX) |
+| Pen taps register as tiny drags on IRIX — **fixed, shipped, verified in the deployed bundle 2026-08-10** | [`docs/lab/PEN-TAP-PLAN.md`](docs/lab/PEN-TAP-PLAN.md) — the record of the change + the measurements behind it. Root cause: quantisation thresholds were in GUEST px while a hand wobbles in physical space (3.13 guest px per CSS px on IRIX); they are in CSS px now |
 | Pen/touch input: what did the BROWSER actually see? | `ssh lab 'python3 /data/vms/streamhost/serve/pen-trace.py --since-min 15'` — the raw pointer stream, pushed from the tab every 2 s and decoded into gestures (no foreground tab, no eval round-trip) |
 | Pointer, tap, drag or double-click "feels wrong" | [`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md) — which of the three code paths a press takes (a STYLUS is not the touch path), the three telemetry sources, the warpd button-guard, and `tests/e2e-live/pen-doubletap-probe.mjs` to reproduce without the hardware |
 | A tile streams then "freezes", or refuses to connect | `ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'` — proves every tile accepts the ticket the gateway mints for it. Catches SPA-id vs `SH_TILE` divergence (`solaris`/`solariscde`, `aros`/`amigaos`) |

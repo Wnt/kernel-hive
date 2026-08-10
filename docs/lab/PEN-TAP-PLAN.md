@@ -1,7 +1,13 @@
 # Pen tap quantisation — agreed plan, and the data behind it
 
-**Status: AGREED, NOT YET IMPLEMENTED** (2026-08-05). Everything in "What is
-deployed" is live; everything in "The plan" is still to do. Background and tools:
+**Status: IMPLEMENTED AND DEPLOYED** (verified 2026-08-10). The banner below
+said "AGREED, NOT YET IMPLEMENTED" long after the work shipped.
+`spa/src/input/tapQuantiser.ts` implements this plan verbatim — thresholds in
+**CSS px** with the exact planned numbers (`tapPx` 12, `dragEscapePx` 30,
+`tapHoldMs` 200, `doubleMs` 500, `doublePx` 20) plus the added time gate — and
+the deployed bundle in the box webroot contains them, with the old guest-px
+`touchGestures` implementation gone. Read what follows as the record of a
+completed change, not as pending work. Background and tools:
 [INPUT-DEBUGGING.md](INPUT-DEBUGGING.md).
 
 ## The problem in one line

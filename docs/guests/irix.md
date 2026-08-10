@@ -13,10 +13,12 @@ the unshipped ~1.2 s CRIU reset procedure is
 [`scripts/build-guests/irix/irix-criu/`](../../scripts/build-guests/irix/irix-criu/README.md).
 
 The gallery's first **non-QEMU** streamhost tile. SGI's IRIX 6.5 runs inside
-**MAME** (the `indy_4610` SGI Indy driver) on an **Xvfb** framebuffer that
-streamhost captures directly via `SH_CAPTURE=x11` (XTEST 1:1 absolute pointer +
-a MAME Lua input agent for buttons/keys). It is an x11 runtime tile, not a QEMU
-VM, because MAME's SGI Indy emulation kernel-panics under a KVM vCPU and must run
+**MAME** (the `indy_4610` SGI Indy driver) with **`-video none`** — no Xvfb and
+no window at all — publishing each finished frame into a shared-memory mapping
+that streamhost reads via **`SH_CAPTURE=shm`**, with pointer and keys going back
+through **`SH_INPUT_BACKEND=mamesock`**. It is an x11 runtime tile
+(`SH_TILE_RUNTIME=x11`), not a QEMU VM, because MAME's SGI Indy emulation
+kernel-panics under a KVM vCPU and must run
 on the bare-metal host CPU.
 
 - Machine: SGI Indy, MIPS R4600 @ 100 MHz, **256 MB RAM**, XL 24-bit graphics,
@@ -72,8 +74,8 @@ on the bare-metal host CPU.
 
 ## Shared-memory capture (`SH_CAPTURE=shm`) — LIVE since 2026-08-02
 
-The tile streams through `SH_CAPTURE=x11` today: MAME renders into an Xvfb and
-streamhost grabs the root window. That path was profiled at **~226-257 Gcyc
+The tile **used to** stream through `SH_CAPTURE=x11`: MAME rendered into an Xvfb
+and streamhost grabbed the root window. That path was profiled at **~226-257 Gcyc
 (~1.5-1.7 Gcyc per emulated second, 32-43% of host time)**, and it is all raw
 pixel movement: MAME rasterises the Newport framebuffer into an RGB32 bitmap,
 uploads it to an SDL texture, `SDL_RenderCopy`s it through Mesa llvmpipe into an
