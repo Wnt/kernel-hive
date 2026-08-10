@@ -84,6 +84,53 @@ For an ordinary new OS, author one registry entry, its builder, and its guest
 documentation; add a bespoke launcher only when the generic runtime is not
 sufficient. Do not hand-edit generated artifacts.
 
+## Taking an exhibit off the floor — the `listing` soft hide
+
+`listing` is the supported way to keep a live exhibit out of the gallery's
+listings without touching anything else about it:
+
+```json
+"listing": {
+  "state": "hidden",
+  "since": "2026-08-10",
+  "reason": "Off the floor for the de-bridging spike: atarist is the measured tile ..."
+}
+```
+
+The block is optional and absent means listed, so every entry without it behaves
+exactly as before. `hidden` removes the tile from the 2D grid, the 3D museum hall
+and their era/total counts — and from nothing else. It stays a full lineup
+entry: it still ships in `gallery-manifest.json` (flagged `"listed": false`,
+row intact), still streams, still keeps its scene bindings, keyboard profile and
+poster, so the SPA parity tests pass untouched and nothing has to be deleted and
+restored.
+
+**This is discoverability, not access control.** `/os/<id>` still resolves and
+streams exactly as before — that is deliberate, it is what makes a dark launch
+useful — so anyone holding or guessing the URL gets in. Carrying the manifest row
+is what keeps that working; dropping it is the bug this field exists to stop.
+
+**`listing` is not `enabled`.** `enabled: false` retires the tile from the
+lineup: it leaves the manifest entirely, the deep link dies, and the SPA's
+hand-maintained per-tile files (`machineIdentity.ts`, the assembly and tint in
+`machines.ts`, `presentAspect.ts`, `keyboardProfiles.ts`) have to be edited and
+edited back. Reach for it when an exhibit is gone, not when it is resting.
+
+**One state, not two.** A never-announced *dark launch* and a temporarily
+withdrawn *off the floor* exhibit render identically on every surface, so a
+second enum value would be a distinction no consumer could branch on — and the
+two are not even disjoint, since a dark-launched tile that gets listed and later
+withdrawn would have to rewrite the field anyway. What actually differs is the
+prose, so `reason` carries it and is required (with `since`, `YYYY-MM-DD`)
+whenever `state` is `hidden`, and forbidden when it is `listed`. `git log --
+registry/tiles/<id>.json` answers "who took it off"; a field would only be able
+to go stale about it.
+
+`validate_listing()` in `scripts/tiles-registry.py` enforces the shape (the
+schema's `additionalProperties` and conditionals are decorative — see below) and
+rejects a hide on an entry that is not in the public lineup anyway, so a
+declared hide can never be a no-op that a later session believes.
+
 ## Generated artifacts and their gate lists
 
 `generated()` in `scripts/tiles-registry.py` is the single authoritative list of

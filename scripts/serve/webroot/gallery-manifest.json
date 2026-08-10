@@ -463,6 +463,7 @@
       "order": 16,
       "eraLabel": "2008 · Android",
       "signalEndpoint": "/signal/android.json",
+      "listed": false,
       "ramMB": 2048,
       "era": "2000s",
       "eraSoftware": [
@@ -492,6 +493,7 @@
       "order": 17,
       "eraLabel": "2017 · postmarketOS",
       "signalEndpoint": "/signal/postmarketos.json",
+      "listed": false,
       "ramMB": 2048,
       "era": "2010s",
       "eraSoftware": [
@@ -520,6 +522,7 @@
       "order": 18,
       "eraLabel": "2013 · Sailfish (Jolla)",
       "signalEndpoint": "/signal/sailfishos.json",
+      "listed": false,
       "ramMB": 2048,
       "era": "2010s",
       "eraSoftware": [
@@ -801,6 +804,7 @@
       "order": 27,
       "eraLabel": "1985 · Atari ST (GEM)",
       "signalEndpoint": "/signal/atarist.json",
+      "listed": false,
       "ramMB": 0,
       "ramKB": 1024,
       "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs the hatari Atari ST emulator full-screen (EmuTOS → GEM desktop); streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Atari ST wedge). See streamhost/docs/BRIDGE.md.",

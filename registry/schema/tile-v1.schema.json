@@ -28,6 +28,28 @@
     "tileDir": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
     "lifecycle": { "enum": ["production", "experiment", "showcase", "candidate"] },
     "enabled": { "type": "boolean" },
+    "listing": {
+      "type": "object",
+      "description": "SOFT HIDE — whether this exhibit is announced in the gallery's listings. Absent means listed, so every entry without this block behaves exactly as before. `hidden` keeps the tile a full lineup entry in every other respect (it still ships in gallery-manifest.json, still streams, still keeps its scene bindings and poster) and only removes it from the grid, the 3D hall and their counts. It is DISCOVERABILITY, NOT ACCESS CONTROL: /os/<id> still resolves and streams, so anyone with the URL gets in. To retire an exhibit from the lineup, use `enabled: false` instead.",
+      "required": ["state"],
+      "properties": {
+        "state": {
+          "enum": ["listed", "hidden"],
+          "description": "There is deliberately no separate `dark` state: a never-announced dark launch and a temporarily-withdrawn exhibit render identically everywhere, so the difference lives in `reason` (prose a human reads) rather than in an enum value no consumer could branch on."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required when hidden, forbidden when listed. Why it is off the floor, and what would put it back. `git log -- registry/tiles/<id>.json` answers who took it off."
+        },
+        "since": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "Required when hidden, forbidden when listed. The date it came off the floor, so a stale hide is visible as a stale hide."
+        }
+      },
+      "additionalProperties": false
+    },
     "aliases": { "type": "object" },
     "display": {
       "type": "object",

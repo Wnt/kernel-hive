@@ -304,6 +304,55 @@ def validate_schema_shape(rows: list[dict[str, Any]], errors: list[str]) -> None
                 fail(errors, row, "demoProgram.lines must be a non-empty list of non-blank strings")
 
 
+def is_hidden(row: dict[str, Any]) -> bool:
+    """Soft-hidden: a full lineup entry that the gallery does not announce."""
+    return row.get("listing", {}).get("state") == "hidden"
+
+
+def validate_listing(rows: list[dict[str, Any]], errors: list[str]) -> None:
+    """Enforce the soft-hide block the shipped JSON-Schema evaluator cannot.
+
+    validate_json_schema() honours neither additionalProperties nor a
+    conditional, so the "reason/since iff hidden" rule and the typo guard are
+    business rules here. The load-bearing one is the last: a hide only means
+    anything for a row that WOULD otherwise be listed, and a hide on a row that
+    is already out of gallery-manifest.json is a lie a future session would
+    believe.
+    """
+    allowed = {"state", "reason", "since"}
+    for row in rows:
+        listing = row.get("listing")
+        if listing is None:
+            continue
+        if not isinstance(listing, dict):
+            fail(errors, row, "listing must be an object")
+            continue
+        unknown = sorted(set(listing) - allowed)
+        if unknown:
+            fail(errors, row, f"listing has unknown key(s) {unknown}; allowed: {sorted(allowed)}")
+        state = listing.get("state")
+        if state not in {"listed", "hidden"}:
+            fail(errors, row, f"listing.state must be 'listed' or 'hidden', got {state!r}")
+            continue
+        if state == "listed":
+            extra = sorted(k for k in ("reason", "since") if k in listing)
+            if extra:
+                fail(errors, row, f"listing.state 'listed' must not carry {extra} — a listed exhibit explains nothing")
+            continue
+        if not str(listing.get("reason", "")).strip():
+            fail(errors, row, "listing.state 'hidden' requires a non-blank reason (why it is off the floor)")
+        if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", str(listing.get("since", ""))):
+            fail(errors, row, "listing.state 'hidden' requires since as YYYY-MM-DD")
+        if not row.get("enabled") or "bindingOrder" not in row.get("render", {}):
+            fail(
+                errors,
+                row,
+                "listing.state 'hidden' on an entry that is not in the public lineup anyway "
+                "(needs enabled + render.bindingOrder). enabled:false is RETIREMENT, not a hide — "
+                "pick one, and do not declare a hide that does nothing.",
+            )
+
+
 # spa/src/ui/grid/StreamView/typeDemoProgram.ts DEMO_PER_CHAR_MS -- what the SPA
 # typist assumes when the entry declares no perCharMs of its own.
 SPA_DEFAULT_PER_CHAR_MS = 70
@@ -588,6 +637,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             {k: v for k, v in row.items() if k != "_path"}, schema, str(row["_path"].relative_to(REPO)), errors
         )
     validate_schema_shape(rows, errors)
+    validate_listing(rows, errors)
     validate_exhibit_assets(rows, errors)
     validate_keyboard_env(rows, errors)
     validate_pointer_method(rows, errors)
@@ -969,6 +1019,14 @@ def emit_gallery_manifest(rows: list[dict[str, Any]]) -> bytes:
                 ("signalEndpoint", f"/signal/{row['id']}.json" if spa["transport"] == "streamhost" else None),
             ]
         )
+        # Soft hide (registry `listing`). The ROW STAYS — dropping it is what a
+        # deployment-only override used to do, and it is exactly what breaks the
+        # /os/<id> deep link, since the SPA resolves that id out of this manifest.
+        # Emitted only when hidden, so every listed tile's JSON is byte-unchanged.
+        # The reason/since stay in registry/index.json: this document is public,
+        # served to every browser, and the SPA renders none of that prose.
+        if is_hidden(row):
+            entry["listed"] = False
         for key in ("ramMB", "ramKB", "notes", "era", "eraSoftware", "periodBrowser", "iconicApps", "blurb"):
             if key in museum:
                 entry[key] = museum[key]
@@ -1487,6 +1545,9 @@ def cmd_explain(os_id: str) -> int:
         [
             ("registry", str(row["_path"].relative_to(REPO))),
             ("lifecycle", row["lifecycle"]),
+            # "why is this exhibit not on the floor" is the first thing a session
+            # asks about a tile it cannot find in the grid; answer it up front.
+            ("listing", row.get("listing", {"state": "listed"})),
             ("tileDir", row.get("tileDir")),
             (
                 "signal",

@@ -38,22 +38,29 @@ function withBoot(vm: RuntimeVMManifestEntry, boot: Record<string, BootIndexEntr
   return b ? { ...vm, bootVideo: { ...b, ...vm.bootVideo } } : vm;
 }
 
+/** Which manifest rows the store gets to hold at all.
+ *
+ * `showcase` entries (posters with no live tile behind them) are dropped here
+ * and never enter the store: there is no tile, so there is nothing for
+ * /os/<id> to resolve to either. That is exactly the DIFFERENCE from a soft
+ * hide — a soft-hidden tile (registry `listing`, manifest `listed: false`) is
+ * fully alive and must stay resolvable, so it is carried through here and
+ * filtered only out of the store's `listedVms`. Do not filter `listed` here:
+ * removing the row is what breaks the direct URL. The hardcoded HIDDEN_IDS set
+ * that used to live in this file (sailfishos / postmarketos / android) is now
+ * the registry `listing` block on those three entries — the same hide,
+ * declared where the rest of the tile is declared.
+ */
+export function storedLineup(
+  entries: readonly RuntimeVMManifestEntry[],
+): RuntimeVMManifestEntry[] {
+  return entries.filter((vm) => vm.transport !== 'showcase');
+}
+
 // Fetch the public lineup at runtime so registry-only additions using an existing
 // archetype appear without rebuilding the Vite bundle. Network/validation errors
 // use the generated embedded last-known-good copy; boot metadata remains a
 // separately published, best-effort overlay.
-//
-// `showcase` entries (posters with no live tile behind them) are dropped here,
-// at the single point every SPA surface reads from: the grid, the 3D museum
-// hall, deep links, and the era/total counts all derive from this store, so
-// excluding them here hides them everywhere and keeps them out of every sum.
-//
-// HIDDEN_IDS is the same kind of hide for a different reason: these tiles
-// still stream fine (transport stays 'streamhost', their services keep
-// running), they're just not fit for this display yet — e.g. the phone-dock
-// archetype the mobile OSes render as. Not a registry/lifecycle change.
-const HIDDEN_IDS = new Set(['sailfishos', 'postmarketos', 'android']);
-
 export function useManifest() {
   const setVMs = useMuseum((s) => s.setVMs);
 
@@ -62,8 +69,7 @@ export function useManifest() {
     (async () => {
       const [manifest, boot] = await Promise.all([loadGalleryManifest(), fetchBootIndex()]);
       if (cancelled) return;
-      const streamhostOnly = manifest.filter((vm) => vm.transport !== 'showcase' && !HIDDEN_IDS.has(vm.id));
-      setVMs(streamhostOnly.map((vm) => withBoot(vm, boot)));
+      setVMs(storedLineup(manifest).map((vm) => withBoot(vm, boot)));
     })();
     return () => { cancelled = true; };
   }, [setVMs]);

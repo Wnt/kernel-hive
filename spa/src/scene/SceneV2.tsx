@@ -31,7 +31,11 @@ import EditorialGrade from './EditorialGrade';
 // ============================================================================
 
 export default function SceneV2() {
-  const registryLineup = useMuseum((state) => state.vms);
+  // The ANNOUNCED lineup only: a soft-hidden tile (registry `listing`) gets no
+  // desk in the hall. The store's `vms` still carries it for /os/:osId, so this
+  // surface must read `listedVms` — including for the info card, whose id can
+  // only ever come from a desk that is here.
+  const registryLineup = useMuseum((state) => state.listedVms);
   const search = window.location.search;
   const displayed = useMemo(
     () => entriesForHall(registryLineup, search),

@@ -8,9 +8,12 @@ import { posterFor } from '../../data/posters';
 // ============================================================================
 //  GridView — the plain 2D, keyboard-navigable card grid (DEFAULT view)
 //  ---------------------------------------------------------------------------
-//  Lists every OS in the store (the manifest, minus `showcase` posters —
-//  filtered out in useManifest so they're hidden here and don't count toward
-//  the era/total sums below), GROUPED BY ERA. Cards are
+//  Lists the ANNOUNCED lineup — store.listedVms, i.e. the manifest minus
+//  `showcase` posters (dropped in useManifest) and minus soft-hidden tiles
+//  (registry `listing`, filtered in the store), so neither kind gets a card or
+//  counts toward the era/total sums below. Read `listedVms`, never `vms`: `vms`
+//  still carries the hidden rows so /os/:osId can resolve them. GROUPED BY ERA.
+//  Cards are
 //  clean CSS placeholders — no live streams open here; only the OS the user
 //  opens streams (StreamView), never the whole fleet at once. Clicking /
 //  Enter / Space on a card opens that OS full-viewport.
@@ -51,7 +54,7 @@ interface EraGroup {
 let savedScrollTop: number | null = null;
 
 export default function GridView() {
-  const vms = useMuseum((s) => s.vms);
+  const vms = useMuseum((s) => s.listedVms);
   const gridRef = useRef<HTMLDivElement>(null);
   // Preserve query parameters across navigation into a tile.
   const { search } = useLocation();

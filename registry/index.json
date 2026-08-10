@@ -952,6 +952,11 @@
       },
       "tileDir": "android",
       "lifecycle": "production",
+      "listing": {
+        "state": "hidden",
+        "since": "2026-07-17",
+        "reason": "Dark launch: the tile streams fine, but the phone-dock archetype it renders as is not finished, so it is not announced in the grid or the hall yet. Carried over from the hardcoded HIDDEN_IDS set in spa/src/data/useManifest.ts, whose date is when the android exhibit was last verified. Delete this block when the phone dock ships."
+      },
       "stream": {
         "transport": "streamhost",
         "udpPort": 54101,
@@ -1847,6 +1852,11 @@
       },
       "tileDir": "atarist",
       "lifecycle": "production",
+      "listing": {
+        "state": "hidden",
+        "since": "2026-08-10",
+        "reason": "Off the floor for the de-bridging spike: atarist is the measured tile, and a visitor opening it mid-run corrupts the latency numbers. The unit is deliberately stopped. Delete this block to put it back on the floor when the spike lands."
+      },
       "stream": {
         "transport": "streamhost",
         "udpPort": 54116,
@@ -8541,6 +8551,11 @@
       },
       "tileDir": "postmarketos",
       "lifecycle": "production",
+      "listing": {
+        "state": "hidden",
+        "since": "2026-07-17",
+        "reason": "Dark launch: the tile streams fine, but the phone-dock archetype it renders as is not finished, so it is not announced in the grid or the hall yet. Carried over from the hardcoded HIDDEN_IDS set in spa/src/data/useManifest.ts. Delete this block when the phone dock ships."
+      },
       "stream": {
         "transport": "streamhost",
         "udpPort": 54103,
@@ -9748,6 +9763,11 @@
       },
       "tileDir": "sailfishos",
       "lifecycle": "production",
+      "listing": {
+        "state": "hidden",
+        "since": "2026-07-17",
+        "reason": "Dark launch: the tile streams fine, but the phone-dock archetype it renders as is not finished, so it is not announced in the grid or the hall yet. Carried over from the hardcoded HIDDEN_IDS set in spa/src/data/useManifest.ts. Delete this block when the phone dock ships."
+      },
       "stream": {
         "transport": "streamhost",
         "udpPort": 54104,
