@@ -188,6 +188,18 @@ well as the key. **Try that before touching the Darkstar keymap** — if your
 XTEST helper batches the modifier with the key, or holds it for the same ~12 ms
 that already failed you, this is the same bug wearing a different hat.
 
+**Confirmed on Darkstar the same day, with a number worth keeping.** B applied
+the timing above and the Star now types `B : N ; M` from `Shift+b`, `Shift+;`,
+`Shift+n`, plain `;`, `Shift+m` — so the XNS three-part name, Desktop Creation
+and the Logon Option Sheet are all unblocked there too. B's *failing* attempt
+had used a **200 ms modifier lead with a 300 ms key hold**: letters survived
+that, punctuation did not. That asymmetry is the whole trap — it reads as a
+selective keymap gap rather than a timing problem. **The modifier lead has to be
+genuinely long; 200 ms is not enough even where 300 ms is fine for plain keys.**
+The cheap discriminator: a real keymap gap would not pass `" { } < > ? _ + | * (
+)` while dropping the shift on `;` alone. (Both lessons are now promoted into
+`docs/lab/ADD-NEW-OS-PLAYBOOK.md` §5.1 — they are not Xerox-specific.)
+
 Consequence for the Level-V family: **no colon button is needed** in
 `xerox-dwarf`, and probably none in `xerox-star` either. The SPA's shift latch
 already sends shift as a separate `sendKey` and the tile's
