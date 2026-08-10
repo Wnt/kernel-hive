@@ -35,7 +35,7 @@
       "glibc": "2.36",
       "gcc": "12",
       "frozen": true,
-      "_note": "FROZEN 2026-07-15. 25 live overlays back onto this byte-for-byte (28 before wave 1 moved atarist, pdp11 and gt40 to trixie). Never rebuild it: `bridge-base.sh --suite bookworm` refuses without --i-know-this-breaks-every-overlay."
+      "_note": "FROZEN 2026-07-15. 24 live overlays back onto this byte-for-byte (28 before wave 1 moved atarist, pdp11, gt40 and then decos to trixie). Never rebuild it: `bridge-base.sh --suite bookworm` refuses without --i-know-this-breaks-every-overlay."
     },
     "trixie": {
       "debianVersion": "13",
@@ -46,7 +46,7 @@
       "glibc": "2.41",
       "gcc": "14",
       "frozen": false,
-      "_note": "BUILT 2026-08-10, runtime-proven (generic kernel + e1000 + bochs-drm + bare-X kiosk + hatari/EmuTOS on a soltest clone). Matches the host suite, so a host-built binary runs in the guest unchanged and the per-tile ABI chroots stop being necessary. Wave 1 landed atarist, pdp11 and gt40 on it (2026-08-10), so it now carries live overlays and is frozen IN FACT: the flag below stays false, but bridge-base.sh treats a suite as frozen if the flag is set OR if any tile is declared on it, so the guard armed itself the moment the first tile migrated. Do not hand-flip it."
+      "_note": "BUILT 2026-08-10, runtime-proven (generic kernel + e1000 + bochs-drm + bare-X kiosk + hatari/EmuTOS on a soltest clone). Matches the host suite, so a host-built binary runs in the guest unchanged and the per-tile ABI chroots stop being necessary. Wave 1 landed atarist, pdp11, gt40 and decos on it (2026-08-10 — decos on the retry, after its builder bug was fixed), so it now carries live overlays and is frozen IN FACT: the flag below stays false, but bridge-base.sh treats a suite as frozen if the flag is set OR if any tile is declared on it, so the guard armed itself the moment the first tile migrated. Do not hand-flip it."
     }
   },
 
@@ -63,7 +63,7 @@
     "cbm2": "bookworm",
     "cbm8032": "bookworm",
     "daybreak": "bookworm",
-    "decos": "bookworm",
+    "decos": "trixie",
     "dragon32": "bookworm",
     "gt40": "trixie",
     "indyr4400": "bookworm",

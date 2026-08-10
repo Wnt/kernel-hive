@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'decos' (VMID 229) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running ONE fullscreen xterm (green on
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running ONE fullscreen xterm (green on
 # black, 80x31) whose only program is a chooser offering three of the operating
 # systems DEC sold for the PDP-11 — RT-11 V5.3, RSX-11M V4.2 and RSTS/E V9.6 —
 # each simulated by Open SIMH (one BIN/pdp11 binary, three .ini files). Keyboard
@@ -8,7 +8,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/apple2/atarist/amiga/plus4).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + the xterm parked ON THE CHOOSER,
 # blocked in `read`. No simulator is running in the golden, so a tile nobody is
 # looking at costs nothing.
