@@ -34,6 +34,8 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 . "$HERE/../lib/bridge-suite.sh"
+# shellcheck disable=SC1091
+. "$HERE/mame-ccache.sh"
 CHROOT_GUARD_LIB="$HERE/../../lib/chroot-guard.sh"
 # The chroot below runs in a PRIVATE mount namespace: nothing it mounts is
 # visible to the host, and no unmount can propagate out (the 2026-08-10
@@ -94,6 +96,11 @@ CHROOT_WORK="${WORK#"$CHROOT"}"
 
 mkdir -p "$WORK"
 install -m 644 "$PATCH" "$WORK/mame-irix-skip-warnings.patch"
+# Shared compiler cache at <chroot>/ccache, outside every build tree. This tile
+# pins a DIFFERENT commit from the other five, which costs nothing here: ccache
+# keys on content, so the files that are identical across the two pins still
+# hit (mame-ccache.sh explains why the hash survives the tree name).
+mame_ccache_prepare "$CHROOT"
 
 say "building MAME $MAME_KC854_TAG (SUBTARGET=kc85) in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- \
@@ -118,9 +125,13 @@ patch -p1 --dry-run -f <../mame-irix-skip-warnings.patch >/dev/null 2>&1 || {
   exit 1
 }
 patch -p1 -f <../mame-irix-skip-warnings.patch >/dev/null
+# Default to genie's own compilers; /ccache/env.sh swaps in `ccache gcc`.
+MAME_MAKE_CC_ARGS=(OVERRIDE_CC=gcc OVERRIDE_CXX=g++)
+# shellcheck disable=SC1091
+if [ -r /ccache/env.sh ]; then . /ccache/env.sh; fi
 # Qt debugger is irrelevant to an SDL kiosk and not installed in the chroot.
 nice -n 5 make SUBTARGET=kc85 SOURCES="$driver_src" \
-  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 -j"$jobs"
+  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 "${MAME_MAKE_CC_ARGS[@]}" -j"$jobs"
 EOS
 
 [ -x "$WORK/mame/kc85" ] || {

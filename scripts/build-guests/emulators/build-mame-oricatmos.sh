@@ -35,6 +35,8 @@ set -euo pipefail
 
 # shellcheck disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-suite.sh"
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/mame-ccache.sh"
 CHROOT_GUARD_LIB="$(dirname "${BASH_SOURCE[0]}")/../../lib/chroot-guard.sh"
 # The chroot below runs in a PRIVATE mount namespace: nothing it mounts is
 # visible to the host, and no unmount can propagate out (the 2026-08-10
@@ -84,6 +86,11 @@ CHROOT_WORK="${WORK#"$CHROOT"}"
 
 mkdir -p "$WORK"
 
+# Shared compiler cache at <chroot>/ccache, outside every build tree, so a
+# migration wave pays for the MAME core once instead of six times
+# (mame-ccache.sh explains why the hash survives the different tree names).
+mame_ccache_prepare "$CHROOT"
+
 say "building MAME 0.289 (oric.cpp subtarget) in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- "$CHROOT_WORK" "$UPSTREAM" "$MAME_ORIC_BASE" "$JOBS" <<'EOS'
 set -euo pipefail
@@ -104,8 +111,11 @@ git clean -qfd
 # GCC (12 on bookworm, 14 on trixie — a newer one only warns MORE, so this stays
 # necessary). USE_QTDEBUG=0: the SDL kiosk never opens the Qt debugger and the
 # chroot has no Qt.
+MAME_MAKE_CC_ARGS=(OVERRIDE_CC=gcc OVERRIDE_CXX=g++)
+# shellcheck disable=SC1091
+if [ -r /ccache/env.sh ]; then . /ccache/env.sh; fi
 nice -n 10 make SUBTARGET=oricatmos SOURCES=src/mame/tangerine/oric.cpp \
-  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 -j"$jobs"
+  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 "${MAME_MAKE_CC_ARGS[@]}" -j"$jobs"
 EOS
 
 [ -x "$WORK/mame/oricatmos" ] || {

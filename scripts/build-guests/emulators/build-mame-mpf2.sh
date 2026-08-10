@@ -14,6 +14,8 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 . "$HERE/../lib/bridge-suite.sh"
+# shellcheck disable=SC1091
+. "$HERE/mame-ccache.sh"
 CHROOT_GUARD_LIB="$HERE/../../lib/chroot-guard.sh"
 # The chroot below runs in a PRIVATE mount namespace: nothing it mounts is
 # visible to the host, and no unmount can propagate out (the 2026-08-10
@@ -85,6 +87,11 @@ else
   install -m 644 "$PATCH" "$WORK/mame-irix-skip-warnings.patch"
 fi
 
+# Shared compiler cache at <chroot>/ccache — this builder names its tree with
+# $$, so every run is a cold tree and ccache is the only thing that carries any
+# work forward (mame-ccache.sh explains why the hash survives the tree name).
+mame_ccache_prepare "$CHROOT"
+
 say "building MAME 0.289 in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- "$CHROOT_WORK" "$UPSTREAM" "$MAME_MPF2_BASE" "$JOBS" "$USE_SUBMODULE" <<'EOS'
 set -euo pipefail
@@ -112,9 +119,13 @@ else
   patch -p1 -f <../mame-irix-skip-warnings.patch >/dev/null
 fi
 cd "$work/mame"
+# Default to genie's own compilers; /ccache/env.sh swaps in `ccache gcc`.
+MAME_MAKE_CC_ARGS=(OVERRIDE_CC=gcc OVERRIDE_CXX=g++)
+# shellcheck disable=SC1091
+if [ -r /ccache/env.sh ]; then . /ccache/env.sh; fi
 # Qt Debugger is irrelevant to the SDL kiosk and not installed in the chroot.
 nice -n 5 make SUBTARGET=mpf2 SOURCES=src/mame/apple/tk2000.cpp \
-  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 -j"$jobs"
+  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 "${MAME_MAKE_CC_ARGS[@]}" -j"$jobs"
 EOS
 
 [ -x "$WORK/mame/mpf2" ] || {

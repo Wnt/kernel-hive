@@ -35,6 +35,8 @@ set -euo pipefail
 
 # shellcheck disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-suite.sh"
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/mame-ccache.sh"
 CHROOT_GUARD_LIB="$(dirname "${BASH_SOURCE[0]}")/../../lib/chroot-guard.sh"
 # The chroot below runs in a PRIVATE mount namespace: nothing it mounts is
 # visible to the host, and no unmount can propagate out (the 2026-08-10
@@ -88,6 +90,11 @@ if [ -n "$LOCAL_REF" ] && [ -e "$LOCAL_REF/.git" ]; then
   [ -d "$WORK/mame/.git" ] || git clone --local --no-hardlinks -q "$LOCAL_REF" "$WORK/mame"
 fi
 
+# Shared compiler cache at <chroot>/ccache, outside every build tree — this
+# builder names its tree with $$, so ccache is the only thing carrying work
+# forward (mame-ccache.sh explains why the hash survives the tree name).
+mame_ccache_prepare "$CHROOT"
+
 say "building MAME 0.289 SUBTARGET=zx81 in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- "$CHROOT_WORK" "$UPSTREAM" "$MAME_ZX81_BASE" "$JOBS" <<'EOS'
 set -euo pipefail
@@ -109,10 +116,14 @@ git rev-parse HEAD | grep -qx "$base" || {
   echo "MAME source is not at the pinned commit $base" >&2
   exit 1
 }
+# Default to genie's own compilers; /ccache/env.sh swaps in `ccache gcc`.
+MAME_MAKE_CC_ARGS=(OVERRIDE_CC=gcc OVERRIDE_CXX=g++)
+# shellcheck disable=SC1091
+if [ -r /ccache/env.sh ]; then . /ccache/env.sh; fi
 # Only the Sinclair ZX driver file is compiled into the MAME core; the Qt
 # debugger is irrelevant to an SDL kiosk and is not installed in the chroot.
 nice -n 10 make SUBTARGET=zx81 SOURCES=src/mame/sinclair/zx.cpp \
-  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 -j"$jobs"
+  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 "${MAME_MAKE_CC_ARGS[@]}" -j"$jobs"
 EOS
 
 [ -x "$WORK/mame/zx81" ] || {

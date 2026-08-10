@@ -40,6 +40,8 @@ set -euo pipefail
 
 # shellcheck disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-suite.sh"
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/mame-ccache.sh"
 CHROOT_GUARD_LIB="$(dirname "${BASH_SOURCE[0]}")/../../lib/chroot-guard.sh"
 # The chroot below runs in a PRIVATE mount namespace: nothing it mounts is
 # visible to the host, and no unmount can propagate out (the 2026-08-10
@@ -103,6 +105,12 @@ if [ -n "$SEED" ]; then
   fi
 fi
 
+# Shared compiler cache at <chroot>/ccache, outside every build tree, so this
+# tile's cold tree still reuses the objects a sibling MAME build already
+# produced (mame-ccache.sh explains why the hash survives the tree name). It
+# touches no file in the tree, so the pristine-source assertion above stands.
+mame_ccache_prepare "$CHROOT"
+
 say "building MAME 0.289 (SUBTARGET=dragon) in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- "$CHROOT_WORK" "$UPSTREAM" "$MAME_DRAGON32_BASE" "$JOBS" <<'EOS'
 set -euo pipefail
@@ -125,9 +133,13 @@ git clean -qfd
   git status --porcelain >&2
   exit 1
 }
+# Default to genie's own compilers; /ccache/env.sh swaps in `ccache gcc`.
+MAME_MAKE_CC_ARGS=(OVERRIDE_CC=gcc OVERRIDE_CXX=g++)
+# shellcheck disable=SC1091
+if [ -r /ccache/env.sh ]; then . /ccache/env.sh; fi
 # Qt debugger is irrelevant to an SDL kiosk and is not installed in the chroot.
 nice -n 5 make SUBTARGET=dragon SOURCES=src/mame/trs/dragon.cpp \
-  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 -j"$jobs"
+  NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 "${MAME_MAKE_CC_ARGS[@]}" -j"$jobs"
 EOS
 
 [ -x "$WORK/mame/dragon" ] || {
