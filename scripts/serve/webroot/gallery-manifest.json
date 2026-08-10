@@ -1763,6 +1763,39 @@
       "blurb": "The first ARM product ever sold: not a computer but a plug-in second processor for the BBC Micro, sold to developers in 1986 so they could write ARM code two years before the Archimedes existed. The board has no operating system — it has 16 KB of supervisor ROM and a floppy with a language on it. What you are looking at is that language, ARM BBC Basic V, running on the ARM while the 6502 that used to be the computer is reduced to a keyboard, a screen and a disc controller."
     },
     {
+      "id": "star",
+      "era_year": 1981,
+      "displayName": "Xerox Star 8010",
+      "year": 1981,
+      "lineage": "Xerox Star / Pilot-Mesa office workstations",
+      "arch": "Xerox \"Dandelion\" bit-slice Mesa processor, 1024×808 mono display",
+      "accent": "#D6001C",
+      "archetypeId": "beige-tower-crt",
+      "transport": "streamhost",
+      "order": 59,
+      "eraLabel": "1981 · Pilot + ViewPoint 2.0 on the 8010",
+      "signalEndpoint": "/signal/star.json",
+      "ramMB": 2,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 bare-X kiosk runs Darkstar (C#/mono) emulating a real Xerox 8010 \"Dandelion\" workstation booting Pilot and ViewPoint 2.0 off the bitsavers 1990 rigid-disk image; streamhost captures the Linux framebuffer exactly like every other tile. Silent — the 8010 has no sound hardware. The X root is a custom 1088×860 mode and the emulator window is moved to (0,−29) so Darkstar’s own System Menu and status bars fall outside the captured frame: what a visitor sees is the Star screen and nothing else. RELATIVE POINTER, and correctly so — Darkstar has no absolute path at all (it differences the host pointer against the display centre and warps it back), so the tile runs the same SH_POINTER=rel / no-tablet / vmport=off device set as c64 and qnx, and X pointer acceleration is turned off in the kiosk so a browser delta arrives 1:1. The golden is the LOGGED-ON ViewPoint user desktop: the 22-minute first boot, the Set Time Utility’s five carriage returns, the desktop creation and the logon all run once at bake time. The software is TIME-LOCKED (Xerox \"Product Factoring\"): the TOD clock is pinned to 1997-12-01 and must stay there — a 1990 date stalls the boot at MP 7800 indefinitely. See streamhost/docs/BRIDGE.md and docs/guests/star.md.",
+      "era": "1980s",
+      "eraSoftware": [
+        "ViewPoint 2.0 / Services 11.0 — the Star desktop itself",
+        "the Document Editor, the first shipping WYSIWYG word processor of its kind",
+        "Records Processing, the spreadsheet and the graphics editor",
+        "XDE 5.0 and Interlisp-D, on the other two disks of the same pack"
+      ],
+      "periodBrowser": "none — pre-web; XNS Courier over Ethernet instead",
+      "iconicApps": [
+        "the ViewPoint desktop",
+        "the Directory icon",
+        "the property sheet",
+        "the in-basket and out-basket"
+      ],
+      "blurb": "The first computer anyone could buy that had a desktop on it. Not a metaphor bolted on afterwards — the whole machine was built around it: overlapping windows, icons you could point at, folders and in-baskets and documents that looked on the screen the way they would come out of the printer, a two-button mouse, property sheets for every object, Ethernet, and file and print servers on the other end of it. Xerox shipped it in April 1981 for $16,595 a seat, sold it to almost nobody, and watched the rest of the industry spend the next fifteen years catching up. This is that machine, running the software it was actually sold with.",
+      "pointerRel": true,
+      "relativePointerOnly": true
+    },
+    {
       "id": "daybreak",
       "era_year": 1985,
       "displayName": "Xerox 6085",

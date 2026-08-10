@@ -4,11 +4,11 @@ import type { VMManifestEntry } from '../types';
 import { OS_BINDINGS } from '../three/archetypeRegistry';
 
 // ============================================================================
-//  MUSEUM CATALOG — placard metadata for the full OS lineup (58 bindings)
+//  MUSEUM CATALOG — placard metadata for the full OS lineup (59 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 56 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 57 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 53 of those 56 have their placard entries in this
+//  WebTransport + WebCodecs. 54 of those 57 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,8 +17,8 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 55 entries
-//  so all 58 exhibits render, each with an era-accurate archetype + accent.
+//  This file provides rich, period-accurate placard metadata for its 56 entries
+//  so all 59 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
 //  top of these entries, so every osId in OS_BINDINGS becomes an exhibit.
@@ -523,6 +523,16 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['ARM BBC Basic V', 'the ARM supervisor\'s disassembler', 'Cambridge LISP'],
     blurb: 'The first ARM product ever sold: not a computer but a plug-in second processor for the BBC Micro, sold to developers in 1986 so they could write ARM code two years before the Archimedes existed. The board has no operating system — it has 16 KB of supervisor ROM and a floppy with a language on it. What you are looking at is that language, ARM BBC Basic V, running on the ARM while the 6502 that used to be the computer is reduced to a keyboard, a screen and a disc controller.',
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile, and the sibling of bbcmicro: the SAME purpose-built MAME 0.289 `bbcb` binary (SUBTARGET=bbcb, built in the Bookworm chroot so its ABI matches the bridge), but with the ARM Evaluation System fitted to the BBC Micro\'s Tube. Three arguments are load-bearing and each cost an experiment: `-fdc acorn1770` because the ARM Evaluation System discs are ADFS .adl at 640 KB double density and the Acorn 8271 is single density and cannot read them at all; `-rom3` and specifically NOT `-rom1`, because ADFS in romimage1 kills the Tube and the banner falls back to "BBC Computer 32K" (romimage4 keeps the Tube but drops host BBC BASIC from the banner; romimage3 keeps both); and `skip_warnings 1` in ui.ini, which is a UI option and not a command-line one. The eight blobs are preservation-source with NO authorised URL and a disputed chain of title, staged by the operator, gated on SHA-1 and assembled BY SHA-1 against the shipped binary\'s own -listxml — the staged file is phroma.bin and the member MAME wants is cm62024.bin, so only the hash connects them. The golden is NOT the machine\'s untouched first screen (that is bbcmicro\'s rule and this machine has no language of its own to show): `*LIB $` and `AB` are baked in and left on screen as the prompt\'s provenance. Bake-time identity gates: the reverse-video A* field must carry blue pixels (a plain BBC Micro banner has zero) AND the frame must carry the ARM BASIC banner\'s ink. Keyboard-only exhibit; keyboard.charMap is bbcmicro\'s, unchanged, because it is the same MOS and the same keyboard matrix. The supervisor is NOT reachable from the ARM BASIC prompt — *QUIT, *DIS and *SHOWREGS all answer "Bad command" and BREAK (F12) does nothing — which is why the on-screen keyboard offers BASIC\'s row and not the supervisor\'s. See streamhost/docs/BRIDGE.md and docs/guests/armeval.md.',
+  },
+  {
+    id: 'star', displayName: 'Xerox Star 8010', year: 1981,
+    lineage: 'Xerox Star / Pilot-Mesa office workstations',
+    arch: 'Xerox "Dandelion" bit-slice Mesa processor, 1024×808 mono display', ramMB: 2,    era: '1980s', accent: '#D6001C',
+    eraSoftware: ['ViewPoint 2.0 / Services 11.0 — the Star desktop itself', 'the Document Editor, the first shipping WYSIWYG word processor of its kind', 'Records Processing, the spreadsheet and the graphics editor', 'XDE 5.0 and Interlisp-D, on the other two disks of the same pack'],
+    periodBrowser: 'none — pre-web; XNS Courier over Ethernet instead',
+    iconicApps: ['the ViewPoint desktop', 'the Directory icon', 'the property sheet', 'the in-basket and out-basket'],
+    blurb: 'The first computer anyone could buy that had a desktop on it. Not a metaphor bolted on afterwards — the whole machine was built around it: overlapping windows, icons you could point at, folders and in-baskets and documents that looked on the screen the way they would come out of the printer, a two-button mouse, property sheets for every object, Ethernet, and file and print servers on the other end of it. Xerox shipped it in April 1981 for $16,595 a seat, sold it to almost nobody, and watched the rest of the industry spend the next fifteen years catching up. This is that machine, running the software it was actually sold with.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 bare-X kiosk runs Darkstar (C#/mono) emulating a real Xerox 8010 "Dandelion" workstation booting Pilot and ViewPoint 2.0 off the bitsavers 1990 rigid-disk image; streamhost captures the Linux framebuffer exactly like every other tile. Silent — the 8010 has no sound hardware. The X root is a custom 1088×860 mode and the emulator window is moved to (0,−29) so Darkstar’s own System Menu and status bars fall outside the captured frame: what a visitor sees is the Star screen and nothing else. RELATIVE POINTER, and correctly so — Darkstar has no absolute path at all (it differences the host pointer against the display centre and warps it back), so the tile runs the same SH_POINTER=rel / no-tablet / vmport=off device set as c64 and qnx, and X pointer acceleration is turned off in the kiosk so a browser delta arrives 1:1. The golden is the LOGGED-ON ViewPoint user desktop: the 22-minute first boot, the Set Time Utility’s five carriage returns, the desktop creation and the logon all run once at bake time. The software is TIME-LOCKED (Xerox "Product Factoring"): the TOD clock is pinned to 1997-12-01 and must stay there — a 1990 date stalls the boot at MP 7800 indefinitely. See streamhost/docs/BRIDGE.md and docs/guests/star.md.',
   },
   {
     id: 'daybreak', displayName: 'Xerox 6085', year: 1985,

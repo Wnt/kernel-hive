@@ -125,6 +125,7 @@ MANIFEST=(
   "dragon32     |tiles/dragon32.sh             |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)"
   "armeval     |tiles/armeval.sh     |bridge/armeval  |retro    |~12-18m |full   |tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)"
   "daybreak     |tiles/daybreak.sh             |bridge/daybreak |graphical|~8-12m  |full   |tiles/daybreak overlay + golden (Dwarf/Draco → ViewPoint 2.0.5)"
+  "star         |tiles/star.sh                 |bridge/star     |graphical|~5-8m   |partial|tiles/star overlay + golden (Darkstar → Pilot/ViewPoint 2.0)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
