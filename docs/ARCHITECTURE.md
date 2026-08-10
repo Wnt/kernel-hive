@@ -131,6 +131,15 @@ live; `showcase` — poster-only, backend retired; also `experiment` and
 `registry/posters/`, hero image at `spa/public/posters/<tile>/desktop.webp`)
 so an exhibit is never live without something to show for it.
 
+An optional `listing: { state: "hidden", reason, since }` block **soft-hides** an
+exhibit: it drops out of the grid, the 3D hall and their counts while staying a
+full lineup entry — the manifest still carries its row (flagged
+`"listed": false`), so `/os/<id>` still resolves and streams. That is
+discoverability, not access control; anyone with the URL gets in. Use it for a
+dark launch or an exhibit temporarily off the floor, and `enabled: false` (which
+removes the row, and the deep link with it) to retire one. Field reference:
+[`registry/README.md`](../registry/README.md).
+
 Turning a guest into a tile is the subject of
 [`docs/lab/ADD-NEW-OS-PLAYBOOK.md`](lab/ADD-NEW-OS-PLAYBOOK.md) — sourcing
 install media, building a golden image, wiring the registry entry, and the

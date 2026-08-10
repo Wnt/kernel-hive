@@ -26,6 +26,12 @@ export interface VMManifestEntry {
   // Runtime lineup/binding fields. SceneV2 selects its model assembly from
   // archetypeId; the grid uses the same metadata for stream/poster behavior.
   order?: number;
+  /** Soft hide (registry `listing`): false ⇒ this exhibit is NOT announced —
+   *  no grid card, no desk in the 3D hall, not in any count. The row is still
+   *  carried here on purpose, because `/os/:osId` resolves out of it: a hidden
+   *  tile stays deep-linkable and streams exactly as before. Discoverability,
+   *  never access control. Absent ⇒ listed. */
+  listed?: boolean;
   archetypeId?: ArchetypeId;
   transport?: Transport;
   eraLabel?: string;
