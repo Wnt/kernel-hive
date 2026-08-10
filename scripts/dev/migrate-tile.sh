@@ -553,7 +553,21 @@ if [ "$FLIP" -eq 1 ]; then
     printf '  [would] set tiles.%s = "%s" in %s (one-line edit, formatting preserved)\n' \
       "$TILE" "$TARGET_SUITE" "registry/bridge-suites.json"
   else
-    python3 - "$LEDGER" "$TILE" "$TARGET_SUITE" <<'PY' || die "ledger flip failed" 1
+    # LOCKED, because this is a read-modify-write of a file OTHER TILES SHARE.
+    # migrate-wave.sh runs tiles concurrently; two flips completing together
+    # both read the pre-edit text and the second write drops the first tile's
+    # entry — one tile's whole migration silently reverted, with both
+    # invocations reporting success. Found by inspection on 2026-08-10 before it
+    # bit anyone, because wave 3 was deliberately run WITHOUT --flip for exactly
+    # this reason.
+    #
+    # The lock is held on the ledger's own inode, not a sidecar: python rewrites
+    # the same path with open(path,"w"), which truncates in place rather than
+    # replacing the inode, so a waiter blocked on this fd is still blocked on
+    # the file it is about to read.
+    exec 9<"$LEDGER" || die "cannot open $LEDGER for locking" 1
+    flock -w 60 9 || die "another migrate-tile is holding the ledger lock (>60s)" 1
+    python3 - "$LEDGER" "$TILE" "$TARGET_SUITE" <<'PY'
 import re, sys
 path, tile, suite = sys.argv[1:4]
 src = open(path, encoding="utf-8").read()
@@ -564,6 +578,9 @@ if n != 1:
 open(path, "w", encoding="utf-8").write(new)
 print("  flipped %s -> %s" % (tile, suite))
 PY
+    FLIP_RC=$?
+    exec 9<&-
+    [ "$FLIP_RC" -eq 0 ] || die "ledger flip failed" 1
   fi
 fi
 
