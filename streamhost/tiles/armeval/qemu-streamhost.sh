@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'armeval' (VMID 238) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running the SAME purpose-built MAME
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running the SAME purpose-built MAME
 # `bbcb` (MAME 0.289, SUBTARGET=bbcb) the bbcmicro tile ships, but with the ARM
 # Evaluation System fitted to the BBC Micro's Tube — `-tube arm`, the Acorn 1770
 # disc interface, Acorn ADFS 1.30 in sideways socket 3 and Disc 3 of the ARM
@@ -9,7 +9,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/apple2/mpf2/plus4/bbcmicro).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + MAME sitting INSIDE ARM BBC Basic
 # V 1.00, running on the 1986 ARM, with the two `A*` lines that loaded it off
 # the floppy still on screen above the `>` prompt.

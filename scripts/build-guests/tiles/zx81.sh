@@ -3,7 +3,7 @@
 # build-guests/tiles/zx81.sh — build the Sinclair ZX81 (1981) streamhost tile as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running a purpose-built MAME `zx81`
+# GUEST : a captured Debian-13 (trixie) kiosk running a purpose-built MAME `zx81`
 #         emulating a 1 KB ZX81 with the second-revision (`-bios 2nd`) ROM,
 #         resting at the machine's own untouched power-on screen. streamhost
 #         captures the Linux framebuffer + AC97 audio exactly like every other
@@ -45,10 +45,12 @@
 #
 # ---- THE MAME BINARY --------------------------------------------------------
 #   Built from PINNED upstream source (MAME 0.289, commit f34f0250 — the same
-#   commit mpf2 pins) as SUBTARGET=zx81 in the Bookworm chroot, by
-#   scripts/build-guests/emulators/build-mame-zx81.sh. The host's packaged MAME is 0.276
-#   on Debian 13 and cannot be loaded by the Debian 12 bridge; Debian 12's own
-#   package is 0.251. Building keeps ONE MAME provenance across the collection.
+#   commit mpf2 pins) as SUBTARGET=zx81 in the TRIXIE chroot, by
+#   scripts/build-guests/emulators/build-mame-zx81.sh. The host's packaged MAME is
+#   0.276 and the suite's own package would be whatever it froze; neither is a pin
+#   anybody chose. Building keeps ONE MAME provenance across the collection. Since
+#   the 2026-08-10 migration guest and host are both Debian 13, so the chroot is
+#   about reproducibility rather than the ABI gap it used to bridge.
 #   Unlike mpf2 there is NO patch: `-listxml zx81` reports status="good", so
 #   this driver never raises MAME's full-screen red "THIS SYSTEM DOESN'T WORK"
 #   panel. That is asserted from the shipped binary's own -listxml below, and

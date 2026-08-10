@@ -399,10 +399,22 @@ step "5/9  build: BRIDGE_SUITE=trixie $BUILDER_REL --force"
 echo "  Staged under $STAGE so the builder's own lib/bridge-base-for"
 echo "  and the ledger resolve relatively. Log: $BUILD_LOG"
 
+# Some builders read HOST-SIDE SIDECARS kept next to the tile's launcher rather
+# than in build-guests/: zx81.sh takes its readiness predicate and paced QMP
+# typist from ../../../streamhost/tiles/zx81, as do win95/win311/indyr4400. Stage
+# those too, or the builder dies 20 s in on `cd: .../streamhost/tiles/<tile>: No
+# such file or directory` (zx81, 2026-08-10), which reads like a bad tile.
+LAUNCHER_SRC="$REPO/streamhost/tiles/$TILE"
+STAGE_LAUNCHER=0
+[ -d "$LAUNCHER_SRC" ] && STAGE_LAUNCHER=1
+
 if [ "$DRY" -eq 1 ]; then
   printf '  [would] rsync -a --delete %s/scripts/build-guests/ %s:%s/scripts/build-guests/\n' \
     "$REPO" "$LAB" "$STAGE"
   printf '  [would] rsync -a %s %s:%s/registry/bridge-suites.json\n' "$LEDGER" "$LAB" "$STAGE"
+  [ "$STAGE_LAUNCHER" -eq 1 ] &&
+    printf '  [would] rsync -a %s/ %s:%s/streamhost/tiles/%s/   (host-side sidecars)\n' \
+      "$LAUNCHER_SRC" "$LAB" "$STAGE" "$TILE"
   printf '  [would] ssh %s: cd %s && BRIDGE_SUITE=trixie setsid bash %s --force >%s 2>&1\n' \
     "$LAB" "$STAGE" "$BUILDER_REL" "$BUILD_LOG"
   printf '  [would] poll every 20s, printing new log lines, up to %ss\n' "$BUILD_TIMEOUT"
@@ -412,13 +424,18 @@ else
   # died on `mkdir "$STAGE/scripts/build-guests" failed: No such file or directory`
   # — after step 3 had already moved the live overlay aside, so every run ended in
   # a rollback that looked like a build failure.
-  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry $(printf '%q' "$STAGE")/scripts/build-guests" ||
+  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry $(printf '%q' "$STAGE")/scripts/build-guests $(printf '%q' "$STAGE")/streamhost/tiles" ||
     fail "cannot create the staging dir $STAGE"
   rsync -a --delete -e "ssh ${SSH_OPTS[*]}" \
     "$REPO/scripts/build-guests/" "$LAB:$STAGE/scripts/build-guests/" ||
     fail "staging rsync of build-guests failed"
   rsync -a -e "ssh ${SSH_OPTS[*]}" "$LEDGER" "$LAB:$STAGE/registry/bridge-suites.json" ||
     fail "staging rsync of the ledger failed"
+  if [ "$STAGE_LAUNCHER" -eq 1 ]; then
+    rsync -a -e "ssh ${SSH_OPTS[*]}" \
+      "$LAUNCHER_SRC/" "$LAB:$STAGE/streamhost/tiles/$TILE/" ||
+      fail "staging rsync of the host-side sidecars failed"
+  fi
 
   log "launching the build (detached, logged)"
   box_build_start "$STAGE" "$BUILDER_REL" "$BUILD_LOG" "BRIDGE_SUITE=$TARGET_SUITE" ||

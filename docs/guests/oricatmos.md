@@ -1,12 +1,13 @@
 # Oric Atmos (1984) — gallery tile notes (udp/54131)
 
-**Guest:** a captured **Debian 12 x86_64 kiosk** running **MAME's `orica`
+**Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **MAME's `orica`
 driver**, emulating an **Oric Atmos** at its own power-on screen. An
 **"emulator bridge"** tile — streamhost captures the Linux framebuffer + AC97
 audio exactly like every other tile. See **`streamhost/docs/BRIDGE.md`**.
 
-**Shared base:** `/data/vms/bridge/bridge-base.qcow2` (frozen, read-only; the
-tile is a thin qcow2 overlay on it).
+**Shared base:** `/data/vms/bridge/bridge-base-trixie.qcow2` (frozen, read-only;
+the tile is a thin qcow2 overlay on it — migrated off the bookworm base on
+2026-08-10, wave 2 of [`../lab/BRIDGE-TRIXIE-MIGRATION.md`](../lab/BRIDGE-TRIXIE-MIGRATION.md)).
 **Build script (tile):** `scripts/build-guests/tiles/oricatmos.sh` — thin overlay +
 ROM staging + kiosk `launch.sh` + quiet console + golden bake + a
 framebuffer-asserted keyboard proof, fully automated.
@@ -52,18 +53,21 @@ The Oric-1 is a placard on this tile's poster, not a second exhibit.
 
 ## The emulator, and why it is built rather than installed
 
-The emulator runs **inside the Debian 12 guest**, so the binary must be
-Bookworm-ABI. Neither packaged option works:
+The emulator runs **inside the guest**, and a romset is only meaningful against
+**one** binary — so the binary is pinned rather than installed. When this tile
+was added the guest was Debian 12 and the argument was also an ABI one; since
+the 2026-08-10 migration guest and host are both Debian 13, and what survives is
+the pin. Neither packaged option works:
 
 | Candidate | Version | Why not |
 |---|---|---|
-| lab host `/usr/games/mame` | 0.276 (Debian **trixie**) | wrong glibc for the Bookworm guest |
-| guest `apt install mame` | 0.251 (Bookworm) | four years old; not the latest stable |
-| `bookworm-backports` | — | has no `mame` package at all (checked 2026-08-09) |
+| lab host `/usr/games/mame` | 0.276 (Debian **trixie**) | not the pin the romset was assembled against |
+| guest `apt install mame` | whatever the suite froze | not a version anybody chose |
+| suite backports | — | has no `mame` package at all (checked 2026-08-09) |
 
 So the tile does what `mpf2` does: **MAME 0.289** (tag `mame0289`, commit
 `f34f02505e32c1993c6a782b6814232cbfc74e36` — the latest stable release, and the
-same commit the MPF-II tile ships), built in the shared Bookworm chroot with
+same commit the MPF-II tile ships), built in the shared **trixie** chroot with
 `SUBTARGET=oricatmos SOURCES=src/mame/tangerine/oric.cpp`, which keeps the
 binary at ~70 MB. **No patch is applied** — `mpf2` needs one only to suppress
 MAME's red "system doesn't work" panel, and `orica` does not nag (below).
@@ -88,9 +92,9 @@ The gate is instead: **ask the shipped binary itself.**
 ```
 
 and require that sha1 to equal the staged file's. That survives a MAME version
-bump, where a filename does not. Cross-checked here: the guest's Bookworm 0.251,
-the host's trixie 0.276 and the shipped 0.289 all demand the same sha1 for
-`orica:ver11`.
+bump, where a filename does not. Cross-checked here across three releases:
+bookworm's 0.251, trixie's 0.276 and the shipped 0.289 all demand the same sha1
+for `orica:ver11`.
 
 `-bios ver11` is **pinned explicitly** in the launcher rather than left to
 MAME's default. That is the dragon32 lesson from the same recon: with slot and

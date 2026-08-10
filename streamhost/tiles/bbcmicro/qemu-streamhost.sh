@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'bbcmicro' (VMID 232) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running a purpose-built MAME `bbcb`
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running a purpose-built MAME `bbcb`
 # (MAME 0.289, SUBTARGET=bbcb) emulating an Acorn BBC Micro Model B (1981) with
 # MOS 1.20, BBC BASIC II and the Acorn disc interface's DNFS 1.20 — fullscreen
 # with aspect correction on the bridge base's stock 1024x768 X root, so the
@@ -9,7 +9,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/apple2/mpf2/plus4/pdp11).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + MAME at the machine's UNTOUCHED
 # power-on banner and `>` BASIC prompt.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):

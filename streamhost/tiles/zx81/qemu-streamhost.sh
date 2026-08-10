@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'zx81' (VMID 231) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running MAME 0.289 (SUBTARGET=zx81)
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running MAME 0.289 (SUBTARGET=zx81)
 # emulating a Sinclair ZX81 (1981) with the second-revision ROM and the 1 KB of
 # memory the machine was sold with, resting at its own untouched power-on
 # screen — a white field with one inverse-video `K` cursor and nothing else.
@@ -11,7 +11,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/apple2/atarist/amiga/mpf2).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + MAME at the K cursor.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):
 #     no Linux boot, no console text, no X startup ever becomes visible.

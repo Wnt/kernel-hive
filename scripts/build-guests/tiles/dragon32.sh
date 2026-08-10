@@ -3,7 +3,7 @@
 # build-guests/tiles/dragon32.sh — build the Dragon 32 (1982) streamhost tile as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 X kiosk running MAME's `dragon32` driver, resting
+# GUEST : a captured Debian-13 (trixie) X kiosk running MAME's `dragon32` driver, resting
 #         at the machine's own untouched power-on screen.
 # TYPE  : "emulator bridge" tile, the same shape as mpf2 — overlay + per-tile
 #         /etc/bridge/launch.sh + an INTERNAL qcow2 `golden` snapshot
@@ -68,8 +68,8 @@
 #   A whole-frame histogram would not do: both screens are the same two greens.
 #
 # ---- MAME BINARY PROVENANCE -------------------------------------------------
-#   Debian 12 packages MAME 0.251 and the lab host's 0.276 is not a Debian 12
-#   binary, so this tile ships MAME 0.289 built in the Bookworm chroot by
+#   Neither the suite's packaged MAME nor the lab host's 0.276 is a pin anybody
+#   chose, so this tile ships MAME 0.289 built in the TRIXIE chroot by
 #   scripts/build-guests/emulators/build-mame-dragon32.sh — the same upstream commit mpf2
 #   ships, so the gallery runs one MAME version and not two. Unlike mpf2's it is
 #   PRISTINE upstream: dragon32 is `<driver status="good" emulation="good">` and
@@ -543,7 +543,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
   rm -f /tmp/dragon32-mame
   guest "ldd /opt/dragon32/mame/dragon | grep -q 'not found' &&
     { ldd /opt/dragon32/mame/dragon | grep 'not found'; exit 1; } || true" ||
-    die "the pinned MAME binary has unresolved libraries in the Debian 12 kiosk"
+    die "the pinned MAME binary has unresolved libraries in the kiosk"
   # Assemble the romset in the guest from the staged blob. One member, named as
   # the shipped binary's -listxml says, zipped as MAME's loader expects.
   guest "cat > /opt/dragon32/roms/d32.rom && chmod 644 /opt/dragon32/roms/d32.rom" <"$ROM"

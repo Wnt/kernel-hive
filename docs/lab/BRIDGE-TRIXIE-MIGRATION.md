@@ -125,6 +125,74 @@ tile dir, which a `--force` rebuild is entitled to clear.
 it by name. What this wave learned that bears on it is in the note below the
 wave table.
 
+### Wave 2: five of seven landed, and the chroot's job changed (2026-08-10)
+
+`bbcmicro`, `armeval`, `zx81`, `dragon32` and `oricatmos` are **migrated
+mechanically** — overlays rebuilt on `bridge-base-trixie.qcow2`, goldens re-baked
+by their own builders and `loadvm`-verified, `/etc/bridge/suite` reporting
+`trixie` in each guest, and each tile's BEFORE/AFTER frames captured for a human
+to compare. `mpf2` and `kc854` were attempted, **failed and were rolled back**;
+they stay bookworm, which is the correct state for them (see below).
+
+All six MAME binaries were rebuilt in `/data/vms/soltest/trixie-chroot` first,
+one at a time. **ccache is what made the wave cheap, and the measurement is the
+headline:** the first build (`bbcb`, the widest SOURCES set) ran 16 min at a
+59.1% hit rate and grew the cache 82 → 110 MB; every later build reused it —
+`mpf2` 99.7%, `zx81` **100.0%** (1113/1113), `dragon32` 96.0%, `kc854` 98.9%,
+`oricatmos` **100.0%** (1204/1204). Cross-tree hit rate is therefore not a hope,
+it is 96-100% once one tree has been built, and the wave's cost assumption holds
+for every remaining MAME tile.
+
+**The chroot survives the migration, but its argument does not.** It existed
+because a host-built binary linked against glibc 2.41 dies in a Debian 12 guest.
+Guest and host are both Debian 13 for these tiles now, so what the chroot buys is
+reproducibility and a pinned toolchain — the per-guest docs and builder headers
+say so rather than repeating the ABI story.
+
+**`mpf2` and `kc854` — the same shape, and it is not the suite.** Both builders
+end with `stop_qemu; boot_tile; <framebuffer predicate>; guest "pgrep …"`, and
+both died there as `MAME exited after cold reset/boot`. Two layers were wrong and
+only the first is fixed:
+
+- The probe had **no wait for SSH** after that second boot (the first boot has
+  one). On trixie it connected into a reset or a timeout, so a transport failure
+  was reported as a claim about the emulator. Both builders now call a shared
+  `wait_for_ssh` there.
+- With the wait in place the probe connects and **genuinely finds no MAME** —
+  even though the same build had just accepted the frame (kc854: CAOS ready,
+  bright 27868, nag-red 0) and, on mpf2, had drawn the real MPF-II banner and `>`
+  prompt on its FIRST cold boot. So the emulators run on trixie; something about
+  the SECOND cold boot does not. That is per-tile work on a soltest clone, not a
+  chroot swap, and it is why these two are not in the table above.
+
+`mpf2` has a second, independent defect the migration exposed: its readiness
+predicate accepts any warning-free frame with more than 100 non-black pixels, so
+a GRUB console passes it. On trixie it returned while the screen still read
+`Loading Linux 6.12.101+deb13-amd64 ...`. It needs to assert the MPF-II's own
+screen, the way `bbcmicro`/`dragon32`/`zx81` assert theirs.
+
+Three defects in `scripts/dev/migrate-tile.sh` were found and fixed by running
+it seven times; the first was destructive:
+
+- **The poll read a line count as an exit code.** The status trailer was
+  separated from the log tail by `echo '---'`, and a poll whose `tail` emitted
+  nothing put that sentinel at offset 0, so neither expansion matched: the driver
+  announced `builder exited 19` — the log's line count — and rolled back a
+  perfectly healthy build 21 s before it baked its golden. Any build that goes
+  quiet for one 20 s interval triggers it, which every bridge builder does while
+  it waits for a guest. Fixed with a sentinel a log cannot contain, printed with
+  a leading newline, plus a numeric assertion on the parsed length.
+- **The rollback raced the builder it had abandoned.** It killed the tile's QEMU
+  but not the detached builder, so on bbcmicro the surviving builder's next
+  `savevm golden` reached the *production* QEMU through the recreated `qmp.sock`
+  and re-baked the restored tile's golden. It landed on the right frame; that was
+  luck. The builder's setsid process group is now recorded and terminated first.
+- **Staging was incomplete in two ways** — the remote `mkdir -p` did not create
+  the rsync destination's parent (every fresh per-tile stage died on the first
+  rsync), and builders that read host-side sidecars from
+  `streamhost/tiles/<tile>/` were never given them, so `zx81` died on
+  `cd: …/streamhost/tiles/zx81: No such file or directory`.
+
 The upstream image exists and the naming substitution is exact — the URL is the
 bookworm one with `debian-12-` → `debian-13-`:
 
@@ -415,7 +483,8 @@ rather than moving to "done".
 | `c128`, `vic20`, `plus4`, `pet2001`, `cbm8032`, `cbm2` | **DONE (wave 4).** VICE from source, unchanged (see the VICE note below — the apt package is a trap, not a shortcut). gcc-14's VICE 3.9 is behaviourally identical: every tile's own colour/ink predicate returned the bookworm numbers. |
 | `c64` | **NOT attempted.** Same VICE story, but its overlay is detached, so it is a full rebuild rather than a rebase and `migrate-tile.sh` refuses it by name. |
 | `amstradcpc` | `cap32` from source; deps fine. |
-| `bbcmicro`, `armeval`, `mpf2`, `zx81`, `dragon32`, `kc854`, `oricatmos` | The MAME-in-chroot tiles (six `build-mame-*.sh` builders between them). The binaries already load against a newer glibc; migrating them is just moving the build to the trixie chroot. |
+| `bbcmicro`, `armeval`, `zx81`, `dragon32`, `oricatmos` | **DONE (wave 2).** The MAME-in-chroot tiles (six `build-mame-*.sh` builders between them). Moving the build to the trixie chroot was exactly as mechanical as predicted, and ccache made the six rebuilds cost roughly one. |
+| `mpf2`, `kc854` | Same family, **not migrated**: attempted in wave 2 and rolled back. Their emulators render correctly on trixie; their builders' second-cold-boot liveness probe does not pass. Per-tile work, see wave 2 above. |
 | `alto` | Self-contained .NET publish. Neither distro end constrains it. |
 
 `indyr4400` is in the ledger and its builder takes its chroot from the suite
@@ -530,8 +599,8 @@ before any expensive tile depends on it.
 | Wave | Tiles | Rationale |
 |---|---|---|
 | **0** | build `bridge-base-trixie.qcow2`; boot it once, bare | The first real runtime evidence for anything on this page. Confirms the e1000/`linux-image-amd64` and static-IP gotchas from BRIDGE.md §1 still hold on trixie *before* a tile depends on them. |
-| **1** | `pdp11` ✅, `gt40` ✅, `atarist` ✅, `decos` ✅ | Pure source-SIMH plus one apt emulator. Smallest blast radius. **All four landed 2026-08-10**; `decos` needed a second attempt after an unrelated builder bug, and is the tile that proved the driver's own two bugs. |
-| **2** | the MAME-in-chroot tiles: `bbcmicro`, `armeval`, `mpf2`, `zx81`, `dragon32`, `kc854`, `oricatmos` | Mechanical chroot swap. Retires the bookworm chroot's biggest consumer. |
+| **1** | `pdp11` ✅, `gt40` ✅, `atarist` ✅, `decos` ✅ | Pure source-SIMH plus one apt emulator. Smallest blast radius. **All four landed 2026-08-10**; `decos` needed a second attempt after an unrelated builder bug, and is the tile that first exposed the driver's own bugs. |
+| **2** | `bbcmicro` ✅, `armeval` ✅, `zx81` ✅, `dragon32` ✅, `oricatmos` ✅, `mpf2` ↩︎, `kc854` ↩︎ | The MAME-in-chroot tiles. **Five landed 2026-08-10** and the chroot swap was indeed mechanical; ccache carried **96-100% of every build after the first** (which was 59.1%), so six MAME builds cost about one. `mpf2` and `kc854` rolled back on a second-cold-boot failure that is theirs, not the suite's. The bookworm chroot's biggest consumer is mostly retired, but it cannot be deleted until those two follow. |
 | **3** | `amstradcpc`, `alto`, `amiga` | Source builds and the .NET publish; `amiga` carries the explicit `libgl1-mesa-dri` fix and the black-screen check. |
 | **4** | `c128` ✅, `vic20` ✅, `plus4` ✅, `pet2001` ✅, `cbm8032` ✅, `cbm2` ✅; `c64` ⏸ | **Six landed 2026-08-10.** Identical procedure ×6, no per-tile emulator build. `c64` is NOT part of it and is not a seventh repeat — see below. |
 | **5** | `daybreak`, `nextstep`, `apple2` | Real per-tile work with real runtime risk. `apple2` needs a genuine framebuffer + GEOS-mouse re-verification under sdl12-compat. |

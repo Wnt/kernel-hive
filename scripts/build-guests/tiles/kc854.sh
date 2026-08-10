@@ -476,18 +476,31 @@ if [ ! -f "$OVERLAY" ]; then
   NEW_OVERLAY=1
 fi
 
-if [ "$NEW_OVERLAY" -eq 1 ]; then
-  boot_tile
+# wait_for_ssh — block until the guest answers on its provisioning port. The
+# inline copy of this loop already guarded the FIRST boot; the second cold boot
+# had none, and probed SSH immediately. On trixie that probe hit a reset or a
+# closed port and the build died as "MAME exited after cold boot" — a message
+# about the emulator, produced by a failure of the transport (2026-08-10).
+#
+# WHAT THIS DOES NOT FIX, and the reason kc854 is still declared bookworm: with
+# the wait in place the connection succeeds and `pgrep -x kc85` then genuinely
+# finds no MAME, on a boot whose framebuffer this script had just accepted as
+# CAOS-ready (bright 27868, nag-red 0). So there is a real second-cold-boot
+# regression here, and it needs its own investigation on a soltest clone — see
+# docs/lab/BRIDGE-TRIXIE-MIGRATION.md, wave 2. This helper only makes the
+# failure honest about which layer failed.
+wait_for_ssh() {
   log "waiting for bridge SSH"
-  ssh_ready=0
   for _ in $(seq 1 40); do
-    if guest true 2>/dev/null; then
-      ssh_ready=1
-      break
-    fi
+    if guest true 2>/dev/null; then return 0; fi
     sleep 3
   done
-  [ "$ssh_ready" -eq 1 ] || die "bridge SSH did not become ready"
+  die "bridge SSH did not become ready"
+}
+
+if [ "$NEW_OVERLAY" -eq 1 ]; then
+  boot_tile
+  wait_for_ssh
   # The distro package is installed for its SDL/X11 runtime dependencies only;
   # its own MAME binary is never launched, because the pinned build replaces it.
   guest "export DEBIAN_FRONTEND=noninteractive
@@ -518,6 +531,7 @@ stop_qemu
 boot_tile
 sleep 8
 wait_for_caos ready-before-golden
+wait_for_ssh
 guest "pgrep -x kc85 >/dev/null" || die "MAME exited after cold boot"
 guest "awk '/MemAvailable/ {print \"guest MemAvailable: \" \$2 \" kB\"}' /proc/meminfo"
 bake_golden

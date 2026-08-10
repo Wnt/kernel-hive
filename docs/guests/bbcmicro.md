@@ -16,7 +16,7 @@ MAME driver — see *The ARM angle* below for the division of labour.
 | Slot / UDP | 129 / 54129 |
 | VMID label / bridge SSH | 232 / `127.0.0.1:5832` (key `/data/vms/bridge/bridge_key`) |
 | Emulator | MAME **0.289** driver `bbcb`, purpose-built subtarget |
-| Guest | Debian 12 X kiosk on a thin overlay of the frozen bridge base |
+| Guest | Debian 13 (trixie) X kiosk on a thin overlay of the trixie bridge base |
 | Archetype | `beige-tower-crt` (fallback; no bespoke Acorn archetype exists) |
 | Builder | `scripts/build-guests/tiles/bbcmicro.sh` (+ `build-mame-bbcb.sh`) |
 | Credentials | none — the machine has no login (`guest/bbcmicro` is a placeholder) |
@@ -26,15 +26,22 @@ MAME driver — see *The ARM angle* below for the division of labour.
 `scripts/build-guests/emulators/build-mame-bbcb.sh` builds tag **`mame0289`**
 (`f34f02505e32c1993c6a782b6814232cbfc74e36` — the newest stable tag when this
 tile was added, confirmed with `git ls-remote --tags`; the same release the mpf2
-tile ships) inside the Bookworm chroot at
-`/data/vms/soltest/bookworm-chroot`, with `SUBTARGET=bbcb
+tile ships) inside the **trixie** chroot at
+`/data/vms/soltest/trixie-chroot`, with `SUBTARGET=bbcb
 SOURCES=src/mame/acorn`.
+
+Migrated bookworm → trixie on 2026-08-10 (wave 2 of
+[`../lab/BRIDGE-TRIXIE-MIGRATION.md`](../lab/BRIDGE-TRIXIE-MIGRATION.md)). The
+chroot's job changed with it: guest and host are both Debian 13 now, so it is no
+longer matching an ABI the host cannot produce, it is only keeping the build
+reproducible and the pin honest.
 
 Three reasons it is not simply apt's MAME:
 
-- the lab host is Debian 13 and its `/usr/games/mame` is 0.276, linked against a
-  newer glibc/libstdc++ than the Debian 12 bridge guest;
-- the bridge base's own `apt install mame` would be an unpinned Bookworm freeze;
+- the lab host's own `/usr/games/mame` is 0.276, and the romset here is
+  assembled against **this** binary's `-listxml`, not against whatever the
+  distro froze;
+- the bridge base's own `apt install mame` would be an unpinned suite freeze;
 - MAME moves ROM requirements between versions, so a romset is only meaningful
   against **one** binary. The builder therefore asks the *shipped* binary
   (`bbcb -listxml bbcb`) which entries it wants and asserts the staged SHA-1s
