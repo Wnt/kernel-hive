@@ -3,7 +3,7 @@
 # build-guests/tiles/vic20.sh — build the Commodore VIC-20 (1980) streamhost tile as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running VICE `xvic` emulating a PAL VIC-20
+# GUEST : a captured Debian-13 (trixie) kiosk running VICE `xvic` emulating a PAL VIC-20
 #         that boots its ROM straight to the "**** CBM BASIC V2 ****" screen.
 #         streamhost captures the Linux framebuffer + AC97 audio exactly like
 #         every other bridge tile (streamhost/docs/BRIDGE.md).

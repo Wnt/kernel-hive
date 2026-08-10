@@ -1,13 +1,13 @@
 # Commodore VIC-20 (PAL) — gallery tile notes (udp/54085)
 
-**Guest:** a captured **Debian 12 x86_64 kiosk** running **VICE `xvic`**,
+**Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **VICE `xvic`**,
 emulating a **PAL Commodore VIC-20** that boots its ROM to the **CBM BASIC V2**
 `READY.` prompt. An **"emulator bridge"** tile — streamhost captures the Linux
 framebuffer + AC97 audio (the VIC-I sound routed through ALSA) exactly like
 every other tile. See **`streamhost/docs/BRIDGE.md`**.
 
-**Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built
-by `scripts/build-guests/lib/bridge-base.sh`). It already contains the whole VICE
+**Shared base:** `/data/vms/bridge/bridge-base-trixie.qcow2` (read-only backing; built
+by `scripts/build-guests/lib/bridge-base.sh --suite trixie`). It already contains the whole VICE
 family, `xvic` included — the base builds VICE from source for the `c64` tile
 and `make install` ships every emulator in the suite.
 **Build script (tile):** `scripts/build-guests/tiles/vic20.sh` — thin overlay + kiosk

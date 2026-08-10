@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'cbm8032' (VMID 225) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running VICE `xpet -model 8032`
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running VICE `xpet -model 8032`
 # emulating a Commodore CBM 8032 (1980) — the 80-column business PET — resting
 # at its own untouched power-on screen, "*** commodore basic 4.0 ***", green on
 # black, drawn double-size (-CRTCdsize) on a 1600x1200 X root. That root is the
@@ -11,7 +11,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/vic20/plus4/apple2/atarist/
 # amiga/mpf2). The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared
-# base /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden'
+# base /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden'
 # snapshot (full RAM+device state) of X (-nocursor) + xpet at the BASIC 4.0
 # READY prompt.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):

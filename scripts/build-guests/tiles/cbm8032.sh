@@ -3,7 +3,7 @@
 # build-guests/tiles/cbm8032.sh — build the Commodore CBM 8032 (1980) streamhost tile
 # as a thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running VICE `xpet -model 8032`, emulating
+# GUEST : a captured Debian-13 (trixie) kiosk running VICE `xpet -model 8032`, emulating
 #         the 80-column business PET, which boots its ROM straight to
 #         "*** commodore basic 4.0 ***" in green on black.
 # TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +

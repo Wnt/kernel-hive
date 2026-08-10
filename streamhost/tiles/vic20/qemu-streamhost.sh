@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'vic20' (VMID 221) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running VICE `xvic` emulating a PAL
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running VICE `xvic` emulating a PAL
 # Commodore VIC-20 (1980) that boots its ROM straight to "**** CBM BASIC V2 ****
 # / 3583 BYTES FREE / READY." — blue on white paper inside a cyan border, drawn
 # double-size on an 800x600 X root (the smallest advertised mode that contains
@@ -8,7 +8,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/apple2/atarist/amiga/mpf2).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + xvic at the BASIC READY prompt.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):
 #     no Linux boot, no console text, no X startup ever becomes visible.

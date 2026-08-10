@@ -1,12 +1,12 @@
 # Commodore Plus/4 (PAL) — gallery tile notes (udp/54086)
 
-**Guest:** a captured **Debian 12 x86_64 kiosk** running **VICE `xplus4`**,
+**Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **VICE `xplus4`**,
 emulating a **PAL Commodore Plus/4** at its power-on screen, one keypress from
 the **3-plus-1** office suite that lives in the machine's ROM. An **"emulator bridge"** tile — streamhost
 captures the Linux framebuffer + AC97 audio exactly like every other tile. See
 **`streamhost/docs/BRIDGE.md`**.
 
-**Shared base:** `/data/vms/bridge/bridge-base.qcow2` — already contains the
+**Shared base:** `/data/vms/bridge/bridge-base-trixie.qcow2` — already contains the
 whole VICE family.
 **Build script (tile):** `scripts/build-guests/tiles/plus4.sh` — thin overlay + kiosk
 `launch.sh` + ROM repair + quiet console + golden bake + a two-step

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'pet2001' (VMID 224) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running VICE `xpet -model 2001`
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running VICE `xpet -model 2001`
 # emulating the ORIGINAL Commodore PET 2001 (1977) — 6502, 8 KB RAM, 40x25
 # blue-white characters on black, no CRTC, chiclet graphics keyboard — at its
 # own untouched power-on screen ("*** COMMODORE BASIC *** / 7167 BYTES FREE /
@@ -11,7 +11,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/vic20/plus4/apple2/atarist).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + xpet at that power-on screen.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):
 #     no Linux boot, no GRUB text, no X startup ever becomes visible.
