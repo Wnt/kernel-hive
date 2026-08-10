@@ -242,9 +242,11 @@ structurally: every builder now passes `-o UserKnownHostsFile=/dev/null`. A
 is faster does not hold on this hardware**, for three reasons:
 
 1. **Recompiler vs interpreter.** MAME's MIPS3 core is a native x86-64 DRC, on
-   by default. Iris's JIT is a separate cargo feature we do not build, and
-   upstream **mothballed** it. `lightning` only disables breakpoints; `rex-jit`
-   is graphics-only — **neither is a CPU fast path.**
+   by default. Iris runs an **interpreter**: `lightning` only disables
+   breakpoints, `rex-jit` is graphics-only — **neither is a CPU fast path.**
+   Iris's v1 tiered JIT is mothballed, and its replacement `jitv2` is a cargo
+   feature we do not enable. **We were never missing it** — jitv2 is commit
+   `c340118`, an *ancestor* of our pin — and enabling it **wedges IRIX** (§7.1).
 2. **The upstream claim was measured on an Apple M2.** This box is a Xeon
    D-2146NT @ 2.3 GHz. Our HUD reads **18.5 MIPS**, below upstream's own ~30 MIPS
    interpreter ceiling.
@@ -259,14 +261,55 @@ we are pinned one commit before a timing fix.
 
 **No flag closes this gap.** If Iris must match MAME it has to stop being a
 bridge tile and become an `x11-runtime` host tile capturing via `shm`, like
-`irix`. A tuning pass (jitv2, `idle-pause`, `-smp 8`, the pin bump) was in
-flight at write time.
+`irix`.
 
 Benchmark caveat for whoever picks this up: **MAME runs throttled** (≤100% of a
 real Indy) while Iris runs free, so a raw ratio flatters MAME. The repo has a
-mature MAME measurement rig and **nothing** for Iris — structural, not an
-oversight (no scripting hook, no exec channel into Iris's IRIX, no network).
-The portable substitute is the guest's own clock: `Δguest_s / Δhost_s`.
+mature MAME measurement rig and **nothing** for Iris. The portable substitute is
+the guest's own clock: `Δguest_s / Δhost_s`.
+
+### 7.1 The tuning pass: concluded, nothing landed
+
+Every lever broke the tile or came out neutral. `indyr4400` is rolled back and
+verified byte-identical to its pre-session state (launcher `diff`-clean, guest
+binary md5 match, service active, framebuffer at the golden desktop).
+
+| Lever | Result |
+|---|---|
+| `jitv2` + `idle-pause` @`43d2715` | **IRIX never boots.** Bare blue root, `REX3 GO` frozen. `IRIS_NO_IDLE=1` does not save it |
+| `-smp 4 → 8` | **Tile down.** vCPU count is part of the `golden` vmstate, so `-loadvm golden` fails and systemd restart-loops |
+| Pin bump to `43d2715` alone | Boots clean, **no win** — 23.65 vs 25.82 MIPS, neutral-to-slightly-worse |
+
+Three findings worth keeping:
+
+- **The wedge is diagnosable.** On the jitv2 arm, `CP0 Status: 00000081`
+  (`IM:________`, every interrupt masked) with `Cause: IP7` latched asserted and
+  undeliverable. Upstream's own `jit-v2-design.md` carries an open audit item
+  that names *our exact build combination*: `lightning` enables `opcodefusion`,
+  so the interpreter samples in fused units while jitv2 samples per-instruction,
+  "not yet reconciled". This is upstream-experimental, not our misconfiguration.
+- **With `idle-pause` active the MIPS counter is a liar.** It read a beautiful
+  `99.97 MIPS` while the `MIPS-CPU` thread sat at **1.5% CPU** — that is the
+  nominal clock advancing while the thread is parked. Any Iris benchmark must be
+  fixed-work wall-clock, never the HUD.
+- **`-smp 8` is worth retrying properly.** The guest genuinely demands ~400% on
+  4 vCPUs (iris main 99.9%, REX3 ~99%, MIPS-CPU ~90-99%, 4× llvmpipe ~28%). It
+  is the one untested hypothesis with real headroom — but it needs a cold boot
+  and a fresh `savevm golden` at the new vCPU count, not a launcher edit.
+
+### 7.2 An exec channel into IRIX exists after all
+
+The claim above that there is "no exec channel into Iris's IRIX" was **wrong**.
+Iris exposes the Indy's two SCC serial ports as telnet listeners on
+`127.0.0.1:8880/8881` inside the kiosk, and **IRIX runs a getty on `:8881`**.
+`iexec.py` drives it and returns real stdout plus the guest's exit code —
+preserved at [`streamhost/guest-agents/irix-iris/`](../../streamhost/guest-agents/irix-iris/).
+
+**It is not durable.** The kiosk copy was never in the golden; a `systemctl
+restart` deleted it (measured — the file survived earlier only because nothing
+had reset the tile since the push). It is also **single-client**: one background
+poller on `:8881` silently starves every other user. Cutover notes are in that
+README; it is a behaviour change on a live exhibit, so it was left as a decision.
 
 ---
 
@@ -295,6 +338,14 @@ The portable substitute is the guest's own clock: `Δguest_s / Δhost_s`.
 7. **`amiga.golden_snapshot` is `null`** in the harvested matrix — a transient
    QMP probe artifact from a busy fleet, not a missing golden. A `labctl gen`
    with the fleet quiet clears it.
+8. **The IRIX-over-serial exec channel is not cut over** (§7.2). `iexec.py` is
+   in the repo but not in any golden, so it must be hand-pushed. Baking it into
+   the kiosk overlay from the tile builder is the repo-native fix; changing what
+   `labctl exec indyr4400` *means* is the decision that gates it.
+9. **`indyr4400`'s matrix `notes` are now wrong** — they assert the Indy "is
+   driven only through the framebuffer + PS/2". True when written, false since
+   §7.2. Fix with the registry source + `make tile-registry-generate`, never by
+   hand-editing the generated matrix.
 
 ---
 
