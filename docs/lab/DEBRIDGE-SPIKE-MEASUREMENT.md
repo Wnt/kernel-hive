@@ -115,6 +115,74 @@ Publish alongside: emulated speed per arm, MAME and streamhost CPU per arm, and
 the `SH_ENC_PROFILE` hop split, so a delta can be attributed to capture-wait vs
 encode vs the rest rather than asserted.
 
+## Status, and the CPU ceiling (2026-08-10)
+
+Both arms are up and re-runnable — rig and bring-up commands in
+[`scripts/debridge-spike/README.md`](../../scripts/debridge-spike/README.md).
+**The latency campaign has NOT been run.** What follows is everything measured
+before it.
+
+**Both arms publish a pixel-identical frame.** Same GEM desktop, same 1024x768,
+`frame-compare.py` verdict `UNCHANGED — not one pixel differs` (0 of 786,432).
+The one binary is literally one binary: sha256 `0f08379e…` on the host and
+inside the kiosk guest at the time of that capture.
+
+**A `drawshm` frame reaches the browser through streamhost.** `direct-stream-proof.mjs`
+in Chrome on CT950 against arm B: `1024x768`, three decoded frames, 98.57%
+non-black, `decodeError: ""`. So the Rust consumer's seqlock retry, damage diff
+and geometry remap all work against this producer, which was the spike's biggest
+unknown.
+
+**CPU at matched resolution — the cheap ceiling.** Idle GEM desktop, both arms
+throttled, `-frameskip 0`, one streamhost each, no viewer. Interleaved A/B/A/B,
+3 rounds x 20 s, sampled from `/proc/<pid>/stat` with each pid resolved through
+`/proc/<pid>/exe`. Load 4.79–6.34 throughout; package 2326–2425 MHz.
+
+| | arm A (bridge) | arm B (host-native) |
+|---|---:|---:|
+| emulator | QEMU+kiosk+MAME **120.0 / 120.0 / 120.6** | MAME **92.9 / 92.5 / 92.1** |
+| streamhost | **26.7 / 26.1 / 25.9** | **9.1 / 9.1 / 9.0** |
+| total, % of one core | **146.8 / 146.2 / 146.6** | **102.0 / 101.6 / 101.1** |
+
+Within-round paired delta (A − B): **44.8 / 44.6 / 45.5** points of a core.
+Arm B costs **69%** of arm A for the same published surface. The saving splits
+roughly two-to-one: ~28 points on the emulator side (the bridge's own QEMU/X
+overhead) and ~17 points on the capture side (`shm` versus the dbus/QEMU path,
+which is streamhost at about a third of its cost). **So the conversion does
+remove real work** — the latency campaign is worth a window.
+
+**Fixture readiness is NOT complete, and this is the gate on the campaign.**
+
+| fixture | arm B | arm A |
+|---|---|---|
+| 1 cursor motion | **validated** — 1,143 px changed (0.145%), cursor only | **not validated** — the two captures are byte-identical |
+| 3 Options menu on hover | **validated** — 71,016 px (9.03%), title inverted, menu drawn | **partly** — a hover menu (Desk) is open in its capture, so motion does reach the emulated pointer, but the closed loop did not converge on Options and its two captures are identical |
+| 2 click icon → black | **not validated** — the click produced no change, so it did not land on the cell | **not validated** |
+
+Arm A's pointer is the open item: the closed loop drives it through QMP
+`input-send-event` to the usb-tablet, and at that step size the motion is not
+reliably reaching MAME through the kiosk's SDL. Fix that before timing anything
+— an arm whose fixtures cannot be placed cannot be measured.
+
+Three things the campaign will have to carry, all of them properties of the
+MACHINE and therefore present in both arms:
+
+- MAME's ST mouse is a **quadrature encoder** (`src/mame/atari/stkbd.cpp`): a
+  500 Hz tick latches the axis ioport every fourth tick, keeps only the
+  DIRECTION and emits one step per latch. A burst is discarded rather than
+  carried, the ceiling is ~125 counts per emulated second per axis, and TOS
+  accelerates on top. Open-loop dead reckoning cannot place this pointer;
+  `fixtures.py` closes the loop against the published framebuffer, identically
+  for both arms.
+- The **Options menu drops on hover** and costs ~6% of the frame, not the
+  >35% the fixture table assumed — so fixture 3 will NOT force the full-frame
+  encode path on this machine at this resolution. Report the measured damage
+  fraction; do not assert the threshold.
+- Arm A's **bare-X root cursor** moves with the tablet without the emulator
+  being involved, and would satisfy a damage detector before the GEM cursor
+  moved. It is blanked in the kiosk launcher; leaving it visible would bias the
+  bridge arm faster.
+
 ## What the number does not claim
 
 It is a claim about the **video** half of the path plus one input sink. It does

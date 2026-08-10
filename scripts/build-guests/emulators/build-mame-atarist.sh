@@ -10,6 +10,23 @@
 # that comparison worth anything: a real WIMP desktop with a MOUSE, booting from
 # ROM with no disk install, so the arms differ only in where the emulator runs.
 #
+# ONE BINARY, BOTH ARMS. The patch stack below is what makes that literal rather
+# than aspirational: every capability either arm needs is compiled in and gated
+# at RUNTIME by an environment variable, so the bridge arm and the host-native
+# arm execute the same bytes and a "win" can never be a build difference.
+#   * drawshm   `-video shm` is reachable only by asking for it by name (it is
+#               registered after RENDERER_NONE), and it is inert unless
+#               MAME_SHM_PATH is set. Arm A never asks; arm B does.
+#   * ctlsock   the module object and its ONE persistent timer are created
+#               unconditionally — that is the covenant that keeps the savestate
+#               signature identical across arms — while the listener and the
+#               command-file tail are gated on MAME_CTL_SOCK / MAME_CTL_CMD_FILE.
+#   * ptr-tags  binds ctlsock's pointer engine to THIS machine's mouse ioports
+#               by env (the module's built-in defaults name the SGI Indy's PS/2
+#               mouse). Defaults unchanged, so irix is untouched.
+# All three are freestanding: they touch only files no tile-specific patch in
+# scripts/build-guests/irix/irix-mame-stack.sh touches.
+#
 # WHY THERE IS NO CHROOT HERE, unlike build-mame-{bbcb,zx81,kc854,…}.sh. Those
 # build inside an ABI-matched chroot because the bridge guest was bookworm while
 # the host was trixie. Since the 2026-08-10 migration the atarist suite IS
@@ -80,7 +97,15 @@ UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"
 JOBS="${JOBS:-$(nproc)}"
 MAME_TAG=mame0289
 MAME_ATARIST_BASE=f34f02505e32c1993c6a782b6814232cbfc74e36
-PATCH="$HERE/../patches/mame-irix-skip-warnings.patch"
+PATCHDIR="$HERE/../patches"
+# ORDER IS LOAD-BEARING: mame-ctlsock-ptr-tags.patch edits the file
+# mame-ctlsock.patch creates. Everything else is freestanding.
+PATCHES=(
+  mame-irix-skip-warnings.patch
+  mame-ctlsock.patch
+  mame-ctlsock-ptr-tags.patch
+  mame-drawshm.patch
+)
 
 # EmuTOS 1.4, the latest stable release. The bridge base carries 1.3's 1024k
 # image for hatari; these are different files for different ROM windows, not a
@@ -125,13 +150,14 @@ HAVE_DEB="$(cut -d. -f1 </etc/debian_version 2>/dev/null || true)"
   echo "  Build in the suite's chroot instead: $(bridge_mame_chroot_for "$SUITE")" >&2
   exit 1
 }
-[ -f "$PATCH" ] || die "missing warning-suppression patch: $PATCH"
+for p in "${PATCHES[@]}"; do
+  [ -f "$PATCHDIR/$p" ] || die "missing patch: $PATCHDIR/$p"
+done
 
 # ---------------------------------------------------------------------------
 # 1. source tree, pinned and patched
 # ---------------------------------------------------------------------------
 mkdir -p "$WORK"
-install -m 644 "$PATCH" "$WORK/mame-skip-warnings.patch"
 cd "$WORK"
 if [ ! -d mame/.git ]; then
   say "cloning MAME (--filter keeps a big repo bearable)"
@@ -144,9 +170,16 @@ git reset -q --hard "$MAME_TAG"
 git clean -qfd # NOT -x: keeps build objects, so a rebuild is minutes
 [ "$(git rev-parse HEAD)" = "$MAME_ATARIST_BASE" ] ||
   die "tag $MAME_TAG is not commit $MAME_ATARIST_BASE (upstream tag moved?)"
-patch -p1 --dry-run -f <../mame-skip-warnings.patch >/dev/null 2>&1 ||
-  die "warning-suppression patch does not apply to $MAME_TAG"
-patch -p1 -f <../mame-skip-warnings.patch >/dev/null
+# Dry-run each patch IMMEDIATELY BEFORE applying it, never all-then-all: the
+# stack is dependent (ptr-tags edits ctlsock's own new file), so a dry-run of
+# the whole list against the unpatched tree would report failures that are not
+# real. Same rule as irix-mame-stack.sh, and the same reason.
+for p in "${PATCHES[@]}"; do
+  patch -p1 --dry-run -f <"$PATCHDIR/$p" >/dev/null 2>&1 ||
+    die "$p does not apply to $MAME_TAG (after the patches before it)"
+  patch -p1 -f <"$PATCHDIR/$p" >/dev/null
+  echo "  applied $p"
+done
 
 # ---------------------------------------------------------------------------
 # 2. build
@@ -224,14 +257,39 @@ awk -v l="$LIME" -v n="$((W * H))" 'BEGIN { exit !(n > 0 && l / n >= 0.15) }' ||
   exit 1
 }
 
+# ---------------------------------------------------------------------------
+# 5. drawshm gate — `-video shm` must publish a mapping of the asked-for size
+# ---------------------------------------------------------------------------
+# The spike's tier-3 arm is exactly this code path, and a binary that builds the
+# module but cannot publish is a failure worth catching HERE rather than three
+# layers up inside a streamhost daemon. The size is deliberately NOT the
+# machine's native raster: a wrong-sized mapping is the confound the whole A/B
+# rests on not having, so the gate asks for an arbitrary one and checks the byte
+# count is exactly 64 + w*h*4.
+say "drawshm gate: -video shm must publish 800x600"
+SHMDIR="$WORK/shmgate"
+rm -rf "$SHMDIR"
+mkdir -p "$SHMDIR"
+printf 'skip_warnings 1\n' >"$SHMDIR/ui.ini"
+(cd "$SHMDIR" && MAME_SHM_PATH="$SHMDIR/fb.shm" MAME_SHM_SIZE=800x600 "$OUT" st -rompath "$ROMS" \
+  -video shm -sound none -nothrottle -str 8 -skip_gameinfo \
+  -homepath . -cfg_directory ./cfg -nvram_directory ./nvram -inipath . \
+  >"$SHMDIR/mame.log" 2>&1) || die "MAME -video shm exited non-zero; see $SHMDIR/mame.log"
+SHMBYTES="$(stat -c %s "$SHMDIR/fb.shm" 2>/dev/null || echo 0)"
+[ "$SHMBYTES" = "$((64 + 800 * 600 * 4))" ] ||
+  die "drawshm published $SHMBYTES bytes, expected $((64 + 800 * 600 * 4)); see $SHMDIR/mame.log"
+
 say "done"
 sha256sum "$OUT"
 cat <<EOF
 
 Binary:  $OUT
 Source:  MAME $MAME_TAG ($MAME_ATARIST_BASE), SOURCES=src/mame/atari/atarist.cpp
-Patch:   $(basename "$PATCH")
+Patches: ${PATCHES[*]}
 Rompath: $ROMS  (st/tos100.bin = EmuTOS 1.4 192k, st/keyboard.u1 = Atari IKBD)
 Gate:    $SHOT — $LIME/$((W * H)) lime pixels, GEM desktop reached
+Shm:     $SHMDIR/fb.shm — $SHMBYTES bytes = 64 + 800x600x4
 Run it:  $OUT st -rompath $ROMS -inipath <dir-with-ui.ini> -skip_gameinfo
+  arm A (bridge kiosk, tier 2):  add  -video soft -resolution <W>x<H>
+  arm B (host-native, tier 3):   add  -video shm   with MAME_SHM_PATH/MAME_SHM_SIZE
 EOF
