@@ -34,8 +34,26 @@
 # before the ST's own GEM cursor moved, making the BRIDGE arm look faster than
 # it is. Arm B has no such second pointer. Hiding it makes both arms measure the
 # same event: the EMULATED cursor moving.
+#
+# THE POINTER NEEDS cfg/st.cfg (armA-st.cfg here). MAME's ST mouse ioports came
+# out of the SDL path with BOTH AXES NEGATED and with a gain so high that the
+# 8-bit ioport wrapped -- and stkbd keeps only the SIGN of the change, so a wrap
+# is a reversed direction. `reverse="yes" sensitivity="1"` on :ikbd:MOUSEX and
+# :ikbd:MOUSEY fixes both, in MAME's own input configuration; the measurements
+# are recorded in that file. Without it this arm's pointer runs backwards.
+#
+# MAME_CTL_SOCK IS A READ-ONLY SENSOR HERE, and deliberately has no
+# MAME_CTL_PTR_TAGS beside it. The module resolves the SGI Indy's PS/2 mouse
+# tags by default, finds nothing on an ST, comes up axes=0 and therefore CANNOT
+# write an ioport even if something asked it to -- so the single-injector rule is
+# kept by construction while `ITEM <save-item>` can still read the emulated
+# MOUSEX/MOUSEY latch out of a running kiosk. That readback is the only
+# machine-checkable evidence about this arm's input plane; without it a pointer
+# question here is back to eyeballing a screenshot. Arm B already carries the
+# module, so this makes the two arms MORE alike, not less.
 XDG_RUNTIME_DIR=/run/user/$(id -u)
 export XDG_RUNTIME_DIR
+export MAME_CTL_SOCK=/tmp/armA-ctl.sock
 export SDL_RENDER_DRIVER=software
 export SDL_VIDEODRIVER=x11
 export SDL_VIDEO_CENTERED=1

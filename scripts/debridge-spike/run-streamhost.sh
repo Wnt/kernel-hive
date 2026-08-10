@@ -21,7 +21,16 @@ D="$RIG/$ARM"
   echo "no such arm: $ARM" >&2
   exit 2
 }
-BIN="$(readlink -f /usr/local/lib/streamhost/tiles/helenos/current)"
+# WHICH BINARY. By default the arms borrow the low-traffic helenos tile's
+# current release, so the rig never needs a build of its own. `$D/streamhost.bin`
+# overrides it per arm: a symlink into /usr/local/lib/streamhost/streamhost-<sha>
+# that pins THIS rig to a specific daemon without touching any tile's `current`.
+# That is the per-tile canary discipline (AGENTS.md "Building") applied to a rig
+# that has no systemd unit -- an arm needing an unreleased daemon must never be
+# a reason to promote one fleet-wide. Point BOTH arms at the same artifact: the
+# spike's premise is one binary, two display paths.
+BIN="$(readlink -f "$D/streamhost.bin" 2>/dev/null || true)"
+[ -x "$BIN" ] || BIN="$(readlink -f /usr/local/lib/streamhost/tiles/helenos/current)"
 PIDF="$D/streamhost.pid"
 
 running() {
