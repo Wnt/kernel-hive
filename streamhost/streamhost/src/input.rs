@@ -142,20 +142,29 @@ const MAX_REL_STEP: i32 = 256;
 /// accumulator and re-clamp; a small gap lets each chunk drain first.
 const REL_STEP_PACE_MS: u64 = 16;
 
+/// How far the homing corner-pin throws the guest cursor, per axis.
+///
+/// It only has to EXCEED the largest guest surface we drive (1280x1024), because
+/// the guest clamps at its own screen edge and the overshoot is free. It used to
+/// be 8192, which is free only if you ignore the wire: the PS/2 mouse carries at
+/// most ~127 counts per packet and drains at its 100 Hz sample rate, so an 8192
+/// pin is ~65 packets and takes the better part of a second to arrive. Anything
+/// sent during that drain is queued BEHIND it and merges into one enormous
+/// negative motion — which is how the pin came to swallow the first target whole
+/// on the Xerox Star tile: the Star cursor parked in the corner while the
+/// daemon's model believed it was at the target, a fixed offset for the rest of
+/// the session, i.e. exactly what the pin exists to prevent.
+const HOME_PIN: i32 = 2048;
+
 /// Settle time after the homing corner-pin, before the origin -> target walk.
 ///
-/// The pin and the walk must be OBSERVED as two separate movements by the
-/// guest. One PS/2 step-pace was not enough for an emulator that samples the
-/// host pointer once per emulated video field and then warps it back: measured
-/// on the Xerox Star tile (Darkstar, ~45 fields/sec => ~22 ms per field), the
-/// guest saw only the merged net position, so the corner-pin swallowed the
-/// whole first target and the Star cursor parked in the corner while the
-/// daemon's model believed it was at the target — a fixed offset for the rest
-/// of the session, which is exactly what the pin exists to prevent.
-///
-/// Two field times of the slowest guest we drive, and it is paid ONCE per
-/// session on the very first pointer sample.
-const HOME_SETTLE_MS: u64 = 120;
+/// The pin and the walk must be OBSERVED as two separate movements. That takes
+/// long enough for the pin to DRAIN over the PS/2 wire (HOME_PIN above: ~17
+/// packets at 100 Hz, ~170 ms) and then be sampled by a guest that reads the
+/// host pointer once per emulated video field and warps it back — measured on
+/// Darkstar at ~45 fields/sec, ~22 ms a field. Paid ONCE per session, on the
+/// very first pointer sample.
+const HOME_SETTLE_MS: u64 = 250;
 
 /// Pure chunker for `rel_motion_bounded` (unit-tested). Split (dx,dy) into a
 /// sequence of per-send deltas, each with |axis| <= MAX_REL_STEP, distributed
@@ -366,12 +375,12 @@ async fn apply_move_abs(
                 // over-clamp the guest cursor into the top-left corner
                 // (a merge/clamp is the goal here, not a truncation
                 // hazard), establishing a known 0,0 origin.
-                rel_motion(cap, -8192, -8192).await; // pin to top-left origin
-                                                     // Let the guest CONSUME the deliberate clamp before
-                                                     // sending origin -> target. Otherwise QEMU, or a guest
-                                                     // that samples the pointer once per emulated frame,
-                                                     // merges the two motions and the oversized homing delta
-                                                     // swallows the target whole.
+                rel_motion(cap, -HOME_PIN, -HOME_PIN).await; // pin to top-left origin
+                                                             // Let the guest CONSUME the deliberate clamp before
+                                                             // sending origin -> target. Otherwise QEMU, or a guest
+                                                             // that samples the pointer once per emulated frame,
+                                                             // merges the two motions and the oversized homing delta
+                                                             // swallows the target whole.
                 tokio::time::sleep(std::time::Duration::from_millis(HOME_SETTLE_MS)).await;
                 st.lx = tx;
                 st.ly = ty;
