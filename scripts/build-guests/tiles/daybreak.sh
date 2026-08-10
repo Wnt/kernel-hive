@@ -45,7 +45,10 @@
 # pidfile, idempotent, --force to rebuild the overlay. Touches ONLY the daybreak
 # tile dir.
 #
-# Usage:  daybreak.sh [--force] [-h]
+# Usage:  daybreak.sh [--force] [--bake] [-h]
+#   --bake  bake the golden of the ALREADY RUNNING tile and prove it restores
+#           (lib/bridge-bake-golden). Boot it under its OWN qemu-streamhost.sh
+#           first: a golden taken under a different device set will not loadvm.
 # =============================================================================
 set -euo pipefail
 
@@ -76,8 +79,11 @@ while [ $# -gt 0 ]; do case "$1" in
     FORCE=1
     shift
     ;;
+  --bake)
+    exec "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-bake-golden" "$QMP" "$OVERLAY"
+    ;;
   -h | --help)
-    sed -n '2,49p' "$0"
+    sed -n '2,52p' "$0"
     exit 0
     ;;
   *)
@@ -87,7 +93,7 @@ while [ $# -gt 0 ]; do case "$1" in
 esac done
 
 log() { echo "[daybreak $(date +%H:%M:%S)] $*"; }
-guest() { ssh -i "$KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"; }
+guest() { ssh -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"; }
 
 # ---- boot the tile QEMU (exact device set; conditional -loadvm golden) -------
 boot_tile() {
@@ -368,8 +374,7 @@ step must be checked against a real framebuffer screenshot:
 
 Then BAKE the golden with that desktop showing:
 
-   python3 /root/qmp_hmp.py $QMP 'savevm golden'
-   python3 /root/qmp_hmp.py $QMP 'loadvm golden'   # verify it restores
+   $0 --bake     # savevm + assert it landed + loadvm + assert it restores running
 
 Re-run this script afterwards to boot straight into the fixture. Emit + start:
 

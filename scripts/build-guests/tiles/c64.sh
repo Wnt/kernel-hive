@@ -23,7 +23,10 @@
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by pidfile,
 # idempotent, --force to rebuild the overlay. Touches ONLY the c64 tile dir.
 #
-# Usage:  c64.sh [--force] [-h]
+# Usage:  c64.sh [--force] [--bake] [-h]
+#   --bake  bake the golden of the ALREADY RUNNING tile and prove it restores
+#           (lib/bridge-bake-golden). Boot it under its OWN qemu-streamhost.sh
+#           first: a golden taken under a different device set will not loadvm.
 # =============================================================================
 set -euo pipefail
 
@@ -49,8 +52,11 @@ while [ $# -gt 0 ]; do case "$1" in
     FORCE=1
     shift
     ;;
+  --bake)
+    exec "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-bake-golden" "$QMP" "$OVERLAY"
+    ;;
   -h | --help)
-    sed -n '2,40p' "$0"
+    sed -n '2,43p' "$0"
     exit 0
     ;;
   *)
@@ -60,7 +66,7 @@ while [ $# -gt 0 ]; do case "$1" in
 esac done
 
 log() { echo "[c64 $(date +%H:%M:%S)] $*"; }
-guest() { ssh -i "$KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"; }
+guest() { ssh -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"; }
 hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
 # The C64/GEOS kiosk launcher (overlaid onto the base's /etc/bridge/launch.sh).
@@ -173,8 +179,7 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
   log "   python3 /root/cdrv.py $QMP dump /tmp/c64.ppm   (convert->png->look: GEOS deskTop?)"
   log "and prove SID non-silent (separate VICE run dumping a tone to wav; see docs/guests/c64.md)."
   log "Then BAKE the golden fixture (with the GEOS deskTop showing):"
-  log "   python3 /root/qmp_hmp.py $QMP 'savevm golden'"
-  log "   python3 /root/qmp_hmp.py $QMP 'loadvm golden'   # verify restore lands on GEOS"
+  log "   $0 --bake   # savevm + assert it landed + loadvm + assert it runs"
   log "Re-run this script after baking to boot straight into the golden fixture (-loadvm golden)."
 fi
 

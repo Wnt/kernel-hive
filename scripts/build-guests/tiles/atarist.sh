@@ -30,7 +30,17 @@
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by pidfile,
 # idempotent, --force to rebuild the overlay. Touches ONLY the atarist tile dir.
 #
-# Usage:  atarist.sh [--force] [-h]
+# Usage:  atarist.sh [--force] [--bake] [-h]
+#
+#   --bake  bake the golden snapshot of the ALREADY RUNNING tile and prove it
+#           restores (lib/bridge-bake-golden). Run it once the acceptance below
+#           has passed on a real screenshot, with the tile up under its own
+#           streamhost/tiles/atarist/qemu-streamhost.sh — NOT under this
+#           script's boot_tile: a golden taken under a device set that differs
+#           from the launcher's will not loadvm, and that only surfaces later,
+#           at the first visitor reset. EmuTOS has no machine-checkable "the
+#           GEM desktop is up" signal (unlike the CPC/GT40 builders' pixel
+#           gates), so the bake stays operator-triggered rather than slept-for.
 # =============================================================================
 set -euo pipefail
 
@@ -69,8 +79,11 @@ while [ $# -gt 0 ]; do case "$1" in
     FORCE=1
     shift
     ;;
+  --bake)
+    exec "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-bake-golden" "$QMP" "$OVERLAY"
+    ;;
   -h | --help)
-    sed -n '2,45p' "$0"
+    sed -n '2,44p' "$0"
     exit 0
     ;;
   *)
@@ -80,7 +93,7 @@ while [ $# -gt 0 ]; do case "$1" in
 esac done
 
 log() { echo "[atarist $(date +%H:%M:%S)] $*"; }
-guest() { ssh -i "$KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"; }
+guest() { ssh -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"; }
 hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
 check_asset() {
@@ -289,9 +302,9 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
   log "   python3 /root/cdrv.py $QMP dump /tmp/atarist.ppm   (convert->png->look: GEM desktop?)"
   log "then launch F3 (Pacman for GEM) and capture its graphical UI."
   log "Also prove YM2149 non-silent (see AUDIO VERIFY below / docs/guests/atarist.md)."
-  log "Then BAKE the golden fixture (with the GEM desktop showing):"
-  log "   python3 /root/qmp_hmp.py $QMP 'savevm golden'"
-  log "   python3 /root/qmp_hmp.py $QMP 'loadvm golden'   # verify restore lands on the desktop"
+  log "Then BAKE the golden fixture, with the GEM desktop showing and the tile up"
+  log "under its OWN launcher (device set must match the bake or -loadvm fails):"
+  log "   bash ${TILE_DIR}/qemu-streamhost.sh && $0 --bake"
   log "Re-run this script after baking to boot straight into the golden fixture (-loadvm golden)."
 fi
 

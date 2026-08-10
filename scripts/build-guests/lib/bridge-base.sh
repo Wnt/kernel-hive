@@ -499,8 +499,8 @@ log "provision status: $DONE"
 
 # ---- 5. clean shutdown + freeze --------------------------------------------
 log "clean shutdown ..."
-ssh -i "$KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 \
-  "sync; systemctl poweroff" 2>/dev/null ||
+ssh -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "sync; systemctl poweroff" 2>/dev/null ||
   python3 /root/qmp_hmp.py "$QMP" 'system_powerdown' >/dev/null 2>&1 || true
 for i in $(seq 1 40); do
   [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null || break

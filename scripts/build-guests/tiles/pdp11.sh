@@ -157,7 +157,7 @@ die() {
 }
 guest() {
   ssh -i "$KEY" -o BatchMode=yes -o StrictHostKeyChecking=no \
-    -o ConnectTimeout=8 -o ServerAliveInterval=30 -p "$SSH_PORT" root@127.0.0.1 "$@"
+    -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 -o ServerAliveInterval=30 -p "$SSH_PORT" root@127.0.0.1 "$@"
 }
 hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
@@ -701,7 +701,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 
   log "installing the pack, the ini and the console driver"
   scp -q -i "$KEY" -o StrictHostKeyChecking=no -P "$SSH_PORT" \
-    "$STAGE/2.11BSD_rq.dsk.zip" root@127.0.0.1:/opt/pdp11/media/ ||
+    -o UserKnownHostsFile=/dev/null "$STAGE/2.11BSD_rq.dsk.zip" root@127.0.0.1:/opt/pdp11/media/ ||
     die "could not copy the 2.11BSD pack into the guest"
   # The kiosk runs as `bridge`: a root-owned pack attaches READ-ONLY and
   # 2.11BSD panics the first time it writes /etc/utmp.

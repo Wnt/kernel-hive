@@ -155,7 +155,7 @@ die() {
 }
 guest() {
   ssh -i "$KEY" -o BatchMode=yes -o StrictHostKeyChecking=no \
-    -o ConnectTimeout=8 -o ServerAliveInterval=30 -p "$SSH_PORT" root@127.0.0.1 "$@"
+    -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 -o ServerAliveInterval=30 -p "$SSH_PORT" root@127.0.0.1 "$@"
 }
 hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
@@ -578,9 +578,9 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
     die "could not install the MAME runtime libraries into the overlay (guest /tmp/apt.log)"
   log "installing the pinned MAME binary and the host-assembled romset"
   scp -q -i "$KEY" -o StrictHostKeyChecking=no -P "$SSH_PORT" \
-    "$MAME" root@127.0.0.1:/opt/bbcmicro/mame/bbcb || die "could not copy the MAME binary"
+    -o UserKnownHostsFile=/dev/null "$MAME" root@127.0.0.1:/opt/bbcmicro/mame/bbcb || die "could not copy the MAME binary"
   scp -q -i "$KEY" -o StrictHostKeyChecking=no -P "$SSH_PORT" \
-    "$TILE_DIR"/roms/*.zip root@127.0.0.1:/opt/bbcmicro/roms/ ||
+    -o UserKnownHostsFile=/dev/null "$TILE_DIR"/roms/*.zip root@127.0.0.1:/opt/bbcmicro/roms/ ||
     die "could not copy the assembled romset zips"
   guest "set -e
     chmod 755 /opt/bbcmicro/mame/bbcb

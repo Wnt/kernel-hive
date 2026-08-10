@@ -195,30 +195,57 @@ The failure does not say "host key" anywhere useful — on `gt40` the builder sa
 in `wait_for_ssh` printing nothing until its 120 s timeout fired and died with
 `bridge SSH did not become ready on 127.0.0.1:5828`, which reads like a guest
 that failed to boot. Two of us first filed this as cosmetic; the third lost an
-hour to it. Treat it as fatal and clear the entry **before** building:
+hour to it.
+
+**The builders are now structurally immune, so this should not bite a build
+again.** Every ssh and scp in every bridge builder — all 28 tiles, plus
+`lib/bridge-base.sh` on its own provisioning port and `lib/graphical-bridge.sh`
+— passes `-o UserKnownHostsFile=/dev/null`, so none of them reads or writes
+`known_hosts` at all: a stale entry cannot bite them, and they never leave one
+behind either. That is the cause fixed rather than the symptom cleaned up, and
+it costs nothing in security: every one of these connections is
+`127.0.0.1:<hostfwd>` into a guest the builder itself just created, so there is
+no MITM surface for host-key verification to protect.
+
+**A human still hits it.** Your own `ssh -p 5828 root@127.0.0.1`, or anything
+else that uses `/root/.ssh/known_hosts`, will still be refused after the overlay
+is rebuilt — and, again, `-o StrictHostKeyChecking=no` will *not* rescue you,
+because it suppresses the prompt for an *unknown* key and does nothing about a
+*changed* one. The recovery is to drop the entry:
 
 ```bash
-ssh lab 'ssh-keygen -R "[127.0.0.1]:5828"'
+ssh lab 'ssh-keygen -f /root/.ssh/known_hosts -R "[127.0.0.1]:5828"'
 ```
 
 Provisioning ports seen in wave 1: `atarist` 5816, `pdp11` 5827, `gt40` 5828,
 `decos` 5829 (each builder's `SSH_PORT`).
 
-**2. `atarist.sh` does not bake the golden — you do.** It cold-boots the
-overlay, stages the media, installs `/etc/bridge/launch.sh`, then **logs the
-`savevm golden` / `loadvm golden` commands and exits 0 with no snapshot in the
-overlay.** A successful run is therefore not a finished tile, and step 3 is a
-manual QMP bake. Do it **under the tile's own
-`streamhost/tiles/atarist/qemu-streamhost.sh`**, not under the builder's boot:
-a golden baked against a different device set will not `loadvm`, and that only
-surfaces later, at the first visitor reset.
+**2. Six builders do not bake the golden — you do.** `atarist.sh` cold-boots
+the overlay, stages the media, installs `/etc/bridge/launch.sh`, then **logs
+the bake command and exits 0 with no snapshot in the overlay.** A successful
+run is therefore not a finished tile, and step 3 is a separate bake.
+`amiga`, `apple2`, `c64`, `daybreak`, `star` and `indyr4400` are the same shape
+— all of them wait on a desktop whose "ready" state no builder can check, so
+the bake is deliberately operator-triggered rather than slept-for.
 
-`pdp11.sh` and `gt40.sh` are **not** like this — both have a `bake_golden()`
-that runs `savevm golden`, asserts the snapshot landed, and `loadvm golden`s to
-prove the restore, inside the build. Their catch is the mirror image: each
-duplicates the production device set inline in its own `boot_tile()`, so the
-builder's QEMU line and the tile's `qemu-streamhost.sh` must stay
-byte-identical or the golden they bake is unrestorable in production.
+It is no longer a copy-paste, though: each of those builders (except
+`indyr4400`) now takes **`--bake`**, which hands the tile's `qmp.sock` and
+overlay to `scripts/build-guests/lib/bridge-bake-golden` — drop any stale
+golden, `savevm golden`, **assert the snapshot actually landed**, `loadvm
+golden`, and assert the restored machine is `running` (a golden baked while the
+VM was stopped restores paused, which screenshots perfectly and is dead). Run it
+with the tile up under its own `streamhost/tiles/<tile>/qemu-streamhost.sh`:
+the helper snapshots whatever QEMU owns that socket, so the golden is taken
+under the production device set by construction.
+
+The other 21 bridge builders bake inside the build, gated on a real pixel check
+(`wait_for_cpc`, `wait_for_vectors`, the ink gates). Their catch is the mirror
+image of the manual six: `pdp11.sh`, `gt40.sh` and the rest duplicate the
+production device set inline in their own `boot_tile()`, so the builder's QEMU
+line and the tile's `qemu-streamhost.sh` must stay byte-identical or the golden
+they bake is unrestorable in production. Moving those bakes onto
+`bridge-bake-golden` against the launcher-started QEMU would retire that whole
+class of drift, and is the obvious follow-up.
 
 ### Acceptance gate
 

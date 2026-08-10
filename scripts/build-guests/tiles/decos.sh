@@ -82,11 +82,11 @@ die() {
 }
 guest() {
   ssh -i "$KEY" -o BatchMode=yes -o StrictHostKeyChecking=no \
-    -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"
+    -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"
 }
 push() {
   scp -q -i "$KEY" -o BatchMode=yes -o StrictHostKeyChecking=no \
-    -P "$SSH_PORT" "$1" "root@127.0.0.1:$2"
+    -o UserKnownHostsFile=/dev/null -P "$SSH_PORT" "$1" "root@127.0.0.1:$2"
 }
 hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # Build-time forkpty driver. Directives: WAIT <regex>|<secs>, SEND <text, python

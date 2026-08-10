@@ -2,53 +2,33 @@
 # =============================================================================
 # migrate-tile.sh — move ONE bridge tile from the bookworm guest base to trixie
 #
-# Wave 1 of docs/lab/BRIDGE-TRIXIE-MIGRATION.md migrated three tiles with one
-# agent per tile, and each of the three re-derived the same procedure from the
-# doc; one of them lost an hour to a trap another had already hit. 25 tiles
-# remain. The procedure is understood now, so it belongs in a script: one
+# THE PROCEDURE IS docs/lab/BRIDGE-TRIXIE-MIGRATION.md §2 — read it there, not
+# here; two copies of it would drift. Wave 1 ran it three times with one agent
+# per tile and each re-derived it from that doc; one lost an hour to a trap
+# another had already hit. 25 tiles remain, so it is a script now: one
 # invocation per tile, plus a human looking at two screenshots.
 #
-# What it drives, on the box, over `ssh lab` (the only door):
+# Everything runs on the box over `ssh lab` (the only door). The nine steps
+# announce themselves as "N/9", and the two wave-1 traps are explained at the
+# step that handles them — 4/9 the stale SSH host key, 7/9 the builders that
+# print the bake commands instead of baking. Three things to know first:
 #
-#   preflight   ledger says bookworm, trixie base exists, builder exists, live
-#               tile dir exists, and the tile's REAL daemon identity comes from
-#               its signaling.json (an SPA id is not always an SH_TILE, and the
-#               systemd unit follows the daemon's — AGENTS.md)
-#   before      `labctl reset` then `labctl shot`, so the baseline is the GOLDEN
-#               frame and not whatever mid-session state a visitor drifted into
-#   stop        systemctl stop the unit
-#   backup      mv overlay.qcow2 -> overlay.qcow2.bookworm-bak. NEVER deleted:
-#               it is the whole rollback, and it is exact because the bookworm
-#               base it backs onto is frozen
-#   hostkey     ssh-keygen -R "[127.0.0.1]:<port>" for the builder's own
-#               provisioning port. TRAP 1: a rebuilt overlay has new host keys
-#               and StrictHostKeyChecking=no suppresses the UNKNOWN-key prompt,
-#               not the CHANGED-key refusal. On gt40 this surfaced as a silent
-#               `wait_for_ssh` timeout that read like a guest that never booted
-#   build       BRIDGE_SUITE=trixie <builder> --force, logged on the box, polled
-#   bake        TRAP 2: not every builder bakes. pdp11.sh/gt40.sh bake inside
-#               the build; atarist.sh only PRINTS the savevm/loadvm commands and
-#               exits 0. So we ask the overlay whether it carries an internal
-#               `golden` snapshot, and bake it if it does not — under the tile's
-#               OWN qemu-streamhost.sh, because a golden baked against a
-#               different device set will not loadvm, and that only surfaces
-#               later at some visitor's first reset
-#   restart     systemctl start, and prove it came up
-#   acceptance  qemu-img says the overlay backs onto the TRIXIE base; the guest's
-#               own /etc/bridge/suite reads trixie; and an AFTER `labctl shot`
+#   * It does NOT claim visual acceptance, and cannot. It prints the BEFORE and
+#     AFTER PNGs and says a human must compare them: the failure this migration
+#     produces (amiga losing Mesa and rendering black) looks healthy in every
+#     log and every exit code below.
+#   * The overlay is MOVED to overlay.qcow2.bookworm-bak, never deleted. That is
+#     the whole rollback, and it is exact because the bookworm base is frozen.
+#     Any failed mechanical check restores it automatically and leaves the
+#     trixie attempt beside it as overlay.qcow2.trixie-failed for the postmortem.
+#   * The tile's REAL daemon identity is read from its signaling.json, because
+#     an SPA id is not always an SH_TILE and the systemd unit follows the
+#     daemon's (AGENTS.md).
 #
-# It deliberately does NOT claim visual acceptance. It prints the two PNG paths
-# and says a human must compare them, because the failure this migration can
-# produce (amiga losing Mesa and rendering black) looks healthy in every log.
-#
-# Any failed mechanical check rolls back automatically: the .bookworm-bak goes
-# home, the unit comes back, and the trixie attempt is kept beside it as
-# overlay.qcow2.trixie-failed for the post-mortem.
-#
-# Not automated, on purpose (--flip prints the list): the registry prose. The
-# twinned .museum.notes / .render.museumBlock, the builder header, the launcher
-# comment and the per-guest doc are judgement, and `make tile-registry-generate`
-# must run after a human has written them.
+# The registry prose is deliberately not automated — the twinned .museum.notes /
+# .render.museumBlock, the builder header, the launcher comment and the
+# per-guest doc are judgement, and `make tile-registry-generate` runs after a
+# human has written them. --flip edits the ledger only; the rest is printed.
 #
 # usage: migrate-tile.sh <tile> [--flip] [--dry-run] [--no-restart]
 #   --flip        after every mechanical check passes, set this tile to "trixie"
@@ -104,7 +84,7 @@ while [ "$#" -gt 0 ]; do
     --dry-run | -n) DRY=1 ;;
     --no-restart) RESTART=0 ;;
     -h | --help)
-      sed -n '3,66p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '3,47p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     -*)
@@ -171,15 +151,12 @@ if [ "$TILE" = "c64" ]; then
 migrate-tile: refusing c64 — it is not a rebase, it is a rebuild.
 
   c64's overlay was FLATTENED on 2026-08-07 into a standalone 5.21 GiB qcow2
-  with an internal `golden` snapshot and NO backing file at all (its launcher
-  comment still calls it a thin overlay; bridge-suite-status.sh reports it as
-  DETACHED, not as drift). This script rebases an overlay onto a new base, so
-  everything it would do to c64 is wrong: the backup is 5 GiB rather than a
-  delta, and the acceptance check "backs onto the trixie base" cannot pass.
-
-  Migrating c64 means a full rebuild from scripts/build-guests/tiles/c64.sh
-  against the trixie base, by hand, with its own acceptance.
-  See docs/lab/BRIDGE-TRIXIE-MIGRATION.md §1 and §4 (wave 4, c64 last).
+  with NO backing file (bridge-suite-status.sh reports it as DETACHED, not as
+  drift). This script rebases an overlay onto a new base, so everything it
+  would do here is wrong: the backup is 5 GiB rather than a delta, and the
+  acceptance check "backs onto the trixie base" can never pass. c64 needs a
+  full by-hand rebuild from scripts/build-guests/tiles/c64.sh with its own
+  acceptance — docs/lab/BRIDGE-TRIXIE-MIGRATION.md §1 and §4 (wave 4, c64 last).
 EOM
   exit 2
 fi
@@ -210,9 +187,8 @@ EVIDENCE="${MIGRATE_EVIDENCE:-${TMPDIR:-/tmp}/migrate-tile/$TILE}"
 step "preflight: the box"
 
 if ! ssh -o ConnectTimeout=8 -o BatchMode=yes "$LAB" true 2>/dev/null; then
-  echo "migrate-tile: ssh $LAB unreachable — nothing was touched."
-  echo "  This tool only drives the box; there is no offline mode. See"
-  echo "  docs/lab/CLOUD-AGENTS.md if you are in a cloud VM."
+  echo "migrate-tile: ssh $LAB unreachable — nothing was touched. There is no"
+  echo "  offline mode; see docs/lab/CLOUD-AGENTS.md if you are in a cloud VM."
   exit 3
 fi
 

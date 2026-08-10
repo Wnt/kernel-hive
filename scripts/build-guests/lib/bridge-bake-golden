@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# build-guests/lib/bridge-bake-golden <qmp.sock> <overlay.qcow2> — bake the
+# internal `golden` snapshot of a RUNNING bridge tile and prove it restores.
+#
+# It deliberately does NOT boot anything. The golden is a RAM+devices snapshot,
+# so it can only be restored by a QEMU whose device set matches the one it was
+# taken under — and the only way to guarantee that is to snapshot the QEMU that
+# the tile's own streamhost/tiles/<tile>/qemu-streamhost.sh started. A builder
+# that boots its own copy of the device set to bake (pdp11.sh, gt40.sh do this)
+# is correct only for as long as the two QEMU command lines stay byte-identical;
+# taking the socket instead cannot drift. Mismatch does not surface at bake
+# time, it surfaces at the first visitor reset, as a tile that will not reset.
+#
+# So the caller's contract is: the tile is up under its production launcher and
+# its screen is showing what the golden should restore to. That is the same
+# framebuffer acceptance the migration procedure already requires
+# (docs/lab/BRIDGE-TRIXIE-MIGRATION.md §2 step 4), which is why the bake is
+# operator-triggered on tiles whose "ready" state has no machine-checkable
+# signal, rather than slept-for and hoped about.
+#
+# Bakes what the mature builders' own bake_golden() functions do, in one place:
+# drop a stale golden, savevm, ASSERT the snapshot actually landed (savevm can
+# fail while QMP still returns success), then loadvm to prove the restore.
+#
+# An EXECUTABLE rather than a sourced function for the reason lib/bridge-base-for
+# documents: the per-tile builders sit against the 600-line hard cap.
+set -euo pipefail
+
+QMP="${1:?bridge-bake-golden: qmp socket path required}"
+OVERLAY="${2:?bridge-bake-golden: overlay qcow2 path required}"
+die() {
+  echo "[bake-golden] ERROR: $*" >&2
+  exit 1
+}
+hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
+
+[ -S "$QMP" ] || die "no QMP socket at $QMP — boot the tile under its own qemu-streamhost.sh first"
+[ -f "$OVERLAY" ] || die "no overlay at $OVERLAY"
+
+if qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
+  echo "[bake-golden] replacing the existing golden snapshot"
+  hmp "delvm golden" >/dev/null
+fi
+hmp "savevm golden" >/dev/null
+qemu-img snapshot -l "$OVERLAY" | grep -qw golden ||
+  die "savevm golden did not land in $OVERLAY"
+hmp "loadvm golden" >/dev/null
+# A golden taken while the VM was STOPPED restores paused — a screenshot of it
+# looks perfect and the tile is dead. Assert the restored machine is running.
+hmp "info status" | grep -q running ||
+  die "loadvm golden did not restore a RUNNING machine (baked while stopped?)"
+echo "[bake-golden] golden baked and restore-verified in $OVERLAY"
