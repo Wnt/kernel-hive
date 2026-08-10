@@ -3,7 +3,7 @@
 # build-guests/tiles/pet2001.sh — build the Commodore PET 2001 (1977) streamhost tile
 # as a thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running VICE `xpet -model 2001`, emulating
+# GUEST : a captured Debian-13 (trixie) kiosk running VICE `xpet -model 2001`, emulating
 #         the ORIGINAL PET 2001: MOS 6502 at 1 MHz, 8 KB RAM, 40x25 characters
 #         of blue-white text on black, no CRTC (the 1977 machine drew its video
 #         with discrete logic), chiclet "graphics" keyboard, cassette deck.

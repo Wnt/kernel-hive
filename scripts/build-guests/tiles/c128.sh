@@ -3,7 +3,7 @@
 # build-guests/tiles/c128.sh — build the Commodore 128 (1985) streamhost tile as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running VICE `x128` emulating a PAL
+# GUEST : a captured Debian-13 (trixie) kiosk running VICE `x128` emulating a PAL
 #         Commodore 128 in its NATIVE 80-column mode, resting at the machine's
 #         own untouched power-on screen, with the CP/M Plus system disk sitting
 #         unbooted in drive 8.

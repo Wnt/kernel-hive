@@ -3,7 +3,7 @@
 # build-guests/tiles/plus4.sh — build the Commodore Plus/4 (1984) streamhost tile as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running VICE `xplus4` emulating a PAL
+# GUEST : a captured Debian-13 (trixie) kiosk running VICE `xplus4` emulating a PAL
 #         Commodore Plus/4, curated into its built-in ROM office suite.
 # TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).

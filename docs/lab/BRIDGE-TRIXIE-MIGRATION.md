@@ -3,7 +3,7 @@
 The lab **host** finished bookworm → trixie on 2026-07-15 and now runs Debian
 13.6. The **guests** did not come with it. The shared emulator-bridge base
 `/data/vms/bridge/bridge-base.qcow2` is still Debian 12 (bookworm, glibc 2.36),
-and **24 tile overlays back onto it read-only** (28 before wave 1). That is the
+and **18 tile overlays back onto it read-only** (28 before waves 1 and 4). That is the
 whole problem in one sentence: the base is not a package set you upgrade, it is
 a byte-for-byte backing file that every one of those qcow2 overlays names by
 path and depends on block-for-block.
@@ -84,6 +84,46 @@ framebuffer shots are 0 differing pixels** of 1024×768.
 
 So wave 1 is 4/28. All three traps below were found on this wave, and the third
 was found on `decos`'s retry.
+
+### Wave 4: all six VICE tiles landed (2026-08-10)
+
+`c128`, `vic20`, `plus4`, `pet2001`, `cbm8032` and `cbm2` are **migrated**, on
+`migrate-tile.sh` rather than by hand. The wave was as cheap as predicted — VICE
+is built into the base, so there is no per-tile emulator build and each tile is
+boot- and I/O-bound. Every builder bakes its own golden, so step 7 was a no-op
+confirmation on all six.
+
+**The prediction that mattered held: trixie's gcc-14-built VICE 3.9 is
+behaviourally identical here.** Each tile's own colour/ink predicate — the thing
+that would catch a silently different renderer — returned the *same measured
+numbers* as the bookworm build recorded:
+
+| Tile | The exhibit's own predicate, on trixie |
+|---|---|
+| `c128` | 80-column VDC BASIC at **cyan=3860, magenta=0** — the exact value the builder header documents. `magenta=0` is the load-bearing half: it proves the deferred CP/M attach still lands *after* the KERNAL's boot-sector check, so the fixture is BASIC 7.0 and not a machine that autobooted CP/M. |
+| `c128` | `BOOT`+RETURN reached **CP/M 3.0 on the Z80** (magenta=1899, cyan=0) — the whole reason this tile has a slot. |
+| `c128` | The GO64 measurement **reproduces**: two byte-identical frames 10 s apart against a blinking-cursor control, so C64 mode still freezes the visible VDC canvas and the decision not to ship a C64 button stands. |
+| `plus4` | Both halves of the 3-plus-1 route: F1+RETURN into the suite (white=131), then C= C + `tc` into the spreadsheet (ink=30036). |
+| `cbm8032` | `RUN` filled all 80 columns of the times table (green=7342). |
+| `cbm2` | The type-in demo grew the lit region rows 100..162 → 100..226 at unchanged columns. |
+| `vic20` | Bright-pixel gate passed; `PRINT 3` changed the framebuffer. |
+| `pet2001` | Ready screen lit=1841 inside the documented 1200..4000 band. |
+
+Memory was the one open per-tile question and it is answered: `c128` reports
+**MemAvailable 397 MB of 715 MB** with `x128` running at `-m 768` (bookworm
+measured 385 of 725), and `cbm2` **414 MB** against the same 200 MB floor. The
+trixie userspace costs nothing worth budgeting for on these tiles.
+
+The CP/M 3.0 system disk — `c128`'s single external file, from the one surviving
+zimmers.net mirror — was staged **entirely from the host copy, with zero upstream
+fetches**, and both it and its `.gz` are now in the never-evicting media archive
+(`sha256 6915922…` and `6ed0da2…`). Before this wave the only copies were in the
+tile dir, which a `--force` rebuild is entitled to clear.
+
+**`c64` was deliberately not attempted** — see §1: its overlay was flattened on
+2026-08-07, so it is a rebuild rather than a rebase and `migrate-tile.sh` refuses
+it by name. What this wave learned that bears on it is in the note below the
+wave table.
 
 The upstream image exists and the naming substitution is exact — the URL is the
 bookworm one with `debian-12-` → `debian-13-`:
@@ -304,6 +344,36 @@ they bake is unrestorable in production. Moving those bakes onto
 `bridge-bake-golden` against the launcher-started QEMU would retire that whole
 class of drift, and is the obvious follow-up.
 
+### Two traps wave 4 found — in the driver, not in any tile
+
+Both were in `migrate-tile.sh` itself, and both are fixed. They are recorded
+because the second one nearly cost a production golden and the symptom pointed
+squarely at the wrong thing.
+
+**3. A quiet build was killed off as a failed one.** The poll loop streamed the
+new log lines *first* and split them from the trailing metadata on a `---`
+sentinel. When a poll interval found **no new lines** neither substitution
+matched, so the log's line COUNT was parsed as the builder's exit code — and a
+perfectly healthy build was declared `builder exited 3` and rolled back. Any tile
+with a quiet stretch hit it every time: `plus4` spends ~46 s in `wait_for_ssh`
+saying nothing. `vic20` survived only because it prints a framebuffer proof every
+two seconds. The fix is to put the fixed-position metadata FIRST, where log
+content cannot be confused with it.
+
+**4. The rollback raced the builder it had abandoned.** The builder is launched
+detached (`setsid`), so it is not a child of the driver and nothing reaps it. When
+trap 3 fired, the rollback restored the bookworm overlay **underneath a builder
+that was still running** — which carried on for another minute, re-baked a golden
+into the restored PRODUCTION overlay, and then typed into the machine. `plus4`
+recovered (the re-bake happened to land on the same untouched power-on fixture,
+and `loadvm golden` was re-proved by hand on a real screenshot), but that was
+luck, not design. Whoever abandons a detached build owes it a kill: the driver now
+records the builder's **process group** and stops the group — builder *and* the
+QEMU it started — before anything touches the overlay.
+
+Both now live in `scripts/lib/box-detached-build.sh`, so the launch/poll/stop
+contract is in one place rather than re-derived per caller.
+
 ### Acceptance gate
 
 A tile is migrated when, and only when: the overlay's real backing file is the
@@ -342,7 +412,8 @@ rather than moving to "done".
 | `atarist` | **DONE (wave 1).** `hatari 2.5.0+dfsg-1+b1` in trixie main; straight apt swap, builder flags unchanged, geometry identical. |
 | `pdp11`, `gt40` | **DONE (wave 1).** Open SIMH pin `a1f57fa3` builds clean under gcc 14.2.0 with `-Werror`; `gt40` against `libsdl2-dev 2.32.4`, VT11 rendering unchanged. |
 | `decos` | **DONE (wave 1, on the retry).** Same source-SIMH story; the first attempt failed on an unrelated builder bug (the `.ini` install, fixed in `73795a5`) and was rolled back. The rebuild landed all three packs, and the `.ini` files are now proven byte-identical inside the running tile. |
-| `c64`, `c128`, `vic20`, `plus4`, `pet2001`, `cbm8032`, `cbm2` | VICE from source, unchanged (see the VICE note below — the apt package is a trap, not a shortcut). `c64` additionally needs a full rebuild because its overlay is detached. |
+| `c128`, `vic20`, `plus4`, `pet2001`, `cbm8032`, `cbm2` | **DONE (wave 4).** VICE from source, unchanged (see the VICE note below — the apt package is a trap, not a shortcut). gcc-14's VICE 3.9 is behaviourally identical: every tile's own colour/ink predicate returned the bookworm numbers. |
+| `c64` | **NOT attempted.** Same VICE story, but its overlay is detached, so it is a full rebuild rather than a rebase and `migrate-tile.sh` refuses it by name. |
 | `amstradcpc` | `cap32` from source; deps fine. |
 | `bbcmicro`, `armeval`, `mpf2`, `zx81`, `dragon32`, `kc854`, `oricatmos` | The MAME-in-chroot tiles (six `build-mame-*.sh` builders between them). The binaries already load against a newer glibc; migrating them is just moving the build to the trixie chroot. |
 | `alto` | Self-contained .NET publish. Neither distro end constrains it. |
@@ -462,10 +533,54 @@ before any expensive tile depends on it.
 | **1** | `pdp11` ✅, `gt40` ✅, `atarist` ✅, `decos` ✅ | Pure source-SIMH plus one apt emulator. Smallest blast radius. **All four landed 2026-08-10**; `decos` needed a second attempt after an unrelated builder bug, and is the tile that proved the driver's own two bugs. |
 | **2** | the MAME-in-chroot tiles: `bbcmicro`, `armeval`, `mpf2`, `zx81`, `dragon32`, `kc854`, `oricatmos` | Mechanical chroot swap. Retires the bookworm chroot's biggest consumer. |
 | **3** | `amstradcpc`, `alto`, `amiga` | Source builds and the .NET publish; `amiga` carries the explicit `libgl1-mesa-dri` fix and the black-screen check. |
-| **4** | the VICE seven: `c128`, `vic20`, `plus4`, `pet2001`, `cbm8032`, `cbm2`, then `c64` | Identical procedure ×7. `c64` last in the wave — it is a full rebuild, not a rebase. |
+| **4** | `c128` ✅, `vic20` ✅, `plus4` ✅, `pet2001` ✅, `cbm8032` ✅, `cbm2` ✅; `c64` ⏸ | **Six landed 2026-08-10.** Identical procedure ×6, no per-tile emulator build. `c64` is NOT part of it and is not a seventh repeat — see below. |
 | **5** | `daybreak`, `nextstep`, `apple2` | Real per-tile work with real runtime risk. `apple2` needs a genuine framebuffer + GEOS-mouse re-verification under sdl12-compat. |
 | **6** | `star` | Blocked on the `nuget` bootstrap; independent of every other tile. |
 | **7** | `sinclairql`, `zxspectrum` | Romset re-derivation against MAME 0.276 plus two golden re-bakes. Do these when nothing else is in flight. |
+
+### What wave 4 settled about `c64`, and what it did not
+
+Six sibling tiles now run the same source-built VICE 3.9 on the trixie base, so
+the **emulator question is closed for `c64` before anyone starts it**: gcc-14's
+VICE renders identically, the ROM tree the base retains at
+`/usr/local/src/vice-3.9/data` is complete (asserted for C64, C128, VIC20, PET,
+PLUS4, CBM-II and DRIVES), and `x64sc` is present and already proven by wave 0.
+Nothing about the emulator is left to discover. What remains is entirely about
+`c64` being **detached**, and it is worth being precise about why that is not a
+seventh repetition of this wave.
+
+One specific pre-check is already done: **the `make install` ROM gap that bit the
+original `c64` build does not exist on the trixie base.** That trap — VICE's
+`make install` silently skipping ROM data files, after which the emulator
+segfaults on startup with no output at all — first bit `c64` on the C64 BASIC ROM
+and later `vic20` on `basic-901486-01.bin`. On `bridge-base-trixie.qcow2` the
+installed tree `/usr/local/share/vice/C64/` already contains all three ROMs a
+stock C64 loads (`basic-901226-01.bin`, `kernal-901227-03.bin`,
+`chargen-901225-01.bin`), and the source tree it repairs from is intact. The
+remaining work is about the disk image, not the emulator:
+
+- **There is no overlay to rebase and no rollback to fall back on.** For these
+  six, `migrate-tile.sh` moved a delta aside and could put it back byte-for-byte
+  because the bookworm base is frozen. `c64`'s 5.21 GiB standalone image is the
+  only copy of its state; the equivalent safety net is an explicit **full copy
+  taken first** (and ~2.5 GiB of its blocks are duplicated base content that a
+  rebuilt thin overlay would stop carrying — the migration is a disk-space win).
+- **`c64.sh` does not bake its golden.** It is one of the six manual builders,
+  so it takes `--bake` and the golden is a separate operator step through
+  `lib/bridge-bake-golden`, under the tile's own launcher. Every tile in wave 4
+  self-baked, so wave 4 exercised *none* of that path.
+- **Its fixture is a booted application, not a power-on screen.** `c64` rests in
+  the **GEOS 2.0 deskTop**, loaded from `GEOS.D64` (which is in the media
+  archive, labelled `bridge-base/GEOS.D64`). Its siblings' predicates all assert
+  a ROM banner that appears within seconds; the GEOS acceptance is a desktop that
+  has to finish loading off an emulated 1541, which is why the builder waits for
+  an operator rather than sleeping. Budget for that, and accept it on a real
+  screenshot of the deskTop — not on "the tile is up".
+- **It is the one VICE tile with a pointer.** `c64` is `pointer_mode rel`:
+  streamhost translates absolute browser coordinates to PS/2 relative for VICE's
+  1351 mouse path. The other six are keyboard-only (`pointer none`), so wave 4
+  proved nothing about mouse tracking under a trixie-built VICE. The GEOS mouse
+  must be re-verified on the framebuffer the way `apple2`'s is called out at §3.
 
 ---
 

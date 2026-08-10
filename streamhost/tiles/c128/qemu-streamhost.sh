@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'c128' (VMID 223) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running VICE `x128` emulating a PAL
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running VICE `x128` emulating a PAL
 # Commodore 128 (1985) in its NATIVE 80-COLUMN mode — the VDC's RGBI text
 # display, cyan on black, drawn 1:1 (NO -VDCdsize) in a 789x576 SDL window on
 # an 800x600 X root, which it fills edge to edge. The CP/M Plus system disk sits
@@ -10,7 +10,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/apple2/atarist/amiga/mpf2/
 # vic20/plus4). The overlay.qcow2 is a THIN qcow2 overlay on the read-only
-# shared base /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden'
+# shared base /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden'
 # snapshot (full RAM+device state) of X (-nocursor) + x128 at the C128's own
 # untouched power-on screen, "COMMODORE BASIC V7.0 122365 BYTES FREE ... READY."
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):

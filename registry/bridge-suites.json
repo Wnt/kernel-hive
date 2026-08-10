@@ -35,7 +35,7 @@
       "glibc": "2.36",
       "gcc": "12",
       "frozen": true,
-      "_note": "FROZEN 2026-07-15. 24 live overlays back onto this byte-for-byte (28 before wave 1 moved atarist, pdp11, gt40 and then decos to trixie). Never rebuild it: `bridge-base.sh --suite bookworm` refuses without --i-know-this-breaks-every-overlay."
+      "_note": "FROZEN 2026-07-15. 18 live overlays back onto this byte-for-byte (28 before wave 1 moved atarist, pdp11, gt40 and then decos on its retry, and wave 4 moved the six VICE tiles c128/vic20/plus4/pet2001/cbm8032/cbm2). Never rebuild it: `bridge-base.sh --suite bookworm` refuses without --i-know-this-breaks-every-overlay. Count the `tiles` map below rather than trusting this sentence; `scripts/dev/bridge-suite-status.sh` is the authority."
     },
     "trixie": {
       "debianVersion": "13",
@@ -46,7 +46,7 @@
       "glibc": "2.41",
       "gcc": "14",
       "frozen": false,
-      "_note": "BUILT 2026-08-10, runtime-proven (generic kernel + e1000 + bochs-drm + bare-X kiosk + hatari/EmuTOS on a soltest clone). Matches the host suite, so a host-built binary runs in the guest unchanged and the per-tile ABI chroots stop being necessary. Wave 1 landed atarist, pdp11, gt40 and decos on it (2026-08-10 — decos on the retry, after its builder bug was fixed), so it now carries live overlays and is frozen IN FACT: the flag below stays false, but bridge-base.sh treats a suite as frozen if the flag is set OR if any tile is declared on it, so the guard armed itself the moment the first tile migrated. Do not hand-flip it."
+      "_note": "BUILT 2026-08-10, runtime-proven (generic kernel + e1000 + bochs-drm + bare-X kiosk + hatari/EmuTOS on a soltest clone). Matches the host suite, so a host-built binary runs in the guest unchanged and the per-tile ABI chroots stop being necessary. Wave 1 landed atarist, pdp11 and gt40 on it (2026-08-10), decos followed on its retry once its builder bug was fixed, and wave 4 brought the six VICE tiles c128/vic20/plus4/pet2001/cbm8032/cbm2 the same day. It now carries live overlays and is frozen IN FACT: the flag below stays false, but bridge-base.sh treats a suite as frozen if the flag is set OR if any tile is declared on it, so the guard armed itself the moment the first tile migrated. Do not hand-flip it."
     }
   },
 
@@ -58,10 +58,10 @@
     "armeval": "bookworm",
     "atarist": "trixie",
     "bbcmicro": "bookworm",
-    "c128": "bookworm",
+    "c128": "trixie",
     "c64": "bookworm",
-    "cbm2": "bookworm",
-    "cbm8032": "bookworm",
+    "cbm2": "trixie",
+    "cbm8032": "trixie",
     "daybreak": "bookworm",
     "decos": "trixie",
     "dragon32": "bookworm",
@@ -72,11 +72,11 @@
     "nextstep": "bookworm",
     "oricatmos": "bookworm",
     "pdp11": "trixie",
-    "pet2001": "bookworm",
-    "plus4": "bookworm",
+    "pet2001": "trixie",
+    "plus4": "trixie",
     "sinclairql": "bookworm",
     "star": "bookworm",
-    "vic20": "bookworm",
+    "vic20": "trixie",
     "zx81": "bookworm",
     "zxspectrum": "bookworm"
   },

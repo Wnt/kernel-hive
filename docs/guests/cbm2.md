@@ -1,12 +1,12 @@
 # Commodore CBM 610 (PAL) — gallery tile notes (udp/54111)
 
-**Guest:** a captured **Debian 12 x86_64 kiosk** running **VICE `xcbm2 -model
+**Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **VICE `xcbm2 -model
 610`**, emulating a **PAL Commodore CBM 610** — the CBM-II / B-series business
 machine of 1982 — at its own untouched power-on screen. An **"emulator bridge"**
 tile: streamhost captures the Linux framebuffer + AC97 audio exactly like every
 other bridge tile. See **`streamhost/docs/BRIDGE.md`**.
 
-**Shared base:** `/data/vms/bridge/bridge-base.qcow2` — already contains the
+**Shared base:** `/data/vms/bridge/bridge-base-trixie.qcow2` — already contains the
 whole VICE family.
 **Build script (tile):** `scripts/build-guests/tiles/cbm2.sh` — thin overlay + kiosk
 `launch.sh` + ROM repair/assert + quiet console + memory assertion + golden bake

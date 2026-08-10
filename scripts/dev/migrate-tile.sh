@@ -55,9 +55,12 @@ unset BRIDGE_SUITE
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck disable=SC1091
 . "$REPO/scripts/build-guests/lib/bridge-suite.sh"
+# shellcheck disable=SC1091
+. "$REPO/scripts/lib/box-detached-build.sh"
 
 LAB="${LAB:-lab}"
 SSH_OPTS=(-o ConnectTimeout=15)
+BOX_BUILD_SSH=(ssh "${SSH_OPTS[@]}" "$LAB")
 TILES_ROOT="${BRIDGE_TILES_ROOT:-/data/vms/streamhost/tiles}"
 BRIDGE_KEY=/data/vms/bridge/bridge_key
 TARGET_SUITE=trixie
@@ -271,36 +274,36 @@ if [ "${P[bak]:-no}" = yes ]; then
 fi
 
 # --- rollback --------------------------------------------------------------
-# Killing the builder is the FIRST thing the restore does, in the same remote
-# program, because a rollback under a live build is worse than no rollback:
-# see BRIDGE-TRIXIE-MIGRATION.md "Trap 3", the decos incident this cost.
+# The detached builder is NOT a child of this script, so nothing reaps it when a
+# check fails — and whoever abandons a build owes it a kill, or it keeps writing
+# to the overlay the rollback is about to replace (box-detached-build.sh).
+stop_builder() {
+  [ "$DRY" -eq 1 ] && return 0
+  log "stopping the detached builder before the overlay is touched"
+  box_build_stop "$BUILD_LOG"
+}
+
 ROLLED_BACK=0
 rollback() {
   [ "$ROLLED_BACK" -eq 0 ] || return 0
   ROLLED_BACK=1
+  # Fail CLOSED: no rollback under a live builder. A rollback restores the
+  # bookworm overlay and restarts the unit, and the builder reaches its guest as
+  # 127.0.0.1:<hostfwd> — so a survivor finds the restarted PRODUCTION tile on
+  # that port and provisions it, up to and including savevm golden over the live
+  # fixture. That happened twice on 2026-08-10 (decos, plus4) and both tiles
+  # survived only on luck. Half-migrated with a known-live builder is a state a
+  # human must look at; it is strictly better than racing it.
+  stop_builder ||
+    die "ROLLBACK ABORTED: the builder is still alive and the overlay was NOT touched. Kill its process group on the box, confirm via /proc/<pid>/exe, then restore $BAK by hand." 1
   step "ROLLBACK: restoring the bookworm overlay"
-  box_sh "kill the builder, stop, restore $BAK, restart $UNIT" "$(
+  box_sh "stop, restore $BAK, restart $UNIT" "$(
     cat <<'EOS'
 set -u
-d=$1 unit=$2 bak=$3 failed=$4 bpf=$5
-# 1. The BUILDER, by the pidfile its own wrapper wrote, as a session group. Only
-# once it is provably gone may the overlay move: the builder addresses the guest
-# as 127.0.0.1:<hostfwd>, so a restored+restarted tile answers on that port and
-# it will happily provision the production guest instead.
-pid=$(cat "$bpf" 2>/dev/null || true)
-case "$pid" in '' | *[!0-9]*) pid="" ;; esac
-if [ -n "$pid" ] && [ -e "/proc/$pid/exe" ]; then
-  kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
-  for _ in $(seq 1 30); do [ -e "/proc/$pid/exe" ] || break; sleep 1; done
-  kill -KILL "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
-  for _ in $(seq 1 15); do [ -e "/proc/$pid/exe" ] || break; sleep 1; done
-  [ -e "/proc/$pid/exe" ] &&
-    { echo "ROLLBACK: builder $pid SURVIVED; not touching the overlay" >&2; exit 1; }
-  echo "rollback: builder session $pid is gone"
-fi
+d=$1 unit=$2 bak=$3 failed=$4
 systemctl stop "$unit" 2>/dev/null
-# 2. This tile's QEMU, only by its pidfile and only after /proc/<pid>/exe says it
-# really is a QEMU (never pkill -f from ssh lab — it matches its own shell).
+# Kill this tile's QEMU only by its pidfile, and only after /proc/<pid>/exe says
+# it really is a QEMU (never pkill -f from ssh lab — it matches its own shell).
 if [ -f "$d/qemu.pid" ]; then
   pid=$(cat "$d/qemu.pid" 2>/dev/null || true)
   case "$(readlink -f "/proc/$pid/exe" 2>/dev/null)" in
@@ -316,8 +319,7 @@ sleep 8
 systemctl is-active --quiet "$unit" && echo "rollback: $unit is active again" ||
   { echo "ROLLBACK: $unit did NOT come back — hands on" >&2; exit 1; }
 EOS
-  )" "$D" "$UNIT" "$BAK" "$FAILED" "$BUILD_LOG.pid" ||
-    die "ROLLBACK FAILED — the tile is in a half-migrated state; hands on" 1
+  )" "$D" "$UNIT" "$BAK" "$FAILED"
   echo
   echo "Rolled back. The trixie attempt is kept at $FAILED (delete it yourself"
   echo "once the post-mortem is done); the build log is $BUILD_LOG."
@@ -397,14 +399,7 @@ step "5/9  build: BRIDGE_SUITE=trixie $BUILDER_REL --force"
 echo "  Staged under $STAGE so the builder's own lib/bridge-base-for"
 echo "  and the ledger resolve relatively. Log: $BUILD_LOG"
 
-# BOTH staging dirs are created up front. rsync makes only the LAST component of
-# a destination path, so `…/$STAGE/scripts/build-guests/` needs `scripts/` to
-# exist already — without it the transfer dies with a bare "mkdir … failed (2)"
-# and the run rolls back before it has built anything. (Found on decos, this
-# script's first real run.)
-STAGE_DIRS=("$STAGE/registry" "$STAGE/scripts/build-guests")
 if [ "$DRY" -eq 1 ]; then
-  printf '  [would] mkdir -p %s\n' "${STAGE_DIRS[*]}"
   printf '  [would] rsync -a --delete %s/scripts/build-guests/ %s:%s/scripts/build-guests/\n' \
     "$REPO" "$LAB" "$STAGE"
   printf '  [would] rsync -a %s %s:%s/registry/bridge-suites.json\n' "$LEDGER" "$LAB" "$STAGE"
@@ -412,55 +407,32 @@ if [ "$DRY" -eq 1 ]; then
     "$LAB" "$STAGE" "$BUILDER_REL" "$BUILD_LOG"
   printf '  [would] poll every 20s, printing new log lines, up to %ss\n' "$BUILD_TIMEOUT"
 else
-  box_ro "mkdir -p $(printf '%q ' "${STAGE_DIRS[@]}")" ||
-    fail "cannot create the staging dirs under $STAGE"
+  # BOTH destination parents, because rsync creates only the LAST component of a
+  # destination path: with only $STAGE/registry made here, the build-guests rsync
+  # died on `mkdir "$STAGE/scripts/build-guests" failed: No such file or directory`
+  # — after step 3 had already moved the live overlay aside, so every run ended in
+  # a rollback that looked like a build failure.
+  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry $(printf '%q' "$STAGE")/scripts/build-guests" ||
+    fail "cannot create the staging dir $STAGE"
   rsync -a --delete -e "ssh ${SSH_OPTS[*]}" \
     "$REPO/scripts/build-guests/" "$LAB:$STAGE/scripts/build-guests/" ||
     fail "staging rsync of build-guests failed"
   rsync -a -e "ssh ${SSH_OPTS[*]}" "$LEDGER" "$LAB:$STAGE/registry/bridge-suites.json" ||
     fail "staging rsync of the ledger failed"
 
-  # The wrapper records its OWN pid, as a session leader, so that rollback() can
-  # prove the builder is dead before it moves the overlay. See the note there.
-  box_sh "launch the build (detached, logged)" "$(
-    cat <<'EOS'
-set -eu
-stage=$1 rel=$2 log=$3
-rm -f "$log" "$log.rc" "$log.pid"
-cd "$stage"
-setsid bash -c "echo \$\$ >'$log.pid'
-  BRIDGE_SUITE=trixie bash '$rel' --force >'$log' 2>&1; echo \$? >'$log.rc'" \
-  </dev/null >/dev/null 2>&1 &
-for _ in $(seq 1 20); do [ -s "$log.pid" ] && break; sleep 0.5; done
-echo "builder session pid $(cat "$log.pid" 2>/dev/null || echo '?')"
-EOS
-  )" "$STAGE" "$BUILDER_REL" "$BUILD_LOG" || fail "could not launch the build"
+  log "launching the build (detached, logged)"
+  box_build_start "$STAGE" "$BUILDER_REL" "$BUILD_LOG" "BRIDGE_SUITE=$TARGET_SUITE" ||
+    fail "could not launch the build"
 
   log "polling (timeout ${BUILD_TIMEOUT}s) — builds run 5-40 min"
-  BUILD_RC=""
-  SEEN=0
-  ELAPSED=0
-  while [ "$ELAPSED" -lt "$BUILD_TIMEOUT" ]; do
-    sleep 20
-    ELAPSED=$((ELAPSED + 20))
-    # ONE fixed header line FIRST, then the new log lines, and the cursor
-    # advances by what was actually consumed. Nothing is inferred from position
-    # — that is the whole point. (Trap 3: a trailing `---` sentinel with a
-    # line count behind it parses as an EXIT CODE on any poll where the build
-    # logged nothing. BRIDGE-TRIXIE-MIGRATION.md has what that cost.)
-    CHUNK="$(box_ro "printf 'RC %s\n' \"\$(cat $(printf '%q' "$BUILD_LOG").rc 2>/dev/null || true)\"; tail -n +$((SEEN + 1)) $(printf '%q' "$BUILD_LOG") 2>/dev/null")"
-    BUILD_RC="$(printf '%s\n' "$CHUNK" | sed -n '1s/^RC //p')"
-    NEW="$(printf '%s\n' "$CHUNK" | tail -n +2)"
-    if [ -n "$NEW" ]; then
-      printf '%s\n' "$NEW" | sed 's/^/    | /'
-      SEEN=$((SEEN + $(printf '%s\n' "$NEW" | wc -l)))
-    fi
-    [ -n "$BUILD_RC" ] && break
-    [ $((ELAPSED % 300)) -eq 0 ] && log "still building (${ELAPSED}s)"
-  done
-  [ -n "$BUILD_RC" ] || fail "build did not finish within ${BUILD_TIMEOUT}s (log: $BUILD_LOG)"
-  [ "$BUILD_RC" = "0" ] || fail "builder exited $BUILD_RC (log: $BUILD_LOG)"
-  log "builder exited 0"
+  box_build_wait "$BUILD_LOG" "$BUILD_TIMEOUT" ||
+    fail "cannot read the build log on the box (log: $BUILD_LOG)"
+  [ -n "$BOX_BUILD_RC" ] || fail "build did not finish within ${BUILD_TIMEOUT}s (log: $BUILD_LOG)"
+  case "$BOX_BUILD_RC" in
+    0) log "builder exited 0" ;;
+    *[!0-9]*) fail "unparseable builder exit code '$BOX_BUILD_RC' (log: $BUILD_LOG)" ;;
+    *) fail "builder exited $BOX_BUILD_RC (log: $BUILD_LOG)" ;;
+  esac
 fi
 
 # --- 6. in-guest suite, while the builder's QEMU is still up ---------------

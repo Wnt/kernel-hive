@@ -3,7 +3,7 @@
 # build-guests/tiles/cbm2.sh — build the Commodore CBM 610 (1982) streamhost tile as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running VICE `xcbm2 -model 610`, emulating
+# GUEST : a captured Debian-13 (trixie) kiosk running VICE `xcbm2 -model 610`, emulating
 #         a PAL Commodore CBM 610 that boots its ROM straight to
 #         "*** commodore basic 128, v4.0 ***  ready." in green on black at 80
 #         columns. streamhost captures the Linux framebuffer + AC97 audio

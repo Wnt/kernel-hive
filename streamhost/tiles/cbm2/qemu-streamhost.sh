@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'cbm2' (VMID 226) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running VICE `xcbm2 -model 610`
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running VICE `xcbm2 -model 610`
 # emulating a PAL Commodore CBM 610 (1982, the CBM-II / B-series business
 # machine) at its own untouched power-on screen — "*** commodore basic 128,
 # v4.0 ***  ready." in green on black, 80 columns, drawn at NATIVE size (704x528
@@ -17,7 +17,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/vic20/plus4/apple2/atarist).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + xcbm2 at the cold BASIC screen.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):
 #     no Linux boot, no console text, no X startup ever becomes visible.
