@@ -1,0 +1,557 @@
+MAME drawshm: a DRIVER-AGNOSTIC `-video shm` OSD render module.
+
+WHY
+
+The gallery already has a shared-memory frame producer, and it converts exactly
+one tile. `mame-newport-shm-framebuffer.patch` publishes finished frames out of
+`src/devices/bus/gio64/newport.cpp` -- the SGI Indy's graphics device. No other
+machine in MAME has a Newport, so nine keyboard-only MAME exhibits and every
+future MAME one are still stuck on the bridge: a QEMU/KVM VM running a bare X
+kiosk whose only job is to hold one full-screen emulator window that streamhost
+then screen-scrapes.
+
+The consumer half is already generic (streamhost `SH_CAPTURE=shm`,
+streamhost/streamhost/src/capture/shm.rs) and so is the input half
+(`mame-ctlsock.patch`, an OSD-level module parameterised by environment). The
+missing piece was a driver-agnostic frame PRODUCER. This is it.
+
+WHERE, AND WHY THERE
+
+At the OSD render layer, beside `drawnone` and `drawsdl` -- not against any
+video device. A module there sees the POST-RENDER TARGET: the primitive list
+MAME has already composed for the output surface, for any machine, at any size
+it is asked for. The module names no machine, no driver and no device; every
+type it touches is `osd_window`, `render_target` or `render_primitive_list`.
+That is the whole tier-level claim, and it is checkable by grep.
+
+ARBITRARY OUTPUT RESOLUTION is a requirement, not a nicety. A host-native arm
+is only comparable with a bridge arm if both produce the same pixel count: a
+bridge kiosk root is 800x600 (1024x768 on some suites) while a vintage
+machine's native raster may be 256x192, and comparing those two measures the
+RESOLUTION, not the bridge. `MAME_SHM_SIZE=WxH` sets the published surface
+directly and MAME's own aspect handling letterboxes the machine inside it.
+
+CONFIGURATION is by environment, exactly like the ctlsock module, so one binary
+serves every machine with no per-machine code and no rebuild:
+
+  MAME_SHM_PATH   (required)  file to publish into; the consumer mmaps it
+  MAME_SHM_SIZE   (optional)  "WxH" surface; default = the window size, which
+                              is MAME's own -resolution when one was given and
+                              the machine's minimum bounds when it was not
+  MAME_SHM_TRACE  (optional)  log the mapping and a periodic publish count
+
+WIRE FORMAT is the one streamhost already speaks -- a 64-byte header (magic
+'IFB1', version, width, height, stride, bpp, u64 seqlock, dirty rect) followed
+by width*height host-endian XRGB8888 pixels, i.e. B,G,R,X in memory, which is
+byte-identical to the BGRA the encoder consumes. Nothing on this path converts
+a pixel; the `software_renderer<uint32_t, 0,0,0, 16,8,0>` instantiation is what
+buys that, and it is the same one drawsdl selects for an rmask of 0x00ff0000.
+This patch does NOT invent a second contract and changes nothing on the Rust
+side.
+
+WHAT IT DOES NOT GET, AND WHY THAT IS THE RIGHT TRADE
+
+Damage. The Newport producer reuses the whole-frame render cache's dirty bit
+and publishes an EMPTY dirty rect for an unchanged frame, so an idle exhibit
+costs the consumer nothing. A render-layer module has no such information --
+the primitive list carries none -- so every published frame is flagged
+whole-frame dirty and streamhost's own frame diff (`SH_SHM_DAMAGE=1`, the
+default) derives the real bounding box. That diff runs on the CONSUMER's core,
+not the emulator's, which is the right side of the trade for an emulator that
+is CPU-bound. It is also why this patch does NOT replace the Newport one:
+irix keeps its optimised special case.
+
+CONTAINMENT
+
+  * Freestanding. It touches only files no tile-specific patch in
+    scripts/build-guests/irix/irix-mame-stack.sh touches (`modules.lua`,
+    `osdobj_common.cpp`, plus its own new `src/osd/modules/render/drawshm.cpp`),
+    so it dry-run-applies to a pristine tree and any MAME tile inherits it by
+    adding one line to a build.
+  * Registered AFTER `RENDERER_NONE`, so `-video auto` can never fall through
+    to it (`none` always initialises) and the module is reachable only by
+    asking for it by name. Zero change to any existing selection.
+  * No timers, no save items: it cannot change a savestate signature and
+    therefore cannot orphan a golden.
+  * `-video shm` with `MAME_SHM_PATH` unset is a LOUD failure, not a blank
+    exhibit.
+  * One publisher per mapping: with `-numscreens > 1` window 0 publishes and
+    the others render nothing, so the seqlock's single-producer premise holds.
+
+PROVEN (2026-08-10, lab box, headless, no X server and no window)
+
+MAME's Dragon 32 -- `dragon32` out of `src/mame/trs/dragon.cpp`, a machine with
+no relation to the SGI Indy -- built from upstream 8f21e978 with THIS PATCH AS
+THE ONLY CHANGE (`make SUBTARGET=dragon SOURCES=src/mame/trs/dragon.cpp`,
+binary md5 8fc95dacadd287e2968f881a00bbff64). MAME's own option help then reads
+"-video  video output method: opengl, bgfx, accel, soft, none or shm".
+
+Each run: `-video shm -sound none -skip_gameinfo -ext "" -seconds_to_run 12`
+with DISPLAY and SDL_VIDEODRIVER unset, so there is no X server and no window
+and the run ends by itself. The mapping was read back with the exhibit's
+EXISTING consumer-side dumper -- scripts/build-guests/irix/irix-bench/shmpng.py,
+unmodified, md5 87b075929c097d35240ebca30bb65f8b in the repo, in the box
+checkout and in the work dir -- which is itself the contract check: a tool
+written for the Newport producer reads this one with no edit. Census by
+scripts/dev/frame-compare.py --frame:
+
+  MAME_SHM_SIZE   mapping bytes   geometry   colours  entropy  non-dominant px
+  <unset>           458,316       391x293       3     1.0520   51,648  (45.08%)
+  800x600         1,920,064       800x600       3     1.0512   216,700 (45.15%)
+  320x240           307,264       320x240       3     1.0554   34,540  (44.97%)
+
+Every byte count is exactly 64 + w*h*4. All three clear the emptiness floor
+(>= 1000 non-dominant pixels) by 34x or more, so a black or flooded frame could
+not have passed. All three carry the SAME three colours -- #30d200 raster,
+#263016 MC6847 border, #007c00 text -- and those are the same three the
+`dragon32` BRIDGE tile's own screenshot carries, and the Dragon's boot text
+("(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT
+/ OK") is legible in all three.
+
+The scaling is size-independent: the green raster occupies 0.688 x 0.655 of the
+surface at 320x240, at 391x293 and at 800x600 alike -- and 0.688 x 0.655 is
+also what MAME's OWN native snapshot (`machine.video:snapshot()`, a code path
+that never touches an OSD renderer) measures.
+
+And the frame is right to the pixel. Run at MAME's own native target geometry
+with `-nokeepaspect` so the two are directly comparable, the published mapping
+versus `video:snapshot()` FROM THE SAME RUN differs in 96 pixels inside one
+8x12 box -- one Dragon character cell, the blinking BASIC cursor, two different
+frames apart. frame-compare's verdict is LOCALISED.
+diff --git a/scripts/src/osd/modules.lua b/scripts/src/osd/modules.lua
+index 0c2e9837f1..0644c04579 100644
+--- a/scripts/src/osd/modules.lua
++++ b/scripts/src/osd/modules.lua
+@@ -144,6 +144,7 @@ function osdmodulesbuild()
+ 		MAME_DIR .. "src/osd/modules/render/draw13.cpp",
+ 		MAME_DIR .. "src/osd/modules/render/drawgdi.cpp",
+ 		MAME_DIR .. "src/osd/modules/render/drawnone.cpp",
++		MAME_DIR .. "src/osd/modules/render/drawshm.cpp",
+ 		MAME_DIR .. "src/osd/modules/render/drawogl.cpp",
+ 		MAME_DIR .. "src/osd/modules/render/drawsdl.cpp",
+ 		MAME_DIR .. "src/osd/modules/render/drawsdl3accel.cpp",
+diff --git a/src/osd/modules/lib/osdobj_common.cpp b/src/osd/modules/lib/osdobj_common.cpp
+index 9695f01ea0..91dc20fba3 100644
+--- a/src/osd/modules/lib/osdobj_common.cpp
++++ b/src/osd/modules/lib/osdobj_common.cpp
+@@ -249,6 +249,12 @@ void osd_common_t::register_options()
+ #endif
+ #endif
+ 	REGISTER_MODULE(m_mod_man, RENDERER_NONE);
++	// drawshm (osgallery): publish the post-render target into a shared-memory
++	// framebuffer (-video shm). Registered AFTER "none" on purpose -- "none"
++	// always initialises, so `auto` can never fall through to this one and the
++	// module is reachable only by asking for it by name. Zero change to any
++	// existing selection.
++	REGISTER_MODULE(m_mod_man, RENDERER_SHM);
+ 
+ 	REGISTER_MODULE(m_mod_man, SOUND_WASAPI);
+ 	REGISTER_MODULE(m_mod_man, SOUND_XAUDIO2);
+diff --git a/src/osd/modules/render/drawshm.cpp b/src/osd/modules/render/drawshm.cpp
+new file mode 100644
+index 0000000000..1df243480b
+--- /dev/null
++++ b/src/osd/modules/render/drawshm.cpp
+@@ -0,0 +1,402 @@
++// license:BSD-3-Clause
++// copyright-holders:osgallery lab
++//============================================================
++//
++//  drawshm.cpp - publish the post-render target into a shared-memory
++//                framebuffer (`-video shm`)
++//
++//============================================================
++//
++//  WHAT THIS IS, AND WHY IT IS AT THE OSD RENDER LAYER
++//
++//  The gallery's IRIX exhibit already publishes finished frames into a
++//  file-backed mapping instead of pushing them through SDL + llvmpipe + an X
++//  server, which measured +41% emulation speed and delivered the exact
++//  emulated framebuffer instead of a window-scaled resample. But that producer
++//  is a patch to src/devices/bus/gio64/newport.cpp -- the SGI Indy's graphics
++//  device. No other machine has a Newport, so it converts exactly ONE tile and
++//  nothing else.
++//
++//  This module is the driver-agnostic form of the same idea. It sits where
++//  drawnone and drawsdl sit, so it sees the POST-RENDER TARGET: the primitive
++//  list MAME has already composed for the output surface, for ANY machine, at
++//  ANY size we ask for. It contains no reference to a machine, a driver or a
++//  video device, and it never can -- everything it touches is osd_window,
++//  render_target and render_primitive_list.
++//
++//  The cost model differs from the Newport producer in exactly one place, and
++//  it is worth stating rather than discovering: the device-level producer gets
++//  a DAMAGE FLAG for free (it reuses the whole-frame render cache's dirty bit),
++//  and a render-layer module cannot -- the primitive list carries no such
++//  thing. So every published frame is flagged whole-frame dirty and the
++//  consumer's own frame diff (streamhost SH_SHM_DAMAGE=1, the default) derives
++//  the real bounding box. That diff runs on the CONSUMER's core, not the
++//  emulator's, which is the right side of the trade for an emulator that is
++//  CPU-bound.
++//
++//  ARBITRARY OUTPUT RESOLUTION is a hard requirement, not a nicety. A
++//  host-native arm is only comparable with a bridge arm if both produce the
++//  same pixel count: a bridge kiosk root is 800x600 while a vintage machine's
++//  native raster may be 256x192, and comparing those two measures the
++//  RESOLUTION, not the bridge. MAME_SHM_SIZE sets the published surface size
++//  directly; the render target is asked for exactly that many pixels and MAME's
++//  own aspect handling letterboxes the machine into it.
++//
++//  CONFIGURATION is by environment, exactly like the ctlsock module, so one
++//  binary serves every machine with no per-machine code and no rebuild:
++//
++//    MAME_SHM_PATH  (required)  file to publish into; the consumer mmaps it
++//    MAME_SHM_SIZE  (optional)  "WxH" output surface; default = the window size
++//                               (which is MAME's own -resolution, or the
++//                               machine's minimum bounds when that is "auto")
++//    MAME_SHM_TRACE (optional)  set to log mapping + a periodic publish count
++//
++//  WIRE FORMAT -- identical to the one streamhost's SH_CAPTURE=shm consumer
++//  already speaks (streamhost/streamhost/src/capture/shm.rs). This module does
++//  NOT invent a second contract:
++//
++//    off  type  field
++//      0  u32   magic 'IFB1' (0x31424649 little-endian)
++//      4  u32   version (1)
++//      8  u32   width
++//     12  u32   height
++//     16  u32   stride (bytes per row; always width*4 here)
++//     20  u32   bpp (32)
++//     24  u64   sequence (seqlock)
++//     32  u32   dirty_x0    36 u32 dirty_y0
++//     40  u32   dirty_x1    44 u32 dirty_y1
++//     48        pad to 64
++//     64        width*height pixels
++//
++//  Pixels are host-endian XRGB8888 -- B,G,R,X in memory on a little-endian
++//  host, byte-identical to the BGRA the encoder consumes, so nothing on this
++//  path converts a pixel. That is what the software_renderer instantiation
++//  below buys: <uint32_t, 0,0,0, 16,8,0> puts red at bit 16, green at 8, blue
++//  at 0, which is exactly the layout drawsdl selects for an rmask of
++//  0x00ff0000.
++//
++//  SYNCHRONISATION is a seqlock: one producer (MAME's video thread, which is
++//  the only caller of draw()), any number of readers, readers never write. The
++//  sequence goes ODD before pixels are touched and EVEN after, both with
++//  release ordering. A reader takes it with acquire, copies, re-reads, and
++//  retries on odd-or-changed, so a torn frame can never be accepted.
++//
++//  ONE PUBLISHER PER MAPPING. With -numscreens > 1 every window would
++//  otherwise write the same file and the seqlock's single-producer premise
++//  would be false. Window 0 publishes; the others render nothing, exactly like
++//  -video none.
++//
++//============================================================
++
++#include "render_module.h"
++
++#include "modules/lib/osdobj_common.h"
++#include "modules/osdmodule.h"
++#include "modules/osdwindow.h"
++
++#if !defined(_WIN32)
++
++#include "emucore.h"
++#include "render.h"
++#include "rendersw.hxx"
++
++#include <atomic>
++#include <cerrno>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <memory>
++#include <string>
++
++#include <fcntl.h>
++#include <sys/mman.h>
++#include <unistd.h>
++
++
++namespace osd {
++
++namespace {
++
++//============================================================
++//  CONSTANTS
++//============================================================
++
++// Fixed header size in bytes; pixels start here.
++constexpr size_t SHM_HEADER = 64;
++constexpr uint32_t SHM_MAGIC = 0x31424649U; // 'IFB1'
++constexpr uint32_t SHM_VERSION = 1U;
++
++
++//============================================================
++//  renderer_shm
++//============================================================
++
++class renderer_shm : public osd_renderer
++{
++public:
++	renderer_shm(osd_window &window, std::string path, int forced_w, int forced_h, bool trace)
++		: osd_renderer(window)
++		, m_path(std::move(path))
++		, m_forced_w(forced_w)
++		, m_forced_h(forced_h)
++		, m_trace(trace)
++	{
++	}
++
++	virtual ~renderer_shm() { unmap(); }
++
++	virtual int create() override { return 0; }
++	virtual render_primitive_list *get_primitives() override;
++	virtual int draw(int update) override;
++
++private:
++	bool ensure_mapped(int w, int h);
++	void unmap();
++
++	std::string const   m_path;
++	int const           m_forced_w;
++	int const           m_forced_h;
++	bool const          m_trace;
++
++	uint8_t             *m_shm = nullptr;
++	size_t              m_shm_size = 0;
++	int                 m_shm_w = 0;
++	int                 m_shm_h = 0;
++	int                 m_w = 0;
++	int                 m_h = 0;
++	uint64_t            m_frames = 0;
++};
++
++
++//============================================================
++//  renderer_shm::get_primitives
++//============================================================
++//
++//  The output surface size, and therefore the render target bounds. An
++//  explicit MAME_SHM_SIZE wins; otherwise the window's size does, which is
++//  MAME's own -resolution when one was given and the machine's minimum bounds
++//  when it was not. Either way this function never asks WHICH machine.
++
++render_primitive_list *renderer_shm::get_primitives()
++{
++	int w = m_forced_w;
++	int h = m_forced_h;
++	if ((w <= 0) || (h <= 0))
++	{
++		osd_dim const dimensions = window().get_size();
++		w = dimensions.width();
++		h = dimensions.height();
++	}
++	if ((w <= 0) || (h <= 0))
++		return nullptr;
++
++	m_w = w;
++	m_h = h;
++
++	// Pixel aspect 1.0: this surface is consumed by a video encoder, not shown
++	// on a monitor, so its pixels ARE square. MAME's own aspect handling then
++	// letterboxes a non-4:3 machine inside the surface instead of stretching
++	// it, which is what makes a 256x192 raster and an 800x600 kiosk root
++	// comparable frame for frame.
++	window().target()->set_bounds(w, h, 1.0f);
++	return &window().target()->get_primitives();
++}
++
++
++//============================================================
++//  renderer_shm::draw
++//============================================================
++
++int renderer_shm::draw(int update)
++{
++	// One publisher per mapping (see the header comment): with -numscreens > 1
++	// the other windows render nothing, exactly like -video none.
++	if (m_path.empty())
++		return 0;
++	if ((m_w <= 0) || (m_h <= 0) || (window().m_primlist == nullptr))
++		return 0;
++	if (!ensure_mapped(m_w, m_h))
++		return 0;
++
++	uint32_t *const hdr = reinterpret_cast<uint32_t *>(m_shm);
++	std::atomic_ref<uint64_t> seq(*reinterpret_cast<uint64_t *>(m_shm + 24));
++
++	uint64_t const start = seq.load(std::memory_order_relaxed);
++	seq.store(start + 1, std::memory_order_release); // odd: write in progress
++
++	window().m_primlist->acquire_lock();
++	software_renderer<uint32_t, 0, 0, 0, 16, 8, 0>::draw_primitives(
++			*window().m_primlist,
++			m_shm + SHM_HEADER,
++			uint32_t(m_w),
++			uint32_t(m_h),
++			uint32_t(m_w)); // pitch is in PIXELS, and the surface is tightly packed
++	window().m_primlist->release_lock();
++
++	// Whole-frame damage on every published frame. A render-layer module has no
++	// damage information -- the primitive list carries none -- so the honest
++	// answer is "all of it", and the consumer's frame diff derives the real box
++	// on its own core.
++	hdr[8] = 0;
++	hdr[9] = 0;
++	hdr[10] = uint32_t(m_w);
++	hdr[11] = uint32_t(m_h);
++
++	seq.store(start + 2, std::memory_order_release); // even: frame complete
++
++	if (m_trace && ((++m_frames % 300) == 0))
++		std::fprintf(stderr, "[drawshm] published %llu frames %dx%d\n", (unsigned long long)m_frames, m_w, m_h);
++	return 0;
++}
++
++
++//============================================================
++//  renderer_shm::ensure_mapped
++//============================================================
++//
++//  (Re)map whenever the output geometry changes. The keyed comparison is
++//  (w, h) and NOT the byte size: 800x600 and 600x800 need the same number of
++//  bytes and a size-keyed test would keep publishing a transposed frame under
++//  a stale header forever.
++//
++//  The order below is the one the consumer's validation expects: grow the file
++//  first, then zero the header (which makes the magic invalid, so a reader that
++//  looks mid-resize sees "not initialised yet" rather than a lie), then write
++//  the new geometry.
++
++bool renderer_shm::ensure_mapped(int w, int h)
++{
++	if (m_shm && (m_shm_w == w) && (m_shm_h == h))
++		return true;
++
++	unmap();
++
++	size_t const want = SHM_HEADER + (size_t(w) * size_t(h) * 4);
++	int const fd = ::open(m_path.c_str(), O_RDWR | O_CREAT, 0644);
++	if (fd < 0)
++	{
++		osd_printf_error("drawshm: cannot open %s: %s\n", m_path, std::strerror(errno));
++		return false;
++	}
++	void *p = MAP_FAILED;
++	if (::ftruncate(fd, off_t(want)) == 0)
++		p = ::mmap(nullptr, want, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++	::close(fd);
++	if (p == MAP_FAILED)
++	{
++		osd_printf_error("drawshm: cannot map %zu bytes of %s: %s\n", want, m_path, std::strerror(errno));
++		return false;
++	}
++
++	m_shm = static_cast<uint8_t *>(p);
++	m_shm_size = want;
++	m_shm_w = w;
++	m_shm_h = h;
++
++	std::memset(m_shm, 0, SHM_HEADER);
++	uint32_t *const hdr = reinterpret_cast<uint32_t *>(m_shm);
++	hdr[0] = SHM_MAGIC;
++	hdr[1] = SHM_VERSION;
++	hdr[2] = uint32_t(w);
++	hdr[3] = uint32_t(h);
++	hdr[4] = uint32_t(w) * 4;
++	hdr[5] = 32;
++	if (m_trace)
++		std::fprintf(stderr, "[drawshm] mapped %dx%d (%zu bytes) at %s\n", w, h, want, m_path.c_str());
++	return true;
++}
++
++
++void renderer_shm::unmap()
++{
++	if (m_shm)
++		::munmap(m_shm, m_shm_size);
++	m_shm = nullptr;
++	m_shm_size = 0;
++	m_shm_w = 0;
++	m_shm_h = 0;
++}
++
++
++//============================================================
++//  video_shm - the module
++//============================================================
++
++class video_shm : public osd_module, public render_module
++{
++public:
++	video_shm() : osd_module(OSD_RENDERER_PROVIDER, "shm") { }
++
++	virtual int init(osd_interface &osd, osd_options const &options) override;
++	virtual void exit() override { }
++
++	virtual std::unique_ptr<osd_renderer> create(osd_window &window) override;
++
++protected:
++	virtual unsigned flags() const override { return 0; }
++
++private:
++	std::string m_path;
++	int         m_w = 0;
++	int         m_h = 0;
++	bool        m_trace = false;
++};
++
++int video_shm::init(osd_interface &osd, osd_options const &options)
++{
++	char const *const path = std::getenv("MAME_SHM_PATH");
++	if (!path || !*path)
++	{
++		// Fail loudly rather than render into the void: `-video shm` with no
++		// destination is a mistake, and a silently blank exhibit is the one
++		// failure mode this whole capture path exists to make impossible.
++		osd_printf_error("-video shm needs MAME_SHM_PATH set to the file to publish frames into\n");
++		return -1;
++	}
++	m_path = path;
++
++	m_trace = (std::getenv("MAME_SHM_TRACE") != nullptr);
++
++	char const *const size = std::getenv("MAME_SHM_SIZE");
++	if (size && *size)
++	{
++		int w = 0, h = 0;
++		if ((std::sscanf(size, "%dx%d", &w, &h) != 2) || (w <= 0) || (h <= 0) || (w > 8192) || (h > 8192))
++		{
++			osd_printf_error("MAME_SHM_SIZE must be WxH within 8192x8192, not '%s'\n", size);
++			return -1;
++		}
++		m_w = w;
++		m_h = h;
++	}
++
++	if (m_w)
++		osd_printf_verbose("drawshm: publishing to %s at %dx%d\n", m_path, m_w, m_h);
++	else
++		osd_printf_verbose("drawshm: publishing to %s at the window size\n", m_path);
++	return 0;
++}
++
++std::unique_ptr<osd_renderer> video_shm::create(osd_window &window)
++{
++	// Only window 0 owns the mapping; the rest get an inert renderer.
++	return std::make_unique<renderer_shm>(
++			window,
++			(window.index() == 0) ? m_path : std::string(),
++			m_w,
++			m_h,
++			m_trace);
++}
++
++} // anonymous namespace
++
++} // namespace osd
++
++#else // !defined(_WIN32)
++
++namespace osd { namespace { MODULE_NOT_SUPPORTED(video_shm, OSD_RENDERER_PROVIDER, "shm") } }
++
++#endif // !defined(_WIN32)
++
++
++MODULE_DEFINITION(RENDERER_SHM, osd::video_shm)
