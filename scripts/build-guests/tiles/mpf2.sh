@@ -304,18 +304,35 @@ if [ ! -f "$OVERLAY" ]; then
   NEW_OVERLAY=1
 fi
 
-if [ "$NEW_OVERLAY" -eq 1 ]; then
-  boot_tile
+# wait_for_ssh — block until the guest answers on its provisioning port. The
+# inline copy of this loop already guarded the FIRST boot; the cold reset near
+# the end had none and probed SSH immediately, which on trixie timed out and was
+# reported as "MAME exited after cold reset" — a claim about the emulator made
+# by a failure of the transport (2026-08-10).
+#
+# A FRAME IS NOT A BOOTED GUEST, and this tile's predicate is the weak kind:
+# wait_for_mpf2_boot accepts any warning-free frame with >100 non-black pixels,
+# which a GRUB console satisfies. On trixie it returned while the screen still
+# read "Loading Linux 6.12.101+deb13-amd64 ...".
+#
+# WHAT THIS DOES NOT FIX, and the reason mpf2 is still declared bookworm: with
+# the wait in place the connection succeeds and the pgrep then genuinely finds no
+# MAME — while the FIRST cold boot of the same build drew the real MPF-II banner
+# and `>` prompt, so the emulator itself is fine on trixie. Both the predicate
+# and the second-cold-boot behaviour need their own investigation on a soltest
+# clone — see docs/lab/BRIDGE-TRIXIE-MIGRATION.md, wave 2.
+wait_for_ssh() {
   log "waiting for bridge SSH"
-  ssh_ready=0
   for _ in $(seq 1 40); do
-    if guest true 2>/dev/null; then
-      ssh_ready=1
-      break
-    fi
+    if guest true 2>/dev/null; then return 0; fi
     sleep 3
   done
-  [ "$ssh_ready" -eq 1 ] || die "bridge SSH did not become ready"
+  die "bridge SSH did not become ready"
+}
+
+if [ "$NEW_OVERLAY" -eq 1 ]; then
+  boot_tile
+  wait_for_ssh
   guest "export DEBIAN_FRONTEND=noninteractive
     apt-get update
     # The distro package supplies SDL/X11 runtime libraries; its MAME binary
@@ -350,6 +367,7 @@ stop_qemu
 boot_tile
 sleep 6
 wait_for_mpf2_boot cold-reset-basic
+wait_for_ssh
 guest "pgrep -x mpf2 >/dev/null || pgrep -x mame >/dev/null" ||
   die "MAME exited after cold reset"
 bake_golden
