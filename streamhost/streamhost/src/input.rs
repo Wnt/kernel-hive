@@ -371,21 +371,29 @@ async fn apply_move_abs(
         let (dx, dy) = {
             let mut st = mouse.lock().await;
             if !st.seeded {
-                // Intentionally UNBOUNDED single event: we WANT this to
-                // over-clamp the guest cursor into the top-left corner
-                // (a merge/clamp is the goal here, not a truncation
-                // hazard), establishing a known 0,0 origin.
-                rel_motion(cap, -HOME_PIN, -HOME_PIN).await; // pin to top-left origin
-                                                             // Let the guest CONSUME the deliberate clamp before
-                                                             // sending origin -> target. Otherwise QEMU, or a guest
-                                                             // that samples the pointer once per emulated frame,
-                                                             // merges the two motions and the oversized homing delta
-                                                             // swallows the target whole.
+                // Deliberate over-clamp into the top-left corner: a merge/clamp
+                // is the goal here, not a truncation hazard, and it establishes
+                // a known 0,0 origin.
+                rel_motion(cap, -HOME_PIN, -HOME_PIN).await;
                 tokio::time::sleep(std::time::Duration::from_millis(HOME_SETTLE_MS)).await;
-                st.lx = tx;
-                st.ly = ty;
+                // The seeding sample sends NO motion of its own. It sets the
+                // model to the origin it just pinned and stops; the NEXT sample
+                // (tens of hertz away — one frame, invisible) walks origin ->
+                // target as an ordinary delta.
+                //
+                // Sending the walk from inside this same handler is what broke
+                // the Xerox Star tile: pointer MOVES ride unreliable datagrams
+                // and are handled concurrently, so the pin, the seed walk and
+                // the next few deltas raced through the PS/2 queue and the guest
+                // observed only their merged, hugely negative sum. The cursor
+                // parked in the corner while the model believed it was at the
+                // target — a fixed offset for the rest of the session, i.e.
+                // exactly what the pin exists to prevent. Separating the two
+                // costs one sample and removes the race entirely.
+                st.lx = 0;
+                st.ly = 0;
                 st.seeded = true;
-                (tx, ty) // delta from the known origin to calibrated target
+                (0, 0)
             } else {
                 let dx = tx - st.lx;
                 let dy = ty - st.ly;
