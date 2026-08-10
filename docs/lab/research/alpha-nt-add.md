@@ -388,8 +388,52 @@ Wall and CPU deltas agree, so this is removed work, not host-noise luck.
 detection variance; the kernel checkpoint, spread 0.4 s, is the metric.)
 Vtable note: the new virtual on `CDisk` means incremental builds against
 stale objects are ABI-broken — clean rebuild after pulling this commit.
-The live rig still runs `a2a21bde…`; it adopts `3745cfb2…` (or newer) on
-its next clean restart — no urgency, the delta is boot-phase only.
+
+### A/B №2 — `-O3` (2026-08-11): +2.4%, adopted
+
+3 interleaved `--until desktop` runs per arm vs the fast-flag `-O2` build,
+pre-quiesce epoch, binary-sha-verified. Kernel 151.0→147.3 s (zero overlap
+between arms), desktop −2.3%, es40 CPU −2.8%. Adopted: configure on the box
+now bakes `-O3` (`CXXFLAGS="-g -O3"` at configure time). LTO/PGO remain
+open as separate experiments.
+
+### A/B №3 — TLB per-page hint (2026-08-11): NULL, reverted
+
+Verified hint cache in front of `FindTBEntry`'s linear scan. Boot A/B (3
+**concurrent pairs**, post-quiesce epoch): paired CPU deltas +0.6/−0.3/−0.5 s
+on ~200 s — noise. Paired 60 s idle-at-desktop perf profiles: FindTBEntry
+absent above 1% in both arms, `virt2phys` identical 3.7% — with `-O3`
+inlining the scan is no longer a measurable cost. Patch parked on fork
+branch `tlb-hint-experimental` with the null result in the commit message.
+Fresh idle shape (the real #2 target): `execute` ~21%, `jit_run` ~14%,
+`jit_hw_mtpr` ~9%, `jit_read` ~8–10%.
+
+### Epochs, quiesce, and the AlphaBIOS NVRAM fix (2026-08-11)
+
+Host quiesced on operator's order (52 tile units stopped, debridge
+experiment + openvms killed; restore list
+`bench/../quiesced-units-20260811.txt`; k3s untouched). Quiet host + turbo
+moved desktop runs 250→180 s on identical binaries — **bench numbers are
+epoch-bound; only compare within an epoch** (governor already
+`performance`, turbo on). A/B arms now run as concurrent slot pairs to
+share conditions.
+
+AlphaBIOS CMOS changes applied on the live rig via `DISPLAY=:64 xdotool`
+(F2 setup → Auto Start Count 30→5 s; F6 Advanced → Power-up Memory Test
+Full→Disabled; F10 save; `flash.rom` persisted 02:47:51, bench inherits it):
+cold-boot **kernel 118.7→82.8 s, desktop 179.5→140.4 s**. A desktop bench
+run is now ~3 min, `--until kernel` ~1.5 min. Bench refs unchanged (`arc`
+still detected at 65.9 s; 5 s countdown chosen over 0 so the chooser frame
+stays catchable at the 2 s poll).
+
+Emulator/guest tuning research digested in
+[`es40-tuning-research.md`](es40-tuning-research.md) — headline items:
+JIT large pages already active on this box (THP `madvise`); remove
+`ali_usb` for W2K guests (known System-process USB-poll burn); `idle_nap`
+exists upstream for WTINT; savestate format is same-build-only raw struct
+dumps with the JIT cache deliberately excluded (restore-then-recompile is
+safe by design); W2K's built-in Telnet Server is the planned guest command
+channel for load scenarios (operator direction).
 
 ### Input: pointer verified, VNC operator access, `mouse.absolute`
 

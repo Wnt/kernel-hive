@@ -1,10 +1,12 @@
 # w2kalpha emulator-optimization — session handoff
 
-**Updated 2026-08-11 after the fast-flag session: queue §1 is DONE (−24.7% to
-kernel, fork `6a525d1`). Next session: pick up at "Optimization queue" §2
-(dispatch) — and note the priority reframe below.** Full background is
-[`alpha-nt-add.md` §10](alpha-nt-add.md); this file is the working handoff —
-what's done, what's next, and the traps that will bite.
+**Updated 2026-08-11 (late session). Done: §1 fast-flag (−24.7%), §4 partial
+(-O3 adopted, +2.4%; LTO/PGO open), §3 closed NULL (patch parked on fork
+branch `tlb-hint-experimental`), AlphaBIOS NVRAM fix (kernel 118.7→82.8s
+cold-boot), host quiesced, tuning research digested in
+[`es40-tuning-research.md`](es40-tuning-research.md). Next: savestate smoke
+test, then guest telnet channel, then §2 (dispatch) sized by a fresh
+JIT_STATS profile.** Full background: [`alpha-nt-add.md` §10](alpha-nt-add.md).
 
 **Priority reframe (operator, 2026-08-11):** the tile ships in instant-resume
 (desktop visible, golden restore < 5 s) — visitors never watch it boot.
@@ -24,18 +26,25 @@ commits (operator rule: **no .patch files**).
 
 - **Repo `main` @ `ab440cd`** (pushed): `alpha-nt-add.md` §10, two `tiles.json`
   harvests. Working tree clean. Box-sync 233/233 MATCH, pre-push gate green.
-- **Fork `Wnt/es40` main @ `6a525d1`** (pushed): `652f7c2` = `gui {
-  mouse.absolute }` (the VNC mouse fix), `6a525d1` = the media-mailbox
-  fast-flag (queue §1). Built binary on the box is `sha256 3745cfb2…`; the
-  box's `es40src` checkout is synced to `6a525d1` (push via a temp branch +
-  `git merge --ff-only` — the box can't auth to github). A/B controls
-  preserved next to it: `es40.652f7c2` (`a2a21bde…`, pre-fast-flag) and
-  `es40.baseline` (`29ecb300…`, pre-mouse-patch).
-- **Live rig** `/data/vms/soltest/ALPHA-nt/run/`: restarted onto the patched
-  binary + `mouse.absolute = true`, cold-booting to desktop as this was written.
-  Serves operator VNC at `vnc://<box>:5964` (pw `alpha2000`, unit
-  `alpha-nt-vnc64.service` on Xvfb `:64`). Clean NTFS shutdown was done before
-  the restart.
+- **Fork `Wnt/es40` main @ `69022e4`** (pushed): `652f7c2` mouse.absolute,
+  `6a525d1` media-mailbox fast-flag, `e4a96e3`/`69022e4` fork docs
+  (KERNEL-HIVE-FORK.md). Branch `tlb-hint-experimental` = the measured-null
+  TLB patch. Box checkout synced (push via temp branch + `git merge
+  --ff-only` — the box can't auth to github). Canonical binary `688428…`
+  (-O3, .text-identical to benched `es40.O3` `ade17cfa…`); controls:
+  `es40.O3`, `es40.652f7c2` (`a2a21bde…`), `es40.baseline` (`29ecb300…`).
+  **The fast-flag commit added a virtual to CDisk — always clean-rebuild
+  across it (stale objects are vtable-broken).**
+- **Live rig** `/data/vms/soltest/ALPHA-nt/run/`: on the canonical -O3
+  binary since 2026-08-11 (clean NTFS shutdown → `start.sh`), at the
+  desktop. **Its `flash.rom` (persisted 02:47:51) carries the new NVRAM:
+  Auto Start Count 5 s + Power-up Memory Test Disabled — the bench copies
+  this file, so all future runs inherit it; the `m2-desktop` milestone
+  flash.rom is now doubly stale (no autoboot script, old settings).**
+  Operator VNC at `vnc://<box>:5964` (pw `alpha2000`, unit
+  `alpha-nt-vnc64.service` on Xvfb `:64`); drive it from the host with
+  `DISPLAY=:64 xdotool key …` + `import -window root` screenshots (the
+  AlphaBIOS setup session used exactly this).
 - **Bench harness** `/data/vms/soltest/ALPHA-nt/bench/` — built, validated,
   slots clear. See "How to measure".
 - **Mouse verified post-restart** (operator, 2026-08-11): pointer moves fine
@@ -75,18 +84,28 @@ Two perf profiles on the box (400 Hz, dwarf call-graphs), saved at
    `3745cfb2…`. **The commit adds a virtual to `CDisk` — clean-rebuild after
    pulling it; stale objects are vtable-broken.** Live rig still runs
    `a2a21bde…` (boot-phase delta only — adopt on next natural restart).
-2. **Dispatch overhead (START HERE)** — why is `execute()` still ~35% with
-   ASMJIT on? Interpreter round-trips per JIT block, poly-successor chaining,
+2. **Dispatch overhead (the big open item)** — fresh 60 s idle-at-desktop
+   profile on the -O3 build (quiet host, 2026-08-11): `execute()` ~21%,
+   `jit_run` ~14%, `jit_hw_mtpr` ~9%, `jit_read` ~8–10%, `virt2phys` 3.7%.
+   Levers: interpreter round-trips per JIT block, poly-successor chaining,
    block-JIT register allocation. **Don't revisit the trace tier**:
    `config_debug.h` (~line 205) records it as a measured NET LOSS (2026-06,
    92 vs 120 VUPS) and names chaining+regalloc as the real lever. A
    `-DJIT_STATS` build (JIT_VERIFY off) prints compiled-vs-interpreted
-   coverage — use it to find where dispatch round-trips.
-3. **Software TLB fast path** — small direct-mapped host-side cache in front of
-   `FindTBEntry` (`AlphaCPU.cpp:3478`): last-hit cache, then a LINEAR SCAN over
-   all TB entries.
-4. **Build flags** — configure default is `-g -O2 -mavx2 -mfma`. Try `-O3`, LTO,
-   PGO (profile a boot, rebuild with it). Cheap, possibly free 10–30%.
+   coverage — size the candidates with it before designing anything.
+3. ~~**Software TLB fast path**~~ **CLOSED NULL 2026-08-11.** Verified
+   per-page hint cache in front of `FindTBEntry` measured zero on boot A/B
+   (3 concurrent pairs, paired CPU deltas ±0.6 s) and the paired idle
+   profiles show FindTBEntry < 1% on -O3 — the scan is no longer a cost.
+   Patch preserved on fork branch `tlb-hint-experimental` (null result in
+   the commit message).
+4. **Build flags — -O3 ADOPTED** (+2.4% kernel wall, +2.8% CPU, zero-overlap
+   3×3). `./configure` on the box now bakes it in (`CXXFLAGS="-g -O3"` at
+   configure time; the macro appends `-mavx2 -mfma`); plain `make` in
+   `es40src/src` reproduces the adopted binary. Controls kept alongside:
+   `es40.O3` (=adopted, `ade17cfa…`, .text-identical to the canonical
+   `688428…`), `es40.652f7c2`, `es40.baseline`. **LTO and PGO still open**
+   as separate one-change A/Bs.
 5. ~~**VGA/llvmpipe**~~ **DEAD (operator, 2026-08-11)** — the tile will drop
    the SDL+X11 layer entirely and wire es40 straight into the video capture
    pipeline, MAME-IRIX style (shm framebuffer export + injected input; the
@@ -110,11 +129,30 @@ Two perf profiles on the box (400 Hz, dwarf call-graphs), saved at
   before the golden bake so the restored device environment matches the
   shipping wiring.
 
-Note for #2/#3: these are *idle-profile* costs — the bench's `--until kernel`
-wall-clock is the wrong metric for them. Measure steady-state: boot a bench
-clone with `--hold-secs`, then `perf stat -e task-clock -p <pid>` over a fixed
-window at the desktop, plus a guest-side responsiveness probe if one exists by
-then.
+Note for #2: dispatch is an *idle/desktop-profile* cost — the bench's
+`--until kernel` wall-clock is the wrong metric. Measure steady-state with
+paired holds + perf (`bench/idle-profile-pair.sh`), plus a guest-side
+workload once the telnet channel exists.
+
+## Before deep JIT work — the enabling items (in order)
+
+1. **Savestate smoke test.** Boot a bench clone to desktop, trigger the
+   serial break-menu save (`autosave.axp`, `Serial.cpp:795`), kill, restore
+   under the same binary, framebuffer-verify, time the restore. Format facts
+   in [`es40-tuning-research.md`](es40-tuning-research.md) — raw
+   struct-layout dumps, same-build restore only, JIT cache intentionally
+   not saved (revalidates lazily — restore-then-recompile is safe by
+   design). If it works, benches become restore-based (seconds, not
+   minutes) and the tile's instant-resume goal is de-risked.
+2. **Guest telnet channel (operator, 2026-08-11).** Before OS-level load
+   scenarios: guest networking over the emulated `dec21143` + W2K's
+   built-in Telnet Server, so load scenarios are driven and validated over
+   text instead of emulated keystrokes + screenshots. Then apply the guest
+   de-bloat list from the research digest.
+3. **Two cheap config experiments** (from research; device-set changes go
+   BEFORE any golden savestate): remove `ali_usb` (W2K System-process
+   USB-polling burn, issues #114/#169); test `idle_nap = true` (does W2K's
+   HAL issue WTINT at all? — unverified, optional given the idle non-goal).
 
 ## How to measure (the bench harness)
 
@@ -129,11 +167,23 @@ ssh lab '/data/vms/soltest/ALPHA-nt/bench/bench.sh <name> [--until kernel] \
 - **Checkpoints** (framebuffer RMSE vs `bench/refs/`): `serial srm arc osloader
   kernel desktop`. `--until kernel` = ~3.5-min A/B loop; full desktop ~5 min.
   Result JSON per run + appended to `bench/results.log`.
-- **Validated baseline** (loaded host): arc 159s / kernel 202s / desktop 307s.
-  ~189s of that is firmware (SRM memtest + 30s AlphaBIOS countdown) — Windows is
-  ~105s, so **`--until kernel` is where boot-phase CPU wins will show**.
-  Post-fast-flag (`3745cfb2…`) the kernel checkpoint is ≈ 150s — expect that,
-  not 202s, when the default-built binary is the subject.
+- **Baselines are EPOCH-BOUND — never compare across epochs** (host load and
+  turbo shift the clock base; the NVRAM change shifted the firmware phase):
+  - loaded host, O2 fast-flag (`3745cfb2…`): kernel ≈ 150s, desktop ≈ 250s
+  - quiesced host, -O3, old NVRAM: arc 76.5 / kernel 118.7 / desktop 179.5
+  - **CURRENT (quiesced, -O3, 5s countdown + no ARC memtest, 2026-08-11):
+    serial 0.1 / arc 65.9 / kernel 82.8 / desktop 140.4** — a desktop run
+    is ~3 min with teardown, `--until kernel` ~1.5 min.
+- **Run A/B arms as CONCURRENT PAIRS** (two slots, same instant) — identical
+  host/turbo conditions per pair, half the wall time; see
+  `bench/ab-tlb.sh` for the pattern, `bench/idle-profile-pair.sh` for the
+  paired-perf variant. Host is 8 cores + SMT: cap concurrent measurement
+  runs at 2 (plus the rig) and `taskset` precision runs to distinct
+  physical cores (CPU N and N+8 are siblings).
+- Host quiesce state: 52 `streamhost@*` tile units stopped 2026-08-11
+  (restore list `/data/vms/soltest/ALPHA-nt/quiesced-units-20260811.txt`);
+  debridge-7f3a experiment + openvms killed on operator's order. k3s and
+  non-streamhost guests untouched.
 
 **The A/B recipe for target #1:**
 ```
