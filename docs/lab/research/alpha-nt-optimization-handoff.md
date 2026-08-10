@@ -1,9 +1,16 @@
 # w2kalpha emulator-optimization — session handoff
 
-**Written 2026-08-11, end of the profiling/harness session. Next session: pick
-up at "Optimization queue" §1 and start making es40 faster.** Full background is
+**Updated 2026-08-11 after the fast-flag session: queue §1 is DONE (−24.7% to
+kernel, fork `6a525d1`). Next session: pick up at "Optimization queue" §2
+(dispatch) — and note the priority reframe below.** Full background is
 [`alpha-nt-add.md` §10](alpha-nt-add.md); this file is the working handoff —
 what's done, what's next, and the traps that will bite.
+
+**Priority reframe (operator, 2026-08-11):** the tile ships in instant-resume
+(desktop visible, golden restore < 5 s) — visitors never watch it boot.
+Boot-time wins are operator/bench velocity; the visitor-facing metric is
+**responsiveness at the desktop**, i.e. the idle profile (§2 dispatch, §3
+TLB), not time-to-desktop.
 
 ## The mission
 
@@ -17,10 +24,13 @@ commits (operator rule: **no .patch files**).
 
 - **Repo `main` @ `ab440cd`** (pushed): `alpha-nt-add.md` §10, two `tiles.json`
   harvests. Working tree clean. Box-sync 233/233 MATCH, pre-push gate green.
-- **Fork `Wnt/es40` main @ `652f7c2`** (pushed): the one source patch so far —
-  `gui { mouse.absolute }` (the VNC mouse fix). Built binary on the box is
-  `sha256 a2a21bde…`; the pre-patch baseline is preserved at
-  `es40src/src/es40.baseline` (`29ecb300…`) — **this is the A/B control binary.**
+- **Fork `Wnt/es40` main @ `6a525d1`** (pushed): `652f7c2` = `gui {
+  mouse.absolute }` (the VNC mouse fix), `6a525d1` = the media-mailbox
+  fast-flag (queue §1). Built binary on the box is `sha256 3745cfb2…`; the
+  box's `es40src` checkout is synced to `6a525d1` (push via a temp branch +
+  `git merge --ff-only` — the box can't auth to github). A/B controls
+  preserved next to it: `es40.652f7c2` (`a2a21bde…`, pre-fast-flag) and
+  `es40.baseline` (`29ecb300…`, pre-mouse-patch).
 - **Live rig** `/data/vms/soltest/ALPHA-nt/run/`: restarted onto the patched
   binary + `mouse.absolute = true`, cold-booting to desktop as this was written.
   Serves operator VNC at `vnc://<box>:5964` (pw `alpha2000`, unit
@@ -57,20 +67,33 @@ Two perf profiles on the box (400 Hz, dwarf call-graphs), saved at
 
 ## Optimization queue — do these in order, A/B each
 
-1. **Media-mailbox fast-flag (START HERE).** Add a `std::atomic<bool>` set when
-   an action is enqueued, checked *before* any lock/alloc in
-   `service_pending_media_actions` (and the floppy `_if_idle` caller). Empty
-   mailbox = one relaxed atomic load, no mutex, no deque. Files:
-   `es40src/src/DiskFile.cpp` (`service_pending_media_actions` ~816,
-   `take_pending_actions` ~213, mailbox class), `Disk.cpp:217`,
-   `FloppyController.cpp:120`. Expected: erase most of that ~30% boot smear.
-2. **Dispatch overhead** — why is `execute()` still ~35% with ASMJIT on? Look at
-   block chaining / trace length / interpreter round-trips per JIT block.
+1. ~~**Media-mailbox fast-flag**~~ **DONE 2026-08-11, fork `6a525d1`.**
+   Kernel checkpoint 198.7 s → 149.6 s wall (−24.7%), es40 CPU 206.3 s →
+   155.6 s (−24.6%), 3×3 interleaved runs, binary.sha256-verified. Details in
+   `alpha-nt-add.md` §10 "A/B №1". New control binary for future A/Bs:
+   `es40src/src/es40.652f7c2` (`a2a21bde…`); the fast-flag build is
+   `3745cfb2…`. **The commit adds a virtual to `CDisk` — clean-rebuild after
+   pulling it; stale objects are vtable-broken.** Live rig still runs
+   `a2a21bde…` (boot-phase delta only — adopt on next natural restart).
+2. **Dispatch overhead (START HERE)** — why is `execute()` still ~35% with
+   ASMJIT on? Interpreter round-trips per JIT block, poly-successor chaining,
+   block-JIT register allocation. **Don't revisit the trace tier**:
+   `config_debug.h` (~line 205) records it as a measured NET LOSS (2026-06,
+   92 vs 120 VUPS) and names chaining+regalloc as the real lever. A
+   `-DJIT_STATS` build (JIT_VERIFY off) prints compiled-vs-interpreted
+   coverage — use it to find where dispatch round-trips.
 3. **Software TLB fast path** — small direct-mapped host-side cache in front of
-   `FindTBEntry`.
+   `FindTBEntry` (`AlphaCPU.cpp:3478`): last-hit cache, then a LINEAR SCAN over
+   all TB entries.
 4. **Build flags** — configure default is `-g -O2 -mavx2 -mfma`. Try `-O3`, LTO,
    PGO (profile a boot, rebuild with it). Cheap, possibly free 10–30%.
 5. **VGA/llvmpipe** — only ~3%, do last.
+
+Note for #2/#3: these are *idle-profile* costs — the bench's `--until kernel`
+wall-clock is the wrong metric for them. Measure steady-state: boot a bench
+clone with `--hold-secs`, then `perf stat -e task-clock -p <pid>` over a fixed
+window at the desktop, plus a guest-side responsiveness probe if one exists by
+then.
 
 ## How to measure (the bench harness)
 
@@ -88,6 +111,8 @@ ssh lab '/data/vms/soltest/ALPHA-nt/bench/bench.sh <name> [--until kernel] \
 - **Validated baseline** (loaded host): arc 159s / kernel 202s / desktop 307s.
   ~189s of that is firmware (SRM memtest + 30s AlphaBIOS countdown) — Windows is
   ~105s, so **`--until kernel` is where boot-phase CPU wins will show**.
+  Post-fast-flag (`3745cfb2…`) the kernel checkpoint is ≈ 150s — expect that,
+  not 202s, when the default-built binary is the subject.
 
 **The A/B recipe for target #1:**
 ```

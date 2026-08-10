@@ -340,15 +340,56 @@ just to find the mailbox empty. `pthread_mutex_lock` 9% + `cfree` 9% +
 
 ### Optimization queue (each to be A/B'd with the bench)
 
-1. **Mailbox fast-flag**: `std::atomic<bool> has_pending` checked before any
-   lock/alloc in the media-action poll. Trivial, ~30% of boot-phase samples.
-2. **Dispatch overhead**: why is `execute()` still 35% with ASMJIT on —
-   block chaining / longer traces.
+**Priority reframe (operator, 2026-08-11):** the gallery tile will sit in
+instant-resume (desktop visible, `loadvm golden` restore < 5 s), so visitors
+never watch it boot. Boot-phase wins are *operator velocity* (bench A/B
+loops, golden re-bakes); the visitor-facing metric is **interactive
+responsiveness at the desktop** — weight the idle profile (#2, #3) over the
+boot profile.
+
+1. ~~**Mailbox fast-flag**~~ **DONE, −24.7%** — see A/B №1 below.
+2. **Dispatch overhead**: why is `execute()` still 35% with ASMJIT on.
+   `config_debug.h` records the 2026-06 finding that the trace tier is a NET
+   LOSS (92 vs 120 VUPS, left dormant) and names the real lever:
+   poly-successor direct chaining + register allocation in the block JIT.
 3. **Software TLB fast path**: small direct-mapped host-side cache in front
-   of `FindTBEntry`.
+   of `FindTBEntry` (its fallback is a linear scan over the whole TB).
 4. **Build flags**: autoconf default is `-g -O2 -mavx2 -mfma`; try `-O3`,
    LTO, PGO on a boot profile.
 5. VGA/llvmpipe: only ~3% — last.
+
+### A/B №1 — media-mailbox fast-flag (2026-08-11): −24.7% to kernel
+
+Fork commit `6a525d1`: `std::atomic<bool> actions_pending` on the mailbox,
+set/cleared under the mailbox mutex, read lock-free. Empty-mailbox poll =
+one acquire load; `CDiskFile::check_state` / `service_pending_media_actions`
+bail before the recursive mutex and the deque (which heap-allocated even
+when empty); `CFloppyController::check_state` bails before
+`controller_mutex` via a new `CDisk::has_pending_media_actions()` virtual.
+The poll tax is a *boot-phase* cost: `SingleStep()`'s tight loop (ROM
+decompress + SRM) sweeps `check_state` per instruction batch, while
+steady-state `Run()` sweeps only every 100 ms — so the win lands exactly
+where `--until kernel` measures.
+
+Bench: 3 interleaved runs per arm, control = `es40.652f7c2`
+(`a2a21bde…`, the pre-change build preserved next to `es40.baseline`),
+flag = `3745cfb2…`; every run's `binary.sha256` verified. Loaded host
+(load 7–9); per-run es40 CPU time sampled from `/proc/<pid>/stat`
+(`bench/ab-flagfix.cpu`, driver `bench/ab-flagfix.sh`, log
+`bench/ab-flagfix.log`).
+
+| metric (kernel ckpt) | ctrl ×3 | flag ×3 | delta |
+|---|---|---|---|
+| wall-clock | 199.6 / 197.2 / 199.2 (198.7) | 149.8 / 149.6 / 149.4 (149.6) | **−49.1 s, −24.7%** |
+| es40 CPU s | 208.4 / 205.5 / 204.9 (206.3) | 156.8 / 156.2 / 154.0 (155.6) | **−50.6 s, −24.6%** |
+
+Wall and CPU deltas agree, so this is removed work, not host-noise luck.
+(`arc` first-hit on flag3 read 86.8 s vs ~106.5 s on flag1/2 — arc RMSE
+detection variance; the kernel checkpoint, spread 0.4 s, is the metric.)
+Vtable note: the new virtual on `CDisk` means incremental builds against
+stale objects are ABI-broken — clean rebuild after pulling this commit.
+The live rig still runs `a2a21bde…`; it adopts `3745cfb2…` (or newer) on
+its next clean restart — no urgency, the delta is boot-phase only.
 
 ### Input: pointer verified, VNC operator access, `mouse.absolute`
 
