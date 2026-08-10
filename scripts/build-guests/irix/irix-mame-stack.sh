@@ -35,6 +35,15 @@
 #     back without re-running the bisect table there.
 #   mame-newport-vc2-restale-timing.patch  a real MAME inaccuracy, but it was
 #     disproven as the cause of the black-screen boot hang and buys nothing.
+#   mame-drawshm.patch                   the DRIVER-AGNOSTIC `-video shm` OSD
+#     render module. Deliberately out of THIS stack and belongs in every OTHER
+#     MAME tile's build instead: irix already has the better producer for its
+#     own machine (mame-newport-shm-framebuffer.patch publishes from the Newport
+#     device, where the whole-frame render cache hands it a damage flag for
+#     free, which a render-layer module cannot get). Adding it here would buy
+#     the exhibit nothing and cost it a binary rebake. It is freestanding --
+#     modules.lua + osdobj_common.cpp + its own new file, none of which any
+#     patch above touches -- so it applies to a pristine tree on its own.
 
 IRIX_MAME_BASE="8f21e978d0bd54971145e08ab5fab6c3c3d4ba81"
 
