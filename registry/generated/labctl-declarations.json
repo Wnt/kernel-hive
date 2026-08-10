@@ -380,7 +380,7 @@
     "nextstep": {
       "dir": "/data/vms/streamhost/tiles/nextstep",
       "qmp": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
-      "pointer_mode": "abs",
+      "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": 5837,

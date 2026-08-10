@@ -111,10 +111,14 @@ but it is the same question and the operator should decide the house style.
 - **The 3D scene is the real cost.** Every assembly in `machines.ts` models a
   landscape CRT. The Alto's tall tube in its pedestal is a **new model**, and it
   is the largest non-emulator line item in the add.
-- **Kiosk geometry trap:** QEMU `-vga std` wants a width that is a multiple of
-  8, and **606 is not**. Use a `608×816` root (2 px slop, window centred) or a
-  larger portrait root with painted surround. The base `.xinitrc` forces
-  1024×768, so this needs a per-tile override.
+- ~~**Kiosk geometry trap:** QEMU `-vga std` wants a width that is a multiple of
+  8, and **606 is not**. Use a `608×816` root (2 px slop, window centred).~~
+  **RETRACTED — measured, and the trap does not exist.** ContrAlto's own bitmap
+  width is **608**, already a multiple of 8, so a `608×808` root is exact:
+  **no slop, no letterbox, no painted surround.** Proven end to end with a
+  chrome-free QMP capture of the Alto Executive. The `606` figure this study
+  quoted was wrong. The base `.xinitrc` still forces 1024×768, so a per-tile
+  override is still needed — that part stands.
 - **ContrAlto's `KioskMode = True` crashes at startup**
   (`InvalidOperationException: No parent window found` in
   `AltoUIViewModel.set_FullScreenDisplay` — the ctor toggles fullscreen before

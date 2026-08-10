@@ -457,6 +457,26 @@ after the keyboard proof, from two separately baked goldens. Any MODE 7 or
 text-prompt exhibit (`bbcmicro` too) needs it; it is a property of the machine,
 not of one add.
 
+**The dwell law applies to MODIFIERS, not just keys.** If shifted characters
+come out inconsistently — some correct, some unshifted, varying key to key —
+suspect the *shape* of the synthetic event before you suspect the keymap. On the
+Xerox tiles (2026-08-10) `Shift+;` → `;` and `Shift+a` → `a` while, in the same
+sweep, `Shift+1` → `!`, `Shift+8` → `*`, `Shift+[` → `{` and `Shift+=` → `+` all
+shifted correctly. The cause was batching the modifier and the key into **one**
+input event: both transitions land in the same instant and the toolkit can
+dispatch the key before the modifier state has updated. Send the modifier as its
+own earlier event, held across the key —
+
+```
+shift-down · 350 ms · key-down · 400 ms · key-up · 250 ms · shift-up
+```
+
+— and every case fixes at once. A real keymap gap would not pass
+`" { } < > ? _ + | * ( )` while dropping the shift on `;` alone. The SPA's shift
+latch already does this correctly (shift as a separate `sendKey`, paced by
+`SH_KEY_MIN_HOLD_MS`); the trap is in ad-hoc XTEST/`send-key` helpers written
+during a bring-up.
+
 **Turn X's auto-repeat OFF in any kiosk driven by synthetic keys — before you
 touch the pacing at all.** On the Oric Atmos add (2026-08-09) the pacing was
 never the problem. Every key a bridge tile sees is an injected press/release
