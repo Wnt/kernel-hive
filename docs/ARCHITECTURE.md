@@ -7,17 +7,69 @@ the file that actually specifies the behavior.
 
 ## The streaming path, end to end
 
+The whole system converges on one pipeline — capture, damage, encode,
+transport — but **what sits in front of that pipeline differs per tile, and
+for nearly half the fleet it is not the machine you came to see.**
+
 ```mermaid
 flowchart TD
-  G[QEMU or MAME or another emulator one process per guest tile]
-  G -->|dbus display scanout or shm mapping| S
+  subgraph F1[Front A direct QEMU 29 tiles]
+    A1[qemu-system running the guest OS itself]
+  end
+
+  subgraph F2[Front B emulator bridge 28 tiles]
+    B1[qemu-system running a Debian kiosk] --> B2[Xorg root window no window manager]
+    B2 --> B3[One full screen emulator VICE MAME hatari FS-UAE SIMH Iris]
+    B3 --> B4[The vintage machine C64 Atari ST PDP-11 Alto SGI Indy]
+  end
+
+  subgraph F3[Front C host native 1 tile irix]
+    C1[MAME on the host CPU with video none]
+  end
+
+  A1 -->|dbus display scanout of the guest framebuffer| S
+  B2 -->|dbus display scanout of the KIOSK framebuffer| S
+  C1 -->|seqlock shared memory mapping| S
+
   S[streamhost Rust daemon one instance per tile]
-  S --> C[frame capture then damage tracking then H.264 in process libx264 plus Opus]
-  C -->|WebTransport QUIC one unidirectional stream per access unit| B
-  B[browser React SPA WebCodecs VideoDecoder live tile grid]
-  B -->|pointer and keyboard on their own QUIC streams and datagrams| S
-  S -->|inject by whichever channel the guest supports| G
+  S --> C[damage tracking then H.264 in process libx264 plus Opus]
+  C -->|WebTransport QUIC one unidirectional stream per access unit| BR
+  BR[browser React SPA WebCodecs VideoDecoder live tile grid]
+  BR -->|pointer and keyboard on their own QUIC streams and datagrams| S
+  S -->|inject by whichever channel the guest supports| A1
+  S -->|inject into the KIOSK which the emulator then re-maps| B1
+  S -->|inject over the emulator control socket| C1
 ```
+
+**Note where the arrow into `streamhost` starts on Front B.** It leaves the
+*kiosk's* X root window, not the emulator and not the vintage machine. On those
+28 tiles there is an entire Linux guest between the exhibit and the encoder, and
+what actually gets H.264-encoded is that Linux guest's framebuffer, which
+happens to be filled edge to edge by one full-screen emulator window. There is
+no window manager precisely so that nothing else can ever appear in the frame.
+
+That layering is not a detail — it is where a whole class of behaviour comes
+from:
+
+- **Input crosses two coordinate mappings, not one.** The browser's guest-pixel
+  coordinates land on the kiosk's `usb-tablet` and become an X pointer position;
+  the emulator then applies *its own* mapping to reach the emulated machine.
+  Each mapping has to be verified separately, and some emulators are
+  relative-only inside and need edge re-homing.
+- **It costs about +9 ms**, mostly a Linux compositing term paid before QEMU is
+  even polled, and more when the inner emulator is busy.
+- **It changes what capture costs.** A 32bpp kiosk surface is not
+  memfd-shareable, so those tiles fall back to QEMU's copy path.
+- **"The tile is up" and "the exhibit is up" are different claims.** The kiosk
+  can be perfectly healthy while the emulator inside it is dead — which is
+  exactly how a migrated tile can render a black screen while every log, exit
+  code and assertion reports success.
+
+Front C inverts the usual assumption in the other direction: `irix` has **no
+QEMU and no QMP at all**, because MAME's SGI Indy emulation kernel-panics under
+a KVM vCPU. A fourth front, `openvms`, runs *two* sibling VMs where the captured
+one does nothing but serve X. The full taxonomy is in
+[`GUEST-TIERS.md`](GUEST-TIERS.md).
 
 Each tile runs its own `streamhost` process; there is no shared fan-out
 server on the media path. A `streamhost@<tile>` systemd unit per tile is
@@ -86,10 +138,12 @@ acceptance checks a new tile has to pass before it ships.
 
 ## Guest tiers
 
-The sentence above — "one process per guest" — hides the single most important
-structural fact about this system. There are **five different things that
-process can be**, and which one a tile is determines its input path, its
-capture backend and most of its cost:
+The three capture fronts above are what `streamhost` *sees*. The full structural
+taxonomy is slightly wider — **five tiers** — because two kinds of tile do not
+show up as a capture front at all: the showcase posters have no runtime to
+capture, and `openvms` is a second QEMU hiding behind Front A's arrow. Which
+tier a tile is determines its input path, its capture backend and most of its
+cost:
 
 | Tier | Count | What runs | Layers to the exhibit |
 |---|---:|---|---|
