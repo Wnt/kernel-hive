@@ -87,7 +87,28 @@ Two perf profiles on the box (400 Hz, dwarf call-graphs), saved at
    all TB entries.
 4. **Build flags** — configure default is `-g -O2 -mavx2 -mfma`. Try `-O3`, LTO,
    PGO (profile a boot, rebuild with it). Cheap, possibly free 10–30%.
-5. **VGA/llvmpipe** — only ~3%, do last.
+5. ~~**VGA/llvmpipe**~~ **DEAD (operator, 2026-08-11)** — the tile will drop
+   the SDL+X11 layer entirely and wire es40 straight into the video capture
+   pipeline, MAME-IRIX style (shm framebuffer export + injected input; the
+   `mouse.absolute` patch was written for exactly that transport). Do not
+   optimize SDL/X11/llvmpipe paths — dev/bench-only.
+
+**Tile roadmap constraints (operator, 2026-08-11)** — these order the work:
+
+- **No golden savestate exists yet** — only the `m2-desktop` disk+ROM cold
+  snapshot. es40's native SaveState/RestoreState (format 2.1; a trigger
+  exists at `Serial.cpp:795` → `autosave.axp`) is UNVALIDATED with the JIT
+  build. The tile's instant-resume goal (< 5 s restore) depends on it —
+  smoke-test save→kill→restore→framebuffer-verify early; it's the riskiest
+  unknown in the tile plan.
+- **State-layout-changing optimizations are compatibility-free until the
+  first golden savestate is baked** (e.g. TB_ENTRIES 16→128, if profiling
+  justifies it). Land them BEFORE baking; afterwards each one forces a
+  re-bake.
+- **Headless capture backend** (shm framebuffer export + socket input,
+  replacing SDL/X11) is a required feature item for the tile — build it
+  before the golden bake so the restored device environment matches the
+  shipping wiring.
 
 Note for #2/#3: these are *idle-profile* costs — the bench's `--until kernel`
 wall-clock is the wrong metric for them. Measure steady-state: boot a bench
