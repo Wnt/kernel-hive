@@ -134,6 +134,33 @@ box_sync_load_pairs() {
   for name in clientcmd.sh gen-local-ca.sh osgallery-https-server.py reset-tile.sh install-https-service.sh; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
+  # The rest of the deployed serving plane. These were live on the box with NO
+  # pair for months, so a drifted copy was invisible: check-stream-tickets.py and
+  # pen-trace.py are both named in AGENTS.md's debugging table as the thing you
+  # run when a tile will not connect or a pen feels wrong, reset-auth.sh is the
+  # guarded path for the account database that must never be rm'd, and the
+  # requirements pair is what decides whether the box venv matches the repo.
+  for name in check-stream-tickets.py pen-trace.py reset-auth.sh sync-venv.sh \
+    test-clientlog.sh requirements.in requirements.txt; do
+    box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
+  done
+  # The auth plane (session gate, passkeys, tickets, and its UI), as a TREE
+  # rather than a name list: this is the security-relevant half of the public
+  # gallery, and a static list is exactly how a newly added file escapes the
+  # gate. Anything git tracks here is mirrored and therefore checked.
+  while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    box_sync_add_pair "serve/${rel#scripts/serve/}" "$rel" "$BOX_ROOT/serve/${rel#scripts/serve/}" exact repo
+  done < <(git -C "$REPO" ls-files 'scripts/serve/auth/*' 'scripts/serve/authui/*' | sort)
+  # The generated manifest the SPA fetches at runtime to build the grid. It had
+  # no pair, which meant a deployed manifest could differ from the generated one
+  # and nothing would say so — and on 2026-08-10 exactly that was done on
+  # purpose, to hide one tile from the grid during a measurement campaign. A
+  # deliberate override is fine; an INVISIBLE one is not, so it is a pair now and
+  # shows as DIFFERS until the override is reverted.
+  box_sync_add_pair serve/webroot/gallery-manifest.json \
+    scripts/serve/webroot/gallery-manifest.json \
+    "$BOX_ROOT/serve/webroot/gallery-manifest.json" exact repo
   # The live signaling registry and golden manifest are maintained ON the box;
   # the repo carries committed REFERENCE copies (scripts/README.md). Pushing the
   # reference at the live file is backwards, so they are box-authoritative and
