@@ -133,14 +133,14 @@
    "fixture": "HelenOS mixed console/GUI; HW cursor uncaptured, no reliably-focused shell for echo."
   },
   "solaris": {
-   "tileDir": "solariscde",
+   "tileDir": "solaris",
    "pointer": "abs",
    "touch": false,
    "resetMode": "loadvm",
    "snapshot": "golden",
    "mouse": "SKIP",
    "keyboard": "SKIP",
-   "fixture": "Solaris CDE desktop restored from the gallery-hid VMState golden; native HW input reaches the full 1920x1200 framebuffer. NOTE osId 'solaris' -> tileDir 'solariscde'."
+   "fixture": "Solaris CDE desktop restored from the gallery-hid VMState golden; native HW input reaches the full 1920x1200 framebuffer."
   },
   "android": {
    "tileDir": "android",

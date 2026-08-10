@@ -677,9 +677,9 @@
       "udp_port": 54133,
       "notes": "exec: labctl exec sinclairql \"<cmd>\" (ssh root@:5836, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated QL — drive the machine with labctl type/key and read it with labctl shot."
     },
-    "solariscde": {
-      "dir": "/data/vms/streamhost/tiles/solariscde",
-      "qmp": "/data/vms/streamhost/tiles/solariscde/qmp.sock",
+    "solaris": {
+      "dir": "/data/vms/streamhost/tiles/solaris",
+      "qmp": "/data/vms/streamhost/tiles/solaris/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": 57790,
       "warpd_addr": "127.0.0.1:57790",
@@ -690,7 +690,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54100,
-      "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solariscde \"<cmd>\""
+      "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solaris \"<cmd>\""
     },
     "star": {
       "dir": "/data/vms/streamhost/tiles/star",

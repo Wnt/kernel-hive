@@ -687,13 +687,15 @@ class H(BaseHTTPRequestHandler):
                 "certHashB64": cert_hash,
             }
             # The daemon publishes its own identity beside the cert hash, and it
-            # is that identity — SH_TILE — that it verifies a ticket against.
-            # It is NOT always this endpoint's key: the SPA calls one exhibit
-            # `solaris` while its daemon runs as `solariscde` (likewise
-            # aros/amigaos). Signing with the endpoint key locked both tiles out
-            # of every session for four hours on 2026-08-05. Read the authority
-            # from the daemon; fall back to the key for a tile that has not
-            # published one yet.
+            # is that identity — SH_TILE — that it verifies a ticket against, so
+            # that is what the ticket is signed over. The endpoint key normally
+            # equals it (the registry refuses an id that differs from its
+            # tileDir), but they are two different documents and the daemon is
+            # the authority on its own: signing with the endpoint key while
+            # `solaris` still ran as `solariscde` and `aros` as `amigaos` locked
+            # both tiles out of every session for four hours on 2026-08-05. Read
+            # the authority from the daemon; fall back to the key for a tile that
+            # has not published one yet.
             ticket_tile = tile
             signal_doc = None
             try:

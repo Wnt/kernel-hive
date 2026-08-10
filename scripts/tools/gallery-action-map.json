@@ -264,7 +264,7 @@
     "kbd_note": "unverified",
     "audio_trigger": "tone"
   },
-  "solariscde": {
+  "solaris": {
     "os": "Solaris (CDE)",
     "win": "qemu",
     "mouse": {

@@ -42,7 +42,7 @@ Verified end-to-end through the real browser→daemon→warpd path: corner test 
 0.989×0.996 (was 0.529×0.642 confined); clicks land accurately deep in the former dead zone.
 
 ## How it's wired (build scripts)
-- `tiles-manifest.sh` — solariscde emits `--pointer warpd --warpd-addr 127.0.0.1:57790` and
+- `tiles-manifest.sh` — solaris emits `--pointer warpd --warpd-addr 127.0.0.1:57790` and
   the netdev carries `hostfwd=tcp:127.0.0.1:57790-10.0.2.15:7777`.
 - `scripts/streamhost-tile.sh` — `--warpd-addr` → `SH_WARPD_ADDR`; keeps `-device usb-tablet`
   for warpd tiles so `loadvm golden` matches the snapshot's device set.

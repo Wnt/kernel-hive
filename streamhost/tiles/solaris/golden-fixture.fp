@@ -1,5 +1,5 @@
 #
-# solariscde GOLDEN TEST FIXTURE front-panel override.
+# solaris GOLDEN TEST FIXTURE front-panel override.
 # Removes the built-in analog Clock control (CONTROL Clock, TYPE clock -- the
 # leftmost globe-with-hands) so the front panel has NO per-minute minute-hand
 # repaint. This makes the idle framebuffer byte-stable for before/after test

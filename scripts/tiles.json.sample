@@ -783,17 +783,17 @@
       "warpd_addr": null,
       "warpd_port": null
     },
-    "solariscde": {
+    "solaris": {
       "console": "fb",
-      "dir": "/data/vms/streamhost/tiles/solariscde",
+      "dir": "/data/vms/streamhost/tiles/solaris",
       "exec_key": null,
       "exec_kind": "warpd_e",
       "exec_port": 57790,
       "exec_user": null,
       "golden_snapshot": true,
-      "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solariscde \"<cmd>\"",
+      "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solaris \"<cmd>\"",
       "pointer_mode": "abs",
-      "qmp": "/data/vms/streamhost/tiles/solariscde/qmp.sock",
+      "qmp": "/data/vms/streamhost/tiles/solaris/qmp.sock",
       "reset_mode": "loadvm",
       "ssh_port": null,
       "udp_port": 54100,

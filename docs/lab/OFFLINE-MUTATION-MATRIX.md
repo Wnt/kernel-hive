@@ -41,7 +41,7 @@ is current.
 | Tile | Filesystem | Why not RW |
 |---|---|---|
 | `haiku` | BeFS | The kernel's `befs` driver is read-only by design. |
-| `solariscde` | UFS (7 partitions) | The kernel's `ufs` driver is read-only unless built with `CONFIG_UFS_FS_WRITE`, which is off here — and Solaris UFS write support is not something to trust a 2.1 GiB golden to. `solariscde` already has a real exec channel (warpd, `labctl exec`), so it needs this least. |
+| `solaris` | UFS (7 partitions) | The kernel's `ufs` driver is read-only unless built with `CONFIG_UFS_FS_WRITE`, which is off here — and Solaris UFS write support is not something to trust a 2.1 GiB golden to. `solaris` already has a real exec channel (warpd, `labctl exec`), so it needs this least. |
 
 ### NOT-SUPPORTED (11 tiles)
 

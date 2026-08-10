@@ -69,12 +69,14 @@ separate.
 Duplicated fields include `osId`, `tileDir`, display name, UDP port, certificate
 hash path, pointer mode, touch behavior, reset mode/snapshot, machine type,
 display/input device, transport, accent, era label, boot-video state, fixture
-description, and startup order. Alias pairs (`solaris`/`solariscde` and
-`aros`/`amigaos`) amplify the problem.
+description, and startup order. The alias pairs of the day
+(`solaris`/`solariscde` and `aros`/`amigaos`) amplified the problem; both were
+renamed on 2026-08-10 and the registry now refuses an id that differs from its
+`tileDir`.
 
 There is concrete semantic drift to audit. Comparing the manifest's current
 `--pointer` with the golden manifest's `pointer` finds different values for nine
-tiles (`helenos`, `kolibrios`, `ninefront`, `solariscde`, `win311`, `win95`,
+tiles (`helenos`, `kolibrios`, `ninefront`, `solaris`, `win311`, `win95`,
 `win98se`, `os2warp`, and `templeos`). Some may be historical descriptions of
 the physical device rather than current streamhost routing, which is itself the
 problem: the field has no single enforced meaning. A typed registry must split

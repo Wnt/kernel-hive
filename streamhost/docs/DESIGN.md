@@ -588,7 +588,7 @@ QEMU); **neko** = original neko container (permanent fallback).
 | 11 | kolibrios | kolibrios | 54097 | SH | |
 | 12 | toaruos | toaruos | 54098 | SH | |
 | 13 | helenos | helenos | 54099 | SH | |
-| 14 | solaris | solariscde | 54100 | SH | osId≠dir |
+| 14 | solaris | solaris | 54100 | SH | (was tile dir `solariscde` until 2026-08-10) |
 | 15 | android | android | 54101 | SH | audio; **reconciled into tiles.json this session** |
 | 16 | serenityos | serenityos | 54102 | SH | needs RW qcow2 overlay over RO ext2 root (bring-up-all.sh) |
 | 17 | **postmarketos** | postmarketos | 54103 | **SH (NEW)** | OVMF/UEFI, guest-driven **720×1440 portrait**, USB tablet+kbd, intel-hda audio |
@@ -596,7 +596,7 @@ QEMU); **neko** = original neko container (permanent fallback).
 | 19 | templeos | templeos | 54105 | SH | |
 | 20 | haiku | haiku | 54107 | SH | intel-hda audio (A/V both verified live) |
 | 21 | os2warp | os2warp | 54108 | SH | **`--accel tcg`** (won't boot on KVM) |
-| 22 | aros | amigaos | 54110 | SH | osId≠dir |
+| 22 | aros | aros | 54110 | SH | (was tile dir `amigaos` until 2026-08-10) |
 | 23 | **qnx** | qnx | 54112 | **SH (daemon started this session)** | LiveCD `-cdrom -boot d`, cirrus, AC97 |
 | 24 | msdoswin1 | msdoswin1 | 54113 | SH | |
 | — | riscos | (neko only) | — | **neko** | rpcemu — no QEMU, no dbus display → cannot stream. *(Since 07-08: ordinary gallery tile, guardrails removed.)* |

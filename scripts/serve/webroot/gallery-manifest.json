@@ -389,7 +389,7 @@
       ],
       "blurb": "The workstation Unix of the 90s — CDE’s front panel on classic Sun hardware.",
       "hardwareInput": true,
-      "bootVideo": "/boot/solariscde/boot.mp4"
+      "bootVideo": "/boot/solaris/boot.mp4"
     },
     {
       "id": "nt351",

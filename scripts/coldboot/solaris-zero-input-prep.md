@@ -1,6 +1,6 @@
-# solariscde boot-capture — zero-input prep + detection notes
+# solaris boot-capture — zero-input prep + detection notes
 
-Reproduction notes for baking a boot video on the **solariscde** vmstate tile
+Reproduction notes for baking a boot video on the **solaris** vmstate tile
 (Oracle Solaris 10 1/13, genuine CDE, 1920x1200 std-VGA) with `record-boot.sh`
 (spec `BOOT-VIDEO-REPLAY-SPEC.md` §3.1/§3.2). Verified end to end on a
 `/data/vms/soltest` clone 2026-07-13; the **live tile was never touched** (the
@@ -67,7 +67,7 @@ Tier-1 framebuffer-stability is unusable: a cold Solaris boot paints the CDE
 Corrugated backdrop + dtwm root long before the fixture dtterm, and the front
 panel comes up a few seconds BEFORE the dtterm — so both a backdrop crop and a
 panel crop would false-settle on a terminal-less desktop. Use **Tier-2** on the
-**GOLDEN-FIXTURE-TERMINAL title bar** (`bootrec-tiles.conf` `solariscde)` arm):
+**GOLDEN-FIXTURE-TERMINAL title bar** (`bootrec-tiles.conf` `solaris)` arm):
 SSIM a crop of its maroon title band + white title text
 (`crop=430:26:350:112`, measured maroon RGB ~178,77,122) — present ONLY once the
 terminal (the LAST fixture element) is fully drawn — vs `boot-ref-desktop.png`

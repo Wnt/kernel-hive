@@ -248,7 +248,7 @@ byte-identical**, md5 `c450449f…`; chime never touched). Delivered: 640×480 H
   full-frame SSIM **0.997**, Start-button region **0.9989** vs the poster. Daemon restarted (active,
   golden=yes).
 - **Publish:** `gen-boot-manifest.sh win98se` → `$WEBROOT/boot/win98se/` + merged `/boot/index.json`
-  (kept all: amiga/win95/haiku/os2warp/solariscde/winxp/win2000). Verified `/boot/win98se/boot.mp4`
+  (kept all: amiga/win95/haiku/os2warp/solaris/winxp/win2000). Verified `/boot/win98se/boot.mp4`
   → **206 `video/mp4`** (`Content-Range …/2388747`); poster 200 image/jpeg; vtt 200 text/vtt;
   index `hasAudio=true durationMs=49109`.
 

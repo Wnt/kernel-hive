@@ -10,15 +10,15 @@ and the traps that have cost real time.
 
 ## Start every tile task with `labctl facts <tile>`
 
-One call for the facts sessions kept re-deriving out of ten files: SPA/registry
-id vs `SH_TILE` (with an explicit `identity_diverges` flag), the real
-`streamhost@<x>.service` name and state, kind (bridge / direct-QEMU /
+One call for the facts sessions kept re-deriving out of ten files: the tile's
+id (registry id == `tileDir` == `SH_TILE`, and a warning if a live tile ever
+drifts off that), the real `streamhost@<x>.service` name and state, kind (bridge / direct-QEMU /
 x11-runtime, derived), declared-vs-actual bridge suite, disk + format + size +
 backing + snapshot names, whether `reset` works and how, the exec channel, and
 the golden builder plus whether that builder *bakes* the golden or only prints
 the operator's `--bake` step.
 
-Takes either id (`labctl facts solaris` == `labctl facts solariscde`).
+Takes the tile id.
 Repo-declared fields are read from the box checkout `/data/kernel-hive` and every
 answer prints the commit it was read at plus a DIRTY count — that checkout only
 advances on an explicit `sync`, so it may lag `main` and says so. Every field
@@ -27,13 +27,13 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
 ## Channels, in order of preference
 
 1. **`labctl exec <tile> "<cmd>"` — real captured stdout + exit code.** The
-   guest's exit code becomes yours. Wired today for `solariscde` (warpd `E`
+   guest's exit code becomes yours. Wired today for `solaris` (warpd `E`
    verb), the ssh tiles `alpine`/`tinycore`/`haiku`, and the bridge tiles
    `c64`/`atarist`/`apple2`/`amiga`. `irix` is declared (`exec_kind`
    `serial_e`) but needs MAME running, so with the tile stopped it says so and
    exits 125. Other tiles exit 2 with alternatives.
 2. **In-guest agent (warpd family)** — pointer + exec over a hostfwd, under the
-   `labctl` layer. Baked and live on `solariscde`, `ninefront`, `win95`, and
+   `labctl` layer. Baked and live on `solaris`, `ninefront`, `win95`, and
    `win311`/`os2warp`/`templeos` over serial. Sources in
    `streamhost/guest-agents/`.
 3. **QMP console driver** — `/root/cdrv.py`, what `labctl sh/type/key/shot`
@@ -64,9 +64,14 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
   correct fail-closed behaviour, not a broken tile — start the tile first.
 - **`labctl reset`** is `loadvm golden`, and refuses tiles without a golden
   snapshot (`serenityos`, `toaruos`, `sailfishos`).
-- **A tile's SPA id is not always its `SH_TILE`** (`solaris`/`solariscde`,
-  `aros`/`amigaos`). Anything that must agree with the daemon reads identity
-  from the tile's `signaling.json`, never the endpoint key.
+- **One tile, one name.** A tile's registry id, its `tileDir` and its `SH_TILE`
+  are the same string, and `tiles-registry.py` fails the build if an entry
+  breaks that. The last two exceptions — `aros`/`amigaos` and
+  `solaris`/`solariscde` — were renamed on 2026-08-10. The serving plane still
+  reads the daemon's identity from the tile's own `signaling.json` rather than
+  trusting the endpoint key, because the daemon is the authority on what it will
+  verify a ticket against; that is a guard against drift, not against a naming
+  scheme that no longer exists.
 - Regenerate the capability matrix with `labctl gen` after any launcher or
   `tile.env` change. It only ever touches tiles in
   `/data/vms/streamhost/tiles.json`, and it **hard-fails** if a declared tile has

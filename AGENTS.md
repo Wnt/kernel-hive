@@ -89,8 +89,10 @@ main`. Never echo or log `~/Downloads/humanify-token`.
 
 ## Three facts that mislead if you don't know them
 
-- **A tile's SPA id is not always its `SH_TILE`** (`solaris`/`solariscde`,
-  `aros`/`amigaos`). Read identity from the tile's `signaling.json`.
+- **A tile has ONE name**: registry id == `tileDir` == `SH_TILE`, enforced by
+  `tiles-registry.py`. The last two exceptions were renamed 2026-08-10. The
+  serving plane still reads identity from the tile's own `signaling.json` — the
+  daemon is the authority on the name it verifies a ticket against.
 - **A tile that looks broken may just be stopped** — `ssh lab 'labctl ls'`. The
   fleet is routinely quiesced; check for in-flight work before starting
   anything.

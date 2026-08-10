@@ -125,7 +125,7 @@ case "$RESETMODE" in
     # SIGUSR1/2 are handled only by the gallery backend; no service/QEMU restart.
     GHID_PID=""
     GHID_SOCK="$TDIR/gallery-hid.sock"
-    if [ "$TILEDIR" = "solariscde" ] &&
+    if [ "$TILEDIR" = "solaris" ] &&
       grep -q '^SH_INPUT_BACKEND=gallery-hid$' "$TDIR/tile.env" 2>/dev/null; then
       GHID_PID="$(systemctl show -p MainPID --value "streamhost@${TILEDIR}.service" 2>/dev/null)"
       case "$GHID_PID" in

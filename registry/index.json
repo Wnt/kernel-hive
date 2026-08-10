@@ -10388,7 +10388,7 @@
       },
       "operator": {
         "actionMap": {
-          "key": "solariscde",
+          "key": "solaris",
           "value": {
             "os": "Solaris (CDE)",
             "win": "qemu",
@@ -10409,8 +10409,8 @@
           }
         },
         "labctl": {
-          "dir": "/data/vms/streamhost/tiles/solariscde",
-          "qmp": "/data/vms/streamhost/tiles/solariscde/qmp.sock",
+          "dir": "/data/vms/streamhost/tiles/solaris",
+          "qmp": "/data/vms/streamhost/tiles/solaris/qmp.sock",
           "pointer_mode": "abs",
           "warpd_port": 57790,
           "warpd_addr": "127.0.0.1:57790",
@@ -10421,10 +10421,10 @@
           "exec_key": null,
           "console": "fb",
           "udp_port": 54100,
-          "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solariscde \"<cmd>\""
+          "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solaris \"<cmd>\""
         }
       },
-      "tileDir": "solariscde",
+      "tileDir": "solaris",
       "lifecycle": "production",
       "stream": {
         "transport": "streamhost",
@@ -10450,29 +10450,25 @@
       },
       "guestDoc": "docs/guests/solaris.md",
       "credentialsRef": "guest/solaris",
-      "aliases": {
-        "publicId": "solaris",
-        "tileDir": "solariscde"
-      },
       "runtime": {
         "tileEnv": {
-          "SH_TILE": "solariscde",
-          "SH_QMP": "/data/vms/streamhost/tiles/solariscde/qmp.sock",
+          "SH_TILE": "solaris",
+          "SH_QMP": "/data/vms/streamhost/tiles/solaris/qmp.sock",
           "SH_PORT": "54100",
           "SH_FPS": "60",
           "SH_HOST_IP": "192.0.2.10",
           "SH_ADVERTISE_HOST": "192.0.2.10",
           "SH_INPUT_BACKEND": "gallery-hid",
-          "SH_GHID_SOCKET": "/data/vms/streamhost/tiles/solariscde/gallery-hid.sock",
+          "SH_GHID_SOCKET": "/data/vms/streamhost/tiles/solaris/gallery-hid.sock",
           "SH_AUDIO": "on",
           "SH_AUDIO_BITRATE": "96000",
-          "SH_HASH_FILE": "/data/vms/streamhost/tiles/solariscde/cert_hash_b64.txt",
-          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/solariscde/signaling.json",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/solaris/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/solaris/signaling.json",
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
           "SH_GOLDEN_DISK": "solariscde-golden.qcow2",
-          "SH_GOLDEN_MANIFEST": "tiles/solariscde/golden.json",
+          "SH_GOLDEN_MANIFEST": "tiles/solaris/golden.json",
           "SH_WARPD_ADDR": "127.0.0.1:57790"
         },
         "vmidLabel": 100,
@@ -10480,7 +10476,7 @@
           "mode": "verbatim",
           "emitArgs": [
             "--tile",
-            "solariscde",
+            "solaris",
             "--vmid",
             "100",
             "--udp",
@@ -10494,13 +10490,13 @@
             "--fps",
             "60",
             "--launcher-file",
-            "$T/solariscde/qemu-streamhost.sh",
+            "$T/solaris/qemu-streamhost.sh",
             "--env-append-file",
-            "$T/solariscde/tile.env.fixture"
+            "$T/solaris/tile.env.fixture"
           ],
-          "deviceSetId": "solariscde-gallery-hid-golden-resume",
-          "launcher": "streamhost/tiles/solariscde/qemu-streamhost.sh",
-          "envFixture": "streamhost/tiles/solariscde/tile.env.fixture",
+          "deviceSetId": "solaris-gallery-hid-golden-resume",
+          "launcher": "streamhost/tiles/solaris/qemu-streamhost.sh",
+          "envFixture": "streamhost/tiles/solaris/tile.env.fixture",
           "binary": "/data/vms/streamhost/qemu-gallery-hid/qemu-system-x86_64",
           "machine": "pc-i440fx-11.0",
           "accel": "kvm",
@@ -10509,7 +10505,7 @@
           "smp": 2,
           "vga": "std",
           "deviceSetSummary": [
-            "-name streamhost-solariscde-vmid-100",
+            "-name streamhost-solaris-vmid-100",
             "-enable-kvm -m 3072 -smp 2,sockets=2,cores=1,threads=1",
             "-machine pc-i440fx-11.0 -cpu Nehalem,hv-vendor-id=XenVMMXenVMM,hv-relaxed,-x2apic",
             "-rtc base=localtime",
@@ -10534,7 +10530,7 @@
             "smp": 2,
             "vga": "std",
             "deviceSetSummary": [
-              "-name streamhost-solariscde-vmid-100",
+              "-name streamhost-solaris-vmid-100",
               "-enable-kvm -m 3072 -smp 2,sockets=2,cores=1,threads=1",
               "-machine pc-i440fx-11.0 -cpu Nehalem,hv-vendor-id=XenVMMXenVMM,hv-relaxed,-x2apic",
               "-rtc base=localtime",
@@ -10567,7 +10563,7 @@
         "accentColor": "#d68a3a",
         "eraLabel": "1994 · Solaris CDE",
         "hardwareInput": true,
-        "bootVideo": "/boot/solariscde/boot.mp4"
+        "bootVideo": "/boot/solaris/boot.mp4"
       },
       "museum": {
         "id": "solaris",
@@ -10592,14 +10588,14 @@
         "blurb": "The workstation Unix of the 90s — CDE’s front panel on classic Sun hardware."
       },
       "reset": {
-        "tileDir": "solariscde",
+        "tileDir": "solaris",
         "pointer": "abs",
         "touch": false,
         "resetMode": "loadvm",
         "snapshot": "golden",
         "mouse": "SKIP",
         "keyboard": "SKIP",
-        "fixture": "Solaris CDE desktop restored from the gallery-hid VMState golden; native HW input reaches the full 1920x1200 framebuffer. NOTE osId 'solaris' -> tileDir 'solariscde'."
+        "fixture": "Solaris CDE desktop restored from the gallery-hid VMState golden; native HW input reaches the full 1920x1200 framebuffer."
       }
     },
     {

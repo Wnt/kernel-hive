@@ -20,11 +20,11 @@
 # golden` (pve-only pbs-state vmstate section), so it MUST ship as a pve-qemu
 # quilt patch after the final numbered pve patch.
 #
-# WHY gallery-hid: solariscde streams input over a bespoke PCI device (1b36:0015,
+# WHY gallery-hid: solaris streams input over a bespoke PCI device (1b36:0015,
 # class ff00, BAR0 regs + BAR2 GLIN ring; streamhost/qemu-patches/gallery-hid/).
 # 0003 adds ONLY that optional device (guarded by CONFIG_GALLERY_HID) plus its
 # qtest, so the rebuilt binary is a superset of the fleet binary — every existing
-# tile behaves identically, solariscde additionally gets `-device gallery-hid-pci`.
+# tile behaves identically, solaris additionally gets `-device gallery-hid-pci`.
 # It ships as a quilt patch (not the old standalone qemu-gallery-hid binary) so it
 # survives QEMU version bumps and is built from source alongside fast-poll.
 #

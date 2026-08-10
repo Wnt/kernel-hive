@@ -41,7 +41,7 @@ run() {
 TILES=(
   alpine tinycore reactos toaruos haiku
   aros helenos kolibrios ninefront
-  android solariscde redstar3
+  android solaris redstar3
   win2000 winxp nt4 nt351 openvms win11
   win311 win95 win98se freedos msdoswin1 os2warp
   qnx sailfishos templeos serenityos postmarketos

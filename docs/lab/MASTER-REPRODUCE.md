@@ -271,7 +271,7 @@ copyright/SSO-gated source.
 | kolibrios (`kolibrios`) | ✅ hands-off | none — live CD, self-lands on GUI | ~2–3 m |
 | ninefront (`9front`) | ✅ hands-off | none — plan9.ini suppresses every prompt → rio | ~5–8 m |
 | android (`android-x86`) | 🟡 one-time-click | installer keystrokes + 8 SetupWizard tap coords weren't persisted → nudge on first run (screenshot-gated) | ~20–40 m |
-| solariscde (`solaris-cde`) 🔒 | licensed-ISO | supply OTN ISO (`SOL10_ISO=`) **and** `INSTALL_GUEST=1` for a supervised first install; post-install→CDE tail fully automated | ~40–60 m |
+| solaris (build key `solaris-cde`) 🔒 | licensed-ISO | supply OTN ISO (`SOL10_ISO=`) **and** `INSTALL_GUEST=1` for a supervised first install; post-install→CDE tail fully automated | ~40–60 m |
 | win2000 (`win2000`) | ✅ hands-off | 🟡 *runtime* only: per-boot "Found New Hardware" → Cancel. Era SW best-effort | ~15–30 m |
 | winxp (`winxp`) 🔒 | licensed-ISO | supply XP ISO (`XP_ISO_LOCAL=`/`XP_ISO_URL=`); then fully unattended | ~30–50 m |
 | win311 (`win311`) | ✅ hands-off | none — patched AUTOEXEC boots straight to Program Manager | ~10 m |
@@ -350,7 +350,7 @@ bash bring-up-all.sh                 # ordered boot: launch each tile's QEMU (pi
   (`SH_DBUS_UPDATE_MS` display capture), serial-Sphinx `pve/0048`, and the
   `gallery-hid-pci` device `pve/0049` (`streamhost/qemu-patches/0003-gallery-hid-device.patch`;
   PCI `1b36:0015`, class `ff00`). The gallery-hid device is REQUIRED to launch
-  and `-loadvm golden` the `solariscde` tile (its golden carries the
+  and `-loadvm golden` the `solaris` tile (its golden carries the
   `gallery-hid-pci` VMState); it is an optional, `CONFIG_GALLERY_HID`-guarded
   device that is inert for every other tile, so the one rebuilt binary serves
   the whole fleet. Build the `.deb`, stage the stock same-version `.deb` as
@@ -492,7 +492,7 @@ steps still need a human:
    fixture/bridge/state-disk tiles; the postmarketos varstore seed is in the manifest;
    serenityos's overlay create is in its launcher) and `scripts/dev/verify-emit.sh`
    proves byte-parity with live. The seven formerly box-only bake drivers are now at
-   `streamhost/tiles/{alpine,kolibrios,solariscde,templeos,tinycore,win95,win98se}/golden-bake.sh`
+   `streamhost/tiles/{alpine,kolibrios,solaris,templeos,tinycore,win95,win98se}/golden-bake.sh`
    with their tile-local QMP/setup auxiliaries; postmarketOS's two fixture helpers are
    vendored beside its launcher and wired by `scripts/build-guests/tiles/postmarketos-fixture.sh`.
    Haiku's formerly manual persistent install is `scripts/build-guests/tiles/haiku-install.sh`

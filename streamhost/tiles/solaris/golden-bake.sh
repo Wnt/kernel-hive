@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# (Re)bake the 'golden' snapshot for tile solariscde from the PRISTINE Oracle
+# (Re)bake the 'golden' snapshot for tile solaris from the PRISTINE Oracle
 # Solaris 10 x86 CDE gallery image. Use after a bare-metal/NVMe rebuild that
 # wiped solariscde-golden.qcow2.
 #
@@ -26,13 +26,13 @@
 # root/solaris (also the single-user maintenance password). Kill only by pidfile.
 # ============================================================================
 set -e
-BASE=/data/vms/streamhost/tiles/solariscde
+BASE=/data/vms/streamhost/tiles/solaris
 DISK="$BASE/solariscde-golden.qcow2"
 SRC=/data/gallery-guests/SolarisCDE/solaris.qcow2
 DRIVE="python3 $BASE/drive.py $BASE/qmp.sock"
 
-echo "[bake] stop streamhost + any running solariscde qemu (by pidfile); fresh golden disk from PRISTINE source"
-systemctl stop streamhost@solariscde 2>/dev/null || true
+echo "[bake] stop streamhost + any running solaris qemu (by pidfile); fresh golden disk from PRISTINE source"
+systemctl stop streamhost@solaris 2>/dev/null || true
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 2
 rm -f "$BASE/qmp.sock" "$BASE/qemu.pid"
@@ -107,7 +107,7 @@ $DRIVE raw cont
 qemu-img snapshot -l "$DISK"
 
 echo "[bake] restart the tile's streamhost daemon (serves udp/54100 at the fixture)"
-systemctl start streamhost@solariscde
+systemctl start streamhost@solaris
 sleep 3
-systemctl is-active streamhost@solariscde
+systemctl is-active streamhost@solaris
 echo "[bake] done. Production launch auto -loadvm golden:  bash $BASE/qemu-streamhost.sh"

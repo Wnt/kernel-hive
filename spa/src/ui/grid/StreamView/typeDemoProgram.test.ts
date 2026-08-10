@@ -114,7 +114,7 @@ describe('registry-declared demo programs', () => {
     expect(cpc?.lines.length).toBeGreaterThan(0);
     // Every line must be its own BASIC statement line — no embedded newlines.
     for (const line of cpc?.lines ?? []) expect(line).not.toContain('\n');
-    expect(demoProgramFor('solariscde')).toBeUndefined();
+    expect(demoProgramFor('solaris')).toBeUndefined();
   });
 
   it('declares only characters typeText can key in (ASCII)', () => {

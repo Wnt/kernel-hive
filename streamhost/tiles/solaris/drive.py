@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# QMP driver for the streamhost solariscde golden-fixture work.
+# QMP driver for the streamhost solaris golden-fixture work.
 # Connects to a QMP unix socket and runs input / screendump / snapshot commands.
-# solariscde runs with a usb-tablet => ABSOLUTE pointer (SH_POINTER=abs), so the
+# solaris runs with a usb-tablet => ABSOLUTE pointer (SH_POINTER=abs), so the
 # mouse is driven via input-send-event 'abs' axis events (0..32767 scaled to the
 # 1920x1200 std-VGA framebuffer), 1:1 no accel. Keyboard is QMP qcode events.
 import socket, json, sys, time

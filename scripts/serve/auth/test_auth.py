@@ -547,7 +547,7 @@ class TestStreamTickets(unittest.TestCase):
 
     def test_a_ticket_is_bound_to_its_tile(self):
         path = tickets.mint(self.KEY, "win95")
-        self.assertFalse(self.verify_like_rust(path, "solariscde", self.KEY, int(time.time())))
+        self.assertFalse(self.verify_like_rust(path, "solaris", self.KEY, int(time.time())))
 
     def test_a_ticket_is_bound_to_the_key(self):
         path = tickets.mint(self.KEY, "win95")

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Launch tile 'solariscde' (VMID 100) QEMU with the streamhost display wiring.
+# Launch tile 'solaris' (VMID 100) QEMU with the streamhost display wiring.
 # Kill only by pidfile. This REPLACES the neko capture for this one tile during
 # its pilot; neko is restored by ROLLBACK.md.
 #
@@ -12,6 +12,10 @@
 #     production tile can never fall through to a cold boot. Bake only on a namespaced
 #     clone with golden-bake-solaris-clone.py.
 #   * NEVER delete solariscde-golden.qcow2 -- it IS the golden snapshot container.
+#     It keeps the pre-2026-08-10 `solariscde` prefix on purpose: the TILE was
+#     renamed solariscde -> solaris, the 5 GiB disk and its dated backups were
+#     not. The file name is a data artifact, not this tile's identity. Do not
+#     "fix" it without moving every backup beside it in the same step.
 #   * The gallery-hid VMState golden requires a QEMU carrying the gallery-hid PCI
 #     device, the two-socket CPU identity, and matching driver/Xorg state baked into
 #     the disk. As of 2026-07-27 that device ships in the packaged pve-qemu (quilt
@@ -19,7 +23,7 @@
 #     hand-built standalone binary is retired (its pc-bios dir is kept only for the
 #     stock BIOS blobs -L points at). VMState restore on the packaged binary verified.
 set -euo pipefail
-D="${D:-/data/vms/streamhost/tiles/solariscde}"
+D="${D:-/data/vms/streamhost/tiles/solaris}"
 DISK="${DISK:-$D/solariscde-golden.qcow2}"
 QEMU="${QEMU:-/usr/bin/qemu-system-x86_64}"
 QEMU_DATA="${QEMU_DATA:-/data/vms/streamhost/qemu-gallery-hid/pc-bios}"
@@ -47,7 +51,7 @@ qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden || {
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 nohup "$QEMU" -L "$QEMU_DATA" \
-  -name "streamhost-solariscde-vmid-$VMID" \
+  -name "streamhost-solaris-vmid-$VMID" \
   -enable-kvm -m 3072 -smp 2,sockets=2,cores=1,threads=1 \
   -machine pc-i440fx-11.0 \
   -cpu Nehalem,hv-vendor-id=XenVMMXenVMM,hv-relaxed,-x2apic \
@@ -70,4 +74,4 @@ for i in $(seq 1 40); do
   [ -S "$D/qmp.sock" ] && [ -f "$D/qemu.pid" ] && break
   sleep 0.5
 done
-echo "tile solariscde vmid=$VMID qemu pid=$(cat "$D/qemu.pid" 2>/dev/null) qmp=$D/qmp.sock udp=54100 loadvm=golden gallery-hid=$D/gallery-hid.sock"
+echo "tile solaris vmid=$VMID qemu pid=$(cat "$D/qemu.pid" 2>/dev/null) qmp=$D/qmp.sock udp=54100 loadvm=golden gallery-hid=$D/gallery-hid.sock"
