@@ -271,7 +271,8 @@ unattended re-install is the wrong tool). The Alpha answer-file path
 
 ### Still open for tile integration
 
-- Pointer: still untested (`gui { mouse.speed }` knobs exist, upstream #131).
+- Pointer: **verified working 2026-08-11, see §10** — including the
+  `mouse.absolute` fork patch any absolute-pointer transport will need.
 - The permanently-busy-core cost stands; `kleinmatic/es40:wtint-idle` is the
   only known idle-detection work (WIP, unreviewed) — see the 2026-08-10 GH
   ecosystem scan in the session transcript.
@@ -280,3 +281,92 @@ unattended re-install is the wrong tool). The Alpha answer-file path
   Source edits go onto the fork as commits (operator: no .patch files).
 - Kiosk/bridge wrapping, SDL3-on-trixie base check (§6), golden bake at the
   AlphaBIOS screen (§5) — unchanged, still the plan.
+
+## 10. Optimization session, 2026-08-11 — profiling, benchmark harness, input
+
+Goal: make the emulator fast enough that the 75-minute install feel never
+reaches a visitor. Method: measure first. All numbers below on a loaded host
+(load 8–13) — relative distributions are trustworthy, absolute times are not.
+
+### The boot benchmark harness (built, validated)
+
+`/data/vms/soltest/ALPHA-nt/bench/bench.sh <name> [--binary PATH]
+[--until CKPT] [--timeout S] [--interval S] [--record-all] [--keep]
+[--hold-secs S]` — boots a throwaway ZFS-clone of the `m2-desktop` pair under
+a private Xvfb and framebuffer-detects checkpoints against
+`bench/refs/` (RMSE vs reference frames, thresholds in `manifest.json`):
+
+| checkpoint | means | validated first-hit |
+|---|---|---|
+| `serial` | es40 alive (serial banner) | 0.2 s |
+| `srm` | SRM console idle at `P00>>>` | (only hit when autoboot is absent) |
+| `arc` | AlphaBIOS first screen | 158.9 s |
+| `kernel` | W2K splash + progress bar | 202.2 s |
+| `desktop` | icons + taskbar | 307.3 s |
+
+Up to 4 concurrent runs (atomic slot claim → display `:80+N`, serial
+`22004+10N`); teardown via `clone-guard kill-pidfile`; per-run `results.json`
++ append to `bench/results.log`; `ES40_EXTRA_ENV` injects env (SDL hints)
+into es40. `--until kernel` is the fast A/B loop (~3.5 min); `--hold-secs`
+keeps the guest alive after the target checkpoint for interactive tests.
+
+**Boot anatomy:** 189 s of the 307 s is firmware — SRM memory test ~155 s +
+a 30 s AlphaBIOS OS-chooser countdown (shrinkable in AlphaBIOS setup; guest
+NVRAM change, not done). Windows itself: ~105 s.
+
+**Trap found:** `milestones/m2-desktop/flash.rom` predates the §9 nvram
+autoboot script — a guest restored from the milestone pair parks at `P00>>>`
+forever. The live rig's `run/rom/flash.rom` (persisted 23:00) has the script;
+the bench copies that one. A restore consumer must do the same or re-enter
+the script.
+
+### Where the time goes (perf, 400 Hz dwarf call-graphs)
+
+**Idle at desktop** (`/tmp/es40-idle.perf.data`): the CPU thread spins at
+100% executing the guest's idle loop. Self time: ~35% dispatch
+(`CAlphaCPU::execute` + `jit_run`), ~21% JIT-emitted code, 9%
+`jit_hw_mtpr` (PAL traffic from the NT idle loop), ~15% software TLB
+(`FindTBEntry` + `virt2phys` + `get_icache`), ~3% VGA repaint. JIT codegen is
+NOT the bottleneck — the C++ around it is. (Idle-sleep itself is a non-goal
+for the tile: the exhibit pauses when unwatched; operator 2026-08-11.)
+
+**During boot** (`/tmp/es40-boot.perf.data`, SRM phase): ~30% of samples in
+the media-hotswap polling machinery — `CFloppyController::check_state()`
+runs in the main loop and, per iteration, takes the controller recursive
+mutex, then per drive takes another mutex and constructs+destroys a
+`std::deque` (`service_pending_media_actions` → `take_pending_actions`),
+just to find the mailbox empty. `pthread_mutex_lock` 9% + `cfree` 9% +
+`malloc` 6.7% + deque `_M_initialize_map` 3.3% all trace here.
+
+### Optimization queue (each to be A/B'd with the bench)
+
+1. **Mailbox fast-flag**: `std::atomic<bool> has_pending` checked before any
+   lock/alloc in the media-action poll. Trivial, ~30% of boot-phase samples.
+2. **Dispatch overhead**: why is `execute()` still 35% with ASMJIT on —
+   block chaining / longer traces.
+3. **Software TLB fast path**: small direct-mapped host-side cache in front
+   of `FindTBEntry`.
+4. **Build flags**: autoconf default is `-g -O2 -mavx2 -mfma`; try `-O3`,
+   LTO, PGO on a boot profile.
+5. VGA/llvmpipe: only ~3% — last.
+
+### Input: pointer verified, VNC operator access, `mouse.absolute`
+
+- **PS/2 pointer works in the guest** (§9 UNVERIFIED closed): click-to-
+  capture, Ctrl+F10 releases; injected deltas land ~2× (W2K "fast" pointer
+  acceleration).
+- **Operator VNC**: `alpha-nt-vnc64.service` = x11vnc on `:64`, port 5964,
+  `-rfbauth run/vncpass`. macOS Screen Sharing (a) refuses passwordless VNC
+  at session init, and (b) composes Option+letter into a glyph keysym, so
+  Alt-combos never arrive — use TigerVNC viewer for those; Ctrl-combos fine.
+- **Corner-dive, root-caused**: SDL relative mode re-centers the hidden
+  pointer every event, so an absolute XTEST stream (x11vnc) becomes
+  center-relative deltas → cursor pins in a corner. With
+  `SDL_MOUSE_RELATIVE_MODE_CENTER=0` absolute injections are dropped
+  entirely (relative injections work 1:1). Neither mode suits VNC.
+- **Fix = first fork commit** `652f7c2` (pushed to github.com/Wnt/es40):
+  `gui { mouse.absolute = true; }` skips SDL relative mode on capture and
+  derives PS/2 deltas by differencing successive window positions; baseline
+  resets on capture toggle/focus loss. Default off. The live rig adopts it
+  on its next es40 restart (cfg edit staged); the bench template already
+  carries it.
