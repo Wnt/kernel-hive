@@ -20,11 +20,17 @@
 #     speed, its input queue backed up, and the NeXT cursor lagged behind the
 #     pointer by hundreds of pixels. Measured at -smp 4 / -m 1536: guest
 #     MemAvailable 957 MB, `previous` RSS 247 MB, host QEMU RSS 1.06 GB.
-#   * POINTER IS RELATIVE (the c64/qnx path, not the tablet path): Previous
-#     consumes SDL xrel/yrel deltas and moves the emulated NeXT mouse by them,
-#     so the tile ships `--pointer rel`, keeps `-usb` but has NO usb-tablet, and
-#     pins `vmport=off` — without that, QEMU's implicit VMware absolute mouse
-#     becomes the active handler and silently swallows the relative events.
+#   * POINTER IS ABSOLUTE, end to end (2026-08-09). Previous emulates a
+#     SummaGraphics digitiser on the NeXT SCC serial port B and feeds it the
+#     host's ABSOLUTE window coordinates whenever `[Tablet] nTabletType` is set
+#     AND the guest's tablet driver is attached; the golden is baked with
+#     /NextAdmin/InstallTablet.app already run, so every visitor and every
+#     `loadvm golden` gets it. The tile therefore ships `-usb -device usb-tablet`
+#     and SH_INPUT_BACKEND=dbus-abs. `vmport=off` STAYS: it predates the tablet
+#     (it protected the old relative path) but QEMU's implicit VMware mouse
+#     would now be a SECOND absolute pointer competing with the usb-tablet, so
+#     leaving it off keeps exactly one. The X root being EXACTLY 1120x832 at
+#     +0+0 is load-bearing for the 1:1 map, not cosmetic — see the builder.
 #   * The AC97 card is in the device set both because the golden was baked with
 #     it and because the NeXT's own sound reaches ALSA through it.
 set -e
@@ -48,7 +54,7 @@ nohup qemu-system-x86_64 \
   -vga std \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0 \
-  -usb \
+  -usb -device usb-tablet \
   -netdev user,id=n0,hostfwd=tcp:127.0.0.1:5837-:22 -device e1000,netdev=n0 \
   $LOADVM \
   -qmp unix:$BASE/qmp.sock,server=on,wait=off \

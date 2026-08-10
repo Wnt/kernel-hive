@@ -83,15 +83,32 @@ reach a **graphical UI**, either at boot or via one simple documented command.
   coalesces** and needs **400 ms hold + 150 ms gap**. Darkstar needs ~300 ms on
   the WinForms *top-level* window (the SDL child lands nothing). Three
   emulators, three answers.
+- **Hold the MODIFIER too — the dwell law is not just for keys.** A partially
+  applied shift, inconsistent from key to key, is the signature. On Dwarf's
+  first sweep `Shift+;` → `;` and `Shift+a` → `a`, while in the *same* sweep
+  `Shift+1` → `!`, `Shift+8` → `*`, `Shift+[` → `{`, `Shift+=` → `+` all shifted
+  correctly. **Cause: batching the modifier and the key into ONE input event**,
+  so both transitions land in the same instant and the toolkit can dispatch the
+  key before the modifier state updates. Send shift as its own EARLIER event,
+  held across the key:
+
+  ```
+  shift-down · 350 ms · key-down · 400 ms · key-up · 250 ms · shift-up
+  ```
+
+  That fixed every case at once on Dwarf: `Shift+a` → `A`, `Shift+;` → `:`.
+  A genuine keymap gap would not pass `" { } < > ? _ + | * ( )` while dropping
+  the shift on `;` alone — so **suspect event shape before you suspect the
+  keymap.** The SPA's shift latch already does the right thing (shift as a
+  separate `sendKey`, paced by `SH_KEY_MIN_HOLD_MS=400`), which is why no colon
+  button is needed in the Level-V family.
 - **Never distinguish `:` from `;` by eye on a ViewPoint screen — test it
-  functionally.** The Star's bitmap font renders them nearly identically even at
-  400 % zoom, and Agent B lost time to that in *both* directions. The functional
-  test is whether the field accepts the value: ViewPoint's own template menu
-  inserts `user:star:xerox` and it is accepted, while a typed `star;star;xerox`
-  is rejected. This matters because Desktop Creation demands an XNS three-part
-  name (`name:domain:org`), and on Darkstar **`Shift+;` yields `;`** — no key
-  found that produces a colon, though other shifted punctuation
-  (`" { } < > ? _ + | * ( )`) comes through fine. Open question for Dwarf.
+  functionally.** The bitmap font renders them nearly identically even at 400 %
+  zoom, and Agent B lost time to that in *both* directions. The functional test
+  is whether the field accepts the value: ViewPoint's own template menu inserts
+  `user:star:xerox` and it is accepted, while a typed `star;star;xerox` is
+  rejected. This matters because Desktop Creation demands an XNS three-part name
+  (`name:domain:org`).
 - **Two-button mouse** (SELECT / ADJUST) on Star and Daybreak; Alto is three
   (RED/BLUE/YELLOW).
 - **Clicks need real dwell** — a zero-dwell synthetic click did nothing in the
