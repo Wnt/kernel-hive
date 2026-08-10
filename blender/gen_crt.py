@@ -30,6 +30,15 @@ Real-world dimensional ground truth (do not invent proportions):
 - E: Sun/Sony GDM 17-inch class 404 W x 426 H x 450 D mm workstation CRT.
   https://shrubbery.net/~heas/sun-feh-2_1/Systems/Sun4/MONITOR_17_Premium_CRT.html
   https://pro.sony/s3/cms-static-content/operation-manual/3800980161.pdf
+- F: PORTRAIT page display, the Xerox Alto's own monitor — the only tube in
+  this kit that stands on end. Its viewable area is not chosen, it is derived:
+  the Alto's bitmap is 606 x 808 pixels at roughly 72 dots to the inch, which
+  is 8.5 x 11 inches, which is a sheet of US Letter paper standing up. That is
+  the whole point of the machine and the reason every document window since is
+  taller than it is wide. 216 x 279 mm viewable inside a 330 W x 470 H x 440 D
+  mm beige cabinet on a fixed pedestal.
+  https://www.computerhistory.org/revolution/input-output/14/347
+  https://history-computer.com/xerox-alto-guide/
 
 SCREEN-GLASS RECTANGLES (live-content planes; glTF x right, y up, z front):
 - Variant D: center (-0.025, 0.157, 0.122), size 0.244 x 0.183 m.
@@ -85,6 +94,17 @@ PARAMS = {
     ),
     "D": dict(style="mono-5151", w=0.380, fh=0.280, d=0.350),
     "E": dict(style="sun-17", w=0.404, fh=0.426, d=0.450),
+    "F": dict(  # PORTRAIT page display (Xerox Alto), tube standing on end
+        w=0.330,
+        fh=0.470,
+        d=0.440,
+        view_w=0.216,
+        view_h=0.279,
+        sag=0.006,
+        controls="knobs",
+        base="plinth",
+        z0=0.062,
+    ),
 }
 
 

@@ -137,6 +137,15 @@ export const MODELS = {
       center: [0, 0.258, 0.174], size: [0.32, 0.24], surfaceOffset: 0.027,
     },
   },
+  // The only PORTRAIT tube in the kit: the Xerox Alto's page display. Its
+  // viewable area is derived rather than chosen — 606 x 808 pixels at roughly
+  // 72 dots to the inch is 8.5 x 11 inches, a sheet of paper standing up.
+  crtF: {
+    url: `${BASE}/param/crt-f.glb`, targetH: 0.532,
+    screen: {
+      center: [0, 0.305, 0.2155], size: [0.216, 0.279], surfaceOffset: 0.008,
+    },
+  },
   paramKeyboard: { url: `${BASE}/param/keyboard-c.glb`, targetH: 0.048, targetW: 0.492 },
   pizzaBoxA: { url: `${BASE}/param/pizzabox-a.glb`, targetH: 0.147, targetW: 0.5 },
   pizzaBoxB: { url: `${BASE}/param/pizzabox-b.glb`, targetH: 0.074, targetW: 0.31 },
@@ -568,6 +577,15 @@ export const ASSEMBLIES_BY_TILE = {
   // the Model B had no pointing device or port for one.
   armeval: {
     kind: 'homeMicro', body: 'acornA3000', monitor: 'crtE',
+  },
+  // The one exhibit whose screen is TALLER than it is wide, which IS the
+  // exhibit. crtF was modelled for this tile and used by nothing else — a
+  // portrait tube whose glass is a sheet of paper standing up — so the
+  // signature cannot collide. The body is a floor cabinet because the Alto
+  // proper was one: a beige box the size of a small fridge, under the desk.
+  alto: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtF',
+    keyboard: 'keyboardD', mouse: 'paramMouseC',
   },
 } as const satisfies Record<string, Assembly>;
 

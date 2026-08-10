@@ -205,6 +205,11 @@ public.
 | AROS nightly i386 boot ISO + contrib | nightly resolver + pinned fallback; APL licence file kept alongside | `amigaos.sh` | `…/AmigaOS/aros-pc-i386.iso` (measured `5aff10ed5ff1…` — post-bake state) |
 | SerenityOS / ToaruOS sources, VICE 3.x, hatari, caprice32, linapple, EmuTOS 1.3, RPCEmu 0.9.5 | git/tarball pins in each builder | `serenityos.sh`, `bridge-base.sh`, `riscos.sh` | built in place |
 | Debian 12 genericcloud qcow2 (bridge kiosk base) | `latest` channel | `bridge-base.sh` | `/data/vms/bridge/bridge-base.qcow2` (built, 3 567 255 552) |
+| ContrAlto 2 source tree (Xerox Alto II emulator, **and the Alto media**) | git commit `e3681fbc30d129172b4c306aaee8c4e71ae1a458` of `https://github.com/jdersch/Contralto2.git`, BSD-3-Clause | `alto.sh` | cloned to `/data/gallery-guests/Alto/src`, published self-contained to `/data/gallery-guests/Alto/app`; nothing staged under `/data/assets-staging` |
+| `nonprog.dsk` — Xerox Alto **Non-Programmer's Disk** (Bravo 7.5, Draw 5.2, Empress, Laurel, the Helvetica family) | sha256 `2696bc0da29400430b1c829d8a0f6c3a67c1764380cdca5431a29fc0f97da289` *(locally measured 2026-08-10)*, 2 601 648 | `alto.sh` | **ships inside the ContrAlto tree above**, at `Contralto/Disks/nonprog.dsk`; copied into the tile overlay at `/opt/bridge/alto/disk/`. Never fetched separately, never staged, never committed |
+| Alto I + Alto II microcode PROM dumps | `ROM/AltoI`, `ROM/AltoII` in the same pinned tree | `alto.sh` | as above — no separate ROM hunt, and no `chdman` conversion (that is a MAME-only tax; MAME's `alto2` does not boot here) |
+
+**Read the Alto rows' licence split carefully.** The BSD-3 licence covers Josh Dersch's code and nothing else: the microcode PROMs and the Diablo packs in that tree are **Xerox-copyright preservation material**, and the Computer History Museum's grant covers providing the Alto file archive to private individuals and non-profits for non-commercial use — it is not a public redistribution licence. The posture is the same as every other preservation row here and is comfortable: a private, passkey-gated exhibit that streams pixels. **Never commit the packs, never serve them, and give the tile no download affordance.**
 
 ## 4. repo-tracked binary assets (and publish blockers)
 

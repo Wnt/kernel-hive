@@ -1,7 +1,7 @@
-ContrAlto 2: make KioskMode survive startup, and place its window without a WM.
+ContrAlto 2: make it survivable as a window-manager-less kiosk.
 
-Two edits, both required before the Xerox Alto tile can be captured. Applied by
-scripts/build-guests/tiles/alto.sh to a clean checkout of
+THREE edits, all required before the Xerox Alto tile can be captured or driven.
+Applied by scripts/build-guests/tiles/alto.sh to a clean checkout of
 jdersch/Contralto2 @ e3681fbc30d129172b4c306aaee8c4e71ae1a458.
 
 1. KioskMode = True CRASHES upstream, on every platform, before the first frame:
@@ -21,15 +21,26 @@ jdersch/Contralto2 @ e3681fbc30d129172b4c306aaee8c4e71ae1a458.
    (both bind to !FullScreenDisplay), so nothing else can keep emulator chrome
    out of the captured framebuffer.
 
-2. The gallery kiosk runs a bare X server with NO window manager. Nothing places
-   the window: Avalonia leaves it at its default +10+10, which paints a black L
-   down the left and top of the captured root and pushes 10 rows of the Alto's
-   808-line portrait picture off the bottom. Measured on the box, before this
-   edit: "Contralto" 608x816+10+10 on a 608x816 root. After: 608x808+0+0 on a
-   608x808 root, with no border, no menu and no letterbox. The window still asks
-   for no decorations a WM would have to honour, so this is inert anywhere a WM
-   does exist.
+2. WITH NO WINDOW MANAGER, NOTHING PLACES THE WINDOW. Avalonia leaves it at its
+   default +10+10, which paints a black L down the left and top of the captured
+   root and pushes 10 rows of the Alto's 808-line portrait picture off the
+   bottom. Measured on the box, before this edit: "Contralto" 608x816+10+10 on a
+   608x816 root. After: 608x808+0+0 on a 608x808 root, with no border, no menu
+   and no letterbox. The window also asks for no decorations a WM would have to
+   honour, so this is inert anywhere a WM does exist.
 
+3. AND NOTHING FOCUSES IT EITHER, WHICH IS THE EXPENSIVE ONE. The Alto keyboard
+   is wired to AltoDisplay.OnKeyDown/OnKeyUp, and AltoDisplay is a Focusable
+   UserControl that in normal use receives Avalonia focus because a user CLICKS
+   the display. Nothing clicks anything in a kiosk. Unpatched, X delivers every
+   keystroke to the right window, the guest kernel's i8042 counter goes up, the
+   emulator is running at 170% of a core — and the Alto never sees a key. The
+   Executive sits there blinking its cursor, which is indistinguishable from a
+   dead emulator, and the two obvious wrong diagnoses (a stalled emulator, a
+   paused guest) each cost a build. Focusing the control on load fixes it.
+
+   Note that X input focus is NOT the problem here and does not need XSetInputFocus:
+   with no WM the focus is PointerRoot, and this window covers the whole root.
 --- a/ContraltoUI/ViewModels/AltoUIViewModel.cs
 +++ b/ContraltoUI/ViewModels/AltoUIViewModel.cs
 @@ -181,23 +181,38 @@
@@ -118,3 +129,25 @@ jdersch/Contralto2 @ e3681fbc30d129172b4c306aaee8c4e71ae1a458.
          }
  
          base.OnLoaded(e);
+--- a/ContraltoUI/Views/AltoDisplay.axaml.cs
++++ b/ContraltoUI/Views/AltoDisplay.axaml.cs
+@@ -39,6 +39,19 @@
+         _hiddenCursor = new Cursor(cursorBitmap, new PixelPoint(2, 2));
+     }
+ 
++    protected override void OnLoaded(RoutedEventArgs e)
++    {
++        base.OnLoaded(e);
++
++        // GALLERY PATCH: this control carries the Alto's keyboard (OnKeyDown /
++        // OnKeyUp below), and Avalonia only routes key events to the FOCUSED
++        // control.  On a desktop the first click on the display focuses it.  In
++        // the exhibit kiosk nothing ever clicks it, so without this every
++        // keystroke was silently dropped before it reached the Alto -- the
++        // Executive showed its cursor and nothing else.
++        Focus();
++    }
++
+     protected override void OnGotFocus(GotFocusEventArgs e)
+     {
+         // Show the "hidden" cursor only when the window has focus...

@@ -124,6 +124,7 @@ MANIFEST=(
   "zxspectrum  |tiles/zxspectrum.sh           |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)"
   "dragon32     |tiles/dragon32.sh             |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)"
   "armeval     |tiles/armeval.sh     |bridge/armeval  |retro    |~12-18m |full   |tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)"
+  "alto         |tiles/alto.sh                 |bridge/alto     |retro    |~12-18m |full   |tiles/alto overlay + golden (ContrAlto 2 Alto II XM -> Alto Executive)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

@@ -297,6 +297,15 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d3cab4', accentTint: '#0000ff', tintMix: 0.36,
     badge: 'ARM EVALUATION SYSTEM', spec: 'ARM1 • 4M • 1986', kit: 'eightBit',
   },
+  // PARC's pale office beige, and the accent is sampled rather than chosen:
+  // ContrAlto lights a set pixel as 0xdffcff, a faintly blue-green white, which
+  // is the only colour this exhibit emits. Everything else on its screen is the
+  // absence of that.
+  alto: {
+    caseTint: '#cdc6b4', accentTint: '#dffcff', tintMix: 0.34,
+    badge: 'XEROX ALTO II XM', spec: 'PAGE DISPLAY • 606x808 • 1973',
+    kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

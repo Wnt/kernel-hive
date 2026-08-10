@@ -17,6 +17,21 @@
       "udp_port": 54081,
       "notes": "exec: labctl exec alpine \"<cmd>\" (ssh root@:5881, key gallery_guest_key)"
     },
+    "alto": {
+      "dir": "/data/vms/streamhost/tiles/alto",
+      "qmp": "/data/vms/streamhost/tiles/alto/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5843,
+      "exec_port": 5843,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54137,
+      "notes": "exec: labctl exec alto \"<cmd>\" (ssh root@:5843, key bridge_key) reaches the Debian KIOSK, not the Alto -- the emulated machine has no shell and no network. Drive the Alto itself with labctl type/key (it is paced at 66/66 ms, two Alto fields) or with the tile's own alto-drive.py, which leads modifiers by a gap and can measure ink in a rect."
+    },
     "amiga": {
       "dir": "/data/vms/streamhost/tiles/amiga",
       "qmp": "/data/vms/streamhost/tiles/amiga/qmp.sock",

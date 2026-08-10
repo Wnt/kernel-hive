@@ -4,11 +4,11 @@ import type { VMManifestEntry } from '../types';
 import { OS_BINDINGS } from '../three/archetypeRegistry';
 
 // ============================================================================
-//  MUSEUM CATALOG — placard metadata for the full OS lineup (57 bindings)
+//  MUSEUM CATALOG — placard metadata for the full OS lineup (58 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 55 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 56 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 52 of those 55 have their placard entries in this
+//  WebTransport + WebCodecs. 53 of those 56 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,8 +17,8 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 54 entries
-//  so all 57 exhibits render, each with an era-accurate archetype + accent.
+//  This file provides rich, period-accurate placard metadata for its 55 entries
+//  so all 58 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
 //  top of these entries, so every osId in OS_BINDINGS becomes an exhibit.
@@ -523,6 +523,18 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['ARM BBC Basic V', 'the ARM supervisor\'s disassembler', 'Cambridge LISP'],
     blurb: 'The first ARM product ever sold: not a computer but a plug-in second processor for the BBC Micro, sold to developers in 1986 so they could write ARM code two years before the Archimedes existed. The board has no operating system — it has 16 KB of supervisor ROM and a floppy with a language on it. What you are looking at is that language, ARM BBC Basic V, running on the ARM while the 6502 that used to be the computer is reduced to a keyboard, a screen and a disc controller.',
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile, and the sibling of bbcmicro: the SAME purpose-built MAME 0.289 `bbcb` binary (SUBTARGET=bbcb, built in the Bookworm chroot so its ABI matches the bridge), but with the ARM Evaluation System fitted to the BBC Micro\'s Tube. Three arguments are load-bearing and each cost an experiment: `-fdc acorn1770` because the ARM Evaluation System discs are ADFS .adl at 640 KB double density and the Acorn 8271 is single density and cannot read them at all; `-rom3` and specifically NOT `-rom1`, because ADFS in romimage1 kills the Tube and the banner falls back to "BBC Computer 32K" (romimage4 keeps the Tube but drops host BBC BASIC from the banner; romimage3 keeps both); and `skip_warnings 1` in ui.ini, which is a UI option and not a command-line one. The eight blobs are preservation-source with NO authorised URL and a disputed chain of title, staged by the operator, gated on SHA-1 and assembled BY SHA-1 against the shipped binary\'s own -listxml — the staged file is phroma.bin and the member MAME wants is cm62024.bin, so only the hash connects them. The golden is NOT the machine\'s untouched first screen (that is bbcmicro\'s rule and this machine has no language of its own to show): `*LIB $` and `AB` are baked in and left on screen as the prompt\'s provenance. Bake-time identity gates: the reverse-video A* field must carry blue pixels (a plain BBC Micro banner has zero) AND the frame must carry the ARM BASIC banner\'s ink. Keyboard-only exhibit; keyboard.charMap is bbcmicro\'s, unchanged, because it is the same MOS and the same keyboard matrix. The supervisor is NOT reachable from the ARM BASIC prompt — *QUIT, *DIS and *SHOWREGS all answer "Bad command" and BREAK (F12) does nothing — which is why the on-screen keyboard offers BASIC\'s row and not the supervisor\'s. See streamhost/docs/BRIDGE.md and docs/guests/armeval.md.',
+  },
+  {
+    id: 'alto', displayName: 'Xerox Alto II', year: 1973,
+    lineage: 'Xerox PARC',
+    arch: 'Xerox Alto II XM: a custom TTL processor with no single CPU chip, microcoded into 16 priority tasks that share the datapath between the display, the disk, the Ethernet and the instruction set the software is written in; 512 KB extended memory; a 606x808 portrait bitmap refreshed at 30 Hz straight out of main memory; a 2.5 MB Diablo 31 removable cartridge; a three-button mouse and a five-key chord keyset',
+    ramMB: 0, ramKB: 512,
+    era: '1970s', accent: '#9FE3EA',
+    eraSoftware: ['Bravo, the first WYSIWYG word processor (1974)', 'Draw and Markup, the illustration pair', 'Laurel, the mail reader that fixed the shape of every inbox since', 'Smalltalk-76 and the Smalltalk-80 that grew out of it', 'the Alto Executive, the command prompt this exhibit rests at'],
+    periodBrowser: 'none -- PARC had Ethernet, laser printing and electronic mail two decades before the web had a first page',
+    iconicApps: ['Bravo', 'Draw', 'Laurel', 'the Alto Executive'],
+    blurb: 'The machine that invented the screen you are reading this on: overlapping windows, a mouse with buttons, a what-you-see-is-what-you-get editor and Ethernet, all in 1973, none of them for sale. Its display stands on end because it is a sheet of paper -- 606 by 808 dots, 8.5 by 11 inches -- and that is why every document window since has been taller than it is wide.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs ContrAlto 2 (jdersch/Contralto2, BSD-3-Clause, .NET 8 + Avalonia, pinned at e3681fbc) as an Alto II XM. Zero external media -- the Alto I and Alto II microcode PROMs and eight Diablo disk packs ship inside the emulator\'s own repository and arrive with the source it is built from, so nothing is downloaded, staged or committed; the exhibit boots nonprog.dsk, the Non-Programmer\'s Disk, whose sha256 the builder asserts. THE ONLY PORTRAIT EXHIBIT IN THE COLLECTION: the kiosk X root is 608x808, the Alto\'s own bitmap, so the capture is exactly the machine\'s picture with no letterbox -- and crt-f.glb, the tall tube it is displayed on in the 3D museum, was modelled for this tile and is used by nothing else. Two upstream patches are required and both are in scripts/build-guests/patches/contralto2-wmless-kiosk.patch: ContrAlto\'s KioskMode (the only switch that hides its menu and status bars) crashes before the first frame, and with no window manager nothing places the window or gives its display control keyboard focus -- unfixed, every keystroke is dropped silently and the exhibit reads as a dead emulator. MAME\'s alto2 driver was tried first and never boots here (five packs, 120 s runs, a uniform white field, PC pinned at 1); that negative result is recorded in docs/lab/research/xerox-add.md so nobody pays for it twice. See streamhost/docs/BRIDGE.md and docs/guests/alto.md.',
   },
 ];
 
