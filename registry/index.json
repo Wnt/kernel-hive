@@ -5947,9 +5947,9 @@
         "touch": false,
         "resetMode": "loadvm",
         "snapshot": "golden",
-        "mouse": "UNVERIFIED",
+        "mouse": "PASS",
         "keyboard": "UNVERIFIED",
-        "fixture": "NeXTSTEP 3.3 Workspace on an emulated NeXTcube: grey workspace, the Workspace menu at the top left, the File Viewer the machine opens for itself at login, and the Dock down the right-hand edge. Baked 2026-08-09 from an untouched cold boot with nothing typed and nothing curated, and restore-verified by framebuffer in the same run (evidence/coldboot-desktop.png, golden-baked.png, golden-restored.png). Pointer and keyboard are recorded UNVERIFIED, not PASS: motion and keystrokes were both proven to reach the emulated machine by framebuffer, but the end-to-end browser path was not exercised and the NeXT KMS mouse register clamps a single delta to 63 px, so a fast flick under-moves. See docs/guests/nextstep.md."
+        "fixture": "NeXTSTEP 3.3 Workspace on an emulated NeXTcube: grey workspace, the Workspace menu at the top left, the File Viewer the machine opens for itself at login, and the Dock down the right-hand edge. Re-baked 2026-08-10 from a COLD boot under the final device set (-usb -device usb-tablet), after running /NextAdmin/InstallTablet.app once so the golden carries NeXTSTEP's own SummaGraphics tablet driver — a kernel server is the one thing a cold boot cannot carry, and `loadvm golden` is not a boot, so every visitor and every reset gets it. The desktop was pixel-diffed back onto the frame the install started from: 3209 px differ, all of them the temporary InstallTablet.app icon the install linked into /me and then removed, plus the cursor. Mouse is PASS, not UNVERIFIED: 24 of 24 commanded absolute targets — corners inset 8 px, edge midpoints, centre and 15 scattered points — landed at 0 px error on the LIVE tile after `loadvm golden` in a fresh QEMU process, and 8 QMP input-send-event absolute moves through the QEMU usb-tablet itself — the leg a browser actually drives — landed within 1 px, that 1 px being the probe's own 0..32767 quantisation. Keyboard stays UNVERIFIED: this is a GUI exhibit with no type-in demo. See docs/guests/nextstep.md."
       },
       "notes": [
         "Bridge tile: Debian 12 kiosk + Previous 4.4 (SVN r1847) emulating a NeXTcube",

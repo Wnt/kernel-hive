@@ -84,7 +84,33 @@ tracked `streamhost/tiles/soltest-*/` launchers (clone scaffolds that run out of
 | `gen_tiles_json.py` | Builds the tiles.json capability matrix from `tile.env` + launchers + live HMP golden probe; invoked by `labctl gen` | box (**sync pair**) |
 | `tiles.json.sample` | Committed reference of the live labctl capability matrix; harvested from `/data/vms/streamhost/tiles.json` | box (**sync pair**) |
 | `shmshot.py` | Screendump a `SH_CAPTURE=shm` tile by reading the seqlocked framebuffer its emulator publishes (no QMP, no X server) -> PPM. Fails loudly where the old x11 path returned a valid all-black image | box (**sync pair**) |
-| `serve-https-spa.sh` | One-shot HTTPS serving-plane bring-up: build SPA (`spa/`), deploy without replacing unrelated webroot content, mint local-CA cert, start HTTPS server | workstation → box |
+| `serve-https-spa.sh` | One-shot HTTPS serving-plane bring-up: build SPA (`spa/`), deploy without replacing unrelated webroot content, mint local-CA cert, start HTTPS server. **`manifests` is NOT concurrency-safe — see below.** | workstation → box |
+
+> **It is not only the `manifests` subcommand — `deploy` publishes implicitly.**
+> `deploy` calls `publish_manifests` as part of its normal run, and it *also*
+> replaces the live SPA **bundle** with the publishing worktree's build, so a
+> sibling's compiled scene rows disappear from the deployed bundle until the
+> next post-merge rebuild. Both clobbers happened on 2026-08-10 from a plain
+> `deploy`, by an agent that had been told not to run `manifests`. **With
+> parallel tile work in flight, treat `deploy` as equally forbidden.**
+>
+> **`serve-https-spa.sh manifests` wholesale-replaces all three serve manifests**
+> (`tiles.json`, `gallery-manifest.json`, `golden-manifest.json`) from the
+> publishing worktree, atomically. It therefore **deletes every tile another
+> worktree published since yours was branched** — silently, and the tile simply
+> vanishes from the gallery while its service stays `active`, which reads as a
+> tile bug rather than a publish bug.
+>
+> Observed 2026-08-10: one agent published at 02:45, a second at 02:47, and the
+> first agent's live tile disappeared from all three documents.
+>
+> **With parallel tile work in flight, do not run it.** Either write an additive
+> merge that inserts/replaces only your own tile's row, or leave publishing to
+> the integrator, who runs `make tile-registry-generate && serve-https-spa.sh
+> manifests` **once** after the branches are merged. Related: `labctl gen` fails
+> closed on a declared/live tile-set mismatch, so it cannot succeed until every
+> in-flight tile's registry entry has landed — that is a merge-time step, not a
+> per-agent one.
 | `vm-idle-watch.sh` | Idle auto-pause/resume watcher for the tile QEMUs (the idle-CPU 80%→~1.4% fix) | box (**sync pair**) |
 | `qmp_hmp.py` | Run one HMP command through a tile's QMP socket (savevm/loadvm/hostfwd_add …) | box (**sync pair**) |
 | `tiles-registry.py new <id> --tier … --archetype … --slot auto` | Creates an inert candidate registry row plus tier builder, guest-doc, and coldboot-arm stubs; reserves UDP `54000+slot` and regenerates canonical outputs | workstation |

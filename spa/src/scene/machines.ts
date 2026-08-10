@@ -581,6 +581,17 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
     keyboard: 'keyboardE', mouse: 'paramMouseC',
   },
+  // Xerox 8010 "Dandelion": the processor was a DESKSIDE cabinet the size of a
+  // two-drawer file, standing on the floor beside the desk with the display,
+  // keyboard and two-button mouse on top of it — the 6085 is the machine that
+  // later flattened all that into a pizza box under the desk. So the Star is a
+  // towerSetup where its successor is a pizzaBox, which is both physically
+  // accurate and the cleanest way to keep the two Xerox exhibits apart on the
+  // rail. towerC|crtD is a pair nothing else holds.
+  star: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtD',
+    keyboard: 'keyboardD', mouse: 'paramMouseA',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

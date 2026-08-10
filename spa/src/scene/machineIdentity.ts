@@ -305,6 +305,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cdc8bd', accentTint: '#c8102e', tintMix: 0.34,
     badge: 'XEROX 6085', spec: 'MESA • VIEWPOINT • 1985', kit: 'workstation',
   },
+  // The 8010 shipped in the earlier, warmer Xerox office grey — closer to putty
+  // than the cooler shell the 6085 arrived in four years later. The accent is a
+  // brighter Xerox red than its successor's, which also keeps the two Xerox
+  // tiles distinguishable at a glance on the rail.
+  star: {
+    caseTint: '#d5cec1', accentTint: '#d6001c', tintMix: 0.34,
+    badge: 'XEROX 8010', spec: 'DANDELION • VIEWPOINT 2.0 • 1981', kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

@@ -457,6 +457,41 @@ after the keyboard proof, from two separately baked goldens. Any MODE 7 or
 text-prompt exhibit (`bbcmicro` too) needs it; it is a property of the machine,
 not of one add.
 
+**A MODIFIER IS A KEY: give it its own event and its own dwell.** The rule is
+about event *shape*, not about a magic number.
+
+*The diagnostic.* Shifted characters that fail **selectively** — letters fine,
+punctuation dead, varying key to key — mean the modifier is racing the key, not
+that the keymap is missing an entry. On the Xerox tiles (2026-08-10) `Shift+;` →
+`;` and `Shift+a` → `a` while, **in the same sweep**, `Shift+1` → `!`,
+`Shift+8` → `*`, `Shift+[` → `{` and `Shift+=` → `+` all shifted correctly. A
+real keymap gap cannot do that: it would not pass `" { } < > ? _ + | * ( )`
+while dropping the shift on `;` alone.
+
+*The cause.* Batching the modifier and the key into **one** input event — both
+transitions land in the same instant and the toolkit can dispatch the key before
+the modifier state has updated.
+
+*The fix, in order.* First correct the shape: modifier press as its own **earlier**
+event, **held across** the key, released after. Only if it still fails, lengthen
+the lead and bisect it.
+
+*The lead is per-machine — measure it, do not inherit it.* Two machines, two
+answers, both measured:
+
+| Emulator | Lead that works | Lead that fails |
+|---|---|---|
+| Dwarf (Java/Swing) | 150 ms — and 250/350 ms, all equal | **0 ms only** (batched into one event) |
+| Darkstar (mono/WinForms+SDL) | 350 ms | **200 ms** |
+
+So Dwarf ships `SH_KEY_MIN_GAP_MS=150` unchanged, while Darkstar needs roughly
+double. Quoting either number as *the* figure will slow a fast machine down for
+nothing, or under-serve a slow one and be blamed on the keymap.
+
+The SPA's shift latch already has the right shape (shift as a separate
+`sendKey`, paced by `SH_KEY_MIN_HOLD_MS`); the trap lives in the ad-hoc
+XTEST/`send-key` helpers written during a bring-up.
+
 **Turn X's auto-repeat OFF in any kiosk driven by synthetic keys — before you
 touch the pacing at all.** On the Oric Atmos add (2026-08-09) the pacing was
 never the problem. Every key a bridge tile sees is an injected press/release
