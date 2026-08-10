@@ -43,6 +43,18 @@ The dangerous shape is not a crash. It is a **silent attach**.
   handler the caller already installed). Rigs whose server must outlive the
   script pass `--no-trap` and release by pidfile at teardown.
 
+> **The exit trap does NOT fire for a rig launched under `setsid nohup`** — the
+> detaching process never runs the trap, so the display stays claimed after the
+> emulator exits. A detached rig **must call `xvfb_release` explicitly** at
+> teardown, exactly as if it had passed `--no-trap`. Observed 2026-08-10: three
+> displays (`:64 :65 :66`) left claimed by one rig after its emulator was gone.
+>
+> Two practical notes from that cleanup. `xvfb-alloc list`'s **OWNER column
+> names the claiming script**, which is how you prove a stale display is yours
+> and not a sibling's before releasing it — do that check first, always.
+> And **`release :N` silently does nothing**; only `release <pidfile>` or
+> `release <pid>` actually frees it.
+
 ## Using it
 
 ```bash
