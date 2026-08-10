@@ -234,13 +234,5 @@
   "daybreak": {
     "udpPort": 54139,
     "hashFile": "/data/vms/streamhost/tiles/daybreak/cert_hash_b64.txt"
-  },
-  "dbr-arma": {
-    "udpPort": 54793,
-    "hashFile": "/data/vms/soltest/debridge-7f3a/armA/cert_hash_b64.txt"
-  },
-  "dbr-armb": {
-    "udpPort": 54794,
-    "hashFile": "/data/vms/soltest/debridge-7f3a/armB/cert_hash_b64.txt"
   }
 }
