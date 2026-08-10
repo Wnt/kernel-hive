@@ -10,14 +10,15 @@ A clone-setup task ran a **stale lab-side launcher** that had been copied from a
 LIVE tile's `qemu-streamhost.sh`. That launcher opens with the production footgun:
 
 ```bash
-D="${D:-/data/vms/streamhost/tiles/solariscde}"       # parameter-DEFAULT
+D="${D:-/data/vms/streamhost/tiles/solaris}"          # parameter-DEFAULT
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")"   # unconditional kill preamble
 ```
 
 The intended namespace override was passed as `D=…`. When it was **not actually
 exported** into the launcher's environment, the `:-` default silently fell back
 to the LIVE tile path and the next line **killed the running production
-solariscde QEMU** (recovered from golden in ~1 min — but a real breach). Root
+Solaris QEMU** — the tile was named `solariscde` then — (recovered from golden
+in ~1 min, but a real breach). Root
 cause: an override that fails *open* (falls back to a live tile) followed by an
 **unguarded** `kill $(cat …/qemu.pid)`, with nothing asserting the target was a
 clone.

@@ -122,7 +122,7 @@ overlay backing files, not assets.
   resolve each hit through `/proc/<pid>/exe`.
 - **Kill clones only via `clone-guard kill-pidfile`.** The
   `${D:-/data/vms/streamhost/tiles/…}` default footgun in a clone launcher once
-  reached the live `solariscde`.
+  reached the live `solaris` tile.
 - **Mount chroot API filesystems only via `chroot-guard`.** A hand
   `mount --rbind /dev` made the chroot's `/dev/pts` a *peer* of the host's and
   the teardown propagated back out, killing every new interactive login on the

@@ -1,7 +1,13 @@
-# Solaris 10 CDE guest (solariscde tile)
+# Solaris 10 CDE guest (`solaris` tile)
+
+> **Renamed 2026-08-10:** the daemon side was `solariscde` (`SH_TILE`, the tile
+> dir, `streamhost@solariscde`) until it was renamed to match the registry id
+> `solaris`. The 5 GiB golden disk keeps its `solariscde-golden.qcow2` name (a
+> data artifact, not identity), as do the `solaris-cde` build key and dated
+> records below.
 
 The live tile runs real Oracle Solaris 10 x86 with the genuine CDE desktop.
-In-guest automation (warpd pointer + exec agent, `labctl exec solariscde`) is
+In-guest automation (warpd pointer + exec agent, `labctl exec solaris`) is
 documented in `streamhost/guest-agents/solaris/README.md`; the golden build
 detail lives on the box in `/data/gallery-guests/SolarisCDE/NOTES.md`.
 

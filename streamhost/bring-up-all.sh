@@ -40,8 +40,8 @@ run() {
 # emulator-bridge kiosks last — they're the heaviest and launch in qcap scopes).
 TILES=(
   alpine tinycore reactos toaruos haiku
-  amigaos helenos kolibrios ninefront
-  android solariscde redstar3
+  aros helenos kolibrios ninefront
+  android solaris redstar3
   win2000 winxp nt4 nt351 openvms win11
   win311 win95 win98se freedos msdoswin1 os2warp
   qnx sailfishos templeos serenityos postmarketos

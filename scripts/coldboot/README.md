@@ -32,7 +32,7 @@ redeploys of `scripts/dev/build-deploy.sh`.
 | `*-zero-input-prep.md`  | prep/ready-state notes for 27 arms (the existing amiga bridge lifecycle is documented in this README); automated LiveCD/greeter input is documented where a disk-baked zero-input path is unavailable |
 | `*-record-driver.sh`    | clone-only automated input for unavoidable boot blockers (Alpine tty login, QNX LiveCD flow, TempleOS questions, postmarketOS greeter); never used against live QMP |
 | `docs/history/os2warp-promote-notes.md` (archived) | os2warp promotion notes (clone-validated → live transplant record) |
-| `solariscde-prep`       | solariscde prep payload used by its zero-input-prep flow |
+| `solaris-prep`          | solaris prep payload used by its zero-input-prep flow |
 
 ## The dbus tap (`SH_DBUS_TAP`) — the one box-only companion
 
@@ -162,12 +162,12 @@ passed framebuffer/ffprobe gates, and **authored-untested** passed live-launcher
 | reactos | **existing** | `reactos-zero-input-prep.md` | no | known immutable-LiveCD dialogs and external-store caveat; not promote-ready |
 | toaruos | **authored-untested** | `toaruos-zero-input-prep.md` | no | restart kind; remastered ISO is golden |
 | haiku | **existing** | `haiku-zero-input-prep.md` | **live** | Tier 2 Deskbar crop |
-| amigaos | **authored-untested** | `amigaos-zero-input-prep.md` | no | AROS LiveCD → Wanderer |
+| aros | **authored-untested** | `aros-zero-input-prep.md` | no | AROS LiveCD → Wanderer |
 | helenos | **authored-untested** | `helenos-zero-input-prep.md` | no | LiveCD → compositor; review old RAM-only terminal fixture |
 | kolibrios | **authored-untested** | `kolibrios-zero-input-prep.md` | no | LiveCD → desktop; array-form loadvm rewrite covered |
 | ninefront | **proven-new** | `ninefront-zero-input-prep.md` + record driver | **live** | external disk + hostfwd rewrite; lively rio fixture |
 | android | **authored-untested** | `android-zero-input-prep.md` | no | external disk copy; reject lock/setup UI |
-| solariscde | **existing** | `solariscde-zero-input-prep.md` + `solariscde-prep/` | **live** | video-only (`hasAudio: false`) |
+| solaris | **existing** | `solaris-zero-input-prep.md` + `solaris-prep/` | **live** | video-only (`hasAudio: false`) |
 | win2000 | **existing** | `win2000-zero-input-prep.md` | **live** | Tier 2 Notepad crop |
 | winxp | **existing** | `winxp-zero-input-prep.md` | **live** | Tier 2 Start-button crop |
 | win311 | **authored-untested** | `win311-zero-input-prep.md` | no | both tile-local disks copied |

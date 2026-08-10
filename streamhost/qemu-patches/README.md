@@ -121,15 +121,15 @@ workers with `EOFError`; Ninja compilation remains parallel.
 
 The same build script also carries **`0003-gallery-hid-device.patch` in slot
 `pve/0049`** — the `gallery-hid-pci` low-latency-input device (PCI `1b36:0015`,
-class `ff00`; sources under `gallery-hid/`) that is LIVE on the `solariscde`
+class `ff00`; sources under `gallery-hid/`) that is LIVE on the `solaris`
 tile. It adds only a new optional device (guarded by `CONFIG_GALLERY_HID`) plus
 its qtest, so the rebuilt binary is a strict superset of the fleet binary: every
-existing tile is byte-for-byte identical in behavior, and `solariscde`
+existing tile is byte-for-byte identical in behavior, and `solaris`
 additionally gets `-device gallery-hid-pci`. Packaging it as a quilt patch
 replaces the old standalone `qemu-gallery-hid` binary (a carried-patch/upgrade
 risk) so it is built from source and survives QEMU version bumps. Because the
 device model (and its VMState `gallery-hid-pci`, version 1) is identical to the
-standalone build that baked `solariscde`'s golden, `-loadvm golden` restores
+standalone build that baked `solaris`'s golden, `-loadvm golden` restores
 cleanly on the packaged binary. Regenerate the patch from the device sources per
 `gallery-hid/README.md` § "Regenerating the quilt patch".
 

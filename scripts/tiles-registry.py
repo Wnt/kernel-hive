@@ -723,9 +723,16 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             if stream.get("udpPort") != expected:
                 fail(errors, row, "experiment UDP port violates base+experimentSlot policy")
         tile_dir = row["tileDir"]
-        aliases = row.get("aliases")
-        if os_id != tile_dir and aliases != {"publicId": os_id, "tileDir": tile_dir}:
-            fail(errors, row, "public/tile alias must be explicit")
+        # ONE tile, ONE name. The id is the user-facing half (/os/<id>, the poster
+        # path, docs/guests/<id>.md, the SPA binding); tileDir is the daemon half
+        # (SH_TILE, the runtime dir, streamhost@<dir>). They used to be allowed to
+        # differ behind an explicit alias block, and the two that did — aros/amigaos
+        # and solaris/solariscde — cost a special case in every tool that spanned
+        # them, plus a four-hour outage on 2026-08-05 when the gateway signed a
+        # ticket with the wrong half. Both were renamed on 2026-08-10; this keeps
+        # the seam from being reintroduced.
+        if os_id != tile_dir:
+            fail(errors, row, f"id '{os_id}' and tileDir '{tile_dir}' must match — one tile, one name")
         ptr = stream["pointer"]
         if (
             ptr["transport"] == "rel"

@@ -5,12 +5,13 @@
 #   A clone-setup task ran a STALE lab-side launcher that had been copied from a
 #   LIVE tile's qemu-streamhost.sh. That launcher opens with the production
 #   footgun pattern:
-#       D="${D:-/data/vms/streamhost/tiles/solariscde}"      # parameter-DEFAULT
+#       D="${D:-/data/vms/streamhost/tiles/solaris}"         # parameter-DEFAULT
 #       [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")"  # unconditional kill
 #   The intended namespace override was expressed as `D=...`; when it was NOT
 #   actually exported into the launcher's environment the `:-` default silently
 #   fell back to the LIVE tile path, and the very next line killed the running
-#   production solariscde QEMU. Recovered from golden in ~1 min, but a real breach.
+#   production Solaris QEMU (the tile was named `solariscde` then). Recovered
+#   from golden in ~1 min, but a real breach.
 #
 # WHAT THIS GUARANTEES (fail-CLOSED — non-zero exit + loud message on any doubt)
 #   Clone tooling MUST route every kill / stop / destructive-QMP / launcher-run

@@ -3,7 +3,7 @@
 //  ---------------------------------------------------------------------------
 //  When the S-Pen barrel arrives ONLY as a native contextmenu (Samsung S-Pen), the
 //  SPA synthesizes a guest right-click (button-2 down then up). Motif/CDE's sticky
-//  Workspace Menu (Solaris / solariscde) only POSTS if the right button is HELD a
+//  Workspace Menu (Solaris) only POSTS if the right button is HELD a
 //  few tens of ms — a 0 ms down→up click never posts it. Windows shows its context
 //  menu on release regardless, so a hold is harmless there. This module owns that
 //  hold for the StreamView input surface.

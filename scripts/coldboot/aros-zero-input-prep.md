@@ -1,4 +1,4 @@
-# amigaos (AROS) boot capture — zero-input prep
+# aros (AROS) boot capture — zero-input prep
 
 Status: **AUTHORED-UNTESTED**. The live read-only shot showed 1024×768 Wanderer
 with the AROS shell/window surface.

@@ -68,8 +68,8 @@ The planned/recovery set is:
 
 `amiga500` is not a missing candidate: it is the active production tile
 `amiga`, a Debian kiosk running FS-UAE with Kickstart/Workbench. It is distinct
-from the active x86 AROS tile whose `osId` is `aros` and `tileDir` is
-`amigaos`. Use the Amiga 500 path as a Tier-2 bridge template.
+from the active x86 AROS tile `aros`. Use the Amiga 500 path as a Tier-2
+bridge template.
 
 Candidate details and the live bridge distinction are recorded in the existing
 guest notes: [`macos.md`](../guests/macos.md),
@@ -92,12 +92,14 @@ Choose these names before downloading anything:
 ```text
 builder key   lower-case build-all key, e.g. solaris-cde
 osId          public SPA/signal/reset identifier, e.g. solaris
-tileDir       runtime directory and systemd instance, e.g. solariscde
+tileDir       runtime directory and systemd instance — MUST equal osId
 displayName   museum label, e.g. Solaris CDE
 ```
 
-Prefer one identical lower-case value for the first three. Existing aliases
-(`solaris` → `solariscde`, `aros` → `amigaos`) require repeated special-case
+`osId` and `tileDir` are the same string, and `tiles-registry.py` fails
+validation if they differ; the builder key may differ (it names a build script,
+not a running tile). The two exhibits that once diverged
+(`solaris` → `solariscde`, `aros` → `amigaos`) required repeated special-case
 mapping and should not be copied.
 
 Write the acceptance criteria into `docs/guests/<os>.md` before implementation:

@@ -36,9 +36,6 @@
 # scratch dir on the box and byte-diffs against the live tiles. Keep it green
 # (PASS or whitelisted-with-justification) after ANY change here.
 #
-# osId vs tile-dir note: osId "aros" == tile dir "amigaos"; osId "solaris" == tile
-# dir "solariscde"; all other osIds equal their tile dir name. streamhost-tile.sh
-# keys everything on the TILE DIR name (--tile), and tiles.json maps osId->tile.
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SH="$HERE/scripts/streamhost-tile.sh"
@@ -180,13 +177,13 @@ emit haiku \
 #           PS/2; AROS binds Poseidon hid.class to a QEMU USB HID tablet.
 # ---------------------------------------------------------------------------
 
-# amigaos / osId "aros" (VMID 110) — AROS LiveCD, AC97, usb-tablet, abs pointer.
+# aros (VMID 110) — AROS LiveCD, AC97, usb-tablet, abs pointer.
 #   VERBATIM LAUNCHER: golden-scratch.qcow2 holds the diskless LiveCD savevm.
 #   The device-set-matched golden preserves `AddUSBHardware pciusb.device 0` and
 #   is auto-loaded so AROS owns the absolute tablet immediately after launch.
-emit amigaos \
-  --tile amigaos --vmid 110 --udp 54110 --pointer abs --audio on --fps 30 \
-  --launcher-file "$T/amigaos/qemu-streamhost.sh"
+emit aros \
+  --tile aros --vmid 110 --udp 54110 --pointer abs --audio on --fps 30 \
+  --launcher-file "$T/aros/qemu-streamhost.sh"
 
 # helenos (VMID 99) — ia32 LiveCD on -cpu qemu32, intel-hda. GENERIC.
 # POINTER=abs (2026-07-13): HelenOS's upstream USB HID stack binds the QEMU
@@ -243,16 +240,16 @@ emit android \
   --launcher-file "$T/android/qemu-streamhost.sh" \
   --env-append-file "$T/android/tile.env.fixture"
 
-# solariscde / osId "solaris" (VMID 100) — Solaris 10 CDE on the standalone
+# solaris (VMID 100) — Solaris 10 CDE on the standalone
 # gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses
 # the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.
 # SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.
 # SH_GHID_SOCKET selects its chardev; hostfwd 57790 and the guest warpd agent are
 # retained for rollback/exec only.
-emit solariscde \
-  --tile solariscde --vmid 100 --udp 54100 --pointer abs --input-backend gallery-hid --audio on --fps 60 \
-  --launcher-file "$T/solariscde/qemu-streamhost.sh" \
-  --env-append-file "$T/solariscde/tile.env.fixture"
+emit solaris \
+  --tile solaris --vmid 100 --udp 54100 --pointer abs --input-backend gallery-hid --audio on --fps 60 \
+  --launcher-file "$T/solaris/qemu-streamhost.sh" \
+  --env-append-file "$T/solaris/tile.env.fixture"
 
 # ---------------------------------------------------------------------------
 # GROUP D — Windows NT family (usb-tablet + AC97), abs pointer.

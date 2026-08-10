@@ -2,7 +2,7 @@
 
 This directory is the canonical source for the gallery-hid low-latency-input
 device (PCI `1b36:0015`, class `ff00`, BAR0 control regs + BAR2 GLIN ring),
-LIVE in production on the `solariscde` tile.
+LIVE in production on the `solaris` tile.
 
 **Production packaging is a pve-qemu quilt patch, not a standalone binary.**
 The device is carried by `../0003-gallery-hid-device.patch`, which

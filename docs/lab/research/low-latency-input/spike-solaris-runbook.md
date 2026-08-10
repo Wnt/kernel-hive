@@ -79,7 +79,7 @@ The Stage-A disk was made with a plain independent copy of the tile-local
 golden.  Never point the scratch QEMU at the source image:
 
     D=/data/vms/soltest/lli/spike-solaris-a
-    L=/data/vms/streamhost/tiles/solariscde
+    L=/data/vms/streamhost/tiles/solaris
     ionice -c2 -n7 nice -n15 cp --sparse=always \
       "$L/solariscde-golden.qcow2" "$D/solariscde-stage-a.qcow2"
     qemu-img check "$D/solariscde-stage-a.qcow2"

@@ -1,5 +1,5 @@
 #!/bin/sh
-# solariscde GOLDEN TEST FIXTURE (sourced by /usr/dt/bin/Xsession via Xsession.d).
+# solaris GOLDEN TEST FIXTURE (sourced by /usr/dt/bin/Xsession via Xsession.d).
 # Makes each CDE login deterministic + animation-free and opens a reactive surface.
 # Backgrounded so it never blocks login.
 (

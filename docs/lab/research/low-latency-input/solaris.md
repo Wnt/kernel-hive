@@ -44,7 +44,7 @@ The repository, not a hypothetical Solaris install, is the baseline:
   records the important observed fact: QEMU `usb-tablet` through Solaris
   `usbms`/VUID only reaches a 1024x768 box on the 1920x1200 CDE desktop, while
   warpd reaches the whole screen.
-- [`streamhost/tiles/solariscde/qemu-streamhost.sh`](../../../../streamhost/tiles/solariscde/qemu-streamhost.sh)
+- [`streamhost/tiles/solaris/qemu-streamhost.sh`](../../../../streamhost/tiles/solaris/qemu-streamhost.sh)
   pins `pc-i440fx-11.0`, Nehalem, 3 GiB, two vCPUs, standard VGA, AC97,
   `usb-tablet`, IDE, e1000, and SLIRP host-forward
   `127.0.0.1:57790 -> 10.0.2.15:7777`. It conditionally loads the VM-state

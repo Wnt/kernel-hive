@@ -6,7 +6,7 @@ set -euo pipefail
 
 REPO="${REPO:-/data/vms/streamhost/build}"
 SRC="$REPO/streamhost/guest-agents/solaris"
-TILE=/data/vms/streamhost/tiles/solariscde
+TILE=/data/vms/streamhost/tiles/solaris
 DISK="$TILE/solariscde-golden.qcow2"
 QMP="$TILE/qmp.sock"
 CDRIVE=(python3 /root/cdrv.py "$QMP")
@@ -53,7 +53,7 @@ qemu-img snapshot -l "$DISK" | awk 'NR > 2 {print $2}' | grep -qx golden || {
 echo "[warpd-bake] stage the vendored host tools and stop the live tile"
 install -m 0755 "$SRC/cdrv.py" /root/cdrv.py
 install -m 0755 "$SRC/gexec.py" /root/gexec.py
-systemctl stop streamhost@solariscde 2>/dev/null || true
+systemctl stop streamhost@solaris 2>/dev/null || true
 if [ -s "$TILE/qemu.pid" ]; then
   pid=$(cat "$TILE/qemu.pid")
   kill "$pid" 2>/dev/null || true
@@ -69,14 +69,14 @@ echo "[warpd-bake] preserve pre-bake disk as $backup"
 cp --reflink=auto "$DISK" "$backup"
 
 echo "[warpd-bake] launch the pinned pc-i440fx-11.0 tile at nice 15; launcher loads clean golden"
-nice -n15 bash "$REPO/streamhost/tiles/solariscde/qemu-streamhost.sh"
+nice -n15 bash "$REPO/streamhost/tiles/solaris/qemu-streamhost.sh"
 sleep 3
 
 echo "[warpd-bake] serve the vendored agent to the guest over SLIRP"
 (
   cd "$SRC"
   exec python3 -m http.server "$HTTP_PORT" --bind 0.0.0.0
-) >/tmp/solariscde-warpd-http.log 2>&1 &
+) >/tmp/solaris-warpd-http.log 2>&1 &
 HPID=$!
 sleep 2
 kill -0 "$HPID"
@@ -123,12 +123,12 @@ probe sync
 "${SNAPDRIVE[@]}" savevm golden sleep 2 querysnap
 
 echo "[warpd-bake] restart service, reset through labctl, then prove the restored exec channel"
-systemctl restart streamhost@solariscde
+systemctl restart streamhost@solaris
 sleep 3
 renice 15 -p "$(cat "$TILE/qemu.pid")" >/dev/null
-labctl reset solariscde
+labctl reset solaris
 sleep 3
-timeout 30 labctl exec solariscde "uname -a"
-labctl shot solariscde /tmp/solariscde-warpd-golden.png >/dev/null
-systemctl is-active streamhost@solariscde
-echo "[warpd-bake] PASS: golden reset is agent-reachable; framebuffer /tmp/solariscde-warpd-golden.png"
+timeout 30 labctl exec solaris "uname -a"
+labctl shot solaris /tmp/solaris-warpd-golden.png >/dev/null
+systemctl is-active streamhost@solaris
+echo "[warpd-bake] PASS: golden reset is agent-reachable; framebuffer /tmp/solaris-warpd-golden.png"

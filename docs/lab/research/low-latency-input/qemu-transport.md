@@ -465,7 +465,7 @@ them.
 | templeos | `pc`, KVM, host CPU, std VGA, ISO + snapshot disk, COM1 | pin matching i440fx machine; `pci.0:1e`; HolyC/IRQ spike first, preserve RAM-snapshot behavior |
 
 Sources are the checked-in launchers
-([Solaris](../../../../streamhost/tiles/solariscde/qemu-streamhost.sh),
+([Solaris](../../../../streamhost/tiles/solaris/qemu-streamhost.sh),
 [Win95](../../../../streamhost/tiles/win95/qemu-streamhost.sh),
 [Win3.11](../../../../streamhost/tiles/win311/qemu-streamhost.sh),
 [OS/2](../../../../streamhost/tiles/os2warp/qemu-streamhost.sh),

@@ -1183,9 +1183,9 @@ def cmd_exec(argv):
         "Alternatives:",
         '  * labctl sh %s "<cmd>"   (BLIND — types into console, no capture)' % name,
     ]
-    if name == "solariscde":
+    if name == "solaris":
         alt.append(
-            "  * labctl clone solariscde <N>  then: ssh -p $((2300+N)) root@127.0.0.1 '<cmd>'  (clone has ssh 22)"
+            "  * labctl clone solaris <N>  then: ssh -p $((2300+N)) root@127.0.0.1 '<cmd>'  (clone has ssh 22)"
         )
     alt.append(
         "  * to add a live ssh channel safely: qmp_hmp.py <qmp> "
@@ -1299,7 +1299,7 @@ def cmd_clone(argv):
         die("usage: labctl clone <tile> <N>   (N should be a fresh id >= 40 for solaris)")
     name, n = argv[0], argv[1]
     tile_conf(name)  # validate + guardrail
-    if name == "solariscde":
+    if name == "solaris":
         if not os.path.exists(SOL_CLONE):
             die("solaris clone tool missing: %s" % SOL_CLONE)
         r = subprocess.run(["bash", SOL_CLONE, str(n)], capture_output=True, text=True)
@@ -1610,6 +1610,18 @@ def tile_facts(sh_tile, c, warn):
         warn("tile.env SH_TILE=%s does not match the matrix key %s" % (daemon_id, sh_tile))
     repo = repo_facts(warn)
     entry = registry_entry(sh_tile, warn)
+    # One tile, one name: the registry id IS the tileDir IS SH_TILE, and
+    # tiles-registry.py fails the build if an entry breaks that. This used to be
+    # a passive `identity_diverges` field on every tile's facts, permanently true
+    # for aros/amigaos and solaris/solariscde (both renamed 2026-08-10). A flag
+    # that is normally set is a flag nobody reads, so it is a WARNING now — it
+    # can only fire on a live tile whose tile.env drifted from its registry entry.
+    if entry.get("id") and entry["id"] != daemon_id:
+        warn(
+            "registry id %s but the daemon runs as %s — the two must match; "
+            "reconcile tile.env/the tile dir with registry/tiles/%s.json"
+            % (entry["id"], daemon_id, entry["id"])
+        )
     launcher = launcher_text(tile_dir)
     disk, snapshots = disk_facts(boot_disk(tile_dir, launcher), warn)
     suite, is_bridge = suite_facts(sh_tile, disk["backing"], launcher, warn)
@@ -1633,7 +1645,6 @@ def tile_facts(sh_tile, c, warn):
     return {
         "id": entry.get("id") or sh_tile,
         "sh_tile": daemon_id,
-        "identity_diverges": bool(entry.get("id") and entry["id"] != daemon_id),
         "dir": tile_dir,
         "unit": {"name": "streamhost@%s.service" % daemon_id, "state": svc_state(daemon_id)},
         "kind": kind,
@@ -1672,8 +1683,6 @@ RESETTABLE = {True: "RESETTABLE", False: "NOT resettable", None: "unknown"}
 def facts_rows(f):
     d, ex, s, b = f["disk"], f["exec"], f["suite"], f["builder"]
     ident = f["id"]
-    if f["identity_diverges"]:
-        ident += "  (SH_TILE %s)  ** IDENTITY DIVERGES **" % f["sh_tile"]
     if f["snapshots"] is None:
         snaps = "unknown"
     else:
@@ -1747,7 +1756,9 @@ def cmd_facts(argv):
     matrix = load_matrix().get("tiles", {})
     sh_tile = name
     if name not in matrix:
-        # The argument may be the SPA/registry id (solaris -> solariscde).
+        # A tile whose runtime dir is not the name given: the registry entry
+        # resolves it. id == tileDir for every tile today, so this is the
+        # schema-general path rather than a lookup that has to succeed.
         entry = registry_entry(name, lambda _m: None)
         sh_tile = entry.get("tileDir") or ""
         if sh_tile not in matrix:

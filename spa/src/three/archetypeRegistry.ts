@@ -119,7 +119,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   tinycore:    { osId: 'tinycore',    archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#4a9fd6', eraLabel: '2009 · Tiny Core' },
   ninefront:   { osId: 'ninefront',   archetypeId: 'mono-terminal',   transport: 'streamhost',  accentColor: '#c9c05b', eraLabel: '2011 · 9front (Plan 9)', bootVideo: '/boot/ninefront/boot.mp4' },
   helenos:     { osId: 'helenos',     archetypeId: 'mono-terminal',   transport: 'streamhost',  accentColor: '#b58fd6', eraLabel: '2006 · HelenOS' },
-  solaris:     { osId: 'solaris',     archetypeId: 'sparc-pizzabox',  transport: 'streamhost',  accentColor: '#d68a3a', eraLabel: '1994 · Solaris CDE', hardwareInput: true, bootVideo: '/boot/solariscde/boot.mp4' },
+  solaris:     { osId: 'solaris',     archetypeId: 'sparc-pizzabox',  transport: 'streamhost',  accentColor: '#d68a3a', eraLabel: '1994 · Solaris CDE', hardwareInput: true, bootVideo: '/boot/solaris/boot.mp4' },
   nt351:       { osId: 'nt351',       archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#3a6ea5', eraLabel: '1995 · Windows NT 3.51' },
   serenityos:  { osId: 'serenityos',  archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#c95a8f', eraLabel: '2018 · SerenityOS' },
   android:     { osId: 'android',     archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#3ddc84', eraLabel: '2008 · Android' },

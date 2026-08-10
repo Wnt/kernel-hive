@@ -103,7 +103,7 @@ startup sound; the games/shortcuts stay on disk. Baked on a clone, validated, sw
   golden md5 `018a4163…`.
 - **Publish:** `WEBROOT=/data/vms/streamhost/serve/webroot gen-boot-manifest.sh winxp` rsyncs
   the staged assets to `$WEBROOT/boot/winxp/` and merge-updates `/boot/index.json` (keeps
-  amiga/haiku/os2warp/solariscde/win95/win98se). Verified: `/boot/winxp/boot.mp4` → 206
+  amiga/haiku/os2warp/solaris/win95/win98se). Verified: `/boot/winxp/boot.mp4` → 206
   `video/mp4` (`Content-Range bytes 0-1023/4822615`); poster 200 `image/jpeg`; vtt 200
   `text/vtt`; index has all 7 tiles.
 

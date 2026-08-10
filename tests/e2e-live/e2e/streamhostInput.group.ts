@@ -9,7 +9,7 @@
 //
 //    osId        — the SPA OS id (drives ?streamhost=<osId> + /signal/<osId>.json
 //                  + the grid card + POST /restore/<osId>). NOTE two tiles differ
-//                  from their tile DIR: solariscde→osId "solaris", amigaos→"aros".
+//                  from their tile DIR (identical since the 2026-08-10 rename).
 //    displayName — museumCatalog displayName (grid card aria-label prefix).
 //    keyType     — literal string typed through the guest for the keyboard probe.
 //    mouseSkip / keyboardSkip — set ONLY for a KNOWN, MEASURED limitation where a

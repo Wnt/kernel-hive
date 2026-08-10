@@ -262,13 +262,18 @@ UDP relay.
   must agree on: that key, `UDP_RELAY_PORT_RANGE` in the forwarder repo's
   `deploy/site.env` (which renders the edge's nftables rule on every deploy —
   the rule itself is derived, not authoritative), and this document.
-- **A tile's SPA id is not always its `SH_TILE`.** `solaris` runs as
-  `solariscde`, `aros` as `amigaos`. The ticket is signed over the identity the
-  DAEMON publishes in its `signaling.json`, not the signalling endpoint's key —
-  signing with the latter locked both tiles out of every session for four hours
-  on 2026-08-05, which presented as "the exhibit froze after I clicked" because
-  the open session kept working and only the next reconnect was refused.
-  `check-stream-tickets.py` is the guard.
+- **The ticket is signed over the identity the DAEMON publishes in its
+  `signaling.json`, not the signalling endpoint's key.** Those were two
+  different names while `solaris` ran as `solariscde` and `aros` as `amigaos`,
+  and signing with the endpoint key locked both tiles out of every session for
+  four hours on 2026-08-05 — which presented as "the exhibit froze after I
+  clicked", because the open session kept working and only the next reconnect
+  was refused. Both tiles were renamed on 2026-08-10 and the registry now
+  refuses an id that differs from its `tileDir`, so the two names agree by
+  construction. The gateway still reads the daemon's, and
+  `check-stream-tickets.py` still proves the relationship holds: the daemon is
+  the authority on the identity it verifies against, and a tile.env edited on
+  the box does not pass through the registry's gate.
 - **`openvms` is flaky across restarts** (`dual-VM stack did not become ready`)
   and needs a retry — unrelated to any of this, but it will stop a fleet-wide
   promotion, so stop that tile before a `--promote` and start it after.

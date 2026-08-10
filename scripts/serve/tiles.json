@@ -65,7 +65,7 @@
   },
   "solaris": {
     "udpPort": 54100,
-    "hashFile": "/data/vms/streamhost/tiles/solariscde/cert_hash_b64.txt"
+    "hashFile": "/data/vms/streamhost/tiles/solaris/cert_hash_b64.txt"
   },
   "nt4": {
     "udpPort": 54089,
@@ -81,7 +81,7 @@
   },
   "aros": {
     "udpPort": 54110,
-    "hashFile": "/data/vms/streamhost/tiles/amigaos/cert_hash_b64.txt"
+    "hashFile": "/data/vms/streamhost/tiles/aros/cert_hash_b64.txt"
   },
   "qnx": {
     "udpPort": 54112,

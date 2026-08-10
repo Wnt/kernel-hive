@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Rebuild amigaos/golden-scratch.qcow2 from a cold AROS LiveCD boot. The
+# Rebuild aros/golden-scratch.qcow2 from a cold AROS LiveCD boot. The
 # production launcher and this setup QEMU intentionally use the same emulated
 # device tree; only the display/audio host backends differ. The framebuffer is
 # gated twice: first on Wanderer, then on the open AROS Shell saved as `golden`.
 # No old-pool image is consulted. Kill QEMU only through this tile's pidfile.
 set -euo pipefail
 
-BASE="${TILE_DIR:-/data/vms/streamhost/tiles/amigaos}"
+BASE="${TILE_DIR:-/data/vms/streamhost/tiles/aros}"
 ISO="${AROS_ISO:-/data/gallery-guests/AmigaOS/aros-pc-i386.iso}"
 PROOF_DIR="${PROOF_DIR:-/data/gallery-guests/AmigaOS}"
 DISK="$BASE/golden-scratch.qcow2"
@@ -97,7 +97,7 @@ elif op == "require_abs":
     current = next((mouse for mouse in mice if mouse.get("current")), None)
     if not current or not current.get("absolute") or "Tablet" not in current.get("name", ""):
         raise SystemExit("QEMU HID Tablet is not AROS's active absolute pointer: " + repr(mice))
-    print("[amigaos-bake] active pointer: " + repr(current))
+    print("[aros-bake] active pointer: " + repr(current))
 else:
     raise SystemExit("unknown QMP operation: " + op)
 s.close()
@@ -193,18 +193,18 @@ command -v python3 >/dev/null 2>&1 || {
 }
 mkdir -p "$BASE" "$PROOF_DIR"
 
-if [ "$BASE" = /data/vms/streamhost/tiles/amigaos ]; then
-  systemctl stop streamhost@amigaos 2>/dev/null || true
+if [ "$BASE" = /data/vms/streamhost/tiles/aros ]; then
+  systemctl stop streamhost@aros 2>/dev/null || true
 fi
 stop_qemu
 
-echo "[amigaos-bake] create a fresh 1 GiB qcow2 (no backing file)"
+echo "[aros-bake] create a fresh 1 GiB qcow2 (no backing file)"
 rm -f "$BAKE_DISK"
 qemu-img create -f qcow2 "$BAKE_DISK" 1G >/dev/null
 
-echo "[amigaos-bake] cold boot under $MACHINE"
+echo "[aros-bake] cold boot under $MACHINE"
 nice -n15 "$QEMU_BIN" \
-  -name amigaos-golden-bake \
+  -name aros-golden-bake \
   -enable-kvm -m 512 -smp 1 \
   -machine "$MACHINE" -cpu host \
   -rtc base=localtime \
@@ -227,7 +227,7 @@ done
   exit 1
 }
 
-echo "[amigaos-bake] framebuffer gate: Wanderer desktop"
+echo "[aros-bake] framebuffer gate: Wanderer desktop"
 desktop=0
 for _ in $(seq 1 "$BOOT_TIMEOUT"); do
   qmp shot "$BASE/bake-boot.ppm" 2>/dev/null || true
@@ -242,7 +242,7 @@ done
   exit 1
 }
 
-echo "[amigaos-bake] open AROS Shell: Right-Amiga+E, newshell, Enter"
+echo "[aros-bake] open AROS Shell: Right-Amiga+E, newshell, Enter"
 qmp key meta_r e
 sleep 0.5
 qmp type newshell
@@ -261,7 +261,7 @@ done
   exit 1
 }
 
-echo "[amigaos-bake] bind QEMU USB Tablet: AddUSBHardware pciusb.device 0"
+echo "[aros-bake] bind QEMU USB Tablet: AddUSBHardware pciusb.device 0"
 qmp type "addusbhardware pciusb.device 0"
 qmp key ret
 # Poseidon's informational binding popup is transient. Let it retract before
@@ -269,7 +269,7 @@ qmp key ret
 sleep 6
 qmp require_abs
 
-echo "[amigaos-bake] framebuffer proof: absolute tablet reaches corners + centre"
+echo "[aros-bake] framebuffer proof: absolute tablet reaches corners + centre"
 for point in tl:3277:3277 tr:29490:3277 bl:3277:29490 br:29490:29490 center:16384:16384; do
   IFS=: read -r name x y <<<"$point"
   qmp abs "$x" "$y"
@@ -281,12 +281,12 @@ frame_is "$PROOF_DIR/aros-abs-center.ppm" shell
 # comparison frame now so the later loadvm delta measures like-for-like state.
 qmp shot "$BASE/bake-golden.ppm"
 
-echo "[amigaos-bake] savevm golden"
+echo "[aros-bake] savevm golden"
 qmp hmp "savevm golden"
 qmp hmp "info snapshots" | tee "$BASE/golden-bake.snapshots"
 grep -qw golden "$BASE/golden-bake.snapshots"
 
-echo "[amigaos-bake] dirty the frame, then prove loadvm restores the Shell"
+echo "[aros-bake] dirty the frame, then prove loadvm restores the Shell"
 qmp type dir
 qmp key ret
 sleep 1
@@ -301,7 +301,7 @@ reset_delta="$(pixel_delta "$BASE/bake-golden.ppm" "$BASE/bake-reset.ppm")"
 python3 - "$dirty_delta" "$reset_delta" <<'PYVERIFY'
 import sys
 dirty, reset = map(float, sys.argv[1:])
-print(f"[amigaos-bake] frame delta: dirty={dirty:.6f} reset={reset:.6f}")
+print(f"[aros-bake] frame delta: dirty={dirty:.6f} reset={reset:.6f}")
 if dirty < .002:
     raise SystemExit("dirty frame did not visibly leave the golden Shell")
 if reset > .002:
@@ -320,4 +320,4 @@ chmod 0644 "$DISK"
 install -m 0644 "$BASE/bake-reset.ppm" "$PROOF_DIR/aros-golden.ppm"
 KEEP_BAKE=1
 rm -f "$BASE/bake-boot.ppm" "$BASE/bake-golden.ppm" "$BASE/bake-dirty.ppm" "$BASE/bake-reset.ppm"
-echo "[amigaos-bake] PASS: fresh $DISK contains snapshot golden under $MACHINE"
+echo "[aros-bake] PASS: fresh $DISK contains snapshot golden under $MACHINE"
