@@ -232,14 +232,39 @@ Two lessons worth more than the colon:
 The SPA needs no new affordance for this: the shift latch already sends shift
 as its own `sendKey` and `SH_KEY_MIN_HOLD_MS=400` paces it.
 
-**What the exhibit actually rests on.** With no XNS Clearinghouse this image
-wakes onto the **Workstation Administration** desktop — grey stipple ground,
-the `35176 Free Disk Pages` header strip, and one ViewPoint window offering
-Desktop Creation / Deletion / Changes. It is a genuine, logged-on ViewPoint 2.0
-desktop with real Star window furniture (title bar, `Start`, the window-menu
-and close buttons, scroll bars), so it clears the "must reach a graphical UI"
-bar — but it is an *administrator's* desktop, not the iconic file-drawer
-desktop, and the route to the latter is behind the colon problem above.
+**THE ICONIC VIEWPOINT DESKTOP IS REACHABLE — and here is the exact route.**
+The image's out-of-the-box state is a **Workstation Administration** desktop
+(grey stipple, `Free Disk Pages` header, one window with Desktop Creation /
+Deletion / Changes). That is a genuine logged-on ViewPoint desktop, but it is
+an administrator's console, not the file-drawer desktop the Star is famous for.
+Getting to the real one, all framebuffer-verified (box clock 02:41 → 03:07):
+
+1. On the admin desktop, click **Desktop Creation**. It expands into
+   `Name` / `Password` fields and an `Administrator` toggle.
+2. **Use the little menu button beside `Name`** (press and hold — it is
+   spring-loaded) and pick the template it offers, `user:star:xerox`. Typing
+   the name by hand works too now that the colon is solved, but the template
+   also tells you the machine's own default domain and organisation.
+3. Edit it to a name that does not already exist — the shipped image already
+   has `user:star:xerox`. `user:star:xerox2` is fine. **The caret in this field
+   always sits at the end**: clicking mid-string does not move it, so append
+   rather than insert.
+4. Click into `Password` (clicking an EMPTY field *does* place the caret; NEXT
+   does not move between fields in this sheet, contrary to the study's warning
+   about the logon sheet), type a password, arm `Administrator`, click `Start`.
+5. The machine **logs itself out** and returns to the bouncing keyboard.
+6. `Home` (NEXT) now brings up the **real Logon Option Sheet** — Xerox
+   1981-1988 copyright, `Name`, `Password`, `Default Domain`, `Default
+   Organization`, and the header prompt *"Please type your user-name and then
+   press <NEXT>"*. Set `Default Organization` to match the desktop you made,
+   fill in name and password, click `Start`.
+7. **The ViewPoint user desktop**: grey stipple ground, the `35168 Free Disk
+   Pages` header with a `Help` button, and the **Directory** icon in the
+   bottom-right corner — the same furniture Draco shows on the 6085.
+
+Two hazards in that sequence, both of which cost me a cycle: `Start` needs the
+pointer *precisely* on the button (a 57 px miss silently does nothing, with no
+hover feedback to warn you), and the machine logs out at step 5 without asking.
 
 **Speed, under a loaded box (not the gate run):** 22 f/s (28 %) during boot,
 settling to **43–53 f/s (55–68 %)** at MP 8000, with the process taking ~178 %
