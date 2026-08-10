@@ -126,6 +126,19 @@ Edit the **source** (`registry/tiles/*`, templates) and run
 edit a generated file. `make tile-registry-check` (and the CI `static` job) fail
 on any drift.
 
+**Regenerate after every MERGE, not just after every edit.** Generated artifacts
+are the worst case for a three-way merge: they auto-merge *cleanly* and are then
+*wrong*, because git resolves them line-by-line with no idea they are a
+projection of the sources. Observed 2026-08-10 merging a tile branch —
+`registry/generated/labctl-declarations.json` came out carrying
+`nextstep.pointer_mode: "rel"` while `registry/tiles/nextstep.json` said `abs`,
+a hybrid neither branch ever contained. No conflict was reported; only
+`make tile-registry-check` caught it.
+
+So in a multi-branch wave, run `make tile-registry-generate` **after each branch
+lands**, not once at the end — otherwise a later merge resolves against
+already-wrong generated content and the mess compounds.
+
 ## Pre-push hook
 
 `.claude/hooks/pre-push-gate.sh` runs this whole suite locally and blocks a push
