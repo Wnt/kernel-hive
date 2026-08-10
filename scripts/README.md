@@ -86,6 +86,14 @@ tracked `streamhost/tiles/soltest-*/` launchers (clone scaffolds that run out of
 | `shmshot.py` | Screendump a `SH_CAPTURE=shm` tile by reading the seqlocked framebuffer its emulator publishes (no QMP, no X server) -> PPM. Fails loudly where the old x11 path returned a valid all-black image | box (**sync pair**) |
 | `serve-https-spa.sh` | One-shot HTTPS serving-plane bring-up: build SPA (`spa/`), deploy without replacing unrelated webroot content, mint local-CA cert, start HTTPS server. **`manifests` is NOT concurrency-safe — see below.** | workstation → box |
 
+> **It is not only the `manifests` subcommand — `deploy` publishes implicitly.**
+> `deploy` calls `publish_manifests` as part of its normal run, and it *also*
+> replaces the live SPA **bundle** with the publishing worktree's build, so a
+> sibling's compiled scene rows disappear from the deployed bundle until the
+> next post-merge rebuild. Both clobbers happened on 2026-08-10 from a plain
+> `deploy`, by an agent that had been told not to run `manifests`. **With
+> parallel tile work in flight, treat `deploy` as equally forbidden.**
+>
 > **`serve-https-spa.sh manifests` wholesale-replaces all three serve manifests**
 > (`tiles.json`, `gallery-manifest.json`, `golden-manifest.json`) from the
 > publishing worktree, atomically. It therefore **deletes every tile another
