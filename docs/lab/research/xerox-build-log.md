@@ -270,6 +270,32 @@ Two hazards in that sequence, both of which cost me a cycle: `Start` needs the
 pointer *precisely* on the button (a 57 px miss silently does nothing, with no
 hover feedback to warn you), and the machine logs out at step 5 without asking.
 
+**`xdotool windowclose` is NOT a clean exit, and it silently discards the
+disk.** Darkstar writes the hard-disk image back only from
+`Program.cs` → `system.Shutdown()` → `_hardDrive.Save()`, reached after the
+main form's dialog returns `DialogResult.OK`. Destroying the X window from
+outside gets WinForms far enough to kill the emulation thread and then throws
+`Cannot call Invoke or BeginInvoke on a control until the window handle is
+created` — the process dies **before** `Shutdown()`, and the image file's mtime
+never moves. I lost an hour of desktop-creation work to this. **The only safe
+shutdown is the `System → Exit` menu item.** For a tile this is mostly moot —
+a bridge tile's golden is a QEMU snapshot of the whole kiosk VM, RAM included,
+so Darkstar never has to flush — but any build script that relies on the `.img`
+must drive that menu and then wait for the process to leave.
+
+**Darkstar's own "100 %" is 77.4 fields/sec**, not 78: `DWindow.cs` computes
+`(_frameCount / 77.4) * 100`. So the study's `>= 78 f/s` gate is the right
+number to one decimal, and the percentage in the status bar is directly
+comparable.
+
+**Rig hygiene note:** `xvfb-alloc`'s exit trap did NOT fire for a rig launched
+under `setsid nohup`, leaving three claimed displays alive after their emulator
+had exited. `xvfb-alloc release <pid>` works; `xvfb-alloc release :N` silently
+does nothing. Call `xvfb_release` explicitly at the end of a detached rig
+rather than trusting the trap, and check `xvfb-alloc list` — its OWNER column
+names the script that claimed each display, which is how I proved the three
+strays were mine and not a sibling's.
+
 **Speed, under a loaded box (not the gate run):** 22 f/s (28 %) during boot,
 settling to **43–53 f/s (55–68 %)** at MP 8000, with the process taking ~178 %
 CPU (emulation + SDL blit). Box was ~72 % busy on all 16 logical CPUs. The
