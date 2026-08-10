@@ -107,7 +107,20 @@ HDV="/opt/bridge/media/geos.hdv"
 CONF="/opt/bridge/media/linapple.conf"
 ASSETS_DIR="${ASSETS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../assets/apple2}"
 # Asimov mirror; GEOS-mouse HDV is the AppleWin-tailored (== LinApple) mouse build.
+#
+# SINGLE MIRROR + FATAL HASH GATE. mirrors.apple2.org.za is the only source this
+# tile has, so the two pins below are what turns "the mirror served something" into
+# "the mirror served THIS". Both are sha256 measured on the LIVE apple2 overlay
+# 2026-08-10 (`labctl exec apple2 sha256sum /opt/bridge/media/…`); the HDV inside the
+# zip is dated 2009-12-05, 1 327 616 B, ProDOS volume /BIGWON. Recorded in
+# docs/lab/ASSETS-MANIFEST.md §2 with its licence class (Breadbox freed Apple GEOS in
+# 2003) and covered by check-assets.sh.
+#   The `file … ProDOS` assertion below is KEPT, and is a different question: the
+#   hash says "this is the right file", `file` says "this is a sane one", and a
+#   substituted-but-valid ProDOS image fails the first while passing the second.
 GEOS_URL="https://mirrors.apple2.org.za/ftp.apple.asimov.net/images/masters/other_os/gui/geos/GEOS-mouse%20supported%20by%20APPLEWIN.hdv.zip"
+GEOS_ZIP_SHA=64b7bef2440e2f0424586a893c641b566901403ad3ce6b3b5adaab573ae23e35
+GEOS_HDV_SHA=5aba89dda3450abf17b8cc05d9de98149abe0bb072e5b01cc29b7fff995fc681
 
 FORCE=0
 while [ $# -gt 0 ]; do case "$1" in
@@ -241,11 +254,13 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
   guest "cd /usr/local/src/linapple && make >/tmp/linapple-build.log 2>&1 && make install >>/tmp/linapple-build.log 2>&1 && \
          test -x /usr/local/bin/linapple && echo linapple-built || { tail -20 /tmp/linapple-build.log; exit 1; }"
 
-  log "fetching the Apple GEOS mouse HDV (freeware, Asimov mirror) ..."
+  log "fetching the Apple GEOS mouse HDV (freeware, Asimov mirror; sha256-gated) ..."
   guest "cd /opt/bridge/media && \
          curl -fsSL -o geos-mouse.hdv.zip '${GEOS_URL}' && \
+         echo '${GEOS_ZIP_SHA}  geos-mouse.hdv.zip' | sha256sum -c - && \
          unzip -o geos-mouse.hdv.zip >/dev/null && \
          cp 'GEOS-mouse supported by APPLEWIN.hdv' geos.hdv && \
+         echo '${GEOS_HDV_SHA}  geos.hdv' | sha256sum -c - && \
          file geos.hdv | grep -q ProDOS && echo geos-hdv-ok"
 
   log "writing LinApple config (HDD-boot GEOS, mouse slot 4, clock slot 5, mono white, windowed 1.8x) ..."

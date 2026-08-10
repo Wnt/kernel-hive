@@ -184,6 +184,66 @@ ROWS=(
   "req-file|armeval|Acorn DFS 2.23 (bbc_acorn1770 BIOS dfs223)|$ASSET_STAGING/armeval/dfs v2.23,acorn.rom|sha1:0d7ed0b0b3852cb61970ada1993244f2896896aa|preservation-source"
   "req-file|armeval|Acorn ADFS 1.30 (sideways socket 3 by path; socket 1 kills the Tube)|$ASSET_STAGING/armeval/Acorn-ADFS-1.30.rom|sha1:301fd05c475a629c4bec70510d4507256a5b00d8|preservation-source"
   "req-file|armeval|ARM Evaluation System Disc 3 'Utilities 2 / BASIC' (carries $.AB, ARM BBC Basic V 1.00)|$ASSET_STAGING/armeval/armevaluationsystem-disc3.adl|sha1:f5114ff744f6f742da3959a91a1b98af0bd1db5d|preservation-source"
+  # -- DEC media (decos, pdp11): staged by hand, and NO builder may fetch them.
+  # Every trailing-edge.com host is offline, so these came through the Wayback
+  # raw form and bitsavers; a lost copy is a one-shot re-hunt, not a re-download.
+  # See ASSETS-MANIFEST §0 for the Mentec hobbyist grant these run under.
+  "req-file|decos|RT-11 V5.3 distribution kit (RL02 pack + the Mentec licence text)|$ASSET_STAGING/decos/rtv53swre.tar.Z|sha256:9fdad10969f1f391b13d9d97aa8fc1aa8fcb44472dac363d23eb2d31500207bc|preservation-source"
+  "req-file|decos|RSX-11M V4.2 BL38 TK50 kit|$ASSET_STAGING/decos/rsx11m42.zip|sha256:c8766a53ae5b32c060560d5cea6302715c046322c80dbc234cc7e63ab2391ba1|preservation-source"
+  "req-file|decos|RSTS/E V9.6 installation tape (TPC)|$ASSET_STAGING/decos/rsts_v9_6_install.zip|sha256:aaf4aa978e13318fe304dfbf75e20090206e17caa5b76bab69bec2704d9c694f|preservation-source"
+  "req-file|pdp11|2.11BSD prebuilt MSCP pack (Don North), pristine zip|/data/vms/streamhost/tiles/pdp11/media/2.11BSD_rq.dsk.zip|sha256:94abeca02f001619e7aa2252cb2336ffe79af0cb3fb35cbd8c14240af3125a6b|preservation-source"
+  # -- atarist app archives: sha256-gated in the builder, but the SOURCES are
+  # three small sites (one behind a two-step PHP cookie handshake, one an opaque
+  # atarimania numeric id). The builder re-fetches when they are absent, so this
+  # is not a gate on the fetch — it is here so a lost cache fails the preflight
+  # instead of failing three fragile HTTP requests deep into a build. Same
+  # reasoning as the dragon32 row above. Pending population into the media cache.
+  "req-file|atarist|AIM 3.1 image manager (Floppyshop ART-3488)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/ART-3488.zip|sha256:a5b245ae886aaeedc7d98a0d7ae774c75c214faa567f5b3f88321c89a210e147|abandonware-URL"
+  "req-file|atarist|GEMBench 4.03 (Floppyshop UTL-3762)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/UTL-3762.zip|sha256:74bce9ec2c7ec4d0da144887e0a5848bde3feff165e4cdabde52c3a395824567|abandonware-URL"
+  "req-file|atarist|Ballerburg (Eckhard Kruse, PD)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/baller.zip|sha256:8bcb4214cc6a30c02413f73923cabcf65437b9294f6148f3018f01bac9115d45|freely-fetchable-pinned"
+  "req-file|atarist|Ballerburg sources (Eckhard Kruse, PD)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/baller_sources.zip|sha256:63fb6c5aa14f4f912e4d5cff61f42fa35951932d0635b185e14da434212ed593|freely-fetchable-pinned"
+  "req-file|atarist|Pacman for GEM 0.2.5 (atarimania pgedump id=31902)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/pacman_for_gem_0_25.zip|sha256:6f33a9e7371f9fb6bd635dd6d67250e1c5adc6c0b44b609e726e0fed84f5fe3e|abandonware-URL"
+  # -- c128: one file, one mirror (zimmers.net). c128.sh re-fetches when the host
+  # copy is absent; the row exists so a dead mirror is discovered at preflight.
+  "req-file|c128|Commodore CP/M 3.0 system disk for the C128 (Z80 side)|/data/vms/streamhost/tiles/c128/media/cpm.d64|sha256:69159226bf1996d8fc8c8921f094cd03955c7a8b9ecf800069d1c369dc6e5a1d|preservation-source"
+  # -- apple2: the GEOS media lives INSIDE the tile overlay at /opt/bridge/media/,
+  # not on the host, so these read "will fetch" exactly like the nextstep and
+  # daybreak rows above. apple2.sh gates BOTH sha256s in-guest on every run.
+  # mirrors.apple2.org.za is the only source, so the pin is the whole defence.
+  "opt-file|apple2|Apple GEOS deskTop mouse HDV, zipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos-mouse.hdv.zip|sha256:64b7bef2440e2f0424586a893c641b566901403ad3ce6b3b5adaab573ae23e35|abandonware-URL"
+  "opt-file|apple2|Apple GEOS deskTop ProDOS image geos.hdv, unzipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos.hdv|sha256:5aba89dda3450abf17b8cc05d9de98149abe0bb072e5b01cc29b7fff995fc681|abandonware-URL"
+  # -- indyr4400: DERIVED from this lab's own irix golden, not downloaded. The
+  # ext4 container's hash is not reproducible (mkfs stamps a random UUID), so
+  # this row is presence-only; the inner disk.raw hash is in ASSETS-MANIFEST §0.
+  "req-file|indyr4400|IRIX 6.5.22 r4400 read-only asset drive (derived from irix65-apps.chd)|$GALLERY_ROOT/IrisIndy/irix65-r4400-disk.ext4||preservation-source"
+  # -- base-media: the four media blobs BAKED INTO the frozen bridge base at
+  # /opt/bridge/media/ inside /data/vms/bridge/bridge-base.qcow2. Every bridge
+  # tile inherits them through its overlay; c64 boots GEOS.D64, atarist boots
+  # etos1024k.img, amiga boots the Kickstart + Workbench pair. They are on no
+  # host path, so these rows read "will fetch" and exist for the HASH RECORD —
+  # the same honest-hollow shape the nextstep/daybreak/star rows use.
+  # To verify them for real, read the base READ-ONLY and never writable:
+  #   modprobe nbd && qemu-nbd --read-only -c /dev/nbd0 /data/vms/bridge/bridge-base.qcow2
+  #   mount -o ro /dev/nbd0p1 /mnt/x && sha256sum /mnt/x/opt/bridge/media/...
+  # (hashes below measured 2026-08-10 through live tile overlays, which is the
+  # cheaper equivalent: pet2001/c64/atarist/apple2 all report the same bytes.)
+  # The base also carries /opt/bridge/media/LICENSES, a text note, not media.
+  "opt-file|bridge-base|C64 GEOS 2.0 disk GEOS.D64 (baked into the bridge base)|$ASSET_STAGING/bridge-base/GEOS.D64|sha256:2aabeb34bd3bb21866f5c50db172a4aeb11163ed1dc178eb82342f7ce3405a59|base-media"
+  "opt-file|bridge-base|EmuTOS 1.3 1024k ROM image etos1024k.img (GPLv2; baked into the bridge base)|$ASSET_STAGING/bridge-base/etos1024k.img|sha256:e2692d0277d473128ac0557fd30a8995a8223a114e91b0e66e8af4ec35b59728|base-media"
+  "opt-file|bridge-base|Amiga Kickstart 1.3 kick13.rom (baked into the bridge base)|$ASSET_STAGING/bridge-base/kick13.rom|sha256:ee05862d8102a08436ac4056da7d549db31625c7d47b24dfb7b3c9a5c113ca53|base-media"
+  "opt-file|bridge-base|Amiga Workbench 1.3 boot ADF workbench13.adf (baked into the bridge base)|$ASSET_STAGING/bridge-base/workbench13.adf|sha256:3610df193fdbbfbd88da695732a5c3ed63e77ed3de20e187201289e3915bb2c2|base-media"
+  # -- DELIBERATELY NOT LISTED, so a green run is not read as more than it is:
+  #   * The six VICE tiles (c64, vic20, plus4, pet2001, cbm8032, cbm2) and gt40
+  #     have NO external media at all — VICE bundles every ROM they need, and
+  #     gt40's lunar.lda ships inside the MIT-licensed Open SIMH tree it builds.
+  #     A row for them would be hollow, and a hollow row is worse than none.
+  #   * alto: the Alto disk packs and microcode PROMs ship inside the pinned
+  #     ContrAlto2 git tree the builder clones. Nothing is staged separately.
+  #   * amiga/c64: their media IS the base-media rows above, not a second copy.
+  #   * The host-built MAME binaries under /data/vms/streamhost/assets/<tile>/mame/
+  #     (the six build-mame-*.sh products bbcb/dragon/kc85/mpf2/oricatmos/zx81,
+  #     plus irix's separately-built sgi; 68-122 MB each) are BUILD ARTIFACTS, not
+  #     media: losing one costs a chroot rebuild, not the tile. No rows.
 )
 
 # ---- impl ---------------------------------------------------------------------

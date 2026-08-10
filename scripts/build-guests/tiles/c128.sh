@@ -141,9 +141,9 @@ EVIDENCE="$TILE_DIR/evidence"
 MEDIA_DIR="$TILE_DIR/media"
 MEM=768
 
-# CP/M 3.0 system disk for the Commodore 128 — the ONE external file this tile
-# needs. Preservation source (zimmers.net's CBM archive); the bits are never
-# committed, only the URL and both hashes. Verified on intake AND in-guest.
+# CP/M 3.0 system disk — the ONE external file this tile needs, from a SINGLE
+# mirror (zimmers.net). Never committed; only the URL + both hashes are. $MEDIA_DIR
+# keeps the host copy: that is the offline recovery path if zimmers.net ever dies.
 CPM_URL="https://www.zimmers.net/anonftp/pub/cbm/demodisks/c128/cpm.system.6228151676.d64.gz"
 CPM_GZ_SHA=6ed0da2d8a6fa74ae7b6e6cb67d78e1806a2a625ca839b4d93558c5ce7f44cb9
 CPM_D64_SHA=69159226bf1996d8fc8c8921f094cd03955c7a8b9ecf800069d1c369dc6e5a1d

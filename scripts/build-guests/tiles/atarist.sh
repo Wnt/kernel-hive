@@ -62,6 +62,20 @@ APP_MEDIA="/opt/bridge/media/atarist-apps"
 APP_CACHE="${TILE_DIR}/assets/atarist-apps"
 APP_WORK="${TILE_DIR}/app-build"
 
+# ---- THE FIVE APP ARCHIVES: FRAGILE SOURCES, FATAL HASHES -------------------
+# Every one of these is gated on the sha256 below and the build dies on a
+# mismatch, which is the easy half. The hard half is that the SOURCES are three
+# small sites and none of them is an archive:
+#   * exxosforum.co.uk (Floppyshop PD library) — needs a two-step PHP cookie
+#     handshake (DL_CAP2.php then dl.php), so it cannot even be curl'd naively,
+#     let alone mirrored. Supplies ART-3488 (AIM 3.1) and UTL-3762 (GEMBench).
+#   * eckhardkruse.net — the author's own site. Supplies Ballerburg + sources.
+#   * atarimania.com/pgedump.awp?id=31902 — an opaque numeric id, not a filename.
+#     Supplies Pacman for GEM 0.2.5.
+# The only copies that exist on the box are the build cache at $APP_CACHE, which
+# is inside a TILE directory rather than an asset location. They are declared in
+# docs/lab/ASSETS-MANIFEST.md §2 and checked by check-assets.sh; they are pending
+# population into the shared media cache. Do not clean $APP_CACHE.
 AIM_ZIP=ART-3488.zip
 AIM_SHA=a5b245ae886aaeedc7d98a0d7ae774c75c214faa567f5b3f88321c89a210e147
 GEMBENCH_ZIP=UTL-3762.zip

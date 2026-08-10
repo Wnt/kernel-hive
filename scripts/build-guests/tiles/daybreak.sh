@@ -68,9 +68,18 @@ MEDIA_DIR="/opt/bridge/media/daybreak" # inside the guest overlay
 DWARF_DIR="${MEDIA_DIR}/dwarf"
 
 # Media (fetched at build time, sha256-verified, NEVER committed).
-DIST_URL="https://github.com/devhawala/dwarf/raw/master/dist.zip"
+# PINNED TO A COMMIT, NOT TO `master`. Both URLs used to read `.../raw/master/...`
+# against the fixed hashes below, and a moving ref plus a fixed hash is not a risk
+# but a TIMER: the day devhawala pushes a new dist.zip the fetch succeeds, the hash
+# check fails, and the build reports an integrity violation for what is really
+# "upstream moved" — the old bytes then unreachable through that ref. A commit is
+# immutable: the fetch returns exactly these bytes or 404s, and a 404 reads as the
+# truth. Resolved 2026-08-10 via `git ls-remote`; both blobs re-fetched from it and
+# re-hashed byte-identical. To advance it: re-resolve, record NEW measured hashes.
+DWARF_COMMIT="c264af5e37f89d7aa0eec968aa23818bf5a89837"
+DIST_URL="https://github.com/devhawala/dwarf/raw/${DWARF_COMMIT}/dist.zip"
 DIST_SHA="67f84b77cbed6cba9d7d2485e84b8142e4fd2403243f8abd8f6e5a81ff6fcf75"
-DISK_URL="https://github.com/devhawala/dwarf/raw/master/disks-6085/vp2.0.5.zdisk"
+DISK_URL="https://github.com/devhawala/dwarf/raw/${DWARF_COMMIT}/disks-6085/vp2.0.5.zdisk"
 DISK_SHA="02bdb53ba7f7896a914fe43b7ca19a620907d0fdbf0f55317b7d1f39aab3f872"
 
 FORCE=0
