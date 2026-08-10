@@ -136,6 +136,21 @@ Closed during promotion (see the guest doc for the evidence):
 - **The cold-boot asymmetry** is written down where it will be read (guest doc
   §4, `scripts/coldboot/nextstep-zero-input-prep.md`) rather than left implicit.
 
+Closed on the second promotion attempt (2026-08-10), after the first one blocked
+on the pre-driver click:
+
+- **The bootstrap click.** It is a one-time bake step and it did not need the
+  general controller the first attempt tried to build. Fixed **1 px** relative
+  steps are exactly 1:1 on this machine (100 steps → 100 px, both axes), because
+  a single-pixel event is below anything NeXTSTEP's acceleration curve can
+  amplify; the walker takes |error| of them and re-reads the framebuffer. It
+  landed dead centre on the Install button from 634 px away, in one round, on
+  the tile that had defeated four controller variants.
+- **RETURN was tested and does not work**, despite the button carrying the
+  default-button ⏎ glyph: the panel never becomes key.
+- **Buttons need a slow press/release** once the tablet is live — `xdotool
+  click 1` is too fast and silently does nothing.
+
 Still unproven:
 
 - The 4 ms serial-report figure. It is read out of `tablet.c` +

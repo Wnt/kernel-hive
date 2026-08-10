@@ -139,18 +139,21 @@ def cursor(name="probe"):
     return hits[0]
 
 
-# Three measured properties of this relative path shape the controller below.
+# Two measured properties of this PRE-DRIVER relative path shape the walker below.
 # (1) The NeXT KMS mouse register carries a SIGNED 6-BIT delta, so one event can
-#     move the cursor at most 63 px and anything larger is truncated -- which
-#     makes a proportional controller with big steps estimate a nonsense gain.
-# (2) NeXTSTEP's acceleration curve has a DEAD ZONE that is not symmetric: a
-#     step of -24 in y moved the cursor not at all, while -1 in x moved it 1:1.
-#     So the loop must never need to come back UP -- it approaches every target
-#     from the top-left park and damps its steps so it cannot overshoot.
-# (3) A relative warp is delivered by moving the KIOSK's X pointer, which X
-#     clamps at the screen edge: a loop that drifts into an edge stops moving
-#     while still reporting a position. The host position is tracked.
-STEP_CAP = 24
+#     move the cursor at most 63 px: "slam the pointer into a corner to park it"
+#     moves 63 px and stops. park() walks out in 22 short steps instead.
+# (2) NeXTSTEP accelerates every event, superlinearly and well before that clamp
+#     (a 24 px step measured ~2.3x). That is what defeated the proportional
+#     controller this replaces: identical code converged on a clone and overshot
+#     the Install button by ~56 px on the tile, because the curve keys off event
+#     TIMING as well as size and the two machines are not timed alike. A ONE
+#     PIXEL step is the one input the curve cannot amplify -- measured on the
+#     live tile, 100 consecutive 1 px steps moved the NeXT arrow exactly 100 px,
+#     gain 1.000 on both axes. So the walker has no proportional term at all: it
+#     takes |error| steps of exactly 1 px and re-reads the framebuffer.
+STEP_DWELL = 0.03
+STEPS_PER_CALL = 200
 
 
 def park():
@@ -167,51 +170,45 @@ def park():
     time.sleep(0.8)
 
 
-def goto(tx, ty, tol=3, iters=120, parks=4):
-    """Walk the RELATIVE (pre-driver) pointer onto a target, closing the loop on
-    the framebuffer. Returns where it actually landed; the caller checks."""
+def goto(tx, ty, tol=4, rounds=4):
+    """Walk the RELATIVE (pre-driver) pointer onto a target in 1 px steps.
+
+    Open loop within a round -- 1 px is exactly 1 px (see above) -- and re-read
+    the framebuffer between rounds so a lost step or a clamp is still corrected.
+    Returns where it actually landed; the caller checks.
+    """
     cx = cy = -1
-    for attempt in range(parks):
-        damp = (0.5, 0.4, 0.3, 0.2)[attempt]
-        park()
-        hostx = hosty = 0
-        cx, cy = cursor()
-        overshot = False
-        for _ in range(iters):
-            ex, ey = tx - cx, ty - cy
-            if abs(ex) <= tol and abs(ey) <= tol:
-                return cx, cy
-            if ex < -tol or ey < -tol:
-                overshot = True  # past the target: only a re-park recovers
-                break
-            # Halve the remaining distance, in HOST pixels, assuming the worst
-            # case that the guest moves at least 1:1. The measured gain is
-            # 0.96-1.33, so this converges geometrically and CANNOT overshoot --
-            # which matters because the dead zone makes coming back impossible.
-            fx, fy = max(0.0, ex * damp), max(0.0, ey * damp)
-            # Clamp the two axes TOGETHER. Capping them independently walks the
-            # diagonal, so the near axis arrives and overshoots long before the
-            # far one -- and the dead zone means an overshoot never comes back.
-            # ... and shrink the cap on the run-in: NeXTSTEP accelerates a big
-            # single event superlinearly (a 24 px step measured ~2.3x), which is
-            # fine while crossing the screen and overshoots by 50 px at the end.
-            cap = STEP_CAP if max(ex, ey) > 150 else 6
-            biggest = max(fx, fy)
-            if biggest > cap:
-                fx, fy = fx * cap / biggest, fy * cap / biggest
-            dx = int(fx) or (1 if ex > tol else 0)
-            dy = int(fy) or (1 if ey > tol else 0)
-            dx = min(dx, W - 1 - hostx)
-            dy = min(dy, H - 1 - hosty)
-            if dx == 0 and dy == 0:
-                break  # host pinned against an edge: re-park and try again
-            kiosk(f"xdotool mousemove_relative --sync -- {dx} {dy}")
-            hostx += dx
-            hosty += dy
-            time.sleep(0.35)
+    was = None
+    for _ in range(rounds):
+        try:
             cx, cy = cursor()
-        if not overshot and abs(tx - cx) <= tol and abs(ty - cy) <= tol:
+        except SystemExit:
+            # Glyph lost (arrow over an I-beam view, or clipped at an edge):
+            # park brings it back somewhere the locator can see it.
+            park()
+            cx, cy = cursor()
+        dx, dy = tx - cx, ty - cy
+        log(f"goto ({tx},{ty}): at ({cx},{cy}), error ({dx},{dy})")
+        if abs(dx) <= tol and abs(dy) <= tol:
             return cx, cy
+        if (cx, cy) == was:
+            # A long burst of 1 px steps loses a pixel every few hundred, and a
+            # 2-3 px correction on its own does not register at all. Another
+            # round would repeat it verbatim, so stop and let the caller judge.
+            log("goto: no progress on a short correction; stopping here")
+            return cx, cy
+        was = (cx, cy)
+        sx, sy = (1 if dx > 0 else -1), (1 if dy > 0 else -1)
+        diag = min(abs(dx), abs(dy))
+        seq = [(sx, sy)] * diag + [(sx, 0)] * (abs(dx) - diag) + [(0, sy)] * (abs(dy) - diag)
+        for i in range(0, len(seq), STEPS_PER_CALL):
+            kiosk(
+                "xdotool "
+                + " ".join(
+                    f"mousemove_relative --sync -- {a} {b} sleep {STEP_DWELL}" for a, b in seq[i : i + STEPS_PER_CALL]
+                )
+            )
+        time.sleep(0.5)
     return cx, cy
 
 

@@ -1,7 +1,6 @@
 # NeXTSTEP 3.3 — live streamhost tile `nextstep` (VMID 237, udp 54134)
 
-**Status: LIVE (relative pointer). The absolute-tablet promotion is landed in
-the repo but NOT deployed — see §9.** A captured Debian-12 kiosk runs the **Previous** emulator as a
+**Status: LIVE, absolute pointer, PROMOTED 2026-08-10.** A captured Debian-12 kiosk runs the **Previous** emulator as a
 **NeXTcube** (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) booting **NeXTSTEP
 3.3 for m68k**, and streamhost captures the Linux framebuffer + AC97 audio like
 every other bridge tile (`streamhost/docs/BRIDGE.md`). The acceptance fixture —
@@ -102,11 +101,23 @@ So the tile ships:
   chain is a straight 1:1 map from the X root to the NeXT screen, so any other
   root size silently scales every visitor's click.
 
-**Measured, on the production tile:** 24 of 24 acceptance targets (corners inset
-8 px, edge midpoints, centre, and 15 scattered points) landed at **0 px** error,
-one commanded move each, located by an exact glyph match on the framebuffer.
-Click and drag were proven the same way — a Workspace icon selects, and the File
-Viewer's title bar drags 1:1 and lands where it was let go.
+**Measured, on the LIVE production tile, 2026-08-10, against the golden restored
+into a fresh QEMU process:** 24 of 24 acceptance targets (corners inset 8 px,
+edge midpoints, centre, and 15 scattered points) landed at **0 px** error, one
+commanded move each, located by an exact glyph match on the framebuffer.
+
+Those 24 drive the kiosk's X pointer directly, which skips the one leg a visitor
+actually uses, so the `usb-tablet` itself was probed separately: 8 QMP
+`input-send-event` absolute moves — the same events streamhost synthesises from
+a browser pointer — travelled QEMU `usb-tablet` → Xorg → SDL3 → Previous
+`tablet.c` → the NeXTSTEP driver and landed **within 1 px**, the 1 px being the
+0..32767 quantisation of the probe's own axis value, not the tile's.
+
+**Buttons need a SLOW press/release.** `xdotool click 1` (≈12 ms down-to-up) is
+sampled away somewhere on the tablet path and does nothing at all — a menu item
+highlights and never fires, a title-bar drag does not move the window. An
+explicit `mousedown 1 / sleep 0.4 / mouseup 1` works every time. This cost a
+confusing half hour: the click looks delivered, the framebuffer says otherwise.
 
 **The one asymmetry, stated plainly.** The driver is a kernel server loaded at
 install time; Previous's own README warns it must be reinstalled after every
@@ -130,14 +141,32 @@ around inside an exhibit a visitor may already be watching.
 **How the install is driven, since it cannot be scripted from a shell.**
 NeXTSTEP refuses a DPS connection to a telnet session (`DPS client library
 error: Could not form connection, host local host`), so `InstallTablet` cannot be
-launched from `nstel.py`; and its panel never becomes the *key* window, so its
-default button cannot be reached with RETURN either. The working sequence, all
-framebuffer-verified: symlink the app into `/me`, reboot NeXTSTEP so the File
-Viewer rescans, **type-select** `Install` in the viewer and press RETURN to open
-it, then walk the still-relative pointer onto the panel's Install button with a
-closed loop on the cursor glyph and click once. From that click on, the pointer
-is absolute and the rest (quit, unlink, refresh, pixel-diff back to the fixture)
-is exact.
+launched from `nstel.py`. The working sequence, all framebuffer-verified:
+symlink the app into `/me` **before the cold boot** so the File Viewer lists it
+without a rescan, **type-select** `Install` in the viewer and press RETURN to
+open it, then put the still-relative pointer on the panel's Install button and
+click once. From that click on the pointer is absolute and the rest (quit,
+unlink, Update Viewers, pixel-diff back to the fixture) is exact.
+
+**The Install button is drawn with the default-button ⏎ glyph, and RETURN still
+does not press it** — the panel is not the key window, and nothing reachable
+from the keyboard makes it key. That was tested, not assumed; the framebuffer is
+unchanged after RETURN. The pointer really is the only way in.
+
+**Moving that pre-driver pointer: fixed 1 px steps, no proportional term.** The
+promotion attempt before this one built a converging closed loop with damped,
+capped steps; it converged on a clone and overshot the button by ~56 px on the
+tile, four variants deep. The reason is that NeXTSTEP accelerates a *single*
+event superlinearly (a 24 px step measured ~2.3x) and the curve keys off event
+timing as well as size, so a step size calibrated on one machine's timing is a
+different step on another's. A **1 px** step is the one input the curve cannot
+amplify: measured on the live tile, 100 consecutive 1 px events moved the arrow
+exactly 100 px, gain 1.000 on both axes. `goto()` in the installer now walks
+|error| single-pixel steps, re-reads the framebuffer, and repeats — it put the
+pointer on the button from 634 px away in **one round, dead centre**. Two
+caveats worth knowing: a long burst loses roughly a pixel every few hundred, and
+a leftover 2-3 px correction on its own does not register at all, so the walker
+stops when a round makes no progress and the caller accepts ≤ 4 px.
 
 **Historical, kept because it explains the old wiring:** before the tablet the
 tile ran `--pointer rel` with no usb-tablet, and the NeXT KMS mouse register's
@@ -234,18 +263,22 @@ lands on the Workspace with no input at all.
 
 ## 9. Open items — stated honestly
 
-- **NOT YET PROMOTED (2026-08-10).** Everything in §4 is proven, and the install
-  automation passes end to end on a clone (`driver attached; absolute probe max
-  error 0 px`, fixture restored) — but the last step does not converge on the
-  TILE. The pre-driver relative closed loop that puts the pointer on the Install
-  button lands ~56 px past it, deterministically, where the identical code
-  converged twice on the clone. The tile is back on its original golden, still
-  `SH_POINTER=rel`; the repo carries the absolute wiring, unde­ployed. Next
-  person: instrument `goto()` per step on the tile (it prints nothing today) and
-  compare the measured per-event gain against the clone's — the suspicion is that
-  NeXTSTEP's acceleration curve is being driven into its superlinear region by a
-  step size that is safe on one machine's timing and not the other's, in which
-  case the fix is a fixed small step with no proportional term at all.
+- **PROMOTED 2026-08-10.** The golden was re-baked on the tile itself from a COLD
+  boot under the final device set (`-usb -device usb-tablet`), with the driver
+  installed before `savevm golden`; `SH_INPUT_BACKEND=dbus-abs`,
+  `pointer_mode: abs` in the labctl matrix, `pointer/mouse: abs/PASS` in the
+  golden manifest, and `pointerRel` gone from the gallery manifest's row.
+- **The SPA's embedded FALLBACK manifest still marks this tile `pointerRel`.**
+  The runtime `/gallery-manifest.json` (which the SPA prefers, and which was
+  merged additively) does not, so the shipped path is correct; the compiled-in
+  copy inside `assets/index-*.js` is stale and only takes over if that fetch
+  fails. It clears itself on the next SPA build from merged `main` — the bundle
+  was deliberately NOT rebuilt here, because the deployed one carries sibling
+  tiles that this branch does not have and a rebuild would delete them.
+- `labctl gen` was **not** run: it fails closed on live tile dirs (`alto`,
+  `indyr4400`) that have no declaration in the deployed file yet. The nextstep
+  row was merged into `/data/vms/streamhost/tiles.json` additively instead, and
+  `labctl ls` shows `abs`. Regenerating the whole matrix is a merge-time step.
 - The **cold-boot pointer asymmetry** in §4: a cold-booted tile has no tablet
   driver and no usable pointer until the installer is re-run. Documented and
   one command away, deliberately not automatic.
