@@ -5765,7 +5765,7 @@
         "labctl": {
           "dir": "/data/vms/streamhost/tiles/nextstep",
           "qmp": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
-          "pointer_mode": "abs",
+          "pointer_mode": "rel",
           "warpd_port": null,
           "warpd_addr": null,
           "ssh_port": 5837,
@@ -5785,12 +5785,11 @@
         "audio": true,
         "touch": false,
         "pointer": {
-          "transport": "abs",
-          "backend": "dbus-abs",
-          "method": "qemu-usb-tablet",
-          "absolute": true,
+          "transport": "rel",
+          "method": "qemu-ps2-relative",
+          "absolute": false,
           "present": true,
-          "device": "usb-tablet",
+          "device": "ps2-mouse",
           "scale": 1.0,
           "offset": [
             0,
@@ -5809,7 +5808,7 @@
           "SH_FPS": "60",
           "SH_HOST_IP": "192.0.2.10",
           "SH_ADVERTISE_HOST": "192.0.2.10",
-          "SH_INPUT_BACKEND": "dbus-abs",
+          "SH_POINTER": "rel",
           "SH_CURSOR_SCALE": "1.0",
           "SH_CURSOR_OFF_X": "0",
           "SH_CURSOR_OFF_Y": "0",
@@ -5820,7 +5819,7 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_FIXTURE_DESC": "NeXTcube (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) running NeXTSTEP 3.3 for m68k under the Previous emulator, resting on the Workspace the machine brings up for itself at login: grey workspace, the Workspace menu down the top left, the File Viewer showing the home directory, and the Dock along the right-hand edge with the recycler at the bottom. Nothing is curated: this is the desktop the machine brings up for itself, pixel-diffed back to that exact state after the one-time tablet-driver install the golden has to carry. 1120x832 MegaPixel display, pixel-exact on a 1120x832 X root. Pointer is ABSOLUTE: NeXTSTEP's own SummaGraphics tablet driver is attached inside the snapshot, so a commanded pixel is the pixel the NeXT arrow lands on; the guest draws that arrow itself.",
+          "SH_FIXTURE_DESC": "NeXTcube (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) running NeXTSTEP 3.3 for m68k under the Previous emulator, resting on the Workspace the machine brings up for itself at login: grey workspace, the Workspace menu down the top left, the File Viewer showing the home directory, and the Dock along the right-hand edge with the recycler at the bottom. Nothing is curated and nothing is typed; this is where an untouched cold boot stops. 1120x832 MegaPixel display, pixel-exact on a 1120x832 X root. Pointer is RELATIVE (SPA pointer lock): the guest draws its own arrow.",
           "SH_IDLE_PAUSE_SECS": "0"
         },
         "vmidLabel": 237,
@@ -5834,9 +5833,7 @@
             "--udp",
             "54134",
             "--pointer",
-            "abs",
-            "--input-backend",
-            "dbus-abs",
+            "rel",
             "--cursor-scale",
             "1.0",
             "--cursor-off-x",
@@ -5870,7 +5867,7 @@
             "-vga std",
             "-display dbus,p2p=on,audiodev=snd0",
             "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-            "-usb -device usb-tablet",
+            "-usb",
             "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5837-:22 -device e1000,netdev=n0",
             "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
             "-pidfile $BASE/qemu.pid"
@@ -5891,7 +5888,7 @@
               "-vga std",
               "-display dbus,p2p=on,audiodev=snd0",
               "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-              "-usb -device usb-tablet",
+              "-usb",
               "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5837-:22 -device e1000,netdev=n0",
               "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
               "-pidfile $BASE/qemu.pid"
@@ -5899,7 +5896,7 @@
           },
           "launcherParity": {
             "status": "semantic-identical",
-            "reason": "registry source pins pc-i440fx-11.0,vmport=off with -m 1536 -smp 4 and -usb -device usb-tablet, matching the device set the golden was baked under"
+            "reason": "registry source pins pc-i440fx-11.0,vmport=off with -m 1536 -smp 4 and no usb-tablet, matching the device set the golden was baked under"
           }
         },
         "bringUpOrder": 56
@@ -5908,7 +5905,8 @@
         "archetypeId": "mono-terminal",
         "transport": "streamhost",
         "accentColor": "#8C8C8C",
-        "eraLabel": "1995 · NeXTSTEP 3.3 (NeXTcube)"
+        "eraLabel": "1995 · NeXTSTEP 3.3 (NeXTcube)",
+        "pointerRel": true
       },
       "museum": {
         "id": "nextstep",
@@ -5933,11 +5931,11 @@
           "Digital Librarian"
         ],
         "blurb": "The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one.",
-        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile's own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU's SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is ABSOLUTE: Previous emulates a SummaGraphics digitiser on the NeXT's serial port B, and NeXTSTEP's own tablet driver is attached inside the golden, so the coordinate a QEMU usb-tablet delivers is the pixel the NeXT arrow lands on; the guest draws that arrow itself. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md."
+        "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile's own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU's SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is relative (SPA pointer lock, the c64/qnx path); the guest draws its own arrow. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md."
       },
       "reset": {
         "tileDir": "nextstep",
-        "pointer": "abs",
+        "pointer": "rel",
         "touch": false,
         "resetMode": "loadvm",
         "snapshot": "golden",

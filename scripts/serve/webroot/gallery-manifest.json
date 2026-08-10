@@ -1713,7 +1713,7 @@
       "eraLabel": "1995 · NeXTSTEP 3.3 (NeXTcube)",
       "signalEndpoint": "/signal/nextstep.json",
       "ramMB": 64,
-      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile's own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU's SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is ABSOLUTE: Previous emulates a SummaGraphics digitiser on the NeXT's serial port B, and NeXTSTEP's own tablet driver is attached inside the golden, so the coordinate a QEMU usb-tablet delivers is the pixel the NeXT arrow lands on; the guest draws that arrow itself. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md.",
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile's own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU's SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is relative (SPA pointer lock, the c64/qnx path); the guest draws its own arrow. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md.",
       "era": "1990s",
       "eraSoftware": [
         "Workspace Manager, the Dock and the File Viewer",
@@ -1728,7 +1728,9 @@
         "Interface Builder",
         "Digital Librarian"
       ],
-      "blurb": "The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one."
+      "blurb": "The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one.",
+      "pointerRel": true,
+      "relativePointerOnly": true
     },
     {
       "id": "armeval",
