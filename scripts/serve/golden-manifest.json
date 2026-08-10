@@ -572,6 +572,16 @@
    "keyboard": "UNVERIFIED",
    "fixture": "SGI Indy (MIPS R4400) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session) in Iris, 1280x1024 1:1. Emulator-bridge tile added 2026-08-10."
   },
+  "star": {
+   "tileDir": "star",
+   "pointer": "rel",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "Xerox 8010 “Dandelion” at the logged-on ViewPoint 2.0 user desktop under Darkstar; golden INTERNAL snapshot restores the RUNNING desktop (verified with `info status`) — no 22-minute Pilot boot, no Set Time Utility, no logon sheet. Route certified 2026-08-10 in framebuffer-asserted steps: cold boot to the Set Time Utility banner (~1 min), five carriage returns, MP 0910→7600→7700→7800→8000 (~17 min total) to the logged-off bouncing keyboard, Home (= Xerox NEXT) to the Workstation Administration desktop, Desktop Creation of user:star:xerox3 with Administrator armed, the machine logs itself out, Home again to the real Logon Option Sheet, log on, and the iconic user desktop paints. Mouse PASS (gain measured 1:1 end to end through the deployed browser client; relative-only, see docs/guests/star.md). Keyboard PASS (300 ms hold; shifted punctuation is flaky and wants the SPA's shift latch). Bridge tile added 2026-08-10."
+  },
   "daybreak": {
    "tileDir": "daybreak",
    "pointer": "abs",

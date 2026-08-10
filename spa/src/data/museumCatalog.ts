@@ -4,11 +4,11 @@ import type { VMManifestEntry } from '../types';
 import { OS_BINDINGS } from '../three/archetypeRegistry';
 
 // ============================================================================
-//  MUSEUM CATALOG — placard metadata for the full OS lineup (60 bindings)
+//  MUSEUM CATALOG — placard metadata for the full OS lineup (61 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 58 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 59 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 55 of those 58 have their placard entries in this
+//  WebTransport + WebCodecs. 56 of those 59 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,8 +17,8 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 57 entries
-//  so all 60 exhibits render, each with an era-accurate archetype + accent.
+//  This file provides rich, period-accurate placard metadata for its 58 entries
+//  so all 61 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
 //  top of these entries, so every osId in OS_BINDINGS becomes an exhibit.
@@ -545,6 +545,16 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['the IRIS login chooser', '4Dwm Indigo Magic teal desktop', 'the SGI toolchest', 'File System Navigator'],
     blurb: 'The other Indy. SGI sold the 1993 pizza-box in several MIPS grades, and this is the R4400 — the faster, larger-cache sibling of the R4600 next to it in the hall, and the chip SGI put in the Indigo² and the Challenge servers. Same blue case, same 24-bit XL graphics, same IRIX 6.5 — a different processor inside, and the reason the two sit side by side.',
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Iris (techomancer/iris, BSD-3), a userspace Rust SGI Indy emulator, booting IRIX 6.5.22 on a 1280x1024 X root captured 1:1. The DELIBERATE pair to the irix tile: same museum machine, different silicon (R4400 vs R4600) and a different emulator, and unlike MAME — which kernel-panics under a KVM vCPU and forced the irix tile bare-metal — Iris runs happily inside KVM, so this one is an ordinary bridge tile with QEMU pointer, keyboard and loadvm-golden reset. Pointer is RELATIVE (Pointer Lock): Iris grabs on first click and feeds PS/2 deltas. Audio and networking are off in this phase. archetype beige-tower-crt. See streamhost/docs/BRIDGE.md and docs/guests/indyr4400.md.',
+  },
+  {
+    id: 'star', displayName: 'Xerox Star 8010', year: 1981,
+    lineage: 'Xerox Star / Pilot-Mesa office workstations',
+    arch: 'Xerox "Dandelion" bit-slice Mesa processor, 1024×808 mono display', ramMB: 2,    era: '1980s', accent: '#D6001C',
+    eraSoftware: ['ViewPoint 2.0 / Services 11.0 — the Star desktop itself', 'the Document Editor, the first shipping WYSIWYG word processor of its kind', 'Records Processing, the spreadsheet and the graphics editor', 'XDE 5.0 and Interlisp-D, on the other two disks of the same pack'],
+    periodBrowser: 'none — pre-web; XNS Courier over Ethernet instead',
+    iconicApps: ['the ViewPoint desktop', 'the Directory icon', 'the property sheet', 'the in-basket and out-basket'],
+    blurb: 'The first computer anyone could buy that had a desktop on it. Not a metaphor bolted on afterwards — the whole machine was built around it: overlapping windows, icons you could point at, folders and in-baskets and documents that looked on the screen the way they would come out of the printer, a two-button mouse, property sheets for every object, Ethernet, and file and print servers on the other end of it. Xerox shipped it in April 1981 for $16,595 a seat, sold it to almost nobody, and watched the rest of the industry spend the next fifteen years catching up. This is that machine, running the software it was actually sold with.',
+    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 bare-X kiosk runs Darkstar (C#/mono) emulating a real Xerox 8010 "Dandelion" workstation booting Pilot and ViewPoint 2.0 off the bitsavers 1990 rigid-disk image; streamhost captures the Linux framebuffer exactly like every other tile. Silent — the 8010 has no sound hardware. The X root is a custom 1088×860 mode and the emulator window is moved to (0,−29) so Darkstar’s own System Menu and status bars fall outside the captured frame: what a visitor sees is the Star screen and nothing else. RELATIVE POINTER, and correctly so — Darkstar has no absolute path at all (it differences the host pointer against the display centre and warps it back), so the tile runs the same SH_POINTER=rel / no-tablet / vmport=off device set as c64 and qnx, and X pointer acceleration is turned off in the kiosk so a browser delta arrives 1:1. The golden is the LOGGED-ON ViewPoint user desktop: the 22-minute first boot, the Set Time Utility’s five carriage returns, the desktop creation and the logon all run once at bake time. The software is TIME-LOCKED (Xerox "Product Factoring"): the TOD clock is pinned to 1997-12-01 and must stay there — a 1990 date stalls the boot at MP 7800 indefinitely. See streamhost/docs/BRIDGE.md and docs/guests/star.md.',
   },
   {
     id: 'daybreak', displayName: 'Xerox 6085', year: 1985,

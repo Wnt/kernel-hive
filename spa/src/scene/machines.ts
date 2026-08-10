@@ -607,6 +607,10 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerA', monitor: 'crtF',
     keyboard: 'keyboardD', mouse: 'paramMouseC',
   },
+  // Xerox 8010: a DESKSIDE cabinet beside the desk — the 6085 is what flattened
+  // it into a pizza box — so the Star is a towerSetup where its successor is a
+  // pizzaBox, and towerC|crtD is a pair nothing else holds.
+  star: { kind: 'towerSetup', body: 'towerC', monitor: 'crtD', keyboard: 'keyboardD', mouse: 'paramMouseA' },
   // Xerox 6085 "Daybreak": a low flat processor case that lived UNDER the desk,
   // a large landscape monochrome display, a wide keyboard whose left-hand column
   // carries the Level-V verb keys, and a two-button mouse. pizzaBox is the right

@@ -692,6 +692,21 @@
       "udp_port": 54100,
       "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solariscde \"<cmd>\""
     },
+    "star": {
+      "dir": "/data/vms/streamhost/tiles/star",
+      "qmp": "/data/vms/streamhost/tiles/star/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5840,
+      "exec_port": 5840,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54138,
+      "notes": "exec: labctl exec star \"<cmd>\" (ssh root@:5840, key bridge_key) — reaches the Debian kiosk, NOT the Star. Drive the Star itself with the guest's own /usr/local/bin/stardrv (key/shift/rel/click, all with the dwell Darkstar needs) or through the framebuffer; the Level-V verbs are plain PC keys here (NEXT=Home, OPEN=F7, PROPS=F8), not Daybreak's Ctrl+letter layer."
+    },
     "templeos": {
       "dir": "/data/vms/streamhost/tiles/templeos",
       "qmp": "/data/vms/streamhost/tiles/templeos/qmp.sock",

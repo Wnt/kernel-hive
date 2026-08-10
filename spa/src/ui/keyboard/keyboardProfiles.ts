@@ -41,7 +41,7 @@ export type Family =
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
   | 'zxspectrum' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
-  | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf';
+  | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -222,6 +222,24 @@ const DWARF_LEVEL_V: LevelVBinding = {
   copy: lvCtrl('c'), same: lvCtrl('s'), again: lvCtrl('a'), find: lvCtrl('f'),
   undo: lvCtrl('u'), help: lvCtrl('h'),
   stop: lvTap(XK.Escape), delete: lvTap(XK.Delete),
+};
+
+// Darkstar (Xerox 8010 "Dandelion"). The SAME Level-V verbs as the 6085, but
+// the 8010 emits them as PLAIN keys, not as a Ctrl layer: Darkstar's README
+// §3.2 maps the Star keyboard onto the PC function block and the navigation
+// cluster. Verified on the live tile — `Home` is the NEXT that wakes the
+// logged-off machine and walks the Logon Option Sheet, and `F7` is the OPEN
+// that opens the Directory icon. Three keys Dwarf cannot bind (SKIP, DEFAULTS,
+// EXPAND) do exist here, so the Star's rows are longer than Daybreak's; that
+// is `levelVRow` doing its job, not a discrepancy to reconcile.
+const STAR_LEVEL_V: LevelVBinding = {
+  next: lvTap(XK.Home), open: lvTap(F(7)), props: lvTap(F(8)), move: lvTap(F(6)),
+  copy: lvTap(F(4)), same: lvTap(F(5)), again: lvTap(F(1)), find: lvTap(F(3)),
+  undo: lvTap(XK.Prior), help: lvTap(XK.Up),
+  stop: lvTap(XK.Next), delete: lvTap(F(2)),
+  // No `skip`: on the Star SKIP and NEXT are ONE key (Darkstar's table reads
+  // "Skip/Next  Home"), so a second button would send the same keysym.
+  defaults: lvTap(XK.Num_Lock), expand: lvTap(XK.End),
 };
 
 /**
@@ -822,6 +840,30 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
       ],
     ],
   },
+  // Xerox 8010 "Dandelion" under Darkstar. The same Level-V verbs as
+  // `xerox-dwarf`, bound to the plain keys Darkstar uses instead of a Ctrl
+  // layer; DEFAULTS and EXPAND are present here and absent on Daybreak. There
+  // is no Ctrl latch on purpose: on the Star, Ctrl IS a Level-V key (Darkstar
+  // maps Left Control to OPEN and Right Control to PROPS), so a bare Ctrl
+  // button would fire a verb rather than modify the next keystroke.
+  'xerox-star': {
+    family: 'xerox-star',
+    rows: [
+      levelVRow(STAR_LEVEL_V, ['next', 'open', 'props', 'move', 'copy', 'same']),
+      levelVRow(STAR_LEVEL_V, ['again', 'find', 'undo', 'help', 'stop', 'delete']),
+    ],
+    moreRows: [
+      levelVRow(STAR_LEVEL_V, ['defaults', 'expand']),
+      [
+        tap('para-tab', 'PARA TAB', XK.Tab, { hint: 'The Xerox tab key' }),
+        tap('new-para', 'NEW PARA', XK.Return, { hint: 'The Xerox return key — a new paragraph, not a new line' }),
+        tap('bs', '⌫', XK.BackSpace, { repeat: true }),
+        latch('shift', 'Shift', XK.Shift_L),
+        tap('lock', 'LOCK', XK.Caps_Lock),
+        tap('space', 'Space', 0x20, { repeat: true, wide: true }),
+      ],
+    ],
+  },
 };
 
 // Every production streamhost tile, EXPLICITLY (test-enforced vs the registry).
@@ -923,6 +965,7 @@ export const OS_FAMILY: Record<string, Family> = {
   // are entirely machine-specific verbs; see the Level-V block above for why it
   // is built from a per-machine binding table rather than a fixed key set.
   daybreak: 'xerox-dwarf',
+  star: 'xerox-star',
 };
 
 export function keyboardProfileFor(osId: string): KeyboardProfile {

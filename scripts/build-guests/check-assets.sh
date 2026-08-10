@@ -156,6 +156,14 @@ ROWS=(
   # licence: the emulator is BSD-3, the Xerox disk it boots is NOT.
   "opt-file|daybreak|Dwarf/Draco Mesa emulator dist.zip (fetched + verified in-guest)|$ASSET_STAGING/daybreak/dist.zip|sha256:67f84b77cbed6cba9d7d2485e84b8142e4fd2403243f8abd8f6e5a81ff6fcf75|freely-fetchable-pinned"
   "opt-file|daybreak|Xerox ViewPoint 2.0.5 Pilot disk for the 6085 (fetched + verified in-guest)|$ASSET_STAGING/daybreak/vp2.0.5.zdisk|sha256:02bdb53ba7f7896a914fe43b7ca19a620907d0fdbf0f55317b7d1f39aab3f872|preservation-source"
+  # -- in-overlay media (star): same shape again — the bitsavers pack lives
+  # INSIDE the tile overlay at /opt/star/, so the host path never exists and
+  # this row reads "will fetch". star.sh re-verifies the pack AND the extracted
+  # ViewPoint image in-guest on every run and refuses to continue on a
+  # mismatch. Never committed. The emulator (Darkstar, BSD-2) is built from
+  # source in the overlay rather than fetched as a binary, so it has no row
+  # here; its pinned commit is in star.sh and ASSETS-MANIFEST.md.
+  "opt-file|star|Xerox 8010 Dandelion rigid-disk pack, incl. ViewPoint 2.0 (fetched + verified in-guest)|$ASSET_STAGING/star/8010_hd_images.zip|sha256:d9fb11362229ba7b9dbb7500f2240f9c1e9cdaa9f37bb4431221174483ca438e|preservation-source"
   # BBC Micro: five blobs, no authorised fetch URL anywhere (see ASSETS-MANIFEST).
   # bbcmicro.sh never downloads; the operator stages these and the builder gates
   # each on SHA-1, then assembles the three MAME zips itself.

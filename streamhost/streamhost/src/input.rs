@@ -142,6 +142,30 @@ const MAX_REL_STEP: i32 = 256;
 /// accumulator and re-clamp; a small gap lets each chunk drain first.
 const REL_STEP_PACE_MS: u64 = 16;
 
+/// How far the homing corner-pin throws the guest cursor, per axis.
+///
+/// It only has to EXCEED the largest guest surface we drive (1280x1024), because
+/// the guest clamps at its own screen edge and the overshoot is free. It used to
+/// be 8192, which is free only if you ignore the wire: the PS/2 mouse carries at
+/// most ~127 counts per packet and drains at its 100 Hz sample rate, so an 8192
+/// pin is ~65 packets and takes the better part of a second to arrive. Anything
+/// sent during that drain is queued BEHIND it and merges into one enormous
+/// negative motion — which is how the pin came to swallow the first target whole
+/// on the Xerox Star tile: the Star cursor parked in the corner while the
+/// daemon's model believed it was at the target, a fixed offset for the rest of
+/// the session, i.e. exactly what the pin exists to prevent.
+const HOME_PIN: i32 = 2048;
+
+/// Settle time after the homing corner-pin, before the origin -> target walk.
+///
+/// The pin and the walk must be OBSERVED as two separate movements. That takes
+/// long enough for the pin to DRAIN over the PS/2 wire (HOME_PIN above: ~17
+/// packets at 100 Hz, ~170 ms) and then be sampled by a guest that reads the
+/// host pointer once per emulated video field and warps it back — measured on
+/// Darkstar at ~45 fields/sec, ~22 ms a field. Paid ONCE per session, on the
+/// very first pointer sample.
+const HOME_SETTLE_MS: u64 = 250;
+
 /// Pure chunker for `rel_motion_bounded` (unit-tested). Split (dx,dy) into a
 /// sequence of per-send deltas, each with |axis| <= MAX_REL_STEP, distributed
 /// proportionally so both axes finish together. The chunk deltas SUM EXACTLY to
@@ -347,20 +371,29 @@ async fn apply_move_abs(
         let (dx, dy) = {
             let mut st = mouse.lock().await;
             if !st.seeded {
-                // Intentionally UNBOUNDED single event: we WANT this to
-                // over-clamp the guest cursor into the top-left corner
-                // (a merge/clamp is the goal here, not a truncation
-                // hazard), establishing a known 0,0 origin.
-                rel_motion(cap, -8192, -8192).await; // pin to top-left origin
-                                                     // Let the PS/2 queue consume the deliberate clamp before
-                                                     // sending origin -> target. Otherwise QEMU can merge the
-                                                     // two motions and discard the target with the oversized
-                                                     // homing delta.
-                tokio::time::sleep(std::time::Duration::from_millis(REL_STEP_PACE_MS)).await;
-                st.lx = tx;
-                st.ly = ty;
+                // Deliberate over-clamp into the top-left corner: a merge/clamp
+                // is the goal here, not a truncation hazard, and it establishes
+                // a known 0,0 origin.
+                rel_motion(cap, -HOME_PIN, -HOME_PIN).await;
+                tokio::time::sleep(std::time::Duration::from_millis(HOME_SETTLE_MS)).await;
+                // The seeding sample sends NO motion of its own. It sets the
+                // model to the origin it just pinned and stops; the NEXT sample
+                // (tens of hertz away — one frame, invisible) walks origin ->
+                // target as an ordinary delta.
+                //
+                // Sending the walk from inside this same handler is what broke
+                // the Xerox Star tile: pointer MOVES ride unreliable datagrams
+                // and are handled concurrently, so the pin, the seed walk and
+                // the next few deltas raced through the PS/2 queue and the guest
+                // observed only their merged, hugely negative sum. The cursor
+                // parked in the corner while the model believed it was at the
+                // target — a fixed offset for the rest of the session, i.e.
+                // exactly what the pin exists to prevent. Separating the two
+                // costs one sample and removes the race entirely.
+                st.lx = 0;
+                st.ly = 0;
                 st.seeded = true;
-                (tx, ty) // delta from the known origin to calibrated target
+                (0, 0)
             } else {
                 let dx = tx - st.lx;
                 let dy = ty - st.ly;

@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "id": "star",
+  "era_year": 1981,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 50,
+        "prelude": "",
+        "line": "  \"star         |tiles/star.sh                 |bridge/star     |graphical|~5-8m   |partial|tiles/star overlay + golden (Darkstar → Pilot/ViewPoint 2.0)\"\n",
+        "value": {
+          "key": "star",
+          "script": "tiles/star.sh",
+          "outputDir": "bridge/star",
+          "class": "graphical",
+          "estimated": "~5-8m",
+          "automation": "partial",
+          "produces": "tiles/star overlay + golden (Darkstar → Pilot/ViewPoint 2.0)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/star",
+      "qmp": "/data/vms/streamhost/tiles/star/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5840,
+      "exec_port": 5840,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "console": "fb",
+      "udp_port": 54138,
+      "notes": "exec: labctl exec star \"<cmd>\" (ssh root@:5840, key bridge_key) — reaches the Debian kiosk, NOT the Star. Drive the Star itself with the guest's own /usr/local/bin/stardrv (key/shift/rel/click, all with the dwell Darkstar needs) or through the framebuffer; the Level-V verbs are plain PC keys here (NEXT=Home, OPEN=F7, PROPS=F8), not Daybreak's Ctrl+letter layer."
+    }
+  },
+  "render": {
+    "signalOrder": 55,
+    "tilesManifestOrder": 53,
+    "tilesManifestPrelude": "\n# star (VMID 240) — Darkstar (C#/mono 6.8) -> Xerox 8010 \"Dandelion\"\n#   -> Pilot + ViewPoint 2.0, logged on. ssh 5840. Silent exhibit (the 8010 has\n#   no sound hardware). RELATIVE pointer: Darkstar has no absolute path, so the\n#   device set carries no usb-tablet and the machine type sets vmport=off.\n#   Fixture stanza pins the key dwell Darkstar needs.\n",
+    "tilesManifestInvocation": "emit star \\\n  --tile star --vmid 240 --udp 54138 --pointer rel \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off --fps 30 \\\n  --launcher-file \"$T/star/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/star/tile.env.fixture\"\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 60,
+    "bindingPrelude": "",
+    "bindingLine": "  star:        { osId: 'star',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#D6001C', eraLabel: '1981 · Pilot + ViewPoint 2.0 on the 8010', pointerRel: true },\n",
+    "museumOrder": 53,
+    "goldenOrder": 53,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'star', displayName: 'Xerox Star 8010', year: 1981,\n    lineage: 'Xerox Star / Pilot-Mesa office workstations',\n    arch: 'Xerox \"Dandelion\" bit-slice Mesa processor, 1024×808 mono display', ramMB: 2,    era: '1980s', accent: '#D6001C',\n    eraSoftware: ['ViewPoint 2.0 / Services 11.0 — the Star desktop itself', 'the Document Editor, the first shipping WYSIWYG word processor of its kind', 'Records Processing, the spreadsheet and the graphics editor', 'XDE 5.0 and Interlisp-D, on the other two disks of the same pack'],\n    periodBrowser: 'none — pre-web; XNS Courier over Ethernet instead',\n    iconicApps: ['the ViewPoint desktop', 'the Directory icon', 'the property sheet', 'the in-basket and out-basket'],\n    blurb: 'The first computer anyone could buy that had a desktop on it. Not a metaphor bolted on afterwards — the whole machine was built around it: overlapping windows, icons you could point at, folders and in-baskets and documents that looked on the screen the way they would come out of the printer, a two-button mouse, property sheets for every object, Ethernet, and file and print servers on the other end of it. Xerox shipped it in April 1981 for $16,595 a seat, sold it to almost nobody, and watched the rest of the industry spend the next fifteen years catching up. This is that machine, running the software it was actually sold with.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 bare-X kiosk runs Darkstar (C#/mono) emulating a real Xerox 8010 \"Dandelion\" workstation booting Pilot and ViewPoint 2.0 off the bitsavers 1990 rigid-disk image; streamhost captures the Linux framebuffer exactly like every other tile. Silent — the 8010 has no sound hardware. The X root is a custom 1088×860 mode and the emulator window is moved to (0,−29) so Darkstar’s own System Menu and status bars fall outside the captured frame: what a visitor sees is the Star screen and nothing else. RELATIVE POINTER, and correctly so — Darkstar has no absolute path at all (it differences the host pointer against the display centre and warps it back), so the tile runs the same SH_POINTER=rel / no-tablet / vmport=off device set as c64 and qnx, and X pointer acceleration is turned off in the kiosk so a browser delta arrives 1:1. The golden is the LOGGED-ON ViewPoint user desktop: the 22-minute first boot, the Set Time Utility’s five carriage returns, the desktop creation and the logon all run once at bake time. The software is TIME-LOCKED (Xerox \"Product Factoring\"): the TOD clock is pinned to 1997-12-01 and must stay there — a 1990 date stalls the boot at MP 7800 indefinitely. See streamhost/docs/BRIDGE.md and docs/guests/star.md.',\n  },\n"
+  },
+  "tileDir": "star",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54138,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "ps2-mouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 138
+  },
+  "guestDoc": "docs/guests/star.md",
+  "credentialsRef": "guest/star",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "star",
+      "SH_QMP": "/data/vms/streamhost/tiles/star/qmp.sock",
+      "SH_PORT": "54138",
+      "SH_FPS": "30",
+      "SH_ENCODER_PRESET": "veryfast",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "rel",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "off",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/star/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/star/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "loadvm",
+      "SH_GOLDEN_SNAPSHOT": "golden",
+      "SH_FIXTURE_DESC": "Xerox 8010 \"Dandelion\" at the logged-on ViewPoint 2.0 user desktop, emulated by Darkstar on mono 6.8 inside a captured Debian 12 bare-X kiosk. 1024x808 one-bit display inside Darkstar's 1088x860 DisplayBox, filling a custom 1088x860 X root edge to edge with the emulator's System Menu and System Status bars moved off-screen. The desk is the ViewPoint grey stipple; the header strip reads \"35167 Free Disk Pages\" with a Help button, and the Directory icon sits bottom-right and the Star's own cursor is parked in the top-left corner of the raster (which is also the origin the daemon's relative pointer pins to, so a reset re-zeroes any pointer drift) — select it and press OPEN (F7) for a window listing Workstation and Desktop. Pointer is RELATIVE: Darkstar differences the host pointer against the display centre and warps it back, so there is no absolute path to offer. Silent exhibit: the 8010 has no sound hardware.",
+      "SH_IDLE_PAUSE_SECS": "0",
+      "SH_KEY_MIN_HOLD_MS": "250",
+      "SH_KEY_MIN_GAP_MS": "250",
+      "SH_KEY_REMAP": "0x38:0x46,0xe038:0x46"
+    },
+    "vmidLabel": 240,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "star",
+        "--vmid",
+        "240",
+        "--udp",
+        "54138",
+        "--pointer",
+        "rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/star/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/star/tile.env.fixture"
+      ],
+      "deviceSetId": "star-current",
+      "launcher": "streamhost/tiles/star/qemu-streamhost.sh",
+      "envFixture": "streamhost/tiles/star/tile.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 1536,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-star",
+        "-enable-kvm -m 1536 -smp 2 -machine pc-i440fx-11.0,vmport=off -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5840-:22 -device e1000,netdev=n0",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,vmport=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 1536,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-star",
+          "-enable-kvm -m 1536 -smp 2 -machine pc-i440fx-11.0,vmport=off -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-usb",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5840-:22 -device e1000,netdev=n0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "machine": "pc-i440fx-11.0,vmport=off",
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 machine the golden was baked under; vmport=off keeps the VMware-mouse handler from absorbing the PS/2 REL events this relative tile depends on"
+      }
+    },
+    "bringUpOrder": 60
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#D6001C",
+    "eraLabel": "1981 · Pilot + ViewPoint 2.0 on the 8010",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "star",
+    "displayName": "Xerox Star 8010",
+    "year": 1981,
+    "lineage": "Xerox Star / Pilot-Mesa office workstations",
+    "arch": "Xerox \"Dandelion\" bit-slice Mesa processor, 1024×808 mono display",
+    "ramMB": 2,
+    "era": "1980s",
+    "accent": "#D6001C",
+    "eraSoftware": [
+      "ViewPoint 2.0 / Services 11.0 — the Star desktop itself",
+      "the Document Editor, the first shipping WYSIWYG word processor of its kind",
+      "Records Processing, the spreadsheet and the graphics editor",
+      "XDE 5.0 and Interlisp-D, on the other two disks of the same pack"
+    ],
+    "periodBrowser": "none — pre-web; XNS Courier over Ethernet instead",
+    "iconicApps": [
+      "the ViewPoint desktop",
+      "the Directory icon",
+      "the property sheet",
+      "the in-basket and out-basket"
+    ],
+    "blurb": "The first computer anyone could buy that had a desktop on it. Not a metaphor bolted on afterwards — the whole machine was built around it: overlapping windows, icons you could point at, folders and in-baskets and documents that looked on the screen the way they would come out of the printer, a two-button mouse, property sheets for every object, Ethernet, and file and print servers on the other end of it. Xerox shipped it in April 1981 for $16,595 a seat, sold it to almost nobody, and watched the rest of the industry spend the next fifteen years catching up. This is that machine, running the software it was actually sold with.",
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 bare-X kiosk runs Darkstar (C#/mono) emulating a real Xerox 8010 \"Dandelion\" workstation booting Pilot and ViewPoint 2.0 off the bitsavers 1990 rigid-disk image; streamhost captures the Linux framebuffer exactly like every other tile. Silent — the 8010 has no sound hardware. The X root is a custom 1088×860 mode and the emulator window is moved to (0,−29) so Darkstar’s own System Menu and status bars fall outside the captured frame: what a visitor sees is the Star screen and nothing else. RELATIVE POINTER, and correctly so — Darkstar has no absolute path at all (it differences the host pointer against the display centre and warps it back), so the tile runs the same SH_POINTER=rel / no-tablet / vmport=off device set as c64 and qnx, and X pointer acceleration is turned off in the kiosk so a browser delta arrives 1:1. The golden is the LOGGED-ON ViewPoint user desktop: the 22-minute first boot, the Set Time Utility’s five carriage returns, the desktop creation and the logon all run once at bake time. The software is TIME-LOCKED (Xerox \"Product Factoring\"): the TOD clock is pinned to 1997-12-01 and must stay there — a 1990 date stalls the boot at MP 7800 indefinitely. See streamhost/docs/BRIDGE.md and docs/guests/star.md."
+  },
+  "reset": {
+    "tileDir": "star",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Xerox 8010 “Dandelion” at the logged-on ViewPoint 2.0 user desktop under Darkstar; golden INTERNAL snapshot restores the RUNNING desktop (verified with `info status`) — no 22-minute Pilot boot, no Set Time Utility, no logon sheet. Route certified 2026-08-10 in framebuffer-asserted steps: cold boot to the Set Time Utility banner (~1 min), five carriage returns, MP 0910→7600→7700→7800→8000 (~17 min total) to the logged-off bouncing keyboard, Home (= Xerox NEXT) to the Workstation Administration desktop, Desktop Creation of user:star:xerox3 with Administrator armed, the machine logs itself out, Home again to the real Logon Option Sheet, log on, and the iconic user desktop paints. Mouse PASS (gain measured 1:1 end to end through the deployed browser client; relative-only, see docs/guests/star.md). Keyboard PASS (300 ms hold; shifted punctuation is flaky and wants the SPA's shift latch). Bridge tile added 2026-08-10."
+  },
+  "migrationExceptions": []
+}

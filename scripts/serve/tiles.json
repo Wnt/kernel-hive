@@ -227,6 +227,10 @@
     "udpPort": 54136,
     "hashFile": "/data/vms/streamhost/tiles/indyr4400/cert_hash_b64.txt"
   },
+  "star": {
+    "udpPort": 54138,
+    "hashFile": "/data/vms/streamhost/tiles/star/cert_hash_b64.txt"
+  },
   "daybreak": {
     "udpPort": 54139,
     "hashFile": "/data/vms/streamhost/tiles/daybreak/cert_hash_b64.txt"

@@ -264,7 +264,303 @@ it from the tree you actually proved, and diff the file count.
 
 ## Agent B — Star / Pilot
 
-_(append findings here)_
+**Build rig (reproducible):** overlay chroot `xstarb` at
+`/data/vms/soltest/XEROX-star-b/` — `bookworm-chroot` as read-only lower,
+`apt install mono-complete mono-xbuild nuget libgdiplus xvfb imagemagick xdotool`.
+Debian *bookworm* ships **mono 6.8.0.105**, not 6.12; it builds and runs
+Darkstar fine. `nuget restore D.sln` → `xbuild /p:Configuration=Release D.sln`
+→ **0 errors, 18 warnings, 3.8 s** at HEAD `7ab55ff3` (2026-04-08).
+
+**Three Linux fixes, not two.** The study's two are right (delete the bundled
+Windows `SDL2.dll`; add `SDL2-CS.dll.config` with
+`<dllmap dll="SDL2.dll" target="libSDL2-2.0.so.0"/>`). The third is a
+*launcher* fix: **Darkstar resolves its PROM/microcode paths relative to the
+CWD** (`Path.Combine("IOP","PROM",name)`), so it must be started with
+`cd <bin/Release>` first — from any other CWD it dies with
+`FileNotFoundException: /IOP/PROM/537P03029.bin`. And **`-rompath` is not the
+tree root** — it replaces the whole `IOP/PROM` prefix, so `-rompath .` makes it
+look for `./537P03029.bin`. Simplest correct invocation: `cd bin/Release &&
+mono ./Darkstar.exe -config <cfg>`, no `-rompath`.
+
+**`AltBootMode = Rigid` is worth far more than "can save time".** With
+`TODSetMode = SpecificDateAndTime` / `TODDateTime = 1997/12/01 09:00:00` and
+`Start = true`, the machine went **0940 → MP 8000 and the Set Time Utility 2.0
+banner in ~3 minutes** on a *72 %-loaded* box — not the 25–35 min the study
+projected. The study's long first boot was the **TOD-1990 time lock plus
+`DiagnosticRigid`**, not an inherent cost. (Framebuffer-verified.)
+
+**MP 8000 + "System is running" is reached before the Set Time dialogue**, so
+MP 8000 really is the run state and not a completion signal for boot.
+
+**Keyboard: NEXT is `Home`, and the whole Level-V row is plain PC keys.**
+Darkstar's own table (README §3.2) — `Again F1, Delete F2, Find F3, Copy F4,
+Same F5, Move F6, Open F7/LCtrl, Props F8/RCtrl, Center F9, Bold F10,
+Italics F11, Underline F12, Defaults NumLock, **Skip/Next Home**, Undo PgUp,
+Defn/Expand End, Stop PgDn, Help Up, Margins Left, Font Backslash,
+Keyboard Down`. So the SPA macro row for the Star emits ordinary qcodes; no
+`Ctrl+letter` layer is needed (that is Dwarf's idiom, Agent C's tile).
+
+**Keystrokes need DWELL, exactly like the clicks — and this is the single
+biggest input finding for both Star and Daybreak.** Under Xvfb, `xdotool key`
+(a ~12 ms XTEST press) landed **nothing** in the Set Time teletype: four
+presses across four candidate focus windows produced one advance, which reads
+as flaky focus but is not. `xdotool keydown Return; sleep 0.3–0.45;
+xdotool keyup Return` on the **top-level `Darkstar` window** lands every time.
+Focus target is the WinForms top-level (`xdotool search --name '^Darkstar$'`),
+**not** the SDL child window — focusing the child (the 1088x860 one) lands
+nothing. Turn X autorepeat off (`xset -r`) first or a 450 ms hold enters
+several CRs. Practical consequence for the SPA: this is the §5.1
+`SH_KEY_MIN_HOLD_MS` case with an unusually large floor — budget **≥250 ms
+hold**, not two frames.
+
+**Where the keys actually have to go, and why (Agent A's PointerRoot note,
+checked against this rig).** The Xvfb root here is 1280x1024 and the Darkstar
+window is **1091x915** — smaller than the root — so with no WM, X focus is
+`PointerRoot` and keystrokes follow the pointer. But that is not the whole
+story on this emulator: with focus set explicitly, the **WinForms top-level
+`Darkstar` window** accepts keys and the **SDL child window (the 1088x860 one)
+does not**. Darkstar embeds SDL with `SDL_CreateWindowFrom`, and the key
+handling lives on the WinForms form, not on the SDL surface. So the rule for
+this tile is: aim at the top-level window, *and* keep the pointer inside it.
+
+**Set Time Utility, the whole dialogue, with `TODDateTime = 1997/12/01`:** five
+prompts, all answerable with a bare CR — Time-zone offset (`-8`), Minute offset
+(`0`), First day of DST (`98`), Last day of DST (`305`), then
+`Current time: 1-Dec-97 1:06:53 / Do you wish to change the time? (Y/N): N`
+→ `Starting ViewPoint......`. So the "interactive first boot" is **five
+carriage returns**, not a data-entry session.
+
+**The ViewPoint volume boot is SLOW, not hung — and telling the two apart takes
+over half an hour.** After `Starting ViewPoint......` the machine restarts into
+the ViewPoint volume. Measured against the box clock, on a ~72 %-loaded host:
+
+| box clock | state |
+|---|---|
+| 02:05:06 | Darkstar started (`Start=true`, `AltBootMode=Rigid`, TOD 1997-12-01) |
+| 02:09:49 | **Set Time Utility 2.0 banner** — 4 min 43 s from cold start |
+| 02:12:28 | five CRs answered → `Starting ViewPoint......` |
+| 02:13 | MP 0960, grey stipple |
+| 02:14 – 02:20 | **MP 7600**, blank white page, zero disk I/O — ~6–8 min |
+| 02:20:37 | MP 7700 |
+
+Every symptom of the upstream issue-#22 hang, and it was simply the next step
+of a slow boot. So `0910 → 7600 → 7700 → 7800 → 8000` is real, each step takes
+minutes at ~50 % speed, and "no disk I/O" proves nothing — the 65 MB image is
+entirely page-cached after the first pass. The study's `e5.png` "live ViewPoint desktop"
+frame is **Draco/6085, not Darkstar**; the Star had not reached its desktop on
+this box before this run.
+
+**THE STAR REACHES THE VIEWPOINT 2.0 DESKTOP. Cold start to desktop: 22
+minutes, on a ~72 %-loaded box.** Continuing the box-clock table above:
+
+| box clock | state |
+|---|---|
+| 02:26:37 | **MP 8000 + the bouncing-keyboard screen** (logged off) — 21 min 31 s from cold start |
+| 02:27:11 | **the ViewPoint 2.0 desktop**, after ONE `Home` (= Xerox NEXT) keypress with a 300 ms hold |
+
+**There was no Logon Option Sheet at all.** With no XNS Clearinghouse on the
+wire, this `ViewPoint-2.0-11-9-1990-18-38.img` wakes straight onto a logged-on
+**Workstation Administration** desktop — grey stipple ground, a
+`35176 Free Disk Pages` header strip, and a Workstation Administration window
+offering Desktop Creation / Desktop Deletion / Desktop Changes. So the study's
+warning that the logon sheet "cannot be completed without NEXT" is moot on this
+image: NEXT is still needed, but only as the single wake keystroke.
+
+Total interactive cost of a cold first boot is therefore **six keystrokes** —
+five CRs through Set Time and one NEXT — and 22 minutes of waiting.
+
+**Interactive responsiveness on the live desktop — the number that actually
+decides this tile.** Measured by firing an action and polling the framebuffer
+until it changes (an `import` grab costs 0.19 s, so treat that as the floor),
+with the box at ~72 % load and Darkstar showing 45–52 f/s (58–67 % of real):
+
+| action | latency to first repaint |
+|---|---|
+| pointer move (Star cursor follows) | **0.19 s** — at the measurement floor, i.e. immediate |
+| click the `Desktop Creation` button (opens a form) | **1.08 s** |
+| click `Start` (validates, posts a message) | **0.89 s** |
+| click `Desktop Creation` again (collapses the form) | **0.59 s** |
+| select the `Directory` icon on the user desktop | **0.78 s** |
+| `OPEN` (F7) on it → the Directory window paints | **0.96 s** |
+
+So the desktop is *slow but alive*: the cursor tracks the hand, and a button
+takes about a second to answer. A real 8010 was not brisk either, so this reads
+as period-authentic rather than broken — but it is measured at 58–67 %, not at
+100 %, and the pinned-idle gate run is still owed.
+
+**THE STAR'S MOUSE IS RELATIVE, AND THAT IS A TILE-DESIGN PROBLEM.**
+`DWindow-IO.cs` computes `dx = x - DisplayBox.Width/2`, feeds
+`IOP.Mouse.MouseMove(dx, dy)`, then `SDL_WarpMouseInWindow`s the host pointer
+back to the centre — with `SDL_SetWindowGrab` confining it. There is no
+absolute path. Every pointer tile in this gallery is absolute (`usb-tablet`),
+and streamhost sends absolute coordinates; fed to Darkstar those become deltas
+from the centre and the Star cursor runs away. **A Star tile needs either a
+relative pointer path or a patched/agent-driven Darkstar.** Budget for it.
+
+**A second mouse trap: the Star drops large deltas.** A single 985 px move
+applied only ~127 px; **50 px steps at 120 ms apply 1:1**. Any pointer driver
+for this machine has to walk, not jump.
+
+**RETRACTED, then fixed: `:` IS Shift+`;` — the modifier needs the same dwell
+as the key.** I first reported the colon as unreachable on the Star, because
+`Shift+;` produced `;` while `Shift+a` → `A` and `" { } < > ? _ + | * ( )` all
+came through. That looked like a keymap gap and it is not. Agent C hit the
+identical symptom on Dwarf and found the cause: **the modifier is subject to
+the same dwell law as the key.** With C's timing —
+
+```
+shift-down · 350 ms · key-down · 400 ms · key-up · 250 ms · shift-up
+```
+
+— Darkstar produces a colon. Proof, typed adjacent in one ViewPoint field and
+read at 500 %: `B : N ; M` from `Shift+b`, `Shift+;`, `Shift+n`, plain `;`,
+`Shift+m` — the colon has two dots and no descender, the semicolon has the
+comma tail. My failing attempt used a 200 ms shift lead and a 300 ms hold; the
+letters survived it and the punctuation did not, which is what made it look
+selective.
+
+Two lessons worth more than the colon:
+- **Pace the MODIFIER, not just the key.** A chord is two dwells, not one.
+- **Never distinguish `:` from `;` by eye on a ViewPoint screen.** At 400 % the
+  two are near-identical in the Star's bitmap font; I called a colon a
+  semicolon and then called a semicolon a colon. Test functionally (does the
+  three-part name validate?) or set the two glyphs side by side at 500 %.
+
+The SPA needs no new affordance for this: the shift latch already sends shift
+as its own `sendKey` and `SH_KEY_MIN_HOLD_MS=400` paces it.
+
+**THE ICONIC VIEWPOINT DESKTOP IS REACHABLE — and here is the exact route.**
+The image's out-of-the-box state is a **Workstation Administration** desktop
+(grey stipple, `Free Disk Pages` header, one window with Desktop Creation /
+Deletion / Changes). That is a genuine logged-on ViewPoint desktop, but it is
+an administrator's console, not the file-drawer desktop the Star is famous for.
+Getting to the real one, all framebuffer-verified (box clock 02:41 → 03:07):
+
+1. On the admin desktop, click **Desktop Creation**. It expands into
+   `Name` / `Password` fields and an `Administrator` toggle.
+2. **Use the little menu button beside `Name`** (press and hold — it is
+   spring-loaded) and pick the template it offers, `user:star:xerox`. Typing
+   the name by hand works too now that the colon is solved, but the template
+   also tells you the machine's own default domain and organisation.
+3. Edit it to a name that does not already exist — the shipped image already
+   has `user:star:xerox`. `user:star:xerox2` is fine. **The caret in this field
+   always sits at the end**: clicking mid-string does not move it, so append
+   rather than insert.
+4. Click into `Password` (clicking an EMPTY field *does* place the caret; NEXT
+   does not move between fields in this sheet, contrary to the study's warning
+   about the logon sheet), type a password, arm `Administrator`, click `Start`.
+5. The machine **logs itself out** and returns to the bouncing keyboard.
+6. `Home` (NEXT) now brings up the **real Logon Option Sheet** — Xerox
+   1981-1988 copyright, `Name`, `Password`, `Default Domain`, `Default
+   Organization`, and the header prompt *"Please type your user-name and then
+   press <NEXT>"*. Set `Default Organization` to match the desktop you made,
+   fill in name and password, click `Start`.
+7. **The ViewPoint user desktop**: grey stipple ground, the `35168 Free Disk
+   Pages` header with a `Help` button, and the **Directory** icon in the
+   bottom-right corner — the same furniture Draco shows on the 6085. Selecting
+   that icon and pressing `OPEN` (F7) gives a real Directory window listing
+   `Workstation` and `Desktop`, with `Close` / `Redisplay` buttons.
+
+Two hazards in that sequence, both of which cost me a cycle: `Start` needs the
+pointer *precisely* on the button (a 57 px miss silently does nothing, with no
+hover feedback to warn you), and the machine logs out at step 5 without asking.
+
+**`xdotool windowclose` is NOT a clean exit, and it silently discards the
+disk.** Darkstar writes the hard-disk image back only from
+`Program.cs` → `system.Shutdown()` → `_hardDrive.Save()`, reached after the
+main form's dialog returns `DialogResult.OK`. Destroying the X window from
+outside gets WinForms far enough to kill the emulation thread and then throws
+`Cannot call Invoke or BeginInvoke on a control until the window handle is
+created` — the process dies **before** `Shutdown()`, and the image file's mtime
+never moves. I lost an hour of desktop-creation work to this. **The only safe
+shutdown is the `System → Exit` menu item.** For a tile this is mostly moot —
+a bridge tile's golden is a QEMU snapshot of the whole kiosk VM, RAM included,
+so Darkstar never has to flush — but any build script that relies on the `.img`
+must drive that menu and then wait for the process to leave.
+
+**Darkstar's own "100 %" is 77.4 fields/sec**, not 78: `DWindow.cs` computes
+`(_frameCount / 77.4) * 100`. So the study's `>= 78 f/s` gate is the right
+number to one decimal, and the percentage in the status bar is directly
+comparable.
+
+**Rig hygiene note:** `xvfb-alloc`'s exit trap did NOT fire for a rig launched
+under `setsid nohup`, leaving three claimed displays alive after their emulator
+had exited. `xvfb-alloc release <pid>` works; `xvfb-alloc release :N` silently
+does nothing. Call `xvfb_release` explicitly at the end of a detached rig
+rather than trusting the trap, and check `xvfb-alloc list` — its OWNER column
+names the script that claimed each display, which is how I proved the three
+strays were mine and not a sibling's.
+
+**Speed, under a loaded box (not the gate run):** 22 f/s (28 %) during boot,
+settling to **43–53 f/s (55–68 %)** at MP 8000, with the process taking ~178 %
+CPU (emulation + SDL blit). Box was ~72 % busy on all 16 logical CPUs. The
+quiesced pinned gate run is reported separately.
+
+### THE STAR IS A LIVE TILE (2026-08-10) — and the pointer was never the blocker
+
+Shipped as `star`, slot 138, UDP 54138, VMID 240, kiosk ssh 5840. Bridge tile on
+the shared Debian kiosk base, built by `scripts/build-guests/tiles/star.sh`;
+full write-up in [`docs/guests/star.md`](../../guests/star.md).
+
+**The "needs a relative pointer path or a patched Darkstar" conclusion above was
+wrong, and the correction is worth reading twice.** Six tiles already ship
+`SH_POINTER=rel` (`qnx`, `nt351`, `amstradcpc`, `c64`, `freedos`, `msdoswin1`) and
+the daemon has a documented bounded/paced relative backend. Darkstar's own scheme
+— difference the host pointer against the DisplayBox centre, warp it back under
+an SDL grab — is exactly what a relative kiosk pointer feeds correctly. Nothing
+was patched and nothing was forked. Declared honestly as relative, the tile earns
+the derived `Rel. pointer` badge, which exists for precisely this.
+
+Measured through the deployed browser client, with the Star cursor located in the
+QMP framebuffer: **gain is 1:1** (−336,+230 commanded → −336,+230 applied). The
+caveat is the ORIGIN, not the gain — see the guest doc.
+
+**Findings the other two Xerox tiles can use:**
+
+- **`xset m 1 0` DOES NOT TURN OFF POINTER ACCELERATION under libinput.** The core
+  pointer control reports `acceleration: 1/1  threshold: 0` while the device goes
+  on applying its own adaptive profile. Measured ~1.8x on medium moves, which
+  reads exactly like a broken relative path. The switch is an xorg.conf.d
+  `InputClass` with `AccelProfile "flat"`. This cost a whole round of pointer
+  measurements against a knob that was lying.
+- **`loadvm golden` reverts the DISK too.** An internal qcow2 snapshot is RAM
+  *and* disk, so every `apt-get install` and every config file written after the
+  bake vanishes on the next reset — silently, while the framebuffer still looks
+  right. Two pointer measurement rounds were invalidated by exactly this: the fix
+  was in the guest, the reset took it away, and the numbers looked like the fix
+  had not worked. **Re-bake after any in-guest change you intend to keep.**
+- **Darkstar does not track the mouse until the display has been CLICKED once**
+  ("Click on the display to capture mouse/keyboard" in its status bar), and
+  **either Alt key RELEASES the capture again**. The kiosk arms it with a
+  dwelled click at startup so the capture is inside the golden, and the tile
+  remaps both Alt scancodes away (`SH_KEY_REMAP=0x38:0x46,0xe038:0x46`).
+- **Turn X autorepeat off (`xset -r`).** Darkstar wants a ~300 ms hold, X repeats
+  at 660 ms, Pilot repeats on its own. Agent A and C: check yours.
+- **The emulator chrome does not have to be in the frame.** The X root is a custom
+  1088x860 mode — exactly Darkstar's DisplayBox — and `launch.sh` moves the
+  1091x915 WinForms window to (0,−29), so the System Menu and System Status bars
+  fall outside the captured framebuffer. The visitor sees the Star screen and
+  nothing else, and cannot reach `System → Exit`. `/root/starmp.sh` slides the
+  window 26 px to read the MP code and slides it back.
+- **This box is much faster than the 72 %-loaded measurements above suggested.**
+  Cold boot inside the tile: Set Time banner in ~1 minute, logged-off screen at
+  17 minutes, 42–45 fields/sec (54–58 % of Darkstar's own 77.4) at the desktop.
+  Cost: **~144 % of a core for the whole QEMU tile, 1.6 GB RSS host-side, 292 MB
+  for mono inside a 1536 MiB guest.**
+- **The Desktop Creation route needed one correction to B's write-up.** The
+  machine only logs itself out when a desktop is actually CREATED; re-submitting
+  an existing name just reports "already exists" and sits there. Create a *new*
+  name with `Administrator` armed. Also: the caret in the Name field is NOT
+  always at the end — clicking mid-string puts it mid-string, so click past the
+  end of the text before backspacing. And `Start` acts on whichever sub-form is
+  expanded, so collapse Desktop Deletion before using it.
+- **Shifted punctuation on Darkstar is FLAKY, not slow.** Fifteen shifted
+  characters typed back to back all landed (`A : " < > ? _ + { } | * ( )`); the
+  same chord embedded in a word did not, at leads from 200 ms to 700 ms, through
+  XTEST *and* through QMP scancodes. Retracting the "350 ms works" number: it is
+  not a threshold. Verify the glyph instead — and note that remapping the X
+  keymap (`xmodmap -e 'keycode 47 = colon colon'`) makes the key produce
+  **nothing at all**, because Darkstar's table is keyed on the layout it expects.
 
 ## Agent C — Daybreak / ViewPoint
 
