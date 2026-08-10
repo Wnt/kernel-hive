@@ -181,6 +181,9 @@ BAK="$OVERLAY.bookworm-bak"
 FAILED="$OVERLAY.trixie-failed"
 STAGE="/data/vms/soltest/migrate-$TILE-trixie"
 BUILD_LOG="$STAGE/build.log"
+# The detached builder's setsid PID, so a rollback can end it before it and the
+# rollback start racing over this tile's overlay path and qmp.sock (see rollback).
+BUILDER_PID="$STAGE/builder.pid"
 EVIDENCE="${MIGRATE_EVIDENCE:-${TMPDIR:-/tmp}/migrate-tile/$TILE}"
 
 # --- box preflight ---------------------------------------------------------
@@ -279,7 +282,24 @@ rollback() {
   box_sh "stop, restore $BAK, restart $UNIT" "$(
     cat <<'EOS'
 set -u
-d=$1 unit=$2 bak=$3 failed=$4
+d=$1 unit=$2 bak=$3 failed=$4 builderpid=$5
+# THE BUILDER GOES FIRST. Reaching a rollback with the detached builder still
+# alive (the timeout path) races it over two shared names, overlay.qcow2 and
+# qmp.sock: on bbcmicro 2026-08-10 the surviving builder's `savevm golden` found
+# the recreated socket and re-baked the RESTORED tile's golden. Negative PID =
+# the whole setsid group, so its qemu/ssh children go too.
+if [ -n "$builderpid" ] && [ -f "$builderpid" ]; then
+  bp=$(cat "$builderpid" 2>/dev/null || true)
+  case "$bp" in '' | *[!0-9]*) bp= ;; esac
+  case "$(readlink -f "/proc/${bp:-0}/exe" 2>/dev/null)" in
+    */bash | */sh)
+      kill -TERM -"$bp" 2>/dev/null || kill -TERM "$bp" 2>/dev/null
+      for _ in $(seq 1 30); do kill -0 "$bp" 2>/dev/null || break; sleep 1; done
+      kill -0 "$bp" 2>/dev/null && { kill -KILL -"$bp" 2>/dev/null; sleep 2; }
+      echo "rollback: builder process group $bp terminated"
+      ;;
+  esac
+fi
 systemctl stop "$unit" 2>/dev/null
 # Kill this tile's QEMU only by its pidfile, and only after /proc/<pid>/exe says
 # it really is a QEMU (never pkill -f from ssh lab — it matches its own shell).
@@ -298,7 +318,7 @@ sleep 8
 systemctl is-active --quiet "$unit" && echo "rollback: $unit is active again" ||
   { echo "ROLLBACK: $unit did NOT come back — hands on" >&2; exit 1; }
 EOS
-  )" "$D" "$UNIT" "$BAK" "$FAILED"
+  )" "$D" "$UNIT" "$BAK" "$FAILED" "$BUILDER_PID"
   echo
   echo "Rolled back. The trixie attempt is kept at $FAILED (delete it yourself"
   echo "once the post-mortem is done); the build log is $BUILD_LOG."
@@ -378,47 +398,89 @@ step "5/9  build: BRIDGE_SUITE=trixie $BUILDER_REL --force"
 echo "  Staged under $STAGE so the builder's own lib/bridge-base-for"
 echo "  and the ledger resolve relatively. Log: $BUILD_LOG"
 
+# Some builders read HOST-SIDE SIDECARS kept next to the tile's launcher rather
+# than in build-guests/: zx81.sh takes its readiness predicate and paced QMP
+# typist from ../../../streamhost/tiles/zx81, as do win95/win311/indyr4400. Stage
+# those too, or the builder dies 20 s in on `cd: .../streamhost/tiles/<tile>: No
+# such file or directory` (zx81, 2026-08-10), which reads like a bad tile.
+LAUNCHER_SRC="$REPO/streamhost/tiles/$TILE"
+STAGE_LAUNCHER=0
+[ -d "$LAUNCHER_SRC" ] && STAGE_LAUNCHER=1
+
 if [ "$DRY" -eq 1 ]; then
   printf '  [would] rsync -a --delete %s/scripts/build-guests/ %s:%s/scripts/build-guests/\n' \
     "$REPO" "$LAB" "$STAGE"
   printf '  [would] rsync -a %s %s:%s/registry/bridge-suites.json\n' "$LEDGER" "$LAB" "$STAGE"
+  [ "$STAGE_LAUNCHER" -eq 1 ] &&
+    printf '  [would] rsync -a %s/ %s:%s/streamhost/tiles/%s/   (host-side sidecars)\n' \
+      "$LAUNCHER_SRC" "$LAB" "$STAGE" "$TILE"
   printf '  [would] ssh %s: cd %s && BRIDGE_SUITE=trixie setsid bash %s --force >%s 2>&1\n' \
     "$LAB" "$STAGE" "$BUILDER_REL" "$BUILD_LOG"
   printf '  [would] poll every 20s, printing new log lines, up to %ss\n' "$BUILD_TIMEOUT"
 else
-  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry" ||
+  # EVERY destination, because rsync creates only the LAST component of a remote
+  # path: with only .../registry pre-made, the build-guests rsync below dies with
+  # "mkdir failed: No such file or directory" on every tile whose stage is fresh.
+  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry $(printf '%q' "$STAGE")/scripts/build-guests $(printf '%q' "$STAGE")/streamhost/tiles" ||
     fail "cannot create the staging dir $STAGE"
   rsync -a --delete -e "ssh ${SSH_OPTS[*]}" \
     "$REPO/scripts/build-guests/" "$LAB:$STAGE/scripts/build-guests/" ||
     fail "staging rsync of build-guests failed"
   rsync -a -e "ssh ${SSH_OPTS[*]}" "$LEDGER" "$LAB:$STAGE/registry/bridge-suites.json" ||
     fail "staging rsync of the ledger failed"
+  if [ "$STAGE_LAUNCHER" -eq 1 ]; then
+    rsync -a -e "ssh ${SSH_OPTS[*]}" "$LAUNCHER_SRC/" "$LAB:$STAGE/streamhost/tiles/$TILE/" ||
+      fail "staging rsync of streamhost/tiles/$TILE failed"
+  fi
 
   box_sh "launch the build (detached, logged)" "$(
     cat <<'EOS'
 set -eu
-stage=$1 rel=$2 log=$3
-rm -f "$log" "$log.rc"
+stage=$1 rel=$2 log=$3 pidf=$4
+rm -f "$log" "$log.rc" "$pidf"
 cd "$stage"
-setsid bash -c "BRIDGE_SUITE=trixie bash '$rel' --force >'$log' 2>&1; echo \$? >'$log.rc'" \
+setsid bash -c "echo \$\$ >'$pidf'; BRIDGE_SUITE=trixie bash '$rel' --force >'$log' 2>&1; echo \$? >'$log.rc'" \
   </dev/null >/dev/null 2>&1 &
-echo "builder pid $!"
+# The builder shell records its OWN pid, rather than this shell recording $!:
+# `setsid` execs when it is not already a process-group leader and FORKS when it
+# is, so $! is the surviving session leader only some of the time. After the
+# exec/fork that pid is both the session and the process-group leader, which is
+# what the rollback signals so no child of the build outlives it.
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  if [ -s "$pidf" ]; then break; fi
+  sleep 1
+done
+echo "builder pid $(cat "$pidf" 2>/dev/null || echo '?')"
 EOS
-  )" "$STAGE" "$BUILDER_REL" "$BUILD_LOG" || fail "could not launch the build"
+  )" "$STAGE" "$BUILDER_REL" "$BUILD_LOG" "$BUILDER_PID" || fail "could not launch the build"
 
+  # A poll returns new log lines, a SENTINEL, then the log length and (once it
+  # exists) the exit code. The sentinel is printed with a LEADING NEWLINE and is
+  # a string no build log contains; both properties are load-bearing. With the
+  # old `echo '---'`, a poll whose `tail` emitted NOTHING put the sentinel at
+  # offset 0, neither expansion below matched, SEEN became "---" and the LINE
+  # COUNT was read as the exit code — so a build that merely went quiet for one
+  # 20 s interval (every bridge builder does, waiting on a guest) was announced
+  # as "builder exited <N>" and rolled back LIVE. Measured on bbcmicro
+  # 2026-08-10: false failure at 19 log lines, 21 s before that same build baked
+  # and loadvm-verified its golden. SEEN is asserted numeric for the same reason.
   log "polling (timeout ${BUILD_TIMEOUT}s) — builds run 5-40 min"
   BUILD_RC=""
   SEEN=0
   ELAPSED=0
+  MARK='@@migrate-tile:status@@'
   while [ "$ELAPSED" -lt "$BUILD_TIMEOUT" ]; do
     sleep 20
     ELAPSED=$((ELAPSED + 20))
-    CHUNK="$(box_ro "tail -n +$((SEEN + 1)) $(printf '%q' "$BUILD_LOG") 2>/dev/null; echo '---'; wc -l < $(printf '%q' "$BUILD_LOG") 2>/dev/null || echo 0; cat $(printf '%q' "$BUILD_LOG").rc 2>/dev/null || true")"
-    NEW="${CHUNK%%$'\n'---*}"
-    TAILINFO="${CHUNK#*$'\n'---$'\n'}"
+    CHUNK="$(box_ro "tail -n +$((SEEN + 1)) $(printf '%q' "$BUILD_LOG") 2>/dev/null; printf '\n%s\n' '$MARK'; wc -l < $(printf '%q' "$BUILD_LOG") 2>/dev/null || echo 0; cat $(printf '%q' "$BUILD_LOG").rc 2>/dev/null || true")"
+    NEW="${CHUNK%%$'\n'"$MARK"*}"
+    TAILINFO="${CHUNK#*$'\n'"$MARK"$'\n'}"
     SEEN="$(printf '%s' "$TAILINFO" | sed -n 1p)"
     BUILD_RC="$(printf '%s' "$TAILINFO" | sed -n 2p)"
-    [ -n "$NEW" ] && printf '%s\n' "$NEW" | sed 's/^/    | /'
+    case "$SEEN" in
+      '' | *[!0-9]*) fail "unparseable build-log poll (log length read as '$SEEN'); log: $BUILD_LOG" ;;
+    esac
+    [ -n "$NEW" ] && printf '%s\n' "${NEW%$'\n'}" | sed 's/^/    | /'
     [ -n "$BUILD_RC" ] && break
     [ $((ELAPSED % 300)) -eq 0 ] && log "still building (${ELAPSED}s)"
   done
