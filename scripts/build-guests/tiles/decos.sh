@@ -263,45 +263,16 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
   exec startx -- -nocursor
 fi
 EOS
-read -r -d '' INI_RT11 <<'EOS' || true
-; RT-11 V5.3, 11/73, RL02. RT-11 cannot be idle-detected: 99% of a host core at
-; a bare "."; 14% with the throttle, which is a 15 MHz J-11's rate anyway.
-set cpu 11/73
-set cpu 256k
-set cpu idle
-set throttle 1000K
-set rl enabled
-attach rl0 @DISK@
-set rk disabled
-set rx disabled
-set tm disabled
-boot rl0
-EOS
-read -r -d '' INI_RSX <<'EOS' || true
-; RSX-11M V4.2 BL38, 11/70, RD52. NOT V4.3: no reachable copy exists. 11/70
-; REJECTS `nocis` and `set rha disabled`. No throttle: RSX executes WAIT.
-set cpu 11/70
-set cpu 4M
-set cpu idle
-set rq0 rd52
-attach rq0 @DISK@
-expect "DD-MMM-YY) [S]: " send "@RSXDATE@\r"; continue
-expect "TERMINAL [D D:132.]: " send "80.\r"; continue
-boot rq0
-EOS
-read -r -d '' INI_RSTS <<'EOS' || true
-; RSTS/E V9.6, 11/70, RD54. THE DATE IS PINNED AT 1990 ON PURPOSE: the two-digit
-; year reads as 19xx and anything before the kit is refused.
-set cpu 11/70
-set cpu 4M
-set cpu idle
-set rq0 rd54
-attach rq0 @DISK@
-expect "Today's date? " send "9-AUG-90\r"; continue
-expect "Current time? " send "10:00 AM\r"; continue
-expect "Start timesharing? <Yes> " send "\r"; continue
-boot rq0
-EOS
+# The three SIMH configurations live in assets/decos/{rt11,rsx,rsts}.ini, NOT in
+# heredocs here: they are data, they are what the chooser and prep_rt11 read by
+# name, and the file-size budget is not the place to lose them.
+# PROVENANCE: RECOVERED FROM THE LIVE decos GUEST ON 2026-08-10, and they are
+# authoritative for that reason. Until that day install_kiosk installed them into
+# a DIRECTORY (see the note there), so no from-scratch build had ever put them
+# where anything reads them, and the copies the running exhibit boots on had been
+# hand-placed during the original bring-up. Their simulator directives turned out
+# to match the old heredocs byte for byte; only the commentary had been lost.
+ASSETS_DIR="${DECOS_ASSETS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../assets/decos}"
 stop_qemu() {
   if [ -S "$QMP" ]; then
     hmp quit >/dev/null 2>&1 || true
@@ -481,23 +452,34 @@ prep_rsts() {
     python3 /opt/decos/simhdrv.py prep.script prep.log pdp11 prep.ini" || return 1
   log "RSTS/E V9.6 installed onto its RD54 pack"
 }
+# ONE EXPLICIT DESTINATION PER .ini, AND A `|| die`. `install a b c DIR/` keeps
+# each source's BASENAME, so the three files landed as /opt/decos/ini/decos-*.ini
+# while prep_rt11 and the chooser read /opt/decos/ini/<id>.ini — and because the
+# guest command carried no `|| die`, this function logged "three .ini files
+# installed" every time while installing nothing usable. Fixed 2026-08-10, after
+# a from-scratch build died at "sed: can't read /opt/decos/ini/rt11.ini".
 install_kiosk() {
-  local d f
+  local d f n
   d=$(mktemp -d)
   printf '%s\n' "$CHOOSER" >"$d/chooser.sh"
   printf '%s\n' "$LAUNCH" >"$d/launch.sh"
   printf '%s\n' "$PROFILE" >"$d/bash_profile"
-  printf '%s\n' "$INI_RT11" >"$d/rt11.ini"
-  printf '%s\n' "$INI_RSX" >"$d/rsx.ini"
-  printf '%s\n' "$INI_RSTS" >"$d/rsts.ini"
+  for n in rt11 rsx rsts; do
+    [ -s "$ASSETS_DIR/$n.ini" ] || die "missing SIMH config asset: $ASSETS_DIR/$n.ini"
+    cp "$ASSETS_DIR/$n.ini" "$d/$n.ini"
+  done
   for f in "$d"/*; do push "$f" "/tmp/decos-$(basename "$f")"; done
   rm -rf "$d"
   guest "set -e
     install -m 755 /tmp/decos-chooser.sh /opt/decos/chooser.sh
     install -m 755 /tmp/decos-launch.sh /etc/bridge/launch.sh
     install -m 644 -o bridge -g bridge /tmp/decos-bash_profile /home/bridge/.bash_profile
-    install -m 644 /tmp/decos-rt11.ini /tmp/decos-rsx.ini /tmp/decos-rsts.ini /opt/decos/ini/
-    rm -f /tmp/decos-*"
+    install -m 644 /tmp/decos-rt11.ini /opt/decos/ini/rt11.ini
+    install -m 644 /tmp/decos-rsx.ini /opt/decos/ini/rsx.ini
+    install -m 644 /tmp/decos-rsts.ini /opt/decos/ini/rsts.ini
+    rm -f /tmp/decos-*
+    for n in rt11 rsx rsts; do [ -s /opt/decos/ini/\$n.ini ] || exit 1; done" ||
+    die "the kiosk chooser/launcher/.ini files did not install into the overlay"
   log "kiosk chooser, launcher and three .ini files installed"
 }
 quiet_console() {
