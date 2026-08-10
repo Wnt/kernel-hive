@@ -7,7 +7,7 @@ auto-boots **Workbench 1.3** off a real **Kickstart 1.3** ROM. This is an
 (the Amiga **Paula** chip routed through OpenAL -> ALSA -> AC97) exactly like every
 other tile. See **`streamhost/docs/BRIDGE.md`** for the reusable bridge pattern.
 
-> **DISTINCT FROM the `amigaos` tile.** `amigaos` (VMID 110, udp 54110) is
+> **DISTINCT FROM the `aros` tile.** `aros` (VMID 110, udp 54110) is
 > **native AROS-on-x86** — QEMU boots `aros-pc-i386.iso` directly on an i386 CPU;
 > it is an *AmigaOS-compatible reimplementation*, not the real thing. **This
 > `amiga` tile is the real 68000 Amiga 500** running Commodore's actual

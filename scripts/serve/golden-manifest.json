@@ -213,14 +213,14 @@
    "fixture": "OS/2 Warp 4.52 Workplace Shell at 1024x768; no window holds keyboard focus so echo is state-dependent."
   },
   "aros": {
-   "tileDir": "amigaos",
+   "tileDir": "aros",
    "pointer": "abs",
    "touch": false,
    "resetMode": "loadvm",
    "snapshot": "golden",
    "mouse": "PASS",
    "keyboard": "SKIP",
-   "fixture": "AROS ('AmigaOS') Wanderer desktop, 1024x768; Poseidon hid.class bound to QEMU USB Tablet in the device-set-matched golden. NOTE osId 'aros' -> tileDir 'amigaos'."
+   "fixture": "AROS Wanderer desktop, 1024x768; Poseidon hid.class bound to QEMU USB Tablet in the device-set-matched golden."
   },
   "qnx": {
    "tileDir": "qnx",

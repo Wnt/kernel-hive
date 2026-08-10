@@ -2,11 +2,16 @@
 
 > **Historical (neko-era) wiring below.** The CT-110 neko tile (:8110, its compose
 > project and the `gallery-integrate-all.sh` manifest row) is superseded: AROS runs
-> today as the streamhost tile **`amigaos`** (osId `aros`) — see its stanza in
-> `streamhost/tiles-manifest.sh` and the `streamhost@amigaos` unit.
+> today as the streamhost tile **`aros`** — see its stanza in
+> `streamhost/tiles-manifest.sh` and the `streamhost@aros` unit.
 > `gallery-integrate-all.sh` / `exotic-guests-add.sh` are neko-era, deleted in the
 > 2026-07 restructure — git history. The build script, licensing and in-guest
 > behaviour notes still apply.
+>
+> **Renamed 2026-08-10:** the daemon side was `amigaos` (`SH_TILE`, tile dir,
+> `streamhost@amigaos`) until it was renamed to match the registry id `aros`.
+> Dated records below, box backup dirs, and the `amigaos.sh` build key still
+> carry the old name; they are not wrong, they are older than the rename.
 
 **Status: LIVE + framebuffer-verified.** Tile at **http://192.0.2.12:8110/**
 (neko streams a QEMU x86 VM running AROS). Added to the :8080 index as
@@ -124,7 +129,7 @@ qemu-system-x86_64 -machine pc -enable-kvm -cpu host -m 512 \
   QEMU HID Tablet/current/absolute. The candidate device set is
   `-usb -device usb-tablet,id=tab0`; `SH_POINTER=abs` makes streamhost inject QMP
   absolute coordinates.
-- **Persistence and proof.** `streamhost/tiles/amigaos/golden-bake.sh` performs
+- **Persistence and proof.** `streamhost/tiles/aros/golden-bake.sh` performs
   the AROS binding before `savevm golden`; the launcher conditionally uses
   `-loadvm golden`, because this live CD has nowhere else to persist Poseidon's
   controller state. The golden and launcher must retain exactly the same tablet
@@ -144,7 +149,7 @@ qemu-system-x86_64 -machine pc -enable-kvm -cpu host -m 512 \
   Tablet current=true/absolute=true. Real 1024x768 framebuffer captures visibly
   placed the arrow at all four inset corners and centre, and an absolute-positioned
   right click opened the Wanderer menu. The final live qcow2 check was clean.
-- **Rollback.** Stop `streamhost@amigaos`, restore the backed-up
+- **Rollback.** Stop `streamhost@aros`, restore the backed-up
   `golden-scratch.qcow2`, launcher, and `tile.env`, regenerate `tiles.json`, then
   restart the service. The old matched set is PS/2-only plus `SH_POINTER=rel`;
   never load a tablet-baked snapshot with that old launcher.
@@ -173,7 +178,7 @@ qemu-system-x86_64 -machine pc -enable-kvm -cpu host -m 512 \
   stand-in, but a dedicated Amiga wedge model is ideal.
 
 DELTAS (repo/doc fixes for an easier next rebuild):
-- [applied] `streamhost/tiles/amigaos/golden-bake.sh` — the previous probe attached `usb-tablet` but never added AROS's PCI USB hardware to Poseidon — run `AddUSBHardware pciusb.device 0`, require QEMU HID Tablet current/absolute, and capture four-corner/centre framebuffer proofs before savevm — `docs/guests/aros.md`
-- [applied] `streamhost/tiles/amigaos/golden-bake.sh` — the first absolute-pointer bake compared the restored post-binding Shell against a pre-binding reference frame (`reset_delta=0.004215`) — refresh `bake-golden.ppm` after the Poseidon bind and absolute-motion proof so loadvm verification compares like-for-like framebuffer state — `docs/guests/aros.md`
-- [applied] `streamhost/tiles/amigaos/qemu-streamhost.sh` + `registry/tiles/aros.json` — the diskless LiveCD cannot persist Poseidon's controller binding across a cold boot — keep `-usb -device usb-tablet,id=tab0` in the matched device set, auto-load the `golden` snapshot, and emit `SH_POINTER=abs` — `docs/guests/aros.md`
+- [applied] `streamhost/tiles/aros/golden-bake.sh` — the previous probe attached `usb-tablet` but never added AROS's PCI USB hardware to Poseidon — run `AddUSBHardware pciusb.device 0`, require QEMU HID Tablet current/absolute, and capture four-corner/centre framebuffer proofs before savevm — `docs/guests/aros.md`
+- [applied] `streamhost/tiles/aros/golden-bake.sh` — the first absolute-pointer bake compared the restored post-binding Shell against a pre-binding reference frame (`reset_delta=0.004215`) — refresh `bake-golden.ppm` after the Poseidon bind and absolute-motion proof so loadvm verification compares like-for-like framebuffer state — `docs/guests/aros.md`
+- [applied] `streamhost/tiles/aros/qemu-streamhost.sh` + `registry/tiles/aros.json` — the diskless LiveCD cannot persist Poseidon's controller binding across a cold boot — keep `-usb -device usb-tablet,id=tab0` in the matched device set, auto-load the `golden` snapshot, and emit `SH_POINTER=abs` — `docs/guests/aros.md`
 - [proposed] `scripts/gen_tiles_json.py` — its golden probe is QMP-only, so running `labctl gen` while the tile is stopped records `golden_snapshot=null` even when `qemu-img snapshot -l` shows `golden` — add a declared snapshot-store fallback or require regeneration after QEMU starts (the promotion reran it after start and recorded `golden=true`) — `docs/guests/aros.md`

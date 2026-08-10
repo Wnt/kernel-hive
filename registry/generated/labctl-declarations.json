@@ -47,21 +47,6 @@
       "udp_port": 54118,
       "notes": "exec: labctl exec amiga \"<cmd>\" (ssh root@:5818, key bridge_key)"
     },
-    "amigaos": {
-      "dir": "/data/vms/streamhost/tiles/amigaos",
-      "qmp": "/data/vms/streamhost/tiles/amigaos/qmp.sock",
-      "pointer_mode": "abs",
-      "warpd_port": null,
-      "warpd_addr": null,
-      "ssh_port": null,
-      "exec_port": null,
-      "exec_kind": null,
-      "exec_user": null,
-      "exec_key": null,
-      "console": "fb",
-      "udp_port": 54110,
-      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
-    },
     "amstradcpc": {
       "dir": "/data/vms/streamhost/tiles/amstradcpc",
       "qmp": "/data/vms/streamhost/tiles/amstradcpc/qmp.sock",
@@ -121,6 +106,21 @@
       "console": "fb",
       "udp_port": 54135,
       "notes": "exec: labctl exec armeval \"<cmd>\" (ssh root@:5838, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro or the ARM"
+    },
+    "aros": {
+      "dir": "/data/vms/streamhost/tiles/aros",
+      "qmp": "/data/vms/streamhost/tiles/aros/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54110,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "atarist": {
       "dir": "/data/vms/streamhost/tiles/atarist",

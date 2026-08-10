@@ -36,9 +36,9 @@
 # scratch dir on the box and byte-diffs against the live tiles. Keep it green
 # (PASS or whitelisted-with-justification) after ANY change here.
 #
-# osId vs tile-dir note: osId "aros" == tile dir "amigaos"; osId "solaris" == tile
-# dir "solariscde"; all other osIds equal their tile dir name. streamhost-tile.sh
-# keys everything on the TILE DIR name (--tile), and tiles.json maps osId->tile.
+# osId vs tile-dir note: osId "solaris" == tile dir "solariscde"; every other osId
+# equals its tile dir name. streamhost-tile.sh keys everything on the TILE DIR
+# name (--tile), and tiles.json maps osId->tile.
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SH="$HERE/scripts/streamhost-tile.sh"
@@ -180,13 +180,13 @@ emit haiku \
 #           PS/2; AROS binds Poseidon hid.class to a QEMU USB HID tablet.
 # ---------------------------------------------------------------------------
 
-# amigaos / osId "aros" (VMID 110) — AROS LiveCD, AC97, usb-tablet, abs pointer.
+# aros (VMID 110) — AROS LiveCD, AC97, usb-tablet, abs pointer.
 #   VERBATIM LAUNCHER: golden-scratch.qcow2 holds the diskless LiveCD savevm.
 #   The device-set-matched golden preserves `AddUSBHardware pciusb.device 0` and
 #   is auto-loaded so AROS owns the absolute tablet immediately after launch.
-emit amigaos \
-  --tile amigaos --vmid 110 --udp 54110 --pointer abs --audio on --fps 30 \
-  --launcher-file "$T/amigaos/qemu-streamhost.sh"
+emit aros \
+  --tile aros --vmid 110 --udp 54110 --pointer abs --audio on --fps 30 \
+  --launcher-file "$T/aros/qemu-streamhost.sh"
 
 # helenos (VMID 99) — ia32 LiveCD on -cpu qemu32, intel-hda. GENERIC.
 # POINTER=abs (2026-07-13): HelenOS's upstream USB HID stack binds the QEMU

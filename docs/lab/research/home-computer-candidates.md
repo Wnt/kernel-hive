@@ -45,7 +45,7 @@ Headline findings:
 |---|---|---|
 | `c64` | Commodore 64 (breadbin) — GEOS 2.0, 1982 | VICE `x64sc`, built from source in the bridge base |
 | `amiga` | Amiga 500 — Workbench 1.3, 1987 | FS-UAE, installed into the tile overlay |
-| `amigaos` (SPA id `aros`) | AROS on x86 | native QEMU — *not* a 68k Amiga |
+| `aros` | AROS on x86 | native QEMU — *not* a 68k Amiga |
 | `atarist` | Atari ST — EmuTOS GEM, 1985 | hatari |
 | `apple2` | Apple II — GEOS, 1988 | LinApple |
 | `amstradcpc` | Amstrad CPC 6128 — Locomotive BASIC, 1985 | cap32 |

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Launch tile 'amigaos' (VMID 110) QEMU with the streamhost display wiring.
+# Launch tile 'aros' (VMID 110) QEMU with the streamhost display wiring.
 # Kill only by pidfile. This REPLACES the neko capture for this one tile during
 # its pilot; neko is restored by ROLLBACK.md.
 set -e
-BASE=/data/vms/streamhost/tiles/amigaos
+BASE=/data/vms/streamhost/tiles/aros
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$BASE/qmp.sock" "$BASE/qemu.pid"
@@ -18,7 +18,7 @@ fi
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 nohup qemu-system-x86_64 \
-  -name streamhost-amigaos \
+  -name streamhost-aros \
   -enable-kvm -m 512 -smp 1 \
   -machine pc-i440fx-11.0 -cpu host \
   -rtc base=localtime \
@@ -36,4 +36,4 @@ for i in $(seq 1 40); do
   [ -S "$BASE/qmp.sock" ] && [ -f "$BASE/qemu.pid" ] && break
   sleep 0.5
 done
-echo "tile amigaos qemu pid=$(cat "$BASE/qemu.pid" 2>/dev/null) qmp=$BASE/qmp.sock udp=54110 loadvm=${LOADVM[*]:-none}"
+echo "tile aros qemu pid=$(cat "$BASE/qemu.pid" 2>/dev/null) qmp=$BASE/qmp.sock udp=54110 loadvm=${LOADVM[*]:-none}"

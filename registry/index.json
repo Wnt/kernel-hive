@@ -1612,7 +1612,7 @@
       },
       "operator": {
         "actionMap": {
-          "key": "amigaos",
+          "key": "aros",
           "value": {
             "os": "AmigaOS",
             "win": "qemu",
@@ -1633,8 +1633,8 @@
           }
         },
         "labctl": {
-          "dir": "/data/vms/streamhost/tiles/amigaos",
-          "qmp": "/data/vms/streamhost/tiles/amigaos/qmp.sock",
+          "dir": "/data/vms/streamhost/tiles/aros",
+          "qmp": "/data/vms/streamhost/tiles/aros/qmp.sock",
           "pointer_mode": "abs",
           "warpd_port": null,
           "warpd_addr": null,
@@ -1648,7 +1648,7 @@
           "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
         }
       },
-      "tileDir": "amigaos",
+      "tileDir": "aros",
       "lifecycle": "production",
       "stream": {
         "transport": "streamhost",
@@ -1672,14 +1672,10 @@
       },
       "guestDoc": "docs/guests/aros.md",
       "credentialsRef": "guest/aros",
-      "aliases": {
-        "publicId": "aros",
-        "tileDir": "amigaos"
-      },
       "runtime": {
         "tileEnv": {
-          "SH_TILE": "amigaos",
-          "SH_QMP": "/data/vms/streamhost/tiles/amigaos/qmp.sock",
+          "SH_TILE": "aros",
+          "SH_QMP": "/data/vms/streamhost/tiles/aros/qmp.sock",
           "SH_PORT": "54110",
           "SH_FPS": "30",
           "SH_HOST_IP": "192.0.2.10",
@@ -1687,8 +1683,8 @@
           "SH_POINTER": "abs",
           "SH_AUDIO": "on",
           "SH_AUDIO_BITRATE": "96000",
-          "SH_HASH_FILE": "/data/vms/streamhost/tiles/amigaos/cert_hash_b64.txt",
-          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/amigaos/signaling.json",
+          "SH_HASH_FILE": "/data/vms/streamhost/tiles/aros/cert_hash_b64.txt",
+          "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/aros/signaling.json",
           "SH_CERT_ROTATE_DAYS": "10"
         },
         "vmidLabel": 110,
@@ -1696,7 +1692,7 @@
           "mode": "verbatim",
           "emitArgs": [
             "--tile",
-            "amigaos",
+            "aros",
             "--vmid",
             "110",
             "--udp",
@@ -1708,10 +1704,10 @@
             "--fps",
             "30",
             "--launcher-file",
-            "$T/amigaos/qemu-streamhost.sh"
+            "$T/aros/qemu-streamhost.sh"
           ],
-          "deviceSetId": "amigaos-usb-tablet",
-          "launcher": "streamhost/tiles/amigaos/qemu-streamhost.sh",
+          "deviceSetId": "aros-usb-tablet",
+          "launcher": "streamhost/tiles/aros/qemu-streamhost.sh",
           "binary": "qemu-system-x86_64",
           "machine": "pc-i440fx-11.0",
           "accel": "kvm",
@@ -1720,7 +1716,7 @@
           "smp": 1,
           "vga": "std",
           "deviceSetSummary": [
-            "-name streamhost-amigaos",
+            "-name streamhost-aros",
             "-enable-kvm -m 512 -smp 1",
             "-machine pc-i440fx-11.0 -cpu host",
             "-rtc base=localtime",
@@ -1742,7 +1738,7 @@
             "smp": 1,
             "vga": "std",
             "deviceSetSummary": [
-              "-name streamhost-amigaos",
+              "-name streamhost-aros",
               "-enable-kvm -m 512 -smp 1",
               "-machine pc-i440fx-11.0 -cpu host",
               "-rtc base=localtime",
@@ -1794,14 +1790,14 @@
         "notes": "Live streamhost tile. Official AROS pc-i386 live CD. Archetype: beige-tower-crt; a bespoke Amiga wedge (the low-profile Amiga 500/1200 keyboard-box) would be the ideal era-accurate model."
       },
       "reset": {
-        "tileDir": "amigaos",
+        "tileDir": "aros",
         "pointer": "abs",
         "touch": false,
         "resetMode": "loadvm",
         "snapshot": "golden",
         "mouse": "PASS",
         "keyboard": "SKIP",
-        "fixture": "AROS ('AmigaOS') Wanderer desktop, 1024x768; Poseidon hid.class bound to QEMU USB Tablet in the device-set-matched golden. NOTE osId 'aros' -> tileDir 'amigaos'."
+        "fixture": "AROS Wanderer desktop, 1024x768; Poseidon hid.class bound to QEMU USB Tablet in the device-set-matched golden."
       },
       "migrationExceptions": []
     },

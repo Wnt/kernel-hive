@@ -68,8 +68,8 @@ The planned/recovery set is:
 
 `amiga500` is not a missing candidate: it is the active production tile
 `amiga`, a Debian kiosk running FS-UAE with Kickstart/Workbench. It is distinct
-from the active x86 AROS tile whose `osId` is `aros` and `tileDir` is
-`amigaos`. Use the Amiga 500 path as a Tier-2 bridge template.
+from the active x86 AROS tile `aros`. Use the Amiga 500 path as a Tier-2
+bridge template.
 
 Candidate details and the live bridge distinction are recorded in the existing
 guest notes: [`macos.md`](../guests/macos.md),

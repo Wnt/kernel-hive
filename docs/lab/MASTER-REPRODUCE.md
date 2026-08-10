@@ -266,7 +266,7 @@ copyright/SSO-gated source.
 | reactos (`reactos`) | ✅ hands-off | none — live ISO fetch, FB-verified to desktop | ~3–5 m |
 | toaruos (`toaruos`) | ✅ hands-off *(proven live)* | none — live ISO | ~3 m |
 | haiku (`haiku`) | ✅ hands-off *(proven full path)* | none — `haiku-install.sh` runs the ISO stage, installs `haiku-persist.qcow2`, provisions sshd/gallery key, applies the fixture, and proves `savevm`→dirty→`loadvm` | ~6–10 m |
-| amigaos / AROS (`amigaos`) | ✅ hands-off | none — latest AROS pc-i386 boot ISO, FB-verified | ~3–5 m |
+| aros / AROS (build key `amigaos`) | ✅ hands-off | none — latest AROS pc-i386 boot ISO, FB-verified | ~3–5 m |
 | helenos (`helenos`) | ✅ hands-off *(proven live)* | none — live ISO auto-boots to compositor | ~3 m |
 | kolibrios (`kolibrios`) | ✅ hands-off | none — live CD, self-lands on GUI | ~2–3 m |
 | ninefront (`9front`) | ✅ hands-off | none — plan9.ini suppresses every prompt → rio | ~5–8 m |

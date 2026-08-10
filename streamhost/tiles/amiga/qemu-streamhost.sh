@@ -3,7 +3,7 @@
 # BRIDGE tile: a captured Debian-12 kiosk running FS-UAE (WINDOWED) emulating a real
 # Commodore Amiga 500 (Motorola 68000) auto-booting Workbench 1.3 off a Kickstart 1.3
 # ROM (see scripts/build-guests/tiles/amiga.sh, scripts/amiga-tile-notes.md, streamhost/BRIDGE.md).
-# DISTINCT from the 'amigaos' tile (that is native AROS-on-x86). Kill only by pidfile.
+# DISTINCT from the 'aros' tile (that is native AROS-on-x86). Kill only by pidfile.
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/alpine/haiku). overlay.qcow2 holds an
 # INTERNAL 'golden' snapshot (full RAM+device state) of the running Workbench 1.3 desktop.

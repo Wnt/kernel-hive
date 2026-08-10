@@ -68,23 +68,6 @@
       "warpd_addr": null,
       "warpd_port": null
     },
-    "amigaos": {
-      "console": "fb",
-      "dir": "/data/vms/streamhost/tiles/amigaos",
-      "exec_key": null,
-      "exec_kind": null,
-      "exec_port": null,
-      "exec_user": null,
-      "golden_snapshot": true,
-      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec",
-      "pointer_mode": "abs",
-      "qmp": "/data/vms/streamhost/tiles/amigaos/qmp.sock",
-      "reset_mode": "loadvm",
-      "ssh_port": null,
-      "udp_port": 54110,
-      "warpd_addr": null,
-      "warpd_port": null
-    },
     "amstradcpc": {
       "console": "fb",
       "dir": "/data/vms/streamhost/tiles/amstradcpc",
@@ -150,6 +133,23 @@
       "reset_mode": "loadvm",
       "ssh_port": 5838,
       "udp_port": 54135,
+      "warpd_addr": null,
+      "warpd_port": null
+    },
+    "aros": {
+      "console": "fb",
+      "dir": "/data/vms/streamhost/tiles/aros",
+      "exec_key": null,
+      "exec_kind": null,
+      "exec_port": null,
+      "exec_user": null,
+      "golden_snapshot": true,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec",
+      "pointer_mode": "abs",
+      "qmp": "/data/vms/streamhost/tiles/aros/qmp.sock",
+      "reset_mode": "loadvm",
+      "ssh_port": null,
+      "udp_port": 54110,
       "warpd_addr": null,
       "warpd_port": null
     },

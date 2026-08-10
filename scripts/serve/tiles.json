@@ -81,7 +81,7 @@
   },
   "aros": {
     "udpPort": 54110,
-    "hashFile": "/data/vms/streamhost/tiles/amigaos/cert_hash_b64.txt"
+    "hashFile": "/data/vms/streamhost/tiles/aros/cert_hash_b64.txt"
   },
   "qnx": {
     "udpPort": 54112,

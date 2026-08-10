@@ -428,7 +428,7 @@
     "kbd_note": "Workplace Shell; unverified",
     "audio_trigger": "tone"
   },
-  "amigaos": {
+  "aros": {
     "os": "AmigaOS",
     "win": "qemu",
     "mouse": {

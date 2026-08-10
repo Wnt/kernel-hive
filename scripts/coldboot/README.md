@@ -162,7 +162,7 @@ passed framebuffer/ffprobe gates, and **authored-untested** passed live-launcher
 | reactos | **existing** | `reactos-zero-input-prep.md` | no | known immutable-LiveCD dialogs and external-store caveat; not promote-ready |
 | toaruos | **authored-untested** | `toaruos-zero-input-prep.md` | no | restart kind; remastered ISO is golden |
 | haiku | **existing** | `haiku-zero-input-prep.md` | **live** | Tier 2 Deskbar crop |
-| amigaos | **authored-untested** | `amigaos-zero-input-prep.md` | no | AROS LiveCD → Wanderer |
+| aros | **authored-untested** | `aros-zero-input-prep.md` | no | AROS LiveCD → Wanderer |
 | helenos | **authored-untested** | `helenos-zero-input-prep.md` | no | LiveCD → compositor; review old RAM-only terminal fixture |
 | kolibrios | **authored-untested** | `kolibrios-zero-input-prep.md` | no | LiveCD → desktop; array-form loadvm rewrite covered |
 | ninefront | **proven-new** | `ninefront-zero-input-prep.md` + record driver | **live** | external disk + hostfwd rewrite; lively rio fixture |

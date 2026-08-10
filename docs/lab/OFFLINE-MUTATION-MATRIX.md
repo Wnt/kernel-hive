@@ -47,7 +47,7 @@ is current.
 
 | Tiles | Why |
 |---|---|
-| `alpine` `amigaos` `helenos` `kolibrios` `qnx` `reactos` `templeos` `tinycore` | **Boot a live ISO.** The tile's qcow2 is a small scratch/state file, not the OS. Writing into it reaches nothing the guest reads at boot; the medium that matters is an ISO, read-only by construction. Changing what these run means rebuilding the ISO, not mutating a disk. |
+| `alpine` `aros` `helenos` `kolibrios` `qnx` `reactos` `templeos` `tinycore` | **Boot a live ISO.** The tile's qcow2 is a small scratch/state file, not the OS. Writing into it reaches nothing the guest reads at boot; the medium that matters is an ISO, read-only by construction. Changing what these run means rebuilding the ISO, not mutating a disk. |
 | `irix` | MAME `.chd` container — not a block image, no host path into it at all. |
 | `serenityos` | No filesystem signature on its qcow2. |
 | `openvms` | **Read this one carefully.** The probe reports `ext4` for `openvms`, and that is the *bridge* Debian guest (`openvms-decwindows-bridge.qcow2`), which genuinely is MOUNTABLE-RW. The **OpenVMS system disk itself** (`openvms-community.qcow2`) is ODS-5: probed directly, only its EFI partition (`X86_EFI`, vfat) has a Linux-readable signature, and the two `X86_OPENVMS_SYSDISK_*` partitions have none. The OpenVMS volume is NOT mutable from the host. |

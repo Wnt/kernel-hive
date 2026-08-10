@@ -36,9 +36,9 @@
 # scratch dir on the box and byte-diffs against the live tiles. Keep it green
 # (PASS or whitelisted-with-justification) after ANY change here.
 #
-# osId vs tile-dir note: osId "aros" == tile dir "amigaos"; osId "solaris" == tile
-# dir "solariscde"; all other osIds equal their tile dir name. streamhost-tile.sh
-# keys everything on the TILE DIR name (--tile), and tiles.json maps osId->tile.
+# osId vs tile-dir note: osId "solaris" == tile dir "solariscde"; every other osId
+# equals its tile dir name. streamhost-tile.sh keys everything on the TILE DIR
+# name (--tile), and tiles.json maps osId->tile.
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SH="$HERE/scripts/streamhost-tile.sh"
