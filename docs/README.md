@@ -54,6 +54,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/aros.md](guests/aros.md) | AROS x86 (AmigaOS re-implementation) under QEMU — distinct from amiga500. |
 | [guests/atarist.md](guests/atarist.md) | Atari ST emulator-bridge tile. |
 | [guests/c64.md](guests/c64.md) | Commodore 64 (VICE) — the reference emulator-bridge implementation. |
+| [guests/daybreak.md](guests/daybreak.md) | Xerox 6085 "Daybreak" running ViewPoint 2.0.5, via the Dwarf/Draco Mesa emulator in a bare-X bridge kiosk. |
 | [guests/haiku.md](guests/haiku.md) | Haiku tile (ssh exec channel wired). |
 | [guests/helenos.md](guests/helenos.md) | HelenOS 0.14.1 LiveCD tile — absolute pointer via usb-tablet. |
 | [guests/kolibrios.md](guests/kolibrios.md) | KolibriOS tile — absolute-pointer notes (live 2026-07-13). |

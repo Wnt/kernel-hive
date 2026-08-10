@@ -5,6 +5,12 @@
 # ---- Dependencies / build output ----
 node_modules/
 **/node_modules/
+# ...and as a bare name too: the two patterns above end in a slash, so they match
+# a DIRECTORY only. A `node_modules` SYMLINK into another checkout slips past
+# them and `git add -A` commits it — an absolute path into someone else's tree,
+# which dangles in CI and silently resolves against a stale install elsewhere.
+node_modules
+**/node_modules
 dist/
 build/
 .vite/
