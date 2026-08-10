@@ -1,0 +1,224 @@
+MAME ctlsock: bind the pointer engine to a machine by ENVIRONMENT, not by
+hardcoded SGI Indy ioport names.
+
+WHY
+
+`mame-ctlsock.patch` compiles a guest-control plane into MAME and the gallery's
+`SH_INPUT_BACKEND=mamesock` speaks to it. Its relative-pointer, button and key
+engines are machine-independent -- they push counts at analog ioport fields and
+press digital ones -- but the BINDING is not: the module finds the pointer by
+looking for ioport tags ending `<MAME_CTL_PTR_PORTS>:mouse_buttons` /
+`:mouse_x_axis` / `:mouse_y_axis` and button fields named "Left Button" /
+"Right Button" / "Middle Button". Those are the SGI Indy's `hle_ps2_mouse`, and
+no other machine in MAME has them.
+
+The Atari ST's mouse is `:ikbd:MOUSEB` / `:ikbd:MOUSEX` / `:ikbd:MOUSEY` with
+buttons named "Mouse Button 1" and "Mouse Button 2" -- so on the ST the module
+came up with `btns=0 axes=0` and every pointer verb was a no-op. That is the
+whole of what stood between the de-bridging spike's tier-3 arm and a working
+pointer, and it is the same wall every future MAME tile would hit.
+
+WHAT IT ADDS
+
+Three environment knobs, in the module's existing env-config style:
+
+  MAME_CTL_PTR_TAGS   "<btn>,<x>,<y>" ioport tag suffixes, replacing the
+                      <PTR_PORTS>:mouse_{buttons,x_axis,y_axis} construction
+                      wholesale. An EMPTY component means that control is
+                      absent, which is not the same as unset -- the ST has no
+                      middle button and must not silently bind one.
+  MAME_CTL_BTN_NAMES  "<left>,<right>,<middle>" button field names.
+  MAME_CTL_PTR_MOD    modulus of the pointer accumulator = 1 + the axis
+                      ioport's mask. Default 65536, the SGI's 16-bit field.
+
+THE MODULUS IS NOT COSMETIC, and it is the failure this patch would otherwise
+still have. The engine writes a RUNNING TOTAL into an axis the guest
+differences, wrapping it in the field's own space. MAME's set_value CLAMPS to
+the field's range, so a total that wraps at 65536 written into the ST's 8-bit
+MOUSEX saturates at 255 on the first homing slam and never moves again. The
+observable is a liar's-paradox: the module logs commands arriving (`cmds=9`),
+the socket acks every one, and the cursor does not move a pixel. Measured
+exactly that way before the knob existed.
+
+The axis field names are deliberately NOT a knob. "Mouse X" and "Mouse Y" are
+MAME's own generic names for `IPT_MOUSE_X` / `IPT_MOUSE_Y` and are identical on
+every driver, so a knob there would be a setting with one correct value. Button
+names come from each driver's `PORT_NAME` and genuinely differ.
+
+CONTAINMENT
+
+  * Unset reproduces the previous behaviour BYTE FOR BYTE: both knobs default
+    back to the exact strings the code used to hardcode, so `irix` -- the only
+    tile running this module today -- is untouched, and this patch is not in
+    scripts/build-guests/irix/irix-mame-stack.sh.
+  * No save items are added or removed, so the SAVESTATE SIGNATURE is unchanged
+    and no golden is orphaned. That is the property the ctlsock module's
+    unconditional-timer covenant exists to protect; this patch keeps it.
+  * Applies AFTER mame-ctlsock.patch (it edits that patch's own new file) and
+    touches nothing else.
+
+MEASURED ON THE ST (2026-08-10, lab box, `st` + EmuTOS 1.4, headless)
+
+Before: `ctlsock: setup btns=0 axes=0 movea=0 …`. After, with
+MAME_CTL_PTR_TAGS=":ikbd:MOUSEB,:ikbd:MOUSEX,:ikbd:MOUSEY" and
+MAME_CTL_BTN_NAMES="Mouse Button 1,Mouse Button 2," and
+MAME_CTL_PTR_MOD=256:
+`ctlsock: setup btns=1 axes=1 movea=0 …` -- and the GEM pointer moves, the
+Options menu drops on hover and an icon inverts to black under a click, each
+proven by a real framebuffer capture.
+
+`movea=0` is expected and correct: the ST draws its pointer in software and has
+no hardware cursor register for the closed loop to read, so the module's own
+documented degraded mode applies -- MOVEA becomes open-loop dead reckoning from
+the last target, preceded by a homing slam into the top-left clamp. That is the
+same dead reckoning `ptr_reckon.rs` and the Lua agent used before the VC2
+sensor existed.
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -92,6 +92,29 @@
+                              listener is; the launcher interlock keeps
+                              the Lua agent off when MAME_CTL_SOCK is set)
+       MAME_CTL_PTR_PORTS     pointer device tag suffix   [:hle_ps2_mouse]
++      MAME_CTL_PTR_TAGS      "<btn>,<x>,<y>" ioport TAG suffixes, replacing
++                             the <PTR_PORTS>:mouse_{buttons,x_axis,y_axis}
++                             construction wholesale. For machines whose
++                             mouse is not the SGI Indy's PS/2 one -- the
++                             Atari ST's is :ikbd:MOUSEB/MOUSEX/MOUSEY. An
++                             empty component means that control is absent.
++      MAME_CTL_BTN_NAMES     "<left>,<right>,<middle>" button FIELD names
++                             [Left Button,Right Button,Middle Button]. The
++                             axis field names are NOT a knob: "Mouse X" /
++                             "Mouse Y" are MAME's generic input-type names
++                             for IPT_MOUSE_X/Y and are the same on every
++                             driver, while button names are per-driver (the
++                             ST calls them "Mouse Button 1"/"2").
++      MAME_CTL_PTR_MOD       modulus of the pointer ACCUMULATOR, i.e. 1 +
++                             the axis ioport's mask         [65536]. The
++                             engine writes a running total to an axis the
++                             guest DIFFERENCES, so the total must wrap in
++                             the field's own space: MAME clamps set_value
++                             to the field range, so a 16-bit total written
++                             to the ST's 8-bit MOUSEX saturates at 255 and
++                             the guest sees no further motion at all --
++                             which is exactly what it did (cmds arriving,
++                             cursor frozen). Set 256 for the ST.
+       MAME_CTL_CURSOR_ITEMS  comma-separated save-item suffixes for the
+                              hardware-cursor X,Y[,ENABLE] registers; on
+                              the irix tile:
+@@ -214,6 +237,31 @@
+ 	return (end && *end == '\0') ? r : defval;
+ }
+ 
++// split3 -- "a,b,c" into three pieces, missing pieces left empty. Used only
++// for the pointer BINDING knobs, where an absent component (the Atari ST has
++// no middle button) must be distinguishable from a present empty one.
++void split3(std::string const &s, std::string &a, std::string &b, std::string &c)
++{
++	a.clear();
++	b.clear();
++	c.clear();
++	size_t const c1 = s.find(',');
++	if (c1 == std::string::npos)
++	{
++		a = s;
++		return;
++	}
++	a = s.substr(0, c1);
++	size_t const c2 = s.find(',', c1 + 1);
++	if (c2 == std::string::npos)
++	{
++		b = s.substr(c1 + 1);
++		return;
++	}
++	b = s.substr(c1 + 1, c2 - c1 - 1);
++	c = s.substr(c2 + 1);
++}
++
+ std::string env_str(const char *name)
+ {
+ 	char const *const v = std::getenv(name);
+@@ -316,6 +364,27 @@
+ 		m_ptr_suffix = env_str("MAME_CTL_PTR_PORTS");
+ 		if (m_ptr_suffix.empty())
+ 			m_ptr_suffix = ":hle_ps2_mouse";
++		// Pointer BINDING. Unset reproduces the previous hardcoding exactly,
++		// so irix and every existing caller are bit-identical; set, it binds
++		// the SAME relative engine to another machine's mouse ioports with no
++		// per-machine code. One binary, every MAME tile.
++		split3(env_str("MAME_CTL_PTR_TAGS"), m_tag_btn, m_tag_x, m_tag_y);
++		if (m_tag_btn.empty() && m_tag_x.empty() && m_tag_y.empty())
++		{
++			m_tag_btn = m_ptr_suffix + ":mouse_buttons";
++			m_tag_x = m_ptr_suffix + ":mouse_x_axis";
++			m_tag_y = m_ptr_suffix + ":mouse_y_axis";
++		}
++		m_ptr_mod = env_long("MAME_CTL_PTR_MOD", 65536);
++		if (m_ptr_mod < 256 || m_ptr_mod > 65536)
++			m_ptr_mod = 65536;
++		split3(env_str("MAME_CTL_BTN_NAMES"), m_btn_name[0], m_btn_name[1], m_btn_name[2]);
++		if (m_btn_name[0].empty() && m_btn_name[1].empty() && m_btn_name[2].empty())
++		{
++			m_btn_name[0] = "Left Button";
++			m_btn_name[1] = "Right Button";
++			m_btn_name[2] = "Middle Button";
++		}
+ 		m_cursor_items = env_str("MAME_CTL_CURSOR_ITEMS");
+ 		m_swap_items = env_str("MAME_CTL_SWAP_ITEMS");
+ 		m_tail_path = env_str("MAME_CTL_CMD_FILE");
+@@ -885,27 +954,25 @@
+ 		natural_keyboard &nat = m_machine.natkeyboard();
+ 		nat.set_in_use(true);
+ 
+-		// pointer ports by tag suffix (default :hle_ps2_mouse — see header)
++		// pointer ports by tag suffix (defaults are the SGI Indy's PS/2 mouse;
++		// MAME_CTL_PTR_TAGS / MAME_CTL_BTN_NAMES rebind them — see header)
+ 		for (auto const &p : m_machine.ioport().ports())
+ 		{
+ 			std::string const &tag = p.first;
+-			if (has_suffix(tag, m_ptr_suffix + ":mouse_buttons"))
++			if (!m_tag_btn.empty() && has_suffix(tag, m_tag_btn))
+ 				m_btn_port = p.second.get();
+-			else if (has_suffix(tag, m_ptr_suffix + ":mouse_x_axis"))
++			else if (!m_tag_x.empty() && has_suffix(tag, m_tag_x))
+ 				m_x_port = p.second.get();
+-			else if (has_suffix(tag, m_ptr_suffix + ":mouse_y_axis"))
++			else if (!m_tag_y.empty() && has_suffix(tag, m_tag_y))
+ 				m_y_port = p.second.get();
+ 		}
+ 		if (m_btn_port)
+ 			for (ioport_field &f : m_btn_port->fields())
+ 			{
+ 				std::string const n = f.name();
+-				if (n == "Left Button")
+-					m_btn_field[0] = &f;
+-				else if (n == "Right Button")
+-					m_btn_field[1] = &f;
+-				else if (n == "Middle Button")
+-					m_btn_field[2] = &f;
++				for (int i = 0; i < 3; i++)
++					if (!m_btn_name[i].empty() && (n == m_btn_name[i]))
++						m_btn_field[i] = &f;
+ 			}
+ 		if (m_x_port)
+ 			for (ioport_field &f : m_x_port->fields())
+@@ -1192,8 +1259,8 @@
+ 		m_ay += std::abs(dy);
+ 		m_cum_ax += std::abs(dx);
+ 		m_cum_ay += std::abs(dy);
+-		m_mx = ((m_mx + dx) % 65536 + 65536) % 65536;
+-		m_my = ((m_my + dy) % 65536 + 65536) % 65536;
++		m_mx = ((m_mx + dx) % m_ptr_mod + m_ptr_mod) % m_ptr_mod;
++		m_my = ((m_my + dy) % m_ptr_mod + m_ptr_mod) % m_ptr_mod;
+ 		m_x_field->set_value(u32(m_mx));
+ 		m_y_field->set_value(u32(m_my));
+ 		// analog path: set_value lands in m_adjoverride and the very next
+@@ -2663,6 +2730,9 @@
+ 	long m_surf_h = 1024;
+ 	std::chrono::seconds m_stat_period{ 15 };
+ 	std::string m_ptr_suffix;
++	std::string m_tag_btn, m_tag_x, m_tag_y;   // resolved pointer ioport tags
++	std::string m_btn_name[3];                 // resolved button field names
++	long m_ptr_mod = 65536;                    // axis accumulator modulus
+ 	std::string m_cursor_items;
+ 	std::string m_tail_path;
+ 	std::string m_banner;
