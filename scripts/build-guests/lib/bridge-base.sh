@@ -197,7 +197,15 @@ trap cleanup EXIT
 # each overlay's recorded backing file describe a DIFFERENT disk, i.e. every one
 # of those tiles is destroyed at once, silently, and no golden snapshot survives
 # it. --force alone is a plausible typo, so it is not sufficient authority here.
-if [ -f "$BASE_QCOW" ] && bridge_suite_is_frozen "$SUITE" && [ "$BREAK_OVERLAYS" -eq 0 ]; then
+#
+# "Frozen" is BOTH declared and DERIVED. The ledger's `frozen` flag is the
+# operator's statement of intent, but the guard must not depend on someone
+# remembering to set it: any suite that has even one tile declared on it has
+# overlays in the field, so it is frozen in fact whatever the flag says. A
+# newly built base is legitimately rebuildable right up until the first tile
+# lands on it, and from that moment it is not — with no edit required.
+if [ -f "$BASE_QCOW" ] && [ "$BREAK_OVERLAYS" -eq 0 ] &&
+  { bridge_suite_is_frozen "$SUITE" || [ -n "$(bridge_suite_tiles "$SUITE")" ]; }; then
   {
     echo "REFUSING to rebuild the FROZEN '$SUITE' base: $BASE_QCOW"
     echo "These overlays back onto it read-only and would ALL be destroyed:"

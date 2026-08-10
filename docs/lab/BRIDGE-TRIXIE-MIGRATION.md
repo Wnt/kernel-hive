@@ -17,12 +17,36 @@ is **gradual**, and this doc is the plan.
 
 > **What is proven and what is not.** Every package fact below was checked
 > against a real trixie 13.6 apt state — versions, presence, absence,
-> dependency fields, backports. **None of it has been through a trixie guest
-> boot yet.** No trixie base image has been built; no overlay has been rebuilt
-> on one; no emulator in this list has been observed running under glibc 2.41.
-> The verdicts are *apt-level*, not *runtime-level*. Treat "MIGRATABLE, no
-> work" as "no work is visible from the package layer", not as "this will
-> work".
+> dependency fields, backports. The **base itself is now proven at runtime**
+> (see below); the **per-tile verdicts are still apt-level**. Treat
+> "MIGRATABLE, no work" as "no work is visible from the package layer", not as
+> "this tile will work" — no tile overlay has been rebuilt on the trixie base,
+> and no golden has been re-baked.
+
+### Wave 0 is done: the trixie base exists and boots (2026-08-10)
+
+`bridge-base.sh --suite trixie` built `/data/vms/bridge/bridge-base-trixie.qcow2`
+in ~16 min (6 GiB virtual / 1.8 GiB actual). It reached **exact emulator parity
+with bookworm**: `vice=yes hatari=yes linapple=no cap32=yes fsuae=yes` — LinApple
+fails on *both* suites, so it is a pre-existing flake, not a migration
+regression. The frozen bookworm base was re-`stat`ed afterwards and is untouched
+(size 3162308608, mtime 2026-07-15 10:52:41).
+
+A clone under `/data/vms/soltest/` then booted an overlay of it under the real
+**bridge tile device set**, which settled the four things apt could not:
+
+| Question | Answer, from a real framebuffer |
+|---|---|
+| Did the cloud-kernel purge work on trixie? | **Yes.** `uname -r` = `6.12.101+deb13-amd64`, the generic kernel; no `*-cloud-amd64` package remains. This was the single biggest unproven risk — the genericcloud image ships a kernel with neither e1000 nor bochs-drm. |
+| Do the tile devices bind? | **Yes.** std VGA `[1234:1111]`, `82801AA AC'97`, `82540EM` e1000 all present; `bochs-drm` found the VGA, `/dev/fb0` came up, e1000 linked at 1000 Mbps. |
+| Does the bare-X kiosk chain still fire? | **Yes.** autologin tty1 → `startx` → `.xinitrc` → `/etc/bridge/launch.sh`, on a 1024x768 black root. |
+| Does a real emulator render? | **Yes.** hatari + EmuTOS drew the GEM desktop at 1024x640 centred with the expected black bands — `--monitor mono --window --zoom 1.6`, the exact flags `atarist.sh` documents, accepted unchanged. |
+
+One behavioural delta found: trixie ships **hatari 2.5.0** (bookworm has 2.4.1).
+Every flag the `atarist` builder relies on was accepted and produced identical
+geometry. Audio was **not** exercised (the clone ran `-audiodev none`; the dbus
+audiodev needs the streamhost daemon), and no golden was baked — both belong to
+the per-tile acceptance in the procedure below.
 
 The upstream image exists and the naming substitution is exact — the URL is the
 bookworm one with `debian-12-` → `debian-13-`:
@@ -158,8 +182,15 @@ sacred.
 
 ## 3. The ledger table — per-tile verdicts
 
-All package facts verified against trixie 13.6 apt state. Apt-level only; see
-the warning at the top.
+All package facts verified against trixie 13.6 apt state. Apt-level only — the
+*base* is runtime-proven (wave 0 above), but no tile in this table has been
+rebuilt or re-baked. See the warning at the top.
+
+Two entries can be upgraded from prediction to measurement by wave 0: `atarist`
+(hatari 2.5.0 drew the GEM desktop with the builder's exact flags) and the seven
+VICE tiles (`x64sc` built from source clean under gcc-14, which was the open
+question for all of them). Neither has had its overlay rebuilt, so both stay in
+this table rather than moving to "done".
 
 ### MIGRATABLE, no per-tile work (20 tiles)
 
