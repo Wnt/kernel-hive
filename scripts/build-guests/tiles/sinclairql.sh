@@ -65,7 +65,7 @@ TILE=sinclairql
 VMID=236
 UDP=54133
 SSH_PORT=5836
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/sinclairql
 OVERLAY="$TILE_DIR/overlay.qcow2"
@@ -499,7 +499,7 @@ bake_golden() {
   log "golden snapshot baked and restore-verified"
 }
 
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -s "$ROMZIP" ] || die "missing staged QL romset: $ROMZIP (see docs/lab/ASSETS-MANIFEST.md)"
 [ "$(sha256sum "$ROMZIP" | awk '{print $1}')" = "$ROMZIP_SHA256" ] ||

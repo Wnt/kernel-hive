@@ -105,7 +105,7 @@ VMID=232
 UDP=54129
 SSH_PORT=5832
 WEB_PORT=8132
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/bbcmicro
 OVERLAY="$TILE_DIR/overlay.qcow2"
@@ -541,7 +541,7 @@ keyboard_proof() {
 }
 
 # ---- preflight ---------------------------------------------------------------
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -x "$MAME" ] ||
   die "missing the pinned BBC MAME binary: $MAME (build with scripts/build-guests/emulators/build-mame-bbcb.sh)"

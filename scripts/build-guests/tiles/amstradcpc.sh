@@ -11,7 +11,7 @@ VMID=219
 UDP=54119
 SSH_PORT=5819
 WEB_PORT=8119
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/amstradcpc
 OVERLAY="$TILE_DIR/overlay.qcow2"
@@ -179,7 +179,7 @@ keyboard_proof() {
     die "keyboard proof did not add the expected framebuffer text"
 }
 
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 if systemctl is-active --quiet "streamhost@$TILE"; then
   die "streamhost@$TILE is active; stop only this new tile before rebuilding"

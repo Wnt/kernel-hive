@@ -82,7 +82,7 @@ VMID=230
 UDP=54127
 SSH_PORT=5830
 WEB_PORT=8130
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/zxspectrum
 OVERLAY="$TILE_DIR/overlay.qcow2"
@@ -434,7 +434,7 @@ stage_rom_deb() {
   sha256sum "$DEB" >"$(dirname "$DEB")/MANIFEST.sha256"
 }
 
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 stage_rom_deb
 [ "$(sha256sum "$DEB" | awk '{print $1}')" = "$DEB_SHA256" ] ||

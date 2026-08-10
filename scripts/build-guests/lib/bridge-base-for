@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# build-guests/lib/bridge-base-for <tile> — print the bridge base qcow2 that
+# this tile's overlay must back onto, per its suite in registry/bridge-suites.json.
+#
+# This exists as an EXECUTABLE rather than as one more sourced function because
+# the 28 per-tile builders that need it are dense 400-600 line scripts sitting
+# against the file-size cap: a `. lib/bridge-suite.sh` + resolve + shellcheck
+# directive block costs each of them four lines and pushed five over the hard
+# cap, for a value that is one string. As a command substitution it costs one:
+#
+#   BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}"
+#
+# Precedence is the repo-wide one (AGENTS.md): a pre-set BRIDGE_BASE wins, then
+# this resolver. There is deliberately NO hardcoded fallback — under
+# `set -euo pipefail` a failure here aborts the build rather than silently
+# overlaying the wrong Debian, which is the failure this whole migration exists
+# to prevent. Scripts that need the suite NAME as well should source
+# bridge-suite.sh directly and call bridge_suite_for/bridge_base_for.
+set -euo pipefail
+
+# shellcheck disable=SC1091 # resolved relative to this file, not the caller's cwd
+. "$(dirname "${BASH_SOURCE[0]}")/bridge-suite.sh"
+
+suite="$(bridge_suite_for "${1:?bridge-base-for: tile id required}")"
+bridge_base_for "$suite"

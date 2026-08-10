@@ -1,0 +1,89 @@
+{
+  "_README": [
+    "LEDGER for the bookworm -> trixie migration of the emulator-bridge guest base.",
+    "",
+    "The lab HOST is Debian 13 (trixie). The shared bridge guest base is still",
+    "Debian 12 (bookworm), and ~29 tiles overlay it read-only. A single flag-day",
+    "rebuild is not possible: each tile needs its own overlay rebuild, golden",
+    "re-bake and framebuffer acceptance, and several need real per-tile work",
+    "first (see docs/lab/BRIDGE-TRIXIE-MIGRATION.md).",
+    "",
+    "So the migration is GRADUAL and this file is its single source of truth.",
+    "Each bridge tile declares which suite its overlay is built on. Two bases",
+    "coexist; the bookworm one is frozen and is never touched again.",
+    "",
+    "TO MIGRATE A TILE: do the per-tile work, rebuild its overlay against the",
+    "trixie base, bake the golden, verify with a real framebuffer screenshot,",
+    "and only THEN flip its entry here from \"bookworm\" to \"trixie\" in the same",
+    "commit. Flipping this file alone changes nothing on the box -- it declares",
+    "intent, and scripts/dev/bridge-suite-status.sh fails loudly when the",
+    "declaration and the box disagree.",
+    "",
+    "Consumed by scripts/build-guests/lib/bridge-suite.sh. Not generated: never",
+    "run tiles-registry.py against it, and do not move it into registry/tiles/."
+  ],
+
+  "defaultSuite": "bookworm",
+
+  "suites": {
+    "bookworm": {
+      "debianVersion": "12",
+      "codename": "bookworm",
+      "base": "/data/vms/bridge/bridge-base.qcow2",
+      "mameChroot": "/data/vms/soltest/bookworm-chroot",
+      "genericcloudUrl": "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2",
+      "glibc": "2.36",
+      "gcc": "12",
+      "frozen": true,
+      "_note": "FROZEN 2026-07-15. 28 live overlays back onto this byte-for-byte. Never rebuild it: `bridge-base.sh --suite bookworm` refuses without --i-know-this-breaks-every-overlay."
+    },
+    "trixie": {
+      "debianVersion": "13",
+      "codename": "trixie",
+      "base": "/data/vms/bridge/bridge-base-trixie.qcow2",
+      "mameChroot": "/data/vms/soltest/trixie-chroot",
+      "genericcloudUrl": "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2",
+      "glibc": "2.41",
+      "gcc": "14",
+      "frozen": false,
+      "_note": "Matches the host suite, so a host-built binary runs in the guest unchanged and the per-tile ABI chroots stop being necessary."
+    }
+  },
+
+  "tiles": {
+    "alto": "bookworm",
+    "amiga": "bookworm",
+    "amstradcpc": "bookworm",
+    "apple2": "bookworm",
+    "armeval": "bookworm",
+    "atarist": "bookworm",
+    "bbcmicro": "bookworm",
+    "c128": "bookworm",
+    "c64": "bookworm",
+    "cbm2": "bookworm",
+    "cbm8032": "bookworm",
+    "daybreak": "bookworm",
+    "decos": "bookworm",
+    "dragon32": "bookworm",
+    "gt40": "bookworm",
+    "indyr4400": "bookworm",
+    "kc854": "bookworm",
+    "mpf2": "bookworm",
+    "nextstep": "bookworm",
+    "oricatmos": "bookworm",
+    "pdp11": "bookworm",
+    "pet2001": "bookworm",
+    "plus4": "bookworm",
+    "sinclairql": "bookworm",
+    "star": "bookworm",
+    "vic20": "bookworm",
+    "zx81": "bookworm",
+    "zxspectrum": "bookworm"
+  },
+
+  "_notes": {
+    "c64": "Its overlay was flattened on 2026-08-07 (a standalone 5.21 GiB qcow2 with an internal `golden` snapshot, no backing file). The status checker reports it as DETACHED rather than as drift; migrating it means a full rebuild, not a rebase.",
+    "openvms": "Not on this base. openvms/openvms-decwindows-bridge.qcow2 is built by scripts/build-guests/stages/openvms-decwindows-bridge.sh and only shares /data/vms/bridge/bridge_key. Out of scope for this ledger.",
+    "irix": "Not a bridge guest at all: SH_TILE_RUNTIME=x11, MAME on the HOST against a .chd. Already trixie by definition."
+  }
+}

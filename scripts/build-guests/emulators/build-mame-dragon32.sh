@@ -1,14 +1,18 @@
 #!/bin/bash
 # Build the shipping Dragon 32 MAME binary from a pinned upstream source revision.
 #
-# WHY A PURPOSE-BUILT BINARY AT ALL.  The bridge base is Debian 12 and the lab
-# host is not, so the host's /usr/games/mame (0.276) cannot simply be copied into
-# a tile: its glibc/libstdc++ ABI does not match.  The two remaining choices are
-# Debian 12's packaged MAME or a binary built in the Bookworm chroot.  This tile
-# takes the second, for the same reason mpf2 does and for one more: mpf2 already
-# ships MAME 0.289 built from commit f34f025 in that chroot, so pinning the SAME
-# commit here means the gallery has exactly one MAME version across its two MAME
-# bridge exhibits instead of two that drift apart.
+# WHY A PURPOSE-BUILT BINARY AT ALL.  While this tile is on the Debian 12 bridge
+# base the lab host is not, so the host's /usr/games/mame (0.276) cannot simply
+# be copied into a tile: its glibc/libstdc++ ABI does not match.  The two
+# remaining choices are Debian 12's packaged MAME or a binary built in the
+# suite's own chroot.  This tile takes the second, for the same reason mpf2 does
+# and for one more: mpf2 already ships MAME 0.289 built from commit f34f025 in
+# that chroot, so pinning the SAME commit here means the gallery has exactly one
+# MAME version across its two MAME bridge exhibits instead of two that drift
+# apart.  The chroot is chosen from the tile's suite in
+# registry/bridge-suites.json; once dragon32 moves to trixie the chroot matches
+# the host and only the pin, not the ABI, is doing the work (see
+# docs/lab/BRIDGE-TRIXIE-MIGRATION.md).
 #
 # NO PATCH.  mpf2 needs `mame-irix-skip-warnings.patch` because its driver is
 # marked imperfect and MAME puts up a nag panel.  `dragon32` is
@@ -22,7 +26,9 @@
 # Usage:
 #   scripts/build-guests/emulators/build-mame-dragon32.sh [work-dir] [output-binary]
 # Env:
-#   MAME_BOOKWORM_CHROOT  chroot root (default /data/vms/soltest/bookworm-chroot)
+#   BRIDGE_SUITE          force a suite (experiment clones only; see the resolver)
+#   MAME_BOOKWORM_CHROOT  DEPRECATED escape hatch: chroot root to use instead of
+#                         the suite's own.  Warns on stderr; still honoured.
 #   MAME_SEED_REPO        optional local MAME git tree to clone from instead of
 #                         hitting the network (any revision; it is reset to the
 #                         pin below).  Saves ~1 GB of fetch on a box that already
@@ -32,7 +38,15 @@
 #                         this box shares its RAM with 30+ emulators)
 set -euo pipefail
 
-CHROOT="${MAME_BOOKWORM_CHROOT:-/data/vms/soltest/bookworm-chroot}"
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-suite.sh"
+SUITE="$(bridge_suite_for dragon32)"
+CHROOT="$(bridge_mame_chroot_for "$SUITE")"
+if [ -n "${MAME_BOOKWORM_CHROOT:-}" ]; then
+  echo "warning: MAME_BOOKWORM_CHROOT is DEPRECATED; the suite ($SUITE) resolves to $CHROOT" >&2
+  echo "         honouring the override anyway: $MAME_BOOKWORM_CHROOT" >&2
+  CHROOT="$MAME_BOOKWORM_CHROOT"
+fi
 CHROOT_WORK="/build/mame-dragon32-build-$$"
 WORK="${1:-$CHROOT$CHROOT_WORK}"
 OUT="${2:-/data/vms/streamhost/assets/dragon32/mame/dragon}"
@@ -46,8 +60,17 @@ MAME_DRAGON32_BASE="f34f02505e32c1993c6a782b6814232cbfc74e36"
 
 say() { printf '\n== %s\n' "$*"; }
 
+# The chroot must exist AND be the generation the suite claims: a stale or
+# wrong-suite chroot otherwise shows up as a link/ABI error an hour into a build.
+CHROOT_DEB_WANT="$(bridge_debian_version_for "$SUITE")"
 [ -d "$CHROOT" ] || {
-  echo "missing Bookworm MAME build chroot: $CHROOT" >&2
+  echo "missing $SUITE MAME build chroot: $CHROOT" >&2
+  exit 1
+}
+CHROOT_DEB_HAVE="$(cut -d. -f1 <"$CHROOT/etc/debian_version" 2>/dev/null || true)"
+[ "$CHROOT_DEB_HAVE" = "$CHROOT_DEB_WANT" ] || {
+  echo "chroot $CHROOT is Debian '${CHROOT_DEB_HAVE:-<no /etc/debian_version>}'," >&2
+  echo "  but suite $SUITE needs Debian $CHROOT_DEB_WANT — rebuild it, or fix the suite." >&2
   exit 1
 }
 [ "${WORK#"$CHROOT"}" != "$WORK" ] || {
@@ -73,7 +96,7 @@ if [ -n "$SEED" ]; then
   fi
 fi
 
-say "building MAME 0.289 (SUBTARGET=dragon) in Bookworm with $JOBS jobs"
+say "building MAME 0.289 (SUBTARGET=dragon) in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- "$CHROOT_WORK" "$UPSTREAM" "$MAME_DRAGON32_BASE" "$JOBS" <<'EOS'
 set -euo pipefail
 work="$1"

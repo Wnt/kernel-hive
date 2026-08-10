@@ -5,6 +5,13 @@
 set -euo pipefail
 R=/data/vms/soltest/ARMEVAL-armbasic
 MAME=/data/vms/streamhost/assets/bbcmicro/mame/bbcb
+# The hash/ dir is MAME's software lists, and it lives in the build tree of the
+# bbcb binary above -- i.e. in whichever suite chroot armeval is built for
+# (registry/bridge-suites.json, docs/lab/BRIDGE-TRIXIE-MIGRATION.md). Derive it
+# rather than hardcoding bookworm, so the probe follows the tile when it moves.
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../build-guests/lib/bridge-suite.sh"
+HASHPATH="$(bridge_mame_chroot_for "$(bridge_suite_for armeval)")/build/mame-bbcb/mame/hash"
 TAG=$1
 FRAMES=$2
 SECS=$3
@@ -50,7 +57,7 @@ LUA
 cd "$OUT"
 "$MAME" "$@" \
   -rompath "$R/roms" \
-  -hashpath /data/vms/soltest/bookworm-chroot/build/mame-bbcb/mame/hash \
+  -hashpath "$HASHPATH" \
   -video none -sound none -nothrottle -str "$SECS" \
   -skip_gameinfo \
   -homepath "$OUT" -cfg_directory "$OUT/cfg" -nvram_directory "$OUT/nvram" \

@@ -1,15 +1,26 @@
 #!/bin/bash
 # Build the shipping MPF-II MAME binary from a pinned upstream source revision.
-# The build runs in the Bookworm chroot used for the IRIX MAME build so its
-# glibc/libstdc++ ABI matches the Debian 12 bridge. It deliberately builds only
-# tk2000.cpp (which owns mpf2) in a namespaced soltest worktree.
+# The build runs in the chroot whose glibc/libstdc++ ABI matches the bridge
+# guest this tile is built on — bookworm today, trixie once mpf2 is migrated
+# (registry/bridge-suites.json, docs/lab/BRIDGE-TRIXIE-MIGRATION.md). On a
+# trixie tile that chroot is the host's own generation, so the ABI detour this
+# script exists for finally goes away. It deliberately builds only tk2000.cpp
+# (which owns mpf2) in a namespaced soltest worktree.
 #
 # Usage:
 #   scripts/build-guests/emulators/build-mame-mpf2.sh [work-dir] [output-binary]
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CHROOT="${MAME_BOOKWORM_CHROOT:-/data/vms/soltest/bookworm-chroot}"
+# shellcheck disable=SC1091
+. "$HERE/../lib/bridge-suite.sh"
+SUITE="$(bridge_suite_for mpf2)"
+CHROOT="$(bridge_mame_chroot_for "$SUITE")"
+if [ -n "${MAME_BOOKWORM_CHROOT:-}" ]; then
+  echo "warning: MAME_BOOKWORM_CHROOT is DEPRECATED; the suite ($SUITE) resolves to $CHROOT" >&2
+  echo "         honouring the override anyway: $MAME_BOOKWORM_CHROOT" >&2
+  CHROOT="$MAME_BOOKWORM_CHROOT"
+fi
 CHROOT_WORK="/build/mame-mpf2-build-$$"
 WORK="${1:-$CHROOT$CHROOT_WORK}"
 OUT="${2:-/data/vms/streamhost/assets/mpf2/mame/mpf2}"
@@ -26,8 +37,17 @@ SUBMODULE="$REPO_ROOT/third_party/mame-mpf2"
 
 say() { printf '\n== %s\n' "$*"; }
 
+# The chroot must exist AND be the generation the suite claims: a stale or
+# wrong-suite chroot otherwise shows up as a link/ABI error an hour into a build.
+CHROOT_DEB_WANT="$(bridge_debian_version_for "$SUITE")"
 [ -d "$CHROOT" ] || {
-  echo "missing Bookworm MAME build chroot: $CHROOT" >&2
+  echo "missing $SUITE MAME build chroot: $CHROOT" >&2
+  exit 1
+}
+CHROOT_DEB_HAVE="$(cut -d. -f1 <"$CHROOT/etc/debian_version" 2>/dev/null || true)"
+[ "$CHROOT_DEB_HAVE" = "$CHROOT_DEB_WANT" ] || {
+  echo "chroot $CHROOT is Debian '${CHROOT_DEB_HAVE:-<no /etc/debian_version>}'," >&2
+  echo "  but suite $SUITE needs Debian $CHROOT_DEB_WANT — rebuild it, or fix the suite." >&2
   exit 1
 }
 [ "${WORK#"$CHROOT"}" != "$WORK" ] || {
@@ -58,7 +78,7 @@ else
   install -m 644 "$PATCH" "$WORK/mame-irix-skip-warnings.patch"
 fi
 
-say "building MAME 0.289 in Bookworm with $JOBS jobs"
+say "building MAME 0.289 in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- "$CHROOT_WORK" "$UPSTREAM" "$MAME_MPF2_BASE" "$JOBS" "$USE_SUBMODULE" <<'EOS'
 set -euo pipefail
 work="$1"

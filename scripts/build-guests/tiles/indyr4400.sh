@@ -20,12 +20,20 @@
 # `loadvm golden` from QEMU with zero streamhost daemon changes.
 #
 # ---- AUTOMATION HONESTY -----------------------------------------------------
-#   * THE IRIS BINARY IS BUILT AGAINST BOOKWORM, NOT AGAINST THE HOST. The lab
-#     box is Debian 13 (trixie, glibc 2.41); the frozen bridge base is Debian 12
-#     (bookworm, glibc 2.36). A host-built iris dies in the guest with
-#     "GLIBC_2.39 not found". This script therefore builds iris inside a
-#     throwaway bookworm chroot and copies only the resulting 64 MB binary into
-#     the overlay — no Rust toolchain is ever installed in the tile.
+#   * THE IRIS BINARY IS BUILT AGAINST THE GUEST'S SUITE, NOT BLINDLY AGAINST
+#     THE HOST. On the BOOKWORM suite the lab box (Debian 13 trixie, glibc 2.41)
+#     and the frozen bridge base (Debian 12, glibc 2.36) disagree, and a
+#     host-built iris dies in the guest with "GLIBC_2.39 not found" — so the
+#     build goes through a throwaway bookworm chroot (debootstrap + a rustup
+#     install inside it, ~10 minutes before a line of Rust compiles) and only the
+#     resulting 64 MB binary is copied into the overlay; no Rust toolchain is
+#     ever installed in the tile. On the TRIXIE suite host and guest are the same
+#     generation (glibc 2.41 both sides), so that whole dance — and the
+#     debootstrap dependency with it — is SKIPPED and iris is built directly with
+#     the host's own cargo. Same output, same pin, one fewer moving part: this is
+#     the clearest place in the repo where the migration pays for itself.
+#     The suite comes from registry/bridge-suites.json (resolver:
+#     scripts/build-guests/lib/bridge-suite.sh, docs/lab/BRIDGE-TRIXIE-MIGRATION.md).
 #   * THE 6.3 GB IRIX DISK IS AN ASSET, NOT OVERLAY CONTENT. It is staged by
 #     streamhost/tiles/indyr4400/fetch-assets.sh as a READ-ONLY ext4 image and
 #     attached as a second, read-only virtio drive; the guest mounts it at
@@ -69,7 +77,6 @@ UDP=54136
 SSH_PORT=5839
 WEB_PORT=8136
 MEM=2048
-BRIDGE_BASE="/data/vms/bridge/bridge-base.qcow2"
 KEY="/data/vms/bridge/bridge_key"
 TILE_DIR="/data/vms/streamhost/tiles/${TILE}"
 OVERLAY="${TILE_DIR}/overlay.qcow2"
@@ -77,10 +84,17 @@ QMP="${TILE_DIR}/qmp.sock"
 PID="${TILE_DIR}/qemu.pid"
 ASSET_DIR="/data/gallery-guests/IrisIndy"
 ASSET="${ASSET_DIR}/irix65-r4400-disk.ext4"
-IRIS_BIN="${ASSET_DIR}/iris-bookworm" # ABI-matched binary, built by --build-iris
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-suite.sh"
+SUITE="$(bridge_suite_for "$TILE")"
+# The overlay backs onto the SAME suite the binary was linked against.
+BRIDGE_BASE="${BRIDGE_BASE:-$(bridge_base_for "$SUITE")}" # env override wins
+# The binary is named after the suite it was linked against, so a migration
+# cannot silently reuse the wrong-ABI one that is already sitting in ASSET_DIR.
+IRIS_BIN="${ASSET_DIR}/iris-${SUITE}" # ABI-matched binary, built by --build-iris
 IRIS_REPO="https://github.com/techomancer/iris"
 IRIS_COMMIT="1e05210" # pinned; features lightning,rex-jit,chd
-CHROOT="/data/vms/soltest/indyr4400-bookworm"
+CHROOT="/data/vms/soltest/indyr4400-${SUITE}"
 
 FORCE=0
 BUILD_IRIS=0
@@ -94,7 +108,7 @@ while [ $# -gt 0 ]; do case "$1" in
     shift
     ;;
   -h | --help)
-    sed -n '2,60p' "$0"
+    sed -n '2,69p' "$0"
     exit 0
     ;;
   *)
@@ -182,8 +196,47 @@ boot_tile() {
   log "tile booted (loadvm='${LOADVM:-<none: cold>}')"
 }
 
-# ---- build iris against BOOKWORM's glibc, outside the tile -------------------
+# ---- build iris against the GUEST's glibc, outside the tile ------------------
+# Two paths, chosen by the tile's suite. They differ ONLY in where cargo runs:
+# same repo, same pinned commit, same feature set, same installed binary.
 build_iris() {
+  if [ "$SUITE" = bookworm ]; then build_iris_chroot; else build_iris_native; fi
+  log "iris built: $IRIS_BIN ($(stat -c %s "$IRIS_BIN") bytes)"
+}
+
+# TRIXIE suite: the host IS the guest's generation (both glibc 2.41), so a
+# host-built binary loads in the guest unchanged. No debootstrap, no chroot, no
+# second rustup — the ~10-minute bootstrap that only ever existed to dodge
+# "GLIBC_2.39 not found" simply does not happen. If the host ever moves ahead of
+# the guest again, this tile goes back on a chroot, which is what the suite
+# ledger is for.
+build_iris_native() {
+  log "building iris ${IRIS_COMMIT} on the host (suite ${SUITE}: host and guest"
+  log "  are the same Debian generation, so no ABI chroot is needed) ..."
+  command -v cargo >/dev/null || {
+    echo "cargo not found on the host; install rustup or a rustc/cargo package" >&2
+    exit 1
+  }
+  # $CHROOT is only a scratch dir here -- nothing is ever chrooted into. Same
+  # layout as the bookworm path so the two produce the same tree.
+  rm -rf "$CHROOT"
+  mkdir -p "$CHROOT"
+  git clone "$IRIS_REPO" "$CHROOT/build"
+  (
+    cd "$CHROOT/build"
+    git checkout "$IRIS_COMMIT"
+    unset CARGO_TARGET_DIR # the box sets a shared target dir; keep ours local
+    cargo build --release --features lightning,rex-jit,chd
+  )
+  install -d -m 0755 "$ASSET_DIR"
+  install -m 0755 "$CHROOT/build/target/release/iris" "$IRIS_BIN"
+  rm -rf "$CHROOT"
+}
+
+# BOOKWORM suite: unchanged. The host is trixie (glibc 2.41) and the frozen
+# bridge base is bookworm (2.36), so iris must be linked in a bookworm userland
+# or it dies in the guest with "GLIBC_2.39 not found". Hence debootstrap.
+build_iris_chroot() {
   log "building iris ${IRIS_COMMIT} in a bookworm chroot (host is trixie; the"
   log "  bridge base is bookworm, and a trixie-built iris needs GLIBC_2.39) ..."
   rm -rf "$CHROOT"
@@ -211,12 +264,11 @@ build_iris() {
   install -m 0755 "$CHROOT/build/target/release/iris" "$IRIS_BIN"
   umount -l "$CHROOT/proc" "$CHROOT/sys" "$CHROOT/dev" 2>/dev/null || true
   rm -rf "$CHROOT"
-  log "iris built: $IRIS_BIN ($(stat -c %s "$IRIS_BIN") bytes)"
 }
 
 # ---- main -------------------------------------------------------------------
 [ -f "$BRIDGE_BASE" ] || {
-  echo "missing bridge base: $BRIDGE_BASE (run bridge-base.sh first)"
+  echo "no $SUITE bridge base: $BRIDGE_BASE (run bridge-base.sh --suite $SUITE)"
   exit 1
 }
 bash "$(dirname "$0")/../../../streamhost/tiles/${TILE}/fetch-assets.sh"

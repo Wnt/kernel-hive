@@ -3,12 +3,27 @@
 # build-guests/lib/bridge-base.sh — reproducible build of the SHARED "emulator
 # bridge" base image for the streamhost retro-OS gallery.
 #
-# WHAT THIS IS: a lean Debian 12 (bookworm) x86_64 guest that boots straight to
-# a bare-X kiosk and runs ONE full-screen SDL emulator with NO window manager.
-# It is the read-only qcow2 BACKING FILE for every "bridge" tile (C64/GEOS,
-# Atari-ST/EmuTOS, Apple-II/GEOS, Amstrad-CPC). Each tile is a thin qcow2
-# OVERLAY on top of this base that swaps in its own /etc/bridge/launch.sh
-# (emulator + media + fullscreen flags). Build it once, freeze it, fan out.
+# WHAT THIS IS: a lean Debian x86_64 guest that boots straight to a bare-X kiosk
+# and runs ONE full-screen SDL emulator with NO window manager. It is the
+# read-only qcow2 BACKING FILE for every "bridge" tile (C64/GEOS, Atari-ST/
+# EmuTOS, Apple-II/GEOS, Amstrad-CPC, …). Each tile is a thin qcow2 OVERLAY on
+# top of this base that swaps in its own /etc/bridge/launch.sh (emulator + media
+# + fullscreen flags). Build it once, freeze it, fan out.
+#
+# ---- TWO SUITES COEXIST (the bookworm -> trixie migration) ------------------
+#  The lab host is Debian 13 (trixie); the base that 28 live overlays back onto
+#  is still Debian 12 (bookworm) and is FROZEN. The migration is GRADUAL: this
+#  script builds EITHER base, selected with `--suite <bookworm|trixie>`, and
+#  every suite-dependent value (base path, genericcloud URL, package deltas)
+#  comes from the ledger registry/bridge-suites.json via lib/bridge-suite.sh —
+#  never from a literal here. Which tile is on which suite, and the per-tile
+#  migration procedure, live in docs/lab/BRIDGE-TRIXIE-MIGRATION.md.
+#
+#  `--suite bookworm` on a box where that base already exists is the single most
+#  destructive command in this repo: rebuilding it invalidates the read-only
+#  backing file of every overlay at once. --force is deliberately NOT enough —
+#  it additionally demands --i-know-this-breaks-every-overlay, and prints the
+#  tiles it would destroy before refusing.
 #
 # The base ships FIVE emulators so the fan-out needs no rebuild:
 #   * VICE  x64sc  (Commodore 64)      — BUILT FROM SOURCE (see HONESTY below)
@@ -36,19 +51,22 @@
 #     and MASK systemd-networkd-wait-online so boot never blocks. Identical for
 #     the virtio provisioning NIC and the e1000 tile NIC (both enumerate en*).
 #
-#  3. VICE IS NOT IN DEBIAN. `apt install vice` FAILS on bookworm — VICE was
-#     removed over ROM/DFSG licensing. x64sc is therefore BUILT FROM SOURCE
-#     (SDL2 UI). Its build needs libcurl4-openssl-dev (configure aborts without
-#     it) on top of the SDL2/png/flex/bison deps. VICE bundles the C64
+#  3. VICE IS BUILT FROM SOURCE ON BOTH SUITES, for two DIFFERENT reasons.
+#     On bookworm there is simply no package: VICE was removed from Debian over
+#     ROM/DFSG licensing, so `apt install vice` FAILS. On trixie the package is
+#     back (vice 3.9+dfsg-1 in contrib) but it is the WRONG BUILD: it is the
+#     GTK3 UI (libgtk-3-0t64, libpulse0) and this kiosk has no window manager
+#     and no PulseAudio — we need the SDL2 fullscreen UI. Either way x64sc comes
+#     from source. Its build needs libcurl4-openssl-dev (configure aborts
+#     without it) on top of the SDL2/png/flex/bison deps. VICE bundles the C64
 #     KERNAL/BASIC/CHARGEN ROMs, so no separate ROM fetch. cap32 additionally
 #     needs libfreetype-dev; LinApple's Makefile is at the REPO ROOT (not src/).
 #
-#  Result: a FROZEN base at $BASE_QCOW that four tiles overlay. NEVER modify the
-#  base again once frozen — overlays depend on it byte-for-byte as read-only
-#  backing.
+#  Result: a FROZEN base at $BASE_QCOW that 28 tiles overlay. NEVER modify a
+#  frozen base again — overlays depend on it byte-for-byte as read-only backing.
 #
 # ---- LICENSE / PROVENANCE (recorded in $MEDIA_DIR/LICENSES) -----------------
-#   Debian 12 genericcloud .......... DFSG-free (Debian).
+#   Debian 12/13 genericcloud ....... DFSG-free (Debian).
 #   VICE 3.9 (source) ............... GPLv2; bundles C64 ROMs (Cloanto/CBM —
 #                                     redistributed by VICE for emulation use).
 #   hatari .......................... GPLv2 (Debian main).
@@ -63,29 +81,98 @@
 # + re-runnable, --force to rebuild. Touches ONLY /data/vms/bridge (+ media).
 #
 # Usage:
-#   bridge-base.sh [--force] [--keep-scratch] [-h]
+#   bridge-base.sh [--suite <bookworm|trixie>] [--force] [--keep-scratch] [-h]
+#     --suite S       which base to build (default: the ledger's defaultSuite)
 #     --force         rebuild the base even if $BASE_QCOW already exists
 #     --keep-scratch  keep the downloaded genericcloud + seed after building
+#     --i-know-this-breaks-every-overlay
+#                     required IN ADDITION to --force to rebuild a base the
+#                     ledger marks frozen. Destroys every overlay on it.
 # =============================================================================
 set -euo pipefail
+
+# Suite resolver (ledger: registry/bridge-suites.json). Fails loudly rather than
+# guessing — a build that cannot tell which Debian it targets must not proceed.
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/bridge-suite.sh"
+
+# ---- flags (parsed FIRST: the suite decides most of the config) -------------
+FORCE=0
+KEEP=0
+BREAK_OVERLAYS=0
+SUITE=""
+while [ $# -gt 0 ]; do case "$1" in
+  --suite)
+    SUITE="${2:?--suite needs a value}"
+    shift 2
+    ;;
+  --suite=*)
+    SUITE="${1#*=}"
+    shift
+    ;;
+  --force)
+    FORCE=1
+    shift
+    ;;
+  --i-know-this-breaks-every-overlay)
+    BREAK_OVERLAYS=1
+    shift
+    ;;
+  --keep-scratch)
+    KEEP=1
+    shift
+    ;;
+  -h | --help)
+    sed -n '2,/^# =\{10,\}$/p' "$0"
+    exit 0
+    ;;
+  *)
+    echo "unknown flag: $1" >&2
+    exit 2
+    ;;
+esac done
+
+SUITE="${SUITE:-$(bridge_suite_default)}"
+bridge_suite_assert "$SUITE"
 
 # ---- config -----------------------------------------------------------------
 BRIDGE_DIR="/data/vms/bridge"
 SCRATCH="${BRIDGE_DIR}/scratch"
 MEDIA_DIR="/opt/bridge/media"
-BASE_QCOW="${BRIDGE_DIR}/bridge-base.qcow2"
 KEY="${BRIDGE_DIR}/bridge_key" # automation keypair (host->guest)
-PIDFILE="${BRIDGE_DIR}/prov.pid"
-QMP="${BRIDGE_DIR}/prov.qmp.sock"
-SERIAL="${SCRATCH}/serial.log"
-SSH_PORT=5810 # provisioning-only host->guest :22
 BASE_SIZE="6G"
 MEM=2048
 
+# Everything below is SUITE-DERIVED — never hardcode a base path or an image
+# URL here again; the ledger is the single source of truth for both.
+BASE_QCOW="$(bridge_base_for "$SUITE")"
+DEB_URL="$(bridge_genericcloud_url_for "$SUITE")"
+DEB_VER="$(bridge_debian_version_for "$SUITE")"
+
+# Per-suite scratch/socket/pidfile/serial so a trixie build cannot adopt, clash
+# with, or be misled by a concurrent or leftover bookworm run (project rule:
+# namespace every shared resource per rig, never check-then-create a global).
+WORK="${SCRATCH}/${SUITE}"
+PIDFILE="${BRIDGE_DIR}/prov-${SUITE}.pid"
+QMP="${BRIDGE_DIR}/prov-${SUITE}.qmp.sock"
+SERIAL="${WORK}/serial.log"
+# Provisioning-only host->guest :22. bookworm keeps the historical 5810; each
+# newer Debian generation takes the next port up, so two builds never collide.
+SSH_PORT=$((5810 + DEB_VER - 12))
+
 # Pinned sources (latest stable at build time; refresh per the "latest stable" rule).
-DEB_URL="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
-DEB_IMG="${SCRATCH}/debian-12-genericcloud-amd64.qcow2"
+DEB_IMG="${WORK}/debian-${DEB_VER}-genericcloud-amd64.qcow2"
 VICE_VER="3.9"
+
+# ---- suite-conditional package delta (measured against trixie 13.6) ---------
+# fs-uae 3.1.66-2+b1 IS in trixie main, but it declares NO `Recommends:` field
+# at all — so the "install WITH recommends" trick below, which is what drags in
+# OpenAL + Mesa on bookworm, pulls nothing extra there. libopenal1 still arrives
+# via a hard Depends on trixie; MESA DOES NOT, and without llvmpipe fs-uae has
+# no GL at all on this GPU-less host. So trixie names libgl1-mesa-dri itself.
+# Everything else in the package set exists in trixie main under the same name.
+FSUAE_PKGS="fs-uae"
+[ "$SUITE" = "bookworm" ] || FSUAE_PKGS="fs-uae libgl1-mesa-dri"
 GEOS_URL="https://archive.org/download/geos64_J1AD/geos64_J1AD.d64"
 GEOS_MD5="709bec31c3502cbcf5d4761c38dcfa9e"
 EMUTOS_URL="https://sourceforge.net/projects/emutos/files/emutos/1.3/emutos-1024k-1.3.zip/download"
@@ -95,28 +182,7 @@ EMUTOS_URL="https://sourceforge.net/projects/emutos/files/emutos/1.3/emutos-1024
 AMIGA_KICK_URL="https://archive.org/download/commodore-amiga-firmware/Kickstart%20v1.3%20r34.005%20%281987-12%29%28Commodore%29%28A500-A1000-A2000-CDTV%29%5B%21%5D.zip"
 AMIGA_WB_URL="https://amigamuseum.emu-france.info/Fichiers/ADF/Installation,%20Kickstars,%20Workbench%20Tutorials%20&%20Promotional/Workbench%201.3%20%2834.20%29%20-%20Boot%20%28Commodore%29%20%281988%29.zip"
 
-FORCE=0
-KEEP=0
-while [ $# -gt 0 ]; do case "$1" in
-  --force)
-    FORCE=1
-    shift
-    ;;
-  --keep-scratch)
-    KEEP=1
-    shift
-    ;;
-  -h | --help)
-    sed -n '2,80p' "$0"
-    exit 0
-    ;;
-  *)
-    echo "unknown flag: $1" >&2
-    exit 2
-    ;;
-esac done
-
-log() { echo "[bridge-base $(date +%H:%M:%S)] $*"; }
+log() { echo "[bridge-base/${SUITE} $(date +%H:%M:%S)] $*"; }
 
 cleanup() {
   [ -f "$PIDFILE" ] && kill "$(cat "$PIDFILE")" 2>/dev/null || true
@@ -125,12 +191,32 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# ---- FROZEN-BASE GUARD (read this before you "just add --force") ------------
+# An existing base marked frozen in the ledger is the read-only backing file of
+# every overlay listed below. Rebuilding it does not "refresh" them — it makes
+# each overlay's recorded backing file describe a DIFFERENT disk, i.e. every one
+# of those tiles is destroyed at once, silently, and no golden snapshot survives
+# it. --force alone is a plausible typo, so it is not sufficient authority here.
+if [ -f "$BASE_QCOW" ] && bridge_suite_is_frozen "$SUITE" && [ "$BREAK_OVERLAYS" -eq 0 ]; then
+  {
+    echo "REFUSING to rebuild the FROZEN '$SUITE' base: $BASE_QCOW"
+    echo "These overlays back onto it read-only and would ALL be destroyed:"
+    bridge_suite_tiles "$SUITE" | sed 's/^/    /'
+    echo "If that is genuinely what you want, pass BOTH --force and"
+    echo "  --i-know-this-breaks-every-overlay"
+    echo "See docs/lab/BRIDGE-TRIXIE-MIGRATION.md — the migration is per-tile,"
+    echo "onto the trixie base (--suite trixie); it never rebuilds this one."
+  } >&2
+  exit 3
+fi
+
 if [ -f "$BASE_QCOW" ] && [ "$FORCE" -eq 0 ]; then
   log "base already exists: $BASE_QCOW (use --force to rebuild)"
   exit 0
 fi
 
-mkdir -p "$BRIDGE_DIR" "$SCRATCH" "$MEDIA_DIR"
+log "building the Debian ${DEB_VER} (${SUITE}) bridge base -> $BASE_QCOW"
+mkdir -p "$BRIDGE_DIR" "$SCRATCH" "$WORK" "$MEDIA_DIR"
 
 # ---- 0. automation keypair --------------------------------------------------
 [ -f "$KEY" ] || ssh-keygen -t ed25519 -N "" -f "$KEY" -C bridge-automation >/dev/null
@@ -138,7 +224,7 @@ PUB="$(cat "${KEY}.pub")"
 
 # ---- 1. download + resize base ---------------------------------------------
 if [ ! -f "$DEB_IMG" ]; then
-  log "downloading Debian 12 genericcloud qcow2 ..."
+  log "downloading Debian ${DEB_VER} genericcloud qcow2 ..."
   curl -fSL -o "$DEB_IMG" "$DEB_URL"
 fi
 SZ=$(stat -c %s "$DEB_IMG")
@@ -152,12 +238,12 @@ qemu-img resize "$BASE_QCOW" "$BASE_SIZE" >/dev/null
 
 # ---- 2. cloud-init NoCloud seed --------------------------------------------
 log "building NoCloud seed ISO ..."
-cat >"${SCRATCH}/meta-data" <<EOF
+cat >"${WORK}/meta-data" <<EOF
 instance-id: bridge-base-001
 local-hostname: bridge-base
 EOF
 
-cat >"${SCRATCH}/user-data" <<EOF
+cat >"${WORK}/user-data" <<EOF
 #cloud-config
 hostname: bridge-base
 manage_etc_hosts: true
@@ -219,6 +305,13 @@ write_files:
       # reaches QEMU's dbus audiodev -> streamhost.
       pcm.!default { type plug; slave.pcm "hw:0,0" }
       ctl.!default { type hw; card 0 }
+  # The codename of the base this guest was built from. Lets the status checker
+  # read a RUNNING tile's ACTUAL suite from inside the guest instead of trusting
+  # registry/bridge-suites.json, which only records intent.
+  - path: /etc/bridge/suite
+    permissions: '0644'
+    content: |
+      ${SUITE}
   - path: /etc/bridge/launch.sh
     permissions: '0755'
     content: |
@@ -273,9 +366,14 @@ write_files:
       # Installed WITH recommends so it pulls libopenal (Paula audio) + mesa (llvmpipe
       # software GL for the GPU-less host). Not part of the original 4-emulator set;
       # baked here so the amiga tile needs no per-tile fs-uae install on a fresh base.
-      apt-get install -y fs-uae && command -v fs-uae >/dev/null && FSUAE_OK=yes || FSUAE_OK=no
+      # On trixie the package has NO Recommends: at all, so mesa is named explicitly
+      # in \$FSUAE_PKGS on the host side (see the package-delta note there).
+      apt-get install -y ${FSUAE_PKGS} && command -v fs-uae >/dev/null && FSUAE_OK=yes || FSUAE_OK=no
       mkdir -p /usr/local/src; cd /usr/local/src
-      # ---- VICE ${VICE_VER} from source (SDL2). NOT in Debian (ROM licensing). ----
+      # ---- VICE ${VICE_VER} from source (SDL2 UI) ----
+      # Source-built on BOTH suites: absent from bookworm (ROM/DFSG removal), and
+      # present in trixie/contrib only as the GTK3 UI build — wrong for a kiosk
+      # with no window manager. Never replace this with \`apt install vice\`.
       if ! command -v x64sc >/dev/null; then
         curl -fSL -o vice.tar.gz "https://downloads.sourceforge.net/project/vice-emu/releases/vice-${VICE_VER}.tar.gz" && tar xf vice.tar.gz
         if [ -d vice-${VICE_VER} ]; then
@@ -299,6 +397,11 @@ write_files:
       # Non-critical (Apple //e fan-out). If it fails, the Apple II tile should fall
       # back to \`mame apple2e\` from apt (apt-get install -y mame) per the plan.
       apt-get install -y imagemagick 2>/dev/null || true
+      # ImageMagick 6 (bookworm) ships \`convert\`; ImageMagick 7 (trixie) ships
+      # \`magick\` and keeps \`convert\` only through the alternatives system. Prefer
+      # the real IM7 binary where it exists by shimming \`convert\` onto it; on IM6
+      # \`magick\` is absent and this whole line is a no-op, so bookworm is unchanged.
+      command -v magick >/dev/null && { printf '#!/bin/sh\nexec magick "\$@"\n' > /usr/local/bin/convert; chmod 0755 /usr/local/bin/convert; } || true
       if ! command -v linapple >/dev/null; then
         rm -rf linapple; git clone --depth 1 https://github.com/linappleii/linapple linapple \\
           && make -C linapple -j2 >/tmp/linapple.log 2>&1 && make -C linapple install >>/tmp/linapple.log 2>&1 || true
@@ -352,7 +455,7 @@ runcmd:
   - [ bash, /root/provision.sh ]
 EOF
 
-(cd "$SCRATCH" && genisoimage -output seed.iso -volid CIDATA -joliet -rock user-data meta-data >/dev/null 2>&1)
+(cd "$WORK" && genisoimage -output seed.iso -volid CIDATA -joliet -rock user-data meta-data >/dev/null 2>&1)
 
 # ---- 3. boot for provisioning (VIRTIO-NET so the cloud kernel has a NIC) -----
 cleanup
@@ -360,11 +463,11 @@ log "booting base for provisioning (virtio-net) ..."
 rm -f "$SERIAL"
 nohup qemu-system-x86_64 -name bridge-base-prov -enable-kvm -m "$MEM" -smp 2 -cpu host \
   -drive file="$BASE_QCOW",if=virtio,format=qcow2 -boot c \
-  -cdrom "${SCRATCH}/seed.iso" \
+  -cdrom "${WORK}/seed.iso" \
   -netdev user,id=n0,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22 -device virtio-net-pci,netdev=n0 \
   -display none -serial "file:${SERIAL}" \
   -qmp "unix:${QMP},server=on,wait=off" -pidfile "$PIDFILE" \
-  >"${SCRATCH}/prov.boot.log" 2>&1 &
+  >"${WORK}/prov.boot.log" 2>&1 &
 for i in $(seq 1 40); do
   [ -S "$QMP" ] && [ -f "$PIDFILE" ] && break
   sleep 0.5
@@ -396,8 +499,10 @@ for i in $(seq 1 40); do
   sleep 1
 done
 cleanup
-[ "$KEEP" -eq 1 ] || rm -f "${SCRATCH}/seed.iso"
-log "FROZEN base: $BASE_QCOW ($(qemu-img info "$BASE_QCOW" | awk -F': ' '/disk size/{print $2}'))"
+[ "$KEEP" -eq 1 ] || rm -f "${WORK}/seed.iso"
+log "FROZEN base [suite=${SUITE}, Debian ${DEB_VER}]: $BASE_QCOW ($(qemu-img info "$BASE_QCOW" | awk -F': ' '/disk size/{print $2}'))"
 log "  emulators: $DONE"
 log "  DO NOT modify this base again — bridge tile overlays back it read-only."
-echo "OK bridge-base"
+log "  Record it: flip a tile to '${SUITE}' in registry/bridge-suites.json ONLY"
+log "  after its overlay is rebuilt and accepted (BRIDGE-TRIXIE-MIGRATION.md)."
+echo "OK bridge-base suite=${SUITE}"

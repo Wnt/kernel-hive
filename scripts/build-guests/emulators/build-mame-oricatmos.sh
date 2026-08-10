@@ -1,18 +1,22 @@
 #!/bin/bash
 # =============================================================================
 # build-guests/emulators/build-mame-oricatmos.sh — build the MAME binary the Oric Atmos
-# tile ships, from a pinned upstream RELEASE commit, inside the Bookworm chroot.
+# tile ships, from a pinned upstream RELEASE commit, inside the suite's chroot.
 #
-# WHY A BUILD AND NOT A PACKAGE. The tile's emulator runs inside the Debian 12
-# bridge guest, so the binary must be Bookworm-ABI. The two packaged options are
+# WHY A BUILD AND NOT A PACKAGE. The tile's emulator runs inside the bridge
+# guest, so the binary must match THAT guest's ABI — Bookworm while oricatmos is
+# on the bookworm suite, Trixie once it is migrated (registry/bridge-suites.json,
+# docs/lab/BRIDGE-TRIXIE-MIGRATION.md). On bookworm the two packaged options are
 # both wrong for different reasons:
 #   * the LAB HOST's `/usr/games/mame` is Debian *trixie* 0.276 — newer, but
 #     linked against a glibc the Bookworm guest does not have;
 #   * Bookworm's own `mame` is 0.251 (2022), and `bookworm-backports` has no
 #     mame at all (checked 2026-08-09).
-# So the tile does what mpf2 does: build in the Bookworm chroot that the IRIX
+# So the tile does what mpf2 does: build in the ABI-matched chroot that the IRIX
 # and MPF-II MAME builds already use, from the latest STABLE tag — `mame0289`,
-# commit f34f0250 — which is also the exact commit the mpf2 tile ships.
+# commit f34f0250 — which is also the exact commit the mpf2 tile ships. On the
+# trixie suite the host and guest agree and the first bullet stops applying; the
+# pin (and therefore this build) still does.
 #
 # NO PATCH IS APPLIED HERE, deliberately. mpf2 needs one because its driver is
 # marked `preliminary` and MAME paints a full-screen red "THIS SYSTEM DOESN'T
@@ -29,7 +33,15 @@
 # =============================================================================
 set -euo pipefail
 
-CHROOT="${MAME_BOOKWORM_CHROOT:-/data/vms/soltest/bookworm-chroot}"
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-suite.sh"
+SUITE="$(bridge_suite_for oricatmos)"
+CHROOT="$(bridge_mame_chroot_for "$SUITE")"
+if [ -n "${MAME_BOOKWORM_CHROOT:-}" ]; then
+  echo "warning: MAME_BOOKWORM_CHROOT is DEPRECATED; the suite ($SUITE) resolves to $CHROOT" >&2
+  echo "         honouring the override anyway: $MAME_BOOKWORM_CHROOT" >&2
+  CHROOT="$MAME_BOOKWORM_CHROOT"
+fi
 CHROOT_WORK="/build/mame-oricatmos"
 WORK="${1:-$CHROOT$CHROOT_WORK}"
 OUT="${2:-/data/vms/streamhost/assets/oricatmos/mame/oricatmos}"
@@ -40,8 +52,17 @@ MAME_ORIC_BASE=f34f02505e32c1993c6a782b6814232cbfc74e36
 
 say() { printf '\n== %s\n' "$*"; }
 
+# The chroot must exist AND be the generation the suite claims: a stale or
+# wrong-suite chroot otherwise shows up as a link/ABI error an hour into a build.
+CHROOT_DEB_WANT="$(bridge_debian_version_for "$SUITE")"
 [ -d "$CHROOT" ] || {
-  echo "missing Bookworm MAME build chroot: $CHROOT" >&2
+  echo "missing $SUITE MAME build chroot: $CHROOT" >&2
+  exit 1
+}
+CHROOT_DEB_HAVE="$(cut -d. -f1 <"$CHROOT/etc/debian_version" 2>/dev/null || true)"
+[ "$CHROOT_DEB_HAVE" = "$CHROOT_DEB_WANT" ] || {
+  echo "chroot $CHROOT is Debian '${CHROOT_DEB_HAVE:-<no /etc/debian_version>}'," >&2
+  echo "  but suite $SUITE needs Debian $CHROOT_DEB_WANT — rebuild it, or fix the suite." >&2
   exit 1
 }
 [ "${WORK#"$CHROOT"}" != "$WORK" ] || {
@@ -56,7 +77,7 @@ CHROOT_WORK="${WORK#"$CHROOT"}"
 
 mkdir -p "$WORK"
 
-say "building MAME 0.289 (oric.cpp subtarget) in Bookworm with $JOBS jobs"
+say "building MAME 0.289 (oric.cpp subtarget) in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- "$CHROOT_WORK" "$UPSTREAM" "$MAME_ORIC_BASE" "$JOBS" <<'EOS'
 set -euo pipefail
 work="$1"
@@ -72,8 +93,9 @@ git remote set-url origin "$upstream"
 git fetch -q --depth=1 origin "$base"
 git reset -q --hard "$base"
 git clean -qfd
-# NOWERROR: the pinned release does not build warning-clean under Bookworm's
-# GCC 12. USE_QTDEBUG=0: the SDL kiosk never opens the Qt debugger and the
+# NOWERROR: the pinned release does not build warning-clean under the chroot's
+# GCC (12 on bookworm, 14 on trixie — a newer one only warns MORE, so this stays
+# necessary). USE_QTDEBUG=0: the SDL kiosk never opens the Qt debugger and the
 # chroot has no Qt.
 nice -n 10 make SUBTARGET=oricatmos SOURCES=src/mame/tangerine/oric.cpp \
   NOWERROR=1 USE_QTDEBUG=0 REGENIE=1 -j"$jobs"

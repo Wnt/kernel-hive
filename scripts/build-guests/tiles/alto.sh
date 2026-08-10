@@ -76,7 +76,7 @@ TILE=alto
 VMID=243
 UDP=54137
 SSH_PORT=5843
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/alto
 OVERLAY="$TILE_DIR/overlay.qcow2"
@@ -514,7 +514,7 @@ reset_proof() {
   log "reset proof: golden restore returned the untouched Executive ($body ink px)"
 }
 
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 if systemctl is-active --quiet "streamhost@$TILE"; then
   die "streamhost@$TILE is active; stop only this tile before rebuilding"

@@ -157,7 +157,7 @@ WEB_PORT=8135
 # own arithmetic (vmid = slot + 103, ssh = slot + 5703), which puts them at 238
 # and 5838. The original scaffold reserved 235/5835 — both were already the LIVE
 # kc854 tile's, and 5835 is a real hostfwd, so QEMU refused to start on it.
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/armeval
 ROMDIR=/data/assets-staging/armeval
@@ -671,7 +671,7 @@ keyboard_proof() {
 }
 
 # ---- preflight ---------------------------------------------------------------
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -x "$MAME" ] ||
   die "missing the pinned BBC MAME binary: $MAME (build with scripts/build-guests/build-mame-bbcb.sh)"

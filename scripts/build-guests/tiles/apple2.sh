@@ -93,7 +93,7 @@ VMID=217
 UDP=54117
 SSH_PORT=5817
 WEB_PORT=8117
-BRIDGE_BASE="/data/vms/bridge/bridge-base.qcow2"
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY="/data/vms/bridge/bridge_key"
 TILE_DIR="/data/vms/streamhost/tiles/${TILE}"
 OVERLAY="${TILE_DIR}/overlay.qcow2"
@@ -200,7 +200,7 @@ boot_tile() {
 
 # ---- main -------------------------------------------------------------------
 [ -f "$BRIDGE_BASE" ] || {
-  echo "missing bridge base: $BRIDGE_BASE (run bridge-base.sh first)"
+  echo "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <this tile's suite in registry/bridge-suites.json>)"
   exit 1
 }
 mkdir -p "$TILE_DIR"

@@ -91,7 +91,7 @@ TILE=nextstep
 VMID=237
 UDP=54134
 SSH_PORT=5837
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/nextstep
 OVERLAY="$TILE_DIR/overlay.qcow2"
@@ -410,7 +410,7 @@ wait_for_workspace() {
   die "no NeXTSTEP Workspace on the framebuffer after 600 seconds"
 }
 
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -f "$HERE/../patches/previous-wmless-window-borders.patch" ] ||
   die "missing patch: $HERE/previous-wmless-window-borders.patch"

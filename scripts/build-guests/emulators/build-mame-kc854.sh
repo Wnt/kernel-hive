@@ -1,16 +1,20 @@
 #!/bin/bash
 # =============================================================================
 # build-mame-kc854.sh — build the shipping KC 85/4 MAME binary from a pinned
-# upstream release, in the Bookworm chroot, exactly as build-mame-mpf2.sh does.
+# upstream release, in the suite's own chroot, exactly as build-mame-mpf2.sh does.
 #
 # WHY A PURPOSE-BUILT BINARY AND NOT THE HOST PACKAGE
-#   The bridge guest is Debian 12 (bookworm); the lab host is Debian 13 and its
-#   packaged MAME is 0.276. A trixie-linked binary will not run in the guest,
-#   and bookworm's own package is MAME 0.251 — the release in which `kc85_4` is
-#   still a *clone* of `kc85_2` with a different ROM split. Pinning one binary
-#   and assembling the romset against THAT binary's -listxml is the only way the
-#   set and the emulator can be known to agree. The chroot's glibc/libstdc++
-#   match the guest, which is why the IRIX/mpf2 builds live there too.
+#   The bridge guest is Debian 12 (bookworm) while this tile is on that suite;
+#   the lab host is Debian 13 and its packaged MAME is 0.276, so a trixie-linked
+#   binary will not run in a bookworm guest — and bookworm's own package is MAME
+#   0.251, the release in which `kc85_4` is still a *clone* of `kc85_2` with a
+#   different ROM split. Pinning one binary and assembling the romset against
+#   THAT binary's -listxml is the only way the set and the emulator can be known
+#   to agree. The chroot is picked from the tile's suite in
+#   registry/bridge-suites.json so its glibc/libstdc++ always match the guest —
+#   which is why the IRIX/mpf2 builds live there too. Once kc854 is migrated the
+#   chroot becomes the host's own generation and the ABI argument above retires
+#   (docs/lab/BRIDGE-TRIXIE-MIGRATION.md); the version pin still stands.
 #
 # WHY THE WARNING PATCH IS NOT OPTIONAL HERE
 #   `mame -listxml kc85_4` reports driver status="preliminary", so MAME puts up
@@ -28,7 +32,15 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CHROOT="${MAME_BOOKWORM_CHROOT:-/data/vms/soltest/bookworm-chroot}"
+# shellcheck disable=SC1091
+. "$HERE/../lib/bridge-suite.sh"
+SUITE="$(bridge_suite_for kc854)"
+CHROOT="$(bridge_mame_chroot_for "$SUITE")"
+if [ -n "${MAME_BOOKWORM_CHROOT:-}" ]; then
+  echo "warning: MAME_BOOKWORM_CHROOT is DEPRECATED; the suite ($SUITE) resolves to $CHROOT" >&2
+  echo "         honouring the override anyway: $MAME_BOOKWORM_CHROOT" >&2
+  CHROOT="$MAME_BOOKWORM_CHROOT"
+fi
 CHROOT_WORK="/build/mame-kc854-build-$$"
 WORK="${1:-$CHROOT$CHROOT_WORK}"
 OUT="${2:-/data/vms/streamhost/assets/kc854/mame/kc85}"
@@ -46,8 +58,17 @@ PATCH="$HERE/../patches/mame-irix-skip-warnings.patch"
 
 say() { printf '\n== %s\n' "$*"; }
 
+# The chroot must exist AND be the generation the suite claims: a stale or
+# wrong-suite chroot otherwise shows up as a link/ABI error an hour into a build.
+CHROOT_DEB_WANT="$(bridge_debian_version_for "$SUITE")"
 [ -d "$CHROOT" ] || {
-  echo "missing Bookworm MAME build chroot: $CHROOT" >&2
+  echo "missing $SUITE MAME build chroot: $CHROOT" >&2
+  exit 1
+}
+CHROOT_DEB_HAVE="$(cut -d. -f1 <"$CHROOT/etc/debian_version" 2>/dev/null || true)"
+[ "$CHROOT_DEB_HAVE" = "$CHROOT_DEB_WANT" ] || {
+  echo "chroot $CHROOT is Debian '${CHROOT_DEB_HAVE:-<no /etc/debian_version>}'," >&2
+  echo "  but suite $SUITE needs Debian $CHROOT_DEB_WANT — rebuild it, or fix the suite." >&2
   exit 1
 }
 [ "${WORK#"$CHROOT"}" != "$WORK" ] || {
@@ -67,7 +88,7 @@ CHROOT_WORK="${WORK#"$CHROOT"}"
 mkdir -p "$WORK"
 install -m 644 "$PATCH" "$WORK/mame-irix-skip-warnings.patch"
 
-say "building MAME $MAME_KC854_TAG (SUBTARGET=kc85) in Bookworm with $JOBS jobs"
+say "building MAME $MAME_KC854_TAG (SUBTARGET=kc85) in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- \
   "$CHROOT_WORK" "$UPSTREAM" "$MAME_KC854_BASE" "$JOBS" "$DRIVER_SRC" <<'EOS'
 set -euo pipefail

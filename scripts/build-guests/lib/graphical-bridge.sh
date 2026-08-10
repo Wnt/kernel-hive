@@ -139,12 +139,18 @@ esac
 clone_guard_assert_clone_path "$OUT_DIR" "graphical bridge output"
 clone_guard_assert_clone_vmid "$VMID"
 
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+# This library has no single tile id, so the base follows the LEDGER DEFAULT
+# suite (registry/bridge-suites.json). A caller whose tile is on another suite
+# must pass BRIDGE_BASE= itself, matched to the emulator build it stages.
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/bridge-suite.sh"
+BRIDGE_SUITE_ID="$(bridge_suite_default)"
+BRIDGE_BASE="${BRIDGE_BASE:-$(bridge_base_for "$BRIDGE_SUITE_ID")}"
 KEY=/data/vms/bridge/bridge_key
 OVERLAY="$OUT_DIR/overlay.qcow2"
 QMP="$OUT_DIR/qmp.sock"
 PIDFILE="$OUT_DIR/qemu.pid"
-[ -r "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -r "$BRIDGE_BASE" ] || die "no $BRIDGE_SUITE_ID bridge base: $BRIDGE_BASE (bridge-base.sh --suite $BRIDGE_SUITE_ID)"
 [ -r "$KEY" ] || die "missing bridge SSH key: $KEY"
 
 mkdir -p "$OUT_DIR"

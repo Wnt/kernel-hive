@@ -7,10 +7,13 @@ x86 Linux guest**, and let streamhost capture the Linux guest's framebuffer +
 audio exactly like every other tile. The retro machine is "bridged" through a
 minimal Linux kiosk.
 
-**Four emulator bridge tiles are live today**: `c64` (VICE), `atarist`
-(hatari), `apple2` (LinApple), `amiga` (FS-UAE), each in a permanent 3 GiB
-qcap scope. `openvms` uses a related graphical bridge pattern: Linux is only
-the captured X server, while OpenVMS supplies the window manager and clients.
+**28 emulator bridge tiles are live today** — the roster is the `tiles` map in
+`registry/bridge-suites.json`, which is also the ledger for the bookworm→trixie
+migration below. The four originals (`c64`/VICE, `atarist`/hatari,
+`apple2`/LinApple, `amiga`/FS-UAE) each run in a permanent 3 GiB qcap scope.
+`openvms` uses a related graphical bridge pattern and is NOT on this base:
+Linux is only the captured X server, while OpenVMS supplies the window manager
+and clients.
 
 The **C64 + GEOS** tile (`/data/vms/streamhost/tiles/c64/`) is the reference
 implementation; this doc is written so a fan-out agent can clone it for the
@@ -52,9 +55,23 @@ processes and replays the fixture. See `docs/guests/openvms.md`.
 `/data/vms/bridge/bridge-base.qcow2` — a lean Debian 12 (bookworm) x86_64 guest.
 Built deterministically by `scripts/build-guests/lib/bridge-base.sh` from a **Debian
 genericcloud qcow2 + a cloud-init NoCloud seed ISO** (reproducible on an NVMe
-rebuild). It contains, ready to use:
+rebuild).
 
-- **Five emulators**, so no rebuild is needed to add a machine:
+**Two bases now coexist.** The host is Debian 13 (trixie) since 2026-07-15; the
+guest base is not, and cannot be migrated in one shot because 28 overlays back
+onto it. `bridge-base.sh --suite bookworm|trixie` builds either — the bookworm
+one at the path above (frozen, path sacred), the trixie one at
+`/data/vms/bridge/bridge-base-trixie.qcow2`. Which suite a tile is on is
+declared per tile in `registry/bridge-suites.json` and resolved by
+`scripts/build-guests/lib/bridge-suite.sh`. Read
+[`docs/lab/BRIDGE-TRIXIE-MIGRATION.md`](../../docs/lab/BRIDGE-TRIXIE-MIGRATION.md)
+before touching either base or any bridge builder.
+
+The base contains, ready to use:
+
+- **Five emulators** — this is the emulator set the BASE ships, **not** the tile
+  roster (28 tiles draw on it, and several install their own emulator into their
+  overlay). Baked in so no base rebuild is needed to add one of these machines:
   | machine        | emulator binary | source                                   |
   |----------------|-----------------|------------------------------------------|
   | Commodore 64   | `x64sc`         | VICE 3.9, **built from source** (SDL2 UI)|
@@ -71,9 +88,18 @@ rebuild). It contains, ready to use:
   audio (SID, YM2149, …) reaches QEMU's dbus audiodev → streamhost.
 
 Because the base is the **read-only qcow2 backing** for every bridge tile, it is
-FROZEN after the build. Editing it would corrupt every overlay that backs onto
-it. Add packages only by rebuilding the base (`bridge-base.sh --force`) BEFORE any
-overlay exists, or by baking them into the per-tile overlay.
+FROZEN after the build — an overlay names its backing file by path and depends
+on it block-for-block, so editing or rebuilding it corrupts all 28 at once. The
+bookworm base has been frozen since 2026-07-15 and
+`bridge-base.sh --suite bookworm` refuses to rebuild it without
+`--i-know-this-breaks-every-overlay`. The trixie base is not frozen only because
+nothing backs onto it yet; it freezes the moment the first overlay does.
+
+Add packages by baking them into the per-tile overlay, or — for the trixie base,
+while it is still empty — by rebuilding it. Migrating a tile between suites is a
+per-tile rebuild + golden re-bake + framebuffer acceptance + ledger flip; the
+procedure, the per-tile verdicts and the wave order are in
+[`docs/lab/BRIDGE-TRIXIE-MIGRATION.md`](../../docs/lab/BRIDGE-TRIXIE-MIGRATION.md).
 
 ### Three non-obvious base-build gotchas (all handled in `bridge-base.sh`)
 
@@ -87,8 +113,11 @@ overlay exists, or by baking them into the per-tile overlay.
    (`10.0.2.15/24`, gw `10.0.2.2`, dns `10.0.2.3`) and mask
    `systemd-networkd-wait-online`. Identical for the virtio provisioning NIC and
    the e1000 tile NIC (both enumerate `en*`).
-3. **VICE is NOT in Debian** (removed over ROM/DFSG licensing) — `apt install
-   vice` fails. `x64sc` is built from source (SDL2). Its `./configure` aborts
+3. **VICE is NOT in Debian 12** (removed over ROM/DFSG licensing) — `apt install
+   vice` fails on bookworm. It is BACK in **trixie/contrib** (`vice 3.9+dfsg-1`,
+   ships `/usr/bin/x64sc`), but that package is the GTK3 UI build and the kiosk
+   needs the SDL2 fullscreen build with no window manager — so `x64sc` is built
+   from source (SDL2) on both suites. Its `./configure` aborts
    without `libcurl4-openssl-dev`; `cap32` needs `libfreetype-dev`; LinApple's
    Makefile is at the repo **root**, not `src/`.
 
@@ -241,7 +270,7 @@ For C64, use `--pointer rel` and the tablet-free/`vmport=off` exception above.
 
 ## 5. Capture-path reality on bridge tiles: copy path, not shm (2026-07-12)
 
-All four bridge kiosks run 32bpp KMS (bochs-drm), so QEMU's `-vga std` scanout
+All bridge kiosks run 32bpp KMS (bochs-drm), so QEMU's `-vga std` scanout
 surface is **guest-VRAM-backed** and not memfd-shareable → QEMU silently uses
 the v1 **copy path** (full ~1024x768 frames at ~30 Hz ≈ 60-110 MB/s of `Update`
 method calls) even though streamhost advertises `Unix.Map`. Two consequences,

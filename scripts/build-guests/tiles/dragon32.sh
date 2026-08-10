@@ -101,7 +101,7 @@ VMID=233
 UDP=54130
 SSH_PORT=5833
 WEB_PORT=8133
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/dragon32
 OVERLAY="$TILE_DIR/overlay.qcow2"
@@ -492,7 +492,7 @@ $(screen_text keyboard-print-3x7)"
 }
 
 # ---------------------------------------------------------------------------
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -x "$MAME" ] ||
   die "missing pinned MAME 0.289 binary: $MAME

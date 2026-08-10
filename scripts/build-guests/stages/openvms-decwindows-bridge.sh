@@ -5,7 +5,12 @@ set -euo pipefail
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$HERE/../../.." && pwd)"
-BRIDGE_BASE="${BRIDGE_BASE:-/data/vms/bridge/bridge-base.qcow2}"
+# Out of scope for the bookworm -> trixie migration (own image, shares only
+# bridge_key), but the base path is written in exactly ONE place: the ledger
+# default suite in registry/bridge-suites.json. Set BRIDGE_BASE= to override.
+# shellcheck disable=SC1091
+. "$(dirname -- "${BASH_SOURCE[0]}")/../lib/bridge-suite.sh"
+BRIDGE_BASE="${BRIDGE_BASE:-$(bridge_base_for "$(bridge_suite_default)")}"
 BRIDGE_KEY="${BRIDGE_KEY:-/data/vms/bridge/bridge_key}"
 OUT_BRIDGE="${OUT_BRIDGE:-/data/gallery-guests/OpenVMS/openvms-decwindows-bridge.qcow2}"
 WORK="${WORK:-/data/vms/build-openvms-decwindows-bridge}"

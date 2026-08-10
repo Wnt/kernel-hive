@@ -91,7 +91,7 @@ TILE=cbm2
 VMID=226
 UDP=54111
 SSH_PORT=5826
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/cbm2
 OVERLAY="$TILE_DIR/overlay.qcow2"
@@ -386,7 +386,7 @@ assert_guest_memory() {
   log "guest MemAvailable ${avail}MB at -m ${MEM} (floor ${CBM2_MIN_AVAIL_MB}MB)"
 }
 
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 if systemctl is-active --quiet "streamhost@$TILE"; then
   die "streamhost@$TILE is active; stop only this tile before rebuilding"

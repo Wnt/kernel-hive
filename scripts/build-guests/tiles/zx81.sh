@@ -97,7 +97,7 @@ TILE=zx81
 VMID=231
 UDP=54128
 SSH_PORT=5831
-BRIDGE_BASE=/data/vms/bridge/bridge-base.qcow2
+BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/zx81
 OVERLAY="$TILE_DIR/overlay.qcow2"
@@ -434,7 +434,7 @@ bake_golden() {
 }
 
 # ---- preflight ---------------------------------------------------------------
-[ -f "$BRIDGE_BASE" ] || die "missing frozen bridge base: $BRIDGE_BASE"
+[ -f "$BRIDGE_BASE" ] || die "missing bridge base $BRIDGE_BASE (build it: lib/bridge-base.sh --suite <registry/bridge-suites.json>)"
 [ -f "$KEY" ] || die "missing bridge SSH key: $KEY"
 [ -x "$MAME" ] ||
   die "missing pinned ZX81 MAME binary: $MAME (build with scripts/build-guests/emulators/build-mame-zx81.sh)"

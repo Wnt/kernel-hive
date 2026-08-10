@@ -1,13 +1,17 @@
 #!/bin/bash
 # =============================================================================
 # build-guests/emulators/build-mame-bbcb.sh — build the shipping BBC Micro MAME binary
-# from a pinned upstream RELEASE, in the Bookworm chroot.
+# from a pinned upstream RELEASE, in the chroot that matches the tile's suite.
 #
 # WHY A PURPOSE-BUILT BINARY AND NOT THE DISTRO PACKAGE (the provenance rule):
-#   * The lab HOST is Debian 13 and its /usr/games/mame is 0.276. Its glibc /
-#     libstdc++ are NEWER than the Debian 12 bridge base the tile runs, so that
-#     binary cannot simply be copied into the overlay.
-#   * The bridge base's own apt `mame` would be whatever Bookworm froze, which
+#   * The binary must be linked against the SAME Debian generation as the bridge
+#     guest it runs inside. That generation is per-tile now: bookworm today,
+#     trixie once bbcmicro/armeval are migrated (registry/bridge-suites.json,
+#     docs/lab/BRIDGE-TRIXIE-MIGRATION.md). On bookworm the host's own
+#     /usr/games/mame (Debian 13, 0.276) is too new to copy into the overlay; on
+#     trixie the host and guest finally agree and the chroot is only about
+#     reproducibility, not ABI.
+#   * The bridge base's own apt `mame` would be whatever the suite froze, which
 #     is neither the latest stable nor a version anyone pinned.
 #   * MAME moves ROM requirements between versions (kim1 renamed its 6530 dump;
 #     kc85_4 changed parent). A romset is only meaningful against ONE binary, so
@@ -38,7 +42,25 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CHROOT="${MAME_BOOKWORM_CHROOT:-/data/vms/soltest/bookworm-chroot}"
+# shellcheck disable=SC1091
+. "$HERE/../lib/bridge-suite.sh"
+# ONE binary, TWO tiles: bbcmicro ships it and armeval reuses it from the same
+# acorn driver directory (see SOURCES above). They must therefore be on the same
+# suite — if the ledger ever disagrees there is no correct chroot to pick, so
+# fail here rather than silently build an ABI that is wrong for one of them.
+SUITE="$(bridge_suite_for bbcmicro)"
+SUITE_ARMEVAL="$(bridge_suite_for armeval)"
+[ "$SUITE" = "$SUITE_ARMEVAL" ] || {
+  echo "bbcmicro is on '$SUITE' but armeval is on '$SUITE_ARMEVAL', and both run THIS binary." >&2
+  echo "  Migrate them together in registry/bridge-suites.json (docs/lab/BRIDGE-TRIXIE-MIGRATION.md)." >&2
+  exit 1
+}
+CHROOT="$(bridge_mame_chroot_for "$SUITE")"
+if [ -n "${MAME_BOOKWORM_CHROOT:-}" ]; then
+  echo "warning: MAME_BOOKWORM_CHROOT is DEPRECATED; the suite ($SUITE) resolves to $CHROOT" >&2
+  echo "         honouring the override anyway: $MAME_BOOKWORM_CHROOT" >&2
+  CHROOT="$MAME_BOOKWORM_CHROOT"
+fi
 WORK="${1:-$CHROOT/build/mame-bbcb}"
 OUT="${2:-/data/vms/streamhost/assets/bbcmicro/mame/bbcb}"
 UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"
@@ -49,8 +71,17 @@ PATCH="$HERE/../patches/mame-irix-skip-warnings.patch"
 
 say() { printf '\n== %s\n' "$*"; }
 
+# The chroot must exist AND be the generation the suite claims: a stale or
+# wrong-suite chroot otherwise shows up as a link/ABI error an hour into a build.
+CHROOT_DEB_WANT="$(bridge_debian_version_for "$SUITE")"
 [ -d "$CHROOT" ] || {
-  echo "missing Bookworm MAME build chroot: $CHROOT" >&2
+  echo "missing $SUITE MAME build chroot: $CHROOT" >&2
+  exit 1
+}
+CHROOT_DEB_HAVE="$(cut -d. -f1 <"$CHROOT/etc/debian_version" 2>/dev/null || true)"
+[ "$CHROOT_DEB_HAVE" = "$CHROOT_DEB_WANT" ] || {
+  echo "chroot $CHROOT is Debian '${CHROOT_DEB_HAVE:-<no /etc/debian_version>}'," >&2
+  echo "  but suite $SUITE needs Debian $CHROOT_DEB_WANT — rebuild it, or fix the suite." >&2
   exit 1
 }
 [ -f "$PATCH" ] || {
@@ -70,7 +101,7 @@ CHROOT_WORK="${WORK#"$CHROOT"}"
 mkdir -p "$WORK"
 install -m 644 "$PATCH" "$WORK/mame-skip-warnings.patch"
 
-say "building MAME $MAME_TAG (acorn drivers) in Bookworm with $JOBS jobs"
+say "building MAME $MAME_TAG (acorn drivers) in $SUITE with $JOBS jobs"
 chroot "$CHROOT" /bin/bash -s -- \
   "$CHROOT_WORK" "$UPSTREAM" "$MAME_TAG" "$MAME_BBCB_BASE" "$JOBS" <<'EOS'
 set -euo pipefail
