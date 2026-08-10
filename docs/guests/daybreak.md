@@ -151,12 +151,15 @@ ADJUST) and Dwarf takes host left/right directly.
   of one core while streaming. (The feasibility study's "3.5 % of a core" was
   measured under bare Xvfb with no capture; expect this figure instead.)
 - Golden VM state: **1.42 GiB**; overlay ~2.9 GB.
-- **Soak — the study's one unexplained JVM exit did not recur.** The JVM
-  survived ~40 min continuous idling before the bake and a further hour under
-  the production daemon, across logon, the golden bake, three `loadvm` restores,
-  the Directory open, and a shifted-punctuation sweep. RSS shows no upward
-  drift. Watch for it anyway: it was seen once, at the YES/START moment, and one
-  unreproduced crash is not the same as no crash.
+- **Soak — the study's one unexplained JVM exit did not recur.** Two windows,
+  ~71 minutes of observed JVM liveness in total: 02:02→02:39 on the prototype
+  before the bake, then 02:50→03:25 under the production daemon while
+  streaming — **35 one-minute samples, 0 of them non-active**, JVM RSS bounded
+  at **225 064–228 564 kB** with no upward drift. Across that window the JVM
+  also survived the YES/START moment the original crash was seen at, the golden
+  bake, four `loadvm` restores, the Directory open and a shifted-punctuation
+  sweep. Watch for it anyway: one unreproduced crash is not the same as no
+  crash.
 
 ## Shutting down
 

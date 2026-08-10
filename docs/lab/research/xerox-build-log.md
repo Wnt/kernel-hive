@@ -319,5 +319,12 @@ YES/START moment it was first seen at passed cleanly on the first attempt, and
 the JVM survived every subsequent step: logon, golden bake, `loadvm` restores,
 the Directory open, a shifted-punctuation sweep, and continuous idling. RSS is
 flat at ~226–229 MB across the whole window with no upward drift, which is the
-shape of a healthy JVM rather than one heading for an OOM. Soak numbers are in
+shape of a healthy JVM rather than one heading for an OOM.
+
+Measured: **~71 minutes of observed liveness** across two windows — 02:02→02:39
+on the prototype before the bake, 02:50→03:25 under the production daemon while
+streaming — **35 one-minute samples, 0 of them non-active**, JVM RSS bounded at
+**225 064–228 564 kB**. Whole-tile cost while streaming: **~17 % of one core**,
+QEMU RSS ~1.65 GB. One unreproduced crash is still not the same as no crash, so
+the next person to touch this tile should keep watching. Details in
 `docs/guests/daybreak.md`.
