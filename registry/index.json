@@ -4408,7 +4408,7 @@
           "SH_GOLDEN_SNAPSHOT": "golden",
           "SH_KEY_MIN_HOLD_MS": "40",
           "SH_KEY_MIN_GAP_MS": "40",
-          "SH_FIXTURE_DESC": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 at the IRIS graphical login, drawn by Iris inside a Debian 12 kiosk; X root 1280x1024 matched to the emulated framebuffer so capture is 1:1; PS/2 relative pointer (click to grab, Right-Ctrl to release); no audio; standalone network mode."
+          "SH_FIXTURE_DESC": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session: Toolchest docked upper-left, the camera/Start Demos/buttonfly/fsn icon column down the right edge), drawn by Iris inside a Debian 12 kiosk; X root 1280x1024 matched to the emulated framebuffer so capture is 1:1; PS/2 relative pointer (click to grab, Right-Ctrl to release); no audio; standalone network mode."
         },
         "vmidLabel": 239,
         "qemu": {
@@ -4527,7 +4527,7 @@
         "snapshot": "golden",
         "mouse": "UNVERIFIED",
         "keyboard": "UNVERIFIED",
-        "fixture": "SGI Indy (MIPS R4400) IRIX 6.5.22 at the IRIS graphical login in Iris, 1280x1024 1:1. Emulator-bridge tile added 2026-08-10."
+        "fixture": "SGI Indy (MIPS R4400) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session) in Iris, 1280x1024 1:1. Emulator-bridge tile added 2026-08-10."
       },
       "migrationExceptions": []
     },

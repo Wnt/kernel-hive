@@ -560,7 +560,7 @@
    "snapshot": "golden",
    "mouse": "UNVERIFIED",
    "keyboard": "UNVERIFIED",
-   "fixture": "SGI Indy (MIPS R4400) IRIX 6.5.22 at the IRIS graphical login in Iris, 1280x1024 1:1. Emulator-bridge tile added 2026-08-10."
+   "fixture": "SGI Indy (MIPS R4400) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session) in Iris, 1280x1024 1:1. Emulator-bridge tile added 2026-08-10."
   }
  }
 }

@@ -92,7 +92,7 @@ the build does not touch the box's shared cargo target tree. Measured build:
 **6 m 30 s** on the 16-core host. Runtime deps beyond the base are
 `libxkbcommon-x11-0`, `libxcb-xkb1` and `xdotool`.
 
-## Three traps this tile sprang, in the order they cost time
+## Four traps this tile sprang, in the order they cost time
 
 ### 1. No window manager ⇒ no X input focus ⇒ a silently dead keyboard
 
@@ -139,6 +139,16 @@ at frame rate, so this only bites hand-written QMP harnesses. Note also that
 **IRIX applies its own pointer acceleration** (measured ~3.5x horizontal,
 ~3.3x vertical from a corner slam), and it is history-dependent, so
 open-loop absolute positioning does not converge — slam to a corner first.
+
+### 4. Re-emitting strips the launcher's exec bit
+
+`streamhost-tile.sh --launcher-file "$T/indyr4400/qemu-streamhost.sh"` copies the
+tracked launcher onto itself (the tracked sidecar and the runtime path are the
+same file for a verbatim tile), which errors with `cp: ... are the same file`
+and leaves the file **non-executable**. `ensure-tile-qemu.sh` then refuses with
+`missing launcher: ...` and systemd restart-loops the unit while
+`/signal/<tile>.json` keeps answering 200 from the still-published map. After
+any re-emit: `chmod +x /data/vms/streamhost/tiles/indyr4400/qemu-streamhost.sh`.
 
 ## Pointer
 
