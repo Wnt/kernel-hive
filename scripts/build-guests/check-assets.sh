@@ -141,6 +141,18 @@ ROWS=(
   "opt-file|oricatmos|Oric Atmos Extended BASIC V1.1 ROM (MAME orica bios ver11)|$ASSET_STAGING/oricatmos/basic11b.rom|sha256:ed28568574716eef5d7c0fde2568d7a47a6e4b1fbca81daff3be05e45723466d|preservation-source"
   "req-file|kc854|KC 85 family merged MAME romset (CAOS 4.2 + HC-BASIC extracted by sha1)|$ASSET_STAGING/kc854/kc85_2.zip|sha256:ed5b8a567232beb89a5f78fea4066160aec2ba0f2a67555439c20785d6a096ab|preservation-source"
   "req-file|sinclairql|Sinclair QL MAME romset (merged ql.zip; builder extracts 4 members by sha1)|$ASSET_STAGING/sinclairql/ql-mame0224-merged.zip|sha256:c4c39530c7abe6518f90b0df9d4eec9201434a905c77f05f490137007e420b03|preservation-source"
+  # -- atarist-mame (de-bridging spike, build-mame-atarist.sh). The ST on MAME
+  # needs TWO roms and only the first is clean. EmuTOS is GPLv2, but this is the
+  # 192 KB image and NOT the etos1024k.img the bridge base bakes for hatari:
+  # MAME's ST maps a 0x30000 TOS region, so the 1 MB image cannot be loaded at
+  # all. The IKBD firmware is Atari's, has no free reimplementation as a 6301
+  # image, and MAME 0.289's ST driver has no HLE keyboard path -- so unlike the
+  # hatari exhibit (which HLEs the IKBD in C and needs no ROM), the MAME ST
+  # exhibit is NOT licence-clean. Same category as the Amiga Kickstart the
+  # bridge base fetches: copyrighted, freely fetchable at a pinned URL,
+  # hash-gated, never committed. The builder fetches both if absent.
+  "opt-file|atarist-mame|EmuTOS 1.4 192k ROM image etos192us.img (GPLv2)|$ASSET_STAGING/atarist-mame/etos192us.img|sha256:8fbbf8b44fc3e34281eaf8cda5265510e9af9ccda0e3e409111648060d244cfc|freely-fetchable-pinned"
+  "opt-file|atarist-mame|Atari ST IKBD HD6301 firmware keyboard.u1 (Atari copyright; without it the ST's mouse and keyboard are dead)|$ASSET_STAGING/atarist-mame/keyboard.u1|sha256:b2c5c61bac3dbd563206ddf4a4bca14db6d95575fe6892e59fff621e5205311f|freely-fetchable-pinned"
   # -- in-overlay media (nextstep): these two live INSIDE the tile's own qcow2
   # overlay at /opt/bridge/media/nextstep/, not on the host filesystem, so the
   # host paths below never exist and these rows read "will fetch". They are
