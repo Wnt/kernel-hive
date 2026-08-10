@@ -10248,7 +10248,7 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_FIXTURE_DESC": "Xerox 8010 \"Dandelion\" at the logged-on ViewPoint 2.0 user desktop, emulated by Darkstar on mono 6.8 inside a captured Debian 12 bare-X kiosk. 1024x808 one-bit display inside Darkstar's 1088x860 DisplayBox, filling a custom 1088x860 X root edge to edge with the emulator's System Menu and System Status bars moved off-screen. The desk is the ViewPoint grey stipple; the header strip reads \"35168 Free Disk Pages\" with a Help button, and the Directory icon sits bottom-right — select it and press OPEN (F7) for a window listing Workstation and Desktop. Pointer is RELATIVE: Darkstar differences the host pointer against the display centre and warps it back, so there is no absolute path to offer. Silent exhibit: the 8010 has no sound hardware.",
+          "SH_FIXTURE_DESC": "Xerox 8010 \"Dandelion\" at the logged-on ViewPoint 2.0 user desktop, emulated by Darkstar on mono 6.8 inside a captured Debian 12 bare-X kiosk. 1024x808 one-bit display inside Darkstar's 1088x860 DisplayBox, filling a custom 1088x860 X root edge to edge with the emulator's System Menu and System Status bars moved off-screen. The desk is the ViewPoint grey stipple; the header strip reads \"35167 Free Disk Pages\" with a Help button, and the Directory icon sits bottom-right and the Star's own cursor is parked in the top-left corner of the raster (which is also the origin the daemon's relative pointer pins to, so a reset re-zeroes any pointer drift) — select it and press OPEN (F7) for a window listing Workstation and Desktop. Pointer is RELATIVE: Darkstar differences the host pointer against the display centre and warps it back, so there is no absolute path to offer. Silent exhibit: the 8010 has no sound hardware.",
           "SH_IDLE_PAUSE_SECS": "0",
           "SH_KEY_MIN_HOLD_MS": "250",
           "SH_KEY_MIN_GAP_MS": "250",
@@ -10373,7 +10373,7 @@
         "snapshot": "golden",
         "mouse": "PASS",
         "keyboard": "PASS",
-        "fixture": "Xerox 8010 “Dandelion” at the logged-on ViewPoint 2.0 user desktop under Darkstar; golden INTERNAL snapshot restores the running desktop with no Pilot boot, no Set Time Utility and no logon sheet. PENDING CERTIFICATION."
+        "fixture": "Xerox 8010 “Dandelion” at the logged-on ViewPoint 2.0 user desktop under Darkstar; golden INTERNAL snapshot restores the RUNNING desktop (verified with `info status`) — no 22-minute Pilot boot, no Set Time Utility, no logon sheet. Route certified 2026-08-10 in framebuffer-asserted steps: cold boot to the Set Time Utility banner (~1 min), five carriage returns, MP 0910→7600→7700→7800→8000 (~17 min total) to the logged-off bouncing keyboard, Home (= Xerox NEXT) to the Workstation Administration desktop, Desktop Creation of user:star:xerox3 with Administrator armed, the machine logs itself out, Home again to the real Logon Option Sheet, log on, and the iconic user desktop paints. Mouse PASS (gain measured 1:1 end to end through the deployed browser client; relative-only, see docs/guests/star.md). Keyboard PASS (300 ms hold; shifted punctuation is flaky and wants the SPA's shift latch). Bridge tile added 2026-08-10."
       },
       "migrationExceptions": []
     },

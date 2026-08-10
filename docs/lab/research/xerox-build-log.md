@@ -360,6 +360,72 @@ settling to **43–53 f/s (55–68 %)** at MP 8000, with the process taking ~178
 CPU (emulation + SDL blit). Box was ~72 % busy on all 16 logical CPUs. The
 quiesced pinned gate run is reported separately.
 
+### THE STAR IS A LIVE TILE (2026-08-10) — and the pointer was never the blocker
+
+Shipped as `star`, slot 138, UDP 54138, VMID 240, kiosk ssh 5840. Bridge tile on
+the shared Debian kiosk base, built by `scripts/build-guests/tiles/star.sh`;
+full write-up in [`docs/guests/star.md`](../../guests/star.md).
+
+**The "needs a relative pointer path or a patched Darkstar" conclusion above was
+wrong, and the correction is worth reading twice.** Six tiles already ship
+`SH_POINTER=rel` (`qnx`, `nt351`, `amstradcpc`, `c64`, `freedos`, `msdoswin1`) and
+the daemon has a documented bounded/paced relative backend. Darkstar's own scheme
+— difference the host pointer against the DisplayBox centre, warp it back under
+an SDL grab — is exactly what a relative kiosk pointer feeds correctly. Nothing
+was patched and nothing was forked. Declared honestly as relative, the tile earns
+the derived `Rel. pointer` badge, which exists for precisely this.
+
+Measured through the deployed browser client, with the Star cursor located in the
+QMP framebuffer: **gain is 1:1** (−336,+230 commanded → −336,+230 applied). The
+caveat is the ORIGIN, not the gain — see the guest doc.
+
+**Findings the other two Xerox tiles can use:**
+
+- **`xset m 1 0` DOES NOT TURN OFF POINTER ACCELERATION under libinput.** The core
+  pointer control reports `acceleration: 1/1  threshold: 0` while the device goes
+  on applying its own adaptive profile. Measured ~1.8x on medium moves, which
+  reads exactly like a broken relative path. The switch is an xorg.conf.d
+  `InputClass` with `AccelProfile "flat"`. This cost a whole round of pointer
+  measurements against a knob that was lying.
+- **`loadvm golden` reverts the DISK too.** An internal qcow2 snapshot is RAM
+  *and* disk, so every `apt-get install` and every config file written after the
+  bake vanishes on the next reset — silently, while the framebuffer still looks
+  right. Two pointer measurement rounds were invalidated by exactly this: the fix
+  was in the guest, the reset took it away, and the numbers looked like the fix
+  had not worked. **Re-bake after any in-guest change you intend to keep.**
+- **Darkstar does not track the mouse until the display has been CLICKED once**
+  ("Click on the display to capture mouse/keyboard" in its status bar), and
+  **either Alt key RELEASES the capture again**. The kiosk arms it with a
+  dwelled click at startup so the capture is inside the golden, and the tile
+  remaps both Alt scancodes away (`SH_KEY_REMAP=0x38:0x46,0xe038:0x46`).
+- **Turn X autorepeat off (`xset -r`).** Darkstar wants a ~300 ms hold, X repeats
+  at 660 ms, Pilot repeats on its own. Agent A and C: check yours.
+- **The emulator chrome does not have to be in the frame.** The X root is a custom
+  1088x860 mode — exactly Darkstar's DisplayBox — and `launch.sh` moves the
+  1091x915 WinForms window to (0,−29), so the System Menu and System Status bars
+  fall outside the captured framebuffer. The visitor sees the Star screen and
+  nothing else, and cannot reach `System → Exit`. `/root/starmp.sh` slides the
+  window 26 px to read the MP code and slides it back.
+- **This box is much faster than the 72 %-loaded measurements above suggested.**
+  Cold boot inside the tile: Set Time banner in ~1 minute, logged-off screen at
+  17 minutes, 42–45 fields/sec (54–58 % of Darkstar's own 77.4) at the desktop.
+  Cost: **~144 % of a core for the whole QEMU tile, 1.6 GB RSS host-side, 292 MB
+  for mono inside a 1536 MiB guest.**
+- **The Desktop Creation route needed one correction to B's write-up.** The
+  machine only logs itself out when a desktop is actually CREATED; re-submitting
+  an existing name just reports "already exists" and sits there. Create a *new*
+  name with `Administrator` armed. Also: the caret in the Name field is NOT
+  always at the end — clicking mid-string puts it mid-string, so click past the
+  end of the text before backspacing. And `Start` acts on whichever sub-form is
+  expanded, so collapse Desktop Deletion before using it.
+- **Shifted punctuation on Darkstar is FLAKY, not slow.** Fifteen shifted
+  characters typed back to back all landed (`A : " < > ? _ + { } | * ( )`); the
+  same chord embedded in a word did not, at leads from 200 ms to 700 ms, through
+  XTEST *and* through QMP scancodes. Retracting the "350 ms works" number: it is
+  not a threshold. Verify the glyph instead — and note that remapping the X
+  keymap (`xmodmap -e 'keycode 47 = colon colon'`) makes the key produce
+  **nothing at all**, because Darkstar's table is keyed on the layout it expects.
+
 ## Agent C — Daybreak / ViewPoint
 
 **Status: ViewPoint 2.0.5 desktop reached and baked into a golden snapshot**

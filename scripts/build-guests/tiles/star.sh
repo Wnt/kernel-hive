@@ -249,9 +249,14 @@ PROPS
 #    must reach the WinForms TOP-LEVEL window; the SDL child window lands
 #    nothing, because Darkstar embeds SDL with SDL_CreateWindowFrom and handles
 #    keys on the form.
-#  * `xset m 1 0` turns X pointer ACCELERATION off. The Star's mouse is
-#    relative and streamhost injects bounded PS/2 deltas; with acceleration on,
-#    X rescales them and the Star cursor overshoots every target.
+#  * X pointer ACCELERATION is off -- but NOT via `xset m`, which under
+#    libinput reports "acceleration 1/1 threshold 0" while the device happily
+#    goes on applying its own adaptive profile. The real switch is the
+#    xorg.conf.d InputClass this script installs. Measured before it existed:
+#    ~1.8x on medium moves, so the Star cursor overshot every target.
+#  * X AUTOREPEAT is off. Darkstar wants a ~300 ms key hold, X repeats after
+#    660 ms, and Pilot does its own repeat -- leave autorepeat on and a
+#    deliberate hold enters the character several times.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_VIDEODRIVER=x11
 export SDL_RENDER_DRIVER=software
@@ -262,7 +267,7 @@ if [ -n "$OUT" ]; then
   xrandr --output "$OUT" --mode star 2>/dev/null || true
 fi
 xsetroot -solid black 2>/dev/null || true
-xset m 1 0 2>/dev/null || true
+xset -r 2>/dev/null || true
 cd /opt/star/Darkstar/D/bin/Release || exit 1
 mono ./Darkstar.exe -config /opt/star/run/star.cfg >/tmp/darkstar.log 2>&1 &
 DPID=$!
@@ -291,6 +296,25 @@ done
 wait "$DPID"
 EOS
 
+  # THE POINTER ACCELERATION FIX, and it is not `xset`. The Star's mouse is
+  # relative: streamhost differences the browser's absolute sample and injects
+  # bounded PS/2 deltas, and Darkstar turns host pointer motion into
+  # IOP.Mouse.MouseMove deltas. Anything in between that rescales a delta makes
+  # the Star cursor overshoot -- measured at ~1.8x before this file existed.
+  # Under libinput the core pointer control reports "acceleration: 1/1
+  # threshold: 0" while the DEVICE still applies its own adaptive profile, so
+  # `xset m 1 0` looks like it worked and does nothing. Only the driver option
+  # turns it off.
+  guest "cat > /etc/X11/xorg.conf.d/20-star-pointer.conf" <<'PTR'
+Section "InputClass"
+    Identifier  "star-flat-pointer"
+    MatchIsPointer "on"
+    Driver      "libinput"
+    Option      "AccelProfile" "flat"
+    Option      "AccelSpeed" "0"
+EndSection
+PTR
+
   # Kiosk session profile: X with NO core pointer cursor. Darkstar paints the
   # Star's own cursor into its framebuffer, so the X arrow would be a second,
   # wrong pointer sitting in the captured frame.
@@ -304,6 +328,68 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
   exec startx -- -nocursor >"$HOME"/startx.log 2>&1
 fi
 EOS
+
+  # stardrv: the bake-time / operator driver, baked into the overlay so the
+  # timings Darkstar needs live WITH the tile instead of in someone's shell
+  # history. See docs/guests/star.md.
+  guest "cat > /usr/local/bin/stardrv; chmod +x /usr/local/bin/stardrv" <<'DRV'
+#!/bin/bash
+# Drive the Xerox Star 8010 kiosk (Darkstar) from inside the guest.
+#   stardrv key <key>...      each key: press, hold, release, gap
+#   stardrv shift <key>       one shifted key, modifier led and held
+#   stardrv rel <dx> <dy>     walk the pointer by (dx,dy) in <=50 px steps
+#   stardrv click [<dx> <dy>] optional walk, then a 400 ms button-1 dwell
+#   stardrv adjust            a 400 ms button-3 (ADJUST) dwell
+# Everything here is dwell. A ~12 ms XTEST press lands NOTHING in Pilot; keys go
+# to the WinForms TOP-LEVEL window (the SDL child lands nothing); the modifier
+# is a key and gets its own lead. Pointer moves are RELATIVE nudges around the
+# DisplayBox centre, walked in small steps because the Star drops large deltas.
+set -u
+export DISPLAY=:0 XAUTHORITY=/home/bridge/.Xauthority
+HOLD=${STAR_HOLD:-0.30}
+GAP=${STAR_GAP:-0.35}
+LEAD=${STAR_LEAD:-0.60}
+DWELL=${STAR_DWELL:-0.40}
+STEP=50
+CX=544
+CY=430
+focus() {
+  W=$(xdotool search --name '^Darkstar$' | head -1)
+  [ -n "$W" ] || { echo "no Darkstar window" >&2; exit 1; }
+  xdotool windowfocus "$W"
+  sleep 0.3
+}
+case "${1:-}" in
+key)
+  shift
+  focus
+  for k in "$@"; do
+    xdotool keydown "$k"; sleep "$HOLD"; xdotool keyup "$k"; sleep "$GAP"
+  done
+  ;;
+shift)
+  focus
+  xdotool keydown Shift_L; sleep "$LEAD"
+  xdotool keydown "$2"; sleep 0.45; xdotool keyup "$2"
+  sleep 0.3; xdotool keyup Shift_L
+  ;;
+rel)
+  dx=$2; dy=$3
+  while [ "$dx" -ne 0 ] || [ "$dy" -ne 0 ]; do
+    if [ "$dx" -gt "$STEP" ]; then sx=$STEP; elif [ "$dx" -lt -"$STEP" ]; then sx=-$STEP; else sx=$dx; fi
+    if [ "$dy" -gt "$STEP" ]; then sy=$STEP; elif [ "$dy" -lt -"$STEP" ]; then sy=-$STEP; else sy=$dy; fi
+    xdotool mousemove $((CX + sx)) $((CY + sy)); sleep 0.12
+    dx=$((dx - sx)); dy=$((dy - sy))
+  done
+  ;;
+click)
+  [ $# -lt 3 ] || "$0" rel "$2" "$3"
+  xdotool mousedown 1; sleep "$DWELL"; xdotool mouseup 1
+  ;;
+adjust) xdotool mousedown 3; sleep "$DWELL"; xdotool mouseup 3 ;;
+*) sed -n '2,8p' "$0"; exit 2 ;;
+esac
+DRV
 }
 
 # ---- main -------------------------------------------------------------------
@@ -330,7 +416,7 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
   done
   if ! guest "command -v mono >/dev/null"; then
     log "installing mono + the Darkstar build chain into the overlay ..."
-    guest "export DEBIAN_FRONTEND=noninteractive; apt-get update -o Acquire::Retries=3 >/tmp/apt.log 2>&1; apt-get install -y mono-complete mono-xbuild nuget libgdiplus libsdl2-2.0-0 git unzip xdotool x11-utils x11-xserver-utils >>/tmp/apt.log 2>&1; mono --version | head -1"
+    guest "export DEBIAN_FRONTEND=noninteractive; apt-get update -o Acquire::Retries=3 >/tmp/apt.log 2>&1; apt-get install -y mono-complete mono-xbuild nuget libgdiplus libsdl2-2.0-0 git unzip xdotool x11-utils x11-xserver-utils xinput >>/tmp/apt.log 2>&1; mono --version | head -1"
   fi
   build_darkstar
   fetch_media

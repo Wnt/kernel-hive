@@ -55,12 +55,28 @@ const oy = box.y + (box.height - res.h * scale) / 2;
 const toClient = (x, y) => [ox + (x + 0.5) * scale, oy + (y + 0.5) * scale];
 console.log(`surface ${res.w}x${res.h} scale ${scale.toFixed(4)} origin ${ox.toFixed(1)},${oy.toFixed(1)}`);
 
+// Start the walk where the pointer ACTUALLY is (the card we clicked), so the
+// first target is reached by real travel. Handing the first target no travel at
+// all is a trap: on a relative tile the session's very first sample only seeds
+// the origin, so a target reached in one teleport never moves the guest and the
+// whole run reads as broken tracking.
+let last = { x: cbox.x + cbox.width / 2, y: cbox.y + cbox.height / 2 };
 for (const [gx, gy] of targets) {
   const [cx, cy] = toClient(gx, gy);
-  // Many small steps, not one jump: the Star's mouse hardware drops large
-  // single deltas (a 985 px jump applied ~127 px), which is exactly why the
-  // daemon chunks. Moving the way a hand moves keeps the client honest too.
-  await page.mouse.move(cx, cy, { steps: 24 });
+  // Move the way a HAND moves — small steps spread over real time — not the
+  // way `page.mouse.move(..., {steps})` moves, which emits every intermediate
+  // sample inside a millisecond. That distinction is not cosmetic on a relative
+  // tile: the daemon's homing pin holds the pointer mutex for its settle on the
+  // first sample of a session, so a whole burst delivered inside that window is
+  // lost and the session inherits an offset the size of the burst. A hand loses
+  // only the few pixels it travelled during the settle.
+  const from = last;
+  const N = 40;
+  for (let i = 1; i <= N; i++) {
+    await page.mouse.move(from.x + ((cx - from.x) * i) / N, from.y + ((cy - from.y) * i) / N);
+    await page.waitForTimeout(25);
+  }
+  last = { x: cx, y: cy };
   console.log(`${Date.now()} move guest ${gx},${gy} (client ${cx.toFixed(1)},${cy.toFixed(1)})`);
   await page.waitForTimeout(DWELL);
 }

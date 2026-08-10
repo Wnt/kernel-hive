@@ -128,7 +128,7 @@ browser absolute sample
      previous target, corner-pin home on the first sample, chunk to <=256 px
      per axis, pace 16 ms  [input.rs rel_motion_bounded]
   -> QEMU PS/2 mouse (NO usb-tablet, machine vmport=off)
-  -> Linux generic PS/2 mouse -> X (acceleration OFF: `xset m 1 0`)
+  -> Linux generic PS/2 mouse -> X (acceleration OFF via xorg.conf.d, below)
   -> SDL relative motion -> Darkstar dx/dy -> the Star cursor
 ```
 
@@ -137,8 +137,14 @@ Three things make it work, and all three are load-bearing:
 - **No `usb-tablet`, and `vmport=off`.** With either present QEMU's absolute /
   VMware-mouse handler absorbs the REL events before the guest's PS/2 driver sees
   them. This is the `c64` lesson (`docs/guests/c64.md`) applied unchanged.
-- **`xset m 1 0` in the kiosk.** X pointer acceleration would rescale streamhost's
-  deltas and the Star cursor would overshoot every target.
+- **X pointer acceleration off — and `xset m` is NOT how you do that.** Under
+  libinput the core pointer control cheerfully reports `acceleration: 1/1
+  threshold: 0` while the DEVICE goes on applying its own adaptive profile. The
+  real switch is the `AccelProfile "flat"` InputClass the builder installs at
+  `/etc/X11/xorg.conf.d/20-star-pointer.conf`. Measured before it existed: about
+  **1.8x** on medium moves, so the Star cursor overshot every target. This cost
+  a full round of pointer measurements — `xset q` said the right thing the whole
+  time.
 - **The 256 px chunking already in the daemon is what this machine needs.** The
   Star drops large single deltas — a 985 px jump applied only ~127 px, while
   50 px steps at 120 ms apply 1:1 — and `rel_motion_bounded` is exactly a bounded,
@@ -146,6 +152,45 @@ Three things make it work, and all three are load-bearing:
 
 The tile therefore declares `stream.pointer.absolute = false` honestly and earns
 the derived **`Rel. pointer`** grid badge, which is what that badge is for.
+
+### What the pointer actually does, measured end to end
+
+Driven through the deployed SPA in a real browser (`tests/e2e-live/star-rel-probe.mjs`),
+with the Star cursor located in the QMP framebuffer at each dwell:
+
+| commanded delta | applied to the Star cursor |
+|---|---|
+| −336, +230 | **−336, +230** — exact |
+| +680, −500 | +663, clamped at the top edge (97.5 % in x) |
+| −344, +270 | clamped at the left edge, **+269** in y |
+
+**Gain is 1:1.** That is the number that decides whether this exhibit is usable
+and it is as good as it can be.
+
+**The ORIGIN is the honest caveat, and it is the shipped behaviour of the
+relative path rather than anything Star-specific.** Two things move it:
+
+- *Session seed.* The daemon pins the guest cursor into the top-left corner on
+  the first sample of a session and dead-reckons from there. The seeding sample
+  itself carries no motion, so the pointer's true origin is established one
+  sample later — invisible when a hand is moving, total when a test harness
+  teleports the pointer in a single event and then sits still.
+- *Edge clamping.* The `dbus-rel` bridge has no edge self-correction (that is
+  `ptr_reckon`, which only the `x11test`/`mamecmd` sinks use). Push the pointer
+  past a screen edge and the guest stops while the model keeps going, so the two
+  drift apart by the overshoot and stay drifted. Measured: after deliberately
+  clamping in both axes, an offset of about (−185, −170).
+
+**The recovery is a real gesture and worth knowing:** drag into the **top-left
+corner**. Both ends clamp there, and the offset goes to zero. A `loadvm golden`
+reset also re-parks the Star cursor in that corner, which is why the golden is
+baked with it there rather than somewhere prettier.
+
+Two daemon fixes landed while measuring this, both of which make the seed more
+robust for every relative tile: the homing pin is now bounded to 2048 counts per
+axis (8192 is ~65 PS/2 packets and takes most of a second to drain, and anything
+sent during the drain merges into it), and the seeding sample now sends the pin
+and nothing else, so the pin and the first walk cannot race through the queue.
 
 ### Darkstar has to be told to take the mouse — once, at bake time
 
@@ -160,6 +205,12 @@ visitor pressing Alt on a physical keyboard would silently kill the pointer unti
 they clicked again, so the tile remaps both Alt scancodes to an inert key
 (`SH_KEY_REMAP`, see `tile.env.fixture`). The SPA's `xerox-star` on-screen
 keyboard has no Alt button.
+
+### X autorepeat must be off
+
+Darkstar wants a ~300 ms key hold, X repeats a held key after 660 ms, and Pilot
+does its own repeat on top. Leave autorepeat on and a deliberate hold enters the
+character several times — `launch.sh` runs `xset -r`.
 
 ### Keys want DWELL — and so does the modifier
 
@@ -181,6 +232,25 @@ produces `:`. Measured on this emulator: a **200 ms lead fails, 350 ms works**.
 Since the daemon caps the gap at 250 ms, the reliable path for shifted
 punctuation is the SPA's **shift latch**, which holds Shift down across a
 human-timed pause; machine-speed typing of shifted symbols is not reliable here.
+
+**And it is genuinely flaky rather than simply slow.** Building the exhibit's
+own user account needed an XNS three-part name, so the colon was on the critical
+path, and the same `Shift`+`;` sent the same way produced `:` sometimes and `;`
+other times — through XTEST inside the guest AND through QMP scancodes, at leads
+from 200 ms to 700 ms. A run of fifteen shifted characters typed back to back
+came out perfectly (`A : " < > ? _ + { } | * ( )`); the same chord embedded in a
+word did not. Two things that *do* work, and are worth reaching for before
+another timing sweep:
+
+- **Verify the glyph, do not trust the timing.** In this bitmap font a colon and
+  a semicolon are one descender pixel apart. The cheap discriminator is that
+  `user:star:xerox2` contains no descender letters at all, so *any* ink below the
+  baseline in that field is a failed shift. `/root/cell.py` on the box prints the
+  cell as ASCII art.
+- **Remapping the X keymap does NOT work.** `xmodmap -e 'keycode 47 = colon
+  colon'` makes the bare key produce nothing at all in the guest: Darkstar's own
+  table is keyed on the layout it expects, and an unexpected keysym is simply
+  dead.
 (Dwarf, on the 6085, needs only that the modifier not ride the same event —
 150 ms is plenty there. Carry the *rule* between these machines, never the
 number.)
