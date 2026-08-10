@@ -9,6 +9,26 @@ Preflight checker: **`scripts/build-guests/check-assets.sh`** verifies
 presence + sha256 of the required staged set and prints a missing-list;
 `build-all.sh --check-assets` runs it first.
 
+**The bits now have a permanent home.** `/data/media-archive` (ZFS dataset
+`data/media-archive`, 150 G quota) is a content-addressed, **never-evicting**
+archive of every external build input we could reach — created 2026-08-10 with
+131 blobs / 15.8 G, including the media baked inside both bridge bases. This
+manifest remains the **index of record** (licence class, provenance, the
+reasoning about redistribution); the archive holds bytes and cross-references
+back here by sha256. Being archived is **not** permission to redistribute:
+the classes below still govern.
+
+- `scripts/build-guests/lib/media-cache.sh` — `media_cache_require` is the
+  resolver builders should use: cache hit → use it; miss → fetch, verify the
+  pin, archive it; fetch fails **and** cache misses → **FAIL LOUDLY**. It
+  replaces the `curl … || true` pattern, which let a media-less build report
+  success.
+- `scripts/build-guests/check-media-archive.sh` — verifies every blob against
+  its own hash, **and the media inside the two frozen bridge bases** (which
+  nothing checked before), read-only. `--manifest` cross-references this file.
+- `/data/media-archive/NOT-POPULATED.md` — what could *not* be archived. That
+  list is the set of things this lab would lose today.
+
 **What a green preflight does and does not prove (2026-08-10).** The checker was
 extended on this date to cover the bridge fleet's external inputs — the DEC media
 (decos, pdp11), the five atarist app archives, the c128 CP/M disk, the apple2 GEOS

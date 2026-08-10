@@ -233,6 +233,44 @@ snapshot -l overlay.qcow2 | grep -qw golden && LOADVM="-loadvm golden"` (same
 pattern as the `alpine` tile). The golden snapshot lives INSIDE `overlay.qcow2`
 (RAM + device state), so the overlay must never be deleted/recreated after bake.
 
+### 3d-bis. `coldboot` — the disk-only checkpoint before the bake
+
+`golden` is the *only* snapshot most overlays carry, which means the builder is
+the sole recipe for re-creating an exhibit and it has no backstop. `coldboot`
+(`scripts/build-guests/lib/bridge-coldboot`) is the missing checkpoint: the disk
+as the builder left it, taken with the VM **stopped** via `qemu-img snapshot -c`,
+which stores **no VM RAM**.
+
+Measured 2026-08-10: a `coldboot` costs **131 KB** on a fresh overlay and **65 KB**
+on one carrying 1 GiB of data (0 MiB extra on disk, 0.06–0.40 s), against
+**424–1442 MiB** for the `savevm` goldens across the live tiles. It is
+metadata-proportional, not RAM-proportional, so it is effectively free
+fleet-wide.
+
+```
+bridge-coldboot snapshot <overlay>          # take it, after provisioning, before driving
+bridge-coldboot revert   <overlay>          # re-bake restart point: boot, drive, bake
+bridge-coldboot mutate   <overlay> -- <cmd> # OFFLINE disk edit, VM not running
+bridge-coldboot status   <overlay>
+```
+
+**`mutate` drops any existing `golden`, unconditionally.** That is the whole
+point rather than a side effect: the tile boots `-loadvm golden`, and `loadvm`
+restores the snapshot's DISK state as well as its RAM, so an offline mutation
+that left a golden in place would be silently discarded at every boot while
+every log and screenshot looked healthy.
+
+Two hard-won constraints it encodes, both measured on this box:
+
+- **`pve-qemu-kvm` does not enforce the qcow2 image lock.** `qemu-img snapshot -c`
+  succeeds against an image a running VM holds open. So "qemu-img will stop me"
+  is false here; the helper checks `/proc/<pid>/fd` for holders instead.
+- **Only `ext2/3/4`, `vfat`, `exfat`, `ntfs` are writable**, probed at run time.
+  The kernel will mount Haiku BFS, Solaris UFS and Amiga AFFS read-only or with
+  unverified write paths, and a partial write to one of those corrupts a golden
+  that took hours to bake. Per-tile verdicts:
+  [`docs/lab/OFFLINE-MUTATION-MATRIX.md`](../../docs/lab/OFFLINE-MUTATION-MATRIX.md).
+
 ### 3e. Emit the streamhost tile + start the daemon
 Use the existing emitter for `tile.env`, then hand-patch `qemu-streamhost.sh` to
 the exact device set above (the emitter defaults `--disk` to `if=virtio`; bridge

@@ -17,6 +17,9 @@
 //   node scripts/check-file-size.mjs            # local: warnings only, exit 0
 //   node scripts/check-file-size.mjs --strict   # CI: hard breaches / stale
 //                                               #     exclusions fail (exit 1)
+//   node scripts/check-file-size.mjs --strict --committed
+//                                               # pre-push: tracked ∪ staged
+//                                               #     only (see the note below)
 //
 // size-exclusions.json (repo root) is a BIDIRECTIONAL ledger: "path" -> "reason".
 // An excluded file MUST still be over its hard cap. The moment it drops to/under
@@ -26,6 +29,31 @@
 //
 // Generated artifacts (see generated() in scripts/tiles-registry.py) and vendored
 // trees are never budgeted — they are not hand-authored source.
+//
+// WHICH FILES ARE SCANNED — it depends on the CONTEXT, and the difference is
+// load-bearing:
+//
+//   default (pre-commit, direct invocation, CI)
+//       tracked ∪ staged ∪ (untracked ∧ not-ignored)
+//   --committed (the pre-push hook)
+//       tracked ∪ staged  — the state actually being pushed
+//
+// A pre-push hook that budgets untracked files blocks you on a SIBLING's
+// in-flight work, which you cannot fix, which trains SKIP_GATE=1, which is how
+// a gate stops protecting anything. By push time your own new file is committed
+// and therefore tracked, so --committed still catches the breach below.
+//
+// The default set, and why it is the default:
+// Scanning only `git ls-files` made a NEW file always pass its own pre-commit
+// check: on 2026-08-10 a 606-line bash script was gated green while untracked,
+// committed, and turned `main` red the instant it became tracked. Same
+// silent-success class as the `decos` bug. So the candidate set is
+// `git ls-files --cached --others --exclude-standard`: `--cached` covers
+// tracked AND staged-new files, `--others --exclude-standard` adds the
+// untracked files that a `git add -A` would commit while honouring .gitignore,
+// .git/info/exclude and the global excludes — so node_modules/, build output
+// and scratch dirs stay invisible exactly as before. Consequence, and it is the
+// intended one: an in-flight untracked file is budgeted before it is committed.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
@@ -73,14 +101,17 @@ function repoRoot() {
   }).trim();
 }
 
-function trackedFiles(root) {
-  return execFileSync("git", ["ls-files", "-z"], {
+// See the header note: committedOnly => tracked ∪ staged (the pushed state);
+// otherwise tracked ∪ staged ∪ (untracked ∧ not-ignored).
+function candidateFiles(root, committedOnly) {
+  const args = ["ls-files", "-z", "--cached"];
+  if (!committedOnly) args.push("--others", "--exclude-standard");
+  const out = execFileSync("git", args, {
     cwd: root,
     encoding: "utf8",
     maxBuffer: 1 << 28,
-  })
-    .split("\0")
-    .filter(Boolean);
+  });
+  return [...new Set(out.split("\0").filter(Boolean))];
 }
 
 // wc -l semantics: number of newline characters.
@@ -128,6 +159,7 @@ function classify(path) {
 
 function main() {
   const strict = process.argv.includes("--strict");
+  const committedOnly = process.argv.includes("--committed");
   const root = repoRoot();
 
   let exclusions = {};
@@ -148,7 +180,7 @@ function main() {
   const suppressed = [];
   const perDialect = {};
 
-  for (const path of trackedFiles(root)) {
+  for (const path of candidateFiles(root, committedOnly)) {
     const dialect = classify(path);
     if (!dialect) continue;
 

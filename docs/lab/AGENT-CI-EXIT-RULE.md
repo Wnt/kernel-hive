@@ -104,6 +104,61 @@ Run them all locally in one shot with the pre-push hook
 
 Generated artifacts and vendored trees are never budgeted.
 
+### Which files a gate sees — it depends on when it runs
+
+`check-file-size.mjs` and `scripts/lint/shell-sources.sh` (the shfmt/shellcheck
+file list) share one rule and one flag. Do **not** substitute a bare
+`git ls-files '*.sh'` for `shell-sources.sh`.
+
+| context | file set | how |
+|---|---|---|
+| pre-commit, direct invocation, CI | tracked ∪ staged ∪ (untracked ∧ not-ignored) | `git ls-files --cached --others --exclude-standard` |
+| pre-push hook | tracked ∪ staged (shell narrowed to the pushed range) | `--committed` → `git ls-files --cached` |
+
+**Why the default includes untracked files.** Scanning only tracked files meant
+*a brand-new file always passed its own pre-commit check*. On 2026-08-10 a
+606-line bash script was gated green while untracked, committed, and pushed a
+red `main` the instant it became tracked — the same silent-success class as a
+`|| true` fetch. `--exclude-standard` honours `.gitignore`, `.git/info/exclude`
+and the global excludes, so `node_modules/`, build output and scratch dirs stay
+invisible; on a clean CI checkout the union is exactly the tracked set, so CI
+behaviour is unchanged.
+
+**Why pre-push excludes them.** A pre-push hook validates the commits being
+pushed, not the working tree. With untracked files in scope it failed `shfmt` on
+a file another agent was actively writing — a failure the pusher could not fix.
+An unfixable gate teaches `SKIP_GATE=1`, and then it protects nothing. By push
+time your own new file is tracked, so a genuine breach still blocks (verified:
+staged 621-line script → `--committed` exits 1).
+
+### The pre-push hook runs only what you owe
+
+`.claude/hooks/pre-push-gate.sh` derives the pushed range from git's own ref
+list (`<remote_sha>..<local_sha>`; by hand it falls back to `@{push}..HEAD`,
+`@{upstream}..HEAD`, `origin/main..HEAD`, then `HEAD`) and runs a language stage
+only when that language changed in it — the same "you owe the gate only for the
+language(s) your branch touches" rule stated above. The two cross-cutting gates
+always run. `GATE_FULL=1` forces the full-tree, every-language run.
+
+**Every skip is loud.** In particular the Rust stage: `streamhost/.cargo/config.toml`
+pins `target-dir` to `/data/vms/streamhost/build/target`, the box's shared
+target tree, so on a workstation cargo dies with `failed to create directory …
+Permission denied` before compiling anything. The hook detects the unwritable
+target dir and prints `SKIPPED: target-dir unavailable locally (CI covers this)`
+rather than failing a push nobody can make green — or, worse, skipping quietly.
+Run it locally with `CARGO_TARGET_DIR=/tmp/kh-target GATE_FULL=1`.
+
+### Gates that still read the working tree
+
+Known and accepted, listed so nobody rediscovers them as bugs:
+`check-generated-drift.sh` / `make tile-registry-check` renders from
+`registry/` on disk (so an *uncommitted* registry edit is what gets checked —
+self-consistent, and a stale generated file is worth surfacing either way), and
+`scripts/dev/verify-box-sync.sh` hashes worktree files against the box and
+enumerates its source/registry/launcher unions with plain `git ls-files` (so a
+brand-new untracked launcher has no mirror row yet). Both would need the pushed
+tree materialised to fix properly; neither is safe to change blind.
+
 `size-exclusions.json` (repo root) is a **bidirectional** ledger — `path` →
 one-line reason. Rules:
 

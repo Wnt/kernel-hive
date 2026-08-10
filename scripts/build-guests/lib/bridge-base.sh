@@ -181,6 +181,12 @@ EMUTOS_URL="https://sourceforge.net/projects/emutos/files/emutos/1.3/emutos-1024
 # (NEVER committed to the GitHub repo).
 AMIGA_KICK_URL="https://archive.org/download/commodore-amiga-firmware/Kickstart%20v1.3%20r34.005%20%281987-12%29%28Commodore%29%28A500-A1000-A2000-CDTV%29%5B%21%5D.zip"
 AMIGA_WB_URL="https://amigamuseum.emu-france.info/Fichiers/ADF/Installation,%20Kickstars,%20Workbench%20Tutorials%20&%20Promotional/Workbench%201.3%20%2834.20%29%20-%20Boot%20%28Commodore%29%20%281988%29.zip"
+# The pins ASSETS-MANIFEST.md records for the two Amiga blobs. They were already
+# written into $MEDIA_DIR/LICENSES as prose by this script; they are now also
+# ASSERTED at the end of provisioning (see check_media below), which is what
+# turns "we wrote down a hash" into "a wrong download fails the build".
+AMIGA_KICK_MD5="82a21c1890cae844b3df741f2762d48d"
+AMIGA_WB_MD5="d10f4907697c4eafcf976b4ef6ea829b"
 
 log() { echo "[bridge-base/${SUITE} $(date +%H:%M:%S)] $*"; }
 
@@ -422,24 +428,65 @@ write_files:
       fi
       command -v cap32 >/dev/null && CAP32_OK=yes
       # ---- media ----
+      # EVERY FETCH AND EVERY EXTRACTION HERE IS FATAL. It used to be
+      # \`curl … || true\` plus \`(unzip … && find -exec cp) || true\`, five times
+      # over, and that is the single most dangerous pattern in this file: a
+      # rotted mirror produced a base with NO emulator media, the provision
+      # script still printed its STATUS line and exited 0, wave 0 acceptance
+      # passed (it only checks that the emulator BINARIES exist), and the fault
+      # would surface weeks later as a tile rendering black with every log
+      # healthy. The amiga media in particular hangs off a single third-party
+      # mirror (amigamuseum.emu-france.info) with no second source.
+      # A base without its media is not a degraded base, it is a broken one, so
+      # it must fail here, loudly, while someone is watching the build.
       mkdir -p ${MEDIA_DIR}; cd ${MEDIA_DIR}
-      [ -f GEOS.D64 ] || curl -fsSL -o GEOS.D64 "${GEOS_URL}" || true
+      [ -f GEOS.D64 ] || curl -fsSL --retry 3 --max-time 180 -o GEOS.D64 "${GEOS_URL}" \\
+        || { echo "FATAL: could not fetch GEOS.D64 from ${GEOS_URL}"; exit 21; }
       if [ ! -f etos1024k.img ]; then
-        curl -fsSL -o /tmp/emutos.zip "${EMUTOS_URL}" || true
-        (cd /tmp && unzip -o emutos.zip >/dev/null 2>&1 && find . -name 'etos1024k.img' -exec cp {} ${MEDIA_DIR}/etos1024k.img \\;) || true
+        curl -fsSL --retry 3 --max-time 180 -o /tmp/emutos.zip "${EMUTOS_URL}" \\
+          || { echo "FATAL: could not fetch EmuTOS from ${EMUTOS_URL}"; exit 22; }
+        (cd /tmp && unzip -o emutos.zip >/dev/null 2>&1 && find . -name 'etos1024k.img' -exec cp {} ${MEDIA_DIR}/etos1024k.img \\;)
+        [ -f ${MEDIA_DIR}/etos1024k.img ] || { echo "FATAL: EmuTOS zip fetched but etos1024k.img not found inside it"; exit 23; }
       fi
       # ---- Amiga 500 tile media (scripts/build-guests/tiles/amiga.sh): Kickstart 1.3 ROM
       # + Workbench 1.3 Boot ADF. Copyrighted, free to use in this private collection — NEVER committed;
       # baked into /opt/bridge/media/amiga/ so the amiga tile needs no per-tile fetch.
       mkdir -p ${MEDIA_DIR}/amiga
       if [ ! -f ${MEDIA_DIR}/amiga/kick13.rom ]; then
-        curl -fsSL --max-time 180 -o /tmp/amiga-kick.zip "${AMIGA_KICK_URL}" || true
-        (cd /tmp && unzip -o amiga-kick.zip >/dev/null 2>&1 && find . -maxdepth 1 -name 'Kickstart*A500*.rom' -exec cp {} ${MEDIA_DIR}/amiga/kick13.rom \\;) || true
+        curl -fsSL --retry 3 --max-time 180 -o /tmp/amiga-kick.zip "${AMIGA_KICK_URL}" \\
+          || { echo "FATAL: could not fetch Amiga Kickstart from ${AMIGA_KICK_URL}"; exit 24; }
+        (cd /tmp && unzip -o amiga-kick.zip >/dev/null 2>&1 && find . -maxdepth 1 -name 'Kickstart*A500*.rom' -exec cp {} ${MEDIA_DIR}/amiga/kick13.rom \\;)
+        [ -f ${MEDIA_DIR}/amiga/kick13.rom ] || { echo "FATAL: Kickstart zip fetched but no Kickstart*A500*.rom inside it"; exit 25; }
       fi
       if [ ! -f ${MEDIA_DIR}/amiga/workbench13.adf ]; then
-        curl -fsSL --max-time 240 -o /tmp/amiga-wb.zip "${AMIGA_WB_URL}" || true
-        (cd /tmp && unzip -o amiga-wb.zip >/dev/null 2>&1 && find . -maxdepth 1 -name 'Workbench*Boot*.adf' -exec cp {} ${MEDIA_DIR}/amiga/workbench13.adf \\;) || true
+        curl -fsSL --retry 3 --max-time 240 -o /tmp/amiga-wb.zip "${AMIGA_WB_URL}" \\
+          || { echo "FATAL: could not fetch Workbench 1.3 from ${AMIGA_WB_URL} (single third-party mirror, no fallback)"; exit 26; }
+        (cd /tmp && unzip -o amiga-wb.zip >/dev/null 2>&1 && find . -maxdepth 1 -name 'Workbench*Boot*.adf' -exec cp {} ${MEDIA_DIR}/amiga/workbench13.adf \\;)
+        [ -f ${MEDIA_DIR}/amiga/workbench13.adf ] || { echo "FATAL: Workbench zip fetched but no Workbench*Boot*.adf inside it"; exit 27; }
       fi
+      # ---- terminal media assertion (the part wave-0 acceptance was missing) --
+      # The three md5s below are the ones ASSETS-MANIFEST.md pins and that this
+      # script already writes into \${MEDIA_DIR}/LICENSES as prose. Asserting them
+      # here turns that prose into a gate: a truncated download, an HTML error
+      # page saved as a .rom, or a mirror that silently started serving a
+      # different Kickstart revision all fail the build instead of being baked
+      # into a frozen base that 28 overlays then depend on.
+      MEDIA_OK=yes
+      check_media() { # <path> <md5> <label>
+        if [ ! -s "\$1" ]; then echo "FATAL: missing media \$3 (\$1)"; MEDIA_OK=no; return 1; fi
+        got=\$(md5sum "\$1" | awk '{print \$1}')
+        if [ "\$got" != "\$2" ]; then
+          echo "FATAL: media \$3 (\$1) md5 \$got != expected \$2"; MEDIA_OK=no; return 1
+        fi
+        return 0
+      }
+      check_media ${MEDIA_DIR}/GEOS.D64 "${GEOS_MD5}" GEOS.D64 || true
+      check_media ${MEDIA_DIR}/amiga/kick13.rom "${AMIGA_KICK_MD5}" kick13.rom || true
+      check_media ${MEDIA_DIR}/amiga/workbench13.adf "${AMIGA_WB_MD5}" workbench13.adf || true
+      # EmuTOS has no md5 pin in the manifest (it is GPL and versioned), so it is
+      # gated on presence and a plausible size rather than a hash.
+      [ -s ${MEDIA_DIR}/etos1024k.img ] || { echo "FATAL: missing etos1024k.img"; MEDIA_OK=no; }
+      [ "\$MEDIA_OK" = yes ] || { echo "FATAL: bridge base media verification FAILED — refusing to freeze a media-less base"; exit 28; }
       cat > ${MEDIA_DIR}/LICENSES <<'LIC'
       GEOS.D64      : C64 GEOS 2.0, archive.org geos64_J1AD, copyrighted (free to use in this private collection).
       etos1024k.img : EmuTOS 1024k 1.3, GPLv2 (free Atari ST ROM).
@@ -456,9 +503,14 @@ write_files:
       chown -R bridge:bridge /home/bridge
       systemctl set-default multi-user.target
       systemctl daemon-reload
-      echo "STATUS vice=\$VICE_OK hatari=\$HATARI_OK linapple=\$LINAPPLE_OK cap32=\$CAP32_OK fsuae=\$FSUAE_OK"
-      echo "vice=\$VICE_OK hatari=\$HATARI_OK linapple=\$LINAPPLE_OK cap32=\$CAP32_OK fsuae=\$FSUAE_OK" > /var/lib/bridge-provision-done
-      echo "BRIDGE-PROVISION-DONE vice=\$VICE_OK hatari=\$HATARI_OK linapple=\$LINAPPLE_OK cap32=\$CAP32_OK fsuae=\$FSUAE_OK" > /dev/ttyS0 || true
+      # media=\$MEDIA_OK is in the STATUS line because that line is what wave-0
+      # acceptance reads. It previously reported only the emulator BINARIES, so a
+      # base with five present emulators and zero media looked identical to a
+      # good one.
+      STATUS="vice=\$VICE_OK hatari=\$HATARI_OK linapple=\$LINAPPLE_OK cap32=\$CAP32_OK fsuae=\$FSUAE_OK media=\$MEDIA_OK"
+      echo "STATUS \$STATUS"
+      echo "\$STATUS" > /var/lib/bridge-provision-done
+      echo "BRIDGE-PROVISION-DONE \$STATUS" > /dev/ttyS0 || true
 runcmd:
   - [ bash, /root/provision.sh ]
 EOF

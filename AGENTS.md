@@ -125,6 +125,20 @@ run on the host over `ssh lab`, not inside CT950.
    regenerate with `labctl gen` after any launcher/tile.env change). Run all via
    `ssh lab '<cmd>'`:
    - `labctl ls` — matrix + live service state (EXEC column shows the port).
+   - `labctl facts <tile> [--json]` — **START EVERY TILE TASK HERE.** One call
+     for the facts sessions kept re-deriving out of ten files: SPA/registry id
+     vs `SH_TILE` (with an explicit `identity_diverges` flag), the real
+     `streamhost@<x>.service` name + state, kind (bridge / direct-QEMU /
+     x11-runtime, derived), declared-vs-actual bridge suite, disk + format +
+     size + backing + snapshot names, whether `reset` works and how, the exec
+     channel, and the golden builder plus whether that builder BAKES the golden
+     or only prints the operator's `--bake` step. Takes either id
+     (`labctl facts solaris` == `labctl facts solariscde`). Repo-declared
+     fields are read from the box checkout `/data/kernel-hive`
+     (`scripts/dev/box-repo.sh`) and every answer prints the commit it was read
+     at, plus a DIRTY count — that checkout only advances on an explicit `sync`,
+     so it may lag `main` and must say so. Every field degrades to null with a
+     `warning:` line naming the missing path, never a failed call.
    - `labctl exec <tile> "<cmd>"` — **REAL captured stdout + exit code.** Wired
      today for: `solariscde` (warpd `E` verb → `/root/gexec.py 57790`), the
      ssh tiles `alpine`/`tinycore`/`haiku` (gallery key, users root/tc/user on
@@ -280,6 +294,21 @@ answer was 0. Resolve each hit through `/proc/<pid>/exe` and check the binary.
 
 ## Building
 
+- **The box's own checkout — `/data/kernel-hive`.** The canonical kernel-hive
+  tree ON the host, and the only place a host-side builder should run from
+  (`/data/kernel-hive/scripts/build-guests/tiles/<os>.sh`). CT950's checkouts
+  cannot do this work — no `/data` mount. Manage it with
+  `scripts/dev/box-repo.sh`: `status [--strict] [--fetch]` (path, commit, dirty
+  flag, behind/ahead), `sync` (fast-forward `main`; **refuses** over local
+  edits), `init`, `path`. It is a **clean mirror, never edited in place**, and
+  it is updated only by an explicit `sync` — no timer, no pull-on-use, so a
+  fetch cannot swap `build-guests/` out from under a 40-minute golden bake.
+  Auth reuses the GitHub key the box already has, read in place (nothing
+  generated, nothing copied). Quote the commit `status` prints in any build
+  report. **Never hand-copy a builder into a scratch dir**: a copy has no
+  version and goes stale in silence — `/data/vms/soltest/BUILD-gt40/gt40.sh`
+  survived the bookworm→trixie flip still pinned to the bookworm base and would
+  have rebuilt the tile on the wrong Debian (removed 2026-08-10).
 - **Rust daemon**: edit `streamhost/streamhost/src/*` locally → rsync to box →
   `cargo build --release` there → install → restart affected
   `streamhost@<tile>` services. One-shot from the Mac:
@@ -319,8 +348,35 @@ jobs):
 - **generated-file drift (all)** — `make tile-registry-check` (never hand-edit a
   generated file; edit the registry source + `make tile-registry-generate`)
 
-Mirror it locally before pushing with `.claude/hooks/pre-push-gate.sh` (enable:
-`ln -sf ../../.claude/hooks/pre-push-gate.sh .git/hooks/pre-push`). Strict on
+**Which files a gate sees depends on WHEN it runs, and both halves are
+load-bearing.** The two file-list gates — `check-file-size.mjs` and
+`scripts/lint/shell-sources.sh` (the shfmt/shellcheck list; use it, never a bare
+`git ls-files`) — take a `--committed` flag:
+
+- **pre-commit / direct / CI (default): tracked ∪ staged ∪ (untracked ∧
+  not-ignored).** Tracked-only meant *a new file always passed its own
+  pre-commit check* — a 606-line script was gated green while untracked,
+  committed, and turned `main` red the moment it became tracked.
+- **pre-push (`--committed`): tracked ∪ staged**, and the hook narrows the shell
+  lint further to the files changed in the pushed range. A pre-push gate
+  validates *what is being pushed*, never the dirty worktree: blocking you on a
+  sibling agent's half-written untracked file is a failure you cannot fix, and
+  an unfixable gate just teaches `SKIP_GATE=1`. Your own new file is tracked by
+  push time, so real breaches still block.
+
+`--exclude-standard` honours `.gitignore`, so build output and scratch dirs stay
+invisible; on a clean CI checkout every variant equals the tracked set.
+
+Mirror it locally before pushing with `.claude/hooks/pre-push-gate.sh` — **enable
+it in every clone/worktree, it is not on by default**:
+`ln -sf ../../.claude/hooks/pre-push-gate.sh .git/hooks/pre-push`. It runs a
+language stage **only when that language changed in the pushed range** (you owe
+the gate only for what you touched) and **says out loud when a stage is
+skipped** — e.g. Rust on a workstation, where `streamhost/.cargo/config.toml`
+points `target-dir` at the box's shared tree and cargo cannot write it (`CI
+covers this`; `CARGO_TARGET_DIR=/tmp/kh-target GATE_FULL=1` to run it anyway).
+A silently skipped gate is the failure class this repo keeps paying for.
+`GATE_FULL=1` forces the full-tree, every-language run. Strict on
 hygiene/debt and file growth, pragmatic on style; Python-2.6 in-guest agents are
 runtime-exempt from the modern budget.
 

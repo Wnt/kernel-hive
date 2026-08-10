@@ -1,0 +1,491 @@
+#!/usr/bin/env bash
+# build-guests/lib/bridge-coldboot — the `coldboot` snapshot: a bridge overlay's
+# DISK-ONLY checkpoint, taken after the builder has finished provisioning the
+# disk and BEFORE the guest is driven to its exhibit state and `savevm golden`.
+#
+# WHY THIS EXISTS
+#   Every bridge overlay carries exactly ONE internal snapshot, `golden`, and
+#   nothing else. So the only recipe for re-creating an exhibit is "base qcow2 +
+#   builder + external media", the builder is the sole recipe, and it has no
+#   backstop — decos.sh was found on 2026-08-10 to be unable to reproduce its own
+#   tile while logging success. `coldboot` is the missing checkpoint: the disk as
+#   the builder left it, before any driving.
+#
+# WHY IT IS CHEAP (measured, not asserted — 2026-08-10, /data/vms/soltest)
+#   `savevm golden` runs on a RUNNING VM and writes the whole VM RAM image into
+#   the qcow2: 424-1442 MiB across the live bridge tiles (pdp11 424, atarist 515,
+#   gt40 538, amiga 541, alto 589, c64 815, apple2 875, star 1442).
+#   `qemu-img snapshot -c` runs on a STOPPED VM and writes no RAM at all — it
+#   copies the L1 table and flips the cluster refcounts, so the data clusters are
+#   shared copy-on-write and nothing is duplicated. Measured on a scratch overlay
+#   carrying 1 GiB of allocated data: VM_SIZE 0 B, file grew 65 KB, 0 MiB of
+#   extra space on disk, 0.40 s wall. On a fresh overlay: 131 KB, 0.06 s.
+#   Four orders of magnitude cheaper, and it is metadata-proportional, not
+#   RAM-proportional.
+#
+# THE THREE USES
+#   1. RE-BAKE RESTART POINT.  `revert` then boot, drive, bridge-bake-golden.
+#      Turns "re-run the whole builder" into "boot and drive" — which is most of
+#      the win for an emulator upgrade, where the disk barely changes.
+#   2. OFFLINE DISK MUTATION.  `mutate` gives you the disk read-write while it
+#      is NOT running, so a new emulator binary / guest tool / media file is a
+#      file copy instead of boot + wait-for-ssh + scp. The seven MAME tiles each
+#      push a 70-120 MB binary over that round trip today.
+#   3. A CORRECTNESS GUARD, and this is the part that must be structural.
+#
+# WHICH TILES SHOULD HAVE ONE — AND WHY IT IS DELIBERATELY NOT ALL OF THEM
+#   The mechanism here is general: it works on any bridge overlay. Wiring it
+#   fleet-wide would be a mistake, and the cost analysis is the reason. A second
+#   internal snapshot is cheap in DISK clusters (see above) but the overlays it
+#   would go into are not empty — and the tiles worth checkpointing are exactly
+#   the ones whose overlays are already 0.8-1.6 GiB. Fleet-wide, `coldboot` buys
+#   ~15 GiB of duplicated state, much of it on tiles whose ENTIRE recipe is
+#   "boot the base, write one /etc/bridge/launch.sh" — for those, rebuilding IS
+#   the cheap path and a checkpoint saves nothing it costs.
+#   And note the failure mode a coldboot does NOT cover: a base rebuild
+#   invalidates every overlay AND every coldboot in it at once, which is
+#   precisely the event that forces a fleet re-bake. Coldboot is insurance
+#   against a bad `savevm golden` and a lever for offline mutation. It is not
+#   insurance against losing the base.
+#
+#   WIRE IT (14 tiles):
+#     * the seven manual-bake tiles — atarist, amiga, apple2, c64, daybreak,
+#       star, indyr4400. Their bake is operator-triggered because no builder can
+#       check their "ready" state, so a bad golden is discovered late and the
+#       only way back is a multi-hour rebuild. This is the case coldboot pays for.
+#     * the seven MAME-in-chroot tiles — bbcmicro, armeval, mpf2, zx81,
+#       dragon32, kc854, oricatmos. These are the offline-mutation case: each
+#       pushes a 70-120 MB MAME binary into the guest over boot + wait-for-SSH +
+#       scp, and `revert` + `mutate` + one boot to bake removes that whole cycle.
+#   SKIP IT: the VICE six (c128, vic20, plus4, pet2001, cbm8032, cbm2) and
+#     amstradcpc. One launcher file each on top of a base that already ships the
+#     emulator; the rebuild is minutes and the checkpoint would cost more state
+#     than it saves. Do not "complete" this later without re-deriving that.
+#
+# THE TRAP `mutate` MAKES UNREPRESENTABLE
+#   A tile's launcher boots `-loadvm golden`, and `loadvm` restores the
+#   snapshot's DISK state as well as its RAM. So a mutation written to the
+#   overlay's *current* disk state is not merely "inconsistent with" a surviving
+#   golden — it is DISCARDED at every single boot, silently, while every log and
+#   every screenshot looks healthy. You would be looking at the pre-mutation
+#   exhibit and calling it proof.
+#   Therefore `mutate` DROPS `golden` before it touches a byte, unconditionally
+#   and loudly, and reverts to `coldboot` first so the mutation always starts
+#   from the known cold disk rather than from whatever the last session left
+#   behind. There is no flag to keep the golden. The overlay is left in a state
+#   where the ONLY way back to a working tile is boot -> drive ->
+#   bridge-bake-golden, which is exactly the truth of what just happened.
+#
+# FAIL-CLOSED ASSERTIONS
+#   * the VM must be STOPPED, checked against /proc — NOT against the qcow2
+#     image lock, which this box does not enforce. Measured 2026-08-10 on
+#     pve-qemu-kvm 11.0.2: with a qemu-nbd server holding the image open
+#     read-write, `qemu-img snapshot -c` returned exit 0 and took the snapshot
+#     anyway, with file.locking=on named explicitly. Upstream QEMU refuses.
+#     See assert_stopped() — the absent guard that reads like a present one is
+#     the whole reason that function is not a one-liner.
+#   * a PRODUCTION tile overlay needs `--allow-tile`. Unlike clone-guard, whose
+#     answer to a production path is always no, a production overlay is a
+#     legitimate target here (use 1 IS a re-bake of a live tile) — so the guard
+#     is explicit opt-in, not refusal.
+#   * `snapshot` refuses an overlay that already has a `golden` unless
+#     `--retroactive`: the current disk state of a baked overlay is whatever the
+#     driving left behind, which is NOT the builder's cold output, and labelling
+#     it `coldboot` would launder a guess into a checkpoint.
+#
+# An EXECUTABLE rather than a sourced function, for the reason lib/bridge-base-for
+# and lib/bridge-bake-golden document: the per-tile builders sit against the
+# 600-line hard cap.
+#
+# Usage:
+#   bridge-coldboot snapshot <overlay> [--allow-tile] [--retroactive]
+#   bridge-coldboot revert   <overlay> [--allow-tile]
+#   bridge-coldboot status   <overlay>
+#   bridge-coldboot mutate   <overlay> [--allow-tile] [--continue] [-- <cmd> …]
+#       With a command: it runs with $COLDBOOT_MNT set to the mounted guest root
+#       (and cwd there). Without: prints the mount point and drops to $SHELL.
+#       Reverts to `coldboot` first unless --continue, which stacks onto the
+#       current disk state instead (a golden is dropped either way).
+set -euo pipefail
+
+SELF="$(basename "$0")"
+COLD_TAG="coldboot"
+GOLD_TAG="golden"
+PROD_TILES_ROOT="${PROD_TILES_ROOT:-/data/vms/streamhost/tiles}"
+
+log() { echo "[coldboot] $*"; }
+die() {
+  echo "[coldboot] ERROR: $*" >&2
+  exit 1
+}
+usage() {
+  sed -n '/^# Usage:/,/^set -euo/p' "$0" | sed 's/^# \{0,1\}//;/^set -euo/d'
+  exit "${1:-0}"
+}
+
+# ---- argument parsing --------------------------------------------------------
+CMD="${1:-}"
+[ -n "$CMD" ] || usage 2
+case "$CMD" in -h | --help | help) usage 0 ;; esac
+shift
+
+OVERLAY=""
+ALLOW_TILE=0
+RETRO=0
+CONTINUE=0
+MUTATE_CMD=()
+while [ $# -gt 0 ]; do case "$1" in
+  --allow-tile)
+    ALLOW_TILE=1
+    shift
+    ;;
+  --continue)
+    CONTINUE=1
+    shift
+    ;;
+  --retroactive)
+    RETRO=1
+    shift
+    ;;
+  --)
+    shift
+    MUTATE_CMD=("$@")
+    break
+    ;;
+  -h | --help) usage 0 ;;
+  -*) die "unknown flag '$1' (see: $SELF --help)" ;;
+  *)
+    [ -z "$OVERLAY" ] || die "more than one overlay given ('$OVERLAY' and '$1')"
+    OVERLAY="$1"
+    shift
+    ;;
+esac done
+[ -n "$OVERLAY" ] || die "overlay qcow2 path required (see: $SELF --help)"
+[ -f "$OVERLAY" ] || die "no overlay at $OVERLAY"
+OVERLAY="$(realpath -- "$OVERLAY")"
+
+# ---- assertions --------------------------------------------------------------
+# assert_not_production — a production tile overlay is a legitimate target, but
+# only when the caller says so out loud.
+assert_not_production() {
+  case "$OVERLAY/" in
+    "$PROD_TILES_ROOT"/*)
+      [ "$ALLOW_TILE" -eq 1 ] || die "$OVERLAY is a PRODUCTION tile overlay.
+  Pass --allow-tile if you mean it. Experiment on a clone under
+  /data/vms/soltest/ first (AGENTS.md 'Clones / experiments')."
+      ;;
+  esac
+}
+
+# assert_stopped — the VM must be STOPPED. A disk-only snapshot or an offline
+# mutation of a LIVE guest races the guest's own writes and yields a torn
+# filesystem, so this is the load-bearing assertion of the whole helper.
+#
+# DO NOT rely on the qcow2 image lock here. Upstream QEMU would refuse
+# `qemu-img snapshot -c` on an image a running VM holds, and the obvious
+# implementation of this function is to let it. MEASURED ON THIS BOX
+# (2026-08-10, pve-qemu-kvm 11.0.2): it does not. With a qemu-nbd server holding
+# a qcow2 open read-write, `qemu-img snapshot -c` SUCCEEDED, exit 0, and so did
+# `qemu-io` and `qemu-img info` — even with file.locking=on named explicitly.
+# Proxmox's QEMU fork does not enforce image locking. So the lock is not a guard
+# here, it is an absent guard that reads like a present one, and trusting it
+# would let this helper silently corrupt a live tile.
+#
+# The authoritative check is therefore the kernel's: does any process hold this
+# exact file open? Resolved through /proc/<pid>/fd symlinks, which is immune to
+# the `pkill -f`-style self-match that AGENTS.md warns about — we compare link
+# TARGETS, never command lines, so this process cannot match itself.
+assert_stopped() {
+  local fd pid exe holders=()
+  while IFS= read -r fd; do
+    [ -n "$fd" ] || continue
+    pid="${fd#/proc/}"
+    pid="${pid%%/*}"
+    [ "$pid" = "$$" ] && continue
+    exe="$(readlink "/proc/$pid/exe" 2>/dev/null || echo '<unreadable>')"
+    holders+=("pid $pid ($exe)")
+  done < <(find /proc/[0-9]*/fd -lname "$OVERLAY" 2>/dev/null)
+  [ ${#holders[@]} -eq 0 ] || die "$OVERLAY is OPEN by a running process — refusing to touch it:
+$(printf '    %s\n' "${holders[@]}")
+  A disk snapshot or offline mutation of a live guest is a torn filesystem.
+  Stop it first. Note that qemu-img will NOT stop you: this box runs
+  pve-qemu-kvm, which does not enforce the qcow2 image lock (measured), so the
+  operation would appear to succeed and corrupt the tile.
+  If the tile is up and driven and you want a golden instead, that is a
+  different tool: lib/bridge-bake-golden."
+}
+
+has_snapshot() { qemu-img snapshot -l -- "$OVERLAY" 2>/dev/null | grep -qw "$1"; }
+
+# ---- subcommand: status ------------------------------------------------------
+cb_status() {
+  echo "overlay:  $OVERLAY"
+  echo "backing:  $(qemu-img info -U --output=json -- "$OVERLAY" |
+    sed -n 's/.*"backing-filename": "\([^"]*\)".*/\1/p' | head -1)"
+  qemu-img snapshot -l -- "$OVERLAY" 2>/dev/null || qemu-img snapshot -l -U -- "$OVERLAY" 2>/dev/null ||
+    echo "(snapshot list unavailable — image locked by a running VM)"
+}
+
+# ---- subcommand: snapshot ----------------------------------------------------
+cb_snapshot() {
+  assert_not_production
+  assert_stopped
+  # Every refusal MUST come before every destructive step. An earlier draft of
+  # this function dropped the stale coldboot first and then hit the golden
+  # guard below — so the refusal path destroyed the very checkpoint it exists to
+  # protect. Order is load-bearing here: check, then act.
+  if has_snapshot "$GOLD_TAG" && [ "$RETRO" -eq 0 ]; then
+    die "$OVERLAY already has a '$GOLD_TAG' snapshot, so its CURRENT disk state is
+  whatever the driving and the running exhibit left behind — not the builder's
+  cold output. Naming that '$COLD_TAG' would launder a guess into a checkpoint.
+  Either re-run the builder and snapshot before the bake, or pass --retroactive
+  if you have positively established what this disk state is."
+  fi
+  if has_snapshot "$COLD_TAG"; then
+    log "replacing the existing $COLD_TAG snapshot"
+    qemu-img snapshot -d "$COLD_TAG" -- "$OVERLAY"
+  fi
+  local before after
+  before="$(stat -c %s -- "$OVERLAY")"
+  qemu-img snapshot -c "$COLD_TAG" -- "$OVERLAY"
+  has_snapshot "$COLD_TAG" || die "qemu-img reported success but no '$COLD_TAG' snapshot landed in $OVERLAY"
+  after="$(stat -c %s -- "$OVERLAY")"
+  log "$COLD_TAG snapshot taken in $OVERLAY (disk only, no VM RAM; file grew $((after - before)) bytes)"
+}
+
+# ---- subcommand: revert ------------------------------------------------------
+cb_revert() {
+  assert_not_production
+  assert_stopped
+  has_snapshot "$COLD_TAG" || die "no '$COLD_TAG' snapshot in $OVERLAY — there is nothing to revert to.
+  This overlay predates the checkpoint; its only recipe is base + builder."
+  qemu-img snapshot -a "$COLD_TAG" -- "$OVERLAY"
+  log "reverted the current disk state to '$COLD_TAG'"
+  if has_snapshot "$GOLD_TAG"; then
+    log "note: the '$GOLD_TAG' snapshot is untouched and still restorable — reverting the"
+    log "      current disk state does not invalidate it (bridge-bake-golden drops it itself)."
+  fi
+  log "next: boot the tile under its own qemu-streamhost.sh, drive it to the exhibit,"
+  log "      then: lib/bridge-bake-golden <qmp.sock> $OVERLAY"
+}
+
+# ---- subcommand: mutate ------------------------------------------------------
+NBD=""
+MNT=""
+mutate_teardown() {
+  local rc=$?
+  set +e
+  # `mountpoint -q` and nothing cleverer. An earlier draft asked
+  # `findmnt --target "$MNT" --mountpoint "$MNT"`, which combines two
+  # contradictory selectors, always failed, and so silently SKIPPED the umount —
+  # leaving the guest root mounted on /dev/nbd0p1 after a "successful" run. The
+  # next mutate then disconnected nbd0 out from under a live mount, and its
+  # reconnect could not re-scan the partition table because p1 was still busy,
+  # which surfaced two runs later as "no ext4 partition found". A teardown whose
+  # own precondition is broken reports success and poisons the NEXT run.
+  if [ -n "$MNT" ] && mountpoint -q "$MNT"; then
+    sync
+    umount "$MNT" || {
+      log "umount $MNT busy — retrying lazily"
+      umount -l "$MNT"
+    }
+  fi
+  if [ -n "$MNT" ] && mountpoint -q "$MNT"; then
+    log "WARNING: $MNT is STILL mounted after teardown — do not reuse $NBD"
+  else
+    [ -n "$MNT" ] && rmdir "$MNT" 2>/dev/null
+    [ -n "$NBD" ] && qemu-nbd --disconnect "$NBD" >/dev/null 2>&1
+  fi
+  return $rc
+}
+
+# claim_nbd — atomic claim: `qemu-nbd -c` FAILS on a device another rig holds, so
+# the successful connect IS the proof of ownership (AGENTS.md 'claim it
+# atomically, and make the claim itself the proof'). Never check-then-create,
+# never adopt a device that is already connected.
+claim_nbd() {
+  local i
+  for i in $(seq 0 15); do
+    [ -b "/dev/nbd$i" ] || continue
+    if qemu-nbd --connect="/dev/nbd$i" --format=qcow2 -- "$OVERLAY" 2>/dev/null; then
+      NBD="/dev/nbd$i"
+      return 0
+    fi
+  done
+  die "no free /dev/nbdN device could be claimed — another rig holds them all"
+}
+
+# FILESYSTEMS WE WILL WRITE TO, and nothing else. This is the gate that makes
+# the helper safe on the DIRECT-QEMU tiles (win95, win311, os2warp, freedos,
+# winxp, nt4, …) as well as the bridge tiles, and it is deliberately a positive
+# allowlist probed at run time rather than a table someone maintains by hand.
+#
+# The reason it is an allowlist: "can Linux mount this" has THREE answers, and
+# the middle one is the dangerous one. The kernel will happily mount Haiku BFS,
+# Solaris UFS and Amiga AFFS — read-only, or read-write with unverified,
+# barely-maintained write paths. A partial or buggy write to an exotic
+# filesystem is WORSE than no write at all: it corrupts a golden that took hours
+# to bake, and it surfaces later, at a visitor reset, as an unbootable exhibit.
+# So anything not positively known good is refused. See
+# docs/lab/OFFLINE-MUTATION-MATRIX.md for the measured per-tile verdicts.
+FS_RW_OK="ext2 ext3 ext4 vfat msdos exfat ntfs"
+
+# mount_type_for <fstype> — the mount(8) type to use. ntfs-3g is named
+# explicitly: the kernel's own `ntfs` driver is read-only, and silently so.
+mount_type_for() {
+  case "$1" in
+    ntfs) echo "ntfs-3g" ;;
+    *) echo "$1" ;;
+  esac
+}
+
+# guest_target_part — the partition to mutate: the LARGEST one carrying a
+# filesystem on the allowlist. Not "p1", and not "the largest partition".
+# The bridge base lays out p1 ext4 root + p14 BIOS-boot + p15 ESP, and the
+# Windows tiles carry an ESP next to the real volume — a mutation applied to
+# the ESP would be silent and useless. Prints "<dev> <fstype>".
+#
+# Polled, not sampled once. `qemu-nbd --connect` returns as soon as the device
+# is bound; the kernel's partition scan lands afterwards, so an immediate probe
+# can legitimately report nothing at all. Observed on the second consecutive
+# connect of the same device (2026-08-10) — one run found /dev/nbd0p1 and the
+# next found nothing. blkid -p is used rather than lsblk because lsblk reports
+# udev's asynchronously-populated cache, which is a second race on top.
+guest_target_part() {
+  local i d t sz best="" bestfs="" bestsz=0 found=""
+  for i in $(seq 1 40); do
+    for d in $(find /dev -maxdepth 1 -name "$(basename "$NBD")p*" 2>/dev/null | sort) "$NBD"; do
+      [ -b "$d" ] || continue
+      # `|| true` is load-bearing under `set -euo pipefail`: blkid exits
+      # non-zero on a partition with no filesystem signature (the BIOS-boot
+      # partition, the ESP on some layouts), and with pipefail that aborts the
+      # whole function on the FIRST such partition — so the scan returned
+      # "no writable filesystem" on an overlay that plainly had ext4 on p1.
+      t="$(blkid -p -o value -s TYPE "$d" 2>/dev/null | head -1 || true)"
+      [ -n "$t" ] || continue
+      found="${found:+$found, }$(basename "$d"):$t"
+      case " $FS_RW_OK " in *" $t "*) : ;; *) continue ;; esac
+      sz="$(blockdev --getsize64 "$d" 2>/dev/null || echo 0)"
+      [ "$sz" -gt "$bestsz" ] && {
+        bestsz="$sz"
+        best="$d"
+        bestfs="$t"
+      }
+    done
+    # The trailing newline matters: `read` returns non-zero at EOF-without-
+    # delimiter even when it successfully assigned the fields, so a bare
+    # `printf '%s %s'` here made the caller's `if ! read …` take the failure
+    # branch and report "no writable filesystem" on an overlay where this
+    # function had just found ext4.
+    [ -n "$best" ] && {
+      printf '%s %s\n' "$best" "$bestfs"
+      return 0
+    }
+    [ -n "$found" ] && break # partitions ARE visible, they are just not writable
+    [ "$i" = 5 ] && partx -a "$NBD" >/dev/null 2>&1
+    sleep 0.25
+  done
+  return 1
+}
+
+# fs_signatures_seen — every "<dev>:<fstype>" the attached image actually shows.
+# Recomputed for the refusal message rather than carried out of
+# guest_target_part: that function runs inside a process substitution, so any
+# variable it sets dies with the subshell (the refusal used to say
+# "detected: <none>" on an image that plainly had a filesystem).
+fs_signatures_seen() {
+  local d t out=""
+  for d in $(find /dev -maxdepth 1 -name "$(basename "$NBD")p*" 2>/dev/null | sort) "$NBD"; do
+    [ -b "$d" ] || continue
+    t="$(blkid -p -o value -s TYPE "$d" 2>/dev/null | head -1 || true)"
+    [ -n "$t" ] && out="${out:+$out, }$(basename "$d"):$t"
+  done
+  printf '%s' "${out:-<no filesystem signature anywhere on the image>}"
+}
+
+cb_mutate() {
+  assert_not_production
+  assert_stopped
+  has_snapshot "$COLD_TAG" || die "no '$COLD_TAG' snapshot in $OVERLAY.
+  An offline mutation MUST start from the cold disk, so that what you produce is
+  reproducible from a checkpoint rather than from an unknown accumulated state.
+  Take one first (on a freshly provisioned overlay): $SELF snapshot $OVERLAY"
+
+  # Drop the golden BEFORE touching a byte. See "THE TRAP" in the header: the
+  # tile boots -loadvm golden, which restores the snapshot's DISK state too, so a
+  # surviving golden does not merely disagree with the mutation — it erases it at
+  # every boot while looking perfectly healthy. There is deliberately no flag to
+  # keep it.
+  if has_snapshot "$GOLD_TAG"; then
+    log "DROPPING the stale '$GOLD_TAG' snapshot — an offline disk mutation invalidates it."
+    log "  (the tile boots -loadvm golden, which would restore the PRE-mutation disk)"
+    qemu-img snapshot -d "$GOLD_TAG" -- "$OVERLAY"
+    has_snapshot "$GOLD_TAG" && die "failed to drop the stale '$GOLD_TAG' — refusing to mutate"
+  fi
+  # Default: start from the cold disk, so what you produce is reproducible from a
+  # checkpoint rather than from an unknown accumulated state. That DISCARDS any
+  # earlier mutation, which is a trap of its own if you are stacking changes —
+  # so it is said out loud, and --continue opts out. The correctness property
+  # --continue does NOT weaken is the one above: no golden survives a mutation.
+  if [ "$CONTINUE" -eq 1 ]; then
+    log "--continue: mutating the CURRENT disk state, not reverting to '$COLD_TAG'"
+  else
+    log "reverting to '$COLD_TAG' so the mutation starts from the known cold disk"
+    log "  (this DISCARDS any earlier offline mutation — pass --continue to stack instead)"
+    qemu-img snapshot -a "$COLD_TAG" -- "$OVERLAY"
+  fi
+
+  trap mutate_teardown EXIT
+  claim_nbd
+  log "claimed $NBD (read-write) for $OVERLAY"
+  udevadm settle --timeout=10 2>/dev/null || sleep 1
+  local part fstype mtype
+  if ! read -r part fstype < <(guest_target_part); then
+    die "no WRITABLE filesystem found on $OVERLAY.
+  Filesystems detected: $(fs_signatures_seen)
+  This helper writes only to: $FS_RW_OK
+  Everything else is refused on purpose. The kernel would mount several other
+  filesystems (Haiku BFS, Solaris UFS, Amiga AFFS, QNX4/6) read-only or with an
+  unverified write path, and a partial write to an exotic filesystem corrupts a
+  golden that took hours to bake — a worse outcome than not writing at all.
+  See docs/lab/OFFLINE-MUTATION-MATRIX.md for this tile's measured verdict."
+  fi
+  mtype="$(mount_type_for "$fstype")"
+  # mktemp is itself the atomic claim of the mount point. Made private the
+  # instant it exists so a umount here can never propagate to the host — this is
+  # the /dev/pts incident's lesson (scripts/lib/chroot-guard.sh header).
+  MNT="$(mktemp -d /run/bridge-coldboot.XXXXXX)"
+  mount -t "$mtype" -o rw "$part" "$MNT" ||
+    die "could not mount $part ($fstype) read-write at $MNT"
+  mount --make-private "$MNT" ||
+    die "mounted $MNT but could NOT make it private — refusing to continue; a umount
+  here could propagate to the host. Investigate before touching it."
+  log "guest filesystem $part ($fstype, via $mtype) mounted read-write at $MNT"
+
+  local rc=0
+  if [ ${#MUTATE_CMD[@]} -gt 0 ]; then
+    COLDBOOT_MNT="$MNT" COLDBOOT_OVERLAY="$OVERLAY" \
+      env --chdir="$MNT" "${MUTATE_CMD[@]}" || rc=$?
+  else
+    log "no command given — dropping to a shell. The guest root is \$COLDBOOT_MNT."
+    COLDBOOT_MNT="$MNT" COLDBOOT_OVERLAY="$OVERLAY" \
+      env --chdir="$MNT" "${SHELL:-/bin/bash}" || rc=$?
+  fi
+  sync
+  trap - EXIT
+  mutate_teardown
+  [ "$rc" -eq 0 ] || die "the mutation command exited $rc — the overlay has been unmounted, but
+  its disk state is whatever that command left. Re-run: $SELF mutate $OVERLAY"
+  log "mutation complete; $OVERLAY has NO '$GOLD_TAG' snapshot and is at the mutated cold disk."
+  log "next: boot the tile under its own qemu-streamhost.sh (it will cold-boot, there is"
+  log "      no golden to load), drive it to the exhibit, verify on a real framebuffer, then:"
+  log "        lib/bridge-bake-golden <qmp.sock> $OVERLAY"
+}
+
+case "$CMD" in
+  snapshot) cb_snapshot ;;
+  revert) cb_revert ;;
+  mutate) cb_mutate ;;
+  status) cb_status ;;
+  *) die "unknown subcommand '$CMD' (see: $SELF --help)" ;;
+esac
