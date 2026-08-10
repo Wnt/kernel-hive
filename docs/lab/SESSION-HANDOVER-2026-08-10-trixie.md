@@ -1,5 +1,17 @@
 # Session handover — 2026-08-10 (bookworm → trixie guest migration)
 
+> **SUPERSEDED IN PART, later the same day.** §1 and §2 were written at **3 of
+> 28** tiles; waves 1(retry), 2 and 4 then landed and it is **15 of 28**. Do not
+> take the state or the "next action" from this file any more:
+> - **live state** → `scripts/dev/bridge-suite-status.sh`
+> - **what to run next, and how** → [`MIGRATION-WAVE-BRIEF.md`](MIGRATION-WAVE-BRIEF.md)
+> - **the procedure** → [`BRIDGE-TRIXIE-MIGRATION.md`](BRIDGE-TRIXIE-MIGRATION.md)
+>
+> §§3-9 (the system, the traps, the deferred tiles, the Iris findings, the open
+> items) are still accurate and are why this file is kept. The three
+> `migrate-tile.sh` bugs §5 warns about are **fixed** — three separate agents
+> each rediscovered them the hard way, and each damaged a live tile doing it.
+
 Written for a context compaction. Everything below is **pushed to
 `origin/main`** at `ad83366`; nothing is uncommitted. Several background agents
 were running at write time — see [§8](#8-open-items) for what they left.
@@ -360,9 +372,14 @@ README; it is a behaviour change on a live exhibit, so it was left as a decision
 6. **2.1 GB of dead MAME trees** in the bookworm chroot
    (`mame-mpf2-build-767435` is an aborted build; `-781121` is the provenance
    tree of the shipping binary). Reclaimable.
-7. **`amiga.golden_snapshot` is `null`** in the harvested matrix — a transient
-   QMP probe artifact from a busy fleet, not a missing golden. A `labctl gen`
-   with the fleet quiet clears it.
+7. **`amiga.golden_snapshot` is `null`** in the harvested matrix. This file
+   previously blamed "a transient QMP probe artifact from a busy fleet" — that
+   was **wrong**. `streamhost@amiga` is simply **stopped**: cleanly, by systemd
+   (`ExecMainStatus=15`, "Deactivated successfully"), at 2026-08-10 02:12:28,
+   after running since Aug 5. A stopped tile has no `qmp.sock`, so the probe has
+   nothing to ask. Consequence for wave 3, which migrates `amiga`: start it and
+   confirm it is healthy on bookworm FIRST, or a pre-existing outage becomes
+   indistinguishable from a migration regression.
 8. **The IRIX-over-serial exec channel is not cut over** (§7.2). `iexec.py` is
    in the repo but not in any golden, so it must be hand-pushed. Baking it into
    the kiosk overlay from the tile builder is the repo-native fix; changing what
