@@ -87,6 +87,69 @@ without it the accumulator saturates at 255 and the cursor freezes while every
 command is still acked) and `MAME_CTL_MOVE_STEP=1` / `MAME_CTL_MOVE_WINDOW=8`
 (the device's own delivery rate).
 
+## Driving the arms by hand, in a browser
+
+Both arms are reachable from the ordinary gallery HTTPS origin, side by side:
+
+```
+https://192.0.2.10:8443/debridge-compare.html   # both panes, one page
+https://192.0.2.10:8443/os/dbr-arma             # arm A alone
+https://192.0.2.10:8443/os/dbr-armb             # arm B alone
+```
+
+(`192.0.2.10` is the repo's scrubbed placeholder for the box — see AGENTS.md
+"Placeholder values". Use the operator's real LAN address.)
+
+Each pane is an `<iframe>` onto the SPA's own `/os/<id>` route, so the pointer,
+keyboard and WebTransport paths a visitor uses are exactly the paths being
+compared; nothing about input is re-implemented. The arms run **without**
+`SH_SESSION_KEY`, so the ticket the gateway mints for them is accepted but not
+required.
+
+Publish / revert, on the box:
+
+```sh
+/data/vms/soltest/debridge-7f3a/gallery-arms.py publish     # or: status
+ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py withdraw'   # THE REVERT
+```
+
+`withdraw` removes the two signalling rows, the two manifest entries and the
+compare page, and touches nothing else. **The arms keep running either way** —
+publishing and withdrawing are gallery-side only.
+
+While published, `scripts/dev/verify-box-sync.sh` reports
+`serve/webroot/gallery-manifest.json` and `serve/tiles.json` as **DIFFERS**.
+That is correct and wanted: the overlay is a deliberate deployment divergence
+and the gate is what makes it visible. It goes away on `withdraw`.
+
+### Why the arms are NOT registry entries with a `listing` soft hide
+
+The soft hide (`registry/README.md`) hides a row that **belongs** in the lineup.
+It is not a way to admit a `soltest` rig into it, and three things block that
+route concretely rather than tediously:
+
+- `scripts/gen_tiles_json.py` — what `labctl gen` runs — hard-exits with
+  `declared/live tile set mismatch` for any streamhost registry row with no
+  `/data/vms/streamhost/tiles/<tileDir>/` directory, and
+  `tiles-registry.py --check` on the box compares the same two sets. Both arms
+  live under `/data/vms/soltest/debridge-7f3a/`, so a registry row **breaks
+  `labctl gen` for every other session** until the arms are moved into the
+  production tile directory and given a `tile.env` + `qemu-streamhost.sh`. Arm B
+  has no QEMU launcher at all — it is host-native MAME.
+- the generated `scripts/serve/tiles.json` hardcodes each row's `hashFile` to
+  `/data/vms/streamhost/tiles/<tileDir>/cert_hash_b64.txt`, so the registry
+  cannot express where these arms actually are.
+- `spa/src/data/tileWiring.test.ts` requires every streamhost manifest row to
+  carry an exhibit poster, a scene identity, a machine assembly and a keyboard
+  profile, and `machines.test.ts` requires a hardware signature **distinct from
+  `atarist`'s** — i.e. invented exhibit identity for two instances of a machine
+  that is already an exhibit.
+
+So the arms stay out of the registry and `gallery-arms.py` carries the same
+*shape* of divergence the soft hide produces (row present so `/os/<id>`
+resolves, `"listed": false` so the grid and the 3D hall never show it) as an
+explicit, committed, one-command-revertible overlay owned by the rig.
+
 ## Tools
 
 | Script | What it does |
@@ -97,3 +160,5 @@ command is still acked) and `MAME_CTL_MOVE_STEP=1` / `MAME_CTL_MOVE_WINDOW=8`
 | `run-streamhost.sh` | one daemon per arm from a plain env file |
 | `armcpu.py` | interleaved A/B/A/B per-arm CPU, resolved through `/proc/<pid>/exe` |
 | `fixtures.py` | closed-loop pointer parking + the three fixtures, with evidence PNGs |
+| `gallery-arms.py` | publish/withdraw both arms in the DEPLOYED gallery (above) |
+| `compare.html` | the side-by-side page it installs into the webroot |

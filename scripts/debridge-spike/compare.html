@@ -1,0 +1,113 @@
+<!doctype html>
+<!--
+  De-bridging spike — the two arms side by side, driven by hand.
+
+  Deployed to WEBROOT/debridge-compare.html by gallery-arms.py, removed again by
+  `gallery-arms.py withdraw`. It is deliberately a plain static page and NOT part
+  of the SPA bundle: each pane is an <iframe> onto the SPA's own /os/<id> route,
+  so the pointer, keyboard and WebTransport paths a visitor uses are exactly the
+  paths under comparison. Nothing about input is re-implemented here — a
+  hand-rolled input path would make the A/B meaningless.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>De-bridging spike — arm A vs arm B</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0d1014;
+    --panel: #151a21;
+    --edge: #263040;
+    --ink: #e6ecf3;
+    --dim: #93a1b5;
+    --arma: #e4002b;
+    --armb: #00a3e0;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.45 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    align-items: baseline;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--edge);
+    background: var(--panel);
+  }
+  h1 { margin: 0; font-size: 15px; letter-spacing: .01em; }
+  header p { margin: 0; color: var(--dim); font-size: 12.5px; }
+  kbd {
+    font: inherit;
+    background: #202834;
+    border: 1px solid var(--edge);
+    border-radius: 4px;
+    padding: 0 5px;
+  }
+  main {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px;
+    min-height: 0;
+  }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+  }
+  section > h2 {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--panel);
+    border-bottom: 1px solid var(--edge);
+    border-left: 4px solid var(--accent);
+  }
+  section > h2 small { font-weight: 400; color: var(--dim); margin-left: 8px; }
+  #pane-a { --accent: var(--arma); }
+  #pane-b { --accent: var(--armb); }
+  iframe { flex: 1 1 auto; width: 100%; border: 0; min-height: 0; background: #000; }
+  a { color: #7fc4ff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>De-bridging spike — arm A (bridged) vs arm B (host-native)</h1>
+  <p>
+    Same MAME Atari ST binary, same 1024&times;768 GEM desktop, one difference:
+    the display path. Click a pane before typing &mdash; keystrokes go to the
+    focused pane. <kbd>Ctrl</kbd>+<kbd>R</kbd> raises EmuTOS&rsquo;s
+    &ldquo;Switch resolution?&rdquo; alert (answer <em>Cancel</em>).
+  </p>
+</header>
+<main>
+  <section id="pane-a">
+    <h2>Arm A &mdash; bridged (tier 2)<small>MAME inside the Debian kiosk &middot; dbus-abs &middot; /os/dbr-arma</small></h2>
+    <iframe src="/os/dbr-arma" title="arm A — bridged" allow="fullscreen; pointer-lock"></iframe>
+  </section>
+  <section id="pane-b">
+    <h2>Arm B &mdash; host-native (tier 3)<small>MAME on the bare host &middot; drawshm + mamesock &middot; /os/dbr-armb</small></h2>
+    <iframe src="/os/dbr-armb" title="arm B — host-native" allow="fullscreen; pointer-lock"></iframe>
+  </section>
+</main>
+</body>
+</html>

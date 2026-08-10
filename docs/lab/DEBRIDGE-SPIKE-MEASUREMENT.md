@@ -159,6 +159,25 @@ remove real work** — the latency campaign is worth a window.
 | 3 Options menu on hover | **validated** — 71,016 px (9.03%), title inverted, menu drawn | **partly** — a hover menu (Desk) is open in its capture, so motion does reach the emulated pointer, but the closed loop did not converge on Options and its two captures are identical |
 | 2 click icon → black | **not validated** — the click produced no change, so it did not land on the cell | **not validated** |
 
+**Both arms are now drivable by hand from the gallery origin** —
+`/debridge-compare.html` for the two panes side by side, `/os/dbr-arma` and
+`/os/dbr-armb` individually. They are NOT registry tiles and deliberately have
+no `listing` soft hide: `scripts/debridge-spike/gallery-arms.py` publishes the
+two signalling rows and two `"listed": false` manifest entries as an explicit,
+revertible deployment overlay, for the reasons recorded in
+[`scripts/debridge-spike/README.md`](../../scripts/debridge-spike/README.md).
+The subjective A/B is the thing the CPU and latency numbers cannot supply, and
+it is the operator's to make.
+
+One asymmetry to expect while doing it: **arm B's keyboard is unlikely to reach
+the guest.** `mamesock`'s `try_key` resolves scancodes through `KEY_MATRIX` in
+`streamhost/streamhost/src/mame_input.rs`, which is the SGI Indy
+`:ioc2:kbd:ms_naturl` matrix — port/field names that do not exist on MAME's
+Atari ST. Arm A takes the ordinary bridge path (browser → QEMU → kiosk X → SDL →
+MAME) and is not affected. This is untested by measurement and is exactly the
+kind of thing the "what de-bridging costs" section is about: tier 3 has to
+replace the kiosk's input plumbing, not just its display path.
+
 Arm A's pointer is the open item: the closed loop drives it through QMP
 `input-send-event` to the usb-tablet, and at that step size the motion is not
 reliably reaching MAME through the kiosk's SDL. Fix that before timing anything
