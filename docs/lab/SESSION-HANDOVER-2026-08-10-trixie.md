@@ -35,14 +35,37 @@ to the suite (§5.1). It is correctly still declared `bookworm`.
 
 ## 2. Next action
 
-**Wave 2**, using the driver. Nine tiles, **4 concurrent maximum** — four
-parallel builds took box load from 9 to 34 and starved everything else,
-including a performance measurement running at the time.
+**Wave numbering is `BRIDGE-TRIXIE-MIGRATION.md` §4's, not this file's.** An
+earlier draft of this section renumbered them and that was a mistake — the plan
+doc is the plan of record. §4 there reads: wave 2 = the seven MAME-in-chroot
+tiles, wave 3 = `amstradcpc`/`alto`/`amiga`, wave 4 = the VICE seven, wave 5 =
+`daybreak`/`nextstep`/`apple2`, wave 6 = `star`, wave 7 =
+`sinclairql`/`zxspectrum`.
 
-| Group | Tiles | Why cheap |
-|---|---|---|
-| VICE | `c128` `vic20` `plus4` `pet2001` `cbm8032` `cbm2` | `x64sc` is already built and proven **inside** the trixie base — no per-tile emulator build at all |
-| Base-supplied | `amstradcpc` `amiga` `alto` | cap32/fs-uae come from the base; alto ships a self-contained .NET tree |
+**Wave 2 — the seven MAME-in-chroot tiles**, using the driver. It is the
+biggest structural win left (it retires the bookworm chroot's largest consumer)
+and it is where the shared ccache pays: all seven pin `mame0289`, so the
+`emu`/`osd`/`3rdparty` core is identical across trees.
+
+> **Serialize the MAME builds.** All seven chroot into the *same*
+> `/data/vms/soltest/trixie-chroot`, and two concurrent builds mounting API
+> filesystems in one chroot is the failure class that took the host's
+> `/dev/pts` down (§5.2). ccache, not parallelism, is what makes this wave
+> cheap. Build the first tile alone and confirm the cache actually grew before
+> continuing — it sits at ~0.1 GB of 32 GB, primed by a validation run only.
+
+**What CAN safely run alongside it:** the VICE seven and the base-supplied
+tiles need **no emulator build at all** (`x64sc`, cap32 and fs-uae come from the
+trixie base; `alto` ships a self-contained .NET tree), so they never enter the
+chroot. They are boot- and I/O-bound rather than compile-bound, which
+complements a compile-bound wave. The binding constraint on running them
+together is box load, not correctness.
+
+**Concurrency is a load question, and the ceiling is real.** Four parallel
+builds once took box load from 9 to 34 and starved everything else, including a
+performance measurement that was running at the time. The box is 16 threads;
+check `uptime` before starting a build and cap `JOBS` rather than letting the
+builders take `nproc`.
 
 Per tile:
 
@@ -59,8 +82,10 @@ trixie base build. If that is wrong the tile renders **black while every log,
 exit code and assertion reports success**. This is the failure the driver
 structurally cannot catch — look at the screenshot.
 
-Then wave 3 (the seven MAME tiles — now cheap, §4.2), wave 4 (`decos` retry,
-`nextstep`, `daybreak`, `apple2`).
+`decos` is a wave-1 leftover and independent of all of this: it failed on a
+builder bug (§5.1), was correctly rolled back, and the fix plus its byte-exact
+recovered `.ini` assets are committed. It is a SIMH source build, so it needs
+neither ccache nor the MAME chroot and can run whenever.
 
 ---
 
@@ -346,6 +371,12 @@ README; it is a behaviour change on a live exhibit, so it was left as a decision
    driven only through the framebuffer + PS/2". True when written, false since
    §7.2. Fix with the registry source + `make tile-registry-generate`, never by
    hand-editing the generated matrix.
+10. **Three tiles are deliberately STOPPED** — `indyr4400`, `star` and
+    `nextstep`, the box's three largest CPU consumers (319%, 175%, 134% of a
+    16-thread box). The operator stopped them to free capacity for the wave-2
+    build campaign, which took the 1-minute load from 21.4 to ~15. **Restart
+    them when the campaign ends**; they are healthy, not broken. Nothing else in
+    the fleet was quiesced — the other 54 tiles are up.
 
 ---
 
