@@ -35,7 +35,7 @@ That inversion is the exhibit.
 |---|---|
 | Public ID / tile directory | `armeval` |
 | Emulator | MAME **0.289**, driver `bbcb` **with `-tube arm`** — the *same* purpose-built binary the `bbcmicro` tile ships (`/data/vms/streamhost/assets/bbcmicro/mame/bbcb`), unmodified, carrying `mame-skip-warnings.patch` |
-| Guest | Debian 12 X kiosk on a thin overlay of the frozen bridge base, 768 MB, 2 vCPU |
+| Guest | Debian 13 (trixie) X kiosk on a thin overlay of the trixie bridge base, 768 MB, 2 vCPU |
 | X root | 800x600 (an emulation-**speed** choice inherited from `bbcmicro`, not a picture one) |
 | Builder | `scripts/build-guests/armeval.sh` |
 | Reset | internal qcow2 `golden` snapshot, `resetMode=loadvm` |
@@ -339,7 +339,7 @@ that file for what a record driver would have to do.
   extra `-listxml` argument.
 - The headless probe recipe (`scripts/dev/armeval-headless-probe.sh`: a Lua
   autoboot script counting frames and calling `manager.machine.video:snapshot()`
-  against the shipped binary inside the Bookworm chroot) proved the exhibit
+  against the shipped binary inside the MAME build chroot) proved the exhibit
   frames in minutes, before a guest was booted. Two traps are baked into it: the
   value returned by `emu.add_machine_frame_notifier` **must** be kept in a
   global or the subscription is garbage-collected and the notifier silently

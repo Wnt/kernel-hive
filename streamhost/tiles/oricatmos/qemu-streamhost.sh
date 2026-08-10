@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'oricatmos' (VMID 234) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running MAME's `orica` driver, an Oric
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running MAME's `orica` driver, an Oric
 # Atmos (1984) resting at its own power-on screen — ORIC EXTENDED BASIC V1.1,
 # (c) 1983 TANGERINE, 37631 BYTES FREE, Ready — drawn fullscreen with aspect
 # correction on an 800x600 X root (4:3, the shape the machine drew on a
@@ -8,14 +8,14 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/apple2/atarist/amiga/mpf2).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + MAME at the BASIC banner.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):
 #     no Linux boot, no console text, no X startup ever becomes visible.
 #   * NEVER delete/recreate overlay.qcow2 — the golden snapshot lives inside it.
 #     Device set MUST match the golden bake EXACTLY or -loadvm golden fails.
 #   * Keyboard exhibit: no pointing device, PS/2 keyboard only (vmport=off).
-#   * 768 MB is the whole guest: Debian 12 with no desktop, X, and one 6502.
+#   * 768 MB is the whole guest: Debian 13 with no desktop, X, and one 6502.
 set -e
 BASE=/data/vms/streamhost/tiles/oricatmos
 OVERLAY="$BASE/overlay.qcow2"

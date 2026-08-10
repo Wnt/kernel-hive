@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'dragon32' (VMID 233) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running MAME 0.289's `dragon32` driver
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running MAME 0.289's `dragon32` driver
 # — a Dragon 32 (Port Talbot, Wales, 1982) resting at its own untouched power-on
 # screen, Microsoft 16K Extended Color BASIC in dark green on the MC6847's
 # bright green page, drawn fullscreen with aspect correction on the stock
@@ -14,7 +14,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like mpf2/c64/plus4/vic20).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + MAME at that power-on screen.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):
 #     no Linux boot, no console text, no X startup ever becomes visible.

@@ -3,7 +3,7 @@
 # build-guests/tiles/bbcmicro.sh — build the Acorn BBC Micro Model B (1981) streamhost
 # tile as a thin overlay on the frozen bridge base (bridge-base.sh).
 #
-# GUEST : a captured Debian-12 X kiosk running a purpose-built MAME `bbcb`
+# GUEST : a captured Debian-13 (trixie) X kiosk running a purpose-built MAME `bbcb`
 #         fullscreen; streamhost captures the Linux framebuffer + AC97 audio
 #         exactly like every other bridge tile (streamhost/docs/BRIDGE.md).
 # TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh + an
@@ -19,10 +19,12 @@
 # ---- WHY A PURPOSE-BUILT MAME, AND WHICH ONE --------------------------------
 #   scripts/build-guests/emulators/build-mame-bbcb.sh builds MAME **0.289** (tag
 #   `mame0289` == f34f02505e32c1993c6a782b6814232cbfc74e36, the newest stable tag
-#   at the time of the add) in the Bookworm chroot, SUBTARGET=bbcb,
-#   SOURCES=src/mame/acorn. The host's /usr/games/mame is 0.276 against Debian
-#   13's glibc and cannot run in the Debian 12 bridge; the bridge base's apt
-#   `mame` would be an unpinned Bookworm freeze. A romset is only meaningful
+#   at the time of the add) in the TRIXIE chroot, SUBTARGET=bbcb,
+#   SOURCES=src/mame/acorn. The host's own /usr/games/mame is 0.276 — a pinned
+#   release is still the point, and it is the tile's pin that the romset is
+#   assembled against. Now that guest and host are both Debian 13 the chroot is
+#   no longer an ABI detour, only a reproducible one; the bridge base's apt
+#   `mame` would be an unpinned suite freeze. A romset is only meaningful
 #   against ONE binary, so this script re-derives the wanted (name, sha1) pairs
 #   from the SHIPPED binary's own `-listxml` — never from a filename.
 #

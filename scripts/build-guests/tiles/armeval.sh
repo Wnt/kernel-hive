@@ -3,7 +3,7 @@
 # build-guests/armeval.sh — build the Acorn ARM Evaluation System (1986)
 # streamhost tile as a thin overlay on the frozen bridge base (bridge-base.sh).
 #
-# GUEST : a captured Debian-12 X kiosk running the SAME purpose-built MAME
+# GUEST : a captured Debian-13 (trixie) X kiosk running the SAME purpose-built MAME
 #         `bbcb` the bbcmicro tile ships, but with the ARM second processor
 #         fitted to the Tube: `bbcb -tube arm`. streamhost captures the Linux
 #         framebuffer + AC97 audio exactly like every other bridge tile.

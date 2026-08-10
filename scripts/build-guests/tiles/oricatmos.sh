@@ -3,7 +3,7 @@
 # build-guests/tiles/oricatmos.sh — build the Oric Atmos (1984) streamhost tile as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running MAME's `orica` driver, emulating an
+# GUEST : a captured Debian-13 (trixie) kiosk running MAME's `orica` driver, emulating an
 #         Oric Atmos that boots its ROM straight to the Oric Extended BASIC V1.1
 #         banner. streamhost captures the Linux framebuffer + AC97 audio exactly
 #         like every other bridge tile (streamhost/docs/BRIDGE.md).

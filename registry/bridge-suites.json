@@ -35,7 +35,7 @@
       "glibc": "2.36",
       "gcc": "12",
       "frozen": true,
-      "_note": "FROZEN 2026-07-15. 25 live overlays back onto this byte-for-byte (28 before wave 1 moved atarist, pdp11 and gt40 to trixie). Never rebuild it: `bridge-base.sh --suite bookworm` refuses without --i-know-this-breaks-every-overlay."
+      "_note": "FROZEN 2026-07-15. 20 live overlays back onto this byte-for-byte (28 before wave 1 moved atarist, pdp11 and gt40, and wave 2 moved bbcmicro, armeval, zx81, dragon32 and oricatmos). Never rebuild it: `bridge-base.sh --suite bookworm` refuses without --i-know-this-breaks-every-overlay."
     },
     "trixie": {
       "debianVersion": "13",
@@ -46,7 +46,7 @@
       "glibc": "2.41",
       "gcc": "14",
       "frozen": false,
-      "_note": "BUILT 2026-08-10, runtime-proven (generic kernel + e1000 + bochs-drm + bare-X kiosk + hatari/EmuTOS on a soltest clone). Matches the host suite, so a host-built binary runs in the guest unchanged and the per-tile ABI chroots stop being necessary. Wave 1 landed atarist, pdp11 and gt40 on it (2026-08-10), so it now carries live overlays and is frozen IN FACT: the flag below stays false, but bridge-base.sh treats a suite as frozen if the flag is set OR if any tile is declared on it, so the guard armed itself the moment the first tile migrated. Do not hand-flip it."
+      "_note": "BUILT 2026-08-10, runtime-proven (generic kernel + e1000 + bochs-drm + bare-X kiosk + hatari/EmuTOS on a soltest clone). Matches the host suite, so a host-built binary runs in the guest unchanged and the per-tile ABI chroots stop being necessary. Waves 1 and 2 landed eight tiles on it (2026-08-10: atarist, pdp11, gt40, then bbcmicro, armeval, zx81, dragon32, oricatmos), so it now carries live overlays and is frozen IN FACT: the flag below stays false, but bridge-base.sh treats a suite as frozen if the flag is set OR if any tile is declared on it, so the guard armed itself the moment the first tile migrated. Do not hand-flip it."
     }
   },
 
@@ -55,33 +55,35 @@
     "amiga": "bookworm",
     "amstradcpc": "bookworm",
     "apple2": "bookworm",
-    "armeval": "bookworm",
+    "armeval": "trixie",
     "atarist": "trixie",
-    "bbcmicro": "bookworm",
+    "bbcmicro": "trixie",
     "c128": "bookworm",
     "c64": "bookworm",
     "cbm2": "bookworm",
     "cbm8032": "bookworm",
     "daybreak": "bookworm",
     "decos": "bookworm",
-    "dragon32": "bookworm",
+    "dragon32": "trixie",
     "gt40": "trixie",
     "indyr4400": "bookworm",
     "kc854": "bookworm",
     "mpf2": "bookworm",
     "nextstep": "bookworm",
-    "oricatmos": "bookworm",
+    "oricatmos": "trixie",
     "pdp11": "trixie",
     "pet2001": "bookworm",
     "plus4": "bookworm",
     "sinclairql": "bookworm",
     "star": "bookworm",
     "vic20": "bookworm",
-    "zx81": "bookworm",
+    "zx81": "trixie",
     "zxspectrum": "bookworm"
   },
 
   "_notes": {
+    "mpf2": "Wave 2 attempted and rolled back (2026-08-10). Its MAME 0.289 binary is already built in the trixie chroot and its FIRST cold boot under trixie draws the real MPF-II banner and > prompt, so the emulator is fine; the builder's SECOND cold boot then fails its in-guest liveness probe, and its readiness predicate is weak enough to accept a GRUB console. Per-tile work on a soltest clone, not a chroot swap.",
+    "kc854": "Wave 2 attempted and rolled back (2026-08-10). Same shape as mpf2: the trixie build reaches a genuine CAOS 4.2 screen (bright 27868, nag-red 0) and then `pgrep -x kc85` finds no MAME after the second cold boot, with SSH proven up first. Per-tile work.",
     "c64": "Its overlay was flattened on 2026-08-07 (a standalone 5.21 GiB qcow2 with an internal `golden` snapshot, no backing file). The status checker reports it as DETACHED rather than as drift; migrating it means a full rebuild, not a rebase.",
     "openvms": "Not on this base. openvms/openvms-decwindows-bridge.qcow2 is built by scripts/build-guests/stages/openvms-decwindows-bridge.sh and only shares /data/vms/bridge/bridge_key. Out of scope for this ledger.",
     "irix": "Not a bridge guest at all: SH_TILE_RUNTIME=x11, MAME on the HOST against a .chd. Already trixie by definition."

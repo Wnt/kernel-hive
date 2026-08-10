@@ -1,6 +1,6 @@
 # Dragon 32 (PAL) — gallery tile notes (udp/54130)
 
-Live streamhost **bridge** tile: a captured Debian 12 X kiosk runs MAME's
+Live streamhost **bridge** tile: a captured Debian 13 (trixie) X kiosk runs MAME's
 `dragon32` driver, and streamhost captures the Linux framebuffer + AC97 audio
 exactly as it does for every other tile. Reset is `loadvm golden` on an
 INTERNAL qcow2 snapshot inside a thin overlay on the frozen shared bridge base.
@@ -120,10 +120,10 @@ The rest of a merged `dragon32.zip` (the Dragon 64 / 200 / Alpha clone ROMs and
 
 ## MAME binary provenance
 
-Debian 12 packages MAME 0.251; the lab host runs 0.276 but is not Debian 12, so
-its binary cannot be dropped into the kiosk. `build-mame-dragon32.sh` builds
-MAME **0.289** (`SUBTARGET=dragon SOURCES=src/mame/trs/dragon.cpp`) in the
-Bookworm chroot at commit `f34f02505e32c1993c6a782b6814232cbfc74e36` — the same
+Neither the guest suite's packaged MAME nor the lab host's 0.276 is a pin anyone
+chose, and a romset is only meaningful against one binary. `build-mame-dragon32.sh`
+builds MAME **0.289** (`SUBTARGET=dragon SOURCES=src/mame/trs/dragon.cpp`) in the
+**trixie** chroot at commit `f34f02505e32c1993c6a782b6814232cbfc74e36` — the same
 commit the mpf2 tile ships, so the gallery runs one MAME version across both of
 its MAME exhibits rather than two that drift.
 
