@@ -185,6 +185,8 @@ with the box at ~72 % load and Darkstar showing 45–52 f/s (58–67 % of real):
 | click the `Desktop Creation` button (opens a form) | **1.08 s** |
 | click `Start` (validates, posts a message) | **0.89 s** |
 | click `Desktop Creation` again (collapses the form) | **0.59 s** |
+| select the `Directory` icon on the user desktop | **0.78 s** |
+| `OPEN` (F7) on it → the Directory window paints | **0.96 s** |
 
 So the desktop is *slow but alive*: the cursor tracks the hand, and a button
 takes about a second to answer. A real 8010 was not brisk either, so this reads
@@ -260,7 +262,9 @@ Getting to the real one, all framebuffer-verified (box clock 02:41 → 03:07):
    fill in name and password, click `Start`.
 7. **The ViewPoint user desktop**: grey stipple ground, the `35168 Free Disk
    Pages` header with a `Help` button, and the **Directory** icon in the
-   bottom-right corner — the same furniture Draco shows on the 6085.
+   bottom-right corner — the same furniture Draco shows on the 6085. Selecting
+   that icon and pressing `OPEN` (F7) gives a real Directory window listing
+   `Workstation` and `Desktop`, with `Close` / `Redisplay` buttons.
 
 Two hazards in that sequence, both of which cost me a cycle: `Start` needs the
 pointer *precisely* on the button (a 57 px miss silently does nothing, with no
