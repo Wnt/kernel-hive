@@ -4,7 +4,7 @@
 # operating systems DEC sold for it, behind a chooser, as a thin overlay on the
 # frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running ONE fullscreen xterm, green on
+# GUEST : a captured Debian-13 (trixie) kiosk running ONE fullscreen xterm, green on
 #         black, whose only program is /opt/decos/chooser.sh. Pressing 1, 2 or 3
 #         boots RT-11 V5.3, RSX-11M V4.2 or RSTS/E V9.6 under Open SIMH.
 # TYPE  : "emulator bridge" tile — overlay + per-tile /etc/bridge/launch.sh + an

@@ -271,18 +271,36 @@ if [ "${P[bak]:-no}" = yes ]; then
 fi
 
 # --- rollback --------------------------------------------------------------
+# Killing the builder is the FIRST thing the restore does, in the same remote
+# program, because a rollback under a live build is worse than no rollback:
+# see BRIDGE-TRIXIE-MIGRATION.md "Trap 3", the decos incident this cost.
 ROLLED_BACK=0
 rollback() {
   [ "$ROLLED_BACK" -eq 0 ] || return 0
   ROLLED_BACK=1
   step "ROLLBACK: restoring the bookworm overlay"
-  box_sh "stop, restore $BAK, restart $UNIT" "$(
+  box_sh "kill the builder, stop, restore $BAK, restart $UNIT" "$(
     cat <<'EOS'
 set -u
-d=$1 unit=$2 bak=$3 failed=$4
+d=$1 unit=$2 bak=$3 failed=$4 bpf=$5
+# 1. The BUILDER, by the pidfile its own wrapper wrote, as a session group. Only
+# once it is provably gone may the overlay move: the builder addresses the guest
+# as 127.0.0.1:<hostfwd>, so a restored+restarted tile answers on that port and
+# it will happily provision the production guest instead.
+pid=$(cat "$bpf" 2>/dev/null || true)
+case "$pid" in '' | *[!0-9]*) pid="" ;; esac
+if [ -n "$pid" ] && [ -e "/proc/$pid/exe" ]; then
+  kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+  for _ in $(seq 1 30); do [ -e "/proc/$pid/exe" ] || break; sleep 1; done
+  kill -KILL "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
+  for _ in $(seq 1 15); do [ -e "/proc/$pid/exe" ] || break; sleep 1; done
+  [ -e "/proc/$pid/exe" ] &&
+    { echo "ROLLBACK: builder $pid SURVIVED; not touching the overlay" >&2; exit 1; }
+  echo "rollback: builder session $pid is gone"
+fi
 systemctl stop "$unit" 2>/dev/null
-# Kill this tile's QEMU only by its pidfile, and only after /proc/<pid>/exe says
-# it really is a QEMU (never pkill -f from ssh lab — it matches its own shell).
+# 2. This tile's QEMU, only by its pidfile and only after /proc/<pid>/exe says it
+# really is a QEMU (never pkill -f from ssh lab — it matches its own shell).
 if [ -f "$d/qemu.pid" ]; then
   pid=$(cat "$d/qemu.pid" 2>/dev/null || true)
   case "$(readlink -f "/proc/$pid/exe" 2>/dev/null)" in
@@ -298,7 +316,8 @@ sleep 8
 systemctl is-active --quiet "$unit" && echo "rollback: $unit is active again" ||
   { echo "ROLLBACK: $unit did NOT come back — hands on" >&2; exit 1; }
 EOS
-  )" "$D" "$UNIT" "$BAK" "$FAILED"
+  )" "$D" "$UNIT" "$BAK" "$FAILED" "$BUILD_LOG.pid" ||
+    die "ROLLBACK FAILED — the tile is in a half-migrated state; hands on" 1
   echo
   echo "Rolled back. The trixie attempt is kept at $FAILED (delete it yourself"
   echo "once the post-mortem is done); the build log is $BUILD_LOG."
@@ -378,7 +397,14 @@ step "5/9  build: BRIDGE_SUITE=trixie $BUILDER_REL --force"
 echo "  Staged under $STAGE so the builder's own lib/bridge-base-for"
 echo "  and the ledger resolve relatively. Log: $BUILD_LOG"
 
+# BOTH staging dirs are created up front. rsync makes only the LAST component of
+# a destination path, so `…/$STAGE/scripts/build-guests/` needs `scripts/` to
+# exist already — without it the transfer dies with a bare "mkdir … failed (2)"
+# and the run rolls back before it has built anything. (Found on decos, this
+# script's first real run.)
+STAGE_DIRS=("$STAGE/registry" "$STAGE/scripts/build-guests")
 if [ "$DRY" -eq 1 ]; then
+  printf '  [would] mkdir -p %s\n' "${STAGE_DIRS[*]}"
   printf '  [would] rsync -a --delete %s/scripts/build-guests/ %s:%s/scripts/build-guests/\n' \
     "$REPO" "$LAB" "$STAGE"
   printf '  [would] rsync -a %s %s:%s/registry/bridge-suites.json\n' "$LEDGER" "$LAB" "$STAGE"
@@ -386,23 +412,27 @@ if [ "$DRY" -eq 1 ]; then
     "$LAB" "$STAGE" "$BUILDER_REL" "$BUILD_LOG"
   printf '  [would] poll every 20s, printing new log lines, up to %ss\n' "$BUILD_TIMEOUT"
 else
-  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry" ||
-    fail "cannot create the staging dir $STAGE"
+  box_ro "mkdir -p $(printf '%q ' "${STAGE_DIRS[@]}")" ||
+    fail "cannot create the staging dirs under $STAGE"
   rsync -a --delete -e "ssh ${SSH_OPTS[*]}" \
     "$REPO/scripts/build-guests/" "$LAB:$STAGE/scripts/build-guests/" ||
     fail "staging rsync of build-guests failed"
   rsync -a -e "ssh ${SSH_OPTS[*]}" "$LEDGER" "$LAB:$STAGE/registry/bridge-suites.json" ||
     fail "staging rsync of the ledger failed"
 
+  # The wrapper records its OWN pid, as a session leader, so that rollback() can
+  # prove the builder is dead before it moves the overlay. See the note there.
   box_sh "launch the build (detached, logged)" "$(
     cat <<'EOS'
 set -eu
 stage=$1 rel=$2 log=$3
-rm -f "$log" "$log.rc"
+rm -f "$log" "$log.rc" "$log.pid"
 cd "$stage"
-setsid bash -c "BRIDGE_SUITE=trixie bash '$rel' --force >'$log' 2>&1; echo \$? >'$log.rc'" \
+setsid bash -c "echo \$\$ >'$log.pid'
+  BRIDGE_SUITE=trixie bash '$rel' --force >'$log' 2>&1; echo \$? >'$log.rc'" \
   </dev/null >/dev/null 2>&1 &
-echo "builder pid $!"
+for _ in $(seq 1 20); do [ -s "$log.pid" ] && break; sleep 0.5; done
+echo "builder session pid $(cat "$log.pid" 2>/dev/null || echo '?')"
 EOS
   )" "$STAGE" "$BUILDER_REL" "$BUILD_LOG" || fail "could not launch the build"
 
@@ -413,12 +443,18 @@ EOS
   while [ "$ELAPSED" -lt "$BUILD_TIMEOUT" ]; do
     sleep 20
     ELAPSED=$((ELAPSED + 20))
-    CHUNK="$(box_ro "tail -n +$((SEEN + 1)) $(printf '%q' "$BUILD_LOG") 2>/dev/null; echo '---'; wc -l < $(printf '%q' "$BUILD_LOG") 2>/dev/null || echo 0; cat $(printf '%q' "$BUILD_LOG").rc 2>/dev/null || true")"
-    NEW="${CHUNK%%$'\n'---*}"
-    TAILINFO="${CHUNK#*$'\n'---$'\n'}"
-    SEEN="$(printf '%s' "$TAILINFO" | sed -n 1p)"
-    BUILD_RC="$(printf '%s' "$TAILINFO" | sed -n 2p)"
-    [ -n "$NEW" ] && printf '%s\n' "$NEW" | sed 's/^/    | /'
+    # ONE fixed header line FIRST, then the new log lines, and the cursor
+    # advances by what was actually consumed. Nothing is inferred from position
+    # — that is the whole point. (Trap 3: a trailing `---` sentinel with a
+    # line count behind it parses as an EXIT CODE on any poll where the build
+    # logged nothing. BRIDGE-TRIXIE-MIGRATION.md has what that cost.)
+    CHUNK="$(box_ro "printf 'RC %s\n' \"\$(cat $(printf '%q' "$BUILD_LOG").rc 2>/dev/null || true)\"; tail -n +$((SEEN + 1)) $(printf '%q' "$BUILD_LOG") 2>/dev/null")"
+    BUILD_RC="$(printf '%s\n' "$CHUNK" | sed -n '1s/^RC //p')"
+    NEW="$(printf '%s\n' "$CHUNK" | tail -n +2)"
+    if [ -n "$NEW" ]; then
+      printf '%s\n' "$NEW" | sed 's/^/    | /'
+      SEEN=$((SEEN + $(printf '%s\n' "$NEW" | wc -l)))
+    fi
     [ -n "$BUILD_RC" ] && break
     [ $((ELAPSED % 300)) -eq 0 ] && log "still building (${ELAPSED}s)"
   done

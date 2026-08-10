@@ -1,14 +1,16 @@
 # DEC PDP-11 — RT-11 / RSX-11M / RSTS/E (udp/54126)
 
-**Guest:** a captured **Debian 12 x86_64 kiosk** running **one fullscreen
+**Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **one fullscreen
 green-on-black xterm** whose only program is a chooser. Pressing `1`, `2` or `3`
 boots **RT-11 V5.3**, **RSX-11M V4.2 BL38** or **RSTS/E V9.6** on a simulated
 **DEC PDP-11** under **Open SIMH**. An **"emulator bridge"** tile — streamhost
 captures the Linux framebuffer + AC97 audio exactly like every other tile. See
 **`streamhost/docs/BRIDGE.md`**.
 
-**Shared base:** `/data/vms/bridge/bridge-base.qcow2` — does **not** contain
+**Shared base:** `/data/vms/bridge/bridge-base-trixie.qcow2` — does **not** contain
 SIMH; see [SIMH is built into the overlay](#simh-is-built-into-the-overlay).
+Migrated from the frozen bookworm base on 2026-08-10; see
+[The trixie migration](#the-trixie-migration).
 **Build script (tile):** `scripts/build-guests/tiles/decos.sh` — thin overlay + SIMH
 build + media staging + three pack preparations + kiosk + golden bake + a
 framebuffer-asserted keyboard proof.
@@ -177,9 +179,16 @@ as one-shot fetches: stage the bits, never make a builder fetch them at build
 time. `decos.sh` reads only `/data/assets-staging/decos/` and dies if it is
 missing.
 
+All three blobs are also in the never-evicting media archive
+(`/data/media-archive`, `scripts/build-guests/lib/media-cache.sh`) under those
+same sha256s — checked 2026-08-10, all three `PRESENT`. So the trixie rebuild
+made **no upstream fetch at all**: staged copies in, `sha256sum -c` inside the
+guest, archive as the backstop. For two of these three the origin no longer
+exists, which is the entire argument for that archive.
+
 ## SIMH is built into the overlay
 
-`bridge-base.qcow2` is frozen and ships VICE, cap32 and LinApple — not SIMH. So,
+The bridge base ships VICE, cap32 and LinApple — not SIMH. So,
 following the **`amiga.sh` precedent**, `decos.sh` builds **Open SIMH pinned at
 commit `a1f57fa3738ed31148d31126ba1a7278ff845c6d`** (2026-07-03 master; there is
 no v4 release tag past v4.0-Beta-1, hence the commit pin) *into this tile's
@@ -200,12 +209,70 @@ by asking the **binary** (`ldd … | grep libSDL2`), not the build log — a no-
 `make` truncates the log to "Nothing to be done" and a grep for `USE_DISPLAY`
 then fails on a perfectly good build.
 
-**Debian's packaged `simh` is 3.8.1 built without SDL video. Never use it.**
+**Do not reach for a packaged `simh`.** On bookworm it was 3.8.1 and built
+without SDL video; on trixie the question does not even arise — `apt-cache
+policy simh` returns **no candidate at all** on a `main contrib
+non-free-firmware` trixie (checked 2026-08-10 on the host, where `vice
+3.9+dfsg-1` from contrib does resolve, so the components are not the reason).
+The source pin is the only route, on either suite.
 
 For a from-scratch NVMe rebuild, `bridge-base.sh` should bake SIMH in; the
 addition is in the build report for this tile. `libpcap-dev` is **optional**
 (SIMH falls back to TAP + its bundled SLiRP, which is enough for 2.11BSD
 networking) and `libvdeplug-dev` is not needed.
+
+## The trixie migration
+
+Migrated **2026-08-10** from the frozen bookworm base onto
+`/data/vms/bridge/bridge-base-trixie.qcow2`, in wave 1 of
+[`docs/lab/BRIDGE-TRIXIE-MIGRATION.md`](../lab/BRIDGE-TRIXIE-MIGRATION.md). The
+overlay was rebuilt from scratch, all three packs re-prepared, the golden re-baked
+and `loadvm`-verified, and the chooser re-accepted on a real `labctl shot`. The
+**BEFORE and AFTER frames are 0 differing pixels** of 1024×768 — identical PNG
+md5 — so the exhibit a visitor sees is unchanged.
+
+**This was the tile's first from-scratch build, ever**, and that is not a turn of
+phrase. Since the tile landed, `install_kiosk` ran one
+`install -m 644 a b c /opt/decos/ini/`, which keeps each source's *basename*: the
+files arrived as `decos-rt11.ini` while `prep_rt11` and the chooser both read
+`rt11.ini`. Nothing in the tile could ever have found them. The step carried no
+`|| die` and logged "three .ini files installed" unconditionally, so it reported
+success while installing nothing usable — for months. The live exhibit worked
+only because the real files had been hand-placed during bring-up and were still
+sitting in the overlay. The migration was simply the first build to try it from
+zero, and it died at `sed: can't read /opt/decos/ini/rt11.ini`. See `73795a5`:
+the three files are now committed assets under
+`scripts/build-guests/assets/decos/`, installed one explicit destination at a
+time, behind a post-condition that asserts all three are non-empty in the
+overlay.
+
+The trixie build itself was uneventful, which is the point:
+
+| Step | Result on trixie |
+|---|---|
+| Open SIMH pin `a1f57fa3` | builds and installs in the overlay under **gcc 14.2.0**, still linking `libSDL2` (`ldd` asserted, not inferred from the log) |
+| RT-11 V5.3 pack | prepared, boots straight to `.` |
+| RSX-11M V4.2 BL38 pack | restored and boot-verified to MCR |
+| RSTS/E V9.6 pack | installed in **~6 min**, against the ~45 min this doc records for the original bookworm build |
+| golden | baked at the chooser, `loadvm`-verified, no simulator running |
+| keyboard proof | pressing `1` booted RT-11 under SIMH, then `loadvm golden` returned to the bare chooser |
+
+That last row is the strongest statement about the `.ini` fix, because it
+exercises `rt11.ini` at **runtime** through the chooser rather than asserting a
+file exists. Presence was then confirmed separately, from **inside the running
+tile** over its production hostfwd rather than from the builder's own log:
+
+```
+$ ssh -p 5829 root@127.0.0.1 'sha256sum /opt/decos/ini/*.ini'
+db40a858…71740  /opt/decos/ini/rt11.ini     876 B
+2f82677a…ab8ee  /opt/decos/ini/rsx.ini      924 B
+585ac1d4…cc077  /opt/decos/ini/rsts.ini     751 B
+```
+
+— byte-identical to `scripts/build-guests/assets/decos/{rt11,rsx,rsts}.ini`, at
+the names the chooser actually reads, with all three packs present beside them
+(`rt11.dsk` 10 MB, `rsx.dsk` 31 MB, `rsts.dsk` 159 MB). `/etc/bridge/suite`
+reports `trixie` and the guest is `Debian GNU/Linux 13 (trixie)`.
 
 ## CPU cost, and the one place `set cpu idle` does not work
 
@@ -296,9 +363,14 @@ keeping:
   `Template monitor's name?`, and the installer looped forever while the driver
   cheerfully reported progress. It now aborts after six identical answers.
 
-## Verification (2026-08-09)
+## Verification (2026-08-09 bookworm, re-run 2026-08-10 on trixie)
 
-Evidence in `/data/vms/streamhost/tiles/decos/evidence/`:
+Evidence in `/data/vms/streamhost/tiles/decos/evidence/`. **The trixie rebuild
+regenerated five of these eight** (`cold-boot-chooser`, `ready-before-golden`,
+`golden-restored`, `keyboard-1-rt11`, `golden-restored-after-keyboard`); the
+other three still date from the 2026-08-09 bookworm build, because the builder's
+automated proof only presses `1`. Pressing `2` and `3` was therefore re-done by
+hand on the migrated tile — see the table below the artifact list.
 
 | Artifact | Shows |
 |---|---|
@@ -318,6 +390,24 @@ half-drawn screen all fail it. The keyboard proof additionally requires that a
 `pdp11` process exists afterwards and that the frame is no longer byte-identical
 to the baked chooser, and that after `loadvm golden` **no** simulator is
 running.
+
+### All three chooser entries, re-driven on trixie (2026-08-10)
+
+The builder only presses `1`, so the other two were driven by hand on the
+migrated tile through `labctl key`, each from a fresh `labctl reset`:
+
+| Key | What the framebuffer showed |
+|---|---|
+| `1` | RT-11FB and a `.` prompt (the builder's own automated proof) |
+| `2` | `RSX-11M V4.2 BL38  124.K MAPPED` and an MCR `>` prompt, with **both** `expect` lines in `rsx.ini` firing — `@RSXDATE@` substituted to the real clock (`TIM 12:45 10-AUG-26`) and the terminal width answered `80.` |
+| `3` | `RSTS V9.6-11 SYSGEN (DU0) INIT V9.6-11`, all three `expect` lines answered (`9-AUG-90`, `10:00 AM`, start timesharing), ending at `?File _SY0:[0,1]START.COM not found` and a DCL `$` — the documented missing-Library-tape end state, unchanged from bookworm |
+
+Every one of those frames also carries `Open SIMH V4.1-0 Current  git commit id:
+a1f57fa3` in its banner, so the pin is legible on the exhibit itself. After the
+last of them, `labctl reset` returned the tile to a chooser **byte-identical**
+to the pre-migration one (same PNG md5), with no simulator running — which is
+both the reset contract and the proof that driving the exhibit cannot leak into
+its golden.
 
 ## Cold boot and rollback
 
