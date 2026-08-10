@@ -97,6 +97,11 @@ reach a **graphical UI**, either at boot or via one simple documented command.
   ```
 
   That fixed every case at once on Dwarf: `Shift+a` → `A`, `Shift+;` → `:`.
+  **The 350 ms lead is a safe recipe, not a threshold, and the two machines
+  differ.** Bisected afterwards on Dwarf: leads of 150 / 250 / 350 ms ALL
+  produce `:A`, so what fails there is a lead of *zero* (the batched event) and
+  `SH_KEY_MIN_GAP_MS=150` is sufficient. Darkstar genuinely needs the long lead
+  — 200 ms failed, 350 ms worked. Carry the rule, measure the number.
   A genuine keymap gap would not pass `" { } < > ? _ + | * ( )` while dropping
   the shift on `;` alone — so **suspect event shape before you suspect the
   keymap.** The SPA's shift latch already does the right thing (shift as a
