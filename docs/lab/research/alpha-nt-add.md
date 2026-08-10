@@ -1,8 +1,10 @@
 # Adding Windows NT / 2000 on DEC Alpha
 
-Status: **research, 2026-08-09.** Nothing is built, no registry entry exists, no
-slot is claimed. This is the feasibility study
-[`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expects.
+Status: **OS INSTALLED, 2026-08-10 — see §9.** The §7 experiment ran to
+completion: Windows 2000 RC2 Alpha reaches a desktop, survives an unattended
+cold boot with the clock pinned, and the timebomb is quantified. No registry
+entry exists yet; tile integration is the remaining work. §§1–8 below are the
+original 2026-08-09 feasibility study, kept as written.
 
 **Verdict: FEASIBLE-WITH-CAVEATS, Tier 3. One tile — `w2kalpha`, Windows 2000
 RC2 for Alpha.** The emulator question is settled affirmatively *by experiment on
@@ -216,3 +218,65 @@ and the least supported anywhere.
 Evidence: `/data/vms/soltest/ALPHA-nt/` on the box (1.1 GB, inert) — es40
 source and binaries, the four media files, the flashed `rom/flash.rom`, the
 partial install image, and screenshots `shot1`–`shot39`.
+
+## 9. Install session, 2026-08-10 — the §7 experiment, completed
+
+Every UNVERIFIED from the study above is now resolved. Evidence:
+`/data/vms/soltest/ALPHA-nt/` (`run/` live rig, `milestones/m2-desktop/` the
+clean installed pair, `run/perf-shot*.png` + `gui-*.png` + `boot-*.png` +
+`cold-*.png` the framebuffer record).
+
+### What changed vs the feasibility run, and what each change bought
+
+| Change | Why | Result |
+|---|---|---|
+| `--enable-asmjit` (needs `git submodule update --init third_party/asmjit`; a stray partial tree blocks the clone — delete it first) | changelog claims ~2.5× | text-mode file copy **35+ min for 12% → 100% in ~3 min** (with the two changes below) |
+| Both disks on `sym53c810` (system `disk0.0`, CD `disk0.4`); `ali_ide` left implicit with no drives | upstream #169: "IDE does not see much love" | matches upstream's reference layout in the zx.net.nz guide |
+| **`ali_usb` removed** | upstream #114: makes the NT System process spin at 100% | the feasibility run's crawl explained |
+| `time = "1999-11-01"` + `arc_year_compat = true` | RC2 timebomb | winver: "Expires **1/18/2001** 1:06 AM" — expiry is fixed at install time; the pinned TOY keeps every boot ~14 months inside the window |
+| **`memory.bits = 29` (512 MB)** | GUI setup died at 256 MB: *"The security subsystem could not be initialized"*, `LsaOpenPolicy returned c0000205` (=STATUS_INSUFF_SERVER_RESOURCES) | GUI phase completes; winver sees 524,160 KB |
+
+### The knowledge that was nowhere in our logs
+
+- **SRM → AlphaBIOS is the `arc` command** at `P00>>>`. `set os_type nt` does
+  not exist on ES40 firmware (real hardware included — Compaq never supported
+  NT on ES40). Sources: zx.net.nz es40 guide; virtuallyfun "Flashing the ES40".
+- **Unattended entry**: `edit nvram` → `10 show dev` / `20 arc` → Ctrl+Z
+  ("13 bytes written"). SRM runs the script at every power-up. **Proven**: a
+  cold es40 start reached the Windows desktop with zero input.
+- A *warm* restart (setup reboot, Windows restart) keeps ARC resident — only a
+  cold es40 start passes through SRM.
+- es40 serial ports block startup until BOTH have a client; `run/start.sh` +
+  `run/pumps.py` handle the ordering (the pumps retry until the port opens).
+- The es40 binary needs `LD_LIBRARY_PATH` to the extracted-debs tree —
+  RUNPATH only covers direct deps, and `libpipewire` is SDL3's dep, not ours.
+
+### Install answers (for the future builder / re-install)
+
+NTFS on C:, D: (6 MB FAT ARC partition) untouched. Name `Kernel Hive`,
+machine `W2KALPHA`, blank Administrator password, **auto-logon** accepted from
+the Network Identification Wizard's default. "Show this screen at startup"
+unticked. **No product key was ever asked** — text or GUI phase. US
+locale/keyboard. Total wall time SRM→desktop ≈ 75 min on a loaded host
+(~load 8), dominated by the GUI phase's single-core stretches (COM+
+registration alone ~15 min).
+
+### Re-install = restore, not re-run
+
+`milestones/m2-desktop/{nt.img,flash.rom}` is the cleanly-shut-down installed
+pair (sha256 `4929bc06…` / `10ef3791…`). The tile builder should consume this
+pair as a cached asset (the `win2000.sh` philosophy — its header explains why
+unattended re-install is the wrong tool). The Alpha answer-file path
+(`OSLOADOPTIONS /unattend`) is untested on es40 and stays unexplored.
+
+### Still open for tile integration
+
+- Pointer: still untested (`gui { mouse.speed }` knobs exist, upstream #131).
+- The permanently-busy-core cost stands; `kleinmatic/es40:wtint-idle` is the
+  only known idle-detection work (WIP, unreviewed) — see the 2026-08-10 GH
+  ecosystem scan in the session transcript.
+- Fork exists: **github.com/Wnt/es40**, pinned at upstream tip `a9bda96` +
+  asmjit `0bd5787`. Zero source patches so far — everything above is config.
+  Source edits go onto the fork as commits (operator: no .patch files).
+- Kiosk/bridge wrapping, SDL3-on-trixie base check (§6), golden bake at the
+  AlphaBIOS screen (§5) — unchanged, still the plan.
