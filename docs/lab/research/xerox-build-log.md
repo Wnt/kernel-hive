@@ -204,15 +204,33 @@ relative pointer path or a patched/agent-driven Darkstar.** Budget for it.
 applied only ~127 px; **50 px steps at 120 ms apply 1:1**. Any pointer driver
 for this machine has to walk, not jump.
 
-**Shift works, but `:` is not Shift+`;` on the Level-V keyboard.** Explicit
-`Shift_L`/`Shift_R` chords are honoured (`Shift+a` → `A`, and `" { } < > ? _ +
-| * ( )` all came through). But **Shift + the `;` key yields `;`, not `:`** —
-and no other shifted PC punctuation produces a colon either. This matters
-because ViewPoint's Desktop Creation sheet demands an XNS **three-part name**
-(`name:domain:organisation`), so a colon is unavoidable and the route to
-creating a user desktop is blocked on finding that key. Unresolved; the exhibit
-does not depend on it (see below), but Agent C should check whether Dwarf has
-the same gap.
+**RETRACTED, then fixed: `:` IS Shift+`;` — the modifier needs the same dwell
+as the key.** I first reported the colon as unreachable on the Star, because
+`Shift+;` produced `;` while `Shift+a` → `A` and `" { } < > ? _ + | * ( )` all
+came through. That looked like a keymap gap and it is not. Agent C hit the
+identical symptom on Dwarf and found the cause: **the modifier is subject to
+the same dwell law as the key.** With C's timing —
+
+```
+shift-down · 350 ms · key-down · 400 ms · key-up · 250 ms · shift-up
+```
+
+— Darkstar produces a colon. Proof, typed adjacent in one ViewPoint field and
+read at 500 %: `B : N ; M` from `Shift+b`, `Shift+;`, `Shift+n`, plain `;`,
+`Shift+m` — the colon has two dots and no descender, the semicolon has the
+comma tail. My failing attempt used a 200 ms shift lead and a 300 ms hold; the
+letters survived it and the punctuation did not, which is what made it look
+selective.
+
+Two lessons worth more than the colon:
+- **Pace the MODIFIER, not just the key.** A chord is two dwells, not one.
+- **Never distinguish `:` from `;` by eye on a ViewPoint screen.** At 400 % the
+  two are near-identical in the Star's bitmap font; I called a colon a
+  semicolon and then called a semicolon a colon. Test functionally (does the
+  three-part name validate?) or set the two glyphs side by side at 500 %.
+
+The SPA needs no new affordance for this: the shift latch already sends shift
+as its own `sendKey` and `SH_KEY_MIN_HOLD_MS=400` paces it.
 
 **What the exhibit actually rests on.** With no XNS Clearinghouse this image
 wakes onto the **Workstation Administration** desktop — grey stipple ground,
