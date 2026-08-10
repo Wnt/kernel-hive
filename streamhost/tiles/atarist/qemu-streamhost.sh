@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'atarist' (VMID 216) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running Hatari (windowed) emulating
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running Hatari (windowed) emulating
 # an Atari ST booting EmuTOS to the GEM desktop (see scripts/build-guests/tiles/atarist.sh,
 # scripts/atarist-tile-notes.md, streamhost/BRIDGE.md). Kill only by pidfile.
 #
@@ -9,7 +9,7 @@
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden) so the
 #     tile comes up already on the GEM desktop (no EmuTOS boot, no keypresses).
 #   * overlay.qcow2 is a THIN qcow2 OVERLAY on the read-only shared base
-#     /data/vms/bridge/bridge-base.qcow2 — NEVER delete/recreate it (the golden
+#     /data/vms/bridge/bridge-base-trixie.qcow2 — NEVER delete/recreate it (the golden
 #     snapshot lives inside it). Runs WITHOUT -snapshot so savevm persists.
 #   * Device set MUST match the golden bake EXACTLY or -loadvm golden fails.
 set -e

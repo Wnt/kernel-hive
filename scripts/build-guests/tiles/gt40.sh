@@ -4,7 +4,7 @@
 # streamhost tile as a thin overlay on the frozen bridge base
 # (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running Open SIMH's `pdp11` with the VT11
+# GUEST : a captured Debian-13 (trixie) kiosk running Open SIMH's `pdp11` with the VT11
 #         vector display, executing the original 1973 GT40 Lunar Lander paper
 #         tape. streamhost captures the Linux framebuffer like every other
 #         bridge tile (streamhost/docs/BRIDGE.md).

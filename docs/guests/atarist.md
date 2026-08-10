@@ -1,6 +1,6 @@
 # Atari ST + EmuTOS GEM desktop — gallery tile notes (:8116)
 
-**Guest:** a captured **Debian 12 x86_64 kiosk** running **Hatari** (WINDOWED),
+**Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **Hatari** (WINDOWED),
 emulating an **Atari ST** that boots **EmuTOS** straight to the **GEM desktop**.
 An **"emulator bridge"** tile (see **`streamhost/docs/BRIDGE.md`**, ref impl = the c64
 tile) — streamhost captures the Linux framebuffer + AC97 audio (the ST **YM2149**
@@ -98,7 +98,7 @@ available releases lack a sufficiently clear redistributable PD/freeware grant.
 ## THE HARD-WON RECIPE (all non-obvious, all baked into the scripts)
 
 ### Kiosk / Hatari launch (atarist.sh → /etc/bridge/launch.sh)
-The verified launcher (WHY each flag — Hatari 2.4.1):
+The verified launcher (WHY each flag — Hatari 2.5.0):
 ```
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software    # GPU-less host: software SDL renderer, no GL

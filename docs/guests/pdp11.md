@@ -1,6 +1,6 @@
 # DEC PDP-11/70 + 2.11BSD — gallery tile notes (udp/54115)
 
-**Guest:** a captured **Debian 12 x86_64 kiosk** running **Open SIMH's `pdp11`**
+**Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **Open SIMH's `pdp11`**
 simulator as a **DEC PDP-11/70** (22-bit, 4 MB of core, FP11 floating point)
 booting **2.11BSD** off an MSCP disk pack, displayed as green phosphor in a
 fixed 80×24 `xterm`. An **"emulator bridge"** tile — streamhost captures the

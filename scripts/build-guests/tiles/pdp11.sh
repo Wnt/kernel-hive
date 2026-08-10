@@ -3,7 +3,7 @@
 # build-guests/tiles/pdp11.sh — build the DEC PDP-11/70 running 2.11BSD as a thin
 # overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk running Open SIMH's `pdp11` as a PDP-11/70
+# GUEST : a captured Debian-13 (trixie) kiosk running Open SIMH's `pdp11` as a PDP-11/70
 #         with 4 MB of core and an FP11, booting 2.11BSD off an MSCP pack into
 #         a full-screen xterm dressed as green phosphor. streamhost captures
 #         the Linux framebuffer like every other bridge tile (BRIDGE.md).

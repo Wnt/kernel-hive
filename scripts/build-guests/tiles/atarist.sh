@@ -3,7 +3,7 @@
 # build-guests/tiles/atarist.sh — build the Atari ST + EmuTOS GEM-desktop streamhost
 # tile as a thin overlay on the shared bridge base (build-guests/lib/bridge-base.sh).
 #
-# GUEST : a captured Debian-12 kiosk that runs Hatari (WINDOWED) emulating an
+# GUEST : a captured Debian-13 (trixie) kiosk that runs Hatari (WINDOWED) emulating an
 #         Atari ST that boots EmuTOS straight to the GEM desktop. streamhost
 #         captures the Linux framebuffer + AC97 audio (the ST YM2149 routed
 #         through ALSA).
@@ -191,7 +191,7 @@ README
 }
 
 # The Atari ST / EmuTOS kiosk launcher (overlaid onto the base's /etc/bridge/launch.sh).
-# VERIFIED FLAGS (Hatari 2.4.1):
+# VERIFIED FLAGS (Hatari 2.5.0, trixie; identical geometry to 2.4.1 on bookworm):
 #   --tos <img>        the EmuTOS ROM image (etos1024k.img).
 #   --machine st       plain Atari ST (EmuTOS 1024k targets ST/STe).
 #   --monitor mono     ST-high mono (640x400) — the crisp classic GEM desktop.
@@ -205,7 +205,7 @@ README
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
 # Atari ST + EmuTOS GEM desktop kiosk launcher (bridge tile). See atarist.sh header.
-# Hatari 2.4.1, WINDOWED (real fullscreen renders BLACK in the captured std-VGA fb).
+# Hatari 2.5.0, WINDOWED (real fullscreen renders BLACK in the captured std-VGA fb).
 # mono monitor -> ST-high 640x400 GEM desktop; --zoom 1.6 -> 1024x640 (fills width).
 # YM2149 sound: SDL audio -> ALSA default -> AC97 (hw:0,0) -> QEMU dbus audiodev.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)

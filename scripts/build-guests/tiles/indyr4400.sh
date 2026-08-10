@@ -86,6 +86,8 @@ ASSET_DIR="/data/gallery-guests/IrisIndy"
 ASSET="${ASSET_DIR}/irix65-r4400-disk.ext4"
 # shellcheck disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-suite.sh"
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../../lib/chroot-guard.sh"
 SUITE="$(bridge_suite_for "$TILE")"
 # The overlay backs onto the SAME suite the binary was linked against.
 BRIDGE_BASE="${BRIDGE_BASE:-$(bridge_base_for "$SUITE")}" # env override wins
@@ -239,12 +241,19 @@ build_iris_native() {
 build_iris_chroot() {
   log "building iris ${IRIS_COMMIT} in a bookworm chroot (host is trixie; the"
   log "  bridge base is bookworm, and a trixie-built iris needs GLIBC_2.39) ..."
+  chroot_guard_umount_all "$CHROOT" || {
+    echo "stale mounts under $CHROOT — clean them before rebuilding" >&2
+    exit 1
+  }
   rm -rf "$CHROOT"
   mkdir -p "$CHROOT"
   debootstrap --variant=minbase bookworm "$CHROOT" http://deb.debian.org/debian
-  mount -t proc proc "$CHROOT/proc"
-  mount --rbind /sys "$CHROOT/sys"
-  mount --rbind /dev "$CHROOT/dev"
+  # /proc,/sys,/dev are bind-mounted PRIVATE and torn down through the guard: a
+  # plain --rbind of the host's shared /dev makes the copy's /dev/pts a peer of
+  # the real one, and the teardown then unmounts the HOST's /dev/pts (which is
+  # "PTY allocation failed" for every new login). See scripts/lib/chroot-guard.sh.
+  trap 'chroot_guard_umount_all "$CHROOT" || true' EXIT
+  chroot_guard_mount_api "$CHROOT" || exit 1
   cp /etc/resolv.conf "$CHROOT/etc/resolv.conf"
   chroot "$CHROOT" /bin/bash -c '
     set -e
@@ -262,7 +271,11 @@ build_iris_chroot() {
     cargo build --release --features lightning,rex-jit,chd"
   install -d -m 0755 "$ASSET_DIR"
   install -m 0755 "$CHROOT/build/target/release/iris" "$IRIS_BIN"
-  umount -l "$CHROOT/proc" "$CHROOT/sys" "$CHROOT/dev" 2>/dev/null || true
+  chroot_guard_umount_all "$CHROOT" || {
+    echo "refusing to rm -rf $CHROOT while mounts remain under it" >&2
+    exit 1
+  }
+  trap - EXIT
   rm -rf "$CHROOT"
 }
 

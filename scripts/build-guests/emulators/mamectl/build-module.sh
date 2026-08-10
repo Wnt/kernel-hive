@@ -9,6 +9,15 @@
 # Regenerate mame-ctlsock.patch from src/ with regen-patch.sh and copy it into
 # $PATCHES first; this script consumes the patch, not the module sources.
 set -eo pipefail
+# The chroot below runs in a PRIVATE mount namespace: nothing it mounts is
+# visible to the host, and no unmount can propagate out (the 2026-08-10
+# "PTY allocation failed" incident — scripts/lib/chroot-guard.sh). This script
+# is also copied to the box, so the guard is loaded from the repo if it is
+# beside us and from /usr/local/bin/chroot-guard otherwise.
+CHROOT_GUARD_LIB="$(dirname "${BASH_SOURCE[0]}")/../../../lib/chroot-guard.sh"
+# shellcheck disable=SC1091
+if [ -f "$CHROOT_GUARD_LIB" ]; then . "$CHROOT_GUARD_LIB"; else . /usr/local/bin/chroot-guard; fi
+chroot_guard_reexec_private "$@"
 C=${MAMECTL_CHROOT:-/data/vms/soltest/trixie-chroot}
 T=$C/build/mame
 PATCHES=${MAMECTL_PATCHES:-/root/mame-stack-v3}

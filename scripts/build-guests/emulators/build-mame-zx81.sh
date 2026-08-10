@@ -35,6 +35,13 @@ set -euo pipefail
 
 # shellcheck disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-suite.sh"
+CHROOT_GUARD_LIB="$(dirname "${BASH_SOURCE[0]}")/../../lib/chroot-guard.sh"
+# The chroot below runs in a PRIVATE mount namespace: nothing it mounts is
+# visible to the host, and no unmount can propagate out (the 2026-08-10
+# "PTY allocation failed" incident — scripts/lib/chroot-guard.sh).
+# shellcheck disable=SC1091
+if [ -f "$CHROOT_GUARD_LIB" ]; then . "$CHROOT_GUARD_LIB"; else . /usr/local/bin/chroot-guard; fi
+chroot_guard_reexec_private "$@"
 SUITE="$(bridge_suite_for zx81)"
 CHROOT="$(bridge_mame_chroot_for "$SUITE")"
 if [ -n "${MAME_BOOKWORM_CHROOT:-}" ]; then

@@ -1,13 +1,13 @@
 #!/bin/bash
 # Launch tile 'pdp11' (VMID 227) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running Open SIMH's `pdp11` simulator
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running Open SIMH's `pdp11` simulator
 # as a DEC PDP-11/70 (4 MB core, FP11) booting 2.11BSD off an MSCP pack, drawn
 # as green phosphor in a fixed 80x24 xterm on a 1024x768 X root. Keyboard
 # exhibit (no pointer). Kill only by pidfile.
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/apple2/atarist/amiga/plus4).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X (-nocursor) + xterm + the simulator resting at
 # 2.11BSD's own multiuser `login:` prompt.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):

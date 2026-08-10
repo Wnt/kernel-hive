@@ -1,6 +1,6 @@
 #!/bin/bash
 # Launch tile 'gt40' (VMID 228) QEMU with the streamhost display wiring.
-# BRIDGE tile: a captured Debian-12 kiosk running Open SIMH's `pdp11` simulator
+# BRIDGE tile: a captured Debian-13 (trixie) kiosk running Open SIMH's `pdp11` simulator
 # with the VT11 vector display, executing the original 1973 GT40 Lunar Lander
 # paper tape (PDP11/lunar11/lunar.lda, in-tree and MIT-licensed — no external
 # media). SIMH's fixed 1024x1024 VT11 window is centred by SDL at +128+0 on a
@@ -10,7 +10,7 @@
 #
 # GOLDEN FIXTURE tile (resetMode=loadvm, like c64/apple2/atarist/amiga/plus4).
 # The overlay.qcow2 is a THIN qcow2 overlay on the read-only shared base
-# /data/vms/bridge/bridge-base.qcow2 and holds an INTERNAL 'golden' snapshot
+# /data/vms/bridge/bridge-base-trixie.qcow2 and holds an INTERNAL 'golden' snapshot
 # (full RAM+device state) of X + the simulator at the first seconds of a fresh
 # lunar descent.
 #   * If the golden snapshot is present, boot STRAIGHT INTO it (-loadvm golden):

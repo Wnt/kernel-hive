@@ -3,9 +3,10 @@
 The lab **host** finished bookworm → trixie on 2026-07-15 and now runs Debian
 13.6. The **guests** did not come with it. The shared emulator-bridge base
 `/data/vms/bridge/bridge-base.qcow2` is still Debian 12 (bookworm, glibc 2.36),
-and **28 tile overlays back onto it read-only**. That is the whole problem in
-one sentence: the base is not a package set you upgrade, it is a byte-for-byte
-backing file that 28 qcow2 overlays name by path and depend on block-for-block.
+and **25 tile overlays back onto it read-only** (28 before wave 1). That is the
+whole problem in one sentence: the base is not a package set you upgrade, it is
+a byte-for-byte backing file that every one of those qcow2 overlays names by
+path and depends on block-for-block.
 
 There is no flag day available. Rebuilding the base in place invalidates every
 overlay at once, which means 28 overlay rebuilds, 28 golden re-bakes and 28
@@ -17,11 +18,12 @@ is **gradual**, and this doc is the plan.
 
 > **What is proven and what is not.** Every package fact below was checked
 > against a real trixie 13.6 apt state — versions, presence, absence,
-> dependency fields, backports. The **base itself is now proven at runtime**
-> (see below); the **per-tile verdicts are still apt-level**. Treat
+> dependency fields, backports. The **base itself is proven at runtime**, and
+> **three tiles are proven end to end** (wave 1 below: `atarist`, `pdp11`,
+> `gt40`). Every *other* per-tile verdict is still apt-level. Treat
 > "MIGRATABLE, no work" as "no work is visible from the package layer", not as
-> "this tile will work" — no tile overlay has been rebuilt on the trixie base,
-> and no golden has been re-baked.
+> "this tile will work" — those tiles' overlays have not been rebuilt and their
+> goldens have not been re-baked.
 
 ### Wave 0 is done: the trixie base exists and boots (2026-08-10)
 
@@ -48,6 +50,23 @@ geometry. Audio was **not** exercised (the clone ran `-audiodev none`; the dbus
 audiodev needs the streamhost daemon), and no golden was baked — both belong to
 the per-tile acceptance in the procedure below.
 
+### Wave 1: three of four landed (2026-08-10)
+
+`atarist`, `pdp11` and `gt40` are **migrated and accepted** — overlays rebuilt on
+`bridge-base-trixie.qcow2`, goldens re-baked and `loadvm`-verified, and each one
+accepted on a real `labctl shot` of the machine's own screen. `atarist` runs
+trixie's **hatari 2.5.0** with the builder's flags unchanged and identical
+geometry, and its golden restores pixel-identical. `pdp11` and `gt40` build the
+same Open SIMH pin `a1f57fa3` clean under **gcc 14.2.0** with `-Werror`; `gt40`
+links trixie's **SDL2 2.32.4** and its VT11 vector rendering is unchanged. The
+ledger is flipped for these three, so the trixie base now carries live overlays
+and `bridge-base.sh` refuses to rebuild it.
+
+`decos` — the fourth tile in this wave — was attempted, **failed on a builder bug
+unrelated to the suite, and was rolled back**. It stays on bookworm, which is the
+correct state for it; the bug is since fixed and the rebuild is pending. Wave 1
+therefore stands at 3/28 migrated. Both traps below were found here.
+
 The upstream image exists and the naming substitution is exact — the URL is the
 bookworm one with `debian-12-` → `debian-13-`:
 
@@ -67,7 +86,7 @@ Two bases coexist. The migration moves tiles between them, one at a time.
 | base qcow2 | `/data/vms/bridge/bridge-base.qcow2` | `/data/vms/bridge/bridge-base-trixie.qcow2` |
 | MAME build chroot | `/data/vms/soltest/bookworm-chroot` | `/data/vms/soltest/trixie-chroot` |
 | glibc / gcc | 2.36 / 12 | 2.41 / 14 |
-| frozen | **yes** (28 live overlays) | no (nothing backs onto it yet) |
+| frozen | **yes** (25 live overlays) | **yes, in fact** (3 live overlays since wave 1; the ledger flag is still `false`, but `bridge-base.sh` derives frozen-ness from "any tile declares this suite") |
 
 **The bookworm base keeps its original path.** This is the single most
 load-bearing decision here and it is deliberately unglamorous: a qcow2 overlay
@@ -161,6 +180,46 @@ that make the migration real rather than declared.
 7. **Run `scripts/dev/bridge-suite-status.sh`.** Clean exit is the end of the
    procedure. Anything else means step 6 was wrong.
 
+### Two traps wave 1 walked into
+
+Both of these are in the gap between step 2 and step 3, and both cost time
+because they look like something else.
+
+**1. The stale SSH host key — fatal, not cosmetic.** The trixie overlay is a
+fresh guest filesystem with fresh host keys, so the box's
+`/root/.ssh/known_hosts` still holds the *bookworm* overlay's key for the tile's
+provisioning port (`[127.0.0.1]:<port>`). Every `guest()` call in the builder
+then fails, and **`StrictHostKeyChecking=no` does not save you**: it suppresses
+the prompt for an *unknown* key, not the hard refusal for a *changed* one.
+The failure does not say "host key" anywhere useful — on `gt40` the builder sat
+in `wait_for_ssh` printing nothing until its 120 s timeout fired and died with
+`bridge SSH did not become ready on 127.0.0.1:5828`, which reads like a guest
+that failed to boot. Two of us first filed this as cosmetic; the third lost an
+hour to it. Treat it as fatal and clear the entry **before** building:
+
+```bash
+ssh lab 'ssh-keygen -R "[127.0.0.1]:5828"'
+```
+
+Provisioning ports seen in wave 1: `atarist` 5816, `pdp11` 5827, `gt40` 5828,
+`decos` 5829 (each builder's `SSH_PORT`).
+
+**2. `atarist.sh` does not bake the golden — you do.** It cold-boots the
+overlay, stages the media, installs `/etc/bridge/launch.sh`, then **logs the
+`savevm golden` / `loadvm golden` commands and exits 0 with no snapshot in the
+overlay.** A successful run is therefore not a finished tile, and step 3 is a
+manual QMP bake. Do it **under the tile's own
+`streamhost/tiles/atarist/qemu-streamhost.sh`**, not under the builder's boot:
+a golden baked against a different device set will not `loadvm`, and that only
+surfaces later, at the first visitor reset.
+
+`pdp11.sh` and `gt40.sh` are **not** like this — both have a `bake_golden()`
+that runs `savevm golden`, asserts the snapshot landed, and `loadvm golden`s to
+prove the restore, inside the build. Their catch is the mirror image: each
+duplicates the production device set inline in its own `boot_tile()`, so the
+builder's QEMU line and the tile's `qemu-streamhost.sh` must stay
+byte-identical or the golden they bake is unrestorable in production.
+
 ### Acceptance gate
 
 A tile is migrated when, and only when: the overlay's real backing file is the
@@ -182,22 +241,23 @@ sacred.
 
 ## 3. The ledger table — per-tile verdicts
 
-All package facts verified against trixie 13.6 apt state. Apt-level only — the
-*base* is runtime-proven (wave 0 above), but no tile in this table has been
-rebuilt or re-baked. See the warning at the top.
+All package facts verified against trixie 13.6 apt state. Apt-level only,
+except where a row says otherwise: the *base* is runtime-proven (wave 0), and
+`atarist`, `pdp11` and `gt40` are fully migrated (wave 1). No other tile in this
+table has been rebuilt or re-baked. See the warning at the top.
 
-Two entries can be upgraded from prediction to measurement by wave 0: `atarist`
-(hatari 2.5.0 drew the GEM desktop with the builder's exact flags) and the seven
-VICE tiles (`x64sc` built from source clean under gcc-14, which was the open
-question for all of them). Neither has had its overlay rebuilt, so both stay in
-this table rather than moving to "done".
+The seven VICE tiles can be upgraded from prediction to measurement by wave 0
+(`x64sc` built from source clean under gcc-14, which was the open question for
+all of them), but none has had its overlay rebuilt, so they stay in this table
+rather than moving to "done".
 
 ### MIGRATABLE, no per-tile work (20 tiles)
 
 | Tiles | Why it is clean |
 |---|---|
-| `atarist` | `hatari 2.5.0+dfsg-1+b1` in trixie main. Straight apt swap. |
-| `pdp11`, `gt40`, `decos` | Open SIMH built from source; the whole toolchain is present — gcc 14.2.0, make, git, `libsdl2-dev 2.32.4`, `libpng-dev`, `libpcre2-dev`. |
+| `atarist` | **DONE (wave 1).** `hatari 2.5.0+dfsg-1+b1` in trixie main; straight apt swap, builder flags unchanged, geometry identical. |
+| `pdp11`, `gt40` | **DONE (wave 1).** Open SIMH pin `a1f57fa3` builds clean under gcc 14.2.0 with `-Werror`; `gt40` against `libsdl2-dev 2.32.4`, VT11 rendering unchanged. |
+| `decos` | Same source-SIMH story, **not migrated**: attempted in wave 1, failed on an unrelated builder bug (since fixed) and rolled back to bookworm. Rebuild pending. |
 | `c64`, `c128`, `vic20`, `plus4`, `pet2001`, `cbm8032`, `cbm2` | VICE from source, unchanged (see the VICE note below — the apt package is a trap, not a shortcut). `c64` additionally needs a full rebuild because its overlay is detached. |
 | `amstradcpc` | `cap32` from source; deps fine. |
 | `bbcmicro`, `armeval`, `mpf2`, `zx81`, `dragon32`, `kc854`, `oricatmos` | The MAME-in-chroot tiles (six `build-mame-*.sh` builders between them). The binaries already load against a newer glibc; migrating them is just moving the build to the trixie chroot. |
@@ -315,7 +375,7 @@ before any expensive tile depends on it.
 | Wave | Tiles | Rationale |
 |---|---|---|
 | **0** | build `bridge-base-trixie.qcow2`; boot it once, bare | The first real runtime evidence for anything on this page. Confirms the e1000/`linux-image-amd64` and static-IP gotchas from BRIDGE.md §1 still hold on trixie *before* a tile depends on them. |
-| **1** | `pdp11`, `gt40`, `decos`, `atarist` | Pure source-SIMH plus one apt emulator. Smallest blast radius, and four goldens' worth of proof that the base is sound. |
+| **1** | `pdp11` ✅, `gt40` ✅, `atarist` ✅, `decos` ↩︎ | Pure source-SIMH plus one apt emulator. Smallest blast radius. **Three landed 2026-08-10**; `decos` rolled back on an unrelated builder bug and is pending a rebuild. |
 | **2** | the MAME-in-chroot tiles: `bbcmicro`, `armeval`, `mpf2`, `zx81`, `dragon32`, `kc854`, `oricatmos` | Mechanical chroot swap. Retires the bookworm chroot's biggest consumer. |
 | **3** | `amstradcpc`, `alto`, `amiga` | Source builds and the .NET publish; `amiga` carries the explicit `libgl1-mesa-dri` fix and the black-screen check. |
 | **4** | the VICE seven: `c128`, `vic20`, `plus4`, `pet2001`, `cbm8032`, `cbm2`, then `c64` | Identical procedure ×7. `c64` last in the wave — it is a full rebuild, not a rebase. |
