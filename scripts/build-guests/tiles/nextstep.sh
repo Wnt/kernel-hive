@@ -571,6 +571,7 @@ guest "chmod 755 /usr/local/bin/nstel.py"
 # typed. (The Plus/4 lesson: a golden baked inside an application drops a
 # visitor into the middle of something they cannot name or leave.)
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile cold
 wait_ssh
 sleep 240

@@ -579,12 +579,12 @@ fi
 # key-pacing bisect reported a flawless 0 ms as passing before a deliberate
 # negative control caught it. Cold-boot the whole VM instead; it is the state a
 # visitor gets anyway.
-
 # The cold boot with the quiet console in force, then bake THAT screen.
 # Bake from a cold boot, never from a framebuffer that has carried verification
 # output: the mpf2 add shipped a golden with two prompts stacked on it and had
 # to re-bake.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 sleep 8
 wait_for_basic ready-before-golden

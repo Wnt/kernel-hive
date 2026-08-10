@@ -546,6 +546,7 @@ fi
 # the very state SPA reset restores for ever after. Bake from an UNTOUCHED cold
 # boot: the mpf2 add shipped a golden carrying its own verification output.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile cold
 wait_for_ssh
 sleep 6

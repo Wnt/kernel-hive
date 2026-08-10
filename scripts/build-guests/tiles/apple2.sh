@@ -286,6 +286,23 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
     systemctl daemon-reload && systemctl enable --now pointer-watchdog.service && \
     systemctl is-active pointer-watchdog && echo watchdog-ok"
 
+  # Disk checkpoint before the getty-restart below drives the guest; see
+  # lib/bridge-coldboot. Needs the VM stopped, so stop this build's own
+  # boot_tile() and cold-boot it again — the getty-restart still re-applies.
+  [ -f "$PID" ] && kill "$(cat "$PID")" 2>/dev/null
+  for i in $(seq 1 40); do
+    { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; } || break
+    sleep 0.25
+  done
+  rm -f "$QMP" "$PID"
+  "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile
+  boot_tile
+  log "waiting for guest ssh ..."
+  for i in $(seq 1 40); do
+    guest true 2>/dev/null && break
+    sleep 3
+  done
+
   # restart X so it lands on the GEOS deskTop unattended (kiosk re-runs launch.sh).
   guest "pkill -u bridge linapple 2>/dev/null; sleep 1; systemctl reset-failed getty@tty1; systemctl restart getty@tty1" || true
 

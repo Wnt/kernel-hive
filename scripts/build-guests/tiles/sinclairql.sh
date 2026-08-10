@@ -547,7 +547,6 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
   sleep 6
   reach_monitor_mode
 fi
-
 # BAKE, but only when there is no golden to protect. A re-run without --force
 # must NOT cold-boot: the launcher enters an existing golden with -loadvm, the
 # MAME warning screen it would wait for is long gone, and the only honest thing
@@ -561,6 +560,7 @@ else
   # mpf2 shipped a golden carrying its own verification output and had to be
   # re-baked.
   stop_qemu
+  "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile # see lib/bridge-coldboot; this branch only runs when no golden exists yet
   boot_tile build
   sleep 8
   reach_monitor_mode

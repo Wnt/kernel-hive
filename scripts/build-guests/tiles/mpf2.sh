@@ -347,6 +347,7 @@ fi
 # One clean cold boot with the quiet console in force, then bake the golden
 # snapshot from the state SPA reset will restore for ever after.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 sleep 6
 wait_for_mpf2_boot cold-reset-basic

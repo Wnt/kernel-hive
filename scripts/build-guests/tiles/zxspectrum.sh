@@ -496,6 +496,7 @@ fi
 # what it was. Here the untouched screen is also the licence condition being
 # honoured in public: "© 1982 Sinclair Research Ltd", unaltered.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 sleep 6
 ensure_live_keyboard

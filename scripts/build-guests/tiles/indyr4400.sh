@@ -327,6 +327,24 @@ REMOTE
   printf '%s\n' "$IRISTOML" | guest "cat > /var/lib/iris/iris.toml; chown bridge:bridge /var/lib/iris/iris.toml"
   log "installing /etc/bridge/launch.sh (Iris / SGI Indy R4400, 1280x1024) ..."
   printf '%s\n' "$LAUNCH" | guest "cat > /etc/bridge/launch.sh; chmod +x /etc/bridge/launch.sh; chown root:root /etc/bridge/launch.sh"
+  # Disk checkpoint before the getty-restart below drives the guest; see
+  # lib/bridge-coldboot. Needs the VM stopped, so stop this build's own
+  # boot_tile() and cold-boot it again — the getty-restart still re-applies.
+  # Only $OVERLAY is snapshotted; the read-only IRIX asset drive is untouched
+  # and remounts from the guest's own /etc/fstab entry on the fresh boot.
+  [ -f "$PID" ] && kill "$(cat "$PID")" 2>/dev/null
+  for _ in $(seq 1 40); do
+    { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; } || break
+    sleep 0.25
+  done
+  rm -f "$QMP" "$PID"
+  "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile
+  boot_tile
+  log "waiting for guest ssh ..."
+  for _ in $(seq 1 40); do
+    guest true 2>/dev/null && break
+    sleep 3
+  done
   guest "pkill -u bridge iris 2>/dev/null; sleep 1; systemctl reset-failed getty@tty1; systemctl restart getty@tty1" || true
   log "IRIX 6.5 boots in ~3-5 min (PROM -> autoconfig -> 4Dwm login). VERIFY via framebuffer:"
   log "   python3 /root/qmp_hmp.py $QMP 'screendump /tmp/${TILE}.ppm'   # -> png -> look: IRIS login box?"

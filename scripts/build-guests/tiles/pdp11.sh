@@ -742,6 +742,7 @@ fi
 # cold boot: the mpf2 add shipped a golden carrying its own verification output
 # and had to be re-baked.
 stop_qemu
+"$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile
 wait_for_ssh
 restart_kiosk

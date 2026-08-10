@@ -215,6 +215,22 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
   fetch_media
   log "installing /etc/bridge/launch.sh (Amiga 500 / Workbench 1.3, FS-UAE windowed) ..."
   printf '%s\n' "$LAUNCH" | guest "cat > /etc/bridge/launch.sh; chmod +x /etc/bridge/launch.sh; chown root:root /etc/bridge/launch.sh"
+  # Disk checkpoint before the getty-restart below drives the guest; see
+  # lib/bridge-coldboot. Needs the VM stopped, so stop this build's own
+  # boot_tile() and cold-boot it again — the getty-restart still re-applies.
+  [ -f "$PID" ] && kill "$(cat "$PID")" 2>/dev/null
+  for i in $(seq 1 40); do
+    { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; } || break
+    sleep 0.25
+  done
+  rm -f "$QMP" "$PID"
+  "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile
+  boot_tile
+  log "waiting for guest ssh ..."
+  for i in $(seq 1 40); do
+    guest true 2>/dev/null && break
+    sleep 3
+  done
   # restart X so it lands on the Workbench desktop unattended (kiosk re-runs launch.sh).
   # reset-failed clears getty's start-limit if a prior bad launcher looped it.
   guest "pkill -u bridge fs-uae 2>/dev/null; sleep 1; systemctl reset-failed getty@tty1; systemctl restart getty@tty1" || true
