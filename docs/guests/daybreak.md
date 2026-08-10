@@ -99,6 +99,11 @@ works, including the literal colon a ViewPoint XNS three-part name needs
 shift latch already does exactly this, which is why the on-screen keyboard is
 the reliable route and a hand-rolled QMP chord is not.
 
+The lead does **not** need to be long here — 150 ms, 250 ms and 350 ms all
+produced `:A`, so `SH_KEY_MIN_GAP_MS=150` is sufficient and is what ships. What
+fails is a lead of *zero*. (The Star under Darkstar is different: 200 ms failed
+there and 350 ms worked. Same rule, different number — measure per machine.)
+
 **3. The keymap.** Dwarf ships **only** `kbd_linux_de_DE.map`, and when a keymap
 file is loaded **there are no defaults** — every key absent from it is dead. The
 build writes `keyboard-maps/kbd_linux_en_US.map`, a US re-seat of the shipped

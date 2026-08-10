@@ -188,6 +188,17 @@ well as the key. **Try that before touching the Darkstar keymap** — if your
 XTEST helper batches the modifier with the key, or holds it for the same ~12 ms
 that already failed you, this is the same bug wearing a different hat.
 
+**How long a lead does Dwarf actually need? Measured: less than 150 ms — the
+killer is a lead of ZERO, not a short one.** With the modifier as its own event
+at leads of 150 / 250 / 350 ms, `Shift`+`;` then `Shift`+`a` produced `:A` every
+time (`Directory:A:A:A` in one field). So the tile ships
+`SH_KEY_MIN_GAP_MS=150` unchanged and the SPA's shift latch is safe on this
+machine. **The two machines differ here and it matters:** Dwarf fails only when
+the modifier and the key ride the same input event, while Darkstar needs a
+genuinely long lead (200 ms failed, 350 ms worked). Do not carry one machine's
+threshold to the other — carry the *rule* (modifier is a key, give it its own
+event and its own dwell) and measure the number.
+
 **Confirmed on Darkstar the same day, with a number worth keeping.** B applied
 the timing above and the Star now types `B : N ; M` from `Shift+b`, `Shift+;`,
 `Shift+n`, plain `;`, `Shift+m` — so the XNS three-part name, Desktop Creation
