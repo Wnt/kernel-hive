@@ -450,6 +450,20 @@ screen; audio (where the tile has it) is measured above the silence floor;
 `make tile-registry-check` is green; `bridge-suite-status.sh` exits 0. Steps
 short of that are progress, not completion.
 
+Most of that list is now one command — `scripts/dev/tile-accept.sh <tile>
+--before <the migration's before-bookworm.png>`. It runs the unit / daemon
+health / stream-ticket / exec-channel / `loadvm golden` / fresh-framebuffer
+bundle and prints a row per check, and its pixel half
+(`scripts/dev/frame-compare.py`) replaces "open both PNGs and compare them" with
+a differing-pixel count, its bounding box, and a **fail-closed emptiness floor**
+that a black frame cannot pass — measured so that it does not reject the real
+2-colour, 99.71%-black exhibits this fleet actually has. What it deliberately
+does NOT do is claim the frame shows the machine's own screen: that judgement,
+and the audio floor, are still the human's, and the tool says so instead of
+printing ACCEPTED. It also refuses, rather than starting, a tile whose unit is
+inactive — three of those are the operator's quiesce and one (amiga) is an
+outage nobody declared.
+
 ### Rollback
 
 Cheap, because the bookworm base was never touched. Rollback is repointing the
