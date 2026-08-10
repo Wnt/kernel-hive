@@ -37,7 +37,7 @@ So three fixtures, spanning the range a real visitor produces:
 |---|---|---|---|---|
 | **1** | **Cursor motion** across empty desktop | ~16×16 px | pointer move, no button | Minimum damage, and the thing a user perceives most sharply. Pure `type-1` datagram path. |
 | **2** | **Click an icon → black highlight** | ~one icon cell | button edge | A single GEM blit, so **no render ramp** — the cleanest edge available. Black on dithered grey = maximum per-pixel delta in a tiny box. Takes the reliable-stream path, not the datagram path. |
-| **3** | **Open the Options menu** | ~750×750 px | pointer (GEM drops menus on hover) | Exceeds `SH_DAMAGE_FULL_PCT=35`, forcing the **full-frame** encode path — the honest worst case. |
+| **3** | **Open the Options menu** | **71,016 px = 9.03%** of the frame (measured 2026-08-10, not the ~750×750 px estimated here originally) | pointer (GEM drops menus on hover) | The largest damage a normal GEM interaction produces. **It does NOT cross `SH_DAMAGE_FULL_PCT=35`**, so it does not force the full-frame encode path — an earlier draft of this table claimed it did, on an eyeballed pixel count, and that was wrong. If the full-frame path needs measuring, a resolution switch or a screen clear is the fixture for it, not this. |
 
 If the A→B delta is roughly constant across all three, the bridge penalty is a
 fixed compositing term. If it **grows with damage area**, the copy path
