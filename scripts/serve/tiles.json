@@ -219,6 +219,10 @@
     "udpPort": 54135,
     "hashFile": "/data/vms/streamhost/tiles/armeval/cert_hash_b64.txt"
   },
+  "alto": {
+    "udpPort": 54137,
+    "hashFile": "/data/vms/streamhost/tiles/alto/cert_hash_b64.txt"
+  },
   "indyr4400": {
     "udpPort": 54136,
     "hashFile": "/data/vms/streamhost/tiles/indyr4400/cert_hash_b64.txt"

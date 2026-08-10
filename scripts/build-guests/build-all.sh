@@ -126,6 +126,7 @@ MANIFEST=(
   "armeval     |tiles/armeval.sh     |bridge/armeval  |retro    |~12-18m |full   |tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)"
   "indyr4400   |tiles/indyr4400.sh   |bridge/indyr4400|retro    |~25-35m |full   |tiles/indyr4400 overlay + golden (Iris SGI Indy R4400 -> IRIX 6.5.22)"
   "daybreak     |tiles/daybreak.sh             |bridge/daybreak |graphical|~8-12m  |full   |tiles/daybreak overlay + golden (Dwarf/Draco → ViewPoint 2.0.5)"
+  "alto         |tiles/alto.sh                 |bridge/alto     |retro    |~12-18m |full   |tiles/alto overlay + golden (ContrAlto 2 Alto II XM -> Alto Executive)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

@@ -552,6 +552,16 @@
    "keyboard": "PASS",
    "fixture": "Acorn ARM Evaluation System at the ARM BBC Basic V 1.00 prompt (ARM Second Processor 4096K / Acorn ADFS / BASIC / A* *LIB $ / A* AB / ARM BBC Basic V version 1.00 ... / >) in MAME 0.289 `bbcb -tube arm`, fullscreen with -keepaspect -artwork_crop on an 800x600 X root; golden INTERNAL snapshot restores it. Reset verified 2026-08-09 with the VM STOPPED — stop / loadvm golden / stop / screendump / cont — because MODE 7 blinks its cursor and a wall-clock sample of the same restored state differs by one ~40 px cell. Two such cycles before the keyboard proof and two after it all hash to sha256 bc8ba12ebb064f00ca23304dc9aef1aca26f80bc2be4fd5ad8e1fbba083bdb56. Keyboard route certified the same day AFTER the bake, against the restored fixture: the registry demoProgram's three lines and RUN typed at the tile's shipped 80/80 pacing print \"20000 LOOPS 0.22\", asserted by lit-pixel count; LIST, RUN and ESCAPE were each driven separately by framebuffer, and ESCAPE additionally asserts that MAME is still alive afterwards because Esc is also MAME's own UI cancel key. Keyboard-only exhibit (no mouse); AC97 audio."
   },
+  "alto": {
+   "tileDir": "alto",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "loadvm",
+   "snapshot": "golden",
+   "mouse": "PASS",
+   "keyboard": "PASS",
+   "fixture": "The Alto Executive on the Non-Programmer's Disk, untouched, on a 608x808 root -- the machine's honest empty state rather than an application. That is deliberate and it follows plus4: an earlier plan baked the golden INSIDE Bravo so a visitor would land in the first WYSIWYG word processor with no 30-second wait, and 10ae428 had already rejected exactly that on the Plus/4 because arriving mid-application tells a visitor nothing about what they are looking at. The choice of application lives in the exhibit UI instead: the alto keyboard profile's first row is ?, BRAVO and DRAW, one Executive command each -- Laurel is deliberately absent, because the mail reader wants a Grapevine server this tile has no Ethernet for and answers with a blank page and an hourglass. Certified 2026-08-10 by framebuffer, after the bake so nothing it did could reach the golden: typing ? filled an empty screen body with the disk's directory, Bravo 7.5 took the screen from the Executive, a 35-character line typed into it intact at 66/66 ms, and the three mouse buttons produced Bravo's own three selections -- RED/left one character, YELLOW/middle the whole word, BLUE/right the selection extended. loadvm golden then returned the untouched Executive with the visitor's session gone."
+  },
   "indyr4400": {
    "tileDir": "indyr4400",
    "pointer": "rel",

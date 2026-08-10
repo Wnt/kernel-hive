@@ -129,7 +129,138 @@ reach a **graphical UI**, either at boot or via one simple documented command.
 
 ## Agent A — Alto
 
-_(append findings here)_
+### The two focus layers, and which one actually bit (2026-08-10)
+
+Both of the failure modes Agent C hit under Swing exist under Avalonia too, but
+only one of them mattered here, and knowing which saves the next agent an hour.
+
+- **Toolkit/component focus — REAL, and fatal.** ContrAlto routes the Alto
+  keyboard through `AltoDisplay.OnKeyDown`, a `Focusable="True"` UserControl
+  that only ever receives Avalonia focus because a user clicks it. Nothing
+  clicks anything in a WM-less kiosk, so every keystroke was dropped before it
+  reached the emulated keyboard and the Alto Executive just sat there blinking
+  its cursor — indistinguishable from a dead emulator. Fixed in source rather
+  than with a synthetic click: `AltoDisplay.OnLoaded -> Focus()`, in
+  `scripts/build-guests/patches/contralto2-wmless-kiosk.patch`.
+- **X input focus — NOT a problem, and here is why.** With no WM the X focus is
+  `PointerRoot`, so key events go to the window *under the pointer*. The
+  ContrAlto window covers the entire root (608x808+0+0), so the pointer is
+  always over it and no `XSetInputFocus` is needed. This only bites a tile whose
+  emulator window is smaller than the root. (The bridge base has no `xdotool`
+  anyway.)
+
+### Pacing: ContrAlto DOES follow the frame-quantisation model
+
+Four rungs, same 20-character line, explicit `input-send-event` press/release
+pairs (never `send-key`'s async hold-time), on the clone:
+
+| hold/gap | landed |
+|---|---|
+| 16/16 ms | 15 of 20 |
+| 33/33 ms | 20 of 20 |
+| 66/66 ms | 20 of 20 |
+| 120/120 ms | 20 of 20 |
+
+So the playbook §5.1 rule holds for ContrAlto (33 ms is one Alto field) and the
+400 ms Dwarf/Darkstar figure is NOT a fleet-wide constant — measure yours.
+Shipping two fields, 66/66.
+
+**Modifiers must LEAD by a full gap.** Pressing `shift` and the letter in one
+QMP event lost the capital every single time: `Bravo` arrived as `ravo`, and the
+Executive answered "There is no subsystem named ravo." — which reads exactly
+like a missing file rather than a dropped keystroke. Press the modifier, wait one
+gap, press the key, release the key, wait, release the modifier. With that,
+35 characters of mixed case landed intact in Bravo, first try.
+
+### Portrait geometry: there is no slop, and the study's 608x816 is not needed
+
+`ALTO_DISPLAY_BITMAP_WIDTH` in ContrAlto is **608** ("rounded up so it's a nice
+even multiple of 8 bits") around 606 visible pixels, and the control renders the
+whole 608-wide bitmap. 608 IS a multiple of 8, so QEMU `-vga std` takes it
+directly. The kiosk root is therefore exactly **608x808** — the Alto's own
+picture, no letterbox, no painted surround, no 2 px slop.
+
+The bridge base's `bochs-drm` advertises no such mode, but a custom one is
+accepted verbatim; the tile launcher does
+`xrandr --newmode alto608x808 33.00 608 640 704 800 808 811 821 838 -hsync
++vsync` then `--addmode`/`--output --mode`, and a QMP `screendump` comes back
+`608x808`. No `cvt` in the guest, so the modeline is hardcoded. **This recipe
+generalises**: any bridge tile whose emulator wants a non-standard canvas can
+have it, as long as the width is a multiple of 8.
+
+### Media: nothing to fetch, nothing to stage
+
+The `dotnet publish` output ships `ROM/AltoI`, `ROM/AltoII` **and** `Disks/`
+with eight packs including `xmsmall.dsk`, `bravox54.dsk`, `games.dsk`,
+`nonprog.dsk`. Same shape as gt40's `lunar.lda`: the exhibit's content arrives
+with the source the emulator is built from. Nothing is downloaded, staged or
+committed.
+
+**`nonprog.dsk` — the Non-Programmer's Disk — is the pack the exhibit wants.**
+`xmsmall.dsk` has no Bravo and no Draw at all (its `?` listing is Chat, Ftp,
+FileStat, Scavenger…), and it greets the visitor with
+`// This USER.CM has NON-STANDARD parameters!`. `nonprog.dsk` carries
+`BRAVO.RUN`, `DRAW.RUN`, `EMPRESS.RUN`, `Laurel.run`, the Helvetica font set and
+a shelf of document templates, and its Executive renders in a proportional serif
+face rather than a fixed one.
+
+**Correction to `xerox-add.md` §1.2**: "Alto I says Executive/11 … OS 20/16;
+Alto II says Executive/12 … 18/16" is a property of the DISK, not the machine.
+Running `SystemType = TwoKRom` (Alto II XM) throughout, `xmsmall.dsk` reports
+Executive/12 OS 18/16 and `nonprog.dsk` reports Executive/11 OS 20/16.
+
+### Input: genuine absolute pointer, and all three buttons proven
+
+`MouseMoveAbsolute()` is as good as the study promised. With a stock
+`-usb -device usb-tablet` and no calibration, requested root coordinates land on
+the Alto cursor within ~2 px, corners included: (300,400)->(302,402),
+(100,700)->(101,700), (600,800)->(602,802).
+
+The three buttons were proven with the machine's own canonical test, inside
+Bravo 7.5, with a 400 ms dwell:
+
+| host button | Alto button | Bravo behaviour, observed |
+|---|---|---|
+| left | RED | underlines ONE character |
+| middle | YELLOW | underlines the whole WORD |
+| right | BLUE | EXTENDS the selection to the pointer |
+
+Middle-click reaches the guest intact through QEMU's `usb-tablet`. A middle
+click in DRAW does nothing at all, so do not use DRAW as the middle-button
+oracle — that is a Draw fact, not a transport fault.
+
+### SHIPPED (2026-08-10): `alto`, slot 137, udp 54137
+
+Live, streaming, golden-verified. Cost, measured on the live tile with the
+daemon attached: host QEMU **732 MB RSS / 189 % of a core**, the streamhost
+daemon **49 MB / 20 %**, and in-guest ContrAlto **177 MB / 162 %**. The encoder
+runs the native **608x808** with no scaling (`[encode] geometry 608x808 tier=0
+-> out 608x808`), at ~28.5 fps against a 30 fps cap.
+
+Rest state: the **Alto Executive**, untouched, NOT inside Bravo — 10ae428's
+Plus/4 ruling applies unchanged, and the application choice went into the
+on-screen keyboard instead (?, BRAVO, DRAW, one Executive command each; LAUREL
+is deliberately absent — the mail reader wants a Grapevine server this tile has
+no Ethernet for, and answers with a blank page and an hourglass).
+
+**Two traps that cost runs here, both likely to bite you as well:**
+
+1. **`loadvm` leaves the guest PAUSED.** HMP `savevm` stops the guest, writes
+   the vmstate and resumes, so the state INSIDE the snapshot is "paused" and a
+   bare `loadvm` hands back a frozen guest. Every screen-based readiness check
+   still passes, because the framebuffer shows the restored picture — and then
+   nothing you type does anything. `labctl` sends `cont` for you; a bare QMP
+   harness must do it itself.
+2. **Bound your framebuffer thresholds ABOVE as well as below.** A black screen
+   measures 24320 "ink" pixels in a 608x40 rect — the whole rectangle — so a
+   `> 1500` readiness test declares a guest that has not started X yet READY,
+   and the build then fails one line later with a message about something else
+   entirely.
+
+And one that is only embarrassing: the first version of the ContrAlto patch file
+was cut from a diff taken **before** the focus fix was written. The tile built
+from it looked perfect and typed nothing. If you carry a patch file, regenerate
+it from the tree you actually proved, and diff the file count.
 
 ## Agent B — Star / Pilot
 

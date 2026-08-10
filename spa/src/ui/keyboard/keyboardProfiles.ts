@@ -41,7 +41,7 @@ export type Family =
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
   | 'zxspectrum' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
-  | 'bbcmicro' | 'armeval' | 'xerox-dwarf';
+  | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -657,6 +657,43 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ]],
   },
 
+  // Xerox Alto. The exhibit rests at the Alto Executive, the machine's own
+  // command prompt, exactly as a cold boot leaves it -- so, as on plus4, the
+  // choice of application lives HERE rather than inside the golden. Four
+  // buttons, in the order a visitor needs them: the disk's own directory, then
+  // the three programs on it that are worth thirty seconds.
+  //
+  // The Executive is case-insensitive, so these are plain lower-case words and
+  // no Shift ever has to survive the wire (a shift that arrives in the same
+  // field as its letter is dropped -- see docs/lab/research/xerox-build-log.md).
+  // Nothing here is a chord: the Alto's own keyboard has no Ctrl-anything worth
+  // putting on screen, and its five-key chord SET is a separate device the
+  // exhibit does not model.
+  alto: {
+    family: 'alto',
+    rows: [[
+      // `?` is Shift+/ and the wire rules forbid a shifted printable keysym, so
+      // it is an explicit chord rather than a cmd(). Everything else on this row
+      // is lower case and needs no modifier at all.
+      macro('alto-dir', '?',
+        [dn(XK.Shift_L), ...press(0x2f), up(XK.Shift_L), ...press(XK.Return)],
+        { hint: '? — the Executive lists everything on the disk it can run' }),
+      cmd('alto-bravo', 'BRAVO', 'bravo',
+        'Bravo 7.5 -- the first WYSIWYG word processor. Takes about half a minute to load'),
+      cmd('alto-draw', 'DRAW', 'draw',
+        'Draw 5.2 -- the illustration program, with its icon palette down the left edge'),
+      // NO LAUREL BUTTON, and it is a deliberate absence. Laurel is the mail
+      // reader, and it is the exhibit's most tempting third program -- but it
+      // wants a Grapevine mail server, this tile has no Ethernet, and it
+      // answers a visitor with a BLANK PAGE AND AN HOURGLASS with no way back
+      // (measured on the tile, 45 s, 0 ink pixels anywhere). A dead end is
+      // worse than an absent button.
+      tap('ret', '\u23ce', XK.Return),
+      tap('bksp', '\u232b', XK.BackSpace, { repeat: true }),
+      ...ARROWS,
+    ]],
+  },
+
   appleii: {
     family: 'appleii',
     rows: [[
@@ -840,6 +877,9 @@ export const OS_FAMILY: Record<string, Family> = {
   // satisfy the coverage test; the on-screen keyboard sends nothing the guest
   // will act on.
   gt40: 'generic',
+  // Xerox Alto: its own family, because the exhibit's whole interaction is four
+  // Executive commands and there is nothing generic about them.
+  alto: 'alto',
   // Sinclair ZX81. Its keyboard is genuinely unlike a PC's, but the hard part
   // is not a mapping problem: at the `K` cursor the machine is in KEYWORD mode,
   // so one keypress enters a whole BASIC word (P gives PRINT). What a visitor

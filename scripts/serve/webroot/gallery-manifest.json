@@ -1797,6 +1797,39 @@
       "relativePointerOnly": true
     },
     {
+      "id": "alto",
+      "era_year": 1973,
+      "displayName": "Xerox Alto II",
+      "year": 1973,
+      "lineage": "Xerox PARC",
+      "arch": "Xerox Alto II XM: a custom TTL processor with no single CPU chip, microcoded into 16 priority tasks that share the datapath between the display, the disk, the Ethernet and the instruction set the software is written in; 512 KB extended memory; a 606x808 portrait bitmap refreshed at 30 Hz straight out of main memory; a 2.5 MB Diablo 31 removable cartridge; a three-button mouse and a five-key chord keyset",
+      "accent": "#9FE3EA",
+      "archetypeId": "mono-terminal",
+      "transport": "streamhost",
+      "order": 59,
+      "eraLabel": "1973 · Alto II XM (portrait page display)",
+      "signalEndpoint": "/signal/alto.json",
+      "ramMB": 0,
+      "ramKB": 512,
+      "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs ContrAlto 2 (jdersch/Contralto2, BSD-3-Clause, .NET 8 + Avalonia, pinned at e3681fbc) as an Alto II XM. Zero external media -- the Alto I and Alto II microcode PROMs and eight Diablo disk packs ship inside the emulator's own repository and arrive with the source it is built from, so nothing is downloaded, staged or committed; the exhibit boots nonprog.dsk, the Non-Programmer's Disk, whose sha256 the builder asserts. THE ONLY PORTRAIT EXHIBIT IN THE COLLECTION: the kiosk X root is 608x808, the Alto's own bitmap, so the capture is exactly the machine's picture with no letterbox -- and crt-f.glb, the tall tube it is displayed on in the 3D museum, was modelled for this tile and is used by nothing else. Two upstream patches are required and both are in scripts/build-guests/patches/contralto2-wmless-kiosk.patch: ContrAlto's KioskMode (the only switch that hides its menu and status bars) crashes before the first frame, and with no window manager nothing places the window or gives its display control keyboard focus -- unfixed, every keystroke is dropped silently and the exhibit reads as a dead emulator. MAME's alto2 driver was tried first and never boots here (five packs, 120 s runs, a uniform white field, PC pinned at 1); that negative result is recorded in docs/lab/research/xerox-add.md so nobody pays for it twice. See streamhost/docs/BRIDGE.md and docs/guests/alto.md.",
+      "era": "1970s",
+      "eraSoftware": [
+        "Bravo, the first WYSIWYG word processor (1974)",
+        "Draw and Markup, the illustration pair",
+        "Laurel, the mail reader that fixed the shape of every inbox since",
+        "Smalltalk-76 and the Smalltalk-80 that grew out of it",
+        "the Alto Executive, the command prompt this exhibit rests at"
+      ],
+      "periodBrowser": "none -- PARC had Ethernet, laser printing and electronic mail two decades before the web had a first page",
+      "iconicApps": [
+        "Bravo",
+        "Draw",
+        "Laurel",
+        "the Alto Executive"
+      ],
+      "blurb": "The machine that invented the screen you are reading this on: overlapping windows, a mouse with buttons, a what-you-see-is-what-you-get editor and Ethernet, all in 1973, none of them for sale. Its display stands on end because it is a sheet of paper -- 606 by 808 dots, 8.5 by 11 inches -- and that is why every document window since has been taller than it is wide."
+    },
+    {
       "id": "daybreak",
       "era_year": 1985,
       "displayName": "Xerox 6085",
@@ -1806,7 +1839,7 @@
       "accent": "#C8102E",
       "archetypeId": "sparc-pizzabox",
       "transport": "streamhost",
-      "order": 60,
+      "order": 61,
       "eraLabel": "1985 · ViewPoint 2.0.5 on the 6085",
       "signalEndpoint": "/signal/daybreak.json",
       "ramMB": 4,
