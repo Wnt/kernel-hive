@@ -88,6 +88,17 @@ apply. Measured on this tile: a zero-length `send-key` chord lands **nothing**;
 zero-dwell synthetic click does nothing in an option sheet. Shipped as
 `SH_KEY_MIN_HOLD_MS=400` / `SH_KEY_MIN_GAP_MS=150`.
 
+**2b. The SHIFT is a key, and it needs its own dwell.** A modifier batched into
+the *same* synthetic input event as the key it modifies is applied
+inconsistently: in one sweep `Shift`+`1` → `!` and `Shift`+`[` → `{` came out
+right while `Shift`+`a` → `a` and `Shift`+`;` → `;` silently lost the shift.
+Hold the modifier as a separate, earlier press —
+`shift↓ · 350 ms · key↓ · 400 ms · key↑ · 250 ms · shift↑` — and every case
+works, including the literal colon a ViewPoint XNS three-part name needs
+(`Shift`+`;` → `:`, verified against a plain `;` typed beside it). The SPA's
+shift latch already does exactly this, which is why the on-screen keyboard is
+the reliable route and a hand-rolled QMP chord is not.
+
 **3. The keymap.** Dwarf ships **only** `kbd_linux_de_DE.map`, and when a keymap
 file is loaded **there are no defaults** — every key absent from it is dead. The
 build writes `keyboard-maps/kbd_linux_en_US.map`, a US re-seat of the shipped
@@ -126,11 +137,21 @@ ADJUST) and Dwarf takes host left/right directly.
 | 5 | click `Start` again | **ViewPoint desktop**, ~45 s |
 | 6 | `savevm golden` / `loadvm golden` | restores the desktop bit-for-bit |
 
-## Cost
+## Cost, and the soak
 
-- JVM RSS at the desktop: **~226 MB**; QEMU RSS ~1.6 GB with `-m 1536`.
-- Guest-side CPU at the idle desktop: **~13 %** of one core.
+- JVM RSS at the desktop: **226–229 MB**, flat. QEMU RSS **~1.65 GB** with
+  `-m 1536`.
+- CPU at the idle desktop: the JVM takes **~9–15 %** of one core inside the
+  guest; the whole tile — QEMU plus the streamhost encoder — sits at **~18 %**
+  of one core while streaming. (The feasibility study's "3.5 % of a core" was
+  measured under bare Xvfb with no capture; expect this figure instead.)
 - Golden VM state: **1.42 GiB**; overlay ~2.9 GB.
+- **Soak — the study's one unexplained JVM exit did not recur.** The JVM
+  survived ~40 min continuous idling before the bake and a further hour under
+  the production daemon, across logon, the golden bake, three `loadvm` restores,
+  the Directory open, and a shifted-punctuation sweep. RSS shows no upward
+  drift. Watch for it anyway: it was seen once, at the YES/START moment, and one
+  unreproduced crash is not the same as no crash.
 
 ## Shutting down
 
