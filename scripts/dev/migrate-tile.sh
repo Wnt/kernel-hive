@@ -55,9 +55,12 @@ unset BRIDGE_SUITE
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck disable=SC1091
 . "$REPO/scripts/build-guests/lib/bridge-suite.sh"
+# shellcheck disable=SC1091
+. "$REPO/scripts/lib/box-detached-build.sh"
 
 LAB="${LAB:-lab}"
 SSH_OPTS=(-o ConnectTimeout=15)
+BOX_BUILD_SSH=(ssh "${SSH_OPTS[@]}" "$LAB")
 TILES_ROOT="${BRIDGE_TILES_ROOT:-/data/vms/streamhost/tiles}"
 BRIDGE_KEY=/data/vms/bridge/bridge_key
 TARGET_SUITE=trixie
@@ -271,10 +274,20 @@ if [ "${P[bak]:-no}" = yes ]; then
 fi
 
 # --- rollback --------------------------------------------------------------
+# The detached builder is NOT a child of this script, so nothing reaps it when a
+# check fails — and whoever abandons a build owes it a kill, or it keeps writing
+# to the overlay the rollback is about to replace (box-detached-build.sh).
+stop_builder() {
+  [ "$DRY" -eq 1 ] && return 0
+  log "stopping the detached builder before the overlay is touched"
+  box_build_stop "$BUILD_LOG"
+}
+
 ROLLED_BACK=0
 rollback() {
   [ "$ROLLED_BACK" -eq 0 ] || return 0
   ROLLED_BACK=1
+  stop_builder
   step "ROLLBACK: restoring the bookworm overlay"
   box_sh "stop, restore $BAK, restart $UNIT" "$(
     cat <<'EOS'
@@ -386,7 +399,12 @@ if [ "$DRY" -eq 1 ]; then
     "$LAB" "$STAGE" "$BUILDER_REL" "$BUILD_LOG"
   printf '  [would] poll every 20s, printing new log lines, up to %ss\n' "$BUILD_TIMEOUT"
 else
-  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry" ||
+  # BOTH destination parents, because rsync creates only the LAST component of a
+  # destination path: with only $STAGE/registry made here, the build-guests rsync
+  # died on `mkdir "$STAGE/scripts/build-guests" failed: No such file or directory`
+  # — after step 3 had already moved the live overlay aside, so every run ended in
+  # a rollback that looked like a build failure.
+  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry $(printf '%q' "$STAGE")/scripts/build-guests" ||
     fail "cannot create the staging dir $STAGE"
   rsync -a --delete -e "ssh ${SSH_OPTS[*]}" \
     "$REPO/scripts/build-guests/" "$LAB:$STAGE/scripts/build-guests/" ||
@@ -394,37 +412,19 @@ else
   rsync -a -e "ssh ${SSH_OPTS[*]}" "$LEDGER" "$LAB:$STAGE/registry/bridge-suites.json" ||
     fail "staging rsync of the ledger failed"
 
-  box_sh "launch the build (detached, logged)" "$(
-    cat <<'EOS'
-set -eu
-stage=$1 rel=$2 log=$3
-rm -f "$log" "$log.rc"
-cd "$stage"
-setsid bash -c "BRIDGE_SUITE=trixie bash '$rel' --force >'$log' 2>&1; echo \$? >'$log.rc'" \
-  </dev/null >/dev/null 2>&1 &
-echo "builder pid $!"
-EOS
-  )" "$STAGE" "$BUILDER_REL" "$BUILD_LOG" || fail "could not launch the build"
+  log "launching the build (detached, logged)"
+  box_build_start "$STAGE" "$BUILDER_REL" "$BUILD_LOG" "BRIDGE_SUITE=$TARGET_SUITE" ||
+    fail "could not launch the build"
 
   log "polling (timeout ${BUILD_TIMEOUT}s) — builds run 5-40 min"
-  BUILD_RC=""
-  SEEN=0
-  ELAPSED=0
-  while [ "$ELAPSED" -lt "$BUILD_TIMEOUT" ]; do
-    sleep 20
-    ELAPSED=$((ELAPSED + 20))
-    CHUNK="$(box_ro "tail -n +$((SEEN + 1)) $(printf '%q' "$BUILD_LOG") 2>/dev/null; echo '---'; wc -l < $(printf '%q' "$BUILD_LOG") 2>/dev/null || echo 0; cat $(printf '%q' "$BUILD_LOG").rc 2>/dev/null || true")"
-    NEW="${CHUNK%%$'\n'---*}"
-    TAILINFO="${CHUNK#*$'\n'---$'\n'}"
-    SEEN="$(printf '%s' "$TAILINFO" | sed -n 1p)"
-    BUILD_RC="$(printf '%s' "$TAILINFO" | sed -n 2p)"
-    [ -n "$NEW" ] && printf '%s\n' "$NEW" | sed 's/^/    | /'
-    [ -n "$BUILD_RC" ] && break
-    [ $((ELAPSED % 300)) -eq 0 ] && log "still building (${ELAPSED}s)"
-  done
-  [ -n "$BUILD_RC" ] || fail "build did not finish within ${BUILD_TIMEOUT}s (log: $BUILD_LOG)"
-  [ "$BUILD_RC" = "0" ] || fail "builder exited $BUILD_RC (log: $BUILD_LOG)"
-  log "builder exited 0"
+  box_build_wait "$BUILD_LOG" "$BUILD_TIMEOUT" ||
+    fail "cannot read the build log on the box (log: $BUILD_LOG)"
+  [ -n "$BOX_BUILD_RC" ] || fail "build did not finish within ${BUILD_TIMEOUT}s (log: $BUILD_LOG)"
+  case "$BOX_BUILD_RC" in
+    0) log "builder exited 0" ;;
+    *[!0-9]*) fail "unparseable builder exit code '$BOX_BUILD_RC' (log: $BUILD_LOG)" ;;
+    *) fail "builder exited $BOX_BUILD_RC (log: $BUILD_LOG)" ;;
+  esac
 fi
 
 # --- 6. in-guest suite, while the builder's QEMU is still up ---------------
