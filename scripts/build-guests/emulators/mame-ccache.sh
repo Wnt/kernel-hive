@@ -39,8 +39,22 @@
 #
 # LAYOUT. The cache lives at <chroot>/ccache — i.e. /ccache inside the chroot.
 # Outside every build tree, so `rm -rf` of a tree never touches it, and one per
-# chroot, which is correct: ccache keys on the compiler, so a bookworm gcc-12
-# cache and a trixie gcc-14 cache could never share an entry anyway.
+# COMPILER, which is what ccache actually keys on: a bookworm gcc-12 cache and a
+# trixie gcc-14 cache could never share an entry anyway.
+#
+# HOST-NATIVE BUILDS SHARE THE TRIXIE CHROOT'S CACHE, and that is the same rule,
+# not an exception to it. Since the 2026-08-10 trixie migration the lab host and
+# the trixie build chroot ARE one compiler — /usr/bin/x86_64-linux-gnu-{gcc,g++}-14
+# and cc1plus are byte-identical files on both sides (sha256-checked). Giving a
+# host build its own cache would buy nothing and cost a ~1 h cold compile for a
+# binary whose entire emu/osd/3rdparty core is already sitting in the chroot's
+# cache. Sharing is safe BY CONSTRUCTION rather than by hope: `compiler_check =
+# content` hashes the compiler's bytes and direct mode hashes every include file,
+# so a host toolchain that drifts from the chroot's simply MISSES — it can never
+# take a wrong hit. Measured on the first host build (MAME 0.289
+# SUBTARGET=atarist) against a cache warmed only by chroot builds: 1259 hits /
+# 1274 cacheable = 98.8%, and the cache grew 3.0 MiB against a 32 G max_size, so
+# no LRU eviction and nothing for the chroot builders to notice.
 #
 # USAGE (host side, after the chroot is resolved and validated):
 #     . "$HERE/mame-ccache.sh"
@@ -51,6 +65,12 @@
 #     make ... "${MAME_MAKE_CC_ARGS[@]}"
 # The fallback array is the genie default, so a chroot that was never prepared
 # builds exactly as it did before.
+#
+# USAGE (host-native build, no chroot — build-mame-atarist.sh):
+#     mame_ccache_prepare_host "$(bridge_mame_chroot_for trixie)/ccache" "$WORK"
+#     make ... "${MAME_MAKE_CC_ARGS[@]}"
+# It exports CCACHE_DIR/CCACHE_BASEDIR and sets MAME_MAKE_CC_ARGS in the caller's
+# shell — there is no heredoc to hand an env file to.
 #
 # CLI:
 #     mame-ccache.sh install <chroot>   # apt-get install ccache, chroot-guarded
@@ -97,15 +117,75 @@ mame_ccache_prepare() {
   # header with -include rather than #include, which is the supported form.
   # No MAME source uses __DATE__/__TIME__ (grepped), so time_macros costs
   # nothing in correctness here.
-  cat >"$dir/ccache.conf" <<EOF
+  _mcc_write_conf "$dir"
+  _mcc_write_env "$dir" 1
+  _mcc_say "cache at $dir (max $MAME_CCACHE_SIZE), OVERRIDE_CC/CXX = ccache gcc/g++"
+}
+
+# _mcc_write_conf <dir>
+_mcc_write_conf() {
+  cat >"$1/ccache.conf" <<EOF
 max_size = $MAME_CCACHE_SIZE
 base_dir = /build
 hash_dir = false
 compiler_check = content
 sloppiness = pch_defines,time_macros
 EOF
-  _mcc_write_env "$dir" 1
-  _mcc_say "cache at $dir (max $MAME_CCACHE_SIZE), OVERRIDE_CC/CXX = ccache gcc/g++"
+}
+
+# mame_ccache_prepare_host <cache-dir> <base-dir> — the no-chroot variant. Sets
+# MAME_MAKE_CC_ARGS and exports CCACHE_DIR/CCACHE_BASEDIR for a `make` run in
+# THIS shell. base_dir/hash_dir come from the shared ccache.conf; CCACHE_BASEDIR
+# is pointed at the host work root so that an absolute path which does reach a
+# command line is rewritten relative to the compile's cwd exactly as it is
+# inside the chroot — which is what lets the two sides hit each other's entries.
+# An existing ccache.conf is never rewritten: the chroot builders' cache is not
+# ours to reconfigure.
+mame_ccache_prepare_host() {
+  local dir="${1:?mame_ccache_prepare_host: cache dir required}"
+  local base="${2:?mame_ccache_prepare_host: base dir required}"
+  MAME_MAKE_CC_ARGS=(OVERRIDE_CC=gcc OVERRIDE_CXX=g++)
+  if [ "${MAME_CCACHE:-1}" = 0 ]; then
+    _mcc_say "MAME_CCACHE=0 — building with plain gcc/g++"
+    return 0
+  fi
+  if ! command -v ccache >/dev/null 2>&1; then
+    _mcc_say "ccache is NOT installed on the host — this build will be a full cold compile."
+    _mcc_say "  install it once with: apt-get install ccache"
+    return 0
+  fi
+  mkdir -p "$dir"
+  [ -f "$dir/ccache.conf" ] || _mcc_write_conf "$dir"
+  export CCACHE_DIR="$dir" CCACHE_BASEDIR="$base"
+  MAME_MAKE_CC_ARGS=(OVERRIDE_CC="ccache gcc" OVERRIDE_CXX="ccache g++")
+  _mcc_say "host cache $dir (basedir $base), OVERRIDE_CC/CXX = ccache gcc/g++"
+}
+
+# mame_ccache_counters <cache-dir> — "<direct> <preprocessed> <miss>", so a
+# caller can print the hit rate of ITS OWN build as a delta. Zeroing the shared
+# counters instead would destroy the chroot builders' running totals.
+mame_ccache_counters() {
+  local dir="${1:?mame_ccache_counters: cache dir required}"
+  if [ ! -d "$dir" ] || ! command -v ccache >/dev/null 2>&1; then
+    echo "0 0 0"
+    return 0
+  fi
+  CCACHE_DIR="$dir" ccache --print-stats 2>/dev/null | awk '
+    $1 == "direct_cache_hit" { d = $2 }
+    $1 == "preprocessed_cache_hit" { p = $2 }
+    $1 == "cache_miss" { m = $2 }
+    END { printf "%d %d %d\n", d, p, m }'
+}
+
+# mame_ccache_report <before-counters> <after-counters> — one line, the measured
+# hit rate of the build that just ran.
+mame_ccache_report() {
+  awk -v b="$1" -v a="$2" 'BEGIN {
+    split(b, x, " "); split(a, y, " ")
+    hit = (y[1] - x[1]) + (y[2] - x[2]); miss = y[3] - x[3]; n = hit + miss
+    if (n <= 0) { print "ccache: no cacheable compiles this run"; exit }
+    printf "ccache: %d/%d cacheable compiles hit (%.1f%%), %d missed\n", hit, n, 100 * hit / n, miss
+  }'
 }
 
 # _mcc_write_env <dir> <enabled>
