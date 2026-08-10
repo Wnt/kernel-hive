@@ -23,7 +23,15 @@
 #                            wrapping at 65536 saturates at 255 on the first
 #                            homing slam and the cursor never moves again while
 #                            every command is still acked.
-#   MAME_CTL_SCREEN          the clamp surface MOVEA targets are clipped to.
+#   MAME_CTL_SCREEN=79x52    the clamp surface MOVEA targets are clipped to --
+#                            and on this machine that surface is COUNTS, not
+#                            pixels. The ST's pointer is a quadrature encoder
+#                            with no hardware cursor to read back, so streamhost
+#                            runs SH_MAMESOCK_PTR_GRID and states targets on the
+#                            79 x 52 count grid the GEM cursor can actually
+#                            reach (measured; see the README's pointer section).
+#                            Leaving this at 1024x768 would let a stale belief
+#                            park 1000 counts from the truth == 8 s of drain.
 #   -throttle -frameskip 0   identical to arm A, for the same reasons.
 #   MAME_CTL_MOVE_STEP/WINDOW the emulated mouse's own delivery rate; see below.
 set -e
@@ -56,13 +64,17 @@ export MAME_CTL_PTR_MOD=256
 # while every command is acked. 1 count per 8 emulated ms == 125/s == the
 # device's own rate, so every issued count lands and the belief stays true.
 #
-# ARM A INHERITS THE SAME CEILING and needs no setting: it is the same emulator,
-# and MAME's SDL input path feeds the same 8-bit axis, so a browser-driven jump
-# is throttled there identically. That is why the probe walks the pointer in
-# both arms instead of teleporting it.
+# ARM A INHERITS THE SAME CEILING -- same emulator, same 8-bit axis -- but it
+# does NOT inherit "and therefore needs no setting", which this comment used to
+# claim. Its axis arrives through MAME's own analog path at 6.4 (X) / 8.6 (Y)
+# ioport counts per surface pixel, and the 8-bit field WRAPS: past ~20 px of
+# motion in one emulated frame the latch read the direction backwards. That is
+# ordinary pointer speed, and it is why arm A's pointer was reported inverted.
+# It is fixed in MAME's own input configuration (armA-ptr-cfg.py: reverse="yes"
+# sensitivity="1"), not here.
 export MAME_CTL_MOVE_STEP=1
 export MAME_CTL_MOVE_WINDOW=8
-export MAME_CTL_SCREEN=1024x768
+export MAME_CTL_SCREEN=79x52
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
 

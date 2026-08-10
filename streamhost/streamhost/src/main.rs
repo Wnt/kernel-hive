@@ -23,6 +23,7 @@ mod input_telemetry;
 mod key_quirks;
 mod mame_input;
 mod mame_sock;
+mod ptr_grid;
 mod ptr_reckon;
 mod realtime_input;
 mod session_ticket;

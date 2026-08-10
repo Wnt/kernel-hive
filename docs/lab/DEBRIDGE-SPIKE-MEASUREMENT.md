@@ -169,6 +169,33 @@ revertible deployment overlay, for the reasons recorded in
 The subjective A/B is the thing the CPU and latency numbers cannot supply, and
 it is the operator's to make.
 
+**The pointer works on both arms as of 2026-08-10, and it needed a different
+fix on each.** Both were real defects, both were diagnosed by reading the
+EMULATED `:ikbd` MOUSEX/MOUSEY ioport latch out of MAME rather than by looking
+at the picture, and neither is a confound between the arms — they are two input
+planes, and each was wrong in its own plane.
+
+- **Arm B ran away.** The ctlsock module's MOVEA engine has no hardware cursor
+  to read on an ST, degrades to open loop, and issued one ioport COUNT per
+  PIXEL of target delta — a tenfold overshoot with no feedback, so the residual
+  never shrank. streamhost now states targets on the machine's real pointer
+  resolution, the **81 x 52 count grid** (`SH_MAMESOCK_PTR_GRID`; see
+  `streamhost/streamhost/src/ptr_grid.rs`). Landing error under 0.6 counts on an
+  ordinary move, 2-3 counts after a full-screen traverse, and self-correcting:
+  entering an edge carries a full-axis slam, 30 s of silence re-homes.
+- **Arm A was inverted on both axes**, and aliased on top of that: MAME's analog
+  path delivered 6.4 (X) / 8.6 (Y) counts per surface pixel into an 8-bit field
+  whose latch keeps only the sign of the change, so anything past ~20 px per
+  emulated frame wrapped and read backwards. Fixed in MAME's own input
+  configuration — `reverse="yes" sensitivity="1"` on `:ikbd:MOUSEX`/`MOUSEY`,
+  applied by `scripts/debridge-spike/armA-ptr-cfg.py`. **Arm A's QEMU device set
+  was not touched**, so the arm is still the arm.
+
+What neither fix changes is the CEILING, which is the machine and is shared:
+~125 counts/s, 4 ST px per count, so ~500 ST px/s and a pointer that is placed
+on a coarse grid. Any pointer-feel remark about this exhibit is a remark about
+that ceiling first.
+
 One asymmetry to expect while doing it: **arm B's keyboard is unlikely to reach
 the guest.** `mamesock`'s `try_key` resolves scancodes through `KEY_MATRIX` in
 `streamhost/streamhost/src/mame_input.rs`, which is the SGI Indy
@@ -178,21 +205,22 @@ MAME) and is not affected. This is untested by measurement and is exactly the
 kind of thing the "what de-bridging costs" section is about: tier 3 has to
 replace the kiosk's input plumbing, not just its display path.
 
-Arm A's pointer is the open item: the closed loop drives it through QMP
-`input-send-event` to the usb-tablet, and at that step size the motion is not
-reliably reaching MAME through the kiosk's SDL. Fix that before timing anything
-— an arm whose fixtures cannot be placed cannot be measured.
+Arm A's pointer was the open item and is **closed** (see the pointer section
+above): the motion was reaching MAME all along, with the sign negated and the
+magnitude aliased by an 8-bit wrap, which is why a closed loop chasing it
+appeared not to converge.
 
 Three things the campaign will have to carry, all of them properties of the
 MACHINE and therefore present in both arms:
 
 - MAME's ST mouse is a **quadrature encoder** (`src/mame/atari/stkbd.cpp`): a
   500 Hz tick latches the axis ioport every fourth tick, keeps only the
-  DIRECTION and emits one step per latch. A burst is discarded rather than
-  carried, the ceiling is ~125 counts per emulated second per axis, and TOS
-  accelerates on top. Open-loop dead reckoning cannot place this pointer;
-  `fixtures.py` closes the loop against the published framebuffer, identically
-  for both arms.
+  DIRECTION and emits one cycle per latch. A burst is discarded rather than
+  carried, the ceiling is ~125 counts per emulated second per axis, and one
+  delivered count moves the GEM cursor 4 ST px (~9.7 surface px across, ~12.3
+  down). Dead reckoning therefore has to be done in COUNTS — which is what
+  `SH_MAMESOCK_PTR_GRID` does for arm B — and a fixture cannot be placed finer
+  than one count on either arm.
 - The **Options menu drops on hover** and costs ~6% of the frame, not the
   >35% the fixture table assumed — so fixture 3 will NOT force the full-frame
   encode path on this machine at this resolution. Report the measured damage
