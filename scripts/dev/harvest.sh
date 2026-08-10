@@ -179,16 +179,18 @@ if selected tiles-json; then
 fi
 
 if selected serve; then
-  note "[serve] seven README-declared live/reference files only"
+  note "[serve] README-declared live/reference files, exact-mode rows only"
+  # osgallery-https.service and restart-https.sh are deliberately absent: they
+  # are SCRUB-mode pairs (real host IP/domain on the box, placeholders in the
+  # repo), so pulling them verbatim would commit real addresses. The box copy
+  # is a scrubbed deployment of repo content, never a harvest source.
   cat >"$tmpdir/serve-files" <<'EOF'
 clientcmd.sh
 gen-local-ca.sh
 golden-manifest.json
 install-https-service.sh
 osgallery-https-server.py
-osgallery-https.service
 reset-tile.sh
-restart-https.sh
 tiles.json
 EOF
   rsync "${RSYNC[@]}" --files-from="$tmpdir/serve-files" -e "$SSH_TRANSPORT" \
