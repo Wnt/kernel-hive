@@ -147,6 +147,37 @@ Middle-click reaches the guest intact through QEMU's `usb-tablet`. A middle
 click in DRAW does nothing at all, so do not use DRAW as the middle-button
 oracle — that is a Draw fact, not a transport fault.
 
+### SHIPPED (2026-08-10): `alto`, slot 137, udp 54137
+
+Live, streaming, golden-verified. Cost, measured on the live tile with the
+daemon attached: host QEMU **732 MB RSS / 189 % of a core**, the streamhost
+daemon **49 MB / 20 %**, and in-guest ContrAlto **177 MB / 162 %**. The encoder
+runs the native **608x808** with no scaling (`[encode] geometry 608x808 tier=0
+-> out 608x808`), at ~28.5 fps against a 30 fps cap.
+
+Rest state: the **Alto Executive**, untouched, NOT inside Bravo — 10ae428's
+Plus/4 ruling applies unchanged, and the application choice went into the
+on-screen keyboard instead (?, BRAVO, DRAW, LAUREL, one Executive command each).
+
+**Two traps that cost runs here, both likely to bite you as well:**
+
+1. **`loadvm` leaves the guest PAUSED.** HMP `savevm` stops the guest, writes
+   the vmstate and resumes, so the state INSIDE the snapshot is "paused" and a
+   bare `loadvm` hands back a frozen guest. Every screen-based readiness check
+   still passes, because the framebuffer shows the restored picture — and then
+   nothing you type does anything. `labctl` sends `cont` for you; a bare QMP
+   harness must do it itself.
+2. **Bound your framebuffer thresholds ABOVE as well as below.** A black screen
+   measures 24320 "ink" pixels in a 608x40 rect — the whole rectangle — so a
+   `> 1500` readiness test declares a guest that has not started X yet READY,
+   and the build then fails one line later with a message about something else
+   entirely.
+
+And one that is only embarrassing: the first version of the ContrAlto patch file
+was cut from a diff taken **before** the focus fix was written. The tile built
+from it looked perfect and typed nothing. If you carry a patch file, regenerate
+it from the tree you actually proved, and diff the file count.
+
 ## Agent B — Star / Pilot
 
 _(append findings here)_
