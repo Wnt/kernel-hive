@@ -569,6 +569,18 @@ export const ASSEMBLIES_BY_TILE = {
   armeval: {
     kind: 'homeMicro', body: 'acornA3000', monitor: 'crtE',
   },
+  // The second SGI Indy. It is the SAME machine as the irix tile — the same
+  // blue pizza-box, a different MIPS grade inside it — so it takes the same
+  // pizzaBoxC body and the same SGI-flavoured wide keyboard and puck mouse
+  // that irix and solaris share. What has to keep the two Indys apart on the
+  // floor is the DESK: irix holds pizzaBoxC|compactA and solaris
+  // pizzaBoxC|crtE, so this one takes crtA, the boxy office monitor nothing
+  // has ever paired with a pizza box. The cooler blue tint in
+  // machineIdentity.ts and the R4400 badge do the rest.
+  indyr4400: {
+    kind: 'pizzaBox', body: 'pizzaBoxC', monitor: 'crtA',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
   // Xerox 6085 "Daybreak": a low flat processor case that lived UNDER the desk,
   // a large landscape monochrome display, a wide keyboard whose left-hand column
   // carries the Level-V verb keys, and a two-button mouse. pizzaBox is the right

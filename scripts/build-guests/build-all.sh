@@ -124,6 +124,7 @@ MANIFEST=(
   "zxspectrum  |tiles/zxspectrum.sh           |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)"
   "dragon32     |tiles/dragon32.sh             |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)"
   "armeval     |tiles/armeval.sh     |bridge/armeval  |retro    |~12-18m |full   |tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)"
+  "indyr4400   |tiles/indyr4400.sh   |bridge/indyr4400|retro    |~25-35m |full   |tiles/indyr4400 overlay + golden (Iris SGI Indy R4400 -> IRIX 6.5.22)"
   "daybreak     |tiles/daybreak.sh             |bridge/daybreak |graphical|~8-12m  |full   |tiles/daybreak overlay + golden (Dwarf/Draco → ViewPoint 2.0.5)"
 )
 
@@ -134,7 +135,7 @@ MANIFEST=(
 DEFAULT_ORDER=(kolibrios toaruos helenos 9front reactos haiku templeos amigaos qnx alpine tinycore
   freedos msdos-win1 win311 win95 win98 win2000 os2warp redstar3
   android-x86 postmarketos sailfishos sailfishos-gui serenityos
-  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos zxspectrum bbcmicro dragon32 kc854 oricatmos armeval daybreak)
+  bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos zxspectrum bbcmicro dragon32 kc854 oricatmos armeval indyr4400 daybreak)
 
 # ---------------------------------------------------------------------------
 c_reset=$'\e[0m'

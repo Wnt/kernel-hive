@@ -169,6 +169,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c2c6c2', accentTint: '#2f7a72', tintMix: 0.34,
     badge: 'INDY R4600', spec: 'MIPS III • 1993', kit: 'workstation',
   },
+  // The other Indy: same case, a colder blue-grey so the pair reads as two
+  // machines rather than one exhibit drawn twice, and the badge carries the
+  // only thing that actually differs — the processor.
+  indyr4400: {
+    caseTint: '#b6bec8', accentTint: '#3e6e9e', tintMix: 0.34,
+    badge: 'INDY R4400', spec: 'MIPS III • 1993', kit: 'workstation',
+  },
   mpf2: {
     caseTint: '#d8cfbb', accentTint: '#7d2e2a', tintMix: 0.38,
     badge: 'MPF-II', spec: '6502 • 1982', kit: 'eightBit',

@@ -125,6 +125,18 @@ anyone. Fine to RUN on this private passkey-gated exhibit; record the URL, the
 measured sha256 and the class, and **never commit the bits** — the repo is
 public.
 
+### `indyr4400` — an asset DERIVED from another tile's golden, not downloaded
+
+| Asset | sha256 | Bytes | Consumed by | Provenance | Class / terms |
+|---|---|---|---|---|---|
+| `irix65-r4400-disk.ext4` — a read-only ext4 image whose only content is `disk.raw`, the raw SGI disk carrying this lab's IRIX 6.5.22 install. Staged `/data/gallery-guests/IrisIndy/irix65-r4400-disk.ext4` (444 + immutable), 6500 MiB apparent / ~500 MiB allocated (sparse). The **container's** own hash is not reproducible (mkfs stamps a random UUID), so the hash recorded here is the INNER `disk.raw`. | inner `disk.raw`: `b8214c34a2983ce9f2b0781ef56a7a71971da2e3dbcb87cc7f1f990f822b1c61` *(locally measured 2026-08-10, verified equal on both sides of the wrap)* | inner `disk.raw`: 6 291 456 000 | `scripts/build-guests/tiles/indyr4400.sh`, staged + verified by `streamhost/tiles/indyr4400/fetch-assets.sh` | **No external download.** Extracted with `chdman extracthd` from a **copy** of this lab's own `irix65-apps.chd` — the `irix` tile's golden, already recorded in this section. Iris's CHD backend rejects that uncompressed CHD (`InvalidFile`), which is why the raw form exists; the ext4 wrapper exists because Iris sizes a disk with `File::metadata().len()`, which is 0 for a block device, so the read-only asset drive has to present a regular FILE. | **preservation-source**, inheriting the `irix65-apps.chd` terms exactly — same bits, different container. **PUBLISH BLOCKER**: never committed and never publicly served. |
+
+**Not an asset:** the `iris` emulator binary itself. It is built from source
+(`github.com/techomancer/iris`, BSD-3, `main` @ `1e05210`, features
+`lightning,rex-jit,chd`) in a throwaway bookworm chroot by the builder and
+installed to `/data/gallery-guests/IrisIndy/iris-bookworm`. Nothing about it
+is licence-encumbered; it is listed here only so the path is discoverable.
+
 
 ---
 
