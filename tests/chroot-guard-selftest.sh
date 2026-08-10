@@ -43,7 +43,7 @@ command -v unshare >/dev/null || {
 # mount is under a host path, and the namespace dies with this script.
 if [ "${CHG_SELFTEST_NS:-0}" != 1 ]; then
   export CHG_SELFTEST_NS=1
-  exec unshare --mount --propagation unchanged -- "$0" "$@"
+  exec unshare --mount --propagation unchanged -- "${BASH:-/bin/bash}" "$0" "$@"
 fi
 # Make sure nothing we do can travel back to the host's namespace.
 mount --make-rslave / 2>/dev/null || mount --make-rprivate / 2>/dev/null || true

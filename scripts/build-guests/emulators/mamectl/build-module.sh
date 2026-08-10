@@ -15,7 +15,7 @@ set -eo pipefail
 # is also copied to the box, so the guard is loaded from the repo if it is
 # beside us and from /usr/local/bin/chroot-guard otherwise.
 CHROOT_GUARD_LIB="$(dirname "${BASH_SOURCE[0]}")/../../../lib/chroot-guard.sh"
-# shellcheck disable=SC1091
+# shellcheck disable=SC1090,SC1091
 if [ -f "$CHROOT_GUARD_LIB" ]; then . "$CHROOT_GUARD_LIB"; else . /usr/local/bin/chroot-guard; fi
 chroot_guard_reexec_private "$@"
 C=${MAMECTL_CHROOT:-/data/vms/soltest/trixie-chroot}

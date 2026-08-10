@@ -142,7 +142,8 @@ chroot_guard_reexec_private() {
   fi
   _chg_info "re-executing in a private mount namespace: $self"
   export CHROOT_GUARD_PRIVATE_NS=1
-  exec unshare --mount --propagation private -- "$self" "$@"
+  # Run through $BASH rather than relying on the script's exec bit.
+  exec unshare --mount --propagation private -- "${BASH:-/bin/bash}" "$self" "$@"
 }
 
 # chroot_guard_run_private <cmd> [args…] — run one command in a private mount

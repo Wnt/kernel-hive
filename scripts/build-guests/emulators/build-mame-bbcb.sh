@@ -48,7 +48,7 @@ CHROOT_GUARD_LIB="$HERE/../../lib/chroot-guard.sh"
 # The chroot below runs in a PRIVATE mount namespace: nothing it mounts is
 # visible to the host, and no unmount can propagate out (the 2026-08-10
 # "PTY allocation failed" incident — scripts/lib/chroot-guard.sh).
-# shellcheck disable=SC1091
+# shellcheck disable=SC1090,SC1091
 if [ -f "$CHROOT_GUARD_LIB" ]; then . "$CHROOT_GUARD_LIB"; else . /usr/local/bin/chroot-guard; fi
 chroot_guard_reexec_private "$@"
 # ONE binary, TWO tiles: bbcmicro ships it and armeval reuses it from the same

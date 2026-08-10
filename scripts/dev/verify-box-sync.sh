@@ -96,6 +96,7 @@ add_pair() {
 add_pair labctl scripts/labctl /usr/local/bin/labctl
 add_pair clone-guard scripts/lib/clone-guard.sh /usr/local/bin/clone-guard
 add_pair xvfb-alloc scripts/lib/xvfb-alloc.sh /usr/local/bin/xvfb-alloc
+add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard
 add_pair gen-tiles-json scripts/gen_tiles_json.py /root/gen_tiles_json.py
 for name in clientcmd.sh gen-local-ca.sh osgallery-https-server.py reset-tile.sh install-https-service.sh tiles.json golden-manifest.json; do
   add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name"
