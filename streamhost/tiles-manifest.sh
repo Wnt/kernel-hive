@@ -142,9 +142,9 @@ emit tinycore \
 #   matches the baked device set). Golden store canonical at
 #   /data/gallery-guests/ReactOS/ (old /data/reactos-golden whitelisted).
 emit reactos \
-  --tile reactos --vmid 106 --udp 4433 --pointer abs --audio on --fps 30 \
-  --launcher-file "$T/reactos/qemu-streamhost.sh" --env-append-file \
-  "$T/reactos/tile.env.fixture"
+  --tile reactos --vmid 106 --udp 4433 --pointer abs --abs-pace-ms 30 \
+  --audio on --fps 30 --launcher-file "$T/reactos/qemu-streamhost.sh" \
+  --env-append-file "$T/reactos/tile.env.fixture"
 
 # toaruos (VMID 98) — LiveCD, AC97 + usb-tablet. GENERIC. The remastered
 #   image.iso IS the golden artifact (no snapshottable disk): resetMode=restart.
@@ -184,8 +184,8 @@ emit haiku \
 #   The device-set-matched golden preserves `AddUSBHardware pciusb.device 0` and
 #   is auto-loaded so AROS owns the absolute tablet immediately after launch.
 emit aros \
-  --tile aros --vmid 110 --udp 54110 --pointer abs --audio on --fps 30 \
-  --launcher-file "$T/aros/qemu-streamhost.sh"
+  --tile aros --vmid 110 --udp 54110 --pointer abs --abs-pace-ms 30 --audio \
+  on --fps 30 --launcher-file "$T/aros/qemu-streamhost.sh"
 
 # helenos (VMID 99) — ia32 LiveCD on -cpu qemu32, intel-hda. GENERIC.
 # POINTER=abs (2026-07-13): HelenOS's upstream USB HID stack binds the QEMU
@@ -279,9 +279,9 @@ emit win2000 \
 #   tile-LOCAL winxp-golden.qcow2 (gallery WinXPpro/winxp.qcow2 stays pristine)
 #   WITHOUT -snapshot; golden snapshot inside (resetMode=loadvm).
 emit winxp \
-  --tile winxp --vmid 94 --udp 54094 --pointer abs --audio on --fps 30 \
-  --launcher-file "$T/winxp/qemu-streamhost.sh" --env-append-file \
-  "$T/winxp/tile.env.fixture"
+  --tile winxp --vmid 94 --udp 54094 --pointer abs --abs-pace-ms 30 --audio \
+  on --fps 30 --launcher-file "$T/winxp/qemu-streamhost.sh" \
+  --env-append-file "$T/winxp/tile.env.fixture"
 
 # ---------------------------------------------------------------------------
 # GROUP E — Win9x / DOS / OS/2: PS/2-only (usb=off), Sound Blaster 16 (only
@@ -306,7 +306,7 @@ emit winxp \
 emit win311 \
   --tile win311 --vmid 90 --udp 54090 --pointer warpd --warpd-addr \
   unix:/data/vms/streamhost/tiles/win311/serial.sock --warpd-buttons qemu \
-  --warpd-pace-ms 8 --warpd-button-delay-ms 80 --audio on --fps 30 \
+  --warpd-pace-ms 30 --warpd-button-delay-ms 80 --audio on --fps 30 \
   --launcher-file "$T/win311/qemu-streamhost.sh" --env-append-file \
   "$T/win311/tile.env.fixture"
 
@@ -325,9 +325,10 @@ emit win311 \
 # stays on the agent (absolute, drift-free).
 emit win95 \
   --tile win95 --vmid 91 --udp 54091 --pointer warpd --warpd-addr \
-  127.0.0.1:57791 --warpd-buttons qemu --audio on --fps 30 --launcher-file \
-  "$T/win95/qemu-streamhost.sh" --aux-file "$T/win95/drive.py" --aux-file \
-  "$T/win95/golden-bake.sh" --env-append-file "$T/win95/tile.env.fixture"
+  127.0.0.1:57791 --warpd-buttons qemu --warpd-pace-ms 30 --audio on --fps \
+  30 --launcher-file "$T/win95/qemu-streamhost.sh" --aux-file \
+  "$T/win95/drive.py" --aux-file "$T/win95/golden-bake.sh" --env-append-file \
+  "$T/win95/tile.env.fixture"
 
 # win98se (VMID 92) — Win98SE, sb16, two qcow2 disks (system + games), pcnet,
 #   usb-tablet. VERBATIM LAUNCHER: golden snapshot lives INSIDE the base disks
@@ -338,11 +339,11 @@ emit win95 \
 # fail-safe PnP BIOS with no PCI/NIC/USB). hidusb.sys staged from the base cabs
 # by scripts/build-guests/tiles/win98.sh. Full evidence: docs/guests/win9x.md.
 emit win98se \
-  --tile win98se --vmid 92 --udp 54092 --pointer abs --audio on --fps 30 \
-  --launcher-file "$T/win98se/qemu-streamhost.sh" --aux-file \
-  "$T/win98se/golden-bake.sh" --aux-file "$T/win98se/qmp.py" --aux-file \
-  "$T/win98se/shot.sh" --aux-file "$T/win98se/sk.py" --env-append-file \
-  "$T/win98se/tile.env.fixture"
+  --tile win98se --vmid 92 --udp 54092 --pointer abs --abs-pace-ms 30 \
+  --audio on --fps 30 --launcher-file "$T/win98se/qemu-streamhost.sh" \
+  --aux-file "$T/win98se/golden-bake.sh" --aux-file "$T/win98se/qmp.py" \
+  --aux-file "$T/win98se/shot.sh" --aux-file "$T/win98se/sk.py" \
+  --env-append-file "$T/win98se/tile.env.fixture"
 
 # freedos (VMID 95) — sb16 + routed PC-speaker audio, pc-i440fx-11.0,acpi=off, cirrus, ne2k NIC, PS/2 relative.
 #   VERBATIM LAUNCHER: golden fixture — NO -snapshot (writes persist in
@@ -364,8 +365,8 @@ emit freedos \
 #     + SETVER entries baked into the golden ("Option B — PROMOTED LIVE").
 emit msdoswin1 \
   --tile msdoswin1 --vmid 113 --udp 54113 --pointer rel --legacy-kbd 1 \
-  --audio on --fps 60 --launcher-file "$T/msdoswin1/qemu-streamhost.sh" \
-  --aux-file "$T/msdoswin1/qmpc.py"
+  --abs-pace-ms 30 --audio on --fps 60 --launcher-file \
+  "$T/msdoswin1/qemu-streamhost.sh" --aux-file "$T/msdoswin1/qmpc.py"
 
 # os2warp (VMID 108) — *** TCG ONLY *** (OS/2 Warp 4 will NOT boot under KVM).
 #   pc,acpi=off,usb=off, -cpu pentium, std VGA, sb16, pcnet NIC, PS/2. VERBATIM
@@ -385,7 +386,7 @@ emit msdoswin1 \
 emit os2warp \
   --tile os2warp --vmid 108 --udp 54108 --pointer warpd --warpd-addr \
   unix:/data/vms/streamhost/tiles/os2warp/serial.sock --warpd-buttons qemu \
-  --warpd-wheel agent --warpd-pace-ms 8 --warpd-button-delay-ms 80 --audio \
+  --warpd-wheel agent --warpd-pace-ms 30 --warpd-button-delay-ms 80 --audio \
   on --fps 30 --launcher-file "$T/os2warp/qemu-streamhost.sh"
 
 # ---------------------------------------------------------------------------
@@ -401,8 +402,8 @@ emit os2warp \
 #   SH_POINTER=rel driving the built-in i8042 PS/2 mouse 1:1 (SPA pointer-lock
 #   type=4 direct-rel). loadvm needs exactly this device set: NO usb, NO tablet.
 emit qnx \
-  --tile qnx --vmid 112 --udp 54112 --pointer rel --audio on --fps 30 \
-  --launcher-file "$T/qnx/qemu-streamhost.sh"
+  --tile qnx --vmid 112 --udp 54112 --pointer rel --abs-pace-ms 30 --audio \
+  on --fps 30 --launcher-file "$T/qnx/qemu-streamhost.sh"
 
 # sailfishos (VMID 104) — audio OFF, usb-tablet + usb-kbd, ide disk, e1000 NIC.
 #   GENERIC (+ -snapshot: ephemeral; no golden — labctl reset refuses it).
@@ -425,9 +426,9 @@ emit sailfishos \
 # Spawn()ed at the T:/Home> REPL and BAKED into the golden RAM snapshot.
 emit templeos \
   --tile templeos --vmid 105 --udp 54105 --pointer warpd --warpd-addr \
-  unix:/data/vms/streamhost/tiles/templeos/serial.sock --audio off --fps 30 \
-  --launcher-file "$T/templeos/qemu-streamhost.sh" --env-append-file \
-  "$T/templeos/tile.env.fixture"
+  unix:/data/vms/streamhost/tiles/templeos/serial.sock --warpd-pace-ms 30 \
+  --audio off --fps 30 --launcher-file "$T/templeos/qemu-streamhost.sh" \
+  --env-append-file "$T/templeos/tile.env.fixture"
 
 # serenityos (VMID 102) — -kernel direct boot off an NVMe-attached qcow2
 #   overlay over the read-only golden raw ext2 root (_disk_image); the Ext2FS
@@ -479,21 +480,22 @@ emit postmarketos \
 # c64 (VMID 214) — VICE x64sc -> Commodore 64 -> GEOS 2.0 deskTop. ssh 5814.
 emit c64 \
   --tile c64 --vmid 214 --udp 54114 --pointer rel --cursor-scale 1.0 \
-  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 --launcher-file \
-  "$T/c64/qemu-streamhost.sh" --env-append-file "$T/c64/tile.env.fixture"
+  --cursor-off-x 0 --cursor-off-y 0 --abs-pace-ms 30 --audio on --fps 60 \
+  --launcher-file "$T/c64/qemu-streamhost.sh" --env-append-file \
+  "$T/c64/tile.env.fixture"
 
 # atarist (VMID 216) — hatari -> Atari ST -> EmuTOS GEM desktop. ssh 5816.
 emit atarist \
   --tile atarist --vmid 216 --udp 54116 --pointer abs --cursor-scale 1.0 \
-  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 --launcher-file \
-  "$T/atarist/qemu-streamhost.sh" --env-append-file \
+  --cursor-off-x 0 --cursor-off-y 0 --abs-pace-ms 30 --audio on --fps 60 \
+  --launcher-file "$T/atarist/qemu-streamhost.sh" --env-append-file \
   "$T/atarist/tile.env.fixture"
 
 # apple2 (VMID 217) — LinApple 2.3.0 -> Apple //e -> Apple GEOS deskTop. ssh 5817.
 emit apple2 \
   --tile apple2 --vmid 217 --udp 54117 --pointer abs --cursor-scale 1.0 \
-  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 --launcher-file \
-  "$T/apple2/qemu-streamhost.sh" --env-append-file \
+  --cursor-off-x 0 --cursor-off-y 0 --abs-pace-ms 30 --audio on --fps 60 \
+  --launcher-file "$T/apple2/qemu-streamhost.sh" --env-append-file \
   "$T/apple2/tile.env.fixture"
 
 # amiga (VMID 218) — FS-UAE -> Amiga 500 -> Kickstart 1.3 + Workbench 1.3.
@@ -501,8 +503,8 @@ emit apple2 \
 #   SH_IDLE_PAUSE_SECS=0 pin was a leftover of the reverted cold-boot pilot.
 emit amiga \
   --tile amiga --vmid 218 --udp 54118 --pointer abs --cursor-scale 1.0 \
-  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 --launcher-file \
-  "$T/amiga/qemu-streamhost.sh" --env-append-file \
+  --cursor-off-x 0 --cursor-off-y 0 --abs-pace-ms 30 --audio on --fps 60 \
+  --launcher-file "$T/amiga/qemu-streamhost.sh" --env-append-file \
   "$T/amiga/tile.env.fixture"
 
 # redstar2 (VMID 120) — Red Star OS 2.0 i386 KDE desktop. AIR-GAPPED

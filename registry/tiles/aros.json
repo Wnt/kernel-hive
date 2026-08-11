@@ -111,7 +111,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/aros/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/aros/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 110,
     "qemu": {
@@ -125,6 +126,8 @@
         "54110",
         "--pointer",
         "abs",
+        "--abs-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",

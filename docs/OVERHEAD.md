@@ -118,7 +118,7 @@ A separate client-side floor nobody can optimise away: a frame waits a median
 | **warpd hybrid** (`win311`, `os2warp`) | not measured end-to-end | `SH_WARPD_BUTTON_DELAY_MS` **80 ms**, re-armed by every reposition |
 | **dbus-rel homing** | not measured end-to-end | 250 ms settle once per session; 256 px chunks at 16 ms |
 | **mamesock** (`irix`) | not measured end-to-end | ack deadline 5 s + 200 ms per outstanding verb |
-| **dbus-abs** | not measured per-tile | `SH_ABS_PACE_MS` 0 everywhere except `win11` = 30 |
+| **dbus-abs** | not measured per-tile | `SH_ABS_PACE_MS` 30 on the 11 old-GUI dbus-abs tiles (2026-07-26 drag investigation; recorded in the registry 2026-08-11), 0 elsewhere |
 
 The warpd-vs-gallery-hid campaign is marked **PARTIAL** in its own document and
 ran on a clone with **one vCPU onlined**, with the diagnostic driver's logging a

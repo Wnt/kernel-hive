@@ -110,7 +110,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/win98se/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win98se/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 92,
     "qemu": {
@@ -124,6 +125,8 @@
         "54092",
         "--pointer",
         "abs",
+        "--abs-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",

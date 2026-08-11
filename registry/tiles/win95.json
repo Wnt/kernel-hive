@@ -116,7 +116,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/win95/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win95/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_WARPD_PACE_MS": "30"
     },
     "vmidLabel": 91,
     "qemu": {
@@ -134,6 +135,8 @@
         "127.0.0.1:57791",
         "--warpd-buttons",
         "qemu",
+        "--warpd-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",

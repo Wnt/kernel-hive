@@ -113,7 +113,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/reactos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/reactos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 106,
     "qemu": {
@@ -127,6 +128,8 @@
         "4433",
         "--pointer",
         "abs",
+        "--abs-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",
