@@ -295,8 +295,8 @@ that make the migration real rather than declared.
      longer mirrors them)
 
    Then `make tile-registry-generate`. **Never hand-edit the generated files** —
-   `streamhost/tiles-manifest.sh`, `scripts/serve/webroot/poster-docs.json` and
-   the rest are outputs. `make tile-registry-check` is the gate and it goes red
+   `streamhost/tiles-manifest.sh`, `spa/src/data/keyboards.ts` and the rest
+   are outputs. `make tile-registry-check` is the gate and it goes red
    on any of these. The public lineup the visitor sees is rendered on demand
    (`tiles-registry.py render`), so a `.museum.notes` edit reaches the gallery
    with `serve-https-spa.sh manifests` and no rebuild.

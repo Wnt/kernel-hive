@@ -163,23 +163,28 @@ box_sync_load_pairs() {
   # deliberate override is fine; an INVISIBLE one is not, so it is a pair and
   # shows as DIFFERS until the override is reverted.
   #
-  # The repo side is RENDERED, not committed (tiles-registry.py rendered()), so
-  # render it here: the pair then compares the deployed bytes against what the
-  # registry says right now, which is the only comparison worth making.
+  # The repo side of all four runtime documents is RENDERED, not committed
+  # (tiles-registry.py rendered()), so render them here: each pair then compares
+  # the deployed bytes against what the registry says right now, which is the
+  # only comparison worth making.
   python3 "$REPO/scripts/tiles-registry.py" render --out "$REPO/build/registry" >/dev/null ||
     {
-      echo "box-sync: gallery manifest render failed (registry does not validate)" >&2
+      echo "box-sync: render failed (registry does not validate)" >&2
       return 1
     }
   box_sync_add_pair serve/webroot/gallery-manifest.json \
     build/registry/gallery-manifest.json \
     "$BOX_ROOT/serve/webroot/gallery-manifest.json" exact repo
-  # The live signaling registry and golden manifest are maintained ON the box;
-  # the repo carries committed REFERENCE copies (scripts/README.md). Pushing the
-  # reference at the live file is backwards, so they are box-authoritative and
-  # the push path refuses them by name, pointing at harvest.sh.
-  box_sync_add_pair serve/tiles.json scripts/serve/tiles.json "$BOX_ROOT/serve/tiles.json" exact box
-  box_sync_add_pair serve/golden-manifest.json scripts/serve/golden-manifest.json "$BOX_ROOT/serve/golden-manifest.json" exact box
+  box_sync_add_pair serve/webroot/poster-docs.json \
+    build/registry/poster-docs.json \
+    "$BOX_ROOT/serve/webroot/poster-docs.json" exact repo
+  # The live signaling registry and golden manifest are rendered from the
+  # registry too. They stay box-AUTHORITATIVE so the push path keeps refusing
+  # them: a live SIGNAL_CONFIG and the reset allow-list are replaced by
+  # `serve-https-spa.sh manifests`, deliberately and atomically, never as a
+  # side effect of a file sync.
+  box_sync_add_pair serve/tiles.json build/registry/tiles.json "$BOX_ROOT/serve/tiles.json" exact box
+  box_sync_add_pair serve/golden-manifest.json build/registry/golden-manifest.json "$BOX_ROOT/serve/golden-manifest.json" exact box
   # The serving plane is deployed WITH the operator's real host/gallery names
   # substituted in (scripts/serve/restart-https.sh's SIGNAL_HOST default and the
   # unit's SIGNAL_HOST/PUBLIC_HOST Environment= lines), so these three compare

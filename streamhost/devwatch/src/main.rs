@@ -24,21 +24,21 @@ use clap::Parser;
 use notify::{EventKind, RecursiveMode};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, DebouncedEvent};
 
-/// Outputs that `serve-https-spa.sh manifests` publishes to the box. The public
-/// lineup is RENDERED (never committed), so it is watched at its build path —
-/// `tiles-registry.py render` writes it, and a museum-copy edit changes nothing
-/// else, which is exactly the save that must still reach the gallery.
+/// Outputs that `serve-https-spa.sh manifests` publishes to the box. All four
+/// are RENDERED (never committed), so they are watched at their build paths —
+/// `tiles-registry.py render` writes them, and a museum-copy or poster edit
+/// changes nothing else, which is exactly the save that must still reach the
+/// gallery.
 const MANIFEST_OUTPUTS: &[&str] = &[
-    "scripts/serve/tiles.json",
+    "build/registry/tiles.json",
     "build/registry/gallery-manifest.json",
-    "scripts/serve/webroot/poster-docs.json",
-    "scripts/serve/golden-manifest.json",
+    "build/registry/poster-docs.json",
+    "build/registry/golden-manifest.json",
 ];
 
 /// Generated outputs compiled into the SPA bundle: changing them needs a build.
 const SPA_OUTPUTS: &[&str] = &[
     "spa/src/three/archetypeRegistry.ts",
-    "spa/src/mock/manifest.json",
     "spa/src/data/posterIndex.ts",
     "spa/src/data/demoPrograms.ts",
     "spa/src/data/keyboards.ts",

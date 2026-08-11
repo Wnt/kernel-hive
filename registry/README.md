@@ -87,20 +87,26 @@ generator.
 
 Two classes of output, and the difference is where they live:
 
-- **Generated** (`generate`): written into the tree and committed —
-  `streamhost/tiles-manifest.sh`, `scripts/serve/tiles.json`,
-  `spa/src/data/keyboards.ts`, … Something outside the generator (a shell
-  script, the Vite build, the box) reads them as files, so they must exist
-  without running Python. `make tile-registry-check` proves each is
-  byte-identical to what the registry produces now.
-- **Rendered** (`render` / `emit`): never committed and never in the tree —
-  the public `gallery-manifest.json` the SPA fetches, and `index.json`, the
-  whole-registry aggregate. Their only consumers can ask for them: the publish
-  path pipes them at the box, the test suite renders one into memory, the Vite
-  dev server answers `/gallery-manifest.json` by rendering per request.
-  `render` drops them in the gitignored `build/registry/`; `emit <name>` writes
-  one to stdout. Nothing can go stale, and a gallery string searched in the
-  repo has exactly one hit — the registry entry that owns it.
+- **Generated** (`generate`): written into the tree and committed — the three
+  shell manifests (`streamhost/tiles-manifest.sh`, `bring-up-all.sh`,
+  `build-guests/build-all.sh`), the four SPA-compiled TS modules
+  (`archetypeRegistry.ts`, `posterIndex.ts`, `demoPrograms.ts`,
+  `keyboards.ts`), and `registry/generated/labctl-declarations.json`. Each has
+  a consumer that opens it as a file with no generator available: a shell that
+  runs it, the Vite build that compiles it, the box's `gen_tiles_json.py` that
+  reads it. `make tile-registry-check` proves each is byte-identical to what
+  the registry produces now.
+- **Rendered** (`render` / `emit`): never committed, never in the tree — every
+  JSON document that is *served or published* rather than compiled:
+  `gallery-manifest.json`, `poster-docs.json`, `tiles.json`,
+  `golden-manifest.json`, `gallery-action-map.json`, `mock-manifest.json`, and
+  `index.json` (the whole-registry aggregate). Every consumer can ask: the
+  publish path renders then ships, the SPA fetches over HTTP, the tests render
+  into memory, the Vite dev server answers a request by rendering, the box-sync
+  gate renders the repo side before comparing. `render` drops them in the
+  gitignored `build/registry/`; `emit <name>` writes one to stdout. Nothing can
+  go stale, and a gallery string searched in the repo has exactly one hit — the
+  registry entry that owns it.
 
 For a live-edit loop, `devwatch` (Rust, `streamhost/devwatch`) watches the
 hand-written sources, runs `generate` + `render` on every save, and — only when

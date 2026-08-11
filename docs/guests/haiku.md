@@ -27,7 +27,7 @@ Reproducible image build: `scripts/build-guests/stages/haiku.sh` (bash -n clean)
   lands on the **live Haiku desktop**; NO installer, NO disk, NO OVMF.
   *(Superseded: the live tile now boots a persistent installed disk,
   `tiles/haiku/haiku-persist.qcow2` with an internal `golden` snapshot —
-  see the tile launcher / `scripts/serve/golden-manifest.json`.)*
+  see the tile launcher / the rendered `golden-manifest.json`.)*
 - **GUI CONFIRMED rendering** (framebuffer truth, not logs): the iconic BeOS
   **yellow window tab** ("Welcome to Haiku!") + language/keymap picker +
   Install/Try-Haiku buttons over the blue Haiku desktop. Verified two ways:

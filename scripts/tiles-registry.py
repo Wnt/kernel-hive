@@ -1158,17 +1158,71 @@ def emit_registry_index(rows: list[dict[str, Any]]) -> bytes:
 def rendered() -> OrderedDict[str, bytes]:
     """The RENDERED artifacts: resolved on demand, never committed.
 
-    Both are pure restatements of the registry — the public SPA lineup and the
-    whole-registry aggregate — with no hand-written byte of their own. Committing
-    them meant every gallery string had a second (and third) search hit and no
-    way to tell master from copy, and it put ~650 KB of regenerated JSON through
-    the diff of every tile edit. They are produced by `render` (into RENDER_DIR,
-    gitignored), streamed by `emit`, and published to the box by
-    serve-https-spa.sh — never by living in the tree.
+    Every one is a pure restatement of the registry with no hand-written byte of
+    its own, and every one of their consumers can ASK for them: the publish path
+    pipes them at the box, the SPA fetches them at runtime, the tests render into
+    memory, the Vite dev server answers a request by rendering. Committing them
+    meant a gallery string had four search hits with no way to tell master from
+    copy, and ~1.2 MB of regenerated JSON in the diff of every station edit.
+
+    `render` writes them to RENDER_DIR (gitignored), `emit <name>` streams one to
+    stdout, `paths --rendered` lists them. Nothing checks them for drift because
+    nothing can drift: there is no second copy.
+
+    The one generated JSON deliberately left OUT of this set is
+    registry/generated/labctl-declarations.json — the box's gen_tiles_json.py
+    opens it as a file, so it must exist without a generator run.
     """
-    _, rows = validate()
+    globals_doc, rows = validate()
+    try:
+        posters, poster_warnings = load_posters(POSTERS, {row["id"] for row in rows})
+    except (OSError, PosterError) as exc:
+        raise RegistryError(f"poster registry validation failed: {exc}") from exc
+    for warning in poster_warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+    streamed = [r for r in rows if r["stream"]["transport"] == "streamhost"]
+    production = [r for r in rows if r["lifecycle"] == "production"]
     out: OrderedDict[str, bytes] = OrderedDict()
+
     out["gallery-manifest.json"] = emit_gallery_manifest(rows)
+    out["poster-docs.json"] = render_poster_docs(posters)
+
+    signal = OrderedDict()
+    for row in sorted(streamed, key=lambda x: x["render"]["signalOrder"]):
+        signal[row["id"]] = {
+            "udpPort": row["stream"]["udpPort"],
+            "hashFile": f"/data/vms/streamhost/tiles/{row['tileDir']}/cert_hash_b64.txt",
+        }
+    out["tiles.json"] = (json.dumps(signal, indent=2, ensure_ascii=False) + "\n").encode()
+
+    golden = OrderedDict(
+        [
+            ("_generated", "scripts/tiles-registry.py render; DO NOT EDIT"),
+            ("_comment", globals_doc["goldenComment"]),
+            ("tiles", OrderedDict()),
+        ]
+    )
+    for row in sorted(production, key=lambda x: x["render"]["goldenOrder"]):
+        reset = OrderedDict(row["reset"])
+        if reset.get("resetMode") == "pve-rollback":
+            reset["pveVmid"] = row["runtime"]["pve"]["vmid"]
+        golden["tiles"][row["id"]] = reset
+    out["golden-manifest.json"] = (json.dumps(golden, indent=1, ensure_ascii=False) + "\n").encode()
+
+    action = OrderedDict(
+        [
+            ("_generated", "scripts/tiles-registry.py render; DO NOT EDIT"),
+            ("_README", globals_doc["actionMapReadme"]),
+            ("_default", globals_doc["actionMapDefault"]),
+        ]
+    )
+    action_rows = [r for r in rows if "actionMap" in r.get("operator", {})]
+    for row in sorted(action_rows, key=lambda x: x["render"]["actionMapOrder"]):
+        item = row["operator"]["actionMap"]
+        action[item["key"]] = item["value"]
+    out["gallery-action-map.json"] = (json.dumps(action, indent=2, ensure_ascii=True) + "\n").encode()
+
+    out["mock-manifest.json"] = render_mock(rows)
     out["index.json"] = emit_registry_index(rows)
     return out
 
@@ -1225,41 +1279,6 @@ def generated() -> OrderedDict[str, bytes]:
     )
     out["scripts/build-guests/build-all.sh"] = build_template.encode()
 
-    signal = OrderedDict()
-    for row in sorted(streamed, key=lambda x: x["render"]["signalOrder"]):
-        signal[row["id"]] = {
-            "udpPort": row["stream"]["udpPort"],
-            "hashFile": f"/data/vms/streamhost/tiles/{row['tileDir']}/cert_hash_b64.txt",
-        }
-    out["scripts/serve/tiles.json"] = (json.dumps(signal, indent=2, ensure_ascii=False) + "\n").encode()
-
-    golden = OrderedDict(
-        [
-            ("_generated", "scripts/tiles-registry.py generate; DO NOT EDIT; run `make tile-registry-generate`"),
-            ("_comment", globals_doc["goldenComment"]),
-            ("tiles", OrderedDict()),
-        ]
-    )
-    for row in sorted(production, key=lambda x: x["render"]["goldenOrder"]):
-        reset = OrderedDict(row["reset"])
-        if reset.get("resetMode") == "pve-rollback":
-            reset["pveVmid"] = row["runtime"]["pve"]["vmid"]
-        golden["tiles"][row["id"]] = reset
-    out["scripts/serve/golden-manifest.json"] = (json.dumps(golden, indent=1, ensure_ascii=False) + "\n").encode()
-
-    action = OrderedDict(
-        [
-            ("_generated", "scripts/tiles-registry.py generate; DO NOT EDIT; run `make tile-registry-generate`"),
-            ("_README", globals_doc["actionMapReadme"]),
-            ("_default", globals_doc["actionMapDefault"]),
-        ]
-    )
-    action_rows = [r for r in rows if "actionMap" in r.get("operator", {})]
-    for row in sorted(action_rows, key=lambda x: x["render"]["actionMapOrder"]):
-        item = row["operator"]["actionMap"]
-        action[item["key"]] = item["value"]
-    out["scripts/tools/gallery-action-map.json"] = (json.dumps(action, indent=2, ensure_ascii=True) + "\n").encode()
-
     binding_rows = [r for r in rows if r.get("enabled") and "bindingOrder" in r["render"]]
     id_width = max(len(r["id"]) for r in binding_rows) + 1
     bindings = "".join(
@@ -1269,10 +1288,7 @@ def generated() -> OrderedDict[str, bytes]:
     out["spa/src/three/archetypeRegistry.ts"] = apply_count_tokens(
         template("archetypeRegistry.ts.in", "@@OS_BINDINGS@@", bindings.rstrip("\n")), rows
     )
-    out["spa/src/mock/manifest.json"] = render_mock(rows)
-
     out["spa/src/data/posterIndex.ts"] = render_poster_index(posters)
-    out["scripts/serve/webroot/poster-docs.json"] = render_poster_docs(posters)
     out["spa/src/data/demoPrograms.ts"] = render_demo_programs(rows)
     out["spa/src/data/keyboards.ts"] = render_keyboards(rows)
 

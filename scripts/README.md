@@ -142,9 +142,9 @@ tracked `streamhost/tiles/soltest-*/` launchers (clone scaffolds that run out of
 > `deploy`, by an agent that had been told not to run `manifests`. **With
 > parallel tile work in flight, treat `deploy` as equally forbidden.**
 >
-> **`serve-https-spa.sh manifests` wholesale-replaces all three serve manifests**
-> (`tiles.json`, `gallery-manifest.json`, `golden-manifest.json`) from the
-> publishing worktree, atomically. It therefore **deletes every tile another
+> **`serve-https-spa.sh manifests` renders and wholesale-replaces all four serve
+> documents** (`tiles.json`, `gallery-manifest.json`, `poster-docs.json`,
+> `golden-manifest.json`) from the publishing worktree's registry, atomically. It therefore **deletes every tile another
 > worktree published since yours was branched** — silently, and the tile simply
 > vanishes from the gallery while its service stays `active`, which reads as a
 > tile bug rather than a publish bug.
@@ -212,7 +212,7 @@ sheets, any nonzero value means an incomplete lap.
 | `coldboot/` | Boot-video record/trim/postprocess toolkit (`record-boot.sh`, `trim-boot.sh`, `postprocess-boot.sh`, `gen-boot-manifest.sh`, per-tile zero-input prep notes) — feeds the SPA's boot-replay plane, live since 2026-07-13 (8 tiles published). Also the amiga cold-boot-on-visit lifecycle (`amiga-coldboot-watch.sh` + in-kiosk `amiga-emu`/`amiga-launch-coldboot.sh` + installer) and the `win95-clean/` golden re-bake pipeline. See `coldboot/README.md` (incl. the per-tile regeneration table). |
 | `lib/` | Shared safety/build helpers: `clone-guard.sh`; chroot mount-propagation guard `chroot-guard.sh` (source it, or `chroot-guard assert-root|assert-under|mount-api|umount-all|run-private`) — the ONE way a chroot gets its `/proc`,`/sys`,`/dev` and the ONLY sanctioned teardown, proven by `tests/chroot-guard-selftest.sh`; X-display allocator `xvfb-alloc.sh` (source it, or `xvfb-alloc alloc|release|list|reap`) — the ONE way a rig gets an Xvfb, proven by `tests/xvfb-alloc-selftest.sh`; build-time QMP console/input library `labqmp.py`; clone-only `golden-verify.sh <tileDir> [--bake]` dirty/restore/fresh-process proof. `labqmp.py` complements rather than replaces box-side `/root/cdrv.py`. |
 | `e2e/` | Node/Playwright live-gallery probes (`fd-check`, `input-smoke-*`, `tile-diag`, `capture-aus.mjs`, plus the `ff-*` Firefox diagnosis kit) — run against the real box, not CI. `GALLERY_URL`/`LAB_HOST` env. See `e2e/README.md`. |
-| `tools/` | Generated `gallery-action-map.json` plus the historical guest-side `gallery-input-probe.py`. The deleted `gallery-perf-probe.mjs` / `gallery-perf-cpu.sh` targeted the retired neko Docker/WebRTC plane and must not be revived for streamhost measurements; live-plane checks belong in `labctl health`, `labctl assert`, `dev/verify-tile.sh`, and `tests/e2e-live/`. |
+| `tools/` | The historical guest-side `gallery-input-probe.py` (`gallery-action-map.json` is rendered on demand now: `tiles-registry.py emit gallery-action-map.json`). The deleted `gallery-perf-probe.mjs` / `gallery-perf-cpu.sh` targeted the retired neko Docker/WebRTC plane and must not be revived for streamhost measurements; live-plane checks belong in `labctl health`, `labctl assert`, `dev/verify-tile.sh`, and `tests/e2e-live/`. |
 
 Per-guest documentation lives in `docs/guests/<os>.md`; the full rebuild
 runbook is `docs/lab/MASTER-REPRODUCE.md`.
