@@ -1,6 +1,6 @@
-// Per-tile diagnostics: open each tile named on the CLI (default: FreeDOS),
+// Per-station diagnostics: open each station named on the CLI (default: FreeDOS),
 // log console/pageerror/signal traffic, probe the stream <video> element
-// (the SPA feeds a <video> from an offscreen canvas via captureStream — no
+// (the UI feeds a <video> from an offscreen canvas via captureStream — no
 // stream <canvas> exists in the document), and screenshot to ~/e2e/shots/.
 import { chromium } from 'playwright';
 import fs from 'node:fs';

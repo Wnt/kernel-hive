@@ -12,7 +12,7 @@ use super::handoff::BgraPatch;
 ///     gated away, even in the subscribe/receiver_count race window.
 ///   * `damaged` — guest framebuffer changed. Feeds ONLY while watched: with
 ///     zero receivers the encoded AU would be broadcast to nobody, so feeding
-///     was pure waste (~23% of the host across 28 idle tiles, 2026-07-12).
+///     was pure waste (~23% of the host across 28 idle stations, 2026-07-12).
 ///   * `hb_due`  — wall-clock heartbeat tick elapsed. Watched-only, as before.
 pub(super) fn should_feed(damaged: bool, kicked: bool, watched: bool, hb_due: bool) -> bool {
     kicked || (watched && (damaged || hb_due))
@@ -77,7 +77,7 @@ mod tests {
 
     /// The 2026-07-12 idle-CPU gate: an animated guest with ZERO receivers
     /// must not feed the encoder (damage used to bypass the idle gating and
-    /// run snapshot+scene-detect+x264 24/7 on unwatched tiles).
+    /// run snapshot+scene-detect+x264 24/7 on unwatched stations).
     #[test]
     fn unwatched_damage_does_not_feed() {
         assert!(!should_feed(true, false, false, false));

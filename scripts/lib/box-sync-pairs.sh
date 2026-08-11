@@ -131,13 +131,17 @@ box_sync_load_pairs() {
   box_sync_add_pair xvfb-alloc scripts/lib/xvfb-alloc.sh /usr/local/bin/xvfb-alloc exact repo
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
   box_sync_add_pair gen-tiles-json scripts/gen_tiles_json.py /root/gen_tiles_json.py exact repo
-  for name in clientcmd.sh gen-local-ca.sh osgallery-https-server.py reset-tile.sh install-https-service.sh; do
+  # gen-local-ca.sh deploys with the operator's real hostname substituted in
+  # (discovered 2026-08-11 when the writer's reverse-scrub check refused the
+  # row): scrub, not exact, or a push writes a placeholder over it.
+  for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
+  box_sync_add_pair serve/gen-local-ca.sh scripts/serve/gen-local-ca.sh "$BOX_ROOT/serve/gen-local-ca.sh" scrub repo
   # The rest of the deployed serving plane. These were live on the box with NO
   # pair for months, so a drifted copy was invisible: check-stream-tickets.py and
   # pen-trace.py are both named in AGENTS.md's debugging table as the thing you
-  # run when a tile will not connect or a pen feels wrong, reset-auth.sh is the
+  # run when a station will not connect or a pen feels wrong, reset-auth.sh is the
   # guarded path for the account database that must never be rm'd, and the
   # requirements pair is what decides whether the box venv matches the repo.
   for name in check-stream-tickets.py pen-trace.py reset-auth.sh sync-venv.sh \
@@ -152,12 +156,12 @@ box_sync_load_pairs() {
     [ -n "$rel" ] || continue
     box_sync_add_pair "serve/${rel#scripts/serve/}" "$rel" "$BOX_ROOT/serve/${rel#scripts/serve/}" exact repo
   done < <(git -C "$REPO" ls-files 'scripts/serve/auth/*' 'scripts/serve/authui/*' | sort)
-  # The manifest the SPA fetches at runtime to build the grid. It had no pair,
+  # The manifest the UI fetches at runtime to build the grid. It had no pair,
   # which meant a deployed manifest could differ from the generated one and
   # nothing would say so — and on 2026-08-10 exactly that was done on purpose,
-  # to hide one tile from the grid during a measurement campaign. A deliberate
-  # override is fine; an INVISIBLE one is not, so it is a pair and shows as
-  # DIFFERS until the override is reverted.
+  # to hide one station from the grid during a measurement campaign. A
+  # deliberate override is fine; an INVISIBLE one is not, so it is a pair and
+  # shows as DIFFERS until the override is reverted.
   #
   # The repo side is RENDERED, not committed (tiles-registry.py rendered()), so
   # render it here: the pair then compares the deployed bytes against what the
@@ -193,7 +197,9 @@ box_sync_load_pairs() {
   box_sync_add_pair irix-mctl streamhost/guest-agents/irix/mctl.py /root/mctl.py exact repo
   box_sync_add_pair qmp-hmp scripts/qmp_hmp.py /root/qmp_hmp.py exact repo
   box_sync_add_pair shmshot scripts/shmshot.py /root/shmshot.py exact repo
-  box_sync_add_pair mobile-netem scripts/dev/mobile-netem.sh /usr/local/bin/mobile-netem exact repo
+  # Deployed with a real address baked in (same 2026-08-11 discovery as
+  # serve/gen-local-ca.sh): scrub keeps the live value on push.
+  box_sync_add_pair mobile-netem scripts/dev/mobile-netem.sh /usr/local/bin/mobile-netem scrub repo
   box_sync_add_pair amiga-coldboot-watch scripts/coldboot/amiga-coldboot-watch.sh /usr/local/bin/amiga-coldboot-watch.sh exact repo
   box_sync_add_pair streamhost-unit streamhost/deploy/streamhost@.service /etc/systemd/system/streamhost@.service exact repo daemon-reload
   box_sync_add_pair amiga-coldboot-unit streamhost/deploy/amiga-coldboot-watch.service /etc/systemd/system/amiga-coldboot-watch.service exact repo daemon-reload
@@ -220,7 +226,7 @@ box_sync_load_pairs() {
     box_sync_add_pair "src/$rel" "streamhost/streamhost/src/$rel" "$BOX_ROOT/build/streamhost/src/$rel" exact repo
   done <"$tmpdir/src-union"
 
-  # Only verbatim, tracked launchers of LIVE tiles are box-authored mirror pairs.
+  # Only verbatim, tracked launchers of LIVE stations are box-authored mirror pairs.
   # Generic launchers are checked by verify-emit.sh; the tracked soltest-*
   # launchers are clone/experiment scaffolds that run out of /data/vms/soltest/,
   # never out of $BOX_ROOT/tiles, so they have no box counterpart by design.
@@ -233,7 +239,7 @@ box_sync_load_pairs() {
   # Registry tree union: box-only and repo-only allowed files must be visible as
   # MISSING rather than silently omitted. "Allowed source files" is the same
   # filter on BOTH sides (README.md, *.json, *.in, minus registry/posters/) — the
-  # poster prose and its image-candidate research feed the SPA build only, and the
+  # poster prose and its image-candidate research feed the UI build only, and the
   # gitignored local.env is operator-local; neither is part of the box mirror.
   git -C "$REPO" ls-files 'registry/**' | sed 's#^registry/##' |
     grep -E '(^|/)README\.md$|\.json$|\.in$' | grep -v '^posters/' | sort >"$tmpdir/registry-repo"

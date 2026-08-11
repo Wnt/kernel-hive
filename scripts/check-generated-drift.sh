@@ -4,7 +4,7 @@
 # Every generated artifact (see generated() in scripts/tiles-registry.py) must be
 # byte-identical to what its typed registry source + templates produce right now.
 # This catches a generated file that has gone stale vs its source/template — the
-# exact failure that bites during re-bakes and tile edits.
+# exact failure that bites during re-bakes and station edits.
 #
 # Authoritative check: `make tile-registry-check` renders every output in memory
 # and byte-compares it against the tree (non-mutating — safe in a pre-push hook).

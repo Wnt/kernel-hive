@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build the SHIPPING `sgi` binary for the IRIX tile, on the lab box (Linux/x86-64).
+# Build the SHIPPING `sgi` binary for the IRIX station, on the lab box (Linux/x86-64).
 #
 # This is the reproducer. The binary in
 # /data/vms/streamhost/assets/irix/mame/sgi is what this script produces from a
@@ -11,7 +11,7 @@
 # Usage:
 #   scripts/build-guests/emulators/build-mame-irix.sh [work-dir]
 # Default work-dir is /data/vms/soltest/mame-irix-build-$$ -- namespaced under
-# soltest on purpose. NEVER build in a live tile directory.
+# soltest on purpose. NEVER build in a live station directory.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,12 +1,12 @@
 // streamhost — scratch-built per-VM streaming host in Rust.
 //
-// Pipeline (one process per gallery tile):
+// Pipeline (one process per gallery station):
 //   QEMU -display dbus,p2p=on  --(zbus p2p)-->  capture (shm scanout + v1 fallback)
 //     -> encode (x264 zerolatency Annex-B)  -> transport (WebTransport/QUIC)
 //   QEMU -audiodev dbus         --(same p2p)-->  audio (Opus low-latency)  ---^
 //   browser input  --(datagrams + reliable stream)-->  input -> QEMU dbus Mouse/Kbd/Touch
 //
-// Config is per-tile (see config.rs): QMP socket, UDP port, audio on/off, input
+// Config is per-station (see config.rs): QMP socket, UDP port, audio on/off, input
 // backend, cert rotation, signaling.json output. The prototype invocation
 // `streamhost <qmp.sock> --port N --fps N --hash-file P` still works.
 
@@ -87,10 +87,10 @@ async fn main() -> Result<()> {
         );
     }
 
-    // Guest audio (opt-in per tile), from one of two sources. `dbus` rides the
+    // Guest audio (opt-in per station), from one of two sources. `dbus` rides the
     // QEMU p2p connection — only the QEMU capture backend has one. `fifo` reads
     // the named pipe MAME's SDL disk audio driver writes; the shm-capture IRIX
-    // tile has NO main_conn, so that arm must never gate on it.
+    // station has NO main_conn, so that arm must never gate on it.
     let audio = if !cfg.audio {
         None
     } else {
@@ -109,7 +109,7 @@ async fn main() -> Result<()> {
                         None
                     }
                 },
-                // SH_AUDIO=on on an x11/shm-capture tile still defaulting to
+                // SH_AUDIO=on on an x11/shm-capture station still defaulting to
                 // dbus: nothing to register against — say so instead of
                 // silently running video-only.
                 None => {
@@ -169,9 +169,9 @@ async fn main() -> Result<()> {
     // One idle lease counter is shared by BOTH platform transports. A WebRTC
     // viewer must wake/hold the guest exactly like a WebTransport viewer; the
     // generic bridge sends S/E lease commands as peers connect and leave.
-    // A QEMU tile freezes its vCPUs over QMP. The x11/shm (emulator) tiles have
+    // A QEMU station freezes its vCPUs over QMP. The x11/shm (emulator) stations have
     // no QMP socket, so they freeze the emulator process itself — but only when
-    // the tile names its pidfile, because signalling is not something to infer.
+    // the station names its pidfile, because signalling is not something to infer.
     let freezer = if cfg.capture_backend.is_qemu() {
         Some(idle::Freezer::Qmp {
             sock: cfg.qmp_sock.clone(),
@@ -200,8 +200,8 @@ async fn main() -> Result<()> {
     }
 
     // Platform WebRTC egress feed. Every instance of the shared streamhost
-    // binary registers its ordinary tile id with the ONE generic bridge. There
-    // is no per-tile WebRTC environment, port, process, or opt-in. If the bridge
+    // binary registers its ordinary station id with the ONE generic bridge. There
+    // is no per-station WebRTC environment, port, process, or opt-in. If the bridge
     // is absent this reconnect loop is inert apart from a rate-limited log; the
     // WebTransport path below remains independent and authoritative.
     webrtc_bridge::spawn(cfg.tile.clone(), enc.clone(), audio.clone(), pauser.clone());

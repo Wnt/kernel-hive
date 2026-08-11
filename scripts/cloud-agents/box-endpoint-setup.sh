@@ -3,7 +3,7 @@
 #
 # WHAT THIS BUILDS (and why it is not just "open port 22")
 #   Cloud coding agents (Google Jules, Claude cloud sessions, …) run outside the
-#   LAN and still need `ssh lab` to drive tiles. Two rules shape the design:
+#   LAN and still need `ssh lab` to drive stations. Two rules shape the design:
 #     * no inbound port on the home WAN — the box dials OUT to the forwarder VPS
 #       (Wnt/forwarder), which publishes the far end on a public TCP port;
 #     * the publicly reachable sshd is NOT the LAN sshd. This installs a second,
@@ -82,7 +82,7 @@ PermitEmptyPasswords no
 AllowUsers root
 UsePAM yes
 
-# Agents scp files and occasionally forward the SPA port; both are in scope.
+# Agents scp files and occasionally forward the UI port; both are in scope.
 Subsystem sftp /usr/lib/openssh/sftp-server
 AllowTcpForwarding yes
 AllowAgentForwarding no

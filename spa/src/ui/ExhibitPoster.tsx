@@ -81,7 +81,7 @@ function Block({ block, index }: { block: PosterBlock; index: number }) {
 /**
  * An 8-bit machine's memory does not survive being rounded to whole megabytes:
  * `ramMB: 0` rendered as "0 MB", which is not merely imprecise but wrong -- the
- * card said zero beside an `arch` line reading "64 KB". Tiles under a megabyte
+ * card said zero beside an `arch` line reading "64 KB". Stations under a megabyte
  * carry `ramKB` instead and are shown in their own unit.
  */
 function formatRam(ramMB?: number, ramKB?: number): string {

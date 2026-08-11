@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# migrate-wave.sh — run scripts/dev/migrate-tile.sh over a WAVE of bridge tiles
+# migrate-wave.sh — run scripts/dev/migrate-tile.sh over a WAVE of kiosks
 #
-# migrate-tile.sh does one tile. A wave is several, and on 2026-08-10 three
+# migrate-tile.sh does one station. A wave is several, and on 2026-08-10 three
 # agents ran three waves in parallel and each hand-rolled the same three things
 # around it — a concurrency cap, a box-load check, and a summary table typed by
 # hand into BRIDGE-TRIXIE-MIGRATION.md. None of that was code, so none of it was
@@ -10,67 +10,67 @@
 #
 #   * BOX LOAD. Four parallel builds once took the box from load 9 to 34 on 16
 #     threads and starved everything else on it, including someone's timing run.
-#     So a tile is LAUNCHED only while the 1-minute load is under a ceiling —
+#     So a station is LAUNCHED only while the 1-minute load is under a ceiling —
 #     checked before each launch, and waited out rather than piled onto.
 #   * THE SHARED MAME CHROOT. Every MAME builder chroots into the SAME
 #     directory and mounts API filesystems in it; two at once is the failure
 #     that took the host's /dev/pts down and broke every new login on the box.
 #     chroot-guard fixed the mount-propagation half. The who-owns-it half is
-#     here: those tiles form a SERIALIZATION GROUP declared in
+#     here: those stations form a SERIALIZATION GROUP declared in
 #     registry/bridge-waves.json, and the group holds ONE claim taken by
 #     `mkdir` ON THE BOX — so it serializes across agents, not merely within
 #     one wave. The claim IS the proof (AGENTS.md "claim atomically"): a claim
 #     this run did not create is never adopted, it is reported with its holder
-#     and that tile simply does not start.
+#     and that station simply does not start.
 #
 # The group membership is declared AND derived: registry/bridge-waves.json
-# lists the tiles, this script re-derives them from the builders, and a
+# lists the stations, this script re-derives them from the builders, and a
 # disagreement refuses the whole run. A hand list nobody re-checks is how a new
-# chroot tile joins the fleet without joining the group.
+# chroot station joins the fleet without joining the group.
 #
 # WHAT IT DOES NOT DO. It never claims visual acceptance — neither does
 # migrate-tile.sh, and for the same reason: the failure this migration produces
 # (amiga losing Mesa and rendering black) is invisible to every log and exit
-# code. It collects the BEFORE/AFTER PNGs per tile and ends by naming the tiles
+# code. It collects the BEFORE/AFTER PNGs per station and ends by naming the stations
 # a human still owes a compare. It also cannot cap the builders' own JOBS: the
 # only environment migrate-tile.sh passes to a builder is BRIDGE_SUITE, so the
 # load ceiling is the whole of this tool's back-pressure. Saying otherwise
 # would be a knob that reports success while doing nothing.
 #
-# A failed tile does NOT abort the wave — migrate-tile.sh has already rolled
-# that tile back on its own — and the report says which tiles were never
+# A failed station does NOT abort the wave — migrate-tile.sh has already rolled
+# that station back on its own — and the report says which stations were never
 # attempted, and why.
 #
 # usage: migrate-wave.sh [TILE…] | --wave <N> | --remaining
-#   -j, --jobs N        tiles in flight at once (default 2)
+#   -j, --jobs N        stations in flight at once (default 2)
 #   --max-load F        do not LAUNCH while the box's 1-min load is >= F
-#                       (default 10.0 of 16 threads; running tiles continue)
-#   --allow-stopped     run tiles whose streamhost@ unit is inactive. Default
-#                       refuses them BY NAME: four of the remaining tiles are
+#                       (default 10.0 of 16 threads; running stations continue)
+#   --allow-stopped     run stations whose streamhost@ unit is inactive. Default
+#                       refuses them BY NAME: four of the remaining stations are
 #                       stopped, three of them on purpose, and migrate-tile.sh
 #                       would take its BEFORE frame from a cold start and
-#                       `systemctl start` the tile at step 8
+#                       `systemctl start` the station at step 8
 #   --flip              pass --flip to migrate-tile.sh (ledger edit only; you
 #                       still owe the prose in the same commit)
-#   --evidence DIR      per-tile logs + PNGs (default $TMPDIR/migrate-wave/<label>)
+#   --evidence DIR      per-station logs + PNGs (default $TMPDIR/migrate-wave/<label>)
 #   -n, --dry-run       print the plan table and stop. Nothing is started, no
 #                       claim is taken
-#   --json              machine-readable per-tile result (in addition to the table)
+#   --json              machine-readable per-station result (in addition to the table)
 #
 # env: LAB=lab  MIGRATE_WAVE_STALL=1800 (s with nothing runnable before giving up)
 #      MIGRATE_WAVE_TILE_CMD=<path>  SELF-TEST ONLY — replaces migrate-tile.sh.
 #                                    A run with it set says so, loudly, twice.
 #
-# exit: 0 every selected tile migrated (each still owes a human frame compare)
-#       1 at least one tile did not migrate (rolled back / not attempted)
-#       2 usage, or NOTHING was started — every tile refused at preflight, or
+# exit: 0 every selected station migrated (each still owes a human frame compare)
+#       1 at least one station did not migrate (rolled back / not attempted)
+#       2 usage, or NOTHING was started — every station refused at preflight, or
 #         none could ever be launched (a claim held elsewhere, load never fell)
 #       3 box unreachable
 # =============================================================================
 set -uo pipefail
 
 # The ledger's own values are what we act on; an experiment override leaking in
-# from the environment would make every tile agree with itself.
+# from the environment would make every station agree with itself.
 unset BRIDGE_SUITE
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -163,7 +163,7 @@ fi
 
 # --- plan: select, validate, group ------------------------------------------
 # migrate-wave-plan.py does the whole declaration side in one pass, because the
-# three answers are entangled: which tiles, which are refused before anything
+# three answers are entangled: which stations, which are refused before anything
 # starts, and which serialization group each belongs to. It exits 2 on a ledger
 # / roster / group disagreement rather than running a wave nobody planned. It is
 # a real file rather than a heredoc so ruff and a reader can both see it.

@@ -3,7 +3,7 @@
 #
 # Clone-only proof for a vmstate golden.  It never opens a production QMP socket,
 # never launches against a live writable disk, and routes teardown through
-# clone-guard.  Per-tile disk/port/ready metadata comes from bootrec-tiles.conf.
+# clone-guard.  Per-station disk/port/ready metadata comes from bootrec-tiles.conf.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"

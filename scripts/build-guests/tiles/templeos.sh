@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/templeos.sh — from-scratch, reproducible build of the TempleOS
-# tile for the neko+QEMU Kernel Hive.
+# station for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), (re)fetch the real
 # upstream TempleOS CD ISO, integrity-verify it, stage it at
@@ -36,7 +36,7 @@
 #   * -smp 1 — TempleOS is only lightly SMP-aware; single core is simplest/most
 #     stable and is plenty fast even under TCG.
 #   * -vga std — Bochs VBE; TempleOS drives a 640x480 16-colour mode over it.
-#   * -m 1024 — comfortable (512 also boots; 1G matches the live tile).
+#   * -m 1024 — comfortable (512 also boots; 1G matches the live station).
 #   * KVM (-enable-kvm -cpu host) — PERF FLIP (perf-baseline-report [deleted — git history] §4, kvm-safe
 #     set). Despite the ring-0 identity-mapped design, naive KVM boots TempleOS
 #     cleanly to the RedSea desktop and accepts input (framebuffer-verified). Under
@@ -193,7 +193,7 @@ verify_boot() {
     log "no qemu-system-x86_64 present — SKIPPING verify (fetch+checksum succeeded)."
     return 0
   }
-  # PERF: match the deployed tile (KVM + -cpu host) when /dev/kvm is available;
+  # PERF: match the deployed station (KVM + -cpu host) when /dev/kvm is available;
   # gracefully fall back to TCG (-cpu qemu64) on a host without KVM so the build
   # still verifies anywhere.
   local accel_args

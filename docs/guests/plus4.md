@@ -1,17 +1,17 @@
-# Commodore Plus/4 (PAL) — gallery tile notes (udp/54086)
+# Commodore Plus/4 (PAL) — gallery station notes (udp/54086)
 
 **Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **VICE `xplus4`**,
 emulating a **PAL Commodore Plus/4** at its power-on screen, one keypress from
-the **3-plus-1** office suite that lives in the machine's ROM. An **"emulator bridge"** tile — streamhost
-captures the Linux framebuffer + AC97 audio exactly like every other tile. See
+the **3-plus-1** office suite that lives in the machine's ROM. A **kiosk** ("emulator bridge") — streamhost
+captures the Linux framebuffer + AC97 audio exactly like every other station. See
 **`streamhost/docs/BRIDGE.md`**.
 
 **Shared base:** `/data/vms/bridge/bridge-base-trixie.qcow2` — already contains the
 whole VICE family.
-**Build script (tile):** `scripts/build-guests/tiles/plus4.sh` — thin overlay + kiosk
-`launch.sh` + ROM repair + quiet console + golden bake + a two-step
+**Build script (station):** `scripts/build-guests/tiles/plus4.sh` — thin overlay + kiosk
+`launch.sh` + ROM repair + quiet console + checkpoint capture + a two-step
 framebuffer proof of the suite route, fully automated, ~2 minutes.
-**Tile dir (host):** `/data/vms/streamhost/tiles/plus4/`.
+**Station dir (labhost):** `/data/vms/streamhost/tiles/plus4/`.
 **Registry entry:** `registry/tiles/plus4.json` (slot 86, udp 54086, VMID 222,
 ssh hostfwd 127.0.0.1:5822).
 
@@ -26,14 +26,14 @@ no external media, no licensed image and no `check-assets.sh` row.
 - **VICE 3.9** — GPLv2; bundles the Plus/4 BASIC/KERNAL/3-plus-1 ROMs for
   emulation use.
 
-## The fixture, and how a visitor drives it
+## The scene, and how a visitor drives it
 
-The golden is **the machine's own untouched power-on screen** —
+The checkpoint is **the machine's own untouched power-on screen** —
 `COMMODORE BASIC V3.5 / 60671 BYTES FREE / 3-PLUS-1 ON KEY F1 / READY.` —
 black on a white page inside a lavender border. Nothing is curated and nothing
 is typed into it.
 
-**An earlier golden was curated INSIDE the suite, resting in the spreadsheet,
+**An earlier checkpoint was curated INSIDE the suite, resting in the spreadsheet,
 and it was wrong.** On the exhibit floor a visitor arrived in the middle of one
 application with no idea what it was, how it got there, or how to leave: it was
 neither the machine's honest empty state nor a launcher. The power-on screen is
@@ -58,7 +58,7 @@ Commodore key again.
 ### Which key is the Commodore key
 
 **`Tab`**, under VICE's symbolic keymap. That is not discoverable, and on a
-phone there is no Tab at all, so the exhibit does not rely on it. The SPA's
+phone there is no Tab at all, so the exhibit does not rely on it. The UI's
 **`plus4` on-screen keyboard profile** puts the whole route on its base row, in
 the order a visitor uses it:
 
@@ -70,7 +70,7 @@ the order a visitor uses it:
 | `File` | `C=`+`c`, `t`, `f`, `RETURN` | inside the suite |
 
 with the bare `C=` key on the overflow row for anyone driving it by hand. Two
-taps reach any application from the fixture, on any platform.
+taps reach any application from the scene, on any platform.
 
 ### Known cosmetic artefact
 
@@ -90,7 +90,7 @@ changes it.
 
 ## Device set and launcher
 
-Identical in shape to its bridge siblings (`c64`, `vic20`, `apple2`, `atarist`,
+Identical in shape to its kiosk siblings (`c64`, `vic20`, `apple2`, `atarist`,
 `amiga`, `mpf2`) — see `streamhost/tiles/plus4/qemu-streamhost.sh`. The kiosk
 launcher is:
 
@@ -99,7 +99,7 @@ xplus4 -sounddev alsa -TEDdsize -TEDborders 0 -pal
 ```
 
 on an 800×600 X root, which the doubled PAL frame fills edge to edge. As for
-every VICE tile, **the kiosk profile must not redirect `startx`'s output to a
+every VICE station, **the kiosk profile must not redirect `startx`'s output to a
 file**: VICE 3.9 segfaults in `vice_banner()` whenever stdout is not a terminal
 and prints nothing at all — the full backtrace and symptom are in
 [`vic20.md`](vic20.md). `plus4.sh` also repairs the PLUS4 ROM set from the

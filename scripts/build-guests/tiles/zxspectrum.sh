@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/zxspectrum.sh — build the Sinclair ZX Spectrum 48K (1982)
-# streamhost tile as a thin overlay on the frozen bridge base
+# streamhost station as a thin overlay on the frozen bridge base
 # (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running MAME's `spectrum` driver, which
 #         boots the 16 KB Sinclair ROM straight to its power-on screen —
 #         "© 1982 Sinclair Research Ltd" in black on the machine's own white
 #         paper. streamhost captures the Linux framebuffer + AC97 audio exactly
-#         like every other bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+#         like every other kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- THE ROM, AND WHY IT MAY BE FETCHED -------------------------------------
@@ -32,7 +32,7 @@
 #   hash-perfect ROM, because the driver declares THIRTY-ONE alternative BIOS
 #   entries (Spanish, prototype, DiagROM, third-party upgrades) and none of them
 #   is staged. The gate here is therefore the sha1 of the exact BIOS entry the
-#   tile pins (`-bios en`), read out of `mame -listxml spectrum` from THE BINARY
+#   station pins (`-bios en`), read out of `mame -listxml spectrum` from THE BINARY
 #   THAT IS SHIPPED, so a MAME upgrade that moved the ROM cannot pass silently.
 #
 # ---- WHICH MAME ------------------------------------------------------------
@@ -48,7 +48,7 @@
 #   ZX Spectrum 48K: Z80A at 3.5 MHz, 16 KB ROM + 48 KB RAM, 256x192 pixels in
 #   8 colours with one ink/paper pair per 8x8 cell (the famous attribute clash),
 #   one-bit beeper, 40 rubber keys. No pointing device ever existed for it, so X
-#   runs with -nocursor and the tile ships --pointer none --input-backend
+#   runs with -nocursor and the station ships --pointer none --input-backend
 #   disabled.
 #
 # ---- KEYBOARD: KEYWORD ENTRY IS THE MACHINE, NOT A BUG ----------------------
@@ -60,9 +60,9 @@
 #   person actually presses on this machine, which is why its lines look short.
 #
 #   The other half is that the Spectrum's 40-key matrix has NO punctuation keys:
-#   every symbol is SYMBOL SHIFT (host right shift) plus a letter, and the SPA's
+#   every symbol is SYMBOL SHIFT (host right shift) plus a letter, and the UI's
 #   typeText() only ever sends US scancodes with LEFT shift. So `"` `;` `,` `.`
-#   `=` and friends are UNREACHABLE from a type-in and must come from the SPA's
+#   `=` and friends are UNREACHABLE from a type-in and must come from the UI's
 #   zxspectrum on-screen keyboard, which carries CAPS SHIFT / SYMBOL SHIFT
 #   latches and the symbol chords instead. MAME's `-natural` was measured as the
 #   alternative and rejected: it does synthesise the SYMBOL SHIFT chords, but it
@@ -71,7 +71,7 @@
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the
-# zxspectrum tile dir; refuses to run while streamhost@zxspectrum is active.
+# zxspectrum station dir; refuses to run while streamhost@zxspectrum is active.
 #
 # Usage: zxspectrum.sh [--force] [-h]
 # =============================================================================
@@ -89,7 +89,7 @@ OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
 EVIDENCE="$TILE_DIR/evidence"
-# 768 MB is deliberate and is the smallest memory of any bridge tile: MAME's
+# 768 MB is deliberate and is the smallest memory of any kiosk: MAME's
 # spectrum driver needs a few tens of megabytes, and the measured guest
 # MemAvailable with the kiosk up is ~320 MB, comfortably over the 200 MB floor.
 MEM=768
@@ -107,7 +107,7 @@ ROM_SHA1=5ea7c2b824672e914525d1d5c419d71b84a426a2
 MAME_PIN=0.251
 
 # Production key pacing, also used by this script's own keyboard proof so the
-# proof exercises exactly what the SPA will. Rationale in
+# proof exercises exactly what the UI will. Rationale in
 # streamhost/tiles/zxspectrum/tile.env.fixture.
 HOLD_MS=200
 GAP_MS=200
@@ -142,7 +142,7 @@ guest() {
 hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
 # MAME runs FULLSCREEN on the bridge base's stock 1024x768 X root (set by
-# ~/.xinitrc, like every sibling bridge tile) with aspect correction on. The
+# ~/.xinitrc, like every sibling kiosk) with aspect correction on. The
 # Spectrum's raster is 352x296 INCLUDING its border; -keepaspect stretches that
 # to the 4:3 shape a 1982 television drew, which fills a 1024x768 root exactly,
 # with no letterboxing. Do NOT pass -resolution 352x296: that is the pixel
@@ -156,7 +156,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 #   crisp under -nofilter.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Sinclair ZX Spectrum 48K (1982) ROM BASIC kiosk launcher (bridge tile).
+# Sinclair ZX Spectrum 48K (1982) ROM BASIC kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/zxspectrum.sh for the flag rationale.
 # Xorg needs a moment to settle its root mode on a fresh QEMU boot.
 sleep 2
@@ -314,7 +314,7 @@ wait_for_zxspectrum_boot() {
   die "no ZX Spectrum power-on framebuffer after 180 seconds"
 }
 
-# Type one key through QMP with the tile's production pacing, using explicit
+# Type one key through QMP with the station's production pacing, using explicit
 # press/release pairs. Never `send-key hold-time`: QEMU releases that on its own
 # timer and back-to-back calls overlap, so the instrument loses characters
 # before the guest does.
@@ -359,7 +359,7 @@ mame_soft_reset() {
   sleep 3
 }
 
-# THE READINESS PREDICATE THAT ACTUALLY MATTERS, and the reason this tile has one
+# THE READINESS PREDICATE THAT ACTUALLY MATTERS, and the reason this station has one
 # the other bridge builders do not.
 #
 # A kiosk MAME started at cold boot is SOMETIMES BORN DEAF: X delivers the key
@@ -374,7 +374,7 @@ mame_soft_reset() {
 #
 # So a golden baked on a pixel-perfect but DEAF instance ships an exhibit whose
 # reset button restores a machine nobody can type on — which is exactly what the
-# first bake of this tile did. The gate is therefore behavioural: type, require
+# first bake of this station did. The gate is therefore behavioural: type, require
 # the frame to change, soft-reset back to a byte-identical power-on screen, and
 # only then let the caller bake. Restart the kiosk and retry if the frame did
 # not move.
@@ -489,7 +489,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 fi
 
 # One clean cold boot with the quiet console in force, then bake the golden from
-# the very state SPA reset will restore for ever after. Bake from an UNTOUCHED
+# the very state UI reset will restore for ever after. Bake from an UNTOUCHED
 # cold boot: this is the screen the MACHINE chose, not a curated state inside an
 # application — the Plus/4 add shipped a golden resting inside its spreadsheet
 # and had to be re-baked because a visitor arrived mid-application with no idea
@@ -509,7 +509,7 @@ wait_for_zxspectrum_boot golden-restored
 
 # And prove the RESET PATH THE VISITOR USES: type into the freshly restored
 # fixture, because "restores a picture" and "restores a machine you can type on"
-# are different claims and this tile has already failed the second one once.
+# are different claims and this station has already failed the second one once.
 #
 # GIVE THE RESTORE TIME TO SETTLE FIRST. Measured: keys sent ~4 s after `loadvm`
 # were swallowed outright on an instance that was demonstrably live before the

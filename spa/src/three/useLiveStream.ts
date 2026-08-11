@@ -9,7 +9,7 @@ import { streamhostSignalFor } from './streamSignal';
 // ============================================================================
 //  useLiveStream — shared hook for the grid's live streamhost transport
 //  ---------------------------------------------------------------------------
-//  Opens a tile's media/control session. Showcase bindings remain inactive.
+//  Opens a station's media/control session. Showcase bindings remain inactive.
 // ============================================================================
 
 export function useLiveStream(

@@ -1,6 +1,6 @@
 // ============================================================================
 //  streamClient — framework-free WebTransport + WebCodecs client for a
-//  streamhost tile (the ~6×-faster replacement for neko's WebRTC transport).
+//  streamhost station (the ~6×-faster replacement for neko's WebRTC transport).
 //  ---------------------------------------------------------------------------
 //  This is the validated prototype `streamhost/web/client.html` refactored into
 //  a typed, reusable module. It owns ONLY the wire + codecs; it has no React and
@@ -256,7 +256,7 @@ export class StreamClient {
   decoderConfigsSeen = 0;
   /** Explicit promise state: WebTransport exposes promises, not a state getter. */
   wtReady = false;
-  /** QUIC policy advertised by the currently selected tile. */
+  /** QUIC policy advertised by the currently selected station. */
   serverMaxUdpPayloadSize: number | null = null;
   serverMtuDiscovery: boolean | null = null;
   /** one-shot startup diagnostic, shared across transparent session rebuilds. */

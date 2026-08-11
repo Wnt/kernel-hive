@@ -1,10 +1,10 @@
-// capture-aus.mjs — capture a REAL sequence of Annex-B AUs from a live tile.
-// Opens a chromium page on the SPA https origin (SecureContext), then from page
-// context opens a raw WebTransport to the tile (signal doc = /signal/<tile>.json)
+// capture-aus.mjs — capture a REAL sequence of Annex-B AUs from a live station.
+// Opens a chromium page on the UI https origin (SecureContext), then from page
+// context opens a raw WebTransport to the station (signal doc = /signal/<tile>.json)
 // and records the first N video AUs (kind=1 uni-streams, 9-byte header + Annex-B),
 // starting from the first KEY AU. Saves base64 JSON to ~/e2e/aus-<tile>.json.
 //
-// Usage: node capture-aus.mjs [tile] [count]
+// Usage: node capture-aus.mjs [station] [count]
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 
@@ -26,7 +26,7 @@ const result = await page.evaluate(async ({ tile, count }) => {
   const sig = await (await fetch(`/signal/${tile}.json`, { cache: 'no-store' })).json();
   const hashStr = sig.certHashB64 ?? sig.certHash ?? sig.hashB64 ?? sig.hash;
   const hash = Uint8Array.from(atob(hashStr), (c) => c.charCodeAt(0));
-  // sig.path carries the signed session ticket when the tile runs with
+  // sig.path carries the signed session ticket when the station runs with
   // SH_SESSION_KEY; a hardcoded /wt is refused before accept() in that case.
   const url = sig.url ?? `https://${sig.host}:${sig.udpPort ?? sig.port}${sig.path ?? '/wt'}`;
   const wt = new WebTransport(url, { serverCertificateHashes: [{ algorithm: 'sha-256', value: hash.buffer }] });

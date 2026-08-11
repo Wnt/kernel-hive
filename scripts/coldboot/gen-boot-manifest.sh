@@ -1,13 +1,13 @@
 #!/bin/bash
 # gen-boot-manifest.sh — P2b: publish. RUN ON THE BOX.
-#   1. rsync each staged tile's assets  /data/vms/streamhost/boot-rec/<id>/{boot.mp4,
+#   1. rsync each staged station's assets  /data/vms/streamhost/boot-rec/<id>/{boot.mp4,
 #      poster.jpg,sprite.jpg,thumbs.vtt}  ->  $WEBROOT/boot/<id>/   (large binaries stay
 #      OUT of git / the vite bundle; §2.8).
 #   2. aggregate every staged boot.json -> $WEBROOT/boot/index.json (schema §4), keyed
 #      by osId, with the served /boot/<id>/... URL paths.
 #
-#   Usage: WEBROOT=/path/to/spa-webroot gen-boot-manifest.sh [tile...]
-#          (no tiles -> every staging dir that has a boot.json)
+#   Usage: WEBROOT=/path/to/spa-webroot gen-boot-manifest.sh [station...]
+#          (no stations -> every staging dir that has a boot.json)
 #
 # NOTE (server, spec §2.9 — one-time, OUTSIDE this tooling): osgallery-https-server.py
 # must serve .mp4/.vtt with correct MIME and add /boot/ as a reserved prefix, else
@@ -22,7 +22,7 @@ BOOT_WEBROOT="$WEBROOT/boot"
 INDEX="$BOOT_WEBROOT/index.json"
 mkdir -p "$BOOT_WEBROOT"
 
-# collect the tile list
+# collect the station list
 TILES=("$@")
 if [ "${#TILES[@]}" -eq 0 ]; then
   for d in "$BOOTREC_STAGING_ROOT"/*/; do
@@ -51,7 +51,7 @@ import json, os, sys
 index, staging = sys.argv[1], sys.argv[2]
 tiles = sys.argv[3:]
 out = {}
-# merge with any existing index so partial re-publishes don't drop other tiles.
+# merge with any existing index so partial re-publishes don't drop other stations.
 if os.path.exists(index):
     try: out = json.load(open(index))
     except Exception: out = {}

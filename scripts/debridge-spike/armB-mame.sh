@@ -4,7 +4,7 @@
 # Frames go straight into a shared-memory mapping (`-video shm`, the drawshm OSD
 # render module) that streamhost reads with SH_CAPTURE=shm; input comes back in
 # over the ctlsock control socket (SH_INPUT_BACKEND=mamesock). This is the irix
-# tile's shape, minus the parts that are IRIX's own.
+# station's shape, minus the parts that are IRIX's own.
 #
 # NOT A TILE. Namespaced under /data/vms/soltest/. Kill ONLY by pidfile, via
 # `clone-guard kill-pidfile`.

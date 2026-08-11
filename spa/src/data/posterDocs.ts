@@ -3,7 +3,7 @@ import type { PosterDoc } from '../types';
 
 // Runtime poster prose. /poster-docs.json is published to the webroot by
 // `serve-https-spa.sh manifests`, so poster copy edits go live on a browser
-// refresh with no SPA rebuild. The same generated JSON is bundled as a LAZY
+// refresh with no UI rebuild. The same generated JSON is bundled as a LAZY
 // fallback chunk (dev server, or a webroot that predates the file) — it is
 // only downloaded when the runtime fetch fails, so the main bundle stays free
 // of the ~450 kB of prose.

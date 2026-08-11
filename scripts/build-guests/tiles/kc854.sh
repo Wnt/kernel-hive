@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/kc854.sh — build the KC 85/4 (VEB Mikroelektronik "Wilhelm
-# Pieck" Mühlhausen, 1988) streamhost tile as a thin overlay on the frozen
+# Pieck" Mühlhausen, 1988) streamhost station as a thin overlay on the frozen
 # bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 X kiosk running a purpose-built MAME `kc85_4`
 #         that boots CAOS 4.2 from ROM. streamhost captures the Linux
-#         framebuffer + AC97 audio like every other bridge tile
+#         framebuffer + AC97 audio like every other kiosk
 #         (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- THE MACHINE ------------------------------------------------------------
@@ -36,7 +36,7 @@
 #   2. `-verifyroms` IS NOT THE GATE; THE PINNED BIOS ENTRIES ARE.
 #      kc85_4 is BIOS-selectable (caos42 / caos41), so verifyroms complains
 #      about whichever alternative BIOS is absent even when the set is perfect.
-#      This script asserts the SHA1 of the three ROMs the tile actually pins —
+#      This script asserts the SHA1 of the three ROMs the station actually pins —
 #      caos__c0.854, caos__e0.854 (both CAOS 4.2) and basic_c0.854 — and treats
 #      verifyroms as advisory output only.
 #
@@ -67,7 +67,7 @@
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the kc854
-# tile dir; refuses to run while streamhost@kc854 is active.
+# station dir; refuses to run while streamhost@kc854 is active.
 #
 # Usage: kc854.sh [--force] [-h]
 # =============================================================================
@@ -90,7 +90,7 @@ MEM=768
 SRC_ZIP=/data/assets-staging/kc854/kc85_2.zip
 SRC_ZIP_SHA256=ed5b8a567232beb89a5f78fea4066160aec2ba0f2a67555439c20785d6a096ab
 MAME=/data/vms/streamhost/assets/kc854/mame/kc85
-# The three ROMs the tile pins: CAOS 4.2 (the default BIOS) plus HC-BASIC.
+# The three ROMs the station pins: CAOS 4.2 (the default BIOS) plus HC-BASIC.
 PIN_C0_SHA1=774fc2496a59b77c7c392eb5aa46420e7722797e
 PIN_E0_SHA1=4300f7ff813c1fb2d5c928dbbf1c9e1fe52a9577
 PIN_BASIC_SHA1=c2e3af55c79e049e811607364f88c703b0285e2e
@@ -129,7 +129,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # the exhibit's boot screen without changing anything in this repo.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# KC 85/4 (CAOS 4.2) kiosk launcher (bridge tile).
+# KC 85/4 (CAOS 4.2) kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/kc854.sh for the flag rationale.
 # 320x256 @ 50.08 Hz, drawn FULLSCREEN with aspect correction on the stock
 # 1024x768 X root, so the captured frame is the 4:3 picture the machine drew
@@ -249,7 +249,7 @@ PYEOS
     /opt/kc854/mame/kc85 /opt/kc854/roms/kc85_4.zip" ||
     die "could not assemble kc85_4.zip by SHA1 from the staged merged set"
 
-  # Gate on the SHA1 of the BIOS entries this tile pins, not on -verifyroms:
+  # Gate on the SHA1 of the BIOS entries this station pins, not on -verifyroms:
   # kc85_4 is BIOS-selectable, so verifyroms reports "bad" for whichever
   # alternative BIOS is absent even when the shipped set is hash-perfect.
   # shellcheck disable=SC2016 # $z/$want/$got are the GUEST python's, by design
@@ -370,7 +370,7 @@ wait_for_caos() {
 }
 
 # Type a paced key sequence through ONE persistent QMP connection, with the
-# tile's PRODUCTION hold/gap. A connection per key was tried first and is a
+# station's PRODUCTION hold/gap. A connection per key was tried first and is a
 # WORSE instrument than the thing it measures: a socat-per-key proof dropped the
 # 'a' out of "basic" while a single-connection run at the same 80/80 lost 0 of
 # 12 thirty-two-character lines. streamhost's own input path holds one
@@ -520,7 +520,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 fi
 
 # One clean cold boot with the quiet console in force, then bake the golden from
-# the very state SPA reset will restore for ever after. THE GOLDEN IS THE
+# the very state UI reset will restore for ever after. THE GOLDEN IS THE
 # MACHINE'S OWN UNTOUCHED POWER-ON SCREEN: CAOS 4.2's command menu, which is
 # both the KC's honest idle state and its own launcher. Nothing is typed before
 # the bake — the mpf2 add shipped a golden that still carried its verification

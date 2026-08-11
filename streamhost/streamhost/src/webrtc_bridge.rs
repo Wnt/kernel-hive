@@ -1,16 +1,16 @@
 //! Platform WebRTC bridge feed.
 //!
 //! Every instance of the shared streamhost binary automatically registers its
-//! tile id with one generic Pion bridge over a shared Unix socket. This mirrors
+//! station id with one generic Pion bridge over a shared Unix socket. This mirrors
 //! the already-encoded H.264 Annex-B AUs and Opus packets; it never captures or
 //! encodes a second time and is independent of the WebTransport sink.
 //!
-//! The socket path is platform configuration, not tile configuration. The
+//! The socket path is platform configuration, not station configuration. The
 //! optional environment override is useful for an isolated platform test; no
-//! `SH_*` tile environment is consulted.
+//! `SH_*` station environment is consulted.
 //!
 //! Wire protocol v1:
-//!   streamhost -> bridge handshake: `OSGWB1` + `[tile_len u16 LE]` + UTF-8 tile
+//!   streamhost -> bridge handshake: `OSGWB1` + `[tile_len u16 LE]` + UTF-8 station
 //!   streamhost -> bridge records: `[record_len u32 LE][kind u8][payload]`
 //!     V: `[capture_ts_us u32 LE][key u8][Annex-B AU]`
 //!     A: `[ts_us u32 LE][seq u32 LE][Opus packet]`

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/stages/haiku.sh — from-scratch, reproducible build of the Haiku tile
+# build-guests/stages/haiku.sh — from-scratch, reproducible build of the Haiku station
 # (Haiku, the open-source BeOS-compatible OS) for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the Haiku guest
@@ -15,13 +15,13 @@
 # and feel (yellow window tabs, the Deskbar, Tracker). It ships as an "anyboot"
 # image: a single hybrid ISO that is simultaneously a BIOS El-Torito CD, an EFI
 # image and a raw USB stick. It boots straight to a fully usable *live* desktop
-# (Installer optional) — so there is NO installer step required for the tile:
+# (Installer optional) — so there is NO installer step required for the station:
 # boot the anyboot ISO as a CD and it lands on the desktop, unattended.
 #
 # LICENSE: Haiku is FREE / OPEN SOURCE (MIT). This is the preferred faithful
-# path for a BeOS-compatible tile — no abandonware needed. (Real BeOS R5 exists
+# path for a BeOS-compatible station — no abandonware needed. (Real BeOS R5 exists
 # on WinWorld, but Haiku is the maintained, legally-clean, visually-identical
-# successor and is what this tile represents: "Haiku (BeOS-compatible)".)
+# successor and is what this station represents: "Haiku (BeOS-compatible)".)
 #
 # ---- AUTOMATION HONESTY -----------------------------------------------------
 #   (1) DOWNLOAD ....... FULLY AUTOMATED (real upstream mirrors, SHA256-checked).

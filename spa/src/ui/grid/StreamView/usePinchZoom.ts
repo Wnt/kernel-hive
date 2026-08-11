@@ -42,7 +42,7 @@ export function usePinchZoom({
   //  A self-contained two-finger pinch (scale 1..3, snap to 1 below 1.1×) + pan,
   //  and single-finger pan while zoomed, applied as a CSS transform on the <video>.
   //  It NEVER calls any send primitive — it is pure local magnification (makes
-  //  640×480 / 720×400 retro tiles legible on a phone). Listeners sit in the
+  //  640×480 / 720×400 retro stations legible on a phone). Listeners sit in the
   //  CAPTURE phase on the container (an ancestor of the <video>): while a gesture
   //  is active they stopPropagation, so the existing guest pointer-forwarder on the
   //  <video> never fires and NO input datagrams are sent. A single finger at scale 1

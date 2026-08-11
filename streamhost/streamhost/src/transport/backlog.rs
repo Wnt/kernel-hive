@@ -48,7 +48,7 @@ const REKEY_MIN_INTERVAL: Duration = Duration::from_millis(500);
 ///   * no report folded yet, or the last one is stale (>= `ACK_FRESH`) — a
 ///     silent/stalled client must not disable the bound;
 ///   * ack of 0 — the client reports `last_frame_id=0` until its very first
-///     received AU, which would read as a huge spurious backlog on any tile
+///     received AU, which would read as a huge spurious backlog on any station
 ///     whose frame counter has advanced;
 ///   * a wrapped/"ahead" diff — `frame_id` restarts at 0 on every encoder
 ///     reopen (ABR tier change, geometry change), so for ~1 report interval
@@ -112,7 +112,7 @@ pub(super) struct BacklogGate {
 
 impl BacklogGate {
     /// `max_backlog` = SH_SEND_MAX_BACKLOG (0 disables the policy); `fps` =
-    /// the tile's configured capture rate. The knob is a LATENCY budget
+    /// the station's configured capture rate. The knob is a LATENCY budget
     /// expressed in frames — the default 6 encodes ~250 ms at the 24 fps it
     /// was sized for — but `behind` measured off the acked pointer sawtooths
     /// up to fps x report-cadence between T_STATS folds (the client acks on

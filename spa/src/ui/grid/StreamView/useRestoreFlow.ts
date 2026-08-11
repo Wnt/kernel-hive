@@ -8,9 +8,9 @@ import { useCallback, useEffect, type Dispatch, type RefObject, type SetStateAct
 type RestoreState = 'idle' | 'busy' | 'ok' | 'err';
 
 // ---- RESTORE TO GOLDEN (streamhost only) ---------------------------------
-//  Non-destructive host-side reset of THIS tile to its curated golden fixture
+//  Non-destructive host-side reset of THIS station to its curated golden fixture
 //  (the same clean starting state the input regression suite certifies). Same
-//  origin as the SPA; no operator token required — the endpoint is LAN-gated
+//  origin as the UI; no operator token required — the endpoint is LAN-gated
 //  and non-destructive, so the exhibit's "Restore to golden snapshot" button
 //  works for any visitor. No confirmation prompt: the action is cheap, obvious
 //  from its label, and undone by using the exhibit again.

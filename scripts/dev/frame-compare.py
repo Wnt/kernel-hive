@@ -11,11 +11,11 @@
 #   images, with no record of what was measured or against which band.
 #
 # THE FAILURE THIS MUST NEVER PASS
-#   A tile that loses its graphics stack renders BLACK — trixie's fs-uae has no
+#   A station that loses its graphics stack renders BLACK — trixie's fs-uae has no
 #   Recommends:, so without libgl1-mesa-dri amiga draws a perfectly healthy,
 #   perfectly empty frame with exit 0 in every log. A black AFTER frame DIFFERS
 #   from its BEFORE, so any "changed pixels < X%" threshold waves it through;
-#   and if the BEFORE came from an already-broken tile, "changed == 0" waves it
+#   and if the BEFORE came from an already-broken station, "changed == 0" waves it
 #   through too. So EMPTINESS IS JUDGED ON EACH FRAME ALONE, before any
 #   comparison is attempted, and no comparison result can rescue a frame that
 #   fails it. A baseline that is itself empty is a refusal, not a pass: there is

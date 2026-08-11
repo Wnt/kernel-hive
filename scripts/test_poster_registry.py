@@ -121,7 +121,7 @@ class AbsentGalleryTest(unittest.TestCase):
             self.assertNotIn('"gallery"', encoded)
 
     def test_poster_without_tile_directory_untouched(self):
-        # A tile with no gallery subdirectory at all behaves identically to
+        # A station with no gallery subdirectory at all behaves identically to
         # one with the subdirectory present but empty for this id.
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

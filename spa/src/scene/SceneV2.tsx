@@ -31,7 +31,7 @@ import EditorialGrade from './EditorialGrade';
 // ============================================================================
 
 export default function SceneV2() {
-  // The ANNOUNCED lineup only: a soft-hidden tile (registry `listing`) gets no
+  // The ANNOUNCED lineup only: a soft-hidden station (registry `listing`) gets no
   // desk in the hall. The store's `vms` still carries it for /os/:osId, so this
   // surface must read `listedVms` — including for the info card, whose id can
   // only ever come from a desk that is here.

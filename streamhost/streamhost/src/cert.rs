@@ -8,7 +8,7 @@
 //
 // On each (re)generation we atomically publish two artifacts:
 //   * hash_file       — bare base64 SHA-256 of the cert DER (prototype back-compat)
-//   * signaling_json  — the full per-tile contract the SERVE agent serves same-origin
+//   * signaling_json  — the full per-station contract the SERVE agent serves same-origin
 
 use anyhow::Result;
 use base64::Engine;
@@ -93,8 +93,8 @@ pub fn publish(cfg: &Config, b: &CertBundle) -> Result<()> {
 
     // Connect-time video defaults (SECTION 3.3). The AUTHORITATIVE codec string is
     // pushed at runtime over KIND_PARAMS subtype 1 (from the emitted SPS); this is
-    // the fallback an old/early SPA uses before the first params push. `wireVersion`
-    // 3 signals the High-profile-capable protocol; an old SPA falls back to baseline.
+    // the fallback an old/early UI uses before the first params push. `wireVersion`
+    // 3 signals the High-profile-capable protocol; an old UI falls back to baseline.
     let (codec, profile_name) = match cfg.profile.as_str() {
         "baseline" => ("avc1.42e01e", "baseline"),
         "main" => ("avc1.4d0028", "main"),

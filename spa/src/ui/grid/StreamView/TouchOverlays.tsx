@@ -11,8 +11,8 @@ import { OnScreenCursor } from './OnScreenCursor';
 //  TouchOverlays — the mobile stage's touch affordance stack, split out of
 //  StreamView (which is at its line budget). Mounted only while mobile + live.
 //    - DIRECT (absolute): the armed-state badge (one-shot right-click arm).
-//    - TRACKPAD (relative): abs tiles get the OnScreenCursor sprite (T-3);
-//      rel tiles need none (the guest draws its own cursor).
+//    - TRACKPAD (relative): abs stations get the OnScreenCursor sprite (T-3);
+//      rel stations need none (the guest draws its own cursor).
 //  The one-time coachmark is always present.
 // ---------------------------------------------------------------------------
 

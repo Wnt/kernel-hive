@@ -43,7 +43,7 @@ use std::time::{Duration, Instant};
 
 /// Pointer silence after which the next sample re-establishes the origin. Same
 /// value and same reasoning as `ptr_reckon::REHOME_IDLE`: no interactive session
-/// crosses it, and the tile self-heals between visitors.
+/// crosses it, and the station self-heals between visitors.
 const REHOME_IDLE: Duration = Duration::from_secs(30);
 
 /// Extra counts on a homing slam, past the grid's own extent, so the guest is

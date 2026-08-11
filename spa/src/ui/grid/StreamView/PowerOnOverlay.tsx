@@ -4,12 +4,12 @@ import { S } from './styles';
 // ---------------------------------------------------------------------------
 //  PowerOnOverlay — the COLD-BOOT power-on EXPERIENCE (flag-gated).
 //  ---------------------------------------------------------------------------
-//  Shown ONLY for tiles with coldBoot=true, in place of the generic spinner,
+//  Shown ONLY for stations with coldBoot=true, in place of the generic spinner,
 //  while the live stream is connecting. It stages the classic CRT switch-on:
 //    1. dark tube → a bright horizontal flyback line snaps in and blooms open to
 //       full raster (pw-on), warm phosphor glow + scanlines + vignette settle;
 //    2. a tasteful "Powering on…" placard (machine name + era + a pulsing power
-//       LED in the tile accent) sits centre while the real BIOS/POST streams in
+//       LED in the station accent) sits centre while the real BIOS/POST streams in
 //       underneath — the placard NEVER covers the live picture once it arrives;
 //    3. the instant the first live frame lands (`live`), a short degauss-bloom
 //       reveal (pw-reveal) brightens then fades the whole overlay to nothing,

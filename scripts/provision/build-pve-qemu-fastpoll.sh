@@ -1,6 +1,6 @@
 #!/bin/bash
 # build-pve-qemu-fastpoll.sh — reproduce the patched pve-qemu-kvm .deb that the
-# whole tile fleet runs. Despite the historical name it now carries ALL
+# whole station fleet runs. Despite the historical name it now carries ALL
 # streamhost pve-qemu quilt patches from source, each appended after the final
 # numbered pve patch and each inserted only if not already in the series:
 #   0001-dbus-display-fast-poll.patch   -> pve/0047  SH_DBUS_UPDATE_MS fast-poll
@@ -13,7 +13,7 @@
 #   RUN ON THE BOX (needs the pve build-dep set + ~20 min).
 #   Output: $WORK/pve-qemu/pve-qemu-kvm_<ver>_amd64.deb
 #
-# WHY fast-poll: tiles capture via `-display dbus,p2p=on`; stock QEMU polls the
+# WHY fast-poll: stations capture via `-display dbus,p2p=on`; stock QEMU polls the
 # guest framebuffer every 30 ms. The patch (streamhost/qemu-patches/
 # 0001-dbus-display-fast-poll.patch) adds the SH_DBUS_UPDATE_MS knob (1..29 ms,
 # inert when unset) + a run-state idle gate. An upstream QEMU can't `loadvm
@@ -24,7 +24,7 @@
 # class ff00, BAR0 regs + BAR2 GLIN ring; streamhost/qemu-patches/gallery-hid/).
 # 0003 adds ONLY that optional device (guarded by CONFIG_GALLERY_HID) plus its
 # qtest, so the rebuilt binary is a superset of the fleet binary — every existing
-# tile behaves identically, solaris additionally gets `-device gallery-hid-pci`.
+# station behaves identically, solaris additionally gets `-device gallery-hid-pci`.
 # It ships as a quilt patch (not the old standalone qemu-gallery-hid binary) so it
 # survives QEMU version bumps and is built from source alongside fast-poll.
 #
@@ -40,7 +40,7 @@
 # ROLLOUT (after the deb builds) — see streamhost/qemu-patches/README.md §
 # "Production rollout": stage the stock same-version .deb as rollback first,
 # dpkg -i the patched deb (running QEMUs keep the old binary until relaunch),
-# then canary one tile before the fleet. The per-tile relaunch procedure the
+# then canary one station before the fleet. The per-station relaunch procedure the
 # 2026-07-13 fleet cutover used (knob injection + qcap-scope handling +
 # loadvm-golden verify) is vendored at streamhost/qemu-patches/rollout-fastpoll.sh.
 set -euo pipefail

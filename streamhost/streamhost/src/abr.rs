@@ -1,8 +1,8 @@
 // Adaptive-bitrate controller (SECTION 2, GFN-style tier restart).
 //
 // MODEL: the client MEASURES + REPORTS (datagram opcode T_STATS=10 @ ~100 ms);
-// the server STEPS. One in-process encoder per tile is broadcast to ALL sessions,
-// so the ABR tier is GLOBAL per tile. This controller aggregates across connected sessions
+// the server STEPS. One in-process encoder per station is broadcast to ALL sessions,
+// so the ABR tier is GLOBAL per station. This controller aggregates across connected sessions
 // using the WORST (minimum smoothed overall) client to protect the weakest
 // viewer; a tier restart's fresh IDR re-syncs everyone at once.
 //
@@ -14,8 +14,8 @@
 // Decode-side metrics (decode_ms / decode_fps / decode_queue) are DELIBERATELY
 // excluded from the downshift decision: a busy client decoding large 1920x1200
 // frames can be legitimately slow (high decode_ms, growing queue, the odd freeze)
-// with a perfectly healthy network, and must NOT drag the whole tile down. We also
-// never treat low fps as degradation (museum caveat 2.4: idle tiles emit ~2 fps).
+// with a perfectly healthy network, and must NOT drag the whole station down. We also
+// never treat low fps as degradation (museum caveat 2.4: idle stations emit ~2 fps).
 //
 // STABILITY (anti-oscillation), all four properties hold together:
 //   1. NETWORK-ONLY downshift (loss / rtt-growth), never decode-side alone.
@@ -149,7 +149,7 @@ struct Inner {
     /// UP_HOLD sustained from here.
     up_since: Option<Instant>,
     /// L-3: the conservative-start seed has been attempted for the CURRENT active
-    /// spell (reset when the tile goes idle). Prevents re-seeding every tick.
+    /// spell (reset when the station goes idle). Prevents re-seeding every tick.
     start_seeded: bool,
     /// L-3: when the current idle->active spell began (for the seed's RTT-wait
     /// timeout); None while no sessions are active.
@@ -212,7 +212,7 @@ fn start_tier_for_rtt(rtt_ms: f32, threshold_ms: u32) -> u8 {
     }
 }
 
-/// The global-per-tile ABR controller.
+/// The global-per-station ABR controller.
 pub struct Abr {
     inner: Mutex<Inner>,
     next_id: AtomicU64,
@@ -324,7 +324,7 @@ impl Abr {
 
         // Aggregate the WORST network across active sessions (protect the weakest
         // viewer). Drop stale sessions (no report in >3 s) so a frozen/gone client
-        // never pins the tile low forever. We look ONLY at network signals here:
+        // never pins the station low forever. We look ONLY at network signals here:
         // packet loss and RTT growth. Decode-side metrics are intentionally not
         // consulted — a slow decoder on a busy client is not a network problem.
         let stale_cutoff = Duration::from_secs(3);
@@ -383,7 +383,7 @@ impl Abr {
         // Asymmetric hysteresis with a wide dead-band (req 4). CONGESTED requires a
         // clearly-bad network; HEALTHY requires a clearly-good one; in between we
         // HOLD. On a LAN worst_loss~0 and worst_excess~0 => always HEALTHY, so a
-        // tile at tier 0 never moves.
+        // station at tier 0 never moves.
         let armed = self.cfg.abr_backlog_downshift;
         let congested = worst_loss >= DOWN_LOSS_PCT
             || worst_excess >= DOWN_RTT_EXCESS_MS
@@ -477,7 +477,7 @@ fn fold(s: &mut SessionState, server_skips: u64) {
 
     // bandwidthScore relative to the CURRENT tier cap: 100 when decode_queue <= 1
     // and no freeze; drops as the decode queue grows / freezes appear (starved).
-    // Driven by queue/freeze, NOT recv/cap — idle tiles legitimately sit far below
+    // Driven by queue/freeze, NOT recv/cap — idle stations legitimately sit far below
     // the cap and must NOT read as starved.
     let mut bw = 100.0f32;
     if r.decode_queue > 1 {

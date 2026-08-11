@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/vic20.sh — build the Commodore VIC-20 (1980) streamhost tile as a
+# build-guests/tiles/vic20.sh — build the Commodore VIC-20 (1980) streamhost station as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running VICE `xvic` emulating a PAL VIC-20
 #         that boots its ROM straight to the "**** CBM BASIC V2 ****" screen.
 #         streamhost captures the Linux framebuffer + AC97 audio exactly like
-#         every other bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+#         every other kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- WHY THIS TILE IS CHEAP -------------------------------------------------
 #   * VICE is ALREADY in the frozen bridge base: bridge-base.sh builds it from
-#     source for the c64 tile and `make install` ships the whole family, so
+#     source for the c64 station and `make install` ships the whole family, so
 #     /usr/local/bin/xvic is present with no new emulator build.
 #   * VICE BUNDLES the Commodore ROMs (which is exactly why Debian cannot ship
 #     it), and the VIC-20 needs nothing else — no disk, no cartridge, no
@@ -22,7 +22,7 @@
 # ---- THE EXHIBIT ------------------------------------------------------------
 #   PAL VIC-20: 6502 at 1.108 MHz, 5 KB RAM (3583 BASIC bytes free), 22x23
 #   characters, 16 colours, VIC-I sound. Keyboard-only — the real machine's only
-#   other input was a joystick — so X runs with -nocursor and the tile ships
+#   other input was a joystick — so X runs with -nocursor and the station ships
 #   --pointer none --input-backend disabled.
 #
 # ---- KEY PACING -------------------------------------------------------------
@@ -33,7 +33,7 @@
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the vic20
-# tile dir; refuses to run while streamhost@vic20 is active.
+# station dir; refuses to run while streamhost@vic20 is active.
 #
 # Usage: vic20.sh [--force] [-h]
 # =============================================================================
@@ -84,14 +84,14 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
 # VICE's SDL window is a fixed size and cannot grow (SDL real fullscreen,
 # -VICfull, renders BLACK under std-VGA capture — see amstradcpc.sh), so the
-# same trick the c64 tile uses applies: shrink the X root to the smallest
+# same trick the c64 station uses applies: shrink the X root to the smallest
 # advertised mode that still contains the window. A PAL VIC-20 at -VICdsize
 # with normal borders is ~568x568, which 640x480 does NOT contain vertically —
 # 800x600 is the smallest mode that does, and it leaves the picture filling
 # most of the captured frame.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Commodore VIC-20 (PAL) ROM BASIC kiosk launcher (bridge tile).
+# Commodore VIC-20 (PAL) ROM BASIC kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/vic20.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software
@@ -116,7 +116,7 @@ EOS
 # to log_archdep(), and strlen(NULL) kills it before the emulator prints a single
 # byte (gdb backtrace, 2026-08-08). The visible symptom is X dying a second after
 # it starts and getty@tty1 looping into start-limit-hit — nothing whatsoever
-# points at VICE. The stock base profile and the c64 tile both leave stdout on
+# points at VICE. The stock base profile and the c64 station both leave stdout on
 # tty1, which is exactly why they work; do the same here. X's own log still goes
 # to /var/log/Xorg.0.log, and once X owns the display no VT text is captured.
 read -r -d '' PROFILE <<'EOS' || true
@@ -151,7 +151,7 @@ quiet_console() {
 
 # bridge-base.sh already records the trap this hits: VICE's `make install` SKIPS
 # some ROM data files and the emulator then SEGFAULTS on startup with NO output
-# at all. The C64 tile hit it on the C64 BASIC ROM; the frozen base's
+# at all. The C64 station hit it on the C64 BASIC ROM; the frozen base's
 # /usr/local/share/vice/VIC20 is missing basic-901486-01.bin in exactly the same
 # way, which is why an unrepaired xvic dies instantly and takes X down with it
 # (the visible symptom is getty@tty1 looping into start-limit-hit). Repair from
@@ -242,8 +242,8 @@ wait_for_vic20_boot() {
   die "no VIC-20 BASIC framebuffer after 180 seconds"
 }
 
-# Type one character through QMP with the tile's production pacing (40 ms hold,
-# 40 ms gap = two PAL frames each), so the proof exercises what the SPA does.
+# Type one character through QMP with the station's production pacing (40 ms hold,
+# 40 ms gap = two PAL frames each), so the proof exercises what the UI does.
 send_key() {
   local qcode=$1
   {
@@ -326,7 +326,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 fi
 
 # One clean cold boot with the quiet console in force, then bake the golden
-# snapshot from the very state SPA reset will restore for ever after. Bake from
+# snapshot from the very state UI reset will restore for ever after. Bake from
 # an UNTOUCHED cold boot: the mpf2 add shipped a golden carrying its own
 # verification output and had to be re-baked.
 stop_qemu

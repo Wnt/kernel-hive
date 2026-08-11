@@ -20,9 +20,9 @@
 # SCOPE / SAFETY:
 #   * qdiscs attach ONLY to CT950's veth (veth950i0) and one dedicated ifb
 #     (ifbmn950) — never vmbr*/eth*/other veths (hard-guarded below).
-#   * Only streamhost flows are matched: tile WebTransport UDP ports
+#   * Only streamhost flows are matched: station WebTransport UDP ports
 #     (SH_PORT= in /data/vms/streamhost/tiles/*/tile.env, discovered at `on`
-#     time) + TCP 8443 (SPA https server). Everything else — ssh, mosh,
+#     time) + TCP 8443 (UI https server). Everything else — ssh, mosh,
 #     ping, other guests — rides the HTB default class at 10 Gbit (downlink)
 #     or is never redirected to the ifb (uplink).
 #   * `on` arms a fail-safe: transient systemd timer runs `mobile-netem off`

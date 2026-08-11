@@ -15,7 +15,7 @@
 #     first and split them from the trailing metadata on a '---' sentinel; when
 #     a poll found NO new lines nothing matched, the line COUNT was parsed as
 #     the exit code, and a perfectly healthy build was declared "builder exited
-#     3" and rolled back. Any tile with a quiet stretch — plus4 spends ~46 s in
+#     3" and rolled back. Any station with a quiet stretch — plus4 spends ~46 s in
 #     wait_for_ssh saying nothing — hit that every single time. Fixed-position
 #     leading fields cannot be confused by log content, quiet or noisy.
 #   * STOPPABLE, because nothing reaps a detached builder when the caller gives
@@ -107,7 +107,7 @@ kill -KILL "-$pgid" 2>/dev/null || true
 sleep 1
 if kill -0 "-$pgid" 2>/dev/null; then
   # FAIL CLOSED. A surviving builder still addresses the guest as
-  # 127.0.0.1:<hostfwd>, so if the caller now restores and restarts the tile the
+  # 127.0.0.1:<hostfwd>, so if the caller now restores and restarts the station the
   # builder provisions the PRODUCTION guest — which is the plus4/decos incident
   # this file exists to prevent. A warning here would let the caller carry on
   # and reproduce it, so this is an error the caller must handle.

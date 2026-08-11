@@ -5,7 +5,7 @@ import { OS_FAMILY } from '../ui/keyboard/keyboardProfiles';
 import { posterFor } from './posterIndex';
 
 // ---------------------------------------------------------------------------
-//  A tile in the registry lineup is not a finished exhibit. Landing one means
+//  A station in the registry lineup is not a finished exhibit. Landing one means
 //  wiring it into several places the registry generator does NOT write, and
 //  every one of them has been forgotten at least once:
 //
@@ -19,9 +19,9 @@ import { posterFor } from './posterIndex';
 //                              at spa/public/posters/<id>/desktop.webp. mpf2
 //                              shipped with neither. Their presence on disk is
 //                              enforced by `tiles-registry.py validate`; here we
-//                              check the poster reached the generated SPA data.
+//                              check the poster reached the generated UI data.
 //
-//  Everything here is checked against the REGISTRY ENTRIES, so adding a tile
+//  Everything here is checked against the REGISTRY ENTRIES, so adding a station
 //  is what turns these red — the reminder arrives with the work, not after
 //  someone notices the exhibit looks wrong.
 // ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ import { posterFor } from './posterIndex';
 // The lineup, read from the hand-written registry entries themselves — the same
 // files /gallery-manifest.json is rendered from, with no generated artifact in
 // between. The selection mirrors emit_gallery_manifest(): enabled entries, in
-// binding order. A tile therefore reaches this test the moment its registry
+// binding order. A station therefore reaches this test the moment its registry
 // entry lands, whether or not anything has been generated or published.
 type RegistryTile = {
   id: string;
@@ -81,7 +81,7 @@ describe('every production tile is fully wired into the SPA', () => {
   it.each(streamhostTiles.map((tile) => tile.id))('%s has an exhibit poster', (id) => {
     // The .md and its hero image existing on disk is checked by
     // `tiles-registry.py validate`, which can see the filesystem; here we
-    // assert the generated poster actually reached the SPA.
+    // assert the generated poster actually reached the UI.
     expect(posterFor(id)).toBeDefined();
   });
 });

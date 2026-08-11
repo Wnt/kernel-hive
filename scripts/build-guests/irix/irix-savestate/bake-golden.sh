@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# bake-golden.sh — bake the IRIX tile's instant-restore state (issue #44).
+# bake-golden.sh — bake the IRIX station's instant-restore state (issue #44).
 #
-# Boots the PRODUCTION configuration (the tile's own launcher, tile.env, golden
+# Boots the PRODUCTION configuration (the station's own launcher, tile.env, golden
 # and tap networking) in a namespaced clone, waits for the exhibit's resting
 # state (the login chooser, or — with --login — a logged-in 4Dwm desktop), then
 # captures the (savestate, disk) pair ATOMICALLY
@@ -9,7 +9,7 @@
 # file binding it to the exact MAME binary. x11-runtime.sh refuses to restore a
 # state whose provenance does not list the running binary's md5 — a MAME rebuild
 # orphans every state (registration-signature change), so REBAKE AFTER EVERY
-# MAME PROMOTION: stop the tile, run this, start the tile.
+# MAME PROMOTION: stop the station, run this, start the station.
 #
 #   bake-golden.sh [--state NAME] [--cpus LIST] [--settle S] [--keep]
 #                  [--login USER] [--login-wait S]
@@ -140,7 +140,7 @@ say "launching the production configuration in $V (cold boot, ~7 min)"
   done <"$T/tile.env"
   export IRIX_CPUS="$CPUS" IRIX_WATCH_UNIT="" IRIX_STATE=""
   # Namespace EVERY producer path into the clone dir — tile.env's values point
-  # at the live tile tree (the audio fifo included, since the audio arm).
+  # at the live station tree (the audio fifo included, since the audio arm).
   export SH_SHM_PATH="$V/fb.shm" SH_X11_CMD_FILE="$V/irix_cmd"
   export SH_AUDIO_FIFO="$V/audio.fifo"
   bash "$V/x11-runtime.sh" >"$V/launch.log" 2>&1

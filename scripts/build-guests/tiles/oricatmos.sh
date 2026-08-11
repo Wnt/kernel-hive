@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/oricatmos.sh — build the Oric Atmos (1984) streamhost tile as a
+# build-guests/tiles/oricatmos.sh — build the Oric Atmos (1984) streamhost station as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running MAME's `orica` driver, emulating an
 #         Oric Atmos that boots its ROM straight to the Oric Extended BASIC V1.1
 #         banner. streamhost captures the Linux framebuffer + AC97 audio exactly
-#         like every other bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+#         like every other kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- THE EXHIBIT ------------------------------------------------------------
@@ -15,13 +15,13 @@
 #   or a 240x200 HIRES bitmap, eight colours set by control codes that occupy
 #   the cell they act on, and an AY-3-8912 that Oric BASIC drives with four
 #   ready-made noises — ZAP, PING, SHOOT and EXPLODE. Keyboard-only: the real
-#   machine's other ports were tape, printer and an expansion bus, so the tile
+#   machine's other ports were tape, printer and an expansion bus, so the station
 #   ships --pointer none --input-backend disabled and X runs with -nocursor.
 #
 #   The golden is the machine's OWN untouched power-on screen. Nothing is typed
 #   into it and nothing is curated: the Plus/4 add proved the opposite wrong on
 #   the exhibit floor (a visitor arriving inside an application with no idea
-#   what it was), and the interaction lives in the SPA's on-screen keyboard and
+#   what it was), and the interaction lives in the UI's on-screen keyboard and
 #   its registry demoProgram instead.
 #
 # ---- MEDIA ------------------------------------------------------------------
@@ -48,7 +48,7 @@
 #   * MAME'S UI KEYS ARE OFF because the driver emulates a full 59-key keyboard,
 #     so a visitor pressing Tab gets the Oric's own key, not MAME's menu. That
 #     is MAME's documented behaviour for full-keyboard drivers and is why this
-#     tile needs no UI lockout, unlike a partial-keyboard arcade driver.
+#     station needs no UI lockout, unlike a partial-keyboard arcade driver.
 #   * THE X ROOT IS FORCED TO 800x600 by the launcher, and the size was chosen
 #     by MEASUREMENT, not by taste. The bridge base's .xinitrc asks for
 #     1024x768 and does not always get it (observed here: the root stayed at
@@ -71,7 +71,7 @@
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the
-# oricatmos tile dir; refuses to run while streamhost@oricatmos is active.
+# oricatmos station dir; refuses to run while streamhost@oricatmos is active.
 #
 # Usage: oricatmos.sh [--force] [-h]
 # =============================================================================
@@ -135,10 +135,10 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # 4:3 root, which reconstructs the picture the Atmos drew on a television.
 # -prescale 2 renders 480x448 before the final scale and measured FASTER than
 # both prescale 1 and prescale 3; -nofilter keeps the text crisp. stdout may safely go to a log here — the VICE segfault that forbids it
-# on the Commodore tiles (docs/guests/vic20.md) is a VICE bug, not a MAME one.
+# on the Commodore stations (docs/guests/vic20.md) is a VICE bug, not a MAME one.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Oric Atmos (1984) ROM BASIC kiosk launcher (bridge tile).
+# Oric Atmos (1984) ROM BASIC kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/oricatmos.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_VIDEODRIVER=x11

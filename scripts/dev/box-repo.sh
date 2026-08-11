@@ -4,13 +4,13 @@
 #
 # WHY IT EXISTS
 #   Builders run on the HOST, not in CT950: the golden images, the bridge bases
-#   and every tile directory live under /data, and CT950 has no /data mount. But
+#   and every station directory live under /data, and CT950 has no /data mount. But
 #   until now there was no checkout on the host, so host-side build work reached
 #   its own source by hand-copying it — `/root/kh-bridge/{scripts,registry}` for
 #   the trixie base, a per-run rsync staging dir inside
-#   scripts/dev/migrate-tile.sh for every single tile migration, and a copy of
+#   scripts/dev/migrate-tile.sh for every single station migration, and a copy of
 #   scripts/build-guests/tiles/gt40.sh in /data/vms/soltest/BUILD-gt40/ that went
-#   stale across the bookworm->trixie flip and would have silently built the tile
+#   stale across the bookworm->trixie flip and would have silently built the station
 #   on the WRONG base. A hand-copy has no version, no drift signal and no way to
 #   tell which commit a build actually ran.
 #
@@ -39,7 +39,7 @@
 #
 # HOW IT IS UPDATED — EXPLICITLY, NEVER ON A TIMER
 #   `box-repo.sh sync` fast-forwards it, and nothing else does. No cron, no
-#   pull-on-use: a background pull can swap build-guests/ out from under a tile
+#   pull-on-use: a background pull can swap build-guests/ out from under a station
 #   bake that is 40 minutes into a golden, and the resulting image would carry no
 #   record of which source produced it. Explicit sync means the operator chooses
 #   the moment, and `status` prints the commit any report should quote.

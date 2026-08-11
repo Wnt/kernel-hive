@@ -6,7 +6,7 @@ import { S } from './styles';
 //  BootVideoOverlay — the BOOT-VIDEO REPLAY experience (flag-gated on bootVideo).
 //  ---------------------------------------------------------------------------
 //  Drop-in sibling of PowerOnOverlay, mounted in the same stage slot when the
-//  tile carries a recorded power-on clip. It plays that clip in a native
+//  station carries a recorded power-on clip. It plays that clip in a native
 //  <video> (autoplay muted playsInline, preload=auto) while the live golden
 //  connects behind it, exposing scrub (currentTime), speed (0.5/1/2/4×) and a
 //  WebVTT sprite-crop hover preview. Its media is pinned to the same full-stage
@@ -88,11 +88,11 @@ export function BootVideoOverlay({
   const [livePainted, setLivePainted] = useState(false);
   const thumbs = useThumbs(vtt, sprite);
 
-  // Autoplay UNMUTED by default — the click that opened the tile is a fresh user
+  // Autoplay UNMUTED by default — the click that opened the station is a fresh user
   // gesture, which most browsers accept for playback with sound. If the autoplay
   // policy still blocks unmuted, fall back to muted playback (so the boot is at
   // least shown) and flip the state so the 🔇 toggle appears — one click restores
-  // audio and raises the site's media-engagement, so later tiles autoplay with sound.
+  // audio and raises the site's media-engagement, so later stations autoplay with sound.
   useEffect(() => {
     const v = vref.current;
     if (!v) return;
@@ -163,10 +163,10 @@ export function BootVideoOverlay({
     return () => { done = true; cancelAnimationFrame(raf); clearTimeout(fallback); };
   }, [live, getLiveSurface]);
 
-  // HANDOFF — swap to the live tile only once the CLIP HAS FINISHED (played through,
+  // HANDOFF — swap to the live station only once the CLIP HAS FINISHED (played through,
   // or the user skipped / scrubbed to the end), NOT when `live` merely becomes ready.
   // loadvm golden restores in ~1s, so gating on `live` cut the boot video off almost
-  // immediately. The live tile is readied in the background WHILE the clip plays; we
+  // immediately. The live station is readied in the background WHILE the clip plays; we
   // swap when the clip is done. Pin to the last frame (== golden first frame) so the
   // held image matches live even on a mid-clip skip, and gate the reveal on
   // livePainted (real non-black live content) to kill the bridge's black-first-frame

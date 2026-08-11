@@ -28,7 +28,7 @@ export const DEMO_LINE_DELAY_MS = 260;
 /**
  * Milliseconds a single character takes to REACH the guest.
  *
- * streamhost paces keys per tile (SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS) so an
+ * streamhost paces keys per station (SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS) so an
  * emulator sampling its input ports once per emulated frame actually observes
  * every press -- on mpf2 that is 32 + 32, i.e. ~64 ms per character. typeText()
  * returns immediately and the daemon drains the queue at that rate, so a line
@@ -37,10 +37,10 @@ export const DEMO_LINE_DELAY_MS = 260;
  * and characters are lost -- seen as the first digit of a line number going
  * missing partway down a listing. Scale the wait by line length instead.
  *
- * This is only the DEFAULT. A tile whose drain rate exceeds it declares its own
+ * This is only the DEFAULT. A station whose drain rate exceeds it declares its own
  * `demoProgram.perCharMs` in the registry (vic20 paces 80+80, so 170), and
  * `validate_demo_pacing` in scripts/tiles-registry.py fails the build if the
- * value that applies is below that tile's hold+gap.
+ * value that applies is below that station's hold+gap.
  */
 export const DEMO_PER_CHAR_MS = 70;
 
@@ -64,7 +64,7 @@ export const DEMO_ENTER_DELAY_MS = 600;
  * letter row is punctuation, so an upper-case letter must be sent UNSHIFTED.
  * Expressed as a flag rather than 26 charMap entries.
  *
- * Declared per tile in the registry `keyboard` block; derive one with
+ * Declared per station in the registry `keyboard` block; derive one with
  * scripts/dev/mame-keymap.py.
  */
 export function applyKeyboard(text: string, kb?: GuestKeyboard): string {
@@ -102,7 +102,7 @@ export async function typeDemoProgram({
   sleep?: (ms: number) => Promise<void>;
   cancelled?: () => boolean;
 }): Promise<boolean> {
-  // The tile's own drain rate wins over the fleet default; an explicit caller
+  // The station's own drain rate wins over the fleet default; an explicit caller
   // argument (tests) still wins over both.
   const charMs = perCharMs === DEMO_PER_CHAR_MS ? (program.perCharMs ?? perCharMs) : perCharMs;
   for (const line of program.lines) {

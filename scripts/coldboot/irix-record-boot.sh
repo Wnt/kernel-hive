@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# irix-record-boot.sh — COMBINED record+rebake boot video for the IRIX tile.
+# irix-record-boot.sh — COMBINED record+rebake boot video for the IRIX station.
 #
 # RUN ON THE BOX as root, with streamhost@irix STOPPED. The IRIX exhibit is
 # MAME (indy_4610), not QEMU: record-boot.sh's dbus tap and savevm/loadvm bake
@@ -47,7 +47,7 @@ die() {
 }
 
 # ── preflight: refuse loudly, never work around ──────────────────────────────
-# The bake owns the tile's tap networking + fb.shm path. Do NOT stop the
+# The bake owns the station's tap networking + fb.shm path. Do NOT stop the
 # service ourselves — someone may be mid-measurement (AGENTS.md).
 if systemctl is-active --quiet streamhost@irix.service; then
   echo "streamhost@irix is ACTIVE — the bake needs the tap free. Stop it first:" >&2
@@ -108,7 +108,7 @@ trap teardown EXIT INT TERM
 
 # ── recorder first, bake second: the pre-boot black lead-in belongs on tape ──
 # Encode is the house §6.1 line from record-boot.sh (single video pipe — this
-# tile has no audio path, hence -an), fed fixed-size BGRA through a fifo. The
+# station has no audio path, hence -an), fed fixed-size BGRA through a fifo. The
 # sampler polls for $CLONE/fb.shm (it does not exist until the bake's launcher
 # starts MAME), emits black until the first valid frame, and takes tear-free
 # seqlock reads per shm.rs (seq even + unchanged around the copy, bounded
@@ -273,7 +273,7 @@ NEXT STEPS (printed, not run):
   1. bash $HERE/postprocess-boot.sh irix     # sprite.jpg + thumbs.vtt + durationMs
   2. bash $HERE/trim-boot.sh $STAGE          # drop the settle tail (final GOP kept verbatim)
   3. WEBROOT=<spa-webroot> bash $HERE/gen-boot-manifest.sh irix
-  4. systemctl start streamhost@irix.service # tile relaunches on the freshly baked golden
+  4. systemctl start streamhost@irix.service # station relaunches on the freshly baked golden
   5. seam check (framebuffer truth): grab the restarted tile's first frame
      (labctl shot irix /tmp/irix-live.png) and compare:
        source $HERE/bootrec-lib.sh && br_ssim $D/last.png /tmp/irix-live.png

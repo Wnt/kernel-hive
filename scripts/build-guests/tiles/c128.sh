@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/c128.sh — build the Commodore 128 (1985) streamhost tile as a
+# build-guests/tiles/c128.sh — build the Commodore 128 (1985) streamhost station as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running VICE `x128` emulating a PAL
 #         Commodore 128 in its NATIVE 80-column mode, resting at the machine's
 #         own untouched power-on screen, with the CP/M Plus system disk sitting
 #         unbooted in drive 8.
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- WHAT MAKES THIS EXHIBIT WORTH THE SLOT --------------------------------
 #   The C128 is three machines in one case: native C128 mode driving the VDC's
 #   80-column RGBI output, a hardware-faithful C64 mode, and CP/M 3.0 on a
-#   second CPU, a Zilog Z80. No other tile in the lineup can tell the CP/M
+#   second CPU, a Zilog Z80. No other station in the lineup can tell the CP/M
 #   story, and the exhibit is built around reaching it in one tap.
 #
 # ---- THE VDC IS A SECOND CANVAS, AND `-80col` IS THE ONLY WAY TO SEE IT -----
@@ -26,7 +26,7 @@
 #   VDC the ACTIVE canvas, and with DualWindow off (the default) every canvas
 #   shares ONE SDL container — a single X window showing 80 columns. The same
 #   flag also chooses which display the machine BOOTS into, so one flag sets
-#   both the idle screen and the visible chip. NEVER use -dualwindow in a tile.
+#   both the idle screen and the visible chip. NEVER use -dualwindow in a station.
 #
 # ---- WINDOW vs X ROOT: MEASURED, NOT GUESSED --------------------------------
 #   VICE's SDL window is a fixed size and cannot grow, and with no window
@@ -43,9 +43,9 @@
 #           and every VDC pixel is 1:1 (80 columns * 8 px = 640 px of text
 #           plus border), so the 80-column text is CRISP rather than resampled.
 #
-#   So this tile drops the doubling flag and keeps the 800x600 root its VICE
+#   So this station drops the doubling flag and keeps the 800x600 root its VICE
 #   siblings (c64, vic20, plus4) use. Doubling would have cost a 1600x1200
-#   capture — four times the pixels of every other bridge tile — to gain
+#   capture — four times the pixels of every other kiosk — to gain
 #   nothing but bigger blocks.
 #
 # ---- THE CP/M DISK, AND WHY IT IS NOT ON THE COMMAND LINE -------------------
@@ -57,7 +57,7 @@
 #
 #   IT IS DELIBERATELY *NOT* PASSED AS `-8 <path>`. The C128's KERNAL reads the
 #   boot sector of drive 8 at every reset, so a CP/M disk present at power-on
-#   AUTOBOOTS: measured here first time out, the tile came up mid-way through
+#   AUTOBOOTS: measured here first time out, the station came up mid-way through
 #   "BOOTING CP/M PLUS" and never showed BASIC at all. That would have baked a
 #   golden the assignment explicitly rules out and, worse, a machine whose
 #   power-on screen is an application.
@@ -81,7 +81,7 @@
 #   mistake rather than after it: an earlier Plus/4 golden rested inside its ROM
 #   office suite and had to be re-baked because a visitor arrived in the middle
 #   of an application with no idea what it was or how to leave. The affordances
-#   belong in the exhibit UI around an honest idle screen — here, the SPA's
+#   belong in the exhibit UI around an honest idle screen — here, the UI's
 #   c128 on-screen keyboard carries a CP/M button that types BOOT + RETURN.
 #
 # ---- WHAT DOES *NOT* SHIP: A C64 BUTTON -------------------------------------
@@ -120,7 +120,7 @@
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the c128
-# tile dir; refuses to run while streamhost@c128 is active.
+# station dir; refuses to run while streamhost@c128 is active.
 #
 # Usage: c128.sh [--force] [-h]
 # =============================================================================
@@ -141,7 +141,7 @@ EVIDENCE="$TILE_DIR/evidence"
 MEDIA_DIR="$TILE_DIR/media"
 MEM=768
 
-# CP/M 3.0 system disk — the ONE external file this tile needs, from a SINGLE
+# CP/M 3.0 system disk — the ONE external file this station needs, from a SINGLE
 # mirror (zimmers.net). Never committed; only the URL + both hashes are. $MEDIA_DIR
 # keeps the host copy: that is the offline recovery path if zimmers.net ever dies.
 CPM_URL="https://www.zimmers.net/anonftp/pub/cbm/demodisks/c128/cpm.system.6228151676.d64.gz"
@@ -183,12 +183,12 @@ push() {
 hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
 # The kiosk launcher. No -VDCdsize (see the window measurement in the header),
-# an 800x600 X root like every other VICE tile, and the CP/M disk attached out
+# an 800x600 X root like every other VICE station, and the CP/M disk attached out
 # of band by the helper below so the KERNAL's boot-sector check at reset misses
 # it. -remotemonitor exists only so that helper has something to talk to.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Commodore 128 (PAL, 80-column VDC) kiosk launcher (bridge tile).
+# Commodore 128 (PAL, 80-column VDC) kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/c128.sh for the flag rationale — in particular why
 # the CP/M disk is NOT on this command line (it would autoboot at reset).
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
@@ -220,7 +220,7 @@ read -r -d '' ATTACH <<'EOS' || true
 #!/bin/bash
 # Attach the CP/M Plus system disk to C128 drive 8, ~10 s after VICE is up.
 # Deliberately late: the C128 KERNAL boots any CP/M disk it finds in drive 8 at
-# reset, and this tile's fixture is the BASIC power-on screen.
+# reset, and this station's fixture is the BASIC power-on screen.
 D=/opt/bridge/media/c128/cpm.d64
 LOG=/tmp/c128-attach.log
 [ -s "$D" ] || {
@@ -295,7 +295,7 @@ quiet_console() {
 
 # bridge-base.sh records the trap this guards: VICE's `make install` SKIPS some
 # ROM data files and the emulator then SEGFAULTS on startup with NO output at
-# all (it bit the C64 tile on the BASIC ROM and the VIC-20 on basic-901486-01).
+# all (it bit the C64 station on the BASIC ROM and the VIC-20 on basic-901486-01).
 # Repair the C128 set from the source tree the base retains, and ASSERT every
 # ROM a PAL C128 actually needs — including the C64-mode pair (GO64 uses them)
 # and the two drive ROMs, since CP/M is booted from an emulated 1541/1571.
@@ -408,7 +408,7 @@ capture() {
 #     high, so r<96 rejects it) all score 0.
 #   * CP/M Plus paints in MAGENTA — 1983 pixels on its A> screen and ZERO cyan.
 #     Requiring magenta==0 is what stops "ready" from accepting a machine that
-#     has autobooted CP/M, which is exactly the failure this tile hit first
+#     has autobooted CP/M, which is exactly the failure this station hit first
 #     time out.
 cyan_px() {
   ppmhist "$1" 2>/dev/null |
@@ -435,8 +435,8 @@ wait_for_basic80() {
   die "no C128 80-column BASIC framebuffer after 180 seconds"
 }
 
-# Type through QMP at the tile's PRODUCTION pacing (80 ms hold, 80 ms gap =
-# four PAL frames each way), so the proof exercises what the SPA does.
+# Type through QMP at the station's PRODUCTION pacing (80 ms hold, 80 ms gap =
+# four PAL frames each way), so the proof exercises what the UI does.
 send_key() {
   local qcode=$1
   {
@@ -549,7 +549,7 @@ wait_for_ssh() {
 # PROVISION ON EVERY RUN, not only when the overlay is new. Every step here is
 # idempotent (cp -n, a fixed file body, a grep-guarded grub edit), and making it
 # conditional is how a rerun silently keeps a stale kiosk: the second build run
-# of this tile edited the attach helper and then ran against the OLD copy still
+# of this station edited the attach helper and then ran against the OLD copy still
 # in the overlay, and the failure it printed was about the new code.
 boot_tile cold
 wait_for_ssh
@@ -573,7 +573,7 @@ sleep 8
 wait_for_basic80 cold-boot-basic80
 
 # One clean cold boot with the quiet console in force, then bake the golden
-# from the very state SPA reset will restore for ever after. NOTHING IS TYPED
+# from the very state UI reset will restore for ever after. NOTHING IS TYPED
 # BEFORE THE BAKE: the fixture is the machine's own untouched power-on screen.
 # `cold` is explicit: a rerun that let boot_tile pick up an existing golden
 # would re-bake a restored snapshot instead of a genuine power-on.
@@ -604,7 +604,7 @@ done
   die "the CP/M disk was not attached to drive 8 (see /tmp/c128-attach.log in the guest)"
 log "CP/M disk attached to drive 8, unbooted: $(guest 'cat /tmp/c128-attach.log')"
 
-# Memory verification (the tile runs 768 MB, half what its VICE siblings use).
+# Memory verification (the station runs 768 MB, half what its VICE siblings use).
 MEMAVAIL_KB=$(guest "awk '/MemAvailable/ {print \$2}' /proc/meminfo")
 log "guest MemAvailable with x128 running: $((MEMAVAIL_KB / 1024)) MB of $(guest "awk '/MemTotal/ {print int(\$2/1024)}' /proc/meminfo") MB"
 [ "$MEMAVAIL_KB" -gt 204800 ] ||

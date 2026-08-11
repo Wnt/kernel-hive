@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # verify-prodclone.sh — boot a candidate MAME binary under the EXACT production
-# tile configuration, in a clone, and screendump it on a fixed schedule.
+# station configuration, in a clone, and screendump it on a fixed schedule.
 #
 #   verify-prodclone.sh <binary> <outdir> <cpus> [dump-seconds ...]
 #
@@ -10,12 +10,12 @@
 #
 # It exists because a binary can be green in the bench rig and broken on the
 # exhibit. The fastram build was: correct and ~9% faster in the rig, and it
-# stopped IRIX at its own memory diagnostic under the tile's full flag set. The
+# stopped IRIX at its own memory diagnostic under the station's full flag set. The
 # only thing that catches that is the production configuration, end to end, read
 # off the framebuffer.
 #
 # The live `streamhost@irix` service stays stopped throughout. This copies the
-# tile's launcher, agent and env into a namespaced dir and runs it there —
+# station's launcher, agent and env into a namespaced dir and runs it there —
 # x11-runtime.sh derives its runtime dir from its own location, so the copy
 # never writes into /data/vms/streamhost.
 set -u
@@ -49,7 +49,7 @@ fi
 rm -rf "$V"
 mkdir -p "$V"
 cp "$T/x11-runtime.sh" "$T/irixagent.lua" "$T/fbstat.py" "$T/tapnet.sh" "$V/"
-# Refuse a launcher that would reach into the live tile tree.
+# Refuse a launcher that would reach into the live station tree.
 "$CG" check-launcher "$V/x11-runtime.sh" || exit 1
 md5sum "$BIN" >"$V/binary.md5"
 
@@ -63,7 +63,7 @@ md5sum "$BIN" >"$V/binary.md5"
     export "${line%%=*}=${line#*=}"
   done <"$T/tile.env"
   export IRIX_MAME="$BIN" IRIX_CPUS="$CPUS" IRIX_WATCH_UNIT=""
-  # One-variable departures from the tile's own env, for bisecting a
+  # One-variable departures from the station's own env, for bisecting a
   # production-only failure (e.g. IRIX_NET_OVERRIDE=off to take the tap and the
   # machine cfg out of the picture).
   [ -n "${IRIX_NET_OVERRIDE:-}" ] && export IRIX_NET="$IRIX_NET_OVERRIDE"

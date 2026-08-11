@@ -14,7 +14,7 @@ describe('trackpad — relative (guest draws its own cursor)', () => {
     tp.begin(ID, 0, 0, 0);
     // 20px travel > 8px slop → a drag; delta 20 × gain 2 → dx 40.
     expect(tp.move(ID, 20, 0)).toEqual([{ kind: 'rel', dx: 40, dy: 0 }]);
-    // rel tiles never carry coords on the click — the guest owns its cursor.
+    // rel stations never carry coords on the click — the guest owns its cursor.
     const tp2 = createTrackpad({ rel: true });
     tp2.begin(ID, 10, 10, 0);
     expect(tp2.end(ID, 90)).toEqual([{ kind: 'button', button: 0, down: true }]);
@@ -26,7 +26,7 @@ describe('trackpad — relative (guest draws its own cursor)', () => {
     // 3 guest px to a CSS px (a 1288-wide exhibit on a phone): 10 px of finger
     // is 30 guest px, which is 10 px of picture. The same swipe on a 640-wide
     // exhibit sends 16 — also 10 px of picture. Before this, both sent the same
-    // guest delta and the low-res tile's pointer bolted.
+    // guest delta and the low-res station's pointer bolted.
     const tp = createTrackpad({ rel: true, gain: 1, track: 3 });
     tp.begin(ID, 0, 0, 0);
     expect(tp.move(ID, 10, 0)).toEqual([{ kind: 'rel', dx: 30, dy: 0 }]);

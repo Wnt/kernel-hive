@@ -3,7 +3,7 @@
 # placeholder /etc/bridge/launch.sh. Runs THE SAME MAME ST binary arm B runs on
 # the host (sha256 is asserted equal by the rig), rendered by SDL into a window
 # that exactly fills the 1024x768 bare-X root, which streamhost then captures
-# through the QEMU dbus display like any other bridge tile.
+# through the QEMU dbus display like any other kiosk.
 #
 # The flags that are NOT free choices:
 #   -resolution 1024x768 -nomaximize   the captured surface must equal arm B's

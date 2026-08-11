@@ -1,4 +1,4 @@
-// ff-check.mjs — Firefox twin of fd-check.mjs: PASS/FAIL stream smoke on ONE tile.
+// ff-check.mjs — Firefox twin of fd-check.mjs: PASS/FAIL stream smoke on ONE station.
 //
 // Drives the live gallery with Playwright's BUNDLED Firefox (build firefox-1532,
 // validated with playwright 1.61.x; `npx playwright install firefox` puts it in
@@ -8,10 +8,10 @@
 //   node ff-check.mjs [TileName]        # default FreeDOS
 //   GALLERY_URL=https://192.0.2.10:8443 node ff-check.mjs "Windows 95"
 //
-// Probe: open the SPA, click the tile card, wait, then assert the stream
+// Probe: open the UI, click the station card, wait, then assert the stream
 // <video> (fed from an offscreen canvas via captureStream — there is NO stream
 // <canvas> in the document): readyState>=2, videoWidth>0, and non-black pixels
-// via drawImage sampling (>50% default; >=1% floor for text-mode DOS tiles —
+// via drawImage sampling (>50% default; >=1% floor for text-mode DOS stations —
 // see MIN_NONBLACK). Prints PASS/FAIL + page console errors and screenshots to
 // ~/e2e/shots/. Exit code 0 on PASS, 1 on FAIL.
 //
@@ -24,7 +24,7 @@ import fs from 'node:fs';
 const GALLERY_URL = process.env.GALLERY_URL || `https://${process.env.LAB_HOST || '192.0.2.10'}:8443`;
 const TILE = process.argv[2] || 'FreeDOS';
 const WAIT_MS = process.env.FF_WAIT_MS ? Number(process.env.FF_WAIT_MS) : 30000;
-// Non-black gate: default >50% of sampled pixels, but text-mode DOS tiles are
+// Non-black gate: default >50% of sampled pixels, but text-mode DOS stations are
 // legitimately ~99% black — a KNOWN-GOOD Chrome decode of FreeDOS measures
 // nonBlackPct=1 (tile-diag.mjs, 2026-07-12) — so they get a >=1% floor instead.
 // Override with FF_MIN_NONBLACK=<pct>.
@@ -45,9 +45,9 @@ page.on('pageerror', (e) => consoleErrors.push(`[pageerror] ${String(e).slice(0,
 await page.goto(GALLERY_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
 await page.waitForTimeout(3000); // manifest fetch + grid render
 
-// Click the tile card. New bundles render <button class="os-card"> (aria-label
+// Click the station card. New bundles render <button class="os-card"> (aria-label
 // starts with the displayName); older deployed bundles have plain card markup,
-// so fall back to a text match + bounding-box click (the tile-diag approach).
+// so fall back to a text match + bounding-box click (the station-diag approach).
 const re = new RegExp(TILE, 'i');
 let card = page.locator('button.os-card').filter({ hasText: re }).first();
 if (await card.count() === 0) card = page.getByText(re).first();

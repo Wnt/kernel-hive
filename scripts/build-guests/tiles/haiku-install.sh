@@ -24,7 +24,7 @@
 # Safety:
 #   * all transient files/sockets/pidfiles live in a unique repro-haiku-* dir;
 #   * QEMU runs at nice 15 and is stopped only through its QMP/pidfile;
-#   * no live tile process/socket is touched;
+#   * no live station process/socket is touched;
 #   * an existing output is refused unless FORCE=1 (then it is backed up).
 #
 # Usage:

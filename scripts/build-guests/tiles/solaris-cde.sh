@@ -4,7 +4,7 @@
 # "Solaris 10 CDE" Kernel Hive guest.
 #
 # GOAL: on a fresh Proxmox host that already has the gallery infra, rebuild the
-# Solaris 10 x86 -> CDE tile END TO END from the real Oracle install media —
+# Solaris 10 x86 -> CDE station END TO END from the real Oracle install media —
 # no image backups, just a runnable recipe. Produces the golden disk
 #   /data/gallery-guests/SolarisCDE/solaris.qcow2
 # that boots to the authentic Common Desktop Environment (dtlogin -> CDE).
@@ -90,7 +90,7 @@ ISO="${GUEST_DIR}/sol10.iso"
 # Default source is the Internet Archive preservation copy (2.25 GB, public direct
 # download — works with a plain curl, no SSO). Solaris 10 is Oracle-copyrighted
 # (OTN developer licence) — free to use in this private collection; this is a
-# preservation copy, kept as a personal retro tile behind edge auth; do not
+# preservation copy, kept as a personal retro station behind edge auth; do not
 # redistribute a publicly-served instance.
 # Override if you have your own media:
 #   SOL10_ISO=/path/to/sol-10-u11-ga-x86-dvd.iso        (a local copy)
@@ -478,7 +478,7 @@ install_os() {
 #           dtstart_hello[0]="$DT_BINPATH/dthello &"
 #       fi
 #
-#   Things that DO NOT change this default (verified — all leave the tile on JDS):
+#   Things that DO NOT change this default (verified — all leave the station on JDS):
 #     * choosing CDE once at the greeter (never persists under runtime -snapshot),
 #     * removing the greeter alt-desktop registration /usr/dt/config/*/Xresources.d/
 #       Xresources.jds  (only drops the JDS *menu entry*, not the default),
@@ -503,7 +503,7 @@ install_os() {
 # Applied ONCE to the golden via a WRITABLE single-user boot (GRUB kernel arg
 # `-s`), typed over the QEMU monitor, then a clean sync + shutdown so the write
 # lands in the qcow2. Idempotent: re-running just re-applies the same sed (no-op
-# once "altDt" is already "altDtOFF"). SAFE: never runs while a -snapshot tile
+# once "altDt" is already "altDtOFF"). SAFE: never runs while a -snapshot station
 # has the golden open — this is a build-time step on the golden itself.
 # =============================================================================
 CDE_DEFAULT="${CDE_DEFAULT:-1}"     # 1 = bake CDE-as-default into the golden
@@ -776,7 +776,7 @@ arch x86_64 / machine pc-i440fx-11.0 + KVM / cpu Nehalem / RAM 3072 MB (2048 ok)
 smp 2 / disk on IDE / net e1000 (Solaris e1000g) / vga std (X at 1920x1200) /
 usb-tablet pointer. Sound AC97 -> Solaris audio810 driver (attaches; not play-verified).
 
-## Boot-to-desktop  (AUTOMATED in the gallery tile — see gallery-integrate-all.sh [neko-era, deleted — git history])
+## Boot-to-desktop  (AUTOMATED in the gallery station — see gallery-integrate-all.sh [neko-era, deleted — git history])
 dtlogin has no native autologin, so the tile lands on CDE via TWO settings:
   1. -snapshot is MANDATORY. The gallery bind-mounts /guests READ-ONLY, so QEMU
      cannot open solaris.qcow2 read-write and crash-loops
@@ -792,7 +792,7 @@ NOTE: heavy tiles (Solaris/Android/pmOS all ~3 GiB) need the gallery CT raised t
 ~16 GiB or the cgroup OOM-killer reaps qemu cluster-wide (was a second black-screen
 cause); gallery-integrate-all.sh now bumps CT memory automatically.
 
-## CDE-as-DEFAULT — RESOLVED (2026-07-04). The tile boots straight to CDE.
+## CDE-as-DEFAULT — RESOLVED (2026-07-04). The station boots straight to CDE.
 Solaris 10's stock default desktop is JDS/GNOME. The golden now defaults to the
 **classic CDE** (dtwm front panel) via a one-line edit to /usr/dt/bin/Xsession,
 baked in by bake_cde_default() (STEP 3.5). Exact mechanism:
@@ -826,7 +826,7 @@ else
 fi
 # STEP 3.5: make CDE the default desktop (the actual "land on CDE, not JDS" fix).
 # Idempotent (re-applying the sed is a no-op once done); set CDE_DEFAULT=0 to skip.
-# NOTE: writes the golden — must NOT run while a -snapshot tile has it open.
+# NOTE: writes the golden — must NOT run while a -snapshot station has it open.
 [ -f "$IMG" ] && bake_cde_default
 [ -f "$IMG" ] && bake_first_cde_login
 write_manifest

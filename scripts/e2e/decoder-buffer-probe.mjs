@@ -1,7 +1,7 @@
 // Measure live VideoDecoder decode() submit -> output latency and whether another
 // chunk was submitted before each output (the signature of a one-frame DPB hold).
 // Runs headed on CT950's VNC desktop.
-// Usage: node decoder-buffer-probe.mjs [tile label] [sample target]
+// Usage: node decoder-buffer-probe.mjs [station label] [sample target]
 import { chromium } from 'playwright';
 
 const TILE = process.argv[2] || 'Solaris';

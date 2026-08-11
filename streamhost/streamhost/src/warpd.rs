@@ -15,7 +15,7 @@
 // historical contracts. Add no new per-agent verbs and do not expand this
 // protocol; new Solaris/QNX device work belongs behind RealtimeInputSink. The
 // guest-agents/solaris-galleryhid/warpd-to-ghid-bridge.py shim is transitional
-// debt and should disappear once gallery-hid subsumes the tiles that still need
+// debt and should disappear once gallery-hid subsumes the stations that still need
 // it. That migration is intentionally not imminent for the six baked agents.
 //
 // A background task owns the TCP connection and reconnects on failure; callers just
@@ -120,7 +120,7 @@ impl WarpdClient {
                             }
                         }
                         if !broke && rx.is_closed() {
-                            break; // tile shutting down
+                            break; // station shutting down
                         }
                     }
                     Err(e) => {

@@ -1,4 +1,4 @@
-//! Window-free input sink for a MAME tile captured over `CaptureBackend::Shm`.
+//! Window-free input sink for a MAME station captured over `CaptureBackend::Shm`.
 //!
 //! The `x11test` sink (see `x11_input.rs`) injects pointer MOTION with XTest and
 //! sends only buttons/keys down the Lua agent's command file. That works only
@@ -83,7 +83,7 @@ use crate::realtime_input::{
 /// four times longer.
 const HOME_DELTA: i32 = -2048;
 
-/// XT set1 scancode (as the SPA puts it on the wire, `0xe0..` for the extended
+/// XT set1 scancode (as the UI puts it on the wire, `0xe0..` for the extended
 /// cluster) -> the `:ioc2:kbd:ms_naturl` matrix port and field name that key
 /// occupies. The field names are MAME's own and contain spaces, so the `KEY`
 /// verb takes the field as the rest of the line.
@@ -209,7 +209,7 @@ pub(crate) fn matrix_key(code: u16) -> Option<(&'static str, &'static str)> {
         .map(|(_, port, field)| (*port, *field))
 }
 
-/// SH_MAMESOCK_KEYMAP: a per-tile scancode -> (port, field) map, replacing the
+/// SH_MAMESOCK_KEYMAP: a per-station scancode -> (port, field) map, replacing the
 /// compiled-in IRIX matrix above — the one piece of the MAME input plane that
 /// was machine-specific rather than machine-generic. One row per key:
 /// `scancode-hex<TAB>port<TAB>field` (`#` comments, blank lines ignored);
@@ -287,7 +287,7 @@ impl KeyMap {
     }
 }
 
-/// The one lookup both MAME sinks route through: the tile's keymap when one
+/// The one lookup both MAME sinks route through: the station's keymap when one
 /// is declared, the IRIX matrix otherwise.
 pub(crate) fn key_for(map: &Option<Arc<KeyMap>>, code: u16) -> Option<(&str, &str)> {
     match map {
@@ -308,7 +308,7 @@ pub struct MameCmdSink {
     /// dead-reckoned MOVEP deltas (rollback). Frozen at construction like every
     /// other sink's config; tests pass the mode explicitly and never touch env.
     abs_mode: bool,
-    /// Per-tile keymap (SH_MAMESOCK_KEYMAP); None = the IRIX matrix.
+    /// Per-station keymap (SH_MAMESOCK_KEYMAP); None = the IRIX matrix.
     keymap: Option<Arc<KeyMap>>,
     st: Mutex<PtrState>,
 }
@@ -683,7 +683,7 @@ mod tests {
         let _ = std::fs::remove_file(&path);
         let sink = MameCmdSink::new(path.to_str().unwrap(), true, None);
         // Pause/Break (no single set1 code), the Korean/Japanese IME keys, and
-        // anything the SPA could not resolve at all.
+        // anything the UI could not resolve at all.
         for code in [0x00u16, 0x59, 0x70, 0x7b, 0xe011, 0xe05e] {
             assert_eq!(sink.try_key(key(1, code, true)), Err(Reject::Unsupported));
         }
@@ -712,7 +712,7 @@ mod tests {
         assert_eq!(matrix_key(0x52), Some(("P2.5", "Keypad 0")));
     }
 
-    /// The per-tile keymap: loads, looks up, and REFUSES malformed input —
+    /// The per-station keymap: loads, looks up, and REFUSES malformed input —
     /// a broken declared keymap must never degrade to the IRIX matrix.
     #[test]
     fn keymap_loads_and_fails_closed() {

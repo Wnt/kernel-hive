@@ -2,7 +2,7 @@
 //  input/penContact — what a STYLUS press and release send to the guest.
 //  ---------------------------------------------------------------------------
 //  A pen does not reach the touch recognizer: `pointerType` is `'pen'`, which is
-//  neither `'touch'` nor one of the touch-ARCHETYPE tiles, so on an ordinary
+//  neither `'touch'` nor one of the touch-ARCHETYPE stations, so on an ordinary
 //  desktop exhibit useStreamInput's mouse path handles it. It still needs the
 //  tap quantisation a finger gets — more, if anything, since a stylus wobbles
 //  between contact and lift — so these two helpers apply the same
@@ -37,7 +37,7 @@ let muteHoverUntil = 0;
  *  second tap of a double-tap.
  *
  *  The extra pair is sent WITHOUT a position on purpose. streamhost holds a
- *  button back until the cursor has provably caught up on tiles whose motion
+ *  button back until the cursor has provably caught up on stations whose motion
  *  rides a slow agent (SH_WARPD_BUTTON_DELAY_MS), and every reposition re-arms
  *  that hold — so a burst that positioned each button would be spread straight
  *  back out to the human gap it exists to close. The cursor is already there. */

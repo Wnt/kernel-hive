@@ -12,7 +12,7 @@
 #   on the REAL framebuffer, and hand back the display number.
 #
 # Run ON the box (root@192.0.2.10). Everything lives under
-# /data/vms/soltest/irix-park/<name>/ — never the production tile tree — and
+# /data/vms/soltest/irix-park/<name>/ — never the production station tree — and
 # every kill goes through clone-guard.
 #
 #   irix-park-desktop.sh start <name> [--display N] [--cpus LIST] [--chd PATH]
@@ -38,7 +38,7 @@ ASSETS="${IRIX_ASSETS:-/data/vms/streamhost/assets/irix}"
 MAME_BIN="${IRIX_MAME:-$ASSETS/mame/sgi}"
 # The Lua input agent is the ONLY reliable keyboard channel: a WM-less
 # full-screen Xvfb never mouse-captures, so SDL drops keys and buttons. Read it
-# from the read-only ASSET stage, never from a live tile's directory — a
+# from the read-only ASSET stage, never from a live station's directory — a
 # parameter-default pointing into /data/vms/streamhost/tiles is the exact
 # footgun clone-guard refuses (and it once killed a production QEMU).
 AGENT_SRC="${IRIX_AGENT:-$ASSETS/irixagent.lua}"

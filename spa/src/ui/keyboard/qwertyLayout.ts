@@ -4,8 +4,8 @@
 //  A phone-fit QWERTY built ENTIRELY from 'char' KeyDefs (delivered by
 //  keySender → handle.typeText → asciiToScancode, which owns the correct
 //  synthetic-Shift per US layout). Every printable US glyph is asciiToScancode-
-//  mappable, so this layer needs ZERO new scancodes and ZERO per-tile lab
-//  verification — it works on all 30 tiles, bridge tiles included.
+//  mappable, so this layer needs ZERO new scancodes and ZERO per-station lab
+//  verification — it works on all 30 stations, kiosks included.
 //
 //  It lives OUTSIDE keyboardProfiles.PROFILES — a SIBLING structure — so the
 //  profile invariants (keyboardProfiles.test.ts) stay untouched and green.

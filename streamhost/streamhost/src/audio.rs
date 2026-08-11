@@ -16,7 +16,7 @@
 // of QEMU over D-Bus. If the guest/QEMU has no dbus audiodev, RegisterOutListener
 // errors and main.rs simply runs video-only.
 //
-// A second PCM source exists for tiles with no QEMU at all: `start_fifo` (see
+// A second PCM source exists for stations with no QEMU at all: `start_fifo` (see
 // its section below) reads raw s16le stereo 48 kHz out of a named pipe written
 // by MAME's SDL "disk" audio driver and feeds the SAME encode_loop, so the wire
 // format (48 k stereo Opus) is identical on both paths.
@@ -192,11 +192,11 @@ pub async fn start(main_conn: zbus::Connection, bitrate: u32) -> anyhow::Result<
 
 // ---- FIFO PCM source (SH_AUDIO_SOURCE=fifo) ---------------------------------
 //
-// The shm-capture IRIX/MAME tile has no QEMU and no dbus audiodev, but MAME's
+// The shm-capture IRIX/MAME station has no QEMU and no dbus audiodev, but MAME's
 // SDL port has a "disk" audio driver that writes the mixed output as raw PCM to
 // a path — pointed at a named pipe (`-sound sdl -audiodriver disk` +
 // SDL_DISKAUDIOFILE=<tile>/audio.fifo, SDL_DISKAUDIODELAY=0), that PCM is live.
-// Probed on the tile before this design was approved: the disk driver writes
+// Probed on the station before this design was approved: the disk driver writes
 // real PCM including the PROM boot chime, the golden savestate loads with the
 // sound flags changed, and emulation survives reader stalls.
 //
@@ -236,7 +236,7 @@ const FIFO_FMT: Fmt = Fmt {
 /// Like `start`, but the PCM source is the named pipe described above. Never
 /// touches D-Bus, so it is the one audio source that works on capture backends
 /// with no `main_conn` (SH_CAPTURE=shm/x11). Reuses `encode_loop` verbatim:
-/// transports and the SPA see exactly what the dbus path produces.
+/// transports and the UI see exactly what the dbus path produces.
 pub fn start_fifo(path: String, bitrate: u32, silence_thresh: u16) -> anyhow::Result<AudioOut> {
     let (tx, _rx) = broadcast::channel::<AudioPacket>(256);
     let (pcm_tx, pcm_rx) = mpsc::unbounded_channel::<Vec<u8>>();
@@ -323,7 +323,7 @@ impl SilenceGate {
 }
 
 /// Open the producer FIFO for one paced-read session. The non-blocking open
-/// succeeds on a FIFO with or without a writer (the tile launcher holds a
+/// succeeds on a FIFO with or without a writer (the station launcher holds a
 /// persistent O_RDWR fd as reader-of-last-resort, but clone rigs may not); the
 /// fd is switched back to blocking for the paced reads so an empty pipe parks
 /// the thread instead of spinning it. Refuses a non-FIFO loudly — a regular
@@ -373,7 +373,7 @@ fn fifo_read_loop(path: &str, pcm_tx: &mpsc::UnboundedSender<Vec<u8>>, silence_t
             Err(e) => {
                 // The launcher creates the fifo; it may legitimately race us
                 // (exactly like the shm mapping). Retry forever — audio coming
-                // up late is strictly better than a tile without audio.
+                // up late is strictly better than a station without audio.
                 if !announced_missing {
                     eprintln!("[audio] fifo {path} not readable yet: {e} (retrying)");
                     announced_missing = true;

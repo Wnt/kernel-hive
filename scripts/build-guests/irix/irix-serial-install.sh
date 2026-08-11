@@ -10,7 +10,7 @@
 #
 # WHY THE CONSOLE AND NOT AN ISO.  /etc/inittab ships `t1:23:respawn:...getty
 # ttyd1 console`, so an IRIX login prompt is sitting on serial port 1 from the
-# moment the tile boots, with an empty root password. That is the whole
+# moment the station boots, with an empty root password. That is the whole
 # bootstrap: no CD image, no key matrix (whose natkeyboard path silently drops
 # every shifted character), no pointer work. Host->guest is byte-clean once the
 # getty's echo is off; guest->host is not, which is why nothing here reads the

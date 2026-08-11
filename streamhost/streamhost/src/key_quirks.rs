@@ -1,4 +1,4 @@
-// Keyboard QUIRKS: the small, per-tile corrections between what a browser
+// Keyboard QUIRKS: the small, per-station corrections between what a browser
 // keyboard emits and what a given emulated machine can actually receive.
 //
 // Three concerns live here, all reached from `input.rs`'s type=3 record path:
@@ -38,9 +38,9 @@ pub(crate) fn key_qnum(code: u32, legacy_kbd: bool) -> u32 {
     }
 }
 
-/// Apply the tile's `SH_KEY_REMAP` table to a browser WIRE code, before any
+/// Apply the station's `SH_KEY_REMAP` table to a browser WIRE code, before any
 /// other keyboard handling. Both input surfaces — the physical keyboard and the
-/// SPA's on-screen keyboard — converge on the same type=3 record, so remapping
+/// UI's on-screen keyboard — converge on the same type=3 record, so remapping
 /// here covers both. First match wins; an empty table is the identity.
 ///
 /// Motivating case: the MPF-II's 8x8 matrix has no Backspace key at all (MAME
@@ -104,7 +104,7 @@ impl KeyHold {
     }
 }
 
-/// The tile-wide key gate. One streamhost process serves ONE tile, so a single
+/// The station-wide key gate. One streamhost process serves ONE station, so a single
 /// mutex serializes every key event for it: while a deferred Release is pending
 /// the next key's Press waits its turn instead of racing ahead. Nothing is
 /// dropped when the user types faster than the hold or the gap — the events

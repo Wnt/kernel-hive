@@ -32,7 +32,7 @@ if ! id gallery >/dev/null 2>&1; then
   useradd -m gallery
 fi
 
-# KDM auto-login is the tile contract: cold boot and golden restore must both
+# KDM auto-login is the station contract: cold boot and golden restore must both
 # reach the logged-in gallery desktop without input. Keep the fixture static by
 # removing the panel clock and disabling the screensaver in gallery's profile.
 KDM=/etc/X11/xdm/kdmrc

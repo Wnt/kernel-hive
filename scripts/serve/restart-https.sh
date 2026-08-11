@@ -1,6 +1,6 @@
 #!/bin/bash
 # restart-https.sh — (re)start the osgallery single-origin HTTPS server that
-# serves the SPA + /signal/<tile>.json + POST /restore/<osId>. When the systemd
+# serves the UI + /signal/<tile>.json + POST /restore/<osId>. When the systemd
 # unit osgallery-https.service is installed (the supervised, reboot-surviving
 # path — see install-https-service.sh) this restarts THROUGH systemd; otherwise
 # it falls back to the legacy detached relaunch. Idempotent; safe to re-run

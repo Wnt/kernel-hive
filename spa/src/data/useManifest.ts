@@ -5,7 +5,7 @@ import type { RuntimeVMManifestEntry, VMManifestEntry } from '../types';
 
 // Boot-video index (BOOT-VIDEO-REPLAY-SPEC §4): a static WEBROOT/boot/index.json
 // keyed by osId. Fetched best-effort and merged additively onto the catalog so
-// durations/paths can change without an SPA rebuild. Absent / 404 ⇒ no-op.
+// durations/paths can change without an UI rebuild. Absent / 404 ⇒ no-op.
 type BootIndexEntry = NonNullable<VMManifestEntry['bootVideo']>;
 async function fetchBootIndex(): Promise<Record<string, BootIndexEntry>> {
   try {
@@ -40,16 +40,16 @@ function withBoot(vm: RuntimeVMManifestEntry, boot: Record<string, BootIndexEntr
 
 /** Which manifest rows the store gets to hold at all.
  *
- * `showcase` entries (posters with no live tile behind them) are dropped here
- * and never enter the store: there is no tile, so there is nothing for
+ * `showcase` entries (posters with no live station behind them) are dropped here
+ * and never enter the store: there is no station, so there is nothing for
  * /os/<id> to resolve to either. That is exactly the DIFFERENCE from a soft
- * hide — a soft-hidden tile (registry `listing`, manifest `listed: false`) is
+ * hide — a soft-hidden station (registry `listing`, manifest `listed: false`) is
  * fully alive and must stay resolvable, so it is carried through here and
  * filtered only out of the store's `listedVms`. Do not filter `listed` here:
  * removing the row is what breaks the direct URL. The hardcoded HIDDEN_IDS set
  * that used to live in this file (sailfishos / postmarketos / android) is now
  * the registry `listing` block on those three entries — the same hide,
- * declared where the rest of the tile is declared.
+ * declared where the rest of the station is declared.
  */
 export function storedLineup(
   entries: readonly RuntimeVMManifestEntry[],

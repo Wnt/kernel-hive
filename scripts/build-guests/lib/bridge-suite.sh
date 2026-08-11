@@ -4,15 +4,15 @@
 # bookworm -> trixie migration of the emulator-bridge guest base.
 #
 # WHY THIS EXISTS. The lab host is Debian 13 (trixie); the shared bridge guest
-# base is still Debian 12 (bookworm) and ~29 tiles overlay it read-only. The
+# base is still Debian 12 (bookworm) and ~29 stations overlay it read-only. The
 # base cannot be migrated in one shot -- every overlay would have to be rebuilt,
-# re-baked and re-accepted on the same day, and several tiles need real work
+# re-baked and re-accepted on the same day, and several stations need real work
 # first (docs/lab/BRIDGE-TRIXIE-MIGRATION.md). So TWO bases coexist and each
-# tile declares which one it is built on, in registry/bridge-suites.json.
+# station declares which one it is built on, in registry/bridge-suites.json.
 #
 # The bookworm base keeps its ORIGINAL path (/data/vms/bridge/bridge-base.qcow2)
 # so every existing overlay's recorded backing file stays valid byte-for-byte.
-# The trixie base is a NEW file beside it. Nothing about an unmigrated tile
+# The trixie base is a NEW file beside it. Nothing about an unmigrated station
 # changes.
 #
 # USAGE (from any build script):
@@ -24,15 +24,15 @@
 #   base="$(bridge_base_for "$suite")"           # -> /data/vms/bridge/...qcow2
 #   chroot="$(bridge_mame_chroot_for "$suite")"  # -> ABI-matched MAME chroot
 #
-# Every function FAILS LOUDLY (non-zero + stderr) on an unknown tile, an unknown
+# Every function FAILS LOUDLY (non-zero + stderr) on an unknown station, an unknown
 # suite, or a malformed ledger. There is deliberately no silent fallback: a
 # build that cannot tell which Debian it is targeting must not guess, because
 # the failure mode is a binary that loads on the host and dies in the guest with
-# `GLIBC_2.xx not found` only once the tile is live.
+# `GLIBC_2.xx not found` only once the station is live.
 #
 # OVERRIDE for experiments: set BRIDGE_SUITE=trixie in the environment to force
 # a suite for one build without editing the ledger. Intended for a clone under
-# /data/vms/soltest/ while migrating a tile; never for a production re-bake --
+# /data/vms/soltest/ while migrating a station; never for a production re-bake --
 # the ledger and the box must agree, and scripts/dev/bridge-suite-status.sh is
 # what proves they do.
 # =============================================================================
@@ -110,12 +110,12 @@ bridge_suite_list() {
   _bridge_suite_query suites
 }
 
-# bridge_suite_default — the suite a tile gets when the ledger does not name it.
+# bridge_suite_default — the suite a station gets when the ledger does not name it.
 bridge_suite_default() {
   _bridge_suite_query default
 }
 
-# bridge_suite_for <tile> — the suite this tile's overlay is built on.
+# bridge_suite_for <tile> — the suite this station's overlay is built on.
 # BRIDGE_SUITE in the environment wins, for experiment clones only.
 bridge_suite_for() {
   local tile="${1:?bridge_suite_for: tile id required}" suite
@@ -172,7 +172,7 @@ bridge_suite_is_frozen() {
   [ "$frozen" = "true" ]
 }
 
-# bridge_suite_tiles [suite] — tile ids, all of them or only those on <suite>.
+# bridge_suite_tiles [suite] — station ids, all of them or only those on <suite>.
 bridge_suite_tiles() {
   if [ $# -eq 0 ]; then
     _bridge_suite_query tiles

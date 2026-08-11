@@ -42,7 +42,7 @@ GALLERY_IMAGE_KEYS = frozenset(
 # depend on the interpreter's per-process hash seed, so two runs of
 # `make tile-registry-generate` produced byte-different output and the
 # generated-file drift gate failed at random. sha256 is deliberately absent --
-# it guards the shipped asset, and the SPA type does not carry it.
+# it guards the shipped asset, and the UI type does not carry it.
 GALLERY_IMAGE_TS_KEYS = (
     "src",
     "alt",

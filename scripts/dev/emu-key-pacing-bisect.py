@@ -134,7 +134,7 @@ def shot(q, out_dir, tag):
 
 
 # Seconds to wait after `loadvm` before typing. 2.5 s is enough for the VICE
-# tiles this harness was written for. It is NOT enough for MAME: on zxspectrum,
+# stations this harness was written for. It is NOT enough for MAME: on zxspectrum,
 # keys sent ~4 s after a restore were swallowed OUTRIGHT by an emulator that was
 # demonstrably live before and after, which turns every trial into a false
 # "corrupted" and makes the instrument lossier than the thing measured. Raise it

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launch an isolated NT4 Cirrus candidate. Never use this for a production tile.
+# Launch an isolated NT4 Cirrus candidate. Never use this for a production station.
 set -euo pipefail
 
 readonly PATCHED_QEMU=${PATCHED_QEMU:-/data/vms/soltest/cvmstate-trace-20260728T084646Z-14233/qemu-fixed-clean}

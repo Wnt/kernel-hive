@@ -5,8 +5,8 @@
 #
 # WHAT THIS IS: a lean Debian x86_64 guest that boots straight to a bare-X kiosk
 # and runs ONE full-screen SDL emulator with NO window manager. It is the
-# read-only qcow2 BACKING FILE for every "bridge" tile (C64/GEOS, Atari-ST/
-# EmuTOS, Apple-II/GEOS, Amstrad-CPC, …). Each tile is a thin qcow2 OVERLAY on
+# read-only qcow2 BACKING FILE for every "bridge" station (C64/GEOS, Atari-ST/
+# EmuTOS, Apple-II/GEOS, Amstrad-CPC, …). Each station is a thin qcow2 OVERLAY on
 # top of this base that swaps in its own /etc/bridge/launch.sh (emulator + media
 # + fullscreen flags). Build it once, freeze it, fan out.
 #
@@ -16,14 +16,14 @@
 #  script builds EITHER base, selected with `--suite <bookworm|trixie>`, and
 #  every suite-dependent value (base path, genericcloud URL, package deltas)
 #  comes from the ledger registry/bridge-suites.json via lib/bridge-suite.sh —
-#  never from a literal here. Which tile is on which suite, and the per-tile
+#  never from a literal here. Which station is on which suite, and the per-station
 #  migration procedure, live in docs/lab/BRIDGE-TRIXIE-MIGRATION.md.
 #
 #  `--suite bookworm` on a box where that base already exists is the single most
 #  destructive command in this repo: rebuilding it invalidates the read-only
 #  backing file of every overlay at once. --force is deliberately NOT enough —
 #  it additionally demands --i-know-this-breaks-every-overlay, and prints the
-#  tiles it would destroy before refusing.
+#  stations it would destroy before refusing.
 #
 # The base ships FIVE emulators so the fan-out needs no rebuild:
 #   * VICE  x64sc  (Commodore 64)      — BUILT FROM SOURCE (see HONESTY below)
@@ -38,18 +38,18 @@
 #  are baked in here so an NVMe rebuild "just works":
 #
 #  1. NIC / KERNEL. The genericcloud image ships the trimmed `linux-image-cloud`
-#     kernel which has NO e1000 driver (virtio only). The streamhost tile device
+#     kernel which has NO e1000 driver (virtio only). The streamhost station device
 #     set uses an e1000 NIC, so provisioning INSTALLS `linux-image-amd64` (the
 #     full generic kernel, virtio + e1000) which becomes the boot kernel. We
 #     PROVISION over virtio-net (the cloud kernel can drive that) but the frozen
-#     base boots fine under the e1000 tile device set.
+#     base boots fine under the e1000 station device set.
 #
 #  2. NETWORKING. SLIRP DHCP was unreliable for this image's systemd-networkd
 #     (networkd-wait-online hung forever, no lease). We use a DETERMINISTIC
 #     STATIC IP matching SLIRP's fixed addressing (guest 10.0.2.15/24,
 #     gw 10.0.2.2, dns 10.0.2.3) via /etc/systemd/network/10-bridge-slirp.network
 #     and MASK systemd-networkd-wait-online so boot never blocks. Identical for
-#     the virtio provisioning NIC and the e1000 tile NIC (both enumerate en*).
+#     the virtio provisioning NIC and the e1000 station NIC (both enumerate en*).
 #
 #  3. VICE IS BUILT FROM SOURCE ON BOTH SUITES, for two DIFFERENT reasons.
 #     On bookworm there is simply no package: VICE was removed from Debian over
@@ -62,7 +62,7 @@
 #     KERNAL/BASIC/CHARGEN ROMs, so no separate ROM fetch. cap32 additionally
 #     needs libfreetype-dev; LinApple's Makefile is at the REPO ROOT (not src/).
 #
-#  Result: a FROZEN base at $BASE_QCOW that 28 tiles overlay. NEVER modify a
+#  Result: a FROZEN base at $BASE_QCOW that 28 stations overlay. NEVER modify a
 #  frozen base again — overlays depend on it byte-for-byte as read-only backing.
 #
 # ---- LICENSE / PROVENANCE (recorded in $MEDIA_DIR/LICENSES) -----------------
@@ -73,8 +73,8 @@
 #   LinApple / cap32 (source) ....... GPLv2.
 #   GEOS 2.0 D64 (C64) .............. archive.org item geos64_J1AD; copyrighted, free
 #                                     to use in this private collection (same stance as
-#                                     the OS/2, Win9x, NeXTSTEP tiles).
-#   EmuTOS 1024k .................... GPLv2 (Atari ST free ROM), for the ST tile.
+#                                     the OS/2, Win9x, NeXTSTEP stations).
+#   EmuTOS 1024k .................... GPLv2 (Atari ST free ROM), for the ST station.
 #
 # HYGIENE (per project rules): namespaced work dir, unique sockets/pidfile, kill
 # ONLY by pidfile (never pkill), qcow2 overlays only (no full copies), idempotent
@@ -176,7 +176,7 @@ FSUAE_PKGS="fs-uae"
 GEOS_URL="https://archive.org/download/geos64_J1AD/geos64_J1AD.d64"
 GEOS_MD5="709bec31c3502cbcf5d4761c38dcfa9e"
 EMUTOS_URL="https://sourceforge.net/projects/emutos/files/emutos/1.3/emutos-1024k-1.3.zip/download"
-# Amiga 500 tile (scripts/build-guests/tiles/amiga.sh) media — copyrighted, free to use in
+# Amiga 500 station (scripts/build-guests/tiles/amiga.sh) media — copyrighted, free to use in
 # this private collection; fetched here so a from-scratch NVMe rebuild bakes it in
 # (NEVER committed to the GitHub repo).
 AMIGA_KICK_URL="https://archive.org/download/commodore-amiga-firmware/Kickstart%20v1.3%20r34.005%20%281987-12%29%28Commodore%29%28A500-A1000-A2000-CDTV%29%5B%21%5D.zip"
@@ -201,14 +201,14 @@ trap cleanup EXIT
 # An existing base marked frozen in the ledger is the read-only backing file of
 # every overlay listed below. Rebuilding it does not "refresh" them — it makes
 # each overlay's recorded backing file describe a DIFFERENT disk, i.e. every one
-# of those tiles is destroyed at once, silently, and no golden snapshot survives
+# of those stations is destroyed at once, silently, and no golden snapshot survives
 # it. --force alone is a plausible typo, so it is not sufficient authority here.
 #
 # "Frozen" is BOTH declared and DERIVED. The ledger's `frozen` flag is the
 # operator's statement of intent, but the guard must not depend on someone
-# remembering to set it: any suite that has even one tile declared on it has
+# remembering to set it: any suite that has even one station declared on it has
 # overlays in the field, so it is frozen in fact whatever the flag says. A
-# newly built base is legitimately rebuildable right up until the first tile
+# newly built base is legitimately rebuildable right up until the first station
 # lands on it, and from that moment it is not — with no edit required.
 if [ -f "$BASE_QCOW" ] && [ "$BREAK_OVERLAYS" -eq 0 ] &&
   { bridge_suite_is_frozen "$SUITE" || [ -n "$(bridge_suite_tiles "$SUITE")" ]; }; then
@@ -282,7 +282,7 @@ write_files:
     permissions: '0644'
     content: |
       # Deterministic static config matching QEMU SLIRP's fixed addressing.
-      # Works for BOTH the virtio provisioning NIC and the e1000 tile NIC (en*).
+      # Works for BOTH the virtio provisioning NIC and the e1000 station NIC (en*).
       [Match]
       Name=en*
       [Network]
@@ -320,7 +320,7 @@ write_files:
       pcm.!default { type plug; slave.pcm "hw:0,0" }
       ctl.!default { type hw; card 0 }
   # The codename of the base this guest was built from. Lets the status checker
-  # read a RUNNING tile's ACTUAL suite from inside the guest instead of trusting
+  # read a RUNNING station's ACTUAL suite from inside the guest instead of trusting
   # registry/bridge-suites.json, which only records intent.
   - path: /etc/bridge/suite
     permissions: '0644'
@@ -330,7 +330,7 @@ write_files:
     permissions: '0755'
     content: |
       #!/bin/bash
-      # PLACEHOLDER. Each bridge tile OVERLAYS its own /etc/bridge/launch.sh.
+      # PLACEHOLDER. Each kiosk OVERLAYS its own /etc/bridge/launch.sh.
       exec xterm -fullscreen -e "echo 'bridge base: no tile launcher installed'; sleep 100000"
   - path: /home/bridge/.xinitrc
     permissions: '0755'
@@ -360,8 +360,8 @@ write_files:
         sed -i 's/^Components: .*/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources
       fi
       apt-get update -o Acquire::Retries=3
-      # full generic kernel (e1000 + bochs-drm for the tile device set / X).
-      # The trimmed \`cloud\` kernel lacks BOTH e1000 (no tile network) AND the
+      # full generic kernel (e1000 + bochs-drm for the station device set / X).
+      # The trimmed \`cloud\` kernel lacks BOTH e1000 (no station network) AND the
       # bochs-drm framebuffer (X errors "no screens found"). Install the generic
       # kernel AND PURGE the cloud kernel so grub boots the generic one by default.
       apt-get install -y linux-image-amd64
@@ -376,10 +376,10 @@ write_files:
         flex bison xa65 dos2unix libreadline-dev libvorbis-dev libflac-dev \\
         libcurl4-openssl-dev libfreetype-dev libglew-dev
       command -v hatari >/dev/null && HATARI_OK=yes
-      # ---- FS-UAE (Amiga 500 tile; scripts/build-guests/tiles/amiga.sh). In Debian main.
+      # ---- FS-UAE (Amiga 500 station; scripts/build-guests/tiles/amiga.sh). In Debian main.
       # Installed WITH recommends so it pulls libopenal (Paula audio) + mesa (llvmpipe
       # software GL for the GPU-less host). Not part of the original 4-emulator set;
-      # baked here so the amiga tile needs no per-tile fs-uae install on a fresh base.
+      # baked here so the amiga station needs no per-station fs-uae install on a fresh base.
       # On trixie the package has NO Recommends: at all, so mesa is named explicitly
       # in \$FSUAE_PKGS on the host side (see the package-delta note there).
       apt-get install -y ${FSUAE_PKGS} && command -v fs-uae >/dev/null && FSUAE_OK=yes || FSUAE_OK=no
@@ -408,7 +408,7 @@ write_files:
       # ---- LinApple (Makefile at repo ROOT) ----
       # KNOWN-FLAKY: the linappleii build needs ImageMagick 'convert' for its
       # PNG->XPM asset step AND currently fails a Video.o compile under modern g++.
-      # Non-critical (Apple //e fan-out). If it fails, the Apple II tile should fall
+      # Non-critical (Apple //e fan-out). If it fails, the Apple II station should fall
       # back to \`mame apple2e\` from apt (apt-get install -y mame) per the plan.
       apt-get install -y imagemagick 2>/dev/null || true
       # ImageMagick 6 (bookworm) ships \`convert\`; ImageMagick 7 (trixie) ships
@@ -434,7 +434,7 @@ write_files:
       # rotted mirror produced a base with NO emulator media, the provision
       # script still printed its STATUS line and exited 0, wave 0 acceptance
       # passed (it only checks that the emulator BINARIES exist), and the fault
-      # would surface weeks later as a tile rendering black with every log
+      # would surface weeks later as a station rendering black with every log
       # healthy. The amiga media in particular hangs off a single third-party
       # mirror (amigamuseum.emu-france.info) with no second source.
       # A base without its media is not a degraded base, it is a broken one, so
@@ -448,9 +448,9 @@ write_files:
         (cd /tmp && unzip -o emutos.zip >/dev/null 2>&1 && find . -name 'etos1024k.img' -exec cp {} ${MEDIA_DIR}/etos1024k.img \\;)
         [ -f ${MEDIA_DIR}/etos1024k.img ] || { echo "FATAL: EmuTOS zip fetched but etos1024k.img not found inside it"; exit 23; }
       fi
-      # ---- Amiga 500 tile media (scripts/build-guests/tiles/amiga.sh): Kickstart 1.3 ROM
+      # ---- Amiga 500 station media (scripts/build-guests/tiles/amiga.sh): Kickstart 1.3 ROM
       # + Workbench 1.3 Boot ADF. Copyrighted, free to use in this private collection — NEVER committed;
-      # baked into /opt/bridge/media/amiga/ so the amiga tile needs no per-tile fetch.
+      # baked into /opt/bridge/media/amiga/ so the amiga station needs no per-station fetch.
       mkdir -p ${MEDIA_DIR}/amiga
       if [ ! -f ${MEDIA_DIR}/amiga/kick13.rom ]; then
         curl -fsSL --retry 3 --max-time 180 -o /tmp/amiga-kick.zip "${AMIGA_KICK_URL}" \\

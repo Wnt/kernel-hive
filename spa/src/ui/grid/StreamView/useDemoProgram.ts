@@ -9,8 +9,8 @@ import { typeDemoProgram } from './typeDemoProgram';
 // ---------------------------------------------------------------------------
 //  useDemoProgram — stage-menu state for "type in a demo program".
 //
-//  Which tiles have one is DATA (registry demoProgram → data/demoPrograms.ts),
-//  never an id check here: a tile without a listing simply gets no menu row.
+//  Which stations have one is DATA (registry demoProgram → data/demoPrograms.ts),
+//  never an id check here: a station without a listing simply gets no menu row.
 //
 //  States mirror useRestoreFlow's busy/err vocabulary, so the menu row can be
 //  disabled while typing and cannot double-fire.

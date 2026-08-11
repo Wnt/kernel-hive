@@ -1,7 +1,7 @@
 #!/bin/bash
 # install-amiga-coldboot.sh — install the Amiga cold-boot-on-visit lifecycle
 # (AUTHORED 2026-07-14 from the live install; the original was hand-applied).
-# RUN ON THE BOX from a repo checkout, with the amiga bridge tile built & up.
+# RUN ON THE BOX from a repo checkout, with the amiga kiosk built & up.
 #
 # Pieces (all byte-copies of the live install, in this directory):
 #   host  : amiga-coldboot-watch.sh  -> /usr/local/bin/  (journal watcher; ssh's the kiosk)

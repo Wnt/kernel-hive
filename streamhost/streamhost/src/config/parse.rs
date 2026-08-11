@@ -41,7 +41,7 @@ pub(super) fn parse_cc(s: &str) -> bool {
     !s.trim().eq_ignore_ascii_case("cubic")
 }
 
-/// The descriptive per-tile name is the public contract. Keep SH_PRESET as a
+/// The descriptive per-station name is the public contract. Keep SH_PRESET as a
 /// compatibility fallback for hand-managed test fixtures created before the
 /// registry grew an explicit encoder-preset field.
 pub(super) fn encoder_preset_env() -> String {
@@ -55,7 +55,7 @@ pub(super) fn normalize_encoder_preset(preset: &str) -> String {
         p @ ("ultrafast" | "superfast" | "veryfast" | "faster" | "fast" | "medium" | "slow"
         | "slower" | "veryslow") => p,
         // Fall back to the same value an unset SH_ENCODER_PRESET gives, so a
-        // typo cannot quietly put one tile on a different preset from the fleet.
+        // typo cannot quietly put one station on a different preset from the fleet.
         _ => "ultrafast",
     }
     .to_string()

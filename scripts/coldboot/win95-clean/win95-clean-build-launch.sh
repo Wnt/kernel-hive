@@ -11,7 +11,7 @@ LAUNCH="$PREP/qemu-streamhost.sh"
 sleep 0.3
 rm -f "$PREP/qmp.sock" "$PREP/qemu.pid"
 
-# transform: redirect tile dir, rename, bump hostfwd, neutralise loadvm (cold boot)
+# transform: redirect station dir, rename, bump hostfwd, neutralise loadvm (cold boot)
 sed -e "s#${LIVE_DIR}#${PREP}#g" \
   -e "s/-name streamhost-win95/-name streamhost-win95-cleanprep/" \
   -e "s/hostfwd=tcp:127.0.0.1:57791-/hostfwd=tcp:127.0.0.1:59791-/g" \

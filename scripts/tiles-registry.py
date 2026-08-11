@@ -291,7 +291,7 @@ def validate_schema_shape(rows: list[dict[str, Any]], errors: list[str]) -> None
             if stream.get("pointer", {}).get("transport") not in pointers:
                 fail(errors, row, "invalid pointer transport")
             runtime = row.get("runtime", {})
-            # x11 tiles are the non-QEMU streamhost runtime (issue #20 / IRIX):
+            # x11 stations are the non-QEMU streamhost runtime (issue #20 / IRIX):
             # an Xvfb+emulator captured via SH_CAPTURE=x11. They carry a
             # runtime.x11 block instead of runtime.qemu and are validated apart.
             if is_x11_runtime(row):
@@ -392,7 +392,7 @@ def validate_listing(rows: list[dict[str, Any]], errors: list[str]) -> None:
             )
 
 
-# spa/src/ui/grid/StreamView/typeDemoProgram.ts DEMO_PER_CHAR_MS -- what the SPA
+# spa/src/ui/grid/StreamView/typeDemoProgram.ts DEMO_PER_CHAR_MS -- what the UI
 # typist assumes when the entry declares no perCharMs of its own.
 SPA_DEFAULT_PER_CHAR_MS = 70
 
@@ -435,7 +435,7 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
 
 
 # stream.pointer.method -> (the SH_INPUT_BACKEND values that can deliver it,
-# device-ledger tokens the tile MUST carry, tokens it must NOT carry). The
+# device-ledger tokens the station MUST carry, tokens it must NOT carry). The
 # backend column mirrors InputBackend in streamhost/streamhost/src/config/
 # backends.rs; the ledger columns are what the launcher/emitArgs must show.
 POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = {
@@ -451,7 +451,7 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
 }
 # `pointer_mode` in the labctl matrix is the daemon's own backend -> abs/rel/
 # warpd/none projection (InputBackend::pointer_mode()); labctl's `abs x y` and
-# the SPA's transport choice both key on it, so it must agree with `absolute`.
+# the UI's transport choice both key on it, so it must agree with `absolute`.
 POINTER_MODE_BY_BACKEND = {
     "disabled": "none",
     "dbus-rel": "rel",
@@ -740,13 +740,13 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                 fail(errors, row, "production entry missing bringUpOrder")
             if "reset" not in row:
                 fail(errors, row, "production entry missing reset policy")
-            # A tile outside the edge's DNAT range is unreachable from the public
+            # A station outside the edge's DNAT range is unreachable from the public
             # gallery while looking entirely healthy on the box -- service active,
             # ticket accepted, signalling fine, and the daemon simply never sees a
-            # session. Four tiles shipped that way on 2026-08-09.
+            # session. Four stations shipped that way on 2026-08-09.
             low = globals_doc["ports"]["publicRelayLow"]
             high = globals_doc["ports"]["publicRelayHigh"]
-            # legacyPortException tiles are deliberately off the base+slot policy
+            # legacyPortException stations are deliberately off the base+slot policy
             # (reactos sits on 4433) and the edge carries its own rule for them, so
             # the range check does not apply.
             in_range = low <= stream.get("udpPort", -1) <= high
@@ -765,8 +765,8 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             if stream.get("udpPort") != expected:
                 fail(errors, row, "experiment UDP port violates base+experimentSlot policy")
         tile_dir = row["tileDir"]
-        # ONE tile, ONE name. The id is the user-facing half (/os/<id>, the poster
-        # path, docs/guests/<id>.md, the SPA binding); tileDir is the daemon half
+        # ONE station, ONE name. The id is the user-facing half (/os/<id>, the poster
+        # path, docs/guests/<id>.md, the UI binding); tileDir is the daemon half
         # (SH_TILE, the runtime dir, streamhost@<dir>). They used to be allowed to
         # differ behind an explicit alias block, and the two that did — aros/amigaos
         # and solaris/solariscde — cost a special case in every tool that spanned
@@ -855,7 +855,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             x11cfg = runtime.get("x11", {})
             # The frame SOURCE is independent of the runtime kind: `x11` grabs
             # an Xvfb root, `shm` maps a framebuffer the emulator publishes
-            # itself (no window, no X server). Default x11, so a tile that does
+            # itself (no window, no X server). Default x11, so a station that does
             # not declare one is unchanged.
             capture = x11cfg.get("capture", "x11")
             expected_env.update(
@@ -1107,10 +1107,10 @@ def emit_gallery_manifest(rows: list[dict[str, Any]]) -> bytes:
         )
         # Soft hide (registry `listing`). The ROW STAYS — dropping it is what a
         # deployment-only override used to do, and it is exactly what breaks the
-        # /os/<id> deep link, since the SPA resolves that id out of this manifest.
-        # Emitted only when hidden, so every listed tile's JSON is byte-unchanged.
+        # /os/<id> deep link, since the UI resolves that id out of this manifest.
+        # Emitted only when hidden, so every listed station's JSON is byte-unchanged.
         # The reason/since stay in registry/index.json: this document is public,
-        # served to every browser, and the SPA renders none of that prose.
+        # served to every browser, and the UI renders none of that prose.
         if is_hidden(row):
             entry["listed"] = False
         for key in ("ramMB", "ramKB", "notes", "era", "eraSoftware", "periodBrowser", "iconicApps", "blurb"):
@@ -1121,8 +1121,8 @@ def emit_gallery_manifest(rows: list[dict[str, Any]]) -> bytes:
                 entry[key] = spa[key]
         # Grid badge: a machine a visitor will TRY to point at, whose pointer is
         # only relative. Derived from stream.pointer (the truth about the guest),
-        # NOT from spa.pointerRel — that flag is the SPA's input-MODEL hint and
-        # three relative tiles legitimately lack it, so keying the badge off it
+        # NOT from spa.pointerRel — that flag is the UI's input-MODEL hint and
+        # three relative stations legitimately lack it, so keying the badge off it
         # would quietly under-report.
         pointer = row.get("stream", {}).get("pointer", {})
         if pointer.get("present") and not pointer.get("absolute"):
@@ -1186,7 +1186,7 @@ def generated() -> OrderedDict[str, bytes]:
     production = [r for r in rows if r["lifecycle"] == "production"]
 
     # No --encoder-preset in emitArgs: the daemon default (ultrafast) governs the
-    # whole fleet. A per-tile value here was 36 restatements of the default and
+    # whole fleet. A per-station value here was 36 restatements of the default and
     # one silent divergence (irix on veryfast, with no recorded reason).
     emits = "".join(
         r["render"].get("tilesManifestPrelude", "") + render_emit_invocation(r)
@@ -1345,7 +1345,7 @@ def check_gate_lists(output_keys: list[str]) -> list[str]:
         mismatches.append(f"GENERATED_SHELL not a subset of generated outputs: {sorted(set(GENERATED_SHELL) - keys)}")
 
     # The edge's DNAT range lives in three places that must agree, and when they
-    # drift nothing on the box notices: the tile is active, its ticket is
+    # drift nothing on the box notices: the station is active, its ticket is
     # accepted, signalling is valid, and the daemon simply never sees a session.
     # registry-v1.json is the source of truth; assert the installer matches it.
     relay = json.loads((REGISTRY / "registry-v1.json").read_text())["ports"]
@@ -1666,7 +1666,7 @@ def cmd_explain(os_id: str) -> int:
             ("registry", str(row["_path"].relative_to(REPO))),
             ("lifecycle", row["lifecycle"]),
             # "why is this exhibit not on the floor" is the first thing a session
-            # asks about a tile it cannot find in the grid; answer it up front.
+            # asks about a station it cannot find in the grid; answer it up front.
             ("listing", row.get("listing", {"state": "listed"})),
             ("tileDir", row.get("tileDir")),
             (

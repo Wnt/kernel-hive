@@ -3,11 +3,11 @@
 # build-guests/emulators/mame-ccache.sh — shared ccache wiring for every
 # chroot MAME build (build-mame-{bbcb,mpf2,zx81,dragon32,kc854,oricatmos}.sh).
 #
-# WHY. Six binaries are built for seven tiles, each from its OWN source tree,
+# WHY. Six binaries are built for seven stations, each from its OWN source tree,
 # and three of the six builders name their tree with `$$` so every run is a
 # brand-new directory. Without a cache that means six cold MAME compiles per
 # migration wave, ~1 h each, recompiling the identical emu/osd/3rdparty core
-# six times over. The trees stay separate on purpose (per-tile patch
+# six times over. The trees stay separate on purpose (per-station patch
 # experimentation is worth more than the disk), so the cache has to be the
 # thing that is shared.
 #

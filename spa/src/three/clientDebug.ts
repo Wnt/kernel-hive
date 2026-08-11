@@ -4,13 +4,13 @@
 //  Shared protocol contract (serve plane implements the other side):
 //    POST /clientlog          — X-Admin-Token + JSON body: ONE event object or an ARRAY of
 //                               events. Event fields: ts (ms epoch), sessionId
-//                               (8-hex per page load), tile (osId or ''), ua
+//                               (8-hex per page load), station (osId or ''), ua
 //                               (only on the FIRST event of a batch), event,
 //                               detail (<=512 chars). 16KiB body cap.
 //    GET  /clientcmd?since=N  — X-Admin-Token; {"seq":N,"cmds":[...]}
 //                               with only cmds seq>since. cmd is one of
 //                               snapshot | verbose | reload | eval;
-//                               tile '<osId>'|'*'. eval may also target one
+//                               station '<osId>'|'*'. eval may also target one
 //                               sessionId through args.sessionId.
 //  This module NEVER throws into the app: telemetry is best-effort diagnostics
 //  for an authenticated operator (clientlog.jsonl on the box), not a dependency.
@@ -22,7 +22,7 @@ import { getAdminToken } from './adminAuth';
 
 const FLUSH_MS = 5000;          // normal batching cadence
 const VERBOSE_FLUSH_MS = 1000;  // verbose mode lowers batching latency
-const POLL_MS = 5000;           // /clientcmd poll cadence while a tile is open
+const POLL_MS = 5000;           // /clientcmd poll cadence while a station is open
 const MAX_DETAIL = 512;         // per-contract detail cap
 const MAX_PENDING = 200;        // drop-oldest bound so a failing POST can't grow RAM
 const MAX_BATCH_CHARS = 14000;  // stay under the server's 16KiB body cap
@@ -147,11 +147,11 @@ export function flushNow(_useBeacon = false): void {
   } catch { /* never throw */ }
 }
 
-// ---- tile lifecycle + command poller -----------------------------------------
+// ---- station lifecycle + command poller -----------------------------------------
 /**
- * Mark a tile as open: subsequent events carry its osId and the /clientcmd
+ * Mark a station as open: subsequent events carry its osId and the /clientcmd
  * poller runs (commands execute only when cmd.tile === '*' or matches this
- * tile). `getSnapshot` feeds the operator `snapshot` command (full metrics).
+ * station). `getSnapshot` feeds the operator `snapshot` command (full metrics).
  */
 export function setDebugTile(tile: string, hooks: { getSnapshot: () => unknown }): void {
   activeTile = tile;
@@ -159,7 +159,7 @@ export function setDebugTile(tile: string, hooks: { getSnapshot: () => unknown }
   startPoller();
 }
 
-/** Tile closed. A stale unmount (older tile) is ignored via the tile guard. */
+/** Station closed. A stale unmount (older station) is ignored via the station guard. */
 export function clearDebugTile(tile?: string): void {
   if (tile != null && activeTile !== tile) return;
   activeTile = null;

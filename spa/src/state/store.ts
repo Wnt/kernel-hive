@@ -5,8 +5,8 @@ import type { EnrichedVM } from '../types';
 // whole of the soft-hide feature (registry `listing`, manifest `listed`):
 //
 //   vms        every row the manifest carried — what an ID RESOLVES against.
-//              /os/:osId, the poster modal and the per-tile boot lookup read
-//              this, so a hidden tile stays deep-linkable and streams as before.
+//              /os/:osId, the poster modal and the per-station boot lookup read
+//              this, so a hidden station stays deep-linkable and streams as before.
 //   listedVms  the announced lineup — what a LISTING renders. The grid and the
 //              3D hall (and therefore every era/total count) read this.
 //
