@@ -68,7 +68,7 @@
     "signalOrder": 19,
     "tilesManifestOrder": 21,
     "tilesManifestPrelude": "\n# templeos (VMID 105) — LiveCD (TempleOS.ISO), audio OFF, PS/2, plain std VGA.\n#   VERBATIM LAUNCHER: state.qcow2 (create-if-missing) holds the savevm\n#   'golden' snapshot (TempleOS is ISO/RAM-only); conditional -loadvm golden;\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (2026-07-13): TempleOS has NO USB stack and its PS/2 mouse is\n# relative. Fix (guest-agents/templeos/warpd.HC): an in-guest HolyC task WS()\n# polls the 16550 UART directly (ring-0, no serial driver needed), parses the\n# warpd M/P/R/B protocol, and writes motion straight to the global mouse state\n# ms.pos.x/y + clicks to ms.lb/ms.rb (framebuffer-verified). The agent is\n# Spawn()ed at the T:/Home> REPL and BAKED into the golden RAM snapshot.\n",
-    "tilesManifestInvocation": "emit templeos \\\n  --tile templeos --vmid 105 --udp 54105 --pointer warpd \\\n  --warpd-addr unix:/data/vms/streamhost/tiles/templeos/serial.sock \\\n  --audio off --fps 30 \\\n  --launcher-file \"$T/templeos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/templeos/tile.env.fixture\"\n",
+    "tilesManifestInvocation": "emit templeos \\\n  --tile templeos --vmid 105 --udp 54105 --pointer warpd \\\n  --warpd-addr unix:/data/vms/streamhost/tiles/templeos/serial.sock \\\n  --warpd-pace-ms 30 --audio off --fps 30 \\\n  --launcher-file \"$T/templeos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/templeos/tile.env.fixture\"\n",
     "bringUpGroup": 5,
     "bindingOrder": 19,
     "bindingPrelude": "",
@@ -122,7 +122,8 @@
       "SH_RESET_MODE": "loadvm",
       "SH_GOLDEN_SNAPSHOT": "golden",
       "SH_GOLDEN_STATE_DISK": "/data/vms/streamhost/tiles/templeos/state.qcow2",
-      "SH_FIXTURE_DESC": "clean-templeos-holyc-prompt"
+      "SH_FIXTURE_DESC": "clean-templeos-holyc-prompt",
+      "SH_WARPD_PACE_MS": "30"
     },
     "vmidLabel": 105,
     "qemu": {
@@ -138,6 +139,8 @@
         "warpd",
         "--warpd-addr",
         "unix:/data/vms/streamhost/tiles/templeos/serial.sock",
+        "--warpd-pace-ms",
+        "30",
         "--audio",
         "off",
         "--fps",

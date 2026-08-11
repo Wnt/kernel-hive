@@ -64,7 +64,7 @@
     "signalOrder": 7,
     "tilesManifestOrder": 12,
     "tilesManifestPrelude": "\n# winxp (VMID 94) — boots hdd + attaches the retro-software LiveCD;\n#   -boot order=c,menu=off. AC97 + usb-tablet. VERBATIM LAUNCHER: boots the\n#   tile-LOCAL winxp-golden.qcow2 (gallery WinXPpro/winxp.qcow2 stays pristine)\n#   WITHOUT -snapshot; golden snapshot inside (resetMode=loadvm).\n",
-    "tilesManifestInvocation": "emit winxp \\\n  --tile winxp --vmid 94 --udp 54094 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/winxp/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/winxp/tile.env.fixture\"\n",
+    "tilesManifestInvocation": "emit winxp \\\n  --tile winxp --vmid 94 --udp 54094 --pointer abs --abs-pace-ms 30 --audio on --fps 30 \\\n  --launcher-file \"$T/winxp/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/winxp/tile.env.fixture\"\n",
     "bringUpGroup": 3,
     "bindingOrder": 7,
     "bindingPrelude": "",
@@ -115,7 +115,8 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_RESET_MODE": "loadvm",
       "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISKS": "winxp-golden.qcow2"
+      "SH_GOLDEN_DISKS": "winxp-golden.qcow2",
+      "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 94,
     "qemu": {
@@ -129,6 +130,8 @@
         "54094",
         "--pointer",
         "abs",
+        "--abs-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",

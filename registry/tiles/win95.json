@@ -70,7 +70,7 @@
     "signalOrder": 1,
     "tilesManifestOrder": 14,
     "tilesManifestPrelude": "\n# win95 (VMID 91) — Win95 OSR2, sb16, pcnet NIC; machine carries accel=kvm.\n#   VERBATIM LAUNCHER: boots the tile-LOCAL win95-golden.qcow2 (gallery\n#   Win95/win95-osr2-kvm.qcow2 stays pristine) WITHOUT -snapshot; conditional\n#   -loadvm golden.\n# POINTER=warpd: usb=off => PS/2 RELATIVE-only mouse + Win9x pointer\n# acceleration make an abs->rel bridge drift. Fix (guest-agents/win9x/\n# warpnet.c): an in-guest Win32 agent SetCursorPos()s absolutely over Winsock\n# TCP :7777, reached via the hostfwd 127.0.0.1:57791 on the launcher's -netdev.\n# BUTTONS ride the real QEMU PS/2 device (--warpd-buttons qemu, 2026-07-14): a\n# warpnet mouse_event click is a WINDOWS-level click that punches through a\n# fullscreen DOS box's input ownership (killed GTA/Duke/Quake with \"VESA\n# function 5h failed\"); PS/2 buttons land in whoever owns the mouse. Motion\n# stays on the agent (absolute, drift-free).\n",
-    "tilesManifestInvocation": "emit win95 \\\n  --tile win95 --vmid 91 --udp 54091 --pointer warpd --warpd-addr 127.0.0.1:57791 \\\n  --warpd-buttons qemu --audio on --fps 30 \\\n  --launcher-file \"$T/win95/qemu-streamhost.sh\" \\\n  --aux-file \"$T/win95/drive.py\" \\\n  --aux-file \"$T/win95/golden-bake.sh\" \\\n  --env-append-file \"$T/win95/tile.env.fixture\"\n",
+    "tilesManifestInvocation": "emit win95 \\\n  --tile win95 --vmid 91 --udp 54091 --pointer warpd --warpd-addr 127.0.0.1:57791 \\\n  --warpd-buttons qemu --warpd-pace-ms 30 --audio on --fps 30 \\\n  --launcher-file \"$T/win95/qemu-streamhost.sh\" \\\n  --aux-file \"$T/win95/drive.py\" \\\n  --aux-file \"$T/win95/golden-bake.sh\" \\\n  --env-append-file \"$T/win95/tile.env.fixture\"\n",
     "bringUpGroup": 4,
     "bindingOrder": 4,
     "bindingPrelude": "",
@@ -126,7 +126,8 @@
       "SH_RESET_MODE": "loadvm",
       "SH_GOLDEN_SNAPSHOT": "golden",
       "SH_GOLDEN_DISK": "win95-golden.qcow2",
-      "SH_GOLDEN_MANIFEST": "tiles/win95/golden.json"
+      "SH_GOLDEN_MANIFEST": "tiles/win95/golden.json",
+      "SH_WARPD_PACE_MS": "30"
     },
     "vmidLabel": 91,
     "qemu": {
@@ -144,6 +145,8 @@
         "127.0.0.1:57791",
         "--warpd-buttons",
         "qemu",
+        "--warpd-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",
