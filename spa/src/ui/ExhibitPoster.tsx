@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { posterFor } from '../data/posters';
+import { usePosterDoc } from '../data/posterDocs';
 import type {
   EnrichedVM,
   PosterBlock,
@@ -111,11 +111,14 @@ export default function ExhibitPoster({
   vm: EnrichedVM;
   onClose: () => void;
 }) {
-  const poster = posterFor(osId);
+  const poster = usePosterDoc(osId);
+  const posterReady = poster !== undefined;
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    // The doc arrives async; focus management only applies once the panel exists.
+    if (!posterReady) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
 
@@ -153,7 +156,7 @@ export default function ExhibitPoster({
       window.removeEventListener('keydown', onKeyDown, true);
       previouslyFocused?.focus();
     };
-  }, [onClose]);
+  }, [onClose, posterReady]);
 
   if (!poster) return null;
   const heroImage = poster.hero

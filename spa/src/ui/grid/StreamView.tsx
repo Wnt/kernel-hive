@@ -33,7 +33,7 @@ import { useCinemaMode } from './StreamView/useCinemaMode';
 import { useRestoreFlow } from './StreamView/useRestoreFlow';
 import { useDemoProgram } from './StreamView/useDemoProgram';
 import { bannerCopy } from './StreamView/bannerCopy';
-import { posterFor } from '../../data/posters';
+import { posterFor } from '../../data/posterIndex';
 import type { GestureState, Vec2, ZoomState } from './StreamView/types';
 
 // StreamView is the shared full-viewport 2D live/showcase component.

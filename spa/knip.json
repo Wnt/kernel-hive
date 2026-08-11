@@ -9,7 +9,5 @@
     "meshoptimizer",
     "sharp"
   ],
-  "ignore": [
-    "src/data/posters.ts"
-  ]
+  "ignore": []
 }

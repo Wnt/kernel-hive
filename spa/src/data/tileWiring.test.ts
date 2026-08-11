@@ -3,7 +3,7 @@ import manifest from '../../../scripts/serve/webroot/gallery-manifest.json' with
 import { ASSEMBLIES_BY_TILE } from '../scene/machines';
 import { EXHIBIT_IDENTITIES } from '../scene/machineIdentity';
 import { OS_FAMILY } from '../ui/keyboard/keyboardProfiles';
-import { posterFor } from './posters';
+import { posterFor } from './posterIndex';
 
 // ---------------------------------------------------------------------------
 //  A tile in the registry lineup is not a finished exhibit. Landing one means

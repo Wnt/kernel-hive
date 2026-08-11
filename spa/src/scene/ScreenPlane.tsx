@@ -19,7 +19,7 @@ import {
   type Group,
   Vector3,
 } from 'three';
-import { posterFor } from '../data/posters';
+import { posterFor } from '../data/posterIndex';
 import type { MachineModel } from './machines';
 import {
   registerScreen,

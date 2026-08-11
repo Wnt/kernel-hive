@@ -70,7 +70,7 @@ const CAPS = {
 // Generated files — kept in lockstep with generated() in scripts/tiles-registry.py.
 // These are emitted from the typed registry + templates; never hand-authored.
 const GENERATED = new Set([
-  "spa/src/data/posters.ts",
+  "spa/src/data/posterIndex.ts",
   "spa/src/data/demoPrograms.ts",
   "spa/src/data/keyboards.ts",
   "spa/src/three/archetypeRegistry.ts",
@@ -79,6 +79,7 @@ const GENERATED = new Set([
   "scripts/serve/tiles.json",
   "scripts/serve/golden-manifest.json",
   "scripts/serve/webroot/gallery-manifest.json",
+  "scripts/serve/webroot/poster-docs.json",
   "scripts/tools/gallery-action-map.json",
   "scripts/build-guests/build-all.sh",
   "streamhost/tiles-manifest.sh",
