@@ -1582,7 +1582,14 @@ def cmd_emit(name: str) -> int:
         outputs.update(generated())
         if wanted not in outputs:
             raise RegistryError(f"unknown artifact {name!r}; known: {', '.join(outputs)}")
-    sys.stdout.buffer.write(outputs[wanted])
+    try:
+        sys.stdout.buffer.write(outputs[wanted])
+        sys.stdout.buffer.flush()
+    except BrokenPipeError:
+        # `emit index.json | head` closes the pipe early. That is the reader
+        # being done, not a failure — and without the devnull redirect Python
+        # prints its own broken-pipe complaint at shutdown on top of it.
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
     return 0
 
 
