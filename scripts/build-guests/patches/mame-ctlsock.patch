@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,2904 @@
+@@ -0,0 +1,2921 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -201,17 +201,20 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +      MAME_CTL_CAL_X/Y       cursor register -> pixel calibration  [-31]
 +      MAME_CTL_MOVE_STEP     pacing budget, counts per window      [120]
 +      MAME_CTL_MOVE_WINDOW   pacing window, EMULATED ms             [40]
-+      MAME_CTL_FLOW_ITEMS    "<x>,<y>" save-item suffixes of the
-+                             device's own consumed-count latch (the
-+                             ST ikbd: m_mouse_x,m_mouse_y). Set, the
-+                             drain holds each axis until the latch
-+                             CHANGED after the last issued count, so
-+                             two counts can never merge into one
-+                             latch period and no quadrature step is
-+                             ever lost (measured: a 5 s fast circle
-+                             lost 5.6 counts of GEM position while
-+                             the latch value was exact). Timeout 8
-+                             windows, then issue anyway.    [unset]
++      MAME_CTL_QUAD_ITEMS    "<px>,<py>,<pc>" save-item suffixes of
++                             the device's quadrature EMISSION state
++                             (ST ikbd: m_mouse_px,m_mouse_py,
++                             m_mouse_pc). The ikbd latches a
++                             direction once per 8 ms period and
++                             emits ONE cycle -- magnitude discarded,
++                             so a pacing beat or a reversal pair
++                             silently loses counts (measured: 5.6
++                             counts adrift after a 5 s fast circle;
++                             a consumed-VALUE flow gate made it
++                             WORSE, 12.8). Set, the belief
++                             integrates emitted cycles and a settle
++                             corrector re-issues whatever merged
++                             away once the pipe is quiet.   [unset]
 +      MAME_CTL_KEY_HOLD/GAP  key edge pacing, EMULATED ms       [100/50]
 +      MAME_CTL_MOVEA_TRIES   accepted, INERT since engine V2 (V2
 +                             flights terminate by construction)     [40]
@@ -1066,21 +1069,21 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				m_cs_dy = find_item(m_swap_items.substr(c2 + 1));
 +			}
 +		}
-+		// FLOW sensor (MAME_CTL_FLOW_ITEMS): the latch the guest-side
-+		// device keeps of the last axis value it CONSUMED. Machines that
-+		// latch direction-only (the ST ikbd quadrature encoder) lose
-+		// counts whenever two land in one latch period; gating each
-+		// issued count on the latch changing makes issue:consume 1:1.
++		// QUAD sensor (MAME_CTL_QUAD_ITEMS): the emission-side ground
++		// truth of a quadrature mouse -- see the header. The belief and
++		// the settle corrector run on EMITTED cycles, not issued counts.
 +		{
-+			std::string const fi = env_str("MAME_CTL_FLOW_ITEMS");
-+			size_t const c1 = fi.find(',');
-+			if (!fi.empty() && c1 != std::string::npos)
++			std::string const qi = env_str("MAME_CTL_QUAD_ITEMS");
++			size_t const c1 = qi.find(',');
++			size_t const c2 = (c1 == std::string::npos) ? std::string::npos : qi.find(',', c1 + 1);
++			if (!qi.empty() && c2 != std::string::npos)
 +			{
-+				m_flow_x = find_item(fi.substr(0, c1));
-+				m_flow_y = find_item(fi.substr(c1 + 1));
-+				m_flow_active = m_flow_x.ok() && m_flow_y.ok();
-+				std::fprintf(stderr, "ctlsock: flow control %s (%s)\n",
-+						m_flow_active ? "ON" : "FAILED to resolve", fi.c_str());
++				m_qd_px = find_item(qi.substr(0, c1));
++				m_qd_py = find_item(qi.substr(c1 + 1, c2 - c1 - 1));
++				m_qd_pc = find_item(qi.substr(c2 + 1));
++				m_quad_active = m_qd_px.ok() && m_qd_py.ok() && m_qd_pc.ok();
++				std::fprintf(stderr, "ctlsock: quadrature sensor %s (%s)\n",
++						m_quad_active ? "ON" : "FAILED to resolve", qi.c_str());
 +			}
 +		}
 +		m_movea_ok = m_cur_x.ok() && m_cur_y.ok();
@@ -1274,6 +1277,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		// ioport this pass — the no-added-latency-for-the-common-case rule
 +		movea_step();
 +		movea_rest();
++		quad_sample();
 +		drain_move();
 +		drain_keys();
 +		check_syncs();
@@ -1311,8 +1315,12 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		// belief is BOOKKEEPING ONLY under V7 (STAT, and the open-loop
 +		// degradation used when the cursor registers cannot be read): the
 +		// closed loop sizes every step from the reading, never from B.
-+		m_bx = clamp_px_x(m_bx + long(std::llround(double(dx) * m_gx)));
-+		m_by = clamp_px_y(m_by + long(std::llround(double(dy) * m_gy)));
++		if (!m_quad_active)
++		{
++			m_bx = clamp_px_x(m_bx + long(std::llround(double(dx) * m_gx)));
++			m_by = clamp_px_y(m_by + long(std::llround(double(dy) * m_gy)));
++		}
++		m_last_issue = emu_now();
 +		// The un-landed ledger is fed HERE, not from the MOVEA step: this is
 +		// the one choke point every count passes through, whoever issued it.
 +		// Feeding it from the step alone missed MOVEP, MOVE and the sink's
@@ -1387,6 +1395,46 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		return std::max(-room, std::min(room, pend));
 +	}
 +
++	// Quadrature-emission sensor: the ikbd sets a per-period phase at its
++	// tick 0 and emits one cycle across the period's four ticks; counting
++	// phases is counting what the guest will actually receive -- even when
++	// the device's own byte compare got the direction wrong at a wrap.
++	// Sampled every module tick (1 kHz vs the 500 Hz device tick): a
++	// period boundary is the tick counter wrapping, and the phase items
++	// then already hold the NEW period's verdict.
++	void quad_sample()
++	{
++		if (!m_quad_active)
++			return;
++		long const pc = long(m_qd_pc.read());
++		long const prev = m_qd_prev_pc;
++		m_qd_prev_pc = pc;
++		if (prev < 0 || pc >= prev)
++			return;
++		long const px = long(m_qd_px.read());
++		long const py = long(m_qd_py.read());
++		if (px == 1)
++			m_bx = clamp_px_x(m_bx + 1);
++		else if (px == 2)
++			m_bx = clamp_px_x(m_bx - 1);
++		if (py == 1)
++			m_by = clamp_px_y(m_by + 1);
++		else if (py == 2)
++			m_by = clamp_px_y(m_by - 1);
++		// Settle corrector: queues empty, nothing issued for three windows
++		// (so every issued count has been emitted and counted), and the
++		// belief still disagrees with the last stated target -- the
++		// difference is exactly what merged away; re-issue it.
++		if (!m_movea_ok && m_fl_valid && m_mq.empty() && m_aq.empty()
++				&& (emu_now() - m_last_issue) >= 3.0 * m_move_window)
++		{
++			long const rx = m_flx - m_bx;
++			long const ry = m_fly - m_by;
++			if (rx != 0 || ry != 0)
++				move_paced_travel(rx, ry);
++		}
++	}
++
 +	void drain_move()
 +	{
 +		if (m_mq.empty())
@@ -1398,27 +1446,11 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			m_win_x = 0;
 +			m_win_y = 0;
 +		}
-+		// Flow gate: an axis with an unconsumed count issues nothing until
-+		// the latch moved (any change is our one count) or the timeout ran
-+		// out (a quiet device must degrade to slow, never to wedged).
-+		bool ok_x = true, ok_y = true;
-+		if (m_flow_active)
-+		{
-+			double const tmo = 8.0 * m_move_window;
-+			if (m_fl_seen_x >= 0 && long(m_flow_x.read()) != m_fl_seen_x)
-+				m_fl_seen_x = -1;
-+			if (m_fl_seen_y >= 0 && long(m_flow_y.read()) != m_fl_seen_y)
-+				m_fl_seen_y = -1;
-+			ok_x = m_fl_seen_x < 0 || (now - m_flow_tx) >= tmo;
-+			ok_y = m_fl_seen_y < 0 || (now - m_flow_ty) >= tmo;
-+			if (!ok_x && !ok_y)
-+				return;
-+		}
 +		while (!m_mq.empty())
 +		{
 +			move_entry &h = m_mq.front();
-+			long const sx = ok_x ? clamp_budget(h.x, m_win_x) : 0;
-+			long const sy = ok_y ? clamp_budget(h.y, m_win_y) : 0;
++			long const sx = clamp_budget(h.x, m_win_x);
++			long const sy = clamp_budget(h.y, m_win_y);
 +			if (sx == 0 && sy == 0)
 +				return;
 +			m_win_x += std::abs(sx);
@@ -1426,21 +1458,6 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			h.x -= sx;
 +			h.y -= sy;
 +			move_rel(sx, sy);
-+			if (m_flow_active)
-+			{
-+				if (sx != 0)
-+				{
-+					m_fl_seen_x = long(m_flow_x.read());
-+					m_flow_tx = now;
-+					ok_x = false;
-+				}
-+				if (sy != 0)
-+				{
-+					m_fl_seen_y = long(m_flow_y.read());
-+					m_flow_ty = now;
-+					ok_y = false;
-+				}
-+			}
 +			if (h.x == 0 && h.y == 0)
 +			{
 +				hist_apply(h.ack);
@@ -2948,10 +2965,10 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	double m_gain_margin = 1.10;         // MAME_CTL_GAIN_MARGIN (user rule)
 +	std::deque<defer_entry> m_aq;
 +	long m_flx = 0, m_fly = 0;               // open-loop fallback origin
-+	save_item_handle m_flow_x, m_flow_y;     // consumed-count latch (flow gate)
-+	bool m_flow_active = false;
-+	long m_fl_seen_x = -1, m_fl_seen_y = -1; // latch value at last issue; -1 = consumed
-+	double m_flow_tx = -1.0, m_flow_ty = -1.0;
++	save_item_handle m_qd_px, m_qd_py, m_qd_pc;  // quadrature emission phase + tick
++	bool m_quad_active = false;
++	long m_qd_prev_pc = -1;
++	double m_last_issue = -1.0;              // emu time of the last issued count
 +	bool m_fl_valid = false;
 +	bool m_fb_logged = false;
 +	long m_res_x = 0, m_res_y = 0;
