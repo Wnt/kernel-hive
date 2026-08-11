@@ -9,8 +9,8 @@ Anything else added here is paid for once per agent, forever — put it in the
 linked doc instead.
 
 Single-box Proxmox home-lab ("living computer museum"). 63 registry entries —
-61 production streamhost tiles + 2 posters (`python3 scripts/tiles-registry.py
-count`). Rust `streamhost` daemon → React SPA. Repo:
+61 production streamhost stations + 2 posters (`python3 scripts/tiles-registry.py
+count`). Rust `streamhost` daemon → React UI. Repo:
 https://github.com/Wnt/kernel-hive (private; this dir is the git root).
 
 ---
@@ -25,13 +25,13 @@ serial `EXAMPLE0000000000`). Do not `ssh`/`curl` one expecting it to resolve and
 gitignored: SSH keys, PKI, `uptoken`, `unifitoken`,
 `spa/src/data/credentials.ts`, `docs/gallery-credentials.md`.
 
-**The box.** `ssh lab '<cmd>'` is the one door, as root, from a LAN workstation
+**Labhost.** `ssh lab '<cmd>'` is the one door, as root, from a LAN workstation
 and a cloud VM alike. stdout/stderr stay separate and the guest's exit code is
 yours. CT950 (`ssh lab 'pct exec 950 -- <cmd>'`) is the dev container and has
-**no `/data` mount**, so host-side checks run on the host. Other guests on this
+**no `/data` mount**, so labhost-side checks run on labhost itself. Other guests on this
 hardware belong to unrelated projects — **leave them alone**.
 
-**Never experiment on a live tile.** Clone under `/data/vms/soltest/`, keep the
+**Never experiment on a live station.** Clone under `/data/vms/soltest/`, keep the
 SAME device set (`loadvm golden` requires it), and namespace every dir, VMID,
 socket and port so concurrent agents cannot collide.
 
@@ -43,7 +43,7 @@ session. Resolve processes through `/proc/<pid>/exe`, never a cmdline grep,
 which matches the shell running it.
 
 **Claim shared things atomically, and make the claim the proof.** Displays,
-taps, host IPs, iptables chains, core pairs, ports, VMIDs. Never
+taps, labhost IPs, iptables chains, core pairs, ports, VMIDs. Never
 check-then-create; namespace per rig; **fail loudly instead of falling back —
 "it exists" is not "it is mine".**
 
@@ -73,29 +73,30 @@ main`. Never echo or log `~/Downloads/humanify-token`.
 
 | I need to… | Go to |
 |---|---|
+| What a word means (station, seed, checkpoint, scene…) | [`docs/GLOSSARY.md`](docs/GLOSSARY.md); identifiers/paths still carry old names until [the migration](docs/lab/research/terminology-migration-2026-08.md) lands |
 | Understand how any of this works | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) → tiers, I/O paths, costs |
 | Drive a guest / run a command in one | [`docs/lab/LABCTL.md`](docs/lab/LABCTL.md). Start with `labctl facts <tile>`; `labctl` prints its own usage |
 | Debug pointer, tap, drag, double-click | [`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md) |
 | Debug keys vanishing or scrambling | [`ADD-NEW-OS-PLAYBOOK.md` §5.1](docs/lab/ADD-NEW-OS-PLAYBOOK.md#51-keyboard-only-exhibits--pacing-layout-and-the-type-in-demo) |
-| Fix a tile that freezes or won't connect | `ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'` |
-| Add a new OS tile | [`docs/lab/ADD-NEW-OS-PLAYBOOK.md`](docs/lab/ADD-NEW-OS-PLAYBOOK.md) |
-| Migrate a bridge tile to trixie | [`docs/lab/MIGRATION-WAVE-BRIEF.md`](docs/lab/MIGRATION-WAVE-BRIEF.md) |
-| Build the daemon, a guest, or the SPA | [`scripts/README.md`](scripts/README.md); host-side builders run only from `/data/kernel-hive` (`scripts/dev/box-repo.sh`) |
+| Fix a station that freezes or won't connect | `ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'` |
+| Add a new OS station | [`docs/lab/ADD-NEW-OS-PLAYBOOK.md`](docs/lab/ADD-NEW-OS-PLAYBOOK.md) |
+| Migrate a kiosk to trixie | [`docs/lab/MIGRATION-WAVE-BRIEF.md`](docs/lab/MIGRATION-WAVE-BRIEF.md) |
+| Build the daemon, a guest, or the UI | [`scripts/README.md`](scripts/README.md); host-side builders run only from `/data/kernel-hive` (`scripts/dev/box-repo.sh`) |
 | Work on the public gallery or passkeys | [`docs/PUBLIC-GALLERY.md`](docs/PUBLIC-GALLERY.md). **Never `rm auth-state.json`** — passkeys cannot be regenerated |
 | Measure performance | [`docs/lab/MEASUREMENT-METHODOLOGY.md`](docs/lab/MEASUREMENT-METHODOLOGY.md) |
-| Get a cloud agent onto the box | [`docs/lab/CLOUD-AGENTS.md`](docs/lab/CLOUD-AGENTS.md) |
+| Get a cloud agent onto labhost | [`docs/lab/CLOUD-AGENTS.md`](docs/lab/CLOUD-AGENTS.md) |
 | Know why the gate is shaped this way | [`docs/lab/AGENT-CI-EXIT-RULE.md`](docs/lab/AGENT-CI-EXIT-RULE.md) |
 | Find anything else | [`docs/README.md`](docs/README.md) |
 
 ## Three facts that mislead if you don't know them
 
-- **A tile has ONE name**: registry id == `tileDir` == `SH_TILE`, enforced by
+- **A station has ONE name**: registry id == `tileDir` == `SH_TILE`, enforced by
   `tiles-registry.py`. The last two exceptions were renamed 2026-08-10. The
-  serving plane still reads identity from the tile's own `signaling.json` — the
+  serving plane still reads identity from the station's own `signaling.json` — the
   daemon is the authority on the name it verifies a ticket against.
-- **A tile that looks broken may just be stopped** — `ssh lab 'labctl ls'`. The
-  fleet is routinely quiesced; check for in-flight work before starting
+- **A station that looks broken may just be stopped or paused** — `ssh lab 'labctl ls'`. The
+  fleet is routinely stopped or paused; check for in-flight work before starting
   anything.
-- **A fix may not have taken effect**: streamhost deploys are per-tile canaries
-  and the fleet is not auto-promoted; SPA edits need the bundle redeployed; a
-  launcher or geometry change needs the golden **re-baked**.
+- **A fix may not have taken effect**: streamhost deploys are per-station canaries
+  and the fleet is not auto-promoted; UI edits need the bundle redeployed; a
+  launcher or geometry change needs the checkpoint **recaptured**.
