@@ -1,169 +1,230 @@
 #!/usr/bin/env python3
-"""Derive a tile's `keyboard.charMap` from a MAME driver's keyboard matrix.
+"""Generate an SH_MAMESOCK_KEYMAP file from a running MAME's own keyboard.
 
-WHY THIS EXISTS
----------------
-The SPA types into a guest with `typeText()`, which maps ASCII to US set1
-scancodes -- it presses the key a US PC keyboard would press. A guest whose
-keyboard is laid out differently then receives a different character, silently.
+Phase 0 of the de-bridging conversion campaign
+(docs/lab/DEBRIDGE-CONVERSION-BRIEF.md): the map is DUMPED from the machine
+via the ctlsock module's KEYDUMP verb — the same rule the IRIX matrix was
+built under — never hand-guessed. Matching is deliberately conservative:
+a field binds to an XT scancode only on an exact (case-insensitive) name or
+alias hit. Everything that does not match is listed LOUDLY at the end; the
+per-tile answer to that list is an --override file, not a looser matcher —
+a key that lands on the wrong field is precisely the failure this pipeline
+exists to end.
 
-The MPF-II cost a session's worth of confusion this way. Its 8x8 matrix puts
-'=' on Shift+O and '-' on Shift+I -- a PC's own '=' and '-' keys do not exist in
-it at all, so those characters simply VANISHED -- and its shifted number row is
-offset by one (Shift+8/9/0 give "( ) *" where a PC gives "* ( )"), so every
-bracket in a BASIC listing landed one key over. The symptom reads like dropped
-keystrokes, which sends you hunting for a timing bug that is not there.
+usage:
+    mame-keymap.py <ctl.sock> [--tags SUBSTR] [--out FILE] [--override FILE]
 
-The answer is already in the driver. MAME declares each matrix key as a
-PORT_CODE (the HOST key that drives it) plus one or two PORT_CHARs (what the
-GUEST produces unshifted and shifted). Comparing that against a US layout gives
-the translation table exactly, in seconds, instead of by inference from a
-corrupted screenshot.
+  --tags      KEYDUMP port-tag filter (default the verb's own ":kbd:";
+              pass ":" to dump every port and let the matcher choose)
+  --override  extra/replacement rows in the output format
+              (scancode-hex<TAB>port<TAB>field), applied last
+  --out       write the keymap here (default stdout)
 
-USAGE
------
-    scripts/dev/mame-keymap.py tk2000            # fetch the driver by machine
-    scripts/dev/mame-keymap.py --file tk2000.cpp # or read a local copy
-    scripts/dev/mame-keymap.py tk2000 --json     # paste-ready registry block
-
-Paste the map as the tile's top-level `keyboard.charMap` in
-registry/tiles/<id>.json AND mirror it into `runtime.tileEnv.SH_KEY_MAP` as
-comma-separated `guest:host` pairs (labctl drives QMP directly and cannot read
-the registry; `validate_keyboard_env` fails the build if the two drift). Then
-run `make tile-registry-generate`. Characters the guest agrees with a PC about
-are omitted -- the map should be as small as the machine's actual differences.
-
-ONE MATRIX AT A TIME. Some driver files declare several INPUT_PORTS_START
-blocks for machine variants that share a source file (bbc_kbd.cpp carries the
-Model B, the Master, the Compact and more), and this tool reads whatever it is
-given. Feeding it the whole file merges incompatible matrices and prints
-nonsense; slice out the one port block your machine uses first, e.g.
-`sed -n '36,157p' bbc_kbd.cpp > modelb.cpp`, then pass that with --file.
-
-The mapping is `guest character` -> `host character to send`.
+Run it ON the box, against a tile's running host-native binary.
 """
 
-from __future__ import annotations
-
 import argparse
-import json
-import re
+import socket
 import sys
-import urllib.request
 
-# A US keyboard, as `typeText()` assumes: KEYCODE -> (unshifted, shifted).
-US_LAYOUT: dict[str, tuple[str, str]] = {
-    **{k: (k.lower(), k) for k in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"},
-    "1": ("1", "!"),
-    "2": ("2", "@"),
-    "3": ("3", "#"),
-    "4": ("4", "$"),
-    "5": ("5", "%"),
-    "6": ("6", "^"),
-    "7": ("7", "&"),
-    "8": ("8", "*"),
-    "9": ("9", "("),
-    "0": ("0", ")"),
-    "MINUS": ("-", "_"),
-    "EQUALS": ("=", "+"),
-    "OPENBRACE": ("[", "{"),
-    "CLOSEBRACE": ("]", "}"),
-    "BACKSLASH": ("\\", "|"),
-    "COLON": (";", ":"),
-    "QUOTE": ("'", '"'),
-    "TILDE": ("`", "~"),
-    "COMMA": (",", "<"),
-    "STOP": (".", ">"),
-    "SLASH": ("/", "?"),
-    "SPACE": (" ", " "),
-}
+# XT set1 canonical names (the SPA's wire scancodes), plus the aliases a
+# vintage machine's MAME driver plausibly uses for the same physical intent.
+# Order matters only for readability; matching is exact per entry.
+XT_KEYS: list[tuple[int, list[str]]] = [
+    (0x01, ["Esc", "Escape"]),
+    (0x02, ["1"]),
+    (0x03, ["2"]),
+    (0x04, ["3"]),
+    (0x05, ["4"]),
+    (0x06, ["5"]),
+    (0x07, ["6"]),
+    (0x08, ["7"]),
+    (0x09, ["8"]),
+    (0x0A, ["9"]),
+    (0x0B, ["0"]),
+    (0x0C, ["-", "Minus"]),
+    (0x0D, ["=", "Equals"]),
+    (0x0E, ["Backspace", "Back Space"]),
+    (0x0F, ["Tab"]),
+    (0x10, ["Q"]),
+    (0x11, ["W"]),
+    (0x12, ["E"]),
+    (0x13, ["R"]),
+    (0x14, ["T"]),
+    (0x15, ["Y"]),
+    (0x16, ["U"]),
+    (0x17, ["I"]),
+    (0x18, ["O"]),
+    (0x19, ["P"]),
+    (0x1A, ["[", "Left Bracket"]),
+    (0x1B, ["]", "Right Bracket"]),
+    (0x1C, ["Enter", "Return", "New Line"]),
+    (0x1D, ["Left Ctrl", "Ctrl", "Control", "CTL"]),
+    (0x1E, ["A"]),
+    (0x1F, ["S"]),
+    (0x20, ["D"]),
+    (0x21, ["F"]),
+    (0x22, ["G"]),
+    (0x23, ["H"]),
+    (0x24, ["J"]),
+    (0x25, ["K"]),
+    (0x26, ["L"]),
+    (0x27, [";", "Semicolon"]),
+    (0x28, ["'", "Quote", "Apostrophe"]),
+    (0x29, ["`", "Tilde", "Backquote"]),
+    (0x2A, ["Left Shift", "Shift Left", "Shift"]),
+    (0x2B, ["\\", "Backslash"]),
+    (0x2C, ["Z"]),
+    (0x2D, ["X"]),
+    (0x2E, ["C"]),
+    (0x2F, ["V"]),
+    (0x30, ["B"]),
+    (0x31, ["N"]),
+    (0x32, ["M"]),
+    (0x33, [",", "Comma"]),
+    (0x34, [".", "Period", "Full Stop"]),
+    (0x35, ["/", "Slash"]),
+    (0x36, ["Right Shift", "Shift Right", "Shift"]),
+    (0x37, ["Keypad *"]),
+    (0x38, ["Left Alt", "Alt"]),
+    (0x39, ["Space", "Space Bar", "Spacebar"]),
+    (0x3A, ["Caps Lock", "Caps Shift", "Shift Lock"]),
+    (0x3B, ["F1"]),
+    (0x3C, ["F2"]),
+    (0x3D, ["F3"]),
+    (0x3E, ["F4"]),
+    (0x3F, ["F5"]),
+    (0x40, ["F6"]),
+    (0x41, ["F7"]),
+    (0x42, ["F8"]),
+    (0x43, ["F9"]),
+    (0x44, ["F10"]),
+    (0x57, ["F11"]),
+    (0x58, ["F12"]),
+    (0xE01C, ["Keypad Enter"]),
+    (0xE01D, ["Right Ctrl"]),
+    (0xE035, ["Keypad /"]),
+    (0xE038, ["Right Alt"]),
+    (0xE047, ["Home", "Clr Home", "Home Clr"]),
+    (0xE048, ["Cursor Up", "Up", "Up Arrow", "Crsr Up"]),
+    (0xE049, ["Page Up"]),
+    (0xE04B, ["Cursor Left", "Left", "Left Arrow", "Crsr Left"]),
+    (0xE04D, ["Cursor Right", "Right", "Right Arrow", "Crsr Right"]),
+    (0xE04F, ["End"]),
+    (0xE050, ["Cursor Down", "Down", "Down Arrow", "Crsr Down"]),
+    (0xE051, ["Page Down"]),
+    (0xE052, ["Insert", "Ins"]),
+    (0xE053, ["Delete", "Del"]),
+]
 
-KEY_RE = re.compile(
-    r"PORT_CODE\(KEYCODE_(?P<code>[A-Z0-9_]+)\)"
-    r"(?P<chars>(?:\s*PORT_CHAR\((?:'(?:\\?.)'|[A-Z_]+\([^)]*\)|[^)]*)\))*)"
-)
-CHAR_RE = re.compile(r"PORT_CHAR\('(\\?.)'\)")
 
-MAME_RAW = "https://raw.githubusercontent.com/mamedev/mame/master/src/mame/"
-# Machines whose driver file is not guessable from the machine name.
-DRIVER_HINTS = {"tk2000": "apple/tk2000.cpp", "mpf2": "apple/tk2000.cpp"}
+def keydump(sock_path: str, tags: str) -> list[tuple[str, str]]:
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(sock_path)
+    s.settimeout(10)
+    buf = b""
 
+    def line() -> str:
+        nonlocal buf
+        while b"\n" not in buf:
+            d = s.recv(4096)
+            if not d:
+                sys.exit("ctl.sock closed mid-dump")
+            buf += d
+        raw, buf = buf.split(b"\n", 1)
+        return raw.decode()
 
-def fetch_driver(machine: str) -> str:
-    path = DRIVER_HINTS.get(machine)
-    if not path:
-        sys.exit(
-            f"unknown driver path for '{machine}'. Pass --file with a local copy, or add it\n"
-            f"to DRIVER_HINTS (find it with: grep -rl 'COMP(.*{machine}' src/mame)."
-        )
-    with urllib.request.urlopen(MAME_RAW + path, timeout=30) as r:  # noqa: S310
-        return r.read().decode("utf-8", "replace")
-
-
-def unescape(c: str) -> str:
-    return {"\\'": "'", '\\"': '"', "\\\\": "\\"}.get(c, c)
-
-
-def derive(source: str) -> tuple[dict[str, str], list[tuple[str, str, str]]]:
-    """Return (keyMap, rows) where rows are (keycode, unshifted, shifted)."""
-    keymap: dict[str, str] = {}
-    rows: list[tuple[str, str, str]] = []
-    for m in KEY_RE.finditer(source):
-        code = m.group("code")
-        chars = [unescape(c) for c in CHAR_RE.findall(m.group("chars"))]
-        if not chars or code not in US_LAYOUT:
-            continue
-        host_un, host_sh = US_LAYOUT[code]
-        guest_un = chars[0]
-        guest_sh = chars[1] if len(chars) > 1 else ""
-        rows.append((code, guest_un, guest_sh))
-        # To type `guest_un`, press the key a US keyboard labels `host_un`.
-        if guest_un and guest_un != host_un and guest_un not in keymap:
-            keymap[guest_un] = host_un
-        if guest_sh and guest_sh != host_sh and guest_sh not in keymap:
-            keymap[guest_sh] = host_sh
-    return keymap, rows
+    banner = line()
+    if not banner.startswith("HELLO "):
+        sys.exit(f"not a ctlsock endpoint: {banner!r}")
+    s.sendall(f"1 KEYDUMP {tags}".rstrip().encode() + b"\n")
+    rows: list[tuple[str, str]] = []
+    while True:
+        reply = line()
+        if reply.startswith("1 D "):
+            body = reply[len("1 D ") :]
+            port, sep, field = body.partition(" | ")
+            if not sep:
+                sys.exit(f"unparsable KEYDUMP row: {reply!r}")
+            rows.append((port, field))
+        elif reply.startswith("1 OK "):
+            return rows
+        elif reply.startswith("1 ERR"):
+            sys.exit(f"KEYDUMP refused: {reply!r}")
+        # EV broadcasts interleave; ignore them.
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("machine", nargs="?", help="MAME machine short name, e.g. tk2000")
-    ap.add_argument("--file", help="read a local driver .cpp instead of fetching")
-    ap.add_argument("--json", action="store_true", help="print only the charMap JSON")
+    ap.add_argument("sock")
+    ap.add_argument("--tags", default="")
+    ap.add_argument("--out")
+    ap.add_argument("--override")
     args = ap.parse_args()
 
-    if args.file:
-        with open(args.file, encoding="utf-8", errors="replace") as fh:
-            source = fh.read()
-    elif args.machine:
-        source = fetch_driver(args.machine)
+    fields = keydump(args.sock, args.tags)
+    if not fields:
+        sys.exit("KEYDUMP returned no fields — wrong --tags for this machine?")
+    by_name: dict[str, list[tuple[str, str]]] = {}
+    for port, field in fields:
+        by_name.setdefault(field.strip().upper(), []).append((port, field))
+
+    entries: dict[int, tuple[str, str]] = {}
+    used: set[tuple[str, str]] = set()
+    ambiguous: list[str] = []
+    for code, names in XT_KEYS:
+        for name in names:
+            hits = by_name.get(name.strip().upper())
+            if not hits:
+                continue
+            if len(hits) > 1:
+                ambiguous.append(f"  {name!r} -> {hits} (took the first; override to pin)")
+            entries[code] = hits[0]
+            used.add(hits[0])
+            break
+
+    if args.override:
+        with open(args.override) as ov:
+            override_rows = ov.readlines()
+        for n, raw in enumerate(override_rows):
+            row = raw.rstrip("\n")
+            if not row or row.startswith("#"):
+                continue
+            parts = row.split("\t", 2)
+            if len(parts) != 3:
+                sys.exit(f"{args.override}:{n + 1}: want scancode<TAB>port<TAB>field")
+            code = int(parts[0], 16)
+            entries[code] = (parts[1], parts[2])
+            used.add((parts[1], parts[2]))
+
+    out_lines = [
+        "# SH_MAMESOCK_KEYMAP — generated by scripts/dev/mame-keymap.py from KEYDUMP",
+        f"# source socket: {args.sock}   fields dumped: {len(fields)}   mapped: {len(entries)}",
+    ]
+    for code in sorted(entries):
+        port, field = entries[code]
+        out_lines.append(f"{code:#04x}\t{port}\t{field}")
+    text = "\n".join(out_lines) + "\n"
+    if args.out:
+        with open(args.out, "w") as fh:
+            fh.write(text)
+        print(f"wrote {args.out}: {len(entries)} keys")
     else:
-        ap.error("give a machine name or --file")
+        sys.stdout.write(text)
 
-    keymap, rows = derive(source)
-
-    if args.json:
-        print(json.dumps({"charMap": keymap}, indent=2, ensure_ascii=False))
-        return 0
-
-    if not rows:
-        print("no PORT_CODE/PORT_CHAR keyboard matrix found in this driver.", file=sys.stderr)
-        return 2
-
-    print(f"{'HOST KEY':14} {'GUEST':8} {'GUEST+SHIFT'}")
-    for code, un, sh in rows:
-        host_un, host_sh = US_LAYOUT[code]
-        flag = "  <-- differs" if (un != host_un or (sh and sh != host_sh)) else ""
-        print(f"{code:14} {un!r:8} {sh!r:8}{flag}")
-
-    print()
-    if keymap:
-        print(f"{len(keymap)} character(s) need translating. Add as the tile's keyboard.charMap:")
-        print(json.dumps({"charMap": keymap}, indent=2, ensure_ascii=False))
-    else:
-        print("No translation needed: this guest agrees with a US keyboard.")
+    unmatched = [f"  {port} | {field}" for port, field in fields if (port, field) not in used]
+    if ambiguous:
+        print("AMBIGUOUS field names (first match taken):", file=sys.stderr)
+        print("\n".join(ambiguous), file=sys.stderr)
+    if unmatched:
+        print(
+            f"UNMATCHED machine fields ({len(unmatched)}) — reachable only via an "
+            "--override row; decide per tile which matter:",
+            file=sys.stderr,
+        )
+        print("\n".join(unmatched), file=sys.stderr)
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

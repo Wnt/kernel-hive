@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,2955 @@
+@@ -0,0 +1,2961 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -2556,10 +2556,16 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		}
 +		else if (verb == "KEYDUMP")
 +		{
++			// Optional argument: the port-tag substring to dump. The default
++			// ":kbd:" is the Indy's own naming and every machine differs
++			// (the ST keeps its matrix under :keyboard, the Dragon under
++			// :row) -- pass ":" to dump every port and let the caller
++			// filter by field name (scripts/dev/mame-keymap.py does).
++			std::string const want = rest.empty() ? std::string(":kbd:") : rest;
 +			int n = 0;
 +			for (auto const &p : m_machine.ioport().ports())
 +			{
-+				if (p.first.find(":kbd:") == std::string::npos)
++				if (p.first.find(want) == std::string::npos)
 +					continue;
 +				for (ioport_field &f : p.second->fields())
 +				{
