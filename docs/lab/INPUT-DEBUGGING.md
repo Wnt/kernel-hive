@@ -33,7 +33,7 @@ it; the stylus path drives its own instance through `input/penContact.ts`.
 
 ## Four telemetry sources, cheapest first
 
-**0. `ptr` pointer telemetry — the raw event stream, PUSHED.** The SPA records
+**0. `ptr` pointer telemetry — the raw event stream, PUSHED.** The UI records
 every pointer event (plus `contextmenu`/`auxclick`) and posts it to `/clientlog`
 every ~2 s, so a reproduction is captured with the phone in a pocket and the tab
 in the background. Decode it into gestures:
@@ -61,7 +61,7 @@ exactly what the push removes.
 
 ## Three further telemetry sources, cheapest first
 
-**1. `pen-tap` / `drag-tel` / `hover-tel` in the client log.** No setup — the SPA
+**1. `pen-tap` / `drag-tel` / `hover-tel` in the client log.** No setup — the UI
 already writes these. This answers "what did the browser see and decide?".
 
 ```bash
@@ -75,7 +75,7 @@ sent). **`fwd=0` with `bbox=null` means the tap was clean** — the wobble was
 swallowed, which is what a tap should look like. Uploads are batched ~5 s, so a
 script must wait before reading.
 
-**2. `SH_INPUT_TELEMETRY=1` on a tile.** This answers "what did the DAEMON
+**2. `SH_INPUT_TELEMETRY=1` on a station.** This answers "what did the DAEMON
 receive?", which is the only way to prove a client fix reached the wire.
 
 ```bash
@@ -120,7 +120,7 @@ node pen-doubletap-probe.mjs "Windows 3.11" 218 178      # display name, guest x
 PROBE_GAP_MS=180 PROBE_OFFSET_PX=5 node pen-doubletap-probe.mjs ...
 ```
 
-It emulates a touch context, opens the tile the way the live suites do (click the
+It emulates a touch context, opens the station the way the live suites do (click the
 `.os-card`), and dispatches `PointerEvent`s with `pointerType: 'pen'`. Caveat
 worth keeping in mind: a synthetic pen is not a real one. It reproduced the
 transport behaviour faithfully but not the exact wobble/timing distribution of a
@@ -128,9 +128,9 @@ hand-held stylus, so a green probe is necessary, not sufficient.
 
 ## What the guest end does to your timing
 
-Some tiles cannot be driven naively:
+Some stations cannot be driven naively:
 
-- **`SH_WARPD_BUTTONS=qemu` tiles (win311, os2warp, templeos)** split the planes:
+- **`SH_WARPD_BUTTONS=qemu` stations (win311, os2warp, templeos)** split the planes:
   buttons ride the instant PS/2 path, motion rides a warpd agent over a serial
   socket. `SH_WARPD_BUTTON_DELAY_MS` (80 ms on win311) makes the daemon *hold
   each button* until the cursor has provably caught up — and **every reposition
@@ -140,11 +140,11 @@ Some tiles cannot be driven naively:
   moves and buttons ride separate streams, so a queued hover sample was being
   applied between the two clicks, moving the cursor off the pixel.
 - **`SH_ABS_PACE_MS` / `SH_WARPD_PACE_MS`** pace absolute moves (30 ms on the old
-  GUI tiles) — see the 2026-07-26 drag investigation.
-- **QMP `abs`/`click` does nothing on a warpd tile.** The guest has no working
+  GUI stations) — see the 2026-07-26 drag investigation.
+- **QMP `abs`/`click` does nothing on a warpd station.** The guest has no working
   absolute pointer — that is *why* it runs an agent. Verified by screenshot:
   the framebuffer is byte-identical after `cdrv.py … abs x y`. Do not use QMP to
-  "check" pointer behaviour on those tiles.
+  "check" pointer behaviour on those stations.
 
 ## Thresholds, and what they are sized against
 

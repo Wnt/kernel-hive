@@ -13,7 +13,7 @@ pattern, with one more arm.
 
 | Arm | What runs | Tier | Purpose |
 |---|---|---|---|
-| **A** | MAME Atari ST + EmuTOS **inside the Debian bridge kiosk** | 2 | the status quo |
+| **A** | MAME Atari ST + EmuTOS **inside the Debian kiosk** | 2 | the status quo |
 | **B** | MAME Atari ST + EmuTOS **host-native**, frames via `drawshm` | 3 | the candidate |
 | **C** | the live `atarist` tile — **hatari** in the kiosk | 2 | reference, **untouched** |
 
@@ -47,7 +47,7 @@ fixture cannot produce it.
 
 ## Fixture discipline
 
-- **Both arms start from the same restored golden state**: the plain desktop,
+- **Both arms start from the same restored checkpoint state**: the plain desktop,
   no menu open, no icon selected. Icon positions must match between arms or the
   click coordinates differ — verify with a framebuffer shot, not by assumption.
 - **Alternate within each fixture** so a stale frame can never satisfy the next
@@ -87,17 +87,17 @@ new one — the numbers have to be comparable to what is already recorded.
 - **Exactly one viewer**, the probe. A second viewer on either arm doubles that
   arm's encode work and is a real confound.
 - **No migration builds, and no other sustained CPU campaign.** This is the one
-  ambient-load rule that matters: a MAME compile or a golden re-bake is minutes
+  ambient-load rule that matters: a MAME compile or a checkpoint recapture is minutes
   of saturated cores and will swamp a ~9 ms effect.
 
-  **A full fleet quiesce is NOT required** (operator, 2026-08-10). The tiles are
+  **A full fleet pause is NOT required** (operator, 2026-08-10). The stations are
   idle-paused when unwatched, the hourly `vms-snapshot` timer is `nice 10` /
   `idle` I/O and does not register, and — the real reason — the **interleaved
   A/B/A/B paired delta is what cancels ambient drift**. Both arms meet the same
-  conditions within each round, so a quiet-but-not-silent box costs a little
+  conditions within each round, so a quiet-but-not-silent labhost costs a little
   precision in the *absolute* numbers and nothing in the *delta*, which is the
   number being claimed. Report the observed load range rather than asserting
-  quiescence.
+  a full pause.
 - **Turbo bin.** x264 smears ~1.07 cores over 8 physical cores and pins the
   package at ~2.47–2.50 GHz while streaming. Both arms inherit it; sample and
   report the achieved clock per arm and show they match.
@@ -161,7 +161,7 @@ remove real work** — the latency campaign is worth a window.
 
 **Both arms are now drivable by hand from the gallery origin** —
 `/debridge-compare.html` for the two panes side by side, `/os/dbr-arma` and
-`/os/dbr-armb` individually. They are NOT registry tiles and deliberately have
+`/os/dbr-armb` individually. They are NOT registry stations and deliberately have
 no `listing` soft hide: `scripts/debridge-spike/gallery-arms.py` publishes the
 two signalling rows and two `"listed": false` manifest entries as an explicit,
 revertible deployment overlay, for the reasons recorded in
@@ -233,12 +233,12 @@ MACHINE and therefore present in both arms:
 ## What the number does not claim
 
 It is a claim about the **video** half of the path plus one input sink. It does
-**not** transfer to pointer *feel* on other tiles: `dbus-abs` through a
+**not** transfer to pointer *feel* on other stations: `dbus-abs` through a
 usb-tablet into a kiosk Xorg is a genuinely different mechanism from `mamesock`
 with hardware-cursor readback. A keyboard or cursor number here must not be
 quoted as a mouse-feel number elsewhere.
 
 It also says nothing about what de-bridging **costs**: the kiosk supplies a
-uniform X environment, ALSA→dbus audio, a golden qcow2 snapshot for instant
+uniform X environment, ALSA→dbus audio, a checkpoint qcow2 snapshot for instant
 reset, an ssh exec channel and cgroup memory capping. Tier 3 has to replace
 each of those or do without.

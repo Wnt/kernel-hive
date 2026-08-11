@@ -3,7 +3,7 @@
 Status: **STEP-1 HARD GO; PCI DRIVER PARTIAL/BLOCKED ON LICENSED TOOLCHAIN +
 INPUT DDK (2026-07-16)**.
 
-Goal: give the `qnx` tile an ABSOLUTE-positioning mouse through the generic
+Goal: give the `qnx` station an ABSOLUTE-positioning mouse through the generic
 `gallery-hid` "HW" device (`SH_INPUT_BACKEND=gallery`), exactly like Solaris.
 Keyboard STAYS on the QEMU PS/2 path (gallery-hid does the absolute pointer
 only). This document is the synthesis of three independent research passes; they
@@ -23,7 +23,7 @@ The preflight also resolved both toolchain unknowns:
 
 - `which qcc` and `which gcc` both returned 1: neither compiler is in the guest.
 - `/usr/include/devi.h` and `/usr/include/sys/devi.h` are both absent (`ls`
-  returned 2). No Input DDK header/source set was found on the clone, golden, or
+  returned 2). No Input DDK header/source set was found on the clone, checkpoint, or
   LiveCD.
 
 The official QNX 6.5 SDP installer was tested in an isolated clone directory and
@@ -41,7 +41,7 @@ committed `galleryhid.c` is therefore an unbuilt porting draft, not a completed
 driver.
 
 Decision: iterate once a licensed QNX 6.5 SDP plus the separate Input DDK are
-provided. Do not promote the live QNX tile. AROS is not indicated because the
+provided. Do not promote the live QNX station. AROS is not indicated because the
 abs-Y gate passed.
 
 ---
@@ -217,29 +217,29 @@ test; this task intentionally does not copy or land it.
 
 ### Toolchain — verified absent on the clone
 
-- The tile boots the QNX Neutrino 6.5 LiveCD, but direct guest checks proved the
+- The station boots the QNX Neutrino 6.5 LiveCD, but direct guest checks proved the
   image is not self-hosting: neither `qcc` nor `gcc` is present.
 - Two-part risk: (a) is `qcc` present? (b) is the **Input DDK**
   (`<devi.h>`, `input_module_t`, `packet_abs`, the devi module lib + skeleton)
   present? A runtime LiveCD may ship `qcc` but not the DDK.
 - **Required mitigation:** provide a licensed QNX SDP 6.5 installation and the
-  separate Input DDK on an off-box/clone-scoped build host, then cross-compile
+  separate Input DDK on an off-labhost/clone-scoped build host, then cross-compile
   for `ntox86`. Public documentation is insufficient to reconstruct the missing
   licensed headers/libraries, and the installer license gate must not be
   bypassed.
 
 ### Source delivery into the guest
 
-The **live `qnx` tile has NO network device and NO exec channel** (launcher has
-zero `-netdev`; device set = `pc-i440fx-11.0`, IDE golden, `QNX650Live.iso`
+The **live `qnx` station has NO network device and NO exec channel** (launcher has
+zero `-netdev`; device set = `pc-i440fx-11.0`, IDE checkpoint, `QNX650Live.iso`
 boot d, Cirrus/std VGA, AC97, implicit PS/2; no USB, no NIC). Only
 `labctl sh/type/key/shot` (blind keystrokes + screendumps) reach it.
 
 Since the clone must add `gallery-hid-pci` anyway (a device-set change forcing a
-fresh golden re-bake), source-delivery devices are "free" to fold into the same
-bake:
+fresh checkpoint recapture), source-delivery devices are "free" to fold into the same
+capture:
 
-- **Recommended:** build a second ATAPI CD ISO on the box (`mkisofs`) carrying
+- **Recommended:** build a second ATAPI CD ISO on labhost (`mkisofs`) carrying
   `galleryhid.c` + vendored DDK headers + `build.sh`. QNX auto-enumerates it
   (`devb-eide`) at `/fs/cd1`; mount, build, load, verify.
 - **Alternative:** add `-netdev user` + `e1000` on the clone and SLIRP-fetch the
@@ -250,9 +250,9 @@ bake:
 ### Persistence
 
 The LiveCD runs from a RAM filesystem; `savevm golden` is a RAM snapshot. A
-loaded `devi-hirun` line + its in-tmpfs `.so` are captured by the golden snapshot
+loaded `devi-hirun` line + its in-tmpfs `.so` are captured by the checkpoint snapshot
 (exactly how the current `relfix` daemon and the Photon desktop already persist).
-No on-disk install is required; the final live golden needs neither the source-CD
+No on-disk install is required; the final live checkpoint needs neither the source-CD
 nor a NIC.
 
 ---
@@ -264,14 +264,14 @@ nor a NIC.
    `packet_abs`/stock-`abs`/Photon output path and framebuffer-proved distinct Y,
    hover movement, press hit-testing, and drag. The custom `fake-abs.so` variant
    was not buildable without the missing toolchain/DDK.
-2. **Clone** the `qnx` tile under `/data/vms/soltest/qnx-ghid-<ts>` with unique
-   dir/VMID/`qmp.sock`/pidfile/ports; **copy** the golden qcow2. Launch with the
+2. **Clone** the `qnx` station under `/data/vms/soltest/qnx-ghid-<ts>` with unique
+   dir/VMID/`qmp.sock`/pidfile/ports; **copy** the checkpoint qcow2. Launch with the
    patched pve-qemu that carries `gallery-hid-pci`, adding
    `-chardev socket,id=ghid0,path=$D/gallery-hid.sock,server=on,wait=off`
    `-device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e`
    (verify addr free via `query-pci`; shared level INTA with AC97 is fine) plus
-   the source-CD. This is a device-set change → **cold-boot** to Photon and bake
-   a FRESH clone golden (do NOT `loadvm` the tablet-era golden).
+   the source-CD. This is a device-set change → **cold-boot** to Photon and capture
+   a FRESH clone checkpoint (do NOT `loadvm` the tablet-era checkpoint).
 3. **Port** the Solaris transport into the module's device layer
    (`pci_attach_device` → `mmap_device_memory` → `InterruptAttachEvent` → `pulse()`
    ring-drain → `packet_abs`). Load as a second `devi-hirun` line, keyboard PS/2
@@ -284,38 +284,38 @@ nor a NIC.
    the `GalleryHidSink` (build from the `ghid-native-sink` worktree; NOT yet on
    `main`) and verify end-to-end through streamhost.
 5. **One producer only:** disable the `relfix` relative daemon / `SH_POINTER=rel`
-   while gallery abs is active (else double/fighting input). Bake the clone golden
+   while gallery abs is active (else double/fighting input). Capture the clone checkpoint
    with the gallery-hid `devi-hirun` line running.
 
 ---
 
-## 6. Promotion plan for the LIVE qnx tile
+## 6. Promotion plan for the LIVE qnx station
 
 Only AFTER the **built PCI driver** passes the equivalent distinct-Y and
-different-widget gate on a fresh clone golden:
+different-widget gate on a fresh clone checkpoint:
 
-1. **Back up first** — snapshot the current live golden
+1. **Back up first** — snapshot the current live checkpoint
    (`golden.qcow2` + the `golden` VM-state), keep a `.bak-preGalleryHid` copy, so
    rollback is one `cp` + `loadvm` (follow the `qnx-upgrade` backup pattern).
 2. **Add the device to the live launcher** —
    `streamhost/tiles/qnx/qemu-streamhost.sh` (and the manifest
    `streamhost/tiles-manifest.sh`): add the `-chardev` + `-device gallery-hid-pci`
    exactly as validated on the clone. This is a device-set change → the existing
-   golden's `loadvm` will mismatch → a **full fresh golden re-bake is mandatory**
+   checkpoint's `loadvm` will mismatch → a **full fresh checkpoint recapture is mandatory**
    (cold-boot to Photon, load the driver line, clean screendump, `savevm golden`).
-3. **Set `SH_INPUT_BACKEND=gallery`** for the qnx tile and **disable the rel
+3. **Set `SH_INPUT_BACKEND=gallery`** for the qnx station and **disable the rel
    pointer path** (`SH_POINTER`/relfix) so gallery-hid is the sole pointer
    producer. Keyboard stays on PS/2. Requires the `GalleryHidSink` merged to
-   `main` + built on the box (the ghid-native-sink work).
+   `main` + built on labhost (the ghid-native-sink work).
 4. **Regenerate the capability matrix** — `labctl gen` (update
    `/data/vms/streamhost/tiles.json`) after the launcher change.
-5. **Verify on the LIVE tile via a browser drag** (not a `-display none` clone —
-   the live tile runs `-display dbus,p2p=on`; only the dbus peer path is
+5. **Verify on the LIVE station via a browser drag** (not a `-display none` clone —
+   the live station runs `-display dbus,p2p=on`; only the dbus peer path is
    representative). Prove full-screen absolute tracking + clicks land on the
    widget under the cursor. Roll back to `.bak-preGalleryHid` on any regression.
 
-Note: the live golden is currently **Cirrus/std 1024×768**; the identity calib
-must match that mode. A resolution change needs a matching calib file re-baked.
+Note: the live checkpoint is currently **Cirrus/std 1024×768**; the identity calib
+must match that mode. A resolution change needs a matching calib file recaptured.
 
 ---
 
@@ -325,12 +325,12 @@ must match that mode. A resolution change needs a matching calib file re-baked.
   evidence for four distinct corners and the Volume-widget press at Y=427.
 - **Driver:** partial. Source exists under
   `streamhost/guest-agents/qnx-galleryhid/`, but it is an uncompiled porting
-  draft. No `.so` was loaded; the PCI path, source CD, fresh clone golden, and
+  draft. No `.so` was loaded; the PCI path, source CD, fresh clone checkpoint, and
   `SH_INPUT_BACKEND=gallery` integration were not completed.
 - **Recommended orchestrator decision:** **ITERATE**, supplying a licensed QNX
   6.5 SDP plus the separate Input DDK and landing the native sink dependency.
-  Keep the live QNX tile unchanged until the built driver passes the same
-  framebuffer gate on a fresh clone golden. Do not fall back to AROS: the
+  Keep the live QNX station unchanged until the built driver passes the same
+  framebuffer gate on a fresh clone checkpoint. Do not fall back to AROS: the
   decision gate passed.
 
 ### Key evidence

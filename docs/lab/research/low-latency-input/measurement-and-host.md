@@ -1,8 +1,8 @@
 # Low-latency input — measurement harness and streamhost integration
 
 Status: **RESEARCH / BUILD PLAN (2026-07-15)**  
-Scope: cross-cutting workstream T2 from `00-generic-plan.md`; no guest driver, QEMU patch, golden,
-or live-lab change is made by this plan.
+Scope: cross-cutting workstream T2 from `00-generic-plan.md`; no guest driver, QEMU patch, checkpoint,
+or live-labhost change is made by this plan.
 
 > **Historical client-path note (2026-07-28).** `ScreenSurface.tsx` references
 > below describe the deleted v1 museum input surface. StreamView now owns the
@@ -10,7 +10,7 @@ or live-lab change is made by this plan.
 
 ## Verdict
 
-**GO for the Rust measurement harness and streamhost integration; conditional GO per tile for the
+**GO for the Rust measurement harness and streamhost integration; conditional GO per station for the
 new device path.** The current capture stack already exposes the framebuffer updates needed for a
 repeatable host-enqueue-to-first-observable-frame measurement, and streamhost has a single input
 dispatch point at which a T1 backend can be selected. The benchmark must timestamp QEMU D-Bus
@@ -18,10 +18,10 @@ callback receipt itself: QEMU's display listener sends `Scanout`, `Update`, and 
 does not put a presentation timestamp in those calls. QMP `screendump`/`labctl shot` is therefore an
 audit mechanism, not a sufficiently precise clock.
 
-The per-tile device decision remains empirical. Ship a tile only if its loadable guest driver passes
-correctness and materially beats that tile's **deployed** warpd path, especially loaded p95/p99 and
+The per-station device decision remains empirical. Ship a station only if its loadable guest driver passes
+correctness and materially beats that station's **deployed** warpd path, especially loaded p95/p99 and
 tail spread. A driver that merely moves work into a deferred user task, loses cursor pixels in the
-capture path, or cannot outperform warpd is a no-go; leave that tile on warpd.
+capture path, or cannot outperform warpd is a no-go; leave that station on warpd.
 
 Languages are deliberately narrow: **Rust 2021** for the harness and streamhost adapter because that
 is the existing host implementation; **C** for any QEMU-facing device work selected by T1 because
@@ -39,7 +39,7 @@ unsafe.
 
 ### Browser to guest path
 
-The actual production origin is the gallery SPA, not `labctl`:
+The actual production origin is the gallery UI, not `labctl`:
 
 1. `spa/src/three/ScreenSurface.tsx` listens for `pointerrawupdate` where available and otherwise
    consumes coalesced pointer events.
@@ -152,11 +152,11 @@ is a convenient operator wrapper for this evidence lane, never the percentile so
 ### Cursor-change predicate
 
 “Any changed pixel” is too weak: clocks, animation, text cursors, and guest-load indicators can all
-produce false early hits. Build a tile-specific calibration artifact as follows:
+produce false early hits. Build a station-specific calibration artifact as follows:
 
 1. Choose two unoccluded, flat-background points A and B, far enough apart that their cursor boxes
    do not overlap. Keep cursor shape/theme, display mode, palette, and scaling fixed.
-2. From a restored golden, settle the desktop, move through the **path under test** to A and B, and
+2. From a restored checkpoint, settle the desktop, move through the **path under test** to A and B, and
    collect QEMU frame buffers plus QMP screenshots. Derive source and destination cursor masks and
    a small ROI around each cursor bounding box (bounding box plus four pixels).
 3. Before each trial, alternate direction A→B or B→A, require both ROIs and framebuffer generation
@@ -171,7 +171,7 @@ produce false early hits. Build a tile-specific calibration artifact as follows:
    within 100 ms. This causally validates an early erase/draw update without incorrectly moving Tfb
    to a later complete frame. A move that changes source pixels but fails to reach B is a wrong-target
    failure, not a latency success.
-6. Default timeout is 1 s and is configurable only for a documented tile reason. A timeout,
+6. Default timeout is 1 s and is configurable only for a documented station reason. A timeout,
    wrong destination, or ambiguous template is reported as a failure. Rank timeouts as +∞ for gate
    decisions; do not fabricate a latency equal to the timeout threshold. If failures occupy a
    requested percentile rank, that percentile fails.
@@ -184,15 +184,15 @@ on every update is unnecessary and itself perturbs the tail.
 Calibration has a hard feasibility test: if the guest/QEMU combination uses a hardware cursor plane
 that is absent from the D-Bus framebuffer and `screendump`, this metric cannot be measured as stated.
 Do not silently substitute `Mouse.SetAbsPosition` acknowledgement or guest API completion. Either
-force a documented software cursor in the test golden without changing the production injection
-path, add a deterministic guest-rendered cursor witness whose cost is reported, or mark that tile's
+force a documented software cursor in the test checkpoint without changing the production injection
+path, add a deterministic guest-rendered cursor witness whose cost is reported, or mark that station's
 framebuffer-latency result unavailable/no-go.
 
 ### Trial protocol and sample size
 
-For each tile, path, and load condition:
+For each station, path, and load condition:
 
-1. Restore the named golden and verify launcher/device set, resolution, cursor template, agent or
+1. Restore the named checkpoint and verify launcher/device set, resolution, cursor template, agent or
    driver health, backend version, and stable framebuffer.
 2. Warm the QEMU display listener, streamhost sink, warpd connection/backend, and cursor path with
    50 unreported A/B moves.
@@ -200,7 +200,7 @@ For each tile, path, and load condition:
    restore three times (minimum 3,000 values). Randomize balanced A→B/B→A directions.
 4. Allow the cursor/framebuffer to settle between trials. The stability gate, rather than a fixed
    sleep alone, ensures the 8 ms warpd pacer cannot merge adjacent trials.
-5. Run candidate/warpd in randomized ABBA blocks in the same candidate golden where possible. Never
+5. Run candidate/warpd in randomized ABBA blocks in the same candidate checkpoint where possible. Never
    send one logical trial down both paths.
 6. Perform a screenshot audit at calibration, at each run boundary, and on every failure; sampling
    one additional successful trial per 20 is enough to detect template drift without putting file
@@ -216,7 +216,7 @@ single-event latency distribution.
 
 Write one JSONL object per attempt plus a machine-readable summary (JSON and CSV). At minimum record:
 
-- repository commit; tile manifest and launcher hashes; agent/driver hash; golden/snapshot identity;
+- repository commit; station manifest and launcher hashes; agent/driver hash; checkpoint/snapshot identity;
 - QEMU package/query-version, accelerator, machine, VGA, vCPU count, full pinned device arguments,
   and `SH_DBUS_UPDATE_MS`;
 - backend/protocol version, warpd TCP/serial and pacing/button-delay values, connection generation,
@@ -269,18 +269,18 @@ that limitation instead of claiming either a win or a driver failure.
 
 Run idle and loaded conditions in alternating order to expose thermal/host drift. Host load should be
 quiet and recorded, not artificially pinned unless the production launcher also pins it; otherwise
-the result describes a laboratory scheduler configuration rather than the deployed tile.
+the result describes a laboratory scheduler configuration rather than the deployed station.
 
 ## Baseline and comparison controls
 
 The most defensible comparison uses two levels:
 
-1. **B0, current image:** measure the checked-in golden and launcher exactly as deployed, idle and
+1. **B0, current image:** measure the checked-in checkpoint and launcher exactly as deployed, idle and
    loaded, using the matrix above.
-2. **B1, candidate image control:** after adding the pinned PCI device and baked driver, leave the
+2. **B1, candidate image control:** after adding the pinned PCI device and captured driver, leave the
    device/backend quiescent and select warpd. Repeat the same measurements. For p50/p95/p99, the
    bootstrap confidence interval of B1−B0 must fit wholly inside an equivalence margin of the larger
-   of ±2 ms or ±10% of B0. Otherwise the rebake/device/QEMU change confounds the comparison and must
+   of ±2 ms or ±10% of B0. Otherwise the recapture/device/QEMU change confounds the comparison and must
    be investigated.
 3. **C, candidate:** in the candidate image, select only the new backend and compare randomized B1/C
    blocks. The dormant warpd agent may remain listening for rollback, but it must receive no duplicate
@@ -293,7 +293,7 @@ response and common to both paths.
 
 ## Concrete success gates
 
-A tile advances only if all gates pass. These are program targets, not promises that a 1990s guest
+A station advances only if all gates pass. These are program targets, not promises that a 1990s guest
 can meet them.
 
 ### Correctness and robustness
@@ -313,7 +313,7 @@ can meet them.
 | Idle | ≤8 ms | ≤12 ms | ≤20 ms | ≤12 ms |
 | Guest ≥90% busy | ≤10 ms | ≤15 ms | ≤25 ms | ≤15 ms |
 
-Also require loaded candidate p99 ≤2× its idle p99. A tile may still demonstrate a strong relative
+Also require loaded candidate p99 ≤2× its idle p99. A station may still demonstrate a strong relative
 device win while missing an absolute display-limited target; report that honestly and do not erase
 the miss.
 
@@ -329,7 +329,7 @@ Use the conservative end of the 95% bootstrap interval: the upper confidence bou
 candidate/baseline ratio must remain at or below 0.60 for the 40% gate and 0.40 for the 60% gate.
 If B1 already meets an absolute target, the candidate passes that statistic with no regression larger
 than the greater of 2 ms or 10%, again at the conservative confidence bound. A median-only win is
-not sufficient. Failure of the loaded tail gate is a per-tile no-go even if idle numbers improve.
+not sufficient. Failure of the loaded tail gate is a per-station no-go even if idle numbers improve.
 
 ## Harness build plan
 
@@ -373,7 +373,7 @@ struct ArmedCursorProbe {
   to the benchmark writer.
 
 Benchmark input is generated by the harness, but it enters the same router and sink as production.
-An optional “browser ingress” mode may drive the SPA for regression coverage; it is not used for the
+An optional “browser ingress” mode may drive the UI for regression coverage; it is not used for the
 primary T0 definition.
 
 ### Verification of the harness itself
@@ -385,8 +385,8 @@ primary T0 definition.
 - Cross-check Rust monotonic deltas against a temporary `clock_gettime(CLOCK_MONOTONIC)` probe on the
   host; Linux defines that clock as unaffected by discontinuous wall-clock jumps
   ([`clock_gettime(2)`](https://www.man7.org/linux/man-pages/man2/clock_gettime.2.html)).
-- Run the existing real-SPA input/screendump tests to protect functional behavior, then do a
-  read-only lab calibration. No benchmark code should install or change a golden implicitly.
+- Run the existing real-UI input/screendump tests to protect functional behavior, then do a
+  read-only labhost calibration. No benchmark code should install or change a checkpoint implicitly.
 - Quantify observer overhead by replaying a fixed D-Bus update workload with probe disarmed/armed;
   target <100 µs p99 handler overhead and no dropped capture generations.
 
@@ -431,15 +431,15 @@ from the realtime path.
   acceptable only if T1 later defines health acknowledgements, an atomic full input-state replay,
   and a safe release-all transition.
 - Keep the warpd executable, guest autostart, TCP host-forward or COM1 socket, and streamhost adapter
-  baked and tested until the tile has completed its bake/measurement/soak gate. The inactive path
+  captured and tested until the station has completed its capture/measurement/soak gate. The inactive path
   receives no duplicate input.
 - Land pointer motion first. Move buttons/wheel/keys to the same device only after their functional
   suites pass; avoid extending the present Win95/Win3.11 mixed-backend ordering workaround.
 
-Adding the device changes the launcher's pinned device set and therefore requires a cloned golden,
-driver install/autoload, cold boot/rebake, and proof that `loadvm golden` returns with the same device
+Adding the device changes the launcher's pinned device set and therefore requires a cloned checkpoint,
+driver install/autoload, cold boot/recapture, and proof that `loadvm golden` returns with the same device
 and an armed driver. The launcher remains the device-set ledger. Never test a candidate driver by
-mutating `/mnt/poc` or a live production golden.
+mutating `/mnt/poc` or a live production checkpoint.
 
 ## Phased delivery and rollout
 
@@ -448,7 +448,7 @@ mutating `/mnt/poc` or a live production golden.
 - Factor the minimum capture/warpd code for reuse and build `lli-bench`.
 - Implement callback-entry timestamps, damage-aware ROI predicates, JSONL output, calibration, and
   QMP screenshot audit.
-- Prove repeatability on one TCP tile and one serial tile using only current warpd; measure observer
+- Prove repeatability on one TCP station and one serial station using only current warpd; measure observer
   overhead and run-to-run confidence intervals.
 - Exit: raw/replayable data, no false hit under unrelated damage, and B0 repeatability within the
   larger of 2 ms or 10% at p50/p95/p99.
@@ -461,31 +461,31 @@ mutating `/mnt/poc` or a live production golden.
 - Exit: bit-exact T1 records and sequence/overflow behavior pass interop tests; warpd behavior remains
   unchanged when selected.
 
-### Phase 2 — per-tile driver spike and bake (roughly 1–4 weeks + 1–2 days per tile)
+### Phase 2 — per-station driver spike and capture (roughly 1–4 weeks + 1–2 days per station)
 
 This work belongs to T1/per-OS plans and varies sharply. In an isolated clone, enumerate/map the
 device, prove the IRQ, inject one absolute move at the chosen kernel point, then implement robust
-state/ordering. Install/autoload and rebake only after the spike. Win16/Win9x may exceed four weeks or
+state/ordering. Install/autoload and recapture only after the spike. Win16/Win9x may exceed four weeks or
 be infeasible; do not hide that variance behind a fleet average.
 
-### Phase 3 — measure and decide (2–3 engineer-days per tile)
+### Phase 3 — measure and decide (2–3 engineer-days per station)
 
 - Calibrate templates and load helper; collect B0, B1, and C idle/loaded data plus functional and
   burst tests.
 - Publish raw data, environment metadata, percentile confidence intervals, and an explicit gate table.
-- Exit per tile: GO only on all correctness and tail gates; otherwise record NO-GO and select warpd.
+- Exit per station: GO only on all correctness and tail gates; otherwise record NO-GO and select warpd.
 
-### Phase 4 — controlled rollout and bake (about 1 week elapsed soak per passing tile)
+### Phase 4 — controlled rollout and capture (about 1 week elapsed soak per passing station)
 
-- Enable one tile/canary through the manifest, monitor backend health/overflow/reconnect and input
-  complaints, and repeat a short sentinel benchmark after QEMU/streamhost/golden changes.
-- After seven clean days, make `gallery-hid` the default for that tile. Keep warpd tested as fallback
-  for at least one subsequent golden/release cycle; removal is a separate decision.
-- Roll out tile by tile. Never make fleet success depend on the hardest guest.
+- Enable one station/canary through the manifest, monitor backend health/overflow/reconnect and input
+  complaints, and repeat a short sentinel benchmark after QEMU/streamhost/checkpoint changes.
+- After seven clean days, make `gallery-hid` the default for that station. Keep warpd tested as fallback
+  for at least one subsequent checkpoint/release cycle; removal is a separate decision.
+- Roll out station by station. Never make fleet success depend on the hardest guest.
 
-Expected first passing tile: approximately **2–6 weeks elapsed** from spike through measured bake,
-depending almost entirely on its guest driver. A six-tile fleet is roughly **8–16+ engineer-weeks**
-and may legitimately finish with some tiles on warpd.
+Expected first passing station: approximately **2–6 weeks elapsed** from spike through measured capture,
+depending almost entirely on its guest driver. A six-station fleet is roughly **8–16+ engineer-weeks**
+and may legitimately finish with some stations on warpd.
 
 ## Risks and stop conditions
 
@@ -494,7 +494,7 @@ and may legitimately finish with some tiles on warpd.
 | Cursor is not in the captured framebuffer | Requested endpoint cannot be detected | Calibration feasibility test; documented software witness or no-go, never substitute an acknowledgement |
 | Guest load prevents UI repaint | Measures scheduler/paint starvation after a successful ISR | Normal-priority ≥90% load plus heartbeat; calibrated yields; declare loaded test invalid if both conditions cannot hold |
 | D-Bus 4 ms batching/host scheduling dominates | Quantized distribution can hide a small transport gain | Same launcher and randomized B1/C blocks; report raw quantization; require large tail win, do not subtract floor |
-| Rebake/new PCI device changes timing | False candidate improvement/regression | B0 versus quiescent-device B1 equivalence gate |
+| Recapture/new PCI device changes timing | False candidate improvement/regression | B0 versus quiescent-device B1 equivalence gate |
 | Unbounded queues or dual coalescers | Old events and misleading T0 | One process router, explicit bounded semantics/counters, one event path per trial |
 | Split move/button paths reorder gestures | Stuck or misplaced click | Converge realtime classes on one backend; explicit fallback restart, no blind mid-gesture failover |
 | Ancient guest cannot take device IRQ/map BAR/inject cursor | No loadable kernel path | Per-OS spike first; T1 must support proven INTx where MSI is unavailable; keep warpd |
@@ -517,7 +517,7 @@ generic architecture:
   prototype in `streamhost/web/client.html`;
 - `streamhost/guest-agents/{solaris,ninefront,win9x,win311,os2,templeos}/`;
 - the checked-in `streamhost/tiles/<tile>/qemu-streamhost.sh` launchers, plus
-  `streamhost/tiles-manifest.sh`/its generation path where a tile (notably ninefront) has no checked-in
+  `streamhost/tiles-manifest.sh`/its generation path where a station (notably ninefront) has no checked-in
   launcher;
 - `labctl`, `scripts/coldboot/`, `tests/e2e-live/e2e/streamhostInput.*`, and
   `scripts/tools/gallery-input-probe.py`;
@@ -525,7 +525,7 @@ generic architecture:
   `docs/history/REBUILD-DELTAS-2026-07-15.md`.
 
 Any implementation should repeat this inventory at its own commit because generated launchers,
-goldens, agent behavior, and QEMU package versions are part of the experimental treatment.
+checkpoints, agent behavior, and QEMU package versions are part of the experimental treatment.
 
 ## Primary external references
 

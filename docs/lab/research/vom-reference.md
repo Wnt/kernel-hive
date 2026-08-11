@@ -67,7 +67,7 @@ Note the gap: **316 boot scripts against 116 credited images.** The other
 two-thirds are installs Warkentin performed himself, so for those the boot script
 is the only record of what configuration works.
 
-### Running the VM on the lab box
+### Running the VM on labhost
 
 From `~/vom-host-scripts/main/scripts/run_qemu`, the shape they ship is
 `qemu-system-x86_64 -enable-kvm -M pc,vmport=off -m 8G`, xHCI + `usb-mouse`,
@@ -77,15 +77,15 @@ AHCI, user networking, and a 9p `virtfs` share. Three things matter for us:
   system; **`guest_images.vdi` is the OS images**. The images are separable from
   the VM that browses them, so extracting one image does not require running the
   whole museum.
-- **Pass `-n` on this box.** The default uses `virtio-vga-gl` with `gl=on`, and
-  the lab host has no GPU; `-n` falls back to standard VGA. Also replace
+- **Pass `-n` on labhost.** The default uses `virtio-vga-gl` with `gl=on`, and
+  labhost has no GPU; `-n` falls back to standard VGA. Also replace
   `-display sdl` with VNC or a headless display — there is no seat to attach to.
 - **`-a` / `-A <dir>` puts the VM into "release preparation mode"**, mounting a
   host directory as its **apt repository** over 9p. That is the seam where the
   `os-museum-machine-*-image` packages come from, and it is how you would feed
   or inspect the media locally rather than chasing the placeholder mirrors.
 
-8 GB and KVM is a real cost on a box already running the fleet — check for
+8 GB and KVM is a real cost on labhost, already running the fleet — check for
 in-flight measurement work before starting it.
 
 ---
@@ -140,7 +140,7 @@ or 2000 for Alpha**, while **NT 4 for MIPS** *is* there.
 
 I read that as strong evidence Alpha NT was materially harder than Alpha Unix.
 **It was not.** [`alpha-nt-add.md`](alpha-nt-add.md) then built ES40-Emu/es40 on
-the box, flashed ARC/AlphaBIOS, and drove Windows 2000 RC2 for Alpha into its
+labhost, flashed ARC/AlphaBIOS, and drove Windows 2000 RC2 for Alpha into its
 file-copy phase with a framebuffer screenshot of every step.
 
 The catalogue's silence had a mundane cause: **AlphaVM Free has no VGA at all**
@@ -166,7 +166,7 @@ Smalltalk-76 pack is one our Alto study did not fetch.
 ### NeXTSTEP — the full version ladder
 
 Fourteen NeXTSTEP installations, 0.8 through 3.3, plus **NeXTSTEP 3.3 for x86**,
-all under **Previous** (the same emulator our `nextstep` tile uses).
+all under **Previous** (the same emulator our `nextstep` station uses).
 
 ---
 
@@ -197,8 +197,8 @@ conservative line than ours, since our gallery is private and passkey-gated.
 ## Caveats
 
 - Their goal is *boots and runs*, ours is *streams as an exhibit with an absolute
-  pointer, a stable rest state and a golden reset*. A machine being in the
-  catalogue says nothing about whether it makes a good tile.
+  pointer, a stable rest state and a checkpoint reset*. A machine being in the
+  catalogue says nothing about whether it makes a good station.
 - Emulator versions may be patched; `CREDITS.md` notes patches are common
   (usually to build on newer Linux or to relocate a hardcoded `$HOME` path).
 - The catalogue records what is in the VM, not how hard it was to get there.

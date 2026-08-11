@@ -37,7 +37,7 @@ Clean rendering requires **no accelerated blitter**. Under stock QEMU + NT 3.51:
 - The **clean, non-accelerated** path (standard VGA) tops out at **640×480×16** — no
   higher-res NT 3.51 miniport (VBE or PCI-Cirrus) will load/bind (Angles C, D).
 
-**Therefore the clean ceiling is 640×480×16 (the current live golden).** There is no
+**Therefore the clean ceiling is 640×480×16 (the current live checkpoint).** There is no
 clean 800×600 or 1024×768 or higher-colour mode: every higher mode routes through the
 corrupting Cirrus blitter.
 

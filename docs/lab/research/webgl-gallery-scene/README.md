@@ -4,7 +4,7 @@
 > the compatibility route redirects there, and the former v1 museum implementation and its
 > exclusive assets have been removed.
 
-Six-angle parallel study on replacing the then-current SPA 3D view (procedural box-primitive
+Six-angle parallel study on replacing the then-current UI 3D view (procedural box-primitive
 machines, canvas textures, billboard backdrops, analytic-light soup) with a
 professional-grade museum scene, built primarily with agentic coding tools
 (Claude Code / Codex) plus Midjourney. Full per-angle reports with annotated
@@ -71,7 +71,7 @@ primitives.
   baked to UV2, exported glTF; rendered basically unlit (`MeshBasicMaterial` /
   `lightMap`) at ~zero runtime cost.
 - **Exhibit slots as named Empties** in the .blend (`Slot_01…`, camera-pose
-  Empties per slot, metadata via glTF `extras`). The tile registry keeps
+  Empties per slot, metadata via glTF `extras`). The station registry keeps
   deciding *which OS* sits in *which slot* — curation moves to Blender, data
   stays in `registry/`. Adding exhibit #34 = a Blender edit, not code.
 - **5–8 machine-archetype glTFs** (sourced per the split below), instanced
@@ -153,7 +153,7 @@ for web delivery).
 2. **Screenshot feedback loop, mandatory.** Named camera bookmarks via URL
    param (`?shot=…`), fixed DPR, Playwright captures (extend `tests/e2e-live/`),
    committed baselines; every visual task ends with the agent *reading* an
-   actual rendered frame — the SPA-side twin of our framebuffer-verification
+   actual rendered frame — the UI-side twin of our framebuffer-verification
    rule. Nobody credible reports good 3D from a blind agent.
 3. **Skills + scene introspection.** Install curated three.js/R3F rule packs
    (emalorenzo/three-agent-skills; crib the visual-scorecard idea from

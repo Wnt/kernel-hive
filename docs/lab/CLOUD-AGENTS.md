@@ -2,19 +2,19 @@
 
 Cloud agents run their editor and their shell in someone else's datacentre. That
 is fine for `spa/` and for docs, and useless for everything this repo is
-actually about: a change to a tile launcher, a daemon knob, or a guest agent is
-only real once it has been driven against the box and verified on a framebuffer.
+actually about: a change to a station launcher, a daemon knob, or a guest agent is
+only real once it has been driven against labhost and verified on a framebuffer.
 
 So the cloud agent needs `ssh lab`. This doc is how it gets it — and the
 constraints that shaped the design:
 
-- **No inbound port on the home WAN.** The box dials OUT; nothing on the home
+- **No inbound port on the home WAN.** labhost dials OUT; nothing on the home
   router is opened or forwarded.
 - **The public door is not the LAN door.** What the internet can reach is a
   second, purpose-built sshd that accepts exactly one key and nothing else.
 - **One-file revocation.** Cutting every cloud agent off is truncating one
   `authorized_keys` and restarting one unit. It never disturbs how you, or
-  anything on the LAN, reach the box.
+  anything on the LAN, reach labhost.
 
 ## Shape
 
@@ -29,7 +29,7 @@ constraints that shaped the design:
    ┌────────────────────┼─ labhost, the lab box (home LAN, no open ports) ───┐
    │  forwarder-agent.service ──► 127.0.0.1:2222                              │
    │  sshd-cloud-agent.service   loopback-only sshd, key-only, 1 key          │
-   │      └─ root shell ─► labctl / tiles / streamhost / QEMU                 │
+   │      └─ root shell ─► labctl / stations / streamhost / QEMU              │
    │  ssh.service (:22)          the LAN door — untouched by any of this      │
    └──────────────────────────────────────────────────────────────────────────┘
 ```
@@ -41,7 +41,7 @@ Nothing about the forwarder deployment had to change.
 
 `sshd-cloud-agent` binds `127.0.0.1` only. It is unreachable from the LAN, from
 the Proxmox bridge, from a guest VM — the tunnel is the *only* path to it. It
-serves the box's normal ed25519 host key, so one `known_hosts` line is valid for
+serves labhost's normal ed25519 host key, so one `known_hosts` line is valid for
 both doors.
 
 ## Facts
@@ -54,7 +54,7 @@ both doors.
 | Config / keys | `/etc/cloud-agent-ssh/{sshd_config,authorized_keys}` |
 | Tunnel env | `/etc/forwarder-agent/agent.env` (0600; forwarder shared token) |
 | Agent identity | ed25519, comment `cloud-agent@osgallery-lab (jules)` |
-| Login | `root` (the lab is driven as root — `labctl`, QMP sockets, systemd) |
+| Login | `root` (labhost is driven as root — `labctl`, QMP sockets, systemd) |
 
 ## Install / re-run
 
@@ -70,7 +70,7 @@ scripts/cloud-agents/check-tunnel.sh --key ~/.ssh/lab_cloudagent
 `install-box-endpoint.sh` ships the `forwarder-agent` binary (from the
 Wnt/forwarder CI artifact) and reads the shared token off the VPS — the token is
 never printed and never enters this repo. `check-tunnel.sh` proves the path from
-outside: box units up, public port open, and a real login that runs `labctl ls`.
+outside: labhost units up, public port open, and a real login that runs `labctl ls`.
 
 ## Configuring Jules
 
@@ -135,12 +135,12 @@ limits the blast radius, it does not eliminate it:
 
 - The key opens exactly one hardened sshd. Passwords and keyboard-interactive
   are off, so the public port cannot be brute-forced; only the private key works.
-- That sshd gives **root on the box**, which is the whole lab. There is no
+- That sshd gives **root on labhost**, which is the whole lab. There is no
   meaningful "less privileged" tier here — `labctl`, QMP sockets and systemd all
-  need root, and the box holds no personal data, only guest images and the
+  need root, and labhost holds no personal data, only guest images and the
   gallery. The lab is a museum, not a home directory.
 - The rest of the LAN is not in scope of the tunnel, but *is* in scope of a
-  compromised box.
+  compromised labhost.
 - The forwarder VPS sees ciphertext only; it cannot read the SSH session.
 
 If that trade stops being acceptable, the revocation above is one command, and
@@ -150,8 +150,8 @@ nothing else in the lab depends on this path.
 
 | Symptom | Look at |
 |---|---|
-| `ssh lab` times out in the Jules VM | Network access toggle OFF; or `ssh root@tunnel.example.com 'curl -s localhost:7001/status'` shows `"tcp_ports":[]` → the box agent is not connected. |
-| `Permission denied (publickey)` | `LAB_SSH_KEY` truncated/CRLF-mangled by the form (use base64), or the box's `authorized_keys` holds a different key: `ssh lab 'ssh-keygen -lf /etc/cloud-agent-ssh/authorized_keys'`. |
-| Host key verification failed | `LAB_SSH_HOSTKEY` is stale — the box's ed25519 host key changed (rebuild). Re-copy it. |
-| Tunnel dead after a box reboot | Both units are `enable`d; check `journalctl -u forwarder-agent -n 50`. A changed forwarder token needs `install-box-endpoint.sh` re-run. |
+| `ssh lab` times out in the Jules VM | Network access toggle OFF; or `ssh root@tunnel.example.com 'curl -s localhost:7001/status'` shows `"tcp_ports":[]` → the labhost agent is not connected. |
+| `Permission denied (publickey)` | `LAB_SSH_KEY` truncated/CRLF-mangled by the form (use base64), or labhost's `authorized_keys` holds a different key: `ssh lab 'ssh-keygen -lf /etc/cloud-agent-ssh/authorized_keys'`. |
+| Host key verification failed | `LAB_SSH_HOSTKEY` is stale — labhost's ed25519 host key changed (rebuild). Re-copy it. |
+| Tunnel dead after a labhost reboot | Both units are `enable`d; check `journalctl -u forwarder-agent -n 50`. A changed forwarder token needs `install-box-endpoint.sh` re-run. |
 | Port shows open but login hangs | `ssh lab 'systemctl status sshd-cloud-agent'` — a bad `sshd_config` edit fails `sshd -t` on install, so this usually means the unit is stopped. |

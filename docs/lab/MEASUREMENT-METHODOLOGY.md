@@ -6,7 +6,7 @@ incident that produced it, because a rule without its scar tissue does not get
 followed.
 
 Scope: the IRIX/MAME work drove all of it, but nothing here is IRIX-specific
-except the framebuffer signature table. Any A/B on a shared box owes these rules.
+except the framebuffer signature table. Any A/B on shared labhost owes these rules.
 
 The rig that implements them is `scripts/build-guests/irix/irix-bench/` (see its
 [README](../../scripts/build-guests/irix/irix-bench/README.md)); the reference
@@ -41,7 +41,7 @@ a 2.493–2.494 GHz cohort is exactly the run that scored lowest on cycnorm.
 Anything that perturbs thread count, spin-waiting or C-states is otherwise
 scored **backwards**.
 
-Related, for clock reasoning generally: on this box speed converts at
+Related, for clock reasoning generally: on labhost speed converts at
 **alpha = 0.78**, not 1.0 — a 1% clock change buys 0.78% of cycnorm.
 
 ## 3. Within-run windowing only. Cross-run differencing is invalid.
@@ -102,7 +102,7 @@ from a collision.
 - **n ≥ 5**, report the **median of within-round paired ratios** with a CI —
   never raw means. Round-level outliers dominate the noise: one perturbed run
   moved an arm's mean by >10%.
-- On a busy box, prefer **sequential arms taking turns on ONE claimed pair**,
+- On busy labhost, prefer **sequential arms taking turns on ONE claimed pair**,
   with the arm order alternating by round, over concurrent arms on two pairs.
   You can only assert occupancy on the pair you are actually running on.
 
@@ -155,7 +155,7 @@ Known shm-mapping signatures (1288×1024, no borders, no resample):
 
 | state | mean | sd |
 | --- | --- | --- |
-| `iconlogin` chooser (golden v7) | 0.702353 | 0.166836 |
+| `iconlogin` chooser (seed v7) | 0.702353 | 0.166836 |
 | memory-diagnostic failure | 0.589366 | 0.188070 |
 | black (VC2 hang, or nothing published yet) | 0.000000 | 0.000000 |
 
@@ -275,7 +275,7 @@ repo:
 - [ ] within-run windows, with the emu-time trace they came from
 - [ ] full core pair, pairs swapped between rounds
 - [ ] interleaved arms, n ≥ 5, median of paired ratios + CI
-- [ ] which regime, and whether the tile is throttled there
+- [ ] which regime, and whether the station is throttled there
 - [ ] a framebuffer verification appropriate to the change (multi-sample trace
       if it touches timing)
 - [ ] discarded runs listed with the reason (clock out of family, foreign

@@ -1,4 +1,4 @@
-# IRIX tile — the closed register
+# IRIX station — the closed register
 
 Every performance angle that has been **measured and closed**, with its
 mechanism and its ceiling. The point of this file is that nothing here gets
@@ -10,7 +10,7 @@ from**, not a new attempt at the same idea.
 
 Measurement rules and the metric: [MEASUREMENT-METHODOLOGY.md](MEASUREMENT-METHODOLOGY.md).
 Baseline numbers: [irix-baseline-2026-08-03.md](irix-baseline-2026-08-03.md).
-Full build/tile record: [../guests/irix.md](../guests/irix.md).
+Full build/station record: [../guests/irix.md](../guests/irix.md).
 
 ---
 
@@ -86,7 +86,7 @@ and HLE has nothing to replace them with.
 | angle | ceiling | mechanism |
 | --- | --- | --- |
 | **`-march=native`**, **`LTO=1`** | **null** | Paired within-round ratios, n=6/arm, two independent datasets; the sign of the idle delta flips between them. The native binary really does contain 12,968 AVX-512 instructions (control: 0) and renders a byte-identical framebuffer — the code changed a lot without retiring faster, exactly what a memory-bound profile predicts. Rules out effects >±3%. |
-| **Hugepages** (`madvise`, per-process) | **~1%** | Boot +1.71%, transition +3.29%, **idle +1.22% (CI −0.7…+2.2)** — and idle is the tile's operating regime. The counters close the door independently: hugepages *halve* the walk rate at boot (dTLB 0.080→0.040, iTLB 0.105→0.040 walks/Kinstr) yet total page-walk cycles only fall **2.93%→1.87%**. The whole prize is ~2–3% of cycles even if every walk were eliminated. |
+| **Hugepages** (`madvise`, per-process) | **~1%** | Boot +1.71%, transition +3.29%, **idle +1.22% (CI −0.7…+2.2)** — and idle is the station's operating regime. The counters close the door independently: hugepages *halve* the walk rate at boot (dTLB 0.080→0.040, iTLB 0.105→0.040 walks/Kinstr) yet total page-walk cycles only fall **2.93%→1.87%**. The whole prize is ~2–3% of cycles even if every walk were eliminated. |
 | **DRC cache beyond 256 MB** | **negative** | 256 MB is a **knee, not a ramp**: 1 GB measured 126.7% against 256 MB's 130.4%. |
 
 Two hugepage mechanism traps, both of which block the naive attempt: MAME maps
@@ -158,12 +158,12 @@ sweep, 1,000 frames, **92.8%**. The emulated Indy simply cannot repaint at
 
 | angle | verdict |
 | --- | --- |
-| **Turbo bins** | Real physics, unreachable prize. MSR 0x1AD = 3.0 / 2.8 / 2.5 GHz at 1 / 2 / 3+ active physical cores; the box never leaves the bottom bin (2.471–2.502 GHz in all 24 windows) because **streamhost's own x264 encoder smears 1.07 cores over all 8 physical cores at 30 Hz** — pinning the package in the 3+-core bin exactly when a visitor is watching. Fragility worth a health-check assertion: MSR 0xCE max non-turbo is 2.3 GHz, so if turbo is ever disabled the tile loses ~7% for free. |
+| **Turbo bins** | Real physics, unreachable prize. MSR 0x1AD = 3.0 / 2.8 / 2.5 GHz at 1 / 2 / 3+ active physical cores; labhost never leaves the bottom bin (2.471–2.502 GHz in all 24 windows) because **streamhost's own x264 encoder smears 1.07 cores over all 8 physical cores at 30 Hz** — pinning the package in the 3+-core bin exactly when a visitor is watching. Fragility worth a health-check assertion: MSR 0xCE max non-turbo is 2.3 GHz, so if turbo is ever disabled the station loses ~7% for free. |
 | **Speculative-execution mitigations** | ≤0.9%, and ≤0.15% after the sysfs fix. SSBD/STIBP are prctl-gated and off for MAME. C-states, uncore frequency, NUMA, PVE/cgroup placement, `nohz_full`/IRQ steering — all bounded near zero. |
 
 ### Alternative vehicles — closed permanently
 
-**IRIS** (techomancer/iris) boots our unmodified golden to the X root and
+**IRIS** (techomancer/iris) boots our unmodified seed to the X root and
 delivers **1/9 of MAME's cycle-normalised rate while burning 2.2–2.9× more host
 CPU**; its Cranelift MIPS JIT engaged on 0.6% of instructions.
 
@@ -192,7 +192,7 @@ The AT-100 campaign found three real, orthogonal wins that do not contend:
 | win | W1 terminal scroll | note |
 | --- | --- | --- |
 | PIT 8254 idle-mode fix + explicit 16 µs quantum | **+39%** (W2 +31%, idle +67%) | biggest single win; see [irix-pit-quantum-2026-08-03.md](irix-pit-quantum-2026-08-03.md) |
-| MIPS3 fastram for Indy RAM | ~+9% | **BLOCKED** in production — fails IRIX's own memory diagnostic with the tile's serial port present |
+| MIPS3 fastram for Indy RAM | ~+9% | **BLOCKED** in production — fails IRIX's own memory diagnostic with the station's serial port present |
 | terminal default 80×40 → 80×24 | +8.0% (CI +5.3…+12.2, n=10) | a default, and it evaporates if a visitor resizes |
 
 Stacked W1: central ~74.5%, honest floor ~61%, ~83% if every remaining small
@@ -226,7 +226,7 @@ decision on 2026-08-03; do not propose it again.
   0% — **build it anyway.** A flat unsymbolised profile is exactly the condition
   under which this project invented three false causes.
 - **An exhibit-facing freeze.** A parked, idle, logged-in 4Dwm desktop on a
-  clone of the shipped golden with the shipped agent **froze after ~7 minutes**:
+  clone of the shipped checkpoint with the shipped agent **froze after ~7 minutes**:
   emulation still advancing, framebuffer byte-identical across samples, pointer
   dead. Distinct from the black-screen boot hang, and it is exactly what a
   visitor sees as a dead exhibit.

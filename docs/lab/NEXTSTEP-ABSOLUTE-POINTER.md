@@ -43,7 +43,7 @@ SummaSketch I (MM I format, 12×12) and WACOM SD-210/310/311/312/320/321/322/
 420/421/422/510B/510C. The driver has explicit **absolute** and relative modes.
 
 Nothing has to be written, compiled or patched — which matters, because the
-golden carries **no m68k toolchain at all** (no cc/as/ld, no `/usr/include`).
+checkpoint carries **no m68k toolchain at all** (no cc/as/ld, no `/usr/include`).
 
 ## What was done on the clone, and what it produced
 
@@ -77,22 +77,22 @@ one screendump, one glyph match.
 
 **The driver survives `loadvm golden`.** Previous's own README warns that the
 tablet driver "needs to be re-installed after every boot of the guest system";
-`loadvm` restores RAM and device state rather than booting, so a golden baked
-with the driver attached comes back with it attached. That was verified both
+`loadvm` restores RAM and device state rather than booting, so a checkpoint
+captured with the driver attached comes back with it attached. That was verified both
 ways above, and it is the reason this fits the exhibit's reset model at all.
 
 ## What shipping it costs
 
 1. `previous.cfg`: `nTabletType = 2`.
-2. Run `InstallTablet.app` once and **bake the golden with the driver attached**
+2. Run `InstallTablet.app` once and **capture the checkpoint with the driver attached**
    (`SH_RESET_MODE=loadvm` then keeps it for every visitor and every reset).
 3. QEMU: add `-device usb-tablet` so the browser's absolute coordinates reach
-   the kiosk's X server as absolute; tile `SH_POINTER=abs`, SPA `pointerRel:
+   the kiosk's X server as absolute; station `SH_POINTER=abs`, UI `pointerRel:
    false`; revisit `vmport=off`, which exists only to protect the relative path.
 4. The X root must stay exactly 1120×832 at +0+0 — already true, and now it is
    load-bearing for a 1:1 mapping rather than merely for edge registration.
 
-Step 3 changes the device set, so a golden re-bake is required — but step 2
+Step 3 changes the device set, so a checkpoint recapture is required — but step 2
 requires one anyway.
 
 **Hot path: there is no new code.** The shipped chain is compiled end to end
@@ -107,10 +107,10 @@ per `CycInt_AddTimeEvent(1000, …)`, which `src/cycInt.c` documents as
 **microseconds** — so **~4 ms** of emulated serial time per absolute report,
 against a relative `kms_mouse_move()` that writes its register directly. That is
 a bound read out of the code, **not a measurement**: the only instrument this
-tile has for input→photon is a screendump poll loop whose floor is ~0.58 s
-(`docs/guests/nextstep.md` §6), which cannot resolve 4 ms, and the box was
+station has for input→photon is a screendump poll loop whose floor is ~0.58 s
+(`docs/guests/nextstep.md` §6), which cannot resolve 4 ms, and labhost was
 carrying a load average of ~10 from sibling clones throughout. Treat 4 ms as the
-number to confirm on a quiesced box with a real instrument before promotion.
+number to confirm on quiesced labhost with a real instrument before promotion.
 
 ## The measurement instrument
 
@@ -145,7 +145,7 @@ on the pre-driver click:
   a single-pixel event is below anything NeXTSTEP's acceleration curve can
   amplify; the walker takes |error| of them and re-reads the framebuffer. It
   landed dead centre on the Install button from 634 px away, in one round, on
-  the tile that had defeated four controller variants.
+  the station that had defeated four controller variants.
 - **RETURN was tested and does not work**, despite the button carrying the
   default-button ⏎ glyph: the panel never becomes key.
 - **Buttons need a slow press/release** once the tablet is live — `xdotool
@@ -154,9 +154,9 @@ on the pre-driver click:
 Still unproven:
 
 - The 4 ms serial-report figure. It is read out of `tablet.c` +
-  `cycInt.c`, not measured: this tile's only input→photon instrument is a
-  screendump poll loop with a floor three orders of magnitude coarser, and the
-  box was carrying a load average of ~10-12 from the rest of the fleet.
+  `cycInt.c`, not measured: this station's only input→photon instrument is a
+  screendump poll loop with a floor three orders of magnitude coarser, and
+  labhost was carrying a load average of ~10-12 from the rest of the fleet.
 - Only MM 1201 was tried. The WACOM types report a finer coordinate range and
   might behave differently at the edges; there was no need to look.
 
@@ -187,4 +187,4 @@ soltest clone (`NSTAB-coldboot`) established, in order:
 - The InstallTablet.app GUI dance is therefore a ONCE-PER-DISK event (it writes
   tablet_reloc and the /dev nodes); `nextstep-tablet-install.py` now probes
   first, skips the GUI when a boot is already absolute, and writes the rc hook
-  on both paths. The live golden was re-baked 2026-08-11 with the hook on disk.
+  on both paths. The live checkpoint was recaptured 2026-08-11 with the hook on disk.

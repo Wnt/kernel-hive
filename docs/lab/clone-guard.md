@@ -1,13 +1,13 @@
 # clone-guard — the hard safety guard for VM-clone tooling
 
 **Source of truth:** `scripts/lib/clone-guard.sh` (repo) == `/usr/local/bin/clone-guard`
-(box), kept **byte-identical** — re-scp + `chmod +x` after any edit (verify with
+(labhost), kept **byte-identical** — re-scp + `chmod +x` after any edit (verify with
 `md5sum`).
 
 ## The incident it prevents
 
-A clone-setup task ran a **stale lab-side launcher** that had been copied from a
-LIVE tile's `qemu-streamhost.sh`. That launcher opens with the production footgun:
+A clone-setup task ran a **stale labhost-side launcher** that had been copied from a
+LIVE station's `qemu-streamhost.sh`. That launcher opens with the production footgun:
 
 ```bash
 D="${D:-/data/vms/streamhost/tiles/solaris}"          # parameter-DEFAULT
@@ -16,10 +16,10 @@ D="${D:-/data/vms/streamhost/tiles/solaris}"          # parameter-DEFAULT
 
 The intended namespace override was passed as `D=…`. When it was **not actually
 exported** into the launcher's environment, the `:-` default silently fell back
-to the LIVE tile path and the next line **killed the running production
-Solaris QEMU** — the tile was named `solariscde` then — (recovered from golden
+to the LIVE station path and the next line **killed the running production
+Solaris QEMU** — the station was named `solariscde` then — (recovered from checkpoint
 in ~1 min, but a real breach). Root
-cause: an override that fails *open* (falls back to a live tile) followed by an
+cause: an override that fails *open* (falls back to a live station) followed by an
 **unguarded** `kill $(cat …/qemu.pid)`, with nothing asserting the target was a
 clone.
 
@@ -29,7 +29,7 @@ Every clone kill / stop / destructive-QMP / launcher-run MUST route through the
 guard. It refuses, **loudly (non-zero exit + message)**, to touch anything that
 is not confined to `/data/vms/soltest/<namespace>/`:
 
-- any path under the production tiles tree `/data/vms/streamhost/tiles/`;
+- any path under the production stations tree `/data/vms/streamhost/tiles/`;
 - any `streamhost@<tile>` systemd unit (clones never run as a unit);
 - any pidfile whose **path** is outside the clone root, **or** whose **PID** is a
   QEMU whose `/proc/<pid>/cmdline` references the tiles tree (belt-and-braces:

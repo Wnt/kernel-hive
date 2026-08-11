@@ -62,7 +62,7 @@ The focused viewer intentionally makes one transport attempt per focus
 acquisition rather than inheriting `useStreamhostSession`'s session retry loop.
 It still reuses `StreamClient` for manifest signaling, WebTransport, WebCodecs,
 ABR and teardown. This is the required “retry only on re-focus” behavior and
-keeps a failing desk from repeatedly waking a live tile.
+keeps a failing desk from repeatedly waking a live station.
 
 Phase B verification also found that Phase A's unweighted “closest frustum
 point" focus picked edge-of-view desks across most of the rail, making centered
@@ -79,7 +79,7 @@ alone could park beside a desk while the rail looked down another aisle.
 ## Production-safe verification
 
 Validate from the deployed HTTPS origin with normal viewer connections only.
-Do not restart, reconfigure, restore, or power-cycle any tile or streamhost.
+Do not restart, reconfigure, restore, or power-cycle any station or streamhost.
 Record: one client in browser telemetry, old-client teardown on three rapid
 focus changes, first-frame time, 60-second decoded FPS/drop metrics, and no open
 client after leaving `/museum`.

@@ -1,7 +1,7 @@
 # Dev workstation — CT 950 `osgallery-dev`
 
-An Ubuntu 24.04 LTS LXC on the lab box for continuing this project from *inside*
-the host network (created 2026-07-08). Sibling of CT 110 (the deploy container),
+An Ubuntu 24.04 LTS LXC on labhost for continuing this project from *inside*
+the labhost network (created 2026-07-08). Sibling of CT 110 (the deploy container),
 NOT nested in it; its own `/etc/pve/lxc/950.conf` + `data/subvol-950-disk-0`
 (24G) on the shared `data` ZFS pool.
 
@@ -14,8 +14,8 @@ NOT nested in it; its own `/etc/pve/lxc/950.conf` + `data/subvol-950-disk-0`
 - **`ssh osgallery-dev`** or **`mosh osgallery-dev`** — user **`wnt`**, passwordless
   sudo, static **192.0.2.11** on the LAN (reachable over the WiFiman VPN).
   Aliased in the Mac `~/.ssh/config` (also `devbox`), uses the default `id_rsa`.
-- `ssh lab` works **from inside** the container (its own key is authorized on the
-  box) -> drive the gallery host exactly like from the Mac.
+- `ssh lab` works **from inside** the container (its own key is authorized on
+  labhost) -> drive labhost exactly like from the Mac.
 - mosh note: the container's sshd had `AcceptEnv LANG LC_*` disabled because
   macOS forwards `LC_CTYPE=UTF-8`, which is not a valid Linux locale and made
   `mosh-server` abort. Now it uses the container's own `en_US.UTF-8`.
@@ -67,9 +67,9 @@ A SINGLE shared X display that both an automation session and the human see:
   2026-07-12; bake into any rebuild.
 - **SecureContext gotcha**: WebCodecs + WebTransport are SecureContext-gated in
   Firefox — `typeof VideoDecoder` is `undefined` on `about:blank`/`data:` pages.
-  Probes/tests must run on the real https origin (the SPA at
+  Probes/tests must run on the real https origin (the UI at
   `https://192.0.2.10:8443` with `ignoreHTTPSErrors: true`) or localhost.
-- Suites: `scripts/e2e/ff-check.mjs` (one-tile PASS/FAIL smoke) and
+- Suites: `scripts/e2e/ff-check.mjs` (one-station PASS/FAIL smoke) and
   `tests/e2e-live/e2e/firefoxSmoke.config.ts` (FreeDOS/Win95/Solaris, firefox +
   chromium projects). Working caps/connect probe kept at `~/e2e/probe2.mjs`.
 

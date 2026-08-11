@@ -88,12 +88,12 @@ One main hall (front-of-house), four walls with distinct characters:
    striped-wallpaper panel + antique desk). Hero machines on desks along it.
 3. **Archive shelf wall** (ref-07): floor-to-ceiling pine grid packed with
    machines + retail-box skyline. Mostly non-interactive dressing (dark CRTs,
-   duplicates, filler) with **1–3 live tiles inset at desk height** (serial
+   duplicates, filler) with **1–3 live stations inset at desk height** (serial
    terminal / 9front style green phosphor) — the ref-07 money shot.
 4. **Fourth side:** corner detail per ref-04 (slatwall, glass shelves, boxed
    software, luggables) transitioning to the entrance.
 5. **Mid-floor:** desk rows (ref-05 rhythm) carrying most of the ~20
-   interactive tiles — each machine on a school desk with a chair and a
+   interactive stations — each machine on a school desk with a chair and a
    standing placard; plus 1–2 glass display cases (ref-02) as dressing.
    Carpet everywhere except a grey-tile strip along the shelf wall (ref-05/07).
 6. **The depot (ref-08): stretch goal** — a second, plainer space (steel
@@ -101,8 +101,8 @@ One main hall (front-of-house), four walls with distinct characters:
    "era timeline" browsing. Not in v2 scope unless cheap.
 
 Exhibit mapping stays registry-driven: slots exported as named Empties from the
-agent-generated hall .blend; the registry assigns tile → slot. Desk slots =
-interactive; shelf slots = ambient/low-rate; poster/showcase tiles live as
+agent-generated hall .blend; the registry assigns station → slot. Desk slots =
+interactive; shelf slots = ambient/low-rate; poster/showcase stations live as
 framed posters or boxed displays.
 
 ## Set-dressing vocabulary (the authenticity layer)

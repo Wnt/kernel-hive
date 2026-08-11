@@ -6,8 +6,8 @@ example `192.0.2.2`), so `client_address` is logging data, not identity.
 
 `POST /clientlog`, `GET /clientcmd`, `POST /clientcmd/admin`, and
 `POST /restore/<osId>` now fail closed unless `X-Admin-Token` matches the
-gitignored token file. The SPA, assets, health, signaling, WebRTC offer proxy,
-and tile WebTransport path remain public. An operator browser tab receives the
+gitignored token file. The UI, assets, health, signaling, WebRTC offer proxy,
+and station WebTransport path remain public. An operator browser tab receives the
 token only through an interactive prompt and keeps it in tab-scoped
 `sessionStorage`; it is never bundled or placed in a URL.
 

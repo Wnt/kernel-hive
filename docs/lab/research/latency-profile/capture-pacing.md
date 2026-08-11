@@ -81,9 +81,9 @@ Historical loaded A/B data reinforces the diagnosis:
 
 ### Current host facts (read-only inspection, 2026-07-16)
 
-The box is an 8-core/16-thread Xeon D-2146NT running `7.0.14-4-pve`. EEVDF features
+labhost is an 8-core/16-thread Xeon D-2146NT running `7.0.14-4-pve`. EEVDF features
 `RUN_TO_PARITY` and `PREEMPT_SHORT` are enabled and the base fair-class slice is
-2.8 ms. The host uses cgroup v2. `streamhost@solariscde` has `Nice=5`,
+2.8 ms. labhost uses cgroup v2. `streamhost@solariscde` has `Nice=5`,
 `CPUWeight=100`, no CPU affinity or quota, `LimitRTPRIO=0`, and QEMU plus streamhost
 live in the **same service cgroup**. Consequently:
 
@@ -102,7 +102,7 @@ kernel's `PREEMPT_SHORT` feature makes this a better first move than real-time p
 ## Ranked ideas
 
 Sorted by expected saving divided by implementation/operational effort. "Idle" means
-one interactive tile on a quiesced host; "loaded" means a gallery/full-fleet run
+one interactive station on quiesced labhost; "loaded" means a gallery/full-fleet run
 queue. Savings are server-side wall time and must be validated A/B/A.
 
 | Rank | Idea | Idle perceived impact | Loaded-tail impact | Effort | Confidence / principal trade-off |
@@ -110,7 +110,7 @@ queue. Savings are server-side wall time and must be validated A/B/A.
 | **1** | Port the 600 us fair-class EEVDF slice prototype to current main; apply before `x264_encoder_open` so the sliced pool inherits it | ~0--3 ms; little reason to alter the already-good idle path | **Expected tens of ms; ceiling ~90 ms at x264 p95.** Directly attacks wake/fan-out/join queuing | Low--medium: focused code already exists in commits `131d6b6` and `71998d9` | Medium. Synthetic same-core A/B improved wake delay p50 2167→600 us and p99 5611→3154 us at a 600 us slice; it has not had a clean full-fleet x264 A/B |
 | **2** | Viewer-aware encode budget: foreground 60 fps; grid/background 10--15 fps; aggregate the maximum requested role per tile | Foreground unchanged; thumbnails trade cadence for capacity | **69% less per-frame work at 15 vs 48 fps; Solaris-class demand proxy 15.1→4.7 CPUs for 28 streams** | Medium: add session role/desired fps and dynamic feed interval | High on work reduction, medium on exact p95. This fixes overload rather than merely prioritizing through it |
 | **3** | Demand-driven IDRs plus tile-hashed staggering; retain a longer safety heartbeat | Median unchanged; removes the visible ~90 ms 2.5 s hitch from sparse interaction | Prevents simultaneous multi-tile IDR storms; a 10 s safety interval cuts heartbeat IDRs 75% | Medium: add client keyframe request and preserve recovery watchdog semantics | High that work/spikes fall; recovery behavior is the risk. Do not simply lengthen the interval without client feedback |
-| **4** | Split QEMU/streamhost cgroups and reserve 1--2 physical cores (both SMT siblings) for latency-critical capture/encode work | Small; quiesced cores were already available | Can bound cross-QEMU run-queue delay if the reserved set is sized for active encoders | High operational effort; costs 12.5--25% of the host's physical cores | Medium-high. Start with runtime cgroup-v2 cpuset partitions, not a boot-time `isolcpus` change; capacity/admission is still required |
+| **4** | Split QEMU/streamhost cgroups and reserve 1--2 physical cores (both SMT siblings) for latency-critical capture/encode work | Small; quiesced cores were already available | Can bound cross-QEMU run-queue delay if the reserved set is sized for active encoders | High operational effort; costs 12.5--25% of labhost's physical cores | Medium-high. Start with runtime cgroup-v2 cpuset partitions, not a boot-time `isolcpus` change; capacity/admission is still required |
 | **5** | Bounded `SCHED_RR` priority 1 canary, or `SCHED_DEADLINE` with explicit runtime/period, only after fair-slice/cpuset tests | Near zero | Potentially removes most fair-class queuing | Medium code, high safety/ops burden | Low as a fleet default. Twenty-eight RT x264 pools can starve the QEMU class; the host's global 95% RT throttle is far too permissive to be the safety case |
 | **6** | Event-driven QEMU dirty emit with a coalesced bottom-half and a 1--2 ms minimum interval | About **1--2 ms p50**, at most ~4 ms worst-case capture wait | Neutral only with a budget; otherwise extra wakeups can worsen the 96 ms tail | High: shared QEMU display/dirty path | Medium. Correct trigger is framebuffer dirtiness, not the input event itself |
 | **7** | Input-coupled short fast-poll window, then let the first post-input generation consume one urgent feed token | About 1--2 ms for input-caused changes; safe fallback remains 4 ms | Neutral/negative without foreground-only gating | Medium | Medium-low. More contained than a global dirty hook, but an immediate snapshot can precede guest paint |
@@ -168,7 +168,7 @@ Start at 15 fps for grid tiles. The Solaris-class service-demand estimate releas
 roughly 10.4 logical CPU equivalents when 28 streams are active, while a selected
 tile retains today's idle latency. Report foreground p50/p95/p99 while opening 1, 7,
 14, and 28 grid streams; the success condition is that foreground p95 stays near its
-quiesced floor rather than scaling with tile count. Add admission or step grid fps
+quiesced floor rather than scaling with station count. Add admission or step grid fps
 down further when host CPU pressure says the budget is exceeded.
 
 This change should also own IDR concurrency: cached IDRs can paint thumbnails

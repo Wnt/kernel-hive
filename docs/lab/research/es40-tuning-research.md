@@ -16,13 +16,13 @@ already **APPLIED** or **VERIFIED** on our rig are marked.
   `CALL_PAL WTINT`; measured 100%→~5% host CPU on an idle OpenVMS guest.
   Caveats: no-op on multi-CPU configs; whether W2K AXP's HAL issues WTINT
   is UNVERIFIED anywhere — needs a 5-minute experiment. Note the operator
-  declared idle-sleep a non-goal for the tile (pauses when unwatched), so
+  declared idle-sleep a non-goal for the station (pauses when unwatched), so
   this is optional polish. github.com/ES40-Emu/es40/pull/148
 - **Remove `ali_usb` from the config for W2K guests.** Two independent
   reports (issues #114, #169): W2K's System process pegs a CPU polling the
   emulated USB controller; removing the device made the guest idle
   properly. Our guest idles at ~9% guest-CPU — worth the experiment.
-  Device-set change: do it BEFORE any golden savestate is baked.
+  Device-set change: do it BEFORE any checkpoint is captured.
   github.com/ES40-Emu/es40/issues/114, /issues/169
 - **Keep `ali_ide` present even if empty; use SCSI for disks; define both
   serials or neither** — maintainer guidance, issue #169.

@@ -5,7 +5,7 @@ said "AGREED, NOT YET IMPLEMENTED" long after the work shipped.
 `spa/src/input/tapQuantiser.ts` implements this plan verbatim — thresholds in
 **CSS px** with the exact planned numbers (`tapPx` 12, `dragEscapePx` 30,
 `tapHoldMs` 200, `doubleMs` 500, `doublePx` 20) plus the added time gate — and
-the deployed bundle in the box webroot contains them, with the old guest-px
+the deployed bundle in the labhost webroot contains them, with the old guest-px
 `touchGestures` implementation gone. Read what follows as the record of a
 completed change, not as pending work. Background and tools:
 [INPUT-DEBUGGING.md](INPUT-DEBUGGING.md).
@@ -27,7 +27,7 @@ win311    1024x768    same rect                        ->  ~2.5 guest px / CSS p
 **The quantisation thresholds are in GUEST pixels, but a hand wobbles in
 physical space.** `tapPx: 24` guest px is therefore only ~7.7 CSS px (~1.3 mm)
 of finger travel on IRIX — far under what a hand-held stylus does — and the
-effective sensitivity *changes with each tile's resolution*. That is why the
+effective sensitivity *changes with each station's resolution*. That is why the
 same code behaved acceptably on win311 and badly on IRIX.
 
 Corroborating evidence, same session:
@@ -61,7 +61,7 @@ Corroborating evidence, same session:
 
 **1. Move the quantiser into CLIENT space.** Do all tap/drag/double-tap maths in
 CSS px and map to guest px only for what is sent. CSS px is ~1/96", so the
-thresholds become physically meaningful and identical on every tile instead of
+thresholds become physically meaningful and identical on every station instead of
 scaling with guest resolution.
 
 **2. Add a time-based hold alongside the distance gate.** Distance alone cannot

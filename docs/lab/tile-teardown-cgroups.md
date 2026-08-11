@@ -1,4 +1,4 @@
-# "The tile is stopped" — making it true
+# "The station is stopped" — making it true
 
 **Status: fixed and installed 2026-08-03.** Reproducer and regression check:
 `scripts/dev/tile-lifecycle-check.sh <tile>`.
@@ -11,7 +11,7 @@ running. It kept its relaunch budget, so the *stopped* exhibit could have
 restarted its own guest. It had to be killed by hand, by PID.
 
 That is not only an ops bug. Most of this project's performance work is done
-"with the tiles stopped", and until now that sentence was not reliably true —
+"with the stations stopped", and until now that sentence was not reliably true —
 an unaccounted MAME could have been competing for the same cores as a
 measurement.
 
@@ -42,7 +42,7 @@ QEMU tiles there is no scope: the launcher backgrounds QEMU straight into the
 service cgroup. Under `process`, systemd signals only the main process, so any
 descendant `ExecStop`'s pidfile pass did not know about simply survived.
 
-**And the pidfile pass had in fact drifted.** The box copy of
+**And the pidfile pass had in fact drifted.** The labhost copy of
 `stop-tile-x11.sh` was an older revision that killed `bootwatch.pid` and
 `mame.pid` but not `livewatch.pid` — the repo already had that line. A teardown
 that depends on one script being in sync is a teardown that will eventually
@@ -76,7 +76,7 @@ the cgroup sweep.
 ## Proof
 
 Run against a throwaway instance of the same template (own `tile.env`,
-`SH_PORT`, tile dir) rather than an exhibit:
+`SH_PORT`, station dir) rather than an exhibit:
 
 ```
 ssh lab '/path/to/tile-lifecycle-check.sh <tile>'

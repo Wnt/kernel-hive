@@ -3,19 +3,19 @@
 > **SUPERSEDED — read
 > [`SESSION-HANDOVER-2026-08-10-evening.md`](SESSION-HANDOVER-2026-08-10-evening.md)
 > first; it is the current handover.** This file's §§3-9 (the system, the traps,
-> the deferred tiles, the Iris findings) remain accurate and are why it is kept.
+> the deferred stations, the Iris findings) remain accurate and are why it is kept.
 >
 > **Superseded in part, later the same day.** §1 and §2 were written at **3 of
-> 28** tiles; waves 1(retry), 2 and 4 then landed and it is **15 of 28**. Do not
+> 28** stations; waves 1(retry), 2 and 4 then landed and it is **15 of 28**. Do not
 > take the state or the "next action" from this file any more:
 > - **live state** → `scripts/dev/bridge-suite-status.sh`
 > - **what to run next, and how** → [`MIGRATION-WAVE-BRIEF.md`](MIGRATION-WAVE-BRIEF.md)
 > - **the procedure** → [`BRIDGE-TRIXIE-MIGRATION.md`](BRIDGE-TRIXIE-MIGRATION.md)
 >
-> §§3-9 (the system, the traps, the deferred tiles, the Iris findings, the open
+> §§3-9 (the system, the traps, the deferred stations, the Iris findings, the open
 > items) are still accurate and are why this file is kept. The three
 > `migrate-tile.sh` bugs §5 warns about are **fixed** — three separate agents
-> each rediscovered them the hard way, and each damaged a live tile doing it.
+> each rediscovered them the hard way, and each damaged a live station doing it.
 
 Written for a context compaction. Everything below is **pushed to
 `origin/main`** at `ad83366`; nothing is uncommitted. Several background agents
@@ -27,13 +27,13 @@ Xerox wave and is still accurate. This one is the guest-OS migration.
 
 The plan of record is
 [`BRIDGE-TRIXIE-MIGRATION.md`](BRIDGE-TRIXIE-MIGRATION.md) — read it before
-touching a tile. This file is the *state*, that one is the *procedure*.
+touching a station. This file is the *state*, that one is the *procedure*.
 
 ---
 
 ## 1. Where it stands
 
-**3 of 28 bridge tiles migrated: `atarist`, `pdp11`, `gt40`.** Zero drift.
+**3 of 28 kiosks migrated: `atarist`, `pdp11`, `gt40`.** Zero drift.
 
 ```
 scripts/dev/bridge-suite-status.sh
@@ -43,7 +43,7 @@ scripts/dev/bridge-suite-status.sh
 The host finished bookworm → trixie on 2026-07-15. What remained was the
 **guest** side: one frozen Debian 12 qcow2 that 28 overlays name by path as
 their read-only backing file. That cannot be upgraded in place, so two bases now
-coexist and tiles move between them one at a time.
+coexist and stations move between them one at a time.
 
 `decos` was attempted and **rolled back** — it failed on a builder bug unrelated
 to the suite (§5.1). It is correctly still declared `bookworm`.
@@ -55,11 +55,11 @@ to the suite (§5.1). It is correctly still declared `bookworm`.
 **Wave numbering is `BRIDGE-TRIXIE-MIGRATION.md` §4's, not this file's.** An
 earlier draft of this section renumbered them and that was a mistake — the plan
 doc is the plan of record. §4 there reads: wave 2 = the seven MAME-in-chroot
-tiles, wave 3 = `amstradcpc`/`alto`/`amiga`, wave 4 = the VICE seven, wave 5 =
+stations, wave 3 = `amstradcpc`/`alto`/`amiga`, wave 4 = the VICE seven, wave 5 =
 `daybreak`/`nextstep`/`apple2`, wave 6 = `star`, wave 7 =
 `sinclairql`/`zxspectrum`.
 
-**Wave 2 — the seven MAME-in-chroot tiles**, using the driver. It is the
+**Wave 2 — the seven MAME-in-chroot stations**, using the driver. It is the
 biggest structural win left (it retires the bookworm chroot's largest consumer)
 and it is where the shared ccache pays: all seven pin `mame0289`, so the
 `emu`/`osd`/`3rdparty` core is identical across trees.

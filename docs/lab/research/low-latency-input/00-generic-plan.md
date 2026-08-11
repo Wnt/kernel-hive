@@ -5,7 +5,7 @@ deep plans are sibling files in this directory (`win9x.md`, `win16.md`, `os2.md`
 `9front.md`, `templeos.md`), plus cross-cutting `qemu-transport.md` and `measurement-and-host.md`.
 
 ## Goal
-Cut host→guest **input latency and jitter to the practical minimum** for the six warpd tiles
+Cut host→guest **input latency and jitter to the practical minimum** for the six warpd stations
 (solariscde, ninefront, win95, win311, os2warp, templeos). Pointer positioning is the
 latency-critical realtime path; keyboard is second; **command-exec is NOT latency-critical** and may
 stay on a simpler/slower channel. The old guests have poor preemptive scheduling, so a usermode
@@ -76,10 +76,10 @@ Use the **highest-preference language the target toolchain actually supports**:
   and pick C or asm accordingly; TempleOS is **HolyC** (ring-0 native). Only claim Rust for a guest
   driver if you can show a real, loadable target — do not hand-wave it.
 
-## Integration with the existing bake/golden flow
-The device is part of the tile's **pinned device set**, and the guest driver is **baked into the
-golden** (auto-loads on boot), exactly like today's warpd agents. Adding a `-device` is a device-set
-change → it lands with a **golden re-bake** (we already re-bake goldens this migration). loadvm golden
+## Integration with the existing capture/checkpoint flow
+The device is part of the station's **pinned device set**, and the guest driver is **captured into the
+checkpoint** (auto-loads on boot), exactly like today's warpd agents. Adding a `-device` is a device-set
+change → it lands with a **checkpoint recapture** (we already recapture checkpoints this migration). loadvm golden
 must bring the guest back with the device present and the driver loaded + armed. Keep the emitted
 launcher = the device-set ledger (AGENTS.md rule).
 
@@ -88,7 +88,7 @@ launcher = the device-set ledger (AGENTS.md rule).
   the cursor pixel changed (via QEMU `dbus`/screendump timestamps). Report p50/p95/p99.
 - **Jitter under load**: same, while the guest runs a CPU-bound task (the realistic "competing
   threads" case) — this is where the kernel-ISR path should crush the usermode agent.
-- **Baseline** the *current* warpd (TCP + serial) per tile first, then target the new path.
+- **Baseline** the *current* warpd (TCP + serial) per station first, then target the new path.
 - Success = a large, measured reduction in p95/p99 latency and jitter vs baseline; go/no-go **per OS**
   (some OSes may not beat warpd enough to justify the driver — record that honestly and keep warpd).
 
@@ -105,24 +105,24 @@ launcher = the device-set ledger (AGENTS.md rule).
 
 ## Per-OS research-question template (every per-OS plan answers ALL of these)
 1. **Driver model & toolchain**: what kind of kernel driver loads on this OS, built with what (name
-   the exact toolchain on/for the box), and in what language (Rust→C→asm, justified)?
+   the exact toolchain on/for labhost), and in what language (Rust→C→asm, justified)?
 2. **Transport binding**: how does the driver enumerate the PCI device, map the BAR/shared ring, and
    register + service the IRQ (INTx/MSI) on this OS?
 3. **Injection point**: the *lowest-latency kernel path* to inject an ABSOLUTE pointer position +
    buttons + wheel (and keys) so the cursor/UI reacts — name the exact API/queue/subsystem, and how
    absolute coords map to the guest's display resolution.
-4. **Auto-start & bake**: how the driver is installed + auto-loaded, and how it's baked into the
-   golden so it's armed after `loadvm golden`.
+4. **Auto-start & capture**: how the driver is installed + auto-loaded, and how it's captured into the
+   checkpoint so it's armed after `loadvm golden`.
 5. **Language decision** per the preference order, with the concrete reason.
 6. **Effort, risks, fallback** (keep warpd if…), and a **phased implementation plan** (spike → driver →
-   bake → measure).
+   capture → measure).
 7. **References**: driver-model docs, DDK/toolchain, example drivers, PCI/IRQ specifics for this OS.
 
 ## Workstream map (parallel research agents)
 - **T1 `qemu-transport`** — device/transport decision (ivshmem vs custom PCI), the finalized binary
-  protocol + ring/doorbell, host↔device backend, QEMU-C vs QEMU-Rust, golden/device-set impact.
+  protocol + ring/doorbell, host↔device backend, QEMU-C vs QEMU-Rust, checkpoint/device-set impact.
 - **T2 `measurement-and-host`** — the latency/jitter benchmark harness, current-warpd baselines, the
   Rust streamhost integration + event source, success criteria/targets.
 - **G-win9x** (win95/98), **G-win16** (win311), **G-os2** (os2warp), **G-solaris** (solariscde),
   **G-9front** (ninefront), **G-templeos** (templeos) — each answers the template above and writes a
-  phased plan. Out of scope: the SSH tiles (alpine/tinycore/haiku) — different model.
+  phased plan. Out of scope: the SSH stations (alpine/tinycore/haiku) — different model.

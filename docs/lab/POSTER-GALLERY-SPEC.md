@@ -200,10 +200,10 @@ Per assigned tile, produce `registry/posters/gallery/<id>.candidates.json`.
   period use. Evan-Amos (public domain) and Wikimedia's retro-computing
   categories are the richest sources.
 - Prefer variety over near-duplicates: 3–6 images showing different aspects.
-- Do not download anything. Do not touch any file other than your tile's
-  `*.candidates.json`. Do not run `make` or build the SPA.
-- Report: for each tile, the chosen titles + licenses, and anything you could
-  NOT find (a tile with fewer than 3 free images is a legitimate outcome — say
+- Do not download anything. Do not touch any file other than your station's
+  `*.candidates.json`. Do not run `make` or build the UI.
+- Report: for each station, the chosen titles + licenses, and anything you could
+  NOT find (a station with fewer than 3 free images is a legitimate outcome — say
   so rather than padding with a wrong-machine photo).
 
 ## Phase 4 — credits and repo licensing

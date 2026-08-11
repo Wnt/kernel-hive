@@ -24,7 +24,7 @@ The injection half is the qualification:
   synchronous cursor update inside the hardware ISR. Fullscreen DOS mouse ownership is another hard
   compatibility constraint.
 - **Win98 SE:** technically easier, but likely **NO-GO on value** unless measurement proves otherwise.
-  The actual tile no longer uses `warpnet`: it already has an in-kernel, absolute `usb-tablet` path.
+  The actual station no longer uses `warpnet`: it already has an in-kernel, absolute `usb-tablet` path.
   A custom PCI VxD may shave USB/HID emulation overhead, but it takes on far more compatibility risk.
   Build the same binary for Win98 during the common spike; do not ship it merely for uniformity.
 
@@ -93,7 +93,7 @@ ISR-reachable code/data in locked segments.
 
 This common VxD is preferable to WDM. Windows 98 implements WDM 1.0
 ([Microsoft's WDM version table](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-ioiswdmversionavailable)),
-but an unmodified Win95 OSR2 fixture is not a dependable WDM target. A WDM function driver would
+but an unmodified Win95 OSR2 scene is not a dependable WDM target. A WDM function driver would
 therefore create a second implementation and still would not solve the Win95 VMOUSE interface.
 
 ### Reproducible build decision
@@ -307,7 +307,7 @@ Pass the normalized value and `SF_ABSOLUTE`/absolute bit; USER maps it to the cu
 so the ISR neither calls GDI nor queries resolution. Microsoft documents the 0..65535 mapping and
 that relative motion is subject to speed/acceleration
 ([`mouse_event` coordinate semantics](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-mouse_event)).
-The tile is single-monitor, so Win98's multi-monitor absolute limitation is irrelevant; nevertheless
+The station is single-monitor, so Win98's multi-monitor absolute limitation is irrelevant; nevertheless
 verify all four corners and center after every resolution/mode switch.
 
 Maintain a complete button state and derive the transition flags expected by USER/VMD. Before every
@@ -315,7 +315,7 @@ button transition, inject the latest position so hit testing uses the intended c
 implement click as `Sleep(15)` in the VxD: host down/up records carry real ordering and timing.
 
 Win95 production currently routes buttons through QEMU PS/2 for a good reason: a Windows-level click
-can steal focus from a fullscreen DOS VM and crash the game's VESA session. Preserve a per-tile
+can steal focus from a fullscreen DOS VM and crash the game's VESA session. Preserve a per-station
 **hybrid policy** initially: VxD absolute movement for the System VM, QEMU PS/2 buttons always. The
 driver may implement VMD desktop buttons for measurement, but they ship only after fullscreen DOS
 ownership tests pass.
@@ -351,7 +351,7 @@ and double motion on the desktop.
 
 Wheel is not allowed to block the pointer-motion replacement. A tiny fallback wheel hop may retain
 usermode scheduling for wheel, but movement/buttons/keys must not traverse it. Document the measured
-behavior per golden.
+behavior per checkpoint.
 
 ### Why not drive the display driver's cursor directly?
 
@@ -361,7 +361,7 @@ window messages, double-click state and mouse ownership; synthesizing buttons af
 different point. It also couples input to the currently installed VBEMP/standard-VGA display driver.
 Use it only as a diagnostic timestamp marker, never as the production injection mechanism.
 
-## 4. Auto-start, installation and golden bake
+## 4. Auto-start, installation and checkpoint capture
 
 ### Development installation
 
@@ -386,25 +386,25 @@ offline removal recipe.
 
 ### Golden integration
 
-For each tile independently:
+For each station independently:
 
 1. Back up all qcow2s and their internal snapshots. Add the exact custom PCI device/backend arguments
    to `qemu-streamhost.sh` and the emitted launcher/device ledger. Use a stable PCI address and socket
    path. Win95 retains all fragile machine flags; Win98 retains `acpi=on`, APIC/default irqchip and
    initially retains the USB tablet as an A/B fallback.
 2. Boot **cold**, allow PnP to bind the already-staged INF/VxD, reboot as required, verify the driver
-   is ready before the fixture UI settles, and exercise input. Do not load the old snapshot.
+   is ready before the scene UI settles, and exercise input. Do not load the old snapshot.
 3. Remove/disable `warpnet.exe` auto-start on the candidate Win95 disk only after the PCI path passes;
    keep the binary present for rollback. Keep QEMU PS/2 buttons enabled. On Win98, keep the USB tablet
    until benchmark cutover; avoid sending duplicate motion.
-4. Re-run the existing determinism/reactivity bake, delete the old internal snapshot and `savevm
+4. Re-run the existing determinism/reactivity capture, delete the old internal snapshot and `savevm
    golden` with the VxD loaded, ring armed and device generation clean. Win98's snapshot spans both
    C: and D: images; preserve their consistency.
 5. Kill QEMU, start a new process with `-loadvm golden`, reconnect the host backend, and verify first
    movement, down/up state, keys, no stale events and framebuffer identity. Then exercise repeated
    QMP `loadvm golden` without restarting QEMU.
 6. Only after measurement, change the manifest pointer selection to the new backend and regenerate
-   emitted configuration. Rollback restores the old launcher+golden pair together—not just one side
+   emitted configuration. Rollback restores the old launcher+checkpoint pair together—not just one side
    of the device set.
 
 `loadvm` success means the driver is already resident and armed; no `WIN.INI load=` program is needed.
@@ -422,7 +422,7 @@ Assuming T1 supplies a documented, migration-capable custom PCI model and host s
 | Toolchain + loadability + PCI/INTx spike | 6-9 d | Reproducible VxD loads on both clones, reads BAR, survives shared interrupts, counter increments from host doorbell |
 | Absolute injection spike | 6-10 d | Win98 direct VMD and Win95 Q139292 path move to five exact points; buttons and VKD keys proven; DOS focus behavior characterized |
 | Production driver hardening | 10-16 d | Ring validation/coalescing, barriers, bounded ISR, stop/resume/generation, diagnostics, INF, rollback, stress tests |
-| Golden bake/integration | 4-7 d | Cold PnP install and fresh verified golden for each tile, fresh-process and repeated loadvm recovery |
+| Checkpoint capture/integration | 4-7 d | Cold PnP install and fresh verified checkpoint for each station, fresh-process and repeated loadvm recovery |
 | Measurement and decision | 4-6 d | Baseline/candidate p50/p95/p99 idle+load, fullscreen compatibility matrix, per-OS go/no-go |
 
 If the QEMU model/backend must also be designed here, add roughly 2-4 weeks, but that belongs primarily
@@ -454,16 +454,16 @@ Proceed from spike to production driver only if all are true:
 - Win95 fullscreen DOS ownership has a safe routing behavior; and
 - initial IRQ-to-visible-cursor p95 under CPU load is clearly better than its actual baseline.
 
-Ship a tile only if repeated fresh-process and in-process golden restores pass, no curated app/input
+Ship a station only if repeated fresh-process and in-process checkpoint restores pass, no curated app/input
 regression occurs, and the measurement plan reports a large enough p95/p99 improvement to justify a
 ring-0 component. A suggested decision threshold is at least **2x lower p95 and p99 under load** with
 no worse idle median, subject to the cross-cutting measurement plan's final criterion.
 
 Fallbacks are first-class:
 
-- Win95: restore the matching old launcher/golden and `SH_POINTER=warpd`, TCP
+- Win95: restore the matching old launcher/checkpoint and `SH_POINTER=warpd`, TCP
   `127.0.0.1:57791`, with `SH_WARPD_BUTTONS=qemu`.
-- Win98: restore the matching launcher/golden and `SH_POINTER=abs` with `usb-tablet`.
+- Win98: restore the matching launcher/checkpoint and `SH_POINTER=abs` with `usb-tablet`.
 - During development, command exec and (if necessary) wheel remain on the old agent; never block
   rollback on deleting `warpnet.exe`.
 
@@ -488,7 +488,7 @@ Fallbacks are first-class:
    versus DOS-VM mouse focus and define the PS/2 handoff before proceeding.
 
 Deliverable: source, INF, reproducible build log, clone-only install/rollback, QEMU/guest counter dump,
-latency sanity plot and a written spike go/no-go. No golden changes.
+latency sanity plot and a written spike go/no-go. No checkpoint changes.
 
 ### Phase B — driver (10-16 days)
 
@@ -506,18 +506,18 @@ latency sanity plot and a written spike go/no-go. No golden changes.
 
 Deliverable: release-candidate VxD/INF, hashes, ABI conformance tests, rollback and compatibility matrix.
 
-### Phase C — bake (4-7 days)
+### Phase C — capture (4-7 days)
 
-1. Back up each tile, update its launcher/device ledger, stage the release package, and cold boot.
+1. Back up each station, update its launcher/device ledger, stage the release package, and cold boot.
 2. Bind PnP, reboot, verify exact resources and readiness. Run the full curated compatibility suite.
-3. Re-bake Win95 and Win98 goldens with device+driver armed. Verify fixture determinism and input
+3. Recapture Win95 and Win98 checkpoints with device+driver armed. Verify scene determinism and input
    reactivity.
 4. Verify ten repeated QMP resets and ten fresh QEMU `-loadvm golden` starts, including backend
    reconnect, first motion, all buttons released and no stale key.
-5. Keep A/B launchers/goldens until measurement passes. Do not yet remove USB tablet or warpnet
+5. Keep A/B launchers/checkpoints until measurement passes. Do not yet remove USB tablet or warpnet
    fallback artifacts.
 
-Deliverable: paired candidate launcher+golden backups and recovery evidence for each OS.
+Deliverable: paired candidate launcher+checkpoint backups and recovery evidence for each OS.
 
 ### Phase D — measure and decide (4-6 days)
 
@@ -533,7 +533,7 @@ Deliverable: paired candidate launcher+golden backups and recovery evidence for 
    handoff. Win98 ships only if it materially beats USB tablet without regression; the expected result
    is that USB tablet remains.
 5. If approved, flip the manifest pointer backend, regenerate emitted files and archive the old pair.
-   If rejected, restore the old launcher/golden and retain the spike as evidence rather than an
+   If rejected, restore the old launcher/checkpoint and retain the spike as evidence rather than an
    auto-loaded ring-0 component.
 
 ## 7. Reference index
@@ -541,13 +541,13 @@ Deliverable: paired candidate launcher+golden backups and recovery evidence for 
 ### Repository evidence
 
 - `docs/lab/research/low-latency-input/00-generic-plan.md` — architecture, binary record, language
-  policy, bake and measurement contract.
+  policy, capture and measurement contract.
 - `streamhost/guest-agents/win9x/README.md`, `warpnet.c`,
   `warpwin-serial-altbuild.c` — actual agent/API/transport and current Win95-vs-Win98 split.
 - `streamhost/tiles/win95/qemu-streamhost.sh`,
   `streamhost/tiles/win98se/qemu-streamhost.sh` — exact pinned device sets.
-- `streamhost/tiles/{win95,win98se}/golden-bake.sh` — current cold-bake/savevm flows.
-- `docs/guests/win9x.md` — verified ACPI/PCI/USB behavior, VBEMP state, golden history and Win95
+- `streamhost/tiles/{win95,win98se}/golden-bake.sh` — current cold-capture/savevm flows.
+- `docs/guests/win9x.md` — verified ACPI/PCI/USB behavior, VBEMP state, checkpoint history and Win95
   fullscreen-DOS PS/2-button requirement.
 
 ### Driver model, PnP, memory and IRQ

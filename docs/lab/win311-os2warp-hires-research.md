@@ -8,7 +8,7 @@ clone-testing in flight. This captures the ranked plan so the outcome docs in
 > first try.** Live at **1024×768×8** on `-vga std` (dacdepth=6; see the full recipe
 > + the `dacdepth=8` savevm/loadvm palette-corruption gotcha in
 > `docs/guests/win9x.md` → "Win311 hi-res SHIPPED"). 1280×1024×8 also validated but
-> not shipped (curated PM layout fills 1024×768; lighter for the TCG tile).
+> not shipped (curated PM layout fills 1024×768; lighter for the TCG station).
 >
 > **os2warp SHIPPED 2026-07-27 — but by none of the candidates below.** The verdict
 > to move to `-vga std` was right; the driver ranking was chasing the wrong root
@@ -23,10 +23,10 @@ clone-testing in flight. This captures the ranked plan so the outcome docs in
 
 ## The verdict (unanimous)
 
-Switch **both** tiles off `-vga cirrus` onto **`-vga std`** (QEMU Bochs
+Switch **both** stations off `-vga cirrus` onto **`-vga std`** (QEMU Bochs
 DISPI/VBE, `1234:1111`, default 16 MiB) and drive it with a **generic-VESA/VBE
 guest driver**. This is the *same* packed-linear path the shipped win95
-(1280×1024) and win98se (1600×1200) VBEMP tiles already run
+(1280×1024) and win98se (1600×1200) VBEMP stations already run
 (`docs/lab/tile-resolution-responsiveness.md`).
 
 The real blocker on both targets is **chipset auto-detection, not lack of
@@ -49,7 +49,7 @@ captured.
 
 Dropped as gate failures: **vmware-svga** (HW-cursor overlay invisible to our
 capture, and no Win16/OS2 driver exists), **qxl / virtio-gpu-3D / virgl** (need
-GL/DMABUF that can't init on a GPU-less box), **ati-vga** (QEMU-experimental,
+GL/DMABUF that can't init on GPU-less labhost), **ati-vga** (QEMU-experimental,
 HW-cursor overlay), **native cirrus** (proven dead on both). **86Box/PCem** with
 real S3/Matrox cores: the drivers genuinely reach clean hi-res, but they are
 different emulators exposing no QEMU dbus scanout — attaching would need a whole
@@ -59,11 +59,11 @@ future heavy-hammer only if every `-vga std`/VBE path fails the readability gate
 ## Ops constraint
 
 cirrus→std is a **device-set change**, so `loadvm golden` won't match. Every
-clone test cold-boots from the materialized golden disk
+clone test cold-boots from the materialized checkpoint disk
 (`qemu-img snapshot -a golden`), installs the driver, verifies, **then**
 `savevm golden` on the new std set. The warpd serial COM1 pointer agent is
-device-set-safe and auto-restarts from the guest, so it survives the re-bake
-(re-verify 1:1 landing at the new resolution). Both tiles stay TCG (OS/2
+device-set-safe and auto-restarts from the guest, so it survives the recapture
+(re-verify 1:1 landing at the new resolution). Both stations stay TCG (OS/2
 triple-faults under KVM; win311 is TCG today).
 
 ## Acceptance test (per clone, before any `savevm golden`)

@@ -1,6 +1,6 @@
 # A second OS on the w2kalpha machine — candidate survey
 
-**Written 2026-08-11.** Desk research only: no box access this session, nothing
+**Written 2026-08-11.** Desk research only: no labhost access this session, nothing
 installed, nothing measured here. Every claim below is sourced or explicitly
 marked **UNVERIFIED**. Companion to
 [`alpha-nt-add.md`](alpha-nt-add.md) (how the ES40 machine was brought up) and
@@ -23,7 +23,7 @@ technical/legal package is **NetBSD/alpha 10.1**; the single best *exhibit* is
 
 ## 1. What "the same emulated machine" actually means
 
-`w2kalpha` is **not** a QEMU tile. It is the es40 emulator (fork
+`w2kalpha` is **not** a QEMU station. It is the es40 emulator (fork
 [`Wnt/es40`](https://github.com/Wnt/es40) of
 [`ES40-Emu/es40`](https://github.com/ES40-Emu/es40)) running headless, with our
 own shm framebuffer export and `mamectl/1` input socket. The machine it presents
@@ -43,17 +43,17 @@ is fixed by `assets/w2kalpha/es40.cfg` and the flashed `rom/`:
 
 Two consequences worth stating plainly:
 
-- **Our runtime is already OS-agnostic.** shm capture is taken at the S3
+- **Our launcher is already OS-agnostic.** shm capture is taken at the S3
   device and `mamectl` injects at the PS/2 controller — neither knows or cares
-  what the guest is. A second tile reuses `x11-runtime.sh` and `pumps.py`
+  what the guest is. A second station reuses `x11-runtime.sh` and `pumps.py`
   essentially verbatim, with a different asset dir. The porting cost is the
   *guest install*, not the plumbing.
-- **The `flash.rom` is per-golden.** Ours carries an SRM NVRAM script that runs
+- **The `flash.rom` is per-checkpoint.** Ours carries an SRM NVRAM script that runs
   `arc` at every power-up (the unattended path into AlphaBIOS for Windows). A
   SRM-booting guest (VMS/Tru64/BSD/Linux) needs its **own** `flash.rom` with a
   different `edit nvram` script (`boot dka0` or similar) — same file, different
-  contents, staged in that tile's own asset dir. Do not share one flash image
-  between two tiles.
+  contents, staged in that station's own asset dir. Do not share one flash image
+  between two stations.
 
 ## 2. What upstream says runs — the authoritative list
 
@@ -93,7 +93,7 @@ Legal-posture buckets are the catalog's
   and [WinWorld `tru64/51b`](https://winworldpc.com/product/tru64/51b). All
   sources we already use. **UNVERIFIED:** none fetched or hashed this session.
 - **Posture:** contested-commercial (HPE). Worse than NetBSD, comparable to the
-  IRIX and Solaris tiles already on the wall.
+  IRIX and Solaris stations already on the wall.
 - **The gating unknown — license PAKs.** Tru64 gates products behind `lmf`
   PAKs; whether a PAK-less install reaches **CDE** (as opposed to console
   multi-user) is **UNVERIFIED and is the first thing to settle** — it decides
@@ -130,8 +130,8 @@ Legal-posture buckets are the catalog's
   expired-PAK problem is a clock problem. Whether that satisfies VMS's licence
   checks, and whether doing so is acceptable, is **UNVERIFIED and an operator
   decision**, not a technical one.
-- **Museum note:** we already exhibit OpenVMS 9.2 on x86-64 (poster + tile). An
-  Alpha VMS tile would be a genuine *pairing* — the same OS, the same DECwindows
+- **Museum note:** we already exhibit OpenVMS 9.2 on x86-64 (poster + station). An
+  Alpha VMS station would be a genuine *pairing* — the same OS, the same DECwindows
   desktop, two architectures and 25 years apart — rather than a duplicate. That
   is the strongest argument for it, and the licence is the strongest against.
 
@@ -152,7 +152,7 @@ Legal-posture buckets are the catalog's
   X11 on the S3 Trio64 under NetBSD/alpha (select the X sets, `wsfb` vs a real
   S3 driver, `ctwm`) is **UNVERIFIED** and is the whole question.
 - **Why it still ranks high:** it is the cheapest possible proof that our
-  headless-es40 runtime is *generic* rather than a W2K one-off, and it can be
+  headless-es40 launcher is *generic* rather than a W2K one-off, and it can be
   attempted with zero legal deliberation.
 
 ### 3.4 Windows NT 4.0 for Alpha — lowest technical risk, lowest novelty
@@ -164,7 +164,7 @@ Legal-posture buckets are the catalog's
   `\I386`), so there is no separate SKU to hunt — the discs already catalogued
   for `nt4` carry it. SP6a for Alpha is on archive.org
   ([`WinNT40SP6aISOEXE`](https://archive.org/details/WinNT40SP6aISOEXE) and
-  siblings). Posture: preservation-archive, same as the existing `nt4` tile.
+  siblings). Posture: preservation-archive, same as the existing `nt4` station.
 - **Why it is not the recommendation:** [`alpha-nt-add.md` §4](alpha-nt-add.md)
   already settled this — with `nt4`, `win2000` and now `w2kalpha` on the wall, a
   fourth near-identical NT desktop adds a placard, not a screen. Keep it as the
@@ -186,30 +186,30 @@ Legal-posture buckets are the catalog's
   ES40; and there is **no WOW** — it runs only ALPHA64 binaries, so the desktop
   has no Solitaire, no IE, nothing period-familiar. A near-empty desktop is a
   weak exhibit even with a fantastic placard.
-- **Verdict:** an experiment, not a tile plan. Cheap to *try* once another
-  Alpha guest has proven the second-tile machinery.
+- **Verdict:** an experiment, not a station plan. Cheap to *try* once another
+  Alpha guest has proven the second-station machinery.
 
 ### 3.6 The rest, and why they rank below
 
 | candidate | status |
 |---|---|
-| **OpenBSD 7.8/alpha** | free, current, [`install78.iso` 232 MB](https://cdn.openbsd.org/pub/OpenBSD/7.8/alpha/), upstream tests 7.7/7.8. But OpenBSD/alpha graphics support is thinner than NetBSD's — likely a console tile. Take NetBSD first. |
+| **OpenBSD 7.8/alpha** | free, current, [`install78.iso` 232 MB](https://cdn.openbsd.org/pub/OpenBSD/7.8/alpha/), upstream tests 7.7/7.8. But OpenBSD/alpha graphics support is thinner than NetBSD's — likely a console station. Take NetBSD first. |
 | **Red Hat Linux 7.2 "Enigma" alpha** | period-perfect (2001 Linux/Alpha, SRM + `aboot`), media on [archive.org](https://archive.org/details/redhat-7.2-alpha-release). Upstream's own note is **"X11 flawed, needs to be fixed"** — i.e. the framebuffer, the one thing we cannot compromise on, is the known-broken part. Park until upstream fixes it. |
 | **Debian/Gentoo Linux alpha** | Debian's last official alpha release is 5.0 lenny; Gentoo alpha stages still build. Not on upstream's tested list at all — strictly more risk than Red Hat 7.2 for the same "Linux on Alpha" story. |
 | **Windows NT 3.51 for Alpha** | not on upstream's list; NT 3.51 predates the AlphaBIOS/ARC generation this firmware presents, and its Alpha HAL set does not cover ES40-class machines. **UNVERIFIED**, but the odds are poor and the payoff (a Program Manager desktop) is already covered by the x86 `nt351` entry. |
 | **FreeBSD/alpha** | dropped after 6.x, not on upstream's tested list. No. |
 
-## 4. What a second Alpha tile costs
+## 4. What a second Alpha station costs
 
 This is the part that should decide how many of these we build, not which one:
 
-- **One permanently saturated core, per tile.** es40 does not idle down
+- **One permanently saturated core, per station.** es40 does not idle down
   ([`alpha-nt-add.md` §6](alpha-nt-add.md): ~330–390 MB RSS, ~101 % CPU
-  continuous). `w2kalpha` already owns one core forever; a second Alpha tile owns
-  a second. On a single box with 60 production tiles that is the real budget
+  continuous). `w2kalpha` already owns one core forever; a second Alpha station owns
+  a second. On labhost, with 60 production stations, that is the real budget
   line, and the reason [§4 of the original study](alpha-nt-add.md) argued for
-  **one** Alpha tile.
-- **Fresh namespace claims, atomically** (AGENTS.md rule): a second tile needs
+  **one** Alpha station.
+- **Fresh namespace claims, atomically** (AGENTS.md rule): a second station needs
   its own udp port + slot, shm path, `ctl.sock`, X11 display slot, **and its own
   serial-port pair** — `w2kalpha` binds 21964/21965, and es40 blocks at startup
   until both have a client, so a collision is a hang, not an error.
@@ -217,18 +217,18 @@ This is the part that should decide how many of these we build, not which one:
   root/}`. The es40 binary can be a hardlink to the same build; the `rom/` must
   not be shared (§1).
 - **Install effort** is the same shape as the W2K install: hours of framebuffer-
-  driven setup, then a golden bake. Budget 2–4 sessions per OS, as before.
+  driven setup, then a checkpoint capture. Budget 2–4 sessions per OS, as before.
 
 ## 5. Recommendation
 
 1. **Try NetBSD/alpha 10.1 first** — one session, no licence question, free
    verified media, and it answers the load-bearing generic question ("does a
-   non-Windows guest come up on our headless-shm/mamectl runtime?") for the
+   non-Windows guest come up on our headless-shm/mamectl launcher?") for the
    price of a download. Its own exhibit value is modest; treat the result as
    infrastructure proof.
 2. **Then decide Tru64 5.1B on evidence** — settle the PAK/CDE question and
    upstream's SCSI-install caveat *before* committing a session. If CDE comes
-   up, this is the tile worth building, and the `os-media-catalog.md` "dead-end"
+   up, this is the station worth building, and the `os-media-catalog.md` "dead-end"
    row gets corrected.
 3. **Escalate OpenVMS Alpha to the operator, not to a build** — technically the
    best-supported guest we could pick, but the Alpha community licence is gone
@@ -236,7 +236,7 @@ This is the part that should decide how many of these we build, not which one:
    pinning. That is a posture call.
 4. **Keep NT 4.0 Alpha as the declared fallback** and **AXP64 2210 as a
    one-shot experiment**, neither as a plan.
-5. **Do not build two Alpha tiles at once** — one more saturated core is the
+5. **Do not build two Alpha stations at once** — one more saturated core is the
    ceiling until es40 idle detection exists (`idle_nap` / the WIP
    `kleinmatic/es40:wtint-idle` work noted in
    [`es40-tuning-research.md`](es40-tuning-research.md)).

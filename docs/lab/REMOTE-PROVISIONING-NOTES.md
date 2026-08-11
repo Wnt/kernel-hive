@@ -1,6 +1,6 @@
 # Remote Provisioning Playbook & Gotchas — Supermicro SYS-5019D-FN8TP
 
-_Hard-won lessons from driving this box fully remotely (BMC 192.0.2.13, X11SDV-8C-TP8F).
+_Hard-won lessons from driving labhost fully remotely (BMC 192.0.2.13, X11SDV-8C-TP8F).
 Read this before repeating any bare-metal provisioning so you don't re-hit these. Written as we
 solved each issue._
 
@@ -18,7 +18,7 @@ solved each issue._
 > (`--fetch-from iso`) as a one-off; migrate to the PXE/HTTP path for all subsequent installs.
 
 ## Access model that actually works
-- **Drive the box via Redfish + IPMI + SSH — NOT the web UI/KVM.** The BMC web session idle-times-out
+- **Drive labhost via Redfish + IPMI + SSH — NOT the web UI/KVM.** The BMC web session idle-times-out
   in ~60–90s and CANNOT be held from browser automation; and entering the BMC password into the web
   login form is disallowed by policy. So: use `ipmitool -I lanplus` and Redfish `curl` for everything
   (mount media, set boot, power, watchdog), and SSH into the booted OS for real work. The user watches
@@ -62,7 +62,7 @@ solved each issue._
 ## Boot device selection — the two traps
 1. **The virtual CD enumerates as a USB CD-ROM** (`sr0`, TRAN=usb). So the boot override target must be
    **`UsbCd`**, NOT `Cd`. `ipmitool chassis bootdev cdrom` (generic/legacy CD) does NOT catch it when a
-   UEFI OS is installed on the disk — the box just boots the disk. Use Redfish:
+   UEFI OS is installed on the disk — labhost just boots the disk. Use Redfish:
    `PATCH /redfish/v1/Systems/1 -d '{"Boot":{"BootSourceOverrideEnabled":"Once","BootSourceOverrideTarget":"UsbCd","BootSourceOverrideMode":"UEFI"}}'`
    then `ipmitool … chassis power reset`. (Redfish AllowableValues here: None,Pxe,Floppy,Cd,Usb,Hdd,BiosSetup,UsbCd.)
 2. **Match the mode:** if the installed OS is UEFI (TrueNAS was), use `BootSourceOverrideMode: UEFI`.
@@ -86,12 +86,12 @@ Phase 8.
 ## PVE NIC pinning — names and config rewrite
 
 - `pve-network-interface-pinning` names the ports **`nicN`, not `pmx-nicN`**.
-  On this box, MAC `02:00:00:00:00:01` (the uplink) became **`nic3`**.
+  On labhost, MAC `02:00:00:00:00:01` (the uplink) became **`nic3`**.
 - The pinning tool does **not** rewrite `/etc/network/interfaces`. Before running it,
   keep a copy as `interfaces.pre-pinning`; afterwards, rewrite the bridge port in
   `/etc/network/interfaces` yourself and verify connectivity before ending the session.
 
-## IPMI watchdog — the "new OS almost boots then the box POSTs again" cause
+## IPMI watchdog — the "new OS almost boots then labhost POSTs again" cause
 - **TrueNAS/FreeNAS arms the BMC watchdog** (Timer Use: SMS/OS, Action: Hard Reset, ~137s). When you boot
   a different OS (SystemRescue) that doesn't pet it, the watchdog expires and **hard-resets mid-boot**.
   Symptom confirmed here: `ipmitool mc watchdog get` showed Expiration Flag (0x10 SMS/OS) set; SEL had a
@@ -127,7 +127,7 @@ Phase 8.
 - Scratchpad dir gets cwd-reset between Bash calls; use absolute paths.
 
 ## Firmware status (checked 2026-07-03)
-- On the box: **BIOS 2.2, BMC 01.74.13** — these ARE the latest (Supermicro's only package is the bundle
+- On labhost: **BIOS 2.2, BMC 01.74.13** — these ARE the latest (Supermicro's only package is the bundle
   `X11SDV-TP8F_2.2_AS01.74.13_SUM2.14.0`; SHA256 f3f7a1f9…). EOL board, no newer firmware. Do NOT reflash.
 
 ## Validation results so far
@@ -139,7 +139,7 @@ Phase 8.
 - Mount a tiny generic **iPXE** image via Redfish virtual media (proven path); it `chain`s to an
   HTTP-served `boot.ipxe` on the Mac (port 58080, no privileged ports, no proxyDHCP/TFTP, no UniFi
   change). `boot.ipxe` netboots SystemRescue (kernel+initrd+squashfs over HTTP) with cmdline
-  `nofirewall` + `ar_source=http://<mac>/…` autorun that installs the SSH key → box comes up SSH-ready,
+  `nofirewall` + `ar_source=http://<mac>/…` autorun that installs the SSH key → labhost comes up SSH-ready,
   zero typing, and I edit boot.ipxe/autorun freely without ever re-baking the iPXE image.
 - (Alternative considered: true dnsmasq proxyDHCP+TFTP PXE — more reusable across machines but needs root
   + is finickier; deferred.)
@@ -167,8 +167,8 @@ the PVE answer-file template, and a Redfish/PXE walkthrough.
    - **`copytoram`** = load the 896MB sfs into RAM so it needs the Mac only during boot.
    - **`sysrescuecfg=<url>`** loads a YAML (`sysrescue.yaml`: `global.nofirewall: true`) — opens SSH.
    - **`ar_source=<url>` + `ar_suffixes=0`** fetches `ar/autorun0` and runs it → installs `lab_key.pub`
-     into root's authorized_keys, restarts sshd. → box comes up **SSH-ready, zero typing**.
-   - **SPEED FIX:** archiso DHCPs every NIC serially at 20s each; the box has 5 (eth0–4). The CONNECTED
+     into root's authorized_keys, restarts sshd. → labhost comes up **SSH-ready, zero typing**.
+   - **SPEED FIX:** archiso DHCPs every NIC serially at 20s each; labhost has 5 (eth0–4). The CONNECTED
      one is **eth4 (MAC 02:00:00:00:00:01)**. `ip=:::::eth4:dhcp` pins to it → saves ~80s. (If cabling
      moves, edit this one line in boot.ipxe — no rebuild.)
 4. **Boot it**: mount `ipxe.iso` via Redfish (UsbCd) + `mc watchdog off` + Redfish boot override
@@ -189,7 +189,7 @@ the PVE answer-file template, and a Redfish/PXE walkthrough.
 ## Kernel Hive / nested-KVM in an LXC — gotchas (solved 2026-07-03/04)
 Running QEMU with **KVM acceleration inside a Docker container inside a privileged LXC**. The whole
 thing was reproduced by `scripts/pve-osgallery-deploy.sh` (neko-era, deleted in the 2026-07
-restructure — git history; the gallery now runs as host-level streamhost tiles, see
+restructure — git history; the gallery now runs as host-level streamhost stations, see
 `docs/lab/MASTER-REPRODUCE.md` Phases 3–5). The traps below are kept for any future
 Docker+KVM-in-LXC workload:
 - **QEMU in the neko container runs as uid 1000** (non-root). So the guest crash-loops with
@@ -207,7 +207,7 @@ Docker+KVM-in-LXC workload:
   (`kvmperms.conf` priority 100 → runs before qemu@500; `fix-kvm-perms.sh` = `chmod 0666 /dev/kvm`).
   Host-independent and reboot-safe — no host udev rule required.
 - **Do NOT rely on a host udev rule to make `/dev/kvm` 0666.** The PVE host's shipped rule is
-  `KERNEL=="kvm", GROUP="kvm", MODE="0660"`, and on this box something re-chowns the node to group
+  `KERNEL=="kvm", GROUP="kvm", MODE="0660"`, and on labhost something re-chowns the node to group
   `render` after CT/boot events, so an override rule loses the race. Fixing perms *inside* the container
   sidesteps all of it.
 - **`lxc.apparmor.profile: unconfined` is NOT required** for KVM or for Docker-in-LXC here — verified by
@@ -216,9 +216,9 @@ Docker+KVM-in-LXC workload:
   privileged + `nesting=1,keyctl=1` + the `cgroup2.devices.allow c 10:232 rwm` + the `/dev/kvm` bind
   mount. (Add unconfined back only if a future workload trips a real denial: `dmesg | grep -i apparmor`.)
 - **No-auth neko:** this neko build (v3-dev) has member providers multiuser/file/object but **no
-  `noauth`**. Auto-login is done at the tile URL with neko's query params
+  `noauth`**. Auto-login is done at the station URL with neko's query params
   `http://<ip>:<port>/?usr=guest&pwd=neko` → drops straight into the desktop, no login screen. In
-  `setup.sh`, **escape `&` before the `sed`** that injects tile URLs (`${OSJSON//&/\\&}`) — an unescaped
+  `setup.sh`, **escape `&` before the `sed`** that injects station URLs (`${OSJSON//&/\\&}`) — an unescaped
   `&` in a sed replacement means "the whole match", corrupting the URL to `...guest__OSES__pwd=neko`.
 - **neko healthcheck lies about the guest:** the container reports `(healthy)` when neko's web server is
   up even while qemu is crash-looping. Don't trust `docker compose ps`; verify the guest with
@@ -227,7 +227,7 @@ Docker+KVM-in-LXC workload:
 ## HARDENED nested-KVM-in-LXC — least-privilege, NO chmod 666 (validated 2026-07-04)
 The chmod-666 approach above was the **testing** config; the least-privilege replacement was encoded
 in `pve-osgallery-hardened.sh` (neko-era, deleted — the neko CT itself is superseded by the streamhost
-tile flow); the validated security-posture table (testing vs hardened) has since been retired along
+station flow); the validated security-posture table (testing vs hardened) has since been retired along
 with that runbook. Provisioning gotchas discovered while validating it in a
 throwaway CT 111 on PVE 9.2.2 (pve-container 6.1.10):
 - **Use `dev0: /dev/kvm`** (PVE device passthrough) on an **unprivileged** CT (`nesting=1,keyctl=1`) with

@@ -9,7 +9,7 @@ Task clone: `/data/vms/soltest/repro-android-cv-1784064830/`
 
 ## Verdict
 
-Local CPU-only vision is feasible for this tile and is materially safer than
+Local CPU-only vision is feasible for this station and is materially safer than
 the reconstructed tap array. The final detector found all ten observed targets
 in 30/30 native template replays and 30/30 replays of the same framebuffers
 resampled from 1024x768 to 800x600. It completed the wizard through the real
@@ -25,7 +25,7 @@ A/B run.
 
 ## Isolation and inputs
 
-- No live QMP socket, live tile file, service, or `/data/gallery-guests` image
+- No live QMP socket, live station file, service, or `/data/gallery-guests` image
   was modified. The only source read from the gallery directory was the ISO.
 - The ISO copied into the task namespace matched the builder pin:
   `91cedb534ba095a0c9b3eceede4147967fd27beea9bba640776f787dc3555021`,
@@ -148,7 +148,7 @@ Abandoned/intermediate branches `cp-installer-partition-menu`,
 `cp-postwizard-processing` experiment were deleted with `delvm`. No qcow2 file
 was copied to make checkpoints and no reinstall was used after a misfire.
 
-## Framebuffer and tile-contract evidence
+## Framebuffer and station-contract evidence
 
 Evidence remains in the namespaced clone under `evidence/`:
 
@@ -196,13 +196,13 @@ Before making this the production default:
 1. Repair and framebuffer-gate the independently stale text-installer keys.
 2. Run a true second guest video mode, not only framebuffer resampling.
 3. Add negative-screen fixtures per crop so score/ROI regressions fail in CI.
-4. Decide whether the builder should cold-relaunch with the exact tile device
+4. Decide whether the builder should cold-relaunch with the exact station device
    set and create/verify `golden`; the spike proves that operation but does not
    silently change the builder's existing artifact policy.
 
 ## Generalization
 
-The toolkit is a good candidate for other graphical-installer tiles when they
+The toolkit is a good candidate for other graphical-installer stations when they
 have deterministic screen states and QEMU-supported absolute input. Reuse the
 QMP capture/action/settle code, but supply per-OS target phrases, crops, score
 thresholds, and relative regions. Template matching should remain a fallback

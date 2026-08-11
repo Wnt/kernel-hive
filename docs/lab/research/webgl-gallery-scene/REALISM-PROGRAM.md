@@ -54,7 +54,7 @@ interaction E2E passing; production redeployed after each integration.
 Waves as run: R1 room-textures/T-grid-ceiling/archive-wall → R2
 variety/light-ground/dressing → R3 grade/spatial-compression/density → R4
 baked hall lightmaps (A/B-proven Cycles bake, `blender/gen_hallbake.py` +
-`hallLightmaps.ts`) + per-tile exhibit identity (`machineIdentity.ts`: 37
+`hallLightmaps.ts`) + per-station exhibit identity (`machineIdentity.ts`: 37
 era-correct tints + nameplates + station kits). Remaining themes recorded by
 the final judge (for any future R5): micro material variation
 (roughness/wear/grime), curatorial rhythm (less grid, asymmetric focal

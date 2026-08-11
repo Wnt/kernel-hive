@@ -55,7 +55,7 @@ the DAC from the wrong (160-early) location. Why SR still round-tripped while
 the DAC did not: the VGACommonState fields' offsets-from-the-wrong-base happened
 to land on stable overlapping memory, so they survived; the far-out
 cirrus-direct fields did not. This is also why the low-colour **nt351**
-(isapc + isa-cirrus) tile's `loadvm golden` looked byte-identical — it never
+(isapc + isa-cirrus) station's `loadvm golden` looked byte-identical — it never
 exercised the hi-colour hidden-DAC path.
 
 ## The fix
@@ -82,7 +82,7 @@ Wire format and section name (`"cirrus_vga"`) are unchanged; the inner VMSD's
 
 ## Build + acceptance
 
-- Base: box `pve-qemu-kvm-11.0.2` source (debian series applied) + ROP1 patch
+- Base: labhost `pve-qemu-kvm-11.0.2` source (debian series applied) + ROP1 patch
   `0004` + this fix. Minimal `--target-list=i386-softmmu` build.
 - Deterministic repro without an NT4 install: a 512-byte bootsector sets VBE
   mode `0x117` (1024x768x16bpp 565 — the exact Cirrus hi-colour hidden-DAC
@@ -103,8 +103,8 @@ Proof PNGs: `docs/lab/nt4-cirrus-vmstate-proofs/`
   compiled into the validated binary) and to vmmouse (input path untouched).
 - Repro used the exact hybrid device set from `nt4-cirrus-hires-investigation.md`
   minus `-device vmmouse` (needs an i8042 link not relevant to the display bug).
-- To promote nt4: build the box QEMU with `0004`+`0005`, then re-bake the nt4
-  golden with the fixed binary (the pre-fix golden was saved with the buggy
+- To promote nt4: build labhost QEMU with `0004`+`0005`, then recapture the nt4
+  checkpoint with the fixed binary (the pre-fix checkpoint was saved with the buggy
   vmstate and must be re-savevm'd, not reused).
 - This is a genuine upstream QEMU bug (`isa-cirrus-vga` migration/snapshot);
   the patch is submittable upstream as-is.
@@ -137,16 +137,16 @@ above is the canonical writeup, and the other two corroborate it:
 1. Rebuild the pinned `/opt/qemu-cirrusfix` QEMU with the full display series
    `0003`+`0004`+`0005` (0005 is display-vmstate-only; strictly additive to the
    ROP1 binary nt351 already runs). Back up the current binary paired with the
-   golden(s) it baked.
-2. **nt351 is the only other `isa-cirrus-vga` production tile.** Its existing
-   golden was `savevm`'d under the buggy vmstate and is self-consistent only with
+   checkpoint(s) it captured.
+2. **nt351 is the only other `isa-cirrus-vga` production station.** Its existing
+   checkpoint was `savevm`'d under the buggy vmstate and is self-consistent only with
    the *buggy* binary — loading it under the fixed binary restores garbage. If
-   `/opt/qemu-cirrusfix` is rebuilt in place, **nt351's golden must be re-baked**
+   `/opt/qemu-cirrusfix` is rebuilt in place, **nt351's checkpoint must be recaptured**
    (cold-boot → clean → `savevm golden`) under the fixed binary and verified live
    before touching nt4. (In practice nt351's live reset is an in-process `loadvm`
    whose correct-offset DAC was set at cold boot, which is why the corruption was
    never visible on nt351 — but a fresh-process service restart would hit it.)
-3. Re-create the nt4 1024×768×16bpp Cirrus golden (the reaped candidate must be
+3. Re-create the nt4 1024×768×16bpp Cirrus checkpoint (the reaped candidate must be
    rebuilt per `nt4-cirrus-hires-investigation.md`: NT4 SP6 `cirrus.sys`/
    `cirrus.dll`, select the CL 5430 1024×768×16 mode), `savevm golden` under the
    fixed binary, verify fresh-process `-loadvm golden` byte-identical + the
@@ -155,4 +155,4 @@ above is the canonical writeup, and the other two corroborate it:
 4. Promote nt4: launcher → `/opt/qemu-cirrusfix/bin/qemu-system-i386
    -L /usr/share/kvm` with the hybrid device set; registry `1024×768`/`65536`
    colors + `deviceSetId`; `docs/guests/nt4.md`; regenerate; drift-clean; restart
-   `streamhost@nt4`; live-verify in the SPA.
+   `streamhost@nt4`; live-verify in the UI.

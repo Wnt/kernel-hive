@@ -120,9 +120,9 @@ c616b103fabd11131fcacc9d9be29403a19e966475c58204bddf150189136385  qemu-system-i3
 QEMU emulator version 11.0.2 (pve-qemu-kvm_11.0.2-1)
 ```
 
-The box's `qemu-system-i386` is the same multi-target executable as
+labhost's `qemu-system-i386` is the same multi-target executable as
 `qemu-system-x86_64`; the uniquely named local copy above was used directly.
-No package was installed and no system or production-tile QEMU was restarted.
+No package was installed and no system or production-station QEMU was restarted.
 
 For a production `.deb`, insert
 `0004-cirrus-blt-rop1-fill.patch` after the current final patch as
@@ -219,13 +219,13 @@ sheet, and trace-range index.
 ## Regression evidence
 
 A second isolated clone used a reflink copy of the current clean NT 3.51
-640x480 golden and the exact same local fixed binary:
+640x480 checkpoint and the exact same local fixed binary:
 
 ```text
 /data/vms/soltest/qcirrus-trace-20260728T015851Z-428914-regression640/
 ```
 
-`regression-640/` contains the clean golden desktop, opened README, README
+`regression-640/` contains the clean checkpoint desktop, opened README, README
 after PageDown ten, and restored desktop in both raw PPM and PNG form. All four
 were inspected together in `qcirrus-regression-all.png`; its SHA-256 is:
 

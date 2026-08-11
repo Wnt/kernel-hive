@@ -22,7 +22,7 @@ an NTFS volume, and the user-visible mount illusion was a **shell namespace
 extension**, not a filesystem mount.
 
 Not just sourced — **measured**. A real Longhorn 4074 installation mounted
-read-only on the box has the store exactly where the architecture predicts:
+read-only on labhost has the store exactly where the architecture predicts:
 
 ```
 /System Volume Information/WinFS/{C11E8244-9F02-44F2-9541-CF9775EE75ED}/
@@ -99,7 +99,7 @@ session.** It reaches the logon UI cleanly, then on logon the video mode drops
 Reproduced 4×, with the obvious causes eliminated: Administrator password
 already `*BLANK*` (`chntpw -l SAM`), `InstallDate` = 2004-04-28 so the RTC was
 inside the 180-day window, retried at 2004-04-29, and `AutoAdminLogon=1`
-injected offline via `hivexregedit`. A real tile needs a real install from ISO.
+injected offline via `hivexregedit`. A real station needs a real install from ISO.
 
 ## 4. WinFS is not demonstrable — and this is what breaks the pitch
 
@@ -128,7 +128,7 @@ Synchronization Manager`** to Automatic. BetaWiki also warns of *"major memory
 leaks"* when WinFS is enabled.
 
 **(c) The honest sentence:** *a visitor standing in front of a stock Longhorn
-tile sees a slightly odd Windows XP.* WinFS is a background service whose only
+station sees a slightly odd Windows XP.* WinFS is a background service whose only
 shell surface is a folder whose columns say `Genre` and `Publisher` instead of
 `Size` and `Date Modified`. Lovely for someone who knows; nothing at all to
 anyone else.
@@ -138,7 +138,7 @@ only configuration with a deliberate UI — stores as top-level objects in My
 Computer, My Documents redirectable into a store, plus the **StoreSpy** browser
 (Items, Relationships, MultiSets, saved searches, graphical Rules view) and the
 **WinFS Type Browser**. It runs on **Windows XP SP2 + .NET 2.0** — and the
-gallery already has a `winxp` tile with a builder. ISO fetched and hashed below.
+gallery already has a `winxp` station with a builder. ISO fetched and hashed below.
 If the thesis is "see WinFS", this is cheaper and more honest than any Longhorn
 build, at the cost of a strange pitch: WinFS running on the OS it was meant to
 replace.
@@ -151,7 +151,7 @@ warez-scene notes. Posture unchanged: **URL + measured sha256 + size + class in
 `ASSETS-MANIFEST.md`, never the bits.** Repo public, gallery passkey-private,
 streaming pixels is fine.
 
-**archive.org is directly fetchable from the box — no operator action, no
+**archive.org is directly fetchable from labhost — no operator action, no
 BetaArchive dependency.** All five fetched and hashed:
 
 | File | sha256 | Size |
@@ -174,7 +174,7 @@ provenance problem when `-rtc base=…` is clean and honest.
 Measured on the running 4051 desktop, idle, `-m 1024 -smp 1 -enable-kvm`:
 **RSS 1 111 936 kB = 1.09 GB**, and **1.04 CPU cores sustained doing nothing.**
 
-| Tile | `-m` | `-vga` | live RSS |
+| Station | `-m` | `-vga` | live RSS |
 |---|---|---|---|
 | `win95` | — | — | 101 MB |
 | `win98se` | 384 | std | 137 MB |
@@ -182,10 +182,10 @@ Measured on the running 4051 desktop, idle, `-m 1024 -smp 1 -enable-kvm`:
 | `winxp` | 768 | std | 358 MB |
 | **`longhorn` (measured 4051)** | **1024** | **cirrus** | **1112 MB** |
 
-**3.1× the heaviest classic Windows tile in RAM, and an order of magnitude worse
-in idle CPU** — every other tile in that table idles near zero. A 4074 tile with
+**3.1× the heaviest classic Windows station in RAM, and an order of magnitude worse
+in idle CPU** — every other station in that table idles near zero. A 4074 station with
 WinFS actually enabled would be worse on both axes. Budget **1.5–2.0 GB RSS and
-~1 core permanently**. On a box already at load 15–20, that is a material
+~1 core permanently**. On labhost already at load 15–20, that is a material
 commitment for an exhibit whose headline feature is invisible.
 
 ## 7. Pointer — no exception needed
@@ -244,6 +244,6 @@ Cross-reference: the Virtual OS Museum catalogues five pre-reset builds (3683,
 [`vom-reference.md`](vom-reference.md). Notably **4074 is not among them**, and
 **4020 is**.
 
-Evidence: `/data/vms/soltest/LH-4074-a7f3/` on the box (7.3 GB, inert) — five
+Evidence: `/data/vms/soltest/LH-4074-a7f3/` on labhost (7.3 GB, inert) — five
 hashed images, converted qcow2s, 20 framebuffer screendumps, and namespaced
 helpers. Delete if the candidate is dropped.
