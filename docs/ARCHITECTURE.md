@@ -115,10 +115,12 @@ capture/encode/transport wrapper, a golden disk image with a known-good
 snapshot to reset to, and an entry in the registry describing all of that.
 `registry/tiles/<osId>.json` is the single typed source of truth (schema at
 `registry/schema/tile-v1.schema.json`); `scripts/tiles-registry.py generate`
-renders it into the deployed artifacts (`registry/index.json`, the
-manifest `streamhost` consumes, SPA poster data). Never hand-edit a
-generated file — edit the registry source and regenerate; `make
-tile-registry-check` fails a drifted generated file. Current roster size:
+renders it into the deployed artifacts (the manifest `streamhost` consumes,
+the serve JSONs, SPA poster data), and `scripts/tiles-registry.py render`
+resolves the two never-committed documents — the public
+`gallery-manifest.json` the SPA fetches and the whole-registry `index.json`.
+Never hand-edit a generated file — edit the registry source and regenerate;
+`make tile-registry-check` fails a drifted generated file. Current roster size:
 
 ```sh
 python3 scripts/tiles-registry.py count

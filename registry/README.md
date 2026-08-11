@@ -17,8 +17,8 @@ hostname, and public domains were replaced with RFC 5737 / documentation
 placeholders (`192.0.2.10`, `labhost`, `example.com`, `gallery.example.com`,
 `tunnel.example.com`). Every tool keeps its placeholder as the DEFAULT so a
 fresh public clone works out of the box and `make tile-registry-check` stays
-deterministic across machines — `registry/index.json` and every other
-generated artifact keep the placeholder regardless of local configuration.
+deterministic across machines — every generated and rendered artifact keeps
+the placeholder regardless of local configuration.
 
 The real values are supplied at *run/deploy* time, not at *generate* time: copy
 `registry/local.env.example` to `registry/local.env` (gitignored) on the box and
@@ -78,15 +78,34 @@ rows) are serialized from the typed fields; the legacy pre-rendered `render.*`
 string mirrors were removed once semantic parity was proven, so `render` now
 carries only ordering, preludes, and comments. A tile's `tile.env.fixture` is
 the single source for the env keys it defines — the generator merges it into
-the env view the validators and `registry/index.json` see, and validation fails
-any key that appears in both places. Verbatim QEMU launchers remain
+the env view the validators and the rendered `index.json` see, and validation
+fails any key that appears in both places. Verbatim QEMU launchers remain
 authoritative device ledgers and are referenced, never rewritten, by this
 generator.
 
+### Generated vs rendered
+
+Two classes of output, and the difference is where they live:
+
+- **Generated** (`generate`): written into the tree and committed —
+  `streamhost/tiles-manifest.sh`, `scripts/serve/tiles.json`,
+  `spa/src/data/keyboards.ts`, … Something outside the generator (a shell
+  script, the Vite build, the box) reads them as files, so they must exist
+  without running Python. `make tile-registry-check` proves each is
+  byte-identical to what the registry produces now.
+- **Rendered** (`render` / `emit`): never committed and never in the tree —
+  the public `gallery-manifest.json` the SPA fetches, and `index.json`, the
+  whole-registry aggregate. Their only consumers can ask for them: the publish
+  path pipes them at the box, the test suite renders one into memory, the Vite
+  dev server answers `/gallery-manifest.json` by rendering per request.
+  `render` drops them in the gitignored `build/registry/`; `emit <name>` writes
+  one to stdout. Nothing can go stale, and a gallery string searched in the
+  repo has exactly one hit — the registry entry that owns it.
+
 For a live-edit loop, `devwatch` (Rust, `streamhost/devwatch`) watches the
-hand-written sources, runs `generate` on every save, and — only when the change
-validates — publishes the runtime manifests (gallery manifest, poster docs) to
-the box via `scripts/serve-https-spa.sh manifests`:
+hand-written sources, runs `generate` + `render` on every save, and — only when
+the change validates — publishes the runtime manifests (gallery manifest,
+poster docs) to the box via `scripts/serve-https-spa.sh manifests`:
 
 ```bash
 make devwatch          # deploys need registry/local.env; --help for flags
@@ -112,7 +131,7 @@ listings without touching anything else about it:
 The block is optional and absent means listed, so every entry without it behaves
 exactly as before. `hidden` removes the tile from the 2D grid, the 3D museum hall
 and their era/total counts — and from nothing else. It stays a full lineup
-entry: it still ships in `gallery-manifest.json` (flagged `"listed": false`,
+entry: it still ships in the rendered `gallery-manifest.json` (flagged `"listed": false`,
 row intact), still streams, still keeps its scene bindings, keyboard profile and
 poster, so the SPA parity tests pass untouched and nothing has to be deleted and
 restored.
@@ -249,9 +268,9 @@ aux mouse comes from a machine-type default that no device ledger names
 The fields are not added to `registry/generated/labctl-declarations.json`:
 `LABCTL_KEYS` must stay in lockstep with the box's `tiles.json`, whose
 `pointer_mode` already carries the abs/rel/warpd/none projection labctl needs —
-so it is cross-checked here rather than duplicated. They ride into
-`registry/index.json` with the rest of each row, and are deliberately kept out
-of the SPA bundle, which renders none of them.
+so it is cross-checked here rather than duplicated. They ride into the rendered
+`index.json` with the rest of each row, and are deliberately kept out of the
+SPA bundle, which renders none of them.
 
 ### Three hand-synced enforcement copies
 

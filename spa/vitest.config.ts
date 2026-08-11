@@ -14,12 +14,14 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
+    // Renders the public lineup from the registry and provides it to the tests
+    // that need one; nothing is read from the tree (see vitest.global-setup.ts).
+    globalSetup: ['./vitest.global-setup.ts'],
     include: ['src/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
       include: [
-        'src/data/catalog.ts',
         'src/data/galleryManifest.ts',
         'src/input/moveSamples.ts',
         'src/scene/progressiveLoading.ts',

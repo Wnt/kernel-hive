@@ -1,9 +1,17 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
 import { loadGalleryManifest, validateGalleryManifest } from '../src/data/galleryManifest.ts';
 
-const sourcePath = new URL('../../scripts/serve/webroot/gallery-manifest.json', import.meta.url);
-const source = JSON.parse(await readFile(sourcePath, 'utf8'));
+// The public lineup is RENDERED from registry/tiles/*.json, never committed, so
+// this check renders it here and validates those exact bytes — the document the
+// box will be handed, not a copy of it that could have gone stale in the tree.
+const rendered = execFileSync(
+  'python3',
+  ['scripts/tiles-registry.py', 'emit', 'gallery-manifest.json'],
+  { cwd: new URL('../../', import.meta.url), maxBuffer: 32 * 1024 * 1024 },
+);
+const source = JSON.parse(rendered.toString('utf8'));
 const validated = validateGalleryManifest(source);
 assert(validated, 'generated gallery manifest must validate');
 assert.equal(validated.entries.length, source.entries.length);
@@ -59,22 +67,23 @@ assert.equal(request.input, '/gallery-manifest.json');
 assert.equal(request.init.cache, 'no-cache');
 assert(runtimeRows.some((entry) => entry.id === 'manifest-only-proof'), 'fetched-only row must enter lineup');
 
-const warnings = [];
-const originalWarn = console.warn;
-console.warn = (message) => warnings.push(String(message));
+// No bundled lineup to fall back on: a failed fetch or a rejected document must
+// yield an EMPTY gallery, loudly, rather than a stale one that looks fine.
+const errors = [];
+const originalError = console.error;
+console.error = (message) => errors.push(String(message));
 try {
-  const fallbackRows = await loadGalleryManifest(async () => new Response('not found', { status: 404 }));
-  assert.equal(fallbackRows.length, validated.entries.length, '404 must return embedded fallback');
-  assert(!fallbackRows.some((entry) => entry.id === 'manifest-only-proof'));
+  const missingRows = await loadGalleryManifest(async () => new Response('not found', { status: 404 }));
+  assert.deepEqual(missingRows, [], '404 must yield an empty lineup');
 
   const invalid = structuredClone(source);
   invalid.entries[0].password = 'must never be accepted';
   const invalidRows = await loadGalleryManifest(async () => new Response(JSON.stringify(invalid), { status: 200 }));
-  assert.equal(invalidRows.length, validated.entries.length, 'invalid shape must return embedded fallback');
+  assert.deepEqual(invalidRows, [], 'invalid shape must yield an empty lineup');
 } finally {
-  console.warn = originalWarn;
+  console.error = originalError;
 }
-assert.equal(warnings.length, 2, 'fallback use must emit visible telemetry');
+assert.equal(errors.length, 2, 'a missing lineup must emit visible telemetry');
 
 if (process.argv.includes('--built')) {
   const assetsDir = new URL('../dist/assets/', import.meta.url);
@@ -82,6 +91,10 @@ if (process.argv.includes('--built')) {
   const bundle = (await Promise.all(scripts.map((name) => readFile(new URL(name, assetsDir), 'utf8')))).join('\n');
   assert(bundle.includes('gallery-manifest.json'), 'built app must fetch the runtime manifest endpoint');
   assert(!bundle.includes('manifest-only-proof'), 'runtime-only proof row must not be compiled into the bundle');
+  // The lineup is fetched, not bundled: no museum copy may be compiled in.
+  const sample = source.entries.find((entry) => entry.blurb)?.blurb;
+  assert(sample, 'rendered manifest must carry blurbs to test against');
+  assert(!bundle.includes(sample), 'museum copy must not be compiled into the bundle');
 }
 
-console.log('gallery-manifest: real generated file, duplicate-order rejection, runtime override, and fallback PASS');
+console.log('gallery-manifest: rendered document, duplicate-order rejection, runtime override, empty-on-failure PASS');

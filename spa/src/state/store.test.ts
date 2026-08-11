@@ -4,12 +4,12 @@
 // streaming. The obvious "fix" — dropping the row before it reaches the store —
 // passes any grid assertion and silently breaks the direct URL, which is the
 // entire point of the feature. So this file pins both halves at once, against
-// the REAL generated manifest, not a fixture that could drift from it.
+// the REAL rendered manifest, not a fixture that could drift from it.
 //
 // It is discoverability, never access control: the hidden row ships in the
 // public manifest and anyone holding the URL gets in.
 import { beforeEach, describe, expect, it } from 'vitest';
-import manifestDocument from '../../../scripts/serve/webroot/gallery-manifest.json' with { type: 'json' };
+import { renderedManifest } from '../data/lineupFixture';
 import appSource from '../App.tsx?raw';
 import gridSource from '../ui/grid/GridView.tsx?raw';
 import hallSource from '../scene/SceneV2.tsx?raw';
@@ -18,8 +18,8 @@ import { storedLineup } from '../data/useManifest';
 import { useMuseum } from './store';
 import type { EnrichedVM } from '../types';
 
-const manifest = validateGalleryManifest(manifestDocument);
-if (!manifest) throw new Error('generated gallery manifest failed validation');
+const manifest = validateGalleryManifest(renderedManifest);
+if (!manifest) throw new Error('rendered gallery manifest failed validation');
 
 const stored = storedLineup(manifest.entries);
 const hiddenIds = stored.filter((vm) => vm.listed === false).map((vm) => vm.id);

@@ -49,7 +49,9 @@ SPA_WEB="$REPO/spa"
 DIST="$SPA_WEB/dist"
 LOCAL_PKI="$REPO/scripts/serve/pki"
 TILES_SRC="$REPO/scripts/serve/tiles.json"
-GALLERY_MANIFEST_SRC="$REPO/scripts/serve/webroot/gallery-manifest.json"
+# Rendered, never committed: resolved from registry/tiles/*.json on the way out
+# (tiles-registry.py rendered()). publish_manifests re-renders before it reads.
+GALLERY_MANIFEST_SRC="$REPO/build/registry/gallery-manifest.json"
 POSTER_DOCS_SRC="$REPO/scripts/serve/webroot/poster-docs.json"
 GOLDEN_MANIFEST_SRC="$REPO/scripts/serve/golden-manifest.json"
 
@@ -144,8 +146,12 @@ publish_manifests() {
     msg "ERROR: missing generated $TILES_SRC"
     exit 1
   }
-  [ -f "$GALLERY_MANIFEST_SRC" ] || {
-    msg "ERROR: missing generated $GALLERY_MANIFEST_SRC"
+  # The public lineup has no committed copy to go stale: render it now, from the
+  # registry, and publish those bytes. A registry that no longer validates fails
+  # HERE, with the live webroot untouched.
+  msg "rendering the public lineup from the registry"
+  python3 "$REPO/scripts/tiles-registry.py" render >/dev/null || {
+    msg "ERROR: gallery manifest render failed — nothing published"
     exit 1
   }
   [ -f "$POSTER_DOCS_SRC" ] || {

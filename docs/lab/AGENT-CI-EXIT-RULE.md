@@ -174,12 +174,15 @@ one-line reason. Rules:
 ## Generated-file drift
 
 Every file emitted by `generated()` in `scripts/tiles-registry.py` (the manifest,
-bring-up list, `registry/index.json`, the SPA catalog/registry, the serve JSONs,
-…) must be byte-identical to what the typed registry + templates produce now.
-Edit the **source** (`registry/tiles/*`, templates) and run
-`make tile-registry-generate`, then commit the regenerated artifacts. Never hand-
-edit a generated file. `make tile-registry-check` (and the CI `static` job) fail
-on any drift.
+bring-up list, the SPA registry data, the serve JSONs, …) must be byte-identical
+to what the typed registry + templates produce now. Edit the **source**
+(`registry/tiles/*`, templates) and run `make tile-registry-generate`, then
+commit the regenerated artifacts. Never hand-edit a generated file. `make
+tile-registry-check` (and the CI `static` job) fail on any drift.
+
+What `rendered()` emits — `gallery-manifest.json` and `index.json` — has no
+committed copy to drift, by design; the check proves those still RENDER, and
+`tiles-registry.py render` / `emit` produces them where they are needed.
 
 **Regenerate after every MERGE, not just after every edit.** Generated artifacts
 are the worst case for a three-way merge: they auto-merge *cleanly* and are then

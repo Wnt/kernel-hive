@@ -21,7 +21,6 @@ GENERATED_PATHS=(
   streamhost/bring-up-all.sh
   scripts/build-guests/build-all.sh
   scripts/serve/tiles.json
-  scripts/serve/webroot/gallery-manifest.json
   scripts/serve/webroot/poster-docs.json
   scripts/serve/golden-manifest.json
   scripts/tools/gallery-action-map.json
@@ -30,7 +29,6 @@ GENERATED_PATHS=(
   spa/src/data/posterIndex.ts
   spa/src/data/demoPrograms.ts
   spa/src/data/keyboards.ts
-  registry/index.json
   registry/generated/labctl-declarations.json
 )
 

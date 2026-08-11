@@ -152,14 +152,23 @@ box_sync_load_pairs() {
     [ -n "$rel" ] || continue
     box_sync_add_pair "serve/${rel#scripts/serve/}" "$rel" "$BOX_ROOT/serve/${rel#scripts/serve/}" exact repo
   done < <(git -C "$REPO" ls-files 'scripts/serve/auth/*' 'scripts/serve/authui/*' | sort)
-  # The generated manifest the SPA fetches at runtime to build the grid. It had
-  # no pair, which meant a deployed manifest could differ from the generated one
-  # and nothing would say so — and on 2026-08-10 exactly that was done on
-  # purpose, to hide one tile from the grid during a measurement campaign. A
-  # deliberate override is fine; an INVISIBLE one is not, so it is a pair now and
-  # shows as DIFFERS until the override is reverted.
+  # The manifest the SPA fetches at runtime to build the grid. It had no pair,
+  # which meant a deployed manifest could differ from the generated one and
+  # nothing would say so — and on 2026-08-10 exactly that was done on purpose,
+  # to hide one tile from the grid during a measurement campaign. A deliberate
+  # override is fine; an INVISIBLE one is not, so it is a pair and shows as
+  # DIFFERS until the override is reverted.
+  #
+  # The repo side is RENDERED, not committed (tiles-registry.py rendered()), so
+  # render it here: the pair then compares the deployed bytes against what the
+  # registry says right now, which is the only comparison worth making.
+  python3 "$REPO/scripts/tiles-registry.py" render --out "$REPO/build/registry" >/dev/null ||
+    {
+      echo "box-sync: gallery manifest render failed (registry does not validate)" >&2
+      return 1
+    }
   box_sync_add_pair serve/webroot/gallery-manifest.json \
-    scripts/serve/webroot/gallery-manifest.json \
+    build/registry/gallery-manifest.json \
     "$BOX_ROOT/serve/webroot/gallery-manifest.json" exact repo
   # The live signaling registry and golden manifest are maintained ON the box;
   # the repo carries committed REFERENCE copies (scripts/README.md). Pushing the

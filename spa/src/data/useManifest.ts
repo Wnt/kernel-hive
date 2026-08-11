@@ -58,9 +58,10 @@ export function storedLineup(
 }
 
 // Fetch the public lineup at runtime so registry-only additions using an existing
-// archetype appear without rebuilding the Vite bundle. Network/validation errors
-// use the generated embedded last-known-good copy; boot metadata remains a
-// separately published, best-effort overlay.
+// archetype appear without rebuilding the Vite bundle. There is no bundled copy:
+// a failed fetch leaves the museum empty and says so in the console (see
+// galleryManifest.ts). Boot metadata remains a separately published,
+// best-effort overlay.
 export function useManifest() {
   const setVMs = useMuseum((s) => s.setVMs);
 
