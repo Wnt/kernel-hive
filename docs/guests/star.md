@@ -317,10 +317,16 @@ Workstation Administration console it first wakes into. That is the famous Star
 screen, and the 30-second interaction works from it: select the **Directory**
 icon, press **OPEN** (F7), and a real window lists `Workstation` and `Desktop`.
 
-`SH_IDLE_PAUSE_SECS=0`: the kiosk is never QMP-frozen. Pausing stops Darkstar's
-emulation thread mid-Pilot-tick, and Pilot is a real-time system with a
-time-locked software stack — not a risk worth taking on a machine that is cheap
-once it is at the desktop.
+Idle auto-pause is **ON** (`SH_IDLE_PAUSE_SECS=60`, the fleet default; flipped
+2026-08-11 — registration shipped `0` for fear of freezing Darkstar
+mid-Pilot-tick). The fear was misplaced for a whole-VM freeze: QMP `stop` halts
+the kiosk's virtual clock together with the emulator, so Pilot sees no
+discontinuity on `cont` — and the exhibit already lives on wrong wall time by
+design: every `loadvm golden` resumes the kiosk clock from bake day, with
+Darkstar's TOD pinned by `star.cfg` at emulator start (see the time lock,
+above). Proven on a soltest clone: 2- and 20-minute QMP stop soaks both resumed
+to the intact desktop with the Star cursor still answering `stardrv rel`
+nudges.
 
 ## Shutting down
 

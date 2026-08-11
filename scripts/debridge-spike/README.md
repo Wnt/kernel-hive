@@ -117,6 +117,22 @@ command is still acked), `MAME_CTL_MOVE_STEP=1` / `MAME_CTL_MOVE_WINDOW=8` (the
 device's own delivery rate — 9 ms was tried and is worse, trading a y drift for
 a larger x one), and `MAME_CTL_SCREEN` (the count grid, not a pixel surface).
 
+**Arm B's target backlog is latest-wins (2026-08-11).** The open-loop engine
+used to keep every accepted MOVEA as a queued paced delta, so a streamed sweep
+replayed its whole path at the device's 125 count/s ceiling — measured through
+the production bench: a 10 s, 60 Hz circle left 390 queue entries and 17.1 s of
+catch-up after the pointer stopped. A newer target now drops the un-issued
+*travel* remainders and states one delta from the module's clamped belief plus
+a clamp-simulation of whatever non-travel counts remain queued. The origin must
+be the belief, not the target ledger: the re-home preamble's restate travel is
+100% clamp-fodder, and folding dropped remainders back into the delta reclaimed
+it — worst landing error went 0.6 → 38.8 counts before that algebra was fixed.
+Now: same sweep catches up in ≤1 s (peak queue 1–2 entries), landing accuracy
+unchanged, and `STAT skipped=x,y` records every dropped count. Slams and
+explicit MOVE/MOVEP entries are never dropped — an edge overshoot still dies
+against the guest's clamp. The fix is `mame-ctlsock.patch`'s open-loop branch;
+streamhost needed nothing (its sink already coalesces `latest_move`).
+
 **The pointer is measurable without a browser, and should be measured that way.**
 `armB-ptr-grid.py verify` reports where the cursor actually lands, in counts.
 Arm A's kiosk MAME runs with `MAME_CTL_SOCK` set and deliberately WITHOUT

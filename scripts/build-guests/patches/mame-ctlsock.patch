@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,2832 @@
+@@ -0,0 +1,2841 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -1660,17 +1660,20 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				// accepts ~125/s/axis), and a FIFO replays the whole path long
 +				// after the pointer stopped -- measured on the spike arm: a 10 s
 +				// circle left mq=390 queued and 17 s of catch-up. Drop the
-+				// un-issued travel remainders and state ONE delta from the
-+				// position the issued counts actually reached; non-travel
-+				// entries (slams, explicit MOVE/MOVEP) keep their place and
-+				// their semantics.
-+				long backx = 0, backy = 0;
++				// un-issued travel remainders; non-travel entries (slams,
++				// explicit MOVE/MOVEP) keep their place and their semantics.
++				//
++				// The new delta is stated from the CLAMPED belief plus a clamp
++				// simulation of the counts still queued -- never by folding the
++				// dropped remainders back in. Counts bound for a clamp never
++				// move the guest: the sink's re-home preamble restates the
++				// origin with travel that is 100% clamp-fodder, and reclaiming
++				// it displaced every later target by the full grid width
++				// (measured: verify worst error went 0.6 -> 38.8 counts).
 +				for (auto it = m_mq.begin(); it != m_mq.end();)
 +				{
 +					if (it->travel)
 +					{
-+						backx += it->x;
-+						backy += it->y;
 +						m_skx += std::abs(it->x);
 +						m_sky += std::abs(it->y);
 +						m_cum_skx += std::abs(it->x);
@@ -1680,7 +1683,13 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +					else
 +						++it;
 +				}
-+				move_paced_travel(x - m_flx + backx, y - m_fly + backy);
++				long px = m_bx, py = m_by;
++				for (move_entry const &e : m_mq)
++				{
++					px = clamp_px_x(px + e.x);
++					py = clamp_px_y(py + e.y);
++				}
++				move_paced_travel(x - px, y - py);
 +			}
 +			m_flx = x;
 +			m_fly = y;
