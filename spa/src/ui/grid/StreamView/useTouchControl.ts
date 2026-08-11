@@ -29,7 +29,7 @@ import type { GestureState, Vec2 } from './types';
 //  phase, so they run before the surface's own handlers).
 //
 //  Using the ⋯ menu's toggle PINS the model: an explicit choice is never undone
-//  by the auto rule. The pin lasts for this stream (a new tile remounts the hook).
+//  by the auto rule. The pin lasts for this stream (a new station remounts the hook).
 // ---------------------------------------------------------------------------
 
 export interface TouchControl {
@@ -46,7 +46,7 @@ export interface TouchControl {
   cursorRef: RefObject<Vec2 | null>;
   /** the trackpad is dragging with its button held — the sprite paints it. */
   heldRef: RefObject<boolean>;
-  /** last-forwarded pen-hover timestamp for the abs-tile throttle. */
+  /** last-forwarded pen-hover timestamp for the abs-station throttle. */
   penHoverRef: RefObject<number>;
   /** paste clipboard text into the guest — MUST be called from a user gesture. */
   paste: () => void;
@@ -79,7 +79,7 @@ export function useTouchControl({
   stageRef: RefObject<HTMLDivElement | null>;
   presentAspect: PresentAspect | null;
 }): TouchControl {
-  // Rel-pointer tiles are BROKEN under direct absolute touch (a tap teleports a
+  // Rel-pointer stations are BROKEN under direct absolute touch (a tap teleports a
   // cursor the guest draws from deltas), so they are trackpad-only. Every other
   // touch device starts on the trackpad too; a desktop pointer starts direct.
   const [trackpadMode, setTrackpadMode] = useState(() => pointerRel || isTouchDevice());
@@ -96,7 +96,7 @@ export function useTouchControl({
   });
   const { controller } = gestures;
 
-  // Coachmark: auto-show once (first live tile), re-openable from the ⋯ menu.
+  // Coachmark: auto-show once (first live station), re-openable from the ⋯ menu.
   const [helpOpen, setHelpOpen] = useState(() => !coachSeen());
   const showHelp = useCallback(() => setHelpOpen(true), []);
   const dismissHelp = useCallback(() => { markCoachSeen(); setHelpOpen(false); }, []);
@@ -132,7 +132,7 @@ export function useTouchControl({
   //  event (a hover sample in the model we are already in) it is two comparisons
   //  and a return, which is what keeps a desktop mouse stream free of cost.
   useEffect(() => {
-    if (pointerRel) return; // rel tiles have no second model to switch to
+    if (pointerRel) return; // rel stations have no second model to switch to
     const preciseAt = { ms: -Infinity };
     const onPointer = (e: PointerEvent) => {
       if (pinnedRef.current) return;

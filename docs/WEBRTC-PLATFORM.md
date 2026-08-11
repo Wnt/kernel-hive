@@ -1,12 +1,12 @@
 # WebRTC native-decoder fallback: platform architecture
 
-Status: generic bridge implementation. This supersedes the Phase-1 per-tile
-spike and every per-tile pilot artifact.
+Status: generic bridge implementation. This supersedes the Phase-1 per-station
+spike and every per-station pilot artifact.
 
 ## Architecture
 
 WebTransport + WebCodecs remains streamhost's primary path. When and only when
-the browser has no `VideoDecoder`, the SPA selects native WebRTC.
+the browser has no `VideoDecoder`, the UI selects native WebRTC.
 
 The fallback is one platform service:
 
@@ -15,7 +15,7 @@ The fallback is one platform service:
    It mirrors the existing encoded H.264 Annex-B AUs and Opus packets. There is
    no second capture or encoder.
 2. One `osgallery-webrtc-bridge.service` owns that socket, loopback HTTP
-   `127.0.0.1:18080`, and ICE UDP `55950`. It multiplexes independent tile hubs
+   `127.0.0.1:18080`, and ICE UDP `55950`. It multiplexes independent station hubs
    and per-peer Pion sessions. `POST /offer/<tile>` chooses a registered feed.
 3. The HTTPS server advertises `/webrtc/<tile>/offer` for every key in its
    ordinary `tiles.json`. The bridge upstream and ICE list are global platform
@@ -28,14 +28,14 @@ Pion is the deliberate interim rather than in-process webrtc-rs: its
 H.264/RTP, NACK/PLI/FIR, per-peer playout-delay extension, and reconnect behavior
 were already proven. This limits the shared Rust binary change to a small,
 best-effort Unix mirror and avoids putting a new WebRTC stack on the latency-
-sensitive WebTransport path. Adding a tile requires only the normal streamhost
-tile registration; the same shared binary and bridge discover it automatically.
+sensitive WebTransport path. Adding a station requires only the normal streamhost
+station registration; the same shared binary and bridge discover it automatically.
 
 ## Client recovery and live state
 
 An ICE `failed`, sustained `disconnected`, muted video track, or decoded-frame
 stall closes the current `RTCPeerConnection` and creates a fresh offer with
-bounded backoff. Recovery happens within the open SPA session. Attempt identity
+bounded backoff. Recovery happens within the open UI session. Attempt identity
 guards prevent late callbacks from an old peer tearing down its replacement.
 
 The UI is not marked live on `ontrack` or PC connectivity. `LIVE · WebRTC
@@ -63,7 +63,7 @@ URL is configured. A remote proof must show `candidateType=relay` and
 
 The shared binary must be built first without restart, backed up, then restarted
 on one canary. Confirm both its bridge feed and normal WebTransport stream before
-using explicit, reviewed waves of tile names. Never use a blind `--all` restart.
+using explicit, reviewed waves of station names. Never use a blind `--all` restart.
 
 The generic bridge has one non-template unit:
 
@@ -77,10 +77,10 @@ systemctl daemon-reload
 systemctl enable --now osgallery-webrtc-bridge.service
 ```
 
-Rollback does not restore a forbidden per-tile sidecar. Stop the one bridge,
+Rollback does not restore a forbidden per-station sidecar. Stop the one bridge,
 restore the timestamped pre-platform shared streamhost binary, and explicitly
-restart only the tiles already rolled forward. Restore the pre-platform HTTPS
-server (and SPA through the normal orchestrator) if signaling/client rollback is
+restart only the stations already rolled forward. Restore the pre-platform HTTPS
+server (and UI through the normal orchestrator) if signaling/client rollback is
 also required.
 
 CT950 rollback artifacts from the 2026-07-16 rollout are:
@@ -90,7 +90,7 @@ CT950 rollback artifacts from the 2026-07-16 rollout are:
 
 ## Automated evidence (2026-07-16)
 
-- Deliberate rollout: Win95 canary, FreeDOS second tile, then four explicit
+- Deliberate rollout: Win95 canary, FreeDOS second station, then four explicit
   reviewed waves. Final bridge health reported 28 live units, 28 registered
   feeds, no missing/extra feed, and every `/proc/<pid>/exe` resolving to the
   shared `build/target/release/streamhost`.
@@ -104,7 +104,7 @@ CT950 rollback artifacts from the 2026-07-16 rollout are:
 - WebTransport regression: deployed desktop Firefox and Chromium each painted
   FreeDOS, Win95, and Solaris through WebCodecs/WebTransport; all 6 checks passed
   with no fallback debug object or decoder-failure banner.
-- Static checks: SPA TypeScript/Vite build and lint passed; HTTPS endpoint suite
+- Static checks: UI TypeScript/Vite build and lint passed; HTTPS endpoint suite
   passed 26 assertions (including generic Win95 + FreeDOS offers); all 38 Rust
   daemon unit tests and all Go bridge tests passed.
 
@@ -114,7 +114,7 @@ real Firefox-Android device run below.
 
 ## Firefox Android proof
 
-Open two different production tiles in Firefox Android, for example
+Open two different production stations in Firefox Android, for example
 `/os/win95` and `/os/freedos`. Authenticate each operator tab with
 `window.__kernelHiveAdminLogin()` through remote DevTools before looking up its
 session. Eval is normally disabled; use a bounded explicit opt-in (see
@@ -129,7 +129,7 @@ ssh lab '/data/vms/streamhost/serve/restart-https.sh'
 
 Pass requires `transport=webrtc-fallback`, `mediaState=live`, connected PC/ICE,
 `codec=video/H264`, `candidateType=host`, `protocol=udp`, and increasing
-`framesDecoded` after 2–3 minutes. During one tile, stop the single bridge long
+`framesDecoded` after 2–3 minutes. During one station, stop the single bridge long
 enough to enter reconnecting, start it again, and verify the same page returns
 to live with `reconnectCount` increased and frames advancing. Repeat without a
 page reload. Desktop Firefox and Chrome must have `VideoDecoder=true`, no

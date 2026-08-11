@@ -16,12 +16,12 @@ lands on the same ViewPoint desktop `gvwin` already gives you. Full reasoning in
 
 ---
 
-## 1. Alto — FEASIBLE, Tier 2, and it is ONE tile
+## 1. Alto — FEASIBLE, Tier 2, and it is ONE station
 
-Verdict: **build it, as a single `alto` tile** running Alto II XM under
+Verdict: **build it, as a single `alto` station** running Alto II XM under
 ContrAlto 2. Alto I becomes placard prose.
 
-### 1.1 The emulator: ContrAlto 2, verified on the box
+### 1.1 The emulator: ContrAlto 2, verified on labhost
 
 [`jdersch/Contralto2`](https://github.com/jdersch/Contralto2) (BSD-3-Clause),
 Josh Dersch's maintained successor to the Living Computers ContrAlto, commit
@@ -31,7 +31,7 @@ Josh Dersch's maintained successor to the Living Computers ContrAlto, commit
 |---|---|
 | Runtime | C#, **.NET 8**, Avalonia 11.1.3 |
 | Builds here? | Yes — `dotnet publish -c Release -r linux-x64`, clean |
-| Debian cost | **Zero apt packages.** Debian 12/13 ship no `dotnet-*`; a `--self-contained` publish is a **27 MB standalone tree** that runs with `DOTNET_ROOT` unset. The 334 MB SDK is build-time only and never enters the tile. |
+| Debian cost | **Zero apt packages.** Debian 12/13 ship no `dotnet-*`; a `--self-contained` publish is a **27 MB standalone tree** that runs with `DOTNET_ROOT` unset. The 334 MB SDK is build-time only and never enters the station. |
 | WM-less X root? | Yes — ran under Xvfb with no WM and no compositor |
 | Acceleration? | No; software rendering on a GPU-less host |
 | Cost | **171–185 MB RSS**, ~1.7–1.8 cores at 80–92 % of real Alto speed |
@@ -71,7 +71,7 @@ repo** (`ROM/AltoI`, `ROM/AltoII`, `Contralto/Disks/`), and its `bcpl.dsk` is
 byte-identical to bitsavers'. The media is plain `.dsk` — the CHD conversion is
 a MAME-only tax.
 
-Additional packs fetched and hashed on the box (all bitsavers,
+Additional packs fetched and hashed on labhost (all bitsavers,
 `bits/Xerox/Alto/`): `xmsmall.zip` `f78b2c48…`, `bravox.zip` `4542ac4d…`,
 `games.zip` `3c5b80af…`, `bcpl.zip` `1f359513…`, `allgames.dsk` `44cacf57…`,
 `alto_firmware.zip` `33be7565…`. Smalltalk-80 sources (`st80src`) and
@@ -95,9 +95,9 @@ The 30-second interaction is typing a command (`Bravo`, `Draw`, `Neptune`) —
 keyboard-only, no pointer skill needed.
 
 **Open question for the operator.** Bravo is the headline but takes 26 s to
-load. Baking the golden *inside Bravo* lands the visitor in the first WYSIWYG
+load. Capturing the checkpoint *inside Bravo* lands the visitor in the first WYSIWYG
 word processor with no wait. That is the call `plus4` made and then **reversed**
-in `10ae428` — the operator rejected a golden resting inside an application
+in `10ae428` — the operator rejected a checkpoint resting inside an application
 because a visitor arrives mid-application with no idea what it is. The Alto case
 is arguably different (the Executive is 26 s of nothing away from the point),
 but it is the same question and the operator should decide the house style.
@@ -105,7 +105,7 @@ but it is the same question and the operator should decide the house style.
 ### 1.5 The two things that will bite the builder
 
 **Portrait display.** Native **606 × 808 @ 30 Hz**. Three consequences:
-- The SPA is probably free — `presentAspect.ts` is opt-in and the default
+- The UI is probably free — `presentAspect.ts` is opt-in and the default
   `object-fit: contain` letterboxes correctly. Do **not** add an `alto` entry;
   square pixels are right. UNVERIFIED end to end.
 - **The 3D scene is the real cost.** Every assembly in `machines.ts` models a
@@ -117,7 +117,7 @@ but it is the same question and the operator should decide the house style.
   width is **608**, already a multiple of 8, so a `608×808` root is exact:
   **no slop, no letterbox, no painted surround.** Proven end to end with a
   chrome-free QMP capture of the Alto Executive. The `606` figure this study
-  quoted was wrong. The base `.xinitrc` still forces 1024×768, so a per-tile
+  quoted was wrong. The base `.xinitrc` still forces 1024×768, so a per-station
   override is still needed — that part stands.
 - **ContrAlto's `KioskMode = True` crashes at startup**
   (`InvalidOperationException: No parent window found` in
@@ -128,7 +128,7 @@ but it is the same question and the operator should decide the house style.
 
 **Input — and this is the best news in the study.** ContrAlto's UI calls
 `MouseMoveAbsolute()`: it *warps the Alto cursor to the host pointer* rather than
-feeding deltas. So this tile gets **`--pointer abs` with the standard
+feeding deltas. So this station gets **`--pointer abs` with the standard
 `usb-tablet` device set**, like `atarist`/`apple2` — not the relative-pointer
 exception that cost NeXTSTEP a five-angle investigation. Three buttons are
 required (RED/BLUE/YELLOW = host 1/2/3) — check the browser path delivers
@@ -136,28 +136,28 @@ middle-click. The five-key **keyset maps to F5–F9 and is not required** by any
 candidate rest state; it is a placard fact.
 
 **Automation is first-class:** ContrAlto has a scripting engine (`-script`) with
-`Command`, `Type`, `KeyStroke`, `MouseMove`, `Wait` — better golden-bake tooling
-than most tiles get.
+`Command`, `Type`, `KeyStroke`, `MouseMove`, `Wait` — better checkpoint-capture tooling
+than most stations get.
 
 ### 1.6 Cost
 
-Tier 2, same shape as `pdp11`/`amiga`: emulator built into the tile overlay with
+Tier 2, same shape as `pdp11`/`amiga`: emulator built into the station overlay with
 a matching `bridge-base.sh` addition. Budget **~1.0–1.3 GB host RSS**; CPU is
-**~1.7–1.8 cores**, noticeably hungrier than an 8-bit VICE tile — worth a
+**~1.7–1.8 cores**, noticeably hungrier than an 8-bit VICE station — worth a
 quiesce-window measurement before it joins a hot fleet.
 
 ### 1.7 Biggest risk, and the experiment that retires it
 
 **The portrait geometry, end to end**: QEMU std-VGA (width ×8, and 606 is not) →
 X root → an Avalonia window whose chrome must be suppressed by a code path that
-provably crashes → capture → SPA letterbox → a 3D scene that has never modelled
+provably crashes → capture → UI letterbox → a 3D scene that has never modelled
 a tall tube.
 
-**Half a day, no golden, no registry entry:** clone `bridge-base.qcow2` into a
+**Half a day, no checkpoint, no registry entry:** clone `bridge-base.qcow2` into a
 throwaway overlay, drop in the 27 MB ContrAlto tree, set the root to `608×816`,
 start fullscreen past the crash, and take a QMP screendump. A chrome-free Alto
-Executive with no letterbox slop proves the whole display chain below the SPA;
-what remains is scene modelling and ordinary tile paperwork. Measure RSS and the
+Executive with no letterbox slop proves the whole display chain below the UI;
+what remains is scene modelling and ordinary station paperwork. Measure RSS and the
 three mouse buttons on the same clone.
 
 ---
@@ -165,12 +165,12 @@ three mouse buttons on the same clone.
 ## 2. Star / Pilot — FEASIBLE-WITH-CAVEATS, Tier 3, gated on one speed measurement
 
 Verdict: **the 8010 Star is buildable and was booted here** — but Darkstar runs
-at only **43–65 % of real-Star speed** on this host, and upstream attributes
+at only **43–65 % of real-Star speed** on labhost, and upstream attributes
 ViewPoint boot hangs precisely to sub-100 % speed. That single number decides
 between the Star and its successor.
 
 **The expected blocker did not materialise.** Media is settled, fetched and
-hashed on the box:
+hashed on labhost:
 
 | file | size | sha256 |
 |---|---|---|
@@ -202,7 +202,7 @@ delete the bundled Windows `SDL2.dll`, and add `SDL2-CS.dll.config` with
 
 Runs under bare `Xvfb`, no WM (one non-fatal `BadMatch` on
 `SDL_CreateRenderer`, then renders fine). No GL, so llvmpipe costs ~45 % of a
-core purely for blitting — the same tax a bridge tile already pays.
+core purely for blitting — the same tax a kiosk already pays.
 
 ### 2.2 The Dec-1997 time lock is the number-one boot gotcha
 
@@ -213,7 +213,7 @@ publishes perpetual option keys and requires the TOD clock set to **December
 - TOD `1990-11-09` → **boot stalled at MP 7800 for >12 min**, twice.
 - TOD `1997-12-01` → proceeded normally.
 
-### 2.3 First boot is interactive — which is exactly why the golden matters
+### 2.3 First boot is interactive — which is exactly why the checkpoint matters
 
 Pilot has no text console; boot progress is a 4-digit **MP code** on an emulated
 front-panel LED, climbing `0910 → 7600 → 7700 → 7800 → 8000`. Then Pilot runs
@@ -222,7 +222,7 @@ then the logged-off bouncing-keyboard screen, then the **Logon Option Sheet**.
 With no XNS Clearinghouse it offers a temporary desktop → the ViewPoint desktop.
 
 First boot: roughly **25–35 min** at ~50 % speed (upstream says 10–15 at 100 %).
-**A golden baked at the logged-on desktop erases all of it** — reset returns in
+**A checkpoint captured at the logged-on desktop erases all of it** — reset returns in
 seconds and no visitor ever sees Set Time or the logon. Without that, a visitor
 sees a black screen and a bouncing keyboard. This is the difference between an
 exhibit and a fault report.
@@ -235,12 +235,12 @@ into `Name`. Darkstar already defines the full Star mapping (`Again F1, Delete
 F2, Find F3, Copy F4, Same F5, Move F6, Open F7, Props F8 …`); Dwarf maps the
 same set to `Ctrl+letter`.
 
-So the SPA needs a **~10-button per-machine macro row** — `NEXT/SKIP`, `OPEN`,
+So the UI needs a **~10-button per-machine macro row** — `NEXT/SKIP`, `OPEN`,
 `PROPERTIES`, `MOVE`, `COPY`, `DELETE`, `AGAIN`, `UNDO`, `STOP`, `HELP` — well
 within what it already does, and **shared with §3**, which found the identical
 requirement independently. Build it once.
 
-Two input details for the SPA path: **clicks need real dwell** (a zero-dwell
+Two input details for the UI path: **clicks need real dwell** (a zero-dwell
 click did nothing in the option sheet; `mousedown; sleep 0.4; mouseup` actuated
 reliably — relevant to the tap path in `INPUT-DEBUGGING.md`), and keys landed at
 120–150 ms while a burst of `Return`s dropped, so expect the §5.1
@@ -249,7 +249,7 @@ reliably — relevant to the tap path in `INPUT-DEBUGGING.md`), and keys landed 
 ### 2.5 Display — no surprises
 
 1024×808 visible in a 1088×860 frame, 1-bit monochrome, **landscape ≈1.26:1**;
-measured window 1091×915. Draco is 1152×861. Both squarer than 4:3, so the SPA
+measured window 1091×915. Draco is 1152×861. Both squarer than 4:3, so the UI
 pillarboxes slightly. **None of the Alto's portrait problem** (§1.5).
 
 ### 2.6 Cost, and the decision
@@ -265,8 +265,8 @@ pillarboxes slightly. **None of the Alto's portrait problem** (§1.5).
 
 ### 2.7 Biggest risk, and the 30-minute experiment that retires it
 
-**A tile that boots on a quiet box and hangs when six MAME tiles are streaming
-is worse than no tile.** Upstream issue #22 is literally "Darkstar stuck booting
+**A station that boots on quiet labhost and hangs when six MAME stations are streaming
+is worse than no station.** Upstream issue #22 is literally "Darkstar stuck booting
 ViewPoint on Linux" at low CPU, and the MP 7800 stall above is consistent with
 it.
 
@@ -285,7 +285,7 @@ live ViewPoint desktop on Draco.
 Verdict: **build `gvwin`** — GlobalView 2.1 for Windows inside a QEMU Windows 3.1
 guest. It was booted, logged into, driven by mouse and keyboard, and `savevm`/
 `loadvm`-cycled in a single research session. Of the three Xerox candidates it is
-the only one driven to a working desktop, and it is the smallest tile in the
+the only one driven to a working desktop, and it is the smallest station in the
 lineup.
 
 ### 3.1 Why this is not a consolation prize
@@ -293,11 +293,11 @@ lineup.
 GlobalView is **not a reimplementation**. It is the real Mesa/Pilot environment
 with a *software* Mesa emulator hosted on the PC — earlier versions needed a
 hardware Mesa CPU board; 2.1 is pure software. It boots a **Pilot 15.3** virtual
-disk (`C:\GVWIN001.DSK`, 52 MB). So the tile is a 1996 PC emulating a 1985
-workstation, inside a 2026 host emulating the 1996 PC — which is itself the
+disk (`C:\GVWIN001.DSK`, 52 MB). So the station is a 1996 PC emulating a 1985
+workstation, inside 2026 labhost emulating the 1996 PC — which is itself the
 placard.
 
-### 3.2 Proven on the box
+### 3.2 Proven on labhost
 
 Pre-built image `davidar/gvwin` (MS-DOS + Windows 3.1 + GlobalView 2.1,
 autostarts GV, credentials `user`/`pass`), run on a **qcow2 overlay** with
@@ -313,7 +313,7 @@ essentially the `win311` device set (`qemu-system-i386 -accel tcg -m 64 -smp 1
 | `savevm golden` → `loadvm golden` | Restores the logged-in desktop bit-for-bit; 13.1 MiB VM state |
 | **RSS** | **181–194 MB** with `-m 64` |
 
-That memory figure is the headline: roughly **an eighth of a bridge tile**
+That memory figure is the headline: roughly **an eighth of a kiosk**
 (0.70–1.66 GB), about a seventh of `c64`. The cheapest exhibit per gigabyte in
 the lineup.
 
@@ -332,11 +332,11 @@ Rest state: the logged-in desktop (proven stable, instantly restorable). The
 30-second interaction is Directory → Workspace, one click per step, each
 narrating itself in the message area.
 
-### 3.4 Input — the one piece of real SPA work
+### 3.4 Input — the one piece of real UI work
 
 - **Two-button machine** (SELECT / ADJUST → PC left/right). Declare a two-button
   **relative** pointer: the guest has a PS/2 mouse, Win3.1 has no USB, so there
-  is no `usb-tablet` and this tile earns the `Rel. pointer` badge.
+  is no `usb-tablet` and this station earns the `Rel. pointer` badge.
   Windows 3.1 acceleration measured as a **clean factor of 2**, so
   `move(target/2)` after homing lands pixel-accurate — verified over three
   clicks.
@@ -344,7 +344,7 @@ narrating itself in the message area.
   the logon banner instructs the visitor to press it), OPEN, PROPERTIES, MOVE,
   COPY, AGAIN, UNDO, DELETE, HELP, SKIP, DEFAULTS. **`Tab` is not NEXT.** Budget
   one `keyboardProfiles.ts` family for the Xerox function block — the most
-  exhibit-defining piece of SPA work in this add. Dwarf ships explicit keymap
+  exhibit-defining piece of UI work in this add. Dwarf ships explicit keymap
   files for exactly this reason.
 
 ### 3.5 The trap: GVWin's display config is bound to the Pilot disk
@@ -397,7 +397,7 @@ is no longer an unsolved research problem.
 
 Two real caveats remain: one **unexplained JVM exit** mid-session, not reproduced
 (soak test before shipping), and the disk readme's warning that shutting down
-from inside ViewPoint can corrupt the disk — which a `loadvm golden` tile
+from inside ViewPoint can corrupt the disk — which a `loadvm golden` station
 sidesteps entirely.
 
 **The lesson worth keeping: a status code you cannot read is not evidence.** An
@@ -435,10 +435,10 @@ a licence.
 **Risk: the working artifact is a single opaque third-party disk image** of
 Xerox-copyrighted software. Unknown provenance, unauditable contents, a display
 config provably un-editable by hand, locked at 640×480/16-colour with a magenta
-desktop and no path to the authentic monochrome look. Building a museum golden
-on that means the tile is not reproducible from a hashed input.
+desktop and no path to the authentic monochrome look. Building a museum checkpoint
+on that means the station is not reproducible from a hashed input.
 
-**One afternoon retires all of it:** clone the **existing `win311` golden**
+**One afternoon retires all of it:** clone the **existing `win311` checkpoint**
 (`qemu-img convert -U -l golden` — never open the live disk) and install
 GlobalView 2.1 **from the original media** through GVWin's own Setup, choosing
 display mode and workspace size at install time. Gate on one framebuffer
@@ -460,7 +460,7 @@ capture path — `scripts/build-guests/tiles/win311.sh` is the template. Estimat
 follow; the three are complementary, not redundant. If only one Xerox exhibit is
 ever built, this is the one achievable this month.
 
-Evidence: `/data/vms/soltest/XEROX-viewpoint/` on the box (595 MB, inert —
+Evidence: `/data/vms/soltest/XEROX-viewpoint/` on labhost (595 MB, inert —
 screenshots `s*.png` `g*.png` `h*.png` `m*.png` `routeA/*.png`, the `golden`
 overlay, the Dwarf/JRE tree). Delete when the space is wanted.
 
@@ -470,7 +470,7 @@ overlay, the Dwarf/JRE tree). Delete when the space is wanted.
 
 | Section | State |
 |---|---|
-| 1. Alto | **Complete** — feasible, Tier 2, one tile |
+| 1. Alto | **Complete** — feasible, Tier 2, one station |
 | 2. Star / Pilot | **Complete** — Tier 3, gated on one 30-min speed measurement |
 | 3. Daybreak / ViewPoint | **Complete** — feasible, Tier 2, **ship this one first** |
 
@@ -481,7 +481,7 @@ and would look nearly identical on the wall; §3's own study reached that deskto
 on §2's emulator. Pick by cost:
 
 1. **`gvwin` (§3) — ship first.** Tier 2, **0.19 GB**, no new emulator or
-   backend, `win311.sh` is the template, boot→login→golden→reset proven.
+   backend, `win311.sh` is the template, boot→login→checkpoint→reset proven.
 2. **`alto` (§1) — ship second.** Tier 2, ~1.0–1.3 GB, genuinely different on
    screen (the 1973 machine, portrait tube), no dependency on the others.
 3. **The Star (§2) — only if the speed measurement passes.** It is the famous
@@ -507,5 +507,5 @@ independently that ViewPoint is unusable without it — `Tab` is not NEXT.
 - [Dwarf — Mesa emulators (Draco/Duchess)](https://github.com/devhawala/dwarf) ·
   [gvwin pre-built image](https://github.com/davidar/gvwin) ·
   [archive.org `win3_globalview_21`](https://archive.org/details/win3_globalview_21)
-- Evidence from this study: `/data/vms/soltest/XEROX-alto/` on the box (1.8 GB,
+- Evidence from this study: `/data/vms/soltest/XEROX-alto/` on labhost (1.8 GB,
   inert — delete when the space is wanted).

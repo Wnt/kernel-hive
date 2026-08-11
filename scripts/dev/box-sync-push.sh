@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
-# box-sync-push.sh — the reconcile half of verify-box-sync.sh: repo -> box.
+# box-sync-push.sh — the reconcile half of verify-box-sync.sh: repo -> labhost.
 #
 # WHY THIS EXISTS. On 2026-08-10 the detector said DIFFERS four separate times
 # and the only remedy in the repo was a human typing `scp` at a production path,
 # one file at a time. `verify-box-sync.sh` ends at "decide which side is
-# authoritative, then sync that way"; `harvest.sh` only ever runs box -> repo.
+# authoritative, then sync that way"; `harvest.sh` only ever runs labhost -> repo.
 # The pre-push gate blocks on that drift, so hand-scp sat on the critical path
 # of every branch that touched a mirrored file — and each hand-scp was a fresh
 # chance to make the one mistake this repo cannot take back.
@@ -20,28 +20,28 @@
 #   * scrub rows are written through the FORWARD substitution built from the
 #     same registry/local.env map the gate reverses with — one map, one
 #     library (scripts/lib/box-sync-pairs.sh), never a second copy of it;
-#   * an `exact` row whose BOX copy turns out to contain a real value is a
+#   * an `exact` row whose labhost copy turns out to contain a real value is a
 #     MIS-DECLARED row, and pushing it is refused, not fixed up silently. That
-#     is detected with the reverse program alone: if reverse-scrubbing the box
-#     copy changes its hash, the box copy holds a real value;
+#     is detected with the reverse program alone: if reverse-scrubbing the labhost
+#     copy changes its hash, the labhost copy holds a real value;
 #   * with no registry/local.env NOTHING is pushed. Unable to tell a
 #     placeholder from a real value is a REFUSAL in the write direction. The
 #     gate is allowed to report UNCHECKED; a writer is not.
 #
 # DIRECTION IS PER ROW AND DECLARED, NEVER GUESSED. Each pair carries an
 # `authority` field. This tool pushes `repo` rows only. A `box` row (the live
-# labctl matrix, the signaling registry, the golden manifest — generated on the
-# box, mirrored into the repo as a committed reference) is refused by name and
+# labctl matrix, the signaling registry, the golden manifest — generated on
+# labhost, mirrored into the repo as a committed reference) is refused by name and
 # sent to `harvest.sh`, which is the tool for that direction. A row under an
 # ACTIVE darklaunch overlay (serve/darklaunch.d — see box-sync-pairs.sh) is
 # likewise refused: pushing over it would strip the overlaid rows. `--all-drift`
 # skips such rows with a note instead of selecting them.
 #
 # NOTHING MOVES WITHOUT --apply. The default prints the unified diff of the
-# reverse-scrubbed box copy against the canonicalised repo copy — the same read
+# reverse-scrubbed labhost copy against the canonicalised repo copy — the same read
 # path the gate hashes, so what you review is what gets compared afterwards.
 #
-# THE CLAIM IS THE PROOF. Every applied row takes a box-side backup
+# THE CLAIM IS THE PROOF. Every applied row takes a labhost-side backup
 # `<box>.presync-<UTC>`, is written atomically (tmp + `mv -f`, mode preserved
 # from the file being replaced), and is then RE-HASHED through the gate's own
 # reverse-scrub read path. A row whose deployed bytes do not hash back to the
@@ -223,7 +223,7 @@ for label in "${WANT[@]:-}"; do
 done
 
 # --- refusals, decided BEFORE anything is written --------------------------
-# One mis-declared row must stop the whole run: a partial push leaves the box in
+# One mis-declared row must stop the whole run: a partial push leaves labhost in
 # a state no single verify run describes.
 declare -a PUSH=() SKIP=()
 refusals=0
@@ -234,7 +234,16 @@ for i in "${SEL[@]}"; do
   b="${BOX_MD5[$i]}"
   if [ "${BOX_SYNC_AUTHORITY[$i]}" != repo ]; then
     printf 'REFUSE %-40s the BOX is authoritative for this row (generated/live\n' "$label" >&2
-    printf '       %-40s artifact). Pull it with: scripts/dev/harvest.sh\n' '' >&2
+    case "$rel" in
+      build/registry/*)
+        # Rendered from the registry: there is no repo copy to harvest INTO, so
+        # harvest.sh is the wrong tool. Replacing the live document is a publish.
+        printf '       %-40s artifact). Publish it with: scripts/serve-https-spa.sh manifests\n' '' >&2
+        ;;
+      *)
+        printf '       %-40s artifact). Pull it with: scripts/dev/harvest.sh\n' '' >&2
+        ;;
+    esac
     refusals=$((refusals + 1))
     continue
   fi
@@ -275,9 +284,9 @@ for i in "${SEL[@]}"; do
 done
 [ "$refusals" -eq 0 ] || die 2 "$refusals row(s) refused — nothing was pushed"
 
-# The scrub guard, and the reason it is a second pass: ask the box to hash each
+# The scrub guard, and the reason it is a second pass: ask labhost to hash each
 # selected `exact` row a SECOND time, through the reverse-scrub program. If that
-# changes the hash, the box copy contains one of the operator's real values —
+# changes the hash, the labhost copy contains one of the operator's real values —
 # so the row is deployed with substitution while declaring `exact`, and pushing
 # the repo copy verbatim would write a placeholder over a live deployment. The
 # real value is never named, fetched or printed; only the two hashes are.
@@ -318,9 +327,9 @@ done
 }
 
 # --- the diff: the gate's read path, so review == what is compared later ----
-# stdin: reverse program, mode, path. Reverse-scrubbing happens ON the box, so
+# stdin: reverse program, mode, path. Reverse-scrubbing happens ON labhost, so
 # the operator's real values never reach a local file or this terminal.
-# shellcheck disable=SC2016  # REMOTE script; $vars must reach the box unexpanded
+# shellcheck disable=SC2016  # REMOTE script; $vars must reach labhost unexpanded
 REMOTE_READ='
 IFS= read -r SEDPROG
 IFS= read -r MODE
@@ -363,7 +372,7 @@ fi
 # re-verification. Asserting the substituted form carries no placeholder is the
 # only independent evidence that the substitution actually happened — and it
 # runs against the temp file, so a bad form is never installed at all.
-# shellcheck disable=SC2016  # REMOTE script; $vars must reach the box unexpanded
+# shellcheck disable=SC2016  # REMOTE script; $vars must reach labhost unexpanded
 REMOTE_PUSH='
 IFS= read -r FWD
 IFS= read -r REV

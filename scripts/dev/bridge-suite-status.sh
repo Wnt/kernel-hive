@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # =============================================================================
-# bridge-suite-status.sh — does the bookworm -> trixie ledger match the box?
+# bridge-suite-status.sh — does the bookworm -> trixie ledger match labhost?
 #
 # registry/bridge-suites.json declares INTENT: which Debian suite each bridge
-# tile's overlay is built on. The box holds REALITY: the backing file actually
-# recorded in that tile's live disk. A gradual migration fails silently exactly
-# when those two drift apart — a tile flipped to "trixie" in the ledger whose
+# station's overlay is built on. labhost holds REALITY: the backing file actually
+# recorded in that station's live disk. A gradual migration fails silently exactly
+# when those two drift apart — a station flipped to "trixie" in the ledger whose
 # overlay still backs onto the frozen bookworm base, or an overlay rebased on
-# the box that nobody declared. This script makes that impossible to miss.
+# labhost that nobody declared. This script makes that impossible to miss.
 #
-# For every tile in the ledger it reports:
+# For every station in the ledger it reports:
 #   OK        declared suite == the suite implied by the real backing file
 #   DRIFT     they disagree (both values printed) — exit 1
 #   DETACHED  the disk has NO backing file (flattened standalone image). Not
@@ -17,8 +17,8 @@
 #             rebase. Fails only under --strict.
 #   MISSING   no launcher, or no disk resolvable from it — exit 1
 #
-# The box side is ONE ssh round trip: a python program is piped to `python3 -`
-# on the box, which parses each tile launcher for its boot disk (they are not
+# labhost's side is ONE ssh round trip: a python program is piped to `python3 -`
+# on labhost, which parses each station launcher for its boot disk (they are not
 # all tiles/<tile>/overlay.qcow2 — openvms names its own) and runs `qemu-img
 # info --output=json` on it. Strictly read-only: nothing is started, stopped
 # or written.
@@ -36,7 +36,7 @@
 set -uo pipefail
 
 # The ledger's own value is what we are auditing, so an experiment override
-# leaking in from the environment would make every tile agree with itself.
+# leaking in from the environment would make every station agree with itself.
 unset BRIDGE_SUITE
 
 # shellcheck disable=SC1091
@@ -83,7 +83,7 @@ if [ -n "$ONE_TILE" ]; then
   TILES=("$ONE_TILE")
 fi
 
-# suite=base pairs for the box side, so it can map a backing file to a suite
+# suite=base pairs for labhost's side, so it can map a backing file to a suite
 # without a second round trip.
 BASE_ARGS=()
 while read -r suite; do
@@ -103,7 +103,7 @@ fi
 
 # ---------------------------------------------------------------------------
 # Box side. argv: <tiles-root> <suite=base>… -- <tile>…
-# Emits one TSV line per tile: tile  state  suite  disk  backing
+# Emits one TSV line per station: station  state  suite  disk  backing
 # state: ok | detached | nolauncher | nodisk | unreadable
 # ---------------------------------------------------------------------------
 read -r -d '' REMOTE_PY <<'PY'
@@ -229,7 +229,7 @@ for tile in "${TILES[@]}"; do
   DECLARED_JOINED+="$tile=$(bridge_suite_for "$tile" || echo '?')"$'\n'
 done
 # Progress is always over the WHOLE ledger, even under --tile: "1 of 1 migrated"
-# for a single selected tile would be a lie about the migration.
+# for a single selected station would be a lie about the migration.
 ALL_JOINED=""
 for tile in "${ALL_TILES[@]}"; do
   ALL_JOINED+="$tile=$(bridge_suite_for "$tile" || echo '?')"$'\n'
@@ -259,7 +259,7 @@ NOTES = {
 
 rows = []
 # Seed every known suite so the progress line shows "trixie 0" before the
-# first tile moves, not a gap. Progress counts the whole ledger; rows are the
+# first station moves, not a gap. Progress counts the whole ledger; rows are the
 # selection.
 counts = {suite: 0 for suite in sys.argv[5].split()}
 for line in sys.argv[6].splitlines():

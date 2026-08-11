@@ -6,7 +6,7 @@ import { followPan } from './followPan';
 import type { GestureState, Vec2 } from './types';
 
 // ---------------------------------------------------------------------------
-//  OnScreenCursor (T-3) — the ABS-tile trackpad sprite. Absolute tiles have no
+//  OnScreenCursor (T-3) — the ABS-station trackpad sprite. Absolute stations have no
 //  guest-drawn cursor, so a relative-style trackpad needs a LOCAL pointer to aim.
 //  This paints a small crosshair at the trackpad engine's virtual cursor (guest px, read
 //  imperatively from cursorRef in a rAF loop so StreamView never re-renders per
@@ -65,7 +65,7 @@ export function OnScreenCursor({
   gestureRef: RefObject<GestureState>;
   /** Commit a followPan into the React view transform. */
   onPan: (p: { x: number; y: number }) => void;
-  // When set (era-correct 4:3 tiles), the picture is a display-aspect box the
+  // When set (era-correct 4:3 stations), the picture is a display-aspect box the
   // framebuffer is stretched to fill — position the sprite against THAT box, not
   // the object-fit:contain rect, so it stays glued to the pixel under it.
   presentAspect?: PresentAspect | null;
@@ -93,7 +93,7 @@ export function OnScreenCursor({
       const h0 = wrap.offsetHeight;
       // The wrap fills the stage, exactly like the picture. Its content rect IS the
       // picture rect: object-fit:contain uses the source resolution, while an
-      // era-correct 4:3 tile fills a display-aspect box (same fit maths, {4,3}
+      // era-correct 4:3 station fills a display-aspect box (same fit maths, {4,3}
       // "resolution"). Guest px are then normalised by the REAL resolution below.
       const content = contentRectFor(w0, h0, presentAspect ?? res);
       let px = content.offsetX + (res.w > 1 ? c.x / (res.w - 1) : 0) * content.width;

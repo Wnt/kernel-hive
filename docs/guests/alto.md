@@ -1,24 +1,24 @@
-# Xerox Alto II XM — gallery tile notes (udp/54137)
+# Xerox Alto II XM — gallery station notes (udp/54137)
 
 **Guest:** a captured **Debian 12 x86_64 kiosk** running **ContrAlto 2**
 ([`jdersch/Contralto2`](https://github.com/jdersch/Contralto2), BSD-3-Clause,
 .NET 8 + Avalonia) as a **Xerox Alto II XM**, booted from the
-**Non-Programmer's Disk**. An **"emulator bridge"** tile — streamhost captures
-the Linux framebuffer exactly like every other tile. See
+**Non-Programmer's Disk**. A **kiosk** — streamhost captures
+the Linux framebuffer exactly like every other station. See
 **`streamhost/docs/BRIDGE.md`**.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` — which does **not**
 contain ContrAlto or a .NET runtime; see
 [The emulator, and where it is built](#the-emulator-and-where-it-is-built).
-**Build script (tile):** `scripts/build-guests/tiles/alto.sh` — pinned source
+**Build script (station):** `scripts/build-guests/tiles/alto.sh` — pinned source
 checkout + patch + self-contained publish + thin overlay + kiosk `launch.sh` +
-quiet console + golden bake + framebuffer-asserted keyboard, pointer and reset
+quiet console + checkpoint capture + framebuffer-asserted keyboard, pointer and reset
 proofs, fully automated, ~12–18 minutes from scratch.
-**Tile dir (host):** `/data/vms/streamhost/tiles/alto/`.
+**Station dir (host):** `/data/vms/streamhost/tiles/alto/`.
 **Registry entry:** `registry/tiles/alto.json` (slot 137, udp 54137, VMID 243,
 ssh hostfwd 127.0.0.1:5843).
 **Feasibility study:** [`docs/lab/research/xerox-add.md`](../lab/research/xerox-add.md)
-§1. **Build log for the three-tile Xerox wave:**
+§1. **Build log for the three-station Xerox wave:**
 [`docs/lab/research/xerox-build-log.md`](../lab/research/xerox-build-log.md).
 
 ## Acceptance criteria
@@ -34,7 +34,7 @@ ssh hostfwd 127.0.0.1:5843).
 | Reset | `loadvm` snapshot `golden` |
 | Pointer | absolute `usb-tablet`; three buttons RED/YELLOW/BLUE = left/middle/right |
 | Keyboard | `SH_KEY_MIN_HOLD_MS=66`, `SH_KEY_MIN_GAP_MS=66` (two Alto fields) |
-| Login | none. The Alto has no user accounts and no network in this tile |
+| Login | none. The Alto has no user accounts and no network in this station |
 
 ## The machine, and why its screen is the exhibit
 
@@ -65,12 +65,12 @@ the framebuffer stays a uniform white field with the emulator task's PC pinned a
 1. The same `xmsmall.dsk` boots to the Executive under ContrAlto. That negative
 result is recorded in `xerox-add.md` §1.1 so nobody pays for it twice.
 
-ContrAlto 2 is C# on **.NET 8** with an Avalonia UI. The tile carries **none** of
+ContrAlto 2 is C# on **.NET 8** with an Avalonia UI. The station carries **none** of
 that as a dependency: `alto.sh` runs `dotnet publish -c Release -r linux-x64
 --self-contained true` on the **host**, and only the ~150 MB output tree crosses
 into the overlay, where it runs with no runtime installed and no apt package
-added to the shared bridge base. The ~350 MB SDK is downloaded once into
-`/data/gallery-guests/Alto/dotnet` and never enters a tile.
+added to the shared bridge seed. The ~350 MB SDK is downloaded once into
+`/data/gallery-guests/Alto/dotnet` and never enters a station.
 
 That publish output is also where the exhibit's *content* comes from. ContrAlto
 ships `ROM/AltoI`, `ROM/AltoII` and `Disks/` in its own repository, so the
@@ -129,7 +129,7 @@ window manager.** Two separate symptoms:
 
 X input focus, by contrast, is **not** a problem here and it is worth knowing
 why: with no WM the X focus is `PointerRoot`, so keys go to the window under the
-pointer, and this window covers the whole root. A tile whose emulator window is
+pointer, and this window covers the whole root. A station whose emulator window is
 smaller than its root does not get that for free.
 
 ## Geometry: 608×808, and there is no slop
@@ -142,7 +142,7 @@ bits") around the 606 visible pixels. 608 **is** a multiple of 8.
 
 So the kiosk root is exactly `608x808` — the Alto's own picture, no letterbox, no
 painted surround, no 2-pixel slop, and no `presentAspect.ts` entry. `bochs-drm`
-advertises no such mode and the bridge base has no `cvt`, so the launcher carries
+advertises no such mode and the bridge seed has no `cvt`, so the launcher carries
 a hardcoded modeline:
 
 ```sh
@@ -151,8 +151,8 @@ xrandr --addmode "$OUT" alto608x808 && xrandr --output "$OUT" --mode alto608x808
 ```
 
 A QMP `screendump` then comes back `608x808`. **This recipe generalises**: any
-bridge tile whose emulator wants a non-standard canvas can have one, as long as
-the width is a multiple of 8. Changing it invalidates the golden — re-bake.
+kiosk whose emulator wants a non-standard canvas can have one, as long as
+the width is a multiple of 8. Changing it invalidates the checkpoint — recapture.
 
 The kiosk runs `startx -- -nocursor`, unlike `gt40`: ContrAlto warps the *Alto's*
 cursor to the host pointer, so the Alto draws its own arrow and the X core
@@ -160,8 +160,8 @@ pointer would be a second, wrong one a pixel away.
 
 ## Input
 
-**Absolute pointer with no calibration**, which is unusual for an emulator
-bridge. ContrAlto's UI calls `MouseMoveAbsolute()` — it warps the Alto cursor to
+**Absolute pointer with no calibration**, which is unusual for a kiosk.
+ContrAlto's UI calls `MouseMoveAbsolute()` — it warps the Alto cursor to
 where the host pointer is rather than feeding it deltas — so a stock `usb-tablet`
 lands where the visitor points. Measured on the clone, uncalibrated:
 
@@ -199,42 +199,42 @@ ContrAlto samples its keyboard once per Alto field, so playbook §5.1 applies. O
 | 66/66 ms | 20 of 20 |
 | 120/120 ms | 20 of 20 |
 
-One field is 33 ms; the tile ships two, **66/66**. Worth stating plainly because
-the other two Xerox tiles in the same wave need ~400 ms holds under Darkstar and
+One field is 33 ms; the station ships two, **66/66**. Worth stating plainly because
+the other two Xerox stations in the same wave need ~400 ms holds under Darkstar and
 Dwarf: **that is not a fleet-wide constant.**
 
 **Modifiers must lead by a full gap.** Pressing `shift` and the letter in one QMP
 event lost the capital every time — `Bravo` arrived as `ravo` and the Executive
 answered `There is no subsystem named ravo.`, which reads exactly like a missing
-file rather than a dropped keystroke. `alto-drive.py` in the tile dir presses the
+file rather than a dropped keystroke. `alto-drive.py` in the station dir presses the
 modifier one gap early; streamhost's own pacing does the same thing for the
-browser path, which is why the SPA's macros do not have to care.
+browser path, which is why the UI's macros do not have to care.
 
-## The fixture, and the argument about it
+## The scene, and the argument about it
 
-**The golden rests at the Alto Executive, untouched, exactly as a cold boot
+**The checkpoint rests at the Alto Executive, untouched, exactly as a cold boot
 leaves it.**
 
 The tempting alternative was Bravo. It is the headline — the first WYSIWYG word
-processor — and it takes about half a minute to load, so baking inside it would
+processor — and it takes about half a minute to load, so capturing inside it would
 put every visitor straight into it with no wait. `xerox-add.md` §1.4 raised
 exactly this and left it to the operator.
 
-The operator has already answered it once. `plus4` shipped a golden curated
+The operator has already answered it once. `plus4` shipped a checkpoint curated
 *inside* its ROM office suite and **10ae428 reversed it**: a visitor arrives
 mid-application with no idea what it is, how they got there or how to leave. The
 Alto case is not different enough to overturn that. So:
 
-- the fixture is the machine's own empty state, which is also its launcher;
+- the scene is the machine's own empty state, which is also its launcher;
 - the choice of application moves into the exhibit UI, exactly as `plus4`'s did.
   `spa/src/ui/keyboard/keyboardProfiles.ts` gives `alto` its own family whose
   first row is **?**, **BRAVO**, **DRAW** — one Executive command each, lower
-  case because the Executive is case-insensitive (verified on the tile: `bravo`
+  case because the Executive is case-insensitive (verified on the station: `bravo`
   and `draw` both load), so no Shift ever has to survive the wire.
 
 **There is no LAUREL button, and that is a measured decision.** Laurel is the
 mail reader and the obvious third program to offer, but it wants a Grapevine
-mail server, this tile has no Ethernet, and on the tile it answers with a blank
+mail server, this station has no Ethernet, and on the station it answers with a blank
 page and an hourglass cursor — 45 seconds, zero ink pixels anywhere, no way
 back to the Executive. A dead end is worse than an absent button. It stays in
 the placard's era-software list, where it belongs, and off the keyboard.
@@ -250,7 +250,7 @@ machine answering "what can I run", and it is the closest thing the Alto has to
 | ContrAlto RSS (in guest) | ~180 MB |
 | CPU | ~170–190 % of a core while the Alto runs (`ThrottleSpeed = True` holds it near real Alto speed) |
 | Guest RAM | 1024 MB |
-| Overlay | thin qcow2 on the shared bridge base; ~150 MB of emulator tree plus the golden |
+| Overlay | thin qcow2 on the shared bridge seed; ~150 MB of emulator tree plus the checkpoint |
 
 The Alto never idles — the display task repaints 30 fields a second whatever is on
 screen — so `SH_IDLE_PAUSE_SECS=60` is left explicitly ON in `tile.env.fixture`.
@@ -266,8 +266,8 @@ curl -ksS -X POST https://192.0.2.10:8443/restore/alto
 ```
 
 `labctl exec` reaches the kiosk, not the emulated machine: the Alto has no shell
-and no network in this tile. To drive the Alto itself use `labctl type/key`
-(paced at 66/66) or the tile's own `alto-drive.py`, which additionally leads
+and no network in this station. To drive the Alto itself use `labctl type/key`
+(paced at 66/66) or the station's own `alto-drive.py`, which additionally leads
 modifiers by a gap and can count ink in a rectangle of the framebuffer:
 
 ```bash
@@ -280,7 +280,7 @@ ssh lab 'python3 /data/vms/streamhost/tiles/alto/alto-drive.py \
 ## Rebuilding
 
 ```bash
-# On the box, from a synced repo tree:
+# On labhost, from a synced repo tree:
 scripts/build-guests/tiles/alto.sh              # idempotent; re-syncs the kiosk
 scripts/build-guests/tiles/alto.sh --force-app  # re-publish + reinstall ContrAlto
 scripts/build-guests/tiles/alto.sh --force      # throw the overlay away and start over
@@ -288,12 +288,12 @@ scripts/build-guests/tiles/alto.sh --force      # throw the overlay away and sta
 
 The builder always cold-boots the live overlay and never passes `-loadvm`: an
 internal qcow2 snapshot carries the **disk** as well as RAM, so restoring the
-golden would silently revert the launcher the run just wrote. Only the production
+checkpoint would silently revert the launcher the run just wrote. Only the production
 launcher restores.
 
 ## Known gaps
 
-- **No boot video.** A cold boot reaches the same Executive the golden restores
+- **No boot video.** A cold boot reaches the same Executive the checkpoint restores
   to, so a clip is possible; it is simply not recorded yet. See
   `scripts/coldboot/alto-zero-input-prep.md`.
 - **No Ethernet.** `HostPacketInterfaceType = None`. Two Altos talking to each

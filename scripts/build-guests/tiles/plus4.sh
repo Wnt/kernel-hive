@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/plus4.sh — build the Commodore Plus/4 (1984) streamhost tile as a
+# build-guests/tiles/plus4.sh — build the Commodore Plus/4 (1984) streamhost station as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running VICE `xplus4` emulating a PAL
 #         Commodore Plus/4, curated into its built-in ROM office suite.
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- WHY THIS TILE IS CHEAP -------------------------------------------------
@@ -47,7 +47,7 @@
 #
 #   The choice of application is then made OUTSIDE the guest, because the C= key
 #   a module switch needs does not exist on a Mac, a PC or a phone (it is Tab
-#   under VICE's symbolic keymap, which nobody would guess). The SPA's plus4
+#   under VICE's symbolic keymap, which nobody would guess). The UI's plus4
 #   on-screen keyboard carries a 3-PLUS-1 button (F1, RETURN — what the screen
 #   asks for) and then one-tap Word / Calc / File buttons, each sending
 #   C=(hold) c, then tw / tc / tf, then RETURN as a single macro.
@@ -79,7 +79,7 @@
 #   a mechanism that has worked before.
 #
 # HYGIENE: thin overlay, namespaced qmp.sock/pidfile, kills only by pidfile,
-# idempotent, --force rebuilds. Touches ONLY the plus4 tile dir; refuses to run
+# idempotent, --force rebuilds. Touches ONLY the plus4 station dir; refuses to run
 # while streamhost@plus4 is active.
 #
 # Usage: plus4.sh [--force] [-h]
@@ -136,7 +136,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # -TEDdsize the Plus/4's doubled PAL frame fills 800x600 edge to edge.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Commodore Plus/4 (PAL) ROM-software kiosk launcher (bridge tile).
+# Commodore Plus/4 (PAL) ROM-software kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/plus4.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software
@@ -168,7 +168,7 @@ fi
 EOS
 
 # The fixture driver: cold BASIC prompt -> 3-plus-1 -> chooser -> spreadsheet.
-# Runs on the HOST against this tile's QMP socket (the guest has no idea).
+# Runs on the HOST against this station's QMP socket (the guest has no idea).
 read -r -d '' FIXTURE_PY <<'EOS' || true
 #!/usr/bin/env python3
 """Drive the emulated Plus/4 from its BASIC prompt into the golden fixture.
@@ -455,7 +455,7 @@ wait_for_basic golden-restored
 # Keyboard proof runs AFTER the bake, against the restored fixture, so nothing
 # it types can ever reach the golden. It walks the WHOLE route the exhibit
 # advertises -- F1+RETURN into the suite (what the power-on screen tells the
-# visitor, and what the SPA's 3-PLUS-1 button sends), then C= + C and tc (what
+# visitor, and what the UI's 3-PLUS-1 button sends), then C= + C and tc (what
 # its Calc button sends) -- and asserts each step by what is actually on the
 # screen: the suite is black where BASIC is a white page, and the spreadsheet's
 # ruled grid is an order of magnitude more ink than an empty document. An

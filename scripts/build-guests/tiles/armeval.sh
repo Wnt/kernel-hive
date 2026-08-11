@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/armeval.sh — build the Acorn ARM Evaluation System (1986)
-# streamhost tile as a thin overlay on the frozen bridge base (bridge-base.sh).
+# streamhost station as a thin overlay on the frozen bridge base (bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) X kiosk running the SAME purpose-built MAME
-#         `bbcb` the bbcmicro tile ships, but with the ARM second processor
+#         `bbcb` the bbcmicro station ships, but with the ARM second processor
 #         fitted to the Tube: `bbcb -tube arm`. streamhost captures the Linux
-#         framebuffer + AC97 audio exactly like every other bridge tile.
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh + an
+#         framebuffer + AC97 audio exactly like every other kiosk.
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh + an
 #         INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # WHAT THE EXHIBIT IS. The ARM Evaluation System is the FIRST ARM PRODUCT EVER
@@ -39,7 +39,7 @@
 #
 #   THE BANNER IS THE ACCEPTANCE TEST'S FIRST CRITERION and it is easy to ship
 #   the wrong one: with no `-tube arm` the identical driver prints "BBC Computer
-#   32K" and a white `>` BASIC prompt, which is the bbcmicro tile — a
+#   32K" and a white `>` BASIC prompt, which is the bbcmicro station — a
 #   near-duplicate and worthless. The bake-time IDENTITY GATE catches that: the
 #   supervisor prompt is a reverse-video field in teletext BLUE and a plain BBC
 #   Micro power-on screen contains not one blue pixel (measured: this golden
@@ -47,7 +47,7 @@
 #
 # ---- THE THREE NON-OBVIOUS ARGUMENTS, EACH PAID FOR BY AN EXPERIMENT ---------
 #   `-fdc acorn1770` : the armevals discs are ADFS `.adl` (640 KB, DOUBLE
-#                      density). The Acorn 8271 that the bbcmicro tile ships is
+#                      density). The Acorn 8271 that the bbcmicro station ships is
 #                      SINGLE density and cannot read them at all. Swapping the
 #                      FDC slot pulls in a second device romset, bbc_acorn1770
 #                      (default BIOS dfs223), and drops bbc_acorn8271's DNFS
@@ -55,7 +55,7 @@
 #                      and "Advanced DFS 1.30" where bbcmicro's says "DFS 1.20".
 #   `-rom3`, NOT -rom1 : ADFS has to live in a SIDEWAYS socket. In romimage1 it
 #                      KILLS THE TUBE — the banner falls back to "BBC Computer
-#                      32K" and the tile is a bbcmicro duplicate. romimage4
+#                      32K" and the station is a bbcmicro duplicate. romimage4
 #                      keeps the Tube but displaces host BBC BASIC (the "BASIC"
 #                      line vanishes from the banner). romimage3 keeps BOTH.
 #   `skip_warnings 1` in ui.ini : it is a UI option, NOT a command-line one —
@@ -101,7 +101,7 @@
 #   but it does raise the amber/red startup WARNINGS stage, which is a separate
 #   stage from the game-info screen and which `-skip_gameinfo` does NOT
 #   suppress. Fitting a tube co-processor does not change the driver's status
-#   (device status is not driver status), so this tile inherits bbcmicro's
+#   (device status is not driver status), so this station inherits bbcmicro's
 #   answer: the shipped binary carries the one-line skip_warnings patch and
 #   /opt/armeval/ui.ini sets it. nag_sweep() then walks EVERY frame of a cold
 #   boot and rejects any red at all, so a binary rebuilt without the patch fails
@@ -111,7 +111,7 @@
 #   The golden rests INSIDE ARM BASIC, so the exhibit's actions are ARM BASIC's,
 #   not the supervisor's. Each is driven against the RESTORED fixture at the
 #   bottom of this script, through the same QMP key path and the same pacing the
-#   tile ships:
+#   station ships:
 #     the registry demoProgram -> "20000 LOOPS 0.22": twenty thousand
 #                       interpreted BASIC loops in a fifth of a second on an
 #                       8 MHz ARM1, on a machine whose 6502 host would need the
@@ -134,13 +134,13 @@
 #   docs/guests/armeval.md for the frames.
 #
 # HYGIENE: thin overlay, namespaced qmp.sock/pidfile, kills only by pidfile,
-# idempotent, --force rebuilds. Touches ONLY the armeval tile dir; refuses to
+# idempotent, --force rebuilds. Touches ONLY the armeval station dir; refuses to
 # run while streamhost@armeval is active.
 #
 # SANDBOX RUNS. There is deliberately NO env-var override for TILE_DIR here.
 # `clone-guard check-launcher` refuses any script that can reach a production
-# tile path through an unset variable — that parameter-default is the exact
-# footgun that once killed a live tile (docs/lab/clone-guard.md) — so a bake-off
+# station path through an unset variable — that parameter-default is the exact
+# footgun that once killed a live station (docs/lab/clone-guard.md) — so a bake-off
 # or experiment run is made by REWRITING the three constants below into a
 # /data/vms/soltest/<ns> copy, which then passes check-launcher on its own.
 #
@@ -153,10 +153,10 @@ VMID=238
 UDP=54135
 SSH_PORT=5838
 WEB_PORT=8135
-# Slot 135 is this tile's; the VMID LABEL and the ssh hostfwd follow the fleet's
+# Slot 135 is this station's; the VMID LABEL and the ssh hostfwd follow the fleet's
 # own arithmetic (vmid = slot + 103, ssh = slot + 5703), which puts them at 238
 # and 5838. The original scaffold reserved 235/5835 — both were already the LIVE
-# kc854 tile's, and 5835 is a real hostfwd, so QEMU refused to start on it.
+# kc854 station's, and 5835 is a real hostfwd, so QEMU refused to start on it.
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
 TILE_DIR=/data/vms/streamhost/tiles/armeval
@@ -171,7 +171,7 @@ OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
 EVIDENCE="$TILE_DIR/evidence"
-# bbcmicro-type-qmp.py is shared with the bbcmicro tile, so the build-guests
+# bbcmicro-type-qmp.py is shared with the bbcmicro station, so the build-guests
 # reorganisation put it in ../lib/ rather than beside this script.
 TYPE_DRIVER="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/bbcmicro-type-qmp.py"
 
@@ -241,7 +241,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 #                   otherwise sit under the picture as emulator chrome.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Acorn ARM Evaluation System (1986) kiosk launcher (bridge tile).
+# Acorn ARM Evaluation System (1986) kiosk launcher (kiosk).
 # A BBC Micro Model B host (MOS 1.20 + BBC BASIC II) with the ARM Evaluation
 # System on the Tube (Executive v1.00, 14th August 1986), the Acorn 1770 disc
 # interface (the ADFS discs are double density; the 8271 cannot read them) and
@@ -456,7 +456,7 @@ red_ink() {
 }
 # THE IDENTITY GATE. The supervisor prompt is drawn as a reverse-video field in
 # teletext blue; a plain BBC Micro power-on screen (no `-tube arm`) contains not
-# one blue pixel. This is what stops the tile silently shipping as a duplicate
+# one blue pixel. This is what stops the station silently shipping as a duplicate
 # of bbcmicro if the ARM romset or the `-tube arm` argument is ever lost — and
 # it survives into the ARM BASIC golden because the two `A*` lines stay on
 # screen above the `>` prompt.
@@ -487,7 +487,7 @@ wait_for_banner() {
       fi
       # A BLACK root with MAME already up is the zero-byte-cookie failure — but
       # it is ALSO what the first second or two after `startx` looks like, so
-      # this must be PERSISTENT before it is fatal. Measured on this tile's own
+      # this must be PERSISTENT before it is fatal. Measured on this station's own
       # first build: MAME had been exec'd for ~11 s and the root was still black,
       # and an eager one-frame check failed a build whose guest was perfect.
       if [ "$white" -eq 0 ] && guest "pgrep -x bbcb >/dev/null" 2>/dev/null; then
@@ -614,8 +614,8 @@ reset_check() {
 }
 
 # The keyboard proof runs AFTER the bake, against the restored fixture, so
-# nothing it types can reach the golden. It drives the SPA's rows and the
-# registry's demoProgram through the same QMP path and the same pacing the tile
+# nothing it types can reach the golden. It drives the UI's rows and the
+# registry's demoProgram through the same QMP path and the same pacing the station
 # ships, and asserts on WHITE INK rather than "the screen changed": a screen
 # full of "Bad command" is a screen that changed.
 keyboard_proof() {

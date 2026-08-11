@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/c64.sh — build the Commodore 64 + GEOS deskTop streamhost tile
+# build-guests/tiles/c64.sh — build the Commodore 64 + GEOS deskTop streamhost station
 # as a thin overlay on the shared bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk that runs VICE `x64sc` full-screen emulating
 #         a Commodore 64 auto-booting the GEOS 2.0 deskTop. streamhost captures
 #         the Linux framebuffer + AC97 audio (the C64 SID routed through ALSA).
-# TYPE  : "emulator bridge" tile (see streamhost/docs/BRIDGE.md). Overlay + a per-tile
+# TYPE  : "emulator bridge" station (see streamhost/docs/BRIDGE.md). Overlay + a per-station
 #         /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
 #
 # ---- AUTOMATION HONESTY -----------------------------------------------------
@@ -14,17 +14,17 @@
 #     hangs on the 1541 — this is the single most important launch flag.
 #   * VICE is the SDL2 build from source (x64sc); it is NOT in Debian. It bundles
 #     the C64 KERNAL/BASIC/CHARGEN ROMs, so only the GEOS.D64 disk is supplied.
-#   * The tile boots straight into GEOS by auto-`-loadvm golden` (same pattern as
-#     the alpine tile): the golden INTERNAL snapshot (RAM+devices) restores the
+#   * The station boots straight into GEOS by auto-`-loadvm golden` (same pattern as
+#     the alpine station): the golden INTERNAL snapshot (RAM+devices) restores the
 #     already-running GEOS deskTop with no boot/keypresses.
 #   * ACCEPTANCE is a REAL framebuffer screenshot of the GEOS deskTop + a measured
 #     non-silent SID wav — never disk/log inference.
 #
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by pidfile,
-# idempotent, --force to rebuild the overlay. Touches ONLY the c64 tile dir.
+# idempotent, --force to rebuild the overlay. Touches ONLY the c64 station dir.
 #
 # Usage:  c64.sh [--force] [--bake] [-h]
-#   --bake  bake the golden of the ALREADY RUNNING tile and prove it restores
+#   --bake  bake the golden of the ALREADY RUNNING station and prove it restores
 #           (lib/bridge-bake-golden). Boot it under its OWN qemu-streamhost.sh
 #           first: a golden taken under a different device set will not loadvm.
 # =============================================================================
@@ -87,7 +87,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # SDL_RENDER_DRIVER=software avoids GL issues on the GPU-less host.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# C64 + GEOS deskTop kiosk launcher (bridge tile). See c64.sh header for flag rationale.
+# C64 + GEOS deskTop kiosk launcher (kiosk). See c64.sh header for flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software
 export SDL_VIDEODRIVER=x11
@@ -102,7 +102,7 @@ exec x64sc -mouse -controlport1device 1351 \
   -autostart /opt/bridge/media/GEOS-1351.D64
 EOS
 
-# ---- boot the tile QEMU (exact device set; conditional -loadvm golden) -------
+# ---- boot the station QEMU (exact device set; conditional -loadvm golden) -------
 boot_tile() {
   [ -f "$PID" ] && kill "$(cat "$PID")" 2>/dev/null || true
   sleep 0.5

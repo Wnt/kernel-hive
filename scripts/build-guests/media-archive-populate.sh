@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # media-archive-populate.sh — seed /data/media-archive from what is ALREADY on
-# the box. Run it on the lab box (`ssh lab`), it needs /data.
+# labhost. Run it on labhost (`ssh lab`), it needs /data.
 #
 # The point of this pass is not tidiness, it is survival: several of these blobs
-# exist in exactly ONE place today, inside a guest image or a tile directory,
+# exist in exactly ONE place today, inside a guest image or a station directory,
 # with an upstream that is already gone or is a single unmirrored third-party
 # host. Anything it cannot reach is listed at the end and written to
 # NOT-POPULATED.md — that list is the most valuable output of the run, because
@@ -64,7 +64,7 @@ put() { # put <file> <label> <note> [url]
 }
 
 # ---- 1. media INSIDE the two bridge bases -----------------------------------
-# Nothing checks these today, and they are the amiga/c64/atarist tiles' actual
+# Nothing checks these today, and they are the amiga/c64/atarist stations' actual
 # firmware. Extracted with debugfs `dump`, which opens the filesystem read-only
 # — no mount, so no mount-propagation risk (the /dev/pts incident's lesson).
 harvest_base_media() {
@@ -99,7 +99,7 @@ log "harvesting media from the trixie base (read-only)"
 harvest_base_media "$TRIXIE_BASE" trixie
 
 # ---- 2. host-staged asset trees ---------------------------------------------
-# /data/vms/streamhost/assets (11 G, the seven MAME-ish tiles), the staging
+# /data/vms/streamhost/assets (11 G, the seven MAME-ish stations), the staging
 # bundle, and the repo's own tracked assets.
 for root in /data/vms/streamhost/assets /data/assets-staging "$HERE/assets"; do
   [ -d "$root" ] || {
@@ -114,7 +114,7 @@ for root in /data/vms/streamhost/assets /data/assets-staging "$HERE/assets"; do
 done
 
 # ---- 3. the two priority blobs that exist in only one place -----------------
-# atarist's curated application zips: they live ONLY in the tile's assets dir,
+# atarist's curated application zips: they live ONLY in the station's assets dir,
 # appear in NO manifest, and one of their sources needs a two-step PHP cookie
 # handshake that will not survive the site changing.
 ATARIST_APPS=/data/vms/streamhost/tiles/atarist/assets/atarist-apps
@@ -126,7 +126,7 @@ else
   note_gap "atarist app zips not found at $ATARIST_APPS"
 fi
 
-# c128's CP/M .d64 exists ONLY inside the c128 tile overlay. Pull it out
+# c128's CP/M .d64 exists ONLY inside the c128 station overlay. Pull it out
 # read-only the same way as the base media.
 C128_OVERLAY=/data/vms/streamhost/tiles/c128/overlay.qcow2
 if [ -f "$C128_OVERLAY" ]; then

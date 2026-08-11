@@ -1,10 +1,10 @@
 #!/bin/bash
 # postprocess-boot.sh — P2a: turn a staged boot.mp4 into the scrub assets (§6).
-# RUN ON THE BOX. Produces, in the tile's staging dir (/data/vms/streamhost/boot-rec/<id>/):
+# RUN ON labhost. Produces, in the station's staging dir (/data/vms/streamhost/boot-rec/<id>/):
 #   boot.mp4     (optionally re-encoded to §6.1 params if BOOTREC_REENCODE=1 or a
 #                 boot_raw.* intermediate is present — record-boot.sh already emits the
 #                 §6.1 params single-pass, so this is a normalise/idempotency pass)
-#   sprite.jpg   (fps=1/N tile grid, §6.2)
+#   sprite.jpg   (fps=1/N station grid, §6.2)
 #   thumbs.vtt   (#xywh media-fragment cues, §6.3)
 #   boot.json    (durationMs filled in)
 #

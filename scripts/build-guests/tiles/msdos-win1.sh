@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 ###############################################################################
 # build-guests/tiles/msdos-win1.sh — reproduce the MS-DOS 6.22 + Windows 1.01 gallery
-#                              tile FROM SOURCE on a fresh Proxmox host.
+#                              station FROM SOURCE on a fresh Proxmox host.
 #
 # GUEST : MS-DOS 6.22 (Microsoft, 1994) that boots straight to the C:\> prompt,
 #         with Windows 1.01 (Microsoft, 1985) pre-installed in C:\WIN10. Typing
 #         WIN (a C:\WIN.BAT launcher) drops into Windows 1.01's tiled MS-DOS
-#         Executive GUI. ONE image backs TWO future SPA exhibits: "MS-DOS 6.22"
+#         Executive GUI. ONE image backs TWO future UI exhibits: "MS-DOS 6.22"
 #         and "Windows 1.0".
 # TYPE  : GENUINE FROM-FLOPPY BUILD (no prebuilt HDD base). The bootable C: drive
 #         is created by booting the real MS-DOS 6.22 Setup Disk 1 in QEMU as an
@@ -40,7 +40,7 @@
 #        - C:\WIN.BAT      (cd \WIN10 & WIN — so "WIN" launches Windows 1.01)
 #   5. Land the artifact at data/gallery-guests/MSDOSWin1/msdos-win1.qcow2
 #      (qemu-img convert -c; ~2 MB of real data in a 120 MB sparse volume).
-#   6. FRAMEBUFFER-VERIFY: boot the qcow2 headless under the EXACT neko-qemu tile
+#   6. FRAMEBUFFER-VERIFY: boot the qcow2 headless under the EXACT neko-qemu station
 #      profile (unique VNC + monitor socket), wait, `screendump` a PNG of the
 #      C:\> boot screen and sanity-check it.
 #
@@ -57,16 +57,16 @@
 #   private collection. Microsoft open-sourced ONLY MS-DOS 1.25 and 2.0 (MIT,
 #   github.com/microsoft/MS-DOS) — NOT 6.22, and NOT any Windows. There is no
 #   free/open faithful substitute for this specific pairing (FreeDOS is a separate
-#   tile; it is not MS-DOS, and Windows 1.01 needs real MS-DOS-family binaries under
+#   station; it is not MS-DOS, and Windows 1.01 needs real MS-DOS-family binaries under
 #   it). These images are fetched at build time from archive.org (the binaries stay
 #   out of the GitHub repo — never committed) and used in this PRIVATE, LAN-only,
 #   edge-passkey-gated home-lab museum — the exact same stance the project already
-#   applies to its Win 3.11/95/98/2000/XP tiles.
+#   applies to its Win 3.11/95/98/2000/XP stations.
 #
 # HYGIENE (per project rules):
 #   * Provisioning + verify VMs are killed ONLY via their QEMU monitor `quit`
 #     (fallback: their own pidfile). NEVER `pkill qemu*` — that would catch live
-#     gallery tiles / sibling OS builders / VM 900/925.
+#     gallery stations / sibling OS builders / VM 900/925.
 #   * Namespaced run dir + unique VNC display + unique monitor socket (per PID).
 #   * Touches ONLY data/gallery-guests/MSDOSWin1/. No other guest, CT, or VM.
 #
@@ -76,7 +76,7 @@ set -euo pipefail
 
 # ------------------------------------------------------------------ parameters
 KEY="msdos-win1"
-DIR_NAME="MSDOSWin1" # matches /guests/MSDOSWin1 in the live tile
+DIR_NAME="MSDOSWin1" # matches /guests/MSDOSWin1 in the live station
 
 GUESTS_ROOT="${GUESTS_ROOT:-/data/gallery-guests}"
 GUEST_DIR="${GUESTS_ROOT}/${DIR_NAME}"
@@ -94,7 +94,7 @@ VERIFY="${VERIFY:-1}"                  # VERIFY=0 skips the framebuffer boot
 PROVISION_WAIT="${PROVISION_WAIT:-25}" # seconds for FDISK/MBR + FORMAT /S (fast)
 VERIFY_WAIT="${VERIFY_WAIT:-16}"       # seconds for Windows 1.01 to reach the Executive
 KEEP_WORK="${KEEP_WORK:-1}"            # 1 = keep source cache; 0 = wipe $WORK at end
-VNC_DISP="${VNC_DISP:-88}"             # VNC :88 -> tcp 5988; clear of gallery tiles
+VNC_DISP="${VNC_DISP:-88}"             # VNC :88 -> tcp 5988; clear of gallery stations
 QEMU_BIN="${QEMU_BIN:-qemu-system-i386}"
 
 export MTOOLS_SKIP_CHECK=1 # let mtools work on partition-offset images
@@ -120,13 +120,13 @@ die() {
 }
 
 ###############################################################################
-# The EXACT neko-qemu launch args this tile runs with in the live gallery
+# The EXACT neko-qemu launch args this station runs with in the live gallery
 # (validated headless + confirmed streaming via the neko screenshot API):
 #
 #   qemu-system-x86_64 -machine pc -enable-kvm -cpu host -m 16 -smp 1 -vga std \
 #     -drive file=msdos-win1.qcow2,format=qcow2,if=ide -boot c -snapshot
 #
-# neko-qemu / launch-qemu.sh environment for this tile:
+# neko-qemu / launch-qemu.sh environment for this station:
 #   OS_NAME="MS-DOS 6.22 + Windows 1.01"
 #   QEMU_MACHINE=pc  QEMU_MEM=16  QEMU_SMP=1  QEMU_VGA=std
 #   GUEST_DISK=/guests/MSDOSWin1/msdos-win1.qcow2  GUEST_FMT=qcow2
@@ -409,7 +409,7 @@ vcleanup() {
 trap vcleanup EXIT INT TERM
 
 log "framebuffer-verify: booting the qcow2 headless (VNC :${VNC_DISP})"
-# EXACT neko-qemu tile profile (audio device dropped for the headless host).
+# EXACT neko-qemu station profile (audio device dropped for the headless host).
 "$QEMU_BIN" \
   -machine pc -cpu pentium -m 16 -smp 1 -vga std \
   -drive file="$QCOW2_PATH",format=qcow2,if=ide,index=0 -boot c -snapshot \
@@ -477,9 +477,9 @@ exit "$verify_rc"
 #     (unnecessary; std is what was validated). No usb-tablet.
 #   * STREAMHOST TILE FIXES (2026-07-13; see docs/guests/msdos-win1.md):
 #     - Keyboard: Win 1.01 ignores 0xE0-prefixed enhanced arrow scancodes; the
-#       streamhost tile sets SH_LEGACY_KBD=1 so input.rs remaps the dedicated
+#       streamhost station sets SH_LEGACY_KBD=1 so input.rs remaps the dedicated
 #       cursor cluster to bare keypad codes. Host-side only, no rebake.
-#     - Sound: Keen 1 is PC-speaker only; the tile launcher wires
+#     - Sound: Keen 1 is PC-speaker only; the station launcher wires
 #       -machine pc,pcspk-audiodev=snd0 + -audiodev dbus + SH_AUDIO=on (backend
 #       only, no rebake). Confirmed non-silent under KVM.
 #     - App launch ("Cannot run NOTEPAD.EXE" for EVERY app): SOLVED, clone-validated
@@ -501,6 +501,6 @@ exit "$verify_rc"
 #   * Compressed Setup-disk files (*.??_ e.g. HIMEM.SY_) are SZDD-packed and need
 #     DOS EXPAND, so they are intentionally NOT injected into C:\DOS — the
 #     uncompressed core set is more than enough for a museum DOS prompt.
-#   * ONE image, TWO SPA exhibits: expose it as "MS-DOS 6.22" (C:\> prompt) and
+#   * ONE image, TWO UI exhibits: expose it as "MS-DOS 6.22" (C:\> prompt) and
 #     "Windows 1.0" (auto-run WIN, or instruct the visitor to type WIN).
 ###############################################################################

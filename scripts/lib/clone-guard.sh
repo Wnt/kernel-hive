@@ -3,14 +3,14 @@
 #
 # WHY THIS EXISTS (the incident it prevents)
 #   A clone-setup task ran a STALE lab-side launcher that had been copied from a
-#   LIVE tile's qemu-streamhost.sh. That launcher opens with the production
+#   LIVE station's qemu-streamhost.sh. That launcher opens with the production
 #   footgun pattern:
 #       D="${D:-/data/vms/streamhost/tiles/solaris}"         # parameter-DEFAULT
 #       [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")"  # unconditional kill
 #   The intended namespace override was expressed as `D=...`; when it was NOT
 #   actually exported into the launcher's environment the `:-` default silently
-#   fell back to the LIVE tile path, and the very next line killed the running
-#   production Solaris QEMU (the tile was named `solariscde` then). Recovered
+#   fell back to the LIVE station path, and the very next line killed the running
+#   production Solaris QEMU (the station was named `solariscde` then). Recovered
 #   from golden in ~1 min, but a real breach.
 #
 # WHAT THIS GUARANTEES (fail-CLOSED — non-zero exit + loud message on any doubt)
@@ -18,10 +18,10 @@
 #   through this guard. The guard refuses, LOUDLY, to touch anything that is not
 #   confined to the clone namespace root ($CLONE_GUARD_CLONE_ROOT, default
 #   /data/vms/soltest):
-#     * any path under the production tiles tree /data/vms/streamhost/tiles/,
+#     * any path under the production stations tree /data/vms/streamhost/tiles/,
 #     * any `streamhost@<tile>` systemd unit,
 #     * any pidfile whose PATH is outside the clone root, OR whose PID is a QEMU
-#       process whose argv references the production tiles tree (belt & braces:
+#       process whose argv references the production stations tree (belt & braces:
 #       catches a clone dir whose qemu.pid was mis-populated with the live PID),
 #     * a clone launcher file that statically embeds a production target
 #       (the `${D:-/data/vms/streamhost/tiles/...}` default, a live pidfile/qmp/
@@ -40,13 +40,13 @@
 #       clone-guard kill-pidfile    <pidfile>    # the GUARDED kill (path + /proc)
 #
 # SOURCE OF TRUTH: scripts/lib/clone-guard.sh in the osgallery repo. Kept
-# byte-identical to the box copy /usr/local/bin/clone-guard (see scripts/README.md
+# byte-identical to the labhost copy /usr/local/bin/clone-guard (see scripts/README.md
 # box-sync pairs). Re-sync after any edit.
 
 # ---- configuration (override via env only to point at a *different* sandbox) ----
 CLONE_GUARD_CLONE_ROOT="${CLONE_GUARD_CLONE_ROOT:-/data/vms/soltest}"
 CLONE_GUARD_PROD_TILES_ROOT="${CLONE_GUARD_PROD_TILES_ROOT:-/data/vms/streamhost/tiles}"
-# VMIDs below this look like production tiles (real tiles are 100..~130; clones use
+# VMIDs below this look like production stations (real stations are 100..~130; clones use
 # 99xxx / 9911 / 9912 etc). Advisory numeric backstop for check-launcher/assert-vmid.
 CLONE_GUARD_MIN_CLONE_VMID="${CLONE_GUARD_MIN_CLONE_VMID:-900}"
 
@@ -63,7 +63,7 @@ _cg_norm() {
 }
 
 # _cg_under_clone_root <path> — 0 if <path> normalises to strictly inside the clone
-# root AND does not traverse the production tiles tree; non-zero otherwise.
+# root AND does not traverse the production stations tree; non-zero otherwise.
 _cg_under_clone_root() {
   local raw="$1" p root
   [ -n "$raw" ] || return 1
@@ -74,7 +74,7 @@ _cg_under_clone_root() {
     "$root"/?*) : ;; # ok: something below the clone root
     *) return 1 ;;
   esac
-  # never allow the production tiles tree to appear anywhere in the resolved path
+  # never allow the production stations tree to appear anywhere in the resolved path
   case "$p/" in
     *"/streamhost/tiles/"*) return 1 ;;
   esac
@@ -107,7 +107,7 @@ clone_guard_assert_clone_qmp() {
 # clone_guard_assert_not_prod_unit <unit-or-tile> — refuse any streamhost@<tile>
 # unit. Clones NEVER run as a systemd unit; a clone action touching a
 # `streamhost@…` service is by definition reaching a production (or reserved
-# soltest-*) tile, so refuse unconditionally.
+# soltest-*) station, so refuse unconditionally.
 clone_guard_assert_not_prod_unit() {
   local u="$1"
   case "$u" in
@@ -120,7 +120,7 @@ clone_guard_assert_not_prod_unit() {
 }
 
 # ---- public: vmid assertion ----------------------------------------------------
-# clone_guard_assert_clone_vmid <vmid> — refuse a VMID that looks like a live tile.
+# clone_guard_assert_clone_vmid <vmid> — refuse a VMID that looks like a live station.
 clone_guard_assert_clone_vmid() {
   local v="$1"
   case "$v" in
@@ -145,7 +145,7 @@ _cg_pid_argv() {
 }
 
 # clone_guard_assert_pid_is_clone <pid> — refuse if the running process is a
-# production QEMU: its argv references the production tiles tree, or it carries a
+# production QEMU: its argv references the production stations tree, or it carries a
 # production `-name streamhost-<tile>-vmid-` that is not a clone/bootrec name.
 clone_guard_assert_pid_is_clone() {
   local pid="$1" argv
@@ -208,15 +208,15 @@ clone_guard_check_launcher() {
     return 2
   fi
   # 1) the exact incident footgun: a `${VAR:-…/streamhost/tiles/…}` parameter-default
-  #    (quote-agnostic) whose fallback is a live tile — a missing override lands there.
+  #    (quote-agnostic) whose fallback is a live station — a missing override lands there.
   if grep -Eq '\$\{[A-Za-z_][A-Za-z0-9_]*:-[^}]*/streamhost/tiles/' "$f"; then
     _cg_err "launcher $f has a parameter-default pointing at the production tiles tree (e.g. \${D:-/data/vms/streamhost/tiles/...}). A missing override silently falls back to a LIVE tile. Hardcode a $CLONE_GUARD_CLONE_ROOT/<ns> path instead."
     bad=1
   fi
-  # 2) any production tiles-tree path referenced at all.
+  # 2) any production stations-tree path referenced at all.
   if grep -Eq '/data/vms/streamhost/tiles/' "$f"; then
     _cg_warn "launcher $f references $CLONE_GUARD_PROD_TILES_ROOT/ — a clone must reference ONLY $CLONE_GUARD_CLONE_ROOT/<ns>/ paths (disk / -pidfile / -qmp / kill target)."
-    # lines that actively TARGET the live tile (kill / -pidfile / -qmp / disk) are hard fails.
+    # lines that actively TARGET the live station (kill / -pidfile / -qmp / disk) are hard fails.
     if grep -Eq '(kill[^\n]*streamhost/tiles/|-pidfile[^\n]*streamhost/tiles/|-qmp[^\n]*streamhost/tiles/|file=[^ ]*streamhost/tiles/)' "$f"; then
       _cg_err "launcher $f actively targets a production tile path (kill/-pidfile/-qmp/disk under $CLONE_GUARD_PROD_TILES_ROOT/)."
       bad=1

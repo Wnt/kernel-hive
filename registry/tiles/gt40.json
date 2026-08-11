@@ -179,17 +179,14 @@
     "id": "gt40",
     "displayName": "DEC GT40",
     "year": 1973,
-    "lineage": "DEC PDP-11/05 + VT11 display processor (GT40 graphics terminal)",
-    "arch": "DEC PDP-11/05, 16-bit; VT11 display processor drawing calligraphic vectors on a magnetic-deflection CRT; light pen",
+    "lineage": "DEC PDP-11",
+    "arch": "DEC PDP-11/05, 16-bit",
     "ramMB": 0,
     "ramKB": 16,
     "era": "1970s",
     "accent": "#3BE84B",
     "eraSoftware": [
-      "Lunar Lander (Moonlander), written for this machine in 1973 by DEC's Jack Burness",
-      "DEC's GT40 demonstration display files",
-      "paper tapes read in through the absolute loader over the DL11 serial line",
-      "display files generated on a host PDP-10 or PDP-11 and shipped down the line"
+      "Lunar Lander"
     ],
     "periodBrowser": "none — the ARPANET era, two decades before the web",
     "iconicApps": [

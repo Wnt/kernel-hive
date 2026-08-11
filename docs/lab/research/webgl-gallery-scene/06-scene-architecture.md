@@ -77,11 +77,11 @@ A 1024×768 RGBA upload is ~3MB; 30 streams × 30fps ≈ 2.8GB/s of texture traf
 | **Far/visible** | in frustum, far | 1–2fps "alive" flicker |
 | **Culled** | off-frustum / occluded | no upload; optionally tell streamhost to drop to poster/keyframe cadence |
 
-Frustum test against slot bounding spheres each frame is trivial for 33 items. This dovetails with your daemon-side backlog control (SH_SEND_MAX_BACKLOG) — the ideal is signaling tier upstream so the network also quiets down, which your per-tile daemon architecture supports.
+Frustum test against slot bounding spheres each frame is trivial for 33 items. This dovetails with your daemon-side backlog control (SH_SEND_MAX_BACKLOG) — the ideal is signaling tier upstream so the network also quiets down, which your per-station daemon architecture supports.
 
 ### 3.3 Frameloop: `demand` + frame-driven invalidation
 
-`frameloop="demand"` normally conflicts with video, but with manual `setFrame` you get the best of both: call `invalidate()` only when (a) a visible exhibit uploaded a frame, (b) camera/controls moved (drei controls invalidate automatically), or (c) an animation is running ([r3f scaling-performance](https://r3f.docs.pmnd.rs/advanced/scaling-performance)). With your fleet's idle auto-pause, an untouched gallery tab renders **zero** frames — matching the 80%→1.4% idle-CPU philosophy on the host side, now on the client.
+`frameloop="demand"` normally conflicts with video, but with manual `setFrame` you get the best of both: call `invalidate()` only when (a) a visible exhibit uploaded a frame, (b) camera/controls moved (drei controls invalidate automatically), or (c) an animation is running ([r3f scaling-performance](https://r3f.docs.pmnd.rs/advanced/scaling-performance)). With your fleet's idle auto-pause, an untouched gallery tab renders **zero** frames — matching the 80%→1.4% idle-CPU philosophy on the labhost side, now on the client.
 
 ### 3.4 React & misc hygiene
 
@@ -98,7 +98,7 @@ Frustum test against slot bounding spheres each frame is trivial for 33 items. T
 
 1. **Instant shell**: branded HTML/`useProgress` loader ([drei Progress](http://drei.docs.pmnd.rs/loaders/progress-use-progress), [Wawa Sensei loading-screen lesson](https://wawasensei.dev/courses/react-three-fiber/lessons/loading-screen)) → hall shell (small, KTX2) inside `<Suspense>`; enter the hall before archetypes finish.
 2. **Placeholder → swap**: each slot mounts instantly as a cheap poster stand-in (poster/keyframe from the stream — you already have showcase posters as a concept) suspending independently per archetype; `useGLTF.preload` archetypes in slot-proximity order ([loading-assets guide](https://aaronclaes.be/blogs/react-three-fiber/loading-assets)).
-3. **Streams last**: connect focused/near streams first; far tiles connect lazily or on approach. (Matches NN/g guidance: get users to content fast, don't gate on a 100% bar.)
+3. **Streams last**: connect focused/near streams first; far stations connect lazily or on approach. (Matches NN/g guidance: get users to content fast, don't gate on a 100% bar.)
 4. Camera intro: play the idle-drift rail as the "doors open" moment once the shell is in — Bartlett's doorway metaphor shows transitions themselves can mask loading ([Awwwards collection](https://www.awwwards.com/immersive-webgl-virtual-gallery-exhibition-collection.html)).
 
 ## 5. Exemplars — what to steal from each

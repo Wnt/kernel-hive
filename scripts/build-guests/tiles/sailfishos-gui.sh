@@ -2,7 +2,7 @@
 ###############################################################################
 # build-guests/tiles/sailfishos-gui.sh   (OPTION B: QEMU-drivable KMS driver)
 #
-# THE WINNER — this is the builder behind the live :8104 Sailfish tile
+# THE WINNER — this is the builder behind the live :8104 Sailfish station
 # (bochs-drm KMS injection; authority: sailfish-kms-notes, now in
 # docs/guests/). Build chain: build-guests/tiles/sailfishos.sh first (produces the
 # golden sailfishos.qcow2 base), then this script patches a COPY of it into
@@ -10,11 +10,11 @@
 # sailfishos-vbox.sh) lost and was deleted in the 2026-07 restructure —
 # recover from git history if ever needed.
 #
-# Turns the Sailfish OS 5.1.0.11 "Pispala" emulator image into a tile that
+# Turns the Sailfish OS 5.1.0.11 "Pispala" emulator image into a station that
 # renders the REAL Lipstick (Wayland) TOUCH GUI under PLAIN QEMU -- no
-# VirtualBox, no launch-qemu.sh change, same `-vga std` every other tile uses.
+# VirtualBox, no launch-qemu.sh change, same `-vga std` every other station uses.
 #
-# BACKGROUND (see docs/guests/sailfish.md for the original console tile):
+# BACKGROUND (see docs/guests/sailfish.md for the original console station):
 #   Lipstick's only Qt platform plugin is eglfs, and its only EGL device
 #   integration is eglfs_kms -> it needs /dev/dri/cardN. The stock emulator
 #   kernel (5.0.21-1.4.5.jolla, 32-bit i686) has DRM/KMS ONLY for vboxvideo/
@@ -46,19 +46,19 @@
 #   /dev/dri/card0 present; lipstick (PID) has card0 + /dev/input/event3
 #   (QEMU USB Tablet) + event4 (USB Keyboard) open and maps
 #   /usr/lib/dri/kms_swrast_dri.so + libqeglfs-kms-integration.so. With the
-#   no-PIN auto-unlock (inject step 6) the tile boots straight to the Lipstick
+#   no-PIN auto-unlock (inject step 6) the station boots straight to the Lipstick
 #   HOME/app-grid (not the swipe lockscreen); a touch drag pulls up the app
-#   launcher. Deployed live as the :8104 tile (see docs/guests/sailfish.md
+#   launcher. Deployed live as the :8104 station (see docs/guests/sailfish.md
 #   sections 8-9).
 #
-# INTEGRATION: the neko+QEMU tile args are IDENTICAL to the console tile
+# INTEGRATION: the neko+QEMU station args are IDENTICAL to the console station
 #   (-vga std already presents PCI 1234:1111 which bochs-drm binds). The ONLY
 #   deltas are (a) this patched image and (b) the kernel cmdline baked into it.
 #   No launch-qemu.sh edit, no OVMF, no extra services -> the clean fit.
 #
 # HYGIENE: namespaced work dir, nbd9, VMID/VNC band 82x, unique QMP/monitor/
 #   serial sockets, pidfile-only stop (never pkill), clean nbd disconnect.
-#   Touches ONLY its own copy under $GUI_BASE. Never the golden or live tile.
+#   Touches ONLY its own copy under $GUI_BASE. Never the golden or live station.
 #
 # ENV OVERRIDES (all optional):
 #   SFOS_SRC_IMG=/path.qcow2   source image to copy (default: the golden
@@ -72,7 +72,7 @@ set -euo pipefail
 
 GUI_BASE="${SFOS_GUI_BASE:-/data/sfos-gui-work.820}"
 SRC_IMG="${SFOS_SRC_IMG:-/data/gallery-guests/SailfishOS/sailfishos.qcow2}"
-IMG="${GUI_BASE}/sailfishos-gui.qcow2" # patched GUI tile image (COPY)
+IMG="${GUI_BASE}/sailfishos-gui.qcow2" # patched GUI station image (COPY)
 KTAG="${SFOS_KERNEL_TAG:-sailfish/5.0.21+git12}"
 KREL="5.0.21-1.4.5.jolla"                             # running-kernel uname -r
 KDIRNAME="kernel-adaptation-pc-sailfish-5.0.21-git12" # tar top-dir for the tag
@@ -221,7 +221,7 @@ UNIT
     sed -i 's#^\(\tappend .*root=/dev/sda1\)#\1 console=tty0 console=ttyS0,115200n8 rootfstype=ext4 quiet loglevel=3 audit=0#' "$M/boot/extlinux/extlinux.conf"
   log "  append: $(grep -m1 append "$M/boot/extlinux/extlinux.conf" | sed 's/^\t*//')"
 
-  # 4. UNMASK lipstick (the console-tile build masks it to /dev/null)
+  # 4. UNMASK lipstick (the console-station build masks it to /dev/null)
   [ -L "$M/etc/systemd/user/lipstick.service" ] && rm -f "$M/etc/systemd/user/lipstick.service" && log "  unmasked lipstick.service"
 
   # 5. compositor env: eglfs_kms + evdev input; drop VBoxTouch
@@ -247,13 +247,13 @@ CENV
   #    (devicelock_settings.conf: code_current_length=0, code_is_mandatory=false,
   #    automatic_locking=0), so the boot lockscreen is only the MCE *tklock*
   #    swipe screen. A tiny self-healing service keeps the tklock unlocked via
-  #    the mce dbus (req_tklock_mode_change string:unlocked) so the tile always
+  #    the mce dbus (req_tklock_mode_change string:unlocked) so the station always
   #    shows the home screen. mce.conf allows req_tklock_mode_change for the
   #    default context, so no privilege tricks are needed.
   install -D -m755 /dev/stdin "$M/usr/bin/sailfish-kiosk-autounlock.sh" <<'SCRIPT'
 #!/bin/sh
 # Kiosk no-PIN self-healing unlock: keep the MCE touchscreen lock (tklock)
-# unlocked so the tile always shows the Lipstick home/app-grid rather than the
+# unlocked so the station always shows the Lipstick home/app-grid rather than the
 # swipe lockscreen. One cheap dbus round-trip every few seconds on an idle kiosk.
 MCE_DEST=com.nokia.mce
 MCE_PATH=/com/nokia/mce/request
@@ -284,9 +284,9 @@ UNIT
   # starts (ConditionResult=no), because graphical.target runs after multi-user.
   mkdir -p "$M/etc/systemd/system/graphical.target.wants"
   ln -sf ../sailfish-kiosk-autounlock.service "$M/etc/systemd/system/graphical.target.wants/sailfish-kiosk-autounlock.service"
-  # belt-and-suspenders: never auto-lock / never blank (neko streams the tile)
+  # belt-and-suspenders: never auto-lock / never blank (neko streams the station)
   cat >"$M/etc/mce/61-kiosk-no-autolock.conf" <<'MCECONF'
-# Kiosk tile: never auto-lock the touchscreen and never blank (neko streams it).
+# Kiosk station: never auto-lock the touchscreen and never blank (neko streams it).
 /system/osso/dsm/locks/tklock_autolock=0
 /system/osso/dsm/locks/tklock_blank_disable=1
 /system/osso/dsm/display/display_blank_timeout=0
@@ -392,10 +392,10 @@ print_tile() {
 
 # ============================================================================
 # neko-qemu gallery TILE (Sailfish OS GUI) -- IDENTICAL args to the console
-# tile; the fix lives entirely in the patched image ($IMG).
+# station; the fix lives entirely in the patched image ($IMG).
 #   QEMU_MEM=1536 QEMU_SMP=2 QEMU_MACHINE=pc QEMU_VGA=std   <-- std == bochs 1234:1111
 #   GUEST_DISK=/guests/SailfishOS/sailfishos-gui.qcow2 GUEST_FMT=qcow2
-#     (live :8104 tile deploys the GUI image beside the golden in SailfishOS/)
+#     (live :8104 station deploys the GUI image beside the golden in SailfishOS/)
 #   GUEST_IF=ide GUEST_BOOT=c
 #   QEMU_EXTRA=-enable-kvm -cpu host -device qemu-xhci,id=xhci \\
 #              -device usb-tablet,bus=xhci.0 -device usb-kbd,bus=xhci.0 \\

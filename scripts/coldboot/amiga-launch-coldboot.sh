@@ -11,7 +11,7 @@
 #                                 HEARS the drive seek/click, then Workbench 1.3 loads.
 #                                 Visitor changes are discarded (fresh ADF copy next boot).
 #
-# The flag is driven by `/usr/local/bin/amiga-emu {boot|stop}`, which the box-side
+# The flag is driven by `/usr/local/bin/amiga-emu {boot|stop}`, which the labhost-side
 # streamhost session watcher (scripts/coldboot/amiga-coldboot-watch.sh) or the daemon
 # idle.rs cmd-hook invokes over ssh. See scripts/amiga-tile-notes.md / docs/guests/amiga500.md.
 XDG_RUNTIME_DIR=/run/user/$(id -u)

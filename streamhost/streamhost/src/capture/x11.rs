@@ -1,12 +1,12 @@
-// X11 root-window capture (Xvfb) for LXC emulator-bridge tiles.
+// X11 root-window capture (Xvfb) for LXC emulator-kiosks.
 //
-// The QEMU dbus-display path (see `super::connect`) is unavailable for tiles
+// The QEMU dbus-display path (see `super::connect`) is unavailable for stations
 // whose emulator must run on the bare-metal CPU rather than a KVM vCPU (the SGI
-// IRIX/MAME tile: MAME's Indy emulation deterministically kernel-panics inside a
-// KVM guest but runs fine in an LXC container / on the host). Those tiles render
+// IRIX/MAME station: MAME's Indy emulation deterministically kernel-panics inside a
+// KVM guest but runs fine in an LXC container / on the host). Those stations render
 // into an Xvfb; this module grabs that X server's root window straight into the
 // same `FrameState.fb` BGRA copy-path the encoder already consumes, so the whole
-// encode/transport/SPA stack is reused unchanged.
+// encode/transport/UI stack is reused unchanged.
 //
 // Design (proven by the x11rb spike, docs/history/irix-tile-issue20-handoff.md):
 //   * pure-Rust x11rb, no C libraries.
@@ -21,7 +21,7 @@
 //     encoder's expected BGRA (the pad byte occupies the ignored alpha slot).
 //
 // Geometry is read once at connect. IRIX/MAME renders a fixed 1280x1024 (xl24);
-// a mid-stream XRandR resize is out of scope for the initial tile.
+// a mid-stream XRandR resize is out of scope for the initial station.
 
 use std::sync::{Arc, Mutex};
 

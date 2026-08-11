@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/dragon32.sh — build the Dragon 32 (1982) streamhost tile as a
+# build-guests/tiles/dragon32.sh — build the Dragon 32 (1982) streamhost station as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) X kiosk running MAME's `dragon32` driver, resting
 #         at the machine's own untouched power-on screen.
-# TYPE  : "emulator bridge" tile, the same shape as mpf2 — overlay + per-tile
+# TYPE  : "emulator bridge" station, the same shape as mpf2 — overlay + per-station
 #         /etc/bridge/launch.sh + an INTERNAL qcow2 `golden` snapshot
 #         (resetMode=loadvm).
 #
@@ -49,7 +49,7 @@
 #   dark green on the MC6847's bright green page. That is the Plus/4 lesson
 #   applied before it could be repeated (see plus4.sh): a golden baked inside an
 #   application drops a visitor into the middle of something. The affordances go
-#   in the SPA's on-screen keyboard AROUND an honest idle screen.
+#   in the UI's on-screen keyboard AROUND an honest idle screen.
 #
 # ---- HOW THE SCREEN IS ASSERTED ---------------------------------------------
 #   Two independent tests, both of which must pass on every capture.
@@ -68,15 +68,15 @@
 #   A whole-frame histogram would not do: both screens are the same two greens.
 #
 # ---- MAME BINARY PROVENANCE -------------------------------------------------
-#   Neither the suite's packaged MAME nor the lab host's 0.276 is a pin anybody
-#   chose, so this tile ships MAME 0.289 built in the TRIXIE chroot by
+#   Neither the suite's packaged MAME nor labhost's 0.276 is a pin anybody
+#   chose, so this station ships MAME 0.289 built in the TRIXIE chroot by
 #   scripts/build-guests/emulators/build-mame-dragon32.sh — the same upstream commit mpf2
 #   ships, so the gallery runs one MAME version and not two. Unlike mpf2's it is
 #   PRISTINE upstream: dragon32 is `<driver status="good" emulation="good">` and
 #   never raises MAME's red "THIS SYSTEM DOESN'T WORK" panel, so there is no
 #   patch to justify. The subtarget build is also markedly cheaper than the
 #   distro's full binary on the same frame — measured in the kiosk, ~48 % of a
-#   vCPU against ~110 %, and 170 MB RSS against 322 MB — which is why the tile
+#   vCPU against ~110 %, and 170 MB RSS against 322 MB — which is why the station
 #   fits in 768 MB and why its keys survive a busy host. The distro `mame`
 #   package stays installed for its SDL/X11 runtime libraries only.
 #
@@ -89,7 +89,7 @@
 #   it strands a small strip in a black root (mpf2 made that mistake first).
 #
 # HYGIENE: thin overlay, namespaced qmp.sock/pidfile, kills only by pidfile,
-# idempotent, --force rebuilds. Touches ONLY the dragon32 tile dir; refuses to
+# idempotent, --force rebuilds. Touches ONLY the dragon32 station dir; refuses to
 # run while streamhost@dragon32 is active.
 #
 # Usage: dragon32.sh [--force] [-h]
@@ -182,7 +182,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # ---------------------------------------------------------------------------
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Dragon 32 (1982) Microsoft Extended Color BASIC kiosk launcher (bridge tile).
+# Dragon 32 (1982) Microsoft Extended Color BASIC kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/dragon32.sh for the flag rationale.
 #
 #   -ext ""      EMPTY the cartridge/expansion slot. Without this the driver
@@ -207,7 +207,7 @@ exec /opt/dragon32/mame/dragon dragon32 \
 EOS
 
 # Kiosk session profile: X with NO core pointer cursor (keyboard-only exhibit),
-# and no console/X-log text on the visible VT. Unlike the VICE tiles, MAME is
+# and no console/X-log text on the visible VT. Unlike the VICE stations, MAME is
 # perfectly happy with a non-tty stdout, so the X log goes to a file (VICE 3.9
 # would segfault here — see docs/guests/vic20.md).
 read -r -d '' PROFILE <<'EOS' || true
@@ -307,7 +307,7 @@ screen_digits() {
 # Read the emulated Dragon's text off the QEMU framebuffer. Threshold at 40% of
 # full scale: the MC6847's bright-green page sits at luma ~117 and its dark-green
 # text at ~34, so 40% (102) separates them; 50% swallows the page as well and
-# tesseract then sees nothing at all (measured on this tile's own dump).
+# tesseract then sees nothing at all (measured on this station's own dump).
 screen_text() {
   local name=$1
   convert "$EVIDENCE/$name.ppm" -colorspace Gray -threshold 40% -negate \
@@ -451,7 +451,7 @@ def key(code, down):
     ])
 
 
-# Explicit press/release pairs at the tile's own shipped pacing (80 ms each way):
+# Explicit press/release pairs at the station's own shipped pacing (80 ms each way):
 # QEMU's `send-key hold-time` releases on its own timer and overlapping calls
 # lose characters, which makes the instrument lossier than the thing measured.
 if mod:

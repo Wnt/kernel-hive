@@ -2,7 +2,7 @@
 # Stage the PREPPED clean disk for record-boot.sh via a BOOTREC_TILES_ROOT override.
 # The staged launcher is the LIVE launcher with ONLY D= redirected to the staged dir,
 # so record-boot's clone rewrite (sed $TILE_DIR -> $CLONE_DIR) redirects everything
-# into the clone (and never the live tile).
+# into the clone (and never the live station).
 set -euo pipefail
 LIVE_DIR=/data/vms/streamhost/tiles/win95
 PREP=/data/vms/soltest/win95-clean-prep
@@ -21,7 +21,7 @@ grep -q "^D=${SDIR}\$" "$SDIR/qemu-streamhost.sh" && echo "  D= redirected OK" |
   echo "  FAIL: D= not redirected"
   exit 1
 }
-# make sure NO live tile path leaks into the staged launcher
+# make sure NO live station path leaks into the staged launcher
 if grep -q "${LIVE_DIR}" "$SDIR/qemu-streamhost.sh"; then
   echo "  FAIL: live tile path still present"
   exit 1

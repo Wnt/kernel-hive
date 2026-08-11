@@ -6,7 +6,7 @@ ZFS pool `data` (83.5 GiB, shared). Companion script: `scripts/provision/pve-mac
 ## Current status (2026-07-14)
 
 The macOS VM and its VNC/WebSocket bridge were permanently deleted on
-2026-07-14. The SPA tile is now a showcase poster with no live backend.
+2026-07-14. The UI station is now a showcase poster with no live backend.
 `scripts/provision/pve-macos-vm.sh` remains the proven optional recreation path if a live
 macOS guest is wanted again.
 

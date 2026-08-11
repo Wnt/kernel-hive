@@ -1,10 +1,10 @@
 // Optional built-in plain-HTTP signaling endpoint (testing / live A-B only).
 //
 // PRODUCTION signaling is served same-origin over HTTPS by the SERVE agent,
-// which simply serves the per-tile `signaling.json` that cert.rs publishes. This
+// which simply serves the per-station `signaling.json` that cert.rs publishes. This
 // tiny dependency-free HTTP server exists so the standalone reference client
 // (web/client.html) and live A/B probes can fetch {host,udpPort,certHashB64}
-// without the SPA. It re-reads the file on every request so cert rotation is
+// without the UI. It re-reads the file on every request so cert rotation is
 // always reflected. Bind it to a LAN/localhost port; never expose it publicly.
 //
 //   GET /            -> the full signaling.json           (application/json)

@@ -40,7 +40,7 @@ wheel notch as button 3.
 The emitted launcher is [`streamhost/tiles/os2warp/qemu-streamhost.sh`](../../../../streamhost/tiles/os2warp/qemu-streamhost.sh).
 Its pinned machine is one TCG Pentium CPU, 128 MiB, `pc,acpi=off,usb=off`, Cirrus VGA, SB16,
 PCnet, IDE, and the default COM1 serial device. It conditionally restores `-loadvm golden`.
-Adding the input PCI function is therefore a **device-set change** and requires a new golden; an
+Adding the input PCI function is therefore a **device-set change** and requires a new checkpoint; an
 old RAM snapshot must never be restored against the new device set.
 
 ## 1. Driver model and exact toolchain
@@ -54,7 +54,7 @@ an eight-byte character-device name such as `GWPMOU$` (space padded). It supplie
 - the device-dependent mouse IDC required by `MOUSE.SYS`: `Query_Config`, `Read_Enable`,
   `Read_Disable`, `Enable_Device`, and `Disable_Device`;
 - a PCI INTx ISR; and
-- an optional diagnostic IOCtl surface, compiled out or disabled for the golden.
+- an optional diagnostic IOCtl surface, compiled out or disabled for the checkpoint.
 
 The IBM PDD model is 16:16 protected mode. A strategy routine and device header are mandatory;
 the interrupt and IDC handlers are optional driver components, and the ISR reports interrupt
@@ -269,13 +269,13 @@ Use this staged policy:
    through the keyboard DI IDC described below. Accumulate high-resolution deltas until one notch;
    cap repeats per ISR and carry the remainder. This gives focused-window coarse scrolling and,
    most importantly, fixes the current false-middle-click bug entirely in kernel space.
-2. **Optional fidelity experiment, not a bake dependency:** test the IBM ScrollPoint or AMouse
+2. **Optional fidelity experiment, not a capture dependency:** test the IBM ScrollPoint or AMouse
    wheel-aware `MOUSE.SYS` packages in a throwaway clone and determine from their documented IDC
    or source whether button 4/5 can be mapped to line scrolling without a PM helper. IBM's package
    replaces `MOUSE.SYS` and adds desktop DLLs, while AMouse is a third-party wheel stack.
    [IBM ScrollPoint II OS/2 package](https://www.ibm.com/support/pages/node/826882),
    [OS/2 mouse-driver archive](https://www.os2site.com/sw/drivers/mouse/index.html)
-3. Do **not** make either replacement part of the initial golden. Historical OS/2 wheel drivers
+3. Do **not** make either replacement part of the initial checkpoint. Historical OS/2 wheel drivers
    had WPS-lock and application-compatibility fixes, and PM-scroll behavior was application
    dependent. The archive explicitly lists a WPS-unlock fix, and Mozilla recorded incompatibility
    with the 2002 PM-scroll behavior.
@@ -301,7 +301,7 @@ Keyboard is second priority. If the DDK sample reveals unsafe interaction betwee
 device-dependent keyboard producers on GA, leave keyboard on QEMU's existing PS/2/DBus route;
 pointer success must not be held hostage by keyboard scope.
 
-## 4. Auto-start, installation, and golden bake
+## 4. Auto-start, installation, and checkpoint capture
 
 There is no user-mode daemon to start. On a disposable clone of the image:
 
@@ -340,7 +340,7 @@ There is no user-mode daemon to start. On a disposable clone of the image:
    from before snapshot creation cannot be consumed after restore.
 
 The rollback is atomic: restore the previous launcher/device set **and** its matching pre-driver
-golden/CONFIG.SYS. Do not mix a disk carrying `TYPE=GWPMOU$` with a launcher lacking the device.
+checkpoint/CONFIG.SYS. Do not mix a disk carrying `TYPE=GWPMOU$` with a launcher lacking the device.
 
 ## 5. Language decision
 
@@ -368,23 +368,23 @@ calendar weeks)** after T1 provides a stable device ABI and test injector.
 | Non-reentrant `MOUSE$` common buffer | corruption under nested events | One ISR producer, device masking, explicit enabled/busy state, bounded ring; never call from both ISR and context hook. |
 | Shared INTx on Warp 4 GA | missing/storming IRQ, system hang | RM shared claim, status ownership test, `SetIRQ(...,1)`, correct EOI, watchdog counters; stop if 10^6-event stress or snapshot restore loses/storms an IRQ. |
 | BAR mapping/cache semantics | MMIO exits or invalid selector make it slower | <=64 KiB 32-bit BAR, persistent GDT selector, QEMU RAM region, measure exits/latency; ack through a control BAR if shared-page stores are unsafe. |
-| MOUSE driver replacement semantics | physical PS/2 fallback disappears | Expected for the gallery; keep COM1 `WARPD.EXE`, alternate CONFIG.SYS, and matched pre-driver golden. |
+| MOUSE driver replacement semantics | physical PS/2 fallback disappears | Expected for the gallery; keep COM1 `WARPD.EXE`, alternate CONFIG.SYS, and matched pre-driver checkpoint. |
 | Wheel has no Warp 4 GA native IDC field | false clicks or incompatible scroll | Separate type 3, kernel PageUp/PageDown default, optional wheel stack/PM helper only after compatibility tests. |
 | Snapshot restores stale ring/IRQ state | ghost input or dead input after `loadvm` | protocol generation/reset handshake, empty ring before save, restore test repeated at least 100 times. |
 | ISR does too much work | system latency or stack overflow | coalesce move-only records, strict budget, register stack usage, leave/reassert interrupt for remainder. |
 | Pointer gain is hidden by framebuffer polling | little measured E2E improvement | measure enqueue-to-cursor p50/p95/p99 under idle/load against serial; keep driver only if tail latency materially improves. |
 
-Fallback is the already-baked serial `WARPD.EXE` and matching launcher/golden. Keep it if any hard
+Fallback is the already-captured serial `WARPD.EXE` and matching launcher/checkpoint. Keep it if any hard
 gate fails, or if measured p95/p99 under CPU load is not materially better enough to justify the
 maintenance burden. A sensible production gate is at least a 2x reduction in loaded p95 and p99,
 no regression in idle p50, zero lost button transitions/keys in 10^6 mixed records, and 100/100
-successful golden restores. The cross-cutting measurement plan may tighten those values.
+successful checkpoint restores. The cross-cutting measurement plan may tighten those values.
 
 ## 7. Phased implementation plan
 
 ### Phase 0 — preserve and baseline (1-2 days)
 
-- Record current cold-boot and golden-restored CONFIG.SYS/STARTUP.CMD, `RMVIEW /IRQ` and
+- Record current cold-boot and checkpoint-restored CONFIG.SYS/STARTUP.CMD, `RMVIEW /IRQ` and
   `/MEM`, PCI.EXE output, display mode, MOUSE/POINTDD/VMOUSE versions, and current agent digest.
 - Use the shared measurement harness to baseline serial warpd p50/p95/p99 idle and under a
   repeatable single-CPU load. Separately record motion, down-drag-up, double-click, and wheel (the
@@ -417,15 +417,15 @@ successful golden restores. The cross-cutting measurement plan may tighten those
   counters.
 - Optional and separately gated: evaluate IBM/AMouse or PM scroll-under-pointer compatibility.
 
-### Phase 3 — bake and restore (2-3 days)
+### Phase 3 — capture and restore (2-3 days)
 
 - Install the PDD and ordered CONFIG.SYS on the disposable candidate, cold boot with the final
   emitted device set, and complete functional tests.
 - Disable WARPD autostart but retain its files/serial rollback. Quiesce and save the replacement
-  golden.
+  checkpoint.
 - Perform at least 100 launcher restarts/restores, injecting first input at varied times; reject any
   ghost event, stuck INTx, stale coordinate, or missing first event.
-- Promote launcher, manifest, disk/golden, driver artifact/digest, build recipe, and rollback as one
+- Promote launcher, manifest, disk/checkpoint, driver artifact/digest, build recipe, and rollback as one
   coordinated change.
 
 ### Phase 4 — measure and decide (2-4 days)
@@ -434,9 +434,9 @@ successful golden restores. The cross-cutting measurement plan may tighten those
   streamhost display settings. Report p50/p95/p99 for idle and CPU-bound load, serial baseline
   versus PDD, plus missed/overwritten/coalesced counts.
 - Run interaction correctness suites for exact positions, double-click, drag, all three buttons,
-  key make/break, wheel direction/remainder, DOS/WIN-OS/2 forwarding if in scope, and golden restore.
+  key make/break, wheel direction/remainder, DOS/WIN-OS/2 forwarding if in scope, and checkpoint restore.
 - Promote only on the quantitative/correctness gates above. Otherwise restore the matched serial
-  warpd launcher and golden; retain the spike notes rather than carrying an unproven ring-0 binary.
+  warpd launcher and checkpoint; retain the spike notes rather than carrying an unproven ring-0 binary.
 
 ## Reference shortlist
 

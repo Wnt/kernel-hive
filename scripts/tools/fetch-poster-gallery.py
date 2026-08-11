@@ -11,7 +11,7 @@
 # the allowed licenses below. This is a mechanical allowlist check -- never a
 # judgement call, never a warning-and-continue. A missing Commons page or a
 # license outside the allowlist is a hard failure and nothing is written for
-# that tile.
+# that station.
 #
 # Usage:
 #   fetch-poster-gallery.py [--tile ID ...]        # fetch + write (default)

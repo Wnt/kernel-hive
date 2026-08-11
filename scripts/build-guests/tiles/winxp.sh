@@ -7,10 +7,10 @@
 #         repack the owner used — operator supplies the media, see XP INSTALL
 #         ISO below), auto-logon to the Administrator desktop, with a period "retro software"
 #         CD (D:) carrying browsers, Winamp, and 4 games. This is the *winxp*
-#         gallery tile whose validated build lives in
+#         gallery station whose validated build lives in
 #         /data/gallery-guests/WinXPpro on the dry-run box.
 #
-# TYPE  : REAL UNATTENDED INSTALL. Unlike the WfW-3.11 tile (which injects a
+# TYPE  : REAL UNATTENDED INSTALL. Unlike the WfW-3.11 station (which injects a
 #         prebuilt base), this recipe runs Windows XP Setup end-to-end from the
 #         install ISO, driven by a FullUnattended answer file on a virtual
 #         floppy — so the whole OS layer is genuinely built from source media.
@@ -68,7 +68,7 @@
 # HYGIENE (per project rules):
 #   * Every VM this script starts is killed ONLY via its own QEMU monitor `quit`
 #     / `system_powerdown`, with its pidfile as the sole fallback. This script
-#     NEVER `pkill`s by name — that would catch the live gallery tiles, CT 110,
+#     NEVER `pkill`s by name — that would catch the live gallery stations, CT 110,
 #     VM 900/920 and the macOS fan-out VMs. (The dry-run helper scripts used
 #     `pkill -f winxppro`; that is deliberately NOT reproduced here.)
 #   * Namespaced run dir + unique monitor socket + unique pidfile (per PID).
@@ -171,7 +171,7 @@ die() {
 }
 
 ###############################################################################
-# The EXACT neko-qemu launch args this tile runs with in the live gallery.
+# The EXACT neko-qemu launch args this station runs with in the live gallery.
 # (verbatim from MANIFEST.json on the dry-run box; emitted here for reuse.)
 #
 #   qemu-system-i386 -name 'Windows XP Professional' \
@@ -186,7 +186,7 @@ die() {
 # Rationale: stock XP has NO intel-hda driver -> AC97. rtl8139 has a native XP
 # driver. std VGA (no 3D accel -> games use SOFTWARE renderers). usb-tablet gives
 # an absolute pointer. Uniprocessor HAL -> keep -smp 1. In CT110/neko, swap the
-# audiodev/-display for the neko VNC + pulse backend the other tiles use; keep
+# audiodev/-display for the neko VNC + pulse backend the other stations use; keep
 # everything else identical.
 ###############################################################################
 
@@ -633,7 +633,7 @@ inject_autologon
 #   and double-clicks to play — NOT a hidden C:\ or a README. The retro CD (D:)
 #   still carries the full staged catalogue, but this step surfaces the marquee
 #   titles as real .lnk shortcuts and puts their payloads on C:\ so they run
-#   straight from the desktop (the tile runs the qcow2 with -snapshot, so every
+#   straight from the desktop (the station runs the qcow2 with -snapshot, so every
 #   viewer sees this exact golden desktop each session):
 #
 #     GAMES  DOOM (ZDoom + doom1.wad shareware)  -> C:\Games\Doom
@@ -779,8 +779,8 @@ bake_desktop_shortcuts
 # 5b. Bake the 1920x1200x32 display (VBEMP universal-VESA miniport on std VGA) and
 #     "show window contents while dragging = OFF" into the golden. std VGA's inbox
 #     driver is 640x480-only and QEMU's cirrus breaks the XP desktop >640 under
-#     KVM, so the VBEMP miniport is how the winxp tile gets a real 1920x1200 desktop
-#     (verified full-frame on the streamhost tile 2026-07-27; the fleet resolution
+#     KVM, so the VBEMP miniport is how the winxp station gets a real 1920x1200 desktop
+#     (verified full-frame on the streamhost station 2026-07-27; the fleet resolution
 #     target was raised 1024x768 -> 1920x1200 — docs/lab/tile-resolution-responsiveness.md).
 #     Set HIRES=0 to skip.
 HIRES="${HIRES:-1}"
@@ -915,7 +915,7 @@ exit "$verify_rc"
 #   * If you HARD-kill an install mid-GUI-phase, next boot shows the F8 recovery
 #     menu; a clean ACPI/`shutdown -s` (as WINNT.SIF does) avoids it, and step 5
 #     also removes bootstat.dat as a belt-and-suspenders.
-#   * To ship as a neko tile: point CT110 at winxp.qcow2 + retro-software.iso
+#   * To ship as a neko station: point CT110 at winxp.qcow2 + retro-software.iso
 #     with the gallery args block above (swap -audiodev none/-display for the
-#     neko VNC + pulse audiodev the other tiles use).
+#     neko VNC + pulse audiodev the other stations use).
 ###############################################################################

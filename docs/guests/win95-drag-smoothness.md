@@ -1,9 +1,9 @@
 # Windows 95 full-window drag tearing
 
-Investigation date: 2026-07-15 UTC (the lab box crossed midnight in its local
-timezone during the run). Lab host: `labhost`, QEMU 11.0.2. The live `win95`
-and `win98se` launchers, disks, services, and goldens were not edited, stopped,
-reset, or re-baked. Live interaction was limited to opening read-only property
+Investigation date: 2026-07-15 UTC (labhost crossed midnight in its local
+timezone during the run). Labhost: `labhost`, QEMU 11.0.2. The live `win95`
+and `win98se` launchers, disks, services, and checkpoints were not edited, stopped,
+reset, or recaptured. Live interaction was limited to opening read-only property
 pages and a drag route that returned the Win95 window to its starting position.
 All driver changes were made to copies below
 `/data/vms/soltest/win95-paint-tearing-20260715/`.
@@ -47,7 +47,7 @@ Bochs VBE interface at ports `0x1ce/0x1cf` in the
 [Standard VGA specification](https://www.qemu.org/docs/master/specs/standard-vga.html).
 
 The streamhost logs show a 640x480, 2560-byte-stride, 32-bit host scanout map for
-both tiles. That is QEMU's rendered host surface, not evidence that the guest is
+both stations. That is QEMU's rendered host surface, not evidence that the guest is
 using packed pixels: `VGA.DRV` updates the four legacy guest bit planes and QEMU
 materializes them into that host surface. A capture can therefore observe a
 partially materialized planar repaint.
@@ -58,7 +58,7 @@ All paths in this section are on `labhost`.
 
 ### Win95 Microsoft VGA baseline
 
-The live Win95 drag used the baked warpnet agent, 45 ms between each cursor
+The live Win95 drag used the captured warpnet agent, 45 ms between each cursor
 position and screendump, and returned to its original title-bar coordinate
 before release. Every inspected PPM has at most the expected 16 VGA colours.
 
@@ -176,7 +176,7 @@ The vendor labels 2019.12.01 **"Release version beta"**, and documents unresolve
 generic moving-window/garbage issues. There is no newer stable-labelled Win9x
 VBEMP release. This is the latest available upstream release and it passed this
 specific QEMU 11.0.2/KVM drag test, but a strict "stable-labelled releases only"
-policy requires an explicit exception before rebaking the live golden. The old
+policy requires an explicit exception before recapturing the live checkpoint. The old
 2008 Bochs-specific archive was also explored and is not recommended: a fresh
 test ended in "adapter type is incorrect, or the current settings do not work
 with your hardware." SciTech Display Doctor was not pursued after the current
@@ -219,7 +219,7 @@ Evidence:
 1. **Use JW Soft/BearWindows VBEMP 19.12.0001 at 640x480x16-bit on the existing
    `-vga std` device**, conditional on accepting the upstream beta label. It is
    the only tested option that removes the tear and does not change the QEMU
-   device set. It still requires an in-guest install and a new golden bake.
+   device set. It still requires an in-guest install and a new checkpoint capture.
 2. **Outline-only drag is a mitigation, not the requested fix.** Clearing "Show
    window contents while dragging" immediately avoids full-window repaint, as
    current Win98SE demonstrates, but gives up the desired interaction.
@@ -229,9 +229,9 @@ Evidence:
 
 If beta-labelled drivers are prohibited without exception, there is currently
 no validated policy-compliant packed-pixel fix that retains `-vga std`; keep the
-live tile unchanged and use outline drag until a stable artifact is approved.
+live station unchanged and use outline drag until a stable artifact is approved.
 
-## Follow-up bake procedure (not performed in this investigation)
+## Follow-up capture procedure (not performed in this investigation)
 
 1. Schedule downtime. Stop `streamhost@win95` and its QEMU only by the live
    pidfile. Copy the complete qcow2 snapshot container to a timestamped rollback
@@ -255,10 +255,10 @@ live tile unchanged and use outline drag until a stable artifact is approved.
    framebuffer sequence with
    `streamhost/guest-agents/win9x/capture-win95-drag.py`. Also smoke-test the
    Start menu, Notepad, and curated DOS games before accepting the driver.
-6. Only after approval, delete/replace the candidate's old `golden` snapshot,
+6. Only after approval, delete/replace the candidate's old `golden` checkpoint,
    `savevm golden`, cold-launch a new process with `-loadvm golden`, and verify
-   the framebuffer and warpnet input again. Transplant/re-bake through the
-   normal golden workflow. The launcher remains `-vga std`.
+   the framebuffer and warpnet input again. Transplant/recapture through the
+   normal checkpoint workflow. The launcher remains `-vga std`.
 
 Rollback is a whole-file restore: stop the candidate/live QEMU through its
 pidfile, replace the modified snapshot container with the timestamped pre-VBEMP

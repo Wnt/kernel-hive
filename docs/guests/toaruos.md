@@ -1,12 +1,12 @@
-# ToaruOS gallery tile
+# ToaruOS gallery station
 
-**Status: clean rebuild and restart reset verified (2026-07-14).** Tile
+**Status: clean rebuild and restart reset verified (2026-07-14).** Station
 `toaruos` is a LiveCD: the remastered `image.iso` is the complete artifact.
 There is no writable disk and no QEMU vmstate snapshot. The manifest therefore
 uses `resetMode=restart`; relaunching QEMU discards all in-RAM changes and boots
 the ISO from its initial state.
 
-## Source and content bake
+## Source and content capture
 
 The builder deliberately pins [ToaruOS v2.3.2](https://github.com/klange/toaruos/releases/tag/v2.3.2),
 which GitHub reported as the latest upstream release during this trial. The
@@ -60,7 +60,7 @@ does not need a per-boot disk overlay because the guest has no writable disk.
 
 ## Rebuild fixes and pitfalls
 
-- Added direct `OUT_DIR` and `WORK_DIR` overrides; all bake/runtime scratch now
+- Added direct `OUT_DIR` and `WORK_DIR` overrides; all capture/runtime scratch now
   stays below `WORK_DIR`.
 - Replaced fixed TCP VNC `:61` with a unique Unix socket.
 - Updated verification from stale TCG/PS2-like arguments to the manifest's
@@ -70,7 +70,7 @@ does not need a per-boot disk overlay because the guest has no writable disk.
   these fixes, a stale or partially written PNG could satisfy the size-only
   success gate.
 - The welcome dialog is expected for the builder artifact and does not block
-  the desktop. The separately curated live fixture may suppress it and focus a
-  terminal; that box-side curation is not part of this builder.
+  the desktop. The separately curated live scene may suppress it and focus a
+  terminal; that labhost-side curation is not part of this builder.
 
 No licensed external asset is required.

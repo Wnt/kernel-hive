@@ -1,15 +1,15 @@
-# Proxmox-backed streamhost tiles
+# Proxmox-backed streamhost stations
 
-PVE-backed tiles use the normal streamhost capture and input path. PVE launches
+PVE-backed stations use the normal streamhost capture and input path. PVE launches
 and owns QEMU; streamhost attaches to a dedicated second QMP socket and asks
 QEMU's D-Bus display for the framebuffer, audio, keyboard, and pointer objects.
-There is no VNC/SPICE bridge and no QEMU launcher in the tile directory.
+There is no VNC/SPICE bridge and no QEMU launcher in the station directory.
 
 The second QMP is intentional. PVE's primary monitor belongs to `pvedaemon` and
 `qmeventd`; sharing it would introduce client contention. The only runtime
 coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
 
-## Add a PVE tile
+## Add a PVE station
 
 1. Build the VM on the PVE host. For a Linux ISO or existing disk, use
    `scripts/provision/pve-tiles/linux.sh` with a fresh VMID. Heavy operating systems may
@@ -73,7 +73,7 @@ coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
    }
    ```
 
-   The real entry also carries the usual stream, museum, SPA, operator, build,
+   The real entry also carries the usual stream, museum, UI, operator, build,
    and render fields. PVE mode requires `runtime.pve.vmid` and forbids
    `runtime.qemu.launcher`.
 
@@ -89,7 +89,7 @@ coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
    `qemu-streamhost.sh`. `SH_QEMU_PIDFILE` points the streamhost RSS guard at
    PVE's `/var/run/qemu-server/<vmid>.pid`.
 
-5. Start the VM, curate the guest, and create its one-time golden RAM snapshot:
+5. Start the VM, curate the guest, and create its one-time checkpoint RAM snapshot:
 
    ```bash
    qm start <vmid>
@@ -101,18 +101,18 @@ coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
    dedicated QMP. Restarting or stopping only the daemon never restarts or
    stops the PVE guest.
 
-6. Prove the tile through the streamed framebuffer: connect a WebTransport
+6. Prove the station through the streamed framebuffer: connect a WebTransport
    client, assert decoded non-blank pixels, inject keyboard and pointer input,
    and assert the resulting streamed-frame change. Then run
    `scripts/serve/reset-tile.sh <os-id>` and assert the streamed framebuffer
-   returns to the golden state. Disk state or service logs are not a substitute
+   returns to the checkpoint state. Disk state or service logs are not a substitute
    for this check. `scripts/e2e/direct-stream-proof.mjs` is the catalog-free
-   framebuffer/keyboard harness for a throwaway tile's `signaling.json`.
+   framebuffer/keyboard harness for a throwaway station's `signaling.json`.
 
 ## Heavy exhibits
 
 This mode readmits the deleted macOS VM 925 and Windows 11 VM 900 exhibits as
-first-class streamed tiles. Their existing builders remain separate, gated
+first-class streamed stations. Their existing builders remain separate, gated
 workflows because they involve licensed media, platform-specific firmware,
 and substantially heavier resources. When intentionally rebuilt, add the same
 dedicated D-Bus display/QMP arguments and follow the six steps above; do not

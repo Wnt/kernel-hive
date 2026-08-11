@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/sinclairql.sh — build the Sinclair QL (1984) streamhost tile as a
+# build-guests/tiles/sinclairql.sh — build the Sinclair QL (1984) streamhost station as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running MAME's `ql` driver (68008 @ 7.5 MHz,
 #         128 KB RAM, QDOS/SuperBASIC in ROM, two Microdrives). streamhost
 #         captures the Linux framebuffer + AC97 audio like every other bridge
-#         tile (streamhost/docs/BRIDGE.md). Overlay + per-tile
+#         station (streamhost/docs/BRIDGE.md). Overlay + per-station
 #         /etc/bridge/launch.sh + an INTERNAL `golden` snapshot (loadvm reset).
 #
 # Usage: sinclairql.sh [--force] [-h]
@@ -14,7 +14,7 @@
 #   The bridge guest's OWN Debian 12 package, pinned to mame 0.251+dfsg.1-1 and
 #   asserted with dpkg-query. NOT the host's 0.276 (trixie glibc, will not run on
 #   bookworm), and deliberately not a chroot-built subtarget like mpf2's 0.289:
-#   that build exists for a warning-suppression patch this tile replaces with one
+#   that build exists for a warning-suppression patch this station replaces with one
 #   keystroke, and `ql` is a status="good" driver.
 #
 # ---- THE ROMSET, ASSEMBLED BY SHA1 ------------------------------------------
@@ -50,13 +50,13 @@
 # ---- KEY PACING -------------------------------------------------------------
 #   The ql screen runs at 50.08 Hz, so §5.1's two-frame floor is 40/40. Bisected
 #   on a clone of this golden (scripts/dev/emu-key-pacing-bisect.py, table in
-#   docs/guests/sinclairql.md); the tile ships 120/120, slower than the VICE
-#   tiles' 80/80 because the QL's keyboard is scanned by a separate 8049 IPC and
+#   docs/guests/sinclairql.md); the station ships 120/120, slower than the VICE
+#   stations' 80/80 because the QL's keyboard is scanned by a separate 8049 IPC and
 #   shipped to the 68008 over a serial link — two sampling stages, not one.
 #
 # HYGIENE: thin overlay, namespaced qmp.sock/pidfile, kills only by pidfile,
 # idempotent (--force rebuilds the overlay; without it an existing golden is
-# re-proved, never re-baked). Touches ONLY the sinclairql tile dir and refuses
+# re-proved, never re-baked). Touches ONLY the sinclairql station dir and refuses
 # to run while streamhost@sinclairql is active.
 # =============================================================================
 set -euo pipefail
@@ -75,7 +75,7 @@ EVIDENCE="$TILE_DIR/evidence"
 # 768 MB: a Debian 12 kiosk, X, and one 68008. Verified, not assumed.
 MEM=768
 MEM_MIN_AVAIL_KB=200000
-# The tile's shipped SH_KEY_MIN_HOLD_MS / SH_KEY_MIN_GAP_MS, in seconds.
+# The station's shipped SH_KEY_MIN_HOLD_MS / SH_KEY_MIN_GAP_MS, in seconds.
 KEY_HOLD_S=0.12
 KEY_GAP_S=0.12
 
@@ -139,7 +139,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 #   makes a regression loud instead of black.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Sinclair QL (1984) QDOS/SuperBASIC kiosk launcher (bridge tile).
+# Sinclair QL (1984) QDOS/SuperBASIC kiosk launcher (kiosk).
 # 512x256 monitor mode drawn at an exact 2x3 integer scale on the 1024x768 X
 # root. See scripts/build-guests/tiles/sinclairql.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
@@ -162,7 +162,7 @@ EOS
 # Kiosk session profile: X with NO core pointer cursor (the QL has no pointing
 # device, so the core pointer would sit frozen mid-screen) and no console or
 # X-log text on the visible VT. Redirecting startx's stdout is safe HERE
-# because the emulator is MAME; the vic20/c64 tiles must not do it (VICE 3.9
+# because the emulator is MAME; the vic20/c64 stations must not do it (VICE 3.9
 # segfaults when its stdout is not a tty).
 read -r -d '' PROFILE <<'EOS' || true
 # Bridge kiosk session (sinclairql overlay). Start X with NO core pointer
@@ -386,8 +386,8 @@ pixels_near() {
         { sum += $5 } END { print sum + 0 }'
 }
 
-# Type one key through QMP at the tile's SHIPPED pacing, so every keystroke the
-# builder sends is the one the SPA will send. Explicit press/release pairs, not
+# Type one key through QMP at the station's SHIPPED pacing, so every keystroke the
+# builder sends is the one the UI will send. Explicit press/release pairs, not
 # `send-key hold-time`, which releases on QEMU's own timer and loses characters
 # on overlapping calls (playbook §5.1).
 send_key() {
@@ -402,7 +402,7 @@ send_key() {
   } | socat - UNIX-CONNECT:"$QMP" >>"$EVIDENCE/keyboard-qmp.jsonl"
 }
 
-# Three framebuffer signatures, measured on this tile (ppmhist on the 1024x768
+# Three framebuffer signatures, measured on this station (ppmhist on the 1024x768
 # root, 2026-08-09); a bare X root, a dead emulator and the QL's RAM-test
 # confetti satisfy none of them:
 #   warning  MAME's panel filled with UI navy 15,15,45          ~94700 px

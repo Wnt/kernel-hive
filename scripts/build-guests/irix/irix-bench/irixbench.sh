@@ -1,5 +1,5 @@
 #!/bin/bash
-# irixbench.sh — measure IRIX-tile emulation speed per WORKLOAD, within one run.
+# irixbench.sh — measure IRIX-station emulation speed per WORKLOAD, within one run.
 #
 # WHY THIS EXISTS
 #   Every IRIX perf claim on this project has to answer the same four questions,
@@ -21,15 +21,15 @@
 #      analyser flags any window that was not clean.
 #
 # PRODUCTION FIDELITY
-#   Same binary, same golden, same flags as the live tile (x11-runtime.sh):
+#   Same binary, same golden, same flags as the live station (x11-runtime.sh):
 #   `-video none` + shm publish, `-sound none`, `-frameskip 6`, the production
 #   irixagent.lua as the input path. ONE deliberate difference: `-nothrottle`.
-#   The tile runs throttled, which clamps every regime at 100% and would make
+#   The station runs throttled, which clamps every regime at 100% and would make
 #   the idle desktop unmeasurable; unthrottled is the only way to read a speed.
 #   Pass --throttle to reproduce the shipped behaviour instead.
 #
 # ISOLATION
-#   Everything under $BENCH_ROOT/<name>/ (never a live tile directory), the
+#   Everything under $BENCH_ROOT/<name>/ (never a live station directory), the
 #   golden is only ever reflink-copied, and the MAME process is killed through
 #   clone-guard by pidfile.
 #
@@ -43,13 +43,13 @@ ASSETS="${IRIX_ASSETS:-/data/vms/streamhost/assets/irix}"
 RIG="${IRIX_BENCH_RIG:-/data/vms/soltest/irix-baseline-b7f2/rig}"
 MAME_BIN="${IRIX_MAME:-$ASSETS/mame/sgi}"
 GOLDEN="${IRIX_GOLDEN:-$ASSETS/irix65-apps-v3.chd}"
-# The agent the LIVE TILE runs, which is the tile-directory copy — NOT
+# The agent the LIVE TILE runs, which is the station-directory copy — NOT
 # $ASSETS/irixagent.lua. Those two had drifted: the assets copy still seeded the
 # pointer accumulators at 32768, so the first MOVEP of a session presented a
 # ~32768-count delta to a 9-bit PS/2 wire field, overflowed, and the cursor never
 # moved again. Driving with it is what made an earlier revision of this rig
 # conclude the interactive workloads were undrivable on golden v3; they are not.
-# Production fidelity means the tile's copy.
+# Production fidelity means the station's copy.
 AGENT_SRC="${IRIX_AGENT:-/data/vms/streamhost/tiles/irix/irixagent.lua}"
 CG="${CLONE_GUARD:-/usr/local/bin/clone-guard}"
 
@@ -167,7 +167,7 @@ cmd_run() {
         shift
         ;;
       --sound)
-        # The tile ships `-sound none`. That is an OSD-SINK option: the emulated
+        # The station ships `-sound none`. That is an OSD-SINK option: the emulated
         # HAL2/HPC3 audio path runs either way, so turning it on does not change
         # what the guest programs. This flag exists so that claim can be
         # measured rather than asserted.

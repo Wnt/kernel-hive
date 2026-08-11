@@ -31,7 +31,7 @@ from .store import AuthStore
 # Redemption and login are the two unauthenticated surfaces; both are bounded
 # per client so a stolen-looking code cannot be ground down by brute force. An
 # invite code is 75 bits, so this is belt-and-braces rather than the real
-# defence — but it also keeps a broken client from hammering the box.
+# defence — but it also keeps a broken client from hammering labhost.
 RATE_WINDOW_SECS = 60
 RATE_MAX_ATTEMPTS = 10
 

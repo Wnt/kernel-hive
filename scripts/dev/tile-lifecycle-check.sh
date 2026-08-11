@@ -1,8 +1,8 @@
 #!/bin/bash
 # tile-lifecycle-check.sh <tile> — assert that `systemctl stop streamhost@<tile>`
-# leaves NOTHING behind. Run ON the box as root.
+# leaves NOTHING behind. Run ON labhost as root.
 #
-# Why this exists. The IRIX tile's liveness watchdog was found alive after
+# Why this exists. The IRIX station's liveness watchdog was found alive after
 # `systemctl stop streamhost@irix`, still holding a relaunch budget — i.e. the
 # stopped exhibit could have restarted itself. Two independent defects produced
 # it, and each one alone is enough:
@@ -20,9 +20,9 @@
 # project's performance work is done "with the tiles stopped", and until this was
 # fixed that sentence was not reliably true.
 #
-# NEVER point this at a production tile you are not allowed to cycle. The
+# NEVER point this at a production station you are not allowed to cycle. The
 # intended target is a throwaway instance of the SAME template with its own
-# tile.env, SH_PORT and tile dir — that exercises the real unit, the real
+# tile.env, SH_PORT and station dir — that exercises the real unit, the real
 # ExecStartPre/ExecStop and the real launcher without touching an exhibit.
 set -u
 
@@ -35,7 +35,7 @@ D="/data/vms/streamhost/tiles/$T"
 SETTLE="${LIFECYCLE_SETTLE:-20}"
 FAIL=0
 
-# Everything whose argv mentions this tile's directory. Deliberately NOT a
+# Everything whose argv mentions this station's directory. Deliberately NOT a
 # `pkill -f`-shaped name match: over ssh that pattern also matches the ssh
 # command line itself, which has killed sessions on this box before.
 survivors() {

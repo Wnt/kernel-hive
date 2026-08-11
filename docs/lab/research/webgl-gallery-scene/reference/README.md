@@ -6,7 +6,7 @@ them off the project). What lives here instead:
 
 - `mj-recreation-prompts.md` — detailed per-photo descriptions used to
   recreate each shot in Midjourney (real brand names kept per director's call
-  2026-07-27; recreations are reference material, not shipped SPA art).
+  2026-07-27; recreations are reference material, not shipped UI art).
 - `ref-01-mj.webp` … `ref-09-mj.webp` — the picked Midjourney recreations
   (2688px Subtle upscales, q90 WebP; lossless PNGs archived off-repo at
   `~/scene-v2-reference/mj-upscales/` on the dev box), committed as the

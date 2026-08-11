@@ -1,12 +1,12 @@
 # The 8254 idle re-arm storm, and the scheduling quantum that has to replace it
 
 **Status: the MAME fix is proven, the repo carries it, and a candidate binary
-is staged on the box — but it is NOT promoted to the tile.** The blocker is stated in
+is staged on labhost — but it is NOT promoted to the station.** The blocker is stated in
 "What is not finished" at the end — it is a margin question, not a doubt about
 the defect or the fix.
 
 Box: `labhost`, 16 logical CPUs, Debian trixie. Target: MAME `indy_4610`,
-one R4600, 256 MB, IRIX 6.5.22 + 4Dwm, golden `irix65-apps-v3.chd`
+one R4600, 256 MB, IRIX 6.5.22 + 4Dwm, seed `irix65-apps-v3.chd`
 (`368fcfb9b56fb4165a4e456238dc1a18`). Production binary
 `0db273009ecd1d41634b5527c8fa6be8`. The live `streamhost@irix` service was
 STOPPED for the whole of this work and every measurement is a clone under
@@ -119,7 +119,7 @@ cut WITHIN one run from the emulated-time trace. One binary (`sgi.ab`) with both
 changes behind environment gates, so control and treatment differ only by the
 knob.
 
-Idle 4Dwm desktop, 95 s hold, `-nothrottle`, production golden/flags/agent:
+Idle 4Dwm desktop, 95 s hold, `-nothrottle`, production seed/flags/agent:
 
 | arm | knobs | cycnorm% | GHz | IPC | foreign% |
 |---|---|---|---|---|---|
@@ -127,7 +127,7 @@ Idle 4Dwm desktop, 95 s hold, `-nothrottle`, production golden/flags/agent:
 | qonly16 | quantum 16 us only | 116.36 | 2.490 | 1.296 | 20.6 |
 | q16 | PIT fix + quantum 16 us | **244.18** | 2.488 | 1.570 | 15.3 |
 
-**These are single runs on a heavily loaded box** — foreign occupancy on the
+**These are single runs on heavily loaded labhost** — foreign occupancy on the
 claimed core pair was 15-21%, against the ~0% the baseline campaign enjoyed, and
 the absolute numbers are correspondingly far below the 152.67% that campaign
 measured for a control idle desktop. They are reported as the shape of the
@@ -158,7 +158,7 @@ the largest with more than one octave of margin under a measured cliff.
 
 ### What still blocks promotion
 
-1. **The speed difference between 4, 8 and 16 us is not separable on this box.**
+1. **The speed difference between 4, 8 and 16 us is not separable on labhost.**
    Foreign CPU on the claimed core pair ran 8-87% across the campaign, and the
    apparent per-quantum ordering tracks the contention rather than the knob:
 
@@ -172,7 +172,7 @@ the largest with more than one octave of margin under a measured cliff.
    arm was ever measured at the same occupancy as another, so these rows cannot
    be differenced. The cleanest single window in the whole campaign — q16 at
    8.1% foreign, **273.34% cycnorm @ 2.493 GHz** — is roughly 1.8x the baseline
-   campaign's control idle desktop (152.67% at a quiet box), which is the right
+   campaign's control idle desktop (152.67% at quiet labhost), which is the right
    order for the effect but is one run against another run and is NOT offered as
    the effect size.
 2. **W1/W2 at n>=10, and W3, are not measured.** The rig drives all three now
@@ -190,7 +190,7 @@ the largest with more than one octave of margin under a measured cliff.
    | W2 window drag | 51.02 | 2.489 | 1.301 | 13.0 |
 
    The project's reference control figures are 45.6-49% for terminal scroll, so
-   this is the right side of them — but that reference was taken on a quiet box
+   this is the right side of them — but that reference was taken on quiet labhost
    and this was not, and comparing them is exactly the cross-run differencing
    this project has retracted results for. It is offered as "the shipped binary
    works and is in the right range", NOT as a delta.
@@ -201,7 +201,7 @@ the largest with more than one octave of margin under a measured cliff.
    the treatment arm's windows were discarded outright by the analyser's guards.
    Both are reported here only so nobody mistakes them for data.
 
-   Note for whoever repeats this: sibling agents on this box run their MAME
+   Note for whoever repeats this: sibling agents on labhost run their MAME
    instances UNPINNED. Claiming a core pair protects nothing against that, and
    the +39%/+31% W1/W2 figures this workstream was asked to confirm at n>=10
    remain unconfirmed for that reason alone.
@@ -231,17 +231,17 @@ the largest with more than one octave of margin under a measured cliff.
 ## What the rig gained, and one bug it was hiding
 
 `scripts/build-guests/irix/irix-bench/` now drives the interactive workloads the
-baseline campaign recorded as impossible on golden v3. They were never
+baseline campaign recorded as impossible on seed v3. They were never
 impossible; the rig was driving the guest with the **wrong agent**.
 
-`irixbench.sh` defaulted to `$ASSETS/irixagent.lua`, but the live tile runs
+`irixbench.sh` defaulted to `$ASSETS/irixagent.lua`, but the live station runs
 `$D/irixagent.lua` from its own directory, and the two had drifted: the assets
 copy still seeded the pointer accumulators at 32768, so the first `MOVEP` of a
 session presented a ~32768-count delta to a 9-bit PS/2 wire field, overflowed,
 and the cursor never moved again for the life of the run. The repo copy and the
-tile copy (`566edbbd22e03488141a168ea1fd40ad`) have the fix; only the staged
-asset was stale. The rig now defaults to the tile's copy, and the stale asset
-was refreshed on the box (previous kept as `irixagent.lua.stale-401b6077`).
+station copy (`566edbbd22e03488141a168ea1fd40ad`) have the fix; only the staged
+asset was stale. The rig now defaults to the station's copy, and the stale asset
+was refreshed on labhost (previous kept as `irixagent.lua.stale-401b6077`).
 
 With the right agent the workloads are straightforward:
 

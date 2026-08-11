@@ -1,8 +1,8 @@
 # WebRTC fallback Phase 1: decision and spike (historical, superseded)
 
-The per-tile test topology below is retained only as Phase-1 evidence. It is no
+The per-station test topology below is retained only as Phase-1 evidence. It is no
 longer deployable and its launcher/config artifacts were removed. The current
-zero-per-tile platform architecture is [WEBRTC-PLATFORM.md](WEBRTC-PLATFORM.md).
+zero-per-station platform architecture is [WEBRTC-PLATFORM.md](WEBRTC-PLATFORM.md).
 
 Status: Phase-1 implementation and namespaced TinyCore spike. It is not a fleet
 rollout and is inert unless both the server test environment and a WebCodecs-less
@@ -45,7 +45,7 @@ HTTPS server    -> loopback-only Pion /offer proxy
 Firefox-Android <- native H.264 MediaStreamTrack -> real <video>/VideoTexture
 ```
 
-The SPA checks capabilities, not user-agent strings. `VideoDecoder` present means
+The UI checks capabilities, not user-agent strings. `VideoDecoder` present means
 the existing WebTransport/WebCodecs client is used without fetching or creating a
 PeerConnection. `VideoDecoder` absent means the signal document is checked for the
 optional `webrtc` object. Only the namespaced test config has that object; without
@@ -53,7 +53,7 @@ it, the shipped decoder-unsupported banner remains in place.
 
 Signaling is deliberately non-trickle for the spike: the browser gathers all ICE
 candidates, POSTs one offer, Pion gathers and returns one answer. The HTTPS server
-will proxy only to a loopback HTTP upstream configured for that exact tile. SDP,
+will proxy only to a loopback HTTP upstream configured for that exact station. SDP,
 TURN credentials, and candidate contents are never logged. Production needs
 authenticated session creation, trickle ICE, expiry, rate limits, and CSRF/origin
 policy.
@@ -96,7 +96,7 @@ The test is a reflink clone of the TinyCore fixture, never the production QEMU:
 - transient services: `osgallery-webrtc-phase1-{pion,streamhost,https}.service`
 
 At the Phase-1 deployment check, the documented public TCP forward on port
-13478 refused connections and there was no listener on lab TCP 3478. The test
+13478 refused connections and there was no listener on labhost TCP 3478. The test
 signal therefore intentionally serves an empty `iceServers` list and the proof
 is LAN `host/udp` only. Remote `relay/tcp` proof is blocked until the existing
 forwarder/coturn service is restored; credentials must then be written only to
@@ -178,7 +178,7 @@ adds remote-path FEC/RTX tuning, and integrates WebRTC sessions into idle-pause,
 ABR ownership, and fleet observability.
 
 Phase 4 performs a small canary rollout, validates audio sync/mobile autoplay and
-accessibility, then rolls out tile-by-tile with per-tile kill switches. Only after
-canary acceptance does the fallback become available for every production tile
+accessibility, then rolls out station-by-station with per-station kill switches. Only after
+canary acceptance does the fallback become available for every production station
 listed by the canonical registry (`python3 scripts/tiles-registry.py count`).
 WebTransport/WebCodecs remains the default throughout.

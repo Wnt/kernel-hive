@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #===============================================================================
-# build-guests/tiles/helenos.sh — reproduce the HelenOS Kernel Hive tile from source
+# build-guests/tiles/helenos.sh — reproduce the HelenOS Kernel Hive station from source
 #===============================================================================
 #
 # GUEST : helenos
@@ -18,7 +18,7 @@
 #      Terminal, taskbar + clock. There is nothing to add to a read-only medium.
 #   5. Boots the exact production device set, framebuffer-gates on the blue
 #      compositor + focused Terminal at '/ #', then runs `savevm golden`.
-#   6. Atomically installs the verified state container as the tile golden.
+#   6. Atomically installs the verified state container as the station golden.
 #
 # AUTOMATION HONESTY
 #   FULLY AUTOMATED — end to end, zero human interaction.
@@ -337,7 +337,7 @@ cat <<EOF
     -usb -device usb-tablet \\
     -drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk \\
     -rtc base=localtime
-  # neko tile row (compose docker-compose.gallery-guests.yml : helenos):
+  # neko station row (compose docker-compose.gallery-guests.yml : helenos):
   #   QEMU_MACHINE=pc-i440fx-11.0 QEMU_VGA=std QEMU_MEM=512
   #   QEMU_SOUND="-device intel-hda -device hda-output,audiodev=snd"
   #   GUEST_CDROM=/guests/HelenOS/${ISO_NAME} GUEST_BOOT=d

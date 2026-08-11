@@ -9,12 +9,12 @@ packet gets in, what stops it, and how to run it.
 ## Why it needed more than a tunnel
 
 The [forwarder](https://github.com/Wnt/forwarder) publishes NAT'd apps over
-HTTP/WS and raw TCP. The gallery's SPA and signaling fit that fine; **the video
-does not**. Tiles stream WebTransport over QUIC — UDP end to end — and carrying
+HTTP/WS and raw TCP. The gallery's UI and signaling fit that fine; **the video
+does not**. Stations stream WebTransport over QUIC — UDP end to end — and carrying
 QUIC inside a TCP tunnel would replace its loss recovery with TCP's, which is
 the thing a low-latency media path exists to avoid.
 
-So the public deployment has two planes that reach the box by different routes:
+So the public deployment has two planes that reach labhost by different routes:
 
 ```
                     gallery.example.com  ──A──►  203.0.113.10 (vm-control)
@@ -55,16 +55,16 @@ server-side as SHA-256 — the state file cannot be replayed into a login. Every
 state-changing call must carry `Origin: https://gallery.example.com`.
 
 **3. The media-plane ticket** (`streamhost/src/session_ticket.rs`). This one is
-easy to forget and the reason the other two are not enough. A tile's QUIC
+easy to forget and the reason the other two are not enough. A station's QUIC
 listener answers whoever reaches its UDP port, and a WebTransport session
 carries the guest's **input** plane as well as its video — so with the ports
-published, a login guarding only the SPA would have been decorative: a stranger
+published, a login guarding only the UI would have been decorative: a stranger
 could watch the exhibits *and type into them*. The authenticated gateway now
 mints a short-lived HMAC ticket per connect and streamhost refuses any session
-whose path does not carry a live one for that tile.
+whose path does not carry a live one for that station.
 
-The ticket rides the signaling doc's existing `path` field, so the SPA needed no
-change. It is minted for LAN callers too — a tile with `SH_SESSION_KEY` set
+The ticket rides the signaling doc's existing `path` field, so the UI needed no
+change. It is minted for LAN callers too — a station with `SH_SESSION_KEY` set
 refuses unticketed sessions from **any** source, so minting only for the public
 listener would have taken the LAN gallery down.
 
@@ -164,8 +164,8 @@ ssh lab 'grep "\[auth\]" /data/vms/streamhost/serve/https-server.log | tail'
 # Refused streams
 ssh lab 'journalctl -u "streamhost@*" --since "10 min ago" | grep SESSION_REJECTED'
 
-# Would every tile accept the ticket the gateway mints for it? Run this after
-# ANY change to the ticket, the key, or a tile's id — a mismatch is invisible
+# Would every station accept the ticket the gateway mints for it? Run this after
+# ANY change to the ticket, the key, or a station's id — a mismatch is invisible
 # until a visitor reconnects and the exhibit appears to freeze.
 ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'
 ```
@@ -187,18 +187,18 @@ and passkey public keys are public — so they need no special handling beyond t
 
 | Secret | Where | Rotate by |
 |---|---|---|
-| Stream-ticket key | `serve/pki/stream-ticket.key` + `/etc/osgallery/stream-ticket.env` | Write a new value to both, `systemctl restart osgallery-https` and the tiles. Both sides must change together — a mismatch refuses every session. |
+| Stream-ticket key | `serve/pki/stream-ticket.key` + `/etc/osgallery/stream-ticket.env` | Write a new value to both, `systemctl restart osgallery-https` and the stations. Both sides must change together — a mismatch refuses every session. |
 | Session cookies | `auth-state.json` | Delete the `sessions` array (server stopped) to sign everyone out. Passkeys survive. |
 | A device you lost | `/account` | Remove its passkey there. The server refuses to remove your last one; an admin can remove the whole account from `/admin`. |
-| Forwarder token | `/etc/forwarder-agent/agent.env` on the box, `/etc/forwarder/forwarder.env` on the edge | See the forwarder repo; both ends share one token. |
+| Forwarder token | `/etc/forwarder-agent/agent.env` on labhost, `/etc/forwarder/forwarder.env` on the edge | See the forwarder repo; both ends share one token. |
 | WireGuard keys | `/etc/wireguard/wg0.conf` both ends | `wg genkey`, update the peer's `PublicKey`, redeploy the edge. |
 
 ## Reproducing it
 
-Box side, from a checkout:
+Labhost side, from a checkout:
 
 ```bash
-scripts/serve-https-spa.sh deploy        # SPA + server + auth plane + lockfile
+scripts/serve-https-spa.sh deploy        # UI + server + auth plane + lockfile
 ssh lab 'bash /data/vms/streamhost/serve/install-https-service.sh'
 ```
 
@@ -243,21 +243,21 @@ UDP relay.
 - **Browser support** is whatever WebTransport + WebCodecs support is: Chrome
   and Chromium-family everywhere, Firefox desktop. Firefox-Android has no
   `VideoDecoder` and gets the existing banner. Safari is untested here.
-- **One relay hop** of added latency for public visitors (~4.5 ms box↔edge, plus
+- **One relay hop** of added latency for public visitors (~4.5 ms labhost↔edge, plus
   the visitor's own path to Helsinki). LAN visitors are unaffected — they still
-  talk to the tile directly.
+  talk to the station directly.
 - **The relay range is a firewall hole** to one host's ports, bounded by
   nftables to `54080-54200` and the single WireGuard peer. It carries no auth of
   its own; the ticket gate behind it is what makes that acceptable.
-- **A tile outside that range is invisible to the public gallery and looks
-  healthy from the box.** UDP port is `54000 + slot`, so the range is also a cap
+- **A station outside that range is invisible to the public gallery and looks
+  healthy from labhost.** UDP port is `54000 + slot`, so the range is also a cap
   on the lineup. When the edge was capped at `54130`, slots 131-134
   (`oricatmos`, `kc854`, `sinclairql`, `nextstep`) streamed fine on the LAN while
   the daemon never saw a single session: service active, ticket accepted,
   `/signal/<id>.json` returning a valid path, and nothing in the journal.
   `check-stream-tickets.py` cannot see this — it validates the ticket, not the
   path the packets take. `tiles-registry.py` now fails validation for any
-  production tile whose `udpPort` falls outside `ports.publicRelayLow..High` in
+  production station whose `udpPort` falls outside `ports.publicRelayLow..High` in
   `registry/registry-v1.json`, which is the source of truth these three places
   must agree on: that key, `UDP_RELAY_PORT_RANGE` in the forwarder repo's
   `deploy/site.env` (which renders the edge's nftables rule on every deploy —
@@ -265,15 +265,15 @@ UDP relay.
 - **The ticket is signed over the identity the DAEMON publishes in its
   `signaling.json`, not the signalling endpoint's key.** Those were two
   different names while `solaris` ran as `solariscde` and `aros` as `amigaos`,
-  and signing with the endpoint key locked both tiles out of every session for
+  and signing with the endpoint key locked both stations out of every session for
   four hours on 2026-08-05 — which presented as "the exhibit froze after I
   clicked", because the open session kept working and only the next reconnect
-  was refused. Both tiles were renamed on 2026-08-10 and the registry now
+  was refused. Both stations were renamed on 2026-08-10 and the registry now
   refuses an id that differs from its `tileDir`, so the two names agree by
   construction. The gateway still reads the daemon's, and
   `check-stream-tickets.py` still proves the relationship holds: the daemon is
   the authority on the identity it verifies against, and a tile.env edited on
-  the box does not pass through the registry's gate.
+  labhost does not pass through the registry's gate.
 - **`openvms` is flaky across restarts** (`dual-VM stack did not become ready`)
   and needs a retry — unrelated to any of this, but it will stop a fleet-wide
-  promotion, so stop that tile before a `--promote` and start it after.
+  promotion, so stop that station before a `--promote` and start it after.

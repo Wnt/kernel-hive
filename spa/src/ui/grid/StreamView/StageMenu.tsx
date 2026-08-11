@@ -46,7 +46,7 @@ export function StageMenu({
   onToggleOsk: () => void;
   restoreState: 'idle' | 'busy' | 'ok' | 'err';
   restoreToGolden: () => void;
-  /** Type-in listing row — present only for tiles whose registry entry declares
+  /** Type-in listing row — present only for stations whose registry entry declares
    *  a demoProgram (undefined label = no row at all). */
   demoLabel?: string;
   demoState: DemoState;

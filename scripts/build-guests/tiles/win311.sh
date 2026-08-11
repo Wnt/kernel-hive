@@ -3,7 +3,7 @@
 # build-guests/tiles/win311.sh — reproduce the Windows for Workgroups 3.11 gallery
 #                          guest FROM SOURCE on a fresh Proxmox host.
 #
-# GUEST : Windows for Workgroups 3.11 + MS-DOS 6.22 (the "Win311" retro tile).
+# GUEST : Windows for Workgroups 3.11 + MS-DOS 6.22 (the "Win311" retro station).
 # TYPE  : PREBUILT-BASE + DISK INJECTION. There is NO free, automatable WfW/DOS
 #         installer, so — exactly like the validated dry-run — this recipe does
 #         NOT run Windows Setup. It consumes the community **rtts/win311**
@@ -64,9 +64,9 @@
 # HYGIENE (per project rules):
 #   * The verify VM is killed ONLY via its QEMU monitor `quit` (fallback: its
 #     own pidfile). NEVER `pkill qemu*` — that would catch the live gallery
-#     tiles, CT 110, VM 900/920 and the macOS fan-out VMs.
+#     stations, CT 110, VM 900/920 and the macOS fan-out VMs.
 #   * Namespaced run dir + unique VNC display + unique monitor socket (per PID).
-#   * Touches ONLY data/gallery-guests/Win311/ and the win311 tile fixture dir.
+#   * Touches ONLY data/gallery-guests/Win311/ and the win311 station fixture dir.
 #     No other guest, CT or VM is modified.
 #
 # Idempotent + re-runnable: base image and ZIPs are cached-by-checksum and every
@@ -145,7 +145,7 @@ QEMU_BIN="${QEMU_BIN:-qemu-system-i386}"
 RUN_DIR="${GUEST_DIR}/.build-run.$$"
 MON_SOCK="${RUN_DIR}/mon.sock"
 PIDFILE="${RUN_DIR}/qemu.pid"
-VNC_DISP="${VNC_DISP:-62}" # VNC :62 -> tcp 5962; clear of gallery tiles
+VNC_DISP="${VNC_DISP:-62}" # VNC :62 -> tcp 5962; clear of gallery stations
 SHOT_PNG="${GUEST_DIR}/verify-desktop.png"
 
 export MTOOLS_SKIP_CHECK=1 # let mtools work on partition-offset images
@@ -156,7 +156,7 @@ die() {
 }
 
 ###############################################################################
-# The EXACT neko-qemu launch args this tile runs with in the live gallery.
+# The EXACT neko-qemu launch args this station runs with in the live gallery.
 # (from MANIFEST.md on the dry-run box; emitted here for reference + reuse)
 #
 #   qemu-system-i386 -machine pc -cpu pentium -m 64 \
@@ -164,7 +164,7 @@ die() {
 #     -nic user,ipv6=off,model=ne2k_pci \
 #     -device sb16 -vga cirrus -no-shutdown
 #
-# neko-qemu / launch-qemu.sh environment for this tile (retro-gallery-guests.md):
+# neko-qemu / launch-qemu.sh environment for this station (retro-gallery-guests.md):
 #   OS_NAME=Windows 3.11
 #   QEMU_MACHINE=pc   QEMU_MEM=64   QEMU_VGA=cirrus
 #   QEMU_SOUND="-device sb16"
@@ -179,7 +179,7 @@ die() {
 #    change in Windows network settings if outbound browsing is required.)
 #
 # PERF: Win9x-under-KVM recipe APPLIED + framebuffer-verified (2026-07-04).
-#   The live win311 tile now runs KVM-accelerated instead of TCG, via:
+#   The live win311 station now runs KVM-accelerated instead of TCG, via:
 #     QEMU_MACHINE="pc,acpi=off,usb=off,kernel-irqchip=off,accel=kvm"
 #     QEMU_VGA="std"   QEMU_SMP="1"   QEMU_EXTRA="-cpu pentium,-apic ..."
 #   kernel-irqchip=off + -cpu pentium,-apic route the 8259/PIT in userspace so
@@ -547,7 +547,7 @@ if ! command -v "$QEMU_BIN" >/dev/null 2>&1; then
 fi
 
 # Clean shutdown helper: monitor `quit` first, pidfile SIGTERM as fallback.
-# NEVER pkill by name (would kill live gallery tiles / CT110 / macOS VMs).
+# NEVER pkill by name (would kill live gallery stations / CT110 / macOS VMs).
 mon_cmd() { printf '%s\n' "$1" | socat - "UNIX-CONNECT:${MON_SOCK}" >/dev/null 2>&1 || true; }
 # shellcheck disable=SC2317 # invoked only via the EXIT/INT/TERM trap below
 cleanup() {

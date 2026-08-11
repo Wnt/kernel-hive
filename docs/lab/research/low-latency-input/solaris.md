@@ -32,7 +32,7 @@ decision; if T1 selects ivshmem globally, the Solaris spike must separately gate
 BAR cache behavior, legacy INTx operation, and snapshot support before driver
 work continues.
 
-## Actual tile and current path
+## Actual station and current path
 
 The repository, not a hypothetical Solaris install, is the baseline:
 
@@ -59,8 +59,8 @@ The repository, not a hypothetical Solaris install, is the baseline:
   guessed. Compiler/header presence is an explicit spike preflight below.
 
 Adding any new PCI device changes the pinned device set. The old VM-state
-snapshot must not be loaded with that new command line; a new golden has to be
-baked with exactly the final device present.
+snapshot must not be loaded with that new command line; a new checkpoint has to be
+captured with exactly the final device present.
 
 ## 1. Driver model and exact toolchain
 
@@ -380,7 +380,7 @@ not represented by the generic 16-byte record alone. It is a separate go/no-go
 after pointer measurement, not a claim that arbitrary key injection is free.
 The existing keyboard route remains the fallback throughout.
 
-## 4. Installation, auto-start, and golden bake
+## 4. Installation, auto-start, and checkpoint capture
 
 ### Installation and cold boot
 
@@ -402,12 +402,12 @@ channel, provided streamhost sends it no `M/P/R/B` pointer verbs; thus it cannot
 race the core pointer and is no longer on the real-time path. If exec is moved
 elsewhere, disable `0100.warpd.sh`. Keep `usb-tablet` in the launcher initially
 as an inactive rollback device unless T1 explicitly elects to remove it during
-the same rebake.
+the same recapture.
 
-### Golden procedure
+### Checkpoint procedure
 
-Never test this by editing the live lab or trying to load the existing golden
-with a changed device set. Work on a copy of the tile-local disk and a separate
+Never test this by editing the live labhost or trying to load the existing checkpoint
+with a changed device set. Work on a copy of the station-local disk and a separate
 QEMU instance/ports:
 
 1. Baseline current TCP warpd before changing anything.
@@ -424,7 +424,7 @@ QEMU instance/ports:
    launcher and emitted device-set ledger together. Restart QEMU from scratch
    with `-loadvm golden`, reconnect the host backend, and repeat pointer tests.
 7. Only after repeated restore success promote the staged disk/launcher through
-   the normal golden process.
+   the normal checkpoint process.
 
 The custom QEMU device must have VMState for programmed ring GPA/length,
 protocol generation, producer/consumer view, masks, and INTx level. Snapshot
@@ -439,7 +439,7 @@ guest so the driver can discard stale entries and re-arm without userspace.
 ### Phase 0: preflight and baseline — 1-2 engineer-days
 
 - Clone the disk and reproduce the pinned QEMU command line away from the live
-  tile.
+  station.
 - Record kernel bitness/update, installed compiler and DDI headers, Xorg and
   xf86-input-mouse versions, `/etc/X11/xorg.conf`, current `/dev/mouse` links,
   `prtconf -pv`, and interrupt APIs exported by the running kernel.
@@ -485,13 +485,13 @@ time-box the `consms` alternative. Do not continue into a broad Xorg rewrite.
 Optional keyboard support is **another 4-6 engineer-days** and has its own
 correctness gate. It is not included in the pointer adoption estimate.
 
-### Phase 3: package and bake — 2-4 engineer-days
+### Phase 3: package and capture — 2-4 engineer-days
 
 - Produce the reproducible SVR4 driver package/install log and rollback
   procedure.
-- Update the staging launcher, tile manifest/env, Xorg config, and golden
+- Update the staging launcher, station manifest/env, Xorg config, and checkpoint
   documentation as one device-set change.
-- Bake from a cold boot with an idle ring, restore in a new QEMU process, and
+- Capture from a cold boot with an idle ring, restore in a new QEMU process, and
   prove driver/backend readiness without relying on warpd for pointer input.
 
 ### Phase 4: measure and decide — 3-5 engineer-days
@@ -500,7 +500,7 @@ correctness gate. It is not included in the pointer adoption estimate.
   under guest CPU load. Run enough samples to show tails, not a short demo.
 - Compare current TCP warpd, the new driver, and (as a diagnostic only) QEMU
   tablet inside its reachable region. Keep identical 4 ms D-Bus display polling
-  and 60 fps tile settings.
+  and 60 fps station settings.
 - Verify 9-point/corners, press/move/release drag, wheel, no sequence loss,
   multi-session behavior, and snapshot/cold-boot recovery.
 
@@ -535,11 +535,11 @@ Fallback order:
 2. Same leaf linked below `consms`/`/dev/mouse`, only if the direct device open is
    the blocker and the 1920x1200 test passes.
 3. Diagnostic Xorg reader for transport proof only, not production.
-4. Existing `warpd.py` over TCP with XTEST/XWarpPointer, which is already baked,
+4. Existing `warpd.py` over TCP with XTEST/XWarpPointer, which is already captured,
    full-screen-correct, and also retains the exec channel.
 
-Rollback is a launcher/golden pair, not just a pointer setting: boot the prior
-device-set launcher with its prior golden, restore `SH_POINTER=warpd` and
+Rollback is a launcher/checkpoint pair, not just a pointer setting: boot the prior
+device-set launcher with its prior checkpoint, restore `SH_POINTER=warpd` and
 `SH_WARPD_ADDR=127.0.0.1:57790`, and ensure the CDE warpd session script is
 enabled.
 

@@ -1,9 +1,9 @@
-# NeXTSTEP 3.3 — live streamhost tile `nextstep` (VMID 237, udp 54134)
+# NeXTSTEP 3.3 — live streamhost station `nextstep` (VMID 237, udp 54134)
 
 **Status: LIVE, absolute pointer, PROMOTED 2026-08-10.** A captured Debian-12 kiosk runs the **Previous** emulator as a
 **NeXTcube** (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) booting **NeXTSTEP
 3.3 for m68k**, and streamhost captures the Linux framebuffer + AC97 audio like
-every other bridge tile (`streamhost/docs/BRIDGE.md`). The acceptance fixture —
+every other kiosk (`streamhost/docs/BRIDGE.md`). The acceptance scene —
 the grey NeXTSTEP Workspace with the right-hand Dock — is reached on an
 untouched cold boot with zero input and is framebuffer-verified in
 `/data/vms/streamhost/tiles/nextstep/evidence/`.
@@ -21,7 +21,7 @@ idempotent). Runtime sources: `streamhost/tiles/nextstep/`. Patch:
 The historical section below records, in full, that **NeXTSTEP 3.3 for Intel
 cannot be installed or run on a modern QEMU**. That finding still stands and was
 not re-tested. What changed is the gallery's architecture: every recent exhibit
-is a *bridge* tile, so the kiosk can run any emulator, and the QEMU driver wall
+is a *kiosk*, so the kiosk can run any emulator, and the QEMU driver wall
 simply stopped being the constraint.
 
 Two routes were costed before anything was built:
@@ -39,7 +39,7 @@ the first web browser on; an Intel clone running the same OS is not.
 
 ## 2. What is built, and where
 
-Nothing in the frozen bridge base is touched. Everything goes into the tile's
+Nothing in the frozen bridge seed is touched. Everything goes into the station's
 own overlay:
 
 | Component | Version / pin | Note |
@@ -52,7 +52,7 @@ own overlay:
 Media provenance is recorded in `docs/lab/ASSETS-MANIFEST.md` and in the guest's
 `/opt/bridge/media/nextstep/PROVENANCE`. **The bits are never committed.**
 
-The overlay is grown to 16 GB before first boot: the 6 GiB base has only ~2.6 GiB
+The overlay is grown to 16 GB before first boot: the 6 GiB seed has only ~2.6 GiB
 free and the disk image alone is 2 GB.
 
 ## 3. Emulated machine and X geometry
@@ -83,16 +83,16 @@ MM 961/MM 1201 digitiser (and the WACOM SD series) on the NeXT **SCC serial port
 B**, and `src/gui-sdl/sdlevent.c` feeds it the host's **absolute** window
 coordinates whenever `[Tablet] nTabletType` is non-zero *and* the guest driver
 has enabled the tablet; only otherwise does it fall back to the relative
-`kms_mouse_move()`. NeXTSTEP 3.3 ships the matching driver on the disk the tile
+`kms_mouse_move()`. NeXTSTEP 3.3 ships the matching driver on the disk the station
 already uses — `/NextAdmin/InstallTablet.app`, setuid root, 21 Oct 1994 — which
 writes a kernel-server relocatable to `/usr/lib/kern_loader/Tablet/`, loads it,
 creates `/dev/tableta`+`/dev/tabletb`, probes `/dev/ttyb` and attaches. Nothing
-is compiled: this golden carries no m68k toolchain at all.
+is compiled: this checkpoint carries no m68k toolchain at all.
 
-So the tile ships:
+So the station ships:
 
 - `nTabletType = 2` in `previous.cfg` (SummaGraphics MM 1201);
-- `-usb -device usb-tablet`, `SH_INPUT_BACKEND=dbus-abs`, SPA `pointerRel`
+- `-usb -device usb-tablet`, `SH_INPUT_BACKEND=dbus-abs`, UI `pointerRel`
   absent, `stream.pointer.method = qemu-usb-tablet`;
 - `-machine …,vmport=off` still pinned — it used to protect the relative path,
   and it now keeps QEMU's implicit VMware mouse from being a *second* absolute
@@ -101,7 +101,7 @@ So the tile ships:
   chain is a straight 1:1 map from the X root to the NeXT screen, so any other
   root size silently scales every visitor's click.
 
-**Measured, on the LIVE production tile, 2026-08-10, against the golden restored
+**Measured, on the LIVE production station, 2026-08-10, against the checkpoint restored
 into a fresh QEMU process:** 24 of 24 acceptance targets (corners inset 8 px,
 edge midpoints, centre, and 15 scattered points) landed at **0 px** error, one
 commanded move each, located by an exact glyph match on the framebuffer.
@@ -111,7 +111,7 @@ actually uses, so the `usb-tablet` itself was probed separately: 8 QMP
 `input-send-event` absolute moves — the same events streamhost synthesises from
 a browser pointer — travelled QEMU `usb-tablet` → Xorg → SDL3 → Previous
 `tablet.c` → the NeXTSTEP driver and landed **within 1 px**, the 1 px being the
-0..32767 quantisation of the probe's own axis value, not the tile's.
+0..32767 quantisation of the probe's own axis value, not the station's.
 
 **Buttons need a SLOW press/release.** `xdotool click 1` (≈12 ms down-to-up) is
 sampled away somewhere on the tablet path and does nothing at all — a menu item
@@ -138,7 +138,7 @@ kl_util -a /usr/lib/kern_loader/Tablet/tablet_reloc
 (`-l` when a clean shutdown persisted the server into kern_loader's conf, `-a`
 adds AND loads when it did not. Do not append to `/etc/kern_loader.conf` by
 hand — kern_loader owns that file and rewrites it.) `loadvm golden` keeps
-working exactly as before; the golden since 2026-08-11 carries the hook on its
+working exactly as before; the checkpoint since 2026-08-11 carries the hook on its
 disk. `nextstep-tablet-install.py` writes the hook, probes a booted disk and
 skips the GUI dance when the boot already came up absolute — the GUI install
 is only needed ONCE per fresh disk image, to make InstallTablet.app write
@@ -160,7 +160,7 @@ symlink the app into `/me` **before the cold boot** so the File Viewer lists it
 without a rescan, **type-select** `Install` in the viewer and press RETURN to
 open it, then put the still-relative pointer on the panel's Install button and
 click once. From that click on the pointer is absolute and the rest (quit,
-unlink, Update Viewers, pixel-diff back to the fixture) is exact.
+unlink, Update Viewers, pixel-diff back to the scene) is exact.
 
 **The Install button is drawn with the default-button ⏎ glyph, and RETURN still
 does not press it** — the panel is not the key window, and nothing reachable
@@ -170,11 +170,11 @@ unchanged after RETURN. The pointer really is the only way in.
 **Moving that pre-driver pointer: fixed 1 px steps, no proportional term.** The
 promotion attempt before this one built a converging closed loop with damped,
 capped steps; it converged on a clone and overshot the button by ~56 px on the
-tile, four variants deep. The reason is that NeXTSTEP accelerates a *single*
+station, four variants deep. The reason is that NeXTSTEP accelerates a *single*
 event superlinearly (a 24 px step measured ~2.3x) and the curve keys off event
 timing as well as size, so a step size calibrated on one machine's timing is a
 different step on another's. A **1 px** step is the one input the curve cannot
-amplify: measured on the live tile, 100 consecutive 1 px events moved the arrow
+amplify: measured on the live station, 100 consecutive 1 px events moved the arrow
 exactly 100 px, gain 1.000 on both axes. `goto()` in the installer now walks
 |error| single-pixel steps, re-reads the framebuffer, and repeats — it put the
 pointer on the button from 634 px away in **one round, dead centre**. Two
@@ -183,7 +183,7 @@ a leftover 2-3 px correction on its own does not register at all, so the walker
 stops when a round makes no progress and the caller accepts ≤ 4 px.
 
 **Historical, kept because it explains the old wiring:** before the tablet the
-tile ran `--pointer rel` with no usb-tablet, and the NeXT KMS mouse register's
+station ran `--pointer rel` with no usb-tablet, and the NeXT KMS mouse register's
 *signed 6-bit* delta capped a single event at 63 px, so a fast flick under-moved.
 That limit is no longer on the visitor's path — the tablet reports a position,
 not a delta — but it still applies to anything driving the guest before the
@@ -194,14 +194,14 @@ driver is attached.
 This is a GUI exhibit, not a type-in exhibit. The NeXT keyboard is a serial
 device polled by the KMS controller, not a matrix sampled once per emulated
 frame, so playbook §5.1's `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS` are not set
-and the tile does not need the pacing canary build.
+and the station does not need the pacing canary build.
 
 ## 6. The five traps, in the order they bit
 
 1. **`panic: (Cpu 0) Root device is physically write protected.`** NeXTSTEP
    boots, finds the disk and dies on its first write. The kiosk runs as
    `bridge`, and a root-owned 0644 image opens read-only — the same trap the
-   pdp11 tile hit with its MSCP pack. `chown bridge:bridge NS33_2GB.dd`.
+   pdp11 station hit with its MSCP pack. `chown bridge:bridge NS33_2GB.dd`.
 2. **`SDL screen scale: 0.971`.** Previous asks SDL for the window border
    thickness and, when SDL cannot answer, assumes a decorated desktop (50 px top
    and bottom, 25 px each side) and shrinks the emulated screen to fit. There is
@@ -225,12 +225,12 @@ and the tile does not need the pacing canary build.
    no `[Keymap]` line at all, while Previous's own F12 menu (handled before the
    queue) opened normally. Rebuilt with `-DENABLE_RENDERING_THREAD=1`, where the
    same events go straight to `Keymap_KeyDown`/`Keymap_MouseMove`, the NeXT
-   cursor moved on the next attempt. **The tile must be built with that flag**;
+   cursor moved on the next attempt. **The station must be built with that flag**;
    the builder asserts it in the cmake output.
 5. **135% of CPU in four llvmpipe threads.** `SDL_RENDER_DRIVER=software` was
    already set and the renderer really was `software` (SDL3 confirms it under
    `SDL_LOGGING=render=verbose`), but SDL3 still *presented* through an
-   accelerated window surface — llvmpipe, on a GPU-less host. Measured before
+   accelerated window surface — llvmpipe, on a GPU-less labhost. Measured before
    and after `SDL_FRAMEBUFFER_ACCELERATION=0`:
 
    | | llvmpipe threads | `previous` RSS | keystroke → screen |
@@ -246,28 +246,28 @@ and the tile does not need the pacing canary build.
 | guest `MemAvailable` at the Workspace | 957 MB of 1462 MB |
 | `previous` RSS in the guest | 247 MB |
 | host QEMU RSS | 1.06 GB |
-| golden snapshot VM_SIZE | 647 MiB |
+| checkpoint VM_SIZE | 647 MiB |
 
 `-smp 4` is not decoration: Previous runs the 68040, the DSP, a SLIRP thread and
 its own present loop, and at `-smp 2` the emulator ran at roughly half real
 speed (`[Hardclock] Expected: 8245 us, actual: 15407 us`) and its input queue
 visibly backed up.
 
-## 8. Golden fixture and reset
+## 8. Checkpoint scene and reset
 
-`SH_RESET_MODE=loadvm`, snapshot `golden`: the grey Workspace, the Workspace
+`SH_RESET_MODE=loadvm`, checkpoint `golden`: the grey Workspace, the Workspace
 menu at the top left, the File Viewer NeXTSTEP opens for itself at login, and the
 Dock down the right-hand edge. Nothing is curated — this is where the machine
-stops on its own — but the snapshot is **not** taken on an untouched boot any
+stops on its own — but the checkpoint is **not** taken on an untouched boot any
 more: it is taken after §4's tablet-driver install. (Since 2026-08-11 the disk
 itself re-attaches the driver on every boot via the rc.local hook, so the
-snapshot's job is back to being just the instant-resume state, not the sole
+checkpoint's job is back to being just the resume state, not the sole
 carrier of the driver.) The install automation ends by pixel-diffing the
 desktop back onto the frame it started from, and refuses to continue if too
 much differs. Restore is verified by framebuffer in the same run.
 
 Evidence in `/data/vms/streamhost/tiles/nextstep/evidence/`:
-`coldboot-desktop.png` (the state that was baked), `golden-baked.png`,
+`coldboot-desktop.png` (the state that was captured), `golden-baked.png`,
 `golden-restored.png` (after `loadvm golden`), `live-streaming.png` (with
 `streamhost@nextstep` running).
 
@@ -279,19 +279,19 @@ lands on the Workspace with no input at all.
 
 ## 9. Open items — stated honestly
 
-- **PROMOTED 2026-08-10.** The golden was re-baked on the tile itself from a COLD
+- **PROMOTED 2026-08-10.** The checkpoint was recaptured on the station itself from a COLD
   boot under the final device set (`-usb -device usb-tablet`), with the driver
   installed before `savevm golden`; `SH_INPUT_BACKEND=dbus-abs`,
   `pointer_mode: abs` in the labctl matrix, `pointer/mouse: abs/PASS` in the
   golden manifest, and `pointerRel` gone from the gallery manifest's row.
-- **The SPA's embedded FALLBACK manifest still marks this tile `pointerRel`.**
-  The runtime `/gallery-manifest.json` (which the SPA prefers, and which was
+- **The UI's embedded FALLBACK manifest still marks this station `pointerRel`.**
+  The runtime `/gallery-manifest.json` (which the UI prefers, and which was
   merged additively) does not, so the shipped path is correct; the compiled-in
   copy inside `assets/index-*.js` is stale and only takes over if that fetch
-  fails. It clears itself on the next SPA build from merged `main` — the bundle
+  fails. It clears itself on the next UI build from merged `main` — the bundle
   was deliberately NOT rebuilt here, because the deployed one carries sibling
-  tiles that this branch does not have and a rebuild would delete them.
-- `labctl gen` was **not** run: it fails closed on live tile dirs (`alto`,
+  stations that this branch does not have and a rebuild would delete them.
+- `labctl gen` was **not** run: it fails closed on live station dirs (`alto`,
   `indyr4400`) that have no declaration in the deployed file yet. The nextstep
   row was merged into `/data/vms/streamhost/tiles.json` additively instead, and
   `labctl ls` shows `abs`. Regenerating the whole matrix is a merge-time step.
@@ -299,16 +299,16 @@ lands on the Workspace with no input at all.
   carries an rc.local hook that loads the tablet server during /etc/rc, and a
   cold boot comes up absolute on its own (proven on a soltest clone: commanded
   (100,100) → arrow at exactly (100,100) after a plain boot, no GUI driven).
-  The live golden was re-baked the same day with the hook on its disk.
+  The live checkpoint was recaptured the same day with the hook on its disk.
 - **Idle auto-pause is ON since 2026-08-11** (`SH_IDLE_PAUSE_SECS=60`, the
-  fleet's QMP arm). The original opt-out feared QMP-freezing the kiosk "out
+  fleet's QMP arm). The original opt-out feared QMP-pausing the kiosk "out
   from under" the frame watcher, but the watcher runs INSIDE the guest — stop
-  freezes watcher and window together. The unwatched tile was 138% of a core.
+  pauses watcher and window together. The unwatched station was 138% of a core.
 - Only `nTabletType = 2` (SummaGraphics MM 1201) was tried. The WACOM types
   report a finer coordinate range and might behave differently at the edges;
   there was no reason to look.
 - Guest-input latency was measured only through Previous's own F12 menu
-  (0.58 s, at the floor of a screendump poll loop) and only while the box was
+  (0.58 s, at the floor of a screendump poll loop) and only while labhost was
   carrying a load average of 20-45 from concurrent build agents. It should be
   re-measured on a quiesced box.
 - `SDL_RENDER_DRIVER=software` alone did not avoid llvmpipe; why SDL3 still
@@ -331,7 +331,7 @@ lands on the Workspace with no input at all.
   It is a shell, not a window server: GUI apps launched through it die with
   `DPS client library error: Could not form connection`.
 - NeXTSTEP logs in automatically as the user `me`. There is no password prompt
-  in the fixture.
+  in the scene.
 - The kiosk writes `/tmp/nextstep-launch.log` (X mode) and
   `/tmp/nextstep-frame.log` (focus + window anchoring); Previous's own stderr is
   `/tmp/previous.err`.
@@ -341,7 +341,7 @@ lands on the Workspace with no input at all.
 # HISTORICAL — the Intel/QEMU-10 dead end (2026, pre-bridge architecture)
 
 *Kept verbatim in substance because it is hard-won and would otherwise be
-re-derived. It describes the previous attempt at this tile: NeXTSTEP 3.3 for
+re-derived. It describes the previous attempt at this station: NeXTSTEP 3.3 for
 **Intel**, installed by QEMU directly, streamed by the retired docker-compose
 / neko stack on port 8109. Both the OS variant and the streaming architecture
 are different from what ships today.*
@@ -371,7 +371,7 @@ floppies are read in."
 No pre-built NeXTSTEP/OPENSTEP **Intel** disk image exists on archive.org (only
 the install media), and a pre-built image would hit the same runtime I/O wall.
 
-## Intel media (unused by the current tile)
+## Intel media (unused by the current station)
 
 Item `NeXTSTEP33CISC` (https://archive.org/details/NeXTSTEP33CISC):
 `NeXTSTEP_3.3_User_(i386_m68k).iso` (~356 MB, a 4.3BSD-FFS disc, **not**
@@ -418,4 +418,4 @@ Also tried with no effect: TCG vs `-enable-kvm`; a fixed 1995 `-rtc` date (the
 *The retired proposal in this document's earlier revision — a `neko-qemu`
 docker-compose service on port 8109, VMID 1040, `NEKO_EPR 53320-53339` — is gone
 with the architecture it belonged to. The gallery has run the Rust `streamhost`
-daemon with per-tile systemd units since; there is no compose stack to wire into.*
+daemon with per-station systemd units since; there is no compose stack to wire into.*

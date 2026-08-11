@@ -1,23 +1,23 @@
 #!/bin/bash
 # record-boot.sh — P1a (capture) + P1c (bake) for the boot-video replay feature.
-# RUN ON THE BOX (ssh lab). Records a tile's cold power-on to a scrub-optimised MP4
-# whose LAST FRAME is byte-identical to the golden's first live frame, so the SPA's
+# RUN ON labhost (ssh lab). Records a station's cold power-on to a scrub-optimised MP4
+# whose LAST FRAME is byte-identical to the checkpoint's first live frame, so the UI's
 # recorded-video -> live-stream handoff is invisible (spec §1.1, §3.1).
 #
 #   Usage: record-boot.sh <tile> [--dry-run]
 #
 # It is a STANDALONE SIDECAR (model: scripts/coldboot/amiga-coldboot-watch.sh) — NO
 # streamhost daemon change, so it is unaffected by the shared-binary redeploys of
-# scripts/dev/build-deploy.sh. It cold-launches a CLONE of the tile under
-# /data/vms/soltest/ on the tile's EXACT live device set (a byte copy of the live
+# scripts/dev/build-deploy.sh. It cold-launches a CLONE of the station under
+# /data/vms/soltest/ on the station's EXACT live device set (a byte copy of the live
 # qemu-streamhost.sh with only paths/ports/loadvm rewritten — loadvm golden requires
 # an exact device match), taps QEMU's dbus display + audio the same way the daemon
 # does, and feeds raw BGRA + PCM into a single-pass ffmpeg encode (§2.3 RECOMMENDED:
 # fixed canvas, no mid-boot SPS/resolution problem). Kills the clone ONLY by pidfile.
 #
-# ── THE dbus TAP (the one piece that needs the box + a tiny companion binary) ──────
+# ── THE dbus TAP (the one piece that needs labhost + a tiny companion binary) ──────
 # Tapping QEMU's p2p D-Bus display/audio needs SCM_RIGHTS fd-passing + zbus — it is
-# NOT expressible in bash and cannot be exercised off-box. It is the EXACT mechanism
+# NOT expressible in bash and cannot be exercised off labhost. It is the EXACT mechanism
 # streamhost already ships:
 #     video: streamhost/streamhost/src/capture.rs  `pub async fn connect(qmp)`  — QMP
 #            getfd(dbusdisp)+add_client{@dbus-display} then Console RegisterListener,
@@ -30,10 +30,10 @@
 #       argv video-fifo, PACED to <fps> (duplicate the last frame between damage) so
 #       the downstream `-f rawvideo` sees a fixed size + constant rate;
 #   (2) audio::register(...); write s16le to argv audio-fifo (open+close it even when
-#       the tile has an audiodev but no card, else ffmpeg blocks on the missing writer).
+#       the station has an audiodev but no card, else ffmpeg blocks on the missing writer).
 # Point record-boot at it via  SH_DBUS_TAP=/path/to/bootrec-tap  (contract below). Any
 # producer honouring that contract works — e.g. a synthetic BGRA generator for testing
-# the ffmpeg/detect/bake plumbing off-box (mirrors amiga-coldboot-watch.sh's SH_FEED_CMD; box-side prototype, not in repo).
+# the ffmpeg/detect/capture plumbing off labhost (mirrors amiga-coldboot-watch.sh's SH_FEED_CMD; labhost-side prototype, not in repo).
 #
 #   SH_DBUS_TAP contract:  $SH_DBUS_TAP <qmp.sock> <video.fifo> <audio.fifo|""> <WxH> <fps> <arate> <ach>
 #     writes constant-size BGRA frames at <fps> to <video.fifo>; s16le PCM to <audio.fifo>
@@ -102,7 +102,7 @@ build_clone_launcher() {
       cp --reflink=auto -f "$TILE_DIR/$d" "$CLONE_DIR/$d"
     fi
   done
-  # Writable disks outside the tile directory need an explicit copy+rewrite. This
+  # Writable disks outside the station directory need an explicit copy+rewrite. This
   # closes the win98se/os2warp/reactos-style footgun for data-driven arms: a clone
   # must never attach a live writable qcow2 merely because its path was absolute.
   local spec src dst
@@ -120,7 +120,7 @@ build_clone_launcher() {
       cp --reflink=auto -f "$src" "$CLONE_DIR/$dst"
     fi
   done
-  # rewrite: (1) redirect ALL tile-dir paths (BASE/DISK/OVERLAY/qmp.sock/pidfile) to
+  # rewrite: (1) redirect ALL station-dir paths (BASE/DISK/OVERLAY/qmp.sock/pidfile) to
   # the clone dir; (2) rename -name to avoid confusion; (3) bump the guest hostfwd port
   # off the LIVE forward; (4) vmstate only -> neutralise -loadvm golden (COLD boot).
   sed -e "s#${TILE_DIR}#${CLONE_DIR}#g" \
@@ -240,12 +240,12 @@ main() {
     return 0
   fi
 
-  # 1. COLD LAUNCH the clone (vmstate: no loadvm; bridge: loadvm the kiosk golden).
+  # 1. COLD LAUNCH the clone (vmstate: no loadvm; bridge: loadvm the kiosk checkpoint).
   br_log "launching clone: $CLONE_LAUNCHER"
   bash "$CLONE_LAUNCHER" >>"$CLONE_DIR/launch.log" 2>&1 || br_die "clone launch failed (see $CLONE_DIR/launch.log)"
   br_wait_qmp "$CLONE_QMP" 80 || br_die "clone QMP never came up"
 
-  # A bridge clone resumes the kiosk golden. Stop the emulator before capture so
+  # A bridge clone resumes the kiosk checkpoint. Stop the emulator before capture so
   # the recorded first frame is its powered-off surface, not yesterday's desktop.
   if [ "$BR_BOOT_KIND" = "bridge" ] && [ -n "$BR_EMU_PREP_CMD" ]; then
     br_log "bridge: preparing powered-off emulator via ssh :$BR_EMU_SSH_PORT"
@@ -257,7 +257,7 @@ main() {
   # 2. START RECORDER (ffmpeg <- dbus tap).
   record_pipeline
 
-  # bridge tiles: the "cold boot" is the in-kiosk emulator — trigger it now, over the
+  # kiosks: the "cold boot" is the in-kiosk emulator — trigger it now, over the
   # clone's bumped ssh forward, so the visitor-visible power-on gets recorded.
   if [ "$BR_BOOT_KIND" = "bridge" ]; then
     [ -n "$BR_EMU_BOOT_CMD" ] || br_die "bridge tile missing BR_EMU_BOOT_CMD"
@@ -275,13 +275,13 @@ main() {
   # 3. DETECT interactive-reached (bounded by BR_MAX_MS).
   bash "$HERE/detect-interactive.sh" "$TILE" "$CLONE_QMP" "$CLONE_DIR/detect" || true
 
-  # 4. FREEZE at the settle frame; poster == last encoded video frame == golden 1st frame.
+  # 4. PAUSE at the settle frame; poster == last encoded video frame == checkpoint 1st frame.
   br_log "freeze: QMP stop"
   br_qmp "$CLONE_QMP" '{"execute":"stop"}' >/dev/null || br_die "QMP stop failed"
   br_screendump "$CLONE_QMP" "$POSTER_PNG" || br_die "poster screendump failed"
   ffmpeg -hide_banner -y -i "$POSTER_PNG" -qscale:v 3 "$POSTER_JPG" >/dev/null 2>&1 || br_die "poster.jpg failed"
 
-  # 5. BAKE (vmstate only): savevm golden ON THE PAUSED STATE (the §1.1 invariant).
+  # 5. CAPTURE (vmstate only): savevm golden ON THE PAUSED STATE (the §1.1 invariant).
   if [ "$BR_BOOT_KIND" = "vmstate" ]; then
     br_log "bake: delvm golden (ignore-if-absent) then savevm golden on the PAUSED VM"
     br_hmp "$CLONE_QMP" "delvm golden" >/dev/null 2>&1 || true

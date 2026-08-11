@@ -1,11 +1,11 @@
 # Sailfish OS GUI under plain QEMU — bochs-drm KMS injection (Option B)
 
-**Status: SOLVED and verified on-box 2026-07-04.** The real Lipstick (Wayland)
+**Status: SOLVED and verified on-labhost 2026-07-04.** The real Lipstick (Wayland)
 touch GUI now renders under plain QEMU (`-vga std`), no VirtualBox. Reproducible
 build: `scripts/build-guests/tiles/sailfishos-gui.sh`. This is a **merge hand-off** for
 the orchestrator — it does NOT edit any shared script.
 
-> **Current state:** the live gallery runs this as the streamhost tile
+> **Current state:** the live gallery runs this as the streamhost station
 > **`sailfishos`** — see its stanza in `streamhost/tiles-manifest.sh` (disk
 > `/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2`, `streamhost@sailfishos`).
 > The neko-era material below is historical: `gallery-integrate-all.sh` and the
@@ -13,21 +13,21 @@ the orchestrator — it does NOT edit any shared script.
 > neko-era, deleted in the 2026-07 restructure — git history. The Option-B KMS
 > recipe and `sailfishos.sh`/`sailfishos-gui.sh` remain the live build path.
 
-Companion: Appendix A below (the original text-console tile notes, formerly
+Companion: Appendix A below (the original text-console station notes, formerly
 `scripts/sailfish-tile-notes.md` [deleted — git history]).
 
 ---
 
 ## TL;DR
 
-The console-only tile failed because Lipstick's `eglfs_kms` needs `/dev/dri` and
+The console-only station failed because Lipstick's `eglfs_kms` needs `/dev/dri` and
 the stock 32-bit emulator kernel (`5.0.21-1.4.5.jolla`) has **no** QEMU-drivable
 DRM/KMS driver. Option B builds a matching **`bochs-drm.ko`** from Jolla's own
 kernel source, force-loads it into a COPY of the image, frees the framebuffer
 BAR, and unmasks Lipstick. Result: `/dev/dri/card0` appears, Lipstick composites
 in software (llvmpipe/`kms_swrast`) via `eglfs_kms`, and the USB-tablet +
-keyboard reach the UI. **The neko+QEMU tile args are identical to every other
-tile** — the fix is entirely inside the image.
+keyboard reach the UI. **The neko+QEMU station args are identical to every other
+station** — the fix is entirely inside the image.
 
 Verified evidence (test VM, VMID band 82x):
 - `/dev/dri/card0` present; `dmesg`: `Found bochs VGA, ID 0xb0c5` →
@@ -37,7 +37,7 @@ Verified evidence (test VM, VMID band 82x):
   `/usr/lib/dri/kms_swrast_dri.so` + `libqeglfs-kms-integration.so`.
 - Framebuffer screendump: Sailfish lock screen (ambience wallpaper + live
   clock). A QMP absolute-touch swipe produces a UI response (top-edge peek).
-- Golden image, live :8104 tile, VM 900/925 all untouched; pool FREE ~27 G.
+- Seed image, live :8104 station, VM 900/925 all untouched; pool FREE ~27 G.
 
 ---
 
@@ -75,7 +75,7 @@ driver is safe.
 
 ## 2. Module build (i386, out-of-tree)
 
-Host: Proxmox/Debian x86_64. Deps: `gcc-12 gcc-12-multilib flex bison
+Labhost: Proxmox/Debian x86_64. Deps: `gcc-12 gcc-12-multilib flex bison
 libelf-dev libssl-dev` (gcc-12 is friendlier to 5.0-era code than gcc-14).
 
     cp /boot/config-5.0.21-1.4.5.jolla  $KSRC/.config
@@ -89,7 +89,7 @@ libelf-dev libssl-dev` (gcc-12 is friendlier to 5.0-era code than gcc-14).
 
 ("Symbol version dump ./Module.symvers is missing" warning is expected and fine.)
 
-## 3. Injection into a COPY (never the golden)
+## 3. Injection into a COPY (never the seed)
 
 1. `install -D bochs-drm.ko /lib/modules/5.0.21-1.4.5.jolla/extra/` ; `depmod -b`
    (records the `bochs-drm → ttm` dependency).
@@ -104,7 +104,7 @@ libelf-dev libssl-dev` (gcc-12 is friendlier to 5.0-era code than gcc-14).
    `*ERROR* Cannot request framebuffer` → `probe ... failed with error -16`.
    Keep `console=tty0 console=ttyS0,115200n8` for the fb console.
 4. **Unmask lipstick** (`rm /etc/systemd/user/lipstick.service` → the console
-   tile symlinks it to `/dev/null`).
+   station symlinks it to `/dev/null`).
 5. Rewrite `/var/lib/environment/compositor/60-emul-wayland-ui.conf`:
    keep `LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=drm QT_QPA_PLATFORM=eglfs`, add
    `QT_QPA_EGLFS_INTEGRATION=eglfs_kms` and
@@ -115,7 +115,7 @@ libelf-dev libssl-dev` (gcc-12 is friendlier to 5.0-era code than gcc-14).
 
 ## 4. QEMU device args
 
-**No change from the console tile.** `-vga std` presents PCI `1234:1111`, exactly
+**No change from the console station.** `-vga std` presents PCI `1234:1111`, exactly
 what `bochs-drm` binds. (`-device bochs-display` would also work but needs
 `-vga none` and loses the early BIOS console — not worth it.) Full verify args:
 
@@ -127,25 +127,25 @@ what `bochs-drm` binds. (`-device bochs-display` would also work but needs
 
 ## 5. Gallery integration (clean fit)
 
-Same neko+QEMU tile as every other guest; only the **image path** and its baked
+Same neko+QEMU station as every other guest; only the **image path** and its captured
 cmdline change. Manifest row (advanced tier) — identical to the console row in
 Appendix A below except the disk path:
 
     GUEST_DISK=/guests/SailfishOS-gui/sailfishos-gui.qcow2
 
 No launch-qemu.sh edit, no OVMF, no extra services, no neko-RDP. The orchestrator
-can either (a) replace the console tile's image with the GUI image (drop-in), or
-(b) add a second tile. `-snapshot` keeps the image pristine per session.
+can either (a) replace the console station's image with the GUI image (drop-in), or
+(b) add a second station. `-snapshot` keeps the image pristine per session.
 
 ## 6. Loose ends / next polish (optional, non-blocking)
 
 - **RESOLVED — no-PIN auto-unlock + LIVE :8104 deployment (2026-07-04).** See
-  §8/§9 below. The tile now boots straight to the Lipstick home screen and touch
-  reaches the UI on the live tile (launcher pulls up under an injected drag).
+  §8/§9 below. The station now boots straight to the Lipstick home screen and touch
+  reaches the UI on the live station (launcher pulls up under an injected drag).
 - The autologin tty1 getty from the console build can stay (Lipstick takes DRM
   master); optionally disable `getty@tty1` for a perfectly clean handover.
-- Software rendering (llvmpipe) — smooth enough for a kiosk tile; expect modest
-  CPU while animating. Runs fine alongside the other tiles (KVM, one vCPU-ish of
+- Software rendering (llvmpipe) — smooth enough for a kiosk station; expect modest
+  CPU while animating. Runs fine alongside the other stations (KVM, one vCPU-ish of
   llvmpipe work under load).
 
 ## 7. What this unlocks for OTHER guests
@@ -175,7 +175,7 @@ PIN. It is dismissed by asking MCE to set `tklock=unlocked`:
       com.nokia.mce.request.req_tklock_mode_change string:unlocked
 
 `/etc/dbus-1/system.d/mce.conf` allows `req_tklock_mode_change` for the default
-context, so no privilege tricks are needed. Baked into the image (now part of
+context, so no privilege tricks are needed. Captured into the image (now part of
 `build-guests/tiles/sailfishos-gui.sh` `inject()` step 6):
 
 - `/usr/bin/sailfish-kiosk-autounlock.sh` — self-healing loop: every 3 s, if
@@ -188,20 +188,20 @@ context, so no privilege tricks are needed. Baked into the image (now part of
   runs *after* multi-user.target — the pending start job is dropped. Must be
   wanted by the same target it is ordered after.
 - `/etc/mce/61-kiosk-no-autolock.conf` — belt-and-suspenders: `tklock_autolock=0`,
-  `tklock_blank_disable=1`, blank/dim timeouts 0 (neko streams the tile forever).
+  `tklock_blank_disable=1`, blank/dim timeouts 0 (neko streams the station forever).
 
-Verified on the live tile: ~95 s after container start the neko screenshot shows
+Verified on the live station: ~95 s after container start the neko screenshot shows
 the Lipstick **home** (wallpaper + small top-bar clock + bottom launcher handle),
 no lockscreen, with zero manual intervention.
 
-## 9. LIVE :8104 tile now runs the GUI image — compose change to MERGE
+## 9. LIVE :8104 station now runs the GUI image — compose change to MERGE
 
-Done live on the host (2026-07-04). **Orchestrator: fold this into the canonical
+Done live on labhost (2026-07-04). **Orchestrator: fold this into the canonical
 manifest / `docker-compose.sailfishos.yml` so a fresh NVMe build is born this way.**
 
-- Deployed GUI image (patched + no-PIN): host
+- Deployed GUI image (patched + no-PIN): labhost
   `/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2`
-  (= container `/guests/SailfishOS/sailfishos-gui.qcow2`). The golden
+  (= container `/guests/SailfishOS/sailfishos-gui.qcow2`). The seed
   `/data/gallery-guests/SailfishOS/sailfishos.qcow2` is **untouched** (the GUI
   image is a copy of the Option-B build output `sfos-gui-work.820/
   sailfishos-copy.qcow2`, then offline-patched with the no-PIN service).
@@ -209,7 +209,7 @@ manifest / `docker-compose.sailfishos.yml` so a fresh NVMe build is born this wa
   only the one line changed —
       GUEST_DISK: "/guests/SailfishOS/sailfishos-gui.qcow2"   # was sailfishos.qcow2
   Backups left beside it: `docker-compose.sailfishos.yml.pre-gui.bak`.
-  All other env is **identical** to the console tile (`QEMU_VGA=std`, the same
+  All other env is **identical** to the console station (`QEMU_VGA=std`, the same
   `-vga std` + usb-xhci tablet/kbd + `-snapshot` QEMU_EXTRA). No launch-qemu.sh
   edit, no OVMF, no extra services.
 - **Recreate ONLY this service** with the SAME compose project name it already
@@ -217,30 +217,30 @@ manifest / `docker-compose.sailfishos.yml` so a fresh NVMe build is born this wa
   directory-default project name `osgallery` collides on port 8104:
       cd /opt/osgallery && docker compose -p osgallery-sailfish \
         -f docker-compose.sailfishos.yml up -d --force-recreate sailfishos
-- Live proofs (host `/data/gallery-guests/SailfishOS/`): `proof-live-8104-gui-home.jpg`
+- Live proofs (labhost `/data/gallery-guests/SailfishOS/`): `proof-live-8104-gui-home.jpg`
   (Lipstick home, auto-unlocked); `proof-live-8104-middrag.jpg` (launcher pulled
   up under an injected drag); `proof-live-8104-gui-home-final.jpg` (**the App Grid
   fully open with real app icons — Components, Settings — plus a Silica "Got it"
   tooltip**: unambiguous that injected touch reaches the live Lipstick UI).
-  Tile Up/healthy, `http://192.0.2.12:8104` → 200.
+  Station Up/healthy, `http://192.0.2.12:8104` → 200.
 - Neko screenshot API used for proofs (admin/admin):
   `POST /api/login {username,password}` → bearer token →
   `GET /api/room/screen/shot.jpg`.
 - Input note: neko-qemu runs QEMU `-display gtk,full-screen=on,zoom-to-fit=on` on
   X `:99` (1280x720); the guest framebuffer renders **1:1 in the top-left
   ~639x505** (letterboxed, black elsewhere — a pre-existing neko-qemu display
-  sizing trait, same as the console tile). Inject touch with `xdotool` on X `:99`
+  sizing trait, same as the console station). Inject touch with `xdotool` on X `:99`
   and keep coordinates **inside** that box (y<505); Sailfish edge gestures must
   start at the guest's own bottom edge (~y=502), and pace the drag (~60 ms/step)
   or the recognizer treats the burst as noise.
 
 ---
 
-<!-- APPENDIX A: merged from scripts/sailfish-tile-notes.md — the original text-console tile (superseded for GUI by the KMS recipe above) -->
+<!-- APPENDIX A: merged from scripts/sailfish-tile-notes.md — the original text-console station (superseded for GUI by the KMS recipe above) -->
 
-# SailfishOS gallery tile (:8104) — integration notes
+# SailfishOS gallery station (:8104) — integration notes
 
-Verified live on the dry-run box 2026-07-04. Written as a **merge hand-off** so the
+Verified live on the dry-run labhost 2026-07-04. Written as a **merge hand-off** so the
 orchestrator could reconcile `gallery-integrate-all.sh` (neko-era, deleted;
 concurrently edited by sibling agents at the time).
 
@@ -248,7 +248,7 @@ Reproducible image build: `scripts/build-guests/tiles/sailfishos.sh`.
 
 ---
 
-## TL;DR — what this tile is
+## TL;DR — what this station is
 
 - **Image**: Sailfish OS 5.1.0.11 "Pispala", the official **Sailfish SDK emulator**
   disk. Format **qcow2**, virtual 8 GiB (~374 MiB used), **32-bit x86 (i686)**,
@@ -257,9 +257,9 @@ Reproducible image build: `scripts/build-guests/tiles/sailfishos.sh`.
 - **The Lipstick (Wayland/touch) GUI does NOT render under QEMU** — this is a hard
   structural limit of the stock VirtualBox emulator image, not a mis-config
   (full root-cause in the `sailfishos.sh` header + "Why no GUI" below).
-- The tile therefore presents Sailfish as a **live, interactive text console**
+- The station therefore presents Sailfish as a **live, interactive text console**
   (autologin root shell, "Sailfish OS 5.1.0.11 (Pispala)" banner) on the
-  framebuffer — like the Alpine / TinyCore / FreeDOS console tiles. **Verified**:
+  framebuffer — like the Alpine / TinyCore / FreeDOS console stations. **Verified**:
   neko keyboard input reaches the shell and commands execute (`id`, `uname`
   rendered on the framebuffer via the neko admin screenshot API).
 
@@ -290,7 +290,7 @@ Field breakdown (pipe-delimited, same schema as the other rows):
 | extra | `-enable-kvm -cpu host -device qemu-xhci,id=xhci -device usb-tablet,bus=xhci.0 -device usb-kbd,bus=xhci.0 -netdev user,id=n0 -device e1000,netdev=n0 -snapshot` |
 | tier | `advanced` |
 
-And pin the published host port (EPR stays index-derived → collision-free):
+And pin the published labhost port (EPR stays index-derived → collision-free):
 
 ```sh
 declare -A FIXED_PORT=( [serenityos]=8102 [postmarketos]=8103 [sailfishos]=8104 )
@@ -301,17 +301,17 @@ intentionally ABSENT (renders black in plain QEMU)"* — it now renders a live
 interactive **console** (the black-screen was lipstick's eglfs crash + no fb
 getty; both fixed by `sailfishos.sh`).
 
-- `usb-tablet` = absolute pointer (kept for parity with the other mobile tiles);
-  `usb-kbd` → the tty1 autologin shell. `-snapshot` keeps the golden qcow2
+- `usb-tablet` = absolute pointer (kept for parity with the other mobile stations);
+  `usb-kbd` → the tty1 autologin shell. `-snapshot` keeps the seed qcow2
   pristine (ephemeral per-session, correct for a kiosk).
-- EPR for port 8104 in the running tile: **53280–53299** (free; next after
+- EPR for port 8104 in the running station: **53280–53299** (free; next after
   postmarketOS 53240–53259 / serenityos 53260–53279). When wired through
   `gallery-integrate-all.sh` (neko-era, deleted) the EPR was index-derived
   instead — either was fine.
 
 ## launch-qemu.sh change required: **NONE**
 
-This tile uses **only stock `launch-qemu.sh` env vars** (`GUEST_DISK/FMT/IF/BOOT`
+This station uses **only stock `launch-qemu.sh` env vars** (`GUEST_DISK/FMT/IF/BOOT`
 + `QEMU_VGA/MEM/SMP/MACHINE` + `QEMU_EXTRA`). **No OVMF** (BIOS/syslinux boot),
 no writable-overlay, no autologin-typer. So `osgallery/neko-qemu/launch-qemu.sh`
 does **not** need any edit for Sailfish — nothing to reconcile there.
@@ -320,7 +320,7 @@ does **not** need any edit for Sailfish — nothing to reconcile there.
 
 `scripts/build-guests/tiles/sailfishos.sh` produces
 `/data/gallery-guests/SailfishOS/sailfishos.qcow2` with three QEMU-compat patches
-baked in (idempotent, via `qemu-nbd`):
+captured in (idempotent, via `qemu-nbd`):
 
 1. **extlinux kernel append** → adds a framebuffer console + quiets kernel/audit
    spam: `console=tty0 console=ttyS0,115200n8 … quiet loglevel=3 audit=0`
@@ -331,22 +331,22 @@ baked in (idempotent, via `qemu-nbd`):
 3. **mask `lipstick.service`** (user unit → `/dev/null`) → stops the eglfs
    "Could not find DRM device" crash-loop (Restart=always) from burning CPU.
 
-The staged image on the box already carries these patches. A fresh NVMe rebuild
+The staged image on labhost already carries these patches. A fresh NVMe rebuild
 just re-runs `sailfishos.sh` (point it at the emulator VDI via `SFOS_VDI=` or an
 archive via `SFOS_EMULATOR_URL=`, or reuse an existing qcow2 with
 `SFOS_SKIP_DOWNLOAD=1`).
 
 ---
 
-## How the live tile is currently wired (concurrency-safe)
+## How the live station is currently wired (concurrency-safe)
 
 To avoid clobbering the sibling-edited `docker-compose.gallery-guests.yml`, the
-live :8104 tile runs as an **isolated compose project**:
+live :8104 station runs as an **isolated compose project**:
 
 - File (in CT 110): `/opt/osgallery/docker-compose.sailfishos.yml` (service
   `sailfishos`, image `neko-qemu:latest`, port `8104:8080`, EPR `53280-53299`,
   volume `./gallery-guests:/guests:ro`, `/dev/kvm`).
-- Brought up with a distinct project so it never touches other tiles:
+- Brought up with a distinct project so it never touches other stations:
   ```sh
   cd /opt/osgallery
   docker compose -p osgallery-sailfish -f docker-compose.sailfishos.yml up -d
@@ -400,12 +400,12 @@ live :8104 tile runs as an **isolated compose project**:
 
 # Sailfish OS — real Lipstick touch GUI via VirtualBox + VRDE (Option A)
 
-Status: **PROVEN on the dry-run box 2026-07-04.** The real Sailfish OS 5.1.0.11
+Status: **PROVEN on the dry-run labhost 2026-07-04.** The real Sailfish OS 5.1.0.11
 "Pispala" **Lipstick (Wayland/eglfs) touch GUI renders** when the emulator image
 runs under **VirtualBox** (its kernel has the `vboxvideo` DRM/KMS driver), and it
 is reachable as a normal **RDP** endpoint via VirtualBox **VRDE** — which slots
-straight into the gallery's existing **neko-RDP** tile pattern (the Windows 11
-tile). This is the fix for the `:8104` tile being only a text console under QEMU.
+straight into the gallery's existing **neko-RDP** station pattern (the Windows 11
+station). This is the fix for the `:8104` station being only a text console under QEMU.
 
 Reproducible driver: `scripts/build-guests/tiles/sailfishos-vbox.sh`
 (`prep | l1 | vbox | l2 | shot | nekotile | stop | all`) — the losing option,
@@ -413,7 +413,7 @@ neko-era, deleted in the 2026-07 restructure (git history); Option B (bochs-drm
 KMS, above) won and is the live path. This appendix is kept as the record of the
 nested-VirtualBox route.
 
-Framebuffer proofs (on the box under `/data/sfvbox-810/`, copies pulled to the
+Framebuffer proofs (on labhost under `/data/sfvbox-810/`, copies pulled to the
 session scratchpad):
 - `proof-lipstick-gui.png` — **the Lipstick lock screen** (ambience wallpaper +
   live clock "13:49 / Saturday 4 Jul"), captured with `VBoxManage controlvm sfos
@@ -438,24 +438,24 @@ full root cause.
 
 ## SAFETY / COEXISTENCE with the live KVM gallery (the critical question)
 
-**VirtualBox is NOT installed on the Proxmox host and never touches host VT-x.**
+**VirtualBox is NOT installed on labhost and never touches host VT-x.**
 It runs inside a **nested KVM VM**, so from L0's view the whole stack is just one
 more ordinary KVM guest:
 
 ```
-L0  Proxmox host (KVM, kvm_intel nested=Y)     <- VM 900/925 + LXC 110 gallery live here, UNTOUCHED
+L0  labhost (KVM, kvm_intel nested=Y)     <- VM 900/925 + LXC 110 gallery live here, UNTOUCHED
  └─ L1  Debian 12 VM   (VMID 810, raw qemu, -cpu host => nested vmx exposed)
       └─ VirtualBox 7.1.18  (vboxdrv built against the L1 kernel; uses NESTED VT-x inside L1)
            └─ L2  Sailfish emulator VM  (VBoxVGA -> vboxvideo -> Lipstick GUI)
-                └─ VRDE :3389 -> L1 hostfwd :6189 -> neko-rdp tile (CT 110)
+                └─ VRDE :3389 -> L1 hostfwd :6189 -> neko-rdp station (CT 110)
 ```
 
-- The dangerous host-level VBox-vs-KVM VT-x fight is **structurally avoided**:
+- The dangerous labhost-level VBox-vs-KVM VT-x fight is **structurally avoided**:
   VBox's `VMXON` happens in L1's virtual CPUs, which L0 KVM emulates as nested
-  VMX. VMs 900/925 keep their own vCPUs and host VT-x root state. **Verified: 900
+  VMX. VMs 900/925 keep their own vCPUs and labhost VT-x root state. **Verified: 900
   and 925 stayed `running` throughout build, boot, reboot, and VRDE.**
-- Requires host `kvm_intel nested=Y` (it is). The script hard-fails if not set.
-- Cost is real but bounded: L1 was given 10 GiB RAM / 6 vCPU (host has 125 GiB /
+- Requires labhost `kvm_intel nested=Y` (it is). The script hard-fails if not set.
+- Cost is real but bounded: L1 was given 10 GiB RAM / 6 vCPU (labhost has 125 GiB /
   16 threads, ~58 GiB free). Nested + software-GL boot to Lipstick is **slow
   (~150 s)** — fine for a persistent kiosk VM, not for cold-start-per-session.
 - Disk: whole stack ≈ 2.5 GiB on `data` (Debian 24 GiB thin ≈ 1.6 GiB used +
@@ -472,12 +472,12 @@ compositor, which Lipstick's fullscreen eglfs makes non-trivial.)
 
 ## Build recipe (what actually worked, incl. gotchas)
 
-### 1. Prepare a COPY of the golden qcow2 for native VBox boot
+### 1. Prepare a COPY of the seed qcow2 for native VBox boot
 `prep_disk()` (never touches `/data/gallery-guests/SailfishOS/`):
-- **unmask** `lipstick.service` (the QEMU tile masked it to stop a crash-loop;
+- **unmask** `lipstick.service` (the QEMU station masked it to stop a crash-loop;
   VBox needs it running) — `rm /etc/systemd/user/lipstick.service`.
 - **drop** the tty1 autologin getty override + `getty.target.wants` symlink the
-  QEMU tile added, so Lipstick owns the display/VT normally.
+  QEMU station added, so Lipstick owns the display/VT normally.
 - **restore native kernel append**: `ro root=/dev/sda1 console=tty0
   console=ttyS0,115200n8 rootfstype=ext4` (drop the forced `video=vesafb
   vga=792` so vboxvideo drives the display). Lipstick still modesets over the
@@ -531,23 +531,23 @@ VBoxManage startvm   sfos --type headless
 
 ---
 
-## Gallery integration — neko-RDP tile (mirrors the Windows 11 tile)
+## Gallery integration — neko-RDP station (mirrors the Windows 11 station)
 
-The Win11 tile is `neko-rdp:latest` driven by `RDP_HOST/RDP_PORT/RDP_USER/
+The Win11 station is `neko-rdp:latest` driven by `RDP_HOST/RDP_PORT/RDP_USER/
 RDP_PASS/RDP_RES` + `NEKO_EPR/NEKO_NAT1TO1/NEKO_ICELITE`. Sailfish plugs into the
 **same image and contract** — only the RDP target changes to the VRDE endpoint:
 
 ```sh
 # prototyped on scratch port 8109 (EPR 53300-53319) in CT 110, isolated
-# `docker run` — does NOT touch the live :8104 console tile or the main stack:
+# `docker run` — does NOT touch the live :8104 console station or the main stack:
 docker run -d --name osgallery-sfvbox-rdp \
   -e RDP_HOST=192.0.2.10 -e RDP_PORT=6189 -e RDP_USER= -e RDP_PASS= -e RDP_RES=1024x768 \
   -e NEKO_PASSWORD=neko -e NEKO_PASSWORD_ADMIN=admin \
   -e NEKO_EPR=53300-53319 -e NEKO_NAT1TO1=192.0.2.12 -e NEKO_ICELITE=true \
   -p 8109:8080 -p 53300-53319:53300-53319/udp neko-rdp:latest
 ```
-- `RDP_HOST=192.0.2.10` (Proxmox host) `:6189` = the L1 hostfwd to VRDE 3389.
-  For a permanent tile, give L1 its own bridged IP and point RDP_HOST there
+- `RDP_HOST=192.0.2.10` (labhost) `:6189` = the L1 hostfwd to VRDE 3389.
+  For a permanent station, give L1 its own bridged IP and point RDP_HOST there
   instead of relying on a user-net hostfwd.
 - `RDP_USER=/RDP_PASS=` empty because VRDE runs `--vrdeauthtype null`.
 - **Result:** xfreerdp3 completed the full RDP activation handshake (reached the
@@ -555,11 +555,11 @@ docker run -d --name osgallery-sfvbox-rdp \
   benign warning — VBox VRDP sends a 0-byte Font Map PDU that FreeRDP grumbles
   about but accepts). neko streamed the live VBox framebuffer (`neko-sfos.jpg`).
 
-**Integration verdict:** cleanest as a **neko-RDP tile** (same image as Win11),
-NOT a neko+QEMU tile. But unlike Win11 (whose RDP server is a separate always-on
+**Integration verdict:** cleanest as a **neko-RDP station** (same image as Win11),
+NOT a neko+QEMU station. But unlike Win11 (whose RDP server is a separate always-on
 Windows box), Sailfish's RDP server is *inside a VBox VM inside a nested KVM VM*
-— i.e. this tile carries an **extra L1 KVM VM per host** as a dependency, plus
-the PUEL ext-pack. It is a heavier, two-hypervisor stack than any other tile.
+— i.e. this station carries an **extra L1 KVM VM per labhost** as a dependency, plus
+the PUEL ext-pack. It is a heavier, two-hypervisor stack than any other station.
 
 ---
 
@@ -568,7 +568,7 @@ the PUEL ext-pack. It is a heavier, two-hypervisor stack than any other tile.
 - A scripted **end-to-end touch gesture** (swipe-to-unlock) through neko→RDP was
   not driven — neko v3 input is WebRTC-only and awkward to script via curl. What
   IS proven: the absolute-pointer device is enumerated in-guest, the VRDE INPUT
-  channel is up, and the neko-rdp session (the same path the Win11 tile uses for
+  channel is up, and the neko-rdp session (the same path the Win11 station uses for
   full mouse+keyboard) is established and streaming. Input reaching the shell is
   therefore expected to work exactly as it does for Win11; a manual browser click
   on `:8109` is the last confirmation step.
@@ -576,7 +576,7 @@ the PUEL ext-pack. It is a heavier, two-hypervisor stack than any other tile.
   L2 VM **persistent** (don't cold-start per viewer). `-snapshot`-style
   ephemerality would re-pay that cost each session.
 
-## Teardown (pidfile-only, no pkill on host)
+## Teardown (pidfile-only, no pkill on labhost)
 `sailfishos-vbox.sh stop` (neko-era, deleted) → `VBoxManage controlvm sfos poweroff` in L1, then
 `system_powerdown` via the L1 qemu monitor socket, fallback `kill $(cat l1.pid)`.
-Remove the scratch tile: `docker rm -f osgallery-sfvbox-rdp` in CT 110.
+Remove the scratch station: `docker rm -f osgallery-sfvbox-rdp` in CT 110.

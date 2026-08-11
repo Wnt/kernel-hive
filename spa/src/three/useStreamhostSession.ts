@@ -17,7 +17,7 @@ import { WebRtcFallbackClient } from './webRtcFallbackClient';
 //    - Firefox registers its visible canvas and paints directly on decode.
 //    - the control handle is the shared StreamControlHandle.
 //  Near-zero buffering by design: we render on decode output (no jitter buffer),
-//  and captureStream is damage-gated by canvas writes — idle tiles cost ~nothing.
+//  and captureStream is damage-gated by canvas writes — idle stations cost ~nothing.
 // ============================================================================
 
 type LivePhase = 'idle' | 'starting' | 'connecting' | 'live' | 'error';
@@ -48,9 +48,9 @@ export interface StreamSessionResult {
 //  Negotiation + session resilience
 //  ---------------------------------------------------------------------------
 //  The old code connected ONCE: any connect error failed immediately, and an
-//  idle tile that had not yet produced a keyframe simply spun forever (or the
+//  idle station that had not yet produced a keyframe simply spun forever (or the
 //  consumer fell back to the poster too eagerly). streamhost decodes on the FIRST
-//  keyframe, so a slow/idle tile can legitimately take a while to paint. We now:
+//  keyframe, so a slow/idle station can legitimately take a while to paint. We now:
 //    - give each attempt a generous KEYFRAME_WAIT budget for the first frame, and
 //    - RETRY the whole connect + keyframe-wait a few times with backoff before the
 //      first frame, and
@@ -129,7 +129,7 @@ export function useStreamhostSession(
     // Live guest resolution, kept current from decoded frame size for input scaling.
     const resolution: StreamResolution = { w: 0, h: 0 };
 
-    // Telemetry + operator commands (clientDebug): tag events with this tile and
+    // Telemetry + operator commands (clientDebug): tag events with this station and
     // run the /clientcmd poller while it is open. The snapshot hook reads the
     // CURRENT attempt's client (the closure variable is reassigned on retry).
     const debugTile = osId ?? signalEndpoint;
@@ -190,7 +190,7 @@ export function useStreamhostSession(
         try { frame.close(); } catch { /* noop */ }
         if (firstFrame && w > 0 && h > 0) firstFrame = false;
         // No MediaStream on this path — StreamView gates liveness on phase alone
-        // for streamhost tiles (see StreamView `live`). This is deliberately per
+        // for streamhost stations (see StreamView `live`). This is deliberately per
         // attempt: the replacement session's first frame returns the phase to live.
         markAttemptLive(w, h);
         return;
@@ -229,7 +229,7 @@ export function useStreamhostSession(
         try {
           // NO-ARG captureStream(): the browser captures a frame each time the canvas
           // is MODIFIED — and we only ever draw on decode output, so this stays
-          // damage-gated (idle tiles cost ~nothing) exactly like the old
+          // damage-gated (idle stations cost ~nothing) exactly like the old
           // captureStream(0)+requestFrame() design intended. Crucially it is the ONE
           // path that works in BOTH engines: captureStream(0) needs
           // track.requestFrame() to emit anything, and Firefox has NO requestFrame()
@@ -263,7 +263,7 @@ export function useStreamhostSession(
     const cleanup = () => {
       cancelled = true;
       clearTimers();
-      clearDebugTile(debugTile); // stop the cmd poller; events lose the tile tag
+      clearDebugTile(debugTile); // stop the cmd poller; events lose the station tag
       teardownAttempt();
       setControl(null);
       try { captureTrack?.stop(); } catch { /* noop */ }
@@ -283,7 +283,7 @@ export function useStreamhostSession(
       clearTimers();
       teardownAttempt();
       attempt++;
-      // Log every retry (don't hide it) so slow/idle-tile negotiation is diagnosable.
+      // Log every retry (don't hide it) so slow/idle-station negotiation is diagnosable.
       console.warn(`[streamhost] ${signalEndpoint} reconnect attempt ${attempt} — ${why}`);
       if (!liveReached && attempt >= MAX_INITIAL_ATTEMPTS) {
         fail('timed out negotiating tile stream (poster fallback)');
@@ -376,7 +376,7 @@ export function useStreamhostSession(
           ? 'Connecting to tile…'
           : `Reconnecting to tile… (attempt ${Math.max(1, attempt)})`);
 
-      // Keyframe watchdog: the transport can be connected yet an idle tile sends
+      // Keyframe watchdog: the transport can be connected yet an idle station sends
       // no keyframe. If frame #1 never lands within the budget, retry.
       watchdog = window.setTimeout(() => {
         // A terminal capability result can arrive while signaling is in flight.
@@ -390,7 +390,7 @@ export function useStreamhostSession(
       });
     };
 
-    // WebCodecs-less fallback. Every streamhost tile gets this platform path;
+    // WebCodecs-less fallback. Every streamhost station gets this platform path;
     // the client selects it solely by feature detection. WebCodecs-capable
     // browsers never execute this branch and stay on WebTransport unchanged.
     const startWebRtcFallback = async () => {
@@ -412,7 +412,7 @@ export function useStreamhostSession(
           }
           // The visible stream <video> is muted for autoplay parity with every
           // other path. Play the same MediaStream through a dedicated audio
-          // element so the bridge's Opus track is usable after the tile-opening
+          // element so the bridge's Opus track is usable after the station-opening
           // user gesture. A blocked autoplay is harmless and video stays live.
           fallbackAudio = document.createElement('audio');
           fallbackAudio.autoplay = true;

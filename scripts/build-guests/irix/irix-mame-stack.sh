@@ -2,7 +2,7 @@
 # The IRIX / SGI Indy MAME patch stack -- ONE authoritative ordered list.
 #
 # Source this, do not copy the list. Two build scripts consume it
-# (build-mame-irix.sh for the lab box, build-mame-macos.sh for a dev Mac) and
+# (build-mame-irix.sh for labhost, build-mame-macos.sh for a dev Mac) and
 # the whole point is that they cannot drift apart. A stale second copy of this
 # list is exactly what left `mame-taptun-ifname-env.patch` documented as
 # adopted while the shipped binary did not carry it, and the failure mode there
@@ -28,7 +28,7 @@
 # why the strip-dir column exists at all.
 #
 # DELIBERATELY NOT IN THE STACK:
-#   mame-indy-mips3-fastram.patch        BLOCKED. Under the tile's real command
+#   mame-indy-mips3-fastram.patch        BLOCKED. Under the station's real command
 #     line (`-ioc2:rs232a pty`) IRIX stops at "Memory diagnostic *FAILED* /
 #     Check or replace: SIMM S7" and never reaches the login chooser. The
 #     registration defect is diagnosed in docs/guests/irix.md; do not add this
@@ -37,7 +37,7 @@
 #     disproven as the cause of the black-screen boot hang and buys nothing.
 #   mame-drawshm.patch                   the DRIVER-AGNOSTIC `-video shm` OSD
 #     render module. Deliberately out of THIS stack and belongs in every OTHER
-#     MAME tile's build instead: irix already has the better producer for its
+#     MAME station's build instead: irix already has the better producer for its
 #     own machine (mame-newport-shm-framebuffer.patch publishes from the Newport
 #     device, where the whole-frame render cache hands it a damage flag for
 #     free, which a render-layer module cannot get). Adding it here would buy
@@ -73,8 +73,8 @@ IRIX_MAME_STACK=(
   # mamectl/1). FREESTANDING by design — it touches only files no other patch
   # in this stack touches (modules.lua, osdobj_common.cpp, save.cpp, plus its
   # own new src/osd/modules/ctlsock/), so it dry-run-applies on a pristine
-  # tree and any future MAME tile inherits it by adding this one line. Goes
-  # LAST so the 13 tile-specific patches above never have to rebase over it.
+  # tree and any future MAME station inherits it by adding this one line. Goes
+  # LAST so the 13 station-specific patches above never have to rebase over it.
   # NOTE: the module allocates one persistent timer UNCONDITIONALLY (9 save
   # entries) — adding or dropping this patch changes the savestate signature
   # and orphans the golden: rebake via scripts/coldboot/irix-record-boot.sh.

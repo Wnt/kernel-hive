@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/gt40.sh — build the DEC GT40 / VT11 "Lunar Lander" (1973)
-# streamhost tile as a thin overlay on the frozen bridge base
+# streamhost station as a thin overlay on the frozen bridge base
 # (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running Open SIMH's `pdp11` with the VT11
 #         vector display, executing the original 1973 GT40 Lunar Lander paper
 #         tape. streamhost captures the Linux framebuffer like every other
-#         bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+#         kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- THE ONE DEVIATION FROM THE OTHER BRIDGE TILES --------------------------
 #   The frozen bridge base ships five emulators and SIMH is not one of them, so
-#   this script BUILDS OPEN SIMH INTO THE TILE OVERLAY — the amiga.sh precedent.
+#   this script BUILDS OPEN SIMH INTO THE STATION OVERLAY — the amiga.sh precedent.
 #   Nothing else is needed: the base already carries gcc, make, git, libsdl2-dev,
 #   libpng-dev and libpcre2-dev, so `make pdp11` compiles with -DUSE_DISPLAY
 #   -DHAVE_LIBSDL -DUSE_SIM_VIDEO out of the box, in 90 s. docs/guests/gt40.md
@@ -30,13 +30,13 @@
 # ---- THE EXHIBIT: A MACHINE WITH NO KEYBOARD --------------------------------
 #   The Lunar Lander uses the light pen for EVERYTHING: the twelve-item telemetry
 #   menu, the four rotation arrows, the throttle bar you slide the pen along.
-#   lunar.txt documents no key at all, so this tile emits --pointer abs and NO
+#   lunar.txt documents no key at all, so this station emits --pointer abs and NO
 #   keyboard affordance. In Open SIMH the pen is mouse button 1 and nothing else
 #   (display/sim_ws.c ws_poll: `display_lp_sw = mev.b1_state`): it is on the
 #   glass only WHILE the button is held, at the position carried by that same
 #   event. A press IS the gesture; there is no hover.
 #
-# ---- MEASUREMENTS THIS SCRIPT ENCODES (all taken on the box, 2026-08-09) -----
+# ---- MEASUREMENTS THIS SCRIPT ENCODES (all taken on labhost, 2026-08-09) -----
 #   * `set vt crt=vr17` + `set vt hspace=narrow` — with vr14 the menu column is
 #     clipped mid-word (ALTITUD, FUEL LEF). vr17 at scale=1 is a fixed 1024x1024
 #     SDL window; xwininfo reports it at 1024x1024+128+0 on a 1280x1024 root, the
@@ -61,7 +61,7 @@
 #   the middle of somebody else's doomed trajectory.
 #
 # HYGIENE: thin overlay, namespaced qmp.sock/pidfile, kills only by pidfile,
-# idempotent, --force rebuilds. Touches ONLY the gt40 tile dir; refuses to run
+# idempotent, --force rebuilds. Touches ONLY the gt40 station dir; refuses to run
 # while streamhost@gt40 is active.  Usage: gt40.sh [--force] [-h]
 # =============================================================================
 set -euo pipefail
@@ -116,12 +116,12 @@ guest() {
 }
 hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
-# The GT40 kiosk launcher. Unlike every other bridge tile the core pointer is
+# The GT40 kiosk launcher. Unlike every other kiosk the core pointer is
 # LEFT VISIBLE and the root is painted black: the pen is the machine's only
 # input, and black root + black CRT read as one continuous screen.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# DEC GT40 / VT11 Lunar Lander kiosk launcher (bridge tile).
+# DEC GT40 / VT11 Lunar Lander kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/gt40.sh for the flag and measurement rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software
@@ -161,7 +161,7 @@ run
 EOS
 
 # Kiosk session profile. NOTE the missing -nocursor, which every other bridge
-# tile passes: this exhibit is pointer-only and the visitor needs to see where
+# station passes: this exhibit is pointer-only and the visitor needs to see where
 # the pen is. stdout stays on tty1 (the base's own rule; VICE dies without it
 # and SIMH has no reason to differ).
 read -r -d '' PROFILE <<'EOS' || true

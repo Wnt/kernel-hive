@@ -46,11 +46,13 @@ the lab box (`https://192.0.2.10:8443`).
 
 ## Data contract
 
-The app consumes a manifest of VMs. Without a live manifest source it falls
-back to the bundled mock (`src/mock/manifest.json`) with the identical schema;
-placard fields (era software, period browser, iconic apps, blurb) are enriched
-from the curated catalog in `src/data/catalog.ts` — real manifest data always
-wins.
+The app consumes a manifest of VMs, fetched at runtime from
+`/gallery-manifest.json` (rendered from `registry/tiles/*.json`; the dev server
+renders it per request, see `vite.config.ts`). Nothing is bundled as a fallback:
+a bundled copy could only be a stale second answer, so a failed fetch leaves the
+lineup empty and logs it. Placard fields (era software, period browser, iconic
+apps, blurb) ride in the same document; poster prose is a second runtime fetch
+of `/poster-docs.json`.
 
 ## Art pipeline
 

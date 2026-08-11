@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/star.sh — build the Xerox Star 8010 "Dandelion" +
-# Pilot / ViewPoint 2.0 streamhost tile as a thin overlay on the shared bridge
+# Pilot / ViewPoint 2.0 streamhost station as a thin overlay on the shared bridge
 # base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 bare-X kiosk running Darkstar — a C#/mono
 #         emulator of the REAL Xerox 8010 "Dandelion" workstation — booting
 #         Pilot and ViewPoint 2.0 off a 1990 rigid-disk image. streamhost
-#         captures the Linux framebuffer exactly like every other tile.
+#         captures the Linux framebuffer exactly like every other station.
 #         SILENT exhibit: the 8010 has no sound hardware and Darkstar emulates
 #         none.
-# TYPE  : "emulator bridge" tile (see streamhost/docs/BRIDGE.md). Overlay + a
-#         per-tile /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
+# TYPE  : "emulator bridge" station (see streamhost/docs/BRIDGE.md). Overlay + a
+#         per-station /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
 #
-# SIBLING, NOT DUPLICATE, of the `daybreak` tile: that is the 1985 Xerox 6085
+# SIBLING, NOT DUPLICATE, of the `daybreak` station: that is the 1985 Xerox 6085
 # under Dwarf/Draco (Java). THIS is the 1981 8010 itself — the first machine
 # ever sold with a desktop, icons, folders and a mouse — under a different
 # emulator, from different media.
@@ -46,7 +46,7 @@
 #   * POINTER IS RELATIVE, and that is correct rather than a compromise.
 #     Darkstar has no absolute path at all: DWindow-IO computes
 #     `dx = x - DisplayBox.Width/2`, feeds IOP.Mouse.MouseMove(dx,dy) and warps
-#     the host pointer back to the centre. So the tile runs the same
+#     the host pointer back to the centre. So the station runs the same
 #     `SH_POINTER=rel` / no-usb-tablet / `vmport=off` device set as c64, qnx and
 #     nt351: streamhost differences the absolute browser sample and injects
 #     bounded, paced PS/2 deltas. `xset m 1 0` disables X pointer acceleration
@@ -60,7 +60,7 @@
 #     docs/guests/star.md.
 #   * `xdotool windowclose` is NOT a clean exit for Darkstar and SILENTLY
 #     DISCARDS the disk image — the image is written only from
-#     Program.cs -> system.Shutdown() -> _hardDrive.Save(). For this tile that
+#     Program.cs -> system.Shutdown() -> _hardDrive.Save(). For this station that
 #     is moot (the golden is a QEMU RAM+device snapshot), but any script that
 #     wants the .img must drive System -> Exit and wait for the process to go.
 #   * ACCEPTANCE is a REAL framebuffer screenshot of the ViewPoint desktop —
@@ -68,10 +68,10 @@
 #
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by
 # pidfile, idempotent, --force to rebuild the overlay. Touches ONLY the star
-# tile dir.
+# station dir.
 #
 # Usage:  star.sh [--force] [--bake] [-h]
-#   --bake  bake the golden of the ALREADY RUNNING tile and prove it restores
+#   --bake  bake the golden of the ALREADY RUNNING station and prove it restores
 #           (lib/bridge-bake-golden). Boot it under its OWN qemu-streamhost.sh
 #           first: a golden taken under a different device set will not loadvm.
 # =============================================================================
@@ -126,7 +126,7 @@ esac done
 log() { echo "[star $(date +%H:%M:%S)] $*"; }
 guest() { ssh -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"; }
 
-# ---- boot the tile QEMU (exact device set; conditional -loadvm golden) -------
+# ---- boot the station QEMU (exact device set; conditional -loadvm golden) -------
 # NO usb-tablet and vmport=off: the Star's mouse is relative, so QEMU must
 # present the plain PS/2 mouse and must not let the VMware-mouse handler absorb
 # the REL events first (the c64 lesson, docs/guests/c64.md).
@@ -226,7 +226,7 @@ REMOTE
 install_config() {
   log "writing star.cfg, /etc/bridge/launch.sh and the -nocursor kiosk profile ..."
   guest "cat > ${MEDIA_DIR}/run/star.cfg" <<PROPS
-# Xerox 8010 "Dandelion" running Pilot + ViewPoint 2.0 — gallery tile.
+# Xerox 8010 "Dandelion" running Pilot + ViewPoint 2.0 — gallery station.
 MemorySize = 0x400
 HostID = 0x0000aa012345
 HardDriveImage = ${MEDIA_DIR}/run/vp20.img
@@ -285,10 +285,10 @@ for _ in $(seq 1 120); do
     # ARM THE MOUSE. Darkstar does not track the pointer until the display has
     # been clicked once ("Click on the display to capture mouse/keyboard" in its
     # status bar): that click turns on the SDL grab and the relative-motion path
-    # the whole tile depends on. Do it here, with real dwell, so the capture is
+    # the whole station depends on. Do it here, with real dwell, so the capture is
     # already armed inside the golden and no visitor spends their first click
     # buying it. NOTE the other half of the same switch: EITHER Alt key RELEASES
-    # the capture, which is why the tile remaps both Alt scancodes away
+    # the capture, which is why the station remaps both Alt scancodes away
     # (SH_KEY_REMAP in tile.env.fixture).
     sleep 3
     xdotool mousemove 544 430 2>/dev/null || true
@@ -336,7 +336,7 @@ fi
 EOS
 
   # stardrv: the bake-time / operator driver, baked into the overlay so the
-  # timings Darkstar needs live WITH the tile instead of in someone's shell
+  # timings Darkstar needs live WITH the station instead of in someone's shell
   # history. See docs/guests/star.md.
   guest "cat > /usr/local/bin/stardrv; chmod +x /usr/local/bin/stardrv" <<'DRV'
 #!/bin/bash

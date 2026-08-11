@@ -210,7 +210,7 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'CBM 8032', spec: '32K • 80 COL • 1980', kit: 'eightBit',
   },
   // Cream business case; the accent is the 610's own phosphor, sampled from the
-  // live tile's framebuffer — a different green from the 8032's, which is part
+  // live station's framebuffer — a different green from the 8032's, which is part
   // of how the two are told apart.
   cbm2: {
     caseTint: '#cdc4ae', accentTint: '#55d544', tintMix: 0.42,
@@ -228,7 +228,7 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#8e9491', accentTint: '#3be84b', tintMix: 0.38,
     badge: 'PDP-11/05 GT40', spec: 'VT11 VECTOR • 1973', kit: 'workstation',
   },
-  // DEC cabinet grey-blue; the accent is the phosphor the tile actually draws
+  // DEC cabinet grey-blue; the accent is the phosphor the station actually draws
   // in, not a colour the gallery chose.
   decos: {
     caseTint: '#5c6470', accentTint: '#33ff55', tintMix: 0.44,
@@ -248,7 +248,7 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'ZX81', spec: '1 KB • MONO • 1981', kit: 'eightBit',
   },
   // Welsh-built beige, and the accent is the machine's own page colour — the
-  // MC6847's bright green, sampled from this tile's framebuffer at #30d200
+  // MC6847's bright green, sampled from this station's framebuffer at #30d200
   // rather than picked. It is the loudest screen in the collection and it is
   // Acorn's cream-beige, and the accent is the one flash of colour on the case:
   // the row of ten RED function keys along the top of the Model B's keyboard.
@@ -272,7 +272,7 @@ export const EXHIBIT_IDENTITIES = {
   },
   // Anthracite plastic, the colour East German industrial equipment was
   // actually moulded in, and nothing like the beige of every Western machine
-  // beside it. The accent is not chosen: a ppmhist of the tile's own golden
+  // beside it. The accent is not chosen: a ppmhist of the station's own checkpoint
   // frame contains exactly TWO colours, RGB(0,0,160) and white, so #0000A0 is
   // literally the only colour this exhibit emits.
   kc854: {
@@ -294,10 +294,10 @@ export const EXHIBIT_IDENTITIES = {
   },
   // Acorn's cream-beige again, because the case IS a BBC Micro — but the accent
   // is not bbcmicro's red function-key row, it is SAMPLED. A ppmhist of this
-  // tile's baked golden contains exactly three colours: black, white, and pure
+  // station's captured checkpoint contains exactly three colours: black, white, and pure
   // RGB(0,0,255), the reverse-video teletext field behind the ARM supervisor's
   // `A*` prompt. That blue is literally the only colour the exhibit emits, and
-  // it is also the bake-time identity gate — a plain BBC Micro banner has zero
+  // it is also the capture-time identity gate — a plain BBC Micro banner has zero
   // blue pixels — so it is the honest badge colour for "there is an ARM on the
   // other end of the Tube".
   armeval: {
@@ -324,7 +324,7 @@ export const EXHIBIT_IDENTITIES = {
   // The 8010 shipped in the earlier, warmer Xerox office grey — closer to putty
   // than the cooler shell the 6085 arrived in four years later. The accent is a
   // brighter Xerox red than its successor's, which also keeps the two Xerox
-  // tiles distinguishable at a glance on the rail.
+  // stations distinguishable at a glance on the rail.
   star: {
     caseTint: '#d5cec1', accentTint: '#d6001c', tintMix: 0.34,
     badge: 'XEROX 8010', spec: 'DANDELION • VIEWPOINT 2.0 • 1981', kit: 'workstation',

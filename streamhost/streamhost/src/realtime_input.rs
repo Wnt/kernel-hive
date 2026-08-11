@@ -55,7 +55,7 @@ pub struct PointerAbs {
 }
 
 // The KeyEvent/try_key path mirrors try_pointer_abs one-for-one. input.rs::handle()
-// routes type=3 records here for the `mamecmd`/`mamesock` backends (the IRIX tile,
+// routes type=3 records here for the `mamecmd`/`mamesock` backends (the IRIX station,
 // whose guest has no D-Bus connection to inject over); every other backend still
 // takes the classic dbus/warpd key path, so the QEMU fleet is untouched. `repeat` is carried
 // but unused by the sinks today — both let the guest auto-repeat from the held key.
@@ -269,7 +269,7 @@ impl Drop for GalleryHidSink {
 /// `/restore` must exclude the process-local gallery socket from `loadvm`.
 /// SIGUSR1 pauses (and closes) the backend; SIGUSR2 resumes a fresh GHIN/GHOK
 /// handshake after QEMU has loaded the device state. Ordinary input never uses
-/// these signals, and non-gallery tiles never construct this task.
+/// these signals, and non-gallery stations never construct this task.
 async fn gallery_control_signals(shared: Arc<GalleryShared>) {
     use tokio::signal::unix::{signal, SignalKind};
 

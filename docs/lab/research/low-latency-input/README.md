@@ -1,7 +1,7 @@
 # Low-latency guest input — research index
 
 Investigation into cutting host→guest pointer/keyboard latency for the six
-"warpd" tiles (solariscde, ninefront, win95/win98se, win311, os2warp,
+"warpd" stations (solariscde, ninefront, win95/win98se, win311, os2warp,
 templeos), which at the time relied on a usermode TCP/ASCII input agent
 competing for CPU inside old, poorly-preemptive guests. Dated 2026-07-15/16;
 research/planning only — no live-lab change is made by these documents
@@ -19,7 +19,7 @@ applies to one OS or one cross-cutting concern.
   Verdict: **design complete, implementation GO, fleet rollout conditional.**
 - [`measurement-and-host.md`](measurement-and-host.md) — the measurement
   harness and streamhost-side integration plan. Verdict: **GO** for the
-  harness, **conditional per tile** for the new device path.
+  harness, **conditional per station** for the new device path.
 
 ## Per-OS plans
 

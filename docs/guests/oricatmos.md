@@ -1,18 +1,18 @@
-# Oric Atmos (1984) — gallery tile notes (udp/54131)
+# Oric Atmos (1984) — gallery station notes (udp/54131)
 
 **Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **MAME's `orica`
 driver**, emulating an **Oric Atmos** at its own power-on screen. An
-**"emulator bridge"** tile — streamhost captures the Linux framebuffer + AC97
-audio exactly like every other tile. See **`streamhost/docs/BRIDGE.md`**.
+**"emulator bridge"** kiosk — streamhost captures the Linux framebuffer + AC97
+audio exactly like every other station. See **`streamhost/docs/BRIDGE.md`**.
 
-**Shared base:** `/data/vms/bridge/bridge-base-trixie.qcow2` (frozen, read-only;
-the tile is a thin qcow2 overlay on it — migrated off the bookworm base on
+**Shared seed:** `/data/vms/bridge/bridge-base-trixie.qcow2` (frozen, read-only;
+the station is a thin qcow2 overlay on it — migrated off the bookworm seed on
 2026-08-10, wave 2 of [`../lab/BRIDGE-TRIXIE-MIGRATION.md`](../lab/BRIDGE-TRIXIE-MIGRATION.md)).
-**Build script (tile):** `scripts/build-guests/tiles/oricatmos.sh` — thin overlay +
-ROM staging + kiosk `launch.sh` + quiet console + golden bake + a
+**Build script (station):** `scripts/build-guests/tiles/oricatmos.sh` — thin overlay +
+ROM staging + kiosk `launch.sh` + quiet console + checkpoint capture + a
 framebuffer-asserted keyboard proof, fully automated.
 **Emulator build:** `scripts/build-guests/emulators/build-mame-oricatmos.sh`.
-**Tile dir (host):** `/data/vms/streamhost/tiles/oricatmos/`.
+**Station dir (labhost):** `/data/vms/streamhost/tiles/oricatmos/`.
 **Registry entry:** `registry/tiles/oricatmos.json` (slot 131, udp 54131,
 VMID 234, ssh hostfwd 127.0.0.1:5834).
 
@@ -22,7 +22,7 @@ VMID 234, ssh hostfwd 127.0.0.1:5834).
   `ORIC EXTENDED BASIC V1.1`, `(c) 1983 TANGERINE`, `37631 BYTES FREE`,
   `Ready` — black on a white page filling an 800×600 root, with the machine's
   own `CAPS` marker in the top-right corner.
-- **Reset:** `loadvm` of the INTERNAL `golden` snapshot. No post-restore keys.
+- **Reset:** `loadvm` of the INTERNAL `golden` checkpoint. No post-restore keys.
 - **Pointer:** none. Keyboard-only exhibit (`--pointer none
   --input-backend disabled`, X started with `-nocursor`).
 - **Login:** none inside the emulated machine; the kiosk's own root SSH is on
@@ -47,25 +47,25 @@ under an `orica/` prefix — `oric1.zip` from the archive.org item
 is 406 KB rather than a 20 GB set. The zip is checked by sha256 and the
 extracted ROM by sha1 before either is used.
 
-The `oric1` PARENT is a different matter and is **not** what this tile runs:
+The `oric1` PARENT is a different matter and is **not** what this station runs:
 MAME 0.276+ wants `basic10uk.rom` for it, which post-dates the 0.224-era set.
-The Oric-1 is a placard on this tile's poster, not a second exhibit.
+The Oric-1 is a placard on this station's poster, not a second exhibit.
 
 ## The emulator, and why it is built rather than installed
 
 The emulator runs **inside the guest**, and a romset is only meaningful against
-**one** binary — so the binary is pinned rather than installed. When this tile
+**one** binary — so the binary is pinned rather than installed. When this station
 was added the guest was Debian 12 and the argument was also an ABI one; since
 the 2026-08-10 migration guest and host are both Debian 13, and what survives is
 the pin. Neither packaged option works:
 
 | Candidate | Version | Why not |
 |---|---|---|
-| lab host `/usr/games/mame` | 0.276 (Debian **trixie**) | not the pin the romset was assembled against |
+| labhost `/usr/games/mame` | 0.276 (Debian **trixie**) | not the pin the romset was assembled against |
 | guest `apt install mame` | whatever the suite froze | not a version anybody chose |
 | suite backports | — | has no `mame` package at all (checked 2026-08-09) |
 
-So the tile does what `mpf2` does: **MAME 0.289** (tag `mame0289`, commit
+So the station does what `mpf2` does: **MAME 0.289** (tag `mame0289`, commit
 `f34f02505e32c1993c6a782b6814232cbfc74e36` — the latest stable release, and the
 same commit the MPF-II tile ships), built in the shared **trixie** chroot with
 `SUBTARGET=oricatmos SOURCES=src/mame/tangerine/oric.cpp`, which keeps the
@@ -123,7 +123,7 @@ the captured frame edge to edge with no black surround.
 
 **Which 4:3 root was decided by measurement, not taste.** MAME's software blit
 dominates the tile's cost, and a 6502 at 1 MHz cannot earn the frame rate back.
-Measured in the guest, `-prescale 2 -nofilter`, 8 s each, with the box at load
+Measured in the guest, `-prescale 2 -nofilter`, 8 s each, with labhost at load
 ~75:
 
 | X root | emulated speed |
@@ -140,39 +140,39 @@ is nearly free — it is all blit.)
 
 - **Do not force `-resolution 240x224`.** That is the pixel count, not the
   picture's shape — the trap the MPF-II add fell into.
-- **The launcher re-asserts the mode itself.** The bridge base's `.xinitrc` asks
+- **The launcher re-asserts the mode itself.** The bridge seed's `.xinitrc` asks
   for 1024×768 and was observed here not to get it (the root stayed at 1280×800),
-  and X geometry is part of what the golden captures.
+  and X geometry is part of what the checkpoint captures.
 - `-prescale 2` renders 480×448 before the final scale, and measured faster than
   both `-prescale 1` (68 %) and `-prescale 3` (63 %) at this root; `-nofilter`
   keeps the text crisp.
-- **Any change to the launcher or the X geometry invalidates the golden.**
-  Re-bake it, or reset restores the old layout and the fix looks like it did
+- **Any change to the launcher or the X geometry invalidates the checkpoint.**
+  Recapture it, or reset restores the old layout and the fix looks like it did
   nothing.
 
-## The fixture
+## The scene
 
-The golden is **the machine's own untouched power-on screen**. Nothing is
+The checkpoint is **the machine's own untouched power-on screen**. Nothing is
 curated into it, nothing is typed into it, and no post-restore keys are sent.
-That is the Plus/4 lesson applied up front: a golden baked inside an application
+That is the Plus/4 lesson applied up front: a checkpoint captured inside an application
 drops a visitor into the middle of something with no idea what it is or how to
 leave.
 
-The builder's keyboard proof therefore runs **after** the bake, against the
-restored fixture, and finishes with a `loadvm golden` — so nothing it types can
-reach the snapshot. It types `PRINT 6502*7` and requires new ink on the screen;
+The builder's keyboard proof therefore runs **after** the capture, against the
+restored scene, and finishes with a `loadvm golden` — so nothing it types can
+reach the checkpoint. It types `PRINT 6502*7` and requires new ink on the screen;
 an assertion that merely said "the framebuffer changed" would also pass on a
 blinking cursor.
 
 ## Keyboard: the auto-repeat trap, then the pacing
 
-**The biggest thing this tile learned is not a pacing constant. It is that X's
+**The biggest thing this station learned is not a pacing constant. It is that X's
 typematic auto-repeat must be OFF in a kiosk driven by synthetic keys.**
 
 Every key this exhibit ever sees is an injected press/release pair. When the
-release is delivered late — and on a box running thirty emulators it sometimes
+release is delivered late — and on labhost running thirty emulators it sometimes
 is — X starts repeating the key that is still "held". Measured here on
-2026-08-09 with repeat on (the bridge base's default), the demo listing's line
+2026-08-09 with repeat on (the bridge seed's default), the demo listing's line
 40 arrived as
 
 ```
@@ -185,22 +185,22 @@ one of the following characters landed, and it stayed deaf until the next
 turn like frame quantisation, host starvation and an emulator freeze; it was
 none of them. `xset r off` in `/etc/bridge/launch.sh` fixes it, and the same
 listing then arrives byte-perfect (`evidence/demo-typein-listing.png`). The
-setting is part of the golden — the tile was re-baked after it was added.
+setting is part of the checkpoint — the station was recaptured after it was added.
 
-Two corollaries worth carrying to the next bridge tile:
+Two corollaries worth carrying to the next kiosk:
 
 - an emulation that keeps rendering while ignoring keys is not frozen, and the
   guest kernel's `/proc/interrupts` i8042 counter is the cheap way to prove
   QEMU delivered the keys (it did, every time);
-- the other X-hosted bridge tiles run with auto-repeat on and may have the same
-  latent fault. It is not fixed here for them, because their goldens capture
-  their X state and would each need re-baking.
+- the other X-hosted kiosks run with auto-repeat on and may have the same
+  latent fault. It is not fixed here for them, because their checkpoints capture
+  their X state and would each need recapturing.
 
 ### Then the pacing
 
 MAME samples the emulated keyboard matrix once per emulated frame. At
 50.080128 Hz that is 19.97 ms, so the frame-derived two-frame floor is 40/40.
-Bisected on this tile (40-character line, 10 trials per rung, auto-repeat off),
+Bisected on this station (40-character line, 10 trials per rung, auto-repeat off),
 comparing each frame against a known-good complete render — the blinking cursor
 costs exactly one 1260-byte cell and a dropped character costs about 3000:
 
@@ -217,27 +217,27 @@ opposite of the vic20 result — which is also why
 its reference at 250/250 and then reports every rung as corrupt against a
 reference that is itself broken.
 
-The tile ships **80/80** anyway: it is what every other 50 Hz tile in the fleet
+The station ships **80/80** anyway: it is what every other 50 Hz station in the fleet
 uses, it is four frames of margin, and it measured no worse than the floor.
 `spa.demoProgram.perCharMs` is **160** to match — `validate_demo_pacing` in
-`scripts/tiles-registry.py` fails the build if the SPA's typist would outrun the
-tile's drain rate. The whole 105-character listing types and `RUN`s correctly at
+`scripts/tiles-registry.py` fails the build if the UI's typist would outrun the
+station's drain rate. The whole 105-character listing types and `RUN`s correctly at
 those values (`evidence/demo-typein-listing.png`, `evidence/demo-typein-run.png`).
 
 **No `SH_KEY_MAP` is needed.** MAME maps the host's PC keys onto the Oric matrix
-by position and the Atmos layout is ASCII-shaped, so the SPA's US set1 scancodes
+by position and the Atmos layout is ASCII-shaped, so the UI's US set1 scancodes
 arrive as the characters they print. The machine boots in CAPS — it says so in
 the top-right corner — so typed lower case reaches BASIC as upper case.
 
 **MAME's UI keys are off** because `orica` emulates a full 59-key keyboard: a
 visitor pressing Tab gets the Oric's key, not MAME's menu. The MPF-II's
 `scroll_lock` sandwich exists for the same reason and is not needed here,
-because this tile sends no post-restore keys at all.
+because this station sends no post-restore keys at all.
 
-**A tile with no viewer is idle-paused, and a paused guest swallows every key.**
+**A station with no viewer is idle-paused, and a paused guest swallows every key.**
 `[idle] no sessions for 60s -> guest paused` in the journal is normal; `labctl`
 resumes automatically, and a bare QMP harness must send `cont` itself. Forty
-characters typed at a paused tile land as nothing at all, which reads exactly
+characters typed at a paused station land as nothing at all, which reads exactly
 like a broken keyboard.
 
 ## Operating and verification
@@ -255,7 +255,7 @@ doing.
 
 ## Rollback
 
-The golden lives INSIDE `overlay.qcow2`; never delete or recreate that file.
+The checkpoint lives INSIDE `overlay.qcow2`; never delete or recreate that file.
 To rebuild from scratch, `oricatmos.sh --force` (which refuses to run while
-`streamhost@oricatmos` is active) replaces the overlay and re-bakes. The frozen
-base is never written.
+`streamhost@oricatmos` is active) replaces the overlay and recaptures. The frozen
+seed is never written.

@@ -143,7 +143,7 @@ pub(super) async fn run(
         let mut last_gen: u64 = u64::MAX;
         let last_reconfig = out.reconfig_gen.load(Ordering::Relaxed);
         // KEYFRAME-ON-CONNECT (join fix, 2026-07-11): last key_req value that has
-        // been ANSWERED with a forced IDR. On a busy tile (constant damage) the
+        // been ANSWERED with a forced IDR. On a busy station (constant damage) the
         // wake loop below always breaks out via `damaged` before it ever reports
         // `kicked`, so a joiner's request_keyframe() used to produce NO keyframe
         // at all — the client sat on a stale primed key + broken-reference deltas
@@ -167,7 +167,7 @@ pub(super) async fn run(
             // wait still polls every 2 ms (no damage Notify missed, ABR reconfig
             // within ~2 ms, encode-thread death surfaces fast). UNWATCHED it
             // widens to 50 ms — the old always-2 ms poll cost ~500 wakeups/s per
-            // tile 24/7 (~1.2% of a core each, plus sys% across 28 daemons).
+            // station 24/7 (~1.2% of a core each, plus sys% across 28 daemons).
             // Connects do NOT pay the 50 ms: request_keyframe() pulses
             // `out.wake` (permit-storing notify_one), which the select below
             // completes on immediately.

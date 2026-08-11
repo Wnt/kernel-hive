@@ -3,12 +3,12 @@
 Status: **OS INSTALLED, 2026-08-10 — see §9.** The §7 experiment ran to
 completion: Windows 2000 RC2 Alpha reaches a desktop, survives an unattended
 cold boot with the clock pinned, and the timebomb is quantified. No registry
-entry exists yet; tile integration is the remaining work. §§1–8 below are the
+entry exists yet; station integration is the remaining work. §§1–8 below are the
 original 2026-08-09 feasibility study, kept as written.
 
-**Verdict: FEASIBLE-WITH-CAVEATS, Tier 3. One tile — `w2kalpha`, Windows 2000
+**Verdict: FEASIBLE-WITH-CAVEATS, Tier 3. One station — `w2kalpha`, Windows 2000
 RC2 for Alpha.** The emulator question is settled affirmatively *by experiment on
-the box*: the backend was built, ARC/AlphaBIOS flashed, and Windows 2000 RC2
+labhost*: the backend was built, ARC/AlphaBIOS flashed, and Windows 2000 RC2
 driven into its file-copy phase, every step framebuffer-proven. The caveats are
 a slow install, a pre-release **timebomb**, and a permanently busy core.
 
@@ -120,14 +120,14 @@ operator-local decision is whether the gallery is comfortable exhibiting a leake
 build at all — the existing OS/2, Win9x and Kickstart stance covers
 preservation-class material, and this is a step beyond it.
 
-## 4. One tile, not two
+## 4. One station, not two
 
 **`w2kalpha` (Windows 2000 RC2 for Alpha).**
 
 - The museum story is unique to it: **the last Alpha build Microsoft ever
   released**, a shipped product that never shipped. NT 4.0 Alpha is "NT 4, but
   Alpha" — a fact the placard states and the screen does not.
-- Both would need separate goldens but share device set, backend, ARC firmware
+- Both would need separate checkpoints but share device set, backend, ARC firmware
   and boot path. With `nt4` and `win2000` already on the wall, adding both Alpha
   versions puts **four near-identical NT-family desktops** in the lineup.
 - **NT 4.0 is the safer fallback, not the primary:** es40 rates NT4 as plainly
@@ -154,33 +154,33 @@ the run stopped before it). Expect `winver` → `5.00.2128` and System Propertie
 naming the 21264 as the only in-desktop tell.
 
 **So the exhibit's value is in the first 60 seconds, not the desktop** — which is
-awkward, because a tile's idle screen is a *steady state*. Hence the one design
-decision that determines whether this tile is worth building:
+awkward, because a station's idle screen is a *steady state*. Hence the one design
+decision that determines whether this station is worth building:
 
-> **Bake the golden at the AlphaBIOS screen**, not the desktop. Then `reset`
+> **Capture the checkpoint at the AlphaBIOS screen**, not the desktop. Then `reset`
 > returns a visitor to the COMPAQ AlphaServer splash and the exhibit carries
 > itself. This is exactly the `plus4` move (`10ae428`, "bake the golden at the
 > machine's power-on screen") — and note it is *not* the pattern the operator
-> rejected there, which was baking **inside an application**. A firmware screen
+> rejected there, which was capturing **inside an application**. A firmware screen
 > is the machine's own power-on state.
 
 ## 6. Cost
 
 - **Tier 3**, bridge/captured-X shape: the es40 SDL3 window inside a Debian-X
-  kiosk, built into the tile overlay (the `amiga.sh`/FS-UAE precedent) because
+  kiosk, built into the station overlay (the `amiga.sh`/FS-UAE precedent) because
   es40 is not in the frozen `bridge-base.qcow2`. It needs **SDL3, which bookworm
-  lacks** — the bridge base's Debian version must be checked. **UNVERIFIED.**
+  lacks** — the bridge seed's Debian version must be checked. **UNVERIFIED.**
 - **~330–390 MB RSS for es40 and ~101 % CPU — one core saturated
   continuously.** It does not idle down the way a QEMU guest does. With the
-  kiosk, expect ~1.3–1.8 GB total: in line with other bridge tiles, but with a
+  kiosk, expect ~1.3–1.8 GB total: in line with other kiosks, but with a
   **permanently busy core**. That is the real capacity cost and the strongest
-  argument for keeping this to one tile.
+  argument for keeping this to one station.
 - **Install time 4–10 hours, not the ~20 minutes upstream claims.** Measured
   2 % → 8 % → 12 % over ~35 min and decelerating. Three fixable causes: **ASMJIT
   was off** (es40's autoconf/cmake path defaults it off; changelog claims ~2.5×),
   the CD was on **ALi IDE/ATAPI** where upstream uses Symbios SCSI, and the host
   carried load 12–17 from other lab work.
-- **Reset:** the kiosk qcow2's `loadvm golden` works as for other bridge tiles;
+- **Reset:** the kiosk qcow2's `loadvm golden` works as for other kiosks;
   es40's `flash.rom` and disk image live inside that snapshot, so visitor writes
   and any dirty-shutdown chkdsk vanish on reset.
 - **Input:** keyboard proven. Pointer untested — es40 has a mouse with a
@@ -191,14 +191,14 @@ decision that determines whether this tile is worth building:
 
 ## 7. Biggest risk, and the experiment that retires it
 
-**Risk:** the install completes but the tile is not viable in steady state —
+**Risk:** the install completes but the station is not viable in steady state —
 the timebomb refuses to boot on a wall in 2026, the GUI phase stalls on a key or
 driver, or the desktop is indistinguishable from `win2000` and the exhibit
 collapses to a placard.
 
 **One unattended session, ~4 h wall clock, no babysitting:** rebuild es40 **with
 ASMJIT enabled**, move the CD to the **Symbios SCSI** controller, set
-`time = "1999-11-01"`, and run the install to completion on a quiesced host.
+`time = "1999-11-01"`, and run the install to completion on quiesced labhost.
 Screenshot three things: the finished desktop, `winver`, and a **fresh cold boot
 with the clock pinned**. Those three frames answer the timebomb, the GUI phase
 and the "is it visibly Alpha" question at once — and if the last answer is "no",
@@ -215,7 +215,7 @@ Museum does catalogue **NT 4 for MIPS** as a working installation
 ([`vom-reference.md`](vom-reference.md)). PowerPC NT (PReP) is the third option
 and the least supported anywhere.
 
-Evidence: `/data/vms/soltest/ALPHA-nt/` on the box (1.1 GB, inert) — es40
+Evidence: `/data/vms/soltest/ALPHA-nt/` on labhost (1.1 GB, inert) — es40
 source and binaries, the four media files, the flashed `rom/flash.rom`, the
 partial install image, and screenshots `shot1`–`shot39`.
 
@@ -279,7 +279,7 @@ unattended re-install is the wrong tool). The Alpha answer-file path
 - Fork exists: **github.com/Wnt/es40**, pinned at upstream tip `a9bda96` +
   asmjit `0bd5787`. Zero source patches so far — everything above is config.
   Source edits go onto the fork as commits (operator: no .patch files).
-- Kiosk/bridge wrapping, SDL3-on-trixie base check (§6), golden bake at the
+- Kiosk/bridge wrapping, SDL3-on-trixie base check (§6), checkpoint capture at the
   AlphaBIOS screen (§5) — unchanged, still the plan.
 
 ## 10. Optimization session, 2026-08-11 — profiling, benchmark harness, input
@@ -328,7 +328,7 @@ the script.
 `jit_hw_mtpr` (PAL traffic from the NT idle loop), ~15% software TLB
 (`FindTBEntry` + `virt2phys` + `get_icache`), ~3% VGA repaint. JIT codegen is
 NOT the bottleneck — the C++ around it is. (Idle-sleep itself is a non-goal
-for the tile: the exhibit pauses when unwatched; operator 2026-08-11.)
+for the station: the exhibit pauses when unwatched; operator 2026-08-11.)
 
 **During boot** (`/tmp/es40-boot.perf.data`, SRM phase): ~30% of samples in
 the media-hotswap polling machinery — `CFloppyController::check_state()`
@@ -340,10 +340,10 @@ just to find the mailbox empty. `pthread_mutex_lock` 9% + `cfree` 9% +
 
 ### Optimization queue (each to be A/B'd with the bench)
 
-**Priority reframe (operator, 2026-08-11):** the gallery tile will sit in
-instant-resume (desktop visible, `loadvm golden` restore < 5 s), so visitors
+**Priority reframe (operator, 2026-08-11):** the gallery station will sit in
+instant-ready (desktop visible, `loadvm golden` restore < 5 s), so visitors
 never watch it boot. Boot-phase wins are *operator velocity* (bench A/B
-loops, golden re-bakes); the visitor-facing metric is **interactive
+loops, checkpoint recaptures); the visitor-facing metric is **interactive
 responsiveness at the desktop** — weight the idle profile (#2, #3) over the
 boot profile.
 
@@ -392,15 +392,15 @@ stale objects are ABI-broken — clean rebuild after pulling this commit.
 ### A/B №2 — `-O3` (2026-08-11): +2.4%, adopted
 
 3 interleaved `--until desktop` runs per arm vs the fast-flag `-O2` build,
-pre-quiesce epoch, binary-sha-verified. Kernel 151.0→147.3 s (zero overlap
-between arms), desktop −2.3%, es40 CPU −2.8%. Adopted: configure on the box
+pre-pause epoch, binary-sha-verified. Kernel 151.0→147.3 s (zero overlap
+between arms), desktop −2.3%, es40 CPU −2.8%. Adopted: configure on labhost
 now bakes `-O3` (`CXXFLAGS="-g -O3"` at configure time). LTO/PGO remain
 open as separate experiments.
 
 ### A/B №3 — TLB per-page hint (2026-08-11): NULL, reverted
 
 Verified hint cache in front of `FindTBEntry`'s linear scan. Boot A/B (3
-**concurrent pairs**, post-quiesce epoch): paired CPU deltas +0.6/−0.3/−0.5 s
+**concurrent pairs**, post-pause epoch): paired CPU deltas +0.6/−0.3/−0.5 s
 on ~200 s — noise. Paired 60 s idle-at-desktop perf profiles: FindTBEntry
 absent above 1% in both arms, `virt2phys` identical 3.7% — with `-O3`
 inlining the scan is no longer a measurable cost. Patch parked on fork
@@ -408,11 +408,11 @@ branch `tlb-hint-experimental` with the null result in the commit message.
 Fresh idle shape (the real #2 target): `execute` ~21%, `jit_run` ~14%,
 `jit_hw_mtpr` ~9%, `jit_read` ~8–10%.
 
-### Epochs, quiesce, and the AlphaBIOS NVRAM fix (2026-08-11)
+### Epochs, pause, and the AlphaBIOS NVRAM fix (2026-08-11)
 
-Host quiesced on operator's order (52 tile units stopped, debridge
+labhost paused on operator's order (52 station units stopped, debridge
 experiment + openvms killed; restore list
-`bench/../quiesced-units-20260811.txt`; k3s untouched). Quiet host + turbo
+`bench/../quiesced-units-20260811.txt`; k3s untouched). Quiet labhost + turbo
 moved desktop runs 250→180 s on identical binaries — **bench numbers are
 epoch-bound; only compare within an epoch** (governor already
 `performance`, turbo on). A/B arms now run as concurrent slot pairs to
@@ -432,7 +432,7 @@ Operator-set goal: a heavy scripted UI interaction (Computer Management
 launch — MMC + snap-ins, disk IO + CPU) in HALF the baseline time,
 framebuffer-timed, repeatable. Result: **24.4 s (n=7 baseline) → 10.30 s
 ± 0.25 (n=8) = 2.37×**, fork commit `0e22e9f`, every iteration a full
-cold boot from the identical m4-warm golden disk.
+cold boot from the identical m4-warm seed disk.
 
 The road there (all measured, `uibench/` harness + JIT_STATS builds):
 
@@ -470,7 +470,7 @@ iterations, A/B-valid; clean up at next guest session).
 
 Emulator/guest tuning research digested in
 [`es40-tuning-research.md`](es40-tuning-research.md) — headline items:
-JIT large pages already active on this box (THP `madvise`); remove
+JIT large pages already active on labhost (THP `madvise`); remove
 `ali_usb` for W2K guests (known System-process USB-poll burn); `idle_nap`
 exists upstream for WTINT; savestate format is same-build-only raw struct
 dumps with the JIT cache deliberately excluded (restore-then-recompile is

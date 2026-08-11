@@ -19,7 +19,7 @@ served:
 Credentials are referenced only as `guest/openvms`; their values do not belong
 in Git, screenshots, serial logs, or build output.
 
-The X server guest is an overlay on the pinned Debian bridge base:
+The X server guest is an overlay on the pinned Debian bridge seed:
 
 ```sh
 scripts/build-guests/lib/bridge-base.sh
@@ -32,11 +32,11 @@ and emits
 `/data/gallery-guests/OpenVMS/openvms-decwindows-bridge.qcow2`. The backing
 file `/data/vms/bridge/bridge-base.qcow2` remains frozen. The OpenVMS builder
 invokes this bridge builder as its final stage, so the normal `build-all.sh`
-OpenVMS row produces the complete three-disk tile.
+OpenVMS row produces the complete three-disk station.
 
 ## Two-VM display architecture
 
-One tile is intentionally two independent QEMU processes:
+One station is intentionally two independent QEMU processes:
 
 1. The captured bridge is Debian, 768 MiB, one vCPU, standard VGA, QEMU D-Bus
    display, E1000, and `usb-tablet`. Its root client only disables blanking,
@@ -62,10 +62,10 @@ Streamhost captures the bridge's 1024x768 D-Bus scanout. Keyboard and
 absolute coordinates enter that QEMU; the bridge's USB tablet gives identity
 mapping with scale 1 and zero offsets.
 
-## DECwindows fixture and pre-connect bake
+## DECwindows fixture and pre-connect capture
 
 `streamhost/tiles/openvms/DECW_FIXTURE.COM` is copied into the OpenVMS system
-disk during the clone-only bake. It creates display 610:
+disk during the clone-only capture. It creates display 610:
 
 ```text
 SET DISPLAY/CREATE/NODE=10.0.2.2/TRANSPORT=TCPIP/SERVER=610/SCREEN=0
@@ -77,7 +77,7 @@ a positioned DECterm. VUE supplies the visible FileView desktop.
 
 The proven 2026 image contains the byte-identical procedure under its original
 lab name, `LEANX_FIXTURE.COM`; `DECW_FIXTURE.COM` is the stable repository and
-future-bake name.
+future-capture name.
 
 The snapshot `leanx-preconnect` must be taken while:
 
@@ -86,10 +86,10 @@ The snapshot `leanx-preconnect` must be taken while:
 - the tracked command procedure exists and is executing its initial `WAIT`;
 - `SET DISPLAY` has not run and no live X socket exists.
 
-A reproducible bake uses copies of both OpenVMS qcow2 files in a guarded
+A reproducible capture uses copies of both OpenVMS qcow2 files in a guarded
 `/data/vms/soltest/openvms-<unique>/` namespace:
 
-1. Boot the exact OpenVMS device set from its existing logged-in fixture.
+1. Boot the exact OpenVMS device set from its existing logged-in checkpoint.
 2. Create `SYS$LOGIN:DECW_FIXTURE.COM` from the tracked file without printing
    credentials or command history into host logs.
 3. Start it in the foreground and pause in its initial wait.
@@ -107,7 +107,7 @@ absent.
 launcher. A pidfile-owned supervisor starts the bridge, gates on the private
 X11 listener, restores a fresh OpenVMS QEMU from `leanx-preconnect`, and owns
 both child QEMUs. Terminating the recorded supervisor reaps both children.
-The captured bridge QMP socket remains the conventional tile path
+The captured bridge QMP socket remains the conventional station path
 `qmp.sock`; OpenVMS control uses `openvms-qmp.sock`.
 
 Warm `loadvm` is unusable after the desktop has connected: it restores dead
@@ -132,14 +132,14 @@ changed. Framebuffer acceptance requires:
 - keyboard echo visible in DECterm;
 - cursor-local changes at 20%, 50%, and 80% of both axes;
 - a dirty marker removed by a cold restart, with all apps remapped;
-- a browser-decoded SPA frame matching the captured bridge QMP frame.
+- a browser-decoded UI frame matching the captured bridge QMP frame.
 
 Save PPM and PNG evidence beneath the clone's `evidence/` directory. After a
-green clone, back up the whole live tile directory and
+green clone, back up the whole live station directory and
 `registry/tiles/openvms.json` to a timestamped rollback directory before
 installing the three qcow2 artifacts and generated runtime files.
 
 If any live framebuffer, keyboard, pointer, or reset check fails, stop only
 `streamhost@openvms`, restore that backup, regenerate the registry and labctl
-matrix, and restart the old service. No other tile shares the disks, sockets,
+matrix, and restart the old service. No other station shares the disks, sockets,
 ports, or processes.

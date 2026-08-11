@@ -25,14 +25,14 @@ fix it".
 ## What was measured
 
 Four runs, all on the shipped binary (`0db27300…`) and, except where noted, the
-shipped golden `irix65-apps-v3.chd`, with the production flag set (`-video none`
+shipped seed `irix65-apps-v3.chd`, with the production flag set (`-video none`
 + shm publish, `-sound none`, `-frameskip 6`, the shipped `irixagent.lua`) plus
 `-nothrottle` and one console getty line. Windows are cut **within** each run
 from that run's own emulated-time trace; nothing is differenced across runs.
 
 | run | pair | what it is |
 |---|---|---|
-| r1 | 3,11 | **null control.** No terminal is ever started. Eleven windows over 17 minutes. (Golden `v3-serial`, `f8c67f03…`.) |
+| r1 | 3,11 | **null control.** No terminal is ever started. Eleven windows over 17 minutes. (Seed `v3-serial`, `f8c67f03…`.) |
 | r5 | 6,14 | scroll, then the terminal is **killed**; eight idle windows over ~13 minutes |
 | r6 | 3,11 | same, and after `post4` an xwsh is **reopened and left idle** on the desktop for `post5`–`post8` |
 | r2/r3/r4 | — | discarded before any window was believed; see "three ways this rig lied" |
@@ -149,14 +149,14 @@ post window.
 Recorded because each one produced a plausible, wrong run, and the next person
 to drive this guest over a serial console will hit all three.
 
-1. **The v3-serial golden's in-guest exec agent does not answer.** `irixexec.py`
+1. **The v3-serial seed's in-guest exec agent does not answer.** `irixexec.py`
    times out on `PING` on `/dev/pts/*` for that image. The console getty on
-   `/dev/ttyd1` (`-ioc2:rs232b pty`) does answer, on the *shipped* v3 golden,
+   `/dev/ttyd1` (`-ioc2:rs232b pty`) does answer, on the *shipped* v3 seed,
    which is strictly better fidelity anyway.
 2. **The emulated IOC2 UART drops characters on a whole-line write.**
    `PATH=/usr/bin:/usr/sbin:...` arrived in the guest as
    `PATH/u/b:/usr/bi/sn:sr/bsd/u/e:$TH` and the shell answered `not found`.
-   Short lines (`root`) survive, which is why the bake channel never hit it.
+   Short lines (`root`) survive, which is why the capture channel never hit it.
    The fix is a 20 ms per-character gap (`CSEND_GAP`). Note the two directions
    fail differently: with pacing, **input is clean and output is still lossy**,
    so commands are reliable and their captured output is not — which is why
@@ -183,8 +183,8 @@ disarms nothing.
 - **`foreign%` is not optional.** The one number that moved speed by 40 points
   in these runs was occupancy of the claimed core pair. Any A/B that does not
   assert it is not a measurement.
-- **Nothing to fix, so nothing was changed in the emulator or the tile.** The
-  live tile service stayed stopped throughout; `/data/vms/streamhost/` was read
+- **Nothing to fix, so nothing was changed in the emulator or the station.** The
+  live station service stayed stopped throughout; `/data/vms/streamhost/` was read
   only to this work.
 
 Evidence, raw: `/data/vms/soltest/slowstate-7c1d/run/{r1,r5,r6}/` — `perf.csv`,

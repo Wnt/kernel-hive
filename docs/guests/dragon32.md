@@ -1,17 +1,17 @@
-# Dragon 32 (PAL) — gallery tile notes (udp/54130)
+# Dragon 32 (PAL) — gallery station notes (udp/54130)
 
-Live streamhost **bridge** tile: a captured Debian 13 (trixie) X kiosk runs MAME's
+Live streamhost **kiosk**: a captured Debian 13 (trixie) X kiosk runs MAME's
 `dragon32` driver, and streamhost captures the Linux framebuffer + AC97 audio
-exactly as it does for every other tile. Reset is `loadvm golden` on an
-INTERNAL qcow2 snapshot inside a thin overlay on the frozen shared bridge base.
+exactly as it does for every other station. Reset is `loadvm golden` on an
+INTERNAL qcow2 snapshot inside a thin overlay on the frozen shared bridge seed.
 
 | | |
 |---|---|
-| tile dir / SPA id | `dragon32` (no alias) |
+| station dir / UI id | `dragon32` (no alias) |
 | VMID label / UDP | 233 / 54130 |
 | ssh (host-side) | `127.0.0.1:5833`, key `/data/vms/bridge/bridge_key` |
 | guest RAM | 768 MB |
-| X root | 1024×768 (bridge base stock) |
+| X root | 1024×768 (bridge seed stock) |
 | emulator | MAME 0.289, `SUBTARGET=dragon`, `/opt/dragon32/mame/dragon` |
 | builder | `scripts/build-guests/tiles/dragon32.sh` (+ `build-mame-dragon32.sh`) |
 | pointer | none — keyboard-only exhibit |
@@ -42,7 +42,7 @@ OK
 remembering.** It verifies the DEFAULT slot configuration, so it fails with
 `ddos10.rom NOT FOUND (tried in dragon_fdc dragon32)` — it demands the very ROM
 that produces the wrong screen, and a romset that satisfies it is a romset that
-boots wrong. Measured on the box 2026-08-09, identically under MAME 0.276 and
+boots wrong. Measured on labhost 2026-08-09, identically under MAME 0.276 and
 the shipped 0.289:
 
 | invocation | result |
@@ -60,7 +60,7 @@ saying so.
 
 The two candidate screens are the *same two greens* and differ only in how much
 text is on them, so a whole-frame pixel histogram is not a discriminator. Every
-capture (cold boot, pre-bake, post-restore) must pass both of these.
+capture (cold boot, pre-capture, post-restore) must pass both of these.
 
 **1. OCR.**
 
@@ -77,7 +77,7 @@ The **40 %** is measured, not guessed: the MC6847's page sits at luma 138 in
 QEMU's dump and its text at 73 (the border is 42), so 40 % of full scale
 separates them; at 50 % the page is swallowed too and tesseract reads nothing at
 all. The token list is short for a harder reason — tesseract mangles this blocky
-font *differently between MAME builds*. Observed on the same fixture: `16K` →
+font *differently between MAME builds*. Observed on the same scene: `16K` →
 `16E` and `LTD` → `LTO` under 0.251, `BASIC` → `EFASIC`,
 `INTERPRETER` → `INTERFRETER` and even `DRAGON` → `DRAGOHW` under 0.289. A gate
 resting on a glyph tesseract happens to read today fails a correct exhibit
@@ -120,11 +120,11 @@ The rest of a merged `dragon32.zip` (the Dragon 64 / 200 / Alpha clone ROMs and
 
 ## MAME binary provenance
 
-Neither the guest suite's packaged MAME nor the lab host's 0.276 is a pin anyone
+Neither the guest suite's packaged MAME nor labhost's 0.276 is a pin anyone
 chose, and a romset is only meaningful against one binary. `build-mame-dragon32.sh`
 builds MAME **0.289** (`SUBTARGET=dragon SOURCES=src/mame/trs/dragon.cpp`) in the
 **trixie** chroot at commit `f34f02505e32c1993c6a782b6814232cbfc74e36` — the same
-commit the mpf2 tile ships, so the gallery runs one MAME version across both of
+commit the mpf2 station ships, so the gallery runs one MAME version across both of
 its MAME exhibits rather than two that drift.
 
 Unlike mpf2's, this binary is **pristine upstream**. mpf2 needs
@@ -143,13 +143,13 @@ runtime libraries only; its 0.251 binary is never launched. The builder asserts
 
 The Dragon draws 372×293 at 49.97 Hz (MC6847 PAL, including its overscan
 border). MAME runs fullscreen with `-keepaspect -prescale 2 -nofilter -video
-soft` on the bridge base's stock 1024×768 root. 1024×768 is 4:3, so the picture
+soft` on the bridge seed's stock 1024×768 root. 1024×768 is 4:3, so the picture
 fills the whole root and the dark surround a visitor sees is the **Dragon's own
 border**, not letterboxing. Do not pin `-resolution 372x293`: that is the pixel
 count, not the picture's shape, and it strands a small strip in a black root —
 the mistake mpf2 made first.
 
-Any change to the launcher or the X geometry invalidates the golden. Re-bake it.
+Any change to the launcher or the X geometry invalidates the checkpoint. Recapture it.
 
 ## Keyboard
 
@@ -188,26 +188,26 @@ Two encoding details that bit during the add:
   `:` are therefore percent-encoded (`keymap_escape` in
   `scripts/tiles-registry.py`, `keymap_unescape` in `scripts/labctl`), so the
   shipped value reads `…,%3A:-,*:_,+:%3A,…`. The KC 85/4 add hit the same wall
-  from the German side in the same wave; this tile adopts that mechanism rather
+  from the German side in the same wave; this station adopts that mechanism rather
   than inventing a second one.
 - **`SH_KEY_MAP` must not *begin* with a quote** — systemd's `EnvironmentFile`
   parser would read the value as a quoted string. `@:[` therefore leads the map.
   Verified with `systemd-run -p EnvironmentFile=…` that the whole value, `"`
   included, survives intact, and again against `/proc/<MainPID>/environ` on the
-  live tile.
+  live station.
 
 ## Keyboard pacing
 
 49.97 Hz → a 20.01 ms frame, so the frame-derived two-frame floor is 40/40. The
-floor is not the answer: the residual loss this box shows is a **host
+floor is not the answer: the residual loss labhost shows is a **host
 scheduling** stall rather than frame quantisation, and it does not scale with
 the frame period (the vic20 add established this the hard way).
 
-Bisected on a namespaced clone of this tile with
+Bisected on a namespaced clone of this station with
 `scripts/dev/emu-key-pacing-bisect.py`, 10 trials of a 40-character line at each
-pacing, 2026-08-09 — **under heavy contention** (box load average ~75, a MAME
-compile and several sibling tile builds in flight), which makes the numbers a
-conservative worst case rather than a quiet-box best case:
+pacing, 2026-08-09 — **under heavy contention** (labhost load average ~75, a MAME
+compile and several sibling station builds in flight), which makes the numbers a
+conservative worst case rather than a quiet-labhost best case:
 
 | hold / gap | lines corrupted (of 10, 40 chars each) |
 |---|---|
@@ -233,7 +233,7 @@ Two other things moved the numbers, and both are worth knowing:
 - **The shipped binary is much cheaper than Debian's.** Measured in the kiosk on
   the same frame, MAME 0.251 from the distro burns ~110 % of a vCPU and 322 MB
   RSS; the pinned 0.289 `SUBTARGET=dragon` build burns ~48 % and 170 MB. Under
-  0.251 even 80/80 lost characters in 7 lines of 10. Key loss on this tile is a
+  0.251 even 80/80 lost characters in 7 lines of 10. Key loss on this station is a
   CPU-starvation symptom, so making the emulator cheaper is a real fix and not
   only a tidiness one.
 - **`-prescale 2` is load-bearing, not cosmetic.** Removing it (i.e. MAME's
@@ -245,31 +245,31 @@ vic20/plus4/c128. The registry declares `demoProgram.perCharMs: 170`, above the
 160 ms drain rate those two knobs impose; `validate_demo_pacing` in
 `scripts/tiles-registry.py` fails the build if they ever disagree.
 
-## Golden fixture
+## Checkpoint scene
 
 `resetMode: loadvm`, snapshot `golden`, inside `overlay.qcow2`. It holds X
 (`-nocursor`) plus MAME at the Dragon's **untouched power-on screen**. The
 picture fills the root: the frame the MC6847 draws is 372×293 *including* its
 overscan border, so at this scale the 256×192 text page is about 700×505 and
 everything around it is the machine's own border colour, not letterbox black. Nothing
-is curated and nothing is typed before the bake, and there are no post-restore
+is curated and nothing is typed before the capture, and there are no post-restore
 keys.
 
 That is deliberate and it is the Plus/4's lesson applied before it could be
-repeated: a golden baked inside an application was rejected on the exhibit floor
+repeated: a checkpoint captured inside an application was rejected on the exhibit floor
 because a visitor arrived in the middle of something with no idea what it was or
-how to leave. Affordances belong in the SPA's on-screen keyboard around an
+how to leave. Affordances belong in the UI's on-screen keyboard around an
 honest idle screen — here, a BREAK and a CLEAR button and a type-in listing.
 
-The keyboard proof runs **after** the bake, against the restored fixture, so
-nothing it types can reach the golden: it sends `PRINT 3*7` and requires `21`
+The keyboard proof runs **after** the capture, against the restored scene, so
+nothing it types can reach the checkpoint: it sends `PRINT 3*7` and requires `21`
 on the screen. That also proves the shifted matrix, since `*` is Shift+the key a
 PC labels `-`; an assertion on "the framebuffer changed" would have passed with
 every shifted key wrong.
 
 ## Verification (2026-08-09)
 
-All on the box, MAME 0.289, tile `dragon32`, in the order the builder runs them.
+All on labhost, MAME 0.289, station `dragon32`, in the order the builder runs them.
 Framebuffer dumps are in `/data/vms/streamhost/tiles/dragon32/evidence/`.
 
 | check | result |
@@ -278,8 +278,8 @@ Framebuffer dumps are in `/data/vms/streamhost/tiles/dragon32/evidence/`.
 | `-verifyroms dragon32` | `romset dragon32 is bad` — `ddos10.rom NOT FOUND`. Recorded, **not** used as a gate |
 | cold boot → banner | `evidence/ready-before-golden.png`, OCR + banner-ink verified |
 | `savevm golden` | snapshot present in `overlay.qcow2` |
-| `loadvm golden` → banner | `evidence/golden-restored.png`, identical fixture |
-| keyboard, after the bake | `PRINT 3*7` → `21` (`evidence/keyboard-print-3x7.png`) |
+| `loadvm golden` → banner | `evidence/golden-restored.png`, identical scene |
+| keyboard, after the capture | `PRINT 3*7` → `21` (`evidence/keyboard-print-3x7.png`) |
 | restore after the keyboard proof | `evidence/golden-restored-after-keyboard.png` |
 | service | `streamhost@dragon32` active; `LISTENING udp/54130 tile=dragon32 audio=true`; first frame 1024x768 |
 | pacing env reached the daemon | `SH_KEY_MIN_HOLD_MS=80`, `SH_KEY_MIN_GAP_MS=80`, `SH_KEY_MAP=@:[,":@,…` all present in `/proc/<MainPID>/environ` |
@@ -288,14 +288,14 @@ Framebuffer dumps are in `/data/vms/streamhost/tiles/dragon32/evidence/`.
 
 ## Cold boot and rollback
 
-Cold boot reaches the same screen the golden holds, so a boot clip would hand
+Cold boot reaches the same screen the checkpoint holds, so a boot clip would hand
 off cleanly; `scripts/coldboot/dragon32-zero-input-prep.md` and the `dragon32)`
 arm in `bootrec-tiles.conf` record the audit. No clip is published and
 `spa.bootVideo` is unset.
 
-Rollback: the overlay is a thin file on the frozen shared base and the golden
+Rollback: the overlay is a thin file on the frozen shared base and the checkpoint
 lives inside it. To rebuild from scratch, stop `streamhost@dragon32`, run
-`scripts/build-guests/tiles/dragon32.sh --force` (which stops only this tile, replaces
-the overlay and re-bakes), then re-emit. Nothing outside
+`scripts/build-guests/tiles/dragon32.sh --force` (which stops only this station, replaces
+the overlay and recaptures), then re-emit. Nothing outside
 `/data/vms/streamhost/tiles/dragon32/` and `/data/assets-staging/dragon32/` is
 touched.

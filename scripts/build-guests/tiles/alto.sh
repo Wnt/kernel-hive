@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/alto.sh — build the Xerox Alto II XM (1973) streamhost tile
+# build-guests/tiles/alto.sh — build the Xerox Alto II XM (1973) streamhost station
 # as a thin overlay on the frozen bridge base
 # (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running ContrAlto 2 (jdersch/Contralto2,
 #         BSD-3-Clause, .NET 8 + Avalonia) as an Alto II XM, booted from the
 #         Non-Programmer's Disk. streamhost captures the Linux framebuffer like
-#         every other bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+#         every other kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- THE DISPLAY, WHICH IS THE WHOLE REASON THIS TILE LOOKS DIFFERENT --------
@@ -42,10 +42,10 @@
 #   document templates. (xmsmall.dsk, which the study used, has neither Bravo
 #   nor Draw and greets the visitor with a USER.CM warning.)
 #
-# ---- MEASUREMENTS THIS SCRIPT ENCODES (on the box, 2026-08-10) --------------
+# ---- MEASUREMENTS THIS SCRIPT ENCODES (on labhost, 2026-08-10) --------------
 #   * Key pacing: 20-character line, explicit press/release pairs — 16/16 ms
 #     landed 15 of 20; 33/33, 66/66 and 120/120 all landed 20 of 20. One Alto
-#     field is 33 ms, so the tile ships two fields (66/66) in tile.env.
+#     field is 33 ms, so the station ships two fields (66/66) in tile.env.
 #   * MODIFIERS MUST LEAD. shift+letter in one event lost the capital every
 #     time ("Bravo" -> "ravo"). The driver presses the modifier a full gap early.
 #   * Absolute pointer, uncalibrated: requested (300,400) put the Alto cursor at
@@ -66,7 +66,7 @@
 #   BRAVO, LAUREL and ? buttons and the Executive stays the honest empty state.
 #
 # HYGIENE: thin overlay, namespaced qmp.sock/pidfile, kills only by pidfile,
-# idempotent, --force rebuilds. Touches ONLY the alto tile dir and its own
+# idempotent, --force rebuilds. Touches ONLY the alto station dir and its own
 # host-side build tree; refuses to run while streamhost@alto is active.
 #   Usage: alto.sh [--force] [--force-app] [-h]
 # =============================================================================
@@ -87,7 +87,7 @@ DRIVE="$TILE_DIR/alto-drive.py"
 MEM=1024
 X_MODE=608x808
 
-# Host-side build tree. NOT in the tile: the .NET SDK is ~350 MB of build-time
+# Host-side build tree. NOT in the station: the .NET SDK is ~350 MB of build-time
 # tooling and only the ~150 MB self-contained publish output crosses into the
 # guest, where it needs no runtime installed at all.
 WORK=/data/gallery-guests/Alto
@@ -147,7 +147,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # every screen-based readiness check passes and then nothing you type has any
 # effect — this build spent a run reporting "typing ? at the Executive produced
 # no directory listing" when the Executive had simply not been running.
-# ADD-NEW-OS-PLAYBOOK.md §5.1 says the same thing about idle-paused tiles;
+# ADD-NEW-OS-PLAYBOOK.md §5.1 says the same thing about idle-paused stations;
 # labctl does it for you and a bare QMP harness must do it itself.
 restore_golden() {
   hmp "loadvm golden" >/dev/null
@@ -160,11 +160,11 @@ drive() { python3 "$DRIVE" "$QMP" "$@"; }
 # `cvt`, and bochs-drm accepts an arbitrary mode as long as it is added first.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Xerox Alto II (ContrAlto 2) kiosk launcher — bridge tile.
+# Xerox Alto II (ContrAlto 2) kiosk launcher — kiosk.
 # See scripts/build-guests/tiles/alto.sh for the geometry and flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 xset s off -dpms s noblank 2>/dev/null || true
-# Auto-repeat OFF. Every key this tile sees is an injected press/release pair,
+# Auto-repeat OFF. Every key this station sees is an injected press/release pair,
 # and a late release on a loaded box makes X hammer the held key (the Oric
 # lesson in ADD-NEW-OS-PLAYBOOK.md §5.1).
 xset r off 2>/dev/null || true

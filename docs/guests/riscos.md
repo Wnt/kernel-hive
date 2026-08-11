@@ -1,4 +1,4 @@
-# RISC OS 5 gallery tile (:8111) — integration notes
+# RISC OS 5 gallery station (:8111) — integration notes
 
 Written as a **merge hand-off** so the orchestrator could reconcile the shared
 files (`gallery-integrate-all.sh` — neko-era, deleted in the 2026-07 restructure —
@@ -7,9 +7,9 @@ build: `scripts/build-guests/tiles/riscos.sh` (bash -n clean).
 
 > **Restructure note:** the reconciliation below never ran — the neko compose plane
 > was superseded by streamhost. RISC OS (RPCEmu, a plain X app — not a QEMU guest)
-> is NOT in the streamhost tile manifest (`streamhost/tiles-manifest.sh`), so the
-> neko-era wiring documented here remains this tile's record; verify its current
-> serving state on the box before relying on it.
+> is NOT in the streamhost station manifest (`streamhost/tiles-manifest.sh`), so the
+> neko-era wiring documented here remains this station's record; verify its current
+> serving state on labhost before relying on it.
 
 Status: **LIVE + VERIFIED (2026-07-04).** The RISC OS 5 desktop (pinboard + icon
 bar) is confirmed rendering via the neko v3 screenshot API, from a from-scratch
@@ -23,9 +23,9 @@ Haiku 53320-53339, reactos 53340-53359, msdoswin1 53360-53379, amigaos
 
 ---
 
-## TL;DR — what this tile is
+## TL;DR — what this station is
 
-- **This is an EMULATOR tile, not a QEMU tile.** RISC OS is **ARM**, so there is
+- **This is an EMULATOR station, not a QEMU station.** RISC OS is **ARM**, so there is
   no QEMU/KVM. neko streams the X window of **RPCEmu** — Sarah Walker / Peter
   Howkins' Acorn **RiscPC / A7000** emulator (a userspace ARMv4 emulator with an
   **amd64 JIT recompiler**) — running fullscreen inside the container.
@@ -48,7 +48,7 @@ Haiku 53320-53339, reactos 53340-53359, msdoswin1 53360-53379, amigaos
   RPCEmu**. Fetched directly from `riscosopen.org`. This is NOT the proprietary
   Acorn RISC OS 3.x ROM (that one would be abandonware) — we use the open RO5.
 - **RPCEmu** — **GPLv2** (source from `marutan.net`), built from source here.
-- => The whole tile is free/open; nothing needs the home-lab-museum abandonware
+- => The whole station is free/open; nothing needs the home-lab-museum abandonware
   stance.
 
 ---
@@ -128,7 +128,7 @@ Net result: a stable RISC OS 5 desktop with the icon bar (`:0` CD, **HostFS**,
 
 ## Exact compose service (isolated project — concurrency-safe)
 
-Live tile runs as its OWN compose project `osgallery-riscos` so it never touches
+Live station runs as its OWN compose project `osgallery-riscos` so it never touches
 the sibling-edited `docker-compose.gallery-guests.yml` (same pattern as
 SailfishOS/TempleOS). File in CT 110: `/opt/osgallery/docker-compose.riscos.yml`:
 
@@ -151,13 +151,13 @@ services:
       OS_NAME: "RISC OS 5"
 ```
 
-Bring up (never touches other tiles):
+Bring up (never touches other stations):
 ```sh
 cd /opt/osgallery
 docker compose -p osgallery-riscos -f docker-compose.riscos.yml up -d
 ```
 
-- **No `/dev/kvm`** — RPCEmu is pure userspace ARM emulation. (This tile is the
+- **No `/dev/kvm`** — RPCEmu is pure userspace ARM emulation. (This station is the
   first non-QEMU, non-RDP streamer in the gallery: a plain X app under neko.)
 - **Port `8111`** (tcp web), **EPR `53380-53399/udp`** — a fixed, collision-free
   block. The original 53320-53339 was reassigned to **Haiku**; and 53360-53379
@@ -167,12 +167,12 @@ docker compose -p osgallery-riscos -f docker-compose.riscos.yml up -d
 
 ## Row for `gallery-integrate-all.sh` (historical — neko-era, deleted; never merged)
 
-This tile does not fit the QEMU-oriented `GUESTS=()` schema (it has no ISO/disk
+This station does not fit the QEMU-oriented `GUESTS=()` schema (it has no ISO/disk
 and a different image). Two clean options for reconciliation:
 
 1. **Keep the standalone compose project** (recommended; self-contained, mirrors
    SailfishOS/TempleOS). Nothing to merge.
-2. If the generator is extended to support emulator tiles, model it as an
+2. If the generator is extended to support emulator stations, model it as an
    `image=neko-rpcemu` row with `FIXED_PORT[riscos]=8111` and no KVM/ISO fields.
 
 ## launch-qemu.sh change required: **NONE**
@@ -212,11 +212,11 @@ build script's verify step.
 grey pinboard + bottom icon bar (`:0`, HostFS, `:0`, Apps, display, Acorn
 task-switcher) — captured from a from-scratch `--force` rebuild via the neko v3
 screenshot API. `:8111` returns HTTP 200; RPCEmu recompiler running, 0 fatal
-errors. Live tile: `http://192.0.2.12:8111/?usr=guest&pwd=neko`.
+errors. Live station: `http://192.0.2.12:8111/?usr=guest&pwd=neko`.
 
 ---
 
-## Curated metadata (for the SPA placard)
+## Curated metadata (for the UI placard)
 
 - **Name**: RISC OS 5 (RISC OS Open)
 - **Year**: lineage 1987 (Arthur → RISC OS); this build RISC OS **5.30** (2024,
@@ -229,6 +229,6 @@ errors. Live tile: `http://192.0.2.12:8111/?usr=guest&pwd=neko`.
 - **Iconic era software**: `!Draw`, `!Paint`, `!Edit`, `!Maestro`, Impression,
   ArtWorks, `!Zap`; the `!Boot` structure; the three-button mouse; StrongARM Risc
   PC.
-- **Archetype**: `beige-tower-crt` is the closest existing SPA model, but the
+- **Archetype**: `beige-tower-crt` is the closest existing UI model, but the
   **ideal** is a dedicated **Acorn Risc PC** model — the beige two-/three-"slice"
   stackable case with the badge, paired with an Acorn AKF CRT.

@@ -11,7 +11,7 @@
 # WHAT DEFECT IT REPLACES: `curl -fsSL -o X "$URL" || true`. That pattern is in
 # lib/bridge-base.sh five times, and it is the actual bug — a rotted URL is
 # silent and NON-FATAL, so a base built from a dead mirror reports success, the
-# emulator media is simply absent, and the tile goes black weeks later with
+# emulator media is simply absent, and the station goes black weeks later with
 # every log healthy. `media_cache_require` is the replacement, and its contract
 # is the inversion of that:
 #

@@ -30,7 +30,7 @@ export class AudioPlayer {
     // reader here assumed a single long-lived stream of length-prefixed packets with
     // a [sampleRate u32][channels u8] header — that stale format never matched the
     // production server, so it misread seq as the sample rate and decoded garbage,
-    // silencing audio on every tile.)
+    // silencing audio on every station.)
     const seq = await br.readU32LE();
     const tsUs = await br.readU32LE();
     if (seq == null || tsUs == null) return;

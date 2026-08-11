@@ -36,7 +36,7 @@ const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
  * Given the element's box size and the source (guest) resolution, return the
  * rect the image actually occupies inside that box under `object-fit: contain`.
  *
- * When `fill` is true (era-correct non-square-pixel tiles, see presentAspect.ts)
+ * When `fill` is true (era-correct non-square-pixel stations, see presentAspect.ts)
  * the element box IS the target display rect and the framebuffer is stretched to
  * fill it (`object-fit: fill`), so the image occupies the WHOLE box — the pointer
  * map below then spreads u/v across the full box back to guest pixels, keeping

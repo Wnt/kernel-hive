@@ -9,7 +9,7 @@ Trial namespace: `/data/vms/soltest/repro-win2000-unattend-1784064580/`
 ## Verdict
 
 **Native fully-unattended Setup is not proved and could not be run.** The input
-gate failed before Setup: the repository and lab contain neither a Windows 2000
+gate failed before Setup: the repository and labhost contain neither a Windows 2000
 installation ISO nor a Windows 2000 product key already authorized for this
 builder. The current builder consumes an already-installed WinWorld VMware disk;
 it does not consume installation media and has no product credential. The task's
@@ -23,10 +23,10 @@ install-time answer file cannot change the existing image and
 production direction is to suppress that exact device before its first QEMU
 enumeration, or retain the existing post-Cancel `golden` snapshot. A native ISO
 mode must remain opt-in until an operator supplies and pins authorized media and
-the existing key, stages any necessary tile-device drivers, and a new run proves
+the existing key, stages any necessary station-device drivers, and a new run proves
 zero input through every Setup phase.
 
-The spike did prove the current tile's residual interaction and golden snapshot
+The spike did prove the current station's residual interaction and checkpoint
 round-trip on one isolated clone. It did **not** treat that control experiment as
 a substitute for an unattended install.
 
@@ -45,8 +45,8 @@ Repository findings:
   variable. The cache is recorded as purged.
 - A masked current-tree and git-history search found no `WIN2000_PRODUCT_KEY`,
   `WIN2K_PRODUCT_KEY`, or historical Win2000 `winnt.sif` implementation.
-- A read-only lab search under `/data`, `/root`, and `/opt` found no candidate
-  Win2000 ISO or `winnt.sif`; a masked search under lab configuration paths found
+- A read-only labhost search under `/data`, `/root`, and `/opt` found no candidate
+  Win2000 ISO or `winnt.sif`; a masked search under labhost configuration paths found
   no Win2000 key variable.
 
 No key was decoded from the installed guest, copied from another Windows
@@ -83,7 +83,7 @@ sections:
 | `[UserData]` | operator-supplied existing `ProductID`, owner/org/computer name | authored, unrun |
 | `[Identification]` | `RETRO` workgroup | authored, unrun |
 | `[Networking]` | default networking components | authored, unrun |
-| `[Display]` / `[RegionalSettings]` | tile resolution and US-English defaults | authored, unrun |
+| `[Display]` / `[RegionalSettings]` | station resolution and US-English defaults | authored, unrun |
 
 The product key and Administrator password remain tokens. A future guarded
 builder must render them only to a mode-0600 scratch file and secret-bearing
@@ -121,7 +121,7 @@ References:
 | first automatic logon | welcome skip and one auto-logon | **not run** |
 | production hardware discovery | answer file plus staged OEM drivers, if any | **not run**; no driver bundle exists |
 | first desktop with zero input | framebuffer proof required | **not proved** |
-| internal `golden` fresh-process load | exact tile profile and screendump | **not proved for an installed result** |
+| internal `golden` fresh-process load | exact station profile and screendump | **not proved for an installed result** |
 
 No native-install checkpoint names or screenshots are claimed because QEMU was
 never launched with installation media.
@@ -136,7 +136,7 @@ No keyboard or pointer input was sent before the residual dialog capture.
 | offline set `ConfigFlags=2` for `ACPI\QEMU0002` in ControlSet001/002, then cold boot | 0 | wizard still present on this already-enumerated/pending lineage |
 | advance wizard once for identification | Enter, diagnostic branch only | page identifies device only as **Unknown** |
 | reload residual checkpoint and Cancel | one Escape (Cancel) | clean 1024×768 desktop, Notepad focused, no wizard/taskbar button |
-| `savevm golden`; quit; new QEMU process; `-loadvm golden` | 0 after save | golden PNG byte-identical to post-Cancel PNG |
+| `savevm golden`; quit; new QEMU process; `-loadvm golden` | 0 after save | checkpoint PNG byte-identical to post-Cancel PNG |
 
 This narrows the timing constraint: the registry flag exists in active
 `ControlSet001` and last-known-good `ControlSet002`, but setting it after the
@@ -210,7 +210,7 @@ add an explicit flag or environment mode and fail closed before creating a disk:
 +  [ "$actual" = "$WIN2000_ISO_SHA256" ] || die "Win2000 ISO hash mismatch"
 +  run_unattended_install_from_iso  # render mode-0600 SIF, build FAT12 floppy,
 +                                   # attach ISO/floppy, blank qcow2, checkpoints,
-+                                   # framebuffer phase gates, golden round-trip
++                                   # framebuffer phase gates, checkpoint round-trip
 +  exit
 +fi
 ```
@@ -222,7 +222,7 @@ must:
 2. Verify the rendered product-ID field is populated while keeping its value
    masked.
 3. Build `unattend.flp`, launch `nice -n15` QEMU with unique QMP/pid paths, and
-   use the production tile's machine/storage/display/device profile.
+   use the production station's machine/storage/display/device profile.
 4. Save `cp-media-boot`, `cp-textsetup-done`, `cp-guisetup-done`,
    `cp-firstboot`, and any `cp-preclick-*` residual checkpoints.
 5. Inspect a real framebuffer at every phase; never infer success from disk
@@ -254,6 +254,6 @@ Resume the native-install line only when the operator supplies all of:
 - any authorized drivers required by the production AC97/RTL8139 profile.
 
 Until then, the crisp feasibility conclusion is **unknown for native Setup and
-no for replacement now**. The current golden snapshot remains reproducible after
+no for replacement now**. The current checkpoint remains reproducible after
 the one residual Cancel, and the candidate answer file is ready for a properly
 authorized checkpointed experiment, not production use.

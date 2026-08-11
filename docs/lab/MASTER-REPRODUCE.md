@@ -285,7 +285,7 @@ copyright/SSO-gated source.
 | templeos (`templeos`) | ✅ hands-off | none — upstream ISO fetch + checksum + FB-verify | ~2–3 m |
 | serenityos (`serenityos`) | ✅ hands-off | none, but **heavy**: from-git toolchain+OS compile in a privileged `nesting=1` LXC (CTID 112) | ~20–60 m |
 | postmarketos (`postmarketos`) | ✅ hands-off *(live-verified)* | none — `postmarketos-fixture.sh` runs the raw-image builder, converts/provisions qcow2+OVMF vars, types PIN 147147, and bakes `golden` | ~12–25 m |
-| — bridge base (`bridge-base`) | ✅ hands-off | none — shared read-only kiosk base (VICE+hatari+cap32 + bare-X); build **once** before the four bridge tiles | ~20–30 m |
+| — bridge seed (`bridge-base`) | ✅ hands-off | none — shared read-only kiosk base (VICE+hatari+cap32 + bare-X); build **once** before the four bridge tiles | ~20–30 m |
 | c64 (`c64`) | ✅ hands-off | none — thin overlay on `bridge-base`; VICE x64sc auto-boots the GEOS 2.0 deskTop → golden bake | ~3–5 m |
 | atarist (`atarist`) | ✅ hands-off | none — thin overlay; hatari auto-boots EmuTOS → GEM desktop → golden bake | ~3–5 m |
 | apple2 (`apple2`) | ✅ hands-off | none — thin overlay; LinApple auto-boots Apple GEOS → golden bake | ~3–5 m |

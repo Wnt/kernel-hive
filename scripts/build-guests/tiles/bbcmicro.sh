@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/bbcmicro.sh — build the Acorn BBC Micro Model B (1981) streamhost
-# tile as a thin overlay on the frozen bridge base (bridge-base.sh).
+# station as a thin overlay on the frozen bridge base (bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) X kiosk running a purpose-built MAME `bbcb`
 #         fullscreen; streamhost captures the Linux framebuffer + AC97 audio
-#         exactly like every other bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh + an
+#         exactly like every other kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh + an
 #         INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # THE GOLDEN IS THE MACHINE'S OWN UNTOUCHED POWER-ON SCREEN — the MOS 1.20
@@ -21,7 +21,7 @@
 #   `mame0289` == f34f02505e32c1993c6a782b6814232cbfc74e36, the newest stable tag
 #   at the time of the add) in the TRIXIE chroot, SUBTARGET=bbcb,
 #   SOURCES=src/mame/acorn. The host's own /usr/games/mame is 0.276 — a pinned
-#   release is still the point, and it is the tile's pin that the romset is
+#   release is still the point, and it is the station's pin that the romset is
 #   assembled against. Now that guest and host are both Debian 13 the chroot is
 #   no longer an ABI detour, only a reproducible one; the bridge base's apt
 #   `mame` would be an unpinned suite freeze. A romset is only meaningful
@@ -58,7 +58,7 @@
 #   options fits the driver's DEFAULT `fdc` slot, which is `acorn8271` — the
 #   Acorn disc interface — and that device's default BIOS is DNFS 1.20. Leave
 #   it out and the machine does not fall back to a cassette-only Model B: MAME
-#   refuses the missing device ROM. This tile ships the driver's own defaults,
+#   refuses the missing device ROM. This station ships the driver's own defaults,
 #   so the banner carries the `Acorn DFS` line a disc-equipped Model B printed,
 #   which is also the configuration the planned `armeval` exhibit runs under
 #   (`bbcb -tube arm`). The frame below is what decided it, not this comment.
@@ -86,7 +86,7 @@
 #   send `@`), `(`/`)` (Shift+8/9, send `*`/`(`), `:` (its own key, send `'`) and
 #   `+` (Shift+`;`, send `:`). Untranslated, `=` and every bracket land one key
 #   over and the listing is quietly corrupt. The map is declared once in the
-#   registry (`keyboard.charMap` -> `SH_KEY_MAP`) and used by both the SPA typist
+#   registry (`keyboard.charMap` -> `SH_KEY_MAP`) and used by both the UI typist
 #   and the proof below.
 #
 #   THE MOS ENABLES CAPS LOCK AT RESET, so unshifted letters arrive UPPERCASE —
@@ -95,7 +95,7 @@
 #   real upper case with caps lock on would arrive LOWER case and "Mistake".
 #
 # HYGIENE: thin overlay, namespaced qmp.sock/pidfile, kills only by pidfile,
-# idempotent, --force rebuilds. Touches ONLY the bbcmicro tile dir; refuses to
+# idempotent, --force rebuilds. Touches ONLY the bbcmicro station dir; refuses to
 # run while streamhost@bbcmicro is active.
 #
 # Usage: bbcmicro.sh [--force] [-h]
@@ -117,7 +117,7 @@ EVIDENCE="$TILE_DIR/evidence"
 TYPE_DRIVER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/bbcmicro-type-qmp.py"
 # 768 MB. Measured in-guest with X + MAME up (see the assertion near the end):
 # MemAvailable stays comfortably above the 200 MB floor while host QEMU RSS is
-# roughly half what the 1536 MB VICE tiles cost. MAME's bbcb is a much smaller
+# roughly half what the 1536 MB VICE stations cost. MAME's bbcb is a much smaller
 # resident set than its arcade drivers.
 MEM=768
 ROMDIR=/data/assets-staging/bbcmicro
@@ -200,7 +200,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # lower case.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Acorn BBC Micro Model B (1981) kiosk launcher (bridge tile).
+# Acorn BBC Micro Model B (1981) kiosk launcher (kiosk).
 # MOS 1.20 + BBC BASIC II + Acorn DNFS 1.20, MAME driver `bbcb` with the
 # driver's own default slots. See scripts/build-guests/tiles/bbcmicro.sh.
 # Xorg needs a moment to settle its root mode on a fresh QEMU boot.
@@ -243,7 +243,7 @@ EOS
 # Kiosk session profile: X with NO core pointer cursor (keyboard-only exhibit;
 # the core pointer would otherwise sit frozen mid-screen) and no console or
 # X-log text on the visible VT. Redirecting startx's output to a file is SAFE
-# here and would NOT be on a VICE tile: VICE 3.9 segfaults when its stdout is
+# here and would NOT be on a VICE station: VICE 3.9 segfaults when its stdout is
 # not a terminal (docs/guests/vic20.md). MAME does not care.
 read -r -d '' PROFILE <<'EOS' || true
 # Bridge kiosk session (bbcmicro overlay). Start X with NO core pointer cursor
@@ -258,7 +258,7 @@ fi
 EOS
 # Host-side QMP typist for the post-bake keyboard proof, kept beside this
 # builder as scripts/build-guests/lib/bbcmicro-type-qmp.py. It applies the SAME BBC
-# charMap the registry declares, so the proof exercises the translation the SPA
+# charMap the registry declares, so the proof exercises the translation the UI
 # will use rather than a private one. `labctl type` is not a fair test of this
 # path (it bypasses streamhost's pacing and drops characters while printing
 # "ok"), so the proof owns its typist and its explicit hold/gap.
@@ -502,9 +502,9 @@ bake_golden() {
 
 # The keyboard proof runs AFTER the bake, against the restored fixture, so
 # nothing it types can reach the golden. It types the registry's own demo
-# listing at the tile's SHIPPED pacing and runs it, and asserts what the screen
+# listing at the station's SHIPPED pacing and runs it, and asserts what the screen
 # actually shows: a MODE 1 fan of coloured lines is an order of magnitude more
-# lit pixels than a teletext banner: measured on this tile, the banner is 5 735
+# lit pixels than a teletext banner: measured on this station, the banner is 5 735
 # lit pixels, the five typed lines about 15 000, and the fan 87 924, so 50 000
 # separates them with room either side. Asserting only "the framebuffer changed"
 # would pass on a listing full of `Mistake` errors — which is exactly what an
@@ -600,7 +600,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 fi
 
 # One clean cold boot with the quiet console in force, then bake the golden from
-# the state SPA reset restores for ever after. Bake from an UNTOUCHED cold boot:
+# the state UI reset restores for ever after. Bake from an UNTOUCHED cold boot:
 # the mpf2 add shipped a golden carrying its own verification output and had to
 # be re-baked, and the Plus/4 shipped one curated inside an application and had
 # to be re-baked too.

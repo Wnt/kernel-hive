@@ -1,7 +1,7 @@
 # 9front low-latency input: kernel PCI driver plan
 
 Status: **research / implementation plan (2026-07-15)**  
-Scope: the `ninefront` tile, 9front release 11554, amd64 `9pc64`; no implementation or live-lab
+Scope: the `ninefront` station, 9front release 11554, amd64 `9pc64`; no implementation or live-lab
 changes were made.
 
 ## Verdict
@@ -19,7 +19,7 @@ fallback, but amd64 9front's `vmap()` deliberately applies `PTEUNCACHED`; puttin
 would give up one of the generic plan's key properties. Ship only if measurement shows a material
 p95/p99 win under guest CPU load; otherwise keep the already-working warpd path.
 
-## Actual tile and baseline
+## Actual station and baseline
 
 The checked-in source of truth is `streamhost/tiles-manifest.sh`; the generated launcher is not in
 this checkout, so its emitted copy was also inspected read-only on `lab`. The current pinned device
@@ -78,7 +78,7 @@ careful old/new kernel copy if `install.9fat` is unavailable in the pinned relea
 
 `mk` selects the compiler through `objtype=amd64`; 9front maps that architecture to **`6c`, `6l`,
 object suffix `6`** ([`pcc.c`](https://git.9front.org/plan9front/plan9front/9d30b0f32dd9d8219805ed0d3ef04605c5f461cf/sys/src/cmd/pcc.c/f.html)). `8c`/`8l` are the 386 tools and
-are not the toolchain for this amd64 tile. The existing warpd agent was
+are not the toolchain for this amd64 station. The existing warpd agent was
 already built in this guest with `6c`/`6l`, which is a useful toolchain sanity check. Before editing,
 archive `/dev/config`, the running kernel hash, the exact `/sys/src` revision if available, and the
 compiler output: current upstream source is guidance, but the release-11554 source in the disk is
@@ -162,7 +162,7 @@ stable and measured, MSI can be a separate optimization, not a prerequisite.
 QEMU ivshmem exposes registers in BAR0, an MSI-X table in BAR1 for `ivshmem-doorbell`, and shared
 memory in BAR2 ([ivshmem specification](https://www.qemu.org/docs/master/specs/ivshmem-spec.html)).
 A 9front driver can PCI-match `1af4:1110` and `vmap` BAR2, but that mapping is uncached. Doorbell
-mode also adds ivshmem-server/eventfd lifecycle and MSI-X handling, while this tile needs only one
+mode also adds ivshmem-server/eventfd lifecycle and MSI-X handling, while this station needs only one
 host-to-guest producer. Use ivshmem only for a disposable proof that PCI enumeration and a doorbell
 reach the ISR, or if T1 proves the uncached BAR ring is still faster and sufficiently stable. It is
 not the shipping recommendation without that measurement.
@@ -218,7 +218,7 @@ feed valid set-1 make/break bytes. That bypasses QEMU's PS/2 device but intentio
 Until that refactor is proven, leave keys on the existing QEMU keyboard path; command execution is
 out of scope and stays on its current channel.
 
-## 4. Auto-start and golden bake
+## 4. Auto-start and checkpoint capture
 
 There is no service to start: the driver is linked into `9pc64`, enumerates during boot, and arms in
 its `Dev.init`. Installation and bake should be:
@@ -243,7 +243,7 @@ its `Dev.init`. Installation and bake should be:
 The custom QEMU device must have complete `VMState` coverage. Ring contents live in snapshotted
 guest RAM, but ring GPA, generation, producer state, interrupt mask/cause and pending level must be
 restored coherently. Its post-load path must reconnect or tolerate a late streamhost backend and
-reassert INTx if work is pending. The saved golden must contain an empty ring: otherwise every tile
+reassert INTx if work is pending. The saved checkpoint must contain an empty ring: otherwise every station
 start can replay stale clicks. This save/restore handshake is the largest integration risk.
 
 ## 5. Language decision
@@ -267,7 +267,7 @@ Estimated 9front-specific effort, excluding the shared T1 QEMU device and T2 hos
 |---|---:|---|
 | spike | 1.5–3 d | release-matched `9pc64` boots; PCI/BAR/INTx works; one record reaches `absmousetrack` |
 | production driver | 3–5 d | ordered ring, buttons/wheel, diagnostics, overflow/reset and SMP tests pass |
-| bake/integration | 1–2 d | cold boot and `loadvm golden` both arm cleanly; manifest and rollback are reproducible |
+| capture/integration | 1–2 d | cold boot and `loadvm golden` both arm cleanly; manifest and rollback are reproducible |
 | measure/harden | 2–3 d | p50/p95/p99, load, soak and restore-loop data support the ship decision |
 
 If the shared custom QEMU device/backend does not yet exist, budget roughly another **5–10 shared
@@ -323,7 +323,7 @@ versus warpd with no regression in event correctness; T2 may set a stricter comm
 - Run repeated high-rate and two-vCPU stress with an instrumented QEMU backend; assert no allocations
   or blocking calls occur in interrupt context.
 
-### Phase C — bake
+### Phase C — capture
 
 - Install the final kernel to the clone's 9fat with old-kernel recovery, cold boot with the exact
   production `pc-q35-11.0` device set, and verify device absence fails safely.

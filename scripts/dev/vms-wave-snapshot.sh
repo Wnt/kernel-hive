@@ -2,15 +2,15 @@
 # vms-wave-snapshot.sh — a cheap FLEET-WIDE safety net for migration waves:
 # a ZFS snapshot of `data/vms` taken before a wave starts.
 #
-# WHAT THIS IS NOT: this is NOT a per-tile checkpoint, and it must never be used
-# as one. `/data/vms` is a SINGLE dataset holding every tile — there are no
-# per-tile datasets. So a snapshot here is fleet-wide and, crucially, **rollback
-# is all-or-nothing: you cannot roll one tile back without taking the other 36
+# WHAT THIS IS NOT: this is NOT a per-station checkpoint, and it must never be used
+# as one. `/data/vms` is a SINGLE dataset holding every station — there are no
+# per-station datasets. So a snapshot here is fleet-wide and, crucially, **rollback
+# is all-or-nothing: you cannot roll one station back without taking the other 36
 # with it**, including any work another agent landed in the meantime.
 #
-# The per-tile checkpoint is the qcow2 internal `coldboot` snapshot
+# The per-station checkpoint is the qcow2 internal `coldboot` snapshot
 # (lib/bridge-coldboot): self-contained, travels with the overlay file, reverts
-# one tile. And `golden` stays a qcow2 internal snapshot too, because it needs
+# one station. And `golden` stays a qcow2 internal snapshot too, because it needs
 # the RAM state to restore a running desktop in seconds — ZFS can only ever
 # checkpoint the disk. Neither of those moves to ZFS.
 #
@@ -75,7 +75,7 @@ case "$CMD" in
     SNAP="${DATASET}@${PREFIX}${LABEL}"
     zfs list -t snapshot -H -o name "$SNAP" >/dev/null 2>&1 || die "no such snapshot: $SNAP"
     # Deliberately NOT executed. `zfs rollback` on this dataset reverts EVERY
-    # tile, discards every snapshot taken after it, and does so while services
+    # station, discards every snapshot taken after it, and does so while services
     # hold the files open. Someone reaching for this mid-incident, under time
     # pressure, is exactly who needs to read the consequence before typing it.
     cat <<EOF

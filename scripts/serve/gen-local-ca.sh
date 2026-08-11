@@ -4,7 +4,7 @@
 # Mint an mkcert-style LOCAL CA + a leaf server cert that the user's Chrome
 # will accept (once the CA root is trusted, see TRUST below). ONE CA + ONE leaf
 # cover:
-#   * the HTTPS SPA origin   https://192.0.2.10:8443
+#   * the HTTPS UI origin   https://192.0.2.10:8443
 # so the browser trusts everything after a single one-time root install.
 #
 # This is INDEPENDENT of the streamhost WebTransport cert (that one is a
@@ -21,7 +21,7 @@
 # TRUST (on the Mac, one time):
 #   sudo security add-trusted-cert -d -r trustRoot \
 #     -k /Library/Keychains/System.keychain rootCA.pem
-# Chrome uses the macOS System keychain, so this trusts the SPA certificate.
+# Chrome uses the macOS System keychain, so this trusts the UI certificate.
 # ---------------------------------------------------------------------------
 set -euo pipefail
 

@@ -2,7 +2,7 @@
 //  streamClient/signal — fetch + normalize the streamhost signaling doc.
 //  ---------------------------------------------------------------------------
 //  SIGNALING (replaces neko's WS message soup): fetch one small JSON/text doc
-//  from the tile's signal endpoint → { url, certHash(b64), wireVersion?, audio? }.
+//  from the station's signal endpoint → { url, certHash(b64), wireVersion?, audio? }.
 //  The cert hash is fetched LIVE every connect (never pinned) because streamhost
 //  certs are self-signed ECDSA P-256 with a <14-day validity and rotate ~every
 //  10 days (Chrome refuses serverCertificateHashes on certs >14 days out).
@@ -21,7 +21,7 @@ function b64ToBytes(b64: string): ArrayBuffer {
 /**
  * Fetch + normalize the signaling doc. Accepts either a JSON object (preferred)
  * or a bare base64 hash string (the prototype's hash-file). Tolerates several
- * field spellings so the SPA and the Rust server can evolve independently.
+ * field spellings so the UI and the Rust server can evolve independently.
  */
 export async function fetchSignal(signalEndpoint: string): Promise<StreamhostSignal> {
   const res = await fetch(signalEndpoint, { cache: 'no-store', mode: 'cors' });

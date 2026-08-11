@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { PosterDoc } from '../types';
 
-// Runtime poster prose. /poster-docs.json is published to the webroot by
-// `serve-https-spa.sh manifests`, so poster copy edits go live on a browser
-// refresh with no SPA rebuild. The same generated JSON is bundled as a LAZY
-// fallback chunk (dev server, or a webroot that predates the file) — it is
-// only downloaded when the runtime fetch fails, so the main bundle stays free
-// of the ~450 kB of prose.
+// Runtime poster prose. /poster-docs.json is rendered from registry/posters/*.md
+// and published to the webroot by `serve-https-spa.sh manifests`, so poster copy
+// edits go live on a browser refresh with no UI rebuild. Nothing is bundled:
+// registry/posters/<id>.md is the single source, the served document is its only
+// projection, and ~450 kB of prose stays out of the build entirely. The dev
+// server renders the same document per request (see vite.config.ts).
 type DocsFile = { posters: Record<string, PosterDoc> };
 
 function isDocsFile(value: unknown): value is DocsFile {
@@ -21,17 +21,15 @@ function isDocsFile(value: unknown): value is DocsFile {
 async function fetchDocs(): Promise<Record<string, PosterDoc>> {
   try {
     const response = await fetch('/poster-docs.json', { cache: 'no-cache' });
-    if (response.ok) {
-      const parsed: unknown = await response.json();
-      if (isDocsFile(parsed)) return parsed.posters;
-    }
-  } catch {
-    // fall through to the bundled fallback chunk
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const parsed: unknown = await response.json();
+    if (!isDocsFile(parsed)) throw new Error('schema validation failed');
+    return parsed.posters;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'unknown error';
+    console.error(`[poster-docs] no poster prose (${reason}) — publish it with 'serve-https-spa.sh manifests'`);
+    return {};
   }
-  const embedded: unknown = (
-    await import('../../../scripts/serve/webroot/poster-docs.json', { with: { type: 'json' } })
-  ).default;
-  return isDocsFile(embedded) ? embedded.posters : {};
 }
 
 let docsPromise: Promise<Record<string, PosterDoc>> | null = null;

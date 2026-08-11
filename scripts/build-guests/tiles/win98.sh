@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/win98.sh — from-scratch, reproducible build of the Windows 98 SE
-# tile for the neko+QEMU Kernel Hive.
+# station for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the Win98 SE
 # guest END TO END from its real upstream sources — no image backups, no
@@ -592,7 +592,7 @@ JSON
 
 # =============================================================================
 # STEP 4 — FRAMEBUFFER VERIFY: exact production KVM device set -> screendump.
-#   Boots BOTH disks exactly as the tile does, but with -snapshot so the golden
+#   Boots BOTH disks exactly as the station does, but with -snapshot so the golden
 #   images are NEVER mutated by the test, and WITHOUT a sound device (a bare
 #   SB16 with no host audio backend can abort QEMU on the verify host; audio is
 #   proven separately and encoded in the neko-qemu args below). Unique unix
@@ -647,7 +647,7 @@ verify_boot() {
   #      C:\WINDOWS\OPTIONS\CABS (Win98 then remembers it). Cancel/Finish-mark the few
   #      driverless ACPI stub devices (ACPI Generic Bus/EIO Bus, PnP Monitor, IDE bus
   #      master) to reach an idle desktop. Verify 1:1 abs tracking + winipcfg 10.0.2.15.
-  #   3. savevm golden ; tile.env SH_POINTER=abs. The tile boots via -loadvm golden, so
+  #   3. savevm golden ; tile.env SH_POINTER=abs. The station boots via -loadvm golden, so
   #      the RAM snapshot restores the settled desktop with the pointer live (no re-scan).
   #   Do NOT re-add acpi=off / usb=off / -apic / kernel-irqchip=off.
   local drives=(-drive "file=${SYS_PATH},if=ide,index=0,media=disk,format=qcow2")
@@ -744,7 +744,7 @@ PY
 # a DIFFERENT package from the NT-only vbempk.zip used for XP (that zip has no 9x
 # build). The Win9x driver is bearwindows `vbe9x.htm` -> latest `191201.zip`,
 # `032MB` build (VBEMP.DRV + VBE.vxd + vbemp.inf); 032MB fits QEMU std-vga's 16 MB
-# VRAM. Resolution stays 640x480 so the streamhost/SPA capture geometry is
+# VRAM. Resolution stays 640x480 so the streamhost/UI capture geometry is
 # unchanged (dbus always presents a 32bpp packed scanout regardless of guest depth).
 # Verified 2026-07-13: smooth drag (8 clean full-window frames in ~0.2 s) vs the
 # <1 FPS planar crawl; baked into the live win98se golden (acpi=on + usb-tablet
@@ -796,7 +796,7 @@ write_manifest
 [ "$VERIFY" = 1 ] && verify_boot || log "verify skipped (--no-verify)."
 
 # =============================================================================
-# DONE — how this tile is wired into the neko+QEMU gallery.
+# DONE — how this station is wired into the neko+QEMU gallery.
 # The container mounts /data/gallery-guests read-only at /guests; launch-qemu.sh
 # uses qemu-system-x86_64 with -audiodev pa,id=snd (hence audiodev=snd below).
 # =============================================================================

@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/atarist.sh — build the Atari ST + EmuTOS GEM-desktop streamhost
-# tile as a thin overlay on the shared bridge base (build-guests/lib/bridge-base.sh).
+# station as a thin overlay on the shared bridge base (build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk that runs Hatari (WINDOWED) emulating an
 #         Atari ST that boots EmuTOS straight to the GEM desktop. streamhost
 #         captures the Linux framebuffer + AC97 audio (the ST YM2149 routed
 #         through ALSA).
-# TYPE  : "emulator bridge" tile (see streamhost/docs/BRIDGE.md). Overlay + a per-tile
+# TYPE  : "emulator bridge" station (see streamhost/docs/BRIDGE.md). Overlay + a per-station
 #         /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
 #
 # ---- AUTOMATION HONESTY -----------------------------------------------------
 #   * Hatari MUST run WINDOWED (--window). Real SDL fullscreen (--fullscreen)
 #     renders BLACK in the captured std-VGA framebuffer (same trap as VICE's
-#     -VICIIfull on the c64 tile).
+#     -VICIIfull on the c64 station).
 #   * mono monitor (--monitor mono) gives the crisp ST-high 640x400 GEM desktop;
 #     --zoom 1.6 scales it to 1024x640 so it FILLS the framebuffer width, centred
 #     on the 1024x768 black bare-X root (small top/bottom black bands).
@@ -21,20 +21,20 @@
 #     etos1024k.img (already in the base's /opt/bridge/media/). A read/write
 #     GEMDOS folder is mounted as C: and carries curated PD/freeware/shareware
 #     applications plus EMUDESK.INF shortcuts; no commercial ROMs/software.
-#   * The tile boots straight into the GEM desktop by auto-`-loadvm golden` (same
-#     pattern as the alpine/c64 tiles): the golden INTERNAL snapshot (RAM+devices)
+#   * The station boots straight into the GEM desktop by auto-`-loadvm golden` (same
+#     pattern as the alpine/c64 stations): the golden INTERNAL snapshot (RAM+devices)
 #     restores the already-running desktop in ~6 s (EmuTOS cold boot is ~30-40 s).
 #   * ACCEPTANCE is a REAL framebuffer screenshot of the GEM desktop + a measured
 #     non-silent YM2149 wav — never disk/log inference.
 #
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by pidfile,
-# idempotent, --force to rebuild the overlay. Touches ONLY the atarist tile dir.
+# idempotent, --force to rebuild the overlay. Touches ONLY the atarist station dir.
 #
 # Usage:  atarist.sh [--force] [--bake] [-h]
 #
-#   --bake  bake the golden snapshot of the ALREADY RUNNING tile and prove it
+#   --bake  bake the golden snapshot of the ALREADY RUNNING station and prove it
 #           restores (lib/bridge-bake-golden). Run it once the acceptance below
-#           has passed on a real screenshot, with the tile up under its own
+#           has passed on a real screenshot, with the station up under its own
 #           streamhost/tiles/atarist/qemu-streamhost.sh — NOT under this
 #           script's boot_tile: a golden taken under a device set that differs
 #           from the launcher's will not loadvm, and that only surfaces later,
@@ -72,8 +72,8 @@ APP_WORK="${TILE_DIR}/app-build"
 #   * eckhardkruse.net — the author's own site. Supplies Ballerburg + sources.
 #   * atarimania.com/pgedump.awp?id=31902 — an opaque numeric id, not a filename.
 #     Supplies Pacman for GEM 0.2.5.
-# The only copies that exist on the box are the build cache at $APP_CACHE, which
-# is inside a TILE directory rather than an asset location. They are declared in
+# The only copies that exist on labhost are the build cache at $APP_CACHE, which
+# is inside a STATION directory rather than an asset location. They are declared in
 # docs/lab/ASSETS-MANIFEST.md §2 and checked by check-assets.sh; they are pending
 # population into the shared media cache. Do not clean $APP_CACHE.
 AIM_ZIP=ART-3488.zip
@@ -228,10 +228,10 @@ README
 #                      on the 1024x768 black bare-X root.
 #   --statusbar 0 --drive-led 0 --borders 0   clean desktop (no chrome/overscan).
 #   --sound 48000 --ym-mixing model           YM2149 -> SDL/ALSA default -> AC97.
-# SDL_RENDER_DRIVER=software avoids GL on the GPU-less host (same as the c64 tile).
+# SDL_RENDER_DRIVER=software avoids GL on the GPU-less host (same as the c64 station).
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Atari ST + EmuTOS GEM desktop kiosk launcher (bridge tile). See atarist.sh header.
+# Atari ST + EmuTOS GEM desktop kiosk launcher (kiosk). See atarist.sh header.
 # Hatari 2.5.0, WINDOWED (real fullscreen renders BLACK in the captured std-VGA fb).
 # mono monitor -> ST-high 640x400 GEM desktop; --zoom 1.6 -> 1024x640 (fills width).
 # YM2149 sound: SDL audio -> ALSA default -> AC97 (hw:0,0) -> QEMU dbus audiodev.
@@ -247,7 +247,7 @@ exec hatari \
   --sound 48000 --ym-mixing model --sound-sync off --frameskips 0
 EOS
 
-# ---- boot the tile QEMU (exact device set; conditional -loadvm golden) -------
+# ---- boot the station QEMU (exact device set; conditional -loadvm golden) -------
 # NOTE: the exact device set MUST match the golden bake or -loadvm golden fails.
 # -m 1536, -vga std, AC97 audiodev, usb-tablet, e1000 hostfwd — identical to c64.
 boot_tile() {

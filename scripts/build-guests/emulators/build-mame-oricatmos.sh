@@ -1,20 +1,20 @@
 #!/bin/bash
 # =============================================================================
 # build-guests/emulators/build-mame-oricatmos.sh — build the MAME binary the Oric Atmos
-# tile ships, from a pinned upstream RELEASE commit, inside the suite's chroot.
+# station ships, from a pinned upstream RELEASE commit, inside the suite's chroot.
 #
-# WHY A BUILD AND NOT A PACKAGE. The tile's emulator runs inside the bridge
+# WHY A BUILD AND NOT A PACKAGE. The station's emulator runs inside the bridge
 # guest, so the binary must match THAT guest's ABI — Bookworm while oricatmos is
 # on the bookworm suite, Trixie once it is migrated (registry/bridge-suites.json,
 # docs/lab/BRIDGE-TRIXIE-MIGRATION.md). On bookworm the two packaged options are
 # both wrong for different reasons:
-#   * the LAB HOST's `/usr/games/mame` is Debian *trixie* 0.276 — newer, but
+#   * labhost's `/usr/games/mame` is Debian *trixie* 0.276 — newer, but
 #     linked against a glibc the Bookworm guest does not have;
 #   * Bookworm's own `mame` is 0.251 (2022), and `bookworm-backports` has no
 #     mame at all (checked 2026-08-09).
-# So the tile does what mpf2 does: build in the ABI-matched chroot that the IRIX
+# So the station does what mpf2 does: build in the ABI-matched chroot that the IRIX
 # and MPF-II MAME builds already use, from the latest STABLE tag — `mame0289`,
-# commit f34f0250 — which is also the exact commit the mpf2 tile ships. On the
+# commit f34f0250 — which is also the exact commit the mpf2 station ships. On the
 # trixie suite the host and guest agree and the first bullet stops applying; the
 # pin (and therefore this build) still does.
 #

@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # =============================================================================
-# migrate-tile.sh — move ONE bridge tile from the bookworm guest base to trixie
+# migrate-tile.sh — move ONE kiosk from the bookworm guest base to trixie
 #
 # THE PROCEDURE IS docs/lab/BRIDGE-TRIXIE-MIGRATION.md §2 — read it there, not
 # here; two copies of it would drift. Wave 1 ran it three times with one agent
-# per tile and each re-derived it from that doc; one lost an hour to a trap
-# another had already hit. 25 tiles remain, so it is a script now: one
-# invocation per tile, plus a human looking at two screenshots.
+# per station and each re-derived it from that doc; one lost an hour to a trap
+# another had already hit. 25 stations remain, so it is a script now: one
+# invocation per station, plus a human looking at two screenshots.
 #
-# Everything runs on the box over `ssh lab` (the only door). The nine steps
+# Everything runs on labhost over `ssh lab` (the only door). The nine steps
 # announce themselves as "N/9", and the two wave-1 traps are explained at the
 # step that handles them — 4/9 the stale SSH host key, 7/9 the builders that
-# print the bake commands instead of baking. Three things to know first:
+# print the capture commands instead of capturing. Three things to know first:
 #
 #   * It does NOT claim visual acceptance, and cannot. It prints the BEFORE and
 #     AFTER PNGs and says a human must compare them: the failure this migration
@@ -21,8 +21,8 @@
 #     the whole rollback, and it is exact because the bookworm base is frozen.
 #     Any failed mechanical check restores it automatically and leaves the
 #     trixie attempt beside it as overlay.qcow2.trixie-failed for the postmortem.
-#   * The tile's REAL daemon identity is read from its signaling.json, because
-#     an SPA id is not always an SH_TILE and the systemd unit follows the
+#   * The station's REAL daemon identity is read from its signaling.json, because
+#     an UI id is not always an SH_TILE and the systemd unit follows the
 #     daemon's (AGENTS.md).
 #
 # The registry prose is deliberately not automated — the twinned .museum.notes /
@@ -31,7 +31,7 @@
 # human has written them. --flip edits the ledger only; the rest is printed.
 #
 # usage: migrate-tile.sh <tile> [--flip] [--dry-run] [--no-restart]
-#   --flip        after every mechanical check passes, set this tile to "trixie"
+#   --flip        after every mechanical check passes, set this station to "trixie"
 #                 in registry/bridge-suites.json (default: OFF — you flip it in
 #                 the same commit as the prose)
 #   --dry-run     print every step and every command, touch nothing. Preflight
@@ -69,7 +69,7 @@ LEDGER="$REPO/registry/bridge-suites.json"
 # The frozen bookworm base, as stat'ed after wave 0 (BRIDGE-TRIXIE-MIGRATION.md
 # §wave 0). Every overlay that has not migrated resolves through this file by
 # path, block for block. We assert it is byte-for-byte untouched before and
-# after, because the failure mode of touching it is 25 tiles booting corrupt.
+# after, because the failure mode of touching it is 25 stations booting corrupt.
 BOOKWORM_SIZE=3162308608
 BOOKWORM_MTIME="2026-07-15 10:52:41"
 
@@ -118,11 +118,11 @@ die() {
 }
 
 # box_ro <cmd…> — read-only probe. ALWAYS runs, including under --dry-run: the
-# plan is only worth reviewing if its facts came off the real box.
+# plan is only worth reviewing if its facts came off real labhost.
 # shellcheck disable=SC2029 # every caller quotes its own %q substitutions
 box_ro() { ssh "${SSH_OPTS[@]}" "$LAB" "$@"; }
 
-# box_sh <label> <program> [arg…] — run a bash program on the box. Mutating, so
+# box_sh <label> <program> [arg…] — run a bash program on labhost. Mutating, so
 # --dry-run prints the program verbatim instead of running it.
 box_sh() {
   local label="$1" prog="$2"
@@ -289,9 +289,9 @@ rollback() {
   ROLLED_BACK=1
   # Fail CLOSED: no rollback under a live builder. A rollback restores the
   # bookworm overlay and restarts the unit, and the builder reaches its guest as
-  # 127.0.0.1:<hostfwd> — so a survivor finds the restarted PRODUCTION tile on
+  # 127.0.0.1:<hostfwd> — so a survivor finds the restarted PRODUCTION station on
   # that port and provisions it, up to and including savevm golden over the live
-  # fixture. That happened twice on 2026-08-10 (decos, plus4) and both tiles
+  # fixture. That happened twice on 2026-08-10 (decos, plus4) and both stations
   # survived only on luck. Half-migrated with a known-live builder is a state a
   # human must look at; it is strictly better than racing it.
   stop_builder ||
@@ -302,7 +302,7 @@ rollback() {
 set -u
 d=$1 unit=$2 bak=$3 failed=$4
 systemctl stop "$unit" 2>/dev/null
-# Kill this tile's QEMU only by its pidfile, and only after /proc/<pid>/exe says
+# Kill this station's QEMU only by its pidfile, and only after /proc/<pid>/exe says
 # it really is a QEMU (never pkill -f from ssh lab — it matches its own shell).
 if [ -f "$d/qemu.pid" ]; then
   pid=$(cat "$d/qemu.pid" 2>/dev/null || true)
@@ -399,11 +399,11 @@ step "5/9  build: BRIDGE_SUITE=trixie $BUILDER_REL --force"
 echo "  Staged under $STAGE so the builder's own lib/bridge-base-for"
 echo "  and the ledger resolve relatively. Log: $BUILD_LOG"
 
-# Some builders read HOST-SIDE SIDECARS kept next to the tile's launcher rather
+# Some builders read HOST-SIDE SIDECARS kept next to the station's launcher rather
 # than in build-guests/: zx81.sh takes its readiness predicate and paced QMP
 # typist from ../../../streamhost/tiles/zx81, as do win95/win311/indyr4400. Stage
 # those too, or the builder dies 20 s in on `cd: .../streamhost/tiles/<tile>: No
-# such file or directory` (zx81, 2026-08-10), which reads like a bad tile.
+# such file or directory` (zx81, 2026-08-10), which reads like a bad station.
 LAUNCHER_SRC="$REPO/streamhost/tiles/$TILE"
 STAGE_LAUNCHER=0
 [ -d "$LAUNCHER_SRC" ] && STAGE_LAUNCHER=1
@@ -554,9 +554,9 @@ if [ "$FLIP" -eq 1 ]; then
       "$TILE" "$TARGET_SUITE" "registry/bridge-suites.json"
   else
     # LOCKED, because this is a read-modify-write of a file OTHER TILES SHARE.
-    # migrate-wave.sh runs tiles concurrently; two flips completing together
-    # both read the pre-edit text and the second write drops the first tile's
-    # entry — one tile's whole migration silently reverted, with both
+    # migrate-wave.sh runs stations concurrently; two flips completing together
+    # both read the pre-edit text and the second write drops the first station's
+    # entry — one station's whole migration silently reverted, with both
     # invocations reporting success. Found by inspection on 2026-08-10 before it
     # bit anyone, because wave 3 was deliberately run WITHOUT --flip for exactly
     # this reason.

@@ -6,13 +6,13 @@ import { S } from './styles';
 //  BootVideoOverlay — the BOOT-VIDEO REPLAY experience (flag-gated on bootVideo).
 //  ---------------------------------------------------------------------------
 //  Drop-in sibling of PowerOnOverlay, mounted in the same stage slot when the
-//  tile carries a recorded power-on clip. It plays that clip in a native
-//  <video> (autoplay muted playsInline, preload=auto) while the live golden
+//  station carries a recorded power-on clip. It plays that clip in a native
+//  <video> (autoplay muted playsInline, preload=auto) while the live checkpoint
 //  connects behind it, exposing scrub (currentTime), speed (0.5/1/2/4×) and a
 //  WebVTT sprite-crop hover preview. Its media is pinned to the same full-stage
 //  geometry as the live surface. On the first live frame it PINS the clip to its
 //  last frame and fades ITSELF out over the already-painting live layer
-//  beneath (reveal-before-drop, §5.3): because clip[last] === golden[first] the
+//  beneath (reveal-before-drop, §5.3): because clip[last] === checkpoint[first] the
 //  fade is pixel-insurance only, then the overlay unmounts. pointerEvents stays
 //  'none' on the root (so click-to-acquire pointer-lock reaches the media
 //  beneath); only the transport controls opt back into 'auto', and the whole
@@ -26,7 +26,7 @@ function bootAssetSiblings(src: string): { poster: string; vtt: string; dir: str
 }
 
 // Fetch + parse the thumbnail VTT once; [] when absent (no preview, no error).
-// `spriteOverride` (from the /boot/index.json manifest) makes the baked sprite
+// `spriteOverride` (from the /boot/index.json manifest) makes the captured sprite
 // sheet authoritative for every cue, in case the VTT's relative ref and the
 // manifest path ever diverge; absent ⇒ each cue's own resolved src is used.
 function useThumbs(vttUrl: string, spriteOverride?: string): Thumb[] {
@@ -51,7 +51,7 @@ export function BootVideoOverlay({
   live, getLiveSurface,
 }: {
   src: string;
-  // P3e: baked manifest paths (/boot/index.json). Each falls back to the
+  // P3e: captured manifest paths (/boot/index.json). Each falls back to the
   // by-convention sibling if the manifest omits it, so an absent index.json
   // leaves behaviour unchanged.
   poster?: string;
@@ -88,11 +88,11 @@ export function BootVideoOverlay({
   const [livePainted, setLivePainted] = useState(false);
   const thumbs = useThumbs(vtt, sprite);
 
-  // Autoplay UNMUTED by default — the click that opened the tile is a fresh user
+  // Autoplay UNMUTED by default — the click that opened the station is a fresh user
   // gesture, which most browsers accept for playback with sound. If the autoplay
   // policy still blocks unmuted, fall back to muted playback (so the boot is at
   // least shown) and flip the state so the 🔇 toggle appears — one click restores
-  // audio and raises the site's media-engagement, so later tiles autoplay with sound.
+  // audio and raises the site's media-engagement, so later stations autoplay with sound.
   useEffect(() => {
     const v = vref.current;
     if (!v) return;
@@ -163,11 +163,11 @@ export function BootVideoOverlay({
     return () => { done = true; cancelAnimationFrame(raf); clearTimeout(fallback); };
   }, [live, getLiveSurface]);
 
-  // HANDOFF — swap to the live tile only once the CLIP HAS FINISHED (played through,
+  // HANDOFF — swap to the live station only once the CLIP HAS FINISHED (played through,
   // or the user skipped / scrubbed to the end), NOT when `live` merely becomes ready.
   // loadvm golden restores in ~1s, so gating on `live` cut the boot video off almost
-  // immediately. The live tile is readied in the background WHILE the clip plays; we
-  // swap when the clip is done. Pin to the last frame (== golden first frame) so the
+  // immediately. The live station is readied in the background WHILE the clip plays; we
+  // swap when the clip is done. Pin to the last frame (== checkpoint first frame) so the
   // held image matches live even on a mid-clip skip, and gate the reveal on
   // livePainted (real non-black live content) to kill the bridge's black-first-frame
   // flash — with a safety fallback so a finished clip never strands the viewer if the

@@ -60,6 +60,22 @@ pub(super) fn spawn_input_bench(
                 while let Ok(Some(line)) = lines.next_line().await {
                     let mut fields = line.split_ascii_whitespace();
                     let Some(verb) = fields.next() else { continue };
+                    // `K <xt-scancode> <0|1>` — a keyboard edge through the
+                    // production router, added for the de-bridging campaign:
+                    // every MAME kiosk is keyboard-only, so keymap
+                    // acceptance needs the same loopback the pointer has.
+                    if verb == "K" {
+                        let (Some(code), Some(down)) = (fields.next(), fields.next()) else {
+                            continue;
+                        };
+                        let code = code.strip_prefix("0x").unwrap_or(code);
+                        if let (Ok(code), Ok(down)) =
+                            (u16::from_str_radix(code, 16), down.parse::<u8>())
+                        {
+                            let _ = router.try_key(code, down != 0, false);
+                        }
+                        continue;
+                    }
                     let parsed = match verb {
                         "M" | "D" | "U" => {
                             let (Some(x), Some(y)) = (fields.next(), fields.next()) else {

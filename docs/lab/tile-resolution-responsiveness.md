@@ -1,15 +1,15 @@
-# Tile resolution vs perceived responsiveness — the unaccelerated-VGA question
+# Station resolution vs perceived responsiveness — the unaccelerated-VGA question
 
 Investigation date 2026-07-27, QEMU 11.0.2 on `labhost`. **READ-ONLY**: no live
-tile was re-baked or reconfigured; the four already-bumped tiles were driven only
+station was re-captured or reconfigured; the four already-bumped stations were driven only
 with input that was immediately reverted (`loadvm golden`) and framebuffer-verified
-back to their curated fixtures. Old-resolution baselines were measured on a
+back to their curated scenes. Old-resolution baselines were measured on a
 disposable `/data/vms/soltest/` clone (killed via `clone-guard`). All backups
 (`*.bak-res*`) were left intact.
 
 ## The question
 
-Wave-1 bumped four tiles on QEMU's **unaccelerated** display path (`-vga std` /
+Wave-1 bumped four stations on QEMU's **unaccelerated** display path (`-vga std` /
 Bochs-VBE packed-linear framebuffer): win95 640×480→**1280×1024**, win98se
 640×480→**1600×1200**, kolibrios 1024×768→**1280×1024**, alpine 1280×800→**1920×1200**.
 Directive: *"make sure responsiveness doesn't suffer; I think we cannot use the
@@ -24,7 +24,7 @@ cost lives entirely in **capture+encode (and downstream egress + client decode)*
 all of which are set by *changed scanout pixels*, not by how the guest drew them.
 The guest's own software blit (packed-linear VBEMP / VESA / bochs-drm) keeps up 1:1
 at every resolution tested. So the correct lever is **CAP the pixel count**, not
-**SWITCH the display path**. Every bumped tile is KEEP-able today on LAN; the cost
+**SWITCH the display path**. Every bumped station is KEEP-able today on LAN; the cost
 that *does* scale with resolution is egress bytes + client (esp. mobile) decode +
 CPU-contention headroom.
 
@@ -42,7 +42,7 @@ abs for the tablet tiles) and sample the QMP framebuffer as fast as possible,
 counting distinct fully-repainted frames + single-move settle time. The **bare
 screendump round-trip** is the sampling floor (my instrument, not the guest).
 
-| tile | resolution | bare screendump RTT p50 | single-move settle | sustained-drag: distinct / samples | guest keeps up? |
+| station | resolution | bare screendump RTT p50 | single-move settle | sustained-drag: distinct / samples | guest keeps up? |
 |---|---|---:|---|---|---|
 | win95 clone | 640×480 | 6.8 ms | < 30 ms (below floor) | 206 / 207 (34/s) | **yes** |
 | win95 live | 1280×1024 | 15.9 ms | < 45 ms (below floor) | 135 / 135 (22/s) | **yes** |
@@ -65,7 +65,7 @@ which is why the shipped Win9x tiles already run the VBEMP packed driver.)
 Live streamhost `snap→AU` latency (includes capture wait + damage-scoped I420
 conversion + x264), read from the journal on the real desktop content:
 
-| tile | resolution | idle p50/p95 | during full-window drag p50 / p95 / max |
+| station | resolution | idle p50/p95 | during full-window drag p50 / p95 / max |
 |---|---|---|---|
 | win95 | 1280×1024 | 1.8 / 2.7 ms | 2.0 / 2.8 / **5.8** ms |
 | win98se | 1600×1200 | 2.7 / 4.3 ms | 2.7 / 5.9 / **11.4** ms |
@@ -94,16 +94,16 @@ worst case — video/complex scrolling, which these desktops rarely produce).
 | 1920×1200 | 7.50× | 5.22 ms | 15.58 ms | 31.46 ms |
 
 Encode scales ~linearly with pixel count. Against the 30 fps budget (33 ms/frame):
-CHANGE at 4 threads fits comfortably at every resolution. **At 1 thread** (a tile
-that loses its thread budget under contention on the 30-tile box) 1600×1200 and
+CHANGE at 4 threads fits comfortably at every resolution. **At 1 thread** (a station
+that loses its thread budget under contention on the 30-station labhost) 1600×1200 and
 1920×1200 full-frame high-entropy hit ~31 ms — *at the edge* of 30 fps. 1280×1024
 stays comfortable (16 ms) even single-threaded.
 
-## Does an accelerated display device help? — Box-verified, no.
+## Does an accelerated display device help? — labhost-verified, no.
 
-- QEMU 11 emulates **no S3/Tseng**; the box is **GPU-less**, so virtio-gpu-gl /
+- QEMU 11 emulates **no S3/Tseng**; labhost is **GPU-less**, so virtio-gpu-gl /
   virgl / DMABUF scanout cannot init (`-display dbus,gl=on` → *egl: no drm render
-  node*). Every tile is captured as the CPU-composited packed scanout.
+  node*). Every station is captured as the CPU-composited packed scanout.
 - streamhost's capture (`capture/listener.rs`) serves only the shared-memory
   `ScanoutMap` + `UpdateMap` damage path — **no DMABUF method, no cursor-overlay
   method**. Therefore:
@@ -112,17 +112,17 @@ stays comfortable (16 ms) even single-threaded.
     lowers the guest's *internal* draw time — which is already sub-frame here.
   - A **hardware-cursor overlay** (cirrus/qxl/virtio HW cursor) is delivered as a
     separate overlay, **not composited into the captured frame → it would be
-    invisible in the stream**. Our tiles work because the guest renders a *software*
+    invisible in the stream**. Our stations work because the guest renders a *software*
     cursor.
   - **virtio-gpu 2D** captures identically to `-vga std` (same `ScanoutMap`/damage);
     only **3D/virgl** would flip to whole-surface DMABUF updates and *defeat*
-    damage-scoping — and that path can't run on this box anyway.
+    damage-scoping — and that path can't run on labhost anyway.
 - `-vga cirrus` **blanks GDI text at hi-res on QEMU 11** (documented in
   `docs/guests/win9x.md`) and its Win9x driver **deadlocks under KVM**.
 
 The only display property that helps our pipeline is a **packed-linear framebuffer
 with a software cursor** (memcpy repaint completes inside one 4 ms fast-poll, so we
-capture the final frame, not torn planar intermediates). Every bumped tile already
+capture the final frame, not torn planar intermediates). Every bumped station already
 has that. Moving to qxl/virtio-gpu for "acceleration" buys the stream nothing and
 adds the invisible-cursor hazard.
 
@@ -164,11 +164,11 @@ resolution only *increases* our per-full-frame encode geometry, and BitBLT accel
 invisible to us. Pursue #1 only for a *fidelity* upgrade; otherwise the current path
 is fine.
 
-## Per-tile recommendation
+## Per-station recommendation
 
 No severe live regression was found, so nothing was rolled back.
 
-| tile | resolution | verdict | why |
+| station | resolution | verdict | why |
 |---|---|---|---|
 | win95 | 1280×1024 | **KEEP** | guest keeps up; encode 2–6 ms real / 16 ms 1-thread worst case — comfortable |
 | kolibrios | 1280×1024 | **KEEP** | guest keeps up; encode 2–8 ms; comfortable single-threaded |
@@ -182,7 +182,7 @@ No severe live regression was found, so nothing was rolled back.
 - **Under CPU contention (effectively 1 encode thread) OR mobile/WAN clients:** cap
   at ~**1280×1024** — single-thread worst case 16 ms, and ~4× fewer egress bytes +
   client-decode load than 1920×1200. This is the safe gate for the remaining
-  un-bumped tiles (reactos/aros/tinycore/haiku/toaruos/serenityos/redstar2/redstar3/
+  un-bumped stations (reactos/aros/tinycore/haiku/toaruos/serenityos/redstar2/redstar3/
   win2000/os2warp).
 - **Never SWITCH display path for "acceleration"** — it does not reduce our
   encode/egress/decode cost and risks the invisible-cursor / cirrus-text-blank bugs.
@@ -191,7 +191,7 @@ No severe live regression was found, so nothing was rolled back.
 
 ## Reproduction
 
-Measurement scripts live under `/data/vms/soltest/resmeas/` on the box:
+Measurement scripts live under `/data/vms/soltest/resmeas/` on labhost:
 `drawmeas.py` (warpd drag + QMP screendump cadence), `absdrag.py` (tablet-abs drag),
 `x264bench.sh` (encode-only scaling bench). Live encode figures come from the
 `[encode] enc latency (snap->AU)` journal line (always emitted per 120 frames;

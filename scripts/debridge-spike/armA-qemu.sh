@@ -3,11 +3,11 @@
 # Debian trixie bridge kiosk, captured the ordinary way (QEMU dbus display).
 #
 # NOT A TILE. A namespaced clone under /data/vms/soltest/ — its own overlay,
-# qmp.sock, pidfile and ssh port. The LIVE `atarist` tile (hatari) is arm C and
+# qmp.sock, pidfile and ssh port. The LIVE `atarist` station (hatari) is arm C and
 # is never touched by anything here.
 #
-# Device set is the live atarist tile's, verbatim, so the only difference
-# between this and a production bridge tile is which emulator the kiosk runs.
+# Device set is the live atarist station's, verbatim, so the only difference
+# between this and a production kiosk is which emulator the kiosk runs.
 # Kill ONLY via `clone-guard kill-pidfile`.
 set -e
 D=/data/vms/soltest/debridge-7f3a/armA

@@ -13,7 +13,7 @@ the same shape as `c64`/`atarist`/`apple2`/`amstradcpc`/`mpf2`.
 The DEC PDP-11 (1970–1997) is the missing ancestor in a lineup that already
 runs its descendants. It would become the **oldest machine in the collection**
 — the current floor is `apple2` (1977) — and it is the direct prehistory of two
-tiles already live:
+stations already live:
 
 - `openvms` — VMS was written by the RSX-11M team, for the VAX, as the PDP-11's
   successor. Putting RSX-11M or RSTS/E next to DECwindows closes that arc.
@@ -25,7 +25,7 @@ tiles already live:
 | Candidate | Finding |
 |---|---|
 | **QEMU** | No PDP-11 target exists. Closed. |
-| **MAME** | Emulates only the **T-11** single-chip PDP-11 (VT240, Elektronika MS 0515). The K1801 Soviet machines and the real 11/xx CPUs are not emulated. The `irix`/`mpf2` MAME route does not apply. Confirmed against the box's own MAME 0.276 driver list. |
+| **MAME** | Emulates only the **T-11** single-chip PDP-11 (VT240, Elektronika MS 0515). The K1801 Soviet machines and the real 11/xx CPUs are not emulated. The `irix`/`mpf2` MAME route does not apply. Confirmed against labhost's own MAME 0.276 driver list. |
 | **SIMH** | Simulates the full PDP-11 line (11/20 … 11/93) plus RK05/RL02/RP06/TM11 peripherals, DZ11/DL11 terminals, and — via its `display/` subsystem with SDL2 — the **VT11/GT40 vector display**, including the in-tree `PDP11/lunar11` Lunar Lander. This is the backend. |
 
 **Which SIMH.** The project forked in May 2022 when the licence on `simh/simh`
@@ -42,14 +42,14 @@ does for VICE, cap32 and LinApple.
 
 | Path | Mechanism | Verdict |
 |---|---|---|
-| **A. Bridge tile** | Thin qcow2 overlay on the frozen `bridge-base.qcow2`, own `/etc/bridge/launch.sh` running SIMH full-screen (an xterm for the console tile; the SDL window for a GT40 tile). Capture = dbus, reset = `loadvm golden`, input = PS/2 keyboard. | **Recommended.** Proven five times; inherits the whole golden/reset/labctl/exec machinery. |
-| **B. Host-native + `SH_CAPTURE=x11`** | SIMH under Xvfb on the box, `x11test` input backend, `fifo` audio. No QEMU at all. | The daemon supports it (`streamhost/src/x11_input.rs`, `streamhost/docs/CONFIG.md`) but **no tile uses it today**, X11 capture was measured at 32–43 % of a host core, and `loadvm golden` is lost — reset would fall back to `restart` plus SIMH's own `SAVE`/`RESTORE`. Interesting second attempt, not the first. |
-| **C. `SH_CAPTURE=shm` (the `irix` route)** | Patch SIMH to publish a shm framebuffer. | Only if the tile ever proves too expensive. Not now. |
+| **A. Kiosk** | Thin qcow2 overlay on the frozen `bridge-base.qcow2`, own `/etc/bridge/launch.sh` running SIMH full-screen (an xterm for the console station; the SDL window for a GT40 station). Capture = dbus, reset = `loadvm golden`, input = PS/2 keyboard. | **Recommended.** Proven five times; inherits the whole checkpoint/reset/labctl/exec machinery. |
+| **B. Host-native + `SH_CAPTURE=x11`** | SIMH under Xvfb on labhost, `x11test` input backend, `fifo` audio. No QEMU at all. | The daemon supports it (`streamhost/src/x11_input.rs`, `streamhost/docs/CONFIG.md`) but **no station uses it today**, X11 capture was measured at 32–43 % of a host core, and `loadvm golden` is lost — reset would fall back to `restart` plus SIMH's own `SAVE`/`RESTORE`. Interesting second attempt, not the first. |
+| **C. `SH_CAPTURE=shm` (the `irix` route)** | Patch SIMH to publish a shm framebuffer. | Only if the station ever proves too expensive. Not now. |
 
 **The one wrinkle in path A.** `bridge-base.qcow2` is explicitly frozen and
 ships five emulators, none of them SIMH. The builder must therefore install and
-build SIMH **into the tile's writable overlay**, exactly as `amiga.sh` already
-does for FS-UAE ("FS-UAE is NOT baked into the frozen bridge base … this script
+build SIMH **into the station's writable overlay**, exactly as `amiga.sh` already
+does for FS-UAE ("FS-UAE is NOT baked into the frozen bridge seed … this script
 `apt-get install -y fs-uae` INTO THE OVERLAY"). Follow that precedent, record
 the deviation in `docs/guests/pdp11.md`, and — as `amiga.sh` did — also add
 SIMH to `bridge-base.sh` so a from-scratch NVMe rebuild bakes it in.
@@ -70,10 +70,10 @@ This decision sets both the media licensing and the exhibit's look.
 | **GT40 / VT11 Lunar Lander** | In the SIMH tree (`PDP11/lunar11`); see also [Isysxp/GT40](https://github.com/Isysxp/GT40). Needs the SDL2 display build, `SET CPU 11/70`, DLI + VT enabled. | **The visual showpiece** — 1973 vector graphics, unlike anything else in the lineup. |
 | *(bonus)* **PiDP-11 blinkenlight panel** | Jörg Hoppe's BlinkenBone panelsim, a photorealistic 11/40 front panel driven by SIMH. | Could share the kiosk root with the console. Extra scope; park it. |
 
-**Recommendation.** Ship **2.11BSD on an 11/70** as the primary tile: best
+**Recommendation.** Ship **2.11BSD on an 11/70** as the primary station: best
 interactivity, verified ready-made images, boots to a real login. Treat **GT40
-Lunar Lander** as an optional second tile later — it is a different device set
-and therefore a different golden, so it cannot share one. Unix V6 is the
+Lunar Lander** as an optional second station later — it is a different device set
+and therefore a different checkpoint, so it cannot share one. Unix V6 is the
 sentimental and legally safest pick but gives a visitor less in 30 seconds.
 
 ## 5. Concrete integration sketch
@@ -89,14 +89,14 @@ make tile-registry-check
 - **Key pacing.** The `SH_KEY_MIN_HOLD_MS`/`SH_KEY_MIN_GAP_MS` frame-sampling
   trap in playbook §5.1 is an *emulator-frame* problem (MAME, VICE). SIMH's
   console is a pty behind X, so default pacing should be fine — but prove it
-  through the SPA path, never with `labctl type`, which drops characters while
+  through the UI path, never with `labctl type`, which drops characters while
   printing `ok: typed N chars`.
-- **Exec channel.** Copy the bridge tiles: sshd in the Debian kiosk on a
+- **Exec channel.** Copy the kiosks: sshd in the Debian kiosk on a
   namespaced hostfwd (bridge key, root), then reach the SIMH console through
   its pty. 2.11BSD itself has only telnet/rsh, so exec lands in the kiosk, not
   in the guest.
-- **Golden.** `resetMode: loadvm`, snapshot `golden`, baked from a **cold boot,
-  untouched**, via `scripts/lib/golden-verify.sh pdp11 --bake` then re-verified
+- **Checkpoint.** `resetMode: loadvm`, snapshot `golden`, captured from a **cold boot,
+  untouched**, via `scripts/lib/checkpoint-verify.sh pdp11 --capture` then re-verified
   without `--bake`. The internal snapshot covers the disk too, so visitor
   writes to the 2.11BSD filesystem — and any unclean-shutdown fsck — vanish on
   reset.
@@ -104,13 +104,13 @@ make tile-registry-check
   `scripts/build-guests/tiles/pdp11.sh`, `docs/guests/pdp11.md`,
   `docs/lab/ASSETS-MANIFEST.md` + `check-assets.sh` rows (hash the TUHS tape
   locally; a size-only check is a reproducibility gap),
-  `scripts/coldboot/bootrec-tiles.conf` arm, and the three compiled-in SPA
+  `scripts/coldboot/bootrec-tiles.conf` arm, and the three compiled-in UI
   files — `spa/src/ui/keyboard/keyboardProfiles.ts` (`OS_FAMILY`),
   `spa/src/scene/machines.ts` (`ASSEMBLIES_BY_TILE`, **registry order, not
   alphabetical**) and `spa/src/scene/machineIdentity.ts`, whose exhaustiveness
   check fails only under `npm run build`, never under vitest.
 - **Capacity.** Negligible: a SIMH 11/70 is a rounding error beside the MAME
-  tiles. Measured bridge-tile RSS on the box is 0.7–1.65 GB, all of it QEMU
+  stations. Measured kiosk RSS on labhost is 0.7–1.65 GB, all of it QEMU
   kiosk rather than emulator.
 
 ## 6. Open questions for the operator
@@ -118,9 +118,9 @@ make tile-registry-check
 1. **Which OS** — 2.11BSD (recommended), Unix V6, or a Mentec-licensed
    RT-11/RSX image, accepting the hobbyist terms on a publicly reachable
    gallery.
-2. **One tile or two** — terminal PDP-11 now, GT40 vector Lunar Lander later?
-   They cannot share a golden.
-3. **The overlay deviation** — confirm SIMH is built into the tile overlay
+2. **One station or two** — terminal PDP-11 now, GT40 vector Lunar Lander later?
+   They cannot share a checkpoint.
+3. **The overlay deviation** — confirm SIMH is built into the station overlay
    (with a matching `bridge-base.sh` update for future rebuilds) rather than
    reopening the frozen base.
 

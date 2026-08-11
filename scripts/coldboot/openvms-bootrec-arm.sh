@@ -1,5 +1,5 @@
 #!/bin/bash
-# Case-arm values for recording the OpenVMS golden-resume path on a clone.
+# Case-arm values for recording the OpenVMS checkpoint-resume path on a clone.
 bootrec_scaffold_openvms() {
   BR_BOOT_KIND="vmstate"
   BR_CANVAS_W=1600

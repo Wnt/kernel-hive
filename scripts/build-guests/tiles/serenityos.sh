@@ -279,7 +279,7 @@ in_ct_root '
 # ---------------------------------------------------------------------------
 # 4d. Set the WindowServer display resolution to 1920x1080 (16:9, full-era).
 #     WindowServer reads [Screen0] Width/Height from /etc/WindowServer.ini at
-#     start. The stock build ships 1024x768; the gallery tile runs the single-head
+#     start. The stock build ships 1024x768; the gallery station runs the single-head
 #     BochsDisplay/VBE packed framebuffer (QEMU -vga std, default 16 MB vgamem
 #     covers 1920x1080x32bpp = 7.9 MB), which the display path drives 1:1 (see
 #     docs/lab/tile-resolution-responsiveness.md). Done OFFLINE with debugfs on
@@ -344,7 +344,7 @@ cat >"$OUT_DIR/boot.sh" <<'BOOTSH'
 # every later boot panicked at StorageManagement::create_first_vfs_root_context).
 # So we NEVER boot the golden directly: we boot a FRESH throwaway copy-on-write
 # qcow2 overlay backed by the read-only _disk_image. The golden stays pristine, and
-# the writable footprint is only tens of KB. The streamhost tile does the same
+# the writable footprint is only tens of KB. The streamhost station does the same
 # on every launch (see streamhost/tiles-manifest.sh).
 set -e
 BASE="$(cd "$(dirname "$0")" && pwd)"
@@ -408,8 +408,8 @@ cat >"$OUT_DIR/MANIFEST.md" <<MANIFEST
 ## Headless verify command
 See boot.sh in this directory. Usage: ./boot.sh <vnc_target> <accel> <work_dir>
 
-## Exact guest-visible QEMU device model for the streamhost gallery tile
-# The tile boots a FRESH per-container qcow2 overlay backed by the READ-ONLY golden
+## Exact guest-visible QEMU device model for the streamhost gallery station
+# The station boots a FRESH per-container qcow2 overlay backed by the READ-ONLY golden
 # _disk_image (writable root, tiny footprint, clean on every restart). -vga std gives a single
 # clean 1920x1080 framebuffer (resolution set in /etc/WindowServer.ini, step 4d; bochs-display
 # exposes a dual-head desktop that half-fills the stream canvas; std avoids that).

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # mobile-netem — emulate the user's mobile 5G + WireGuard path for STREAMHOST
-# TRAFFIC ONLY between the lab box and dev container CT950 (osgallery-dev,
+# TRAFFIC ONLY between labhost and dev container CT950 (osgallery-dev,
 # 192.0.2.11). Chrome DevTools throttling cannot shape WebTransport/QUIC,
-# so the shaping happens here, in the kernel, on the box.
+# so the shaping happens here, in the kernel, on labhost.
 #
 # SOURCE OF TRUTH: scripts/dev/mobile-netem.sh (osgallery repo)
-# LIVE COPY:       /usr/local/bin/mobile-netem (on the lab box)
+# LIVE COPY:       /usr/local/bin/mobile-netem (on labhost)
 # These two files MUST stay byte-identical (same rule as scripts/labctl).
-# The script runs ON THE BOX as root:  ssh lab 'mobile-netem on|off|status'
+# The script runs ON labhost as root:  ssh lab 'mobile-netem on|off|status'
 #
 # EMULATED PROFILE — measured phone baseline (fast.com over 5G + WireGuard,
 # 2026-07-17): 44 Mbps down / 29 Mbps up, 42 ms unloaded latency, ~510 ms
@@ -20,9 +20,9 @@
 # SCOPE / SAFETY:
 #   * qdiscs attach ONLY to CT950's veth (veth950i0) and one dedicated ifb
 #     (ifbmn950) — never vmbr*/eth*/other veths (hard-guarded below).
-#   * Only streamhost flows are matched: tile WebTransport UDP ports
+#   * Only streamhost flows are matched: station WebTransport UDP ports
 #     (SH_PORT= in /data/vms/streamhost/tiles/*/tile.env, discovered at `on`
-#     time) + TCP 8443 (SPA https server). Everything else — ssh, mosh,
+#     time) + TCP 8443 (UI https server). Everything else — ssh, mosh,
 #     ping, other guests — rides the HTB default class at 10 Gbit (downlink)
 #     or is never redirected to the ifb (uplink).
 #   * `on` arms a fail-safe: transient systemd timer runs `mobile-netem off`

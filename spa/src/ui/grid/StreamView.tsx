@@ -73,7 +73,7 @@ export default function StreamView({
   const transport = os.transport;
   const streamable = transport === 'streamhost';
   const isStreamhost = transport === 'streamhost';
-  // streamhost tiles CAN render through a DIRECT visible <canvas> (paint-on-decode)
+  // streamhost stations CAN render through a DIRECT visible <canvas> (paint-on-decode)
   // — gated to Firefox (faster there); Chrome keeps its lower-latency overlay
   // <video>. WebCodecs-less Firefox uses the native WebRTC MediaStream fallback,
   // which must stay on a real <video>. See env.isFirefoxEngine.
@@ -88,35 +88,35 @@ export default function StreamView({
   const touchExhibit =
     (os as { isTouch?: boolean }).isTouch ?? os.archetypeId === 'touch-phone';
   const displayName = os.displayName ?? os.osId;
-  // MOBILE LAYOUT gate (device, not tile archetype): three fixed regions —
+  // MOBILE LAYOUT gate (device, not station archetype): three fixed regions —
   // thin bar / maximized stage / collapsible keyboard sheet.
   const mobile = useMobileLayout();
 
   // coldBoot: frame the connect as a CRT power-on (PowerOnOverlay) instead of a
   // spinner. bootVideo: same-origin recorded power-on clip (BootVideoOverlay),
   // takes the overlay slot ahead of coldBoot + spinner. bootManifest: the merged
-  // /boot/index.json fields for THIS tile (poster/sprite/vtt/duration).
+  // /boot/index.json fields for THIS station (poster/sprite/vtt/duration).
   const coldBoot = !!os.coldBoot;
   const bootVideo = playBootVideo ? os.bootVideo : undefined;
   const bootManifest = useMuseum((s) => s.vms.find((v) => v.id === os.osId)?.bootVideo);
 
-  // pointerRel: SH_POINTER=rel tiles (qnx/freedos/msdoswin1) fed raw movementX/Y
+  // pointerRel: SH_POINTER=rel stations (qnx/freedos/msdoswin1) fed raw movementX/Y
   // as DIRECT type=4 RelMotion under lock.
   //
   // mouseCapture: GFN-style whole-mouse capture (pointer lock in fullscreen).
-  // ONLY the relative-pointer tiles take it, because only they NEED it — a
+  // ONLY the relative-pointer stations take it, because only they NEED it — a
   // relative guest has no way to be told "the pointer is here", so it must be
-  // fed deltas, and deltas only exist under lock. An ABSOLUTE tile is mapped
+  // fed deltas, and deltas only exist under lock. An ABSOLUTE station is mapped
   // point-for-point from the picture rect, which works identically in
   // fullscreen and windowed; locking it bought nothing and cost the visitor
   // their cursor (the UA hides it under lock, and no CSS can bring it back).
-  // So fullscreen on an abs tile is now just the windowed view, full-bleed:
+  // So fullscreen on an abs station is now just the windowed view, full-bleed:
   // same 1:1 pointer, same crosshair, no click-to-resume, no captured state.
   const pointerRel = !!os.pointerRel;
   const mouseCapture = transport === 'streamhost' && !touchExhibit && pointerRel;
 
   // ERA-CORRECT 4:3 PRESENTATION (presentAspect.ts) — non-square-pixel vintage/
-  // bridge tiles fill a display-aspect box (object-fit:fill), else default OFF.
+  // kiosks fill a display-aspect box (object-fit:fill), else default OFF.
   const present = presentAspectFor(os.osId);
   const presentFill = !!present;
 
@@ -226,7 +226,7 @@ export default function StreamView({
   }, [onExit, releaseHeldButtons]);
 
   // ---- POINTER-LOCK request/reconcile (GFN np() port) -----------------------
-  //  The element that takes the lock: the <video>/<canvas> for streamhost tiles
+  //  The element that takes the lock: the <video>/<canvas> for streamhost stations
   //  (null for everything else). Requesting MUST happen inside a user-activation
   //  chain (a click) — never from a bare effect — or the browser rejects it.
   const lockTargetEl = useCallback((): (HTMLElement & {
@@ -238,7 +238,7 @@ export default function StreamView({
 
   // The live picture element (streamhost <canvas> or <video>). BootVideoOverlay
   // samples this to detect when the live layer has painted real (non-black)
-  // content. Stable for the component's life (directCanvas is constant per tile).
+  // content. Stable for the component's life (directCanvas is constant per station).
   const getLiveSurface = useCallback(
     (): HTMLVideoElement | HTMLCanvasElement | null =>
       directCanvas ? canvasRef.current : videoRef.current,
@@ -333,13 +333,13 @@ export default function StreamView({
     fsRef, lockedRef, wantControlRef, vcursorRef, lastGuestRef, unknownErrRef, unadjustedRef,
   });
 
-  // ---- RESTORE TO GOLDEN (streamhost only) ---------------------------------
+  // ---- RESTORE TO CHECKPOINT (streamhost only) ---------------------------------
   const { restoreToGolden } = useRestoreFlow({
     osId: os.osId, restoreState, setRestoreState,
     beginRestoreReconnect, finishRestoreReconnect, restoreTimer,
   });
 
-  // ---- TYPE-IN DEMO PROGRAM (registry-declared tiles only) -----------------
+  // ---- TYPE-IN DEMO PROGRAM (registry-declared stations only) -----------------
   const demo = useDemoProgram({ osId: os.osId, streamable, controlRef });
 
   // ---- status line + debug readout (pure derivation in statusDerive.ts) ----
@@ -456,8 +456,8 @@ export default function StreamView({
               />
             )}
             {bootVideo ? (
-              // BOOT-VIDEO tiles: replay the recorded power-on clip while the live
-              // golden connects behind it, then swap invisibly on the first live
+              // BOOT-VIDEO stations: replay the recorded power-on clip while the live
+              // checkpoint connects behind it, then swap invisibly on the first live
               // frame. Takes the overlay slot ahead of coldBoot + the spinner.
               <BootVideoOverlay
                 src={bootManifest?.mp4 ?? bootVideo}
@@ -469,7 +469,7 @@ export default function StreamView({
                 getLiveSurface={getLiveSurface}
               />
             ) : coldBoot ? (
-              // COLD-BOOT tiles: dramatic CRT power-on instead of a spinner.
+              // COLD-BOOT stations: dramatic CRT power-on instead of a spinner.
               <PowerOnOverlay
                 displayName={displayName}
                 eraLabel={os.eraLabel}

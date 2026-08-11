@@ -1,11 +1,11 @@
 # Windows XP Professional — Kernel Hive retro guest (build notes)
 
-Built from the user's own legit media, automated as far as practical, on the
-Proxmox host (192.0.2.10) as a neko-qemu gallery guest.
+Built from the user's own legit media, automated as far as practical, on
+labhost (192.0.2.10) as a neko-qemu gallery guest.
 
 > **CURRENT STATE — see [§12](#12-2026-07-27-rebuild--revived-at-1920×1200-after-the-nvme-migration).**
-> The tile runs today as the **streamhost** guest `winxp` (VMID 94) at **1920×1200**
-> from `/data/vms/streamhost/tiles/winxp/winxp-golden.qcow2` (golden snapshot,
+> The station runs today as the **streamhost** guest `winxp` (VMID 94) at **1920×1200**
+> from `/data/vms/streamhost/tiles/winxp/winxp-golden.qcow2` (checkpoint,
 > resetMode=loadvm). §1–§11 below are the original neko-era usermedia build + the
 > 1024×768 polish, kept for the record; the paths/resolution there are superseded.
 
@@ -28,7 +28,7 @@ Proxmox host (192.0.2.10) as a neko-qemu gallery guest.
 - Source (Mac): a pre-integrated XP Pro SP3 (Nov 2014, DriverPacks slipstreamed) zip from the private media collection
   (624 MB ZIP). Contains one install ISO + a "Remove Maher's Digital World"
   cleanup .cmd/screenshot (ignored).
-- Extracted on the Mac; the **ISO** (624 MB) was `scp`'d to the host, then copied
+- Extracted on the Mac; the **ISO** (624 MB) was `scp`'d to labhost, then copied
   into the isolated build dir as `winxp-sp3.iso`.
 
 ## 2. Unattended detection — partial
@@ -75,7 +75,7 @@ qemu-system-x86_64 -name winxp-um-gallery \
 - On reboots during install, do NOT press a key at "Press any key to boot from
   CD" — it times out to the HDD.
 - For the gallery LXC (neko-qemu): swap `-display none` / `-audiodev none` for
-  the neko VNC + pulse audiodev the other tiles use; keep the rest identical.
+  the neko VNC + pulse audiodev the other stations use; keep the rest identical.
 
 ## 4. Headless framebuffer automation (REQUIRED — do not fly blind)
 
@@ -146,9 +146,9 @@ the helper scripts I wrote there). Mid-build it **re-created that qcow2 from
 scratch**, destroying my first completed image (both qemus briefly had the file
 open r/w). I **ceded `/data/gallery-guests/WinXP/` to that workflow** and rebuilt
 mine in the isolated **`/data/gallery-guests/WinXP-usermedia/`** with a unique
-image name, VM `-name`, and monitor socket. Two "WinXP" tiles were in flight at
+image name, VM `-name`, and monitor socket. Two "WinXP" stations were in flight at
 the time — since **resolved**: one XP exhibit ships, the live streamhost `winxp`
-tile (VMID 94).
+station (VMID 94).
 
 ## 7. Killer/reaper: use qemu-system-x86_64, not -i386
 
@@ -170,7 +170,7 @@ Working (double-click a Desktop `Play-*.bat`; all three verified in-game):
   NOT set `SDL_VIDEODRIVER=windib` for SDL2 — it errors "windib not available".
 - **Duke Nukem 3D** shareware v1.3D (`DUKE3D.EXE`+`.GRP`) via bundled **DOSBox
   0.74-3**. Required a one-time `SETUP.EXE` → "Save and launch" to create
-  `DUKE3D.CFG` (baked into the image; the launcher now runs the game directly).
+  `DUKE3D.CFG` (captured into the image; the launcher now runs the game directly).
 - **Quake** shareware (`QUAKE.EXE`+`ID1\PAK0.PAK`) via DOSBox. Runs directly
   (reaches the Quake MAIN menu).
 - DOSBox itself works on std VGA (SDL 1.2) with no env tweaks.
@@ -195,7 +195,7 @@ archive.org.
 
 Separately from the staged `C:\RetroApps\Installers\` Winamp 5.666 installer
 above, `winxp.sh`'s `bake_desktop_shortcuts` step drops a real desktop icon
-for **Winamp 2.95** onto the golden's desktop so a first-time viewer can just
+for **Winamp 2.95** onto the checkpoint's desktop so a first-time viewer can just
 double-click it. Because Nullsoft's installer can't run headlessly, this was
 built once from an already-installed `C:\Program Files\Winamp` tree and
 repacked as `scripts/build-guests/assets/winxp/Winamp-2.95-installed.tar.gz`
@@ -209,7 +209,7 @@ checkout:
 
 1. Install Winamp 2.95 freeware into a scratch Windows environment.
 2. Disable the first-run registration nag and the startup mini-browser /
-   version-check in its `winamp.ini` (so the golden opens straight to the
+   version-check in its `winamp.ini` (so the checkpoint opens straight to the
    player).
 3. `tar czf Winamp-2.95-installed.tar.gz -C <scratch-dir> "Program Files/Winamp"`
    and place the result at
@@ -219,35 +219,35 @@ checkout:
 Without it, `winxp.sh` logs a WARN and simply skips the Winamp shortcut — the
 rest of the build (including the staged 5.666 installer above) is unaffected.
 
-## 9. Remaining step — add it as a gallery tile (DONE — historical)
+## 9. Remaining step — add it as a gallery station (DONE — historical)
 
 > **Status:** done, though not via neko — the exhibit runs today as the live
-> **streamhost** tile `winxp` (VMID 94). The neko-qemu wiring below was never
+> **streamhost** station `winxp` (VMID 94). The neko-qemu wiring below was never
 > executed; kept for the record.
 
-Add one neko-qemu tile in CTID 110 pointing at
+Add one neko-qemu station in CTID 110 pointing at
 `/data/gallery-guests/WinXP-usermedia/winxp.qcow2` with the §3 args (swap
 `-display none` / `-audiodev none` for the neko VNC + pulse audiodev the other
-tiles use, and keep **`qemu-system-x86_64`**). Do **not** hand-edit the live
+stations use, and keep **`qemu-system-x86_64`**). Do **not** hand-edit the live
 `setup.sh`/compose here — that belongs to the gallery workflow. The image is
 self-contained and boots to the desktop via auto-logon.
 
-## 10. Files on the host (isolated dir `/data/gallery-guests/WinXP-usermedia/`)
+## 10. Files on labhost (isolated dir `/data/gallery-guests/WinXP-usermedia/`)
 
 - `winxp.qcow2` — the deliverable disk image (~841 MiB, boots to desktop)
 - `winxp-sp3.iso` — the source install ISO (only needed to re-install; optional)
 - `boot.sh` — launches the final profile (§3)
 - `start-install.sh` — the install-time profile (CD + boot dc)
 - `mon.sh` / `shot.sh` — monitor-command and screendump→png helpers
-- `payload_RetroApps/` — host-side copy of the injected software (source of truth)
+- `payload_RetroApps/` — labhost-side copy of the injected software (source of truth)
 
-## 11. Tile polish — 1024×768 display + cursor + drag perf (2026-07-06)
+## 11. Station polish — 1024×768 display + cursor + drag perf (2026-07-06)
 
-Applied to the canonical `WinXPpro/winxp.qcow2` golden (the one the live tile
+Applied to the canonical `WinXPpro/winxp.qcow2` checkpoint (the one the live station
 uses); original backed up as `winxp.qcow2.bak-20260706-032724`.
 
 **RESOLUTION → 1024×768×32 (achieved).** The QEMU **std** (Bochs) VGA that the
-tile uses has NO XP inbox driver above 640×480, and QEMU **cirrus** is a dead
+station uses has NO XP inbox driver above 640×480, and QEMU **cirrus** is a dead
 end here: under KVM the XP desktop only scans out the top ~half of the frame on
 a cold `-snapshot` boot (partial paint / no taskbar) at 800×600 and 1024×768 —
 it *looks* fine after a live mode-reset but never survives a fresh boot. The
@@ -266,12 +266,12 @@ AnaPa, `vbempk.zip`) bound to the std-VGA PCI device (`PCI\CC_0300`):
 `-display none` + monitor `screendump` shows the high-res desktop with a BLACK
 bottom on a cold boot (screendump only re-converts dirty framebuffer regions
 when there is no active display client). This is a *capture artifact*, NOT a
-guest defect: the real tile runs `-display gtk` + neko's live ximagesrc capture
-and paints the **full frame**. Always verify resolution via the live tile's
+guest defect: the real station runs `-display gtk` + neko's live ximagesrc capture
+and paints the **full frame**. Always verify resolution via the live station's
 neko `GET /api/room/screen` (returned `{"width":1024,"height":768}`), not via a
 `-display none` screendump.
 
-**CURSOR → usb-tablet (kept).** The tile already carries `-usb -device
+**CURSOR → usb-tablet (kept).** The station already carries `-usb -device
 usb-tablet`; XP has an inbox USB-HID stack (Device Manager shows "Human
 Interface Devices"), so the absolute tablet binds and the guest cursor tracks
 neko's absolute injection 1:1 — no PS/2 offset. Left as-is.
@@ -279,18 +279,18 @@ neko's absolute injection 1:1 — no PS/2 offset. Left as-is.
 **PERF → full-window drag OFF (achieved).** Display Properties → Appearance →
 Effects → unchecked "Show window contents while dragging"
 (`HKCU\Control Panel\Desktop\DragFullWindows="0"`). Luna visual style and font
-smoothing kept, so the tile still looks like XP.
+smoothing kept, so the station still looks like XP.
 
-**IDLE-HLT → N/A.** XP uses ACPI/HLT idle under KVM; the tile idles at a few %
+**IDLE-HLT → N/A.** XP uses ACPI/HLT idle under KVM; the station idles at a few %
 of a vCPU (the visible ~8% is mostly neko H.264 encoding), no pegged vCPU. No
 DOSidle/AmnHLT-class tool needed (that's a DOS/Win9x problem).
 
-**Reproducibility (baked in, from-scratch NVMe rebuild reproduces it):**
+**Reproducibility (captured in, from-scratch NVMe rebuild reproduces it):**
 - `scripts/build-guests/stages/winxp-vbemp-hires.sh` — fetches VBEMP, builds the
   driver floppy, and replays the exact monitor-driven install + 1024×768 +
   drag-off + verify sequence. Called from `winxp.sh` after auto-logon injection
   (guard `HIRES=1`). This is the surviving reproducer; the guest runs today as
-  the streamhost tile `winxp` (see its stanza in `streamhost/tiles-manifest.sh`).
+  the streamhost station `winxp` (see its stanza in `streamhost/tiles-manifest.sh`).
 - Neko-era canvas wiring (historical): `gallery-integrate-all.sh` carried
   `FIXED_SCREEN[winxp]="1024x768@30"` and the winxp block of
   `docker-compose.gallery-guests.yml` pinned `NEKO_SCREEN=1024x768@30`
@@ -298,12 +298,12 @@ DOSidle/AmnHLT-class tool needed (that's a DOS/Win9x problem).
   `win95-perf-override.yml` / `win311-perf-override.yml` overrides used in the
   neko recreate command are all neko-era, deleted in the 2026-07 restructure —
   git history. (That neko recreate also cleared a pre-existing hung boot — the
-  tile had been stuck on the XP splash for hours.)
+  station had been stuck on the XP splash for hours.)
 
 ## 12. 2026-07-27 rebuild — revived at 1920×1200 after the NVMe migration
 
-The NVMe migration wiped every golden qcow2 (goldens weren't transferred), so the
-`winxp` tile was DOWN with an intact skeleton but no disk. Rebuilt from source, and
+The NVMe migration wiped every checkpoint qcow2 (checkpoints weren't transferred), so the
+`winxp` station was DOWN with an intact skeleton but no disk. Rebuilt from source, and
 the **fleet resolution target was raised 1024×768 → 1920×1200** (packed-VBEMP on
 `-vga std` stays inside the 30 fps encode budget on KVM — see
 `docs/lab/tile-resolution-responsiveness.md`).
@@ -333,18 +333,18 @@ the **fleet resolution target was raised 1024×768 → 1920×1200** (packed-VBEM
   (=3840×2160) then 3× Left lands on **1920×1200** (Highest/32-bit). 1920×1200×32 =
   9.2 MiB fits the std-VGA default 16 MiB vgamem, so the production launcher's plain
   `-vga std` renders it full-frame; the mode persists across reboot.
-- **Golden fixture** (`streamhost/tiles/winxp/golden-bake.sh`, resetMode=loadvm):
-  tile-local `winxp-golden.qcow2` (copy of the pristine `WinXPpro/winxp.qcow2`) with
-  an internal `savevm golden` snapshot. Notepad open+focused (empty, caret top-left),
+- **Checkpoint scene** (`streamhost/tiles/winxp/golden-bake.sh`, resetMode=loadvm):
+  station-local `winxp-golden.qcow2` (copy of the pristine `WinXPpro/winxp.qcow2`) with
+  an internal `savevm golden` checkpoint. Notepad open+focused (empty, caret top-left),
   Bliss, pointer parked right; screensaver OFF, powercfg "Always On" + timeouts 0,
   tray clock hidden (`HideClock=1`), caret quieted (`CursorBlinkRate=2000000000`),
   Security Center (`wscsvc`) + Automatic Updates (`wuauserv`) disabled. **Two
-  no-input frames 3 s apart are byte-identical** (acceptance PASS). The bake does a
+  no-input frames 3 s apart are byte-identical** (acceptance PASS). The capture does a
   **warm-up reboot** so the AC97 "Found New Hardware" event (the launcher attaches
   `-device AC97`, which the hires boot's device order slots differently) installs and
-  clears BEFORE the snapshot — otherwise the balloon bakes into the fixture.
-- **Tile:** `streamhost@winxp` (VMID 94, udp 54094, ptr abs / usb-tablet, AC97). The
+  clears BEFORE the checkpoint — otherwise the balloon gets captured into the scene.
+- **Station:** `streamhost@winxp` (VMID 94, udp 54094, ptr abs / usb-tablet, AC97). The
   launcher (`qemu-streamhost.sh`) gained the `-loadvm golden` conditional (mirroring
-  win95/win311) so `systemctl start` comes up straight in the fixture; `labctl reset
+  win95/win311) so `systemctl start` comes up straight in the scene; `labctl reset
   winxp` (loadvm golden) restores it. Verified live: streams 1920×1200, autologon →
-  Notepad fixture, reset clean, abs pointer maps across the full 1920×1200 surface.
+  Notepad scene, reset clean, abs pointer maps across the full 1920×1200 surface.

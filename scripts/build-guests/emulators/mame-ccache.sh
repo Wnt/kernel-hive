@@ -3,11 +3,11 @@
 # build-guests/emulators/mame-ccache.sh — shared ccache wiring for every
 # chroot MAME build (build-mame-{bbcb,mpf2,zx81,dragon32,kc854,oricatmos}.sh).
 #
-# WHY. Six binaries are built for seven tiles, each from its OWN source tree,
+# WHY. Six binaries are built for seven stations, each from its OWN source tree,
 # and three of the six builders name their tree with `$$` so every run is a
 # brand-new directory. Without a cache that means six cold MAME compiles per
 # migration wave, ~1 h each, recompiling the identical emu/osd/3rdparty core
-# six times over. The trees stay separate on purpose (per-tile patch
+# six times over. The trees stay separate on purpose (per-station patch
 # experimentation is worth more than the disk), so the cache has to be the
 # thing that is shared.
 #
@@ -43,7 +43,7 @@
 # trixie gcc-14 cache could never share an entry anyway.
 #
 # HOST-NATIVE BUILDS SHARE THE TRIXIE CHROOT'S CACHE, and that is the same rule,
-# not an exception to it. Since the 2026-08-10 trixie migration the lab host and
+# not an exception to it. Since the 2026-08-10 trixie migration labhost and
 # the trixie build chroot ARE one compiler — /usr/bin/x86_64-linux-gnu-{gcc,g++}-14
 # and cc1plus are byte-identical files on both sides (sha256-checked). Giving a
 # host build its own cache would buy nothing and cost a ~1 h cold compile for a

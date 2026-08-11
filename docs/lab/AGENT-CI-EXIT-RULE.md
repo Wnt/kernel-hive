@@ -16,7 +16,7 @@ cross-cutting gates, which every branch owes:
 - **file-size budget** — `node scripts/check-file-size.mjs --strict`
 - **generated-file drift** — `make tile-registry-check`
 
-Plus one gate CI cannot run, enforced by the pre-push hook whenever the box is
+Plus one gate CI cannot run, enforced by the pre-push hook whenever labhost is
 reachable: **box-sync drift** — `scripts/dev/verify-box-sync.sh` (see below).
 
 The gate is strict on hygiene and debt (unused
@@ -58,20 +58,20 @@ scripts/check-generated-drift.sh --regen
 `scripts/dev/verify-box-sync.sh` MD5-gates every documented repo↔box mirror pair
 (see the "Box-sync pairs" table in [`scripts/README.md`](../../scripts/README.md)).
 It needs `ssh lab`, which GitHub Actions does not have, so it is **deliberately
-NOT in `.github/workflows/quality.yml`** — a job that can never reach the box
+NOT in `.github/workflows/quality.yml`** — a job that can never reach labhost
 would be permanently red, and a permanently-red job is worse than none.
 
 Instead it runs from `.claude/hooks/pre-push-gate.sh`, probe-gated:
 
 | Environment | Behaviour |
 |---|---|
-| Box reachable (`ssh lab` answers within 4 s) | Runs the check. **Any drift hard-fails the push.** |
-| Box unreachable (public clone, offline laptop, cloud VM without the door) | Prints `skip (ssh lab unreachable)`; never fails. |
+| labhost reachable (`ssh lab` answers within 4 s) | Runs the check. **Any drift hard-fails the push.** |
+| labhost unreachable (public clone, offline laptop, cloud VM without the door) | Prints `skip (ssh lab unreachable)`; never fails. |
 | GitHub Actions | Never runs it at all — the workflow has no box-sync job. |
 
 The check itself is placeholder-aware: pairs marked `scrub` are deployed with
-the operator's real address substituted in, so their box-side hash is taken
-**after** reversing the substitution, on the box, inside the one batched SSH
+the operator's real address substituted in, so their labhost-side hash is taken
+**after** reversing the substitution, on labhost, inside the one batched SSH
 session. Without `registry/local.env` those pairs report `UNCHECKED`, which does
 not fail the gate — they never silently pass and never spuriously fail.
 
@@ -81,10 +81,10 @@ scripts/dev/verify-box-sync.sh --all      # every row, including MATCH
 scripts/dev/verify-box-sync.sh --table    # TSV for scripting
 ```
 
-Fix drift **per row**: the repo is authoritative for source; the box is
+Fix drift **per row**: the repo is authoritative for source; labhost is
 authoritative for generated/live artifacts (`tiles.json`, the golden manifest's
 live reset allow-list). `MISSING_ON_BOX` means "never deployed"; `MISSING_IN_REPO`
-means "stale or scratch on the box" — delete it there rather than adopting it.
+means "stale or scratch on labhost" — delete it there rather than adopting it.
 
 Run them all locally in one shot with the pre-push hook
 (`.claude/hooks/pre-push-gate.sh`) — see below.
@@ -141,7 +141,7 @@ language(s) your branch touches" rule stated above. The two cross-cutting gates
 always run. `GATE_FULL=1` forces the full-tree, every-language run.
 
 **Every skip is loud.** In particular the Rust stage: `streamhost/.cargo/config.toml`
-pins `target-dir` to `/data/vms/streamhost/build/target`, the box's shared
+pins `target-dir` to `/data/vms/streamhost/build/target`, labhost's shared
 target tree, so on a workstation cargo dies with `failed to create directory …
 Permission denied` before compiling anything. The hook detects the unwritable
 target dir and prints `SKIPPED: target-dir unavailable locally (CI covers this)`
@@ -154,7 +154,7 @@ Known and accepted, listed so nobody rediscovers them as bugs:
 `check-generated-drift.sh` / `make tile-registry-check` renders from
 `registry/` on disk (so an *uncommitted* registry edit is what gets checked —
 self-consistent, and a stale generated file is worth surfacing either way), and
-`scripts/dev/verify-box-sync.sh` hashes worktree files against the box and
+`scripts/dev/verify-box-sync.sh` hashes worktree files against labhost and
 enumerates its source/registry/launcher unions with plain `git ls-files` (so a
 brand-new untracked launcher has no mirror row yet). Both would need the pushed
 tree materialised to fix properly; neither is safe to change blind.
@@ -174,12 +174,15 @@ one-line reason. Rules:
 ## Generated-file drift
 
 Every file emitted by `generated()` in `scripts/tiles-registry.py` (the manifest,
-bring-up list, `registry/index.json`, the SPA catalog/registry, the serve JSONs,
-…) must be byte-identical to what the typed registry + templates produce now.
-Edit the **source** (`registry/tiles/*`, templates) and run
-`make tile-registry-generate`, then commit the regenerated artifacts. Never hand-
-edit a generated file. `make tile-registry-check` (and the CI `static` job) fail
-on any drift.
+bring-up list, the UI registry data, the serve JSONs, …) must be byte-identical
+to what the typed registry + templates produce now. Edit the **source**
+(`registry/tiles/*`, templates) and run `make tile-registry-generate`, then
+commit the regenerated artifacts. Never hand-edit a generated file. `make
+tile-registry-check` (and the CI `static` job) fail on any drift.
+
+What `rendered()` emits — `gallery-manifest.json` and `index.json` — has no
+committed copy to drift, by design; the check proves those still RENDER, and
+`tiles-registry.py render` / `emit` produces them where they are needed.
 
 **Regenerate after every MERGE, not just after every edit.** Generated artifacts
 are the worst case for a three-way merge: they auto-merge *cleanly* and are then

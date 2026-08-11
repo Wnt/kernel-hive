@@ -3,7 +3,7 @@
 **2026-08-11 ~08:00 — THE 2× DESKTOP-INTERACTION GOAL IS ACHIEVED AND
 PROVEN: Computer Management launch 24.4 s → 10.30 s ± 0.25 (2.37×, n=8),
 fork `0e22e9f` (+ savestate work `ab75e70`/`d73e4dc`, docs `d019b15`).
-The canonical box build == the benchmarked binary (`362cf057…`); the rig
+The canonical labhost build == the benchmarked binary (`362cf057…`); the rig
 runs it. Read alpha-nt-add.md §10 "The 24h mission" for the full story.
 Remaining queue: post-restore-under-load wedge (timer-baseline suspect),
 guest telnet channel, guest de-bloat, idle_nap probe, LTO/PGO packaging
@@ -12,13 +12,13 @@ pass, TB_ENTRIES experiment. Older content below.**
 **(Superseded status paragraph:)** Updated 2026-08-11 (late session). Done: §1 fast-flag (−24.7%), §4 partial
 (-O3 adopted, +2.4%; LTO/PGO open), §3 closed NULL (patch parked on fork
 branch `tlb-hint-experimental`), AlphaBIOS NVRAM fix (kernel 118.7→82.8s
-cold-boot), host quiesced, tuning research digested in
+cold-boot), labhost paused, tuning research digested in
 [`es40-tuning-research.md`](es40-tuning-research.md). Next: savestate smoke
 test, then guest telnet channel, then §2 (dispatch) sized by a fresh
 JIT_STATS profile.** Full background: [`alpha-nt-add.md` §10](alpha-nt-add.md).
 
-**Priority reframe (operator, 2026-08-11):** the tile ships in instant-resume
-(desktop visible, golden restore < 5 s) — visitors never watch it boot.
+**Priority reframe (operator, 2026-08-11):** the station ships in instant-ready
+(desktop visible, checkpoint restore < 5 s) — visitors never watch it boot.
 Boot-time wins are operator/bench velocity; the visitor-facing metric is
 **responsiveness at the desktop**, i.e. the idle profile (§2 dispatch, §3
 TLB), not time-to-desktop.
@@ -38,8 +38,8 @@ commits (operator rule: **no .patch files**).
 - **Fork `Wnt/es40` main @ `69022e4`** (pushed): `652f7c2` mouse.absolute,
   `6a525d1` media-mailbox fast-flag, `e4a96e3`/`69022e4` fork docs
   (KERNEL-HIVE-FORK.md). Branch `tlb-hint-experimental` = the measured-null
-  TLB patch. Box checkout synced (push via temp branch + `git merge
-  --ff-only` — the box can't auth to github). Canonical binary `688428…`
+  TLB patch. labhost checkout synced (push via temp branch + `git merge
+  --ff-only` — labhost can't auth to github). Canonical binary `688428…`
   (-O3, .text-identical to benched `es40.O3` `ade17cfa…`); controls:
   `es40.O3`, `es40.652f7c2` (`a2a21bde…`), `es40.baseline` (`29ecb300…`).
   **The fast-flag commit added a virtual to CDisk — always clean-rebuild
@@ -60,12 +60,12 @@ commits (operator rule: **no .patch files**).
   over VNC. Note it is still tracking *relative* — "OK for testing." The
   `mouse.absolute` path is in the config but the operator's VNC client is
   evidently feeding relative motion, which the unpatched path already handles;
-  `mouse.absolute` matters for an absolute-injection transport (the future tile
+  `mouse.absolute` matters for an absolute-injection transport (the future station
   capture pipeline, MAME-IRIX style), not this hand-driven VNC.
 
 ## Where the time goes (the actual findings)
 
-Two perf profiles on the box (400 Hz, dwarf call-graphs), saved at
+Two perf profiles on labhost (400 Hz, dwarf call-graphs), saved at
 `/tmp/es40-idle.perf.data` and `/tmp/es40-boot.perf.data`:
 
 - **Boot phase** (`es40-boot.perf.data`): **~30% of samples in media-hotswap
@@ -80,7 +80,7 @@ Two perf profiles on the box (400 Hz, dwarf call-graphs), saved at
   `jit_run`), ~21% JIT-emitted code, 9% `jit_hw_mtpr` (PAL traffic), ~15%
   software TLB (`FindTBEntry`+`virt2phys`+`get_icache`), ~3% VGA. **JIT codegen
   is NOT the bottleneck — the C++ dispatch/helpers around it are.**
-  (Idle-sleep/WTINT is explicitly a **non-goal**: the tile pauses when unwatched.
+  (Idle-sleep/WTINT is explicitly a **non-goal**: the station pauses when unwatched.
   Operator, 2026-08-10.)
 
 ## Optimization queue — do these in order, A/B each
@@ -109,33 +109,33 @@ Two perf profiles on the box (400 Hz, dwarf call-graphs), saved at
    Patch preserved on fork branch `tlb-hint-experimental` (null result in
    the commit message).
 4. **Build flags — -O3 ADOPTED** (+2.4% kernel wall, +2.8% CPU, zero-overlap
-   3×3). `./configure` on the box now bakes it in (`CXXFLAGS="-g -O3"` at
+   3×3). `./configure` on labhost now bakes it in (`CXXFLAGS="-g -O3"` at
    configure time; the macro appends `-mavx2 -mfma`); plain `make` in
    `es40src/src` reproduces the adopted binary. Controls kept alongside:
    `es40.O3` (=adopted, `ade17cfa…`, .text-identical to the canonical
    `688428…`), `es40.652f7c2`, `es40.baseline`. **LTO and PGO still open**
    as separate one-change A/Bs.
-5. ~~**VGA/llvmpipe**~~ **DEAD (operator, 2026-08-11)** — the tile will drop
+5. ~~**VGA/llvmpipe**~~ **DEAD (operator, 2026-08-11)** — the station will drop
    the SDL+X11 layer entirely and wire es40 straight into the video capture
    pipeline, MAME-IRIX style (shm framebuffer export + injected input; the
    `mouse.absolute` patch was written for exactly that transport). Do not
    optimize SDL/X11/llvmpipe paths — dev/bench-only.
 
-**Tile roadmap constraints (operator, 2026-08-11)** — these order the work:
+**Station roadmap constraints (operator, 2026-08-11)** — these order the work:
 
-- **No golden savestate exists yet** — only the `m2-desktop` disk+ROM cold
+- **No checkpoint savestate exists yet** — only the `m2-desktop` disk+ROM cold
   snapshot. es40's native SaveState/RestoreState (format 2.1; a trigger
   exists at `Serial.cpp:795` → `autosave.axp`) is UNVALIDATED with the JIT
-  build. The tile's instant-resume goal (< 5 s restore) depends on it —
+  build. The station's instant-ready goal (< 5 s restore) depends on it —
   smoke-test save→kill→restore→framebuffer-verify early; it's the riskiest
-  unknown in the tile plan.
+  unknown in the station plan.
 - **State-layout-changing optimizations are compatibility-free until the
-  first golden savestate is baked** (e.g. TB_ENTRIES 16→128, if profiling
-  justifies it). Land them BEFORE baking; afterwards each one forces a
-  re-bake.
+  first checkpoint savestate is captured** (e.g. TB_ENTRIES 16→128, if profiling
+  justifies it). Land them BEFORE capturing; afterwards each one forces a
+  recapture.
 - **Headless capture backend** (shm framebuffer export + socket input,
-  replacing SDL/X11) is a required feature item for the tile — build it
-  before the golden bake so the restored device environment matches the
+  replacing SDL/X11) is a required feature item for the station — build it
+  before the checkpoint capture so the restored device environment matches the
   shipping wiring.
 
 Note for #2: dispatch is an *idle/desktop-profile* cost — the bench's
@@ -168,8 +168,8 @@ state saved with option 3 while the guest keeps writing NTFS bugchecks
 STOP 0x7B on restore) and **`ES40_RESTORE=<file>`** (restore before the
 main loop: no SRM/AlphaBIOS/boot — interactive desktop in seconds).
 
-**Golden pair: `milestones/m4-warm/`** = {nt.img, autosave.axp, flash.rom,
-es40.cfg} baked via option 5 from a settled desktop.
+**Checkpoint pair: `milestones/m4-warm/`** = {nt.img, autosave.axp, flash.rom,
+es40.cfg} captured via option 5 from a settled desktop.
 
 **KNOWN REMAINING BUG — post-restore guest damage under load:** an
 instant-resumed guest looks fine (desktop, Start menu) but Computer
@@ -198,7 +198,7 @@ whole-screen RMSE broke on the guest's "Active Desktop Recovery"
 background (cosmetic guest damage from tonight's hard kills; consistent
 across iterations so A/Bs stay valid; clean up when re-baking).
 
-**BASELINE (canonical -O3 `63ae339f`, quiesced host, 2026-08-11 05:25):
+**BASELINE (canonical -O3 `63ae339f`, quiesced labhost, 2026-08-11 05:25):
 Computer Management launch = 28.28 / 23.03 / 23.62 s (mean 25.0 s).
 The 2× goal: ≤ 12.5 s under the identical protocol.**
 
@@ -218,10 +218,10 @@ capture, MAME-IRIX style), and raise the guest to 1280x1024.
   `SDL_VIDEODRIVER=dummy` with NO X server and NO window. Verified two
   ways: (1) pixel-exact 1280x1024 desktop read from shm vs the SDL window;
   (2) fully headless (no DISPLAY, dummy driver) cold boot AND instant-
-  resume from the golden, both publishing correct frames. Reader:
+  ready from the checkpoint, both publishing correct frames. Reader:
   `uibench/shmread.py`.
-- **New golden `milestones/m5-1280/`** {nt.img, autosave.axp, flash.rom,
-  es40.cfg} baked at 1280x1024 via menu-5 save-and-exit. Headless
+- **New checkpoint `milestones/m5-1280/`** {nt.img, autosave.axp, flash.rom,
+  es40.cfg} captured at 1280x1024 via menu-5 save-and-exit. Headless
   `ES40_RESTORE` from it → 1280x1024 desktop in shm in seconds.
 
 **DONE + VERIFIED — the input socket (fork `849039a`, NO streamhost changes):**
@@ -236,24 +236,24 @@ mamectl/1, so the streamhost `mamesock` backend drives a headless es40.
   position. Verified: MOVEA drives the cursor to the target REGION; pixel-
   accuracy needs the guest at 1:1 motion (no acceleration) — the one open
   guest-side step (HKCU\Control Panel\Mouse MouseSpeed=0, or Mouse cpl
-  Motion tab -> Acceleration None) then re-bake.
+  Motion tab -> Acceleration None) then recapture.
 
 **Verified headless capture path, end to end:** `SDL_VIDEODRIVER=dummy`, no
 DISPLAY, ES40_SHM_PATH + ES40_CTL_SOCK, restore from m5-1280 → full
 1280x1024 desktop published to shm, keyboard + pointer over the socket. No X
 server, no window — the MAME-IRIX shape.
 
-**Reset mode — use RELAUNCH (cold boot), not instant-resume, for now:** an
+**Reset mode — use RELAUNCH (cold boot), not instant-ready, for now:** an
 instant-resumed guest renders the desktop perfectly but new dialogs paint
 only their controls (background not repainted) — a post-restore repaint
 symptom of the same documented restore-under-load fragility, NOT a capture
 bug (cold-booted guests render Computer Management / Display Properties
-fully; the full-desktop shm capture is pixel-exact). So wire the tile like
+fully; the full-desktop shm capture is pixel-exact). So wire the station like
 IRIX: `SH_RESET_MODE=relaunch`, es40 cold-boots headless per launch (~2.5
-min to desktop at the new NVRAM settings). Instant-resume via ES40_RESTORE
+min to desktop at the new NVRAM settings). Instant-ready via ES40_RESTORE
 becomes the fast path once the post-restore repaint/timer issue is fixed.
 
-**Final wiring — the w2kalpha tile (tile.env, mirroring `tiles/irix`):**
+**Final wiring — the w2kalpha station (tile.env, mirroring `tiles/irix`):**
 ```
 SH_TILE=w2kalpha
 SH_TILE_RUNTIME=x11            # launcher-managed emulator, not QEMU
@@ -276,7 +276,7 @@ keep it DISABLED until framebuffer+input+reset pass the playbook gate.
 - **Guest telnet channel** (operator): dec21143 networking + W2K Telnet
   Server for text-driven load scenarios; then the guest de-bloat list.
 - **Config experiments**: remove `ali_usb` (issues #114/#169); test
-  `idle_nap`. Device-set changes before any further golden bakes.
+  `idle_nap`. Device-set changes before any further checkpoint captures.
 
 ## How to measure (the bench harness)
 
@@ -291,20 +291,20 @@ ssh lab '/data/vms/soltest/ALPHA-nt/bench/bench.sh <name> [--until kernel] \
 - **Checkpoints** (framebuffer RMSE vs `bench/refs/`): `serial srm arc osloader
   kernel desktop`. `--until kernel` = ~3.5-min A/B loop; full desktop ~5 min.
   Result JSON per run + appended to `bench/results.log`.
-- **Baselines are EPOCH-BOUND — never compare across epochs** (host load and
+- **Baselines are EPOCH-BOUND — never compare across epochs** (labhost load and
   turbo shift the clock base; the NVRAM change shifted the firmware phase):
-  - loaded host, O2 fast-flag (`3745cfb2…`): kernel ≈ 150s, desktop ≈ 250s
-  - quiesced host, -O3, old NVRAM: arc 76.5 / kernel 118.7 / desktop 179.5
-  - **CURRENT (quiesced, -O3, 5s countdown + no ARC memtest, 2026-08-11):
+  - loaded labhost, O2 fast-flag (`3745cfb2…`): kernel ≈ 150s, desktop ≈ 250s
+  - paused labhost, -O3, old NVRAM: arc 76.5 / kernel 118.7 / desktop 179.5
+  - **CURRENT (paused, -O3, 5s countdown + no ARC memtest, 2026-08-11):
     serial 0.1 / arc 65.9 / kernel 82.8 / desktop 140.4** — a desktop run
     is ~3 min with teardown, `--until kernel` ~1.5 min.
 - **Run A/B arms as CONCURRENT PAIRS** (two slots, same instant) — identical
-  host/turbo conditions per pair, half the wall time; see
+  labhost/turbo conditions per pair, half the wall time; see
   `bench/ab-tlb.sh` for the pattern, `bench/idle-profile-pair.sh` for the
-  paired-perf variant. Host is 8 cores + SMT: cap concurrent measurement
+  paired-perf variant. labhost is 8 cores + SMT: cap concurrent measurement
   runs at 2 (plus the rig) and `taskset` precision runs to distinct
   physical cores (CPU N and N+8 are siblings).
-- Host quiesce state: 52 `streamhost@*` tile units stopped 2026-08-11
+- labhost pause state: 52 `streamhost@*` station units stopped 2026-08-11
   (restore list `/data/vms/soltest/ALPHA-nt/quiesced-units-20260811.txt`);
   debridge-7f3a experiment + openvms killed on operator's order. k3s and
   non-streamhost guests untouched.
@@ -316,9 +316,9 @@ bench.sh ctrl --until kernel --binary /data/vms/soltest/ALPHA-nt/es40src/src/es4
 # build your change, then:
 bench.sh flagfix --until kernel     # uses the freshly built es40
 ```
-Compare `kernel` checkpoint seconds across 2–3 runs each. **Host is loaded
+Compare `kernel` checkpoint seconds across 2–3 runs each. **labhost is loaded
 (load 8–13): relative % in perf is trustworthy; wall-clock A/B needs back-to-
-back runs, ideally a quiesced host.** For CPU-cost that survives host noise,
+back runs, ideally quiesced labhost.** For CPU-cost that survives host noise,
 also `perf stat -e task-clock` the es40 pid over a fixed boot window rather than
 trusting wall-time alone.
 

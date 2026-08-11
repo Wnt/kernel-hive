@@ -15,7 +15,7 @@ function runsText(runs: readonly PosterInlineRun[]): string {
  * next level-2 heading, or the end of the poster if Origins runs to the end.
  *
  * Returns -1 when the poster has no "Origins" heading at all. Every round-1
- * gallery tile's prose does have one (see any registry/posters/*.md), but a
+ * gallery station's prose does have one (see any registry/posters/*.md), but a
  * poster is never assumed to -- this is the defensive, not the expected,
  * path.
  */

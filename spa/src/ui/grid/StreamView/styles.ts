@@ -105,9 +105,9 @@ export const POWER_ON_CSS = `
 // ---------------------------------------------------------------------------
 //  ERA-CORRECT 4:3 PRESENTATION (presentAspect.ts) — scoped size-container.
 //  ---------------------------------------------------------------------------
-//  Only the six non-square-pixel tiles opt in (data-present-fill="1"), so the
+//  Only the six non-square-pixel stations opt in (data-present-fill="1"), so the
 //  size containment is scoped to THOSE sessions and never touches the shared
-//  stage sizing of any other tile. Making the stage a `container-type: size`
+//  stage sizing of any other station. Making the stage a `container-type: size`
 //  container is what lets its <video>/<canvas> size itself in container units
 //  (cqw/cqh) to an exact 4:3 box that fits the stage in BOTH orientations — the
 //  robust, orientation-safe way to size a fitted box with pure CSS. The picture
@@ -118,7 +118,7 @@ export const PRESENT_CSS = `
 .sv-root[data-present-fill="1"] .sv-stage { container-type: size; }
 `;
 
-// Inline size+fit for an era-correct 4:3 tile: size the picture element to an
+// Inline size+fit for an era-correct 4:3 station: size the picture element to an
 // exact display-aspect box (container units against the size-container stage, so
 // it fits in BOTH orientations), then object-fit:fill-stretch the framebuffer to
 // fill it. Merged AFTER S.video so it overrides width/height/object-fit; the

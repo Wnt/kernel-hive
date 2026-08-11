@@ -64,7 +64,7 @@ export async function connectImpl(this: StreamClient): Promise<void> {
     // an old server / new client stays compatible.
     if (sig.video?.codec) { this.desiredCodec = sig.video.codec; }
 
-    // Ask WebCodecs about the exact codec advertised by this tile before
+    // Ask WebCodecs about the exact codec advertised by this station before
     // opening WebTransport. A definitive `supported:false` is terminal; a
     // rejected probe is inconclusive and falls through to configure(), whose
     // existing error path remains authoritative.

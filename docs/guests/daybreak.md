@@ -1,17 +1,17 @@
-# Xerox 6085 "Daybreak" / ViewPoint 2.0.5 — gallery tile notes (udp/54139)
+# Xerox 6085 "Daybreak" / ViewPoint 2.0.5 — gallery station notes (udp/54139)
 
 **Guest:** a captured **Debian 12 x86_64 bare-X kiosk** running **Dwarf/Draco**
 (a Java Mesa-architecture emulator) emulating a real **Xerox 6085
 "Daybreak"/Dove** workstation booting **ViewPoint 2.0.5** off a Pilot rigid-disk
-image. An **"emulator bridge"** tile — streamhost captures the Linux framebuffer
-exactly like every other tile. See **`streamhost/docs/BRIDGE.md`**.
+image. A **kiosk** — streamhost captures the Linux framebuffer
+exactly like every other station. See **`streamhost/docs/BRIDGE.md`**.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (frozen). Java is **not**
-in the base; `openjdk-17-jre` is installed **into this tile's overlay**.
-**Build script (tile):** `scripts/build-guests/tiles/daybreak.sh` — thin overlay
+in the base; `openjdk-17-jre` is installed **into this station's overlay**.
+**Build script (station):** `scripts/build-guests/tiles/daybreak.sh` — thin overlay
 + JRE + upstream Dwarf/disk fetch with verified sha256 + a US Dwarf keymap + the
-kiosk `launch.sh`, then a documented manual logon and golden bake.
-**Tile dir (host):** `/data/vms/streamhost/tiles/daybreak/`.
+kiosk `launch.sh`, then a documented manual logon and checkpoint capture.
+**Station dir (host):** `/data/vms/streamhost/tiles/daybreak/`.
 **Registry entry:** `registry/tiles/daybreak.json` (slot 139, udp 54139,
 VMID 239, ssh hostfwd 127.0.0.1:5849).
 
@@ -38,11 +38,11 @@ and never given a download affordance.
 `10-00-FE-31-AB-21`.** Changing `processorId` in the Draco properties re-locks
 every ViewPoint application. Do not touch it.
 
-## The fixture
+## The scene
 
-The golden is the **logged-in ViewPoint desktop**: the 50 %-dither grey desk,
+The checkpoint is the **logged-in ViewPoint desktop**: the 50 %-dither grey desk,
 `91198 Free Disk Pages` in the message area, a `Help` button top right and a
-single `Directory` icon bottom right. Logon happens **once**, at bake time.
+single `Directory` icon bottom right. Logon happens **once**, at capture time.
 
 That is deliberate. A cold Draco lands on the **logged-off screen** — a small
 bouncing keyboard graphic on black, with `8000` in the emulator's status bar.
@@ -53,8 +53,8 @@ visitor would never guess that, so they never see it.
 There is no Clearinghouse and no Dodo XNS server, so ViewPoint cannot find a
 home File Service. That is the documented standalone path, not a fault: any
 user name plus any password, then ViewPoint offers *"Do you want a new Desktop
-created for you?"* and builds a **temporary desktop**. The bake answers YES.
-Credentials used at bake time: `guest` / `guest`, domain `dev`, organisation
+created for you?"* and builds a **temporary desktop**. The capture answers YES.
+Credentials used at capture time: `guest` / `guest`, domain `dev`, organisation
 `hawala` (the disk's own defaults). `credentialsRef: guest/daybreak`.
 
 ## Display
@@ -82,7 +82,7 @@ logs nothing, the problem is focus, not Pilot.
 
 **2. Dwell, and it is long.** Dwarf is Java/Swing and coalesces input rather
 than sampling once per emulated frame, so the playbook's two-frame rule does not
-apply. Measured on this tile: a zero-length `send-key` chord lands **nothing**;
+apply. Measured on this station: a zero-length `send-key` chord lands **nothing**;
 **400 ms hold with a 150 ms gap** landed 5/5 typed characters and actuated
 `Ctrl+N` first try. Mouse clicks need the same ~400 ms press→release dwell — a
 zero-dwell synthetic click does nothing in an option sheet. Shipped as
@@ -95,7 +95,7 @@ right while `Shift`+`a` → `a` and `Shift`+`;` → `;` silently lost the shift.
 Hold the modifier as a separate, earlier press —
 `shift↓ · 350 ms · key↓ · 400 ms · key↑ · 250 ms · shift↑` — and every case
 works, including the literal colon a ViewPoint XNS three-part name needs
-(`Shift`+`;` → `:`, verified against a plain `;` typed beside it). The SPA's
+(`Shift`+`;` → `:`, verified against a plain `;` typed beside it). The UI's
 shift latch already does exactly this, which is why the on-screen keyboard is
 the reliable route and a hand-rolled QMP chord is not.
 
@@ -121,7 +121,7 @@ German map with the Level-V block unchanged.
 | SAME | `Ctrl+S` | | |
 | AGAIN | `Ctrl+A` | | |
 
-The SPA exposes these through the shared **Level-V keyboard family**
+The UI exposes these through the shared **Level-V keyboard family**
 (`spa/src/ui/keyboard/keyboardProfiles.ts`), which is a per-machine keycode map:
 the same logical buttons and labels are bound to `Ctrl+letter` here and to plain
 PC function keys on a Darkstar-driven Star. The text-property block (F2 Center,
@@ -147,17 +147,17 @@ ADJUST) and Dwarf takes host left/right directly.
 - JVM RSS at the desktop: **226–229 MB**, flat. QEMU RSS **~1.65 GB** with
   `-m 1536`.
 - CPU at the idle desktop: the JVM takes **~9–15 %** of one core inside the
-  guest; the whole tile — QEMU plus the streamhost encoder — sits at **~18 %**
+  guest; the whole station — QEMU plus the streamhost encoder — sits at **~18 %**
   of one core while streaming. (The feasibility study's "3.5 % of a core" was
   measured under bare Xvfb with no capture; expect this figure instead.)
-- Golden VM state: **1.42 GiB**; overlay ~2.9 GB.
+- Checkpoint VM state: **1.42 GiB**; overlay ~2.9 GB.
 - **Soak — the study's one unexplained JVM exit did not recur.** Two windows,
   ~71 minutes of observed JVM liveness in total: 02:02→02:39 on the prototype
-  before the bake, then 02:50→03:25 under the production daemon while
+  before the capture, then 02:50→03:25 under the production daemon while
   streaming — **35 one-minute samples, 0 of them non-active**, JVM RSS bounded
   at **225 064–228 564 kB** with no upward drift. Across that window the JVM
-  also survived the YES/START moment the original crash was seen at, the golden
-  bake, four `loadvm` restores, the Directory open and a shifted-punctuation
+  also survived the YES/START moment the original crash was seen at, the checkpoint
+  capture, four `loadvm` restores, the Directory open and a shifted-punctuation
   sweep. Watch for it anyway: one unreproduced crash is not the same as no
   crash.
 
@@ -166,13 +166,13 @@ ADJUST) and Dwarf takes host left/right directly.
 **Never shut the guest down from inside ViewPoint.** The Dwarf disks readme is
 explicit that an in-guest halt can leave the Pilot disk unusable. The only safe
 stop is the emulator's own Stop button — and a `loadvm golden` kiosk sidesteps
-the question entirely, because the tile is always restored, never shut down.
+the question entirely, because the station is always restored, never shut down.
 `oldDeltasToKeep` is set to 1: Dwarf writes disk changes as delta files on a
-clean stop, and a golden-reset tile discards them anyway.
+clean stop, and a checkpoint-reset station discards them anyway.
 
 ## Rollback
 
-The tile is a thin overlay: `systemctl stop streamhost@daybreak`, then restore
-`overlay.qcow2` (the golden lives **inside** it — never `rm` and recreate it).
+The station is a thin overlay: `systemctl stop streamhost@daybreak`, then restore
+`overlay.qcow2` (the checkpoint lives **inside** it — never `rm` and recreate it).
 Rebuilding from scratch is `scripts/build-guests/tiles/daybreak.sh --force`
-followed by the manual logon and bake in §"Cold-boot route".
+followed by the manual logon and capture in §"Cold-boot route".

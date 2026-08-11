@@ -1,15 +1,15 @@
-# OS/2 Warp 4 gallery tile — notes for the orchestrator
+# OS/2 Warp 4 gallery station — notes for the orchestrator
 
-**Tile:** IBM OS/2 Warp 4 (1996, "Merlin") — Workplace Shell desktop
+**Station:** IBM OS/2 Warp 4 (1996, "Merlin") — Workplace Shell desktop
 **Port:** http://192.0.2.12:**8108**/?usr=guest&pwd=neko
 **Build script:** `scripts/build-guests/tiles/os2warp.sh` (from-scratch, reproducible, `bash -n` clean)
-**Golden image (host):** `/data/gallery-guests/OS2Warp/os2.qcow2` → in container `/guests/OS2Warp/os2.qcow2`
+**Checkpoint image (labhost):** `/data/gallery-guests/OS2Warp/os2.qcow2` → in container `/guests/OS2Warp/os2.qcow2`
 **Proof screenshot:** `/data/gallery-guests/OS2Warp/os2-warp4-desktop.png`
 **Status:** LIVE + framebuffer-verified. Now **Warp 4.52 (MCP2) at 1024×768×64k**
 on `-vga std` via IBM GENGRADD (2026-07-27) — see "SOLVED" at the end of this doc;
 the 640×480 sections below are historical.
 
-> **Historical (neko-era) wiring below.** OS/2 runs today as the streamhost tile
+> **Historical (neko-era) wiring below.** OS/2 runs today as the streamhost station
 > **`os2warp`** — see its stanza in `streamhost/tiles-manifest.sh`
 > (`streamhost@os2warp`). The neko compose/:8108 wiring and the
 > `gallery-integrate-all.sh` manifest row below are neko-era; that integrator was
@@ -23,19 +23,19 @@ the 640×480 sections below are historical.
 IBM OS/2 Warp 4 is copyrighted IBM media (no free/open license). Sourced
 from the Internet Archive (item `os2warp4_20240227`), it is **free to use in this
 private, LAN-only home-lab collection**, same stance already applied to the Win
-9x/XP/2000 and macOS tiles. The only rule: don't re-distribute the copyrighted
-binary media via the GitHub repo; and never expose the tile to the public Internet.
+9x/XP/2000 and macOS stations. The only rule: don't re-distribute the copyrighted
+binary media via the GitHub repo; and never expose the station to the public Internet.
 The **modern, legally-licensed** OS/2 path is **ArcaOS by Arca Noae (paid)** — use
 that for any real/commercial OS/2 work. No faithful free/open OS/2 exists.
 
 ---
 
-## Live tile — isolated compose service (already applied)
+## Live station — isolated compose service (already applied)
 
 Deployed as its **own** compose project `osgallery-os2warp` from
 `/opt/osgallery/docker-compose.os2warp.yml` **inside CT 110** (mirrors the
 TempleOS / SailfishOS isolation pattern), so it never touches the concurrently
-edited `docker-compose.gallery-guests.yml`. Bring up / recreate ONLY this tile:
+edited `docker-compose.gallery-guests.yml`. Bring up / recreate ONLY this station:
 
 ```bash
 # inside CT 110 (pct exec 110 -- ...)
@@ -104,29 +104,29 @@ qemu-system-x86_64 -machine pc,acpi=off,usb=off -cpu pentium -m 128 -smp 1 \
   -netdev user,id=n0 -device pcnet,netdev=n0 -snapshot
 ```
 
-## OS/2-under-QEMU pitfalls baked into the profile (all verified)
+## OS/2-under-QEMU pitfalls captured into the profile (all verified)
 
 - **TCG ONLY.** OS/2 will **not** boot under KVM / hardware virtualisation. The
-  tile leaves `/dev/kvm` mapped for parity but QEMU runs pure TCG for this guest.
+  station leaves `/dev/kvm` mapped for parity but QEMU runs pure TCG for this guest.
 - **`acpi=off,usb=off`.** OS/2 Warp 4 predates ACPI (leaving it on wedges boot);
   it has **no USB stack**, so `usb-tablet` gives no cursor → **PS/2 mouse only**
   (relative pointer; the gallery's neko input maps to it fine).
 - **`-cpu pentium` + `-smp 1`.** The image ships a uniprocessor kernel.
 - **(HISTORICAL) `-vga cirrus` — OS/2 ran its BASE VGA driver, not a Cirrus one.**
-  *Superseded: the tile now runs `-vga std` at 1024×768 — see "SOLVED" below.*
+  *Superseded: the station now runs `-vga std` at 1024×768 — see "SOLVED" below.*
   QEMU emulates Cirrus *hardware*, yet the guest's active PM display driver is the
   generic **base VGA** (`BVHVGA` in `CONFIG.SYS`, `SET VIDEO_DEVICES=VIO_VGA`),
   locked to **640×480×16 colours** (the System→Screen notebook lists only
   `640 x 480 x 16`; screendumps are 4-bit). `std`/`qxl` give a black screen because
   OS/2 has no driver for those either. Earlier revisions of this doc claimed a
   "Cirrus 640×480×8" driver — that is INCORRECT; the resolution CANNOT be raised on
-  this golden, see the 2026-07-27 investigation below.
+  this checkpoint, see the 2026-07-27 investigation below.
 - **IDE disk.** qcow2 as primary IDE master; mounted read-only + `-snapshot` so
   every visitor session is ephemeral.
 
 ---
 
-## How the golden image is prepared (what os2warp.sh automates)
+## How the seed image is prepared (what os2warp.sh automates)
 
 The archive qcow2 is a **pre-installed** Warp 4.0 captured **mid-first-boot**, so a
 naive boot lands on the *IBM Software Registration* wizard over a stray
@@ -145,11 +145,11 @@ museum-clean, fully unattended:
 4. **Verify** — a fresh `-snapshot` boot must reach the **bluish** WPS desktop
    (asserted distinct from the gray registration wizard); saves the proof PNG.
 
-Re-runnable/idempotent: rebuild the golden with `--force`; the pristine download
+Re-runnable/idempotent: rebuild the seed with `--force`; the pristine download
 is cached. If the automated tamer ever mis-times on a very slow host, the manual
 fallback is the identical 6-step keystroke path documented in the script body.
 
-## Curated metadata (for the SPA placard)
+## Curated metadata (for the UI placard)
 
 - **Name/version:** IBM OS/2 Warp 4 ("Merlin"), 1996
 - **Lineage:** IBM OS/2 (1987, orig. joint IBM–Microsoft) → OS/2 2.x (1992, 32-bit)
@@ -181,7 +181,7 @@ not fully boot + accept input). **Empirically re-tested and REVERTED to TCG.**
   `gallery-input-probe.py` mouse probe = **5 hits / 0 misses** (framebuffer
   changes on every injected cursor move). **`reverted=true`.**
 - **Conclusion:** the "TCG ONLY" pitfall above is confirmed by measurement, not
-  just lore. Do **not** flip this tile to KVM.
+  just lore. Do **not** flip this station to KVM.
 - **Audio-buffer knob (gallery-wide):** applied automatically at the image layer —
   the current `neko-qemu:latest` `launch-qemu.sh` emits
   `-audiodev pa,id=snd,out.buffer-length=100000,out.latency=50000` by default, so a
@@ -193,7 +193,7 @@ not fully boot + accept input). **Empirically re-tested and REVERTED to TCG.**
 
 ## Absolute pointer — in-guest warpd agent (2026-07-16, full mouse)
 
-The gallery streamhost tile now runs `SH_POINTER=warpd` for **absolute cursor
+The gallery streamhost station now runs `SH_POINTER=warpd` for **absolute cursor
 tracking** (the PS/2 homing-rel bridge drifted badly under OS/2 PM pointer
 acceleration). The in-guest agent sources live under `streamhost/guest-agents/os2/`
 built with **OpenWatcom 1.9** (`wcl386 -bt=os2 -l=os2v2_pm -fe=WARPD.EXE`; V2's
@@ -215,9 +215,9 @@ framebuffer screendump — cursor jumps precisely to each commanded `M x y`):
 **default `serial0`** (`-chardev socket,id=ser0,… -serial chardev:ser0`) — adds no
 new `-device`, so `loadvm golden` still matches. `SH_WARPD_ADDR=unix:…/serial.sock`.
 
-**Golden / boot.** The golden RAM snapshot is re-baked with `WARPD.EXE` already
+**Checkpoint / boot.** The checkpoint is recaptured with `WARPD.EXE` already
 running; the launcher gained the standard `-loadvm golden` conditional (os2warp was
-the only tile lacking it) and the disk carries **no `-snapshot`**, so every start
+the only station lacking it) and the disk carries **no `-snapshot`**, so every start
 restores the clean desktop + live agent and the OS/2 "register" nag never reappears.
 
 **Full button/drag fix.** The original agent collapsed every `P` into an immediate
@@ -254,38 +254,38 @@ drag ordering/position stay correct; the final pended position is applied once t
 port is drained. Verified on a `/data/vms/soltest` clone under an 8% CPU throttle
 (reproducing encoder starvation): with the OLD agent a 167/s feed backlogged
 9.2 s (T=1) → 26 s (T=3) — settle grows with feed length; with the coalescing agent
-the same feed settled in ~0.1–0.5 s flat, and a pace=30 18 s hover on the re-baked
-live golden settled in **21 ms** with no growth. This let the temporary
+the same feed settled in ~0.1–0.5 s flat, and a pace=30 18 s hover on the recaptured
+live checkpoint settled in **21 ms** with no growth. This let the temporary
 `SH_WARPD_PACE_MS=50` stopgap revert to `SH_WARPD_PACE_MS=30`. Agent source
 `streamhost/guest-agents/os2/warpd_os2.c`, rebuilt with OpenWatcom 1.9
-(`wcl386 -bt=os2 -l=os2v2_pm -fe=WARPD.EXE`); golden re-baked 2026-07-26, rollback
+(`wcl386 -bt=os2 -l=os2v2_pm -fe=WARPD.EXE`); checkpoint recaptured 2026-07-26, rollback
 backup `/data/gallery-guests/OS2Warp/os2.qcow2.pre-coa.bak`.
 
-**Rollback.** The pre-full-mouse golden is
+**Rollback.** The pre-full-mouse checkpoint is
 `/data/gallery-guests/OS2Warp/os2.qcow2.pre-mouse-20260716T2352Z`
 (SHA-256 `4a6385ee84e2b672a086fc438dc12289dfda68639f3dcfb2b347ba6e2c266cdc`).
-Stop only `streamhost@os2warp`, stop its QEMU by the tile pidfile, restore that
+Stop only `streamhost@os2warp`, stop its QEMU by the station pidfile, restore that
 file over `os2.qcow2`, restore the prior agent-button registry/env values, run
 the registry generator plus `labctl gen`, and restart only the OS/2 service.
 
 ---
 
-## Resolution + wheel re-bake investigation (2026-07-27)
+## Resolution + wheel recapture investigation (2026-07-27)
 
 Attempted to (a) raise resolution toward 1280×1024 and (b) re-verify / fold in the
 "long-pending mouse-WHEEL fix". Investigated entirely on a `/data/vms/soltest`
-clone (byte copy of the live golden, identical device set, `loadvm golden`), with
-every step framebuffer-verified. **Live golden, service, and all backups were
-left untouched — no re-bake was performed, because nothing needed to change.**
+clone (byte copy of the live checkpoint, identical device set, `loadvm golden`), with
+every step framebuffer-verified. **Live checkpoint, service, and all backups were
+left untouched — no recapture was performed, because nothing needed to change.**
 
 ### Wheel — already fixed; NO change needed (debt is stale)
 
 The "wheel bug" tracked in memory ("os2 wheel → middle-click, pending re-bake")
 was **already resolved** by the `WM_VSCROLL` rework that is in the current source
-AND baked into the live golden. The live wheel path is: browser wheel → daemon
+AND captured into the live checkpoint. The live wheel path is: browser wheel → daemon
 `realtime_input.rs` emits `B 4 x y` (up) / `B 5 x y` (down) → agent `pt_wheel()`
 posts `WM_VSCROLL` `SB_LINEUP`/`SB_LINEDOWN` to the window under the pointer.
-Framebuffer proof on the golden clone (exact verbs the daemon sends):
+Framebuffer proof on the checkpoint clone (exact verbs the daemon sends):
 
 - **EPM / System Editor** (MLE-style edit window): wheel-up scrolls up
   (rows 36–45 → 32–43), wheel-down scrolls back down. **Works, both directions.**
@@ -304,7 +304,7 @@ Framebuffer proof on the golden clone (exact verbs the daemon sends):
 
 ### Resolution — BLOCKED at 640×480×16 (fell back; could not raise)
 
-The goal (1280×1024, fallback 1024×768) is **not achievable on this golden**, and
+The goal (1280×1024, fallback 1024×768) is **not achievable on this checkpoint**, and
 the blocker is earlier than the task anticipated ("cirrus corrupts above
 1024×768"): OS/2 cannot even bring up *any* SVGA mode on QEMU's Cirrus.
 
@@ -322,7 +322,7 @@ the blocker is earlier than the task anticipated ("cirrus corrupts above
   detection failure).
 - The chipset-specific Cirrus driver binaries (`CL54XA/B/M`) are **not on disk**
   (only `CL54X.DSC`); they live on the Warp 4 install CD's `OS2IMAGE\DISP_1/2`,
-  which is **not present** (the tile is built from a pre-installed archive.org
+  which is **not present** (the station is built from a pre-installed archive.org
   qcow2 with no `OS2IMAGE`, and the source archive item has no ISO). But this is
   moot — even with the binaries, the chip-detection step still fails.
 
@@ -347,9 +347,9 @@ Follow-up to the resolution investigation above: a 7-angle study recommended
 switching `-vga cirrus` → `-vga std` (Bochs DISPI/VBE, packed-linear, software PM
 cursor) and installing a **generic-VESA** display driver that does not depend on
 OS/2 auto-identifying the chipset. Investigated end-to-end on `/data/vms/soltest`
-clones (byte copies of the live golden, device set cirrus→std, cold-boot,
-framebuffer-verified). **The live golden, launcher, service, and all backups were
-left untouched — os2warp stays at `-vga cirrus` 640×480×16.** The live golden
+clones (byte copies of the live checkpoint, device set cirrus→std, cold-boot,
+framebuffer-verified). **The live checkpoint, launcher, service, and all backups were
+left untouched — os2warp stays at `-vga cirrus` 640×480×16.** The live checkpoint
 SHA-256 was `1736a0cf…` before and after; the launcher line is still `-vga cirrus`.
 
 ### What `-vga std` gives us (the good news)
@@ -404,14 +404,14 @@ QEMU's Bochs VBE via `VIDEOPMI`, and the one VM-safe generic-VESA driver
 any free Warp 4 fixpak provides. No in-image path raises the resolution.
 
 **Recommended next step (user decision — NOT executed, per guardrails):** swap the
-exhibit's base image to **ArcaOS 5.1 / eComStation** (or Warp 4.52 MCP with a
+exhibit's seed image to **ArcaOS 5.1 / eComStation** (or Warp 4.52 MCP with a
 14.1xx kernel). Those ship the modern **Panorama VESA** driver, boot on QEMU
 `-vga std`, and do 1280×1024/1024×768 out of the box — but this **changes the
 exhibit's OS identity** (Warp 4 "Merlin" → ArcaOS/eCS) and so is deliberately left
 as a go/no-go for the maintainer. Until then os2warp remains **640×480×16 on
 `-vga cirrus`**, fully interactive with warpd 1:1 + the live coalescing agent.
 
-Reusable artifacts left on the box: `/data/vms/soltest/os2-isos/os2_snap.iso`
+Reusable artifacts left on labhost: `/data/vms/soltest/os2-isos/os2_snap.iso`
 (SNAP 3.1.8 + WP4FP15), and the unattended-FixPak recipe (`fservice
 /r:<response>` with `REPLACE_NEWER`, source dir holding `\FIX`, `csfcdromdir`
 env). Note the guest keyboard is **UK layout** (backslash = the 102nd/`less`
@@ -425,9 +425,9 @@ kernel"): an **in-place UPDATE** of the GA image to Warp 4.52 CP2 on a
 upgrade works and keeps everything, but hi-res is still blocked** because the only
 freely-available CP2 ISO ships kernel **14.089** (not the 14.1xx hoped for; still
 < Panorama's 14.096) and the VESA-PMI trap is fundamental to QEMU `-vga std`
-regardless of kernel. **The live golden, launcher, service and backups were left
-untouched — os2warp stays at `-vga cirrus` 640×480×16.** GA golden backed up first
-to `/data/gallery-guests/OS2Warp/os2.qcow2.GA-PRESERVE-<ts>` (golden snapshot
+regardless of kernel. **The live checkpoint, launcher, service and backups were left
+untouched — os2warp stays at `-vga cirrus` 640×480×16.** GA checkpoint backed up first
+to `/data/gallery-guests/OS2Warp/os2.qcow2.GA-PRESERVE-<ts>` (checkpoint
 intact); all work on a reflink clone. Framebuffer-verified every step.
 
 ### ISO / provenance
@@ -499,7 +499,7 @@ GA image's UK layout noted above.
 → `SDDPMI.DLL` + `VIDEOPMI.DLL`. Kernel is **14.089**, still 7 builds below
 Panorama's **14.096** floor, and free Panorama is ATI-only. So "Warp 4.52 MCP" only
 unlocks hi-res if the kernel is **≥14.096** (a later fixpak/kernel than this CP2
-ISO ships) **plus** a licensed generic-VESA **Panorama** — or a base swap to
+ISO ships) **plus** a licensed generic-VESA **Panorama** — or a seed swap to
 **ArcaOS 5.x / eComStation**. Unchanged recommendation, now confirmed against a real
 4.52 base.
 
@@ -515,7 +515,7 @@ move, `C x y` click, `D/U`).
 
 > **Superseded 2026-07-27d.** The "needs a 14.096+ kernel + licensed Panorama (or
 > ArcaOS)" conclusion above was **wrong about the root cause** and is closed by the
-> next section: the tile is LIVE at **1024×768×64k** on this very 4.52 build with
+> next section: the station is LIVE at **1024×768×64k** on this very 4.52 build with
 > stock QEMU, stock IBM GENGRADD, and no licence purchase.
 
 ---
@@ -603,7 +603,7 @@ Resolution is picked in **System Setup → System → Screen** (the list now run
 is what shipped.
 
 **Tooling:** `scripts/dev/os2-gengradd-hires.sh` (`prep` / `run` / `shot`) scripts
-the offline disk surgery and the clone launcher; run it on the box against a
+the offline disk surgery and the clone launcher; run it on labhost against a
 `/data/vms/soltest` clone.
 
 ### Acceptance (all framebuffer-verified on the clone, then live)
@@ -619,33 +619,33 @@ the offline disk surgery and the clone launcher; run it on the box against a
 - Apps preserved and running on the hi-res build: **DOOM** (full-screen DOS
   session, live HUD) and the WPS games/tools from the 4.52 upgrade.
 - `savevm golden` → fresh `-loadvm golden` restores the 1024×768 desktop with
-  warpd live; `labctl reset os2warp` verified against the live tile.
+  warpd live; `labctl reset os2warp` verified against the live station.
 
 ### Live cutover (done)
 
-- Golden: the 4.52 apps-preserved build re-baked at 1024×768 →
+- Checkpoint: the 4.52 apps-preserved build recaptured at 1024×768 →
   `/data/gallery-guests/OS2Warp/os2.qcow2`.
 - Launcher `tiles/os2warp/qemu-streamhost.sh`: `-vga cirrus` → `-vga std -global
   VGA.vgamem_mb=2`, `-m 128` → `-m 256`. Everything else — TCG, `-cpu pentium`,
   `acpi=off,usb=off`, sb16, pcnet, the COM1 warpd chardev — is unchanged.
 - `registry/tiles/os2warp.json` retargeted (`deviceSetId` `os2warp-std-1024x768`,
-  memory 256, fps **60 → 30** to match every other hi-res tile at 2.56× the pixels)
+  memory 256, fps **60 → 30** to match every other hi-res station at 2.56× the pixels)
   and regenerated; `labctl gen` re-run.
 - Startup-folder cleanup: the three broken MCP2 startup objects (TCP/IP Startup,
   Network Messaging, MFS Setup — all pointing at binaries the failed networking
   install never delivered) were deleted, and the dangling `NWCONFIG`/`IBMEANDI`
   `DEVICE=` lines REMmed, so the boot no longer stops on SYS1718/SYS1201 prompts.
 
-**Rollback.** The Warp 4 GA 640×480 golden is kept at
+**Rollback.** The Warp 4 GA 640×480 checkpoint is kept at
 `/data/gallery-guests/OS2Warp/os2.qcow2.GA-640x480-20260727T183735Z` (and
 `os2.qcow2.GA-replaced`), with the pre-change launcher at
-`tiles/os2warp/qemu-streamhost.sh.cirrus-640-bak` on the box. To revert: stop
+`tiles/os2warp/qemu-streamhost.sh.cirrus-640-bak` on labhost. To revert: stop
 `streamhost@os2warp`, kill its QEMU by pidfile, restore both files, revert the
 registry entry + `labctl gen`, restart the service.
 
 ### Desktop shortcut regression and repair (2026-07-27, LIVE)
 
-The first hi-res golden retained the application binaries but lost their visible
+The first hi-res checkpoint retained the application binaries but lost their visible
 WPS desktop objects. The matched reference was
 `/data/gallery-guests/OS2Warp/os2.qcow2.GA-PRESERVE-20260727T132806Z`; its
 640×480 framebuffer showed the original gallery layout. The secondary
@@ -679,8 +679,8 @@ destroy each gallery-owned object ID, and recreate it in `<WP_DESKTOP>` with
 `SysCreateObject` and the `U` flag. The browser entries are gallery-owned
 `WPShadow` objects, so the original system-owned launch data and icons stay
 authoritative. Both `scripts/build-guests/tiles/os2warp.sh` and
-`scripts/dev/os2-gengradd-hires.sh prep` install this same source; future base
-builds and hi-res re-bakes therefore use one inventory.
+`scripts/dev/os2-gengradd-hires.sh prep` install this same source; future seed
+builds and hi-res recaptures therefore use one inventory.
 
 Clone verification ran under
 `/data/vms/soltest/os2warp-shortcuts-20260727T193043Z-167630/` with the exact
@@ -691,7 +691,7 @@ a fresh `-loadvm golden` were byte-identical.
 
 The promoted pre-change backup is
 `/data/gallery-guests/OS2Warp/os2.qcow2.shortcuts-bak-20260727T200829Z`.
-The live SPA rendered the 1024×768 desktop with all shortcuts, and an SPA-driven
+The live UI rendered the 1024×768 desktop with all shortcuts, and a UI-driven
 EPM open/drag was independently visible in a QMP framebuffer. Finally,
 `labctl reset os2warp` restored the clean shortcut-bearing desktop; two direct
 stopped-QEMU post-reset screendumps were byte-identical.
@@ -709,5 +709,5 @@ stopped-QEMU post-reset screendumps were byte-identical.
   on this QEMU/TCG configuration. Not needed anyway.
 - **eCo's free `genpmi.dll` + generic `SVGADATA.PMI`** from `panorama-20051228.zip`
   — untestable past the kernel trap above, and moot now.
-- **Arca Noae Panorama** (US$49/yr drivers subscription) and an **ArcaOS/eCS base
+- **Arca Noae Panorama** (US$49/yr drivers subscription) and an **ArcaOS/eCS seed
   swap** — both unnecessary; the exhibit keeps its OS/2 Warp identity and its apps.

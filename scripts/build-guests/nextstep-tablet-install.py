@@ -13,7 +13,7 @@ SCC serial port B and feeds it the host's ABSOLUTE window coordinates whenever
 NeXTSTEP 3.3 ships that driver in /NextAdmin/InstallTablet.app, but the app is
 GUI-only: NeXTSTEP refuses a DPS connection from a telnet session ("Could not
 form connection"), so the install has to be driven through the framebuffer.
-Nothing is compiled -- the golden carries no m68k toolchain.
+Nothing is compiled -- the checkpoint carries no m68k toolchain.
 
 The driver survives `loadvm golden` (RAM + device state, not a boot). Since
 2026-08-11 it also survives a COLD boot: the reloc's own kern_loader load
@@ -154,10 +154,10 @@ def cursor(name="probe"):
 # (2) NeXTSTEP accelerates every event, superlinearly and well before that clamp
 #     (a 24 px step measured ~2.3x). That is what defeated the proportional
 #     controller this replaces: identical code converged on a clone and overshot
-#     the Install button by ~56 px on the tile, because the curve keys off event
+#     the Install button by ~56 px on the station, because the curve keys off event
 #     TIMING as well as size and the two machines are not timed alike. A ONE
 #     PIXEL step is the one input the curve cannot amplify -- measured on the
-#     live tile, 100 consecutive 1 px steps moved the NeXT arrow exactly 100 px,
+#     live station, 100 consecutive 1 px steps moved the NeXT arrow exactly 100 px,
 #     gain 1.000 on both axes. So the walker has no proportional term at all: it
 #     takes |error| steps of exactly 1 px and re-reads the framebuffer.
 STEP_DWELL = 0.03
@@ -360,7 +360,7 @@ def main():
     # `bTabletEnabled` across a GUEST reboot, so a rebooted guest has no driver
     # while the emulator is still routing every motion to tablet_pen_move(): the
     # cursor freezes completely and nothing can be clicked. (Same trap live: if
-    # anyone ever reboots NeXTSTEP inside the exhibit, reset the tile to golden.)
+    # anyone ever reboots NeXTSTEP inside the exhibit, reset the station to checkpoint.)
     log("linking InstallTablet.app into /me")
     nextstep(
         "rm -f /me/InstallTablet.app",
@@ -371,7 +371,7 @@ def main():
     log("opening InstallTablet.app from the File Viewer")
     box = None
     for attempt in range(4):
-        # The Workspace only rescans a directory it re-opens. On the tile's own
+        # The Workspace only rescans a directory it re-opens. On the station's own
         # cold boot the listing is already fresh (the builder links the app in
         # before that boot), so try the keyboard first and only fall back to
         # double-clicking the shelf's home icon -- which needs the fragile

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# harvest.sh — safely collate the lab box's authored source back into this repo.
+# harvest.sh — safely collate labhost's authored source back into this repo.
 #
 # Dry-run is the default.  A real, marker-writing harvest is deliberately two-key:
 #
@@ -8,7 +8,7 @@
 #
 # Select a subset by repeating --tree NAME.  Run --list-trees for the allowlist.
 # A subset apply is useful for review, but only a committed harvest that includes
-# `src` refreshes the box's .last-harvest source digest.
+# `src` refreshes labhost's .last-harvest source digest.
 set -euo pipefail
 
 LAB="${LAB:-lab}"
@@ -181,17 +181,19 @@ fi
 if selected serve; then
   note "[serve] README-declared live/reference files, exact-mode rows only"
   # osgallery-https.service and restart-https.sh are deliberately absent: they
-  # are SCRUB-mode pairs (real host IP/domain on the box, placeholders in the
-  # repo), so pulling them verbatim would commit real addresses. The box copy
+  # are SCRUB-mode pairs (real host IP/domain on labhost, placeholders in the
+  # repo), so pulling them verbatim would commit real addresses. The labhost copy
   # is a scrubbed deployment of repo content, never a harvest source.
+  # tiles.json and golden-manifest.json are deliberately absent: both are
+  # RENDERED from the registry (tiles-registry.py rendered()) and have no repo
+  # copy to harvest into. A live/repo divergence in those is fixed in
+  # registry/tiles/<id>.json and republished, never pulled back.
   cat >"$tmpdir/serve-files" <<'EOF'
 clientcmd.sh
 gen-local-ca.sh
-golden-manifest.json
 install-https-service.sh
 osgallery-https-server.py
 reset-tile.sh
-tiles.json
 EOF
   rsync "${RSYNC[@]}" --files-from="$tmpdir/serve-files" -e "$SSH_TRANSPORT" \
     "$LAB:$BOX_ROOT/serve/" "$REPO/scripts/serve/"

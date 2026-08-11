@@ -181,17 +181,14 @@
     "id": "pdp11",
     "displayName": "DEC PDP-11/70 — 2.11BSD",
     "year": 1975,
-    "lineage": "DEC PDP-11 (1970–1997); 2.11BSD (UC Berkeley, 1991), the last BSD for the PDP-11",
-    "arch": "DEC PDP-11/70, 16-bit with 22-bit addressing, 4 MB core, FP11 floating point (Open SIMH)",
+    "lineage": "DEC PDP-11",
+    "arch": "DEC PDP-11/70",
     "ramMB": 4,
     "ramKB": 0,
     "era": "1970s",
     "accent": "#9A4F96",
     "eraSoftware": [
-      "2.11BSD: csh, vi, more, man pages and a 4.3BSD-derived TCP/IP stack, on a 16-bit machine",
-      "the complete operating system source tree in /usr/src, kernel included",
-      "the Seventh Edition toolchain — cc, as, ld, make, sccs — that C was invented for",
-      "adventure, rogue and the rest of /usr/games, still where they were left"
+      "2.11BSD"
     ],
     "periodBrowser": "none — the ARPANET era; the web was two decades away",
     "iconicApps": [

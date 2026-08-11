@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# rawrun.sh — run MAME with the IRIX tile's exact production command line, one
+# rawrun.sh — run MAME with the IRIX station's exact production command line, one
 # flag at a time added or removed, and screendump the result. No launcher, no
 # watchdogs, no netns: the point is the command line itself.
 #

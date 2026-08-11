@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import manifest from '../../../scripts/serve/webroot/gallery-manifest.json' with { type: 'json' };
+import { renderedEntries } from '../data/lineupFixture';
 import {
   ASSEMBLIES_BY_TILE,
   MODELS,
@@ -13,7 +13,7 @@ import { lampScaleForDesk } from './lampScale';
 import type { HallDesk } from './hallLayout';
 import { identityBadgeSurface } from './machineBadge';
 
-const registryIds = [...manifest.entries]
+const registryIds = [...renderedEntries]
   .sort((a, b) => a.order - b.order)
   .map((entry) => entry.id);
 
@@ -137,7 +137,7 @@ describe('scene-v2 registry hardware bindings', () => {
   it.each(['c64', 'amstradcpc'] as const)(
     'clamps the %s desk lamp below the station display envelope',
     (tileId) => {
-      const entry = manifest.entries.find((candidate) => candidate.id === tileId)!;
+      const entry = renderedEntries.find((candidate) => candidate.id === tileId)!;
       const desk = {
         entry,
       } as unknown as HallDesk;

@@ -9,7 +9,7 @@
 //   * INPUT in : mouse-move + RTT pings over datagrams (unreliable, coalesced);
 //     buttons/keys/wheel/touch over CLIENT-opened reliable QUIC streams. Two
 //     framings coexist (the server always reads both; the client picks one):
-//       - PER-TYPE (the shipped SPA): one client-opened UNIDIRECTIONAL
+//       - PER-TYPE (the shipped UI): one client-opened UNIDIRECTIONAL
 //         reliable stream per input CLASS, led by a 1-byte class tag (mirrors the
 //         uni-stream KIND convention) — ICLASS_KEY=1 / ICLASS_BUTTON=2 /
 //         ICLASS_WHEEL=3 / ICLASS_CONTROL=4 — then the same length-prefixed
@@ -17,12 +17,12 @@
 //         can't head-of-line-block another (Moonlight-style HOL avoidance). Records
 //         are still self-describing (rec[0] is the input type), so input::handle is
 //         unchanged; the tag only demuxes the class onto its own ordered stream.
-//       - LEGACY (an old SPA): ALL classes on ONE client-opened reliable BIDI
+//       - LEGACY (an old UI): ALL classes on ONE client-opened reliable BIDI
 //         stream, [len u16 | record]. Still accepted unconditionally so old and
 //         new clients both work against this server.
 //   * CERT ROTATION: the endpoint is rebuilt on a ~10-day timer with a fresh
 //     self-signed cert; signaling.json is re-published each cycle. Clients fetch
-//     the live hash and reconnect (gallery tiles auto-reconnect), so rotation is
+//     the live hash and reconnect (gallery stations auto-reconnect), so rotation is
 //     a sub-second blip on the same UDP port — no hardcoded pin ever.
 //
 // This module is split along its natural seams: the SERVER->CLIENT uni-stream
@@ -80,7 +80,7 @@ fn video_trace() -> bool {
 
 /// Per-session join gate: a freshly-joined session must start its broadcast
 /// relay on a KEYFRAME. The broadcast channel resumes mid-GOP for a joiner on a
-/// busy tile, and mid-GOP deltas reference frames the session never received
+/// busy station, and mid-GOP deltas reference frames the session never received
 /// (the gap between the primed cached key and the subscription point), so they
 /// must be discarded until the first key AU arrives. After that everything is
 /// admitted unconditionally — steady-state relay is unchanged. The B1 backlog
@@ -119,7 +119,7 @@ pub async fn serve(
         spawn_input_bench(addr, cap.clone(), router);
     }
 
-    // Global-per-tile ABR controller (SECTION 2). One in-process encoder per tile
+    // Global-per-station ABR controller (SECTION 2). One in-process encoder per station
     // is broadcast to all sessions, so the tier is shared; the controller
     // aggregates the worst client and drives the encoder. When ABR is off, the
     // controller is not run and the encoder stays pinned to tier 0.
@@ -225,7 +225,7 @@ async fn handle_session(
 ) -> Result<()> {
     let req = incoming.await?;
     eprintln!("[transport] SESSION path={}", req.path());
-    // Media-plane gate. Inert on the LAN (SH_SESSION_KEY unset); on a tile whose
+    // Media-plane gate. Inert on the LAN (SH_SESSION_KEY unset); on a station whose
     // UDP port is published, an unticketed session is refused BEFORE accept() —
     // this session would otherwise carry the guest's input plane, not just video.
     if let Err(why) = crate::session_ticket::admit(&cfg, req.path()) {
@@ -239,7 +239,7 @@ async fn handle_session(
         conn.remote_address()
     );
 
-    // AUTO-PAUSE: resume a frozen guest FIRST — before priming/keyframe work —
+    // AUTO-PAUSE: resume a paused guest FIRST — before priming/keyframe work —
     // so the joiner's forced IDR captures the live (resuming) screen. The RAII
     // guard reports the session end on every exit path below, which starts the
     // idle-pause grace clock once the last session is gone.
@@ -268,7 +268,7 @@ async fn handle_session(
     // update the same last-position and relative deltas stay continuous.
     let mouse = input::new_mouse();
 
-    // MOVE COALESCER for the dbus (abs/rel) tiles — mirrors warpd.rs. The datagram
+    // MOVE COALESCER for the dbus (abs/rel) stations — mirrors warpd.rs. The datagram
     // receive loop must NOT apply each move as an awaited dbus call_method
     // (SetAbsPosition/RelMotion waits for a QEMU method REPLY), because at
     // pointer-lock move rates (~1 record per mousemove, up to ~1 kHz) that serializes
@@ -278,7 +278,7 @@ async fn handle_session(
     // the LATEST absolute (type 1) / SUMS relative deltas (type 4), and issues ONE
     // dbus inject — so a burst collapses to the freshest position and receive_datagram
     // is never throttled. Buttons/keys/wheel ride the reliable stream and are never
-    // pooled here. Warpd tiles skip this (warpd.rs already coalesces downstream).
+    // pooled here. Warpd stations skip this (warpd.rs already coalesces downstream).
     let move_tx = if matches!(
         cfg.input_backend,
         crate::config::InputBackend::DbusAbs | crate::config::InputBackend::DbusRel
@@ -371,7 +371,7 @@ async fn handle_session(
 
     // ---- LEGACY reliable input: client opens ONE bidi stream, all classes
     // interleaved as length-prefixed records. Kept running unconditionally so an
-    // old SPA still drives input. A new
+    // old UI still drives input. A new
     // client that uses per-type uni streams simply never opens a bidi, so this loop
     // idles harmlessly. `has_tag=false`: no leading class byte on this framing.
     {
@@ -402,7 +402,7 @@ async fn handle_session(
     // so keys/buttons/wheel still reach input::handle in per-class order and the
     // abs->rel pointer state stays coherent with the datagram (moves) task.
     // `has_tag=true`: the first byte of the stream is the class tag. Always on:
-    // the shipped SPA opens per-class uni streams unconditionally, so disabling
+    // the shipped UI opens per-class uni streams unconditionally, so disabling
     // this router (the old SH_INPUT_STREAMS=off) silently killed all reliable
     // input; the knob was removed 2026-07-14.
     {
@@ -552,7 +552,7 @@ async fn handle_session(
         }
     }
     // JOIN GATE (2026-07-11): relay nothing to this session until the first
-    // broadcast KEYFRAME. On a busy tile the broadcast resumes mid-GOP: every
+    // broadcast KEYFRAME. On a busy station the broadcast resumes mid-GOP: every
     // frame between the primed cached key and the subscription point was never
     // delivered here (measured on freedos: primed id=423, first broadcast
     // id=453), so relaying those deltas hands the decoder up to keyframe_ms of
@@ -676,7 +676,7 @@ async fn handle_session(
 mod tests {
     use super::JoinGate;
 
-    /// Busy-tile join (the 2026-07-11 freedos bug): the broadcast resumes
+    /// Busy-station join (the 2026-07-11 freedos bug): the broadcast resumes
     /// mid-GOP, so every delta before the first key must be discarded, then
     /// everything relays.
     #[test]
@@ -690,7 +690,7 @@ mod tests {
         assert!(g.admit(false));
     }
 
-    /// Idle-tile join: the keyframe-on-connect IDR is the first broadcast AU,
+    /// Idle-station join: the keyframe-on-connect IDR is the first broadcast AU,
     /// so the gate must be transparent from the very first frame.
     #[test]
     fn join_gate_transparent_when_stream_starts_on_key() {

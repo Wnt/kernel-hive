@@ -41,7 +41,7 @@ Budget that works for this scene: **≤1–2 MB per hero GLB, ≤25 MB total des
 ### The reality check for your use case
 
 - Every serious comparison agrees textures from all generators "need significant refinement before production use" and are "insufficient resolution for close-ups" ([ideate.xyz test, Apr 2025](https://ideate.xyz/blogs/posts/ai-3d-model-comparison-trellis-tripo-meshy-rodin-hunyuan)). A C64's identity is its badge, function-key legends, and two-tone keycaps — exactly the fine text/label detail that single-image reconstruction smears, and back/underside geometry is invented ("the back looks melted in a microwave" — [QWE tutorial on image-to-3D failure modes](https://www.qwe.edu.pl/tutorial/create-ai-generated-3d-models-from-images/)).
-- Keyboards are a known killer: ~100 small repeated protrusions with per-key text. No 2026 generator produces clickably-crisp keycaps from a photo. For your tiles' hero machines (viewed up close), AI output would need Blender surgery that exceeds the cost of buying a $20 human-made model.
+- Keyboards are a known killer: ~100 small repeated protrusions with per-key text. No 2026 generator produces clickably-crisp keycaps from a photo. For your stations' hero machines (viewed up close), AI output would need Blender surgery that exceeds the cost of buying a $20 human-made model.
 - Where AI generation **is** worth it for you: background clutter (shelves, boxes, cables, a generic beige printer), and geometry drafts you then re-texture with your own decal textures.
 
 ## 2. Midjourney → 3D workflows

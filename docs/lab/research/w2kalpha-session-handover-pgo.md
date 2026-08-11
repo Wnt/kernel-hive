@@ -17,33 +17,33 @@ is the compact "where things stand right now".
 - Full write-up + optional recipe:
   [`es40-pgo-measurement.md`](es40-pgo-measurement.md).
 - Method: isolated private es40src clone + headless bench (private serial
-  ports 25964/5, own shm/ctl, reflink golden copies, no Xvfb), interleaved
-  arms to cancel the live tile's shared-box load.
+  ports 25964/5, own shm/ctl, reflink seed copies, no Xvfb), interleaved
+  arms to cancel the live station's shared-labhost load.
 - **Deliverable is pushed** to branch `worktree-pgo-packaging` (rebased onto
   current `origin/main`, pre-push gate green). New files only — trivially
   mergeable to `main`; not force-merged, to avoid racing the other agent's
   in-flight commits.
 - Private scratch `/data/vms/soltest/ALPHA-nt-pgo/` (1.7G) **torn down**; the
-  live tile was never touched.
+  live station was never touched.
 
 ## Broader state (unchanged this session)
 
 - **2.37× desktop-interaction win** proven (fork `0e22e9f`); **X11 removed**
   — headless shm capture + mamectl socket input (fork
   `66c5b2f`/`849039a`/`6986997`); guest at **1280×1024**.
-- **Tile is LIVE** — the other agent registered it (slot 140, udp 54140,
+- **Station is LIVE** — the other agent registered it (slot 140, udp 54140,
   `streamhost@w2kalpha` active). `docs/guests/w2kalpha.md` is canonical.
-- es40 fork `github.com/Wnt/es40` main `6986997` (local `~/es40`); box
+- es40 fork `github.com/Wnt/es40` main `6986997` (local `~/es40`); labhost
   es40src `/data/vms/soltest/ALPHA-nt/es40src`.
 
-## The one open user-facing item (tile/gallery side, not mine)
+## The one open user-facing item (station/gallery side, not mine)
 
-**Golden guest-polish** — every cold boot/reset shows a flaky "Active Desktop
+**Checkpoint guest-polish** — every cold boot/reset shows a flaky "Active Desktop
 Recovery" page (3/3 observed), and the open-loop pointer is inexact until the
 guest is set to 1:1 mouse. Keyboard-only fix (desk.cpl → Web tab → uncheck
 Show Web Content; main.cpl → Motion → Acceleration None; clean shutdown;
-re-capture golden) is recorded in `docs/guests/w2kalpha.md §Golden`. Deferred
-by the operator; left to the gallery agent — it's a shared golden, out of my
+recapture checkpoint) is recorded in `docs/guests/w2kalpha.md §Golden`. Deferred
+by the operator; left to the gallery agent — it's a shared checkpoint, out of my
 lane.
 
 ## Other open leads (none urgent; detail in the HANDOFF doc)

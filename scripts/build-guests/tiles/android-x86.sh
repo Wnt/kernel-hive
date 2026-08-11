@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  build-guests/tiles/android-x86.sh
-#  Reproducible from-scratch build of the "Android-x86" Kernel Hive tile.
+#  Reproducible from-scratch build of the "Android-x86" Kernel Hive station.
 #
 #  GOAL: on a FRESH Proxmox host that already has the gallery infra
 #  (ZFS dataset data/gallery-guests, qemu-system-x86_64, socat, pnmtopng,
-#  python3), rebuild the Android tablet tile END TO END with NO image backup:
+#  python3), rebuild the Android tablet station END TO END with NO image backup:
 #     1. download the real Android-x86 9.0-r2 install ISO from SourceForge
 #     2. create an 8 GiB qcow2
 #     3. boot the ISO and run the text installer UNATTENDED (partition, format
@@ -78,7 +78,7 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 # Parameters (override via env)
 # ---------------------------------------------------------------------------
 GUEST_KEY="android-x86"
-BOX_DIR="${BOX_DIR:-/data/gallery-guests/Android}" # persistent tile dir
+BOX_DIR="${BOX_DIR:-/data/gallery-guests/Android}" # persistent station dir
 WORK_DIR="${WORK_DIR:-$BOX_DIR}"                   # scratch = same dir
 
 ISO_NAME="android-x86-9.0-r2.iso"
@@ -170,7 +170,7 @@ vm_stop() {
 }
 
 # Boot the VM.  $1 = iso | disk
-# These args are IDENTICAL in spirit to the box's android-boot.sh, minus the
+# These args are IDENTICAL in spirit to labhost's android-boot.sh, minus the
 # renamed binary, plus a namespaced monitor socket + pidfile.
 vm_boot() {
   local mode="$1" bootargs

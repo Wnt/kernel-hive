@@ -1,11 +1,11 @@
 #!/bin/bash
 # sync-venv.sh — build the gallery server's Python virtualenv from the repo's
-# lockfile. RUN ON THE BOX (or via `ssh lab`). Idempotent: re-running with an
+# lockfile. RUN ON labhost (or via `ssh lab`). Idempotent: re-running with an
 # unchanged lock is a no-op after the hash check.
 #
 # The server's third-party Python (WebAuthn) is pinned by scripts/serve/
 # requirements.txt — compiled from requirements.in with hashes — instead of
-# coming from apt. Two reasons: the box gets upstream security fixes the day
+# coming from apt. Two reasons: labhost gets upstream security fixes the day
 # they ship rather than when Debian backports them, and Dependabot can open the
 # upgrade PR itself (.github/dependabot.yml).
 #
@@ -66,7 +66,7 @@ if [ ! -x "$VENV/bin/python" ]; then
 fi
 
 # --require-hashes: every wheel must match a hash in the lock, so a compromised
-# or substituted package fails the install instead of landing on the box.
+# or substituted package fails the install instead of landing on labhost.
 # --upgrade so a downgrade in the lock is honoured too.
 "$VENV/bin/pip" install --quiet --upgrade --require-hashes -r "$REQ" ||
   die "pip install from the lockfile failed"

@@ -1,6 +1,6 @@
 # `xvfb-alloc` — how a lab rig gets an X display
 
-Source of truth `scripts/lib/xvfb-alloc.sh`, box copy `/usr/local/bin/xvfb-alloc`
+Source of truth `scripts/lib/xvfb-alloc.sh`, labhost copy `/usr/local/bin/xvfb-alloc`
 (byte-identical pair, see `scripts/README.md`). Proof harness:
 `tests/xvfb-alloc-selftest.sh`.
 
@@ -71,7 +71,7 @@ release <pidfile|:N|pid>`, `xvfb-alloc list`, `xvfb-alloc reap [--force]`.
 
 Pool is `:64..:191` (`XVFB_ALLOC_MIN`/`MAX`); nothing below `:10` may be claimed,
 because **`:1` is the shared CT950 dev desktop** and `:0` is a real seat.
-`--display N` pins a number for callers that need a fixed one (the IRIX tile's
+`--display N` pins a number for callers that need a fixed one (the IRIX station's
 `SH_X11_DISPLAY`) — pinned or pooled, a taken display is a loud failure.
 
 ## Converted callers
@@ -84,11 +84,11 @@ because **`:1` is the shared CT950 dev desktop** and `:0` is a real seat.
 | `scripts/build-guests/irix/irix-apps/irix-apps-kill.sh` | `clone-guard kill-pidfile xvfb.pid` | `xvfb_release` (proves ownership, then clears the display's files) |
 | `streamhost/tiles/irix/x11-runtime.sh` | fixed `:40` + socket test + `rm -f $XSOCK` | pinned claim via the allocator; the socket `rm` is gone |
 
-The production IRIX tile runs `IRIX_CAPTURE=shm` (`-video none`) and starts **no
-X server at all**, so the tile's converted branch is its rollback path, not its
+The production IRIX station runs `IRIX_CAPTURE=shm` (`-video none`) and starts **no
+X server at all**, so the station's converted branch is its rollback path, not its
 live path.
 
-## Long tail on the box
+## Long tail on labhost
 
 `/data/vms/soltest/**` holds ~44 one-off copies of these rigs from past
 campaigns, most with a hardcoded number (7 × `DISPNUM=151`, 2 × `:77`, plus

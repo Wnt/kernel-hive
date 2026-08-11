@@ -28,36 +28,36 @@ migration ledger, not a taxonomy. So the test is:
 Applying that to all 61 registry entries gives **29 / 28 / 1 / 1 / 2**.
 
 > **Roster note.** `python3 scripts/tiles-registry.py count` prints *61 lineup
-> entries: 59 streamhost production tiles, 2 showcase posters*. If a doc tells
+> entries: 59 streamhost production stations, 2 showcase posters*. If a doc tells
 > you 39/37, it is stale — run the command. The posters today are `riscos` and
-> `macos`; `win11` is a live Tier-1 tile, not a poster.
+> `macos`; `win11` is a live Tier-1 station, not a poster.
 
 ## The tiers
 
 ```mermaid
 flowchart TD
-  HOST[Host bare metal Debian trixie no GPU]
-  HOST --> SVC[systemd streamhost at tile unit reads tile.env execs a per tile binary symlink]
+  HOST[Labhost bare metal Debian trixie no GPU]
+  HOST --> SVC[systemd streamhost at tile unit reads tile.env execs a per-station binary symlink]
   SVC --> T1
   SVC --> T2
   SVC --> T3
   SVC --> T4
 
-  subgraph T1[Tier 1 direct QEMU 29 tiles]
+  subgraph T1[Tier 1 direct QEMU 29 stations]
     A1[One qemu-system process 26 KVM 3 TCG] --> A2[Guest OS itself winxp solaris haiku os2warp win11]
   end
 
-  subgraph T2[Tier 2 emulator bridge 28 tiles]
+  subgraph T2[Tier 2 emulator bridge 28 stations]
     B1[QEMU KVM shared device set] --> B2[Debian bare X kiosk no window manager]
     B2 --> B3[One full screen emulator VICE MAME hatari FS-UAE SIMH Iris]
     B3 --> B4[Vintage machine C64 Atari ST PDP-11 SGI Indy Alto]
   end
 
-  subgraph T3[Tier 3 host native 1 tile irix]
+  subgraph T3[Tier 3 host native 1 station irix]
     C1[MAME indy_4610 on the host CPU with video none] --> C2[IRIX 6.5 on emulated MIPS R4600]
   end
 
-  subgraph T4[Tier 4 two QEMU X bridge 1 tile openvms]
+  subgraph T4[Tier 4 two QEMU X bridge 1 station openvms]
     D1[VM one Debian running lean Xorg only THIS is the captured one] 
     D2[VM two OpenVMS x86-64 display none] -->|X protocol over SLIRP| D1
   end
@@ -77,7 +77,7 @@ flowchart TD
 | **5 — showcase poster** | 2 | Nothing. No runtime, no launcher, no unit | none | 0 |
 
 A sixth mode, `pve` (a Proxmox-managed VM addressed by VMID), is **declared in
-the schema but used by no tile**.
+the schema but used by no station**.
 
 ## Membership
 
@@ -93,14 +93,14 @@ the schema but used by no tile**.
 
 ## Sub-structure worth knowing
 
-**Tier 1 is not homogeneous.** Three tiles are TCG-interpreted rather than
+**Tier 1 is not homogeneous.** Three stations are TCG-interpreted rather than
 KVM-accelerated — `nt351` (486), `os2warp` (pentium), `win311`
 (`qemu-system-i386`, pentium) — so they carry an interpretation layer the other
-26 do not. Counting `openvms` as a QEMU tile the split is 27 KVM / 3 TCG out of
+26 do not. Counting `openvms` as a QEMU station the split is 27 KVM / 3 TCG out of
 30; counting it as its own tier, Tier 1 is 26 / 3 out of 29. Both numbers are
 correct and they differ only in where `openvms` is filed.
 
-Three tiles do **not** run a stock QEMU binary: `solaris` uses the patched build
+Three stations do **not** run a stock QEMU binary: `solaris` uses the patched build
 carrying `gallery-hid-pci`, and `nt351`/`nt4` use separate cirrus-fix builds.
 Patches live in `streamhost/qemu-patches/`.
 
@@ -124,7 +124,7 @@ VT11, `decos`), **hatari** (`atarist`), **LinApple** (`apple2`), **FS-UAE**
 
 **`irix` and `indyr4400` are a deliberate tier-contrast pair**, not a duplicate
 exhibit: the same IRIX 6.5 install rendered through two different tiers, with
-`indyr4400`'s disk extracted from a copy of `irix`'s golden CHD. Tier 3 exists
+`indyr4400`'s disk extracted from a copy of `irix`'s seed CHD. Tier 3 exists
 because MAME's SGI Indy emulation **kernel-panics under a KVM vCPU** — a
 constraint, not a preference. The performance consequence of that pairing is in
 [`OVERHEAD.md`](OVERHEAD.md#cpu); the short version is that comparing them
@@ -132,7 +132,7 @@ directly flatters MAME, because MAME runs throttled and Iris runs free.
 
 **Every tier is served by the same systemd template and the same binary shape.**
 `streamhost@<tile>.service` reads `/data/vms/streamhost/tiles/%i/tile.env` and
-execs a per-tile versioned binary symlink. The tier is expressed entirely in
+execs a per-station versioned binary symlink. The tier is expressed entirely in
 `tile.env` plus which launcher was emitted — which is why a tier change is a
 config change, not a code change.
 
@@ -140,10 +140,10 @@ config change, not a code change.
 can disagree. `irix` is the live example: the registry declares
 `stream.audio: false` (emitting `SH_AUDIO=off`) while the appended fixture sets
 `SH_AUDIO=on` with `SH_AUDIO_SOURCE=fifo`. Reading only the registry block for a
-tile can give you the pre-fixture value.
+station can give you the pre-fixture value.
 
-**Only 5 of 59 tiles put their guest in a memory-capped cgroup** — the four
-original bridge kiosks `c64 atarist apple2 amiga` and `irix`. Both scopes are
+**Only 5 of 59 stations put their guest in a memory-capped cgroup** — the four
+original kiosks `c64 atarist apple2 amiga` and `irix`. Both scopes are
 `BindsTo=` their unit, so `systemctl stop` reaches the whole tree; that binding
 was added after orphaned watchdogs survived a stop and poisoned a measurement
 campaign. Every other launcher is exec'd bare.
@@ -151,9 +151,9 @@ campaign. Every other launcher is exec'd bare.
 ## Per-guest table
 
 Generated from `registry/tiles/*.json` and `registry/bridge-suites.json` — the
-same files the daemon and the SPA read. Regenerate rather than hand-edit.
+same files the daemon and the UI read. Regenerate rather than hand-edit.
 
-Pointer methods across the 59 production tiles: `qemu-usb-tablet` 24, **none
+Pointer methods across the 59 production stations: `qemu-usb-tablet` 24, **none
 17**, `qemu-ps2-relative` 8, `warpd-agent` 5, `qemu-vmmouse` 2, and one each of
 `gallery-hid`, `simh-light-pen`, `mame-ioport`. Audio on 49 / off 10. Stream
 rate 60 fps on 32, 30 fps on 27. Exec channel: `ssh` 31, none 26, one
@@ -164,7 +164,7 @@ of the lineup has no pointer at all.** Those are the keyboard-only and
 switch-only machines — PETs, the KC 85, the single-board trainers — where a
 mouse would be an anachronism, not a missing feature.
 
-| Tile | Tier | Suite / accel | Pointer method | Mode | Touch | Audio | fps | Exec |
+| Station | Tier | Suite / accel | Pointer method | Mode | Touch | Audio | fps | Exec |
 |---|---|---|---|---|---|---|---:|---|
 | `alpine` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
 | `alto` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | on | 30 | ssh |

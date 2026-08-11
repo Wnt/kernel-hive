@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/cbm8032.sh — build the Commodore CBM 8032 (1980) streamhost tile
+# build-guests/tiles/cbm8032.sh — build the Commodore CBM 8032 (1980) streamhost station
 # as a thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running VICE `xpet -model 8032`, emulating
 #         the 80-column business PET, which boots its ROM straight to
 #         "*** commodore basic 4.0 ***" in green on black.
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- WHY THIS TILE IS CHEAP -------------------------------------------------
 #   Same argument as vic20.sh and plus4.sh: VICE is ALREADY in the frozen bridge
-#   base (built from source for the c64 tile; `make install` ships the whole
+#   base (built from source for the c64 station; `make install` ships the whole
 #   family, xpet included) and it BUNDLES the Commodore ROMs. A CBM 8032 needs
 #   no disk, no cartridge and no tape to reach BASIC, so the exhibit is the ROM
 #   and the ROM is already there: no staged asset, no checksum gate, no
@@ -29,7 +29,7 @@
 #   into it. (The Plus/4 add shipped a golden curated deep inside an application
 #   and had to be re-baked: a visitor arrived in the middle of a program with no
 #   idea what it was or how to leave. Bake the state the machine itself chose,
-#   and put the affordances in the SPA around it.) The exhibit's interaction is
+#   and put the affordances in the UI around it.) The exhibit's interaction is
 #   the registry `demoProgram` — a BASIC 4.0 times table that fills all 80
 #   columns — which this builder types and RUNS after the bake, so what ships is
 #   what was proven.
@@ -55,7 +55,7 @@
 #   NOTE there is no `-CRTCborders` — unlike VIC-II/TED/VIC, VICE's CRTC video
 #   chip has no border resource, so the border (64 px each side horizontally and
 #   82 vertically at -CRTCdsize, around a 1280x900 text area) is not removable
-#   and the sibling tiles' `-XXXborders 0` has no counterpart here. Asking for it
+#   and the sibling stations' `-XXXborders 0` has no counterpart here. Asking for it
 #   is not merely ignored: xpet prints "Unknown option '-CRTCborders'. Error
 #   parsing command-line options, bailing out." and exits, taking X with it.
 #
@@ -81,7 +81,7 @@
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the cbm8032
-# tile dir; refuses to run while streamhost@cbm8032 is active.
+# station dir; refuses to run while streamhost@cbm8032 is active.
 #
 # Usage: cbm8032.sh [--force] [-h]
 # =============================================================================
@@ -99,9 +99,9 @@ QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
 EVIDENCE="$TILE_DIR/evidence"
 DEMO_DRIVER="$TILE_DIR/demo-drive.py"
-# 768 MB, not the 1536 the other bridge tiles carry. Measured in the guest with
+# 768 MB, not the 1536 the other kiosks carry. Measured in the guest with
 # xpet up at 1600x1200: MemAvailable 397736 kB, i.e. 388 MB still free, so the
-# tile costs the box half of what its siblings do. assert_memory() below keeps
+# station costs labhost half of what its siblings do. assert_memory() below keeps
 # that honest on every build.
 MEM=768
 ROOT_W=1600
@@ -142,7 +142,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # measurement table in the header for why not 1024x768 or 1920x1080.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Commodore CBM 8032 (1980) ROM BASIC 4.0 kiosk launcher (bridge tile).
+# Commodore CBM 8032 (1980) ROM BASIC 4.0 kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/cbm8032.sh for the flag rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_RENDER_DRIVER=software
@@ -162,7 +162,7 @@ EOS
 # whenever its stdout is not a terminal, before it prints a single byte
 # (vice_banner() -> log_message(" ") -> strlen(NULL); gdb backtrace in
 # docs/guests/vic20.md). Leaving stdout on tty1 is exactly why the stock base
-# profile and the c64/vic20/plus4 tiles work.
+# profile and the c64/vic20/plus4 stations work.
 read -r -d '' PROFILE <<'EOS' || true
 # Bridge kiosk session (cbm8032 overlay). Start X with NO core pointer cursor
 # (-nocursor: keyboard-only exhibit). stdout MUST stay on tty1: VICE 3.9
@@ -176,8 +176,8 @@ fi
 EOS
 
 # The demo driver: types the REGISTRY listing (registry/tiles/cbm8032.json
-# spa/demoProgram) into the emulated PET over this tile's QMP socket, at the
-# tile's production key pacing. Runs on the HOST; the guest has no idea.
+# spa/demoProgram) into the emulated PET over this station's QMP socket, at the
+# station's production key pacing. Runs on the HOST; the guest has no idea.
 read -r -d '' DEMO_PY <<'EOS' || true
 #!/usr/bin/env python3
 """Type the cbm8032 registry demo listing into the emulated PET over QMP.
@@ -273,7 +273,7 @@ class QMP:
             self.tap(ch)
         self.tap("\n")
         # BASIC tokenises the line it just received; while it does, its keyboard
-        # buffer can miss the next character (the same settle the SPA typist
+        # buffer can miss the next character (the same settle the UI typist
         # applies as DEMO_ENTER_DELAY_MS).
         time.sleep(0.6)
 
@@ -398,7 +398,7 @@ green_of() {
 
 # The QEMU scanout IS the X root, so the capture's own PPM header proves the
 # xrandr mode actually took. An unresized 1024x768 root would clip the 1064-tall
-# window and is the single most likely way this tile ships broken.
+# window and is the single most likely way this station ships broken.
 assert_root_size() {
   local got
   got=$(head -2 "$EVIDENCE/$1.ppm" | tail -1)
@@ -408,7 +408,7 @@ assert_root_size() {
 
 # The BASIC 4.0 banner is three short lines plus a blinking cursor: 1597 green
 # pixels with the cursor off, 1985 with it on, measured on a clone AND on this
-# tile. A black root or a dead xpet scores 0.
+# station. A black root or a dead xpet scores 0.
 #
 # THE CEILING IS NOT DECORATION. A floor alone passes on the WRONG SCREEN: the
 # PET's screen RAM is uninitialised at power-on, so for the first moments after
@@ -416,7 +416,7 @@ assert_root_size() {
 # a solid green block of garbage. The first version of this predicate accepted
 # it at green=375726 and called it "BASIC 4.0 screen present". Real text is
 # SPARSE; 20000 is an order of magnitude above the busiest legitimate screen
-# this tile ever shows (the RUN table, 6954) and an order of magnitude below the
+# this station ever shows (the RUN table, 6954) and an order of magnitude below the
 # garbage.
 CBM8032_MIN_GREEN=${CBM8032_MIN_GREEN:-1200}
 CBM8032_MAX_GREEN=${CBM8032_MAX_GREEN:-20000}
@@ -436,9 +436,9 @@ wait_for_basic() {
   die "no CBM 8032 BASIC 4.0 framebuffer after 180 seconds"
 }
 
-# The tile runs on 768 MB. Prove there is real headroom left INSIDE the guest
+# The station runs on 768 MB. Prove there is real headroom left INSIDE the guest
 # with the emulator up, rather than assuming it — this is the number that would
-# have to move the tile to 1024.
+# have to move the station to 1024.
 assert_memory() {
   local avail
   avail=$(guest "awk '/MemAvailable/ {print \$2}' /proc/meminfo") ||
@@ -536,7 +536,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 fi
 
 # One clean cold boot with the quiet console in force, then bake the golden from
-# the very state SPA reset will restore for ever after. Bake from an UNTOUCHED
+# the very state UI reset will restore for ever after. Bake from an UNTOUCHED
 # cold boot: the mpf2 add shipped a golden carrying its own verification output
 # and had to be re-baked.
 stop_qemu

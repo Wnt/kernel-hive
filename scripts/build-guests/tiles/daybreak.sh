@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/daybreak.sh — build the Xerox 6085 "Daybreak" + ViewPoint
-# 2.0.5 streamhost tile as a thin overlay on the shared bridge base
+# 2.0.5 streamhost station as a thin overlay on the shared bridge base
 # (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 bare-X kiosk running Dwarf/Draco — a Java Mesa
 #         architecture emulator — emulating a REAL Xerox 6085 (Daybreak/Dove)
 #         workstation booting ViewPoint 2.0.5 off a Pilot rigid-disk image.
 #         streamhost captures the Linux framebuffer exactly like every other
-#         tile. SILENT exhibit: Dwarf emulates no Xerox sound hardware.
-# TYPE  : "emulator bridge" tile (see streamhost/docs/BRIDGE.md). Overlay + a
-#         per-tile /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
+#         station. SILENT exhibit: Dwarf emulates no Xerox sound hardware.
+# TYPE  : "emulator bridge" station (see streamhost/docs/BRIDGE.md). Overlay + a
+#         per-station /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
 #
 # NOT the GlobalView-on-Windows-3.1 route an earlier feasibility study
 # recommended: there is no second emulation layer and no Windows host here.
@@ -43,10 +43,10 @@
 #
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by
 # pidfile, idempotent, --force to rebuild the overlay. Touches ONLY the daybreak
-# tile dir.
+# station dir.
 #
 # Usage:  daybreak.sh [--force] [--bake] [-h]
-#   --bake  bake the golden of the ALREADY RUNNING tile and prove it restores
+#   --bake  bake the golden of the ALREADY RUNNING station and prove it restores
 #           (lib/bridge-bake-golden). Boot it under its OWN qemu-streamhost.sh
 #           first: a golden taken under a different device set will not loadvm.
 # =============================================================================
@@ -104,7 +104,7 @@ esac done
 log() { echo "[daybreak $(date +%H:%M:%S)] $*"; }
 guest() { ssh -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 -p "$SSH_PORT" root@127.0.0.1 "$@"; }
 
-# ---- boot the tile QEMU (exact device set; conditional -loadvm golden) -------
+# ---- boot the station QEMU (exact device set; conditional -loadvm golden) -------
 boot_tile() {
   [ -f "$PID" ] && kill "$(cat "$PID")" 2>/dev/null || true
   sleep 0.5
@@ -169,7 +169,7 @@ REMOTE
 install_config() {
   log "writing the Draco properties, the US keyboard map and /etc/bridge/launch.sh ..."
   guest "cat > ${DWARF_DIR}/vp2.0.5.properties" <<PROPS
-# Draco (Xerox 6085 / Daybreak / Dove) running ViewPoint 2.0.5 — gallery tile.
+# Draco (Xerox 6085 / Daybreak / Dove) running ViewPoint 2.0.5 — gallery station.
 # Derived from Dwarf's shipped vp2.0.5.properties sample.
 boot = ./vp2.0.5/vp2.0.5.zdisk
 # Dwarf writes disk changes as delta files on a clean stop; a loadvm-golden
@@ -199,7 +199,7 @@ PROPS
 # special keys keep Dwarf's documented Ctrl!<letter> idiom unchanged.
 #
 # NOTE: when a keyboard map file is loaded there are NO DEFAULTS — any key not
-# listed here is dead in the guest. Keep this in step with the SPA's
+# listed here is dead in the guest. Keep this in step with the UI's
 # 'xerox-dwarf' keyboard profile (spa/src/ui/keyboard/keyboardProfiles.ts).
 #
 

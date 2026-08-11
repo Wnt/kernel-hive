@@ -4,12 +4,12 @@
 // streaming. The obvious "fix" — dropping the row before it reaches the store —
 // passes any grid assertion and silently breaks the direct URL, which is the
 // entire point of the feature. So this file pins both halves at once, against
-// the REAL generated manifest, not a fixture that could drift from it.
+// the REAL rendered manifest, not a fixture that could drift from it.
 //
 // It is discoverability, never access control: the hidden row ships in the
 // public manifest and anyone holding the URL gets in.
 import { beforeEach, describe, expect, it } from 'vitest';
-import manifestDocument from '../../../scripts/serve/webroot/gallery-manifest.json' with { type: 'json' };
+import { renderedManifest } from '../data/lineupFixture';
 import appSource from '../App.tsx?raw';
 import gridSource from '../ui/grid/GridView.tsx?raw';
 import hallSource from '../scene/SceneV2.tsx?raw';
@@ -18,15 +18,15 @@ import { storedLineup } from '../data/useManifest';
 import { useMuseum } from './store';
 import type { EnrichedVM } from '../types';
 
-const manifest = validateGalleryManifest(manifestDocument);
-if (!manifest) throw new Error('generated gallery manifest failed validation');
+const manifest = validateGalleryManifest(renderedManifest);
+if (!manifest) throw new Error('rendered gallery manifest failed validation');
 
 const stored = storedLineup(manifest.entries);
 const hiddenIds = stored.filter((vm) => vm.listed === false).map((vm) => vm.id);
 
-// Fixtures rather than named real tiles: every hide in the registry today is
+// Fixtures rather than named real stations: every hide in the registry today is
 // meant to be deleted again (the spike lands, the phone dock ships), and a test
-// that only works while some tile happens to be hidden would go red on the day
+// that only works while some station happens to be hidden would go red on the day
 // the feature is used correctly.
 const sample = manifest.entries[0];
 const listedRow: EnrichedVM = { ...sample, id: 'fixture-listed', listed: undefined };
@@ -35,8 +35,8 @@ const posterRow: EnrichedVM = { ...sample, id: 'fixture-poster', transport: 'sho
 
 describe('storedLineup — what is allowed to reach the store', () => {
   it('drops showcase posters but KEEPS soft-hidden tiles', () => {
-    // The distinction the whole feature rests on. A poster has no tile behind
-    // it, so there is nothing to resolve; a hidden tile is alive, and dropping
+    // The distinction the whole feature rests on. A poster has no station behind
+    // it, so there is nothing to resolve; a hidden station is alive, and dropping
     // its row here is exactly the deployment-only workaround this replaced —
     // it would take /os/<id> down with it.
     expect(storedLineup([listedRow, hiddenRow, posterRow]).map((vm) => vm.id))
@@ -64,7 +64,7 @@ describe('museum store lineups', () => {
 
   it('honours the shipped manifest, which flags hidden rows and only those', () => {
     // Also pins the empty-diff promise: the generator emits `listed` for hidden
-    // rows alone, so adding the field cost every other tile nothing.
+    // rows alone, so adding the field cost every other station nothing.
     expect(stored.filter((vm) => vm.listed !== undefined).map((vm) => vm.id)).toEqual(hiddenIds);
     useMuseum.getState().setVMs(stored);
     const { vms, listedVms } = useMuseum.getState();
@@ -79,7 +79,7 @@ describe('museum store lineups', () => {
 // The store can only keep that promise if the listing surfaces actually read
 // `listedVms`. Nothing else in a node-env unit suite can bind a React render
 // site to a store field, and switching one back to `vms` would quietly put the
-// hidden tiles back on the floor with no test going red — so assert it against
+// hidden stations back on the floor with no test going red — so assert it against
 // the source text (imported through Vite's ?raw, hence no node typings).
 describe('listing surfaces read the listed lineup', () => {
   it.each([

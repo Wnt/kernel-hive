@@ -24,6 +24,10 @@ USAGE
     scripts/serve/merge-serve-manifests.py <tile> \
         <my-tiles.json> <my-gallery-manifest.json> <my-golden-manifest.json>
 
+The gallery manifest has no committed copy to point at: render one first with
+`python3 scripts/tiles-registry.py render` (build/registry/gallery-manifest.json)
+or `emit gallery-manifest.json > <path>`.
+
 Run it ON THE BOX (the destinations are box paths; override with --serve-root
 for a dry run against a copy).
 """

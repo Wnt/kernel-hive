@@ -69,7 +69,7 @@ else
   git clean -qfd
 
   say "applying patches"
-  # The stack, its order and its dependencies live in ONE place so the box build
+  # The stack, its order and its dependencies live in ONE place so the labhost build
   # and this one cannot drift apart -- see irix-mame-stack.sh for what each patch
   # buys, which pairs are required, and what is deliberately excluded. On macOS
   # the arch and OS gates in that file skip the 256 MB DRC cache patch (arm64

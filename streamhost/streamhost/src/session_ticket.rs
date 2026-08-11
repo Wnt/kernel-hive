@@ -3,10 +3,10 @@
 //  ---------------------------------------------------------------------------
 //  streamhost's QUIC listener answers whoever reaches its UDP port. On the LAN
 //  that IS the security model, and this module stays inert (SH_SESSION_KEY
-//  unset => today's behaviour, every session accepted). The moment a tile's port
+//  unset => today's behaviour, every session accepted). The moment a station's port
 //  is published to the internet it stops being enough: a WebTransport session
 //  carries the guest's INPUT plane as well as its video, so an unauthenticated
-//  session is a stranger typing into the exhibit — the SPA's login would be
+//  session is a stranger typing into the exhibit — the UI's login would be
 //  decorative if the media port were open.
 //
 //  So the authenticated gateway mints a short-lived ticket per connect and hands
@@ -19,7 +19,7 @@
 //              signed = v1|<tile>|<exp>|<nonce>
 //              sig    = base64url-nopad HMAC-SHA256(key, signed)
 //
-//  The tile is signed in, so a ticket minted for one exhibit cannot be replayed
+//  The station is signed in, so a ticket minted for one exhibit cannot be replayed
 //  against another. Replay WITHIN the ticket's lifetime by whoever already holds
 //  it is deliberately not addressed: it travels inside the visitor's own TLS
 //  session, and the short expiry is the bound.
@@ -82,7 +82,7 @@ fn sign(key: &[u8], tile: &str, exp: u64, nonce: &str) -> String {
 
 /// The gate as the transport sees it: `Ok(())` to accept this session.
 ///
-/// Inert when the tile has no session key — that is every LAN tile, and it is
+/// Inert when the station has no session key — that is every LAN station, and it is
 /// the behaviour streamhost has always had. `Err` carries a short reason for the
 /// log and NEVER the ticket, which is a bearer token.
 pub fn admit(cfg: &crate::config::Config, path: &str) -> Result<(), &'static str> {
@@ -224,8 +224,8 @@ mod tests {
         );
     }
 
-    // The whole point of signing the tile in: a viewer's ticket for one exhibit
-    // must not open a session on the tile next to it.
+    // The whole point of signing the station in: a viewer's ticket for one exhibit
+    // must not open a session on the station next to it.
     #[test]
     fn rejects_a_ticket_minted_for_another_tile() {
         assert_eq!(

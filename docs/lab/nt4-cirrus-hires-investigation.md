@@ -14,7 +14,7 @@ promoted to accelerated 1024x768x16bpp with true-absolute vmmouse.
 The clone-only gate is `scripts/dev/nt4-cirrus-acceptance.sh`; its guarded
 launcher is `scripts/dev/nt4-cirrus-clone-launch.sh`. Both require a path below
 `/data/vms/soltest/nt4-cirrus-*`, assert the QMP and pidfile through
-`clone-guard`, reject a QEMU process that references a production tile, and pin
+`clone-guard`, reject a QEMU process that references a production station, and pin
 the executable used for the promotion to:
 
 ```text
@@ -163,7 +163,7 @@ restore rather than capture noise:
 f39c586fafaa0a18bb5cd277ad7e381a4b43ed55e20658c4aaeda7c7e1830983
 ```
 
-The same test was rebaked under TCG in:
+The same test was recaptured under TCG in:
 
 ```text
 /data/vms/soltest/nt4-cirrus-tcg-20260728T082415Z-shHLYf/
@@ -216,9 +216,9 @@ The production disk backup is
 `/data/vms/streamhost/tiles/nt4/nt4-golden.qcow2.bak-preHiRes-20260728T110112Z`.
 The launcher and `tile.env` have matching timestamped backups. `live-proof/`
 contains a visible live mode panel, `labctl` pointer and keyboard proofs, stable
-raw idle frames, and genuine SPA screenshots. The SPA decoded 1024x768 with no
+raw idle frames, and genuine UI screenshots. The UI decoded 1024x768 with no
 console errors; its five browser-driven pointer targets land within two pixels,
 and browser Ctrl+Esc visibly opens the Start menu.
 
 The clone QEMU was reaped through `clone-guard`. NT 3.51,
-`/opt/qemu-cirrusfix`, the system QEMU, and all unrelated tiles were untouched.
+`/opt/qemu-cirrusfix`, the system QEMU, and all unrelated stations were untouched.

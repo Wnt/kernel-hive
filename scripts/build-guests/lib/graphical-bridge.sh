@@ -2,9 +2,9 @@
 # Build a heavy graphical-emulator bridge as a thin, isolated overlay.
 #
 # This is deliberately a scratch-first template. It never writes below the
-# production tile tree and never changes the frozen shared bridge base. Future
+# production station tree and never changes the frozen shared bridge base. Future
 # OS workers fork the generated tile.env/qemu-streamhost.sh after framebuffer,
-# audio, and golden-snapshot validation.
+# audio, and checkpoint validation.
 #
 # Usage:
 #   graphical-bridge.sh --tile NAME --vmid 99NNN --udp PORT --ssh-port PORT \
@@ -139,8 +139,8 @@ esac
 clone_guard_assert_clone_path "$OUT_DIR" "graphical bridge output"
 clone_guard_assert_clone_vmid "$VMID"
 
-# This library has no single tile id, so the base follows the LEDGER DEFAULT
-# suite (registry/bridge-suites.json). A caller whose tile is on another suite
+# This library has no single station id, so the base follows the LEDGER DEFAULT
+# suite (registry/bridge-suites.json). A caller whose station is on another suite
 # must pass BRIDGE_BASE= itself, matched to the emulator build it stages.
 # shellcheck disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/bridge-suite.sh"
@@ -215,7 +215,7 @@ EOF
 chmod +x "$OUT_DIR/launch-scoped.sh"
 
 cat >"$OUT_DIR/tile.env" <<EOF
-# Scratch graphical-bridge contract. This is not a registry/production tile.
+# Scratch graphical-bridge contract. This is not a registry/production station.
 SH_TILE=$TILE
 SH_QMP=$QMP
 SH_PORT=$UDP_PORT

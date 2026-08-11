@@ -3,8 +3,12 @@
 #
 # Every generated artifact (see generated() in scripts/tiles-registry.py) must be
 # byte-identical to what its typed registry source + templates produce right now.
+# The RENDERED artifacts (rendered(): the serve JSONs, the public lineup, the
+# registry aggregate) are deliberately absent — they are never committed, so
+# there is no second copy to drift. `make tile-registry-check` proves they still
+# render.
 # This catches a generated file that has gone stale vs its source/template — the
-# exact failure that bites during re-bakes and tile edits.
+# exact failure that bites during re-bakes and station edits.
 #
 # Authoritative check: `make tile-registry-check` renders every output in memory
 # and byte-compares it against the tree (non-mutating — safe in a pre-push hook).
@@ -20,17 +24,10 @@ GENERATED_PATHS=(
   streamhost/tiles-manifest.sh
   streamhost/bring-up-all.sh
   scripts/build-guests/build-all.sh
-  scripts/serve/tiles.json
-  scripts/serve/webroot/gallery-manifest.json
-  scripts/serve/webroot/poster-docs.json
-  scripts/serve/golden-manifest.json
-  scripts/tools/gallery-action-map.json
   spa/src/three/archetypeRegistry.ts
-  spa/src/mock/manifest.json
   spa/src/data/posterIndex.ts
   spa/src/data/demoPrograms.ts
   spa/src/data/keyboards.ts
-  registry/index.json
   registry/generated/labctl-declarations.json
 )
 

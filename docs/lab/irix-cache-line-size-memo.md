@@ -1,12 +1,12 @@
 # `osd_get_cache_line_size()` is called once per compiled DRC block
 
 Measured 2026-08-03 on the lab box (`labhost`, Debian trixie, 16 logical CPUs),
-MAME `indy_4610`, one R4600, 256 MB, IRIX 6.5.22, golden v3
+MAME `indy_4610`, one R4600, 256 MB, IRIX 6.5.22, seed v3
 (`368fcfb9b56fb4165a4e456238dc1a18`), `-video none` + shm publish, `-sound none`,
 `-frameskip 6`, `-nothrottle`, pinned to core pair 1,9.
 
 Patch: `scripts/build-guests/patches/mame-osd-cache-line-size-memo.patch`.
-Work dir on the box: `/data/vms/soltest/cacheline-memo-3d91/`.
+Work dir on labhost: `/data/vms/soltest/cacheline-memo-3d91/`.
 
 ## The defect
 
@@ -35,7 +35,7 @@ perf stat -x, -e clsmemo:cls,clsmemo:gen,clsmemo:ccb,syscalls:sys_enter_openat -
 ```
 
 (Delete with `-:clsmemo/cls` etc. Do **not** truncate `uprobe_events` wholesale
-on this box: it removes probes belonging to other agents too.)
+on labhost: it removes probes belonging to other agents too.)
 
 One 20 s window at the iconlogin chooser:
 
@@ -70,11 +70,11 @@ single count, which is the stdio signature of exactly this call):
 The settled desktop compiles essentially nothing: with the 256 MB DRC cache the
 working set stops being evicted. So this patch is worth **nothing at idle** and
 its whole value is in boot — which is also the one regime that sits below 100%
-and is therefore not clamped by the tile's throttle.
+and is therefore not clamped by the station's throttle.
 
 ## What one call costs
 
-The box runs IBRS + PTI + MDS "clear CPU buffers", so three syscalls are not
+labhost runs IBRS + PTI + MDS "clear CPU buffers", so three syscalls are not
 cheap here. Two independent measurements:
 
 * standalone microbenchmark of exactly this triple (`clscost.c`), pinned to the
@@ -96,7 +96,7 @@ between the two links, so nothing else moved.
 The primary metric is **kernel-cycle share** (`cycles:k / cycles`) sampled in
 25 s windows against the emulated-time trace. The whole triple lands in
 `cycles:k`, so the arms separate there far more cleanly than in end-to-end speed
-— which matters, because the box was carrying load 12-15 from five sibling
+— which matters, because labhost was carrying load 12-15 from five sibling
 agents and foreign occupancy on the claimed pair ran 28-35%.
 
 Correctness first: **the memoized build makes zero `openat` calls** across the
@@ -126,14 +126,14 @@ Restricted to the compile-heavy first ~70 emulated seconds (16 control samples,
 
 **4.05 % of cycles** in that phase.
 
-### Secondary: cycnorm% — NOT usable on this box tonight, reported anyway
+### Secondary: cycnorm% — NOT usable on labhost tonight, reported anyway
 
 | window | stock median | memo median | ratio |
 |---|---|---|---|
 | emu 40–110 s | 73.69 | 90.04 | 1.22 |
 | emu 110–180 s | 100.10 | 131.18 | 1.31 |
 
-**Do not believe those ratios.** Five sibling agents held the box at load 12–15
+**Do not believe those ratios.** Five sibling agents held labhost at load 12–15
 and foreign occupancy on the claimed pair reached 55 %, 80 %, 94 %, 103 % — the
 control arm happened to draw the worse rounds, and a +22 %/+31 % reading from a
 2.6 % cycle saving is exactly the manufactured result the measurement rules
@@ -145,7 +145,7 @@ kernel-cycle result above is the claim; the speed A/B corroborates it at best.
 
 ### Where it lands in production
 
-The tile runs throttled, so a saving only becomes visible speed in a regime that
+The station runs throttled, so a saving only becomes visible speed in a regime that
 is below 100 %. Boot is: the baseline measured 93.84 % cycnorm over emu 40–110 s
 and 150.65 % over 110–180 s. So this shows up as a slightly faster boot — the
 part of the exhibit a visitor actually waits through — and as reduced host CPU
@@ -155,7 +155,7 @@ elsewhere. At an idle desktop it is worth nothing at all.
 ## What this does not do
 
 Nothing at the idle desktop (rate 3-11/s → below 0.01% of cycles). Nothing for
-the interactive workloads that the baseline could not drive on golden v3.
+the interactive workloads that the baseline could not drive on seed v3.
 
 ## Upstreaming
 

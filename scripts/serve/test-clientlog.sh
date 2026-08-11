@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-clientlog.sh — SPA-independent smoke test for the /clientlog and
+# test-clientlog.sh — UI-independent smoke test for the /clientlog and
 # /clientcmd endpoints of osgallery-https-server.py.
 #
 # Runs entirely locally: throwaway self-signed TLS cert, throwaway port,
@@ -22,7 +22,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Throwaway TLS material + minimal webroot + two ordinary tiles + admin token.
+# Throwaway TLS material + minimal webroot + two ordinary stations + admin token.
 openssl req -x509 -newkey rsa:2048 -nodes -keyout "$TMP/key.pem" \
   -out "$TMP/cert.pem" -days 1 -subj /CN=localhost >/dev/null 2>&1
 mkdir -p "$TMP/webroot" "$TMP/pki"
@@ -150,8 +150,8 @@ check "restore ran expected tile" win95 "$(cat "$TMP/reset-proof")"
 c=$(code -X POST "$BASE/restore/not-a-tile" "${AUTH[@]}")
 check "unknown authenticated restore -> 404" 404 "$c"
 
-# 10. Public SPA/signaling/WebRTC stay reachable without an admin token. A
-# missing generic bridge is 502, never a per-tile 404 gate.
+# 10. Public UI/signaling/WebRTC stay reachable without an admin token. A
+# missing generic bridge is 502, never a per-station 404 gate.
 c=$(code "$BASE/")
 check "public SPA index -> 200" 200 "$c"
 for tile in win95 freedos; do
@@ -168,7 +168,7 @@ c=$(code -X POST "$BASE/webrtc/not-a-tile/offer" -H 'Content-Type: application/j
   --data '{"type":"offer","sdp":"v=0\\r\\n"}')
 check "unknown tile offer -> 404" 404 "$c"
 
-# 11. reserved prefixes: stray GETs must NOT fall through to the SPA index
+# 11. reserved prefixes: stray GETs must NOT fall through to the UI index
 c=$(code "$BASE/clientlog")
 check "GET /clientlog -> 404 (not SPA fallback)" 404 "$c"
 

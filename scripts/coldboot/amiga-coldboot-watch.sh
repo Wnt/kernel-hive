@@ -1,10 +1,10 @@
 #!/bin/bash
 # amiga-coldboot-watch.sh — box-side session watcher that COLD-BOOTS the Amiga 500
-# bridge tile's FS-UAE emulator on visit and powers it off when idle, by tracking the
+# kiosk's FS-UAE emulator on visit and powers it off when idle, by tracking the
 # streamhost@amiga daemon's own session log lines. NO streamhost binary change needed,
 # so it is unaffected by shared-binary redeploys (the daemon is shared fleet-wide).
 #
-# WHY a watcher instead of QMP idle-pause: this is a BRIDGE tile — a Debian kiosk running
+# WHY a watcher instead of QMP idle-pause: this is a BRIDGE station — a Debian kiosk running
 # FS-UAE. QMP stop would freeze the WHOLE kiosk (X + capture + ssh). Cold-boot here means
 # restarting the *emulator inside the kiosk*, so the kiosk X server + streamhost capture
 # stay live and we drive FS-UAE over ssh. Set SH_IDLE_PAUSE_SECS=0 in the tile.env so the

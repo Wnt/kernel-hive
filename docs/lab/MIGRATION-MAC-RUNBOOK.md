@@ -5,7 +5,7 @@
 > pointer below is current and the credential itself remains private.
 
 **If you are a Claude session started on the user's Mac to do the NVMe migration:
-start here.** The lab box's dev container CT950 — which normally hosts the Claude
+start here.** labhost's dev container CT950 — which normally hosts the Claude
 session — is being wiped in this migration, so you drive from the Mac (via `ssh lab`
 + the BMC) until CT950 is restored in Phase 4, then the seat moves back.
 
@@ -35,18 +35,18 @@ session back to it. The Mac is a disposable bootstrap bridge, nothing more.**
 
 ## State of the world (why this is safe to attempt)
 The repo is now self-reproducing: **no derived artifacts transfer** — guest images,
-goldens, and boot videos all rebuild from the repo on the new box. The gap-closure
+checkpoints, and boot videos all rebuild from the repo on the new box. The gap-closure
 program (`docs/history/REPRO-GAP-CLOSURE.md`) is green through L2: 11 builders proven end
-to end, all 28 launchers emit from `tiles-manifest.sh` (verify-emit gate), golden-bake
+to end, all 28 launchers emit from `tiles-manifest.sh` (verify-emit gate), checkpoint-capture
 helpers + the provisioning kit + the fast-poll pve-qemu recipe all vendored, and the
 licensed/abandonware inputs are staged as a sha-verified bundle. The migration itself
 (a full rebuild on the NVMe box) is L3 — the final proof.
 
 ## Preconditions — do these on the Mac WHILE CT950 IS STILL ALIVE
-CT950 holds the secrets and the Claude memory; grab them before the box goes down.
+CT950 holds the secrets and the Claude memory; grab them before labhost goes down.
 
 1. **Repo current**: `cd ~/osgallery && git pull` — must be on `main`, in sync with origin.
-2. **SSH to the box**: `~/.ssh/lab_key` + a `lab` alias in `~/.ssh/config`
+2. **SSH to labhost**: `~/.ssh/lab_key` + a `lab` alias in `~/.ssh/config`
    (`Host lab` → `HostName 192.0.2.10`, `User root`, `IdentityFile ~/.ssh/lab_key`).
    Historical pre-wipe test result: `ssh lab hostname` → `pve-dryrun.lan`. Also
    confirm `ssh osgallery-dev` (CT950).
@@ -68,7 +68,7 @@ CT950 holds the secrets and the Claude memory; grab them before the box goes dow
      ~/.claude/projects/-Users-wnt-osgallery/memory/
    ```
    (Create the Mac project dir first if absent. This gives the Mac Claude session continuity.)
-5. **Copy the staged assets bundle off the box** (2.5 G — the licensed/abandonware inputs
+5. **Copy the staged assets bundle off labhost** (2.5 G — the licensed/abandonware inputs
    that can't be re-fetched cleanly): `rsync -a lab:/data/assets-staging/ ~/osgallery-assets-staging/`
    then verify: `scripts/build-guests/check-assets.sh --root ~/osgallery-assets-staging`.
 6. **vzdump CT950** as a belt-and-braces copy of the dev seat:
@@ -82,9 +82,9 @@ CT950 holds the secrets and the Claude memory; grab them before the box goes dow
    dir the Mac's `isoserver.py` will serve. The Range-capable server + iPXE/answer-file
    templates are already vendored at **`scripts/provision/`** (do NOT re-create them).
 
-## Verify readiness BEFORE taking the box offline
+## Verify readiness BEFORE taking labhost offline
 Once the preconditions above are done, run the preflight **while CT950 is still up** —
-it checks every handoff item (ssh to box + CT950, the BMC-critical Range serving on the
+it checks every handoff item (ssh to labhost + CT950, the BMC-critical Range serving on the
 Mac's own python3, secrets, memory, assets bundle, vzdump, ISOs, provisioning kit, BMC
 reachability) and exits non-zero on any blocker:
 
@@ -94,8 +94,8 @@ scripts/provision/mac-preflight.sh
 #   ASSETS_DIR=~/where-you-put-it ISO_DIR=~/isos VZDUMP_DIR=~/dumps scripts/provision/mac-preflight.sh
 ```
 
-Fix every **[FAIL]** and re-run until it prints "Mac is ready" — a FAIL after the box is
-offline means a secret or the memory you can no longer fetch. **Do not power down the box
+Fix every **[FAIL]** and re-run until it prints "Mac is ready" — a FAIL after labhost is
+offline means a secret or the memory you can no longer fetch. **Do not power down labhost
 until this passes.**
 
 ## First actions once hardware is fitted (Kingston + WD SN7100 + new CR2032)
@@ -120,12 +120,12 @@ until this passes.**
 | Machine-pin target | `pc-i440fx-11.0` / `pc-q35-11.0` — emit with `SH_PIN_MACHINE=1` |
 | Name-collision hazard | old SSD's ZFS pool `data` **and** VG `pve` clashed with the fresh install → old VG was renamed live to `pve_poc` immediately before poweroff; import old pool by GUID readonly (plan §4) |
 | Provisioning kit | `scripts/provision/` (Range server + iPXE + answer-file templates + Redfish README) |
-| Assets bundle | staged copy from box `/data/assets-staging/`; verify with `check-assets.sh --root <dir>` |
+| Assets bundle | staged copy from labhost `/data/assets-staging/`; verify with `check-assets.sh --root <dir>` |
 | Dev seat return | Phase 4: restore CT950 (`zfs recv` the subvol, or the vzdump, or `scripts/provision/provision-dev-ct.sh`) → Claude session moves back to CT950 |
 | SSD | stays cabled + untouched as the rollback medium until Phase 8 sign-off |
 
 ## Historical pre-migration input gap (user-supplied)
-**WinXP** (G16) — no authorized XP ISO + product key is in the repo/box (licensed; can't
+**WinXP** (G16) — no authorized XP ISO + product key is in the repo/labhost (licensed; can't
 be redistributed). winxp builds only if the user stages their own licensed media/key (or
-a Win7-licensed XP Mode VHD). `build-all.sh` skips it with a notice; **27/28 tiles rebuild
+a Win7-licensed XP Mode VHD). `build-all.sh` skips it with a notice; **27/28 stations rebuild
 without it**. Everything else is Tier-A/B reproducible from the repo + the assets bundle.

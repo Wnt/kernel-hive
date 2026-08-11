@@ -19,11 +19,15 @@ values belong only in the gitignored files (`registry/local.env` and similar).
 
 ## Never hand-edit a generated file
 
-`registry/index.json`, the `streamhost` manifest, and the SPA poster data
-are all generated from `registry/tiles/*.json` by
+The `streamhost` manifest, the serve JSONs and the SPA poster data are all
+generated from `registry/tiles/*.json` by
 `scripts/tiles-registry.py generate`. Edit the registry source and
 regenerate — `make tile-registry-check` fails the build if a generated
-file has drifted from its source. The same rule applies to any other
+file has drifted from its source. The runtime JSON documents are not committed
+at all — the public `gallery-manifest.json`, `poster-docs.json`, the serve
+`tiles.json` / `golden-manifest.json`, `gallery-action-map.json` and the
+whole-registry `index.json`: `tiles-registry.py render` / `emit` resolves them
+on demand, so a gallery-visible string has exactly ONE hit in the tree. The same rule applies to any other
 generated artifact you find a comment marking as such.
 
 ## The quality gate — green before done

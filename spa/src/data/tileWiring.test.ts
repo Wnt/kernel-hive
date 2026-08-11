@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import manifest from '../../../scripts/serve/webroot/gallery-manifest.json' with { type: 'json' };
 import { ASSEMBLIES_BY_TILE } from '../scene/machines';
 import { EXHIBIT_IDENTITIES } from '../scene/machineIdentity';
 import { OS_FAMILY } from '../ui/keyboard/keyboardProfiles';
 import { posterFor } from './posterIndex';
 
 // ---------------------------------------------------------------------------
-//  A tile in the registry lineup is not a finished exhibit. Landing one means
+//  A station in the registry lineup is not a finished exhibit. Landing one means
 //  wiring it into several places the registry generator does NOT write, and
 //  every one of them has been forgotten at least once:
 //
@@ -20,19 +19,36 @@ import { posterFor } from './posterIndex';
 //                              at spa/public/posters/<id>/desktop.webp. mpf2
 //                              shipped with neither. Their presence on disk is
 //                              enforced by `tiles-registry.py validate`; here we
-//                              check the poster reached the generated SPA data.
+//                              check the poster reached the generated UI data.
 //
-//  Everything here is checked against the GENERATED manifest, so adding a tile
-//  to the registry is what turns these red — the reminder arrives with the
-//  work, not after someone notices the exhibit looks wrong.
+//  Everything here is checked against the REGISTRY ENTRIES, so adding a station
+//  is what turns these red — the reminder arrives with the work, not after
+//  someone notices the exhibit looks wrong.
 // ---------------------------------------------------------------------------
 
-const streamhostTiles = [...manifest.entries]
-  .sort((a, b) => a.order - b.order)
-  .filter((e) => e.transport === 'streamhost');
+// The lineup, read from the hand-written registry entries themselves — the same
+// files /gallery-manifest.json is rendered from, with no generated artifact in
+// between. The selection mirrors emit_gallery_manifest(): enabled entries, in
+// binding order. A station therefore reaches this test the moment its registry
+// entry lands, whether or not anything has been generated or published.
+type RegistryTile = {
+  id: string;
+  enabled: boolean;
+  stream: { transport: string };
+  render: { bindingOrder?: number };
+  museum: { lineage: string; arch: string; blurb?: string; ramMB?: number; ramKB?: number };
+};
 
-// The visitor-facing museum copy, straight from the manifest the SPA fetches at
-// runtime (registry/tiles/<id>.json `museum` is the hand-written source).
+const lineup = Object.values(
+  import.meta.glob<RegistryTile>('../../../registry/tiles/*.json', { eager: true, import: 'default' }),
+)
+  .filter((tile) => tile.enabled === true && tile.render.bindingOrder !== undefined)
+  .sort((a, b) => (a.render.bindingOrder ?? 0) - (b.render.bindingOrder ?? 0));
+
+const streamhostTiles = lineup.filter((tile) => tile.stream.transport === 'streamhost');
+
+// The visitor-facing museum copy (registry/tiles/<id>.json `museum`), checked at
+// its source rather than in the rendered projection of it.
 type MuseumCopy = {
   id: string;
   lineage: string;
@@ -41,31 +57,31 @@ type MuseumCopy = {
   ramMB?: number;
   ramKB?: number;
 };
-const museumRows: MuseumCopy[] = manifest.entries;
+const museumRows: MuseumCopy[] = lineup.map((tile) => ({ id: tile.id, ...tile.museum }));
 
 describe('every production tile is fully wired into the SPA', () => {
   it('has entries in the lineup at all (guards against an empty manifest)', () => {
     expect(streamhostTiles.length).toBeGreaterThan(0);
   });
 
-  it.each(streamhostTiles.map((e) => e.id))('%s has a scene exhibit identity', (id) => {
+  it.each(streamhostTiles.map((tile) => tile.id))('%s has a scene exhibit identity', (id) => {
     // Missing entries here fail `npm run build` with a Record exhaustiveness
     // error and no test — this makes the same omission visible in the suite.
     expect(EXHIBIT_IDENTITIES[id as keyof typeof EXHIBIT_IDENTITIES]).toBeDefined();
   });
 
-  it.each(streamhostTiles.map((e) => e.id))('%s has a machine assembly', (id) => {
+  it.each(streamhostTiles.map((tile) => tile.id))('%s has a machine assembly', (id) => {
     expect(ASSEMBLIES_BY_TILE[id as keyof typeof ASSEMBLIES_BY_TILE]).toBeDefined();
   });
 
-  it.each(streamhostTiles.map((e) => e.id))('%s has a keyboard profile', (id) => {
+  it.each(streamhostTiles.map((tile) => tile.id))('%s has a keyboard profile', (id) => {
     expect(OS_FAMILY[id]).toBeDefined();
   });
 
-  it.each(streamhostTiles.map((e) => e.id))('%s has an exhibit poster', (id) => {
+  it.each(streamhostTiles.map((tile) => tile.id))('%s has an exhibit poster', (id) => {
     // The .md and its hero image existing on disk is checked by
     // `tiles-registry.py validate`, which can see the filesystem; here we
-    // assert the generated poster actually reached the SPA.
+    // assert the generated poster actually reached the UI.
     expect(posterFor(id)).toBeDefined();
   });
 });

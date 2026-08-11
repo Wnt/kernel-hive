@@ -1,7 +1,7 @@
 # TempleOS low-latency input plan
 
 Status: **RESEARCH / PLAN — 2026-07-15**  
-Scope: TempleOS V5.03 tile only; no driver, QEMU, golden, or live-lab changes were made.
+Scope: TempleOS V5.03 station only; no driver, QEMU, checkpoint, or live-labhost changes were made.
 
 ## Verdict
 
@@ -50,12 +50,12 @@ QMP `query-pci` also exposed an important implicit device not obvious in the lau
 an e1000 at slot 3, INT A, IRQ 11. TempleOS has no networking and does not use it. The migration must
 therefore add **`-nic none`** and pin the gallery device explicitly (proposed `bus=pci.0,addr=0x3`) so
 the emitted launcher really is the device-set ledger and a legacy IRQ is not needlessly shared. That
-is a device-set change and requires a cold golden re-bake.
+is a device-set change and requires a cold checkpoint recapture.
 
 There is another reproducibility gap to fix during the bake phase: the checked-in
 [`golden-bake.sh`](../../../../streamhost/tiles/templeos/golden-bake.sh) performs the desktop cleanup
 and snapshot, but it does not currently define or spawn `warpd.HC`; the README describes an older
-manual step. The new bake must explicitly compile and install the PCI driver before `savevm golden`.
+manual step. The new capture must explicitly compile and install the PCI driver before `savevm golden`.
 
 ## 1. Driver model and exact toolchain
 
@@ -67,7 +67,7 @@ tasks running until they yield ([TempleOS scheduler source](https://github.com/c
 The deliverable is consequently a resident HolyC program, `gallery_input.HC`, not a `.ko`, VxD, or
 ELF module. It will define packed-protocol accessors, the PCI probe/install routine, an `interrupt U0`
 ISR, mouse/keyboard injection helpers, counters, and a diagnostic uninstall function. Installation
-calls `IntEntrySet`, unmasks the selected PIC line, and leaves the compiled code resident. The golden
+calls `IntEntrySet`, unmasks the selected PIC line, and leaves the compiled code resident. The checkpoint
 RAM snapshot is the persistence mechanism.
 
 Build and load it with the **TempleOS V5.03 in-guest HolyC JIT/AOT compiler at the `T:/Home>` REPL**.
@@ -276,21 +276,21 @@ reentrancy or frame-pacing regression. It can wake a sleeping task; it cannot fo
 running task to yield. Report transport-to-state and host-to-frame separately so the 30 Hz display
 floor is not misattributed to the PCI device.
 
-## 4. Auto-start and golden bake
+## 4. Auto-start and checkpoint capture
 
 There is no persistent installed system: TempleOS boots from the pinned ISO and the qcow2 holds a
 full-RAM/device `golden` snapshot. The driver therefore auto-starts by being compiled, installed, and
-armed **before** the golden snapshot. `loadvm golden` restores its code, globals, IDT entry, PIC mask,
+armed **before** the checkpoint snapshot. `loadvm golden` restores its code, globals, IDT entry, PIC mask,
 and task/kernel state. No polling task is required.
 
-Proposed reproducible bake:
+Proposed reproducible capture:
 
 1. Land the common QEMU device first. Update the launcher in one change to add `-nic none`, the
    finalized shared-memory/backend objects, and `-device gallery-hid,bus=pci.0,addr=0x3,...`; keep the
    serial chardev for fallback/commands. Explicitly preserve all existing machine/CPU/RAM/VGA/IDE
    arguments.
-2. Delete only the `golden` internal snapshot in the controlled re-bake workflow, never the pinned
-   ISO and never the live lab during development. Cold boot with the new exact device set.
+2. Delete only the `golden` internal snapshot in the controlled recapture workflow, never the pinned
+   ISO and never live labhost during development. Cold boot with the new exact device set.
 3. Extend `golden-bake.sh` to feed the vendored `gallery_input.HC` through `sk.py`, compile it using
    the in-guest HolyC compiler, and call `GalleryInputInstall`. Generate one comment-free, physical
    REPL line per top-level definition (the existing typer cannot enter source newlines), press Enter
@@ -332,7 +332,7 @@ Estimate assumes T1 has delivered a tested `gallery-hid` device, socket/backend,
 |---|---:|---|
 | Spike | 0.5–1.0 day | PCI ID/BARs read, cacheable ring pattern validated, 1,000 INTx notifications delivered/acked with no storm or loss under KVM. |
 | Driver | 1.5–2.5 days | Absolute motion, L/R, wheel, sequence/overflow handling, counters, then keyboard make/break; no allocation/FPU in ISR. |
-| Bake | 0.5–1.0 day | Automated cold bake and fresh-process `loadvm golden` pass with backend re-handshake. |
+| Capture | 0.5–1.0 day | Automated cold capture and fresh-process `loadvm golden` pass with backend re-handshake. |
 | Measure/harden | 1.0–1.5 days | Idle/load distributions, short-click and overflow stress, rollback test, written go/no-go. |
 | **Total** | **4–6 days** | Excludes common host/QEMU transport. |
 
@@ -355,7 +355,7 @@ Principal risks, in order:
 6. **ISR safety.** Calling `MsSet`, printing, allocating, using PCI BIOS, or doing floating-point work
    from the interrupt risks state corruption or long interrupt masking. Keep the handler bounded and
    integer-only.
-7. **Device-set drift.** Goldens are tied to exact QEMU devices. The launcher, bake script, snapshot,
+7. **Device-set drift.** Checkpoints are tied to exact QEMU devices. The launcher, capture script, snapshot,
    and deployment must change atomically.
 
 Fallback is the checked-in serial `warpd.HC` plus the existing COM1 Unix socket. Keep it if the PCI
@@ -368,7 +368,7 @@ production fallback; production falls back to known-good warpd.
 
 ### Phase A — spike
 
-- Clone the tile and golden; never experiment on CT950's live state or `/mnt/poc`.
+- Clone the station and checkpoint; never experiment on CT950's live state or `/mnt/poc`.
 - Add `-nic none` and a fixed-slot prototype custom PCI device to the clone's exact launcher.
 - In a small REPL HolyC probe, enumerate by ID, validate both BARs, read/write a scratch cacheable ring
   word, and report BDF/BAR/pin/line.
@@ -387,11 +387,11 @@ production fallback; production falls back to known-good warpd.
   short clicks. Add keyboard last through the scan-code FIFO/state path.
 - Retain serial for command execution and rollback. Do not delete or overwrite the known-good agent.
 
-### Phase C — bake
+### Phase C — capture
 
 - Make launcher device additions/removals explicit and update `golden-bake.sh` to compile/install the
   source reproducibly.
-- Cold re-bake with the new device set, run pre-snapshot self-tests, save, quit, fresh-launch, reload,
+- Cold recapture with the new device set, run pre-snapshot self-tests, save, quit, fresh-launch, reload,
   reconnect, and rerun all tests.
 - Prove reset repeatedly (at least 25 `loadvm golden` cycles) with no stale event, missed first event,
   stuck INTx, or backend leak.
@@ -407,7 +407,7 @@ Follow the common measurement plan and report raw distributions, not selected sc
 - record ring occupancy, sequence loss, IRQ count, records/IRQ, ISR cycles, D-Bus 4 ms poll, guest
   29.97 Hz frame phase, and stream 30 fps so transport and rendering costs remain separable;
 - stress bursts, move+button ordering, drags, 5–20 ms clicks, wheel bursts, keyboard chords, ring full,
-  malformed records, backend disconnect/reconnect, and repeated golden restore;
+  malformed records, backend disconnect/reconnect, and repeated checkpoint restore;
 - compare optional window-manager wake enabled/disabled. Keep it only if it improves tails without
   increasing CPU, tearing, or frame instability.
 

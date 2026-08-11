@@ -1,4 +1,4 @@
-//! Native mamectl/1 input sink for the MAME tile (issue #45 Stage 2).
+//! Native mamectl/1 input sink for the MAME station (issue #45 Stage 2).
 //!
 //! Same wire contract as `MameCmdSink` abs mode — surface-clamped `MOVEA x y`
 //! targets restated before every button edge, `DOWN1/UP1` (left) `DOWN2/UP2`
@@ -29,7 +29,7 @@
 //! redundant releases), a fresh MOVEA of the current target, then DOWNn for
 //! each held button.
 //!
-//! Single-injector rule (BINDING): a tile launched with MAME_CTL_SOCK set must
+//! Single-injector rule (BINDING): a station launched with MAME_CTL_SOCK set must
 //! NOT also run `-autoboot_script irixagent.lua` — two injectors fight over the
 //! module's pacing budgets and accumulators.
 //!
@@ -183,7 +183,7 @@ struct Pending {
     /// the guest's button state must never drift from the browser's.
     queued_buttons: u16,
     /// Count-grid mode only: home/edge bookkeeping. Inert while `Shared::grid`
-    /// is None, which is every tile that does not set `SH_MAMESOCK_PTR_GRID`.
+    /// is None, which is every station that does not set `SH_MAMESOCK_PTR_GRID`.
     grid: GridReckon,
 }
 

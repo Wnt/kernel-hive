@@ -2,7 +2,7 @@
 
 Status: **RESEARCH / CONDITIONAL GO FOR A BOUNDED SPIKE (2026-07-15)**
 
-This plan covers the `win311` tile: Windows for Workgroups 3.11 on DOS, running in
+This plan covers the `win311` station: Windows for Workgroups 3.11 on DOS, running in
 386 Enhanced mode under VMM. It answers every question in the
 [generic per-OS template](00-generic-plan.md) and does not propose modifying the live lab during
 research.
@@ -39,7 +39,7 @@ The similarly named `VMD_Post_Absolute_Pointer_Message` is documented for Window
 known Windows 95 bug; it is not evidence of a Windows 3.11 VMD service. The documented Win3.x
 `MOUSE.DRV` callback is the defensible interface.
 
-## 0. Actual tile and baseline
+## 0. Actual station and baseline
 
 The current path is:
 
@@ -101,7 +101,7 @@ cheaply after the in-Windows goal is met.
 
 ### Toolchain
 
-Use the box's pinned Open Watcom 1.9 from `/root/watcom`:
+Use labhost's pinned Open Watcom 1.9 from `/root/watcom`:
 
 - `wcc386` for a freestanding 386 C core;
 - `wasm` for the VxD declaration/control-dispatch, VMM/VPICD service-call glue, interrupt entry, and
@@ -275,7 +275,7 @@ y16 = round(clamp(y15, 0, 32767) * 65535 / 32767)
 
 USER maps the normalized values onto the display surface. Equivalently, for validation at the
 current 640x480 fixture, the expected pixel is
-`round(x15 * 639 / 32767), round(y15 * 479 / 32767)`. This remains correct if the golden's display
+`round(x15 * 639 / 32767), round(y15 * 479 / 32767)`. This remains correct if the checkpoint's display
 resolution changes and avoids pointer acceleration and accumulated relative error.
 
 The callback's button-transition bits enter USER's system input queue, so menus, title bars,
@@ -324,21 +324,21 @@ acknowledge hardware; the callback bridge must obey VMM's reentrancy rules.
   retry remaining codes from a deferred event. Keep QEMU's existing PS/2 keyboard enabled for
   rollback and full-screen DOS compatibility.
 
-## 4. Auto-start and golden bake
+## 4. Auto-start and checkpoint capture
 
-Installation is an offline, reversible golden-image operation:
+Installation is an offline, reversible checkpoint-image operation:
 
 1. build and fingerprint `GALLHID.386` and `GALMOUSE.DRV`; verify the former as the intended VxD/LE
    image and the latter as a Win16 NE driver;
-2. with the VM stopped, back up both tile qcow2s, mount the C: FAT16 image, copy the drivers to
+2. with the VM stopped, back up both station qcow2s, mount the C: FAT16 image, copy the drivers to
    `C:\WINDOWS\SYSTEM`, and preserve the original `SYSTEM.INI`;
 3. add `device=GALLHID.386` under `[386Enh]`, set `[boot] mouse.drv=GALMOUSE.DRV`, and retain the
    stock `mouse=*vmd`/PS/2 configuration until the DOS-box tests say otherwise;
 4. leave `C:\AGENT.EXE`, its `WIN.INI load=` entry, COM1, and `serial.sock` present for the first
    rollout. The agent may sit idle while the host selects PV input; rollback then requires only a
-   launcher/env switch plus the known-good golden, not emergency disk surgery;
+   launcher/env switch plus the known-good checkpoint, not emergency disk surgery;
 5. add the custom PCI device at an explicit, scratch-validated `pci.0` address/pin to the verbatim
-   tile launcher. The launcher is the device-set ledger; do not rely on QEMU auto-placement;
+   station launcher. The launcher is the device-set ledger; do not rely on QEMU auto-placement;
 6. cold boot—never load the old vmstate with a changed device set—verify VxD initialization, PCI
    IDs/BAR/IRQ, mouse callback registration, pointer/buttons/keys, and clean Windows exit/restart;
 7. with an empty ring, INTx deasserted, both buttons/keys up, and the driver armed, delete/recreate
@@ -348,11 +348,11 @@ Installation is an offline, reversible golden-image operation:
 
 The QEMU device must migrate/save at least negotiated features, ring physical address/size,
 producer state, interrupt mask/status, and backend connection-independent state. A restored stale
-pending interrupt or producer index is a bake blocker. The external Unix socket may reconnect after
+pending interrupt or producer index is a capture blocker. The external Unix socket may reconnect after
 restore, but the device must not discard the guest-programmed DMA address.
 
 Rollback artifacts must include the pre-driver qcow2s and launcher. Never attach `qemu-nbd` or mount
-a live tile disk.
+a live station disk.
 
 ## 5. Effort, risks, fallback, and gates
 
@@ -365,7 +365,7 @@ measurement harness:
 |---|---:|---|
 | spike | 5-8 engineer-days | loadable VxD; PCI BIOS/BAR/INTx proven; synthetic absolute callback moves and clicks correctly |
 | production driver | 10-15 engineer-days | bounded ring/ISR, stable priority-event callback bridge, buttons and VKD keys, diagnostics, stress/rollback |
-| bake/integration | 2-3 engineer-days | deterministic offline install, pinned device slot, rebuilt golden, 20+ clean restores |
+| capture/integration | 2-3 engineer-days | deterministic offline install, pinned device slot, rebuilt checkpoint, 20+ clean restores |
 | measure/tune | 3-5 engineer-days | serial/PS2/PV p50/p95/p99 idle+load data and documented go/no-go |
 | **total** | **20-31 engineer-days (about 4-6 weeks)** | excludes shared QEMU/host implementation |
 
@@ -379,7 +379,7 @@ cross-privilege and callback behavior, not parsing 16-byte records.
 | VxD-to-16-bit callback reentrancy/paging | one bad selector, stack, unload race, or callback during a critical section can hang all of Enhanced Windows | fixed code/data; unregister handshake; make the documented priority-event bridge stable first; treat direct thunking only as an optional measured optimization; stop after repeatable hangs |
 | PCI INTx routing/sharing | current NE2000 already uses IRQ11; VPICD shares only when all owners opt in | explicit slot/pin; scratch-query PCI line; target free IRQ9/10; status-first ISR; do not remove networking without a separate product decision |
 | MMIO/shared-memory cache behavior | a BAR-backed ring may trap or be uncached, erasing the latency win | prefer a PageFixed contiguous guest-RAM DMA ring; benchmark BAR mapping only as fallback |
-| snapshot coherence | `loadvm` restores RAM and device state without driver re-init | empty-ring golden invariant; complete QEMU VMState; 20+ restore loops with sequence/IRQ counters |
+| snapshot coherence | `loadvm` restores RAM and device state without driver re-init | empty-ring checkpoint invariant; complete QEMU VMState; 20+ restore loops with sequence/IRQ counters |
 | cursor is not in QMP screendumps | the current golden manifest marks Win3.11 mouse pixel verification as skipped because its hardware cursor overlay is uncaptured | use QEMU D-Bus cursor-position metadata/composited streamhost output if T2 exposes it; otherwise use a Win16 test surface that repaints a marker on `WM_MOUSEMOVE`, and report that this measures UI reaction rather than raw cursor overlay |
 | Win16 USER remains serialized | even priority callbacks can wait behind USER/VMM critical sections; a VxD cannot make cooperative USER reentrant | compare direct thunk and priority event under CPU/UI load; require tail improvement, not merely lower transport time |
 | semantic gaps | third button, wheel, and full-screen DOS are not as clean as in-Windows two-button input | keep PS/2 and warpd; scope first release honestly; never substitute `PostMessage` and call it hardware input |
@@ -447,17 +447,17 @@ small median-only gain would be a regression in engineering quality.
 6. Fuzz device records from the host and run long GUI/CPU/DOS-box stress. Fail closed to PS/2/serial
    on initialization errors.
 
-### Phase C — bake (2-3 days)
+### Phase C — capture (2-3 days)
 
 1. Turn build/install steps into reproducible, offline scripts operating on stopped scratch images;
    preserve CRLF and original INI files.
 2. Pin the custom device's ID, BAR contract, explicit PCI address/pin, backend socket, and all
    relevant properties in the emitted launcher. Retain COM1 during rollout.
 3. Cold boot the modified clone; validate driver diagnostics and every input semantic; create a new
-   empty-ring/deasserted-INTx golden.
+   empty-ring/deasserted-INTx checkpoint.
 4. Run at least 20 pre-promotion `loadvm golden` loops plus cold boots. Then follow the larger
    100/1,000 stability gate before declaring production.
-5. Produce a one-command rollback to the pre-driver launcher/golden and retain warpd configuration.
+5. Produce a one-command rollback to the pre-driver launcher/checkpoint and retain warpd configuration.
 
 ### Phase D — measure and decide (3-5 days)
 

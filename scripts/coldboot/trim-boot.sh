@@ -1,6 +1,6 @@
 #!/bin/bash
 # trim-boot.sh — trim a boot clip's dead trailing-static tail while PRESERVING the
-# seam invariant (last frame == golden) AND the boot chime. Operates in place on a
+# seam invariant (last frame == checkpoint) AND the boot chime. Operates in place on a
 # boot-rec dir (backs the original up as boot.mp4.orig). Idempotent + safe to re-run.
 #
 #   Usage: trim-boot.sh <boot-rec-dir>
@@ -25,7 +25,7 @@
 # construction that satisfies the hard gate is to KEEP the original's final GOP verbatim:
 #   out = copy[0 .. kfHold)  ++  copy[kfLast .. end]
 # dropping the static middle [kfHold, kfLast]. The last packet is the original's, so the
-# last decoded frame is byte-identical to the golden by construction; both segments are
+# last decoded frame is byte-identical to the checkpoint by construction; both segments are
 # original §6 packets, so the output stays §6-compliant.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -134,7 +134,7 @@ printf 'file %q\nfile %q\n' "$A" "$B" >"$LIST"
 ffmpeg -hide_banner -nostats -y -f concat -safe 0 -i "$LIST" \
   -c copy -movflags +faststart "$OUT" >/dev/null 2>&1 || br_die "concat failed"
 
-# ── HARD GATE: trimmed last decoded frame must be byte-identical to the golden ──
+# ── HARD GATE: trimmed last decoded frame must be byte-identical to the checkpoint ──
 last_frame_md5() {
   local f="$1" n i
   n="$(ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=nb_read_frames -of csv=p=0 "$f")"

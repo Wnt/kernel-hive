@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# nsnet.sh — the network shape a CRIU-checkpointable IRIX tile needs: a private
+# nsnet.sh — the network shape a CRIU-checkpointable IRIX station needs: a private
 # netns holding the guest tap, joined to the host by a veth pair, carrying the
 # same containment as `tapnet.sh` egress mode (guest may dial OUT, nothing may
 # dial IN).

@@ -72,7 +72,7 @@ import { logClientEvent } from '../three/clientDebug';
 
 const CONTACT_CAP = 200;
 const MOVE_CAP = 300;
-/** Push cadence. Short enough that a gesture reaches the box while the user is
+/** Push cadence. Short enough that a gesture reaches labhost while the user is
  *  still describing it, long enough to pack many rows per request. */
 const PUSH_MS = 2000;
 /** Rows per telemetry event. `detail` is capped at 512 chars server-side and a
@@ -129,7 +129,7 @@ function ensurePushTimer(): void {
 }
 
 function push(row: PointerRecRow): void {
-  // Queue for the box FIRST, so a row is shipped even if the ring later evicts
+  // Queue for labhost FIRST, so a row is shipped even if the ring later evicts
   // it — the rings are for live poking, the push is the durable record.
   unsent.push(row);
   if (unsent.length > CONTACT_CAP + MOVE_CAP) unsent.shift();

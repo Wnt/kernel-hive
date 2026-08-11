@@ -1,11 +1,11 @@
 #!/bin/bash
 # =============================================================================
 # build-guests/emulators/build-mame-bbcb.sh — build the shipping BBC Micro MAME binary
-# from a pinned upstream RELEASE, in the chroot that matches the tile's suite.
+# from a pinned upstream RELEASE, in the chroot that matches the station's suite.
 #
 # WHY A PURPOSE-BUILT BINARY AND NOT THE DISTRO PACKAGE (the provenance rule):
 #   * The binary must be linked against the SAME Debian generation as the bridge
-#     guest it runs inside. That generation is per-tile now: bookworm today,
+#     guest it runs inside. That generation is per-station now: bookworm today,
 #     trixie once bbcmicro/armeval are migrated (registry/bridge-suites.json,
 #     docs/lab/BRIDGE-TRIXIE-MIGRATION.md). On bookworm the host's own
 #     /usr/games/mame (Debian 13, 0.276) is too new to copy into the overlay; on
@@ -15,12 +15,12 @@
 #     is neither the latest stable nor a version anyone pinned.
 #   * MAME moves ROM requirements between versions (kim1 renamed its 6530 dump;
 #     kc85_4 changed parent). A romset is only meaningful against ONE binary, so
-#     the tile builds its binary, pins it, and re-derives the wanted (name,sha1)
+#     the station builds its binary, pins it, and re-derives the wanted (name,sha1)
 #     pairs from THAT binary's own -listxml. bbcmicro.sh does exactly that.
 #
 # PIN: tag `mame0289` == commit f34f02505e32c1993c6a782b6814232cbfc74e36 — the
 # newest STABLE MAME tag at the time of the add (checked with `git ls-remote
-# --tags`; 0.290 did not exist), and the same release the mpf2 tile ships, so
+# --tags`; 0.290 did not exist), and the same release the mpf2 station ships, so
 # the two MAME exhibits share one provenance story.
 #
 # SOURCES is the DIRECTORY src/mame/acorn, not bbcb.cpp alone. In 0.289 the BBC
@@ -53,7 +53,7 @@ CHROOT_GUARD_LIB="$HERE/../../lib/chroot-guard.sh"
 # shellcheck disable=SC1090,SC1091
 if [ -f "$CHROOT_GUARD_LIB" ]; then . "$CHROOT_GUARD_LIB"; else . /usr/local/bin/chroot-guard; fi
 chroot_guard_reexec_private "$@"
-# ONE binary, TWO tiles: bbcmicro ships it and armeval reuses it from the same
+# ONE binary, TWO stations: bbcmicro ships it and armeval reuses it from the same
 # acorn driver directory (see SOURCES above). They must therefore be on the same
 # suite — if the ledger ever disagrees there is no correct chroot to pick, so
 # fail here rather than silently build an ABI that is wrong for one of them.
@@ -111,7 +111,7 @@ mkdir -p "$WORK"
 install -m 644 "$PATCH" "$WORK/mame-skip-warnings.patch"
 # Shared compiler cache at <chroot>/ccache, outside every build tree, so the
 # fifth MAME build of a migration wave reuses the first four's objects even
-# though each tile keeps its own source tree (mame-ccache.sh explains why the
+# though each station keeps its own source tree (mame-ccache.sh explains why the
 # hash survives the different tree names).
 mame_ccache_prepare "$CHROOT"
 
@@ -160,7 +160,7 @@ EOS
 mkdir -p "$(dirname "$OUT")"
 install -m 755 "$WORK/mame/bbcb" "$OUT"
 
-# Prove the shipped binary really knows the driver this tile pins.
+# Prove the shipped binary really knows the driver this station pins.
 "$OUT" -listxml bbcb >/dev/null 2>&1 || {
   echo "the built binary does not know driver bbcb" >&2
   exit 1

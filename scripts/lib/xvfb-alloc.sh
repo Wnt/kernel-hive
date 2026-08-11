@@ -47,12 +47,12 @@
 #                 xvfb-alloc reap [--force]  # remove ORPHAN lock/socket files only
 #
 # `--display N` pins one number (min=max=N) for the cases that genuinely need a
-# fixed display — e.g. the IRIX tile, whose streamhost service is configured with
+# fixed display — e.g. the IRIX station, whose streamhost service is configured with
 # SH_X11_DISPLAY. Pinned or pooled, the claim and the failure mode are identical:
 # if N is not free you get a non-zero exit, never someone else's server.
 #
 # SOURCE OF TRUTH: scripts/lib/xvfb-alloc.sh in the osgallery repo, kept
-# byte-identical to the box copy /usr/local/bin/xvfb-alloc (box-sync pair, see
+# byte-identical to the labhost copy /usr/local/bin/xvfb-alloc (box-sync pair, see
 # scripts/README.md). Re-sync after any edit.
 
 # ---- configuration ---------------------------------------------------------

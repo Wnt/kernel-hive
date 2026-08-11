@@ -429,7 +429,7 @@ export const ASSEMBLIES_BY_TILE = {
   mpf2: {
     kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtD',
   },
-  // The VIC-20 shares the breadbin shell with the c64 tile because the real
+  // The VIC-20 shares the breadbin shell with the c64 station because the real
   // machines did: the Commodore 64 reused the VIC-20's case, keyboard and port
   // layout wholesale. No mouse — the VIC-20's only other input was a joystick.
   vic20: {
@@ -442,7 +442,7 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtB',
   },
   // The C128 is not a breadbin: a wide, low wedge with a full numeric keypad,
-  // closer in silhouette to the Amiga 500 than to the c64 tile's case. amigaA is
+  // closer in silhouette to the Amiga 500 than to the c64 station's case. amigaA is
   // the widest wedge body in the kit, so it carries the machine; the identity
   // tint below is what keeps it from reading as an Amiga. Keyboard-only.
   c128: {
@@ -541,7 +541,7 @@ export const ASSEMBLIES_BY_TILE = {
   // cable, and a monitor standing on top of the case — a pizza-box station, and
   // the only 8-bit one in the lineup, which is also what keeps its silhouette
   // distinct from the Commodore wedges. No mouse: the KC's pointing devices
-  // were a light pen and a joystick module, neither of which this tile streams.
+  // were a light pen and a joystick module, neither of which this station streams.
   kc854: {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'homeCrtA', keyboard: 'keyboardD',
   },
@@ -578,7 +578,7 @@ export const ASSEMBLIES_BY_TILE = {
   armeval: {
     kind: 'homeMicro', body: 'acornA3000', monitor: 'crtE',
   },
-  // The second SGI Indy. It is the SAME machine as the irix tile — the same
+  // The second SGI Indy. It is the SAME machine as the irix station — the same
   // blue pizza-box, a different MIPS grade inside it — so it takes the same
   // pizzaBoxC body and the same SGI-flavoured wide keyboard and puck mouse
   // that irix and solaris share. What has to keep the two Indys apart on the
@@ -599,7 +599,7 @@ export const ASSEMBLIES_BY_TILE = {
   // in the kit, which is what the Level-V column needs; paramMouseC keeps the
   // two-button silhouette away from the workstation mouse nextstep holds.
   // The one exhibit whose screen is TALLER than it is wide, which IS the
-  // exhibit. crtF was modelled for this tile and used by nothing else — a
+  // exhibit. crtF was modelled for this station and used by nothing else — a
   // portrait tube whose glass is a sheet of paper standing up — so the
   // signature cannot collide. The body is a floor cabinet because the Alto
   // proper was one: a beige box the size of a small fridge, under the desk.

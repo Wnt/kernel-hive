@@ -1,23 +1,23 @@
 #!/bin/bash
 # ============================================================================
-# reset-tile.sh <osId> — reset ONE streamhost tile to its golden fixture.
+# reset-tile.sh <osId> — reset ONE streamhost station to its golden fixture.
 # ----------------------------------------------------------------------------
 # The single authoritative reset used by BOTH the Playwright input suite
-# (reset-before-run) AND the SPA "Restore to golden" button
+# (reset-before-run) AND the UI "Restore to golden" button
 # (POST /restore/<osId> in osgallery-https-server.py).
 #
-# Reads golden-manifest.json (same dir). Per-tile resetMode:
-#   loadvm   -> QMP `loadvm <snapshot>` on the tile's live qmp.sock. Fast,
+# Reads golden-manifest.json (same dir). Per-station resetMode:
+#   loadvm   -> QMP `loadvm <snapshot>` on the station's live qmp.sock. Fast,
 #              no restart, restores RAM+devices EXACTLY. Non-destructive: it
 #              only RESTORES from the in-qcow2 snapshot, never `savevm`.
-#   restart  -> re-run the tile's qemu-streamhost.sh (kills by pidfile +
+#   restart  -> re-run the station's qemu-streamhost.sh (kills by pidfile +
 #              relaunches -> cold-boots the curated fixture) then restart
 #              streamhost@<tileDir> so the daemon re-attaches to the new QMP
-#              socket. For tiles whose backing store can't hold a vmstate snap.
+#              socket. For stations whose backing store can't hold a vmstate snap.
 #   pve-rollback -> `qm rollback <vmid> golden`, then restart streamhost so it
 #              re-attaches to the dedicated QMP socket recreated by PVE.
 #
-# Optional per-tile `postRestoreKeys` (registry-declared, loadvm only): a list of
+# Optional per-station `postRestoreKeys` (registry-declared, loadvm only): a list of
 # HMP sendkey chords sent to the guest AFTER a successful restore. Used where the
 # fixture is an emulator inside the guest and the exhibit wants the emulated
 # machine itself to re-run its own power-on sequence (mpf2: scroll_lock toggles
@@ -42,7 +42,7 @@ if [ ! -f "$MANIFEST" ]; then
   exit 2
 fi
 
-# Pull this tile's fields out of the manifest with python3 (always present here).
+# Pull this station's fields out of the manifest with python3 (always present here).
 read -r TILEDIR RESETMODE SNAP PVE_VMID POSTKEYS < <(
   python3 - "$MANIFEST" "$OSID" <<'PY'
 import json,sys
@@ -190,7 +190,7 @@ case "$RESETMODE" in
     exit 5
     ;;
   restart | relaunch)
-    # relaunch = the x11/shm runtime tiles (irix). They have no QMP monitor and
+    # relaunch = the x11/shm runtime stations (irix). They have no QMP monitor and
     # no vmstate snapshot, so "restore to golden" means relaunching the emulator:
     # the launcher rebuilds disk.chd from the immutable golden CHD on every
     # start, so a fresh launch IS the golden state.
@@ -201,7 +201,7 @@ case "$RESETMODE" in
     # encodes a frozen buffer forever, and says nothing, because a static frame
     # still produces its periodic keyframes and every health check reads normal.
     # Restarting the service re-maps it. (Observed 2026-08-04 after a boot-watchdog
-    # relaunch: tile streamed black while labctl shot, which opens the file by
+    # relaunch: station streamed black while labctl shot, which opens the file by
     # path, showed a live desktop.)
     systemctl restart "streamhost@${TILEDIR}.service" >/dev/null 2>&1 || {
       echo "reset $OSID: FAIL (cold service restart)" >&2

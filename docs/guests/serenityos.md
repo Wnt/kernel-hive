@@ -1,17 +1,17 @@
-# SerenityOS gallery tile
+# SerenityOS gallery station
 
 **Status: source rebuild and restart reset verified (2026-07-14); display bumped
-to 1920×1080 (2026-07-27).** The tile boots a directly loaded SerenityOS kernel
+to 1920×1080 (2026-07-27).** The station boots a directly loaded SerenityOS kernel
 with a raw ext2 root attached as NVMe. The root must be writable, but the rebuilt
-`_disk_image` is the read-only base: every launch deletes and recreates a qcow2
+`_disk_image` is the read-only seed: every launch deletes and recreates a qcow2
 overlay. There is no vmstate snapshot; the manifest therefore uses
 `resetMode=restart`.
 
 ## Display resolution
 
-The tile runs a **single-head 1920×1080** framebuffer (16:9, full-era-correct).
+The station runs a **single-head 1920×1080** framebuffer (16:9, full-era-correct).
 WindowServer reads `[Screen0] Width`/`Height` from `/etc/WindowServer.ini` inside
-the base `_disk_image` at start; the QEMU device set is unchanged (`-vga std` =
+the seed `_disk_image` at start; the QEMU device set is unchanged (`-vga std` =
 QEMU stdvga, the Bochs/VBE packed-linear framebuffer that SerenityOS' BochsDisplay
 drives — default 16 MB vgamem covers 1920×1080×32bpp = 7.9 MB, single head). The
 display path drives this 1:1 (see `docs/lab/tile-resolution-responsiveness.md`),
@@ -24,9 +24,9 @@ Set two ways, kept in sync:
   `[Screen0]` Width→1920 / Height→1080 offline with `debugfs` on the packed
   `_disk_image` (same no-mount pattern as the desktop-shortcut step 4c), so a
   from-scratch rebuild comes up at 1920×1080.
-- **Live golden (box):** the same offline `debugfs` edit was applied to the
-  running tile's base image `/data/gallery-guests/SerenityOS/_disk_image` (the
-  hand-curated golden fixture — autostarted Terminal, desktop shortcuts — is
+- **Live seed (labhost):** the same offline `debugfs` edit was applied to the
+  running station's seed image `/data/gallery-guests/SerenityOS/_disk_image` (the
+  hand-curated seed scene — autostarted Terminal, desktop shortcuts — is
   preserved; only the two resolution keys changed; uid/gid/mode 13/13/0664 kept;
   `e2fsck -fn` clean, still plain ext2). The pre-bump image was backed up to
   `/data/gallery-guests/SerenityOS/_disk_image.bak-res1024x768` for rollback:
@@ -93,7 +93,7 @@ The emitted `boot.sh` was run twice against the final artifacts with its own
 Unix VNC/QMP sockets. On the first boot, `resetdirty` was typed visibly into the
 focused terminal. QEMU was stopped through its own QMP socket/pidfile. The next
 launch deleted and recreated `verify-overlay.qcow2` (inode changed from 220190
-to 210454) and cold-booted the same base image.
+to 210454) and cold-booted the same seed image.
 
 All three framebuffers were inspected: baseline prompt, dirty prompt containing
 `resetdirty`, and post-restart clean prompt. Excluding only the 30-pixel bottom
@@ -106,7 +106,7 @@ baseline -> restart:   0 differing pixels
 
 This proves both halves of the reset contract: the root is writable during a
 session, and relaunch discards that session's overlay without modifying the raw
-base.
+seed.
 
 ## Rebuild fixes and pattern rot
 
@@ -121,8 +121,8 @@ base.
   sockets instead of fixed TCP VNC `:7`.
 - Made the verification boot match the streamhost launcher: `std` VGA rather
   than `bochs-display`, plus AC97 and local-time RTC. The writable root always
-  uses a fresh qcow2 overlay over the raw base.
+  uses a fresh qcow2 overlay over the raw seed.
 - Increased the post-WindowServer settle to 12 seconds so the proof captures
   the completed desktop and terminal paint.
 - Corrected the optional EFI-kernel source path to
-  `Kernel/EFIPrekernel/Kernel.efi`; the direct multiboot tile does not use it.
+  `Kernel/EFIPrekernel/Kernel.efi`; the direct multiboot station does not use it.

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/decos.sh — the DEC PDP-11 tile: ONE machine and THREE of the
+# build-guests/tiles/decos.sh — the DEC PDP-11 station: ONE machine and THREE of the
 # operating systems DEC sold for it, behind a chooser, as a thin overlay on the
 # frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running ONE fullscreen xterm, green on
 #         black, whose only program is /opt/decos/chooser.sh. Pressing 1, 2 or 3
 #         boots RT-11 V5.3, RSX-11M V4.2 or RSTS/E V9.6 under Open SIMH.
-# TYPE  : "emulator bridge" tile — overlay + per-tile /etc/bridge/launch.sh + an
+# TYPE  : "emulator bridge" station — overlay + per-station /etc/bridge/launch.sh + an
 #         INTERNAL qcow2 `golden` taken AT THE CHOOSER with NO simulator running
 #         (resetMode=loadvm). Traps below; measurements in the guest doc.
 #
@@ -39,8 +39,8 @@
 #
 # Media: three archives staged by hand at /data/assets-staging/decos under the
 # Mentec hobbyist grant (use and copy, NOT distribute); never committed, and the
-# tile offers no download. HYGIENE: thin overlay, namespaced sockets, kills only
-# by pidfile, idempotent, decos tile dir only.
+# station offers no download. HYGIENE: thin overlay, namespaced sockets, kills only
+# by pidfile, idempotent, decos station dir only.
 # Usage: decos.sh [--force] [-h]   (DECOS_SKIP_RSTS=1 skips the long install)
 # =============================================================================
 set -euo pipefail
@@ -176,12 +176,12 @@ except OSError: pass
 log.close()
 sys.exit(1 if bad else 0)
 EOS
-# The placard's rule is EXACTLY 80 '=' characters: its drawn width is the tile's
+# The placard's rule is EXACTLY 80 '=' characters: its drawn width is the station's
 # readiness predicate AND its proof that no 80-column screen is clipped, so do
 # not shorten it. The golden idles in the read at the bottom, no simulator.
 read -r -d '' CHOOSER <<'EOS' || true
 #!/bin/bash
-# PDP-11 exhibit chooser (bridge tile 'decos'). Built by build-guests/tiles/decos.sh.
+# PDP-11 exhibit chooser (kiosk 'decos'). Built by build-guests/tiles/decos.sh.
 set -u
 D=/opt/decos
 W=/tmp/decos   # NOT /run: root-owned, and the kiosk runs as 'bridge'

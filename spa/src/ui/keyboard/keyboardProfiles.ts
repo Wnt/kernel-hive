@@ -20,12 +20,12 @@
 //    - T3 atarist: Help (XK_Print 0xff61→0xE037 candidate — needs the new
 //      KEYSYM_TO_SCANCODE row; the running hatari 2.4.1's own manual documents
 //      Print Screen → ST HELP, so only the client row is missing). Undo is
-//      VERIFIED 2026-07-17 on the live tile: the running hatari 2.4.1 (ps-
+//      VERIFIED 2026-07-17 on the live station: the running hatari 2.4.1 (ps-
 //      checked invocation, no --keymap / no hatari.cfg override) documents
-//      Scroll Lock → ST UNDO, and an evdev capture on the tile confirmed the
+//      Scroll Lock → ST UNDO, and an evdev capture on the station confirmed the
 //      OSK's scancode 0x46 arrives as KEY_SCROLLLOCK on the input device
 //      hatari reads;
-//    - T4 android: RESOLVED for Home 2026-07-17 (live-tile framebuffer test:
+//    - T4 android: RESOLVED for Home 2026-07-17 (live-station framebuffer test:
 //      KEY_HOME 0xE047 is MOVE_HOME — did NOT leave the search activity;
 //      KEY_HOMEPAGE via scancode 0xE032 navigated to the launcher → shipped
 //      as XF86HomePage). Back(Esc)/Menu keep their defensible mappings; note
@@ -61,7 +61,7 @@ const press = (keysym: number): MacroStep[] => [dn(keysym), up(keysym)];
 
 // XF86HomePage — resolves to scancode 0xE032 (KEY_HOMEPAGE in a Linux guest),
 // the key Android's Generic.kl binds to launcher HOME. Lab-verified 2026-07-17
-// on the live android tile (KEY_HOME 0xE047 is MOVE_HOME there — wrong key).
+// on the live android station (KEY_HOME 0xE047 is MOVE_HOME there — wrong key).
 const XF86_HOMEPAGE = 0x1008ff18;
 
 // The XK table has NO F-key constants — F-keys are numeric XK_F1 + n − 1.
@@ -91,7 +91,7 @@ const caps = (id: string, label: string, c: string): KeyDef =>
  * host BBC's MOS has CAPS LOCK on at reset — so the LOWERCASE keysyms below
  * (unshifted, as the profile invariant requires) arrive at the machine upper
  * case, which is what BASIC's tokeniser wants. The steps go out through the
- * normal sendKey path, so streamhost's per-tile SH_KEY_MIN_HOLD_MS/GAP_MS
+ * normal sendKey path, so streamhost's per-station SH_KEY_MIN_HOLD_MS/GAP_MS
  * pacing applies to them exactly as it does to hand-typed keys.
  *
  * IT CANNOT CARRY A `*` COMMAND. On this machine `*` is not where a US PC puts
@@ -213,7 +213,7 @@ const lvCtrl = (c: string): LevelVEmit => (id, label, hint) => ctrlChar(id, labe
 const lvTap = (keysym: number): LevelVEmit => (id, label, hint) => tap(id, label, keysym, { hint });
 
 // Dwarf/Draco (Xerox 6085 "Daybreak"). Ctrl is Dwarf's `xeroxControlKeyCode`,
-// and these letters are exactly the rows this tile's own keyboard map declares
+// and these letters are exactly the rows this station's own keyboard map declares
 // (scripts/build-guests/tiles/daybreak.sh writes kbd_linux_en_US.map). SKIP,
 // DEFAULTS and EXPAND are deliberately unbound: Dwarf's map has no Ctrl binding
 // for them, so a button would be dead.
@@ -227,7 +227,7 @@ const DWARF_LEVEL_V: LevelVBinding = {
 // Darkstar (Xerox 8010 "Dandelion"). The SAME Level-V verbs as the 6085, but
 // the 8010 emits them as PLAIN keys, not as a Ctrl layer: Darkstar's README
 // §3.2 maps the Star keyboard onto the PC function block and the navigation
-// cluster. Verified on the live tile — `Home` is the NEXT that wakes the
+// cluster. Verified on the live station — `Home` is the NEXT that wakes the
 // logged-off machine and walks the Logon Option Sheet, and `F7` is the OPEN
 // that opens the Directory icon. Three keys Dwarf cannot bind (SKIP, DEFAULTS,
 // EXPAND) do exist here, so the Star's rows are longer than Daybreak's; that
@@ -305,7 +305,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     moreRows: [
       // Alt+F10 is the CUA MAXIMIZE shortcut (Alt+F4 close … Alt+F9 minimize,
       // Alt+F10 maximize) — label it as what it does. The system menu is
-      // Alt+Space; ship it only after a live-tile verification pass.
+      // Alt+Space; ship it only after a live-station verification pass.
       [ctrlEsc('Window List'), ALT_F4, chord('alt-f10', 'Maximize', XK.Alt_L, F(10), 'Alt+F10 — maximize window')],
       fkeyRow(1, 12),
     ],
@@ -359,7 +359,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
 
   // Plus/4: the c64 row plus the thing this machine is actually FOR — its four
   // applications in ROM. THE ORDER OF THESE BUTTONS IS THE ORDER A VISITOR USES
-  // THEM. The tile rests on the machine's power-on screen, which prints
+  // THEM. The station rests on the machine's power-on screen, which prints
   // "3-PLUS-1 ON KEY F1", so the first button does exactly that; the next three
   // switch module once the suite is up.
   //
@@ -392,7 +392,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   },
 
   // C128: the c64 keys (Commodore reused the keyboard) plus the one thing no
-  // other tile in the lineup can do. The fixture is the machine's untouched
+  // other station in the lineup can do. The scene is the machine's untouched
   // 80-column BASIC 7.0 power-on screen with the CP/M 3.0 system disk already
   // in drive 8, so its second CPU is exactly one BASIC keyword away — but only
   // if you know the keyword, which is why it is a button. The load is slow
@@ -417,7 +417,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
       ...ARROWS,
     ]],
     // HELP and 40/80 DISPLAY are absent on purpose: neither has a verified
-    // end-to-end scancode path on this tile yet, and a dead key is silent
+    // end-to-end scancode path on this station yet, and a dead key is silent
     // through the whole pipeline.
     moreRows: [[
       tap('restore', 'RESTORE', XK.Prior, { hint: 'RESTORE (VICE: PageUp)' }),
@@ -427,8 +427,8 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   // PET 2001 — the 1977 chiclet machine. NOT the c64 profile: no Commodore key,
   // no RESTORE, no function keys. RUN/STOP is the key that matters, because the
   // exhibit's type-in demo is an infinite loop and without it a visitor who runs
-  // the demo can only get back to READY. by resetting the tile. Verified on the
-  // live tile: Esc gave "BREAK IN 30 / READY.".
+  // the demo can only get back to READY. by resetting the station. Verified on the
+  // live station: Esc gave "BREAK IN 30 / READY.".
   //
   // Backspace is DELIBERATELY ABSENT: it does not reach the PET's INST/DEL under
   // VICE's graphics-keyboard symbolic keymap ("PRINT 1234" survived two presses
@@ -470,7 +470,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   // MAME passes host SHIFT straight through to the emulated SHIFT, so each of
   // these is an honest chord and not a gallery invention.
   //
-  // EVERY ROW HERE WAS PROVED ON THE LIVE FRAMEBUFFER (clone of the tile,
+  // EVERY ROW HERE WAS PROVED ON THE LIVE FRAMEBUFFER (clone of the station,
   // 2026-08-09): RUBOUT deleted the whole PRINT token and the cursor returned
   // to `K`; FUNCTION changed the cursor glyph from `K` to `F`; BREAK visibly
   // changed the screen at rest. NEWLINE is proved by the builder's own
@@ -520,7 +520,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   // only exhibit here where the on-screen keyboard has to apologise for the
   // host's layout rather than just add a missing modifier.
   //
-  // Base row: the two words CAOS itself is offering on the screen the tile rests
+  // Base row: the two words CAOS itself is offering on the screen the station rests
   // at. Every letter is sent UNSHIFTED on purpose — this machine's unshifted
   // letter row is UPPER case and shift gives lower case, which is the opposite
   // of every later convention (MAME's src/mame/ddr/kc_keyb.cpp declares
@@ -572,7 +572,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ], fkeyRow(1, 6)],
   },
 
-  // Sinclair QL. The fixture is the machine's own idle SuperBASIC screen, which
+  // Sinclair QL. The scene is the machine's own idle SuperBASIC screen, which
   // says nothing and offers nothing — the QL does not even print READY — so the
   // affordances have to come from here. All three macros are SuperBASIC lines
   // the machine answers immediately and visibly:
@@ -580,7 +580,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   //   MODE 4  back to the 512-pixel four-colour mode this exhibit rests in
   //   CLS     clears the command window, which is the only way to tidy up
   // F1..F5 are the QL's own function keys: F1/F2 are what the machine asks for
-  // at power-on (monitor or TV — already answered in the golden), and QL
+  // at power-on (monitor or TV — already answered in the checkpoint), and QL
   // software of the period hangs its menus off all five.
   sinclairql: {
     family: 'sinclairql',
@@ -605,7 +605,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
 
   // BBC Micro Model B. Three keys a visitor cannot find on their own keyboard,
   // all read from the driver's own PORT_CHAR/PORT_CODE table
-  // (src/mame/acorn/bbc_kbd.cpp) and then verified on the live tile:
+  // (src/mame/acorn/bbc_kbd.cpp) and then verified on the live station:
   //
   //  * ESCAPE stops a running BASIC program — the machine prints "Escape" and
   //    returns to `>`. It is the one key a visitor who runs an accidental
@@ -647,10 +647,10 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   // The ARM Evaluation System has no operating system and no application — the
   // exhibit IS its 16 KB supervisor ROM, so the keyboard is the whole exhibit
   // and these four macros are its entire guided tour. Every one of them was
-  // driven against the restored golden by framebuffer before it shipped.
+  // driven against the restored checkpoint by framebuffer before it shipped.
   // The exhibit rests INSIDE ARM BBC Basic V, not at the supervisor's `A*`
   // prompt, so this profile is BASIC's, not the supervisor's. Every button
-  // below was driven against the restored golden by framebuffer before it was
+  // below was driven against the restored checkpoint by framebuffer before it was
   // written down, and the supervisor's four commands were driven too and are
   // gone because they FAILED there:
   //   `*QUIT` / `*DIS 3000000` / `*SHOWREGS` -> "Bad command". DIS and SHOWREGS
@@ -677,7 +677,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
 
   // Xerox Alto. The exhibit rests at the Alto Executive, the machine's own
   // command prompt, exactly as a cold boot leaves it -- so, as on plus4, the
-  // choice of application lives HERE rather than inside the golden. Four
+  // choice of application lives HERE rather than inside the checkpoint. Four
   // buttons, in the order a visitor needs them: the disk's own directory, then
   // the three programs on it that are worth thirty seconds.
   //
@@ -702,9 +702,9 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
         'Draw 5.2 -- the illustration program, with its icon palette down the left edge'),
       // NO LAUREL BUTTON, and it is a deliberate absence. Laurel is the mail
       // reader, and it is the exhibit's most tempting third program -- but it
-      // wants a Grapevine mail server, this tile has no Ethernet, and it
+      // wants a Grapevine mail server, this station has no Ethernet, and it
       // answers a visitor with a BLANK PAGE AND AN HOURGLASS with no way back
-      // (measured on the tile, 45 s, 0 ink pixels anywhere). A dead end is
+      // (measured on the station, 45 s, 0 ink pixels anywhere). A dead end is
       // worse than an absent button.
       tap('ret', '\u23ce', XK.Return),
       tap('bksp', '\u232b', XK.BackSpace, { repeat: true }),
@@ -866,7 +866,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   },
 };
 
-// Every production streamhost tile, EXPLICITLY (test-enforced vs the registry).
+// Every production streamhost station, EXPLICITLY (test-enforced vs the registry).
 export const OS_FAMILY: Record<string, Family> = {
   helenos: 'generic', serenityos: 'generic', toaruos: 'generic', kolibrios: 'generic',
   tinycore: 'generic', redstar2: 'generic', redstar3: 'generic', postmarketos: 'generic',
@@ -896,7 +896,7 @@ export const OS_FAMILY: Record<string, Family> = {
   // Same keyboard as the c64 (Commodore reused the VIC-20's), and the same VICE
   // bindings drive it: RUN/STOP is Esc, RESTORE is PageUp, C= is Tab.
   vic20: 'c64',
-  // Same keyboard again, plus a CP/M button — the Z80 is what this tile is for.
+  // Same keyboard again, plus a CP/M button — the Z80 is what this station is for.
   c128: 'c128',
   // The two PETs take DIFFERENT families on purpose: VICE picks the keymap from
   // each model's kbd_type, and the 1977 chiclet machine and the 1980 business

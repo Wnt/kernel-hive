@@ -1,15 +1,15 @@
-# Solaris 10 CDE guest (`solaris` tile)
+# Solaris 10 CDE guest (`solaris` station)
 
-> **Renamed 2026-08-10:** the daemon side was `solariscde` (`SH_TILE`, the tile
+> **Renamed 2026-08-10:** the daemon side was `solariscde` (`SH_TILE`, the station
 > dir, `streamhost@solariscde`) until it was renamed to match the registry id
-> `solaris`. The 5 GiB golden disk keeps its `solariscde-golden.qcow2` name (a
+> `solaris`. The 5 GiB seed disk keeps its `solariscde-golden.qcow2` name (a
 > data artifact, not identity), as do the `solaris-cde` build key and dated
 > records below.
 
-The live tile runs real Oracle Solaris 10 x86 with the genuine CDE desktop.
+The live station runs real Oracle Solaris 10 x86 with the genuine CDE desktop.
 In-guest automation (warpd pointer + exec agent, `labctl exec solaris`) is
-documented in `streamhost/guest-agents/solaris/README.md`; the golden build
-detail lives on the box in `/data/gallery-guests/SolarisCDE/NOTES.md`.
+documented in `streamhost/guest-agents/solaris/README.md`; the seed build
+detail lives on labhost in `/data/gallery-guests/SolarisCDE/NOTES.md`.
 
 <!-- section below folded in from exotic-gallery-guests.md (2026-07 restructure) -->
 
@@ -29,11 +29,11 @@ detail lives on the box in `/data/gallery-guests/SolarisCDE/NOTES.md`.
   JumpStart post-install "Press Return to reboot" prompt). Force-ejected the locked CD so
   reboot wouldn't re-run the installer → boot_archive rebuilt → reboot from disk → dtlogin
   → login **root / solaris** → chose CDE. Verified reproducible across an init6 reboot.
-- **Login:** `root` / `solaris`. dtlogin has no native autologin — a boot-to-desktop tile
+- **Login:** `root` / `solaris`. dtlogin has no native autologin — a boot-to-desktop station
   needs the neko launcher to auto-type `root<CR>solaris<CR>` ~90 s after boot, or it sits
   at the dtlogin greeter (default session already CDE). *(Historical — neko-era
-  note; the live streamhost tile resumes a logged-in CDE desktop from its
-  `golden` snapshot, no auto-type involved.)*
+  note; the live streamhost station resumes a logged-in CDE desktop from its
+  `golden` checkpoint, no auto-type involved.)*
 - **Exact QEMU args (validated, boots to CDE):**
   ```
   qemu-system-x86_64 -machine pc,accel=kvm -cpu Nehalem -m 3072 -smp 2 \
@@ -51,7 +51,7 @@ detail lives on the box in `/data/gallery-guests/SolarisCDE/NOTES.md`.
   cleanly with it present** (a new `/` device node appears), but audio playback was **not**
   verified (no PA backend available for host-side test runs).
 - **Footprint:** qcow2 ~1.5 GiB; `sol10.iso` (2.0 GiB) is install-media only and removable
-  at runtime. Heaviest exotic tile, but well within pool budget (`data` ~48% CAP).
+  at runtime. Heaviest exotic station, but well within pool budget (`data` ~48% CAP).
 - **License (honest):** Oracle Solaris 10 is **proprietary** (distributed under the Oracle
   Technology Network **developer** license). Free to use in this private collection as a
   personal retro demo behind edge auth; the only rule is the copyrighted image binary isn't

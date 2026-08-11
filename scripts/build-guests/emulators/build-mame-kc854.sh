@@ -4,13 +4,13 @@
 # upstream release, in the suite's own chroot, exactly as build-mame-mpf2.sh does.
 #
 # WHY A PURPOSE-BUILT BINARY AND NOT THE HOST PACKAGE
-#   The bridge guest is Debian 12 (bookworm) while this tile is on that suite;
-#   the lab host is Debian 13 and its packaged MAME is 0.276, so a trixie-linked
+#   The bridge guest is Debian 12 (bookworm) while this station is on that suite;
+#   labhost is Debian 13 and its packaged MAME is 0.276, so a trixie-linked
 #   binary will not run in a bookworm guest — and bookworm's own package is MAME
 #   0.251, the release in which `kc85_4` is still a *clone* of `kc85_2` with a
 #   different ROM split. Pinning one binary and assembling the romset against
 #   THAT binary's -listxml is the only way the set and the emulator can be known
-#   to agree. The chroot is picked from the tile's suite in
+#   to agree. The chroot is picked from the station's suite in
 #   registry/bridge-suites.json so its glibc/libstdc++ always match the guest —
 #   which is why the IRIX/mpf2 builds live there too. Once kc854 is migrated the
 #   chroot becomes the host's own generation and the ABI argument above retires
@@ -22,7 +22,7 @@
 #   runs. -skip_gameinfo does NOT suppress that panel, and a headless
 #   -video none probe never shows it, so an unpatched binary would ship an
 #   exhibit that is a red error screen for ever. mame-irix-skip-warnings.patch
-#   makes `skip_warnings 1` (set in the tile's ui.ini) actually apply to it.
+#   makes `skip_warnings 1` (set in the station's ui.ini) actually apply to it.
 #   The kiosk therefore never needs to post a dismissal key, and the golden can
 #   be baked at a genuinely untouched CAOS boot screen.
 #
@@ -56,7 +56,7 @@ OUT="${2:-/data/vms/streamhost/assets/kc854/mame/kc85}"
 UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"
 JOBS="${JOBS:-8}"
 # mame0289 — the newest upstream release tag at build time (2026-08-09), and the
-# same revision the mpf2 tile ships, so the two MAME tiles stay on one version.
+# same revision the mpf2 station ships, so the two MAME stations stay on one version.
 MAME_KC854_TAG="${MAME_KC854_TAG:-mame0289}"
 MAME_KC854_BASE="${MAME_KC854_BASE:-d0b7160e54874fa58f553614db373d73100d5ecb}"
 # src/mame/ddr/kc.cpp owns kc85_2/kc85_3/kc85_4/kc85_5 (VEB Mühlhausen). The
@@ -96,7 +96,7 @@ CHROOT_WORK="${WORK#"$CHROOT"}"
 
 mkdir -p "$WORK"
 install -m 644 "$PATCH" "$WORK/mame-irix-skip-warnings.patch"
-# Shared compiler cache at <chroot>/ccache, outside every build tree. This tile
+# Shared compiler cache at <chroot>/ccache, outside every build tree. This station
 # pins a DIFFERENT commit from the other five, which costs nothing here: ccache
 # keys on content, so the files that are identical across the two pins still
 # hit (mame-ccache.sh explains why the hash survives the tree name).
@@ -138,7 +138,7 @@ EOS
   echo "MAME build completed without a kc85 binary" >&2
   exit 1
 }
-# The binary must actually contain the driver this tile exists for.
+# The binary must actually contain the driver this station exists for.
 "$WORK/mame/kc85" -listxml kc85_4 >/dev/null 2>&1 || {
   echo "built binary does not know the kc85_4 driver" >&2
   exit 1

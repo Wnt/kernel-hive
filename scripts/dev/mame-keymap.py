@@ -27,7 +27,7 @@ import argparse
 import socket
 import sys
 
-# XT set1 canonical names (the SPA's wire scancodes), plus the aliases a
+# XT set1 canonical names (the UI's wire scancodes), plus the aliases a
 # vintage machine's MAME driver plausibly uses for the same physical intent.
 # Order matters only for readability; matching is exact per entry.
 XT_KEYS: list[tuple[int, list[str]]] = [
@@ -86,7 +86,7 @@ XT_KEYS: list[tuple[int, list[str]]] = [
     (0x35, ["/", "Slash"]),
     (0x36, ["Right Shift", "Shift Right", "Shift"]),
     (0x37, ["Keypad *"]),
-    (0x38, ["Left Alt", "Alt"]),
+    (0x38, ["Left Alt", "Alt", "Alternate"]),
     (0x39, ["Space", "Space Bar", "Spacebar"]),
     (0x3A, ["Caps Lock", "Caps Shift", "Shift Lock"]),
     (0x3B, ["F1"]),
@@ -99,6 +99,19 @@ XT_KEYS: list[tuple[int, list[str]]] = [
     (0x42, ["F8"]),
     (0x43, ["F9"]),
     (0x44, ["F10"]),
+    (0x47, ["Keypad 7"]),
+    (0x48, ["Keypad 8"]),
+    (0x49, ["Keypad 9"]),
+    (0x4A, ["Keypad -"]),
+    (0x4B, ["Keypad 4"]),
+    (0x4C, ["Keypad 5"]),
+    (0x4D, ["Keypad 6"]),
+    (0x4E, ["Keypad +"]),
+    (0x4F, ["Keypad 1"]),
+    (0x50, ["Keypad 2"]),
+    (0x51, ["Keypad 3"]),
+    (0x52, ["Keypad 0"]),
+    (0x53, ["Keypad ."]),
     (0x57, ["F11"]),
     (0x58, ["F12"]),
     (0xE01C, ["Keypad Enter"]),
@@ -106,12 +119,12 @@ XT_KEYS: list[tuple[int, list[str]]] = [
     (0xE035, ["Keypad /"]),
     (0xE038, ["Right Alt"]),
     (0xE047, ["Home", "Clr Home", "Home Clr"]),
-    (0xE048, ["Cursor Up", "Up", "Up Arrow", "Crsr Up"]),
+    (0xE048, ["Cursor Up", "Up", "Up Arrow", "Crsr Up", "\u2191"]),
     (0xE049, ["Page Up"]),
-    (0xE04B, ["Cursor Left", "Left", "Left Arrow", "Crsr Left"]),
-    (0xE04D, ["Cursor Right", "Right", "Right Arrow", "Crsr Right"]),
+    (0xE04B, ["Cursor Left", "Left", "Left Arrow", "Crsr Left", "\u2190"]),
+    (0xE04D, ["Cursor Right", "Right", "Right Arrow", "Crsr Right", "\u2192"]),
     (0xE04F, ["End"]),
-    (0xE050, ["Cursor Down", "Down", "Down Arrow", "Crsr Down"]),
+    (0xE050, ["Cursor Down", "Down", "Down Arrow", "Crsr Down", "\u2193"]),
     (0xE051, ["Page Down"]),
     (0xE052, ["Insert", "Ins"]),
     (0xE053, ["Delete", "Del"]),
@@ -168,6 +181,15 @@ def main() -> int:
     by_name: dict[str, list[tuple[str, str]]] = {}
     for port, field in fields:
         by_name.setdefault(field.strip().upper(), []).append((port, field))
+
+    # Dual-legend fields — MAME's `<unshifted>  <shifted>` PORT_NAMEs
+    # ("1  !", "; +") — additionally index under their unshifted token. Still
+    # exact matching: two tokens only, and the shifted legend must be a single
+    # non-alphanumeric glyph, so "Left Shift" can never alias to "Left".
+    for port, field in fields:
+        toks = field.split()
+        if len(toks) == 2 and len(toks[1]) == 1 and not toks[1].isalnum():
+            by_name.setdefault(toks[0].upper(), []).append((port, field))
 
     entries: dict[int, tuple[str, str]] = {}
     used: set[tuple[str, str]] = set()

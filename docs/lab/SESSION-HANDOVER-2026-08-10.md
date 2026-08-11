@@ -13,18 +13,18 @@ which is still accurate for anything not restated here.
 
 ## 1. State of the lineup
 
-**61 entries: 59 production streamhost tiles + 2 posters.** Five landed this
+**61 entries: 59 production streamhost stations + 2 posters.** Five landed this
 session, all live, all in all three runtime documents, all serving `signal=200`:
 
-| Tile | Machine | UDP | Notes |
+| Station | Machine | UDP | Notes |
 |---|---|---|---|
 | `indyr4400` | SGI Indy R4400, Iris emulator | 54136 | second Indy; idle-pausable (Iris burns ~310 % CPU) |
 | `alto` | Xerox Alto II XM, ContrAlto 2 | 54137 | **absolute** pointer; portrait 608×808 |
 | `star` | Xerox Star 8010, Darkstar | 54138 | relative pointer, no fork needed |
-| `daybreak` | Xerox 6085 + ViewPoint 2.0.5, Dwarf/Draco | 54139 | cheapest of the three Xerox tiles |
+| `daybreak` | Xerox 6085 + ViewPoint 2.0.5, Dwarf/Draco | 54139 | cheapest of the three Xerox stations |
 | `nextstep` | — | 54134 | **promoted to an absolute pointer** |
 
-Fleet verified after deploy: `all 59 tiles accept their own tickets`,
+Fleet verified after deploy: `all 59 stations accept their own tickets`,
 `systemctl is-system-running` = running, 0 failed, 57 `streamhost@` active.
 
 ---
@@ -32,8 +32,8 @@ Fleet verified after deploy: `all 59 tiles accept their own tickets`,
 ## 2. Open items, highest value first
 
 1. **Split `spa/src/scene/machines.ts`.** It is over the 600-line hard cap on a
-   tracked exclusion, and the exclusion records the real reason: **three tile
-   branches in a row conflicted there**, because every new tile appends an
+   tracked exclusion, and the exclusion records the real reason: **three station
+   branches in a row conflicted there**, because every new station appends an
    assembly at the same spot. Move `ASSEMBLIES_BY_TILE` to its own module. No
    longer blocked — the wave has landed.
 2. **Re-check the playbook against a retraction.** `ADD-NEW-OS-PLAYBOOK.md`
@@ -43,10 +43,10 @@ Fleet verified after deploy: `all 59 tiles accept their own tickets`,
    first) still stands; the Darkstar number may not.
 3. **Delete the merged branches**: `agent-a-alto`, `agent-b-star`,
    `agent-c-daybreak`, `feat/irisindy`, `star-tile` — all merged into `main`.
-4. **`amiga` coldboot watcher is broken and the tile is stopped.** See §4.
+4. **`amiga` coldboot watcher is broken and the station is stopped.** See §4.
 5. **Promote the streamhost canary** if wanted: `star` runs a verified canary
    (`streamhost-9537cd6…`) and was deliberately not `--promote`d, because that
-   restarts all 57 tiles.
+   restarts all 57 stations.
 6. Deferred research, unchanged: MAME build consolidation, the variant policy
    (`c16`/`dragon64`/`zx80` → posters), Longhorn and Alpha candidate studies
    (`longhorn-add.md`, `alpha-nt-add.md`).
@@ -58,10 +58,10 @@ Fleet verified after deploy: `all 59 tiles accept their own tickets`,
 **Integration hazards, all now documented in-repo:**
 
 - **`serve-https-spa.sh manifests` AND `deploy` wholesale-replace all three
-  serve documents** (and `deploy` also replaces the SPA bundle). With parallel
-  tile work that silently deletes siblings — it happened **twice**. The symptom
+  serve documents** (and `deploy` also replaces the UI bundle). With parallel
+  station work that silently deletes siblings — it happened **twice**. The symptom
   is evil: the victim's `/signal/<tile>.json` returns 404 and
-  `POST /restore/<tile>` returns `unknown osId` while the tile runs perfectly
+  `POST /restore/<tile>` returns `unknown osId` while the station runs perfectly
   and nothing logs a warning. Use `scripts/serve/merge-serve-manifests.py`
   (added this session) for additive publishing; the integrator does one
   wholesale publish after the merge. Deploy the bundle with
@@ -123,15 +123,15 @@ Fleet verified after deploy: `all 59 tiles accept their own tickets`,
   /usr/local/bin/amiga-emu /etc/bridge/launch.sh"` → if missing, run
   `scripts/coldboot/install-amiga-coldboot.sh` first.
 - **Disk**: `soltest` swept 359 G → 131 G. Note the pool only gained **19 G**:
-  most of the deleted bulk was ZFS **block-cloned** from production goldens
+  most of the deleted bulk was ZFS **block-cloned** from production checkpoints
   (`bclonesaved` 173 G), so `du` was counting shared blocks. Kept deliberately:
   `bookworm-chroot` (live overlay lowerdir + referenced by 8 builders),
   `trixie-chroot`, and three immutable-flagged files (~1.6 G, operator's call).
 - **Box-sync is green** (191 MATCH) and there is now a **conditional pre-push
-  gate**: it hard-fails on drift when the box is reachable and skips cleanly
-  when it is not. The checker is placeholder-aware — scrubbing happens **on the
-  box**, so real values never reach a local artifact.
-- Not in git, needed by a fresh box: per-tile canary symlinks
+  gate**: it hard-fails on drift when labhost is reachable and skips cleanly
+  when it is not. The checker is placeholder-aware — scrubbing happens **on
+  labhost**, so real values never reach a local artifact.
+- Not in git, needed by fresh labhost: per-station canary symlinks
   `/usr/local/lib/streamhost/tiles/{alto,…}/current`.
 
 ---

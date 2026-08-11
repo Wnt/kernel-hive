@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # =============================================================================
-# box-detached-build.sh — run a LONG build on the lab box, detached from the ssh
+# box-detached-build.sh — run a LONG build on labhost, detached from the ssh
 # session that started it, stream its log back, and be able to stop it again.
 #
 # Sourced, not executed. Extracted from scripts/dev/migrate-tile.sh, where all
@@ -15,7 +15,7 @@
 #     first and split them from the trailing metadata on a '---' sentinel; when
 #     a poll found NO new lines nothing matched, the line COUNT was parsed as
 #     the exit code, and a perfectly healthy build was declared "builder exited
-#     3" and rolled back. Any tile with a quiet stretch — plus4 spends ~46 s in
+#     3" and rolled back. Any station with a quiet stretch — plus4 spends ~46 s in
 #     wait_for_ssh saying nothing — hit that every single time. Fixed-position
 #     leading fields cannot be confused by log content, quiet or noisy.
 #   * STOPPABLE, because nothing reaps a detached builder when the caller gives
@@ -24,7 +24,7 @@
 #     it had just been handed back, re-baking a golden into the PRODUCTION
 #     overlay. Whoever abandons the build owes it a kill.
 #
-# The caller supplies how to reach the box, as an array:
+# The caller supplies how to reach labhost, as an array:
 #     BOX_BUILD_SSH=(ssh -o ConnectTimeout=15 lab)
 #
 #     box_build_start <stage> <relpath> <log> [VAR=VAL …]
@@ -34,7 +34,7 @@
 #     box_build_wait <log> <timeout-s> [poll-s]
 #         Stream new log lines to stdout, prefixed. Sets BOX_BUILD_RC to the
 #         builder's exit code, or leaves it empty on timeout. Returns non-zero
-#         only if the box became unreadable.
+#         only if labhost became unreadable.
 #     box_build_stop <log>
 #         Kill the builder's whole process group, but ONLY while it is genuinely
 #         still running: an existing <log>.rc means it finished on its own and
@@ -107,7 +107,7 @@ kill -KILL "-$pgid" 2>/dev/null || true
 sleep 1
 if kill -0 "-$pgid" 2>/dev/null; then
   # FAIL CLOSED. A surviving builder still addresses the guest as
-  # 127.0.0.1:<hostfwd>, so if the caller now restores and restarts the tile the
+  # 127.0.0.1:<hostfwd>, so if the caller now restores and restarts the station the
   # builder provisions the PRODUCTION guest — which is the plus4/decos incident
   # this file exists to prevent. A warning here would let the caller carry on
   # and reproduce it, so this is an error the caller must handle.

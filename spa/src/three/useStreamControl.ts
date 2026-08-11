@@ -13,8 +13,8 @@
 //      whole point — so setJitterBufferTargetMs/setJitterAuto keep the HUD slider
 //      bound but only record a value; getStats reports it back.
 //    - mouse: the client is guest-agnostic — it always sends correctly-scaled
-//      ABSOLUTE guest px; the daemon converts to relative for PS/2 tiles and
-//      applies any per-tile calibration offset. (No client-side cursor fixups.)
+//      ABSOLUTE guest px; the daemon converts to relative for PS/2 stations and
+//      applies any per-station calibration offset. (No client-side cursor fixups.)
 //    - G1 fold-in kept: a win9x boot-modal auto-dismiss on first connect.
 
 import type {
@@ -282,20 +282,20 @@ export function createStreamController(
   // pixels (already mapped by grid letterbox.clientToGuest). There is NO
   // client-side PS/2 "cursor correction"
   // any more — the DAEMON owns the abs→device mapping per tile.env SH_POINTER:
-  //   • abs tiles  → Mouse.SetAbsPosition(x,y)
-  //   • rel tiles  → last-position delta → rel_motion(dx,dy)  (win9x/os2/…)
-  // and any per-tile calibration offset (e.g. tinycore's tablet hotspot) is a
-  // server-side affine in input.rs, so it benefits abs AND rel tiles uniformly.
+  //   • abs stations  → Mouse.SetAbsPosition(x,y)
+  //   • rel stations  → last-position delta → rel_motion(dx,dy)  (win9x/os2/…)
+  // and any per-station calibration offset (e.g. tinycore's tablet hotspot) is a
+  // server-side affine in input.rs, so it benefits abs AND rel stations uniformly.
   const sendMouseMove = (x: number, y: number) => {
     if (disposed) return;
     client.sendMoveAbs(x, y);
   };
 
-  // RELATIVE motion for pointer-locked rel-pointer tiles (qnx/freedos/msdoswin1):
+  // RELATIVE motion for pointer-locked rel-pointer stations (qnx/freedos/msdoswin1):
   // ship the raw movementX/Y delta as a type=4 DIRECT RelMotion datagram. The
   // daemon (input.rs case 4) forwards it straight to Mouse.RelMotion — NO homing
   // bridge — so QEMU's PS/2 mouse advances 1:1 with no clamped mega-delta, and the
-  // guest renders its own cursor. Absolute tiles never call this (see StreamView).
+  // guest renders its own cursor. Absolute stations never call this (see StreamView).
   const sendMouseMoveRel = (dx: number, dy: number) => {
     if (disposed) return;
     client.sendMoveRel(dx, dy);
@@ -309,7 +309,7 @@ export function createStreamController(
     // the cursor under a held button, which the guest reads as a drag.
     //
     // The move datagram is still sent when a point is given, because it is what
-    // actually STREAMS motion: warpd tiles apply cursor position through their
+    // actually STREAMS motion: warpd stations apply cursor position through their
     // agent channel and never look at a button's coordinates, and the daemon's
     // button-guard clock keys off it. Sending both is not redundant work on the
     // guest — the sinks that use the carried point coalesce the duplicate.

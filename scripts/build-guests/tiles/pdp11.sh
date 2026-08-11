@@ -6,11 +6,11 @@
 # GUEST : a captured Debian-13 (trixie) kiosk running Open SIMH's `pdp11` as a PDP-11/70
 #         with 4 MB of core and an FP11, booting 2.11BSD off an MSCP pack into
 #         a full-screen xterm dressed as green phosphor. streamhost captures
-#         the Linux framebuffer like every other bridge tile (BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh + an
+#         the Linux framebuffer like every other kiosk (BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh + an
 #         INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #         The oldest lineage in the collection and the ancestor of most of it:
-#         every Unix tile descends from PDP-11 Unix, and openvms' VMS was
+#         every Unix station descends from PDP-11 Unix, and openvms' VMS was
 #         written by the team that had just finished RSX-11M for this machine.
 #
 # THE DEVIATION: SIMH IS BUILT INTO THE OVERLAY. The bridge base is FROZEN and
@@ -24,20 +24,20 @@
 #   1. `set cpu 11/70` REJECTS the two lines every 11/44 recipe on the internet
 #      opens with: `nocis` ("The CIS option can't be disabled on a 11/70 CPU")
 #      and `set rha disabled` ("Command not allowed"). Neither is in the ini.
-#   2. `set cpu idle` COSTS THE EXHIBIT ITS RESET, so this tile does not use
+#   2. `set cpu idle` COSTS THE EXHIBIT ITS RESET, so this station does not use
 #      it. It is the standard answer to SIMH burning a whole host core, and it
 #      works beautifully — 2.37% at an idle login prompt instead of 100% — but
 #      idle detection rides on SIMH's calibrated timer, and a savevm/loadvm
 #      cycle destroys that calibration PERMANENTLY: after restoring a snapshot
 #      120 s old, one keystroke took 38-80 s to echo and it never recovered
-#      over three further rounds. Measured on this tile, 120 s-old snapshot,
+#      over three further rounds. Measured on this station, 120 s-old snapshot,
 #      echo latency after `loadvm` / CPU at an idle prompt:
 #         set cpu idle        never echoed (38-80 s+)   2.4%
 #         nothing at all      0.5 s                   100.1%
 #         set throttle 1200k  0.5 s                    59.0%   (~real 11/70)
 #         set throttle 10%    0.5 s                    19.7%   <- shipped
 #         set throttle 5%     0.4 s                     7.9%   (visibly slow)
-#      The tile ships `set throttle 10%` + `set timer nocatchup`: a reset stays
+#      The station ships `set throttle 10%` + `set timer nocatchup`: a reset stays
 #      instant, and the cost is a fifth of a core rather than a whole one.
 #   3. SIMH's console emits LF-then-CR with 0x7f padding (`\n\r\x7f`), NOT
 #      CRLF. Every expect regex written `\r\n` silently never matches.
@@ -59,7 +59,7 @@
 #      futex_wait burning 0 CPU ticks per 20 s, so every keystroke vanishes
 #      while the exhibit looks perfectly healthy — right framebuffer, live
 #      xterm, X focus correct, QEMU's i8042 interrupt counter still ticking.
-#      Chasing it through X focus and PS/2 first cost an hour. The tile builds
+#      Chasing it through X focus and PS/2 first cost an hour. The station builds
 #      with `make pdp11 AIO_CCDEFS=` (a command-line variable overrides every
 #      `+=` in the makefile), which drops both flags; the simulator is then
 #      single-threaded, survives savevm/loadvm, and idles at 0 ticks/10 s. The
@@ -71,7 +71,7 @@
 # stream, and a 69-character line at a 0 ms inter-character gap echoed and
 # executed intact 5/5. Only the bridge PS/2 -> X -> xterm path remains, and
 # 40/40 through QMP delivered `root`, `uname -a` and `ls /usr/src` losing
-# nothing (the keyboard proof below IS that test), so the tile ships 40/40
+# nothing (the keyboard proof below IS that test), so the station ships 40/40
 # rather than vic20/plus4's 80/80 and needs no canary streamhost build.
 #
 # THE GOLDEN RESTS AT 2.11BSD'S OWN `login:`, not at a logged-in root shell:
@@ -79,7 +79,7 @@
 # system, and it is the only state a visitor cannot arrive in the middle of. A
 # baked shell would be a state a human typed into and would hand the next
 # visitor whatever the last one left running. The one thing the screen cannot
-# say — root, no password — is on the placard, in the SPA hint and in
+# say — root, no password — is on the placard, in the UI hint and in
 # SH_FIXTURE_DESC, and the keyboard proof walks exactly that route.
 #
 # WHAT WAS CURATED ON THE PACK: it expects a DZ11 mux and a DEUNA Ethernet
@@ -93,7 +93,7 @@
 # has the before/after console transcripts.
 #
 # HYGIENE: thin overlay, namespaced qmp.sock/pidfile, kills only by pidfile,
-# idempotent, --force rebuilds. Touches ONLY the pdp11 tile dir; refuses to run
+# idempotent, --force rebuilds. Touches ONLY the pdp11 station dir; refuses to run
 # while streamhost@pdp11 is active.
 #
 # Usage: pdp11.sh [--force] [-h]
@@ -115,7 +115,7 @@ EVIDENCE="$TILE_DIR/evidence"
 STAGE="$TILE_DIR/media"
 TYPE_DRIVER="$TILE_DIR/type-qmp.py"
 SIMH_PIN=a1f57fa3738ed31148d31126ba1a7278ff845c6d # Open SIMH master, 2026-07-03
-# 512 MB, not the 1536 the VICE/MAME bridge tiles use. Measured in-guest at the
+# 512 MB, not the 1536 the VICE/MAME kiosks use. Measured in-guest at the
 # login prompt with everything running: MemTotal 468 MB, MemAvailable 338 MB,
 # simulator RSS 21 MB. (At 768 MB: MemAvailable 408 MB, host QEMU RSS 859 MB;
 # at 512 MB, host QEMU RSS 591 MB. The simulated PDP-11 is 4 MB of core.)
@@ -124,10 +124,10 @@ MEM=512
 # 2.11BSD (1991, UCB) prebuilt MSCP pack. PRESERVATION SOURCE: 2.11BSD predates
 # the Net/2 split, is NOT covered by the Caldera 2002 Ancient-Unix letter, and
 # this prebuilt image carries no licence statement. Streamed as pixels only:
-# never committed, never served, no download affordance anywhere in the tile.
+# never committed, never served, no download affordance anywhere in the station.
 # simh.trailing-edge.com (which every howto links) has been Cloudflare-dead
 # since at least 2026-08-09; this is Don North's kit on GitHub Pages. Hashes
-# measured on the box 2026-08-09.
+# measured on labhost 2026-08-09.
 MEDIA_URL="https://ak6dn.github.io/PDP-11/2.11BSD/2.11BSD_rq.dsk.zip"
 MEDIA_ZIP_SHA=94abeca02f001619e7aa2252cb2336ffe79af0cb3fb35cbd8c14240af3125a6b
 MEDIA_DSK_SHA=2f100ee585f229fd55923e1d1c44108e72df96f649f28a31df35985e6a481805
@@ -406,11 +406,11 @@ EOS
 
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# DEC PDP-11/70 + 2.11BSD kiosk launcher (bridge tile).
+# DEC PDP-11/70 + 2.11BSD kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/pdp11.sh for the rationale behind every choice.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 # The X root stays at the bridge base's default 1024x768: unlike the VICE/MAME
-# tiles there is no fixed-size SDL window to fit -- the terminal is sized in
+# stations there is no fixed-size SDL window to fit -- the terminal is sized in
 # CHARACTERS and the root is simply the black surround.
 xsetroot -solid black 2>/dev/null || true
 # 80x24 is the VT100 the machine believes it is talking to (/etc/ttys gives the
@@ -637,7 +637,7 @@ printf '%s\n' "$TYPE_PY" >"$TYPE_DRIVER"
 chmod 755 "$TYPE_DRIVER"
 
 # ---- stage the pack ONCE, on the host, hash-gated ----------------------------
-# DEC media sourcing is fragile and the box has NO working IPv6 egress, so the
+# DEC media sourcing is fragile and labhost has NO working IPv6 egress, so the
 # curl needs -4 or it hangs 40 s on the AAAA record. The bits are staged here,
 # outside the overlay, so --force never re-fetches them.
 if [ ! -s "$STAGE/2.11BSD_rq.dsk.zip" ] ||
@@ -667,7 +667,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
   log "waiting for bridge SSH"
   wait_for_ssh
   # Assert the base's build dependencies instead of apt-get: a missing one
-  # should fail loudly here, not reach out to the network from a museum tile.
+  # should fail loudly here, not reach out to the network from a museum station.
   guest "command -v gcc make git xterm xsetroot unzip >/dev/null &&
     [ -f /usr/include/SDL2/SDL.h ]" ||
     die "the bridge base is missing a SIMH build dependency or xterm"
@@ -738,7 +738,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 fi
 
 # One clean cold boot with the quiet console in force, then bake the golden
-# from the very state SPA reset restores for ever after. Bake from an UNTOUCHED
+# from the very state UI reset restores for ever after. Bake from an UNTOUCHED
 # cold boot: the mpf2 add shipped a golden carrying its own verification output
 # and had to be re-baked.
 stop_qemu

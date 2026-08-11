@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/tiles/win95.sh — reproduce the Windows 95 OSR2 gallery tile from source
+# build-guests/tiles/win95.sh — reproduce the Windows 95 OSR2 gallery station from source
 #
-# GUEST : Windows 95 OSR2 (retro-gallery tile, priority 1)
+# GUEST : Windows 95 OSR2 (retro-gallery station, priority 1)
 # TYPE  : PRE-INSTALLED PRESERVATION IMAGE + era-software injection.
 #         There is NO scripted from-scratch MS-Setup for Win95 (no answer file /
 #         autounattend exists for the 1995 Setup, and cycling real Setup from the
 #         boot floppies is not reproducible).
 #         The reproducible SOURCE is the community "Windows 95 for UTM" disk image
 #         on archive.org — a clean, already-installed, already-patcher9x-patched
-#         Win95 OSR2 that boots to desktop under QEMU/UTM. "Building" this tile ==
+#         Win95 OSR2 that boots to desktop under QEMU/UTM. "Building" this station ==
 #         fetch that image, normalise it to qcow2, INJECT the curated era software
 #         into C:\GALLERY\, cycle first-boot PnP once, and framebuffer-prove the
 #         desktop. That injection is the real automated work this script encodes.
@@ -61,12 +61,12 @@
 #     a stable direct URL — set NETSCAPE_URL to a reachable mirror or drop the
 #     installer at $GUEST_DIR/payload/NETSCAPE.EXE beforehand. If neither is
 #     present the script SKIPS Netscape with a warning (it is a staged one-click
-#     installer, non-blocking for the tile; IE5.5 is already on the image).
+#     installer, non-blocking for the station; IE5.5 is already on the image).
 #
 # HYGIENE (per project rules):
 #   * Every VM this script boots is killed ONLY via its QEMU monitor `quit`
 #     (fallback: its own pidfile). NEVER `pkill qemu*` — that would catch the
-#     live gallery tiles, VM 900/920, and the macOS fan-out VMs.
+#     live gallery stations, VM 900/920, and the macOS fan-out VMs.
 #   * qemu-nbd is connected to a DYNAMICALLY-CHOSEN FREE /dev/nbdN and always
 #     disconnected in cleanup; the mount uses a namespaced dir.
 #   * Namespaced run dir + unique VNC display + unique monitor socket (PID-
@@ -109,7 +109,7 @@ SHOT_PNG="${GUEST_DIR}/verify-desktop.png"
 # --- Behaviour knobs ---------------------------------------------------------
 INJECT="${INJECT:-1}"       # 0 = skip C:\GALLERY software injection
 PATCH9X="${PATCH9X:-0}"     # 1 = re-assert patcher9x on the base image
-KVM_READY="${KVM_READY:-1}" # 1 = make the KVM-bootable live-tile variant (see KVM section
+KVM_READY="${KVM_READY:-1}" # 1 = make the KVM-bootable live-station variant (see KVM section
 #     + docs/guests/win9x.md). First swaps to Standard VGA,
 #     then VBEMP_READY=1 installs packed 640x480x16-bit.
 #     Set 0 only when
@@ -127,9 +127,9 @@ NETSCAPE_URL="${NETSCAPE_URL:-}" # WinWorld: netscape-navigator/40x
 FREEDOOM_URL="${FREEDOOM_URL:-https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip}"
 GTA1_URL="${GTA1_URL:-}" # full gtados+gtadata ZIP only
 
-# The live Win95 tile cannot use usb-tablet, so its absolute pointer is supplied
+# The live Win95 station cannot use usb-tablet, so its absolute pointer is supplied
 # by the tiny Winsock warpnet agent. i686 MinGW defaults may emit CMOV, which the
-# tile's Pentium CPU model does not implement; -march=pentium is load-bearing.
+# station's Pentium CPU model does not implement; -march=pentium is load-bearing.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WARPNET="${WARPNET:-1}"
 WARPNET_SRC="${WARPNET_SRC:-${SCRIPT_DIR}/../../../streamhost/guest-agents/win9x/warpnet.c}"
@@ -152,7 +152,7 @@ RUN_DIR="${GUEST_DIR}/.build-run.$$"
 MON_SOCK="${RUN_DIR}/mon.sock"
 PIDFILE="${RUN_DIR}/qemu.pid"
 NBD_MNT="${RUN_DIR}/mnt"
-VNC_DISP="${VNC_DISP:-62}" # VNC :62 -> tcp 5962; clear of gallery tiles
+VNC_DISP="${VNC_DISP:-62}" # VNC :62 -> tcp 5962; clear of gallery stations
 NBD_DEV=""                 # chosen dynamically in inject/patch steps
 
 log() { printf '[%s] %s\n' "$KEY" "$*" >&2; }
@@ -162,7 +162,7 @@ die() {
 }
 
 ###############################################################################
-# The EXACT neko-qemu launch args this tile runs with in the live gallery.
+# The EXACT neko-qemu launch args this station runs with in the live gallery.
 # (from Win95/manifest.json; emitted here for reference + reuse)
 #
 #   qemu-system-i386 -machine pc,acpi=off,usb=off,accel=tcg -cpu pentium -m 256 \
@@ -170,7 +170,7 @@ die() {
 #     -vga cirrus -audiodev AUDIODEV,id=a1 -device sb16,audiodev=a1 \
 #     -netdev user,id=n0 -device pcnet,netdev=n0 -rtc base=localtime
 #
-# neko-qemu / launch-qemu.sh environment-contract for this tile
+# neko-qemu / launch-qemu.sh environment-contract for this station
 # (retro-guests-add.sh [neko-era, deleted — git history] row; launch-qemu.sh emits audiodev id "snd"):
 #   OS_NAME      = Windows 95
 #   QEMU_MACHINE = pc,acpi=off,usb=off   # acpi OFF: Win95 has no ACPI
@@ -184,7 +184,7 @@ die() {
 #   GUEST_BOOT   = c
 #   QEMU_EXTRA   = -cpu pentium -netdev user,id=n0 -device pcnet,netdev=n0 -snapshot
 #
-# DEFAULT is TCG (accel=tcg) for the SHIPPED cirrus 1024x768 hi-colour tile.
+# DEFAULT is TCG (accel=tcg) for the SHIPPED cirrus 1024x768 hi-colour station.
 # The old note "KVM hangs/corrupts first-boot PnP" was MISDIAGNOSED: KVM hang is the
 # guest's *Cirrus Logic 5446 display driver*, not PnP or the CPU/TSC. Win95 DOES run
 # under KVM once that driver is swapped for Standard VGA. Full analysis + the working
@@ -508,11 +508,11 @@ PY
   # both resolve; a gtawin-only zip has no gtados => staging stays non-fatal.
   unzip_into "$PL/gta1.zip" "$STAGE/GTA" "gtados"
 
-  # --- baked-in game configs (validated on the live tile 2026-07-12) ----------
+  # --- baked-in game configs (validated on the live station 2026-07-12) ----------
   #  DUKE3D.CFG: Duke3D v1.1 hard-EXITS at startup when DUKE3D.CFG is missing
   #  ("ReadSetup: DUKE3D.CFG does not exist -- Please run SETUP.EXE") -- to a
   #  gallery viewer the DOS box just flashes and dies. Stage the SETUP.EXE
-  #  output verbatim (SB16 0x220/IRQ5/DMA1/HDMA5 = the tile's QEMU sb16; music
+  #  output verbatim (SB16 0x220/IRQ5/DMA1/HDMA5 = the station's QEMU sb16; music
   #  None -- no OPL device in the launcher; 8-bit/11kHz mixing).
   base64 -d >"$STAGE/DUKE3D/DUKE3D.CFG" <<'DUKECFG'
 W1NldHVwXQ0KO1NldHVwIEZpbGUgZm9yIER1a2UgTnVrZW0gM0QNClNldHVwVmVyc2lvbiA9ICIx
@@ -886,7 +886,7 @@ boot_qemu_stdvga() { # like boot_qemu but Standard VGA + writes PERSIST (no -sna
 if [[ "$KVM_READY" -eq 1 ]]; then
   if command -v "$QEMU_BIN" >/dev/null 2>&1; then
     # COPY-AND-SWAP: never modify the in-use cirrus golden. Work on a fresh copy and
-    # emit it as win95-osr2-kvm.qcow2 (this is the image the live KVM tile boots).
+    # emit it as win95-osr2-kvm.qcow2 (this is the image the live KVM station boots).
     log "KVM-ready: copy-and-swap golden -> ${KVM_IMG_PATH} (golden left untouched)..."
     cp -f "$IMG_PATH" "$KVM_IMG_PATH"
     sync

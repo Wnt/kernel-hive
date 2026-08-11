@@ -2,7 +2,7 @@
 # verify-tile.sh <osId> [--restore] [--evidence DIR]
 #
 # Mechanical portion of docs/lab/ADD-NEW-OS-PLAYBOOK.md section 7.3.
-# Runs on the lab box. The default is strictly read-only: HTTPS GETs, QMP
+# Runs on labhost. The default is strictly read-only: HTTPS GETs, QMP
 # query/screendump, systemd-derived labctl health, and bundle reads. --restore
 # opts into the manifest's restore action only after a zero-session health gate.
 set -uo pipefail

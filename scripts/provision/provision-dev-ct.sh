@@ -23,7 +23,7 @@
 #   * xdesk.service: Xvfb :1 1920x1080x24 + openbox + x11vnc shared desktop
 #     (DISPLAY=:1 via /etc/profile.d/xdesk.sh; VNC on :5900 — set a password!)
 #   * Playwright 1.6x + google-chrome-stable + bundled firefox, e2e-chrome helper
-#   * an ssh keypair for wnt; print it so you can authorize it on the lab box
+#   * an ssh keypair for wnt; print it so you can authorize it on labhost
 set -euo pipefail
 
 CTID=950

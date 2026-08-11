@@ -42,9 +42,9 @@ export function StatusOverlays({
         <div style={S.hintToast}>
           {/* Two INDEPENDENT locks decide this copy. The mouse clause is about
               pointer capture; the Esc clause is about the SYSTEM KEYBOARD lock,
-              which every streamable tile takes in fullscreen — under it a tap of
+              which every streamable station takes in fullscreen — under it a tap of
               Esc reaches the guest and only a hold leaves fullscreen. Tying the
-              Esc wording to the mouse flag told abs tiles "Esc to exit" while
+              Esc wording to the mouse flag told abs stations "Esc to exit" while
               their Esc was in fact going to the guest. */}
           {[
             mouseCapture ? 'Mouse captured' : null,

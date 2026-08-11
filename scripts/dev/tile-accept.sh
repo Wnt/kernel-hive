@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
 # =============================================================================
-# tile-accept.sh — the post-migration health bundle for ONE tile, as one call.
+# tile-accept.sh — the post-migration health bundle for ONE station, as one call.
 #
 # WHY THIS EXISTS
 #   scripts/dev/migrate-tile.sh ends at "HUMAN REQUIRED" with two PNG paths, and
 #   everything after that was done by hand, differently, by each of the three
 #   agents who ran a wave on 2026-08-10. This is that tail, written down: unit,
-#   daemon health, stream-ticket acceptance, the exec channel, the golden
+#   daemon health, stream-ticket acceptance, the exec channel, the checkpoint
 #   restore, and one fresh framebuffer measured by scripts/dev/frame-compare.py.
 #
 #   The order is not arbitrary — each step also sets up the next. `labctl exec`
 #   resumes an idle-paused guest and re-proves the suite from INSIDE the
 #   production boot (not the builder's); `labctl reset` proves `loadvm golden`
-#   restores under the tile's OWN qemu-streamhost.sh, which migrate-tile.sh
-#   never checks when the builder baked the golden itself (it returns at "golden
-#   snapshot already present" — all six wave-4 tiles took that branch, and the
+#   restores under the station's OWN qemu-streamhost.sh, which migrate-tile.sh
+#   never checks when the builder captured the checkpoint itself (it returns at "golden
+#   snapshot already present" — all six wave-4 stations took that branch, and the
 #   plan doc says that class "surfaces at some visitor's first reset"); and
 #   shooting AFTER that reset is what makes the AFTER frame the same KIND of
 #   frame as migrate-tile.sh's BEFORE, which is reset + settle + shot. Comparing
-#   a settled golden against a just-started unit was never a fair test.
+#   a settled checkpoint against a just-started unit was never a fair test.
 #
 # WHAT IT WILL NOT DO
-#   * It never starts a stopped tile. Four bridge tiles are down right now and
+#   * It never starts a stopped station. Four kiosks are down right now and
 #     only three of them are declared anywhere (indyr4400, star, nextstep are
-#     the operator's quiesce; amiga fell over at 02:12 on 2026-08-10 with
-#     ExecMainStatus=15). Starting someone else's stopped tile corrupts a
-#     measurement campaign, and "it exists" is not "it is mine" — a tile this
+#     the operator's pause; amiga fell over at 02:12 on 2026-08-10 with
+#     ExecMainStatus=15). Starting someone else's stopped station corrupts a
+#     measurement campaign, and "it exists" is not "it is mine" — a station this
 #     script did not stop is a refusal, not a silent `systemctl start`.
 #   * It never prints ACCEPTED. Every check here is mechanical; whether the
 #     frame shows the MACHINE's own screen is a judgement no pixel statistic
@@ -41,12 +41,12 @@
 #   --expect WxH     require this framebuffer geometry
 #   --evidence DIR   where the PNGs are copied locally (default
 #                    ./tile-accept-evidence/<tile>)
-#   --keep           leave the box-side run directory in place
+#   --keep           leave the labhost-side run directory in place
 #   -n, --dry-run    print every command this would run, touch nothing
 #
 # exit: 0  every mechanical check passed (a human still owes the identity call)
 #       1  a check FAILED — named in the summary
-#       2  usage, unknown tile, or a refusal (an inactive tile, mainly)
+#       2  usage, unknown station, or a refusal (an inactive station, mainly)
 #       3  ssh lab unreachable — nothing was verified
 #      10  the frame comparison says DIFFERS: a human must look. Not a failure,
 #          and deliberately not 1 — see frame-compare.py's exit table.
@@ -59,7 +59,7 @@ COMPARE="$HERE/frame-compare.py"
 TICKETS="${TILE_ACCEPT_TICKETS:-/data/vms/streamhost/serve/check-stream-tickets.py}"
 # Every box-side artefact of this run lives in ONE namespaced directory under
 # the clone root, so two agents running this concurrently cannot collide and
-# neither can write anywhere near a production tile directory.
+# neither can write anywhere near a production station directory.
 RUN_TAG="$$-$(date -u +%Y%m%dT%H%M%SZ)"
 
 TILE=""
@@ -136,7 +136,7 @@ box() { # box <command…> — a read of the box; stdout is the answer
   ssh -o ConnectTimeout=15 "$LAB" "$@"
 }
 
-# --- 0. the box has to be there --------------------------------------------
+# --- 0. labhost has to be there --------------------------------------------
 if [ "$DRY" -eq 0 ] && ! ssh -o ConnectTimeout=8 -o BatchMode=yes "$LAB" true 2>/dev/null; then
   die "ssh $LAB unreachable — NOTHING was verified (this is not a pass)" 3
 fi
@@ -242,7 +242,7 @@ else
 fi
 
 # --- 4. stream tickets ------------------------------------------------------
-# The fleet checker has no per-tile mode and its exit code covers every tile, so
+# The fleet checker has no per-station mode and its exit code covers every station, so
 # an unrelated broken exhibit would turn this red. We read OUR row and ignore
 # its fleet-wide exit code, on purpose.
 step "4/7  stream ticket — this tile's row from check-stream-tickets.py"
@@ -258,7 +258,7 @@ else
 fi
 
 # --- 5. exec channel --------------------------------------------------------
-# For a bridge tile /etc/bridge/suite is the suite the PRODUCTION boot actually
+# For a kiosk /etc/bridge/suite is the suite the PRODUCTION boot actually
 # has, which is a different claim from the backing file the disk records.
 step "5/7  exec channel"
 EXEC_KIND="$(fact exec_kind)"
@@ -277,7 +277,7 @@ else
     record EXEC FAIL "$EXEC_KIND channel returned $ERC: $(printf '%s' "$EOUT" | tr '\n' ' ' | cut -c1-60)"
   elif [ -n "$ACTUAL" ] && [ "$ESAY" != "$ACTUAL" ] && printf '%s' "$ESAY" | grep -qx '[a-z]*'; then
     # The disk's backing file and the booted root are two different claims about
-    # one suite. When they disagree the tile is running something nobody
+    # one suite. When they disagree the station is running something nobody
     # declared, and that is exactly what a migration must not ship.
     record EXEC FAIL "in-guest suite is '$ESAY' but the disk backs onto '$ACTUAL'"
   else
@@ -294,7 +294,7 @@ elif [ "$DO_RESET" -eq 0 ]; then
   record GOLDEN skipped "--no-reset: snapshots=[$(fact snapshots)] present, loadvm NOT proven"
   owes "RESET NOT PROVEN — run again without --no-reset before you believe the golden"
 elif [ "$(fact resettable)" != "True" ] && [ "$(fact kind)" = "bridge" ]; then
-  # A bridge tile without a golden is a migration failure: migrate-tile.sh bakes
+  # A kiosk without a golden is a migration failure: migrate-tile.sh bakes
   # one, and a visitor's reset button restores it.
   record GOLDEN FAIL "a bridge tile with NO golden snapshot (snapshots=[$(fact snapshots)])"
 elif [ "$(fact resettable)" != "True" ]; then
@@ -332,7 +332,7 @@ else
     fi
     ARGS+=(--label "$TILE")
     [ -z "$EXPECT" ] || ARGS+=(--expect "$EXPECT")
-    # The frames are on the box and the box has numpy+Pillow, so the analysis
+    # The frames are on labhost and labhost has numpy+Pillow, so the analysis
     # runs where the pixels are; the script travels on stdin, never on argv.
     REMOTE_ARGS="$(printf ' %q' "${ARGS[@]}")"
     FRAME_OUT="$(ssh -o ConnectTimeout=30 "$LAB" "python3 -${REMOTE_ARGS}" <"$COMPARE" 2>&1)"

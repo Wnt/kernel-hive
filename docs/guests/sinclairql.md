@@ -1,6 +1,6 @@
-# sinclairql — Sinclair QL (1984), MAME `ql` in a Debian bridge kiosk
+# sinclairql — Sinclair QL (1984), MAME `ql` in a Debian kiosk
 
-Status: **LIVE production tile** (built 2026-08-09). Bridge tile: a captured
+Status: **LIVE production station** (built 2026-08-09). Kiosk: a captured
 Debian 12 kiosk runs MAME's `ql` driver; streamhost captures the Linux
 framebuffer + AC97 audio, exactly like c64/vic20/plus4/mpf2
 (`streamhost/docs/BRIDGE.md`).
@@ -12,7 +12,7 @@ framebuffer + AC97 audio, exactly like c64/vic20/plus4/mpf2
 | VMID label / kiosk SSH | 236 / 127.0.0.1:5836 (bridge key) |
 | builder | `scripts/build-guests/tiles/sinclairql.sh` (`--force` rebuilds the overlay) |
 | disk | `overlay.qcow2`, a THIN overlay on the frozen `/data/vms/bridge/bridge-base.qcow2` |
-| reset | `loadvm` of the INTERNAL `golden` snapshot |
+| reset | `loadvm` of the INTERNAL `golden` checkpoint |
 | pointer | none — keyboard-only exhibit (`--pointer none --input-backend disabled`) |
 | RAM | 768 MB (measured MemAvailable with the emulator running: **374 536 kB**) |
 
@@ -63,14 +63,14 @@ the *only* thing MAME complains about.
 
 ## Which MAME, and why
 
-The tile ships the bridge guest's own Debian 12 package, pinned to
+The station ships the bridge guest's own Debian 12 package, pinned to
 **`mame 0.251+dfsg.1-1`** and asserted with `dpkg-query` at build time.
 
 - Not the host's 0.276: that binary is built against trixie's glibc/libstdc++
   and cannot run on the bookworm bridge.
 - Not a chroot-built subtarget like mpf2's 0.289: mpf2 needed a source build for
-  its warning-suppression patch, this tile answers the same warning with one
-  keystroke before the golden is baked, and `ql` is a `status="good"` driver.
+  its warning-suppression patch, this station answers the same warning with one
+  keystroke before the checkpoint is captured, and `ql` is a `status="good"` driver.
 
 If the pin is ever moved, `assert_romset` will re-verify the set against the new
 binary — that is the whole point of deriving it from `-listxml` rather than from
@@ -83,7 +83,7 @@ overlay, `-vga std`, dbus display, AC97, e1000 with hostfwd 5836→22, no tablet
 with `-m 768`. The launcher is
 `streamhost/tiles/sinclairql/qemu-streamhost.sh`.
 
-The kiosk X root is the bridge base's stock **1024×768**, and that is the lucky
+The kiosk X root is the bridge seed's stock **1024×768**, and that is the lucky
 size for this machine: the QL's 512×256 monitor mode scales to it by exactly 2×
 horizontally and 3× vertically, so every QL pixel is one identical 2×3 block and
 the picture keeps the 4:3 shape the real monitor drew. `-prescale 2` was tried
@@ -124,22 +124,22 @@ Two smaller ones: the frame predicates must match colours with a tolerance
 (`accel` renders the UI navy as 14,14,44 where `soft` gives 15,15,45), and
 `assert && die` under `set -e` exits the script silently on the passing branch.
 
-## Golden fixture
+## Checkpoint scene
 
-`savevm golden` inside `overlay.qcow2`, baked from an untouched cold boot after
+`savevm golden` inside `overlay.qcow2`, captured from an untouched cold boot after
 exactly two keystrokes:
 
 1. a letter, to clear MAME's imperfect-dump warning (emulation has not started
    at that point, so it cannot reach the QL);
 2. `F1`, to answer the QL's own `F1...monitor / F2...TV` chooser.
 
-The fixture is the 80-column monitor-mode SuperBASIC screen: white window #2 on
+The scene is the 80-column monitor-mode SuperBASIC screen: white window #2 on
 the left, red window #1 on the right, an empty black command window along the
 bottom. **Nothing is typed into it**, and that is asserted rather than assumed —
-the QL prints command-window text in green, so a clean fixture has fewer than
+the QL prints command-window text in green, so a clean scene has fewer than
 half a glyph's worth of green pixels (`command_window_clean`).
 
-The bake runs under `-audiodev none` and is then re-proved under the production
+The capture runs under `-audiodev none` and is then re-proved under the production
 `-audiodev dbus` launcher with `-loadvm golden`: the guest-visible AC97 is
 identical, only the host backend differs, and `production-loadvm.png` is the
 proof. The build backend exists because with `-audiodev dbus` and no streamhost
@@ -158,8 +158,8 @@ Evidence in `/data/vms/streamhost/tiles/sinclairql/evidence/`:
 ## Key pacing
 
 The `ql` screen runs at 50.08 Hz (19.97 ms), so the playbook's two-frame floor is
-40/40. Measured on a **clone** of this tile's golden (2026-08-09, production
-tile stopped so only the clone was running; a 40-character line typed with
+40/40. Measured on a **clone** of this station's checkpoint (2026-08-09, production
+station stopped so only the clone was running; a 40-character line typed with
 explicit press/release pairs, counting the characters that actually landed):
 
 | hold / gap | characters landed |
@@ -168,7 +168,7 @@ explicit press/release pairs, counting the characters that actually landed):
 | 80 / 80 | 40 of 40 (×3 runs) |
 | 120 / 120 | 40 of 40 (×3 runs) |
 
-So the tile ships:
+So the station ships:
 
     SH_KEY_MIN_HOLD_MS=120
     SH_KEY_MIN_GAP_MS=120
@@ -176,8 +176,8 @@ So the tile ships:
 80/80 also measured clean, and 120/120 is a deliberate extra frame of margin:
 the QL's keyboard is not read by the CPU at all but scanned by a separate 8049
 IPC and relayed to the 68008 over a serial link, so a keypress has to survive
-two sampling stages rather than one, and the losses this tile showed while the
-box was busiest were the worst of any bridge tile measured so far. The cost is
+two sampling stages rather than one, and the losses this station showed while
+labhost was busiest were the worst of any kiosk measured so far. The cost is
 typing at ~4 characters a second instead of ~6.
 
 Two traps in the measurement, recorded so nobody repeats them:
@@ -190,9 +190,9 @@ Two traps in the measurement, recorded so nobody repeats them:
   the harness's, so a relative one made it die reading its own frames back.)
 - **Slower is not always better.** At 250/250 only 26 of 40 characters landed,
   repeatably, where 120/120 landed all 40. The cause was not chased; the ladder
-  this tile ships on is measured, and 250 ms holds are not on it.
+  this station ships on is measured, and 250 ms holds are not on it.
 
-On the **live** tile the same 6-character line lands complete
+On the **live** station the same 6-character line lands complete
 (`evidence/live-typed-dirty.png`) — but only after the daemon's idle auto-pause
 is lifted. With no viewer attached the VM is `paused` after 60 s, injected keys
 go nowhere at all, and the frame does not change; that reads exactly like a dead
@@ -205,12 +205,12 @@ keyboard and is not one (`labctl` resumes automatically, raw QMP does not).
   the emulated QL. Drive the machine with `labctl type/key` and read it with
   `labctl shot`.
 - `ssh lab 'labctl reset sinclairql'` / `POST /restore/sinclairql` — `loadvm golden`.
-- SPA keyboard: `sinclairql` profile in `spa/src/ui/keyboard/keyboardProfiles.ts`
+- UI keyboard: `sinclairql` profile in `spa/src/ui/keyboard/keyboardProfiles.ts`
   (MODE 8 / MODE 4 / CLS, F1–F5, BREAK = Ctrl+Space). The QL's idle screen says
   nothing at all, so those buttons are the exhibit's only invitation.
 
 ## Rollback
 
-`overlay.qcow2` holds the golden; never delete or recreate it except through
-`sinclairql.sh --force`, which rebuilds the whole tile from the frozen base in
-about ten minutes. The shared base is never written.
+`overlay.qcow2` holds the checkpoint; never delete or recreate it except through
+`sinclairql.sh --force`, which rebuilds the whole station from the frozen seed in
+about ten minutes. The shared seed is never written.

@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-# tile-fs-probe.sh — READ-ONLY survey of every tile's disk: image format,
+# tile-fs-probe.sh — READ-ONLY survey of every station's disk: image format,
 # partition scheme, and the filesystem(s) inside it. This is what produces the
 # feasibility matrix in docs/lab/OFFLINE-MUTATION-MATRIX.md, which decides which
-# tiles `lib/bridge-coldboot mutate` will agree to touch.
+# stations `lib/bridge-coldboot mutate` will agree to touch.
 #
 # WHY A PROBE AND NOT A GUESS: "can we write into this guest's disk from the
 # host" is a per-filesystem question with three answers, not two — rw, ro, and
 # not-at-all — and the middle one is the dangerous one. A partial or buggy write
 # to an exotic filesystem (Amiga OFS/FFS, Haiku BFS, Solaris UFS, ODS-5) is
-# WORSE than no write: it corrupts a golden that took hours to bake, and the
+# WORSE than no write: it corrupts a checkpoint that took hours to capture, and the
 # corruption surfaces later, on a visitor reset. So the matrix is measured, and
 # the mutate path refuses anything not positively verified.
 #
 # SAFETY: this script NEVER writes. qemu-nbd is attached --read-only, nothing is
 # ever mounted (we read the partition table and blkid signatures off the block
 # device), and the nbd device is disconnected before moving on. It is safe to
-# run against RUNNING tiles — read-only access is shareable — though a live
+# run against RUNNING stations — read-only access is shareable — though a live
 # image can of course return a torn view of a filesystem being written, so a
-# verdict taken from a running tile is marked as such.
+# verdict taken from a running station is marked as such.
 #
-# Usage: tile-fs-probe.sh [--tiles-root DIR] [--json] [tile…]
+# Usage: tile-fs-probe.sh [--tiles-root DIR] [--json] [station…]
 set -uo pipefail
 
 TILES_ROOT="${TILES_ROOT:-/data/vms/streamhost/tiles}"
@@ -65,17 +65,17 @@ claim_nbd() {
   return 1
 }
 
-# primary_disk <tiledir> — the tile's main disk. Prefer a path from the RUNNING
-# QEMU's argv (authoritative), else the largest image file in the tile tree.
+# primary_disk <tiledir> — the station's main disk. Prefer a path from the RUNNING
+# QEMU's argv (authoritative), else the largest image file in the station tree.
 # Parsing the launcher was tried first and is not reliable: the paths are built
 # from shell variables ($D, $BASE, $GDIR) that only exist at run time.
 primary_disk() {
   local dir="$1" tile p pid argv f best="" bestsz=0 sz
   tile="$(basename "$dir")"
-  # 1. The RUNNING QEMU's argv is authoritative — many tiles keep their disk in
-  #    /data/gallery-guests, not the tile dir, reached through a launcher
+  # 1. The RUNNING QEMU's argv is authoritative — many stations keep their disk in
+  #    /data/gallery-guests, not the station dir, reached through a launcher
   #    variable ($D, $GDIR, $BASE) that only has a value at run time. Match the
-  #    process by its `-name streamhost-<tile>` tag or the tile dir in its argv;
+  #    process by its `-name streamhost-<tile>` tag or the station dir in its argv;
   #    a bare basename match is too loose (short names like `nt4` and `star`
   #    appear inside unrelated paths).
   for pid in $(pgrep -f 'qemu-system-' 2>/dev/null); do
@@ -89,7 +89,7 @@ primary_disk() {
       return 0
     }
   done
-  # 2. Stopped: the largest image in the tile dir, else a literal
+  # 2. Stopped: the largest image in the station dir, else a literal
   #    /data/gallery-guests path named in the launcher.
   while IFS= read -r p; do
     sz=$(stat -c %s "$p" 2>/dev/null || echo 0)
@@ -102,8 +102,8 @@ primary_disk() {
     grep -vE 'OVMF|VARS|seed|cloudinit')
   if [ -z "$best" ]; then
     # Restrict to the launcher/config TEXT files. An unrestricted `grep -r` here
-    # walks the tile's own multi-gigabyte qcow2 images looking for path strings,
-    # which took this probe from seconds to minutes per tile.
+    # walks the station's own multi-gigabyte qcow2 images looking for path strings,
+    # which took this probe from seconds to minutes per station.
     best="$(grep -rhoE --binary-files=without-match \
       --include='*.sh' --include='*.env' --include='*.env.*' --include='*.conf' --include='*.json' \
       '/data/(gallery-guests|vms)/[A-Za-z0-9_./-]+\.(qcow2|img|raw|vmdk|dd)' \
@@ -114,7 +114,7 @@ primary_disk() {
   [ -n "$best" ] && printf '%s' "$best"
 }
 
-# boot_medium_note <tiledir> — several tiles boot a live ISO and keep only a
+# boot_medium_note <tiledir> — several stations boot a live ISO and keep only a
 # small scratch qcow2 for state. Writing into that qcow2 reaches nothing the
 # guest reads at boot, so the honest verdict is not "no filesystem" but "the
 # boot medium is read-only by construction".
@@ -129,7 +129,7 @@ boot_medium_note() {
 # verdict <fstype> — can we mount this read-write from this host, at all?
 # Derived from /proc/filesystems + the modules present + the userspace helpers
 # installed. Kept deliberately conservative: anything not positively known good
-# is NOT-SUPPORTED, because the cost of being wrong is a corrupted golden.
+# is NOT-SUPPORTED, because the cost of being wrong is a corrupted checkpoint.
 verdict() {
   case "$1" in
     ext2 | ext3 | ext4) echo "MOUNTABLE-RW|kernel ext4" ;;
@@ -174,7 +174,7 @@ for dir in "$TILES_ROOT"/*/; do
   # protocol layer, whose format is "file", so the naive grep reports every
   # qcow2 in the fleet as "file" — and attaching it with --format=file exposes
   # the container bytes raw, where no filesystem signature exists. That produced
-  # a matrix reading NOT-SUPPORTED for all 59 tiles, which looks like a finding
+  # a matrix reading NOT-SUPPORTED for all 59 stations, which looks like a finding
   # and is a bug.
   fmt="$(qemu-img info -U --output=json -- "$disk" 2>/dev/null |
     python3 -c 'import sys,json; print(json.load(sys.stdin).get("format",""))' 2>/dev/null)"
@@ -189,7 +189,7 @@ for dir in "$TILES_ROOT"/*/; do
   # Probe each partition DIRECTLY with `blkid -p`, never via lsblk's FSTYPE.
   # lsblk reports udev's cached db, which is populated asynchronously after the
   # partition scan — so a probe run immediately after `qemu-nbd --connect` reads
-  # back empty and every tile looks like it has no filesystem. `blkid -p`
+  # back empty and every station looks like it has no filesystem. `blkid -p`
   # bypasses the cache and probes the device itself. (This is the second
   # incarnation of the same race in this script; the first was the partition
   # table not being scanned yet, handled by the settle loop below.)

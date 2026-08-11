@@ -1,10 +1,10 @@
-// Idle auto-pause: freeze the guest when NO WebTransport session has been
-// connected for a grace period, and thaw it the moment a new session is
+// Idle auto-pause: pause the guest when NO WebTransport session has been
+// connected for a grace period, and resume it the moment a new session is
 // accepted — before priming/keyframe work, so the joiner sees the live screen
 // sub-second.
 //
-// TWO FREEZE MECHANISMS, one reconciler. A QEMU tile freezes its vCPUs with QMP
-// `stop`/`cont`. The x11/shm emulator tiles (irix: MAME on the bare-metal CPU)
+// TWO PAUSE MECHANISMS, one reconciler. A QEMU station pauses its vCPUs with QMP
+// `stop`/`cont`. The x11/shm emulator stations (irix: MAME on the bare-metal CPU)
 // have no QMP socket at all, so there the equivalent is SIGSTOP/SIGCONT on the
 // emulator process named by SH_IDLE_PAUSE_PIDFILE. Everything above the
 // `Freezer` — the session lease, the grace clock, the reconciler and its
@@ -12,18 +12,18 @@
 // differs. Whichever mechanism is in play, a paused guest costs ~0 CPU and its
 // RAM/state is untouched.
 //
-// WHY: measured 2026-07-12, unwatched guests were the box's dominant idle load
+// WHY: measured 2026-07-12, unwatched guests were labhost's dominant idle load
 // (~43% of the host: the emulator-bridge kiosks run linapple/VICE full-speed
 // 24/7, sailfishos/templeos/kolibrios etc. churn at 6-56% of a core each). A
 // paused guest costs ~0 CPU; `cont` is sub-second; and pause != loadvm — guest
-// RAM/state is untouched, so cold-boot-only tiles (serenityos/toaruos) are safe.
-// The user-facing UX is intentional: a tile "wakes up" live in front of the
-// visitor (guest clocks freeze while paused; clock-set is a load-time concern).
+// RAM/state is untouched, so cold-boot-only stations (serenityos/toaruos) are safe.
+// The user-facing UX is intentional: a station "wakes up" live in front of the
+// visitor (guest clocks pause while paused; clock-set is a load-time concern).
 //
 // QMP DISCIPLINE: streamhost does NOT hold the QMP socket (capture::connect
 // drops it after the dbus-display handshake precisely so labctl/cdrv.py can
 // use it). Every stop/cont here is a fresh short-lived QMP connection with 2 s
-// timeouts — the same transient pattern the box tooling uses. If another QMP
+// timeouts — the same transient pattern labhost tooling uses. If another QMP
 // client (cdrv.py) holds the socket at that instant, the command fails fast
 // and the reconciler retries on its next tick.
 //
@@ -33,21 +33,21 @@
 //     it whenever sessions > 0 but the pause belief is still set (covers a
 //     `cont` that failed on a transiently busy QMP socket).
 //   * External `cont`s self-heal: labctl auto-resumes a paused guest before
-//     driving it (screendump/exec would hang on frozen vCPUs) and does not
+//     driving it (screendump/exec would hang on paused vCPUs) and does not
 //     tell the daemon. The reconciler re-asserts a believed pause every
 //     HEAL_EVERY ticks (60 s), so a labctl-driven guest re-freezes within
 //     <= grace + 60 s of the last visitor, instead of running forever.
-//   * Zero sessions at daemon start counts as idle: a tile nobody ever visits
+//   * Zero sessions at daemon start counts as idle: a station nobody ever visits
 //     pauses one grace period after boot (the visitor then watches it resume —
 //     or finish booting — live).
 //
-// WARMUP (SH_IDLE_PAUSE_WARMUP_SECS, default 0 = off): the FIRST freeze can be
-// withheld for a while after daemon start. A tile whose own health machinery
+// WARMUP (SH_IDLE_PAUSE_WARMUP_SECS, default 0 = off): the FIRST pause can be
+// withheld for a while after daemon start. A station whose own health machinery
 // needs the guest RUNNING to vet it is otherwise never vetted — irix's
 // livewatch waits 600 s before its first pointer probe, and that probe is the
-// only thing that clears the instant-restore budget, so a tile frozen at 60 s
+// only thing that clears the instant-ready budget, so a station paused at 60 s
 // and never visited would ratchet that budget up until every launch fell back
-// to the 390 s cold boot. Resumes are never withheld; only the freeze waits.
+// to the 390 s cold boot. Resumes are never withheld; only the pause waits.
 //
 // SIGNAL DISCIPLINE (the pidfile mechanism): the pidfile is re-read on EVERY
 // stop/cont, so a watchdog that relaunched the emulator under us is followed
@@ -57,19 +57,19 @@
 // reconciler's re-assert and the unconditional cont on connect stay free.
 //
 // Config: SH_IDLE_PAUSE_SECS / --idle-pause-secs (default 60; 0 = disabled;
-// per-tile override via tile.env), SH_IDLE_PAUSE_PIDFILE +
-// SH_IDLE_PAUSE_PROC_MATCH (non-QEMU tiles). See docs/IDLE-PAUSE.md.
+// per-station override via tile.env), SH_IDLE_PAUSE_PIDFILE +
+// SH_IDLE_PAUSE_PROC_MATCH (non-QEMU stations). See docs/IDLE-PAUSE.md.
 
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-/// How this tile's guest is frozen and thawed. The reconciler above only ever
+/// How this station's guest is paused and resumed. The reconciler above only ever
 /// asks for "stop" or "cont"; this is the whole of what differs between a QEMU
-/// tile and an emulator tile.
+/// station and an emulator station.
 pub enum Freezer {
-    /// QEMU: `stop`/`cont` over the tile's QMP socket.
+    /// QEMU: `stop`/`cont` over the station's QMP socket.
     Qmp { sock: String },
     /// Non-QEMU emulator: SIGSTOP/SIGCONT the process recorded in `pidfile`,
     /// but only while `proc_match` (when set) appears in its cmdline.
@@ -128,8 +128,8 @@ impl Cmd {
 /// that is missing (the launcher has not written it yet), empty (the launcher
 /// truncates it on teardown), unparseable, dead, or whose cmdline no longer
 /// carries `proc_match`. Refusing is always right — the cost of a skipped
-/// freeze is one tile idling for 5 more seconds, the cost of a wrong signal is
-/// an unrelated process on this box frozen with no one to thaw it.
+/// pause is one station idling for 5 more seconds, the cost of a wrong signal is
+/// an unrelated process on labhost paused with no one to resume it.
 fn signal_pidfile(pidfile: &str, proc_match: Option<&str>, sig: libc::c_int) -> anyhow::Result<()> {
     let raw =
         std::fs::read_to_string(pidfile).map_err(|e| anyhow::anyhow!("pidfile {pidfile}: {e}"))?;
@@ -162,7 +162,7 @@ fn signal_pidfile(pidfile: &str, proc_match: Option<&str>, sig: libc::c_int) -> 
 /// What the reconciler should do this tick (pure decision, unit-tested).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Action {
-    /// Freeze the guest (QMP stop). Idempotent on an already-stopped guest.
+    /// Pause the guest (QMP stop). Idempotent on an already-stopped guest.
     Stop,
     /// Resume the guest (QMP cont) — a session is active but the pause belief
     /// is still set (an earlier cont failed / raced).
@@ -179,7 +179,7 @@ enum Action {
 ///     -> Stop again (re-assert; heals an external `cont`, e.g. labctl).
 ///
 /// `warmed_up` is false only during SH_IDLE_PAUSE_WARMUP_SECS after daemon
-/// start, for a tile whose own health machinery needs the guest RUNNING to vet
+/// start, for a station whose own health machinery needs the guest RUNNING to vet
 /// it and would otherwise never get a look (irix's livewatch — see the field
 /// doc on Config::idle_pause_warmup_secs).
 fn reconcile_action(
@@ -324,7 +324,7 @@ impl IdlePauser {
         }
     }
 
-    /// Apply one freeze/thaw verb (blocking I/O — a transient QMP connection or
+    /// Apply one pause/resume verb (blocking I/O — a transient QMP connection or
     /// a /proc read — off the runtime). Held under the state lock by callers,
     /// which serializes stop/cont ordering.
     async fn exec(&self, cmd: Cmd) -> anyhow::Result<()> {
@@ -448,12 +448,12 @@ mod tests {
         );
     }
 
-    /// Warmup withholds the FIRST freeze so a tile whose own health machinery
+    /// Warmup withholds the FIRST pause so a station whose own health machinery
     /// needs the guest running (irix's livewatch, whose probe is the only thing
     /// that clears the instant-restore budget) gets its look.
     #[test]
     fn warmup_withholds_the_freeze_but_never_a_resume() {
-        // Long past grace, but not warmed up: do not freeze.
+        // Long past grace, but not warmed up: do not pause.
         assert_eq!(
             reconcile_action(0, false, Duration::from_secs(999), G, false, false),
             Action::None

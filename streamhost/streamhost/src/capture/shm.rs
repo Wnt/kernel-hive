@@ -2,7 +2,7 @@
 // straight into a file-backed mapping and we read them; no X server, no window.
 //
 // WHY (measured, see docs/guests/irix.md): the `x11` backend costs the IRIX/MAME
-// tile ~1.5-1.7 Gcyc per emulated second (32-43% of host time) and it is all raw
+// station ~1.5-1.7 Gcyc per emulated second (32-43% of host time) and it is all raw
 // pixel movement, not shading — MAME rasterises the Newport framebuffer into an
 // RGB32 bitmap, uploads it to an SDL texture, blits that through Mesa llvmpipe
 // into an X window, and this daemon then reads the same pixels back out. A
@@ -74,7 +74,7 @@ const HEADER: usize = 64;
 const MAGIC: u32 = 0x3142_4649; // 'IFB1'
 /// How long to wait for the producer to create + populate the mapping before
 /// giving up. MAME publishes its first frame within a second or two of start,
-/// but the tile launcher may race us.
+/// but the station launcher may race us.
 const WAIT_FIRST_FRAME: std::time::Duration = std::time::Duration::from_secs(120);
 /// Bound on seqlock retries for one frame before we simply wait for the next.
 const MAX_TEARS: u32 = 16;
@@ -217,7 +217,7 @@ fn capture_loop(
     poll: std::time::Duration,
     diff_damage: bool,
 ) -> anyhow::Result<()> {
-    // Wait for the producer. The tile launcher starts MAME and streamhost
+    // Wait for the producer. The station launcher starts MAME and streamhost
     // together, so the file legitimately does not exist for the first seconds.
     let deadline = std::time::Instant::now() + WAIT_FIRST_FRAME;
     let mut map = loop {
@@ -276,7 +276,7 @@ fn capture_loop(
         // An unchanged frame costs nothing: the producer already told us via the
         // dirty rect it carried out of its whole-frame render cache. The FIRST
         // frame is exempt — a daemon started against an already-idle guest (the
-        // IRIX login chooser is perfectly static, and a tile relaunch lands
+        // IRIX login chooser is perfectly static, and a station relaunch lands
         // exactly there) would otherwise never see a dirty frame, never report
         // geometry, and never come up at all.
         let (dx0, dy0, dx1, dy1) = (map.hdr(8), map.hdr(9), map.hdr(10), map.hdr(11));

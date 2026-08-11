@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # serve-https-spa.sh  (SERVE agent — reproducible bring-up)
 # ---------------------------------------------------------------------------
-# Stand up the HTTPS serving plane for the Kernel Hive SPA on the LAN so the
+# Stand up the HTTPS serving plane for the Kernel Hive UI on the LAN so the
 # page is a SECURE CONTEXT (required for WebTransport / WebCodecs), and expose
-# SAME-ORIGIN signaling JSON for the registry's production streamhost tiles.
+# SAME-ORIGIN signaling JSON for the registry's production streamhost stations.
 #
-# It deploys only the SPA entries present in dist/ and leaves other webroot
+# It deploys only the UI entries present in dist/ and leaves other webroot
 # content (such as boot-replay videos under boot/) in place. It does not manage
-# the streamhost tile processes or any Proxmox guests.
+# the streamhost station processes or any Proxmox guests.
 #
 # Runs from a workstation or the dev box (needs ssh to the host). Sub-commands:
 #   build     npm run build in spa/
 #   deploy    push built dist + server + ca script to the host
-#   manifests publish generated tiles.json + gallery-manifest.json (no SPA build)
+#   manifests publish generated tiles.json + gallery-manifest.json (no UI build)
 #   cert      mint/refresh the local-CA leaf on the host, pull rootCA.pem here
 #   up        (cert + deploy-if-needed +) start the HTTPS server
 #   down      stop the HTTPS server by pidfile
@@ -21,7 +21,7 @@
 #   all       build + deploy + cert + up   (full reproducible bring-up)
 #
 # Endpoints when up:
-#   SPA      https://192.0.2.10:8443/
+#   UI      https://192.0.2.10:8443/
 #   signal   https://192.0.2.10:8443/signal/<tile>.json
 # ---------------------------------------------------------------------------
 set -euo pipefail
@@ -48,10 +48,13 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SPA_WEB="$REPO/spa"
 DIST="$SPA_WEB/dist"
 LOCAL_PKI="$REPO/scripts/serve/pki"
-TILES_SRC="$REPO/scripts/serve/tiles.json"
-GALLERY_MANIFEST_SRC="$REPO/scripts/serve/webroot/gallery-manifest.json"
-POSTER_DOCS_SRC="$REPO/scripts/serve/webroot/poster-docs.json"
-GOLDEN_MANIFEST_SRC="$REPO/scripts/serve/golden-manifest.json"
+# All four published documents are RENDERED, never committed: resolved from
+# registry/tiles/*.json + registry/posters/*.md on the way out
+# (tiles-registry.py rendered()). publish_manifests re-renders before it reads.
+TILES_SRC="$REPO/build/registry/tiles.json"
+GALLERY_MANIFEST_SRC="$REPO/build/registry/gallery-manifest.json"
+POSTER_DOCS_SRC="$REPO/build/registry/poster-docs.json"
+GOLDEN_MANIFEST_SRC="$REPO/build/registry/golden-manifest.json"
 
 # host-side layout
 SERVE_DIR="/data/vms/streamhost/serve"
@@ -89,7 +92,7 @@ deploy() {
   }
   msg "deploying dist + server to $HOST:$SERVE_DIR"
   $SSH "mkdir -p $WEBROOT $HOST_PKI"
-  # Timestamped safety tar of the current webroot before replacing SPA entries;
+  # Timestamped safety tar of the current webroot before replacing UI entries;
   # keep the newest 3.
   msg "backing up current webroot -> $SERVE_DIR/webroot-backup-<epoch>.tar.gz (keep 3)"
   $SSH "if [ -n \"\$(ls -A $WEBROOT 2>/dev/null)\" ]; then \
@@ -114,21 +117,21 @@ deploy() {
   $SSH "cat > $CA_SH && chmod +x $CA_SH" <"$REPO/scripts/serve/gen-local-ca.sh"
   # The server shells out to this for POST /restore/<osId>, so it has to travel
   # with the server that calls it — it is a tracked box-sync pair, and leaving it
-  # out of deploy meant a fix in the repo silently never reached the box.
+  # out of deploy meant a fix in the repo silently never reached labhost.
   $SSH "cat > $RESET_SH && chmod +x $RESET_SH" <"$REPO/scripts/serve/reset-tile.sh"
   # The public gallery's plane: the auth package the server imports, the
   # sign-in/people pages it serves, and the lockfile + venv builder its unit
   # runs as ExecStartPre. These travel WITH the server for the same reason
   # reset-tile.sh does — the server fails to import half a deploy.
   # Replaced wholesale, not merged: a module dropped from the repo must not
-  # linger on the box, where the package would happily keep importing it.
+  # linger on labhost, where the package would happily keep importing it.
   msg "shipping the auth plane"
   tar czf - -C "$REPO/scripts/serve" --exclude __pycache__ auth authui |
     $SSH "set -e; rm -rf $SERVE_DIR/auth $SERVE_DIR/authui; tar xzf - -C $SERVE_DIR"
   $SSH "cat > $SERVE_DIR/requirements.txt" <"$REPO/scripts/serve/requirements.txt"
   $SSH "cat > $SERVE_DIR/requirements.in" <"$REPO/scripts/serve/requirements.in"
   $SSH "cat > $SERVE_DIR/sync-venv.sh && chmod +x $SERVE_DIR/sync-venv.sh" <"$REPO/scripts/serve/sync-venv.sh"
-  # The guarded account reset. It must live ON the box, because the failure mode
+  # The guarded account reset. It must live ON labhost, because the failure mode
   # it exists to prevent is someone reaching for `rm auth-state.json` there.
   $SSH "cat > $SERVE_DIR/reset-auth.sh && chmod +x $SERVE_DIR/reset-auth.sh" <"$REPO/scripts/serve/reset-auth.sh"
   $SSH "cat > $SERVE_DIR/check-stream-tickets.py" <"$REPO/scripts/serve/check-stream-tickets.py"
@@ -138,29 +141,31 @@ deploy() {
 }
 
 # Publish the two registry-generated runtime JSON documents with atomic per-file
-# replacement. This is independent of deploy(): ordinary new tiles need no Vite build.
+# replacement. This is independent of deploy(): ordinary new stations need no Vite build.
 publish_manifests() {
-  [ -f "$TILES_SRC" ] || {
-    msg "ERROR: missing generated $TILES_SRC"
+  # None of these has a committed copy to go stale: render them now, from the
+  # registry, and publish those bytes. A registry that no longer validates fails
+  # HERE, with the live serving plane untouched.
+  msg "rendering the runtime documents from the registry"
+  python3 "$REPO/scripts/tiles-registry.py" render >/dev/null || {
+    msg "ERROR: render failed (registry does not validate) — nothing published"
     exit 1
   }
-  [ -f "$GALLERY_MANIFEST_SRC" ] || {
-    msg "ERROR: missing generated $GALLERY_MANIFEST_SRC"
-    exit 1
-  }
-  [ -f "$POSTER_DOCS_SRC" ] || {
-    msg "ERROR: missing generated $POSTER_DOCS_SRC"
-    exit 1
-  }
+  for src in "$TILES_SRC" "$GALLERY_MANIFEST_SRC" "$POSTER_DOCS_SRC" "$GOLDEN_MANIFEST_SRC"; do
+    [ -f "$src" ] || {
+      msg "ERROR: render produced no $src"
+      exit 1
+    }
+  done
   msg "publishing runtime manifests -> $SERVE_DIR"
   $SSH "mkdir -p $WEBROOT"
   $SSH "set -e; tmp=$TILES.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $TILES" <"$TILES_SRC"
   $SSH "set -e; tmp=$WEBROOT/gallery-manifest.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $WEBROOT/gallery-manifest.json" <"$GALLERY_MANIFEST_SRC"
-  # Poster prose is runtime data too: the SPA fetches /poster-docs.json before
+  # Poster prose is runtime data too: the UI fetches /poster-docs.json before
   # falling back to its bundled copy, so publishing here is what makes a poster
   # edit live without a Vite build.
   $SSH "set -e; tmp=$WEBROOT/poster-docs.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $WEBROOT/poster-docs.json" <"$POSTER_DOCS_SRC"
-  # reset-tile.sh reads this to find each tile's resetMode, so a tile missing
+  # reset-tile.sh reads this to find each station's resetMode, so a station missing
   # here has a dead "Restore to golden" button. It went stale for irix and the
   # box copy simply had no entry, which reads as `unknown osId` at reset time.
   $SSH "set -e; tmp=$SERVE_DIR/golden-manifest.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $SERVE_DIR/golden-manifest.json" <"$GOLDEN_MANIFEST_SRC"

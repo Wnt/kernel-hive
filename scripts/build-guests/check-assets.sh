@@ -129,7 +129,7 @@ ROWS=(
   "opt-file|helenos|HelenOS 0.14.1 ISO|$GALLERY_ROOT/HelenOS/HelenOS-0.14.1-ia32.iso|sha256:1b15da0459cbfe28a6d3058675c2c20a4b03584cfb4d034c0ccb17b521791ccb|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
   # ZX81 ROM, second revision. NOT covered by the 1986 Amstrad permission --
-  # Amstrad bought the Spectrum and QL rights only; Nine Tiles Networks Ltd wrote
+  # Amstrad bought the Spectrum and QL rights only; Nine Stations Networks Ltd wrote
   # and still holds the ZX80/ZX81 ROM copyright. Preservation source, private.
   "req-file|zx81|Sinclair ZX81 ROM (2nd revision, zx81a.rom)|$ASSET_STAGING/zx81/zx81a.rom|sha256:14ad84f4243efcd41587ff46ab932d11087043e8d455a1ed2a227b9657828dfa|preservation-source"
   # dragon32.sh re-fetches and re-hashes this itself if it is missing, so the
@@ -153,7 +153,7 @@ ROWS=(
   # hash-gated, never committed. The builder fetches both if absent.
   "opt-file|atarist-mame|EmuTOS 1.4 192k ROM image etos192us.img (GPLv2)|$ASSET_STAGING/atarist-mame/etos192us.img|sha256:8fbbf8b44fc3e34281eaf8cda5265510e9af9ccda0e3e409111648060d244cfc|freely-fetchable-pinned"
   "opt-file|atarist-mame|Atari ST IKBD HD6301 firmware keyboard.u1 (Atari copyright; without it the ST's mouse and keyboard are dead)|$ASSET_STAGING/atarist-mame/keyboard.u1|sha256:b2c5c61bac3dbd563206ddf4a4bca14db6d95575fe6892e59fff621e5205311f|freely-fetchable-pinned"
-  # -- in-overlay media (nextstep): these two live INSIDE the tile's own qcow2
+  # -- in-overlay media (nextstep): these two live INSIDE the station's own qcow2
   # overlay at /opt/bridge/media/nextstep/, not on the host filesystem, so the
   # host paths below never exist and these rows read "will fetch". They are
   # here for the hash record; nextstep.sh re-verifies both sha256s in-guest on
@@ -161,7 +161,7 @@ ROWS=(
   "opt-file|nextstep|NeXTSTEP 3.3 m68k pre-installed disk (fetched + verified in-guest)|$ASSET_STAGING/nextstep/NS33_2GB.dd|sha256:6381423b066c33c24c9c9ec519086708b9cf3b2f11882fed5319cfb6a3422f1b|preservation-source"
   "opt-file|nextstep|NeXT ROM Rev 2.5 v66 (ships inside the Previous source tree)|$ASSET_STAGING/nextstep/Rev_2.5_v66.BIN|sha256:1b753890b67095b73e104c939ddf62eca9e7d0aedde5108e3893b0ed9d8000a4|preservation-source"
   # -- in-overlay media (daybreak): same shape as nextstep above. Both live
-  # INSIDE the tile's own qcow2 overlay at /opt/bridge/media/daybreak/, so the
+  # INSIDE the station's own qcow2 overlay at /opt/bridge/media/daybreak/, so the
   # host paths never exist and these rows read "will fetch". They are here for
   # the hash record; daybreak.sh re-verifies both sha256s in-guest on every run
   # and refuses to continue on a mismatch. Never committed. Note the split
@@ -169,7 +169,7 @@ ROWS=(
   "opt-file|daybreak|Dwarf/Draco Mesa emulator dist.zip (fetched + verified in-guest)|$ASSET_STAGING/daybreak/dist.zip|sha256:67f84b77cbed6cba9d7d2485e84b8142e4fd2403243f8abd8f6e5a81ff6fcf75|freely-fetchable-pinned"
   "opt-file|daybreak|Xerox ViewPoint 2.0.5 Pilot disk for the 6085 (fetched + verified in-guest)|$ASSET_STAGING/daybreak/vp2.0.5.zdisk|sha256:02bdb53ba7f7896a914fe43b7ca19a620907d0fdbf0f55317b7d1f39aab3f872|preservation-source"
   # -- in-overlay media (star): same shape again — the bitsavers pack lives
-  # INSIDE the tile overlay at /opt/star/, so the host path never exists and
+  # INSIDE the station overlay at /opt/star/, so the host path never exists and
   # this row reads "will fetch". star.sh re-verifies the pack AND the extracted
   # ViewPoint image in-guest on every run and refuses to continue on a
   # mismatch. Never committed. The emulator (Darkstar, BSD-2) is built from
@@ -184,7 +184,7 @@ ROWS=(
   "req-file|bbcmicro|TMS5220 speech PHROM (BBC Micro)|$ASSET_STAGING/bbcmicro/phroma.bin|sha1:b369809275cb67dfd8a749265e91adb2d2558ae6|preservation-source"
   "req-file|bbcmicro|SAA5050 teletext character generator (no glyphs in MODE 7 without it)|$ASSET_STAGING/bbcmicro/saa5050|sha1:6c8daba70374e5aa3a6402f24cdc5f8677d58a0f|preservation-source"
   "req-file|bbcmicro|Acorn DNFS 1.20 (the driver's default fdc slot needs it)|$ASSET_STAGING/bbcmicro/dnfs120.rom|sha1:7e3c536baeae84d6498a14e8405319e01ee78232|preservation-source"
-  # ARM Evaluation System: the bbcmicro blobs again in this tile's own staging
+  # ARM Evaluation System: the bbcmicro blobs again in this station's own staging
   # dir, plus four of its own. armeval.sh never downloads either; note there is
   # NO dnfs120 here — `-fdc acorn1770` replaces the 8271, because the ARM
   # Evaluation System discs are ADFS double density and the 8271 cannot read them.
@@ -218,26 +218,26 @@ ROWS=(
   # -- c128: one file, one mirror (zimmers.net). c128.sh re-fetches when the host
   # copy is absent; the row exists so a dead mirror is discovered at preflight.
   "req-file|c128|Commodore CP/M 3.0 system disk for the C128 (Z80 side)|/data/vms/streamhost/tiles/c128/media/cpm.d64|sha256:69159226bf1996d8fc8c8921f094cd03955c7a8b9ecf800069d1c369dc6e5a1d|preservation-source"
-  # -- apple2: the GEOS media lives INSIDE the tile overlay at /opt/bridge/media/,
+  # -- apple2: the GEOS media lives INSIDE the station overlay at /opt/bridge/media/,
   # not on the host, so these read "will fetch" exactly like the nextstep and
   # daybreak rows above. apple2.sh gates BOTH sha256s in-guest on every run.
   # mirrors.apple2.org.za is the only source, so the pin is the whole defence.
   "opt-file|apple2|Apple GEOS deskTop mouse HDV, zipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos-mouse.hdv.zip|sha256:64b7bef2440e2f0424586a893c641b566901403ad3ce6b3b5adaab573ae23e35|abandonware-URL"
   "opt-file|apple2|Apple GEOS deskTop ProDOS image geos.hdv, unzipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos.hdv|sha256:5aba89dda3450abf17b8cc05d9de98149abe0bb072e5b01cc29b7fff995fc681|abandonware-URL"
-  # -- indyr4400: DERIVED from this lab's own irix golden, not downloaded. The
+  # -- indyr4400: DERIVED from labhost's own irix checkpoint, not downloaded. The
   # ext4 container's hash is not reproducible (mkfs stamps a random UUID), so
   # this row is presence-only; the inner disk.raw hash is in ASSETS-MANIFEST §0.
   "req-file|indyr4400|IRIX 6.5.22 r4400 read-only asset drive (derived from irix65-apps.chd)|$GALLERY_ROOT/IrisIndy/irix65-r4400-disk.ext4||preservation-source"
-  # -- base-media: the four media blobs BAKED INTO the frozen bridge base at
+  # -- base-media: the four media blobs CAPTURED INTO the frozen bridge base at
   # /opt/bridge/media/ inside /data/vms/bridge/bridge-base.qcow2. Every bridge
-  # tile inherits them through its overlay; c64 boots GEOS.D64, atarist boots
+  # station inherits them through its overlay; c64 boots GEOS.D64, atarist boots
   # etos1024k.img, amiga boots the Kickstart + Workbench pair. They are on no
   # host path, so these rows read "will fetch" and exist for the HASH RECORD —
   # the same honest-hollow shape the nextstep/daybreak/star rows use.
   # To verify them for real, read the base READ-ONLY and never writable:
   #   modprobe nbd && qemu-nbd --read-only -c /dev/nbd0 /data/vms/bridge/bridge-base.qcow2
   #   mount -o ro /dev/nbd0p1 /mnt/x && sha256sum /mnt/x/opt/bridge/media/...
-  # (hashes below measured 2026-08-10 through live tile overlays, which is the
+  # (hashes below measured 2026-08-10 through live station overlays, which is the
   # cheaper equivalent: pet2001/c64/atarist/apple2 all report the same bytes.)
   # The base also carries /opt/bridge/media/LICENSES, a text note, not media.
   "opt-file|bridge-base|C64 GEOS 2.0 disk GEOS.D64 (baked into the bridge base)|$ASSET_STAGING/bridge-base/GEOS.D64|sha256:2aabeb34bd3bb21866f5c50db172a4aeb11163ed1dc178eb82342f7ce3405a59|base-media"
@@ -245,7 +245,7 @@ ROWS=(
   "opt-file|bridge-base|Amiga Kickstart 1.3 kick13.rom (baked into the bridge base)|$ASSET_STAGING/bridge-base/kick13.rom|sha256:ee05862d8102a08436ac4056da7d549db31625c7d47b24dfb7b3c9a5c113ca53|base-media"
   "opt-file|bridge-base|Amiga Workbench 1.3 boot ADF workbench13.adf (baked into the bridge base)|$ASSET_STAGING/bridge-base/workbench13.adf|sha256:3610df193fdbbfbd88da695732a5c3ed63e77ed3de20e187201289e3915bb2c2|base-media"
   # -- DELIBERATELY NOT LISTED, so a green run is not read as more than it is:
-  #   * The six VICE tiles (c64, vic20, plus4, pet2001, cbm8032, cbm2) and gt40
+  #   * The six VICE stations (c64, vic20, plus4, pet2001, cbm8032, cbm2) and gt40
   #     have NO external media at all — VICE bundles every ROM they need, and
   #     gt40's lunar.lda ships inside the MIT-licensed Open SIMH tree it builds.
   #     A row for them would be hollow, and a hollow row is worse than none.
@@ -255,7 +255,7 @@ ROWS=(
   #   * The host-built MAME binaries under /data/vms/streamhost/assets/<tile>/mame/
   #     (the six build-mame-*.sh products bbcb/dragon/kc85/mpf2/oricatmos/zx81,
   #     plus irix's separately-built sgi; 68-122 MB each) are BUILD ARTIFACTS, not
-  #     media: losing one costs a chroot rebuild, not the tile. No rows.
+  #     media: losing one costs a chroot rebuild, not the station. No rows.
 )
 
 # ---- impl ---------------------------------------------------------------------

@@ -25,9 +25,9 @@ primitives**, one of which we already ship:
    guest's* dbus scanout + audio + injects input, exactly as it does for
    C64/Atari ST/Apple II/Amiga today (`streamhost/docs/BRIDGE.md`). Its **killer
    feature**: a `savevm golden` of the kiosk snapshots the **emulator's live
-   RAM**, so it grants **instant golden reset to emulators that have no
+   RAM**, so it grants **instant checkpoint reset to emulators that have no
    save-state of their own** (86Box, SheepShaver, Previous…). Cost: ~1.5 GB Linux
-   guest per tile and ~8 ms extra compose latency.
+   guest per station and ~8 ms extra compose latency.
 2. **`CaptureSource::Vnc` (an optional ~1 wk RFB client)** — unlocks the "real
    x86 VMM" tier (Bochs/VMware/VirtualBox + any dbus-less QEMU fork) that can't
    cleanly nest inside a kiosk. Mature Rust crates exist (`vnc-rs`, `rust-vnc`).
@@ -50,7 +50,7 @@ the curated apps**, unlike the ArcaOS base-swap.
 
 Crucially, **the vgabios is a standalone ROM blob, not compiled into QEMU** — it
 can be swapped per-device with `-device VGA,romfile=<blob>`, so this needs no
-QEMU device-model change and every existing golden `loadvm`s unchanged.
+QEMU device-model change and every existing checkpoint `loadvm`s unchanged.
 
 - **Variant B1 — cheap de-risk probe (hours):** build the LGPL Bochs vgabios
   (`bochs-emu/VGABIOS` v0.9c, actively maintained, *has* the PMI incl.
@@ -65,7 +65,7 @@ QEMU device-model change and every existing golden `loadvm`s unchanged.
   SetPrimaryPaletteData stubs over the DISPI ports; the LGPL vgabios + malc's
   original patch are the reference, so it's a *port*, not from-scratch). Ship as
   the next `pve/00xx` quilt patch via `scripts/provision/build-pve-qemu-fastpoll.sh`, emit
-  as a *separate* blob, `romfile=` only os2warp → other std tiles' goldens stay
+  as a *separate* blob, `romfile=` only os2warp → other std stations' checkpoints stay
   byte-identical. Purely additive (win95/98/311/xp never call `4F0Ah`).
 
 **This is now the recommended os2warp path — cheaper and more surgical than
@@ -83,33 +83,33 @@ add. Top picks by appeal × maturity × low effort:
 1. **Classic Mac OS 9 / System 7** — SheepShaver (PPC) + Basilisk II (68k),
    actively maintained SDL apps. The biggest gap on the roster (we have modern
    macOS and the 8-bit machines, but not the iconic 1990s Mac). ★★★★★, LOW.
-2. **NeXTSTEP / OPENSTEP** — Previous (built on Hatari, which the bridge base
+2. **NeXTSTEP / OPENSTEP** — Previous (built on Hatari, which the bridge seed
    already carries). Arguably the highest story value in computing history.
    ★★★★★, LOW–MED.
 3. **SGI IRIX 6.5** — MAME `indy_4610`; boots the teal 4Dwm desktop in ~45 s.
-   Distinct from everything else; watch nested-MIPS CPU cost on the shared box.
+   Distinct from everything else; watch nested-MIPS CPU cost on shared labhost.
    ★★★★★, MED.
 4. **IBM MVS 3.8j mainframe (+ VM/370 CMS)** — Hercules + TK4-; a green-screen
    category the museum lacks; legally clean (public-domain MVS, **not** licensed
    z/OS). Console exhibit (full-screen tn3270). ★★★★, MED.
 5. **BeOS R5** — plain `qemu-system-i386`, **no bridge needed** (it's x86, a
-   normal tile). Cheapest high-appeal win; pairs with the existing Haiku tile.
+   normal station). Cheapest high-appeal win; pairs with the existing Haiku station.
    ★★★★, LOW.
 
 Honorable: flip the dead **RISC OS 5** showcase poster into a *live* RPCemu
-bridge tile; **SIMH** VAX/OpenVMS + PDP-11 2.11BSD as low-CPU serial/green-screen
+kiosk; **SIMH** VAX/OpenVMS + PDP-11 2.11BSD as low-CPU serial/green-screen
 exhibits. Skip on legality/maturity: z/OS (IBM-licensed), Apollo Domain/OS
 (MAME crashy), HP-UX/Alpha (immature).
 
-## Part 3 — better graphics for existing tiles
+## Part 3 — better graphics for existing stations
 
 - **86Box (via the bridge) — the accelerated-graphics unlock.** Emulates *real*
   S3 Trio64/ViRGE, Matrox, Cirrus GD-5480 (working BitBLT), and **3dfx Voodoo**
   with genuine period drivers. It (a) is the **fallback os2warp fix** if the VBE
   PMI proves insufficient (a real S3 → OS/2 writes `SVGADATA.PMI` → accelerated
-  hi-res), and (b) opens a **category QEMU can't touch on a GPU-less box:
+  hi-res), and (b) opens a **category QEMU can't touch on GPU-less labhost:
   software-emulated 3dfx/Glide** → real 3D DOS/Win9x game exhibits. The bridge
-  gives it free golden reset (it has no save-states). **Gate on a host
+  gives it free checkpoint reset (it has no save-states). **Gate on a host
   single-thread benchmark** — 86Box is period-locked with no turbo: 486/early
   Pentium + S3 is comfortable; Pentium-II + Voodoo is the risk zone. Note the
   integration angle corrected a detail: 86Box's Qt VNC shows only menus, so it
@@ -138,9 +138,9 @@ exhibits. Skip on legality/maturity: z/OS (IBM-licensed), Apollo Domain/OS
   hardening makes the blitter bail silently), but it's security-hardened,
   unmaintained legacy code (permanent carried liability) and **moot** since
   win311 shipped on `-vga std`. **Skip.**
-- **A second/upstream QEMU version** — goldens carry a pve-only `pbs-state`
+- **A second/upstream QEMU version** — checkpoints carry a pve-only `pbs-state`
   vmstate section (upstream can't `loadvm`), and cross-version snapshot loads are
-  fragile → a full fleet re-bake for no os2warp gain. Keep display fixes as
+  fragile → a full fleet recapture for no os2warp gain. Keep display fixes as
   additive vgabios/quilt patches *inside* pve-qemu. **Skip.**
 - **Bochs as a fleet emulator** — patchable VBE BIOS + free `vncsrv` make it a
   clean single-guest compatibility *last resort*, but it's an interpreter (too
@@ -155,7 +155,7 @@ exhibits. Skip on legality/maturity: z/OS (IBM-licensed), Apollo Domain/OS
    #15 while preserving apps + Warp 4 identity.
 2. **When new exhibits are wanted — bridge adds (Part 2).** SheepShaver Mac OS 9,
    Previous NeXTSTEP, MAME IRIX, Hercules MVS, native-x86 BeOS R5, live RISC OS.
-   Each is "one more bridge tile," zero new Rust.
+   Each is "one more kiosk," zero new Rust.
 3. **For the accelerated-graphics category — 86Box-via-bridge (Part 3),** gated
    on a host single-thread benchmark; delivers GPU-less 3dfx/Glide game exhibits
    QEMU can never produce, and the os2warp fallback.
@@ -166,6 +166,6 @@ exhibits. Skip on legality/maturity: z/OS (IBM-licensed), Apollo Domain/OS
    lands.
 
 **Bottom line:** don't replace QEMU. The GPU-less dbus-scanout pipeline is right.
-Fix os2warp with a per-tile vgabios that restores the VBE PMI QEMU used to ship;
+Fix os2warp with a per-station vgabios that restores the VBE PMI QEMU used to ship;
 grow the museum with the bridge pattern (exotic OSes) and 86Box (accelerated /
 3dfx graphics); and keep an optional RFB capture source in the back pocket.

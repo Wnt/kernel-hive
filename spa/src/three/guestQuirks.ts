@@ -15,7 +15,7 @@
 //      Esc then Enter to clear the "Windows is running in… / restore settings"
 //      startup dialog so the desktop is immediately usable.
 //  (Cursor correction is NOT done client-side any more — the DAEMON owns the
-//  abs→device pointer mapping per tile, including any calibration offsets.)
+//  abs→device pointer mapping per station, including any calibration offsets.)
 // ============================================================================
 
 // ---------------------------------------------------------------------------
@@ -87,7 +87,7 @@ export const KEYSYM_TO_SCANCODE: Record<number, number> = {
   0xff7f: 0x45,          // Num_Lock
   0xff14: 0x46,          // Scroll_Lock
   // XF86HomePage → "Browser Home" (KEY_HOMEPAGE in a Linux guest). Android's
-  // launcher-HOME key: lab-verified 2026-07-17 on the live android tile
+  // launcher-HOME key: lab-verified 2026-07-17 on the live android station
   // (0xE047/KEY_HOME does NOT leave a foreground activity; 0xE032 navigates
   // to the launcher — framebuffer-confirmed).
   0x1008ff18: EXT | 0x32,

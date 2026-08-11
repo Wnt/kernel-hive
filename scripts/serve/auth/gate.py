@@ -31,7 +31,7 @@ BLOCKED_PREFIXES: tuple[str, ...] = ()
 # of the command plane: the poll a tab makes, and the enqueue that puts a
 # command in front of it. Arbitrary-JS `eval` needs OSG_ADMIN_EVAL=1 on top of
 # this, which is default-off and does not survive a reboot — so the dangerous
-# verb still takes a deliberate act on the box, not just an admin cookie.
+# verb still takes a deliberate act on labhost, not just an admin cookie.
 ADMIN_PATHS = frozenset({"/clientcmd", "/clientcmd/admin"})
 ADMIN_PREFIXES = ("/clientcmd",)
 

@@ -4,13 +4,13 @@ Status: **research, 2026-08-08 — one machine has since been built.** This is t
 feasibility study behind an operator-proposed expansion of the lineup, in the
 form [`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expects.
 
-**Built since:** the **VIC-20** (§4.1) is live as the production tile `vic20`
+**Built since:** the **VIC-20** (§4.1) is live as the production station `vic20`
 (slot 85, udp 54085) — see [`docs/guests/vic20.md`](../../guests/vic20.md). It
 was taken first because it is the cheapest item in the whole study: `xvic` is
-already in the frozen bridge base (VICE is built from source there for the `c64`
-tile and `make install` ships the entire family), VICE bundles the Commodore
+already in the frozen bridge seed (VICE is built from source there for the `c64`
+station and `make install` ships the entire family), VICE bundles the Commodore
 ROMs, and an unexpanded VIC-20 needs no media at all — so it required no staged
-asset, no checksum gate and no new emulator build, only a launcher, a golden and
+asset, no checksum gate and no new emulator build, only a launcher, a checkpoint and
 a registry entry. §2's "VICE covers the whole Commodore 8-bit wishlist" claim is
 now proven rather than predicted. Two costs the study did not predict are
 recorded in the guest doc: VICE segfaults when its stdout is not a terminal, and
@@ -22,29 +22,29 @@ Companion study for the minicomputer end of the same wishlist:
 
 Headline findings:
 
-1. **Emulation is not the constraint.** MAME 0.276 is already installed on the
-   box (`/usr/games/mame`) and its driver list, queried directly, contains
+1. **Emulation is not the constraint.** MAME 0.276 is already installed on
+   labhost (`/usr/games/mame`) and its driver list, queried directly, contains
    *every* machine on the wishlist — including the regional VIC-20 and C64
    variants, all four big Amigas, the Acorn/Archimedes line, the whole Sinclair
    line, and the GDR machines.
-2. **Memory is the constraint.** Measured RSS of the six live bridge tiles is
-   0.70–1.65 GB each (mean ≈ 1.2 GB). The box has ~40 GB available. Thirty more
-   tiles at the measured mean is ~36 GB — the lineup is **memory-bound long
+2. **Memory is the constraint.** Measured RSS of the six live kiosks is
+   0.70–1.65 GB each (mean ≈ 1.2 GB). labhost has ~40 GB available. Thirty more
+   stations at the measured mean is ~36 GB — the lineup is **memory-bound long
    before it is effort-bound**. §6 costs this properly.
 3. **Most of the collector-level variants are not separate exhibits.** Keyboard
    mould and label variants are invisible to an emulator; regional variants
    (VIC-1001, VIC-20 SE, C64 SE) differ in *charset ROM and keyboard layout*,
-   which this repo can already express per tile. §3 proposes the policy.
+   which this repo can already express per station. §3 proposes the policy.
 4. **The engineering work is one shared builder, not thirty scripts.** After
    `mpf2` the MAME-in-a-kiosk pattern is proven; the leverage is a
    registry-parameterised `mame-bridge.sh`. §5.
 
 ## 1. What the lineup already has
 
-| Tile | Machine | Backend |
+| Station | Machine | Backend |
 |---|---|---|
-| `c64` | Commodore 64 (breadbin) — GEOS 2.0, 1982 | VICE `x64sc`, built from source in the bridge base |
-| `amiga` | Amiga 500 — Workbench 1.3, 1987 | FS-UAE, installed into the tile overlay |
+| `c64` | Commodore 64 (breadbin) — GEOS 2.0, 1982 | VICE `x64sc`, built from source in the bridge seed |
+| `amiga` | Amiga 500 — Workbench 1.3, 1987 | FS-UAE, installed into the station overlay |
 | `aros` | AROS on x86 | native QEMU — *not* a 68k Amiga |
 | `atarist` | Atari ST — EmuTOS GEM, 1985 | hatari |
 | `apple2` | Apple II — GEOS, 1988 | LinApple |
@@ -63,13 +63,13 @@ bridge pattern (`streamhost/docs/BRIDGE.md`):
   (`xvic`), C64 (`x64sc`), C128 (`x128`), the 264 line (`xplus4`) and CBM-II
   (`xcbm2`). Decisively: **upstream VICE source bundles the Commodore ROMs**,
   which is precisely why Debian cannot ship it and why `bridge-base.sh` already
-  builds it from source. The C64 tile's ROM problem is therefore already solved
+  builds it from source. The C64 station's ROM problem is therefore already solved
   for the *entire* Commodore 8-bit wishlist except the KIM-1.
 - **MAME** for everything VICE does not cover: KIM-1, the Britons, the GDR
-  machines, and the big Amigas if FS-UAE is not used. Already on the box, and
+  machines, and the big Amigas if FS-UAE is not used. Already on labhost, and
   the daemon already has MAME-specific input plumbing
   (`SH_INPUT_BACKEND=mamecmd`/`mamesock`, `mame_input.rs`, `scripts/build-guests/emulators/mamectl`).
-- **FS-UAE** for the Amigas, continuing the `amiga` tile's path. Its model list
+- **FS-UAE** for the Amigas, continuing the `amiga` station's path. Its model list
   covers A1000, A3000, A4000 and A4000T — but **not the A2000** (§4.4).
 
 Specialist alternatives exist per family (XRoar for Dragon, Oricutron for Oric,
@@ -90,19 +90,19 @@ machinery for the ones that survive:
 
 | Kind of variant | Visible in emulation? | Proposed treatment |
 |---|---|---|
-| Case form (C64 breadbin vs C64C, PET chiclet vs full keyboard) | No — identical stream | **The 3D scene, not a second tile.** `spa/src/scene/machines.ts` binds one assembly per tile, so a second case form is a modelling job, or a poster (`registry/posters/`). A second stream of the same emulator is pure waste. |
+| Case form (C64 breadbin vs C64C, PET chiclet vs full keyboard) | No — identical stream | **The 3D scene, not a second station.** `spa/src/scene/machines.ts` binds one assembly per station, so a second case form is a modelling job, or a poster (`registry/posters/`). A second stream of the same emulator is pure waste. |
 | Keycap print vs mould, badge/label revisions | No | **Placard text and a photograph.** `museum.notes` / poster prose. |
-| Regional ROM + keyboard (VIC-1001 Japan, VIC-20 SE, C64 SE, C128 DE/SE, QL SE) | **Yes** — different charset ROM, different key matrix | **A real tile is defensible**, and the repo already supports the hard part: `spa.demoProgram.keyMap` and `SH_KEY_MAP` remap ASCII to a guest's own matrix (the MPF-II add proved this), and `keyboardProfiles.ts` gives it the right on-screen keyboard. A VIC-1001 typing katakana is a genuinely different exhibit. |
-| Model generations (VIC-20 → C64 → C128; KC 85/2 → /3 → /4) | Yes | One tile per generation where the *software* differs; otherwise pick the canonical one. |
+| Regional ROM + keyboard (VIC-1001 Japan, VIC-20 SE, C64 SE, C128 DE/SE, QL SE) | **Yes** — different charset ROM, different key matrix | **A real station is defensible**, and the repo already supports the hard part: `spa.demoProgram.keyMap` and `SH_KEY_MAP` remap ASCII to a guest's own matrix (the MPF-II add proved this), and `keyboardProfiles.ts` gives it the right on-screen keyboard. A VIC-1001 typing katakana is a genuinely different exhibit. |
+| Model generations (VIC-20 → C64 → C128; KC 85/2 → /3 → /4) | Yes | One station per generation where the *software* differs; otherwise pick the canonical one. |
 
-Recommendation: **one tile per machine-with-different-software**, regional and
+Recommendation: **one station per machine-with-different-software**, regional and
 cosmetic variants carried by placards, posters and scene assets. That turns a
-~45-item wishlist into roughly 20 streamed tiles plus a poster set.
+~45-item wishlist into roughly 20 streamed stations plus a poster set.
 
 ## 4. Per-family findings
 
 All driver short names below were verified against `/usr/games/mame -listfull`
-on the box (MAME 0.276), not from memory.
+on labhost (MAME 0.276), not from memory.
 
 ### 4.1 Commodore — the pre-64 machines
 
@@ -110,10 +110,10 @@ on the box (MAME 0.276), not from memory.
 |---|---|---|---|
 | **KIM-1** | 1976 | MAME `kim1` | **No video at all**: six seven-segment LEDs and a hex keypad, which MAME renders as an artwork panel. A superb, genuinely strange exhibit — and the correct starting point for "everything Commodore", since MOS Technology's KIM-1 is what Commodore bought its way into. Keyboard-only, hex keypad → needs a `keyMap`. Pairs with the GDR **LC 80** (§4.9). |
 | **PET 2001** | 1977 | MAME `pet2001`, `pet20018`; VICE `xpet` | The chiclet-keyboard original with the built-in cassette. Green phosphor, 40 columns. |
-| **PET 2001-N / -B, CBM 3032, 4032 "Fat 40", 8032, 8296** | 1979–84 | `pet2001n`, `pet2001b`, `cbm3032`, `cbm4032f`, `cbm8032`, `cbm8296` (+ `_de`, `_se`, `_fr` regional sets) | The business line. `cbm8032` at 80 columns is the most "office computer" of them; the `_se`/`_de` sets show how far the regional ROM story goes. One tile (`cbm8032`) plus placard coverage of the family is the sane call. |
+| **PET 2001-N / -B, CBM 3032, 4032 "Fat 40", 8032, 8296** | 1979–84 | `pet2001n`, `pet2001b`, `cbm3032`, `cbm4032f`, `cbm8032`, `cbm8296` (+ `_de`, `_se`, `_fr` regional sets) | The business line. `cbm8032` at 80 columns is the most "office computer" of them; the `_se`/`_de` sets show how far the regional ROM story goes. One station (`cbm8032`) plus placard coverage of the family is the sane call. |
 | **VIC-20 (NTSC)** | 1980 | MAME `vic20`; VICE `xvic` | The first computer to sell a million. 22 columns, 5 KB. |
 | **VC-20 / VIC-20 (PAL)** | 1981 | MAME `vic20p` | Same machine, European timing. Cosmetic in the stream → placard. |
-| **VIC-1001 (Japan)** | 1980 | MAME `vic1001` | **Different charset ROM (katakana) and key legends** → a defensible separate tile under §3, and a striking one. |
+| **VIC-1001 (Japan)** | 1980 | MAME `vic1001` | **Different charset ROM (katakana) and key legends** → a defensible separate station under §3, and a striking one. |
 | **VIC-20 (Sweden/Finland)** | 1981 | MAME `vic20_se` | Swedish charset/keyboard (å ä ö). Local interest for this lab; same argument as above. |
 
 ### 4.2 Commodore 64 and 128
@@ -121,10 +121,10 @@ on the box (MAME 0.276), not from memory.
 | Machine | Year | Driver | Notes |
 |---|---|---|---|
 | C64 breadbin | 1982 | live as `c64` | Already an exhibit (GEOS 2.0). |
-| C64C / C64G | 1986/87 | `c64c`, `c64cp`, `c64g` | Same machine, wedge case (and later the 8580 SID's subtly different sound). **Scene asset or poster, not a tile** (§3). |
+| C64C / C64G | 1986/87 | `c64c`, `c64cp`, `c64g` | Same machine, wedge case (and later the 8580 SID's subtly different sound). **Scene asset or poster, not a station** (§3). |
 | C64 SE / VIC-64S, C64 JP | 1983 | `c64_se`, `c64_jp` | Regional ROM variants; placard unless the Swedish keyboard is wanted as its own exhibit. |
-| SX-64 Executive | 1984 | `sx64`, `sx64p` | The luggable with the built-in 5" CRT and drive. Visually unique → a good *scene* piece, and a plausible tile if the exhibit shows it as a portable. |
-| **C128** | 1985 | `c128`, `c128p`, `c128d`, `c128dcr`, `c128_de`, `c128_se`; VICE `x128` | **The strongest single candidate in the Commodore set.** Three machines in one box: native C128 mode with the VDC's 80-column RGBI output, C64 mode, and **CP/M on the Z80**. An exhibit that boots CP/M on a Commodore tells a story no other tile in the lineup tells. |
+| SX-64 Executive | 1984 | `sx64`, `sx64p` | The luggable with the built-in 5" CRT and drive. Visually unique → a good *scene* piece, and a plausible station if the exhibit shows it as a portable. |
+| **C128** | 1985 | `c128`, `c128p`, `c128d`, `c128dcr`, `c128_de`, `c128_se`; VICE `x128` | **The strongest single candidate in the Commodore set.** Three machines in one box: native C128 mode with the VDC's 80-column RGBI output, C64 mode, and **CP/M on the Z80**. An exhibit that boots CP/M on a Commodore tells a story no other station in the lineup tells. |
 
 ### 4.3 The 264 line — C16, C116, Plus/4
 
@@ -140,9 +140,9 @@ Jack Tramiel **resigned from Commodore in January 1984** — before the machines
 shipped — and what followed was a range that was incompatible with the C64,
 priced against its own bestseller, and marketed by people who could not explain
 what it was for. The C16 sold respectably in Europe against the Spectrum; the
-Plus/4 is the canonical Commodore misfire. One tile (Plus/4, for the ROM
+Plus/4 is the canonical Commodore misfire. One station (Plus/4, for the ROM
 software) plus C16/C116 as placard-and-poster coverage is the efficient split;
-all three as tiles is defensible if the line's *failure* is itself the exhibit.
+all three as stations is defensible if the line's *failure* is itself the exhibit.
 
 ### 4.4 Amiga 1000 / 2000 / 3000 / 4000
 
@@ -153,7 +153,7 @@ all three as tiles is defensible if the line's *failure* is itself the exhibit.
 | **A3000** | 1990 | `a3000` | yes | 68030 + ECS, Kickstart 3.1, the Unix-capable one (Amiga UNIX / SVR4). A genuinely different exhibit from the A500. |
 | **A4000** | 1992 | `a4000`, `a400030`, `a4000t` | yes | AGA chipset, Workbench 3.1 — the end of the line, and visually the most capable Amiga desktop. |
 
-Kickstart ROMs are the gating input, exactly as for the existing `amiga` tile:
+Kickstart ROMs are the gating input, exactly as for the existing `amiga` station:
 licensed material fetched at build time, hash-verified, never committed
 (`.gitignore` already covers `*.rom`, `*.adf`). The clean commercial path is
 Cloanto **Amiga Forever** Plus/Premium, which licenses Kickstarts for every
@@ -175,13 +175,13 @@ gone, the BASIC lineage is Microsoft's. Tier 2, cheap.
 MAME `oric1` / `orica`; specialist alternative **Oricutron**. The Oric-1 (1983)
 was the Spectrum's most direct British rival; the Atmos (1984) fixed the
 keyboard and was a substantial success in France, where the machine has a
-living scene to this day. One tile (Atmos) plus a placard covering the Oric-1
+living scene to this day. One station (Atmos) plus a placard covering the Oric-1
 is the efficient split.
 
 ### 4.7 Acorn — BBC Micro, Electron, and the ARM story
 
-This family carries the single best narrative in the entire wishlist, and the
-box's MAME can already tell all three acts of it:
+This family carries the single best narrative in the entire wishlist, and
+labhost's MAME can already tell all three acts of it:
 
 | Act | Machine | Driver |
 |---|---|---|
@@ -205,7 +205,7 @@ but its Archimedes driver is widely regarded as behind the specialists;
 port) and **RPCEmu** are the community's choices, with **ArcEm** as a
 register-level third. Since the exhibit only needs the RISC OS desktop idle and
 input-responsive, MAME may well suffice — but this must be settled **on a
-clone, by framebuffer**, before the tile is designed. Acorn ROMs are
+clone, by framebuffer**, before the station is designed. Acorn ROMs are
 preservation-class with a genuinely murky rights history (there is doubt that
 Acorn holds clean assignment of all the original MOS work); record provenance
 and hashes, do not redistribute.
@@ -217,7 +217,7 @@ and hashes, do not redistribute.
 | **ZX80** | 1980 | `zx80` | 1 KB, black-and-white, and the display *blanks while it computes* — the exhibit is the flicker. |
 | **ZX81** | 1981 | `zx81` | SLOW/FAST modes, the machine that put a computer in a British newsagent. |
 | **ZX Spectrum 48K** | 1982 | `spectrum` | The rubber keyboard and attribute clash. The icon. |
-| Spectrum 128 / +2 / +3 | 1985–87 | `spec128`, `specpls2`, `specpls3` | The Amstrad-era machines — a neat link to the existing `amstradcpc` tile, since Amstrad bought Sinclair's computer business in 1986. |
+| Spectrum 128 / +2 / +3 | 1985–87 | `spec128`, `specpls2`, `specpls3` | The Amstrad-era machines — a neat link to the existing `amstradcpc` station, since Amstrad bought Sinclair's computer business in 1986. |
 | **Sinclair QL** | 1984 | `ql` (+ `ql_se`, `ql_de`, `ql_fr`, `ql_es`, `ql_it`, `ql_us`, …) | 68008, Microdrives, QDOS, SuperBASIC, and a bundled office suite. Alternatives: sQLux, Q-emuLator. |
 
 **The Sinclair ROMs are the cleanest licensing story on the British side.**
@@ -257,7 +257,7 @@ essentially this whole table). ROMs are preservation-class: the manufacturers
 are dissolved, the images circulate freely, and MAME carries the sets. Record
 provenance, hash locally, do not redistribute.
 
-**Recommendation:** two tiles — **KC 85/4** (the colour, module-slot machine)
+**Recommendation:** two stations — **KC 85/4** (the colour, module-slot machine)
 and **LC 80** (paired with the KIM-1, one exhibit on each side of the Wall) —
 with Z1013, KC 87 and A5105 as placard/poster coverage.
 
@@ -265,15 +265,15 @@ with Z1013, KC 87 and A5105 as placard/poster coverage.
 
 Thirty machines must not become thirty copies of `c64.sh`. After `mpf2`, the
 MAME-in-a-kiosk pattern is proven end to end (X root sizing, `-keepaspect`,
-golden bake from a cold boot, key pacing derived from the emulated frame
+seed capture from a cold boot, key pacing derived from the emulated frame
 period). The proposal is a single
 `scripts/build-guests/mame-bridge.sh --driver <name> --media <path> …` (and a
 sibling `vice-bridge.sh` for the Commodore 8-bits) driven entirely by fields
 already in the registry entry.
 
-That respects the playbook's rule — *per-tile behaviour belongs in the registry
+That respects the playbook's rule — *per-station behaviour belongs in the registry
 entry, never in a case statement in shared code* — because the shared script
-takes parameters, it does not branch on tile names. Per-machine specifics that
+takes parameters, it does not branch on station names. Per-machine specifics that
 genuinely vary are already registry-expressible: `SH_KEY_MIN_HOLD_MS` /
 `SH_KEY_MIN_GAP_MS` from the machine's frame period, `SH_KEY_MAP` and
 `spa.demoProgram.keyMap` from the driver's `PORT_CHAR` table, display geometry,
@@ -290,9 +290,9 @@ Two facts that make this cheaper than it looks:
 
 ## 6. What it costs — the real constraint
 
-Measured on the box, 2026-08-08, RSS of the live bridge tiles:
+Measured on labhost, 2026-08-08, RSS of the live kiosks:
 
-| Tile | RSS |
+| Station | RSS |
 |---|---|
 | `mpf2` | 1.66 GB |
 | `c64` | 1.65 GB |
@@ -301,27 +301,27 @@ Measured on the box, 2026-08-08, RSS of the live bridge tiles:
 | `atarist` | 0.78 GB |
 | `amstradcpc` | 0.70 GB |
 
-Mean ≈ 1.2 GB per tile, and the box reports **~40 GB available** of 128 GB.
+Mean ≈ 1.2 GB per station, and labhost reports **~40 GB available** of 128 GB.
 So:
 
-- ~10 new tiles ≈ 12 GB — comfortable.
-- ~20 new tiles ≈ 24 GB — tight but possible.
-- ~30 new tiles ≈ 36 GB — **does not fit** with headroom for builds, clones and
+- ~10 new stations ≈ 12 GB — comfortable.
+- ~20 new stations ≈ 24 GB — tight but possible.
+- ~30 new stations ≈ 36 GB — **does not fit** with headroom for builds, clones and
   measurement campaigns.
 
 Three levers, in order of preference:
 
 1. **Right-size each kiosk.** An 8-bit MAME/VICE kiosk does not need the 1.5 GB
-   the current tiles are given; `amstradcpc` already runs at 0.70 GB. Setting
-   `--mem 512` for this class would put 30 tiles near ~18 GB.
-2. **Start tiles on demand.** `streamhost@<tile>` is one systemd service per
-   tile and the fleet is already routinely quiesced; a lineup of 60+ exhibits
-   argues for starting a tile when a visitor opens it rather than keeping every
-   one hot. That is an architectural change, not a tile change — and it is the
+   the current stations are given; `amstradcpc` already runs at 0.70 GB. Setting
+   `--mem 512` for this class would put 30 stations near ~18 GB.
+2. **Start stations on demand.** `streamhost@<tile>` is one systemd service per
+   station and the fleet is already routinely paused; a lineup of 60+ exhibits
+   argues for starting a station when a visitor opens it rather than keeping every
+   one hot. That is an architectural change, not a station change — and it is the
    only lever that scales past ~50 exhibits.
 3. **More RAM.** The cheapest fix in money, the least interesting in design.
 
-Non-memory costs to budget for, per tile, all hand-managed: a scene assembly in
+Non-memory costs to budget for, per station, all hand-managed: a scene assembly in
 `spa/src/scene/machines.ts` (**registry order, not alphabetical**), a
 `machineIdentity.ts` row (fails only under `npm run build`), a
 `keyboardProfiles.ts` family, a guest doc, an assets-manifest row, a coldboot
@@ -332,9 +332,9 @@ arm, and — if wanted — a boot video. Slots 125+ are free, with gaps at 85–
 
 Each phase is independently shippable and ends with a green quality gate.
 
-| Phase | Tiles | Why this order |
+| Phase | Stations | Why this order |
 |---|---|---|
-| **0** | Nothing new — build `mame-bridge.sh` / `vice-bridge.sh` and prove them by **rebuilding an existing tile** | The abstraction gets proven against a known-good fixture before it is trusted with new machines. |
+| **0** | Nothing new — build `mame-bridge.sh` / `vice-bridge.sh` and prove them by **rebuilding an existing station** | The abstraction gets proven against a known-good fixture before it is trusted with new machines. |
 | **1 — the stories** | **C128** (CP/M on a Commodore), **BBC Micro + ARM Evaluation System**, **ZX Spectrum 48K**, **Amiga 1000** | Four exhibits, four narratives a visitor can be told in one sentence each. Highest value per gigabyte. |
 | **2 — the origins** | **KIM-1**, **PET 2001/CBM 8032**, **VIC-20**, **LC 80** | The pre-64 Commodore arc, and the KIM-1/LC-80 pairing across the Wall. |
 | **3 — the Britons** | **Archimedes A310**, **Oric Atmos**, **Dragon 32**, **Sinclair QL**, **ZX81** | Depends on settling the Archimedes emulator question first. |
@@ -343,11 +343,11 @@ Each phase is independently shippable and ends with a green quality gate.
 
 ## 8. Open questions for the operator
 
-1. **Variant policy (§3)** — accept "one tile per machine-with-different-
+1. **Variant policy (§3)** — accept "one station per machine-with-different-
    software, variants as placards/posters/scene assets", or does the collection
    deliberately want the collector-level granularity as separate streams?
 2. **Scale target** — how many exhibits is this lineup ultimately for? The
-   answer picks between right-sizing (≈50) and on-demand tile start (>50).
+   answer picks between right-sizing (≈50) and on-demand station start (>50).
 3. **Archimedes backend** — is a MAME `aa310` bake-off against Arculator worth
    a clone campaign, or ship whichever reaches an idle RISC OS desktop first?
 4. **Amiga breadth** — A1000 alone, or A1000 + A4000 (+ A3000)?
@@ -356,7 +356,7 @@ Each phase is independently shippable and ends with a green quality gate.
 
 ## Sources
 
-- MAME driver names: `/usr/games/mame -listfull` on the lab box, MAME 0.276.
+- MAME driver names: `/usr/games/mame -listfull` on labhost, MAME 0.276.
 - [MAME `aa310.cpp`](https://github.com/mamedev/mame/blob/master/src/mame/acorn/aa310.cpp) ·
   [MAME `c64.cpp`](https://github.com/mamedev/mame/blob/master/src/mame/commodore/c64.cpp)
 - [VICE](https://vice-emu.sourceforge.io/) · [VICE ROM licensing / Debian's removal](https://rr.pokefinder.org/wiki/VICE_ROMs)
@@ -374,4 +374,4 @@ Each phase is independently shippable and ends with a green quality gate.
   [KCemu](https://kcemu.sourceforge.net/)
 - [Acorn ROM rights discussion, stardot](https://stardot.org.uk/forums/viewtopic.php?t=30265)
 - QL RAM upgrades: [Sinclair QL Forum, internal memory upgrade](https://qlforum.co.uk/viewtopic.php?t=2314)
-- Tile RSS figures: measured on the box, 2026-08-08.
+- Station RSS figures: measured on labhost, 2026-08-08.

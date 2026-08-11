@@ -1,6 +1,6 @@
 #!/bin/bash
 # restart-https.sh — (re)start the osgallery single-origin HTTPS server that
-# serves the SPA + /signal/<tile>.json + POST /restore/<osId>. When the systemd
+# serves the UI + /signal/<tile>.json + POST /restore/<osId>. When the systemd
 # unit osgallery-https.service is installed (the supervised, reboot-surviving
 # path — see install-https-service.sh) this restarts THROUGH systemd; otherwise
 # it falls back to the legacy detached relaunch. Idempotent; safe to re-run
@@ -24,7 +24,7 @@ export BIND_IP="${BIND_IP:-0.0.0.0}"
 export PORT="${PORT:-8443}"
 # Arbitrary browser JavaScript stays off unless the operator opts in for this restart.
 export OSG_ADMIN_EVAL="${OSG_ADMIN_EVAL:-0}"
-# Restore-to-golden endpoint authority (defaults sit beside the server).
+# Restore-to-checkpoint endpoint authority (defaults sit beside the server).
 export RESET_SCRIPT="${RESET_SCRIPT:-$SERVE/reset-tile.sh}"
 export GOLDEN_MANIFEST="${GOLDEN_MANIFEST:-$SERVE/golden-manifest.json}"
 

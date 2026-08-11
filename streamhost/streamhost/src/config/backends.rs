@@ -5,9 +5,9 @@
 //! InputBackend}` remain the public paths.
 
 /// Frame source for the capture stage. `Qemu` is the historical QEMU
-/// dbus-display path (shm scanout + v1 copy fallback) that every production tile
+/// dbus-display path (shm scanout + v1 copy fallback) that every production station
 /// uses. `X11` grabs an X server's root window (Xvfb in an LXC emulator-bridge
-/// container, e.g. the IRIX/MAME tile whose emulator panics under a KVM vCPU and
+/// container, e.g. the IRIX/MAME station whose emulator panics under a KVM vCPU and
 /// must run on the bare-metal CPU) and fills `FrameState.fb`. `Shm` reads the
 /// same emulator's frames out of a file-backed shared mapping it publishes
 /// itself, so the emulator needs no window (and no X server) at all — the whole
@@ -52,7 +52,7 @@ pub(super) fn parse_capture_backend(s: &str) -> CaptureBackend {
 /// capture backend has. `Fifo` reads raw s16le stereo 48 kHz PCM out of a named
 /// pipe that the emulator's SDL "disk" audio driver writes
 /// (`-sound sdl -audiodriver disk` + SDL_DISKAUDIOFILE), so shm/x11-capture
-/// tiles with no QEMU connection at all (the IRIX/MAME tile) get audio through
+/// stations with no QEMU connection at all (the IRIX/MAME station) get audio through
 /// the exact same Opus encode path. Default `dbus` so nothing about the
 /// existing fleet changes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -90,7 +90,7 @@ pub(super) fn parse_silence_thresh(s: &str) -> u16 {
 /// Parse `SH_KEY_REMAP`: a comma-separated list of `from:to` XT set1 wire codes,
 /// each hex (`0x0e`, `0xe04b`) or decimal. Whitespace is ignored, an empty value
 /// yields no remaps, and a malformed or out-of-range (> 0xffff) pair is skipped
-/// rather than taking the tile down — a typo must not cost the whole keyboard.
+/// rather than taking the station down — a typo must not cost the whole keyboard.
 pub(super) fn parse_key_remap(s: &str) -> Vec<(u32, u32)> {
     fn code(t: &str) -> Option<u32> {
         let t = t.trim();
@@ -126,21 +126,21 @@ pub enum InputBackend {
     /// XTEST fake-input into an X server (pairs with `CaptureBackend::X11`).
     /// Absolute pointer is 1:1 (xtest_fake_input MotionNotify at root x,y);
     /// buttons/wheel/keys ride the same XTEST channel. Never inferred — only
-    /// set explicitly via `SH_INPUT_BACKEND=x11test` on an X11-capture tile.
+    /// set explicitly via `SH_INPUT_BACKEND=x11test` on an X11-capture station.
     X11Test,
-    /// Window-free pointer/button route for a MAME tile running `-video none`
+    /// Window-free pointer/button route for a MAME station running `-video none`
     /// (pairs with `CaptureBackend::Shm`). There is no X window to XTEST into,
     /// so absolute targets are converted to relative deltas and appended to the
     /// in-emulator Lua agent's command file as `MOVE dx dy`, which drives the
     /// emulated PS/2 mouse axes directly. Never inferred — only set explicitly
     /// via `SH_INPUT_BACKEND=mamecmd`.
     MameCmd,
-    /// Native mamectl/1 route for the same MAME tile (issue #45): the identical
+    /// Native mamectl/1 route for the same MAME station (issue #45): the identical
     /// closed-loop MOVEA/edge/KEY wire contract as `MameCmd`, but spoken to the
     /// in-emulator ctlsock OSD module's unix control socket (`SH_MAMECTL_SOCK`)
     /// with per-verb acks instead of an append-only file tailed by a Lua agent.
     /// Never inferred — only set explicitly via `SH_INPUT_BACKEND=mamesock`.
-    /// Single-injector rule: the tile must then NOT launch MAME with
+    /// Single-injector rule: the station must then NOT launch MAME with
     /// `-autoboot_script irixagent.lua`.
     MameSock,
 }

@@ -23,10 +23,10 @@ you can't yet name the working approach.
 3. **Gate.** Run the acceptance test against each candidate. Kill the ones that fail;
    keep framebuffer/artifact evidence for every verdict.
 4. **Converge.** Pick the winner. If several pass, prefer the lowest-risk one (fewest
-   moving parts; keeps the pinned device set / avoids a re-bake).
+   moving parts; keeps the pinned device set / avoids a recapture).
 5. **Verify.** Re-run the adversarial acceptance test on the converged solution in a
-   production-realistic setting (golden re-bake + `loadvm golden` byte-identical +
-   live via the SPA), then promote.
+   production-realistic setting (checkpoint recapture + `loadvm golden` byte-identical +
+   live via the UI), then promote.
 6. **Hand off.** Record what won, and — just as important — **what didn't and why**.
 
 ## Parallel agents from different angles  ← the default for genuinely hard problems
@@ -61,7 +61,7 @@ wasting effort. Instead:
 
 - Repo work: a **git worktree** per agent (branch `agent/<angle>`), so file edits never
   collide.
-- Box work: a **namespaced clone** per agent under `/data/vms/soltest/<name>-<uniq>/`
+- labhost work: a **namespaced clone** per agent under `/data/vms/soltest/<name>-<uniq>/`
   with a **unique** dir / VMID / `qmp.sock` / pidfile / hostfwd ports, so N concurrent
   QEMU clones don't step on each other. Kill VMs **only** via `clone-guard
   kill-pidfile` (never `pkill` by name). Keep `loadvm golden` device-set parity.
@@ -95,7 +95,7 @@ each one had already been reported as a result.
 3. Monitor. On the **first** PASS: verify its framebuffer proof yourself, **kill the
    remaining agents**, and **salvage** their partial conclusions (append the dead-ends
    to the problem's notes / this repo).
-4. Promote the winner via a dedicated step (bake golden, back up, flip registry,
+4. Promote the winner via a dedicated step (capture checkpoint, back up, flip registry,
    deploy, live-verify).
 5. **If every angle fails**, report **INFEASIBLE with evidence** plus the
    **best-achievable results ranked** — and let the human choose the fallback. Never
@@ -115,7 +115,7 @@ each one had already been reported as a result.
   converge on hope.
 - **Reporting done with clones still running.** Ten orphans once sat at 85% CPU for
   an hour and poisoned every sibling agent's measurements. The verdict is not final
-  until the box is back the way you found it.
+  until labhost is back the way you found it.
 - **Adopting a shared resource you did not create** — a display, a tap, a chain, a
   core pair. It looks like success and produces someone else's data.
 

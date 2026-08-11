@@ -385,7 +385,7 @@ done
 : "${UDP:?--udp required}"
 
 # ---- deployment-local override (registry/local.env, gitignored) ----
-# The repo ships a placeholder HOST_IP (192.0.2.10) so registry/index.json stays
+# The repo ships a placeholder HOST_IP (192.0.2.10) so the registry's outputs stay
 # a deterministic public artifact (checked by `make tile-registry-check`). An
 # operator's real address lives ONLY in registry/local.env on the box, never in
 # a tracked file. --host-ip on the command line still wins over both.

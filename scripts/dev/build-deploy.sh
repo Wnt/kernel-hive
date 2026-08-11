@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# build-deploy.sh — build streamhost on the lab box and deploy it safely.
+# build-deploy.sh — build streamhost on labhost and deploy it safely.
 #
 # Ordinary (legacy-unit) operation:
 #   build-deploy.sh                 release build + restart helenos only
-#   build-deploy.sh <tile> [...]    release build + restart named tile(s)
-#   build-deploy.sh --all           release build + restart every live tile
+#   build-deploy.sh <tile> [...]    release build + restart named station(s)
+#   build-deploy.sh --all           release build + restart every live station
 #   build-deploy.sh --fast          dev-fast iteration build; never installs/restarts
 #   build-deploy.sh --check         release cargo check; never installs/restarts
 #   build-deploy.sh --no-restart    release build only
 #
 # Versioned operation (after migrate-to-versioned.sh has been supervised):
-#   build-deploy.sh --canary <tile> build/install streamhost-<gitsha>, switch one tile
+#   build-deploy.sh --canary <tile> build/install streamhost-<gitsha>, switch one station
 #   build-deploy.sh --promote       promote the verified canary in bounded waves
 #   build-deploy.sh --rollback <tile>
-#                                    atomically swap that tile to its previous binary
+#                                    atomically swap that station to its previous binary
 #
 # Flags:
 #   --wave-size N       promotion wave size (default: 4)
@@ -21,7 +21,7 @@
 #   -h, --help          show this help
 #
 # --changed-only was removed: a streamhost source change has no meaningful
-# per-tile mapping. Use an explicit tile, --canary, or --all.
+# per-station mapping. Use an explicit station, --canary, or --all.
 #
 # Guardrails:
 #   * a bare deploy targets SAFE_TILE (helenos), never the fleet;
@@ -272,8 +272,8 @@ sync_workspace() {
   rsync -a --checksum --itemize-changes -e "ssh -o ConnectTimeout=15" \
     "$REPO_CONFIG" "${LAB}:${BOX_BUILD}/.cargo/config.toml" ||
     die "Cargo config rsync failed"
-  # The mirror just made the box source identical to the repo's, so the marker's
-  # premise ("the box may hold changes the repo has not seen") is satisfied by
+  # The mirror just made labhost's source identical to the repo's, so the marker's
+  # premise ("labhost may hold changes the repo has not seen") is satisfied by
   # definition — re-stamp it. Without this the guard fires on the NEXT run of
   # this same script with DIGEST_MISMATCH though nothing was at risk: four manual
   # re-stamps in one session (2026-08-05), which teaches the next agent to

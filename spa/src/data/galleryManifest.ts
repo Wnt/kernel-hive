@@ -1,4 +1,3 @@
-import embeddedManifest from '../../../scripts/serve/webroot/gallery-manifest.json' with { type: 'json' };
 import type { ArchetypeId, Transport } from '../three/archetypeRegistry';
 import type { RuntimeVMManifestEntry } from '../types';
 
@@ -95,10 +94,13 @@ export function validateGalleryManifest(value: unknown): GalleryManifest | null 
   return { schemaVersion: 1, entries };
 }
 
-const fallback = validateGalleryManifest(embeddedManifest);
-if (!fallback) throw new Error('embedded gallery manifest failed validation');
-const fallbackEntries = fallback.entries;
-
+// The lineup has ONE source: /gallery-manifest.json, rendered from
+// registry/tiles/*.json and served from the same origin as this bundle. There is
+// deliberately no embedded copy to fall back on — a bundled snapshot is a second
+// answer to "what is in the museum" that goes stale silently (it is why a
+// registry edit used to need a Vite build to show up), and the origin that would
+// have served the fallback is the same one that just failed to serve the
+// manifest. An empty lineup is the honest, loud failure.
 export async function loadGalleryManifest(fetcher: FetchLike = fetch): Promise<RuntimeVMManifestEntry[]> {
   try {
     const response = await fetcher('/gallery-manifest.json', { cache: 'no-cache' });
@@ -108,7 +110,7 @@ export async function loadGalleryManifest(fetcher: FetchLike = fetch): Promise<R
     return runtime.entries;
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'unknown error';
-    console.warn(`[gallery-manifest] runtime manifest unavailable; using embedded fallback (${reason})`);
-    return fallbackEntries;
+    console.error(`[gallery-manifest] no lineup (${reason}) — publish it with 'serve-https-spa.sh manifests'`);
+    return [];
   }
 }

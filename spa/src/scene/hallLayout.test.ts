@@ -1,6 +1,6 @@
 import { CatmullRomCurve3, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import manifest from '../../../scripts/serve/webroot/gallery-manifest.json' with { type: 'json' };
+import { renderedEntries } from '../data/lineupFixture';
 import {
   CHAIR_BACK_CLEARANCE,
   chairBackAabb,
@@ -16,7 +16,7 @@ import {
   DESK_MODULE,
 } from './hallSpec';
 
-const registryEntries: HallEntry[] = [...manifest.entries]
+const registryEntries: HallEntry[] = [...renderedEntries]
   .sort((a, b) => a.order - b.order)
   .map((entry) => ({
     id: entry.id,

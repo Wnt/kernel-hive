@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # =============================================================================
-# box-repo.sh — the canonical kernel-hive checkout ON the box, and its gate.
+# box-repo.sh — the canonical kernel-hive checkout ON labhost, and its gate.
 #
 # WHY IT EXISTS
 #   Builders run on the HOST, not in CT950: the golden images, the bridge bases
-#   and every tile directory live under /data, and CT950 has no /data mount. But
+#   and every station directory live under /data, and CT950 has no /data mount. But
 #   until now there was no checkout on the host, so host-side build work reached
 #   its own source by hand-copying it — `/root/kh-bridge/{scripts,registry}` for
 #   the trixie base, a per-run rsync staging dir inside
-#   scripts/dev/migrate-tile.sh for every single tile migration, and a copy of
+#   scripts/dev/migrate-tile.sh for every single station migration, and a copy of
 #   scripts/build-guests/tiles/gt40.sh in /data/vms/soltest/BUILD-gt40/ that went
-#   stale across the bookworm->trixie flip and would have silently built the tile
+#   stale across the bookworm->trixie flip and would have silently built the station
 #   on the WRONG base. A hand-copy has no version, no drift signal and no way to
 #   tell which commit a build actually ran.
 #
@@ -27,7 +27,7 @@
 #   build-deploy.sh's rsync mirror of the Rust workspace and is not a git tree.
 #
 # HOW IT AUTHENTICATES
-#   With the GitHub key the box ALREADY has, read in place: CT950's
+#   With the GitHub key labhost ALREADY has, read in place: CT950's
 #   ~/.ssh/id_github, visible to host root at
 #   /data/subvol-950-disk-0/home/wnt/.ssh/id_github. Nothing is generated, and
 #   no key material is copied anywhere (least of all into the repo) — the clone
@@ -39,8 +39,8 @@
 #
 # HOW IT IS UPDATED — EXPLICITLY, NEVER ON A TIMER
 #   `box-repo.sh sync` fast-forwards it, and nothing else does. No cron, no
-#   pull-on-use: a background pull can swap build-guests/ out from under a tile
-#   bake that is 40 minutes into a golden, and the resulting image would carry no
+#   pull-on-use: a background pull can swap build-guests/ out from under a station
+#   capture that is 40 minutes into a checkpoint, and the resulting image would carry no
 #   record of which source produced it. Explicit sync means the operator chooses
 #   the moment, and `status` prints the commit any report should quote.
 #
@@ -64,7 +64,7 @@ LAB="${LAB:-lab}"
 DIR="${BOX_REPO_DIR:-/data/kernel-hive}"
 REMOTE_URL="${BOX_REPO_REMOTE:-git@github.com:Wnt/kernel-hive.git}"
 BRANCH="${BOX_REPO_BRANCH:-main}"
-# Candidate GitHub keys, in preference order, as they exist ON THE BOX. These are
+# Candidate GitHub keys, in preference order, as they exist ON labhost. These are
 # paths, not secrets: nothing here is printed, copied or committed.
 KEY_CANDIDATES="${BOX_REPO_SSH_KEY:-}
 /root/.ssh/id_github

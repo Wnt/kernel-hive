@@ -18,7 +18,7 @@ client can predict locally**, not from another single "floor" fix.
 ```
         ┌──────────────────────────── YOU PRESS / MOVE ────────────────────────────┐
         │                                                                           │
-  BROWSER (client)                     LAN                    HOST (streamhost + QEMU + guest)
+  BROWSER (client)                     LAN                    LABHOST (streamhost + QEMU + guest)
         │                               │                                           │
   [1] capture event  ── QUIC ─────────► │ ──► [2] daemon inject ──► [3] guest reacts │
       (key/click: reliable stream)      │        (dbus / warpd)        + REPAINTS    │
@@ -90,14 +90,14 @@ neko / WebRTC          ███████████████████
 ## 3. The mouse-specific caveat (stage 2)
 
 Mouse **movement** has an extra hazard that key presses do not. On the abs/rel
-**dbus** tiles (winxp, win2000, reactos, haiku, all usb-tablet tiles, the rel
-tiles), the datagram receive loop applies each move as an **awaited** dbus
+**dbus** stations (winxp, win2000, reactos, haiku, all usb-tablet stations, the rel
+stations), the datagram receive loop applies each move as an **awaited** dbus
 `SetAbsPosition` / `RelMotion` call — it waits for QEMU's method *reply* before
 reading the next datagram. Under pointer-lock at high move rates (up to ~1 kHz)
 moves queue one round-trip each, and a **backlog of already-superseded cursor
 positions** builds up, so the cursor lags the pointer under fast motion. The
-`warpd`-agent tiles (win95, win311, 9front, solaris) already avoid this via
-server-side coalesce + 8 ms pacing; the dbus tiles do not. This is a known,
+`warpd`-agent stations (win95, win311, 9front, solaris) already avoid this via
+server-side coalesce + 8 ms pacing; the dbus stations do not. This is a known,
 un-shipped fix (`LATENCY-NOTES.md` item 1) and is the **biggest felt mouse-lag
 win available without new hardware**.
 
@@ -123,12 +123,12 @@ prize.
 
 | # | Lever | Cuts | Est. win | Effort | Where it lives | Notes |
 |---|-------|------|---------:|--------|----------------|-------|
-| A | **Client-side cursor prediction** | perceived mouse lag | **→ ~0 ms felt** | Med | client (SPA) | draw the cursor locally at the pointer the instant it moves; the guest cursor catches up underneath. Standard in RDP/Guacamole/Parsec. Doesn't lower the *pipeline*, it **hides** it — the single biggest perceptual mouse win, client-only, no hardware. |
-| B | **GPU hardware encode** (NVENC / VA-API / QSV) | stage 5 encode | **~8 → ~1–2 ms** | High (re-arch + **GPU**) | host | the box is deliberately GPU-less; CPU x264 is the ~8 ms. A GPU encoder drops encode to ~1 ms *and* frees ~30 % of a core per busy tile (more fps / more tiles). Biggest **fixed-pipeline** reduction. Requires adding a GPU and a VAAPI/NVENC path in `encode/`. |
+| A | **Client-side cursor prediction** | perceived mouse lag | **→ ~0 ms felt** | Med | client (UI) | draw the cursor locally at the pointer the instant it moves; the guest cursor catches up underneath. Standard in RDP/Guacamole/Parsec. Doesn't lower the *pipeline*, it **hides** it — the single biggest perceptual mouse win, client-only, no hardware. |
+| B | **GPU hardware encode** (NVENC / VA-API / QSV) | stage 5 encode | **~8 → ~1–2 ms** | High (re-arch + **GPU**) | host | labhost is deliberately GPU-less; CPU x264 is the ~8 ms. A GPU encoder drops encode to ~1 ms *and* frees ~30 % of a core per busy station (more fps / more stations). Biggest **fixed-pipeline** reduction. Requires adding a GPU and a VAAPI/NVENC path in `encode/`. |
 | C | **Fix the dbus move-apply backlog** (§3) | stage 2 (mouse) | removes queued-move lag | Low–Med | daemon | coalesce + pace the abs/rel dbus move path like `warpd.rs` already does (apply only the latest position, don't await each call). Un-shipped `LATENCY-NOTES.md` item 1. |
 | D | **Verify/force SPS VUI `num_reorder_frames=0`, `max_dec_frame_buffering≤1`** | stage 7 decode | up to **~1 frame (~16 ms)** worst case | Trivial (measure) | encoder | `bframes=0` does *not* guarantee the VUI flags; if the browser DPB defensively buffers a frame, that is a hidden ~16 ms. Dump the emitted SPS; add the x264 VUI opts only if missing. Cheapest possible check with a large upside if it's wrong today. |
 | E | **Slice / damage-region pipelined capture-encode** | stages 4–6 serialization | ~2–5 ms | High (re-arch) | capture+encode | today: guest finishes frame → capture whole frame → encode whole frame → ship. Instead encode+ship each damaged region / H.264 slice **as it is captured**, overlapping encode with the guest still drawing and with the network. Removes whole-frame serialization; pairs naturally with GPU encode. |
-| F | **Faster guest repaint** (per-guest, not pipeline) | stage 3 | large on slow guests | Med per tile | guest | KVM accel + packed-linear VBE driver (the Win9x VBEMP work) + reasonable colour depth. Only matters where the guest can't rasterise fast enough (retro GUIs); modern guests already fine. |
+| F | **Faster guest repaint** (per-guest, not pipeline) | stage 3 | large on slow guests | Med per station | guest | KVM accel + packed-linear VBE driver (the Win9x VBEMP work) + reasonable colour depth. Only matters where the guest can't rasterise fast enough (retro GUIs); modern guests already fine. |
 | G | **WAN: local echo / speculative present + edge** | the physical RTT | hides WAN RTT | High | client + edge | on the internet the round-trip dominates and is physics. Client-side input prediction (A generalised), an edge relay near the user, and DSCP/SO_PRIORITY on the input socket are the WAN levers. No-op on LAN. |
 
 ### Projected budget after the big wins (A hides mouse; B+C+D+E on the pipeline)
@@ -158,8 +158,8 @@ keyboard-to-echo path is bounded by encode + one LAN round-trip + decode.
 2. **C — dbus move coalesce** and **D — SPS VUI check.** Low-effort, and D is a
    trivial measurement that could reveal a hidden ~16 ms decoder frame.
 3. **B — GPU encode.** The one true "re-architecture for a big win": it needs a
-   GPU in the box, but it halves the fixed pipeline's dominant stage *and* buys
-   headroom for higher frame rates and more concurrent tiles. Design the
+   GPU in labhost, but it halves the fixed pipeline's dominant stage *and* buys
+   headroom for higher frame rates and more concurrent stations. Design the
    `encode/` path so a VAAPI/NVENC backend slots in behind the existing
    `EncodeWorker` boundary.
 4. **E — slice-pipelined capture/encode**, best done *with* B (a GPU encoder

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 ###############################################################################
 # build-guests/stages/winxp-vbemp-hires.sh
-#   Bake 1920x1200x32 display + "show window contents while dragging = OFF" into
-#   the post-install Windows XP gallery golden (winxp.qcow2), reproducibly.
+#   Capture 1920x1200x32 display + "show window contents while dragging = OFF" into
+#   the post-install Windows XP gallery checkpoint (winxp.qcow2), reproducibly.
 #   (Fleet resolution target raised 1024x768 -> 1920x1200 on 2026-07-27; the
 #   unaccelerated packed-VBEMP path stays inside the 30 fps encode budget on KVM
 #   — see docs/lab/tile-resolution-responsiveness.md.)
 #
 # WHY THIS EXISTS
-#   The winxp tile runs on the QEMU *std* (Bochs) PCI VGA under KVM. XP's inbox
+#   The winxp station runs on the QEMU *std* (Bochs) PCI VGA under KVM. XP's inbox
 #   "Standard VGA" driver is hard-capped at 640x480, and QEMU's *cirrus*
 #   emulation breaks the XP desktop bring-up above 640x480 on a cold -snapshot
 #   boot under KVM (top ~half of the framebuffer scans out, the taskbar never
@@ -43,12 +43,12 @@
 #      while dragging" -> Apply; clean ACPI shutdown.
 #   3. verify: boot, screendump, assert the PPM is 1920x1200, clean shutdown.
 #
-# QEMU_VGA stays "std" and the tile carries "-usb -device usb-tablet" (absolute
-# cursor) + "-device AC97" (so the audio driver is baked in before the golden).
+# QEMU_VGA stays "std" and the station carries "-usb -device usb-tablet" (absolute
+# cursor) + "-device AC97" (so the audio driver is captured in before the checkpoint).
 #
-# RUN AFTER winxp.sh has produced the auto-logon golden. Idempotent-ish: re-runs
+# RUN AFTER winxp.sh has produced the auto-logon checkpoint. Idempotent-ish: re-runs
 # re-install the driver over itself (harmless) but prefer running once on a fresh
-# golden. Timing-driven GUI automation — each phase drops a screendump PNG into
+# checkpoint. Timing-driven GUI automation — each phase drops a screendump PNG into
 # $LOG_DIR so you can eyeball the checkpoints.
 #
 # DEPS (host): qemu-system-x86_64 (or -i386), socat, curl, unzip, mcopy, and
@@ -63,7 +63,7 @@ set -euo pipefail
 
 DISK="${DISK:-/data/gallery-guests/WinXPpro/winxp.qcow2}"
 QEMU_BIN="${QEMU_BIN:-qemu-system-x86_64}"        # KVM-capable; std VGA
-QEMU_ACCEL="${QEMU_ACCEL:--enable-kvm -cpu host}" # match the live tile
+QEMU_ACCEL="${QEMU_ACCEL:--enable-kvm -cpu host}" # match the live station
 MEM="${MEM:-768}"
 RUN_DIR="${RUN_DIR:-/tmp/winxp-hires.$$}"
 LOG_DIR="${LOG_DIR:-${RUN_DIR}/log}"

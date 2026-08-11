@@ -2,9 +2,9 @@
 #
 # vm-idle-watch.sh — idle auto-pause for bridge-fronted Proxmox VMs.
 # ---------------------------------------------------------------------------
-# The streamhost tiles pause their own guests (QMP stop) when no WebTransport
+# The streamhost stations pause their own guests (QMP stop) when no WebTransport
 # session is connected (streamhost/docs/IDLE-PAUSE.md). VMs that are NOT
-# streamhost tiles but are exposed through TCP bridges need the same treatment
+# streamhost stations but are exposed through TCP bridges need the same treatment
 # from the outside. This watcher polls the configured bridge ports for
 # ESTABLISHED client connections and drives `qm suspend` / `qm resume`:
 #

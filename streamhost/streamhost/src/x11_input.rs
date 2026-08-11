@@ -1,6 +1,6 @@
-//! Input sink for `CaptureBackend::X11` tiles whose emulator is MAME driving a
+//! Input sink for `CaptureBackend::X11` stations whose emulator is MAME driving a
 //! guest with a RELATIVE mouse behind an SDL window that fills the whole Xvfb
-//! (the SGI IRIX/MAME tile, issue #20).
+//! (the SGI IRIX/MAME station, issue #20).
 //!
 //! Two channels, because MAME-SDL only delivers mouse BUTTONS + keyboard to the
 //! machine while the window is pointer-CAPTURED, and capture needs an
@@ -18,7 +18,7 @@
 //!   ioport. Every button carries real press/release edges (DOWN1/UP1,
 //!   DOWN2/UP2, DOWN3/UP3), which spring-loaded 4Dwm menus require.
 //!
-//! See docs/history/irix-tile-issue20-handoff.md and the RECIPE on the box.
+//! See docs/history/irix-tile-issue20-handoff.md and the RECIPE on labhost.
 
 use std::io::Write;
 use std::sync::{Arc, Mutex};
@@ -94,7 +94,7 @@ impl RealtimeInputSink for X11TestSink {
         // MOTION: absolute target -> relative delta, with the one-time homing
         // slam and the one-shot edge resync (see ptr_reckon — without the latter
         // a single clamp at a screen edge desyncs this sink from the guest
-        // permanently, which was measured at 127 px on the IRIX tile).
+        // permanently, which was measured at 127 px on the IRIX station).
         let step = st.reckon.step(event.x, event.y, event.width, event.height);
         if step.home {
             for (cx, cy) in rel_chunks(HOME_DELTA, HOME_DELTA) {

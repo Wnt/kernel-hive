@@ -1,6 +1,6 @@
 # Solaris gallery-hid cursor latency profile (end-to-end)
 
-**Tile:** `solariscde` — Solaris CDE, `SH_INPUT_BACKEND=gallery` (gallery-hid-pci HW
+**Station:** `solariscde` — Solaris CDE, `SH_INPUT_BACKEND=gallery` (gallery-hid-pci HW
 input), 1920×1200, tier-0 CQP q10 (veryfast/high/zerolatency), `SH_FPS=60`,
 `SH_DBUS_UPDATE_MS=4`, keyframe 2500 ms.
 **Question profiled:** *perceived* mouse-cursor latency = the FULL round trip a user
@@ -16,9 +16,9 @@ feels — up-path (event → server → gallery-hid → Solaris) + guest render 
 > re-encode.
 
 Measurements are from a **namespaced clone** (`/data/vms/soltest/latprobe`, VMID 199,
-2 vCPUs via `sockets=2` + `hv-vendor-id=XenVMMXenVMM`, reflink copy of a quiesced
-golden — **the live `solariscde` tile was never touched**), plus live-SPA transport
-probes from CT950 and the reused stage-d D-Bus ROI harness. Host was **quiesced**
+2 vCPUs via `sockets=2` + `hv-vendor-id=XenVMMXenVMM`, reflink copy of a paused
+checkpoint — **the live `solariscde` station was never touched**), plus live-UI transport
+probes from CT950 and the reused stage-d D-Bus ROI harness. labhost was **quiesced**
 (only live solariscde + CT950), so x264 wall time is near its floor — see
 [Caveats](#caveats).
 
@@ -208,7 +208,7 @@ reduction for a cursor move; hardware column notes EUR + 1U fit.
 | **Lower encode resolution (e.g. 1280×800)** | 8–9 | ~8–10 ms (conv+encode scale ~2.4×) | low | med (sharpness) | €0 | Cheap lever if CDE at 1280×800 is acceptable; halves the pixel work. |
 | **Decouple encode feed from 48 fps rate-cap / widen isolated-event bypass** | 8→enc | ~2–4 ms (capwait) | low | low | €0 | Under sustained drag the cap adds up to a frame interval; isolated moves already bypass it. |
 | **preset=ultrafast (from veryfast)** | 9 x264 | ~3 ms | trivial | med (bitrate/quality) | €0 | x264 CPU already ~2.4 ms; ultrafast trims analysis at a quality/bitrate cost. |
-| **GPU / hardware H.264 encode (NVENC/QSV/VA-API)** | 9 | ~12–13 ms (14 ms → ~1–2 ms) | high | med | **~€1000–1500 pro card (NVIDIA A2 / RTX A2000, single-slot low-profile) — fits 1U; consumer cards ~€150–300 but capped NVENC sessions** | Biggest hardware lever; needs a session-unlimited pro card because 28 tiles share. Pair with ROI for max effect. INPUT-LATENCY.md lever B. |
+| **GPU / hardware H.264 encode (NVENC/QSV/VA-API)** | 9 | ~12–13 ms (14 ms → ~1–2 ms) | high | med | **~€1000–1500 pro card (NVIDIA A2 / RTX A2000, single-slot low-profile) — fits 1U; consumer cards ~€150–300 but capped NVENC sessions** | Biggest hardware lever; needs a session-unlimited pro card because 28 stations share. Pair with ROI for max effect. INPUT-LATENCY.md lever B. |
 | **Remove per-record `cmn_err` in Solaris ISR** | 6 | loaded-tail only (idle ~0) | low | low | €0 | galleryhid.c:913/921/927. Fixes loaded p99, not idle perceived latency. Prerequisite for trustworthy loaded numbers. |
 | **Drop redundant `GUEST_KICK` + zero-value tail `IRQ_ACK`** | 6 | ~2–3 VM exits/event (µs) | low | low | €0 | galleryhid.c:1079/1088. Idle-negligible; matters only under heavy input rate. |
 | **Bulk-read record / preallocate mblk pool** | 6 | µs + tail smoothing | low | low | €0 | galleryhid.c:776 loop, allocb sites. Nice-to-have. |
@@ -298,7 +298,7 @@ bottleneck — pursue it as the ROI lever, not as a wholesale codec swap.**
 
 The bottleneck is host CPU full-frame H.264 encode; a **single-slot low-profile pro
 NVENC card (NVIDIA A2 / RTX A2000, ~€1000–1500, fits 1U, session-unlimited for all 28
-tiles)** would cut the dominant 14 ms encode to ~1–2 ms and is the top hardware lever —
+stations)** would cut the dominant 14 ms encode to ~1–2 ms and is the top hardware lever —
 but the **€0 software ROI/damage-scoped encode** attacks the same cost first and should
 be tried before spending money.
 
@@ -306,8 +306,8 @@ be tried before spending money.
 
 ## Caveats
 
-- **Host was quiesced** (only live solariscde + CT950). x264 wall time is near its floor;
-  under full 28-tile fleet load `config.rs` documents x264 p95 inflating to ~96 ms from
+- **labhost was quiesced** (only live solariscde + CT950). x264 wall time is near its floor;
+  under full 28-station fleet load `config.rs` documents x264 p95 inflating to ~96 ms from
   EEVDF scheduler queuing — that would dominate the tail. **Re-measure under load before
   acting on absolute encode numbers.**
 - `hop8→encode-start` (capwait) is regime-dependent — reported for continuous drag;
@@ -329,7 +329,7 @@ be tried before spending money.
   2-vCPU `latprobe` clone. Instrumentation was clone-only / unmerged
   (`streamhost/streamhost/src/{clock.rs,capture.rs,realtime_input.rs,encode/*}`).
 - **Guest round trip** (hop5→8): stage-d D-Bus ROI harness, N=500, inject→cursor-in-ROI.
-- **Transport**: live SPA type-9 datagram RTT (Ctrl+N overlay) + tcpdump on the box;
+- **Transport**: live UI type-9 datagram RTT (Ctrl+N overlay) + tcpdump on labhost;
   live solariscde observed **read-only** (no injection/savevm/restart).
 - **Prior docs reused:** `docs/INPUT-LATENCY.md`,
   `docs/lab/research/low-latency-input/{measurement-and-host.md,spike-solaris-runbook.md}`,

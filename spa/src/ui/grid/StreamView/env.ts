@@ -13,7 +13,7 @@ export const MAX_LOCK_DELTA = 300;
 // ---------------------------------------------------------------------------
 //  DIRECT-CANVAS RENDER GATE (measured 2026-07-13, reactos, glass-to-glass rig)
 //  ---------------------------------------------------------------------------
-//  For streamhost tiles we can paint decoded frames EITHER to a captureStream →
+//  For streamhost stations we can paint decoded frames EITHER to a captureStream →
 //  <video> (default) OR straight to a visible <canvas> (paint-on-decode). A
 //  browser-photon A/B (N=60 Chrome, N=32 Firefox, interleaved to cancel box
 //  drift) showed the two engines diverge:
@@ -28,7 +28,7 @@ export const isFirefoxEngine =
   typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent);
 
 // Coarse-pointer gate for the local pinch-zoom feature (Item 5) — a phone/tablet,
-// not a per-tile archetype. TouchEvent presence + a coarse pointer.
+// not a per-station archetype. TouchEvent presence + a coarse pointer.
 export function isTouchDevice(): boolean {
   if (typeof window === 'undefined') return false;
   const coarse = !!window.matchMedia && window.matchMedia('(any-pointer:coarse)').matches;

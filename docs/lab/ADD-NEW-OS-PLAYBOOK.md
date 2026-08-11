@@ -5,11 +5,11 @@ source media to a reproducible, interactive streamhost exhibit. It fills the
 gap between the per-guest notes in [`docs/guests/`](../guests/) and the
 whole-lab rebuild in [`MASTER-REPRODUCE.md`](MASTER-REPRODUCE.md).
 
-The canonical tile registry makes repeated lineup metadata a one-entry
-integration. A production tile still has a build recipe, a QEMU/device set,
-runtime sidecars where needed, a golden, guest documentation, private
+The canonical station registry makes repeated lineup metadata a one-entry
+integration. A production station still has a build recipe, a QEMU/device set,
+runtime sidecars where needed, a checkpoint, guest documentation, private
 credentials outside Git, and optionally a boot video. Treat the checklist in
-this document as a release gate. Do not make a tile visible until its
+this document as a release gate. Do not make a station visible until its
 framebuffer, input, and reset path have all passed.
 
 Start every Tier 1–3 add with the scaffold command, then fill and prove what it
@@ -24,12 +24,12 @@ make tile-registry-check
 The command reserves `slot` and UDP `54000+slot`, writes a schema-valid disabled
 candidate entry, copies the matching builder template, and stubs the guest doc
 and cold-boot arm. Disabled means it does not enter the streamhost, signaling,
-reset, or SPA lineups while its TODOs remain. The paved path is now **scaffold →
+reset, or UI lineups while its TODOs remain. The paved path is now **scaffold →
 fill → verify**: builders use [`scripts/lib/labqmp.py`](../../scripts/lib/labqmp.py)
-for build-time QMP console/input, and clone-only golden proof uses
-[`scripts/lib/golden-verify.sh`](../../scripts/lib/golden-verify.sh).
+for build-time QMP console/input, and clone-only checkpoint proof uses
+[`scripts/lib/checkpoint-verify.sh`](../../scripts/lib/checkpoint-verify.sh).
 
-All commands which affect the lab are examples for a planned maintenance
+All commands which affect labhost are examples for a planned maintenance
 window. Develop and validate against a clone or scratch output first. Never
 experiment against a live writable guest disk, and never use `/mnt/poc` as an
 input or output.
@@ -40,7 +40,7 @@ input or output.
 an explicit `lifecycle`; `streamhost/tiles-manifest.sh` is generated from its
 production entries rather than maintained as an independent inventory. At the
 current registry revision, `python3 scripts/tiles-registry.py count` reports
-**39 lineup entries: 37 streamhost production tiles and 2 showcase posters**.
+**39 lineup entries: 37 streamhost production stations and 2 showcase posters**.
 Use that command for the current roster count and `labctl ls` for observed live
 service state; do not copy the number into another inventory.
 
@@ -60,15 +60,15 @@ The planned/recovery set is:
 | OS / exhibit | State and blocker | Rough tier |
 |---|---|---|
 | `macos` | Showcase poster. The proven Sequoia VM 925 and VNC/WebSocket bridge were deleted; recreation needs Apple-compatible OpenCore/QEMU work, substantial disk space, and a new streamhost-era capture path. Tahoe is not viable without working accelerated graphics on this host. | **4** |
-| `nextstep` | Not live and not in the SPA lineup. The builder reaches device detection, but NeXTSTEP 3.3 loses IDE/SCSI I/O under current QEMU; the likely paths are a QEMU 0.9 sidecar or Previous plus a licensed NeXT ROM. The ISO is also not staged. | **4** |
-| `riscos` | Showcase poster. Its former RPCEmu/neko backend was retired. ROOL media and a builder exist, but it needs a streamhost-compatible captured-Linux/RPCEmu bridge and a new golden. | **3** |
+| `nextstep` | Not live and not in the UI lineup. The builder reaches device detection, but NeXTSTEP 3.3 loses IDE/SCSI I/O under current QEMU; the likely paths are a QEMU 0.9 sidecar or Previous plus a licensed NeXT ROM. The ISO is also not staged. | **4** |
+| `riscos` | Showcase poster. Its former RPCEmu/neko backend was retired. ROOL media and a builder exist, but it needs a streamhost-compatible captured-Linux/RPCEmu bridge and a new checkpoint. | **3** |
 | `win11` | Showcase poster. VM 900 was deleted with the legacy RDP/neko path. Re-entry needs user-supplied licensed media plus a supported UEFI/TPM guest and streamhost/RDP capture design. | **3–4** |
 | `winxp` | Fully registered and previously built, but currently inactive. A clean rebuild is blocked on the operator's licensed XP SP3 ISO, product key, and administrator password; the consumed ISO has no recorded hash. | **3** |
 | `sailfishos` | Fully registered and previously built, but currently inactive. A clean two-stage rebuild needs an account/EULA-gated Sailfish SDK emulator VDI; the source VDI was not retained. | **3** |
 
-`amiga500` is not a missing candidate: it is the active production tile
+`amiga500` is not a missing candidate: it is the active production station
 `amiga`, a Debian kiosk running FS-UAE with Kickstart/Workbench. It is distinct
-from the active x86 AROS tile `aros`. Use the Amiga 500 path as a Tier-2
+from the active x86 AROS station `aros`. Use the Amiga 500 path as a Tier-2
 bridge template.
 
 Candidate details and the live bridge distinction are recorded in the existing
@@ -81,7 +81,7 @@ neko-era material; the canonical registry and a current read-only `labctl ls`
 result take precedence for lineup and live status respectively.
 
 [`docs/guests/UNDOCUMENTED.md`](../guests/UNDOCUMENTED.md) is a documentation
-gap list, not a candidate list: its rows are already-live tiles. At the time of
+gap list, not a candidate list: its rows are already-live stations. At the time of
 this inventory its heading says seven but its table contains six (`android`,
 `postmarketos`, `serenityos`, `toaruos`, `win2000`, and `win311`).
 
@@ -98,7 +98,7 @@ displayName   museum label, e.g. Solaris CDE
 
 `osId` and `tileDir` are the same string, and `tiles-registry.py` fails
 validation if they differ; the builder key may differ (it names a build script,
-not a running tile). The two exhibits that once diverged
+not a running station). The two exhibits that once diverged
 (`solaris` → `solariscde`, `aros` → `amigaos`) required repeated special-case
 mapping and should not be copied.
 
@@ -168,7 +168,7 @@ should place or derive their canonical artifacts beneath
 explicitly reference belong under `/data/isos/`.
 
 ```bash
-# On the lab host, after the operator has supplied media when required.
+# On labhost, after the operator has supplied media when required.
 install -d -m 0750 /data/assets-staging/<osId>
 sha256sum /data/assets-staging/<osId>/<media> \
   | tee /data/assets-staging/<osId>/MANIFEST.sha256
@@ -194,7 +194,7 @@ from `scripts/lib/labqmp.py`, or invoke its qdrv-compatible CLI from shell. It
 provides the single keymap plus `type`, `sendkey`, `screendump`, `savevm`,
 `loadvm`, `hostfwd_add`, and `assert_idle_deterministic`. This is the
 **build-time** helper; it does not replace the operator-side `/root/cdrv.py`
-used by `labctl` on the box.
+used by `labctl` on labhost.
 
 Make the builder idempotent, fail-fast, and isolated. It must own a namespaced
 work directory, unique sockets and ports, and a pidfile. Stop only its own QEMU
@@ -215,12 +215,12 @@ Use these templates by difficulty:
 | Tier | Start from | Why |
 |---|---|---|
 | 1 | `alpine.sh`, `kolibrios.sh`, `reactos.sh` | Stable-media resolution, checksum validation, LiveCD/scratch snapshot, automated framebuffer gates. |
-| 2 install | `haiku-install.sh`, `win2000.sh` | Real install, fixture provisioning, final device-set snapshot and restore proof. |
+| 2 install | `haiku-install.sh`, `win2000.sh` | Real install, scene provisioning, final device-set snapshot and restore proof. |
 | 2 bridge | `bridge-base.sh`, `c64.sh`, `amiga.sh`, `streamhost/docs/BRIDGE.md` | Captured-Linux kiosk around a non-QEMU architecture/emulator. |
 | 3 graphical | [`scripts/install-vision/README.md`](../../scripts/install-vision/README.md) plus `redstar3.flow.yaml` | Declarative screenshot/OCR/template state machine, capture helper, optional dialogs, secret injection, and framebuffer checkpoints. |
 | 3 unattended | `win2000.sh` plus `docs/lab/research/unattended-install-win2000.md` | Secret-free answer-file template; secrets supplied only at execution. |
-| 3 legacy | `os2warp.sh`, `win95.sh`, `win98.sh` | TCG/legacy chipset, old display/audio/input drivers, exact golden parity. |
-| 4 negative research | `nextstep.sh` and `docs/guests/nextstep.md` | How to retain a reproducible failure without advertising a broken tile. |
+| 3 legacy | `os2warp.sh`, `win95.sh`, `win98.sh` | TCG/legacy chipset, old display/audio/input drivers, exact checkpoint parity. |
+| 4 negative research | `nextstep.sh` and `docs/guests/nextstep.md` | How to retain a reproducible failure without advertising a broken station. |
 
 For the two nontrivial automation styles, also read
 [`unattended-install-win2000.md`](research/unattended-install-win2000.md) and
@@ -244,7 +244,7 @@ same guest-visible devices and properties.
    systems, q35 for guests that require newer PCI/UEFI behavior.
 4. Resolve the alias to the host's current versioned type (today's rebuild uses
    `pc-i440fx-11.0` or `pc-q35-11.0`) and pin it. Re-check on a future QEMU
-   upgrade; do not silently retarget an existing golden.
+   upgrade; do not silently retarget an existing checkpoint.
 5. Pin CPU model, vCPU count, memory, ACPI/APIC/USB properties, RTC behavior,
    firmware/varstore, and boot order. A change to any guest-visible device can
    invalidate `loadvm golden`.
@@ -266,34 +266,34 @@ same guest-visible devices and properties.
 5. Verify with QMP `screendump` and the streamhost D-Bus capture. A VNC view or
    guest log alone does not establish framebuffer compatibility.
 
-**Bridge tiles — fitting an emulator window to the captured root.** The
+**Kiosks — fitting an emulator window to the captured root.** The
 captured surface is the kiosk's X root, so the emulator must fill it:
 
 - **Do not force the emulator's `-resolution` to the machine's raw pixel
   count.** That number is the pixel count, not the picture's shape, and setting
   it defeats the emulator's aspect correction. MPF-II at `-resolution 1120x384`
   sat as a 2.92:1 strip in the middle of a black root; fullscreen plus
-  `-keepaspect` on the bridge base's stock root reconstructs the roughly 4:3
+  `-keepaspect` on the bridge seed's stock root reconstructs the roughly 4:3
   image the real machine drew on a television.
 - **Where the emulator's window cannot grow, shrink the root to it.** VICE's SDL
   window is a fixed 719×544 at `-VICIIdsize`, so the X root drops to the smallest
   advertised mode that contains it (800×600). Do not reach for SDL real
   fullscreen instead: it renders BLACK under std-VGA capture (see the note in
   `scripts/build-guests/tiles/amstradcpc.sh`).
-- Any change to the launcher or the X geometry invalidates the golden. Re-bake
+- Any change to the launcher or the X geometry invalidates the checkpoint. Recapture
   it, or reset restores the old layout and the fix appears not to have worked.
 
 **Other devices:**
 
 - Disk: prefer qcow2 for installed guests and internal snapshots; use IDE/SATA
   for old inbox drivers, virtio only where supported. UEFI guests need a
-  per-tile writable varstore, never a shared writable template.
+  per-station writable varstore, never a shared writable template.
 - NIC: use virtio-net for modern guests; e1000/rtl8139/pcnet for older inbox
   drivers. Put host forwards on the existing `-netdev user` backend so a later
   reset does not accidentally add a guest-visible device.
 - Audio: `intel-hda` for modern guests, AC97 for many NT/Unix guests, SB16 for
   DOS/Win9x, or none. The guest must have a real driver. Match the production
-  D-Bus audiodev and sample format during the golden bake.
+  D-Bus audiodev and sample format during the checkpoint capture.
 - Keyboard/input: USB tablet/PS2/virtio choice is part of the device set. Decide
   it before saving the snapshot; Section 5 gives the pointer policy.
 
@@ -323,19 +323,19 @@ Every phase should be restartable or should fail with the last framebuffer,
 serial tail, command, and expected next state. Never treat a timeout followed by
 blind input as success.
 
-### 4.3 Create and prove the golden
+### 4.3 Create and prove the checkpoint
 
 Curate an idle, deterministic, input-ready screen: no setup wizard, modal error,
 screen saver, changing clock where avoidable, or unknown login prompt. Run the
-standard clone-only proof on the lab host:
+standard clone-only proof on labhost:
 
 ```bash
-# Bake/rebake on copied disks, then independently verify the retained tag.
-scripts/lib/golden-verify.sh <tileDir> --bake
-scripts/lib/golden-verify.sh <tileDir>
+# Capture/recapture on copied disks, then independently verify the retained tag.
+scripts/lib/checkpoint-verify.sh <tileDir> --capture
+scripts/lib/checkpoint-verify.sh <tileDir>
 ```
 
-The helper uses the tile's `bootrec-tiles.conf` disk/port/ready metadata, copies
+The helper uses the station's `bootrec-tiles.conf` disk/port/ready metadata, copies
 every writable disk under a namespaced `/data/vms/soltest/golden-verify-*`
 directory, statically checks the rewritten launcher, gates destructive QMP by
 `clone-guard`, and tears the clone down. Its required sequence is:
@@ -352,10 +352,10 @@ restart QEMU with the final production device set and `-loadvm golden`
 repeat the visible input proof
 ```
 
-On a first bake (no tag), the configured cold-boot driver/detector must reach the
-ready fixture; on a rebake, the existing tag is the ready seed. Without
+On a first capture (no tag), the configured cold-boot driver/detector must reach the
+ready scene; on a recapture, the existing tag is the ready seed. Without
 `--bake` the helper refuses to create or replace a snapshot and verifies the
-existing `golden`. Set `GOLDEN_VERIFY_DIRTY_TEXT` only when the fixture needs a
+existing `golden`. Set `GOLDEN_VERIFY_DIRTY_TEXT` only when the scene needs a
 different visible keyboard string; a dirty action which does not change the
 framebuffer is a failure, not a skipped assertion.
 
@@ -365,25 +365,25 @@ normal production restore. Do not combine an internal snapshot with QEMU
 For immutable ISOs/raw bases or non-migratable devices, use
 `resetMode=restart` and prove the cold boot is deterministic.
 
-**Bake from a clean cold boot, and let the restore finish alone.**
+**Capture from a clean cold boot, and let the restore finish alone.**
 
-- The screen you bake is the screen every visitor sees for the life of the
-  exhibit. A golden baked while the framebuffer still carried output from a
+- The screen you capture is the screen every visitor sees for the life of the
+  exhibit. A checkpoint captured while the framebuffer still carried output from a
   verification run gave the MPF-II an exhibit that restored to a scrolled screen
-  with the banner gone and two prompts stacked. Cold-boot the fixture, leave it
-  untouched, bake that.
+  with the banner gone and two prompts stacked. Cold-boot the scene, leave it
+  untouched, capture that.
 - **Do not inject keys after `loadvm`.** mpf2 sent `scroll_lock,f3,scroll_lock`
   after a restore purely to replay the ROM power-on beep; it raced the restore
   and intermittently corrupted the screen, and was removed. Note also that
   MAME's F3 is a *warm* start — RAM survives, so an Apple-family ROM skips its
   banner entirely; Shift+F3 behaves the same.
 - **Use the sibling pattern.** `resetMode: loadvm` plus an internal `golden`
-  snapshot is what every restorable tile does. A bespoke reset mode with a tile
+  snapshot is what every restorable station does. A bespoke reset mode with a station
   name hardcoded in the generic `scripts/serve/reset-tile.sh` was tried on this
-  add and reverted: per-tile behaviour belongs in the registry entry, never in a
+  add and reverted: per-station behaviour belongs in the registry entry, never in a
   case statement in shared code.
 
-Keep the launcher and golden as an atomic pair. Adding/removing a disk, tablet,
+Keep the launcher and checkpoint as an atomic pair. Adding/removing a disk, tablet,
 NIC, serial device, firmware property, PCI device, or machine version after
 `savevm golden` requires a new golden. Display/audio **backends** can sometimes
 vary without changing guest-visible state, but prove this rather than assuming.
@@ -396,11 +396,11 @@ input immediately after a reset.
 
 | Path | Choose when | Production wiring |
 |---|---|---|
-| Absolute HID | Guest has USB HID or virtio-input and maps the full display correctly. This is the default and lowest-effort path. | Emit `--pointer abs --input-backend dbus-abs --input-dev usb` for `-usb -device usb-tablet`, or `--input-dev virtio` for virtio keyboard/tablet. `tile.env` gets `SH_INPUT_BACKEND=dbus-abs`. Add cursor scale/offset only from measured framebuffer calibration. Do not set SPA `pointerRel`. |
-| Direct relative PS/2 | Guest only has a good PS/2 relative mouse and browser Pointer Lock produces usable 1:1 deltas. | Emit `--pointer rel --input-backend dbus-rel --input-dev ps2`; no tablet. Set `pointerRel: true` in the SPA binding so raw relative movement is sent. QNX is the reference. |
-| TCP warpd / hybrid | Existing baked guest exposes a trustworthy absolute cursor API but its virtual HID is absent, range-limited, accelerated, or otherwise wrong. | Warpd is frozen: reuse only for its six existing tiles; do not add another agent or protocol verb. Their emit form is `--pointer warpd --input-backend warpd --warpd-addr 127.0.0.1:<hostPort>`. Optional `--warpd-buttons qemu` keeps motion on the agent while real QEMU mouse buttons preserve window-manager semantics. |
+| Absolute HID | Guest has USB HID or virtio-input and maps the full display correctly. This is the default and lowest-effort path. | Emit `--pointer abs --input-backend dbus-abs --input-dev usb` for `-usb -device usb-tablet`, or `--input-dev virtio` for virtio keyboard/tablet. `tile.env` gets `SH_INPUT_BACKEND=dbus-abs`. Add cursor scale/offset only from measured framebuffer calibration. Do not set UI `pointerRel`. |
+| Direct relative PS/2 | Guest only has a good PS/2 relative mouse and browser Pointer Lock produces usable 1:1 deltas. | Emit `--pointer rel --input-backend dbus-rel --input-dev ps2`; no tablet. Set `pointerRel: true` in the UI binding so raw relative movement is sent. QNX is the reference. |
+| TCP warpd / hybrid | Existing baked guest exposes a trustworthy absolute cursor API but its virtual HID is absent, range-limited, accelerated, or otherwise wrong. | Warpd is frozen: reuse only for its six existing stations; do not add another agent or protocol verb. Their emit form is `--pointer warpd --input-backend warpd --warpd-addr 127.0.0.1:<hostPort>`. Optional `--warpd-buttons qemu` keeps motion on the agent while real QEMU mouse buttons preserve window-manager semantics. |
 | Serial warpd agent | Existing baked guest has no reliable NIC/TCP path but reads COM1 and calls an absolute cursor API. | Warpd is frozen: retain the existing Unix socket chardev and `--pointer warpd --input-backend warpd --warpd-addr unix:<tileDir>/serial.sock` only for Win3.11/OS2/TempleOS. New OS work must not create another guest agent. |
-| `gallery-hid` | Only after the OS-specific kernel driver and patched QEMU device have passed latency, restore, and fallback gates. It is not the generic first choice. | Follow `docs/lab/research/low-latency-input/qemu-transport.md`: pinned patched QEMU; `-chardev socket,id=ghid0,path=<tileDir>/gallery-hid.sock,server=on,wait=off`; `-device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e`; guest driver installed/armed before a new golden; `SH_GHID_SOCKET=<path>` in `tile.env`. Keep the old HID/warpd route available for rollback until the tile is promoted. |
+| `gallery-hid` | Only after the OS-specific kernel driver and patched QEMU device have passed latency, restore, and fallback gates. It is not the generic first choice. | Follow `docs/lab/research/low-latency-input/qemu-transport.md`: pinned patched QEMU; `-chardev socket,id=ghid0,path=<tileDir>/gallery-hid.sock,server=on,wait=off`; `-device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e`; guest driver installed/armed before a new checkpoint; `SH_GHID_SOCKET=<path>` in `tile.env`. Keep the old HID/warpd route available for rollback until the station is promoted. |
 
 The experimental transport contract and its promotion/rollback requirements are
 in [`qemu-transport.md`](research/low-latency-input/qemu-transport.md).
@@ -409,7 +409,7 @@ in [`qemu-transport.md`](research/low-latency-input/qemu-transport.md).
 
 For a machine with no pointing device (MPF-II, Amstrad CPC) the keyboard *is*
 the exhibit, and it has its own failure modes. All the numbers below were
-measured on the lab box during the MPF-II add (2026-08-06).
+measured on labhost during the MPF-II add (2026-08-06).
 
 **Pace the release→press GAP, not just the hold.** An emulator samples its input
 ports once per emulated frame, so a press+release completing inside one frame is
@@ -423,7 +423,7 @@ successive keys. Bisected on mpf2 (MAME, 60 Hz), typing a 16-key line:
 | 12 ms | 12 of 16 |
 | 16 ms (one frame) | 16 of 16 |
 
-The knobs are `SH_KEY_MIN_HOLD_MS` and `SH_KEY_MIN_GAP_MS` (declared per tile in
+The knobs are `SH_KEY_MIN_HOLD_MS` and `SH_KEY_MIN_GAP_MS` (declared per station in
 `runtime.tileEnv`; reference in `streamhost/docs/CONFIG.md`). **Derive the values
 from the machine's frame period**, with two frames as the shipped margin: mpf2 at
 60 Hz → `32`/`32`; amstradcpc, whose PSG scans the matrix at 50 Hz → `40`/`40`.
@@ -455,7 +455,7 @@ stop ; loadvm golden ; stop ; screendump out.ppm ; cont
 
 On `armeval` that turns "two hashes across three samples, differing by exactly
 one ~40 px cursor cell" into four byte-identical captures — taken before and
-after the keyboard proof, from two separately baked goldens. Any MODE 7 or
+after the keyboard proof, from two separately captured checkpoints. Any MODE 7 or
 text-prompt exhibit (`bbcmicro` too) needs it; it is a property of the machine,
 not of one add.
 
@@ -464,7 +464,7 @@ about event *shape*, not about a magic number.
 
 *The diagnostic.* Shifted characters that fail **selectively** — letters fine,
 punctuation dead, varying key to key — mean the modifier is racing the key, not
-that the keymap is missing an entry. On the Xerox tiles (2026-08-10) `Shift+;` →
+that the keymap is missing an entry. On the Xerox stations (2026-08-10) `Shift+;` →
 `;` and `Shift+a` → `a` while, **in the same sweep**, `Shift+1` → `!`,
 `Shift+8` → `*`, `Shift+[` → `{` and `Shift+=` → `+` all shifted correctly. A
 real keymap gap cannot do that: it would not pass `" { } < > ? _ + | * ( )`
@@ -490,47 +490,47 @@ So Dwarf ships `SH_KEY_MIN_GAP_MS=150` unchanged, while Darkstar needs roughly
 double. Quoting either number as *the* figure will slow a fast machine down for
 nothing, or under-serve a slow one and be blamed on the keymap.
 
-The SPA's shift latch already has the right shape (shift as a separate
+The UI's shift latch already has the right shape (shift as a separate
 `sendKey`, paced by `SH_KEY_MIN_HOLD_MS`); the trap lives in the ad-hoc
 XTEST/`send-key` helpers written during a bring-up.
 
 **Turn X's auto-repeat OFF in any kiosk driven by synthetic keys — before you
 touch the pacing at all.** On the Oric Atmos add (2026-08-09) the pacing was
-never the problem. Every key a bridge tile sees is an injected press/release
+never the problem. Every key a kiosk sees is an injected press/release
 pair, and when the release arrives late — this box runs thirty emulators — X's
 typematic repeat starts hammering the key that is still "held". The demo
 listing's line 40 came out as `PRINT "ORIC ATMOS 19999999999`: one late
 release, eleven nines. The flood then left the emulated machine **deaf** —
 nothing typed afterwards landed, until the next `loadvm` — and that symptom
 impersonates, in turn, frame quantisation, host starvation and an emulator
-freeze. `xset r off` in the tile's `/etc/bridge/launch.sh` fixes it; the golden
-must be re-baked afterwards, because the X state is inside it. Three cheap
+freeze. `xset r off` in the station's `/etc/bridge/launch.sh` fixes it; the checkpoint
+must be recaptured afterwards, because the X state is inside it. Three cheap
 discriminators, in the order they pay off:
 
 1. the guest kernel's `/proc/interrupts` i8042 counter proves whether QEMU
-   delivered the keys at all (on that tile it always had);
+   delivered the keys at all (on that station it always had);
 2. a screen that keeps changing while keys do nothing is an INPUT fault, not a
    frozen emulator — but pick a test pattern that actually changes, since a
    screen scrolling identical characters compares equal frame to frame;
-3. a tile with no viewer is idle-paused (`[idle] no sessions for 60s -> guest
+3. a station with no viewer is idle-paused (`[idle] no sessions for 60s -> guest
    paused`), and a paused guest swallows every key. A bare QMP harness must
    send `cont` after each `loadvm`; `labctl` does it for you.
 
 **The bisect's 250/250 reference is an assumption, not a law.** On that same
-Oric tile a LONG hold was the failure mode: 40/40, 60/60 and 80/80 all typed a
+Oric station a LONG hold was the failure mode: 40/40, 60/60 and 80/80 all typed a
 40-character line intact in 10 of 10 trials, while the harness's "pacing nobody
 disputes" reference dropped 7 characters of 40 — so
 `emu-key-pacing-bisect.py` reported every rung as corrupt against a reference
 that was itself broken. Look at the reference frame before believing a rung.
 
-**Raising the pacing obliges the typist to slow down too.** The SPA waits
-`line.length * perCharMs` before submitting the next line; below the tile's
+**Raising the pacing obliges the typist to slow down too.** The UI waits
+`line.length * perCharMs` before submitting the next line; below the station's
 hold+gap drain rate a backlog builds and BASIC loses the characters that arrive
 while it is tokenising. Declare `demoProgram.perCharMs` in the registry when a
-tile drains slower than the fleet default — `validate_demo_pacing` in
+station drains slower than the fleet default — `validate_demo_pacing` in
 `scripts/tiles-registry.py` fails the build if the two disagree.
 
-**A guest's keyboard is not necessarily laid out like a PC's.** The SPA's
+**A guest's keyboard is not necessarily laid out like a PC's.** The UI's
 `typeText()` maps ASCII to US set1 scancodes. The MPF-II's 8×8 matrix puts `=` on
 Shift+O, `-` on Shift+I and `+` on Shift+P, and its shifted number row is offset
 by one (Shift+8/9/0 give `( ) *` where a PC gives `* ( )`). Untranslated, `=` and
@@ -542,7 +542,7 @@ lands one key over. The fix is the registry-declared `spa.demoProgram.keyMap`
 give the exact unshifted/shifted pairing of every key in the matrix.
 
 **Wait in proportion to LINE LENGTH, not on a fixed tick.** `typeText()` returns
-immediately and streamhost drains the queue at the tile's paced rate (~64 ms per
+immediately and streamhost drains the queue at the station's paced rate (~64 ms per
 character on mpf2), so a 25-character line is still arriving 1.6 s later.
 Submitting the next line on a fixed tick overruns the queue and loses characters
 — it shows up as the first character after each ENTER going missing, in a
@@ -551,7 +551,7 @@ budget; keep the delay proportional.
 
 **`labctl type` is not a fair test of a guest's keyboard.** It drives QMP
 directly and therefore gets none of streamhost's pacing, so it drops characters
-while printing `ok: typed N chars`. Judge a keyboard through the SPA path, or
+while printing `ok: typed N chars`. Judge a keyboard through the UI path, or
 through a proof the builder runs, and check the framebuffer.
 
 If a USB tablet covers only part of a high-resolution desktop (the Solaris VUID
@@ -559,11 +559,11 @@ case), do not hide the defect with arbitrary client scaling if an in-guest
 absolute API can solve it. Conversely, do not write a guest agent where native
 absolute HID already works.
 
-## 6. Register the tile everywhere
+## 6. Register the station everywhere
 
 The scaffolded `registry/tiles/<osId>.json` is the source of truth. It begins as
 an inert candidate with the slot/port reservation; fill it using `alpine.json`
-and `android.json` as complete streamed-tile examples, then set `enabled: true`
+and `android.json` as complete streamed-station examples, then set `enabled: true`
 and promote its lifecycle only after its proof passes. Audit the
 entry's `schemaVersion`, `id`, `tileDir`/`aliases`, `lifecycle`, `enabled`,
 `build`, `stream`, `runtime`, `reset`, `operator`, `spa`, `museum`, `guestDoc`,
@@ -579,24 +579,33 @@ make tile-registry-generate
 make tile-registry-check
 ```
 
-`tile-registry-check` recomputes every output and fails on drift. The **Tile
+`tile-registry-check` recomputes every output and fails on drift. The **Station
 registry** GitHub Actions workflow runs the same check for pull requests and
 pushes to `main`. The generated surfaces and their actual inputs are:
 
 | Generated artifact (do not hand-edit) | Registry fields used |
 |---|---|
-| `streamhost/tiles-manifest.sh` | Production rows ordered by `render.tilesManifestOrder`; `render.tilesManifestPrelude` plus the emit invocation rendered from `tileDir` and `runtime.qemu.emitArgs` (`runtime.x11.emitArgs` for x11 tiles). |
+| `streamhost/tiles-manifest.sh` | Production rows ordered by `render.tilesManifestOrder`; `render.tilesManifestPrelude` plus the emit invocation rendered from `tileDir` and `runtime.qemu.emitArgs` (`runtime.x11.emitArgs` for x11 stations). |
 | `streamhost/bring-up-all.sh` | Production `tileDir` values grouped by `render.bringUpGroup` and ordered by `runtime.bringUpOrder`. |
 | `scripts/build-guests/build-all.sh` | `build.rows` entries (`order`, `prelude`, typed `value`, and optional `defaultOrder`) rendered as aligned manifest lines, plus shared rows in `registry/registry-v1.json`. |
-| `scripts/serve/tiles.json` | Every streamhost row's `id`, `stream.udpPort`, `tileDir`-derived certificate-hash path, and `render.signalOrder`. |
-| `scripts/serve/golden-manifest.json` | Production `id` and `reset`, ordered by `render.goldenOrder`. |
-| `scripts/tools/gallery-action-map.json` | `operator.actionMap`, ordered by `render.actionMapOrder`. |
 | `spa/src/three/archetypeRegistry.ts` | `id` and `spa`, rendered as an OS binding line (`render.bindingPrelude` kept, optional `render.bindingComment` appended) and ordered by `render.bindingOrder`. |
-| `spa/src/mock/manifest.json` | `museum` for entries that have `render.mockManifestOrder`. |
 | `spa/src/data/posterIndex.ts` | Poster existence + hero path per `registry/posters/<id>.md` (the prose ships separately at runtime). |
-| `scripts/serve/webroot/poster-docs.json` | The full poster documents compiled from `registry/posters/*.md`, fetched by the SPA at runtime. |
-| `registry/index.json` | The aggregate of every entry — `runtime.tileEnv` merged with the tile's `tile.env.fixture` — excluding generator-only `render` data. |
-| `registry/generated/labctl-declarations.json` | Streamhost `tileDir` plus the declared keys in `operator.labctl`. Live observed golden state is intentionally excluded. |
+| `registry/generated/labctl-declarations.json` | Streamhost `tileDir` plus the declared keys in `operator.labctl`. Live observed checkpoint state is intentionally excluded. |
+
+Two more documents are **rendered, never committed** — they have no copy in the
+tree to hand-edit or to go stale, and `tiles-registry.py render` (into the
+gitignored `build/registry/`) or `emit <name>` (to stdout) resolves them from
+the registry whenever something needs them:
+
+| Rendered artifact | What it takes from the entry |
+|---|---|
+| `gallery-manifest.json` | The public lineup the UI fetches at runtime: `museum` + `spa`, ordered by `render.bindingOrder`. Published to the labhost webroot by `serve-https-spa.sh manifests`. |
+| `poster-docs.json` | The full poster documents compiled from `registry/posters/*.md`, fetched by the UI at runtime. |
+| `tiles.json` | Every streamhost row's `id`, `stream.udpPort`, `tileDir`-derived certificate-hash path, and `render.signalOrder`. The live `SIGNAL_CONFIG`. |
+| `golden-manifest.json` | Production `id` and `reset`, ordered by `render.goldenOrder`. The reset allow-list `reset-tile.sh` reads. |
+| `gallery-action-map.json` | `operator.actionMap`, ordered by `render.actionMapOrder`. |
+| `mock-manifest.json` | `museum` for entries that have `render.mockManifestOrder`. |
+| `index.json` | The aggregate of every entry — `runtime.tileEnv` merged with the station's `tile.env.fixture` — excluding generator-only `render` data. |
 
 Use this table as an exhaustive audit of the JSON entry, not as an edit list for
 derived files. `python3 scripts/tiles-registry.py explain <osId>` is useful for
@@ -608,14 +617,14 @@ reviewing one entry's principal derived values.
   from the typed fields** (`spa`, `runtime.*.emitArgs`, `build.rows[].value`) —
   there is no pre-rendered string twin to keep in sync. Edit the typed field,
   then regenerate.
-- A key defined in the tile's `tile.env.fixture` must NOT also appear in
+- A key defined in the station's `tile.env.fixture` must NOT also appear in
   `runtime.tileEnv` — the fixture is the single source for its keys and
   `validate` fails on the overlap. The generator merges the fixture into the
-  env view that `registry/index.json` and the validators see.
+  env view that the rendered `index.json` and the validators see.
 - **`museum` describes the real machine, never how the gallery runs it.**
   `lineage` is a heritage — "Windows NT 3.x", "Multitech (Taiwan)" — not a
   paragraph. `notes` is the one operator-facing field; `blurb` is what the
-  public placard shows, and the SPA test suite fails any manifest row without
+  public placard shows, and the UI test suite fails any manifest row without
   one. Always set `blurb`.
 - `ramMB` cannot express a sub-megabyte machine. Use `ramKB` (the MPF-II has
   64 KB); both are accepted by the schema and the museum renderer.
@@ -635,7 +644,7 @@ reviewing one entry's principal derived values.
   status, exact media, device-set rationale, automation, golden, pointer,
   verification, blockers, and rollback notes.
 
-### 6.2 Streamhost registry and tile directory
+### 6.2 Streamhost registry and station directory
 
 Describe the stream in `stream`, the declared emitted environment in
 `runtime.tileEnv`, the pinned device set in `runtime.qemu`, and startup order in
@@ -644,7 +653,7 @@ Describe the stream in `stream`, the declared emitted environment in
 Regeneration writes the production `emit` stanza and ordered bring-up list; do
 not edit either generated shell script.
 
-Add `streamhost/tiles/<tileDir>/` when the tile needs tracked runtime material.
+Add `streamhost/tiles/<tileDir>/` when the station needs tracked runtime material.
 These source sidecars remain hand-managed even when the registry references
 their paths through `runtime.qemu.launcher`, `envFixture`, or `auxFiles`:
 
@@ -687,8 +696,8 @@ Do not save the golden until the launcher has the pinned production device set.
 Set `stream.udpPort` and `render.signalOrder`; generation derives the public
 signal row from `id`, `tileDir`, and that port. The HTTPS server reads the
 signal JSON and certificate hash fresh on every request, but the **live**
-`SIGNAL_CONFIG` copy must still be updated. The SPA deploy helper preserves an
-existing host copy, so do not assume an SPA deploy has copied a changed map.
+`SIGNAL_CONFIG` copy must still be updated. The UI deploy helper preserves an
+existing host copy, so do not assume an UI deploy has copied a changed map.
 
 For production, fill `reset` and `render.goldenOrder`. Use
 `resetMode: "restart"` with `snapshot: null` only when the launcher creates a
@@ -706,7 +715,7 @@ Declare `dir`, `qmp`, `pointer_mode`, `warpd_port`, `warpd_addr`, `ssh_port`,
 `notes` in `operator.labctl`. Set the exec kind, port, user, and private-key
 **path** only when a captured-output exec channel is proven; otherwise use null
 declarations. Regeneration writes the committed declaration seed. After the
-runtime tile directory, launcher, and emitted `tile.env` exist, run:
+runtime station directory, launcher, and emitted `tile.env` exist, run:
 
 ```bash
 ssh lab 'labctl gen'
@@ -716,17 +725,18 @@ ssh lab 'labctl ls'
 This verifies the declarations against live files, adds observed golden state,
 and regenerates `/data/vms/streamhost/tiles.json`; do not hand-edit it.
 
-### 6.4 Runtime SPA manifest (no rebuild for an existing archetype)
+### 6.4 Runtime UI manifest (no rebuild for an existing archetype)
 
-The public lineup is served from `/gallery-manifest.json`, generated from each
+The public lineup is served from `/gallery-manifest.json`, rendered from each
 registry row's `museum` + `spa` data. It carries the display metadata,
 archetype/transport binding, order, and `/signal/<osId>.json` reference. It does
 **not** carry `credentialsRef`, logins, passwords, keys, tokens, or other private
-operator data. The SPA fetches it with `cache: "no-cache"`, validates every row,
-and uses its embedded generated last-known-good copy if the request 404s, fails,
-or has an invalid shape.
+operator data. The UI fetches it with `cache: "no-cache"` and validates every
+row; there is deliberately **no** bundled copy behind it, so a 404 or an invalid
+shape leaves the gallery empty and says so in the console rather than quietly
+showing a lineup from whenever the bundle was built.
 
-For an ordinary OS using an existing `ArchetypeId`, do not edit SPA TypeScript or
+For an ordinary OS using an existing `ArchetypeId`, do not edit UI TypeScript or
 run Vite. After updating `registry/tiles/<osId>.json`:
 
 ```bash
@@ -738,23 +748,24 @@ make tile-registry-check
 scripts/serve-https-spa.sh manifests
 ```
 
-That command copies the two generated JSON documents to
+That command re-renders the lineup and copies both documents to
 `/data/vms/streamhost/serve/tiles.json` and
 `/data/vms/streamhost/serve/webroot/gallery-manifest.json`; the new OS then
-appears without `npm ci`, `npm run build`, or a bundle deployment. A direct
-manual copy of those same two files is equivalent. Run the generator on the box
-or sync the generated files before copying; never hand-edit the live JSON.
+appears without `npm ci`, `npm run build`, or a bundle deployment. The
+equivalent by hand is `python3 scripts/stations-registry.py emit
+gallery-manifest.json` piped to the live webroot path, and the same for
+`tiles.json` at the live `SIGNAL_CONFIG`; never hand-edit the live JSON.
 
-**A tile in the registry lineup is not finished until the 3D scene knows it.**
+**A station in the registry lineup is not finished until the 3D scene knows it.**
 The runtime manifest carries the placard, but the WebGL museum and the on-screen
 keyboard are compiled in, and they are hand-managed:
 
-- `spa/src/ui/keyboard/keyboardProfiles.ts` — add the tile to `OS_FAMILY`, or its
+- `spa/src/ui/keyboard/keyboardProfiles.ts` — add the station to `OS_FAMILY`, or its
   virtual keyboard falls back to `generic`;
 - `spa/src/scene/machines.ts` — `ASSEMBLIES_BY_TILE` places the exhibit;
   **order matters** and must follow the registry lineup order, not alphabetical;
 - `spa/src/scene/machineIdentity.ts` — a `Record<keyof typeof
-  ASSEMBLIES_BY_TILE, ExhibitIdentity>` exhaustiveness check. A missing tile is a
+  ASSEMBLIES_BY_TILE, ExhibitIdentity>` exhaustiveness check. A missing station is a
   **type error caught only by `npm run build`**, never by vitest, so a branch can
   be green on tests and still fail the build.
 
@@ -795,10 +806,10 @@ scripts/coldboot/postprocess-boot.sh <tileDir>
 scripts/coldboot/gen-boot-manifest.sh <tileDir>
 ```
 
-The runtime `/boot/index.json` supplies detailed clip metadata without an SPA
+The runtime `/boot/index.json` supplies detailed clip metadata without an UI
 rebuild. The current grid badge/mount also reads `OSBinding.bootVideo`, so a
-newly published tile still needs `spa.bootVideo` in its registry entry followed
-by regeneration and an SPA rebuild until the architecture is fully
+newly published station still needs `spa.bootVideo` in its registry entry followed
+by regeneration and an UI rebuild until the architecture is fully
 runtime-driven.
 
 ## 7. Deploy and verify
@@ -811,9 +822,10 @@ make tile-registry-generate
 make tile-registry-check
 bash -n scripts/build-guests/tiles/<os>.sh
 bash -n streamhost/tiles/<tileDir>/qemu-streamhost.sh  # if verbatim
-jq empty scripts/serve/tiles.json
-jq empty scripts/serve/golden-manifest.json
-jq empty scripts/tools/gallery-action-map.json
+python3 scripts/tiles-registry.py render     # renders every runtime document
+jq empty build/registry/tiles.json
+jq empty build/registry/golden-manifest.json
+jq empty build/registry/gallery-action-map.json
 scripts/build-guests/build-all.sh --list
 scripts/build-guests/build-all.sh --check-assets --only <builderKey>
 (cd spa && npm ci && npm run build)
@@ -822,7 +834,7 @@ scripts/build-guests/build-all.sh --check-assets --only <builderKey>
 Run the builder against its own namespaced artifact. Require its checksum,
 framebuffer, input, and golden round-trip gates before registration is deployed.
 
-### 7.2 Supervised tile deployment
+### 7.2 Supervised station deployment
 
 Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
 
@@ -830,32 +842,32 @@ Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
    launcher, `tile.env.fixture`, or coldboot sidecar; prepare the gitignored
    credential separately when required;
 2. run `make tile-registry-generate`, then `make tile-registry-check`;
-3. sync the tracked tree, including the registry, generated streamhost/serve/SPA
+3. sync the tracked tree, including the registry, generated streamhost/serve/UI
    files, generated labctl declarations, and hand-managed tracked sidecars;
 4. emit with pinned machine types into scratch and pass `verify-emit`;
-5. emit/deploy the new tile directory;
+5. emit/deploy the new station directory;
 6. launch only its `qemu-streamhost.sh`, wait for `qmp.sock`, then start
    `streamhost@<tileDir>`;
 7. publish the **three** runtime documents with
    `scripts/serve-https-spa.sh manifests` (or atomically copy generated
-   `scripts/serve/tiles.json` to the live `SIGNAL_CONFIG` path,
-   `scripts/serve/webroot/gallery-manifest.json` to the live webroot, and
-   `scripts/serve/golden-manifest.json` beside the HTTPS server).
+   `emit tiles.json` to the live `SIGNAL_CONFIG` path, `emit
+   gallery-manifest.json` to the live webroot, and `emit golden-manifest.json`
+   beside the HTTPS server).
    **Do not skip the third.** Its keys are the allow-list for
    `POST /restore/<osId>` (`_restore_osids()` in
-   `scripts/serve/osgallery-https-server.py`), so a tile missing from the
+   `scripts/serve/osgallery-https-server.py`), so a station missing from the
    live copy streams perfectly while its "reset to golden" button returns
-   `404 unknown osId` — a failure that looks like a broken tile and is not.
+   `404 unknown osId` — a failure that looks like a broken station and is not.
    This doc said "the two runtime documents" until 2026-08-09 and that is
    exactly how the Commodore wave shipped with dead reset buttons;
 8. run `labctl gen` so the generated declarations are checked against the live
    runtime and observed state is added;
-9. do not rebuild the SPA for a tile that uses an existing archetype; a new
-   compiled archetype or UI/schema feature follows the coordinated SPA build and
+9. do not rebuild the UI for a station that uses an existing archetype; a new
+   compiled archetype or UI/schema feature follows the coordinated UI build and
    deploy path.
 
-Do not run the full `bring-up-all.sh` merely to test one new tile if that would
-restart unrelated guests. Once the tile is proven, run the full ordered path in
+Do not run the full `bring-up-all.sh` merely to test one new station if that would
+restart unrelated guests. Once the station is proven, run the full ordered path in
 a planned fleet-rebuild test.
 
 ### 7.2.1 Traps that make a correct fix look broken
@@ -863,17 +875,17 @@ a planned fleet-rebuild test.
 Four of these cost time on the MPF-II add. Check them before you conclude a
 change did not work.
 
-- **The tile is running an old binary.** streamhost deploys are per-tile
+- **The station is running an old binary.** streamhost deploys are per-station
   canaries: `scripts/dev/build-deploy.sh` swaps a `current` symlink under
   `/usr/local/lib/streamhost/tiles/<tile>/`, and the fleet is **not** promoted
-  automatically. A tile can therefore be running a binary that predates the knob
+  automatically. A station can therefore be running a binary that predates the knob
   you just declared in its `tile.env`. Confirm with
   `ssh lab 'readlink -f /usr/local/lib/streamhost/tiles/<tile>/current'` before
   debugging the knob.
-- **SPA changes are invisible until the bundle is deployed** to
+- **UI changes are invisible until the bundle is deployed** to
   `/data/vms/streamhost/serve/webroot/`. A local `npm run build` proves nothing
   about what the browser is loading.
-- **Tiles idle-pause with no viewer attached**, so a raw `ssh` into a bridge
+- **Stations idle-pause with no viewer attached**, so a raw `ssh` into a bridge
   guest simply hangs. `labctl` auto-resumes and is the supported path. A
   freshly-resumed VM also swallows the first characters sent to it.
 - **A silent emulator segfault reads as an X or systemd fault.** On the vic20
@@ -883,8 +895,8 @@ change did not work.
   **VICE 3.9 segfaults in `vice_banner()` whenever its stdout is not a
   terminal** (`log_helper()` hands a NULL to `strlen`), so copying mpf2's
   `exec startx … >"$HOME"/startx.log 2>&1` — correct and harmless for MAME —
-  kills a VICE tile. Leave stdout on tty1, as the stock bridge profile and the
-  c64/vic20 tiles do. A *second*, independent fault has the same signature: VICE's
+  kills a VICE station. Leave stdout on tty1, as the stock bridge profile and the
+  c64/vic20 stations do. A *second*, independent fault has the same signature: VICE's
   `make install` skips some ROM data files and the emulator segfaults with no
   output when one is missing (the C64 BASIC ROM for c64, `basic-901486-01.bin`
   for vic20). Reach for `script -qec '<cmd>' /dev/null` (a pty makes the first
@@ -929,8 +941,8 @@ Then verify in a browser, not only with curl:
 - reset restores the exact curated fixture and input works immediately after;
 - cold restart reaches the same fixture with no human action;
 - optional boot clip has audio, scrubs, and hands off without a visible seam;
-- stopping/restarting this tile by pidfile/systemd does not affect another tile;
-- no secret appears in the SPA bundle, network response, Git diff, or logs.
+- stopping/restarting this station by pidfile/systemd does not affect another station;
+- no secret appears in the UI bundle, network response, Git diff, or logs.
 
 Finally, run `make tile-registry-check`, compare the live signal and labctl
 outputs with the canonical entry, and keep the pre-change launcher+golden pair
@@ -942,24 +954,24 @@ The Solaris A/B pair records the friction the canonical registry removed.
 Before the registry landed, making two experimental streams browser-visible
 required independent edits to:
 
-- two tile directories with `tile.env` and bespoke launchers;
-- two signal rows in `scripts/serve/tiles.json` for UDP 54911/54912 and the
+- two station directories with `tile.env` and bespoke launchers;
+- two signal rows in the serve `tiles.json` for UDP 54911/54912 and the
   corresponding certificate-hash paths;
 - two bundled `OS_BINDINGS` rows in `archetypeRegistry.ts` (before the runtime
   manifest migration);
 - `labctl gen` after runtime files existed;
-- a complete SPA rebuild and deployment.
+- a complete UI rebuild and deployment.
 
 Today a registry row declares lifecycle, signal, public museum/binding data, and
 labctl capabilities. Regeneration updates those derived surfaces together; the
-two runtime JSON files can be published without rebuilding the SPA, while
-lifecycle still controls inclusion in production tile and golden manifests.
+two runtime JSON files can be published without rebuilding the UI, while
+lifecycle still controls inclusion in production station and golden manifests.
 
 The remaining friction is real but no longer duplicated registry work. The pair
 still needs hand-managed verbatim launchers/runtime sidecars and live runtime
 proof. Any registry change still needs the generated signal map copied to
-`SIGNAL_CONFIG`, `labctl gen` run after the runtime files exist, and an SPA
-rebuild because bindings/catalog data remain bundled. For a normal new tile,
+`SIGNAL_CONFIG`, `labctl gen` run after the runtime files exist, and an UI
+rebuild because bindings/catalog data remain bundled. For a normal new station,
 the repeated lineup metadata is principally one registry file plus regeneration;
 the OS-specific builder, guest doc, golden, and optional launcher/fixture remain
 authored artifacts.

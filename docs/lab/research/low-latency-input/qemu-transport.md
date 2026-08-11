@@ -11,7 +11,7 @@ research changed the lab.
 
 Build a **custom conventional-PCI `gallery-hid-pci` device in QEMU C**, with a small RAM-backed
 shared-memory BAR and one legacy level-triggered INTA interrupt. Connect streamhost to the device
-over a dedicated per-tile Unix socket implemented with QEMU's normal chardev frontend. Put
+over a dedicated per-station Unix socket implemented with QEMU's normal chardev frontend. Put
 **absolute pointer state and keyboard events in one ordered ring**. Keep exec on the existing
 TCP/serial/SSH agent channels and out of both the device ISR and this ABI.
 
@@ -37,7 +37,7 @@ infrequent control/acknowledgement; event reads are from BAR2.
 | Host can wake an ancient guest with INTx | **No interrupt** | **No in current rev-1 device**; doorbell uses MSI-X | Yes, INTA by design |
 | Extra host service | mapped file | ivshmem server + host peer | none beyond QEMU's Unix listener |
 | Production status of helper | n/a | example server is explicitly “not to be used in production” | our bounded device/backend |
-| Snapshot semantics | `master=on` required to copy memory | same, plus server/peer lifecycle | defined for the gallery golden flow |
+| Snapshot semantics | `master=on` required to copy memory | same, plus server/peer lifecycle | defined for the gallery checkpoint flow |
 | Guest ABI fit | generic shared memory only | peer IDs/vectors and three BARs | exactly one input ring and one IRQ |
 | Downstream QEMU code | none | none only if MSI-X is acceptable | isolated new device, build wiring, tests |
 | Maintenance | lowest | low QEMU patch cost, high service/guest complexity | modest recurring downstream rebase |
@@ -58,7 +58,7 @@ The apparent ivshmem advantage does not survive the fleet's interrupt requiremen
 - Doorbell also requires the ivshmem server to distribute a shared-memory fd and eventfds to peers.
   The upstream spec calls its bundled server example non-production and documents poorly designed
   protocol behavior and reconnect limitations. We would need to own a production server, ordering,
-  one namespace per tile, and a host peer. That is more operational code than a QEMU chardev.
+  one namespace per station, and a host peer. That is more operational code than a QEMU chardev.
 - Patching current ivshmem to restore a rev-1 INTx receive path and a host-friendly endpoint would
   make it downstream code anyway while retaining its irrelevant peer-ID protocol. At that point the
   custom device is smaller and its ABI is under our control.
@@ -114,9 +114,9 @@ pinned/current QEMU list. It is not an upstream allocation. QEMU's PCI-ID policy
 maintainer for a 1b36 ID and reserves unassigned values
 ([QEMU PCI IDs](https://www.qemu.org/docs/master/specs/pci-ids.html)). Therefore:
 
-- the lab ABI and all baked drivers use `1b36:0015` consistently;
+- the lab ABI and all captured drivers use `1b36:0015` consistently;
 - before proposing the device upstream or distributing it as a general product, request an official
-  ID; if a different ID is required, make that change **before** any production golden bake;
+  ID; if a different ID is required, make that change **before** any production checkpoint capture;
 - an upstream refusal is not a local technical blocker, but collision auditing is part of every
   QEMU-bump review.
 
@@ -372,7 +372,7 @@ streamhost task reconnects with bounded backoff, but does not replay old transit
 
 - **Not QMP:** QMP is a JSON machine-management protocol with greeting/capability negotiation and a
   response per ordinary command ([QMP specification](https://www.qemu.org/docs/master/interop/qmp-spec.html)).
-  This tree already uses QMP for dbus-display fd handoff, idle `stop`/`cont`, screendumps, and golden
+  This tree already uses QMP for dbus-display fd handoff, idle `stop`/`cont`, screendumps, and checkpoint
   management. A high-rate input command would add QAPI schema and JSON work, share a management
   serialization point, and complicate transient QMP-client discipline. It gives no benefit over a
   16-byte local frame.
@@ -399,7 +399,7 @@ disabled.
 
 At rollout, configure exactly one pointer/keyboard producer. Do not leave QEMU dbus keyboard or
 warpd pointer injection active alongside `gallery-hid` for the same browser events, or every event
-will be duplicated. Emergency lab tooling may still use QMP `send-key` while the normal streamhost
+will be duplicated. Emergency labhost tooling may still use QMP `send-key` while the normal streamhost
 route is stopped.
 
 ## Implementation language
@@ -442,7 +442,7 @@ contract. Each must demonstrate all of the following:
    Pause, repeat, and release-all. It may phase pointer first and leave normal QEMU keyboard enabled
    temporarily, but a production switch must not duplicate keys.
 6. Auto-load at boot, expose diagnostics, tolerate backend absence, reset cleanly, and be armed in
-   the new golden. Failure must leave the machine bootable and warpd selectable.
+   the new checkpoint. Failure must leave the machine bootable and warpd selectable.
 
 The device contract does not prove those OS input subsystems are callable at ISR level. That is the
 largest fleet feasibility risk, not PCI transport throughput.
@@ -451,14 +451,14 @@ largest fleet feasibility risk, not PCI transport throughput.
 
 The inspected launchers/manifest show that all six machines already have a conventional PCI root,
 but their interrupt environments differ. Keep every existing disk, display, audio, NIC, USB, serial,
-and CPU property during the first bake; add only the chardev and device. Existing tablet/serial/NIC
+and CPU property during the first capture; add only the chardev and device. Existing tablet/serial/NIC
 devices remain physically present for fallback even when streamhost stops routing normal input to
 them.
 
-| Tile | Grounded current set | Required addition/concern |
+| Station | Grounded current set | Required addition/concern |
 |---|---|---|
 | solariscde | `pc-i440fx-11.0`, KVM, Nehalem, std VGA, AC97, USB tablet, e1000 | `bus=pci.0,addr=0x1e`; shared INTx alongside e1000/AC97; keep tablet for fallback |
-| ninefront | generated `q35`, 2 vCPU, std VGA, HDA, PS/2, IDE, virtio-net-pci, unconditional golden | `bus=pcie.0,addr=0x1e`; no new bridge |
+| ninefront | generated `q35`, 2 vCPU, std VGA, HDA, PS/2, IDE, virtio-net-pci, unconditional checkpoint | `bus=pcie.0,addr=0x1e`; no new bridge |
 | win95 | `pc`, KVM, Pentium `-apic`, `acpi=off,usb=off,kernel-irqchip=off`, std VGA, SB16, pcnet | first pin alias to the matching `pc-i440fx-11.0`; INTA/PIC is mandatory; no MSI assumption |
 | win311 | `pc-i440fx-11.0`, TCG, Pentium, cirrus, SB16, NE2K PCI, COM1 | `pci.0:1e`; Win3.x driver and interrupt legality are a hard go/no-go |
 | os2warp | `pc`, TCG, Pentium, `acpi=off,usb=off`, cirrus, SB16, pcnet, COM1 | pin matching i440fx machine; `pci.0:1e`; preserve serial warpd fallback |
@@ -471,7 +471,7 @@ Sources are the checked-in launchers
 [OS/2](../../../../streamhost/tiles/os2warp/qemu-streamhost.sh),
 [TempleOS](../../../../streamhost/tiles/templeos/qemu-streamhost.sh)) and the
 [ninefront manifest entry](../../../../streamhost/tiles-manifest.sh). `addr=0x1e` is a proposed
-stable slot because it is away from current default devices; it is not considered final for a tile
+stable slot because it is away from current default devices; it is not considered final for a station
 until `info pci`/QMP and a cold boot prove it free on that exact machine. Record the root bus and
 slot explicitly in each emitted launcher. Never rely on QEMU auto-placement for a saved VM.
 The pinned QEMU tree's own q35 ACPI qtests attach the conventional `pci-testdev` directly to
@@ -482,15 +482,15 @@ non-hotplug endpoint
 The unversioned `pc`/`q35` aliases are another snapshot risk. QEMU's compatibility documentation
 states that compatible migration requires the same versioned machine type and hardware
 configuration ([QEMU migration compatibility](https://www.qemu.org/docs/master/devel/migration/compatibility.html)).
-Resolve each alias to the current matching `*-11.0` type as part of the same device-set re-bake;
+Resolve each alias to the current matching `*-11.0` type as part of the same device-set recapture;
 do not change chipset generation independently.
 
-### Golden/snapshot contract
+### Checkpoint/snapshot contract
 
-An old golden cannot be loaded after adding a PCI function. For each tile, work on a clone and:
+An old checkpoint cannot be loaded after adding a PCI function. For each station, work on a clone and:
 
 1. build/install the patched pve-qemu package, keep a same-version stock `.deb` rollback, and prove
-   it still loads an untouched existing golden;
+   it still loads an untouched existing checkpoint;
 2. cold-boot **without the old `-loadvm golden`** using the final explicit machine, bus, slot,
    chardev, and `gallery-hid-pci` properties;
 3. install and auto-load the guest driver; retain but disable warpd input routing;
@@ -499,7 +499,7 @@ An old golden cannot be loaded after adding a PCI function. For each tile, work 
    partial frame;
 5. save a new `golden`, relaunch the exact command line with `-loadvm golden`, then connect
    streamhost and test reset/reconnect/input;
-6. keep the pre-device disk/golden and launcher as the rollback pair.
+6. keep the pre-device disk/checkpoint and launcher as the rollback pair.
 
 The QEMU device uses a stable `VMStateDescription` name/version and a stable BAR2 RAM-region name.
 VMState contains PCI config, IRQ status/mask, epoch, sequence, and driver-ready state; BAR2 RAM is
@@ -516,7 +516,7 @@ disconnect; with no viewer there should be no producer.
 ## Coexistence with pve-qemu fast-poll
 
 This device must ship in the same pve-qemu package as the existing display fast-poll. An upstream
-binary cannot load these goldens because they contain PVE's `pbs-state`; the existing
+binary cannot load these checkpoints because they contain PVE's `pbs-state`; the existing
 [build script](../../../../scripts/provision/build-pve-qemu-fastpoll.sh) already clones the exact installed
 packaging commit, applies the complete quilt series, verifies the display patch, and builds a
 same-version `.deb`. The [patch README](../../../../streamhost/qemu-patches/README.md) records the
@@ -547,15 +547,15 @@ change. Every bump requires:
 - rebase the isolated quilt patch after PVE's last patch;
 - audit `1b36:0015` for a collision and re-run compile/qtests;
 - boot i440fx and q35 canaries under KVM and TCG;
-- load existing gallery-hid goldens, check VMState version compatibility, IRQ, socket reconnect, and
+- load existing gallery-hid checkpoints, check VMState version compatibility, IRQ, socket reconnect, and
   fast-poll;
 - retain the old patched `.deb` until fleet validation completes.
 
 The ABI and VMState names must not be casually refactored. Additive state uses VMState subsections;
 QEMU explicitly warns that changing/removing fields breaks migration compatibility
 ([VMState compatibility guidance](https://www.qemu.org/docs/master/devel/migration/main.html)). A
-routine QEMU bump should **not** require six golden re-bakes. If the old golden cannot load, that is a
-release blocker unless a deliberate migration/re-bake project is approved.
+routine QEMU bump should **not** require six checkpoint recaptures. If the old checkpoint cannot load, that is a
+release blocker unless a deliberate migration/recapture project is approved.
 
 Ivshmem would reduce this downstream rebase cost, but only after accepting MSI-X or carrying an
 INTx patch and a production server. For this fleet, the custom patch exchanges a bounded, testable
@@ -585,39 +585,39 @@ maintenance cost for much lower per-OS and operational risk.
 - Gate: under both KVM and TCG, host enqueue to observed INTA is reliable with zero lost wakeups and
   no unbounded queue/RSS growth. A process-start and live coordinated loadvm round-trip both pass.
 
-### Phase 2 — reference guest and latency proof (driver 3–5 days, bake 1 day, measure 1–2 days)
+### Phase 2 — reference guest and latency proof (driver 3–5 days, capture 1 day, measure 1–2 days)
 
 - Start with 9front or TempleOS, whichever per-OS plan proves a legal kernel injection path first.
   They have source/toolchain access and avoid the Win9x VxD uncertainty.
 - First write a diagnostic driver that enumerates/maps/IRQs and logs records without injecting.
   Stress 16-bit wrap, held buttons, E0 keys, backend reconnect, guest reset, and 256-record bursts.
-- Add pointer injection, then keyboard. Bake only after cold-boot attach and coordinated loadvm pass.
+- Add pointer injection, then keyboard. Capture only after cold-boot attach and coordinated loadvm pass.
 - Baseline current warpd first, then measure p50/p95/p99 idle and CPU-loaded input-to-frame latency
   using T2's harness. Also record ISR-to-injection time and fast-poll cadence.
 - Gate: material p95/p99 improvement under load, no regressions in clicks/drags/keys/reset, and no
   stuck state. Otherwise keep warpd and reassess BAR caching/deferred injection before more drivers.
 
-### Phase 3 — per-OS drivers and fleet bake (roughly 6–12 weeks total)
+### Phase 3 — per-OS drivers and fleet capture (roughly 6–12 weeks total)
 
 - Proceed in ascending uncertainty: 9front/TempleOS, Solaris, OS/2, Win95, Win3.11, adjusted by the
   sibling plans' evidence.
-- For each: PCI/IRQ diagnostic → pointer → buttons/wheel → keys → cold boot/autoload → cloned golden
-  → latency and load test → canary. Do not batch six unmeasured bakes.
+- For each: PCI/IRQ diagnostic → pointer → buttons/wheel → keys → cold boot/autoload → cloned checkpoint
+  → latency and load test → canary. Do not batch six unmeasured captures.
 - A single OS is no-go if its required kernel API cannot be called from ISR/deferred kernel context,
   driver install destabilizes boot/snapshots, or its measured p95/p99 does not justify maintenance.
-  Leave that tile on warpd; mixed fleet operation is supported.
+  Leave that station on warpd; mixed fleet operation is supported.
 
 ### Phase 4 — hardening and rollout (3–5 days plus observation)
 
 - Security-review socket ownership, malformed input handling, bounded queues, guest-written indices,
   and denial-of-service behavior. The device must clamp/validate every untrusted guest/host value.
-- Canary one tile through the existing same-version `.deb` rollback procedure, then one example of
+- Canary one station through the existing same-version `.deb` rollback procedure, then one example of
   each chipset/accelerator combination before the fleet.
 - Document the final device ledger in each emitted launcher and the patched-QEMU build metadata.
-- Keep current warpd artifacts and pre-device goldens until several reset/uptime cycles pass.
+- Keep current warpd artifacts and pre-device checkpoints until several reset/uptime cycles pass.
 
 Overall planning estimate is **2–3 weeks for ABI + QEMU/host/reference spike**, then **3–25 days per
-guest driver depending on OS**, plus **1 day to bake and 1–2 days to measure each**. A realistic
+guest driver depending on OS**, plus **1 day to capture and 1–2 days to measure each**. A realistic
 six-OS total is **8–14 engineer-weeks**, dominated by Windows 3.x/9x and OS/2, not by the QEMU model.
 
 ## Risks and explicit fallbacks
@@ -627,15 +627,15 @@ six-OS total is **8–14 engineer-weeks**, dominated by Windows 3.x/9x and OS/2,
 | Native input API illegal at hard IRQ priority | crash/deadlock or forced scheduling jitter | per-OS diagnostic + highest kernel deferred path; no-go if it cannot beat warpd |
 | Ancient driver cannot map/observe BAR coherently | stale indices or poor latency | 32-bit prefetchable RAM BAR, barriers, KVM/TCG stress; consider DMA only for that credible OS |
 | INTx routing/ack bug | interrupt storm or no input | explicit slot, shared ISR, W1C+recheck qtests, per-chipset canary |
-| Explicit PCI slot collides with a tile default | QEMU fails launch or topology moves | inspect `query-pci` for every final launcher and choose/freeze another slot before bake |
+| Explicit PCI slot collides with a station default | QEMU fails launch or topology moves | inspect `query-pci` for every final launcher and choose/freeze another slot before capture |
 | Socket backpressure creates stale pointer queue | rubber-band lag | latest-unsent pointer coalescer, bounded reliable queue, ring-full telemetry |
-| Snapshot crosses partial backend/event state | stuck keys or corrupt frame alignment | quiesce/disconnect before live loadvm; hello on reconnect; release-all; empty-ring bake check |
+| Snapshot crosses partial backend/event state | stuck keys or corrupt frame alignment | quiesce/disconnect before live loadvm; hello on reconnect; release-all; empty-ring capture check |
 | PCI ID is not officially allocated | future collision/upstream rejection | local fixed ID audit each bump; request allocation before external distribution |
-| Custom device breaks on QEMU bump | fleet cannot load goldens | stable VMState, qtests, pinned machine, old patched `.deb`, 0.5–5 day bump budget |
+| Custom device breaks on QEMU bump | fleet cannot load checkpoints | stable VMState, qtests, pinned machine, old patched `.deb`, 0.5–5 day bump budget |
 | Two input paths remain enabled | duplicate movement/keys | one streamhost routing switch; retain fallback installed but inactive |
 | Six-driver scope is uneconomic | long project with marginal wins | reference latency gate before difficult drivers; per-OS no-go is acceptable |
 
-The universal fallback is the current, already baked warpd path under
+The universal fallback is the current, already captured warpd path under
 [`streamhost/guest-agents`](../../../../streamhost/guest-agents/). It remains slower and more
 jitter-prone, but it is known to boot and preserves gallery availability. A failed custom transport
 must not force a fleet-wide cutover or remove that escape hatch.
@@ -647,11 +647,11 @@ The T1 implementation is complete only when all of these are true:
 - exact ABI byte-vector tests pass in C and Rust;
 - device IDs, 32-bit BARs, INTA, slot, and versioned machine are explicit;
 - qtests cover IRQ races, full/wrap, malformed socket input, reconnect, reset, and VMState;
-- the combined pve package retains PVE `pbs-state`, fast-poll, stock-deb rollback, and old-golden
+- the combined pve package retains PVE `pbs-state`, fast-poll, stock-deb rollback, and old-checkpoint
   compatibility for VMs without the new device;
-- one reference guest cold-boots, auto-loads, survives process-start and coordinated live golden
+- one reference guest cold-boots, auto-loads, survives process-start and coordinated live checkpoint
   restore, and never sticks a key/button;
 - measured p95/p99 under load materially beats that guest's warpd baseline;
 - every additional OS independently passes its own driver/toolchain/injection feasibility gate;
-- launchers and goldens carry the same final device set, while old launchers/goldens remain available
+- launchers and checkpoints carry the same final device set, while old launchers/checkpoints remain available
   for rollback.

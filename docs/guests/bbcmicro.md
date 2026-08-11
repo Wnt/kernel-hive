@@ -1,6 +1,6 @@
 # bbcmicro — Acorn BBC Micro Model B (1981)
 
-Status: **LIVE production streamhost tile** (bridge tile, `resetMode=loadvm`).
+Status: **LIVE production streamhost station** (kiosk, `resetMode=loadvm`).
 
 The machine the BBC Computer Literacy Project put in British schools, and act 1
 of the ARM story: the Acorn team that built this designed the ARM1 next, and its
@@ -12,11 +12,11 @@ MAME driver — see *The ARM angle* below for the division of labour.
 
 | | |
 |---|---|
-| Public ID / tile directory | `bbcmicro` |
+| Public ID / station directory | `bbcmicro` |
 | Slot / UDP | 129 / 54129 |
 | VMID label / bridge SSH | 232 / `127.0.0.1:5832` (key `/data/vms/bridge/bridge_key`) |
 | Emulator | MAME **0.289** driver `bbcb`, purpose-built subtarget |
-| Guest | Debian 13 (trixie) X kiosk on a thin overlay of the trixie bridge base |
+| Guest | Debian 13 (trixie) X kiosk on a thin overlay of the trixie bridge seed |
 | Archetype | `beige-tower-crt` (fallback; no bespoke Acorn archetype exists) |
 | Builder | `scripts/build-guests/tiles/bbcmicro.sh` (+ `build-mame-bbcb.sh`) |
 | Credentials | none — the machine has no login (`guest/bbcmicro` is a placeholder) |
@@ -25,8 +25,8 @@ MAME driver — see *The ARM angle* below for the division of labour.
 
 `scripts/build-guests/emulators/build-mame-bbcb.sh` builds tag **`mame0289`**
 (`f34f02505e32c1993c6a782b6814232cbfc74e36` — the newest stable tag when this
-tile was added, confirmed with `git ls-remote --tags`; the same release the mpf2
-tile ships) inside the **trixie** chroot at
+station was added, confirmed with `git ls-remote --tags`; the same release the mpf2
+station ships) inside the **trixie** chroot at
 `/data/vms/soltest/trixie-chroot`, with `SUBTARGET=bbcb
 SOURCES=src/mame/acorn`.
 
@@ -38,10 +38,10 @@ reproducible and the pin honest.
 
 Three reasons it is not simply apt's MAME:
 
-- the lab host's own `/usr/games/mame` is 0.276, and the romset here is
+- labhost's own `/usr/games/mame` is 0.276, and the romset here is
   assembled against **this** binary's `-listxml`, not against whatever the
   distro froze;
-- the bridge base's own `apt install mame` would be an unpinned suite freeze;
+- the bridge seed's own `apt install mame` would be an unpinned suite freeze;
 - MAME moves ROM requirements between versions, so a romset is only meaningful
   against **one** binary. The builder therefore asks the *shipped* binary
   (`bbcb -listxml bbcb`) which entries it wants and asserts the staged SHA-1s
@@ -85,7 +85,7 @@ Two traps paid for here on 2026-08-09:
 - **The disc interface is the dragon32 trap in reverse.** `mame bbcb` with no
   slot options fits the driver's default `fdc` slot, `acorn8271`, whose default
   BIOS is DNFS 1.20. Omitting `dnfs120.rom` does not silently give a
-  cassette-only Model B; MAME refuses the missing device ROM. This tile ships
+  cassette-only Model B; MAME refuses the missing device ROM. This station ships
   MAME's own defaults, so the banner carries the `Acorn DFS` line a
   disc-equipped Model B printed — and that is also the configuration `armeval`
   runs under.
@@ -98,7 +98,7 @@ pinned set.
 ## Device set
 
 Identical in the builder and in `streamhost/tiles/bbcmicro/qemu-streamhost.sh`
-(the launcher is the guest-visible ledger; changing it invalidates the golden):
+(the launcher is the guest-visible ledger; changing it invalidates the checkpoint):
 
 ```
 qemu-system-x86_64 -name streamhost-bbcmicro
@@ -114,8 +114,8 @@ qemu-system-x86_64 -name streamhost-bbcmicro
   -qmp unix:qmp.sock,server=on,wait=off -pidfile qemu.pid
 ```
 
-**768 MB, not the 1536 the VICE bridge tiles use.** Measured in-guest at the
-fixture with X and MAME up: `MemAvailable` 570 MB, MAME RSS 116 MB, host QEMU
+**768 MB, not the 1536 the VICE kiosks use.** Measured in-guest at the
+scene with X and MAME up: `MemAvailable` 570 MB, MAME RSS 116 MB, host QEMU
 RSS 1.06 GB. The builder asserts a 200 MB `MemAvailable` floor, so a future
 MAME that needs more fails the build rather than the exhibit.
 
@@ -127,8 +127,8 @@ bbcb -rompath /opt/bbcmicro/roms -inipath /opt/bbcmicro
      -keepaspect -nowindow -nofilter
 ```
 
-MAME runs fullscreen on the bridge base's **stock 1024×768** X root (unlike the
-VICE tiles, whose fixed SDL window forces the root down to 800×600). The BBC's
+MAME runs fullscreen on the bridge seed's **stock 1024×768** X root (unlike the
+VICE stations, whose fixed SDL window forces the root down to 800×600). The BBC's
 MODE 7 raster is 480×500 — 40×25 teletext cells of 12×20 pixels — which is the
 pixel count, not the picture's shape; `-keepaspect` reconstructs the 4:3 image
 the machine drew on a television or a Microvitec Cub.
@@ -152,11 +152,11 @@ existing `skip_warnings` UI option gates that stage, and `/opt/bbcmicro/ui.ini`
 sets it. The builder's readiness predicate **rejects a red-dominant frame**, so
 a binary rebuilt without the patch fails the build instead of shipping.
 
-## Golden fixture
+## Checkpoint scene
 
 `resetMode: loadvm`, internal qcow2 snapshot `golden`, no post-restore keys.
 
-The fixture is **the machine's own untouched power-on screen** — white teletext
+The scene is **the machine's own untouched power-on screen** — white teletext
 on black, MODE 7:
 
 ```
@@ -170,7 +170,7 @@ BASIC
 ```
 
 Nothing is typed into it and nothing is curated. That is the Plus/4 lesson
-applied before it could be repeated: a golden baked inside an application drops
+applied before it could be repeated: a checkpoint captured inside an application drops
 a visitor into the middle of something with no idea what it is or how to leave.
 Here the machine's own first screen is also the invitation — a blinking prompt
 on a machine whose entire purpose was that you programmed it.
@@ -186,7 +186,7 @@ Derived from the driver's own `PORT_CHAR` table (`src/mame/acorn/bbc_kbd.cpp`,
 the `bbc_keyboard` port) with `scripts/dev/mame-keymap.py`, not guessed.
 Thirteen characters sit on different keys from a US PC; the map is declared once
 in `registry/tiles/bbcmicro.json` (`keyboard.charMap`, mirrored to `SH_KEY_MAP`
-for labctl) and used by the SPA typist and by the builder's proof:
+for labctl) and used by the UI typist and by the builder's proof:
 
 | BBC character | send this US key |
 |---|---|
@@ -213,7 +213,7 @@ and `Mistake`.
 ### Pacing
 
 `SH_KEY_MIN_HOLD_MS=80`, `SH_KEY_MIN_GAP_MS=80`; `demoProgram.perCharMs=170`
-(the SPA typist's per-character budget must not undercut hold+gap, enforced by
+(the UI typist's per-character budget must not undercut hold+gap, enforced by
 `validate_demo_pacing`).
 
 Derivation and measurement: the BBC is a 50 Hz machine, so the frame period is
@@ -221,10 +221,10 @@ Derivation and measurement: the BBC is a 50 Hz machine, so the frame period is
 an answer — the vic20 shipped at its derived 40/40 and still lost characters to
 host scheduling stalls. Bisected here on a namespaced clone with
 `scripts/dev/emu-key-pacing-bisect.py` (see the campaign note in the guest doc
-history below), and shipped at 80/80, the same margin as the other bridge tiles
-on this box.
+history below), and shipped at 80/80, the same margin as the other kiosks
+on labhost.
 
-**This tile must run the pacing canary binary.** The shared fleet streamhost
+**This station must run the pacing canary binary.** The shared fleet streamhost
 binary does not implement `SH_KEY_MIN_HOLD_MS`; `/usr/local/lib/streamhost/tiles/bbcmicro/{current,previous}`
 point at the same build vic20/plus4/c128 use
 (`streamhost-bca88a2bed22e1ea616993995faf4379b954bb11`).
@@ -243,7 +243,7 @@ point at the same build vic20/plus4/c128 use
 
 BBC BASIC is the point of the machine, and this listing exercises the three
 translations that matter (`=`, `+`, `:`) as well as the graphics the Model B was
-bought for. The builder types exactly this listing after the bake, runs it, and
+bought for. The builder types exactly this listing after the capture, runs it, and
 asserts the lit-pixel count — a listing full of `Mistake` errors would leave the
 screen a teletext banner and fail.
 
@@ -260,21 +260,21 @@ A separate exhibit, **`armeval`** (not in this wave), shows the ARM Evaluation
 System on this same driver via `bbcb -tube arm`. The two are visibly different
 and deliberately so: plain reads `BBC Computer 32K` with a white `>`; with the
 ARM second processor it reads `ARM Second Processor 4096K` and the prompt is a
-blue `A*`. This tile's placard sets that exhibit up and does not duplicate it.
+blue `A*`. This station's placard sets that exhibit up and does not duplicate it.
 
 ## Cold boot and reset
 
-- Zero input: genuine. A cold boot reaches the same banner the golden holds —
+- Zero input: genuine. A cold boot reaches the same banner the checkpoint holds —
   see `scripts/coldboot/bbcmicro-zero-input-prep.md` and the `bbcmicro)` arm in
   `scripts/coldboot/bootrec-tiles.conf`. No clip is published.
-- Reset: `POST /restore/bbcmicro` → `loadvm golden`. The tile must appear in the
+- Reset: `POST /restore/bbcmicro` → `loadvm golden`. The station must appear in the
   live `golden-manifest.json` or that endpoint returns `404 unknown osId` while
-  the tile streams perfectly.
+  the station streams perfectly.
 
 ## Rollback
 
-Keep the launcher and the golden as an atomic pair. To roll back, restore the
+Keep the launcher and the checkpoint as an atomic pair. To roll back, restore the
 previous `overlay.qcow2` (the snapshot lives inside it) and the previous
 `qemu-streamhost.sh` together; a device-set change alone makes `-loadvm golden`
-fail. Re-baking after any launcher or X-geometry change is mandatory — otherwise
+fail. Recapturing after any launcher or X-geometry change is mandatory — otherwise
 reset restores the old layout and the fix appears not to have worked.

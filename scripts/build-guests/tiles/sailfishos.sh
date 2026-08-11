@@ -2,12 +2,12 @@
 ###############################################################################
 # build-guests/tiles/sailfishos.sh
 #
-# From-scratch, reproducible build of the Kernel Hive "Sailfish OS" tile (:8104).
+# From-scratch, reproducible build of the Kernel Hive "Sailfish OS" station (:8104).
 # Runs on a fresh Proxmox host that already has the gallery infra
 # (qemu-system-x86_64, qemu-img, qemu-nbd, socat, netpbm/pnmtopng).
 #
 # NOTE (2026-07 restructure): this is STAGE 1 of the Sailfish build chain —
-# it produces the golden sailfishos.qcow2 base image. The live :8104 tile
+# it produces the golden sailfishos.qcow2 base image. The live :8104 station
 # runs the Lipstick GUI image built by STAGE 2, sailfishos-gui.sh (Option B,
 # bochs-drm KMS — the winning approach). Run both, in that order. The losing
 # Option A (VirtualBox, sailfishos-vbox.sh) was deleted; see git history.
@@ -56,7 +56,7 @@
 #   CONFIG_MODVERSIONS=y (so a hand-built module needs matching symbol CRCs).
 #   See docs/guests/sailfish.md for the full remediation path.
 #
-#   THEREFORE this tile presents Sailfish OS as a LIVE, INTERACTIVE TEXT
+#   THEREFORE this station presents Sailfish OS as a LIVE, INTERACTIVE TEXT
 #   CONSOLE on the framebuffer (autologin root shell showing the
 #   "Sailfish OS 5.1.0.11 (Pispala)" banner) -- consistent with the gallery's
 #   other console guests (Alpine, TinyCore, FreeDOS). Verified: neko keyboard
@@ -65,7 +65,7 @@
 #
 # ---------------------------------------------------------------------------
 # WHAT THIS SCRIPT PRODUCES:
-#   /data/gallery-guests/SailfishOS/sailfishos.qcow2   <- bootable tile image
+#   /data/gallery-guests/SailfishOS/sailfishos.qcow2   <- bootable station image
 #                                                          (patched for QEMU)
 #   proof-*.png                                        <- framebuffer proof
 #
@@ -113,7 +113,7 @@ set -euo pipefail
 # ----------------------------------------------------------------------------
 GUEST_KEY="sailfishos"
 BASE="${SFOS_BASE:-/data/gallery-guests/SailfishOS}"
-IMG="${BASE}/sailfishos.qcow2" # final bootable tile image (qcow2)
+IMG="${BASE}/sailfishos.qcow2" # final bootable station image (qcow2)
 
 # Runtime handles (namespaced; unique to this guest; VMID band 980-989).
 WORK="${SFOS_WORK:-/data/sailfish-build.$$}"
@@ -292,7 +292,7 @@ snap() { # screendump framebuffer -> PNG; echoes the path
 
 # ----------------------------------------------------------------------------
 # 3. Boot headless + framebuffer-verify the interactive console.
-#    This is the EXACT arg shape the neko tile runs (see print_gallery_args).
+#    This is the EXACT arg shape the neko station runs (see print_gallery_args).
 # ----------------------------------------------------------------------------
 verify_gui() {
   stop_vm
@@ -346,7 +346,7 @@ verify_gui() {
 }
 
 # ----------------------------------------------------------------------------
-# neko-qemu / gallery tile args (emitted for reference; wired via the manifest
+# neko-qemu / gallery station args (emitted for reference; wired via the manifest
 # row in docs/guests/sailfish.md). NO OVMF (BIOS/syslinux), NO
 # launch-qemu.sh change -- only stock env vars are used.
 # ----------------------------------------------------------------------------

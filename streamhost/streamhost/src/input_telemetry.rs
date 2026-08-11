@@ -1,7 +1,7 @@
 //! Process-global pointer-input telemetry (SH_INPUT_TELEMETRY). DIAGNOSTIC ONLY.
 //!
-//! One streamhost process serves one tile, so a process-global singleton ==
-//! per-tile telemetry. It answers two questions about the server pointer path:
+//! One streamhost process serves one station, so a process-global singleton ==
+//! per-station telemetry. It answers two questions about the server pointer path:
 //!   1. Is the SERVER coalescing many move samples into one guest inject?
 //!      `batch_len > 1` proves it — the "curved drag becomes a straight LINE in
 //!      Paint" (win98se) and the "skip stale positions to cut latency" theory.
@@ -18,7 +18,7 @@
 //! Cost when OFF (default): `enabled()` is one relaxed atomic load; every timing
 //! (Instant::now) and record_* body early-returns, and the 1 s summary task is
 //! never spawned. Hot-path callers additionally gate their Instant::now on
-//! `enabled()`, so the fleet pays nothing until a tile turns telemetry on.
+//! `enabled()`, so the fleet pays nothing until a station turns telemetry on.
 
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::OnceLock;
@@ -86,7 +86,7 @@ impl InputTelemetry {
     }
 }
 
-/// Initialize the singleton from the parsed config level + tile name, and (when
+/// Initialize the singleton from the parsed config level + station name, and (when
 /// level >= 1) spawn the once-per-process 1 s summary task. Idempotent: a second
 /// call re-sets the level but leaves the already-installed singleton in place.
 pub fn init(level: u8, tile: &str) {

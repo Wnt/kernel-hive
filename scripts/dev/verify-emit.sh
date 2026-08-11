@@ -3,29 +3,29 @@
 # scripts/dev/verify-emit.sh — launcher-parity gate for the registry production roster.
 #
 # Proves that this repo's streamhost/tiles-manifest.sh + streamhost-tile.sh
-# reproduce every LIVE tile's {tile.env,qemu-streamhost.sh,x11-runtime.sh}
+# reproduce every LIVE station's {tile.env,qemu-streamhost.sh,x11-runtime.sh}
 # BYTE-FOR-BYTE,
 # modulo the whitelisted-and-justified deltas in verify-emit-allow.diffpatterns.
 # This checker is the definition of done for launcher-emit completeness: run it
-# after ANY change to the manifest, the emitter, or a tracked per-tile file.
+# after ANY change to the manifest, the emitter, or a tracked per-station file.
 #
-# What it does (the box's /data is treated as READ-ONLY; only /tmp is written):
+# What it does (labhost's /data is treated as READ-ONLY; only /tmp is written):
 #   1. rsync the repo's streamhost/{scripts,tiles,tiles-manifest.sh} to
 #      $HOST:/tmp/verify-emit.<id>/streamhost/   (NEVER into live paths)
-#   1b. copy the BOX's /data/kernel-hive/registry/local.env (if present) into
+#   1b. copy labhost's /data/kernel-hive/registry/local.env (if present) into
 #      the kit as registry/local.env, so the emitter resolves the operator's
 #      real SH_HOST_IP/SH_ADVERTISE_HOST exactly as a production emit does.
 #      Without it every tile.env diffs on the two address lines and the gate
-#      was blind (2026-08-11). No secret leaves the box: the file is copied
-#      box-side into the /tmp scratch kit the EXIT trap removes.
-#   2. on the box: tiles-manifest.sh --out-root /tmp/verify-emit.<id>/out
-#      (emits every registry production tile into the scratch dir; file CONTENTS still reference
+#      was blind (2026-08-11). No secret leaves labhost: the file is copied
+#      labhost-side into the /tmp scratch kit the EXIT trap removes.
+#   2. on labhost: tiles-manifest.sh --out-root /tmp/verify-emit.<id>/out
+#      (emits every registry production station into the scratch dir; file CONTENTS still reference
 #      the live runtime root, so a clean emit is byte-identical to live)
-#   3. per tile, per emitted file: diff LIVE (left, `<`) vs EMITTED (right,
-#      `>`). Only files the emit PRODUCED are compared — an x11 tile emits
+#   3. per station, per emitted file: diff LIVE (left, `<`) vs EMITTED (right,
+#      `>`). Only files the emit PRODUCED are compared — an x11 station emits
 #      x11-runtime.sh and no qemu-streamhost.sh, and demanding the latter
 #      used to hard-fail irix/w2kalpha on every run (NO-LIVE artifact).
-#   4. filter each diff through the whitelist and print a per-tile report:
+#   4. filter each diff through the whitelist and print a per-station report:
 #         PASS   byte-identical
 #         PASS*  differs only in whitelisted lines (intentional deltas)
 #         DIFF   unexplained delta — the gate FAILS
@@ -33,12 +33,12 @@
 # Usage:
 #   scripts/dev/verify-emit.sh [--host lab|--local] [--pin-machine] [--keep] [--verbose]
 #     --host <ssh-host>  box to verify against (default: lab)
-#     --local            run directly on the box (no second SSH hop)
+#     --local            run directly on labhost (no second SSH hop)
 #     --pin-machine      emit versioned machine types for fresh-rebuild parity
 #     --keep             keep the remote scratch dir (prints its path)
 #     --verbose          print the residual (non-whitelisted) diff lines,
-#                        and the whitelisted ones for PASS* tiles
-# Exit: 0 iff every tile is PASS or PASS*.
+#                        and the whitelisted ones for PASS* stations
+# Exit: 0 iff every station is PASS or PASS*.
 # =============================================================================
 set -u
 HOST=lab
@@ -116,7 +116,7 @@ rsync -a --delete "$REPO/streamhost/scripts" "$REPO/streamhost/tiles" \
   exit 1
 }
 
-# The operator's real addresses, from the box's own canonical checkout (see
+# The operator's real addresses, from labhost's own canonical checkout (see
 # header 1b). Absent file = placeholder emit, exactly the old blind behaviour.
 host_run "if [ -f /data/kernel-hive/registry/local.env ]; then mkdir -p $REMOTE/registry && cp /data/kernel-hive/registry/local.env $REMOTE/registry/local.env; fi"
 
@@ -145,7 +145,7 @@ else
   rsync -a "$HOST:$REMOTE/diffs/" "$LOCAL/diffs/" >/dev/null
 fi
 
-# ---- tile-set sanity -------------------------------------------------------
+# ---- station-set sanity -------------------------------------------------------
 if ! diff -q "$LOCAL/diffs/EMITTED_TILES" "$LOCAL/diffs/LIVE_TILES" >/dev/null; then
   echo "WARN: emitted tile set != live tile set:"
   diff "$LOCAL/diffs/EMITTED_TILES" "$LOCAL/diffs/LIVE_TILES" | sed 's/^/  /'
@@ -153,10 +153,10 @@ fi
 
 # ---- whitelist filter -------------------------------------------------------
 # Whitelist line format:  <tile>|<file>|<extended-regex>
-#   tile: exact tile-dir name or *      file: tile.env | qemu-streamhost.sh | *
+#   station: exact station-dir name or *      file: tile.env | qemu-streamhost.sh | *
 # The regex is matched against each diff CONTENT line INCLUDING its leading
 # "< " (live-only line) or "> " (emitted/repo-only line). Hunk headers are
-# ignored. A tile file PASSes* when every content line matches some pattern.
+# ignored. A station file PASSes* when every content line matches some pattern.
 allowed_for() { # $1=tile $2=file -> prints applicable regexes, one per line
   # split ONLY on the first two '|' — the regex field may itself contain pipes
   awk -v t="$1" -v f="$2" '
@@ -179,9 +179,9 @@ while IFS= read -r t; do
   for f in tile.env qemu-streamhost.sh x11-runtime.sh; do
     d="$LOCAL/diffs/$t--$f.diff"
     if [ ! -f "$d" ]; then
-      # No diff file = the emit did not produce this file for this tile (an
-      # x11 tile has no qemu-streamhost.sh and vice versa) — not a failure.
-      # tile.env is emitted for every tile, so its absence IS one.
+      # No diff file = the emit did not produce this file for this station (an
+      # x11 station has no qemu-streamhost.sh and vice versa) — not a failure.
+      # tile.env is emitted for every station, so its absence IS one.
       if [ "$f" = tile.env ]; then
         verdict[$f]="MISSING"
         overall_rc=1

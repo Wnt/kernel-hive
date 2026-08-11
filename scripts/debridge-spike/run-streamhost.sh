@@ -5,11 +5,11 @@
 # NOT a `streamhost@<tile>` unit on purpose. The systemd template pulls in
 # /etc/systemd/system/streamhost@.service.d/session-key.conf, which sets
 # SH_SESSION_KEY and makes every WebTransport session require a ticket minted
-# by the public-gallery gateway for a tile the gateway knows about. These arms
+# by the public-gallery gateway for a station the gateway knows about. These arms
 # are not exhibits and the gateway has never heard of them, so a probe could
 # not connect at all. Running the same binary by hand, without that drop-in, is
 # what lets the standalone probe dial the arm directly -- and it also keeps the
-# spike out of the production tiles tree entirely.
+# spike out of the production stations tree entirely.
 #
 #   usage: run-streamhost.sh <armA|armB> [start|stop|status]
 set -euo pipefail
@@ -21,11 +21,11 @@ D="$RIG/$ARM"
   echo "no such arm: $ARM" >&2
   exit 2
 }
-# WHICH BINARY. By default the arms borrow the low-traffic helenos tile's
+# WHICH BINARY. By default the arms borrow the low-traffic helenos station's
 # current release, so the rig never needs a build of its own. `$D/streamhost.bin`
 # overrides it per arm: a symlink into /usr/local/lib/streamhost/streamhost-<sha>
-# that pins THIS rig to a specific daemon without touching any tile's `current`.
-# That is the per-tile canary discipline (AGENTS.md "Building") applied to a rig
+# that pins THIS rig to a specific daemon without touching any station's `current`.
+# That is the per-station canary discipline (AGENTS.md "Building") applied to a rig
 # that has no systemd unit -- an arm needing an unreleased daemon must never be
 # a reason to promote one fleet-wide. Point BOTH arms at the same artifact: the
 # spike's premise is one binary, two display paths.

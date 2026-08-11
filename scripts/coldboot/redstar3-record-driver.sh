@@ -4,7 +4,7 @@
 # Red Star 3 occasionally ignores the persisted "do not show again" setting on a
 # true disk boot. Detect the notice from two framebuffer pixels (the red close
 # control and its grey title bar), then accept the focused dialog with Enter. No
-# credential or live-tile input is involved.
+# credential or live-station input is involved.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=bootrec-lib.sh disable=SC1091

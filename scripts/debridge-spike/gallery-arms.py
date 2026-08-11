@@ -70,7 +70,7 @@ RIG_ROOT = "/data/vms/soltest/debridge-7f3a"
 PAGE_NAME = "debridge-compare.html"
 
 # order: parked far above the lineup so these can never collide with a real
-# tile's binding order (the SPA rejects a manifest with duplicate orders).
+# station's binding order (the UI rejects a manifest with duplicate orders).
 ARMS = (
     {
         "dir": "armA",

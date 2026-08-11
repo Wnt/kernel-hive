@@ -10,13 +10,13 @@
 #
 # WHY THE CONSOLE AND NOT AN ISO.  /etc/inittab ships `t1:23:respawn:...getty
 # ttyd1 console`, so an IRIX login prompt is sitting on serial port 1 from the
-# moment the tile boots, with an empty root password. That is the whole
+# moment the station boots, with an empty root password. That is the whole
 # bootstrap: no CD image, no key matrix (whose natkeyboard path silently drops
 # every shifted character), no pointer work. Host->guest is byte-clean once the
 # getty's echo is off; guest->host is not, which is why nothing here reads the
 # console back — verification goes through the agent, on the OTHER port.
 #
-# Runs ON the box. Touches only /data/vms/soltest/irix-serial/<name>.
+# Runs ON labhost. Touches only /data/vms/soltest/irix-serial/<name>.
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -166,7 +166,7 @@ log "agent answered"
 
 # The single-instance guard is an flock the agent holds for its whole life (a pid
 # lock is not enough: the write is not atomic and the boot pid is deterministic,
-# so a stale pid frozen into a golden would disable the agent for ever). The
+# so a stale pid frozen into a checkpoint would disable the agent for ever). The
 # agent falls back to a pid test if flock is missing — assert here that it does
 # not have to, because that fallback is the weak one.
 have="$("$RIG" exec "$NAME" "perl -e 'open(F,\">/var/tmp/.flockprobe\"); print flock(F,2) ? \"FLOCK-OK\" : \"FLOCK-NO\"'")"

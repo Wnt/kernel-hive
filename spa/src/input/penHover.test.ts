@@ -1,5 +1,5 @@
-// Unit coverage for the PURE S-Pen hover gate (T-5): rel tiles drop pen hover
-// outright; abs tiles throttle it; button-down / non-pen moves are never gated.
+// Unit coverage for the PURE S-Pen hover gate (T-5): rel stations drop pen hover
+// outright; abs stations throttle it; button-down / non-pen moves are never gated.
 import { describe, expect, it } from 'vitest';
 import { allowPenHover } from './penHover';
 

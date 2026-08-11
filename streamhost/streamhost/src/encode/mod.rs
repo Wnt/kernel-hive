@@ -32,7 +32,7 @@
 // SH_ENC_THREADS / --enc-threads knob (0 = auto = min(4, cores)).
 //
 // NEW: DEDICATED ENCODE THREAD. The encode-latency investigation showed
-// x264_encoder_encode costs ~1 ms CPU at tile resolutions but ~11-13 ms WALL
+// x264_encoder_encode costs ~1 ms CPU at station resolutions but ~11-13 ms WALL
 // when run synchronously on the shared Nice=5 tokio runtime serving the whole
 // fleet — pure OS-scheduling preemption (the old ffmpeg CHILD never showed it
 // because a process is its own scheduling entity). Conversion + encode now run
@@ -77,7 +77,7 @@ pub struct Au {
     pub frame_id: u32,
 }
 
-/// Static (per-tile) encoder configuration threaded from Config into the
+/// Static (per-station) encoder configuration threaded from Config into the
 /// capture->encode loop. The ABR TIER (a dynamic index into the ladder) is held
 /// separately in `EncoderOut::tier`; these are the invariants the ladder is built
 /// on top of.
@@ -287,7 +287,7 @@ impl EncoderOut {
 /// joiners is carried entirely by the key_req kick: transport subscribes
 /// FIRST, then request_keyframe() wakes the loop (event-driven Notify) and the
 /// next fed frame is a forced IDR (`answered_key_req` at the feed site), so a
-/// fresh join on a long-idle tile still gets decodable video within ~1 frame.
+/// fresh join on a long-idle station still gets decodable video within ~1 frame.
 /// The cached `last_key` primer may be stale after an unwatched gap — same
 /// class of staleness as the old <=heartbeat window, just longer; the forced
 /// IDR replaces it immediately.

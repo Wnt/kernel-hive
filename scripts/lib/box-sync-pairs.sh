@@ -4,7 +4,7 @@
 #
 # This was the pair table inside verify-box-sync.sh. It is a library now for a
 # concrete reason: on 2026-08-10 the orchestrator hand-scp'd drifting files to
-# the box FOUR times in one day, because the detector could say DIFFERS and
+# labhost FOUR times in one day, because the detector could say DIFFERS and
 # nothing could say "push it". Splitting the DECLARATION from the DETECTOR lets
 # the reconcile half (scripts/dev/box-sync-push.sh) read exactly the same rows,
 # the same secret guard and the same scrub map that the gate reads — so a pair
@@ -12,7 +12,7 @@
 #
 # Every row carries FOUR facts, not two:
 #
-#   mode       exact | scrub    — is the box copy deployed VERBATIM, or with the
+#   mode       exact | scrub    — is the labhost copy deployed VERBATIM, or with the
 #                                 operator's real host/gallery names substituted
 #                                 in for this repo's scrubbed placeholders?
 #   authority  repo | box       — which side is the source of truth. scripts/
@@ -20,10 +20,10 @@
 #                                 authoritative for source, the box for
 #                                 generated/live artifacts"; it was prose, and a
 #                                 tool cannot read prose. Pushing a generated
-#                                 artifact back at the box overwrites the thing
+#                                 artifact back at labhost overwrites the thing
 #                                 that generated it, so this is not a hint.
 #   post       none | daemon-reload
-#                                 what the box needs told after the bytes land.
+#                                 what labhost needs told after the bytes land.
 #                                 Deliberately NOT "restart the service": that
 #                                 is a human decision about a live exhibit, and
 #                                 a sync tool that restarts things is a sync
@@ -35,14 +35,14 @@
 # public hostnames (AGENTS.md "Placeholder values"):
 #
 #   BOX_SYNC_CANON_PROG    `${KEY:-placeholder}` -> placeholder   (placeholders only)
-#   BOX_SYNC_REVERSE_PROG  real -> placeholder, then canon        (box copy -> repo form)
-#   BOX_SYNC_FORWARD_PROG  canon, then placeholder -> real        (repo copy -> box form)
+#   BOX_SYNC_REVERSE_PROG  real -> placeholder, then canon        (labhost copy -> repo form)
+#   BOX_SYNC_FORWARD_PROG  canon, then placeholder -> real        (repo copy -> labhost form)
 #
 # CANON FIRST in the forward program is load-bearing: substitute the bare
 # placeholder first and `${SH_HOST_IP:-192.0.2.10}` becomes
 # `${SH_HOST_IP:-<real>}`, which the canon rule no longer matches, and the
 # deployed file ends up with a shell fallback wrapped around a real address
-# instead of the flat value the box expects. Reverse then canon is the mirror
+# instead of the flat value labhost expects. Reverse then canon is the mirror
 # of that and is what the gate has always done.
 #
 # With no registry/local.env, BOX_SYNC_SCRUB_READY stays 0. The gate reports
@@ -120,7 +120,7 @@ box_sync_add_pair() {
 }
 
 # box_sync_load_pairs <repo> <box-root> <lab> <tmpdir>
-# Three of the trees are unions discovered on the box, so this makes exactly two
+# Three of the trees are unions discovered on labhost, so this makes exactly two
 # read-only ssh round trips (find, find). Everything else is declared here.
 box_sync_load_pairs() {
   local REPO="$1" BOX_ROOT="$2" LAB="$3" tmpdir="$4" name rel path
@@ -131,15 +131,19 @@ box_sync_load_pairs() {
   box_sync_add_pair xvfb-alloc scripts/lib/xvfb-alloc.sh /usr/local/bin/xvfb-alloc exact repo
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
   box_sync_add_pair gen-tiles-json scripts/gen_tiles_json.py /root/gen_tiles_json.py exact repo
-  for name in clientcmd.sh gen-local-ca.sh osgallery-https-server.py reset-tile.sh install-https-service.sh; do
+  # gen-local-ca.sh deploys with the operator's real hostname substituted in
+  # (discovered 2026-08-11 when the writer's reverse-scrub check refused the
+  # row): scrub, not exact, or a push writes a placeholder over it.
+  for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
-  # The rest of the deployed serving plane. These were live on the box with NO
+  box_sync_add_pair serve/gen-local-ca.sh scripts/serve/gen-local-ca.sh "$BOX_ROOT/serve/gen-local-ca.sh" scrub repo
+  # The rest of the deployed serving plane. These were live on labhost with NO
   # pair for months, so a drifted copy was invisible: check-stream-tickets.py and
   # pen-trace.py are both named in AGENTS.md's debugging table as the thing you
-  # run when a tile will not connect or a pen feels wrong, reset-auth.sh is the
+  # run when a station will not connect or a pen feels wrong, reset-auth.sh is the
   # guarded path for the account database that must never be rm'd, and the
-  # requirements pair is what decides whether the box venv matches the repo.
+  # requirements pair is what decides whether the labhost venv matches the repo.
   for name in check-stream-tickets.py pen-trace.py reset-auth.sh sync-venv.sh \
     test-clientlog.sh requirements.in requirements.txt; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
@@ -152,21 +156,35 @@ box_sync_load_pairs() {
     [ -n "$rel" ] || continue
     box_sync_add_pair "serve/${rel#scripts/serve/}" "$rel" "$BOX_ROOT/serve/${rel#scripts/serve/}" exact repo
   done < <(git -C "$REPO" ls-files 'scripts/serve/auth/*' 'scripts/serve/authui/*' | sort)
-  # The generated manifest the SPA fetches at runtime to build the grid. It had
-  # no pair, which meant a deployed manifest could differ from the generated one
-  # and nothing would say so — and on 2026-08-10 exactly that was done on
-  # purpose, to hide one tile from the grid during a measurement campaign. A
-  # deliberate override is fine; an INVISIBLE one is not, so it is a pair now and
+  # The manifest the UI fetches at runtime to build the grid. It had no pair,
+  # which meant a deployed manifest could differ from the generated one and
+  # nothing would say so — and on 2026-08-10 exactly that was done on purpose,
+  # to hide one station from the grid during a measurement campaign. A
+  # deliberate override is fine; an INVISIBLE one is not, so it is a pair and
   # shows as DIFFERS until the override is reverted.
+  #
+  # The repo side of all four runtime documents is RENDERED, not committed
+  # (tiles-registry.py rendered()), so render them here: each pair then compares
+  # the deployed bytes against what the registry says right now, which is the
+  # only comparison worth making.
+  python3 "$REPO/scripts/tiles-registry.py" render --out "$REPO/build/registry" >/dev/null ||
+    {
+      echo "box-sync: render failed (registry does not validate)" >&2
+      return 1
+    }
   box_sync_add_pair serve/webroot/gallery-manifest.json \
-    scripts/serve/webroot/gallery-manifest.json \
+    build/registry/gallery-manifest.json \
     "$BOX_ROOT/serve/webroot/gallery-manifest.json" exact repo
-  # The live signaling registry and golden manifest are maintained ON the box;
-  # the repo carries committed REFERENCE copies (scripts/README.md). Pushing the
-  # reference at the live file is backwards, so they are box-authoritative and
-  # the push path refuses them by name, pointing at harvest.sh.
-  box_sync_add_pair serve/tiles.json scripts/serve/tiles.json "$BOX_ROOT/serve/tiles.json" exact box
-  box_sync_add_pair serve/golden-manifest.json scripts/serve/golden-manifest.json "$BOX_ROOT/serve/golden-manifest.json" exact box
+  box_sync_add_pair serve/webroot/poster-docs.json \
+    build/registry/poster-docs.json \
+    "$BOX_ROOT/serve/webroot/poster-docs.json" exact repo
+  # The live signaling registry and golden manifest are rendered from the
+  # registry too. They stay box-AUTHORITATIVE so the push path keeps refusing
+  # them: a live SIGNAL_CONFIG and the reset allow-list are replaced by
+  # `serve-https-spa.sh manifests`, deliberately and atomically, never as a
+  # side effect of a file sync.
+  box_sync_add_pair serve/tiles.json build/registry/tiles.json "$BOX_ROOT/serve/tiles.json" exact box
+  box_sync_add_pair serve/golden-manifest.json build/registry/golden-manifest.json "$BOX_ROOT/serve/golden-manifest.json" exact box
   # The serving plane is deployed WITH the operator's real host/gallery names
   # substituted in (scripts/serve/restart-https.sh's SIGNAL_HOST default and the
   # unit's SIGNAL_HOST/PUBLIC_HOST Environment= lines), so these three compare
@@ -184,7 +202,9 @@ box_sync_load_pairs() {
   box_sync_add_pair irix-mctl streamhost/guest-agents/irix/mctl.py /root/mctl.py exact repo
   box_sync_add_pair qmp-hmp scripts/qmp_hmp.py /root/qmp_hmp.py exact repo
   box_sync_add_pair shmshot scripts/shmshot.py /root/shmshot.py exact repo
-  box_sync_add_pair mobile-netem scripts/dev/mobile-netem.sh /usr/local/bin/mobile-netem exact repo
+  # Deployed with a real address baked in (same 2026-08-11 discovery as
+  # serve/gen-local-ca.sh): scrub keeps the live value on push.
+  box_sync_add_pair mobile-netem scripts/dev/mobile-netem.sh /usr/local/bin/mobile-netem scrub repo
   box_sync_add_pair amiga-coldboot-watch scripts/coldboot/amiga-coldboot-watch.sh /usr/local/bin/amiga-coldboot-watch.sh exact repo
   box_sync_add_pair streamhost-unit streamhost/deploy/streamhost@.service /etc/systemd/system/streamhost@.service exact repo daemon-reload
   box_sync_add_pair amiga-coldboot-unit streamhost/deploy/amiga-coldboot-watch.service /etc/systemd/system/amiga-coldboot-watch.service exact repo daemon-reload
@@ -192,7 +212,7 @@ box_sync_load_pairs() {
   box_sync_add_pair sailfish-seriald streamhost/tiles/sailfishos/seriald.py "$BOX_ROOT/tiles/sailfishos/seriald.py" exact repo
 
   # The live labctl matrix is harvested into the committed reference sample:
-  # `labctl gen` writes the box copy, so the box is the source of truth.
+  # `labctl gen` writes the labhost copy, so labhost is the source of truth.
   box_sync_add_pair tiles-json scripts/tiles.json.sample "$BOX_ROOT/tiles.json" exact box
 
   # build-deploy.sh's workspace/source mirror, expanded file-by-file. AGENTS.md
@@ -211,7 +231,7 @@ box_sync_load_pairs() {
     box_sync_add_pair "src/$rel" "streamhost/streamhost/src/$rel" "$BOX_ROOT/build/streamhost/src/$rel" exact repo
   done <"$tmpdir/src-union"
 
-  # Only verbatim, tracked launchers of LIVE tiles are box-authored mirror pairs.
+  # Only verbatim, tracked launchers of LIVE stations are box-authored mirror pairs.
   # Generic launchers are checked by verify-emit.sh; the tracked soltest-*
   # launchers are clone/experiment scaffolds that run out of /data/vms/soltest/,
   # never out of $BOX_ROOT/tiles, so they have no box counterpart by design.
@@ -224,8 +244,8 @@ box_sync_load_pairs() {
   # Registry tree union: box-only and repo-only allowed files must be visible as
   # MISSING rather than silently omitted. "Allowed source files" is the same
   # filter on BOTH sides (README.md, *.json, *.in, minus registry/posters/) — the
-  # poster prose and its image-candidate research feed the SPA build only, and the
-  # gitignored local.env is operator-local; neither is part of the box mirror.
+  # poster prose and its image-candidate research feed the UI build only, and the
+  # gitignored local.env is operator-local; neither is part of the labhost mirror.
   git -C "$REPO" ls-files 'registry/**' | sed 's#^registry/##' |
     grep -E '(^|/)README\.md$|\.json$|\.in$' | grep -v '^posters/' | sort >"$tmpdir/registry-repo"
   ssh -o ConnectTimeout=15 "$LAB" \
@@ -249,7 +269,7 @@ box_sync_load_pairs() {
 #                  { "kind": "json-object-keys" | "json-entries",
 #                    "ids": ["row-id", ...] } } }
 #
-# The gate compares the box copy WITH THE DECLARED IDS REMOVED against the repo
+# The gate compares the labhost copy WITH THE DECLARED IDS REMOVED against the repo
 # copy, both reduced to one canonical JSON form: the declared rows become
 # invisible, and any OTHER divergence in the same file still fails. The
 # declaration is the claim and the filtered hash is the proof — a declaration
@@ -269,7 +289,7 @@ declare -A BOX_SYNC_DL_NAMES=() BOX_SYNC_DL_MD5=() BOX_SYNC_DL_FOUND=()
 # md5 column carrying ERROR:<why> when the declaration cannot be proven. The
 # canonical form MUST stay byte-identical to box_sync_canon_json_md5 below —
 # the two halves only ever meet as hashes.
-# shellcheck disable=SC2016  # REMOTE script; $vars must reach the box unexpanded
+# shellcheck disable=SC2016  # REMOTE script; $vars must reach labhost unexpanded
 BOX_SYNC_REMOTE_DARKLAUNCH='
 IFS= read -r DLDIR
 export DLDIR

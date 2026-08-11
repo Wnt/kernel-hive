@@ -33,7 +33,7 @@
 // QEMU InputButton order: left=0 middle=1 right=2 wheel-up=3 wheel-down=4.
 // Absolute pointer (type 1) needs the guest to bind usb-tablet (Windows/ReactOS/
 // evdev-Linux). Guests whose X only reads relative /dev/input/mice use type 4.
-// Touch (type 6) needs `-device virtio-multitouch-pci` (or usb) for phone tiles.
+// Touch (type 6) needs `-device virtio-multitouch-pci` (or usb) for phone stations.
 
 use std::sync::Arc;
 
@@ -64,7 +64,7 @@ pub struct MouseState {
     /// Last absolute position actually applied, so a button's CARRIED point is
     /// only injected when it says something new. In the common case the move
     /// datagram already won the race and the click costs nothing extra — which
-    /// matters on the paced warpd tiles, where a redundant motion command would
+    /// matters on the paced warpd stations, where a redundant motion command would
     /// delay the very click it was meant to place.
     last_abs: Option<(u32, u32)>,
 }
@@ -103,7 +103,7 @@ fn calibrated_abs(x: u32, y: u32, off_x: i32, off_y: i32, scale: f64) -> (i32, i
     (xf.max(0), yf.max(0))
 }
 
-/// Absolute inject with per-guest tablet-origin calibration (FIX 3). Most tiles
+/// Absolute inject with per-guest tablet-origin calibration (FIX 3). Most stations
 /// use identity (scale=1.0, off=0).
 pub async fn set_abs(cap: &Capture, x: u32, y: u32, off_x: i32, off_y: i32, scale: f64) {
     let Some(conn) = cap.main_conn.as_ref() else {
@@ -151,7 +151,7 @@ const REL_STEP_PACE_MS: u64 = 16;
 /// pin is ~65 packets and takes the better part of a second to arrive. Anything
 /// sent during that drain is queued BEHIND it and merges into one enormous
 /// negative motion — which is how the pin came to swallow the first target whole
-/// on the Xerox Star tile: the Star cursor parked in the corner while the
+/// on the Xerox Star station: the Star cursor parked in the corner while the
 /// daemon's model believed it was at the target, a fixed offset for the rest of
 /// the session, i.e. exactly what the pin exists to prevent.
 const HOME_PIN: i32 = 2048;
@@ -201,7 +201,7 @@ fn rel_chunks(dx: i32, dy: i32) -> Vec<(i32, i32)> {
 
 /// Send a relative pointer delta SAFELY: chunk it (<=256 px/axis) and pace the
 /// chunks so QEMU's PS/2 per-send clamp can never truncate a large/fast move (the
-/// QNX / rel-tile fix). A small delta is one un-paced send == `rel_motion`, so the
+/// QNX / rel-station fix). A small delta is one un-paced send == `rel_motion`, so the
 /// pointer-lock direct-rel (type=4) small-delta path stays exactly 1:1.
 pub async fn rel_motion_bounded(cap: &Capture, dx: i32, dy: i32) {
     let chunks = rel_chunks(dx, dy);
@@ -295,7 +295,7 @@ pub async fn touch(cap: &Capture, kind: u32, slot: u64, x: f64, y: f64) {
 
 /// Handle one binary input record from the browser.
 ///
-/// `cfg` carries the tile's pointer mode + cursor calibration; `mouse` is the
+/// `cfg` carries the station's pointer mode + cursor calibration; `mouse` is the
 /// per-session abs->rel state shared across the datagram and reliable tasks.
 /// Apply an ABSOLUTE pointer position, however it arrived: as a move record of
 /// its own, or carried on a button edge. One body so a click's position and a
@@ -351,7 +351,7 @@ async fn apply_move_abs(
         .await
     } else {
         // FIX 2: Rel (PS/2, no usb-tablet) guests: convert abs -> relative delta.
-        // FIX 4: HOME on seed. The guest cursor after a (golden) reset sits at
+        // FIX 4: HOME on seed. The guest cursor after a (checkpoint) reset sits at
         // an UNKNOWN position, but naively seeding lx/ly to the first client
         // target assumes the guest cursor already matches it — leaving a fixed
         // offset that confines the cursor to a sub-rectangle (audited: win95/
@@ -382,7 +382,7 @@ async fn apply_move_abs(
                 // target as an ordinary delta.
                 //
                 // Sending the walk from inside this same handler is what broke
-                // the Xerox Star tile: pointer MOVES ride unreliable datagrams
+                // the Xerox Star station: pointer MOVES ride unreliable datagrams
                 // and are handled concurrently, so the pin, the seed walk and
                 // the next few deltas raced through the PS/2 queue and the guest
                 // observed only their merged, hugely negative sum. The cursor
@@ -404,7 +404,7 @@ async fn apply_move_abs(
         };
         // Route the homing delta through the bounded/paced sender so a
         // large seed jump (origin -> target) or a fast drag never hits
-        // the PS/2 per-send clamp and truncates (the rel-tile fix). A
+        // the PS/2 per-send clamp and truncates (the rel-station fix). A
         // (0,0) delta yields no send, so this is a no-op when idle.
         rel_motion_bounded(cap, dx, dy).await;
     }
@@ -458,7 +458,7 @@ pub async fn handle(
             // a click is worse than anything it fixes), but it must not rewind
             // the cursor to where the pointer used to be.
             //
-            // Skipped for warpd hybrid tiles: their motion rides the agent
+            // Skipped for warpd hybrid stations: their motion rides the agent
             // channel, the button plane is pure PS/2 and never carries a point,
             // and feeding one here would re-arm the very button-guard below.
             let carried = if rec.len() >= 11 {
@@ -519,7 +519,7 @@ pub async fn handle(
                 if let Some((x, y, _, _)) = at {
                     apply_move_abs(cap, cfg, mouse, router, x, y).await;
                 }
-                // Hybrid warpd tiles (SH_WARPD_BUTTONS=qemu): MOTION rides the (possibly
+                // Hybrid warpd stations (SH_WARPD_BUTTONS=qemu): MOTION rides the (possibly
                 // slow serial) agent channel while BUTTONS ride the instant PS/2 path —
                 // two channels with no ordering. During a drag the press/release would
                 // land BEFORE the queued motion reaches the guest, collapsing the drag
@@ -545,11 +545,11 @@ pub async fn handle(
         }
         3 if rec.len() >= 4 => {
             let down = rec[1] != 0;
-            // The per-tile remap rewrites the WIRE code first, so every backend
+            // The per-station remap rewrites the WIRE code first, so every backend
             // below (and key_qnum's legacy-kbd quirk) sees the key the emulated
             // hardware actually has.
             let code = remap_key(u16::from_le_bytes([rec[2], rec[3]]) as u32, &cfg.key_remap);
-            // mamecmd/mamesock (the IRIX tile) have no D-Bus connection at all —
+            // mamecmd/mamesock (the IRIX station) have no D-Bus connection at all —
             // Capture.main_conn is None for every non-QEMU backend, which is
             // exactly why browser keys had never reached that guest. Route it to
             // the key matrix instead (the Lua agent's command file, or the same
@@ -569,7 +569,7 @@ pub async fn handle(
             key(cap, code, down, cfg).await;
         }
         // type=4 DIRECT relative (pointer-lock movementX/Y): NO homing/corner-pin.
-        // The SPA pointer-lock sends small per-event deltas that reach the guest
+        // The UI pointer-lock sends small per-event deltas that reach the guest
         // 1:1; routing through the bounded sender keeps that exact 1:1 for small
         // deltas (single un-paced send) while still chunking an occasional large
         // batched delta so it can't truncate.

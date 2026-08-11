@@ -1,4 +1,4 @@
-# HelenOS tile — absolute pointer (USB HID tablet)
+# HelenOS station — absolute pointer (USB HID tablet)
 
 HelenOS 0.14.1 "Aladar" (ia32 LiveCD, VMID 99, `-cpu qemu32`, intel-hda audio).
 
@@ -24,22 +24,22 @@ and routes to the tablet.
    - abs(6400,29866) → cursor at pixel (200,700). ✅
    Perfect 1:1, both axes. UHCI is the mature path in the HelenOS stack; EHCI/
    xHCI were not needed.
-2. **Live** — same result on the daemon-managed tile: abs(20800,21333) →
+2. **Live** — same result on the daemon-managed station: abs(20800,21333) →
    cursor (650,500), captured with `labctl shot`.
 
-## Golden re-bake (device-set change)
+## Checkpoint recapture (device-set change)
 
 Adding `usb-tablet` changes the migration device set, so the `golden` snapshot
-was re-baked with the tablet present:
+was recaptured with the tablet present:
 
-- Backed up the pre-tablet golden → `golden.qcow2.bak-pretablet`.
+- Backed up the pre-tablet checkpoint → `golden.qcow2.bak-pretablet`.
 - Cold-booted the (edited) live launcher from the ISO, let the compositor +
-  Terminal fixture come up, parked the cursor on the Terminal title bar via the
+  Terminal scene come up, parked the cursor on the Terminal title bar via the
   tablet (abs(9600,597)), then `delvm golden; savevm golden`.
 - Verified `loadvm golden` restores cleanly (STOP/RESUME, `return ""`) — device
   set matches — and snaps the cursor back to the parked title-bar position.
 
-The daemon issues `loadvm golden` on attach (`SH_RESET_MODE=loadvm`); the fixture
+The daemon issues `loadvm golden` on attach (`SH_RESET_MODE=loadvm`); the scene
 (focused Bdsh Terminal at prompt, cursor parked on the title bar, taskbar clock
 masked) is unchanged apart from the parked-cursor pose.
 
@@ -49,7 +49,7 @@ masked) is unchanged apart from the parked-cursor pose.
 -usb -device usb-tablet \
 ```
 inserted between the intel-hda audio devices and the `-drive` line. Everything
-else (machine `pc`, `qemu32`, `-vga std`, dbus display/audio, IDE golden disk,
+else (machine `pc`, `qemu32`, `-vga std`, dbus display/audio, IDE checkpoint disk,
 ISO `-boot d`) is unchanged.
 
 ## Rollback

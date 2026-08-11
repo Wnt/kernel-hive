@@ -5,7 +5,7 @@
 // Coordinates are built from a CSS point through a guest/CSS SCALE, the way the
 // real letterbox map produces them. That is the point of the whole file: the
 // thresholds live in CSS px, so the same physical gesture must behave the same
-// on a 1288-wide IRIX tile and a 640-wide DOS one.
+// on a 1288-wide IRIX station and a 640-wide DOS one.
 import { describe, expect, it } from 'vitest';
 import { createTapQuantiser, TAP, type TapPoint } from './tapQuantiser';
 
@@ -52,9 +52,9 @@ describe('tap quantiser — a tap is a point', () => {
 });
 
 // THE 2026-08-05 FIX. The thresholds used to be in guest px, so an identical
-// hand movement was judged 3.13x more harshly on IRIX than on a 1:1 tile — the
+// hand movement was judged 3.13x more harshly on IRIX than on a 1:1 station — the
 // same code was usable on win311 and unusable on IRIX purely because of the
-// tile's resolution. Nothing about a hand changes with the guest's resolution.
+// station's resolution. Nothing about a hand changes with the guest's resolution.
 describe('tap quantiser — thresholds are physical, not per-tile', () => {
   const wobble = (scale: number) => {
     const q = createTapQuantiser();
@@ -67,8 +67,8 @@ describe('tap quantiser — thresholds are physical, not per-tile', () => {
   it('treats one gesture identically on a 3.13x tile and a 1:1 one', () => {
     for (const scale of [IRIX, 2.5, 1]) {
       const r = wobble(scale);
-      expect(r.fwd).toBe(false); // swallowed on every tile…
-      expect(r.up.tapped).toBe(true); // …and still a tap on every tile
+      expect(r.fwd).toBe(false); // swallowed on every station…
+      expect(r.up.tapped).toBe(true); // …and still a tap on every station
       expect(r.up).toEqual({ x: r.press.x, y: r.press.y, tapped: true });
     }
   });

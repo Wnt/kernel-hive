@@ -1,12 +1,12 @@
 # Solaris gallery-hid spike runbook
 
-Status: Stages A-C PASS, Stage D PARTIAL, and VMState/golden-resume PASS;
+Status: Stages A-C PASS, Stage D PARTIAL, and VMState/checkpoint-resume PASS;
 captured 2026-07-15--16 on labhost.
 
 This is the reproducible handoff for the standalone QEMU transport and Solaris
-driver work. Early stages do not install QEMU, change a live tile, or load a
+driver work. Early stages do not install QEMU, change a live station, or load a
 saved VM state; the final section records the isolated clone-only VMState and
-golden-resume proof.
+checkpoint-resume proof.
 
 ## Fixed paths and identities
 
@@ -75,8 +75,8 @@ adds and passes a fifth save/load test; parser fuzzing remains follow-up work.
 
 ## Clone and launch
 
-The Stage-A disk was made with a plain independent copy of the tile-local
-golden.  Never point the scratch QEMU at the source image:
+The Stage-A disk was made with a plain independent copy of the station-local
+checkpoint.  Never point the scratch QEMU at the source image:
 
     D=/data/vms/soltest/lli/spike-solaris-a
     L=/data/vms/streamhost/tiles/solaris
@@ -120,10 +120,10 @@ source programmatically and do not print it.  The final framebuffer proof is:
 
     /data/vms/soltest/lli/spike-solaris-a/cde-proven.png
 
-It visibly shows the 1920x1200 CDE desktop and fixture dtterm.  The earlier
+It visibly shows the 1920x1200 CDE desktop and scene dtterm.  The earlier
 boot and dtlogin evidence is in framebuffer.png and framebuffer-2.png.
 
-ImageMagick is not installed on this box.  Convert a QMP PPM screendump with
+ImageMagick is not installed on labhost.  Convert a QMP PPM screendump with
 the available ffmpeg instead:
 
     ffmpeg -loglevel error -y -i "$D/framebuffer.ppm" "$D/framebuffer.png"
@@ -599,7 +599,7 @@ Pointer`, `ZAxisMapping: buttons 4 and 5`, and XINPUT registration of
 
 ### Full-screen framebuffer proof
 
-The final proof injected normalized points with box-side `ghid-inject`, waited
+The final proof injected normalized points with labhost-side `ghid-inject`, waited
 for Xorg to consume each event, queried X's root pointer with
 `xquery-pointer`, then took a QMP `screendump` and converted the PPM with
 `pnmtopng`. The exact results are saved in:
@@ -628,7 +628,7 @@ and both right corners reached x=1919.
 
 ### Button drag and wheel proof
 
-The final press/move/release proof selected text in the fixture dtterm. It
+The final press/move/release proof selected text in the scene dtterm. It
 moved from normalized 2732,6012 (pixel 160,220) to 7342,12298 (pixel
 430,450). X reported mask `0x100` while held and `0x0` after release; the
 selected region is visibly inverted in the held and after frames:
@@ -697,8 +697,8 @@ reporting `GalleryMouse: Protocol: VUID` and `GalleryMouse: Core Pointer`:
     /data/vms/streamhost/tiles/soltest-ghid/cert-coldboot-2-final/cde-gallerymouse.png
     /data/vms/streamhost/tiles/soltest-ghid/cert-coldboot-2-final/guest-verification.txt
 
-The deployed test tile sets `SH_IDLE_PAUSE_SECS=0`; its 60-second default
-pause otherwise freezes the 1--2 minute Solaris cold boot before dtlogin.
+The deployed test station sets `SH_IDLE_PAUSE_SECS=0`; its 60-second default
+pause otherwise pauses the 1--2 minute Solaris cold boot before dtlogin.
 The systemd tile reached a 1920x1200 D-Bus scanout and listened on UDP 54912.
 
 The final functional proof sent streamhost warpd verbs to
@@ -813,11 +813,11 @@ none is invented here. This makes the remeasurement PARTIAL, while the native
 path's latency verdict itself is a clear FAIL. Raw native JSONL, metadata,
 audits, counters, and the invalid warpd attempts are under
 `/data/vms/streamhost/tiles/soltest-ghid/native-sink/measure/`.
-## VMState and clone golden-resume proof
+## VMState and clone checkpoint-resume proof
 
 Status: **PASS**, captured 2026-07-16 on `labhost`. The live `solariscde`
-tile was not modified or restarted by this work; its warpd-backed QEMU stayed
-running. All installation, baking, and restore testing used the isolated clone:
+station was not modified or restarted by this work; its warpd-backed QEMU stayed
+running. All installation, capturing, and restore testing used the isolated clone:
 
     /data/vms/soltest/ghid-vmstate-codex
 
@@ -865,11 +865,11 @@ then reconnects, re-arms, and publishes the next sequence. TAP is:
 
     /data/vms/soltest/ghid-vmstate-codex/qtests-vmstate.tap
 
-### Reproducible bake
+### Reproducible capture
 
 Use the checked-in clone-only helper after the desktop is settled. First send
 `RELEASE_ALL` plus a button-zero pointer snapshot, wait for X to report mask
-zero, and close the gallery socket. The helper independently refuses live tile
+zero, and close the gallery socket. The helper independently refuses live station
 paths, verifies the pidfile uses a disk below the clone, rejects an established
 gallery backend, reads BAR0/BAR2 through QMP, and requires an empty ring,
 matching armed epoch, driver-ready, all IRQs enabled, and no pending cause:
@@ -882,7 +882,7 @@ matching armed epoch, driver-ready, all IRQs enabled, and no pending cause:
 
 The installed clone reported `galleryhid` in `modinfo` and `prtconf -D`,
 `/dev/gallerymouse` present, and Xorg logged VUID/CorePointer registration.
-Immediately before the actual bake, BAR2 producer and consumer were both 20,
+Immediately before the actual capture, BAR2 producer and consumer were both 20,
 `last_epoch` equalled epoch 10, X button mask was zero, and the backend was
 closed. `savevm golden` completed in 1.808 seconds.
 
@@ -921,9 +921,9 @@ logs, and selected instant/held/final framebuffer PNGs are retained at:
 ### Immediate promotion handoff
 
 Do not cold-boot production. The next session promotes the proven launcher,
-standalone QEMU, driver/Xorg state, and `golden` to the live `solariscde` tile
+standalone QEMU, driver/Xorg state, and `golden` to the live `solariscde` station
 through the normal clone-to-production procedure. Keep warpd installed and
 available as fallback until the production framebuffer, reconnect, corners,
 click, and resize-drag pass. Then remove the `soltest` clones and add the
 registry-owned `HW input` grid badge; never hand-edit generated
-`tiles-manifest.sh`. Do not deploy the SPA during that handoff.
+`tiles-manifest.sh`. Do not deploy the UI during that handoff.

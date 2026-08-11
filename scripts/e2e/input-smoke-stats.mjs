@@ -1,4 +1,4 @@
-// Open a tile (arg1, default FreeDOS), open the Stats HUD, dump innerText +
+// Open a station (arg1, default FreeDOS), open the Stats HUD, dump innerText +
 // console + a stream-<video> probe. Screenshots go to ~/e2e/shots/ with a
 // timestamp (a fixed filename used to EACCES-collide with stale root-owned
 // files in a shared scratchpad).
@@ -29,7 +29,7 @@ await page.waitForTimeout(6000);
 try { await page.getByText(/Stats/i).first().click({ timeout: 3000 }); }
 catch (e) { logs.push(`[stats-click] ${e}`.slice(0, 200)); await page.keyboard.press('Control+n'); }
 await page.waitForTimeout(6000);
-// Stream health: the SPA renders a <video> fed from an offscreen canvas via
+// Stream health: the UI renders a <video> fed from an offscreen canvas via
 // captureStream — probe the video element, not document canvases.
 const vids = await page.evaluate(() => {
   const out = [];

@@ -46,7 +46,7 @@ fn guard_poll_step(cur_kb: u64, low_kb: u64, thresh_kb: u64) -> (u64, bool) {
 ///   * backlog trip: the recycle freed the queued frames, `after` lands back
 ///     near the old low — baseline effectively unchanged, guard stays armed;
 ///   * legitimate guest-RAM growth (RAM fault-in after an early-boot attach,
-///     -m 3072 tiles, `loadvm golden` restoring a full RAM image): the recycle
+///     -m 3072 stations, `loadvm golden` restoring a full RAM image): the recycle
 ///     frees ~nothing, `after ≈ cur` — the baseline moves UP so the guard
 ///     measures only NEW growth from here, instead of re-tripping against a
 ///     stale low every debounce interval forever.
@@ -68,7 +68,7 @@ fn rebaseline_low(prev_low_kb: u64, after_kb: Option<u64>) -> u64 {
 /// sub-second capture gap — instead of a cgroup OOM kill of the guest.
 /// The low-water mark is rebaselined from a fresh read after every recycle
 /// (see `rebaseline_low`), so legitimate guest-RAM growth trips at most once
-/// and the 2048 MB default is safe even for -m 3072 tiles.
+/// and the 2048 MB default is safe even for -m 3072 stations.
 pub(super) async fn rss_guard(
     qmp_path: String,
     main_conn: zbus::Connection,
@@ -117,10 +117,10 @@ pub(super) async fn rss_guard(
     );
     loop {
         tokio::time::sleep(std::time::Duration::from_secs(3)).await;
-        // Re-read the pidfile every poll: `labctl reset`/tile restarts can
+        // Re-read the pidfile every poll: `labctl reset`/station restarts can
         // replace QEMU under us. A changed pid means the old baseline is
         // meaningless — re-baseline from a fresh read. A vanished pidfile or
-        // /proc entry means the tile is being torn down: stop the guard
+        // /proc entry means the station is being torn down: stop the guard
         // cleanly, never trip against a dead/unrelated pid.
         match read_pidfile(&pidfile) {
             None => {
@@ -247,7 +247,7 @@ mod tests {
 
     #[test]
     fn ram_fault_in_rebaselines_up_no_trip_storm() {
-        // serenityos attach-during-early-boot / -m 3072 tiles / loadvm golden:
+        // serenityos attach-during-early-boot / -m 3072 stations / loadvm golden:
         // low-water was captured tiny, guest RAM legitimately faults in.
         let low0 = 200 * MB;
         let (low, trip) = guard_poll_step(2900 * MB, low0, THRESH);

@@ -1,7 +1,7 @@
 # Bridge guest base: bookworm → trixie, one tile at a time
 
 The lab **host** finished bookworm → trixie on 2026-07-15 and now runs Debian
-13.6. The **guests** did not come with it. The shared emulator-bridge base
+13.6. The **guests** did not come with it. The shared emulator-bridge seed
 `/data/vms/bridge/bridge-base.qcow2` is still Debian 12 (bookworm, glibc 2.36),
 and **18 tile overlays back onto it read-only** (28 before waves 1 and 4). That is the
 whole problem in one sentence: the base is not a package set you upgrade, it is
@@ -295,9 +295,11 @@ that make the migration real rather than declared.
      longer mirrors them)
 
    Then `make tile-registry-generate`. **Never hand-edit the generated files** —
-   `registry/index.json`, `scripts/serve/webroot/gallery-manifest.json`,
-   `scripts/serve/webroot/poster-docs.json` and the rest are outputs. `make
-   tile-registry-check` is the gate and it goes red on any of these.
+   `streamhost/tiles-manifest.sh`, `spa/src/data/keyboards.ts` and the rest
+   are outputs. `make tile-registry-check` is the gate and it goes red
+   on any of these. The public lineup the visitor sees is rendered on demand
+   (`tiles-registry.py render`), so a `.museum.notes` edit reaches the gallery
+   with `serve-https-spa.sh manifests` and no rebuild.
 6. **Flip the ledger in the same commit** as steps 2–5. A commit that flips the
    ledger without the rebuild, or rebuilds without the flip, produces drift that
    `bridge-suite-status.sh` will find later, out of context, with nobody who
