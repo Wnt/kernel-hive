@@ -8,7 +8,6 @@
       {
         "order": 19,
         "prelude": "",
-        "line": "  \"postmarketos|tiles/postmarketos-fixture.sh |postmarketOS|heavy|~12-25m |full   |pmos-phosh.qcow2 + OVMF vars + golden\"\n",
         "value": {
           "key": "postmarketos",
           "script": "tiles/postmarketos-fixture.sh",
@@ -68,11 +67,9 @@
     "signalOrder": 23,
     "tilesManifestOrder": 23,
     "tilesManifestPrelude": "\n# postmarketos (VMID 103) — *** UEFI (OVMF pflash) + PORTRAIT 720x1440 ***\n#   q35, intel-hda; xhci usb-tablet + usb-kbd; AHCI disk. VERBATIM LAUNCHER:\n#   golden fixture — boots the qcow2 disk pmos-phosh.qcow2 (NO snapshot=on) +\n#   a WRITABLE qcow2 UEFI varstore (OVMF_VARS.qcow2); conditional\n#   -loadvm golden (logged-in phosh desktop, PIN auto-typed at bake time).\n#   PRE-REQ (this manifest performs it, see the pre-seed step at the bottom):\n#   seed the varstore once —\n#       qemu-img convert -f raw -O qcow2 \\\n#         /usr/share/pve-edk2-firmware/OVMF_VARS_4M.fd \\\n#         /data/vms/streamhost/tiles/postmarketos/OVMF_VARS.qcow2\n#   The guest (phosh) drives the 720x1440 portrait mode; the streamhost daemon\n#   must be (re)started only AFTER that resolution settles (bring-up-all.sh\n#   step 5 handles it).\n",
-    "tilesManifestInvocation": "emit postmarketos \\\n  --tile postmarketos --vmid 103 --udp 54103 --pointer abs --audio on --fps 60 \\\n  --launcher-file \"$T/postmarketos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/postmarketos/tile.env.fixture\"\n",
     "bringUpGroup": 5,
     "bindingOrder": 17,
     "bindingPrelude": "",
-    "bindingLine": "  postmarketos:{ osId: 'postmarketos',archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#008b4b', eraLabel: '2017 · postmarketOS' },\n",
     "goldenOrder": 16,
     "actionMapOrder": 18
   },

@@ -8,7 +8,6 @@
       {
         "order": 37,
         "prelude": "",
-        "line": "  \"c128         |tiles/c128.sh                 |bridge/c128     |retro    |~3-5m   |full   |tiles/c128 overlay + golden (VICE x128 → 80-col BASIC V7.0, CP/M in drive 8)\"\n",
         "value": {
           "key": "c128",
           "script": "tiles/c128.sh",
@@ -49,8 +48,6 @@
     "goldenOrder": 36,
     "bringUpGroup": 6,
     "signalOrder": 38,
-    "tilesManifestInvocation": "emit c128 \\\n  --tile c128 --vmid 223 --udp 54087 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/c128/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/c128/tile.env.fixture\"\n",
-    "bindingLine": "  c128:        { osId: 'c128', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7FD4C1', eraLabel: '1985 · C128 (80-column BASIC 7.0 · CP/M 3.0)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

@@ -8,7 +8,6 @@
       {
         "order": 42,
         "prelude": "",
-        "line": "  \"gt40         |tiles/gt40.sh                 |bridge/gt40     |retro    |~5-8m   |full   |tiles/gt40 overlay + golden (Open SIMH pdp11 VT11 → Lunar Lander)\"\n",
         "value": {
           "key": "gt40",
           "script": "tiles/gt40.sh",
@@ -45,8 +44,6 @@
     "goldenOrder": 41,
     "bringUpGroup": 6,
     "signalOrder": 43,
-    "tilesManifestInvocation": "emit gt40 \\\n  --tile gt40 --vmid 228 --udp 54125 --pointer abs --cursor-scale 1.0 \\\n  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 --launcher-file \\\n  \"$T/gt40/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/gt40/tile.env.fixture\"\n",
-    "bindingLine": "  gt40:        { osId: 'gt40', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#3BE84B', eraLabel: '1973 · GT40 (VT11 vector, light pen)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

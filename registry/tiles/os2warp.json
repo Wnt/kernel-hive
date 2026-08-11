@@ -8,7 +8,6 @@
       {
         "order": 17,
         "prelude": "",
-        "line": "  \"os2warp     |tiles/os2warp.sh              |OS2Warp     |retro    |~20-30m |full   |os2.qcow2 (Warp 4 prebuilt + first-boot taming; TCG)\"\n",
         "value": {
           "key": "os2warp",
           "script": "tiles/os2warp.sh",
@@ -68,11 +67,9 @@
     "signalOrder": 20,
     "tilesManifestOrder": 18,
     "tilesManifestPrelude": "\n# os2warp (VMID 108) — *** TCG ONLY *** (OS/2 Warp 4 will NOT boot under KVM).\n#   pc,acpi=off,usb=off, -cpu pentium, std VGA, sb16, pcnet NIC, PS/2. VERBATIM\n#   LAUNCHER: COM1 serial chardev (serial.sock) + conditional -loadvm golden\n#   (no -snapshot — savevm/loadvm persist; the OS/2 register nag never returns).\n# DISPLAY: Warp 4.52 (MCP2) + IBM GENGRADD at 1024x768x64k on -vga std.\n#   -global VGA.vgamem_mb=2 is LOAD-BEARING: GENPMI's mode tables hold 64 VESA\n#   modes and SeaVGABIOS reports 93 at the 16 MB default, overflowing them\n#   (trap c0000005 at display init). 2 MB trims the list to 46. See\n#   docs/guests/os2warp.md.\n# POINTER: in-guest warpd agent (guest-agents/os2/warpd_os2.c -> C:\\WARPD.EXE,\n#   PM WinSetPointerPos, Y-flipped) over COM1. Critical enablers: DosDevIOCtl\n#   SET_DCBINFO forcing MODE_NOWAIT_READ_TIMEOUT, a PM message queue, and\n#   MouSetPtrPos mirroring each warp into OS/2's native mouse subsystem. Buttons\n#   ride the real QEMU PS/2 device (--warpd-buttons qemu) for PM capture, frame\n#   sizing, menus, and double-clicks; the 80ms guard orders serial motion first.\n",
-    "tilesManifestInvocation": "emit os2warp \\\n  --tile os2warp --vmid 108 --udp 54108 --pointer warpd \\\n  --warpd-addr unix:/data/vms/streamhost/tiles/os2warp/serial.sock \\\n  --warpd-buttons qemu --warpd-wheel agent --warpd-pace-ms 8 \\\n  --warpd-button-delay-ms 80 --audio on --fps 30 \\\n  --launcher-file \"$T/os2warp/qemu-streamhost.sh\"\n",
     "bringUpGroup": 4,
     "bindingOrder": 22,
     "bindingPrelude": "",
-    "bindingLine": "  os2warp:     { osId: 'os2warp',      archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#1e5aa8', eraLabel: '1996 · OS/2 Warp 4', bootVideo: '/boot/os2warp/boot.mp4' },\n",
     "goldenOrder": 20,
     "actionMapOrder": 23
   },

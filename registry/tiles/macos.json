@@ -9,8 +9,7 @@
   "operator": {},
   "render": {
     "bindingOrder": 32,
-    "bindingPrelude": "\n  // ---- macos — SHOWCASE poster. VM 925 (the macOS guest) was destroyed\n  // 2026-07-14 along with its VNC->WebSocket bridge (ws :8115 / wss :8116), so\n  // there is nothing to connect to; poster + placard only, no connection attempt.\n",
-    "bindingLine": "  macos:       { osId: 'macos',       archetypeId: 'apple-studio',    transport: 'showcase',    accentColor: '#a0a0a8', eraLabel: '2024 · macOS Sequoia' },\n"
+    "bindingPrelude": "\n  // ---- macos — SHOWCASE poster. VM 925 (the macOS guest) was destroyed\n  // 2026-07-14 along with its VNC->WebSocket bridge (ws :8115 / wss :8116), so\n  // there is nothing to connect to; poster + placard only, no connection attempt.\n"
   },
   "lifecycle": "showcase",
   "stream": {

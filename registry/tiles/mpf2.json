@@ -8,7 +8,6 @@
       {
         "order": 34,
         "prelude": "",
-        "line": "  \"mpf2         |tiles/mpf2.sh                 |bridge/mpf2     |retro    |~3-5m   |full   |tiles/mpf2 cold-boot overlay (MAME mpf2 → Applesoft BASIC)\"\n",
         "value": {
           "key": "mpf2",
           "script": "tiles/mpf2.sh",
@@ -47,11 +46,9 @@
     "signalOrder": 34,
     "tilesManifestOrder": 32,
     "tilesManifestPrelude": "\n# mpf2 (VMID 220) — MAME mpf2 (Multitech Microprofessor II, 1982) -> Applesoft BASIC. ssh 5820. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit mpf2 \\\n  --tile mpf2 --vmid 220 --udp 54124 --pointer none --input-backend disabled \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/mpf2/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/mpf2/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 39,
     "bindingPrelude": "",
-    "bindingLine": "  mpf2:        { osId: 'mpf2',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#8B4513', eraLabel: '1982 · MPF-II BASIC' },\n",
     "goldenOrder": 32
   },
   "tileDir": "mpf2",

@@ -10,7 +10,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"oricatmos   |tiles/oricatmos.sh            |bridge/oricatmos|retro    |~4-8m   |full   |tiles/oricatmos overlay + golden (MAME 0.289 orica → Oric Extended BASIC V1.1)\"\n",
         "value": {
           "key": "oricatmos",
           "script": "tiles/oricatmos.sh",
@@ -51,8 +50,6 @@
     "goldenOrder": 47,
     "bringUpGroup": 6,
     "signalOrder": 49,
-    "tilesManifestInvocation": "emit oricatmos \\\n  --tile oricatmos --vmid 234 --udp 54131 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/oricatmos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/oricatmos/tile.env.fixture\"\n",
-    "bindingLine": "  oricatmos:   { osId: 'oricatmos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8402F', eraLabel: '1984 · Oric Atmos (Extended BASIC V1.1)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

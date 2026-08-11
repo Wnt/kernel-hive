@@ -8,7 +8,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"sinclairql   |tiles/sinclairql.sh           |bridge/sinclairql|retro    |~8-12m  |full   |tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)\"\n",
         "value": {
           "key": "sinclairql",
           "script": "tiles/sinclairql.sh",
@@ -45,8 +44,6 @@
     "goldenOrder": 49,
     "bringUpGroup": 6,
     "signalOrder": 51,
-    "tilesManifestInvocation": "emit sinclairql \\\n  --tile sinclairql --vmid 236 --udp 54133 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/sinclairql/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/sinclairql/tile.env.fixture\"\n",
-    "bindingLine": "  sinclairql:  { osId: 'sinclairql', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2EE65A', eraLabel: '1984 · Sinclair QL (QDOS · SuperBASIC)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

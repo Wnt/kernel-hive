@@ -8,7 +8,6 @@
       {
         "order": 32,
         "prelude": "",
-        "line": "  \"nt351       |tiles/nt351.sh                |Nt351         |installed|~15-30m |partial |nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)\"\n",
         "value": {
           "key": "nt351",
           "script": "tiles/nt351.sh",
@@ -65,11 +64,9 @@
     "signalOrder": 32,
     "tilesManifestOrder": 30,
     "tilesManifestPrelude": "\n# nt351 (VMID 83) — Windows NT Workstation 3.51 on the ISA-only machine.\n#   TCG/486/64 MiB, 480 MiB FAT16 IDE disk, ISA Cirrus, SB16, NE2000 at\n#   0x300/IRQ9. VERBATIM launcher with conditional -loadvm golden. The disk is\n#   deliberately below the legacy 504 MiB CHS boundary: a 1 GiB install reaches\n#   the desktop during Setup but cannot cold-boot through isapc's 16-head BIOS.\n# DISPLAY: accelerated Cirrus 1024x768x65536 colors (16bpp). The launcher pins\n#   /opt/qemu-cirrusfix with patch 0004-cirrus-blt-rop1-fill.patch; the stock\n#   QEMU drops source-independent row fills and corrupts scroll/window redraws.\n#   Rebuild the pinned binary whenever the packaged QEMU version changes.\n#   Program Manager and Main are maximized; dirty -> loadvm restores cleanly.\n# POINTER: NT reads only the relative PS/2 mouse. Streamhost receives absolute\n#   browser coordinates, homes the relative guest at an edge, then applies the\n#   measured cursor_scale for 1:1 tracking. Recalibrate after a resolution or\n#   mouse-control-panel change.\n",
-    "tilesManifestInvocation": "emit nt351 \\\n  --tile nt351 --vmid 83 --udp 54083 --pointer abs --input-backend dbus-rel \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 \\\n  --launcher-file \"$T/nt351/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/nt351/tile.env.fixture\"\n",
     "bringUpGroup": 3,
     "bindingOrder": 13,
     "bindingPrelude": "",
-    "bindingLine": "  nt351:       { osId: 'nt351',       archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#3a6ea5', eraLabel: '1995 · Windows NT 3.51' },\n",
     "goldenOrder": 30,
     "actionMapOrder": 4
   },

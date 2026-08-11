@@ -8,7 +8,6 @@
       {
         "order": 58,
         "prelude": "",
-        "line": "  \"alto         |tiles/alto.sh                 |bridge/alto     |retro    |~12-18m |full   |tiles/alto overlay + golden (ContrAlto 2 Alto II XM -> Alto Executive)\"\n",
         "value": {
           "key": "alto",
           "script": "tiles/alto.sh",
@@ -45,8 +44,6 @@
     "goldenOrder": 52,
     "bringUpGroup": 6,
     "signalOrder": 54,
-    "tilesManifestInvocation": "emit alto \\\n  --tile alto --vmid 243 --udp 54137 --pointer abs --cursor-scale 1.0 \\\n  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 --launcher-file \\\n  \"$T/alto/qemu-streamhost.sh\" --env-append-file \"$T/alto/tile.env.fixture\"\n",
-    "bindingLine": "  alto:        { osId: 'alto', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#9FE3EA', eraLabel: '1973 · Alto II XM (portrait page display)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

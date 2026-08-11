@@ -10,7 +10,6 @@
       {
         "order": 46,
         "prelude": "",
-        "line": "  \"armeval     |tiles/armeval.sh     |bridge/armeval  |retro    |~12-18m |full   |tiles/armeval overlay + golden (MAME 0.289 bbcb -tube arm → ARM BBC Basic V 1.00)\"\n",
         "value": {
           "key": "armeval",
           "script": "tiles/armeval.sh",
@@ -51,8 +50,6 @@
     "goldenOrder": 51,
     "bringUpGroup": 6,
     "signalOrder": 53,
-    "tilesManifestInvocation": "emit armeval \\\n  --tile armeval --vmid 238 --udp 54135 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/armeval/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/armeval/tile.env.fixture\"\n",
-    "bindingLine": "  armeval:     { osId: 'armeval', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#0000FF', eraLabel: '1986 · ARM Evaluation System (ARM BBC Basic V)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

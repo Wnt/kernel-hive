@@ -8,7 +8,6 @@
       {
         "order": 45,
         "prelude": "",
-        "line": "  \"dragon32     |tiles/dragon32.sh             |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)\"\n",
         "value": {
           "key": "dragon32",
           "script": "tiles/dragon32.sh",
@@ -47,11 +46,9 @@
     "signalOrder": 48,
     "tilesManifestOrder": 46,
     "tilesManifestPrelude": "\n# dragon32 (VMID 233) — MAME dragon32 -ext \"\" (Dragon 32, PAL, 1982) -> Microsoft Extended Color BASIC. ssh 5833. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit dragon32 \\\n  --tile dragon32 --vmid 233 --udp 54130 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/dragon32/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/dragon32/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 52,
     "bindingPrelude": "",
-    "bindingLine": "  dragon32:    { osId: 'dragon32', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#30D200', eraLabel: '1982 · Dragon 32 (Microsoft BASIC)' },\n",
     "goldenOrder": 46
   },
   "tileDir": "dragon32",

@@ -27,11 +27,9 @@
     "signalOrder": 57,
     "tilesManifestOrder": 55,
     "tilesManifestPrelude": "\n# w2kalpha — x11 RUNTIME tile, NOT QEMU. es40 (AlphaServer ES40, fork Wnt/es40)\n#   cold-booting Windows 2000 RC2 build 2128 for Alpha AXP with NO window and\n#   NO X server (SDL_VIDEODRIVER=dummy), captured from the framebuffer es40\n#   publishes itself: SH_CAPTURE=shm (src/gui/shmfb.h) + mamesock input (es40\n#   ctlsock mamectl/1, src/gui/ctlsock.h). No SH_QMP; large media staged under\n#   /data/vms/streamhost/assets/w2kalpha (es40 fork binary + golden nt.img).\n",
-    "tilesManifestInvocation": "emit w2kalpha \\\n  --tile w2kalpha --udp 54140 --x11 --x11-display :41 --capture shm \\\n  --pointer abs --input-backend mamesock --audio off --fps 30 \\\n  --x11-runtime-file \"$T/w2kalpha/x11-runtime.sh\" \\\n  --aux-file \"$T/w2kalpha/pumps.py\" \\\n  --env-append-file \"$T/w2kalpha/tile.env.fixture\"\n",
     "bringUpGroup": 7,
     "bindingOrder": 62,
     "bindingPrelude": "",
-    "bindingLine": "  w2kalpha:    { osId: 'w2kalpha',    archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#862633', eraLabel: '1999 · Windows 2000 RC2 — Alpha AXP' },\n",
     "goldenOrder": 55
   },
   "tileDir": "w2kalpha",

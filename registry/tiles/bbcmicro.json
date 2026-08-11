@@ -10,7 +10,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"bbcmicro    |tiles/bbcmicro.sh             |bridge/bbcmicro |retro    |~6-10m  |full   |tiles/bbcmicro overlay + golden (MAME 0.289 bbcb → BBC BASIC II)\"\n",
         "value": {
           "key": "bbcmicro",
           "script": "tiles/bbcmicro.sh",
@@ -49,11 +48,9 @@
     "signalOrder": 47,
     "tilesManifestOrder": 45,
     "tilesManifestPrelude": "\n# bbcmicro (VMID 232) — MAME 0.289 bbcb (Acorn BBC Micro Model B, 1981) -> BBC BASIC II. ssh 5832. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit bbcmicro \\\n  --tile bbcmicro --vmid 232 --udp 54129 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/bbcmicro/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/bbcmicro/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 51,
     "bindingPrelude": "",
-    "bindingLine": "  bbcmicro:    { osId: 'bbcmicro', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8442F', eraLabel: '1981 · BBC Micro Model B (BBC BASIC II)' },\n",
     "goldenOrder": 45
   },
   "stream": {

@@ -10,7 +10,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"nextstep    |tiles/nextstep.sh             |bridge/nextstep|graphical|~25-40m |full   |tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)\"\n",
         "value": {
           "key": "nextstep",
           "script": "tiles/nextstep.sh",
@@ -47,8 +46,6 @@
     "goldenOrder": 50,
     "bringUpGroup": 6,
     "signalOrder": 52,
-    "tilesManifestInvocation": "emit nextstep \\\n  --tile nextstep --vmid 237 --udp 54134 --pointer abs --input-backend dbus-abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/nextstep/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/nextstep/tile.env.fixture\"\n",
-    "bindingLine": "  nextstep:    { osId: 'nextstep', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#8C8C8C', eraLabel: '1995 · NeXTSTEP 3.3 (NeXTcube)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

@@ -27,11 +27,9 @@
     "signalOrder": 34,
     "tilesManifestOrder": 32,
     "tilesManifestPrelude": "\n# irix — x11 RUNTIME tile (issue #20), NOT QEMU. MAME(indy_4610) booting\n#   SGI IRIX 6.5 with NO window and NO X server (-video none), captured from\n#   the framebuffer it publishes: SH_CAPTURE=shm + mamesock input (mamectl\n#   OSD module ctl.sock, issue #45; irixagent.lua stays deployed as the\n#   IRIX_CTL=off deep-rollback arm).\n#   No SH_QMP; large media staged by tiles/irix/fetch-assets.sh.\n",
-    "tilesManifestInvocation": "emit irix \\\n  --tile irix --udp 54122 --x11 --x11-display :40 --capture shm \\\n  --pointer abs --input-backend mamesock --audio off --fps 30 \\\n  --x11-runtime-file \"$T/irix/x11-runtime.sh\" \\\n  --aux-file \"$T/irix/irixagent.lua\" \\\n  --aux-file \"$T/irix/fbstat.py\" \\\n  --aux-file \"$T/irix/tapnet.sh\" \\\n  --env-append-file \"$T/irix/tile.env.fixture\"\n",
     "bringUpGroup": 7,
     "bindingOrder": 38,
     "bindingPrelude": "",
-    "bindingLine": "  irix:        { osId: 'irix',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#5B8FA8', eraLabel: '1993 · SGI Indy — IRIX 6.5', bootVideo: '/boot/irix/boot.mp4' },\n",
     "goldenOrder": 32
   },
   "tileDir": "irix",

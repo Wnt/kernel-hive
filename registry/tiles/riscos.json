@@ -9,8 +9,7 @@
   "operator": {},
   "render": {
     "bindingOrder": 31,
-    "bindingPrelude": "\n  // ---- riscos — SHOWCASE poster. RISC OS is ARM (the old tile streamed RPCEmu\n  // through the now-deleted neko plane at :8111), so it has no QEMU streamhost\n  // tile yet; poster + placard only, no connection attempt. // ideal: Acorn RiscPC\n",
-    "bindingLine": "  riscos:      { osId: 'riscos',      archetypeId: 'beige-tower-crt', transport: 'showcase',    accentColor: '#4a7c3a', eraLabel: '2022 · RISC OS 5.30' },\n"
+    "bindingPrelude": "\n  // ---- riscos — SHOWCASE poster. RISC OS is ARM (the old tile streamed RPCEmu\n  // through the now-deleted neko plane at :8111), so it has no QEMU streamhost\n  // tile yet; poster + placard only, no connection attempt. // ideal: Acorn RiscPC\n"
   },
   "lifecycle": "showcase",
   "stream": {

@@ -8,7 +8,6 @@
       {
         "order": 31,
         "prelude": "",
-        "line": "  \"redstar3    |tiles/redstar3.sh             |RedStar3    |retro    |~15-30m |vision |redstar3.qcow2|media\"\n",
         "value": {
           "key": "redstar3",
           "script": "tiles/redstar3.sh",
@@ -72,11 +71,9 @@
     "signalOrder": 31,
     "tilesManifestOrder": 29,
     "tilesManifestPrelude": "\n# redstar3 (VMID 121) — private Red Star OS 3.0 Desktop preservation tile.\n#   KVM/i440fx, stable Nehalem CPU, std VGA (Xorg vesa + ShadowFB, 1920x1080),\n#   IDE, USB tablet, no audio.\n#   -nodefaults is mandatory: it prevents QEMU's implicit e1000; zero guest NICs.\n",
-    "tilesManifestInvocation": "emit redstar3 \\\n  --tile redstar3 --vmid 121 --udp 54121 --pointer abs --audio off --fps 30 \\\n  --input-dev usb --mem 1024 --smp 1 --machine pc-i440fx-11.0 --cpu Nehalem,kvm=off --vga std \\\n  --disk-raw \"-drive file=/data/gallery-guests/RedStar3/redstar3.qcow2,format=qcow2,if=ide,index=0,media=disk -drive if=ide,index=2,media=cdrom\" \\\n  --boot c --extra \"-nodefaults\" \\\n  --env-append-file \"$T/redstar3/tile.env.fixture\" \\\n  --loadvm-launch /data/gallery-guests/RedStar3/redstar3.qcow2\n",
     "bringUpGroup": 2,
     "bindingOrder": 34,
     "bindingPrelude": "",
-    "bindingLine": "  redstar3:    { osId: 'redstar3',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#b3202a', eraLabel: '2013 · Red Star OS 3.0', bootVideo: '/boot/redstar3/boot.mp4' },\n",
     "goldenOrder": 29,
     "actionMapOrder": 27
   },

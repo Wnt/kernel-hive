@@ -10,7 +10,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"kc854       |tiles/kc854.sh                |bridge/kc854    |retro    |~6-10m  |full   |tiles/kc854 overlay + golden (MAME kc85_4 → CAOS 4.2)\"\n",
         "value": {
           "key": "kc854",
           "script": "tiles/kc854.sh",
@@ -51,8 +50,6 @@
     "goldenOrder": 48,
     "bringUpGroup": 6,
     "signalOrder": 50,
-    "tilesManifestInvocation": "emit kc854 \\\n  --tile kc854 --vmid 235 --udp 54132 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/kc854/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/kc854/tile.env.fixture\"\n",
-    "bindingLine": "  kc854:       { osId: 'kc854', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3FD8D0', eraLabel: '1988 · KC 85/4 (CAOS 4.2)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

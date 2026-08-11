@@ -8,7 +8,6 @@
       {
         "order": 36,
         "prelude": "",
-        "line": "  \"plus4        |tiles/plus4.sh                |bridge/plus4    |retro    |~2-4m   |full   |tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)\"\n",
         "value": {
           "key": "plus4",
           "script": "tiles/plus4.sh",
@@ -47,11 +46,9 @@
     "signalOrder": 37,
     "tilesManifestOrder": 35,
     "tilesManifestPrelude": "\n# plus4 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit plus4 \\\n  --tile plus4 --vmid 222 --udp 54086 --pointer none --input-backend disabled \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/plus4/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/plus4/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 41,
     "bindingPrelude": "",
-    "bindingLine": "  plus4:       { osId: 'plus4',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#C2CF5F', eraLabel: '1984 · Plus/4 (3-plus-1 in ROM)' },\n",
     "goldenOrder": 35
   },
   "tileDir": "plus4",

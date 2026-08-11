@@ -8,7 +8,6 @@
       {
         "order": 18,
         "prelude": "",
-        "line": "  \"android-x86 |tiles/android-x86.sh          |Android     |heavy    |~20-40m |1-click|android.qcow2\"\n",
         "value": {
           "key": "android-x86",
           "script": "tiles/android-x86.sh",
@@ -68,11 +67,9 @@
     "signalOrder": 24,
     "tilesManifestOrder": 9,
     "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP C — disk-image Linux/Unix guests, USB-tablet abs pointer.\n# ---------------------------------------------------------------------------\n\n# android (VMID 101) — Android-x86 qcow2 on q35, virtio-blk + virtio-net,\n#   usb-tablet, intel-hda. VERBATIM LAUNCHER: golden fixture — runs WITHOUT\n#   -snapshot, boots -loadvm golden unconditionally, and exposes a dedicated\n#   HMP reset socket (reset-hmp.sock) for live loadvm resets.\n",
-    "tilesManifestInvocation": "emit android \\\n  --tile android --vmid 101 --udp 54101 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/android/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/android/tile.env.fixture\"\n",
     "bringUpGroup": 2,
     "bindingOrder": 16,
     "bindingPrelude": "",
-    "bindingLine": "  android:     { osId: 'android',     archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#3ddc84', eraLabel: '2008 · Android' },\n",
     "goldenOrder": 14,
     "actionMapOrder": 16
   },

@@ -8,7 +8,6 @@
       {
         "order": 35,
         "prelude": "",
-        "line": "  \"vic20        |tiles/vic20.sh                |bridge/vic20    |retro    |~2-4m   |full   |tiles/vic20 overlay + golden (VICE xvic → CBM BASIC V2)\"\n",
         "value": {
           "key": "vic20",
           "script": "tiles/vic20.sh",
@@ -47,11 +46,9 @@
     "signalOrder": 36,
     "tilesManifestOrder": 34,
     "tilesManifestPrelude": "\n# vic20 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit vic20 \\\n  --tile vic20 --vmid 221 --udp 54085 --pointer none --input-backend disabled \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/vic20/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/vic20/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 40,
     "bindingPrelude": "",
-    "bindingLine": "  vic20:       { osId: 'vic20',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3FBFC7', eraLabel: '1980 · VIC-20 (CBM BASIC V2)' },\n",
     "goldenOrder": 34
   },
   "tileDir": "vic20",

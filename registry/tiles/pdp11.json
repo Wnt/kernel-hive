@@ -8,7 +8,6 @@
       {
         "order": 41,
         "prelude": "",
-        "line": "  \"pdp11        |tiles/pdp11.sh                |bridge/pdp11    |retro    |~6-8m   |full   |tiles/pdp11 overlay + golden (Open SIMH PDP-11/70 → 2.11BSD login)\"\n",
         "value": {
           "key": "pdp11",
           "script": "tiles/pdp11.sh",
@@ -45,8 +44,6 @@
     "goldenOrder": 40,
     "bringUpGroup": 6,
     "signalOrder": 42,
-    "tilesManifestInvocation": "emit pdp11 \\\n  --tile pdp11 --vmid 227 --udp 54115 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/pdp11/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/pdp11/tile.env.fixture\"\n",
-    "bindingLine": "  pdp11:       { osId: 'pdp11', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#9A4F96', eraLabel: '1975 · PDP-11/70 (2.11BSD)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

@@ -8,7 +8,6 @@
       {
         "order": 32,
         "prelude": "",
-        "line": "  \"amstradcpc   |tiles/amstradcpc.sh           |bridge/amstradcpc|retro    |~3-5m   |full   |tiles/amstradcpc overlay + golden (cap32 → Locomotive BASIC)\"\n",
         "value": {
           "key": "amstradcpc",
           "script": "tiles/amstradcpc.sh",
@@ -47,11 +46,9 @@
     "signalOrder": 32,
     "tilesManifestOrder": 30,
     "tilesManifestPrelude": "\n# amstradcpc (VMID 219) — cap32 (Caprice32) -> Amstrad CPC 6128 -> Locomotive BASIC Ready. ssh 5819.\n",
-    "tilesManifestInvocation": "emit amstradcpc \\\n  --tile amstradcpc --vmid 219 --udp 54119 --pointer rel \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/amstradcpc/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/amstradcpc/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 35,
     "bindingPrelude": "",
-    "bindingLine": "  amstradcpc:  { osId: 'amstradcpc',  archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#F0C000', eraLabel: '1985 · CPC 6128 (Locomotive BASIC)' },\n",
     "goldenOrder": 30
   },
   "tileDir": "amstradcpc",

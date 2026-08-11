@@ -8,7 +8,6 @@
       {
         "order": 20,
         "prelude": "",
-        "line": "  \"sailfishos  |tiles/sailfishos.sh           |SailfishOS  |heavy    |~15-30m |supplied|sailfishos.qcow2 (STAGE 1; needs Sailfish SDK emulator VDI/archive)|media\"\n",
         "value": {
           "key": "sailfishos",
           "script": "tiles/sailfishos.sh",
@@ -29,7 +28,6 @@
       {
         "order": 21,
         "prelude": "",
-        "line": "  \"sailfishos-gui|tiles/sailfishos-gui.sh       |SailfishOS|heavy  |~20-40m |full   |sailfishos-gui.qcow2 (STAGE 2 bochs-drm KMS; run after sailfishos)|media\"\n",
         "value": {
           "key": "sailfishos-gui",
           "script": "tiles/sailfishos-gui.sh",
@@ -91,11 +89,9 @@
     "signalOrder": 25,
     "tilesManifestOrder": 20,
     "tilesManifestPrelude": "\n# sailfishos (VMID 104) — audio OFF, usb-tablet + usb-kbd, ide disk, e1000 NIC.\n#   GENERIC (+ -snapshot: ephemeral; no golden — labctl reset refuses it).\n",
-    "tilesManifestInvocation": "emit sailfishos \\\n  --tile sailfishos --vmid 104 --udp 54104 --pointer abs --audio off \\\n  --input-dev usb --mem 1536 --smp 2 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot\" \\\n  --loadvm-launch /data/gallery-guests/SailfishOS/sailfishos-gui.qcow2\n",
     "bringUpGroup": 5,
     "bindingOrder": 18,
     "bindingPrelude": "",
-    "bindingLine": "  sailfishos:  { osId: 'sailfishos',  archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#e60d42', eraLabel: '2013 · Sailfish (Jolla)' },\n",
     "goldenOrder": 17,
     "actionMapOrder": 19
   },

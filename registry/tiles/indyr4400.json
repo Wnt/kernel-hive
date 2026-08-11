@@ -10,7 +10,6 @@
       {
         "order": 47,
         "prelude": "",
-        "line": "  \"indyr4400   |tiles/indyr4400.sh   |bridge/indyr4400|retro    |~25-35m |full   |tiles/indyr4400 overlay + golden (Iris SGI Indy R4400 -> IRIX 6.5.22)\"\n",
         "value": {
           "key": "indyr4400",
           "script": "tiles/indyr4400.sh",
@@ -52,9 +51,7 @@
     "bringUpGroup": 6,
     "signalOrder": 54,
     "tilesManifestPrelude": "\n# indyr4400 (VMID 239) — Iris -> SGI Indy (MIPS R4400) -> IRIX 6.5.22.\n#   The SECOND SGI Indy in the lineup and the other emulator: 'irix' is MAME's\n#   R4600 indy_4610 running BARE-METAL (MAME panics under a KVM vCPU); Iris is\n#   userspace Rust and runs as an ordinary KVM bridge tile. ssh 5839. The 6.3 GB\n#   IRIX disk is a READ-ONLY virtio asset, staged by tiles/indyr4400/fetch-assets.sh.\n",
-    "tilesManifestInvocation": "emit indyr4400 \\\n  --tile indyr4400 --vmid 239 --udp 54136 --pointer rel --audio off --fps 30 \\\n  --launcher-file \"$T/indyr4400/qemu-streamhost.sh\" \\\n  --aux-file \"$T/indyr4400/fetch-assets.sh\" \\\n  --env-append-file \"$T/indyr4400/tile.env.fixture\"\n",
-    "bindingPrelude": "",
-    "bindingLine": "  indyr4400:   { osId: 'indyr4400',   archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3E6E9E', eraLabel: '1993 · SGI Indy R4400 — IRIX 6.5', pointerRel: true },\n"
+    "bindingPrelude": ""
   },
   "stream": {
     "transport": "streamhost",

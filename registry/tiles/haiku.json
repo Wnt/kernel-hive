@@ -8,7 +8,6 @@
       {
         "order": 5,
         "prelude": "",
-        "line": "  \"haiku       |tiles/haiku-install.sh        |Haiku       |fast     |~6-10m  |full   |haiku.iso -> tile haiku-persist.qcow2 + sshd/key + golden\"\n",
         "value": {
           "key": "haiku",
           "script": "tiles/haiku-install.sh",
@@ -68,13 +67,12 @@
     "signalOrder": 2,
     "tilesManifestOrder": 4,
     "tilesManifestPrelude": "\n# haiku (VMID 107) — persistent disk boot. GENERIC. --vga none: --extra supplies\n#   a VGA device forced to 1920x1200 via EDID (the built-in -vga would ignore the\n#   EDID). intel-hda + usb-tablet.\n# SSH GUEST SHELL: ssh -i /root/.ssh/gallery_guest_key -p 5807 user@127.0.0.1\n#   (login user 'user', uid 0; guest 10.0.2.15:22). hostfwd=...5807-:22 is baked\n#   onto the EXISTING -netdev user below (a netdev backend property, NOT a\n#   -device => -loadvm golden still matches exactly). sshd autostart + keys live\n#   on the persistent disk AND in savevm golden (see the fixture stanza). The\n#   tile boots haiku-persist.qcow2 (-boot c, ide — via --disk-raw so it lands in\n#   the media slot exactly as baked); loadvm needs exactly this device set.\n",
-    "tilesManifestInvocation": "emit haiku \\\n  --tile haiku --vmid 107 --udp 54107 --pointer abs --audio on --audio-dev hda \\\n  --input-dev usb --mem 2048 --smp 2 --machine pc-i440fx-11.0 --cpu host --vga none --fps 30 \\\n  --disk-raw \"-drive file=/data/vms/streamhost/tiles/haiku/haiku-persist.qcow2,format=qcow2,if=ide\" \\\n  --boot c \\\n  --extra \"-device VGA,id=vga0,edid=on,xres=1920,yres=1200 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:5807-:22 -device e1000,netdev=n0\" \\\n  --env-append-file \"$T/haiku/tile.env.fixture\" \\\n  --loadvm-launch /data/vms/streamhost/tiles/haiku/haiku-persist.qcow2\n",
     "bringUpGroup": 0,
     "bindingOrder": 21,
     "bindingPrelude": "",
-    "bindingLine": "  haiku:       { osId: 'haiku',        archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#ffca3a', eraLabel: '2024 · Haiku R1/beta5', bootVideo: '/boot/haiku/boot.mp4' }, // ideal: BeBox\n",
     "goldenOrder": 19,
-    "actionMapOrder": 22
+    "actionMapOrder": 22,
+    "bindingComment": "ideal: BeBox"
   },
   "tileDir": "haiku",
   "lifecycle": "production",

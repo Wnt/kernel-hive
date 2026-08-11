@@ -8,7 +8,6 @@
       {
         "order": 50,
         "prelude": "",
-        "line": "  \"star         |tiles/star.sh                 |bridge/star     |graphical|~5-8m   |partial|tiles/star overlay + golden (Darkstar → Pilot/ViewPoint 2.0)\"\n",
         "value": {
           "key": "star",
           "script": "tiles/star.sh",
@@ -43,11 +42,9 @@
     "signalOrder": 55,
     "tilesManifestOrder": 53,
     "tilesManifestPrelude": "\n# star (VMID 240) — Darkstar (C#/mono 6.8) -> Xerox 8010 \"Dandelion\"\n#   -> Pilot + ViewPoint 2.0, logged on. ssh 5840. Silent exhibit (the 8010 has\n#   no sound hardware). RELATIVE pointer: Darkstar has no absolute path, so the\n#   device set carries no usb-tablet and the machine type sets vmport=off.\n#   Fixture stanza pins the key dwell Darkstar needs.\n",
-    "tilesManifestInvocation": "emit star \\\n  --tile star --vmid 240 --udp 54138 --pointer rel \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off --fps 30 \\\n  --launcher-file \"$T/star/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/star/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 60,
     "bindingPrelude": "",
-    "bindingLine": "  star:        { osId: 'star',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#D6001C', eraLabel: '1981 · Pilot + ViewPoint 2.0 on the 8010', pointerRel: true },\n",
     "goldenOrder": 53
   },
   "tileDir": "star",

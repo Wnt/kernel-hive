@@ -8,7 +8,6 @@
       {
         "order": 49,
         "prelude": "",
-        "line": "  \"daybreak     |tiles/daybreak.sh             |bridge/daybreak |graphical|~8-12m  |full   |tiles/daybreak overlay + golden (Dwarf/Draco → ViewPoint 2.0.5)\"\n",
         "value": {
           "key": "daybreak",
           "script": "tiles/daybreak.sh",
@@ -47,11 +46,9 @@
     "signalOrder": 56,
     "tilesManifestOrder": 54,
     "tilesManifestPrelude": "\n# daybreak (VMID 239) — Dwarf/Draco (Java, OpenJDK 17) -> Xerox 6085 \"Daybreak\"\n#   -> ViewPoint 2.0.5, logged in. ssh 5849. Silent exhibit (no Xerox sound\n#   hardware in Dwarf). Fixture stanza pins SH_IDLE_PAUSE_SECS=0 (never\n#   QMP-freeze the kiosk out from under the watcher) and a 400 ms key hold.\n",
-    "tilesManifestInvocation": "emit daybreak \\\n  --tile daybreak --vmid 239 --udp 54139 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off --fps 60 \\\n  --launcher-file \"$T/daybreak/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/daybreak/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 61,
     "bindingPrelude": "",
-    "bindingLine": "  daybreak:    { osId: 'daybreak',    archetypeId: 'sparc-pizzabox', transport: 'streamhost',  accentColor: '#C8102E', eraLabel: '1985 · ViewPoint 2.0.5 on the 6085' },\n",
     "goldenOrder": 54
   },
   "tileDir": "daybreak",

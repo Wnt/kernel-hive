@@ -10,7 +10,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"zx81        |tiles/zx81.sh                 |bridge/zx81     |retro    |~6-10m  |full   |tiles/zx81 overlay + golden (MAME 0.289 zx81 → K cursor)\"\n",
         "value": {
           "key": "zx81",
           "script": "tiles/zx81.sh",
@@ -47,8 +46,6 @@
     "goldenOrder": 44,
     "bringUpGroup": 6,
     "signalOrder": 46,
-    "tilesManifestInvocation": "emit zx81 \\\n  --tile zx81 --vmid 231 --udp 54128 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/zx81/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/zx81/tile.env.fixture\"\n",
-    "bindingLine": "  zx81:        { osId: 'zx81', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8462F', eraLabel: '1981 · ZX81 (1 KB, black and white)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

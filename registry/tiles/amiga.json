@@ -8,7 +8,6 @@
       {
         "order": 29,
         "prelude": "",
-        "line": "  \"amiga        |tiles/amiga.sh                |bridge/amiga   |retro    |~3-5m   |full   |tiles/amiga overlay + golden (Kickstart 1.3 + Workbench 1.3)\"\n",
         "value": {
           "key": "amiga",
           "script": "tiles/amiga.sh",
@@ -47,11 +46,9 @@
     "signalOrder": 29,
     "tilesManifestOrder": 27,
     "tilesManifestPrelude": "\n# amiga (VMID 218) — FS-UAE -> Amiga 500 -> Kickstart 1.3 + Workbench 1.3.\n#   ssh 5818. Idle auto-pause: daemon default (like c64/atarist); the old\n#   SH_IDLE_PAUSE_SECS=0 pin was a leftover of the reverted cold-boot pilot.\n",
-    "tilesManifestInvocation": "emit amiga \\\n  --tile amiga --vmid 218 --udp 54118 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/amiga/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/amiga/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 29,
     "bindingPrelude": "",
-    "bindingLine": "  amiga:       { osId: 'amiga',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#0055AA', eraLabel: '1987 · Amiga Workbench 1.3', bootVideo: '/boot/amiga/boot.mp4' },\n",
     "goldenOrder": 27
   },
   "tileDir": "amiga",

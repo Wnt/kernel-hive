@@ -8,7 +8,6 @@
       {
         "order": 30,
         "prelude": "",
-        "line": "  \"redstar2     |tiles/redstar2.sh             |RedStar2    |heavy    |~45-90m |vision |redstar2.qcow2 (air-gapped install + golden)\"\n",
         "value": {
           "key": "redstar2",
           "script": "tiles/redstar2.sh",
@@ -70,11 +69,9 @@
     "signalOrder": 30,
     "tilesManifestOrder": 28,
     "tilesManifestPrelude": "\n# redstar2 (VMID 120) — Red Star OS 2.0 i386 KDE desktop. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk,\n#   std VGA (Xorg vesa + ShadowFB, 1920x1200), absolute USB tablet, no audio.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
-    "tilesManifestInvocation": "emit redstar2 \\\n  --tile redstar2 --vmid 120 --udp 54120 --pointer abs --audio off --fps 30 \\\n  --input-dev usb \\\n  --launcher-file \"$T/redstar2/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/redstar2/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 33,
     "bindingPrelude": "",
-    "bindingLine": "  redstar2:    { osId: 'redstar2',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#c8102e', eraLabel: '2009 · Red Star OS 2.0', bootVideo: '/boot/redstar2/boot.mp4' },\n",
     "goldenOrder": 28,
     "actionMapOrder": 28
   },

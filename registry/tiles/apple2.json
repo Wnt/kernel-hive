@@ -8,7 +8,6 @@
       {
         "order": 28,
         "prelude": "",
-        "line": "  \"apple2       |tiles/apple2.sh               |bridge/apple2  |retro    |~3-5m   |full   |tiles/apple2 overlay + golden (Apple //e → GEOS)\"\n",
         "value": {
           "key": "apple2",
           "script": "tiles/apple2.sh",
@@ -47,11 +46,9 @@
     "signalOrder": 28,
     "tilesManifestOrder": 26,
     "tilesManifestPrelude": "\n# apple2 (VMID 217) — LinApple 2.3.0 -> Apple //e -> Apple GEOS deskTop. ssh 5817.\n",
-    "tilesManifestInvocation": "emit apple2 \\\n  --tile apple2 --vmid 217 --udp 54117 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/apple2/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/apple2/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 28,
     "bindingPrelude": "",
-    "bindingLine": "  apple2:      { osId: 'apple2',      archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#8A8577', eraLabel: '1988 · Apple II — GEOS' },\n",
     "goldenOrder": 26
   },
   "tileDir": "apple2",

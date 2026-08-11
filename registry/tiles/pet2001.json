@@ -8,7 +8,6 @@
       {
         "order": 38,
         "prelude": "",
-        "line": "  \"pet2001     |tiles/pet2001.sh              |bridge/pet2001  |retro    |~2-4m   |full   |tiles/pet2001 overlay + golden (VICE xpet -model 2001 → COMMODORE BASIC)\"\n",
         "value": {
           "key": "pet2001",
           "script": "tiles/pet2001.sh",
@@ -49,8 +48,6 @@
     "goldenOrder": 37,
     "bringUpGroup": 6,
     "signalOrder": 39,
-    "tilesManifestInvocation": "emit pet2001 \\\n  --tile pet2001 --vmid 224 --udp 54088 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/pet2001/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/pet2001/tile.env.fixture\"\n",
-    "bindingLine": "  pet2001:     { osId: 'pet2001', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#AEB8F0', eraLabel: '1977 · PET 2001 (COMMODORE BASIC)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

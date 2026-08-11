@@ -8,7 +8,6 @@
       {
         "order": 9,
         "prelude": "",
-        "line": "  \"alpine      |tiles/alpine.sh               |Alpine      |fast     |~2-3m   |full   |Alpine.iso -> /data/isos/ (ssh-golden LiveCD)\"\n",
         "value": {
           "key": "alpine",
           "script": "tiles/alpine.sh",
@@ -61,11 +60,9 @@
     "signalOrder": 3,
     "tilesManifestOrder": 0,
     "tilesManifestPrelude": "# ---------------------------------------------------------------------------\n\n# alpine (VMID 81) — Alpine LiveCD + golden fixture. VERBATIM LAUNCHER\n#   (tiles/alpine/qemu-streamhost.sh): state.qcow2 (2G ide, create-if-missing)\n#   holds the savevm 'golden' snapshot; conditional -loadvm golden; post-boot\n#   QMP hostfwd_add re-adds the ssh forward 127.0.0.1:5881 -> guest :22 (SLIRP\n#   state is host-side, NOT in the snapshot; QMP add keeps the device set\n#   loadvm-exact). Needs /root/qmp_hmp.py (source: scripts/qmp_hmp.py here).\n#   ISO at /data/isos/Alpine.iso (canonical; the retired CT110 subvol path the\n#   pre-2026-07-14 live launcher used is whitelisted in verify-emit).\n",
-    "tilesManifestInvocation": "emit alpine \\\n  --tile alpine --vmid 81 --udp 54081 --pointer abs --audio on --fps 60 \\\n  --launcher-file \"$T/alpine/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/alpine/tile.env.fixture\"\n",
     "bringUpGroup": 0,
     "bindingOrder": 8,
     "bindingPrelude": "",
-    "bindingLine": "  alpine:      { osId: 'alpine',      archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#0d597f', eraLabel: '2005 · Alpine Linux' },\n",
     "goldenOrder": 2,
     "actionMapOrder": 2
   },

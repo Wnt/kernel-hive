@@ -8,7 +8,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"zxspectrum  |tiles/zxspectrum.sh           |bridge/zxspectrum|retro    |~6-12m  |full   |tiles/zxspectrum overlay + golden (MAME spectrum → Sinclair 48K BASIC)\"\n",
         "value": {
           "key": "zxspectrum",
           "script": "tiles/zxspectrum.sh",
@@ -49,8 +48,6 @@
     "goldenOrder": 43,
     "bringUpGroup": 6,
     "signalOrder": 45,
-    "tilesManifestInvocation": "emit zxspectrum \\\n  --tile zxspectrum --vmid 230 --udp 54127 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/zxspectrum/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/zxspectrum/tile.env.fixture\"\n",
-    "bindingLine": "  zxspectrum:  { osId: 'zxspectrum', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CD0000', eraLabel: '1982 · ZX Spectrum 48K' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

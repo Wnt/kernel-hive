@@ -10,7 +10,6 @@
       {
         "order": 33,
         "prelude": "",
-        "line": "  \"openvms     |tiles/openvms.sh              |OpenVMS       |licensed |~3-8m   |full    |OpenVMS disks; openvms-decwindows-bridge.sh builds lean-X bridge\"\n",
         "value": {
           "key": "openvms",
           "script": "tiles/openvms.sh",
@@ -58,11 +57,9 @@
     "signalOrder": 33,
     "tilesManifestOrder": 31,
     "tilesManifestPrelude": "\n# openvms (slot 84) — TWO-VM DECwindows bridge. A captured 1024x768 Debian\n#   bridge runs lean Xorg only (no Linux WM/DM) with usb-tablet. OpenVMS is an\n#   independent SLIRP X client restored from leanx-preconnect, then replays the\n#   DECterm/FileView/Clock/Calculator fixture. Reset is a cold service restart;\n#   warm loadvm is forbidden because it restores dead X sockets.\n",
-    "tilesManifestInvocation": "emit openvms \\\n  --tile openvms --vmid 84 --udp 54084 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off --fps 30 \\\n  --launcher-file \"$T/openvms/qemu-streamhost.sh\" \\\n  --aux-file \"$T/openvms/bridge-launch.sh\" \\\n  --aux-file \"$T/openvms/bridge-xserverrc\" \\\n  --aux-file \"$T/openvms/DECW_FIXTURE.COM\" \\\n  --env-append-file \"$T/openvms/tile.env.fixture\"\n",
     "bringUpGroup": 3,
     "bindingOrder": 37,
     "bindingPrelude": "",
-    "bindingLine": "  openvms:     { osId: 'openvms',     archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#00a6d6', eraLabel: '2024 · OpenVMS 9.2 · DECwindows' },\n",
     "goldenOrder": 31,
     "actionMapOrder": 30
   },

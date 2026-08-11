@@ -8,7 +8,6 @@
       {
         "order": 27,
         "prelude": "",
-        "line": "  \"atarist      |tiles/atarist.sh              |bridge/atarist |retro    |~3-5m   |full   |tiles/atarist overlay + golden (hatari → EmuTOS GEM)\"\n",
         "value": {
           "key": "atarist",
           "script": "tiles/atarist.sh",
@@ -47,11 +46,9 @@
     "signalOrder": 27,
     "tilesManifestOrder": 25,
     "tilesManifestPrelude": "\n# atarist (VMID 216) — hatari -> Atari ST -> EmuTOS GEM desktop. ssh 5816.\n",
-    "tilesManifestInvocation": "emit atarist \\\n  --tile atarist --vmid 216 --udp 54116 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/atarist/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/atarist/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 27,
     "bindingPrelude": "",
-    "bindingLine": "  atarist:     { osId: 'atarist',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#E4002B', eraLabel: '1985 · Atari ST (GEM)' },\n",
     "goldenOrder": 25
   },
   "tileDir": "atarist",

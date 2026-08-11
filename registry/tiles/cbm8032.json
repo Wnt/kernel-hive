@@ -8,7 +8,6 @@
       {
         "order": 39,
         "prelude": "",
-        "line": "  \"cbm8032      |tiles/cbm8032.sh              |bridge/cbm8032  |retro    |~2-4m   |full   |tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)\"\n",
         "value": {
           "key": "cbm8032",
           "script": "tiles/cbm8032.sh",
@@ -49,8 +48,6 @@
     "goldenOrder": 38,
     "bringUpGroup": 6,
     "signalOrder": 40,
-    "tilesManifestInvocation": "emit cbm8032 \\\n  --tile cbm8032 --vmid 225 --udp 54109 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/cbm8032/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/cbm8032/tile.env.fixture\"\n",
-    "bindingLine": "  cbm8032:     { osId: 'cbm8032', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#41FF00', eraLabel: '1980 · CBM 8032 (BASIC 4.0, 80 columns)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },

@@ -8,7 +8,6 @@
       {
         "order": 40,
         "prelude": "",
-        "line": "  \"cbm2         |tiles/cbm2.sh                 |bridge/cbm2     |retro    |~2-4m   |full   |tiles/cbm2 overlay + golden (VICE xcbm2 -model 610 → BASIC 128)\"\n",
         "value": {
           "key": "cbm2",
           "script": "tiles/cbm2.sh",
@@ -45,8 +44,6 @@
     "goldenOrder": 39,
     "bringUpGroup": 6,
     "signalOrder": 41,
-    "tilesManifestInvocation": "emit cbm2 \\\n  --tile cbm2 --vmid 226 --udp 54111 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/cbm2/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/cbm2/tile.env.fixture\"\n",
-    "bindingLine": "  cbm2:        { osId: 'cbm2', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#55D544', eraLabel: '1982 · CBM 610 (BASIC 128, 6509)' },\n",
     "tilesManifestPrelude": "",
     "bindingPrelude": ""
   },
