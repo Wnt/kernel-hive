@@ -1,5 +1,5 @@
 #!/bin/bash
-# checkpoint-verify.sh <tileDir> [--capture]  (--bake accepted, one epoch)
+# checkpoint-verify.sh <stationDir> [--capture]  (--bake accepted, one epoch)
 #
 # Clone-only proof for a vmstate checkpoint.  It never opens a production QMP socket,
 # never launches against a live writable disk, and routes teardown through
@@ -14,7 +14,7 @@ source "$COLD_DIR/bootrec-lib.sh"
 source "$COLD_DIR/bootrec-tiles.conf"
 
 usage() {
-  echo "usage: $0 <tileDir> [--capture]" >&2
+  echo "usage: $0 <stationDir> [--capture]" >&2
   exit 2
 }
 
@@ -26,7 +26,7 @@ BAKE=0
 # --capture is the glossary spelling; --bake stays accepted for one epoch
 # (terminology stage 2) so existing invocations and briefs keep working.
 { [ "$MODE" = "--capture" ] || [ "$MODE" = "--bake" ]; } && BAKE=1
-[[ "$TILE" =~ ^[a-z0-9][a-z0-9-]*$ ]] || br_die "invalid tileDir '$TILE'"
+[[ "$TILE" =~ ^[a-z0-9][a-z0-9-]*$ ]] || br_die "invalid stationDir '$TILE'"
 
 bootrec_load_tile "$TILE"
 [ "$BR_BOOT_KIND" = "vmstate" ] ||

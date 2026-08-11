@@ -65,15 +65,15 @@
   },
   "render": {
     "signalOrder": 13,
-    "tilesManifestOrder": 6,
-    "tilesManifestPrelude": "\n# helenos (VMID 99) — ia32 LiveCD on -cpu qemu32, intel-hda. GENERIC.\n# POINTER=abs (2026-07-13): HelenOS's upstream USB HID stack binds the QEMU\n# usb-tablet over the default PIIX3 UHCI controller (`--input-dev usb` -> `-usb\n# -device usb-tablet`) and consumes absolute coordinates 1:1 — verified on a\n# clone then live via QMP-abs framebuffer tracking. The golden snapshot was\n# re-baked with the tablet present. golden.qcow2 (--extra) holds the savevm\n# 'golden' snapshot for the diskless LiveCD; loadvm needs this exact device set.\n",
+    "stationsManifestOrder": 6,
+    "stationsManifestPrelude": "\n# helenos (VMID 99) — ia32 LiveCD on -cpu qemu32, intel-hda. GENERIC.\n# POINTER=abs (2026-07-13): HelenOS's upstream USB HID stack binds the QEMU\n# usb-tablet over the default PIIX3 UHCI controller (`--input-dev usb` -> `-usb\n# -device usb-tablet`) and consumes absolute coordinates 1:1 — verified on a\n# clone then live via QMP-abs framebuffer tracking. The golden snapshot was\n# re-baked with the tablet present. golden.qcow2 (--extra) holds the savevm\n# 'golden' snapshot for the diskless LiveCD; loadvm needs this exact device set.\n",
     "bringUpGroup": 1,
     "bindingOrder": 11,
     "bindingPrelude": "",
     "goldenOrder": 12,
     "actionMapOrder": 14
   },
-  "tileDir": "helenos",
+  "stationDir": "helenos",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -98,7 +98,7 @@
   "guestDoc": "docs/guests/helenos.md",
   "credentialsRef": "guest/helenos",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "helenos",
       "SH_QMP": "/data/vms/streamhost/tiles/helenos/qmp.sock",
       "SH_PORT": "54099",
@@ -249,7 +249,7 @@
     "blurb": "A from-scratch microkernel research OS — a whole desktop built on message passing."
   },
   "reset": {
-    "tileDir": "helenos",
+    "stationDir": "helenos",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

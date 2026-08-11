@@ -61,15 +61,15 @@
   },
   "render": {
     "signalOrder": 7,
-    "tilesManifestOrder": 12,
-    "tilesManifestPrelude": "\n# winxp (VMID 94) — boots hdd + attaches the retro-software LiveCD;\n#   -boot order=c,menu=off. AC97 + usb-tablet. VERBATIM LAUNCHER: boots the\n#   tile-LOCAL winxp-golden.qcow2 (gallery WinXPpro/winxp.qcow2 stays pristine)\n#   WITHOUT -snapshot; golden snapshot inside (resetMode=loadvm).\n",
+    "stationsManifestOrder": 12,
+    "stationsManifestPrelude": "\n# winxp (VMID 94) — boots hdd + attaches the retro-software LiveCD;\n#   -boot order=c,menu=off. AC97 + usb-tablet. VERBATIM LAUNCHER: boots the\n#   tile-LOCAL winxp-golden.qcow2 (gallery WinXPpro/winxp.qcow2 stays pristine)\n#   WITHOUT -snapshot; golden snapshot inside (resetMode=loadvm).\n",
     "bringUpGroup": 3,
     "bindingOrder": 7,
     "bindingPrelude": "",
     "goldenOrder": 7,
     "actionMapOrder": 9
   },
-  "tileDir": "winxp",
+  "stationDir": "winxp",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -94,7 +94,7 @@
   "guestDoc": "docs/guests/winxp.md",
   "credentialsRef": "guest/winxp",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "winxp",
       "SH_QMP": "/data/vms/streamhost/tiles/winxp/qmp.sock",
       "SH_PORT": "54094",
@@ -216,7 +216,7 @@
     "blurb": "Bliss. The green hill and blue taskbar the whole world remembers."
   },
   "reset": {
-    "tileDir": "winxp",
+    "stationDir": "winxp",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

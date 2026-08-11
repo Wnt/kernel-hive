@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "bbcmicro",
   "era_year": 1981,
-  "tileDir": "bbcmicro",
+  "stationDir": "bbcmicro",
   "lifecycle": "production",
   "enabled": true,
   "build": {
@@ -46,8 +46,8 @@
   },
   "render": {
     "signalOrder": 47,
-    "tilesManifestOrder": 45,
-    "tilesManifestPrelude": "\n# bbcmicro (VMID 232) — MAME 0.289 bbcb (Acorn BBC Micro Model B, 1981) -> BBC BASIC II. ssh 5832. Keyboard-only.\n",
+    "stationsManifestOrder": 45,
+    "stationsManifestPrelude": "\n# bbcmicro (VMID 232) — MAME 0.289 bbcb (Acorn BBC Micro Model B, 1981) -> BBC BASIC II. ssh 5832. Keyboard-only.\n",
     "bringUpGroup": 6,
     "bindingOrder": 51,
     "bindingPrelude": "",
@@ -77,7 +77,7 @@
   "guestDoc": "docs/guests/bbcmicro.md",
   "credentialsRef": "guest/bbcmicro",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "bbcmicro",
       "SH_QMP": "/data/vms/streamhost/tiles/bbcmicro/qmp.sock",
       "SH_PORT": "54129",
@@ -237,7 +237,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs a purpose-built MAME 0.289 `bbcb` (SUBTARGET=bbcb, SOURCES=src/mame/acorn, built in the trixie chroot — which is now the host's own generation, so it buys reproducibility rather than the ABI match it used to); streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Unlike the VICE tiles this one keeps the base's full 1024x768 X root and runs MAME fullscreen with -keepaspect and -artwork_crop, which drops the driver's keyboard-LED strip. The five ROM dumps are preservation-source with NO authorised URL and are staged by the operator, gated on SHA-1 and assembled into three MAME zips by the builder; MAME's own defaults are shipped, so the Acorn 8271 disc interface is fitted and the banner carries its DFS line. The golden is the machine's own untouched power-on screen. Keyboard-only exhibit; thirteen characters sit on different keys from a PC (keyboard.charMap, derived from the driver's PORT_CHAR table) and CAPS LOCK is on at reset. A sibling exhibit, armeval, will show the ARM Evaluation System on this same driver via `bbcb -tube arm`. See streamhost/docs/BRIDGE.md and docs/guests/bbcmicro.md."
   },
   "reset": {
-    "tileDir": "bbcmicro",
+    "stationDir": "bbcmicro",
     "pointer": "none",
     "touch": false,
     "resetMode": "loadvm",

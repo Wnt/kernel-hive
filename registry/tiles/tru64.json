@@ -30,14 +30,14 @@
   },
   "render": {
     "signalOrder": 58,
-    "tilesManifestOrder": 56,
-    "tilesManifestPrelude": "\n# tru64 — x11 RUNTIME tile, NOT QEMU. es40 (AlphaServer ES40, fork Wnt/es40)\n#   SRM-booting Tru64 UNIX 5.1B — the same emulated machine as w2kalpha with a\n#   different flash.rom lineage (no arc autoboot; SRM boots dka0/dka400), NO\n#   window and NO X server (SDL_VIDEODRIVER=dummy), captured from the\n#   framebuffer es40 publishes itself: SH_CAPTURE=shm + mamesock input (es40\n#   ctlsock mamectl/1, multi-client). No SH_QMP; media + install disk staged\n#   under /data/vms/streamhost/assets/tru64. DARK LAUNCH: listing=hidden while\n#   the install runs on camera.\n",
+    "stationsManifestOrder": 56,
+    "stationsManifestPrelude": "\n# tru64 — x11 RUNTIME tile, NOT QEMU. es40 (AlphaServer ES40, fork Wnt/es40)\n#   SRM-booting Tru64 UNIX 5.1B — the same emulated machine as w2kalpha with a\n#   different flash.rom lineage (no arc autoboot; SRM boots dka0/dka400), NO\n#   window and NO X server (SDL_VIDEODRIVER=dummy), captured from the\n#   framebuffer es40 publishes itself: SH_CAPTURE=shm + mamesock input (es40\n#   ctlsock mamectl/1, multi-client). No SH_QMP; media + install disk staged\n#   under /data/vms/streamhost/assets/tru64. DARK LAUNCH: listing=hidden while\n#   the install runs on camera.\n",
     "bringUpGroup": 7,
     "bindingOrder": 63,
     "bindingPrelude": "",
     "goldenOrder": 56
   },
-  "tileDir": "tru64",
+  "stationDir": "tru64",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -63,7 +63,7 @@
   "guestDoc": "docs/guests/tru64.md",
   "credentialsRef": "guest/tru64",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "tru64",
       "SH_TILE_RUNTIME": "x11",
       "SH_CAPTURE": "shm",
@@ -149,7 +149,7 @@
     "notes": "Live streamhost tile — third x11-runtime tile (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. DARK LAUNCH 2026-08-11: listing=hidden, the 5.1B install is performed live on the tile; golden bake + listing follow. See docs/guests/tru64.md."
   },
   "reset": {
-    "tileDir": "tru64",
+    "stationDir": "tru64",
     "pointer": "abs",
     "touch": false,
     "resetMode": "relaunch",

@@ -269,7 +269,7 @@ UDP relay.
   four hours on 2026-08-05 — which presented as "the exhibit froze after I
   clicked", because the open session kept working and only the next reconnect
   was refused. Both stations were renamed on 2026-08-10 and the registry now
-  refuses an id that differs from its `tileDir`, so the two names agree by
+  refuses an id that differs from its `stationDir`, so the two names agree by
   construction. The gateway still reads the daemon's, and
   `check-stream-tickets.py` still proves the relationship holds: the daemon is
   the authority on the identity it verifies against, and a tile.env edited on

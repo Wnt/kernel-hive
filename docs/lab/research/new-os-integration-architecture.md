@@ -66,13 +66,13 @@ bundled SPA bindings, `labctl gen`, and an SPA rebuild/deploy all had to be
 coordinated, while the production tile manifest and golden manifest remained
 separate.
 
-Duplicated fields include `osId`, `tileDir`, display name, UDP port, certificate
+Duplicated fields include `osId`, `stationDir`, display name, UDP port, certificate
 hash path, pointer mode, touch behavior, reset mode/snapshot, machine type,
 display/input device, transport, accent, era label, boot-video state, fixture
 description, and startup order. The alias pairs of the day
 (`solaris`/`solariscde` and `aros`/`amigaos`) amplified the problem; both were
 renamed on 2026-08-10 and the registry now refuses an id that differs from its
-`tileDir`.
+`stationDir`.
 
 There is concrete semantic drift to audit. Comparing the manifest's current
 `--pointer` with the golden manifest's `pointer` finds different values for nine
@@ -151,7 +151,7 @@ This example is illustrative, not a frozen schema:
 {
   "schemaVersion": 1,
   "id": "exampleos",
-  "tileDir": "exampleos",
+  "stationDir": "exampleos",
   "lifecycle": "production",
   "enabled": true,
 
@@ -300,9 +300,9 @@ it. `check` belongs in CI and in the pre-deploy path.
 | Canonical fields | Generated output | Hand edits removed |
 |---|---|---|
 | `build.*` for enabled production tiles | a sourced/generated manifest consumed by `scripts/build-guests/build-all.sh` | `MANIFEST` and `DEFAULT_ORDER` registration |
-| `runtime.qemu`, `stream.*`, `tileDir` | `streamhost/tiles-manifest.generated.sh` emit stanzas, still invoking `streamhost-tile.sh` and referenced verbatim launchers | hand-written emit args and repeated port/pointer/device metadata |
+| `runtime.qemu`, `stream.*`, `stationDir` | `streamhost/tiles-manifest.generated.sh` emit stanzas, still invoking `streamhost-tile.sh` and referenced verbatim launchers | hand-written emit args and repeated port/pointer/device metadata |
 | `runtime.bringUpOrder` plus explicit dependencies | generated `TILES=(...)` include consumed by `bring-up-all.sh` | separate boot-order list |
-| `id`, `tileDir`, `stream.udpPort` | `scripts/serve/tiles.json` | signal registry row and hash path |
+| `id`, `stationDir`, `stream.udpPort` | `scripts/serve/tiles.json` | signal registry row and hash path |
 | `reset.*`, pointer/touch evidence | `scripts/serve/golden-manifest.json` | reset map row |
 | public `museum`, stream transport/pointer, boot-video flag | `scripts/serve/gallery-manifest.json` | bundled OS binding + manifest/catalog row |
 | declared operator capabilities | seed input for `/data/vms/streamhost/tiles.json`; `labctl gen` then adds observed sockets/snapshots | duplicated static capability parsing |
@@ -326,7 +326,7 @@ launcher behavior therefore stays unchanged during migration.
 
 Validation should reject:
 
-- duplicate `id`, `tileDir`, slot, UDP port, host-forward, or bring-up order;
+- duplicate `id`, `stationDir`, slot, UDP port, host-forward, or bring-up order;
 - a streamhost binding without an enabled signal row, QEMU description, reset
   policy, or guest doc;
 - a showcase/candidate with a production signal row;
@@ -341,7 +341,7 @@ Validation should reject:
 - a `stream.udpPort` inconsistent with deterministic slot policy unless marked
   as a migrated legacy exception;
 - a private credentials value rather than an allowed opaque reference;
-- public `id`/`tileDir` aliasing without an explicit mapping.
+- public `id`/`stationDir` aliasing without an explicit mapping.
 
 Validation cannot prove that a guest boots or a golden matches. Keep
 `verify-emit`, builder framebuffer gates, golden dirty→restore proof, browser
@@ -353,7 +353,7 @@ The requested canonical registry can generate the **declared** labctl matrix,
 but it should not pretend to generate live facts. Split the current output:
 
 ```text
-registry declaration: tileDir, qmp path convention, pointer transport,
+registry declaration: stationDir, qmp path convention, pointer transport,
                       declared exec kind/user/key reference, udp port
 runtime observation:  socket present, service active, actual hostfwd parsed,
                       live `info snapshots` result
@@ -469,7 +469,7 @@ Migration rules:
 - mark nonconforming ports such as ReactOS UDP 4433 as
   `legacyPortException: true`;
 - never renumber an existing production tile merely to make the table pretty;
-- derive hash-file paths from `tileDir`, not another free-form field;
+- derive hash-file paths from `stationDir`, not another free-form field;
 - allocate host forwards from separate named pools (`ssh`, `warpd`, test) because
   they have different consumers and cannot safely share the UDP slot formula.
 
@@ -582,9 +582,9 @@ $EDITOR registry/tiles/<osId>.json
 $EDITOR scripts/build-guests/tiles/<osId>.sh
 $EDITOR docs/guests/<osId>.md
 # Optional only for a non-generic runtime:
-$EDITOR streamhost/tiles/<tileDir>/qemu-streamhost.sh
-$EDITOR streamhost/tiles/<tileDir>/tile.env.fixture
-$EDITOR streamhost/tiles/<tileDir>/golden-bake.sh
+$EDITOR streamhost/tiles/<stationDir>/qemu-streamhost.sh
+$EDITOR streamhost/tiles/<stationDir>/tile.env.fixture
+$EDITOR streamhost/tiles/<stationDir>/golden-bake.sh
 
 scripts/stations-registry.py validate
 scripts/stations-registry.py check

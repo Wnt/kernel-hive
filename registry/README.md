@@ -208,7 +208,7 @@ author must satisfy, or `validate` fails:
 
 - `runtime.pve.vmid` present, integer ≥ 1.
 - `runtime.qemu.emitArgs` contains `["--pve-vmid", str(vmid)]`.
-- `runtime.tileEnv` emits `SH_QEMU_MODE=pve`, `SH_PVE_VMID=<vmid>`,
+- `runtime.stationEnv` emits `SH_QEMU_MODE=pve`, `SH_PVE_VMID=<vmid>`,
   `SH_QEMU_PIDFILE=/var/run/qemu-server/<vmid>.pid`.
 - `runtime.qemu` has NO `launcher` (pve tiles are not launcher-driven).
 - If `reset.resetMode == "pve-rollback"`, then `runtime.qemu.mode` must be `pve`
@@ -222,7 +222,7 @@ is an OPTIONAL sibling of the legacy required `stream.pointer.transport` (enum
 `parse_input_backend` (an explicit `backend` wins; an absent one derives from
 `transport`). gallery-hid tiles carry a redundant `transport: "abs"` by design
 (`config.rs` `GalleryHid → abs`). Business rule (Python, not schema): when
-`backend` is present the tileEnv MUST emit `SH_INPUT_BACKEND=<backend>` and MUST
+`backend` is present the stationEnv MUST emit `SH_INPUT_BACKEND=<backend>` and MUST
 NOT also emit the legacy `SH_POINTER`. solaris is the only backend user today;
 qnx is a latent second user (enum already accommodates it).
 

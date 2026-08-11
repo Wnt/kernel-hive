@@ -11,7 +11,7 @@ and the traps that have cost real time.
 ## Start every station task with `labctl facts <tile>`
 
 One call for the facts sessions kept re-deriving out of ten files: the station's
-id (registry id == `tileDir` == `SH_TILE`, and a warning if a live station ever
+id (registry id == `stationDir` == `SH_TILE`, and a warning if a live station ever
 drifts off that), the real `streamhost@<x>.service` name and state, kind (kiosk / direct-QEMU /
 x11-runtime, derived), declared-vs-actual bridge suite, disk + format + size +
 backing + snapshot names, whether `reset` works and how, the exec channel, and
@@ -64,7 +64,7 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
   correct fail-closed behaviour, not a broken station — start the station first.
 - **`labctl reset`** is `loadvm golden`, and refuses stations without a checkpoint
   snapshot (`serenityos`, `toaruos`, `sailfishos`).
-- **One station, one name.** A station's registry id, its `tileDir` and its `SH_TILE`
+- **One station, one name.** A station's registry id, its `stationDir` and its `SH_TILE`
   are the same string, and `stations-registry.py` fails the build if an entry
   breaks that. The last two exceptions — `aros`/`amigaos` and
   `solaris`/`solariscde` — were renamed on 2026-08-10. The serving plane still

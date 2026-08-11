@@ -60,9 +60,9 @@ snapshot, unaffected.
    new` rolls back unless the entry is complete (it needs `stream.pointer`,
    the ordering fields, binding/museum blocks). Author `registry/tiles/
    w2kalpha.json` modelled on `registry/tiles/irix.json` (the other non-QEMU
-   shm/mamesock station): id/tileDir=w2kalpha, lifecycle candidate→production,
+   shm/mamesock station): id/stationDir=w2kalpha, lifecycle candidate→production,
    stream.pointer {transport abs, backend mamesock, absolute true},
-   runtime.tileEnv mirroring the tile.env above, render.* binding +
+   runtime.stationEnv mirroring the tile.env above, render.* binding +
    museumBlock (archetype `putty-lcd` like nt4/winxp, a 2000/Alpha blurb),
    guestDoc `docs/guests/w2kalpha.md`. Then wire the systemd unit /
    ensure-tile-x11 path as IRIX does (`stations-manifest.sh` emit line with

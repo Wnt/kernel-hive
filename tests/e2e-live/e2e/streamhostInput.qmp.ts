@@ -5,7 +5,7 @@
 //  The neko suites pixel-verify a guest reaction through the neko ADMIN API on a
 //  second browser page. streamhost tiles have NO such admin API — instead every
 //  tile is a QEMU process exposing a QMP unix socket at
-//    /data/vms/streamhost/tiles/<tileDir>/qmp.sock
+//    /data/vms/streamhost/tiles/<stationDir>/qmp.sock
 //  so we verify a guest reaction DIRECTLY off the authoritative guest framebuffer
 //  via QMP `screendump` (PPM). This is stronger than the neko path: it reads the
 //  real VGA framebuffer, not a re-encoded stream, and is completely independent
@@ -21,15 +21,15 @@ import net from 'node:net';
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** Root dir holding each tile's qmp.sock (…/<tileDir>/qmp.sock). */
+/** Root dir holding each tile's qmp.sock (…/<stationDir>/qmp.sock). */
 export const TILES_ROOT =
   process.env.STREAMHOST_TILES_DIR ?? '/data/vms/streamhost/tiles';
 
 /** Scratch dir for the PPM screendumps QEMU writes (must be writable by QEMU). */
 export const SHOT_DIR = process.env.STREAMHOST_SHOT_DIR ?? '/data/streamhost-input-test/shots';
 
-export function qmpSock(tileDir: string): string {
-  return path.join(TILES_ROOT, tileDir, 'qmp.sock');
+export function qmpSock(stationDir: string): string {
+  return path.join(TILES_ROOT, stationDir, 'qmp.sock');
 }
 
 export interface Ppm { w: number; h: number; data: Buffer; }
@@ -109,10 +109,10 @@ export const fmtDiff = (d: DiffResult | null): string =>
   d ? `cf=${d.changedFrac.toExponential(2)} md=${d.meanDelta.toFixed(2)}${d.note ? ` (${d.note})` : ''}` : 'n/a';
 
 /** Take a fresh screendump of a tile and parse it. */
-export async function shot(tileDir: string, label: string): Promise<Ppm> {
+export async function shot(stationDir: string, label: string): Promise<Ppm> {
   fs.mkdirSync(SHOT_DIR, { recursive: true });
-  const out = path.join(SHOT_DIR, `${tileDir}-${label}.ppm`);
-  await screendump(qmpSock(tileDir), out);
+  const out = path.join(SHOT_DIR, `${stationDir}-${label}.ppm`);
+  await screendump(qmpSock(stationDir), out);
   return readPpm(out);
 }
 
@@ -152,8 +152,8 @@ export function qmp(sock: string, execute: string, args?: Record<string, unknown
  * (`savevm <name>` on a writable qcow2; tiles currently launch with `-snapshot`, whose
  * overlay must be dropped for a snapshot to persist). No-op (and logged) when unset.
  */
-export async function loadSnapshot(tileDir: string, name: string): Promise<boolean> {
-  const r = await qmp(qmpSock(tileDir), 'human-monitor-command', { 'command-line': `loadvm ${name}` });
+export async function loadSnapshot(stationDir: string, name: string): Promise<boolean> {
+  const r = await qmp(qmpSock(stationDir), 'human-monitor-command', { 'command-line': `loadvm ${name}` });
   const out = (r.return as string | undefined) ?? '';
   // HMP loadvm prints nothing on success; any text is an error (e.g. "no such snapshot").
   return !out || !/error|no such|Device.*does not/i.test(out);

@@ -70,7 +70,7 @@ Dev-box deps: Firefox H.264 WebCodecs needs **system libavcodec**
 
 ## Shared facts: the golden manifest
 
-Per-tile infrastructure facts (`tileDir` / `pointer` / `touch` / `resetMode` /
+Per-tile infrastructure facts (`stationDir` / `pointer` / `touch` / `resetMode` /
 `snapshot`) come from the **rendered `golden-manifest.json`** (`stations-registry.py
 emit golden-manifest.json`; the copy published to `/data/vms/streamhost/serve/`
 drives `reset-tile.sh` and the SPA "Restore to golden" endpoint).

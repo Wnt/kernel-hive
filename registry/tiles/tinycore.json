@@ -66,15 +66,15 @@
   },
   "render": {
     "signalOrder": 4,
-    "tilesManifestOrder": 1,
-    "tilesManifestPrelude": "\n# tinycore (VMID 82) — TinyCore LiveCD + golden fixture. VERBATIM LAUNCHER:\n#   state.qcow2 (3G virtio) for the golden snapshot; conditional -loadvm golden;\n#   post-boot QMP hostfwd_add 127.0.0.1:5882 -> guest :22 (user 'tc').\n#   ISO at /data/isos/TinyCore.iso (canonical; old /data/vms/spikeA path\n#   whitelisted). Resolution 1600x1200x32 (4:3, under the 1920x1200 cap; set in\n#   the guest .xsession Xvesa -screen). Cursor calibration (2026-07): TinyCore's\n#   Xvesa reads a RELATIVE PS/2 mouse (/dev/input/mice), so the daemon-abs path\n#   is relative tracking with edge re-homing (clamp at screen edges). The single\n#   cursor_scale sets the 1:1 GAIN (measured transfer A~1.28 per axis, equal at\n#   4:3); the offset is a neutral origin. scale=0.783 off=(0,0) tracks 1:1 within\n#   ~1-2px after any edge touch (live-client + framebuffer verified). Re-verify\n#   after any TinyCore major bump or resolution change.\n",
+    "stationsManifestOrder": 1,
+    "stationsManifestPrelude": "\n# tinycore (VMID 82) — TinyCore LiveCD + golden fixture. VERBATIM LAUNCHER:\n#   state.qcow2 (3G virtio) for the golden snapshot; conditional -loadvm golden;\n#   post-boot QMP hostfwd_add 127.0.0.1:5882 -> guest :22 (user 'tc').\n#   ISO at /data/isos/TinyCore.iso (canonical; old /data/vms/spikeA path\n#   whitelisted). Resolution 1600x1200x32 (4:3, under the 1920x1200 cap; set in\n#   the guest .xsession Xvesa -screen). Cursor calibration (2026-07): TinyCore's\n#   Xvesa reads a RELATIVE PS/2 mouse (/dev/input/mice), so the daemon-abs path\n#   is relative tracking with edge re-homing (clamp at screen edges). The single\n#   cursor_scale sets the 1:1 GAIN (measured transfer A~1.28 per axis, equal at\n#   4:3); the offset is a neutral origin. scale=0.783 off=(0,0) tracks 1:1 within\n#   ~1-2px after any edge touch (live-client + framebuffer verified). Re-verify\n#   after any TinyCore major bump or resolution change.\n",
     "bringUpGroup": 0,
     "bindingOrder": 9,
     "bindingPrelude": "",
     "goldenOrder": 1,
     "actionMapOrder": 3
   },
-  "tileDir": "tinycore",
+  "stationDir": "tinycore",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -99,7 +99,7 @@
   "guestDoc": "docs/guests/tinycore.md",
   "credentialsRef": "guest/tinycore",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "tinycore",
       "SH_QMP": "/data/vms/streamhost/tiles/tinycore/qmp.sock",
       "SH_PORT": "54082",
@@ -224,7 +224,7 @@
     "blurb": "A complete graphical Linux in ~16 MB — the whole OS lives in RAM."
   },
   "reset": {
-    "tileDir": "tinycore",
+    "stationDir": "tinycore",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

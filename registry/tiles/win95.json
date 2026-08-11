@@ -67,15 +67,15 @@
   },
   "render": {
     "signalOrder": 1,
-    "tilesManifestOrder": 14,
-    "tilesManifestPrelude": "\n# win95 (VMID 91) — Win95 OSR2, sb16, pcnet NIC; machine carries accel=kvm.\n#   VERBATIM LAUNCHER: boots the tile-LOCAL win95-golden.qcow2 (gallery\n#   Win95/win95-osr2-kvm.qcow2 stays pristine) WITHOUT -snapshot; conditional\n#   -loadvm golden.\n# POINTER=warpd: usb=off => PS/2 RELATIVE-only mouse + Win9x pointer\n# acceleration make an abs->rel bridge drift. Fix (guest-agents/win9x/\n# warpnet.c): an in-guest Win32 agent SetCursorPos()s absolutely over Winsock\n# TCP :7777, reached via the hostfwd 127.0.0.1:57791 on the launcher's -netdev.\n# BUTTONS ride the real QEMU PS/2 device (--warpd-buttons qemu, 2026-07-14): a\n# warpnet mouse_event click is a WINDOWS-level click that punches through a\n# fullscreen DOS box's input ownership (killed GTA/Duke/Quake with \"VESA\n# function 5h failed\"); PS/2 buttons land in whoever owns the mouse. Motion\n# stays on the agent (absolute, drift-free).\n",
+    "stationsManifestOrder": 14,
+    "stationsManifestPrelude": "\n# win95 (VMID 91) — Win95 OSR2, sb16, pcnet NIC; machine carries accel=kvm.\n#   VERBATIM LAUNCHER: boots the tile-LOCAL win95-golden.qcow2 (gallery\n#   Win95/win95-osr2-kvm.qcow2 stays pristine) WITHOUT -snapshot; conditional\n#   -loadvm golden.\n# POINTER=warpd: usb=off => PS/2 RELATIVE-only mouse + Win9x pointer\n# acceleration make an abs->rel bridge drift. Fix (guest-agents/win9x/\n# warpnet.c): an in-guest Win32 agent SetCursorPos()s absolutely over Winsock\n# TCP :7777, reached via the hostfwd 127.0.0.1:57791 on the launcher's -netdev.\n# BUTTONS ride the real QEMU PS/2 device (--warpd-buttons qemu, 2026-07-14): a\n# warpnet mouse_event click is a WINDOWS-level click that punches through a\n# fullscreen DOS box's input ownership (killed GTA/Duke/Quake with \"VESA\n# function 5h failed\"); PS/2 buttons land in whoever owns the mouse. Motion\n# stays on the agent (absolute, drift-free).\n",
     "bringUpGroup": 4,
     "bindingOrder": 4,
     "bindingPrelude": "",
     "goldenOrder": 4,
     "actionMapOrder": 6
   },
-  "tileDir": "win95",
+  "stationDir": "win95",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -102,7 +102,7 @@
   "guestDoc": "docs/guests/win9x.md",
   "credentialsRef": "guest/win95",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "win95",
       "SH_QMP": "/data/vms/streamhost/tiles/win95/qmp.sock",
       "SH_PORT": "54091",
@@ -237,7 +237,7 @@
     "blurb": "The Start button that changed everything — the desktop metaphor that defined a decade."
   },
   "reset": {
-    "tileDir": "win95",
+    "stationDir": "win95",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

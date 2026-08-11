@@ -25,14 +25,14 @@
   },
   "render": {
     "signalOrder": 57,
-    "tilesManifestOrder": 55,
-    "tilesManifestPrelude": "\n# w2kalpha — x11 RUNTIME tile, NOT QEMU. es40 (AlphaServer ES40, fork Wnt/es40)\n#   cold-booting Windows 2000 RC2 build 2128 for Alpha AXP with NO window and\n#   NO X server (SDL_VIDEODRIVER=dummy), captured from the framebuffer es40\n#   publishes itself: SH_CAPTURE=shm (src/gui/shmfb.h) + mamesock input (es40\n#   ctlsock mamectl/1, src/gui/ctlsock.h). No SH_QMP; large media staged under\n#   /data/vms/streamhost/assets/w2kalpha (es40 fork binary + golden nt.img).\n",
+    "stationsManifestOrder": 55,
+    "stationsManifestPrelude": "\n# w2kalpha — x11 RUNTIME tile, NOT QEMU. es40 (AlphaServer ES40, fork Wnt/es40)\n#   cold-booting Windows 2000 RC2 build 2128 for Alpha AXP with NO window and\n#   NO X server (SDL_VIDEODRIVER=dummy), captured from the framebuffer es40\n#   publishes itself: SH_CAPTURE=shm (src/gui/shmfb.h) + mamesock input (es40\n#   ctlsock mamectl/1, src/gui/ctlsock.h). No SH_QMP; large media staged under\n#   /data/vms/streamhost/assets/w2kalpha (es40 fork binary + golden nt.img).\n",
     "bringUpGroup": 7,
     "bindingOrder": 62,
     "bindingPrelude": "",
     "goldenOrder": 55
   },
-  "tileDir": "w2kalpha",
+  "stationDir": "w2kalpha",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -58,7 +58,7 @@
   "guestDoc": "docs/guests/w2kalpha.md",
   "credentialsRef": "guest/w2kalpha",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "w2kalpha",
       "SH_TILE_RUNTIME": "x11",
       "SH_CAPTURE": "shm",
@@ -144,7 +144,7 @@
     "notes": "Live streamhost tile — the second non-QEMU x11-runtime tile (after irix): the es40 AlphaServer ES40 emulator (fork Wnt/es40: JIT compile-on-2nd-encounter 2.37x interactive throughput, shm framebuffer export, mamectl/1 ctlsock input) runs headless, captured via SH_CAPTURE=shm. resetMode=relaunch cold-boots the golden nt.img in ~80 s. archetype putty-lcd. See docs/lab/research/w2kalpha-HANDOFF.md."
   },
   "reset": {
-    "tileDir": "w2kalpha",
+    "stationDir": "w2kalpha",
     "pointer": "abs",
     "touch": false,
     "resetMode": "relaunch",

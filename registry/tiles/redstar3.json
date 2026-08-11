@@ -69,15 +69,15 @@
   },
   "render": {
     "signalOrder": 31,
-    "tilesManifestOrder": 29,
-    "tilesManifestPrelude": "\n# redstar3 (VMID 121) — private Red Star OS 3.0 Desktop preservation tile.\n#   KVM/i440fx, stable Nehalem CPU, std VGA (Xorg vesa + ShadowFB, 1920x1080),\n#   IDE, USB tablet, no audio.\n#   -nodefaults is mandatory: it prevents QEMU's implicit e1000; zero guest NICs.\n",
+    "stationsManifestOrder": 29,
+    "stationsManifestPrelude": "\n# redstar3 (VMID 121) — private Red Star OS 3.0 Desktop preservation tile.\n#   KVM/i440fx, stable Nehalem CPU, std VGA (Xorg vesa + ShadowFB, 1920x1080),\n#   IDE, USB tablet, no audio.\n#   -nodefaults is mandatory: it prevents QEMU's implicit e1000; zero guest NICs.\n",
     "bringUpGroup": 2,
     "bindingOrder": 34,
     "bindingPrelude": "",
     "goldenOrder": 29,
     "actionMapOrder": 27
   },
-  "tileDir": "redstar3",
+  "stationDir": "redstar3",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -102,7 +102,7 @@
   "guestDoc": "docs/guests/redstar3.md",
   "credentialsRef": "guest/redstar3",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "redstar3",
       "SH_QMP": "/data/vms/streamhost/tiles/redstar3/qmp.sock",
       "SH_PORT": "54121",
@@ -239,7 +239,7 @@
     "notes": "Private air-gapped preservation exhibit. The guest has no emulated network interface."
   },
   "reset": {
-    "tileDir": "redstar3",
+    "stationDir": "redstar3",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

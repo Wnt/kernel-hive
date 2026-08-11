@@ -2,7 +2,7 @@
 //  streamhostInput.group.ts — the streamhost tiles under input regression.
 //  ---------------------------------------------------------------------------
 //  SHARED FACTS COME FROM THE GOLDEN MANIFEST (de-drifted 2026-07-14): per-tile
-//  `tileDir` / `pointer` / `touch` / `resetMode` / `snapshot` are READ AT LOAD
+//  `stationDir` / `pointer` / `touch` / `resetMode` / `snapshot` are READ AT LOAD
 //  from the RENDERED golden manifest (stations-registry.py; the copy deployed to
 //  `/data/vms/streamhost/serve/golden-manifest.json` is what reset-tile.sh and
 //  the SPA restore endpoint read). This file keeps only the TEST-SIDE fields:
@@ -44,7 +44,7 @@ import { fileURLToPath } from 'node:url';
 export interface InputTileSpec {
   osId: string;
   displayName: string;
-  tileDir: string;
+  stationDir: string;
   pointer: 'abs' | 'rel';
   touch?: boolean;
   keyType?: string;
@@ -61,7 +61,7 @@ export interface InputTileSpec {
 //  the host without the full repo, e.g. /data/streamhost-input-test).
 // ---------------------------------------------------------------------------
 interface ManifestTile {
-  tileDir: string;
+  stationDir: string;
   pointer: 'abs' | 'rel';
   touch: boolean;
   resetMode: 'loadvm' | 'restart';
@@ -278,7 +278,7 @@ export const STREAMHOST_INPUT_TILES: InputTileSpec[] = TEST_SPECS.map((t) => {
   return {
     osId: t.osId,
     displayName: t.displayName,
-    tileDir: facts.tileDir,
+    stationDir: facts.stationDir,
     pointer: facts.pointer,
     touch: facts.touch || undefined,
     keyType: t.keyType,

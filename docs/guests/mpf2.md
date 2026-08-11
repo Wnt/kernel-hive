@@ -149,7 +149,7 @@ default PS/2 keyboard. MAME maps those physical keys to the 6502 memory-mapped
 matrix at $C000/$C010. Uppercase letters and symbols follow standard ASCII.
 
 Two registry-declared streamhost keyboard knobs make that surface usable
-(`registry/tiles/mpf2.json` → `runtime.tileEnv`; both also cover the UI's
+(`registry/tiles/mpf2.json` → `runtime.stationEnv`; both also cover the UI's
 on-screen keyboard, since it shares the same wire record):
 
 - **`SH_KEY_REMAP=0x0e:0xe04b`** — Backspace is delivered as LEFT ARROW. The

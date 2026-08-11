@@ -25,14 +25,14 @@
   },
   "render": {
     "signalOrder": 34,
-    "tilesManifestOrder": 32,
-    "tilesManifestPrelude": "\n# irix — x11 RUNTIME tile (issue #20), NOT QEMU. MAME(indy_4610) booting\n#   SGI IRIX 6.5 with NO window and NO X server (-video none), captured from\n#   the framebuffer it publishes: SH_CAPTURE=shm + mamesock input (mamectl\n#   OSD module ctl.sock, issue #45; irixagent.lua stays deployed as the\n#   IRIX_CTL=off deep-rollback arm).\n#   No SH_QMP; large media staged by tiles/irix/fetch-assets.sh.\n",
+    "stationsManifestOrder": 32,
+    "stationsManifestPrelude": "\n# irix — x11 RUNTIME tile (issue #20), NOT QEMU. MAME(indy_4610) booting\n#   SGI IRIX 6.5 with NO window and NO X server (-video none), captured from\n#   the framebuffer it publishes: SH_CAPTURE=shm + mamesock input (mamectl\n#   OSD module ctl.sock, issue #45; irixagent.lua stays deployed as the\n#   IRIX_CTL=off deep-rollback arm).\n#   No SH_QMP; large media staged by tiles/irix/fetch-assets.sh.\n",
     "bringUpGroup": 7,
     "bindingOrder": 38,
     "bindingPrelude": "",
     "goldenOrder": 32
   },
-  "tileDir": "irix",
+  "stationDir": "irix",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -58,7 +58,7 @@
   "guestDoc": "docs/guests/irix.md",
   "credentialsRef": "guest/irix",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "irix",
       "SH_TILE_RUNTIME": "x11",
       "SH_CAPTURE": "shm",
@@ -152,7 +152,7 @@
     "notes": "Live streamhost tile — the FIRST non-QEMU tile: an Xvfb + MAME(indy_4610) emulator captured directly by streamhost’s SH_CAPTURE=shm backend (MAME’s SGI Indy emulation kernel-panics under a KVM vCPU, so it runs on the bare-metal CPU, not a QEMU VM). archetype beige-tower-crt. See docs/history/irix-tile-issue20-handoff.md."
   },
   "reset": {
-    "tileDir": "irix",
+    "stationDir": "irix",
     "pointer": "abs",
     "touch": false,
     "resetMode": "relaunch",

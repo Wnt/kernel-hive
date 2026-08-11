@@ -43,15 +43,15 @@
     }
   },
   "render": {
-    "tilesManifestOrder": 38,
+    "stationsManifestOrder": 38,
     "bindingOrder": 44,
     "goldenOrder": 38,
     "bringUpGroup": 6,
     "signalOrder": 40,
-    "tilesManifestPrelude": "",
+    "stationsManifestPrelude": "",
     "bindingPrelude": ""
   },
-  "tileDir": "cbm8032",
+  "stationDir": "cbm8032",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -77,7 +77,7 @@
   "guestDoc": "docs/guests/cbm8032.md",
   "credentialsRef": "guest/cbm8032",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "cbm8032",
       "SH_QMP": "/data/vms/streamhost/tiles/cbm8032/qmp.sock",
       "SH_PORT": "54109",
@@ -220,7 +220,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (xpet -model 8032) emulating a CBM 8032; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media — BASIC 4.0, KERNAL 4, the 80-column business editor and the character generator all come from the emulator's own data tree. The golden is the machine's own untouched power-on screen; the exhibit's interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns. Drawn double-size (-CRTCdsize) on a 1600x1200 X root, the tightest advertised mode that contains the 1408x1064 SDL window. Keyboard-only exhibit; mono-terminal archetype — the 8032 is an all-in-one with an integrated 12-inch green monitor, which is what that archetype models. See streamhost/docs/BRIDGE.md and docs/guests/cbm8032.md."
   },
   "reset": {
-    "tileDir": "cbm8032",
+    "stationDir": "cbm8032",
     "pointer": "none",
     "touch": false,
     "resetMode": "loadvm",

@@ -39,15 +39,15 @@
     }
   },
   "render": {
-    "tilesManifestOrder": 52,
+    "stationsManifestOrder": 52,
     "bindingOrder": 59,
     "goldenOrder": 52,
     "bringUpGroup": 6,
     "signalOrder": 54,
-    "tilesManifestPrelude": "",
+    "stationsManifestPrelude": "",
     "bindingPrelude": ""
   },
-  "tileDir": "alto",
+  "stationDir": "alto",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -72,7 +72,7 @@
   "guestDoc": "docs/guests/alto.md",
   "credentialsRef": "guest/alto",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "alto",
       "SH_QMP": "/data/vms/streamhost/tiles/alto/qmp.sock",
       "SH_PORT": "54137",
@@ -170,7 +170,7 @@
     "bringUpOrder": 59
   },
   "reset": {
-    "tileDir": "alto",
+    "stationDir": "alto",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

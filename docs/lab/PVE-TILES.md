@@ -57,7 +57,7 @@ coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
            "reason": "PVE config is the authoritative device ledger"
          }
        },
-       "tileEnv": {
+       "stationEnv": {
          "SH_TILE": "example",
          "SH_QMP": "/data/vms/streamhost/tiles/example/qmp.sock",
          "SH_QEMU_MODE": "pve",
@@ -66,7 +66,7 @@ coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
        }
      },
      "reset": {
-       "tileDir": "example",
+       "stationDir": "example",
        "resetMode": "pve-rollback",
        "snapshot": "golden"
      }

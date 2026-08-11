@@ -67,8 +67,8 @@
   },
   "render": {
     "signalOrder": 15,
-    "tilesManifestOrder": 7,
-    "tilesManifestPrelude": "\n# kolibrios (VMID 97) — LiveCD, usb-tablet, AC97. VERBATIM LAUNCHER:\n#   state.qcow2 (virtio) holds the golden snapshot; conditional -loadvm golden.\n# POINTER=abs (Pattern A): KolibriOS's native USB HID stack consumes usb-tablet\n# absolute coordinates 1:1; golden re-baked 2026-07-13 with the tablet present.\n",
+    "stationsManifestOrder": 7,
+    "stationsManifestPrelude": "\n# kolibrios (VMID 97) — LiveCD, usb-tablet, AC97. VERBATIM LAUNCHER:\n#   state.qcow2 (virtio) holds the golden snapshot; conditional -loadvm golden.\n# POINTER=abs (Pattern A): KolibriOS's native USB HID stack consumes usb-tablet\n# absolute coordinates 1:1; golden re-baked 2026-07-13 with the tablet present.\n",
     "bringUpGroup": 1,
     "bindingOrder": 1,
     "bindingPrelude": "",
@@ -76,7 +76,7 @@
     "goldenOrder": 10,
     "actionMapOrder": 12
   },
-  "tileDir": "kolibrios",
+  "stationDir": "kolibrios",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -101,7 +101,7 @@
   "guestDoc": "docs/guests/kolibrios.md",
   "credentialsRef": "guest/kolibrios",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "kolibrios",
       "SH_QMP": "/data/vms/streamhost/tiles/kolibrios/qmp.sock",
       "SH_PORT": "54097",
@@ -221,7 +221,7 @@
     "blurb": "A complete graphical OS that fits on a single floppy — written in pure asm."
   },
   "reset": {
-    "tileDir": "kolibrios",
+    "stationDir": "kolibrios",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

@@ -44,14 +44,14 @@
   },
   "render": {
     "signalOrder": 32,
-    "tilesManifestOrder": 30,
-    "tilesManifestPrelude": "\n# amstradcpc (VMID 219) — cap32 (Caprice32) -> Amstrad CPC 6128 -> Locomotive BASIC Ready. ssh 5819.\n",
+    "stationsManifestOrder": 30,
+    "stationsManifestPrelude": "\n# amstradcpc (VMID 219) — cap32 (Caprice32) -> Amstrad CPC 6128 -> Locomotive BASIC Ready. ssh 5819.\n",
     "bringUpGroup": 6,
     "bindingOrder": 35,
     "bindingPrelude": "",
     "goldenOrder": 30
   },
-  "tileDir": "amstradcpc",
+  "stationDir": "amstradcpc",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -97,7 +97,7 @@
     "perCharMs": 90
   },
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "amstradcpc",
       "SH_QMP": "/data/vms/streamhost/tiles/amstradcpc/qmp.sock",
       "SH_PORT": "54119",
@@ -227,7 +227,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Caprice32 (cap32) in a verified scale-3 SDL/X11 window emulating an Amstrad CPC 6128 that boots Locomotive BASIC; streamhost captures the Linux framebuffer + AC97 audio (the CPC AY-3-8912 routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke CPC 6128 + CTM monitor). See streamhost/docs/BRIDGE.md."
   },
   "reset": {
-    "tileDir": "amstradcpc",
+    "stationDir": "amstradcpc",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

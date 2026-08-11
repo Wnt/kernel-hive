@@ -44,14 +44,14 @@
   },
   "render": {
     "signalOrder": 37,
-    "tilesManifestOrder": 35,
-    "tilesManifestPrelude": "\n# plus4 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.\n",
+    "stationsManifestOrder": 35,
+    "stationsManifestPrelude": "\n# plus4 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.\n",
     "bringUpGroup": 6,
     "bindingOrder": 41,
     "bindingPrelude": "",
     "goldenOrder": 35
   },
-  "tileDir": "plus4",
+  "stationDir": "plus4",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -77,7 +77,7 @@
   "guestDoc": "docs/guests/plus4.md",
   "credentialsRef": "guest/plus4",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "plus4",
       "SH_QMP": "/data/vms/streamhost/tiles/plus4/qmp.sock",
       "SH_PORT": "54086",
@@ -207,7 +207,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (xplus4) emulating a PAL Plus/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs INCLUDING both 3-plus-1 banks, so this tile needs no external media. The golden is the machine's own untouched power-on screen, whose ROM message “3-PLUS-1 ON KEY F1” is the exhibit's launcher. The suite’s command prompt is one-shot — C= + C opens it, one command runs, it closes — so module switching needs the Commodore key (Tab under VICE’s symbolic keymap); the SPA’s plus4 on-screen keyboard therefore carries one-tap Word/Calc/File buttons that send the whole sequence. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/plus4.md."
   },
   "reset": {
-    "tileDir": "plus4",
+    "stationDir": "plus4",
     "pointer": "none",
     "touch": false,
     "resetMode": "loadvm",

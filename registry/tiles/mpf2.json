@@ -44,14 +44,14 @@
   },
   "render": {
     "signalOrder": 34,
-    "tilesManifestOrder": 32,
-    "tilesManifestPrelude": "\n# mpf2 (VMID 220) — MAME mpf2 (Multitech Microprofessor II, 1982) -> Applesoft BASIC. ssh 5820. Keyboard-only.\n",
+    "stationsManifestOrder": 32,
+    "stationsManifestPrelude": "\n# mpf2 (VMID 220) — MAME mpf2 (Multitech Microprofessor II, 1982) -> Applesoft BASIC. ssh 5820. Keyboard-only.\n",
     "bringUpGroup": 6,
     "bindingOrder": 39,
     "bindingPrelude": "",
     "goldenOrder": 32
   },
-  "tileDir": "mpf2",
+  "stationDir": "mpf2",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -77,7 +77,7 @@
   "guestDoc": "docs/guests/mpf2.md",
   "credentialsRef": "guest/mpf2",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "mpf2",
       "SH_QMP": "/data/vms/streamhost/tiles/mpf2/qmp.sock",
       "SH_PORT": "54124",
@@ -233,7 +233,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME (mpf2 driver) emulating a Multitech MPF-II that boots its ROM BASIC; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Keyboard-only exhibit (no pointing device — the real machine had none); uses the beige-tower-crt fallback until a bespoke MPF-II archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/mpf2.md."
   },
   "reset": {
-    "tileDir": "mpf2",
+    "stationDir": "mpf2",
     "pointer": "none",
     "touch": false,
     "resetMode": "loadvm",

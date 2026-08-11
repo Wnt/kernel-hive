@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "indyr4400",
   "era_year": 1993,
-  "tileDir": "indyr4400",
+  "stationDir": "indyr4400",
   "lifecycle": "production",
   "enabled": true,
   "build": {
@@ -45,12 +45,12 @@
     }
   },
   "render": {
-    "tilesManifestOrder": 52,
+    "stationsManifestOrder": 52,
     "bindingOrder": 58,
     "goldenOrder": 52,
     "bringUpGroup": 6,
     "signalOrder": 54,
-    "tilesManifestPrelude": "\n# indyr4400 (VMID 239) — Iris -> SGI Indy (MIPS R4400) -> IRIX 6.5.22.\n#   The SECOND SGI Indy in the lineup and the other emulator: 'irix' is MAME's\n#   R4600 indy_4610 running BARE-METAL (MAME panics under a KVM vCPU); Iris is\n#   userspace Rust and runs as an ordinary KVM bridge tile. ssh 5839. The 6.3 GB\n#   IRIX disk is a READ-ONLY virtio asset, staged by tiles/indyr4400/fetch-assets.sh.\n",
+    "stationsManifestPrelude": "\n# indyr4400 (VMID 239) — Iris -> SGI Indy (MIPS R4400) -> IRIX 6.5.22.\n#   The SECOND SGI Indy in the lineup and the other emulator: 'irix' is MAME's\n#   R4600 indy_4610 running BARE-METAL (MAME panics under a KVM vCPU); Iris is\n#   userspace Rust and runs as an ordinary KVM bridge tile. ssh 5839. The 6.3 GB\n#   IRIX disk is a READ-ONLY virtio asset, staged by tiles/indyr4400/fetch-assets.sh.\n",
     "bindingPrelude": ""
   },
   "stream": {
@@ -76,7 +76,7 @@
   "guestDoc": "docs/guests/indyr4400.md",
   "credentialsRef": "guest/indyr4400",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "indyr4400",
       "SH_QMP": "/data/vms/streamhost/tiles/indyr4400/qmp.sock",
       "SH_PORT": "54136",
@@ -200,7 +200,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Iris (techomancer/iris, BSD-3), a userspace Rust SGI Indy emulator, booting IRIX 6.5.22 on a 1280x1024 X root captured 1:1. The DELIBERATE pair to the irix tile: same museum machine, different silicon (R4400 vs R4600) and a different emulator, and unlike MAME — which kernel-panics under a KVM vCPU and forced the irix tile bare-metal — Iris runs happily inside KVM, so this one is an ordinary bridge tile with QEMU pointer, keyboard and loadvm-golden reset. Pointer is RELATIVE (Pointer Lock): Iris grabs on first click and feeds PS/2 deltas. Audio and networking are off in this phase. archetype beige-tower-crt. See streamhost/docs/BRIDGE.md and docs/guests/indyr4400.md."
   },
   "reset": {
-    "tileDir": "indyr4400",
+    "stationDir": "indyr4400",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

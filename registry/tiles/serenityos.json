@@ -65,15 +65,15 @@
   },
   "render": {
     "signalOrder": 11,
-    "tilesManifestOrder": 22,
-    "tilesManifestPrelude": "\n# serenityos (VMID 102) — -kernel direct boot off an NVMe-attached qcow2\n#   overlay over the read-only golden raw ext2 root (_disk_image); the Ext2FS\n#   root must mount RW or the kernel panics. VERBATIM LAUNCHER: recreates the\n#   overlay FRESH on every boot (rm + qemu-img create -b) — resetMode=restart;\n#   the launcher is self-contained, no external pre-seed step needed.\n# NOTE: pointer=ABS even though there is no usb-tablet. SerenityOS reads\n# absolute pointer position (verified live: dbus SetAbsPosition lands 1:1; a\n# relative delta is ignored). Do NOT switch this to rel.\n",
+    "stationsManifestOrder": 22,
+    "stationsManifestPrelude": "\n# serenityos (VMID 102) — -kernel direct boot off an NVMe-attached qcow2\n#   overlay over the read-only golden raw ext2 root (_disk_image); the Ext2FS\n#   root must mount RW or the kernel panics. VERBATIM LAUNCHER: recreates the\n#   overlay FRESH on every boot (rm + qemu-img create -b) — resetMode=restart;\n#   the launcher is self-contained, no external pre-seed step needed.\n# NOTE: pointer=ABS even though there is no usb-tablet. SerenityOS reads\n# absolute pointer position (verified live: dbus SetAbsPosition lands 1:1; a\n# relative delta is ignored). Do NOT switch this to rel.\n",
     "bringUpGroup": 5,
     "bindingOrder": 15,
     "bindingPrelude": "",
     "goldenOrder": 15,
     "actionMapOrder": 17
   },
-  "tileDir": "serenityos",
+  "stationDir": "serenityos",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -98,7 +98,7 @@
   "guestDoc": "docs/guests/serenityos.md",
   "credentialsRef": "guest/serenityos",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "serenityos",
       "SH_QMP": "/data/vms/streamhost/tiles/serenityos/qmp.sock",
       "SH_PORT": "54102",
@@ -213,7 +213,7 @@
     "blurb": "A love letter to the late-90s desktop, written entirely from scratch on YouTube."
   },
   "reset": {
-    "tileDir": "serenityos",
+    "stationDir": "serenityos",
     "pointer": "abs",
     "touch": false,
     "resetMode": "restart",

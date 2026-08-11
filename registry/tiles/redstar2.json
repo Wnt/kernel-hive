@@ -67,15 +67,15 @@
   },
   "render": {
     "signalOrder": 30,
-    "tilesManifestOrder": 28,
-    "tilesManifestPrelude": "\n# redstar2 (VMID 120) — Red Star OS 2.0 i386 KDE desktop. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk,\n#   std VGA (Xorg vesa + ShadowFB, 1920x1200), absolute USB tablet, no audio.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
+    "stationsManifestOrder": 28,
+    "stationsManifestPrelude": "\n# redstar2 (VMID 120) — Red Star OS 2.0 i386 KDE desktop. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk,\n#   std VGA (Xorg vesa + ShadowFB, 1920x1200), absolute USB tablet, no audio.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
     "bringUpGroup": 6,
     "bindingOrder": 33,
     "bindingPrelude": "",
     "goldenOrder": 28,
     "actionMapOrder": 28
   },
-  "tileDir": "redstar2",
+  "stationDir": "redstar2",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -100,7 +100,7 @@
   "guestDoc": "docs/guests/redstar2.md",
   "credentialsRef": "guest/redstar2",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "redstar2",
       "SH_QMP": "/data/vms/streamhost/tiles/redstar2/qmp.sock",
       "SH_PORT": "54120",
@@ -217,7 +217,7 @@
     "blurb": "A preserved KDE-era North Korean desktop distribution, presented offline with no network hardware."
   },
   "reset": {
-    "tileDir": "redstar2",
+    "stationDir": "redstar2",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

@@ -52,7 +52,7 @@ renamed box-side scripts re-synced; `box-repo.sh sync` + re-emit.
   the NEW var first and falls back to the old with a deprecation log line —
   both vocabularies work during the fleet flip. Canary-deploy per the normal
   per-station rule before promoting.
-- **Registry**: `tileDir`/`tileEnv`/`tilesManifest*` → `stationDir`/… in
+- **Registry**: `stationDir`/`stationEnv`/`stationsManifest*` → `stationDir`/… in
   `stations-registry.py` + all station JSONs (one mechanical commit,
   regenerate everything; labctl reads the generated declarations — update its
   keys in the same commit).

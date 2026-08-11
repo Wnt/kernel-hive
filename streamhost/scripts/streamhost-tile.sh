@@ -87,7 +87,7 @@ WARPD_BUTTON_DELAY_MS=""
 # decision 2026-08-11: every tile streams ultrafast; the box is GPU-less and
 # a busier preset buys latency, not quality a museum stream can show. The
 # 2026-07/08 emits shipped "veryfast" here and seeded 29 live tile.envs +
-# 4 registry tileEnv records with it (all re-set to ultrafast the same day).
+# 4 registry stationEnv records with it (all re-set to ultrafast the same day).
 ENCODER_PRESET="ultrafast"
 PROFILE="high"
 CRF=""

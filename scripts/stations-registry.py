@@ -65,7 +65,7 @@ class RegistryError(Exception):
 def is_x11_runtime(row: dict[str, Any]) -> bool:
     """True for the non-QEMU x11 streamhost runtime (SH_CAPTURE=x11 tiles).
 
-    Discriminated by a runtime.x11 block; the tileEnv carries the matching
+    Discriminated by a runtime.x11 block; the stationEnv carries the matching
     SH_TILE_RUNTIME=x11 marker the service dispatch keys on. The block is still
     called `x11` because that names the RUNTIME (an emulator managed by
     x11-runtime.sh rather than a QEMU VM). Its FRAME SOURCE is chosen separately
@@ -117,11 +117,11 @@ def load() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             fixture_env = parse_env_fixture(fixture)
             row["_fixtureEnv"] = fixture_env
             runtime = row.setdefault("runtime", OrderedDict())
-            recorded = runtime.get("tileEnv", OrderedDict())
+            recorded = runtime.get("stationEnv", OrderedDict())
             row["_recordedTileEnv"] = recorded
             merged = OrderedDict(recorded)
             merged.update(fixture_env)
-            runtime["tileEnv"] = merged
+            runtime["stationEnv"] = merged
         rows.append(row)
     if not rows:
         raise RegistryError("registry/tiles contains no entries")
@@ -284,8 +284,8 @@ def validate_schema_shape(rows: list[dict[str, Any]], errors: list[str]) -> None
         if stream.get("transport") not in transports:
             fail(errors, row, f"invalid stream.transport {stream.get('transport')!r}")
         if stream.get("transport") == "streamhost":
-            for key in ("tileDir", "udpPort", "fps", "audio", "touch", "pointer"):
-                container = row if key == "tileDir" else stream
+            for key in ("stationDir", "udpPort", "fps", "audio", "touch", "pointer"):
+                container = row if key == "stationDir" else stream
                 if key not in container:
                     fail(errors, row, f"streamhost entry missing {key}")
             if stream.get("pointer", {}).get("transport") not in pointers:
@@ -412,7 +412,7 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
         demo = row.get("demoProgram")
         if not demo:
             continue
-        env = (row.get("runtime") or {}).get("tileEnv", {})
+        env = (row.get("runtime") or {}).get("stationEnv", {})
 
         def ms(key: str, env: dict[str, Any] = env) -> int:
             try:
@@ -517,7 +517,7 @@ def validate_pointer_method(rows: list[dict[str, Any]], errors: list[str]) -> No
                     f"absolute false and present false, not {method!r}",
                 )
             continue
-        env = row.get("runtime", {}).get("tileEnv", {})
+        env = row.get("runtime", {}).get("stationEnv", {})
         backend = ptr.get("backend") or env.get("SH_INPUT_BACKEND") or LEGACY_POINTER_BACKEND.get(ptr.get("transport"))
         if backend not in POINTER_MODE_BY_BACKEND:
             fail(errors, row, f"cannot resolve an input backend for stream.pointer {ptr.get('transport')!r}")
@@ -528,7 +528,7 @@ def validate_pointer_method(rows: list[dict[str, Any]], errors: list[str]) -> No
                 row,
                 f"stream.pointer.method {method!r} is delivered by backend "
                 f"{'/'.join(sorted(backends))}, but this tile runs {backend!r} "
-                f"(stream.pointer.backend / runtime.tileEnv SH_INPUT_BACKEND / "
+                f"(stream.pointer.backend / runtime.stationEnv SH_INPUT_BACKEND / "
                 f"legacy SH_POINTER={ptr.get('transport')!r}). Correct the method or "
                 f"the backend -- the LIVE tile.env on the box is the truth about "
                 f"which one is wrong.",
@@ -599,18 +599,18 @@ def validate_keyboard_env(rows: list[dict[str, Any]], errors: list[str]) -> None
     """
     for row in rows:
         charmap = (row.get("keyboard") or {}).get("charMap")
-        env = (row.get("runtime") or {}).get("tileEnv", {}).get("SH_KEY_MAP")
+        env = (row.get("runtime") or {}).get("stationEnv", {}).get("SH_KEY_MAP")
         if not charmap and not env:
             continue
         if charmap and not env:
             fail(
                 errors,
                 row,
-                "keyboard.charMap declared but SH_KEY_MAP missing from runtime.tileEnv (labctl reads it from there)",
+                "keyboard.charMap declared but SH_KEY_MAP missing from runtime.stationEnv (labctl reads it from there)",
             )
             continue
         if env and not charmap:
-            fail(errors, row, "SH_KEY_MAP set in runtime.tileEnv with no keyboard.charMap to derive it from")
+            fail(errors, row, "SH_KEY_MAP set in runtime.stationEnv with no keyboard.charMap to derive it from")
             continue
         expected = ",".join(f"{keymap_escape(g)}:{keymap_escape(h)}" for g, h in charmap.items())
         if env != expected:
@@ -687,7 +687,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     validate_fleet_encoder(globals_doc, errors)
     ids: dict[str, str] = {}
     unique: dict[str, dict[Any, str]] = {
-        k: {} for k in ("tileDir", "udpPort", "slot", "experimentSlot", "bringUpOrder", "bindingOrder")
+        k: {} for k in ("stationDir", "udpPort", "slot", "experimentSlot", "bringUpOrder", "bindingOrder")
     }
     by_id = {row["id"]: row for row in rows}
     for row in rows:
@@ -711,7 +711,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         # Disabled candidate scaffolds reserve their identity, slot, and port even
         # though they intentionally use showcase transport until promotion.
         for key, value in (
-            ("tileDir", row.get("tileDir")),
+            ("stationDir", row.get("stationDir")),
             ("udpPort", stream.get("udpPort")),
             ("slot", stream.get("slot")),
             ("experimentSlot", stream.get("experimentSlot")),
@@ -733,7 +733,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                     fail(errors, row, "legacyPortException set but port follows slot policy")
             elif stream.get("udpPort") != globals_doc["ports"]["productionBase"] + stream.get("slot", -99999):
                 fail(errors, row, "production UDP port violates base+slot policy without legacyPortException")
-            for key in ("tilesManifestOrder", "bringUpGroup", "goldenOrder"):
+            for key in ("stationsManifestOrder", "bringUpGroup", "goldenOrder"):
                 if key not in row.get("render", {}):
                     fail(errors, row, f"production entry missing render.{key}")
             if runtime.get("bringUpOrder") is None:
@@ -764,9 +764,9 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             expected = globals_doc["ports"]["experimentBase"] + stream.get("experimentSlot", -99999)
             if stream.get("udpPort") != expected:
                 fail(errors, row, "experiment UDP port violates base+experimentSlot policy")
-        tile_dir = row["tileDir"]
+        tile_dir = row["stationDir"]
         # ONE station, ONE name. The id is the user-facing half (/os/<id>, the poster
-        # path, docs/guests/<id>.md, the UI binding); tileDir is the daemon half
+        # path, docs/guests/<id>.md, the UI binding); stationDir is the daemon half
         # (SH_TILE, the runtime dir, streamhost@<dir>). They used to be allowed to
         # differ behind an explicit alias block, and the two that did — aros/amigaos
         # and solaris/solariscde — cost a special case in every tool that spanned
@@ -774,7 +774,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         # ticket with the wrong half. Both were renamed on 2026-08-10; this keeps
         # the seam from being reintroduced.
         if os_id != tile_dir:
-            fail(errors, row, f"id '{os_id}' and tileDir '{tile_dir}' must match — one tile, one name")
+            fail(errors, row, f"id '{os_id}' and stationDir '{tile_dir}' must match — one tile, one name")
         ptr = stream["pointer"]
         if (
             ptr["transport"] == "rel"
@@ -801,7 +801,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             if not (binary.startswith("/data/vms/soltest/") or binary == stable_binary):
                 fail(errors, row, "gallery-hid must use the standalone patched QEMU")
             companions = {item.get("name") for item in runtime.get("companions", [])}
-            native_sink = runtime.get("tileEnv", {}).get("SH_INPUT_BACKEND") == "gallery-hid"
+            native_sink = runtime.get("stationEnv", {}).get("SH_INPUT_BACKEND") == "gallery-hid"
             if not native_sink and "warpd-to-ghid" not in companions:
                 fail(errors, row, "gallery-hid missing warpd-to-ghid companion")
             if native_sink and "warpd-to-ghid" in companions:
@@ -825,7 +825,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                 fail(errors, row, "criu reset snapshot must be golden")
             if x11 and reset.get("resetMode") not in {"relaunch", "criu"}:
                 fail(errors, row, "x11 tile reset must be relaunch or criu")
-        env = runtime.get("tileEnv", {})
+        env = runtime.get("stationEnv", {})
         expected_env = {
             "SH_TILE": tile_dir,
             "SH_PORT": str(stream["udpPort"]),
@@ -872,7 +872,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                 fail(errors, row, "x11 tile must not emit SH_QMP (no QEMU/QMP)")
         for key, value in expected_env.items():
             if env.get(key) != value:
-                fail(errors, row, f"tileEnv {key}={env.get(key)!r}, expected {value!r}")
+                fail(errors, row, f"stationEnv {key}={env.get(key)!r}, expected {value!r}")
         for ref in (row.get("guestDoc"), qemu.get("launcher"), qemu.get("envFixture")):
             if ref and not (REPO / ref).exists():
                 fail(errors, row, f"referenced path does not exist: {ref}")
@@ -893,7 +893,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             fail(
                 errors,
                 row,
-                f"runtime.tileEnv duplicates fixture-owned key(s) {overlap}: the tile's "
+                f"runtime.stationEnv duplicates fixture-owned key(s) {overlap}: the tile's "
                 f"tile.env.fixture is the single source for the keys it defines — "
                 f"delete them from the registry entry",
             )
@@ -988,7 +988,7 @@ def render_emit_invocation(row: dict[str, Any]) -> str:
             current = candidate
     if current:
         lines.append(current)
-    return f"emit {row['tileDir']} \\\n  " + " \\\n  ".join(lines) + "\n"
+    return f"emit {row['stationDir']} \\\n  " + " \\\n  ".join(lines) + "\n"
 
 
 BUILD_COLUMNS = ("key", "script", "outputDir", "class", "estimated", "automation")
@@ -1191,7 +1191,7 @@ def rendered() -> OrderedDict[str, bytes]:
     for row in sorted(streamed, key=lambda x: x["render"]["signalOrder"]):
         signal[row["id"]] = {
             "udpPort": row["stream"]["udpPort"],
-            "hashFile": f"/data/vms/streamhost/tiles/{row['tileDir']}/cert_hash_b64.txt",
+            "hashFile": f"/data/vms/streamhost/tiles/{row['stationDir']}/cert_hash_b64.txt",
         }
     out["tiles.json"] = (json.dumps(signal, indent=2, ensure_ascii=False) + "\n").encode()
 
@@ -1243,8 +1243,8 @@ def generated() -> OrderedDict[str, bytes]:
     # whole fleet. A per-station value here was 36 restatements of the default and
     # one silent divergence (irix on veryfast, with no recorded reason).
     emits = "".join(
-        r["render"].get("tilesManifestPrelude", "") + render_emit_invocation(r)
-        for r in sorted(production, key=lambda x: x["render"]["tilesManifestOrder"])
+        r["render"].get("stationsManifestPrelude", "") + render_emit_invocation(r)
+        for r in sorted(production, key=lambda x: x["render"]["stationsManifestOrder"])
     )
     out["streamhost/stations-manifest.sh"] = apply_count_tokens(
         template("stations-manifest.sh.in", "@@TILE_EMITS@@", emits.rstrip("\n")), rows
@@ -1252,7 +1252,7 @@ def generated() -> OrderedDict[str, bytes]:
 
     groups: dict[int, list[str]] = {}
     for row in sorted(production, key=lambda x: x["runtime"]["bringUpOrder"]):
-        groups.setdefault(row["render"]["bringUpGroup"], []).append(row["tileDir"])
+        groups.setdefault(row["render"]["bringUpGroup"], []).append(row["stationDir"])
     bring = "TILES=(\n" + "".join("  " + " ".join(groups[g]) + "\n" for g in sorted(groups)) + ")"
     out["streamhost/bring-up-all.sh"] = apply_count_tokens(
         template("bring-up-all.sh.in", "@@BRING_UP_TILES@@", bring), rows
@@ -1299,9 +1299,9 @@ def generated() -> OrderedDict[str, bytes]:
             ("tiles", OrderedDict()),
         ]
     )
-    for row in sorted(streamed, key=lambda x: x["tileDir"]):
+    for row in sorted(streamed, key=lambda x: x["stationDir"]):
         labctl = row.get("operator", {}).get("labctl", {})
-        declarations["tiles"][row["tileDir"]] = OrderedDict((k, labctl.get(k)) for k in LABCTL_KEYS)
+        declarations["tiles"][row["stationDir"]] = OrderedDict((k, labctl.get(k)) for k in LABCTL_KEYS)
     out["registry/generated/labctl-declarations.json"] = (
         json.dumps(declarations, indent=2, ensure_ascii=False) + "\n"
     ).encode()
@@ -1469,7 +1469,7 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
             ("schemaVersion", 1),
             ("id", os_id),
             ("era_year", date.today().year),
-            ("tileDir", os_id),
+            ("stationDir", os_id),
             ("lifecycle", "candidate"),
             ("enabled", False),
             ("build", {"rows": [{"order": build_order, "prelude": "", "value": line_value}]}),
@@ -1691,13 +1691,13 @@ def cmd_explain(os_id: str) -> int:
             # "why is this exhibit not on the floor" is the first thing a session
             # asks about a station it cannot find in the grid; answer it up front.
             ("listing", row.get("listing", {"state": "listed"})),
-            ("tileDir", row.get("tileDir")),
+            ("stationDir", row.get("stationDir")),
             (
                 "signal",
                 {
                     "udpPort": row.get("stream", {}).get("udpPort"),
-                    "hashFile": f"/data/vms/streamhost/tiles/{row.get('tileDir')}/cert_hash_b64.txt"
-                    if row.get("tileDir")
+                    "hashFile": f"/data/vms/streamhost/tiles/{row.get('stationDir')}/cert_hash_b64.txt"
+                    if row.get("stationDir")
                     else None,
                 },
             ),

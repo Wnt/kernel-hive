@@ -67,15 +67,15 @@
   },
   "render": {
     "signalOrder": 0,
-    "tilesManifestOrder": 2,
-    "tilesManifestPrelude": "\n# reactos (VMID 106) — NT-era LiveCD + golden fixture. UDP 4433. VERBATIM\n#   LAUNCHER: boots the LiveCD (-boot d) with reactos-golden.qcow2 attached\n#   solely to hold the savevm 'golden' snapshot (no -snapshot, no floppy —\n#   matches the baked device set). Golden store canonical at\n#   /data/gallery-guests/ReactOS/ (old /data/reactos-golden whitelisted).\n",
+    "stationsManifestOrder": 2,
+    "stationsManifestPrelude": "\n# reactos (VMID 106) — NT-era LiveCD + golden fixture. UDP 4433. VERBATIM\n#   LAUNCHER: boots the LiveCD (-boot d) with reactos-golden.qcow2 attached\n#   solely to hold the savevm 'golden' snapshot (no -snapshot, no floppy —\n#   matches the baked device set). Golden store canonical at\n#   /data/gallery-guests/ReactOS/ (old /data/reactos-golden whitelisted).\n",
     "bringUpGroup": 0,
     "bindingOrder": 20,
     "bindingPrelude": "",
     "goldenOrder": 0,
     "actionMapOrder": 21
   },
-  "tileDir": "reactos",
+  "stationDir": "reactos",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -101,7 +101,7 @@
   "guestDoc": "docs/guests/reactos.md",
   "credentialsRef": "guest/reactos",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "reactos",
       "SH_QMP": "/data/vms/streamhost/tiles/reactos/qmp.sock",
       "SH_PORT": "4433",
@@ -227,7 +227,7 @@
     "notes": "Live streamhost tile. ReactOS 0.4.14 live CD (0.4.15 hangs QEMU 11 kernel init). Archetype: beige-tower-crt (a Windows-2000-era beige tower is the right period fit)."
   },
   "reset": {
-    "tileDir": "reactos",
+    "stationDir": "reactos",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

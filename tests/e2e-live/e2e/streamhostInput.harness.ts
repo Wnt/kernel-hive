@@ -145,7 +145,7 @@ async function driveMouse(page: Page, spec: InputTileSpec, baseline: Ppm): Promi
     await page.mouse.move(q.x, q.y, { steps: 2 });
     await page.waitForTimeout(15);
   }
-  consider(diffPpm(baseline, await shot(spec.tileDir, 'drag')));
+  consider(diffPpm(baseline, await shot(spec.stationDir, 'drag')));
   await page.mouse.up();
   await page.waitForTimeout(120);
 
@@ -155,7 +155,7 @@ async function driveMouse(page: Page, spec: InputTileSpec, baseline: Ppm): Promi
   const c = px(t, 0.5, 0.55);
   await page.mouse.click(c.x, c.y, { button: 'right' });
   await page.waitForTimeout(700);
-  consider(diffPpm(baseline, await shot(spec.tileDir, 'rclick')));
+  consider(diffPpm(baseline, await shot(spec.stationDir, 'rclick')));
   await page.keyboard.press('Escape'); // dismiss the context menu (leave no trace)
   await page.waitForTimeout(200);
 
@@ -188,7 +188,7 @@ async function driveKeyboard(page: Page, spec: InputTileSpec, baseline: Ppm): Pr
   await page.waitForTimeout(120);
   await page.keyboard.press('ArrowDown'); await page.waitForTimeout(120);
   await page.keyboard.press('ArrowUp'); await page.waitForTimeout(120);
-  consider(diffPpm(baseline, await shot(spec.tileDir, 'key_a')));
+  consider(diffPpm(baseline, await shot(spec.stationDir, 'key_a')));
 
   // (b) Ctrl+Esc → the Start menu POPS UP on every Windows-family guest (state-
   //     independent — the baseline was normalized to a CLOSED menu first, so this is
@@ -198,7 +198,7 @@ async function driveKeyboard(page: Page, spec: InputTileSpec, baseline: Ppm): Pr
   await page.keyboard.press('Escape');
   await page.keyboard.up('Control');
   await page.waitForTimeout(800);
-  consider(diffPpm(baseline, await shot(spec.tileDir, 'key_start')));
+  consider(diffPpm(baseline, await shot(spec.stationDir, 'key_start')));
 
   // The requested single Esc — also closes the Start menu (>500ms after the last Esc
   // so StreamView's double-Esc-exits-to-grid never fires). No Enter/activation: we do
@@ -305,11 +305,11 @@ export function runInputTest(spec: InputTileSpec): void {
 
     // 4b. IDLE baseline: sample the self-churn several times and take the MINIMUM,
     //     so a one-off repaint (window fade, clock tick straddle) can't inflate it.
-    let base = await shot(spec.tileDir, 'base');
+    let base = await shot(spec.stationDir, 'base');
     let idle: DiffResult = { changedFrac: 1, meanDelta: 255 };
     for (let i = 0; i < 3; i++) {
       await page.waitForTimeout(1000);
-      const next = await shot(spec.tileDir, `idle${i}`);
+      const next = await shot(spec.stationDir, `idle${i}`);
       const d = diffPpm(base, next);
       if (d.changedFrac < idle.changedFrac) idle = d;
       base = next; // walk forward so we compare consecutive frames
@@ -327,7 +327,7 @@ export function runInputTest(spec: InputTileSpec): void {
     testInfo.annotations.push({ type: 'mouse', description: `${fmtDiff(mouse)} ptrReached=${ptrReached} reacted=${mouseReacted}` });
 
     // 6. KEYBOARD — real keys through the global capture, verified on the framebuffer.
-    const base2 = await shot(spec.tileDir, 'kbase');
+    const base2 = await shot(spec.stationDir, 'kbase');
     const keyDiff = await driveKeyboard(page, spec, base2);
     const keyReacted = reacted(keyDiff, idle, KEY_PASS_CF);
     testInfo.annotations.push({ type: 'keyboard', description: `${fmtDiff(keyDiff)} reacted=${keyReacted}` });
@@ -343,7 +343,7 @@ export function runInputTest(spec: InputTileSpec): void {
 
     if (process.env.STREAMHOST_LOG) {
       appendFileSync(process.env.STREAMHOST_LOG, JSON.stringify({
-        osId: spec.osId, tileDir: spec.tileDir, displayName: spec.displayName,
+        osId: spec.osId, stationDir: spec.stationDir, displayName: spec.displayName,
         pointer: spec.pointer, touch: !!spec.touch,
         decode: decodeOk ? dim : false, control: controlOk,
         idle, mouse, keyboard: keyDiff, ptrReached,

@@ -40,17 +40,17 @@ reported `PASS` — the flag is a floor, never a ceiling.
 the rendered `golden-manifest.json` (deployed to
 `/data/vms/streamhost/serve/`) is the single source of truth, keyed by **osId**.
 `streamhostInput.group.ts` reads it at load for the shared per-tile facts
-(`tileDir/pointer/touch/resetMode/snapshot`) — override the path with
+(`stationDir/pointer/touch/resetMode/snapshot`) — override the path with
 `GOLDEN_MANIFEST=…`; when the repo tree is absent (suite rsynced to the box) it
 falls back to the deployed copy. The former duplicate in this dir was deleted
-2026-07-14 (de-drift). Per tile the manifest records `tileDir`,
+2026-07-14 (de-drift). Per tile the manifest records `stationDir`,
 `pointer/touch`, the **`resetMode`**, and the visually-certified `mouse`/`keyboard`
 verdict + `fixture` description. Two reset modes:
 
 | resetMode | tiles | how it resets | speed |
 |-----------|-------|---------------|-------|
 | `loadvm`  | 22 (all except the two below) | QMP `loadvm golden` on the tile's live `qmp.sock` — restores RAM+devices **exactly**, no restart | instant |
-| `restart` | `serenityos`, `toaruos` | re-run the tile's `qemu-streamhost.sh` (cold-boot the curated fixture) + `systemctl restart streamhost@<tileDir>` — for tiles whose backing store holds no vmstate snapshot | ~cold boot (≤45 s to fixture, measured) |
+| `restart` | `serenityos`, `toaruos` | re-run the tile's `qemu-streamhost.sh` (cold-boot the curated fixture) + `systemctl restart streamhost@<stationDir>` — for tiles whose backing store holds no vmstate snapshot | ~cold boot (≤45 s to fixture, measured) |
 
 `reset-tile.sh <osId>` dispatches on `resetMode`. **Non-destructive by construction:**
 it only *restores* the in-qcow2 `golden` snapshot or *cold-boots* the fixture — it
@@ -90,7 +90,7 @@ Two hard reasons:
 1. **macOS local-network privacy** blocks fresh Chromes from `192.168.x.x`
    (`ERR_ADDRESS_UNREACHABLE`). The Linux host has no such wall.
 2. Guest reactions are read from each tile's **local** `qmp.sock`
-   (`/data/vms/streamhost/tiles/<tileDir>/qmp.sock`) — only reachable on the host.
+   (`/data/vms/streamhost/tiles/<stationDir>/qmp.sock`) — only reachable on the host.
 
 It also needs a **proprietary-codec Chrome** (Chrome for Testing / Google Chrome),
 **not** Playwright's bundled Chromium: the wire is H.264 and the codec-stripped
@@ -107,7 +107,7 @@ STREAMHOST_LOG=$PWD/out/input.jsonl \
 ```
 
 Reset-to-golden runs by default. The suite writes before/after PPM screendumps to
-`STREAMHOST_SHOT_DIR` (each tile: `<tileDir>-drag/-rclick/-key_a/-key_start/...`) —
+`STREAMHOST_SHOT_DIR` (each tile: `<stationDir>-drag/-rclick/-key_a/-key_start/...`) —
 spot-check those to confirm assertions match the pixels.
 
 ### Env knobs
@@ -116,7 +116,7 @@ spot-check those to confirm assertions match the pixels.
 |------------------------------|-----------------------------------------------------|------------------------------------------|
 | `CHROME_PATH`                | `/data/streamhost-input-test/chrome-linux64/chrome` | proprietary-codec Chrome binary          |
 | `SPA_BASE_URL`               | `https://127.0.0.1:8443`                            | deployed SPA origin                      |
-| `STREAMHOST_TILES_DIR`       | `/data/vms/streamhost/tiles`                        | dir holding each `<tileDir>/qmp.sock`    |
+| `STREAMHOST_TILES_DIR`       | `/data/vms/streamhost/tiles`                        | dir holding each `<stationDir>/qmp.sock`    |
 | `STREAMHOST_SHOT_DIR`        | `/data/streamhost-input-test/shots`                 | scratch for QEMU PPM screendumps         |
 | `STREAMHOST_RESET_SCRIPT`    | `/data/vms/streamhost/serve/reset-tile.sh`          | reset authority (shared with the button) |
 | `STREAMHOST_NO_RESET`        | (unset)                                             | **disable** reset-to-golden (debug the live state) |
@@ -211,7 +211,7 @@ The same reset authority is exposed to the SPA:
 
 ## Files
 
-- the rendered `golden-manifest.json` (published to `/data/vms/streamhost/serve/`) — per-tile `tileDir/pointer/touch/resetMode/snapshot` + certified `mouse`/`keyboard` verdict + fixture. Single source of truth, read by the suite at load.
+- the rendered `golden-manifest.json` (published to `/data/vms/streamhost/serve/`) — per-tile `stationDir/pointer/touch/resetMode/snapshot` + certified `mouse`/`keyboard` verdict + fixture. Single source of truth, read by the suite at load.
 - `scripts/serve/reset-tile.sh` (repo root; deployed to `/data/vms/streamhost/serve/reset-tile.sh`) — the reset authority (loadvm / restart per manifest). Shared by the suite AND the restore endpoint.
 - `streamhostInput.qmp.ts` — QMP `screendump` over the tile unix socket + PPM parse + diff (+ `loadSnapshot` helper).
 - `streamhostInput.group.ts` — test-side tile table (keyType + measured skip reasons + visual-certification comments) merged with the manifest's shared facts at load.

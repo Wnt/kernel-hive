@@ -43,15 +43,15 @@
     }
   },
   "render": {
-    "tilesManifestOrder": 37,
+    "stationsManifestOrder": 37,
     "bindingOrder": 43,
     "goldenOrder": 37,
     "bringUpGroup": 6,
     "signalOrder": 39,
-    "tilesManifestPrelude": "",
+    "stationsManifestPrelude": "",
     "bindingPrelude": ""
   },
-  "tileDir": "pet2001",
+  "stationDir": "pet2001",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -77,7 +77,7 @@
   "guestDoc": "docs/guests/pet2001.md",
   "credentialsRef": "guest/pet2001",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "pet2001",
       "SH_QMP": "/data/vms/streamhost/tiles/pet2001/qmp.sock",
       "SH_PORT": "54088",
@@ -220,7 +220,7 @@
     "notes": "Live streamhost tile, and the oldest machine in the gallery. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (xpet -model 2001) emulating the ORIGINAL 1977 PET; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media. VICE's model 2001 is the real machine and not a badge — RamSize=8, Crtc=0 (it predates the 6545 CRTC every later PET used), VideoSize=40, the chiclet graphics keyboard, the 2001-blueish phosphor palette. The golden is the machine's own untouched power-on screen; the exhibit's interaction is the SPA type-in demo, four lines of PET BASIC that POKE characters straight into screen memory at 32768, which is how the PET drew everything. Keyboard-only exhibit (unshifted keys give upper case, SHIFT gives the graphics set, hence keyboard.letterCase=upper-only). See streamhost/docs/BRIDGE.md and docs/guests/pet2001.md."
   },
   "reset": {
-    "tileDir": "pet2001",
+    "stationDir": "pet2001",
     "pointer": "none",
     "touch": false,
     "resetMode": "loadvm",

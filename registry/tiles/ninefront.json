@@ -65,15 +65,15 @@
   },
   "render": {
     "signalOrder": 14,
-    "tilesManifestOrder": 8,
-    "tilesManifestPrelude": "\n# ninefront / 9front (VMID 96) — q35 disk, PS/2, intel-hda. GENERIC. Disk is a\n#   virtio-less ide-hd on bus ide.0; whole drive+net string + the baked\n#   `-loadvm golden` (the golden lives INSIDE the 9front qcow2; the disk runs\n#   WITHOUT -snapshot so savevm persists) goes in --extra.\n# POINTER=warpd: 9front's kernel devmouse accepts true absolute injection via\n# /dev/mousein \"A x y buttons msec\" lines. In-guest agent /amd64/bin/warpd\n# (guest-agents/ninefront/warpd.c, compiled IN-GUEST with 6c/6l) listens on\n# tcp!*!7777; autostarted at boot by /cfg/cirno/termrc. The daemon reaches it\n# via the hostfwd baked onto the EXISTING -netdev user below (host\n# 127.0.0.1:57793 -> guest :7777; a netdev backend property, NOT a -device =>\n# loadvm golden matches). Agent BAKED into the golden qcow2 disk AND the settled\n# rio/app RAM snapshot with boot replay (2026-07-15).\n",
+    "stationsManifestOrder": 8,
+    "stationsManifestPrelude": "\n# ninefront / 9front (VMID 96) — q35 disk, PS/2, intel-hda. GENERIC. Disk is a\n#   virtio-less ide-hd on bus ide.0; whole drive+net string + the baked\n#   `-loadvm golden` (the golden lives INSIDE the 9front qcow2; the disk runs\n#   WITHOUT -snapshot so savevm persists) goes in --extra.\n# POINTER=warpd: 9front's kernel devmouse accepts true absolute injection via\n# /dev/mousein \"A x y buttons msec\" lines. In-guest agent /amd64/bin/warpd\n# (guest-agents/ninefront/warpd.c, compiled IN-GUEST with 6c/6l) listens on\n# tcp!*!7777; autostarted at boot by /cfg/cirno/termrc. The daemon reaches it\n# via the hostfwd baked onto the EXISTING -netdev user below (host\n# 127.0.0.1:57793 -> guest :7777; a netdev backend property, NOT a -device =>\n# loadvm golden matches). Agent BAKED into the golden qcow2 disk AND the settled\n# rio/app RAM snapshot with boot replay (2026-07-15).\n",
     "bringUpGroup": 1,
     "bindingOrder": 10,
     "bindingPrelude": "",
     "goldenOrder": 9,
     "actionMapOrder": 11
   },
-  "tileDir": "ninefront",
+  "stationDir": "ninefront",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -99,7 +99,7 @@
   "guestDoc": "docs/guests/ninefront.md",
   "credentialsRef": "guest/ninefront",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "ninefront",
       "SH_QMP": "/data/vms/streamhost/tiles/ninefront/qmp.sock",
       "SH_PORT": "54096",
@@ -242,7 +242,7 @@
     "blurb": "Bell Labs’ successor to Unix, still alive — everything is a file, over the network."
   },
   "reset": {
-    "tileDir": "ninefront",
+    "stationDir": "ninefront",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

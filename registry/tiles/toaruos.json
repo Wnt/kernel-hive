@@ -65,8 +65,8 @@
   },
   "render": {
     "signalOrder": 12,
-    "tilesManifestOrder": 3,
-    "tilesManifestPrelude": "\n# toaruos (VMID 98) — LiveCD, AC97 + usb-tablet. GENERIC. The remastered\n#   image.iso IS the golden artifact (no snapshottable disk): resetMode=restart.\n",
+    "stationsManifestOrder": 3,
+    "stationsManifestPrelude": "\n# toaruos (VMID 98) — LiveCD, AC97 + usb-tablet. GENERIC. The remastered\n#   image.iso IS the golden artifact (no snapshottable disk): resetMode=restart.\n",
     "bringUpGroup": 0,
     "bindingOrder": 2,
     "bindingPrelude": "",
@@ -74,7 +74,7 @@
     "goldenOrder": 11,
     "actionMapOrder": 13
   },
-  "tileDir": "toaruos",
+  "stationDir": "toaruos",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -99,7 +99,7 @@
   "guestDoc": "docs/guests/toaruos.md",
   "credentialsRef": "guest/toaruos",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "toaruos",
       "SH_QMP": "/data/vms/streamhost/tiles/toaruos/qmp.sock",
       "SH_PORT": "54098",
@@ -236,7 +236,7 @@
     "blurb": "One developer's from-scratch UNIX with a real windowing compositor."
   },
   "reset": {
-    "tileDir": "toaruos",
+    "stationDir": "toaruos",
     "pointer": "abs",
     "touch": false,
     "resetMode": "restart",

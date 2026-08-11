@@ -65,15 +65,15 @@
   },
   "render": {
     "signalOrder": 19,
-    "tilesManifestOrder": 21,
-    "tilesManifestPrelude": "\n# templeos (VMID 105) — LiveCD (TempleOS.ISO), audio OFF, PS/2, plain std VGA.\n#   VERBATIM LAUNCHER: state.qcow2 (create-if-missing) holds the savevm\n#   'golden' snapshot (TempleOS is ISO/RAM-only); conditional -loadvm golden;\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (2026-07-13): TempleOS has NO USB stack and its PS/2 mouse is\n# relative. Fix (guest-agents/templeos/warpd.HC): an in-guest HolyC task WS()\n# polls the 16550 UART directly (ring-0, no serial driver needed), parses the\n# warpd M/P/R/B protocol, and writes motion straight to the global mouse state\n# ms.pos.x/y + clicks to ms.lb/ms.rb (framebuffer-verified). The agent is\n# Spawn()ed at the T:/Home> REPL and BAKED into the golden RAM snapshot.\n",
+    "stationsManifestOrder": 21,
+    "stationsManifestPrelude": "\n# templeos (VMID 105) — LiveCD (TempleOS.ISO), audio OFF, PS/2, plain std VGA.\n#   VERBATIM LAUNCHER: state.qcow2 (create-if-missing) holds the savevm\n#   'golden' snapshot (TempleOS is ISO/RAM-only); conditional -loadvm golden;\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (2026-07-13): TempleOS has NO USB stack and its PS/2 mouse is\n# relative. Fix (guest-agents/templeos/warpd.HC): an in-guest HolyC task WS()\n# polls the 16550 UART directly (ring-0, no serial driver needed), parses the\n# warpd M/P/R/B protocol, and writes motion straight to the global mouse state\n# ms.pos.x/y + clicks to ms.lb/ms.rb (framebuffer-verified). The agent is\n# Spawn()ed at the T:/Home> REPL and BAKED into the golden RAM snapshot.\n",
     "bringUpGroup": 5,
     "bindingOrder": 19,
     "bindingPrelude": "",
     "goldenOrder": 18,
     "actionMapOrder": 20
   },
-  "tileDir": "templeos",
+  "stationDir": "templeos",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -99,7 +99,7 @@
   "guestDoc": "docs/guests/templeos.md",
   "credentialsRef": "guest/templeos",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "templeos",
       "SH_QMP": "/data/vms/streamhost/tiles/templeos/qmp.sock",
       "SH_PORT": "54105",
@@ -225,7 +225,7 @@
     "notes": "Live streamhost tile. PS/2 input only — TempleOS has no USB stack. Ring-0, single-address-space, no networking by design; CD-only ephemeral live boot."
   },
   "reset": {
-    "tileDir": "templeos",
+    "stationDir": "templeos",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

@@ -61,15 +61,15 @@
   },
   "render": {
     "signalOrder": 16,
-    "tilesManifestOrder": 10,
-    "tilesManifestPrelude": "\n# solaris (VMID 100) — Solaris 10 CDE on the standalone\n# gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses\n# the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.\n# SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.\n# SH_GHID_SOCKET selects its chardev; hostfwd 57790 and the guest warpd agent are\n# retained for rollback/exec only.\n",
+    "stationsManifestOrder": 10,
+    "stationsManifestPrelude": "\n# solaris (VMID 100) — Solaris 10 CDE on the standalone\n# gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses\n# the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.\n# SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.\n# SH_GHID_SOCKET selects its chardev; hostfwd 57790 and the guest warpd agent are\n# retained for rollback/exec only.\n",
     "bringUpGroup": 2,
     "bindingOrder": 12,
     "bindingPrelude": "",
     "goldenOrder": 13,
     "actionMapOrder": 15
   },
-  "tileDir": "solaris",
+  "stationDir": "solaris",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -96,7 +96,7 @@
   "guestDoc": "docs/guests/solaris.md",
   "credentialsRef": "guest/solaris",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "solaris",
       "SH_QMP": "/data/vms/streamhost/tiles/solaris/qmp.sock",
       "SH_PORT": "54100",
@@ -227,7 +227,7 @@
     "blurb": "The workstation Unix of the 90s — CDE’s front panel on classic Sun hardware."
   },
   "reset": {
-    "tileDir": "solaris",
+    "stationDir": "solaris",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

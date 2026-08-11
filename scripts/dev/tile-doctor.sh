@@ -123,7 +123,7 @@ read_checks < <(
   python3 - "$ENTRY" <<'PYEOF'
 import json, sys
 d = json.load(open(sys.argv[1]))
-env = d.get("runtime", {}).get("tileEnv", {})
+env = d.get("runtime", {}).get("stationEnv", {})
 kb = d.get("keyboard") or {}
 gap = env.get("SH_KEY_MIN_GAP_MS")
 blob = json.dumps(d).lower()
@@ -161,7 +161,7 @@ if [ "$LIVE" = 1 ]; then
     esac
     # The knobs the registry declares must actually be in the running process.
     for k in SH_KEY_MIN_GAP_MS SH_KEY_MAP; do
-      want=$(python3 -c "import json;print(json.load(open('$ENTRY')).get('runtime',{}).get('tileEnv',{}).get('$k',''))")
+      want=$(python3 -c "import json;print(json.load(open('$ENTRY')).get('runtime',{}).get('stationEnv',{}).get('$k',''))")
       [ -z "$want" ] && continue
       got=$(ssh lab "P=\$(systemctl show -p MainPID --value streamhost@$TILE); tr '\0' '\n' </proc/\$P/environ 2>/dev/null | sed -n 's/^$k=//p'" 2>/dev/null)
       if [ "$got" = "$want" ]; then

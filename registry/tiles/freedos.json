@@ -57,8 +57,8 @@
   },
   "render": {
     "signalOrder": 9,
-    "tilesManifestOrder": 16,
-    "tilesManifestPrelude": "\n# freedos (VMID 95) — sb16 + routed PC-speaker audio, pc-i440fx-11.0,acpi=off, cirrus, ne2k NIC, PS/2 relative.\n#   VERBATIM LAUNCHER: golden fixture — NO -snapshot (writes persist in\n#   freedos.qcow2) and boots straight into the baked snapshot via an\n#   unconditional -loadvm golden (fixture = the retro-games CHOICE menu).\n",
+    "stationsManifestOrder": 16,
+    "stationsManifestPrelude": "\n# freedos (VMID 95) — sb16 + routed PC-speaker audio, pc-i440fx-11.0,acpi=off, cirrus, ne2k NIC, PS/2 relative.\n#   VERBATIM LAUNCHER: golden fixture — NO -snapshot (writes persist in\n#   freedos.qcow2) and boots straight into the baked snapshot via an\n#   unconditional -loadvm golden (fixture = the retro-games CHOICE menu).\n",
     "bringUpGroup": 4,
     "bindingOrder": 0,
     "bindingPrelude": "  // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----\n",
@@ -66,7 +66,7 @@
     "goldenOrder": 8,
     "actionMapOrder": 10
   },
-  "tileDir": "freedos",
+  "stationDir": "freedos",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -91,7 +91,7 @@
   "guestDoc": "docs/guests/freedos.md",
   "credentialsRef": "guest/freedos",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "freedos",
       "SH_QMP": "/data/vms/streamhost/tiles/freedos/qmp.sock",
       "SH_PORT": "54095",
@@ -210,7 +210,7 @@
     "blurb": "The DOS command prompt that never died — C:\\> is still alive and well."
   },
   "reset": {
-    "tileDir": "freedos",
+    "stationDir": "freedos",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

@@ -44,14 +44,14 @@
   },
   "render": {
     "signalOrder": 29,
-    "tilesManifestOrder": 27,
-    "tilesManifestPrelude": "\n# amiga (VMID 218) — FS-UAE -> Amiga 500 -> Kickstart 1.3 + Workbench 1.3.\n#   ssh 5818. Idle auto-pause: daemon default (like c64/atarist); the old\n#   SH_IDLE_PAUSE_SECS=0 pin was a leftover of the reverted cold-boot pilot.\n",
+    "stationsManifestOrder": 27,
+    "stationsManifestPrelude": "\n# amiga (VMID 218) — FS-UAE -> Amiga 500 -> Kickstart 1.3 + Workbench 1.3.\n#   ssh 5818. Idle auto-pause: daemon default (like c64/atarist); the old\n#   SH_IDLE_PAUSE_SECS=0 pin was a leftover of the reverted cold-boot pilot.\n",
     "bringUpGroup": 6,
     "bindingOrder": 29,
     "bindingPrelude": "",
     "goldenOrder": 27
   },
-  "tileDir": "amiga",
+  "stationDir": "amiga",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -76,7 +76,7 @@
   "guestDoc": "docs/guests/amiga500.md",
   "credentialsRef": "guest/amiga",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "amiga",
       "SH_QMP": "/data/vms/streamhost/tiles/amiga/qmp.sock",
       "SH_PORT": "54118",
@@ -209,7 +209,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Amiga emulator full-screen booting the real Kickstart 1.3 + Workbench 1.3; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Amiga 500 wedge). See streamhost/docs/BRIDGE.md."
   },
   "reset": {
-    "tileDir": "amiga",
+    "stationDir": "amiga",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

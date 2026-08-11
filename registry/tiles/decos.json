@@ -43,15 +43,15 @@
     }
   },
   "render": {
-    "tilesManifestOrder": 42,
+    "stationsManifestOrder": 42,
     "bindingOrder": 48,
     "goldenOrder": 42,
     "bringUpGroup": 6,
     "signalOrder": 44,
-    "tilesManifestPrelude": "",
+    "stationsManifestPrelude": "",
     "bindingPrelude": ""
   },
-  "tileDir": "decos",
+  "stationDir": "decos",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -77,7 +77,7 @@
   "guestDoc": "docs/guests/decos.md",
   "credentialsRef": "guest/decos",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "decos",
       "SH_QMP": "/data/vms/streamhost/tiles/decos/qmp.sock",
       "SH_PORT": "54126",
@@ -208,7 +208,7 @@
     "notes": "Live streamhost tile, and the oldest machine in the collection. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs one fullscreen green-on-black xterm whose only program is a chooser, and pressing 1, 2 or 3 boots RT-11 V5.3, RSX-11M V4.2 BL38 or RSTS/E V9.6 under Open SIMH (pinned at commit a1f57fa3 and built INTO this tile's overlay, the amiga.sh precedent, because the frozen bridge base predates it). ONE tile rather than three because a visitor cannot tell RT-11's “.” from RSX-11M's “>” from RSTS/E's “Ready”, and three near-identical terminals would read as one exhibit cloned by accident; the chooser is the placard. THE VERSIONS ARE THE MENTEC CEILINGS: the 1997 hobbyist grant covers RT-11 V5.3, RSTS/E V9.6, RSX-11M V4.3 and RSX-11M-PLUS V3.0 “or prior”, which is exactly why they are hard to find. RSX-11M is V4.2 and the exhibit says V4.2 — V4.3 media is not reachable anywhere today, and the community's RSX-11M-PLUS V4.6 and RSTS/E V10.1 are outside the grant. RSTS/E is installed as far as its media allows: the pack boots to timesharing and a working DCL $ prompt, but DEC's procedure ends by asking for a second “Library” tape that is not in the kit and is not obtainable, so START.COM and the packaged CCL commands are absent — the chooser says so in three lines of its own text rather than leaving a visitor to discover it. The golden idles AT the chooser with no simulator running, so a tile nobody is watching costs nothing, and each system runs on a fresh sparse copy of its pack. Keyboard-only exhibit; mono-terminal archetype. The arc worth reading aloud: the “>” of RSX-11M is the prompt whose authors, under Dave Cutler, went on to write VMS and then Windows NT, both of which are already in this gallery. See streamhost/docs/BRIDGE.md and docs/guests/decos.md."
   },
   "reset": {
-    "tileDir": "decos",
+    "stationDir": "decos",
     "pointer": "none",
     "touch": false,
     "resetMode": "loadvm",

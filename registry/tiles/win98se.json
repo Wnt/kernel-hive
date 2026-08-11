@@ -65,15 +65,15 @@
   },
   "render": {
     "signalOrder": 8,
-    "tilesManifestOrder": 15,
-    "tilesManifestPrelude": "\n# win98se (VMID 92) — Win98SE, sb16, two qcow2 disks (system + games), pcnet,\n#   usb-tablet. VERBATIM LAUNCHER: golden snapshot lives INSIDE the base disks\n#   (NO -snapshot); conditional -loadvm golden.\n# POINTER=abs via usb-tablet — BAKED + LIVE 2026-07-12. WINNING accel = KVM +\n# acpi=on + -cpu pentium3 (apic ON, default irqchip): acpi=on is REQUIRED for\n# PCI enumeration (this golden is an ACPI-HAL install; acpi=off left it on the\n# fail-safe PnP BIOS with no PCI/NIC/USB). hidusb.sys staged from the base cabs\n# by scripts/build-guests/tiles/win98.sh. Full evidence: docs/guests/win9x.md.\n",
+    "stationsManifestOrder": 15,
+    "stationsManifestPrelude": "\n# win98se (VMID 92) — Win98SE, sb16, two qcow2 disks (system + games), pcnet,\n#   usb-tablet. VERBATIM LAUNCHER: golden snapshot lives INSIDE the base disks\n#   (NO -snapshot); conditional -loadvm golden.\n# POINTER=abs via usb-tablet — BAKED + LIVE 2026-07-12. WINNING accel = KVM +\n# acpi=on + -cpu pentium3 (apic ON, default irqchip): acpi=on is REQUIRED for\n# PCI enumeration (this golden is an ACPI-HAL install; acpi=off left it on the\n# fail-safe PnP BIOS with no PCI/NIC/USB). hidusb.sys staged from the base cabs\n# by scripts/build-guests/tiles/win98.sh. Full evidence: docs/guests/win9x.md.\n",
     "bringUpGroup": 4,
     "bindingOrder": 5,
     "bindingPrelude": "",
     "goldenOrder": 5,
     "actionMapOrder": 7
   },
-  "tileDir": "win98se",
+  "stationDir": "win98se",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -98,7 +98,7 @@
   "guestDoc": "docs/guests/win9x.md",
   "credentialsRef": "guest/win98se",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "win98se",
       "SH_QMP": "/data/vms/streamhost/tiles/win98se/qmp.sock",
       "SH_PORT": "54092",
@@ -239,7 +239,7 @@
     "blurb": "The polished peak of the 9x line — USB, Active Desktop, and Space Cadet pinball."
   },
   "reset": {
-    "tileDir": "win98se",
+    "stationDir": "win98se",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "nt4",
   "era_year": 1996,
-  "tileDir": "nt4",
+  "stationDir": "nt4",
   "lifecycle": "production",
   "enabled": true,
   "display": {
@@ -71,8 +71,8 @@
   },
   "render": {
     "signalOrder": 18,
-    "tilesManifestOrder": 30,
-    "tilesManifestPrelude": "\n# nt4 (VMID 89) — Windows NT 4.0 Workstation SP6a, accelerated ISA Cirrus\n#   1024x768x65536 colors (16bpp), pcnet device, audio off. VERBATIM launcher:\n#   boots the tile-local nt4-golden.qcow2 without -snapshot; conditional\n#   -loadvm golden. Pins /opt/qemu-cirrusfix2 with patches 0004 (ROP1 fill) and\n#   0005 (ISA Cirrus vmstate substructure restore); rebuild and reverify on a\n#   packaged-QEMU version change. pc vmport=on auto-instantiates vmmouse, which\n#   the preserved NT4 driver consumes as true absolute 1:1 input.\n",
+    "stationsManifestOrder": 30,
+    "stationsManifestPrelude": "\n# nt4 (VMID 89) — Windows NT 4.0 Workstation SP6a, accelerated ISA Cirrus\n#   1024x768x65536 colors (16bpp), pcnet device, audio off. VERBATIM launcher:\n#   boots the tile-local nt4-golden.qcow2 without -snapshot; conditional\n#   -loadvm golden. Pins /opt/qemu-cirrusfix2 with patches 0004 (ROP1 fill) and\n#   0005 (ISA Cirrus vmstate substructure restore); rebuild and reverify on a\n#   packaged-QEMU version change. pc vmport=on auto-instantiates vmmouse, which\n#   the preserved NT4 driver consumes as true absolute 1:1 input.\n",
     "bringUpGroup": 3,
     "bindingOrder": 36,
     "bindingPrelude": "",
@@ -102,7 +102,7 @@
   "guestDoc": "docs/guests/nt4.md",
   "credentialsRef": "guest/nt4",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "nt4",
       "SH_QMP": "/data/vms/streamhost/tiles/nt4/qmp.sock",
       "SH_PORT": "54089",
@@ -220,7 +220,7 @@
     "blurb": "The classic Explorer shell on the NT kernel. The teal desktop that brought the Windows 95 look to enterprise NT."
   },
   "reset": {
-    "tileDir": "nt4",
+    "stationDir": "nt4",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

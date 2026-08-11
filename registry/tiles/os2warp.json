@@ -65,15 +65,15 @@
   },
   "render": {
     "signalOrder": 20,
-    "tilesManifestOrder": 18,
-    "tilesManifestPrelude": "\n# os2warp (VMID 108) — *** TCG ONLY *** (OS/2 Warp 4 will NOT boot under KVM).\n#   pc,acpi=off,usb=off, -cpu pentium, std VGA, sb16, pcnet NIC, PS/2. VERBATIM\n#   LAUNCHER: COM1 serial chardev (serial.sock) + conditional -loadvm golden\n#   (no -snapshot — savevm/loadvm persist; the OS/2 register nag never returns).\n# DISPLAY: Warp 4.52 (MCP2) + IBM GENGRADD at 1024x768x64k on -vga std.\n#   -global VGA.vgamem_mb=2 is LOAD-BEARING: GENPMI's mode tables hold 64 VESA\n#   modes and SeaVGABIOS reports 93 at the 16 MB default, overflowing them\n#   (trap c0000005 at display init). 2 MB trims the list to 46. See\n#   docs/guests/os2warp.md.\n# POINTER: in-guest warpd agent (guest-agents/os2/warpd_os2.c -> C:\\WARPD.EXE,\n#   PM WinSetPointerPos, Y-flipped) over COM1. Critical enablers: DosDevIOCtl\n#   SET_DCBINFO forcing MODE_NOWAIT_READ_TIMEOUT, a PM message queue, and\n#   MouSetPtrPos mirroring each warp into OS/2's native mouse subsystem. Buttons\n#   ride the real QEMU PS/2 device (--warpd-buttons qemu) for PM capture, frame\n#   sizing, menus, and double-clicks; the 80ms guard orders serial motion first.\n",
+    "stationsManifestOrder": 18,
+    "stationsManifestPrelude": "\n# os2warp (VMID 108) — *** TCG ONLY *** (OS/2 Warp 4 will NOT boot under KVM).\n#   pc,acpi=off,usb=off, -cpu pentium, std VGA, sb16, pcnet NIC, PS/2. VERBATIM\n#   LAUNCHER: COM1 serial chardev (serial.sock) + conditional -loadvm golden\n#   (no -snapshot — savevm/loadvm persist; the OS/2 register nag never returns).\n# DISPLAY: Warp 4.52 (MCP2) + IBM GENGRADD at 1024x768x64k on -vga std.\n#   -global VGA.vgamem_mb=2 is LOAD-BEARING: GENPMI's mode tables hold 64 VESA\n#   modes and SeaVGABIOS reports 93 at the 16 MB default, overflowing them\n#   (trap c0000005 at display init). 2 MB trims the list to 46. See\n#   docs/guests/os2warp.md.\n# POINTER: in-guest warpd agent (guest-agents/os2/warpd_os2.c -> C:\\WARPD.EXE,\n#   PM WinSetPointerPos, Y-flipped) over COM1. Critical enablers: DosDevIOCtl\n#   SET_DCBINFO forcing MODE_NOWAIT_READ_TIMEOUT, a PM message queue, and\n#   MouSetPtrPos mirroring each warp into OS/2's native mouse subsystem. Buttons\n#   ride the real QEMU PS/2 device (--warpd-buttons qemu) for PM capture, frame\n#   sizing, menus, and double-clicks; the 80ms guard orders serial motion first.\n",
     "bringUpGroup": 4,
     "bindingOrder": 22,
     "bindingPrelude": "",
     "goldenOrder": 20,
     "actionMapOrder": 23
   },
-  "tileDir": "os2warp",
+  "stationDir": "os2warp",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -103,7 +103,7 @@
   "guestDoc": "docs/guests/os2warp.md",
   "credentialsRef": "guest/os2warp",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "os2warp",
       "SH_QMP": "/data/vms/streamhost/tiles/os2warp/qmp.sock",
       "SH_PORT": "54108",
@@ -236,7 +236,7 @@
     "notes": "Live streamhost tile at 1024x768x64k (IBM GENGRADD on QEMU std VGA). Runs under TCG — it broke under KVM and was reverted — but remains fully interactive. Archetype: beige-tower-crt."
   },
   "reset": {
-    "tileDir": "os2warp",
+    "stationDir": "os2warp",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

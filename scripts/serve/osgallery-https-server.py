@@ -690,7 +690,7 @@ class H(BaseHTTPRequestHandler):
             # is that identity — SH_TILE — that it verifies a ticket against, so
             # that is what the ticket is signed over. The endpoint key normally
             # equals it (the registry refuses an id that differs from its
-            # tileDir), but they are two different documents and the daemon is
+            # stationDir), but they are two different documents and the daemon is
             # the authority on its own: signing with the endpoint key while
             # `solaris` still ran as `solariscde` and `aros` as `amigaos` locked
             # both stations out of every session for four hours on 2026-08-05. Read

@@ -91,10 +91,10 @@ try:
     reset = json.load(open(manifest))["tiles"].get(osid)
     if not reset:
         raise KeyError("osId is absent from golden manifest")
-    tile = reset["tileDir"]
+    tile = reset["stationDir"]
     conf = json.load(open(matrix))["tiles"].get(tile)
     if not conf:
-        raise KeyError("tileDir is absent from live capability matrix")
+        raise KeyError("stationDir is absent from live capability matrix")
     print("|".join((tile, conf["qmp"], str(conf.get("udp_port") or ""),
                      str(conf.get("exec_kind") or ""), reset.get("resetMode", ""))))
 except Exception as exc:
@@ -107,7 +107,7 @@ if [[ "$META" == ERROR\|* ]]; then
   exit 1
 fi
 IFS='|' read -r TILE QMP UDP_PORT EXEC_KIND RESET_MODE <<<"$META"
-pass identity "osId=$OSID tileDir=$TILE reset=$RESET_MODE"
+pass identity "osId=$OSID stationDir=$TILE reset=$RESET_MODE"
 
 if [ -n "$EVIDENCE" ]; then
   mkdir -p "$EVIDENCE" || {

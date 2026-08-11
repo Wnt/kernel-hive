@@ -65,8 +65,8 @@
   },
   "render": {
     "signalOrder": 2,
-    "tilesManifestOrder": 4,
-    "tilesManifestPrelude": "\n# haiku (VMID 107) — persistent disk boot. GENERIC. --vga none: --extra supplies\n#   a VGA device forced to 1920x1200 via EDID (the built-in -vga would ignore the\n#   EDID). intel-hda + usb-tablet.\n# SSH GUEST SHELL: ssh -i /root/.ssh/gallery_guest_key -p 5807 user@127.0.0.1\n#   (login user 'user', uid 0; guest 10.0.2.15:22). hostfwd=...5807-:22 is baked\n#   onto the EXISTING -netdev user below (a netdev backend property, NOT a\n#   -device => -loadvm golden still matches exactly). sshd autostart + keys live\n#   on the persistent disk AND in savevm golden (see the fixture stanza). The\n#   tile boots haiku-persist.qcow2 (-boot c, ide — via --disk-raw so it lands in\n#   the media slot exactly as baked); loadvm needs exactly this device set.\n",
+    "stationsManifestOrder": 4,
+    "stationsManifestPrelude": "\n# haiku (VMID 107) — persistent disk boot. GENERIC. --vga none: --extra supplies\n#   a VGA device forced to 1920x1200 via EDID (the built-in -vga would ignore the\n#   EDID). intel-hda + usb-tablet.\n# SSH GUEST SHELL: ssh -i /root/.ssh/gallery_guest_key -p 5807 user@127.0.0.1\n#   (login user 'user', uid 0; guest 10.0.2.15:22). hostfwd=...5807-:22 is baked\n#   onto the EXISTING -netdev user below (a netdev backend property, NOT a\n#   -device => -loadvm golden still matches exactly). sshd autostart + keys live\n#   on the persistent disk AND in savevm golden (see the fixture stanza). The\n#   tile boots haiku-persist.qcow2 (-boot c, ide — via --disk-raw so it lands in\n#   the media slot exactly as baked); loadvm needs exactly this device set.\n",
     "bringUpGroup": 0,
     "bindingOrder": 21,
     "bindingPrelude": "",
@@ -74,7 +74,7 @@
     "actionMapOrder": 22,
     "bindingComment": "ideal: BeBox"
   },
-  "tileDir": "haiku",
+  "stationDir": "haiku",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -99,7 +99,7 @@
   "guestDoc": "docs/guests/haiku.md",
   "credentialsRef": "guest/haiku",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "haiku",
       "SH_QMP": "/data/vms/streamhost/tiles/haiku/qmp.sock",
       "SH_PORT": "54107",
@@ -243,7 +243,7 @@
     "notes": "Live streamhost tile. Official haiku-r1beta5 anyboot live CD. Archetype: beige-tower-crt; a bespoke BeBox (the dual-CPU BeOS workstation) would be the ideal era-accurate model."
   },
   "reset": {
-    "tileDir": "haiku",
+    "stationDir": "haiku",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

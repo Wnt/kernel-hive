@@ -24,7 +24,7 @@ The sibling station's machinery this one reuses:
 
 ## Identity
 
-- `osId` = `tileDir` = `tru64`; slot 141, udp 54141; archetype `putty-lcd`.
+- `osId` = `stationDir` = `tru64`; slot 141, udp 54141; archetype `putty-lcd`.
 - The SIBLING of `w2kalpha`: the identical emulated machine (es40 fork
   `Wnt/es40`, AlphaServer ES40, Tsunami, 1× EV68 800 MHz, 512 MB, S3 Trio64,
   sym53c810 SCSI, ALi PS/2, two serial ports) with a DIFFERENT firmware

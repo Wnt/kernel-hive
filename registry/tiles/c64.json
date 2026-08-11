@@ -44,14 +44,14 @@
   },
   "render": {
     "signalOrder": 26,
-    "tilesManifestOrder": 24,
-    "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP G — emulator-bridge retro home computers (c64, atarist, apple2, amiga).\n#   Each tile is a captured Debian 12 \"bridge\" kiosk (shared read-only base\n#   /data/vms/bridge/bridge-base.qcow2 + a thin per-tile overlay.qcow2) running\n#   a period emulator full-screen; streamhost captures the Linux framebuffer +\n#   AC97 audio exactly like every other tile. See streamhost/docs/BRIDGE.md and\n#   docs/guests/c64.md. Atari ST/Apple II/Amiga use usb-tablet ABS; C64 keeps\n#   browser coordinates absolute but streamhost translates them to PS/2 REL for\n#   VICE's SDL/1351 path (vmport=off, no tablet). All four use AC97, KVM,\n#   -m 1536 -smp 2 -cpu host -vga std. VERBATIM LAUNCHERS: overlay.qcow2 (ide,\n#   holds the INTERNAL golden snapshot — NEVER delete), e1000 NIC with an ssh\n#   hostfwd (c64:5814 atarist:5816 apple2:5817 amiga:5818 -> guest :22), and a\n#   CONDITIONAL -loadvm golden. tile.env carries the golden-fixture stanza\n#   (SH_RESET_MODE=loadvm etc.) via the tracked fixture files.\n# ---------------------------------------------------------------------------\n\n# c64 (VMID 214) — VICE x64sc -> Commodore 64 -> GEOS 2.0 deskTop. ssh 5814.\n",
+    "stationsManifestOrder": 24,
+    "stationsManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP G — emulator-bridge retro home computers (c64, atarist, apple2, amiga).\n#   Each tile is a captured Debian 12 \"bridge\" kiosk (shared read-only base\n#   /data/vms/bridge/bridge-base.qcow2 + a thin per-tile overlay.qcow2) running\n#   a period emulator full-screen; streamhost captures the Linux framebuffer +\n#   AC97 audio exactly like every other tile. See streamhost/docs/BRIDGE.md and\n#   docs/guests/c64.md. Atari ST/Apple II/Amiga use usb-tablet ABS; C64 keeps\n#   browser coordinates absolute but streamhost translates them to PS/2 REL for\n#   VICE's SDL/1351 path (vmport=off, no tablet). All four use AC97, KVM,\n#   -m 1536 -smp 2 -cpu host -vga std. VERBATIM LAUNCHERS: overlay.qcow2 (ide,\n#   holds the INTERNAL golden snapshot — NEVER delete), e1000 NIC with an ssh\n#   hostfwd (c64:5814 atarist:5816 apple2:5817 amiga:5818 -> guest :22), and a\n#   CONDITIONAL -loadvm golden. tile.env carries the golden-fixture stanza\n#   (SH_RESET_MODE=loadvm etc.) via the tracked fixture files.\n# ---------------------------------------------------------------------------\n\n# c64 (VMID 214) — VICE x64sc -> Commodore 64 -> GEOS 2.0 deskTop. ssh 5814.\n",
     "bringUpGroup": 6,
     "bindingOrder": 26,
     "bindingPrelude": "\n  // ---- emulator-bridge retro home computers (captured-Linux kiosk running a\n  //      period emulator; streamhost captures the Linux framebuffer + AC97.\n  //      See streamhost/docs/BRIDGE.md. beige-tower-crt is the closest era\n  //      archetype; bespoke breadbin/wedge/all-in-one models are the ideal\n  //      follow-ups). ----\n",
     "goldenOrder": 24
   },
-  "tileDir": "c64",
+  "stationDir": "c64",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -76,7 +76,7 @@
   "guestDoc": "docs/guests/c64.md",
   "credentialsRef": "guest/c64",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "c64",
       "SH_QMP": "/data/vms/streamhost/tiles/c64/qmp.sock",
       "SH_PORT": "54114",
@@ -209,7 +209,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x64sc) full-screen emulating a C64 that auto-boots the GEOS 2.0 deskTop; streamhost captures the Linux framebuffer + AC97 audio (the C64 SID routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke C64 breadbin + 1541 + CRT). See streamhost/docs/BRIDGE.md."
   },
   "reset": {
-    "tileDir": "c64",
+    "stationDir": "c64",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

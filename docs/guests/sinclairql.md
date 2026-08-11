@@ -7,7 +7,7 @@ framebuffer + AC97 audio, exactly like c64/vic20/plus4/mpf2
 
 | | |
 |---|---|
-| public id / tileDir | `sinclairql` / `sinclairql` |
+| public id / stationDir | `sinclairql` / `sinclairql` |
 | slot / UDP | 133 / 54133 |
 | VMID label / kiosk SSH | 236 / 127.0.0.1:5836 (bridge key) |
 | builder | `scripts/build-guests/tiles/sinclairql.sh` (`--force` rebuilds the overlay) |

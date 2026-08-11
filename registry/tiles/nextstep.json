@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "nextstep",
   "era_year": 1995,
-  "tileDir": "nextstep",
+  "stationDir": "nextstep",
   "lifecycle": "production",
   "enabled": true,
   "build": {
@@ -41,12 +41,12 @@
     }
   },
   "render": {
-    "tilesManifestOrder": 50,
+    "stationsManifestOrder": 50,
     "bindingOrder": 56,
     "goldenOrder": 50,
     "bringUpGroup": 6,
     "signalOrder": 52,
-    "tilesManifestPrelude": "",
+    "stationsManifestPrelude": "",
     "bindingPrelude": ""
   },
   "stream": {
@@ -73,7 +73,7 @@
   "guestDoc": "docs/guests/nextstep.md",
   "credentialsRef": "guest/nextstep",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "nextstep",
       "SH_QMP": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
       "SH_PORT": "54134",
@@ -203,7 +203,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile's own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU's SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is ABSOLUTE: Previous emulates a SummaGraphics digitiser on the NeXT's serial port B, and NeXTSTEP's own tablet driver is attached inside the golden, so the coordinate a QEMU usb-tablet delivers is the pixel the NeXT arrow lands on; the guest draws that arrow itself. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md."
   },
   "reset": {
-    "tileDir": "nextstep",
+    "stationDir": "nextstep",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

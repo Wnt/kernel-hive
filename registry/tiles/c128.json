@@ -43,15 +43,15 @@
     }
   },
   "render": {
-    "tilesManifestOrder": 36,
+    "stationsManifestOrder": 36,
     "bindingOrder": 42,
     "goldenOrder": 36,
     "bringUpGroup": 6,
     "signalOrder": 38,
-    "tilesManifestPrelude": "",
+    "stationsManifestPrelude": "",
     "bindingPrelude": ""
   },
-  "tileDir": "c128",
+  "stationDir": "c128",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -77,7 +77,7 @@
   "guestDoc": "docs/guests/c128.md",
   "credentialsRef": "guest/c128",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "c128",
       "SH_QMP": "/data/vms/streamhost/tiles/c128/qmp.sock",
       "SH_PORT": "54087",
@@ -207,7 +207,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (x128) emulating a PAL C128; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. In VICE's SDL2 build the VDC 80-column output is a SECOND canvas — `-80col` makes it the visible one (and chooses the boot display); `-dualwindow` never becomes visible under a kiosk with no window manager. No -VDCdsize: the 1:1 window is 789x576 and fills the 800x600 X root, where the doubled one is 1578x1152 and is clipped even at 1920x1080. VICE bundles the C128 ROMs but not the CP/M system DISK, which is staged in-guest and attached to drive 8 ~10 s AFTER reset — the KERNAL boots any CP/M disk it finds at power-on, and this tile's fixture is the untouched BASIC 7.0 screen. The visitor types BOOT (one SPA keyboard button) to reach CP/M 3.0. No C64 button: GO64 works but paints the VIC-II while the visible VDC canvas freezes (measured — two byte-identical frames 10 s apart against a blinking-cursor control). Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/c128.md."
   },
   "reset": {
-    "tileDir": "c128",
+    "stationDir": "c128",
     "pointer": "none",
     "touch": false,
     "resetMode": "loadvm",

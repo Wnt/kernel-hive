@@ -1408,7 +1408,7 @@ def repo_facts(warn):
 
 
 def registry_entry(sh_tile, warn):
-    """The canonical registry entry for a tile, keyed by its tileDir (== SH_TILE).
+    """The canonical registry entry for a tile, keyed by its stationDir (== SH_TILE).
     registry/tiles/ is the generated source everything else in the repo is
     rendered from, so the SPA id and the builder come from there rather than
     from a second guess about naming."""
@@ -1420,9 +1420,9 @@ def registry_entry(sh_tile, warn):
         return {}
     for name in names:
         entry = load_json(os.path.join(root, name)) or {}
-        if entry.get("tileDir") == sh_tile or entry.get("id") == sh_tile:
+        if entry.get("stationDir") == sh_tile or entry.get("id") == sh_tile:
             return entry
-    warn("no registry entry with tileDir=%s under %s" % (sh_tile, root))
+    warn("no registry entry with stationDir=%s under %s" % (sh_tile, root))
     return {}
 
 
@@ -1628,7 +1628,7 @@ def tile_facts(sh_tile, c, warn):
         warn("tile.env SH_TILE=%s does not match the matrix key %s" % (daemon_id, sh_tile))
     repo = repo_facts(warn)
     entry = registry_entry(sh_tile, warn)
-    # One tile, one name: the registry id IS the tileDir IS SH_TILE, and
+    # One tile, one name: the registry id IS the stationDir IS SH_TILE, and
     # stations-registry.py fails the build if an entry breaks that. This used to be
     # a passive `identity_diverges` field on every tile's facts, permanently true
     # for aros/amigaos and solaris/solariscde (both renamed 2026-08-10). A flag
@@ -1775,10 +1775,10 @@ def cmd_facts(argv):
     sh_tile = name
     if name not in matrix:
         # A tile whose runtime dir is not the name given: the registry entry
-        # resolves it. id == tileDir for every tile today, so this is the
+        # resolves it. id == stationDir for every tile today, so this is the
         # schema-general path rather than a lookup that has to succeed.
         entry = registry_entry(name, lambda _m: None)
-        sh_tile = entry.get("tileDir") or ""
+        sh_tile = entry.get("stationDir") or ""
         if sh_tile not in matrix:
             tile_conf(name)  # emits the canonical unknown-tile error and exits
     warnings = []

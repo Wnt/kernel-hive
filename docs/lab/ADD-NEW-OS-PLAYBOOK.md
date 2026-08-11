@@ -92,11 +92,11 @@ Choose these names before downloading anything:
 ```text
 builder key   lower-case build-all key, e.g. solaris-cde
 osId          public SPA/signal/reset identifier, e.g. solaris
-tileDir       runtime directory and systemd instance — MUST equal osId
+stationDir       runtime directory and systemd instance — MUST equal osId
 displayName   museum label, e.g. Solaris CDE
 ```
 
-`osId` and `tileDir` are the same string, and `stations-registry.py` fails
+`osId` and `stationDir` are the same string, and `stations-registry.py` fails
 validation if they differ; the builder key may differ (it names a build script,
 not a running station). The two exhibits that once diverged
 (`solaris` → `solariscde`, `aros` → `amigaos`) required repeated special-case
@@ -331,8 +331,8 @@ standard clone-only proof on labhost:
 
 ```bash
 # Capture/recapture on copied disks, then independently verify the retained tag.
-scripts/lib/checkpoint-verify.sh <tileDir> --capture
-scripts/lib/checkpoint-verify.sh <tileDir>
+scripts/lib/checkpoint-verify.sh <stationDir> --capture
+scripts/lib/checkpoint-verify.sh <stationDir>
 ```
 
 The helper uses the station's `bootrec-tiles.conf` disk/port/ready metadata, copies
@@ -399,8 +399,8 @@ input immediately after a reset.
 | Absolute HID | Guest has USB HID or virtio-input and maps the full display correctly. This is the default and lowest-effort path. | Emit `--pointer abs --input-backend dbus-abs --input-dev usb` for `-usb -device usb-tablet`, or `--input-dev virtio` for virtio keyboard/tablet. `tile.env` gets `SH_INPUT_BACKEND=dbus-abs`. Add cursor scale/offset only from measured framebuffer calibration. Do not set UI `pointerRel`. |
 | Direct relative PS/2 | Guest only has a good PS/2 relative mouse and browser Pointer Lock produces usable 1:1 deltas. | Emit `--pointer rel --input-backend dbus-rel --input-dev ps2`; no tablet. Set `pointerRel: true` in the UI binding so raw relative movement is sent. QNX is the reference. |
 | TCP warpd / hybrid | Existing baked guest exposes a trustworthy absolute cursor API but its virtual HID is absent, range-limited, accelerated, or otherwise wrong. | Warpd is frozen: reuse only for its six existing stations; do not add another agent or protocol verb. Their emit form is `--pointer warpd --input-backend warpd --warpd-addr 127.0.0.1:<hostPort>`. Optional `--warpd-buttons qemu` keeps motion on the agent while real QEMU mouse buttons preserve window-manager semantics. |
-| Serial warpd agent | Existing baked guest has no reliable NIC/TCP path but reads COM1 and calls an absolute cursor API. | Warpd is frozen: retain the existing Unix socket chardev and `--pointer warpd --input-backend warpd --warpd-addr unix:<tileDir>/serial.sock` only for Win3.11/OS2/TempleOS. New OS work must not create another guest agent. |
-| `gallery-hid` | Only after the OS-specific kernel driver and patched QEMU device have passed latency, restore, and fallback gates. It is not the generic first choice. | Follow `docs/lab/research/low-latency-input/qemu-transport.md`: pinned patched QEMU; `-chardev socket,id=ghid0,path=<tileDir>/gallery-hid.sock,server=on,wait=off`; `-device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e`; guest driver installed/armed before a new checkpoint; `SH_GHID_SOCKET=<path>` in `tile.env`. Keep the old HID/warpd route available for rollback until the station is promoted. |
+| Serial warpd agent | Existing baked guest has no reliable NIC/TCP path but reads COM1 and calls an absolute cursor API. | Warpd is frozen: retain the existing Unix socket chardev and `--pointer warpd --input-backend warpd --warpd-addr unix:<stationDir>/serial.sock` only for Win3.11/OS2/TempleOS. New OS work must not create another guest agent. |
+| `gallery-hid` | Only after the OS-specific kernel driver and patched QEMU device have passed latency, restore, and fallback gates. It is not the generic first choice. | Follow `docs/lab/research/low-latency-input/qemu-transport.md`: pinned patched QEMU; `-chardev socket,id=ghid0,path=<stationDir>/gallery-hid.sock,server=on,wait=off`; `-device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e`; guest driver installed/armed before a new checkpoint; `SH_GHID_SOCKET=<path>` in `tile.env`. Keep the old HID/warpd route available for rollback until the station is promoted. |
 
 The experimental transport contract and its promotion/rollback requirements are
 in [`qemu-transport.md`](research/low-latency-input/qemu-transport.md).
@@ -424,7 +424,7 @@ successive keys. Bisected on mpf2 (MAME, 60 Hz), typing a 16-key line:
 | 16 ms (one frame) | 16 of 16 |
 
 The knobs are `SH_KEY_MIN_HOLD_MS` and `SH_KEY_MIN_GAP_MS` (declared per station in
-`runtime.tileEnv`; reference in `streamhost/docs/CONFIG.md`). **Derive the values
+`runtime.stationEnv`; reference in `streamhost/docs/CONFIG.md`). **Derive the values
 from the machine's frame period**, with two frames as the shipped margin: mpf2 at
 60 Hz → `32`/`32`; amstradcpc, whose PSG scans the matrix at 50 Hz → `40`/`40`.
 An earlier empirical 80/250/500 ms triple also worked but was never bisected and
@@ -565,7 +565,7 @@ The scaffolded `registry/tiles/<osId>.json` is the source of truth. It begins as
 an inert candidate with the slot/port reservation; fill it using `alpine.json`
 and `android.json` as complete streamed-station examples, then set `enabled: true`
 and promote its lifecycle only after its proof passes. Audit the
-entry's `schemaVersion`, `id`, `tileDir`/`aliases`, `lifecycle`, `enabled`,
+entry's `schemaVersion`, `id`, `stationDir`/`aliases`, `lifecycle`, `enabled`,
 `build`, `stream`, `runtime`, `reset`, `operator`, `spa`, `museum`, `guestDoc`,
 `credentialsRef`, and `render` fields. Do not add a field that is absent from
 the schema or infer that a sidecar will be created merely because the registry
@@ -585,12 +585,12 @@ pushes to `main`. The generated surfaces and their actual inputs are:
 
 | Generated artifact (do not hand-edit) | Registry fields used |
 |---|---|
-| `streamhost/stations-manifest.sh` | Production rows ordered by `render.tilesManifestOrder`; `render.tilesManifestPrelude` plus the emit invocation rendered from `tileDir` and `runtime.qemu.emitArgs` (`runtime.x11.emitArgs` for x11 stations). |
-| `streamhost/bring-up-all.sh` | Production `tileDir` values grouped by `render.bringUpGroup` and ordered by `runtime.bringUpOrder`. |
+| `streamhost/stations-manifest.sh` | Production rows ordered by `render.stationsManifestOrder`; `render.stationsManifestPrelude` plus the emit invocation rendered from `stationDir` and `runtime.qemu.emitArgs` (`runtime.x11.emitArgs` for x11 stations). |
+| `streamhost/bring-up-all.sh` | Production `stationDir` values grouped by `render.bringUpGroup` and ordered by `runtime.bringUpOrder`. |
 | `scripts/build-guests/build-all.sh` | `build.rows` entries (`order`, `prelude`, typed `value`, and optional `defaultOrder`) rendered as aligned manifest lines, plus shared rows in `registry/registry-v1.json`. |
 | `spa/src/three/archetypeRegistry.ts` | `id` and `spa`, rendered as an OS binding line (`render.bindingPrelude` kept, optional `render.bindingComment` appended) and ordered by `render.bindingOrder`. |
 | `spa/src/data/posterIndex.ts` | Poster existence + hero path per `registry/posters/<id>.md` (the prose ships separately at runtime). |
-| `registry/generated/labctl-declarations.json` | Streamhost `tileDir` plus the declared keys in `operator.labctl`. Live observed checkpoint state is intentionally excluded. |
+| `registry/generated/labctl-declarations.json` | Streamhost `stationDir` plus the declared keys in `operator.labctl`. Live observed checkpoint state is intentionally excluded. |
 
 Two more documents are **rendered, never committed** — they have no copy in the
 tree to hand-edit or to go stale, and `stations-registry.py render` (into the
@@ -601,11 +601,11 @@ the registry whenever something needs them:
 |---|---|
 | `gallery-manifest.json` | The public lineup the UI fetches at runtime: `museum` + `spa`, ordered by `render.bindingOrder`. Published to the labhost webroot by `serve-https-spa.sh manifests`. |
 | `poster-docs.json` | The full poster documents compiled from `registry/posters/*.md`, fetched by the UI at runtime. |
-| `tiles.json` | Every streamhost row's `id`, `stream.udpPort`, `tileDir`-derived certificate-hash path, and `render.signalOrder`. The live `SIGNAL_CONFIG`. |
+| `tiles.json` | Every streamhost row's `id`, `stream.udpPort`, `stationDir`-derived certificate-hash path, and `render.signalOrder`. The live `SIGNAL_CONFIG`. |
 | `golden-manifest.json` | Production `id` and `reset`, ordered by `render.goldenOrder`. The reset allow-list `reset-tile.sh` reads. |
 | `gallery-action-map.json` | `operator.actionMap`, ordered by `render.actionMapOrder`. |
 | `mock-manifest.json` | `museum` for entries that have `render.mockManifestOrder`. |
-| `index.json` | The aggregate of every entry — `runtime.tileEnv` merged with the station's `tile.env.fixture` — excluding generator-only `render` data. |
+| `index.json` | The aggregate of every entry — `runtime.stationEnv` merged with the station's `tile.env.fixture` — excluding generator-only `render` data. |
 
 Use this table as an exhaustive audit of the JSON entry, not as an edit list for
 derived files. `python3 scripts/stations-registry.py explain <osId>` is useful for
@@ -618,7 +618,7 @@ reviewing one entry's principal derived values.
   there is no pre-rendered string twin to keep in sync. Edit the typed field,
   then regenerate.
 - A key defined in the station's `tile.env.fixture` must NOT also appear in
-  `runtime.tileEnv` — the fixture is the single source for its keys and
+  `runtime.stationEnv` — the fixture is the single source for its keys and
   `validate` fails on the overlap. The generator merges the fixture into the
   env view that the rendered `index.json` and the validators see.
 - **`museum` describes the real machine, never how the gallery runs it.**
@@ -647,13 +647,13 @@ reviewing one entry's principal derived values.
 ### 6.2 Streamhost registry and station directory
 
 Describe the stream in `stream`, the declared emitted environment in
-`runtime.tileEnv`, the pinned device set in `runtime.qemu`, and startup order in
+`runtime.stationEnv`, the pinned device set in `runtime.qemu`, and startup order in
 `runtime.bringUpOrder`. Put the exact emitter argument vector in
 `runtime.qemu.emitArgs` and its validated shell rendering/order in `render`.
 Regeneration writes the production `emit` stanza and ordered bring-up list; do
 not edit either generated shell script.
 
-Add `streamhost/tiles/<tileDir>/` when the station needs tracked runtime material.
+Add `streamhost/tiles/<stationDir>/` when the station needs tracked runtime material.
 These source sidecars remain hand-managed even when the registry references
 their paths through `runtime.qemu.launcher`, `envFixture`, or `auxFiles`:
 
@@ -673,7 +673,7 @@ at the tracked script, and keep `launcherParity` honest. The generator records
 and reports launcher parity but does not synthesize the launcher or
 `tile.env.fixture`. The emitter produces the deployed `tile.env`, launcher, and
 `ROLLBACK.md` from the generated invocation and referenced source material.
-Ensure `runtime.tileEnv.SH_TILE` and paths use `tileDir`, while public maps use
+Ensure `runtime.stationEnv.SH_TILE` and paths use `stationDir`, while public maps use
 `id`.
 
 Choose `runtime.bringUpOrder` and `render.bringUpGroup` after every build or
@@ -694,7 +694,7 @@ Do not save the golden until the launcher has the pinned production device set.
 ### 6.3 Serve, reset, and operator maps
 
 Set `stream.udpPort` and `render.signalOrder`; generation derives the public
-signal row from `id`, `tileDir`, and that port. The HTTPS server reads the
+signal row from `id`, `stationDir`, and that port. The HTTPS server reads the
 signal JSON and certificate hash fresh on every request, but the **live**
 `SIGNAL_CONFIG` copy must still be updated. The UI deploy helper preserves an
 existing host copy, so do not assume an UI deploy has copied a changed map.
@@ -707,7 +707,7 @@ with `stream.pointer.transport`.
 
 Put the performance/input probe under `operator.actionMap` and order it with
 `render.actionMapOrder`. Use `mouse: null` for a text-only surface. Its `key`
-may be an `id`, `tileDir`, or retained historical tool spelling; prefer an
+may be an `id`, `stationDir`, or retained historical tool spelling; prefer an
 alias-free `id` for new entries.
 
 Declare `dir`, `qmp`, `pointer_mode`, `warpd_port`, `warpd_addr`, `ssh_port`,
@@ -785,12 +785,12 @@ manifest, tracked source, docs, screenshots, or logs.
 Boot video is optional. Even without publishing a clip, audit the cold-boot
 behavior so the guest cannot stop on first-run input.
 
-- Add `scripts/coldboot/<tileDir>-zero-input-prep.md` describing the ready state,
+- Add `scripts/coldboot/<stationDir>-zero-input-prep.md` describing the ready state,
   blockers, automation, and clone proof.
 - Add a `case` arm to `scripts/coldboot/bootrec-tiles.conf`: `BR_BOOT_KIND`, final
   canvas, FPS/audio, every writable disk to clone, port rewrites, detection tier,
   timeout, and optional automated record driver.
-- Run `record-boot.sh <tileDir> --dry-run` and inspect the rewritten clone launcher
+- Run `record-boot.sh <stationDir> --dry-run` and inspect the rewritten clone launcher
   before a real capture. It must never attach a live writable disk.
 - A published clip's last frame must match the golden's first live frame. Follow
   `scripts/coldboot/README.md`; do not publish a clip merely because it plays.
@@ -800,10 +800,10 @@ On an authorized box-side run:
 ```bash
 export SH_DBUS_TAP=/data/vms/streamhost/build/target/release/bootrec-tap
 export WEBROOT=/data/vms/streamhost/serve/webroot
-scripts/coldboot/record-boot.sh <tileDir> --dry-run
-scripts/coldboot/record-boot.sh <tileDir>
-scripts/coldboot/postprocess-boot.sh <tileDir>
-scripts/coldboot/gen-boot-manifest.sh <tileDir>
+scripts/coldboot/record-boot.sh <stationDir> --dry-run
+scripts/coldboot/record-boot.sh <stationDir>
+scripts/coldboot/postprocess-boot.sh <stationDir>
+scripts/coldboot/gen-boot-manifest.sh <stationDir>
 ```
 
 The runtime `/boot/index.json` supplies detailed clip metadata without an UI
@@ -821,7 +821,7 @@ make station-registry-validate
 make station-registry-generate
 make station-registry-check
 bash -n scripts/build-guests/tiles/<os>.sh
-bash -n streamhost/tiles/<tileDir>/qemu-streamhost.sh  # if verbatim
+bash -n streamhost/tiles/<stationDir>/qemu-streamhost.sh  # if verbatim
 python3 scripts/stations-registry.py render     # renders every runtime document
 jq empty build/registry/tiles.json
 jq empty build/registry/golden-manifest.json
@@ -847,7 +847,7 @@ Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
 4. emit with pinned machine types into scratch and pass `verify-emit`;
 5. emit/deploy the new station directory;
 6. launch only its `qemu-streamhost.sh`, wait for `qmp.sock`, then start
-   `streamhost@<tileDir>`;
+   `streamhost@<stationDir>`;
 7. publish the **three** runtime documents with
    `scripts/serve-https-spa.sh manifests` (or atomically copy generated
    `emit tiles.json` to the live `SIGNAL_CONFIG` path, `emit
@@ -921,14 +921,14 @@ jq '{host,udpPort,hasHash:(.certHashB64|type=="string" and length>0)}' \
 
 # Operator inventory and framebuffer.
 ssh lab 'labctl ls'
-ssh lab 'labctl shot <tileDir> /tmp/<tileDir>-accept.png'
+ssh lab 'labctl shot <stationDir> /tmp/<stationDir>-accept.png'
 
 # Reset (safe restore only; never savevm through this endpoint).
 curl -ksS -X POST https://192.0.2.10:8443/restore/<osId>
-ssh lab 'labctl shot <tileDir> /tmp/<tileDir>-restored.png'
+ssh lab 'labctl shot <stationDir> /tmp/<stationDir>-restored.png'
 
 # Only where a captured-output exec channel was explicitly configured.
-ssh lab 'labctl exec <tileDir> "uname -a"'
+ssh lab 'labctl exec <stationDir> "uname -a"'
 ```
 
 Then verify in a browser, not only with curl:

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "openvms",
   "era_year": 2024,
-  "tileDir": "openvms",
+  "stationDir": "openvms",
   "lifecycle": "production",
   "enabled": true,
   "build": {
@@ -55,8 +55,8 @@
   },
   "render": {
     "signalOrder": 33,
-    "tilesManifestOrder": 31,
-    "tilesManifestPrelude": "\n# openvms (slot 84) — TWO-VM DECwindows bridge. A captured 1024x768 Debian\n#   bridge runs lean Xorg only (no Linux WM/DM) with usb-tablet. OpenVMS is an\n#   independent SLIRP X client restored from leanx-preconnect, then replays the\n#   DECterm/FileView/Clock/Calculator fixture. Reset is a cold service restart;\n#   warm loadvm is forbidden because it restores dead X sockets.\n",
+    "stationsManifestOrder": 31,
+    "stationsManifestPrelude": "\n# openvms (slot 84) — TWO-VM DECwindows bridge. A captured 1024x768 Debian\n#   bridge runs lean Xorg only (no Linux WM/DM) with usb-tablet. OpenVMS is an\n#   independent SLIRP X client restored from leanx-preconnect, then replays the\n#   DECterm/FileView/Clock/Calculator fixture. Reset is a cold service restart;\n#   warm loadvm is forbidden because it restores dead X sockets.\n",
     "bringUpGroup": 3,
     "bindingOrder": 37,
     "bindingPrelude": "",
@@ -92,7 +92,7 @@
   "guestDoc": "docs/guests/openvms.md",
   "credentialsRef": "guest/openvms",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "openvms",
       "SH_QMP": "/data/vms/streamhost/tiles/openvms/qmp.sock",
       "SH_PORT": "54084",
@@ -217,7 +217,7 @@
     "notes": "A two-VM graphical bridge: OpenVMS supplies MWM and the applications while a private lean-X Debian guest supplies only the captured Xorg scanout and absolute tablet input."
   },
   "reset": {
-    "tileDir": "openvms",
+    "stationDir": "openvms",
     "pointer": "PASS (usb-tablet 1:1 at 20%, 50%, 80%)",
     "touch": false,
     "resetMode": "restart",

@@ -12,7 +12,7 @@
 #              only RESTORES from the in-qcow2 snapshot, never `savevm`.
 #   restart  -> re-run the station's qemu-streamhost.sh (kills by pidfile +
 #              relaunches -> cold-boots the curated fixture) then restart
-#              streamhost@<tileDir> so the daemon re-attaches to the new QMP
+#              streamhost@<stationDir> so the daemon re-attaches to the new QMP
 #              socket. For stations whose backing store can't hold a vmstate snap.
 #   pve-rollback -> `qm rollback <vmid> golden`, then restart streamhost so it
 #              re-attaches to the dedicated QMP socket recreated by PVE.
@@ -50,7 +50,7 @@ m=json.load(open(sys.argv[1]))["tiles"]
 t=m.get(sys.argv[2])
 if not t: print("__MISSING__ __ __ __ -"); sys.exit(0)
 keys=",".join(t.get("postRestoreKeys") or []) or "-"
-print(t["tileDir"], t["resetMode"], t.get("snapshot") or "-", t.get("pveVmid") or "-", keys)
+print(t["stationDir"], t["resetMode"], t.get("snapshot") or "-", t.get("pveVmid") or "-", keys)
 PY
 )
 

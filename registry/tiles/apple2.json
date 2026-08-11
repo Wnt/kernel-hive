@@ -44,14 +44,14 @@
   },
   "render": {
     "signalOrder": 28,
-    "tilesManifestOrder": 26,
-    "tilesManifestPrelude": "\n# apple2 (VMID 217) — LinApple 2.3.0 -> Apple //e -> Apple GEOS deskTop. ssh 5817.\n",
+    "stationsManifestOrder": 26,
+    "stationsManifestPrelude": "\n# apple2 (VMID 217) — LinApple 2.3.0 -> Apple //e -> Apple GEOS deskTop. ssh 5817.\n",
     "bringUpGroup": 6,
     "bindingOrder": 28,
     "bindingPrelude": "",
     "goldenOrder": 26
   },
-  "tileDir": "apple2",
+  "stationDir": "apple2",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -76,7 +76,7 @@
   "guestDoc": "docs/guests/apple2.md",
   "credentialsRef": "guest/apple2",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "apple2",
       "SH_QMP": "/data/vms/streamhost/tiles/apple2/qmp.sock",
       "SH_PORT": "54117",
@@ -209,7 +209,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Apple //e emulator full-screen booting Apple GEOS; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke platinum Apple //e all-in-one). See streamhost/docs/BRIDGE.md."
   },
   "reset": {
-    "tileDir": "apple2",
+    "stationDir": "apple2",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

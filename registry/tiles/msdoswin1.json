@@ -65,15 +65,15 @@
   },
   "render": {
     "signalOrder": 10,
-    "tilesManifestOrder": 17,
-    "tilesManifestPrelude": "\n# msdoswin1 (VMID 113) — MS-DOS 6.22 + Windows 1.01, tiny 16MB, PS/2, ide disk.\n#   VERBATIM LAUNCHER: golden fixture — no -snapshot; post-boot `loadvm golden`\n#   + `cont` via the tile-local qmpc.py helper (installed via --aux-file).\n#   2026-07-13/14 streamhost fixes (docs/guests/msdos-win1.md):\n#   - SOUND: PC-speaker only — `-machine pc,pcspk-audiodev=snd0` (backend-only).\n#   - KEYBOARD: SH_LEGACY_KBD=1 — input.rs remaps the cursor cluster to bare\n#     keypad scancodes for this pre-1986 guest.\n#   - MOUSE: genuine Win 1.01 re-SETUP with the Windows 2.03 MOUSE.DRV (PS/2)\n#     + SETVER entries baked into the golden (\"Option B — PROMOTED LIVE\").\n",
+    "stationsManifestOrder": 17,
+    "stationsManifestPrelude": "\n# msdoswin1 (VMID 113) — MS-DOS 6.22 + Windows 1.01, tiny 16MB, PS/2, ide disk.\n#   VERBATIM LAUNCHER: golden fixture — no -snapshot; post-boot `loadvm golden`\n#   + `cont` via the tile-local qmpc.py helper (installed via --aux-file).\n#   2026-07-13/14 streamhost fixes (docs/guests/msdos-win1.md):\n#   - SOUND: PC-speaker only — `-machine pc,pcspk-audiodev=snd0` (backend-only).\n#   - KEYBOARD: SH_LEGACY_KBD=1 — input.rs remaps the cursor cluster to bare\n#     keypad scancodes for this pre-1986 guest.\n#   - MOUSE: genuine Win 1.01 re-SETUP with the Windows 2.03 MOUSE.DRV (PS/2)\n#     + SETVER entries baked into the golden (\"Option B — PROMOTED LIVE\").\n",
     "bringUpGroup": 4,
     "bindingOrder": 25,
     "bindingPrelude": "",
     "goldenOrder": 23,
     "actionMapOrder": 25
   },
-  "tileDir": "msdoswin1",
+  "stationDir": "msdoswin1",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -98,7 +98,7 @@
   "guestDoc": "docs/guests/msdos-win1.md",
   "credentialsRef": "guest/msdoswin1",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "msdoswin1",
       "SH_QMP": "/data/vms/streamhost/tiles/msdoswin1/qmp.sock",
       "SH_PORT": "54113",
@@ -226,7 +226,7 @@
     "notes": "Live streamhost tile. One combined image: boots MS-DOS 6.22 to C:\\> and launches Windows 1.01 via WIN — presented here as a single exhibit. Archetype: beige-ibm-pc (the boxy DOS-era CRT + IBM-PC fit)."
   },
   "reset": {
-    "tileDir": "msdoswin1",
+    "stationDir": "msdoswin1",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

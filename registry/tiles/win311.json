@@ -65,15 +65,15 @@
   },
   "render": {
     "signalOrder": 5,
-    "tilesManifestOrder": 13,
-    "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP E — Win9x / DOS / OS/2: PS/2-only (usb=off), Sound Blaster 16 (only\n#           inbox codec that works), acpi=off/kernel-irqchip=off, legacy\n#           -cpu pentium*. rel/warpd pointer. ALL VERBATIM (golden fixtures).\n# ---------------------------------------------------------------------------\n\n# win311 (VMID 90) — Windows 3.11, sb16, two golden qcow2 disks (tile-local,\n#   NO -snapshot; savevm/loadvm 'golden' persists). VERBATIM LAUNCHER with the\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (hybrid): usb=off => PS/2 RELATIVE-only mouse, and the Win3.x\n# DOS mouse driver applies acceleration so an abs->rel bridge desyncs. Fix\n# (guest-agents/win311/agent.c): an in-guest Win16 agent OpenComm(\"COM1\")s and\n# SetCursorPos()es the cursor absolutely from the warpd M/P/R/B protocol over\n# COM1. SH_WARPD_BUTTONS=qemu keeps MOTION on the agent but routes BUTTONS\n# through the real QEMU PS/2 device for true window-manager semantics. The COM1\n# device comes from machine 'pc'; -serial chardev:ser0 only redirects its\n# BACKEND so the guest device set is UNCHANGED and loadvm golden still matches.\n# LAG+DRAG FIX (baked 2026-07-08): AGENT.EXE coalesces moves per COM1 drain\n# batch; the two-channel race is closed by SH_WARPD_BUTTON_DELAY_MS=80 with\n# SH_WARPD_PACE_MS=8 write pacing (empirical floor 50; 80 = 0 races observed).\n",
+    "stationsManifestOrder": 13,
+    "stationsManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP E — Win9x / DOS / OS/2: PS/2-only (usb=off), Sound Blaster 16 (only\n#           inbox codec that works), acpi=off/kernel-irqchip=off, legacy\n#           -cpu pentium*. rel/warpd pointer. ALL VERBATIM (golden fixtures).\n# ---------------------------------------------------------------------------\n\n# win311 (VMID 90) — Windows 3.11, sb16, two golden qcow2 disks (tile-local,\n#   NO -snapshot; savevm/loadvm 'golden' persists). VERBATIM LAUNCHER with the\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (hybrid): usb=off => PS/2 RELATIVE-only mouse, and the Win3.x\n# DOS mouse driver applies acceleration so an abs->rel bridge desyncs. Fix\n# (guest-agents/win311/agent.c): an in-guest Win16 agent OpenComm(\"COM1\")s and\n# SetCursorPos()es the cursor absolutely from the warpd M/P/R/B protocol over\n# COM1. SH_WARPD_BUTTONS=qemu keeps MOTION on the agent but routes BUTTONS\n# through the real QEMU PS/2 device for true window-manager semantics. The COM1\n# device comes from machine 'pc'; -serial chardev:ser0 only redirects its\n# BACKEND so the guest device set is UNCHANGED and loadvm golden still matches.\n# LAG+DRAG FIX (baked 2026-07-08): AGENT.EXE coalesces moves per COM1 drain\n# batch; the two-channel race is closed by SH_WARPD_BUTTON_DELAY_MS=80 with\n# SH_WARPD_PACE_MS=8 write pacing (empirical floor 50; 80 = 0 races observed).\n",
     "bringUpGroup": 4,
     "bindingOrder": 3,
     "bindingPrelude": "",
     "goldenOrder": 3,
     "actionMapOrder": 5
   },
-  "tileDir": "win311",
+  "stationDir": "win311",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -102,7 +102,7 @@
   "guestDoc": "docs/guests/UNDOCUMENTED.md",
   "credentialsRef": "guest/win311",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "win311",
       "SH_QMP": "/data/vms/streamhost/tiles/win311/qmp.sock",
       "SH_PORT": "54090",
@@ -235,7 +235,7 @@
     "blurb": "Windows for Workgroups — the tiled Program Manager era, riding on top of DOS."
   },
   "reset": {
-    "tileDir": "win311",
+    "stationDir": "win311",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

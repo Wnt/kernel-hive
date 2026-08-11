@@ -20,7 +20,7 @@ migration ledger, not a taxonomy. So the test is:
 | Test, in order | Tier |
 |---|---|
 | `runtime` is empty — no build rows, no launcher, no unit | **5** — showcase poster |
-| `runtime.tileEnv.SH_TILE_RUNTIME == "x11"` | **3** — host-native |
+| `runtime.stationEnv.SH_TILE_RUNTIME == "x11"` | **3** — host-native |
 | id appears in `registry/bridge-suites.json` `.tiles` | **2** — emulator bridge |
 | id is `openvms` | **4** — two-QEMU X bridge |
 | otherwise | **1** — direct QEMU |
@@ -136,7 +136,7 @@ execs a per-station versioned binary symlink. The tier is expressed entirely in
 `tile.env` plus which launcher was emitted — which is why a tier change is a
 config change, not a code change.
 
-**The effective environment is `tileEnv` THEN the appended fixture**, and they
+**The effective environment is `stationEnv` THEN the appended fixture**, and they
 can disagree. `irix` is the live example: the registry declares
 `stream.audio: false` (emitting `SH_AUDIO=off`) while the appended fixture sets
 `SH_AUDIO=on` with `SH_AUDIO_SOURCE=fifo`. Reading only the registry block for a

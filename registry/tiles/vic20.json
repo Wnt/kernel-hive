@@ -44,14 +44,14 @@
   },
   "render": {
     "signalOrder": 36,
-    "tilesManifestOrder": 34,
-    "tilesManifestPrelude": "\n# vic20 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.\n",
+    "stationsManifestOrder": 34,
+    "stationsManifestPrelude": "\n# vic20 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.\n",
     "bringUpGroup": 6,
     "bindingOrder": 40,
     "bindingPrelude": "",
     "goldenOrder": 34
   },
-  "tileDir": "vic20",
+  "stationDir": "vic20",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -77,7 +77,7 @@
   "guestDoc": "docs/guests/vic20.md",
   "credentialsRef": "guest/vic20",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "vic20",
       "SH_QMP": "/data/vms/streamhost/tiles/vic20/qmp.sock",
       "SH_PORT": "54085",
@@ -223,7 +223,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (xvic) emulating a PAL VIC-20 that boots its ROM to the CBM BASIC V2 READY prompt; streamhost captures the Linux framebuffer + AC97 audio (the VIC-I sound routed through ALSA) exactly like every other tile. VICE is already in the frozen bridge base (built from source for the c64 tile) and bundles the Commodore ROMs, so this tile needs no external media at all. Keyboard-only exhibit (the machine’s other input was a joystick); uses the beige-tower-crt fallback until a bespoke VIC-20 archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/vic20.md."
   },
   "reset": {
-    "tileDir": "vic20",
+    "stationDir": "vic20",
     "pointer": "none",
     "touch": false,
     "resetMode": "loadvm",

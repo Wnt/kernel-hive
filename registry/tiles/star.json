@@ -40,14 +40,14 @@
   },
   "render": {
     "signalOrder": 55,
-    "tilesManifestOrder": 53,
-    "tilesManifestPrelude": "\n# star (VMID 240) — Darkstar (C#/mono 6.8) -> Xerox 8010 \"Dandelion\"\n#   -> Pilot + ViewPoint 2.0, logged on. ssh 5840. Silent exhibit (the 8010 has\n#   no sound hardware). RELATIVE pointer: Darkstar has no absolute path, so the\n#   device set carries no usb-tablet and the machine type sets vmport=off.\n#   Fixture stanza pins the key dwell Darkstar needs.\n",
+    "stationsManifestOrder": 53,
+    "stationsManifestPrelude": "\n# star (VMID 240) — Darkstar (C#/mono 6.8) -> Xerox 8010 \"Dandelion\"\n#   -> Pilot + ViewPoint 2.0, logged on. ssh 5840. Silent exhibit (the 8010 has\n#   no sound hardware). RELATIVE pointer: Darkstar has no absolute path, so the\n#   device set carries no usb-tablet and the machine type sets vmport=off.\n#   Fixture stanza pins the key dwell Darkstar needs.\n",
     "bringUpGroup": 6,
     "bindingOrder": 60,
     "bindingPrelude": "",
     "goldenOrder": 53
   },
-  "tileDir": "star",
+  "stationDir": "star",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
@@ -72,7 +72,7 @@
   "guestDoc": "docs/guests/star.md",
   "credentialsRef": "guest/star",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "star",
       "SH_QMP": "/data/vms/streamhost/tiles/star/qmp.sock",
       "SH_PORT": "54138",
@@ -202,7 +202,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 bare-X kiosk runs Darkstar (C#/mono) emulating a real Xerox 8010 \"Dandelion\" workstation booting Pilot and ViewPoint 2.0 off the bitsavers 1990 rigid-disk image; streamhost captures the Linux framebuffer exactly like every other tile. Silent — the 8010 has no sound hardware. The X root is a custom 1088×860 mode and the emulator window is moved to (0,−29) so Darkstar’s own System Menu and status bars fall outside the captured frame: what a visitor sees is the Star screen and nothing else. RELATIVE POINTER, and correctly so — Darkstar has no absolute path at all (it differences the host pointer against the display centre and warps it back), so the tile runs the same SH_POINTER=rel / no-tablet / vmport=off device set as c64 and qnx, and X pointer acceleration is turned off in the kiosk so a browser delta arrives 1:1. The golden is the LOGGED-ON ViewPoint user desktop: the 22-minute first boot, the Set Time Utility’s five carriage returns, the desktop creation and the logon all run once at bake time. The software is TIME-LOCKED (Xerox \"Product Factoring\"): the TOD clock is pinned to 1997-12-01 and must stay there — a 1990 date stalls the boot at MP 7800 indefinitely. See streamhost/docs/BRIDGE.md and docs/guests/star.md."
   },
   "reset": {
-    "tileDir": "star",
+    "stationDir": "star",
     "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",

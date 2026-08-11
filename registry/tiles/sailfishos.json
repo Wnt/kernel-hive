@@ -87,15 +87,15 @@
   },
   "render": {
     "signalOrder": 25,
-    "tilesManifestOrder": 20,
-    "tilesManifestPrelude": "\n# sailfishos (VMID 104) — audio OFF, usb-tablet + usb-kbd, ide disk, e1000 NIC.\n#   GENERIC (+ -snapshot: ephemeral; no golden — labctl reset refuses it).\n",
+    "stationsManifestOrder": 20,
+    "stationsManifestPrelude": "\n# sailfishos (VMID 104) — audio OFF, usb-tablet + usb-kbd, ide disk, e1000 NIC.\n#   GENERIC (+ -snapshot: ephemeral; no golden — labctl reset refuses it).\n",
     "bringUpGroup": 5,
     "bindingOrder": 18,
     "bindingPrelude": "",
     "goldenOrder": 17,
     "actionMapOrder": 19
   },
-  "tileDir": "sailfishos",
+  "stationDir": "sailfishos",
   "lifecycle": "production",
   "listing": {
     "state": "hidden",
@@ -125,7 +125,7 @@
   "guestDoc": "docs/guests/sailfish.md",
   "credentialsRef": "guest/sailfishos",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "sailfishos",
       "SH_QMP": "/data/vms/streamhost/tiles/sailfishos/qmp.sock",
       "SH_PORT": "54104",
@@ -256,7 +256,7 @@
     "blurb": "MeeGo’s heir from Jolla — the gesture-driven Nordic take on the smartphone."
   },
   "reset": {
-    "tileDir": "sailfishos",
+    "stationDir": "sailfishos",
     "pointer": "abs",
     "touch": true,
     "resetMode": "loadvm",

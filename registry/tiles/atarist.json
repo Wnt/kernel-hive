@@ -44,14 +44,14 @@
   },
   "render": {
     "signalOrder": 27,
-    "tilesManifestOrder": 25,
-    "tilesManifestPrelude": "\n# atarist (VMID 216) — hatari -> Atari ST -> EmuTOS GEM desktop. ssh 5816.\n",
+    "stationsManifestOrder": 25,
+    "stationsManifestPrelude": "\n# atarist (VMID 216) — hatari -> Atari ST -> EmuTOS GEM desktop. ssh 5816.\n",
     "bringUpGroup": 6,
     "bindingOrder": 27,
     "bindingPrelude": "",
     "goldenOrder": 25
   },
-  "tileDir": "atarist",
+  "stationDir": "atarist",
   "lifecycle": "production",
   "listing": {
     "state": "hidden",
@@ -81,7 +81,7 @@
   "guestDoc": "docs/guests/atarist.md",
   "credentialsRef": "guest/atarist",
   "runtime": {
-    "tileEnv": {
+    "stationEnv": {
       "SH_TILE": "atarist",
       "SH_QMP": "/data/vms/streamhost/tiles/atarist/qmp.sock",
       "SH_PORT": "54116",
@@ -214,7 +214,7 @@
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs the hatari Atari ST emulator full-screen (EmuTOS → GEM desktop); streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Atari ST wedge). See streamhost/docs/BRIDGE.md."
   },
   "reset": {
-    "tileDir": "atarist",
+    "stationDir": "atarist",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",

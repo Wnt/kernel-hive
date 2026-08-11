@@ -46,7 +46,7 @@ import json
 import sys
 
 row = json.load(open(sys.argv[1]))
-print(row.get("tileDir", row["id"]))
+print(row.get("stationDir", row["id"]))
 PY
       )
       remote_png="/tmp/osgallery-poster-${os_id}.png"

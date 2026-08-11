@@ -100,7 +100,7 @@ files.
   "schemaVersion": 1,
   "id": "<tile-id>",
   "enabled": false,
-  "tileDir": "<tile-id>",
+  "stationDir": "<tile-id>",
   "lifecycle": "production",
   "operator": {
     "labctl": {
@@ -145,7 +145,7 @@ files.
     }
   },
   "reset": {
-    "tileDir": "<tile-id>",
+    "stationDir": "<tile-id>",
     "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
