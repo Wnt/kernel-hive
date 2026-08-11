@@ -30,7 +30,7 @@ D=/data/vms/streamhost/tiles/nt351
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid"
 LOADVM=""
-qemu-img snapshot -l "$D/nt351-golden.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden"
+qemu-img snapshot -l "$D/nt351-golden.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)

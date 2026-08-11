@@ -18,7 +18,7 @@ rm -f "$BASE/qmp.sock" "$BASE/qemu.pid"
 # Auto-load the golden fixture snapshot if present in the scratch state disk.
 LOADVM=()
 if qemu-img snapshot -l "$BASE/state.qcow2" 2>/dev/null | grep -qw golden; then
-  LOADVM=(-loadvm golden)
+  LOADVM=(-loadvm golden -S)
 fi
 
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.

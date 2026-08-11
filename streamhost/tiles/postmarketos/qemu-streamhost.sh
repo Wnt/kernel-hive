@@ -19,7 +19,7 @@ rm -f "$TILE_DIR/qmp.sock" "$TILE_DIR/qemu.pid"
 # Auto-resume the golden fixture snapshot if it is present in the disk.
 LOADVM=""
 if qemu-img snapshot -l "$DISK" 2>/dev/null | awk '{print $2}' | grep -qx golden; then
-  LOADVM="-loadvm golden"
+  LOADVM="-loadvm golden -S"
 fi
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"

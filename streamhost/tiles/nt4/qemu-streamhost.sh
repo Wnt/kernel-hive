@@ -54,7 +54,7 @@ rm -f "$D/qmp.sock" "$D/qemu.pid"
 LOADVM=()
 LOADVM_LABEL="<none: cold boot>"
 if qemu-img snapshot -l "$D/nt4-golden.qcow2" 2>/dev/null | grep -qw golden; then
-  LOADVM=(-loadvm golden)
+  LOADVM=(-loadvm golden -S)
   LOADVM_LABEL="-loadvm golden"
 fi
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.

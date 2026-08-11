@@ -22,7 +22,7 @@ export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # when it exists; device set must match the bake exactly (adds nothing, reuses
 # the default serial0). First-ever bake has no snapshot -> cold boot.
 LOADVM=""
-qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden"
+qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
 nohup qemu-system-x86_64 \
   -name streamhost-os2warp \

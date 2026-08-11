@@ -29,7 +29,7 @@ nohup qemu-system-x86_64 \
   -rtc base=localtime \
   -cdrom /data/gallery-guests/ReactOS/ReactOS.iso -boot d \
   -drive file=$GDIR/reactos-golden.qcow2,if=ide,index=0,media=disk,format=qcow2 \
-  -loadvm golden \
+  -loadvm golden -S \
   -vga std \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0 \

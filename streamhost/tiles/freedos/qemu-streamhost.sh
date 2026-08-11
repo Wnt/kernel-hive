@@ -16,7 +16,7 @@ rm -f "/data/vms/streamhost/tiles/freedos/qmp.sock" "/data/vms/streamhost/tiles/
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms (default 4).
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 LOADVM=""
-qemu-img snapshot -l /data/gallery-guests/FreeDOS/freedos.qcow2 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden"
+qemu-img snapshot -l /data/gallery-guests/FreeDOS/freedos.qcow2 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
 nohup qemu-system-x86_64 \
   -name streamhost-freedos \

@@ -28,7 +28,7 @@ rm -f "$BASE/qmp.sock" "$BASE/qemu.pid"
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # Boot straight into the golden PET BASIC fixture if the snapshot is present.
 LOADVM=""
-qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden"
+qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
 nohup qemu-system-x86_64 \
   -name streamhost-pet2001 \

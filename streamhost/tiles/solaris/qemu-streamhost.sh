@@ -62,7 +62,7 @@ nohup "$QEMU" -L "$QEMU_DATA" \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0 \
   -usb -device usb-tablet \
   -drive file="$DISK",if=ide,index=0,media=disk,format=qcow2 \
-  -loadvm golden \
+  -loadvm golden -S \
   -netdev user,id=net0,hostfwd=tcp:127.0.0.1:"$HOSTFWD"-10.0.2.15:7777 -device e1000,netdev=net0 \
   -chardev socket,id=ghid0,path="$D/gallery-hid.sock",server=on,wait=off \
   -device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e \

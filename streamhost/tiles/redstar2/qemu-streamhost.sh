@@ -32,7 +32,7 @@ nohup qemu-system-x86_64 \
   -enable-kvm -machine pc-i440fx-11.0 -cpu host \
   -m 1024 -smp 1 -rtc base=localtime \
   -drive file="$DISK",format=qcow2,if=ide,index=0 \
-  -boot order=c -loadvm golden \
+  -boot order=c -loadvm golden -S \
   -vga std \
   -usb -device usb-tablet \
   -display dbus,p2p=on \

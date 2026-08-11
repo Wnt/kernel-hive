@@ -13,7 +13,7 @@ rm -f "$BASE/qmp.sock" "$BASE/qemu.pid"
 # is present. The device tree must stay byte-for-byte compatible with the bake.
 LOADVM=()
 if qemu-img snapshot -l "$BASE/golden-scratch.qcow2" 2>/dev/null | grep -qw golden; then
-  LOADVM=(-loadvm golden)
+  LOADVM=(-loadvm golden -S)
 fi
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"

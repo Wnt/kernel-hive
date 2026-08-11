@@ -19,7 +19,7 @@ T=/data/vms/streamhost/tiles/android
 DISK=/data/gallery-guests/Android/android.qcow2
 LOADVM=()
 if qemu-img snapshot -l "$DISK" | grep -Eq '^[[:space:]]*[0-9]+[[:space:]]+golden[[:space:]]'; then
-  LOADVM=(-loadvm golden)
+  LOADVM=(-loadvm golden -S)
 fi
 [ -f "$T/qemu.pid" ] && kill "$(cat "$T/qemu.pid")" 2>/dev/null || true
 sleep 0.3
