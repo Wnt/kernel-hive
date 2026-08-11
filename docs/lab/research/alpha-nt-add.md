@@ -426,6 +426,48 @@ run is now ~3 min, `--until kernel` ~1.5 min. Bench refs unchanged (`arc`
 still detected at 65.9 s; 5 s countdown chosen over 0 so the chooser frame
 stays catchable at the 2 s poll).
 
+### The 24h mission (2026-08-11, operator offline): 2× GOAL ACHIEVED
+
+Operator-set goal: a heavy scripted UI interaction (Computer Management
+launch — MMC + snap-ins, disk IO + CPU) in HALF the baseline time,
+framebuffer-timed, repeatable. Result: **24.4 s (n=7 baseline) → 10.30 s
+± 0.25 (n=8) = 2.37×**, fork commit `0e22e9f`, every iteration a full
+cold boot from the identical m4-warm golden disk.
+
+The road there (all measured, `uibench/` harness + JIT_STATS builds):
+
+1. **Savestate fixed end-to-end** (`ab75e70`, `d73e4dc`): restore hang
+   (get_primes(0)), BAR re-registration, S3 video state + VRAM, SDL
+   texture loss (S3 thread now pauses, never recreates). New: menu-5
+   atomic save-and-exit, `ES40_RESTORE` instant resume (desktop in
+   seconds, skips all firmware). Known residue: an instant-resumed guest
+   wedges under heavy load (CM freezes mid-load; cold boots fine) —
+   suspected unrestored wall-clock timer baselines; restore-benching
+   parked, cold mode used throughout.
+2. **PGO +10% / LTO null** on the launch metric (PGO re-applies as a
+   packaging step; iteration loop stays plain -O3).
+3. **JIT_STATS revealed the gate storm**: compiled 53% / interp 22% /
+   dispatch 25%; 3.9M chain exits per 100M instr, 100% "gate" —
+   check_int kicked by every NT IRQL write (IER rewrite per spinlock),
+   check_timers gating natives through ~100 interpreted instructions per
+   delayed IRQ. Fixes: deliverability-gated kicks (pending AND enabled,
+   the delivery poll's exact predicate) + chain-granular countdown
+   drains. Idle throughput 140 → ~300 MIPS, compiled 98.5%. Launch time:
+   UNMOVED — which exposed:
+4. **The launch is a cold-code event**: slow intervals showed ~390k
+   first-sight block compilations per 100M instr (29 MIPS, dispatch
+   66%) — run-once DLL/registry init code paying full compile cost for
+   zero reuse. Fix: `m_cold_seen` — compile only on second encounter
+   (16K direct-mapped phys-tag filter). Launch: 24.4 → 10.3 s.
+
+Measurement discipline notes: CM-launch noise is ±2.5 s — n=3 arms
+cannot resolve <10% effects (the PGO/gatekick early reads were
+noise-dominated); the JIT_STATS time-split was the reliable compass.
+uibench detection is crop-based (taskbar strip + MMC tree pane) after
+whole-screen RMSE broke on the guest's Active Desktop Recovery
+background (cosmetic damage from hard kills; consistent across
+iterations, A/B-valid; clean up at next guest session).
+
 Emulator/guest tuning research digested in
 [`es40-tuning-research.md`](es40-tuning-research.md) — headline items:
 JIT large pages already active on this box (THP `madvise`); remove

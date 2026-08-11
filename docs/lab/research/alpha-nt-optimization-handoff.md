@@ -1,6 +1,15 @@
 # w2kalpha emulator-optimization — session handoff
 
-**Updated 2026-08-11 (late session). Done: §1 fast-flag (−24.7%), §4 partial
+**2026-08-11 ~08:00 — THE 2× DESKTOP-INTERACTION GOAL IS ACHIEVED AND
+PROVEN: Computer Management launch 24.4 s → 10.30 s ± 0.25 (2.37×, n=8),
+fork `0e22e9f` (+ savestate work `ab75e70`/`d73e4dc`, docs `d019b15`).
+The canonical box build == the benchmarked binary (`362cf057…`); the rig
+runs it. Read alpha-nt-add.md §10 "The 24h mission" for the full story.
+Remaining queue: post-restore-under-load wedge (timer-baseline suspect),
+guest telnet channel, guest de-bloat, idle_nap probe, LTO/PGO packaging
+pass, TB_ENTRIES experiment. Older content below.**
+
+**(Superseded status paragraph:)** Updated 2026-08-11 (late session). Done: §1 fast-flag (−24.7%), §4 partial
 (-O3 adopted, +2.4%; LTO/PGO open), §3 closed NULL (patch parked on fork
 branch `tlb-hint-experimental`), AlphaBIOS NVRAM fix (kernel 118.7→82.8s
 cold-boot), host quiesced, tuning research digested in
