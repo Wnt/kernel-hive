@@ -181,9 +181,17 @@ heavy) — completes in half the baseline time. Harness:
 iteration, xdotool injection (`windowfocus` first — a bare Xvfb never
 focuses the SDL window on its own), ImageMagick RMSE against
 `refs/compmgmt-ref.png` for completion, `refs/desktop-ref.png` for
-readiness. `--cold` = full SRM boot per iteration (~4 min, the reliable
-mode today); restore mode is the fast path once the timer bug above is
-fixed. Results append to `uibench/results.log`.
+readiness. `--cold` = full SRM boot per iteration (~3 min, the reliable
+mode today); restore mode is the fast path once the post-restore bug is
+fixed. Results append to `uibench/results.log`. Detection is CROP-based
+(taskbar strip for readiness, populated MMC tree pane for completion) —
+whole-screen RMSE broke on the guest's "Active Desktop Recovery"
+background (cosmetic guest damage from tonight's hard kills; consistent
+across iterations so A/Bs stay valid; clean up when re-baking).
+
+**BASELINE (canonical -O3 `63ae339f`, quiesced host, 2026-08-11 05:25):
+Computer Management launch = 28.28 / 23.03 / 23.62 s (mean 25.0 s).
+The 2× goal: ≤ 12.5 s under the identical protocol.**
 
 ## Still queued
 
