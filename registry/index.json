@@ -519,7 +519,6 @@
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
           "SH_FIXTURE_DESC": "Amiga 500 (68000) Workbench 1.3 desktop in FS-UAE; Kickstart 1.3; Paula->ALSA->AC97.",
-          "SH_IDLE_PAUSE_SECS": "0",
           "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 218,

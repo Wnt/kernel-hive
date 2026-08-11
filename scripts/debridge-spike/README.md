@@ -86,9 +86,16 @@ emits one quadrature cycle per latch. So
 * one delivered count moves the GEM cursor **4 ST pixels**, which on the
   published 1024x768 surface is ~9.7 px across and ~12.3 px down (measured);
 * so the pointer's real resolution is a **count grid of 81 x 52 reachable
-  positions**, not 1024 x 768, and the top speed is ~500 ST px/s. Crossing the
-  desktop takes about 1.3 s and there is nothing to be done about it: the
-  ceiling is the emulated hardware.
+  positions**, not 1024 x 768. The top speed was ~125 counts/s (~500 ST px/s,
+  a 0.65 s desktop crossing) — but that ceiling was MAME's 500 Hz quadrature
+  tick, not the machine: a real ST mouse delivers 2000+ counts/s and the
+  ikbd's 4 MHz HD6301 counts it fine. `mame-st-fastmouse.patch`
+  (`MAME_ST_MOUSE_HZ`, default upstream-identical) raises the tick; the rig
+  runs **1000 Hz = 250 counts/s**, the measured fidelity ceiling — at 2000
+  the emulated 6301 firmware drops a couple of counts per burst *below* the
+  module's emission sensor (a constant +2-count Y skew the corrector cannot
+  see), while at 1000 every fixture lands within 0.9 counts and a streamed
+  60 Hz sweep is followed with **zero queue backlog**.
 
 Both arms inherit all of it, and both needed a fix for it — this is the part
 that was wrong on the live rig until 2026-08-10, in a *different* way on each

@@ -105,6 +105,7 @@ PATCHES=(
   mame-ctlsock.patch
   mame-ctlsock-ptr-tags.patch
   mame-drawshm.patch
+  mame-st-fastmouse.patch
 )
 
 # EmuTOS 1.4, the latest stable release. The bridge base carries 1.3's 1024k
