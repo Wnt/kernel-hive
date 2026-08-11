@@ -5,13 +5,10 @@ hero: /posters/w2kalpha/dxdiag.webp
 images:
   - src: /posters/w2kalpha/dxdiag.webp
     alt: The Windows 2000 DirectX Diagnostic Tool on the Alpha guest, its System page reporting the processor outright as "Alpha 21264 Model A - Pass 2", the computer name W2KALPHA, Windows 2000 build 2128, and 512 MB of RAM
-    caption: The DirectX Diagnostic Tool (run "dxdiag") says in plain words what System Properties only hints at — Processor "Alpha 21264 Model A - Pass 2". No x86 machine ever names that chip. It is the clearest single view that this Windows is running on Digital's 64-bit RISC, not an Intel PC.
+    caption: The DirectX Diagnostic Tool names the hardware directly — Processor "Alpha 21264 Model A - Pass 2", a DEC Alpha rather than the Intel or AMD chip inside an ordinary PC.
   - src: /posters/w2kalpha/x86prog.webp
     alt: The x86 Program Optimization window ("x86 Programs") listing Winamp v2.5e, the Winamp installer, and Windows games — Solitaire, FreeCell, Minesweeper, Calculator, Notepad — each translated by FX!32 and shown at 100% optimization
-    caption: Because the CPU is not x86, ordinary x86 Windows software runs here through FX!32, the binary translator. The "x86 Program Optimization" panel (run "x86prog") lists what it has translated and cached to native Alpha code — Winamp 2.5e, Solitaire, Minesweeper and more — each optimized to 100%. This control panel simply cannot exist on an x86 PC.
-  - src: /posters/w2kalpha/desktop.webp
-    alt: Windows 2000 RC2 build 2128 desktop with System Properties open, reporting Microsoft Windows 2000 5.00.2128 on a DEC-221264 Clipper/Tsunami platform with 512 MB of RAM
-    caption: System Properties tells the same story in three cryptic lines — Windows 2000 build 2128, the DEC-221264 (21264) processor, and the DEC Clipper/Tsunami AlphaServer platform. The "Evaluation copy. Build 2128" badge at lower right marks Release Candidate 2, the last Windows ever built for Alpha.
+    caption: Because the Alpha is not an x86 chip, ordinary Windows programs run through FX!32, a binary translator. This panel lists the programs FX!32 has translated to native Alpha code — Winamp 2.5e, Solitaire, Minesweeper and more — each shown at 100%.
 ---
 ## Origins
 
@@ -27,11 +24,11 @@ Release Candidate 2 for Alpha survived anyway, the way interesting software does
 
 ## What you're looking at
 
-The exhibit runs Windows 2000 Professional, build 2128, logged on to a clean desktop at 1280×1024. Two built-in tools make the machine name itself. The **DirectX Diagnostic Tool** — Microsoft's own `dxdiag`, on every Windows of the era — puts it plainly on its System page: Processor "Alpha 21264 Model A - Pass 2", computer name W2KALPHA, 512 MB of RAM. No Intel or AMD PC ever reports that processor line; it is the single most obvious proof of what the CPU really is. System Properties says the same thing in three cryptic strings — DEC-221264, the DEC Clipper/Tsunami platform, 512 MB — which is why the diagnostic tool reads so much more clearly.
+The exhibit runs Windows 2000 Professional, build 2128, on a clean desktop at 1280×1024. On screen is the **DirectX Diagnostic Tool** — Microsoft's `dxdiag`, familiar from any Windows of the era — whose System page names the hardware directly: an "Alpha 21264" processor, the computer W2KALPHA, 512 MB of RAM. This is a DEC Alpha, not the Intel or AMD chip inside an ordinary PC.
 
-The second window is stranger and more revealing: **x86 Program Optimization** (`x86prog`, reached from System Properties → Advanced → Performance Options). Because the processor is not x86, ordinary 32-bit Windows software cannot run natively — it is translated on the fly by **FX!32**, the same binary translator that let NT-on-Alpha run x86 applications through the NT 4.0 years. The panel lists what FX!32 has profiled and compiled to native Alpha code — Winamp 2.5e and its installer, Solitaire, FreeCell, Minesweeper, Calculator, Notepad — each at 100% optimization. A control panel devoted to *optimizing x86 programs* is something an x86 PC has no reason to contain; its mere presence is an architecture fingerprint.
+The second window is the more surprising one: **x86 Program Optimization** (`x86prog`, reached from System Properties → Advanced → Performance Options). Because the Alpha is not an x86 chip, ordinary 32-bit Windows programs cannot run on it directly — they are translated as they run by **FX!32**, the binary translator that carried x86 software across to Alpha through the NT years. The panel lists the programs FX!32 has translated and cached as native Alpha code — Winamp 2.5e and its installer, Solitaire, FreeCell, Minesweeper, Calculator, Notepad — each at 100%.
 
-Everything around them is exactly the Windows 2000 the world remembers — the same Explorer shell, the same desktop icons, the same taskbar, even Winamp — which is precisely the point. This was not a port in progress; it was a finished Windows, able to run the everyday software of its day, on the wrong side of a business decision.
+Everything around them is exactly the Windows 2000 the world remembers — the same Explorer shell, the same desktop icons, the same taskbar — which is precisely the point. This was not a port in progress; it was a finished Windows, able to run the everyday software of its day, on the wrong side of a business decision.
 
 ## Legacy
 
