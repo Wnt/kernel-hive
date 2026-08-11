@@ -154,10 +154,15 @@ ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py withdraw'   # THE REVER
 compare page, and touches nothing else. **The arms keep running either way** —
 publishing and withdrawing are gallery-side only.
 
-While published, `scripts/dev/verify-box-sync.sh` reports
-`serve/webroot/gallery-manifest.json` and `serve/tiles.json` as **DIFFERS**.
-That is correct and wanted: the overlay is a deliberate deployment divergence
-and the gate is what makes it visible. It goes away on `withdraw`.
+While published, the overlay is **declared** in
+`serve/darklaunch.d/debridge-arms.json` (written by `publish`, removed by
+`withdraw`). `scripts/dev/verify-box-sync.sh` verifies the two touched
+documents minus the declared `dbr-arm*` ids still match the repo and reports
+them **DARKLAUNCH** — visible, proven additive-only, and **not** blocking
+`git push`. Any divergence beyond the declared rows still fails the gate, and a
+declaration left behind after the rows are gone fails it as
+`DARKLAUNCH_STALE`. See "Darklaunch overlays" in
+[`../README.md`](../README.md).
 
 ### Why the arms are NOT registry entries with a `listing` soft hide
 

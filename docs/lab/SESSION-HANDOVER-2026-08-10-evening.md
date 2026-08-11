@@ -28,12 +28,15 @@ they are a persistent contrast pair, expensive to rebuild:
 - arm B `dbr-armb` — the same binary host-native via `drawshm` (tier 3), MAME pid 1820339
 
 **A deliberate serve-manifest overlay is published**, exposing both arms at
-`/os/dbr-arma` and `/os/dbr-armb` while hiding them from the grid. It shows as
-**2 DIFFERS in box-sync and therefore blocks `git push`** until withdrawn:
+`/os/dbr-arma` and `/os/dbr-armb` while hiding them from the grid.
+*(Updated 2026-08-11: the overlay now declares itself in `serve/darklaunch.d/`
+and box-sync reports it `DARKLAUNCH` without blocking `git push` — withdrawing
+before a push is no longer needed. See "Darklaunch overlays" in
+`scripts/README.md`.)*
 
 ```
-ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py withdraw'   # then push
-ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py publish'    # then re-expose
+ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py withdraw'   # remove the exposure
+ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py publish'    # re-expose
 ```
 
 **The trixie migration is PAUSED** so the box stays quiet for the latency

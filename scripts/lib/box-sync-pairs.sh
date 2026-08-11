@@ -238,6 +238,130 @@ box_sync_load_pairs() {
   done <"$tmpdir/registry-union"
 }
 
+# --- darklaunch overlays ----------------------------------------------------
+# A darklaunch is a DECLARED, additive, box-side deployment divergence: a rig
+# (typically working out of a git worktree) exposes extra rows in a deployed,
+# mirrored JSON document without committing them, and declares exactly what it
+# added in $BOX_ROOT/serve/darklaunch.d/<name>.json:
+#
+#   { "darklaunch": "<name>", "owner": "<the tool that wrote it>",
+#     "files": { "<box-absolute path>":
+#                  { "kind": "json-object-keys" | "json-entries",
+#                    "ids": ["row-id", ...] } } }
+#
+# The gate compares the box copy WITH THE DECLARED IDS REMOVED against the repo
+# copy, both reduced to one canonical JSON form: the declared rows become
+# invisible, and any OTHER divergence in the same file still fails. The
+# declaration is the claim and the filtered hash is the proof — a declaration
+# whose ids the file does not carry is STALE and fails the gate, exactly like a
+# stale size-exclusion (a one-way ledger rots).
+#
+# Kinds: json-object-keys removes top-level object keys (serve/tiles.json);
+# json-entries removes doc["entries"] rows by their "id" (gallery-manifest).
+# Declarations on scrub-mode pairs are unsupported and ignored; a declared path
+# that is not a mirror pair has no effect (it hides nothing — the path was
+# never gated). File CONTENTS never travel in this pass — only paths,
+# declaration names, hashes and a found-ids count.
+declare -A BOX_SYNC_DL_NAMES=() BOX_SYNC_DL_MD5=() BOX_SYNC_DL_FOUND=()
+
+# The remote half: line 1 of stdin is the darklaunch.d directory; each output
+# row is `path<TAB>names<TAB>filtered-canonical-md5<TAB>ids-found`, with the
+# md5 column carrying ERROR:<why> when the declaration cannot be proven. The
+# canonical form MUST stay byte-identical to box_sync_canon_json_md5 below —
+# the two halves only ever meet as hashes.
+# shellcheck disable=SC2016  # REMOTE script; $vars must reach the box unexpanded
+BOX_SYNC_REMOTE_DARKLAUNCH='
+IFS= read -r DLDIR
+export DLDIR
+python3 - <<"PYEOF"
+import glob, hashlib, json, os
+
+merged = {}
+for decl_path in sorted(glob.glob(os.path.join(os.environ["DLDIR"], "*.json"))):
+    try:
+        with open(decl_path) as fh:
+            decl = json.load(fh)
+        name, files = decl["darklaunch"], decl["files"]
+    except (OSError, ValueError, KeyError) as exc:
+        print(f"{decl_path}\t?\tERROR:unreadable declaration ({exc})\t0")
+        continue
+    for path, spec in files.items():
+        e = merged.setdefault(path, {"names": set(), "kinds": set(), "ids": set()})
+        e["names"].add(str(name))
+        e["kinds"].add(spec.get("kind", "?"))
+        e["ids"].update(spec.get("ids", []))
+for path, e in sorted(merged.items()):
+    names = ",".join(sorted(e["names"]))
+    if len(e["kinds"]) != 1 or e["kinds"] - {"json-object-keys", "json-entries"}:
+        print(f"{path}\t{names}\tERROR:unknown or conflicting kind\t0")
+        continue
+    kind = e["kinds"].pop()
+    try:
+        with open(path) as fh:
+            doc = json.load(fh)
+    except OSError:
+        print(f"{path}\t{names}\tERROR:file absent on box\t0")
+        continue
+    except ValueError as exc:
+        print(f"{path}\t{names}\tERROR:unparseable JSON ({exc})\t0")
+        continue
+    ids = e["ids"]
+    if kind == "json-object-keys":
+        if not isinstance(doc, dict):
+            print(f"{path}\t{names}\tERROR:not a JSON object\t0")
+            continue
+        nfound = sum(1 for i in ids if i in doc)
+        for i in ids:
+            doc.pop(i, None)
+    else:
+        ents = doc.get("entries") if isinstance(doc, dict) else None
+        if not isinstance(ents, list):
+            print(f"{path}\t{names}\tERROR:no entries list\t0")
+            continue
+        nfound = sum(1 for x in ents if isinstance(x, dict) and x.get("id") in ids)
+        doc["entries"] = [x for x in ents if not (isinstance(x, dict) and x.get("id") in ids)]
+    blob = json.dumps(doc, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    print(f"{path}\t{names}\t{hashlib.md5(blob).hexdigest()}\t{nfound}")
+PYEOF
+'
+
+# The local half of the proof: canonical-JSON md5 of a repo file. The dumps()
+# arguments MUST stay identical to the remote pass above. Failure modes return
+# sentinels that can never equal a real hash, so they fail closed as DIFFERS.
+box_sync_canon_json_md5() { # <file> -> md5, or a sentinel matching nothing
+  [ -f "$1" ] || {
+    printf 'MISSING\n'
+    return 0
+  }
+  command -v python3 >/dev/null 2>&1 || {
+    printf 'NO-PYTHON3\n'
+    return 0
+  }
+  python3 - "$1" <<'PYEOF' 2>/dev/null || printf 'UNPARSEABLE\n'
+import hashlib, json, sys
+with open(sys.argv[1]) as fh:
+    doc = json.load(fh)
+blob = json.dumps(doc, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+print(hashlib.md5(blob).hexdigest())
+PYEOF
+}
+
+# box_sync_darklaunch_load <lab> <box-root>
+# One short ssh; fills the three maps, keyed by box-absolute path. An absent or
+# empty darklaunch.d yields empty maps. On ssh failure the maps stay empty and
+# every declared row degrades to DIFFERS — fail closed, never fail invisible.
+box_sync_darklaunch_load() {
+  local lab="$1" box_root="$2" path names md5 nfound
+  BOX_SYNC_DL_NAMES=() BOX_SYNC_DL_MD5=() BOX_SYNC_DL_FOUND=()
+  while IFS=$'\t' read -r path names md5 nfound; do
+    [ -n "$path" ] || continue
+    BOX_SYNC_DL_NAMES["$path"]="$names"
+    BOX_SYNC_DL_MD5["$path"]="$md5"
+    BOX_SYNC_DL_FOUND["$path"]="${nfound:-0}"
+  done < <(printf '%s\n' "$box_root/serve/darklaunch.d" |
+    ssh -o ConnectTimeout=15 "$lab" "$BOX_SYNC_REMOTE_DARKLAUNCH")
+}
+
 # --- the one batched remote hash pass --------------------------------------
 # stdin: line 1 = the reverse-scrub sed program (possibly empty), then one
 # `mode<TAB>path` line per pair. Paths are fixed by the table above or by the

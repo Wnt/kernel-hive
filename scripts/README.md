@@ -25,7 +25,7 @@ Output and flags:
 ```sh
 scripts/dev/verify-box-sync.sh            # only rows needing attention, grouped by kind
 scripts/dev/verify-box-sync.sh --all      # every row, including MATCH
-scripts/dev/verify-box-sync.sh --table    # TSV: status<TAB>label<TAB>repo_md5<TAB>box_md5
+scripts/dev/verify-box-sync.sh --table    # TSV: status<TAB>label<TAB>repo_md5<TAB>box_md5<TAB>darklaunch
 ```
 
 Rows are classified so the fix is obvious: `DIFFERS` (content), `MISSING_ON_BOX`
@@ -35,6 +35,19 @@ itself is wrong). Direction of truth is **per row**: the repo is authoritative
 for source, the box for generated/live artifacts — and that is now a declared
 `authority` field on every row in `scripts/lib/box-sync-pairs.sh`, not prose a
 tool cannot read.
+
+**Darklaunch overlays (`<box>/serve/darklaunch.d/`).** A rig may deliberately
+expose extra rows in a deployed, mirrored JSON document — dark-launching work
+from a git worktree — without committing them, by declaring exactly what it
+added in `serve/darklaunch.d/<name>.json` (format: "darklaunch overlays" in
+`scripts/lib/box-sync-pairs.sh`). The gate verifies the box copy **minus the
+declared ids** still matches the repo and reports the row `DARKLAUNCH` instead
+of `DIFFERS`: visible, additive-only, and **not** push-blocking. Any divergence
+beyond the declaration still fails, and the ledger is bidirectional like
+size-exclusions: a declaration whose ids are not actually overlaid fails as
+`DARKLAUNCH_STALE`, an unprovable one as `DARKLAUNCH_BROKEN`. `box-sync-push.sh`
+refuses to push over an active declaration and `--all-drift` skips such rows
+with a note. First user: `scripts/debridge-spike/gallery-arms.py`.
 
 **Fixing drift: `scripts/dev/box-sync-push.sh` (repo → box).** The detector used
 to end at "decide which side is authoritative, then sync that way", and the

@@ -32,7 +32,10 @@
 # `authority` field. This tool pushes `repo` rows only. A `box` row (the live
 # labctl matrix, the signaling registry, the golden manifest — generated on the
 # box, mirrored into the repo as a committed reference) is refused by name and
-# sent to `harvest.sh`, which is the tool for that direction.
+# sent to `harvest.sh`, which is the tool for that direction. A row under an
+# ACTIVE darklaunch overlay (serve/darklaunch.d — see box-sync-pairs.sh) is
+# likewise refused: pushing over it would strip the overlaid rows. `--all-drift`
+# skips such rows with a note instead of selecting them.
 #
 # NOTHING MOVES WITHOUT --apply. The default prints the unified diff of the
 # reverse-scrubbed box copy against the canonicalised repo copy — the same read
@@ -119,6 +122,19 @@ ssh -o ConnectTimeout=8 -o BatchMode=yes "$LAB" true 2>/dev/null ||
 
 box_sync_scrub_init "$REPO"
 box_sync_load_pairs "$REPO" "$BOX_ROOT" "$LAB" "$tmpdir"
+box_sync_darklaunch_load "$LAB" "$BOX_ROOT"
+
+# Is an ACTIVE darklaunch declaration deployed over this row? Pushing repo->box
+# would silently strip its overlaid rows, so an active declaration is a refusal
+# in the write direction; the owner tool withdraws it, the push runs, and the
+# owner re-publishes. A stale declaration (ids not actually present) does not
+# block a push — the gate flags it DARKLAUNCH_STALE on its own.
+dl_active() { # <index>
+  local bf="${BOX_SYNC_BOX_FILES[$1]}"
+  [ -n "${BOX_SYNC_DL_NAMES[$bf]:-}" ] || return 1
+  case "${BOX_SYNC_DL_MD5[$bf]}" in ERROR:*) return 0 ;; esac
+  [ "${BOX_SYNC_DL_FOUND[$bf]:-0}" -gt 0 ]
+}
 
 if [ "$LIST" = 1 ]; then
   printf '%-46s %-6s %-9s %s\n' PAIR MODE AUTHORITY POST
@@ -183,7 +199,17 @@ if [ "$ALL_DRIFT" = 1 ]; then
     [ "${BOX_SYNC_AUTHORITY[$i]}" = repo ] || continue
     r="$(repo_hash "$i")"
     [ "$r" = MISSING ] && continue
-    [ "$r" = "${BOX_MD5[$i]}" ] || SEL+=("$i")
+    [ "$r" = "${BOX_MD5[$i]}" ] && continue
+    if dl_active "$i"; then
+      bf="${BOX_SYNC_BOX_FILES[$i]}"
+      if [ "${BOX_SYNC_DL_MD5[$bf]}" = "$(box_sync_canon_json_md5 "$REPO/${BOX_SYNC_REPO_FILES[$i]}")" ]; then
+        say "darklaunched (${BOX_SYNC_DL_NAMES[$bf]}), in sync modulo the declaration — not selected: ${BOX_SYNC_LABELS[$i]}"
+      else
+        say "WARNING: ${BOX_SYNC_LABELS[$i]} differs BEYOND its darklaunch declaration (${BOX_SYNC_DL_NAMES[$bf]}) — resolve by hand; not selected"
+      fi
+      continue
+    fi
+    SEL+=("$i")
   done
   [ "${#SEL[@]}" -gt 0 ] || {
     say "no repo-authoritative row needs attention — nothing to do"
@@ -226,6 +252,15 @@ for i in "${SEL[@]}"; do
   fi
   if [ "$r" = "$b" ]; then
     SKIP+=("$i")
+    continue
+  fi
+  if dl_active "$i"; then
+    printf 'REFUSE %-40s an active darklaunch overlay (%s) is deployed on this\n' \
+      "$label" "${BOX_SYNC_DL_NAMES[${BOX_SYNC_BOX_FILES[$i]}]}" >&2
+    printf '       %-40s row; pushing repo -> box would strip its overlaid rows.\n' '' >&2
+    printf '       %-40s Withdraw it with its owner tool (see the declaration in\n' '' >&2
+    printf '       %-40s serve/darklaunch.d), push, then re-publish it.\n' '' >&2
+    refusals=$((refusals + 1))
     continue
   fi
   if [ "$ALLOW_DIRTY" = 0 ] &&

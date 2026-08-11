@@ -41,8 +41,14 @@ WHAT IT WRITES
     <serve>/tiles.json                      2 signaling rows (real soltest paths)
     <serve>/webroot/gallery-manifest.json   2 entries, both `"listed": false`
     <serve>/webroot/debridge-compare.html   the side-by-side page
+    <serve>/darklaunch.d/debridge-arms.json the darklaunch declaration: it names
+                                            exactly the rows added above, so
+                                            scripts/dev/verify-box-sync.sh can
+                                            verify the divergence is additive-only
+                                            and report DARKLAUNCH (green) instead
+                                            of DIFFERS (push-blocking)
 
-REVERT (removes all three, leaves the arms running)
+REVERT (removes all four, leaves the arms running)
     ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py withdraw'
 
 USAGE
@@ -90,6 +96,11 @@ ARMS = (
     },
 )
 ARM_IDS = frozenset(arm["id"] for arm in ARMS)
+DARKLAUNCH_NAME = "debridge-arms"
+
+
+def darklaunch_path(serve: Path) -> Path:
+    return serve / "darklaunch.d" / f"{DARKLAUNCH_NAME}.json"
 
 
 def read_signaling(arm_dir: Path, arm: dict) -> dict:
@@ -176,9 +187,26 @@ def cmd_publish(serve: Path, rig: Path) -> int:
     else:
         print(f"warning: {page_src} absent — compare page not installed", file=sys.stderr)
 
+    # The darklaunch declaration: the claim box-sync verifies instead of
+    # blocking on. It must name EXACTLY the rows written above — nothing else
+    # this overlay diverges by is forgiven by the gate.
+    decl_path = darklaunch_path(serve)
+    decl_path.parent.mkdir(parents=True, exist_ok=True)
+    decl = {
+        "darklaunch": DARKLAUNCH_NAME,
+        "owner": str(Path(__file__).resolve()),
+        "note": "de-bridging spike arms at /os/dbr-arma and /os/dbr-armb; revert with: gallery-arms.py withdraw",
+        "files": {
+            str(tiles_path): {"kind": "json-object-keys", "ids": sorted(ARM_IDS)},
+            str(manifest_path): {"kind": "json-entries", "ids": sorted(ARM_IDS)},
+        },
+    }
+    write_json(decl_path, decl, 2)
+
     for arm in ARMS:
         print(f"published {arm['id']}: udp {rows[arm['id']]['udpPort']}  /os/{arm['id']}")
     print(f"published {page_dst.name}")
+    print(f"declared darklaunch: {decl_path}")
     return 0
 
 
@@ -198,10 +226,13 @@ def cmd_withdraw(serve: Path, _rig: Path) -> int:
     write_json(manifest_path, manifest, 2)
     page = serve / "webroot" / PAGE_NAME
     page.unlink(missing_ok=True)
+    decl = darklaunch_path(serve)
+    decl.unlink(missing_ok=True)
 
     print(f"withdrew signaling rows: {removed or 'none'}")
     print(f"withdrew manifest entries: {before - len(manifest['entries'])}")
     print(f"removed {page}")
+    print(f"removed {decl}")
     print("the arms themselves are untouched and still running")
     return 0
 
@@ -220,6 +251,7 @@ def cmd_status(serve: Path, rig: Path) -> int:
             f"arm-signaling={'present' if sig.is_file() else 'ABSENT'}"
         )
     print(f"compare page: {'present' if (serve / 'webroot' / PAGE_NAME).is_file() else 'absent'}")
+    print(f"darklaunch declaration: {'present' if darklaunch_path(serve).is_file() else 'absent'}")
     return 0
 
 
