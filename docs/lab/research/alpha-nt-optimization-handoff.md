@@ -224,27 +224,52 @@ capture, MAME-IRIX style), and raise the guest to 1280x1024.
   es40.cfg} baked at 1280x1024 via menu-5 save-and-exit. Headless
   `ES40_RESTORE` from it → 1280x1024 desktop in shm in seconds.
 
-**REMAINING — the input socket (clearly scoped, NO streamhost changes):**
-es40 needs a unix-socket input server speaking mamectl/1 so the existing
-streamhost `mamesock` backend drives it (as it drives IRIX). Verified
-viable: the streamhost KEY verb carries (port, field-NAME), and the 104
-field-names are UNIQUE (an earlier worry about Newport-matrix collisions
-was wrong — checked), so es40 maps each field name → BX_KEY and injects via
-`theKeyboard->gen_scancode`. Design:
-- `src/gui/ctlsock.h`: listen on `ES40_CTL_SOCK`, accept one client, send
-  `HELLO mamectl/1 1 w2kalpha caps=natkbd,savest screen=1280x1024`, poll
-  from `handle_events()` (non-blocking), ack every verb `<seq> OK`.
-- Keyboard: field-name → BX_KEY table (104 entries), gen_scancode make/break.
-- Pointer: `MOVEA x y` absolute via CLOSED-LOOP homing on the S3 hardware
-  cursor (`s3.cursor_x/cursor_y` exist) — emit corrective PS/2 deltas via
-  `mouse_motion` until the S3 cursor reaches the target; this is the
-  standard fix for the guest's 2x PS/2 acceleration (no open-loop drift).
-  `DOWN1/UP1..DOWN3/UP3` → button state. Mirrors streamhost `mame_sock.rs`.
-Then the gallery tile: scaffold `scripts/tiles-registry.py new w2kalpha
---tier 3`, tile dir mirroring `tiles/irix` (SH_CAPTURE=shm, SH_SHM_PATH,
-SH_INPUT_BACKEND=mamesock, SH_MAMECTL_SOCK, SH_RESET_MODE via ES40_RESTORE
-from m5-1280), launch script runs es40 headless. Keep DISABLED until
-framebuffer+input+reset pass (playbook gate).
+**DONE + VERIFIED — the input socket (fork `849039a`, NO streamhost changes):**
+`src/gui/ctlsock.h` — a unix-socket server (`ES40_CTL_SOCK`) speaking
+mamectl/1, so the streamhost `mamesock` backend drives a headless es40.
+- Keyboard: WORKS. The streamhost KEY verb's field name → BX_KEY (104 unique
+  names), injected via `gen_scancode`. Verified: KEY Ctrl+Esc opens the guest
+  Start menu, fully headless (no X server).
+- Pointer: open-loop absolute (W2K uses a software cursor and parks the S3 HW
+  cursor off-screen at screen+64, so there is nothing to close a loop
+  against). Corner-home slam to (0,0) then exact deltas vs a believed
+  position. Verified: MOVEA drives the cursor to the target REGION; pixel-
+  accuracy needs the guest at 1:1 motion (no acceleration) — the one open
+  guest-side step (HKCU\Control Panel\Mouse MouseSpeed=0, or Mouse cpl
+  Motion tab -> Acceleration None) then re-bake.
+
+**Verified headless capture path, end to end:** `SDL_VIDEODRIVER=dummy`, no
+DISPLAY, ES40_SHM_PATH + ES40_CTL_SOCK, restore from m5-1280 → full
+1280x1024 desktop published to shm, keyboard + pointer over the socket. No X
+server, no window — the MAME-IRIX shape.
+
+**Reset mode — use RELAUNCH (cold boot), not instant-resume, for now:** an
+instant-resumed guest renders the desktop perfectly but new dialogs paint
+only their controls (background not repainted) — a post-restore repaint
+symptom of the same documented restore-under-load fragility, NOT a capture
+bug (cold-booted guests render Computer Management / Display Properties
+fully; the full-desktop shm capture is pixel-exact). So wire the tile like
+IRIX: `SH_RESET_MODE=relaunch`, es40 cold-boots headless per launch (~2.5
+min to desktop at the new NVRAM settings). Instant-resume via ES40_RESTORE
+becomes the fast path once the post-restore repaint/timer issue is fixed.
+
+**Final wiring — the w2kalpha tile (tile.env, mirroring `tiles/irix`):**
+```
+SH_TILE=w2kalpha
+SH_TILE_RUNTIME=x11            # launcher-managed emulator, not QEMU
+SH_CAPTURE=shm
+SH_SHM_PATH=/data/vms/streamhost/tiles/w2kalpha/fb.shm   # -> ES40_SHM_PATH
+SH_INPUT_BACKEND=mamesock
+SH_MAMECTL_SOCK=/data/vms/streamhost/tiles/w2kalpha/ctl.sock  # -> ES40_CTL_SOCK
+SH_RESET_MODE=relaunch
+SH_PORT=54000+slot ; SH_FPS=30 ; SH_AUDIO=off
+```
+Launcher (x11-runtime.sh analogue): `SDL_VIDEODRIVER=dummy
+ES40_SHM_PATH=$SH_SHM_PATH ES40_CTL_SOCK=$SH_MAMECTL_SOCK` + the pumps for
+the two serial ports, es40 from the m5-1280 device set (cold boot; drop
+ES40_RESTORE for relaunch mode). Then `scripts/tiles-registry.py new
+w2kalpha --tier 3`, fill the entry, `make tile-registry-check` green, and
+keep it DISABLED until framebuffer+input+reset pass the playbook gate.
 
 ## Still queued
 
