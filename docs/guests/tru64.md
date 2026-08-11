@@ -1,11 +1,21 @@
 # tru64 — Tru64 UNIX 5.1B on es40 (AlphaServer ES40)
 
-**Status: DARK-LAUNCHED, INSTALL IN PROGRESS (2026-08-11).** The station is
-registered with `listing.state=hidden` — `/os/tru64` streams, the grid and
-museum hall do not show it — and the exhibit currently IS the running
-Tru64 5.1B installation, performed live over the streamed framebuffer.
-This doc records the acceptance criteria and everything learned so far;
-it is rewritten to the finished-station shape when the checkpoint is captured.
+**Status: DARK-LAUNCHED, INSTALL COMPLETE (2026-08-11/12) — checkpoint
+bake pending.** The station is registered with `listing.state=hidden` —
+`/os/tru64` streams, the grid and museum hall do not show it. The full
+"All Software" install (115 subsets, AdvFS on dka0) was performed live
+over the streamed station and is DONE: the machine SRM-auto-boots
+unattended (`auto_action=BOOT`, `bootdef_dev=dka0`) to the CDE login
+greeter, and root logs into a full CDE desktop. **The PAK question is
+settled: a PAK-less base install boots root into CDE** ("Can't find an
+OSF-BASE … PAK" appears in the console log and gates non-root logins
+only). Re-install = restore, never re-run: milestone pairs live under
+`/data/vms/soltest/TRU64/milestones/` — `m1-installed-frozen-copy/`
+(post-install, frozen live copy) and `m2-clean-shutdown/` (cleanly halted
+disk+flash+cfg with `MANIFEST.sha256`; **this is the checkpoint-lineage
+source**). Remaining: checkpoint bake from m2 + launcher flip to the
+w2kalpha reflink shape, fixture/registry rewrite, poster hero swap to the
+CDE desktop, lift `listing`.
 
 The research that selected this OS (candidates, media, licensing, risk):
 [`docs/lab/research/alpha-second-os-candidates.md`](../lab/research/alpha-second-os-candidates.md).
@@ -61,6 +71,21 @@ archive.org ZIP if layered products are ever wanted.
    from the CD), X cursor drawn. This single frame overturns the
    `os-media-catalog.md` "Tru64 = dead-end" verdict (recorded before es40's
    S3 worked).
+5. **The whole install ran on the emulated SCSI disk** — labeling, AdvFS
+   domain creation, 115-subset load+configure, kernel build — upstream's
+   "installation still fails on SCSI disk" README caveat did NOT reproduce
+   on fork tip (`e781c20`, base `328b20b`). Wall clock ≈ 2.5 h on a loaded
+   host, dominated by the subset load (the installer's own 45–120 min
+   estimate held).
+6. **First boot + reboot proven**: root/CDE desktop (Front Panel, four
+   workspaces, System Setup clipboard), clean `shutdown -h now`, SRM env
+   set, and an unattended `auto_action` boot back to the CDE greeter.
+   Guest answers baked into the disk: hostname `tru64`, date pinned
+   09-01-2003 12:00 EDT (matches the cfg `time` pin), root password in the
+   gitignored credential stores (`credentialsRef: guest/tru64`).
+   Install-driving technique (dialogs, pointer visual-servo, the `_`/`:`
+   TYPE-map gaps) is recorded in the session memory
+   `tru64-dark-launch-install`.
 
 ## Gotchas (earned here, do not relearn)
 
