@@ -337,6 +337,14 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'ALPHASERVER ES40', spec: 'EV68 ALPHA • BUILD 2128 • 1999',
     kit: 'workstation',
   },
+  // w2kalpha's sibling: the same AlphaServer ivory-grey pedestal, but where
+  // that machine wears DEC's maroon for the Windows that never shipped, this
+  // one takes Tru64's steel blue — DEC's own UNIX at home on its own iron.
+  tru64: {
+    caseTint: '#b9bcc0', accentTint: '#2f6a9b', tintMix: 0.38,
+    badge: 'ALPHASERVER ES40', spec: 'EV68 ALPHA • TRU64 5.1B • 2003',
+    kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

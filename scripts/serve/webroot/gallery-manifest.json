@@ -1926,6 +1926,37 @@
         "Paint"
       ],
       "blurb": "The Windows that never shipped. Microsoft built Windows 2000 for DEC’s 64-bit Alpha right up to Release Candidate 2 — then Compaq dropped Alpha NT in August 1999 and the port died before release. RC2 build 2128 is the last Windows for Alpha ever built, running here on an AlphaServer ES40."
+    },
+    {
+      "id": "tru64",
+      "era_year": 2003,
+      "displayName": "Tru64 UNIX",
+      "year": 2003,
+      "lineage": "OSF/1 — Digital UNIX — Tru64",
+      "arch": "DEC Alpha 21264 (EV68, 64-bit)",
+      "accent": "#2f6a9b",
+      "archetypeId": "putty-lcd",
+      "transport": "streamhost",
+      "order": 63,
+      "eraLabel": "2003 · Tru64 UNIX 5.1B — Alpha",
+      "signalEndpoint": "/signal/tru64.json",
+      "listed": false,
+      "ramMB": 512,
+      "notes": "Live streamhost tile — third x11-runtime tile (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. DARK LAUNCH 2026-08-11: listing=hidden, the 5.1B install is performed live on the tile; golden bake + listing follow. See docs/guests/tru64.md.",
+      "era": "2000s",
+      "eraSoftware": [
+        "CDE — Common Desktop Environment",
+        "AdvFS journaling file system",
+        "Korn shell",
+        "SRM console firmware"
+      ],
+      "periodBrowser": "Netscape Communicator",
+      "iconicApps": [
+        "CDE Front Panel",
+        "dtterm",
+        "CDE File Manager"
+      ],
+      "blurb": "DEC’s own UNIX on DEC’s own 64-bit iron. Born OSF/1 in 1992, renamed Digital UNIX and finally Tru64, this was the operating system the AlphaServer ES40 was designed around: a fully 64-bit UNIX with the CDE desktop, from the same company that built the processor under it. Version 5.1B of 2003 was the line’s last major release — HP retired Alpha and Tru64 together, and their engineering went on into HP-UX and beyond."
     }
   ]
 }

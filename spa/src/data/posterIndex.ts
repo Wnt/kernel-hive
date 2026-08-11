@@ -159,6 +159,9 @@ const POSTER_INDEX = {
   "toaruos": {
     "hero": "/posters/toaruos/desktop.webp"
   },
+  "tru64": {
+    "hero": "/posters/tru64/desktop.webp"
+  },
   "vic20": {
     "hero": "/posters/vic20/desktop.webp"
   },

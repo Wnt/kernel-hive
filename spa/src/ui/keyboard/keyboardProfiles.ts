@@ -877,6 +877,7 @@ export const OS_FAMILY: Record<string, Family> = {
   nt4: 'windows', // Explorer shell — Win95-era shortcuts apply
   win11: 'windows', // Same Explorer shortcut family; Fluent chrome, not new chords
   w2kalpha: 'windows', // W2K RC2 on Alpha — the same NT 5.0 Explorer shell as win2000
+  tru64: 'suncde', // CDE desktop — the same CDE chord set the Solaris profile carries
   win311: 'win3x', nt351: 'win3x', // NT 3.51 runs the Program Manager shell
   amstradcpc: 'generic',
   mpf2: 'generic', // BASIC prompt only; no shell chords to profile
