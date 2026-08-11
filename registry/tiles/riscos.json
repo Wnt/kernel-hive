@@ -10,10 +10,7 @@
   "render": {
     "bindingOrder": 31,
     "bindingPrelude": "\n  // ---- riscos — SHOWCASE poster. RISC OS is ARM (the old tile streamed RPCEmu\n  // through the now-deleted neko plane at :8111), so it has no QEMU streamhost\n  // tile yet; poster + placard only, no connection attempt. // ideal: Acorn RiscPC\n",
-    "bindingLine": "  riscos:      { osId: 'riscos',      archetypeId: 'beige-tower-crt', transport: 'showcase',    accentColor: '#4a7c3a', eraLabel: '2022 · RISC OS 5.30' },\n",
-    "museumOrder": 21,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'riscos', displayName: 'RISC OS 5.30', year: 2022,\n    lineage: 'Acorn RISC OS', arch: 'ARM', ramMB: 256,    era: '2020s', accent: '#4a7c3a',\n    eraSoftware: ['icon bar', 'pinboard', 'Filer', '!Draw'],\n    periodBrowser: 'NetSurf',\n    iconicApps: ['icon bar + pinboard', '!Draw', '!Paint', 'StrongED'],\n    blurb: 'Acorn’s ARM desktop, still shipping from RISC OS Open — the icon bar and pinboard that defined British computing.',\n    notes: 'Showcase poster: RISC OS is ARM (the retired tile ran RPCEmu, not QEMU), so it has had no streamhost tile since the neko plane was deleted — poster + placard only for now. ROOL 5.30 softload ROM + HardDisc4. Archetype: beige-tower-crt; a bespoke Acorn RiscPC (the stackable slab that ran RISC OS) would be the ideal era-accurate model.',\n  },\n"
+    "bindingLine": "  riscos:      { osId: 'riscos',      archetypeId: 'beige-tower-crt', transport: 'showcase',    accentColor: '#4a7c3a', eraLabel: '2022 · RISC OS 5.30' },\n"
   },
   "lifecycle": "showcase",
   "stream": {

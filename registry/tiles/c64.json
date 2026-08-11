@@ -52,9 +52,6 @@
     "bindingOrder": 26,
     "bindingPrelude": "\n  // ---- emulator-bridge retro home computers (captured-Linux kiosk running a\n  //      period emulator; streamhost captures the Linux framebuffer + AC97.\n  //      See streamhost/docs/BRIDGE.md. beige-tower-crt is the closest era\n  //      archetype; bespoke breadbin/wedge/all-in-one models are the ideal\n  //      follow-ups). ----\n",
     "bindingLine": "  c64:         { osId: 'c64',         archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#6c5eb5', eraLabel: '1982 · C64 + GEOS' },\n",
-    "museumOrder": 24,
-    "museumPrelude": "\n  // ---- emulator-bridge retro home computers ----\n",
-    "museumBlock": "  {\n    id: 'c64', displayName: 'Commodore 64', year: 1982,\n    lineage: 'Commodore 64 / GEOS',\n    arch: 'MOS 6510 (6502), 1 MHz, 64 KB', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#6c5eb5',\n    eraSoftware: ['GEOS 2.0 deskTop', 'geoWrite', 'geoPaint', 'Preference Manager', 'the 1541 drive'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['GEOS deskTop', 'geoWrite', 'geoPaint', 'the 1541 disk drive'],\n    blurb: 'A full windows-icons-menus desktop (GEOS) running on a 1 MHz, 64 KB home computer — the 8-bit era’s answer to the Macintosh.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x64sc) full-screen emulating a C64 that auto-boots the GEOS 2.0 deskTop; streamhost captures the Linux framebuffer + AC97 audio (the C64 SID routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke C64 breadbin + 1541 + CRT). See streamhost/docs/BRIDGE.md.',\n  },\n",
     "goldenOrder": 24
   },
   "tileDir": "c64",

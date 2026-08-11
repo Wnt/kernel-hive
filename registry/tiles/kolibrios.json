@@ -76,9 +76,6 @@
     "bindingPrelude": "",
     "bindingLine": "  kolibrios:   { osId: 'kolibrios',   archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#39c6d6', eraLabel: '2004 · asm GUI OS' },\n",
     "mockManifestOrder": 0,
-    "catalogOrder": 0,
-    "catalogPrelude": "",
-    "catalogBlock": "  kolibrios: {\n    accent: '#39c6d6',\n    era: '2000s',\n    eraSoftware: ['KolibriOS desktop', 'TinyBasic', 'Fasm IDE', 'Animage paint'],\n    periodBrowser: 'WebView (HTMLv)',\n    iconicApps: ['Fara (dungeon crawler)', 'MineSweeper', '3D Cube demo'],\n    blurb: 'A complete graphical OS that fits on a single floppy — written in pure asm.',\n  },\n",
     "goldenOrder": 10,
     "actionMapOrder": 12
   },

@@ -75,9 +75,6 @@
     "bindingOrder": 6,
     "bindingPrelude": "",
     "bindingLine": "  win2000:     { osId: 'win2000',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#5b6fc9', eraLabel: '2000 · Windows 2000', bootVideo: '/boot/win2000/boot.mp4' },\n",
-    "museumOrder": 3,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'win2000', displayName: 'Windows 2000', year: 2000,\n    lineage: 'Windows NT 5.0', arch: 'i386', ramMB: 128,    era: '2000s', accent: '#5b6fc9',\n    eraSoftware: ['NTFS', 'Active Directory', 'IE5.5', 'MMC'],\n    periodBrowser: 'Internet Explorer 5.5',\n    iconicApps: ['Pinball', 'Solitaire', 'Paint'],\n    blurb: 'NT stability meets the 9x desktop — the professional workstation of the millennium.',\n  },\n",
     "goldenOrder": 6,
     "actionMapOrder": 8
   },

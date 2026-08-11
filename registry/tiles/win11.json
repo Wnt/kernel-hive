@@ -70,9 +70,6 @@
     "bindingOrder": 30,
     "bindingPrelude": "",
     "bindingLine": "  win11:       { osId: 'win11',       archetypeId: 'apple-studio',    transport: 'streamhost',  accentColor: '#2d9bd6', eraLabel: '2021 · Windows 11' },\n",
-    "museumOrder": 5,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'win11', displayName: 'Windows 11', year: 2021,\n    lineage: 'Windows NT 10.0', arch: 'x86_64', ramMB: 4096,    era: '2020s', accent: '#2d9bd6',\n    eraSoftware: ['Centered taskbar', 'Edge', 'Fluent design', 'Widgets'],\n    periodBrowser: 'Microsoft Edge (Chromium)',\n    iconicApps: ['Snipping Tool', 'Terminal', 'Solitaire Collection'],\n    blurb: 'The rounded, centered present day, running on the same wall as the machines it descends from.',\n  },\n",
     "goldenOrder": 33,
     "actionMapOrder": 4
   },

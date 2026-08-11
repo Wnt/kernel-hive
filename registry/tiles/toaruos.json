@@ -74,9 +74,6 @@
     "bindingPrelude": "",
     "bindingLine": "  toaruos:     { osId: 'toaruos',     archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#c98b3a', eraLabel: '2011 · hobby UNIX' },\n",
     "mockManifestOrder": 1,
-    "catalogOrder": 1,
-    "catalogPrelude": "",
-    "catalogBlock": "  toaruos: {\n    accent: '#c98b3a',\n    era: '2010s',\n    eraSoftware: ['Yutani compositor', 'Bim editor', 'Kuroko shell', 'Terminal'],\n    periodBrowser: 'no period browser (demo apps)',\n    iconicApps: ['Julia fractal viewer', 'Bomberman-style demo', 'Clock widget'],\n    blurb: \"One developer's from-scratch UNIX with a real windowing compositor.\",\n  },\n",
     "goldenOrder": 11,
     "actionMapOrder": 13
   },

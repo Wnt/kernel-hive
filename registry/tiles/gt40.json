@@ -42,16 +42,13 @@
   "render": {
     "tilesManifestOrder": 41,
     "bindingOrder": 47,
-    "museumOrder": 41,
     "goldenOrder": 41,
     "bringUpGroup": 6,
     "signalOrder": 43,
     "tilesManifestInvocation": "emit gt40 \\\n  --tile gt40 --vmid 228 --udp 54125 --pointer abs --cursor-scale 1.0 \\\n  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 --launcher-file \\\n  \"$T/gt40/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/gt40/tile.env.fixture\"\n",
     "bindingLine": "  gt40:        { osId: 'gt40', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#3BE84B', eraLabel: '1973 · GT40 (VT11 vector, light pen)' },\n",
-    "museumBlock": "  {\n    id: 'gt40', displayName: 'DEC GT40', year: 1973,\n    lineage: 'DEC PDP-11/05 + VT11 display processor (GT40 graphics terminal)',\n    arch: 'DEC PDP-11/05, 16-bit; VT11 display processor drawing calligraphic vectors on a magnetic-deflection CRT; light pen', ramMB: 0, ramKB: 16,    era: '1970s', accent: '#3BE84B',\n    eraSoftware: ['Lunar Lander (Moonlander), written for this machine in 1973 by DEC\\'s Jack Burness', 'DEC\\'s GT40 demonstration display files', 'paper tapes read in through the absolute loader over the DL11 serial line', 'display files generated on a host PDP-10 or PDP-11 and shipped down the line'],\n    periodBrowser: 'none — the ARPANET era, two decades before the web',\n    iconicApps: ['Lunar Lander (Moonlander)', 'the VT11 display file', 'the light pen'],\n    blurb: 'A PDP-11 with a vector processor bolted to it and a light pen on a cord: no pixels, no keyboard worth using, just an electron beam drawing lines exactly where the program tells it. The 1973 Lunar Lander it is running was written to show the machine off, and it still does.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs Open SIMH\\'s pdp11 simulator with the VT11 vector display, executing the original lunar.lda paper tape that ships inside the MIT-licensed Open SIMH tree — no external media, no staged asset, nothing to license. The exhibit is self-sustaining: the LEM falls for about two minutes, crashes, and the program restarts itself, so the golden rests at the first seconds of a fresh descent. THE ONLY POINTER-ONLY EXHIBIT IN THE COLLECTION and the only one where a light pen is the historically correct input device: the telemetry menu, the rotation arrows and the throttle bar are all driven by pointing, and there is no keyboard input of any kind (Open SIMH wires the pen to mouse button 1, so the pen is on the glass only while the button is held). No archetype models a vector CRT with a light pen; mono-terminal is a deliberate fallback, chosen because it is the only monochrome DEC-style CRT in the set. Displayed on the larger VR17 tube (crt=vr17) rather than the GT40\\'s own VR14, because SIMH\\'s VR14 model clips the twelve-item menu mid-word. See streamhost/docs/BRIDGE.md and docs/guests/gt40.md.',\n  },\n",
     "tilesManifestPrelude": "",
-    "bindingPrelude": "",
-    "museumPrelude": ""
+    "bindingPrelude": ""
   },
   "tileDir": "gt40",
   "lifecycle": "production",

@@ -73,9 +73,6 @@
     "bindingOrder": 16,
     "bindingPrelude": "",
     "bindingLine": "  android:     { osId: 'android',     archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#3ddc84', eraLabel: '2008 · Android' },\n",
-    "museumOrder": 12,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'android', displayName: 'Android', year: 2008,\n    lineage: 'Linux (AOSP)', arch: 'ARM / x86', ramMB: 2048,    era: '2000s', accent: '#3ddc84',\n    eraSoftware: ['Launcher', 'WebView', 'Dalvik/ART', 'Play-era apps'],\n    periodBrowser: 'Android Browser / Chrome',\n    iconicApps: ['Maps', 'Camera', 'Messaging'],\n    blurb: 'The pocket Linux that ate the world — the original touchscreen candybar.',\n  },\n",
     "goldenOrder": 14,
     "actionMapOrder": 16
   },

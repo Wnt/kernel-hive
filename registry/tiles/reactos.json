@@ -75,9 +75,6 @@
     "bindingOrder": 20,
     "bindingPrelude": "",
     "bindingLine": "  reactos:     { osId: 'reactos',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#2f6fba', eraLabel: '2024 · ReactOS 0.4.14' },\n",
-    "museumOrder": 17,
-    "museumPrelude": "\n  // ---- 7 newest gallery OSes ----\n",
-    "museumBlock": "  {\n    id: 'reactos', displayName: 'ReactOS 0.4.14', year: 2024,\n    lineage: 'Windows NT / ReactOS', arch: 'i386', ramMB: 512,    era: '2020s', accent: '#2f6fba',\n    eraSoftware: ['ReactOS Explorer', 'Start menu / taskbar', 'App Manager', 'ReactOS Shell'],\n    periodBrowser: 'no bundled browser (NT 5.x live CD)',\n    iconicApps: ['ReactOS Explorer', 'Command Prompt', 'App Manager', 'Winefile'],\n    blurb: 'The open-source Windows-2000 — a from-scratch, binary-compatible reimplementation of the NT 5.x kernel and Win32.',\n    notes: 'Live streamhost tile. ReactOS 0.4.14 live CD (0.4.15 hangs QEMU 11 kernel init). Archetype: beige-tower-crt (a Windows-2000-era beige tower is the right period fit).',\n  },\n",
     "goldenOrder": 0,
     "actionMapOrder": 21
   },

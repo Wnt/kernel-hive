@@ -870,15 +870,6 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             parsed = parse_js_object(render["bindingLine"])
             if parsed.pop("osId", None) != os_id or dict(parsed) != dict(row.get("spa", {})):
                 fail(errors, row, "rendered OS binding disagrees with spa fields")
-        if "museumBlock" in render and dict(parse_js_object(render["museumBlock"])) != dict(row["museum"]):
-            fail(errors, row, "rendered museum block disagrees with museum fields")
-        if "catalogBlock" in render:
-            parsed = parse_js_object(render["catalogBlock"])
-            curated = {
-                k: row["museum"][k] for k in ("accent", "era", "eraSoftware", "periodBrowser", "iconicApps", "blurb")
-            }
-            if dict(parsed) != curated:
-                fail(errors, row, "rendered catalog adapter block disagrees with museum fields")
     if set(by_id) != {p.stem for p in TILES.glob("*.json")}:
         errors.append("registry filename/id set mismatch")
     for item in globals_doc.get("sharedBuildRows", []):
@@ -917,10 +908,6 @@ def apply_count_tokens(data: bytes, rows: list[dict[str, Any]]) -> bytes:
         b"@@PRODUCTION_COUNT@@": sum(r["lifecycle"] == "production" for r in rows),
         b"@@STREAMED_COUNT@@": sum(r["stream"]["transport"] == "streamhost" for r in rows),
         b"@@SHOWCASE_COUNT@@": sum(r["lifecycle"] == "showcase" for r in rows),
-        b"@@MUSEUM_ENTRY_COUNT@@": sum("museumBlock" in r["render"] for r in rows),
-        b"@@STREAMED_MUSEUM_ENTRY_COUNT@@": sum(
-            r["stream"]["transport"] == "streamhost" and "museumBlock" in r["render"] for r in rows
-        ),
     }
     for token, count in counts.items():
         data = data.replace(token, str(count).encode())
@@ -1160,23 +1147,9 @@ def generated() -> OrderedDict[str, bytes]:
     )
     out["spa/src/mock/manifest.json"] = render_mock(rows)
 
-    museum_rows = [r for r in rows if "museumBlock" in r["render"]]
-    museum = "".join(
-        r["render"].get("museumPrelude", "") + r["render"]["museumBlock"]
-        for r in sorted(museum_rows, key=lambda x: x["render"]["museumOrder"])
-    )
-    out["spa/src/data/museumCatalog.ts"] = apply_count_tokens(
-        template("museumCatalog.ts.in", "@@MUSEUM_ENTRIES@@", museum.rstrip("\n")), rows
-    )
     out["spa/src/data/posters.ts"] = render_posters(posters)
     out["spa/src/data/demoPrograms.ts"] = render_demo_programs(rows)
     out["spa/src/data/keyboards.ts"] = render_keyboards(rows)
-    catalog_rows = [r for r in rows if "catalogBlock" in r["render"]]
-    catalog = "".join(
-        r["render"].get("catalogPrelude", "") + r["render"]["catalogBlock"]
-        for r in sorted(catalog_rows, key=lambda x: x["render"]["catalogOrder"])
-    )
-    out["spa/src/data/catalog.ts"] = template("catalog.ts.in", "@@CATALOG_ENTRIES@@", catalog.rstrip("\n"))
 
     public_rows = []
     for row in sorted(rows, key=lambda x: x["id"]):

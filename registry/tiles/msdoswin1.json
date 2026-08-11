@@ -73,9 +73,6 @@
     "bindingOrder": 25,
     "bindingPrelude": "",
     "bindingLine": "  msdoswin1:   { osId: 'msdoswin1',    archetypeId: 'beige-ibm-pc',    transport: 'streamhost', accentColor: '#c8a24a', eraLabel: '1994 · MS-DOS 6.22 + Win 1.0', pointerRel: true },\n",
-    "museumOrder": 23,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'msdoswin1', displayName: 'MS-DOS 6.22 + Windows 1.0', year: 1994,\n    lineage: 'Microsoft MS-DOS / Windows', arch: 'i386', ramMB: 16,    era: '1990s', accent: '#c8a24a',\n    eraSoftware: ['COMMAND.COM', 'MS-DOS Executive', 'EDIT', 'QBASIC'],\n    periodBrowser: 'none — pre-web (1985/1994)',\n    iconicApps: ['COMMAND.COM', 'Windows 1.0 tiled windows', 'EDIT', 'QBASIC'],\n    blurb: 'The C:\\\\> prompt of MS-DOS 6.22 (1994) with Microsoft’s first Windows 1.0 (1985) layered on top — the tiled-window dawn before the desktop metaphor.',\n    notes: 'Live streamhost tile. One combined image: boots MS-DOS 6.22 to C:\\\\> and launches Windows 1.01 via WIN — presented here as a single exhibit. Archetype: beige-ibm-pc (the boxy DOS-era CRT + IBM-PC fit).',\n  },\n",
     "goldenOrder": 23,
     "actionMapOrder": 25
   },

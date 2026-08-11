@@ -42,16 +42,13 @@
   "render": {
     "tilesManifestOrder": 39,
     "bindingOrder": 45,
-    "museumOrder": 39,
     "goldenOrder": 39,
     "bringUpGroup": 6,
     "signalOrder": 41,
     "tilesManifestInvocation": "emit cbm2 \\\n  --tile cbm2 --vmid 226 --udp 54111 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/cbm2/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/cbm2/tile.env.fixture\"\n",
     "bindingLine": "  cbm2:        { osId: 'cbm2', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#55D544', eraLabel: '1982 · CBM 610 (BASIC 128, 6509)' },\n",
-    "museumBlock": "  {\n    id: 'cbm2', displayName: 'Commodore CBM 610', year: 1982,\n    lineage: 'Commodore CBM-II / B-series (MOS 6509, 6545 CRTC, SID)',\n    arch: 'MOS 6509, 2 MHz, 128 KB RAM banked out of a 1 MB address space, 80x25 monochrome', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#55D544',\n    eraSoftware: ['Commodore BASIC 128 v4.0 in ROM, with the PET disk commands built in', 'CP/M via the optional 8088/Z80 coprocessor board — the machine\\'s other, stranger half', 'the IEEE-488 business peripherals: 8050/8250 drives, 8023 printer', 'a handful of ports of the PET business software it was meant to succeed'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['Commodore BASIC 128 v4.0', 'the built-in machine-language monitor', 'PET-lineage business software over IEEE-488'],\n    blurb: 'Not a Commodore 128, despite what the screen says. This is the CBM-II — Commodore\\'s 1982 attempt to sell a serious business computer, built on a 6509 that reaches a full megabyte by bank-switching, and cancelled almost immediately.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (xcbm2 -model 610) emulating a PAL CBM 610; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the CBM-II ROMs, so this tile needs no external media — the 610 boots to BASIC with nothing attached. NOT A NEAR-DUPLICATE OF cbm8032, and the placard says why: same green 80-column CBM banner, but a 6509 bank-switching a megabyte instead of a 6502 with 32 KB, a low-profile box with a detached monitor instead of an all-in-one, and a business market Commodore reached for and missed. The golden is the machine\\'s own untouched power-on screen; the visitor types at the BASIC prompt through the SPA on-screen keyboard. Keyboard-only exhibit; native 704x528 window on an 800x600 X root (the doubled window is silently clipped by every root this fleet uses). See streamhost/docs/BRIDGE.md and docs/guests/cbm2.md. The screen reads \"commodore basic 128\": that name predates the Commodore 128 of 1985 and shares nothing with it.',\n  },\n",
     "tilesManifestPrelude": "",
-    "bindingPrelude": "",
-    "museumPrelude": ""
+    "bindingPrelude": ""
   },
   "tileDir": "cbm2",
   "lifecycle": "production",

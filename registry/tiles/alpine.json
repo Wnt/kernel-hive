@@ -66,9 +66,6 @@
     "bindingOrder": 8,
     "bindingPrelude": "",
     "bindingLine": "  alpine:      { osId: 'alpine',      archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#0d597f', eraLabel: '2005 · Alpine Linux' },\n",
-    "museumOrder": 6,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'alpine', displayName: 'Alpine Linux', year: 2005,\n    lineage: 'musl + BusyBox Linux', arch: 'x86_64', ramMB: 256,    era: '2000s', accent: '#0d597f',\n    eraSoftware: ['apk', 'OpenRC', 'BusyBox', 'musl libc'],\n    periodBrowser: 'no default GUI browser (server distro)',\n    iconicApps: ['ash shell', 'vi', 'doas'],\n    blurb: 'The tiny, security-focused distro that quietly runs half the containers on Earth.',\n  },\n",
     "goldenOrder": 2,
     "actionMapOrder": 2
   },

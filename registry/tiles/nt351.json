@@ -70,9 +70,6 @@
     "bindingOrder": 13,
     "bindingPrelude": "",
     "bindingLine": "  nt351:       { osId: 'nt351',       archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#3a6ea5', eraLabel: '1995 · Windows NT 3.51' },\n",
-    "museumOrder": 5,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'nt351', displayName: 'Windows NT 3.51', year: 1995,\n    lineage: 'Windows NT 3.x', arch: 'i386', ramMB: 64,    era: '1990s', accent: '#3a6ea5',\n    eraSoftware: ['Program Manager', 'File Manager', 'Control Panel', 'Paintbrush'],\n    periodBrowser: 'Internet Explorer 2 / early Netscape',\n    iconicApps: ['Program Manager', 'File Manager', 'Minesweeper'],\n    blurb: 'The last workstation NT built around Program Manager — compact, blue, and unmistakably mid-1990s.',\n  },\n",
     "goldenOrder": 30,
     "actionMapOrder": 4
   },

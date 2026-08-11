@@ -66,9 +66,6 @@
     "bindingPrelude": "  // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----\n",
     "bindingLine": "  freedos:     { osId: 'freedos',     archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },\n",
     "mockManifestOrder": 2,
-    "catalogOrder": 2,
-    "catalogPrelude": "",
-    "catalogBlock": "  freedos: {\n    accent: '#5fa85f',\n    era: '1990s',\n    eraSoftware: ['EDIT', 'FDISK', '4DOS', 'Arachne browser'],\n    periodBrowser: 'Arachne / Lynx (DOS)',\n    iconicApps: ['Rogue', 'Nibbles', 'DOOM (shareware)'],\n    blurb: \"The DOS command prompt that never died — C:\\\\> is still alive and well.\",\n  },\n",
     "goldenOrder": 8,
     "actionMapOrder": 10
   },

@@ -77,9 +77,6 @@
     "bindingOrder": 34,
     "bindingPrelude": "",
     "bindingLine": "  redstar3:    { osId: 'redstar3',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#b3202a', eraLabel: '2013 · Red Star OS 3.0', bootVideo: '/boot/redstar3/boot.mp4' },\n",
-    "museumOrder": 29,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'redstar3', displayName: 'Red Star OS 3.0 Desktop', year: 2013,\n    lineage: 'Linux (Fedora lineage)', arch: 'i386', ramMB: 1024,    era: '2010s', accent: '#b3202a',\n    eraSoftware: ['KDE desktop', 'Naenara browser', 'Red Star file manager', 'system tools'],\n    periodBrowser: 'Naenara (Firefox-derived)',\n    iconicApps: ['Naenara', 'File Manager', 'System Preferences'],\n    blurb: 'A macOS-styled desktop distribution from the DPRK: Fedora/KDE foundations reshaped into a tightly controlled national-computing environment.',\n    notes: 'Private air-gapped preservation exhibit. The guest has no emulated network interface.',\n  },\n",
     "goldenOrder": 29,
     "actionMapOrder": 27
   },

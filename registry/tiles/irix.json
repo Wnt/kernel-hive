@@ -32,9 +32,6 @@
     "bindingOrder": 38,
     "bindingPrelude": "",
     "bindingLine": "  irix:        { osId: 'irix',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#5B8FA8', eraLabel: '1993 · SGI Indy — IRIX 6.5', bootVideo: '/boot/irix/boot.mp4' },\n",
-    "museumOrder": 32,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'irix', displayName: 'SGI Indy', year: 1993,\n    lineage: 'SGI IRIX / System V Unix',\n    arch: 'MIPS R4600 (MIPS III, 64-bit)', ramMB: 256,    era: '1990s', accent: '#5B8FA8',\n    eraSoftware: ['Indigo Magic Desktop (4Dwm)', 'IRIX Interactive Desktop / toolchest', 'showcasedemos (gr_osview, buttonfly)', 'WorldView / SGI demos', 'Netscape for IRIX'],\n    periodBrowser: 'Netscape Navigator / Communicator for IRIX',\n    iconicApps: ['4Dwm Indigo Magic teal desktop', 'the SGI toolchest', 'IconCatalog', 'File System Navigator'],\n    blurb: 'SGI’s 1993 Indy brought real workstation Unix — 64-bit MIPS, hardware 24-bit graphics, and the gorgeous teal Indigo Magic Desktop — to a friendly blue pizza-box. IRIX 6.5 was the definitive SGI Unix, booting to the 4Dwm desktop.',\n    notes: 'Live streamhost tile — the FIRST non-QEMU tile: an Xvfb + MAME(indy_4610) emulator captured directly by streamhost’s SH_CAPTURE=shm backend (MAME’s SGI Indy emulation kernel-panics under a KVM vCPU, so it runs on the bare-metal CPU, not a QEMU VM). archetype beige-tower-crt. See docs/history/irix-tile-issue20-handoff.md.',\n  },\n",
     "goldenOrder": 32
   },
   "tileDir": "irix",

@@ -52,9 +52,6 @@
     "bindingOrder": 27,
     "bindingPrelude": "",
     "bindingLine": "  atarist:     { osId: 'atarist',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#E4002B', eraLabel: '1985 · Atari ST (GEM)' },\n",
-    "museumOrder": 25,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'atarist', displayName: 'Atari ST (EmuTOS GEM)', year: 1985,\n    lineage: 'Atari ST / Digital Research GEM',\n    arch: 'Motorola 68000 (m68k)', ramMB: 0, ramKB: 1024,    era: '1980s', accent: '#E4002B',\n    eraSoftware: ['GEM desktop (TOS)', 'NEODESK', 'Cubase / Notator (MIDI)', 'Degas Elite', 'First Word / First Word Plus'],\n    periodBrowser: 'none — pre-web 16-bit era',\n    iconicApps: ['GEM desktop (DISK A/B, TRASH, PRINTER)', 'GEM file manager', 'Atari BASIC / GFA BASIC', 'Cubase MIDI sequencer'],\n    blurb: 'The 16-bit “Jackintosh” — a 68000 with the GEM windows-icons-menus desktop and built-in MIDI, shown here booting the open-source EmuTOS straight to the classic monochrome GEM desktop.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs the hatari Atari ST emulator full-screen (EmuTOS → GEM desktop); streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Atari ST wedge). See streamhost/docs/BRIDGE.md.',\n  },\n",
     "goldenOrder": 25
   },
   "tileDir": "atarist",

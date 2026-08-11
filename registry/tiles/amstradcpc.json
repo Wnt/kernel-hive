@@ -52,9 +52,6 @@
     "bindingOrder": 35,
     "bindingPrelude": "",
     "bindingLine": "  amstradcpc:  { osId: 'amstradcpc',  archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#F0C000', eraLabel: '1985 · CPC 6128 (Locomotive BASIC)' },\n",
-    "museumOrder": 30,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'amstradcpc', displayName: 'Amstrad CPC 6128', year: 1985,\n    lineage: 'Amstrad CPC / Locomotive BASIC',\n    arch: 'Zilog Z80A, 4 MHz, 128 KB', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#F0C000',\n    eraSoftware: ['Locomotive BASIC 1.1', 'AMSDOS / CP/M Plus', 'Protext', 'The Advanced OCP Art Studio', 'CPC games (Head over Heels, Chase H.Q.)'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['Locomotive BASIC', 'AMSDOS', 'CP/M Plus', 'The Advanced OCP Art Studio'],\n    blurb: 'The British 8-bit all-in-one — an integrated Z80 micro with monitor and disk drive that boots to the iconic yellow-on-blue Locomotive BASIC Ready prompt.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Caprice32 (cap32) in a verified scale-3 SDL/X11 window emulating an Amstrad CPC 6128 that boots Locomotive BASIC; streamhost captures the Linux framebuffer + AC97 audio (the CPC AY-3-8912 routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke CPC 6128 + CTM monitor). See streamhost/docs/BRIDGE.md.',\n  },\n",
     "goldenOrder": 30
   },
   "tileDir": "amstradcpc",

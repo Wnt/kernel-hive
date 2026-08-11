@@ -10,10 +10,7 @@
   "render": {
     "bindingOrder": 32,
     "bindingPrelude": "\n  // ---- macos — SHOWCASE poster. VM 925 (the macOS guest) was destroyed\n  // 2026-07-14 along with its VNC->WebSocket bridge (ws :8115 / wss :8116), so\n  // there is nothing to connect to; poster + placard only, no connection attempt.\n",
-    "bindingLine": "  macos:       { osId: 'macos',       archetypeId: 'apple-studio',    transport: 'showcase',    accentColor: '#a0a0a8', eraLabel: '2024 · macOS Sequoia' },\n",
-    "museumOrder": 16,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'macos', displayName: 'macOS Sequoia', year: 2024,\n    lineage: 'Darwin / XNU', arch: 'arm64', ramMB: 8192,    era: '2020s', accent: '#a0a0a8',\n    eraSoftware: ['Aqua', 'Finder', 'Safari', 'Continuity'],\n    periodBrowser: 'Safari',\n    iconicApps: ['Finder', 'Launchpad', 'Terminal'],\n    blurb: 'The modern Apple desktop on a Studio Display — currently a showcase poster awaiting a rebuilt guest.',\n    notes: 'Showcase poster: VM 925 (the macOS guest) and the VNC->WebSocket bridge that fronted it were destroyed on 2026-07-14, so there is nothing to connect to; a rebuilt macOS tile is the pending fix.',\n  },\n"
+    "bindingLine": "  macos:       { osId: 'macos',       archetypeId: 'apple-studio',    transport: 'showcase',    accentColor: '#a0a0a8', eraLabel: '2024 · macOS Sequoia' },\n"
   },
   "lifecycle": "showcase",
   "stream": {

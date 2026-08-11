@@ -96,9 +96,6 @@
     "bindingOrder": 18,
     "bindingPrelude": "",
     "bindingLine": "  sailfishos:  { osId: 'sailfishos',  archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#e60d42', eraLabel: '2013 · Sailfish (Jolla)' },\n",
-    "museumOrder": 14,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'sailfishos', displayName: 'Sailfish OS', year: 2013,\n    lineage: 'Mer / MeeGo (Jolla)', arch: 'ARM', ramMB: 2048,    era: '2010s', accent: '#e60d42',\n    eraSoftware: ['Lipstick UI', 'Silica', 'Android app support'],\n    periodBrowser: 'Sailfish Browser (Gecko)',\n    iconicApps: ['Gesture deck', 'Clock', 'Media'],\n    blurb: 'MeeGo’s heir from Jolla — the gesture-driven Nordic take on the smartphone.',\n  },\n",
     "goldenOrder": 17,
     "actionMapOrder": 19
   },

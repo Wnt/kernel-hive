@@ -52,10 +52,7 @@
     "bindingOrder": 39,
     "bindingPrelude": "",
     "bindingLine": "  mpf2:        { osId: 'mpf2',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#8B4513', eraLabel: '1982 · MPF-II BASIC' },\n",
-    "museumOrder": 32,
-    "goldenOrder": 32,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'mpf2', displayName: 'Multitech Microprofessor II', year: 1982,\n    lineage: 'Multitech / Apple II clone',\n    arch: 'MOS 6502, 1 MHz, 64 KB RAM, 16 KB ROM', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#8B4513',\n    eraSoftware: ['MPF-II BASIC in ROM', 'the built-in machine-language monitor', 'cassette titles: Blitz, Snake, Head On, Reverse, Sabotage', 'type-in listings from the computer magazines'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['MPF-II BASIC', 'the machine-language monitor'],\n    blurb: 'Taiwan\\'s first mass-market home computer — a chiclet-keyboard Apple II clone that boots straight to BASIC, in 6 colours on a television set.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME (mpf2 driver) emulating a Multitech MPF-II that boots its ROM BASIC; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Keyboard-only exhibit (no pointing device — the real machine had none); uses the beige-tower-crt fallback until a bespoke MPF-II archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/mpf2.md.',\n  },\n"
+    "goldenOrder": 32
   },
   "tileDir": "mpf2",
   "lifecycle": "production",

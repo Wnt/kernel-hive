@@ -74,9 +74,6 @@
     "bindingOrder": 9,
     "bindingPrelude": "",
     "bindingLine": "  tinycore:    { osId: 'tinycore',    archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#4a9fd6', eraLabel: '2009 · Tiny Core' },\n",
-    "museumOrder": 7,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'tinycore', displayName: 'Tiny Core Linux', year: 2009,\n    lineage: 'BusyBox Linux', arch: 'i386', ramMB: 128,    era: '2000s', accent: '#4a9fd6',\n    eraSoftware: ['FLTK/FLWM desktop', 'tce-load', 'BusyBox'],\n    periodBrowser: 'dillo / Firefox extension',\n    iconicApps: ['App Browser', 'Terminal', 'Text editor'],\n    blurb: 'A complete graphical Linux in ~16 MB — the whole OS lives in RAM.',\n  },\n",
     "goldenOrder": 1,
     "actionMapOrder": 3
   },

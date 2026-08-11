@@ -73,9 +73,6 @@
     "bindingOrder": 17,
     "bindingPrelude": "",
     "bindingLine": "  postmarketos:{ osId: 'postmarketos',archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#008b4b', eraLabel: '2017 · postmarketOS' },\n",
-    "museumOrder": 13,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'postmarketos', displayName: 'postmarketOS', year: 2017,\n    lineage: 'Alpine Linux mobile', arch: 'ARM', ramMB: 2048,    era: '2010s', accent: '#008b4b',\n    eraSoftware: ['Phosh / Plasma Mobile', 'apk', 'PulseAudio'],\n    periodBrowser: 'Firefox / GNOME Web',\n    iconicApps: ['Phosh shell', 'Terminal', 'Settings'],\n    blurb: 'Real mainline Linux on the phone — a ten-year lifecycle for the PinePhone era.',\n  },\n",
     "goldenOrder": 16,
     "actionMapOrder": 18
   },

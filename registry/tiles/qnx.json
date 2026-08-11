@@ -52,9 +52,6 @@
     "bindingOrder": 24,
     "bindingPrelude": "",
     "bindingLine": "  qnx:         { osId: 'qnx',          archetypeId: 'putty-lcd',       transport: 'streamhost', accentColor: '#1b6fb5', eraLabel: '2010 · QNX Neutrino 6.5', pointerRel: true },\n",
-    "museumOrder": 22,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'qnx', displayName: 'QNX Neutrino 6.5', year: 2010,\n    lineage: 'QNX/BlackBerry', arch: 'i386', ramMB: 256,    era: '2010s', accent: '#1b6fb5',\n    eraSoftware: ['Photon microGUI', 'the app shelf', 'pterm', 'Voyager'],\n    periodBrowser: 'Voyager',\n    iconicApps: ['Photon microGUI', 'the app shelf', 'Voyager'],\n    blurb: 'A hard-real-time microkernel OS whose Photon microGUI once fit a web browser and a whole desktop onto a single floppy.',\n    notes: 'Live streamhost tile with a true 1:1 relative mouse — the guest owns a PS/2 pointer, so under pointer lock the SPA ships raw deltas straight to it. QNX 6.5.0 self-hosting live CD. Archetype: putty-lcd (early-2000s embedded/industrial panel-PC fit).',\n  },\n",
     "goldenOrder": 22
   },
   "tileDir": "qnx",

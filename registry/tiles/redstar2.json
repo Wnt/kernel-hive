@@ -75,9 +75,6 @@
     "bindingOrder": 33,
     "bindingPrelude": "",
     "bindingLine": "  redstar2:    { osId: 'redstar2',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#c8102e', eraLabel: '2009 · Red Star OS 2.0', bootVideo: '/boot/redstar2/boot.mp4' },\n",
-    "museumOrder": 28,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'redstar2', displayName: 'Red Star OS 2.0', year: 2009,\n    lineage: 'Linux (Red Hat/Fedora lineage)', arch: 'i386', ramMB: 1024,    era: '2000s', accent: '#c8102e',\n    eraSoftware: ['KDE 3.5', 'Naenara', 'Uri 2.0', 'OpenOffice.org'],\n    periodBrowser: 'Naenara (Firefox-derived)',\n    iconicApps: ['Naenara', 'Uri 2.0 office suite', 'KDE Control Center'],\n    blurb: 'A preserved KDE-era North Korean desktop distribution, presented offline with no network hardware.',\n  },\n",
     "goldenOrder": 28,
     "actionMapOrder": 28
   },

@@ -79,9 +79,6 @@
     "bindingOrder": 36,
     "bindingPrelude": "",
     "bindingLine": "  nt4:         { osId: 'nt4',         archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#1f7a7a', eraLabel: '1996 · Windows NT 4.0' },\n",
-    "museumOrder": 30,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'nt4', displayName: 'Windows NT 4.0', year: 1996,\n    lineage: 'Windows NT 4.0', arch: 'i386', ramMB: 128,    era: '1990s', accent: '#1f7a7a',\n    eraSoftware: ['Explorer shell', 'Internet Explorer 2.0', 'Solitaire', 'Paint'],\n    periodBrowser: 'Internet Explorer 2.0',\n    iconicApps: ['Solitaire', 'Minesweeper', 'Paint'],\n    blurb: 'The classic Explorer shell on the NT kernel. The teal desktop that brought the Windows 95 look to enterprise NT.',\n  },\n",
     "goldenOrder": 30,
     "actionMapOrder": 29
   },

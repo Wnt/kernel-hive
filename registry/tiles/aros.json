@@ -73,9 +73,6 @@
     "bindingOrder": 23,
     "bindingPrelude": "",
     "bindingLine": "  aros:        { osId: 'aros',         archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#e87a17', eraLabel: '2024 · AROS (Amiga)' }, // ideal: Amiga wedge\n",
-    "museumOrder": 20,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'aros', displayName: 'AROS', year: 2024,\n    lineage: 'Commodore Amiga → AROS', arch: 'i386', ramMB: 256,    era: '2020s', accent: '#e87a17',\n    eraSoftware: ['Workbench', 'Wanderer desktop', 'RAM Disk', 'AmigaDOS'],\n    periodBrowser: 'no bundled browser (live CD)',\n    iconicApps: ['Workbench', 'Wanderer', 'AmigaDOS shell'],\n    blurb: 'The free, from-scratch AmigaOS — Wanderer brings back the Workbench desktop with no copyrighted Kickstart ROM required.',\n    notes: 'Live streamhost tile. Official AROS pc-i386 live CD. Archetype: beige-tower-crt; a bespoke Amiga wedge (the low-profile Amiga 500/1200 keyboard-box) would be the ideal era-accurate model.',\n  },\n",
     "goldenOrder": 21,
     "actionMapOrder": 24
   },

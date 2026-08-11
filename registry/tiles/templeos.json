@@ -73,9 +73,6 @@
     "bindingOrder": 19,
     "bindingPrelude": "",
     "bindingLine": "  templeos:    { osId: 'templeos',    archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#f2c14e', eraLabel: '2013 · TempleOS' },\n",
-    "museumOrder": 15,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'templeos', displayName: 'TempleOS', year: 2013,\n    lineage: 'Terry A. Davis / from-scratch', arch: 'x86_64', ramMB: 1024,    era: '2010s', accent: '#f2c14e',\n    eraSoftware: ['HolyC', 'The Oracle', 'After Egypt', 'built-in editor'],\n    periodBrowser: 'none — no networking by design',\n    iconicApps: ['HolyC REPL', 'The Oracle', 'After Egypt'],\n    blurb: 'Terry Davis’ divine 640x480 16-colour temple — a ring-0, single-address-space OS written from scratch in HolyC.',\n    notes: 'Live streamhost tile. PS/2 input only — TempleOS has no USB stack. Ring-0, single-address-space, no networking by design; CD-only ephemeral live boot.',\n  },\n",
     "goldenOrder": 18,
     "actionMapOrder": 20
   },

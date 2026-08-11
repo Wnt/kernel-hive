@@ -73,9 +73,6 @@
     "bindingOrder": 11,
     "bindingPrelude": "",
     "bindingLine": "  helenos:     { osId: 'helenos',     archetypeId: 'mono-terminal',   transport: 'streamhost',  accentColor: '#b58fd6', eraLabel: '2006 · HelenOS' },\n",
-    "museumOrder": 9,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'helenos', displayName: 'HelenOS', year: 2006,\n    lineage: 'Microkernel multiserver OS', arch: 'x86_64', ramMB: 512,    era: '2000s', accent: '#b58fd6',\n    eraSoftware: ['spartan microkernel', 'HelenOS GUI', 'bdsh shell'],\n    periodBrowser: 'no period browser (research OS)',\n    iconicApps: ['Terminal', 'Calculator', 'Viewer'],\n    blurb: 'A from-scratch microkernel research OS — a whole desktop built on message passing.',\n  },\n",
     "goldenOrder": 12,
     "actionMapOrder": 14
   },

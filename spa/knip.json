@@ -10,8 +10,6 @@
     "sharp"
   ],
   "ignore": [
-    "src/data/museumCatalog.ts",
-    "src/data/posters.ts",
-    "src/data/catalog.ts"
+    "src/data/posters.ts"
   ]
 }

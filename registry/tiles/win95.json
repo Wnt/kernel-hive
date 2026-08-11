@@ -75,9 +75,6 @@
     "bindingOrder": 4,
     "bindingPrelude": "",
     "bindingLine": "  win95:       { osId: 'win95',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#2f8f5b', eraLabel: '1995 · Windows 95', bootVideo: '/boot/win95/boot.mp4' },\n",
-    "museumOrder": 1,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'win95', displayName: 'Windows 95', year: 1995,\n    lineage: 'Windows 9x', arch: 'i386', ramMB: 64,    era: '1990s', accent: '#2f8f5b',\n    eraSoftware: ['Start menu', 'Explorer', 'Internet Explorer 1', 'Notepad'],\n    periodBrowser: 'Internet Explorer / Netscape Navigator',\n    iconicApps: ['Minesweeper', 'FreeCell', 'Hover!'],\n    blurb: 'The Start button that changed everything — the desktop metaphor that defined a decade.',\n  },\n",
     "goldenOrder": 4,
     "actionMapOrder": 6
   },

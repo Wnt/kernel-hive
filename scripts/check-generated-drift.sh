@@ -26,11 +26,9 @@ GENERATED_PATHS=(
   scripts/tools/gallery-action-map.json
   spa/src/three/archetypeRegistry.ts
   spa/src/mock/manifest.json
-  spa/src/data/museumCatalog.ts
   spa/src/data/posters.ts
   spa/src/data/demoPrograms.ts
   spa/src/data/keyboards.ts
-  spa/src/data/catalog.ts
   registry/index.json
   registry/generated/labctl-declarations.json
 )

@@ -69,9 +69,6 @@
     "bindingOrder": 12,
     "bindingPrelude": "",
     "bindingLine": "  solaris:     { osId: 'solaris',     archetypeId: 'sparc-pizzabox',  transport: 'streamhost',  accentColor: '#d68a3a', eraLabel: '1994 · Solaris CDE', hardwareInput: true, bootVideo: '/boot/solaris/boot.mp4' },\n",
-    "museumOrder": 10,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'solaris', displayName: 'Solaris CDE', year: 1994,\n    lineage: 'SunOS / System V Unix', arch: 'SPARC', ramMB: 512,    era: '1990s', accent: '#d68a3a',\n    eraSoftware: ['CDE (Common Desktop Environment)', 'dtterm', 'OpenWindows'],\n    periodBrowser: 'HotJava / early Netscape',\n    iconicApps: ['Front Panel', 'File Manager', 'dtterm'],\n    blurb: 'The workstation Unix of the 90s — CDE’s front panel on classic Sun hardware.',\n  },\n",
     "goldenOrder": 13,
     "actionMapOrder": 15
   },

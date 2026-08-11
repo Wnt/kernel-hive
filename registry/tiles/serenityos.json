@@ -73,9 +73,6 @@
     "bindingOrder": 15,
     "bindingPrelude": "",
     "bindingLine": "  serenityos:  { osId: 'serenityos',  archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#c95a8f', eraLabel: '2018 · SerenityOS' },\n",
-    "museumOrder": 11,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'serenityos', displayName: 'SerenityOS', year: 2018,\n    lineage: 'From-scratch Unix-like', arch: 'x86_64', ramMB: 1024,    era: '2010s', accent: '#c95a8f',\n    eraSoftware: ['LibGUI desktop', 'Ladybird browser', 'Assistant', 'Terminal'],\n    periodBrowser: 'Ladybird',\n    iconicApps: ['Solitaire', 'Minesweeper', 'PixelPaint'],\n    blurb: 'A love letter to the late-90s desktop, written entirely from scratch on YouTube.',\n  },\n",
     "goldenOrder": 15,
     "actionMapOrder": 17
   },

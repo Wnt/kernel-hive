@@ -52,9 +52,6 @@
     "bindingOrder": 29,
     "bindingPrelude": "",
     "bindingLine": "  amiga:       { osId: 'amiga',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#0055AA', eraLabel: '1987 · Amiga Workbench 1.3', bootVideo: '/boot/amiga/boot.mp4' },\n",
-    "museumOrder": 27,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'amiga', displayName: 'Amiga 500', year: 1987,\n    lineage: 'Commodore Amiga / AmigaOS',\n    arch: 'Motorola 68000 (16/32-bit)', ramMB: 0, ramKB: 512,    era: '1980s', accent: '#0055AA',\n    eraSoftware: ['Workbench 1.3', 'AmigaDOS CLI', 'Deluxe Paint', 'Extras 1.3 / AmigaBASIC'],\n    periodBrowser: 'none — pre-web (AmigaOS 1.3)',\n    iconicApps: ['Workbench 1.3 desktop', 'AmigaDOS Shell/CLI', 'the insert-disk hand', 'the floppy-drive click'],\n    blurb: 'A 1987 home computer whose custom chips (blitter + copper + 4-channel Paula sound) gave it colour multitasking and arcade graphics the PC and Mac couldn’t touch for years — booting the real Kickstart 1.3 + Workbench 1.3 on a genuine 68000.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Amiga emulator full-screen booting the real Kickstart 1.3 + Workbench 1.3; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Amiga 500 wedge). See streamhost/docs/BRIDGE.md.',\n  },\n",
     "goldenOrder": 27
   },
   "tileDir": "amiga",

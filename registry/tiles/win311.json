@@ -73,9 +73,6 @@
     "bindingOrder": 3,
     "bindingPrelude": "",
     "bindingLine": "  win311:      { osId: 'win311',      archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#7fb0d6', eraLabel: '1993 · Windows 3.11' },\n",
-    "museumOrder": 0,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'win311', displayName: 'Windows 3.11', year: 1993,\n    lineage: 'MS-DOS + Windows 3.x', arch: 'i386', ramMB: 16,    era: '1990s', accent: '#7fb0d6',\n    eraSoftware: ['Program Manager', 'File Manager', 'Write', 'Paintbrush'],\n    periodBrowser: 'Mosaic / early Netscape',\n    iconicApps: ['Solitaire', 'Minesweeper', 'Reversi'],\n    blurb: 'Windows for Workgroups — the tiled Program Manager era, riding on top of DOS.',\n  },\n",
     "goldenOrder": 3,
     "actionMapOrder": 5
   },

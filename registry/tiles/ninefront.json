@@ -73,9 +73,6 @@
     "bindingOrder": 10,
     "bindingPrelude": "",
     "bindingLine": "  ninefront:   { osId: 'ninefront',   archetypeId: 'mono-terminal',   transport: 'streamhost',  accentColor: '#c9c05b', eraLabel: '2011 · 9front (Plan 9)', bootVideo: '/boot/ninefront/boot.mp4' },\n",
-    "museumOrder": 8,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'ninefront', displayName: '9front (Plan 9)', year: 2011,\n    lineage: 'Plan 9 from Bell Labs', arch: 'x86_64', ramMB: 512,    era: '2010s', accent: '#c9c05b',\n    eraSoftware: ['rio', 'acme', 'stats', 'catclock', 'rc shell', '9P'],\n    periodBrowser: 'mothra / abaco',\n    iconicApps: ['acme editor', 'stats', 'catclock', 'rio windows', 'sam'],\n    blurb: 'Bell Labs’ successor to Unix, still alive — everything is a file, over the network.',\n  },\n",
     "goldenOrder": 9,
     "actionMapOrder": 11
   },

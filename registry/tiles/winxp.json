@@ -69,9 +69,6 @@
     "bindingOrder": 7,
     "bindingPrelude": "",
     "bindingLine": "  winxp:       { osId: 'winxp',       archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#5aa832', eraLabel: '2001 · Windows XP' },\n",
-    "museumOrder": 4,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'winxp', displayName: 'Windows XP', year: 2001,\n    lineage: 'Windows NT 5.1', arch: 'i386', ramMB: 256,    era: '2000s', accent: '#5aa832',\n    eraSoftware: ['Luna theme', 'IE6', 'Windows Media Player 8', 'Movie Maker'],\n    periodBrowser: 'Internet Explorer 6',\n    iconicApps: ['Bliss wallpaper', 'Pinball', 'Solitaire'],\n    blurb: 'Bliss. The green hill and blue taskbar the whole world remembers.',\n  },\n",
     "goldenOrder": 7,
     "actionMapOrder": 9
   },

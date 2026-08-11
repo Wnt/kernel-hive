@@ -73,9 +73,6 @@
     "bindingOrder": 5,
     "bindingPrelude": "",
     "bindingLine": "  win98se:     { osId: 'win98se',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3a7fc9', eraLabel: '1999 · Windows 98 SE', bootVideo: '/boot/win98se/boot.mp4' },\n",
-    "museumOrder": 2,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'win98se', displayName: 'Windows 98 SE', year: 1999,\n    lineage: 'Windows 9x', arch: 'i386', ramMB: 96,    era: '1990s', accent: '#3a7fc9',\n    eraSoftware: ['Active Desktop', 'IE5', 'Outlook Express', 'Media Player 6'],\n    periodBrowser: 'Internet Explorer 5',\n    iconicApps: ['3D Pinball Space Cadet', 'Minesweeper', 'Solitaire'],\n    blurb: 'The polished peak of the 9x line — USB, Active Desktop, and Space Cadet pinball.',\n  },\n",
     "goldenOrder": 5,
     "actionMapOrder": 7
   },

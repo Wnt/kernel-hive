@@ -44,16 +44,13 @@
   "render": {
     "tilesManifestOrder": 44,
     "bindingOrder": 50,
-    "museumOrder": 44,
     "goldenOrder": 44,
     "bringUpGroup": 6,
     "signalOrder": 46,
     "tilesManifestInvocation": "emit zx81 \\\n  --tile zx81 --vmid 231 --udp 54128 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/zx81/qemu-streamhost.sh\" --env-append-file \\\n  \"$T/zx81/tile.env.fixture\"\n",
     "bindingLine": "  zx81:        { osId: 'zx81', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8462F', eraLabel: '1981 · ZX81 (1 KB, black and white)' },\n",
-    "museumBlock": "  {\n    id: 'zx81', displayName: 'Sinclair ZX81', year: 1981,\n    lineage: 'Sinclair Research (ZX80 → ZX81 → ZX Spectrum)',\n    arch: 'Zilog Z80A at 3.25 MHz, 1 KB RAM, 8 KB ROM, 32×24 characters, monochrome', ramMB: 0, ramKB: 1,    era: '1980s', accent: '#D8462F',\n    eraSoftware: ['Sinclair BASIC in 8 KB of ROM, entered one keyword per keypress', '3D Monster Maze — a first-person maze with a pursuing Tyrannosaurus, in 16 KB', 'Mazogs, Flight Simulation and the rest of a cassette-tape software trade sold by post', 'the ZX Printer\\'s silver spark-eroded paper, and hundreds of type-in listings from magazines'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['Sinclair BASIC', '3D Monster Maze', 'type-in listings from Sinclair User and ZX Computing'],\n    blurb: 'The machine that put a computer in a British newsagent: £69.95 in kit form, a Z80, a membrane keyboard, one kilobyte of memory, no sound and no colour — and a million and a half of them sold.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs MAME 0.289 (SUBTARGET=zx81, pinned upstream commit f34f0250, built in the trixie chroot by scripts/build-guests/emulators/build-mame-zx81.sh); streamhost captures the Linux framebuffer + AC97 audio exactly like every other bridge tile. The ROM is the second revision (-bios 2nd, zx81a.rom, sha1 7b143ee9…), which is what almost every shipped ZX81 contained; it is preservation-source material copyright Nine Tiles Networks Ltd, staged on the box and never committed. RAM is pinned to the machine as sold, -ramsize 1K, rather than MAME\\'s 16K default. The golden is the untouched power-on screen — a white field with one inverse K — and readiness is decided GEOMETRICALLY, not by counting bright pixels, because this machine blanks its display while it computes and a photometric test cannot tell that frame from the fixture. Keyboard-only exhibit; the ZX81 has no sound hardware. See streamhost/docs/BRIDGE.md and docs/guests/zx81.md.',\n  },\n",
     "tilesManifestPrelude": "",
-    "bindingPrelude": "",
-    "museumPrelude": ""
+    "bindingPrelude": ""
   },
   "stream": {
     "transport": "streamhost",

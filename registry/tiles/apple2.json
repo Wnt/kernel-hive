@@ -52,9 +52,6 @@
     "bindingOrder": 28,
     "bindingPrelude": "",
     "bindingLine": "  apple2:      { osId: 'apple2',      archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#8A8577', eraLabel: '1988 · Apple II — GEOS' },\n",
-    "museumOrder": 26,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'apple2', displayName: 'Apple II', year: 1988,\n    lineage: 'Apple II / GEOS',\n    arch: 'MOS 65C02 (Apple //e enhanced), 1 MHz, 128 KB', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#8A8577',\n    eraSoftware: ['Apple GEOS deskTop', 'geoWrite', 'geoPaint', 'ProDOS', 'DeskTop file manager'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['geoWrite', 'geoPaint', 'GEOS deskTop', 'Preference Manager'],\n    blurb: 'A windows-icons-menus desktop (GEOS) with geoWrite & geoPaint running on a 1 MHz Apple //e — the 8-bit era’s Macintosh, on Apple hardware.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Apple //e emulator full-screen booting Apple GEOS; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke platinum Apple //e all-in-one). See streamhost/docs/BRIDGE.md.',\n  },\n",
     "goldenOrder": 26
   },
   "tileDir": "apple2",
