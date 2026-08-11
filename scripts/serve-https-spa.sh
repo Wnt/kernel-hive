@@ -48,10 +48,13 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SPA_WEB="$REPO/spa"
 DIST="$SPA_WEB/dist"
 LOCAL_PKI="$REPO/scripts/serve/pki"
-TILES_SRC="$REPO/scripts/serve/tiles.json"
-GALLERY_MANIFEST_SRC="$REPO/scripts/serve/webroot/gallery-manifest.json"
-POSTER_DOCS_SRC="$REPO/scripts/serve/webroot/poster-docs.json"
-GOLDEN_MANIFEST_SRC="$REPO/scripts/serve/golden-manifest.json"
+# All four published documents are RENDERED, never committed: resolved from
+# registry/tiles/*.json + registry/posters/*.md on the way out
+# (tiles-registry.py rendered()). publish_manifests re-renders before it reads.
+TILES_SRC="$REPO/build/registry/tiles.json"
+GALLERY_MANIFEST_SRC="$REPO/build/registry/gallery-manifest.json"
+POSTER_DOCS_SRC="$REPO/build/registry/poster-docs.json"
+GOLDEN_MANIFEST_SRC="$REPO/build/registry/golden-manifest.json"
 
 # host-side layout
 SERVE_DIR="/data/vms/streamhost/serve"
@@ -140,18 +143,20 @@ deploy() {
 # Publish the two registry-generated runtime JSON documents with atomic per-file
 # replacement. This is independent of deploy(): ordinary new stations need no Vite build.
 publish_manifests() {
-  [ -f "$TILES_SRC" ] || {
-    msg "ERROR: missing generated $TILES_SRC"
+  # None of these has a committed copy to go stale: render them now, from the
+  # registry, and publish those bytes. A registry that no longer validates fails
+  # HERE, with the live serving plane untouched.
+  msg "rendering the runtime documents from the registry"
+  python3 "$REPO/scripts/tiles-registry.py" render >/dev/null || {
+    msg "ERROR: render failed (registry does not validate) — nothing published"
     exit 1
   }
-  [ -f "$GALLERY_MANIFEST_SRC" ] || {
-    msg "ERROR: missing generated $GALLERY_MANIFEST_SRC"
-    exit 1
-  }
-  [ -f "$POSTER_DOCS_SRC" ] || {
-    msg "ERROR: missing generated $POSTER_DOCS_SRC"
-    exit 1
-  }
+  for src in "$TILES_SRC" "$GALLERY_MANIFEST_SRC" "$POSTER_DOCS_SRC" "$GOLDEN_MANIFEST_SRC"; do
+    [ -f "$src" ] || {
+      msg "ERROR: render produced no $src"
+      exit 1
+    }
+  done
   msg "publishing runtime manifests -> $SERVE_DIR"
   $SSH "mkdir -p $WEBROOT"
   $SSH "set -e; tmp=$TILES.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $TILES" <"$TILES_SRC"

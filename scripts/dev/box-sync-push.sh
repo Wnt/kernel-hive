@@ -234,7 +234,16 @@ for i in "${SEL[@]}"; do
   b="${BOX_MD5[$i]}"
   if [ "${BOX_SYNC_AUTHORITY[$i]}" != repo ]; then
     printf 'REFUSE %-40s the BOX is authoritative for this row (generated/live\n' "$label" >&2
-    printf '       %-40s artifact). Pull it with: scripts/dev/harvest.sh\n' '' >&2
+    case "$rel" in
+      build/registry/*)
+        # Rendered from the registry: there is no repo copy to harvest INTO, so
+        # harvest.sh is the wrong tool. Replacing the live document is a publish.
+        printf '       %-40s artifact). Publish it with: scripts/serve-https-spa.sh manifests\n' '' >&2
+        ;;
+      *)
+        printf '       %-40s artifact). Pull it with: scripts/dev/harvest.sh\n' '' >&2
+        ;;
+    esac
     refusals=$((refusals + 1))
     continue
   fi

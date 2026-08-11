@@ -1,5 +1,5 @@
 {
-  "_comment": "Every spa/src/**/*.{ts,tsx} module NOT listed in vitest.config.ts's coverage.include, with a written reason it isn't (yet) unit-tested. See docs/history/TECH-DEBT-INVENTORY.md item 14. Covered modules (parsers/adapters/state helpers, node-testable with no DOM/three.js): src/data/catalog.ts, src/data/galleryManifest.ts, src/three/annexb.ts, src/three/guestQuirks.ts, src/three/streamSignal.ts, src/ui/grid/letterbox.ts, src/ui/grid/thumbVtt.ts.",
+  "_comment": "Every spa/src/**/*.{ts,tsx} module NOT listed in vitest.config.ts's coverage.include, with a written reason it isn't (yet) unit-tested. See docs/history/TECH-DEBT-INVENTORY.md item 14. Covered modules (parsers/adapters/state helpers, node-testable with no DOM/three.js): src/data/galleryManifest.ts, src/three/annexb.ts, src/three/guestQuirks.ts, src/three/streamSignal.ts, src/ui/grid/letterbox.ts, src/ui/grid/thumbVtt.ts.",
   "exclusions": [
     { "file": "src/App.tsx", "reason": "react-component: top-level app shell/router, no pure logic to isolate" },
     { "file": "src/config.ts", "reason": "static string constants, no logic" },

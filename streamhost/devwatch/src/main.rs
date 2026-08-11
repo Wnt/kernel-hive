@@ -2,11 +2,12 @@
 //!
 //! Watches the hand-written sources (registry/tiles, registry/posters,
 //! registry-v1.json, templates, streamhost/tiles fixtures, spa/src) and, on
-//! every debounced change, runs `tiles-registry.py generate` (which validates
-//! first). Only when the change PARSES does anything deploy: runtime manifests
-//! (gallery-manifest.json, poster-docs.json, tiles.json, golden-manifest.json)
-//! publish to labhost via `serve-https-spa.sh manifests`; UI-compiled outputs
-//! request (or, with --spa-autodeploy, run) a Vite build + deploy.
+//! every debounced change, runs `tiles-registry.py generate` and `render`
+//! (both validate first). Only when the change PARSES does anything deploy:
+//! runtime manifests (gallery-manifest.json, poster-docs.json, tiles.json,
+//! golden-manifest.json) publish to labhost via `serve-https-spa.sh manifests`;
+//! UI-compiled outputs request (or, with --spa-autodeploy, run) a Vite build
+//! + deploy.
 //!
 //! Never automated: per-station re-emit and `systemctl restart streamhost@<tile>`
 //! — a daemon restart resets a checkpoint-scene station, so scene edits print the
@@ -23,18 +24,21 @@ use clap::Parser;
 use notify::{EventKind, RecursiveMode};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, DebouncedEvent};
 
-/// Generated outputs that `serve-https-spa.sh manifests` publishes to labhost.
+/// Outputs that `serve-https-spa.sh manifests` publishes to labhost. All four
+/// are RENDERED (never committed), so they are watched at their build paths —
+/// `tiles-registry.py render` writes them, and a museum-copy or poster edit
+/// changes nothing else, which is exactly the save that must still reach the
+/// gallery.
 const MANIFEST_OUTPUTS: &[&str] = &[
-    "scripts/serve/tiles.json",
-    "scripts/serve/webroot/gallery-manifest.json",
-    "scripts/serve/webroot/poster-docs.json",
-    "scripts/serve/golden-manifest.json",
+    "build/registry/tiles.json",
+    "build/registry/gallery-manifest.json",
+    "build/registry/poster-docs.json",
+    "build/registry/golden-manifest.json",
 ];
 
 /// Generated outputs compiled into the UI bundle: changing them needs a build.
 const SPA_OUTPUTS: &[&str] = &[
     "spa/src/three/archetypeRegistry.ts",
-    "spa/src/mock/manifest.json",
     "spa/src/data/posterIndex.ts",
     "spa/src/data/demoPrograms.ts",
     "spa/src/data/keyboards.ts",
@@ -144,9 +148,11 @@ fn load_local_env(
     (Vec::new(), None)
 }
 
-fn generated_paths(repo: &Path) -> Result<BTreeSet<String>> {
+fn output_paths(repo: &Path, extra: &[&str]) -> Result<BTreeSet<String>> {
+    let mut args = vec!["scripts/tiles-registry.py", "paths"];
+    args.extend_from_slice(extra);
     let out = Command::new("python3")
-        .args(["scripts/tiles-registry.py", "paths"])
+        .args(&args)
         .current_dir(repo)
         .output()
         .context("running tiles-registry.py paths")?;
@@ -162,6 +168,22 @@ fn generated_paths(repo: &Path) -> Result<BTreeSet<String>> {
         .collect())
 }
 
+/// Every artifact the registry produces, in the two classes that matter here:
+/// `all` is what a save can change (watched for self-writes and snapshotted),
+/// `rendered` is the subset that exists only under build/ — never committed and
+/// never box-synced, so it must not be reported as work still owed.
+struct Outputs {
+    all: BTreeSet<String>,
+    rendered: BTreeSet<String>,
+}
+
+fn load_outputs(repo: &Path) -> Result<Outputs> {
+    let rendered = output_paths(repo, &["--rendered"])?;
+    let mut all = output_paths(repo, &[])?;
+    all.extend(rendered.iter().cloned());
+    Ok(Outputs { all, rendered })
+}
+
 fn ignorable(rel: &str) -> bool {
     let name = rel.rsplit('/').next().unwrap_or(rel);
     name.ends_with('~')
@@ -172,20 +194,21 @@ fn ignorable(rel: &str) -> bool {
         || name.starts_with('#')
 }
 
-fn classify(repo: &Path, generated: &BTreeSet<String>, paths: &[PathBuf]) -> Dirty {
+fn classify(repo: &Path, outputs: &BTreeSet<String>, paths: &[PathBuf]) -> Dirty {
     let mut dirty = Dirty::default();
     for path in paths {
         let Ok(rel) = path.strip_prefix(repo) else {
             continue;
         };
         let rel = rel.to_string_lossy().replace('\\', "/");
-        if ignorable(&rel) || generated.contains(rel.as_str()) {
+        if ignorable(&rel) || outputs.contains(rel.as_str()) {
             continue;
         }
         if let Some(rest) = rel.strip_prefix("streamhost/tiles/") {
             let tile = rest.split('/').next().unwrap_or("").to_string();
             if rest.ends_with("tile.env.fixture") {
-                // index.json embeds fixture keys, so a fixture edit is a registry change too.
+                // The rendered index embeds fixture keys, so a fixture edit is a
+                // registry change too.
                 dirty.registry = true;
                 dirty.fixtures.insert(tile);
             } else if !tile.is_empty() {
@@ -228,19 +251,22 @@ fn run(repo: &Path, env: &[(String, String)], program: &str, args: &[&str]) -> R
     Ok(status.success())
 }
 
-fn generate(repo: &Path) -> Result<bool> {
+/// Run one registry sub-command that writes artifacts (`generate` / `render`).
+/// A non-zero exit means the save did not parse: nothing is written, so nothing
+/// deploys, and the operator gets the validator's own words.
+fn produce(repo: &Path, command: &str) -> Result<bool> {
     let started = Instant::now();
     let out = Command::new("python3")
-        .args(["scripts/tiles-registry.py", "generate"])
+        .args(["scripts/tiles-registry.py", command])
         .current_dir(repo)
         .output()
-        .context("running tiles-registry.py generate")?;
+        .with_context(|| format!("running tiles-registry.py {command}"))?;
     let secs = started.elapsed().as_secs_f32();
     if out.status.success() {
-        println!("devwatch: generate ok ({secs:.1}s)");
+        println!("devwatch: {command} ok ({secs:.1}s)");
         return Ok(true);
     }
-    println!("devwatch: generate REJECTED the change ({secs:.1}s) — fix and save again:");
+    println!("devwatch: {command} REJECTED the change ({secs:.1}s) — fix and save again:");
     print!("{}", String::from_utf8_lossy(&out.stderr));
     Ok(false)
 }
@@ -249,7 +275,7 @@ fn generate(repo: &Path) -> Result<bool> {
 fn pipeline(
     repo: &Path,
     env: &[(String, String)],
-    generated: &BTreeSet<String>,
+    outputs: &Outputs,
     dirty: &Dirty,
     args: &Args,
     deploys_enabled: bool,
@@ -257,8 +283,8 @@ fn pipeline(
     let mut spa_dirty = dirty.spa;
 
     if dirty.registry {
-        let before = snapshot(repo, generated);
-        if !generate(repo)? {
+        let before = snapshot(repo, &outputs.all);
+        if !produce(repo, "generate")? || !produce(repo, "render")? {
             return Ok(());
         }
         let changed: BTreeSet<String> = before
@@ -267,10 +293,10 @@ fn pipeline(
             .map(|(path, _)| path)
             .collect();
         if changed.is_empty() {
-            println!("devwatch: no generated output changed");
+            println!("devwatch: no registry output changed");
         } else {
             println!(
-                "devwatch: {} generated output(s) changed: {}",
+                "devwatch: {} registry output(s) changed: {}",
                 changed.len(),
                 changed.iter().cloned().collect::<Vec<_>>().join(", ")
             );
@@ -294,7 +320,9 @@ fn pipeline(
         let ops: Vec<&String> = changed
             .iter()
             .filter(|p| {
-                !MANIFEST_OUTPUTS.contains(&p.as_str()) && !SPA_OUTPUTS.contains(&p.as_str())
+                !MANIFEST_OUTPUTS.contains(&p.as_str())
+                    && !SPA_OUTPUTS.contains(&p.as_str())
+                    && !outputs.rendered.contains(p.as_str())
             })
             .collect();
         if !ops.is_empty() {
@@ -332,7 +360,7 @@ fn main() -> Result<()> {
         Some(path) => path.canonicalize().context("--repo does not exist")?,
         None => find_repo(&std::env::current_dir()?)?,
     };
-    let generated = generated_paths(&repo)?;
+    let outputs = load_outputs(&repo)?;
     let (env, env_path) = load_local_env(&repo, args.local_env.as_deref());
     let host_ip = std::env::var("SH_HOST_IP").ok().or_else(|| {
         env.iter()
@@ -377,7 +405,7 @@ fn main() -> Result<()> {
                 // The pipeline's own `generate` READS every source file; acting
                 // on Access events would make the watcher re-trigger itself.
                 if mutates(event) {
-                    dirty.merge(classify(&repo, &generated, &event.paths));
+                    dirty.merge(classify(&repo, &outputs.all, &event.paths));
                 }
             }
         }
@@ -397,7 +425,7 @@ fn main() -> Result<()> {
         if dirty.is_empty() {
             continue;
         }
-        pipeline(&repo, &env, &generated, &dirty, &args, deploys_enabled)?;
+        pipeline(&repo, &env, &outputs, &dirty, &args, deploys_enabled)?;
     }
 }
 

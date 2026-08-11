@@ -4,13 +4,7 @@
 // Produces rail/section/lineup contact sheets for human review; it does not
 // run an automated visual judge.
 import { spawnSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -94,8 +88,15 @@ function relativeToOut(out, path) {
   return relative(out, path);
 }
 
+// The registry aggregate is rendered on demand, not committed — ask for it.
 function decadesFromRegistry() {
-  const registry = JSON.parse(readFileSync(join(repoRoot, 'registry/index.json'), 'utf8'));
+  const result = spawnSync(
+    'python3',
+    [join(repoRoot, 'scripts/tiles-registry.py'), 'emit', 'index.json'],
+    { cwd: repoRoot, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 },
+  );
+  if (result.status !== 0) fail(`tiles-registry.py emit index.json failed: ${result.stderr ?? ''}`);
+  const registry = JSON.parse(result.stdout);
   const decades = registry.tiles
     .filter((tile) => tile.enabled !== false)
     .map((tile) => Math.floor(tile.era_year / 10) * 10);

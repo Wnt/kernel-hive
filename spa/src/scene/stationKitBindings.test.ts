@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import manifest from '../../../scripts/serve/webroot/gallery-manifest.json' with { type: 'json' };
+import { renderedEntries } from '../data/lineupFixture';
 import { computeHall, type HallEntry } from './hallLayout';
 import {
   assemblyForTile,
@@ -9,7 +9,7 @@ import { buildStationKitBindings } from './stationKitBindings';
 
 describe('station kit bindings', () => {
   it('never dresses an integrated-keyboard assembly with a spare keyboard', () => {
-    const entries: HallEntry[] = manifest.entries.map((entry) => ({
+    const entries: HallEntry[] = renderedEntries.map((entry) => ({
       id: entry.id,
       displayName: entry.displayName,
       era_year: entry.era_year,

@@ -37,7 +37,7 @@ reported `PASS` — the flag is a floor, never a ceiling.
 
 ## Reset-to-golden — the golden manifest
 
-`scripts/serve/golden-manifest.json` (repo root; deployed to
+the rendered `golden-manifest.json` (deployed to
 `/data/vms/streamhost/serve/`) is the single source of truth, keyed by **osId**.
 `streamhostInput.group.ts` reads it at load for the shared per-tile facts
 (`tileDir/pointer/touch/resetMode/snapshot`) — override the path with
@@ -211,7 +211,7 @@ The same reset authority is exposed to the SPA:
 
 ## Files
 
-- `scripts/serve/golden-manifest.json` (repo root; deployed to `/data/vms/streamhost/serve/`) — per-tile `tileDir/pointer/touch/resetMode/snapshot` + certified `mouse`/`keyboard` verdict + fixture. Single source of truth, read by the suite at load.
+- the rendered `golden-manifest.json` (published to `/data/vms/streamhost/serve/`) — per-tile `tileDir/pointer/touch/resetMode/snapshot` + certified `mouse`/`keyboard` verdict + fixture. Single source of truth, read by the suite at load.
 - `scripts/serve/reset-tile.sh` (repo root; deployed to `/data/vms/streamhost/serve/reset-tile.sh`) — the reset authority (loadvm / restart per manifest). Shared by the suite AND the restore endpoint.
 - `streamhostInput.qmp.ts` — QMP `screendump` over the tile unix socket + PPM parse + diff (+ `loadSnapshot` helper).
 - `streamhostInput.group.ts` — test-side tile table (keyType + measured skip reasons + visual-certification comments) merged with the manifest's shared facts at load.

@@ -220,7 +220,7 @@ route concretely rather than tediously:
   `labctl gen` for every other session** until the arms are moved into the
   production tile directory and given a `tile.env` + `qemu-streamhost.sh`. Arm B
   has no QEMU launcher at all — it is host-native MAME.
-- the generated `scripts/serve/tiles.json` hardcodes each row's `hashFile` to
+- the rendered `tiles.json` hardcodes each row's `hashFile` to
   `/data/vms/streamhost/tiles/<tileDir>/cert_hash_b64.txt`, so the registry
   cannot express where these arms actually are.
 - `spa/src/data/tileWiring.test.ts` requires every streamhost manifest row to

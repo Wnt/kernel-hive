@@ -3,6 +3,9 @@
 # ============================================================================
 
 # ---- Dependencies / build output ----
+# build/ also covers build/registry/, where `tiles-registry.py render` drops the
+# runtime documents that are deliberately NOT committed (gallery-manifest.json,
+# index.json) — see registry/README.md "Generated vs rendered".
 node_modules/
 **/node_modules/
 # ...and as a bare name too: the two patterns above end in a slash, so they match
@@ -89,8 +92,9 @@ lab_key*
 spa/src/data/credentials.ts
 
 # Deployment-local operator values (real host IP etc.) — provide locally from
-# registry/local.env.example. Never publish; registry/index.json must keep the
-# placeholder for tile-registry-check determinism.
+# registry/local.env.example. Never publish; the registry's generated and
+# rendered outputs must keep the placeholder for tile-registry-check
+# determinism.
 registry/local.env
 
 # ---- Dev/debug screenshots & scratch (not needed to build or run) ----

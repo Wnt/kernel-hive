@@ -588,15 +588,24 @@ pushes to `main`. The generated surfaces and their actual inputs are:
 | `streamhost/tiles-manifest.sh` | Production rows ordered by `render.tilesManifestOrder`; `render.tilesManifestPrelude` plus the emit invocation rendered from `tileDir` and `runtime.qemu.emitArgs` (`runtime.x11.emitArgs` for x11 tiles). |
 | `streamhost/bring-up-all.sh` | Production `tileDir` values grouped by `render.bringUpGroup` and ordered by `runtime.bringUpOrder`. |
 | `scripts/build-guests/build-all.sh` | `build.rows` entries (`order`, `prelude`, typed `value`, and optional `defaultOrder`) rendered as aligned manifest lines, plus shared rows in `registry/registry-v1.json`. |
-| `scripts/serve/tiles.json` | Every streamhost row's `id`, `stream.udpPort`, `tileDir`-derived certificate-hash path, and `render.signalOrder`. |
-| `scripts/serve/golden-manifest.json` | Production `id` and `reset`, ordered by `render.goldenOrder`. |
-| `scripts/tools/gallery-action-map.json` | `operator.actionMap`, ordered by `render.actionMapOrder`. |
 | `spa/src/three/archetypeRegistry.ts` | `id` and `spa`, rendered as an OS binding line (`render.bindingPrelude` kept, optional `render.bindingComment` appended) and ordered by `render.bindingOrder`. |
-| `spa/src/mock/manifest.json` | `museum` for entries that have `render.mockManifestOrder`. |
 | `spa/src/data/posterIndex.ts` | Poster existence + hero path per `registry/posters/<id>.md` (the prose ships separately at runtime). |
-| `scripts/serve/webroot/poster-docs.json` | The full poster documents compiled from `registry/posters/*.md`, fetched by the SPA at runtime. |
-| `registry/index.json` | The aggregate of every entry — `runtime.tileEnv` merged with the tile's `tile.env.fixture` — excluding generator-only `render` data. |
 | `registry/generated/labctl-declarations.json` | Streamhost `tileDir` plus the declared keys in `operator.labctl`. Live observed golden state is intentionally excluded. |
+
+Two more documents are **rendered, never committed** — they have no copy in the
+tree to hand-edit or to go stale, and `tiles-registry.py render` (into the
+gitignored `build/registry/`) or `emit <name>` (to stdout) resolves them from
+the registry whenever something needs them:
+
+| Rendered artifact | What it takes from the entry |
+|---|---|
+| `gallery-manifest.json` | The public lineup the SPA fetches at runtime: `museum` + `spa`, ordered by `render.bindingOrder`. Published to the box webroot by `serve-https-spa.sh manifests`. |
+| `poster-docs.json` | The full poster documents compiled from `registry/posters/*.md`, fetched by the SPA at runtime. |
+| `tiles.json` | Every streamhost row's `id`, `stream.udpPort`, `tileDir`-derived certificate-hash path, and `render.signalOrder`. The live `SIGNAL_CONFIG`. |
+| `golden-manifest.json` | Production `id` and `reset`, ordered by `render.goldenOrder`. The reset allow-list `reset-tile.sh` reads. |
+| `gallery-action-map.json` | `operator.actionMap`, ordered by `render.actionMapOrder`. |
+| `mock-manifest.json` | `museum` for entries that have `render.mockManifestOrder`. |
+| `index.json` | The aggregate of every entry — `runtime.tileEnv` merged with the tile's `tile.env.fixture` — excluding generator-only `render` data. |
 
 Use this table as an exhaustive audit of the JSON entry, not as an edit list for
 derived files. `python3 scripts/tiles-registry.py explain <osId>` is useful for
@@ -611,7 +620,7 @@ reviewing one entry's principal derived values.
 - A key defined in the tile's `tile.env.fixture` must NOT also appear in
   `runtime.tileEnv` — the fixture is the single source for its keys and
   `validate` fails on the overlap. The generator merges the fixture into the
-  env view that `registry/index.json` and the validators see.
+  env view that the rendered `index.json` and the validators see.
 - **`museum` describes the real machine, never how the gallery runs it.**
   `lineage` is a heritage — "Windows NT 3.x", "Multitech (Taiwan)" — not a
   paragraph. `notes` is the one operator-facing field; `blurb` is what the
@@ -718,13 +727,14 @@ and regenerates `/data/vms/streamhost/tiles.json`; do not hand-edit it.
 
 ### 6.4 Runtime SPA manifest (no rebuild for an existing archetype)
 
-The public lineup is served from `/gallery-manifest.json`, generated from each
+The public lineup is served from `/gallery-manifest.json`, rendered from each
 registry row's `museum` + `spa` data. It carries the display metadata,
 archetype/transport binding, order, and `/signal/<osId>.json` reference. It does
 **not** carry `credentialsRef`, logins, passwords, keys, tokens, or other private
-operator data. The SPA fetches it with `cache: "no-cache"`, validates every row,
-and uses its embedded generated last-known-good copy if the request 404s, fails,
-or has an invalid shape.
+operator data. The SPA fetches it with `cache: "no-cache"` and validates every
+row; there is deliberately **no** bundled copy behind it, so a 404 or an invalid
+shape leaves the gallery empty and says so in the console rather than quietly
+showing a lineup from whenever the bundle was built.
 
 For an ordinary OS using an existing `ArchetypeId`, do not edit SPA TypeScript or
 run Vite. After updating `registry/tiles/<osId>.json`:
@@ -738,12 +748,13 @@ make tile-registry-check
 scripts/serve-https-spa.sh manifests
 ```
 
-That command copies the two generated JSON documents to
+That command re-renders the lineup and copies both documents to
 `/data/vms/streamhost/serve/tiles.json` and
 `/data/vms/streamhost/serve/webroot/gallery-manifest.json`; the new OS then
-appears without `npm ci`, `npm run build`, or a bundle deployment. A direct
-manual copy of those same two files is equivalent. Run the generator on the box
-or sync the generated files before copying; never hand-edit the live JSON.
+appears without `npm ci`, `npm run build`, or a bundle deployment. The
+equivalent by hand is `python3 scripts/tiles-registry.py emit
+gallery-manifest.json` piped to the live webroot path, and the same for
+`tiles.json` at the live `SIGNAL_CONFIG`; never hand-edit the live JSON.
 
 **A tile in the registry lineup is not finished until the 3D scene knows it.**
 The runtime manifest carries the placard, but the WebGL museum and the on-screen
@@ -811,9 +822,10 @@ make tile-registry-generate
 make tile-registry-check
 bash -n scripts/build-guests/tiles/<os>.sh
 bash -n streamhost/tiles/<tileDir>/qemu-streamhost.sh  # if verbatim
-jq empty scripts/serve/tiles.json
-jq empty scripts/serve/golden-manifest.json
-jq empty scripts/tools/gallery-action-map.json
+python3 scripts/tiles-registry.py render     # renders every runtime document
+jq empty build/registry/tiles.json
+jq empty build/registry/golden-manifest.json
+jq empty build/registry/gallery-action-map.json
 scripts/build-guests/build-all.sh --list
 scripts/build-guests/build-all.sh --check-assets --only <builderKey>
 (cd spa && npm ci && npm run build)
@@ -838,9 +850,9 @@ Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
    `streamhost@<tileDir>`;
 7. publish the **three** runtime documents with
    `scripts/serve-https-spa.sh manifests` (or atomically copy generated
-   `scripts/serve/tiles.json` to the live `SIGNAL_CONFIG` path,
-   `scripts/serve/webroot/gallery-manifest.json` to the live webroot, and
-   `scripts/serve/golden-manifest.json` beside the HTTPS server).
+   `emit tiles.json` to the live `SIGNAL_CONFIG` path, `emit
+   gallery-manifest.json` to the live webroot, and `emit golden-manifest.json`
+   beside the HTTPS server).
    **Do not skip the third.** Its keys are the allow-list for
    `POST /restore/<osId>` (`_restore_osids()` in
    `scripts/serve/osgallery-https-server.py`), so a tile missing from the
@@ -943,7 +955,7 @@ Before the registry landed, making two experimental streams browser-visible
 required independent edits to:
 
 - two tile directories with `tile.env` and bespoke launchers;
-- two signal rows in `scripts/serve/tiles.json` for UDP 54911/54912 and the
+- two signal rows in the serve `tiles.json` for UDP 54911/54912 and the
   corresponding certificate-hash paths;
 - two bundled `OS_BINDINGS` rows in `archetypeRegistry.ts` (before the runtime
   manifest migration);

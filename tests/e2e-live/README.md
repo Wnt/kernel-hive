@@ -71,11 +71,12 @@ Dev-box deps: Firefox H.264 WebCodecs needs **system libavcodec**
 ## Shared facts: the golden manifest
 
 Per-tile infrastructure facts (`tileDir` / `pointer` / `touch` / `resetMode` /
-`snapshot`) come from **`scripts/serve/golden-manifest.json`** (repo root; the
-copy deployed to `/data/vms/streamhost/serve/` drives `reset-tile.sh` and the
-SPA "Restore to golden" endpoint). `e2e/streamhostInput.group.ts` reads it at
-load (override the path with `GOLDEN_MANIFEST=…`; falls back to the deployed
-box copy when the repo tree is absent) and keeps only test-side data — probe
+`snapshot`) come from the **rendered `golden-manifest.json`** (`tiles-registry.py
+emit golden-manifest.json`; the copy published to `/data/vms/streamhost/serve/`
+drives `reset-tile.sh` and the SPA "Restore to golden" endpoint).
+`e2e/streamhostInput.group.ts` renders it at load (override with
+`GOLDEN_MANIFEST=…`; falls back to the deployed box copy when there is no
+checkout to render from) and keeps only test-side data — probe
 strings and measured per-channel skip flags. The former duplicate at
 `e2e/golden-manifest.json` was deleted 2026-07-14 (it had drifted: no bridge
 tiles, tablet-era qnx facts).

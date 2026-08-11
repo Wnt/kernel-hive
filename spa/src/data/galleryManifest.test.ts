@@ -1,9 +1,9 @@
-// Unit coverage for the runtime gallery-manifest loader/validator: the
-// generated public manifest must parse, the runtime fetch must win over the
-// embedded fallback when it succeeds, and any HTTP/schema failure must fall
-// back to the embedded (last-known-good, bundle-time) copy WITHOUT throwing.
+// Unit coverage for the runtime gallery-manifest loader/validator. The lineup
+// is fetched, never bundled, so the contract under test is: a valid runtime
+// document wins, and every failure (HTTP, schema, network) returns an EMPTY
+// lineup without throwing — loudly, with nothing stale substituted in.
 // Mirrors scripts/test-gallery-manifest.mjs (kept as the framework-free
-// `npm run test:manifest` sibling check against the on-disk generated file).
+// `npm run test:manifest` sibling check against the rendered document).
 import { describe, expect, it, vi } from 'vitest';
 import { loadGalleryManifest, validateGalleryManifest } from './galleryManifest';
 
@@ -101,27 +101,27 @@ describe('loadGalleryManifest', () => {
     expect(fetcher).toHaveBeenCalledWith('/gallery-manifest.json', { cache: 'no-cache' });
   });
 
-  it('falls back to the embedded manifest on HTTP failure', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('returns an empty lineup on HTTP failure (no throw)', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const rows = await loadGalleryManifest(async () => new Response('nope', { status: 404 }));
-    expect(rows.length).toBeGreaterThan(0);
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
+    expect(rows).toEqual([]);
+    expect(error).toHaveBeenCalled();
+    error.mockRestore();
   });
 
-  it('falls back to the embedded manifest on invalid schema (no throw)', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('returns an empty lineup on invalid schema (no throw)', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const rows = await loadGalleryManifest(async () => new Response(JSON.stringify({ nope: true }), { status: 200 }));
-    expect(rows.length).toBeGreaterThan(0);
-    warn.mockRestore();
+    expect(rows).toEqual([]);
+    error.mockRestore();
   });
 
-  it('falls back to the embedded manifest when the fetch itself rejects', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('returns an empty lineup when the fetch itself rejects', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const rows = await loadGalleryManifest(async () => {
       throw new Error('network down');
     });
-    expect(rows.length).toBeGreaterThan(0);
-    warn.mockRestore();
+    expect(rows).toEqual([]);
+    error.mockRestore();
   });
 });

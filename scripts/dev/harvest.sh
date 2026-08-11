@@ -184,14 +184,16 @@ if selected serve; then
   # are SCRUB-mode pairs (real host IP/domain on labhost, placeholders in the
   # repo), so pulling them verbatim would commit real addresses. The labhost copy
   # is a scrubbed deployment of repo content, never a harvest source.
+  # tiles.json and golden-manifest.json are deliberately absent: both are
+  # RENDERED from the registry (tiles-registry.py rendered()) and have no repo
+  # copy to harvest into. A live/repo divergence in those is fixed in
+  # registry/tiles/<id>.json and republished, never pulled back.
   cat >"$tmpdir/serve-files" <<'EOF'
 clientcmd.sh
 gen-local-ca.sh
-golden-manifest.json
 install-https-service.sh
 osgallery-https-server.py
 reset-tile.sh
-tiles.json
 EOF
   rsync "${RSYNC[@]}" --files-from="$tmpdir/serve-files" -e "$SSH_TRANSPORT" \
     "$LAB:$BOX_ROOT/serve/" "$REPO/scripts/serve/"
