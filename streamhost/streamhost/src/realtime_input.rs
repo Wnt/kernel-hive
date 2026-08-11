@@ -561,12 +561,15 @@ impl InputRouter {
             InputBackend::Disabled | InputBackend::DbusAbs | InputBackend::DbusRel => return None,
             InputBackend::Warpd => WarpdSink::new(cfg),
             InputBackend::GalleryHid => GalleryHidSink::new(cfg.ghid_socket.clone()),
-            InputBackend::MameCmd => {
-                crate::mame_input::MameCmdSink::new(&cfg.x11_cmd_file, cfg.mamecmd_abs)
-            }
+            InputBackend::MameCmd => crate::mame_input::MameCmdSink::new(
+                &cfg.x11_cmd_file,
+                cfg.mamecmd_abs,
+                crate::mame_input::KeyMap::from_env(),
+            ),
             InputBackend::MameSock => crate::mame_sock::MameSockSink::new(
                 cfg.mamectl_sock.clone(),
                 crate::ptr_grid::PtrGrid::from_env(),
+                crate::mame_input::KeyMap::from_env(),
             ),
             InputBackend::X11Test => {
                 match crate::x11_input::X11TestSink::new(&cfg.x11_display, &cfg.x11_cmd_file) {

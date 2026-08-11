@@ -209,6 +209,93 @@ pub(crate) fn matrix_key(code: u16) -> Option<(&'static str, &'static str)> {
         .map(|(_, port, field)| (*port, *field))
 }
 
+/// SH_MAMESOCK_KEYMAP: a per-tile scancode -> (port, field) map, replacing the
+/// compiled-in IRIX matrix above — the one piece of the MAME input plane that
+/// was machine-specific rather than machine-generic. One row per key:
+/// `scancode-hex<TAB>port<TAB>field` (`#` comments, blank lines ignored);
+/// field names carry spaces, so the split is on the first two tabs only.
+/// Generated per machine by `scripts/dev/mame-keymap.py` from the ctlsock
+/// module's own KEYDUMP — never hand-guessed, same rule as the IRIX table.
+/// Env unset = the IRIX matrix, byte-identical behavior.
+pub(crate) struct KeyMap {
+    entries: Vec<(u16, String, String)>,
+}
+
+impl KeyMap {
+    /// A declared-but-broken keymap fails CLOSED and LOUD: an empty map that
+    /// rejects every key, never a silent fall back to the IRIX matrix — keys
+    /// landing on some other machine's fields is the failure this exists to
+    /// end, not one to reintroduce on a typo.
+    pub(crate) fn from_env() -> Option<Arc<KeyMap>> {
+        let path = std::env::var("SH_MAMESOCK_KEYMAP").ok()?;
+        if path.trim().is_empty() {
+            return None;
+        }
+        match Self::load(&path) {
+            Ok(map) => {
+                eprintln!(
+                    "[input-router] mame keymap: {} keys from {path}",
+                    map.entries.len()
+                );
+                Some(Arc::new(map))
+            }
+            Err(e) => {
+                eprintln!(
+                    "[input-router] SH_MAMESOCK_KEYMAP {path}: {e} — keyboard DISABLED \
+                     (fail-closed; fix the file, the IRIX matrix is not a fallback)"
+                );
+                Some(Arc::new(KeyMap {
+                    entries: Vec::new(),
+                }))
+            }
+        }
+    }
+
+    pub(crate) fn load(path: &str) -> Result<KeyMap, String> {
+        let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+        let mut entries: Vec<(u16, String, String)> = Vec::new();
+        for (n, raw) in text.lines().enumerate() {
+            let line = raw.trim_end();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            let mut it = line.splitn(3, '\t');
+            let (Some(code), Some(port), Some(field)) = (it.next(), it.next(), it.next()) else {
+                return Err(format!("line {}: want scancode<TAB>port<TAB>field", n + 1));
+            };
+            let code = u16::from_str_radix(code.trim_start_matches("0x"), 16)
+                .map_err(|_| format!("line {}: bad scancode {code:?}", n + 1))?;
+            if entries.iter().any(|(c, _, _)| *c == code) {
+                return Err(format!("line {}: duplicate scancode {code:#x}", n + 1));
+            }
+            if port.is_empty() || field.is_empty() {
+                return Err(format!("line {}: empty port or field", n + 1));
+            }
+            entries.push((code, port.to_string(), field.to_string()));
+        }
+        if entries.is_empty() {
+            return Err("no entries".into());
+        }
+        Ok(KeyMap { entries })
+    }
+
+    pub(crate) fn lookup(&self, code: u16) -> Option<(&str, &str)> {
+        self.entries
+            .iter()
+            .find(|(c, _, _)| *c == code)
+            .map(|(_, port, field)| (port.as_str(), field.as_str()))
+    }
+}
+
+/// The one lookup both MAME sinks route through: the tile's keymap when one
+/// is declared, the IRIX matrix otherwise.
+pub(crate) fn key_for(map: &Option<Arc<KeyMap>>, code: u16) -> Option<(&str, &str)> {
+    match map {
+        Some(m) => m.lookup(code),
+        None => matrix_key(code),
+    }
+}
+
 #[derive(Default)]
 struct PtrState {
     reckon: Reckoner,
@@ -221,11 +308,13 @@ pub struct MameCmdSink {
     /// dead-reckoned MOVEP deltas (rollback). Frozen at construction like every
     /// other sink's config; tests pass the mode explicitly and never touch env.
     abs_mode: bool,
+    /// Per-tile keymap (SH_MAMESOCK_KEYMAP); None = the IRIX matrix.
+    keymap: Option<Arc<KeyMap>>,
     st: Mutex<PtrState>,
 }
 
 impl MameCmdSink {
-    pub fn new(cmd_file: &str, abs_mode: bool) -> Arc<Self> {
+    pub fn new(cmd_file: &str, abs_mode: bool, keymap: Option<Arc<KeyMap>>) -> Arc<Self> {
         eprintln!(
             "[input-router] mamecmd sink cmd_file={cmd_file} mode={}",
             if abs_mode {
@@ -237,6 +326,7 @@ impl MameCmdSink {
         Arc::new(Self {
             cmd_file: cmd_file.to_string(),
             abs_mode,
+            keymap,
             st: Mutex::new(PtrState::default()),
         })
     }
@@ -329,10 +419,11 @@ impl RealtimeInputSink for MameCmdSink {
     /// IRIX generates its own auto-repeat from the held matrix bit instead of
     /// the browser's rate fighting the guest's.
     fn try_key(&self, event: KeyEvent) -> Result<AcceptedSeq, Reject> {
-        let Some((port, field)) = matrix_key(event.key) else {
+        let Some((port, field)) = key_for(&self.keymap, event.key) else {
             return Err(Reject::Unsupported);
         };
-        self.cmd(&format!("KEY {} {port} {field}", u8::from(event.down)))?;
+        let line = format!("KEY {} {port} {field}", u8::from(event.down));
+        self.cmd(&line)?;
         Ok(AcceptedSeq(event.seq))
     }
 
@@ -347,8 +438,9 @@ impl RealtimeInputSink for MameCmdSink {
 
 #[cfg(test)]
 mod tests {
-    use super::{matrix_key, MameCmdSink, KEY_MATRIX};
+    use super::{key_for, matrix_key, KeyMap, MameCmdSink, KEY_MATRIX};
     use crate::realtime_input::{KeyEvent, PointerAbs, RealtimeInputSink, Reject};
+    use std::sync::Arc;
 
     fn key(seq: u64, code: u16, down: bool) -> KeyEvent {
         KeyEvent {
@@ -382,7 +474,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("cmd");
         let _ = std::fs::remove_file(&path);
-        let sink = MameCmdSink::new(path.to_str().unwrap(), false);
+        let sink = MameCmdSink::new(path.to_str().unwrap(), false, None);
 
         sink.try_pointer_abs(ev(1, 100, 50, 0)).unwrap();
         sink.try_pointer_abs(ev(2, 140, 50, 1)).unwrap();
@@ -421,7 +513,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("cmd");
         let _ = std::fs::remove_file(&path);
-        let sink = MameCmdSink::new(path.to_str().unwrap(), false);
+        let sink = MameCmdSink::new(path.to_str().unwrap(), false, None);
 
         sink.try_pointer_abs(ev(1, 500, 500, 0)).unwrap();
         sink.try_pointer_abs(ev(2, 0, 500, 0)).unwrap(); // enter left edge
@@ -459,7 +551,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("cmd");
         let _ = std::fs::remove_file(&path);
-        let sink = MameCmdSink::new(path.to_str().unwrap(), true);
+        let sink = MameCmdSink::new(path.to_str().unwrap(), true, None);
 
         // Wire bit0=L, bit1=M, bit2=R. Press right, drag, release right.
         sink.try_pointer_abs(ev(1, 500, 500, 0)).unwrap();
@@ -503,7 +595,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("cmd");
         let _ = std::fs::remove_file(&path);
-        let sink = MameCmdSink::new(path.to_str().unwrap(), true);
+        let sink = MameCmdSink::new(path.to_str().unwrap(), true, None);
 
         sink.try_pointer_abs(ev(1, 100, 50, 0)).unwrap();
         sink.try_pointer_abs(ev(2, 140, 50, 1)).unwrap();
@@ -547,7 +639,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("cmd");
         let _ = std::fs::remove_file(&path);
-        let sink = MameCmdSink::new(path.to_str().unwrap(), true);
+        let sink = MameCmdSink::new(path.to_str().unwrap(), true, None);
 
         // Shift+'-' => '_'
         sink.try_key(key(1, 0x2a, true)).unwrap();
@@ -589,7 +681,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("cmd");
         let _ = std::fs::remove_file(&path);
-        let sink = MameCmdSink::new(path.to_str().unwrap(), true);
+        let sink = MameCmdSink::new(path.to_str().unwrap(), true, None);
         // Pause/Break (no single set1 code), the Korean/Japanese IME keys, and
         // anything the SPA could not resolve at all.
         for code in [0x00u16, 0x59, 0x70, 0x7b, 0xe011, 0xe05e] {
@@ -618,5 +710,53 @@ mod tests {
         assert_eq!(matrix_key(0x39), Some(("P2.4", "Space")));
         assert_eq!(matrix_key(0xe048), Some(("P2.4", "Cursor Up")));
         assert_eq!(matrix_key(0x52), Some(("P2.5", "Keypad 0")));
+    }
+
+    /// The per-tile keymap: loads, looks up, and REFUSES malformed input —
+    /// a broken declared keymap must never degrade to the IRIX matrix.
+    #[test]
+    fn keymap_loads_and_fails_closed() {
+        let dir = std::env::temp_dir().join(format!("keymap-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("st.keymap");
+        let p = path.to_str().unwrap();
+
+        std::fs::write(
+            &path,
+            "# ST\n0x10\t:keyboard:P0\tQ\n0xe048\t:keyboard:P4\tUp\n",
+        )
+        .unwrap();
+        let map = KeyMap::load(p).unwrap();
+        assert_eq!(map.lookup(0x10), Some((":keyboard:P0", "Q")));
+        assert_eq!(map.lookup(0xe048), Some((":keyboard:P4", "Up")));
+        assert_eq!(map.lookup(0x11), None);
+
+        for bad in [
+            "0x10\t:k\tQ\n0x10\t:k\tW\n", // duplicate scancode
+            "0x10 :k Q\n",                // spaces, not tabs
+            "zz\t:k\tQ\n",                // unparsable scancode
+            "0x10\t\tQ\n",                // empty port
+            "# only comments\n",          // no entries at all
+        ] {
+            std::fs::write(&path, bad).unwrap();
+            assert!(KeyMap::load(p).is_err(), "must refuse: {bad:?}");
+        }
+    }
+
+    /// `key_for` routes through the declared map when present — including its
+    /// misses — and only uses the IRIX matrix when no map is declared.
+    #[test]
+    fn key_for_prefers_the_declared_map() {
+        let dir = std::env::temp_dir().join(format!("keyfor-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("one.keymap");
+        std::fs::write(&path, "0x10\t:kbd:X\tSt Q\n").unwrap();
+        let map = Some(Arc::new(KeyMap::load(path.to_str().unwrap()).unwrap()));
+
+        assert_eq!(key_for(&map, 0x10), Some((":kbd:X", "St Q")));
+        // 0x39 is Space in the IRIX matrix; the declared map does not carry it
+        // and must NOT fall through.
+        assert_eq!(key_for(&map, 0x39), None);
+        assert_eq!(key_for(&None, 0x39), Some(("P2.4", "Space")));
     }
 }

@@ -57,7 +57,7 @@ use tokio::net::UnixStream;
 use tokio::sync::Notify;
 use tokio::time::Instant;
 
-use crate::mame_input::matrix_key;
+use crate::mame_input::{key_for, KeyMap};
 use crate::ptr_grid::{GridReckon, GridStep, PtrGrid};
 use crate::realtime_input::{
     AcceptedSeq, KeyEvent, PointerAbs, RealtimeInputSink, Reject, SinkHealth,
@@ -196,6 +196,8 @@ struct Shared {
     /// `SH_MAMESOCK_PTR_GRID`, frozen at construction. None = state targets in
     /// surface pixels, exactly as before this knob existed.
     grid: Option<PtrGrid>,
+    /// `SH_MAMESOCK_KEYMAP`, frozen at construction. None = the IRIX matrix.
+    keymap: Option<Arc<KeyMap>>,
 }
 
 pub struct MameSockSink {
@@ -203,7 +205,7 @@ pub struct MameSockSink {
 }
 
 impl MameSockSink {
-    pub fn new(path: String, grid: Option<PtrGrid>) -> Arc<Self> {
+    pub fn new(path: String, grid: Option<PtrGrid>, keymap: Option<Arc<KeyMap>>) -> Arc<Self> {
         match grid {
             Some(g) => eprintln!(
                 "[input-router] mamesock sink socket={path} count-grid {}x{}",
@@ -226,6 +228,7 @@ impl MameSockSink {
             counters: Counters::default(),
             closed: AtomicBool::new(false),
             grid,
+            keymap,
         });
         tokio::spawn(mamesock_task(path, shared.clone()));
         let log_shared = shared.clone();
@@ -383,7 +386,7 @@ impl RealtimeInputSink for MameSockSink {
     fn try_key(&self, event: KeyEvent) -> Result<AcceptedSeq, Reject> {
         // Unmapped scancode: rejected before touching any state, never folded
         // onto a neighbouring key (same rule as MameCmdSink).
-        let Some((port, field)) = matrix_key(event.key) else {
+        let Some((port, field)) = key_for(&self.shared.keymap, event.key) else {
             return Err(Reject::Unsupported);
         };
         let mut p = self.lock_pending()?;
@@ -744,7 +747,11 @@ mod tests {
         let log: Arc<Mutex<Vec<String>>> = Arc::default();
         spawn_module(listener, log.clone(), None);
 
-        let sink = MameSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string(), None);
+        let sink = MameSockSink::new(
+            dir.join("ctl.sock").to_str().unwrap().to_string(),
+            None,
+            None,
+        );
         wait_until("healthy after HELLO", || {
             sink.health() == SinkHealth::Healthy
         })
@@ -841,7 +848,11 @@ mod tests {
         // Drop connection 1 after the 4-line preamble + 1 move.
         spawn_module(listener, log.clone(), Some(5));
 
-        let sink = MameSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string(), None);
+        let sink = MameSockSink::new(
+            dir.join("ctl.sock").to_str().unwrap().to_string(),
+            None,
+            None,
+        );
         wait_until("healthy", || sink.health() == SinkHealth::Healthy).await;
         sink.try_pointer_abs(ev(1, 100, 50, 0)).unwrap();
         wait_until("first move on the wire", || log.lock().unwrap().len() >= 5).await;
@@ -893,7 +904,11 @@ mod tests {
         // on a 79 x 52 count grid.
         let grid = PtrGrid::parse("134,63,891,692,79,52");
         assert!(grid.is_some());
-        let sink = MameSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string(), grid);
+        let sink = MameSockSink::new(
+            dir.join("ctl.sock").to_str().unwrap().to_string(),
+            grid,
+            None,
+        );
         wait_until("healthy after HELLO", || {
             sink.health() == SinkHealth::Healthy
         })
