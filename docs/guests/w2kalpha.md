@@ -109,9 +109,17 @@ pump can never hold the ports.
   the prime suspect is wall-clock RPCC/interval-timer baselines not being
   re-anchored in `CAlphaCPU::RestoreState` — fix that, re-verify, and the
   tile can move to instant-resume reset.
-- **Idle auto-pause is OFF** (`SH_IDLE_PAUSE_SECS=0`) for the same clock-
-  discontinuity reason — SIGSTOP/SIGCONT would hand the guest a wall-clock
-  jump. Copy irix's SIGSTOP stanza only after the RPCC re-anchor fix.
+- **Idle auto-pause is ON** (2026-08-11): the daemon SIGSTOPs es40 (pid from
+  `mame.pid`, cmdline guard `assets/w2kalpha/es40`) after 60 s with no
+  session, SIGCONTs on the next visit; warmup 120 s covers the ~80 s cold
+  boot. Safe since fork commit `fc82f05` (`host_freeze_reanchor`): a
+  wall-clock gap ≥ 5 s at a cc sync point is recognized as a host-side freeze
+  and every guest-visible clock (RPCC, Cchip interval timer, TOY/RTC, ACPI PM
+  timer) re-anchors, so the guest resumes exactly where it stopped — the QMP
+  stop/cont semantics the QEMU tiles get. Before that commit a pause handed
+  the guest the whole gap as a clock jump (the reason this stanza was held
+  back at registration). The staged `assets/w2kalpha/es40` binary must be at
+  or after `fc82f05`.
 - Scratch clones: namespace EVERYTHING (dir, shm, socket, and the two serial
   ports — the production tile owns 21964/21965 via es40's listen bind).
 
