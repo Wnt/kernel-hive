@@ -83,7 +83,7 @@
       "SH_QMP": "/data/vms/streamhost/tiles/star/qmp.sock",
       "SH_PORT": "54138",
       "SH_FPS": "30",
-      "SH_ENCODER_PRESET": "veryfast",
+      "SH_ENCODER_PRESET": "ultrafast",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "rel",

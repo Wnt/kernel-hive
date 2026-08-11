@@ -87,7 +87,7 @@
       "SH_QMP": "/data/vms/streamhost/tiles/daybreak/qmp.sock",
       "SH_PORT": "54139",
       "SH_FPS": "60",
-      "SH_ENCODER_PRESET": "veryfast",
+      "SH_ENCODER_PRESET": "ultrafast",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "abs",
