@@ -88,13 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/alto/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/alto/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_IDLE_PAUSE_SECS": "60",
-      "SH_KEY_MIN_HOLD_MS": "66",
-      "SH_KEY_MIN_GAP_MS": "66",
-      "SH_FIXTURE_DESC": "Xerox Alto II XM (1973) at the Alto Executive, the machine's own command prompt, exactly as a cold boot leaves it and with nothing typed into it: the two banner lines \"-- XEROX Alto Executive/11 ----------- Date and Time Unknown - 1609 Pages --\" and \"--- OS Version 20/16 --- Alto 0#42# --- NoName --- Non-Prog.BFS ------------\" across the top, then \"// eventBooted\" and a waiting \">\" prompt. Faintly blue-white text on black, in the Alto's own proportional serif face, on a PORTRAIT 606x808 page display -- the only exhibit in the collection whose screen is taller than it is wide. ContrAlto 2 renders that into a 608-wide bitmap and the kiosk X root is 608x808 to match exactly, so there is no letterbox and no surround anywhere in the capture. The disk is the Non-Programmer's Disk, so BRAVO and DRAW are each one Executive command away and the SPA's alto on-screen keyboard sends both from a labelled button. Three-button mouse (RED/YELLOW/BLUE = host left/middle/right), absolute; keyboard paced at two Alto fields."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 243,
     "qemu": {

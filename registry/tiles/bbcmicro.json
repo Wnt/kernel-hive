@@ -92,13 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/bbcmicro/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/bbcmicro/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+:%3A,^:=,~:+,_:`,%3A:',*:\"",
-      "SH_FIXTURE_DESC": "Acorn BBC Micro Model B (1981) at its own untouched power-on screen: \"BBC Computer 32K / Acorn DFS / BASIC / >\" in white MODE 7 teletext on black, drawn fullscreen with aspect correction by a purpose-built MAME 0.289 `bbcb` on the bridge base's stock 1024x768 X root. Nothing is curated and nothing is typed. The machine is MAME's own default configuration — MOS 1.20, BBC BASIC II, and the Acorn 8271 disc interface with DNFS 1.20, which is what prints the \"Acorn DFS\" line. -artwork_crop removes the driver's LED strip so the exhibit is the picture and nothing else. CAPS LOCK is on at reset (the MOS switches it on), so unshifted letters arrive upper case, which is what BASIC's tokeniser needs; thirteen characters sit on different keys from a US PC and are translated by SH_KEY_MAP. Keyboard-only exhibit; no pointer device; SN76489 sound -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 232,
     "qemu": {

@@ -112,12 +112,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/amstradcpc/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/amstradcpc/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "40",
-      "SH_KEY_MIN_GAP_MS": "40",
-      "SH_FIXTURE_DESC": "Amstrad CPC 6128 Locomotive BASIC yellow-on-blue Ready prompt in Caprice32 (cap32); explicit key down/up keyboard path certified with PRINT, RETURN, and RUN; keyboard-only exhibit; AY-3-8912->ALSA->AC97. Keyboard pacing: SH_KEY_MIN_HOLD_MS=40 and SH_KEY_MIN_GAP_MS=40 hold each key and space successive keys by 2 emulated frames (the CPC's matrix is scanned by the PSG once per 50 Hz frame = 20 ms); without the gap, back-to-back typing never lets the machine sample the all-keys-up state and it reads one long chord, losing most of a typed line."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 219,
     "qemu": {

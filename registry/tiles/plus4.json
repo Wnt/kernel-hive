@@ -92,12 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/plus4/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/plus4/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_FIXTURE_DESC": "Commodore Plus/4 (PAL) at its own untouched power-on screen: \"COMMODORE BASIC V3.5 / 60671 BYTES FREE / 3-PLUS-1 ON KEY F1 / READY.\" in black on a white page inside a lavender border, drawn double-size (-TEDdsize) by VICE xplus4 on an 800x600 X root. Nothing is curated and nothing is typed: the ROM's own message is the exhibit's launcher, and F1+RETURN enters the built-in 3-plus-1 office suite. Module switching inside the suite needs C= + C (Tab under VICE's symbolic keymap) followed by tw/tc/tf, which the SPA's plus4 on-screen keyboard sends from one labelled button each. Keyboard-only exhibit; no pointer device; TED sound -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 222,
     "qemu": {

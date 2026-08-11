@@ -113,11 +113,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/reactos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/reactos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "GOLDEN_RESET_MODE": "loadvm",
-      "GOLDEN_SNAPSHOT": "golden",
-      "GOLDEN_SNAPSHOT_STORE": "/data/gallery-guests/ReactOS/reactos-golden.qcow2",
-      "GOLDEN_MANIFEST": "/data/gallery-guests/ReactOS/golden-manifest.json"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 106,
     "qemu": {

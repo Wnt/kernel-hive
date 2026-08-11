@@ -88,12 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/indyr4400/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/indyr4400/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "40",
-      "SH_KEY_MIN_GAP_MS": "40",
-      "SH_FIXTURE_DESC": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session: Toolchest docked upper-left, the camera/Start Demos/buttonfly/fsn icon column down the right edge), drawn by Iris inside a Debian 12 kiosk; X root 1280x1024 matched to the emulated framebuffer so capture is 1:1; PS/2 relative pointer (click to grab, Right-Ctrl to release); no audio; standalone network mode."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 239,
     "qemu": {

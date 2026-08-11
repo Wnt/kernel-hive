@@ -88,12 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/pdp11/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/pdp11/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "40",
-      "SH_KEY_MIN_GAP_MS": "40",
-      "SH_FIXTURE_DESC": "DEC PDP-11/70 (4 MB core, FP11) under Open SIMH, resting at 2.11BSD's own multiuser login prompt: the tail of the boot — \"Fast boot ... skipping disk checks\", \"Assuming non-networking system ...\", \"standard daemons: update cron accounting.\", the date, then \"2.11 BSD UNIX (pdp11) (console)\" and \"login:\" — in green phosphor on black, 80x24 at DejaVu Sans Mono 15 pt on a 1024x768 X root. LOG IN AS `root`, WITH NO PASSWORD: that is the one thing the screen cannot tell a visitor, so the placard and the SPA hint carry it. Then `uname -a` prints \"BSD pdp11 2.11 ... #19 ... /usr/src/sys/ZEKE\" and /usr/src holds the entire 2.11BSD kernel and userland source tree. Keyboard-only exhibit; no pointer device; silent (a console terminal has no audio)."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 227,
     "qemu": {

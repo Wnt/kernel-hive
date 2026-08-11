@@ -113,12 +113,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/helenos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/helenos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISK": "/data/vms/streamhost/tiles/helenos/golden.qcow2",
-      "SH_GOLDEN_RESET_CMD": "loadvm golden",
-      "SH_GOLDEN_MANIFEST": "/data/vms/streamhost/tiles/helenos/golden-manifest.json"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 99,
     "qemu": {

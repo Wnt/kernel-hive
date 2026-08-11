@@ -113,10 +113,7 @@
       "SH_AUDIO": "off",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/nt4/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nt4/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISKS": "nt4-golden.qcow2"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 89,
     "qemu": {

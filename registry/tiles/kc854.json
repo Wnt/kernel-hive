@@ -92,13 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/kc854/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/kc854/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_KEY_MAP": "W:w,w:W,A:a,a:A,\":@,-:=,=:+,Y:y,y:Y,E:e,e:E,S:s,s:S,^:[,%3A:-,*:_,X:x,x:X,T:t,t:T,F:f,f:F,P:p,p:P,@:),V:v,v:V,U:u,u:U,H:h,h:H,':&,O:o,o:O,):(,N:n,n:N,I:i,i:I,J:j,j:J,(:*,K:k,k:K,M:m,m:M,Z:z,z:Z,G:g,g:G,&:^,L:l,l:L,B:b,b:B,R:r,r:R,D:d,d:D,|:\",+:;,;:%3A,C:c,c:C,Q:q,q:Q",
-      "SH_FIXTURE_DESC": "KC 85/4 (VEB Mikroelektronik \"Wilhelm Pieck\" Mühlhausen, 1988) at its own untouched power-on screen: CAOS 4.2's command menu and prompt, drawn by MAME 0.289 kc85_4 (-bios caos42) fullscreen with aspect correction on a 1024x768 X root. Nothing is curated and nothing is typed — the operating system prints the list of things a visitor can type, which makes the machine's honest idle screen its own launcher. BASIC starts HC-BASIC from the second ROM; MENU brings the list back. Keyboard-only exhibit; no pointer device; KC speaker -> ALSA -> AC97. THE DRIVER IS `preliminary`, so a stock MAME would open it with a full-screen red \"THIS SYSTEM DOESN'T WORK\" panel that -skip_gameinfo does not suppress: the shipped binary carries mame-irix-skip-warnings.patch and /opt/kc854/ui.ini sets skip_warnings 1. If red ever appears in this fixture, the deployment has regressed."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 235,
     "qemu": {

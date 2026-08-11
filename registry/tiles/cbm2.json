@@ -88,12 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/cbm2/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/cbm2/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_FIXTURE_DESC": "Commodore CBM 610 (PAL, 1982) at its own untouched power-on screen: \"*** commodore basic 128, v4.0 ***\" and \"ready.\" with the block cursor beneath it, green on black at 80 columns, drawn by VICE xcbm2 -model 610 at NATIVE size (704x528 window, no -CRTCdsize) and centred by SDL on an 800x600 X root. This is the CBM-II / B-series business machine — a MOS 6509 bank-switching a megabyte, not the Commodore 128 of 1985, which merely took the same number. Nothing is typed: BASIC 128 v4.0 is the whole machine as sold with no disk attached, and the visitor types at the prompt through the SPA's on-screen keyboard. Keyboard-only exhibit; no pointer device; SID audio -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 226,
     "qemu": {

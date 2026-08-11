@@ -114,11 +114,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/redstar3/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/redstar3/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "\"Logged-in idle Red Star OS 3.0 Desktop; complete 1920x1080 menubar, wallpaper, and dock; absolute USB-tablet and keyboard ready\"",
-      "SH_BASE_BACKUP": "/data/gallery-guests/RedStar3/redstar3.qcow2.bak-pre-redstar3"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 121,
     "qemu": {

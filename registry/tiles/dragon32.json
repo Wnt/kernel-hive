@@ -92,13 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/dragon32/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/dragon32/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_KEY_MAP": "@:[,\":@,&:^,':&,(:*,):(,%3A:-,*:_,+:%3A,-:=,=:+",
-      "SH_FIXTURE_DESC": "Dragon 32 (PAL) at its own untouched power-on screen: \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\", dark green on the MC6847's bright green page, drawn fullscreen with aspect correction by MAME 0.289's dragon32 driver on a 1024x768 X root (the dark surround is the Dragon's own border, not letterboxing). The launcher empties the driver's `ext` slot with -ext \"\": with the default dragon_fdc cartridge the machine boots DRAGONDOS 1.0 instead, and -verifyroms actively demands the FDC ROM that produces that wrong screen. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; 6-bit DAC sound -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 233,
     "qemu": {

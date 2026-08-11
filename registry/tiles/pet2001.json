@@ -92,12 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/pet2001/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/pet2001/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_FIXTURE_DESC": "Commodore PET 2001 (1977) at its own untouched cold power-on screen: \"*** COMMODORE BASIC *** / 7167 BYTES FREE / READY.\" in blue-white on black, 40x25 characters drawn double-size (-CRTCdsize) by VICE xpet -model 2001 as a 768x532 SDL window on an 800x600 X root. VICE's model 2001 is the 1977 original and not a badge: RamSize=8, Crtc=0 (the machine predates the 6545 CRTC every later PET used), VideoSize=40, KeyboardType=4 (the chiclet graphics keyboard), palette 2001-blueish.vpl. Keyboard-only exhibit; no pointer device; PET CB2 sound -> ALSA -> AC97 (the 1977 machine shipped with no sound hardware at all, so this is silent in practice)."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 224,
     "qemu": {

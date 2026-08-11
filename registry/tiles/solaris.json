@@ -104,17 +104,11 @@
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_INPUT_BACKEND": "gallery-hid",
-      "SH_GHID_SOCKET": "/data/vms/streamhost/tiles/solaris/gallery-hid.sock",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/solaris/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/solaris/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISK": "solariscde-golden.qcow2",
-      "SH_GOLDEN_MANIFEST": "tiles/solaris/golden.json",
-      "SH_WARPD_ADDR": "127.0.0.1:57790"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 100,
     "qemu": {

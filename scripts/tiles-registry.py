@@ -70,6 +70,28 @@ def is_x11_runtime(row: dict[str, Any]) -> bool:
     return "x11" in row.get("runtime", {})
 
 
+def fixture_path(row: dict[str, Any]) -> Path | None:
+    """The tile's --env-append-file: the hand-written source of its append env keys."""
+    runtime = row.get("runtime", {})
+    source = runtime.get("x11") if is_x11_runtime(row) else runtime.get("qemu", {})
+    args = source.get("emitArgs", [])
+    if "--env-append-file" in args:
+        raw = args[args.index("--env-append-file") + 1]
+        return REPO / raw.replace("$T", "streamhost/tiles")
+    return None
+
+
+def parse_env_fixture(path: Path) -> OrderedDict[str, str]:
+    env: OrderedDict[str, str] = OrderedDict()
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        env[key.strip()] = value
+    return env
+
+
 def load() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     try:
         globals_doc = json.loads((REGISTRY / "registry-v1.json").read_text(), object_pairs_hook=OrderedDict)
@@ -82,6 +104,19 @@ def load() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         except json.JSONDecodeError as exc:
             raise RegistryError(f"{path.relative_to(REPO)}:{exc.lineno}: {exc.msg}") from exc
         row["_path"] = path
+        # The tile.env.fixture owns its keys; the registry entry owns the
+        # emitter-written keys. Everything downstream (validators, index.json)
+        # sees the merged view — the same env the emitter's append produces.
+        fixture = fixture_path(row)
+        if fixture is not None and fixture.is_file():
+            fixture_env = parse_env_fixture(fixture)
+            row["_fixtureEnv"] = fixture_env
+            runtime = row.setdefault("runtime", OrderedDict())
+            recorded = runtime.get("tileEnv", OrderedDict())
+            row["_recordedTileEnv"] = recorded
+            merged = OrderedDict(recorded)
+            merged.update(fixture_env)
+            runtime["tileEnv"] = merged
         rows.append(row)
     if not rows:
         raise RegistryError("registry/tiles contains no entries")
@@ -633,7 +668,10 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         raise RegistryError(f"cannot load tile JSON Schema: {exc}") from exc
     for row in rows:
         validate_json_schema(
-            {k: v for k, v in row.items() if k != "_path"}, schema, str(row["_path"].relative_to(REPO)), errors
+            {k: v for k, v in row.items() if not str(k).startswith("_")},
+            schema,
+            str(row["_path"].relative_to(REPO)),
+            errors,
         )
     validate_schema_shape(rows, errors)
     validate_listing(rows, errors)
@@ -841,6 +879,19 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             fail(errors, row, f"referenced path does not exist: {x11_launcher}")
         if not re.fullmatch(r"guest/[a-z0-9-]+", row.get("credentialsRef", "")):
             fail(errors, row, "credentialsRef must be an opaque guest/<id> reference")
+        declared_fixture = qemu.get("envFixture")
+        resolved_fixture = fixture_path(row)
+        if declared_fixture and (resolved_fixture is None or (REPO / declared_fixture) != resolved_fixture):
+            fail(errors, row, "runtime.qemu.envFixture disagrees with the emitArgs --env-append-file path")
+        overlap = sorted(set(row.get("_recordedTileEnv", {})) & set(row.get("_fixtureEnv", {})))
+        if overlap:
+            fail(
+                errors,
+                row,
+                f"runtime.tileEnv duplicates fixture-owned key(s) {overlap}: the tile's "
+                f"tile.env.fixture is the single source for the keys it defines — "
+                f"delete them from the registry entry",
+            )
     if set(by_id) != {p.stem for p in TILES.glob("*.json")}:
         errors.append("registry filename/id set mismatch")
     if errors:
@@ -1172,7 +1223,7 @@ def generated() -> OrderedDict[str, bytes]:
 
     public_rows = []
     for row in sorted(rows, key=lambda x: x["id"]):
-        clean = OrderedDict((k, v) for k, v in row.items() if k not in {"_path", "render"})
+        clean = OrderedDict((k, v) for k, v in row.items() if not str(k).startswith("_") and k != "render")
         public_rows.append(clean)
     index = OrderedDict(
         [

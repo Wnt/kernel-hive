@@ -111,10 +111,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/haiku/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/haiku/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "Clean Haiku desktop, focused Terminal (empty prompt, steady caret) as input-reactive surface; screensaver+DPMS off; clock hidden, ProcessController removed, cursor blink off (idle-deterministic)."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 107,
     "qemu": {

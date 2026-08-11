@@ -110,11 +110,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/serenityos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/serenityos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "GOLDEN_RESET_MODE": "restart",
-      "GOLDEN_RESET_CMD": "bash /data/vms/streamhost/tiles/serenityos/qemu-streamhost.sh",
-      "GOLDEN_DISK": "/data/gallery-guests/SerenityOS/_disk_image",
-      "GOLDEN_FIXTURE": "SerenityOS desktop; autostarted focused Terminal (anon@courage) with clean prompt and steady non-blinking block cursor; resource-graph applets removed; taskbar clock date-only; idle screen 100 percent static."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 102,
     "qemu": {

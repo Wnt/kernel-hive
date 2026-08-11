@@ -88,12 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/sinclairql/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/sinclairql/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "120",
-      "SH_KEY_MIN_GAP_MS": "120",
-      "SH_FIXTURE_DESC": "Sinclair QL (1984) in MAME's `ql` driver, resting where the machine itself stops: the 80-column MONITOR-mode SuperBASIC screen it draws once F1 is answered — window #2 a white page on the left, window #1 red on the right, the black command window along the bottom with nothing typed in it. 512x256 drawn at an exact 2x3 integer scale on the kiosk's 1024x768 X root, so every QL pixel is one identical block and the picture keeps the machine's 4:3 shape. The `F1...monitor / F2...TV` chooser that precedes it, and MAME's imperfect-dump warning before that (the QL's hal16l8.ic38 PLD has never been dumped anywhere), are both answered during the bake and never seen by a visitor; the chooser is the exhibit's poster image instead. Keyboard-only exhibit; no pointer device; QL beeper -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 236,
     "qemu": {

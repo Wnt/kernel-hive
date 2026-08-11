@@ -116,11 +116,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/win95/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win95/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISK": "win95-golden.qcow2",
-      "SH_GOLDEN_MANIFEST": "tiles/win95/golden.json"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 91,
     "qemu": {

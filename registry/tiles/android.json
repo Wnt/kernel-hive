@@ -115,12 +115,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/android/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/android/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_RESET_MONITOR": "/data/vms/streamhost/tiles/android/reset-hmp.sock",
-      "SH_FIXTURE_DESC": "\"Terminal Emulator shell prompt; Stay-awake on (no idle blank); static, keyboard+mouse reactive\"",
-      "SH_BASE_BACKUP": "/data/gallery-guests/Android/android.qcow2.bak-pre-golden"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 101,
     "qemu": {

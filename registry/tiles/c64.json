@@ -91,10 +91,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/c64/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/c64/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "C64 GEOS 2.0 deskTop with COMM 1351 active; browser absolute coordinates translated to tablet-free PS/2 REL (vmport=off); SID->ALSA->AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 214,
     "qemu": {

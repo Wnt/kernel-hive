@@ -38,7 +38,7 @@
     "transport": "streamhost",
     "udpPort": 54122,
     "fps": 30,
-    "audio": false,
+    "audio": true,
     "touch": false,
     "pointer": {
       "transport": "abs",
@@ -69,16 +69,10 @@
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
-      "SH_INPUT_BACKEND": "mamesock",
-      "SH_MAMECTL_SOCK": "/data/vms/streamhost/tiles/irix/ctl.sock",
-      "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/irix/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/irix/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "relaunch",
-      "SH_FIXTURE_DESC": "SGI Indy (MIPS R4600) IRIX 6.5 4Dwm Indigo Magic desktop in MAME indy_4610; xl24 24-bit, exact emulated framebuffer 1288x1024; SH_CAPTURE=shm (MAME -video none) + mamesock ioport input.",
-      "SH_IDLE_PAUSE_SECS": "0"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "x11": {
       "display": ":40",

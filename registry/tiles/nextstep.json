@@ -88,11 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/nextstep/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nextstep/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "NeXTcube (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) running NeXTSTEP 3.3 for m68k under the Previous emulator, resting on the Workspace the machine brings up for itself at login: grey workspace, the Workspace menu down the top left, the File Viewer showing the home directory, and the Dock along the right-hand edge with the recycler at the bottom. Nothing is curated: this is the desktop the machine brings up for itself, pixel-diffed back to that exact state after the one-time tablet-driver install the golden has to carry. 1120x832 MegaPixel display, pixel-exact on a 1120x832 X root. Pointer is ABSOLUTE: NeXTSTEP's own SummaGraphics tablet driver is attached inside the snapshot, so a commanded pixel is the pixel the NeXT arrow lands on; the guest draws that arrow itself.",
-      "SH_IDLE_PAUSE_SECS": "0"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 237,
     "qemu": {

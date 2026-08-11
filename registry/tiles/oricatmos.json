@@ -92,12 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/oricatmos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/oricatmos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_FIXTURE_DESC": "Oric Atmos (1984) at its own untouched power-on screen: \"ORIC EXTENDED BASIC V1.1 / (c) 1983 TANGERINE / 37631 BYTES FREE / Ready\" in black on a white page, with the machine's own CAPS marker in the top-right corner, drawn fullscreen with aspect correction by MAME 0.289's `orica` driver on an 800x600 X root — 4:3, the shape the Atmos drew on a television, and measured 1.6x cheaper to blit than 1024x768 on this box. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; AY-3-8912 sound -> ALSA -> AC97. The interaction is the registry demoProgram, a colour-and-sound listing in Oric Extended BASIC that the SPA types and the visitor runs."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 234,
     "qemu": {

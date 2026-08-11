@@ -92,12 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/cbm8032/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/cbm8032/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_FIXTURE_DESC": "Commodore CBM 8032 (1980) at its own untouched power-on screen: \"*** commodore basic 4.0 *** / 31743 bytes free / ready.\" in green on black with a solid block cursor, 80 columns wide, drawn double-size (-CRTCdsize) by VICE xpet on a 1600x1200 X root — the tightest advertised mode that contains the 1408x1064 SDL window, and the 4:3 shape of the machine's own 12-inch monitor. No colour, no sprites and no sound generator: the 8032 had none. Keyboard-only exhibit; no pointer device. The interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns, typed by the SPA and started by the visitor's own RETURN."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 225,
     "qemu": {

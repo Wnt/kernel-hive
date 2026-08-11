@@ -92,13 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/armeval/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/armeval/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+:%3A,^:=,~:+,_:`,%3A:',*:\"",
-      "SH_FIXTURE_DESC": "Acorn ARM Evaluation System (1986) — the first ARM product ever sold — sitting at the prompt of ARM BBC Basic V version 1.00, running ON the ARM second processor. The screen reads \"ARM Second Processor 4096K / Acorn ADFS / BASIC\", then the two supervisor lines that got it there, \"A* *LIB $\" and \"A* AB\", then the ARM BASIC banner and a \">\" prompt. Those two A* lines are BAKED INTO the fixture, not typed by a visitor: the board has no operating system of its own, the language comes off Disc 3 of the ARM Evaluation System floppy set as $.AB, and the ADFS library is \"Unset\" on a cold boot so *LIB $ is required before AB resolves at all (both AB and *AB answer \"No directory (169)\" without it). They are left visible because they ARE the exhibit — a 1986 co-processor loading its language off a floppy while the 6502 host is demoted to a terminal and a disc controller. Drawn by the same purpose-built MAME 0.289 `bbcb` the bbcmicro tile ships, with `-tube arm`, the Acorn 1770 disc interface (the ADFS .adl discs are double density; the 8271 the bbcmicro tile ships cannot read them) and Acorn ADFS 1.30 in sideways socket 3 — socket 1 kills the Tube outright and the banner falls back to a plain \"BBC Computer 32K\", i.e. a bbcmicro duplicate. Fullscreen with aspect correction on an 800x600 X root; -artwork_crop removes the driver's keyboard-LED strip. The whole frame contains exactly three colours: black, white, and the pure #0000FF of the reverse-video A* supervisor field. CAPS LOCK is on at reset, so unshifted letters arrive upper case, which is what BASIC's tokeniser needs. Keyboard-only exhibit; no pointer device; sound -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 238,
     "qemu": {

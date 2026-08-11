@@ -112,11 +112,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/templeos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/templeos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_STATE_DISK": "/data/vms/streamhost/tiles/templeos/state.qcow2",
-      "SH_FIXTURE_DESC": "clean-templeos-holyc-prompt"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 105,
     "qemu": {

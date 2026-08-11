@@ -92,12 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/zxspectrum/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/zxspectrum/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "200",
-      "SH_KEY_MIN_GAP_MS": "200",
-      "SH_FIXTURE_DESC": "Sinclair ZX Spectrum 48K at its own untouched power-on screen: the whole 352x296 raster — border included — in the machine's non-bright white, with one line of black text, \"© 1982 Sinclair Research Ltd\", along the bottom. Drawn by MAME 0.251's `spectrum` driver fullscreen with -keepaspect on the bridge base's stock 1024x768 X root, which the Spectrum's 4:3 picture fills exactly. Nothing is curated and nothing is typed; the copyright line the ROM prints is also the condition under which Amstrad permits the ROM to be emulated at all. Keyboard-only exhibit; no pointer device; 1-bit beeper -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 230,
     "qemu": {

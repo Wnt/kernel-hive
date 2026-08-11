@@ -111,11 +111,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/toaruos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/toaruos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "restart",
-      "SH_GOLDEN_MANIFEST": "/data/vms/streamhost/tiles/toaruos/golden.json",
-      "SH_GOLDEN_ISO": "/data/gallery-guests/toaruos/image.iso",
-      "SH_GOLDEN_ISO_BACKUP": "/data/gallery-guests/toaruos/image.iso.golden-backup-1783370359"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 98,
     "qemu": {

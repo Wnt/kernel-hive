@@ -115,13 +115,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/postmarketos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/postmarketos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "GOLDEN_RESET_MODE": "loadvm",
-      "GOLDEN_SNAPSHOT": "golden",
-      "GOLDEN_DISK": "/data/gallery-guests/postmarketOS/pmos-phosh.qcow2",
-      "GOLDEN_VARSTORE": "/data/vms/streamhost/tiles/postmarketos/OVMF_VARS.qcow2",
-      "GOLDEN_FIXTURE": "phosh desktop, GNOME Console maximized + focused ash prompt (steady caret); no-blank/no-lock/no-suspend, OSK off, animations off, tour disabled; idle byte-stable",
-      "GOLDEN_RESET_CMD": "qmp human-monitor-command \"loadvm golden\"  (cold launch auto-adds -loadvm golden)"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "privateEnvRefs": {
       "GOLDEN_LOGIN_PIN": "guest/postmarketos#golden_login_pin"

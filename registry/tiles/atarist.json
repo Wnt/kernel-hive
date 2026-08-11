@@ -96,10 +96,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/atarist/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/atarist/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "Atari ST EmuTOS GEM desktop (menu bar, DISK A/B, TRASH, PRINTER) in Hatari, mono ST-high; YM2149->ALSA->AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 216,
     "qemu": {

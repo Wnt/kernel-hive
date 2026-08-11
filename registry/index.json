@@ -300,10 +300,10 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_IDLE_PAUSE_SECS": "60",
+          "SH_FIXTURE_DESC": "Xerox Alto II XM (1973) at the Alto Executive, the machine's own command prompt, exactly as a cold boot leaves it and with nothing typed into it: the two banner lines \"-- XEROX Alto Executive/11 ----------- Date and Time Unknown - 1609 Pages --\" and \"--- OS Version 20/16 --- Alto 0#42# --- NoName --- Non-Prog.BFS ------------\" across the top, then \"// eventBooted\" and a waiting \">\" prompt. Faintly blue-white text on black, in the Alto's own proportional serif face, on a PORTRAIT 606x808 page display — the only exhibit in the collection whose screen is taller than it is wide. ContrAlto 2 renders that into a 608-wide bitmap and the kiosk X root is 608x808 to match exactly, so there is no letterbox and no surround anywhere in the capture. The disk is the Non-Programmer's Disk, so BRAVO and DRAW are each one Executive command away and the SPA's alto on-screen keyboard sends both from a labelled button. Three-button mouse (RED/YELLOW/BLUE = host left/middle/right), absolute; keyboard paced at two Alto fields.",
           "SH_KEY_MIN_HOLD_MS": "66",
           "SH_KEY_MIN_GAP_MS": "66",
-          "SH_FIXTURE_DESC": "Xerox Alto II XM (1973) at the Alto Executive, the machine's own command prompt, exactly as a cold boot leaves it and with nothing typed into it: the two banner lines \"-- XEROX Alto Executive/11 ----------- Date and Time Unknown - 1609 Pages --\" and \"--- OS Version 20/16 --- Alto 0#42# --- NoName --- Non-Prog.BFS ------------\" across the top, then \"// eventBooted\" and a waiting \">\" prompt. Faintly blue-white text on black, in the Alto's own proportional serif face, on a PORTRAIT 606x808 page display -- the only exhibit in the collection whose screen is taller than it is wide. ContrAlto 2 renders that into a 608-wide bitmap and the kiosk X root is 608x808 to match exactly, so there is no letterbox and no surround anywhere in the capture. The disk is the Non-Programmer's Disk, so BRAVO and DRAW are each one Executive command away and the SPA's alto on-screen keyboard sends both from a labelled button. Three-button mouse (RED/YELLOW/BLUE = host left/middle/right), absolute; keyboard paced at two Alto fields."
+          "SH_IDLE_PAUSE_SECS": "60"
         },
         "vmidLabel": 243,
         "qemu": {
@@ -1411,10 +1411,10 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Acorn ARM Evaluation System (1986) — the first ARM product ever sold — sitting at the prompt of ARM BBC Basic V version 1.00, running ON the ARM second processor. The screen reads \"ARM Second Processor 4096K / Acorn ADFS / BASIC\", then the two supervisor lines that got it there, \"A* *LIB $\" and \"A* AB\", then the ARM BASIC banner and a \">\" prompt. Those two A* lines are BAKED INTO the fixture, not typed by a visitor: the board has no operating system of its own, the language comes off Disc 3 of the ARM Evaluation System floppy set as $.AB, and the ADFS library is \"Unset\" on a cold boot so *LIB $ is required before AB resolves at all (both AB and *AB answer \"No directory (169)\" without it). They are left visible because they ARE the exhibit — a 1986 co-processor loading its language off a floppy while the 6502 host is demoted to a terminal and a disc controller. Drawn by the same purpose-built MAME 0.289 `bbcb` the bbcmicro tile ships, with `-tube arm`, the Acorn 1770 disc interface (the ADFS .adl discs are double density; the 8271 the bbcmicro tile ships cannot read them) and Acorn ADFS 1.30 in sideways socket 3 — socket 1 kills the Tube outright and the banner falls back to a plain \"BBC Computer 32K\", i.e. a bbcmicro duplicate. Fullscreen with aspect correction on an 800x600 X root; -artwork_crop removes the driver's keyboard-LED strip. The whole frame contains exactly three colours: black, white, and the pure #0000FF of the reverse-video A* supervisor field. CAPS LOCK is on at reset, so unshifted letters arrive upper case, which is what BASIC's tokeniser needs. Keyboard-only exhibit; no pointer device; sound -> ALSA -> AC97.",
           "SH_KEY_MIN_HOLD_MS": "80",
           "SH_KEY_MIN_GAP_MS": "80",
-          "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+:%3A,^:=,~:+,_:`,%3A:',*:\"",
-          "SH_FIXTURE_DESC": "Acorn ARM Evaluation System (1986) — the first ARM product ever sold — sitting at the prompt of ARM BBC Basic V version 1.00, running ON the ARM second processor. The screen reads \"ARM Second Processor 4096K / Acorn ADFS / BASIC\", then the two supervisor lines that got it there, \"A* *LIB $\" and \"A* AB\", then the ARM BASIC banner and a \">\" prompt. Those two A* lines are BAKED INTO the fixture, not typed by a visitor: the board has no operating system of its own, the language comes off Disc 3 of the ARM Evaluation System floppy set as $.AB, and the ADFS library is \"Unset\" on a cold boot so *LIB $ is required before AB resolves at all (both AB and *AB answer \"No directory (169)\" without it). They are left visible because they ARE the exhibit — a 1986 co-processor loading its language off a floppy while the 6502 host is demoted to a terminal and a disc controller. Drawn by the same purpose-built MAME 0.289 `bbcb` the bbcmicro tile ships, with `-tube arm`, the Acorn 1770 disc interface (the ADFS .adl discs are double density; the 8271 the bbcmicro tile ships cannot read them) and Acorn ADFS 1.30 in sideways socket 3 — socket 1 kills the Tube outright and the banner falls back to a plain \"BBC Computer 32K\", i.e. a bbcmicro duplicate. Fullscreen with aspect correction on an 800x600 X root; -artwork_crop removes the driver's keyboard-LED strip. The whole frame contains exactly three colours: black, white, and the pure #0000FF of the reverse-video A* supervisor field. CAPS LOCK is on at reset, so unshifted letters arrive upper case, which is what BASIC's tokeniser needs. Keyboard-only exhibit; no pointer device; sound -> ALSA -> AC97."
+          "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+:%3A,^:=,~:+,_:`,%3A:',*:\""
         },
         "vmidLabel": 238,
         "qemu": {
@@ -2098,10 +2098,10 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Acorn BBC Micro Model B (1981) at its own untouched power-on screen: \"BBC Computer 32K / Acorn DFS / BASIC / >\" in white MODE 7 teletext on black, drawn fullscreen with aspect correction by a purpose-built MAME 0.289 `bbcb` on the bridge base's stock 1024x768 X root. Nothing is curated and nothing is typed. The machine is MAME's own default configuration — MOS 1.20, BBC BASIC II, and the Acorn 8271 disc interface with DNFS 1.20, which is what prints the \"Acorn DFS\" line. -artwork_crop removes the driver's LED strip so the exhibit is the picture and nothing else. CAPS LOCK is on at reset (the MOS switches it on), so unshifted letters arrive upper case, which is what BASIC's tokeniser needs; thirteen characters sit on different keys from a US PC and are translated by SH_KEY_MAP. Keyboard-only exhibit; no pointer device; SN76489 sound -> ALSA -> AC97.",
           "SH_KEY_MIN_HOLD_MS": "80",
           "SH_KEY_MIN_GAP_MS": "80",
-          "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+:%3A,^:=,~:+,_:`,%3A:',*:\"",
-          "SH_FIXTURE_DESC": "Acorn BBC Micro Model B (1981) at its own untouched power-on screen: \"BBC Computer 32K / Acorn DFS / BASIC / >\" in white MODE 7 teletext on black, drawn fullscreen with aspect correction by a purpose-built MAME 0.289 `bbcb` on the bridge base's stock 1024x768 X root. Nothing is curated and nothing is typed. The machine is MAME's own default configuration — MOS 1.20, BBC BASIC II, and the Acorn 8271 disc interface with DNFS 1.20, which is what prints the \"Acorn DFS\" line. -artwork_crop removes the driver's LED strip so the exhibit is the picture and nothing else. CAPS LOCK is on at reset (the MOS switches it on), so unshifted letters arrive upper case, which is what BASIC's tokeniser needs; thirteen characters sit on different keys from a US PC and are translated by SH_KEY_MAP. Keyboard-only exhibit; no pointer device; SN76489 sound -> ALSA -> AC97."
+          "SH_KEY_MAP": "\":@,':&,&:^,(:*,):(,=:_,@:\\,+:%3A,^:=,~:+,_:`,%3A:',*:\""
         },
         "vmidLabel": 232,
         "qemu": {
@@ -2348,9 +2348,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Commodore 128 (PAL) at its own untouched 80-column power-on screen: \"COMMODORE BASIC V7.0 122365 BYTES FREE / (C)1986 COMMODORE ELECTRONICS, LTD. / (C)1977 MICROSOFT CORP. / ALL RIGHTS RESERVED / READY.\" in the VDC's cyan on black, drawn 1:1 (no -VDCdsize) by VICE x128 in a 789x576 window that fills an 800x600 X root. The VDC is a SECOND canvas in VICE's SDL2 build and -80col is what makes it the visible one; -dualwindow never shows it under a kiosk with no window manager. The CP/M 3.0 system disk is in drive 8 but deliberately NOT on the command line - the KERNAL boots any CP/M disk it finds at reset, so the kiosk attaches it ~10 s later over VICE's guest-local text monitor. The visitor reaches CP/M by typing BOOT, which the SPA's c128 on-screen keyboard sends from one labelled button. No C64 button: GO64 works but paints the VIC-II, and with -80col the visible VDC canvas freezes. Keyboard-only exhibit; no pointer device; SID sound -> ALSA -> AC97.",
           "SH_KEY_MIN_HOLD_MS": "80",
-          "SH_KEY_MIN_GAP_MS": "80",
-          "SH_FIXTURE_DESC": "Commodore 128 (PAL) at its own untouched 80-column power-on screen: \"COMMODORE BASIC V7.0 122365 BYTES FREE / (C)1986 COMMODORE ELECTRONICS, LTD. / (C)1977 MICROSOFT CORP. / ALL RIGHTS RESERVED / READY.\" in the VDC's cyan on black, drawn 1:1 (no -VDCdsize) by VICE x128 in a 789x576 window that fills an 800x600 X root. The VDC is a SECOND canvas in VICE's SDL2 build and -80col is what makes it the visible one; -dualwindow never shows it under a kiosk with no window manager. The CP/M 3.0 system disk is in drive 8 but deliberately NOT on the command line - the KERNAL boots any CP/M disk it finds at reset, so the kiosk attaches it ~10 s later over VICE's guest-local text monitor. The visitor reaches CP/M by typing BOOT, which the SPA's c128 on-screen keyboard sends from one labelled button. No C64 button: GO64 works but paints the VIC-II, and with -80col the visible VDC canvas freezes. Keyboard-only exhibit; no pointer device; SID sound -> ALSA -> AC97."
+          "SH_KEY_MIN_GAP_MS": "80"
         },
         "vmidLabel": 223,
         "qemu": {
@@ -2774,9 +2774,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Commodore CBM 610 (PAL, 1982) at its own untouched power-on screen: \"*** commodore basic 128, v4.0 ***\" and \"ready.\" with the block cursor beneath it, green on black at 80 columns, drawn by VICE xcbm2 -model 610 at NATIVE size (704x528 window, no -CRTCdsize) and centred by SDL on an 800x600 X root. This is the CBM-II / B-series business machine — a MOS 6509 bank-switching a megabyte, not the Commodore 128 of 1985, which merely took the same number. Nothing is typed: BASIC 128 v4.0 is the whole machine as sold with no disk attached, and the visitor types at the prompt through the SPA's on-screen keyboard. Keyboard-only exhibit; no pointer device; SID audio -> ALSA -> AC97.",
           "SH_KEY_MIN_HOLD_MS": "80",
-          "SH_KEY_MIN_GAP_MS": "80",
-          "SH_FIXTURE_DESC": "Commodore CBM 610 (PAL, 1982) at its own untouched power-on screen: \"*** commodore basic 128, v4.0 ***\" and \"ready.\" with the block cursor beneath it, green on black at 80 columns, drawn by VICE xcbm2 -model 610 at NATIVE size (704x528 window, no -CRTCdsize) and centred by SDL on an 800x600 X root. This is the CBM-II / B-series business machine — a MOS 6509 bank-switching a megabyte, not the Commodore 128 of 1985, which merely took the same number. Nothing is typed: BASIC 128 v4.0 is the whole machine as sold with no disk attached, and the visitor types at the prompt through the SPA's on-screen keyboard. Keyboard-only exhibit; no pointer device; SID audio -> ALSA -> AC97."
+          "SH_KEY_MIN_GAP_MS": "80"
         },
         "vmidLabel": 226,
         "qemu": {
@@ -2989,9 +2989,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Commodore CBM 8032 (1980) at its own untouched power-on screen: \"*** commodore basic 4.0 *** / 31743 bytes free / ready.\" in green on black with a solid block cursor, 80 columns wide, drawn double-size (-CRTCdsize) by VICE xpet on a 1600x1200 X root — the tightest advertised mode that contains the 1408x1064 SDL window, and the 4:3 shape of the machine's own 12-inch monitor. No colour, no sprites and no sound generator: the 8032 had none. Keyboard-only exhibit; no pointer device. The interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns, typed by the SPA and started by the visitor's own RETURN.",
           "SH_KEY_MIN_HOLD_MS": "80",
-          "SH_KEY_MIN_GAP_MS": "80",
-          "SH_FIXTURE_DESC": "Commodore CBM 8032 (1980) at its own untouched power-on screen: \"*** commodore basic 4.0 *** / 31743 bytes free / ready.\" in green on black with a solid block cursor, 80 columns wide, drawn double-size (-CRTCdsize) by VICE xpet on a 1600x1200 X root — the tightest advertised mode that contains the 1408x1064 SDL window, and the 4:3 shape of the machine's own 12-inch monitor. No colour, no sprites and no sound generator: the 8032 had none. Keyboard-only exhibit; no pointer device. The interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns, typed by the SPA and started by the visitor's own RETURN."
+          "SH_KEY_MIN_GAP_MS": "80"
         },
         "vmidLabel": 225,
         "qemu": {
@@ -3646,10 +3646,10 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Dragon 32 (PAL) at its own untouched power-on screen: \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\", dark green on the MC6847's bright green page, drawn fullscreen with aspect correction by MAME 0.289's dragon32 driver on a 1024x768 X root (the dark surround is the Dragon's own border, not letterboxing). The launcher empties the driver's `ext` slot with -ext \"\": with the default dragon_fdc cartridge the machine boots DRAGONDOS 1.0 instead, and -verifyroms actively demands the FDC ROM that produces that wrong screen. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; 6-bit DAC sound -> ALSA -> AC97.",
           "SH_KEY_MIN_HOLD_MS": "80",
           "SH_KEY_MIN_GAP_MS": "80",
-          "SH_KEY_MAP": "@:[,\":@,&:^,':&,(:*,):(,%3A:-,*:_,+:%3A,-:=,=:+",
-          "SH_FIXTURE_DESC": "Dragon 32 (PAL) at its own untouched power-on screen: \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\", dark green on the MC6847's bright green page, drawn fullscreen with aspect correction by MAME 0.289's dragon32 driver on a 1024x768 X root (the dark surround is the Dragon's own border, not letterboxing). The launcher empties the driver's `ext` slot with -ext \"\": with the default dragon_fdc cartridge the machine boots DRAGONDOS 1.0 instead, and -verifyroms actively demands the FDC ROM that produces that wrong screen. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; 6-bit DAC sound -> ALSA -> AC97."
+          "SH_KEY_MAP": "@:[,\":@,&:^,':&,(:*,):(,%3A:-,*:_,+:%3A,-:=,=:+"
         },
         "vmidLabel": 233,
         "qemu": {
@@ -4104,8 +4104,8 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_IDLE_PAUSE_SECS": "60",
-          "SH_FIXTURE_DESC": "DEC GT40 (1973) at the first seconds of a fresh lunar descent: the LEM in the upper left with its descent engine firing, four telemetry readouts across the top (HEIGHT ~17000-19000 feet, DISTANCE ~-15000 to -21000, VER VEL ~-490, HOR VEL ~880 — the exact digits differ by a second or two of flight from bake to bake), the 75% throttle bar and the two pairs of rotation arrows down the right edge, the twelve-item telemetry menu (HEIGHT, ALTITUDE, DISTANCE, FUEL LEFT, WEIGHT, THRUST, ANGLE, VER VEL, HOR VEL, VER ACC, HOR ACC, SECONDS) under them, and the mountainous lunar horizon across the bottom — green vectors on black, drawn by Open SIMH's VT11 at crt=vr17 scale=1 hspace=narrow in a 1024x1024 SDL window centred on a 1280x1024 X root. The exhibit is self-sustaining: the LEM falls for about two minutes, crashes, and the program restarts itself, a 135 s loop. LIGHT-PEN exhibit: the menu, the rotation arrows and the throttle bar are all selected by pointing; there is no keyboard input of any kind."
+          "SH_FIXTURE_DESC": "DEC GT40 (1973) at the first seconds of a fresh lunar descent: the LEM in the upper left with its descent engine firing, four telemetry readouts across the top (HEIGHT ~17000-19000 feet, DISTANCE ~-15000 to -21000, VER VEL ~-490, HOR VEL ~880 — the exact digits differ by a second or two of flight from bake to bake), the 75% throttle bar and the two pairs of rotation arrows down the right edge, the twelve-item telemetry menu (HEIGHT, ALTITUDE, DISTANCE, FUEL LEFT, WEIGHT, THRUST, ANGLE, VER VEL, HOR VEL, VER ACC, HOR ACC, SECONDS) under them, and the mountainous lunar horizon across the bottom — green vectors on black, drawn by Open SIMH's VT11 at crt=vr17 scale=1 hspace=narrow in a 1024x1024 SDL window centred on a 1280x1024 X root. The exhibit is self-sustaining: the LEM falls for about two minutes, crashes, and the program restarts itself, a 135 s loop. LIGHT-PEN exhibit: the menu, the rotation arrows and the throttle bar are all selected by pointing; there is no keyboard input of any kind.",
+          "SH_IDLE_PAUSE_SECS": "60"
         },
         "vmidLabel": 228,
         "qemu": {
@@ -4822,9 +4822,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session: Toolchest docked upper-left, the camera/Start Demos/buttonfly/fsn icon column down the right edge), drawn by Iris inside a Debian 12 kiosk; X root 1280x1024 matched to the emulated framebuffer so capture is 1:1; PS/2 relative pointer (click to grab, Right-Ctrl to release); no audio; standalone network mode.",
           "SH_KEY_MIN_HOLD_MS": "40",
-          "SH_KEY_MIN_GAP_MS": "40",
-          "SH_FIXTURE_DESC": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session: Toolchest docked upper-left, the camera/Start Demos/buttonfly/fsn icon column down the right edge), drawn by Iris inside a Debian 12 kiosk; X root 1280x1024 matched to the emulated framebuffer so capture is 1:1; PS/2 relative pointer (click to grab, Right-Ctrl to release); no audio; standalone network mode."
+          "SH_KEY_MIN_GAP_MS": "40"
         },
         "vmidLabel": 239,
         "qemu": {
@@ -4978,7 +4978,7 @@
         "transport": "streamhost",
         "udpPort": 54122,
         "fps": 30,
-        "audio": false,
+        "audio": true,
         "touch": false,
         "pointer": {
           "transport": "abs",
@@ -5009,16 +5009,34 @@
           "SH_FPS": "30",
           "SH_HOST_IP": "192.0.2.10",
           "SH_ADVERTISE_HOST": "192.0.2.10",
-          "SH_INPUT_BACKEND": "mamesock",
-          "SH_MAMECTL_SOCK": "/data/vms/streamhost/tiles/irix/ctl.sock",
-          "SH_AUDIO": "off",
           "SH_AUDIO_BITRATE": "96000",
           "SH_HASH_FILE": "/data/vms/streamhost/tiles/irix/cert_hash_b64.txt",
           "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/irix/signaling.json",
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "relaunch",
           "SH_FIXTURE_DESC": "SGI Indy (MIPS R4600) IRIX 6.5 4Dwm Indigo Magic desktop in MAME indy_4610; xl24 24-bit, exact emulated framebuffer 1288x1024; SH_CAPTURE=shm (MAME -video none) + mamesock ioport input.",
-          "SH_IDLE_PAUSE_SECS": "0"
+          "IRIX_CAPTURE": "shm",
+          "SH_INPUT_BACKEND": "mamesock",
+          "SH_MAMECTL_SOCK": "/data/vms/streamhost/tiles/irix/ctl.sock",
+          "MAME_CTL_DEADBAND": "1",
+          "MAME_CTL_SWAP_ITEMS": ":vc2/0/m_cs_seq,:vc2/0/m_cs_dx,:vc2/0/m_cs_dy",
+          "IRIX_GOLDEN": "/data/vms/streamhost/assets/irix/irix65-apps-v9.chd",
+          "IRIX_STATE": "golden",
+          "SH_IDLE_PAUSE_SECS": "60",
+          "SH_IDLE_PAUSE_PIDFILE": "/data/vms/streamhost/tiles/irix/mame.pid",
+          "SH_IDLE_PAUSE_PROC_MATCH": "indy_4610",
+          "SH_IDLE_PAUSE_WARMUP_SECS": "0",
+          "IRIX_START_PAUSED": "on",
+          "IRIX_CPUS": "2,10",
+          "IRIX_NET": "on",
+          "IRIX_TAP_IF": "irixtap0",
+          "IRIX_TAP_HOST_CIDR": "172.31.20.1/30",
+          "IRIX_TAP_GUEST_IP": "172.31.20.2",
+          "IRIX_NET_EGRESS": "on",
+          "IRIX_AUDIO": "on",
+          "SH_AUDIO": "on",
+          "SH_AUDIO_SOURCE": "fifo",
+          "SH_AUDIO_FIFO": "/data/vms/streamhost/tiles/irix/audio.fifo"
         },
         "x11": {
           "display": ":40",
@@ -5197,10 +5215,10 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "KC 85/4 (VEB Mikroelektronik \"Wilhelm Pieck\" Mühlhausen, 1988) at its own untouched power-on screen: CAOS 4.2's command menu and prompt, drawn by MAME 0.289 kc85_4 (-bios caos42) fullscreen with aspect correction on a 1024x768 X root. Nothing is curated and nothing is typed — the operating system prints the list of things a visitor can type, which makes the machine's honest idle screen its own launcher. BASIC starts HC-BASIC from the second ROM; MENU brings the list back. Keyboard-only exhibit; no pointer device; KC speaker -> ALSA -> AC97. THE DRIVER IS `preliminary`, so a stock MAME would open it with a full-screen red \"THIS SYSTEM DOESN'T WORK\" panel that -skip_gameinfo does not suppress: the shipped binary carries mame-irix-skip-warnings.patch and /opt/kc854/ui.ini sets skip_warnings 1. If red ever appears in this fixture, the deployment has regressed.",
           "SH_KEY_MIN_HOLD_MS": "80",
           "SH_KEY_MIN_GAP_MS": "80",
-          "SH_KEY_MAP": "W:w,w:W,A:a,a:A,\":@,-:=,=:+,Y:y,y:Y,E:e,e:E,S:s,s:S,^:[,%3A:-,*:_,X:x,x:X,T:t,t:T,F:f,f:F,P:p,p:P,@:),V:v,v:V,U:u,u:U,H:h,h:H,':&,O:o,o:O,):(,N:n,n:N,I:i,i:I,J:j,j:J,(:*,K:k,k:K,M:m,m:M,Z:z,z:Z,G:g,g:G,&:^,L:l,l:L,B:b,b:B,R:r,r:R,D:d,d:D,|:\",+:;,;:%3A,C:c,c:C,Q:q,q:Q",
-          "SH_FIXTURE_DESC": "KC 85/4 (VEB Mikroelektronik \"Wilhelm Pieck\" Mühlhausen, 1988) at its own untouched power-on screen: CAOS 4.2's command menu and prompt, drawn by MAME 0.289 kc85_4 (-bios caos42) fullscreen with aspect correction on a 1024x768 X root. Nothing is curated and nothing is typed — the operating system prints the list of things a visitor can type, which makes the machine's honest idle screen its own launcher. BASIC starts HC-BASIC from the second ROM; MENU brings the list back. Keyboard-only exhibit; no pointer device; KC speaker -> ALSA -> AC97. THE DRIVER IS `preliminary`, so a stock MAME would open it with a full-screen red \"THIS SYSTEM DOESN'T WORK\" panel that -skip_gameinfo does not suppress: the shipped binary carries mame-irix-skip-warnings.patch and /opt/kc854/ui.ini sets skip_warnings 1. If red ever appears in this fixture, the deployment has regressed."
+          "SH_KEY_MAP": "W:w,w:W,A:a,a:A,\":@,-:=,=:+,Y:y,y:Y,E:e,e:E,S:s,s:S,^:[,%3A:-,*:_,X:x,x:X,T:t,t:T,F:f,f:F,P:p,p:P,@:),V:v,v:V,U:u,u:U,H:h,h:H,':&,O:o,o:O,):(,N:n,n:N,I:i,i:I,J:j,j:J,(:*,K:k,k:K,M:m,m:M,Z:z,z:Z,G:g,g:G,&:^,L:l,l:L,B:b,b:B,R:r,r:R,D:d,d:D,|:\",+:;,;:%3A,C:c,c:C,Q:q,q:Q"
         },
         "vmidLabel": 235,
         "qemu": {
@@ -5763,11 +5781,11 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_KEY_REMAP": "0x0e:0xe04b",
-          "SH_KEY_MIN_HOLD_MS": "32",
-          "SH_KEY_MIN_GAP_MS": "32",
           "SH_FIXTURE_DESC": "Multitech Microprofessor II Applesoft BASIC 560x192 @ 60 Hz composite (6-colour artifact) drawn fullscreen with aspect correction on a 1024x768 X root in MAME mpf2; golden snapshot restores X (-nocursor) + MAME at the BASIC prompt and a MAME soft reset re-runs the ROM power-on beep; keyboard-only exhibit; no pointer device. Keyboard quirks: SH_KEY_REMAP delivers Backspace as Left (the machine's matrix has no Backspace; Left is its rubout key), SH_KEY_MIN_HOLD_MS=32 holds every key for 2 emulated frames, and SH_KEY_MIN_GAP_MS=32 keeps 2 frames of gap between one key's release and the next key's press — measured on the live tile, a release-to-press gap under ~8 ms makes the machine read two keystrokes as one held chord (browser typing leaves ~2 ms).",
-          "SH_KEY_MAP": "=:O,-:I,+:P,(:*,):(,*:)"
+          "SH_KEY_REMAP": "0x0e:0xe04b",
+          "SH_KEY_MAP": "=:O,-:I,+:P,(:*,):(,*:)",
+          "SH_KEY_MIN_HOLD_MS": "32",
+          "SH_KEY_MIN_GAP_MS": "32"
         },
         "vmidLabel": 220,
         "qemu": {
@@ -6232,7 +6250,7 @@
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
           "SH_FIXTURE_DESC": "NeXTcube (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) running NeXTSTEP 3.3 for m68k under the Previous emulator, resting on the Workspace the machine brings up for itself at login: grey workspace, the Workspace menu down the top left, the File Viewer showing the home directory, and the Dock along the right-hand edge with the recycler at the bottom. Nothing is curated: this is the desktop the machine brings up for itself, pixel-diffed back to that exact state after the one-time tablet-driver install the golden has to carry. 1120x832 MegaPixel display, pixel-exact on a 1120x832 X root. Pointer is ABSOLUTE: NeXTSTEP's own SummaGraphics tablet driver is attached inside the snapshot, so a commanded pixel is the pixel the NeXT arrow lands on; the guest draws that arrow itself.",
-          "SH_IDLE_PAUSE_SECS": "0"
+          "SH_IDLE_PAUSE_SECS": "60"
         },
         "vmidLabel": 237,
         "qemu": {
@@ -7406,9 +7424,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Oric Atmos (1984) at its own untouched power-on screen: \"ORIC EXTENDED BASIC V1.1 / (c) 1983 TANGERINE / 37631 BYTES FREE / Ready\" in black on a white page, with the machine's own CAPS marker in the top-right corner, drawn fullscreen with aspect correction by MAME 0.289's `orica` driver on an 800x600 X root — 4:3, the shape the Atmos drew on a television, and measured 1.6x cheaper to blit than 1024x768 on this box. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; AY-3-8912 sound -> ALSA -> AC97. The interaction is the registry demoProgram, a colour-and-sound listing in Oric Extended BASIC that the SPA types and the visitor runs.",
           "SH_KEY_MIN_HOLD_MS": "80",
-          "SH_KEY_MIN_GAP_MS": "80",
-          "SH_FIXTURE_DESC": "Oric Atmos (1984) at its own untouched power-on screen: \"ORIC EXTENDED BASIC V1.1 / (c) 1983 TANGERINE / 37631 BYTES FREE / Ready\" in black on a white page, with the machine's own CAPS marker in the top-right corner, drawn fullscreen with aspect correction by MAME 0.289's `orica` driver on an 800x600 X root — 4:3, the shape the Atmos drew on a television, and measured 1.6x cheaper to blit than 1024x768 on this box. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; AY-3-8912 sound -> ALSA -> AC97. The interaction is the registry demoProgram, a colour-and-sound listing in Oric Extended BASIC that the SPA types and the visitor runs."
+          "SH_KEY_MIN_GAP_MS": "80"
         },
         "vmidLabel": 234,
         "qemu": {
@@ -7871,9 +7889,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "DEC PDP-11/70 (4 MB core, FP11) under Open SIMH, resting at 2.11BSD's own multiuser login prompt: the tail of the boot — \"Fast boot ... skipping disk checks\", \"Assuming non-networking system ...\", \"standard daemons: update cron accounting.\", the date, then \"2.11 BSD UNIX (pdp11) (console)\" and \"login:\" — in green phosphor on black, 80x24 at DejaVu Sans Mono 15 pt on a 1024x768 X root. LOG IN AS `root`, WITH NO PASSWORD: that is the one thing the screen cannot tell a visitor, so the placard and the SPA hint carry it. Then `uname -a` prints \"BSD pdp11 2.11 ... #19 ... /usr/src/sys/ZEKE\" and /usr/src holds the entire 2.11BSD kernel and userland source tree. Keyboard-only exhibit; no pointer device; silent (a console terminal has no audio).",
           "SH_KEY_MIN_HOLD_MS": "40",
-          "SH_KEY_MIN_GAP_MS": "40",
-          "SH_FIXTURE_DESC": "DEC PDP-11/70 (4 MB core, FP11) under Open SIMH, resting at 2.11BSD's own multiuser login prompt: the tail of the boot — \"Fast boot ... skipping disk checks\", \"Assuming non-networking system ...\", \"standard daemons: update cron accounting.\", the date, then \"2.11 BSD UNIX (pdp11) (console)\" and \"login:\" — in green phosphor on black, 80x24 at DejaVu Sans Mono 15 pt on a 1024x768 X root. LOG IN AS `root`, WITH NO PASSWORD: that is the one thing the screen cannot tell a visitor, so the placard and the SPA hint carry it. Then `uname -a` prints \"BSD pdp11 2.11 ... #19 ... /usr/src/sys/ZEKE\" and /usr/src holds the entire 2.11BSD kernel and userland source tree. Keyboard-only exhibit; no pointer device; silent (a console terminal has no audio)."
+          "SH_KEY_MIN_GAP_MS": "40"
         },
         "vmidLabel": 227,
         "qemu": {
@@ -8091,9 +8109,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Commodore PET 2001 (1977) at its own untouched cold power-on screen: \"*** COMMODORE BASIC *** / 7167 BYTES FREE / READY.\" in blue-white on black, 40x25 characters drawn double-size (-CRTCdsize) by VICE xpet -model 2001 as a 768x532 SDL window on an 800x600 X root. VICE's model 2001 is the 1977 original and not a badge: RamSize=8, Crtc=0 (the machine predates the 6545 CRTC every later PET used), VideoSize=40, KeyboardType=4 (the chiclet graphics keyboard), palette 2001-blueish.vpl. Keyboard-only exhibit; no pointer device; PET CB2 sound -> ALSA -> AC97 (the 1977 machine shipped with no sound hardware at all, so this is silent in practice).",
           "SH_KEY_MIN_HOLD_MS": "80",
-          "SH_KEY_MIN_GAP_MS": "80",
-          "SH_FIXTURE_DESC": "Commodore PET 2001 (1977) at its own untouched cold power-on screen: \"*** COMMODORE BASIC *** / 7167 BYTES FREE / READY.\" in blue-white on black, 40x25 characters drawn double-size (-CRTCdsize) by VICE xpet -model 2001 as a 768x532 SDL window on an 800x600 X root. VICE's model 2001 is the 1977 original and not a badge: RamSize=8, Crtc=0 (the machine predates the 6545 CRTC every later PET used), VideoSize=40, KeyboardType=4 (the chiclet graphics keyboard), palette 2001-blueish.vpl. Keyboard-only exhibit; no pointer device; PET CB2 sound -> ALSA -> AC97 (the 1977 machine shipped with no sound hardware at all, so this is silent in practice)."
+          "SH_KEY_MIN_GAP_MS": "80"
         },
         "vmidLabel": 224,
         "qemu": {
@@ -8321,9 +8339,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Commodore Plus/4 (PAL) at its own untouched power-on screen: \"COMMODORE BASIC V3.5 / 60671 BYTES FREE / 3-PLUS-1 ON KEY F1 / READY.\" in black on a white page inside a lavender border, drawn double-size (-TEDdsize) by VICE xplus4 on an 800x600 X root. Nothing is curated and nothing is typed: the ROM's own message is the exhibit's launcher, and F1+RETURN enters the built-in 3-plus-1 office suite. Module switching inside the suite needs C= + C (Tab under VICE's symbolic keymap) followed by tw/tc/tf, which the SPA's plus4 on-screen keyboard sends from one labelled button each. Keyboard-only exhibit; no pointer device; TED sound -> ALSA -> AC97.",
           "SH_KEY_MIN_HOLD_MS": "80",
-          "SH_KEY_MIN_GAP_MS": "80",
-          "SH_FIXTURE_DESC": "Commodore Plus/4 (PAL) at its own untouched power-on screen: \"COMMODORE BASIC V3.5 / 60671 BYTES FREE / 3-PLUS-1 ON KEY F1 / READY.\" in black on a white page inside a lavender border, drawn double-size (-TEDdsize) by VICE xplus4 on an 800x600 X root. Nothing is curated and nothing is typed: the ROM's own message is the exhibit's launcher, and F1+RETURN enters the built-in 3-plus-1 office suite. Module switching inside the suite needs C= + C (Tab under VICE's symbolic keymap) followed by tw/tc/tf, which the SPA's plus4 on-screen keyboard sends from one labelled button each. Keyboard-only exhibit; no pointer device; TED sound -> ALSA -> AC97."
+          "SH_KEY_MIN_GAP_MS": "80"
         },
         "vmidLabel": 222,
         "qemu": {
@@ -8560,6 +8578,7 @@
           "GOLDEN_SNAPSHOT": "golden",
           "GOLDEN_DISK": "/data/gallery-guests/postmarketOS/pmos-phosh.qcow2",
           "GOLDEN_VARSTORE": "/data/vms/streamhost/tiles/postmarketos/OVMF_VARS.qcow2",
+          "GOLDEN_LOGIN_PIN": "147147",
           "GOLDEN_FIXTURE": "phosh desktop, GNOME Console maximized + focused ash prompt (steady caret); no-blank/no-lock/no-suspend, OSK off, animations off, tour disabled; idle byte-stable",
           "GOLDEN_RESET_CMD": "qmp human-monitor-command \"loadvm golden\"  (cold launch auto-adds -loadvm golden)"
         },
@@ -9213,7 +9232,7 @@
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
           "SH_RESET_MONITOR": "/data/vms/streamhost/tiles/redstar2/reset-hmp.sock",
-          "SH_FIXTURE_DESC": "\"Red Star OS 2.0 gallery auto-login; curated 1920x1200 KDE desktop; input-ready\"",
+          "SH_FIXTURE_DESC": "\"Red Star OS 2.0 KDM login chooser at 1024x768; gallery and root accounts; absolute tablet and keyboard ready\"",
           "SH_BASE_BACKUP": "/data/gallery-guests/RedStar2/redstar2.qcow2.bak-pre-golden"
         },
         "vmidLabel": 120,
@@ -10199,9 +10218,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Sinclair QL (1984) in MAME's `ql` driver, resting where the machine itself stops: the 80-column MONITOR-mode SuperBASIC screen it draws once F1 is answered — window #2 a white page on the left, window #1 red on the right, the black command window along the bottom with nothing typed in it. 512x256 drawn at an exact 2x3 integer scale on the kiosk's 1024x768 X root, so every QL pixel is one identical block and the picture keeps the machine's 4:3 shape. The `F1...monitor / F2...TV` chooser that precedes it, and MAME's imperfect-dump warning before that (the QL's hal16l8.ic38 PLD has never been dumped anywhere), are both answered during the bake and never seen by a visitor; the chooser is the exhibit's poster image instead. Keyboard-only exhibit; no pointer device; QL beeper -> ALSA -> AC97.",
           "SH_KEY_MIN_HOLD_MS": "120",
-          "SH_KEY_MIN_GAP_MS": "120",
-          "SH_FIXTURE_DESC": "Sinclair QL (1984) in MAME's `ql` driver, resting where the machine itself stops: the 80-column MONITOR-mode SuperBASIC screen it draws once F1 is answered — window #2 a white page on the left, window #1 red on the right, the black command window along the bottom with nothing typed in it. 512x256 drawn at an exact 2x3 integer scale on the kiosk's 1024x768 X root, so every QL pixel is one identical block and the picture keeps the machine's 4:3 shape. The `F1...monitor / F2...TV` chooser that precedes it, and MAME's imperfect-dump warning before that (the QL's hal16l8.ic38 PLD has never been dumped anywhere), are both answered during the bake and never seen by a visitor; the chooser is the exhibit's poster image instead. Keyboard-only exhibit; no pointer device; QL beeper -> ALSA -> AC97."
+          "SH_KEY_MIN_GAP_MS": "120"
         },
         "vmidLabel": 236,
         "qemu": {
@@ -10422,7 +10441,6 @@
           "SH_HOST_IP": "192.0.2.10",
           "SH_ADVERTISE_HOST": "192.0.2.10",
           "SH_INPUT_BACKEND": "gallery-hid",
-          "SH_GHID_SOCKET": "/data/vms/streamhost/tiles/solaris/gallery-hid.sock",
           "SH_AUDIO": "on",
           "SH_AUDIO_BITRATE": "96000",
           "SH_HASH_FILE": "/data/vms/streamhost/tiles/solaris/cert_hash_b64.txt",
@@ -10432,7 +10450,8 @@
           "SH_GOLDEN_SNAPSHOT": "golden",
           "SH_GOLDEN_DISK": "solariscde-golden.qcow2",
           "SH_GOLDEN_MANIFEST": "tiles/solaris/golden.json",
-          "SH_WARPD_ADDR": "127.0.0.1:57790"
+          "SH_WARPD_ADDR": "127.0.0.1:57790",
+          "SH_GHID_SOCKET": "/data/vms/streamhost/tiles/solaris/gallery-hid.sock"
         },
         "vmidLabel": 100,
         "qemu": {
@@ -11561,9 +11580,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Commodore VIC-20 (PAL) ROM BASIC power-on screen — \"**** CBM BASIC V2 **** / 3583 BYTES FREE / READY.\" in blue on white paper inside a cyan border, drawn double-size (-VICdsize) by VICE xvic on an 800x600 X root; golden snapshot restores X (-nocursor) + xvic at the READY prompt exactly as baked from an untouched cold boot; keyboard-only exhibit; no pointer device; VIC-I sound -> ALSA -> AC97.",
           "SH_KEY_MIN_HOLD_MS": "80",
-          "SH_KEY_MIN_GAP_MS": "80",
-          "SH_FIXTURE_DESC": "Commodore VIC-20 (PAL) ROM BASIC power-on screen — \"**** CBM BASIC V2 **** / 3583 BYTES FREE / READY.\" in blue on white paper inside a cyan border, drawn double-size (-VICdsize) by VICE xvic on an 800x600 X root; golden snapshot restores X (-nocursor) + xvic at the READY prompt exactly as baked from an untouched cold boot; keyboard-only exhibit; no pointer device; VIC-I sound -> ALSA -> AC97."
+          "SH_KEY_MIN_GAP_MS": "80"
         },
         "vmidLabel": 221,
         "qemu": {
@@ -11766,8 +11785,6 @@
           "SH_FPS": "30",
           "SH_HOST_IP": "192.0.2.10",
           "SH_ADVERTISE_HOST": "192.0.2.10",
-          "SH_INPUT_BACKEND": "mamesock",
-          "SH_MAMECTL_SOCK": "/data/vms/streamhost/tiles/w2kalpha/ctl.sock",
           "SH_AUDIO": "off",
           "SH_AUDIO_BITRATE": "96000",
           "SH_HASH_FILE": "/data/vms/streamhost/tiles/w2kalpha/cert_hash_b64.txt",
@@ -11775,7 +11792,12 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "relaunch",
           "SH_FIXTURE_DESC": "Windows 2000 RC2 (build 2128, Alpha AXP) 1280x1024 desktop in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input; cold boot ~80 s per relaunch.",
-          "SH_IDLE_PAUSE_SECS": "0"
+          "SH_INPUT_BACKEND": "mamesock",
+          "SH_MAMECTL_SOCK": "/data/vms/streamhost/tiles/w2kalpha/ctl.sock",
+          "SH_IDLE_PAUSE_SECS": "60",
+          "SH_IDLE_PAUSE_PIDFILE": "/data/vms/streamhost/tiles/w2kalpha/mame.pid",
+          "SH_IDLE_PAUSE_PROC_MATCH": "assets/w2kalpha/es40",
+          "SH_IDLE_PAUSE_WARMUP_SECS": "120"
         },
         "x11": {
           "display": ":41",
@@ -11959,7 +11981,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_GOLDEN_DISKS": "win11-golden.qcow2 OVMF_VARS.qcow2"
+          "SH_GOLDEN_DISKS": "win11-golden.qcow2 OVMF_VARS.qcow2",
+          "SH_BUFSIZE_RATIO": "0.5",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 123,
         "qemu": {
@@ -13366,9 +13390,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Sinclair ZX81 (1981) at its own untouched power-on screen: a white field with a single inverse-video K in the bottom-left corner and nothing else — no banner, no memory count, no copyright line. K is the machine telling you it is in keyword mode, where one keypress enters a whole BASIC word (P gives PRINT). MAME 0.289 zx81 with -bios 2nd and -ramsize 1K, drawn fullscreen with aspect correction on the bridge kiosk's 1024x768 X root, which is exactly the 4:3 of the television the machine was sold to be plugged into. Keyboard-only exhibit; no pointer device; the ZX81 has no sound hardware, so the AC97 stream is silent by design.",
           "SH_KEY_MIN_HOLD_MS": "100",
-          "SH_KEY_MIN_GAP_MS": "100",
-          "SH_FIXTURE_DESC": "Sinclair ZX81 (1981) at its own untouched power-on screen: a white field with a single inverse-video K in the bottom-left corner and nothing else — no banner, no memory count, no copyright line. K is the machine telling you it is in keyword mode, where one keypress enters a whole BASIC word (P gives PRINT). MAME 0.289 zx81 with -bios 2nd and -ramsize 1K, drawn fullscreen with aspect correction on the bridge kiosk's 1024x768 X root, which is exactly the 4:3 of the television the machine was sold to be plugged into. Keyboard-only exhibit; no pointer device; the ZX81 has no sound hardware, so the AC97 stream is silent by design."
+          "SH_KEY_MIN_GAP_MS": "100"
         },
         "vmidLabel": 231,
         "qemu": {
@@ -13589,9 +13613,9 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
+          "SH_FIXTURE_DESC": "Sinclair ZX Spectrum 48K at its own untouched power-on screen: the whole 352x296 raster — border included — in the machine's non-bright white, with one line of black text, \"© 1982 Sinclair Research Ltd\", along the bottom. Drawn by MAME 0.251's `spectrum` driver fullscreen with -keepaspect on the bridge base's stock 1024x768 X root, which the Spectrum's 4:3 picture fills exactly. Nothing is curated and nothing is typed; the copyright line the ROM prints is also the condition under which Amstrad permits the ROM to be emulated at all. Keyboard-only exhibit; no pointer device; 1-bit beeper -> ALSA -> AC97.",
           "SH_KEY_MIN_HOLD_MS": "200",
-          "SH_KEY_MIN_GAP_MS": "200",
-          "SH_FIXTURE_DESC": "Sinclair ZX Spectrum 48K at its own untouched power-on screen: the whole 352x296 raster — border included — in the machine's non-bright white, with one line of black text, \"© 1982 Sinclair Research Ltd\", along the bottom. Drawn by MAME 0.251's `spectrum` driver fullscreen with -keepaspect on the bridge base's stock 1024x768 X root, which the Spectrum's 4:3 picture fills exactly. Nothing is curated and nothing is typed; the copyright line the ROM prints is also the condition under which Amstrad permits the ROM to be emulated at all. Keyboard-only exhibit; no pointer device; 1-bit beeper -> ALSA -> AC97."
+          "SH_KEY_MIN_GAP_MS": "200"
         },
         "vmidLabel": 230,
         "qemu": {

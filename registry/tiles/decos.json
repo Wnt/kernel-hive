@@ -92,10 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/decos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/decos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "A DEC PDP-11 with three of its operating systems behind a chooser. The golden is the chooser itself: a green-on-black 80x31 xterm on a 1024x768 X root listing \"1 RT-11 V5.3 (single-user real-time monitor, 11/73, RL02)\", \"2 RSX-11M V4.2 (multi-user real-time executive, 11/70, RD52)\" and \"3 RSTS/E V9.6 (multi-user timesharing, 11/70, RD54)\", each with the prompt it answers with (. > $) spelled out beside it, over the line \"Press 1, 2 or 3. Reset returns you to this screen.\" The RSTS/E entry carries three extra lines saying plainly that its installer stops one step short, because the second \"Library\" tape it asks for no longer exists: DCL answers but the packaged commands were never wired up. One keypress boots the chosen system under Open SIMH (pinned to commit a1f57fa3, built into this tile's overlay because the frozen bridge base predates it). RSX-11M is V4.2 BL38, not the V4.3 ceiling of the Mentec grant, because no reachable copy of V4.3 exists; the chooser says V4.2 rather than pretending. Keyboard-only exhibit; no pointer device; the AC97 card is present because the bridge shape always carries it, but nothing inside the guest makes a sound."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 229,
     "qemu": {

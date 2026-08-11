@@ -88,11 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/gt40/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/gt40/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_IDLE_PAUSE_SECS": "60",
-      "SH_FIXTURE_DESC": "DEC GT40 (1973) at the first seconds of a fresh lunar descent: the LEM in the upper left with its descent engine firing, four telemetry readouts across the top (HEIGHT ~17000-19000 feet, DISTANCE ~-15000 to -21000, VER VEL ~-490, HOR VEL ~880 — the exact digits differ by a second or two of flight from bake to bake), the 75% throttle bar and the two pairs of rotation arrows down the right edge, the twelve-item telemetry menu (HEIGHT, ALTITUDE, DISTANCE, FUEL LEFT, WEIGHT, THRUST, ANGLE, VER VEL, HOR VEL, VER ACC, HOR ACC, SECONDS) under them, and the mountainous lunar horizon across the bottom — green vectors on black, drawn by Open SIMH's VT11 at crt=vr17 scale=1 hspace=narrow in a 1024x1024 SDL window centred on a 1280x1024 X root. The exhibit is self-sustaining: the LEM falls for about two minutes, crashes, and the program restarts itself, a 135 s loop. LIGHT-PEN exhibit: the menu, the rotation arrows and the throttle bar are all selected by pointing; there is no keyboard input of any kind."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 228,
     "qemu": {
