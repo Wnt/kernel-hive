@@ -87,7 +87,19 @@ artifact labels.
 ## Status
 
 - [x] Stage 0 — glossary + this plan (2026-08-11)
-- [ ] Stage 1 — sample: AGENTS.md converted for operator review; sweep pending
+- [x] Stage 1 — swept 2026-08-11/12 (two waves; ~460 files). Recorded
+  exceptions, accepted by the operator: docs/lab
+  `BRIDGE-TRIXIE-MIGRATION.md`, `MASTER-REPRODUCE.md`,
+  `new-os-integration-architecture.md`, `xerox-build-log.md` unconverted;
+  `SESSION-HANDOVER-2026-08-10-trixie.md` ~15 % converted; comment coverage
+  in `scripts/build-guests/tiles/*.sh` partial; deploy-parity trees
+  (`streamhost/tiles/**`, `guest-agents/**`) untouched by design — they
+  convert with stage 2's re-emit motion. Sense rules that emerged and BIND
+  future passes: "kiosk" = the bridge *pattern* noun, counted instances are
+  stations; "golden vN" (versioned artifact) = seed, unversioned
+  state-behaviour "golden" = checkpoint; "frozen bridge seed" keeps
+  *frozen* (immutable/pinned sense); CRIU + protocol-freeze + x264-stall
+  vocabulary untouched.
 - [ ] Stage 2
 - [ ] Stage 3
 - [ ] Stage 4
