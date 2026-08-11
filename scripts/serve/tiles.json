@@ -234,5 +234,9 @@
   "daybreak": {
     "udpPort": 54139,
     "hashFile": "/data/vms/streamhost/tiles/daybreak/cert_hash_b64.txt"
+  },
+  "w2kalpha": {
+    "udpPort": 54140,
+    "hashFile": "/data/vms/streamhost/tiles/w2kalpha/cert_hash_b64.txt"
   }
 }

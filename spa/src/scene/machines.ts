@@ -623,6 +623,17 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
     keyboard: 'keyboardE', mouse: 'paramMouseC',
   },
+  // Compaq AlphaServer ES40: a wide pedestal server, not a desktop PC — towerD
+  // already reads as DEC on the floor (decos holds towerD|terminalA). The glass
+  // is crtE, the big workstation tube gt40 and nextstep hold; towerD|crtE is a
+  // pair nothing else in the hall has, so the one Windows machine on non-Intel
+  // iron cannot be mistaken for the PC towers around it. Workstation
+  // keyboard/mouse (keyboardH|paramMouseG) because the ES40 console was DEC
+  // glass, not a family-PC set.
+  w2kalpha: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

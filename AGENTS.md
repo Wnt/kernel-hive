@@ -8,8 +8,8 @@ things: **rules that prevent damage**, and **pointers to where the detail is**.
 Anything else added here is paid for once per agent, forever — put it in the
 linked doc instead.
 
-Single-box Proxmox home-lab ("living computer museum"). 61 registry entries —
-59 production streamhost tiles + 2 posters (`python3 scripts/tiles-registry.py
+Single-box Proxmox home-lab ("living computer museum"). 62 registry entries —
+60 production streamhost tiles + 2 posters (`python3 scripts/tiles-registry.py
 count`). Rust `streamhost` daemon → React SPA. Repo:
 https://github.com/Wnt/kernel-hive (private; this dir is the git root).
 

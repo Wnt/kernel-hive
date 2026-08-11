@@ -400,7 +400,7 @@ if [ "$X11" = 1 ]; then
   [ -n "$INPUT_BACKEND" ] || INPUT_BACKEND="x11test"
   # One variable so the x11 emit stays BYTE-IDENTICAL (no stray blank line) while
   # the shm emit gains exactly one line.
-  X11_PATHS="SH_X11_CMD_FILE=${BASE}/irix_cmd"
+  X11_PATHS="SH_X11_CMD_FILE=${BASE}/${TILE}_cmd"
   [ "$X11_CAPTURE" = shm ] && X11_PATHS="${X11_PATHS}
 SH_SHM_PATH=${BASE}/fb.shm"
   cat >"${BASE_OUT}/tile.env" <<EOF

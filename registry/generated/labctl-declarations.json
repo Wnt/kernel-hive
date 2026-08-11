@@ -767,6 +767,21 @@
       "udp_port": 54085,
       "notes": "exec: labctl exec vic20 \"<cmd>\" (ssh root@:5821, key bridge_key)"
     },
+    "w2kalpha": {
+      "dir": "/data/vms/streamhost/tiles/w2kalpha",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54140,
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); no exec channel (guest telnet server is future work); reset = relaunch (cold boot ~80 s from reflink copy of golden nt.img)"
+    },
     "win11": {
       "dir": "/data/vms/streamhost/tiles/win11",
       "qmp": "/data/vms/streamhost/tiles/win11/qmp.sock",

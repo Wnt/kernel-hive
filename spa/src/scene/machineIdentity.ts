@@ -329,6 +329,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d5cec1', accentTint: '#d6001c', tintMix: 0.34,
     badge: 'XEROX 8010', spec: 'DANDELION • VIEWPOINT 2.0 • 1981', kit: 'workstation',
   },
+  // Compaq's AlphaServer ivory-grey, a shade cooler than the PC beiges around
+  // it; the accent is DEC's brand maroon — the one colour that says Digital —
+  // on the machine running the last Windows DEC's architecture ever got.
+  w2kalpha: {
+    caseTint: '#b9bcc0', accentTint: '#862633', tintMix: 0.38,
+    badge: 'ALPHASERVER ES40', spec: 'EV68 ALPHA • BUILD 2128 • 1999',
+    kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

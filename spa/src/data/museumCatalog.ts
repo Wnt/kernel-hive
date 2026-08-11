@@ -4,11 +4,11 @@ import type { VMManifestEntry } from '../types';
 import { OS_BINDINGS } from '../three/archetypeRegistry';
 
 // ============================================================================
-//  MUSEUM CATALOG — placard metadata for the full OS lineup (61 bindings)
+//  MUSEUM CATALOG — placard metadata for the full OS lineup (62 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 59 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 60 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 56 of those 59 have their placard entries in this
+//  WebTransport + WebCodecs. 57 of those 60 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,8 +17,8 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 58 entries
-//  so all 61 exhibits render, each with an era-accurate archetype + accent.
+//  This file provides rich, period-accurate placard metadata for its 59 entries
+//  so all 62 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
 //  top of these entries, so every osId in OS_BINDINGS becomes an exhibit.
@@ -565,6 +565,16 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['the ViewPoint desktop', 'the VP Document Editor', 'the property sheet', 'the Directory icon'],
     blurb: 'The machine that carried the Star’s ideas — icons, folders, property sheets, WYSIWYG documents — into something an office could actually buy, four years after the 8010 and still years before anyone else shipped them. Every window has a named tab instead of a title bar, every setting is a property sheet, and a line of prose across the top narrates what the system is doing.',
     notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 bare-X kiosk runs Dwarf/Draco (Java, OpenJDK 17) emulating a real Xerox 6085 Mesa workstation booting the ViewPoint 2.0.5 Pilot disk shipped with Dwarf; streamhost captures the Linux framebuffer exactly like every other tile. Silent — Dwarf emulates no Xerox sound hardware. The golden is the LOGGED-IN desktop: logon runs once at bake time, so no visitor meets the logged-off bouncing keyboard or has to discover that Ctrl+N is the Xerox NEXT key. Product factoring on the disk is bound to processor id 10-00-FE-31-AB-21 and must never be changed. See streamhost/docs/BRIDGE.md and docs/guests/daybreak.md.',
+  },
+  {
+    id: 'w2kalpha', displayName: 'Windows 2000 for Alpha', year: 1999,
+    lineage: 'Windows NT 5.0 — Alpha AXP port',
+    arch: 'DEC Alpha 21264 (EV68, 64-bit)', ramMB: 512,    era: '1990s', accent: '#862633',
+    eraSoftware: ['Explorer shell (NT 5.0)', 'Internet Explorer 5', 'Microsoft Management Console', 'AlphaBIOS / ARC firmware'],
+    periodBrowser: 'Internet Explorer 5',
+    iconicApps: ['Solitaire', 'Minesweeper', 'Paint'],
+    blurb: 'The Windows that never shipped. Microsoft built Windows 2000 for DEC’s 64-bit Alpha right up to Release Candidate 2 — then Compaq dropped Alpha NT in August 1999 and the port died before release. RC2 build 2128 is the last Windows for Alpha ever built, running here on an AlphaServer ES40.',
+    notes: 'Live streamhost tile — the second non-QEMU x11-runtime tile (after irix): the es40 AlphaServer ES40 emulator (fork Wnt/es40: JIT compile-on-2nd-encounter 2.37x interactive throughput, shm framebuffer export, mamectl/1 ctlsock input) runs headless, captured via SH_CAPTURE=shm. resetMode=relaunch cold-boots the golden nt.img in ~80 s. archetype putty-lcd. See docs/lab/research/w2kalpha-HANDOFF.md.',
   },
 ];
 

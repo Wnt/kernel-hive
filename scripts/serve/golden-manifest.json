@@ -591,6 +591,16 @@
    "mouse": "PASS",
    "keyboard": "PASS",
    "fixture": "Xerox 6085 \"Daybreak\" at the logged-in ViewPoint 2.0.5 desktop under Dwarf/Draco; golden INTERNAL snapshot restores the running desktop with no Pilot boot, no Ctrl+N and no logon sheet. Route certified 2026-08-09 in framebuffer-asserted steps: boot to the logged-off bouncing keyboard (~90 s), Ctrl+N to the Logon Option Sheet, guest/guest, START, \"Do you want a new Desktop created for you?\" YES, desktop. Mouse PASS (400 ms dwell actuates the sheet's Start button); keyboard PASS (400 ms hold, 5/5 typed characters). Bridge tile added 2026-08-09."
+  },
+  "w2kalpha": {
+   "tileDir": "w2kalpha",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "relaunch",
+   "snapshot": null,
+   "mouse": "UNVERIFIED",
+   "keyboard": "PASS",
+   "fixture": "Windows 2000 RC2 (build 2128, Alpha AXP) 1280x1024 desktop in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. resetMode=relaunch: every reset reflink-copies the golden nt.img and cold-boots (~80 s). x11-runtime (es40) tile added 2026-08-11."
   }
  }
 }

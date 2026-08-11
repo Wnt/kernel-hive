@@ -821,7 +821,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                     "SH_CAPTURE": capture,
                     "SH_X11_DISPLAY": x11cfg.get("display"),
                     "SH_TILE_RUNTIME": "x11",
-                    "SH_X11_CMD_FILE": f"/data/vms/streamhost/tiles/{tile_dir}/irix_cmd",
+                    "SH_X11_CMD_FILE": f"/data/vms/streamhost/tiles/{tile_dir}/{tile_dir}_cmd",
                 }
             )
             if capture == "shm":
