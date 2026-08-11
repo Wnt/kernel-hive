@@ -1,21 +1,21 @@
-# Amstrad CPC 6128 + Locomotive BASIC — gallery tile notes (:8119)
+# Amstrad CPC 6128 + Locomotive BASIC — gallery station notes (:8119)
 
 **Guest:** a captured **Debian 12 x86_64 kiosk** running **Caprice32 (`cap32`)**
 in a scale-3 SDL/X11 window, emulating an **Amstrad CPC 6128** that boots
 **Locomotive BASIC 1.1**
-to the classic **yellow-on-blue `Ready`** prompt. This is an **"emulator bridge"**
-tile — streamhost captures the Linux framebuffer + AC97 audio (the CPC
-**AY-3-8912** PSG routed through ALSA) exactly like every other tile. See
+to the classic **yellow-on-blue `Ready`** prompt. This is a **kiosk**
+— streamhost captures the Linux framebuffer + AC97 audio (the CPC
+**AY-3-8912** PSG routed through ALSA) exactly like every other station. See
 **`streamhost/docs/BRIDGE.md`** for the reusable bridge pattern and
-**`docs/guests/c64.md`** for the reference (C64) recipe this tile forks.
+**`docs/guests/c64.md`** for the reference (C64) recipe this station forks.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built by
 `scripts/build-guests/lib/bridge-base.sh`). Ships VICE(x64sc)+hatari+LinApple+**cap32**
 +fs-uae + the bare-X kiosk. cap32 is built from source (github ColinPitrat) in the
-base, so this tile needs NO base rebuild.
-**Build script (tile):** `scripts/build-guests/tiles/amstradcpc.sh` (thin overlay +
-kiosk `launch.sh` + framebuffer checks + keyboard proof + golden cold-restore).
-**Tile dir (host):** `/data/vms/streamhost/tiles/amstradcpc/` — `overlay.qcow2`
+base, so this station needs NO base rebuild.
+**Build script (station):** `scripts/build-guests/tiles/amstradcpc.sh` (thin overlay +
+kiosk `launch.sh` + framebuffer checks + keyboard proof + checkpoint cold-restore).
+**Station dir (host):** `/data/vms/streamhost/tiles/amstradcpc/` — `overlay.qcow2`
 (thin, on the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`,
 `tile.env`.
 
@@ -28,7 +28,7 @@ kiosk `launch.sh` + framebuffer checks + keyboard proof + golden cold-restore).
 - No proprietary media beyond the bundled ROMs is required — the machine boots
   straight to BASIC with no disk.
 
-## Curated metadata (for the SPA placard)
+## Curated metadata (for the UI placard)
 - **Year:** CPC 6128 = **1985**.
 - **Lineage:** Amstrad's British all-in-one home micro (Zilog **Z80A** @ 4 MHz,
   **128 KB** RAM, built-in 3-inch disk drive, its own colour/green monitor). Boots
@@ -45,7 +45,7 @@ kiosk `launch.sh` + framebuffer checks + keyboard proof + golden cold-restore).
 The CPC is **keyboard/joystick driven**; the AMX mouse was rare, so there is **no
 mouse/pointer acceptance criterion**. Keyboard mapping is the real input work
 (Stage 2). The device set mirrors the C64 keyboard sibling: `-machine
-pc-i440fx-11.0,vmport=off`, no `usb-tablet`, `SH_POINTER=rel`. The SPA still emits
+pc-i440fx-11.0,vmport=off`, no `usb-tablet`, `SH_POINTER=rel`. The UI still emits
 absolute coordinates; streamhost translates them to bounded PS/2 deltas, but with
 no CPC pointer those deltas are inert by design.
 
@@ -53,9 +53,9 @@ no CPC pointer those deltas are inert by design.
 - streamhost UDP (WebTransport): **54119** (slot 119).
 - ssh hostfwd (host->guest :22, for `labctl exec`): **127.0.0.1:5819** (guest user
   `root`, key `/data/vms/bridge/bridge_key`).
-- SPA web port (reserved): **8119**. VMID **219**.
+- UI web port (reserved): **8119**. VMID **219**.
 
-## Proven raw QEMU profile (the tile device set — MUST match the golden bake)
+## Proven raw QEMU profile (the station device set — MUST match the checkpoint capture)
 ```
 qemu-system-x86_64 -name streamhost-amstradcpc -enable-kvm -machine pc-i440fx-11.0,vmport=off \
   -m 1536 -smp 2 -cpu host -rtc base=localtime \
@@ -81,7 +81,7 @@ exec cap32 -O video.scr_green_mode=0 -O video.scr_scale=3
 ```
 The base configuration is green-monitor mode (`scr_green_mode=1`), so the
 command-line override is required for the yellow-on-blue colour prompt. The
-windowed capture is intentional: sibling SDL real-fullscreen bridge emulators
+windowed capture is intentional: sibling SDL real-fullscreen kiosk emulators
 render black through std-VGA capture, while this window is framebuffer-proven.
 
 ## Keyboard mapping
@@ -94,7 +94,7 @@ reaches the CPC Return key. The certified proof types `PRINT "HELLO"`, Return,
 then `RUN`, and visibly renders `HELLO` in the CPC framebuffer.
 
 ## LIVE status (2026-07-27)
-- Production/enabled streamhost tile, VMID 219, UDP 54119, slot 119.
+- Production/enabled streamhost station, VMID 219, UDP 54119, slot 119.
 - Thin `overlay.qcow2` on the frozen bridge base, with an internal `golden`
   snapshot of the colour `Ready` prompt.
 - A cold QEMU start with the tracked device set and `-loadvm golden` returns to

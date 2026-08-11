@@ -1,8 +1,8 @@
-# Apple //e + Apple GEOS deskTop — gallery tile notes (:8117)
+# Apple //e + Apple GEOS deskTop — gallery station notes (:8117)
 
 **Guest:** a captured **Debian 12 x86_64 kiosk** running **LinApple 2.3.0 `linapple`**
 in a window, emulating an **Apple //e (enhanced)** that auto-boots the **Apple GEOS
-deskTop** off a ProDOS hard-disk image. This is an **"emulator bridge"** tile (see
+deskTop** off a ProDOS hard-disk image. This is a **kiosk** (see
 **`streamhost/docs/BRIDGE.md`**, reference impl `c64`) — streamhost captures the Linux
 framebuffer + AC97 audio (the Apple II 1-bit **speaker** routed through ALSA).
 
@@ -14,9 +14,9 @@ was not needed — LinApple reaches the GEOS deskTop reliably and bundles the //
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built by
 `scripts/build-guests/lib/bridge-base.sh`). Contains the bare-X kiosk + LinApple *source*
 at `/usr/local/src/linapple` (its build had failed in the base).
-**Build script (tile):** `scripts/build-guests/tiles/apple2.sh` (thin overlay + LinApple
-build fix + GEOS media + kiosk `launch.sh` + golden bake + verify).
-**Tile dir (host):** `/data/vms/streamhost/tiles/apple2/` — `overlay.qcow2` (thin, on
+**Build script (station):** `scripts/build-guests/tiles/apple2.sh` (thin overlay + LinApple
+build fix + GEOS media + kiosk `launch.sh` + checkpoint capture + verify).
+**Station dir (host):** `/data/vms/streamhost/tiles/apple2/` — `overlay.qcow2` (thin, on
 the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `tile.env`.
 **Proof:** `/data/vms/streamhost/tiles/apple2/proof/geos-desktop.png` (the GEOS
 deskTop in monochrome white, BIGWON window open; refreshed 2026-07-12 v2 — earlier
@@ -24,18 +24,18 @@ proofs kept as `geos-desktop-color-pre-2026-07-12.png` / `geos-desktop-green-202
 `geos-loadvm-golden-restore.png` (cold `-loadvm golden`
 lands on the same deskTop), `apple2-speaker-beep.wav` (the measured non-silent beep).
 
-## UPDATE 2026-07-12 v2 — GEOS mouse ACTUALLY works now + mono white (browser-verified, golden re-baked)
-Supersedes the earlier 2026-07-12 green-palette bake. The user-visible symptoms —
+## UPDATE 2026-07-12 v2 — GEOS mouse ACTUALLY works now + mono white (browser-verified, checkpoint recaptured)
+Supersedes the earlier 2026-07-12 green-palette capture. The user-visible symptoms —
 "the GEOS cursor never tracks, the host cursor disappears after one click, and the
 mono display looks broken/smeared in the browser" — came from FOUR stacked defects,
 all fixed and re-verified END-TO-END through the actual browser stream (Playwright
-driving the SPA at https://192.0.2.10:8443, decoding the `<video>` frames):
+driving the UI at https://192.0.2.10:8443, decoding the `<video>` frames):
 1. **`Clock Enable = 4` (stock linapple.conf default) clobbered the mouse card.**
    `Clock_Insert()` runs AFTER `MemInitialize()` and copies a ProDOS clock-card ROM
    + IO handler over slot 4 — on top of the AppleMouse card. GEOS's driver scans
    `$Cn0C=$20 / $CnFB=$D6 / $Cn11=$00`, found clock bytes instead, and booted with
    **no mouse driver at all** ("Input driver error: No mouse card found" — the
-   "benign dialog" of the original bake was actually the smoking gun; the "GEOS
+   "benign dialog" of the original capture was actually the smoking gun; the "GEOS
    arrow follows the tablet" claim was a misread of the X cursor). Clock moved to
    free slot 5; with the mouse card visible GEOS also finds its **VBL interrupt
    source**, so BOTH boot dialogs are gone — cold boot lands straight on the deskTop.
@@ -52,7 +52,7 @@ driving the SPA at https://192.0.2.10:8443, decoding the `<video>` frames):
    (MouseInterface.cpp): clamp-space writes clamp instead of scale, and host
    motion feeds exact correction deltas against a mirrored arrow-position estimate
    with a pin-to-corner sync handshake on driver init → true absolute 1:1 tracking
-   (browser-verified: GEOS arrow lands under the SPA pointer; click/drag/menu work).
+   (browser-verified: GEOS arrow lands under the UI pointer; click/drag/menu work).
 4. **Scanline blanking + green chroma murdered the stream.** LinApple blanks every
    other line for all video modes ≥ TV-emu (incl. monochrome) → moire striping
    through the 1.8x scale + H.264; and mono GREEN puts the signal in the chroma
@@ -61,7 +61,7 @@ driving the SPA at https://192.0.2.10:8443, decoding the `<video>` frames):
    for GEOS's 1-bit B/W desktop). Browser frames are now crisp with no fringing,
    no striping, no chroma smear.
 
-## LIVE TILE STATUS (2026-07-08) — LIVE at udp/54117, GEOS deskTop CONFIRMED, speaker non-silent
+## LIVE STATION STATUS (2026-07-08) — LIVE at udp/54117, GEOS deskTop CONFIRMED, speaker non-silent
 - **streamhost@apple2 is active** and serving udp/54117. The daemon attached to the
   QMP socket, captured the framebuffer ("first frame 1024x768"), registered the
   **dbus AudioOutListener (Opus @96k)**, and spawned its **ffmpeg/libx264** child.
@@ -79,7 +79,7 @@ driving the SPA at https://192.0.2.10:8443, decoding the `<video>` frames):
   is **Apple II speaker → ALSA default (hw:0,0) → AC97 → QEMU dbus audiodev →
   streamhost Opus**. NB: the *idle GEOS deskTop is silent* — Apple GEOS does not toggle
   the speaker at the deskTop; sound is proven via the boot beep / any sound-using app.
-- **Golden fixture:** boots straight to the GEOS deskTop via `-loadvm golden` (INTERNAL
+- **Checkpoint scene:** boots straight to the GEOS deskTop via `-loadvm golden` (INTERNAL
   snapshot in `overlay.qcow2`, VM_SIZE **876 MiB**). Verified: a cold `-loadvm golden`
   restart lands on the identical clean deskTop in ~4 s (no //e boot, no ProDOS load, no
   keypresses, and neither boot dialog).
@@ -91,11 +91,11 @@ driving the SPA at https://192.0.2.10:8443, decoding the `<video>` frames):
   HDD image `GEOS-mouse supported by APPLEWIN.hdv` (ProDOS, Volume `/BIGWON`) from the
   Asimov Apple II archive mirror (`.../other_os/gui/geos/`). Copyrighted media here is
   free to use in this private home-lab collection (same stance as the C64 GEOS, OS/2,
-  Win9x tiles); we just don't re-distribute the binary media files via the GitHub repo.
-  Baked into the overlay as
+  Win9x stations); we just don't re-distribute the binary media files via the GitHub repo.
+  Captured into the overlay as
   `/opt/bridge/media/geos.hdv`.
 
-## Curated metadata (for the SPA placard)
+## Curated metadata (for the UI placard)
 - **Year:** Apple //e = **1983** (enhanced //e = 1985); **Apple GEOS** = **1988**
   (Berkeley Softworks, ported from the Commodore 64 original).
 - **Lineage:** the Apple II line (MOS 6502 / 65C02) was the machine that made the
@@ -160,20 +160,20 @@ export SDL_AUDIODRIVER=alsa
 cd /opt/bridge/media
 exec linapple
 ```
-- **Windowed, not real fullscreen** — same capture gotcha as the c64 tile: SDL real
+- **Windowed, not real fullscreen** — same capture gotcha as the c64 station: SDL real
   fullscreen mode-switch renders BLACK in the std-VGA framebuffer; a window captures.
 - Kiosk = getty autologin `bridge` on tty1 → `startx` → `~/.xinitrc` (xset s off,
   1024×768) → `/etc/bridge/launch.sh`. If a bad launcher looped getty into
   `start-limit-hit`, clear it with `systemctl reset-failed getty@tty1` before restart.
 
 ### The two GEOS "boot dialogs" were NOT benign (gone since 2026-07-12 v2)
-The original bake documented two cold-boot dialogs as benign and dismissed them
-before baking. In truth both were symptoms of the slot-4 clobber
+The original capture documented two cold-boot dialogs as benign and dismissed them
+before capturing. In truth both were symptoms of the slot-4 clobber
 (`Clock Enable = 4`): with no reachable mouse card GEOS finds **no VBL interrupt
 source** (dialog 1) and **no input driver** (dialog 2, "No mouse card found") — the
-GEOS arrow was DEAD, permanently, on the baked tile. With the clock card moved to
+GEOS arrow was DEAD, permanently, on the captured station. With the clock card moved to
 slot 5, a cold boot goes **straight to the deskTop with no dialogs**. If either
-dialog ever reappears, slot 4 is occupied again: fix that, never dismiss-and-bake.
+dialog ever reappears, slot 4 is occupied again: fix that, never dismiss-and-capture.
 
 ### GEOS mouse: delta-based driver + the kiosk patch (2026-07-12 v2)
 The APPLEWIN-patched GEOS input driver detects the card by scanning slot ROM for
@@ -190,7 +190,7 @@ under an absolute usb-tablet host pointer:
   (stock code re-scaled them: the 16384 re-home became 533122). Host motion feeds
   exact correction deltas against a mirrored estimate of the GEOS arrow position;
   a pin-to-corner handshake on driver init (pin → wait for GEOS to consume it →
-  synced) gives **absolute 1:1 tracking**: the GEOS arrow sits under the SPA
+  synced) gives **absolute 1:1 tracking**: the GEOS arrow sits under the UI
   pointer, and click / double-click / drag land where the user points.
 - `Video.cpp` — no scanline blanking (see display section).
 
@@ -198,7 +198,7 @@ under an absolute usb-tablet host pointer:
 Apple GEOS draws its whole desktop in **monochrome 560×192 double-hi-res** (1-bit
 pixels). Three separate display defects were fixed:
 1. **"Color Standard" (1)** emulates an NTSC color monitor, so GEOS's B/W desktop
-   grew magenta/green/orange artifact fringes on every glyph (original bake).
+   grew magenta/green/orange artifact fringes on every glyph (original capture).
 2. **LinApple blanks every other scanline** for all video types ≥ TV-emu including
    the monochrome modes (`CopySource` in Video.cpp) — after the 1.8× window scale
    and H.264 encode that turned into heavy moire striping across the whole screen.
@@ -215,22 +215,22 @@ pixels). Three separate display defects were fixed:
 **Symptom:** after ~3.5 days of continuous kiosk runtime, Xorg stopped applying
 tablet events — the kernel verifiably kept receiving `EV_ABS` on the tablet's
 `/dev/input/eventN` while the X core pointer stayed frozen; a kiosk/Xorg restart
-(or `loadvm golden`) clears it instantly. The injection chain (SPA → streamhost →
+(or `loadvm golden`) clears it instantly. The injection chain (UI → streamhost →
 dbus `SetAbsPosition` → usb-tablet → guest) is proven correct and identical to the
-working c64/atarist/amiga tiles. Top suspect for the X-internal mechanism is
+working c64/atarist/amiga stations. Top suspect for the X-internal mechanism is
 **systemd-logind pausing the libinput fd without a resume** (unconfirmed — forensics
-were destroyed by a golden restore; root-causing needs a multi-day clone soak).
+were destroyed by a checkpoint restore; root-causing needs a multi-day clone soak).
 
 **Self-heal instead of rabbit-hole:** `pointer-watchdog.service` runs
-`/opt/bridge/pointer-watchdog.py` (root, python3 stdlib + `xdotool`), baked into the
-golden. Every 10 s it drains the tablet's raw evdev stream (a second evdev reader
+`/opt/bridge/pointer-watchdog.py` (root, python3 stdlib + `xdotool`), captured into the
+checkpoint. Every 10 s it drains the tablet's raw evdev stream (a second evdev reader
 does not disturb Xorg's client) and samples the X pointer via `xdotool
 getmouselocation` (DISPLAY/XAUTHORITY resolved from the running Xorg's own cmdline,
 so it survives kiosk restarts and serverauth rotation). It declares a wedge ONLY
 when, across **6 consecutive samples (60 s)**: the kernel saw ≥20 ABS events with
 ≥3 distinct values spanning ≥800 raw units on **both** axes (someone is genuinely
 sweeping the pointer) while the X pointer position was **identical in every
-sample**. A healthy X always breaks the condition; an idle tile produces no kernel
+sample**. A healthy X always breaks the condition; an idle station produces no kernel
 events and can never trigger. On detection it logs to
 `/var/log/pointer-watchdog.log`, restarts the kiosk (`systemctl restart getty@tty1`
 — the proven recovery), best-effort presses Return+space after ~50 s (a leftover
@@ -248,9 +248,9 @@ Pointer motion always follows the tablet regardless of focus, so GEOS is mouse-u
 - streamhost UDP (WebTransport): **54117**.
 - ssh hostfwd (host→guest :22): **127.0.0.1:5817** (guest user `bridge`, key
   `/data/vms/bridge/bridge_key`).
-- SPA web port (reserved for integration): **8117**. VMID **217**.
+- UI web port (reserved for integration): **8117**. VMID **217**.
 
-## Proven raw QEMU profile (the exact tile device set — MUST match golden bake)
+## Proven raw QEMU profile (the exact station device set — MUST match checkpoint capture)
 ```
 qemu-system-x86_64 -name streamhost-apple2 -enable-kvm -m 1536 -smp 2 -cpu host -rtc base=localtime \
   -drive file=overlay.qcow2,if=ide,format=qcow2 -boot c \
@@ -262,7 +262,7 @@ qemu-system-x86_64 -name streamhost-apple2 -enable-kvm -m 1536 -smp 2 -cpu host 
   -loadvm golden   # when the snapshot is present
   -qmp unix:qmp.sock,server=on,wait=off -pidfile qemu.pid
 ```
-Golden bake/verify (HMP over QMP):
+Checkpoint capture/verify (HMP over QMP):
 ```
 python3 /root/qmp_hmp.py qmp.sock 'savevm golden'
 python3 /root/qmp_hmp.py qmp.sock 'loadvm golden'
@@ -272,10 +272,10 @@ python3 /root/qmp_hmp.py qmp.sock 'info snapshots'
 ## Deviations / caveats
 - **Idle GEOS deskTop is silent** — Apple GEOS does not toggle the speaker at the
   deskTop (unlike C64 GEOS's clicks). Audio is proven via the //e power-on beep and is
-  live for any sound-using GEOS app; the tile is not silent-by-fault.
+  live for any sound-using GEOS app; the station is not silent-by-fault.
 - **Pointer:** `SH_POINTER=abs` via usb-tablet → guest X → SDL → LinApple mouse (slot 4)
   → GEOS AppleMouse. Absolute 1:1 tracking, **verified through the browser stream**
-  (Playwright on the SPA: move / icon click / drag / menu open, 2026-07-12 v2).
+  (Playwright on the UI: move / icon click / drag / menu open, 2026-07-12 v2).
 - **Multi-day Xorg input wedge:** X can stop applying tablet events after days of
   continuous runtime (kernel still gets EV_ABS). Mitigated by the baked-in
   pointer-wedge watchdog (see recipe section); the X-internal root cause (logind

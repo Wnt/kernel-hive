@@ -1,6 +1,6 @@
-# SGI IRIX 6.5 (irix tile) — issue #20
+# SGI IRIX 6.5 (irix station) — issue #20
 
-Before touching performance on this tile, read three companion files:
+Before touching performance on this station, read three companion files:
 [`lab/MEASUREMENT-METHODOLOGY.md`](../lab/MEASUREMENT-METHODOLOGY.md) (how to
 measure it, and the four retracted conclusions behind each rule),
 [`lab/irix-closed-register.md`](../lab/irix-closed-register.md) (every angle
@@ -12,26 +12,26 @@ numbers everything is judged against). The rig is
 the unshipped ~1.2 s CRIU reset procedure is
 [`scripts/build-guests/irix/irix-criu/`](../../scripts/build-guests/irix/irix-criu/README.md).
 
-The gallery's first **non-QEMU** streamhost tile. SGI's IRIX 6.5 runs inside
+The gallery's first **non-QEMU** streamhost station. SGI's IRIX 6.5 runs inside
 **MAME** (the `indy_4610` SGI Indy driver) with **`-video none`** — no Xvfb and
 no window at all — publishing each finished frame into a shared-memory mapping
 that streamhost reads via **`SH_CAPTURE=shm`**, with pointer and keys going back
-through **`SH_INPUT_BACKEND=mamesock`**. It is an x11 runtime tile
+through **`SH_INPUT_BACKEND=mamesock`**. It is an x11 station
 (`SH_TILE_RUNTIME=x11`), not a QEMU VM, because MAME's SGI Indy emulation
 kernel-panics under a KVM vCPU and must run
 on the bare-metal host CPU.
 
 - Machine: SGI Indy, MIPS R4600 @ 100 MHz, **256 MB RAM**, XL 24-bit graphics,
   1280x1024. MAME's `indy_4610` ships 16 MB (bank A `4x4M`, bank B empty), which
-  makes IRIX 6.5 + 4Dwm page continuously; the tile's MAME carries
+  makes IRIX 6.5 + 4Dwm page continuously; the station's MAME carries
   `scripts/build-guests/patches/mame-indy-256mb-ram.patch` (banks A+B at `4x32M` = a real
   Indy's 256 MB maximum). It CANNOT be done from a `cfg/` file — `ioport.cpp`
   applies `DEVICE_INPUT_DEFAULTS` only on an exact mask match, so the patch uses
   two per-field entries (`0x000f`/`0x00f0`). Verify a binary offline with
   `sgi -listxml indy_4610` → `4x32M` must be `default="yes"` for banks A and B.
 - OS: IRIX 6.5 (4Dwm Indigo Magic desktop). Login `root`, empty password.
-- Runtime: `streamhost/tiles/irix/x11-runtime.sh` (Xvfb :40 + MAME) — installed
-  as the tile launcher by `scripts/streamhost-tile.sh --x11`.
+- Launcher: `streamhost/tiles/irix/x11-runtime.sh` (Xvfb :40 + MAME) — installed
+  as the station launcher by `scripts/streamhost-tile.sh --x11`.
 - Input: the mamectl control socket (`SH_INPUT_BACKEND=mamesock`, issue #45 —
   see "mamectl control plane" below). The Lua agent below is the `IRIX_CTL=off`
   deep-rollback arm only; its description is kept as the design record.
@@ -44,7 +44,7 @@ on the bare-metal host CPU.
   generate on a WM-less Xvfb the MAME window exactly fills, and when it fails to
   engage nothing reaches the guest at all (which takes the keyboard with it,
   because 4Dwm is pointer-focus). `IPT_MOUSE_X/Y` are relative, so the agent
-  keeps its own accumulators. Verified on the live tile: 60x `MOVE -40 -40` pins
+  keeps its own accumulators. Verified on the live station: 60x `MOVE -40 -40` pins
   the cursor at `0,34`, then 8x `MOVE 32 24` (raw 256,192) lands it at
   `704,374` — i.e. IRIX applies ~2.75x horizontal / ~1.77x vertical
   acceleration, so absolute positioning still needs the documented closed loop
@@ -54,27 +54,27 @@ on the bare-metal host CPU.
   `.append(true)`). It used to `io.open`/read/close (plus a second open to
   truncate) on **every periodic tick**, which cost ~13 percentage points of a
   core forever: MAME at an idle 4Dwm desktop measured **114.3/114.6/114.0% CPU
-  before, 99.7/101.0/101.3% after** (same tile, same `2,10` pin, same desktop),
+  before, 99.7/101.0/101.3% after** (same station, same `2,10` pin, same desktop),
   and `strace` counts zero `openat` on the command file over 5 s where it
   previously did dozens a second.
 - Reset: `relaunch` — a service restart kills MAME+Xvfb by pidfile and
   relaunches. Since the savestate work (issue #44, `mame-indy-savestate.patch`)
-  a relaunch with `IRIX_STATE=golden` set in `tile.env` **restores the baked
+  a relaunch with `IRIX_STATE=golden` set in `tile.env` **restores the captured
   MAME savestate + its paired disk in seconds** instead of the ~390 s cold
   boot; see "Instant restore" below. With `IRIX_STATE` empty the launch is the
   historical pristine cold boot, unchanged.
 - Render rate: `-frameskip 6` (render 6 of 12 frames, ~36 Hz instead of
-  Newport's ~72 Hz). The tile streams at `SH_FPS=30`, so the skipped frames were
+  Newport's ~72 Hz). The station streams at `SH_FPS=30`, so the skipped frames were
   discarded anyway; Newport scan-out is ~31% of runtime and is costed per frame
   generated, so this buys ~+18% emulation speed with no guest-visible timing
   change. Do not raise it — fs7 has zero margin and fs8 drops 34% of frames.
 - CPU pin: `IRIX_CPUS` in `tile.env` (currently `2,10` = one physical core plus
-  its SMT sibling). MAME saturates whatever core it lands on and the lab box is
+  its SMT sibling). MAME saturates whatever core it lands on and labhost is
   shared with build/benchmark agents.
 
 ## Shared-memory capture (`SH_CAPTURE=shm`) — LIVE since 2026-08-02
 
-The tile **used to** stream through `SH_CAPTURE=x11`: MAME rendered into an Xvfb
+The station **used to** stream through `SH_CAPTURE=x11`: MAME rendered into an Xvfb
 and streamhost grabbed the root window. That path was profiled at **~226-257 Gcyc
 (~1.5-1.7 Gcyc per emulated second, 32-43% of host time)**, and it is all raw
 pixel movement: MAME rasterises the Newport framebuffer into an RGB32 bitmap,
@@ -91,31 +91,31 @@ to the encoder's existing BGRA copy-path. It is also a **fidelity fix**: MAME's 
 window was 1272x954 on a 1280x1024 Xvfb and auto-scaled with the display, so the
 exhibit has been streaming a *resampled* picture; the mapping carries the exact
 emulated framebuffer, which is **1288x1024** (IRIX programs the VC2 with eight
-columns of overscan a real monitor never showed — the SPA pins the tile to 5:4 in
+columns of overscan a real monitor never showed — the UI pins the station to 5:4 in
 `spa/src/ui/grid/presentAspect.ts` so those columns do not stretch the desktop).
 
 ### Cutover record (2026-08-02)
 
-Verified on the live tile, in this order, so that each step's evidence stands on
+Verified on the live station, in this order, so that each step's evidence stands on
 its own:
 
-1. **QEMU fleet first.** The 35 QEMU tiles share this binary, so `helenos` was
-   canaried and driven through the REAL SPA in a real Chrome before IRIX was
+1. **QEMU fleet first.** The 35 QEMU stations share this binary, so `helenos` was
+   canaried and driven through the REAL UI in a real Chrome before IRIX was
    touched: decode PASS 1024x768, and `help` typed into the Bdsh prompt echoed
    and executed (whole-frame change 4.1e-2, ~200x the reaction floor). The
-   shared-path edits are inert for QEMU tiles by construction, but 35 exhibits
+   shared-path edits are inert for QEMU stations by construction, but 35 exhibits
    is not where that is worth trusting to reasoning alone.
 2. **MAME binary promoted**, previous kept as `mame/sgi.prev-a33944d3`.
 3. **Registry flip + emit.** The emitted `tile.env` was diffed against live
    before installing: every changed line was an intended part of the cutover.
-4. **Live tile switched.** No Xvfb process at all any more, MAME running
+4. **Live station switched.** No Xvfb process at all any more, MAME running
    `-video none` with no `DISPLAY` in its environment, `fb.shm` 5,275,712 bytes
    (= 64 + 1288x1024x4), daemon `[shmcap] first frame 1288x1024`, encoder
    opened at 1288x1024.
-5. **Browser end to end.** The tile streams in the deployed SPA at
+5. **Browser end to end.** The station streams in the deployed UI at
    **1288x1024** — the exact emulated framebuffer now reaches the visitor —
    presented at 5:4, with the control channel green.
-6. **Pointer 1:1 through the real SPA**, measured against the published
+6. **Pointer 1:1 through the real UI**, measured against the published
    framebuffer (browser mouse → StreamView → WebTransport → the mamecmd sink →
    the Lua agent → the emulated PS/2 ioport → IRIX):
 
@@ -152,7 +152,7 @@ cutover regression, and not something that was lost in a refactor either.
 function's first statement. The x11 sink shipped saying so out loud: *"Keyboard
 (`try_key`) is intentionally not wired: the wire carries XT set1 scancodes and
 Xvfb's evdev keymap needs an XT->X-keycode translation table"* (`6dda418`).
-There has never been a browser key path to this tile.
+There has never been a browser key path to this station.
 
 **`natkeyboard` is not the fix, and wiring `POST` would have looked like one.**
 `indy_4610`'s keyboard is a PC "Microsoft Natural" behind an SGI keymap, and
@@ -170,7 +170,7 @@ This is the proven route from `scripts/build-guests/irix/irix-apps/keys.py`, por
   exposes — the host-side table was read off the running machine with it, not
   guessed (`keys.py`'s hand-dumped table is missing the whole keypad, Menu,
   right Meta and Print Screen).
-- **Shift/Ctrl/Alt are not special-cased anywhere.** The SPA already sends a
+- **Shift/Ctrl/Alt are not special-cased anywhere.** The UI already sends a
   real modifier make/break around a shifted character, so the sink just presses
   the modifier's field like any other key. That is what makes both `_` and
   **Ctrl-C** work, without a chord table.
@@ -198,12 +198,12 @@ keyboard minor — keeps the D-Bus path byte for byte.
 and with the pointer over the root they go nowhere. A visitor who opens a
 Console and then moves the mouse away stops typing into it. Nothing host-side
 can fix that without changing the guest's focus policy (`4Dwm *keyboardFocusPolicy:
-explicit` in the app-defaults, which would need a golden re-bake and would change
+explicit` in the app-defaults, which would need a seed recapture and would change
 the exhibit's period-correct behaviour) — so it is documented, not worked around.
 
-Verified through the real SPA in a browser: typed `root` + Enter at the
+Verified through the real UI in a browser: typed `root` + Enter at the
 `iconlogin` chooser to log in, opened a Console from the Toolchest with the
-SPA's mouse, and typed `ls /usr/demos/General_Demos | head -3` verbatim
+UI's mouse, and typed `ls /usr/demos/General_Demos | head -3` verbatim
 (capitals, `_`, `/`, `|`, `-`) — executed correctly — then Ctrl-C interrupting
 `sleep 300`.
 
@@ -339,7 +339,7 @@ The chain, each link measured on a namespaced clone with an instrumented
   very first `MOVEP 100 60`: `OVERFLOW dx=-32668 dy=32708`.
 - **Reproduced deliberately, on the browser-realistic first-contact sequence**
   (`MOVEP -2048 -2048` home, then a move to the screen centre, then ordinary
-  moves), two clones booted from the same golden, differing only in the
+  moves), two clones booted from the same seed, differing only in the
   accumulator seed:
 
   | arm | first-contact trace (red-cursor centroid) |
@@ -426,7 +426,7 @@ Two real weaknesses were fixed with it:
   is being written to the command file, so a visitor is never nudged mid-drag.
 
 And one weakness the new watchdog introduced and then had to fix, caught by
-watching it run on the live tile: **it relaunched a perfectly healthy guest
+watching it run on the live station: **it relaunched a perfectly healthy guest
 during a login.** xdm resets the X server at login, which re-opens and
 re-initialises the PS/2 mouse, and for a couple of minutes afterwards (the bare
 X root sits there for minutes before 4Dwm draws the Toolchest) an injected nudge
@@ -439,10 +439,10 @@ forever, and the evidence for killing a live exhibit should be cheap to require.
 Time to self-heal is ~7 minutes rather than the ~18 the old settings took, and
 every uncertainty still resolves to "leave it alone".
 
-### 1:1 and losslessness, measured on golden v3
+### 1:1 and losslessness, measured on seed v3
 
-Dead reckoning requires the guest to apply deltas 1:1. Golden
-`irix65-apps-v3.chd` bakes `/.sgisession` running **`xset m 1/1 0`** — not
+Dead reckoning requires the guest to apply deltas 1:1. Seed
+`irix65-apps-v3.chd` captures `/.sgisession` running **`xset m 1/1 0`** — not
 `xset m 0 0`, which sets a zero numerator. Verified on the real framebuffer by
 opening the desktop Console through this very pointer route and running
 `xset q`: `Pointer Control: acceleration: 1/1  threshold: 0`.
@@ -518,7 +518,7 @@ from a byte-identical fresh `disk.chd`, so it is neither the RAM patch nor disk
 corruption.
 
 Because reset mode is `relaunch`, an unlucky reset used to leave a visitor
-staring at a black tile forever. `x11-runtime.sh` therefore arms a **boot
+staring at a black station forever. `x11-runtime.sh` therefore arms a **boot
 watchdog** (`x11-runtime.sh --bootwatch`, backgrounded at launch, pidfile
 `bootwatch.pid`, log `bootwatch.log`):
 
@@ -530,7 +530,7 @@ watchdog** (`x11-runtime.sh --bootwatch`, backgrounded at launch, pidfile
   90 s of continuous black) before it acts, and `IRIX_WATCH_GRACE` (60 s) before
   it looks at all.
 - On a confirmed hang it kills MAME **by pidfile only** and relaunches it on the
-  existing Xvfb from a fresh copy of the golden, up to `IRIX_WATCH_ATTEMPTS` (5)
+  existing Xvfb from a fresh copy of the seed, up to `IRIX_WATCH_ATTEMPTS` (5)
   boots in total. Every attempt is logged.
 - It cannot fight the service: `x11-runtime.sh` stamps a `bootwatch.gen` token
   at each full launch and the watchdog aborts if that token changes, it refuses
@@ -544,11 +544,11 @@ can never mistake a legitimate boot for a failure.
 
 ## Exec channel — `labctl exec irix "<cmd>"` (serial, BUILT — NOT CUT OVER)
 
-The tile *can* have a REAL exec channel: captured stdout+stderr and the guest's
-own exit code, like the ssh and bridge tiles.
+The station *can* have a REAL exec channel: captured stdout+stderr and the guest's
+own exit code, like the ssh and bridge kiosks.
 
-> **Status.** Built, and verified end to end on a clone. The LIVE tile is
-> untouched: it runs the golden without the agent, `x11-runtime.sh` on the box
+> **Status.** Built, and verified end to end on a clone. The LIVE station is
+> untouched: it runs the seed without the agent, `x11-runtime.sh` on labhost
 > has no `-ioc2:rs232a pty`, and `registry/tiles/irix.json` keeps
 > `exec_kind: null` on purpose — so `labctl exec irix` errors out exactly as it
 > did before, rather than advertising a channel that cannot work. The cutover
@@ -570,12 +570,12 @@ short version:
   port. `-ioc2:rs232a pty` in `x11-runtime.sh` == IRIX `/dev/ttyd2`, a port
   `/etc/inittab` leaves free (`t2` ships `off`). `ioc2:rs232b` is `/dev/ttyd1`,
   the console getty from `t1`, and production still leaves it unpopulated.
-- `irixagent.pl` (Perl 5.004 + POSIX::Termios) is baked into the golden at
+- `irixagent.pl` (Perl 5.004 + POSIX::Termios) is captured into the seed at
   `/usr/local/bin/` and started by an `/etc/inittab` **respawn** entry, so init
   supervises it and it survives a relaunch. Idle it blocks in `sysread()` —
-  zero emulated CPU, which matters on a tile that is CPU-bound.
+  zero emulated CPU, which matters on a station that is CPU-bound.
 - `/root/irixexec.py` is the host client; `labctl`'s `exec_kind: "serial_e"`
-  shells out to it with the tile dir. There is **no port**: MAME never prints
+  shells out to it with the station dir. There is **no port**: MAME never prints
   the pty slave's name, so the client scrapes it out of `/proc/<mame>/fd` (and
   checks the pid really is MAME before writing into it). `x11-runtime.sh` also
   publishes it in `<tile>/serial.pts` for convenience, but that file goes stale
@@ -599,7 +599,7 @@ scripts/build-guests/irix/irix-serial-selftest.py     # ~25 s, needs only perl
 Runs the real agent and the real client against each other over a pair of ptys
 with a relay in the middle that corrupts one chosen line on demand — so the
 corruption cases are produced, not waited for. It does not need MAME, IRIX or
-the box. Run it before every re-bake; it is the reason a protocol change is
+labhost. Run it before every recapture; it is the reason a protocol change is
 minutes rather than a day of 4.5-minute cold boots. What it cannot cover is
 IRIX's perl 5.004 and MAME's SCC itself — those still need a booted clone.
 
@@ -642,12 +642,12 @@ IRIX's perl 5.004 and MAME's SCC itself — those still need a booted clone.
 ### X11 / launching demos
 
 The agent exports `DISPLAY=:0` and `XAUTHORITY=/.Xauthority`. That works once
-somebody is logged in. At the `iconlogin` chooser the tile boots to, xdm holds
+somebody is logged in. At the `iconlogin` chooser the station boots to, xdm holds
 the server grabbed and X clients **block indefinitely** — verified: `xdpyinfo`
 never returned in 10 minutes. Always pass `--timeout` (the client kills the
 process group and returns 124), and log in before launching anything graphical.
 
-### Re-baking the agent into a golden
+### Recapturing the agent into a seed
 
 ```
 scripts/build-guests/irix/irix-serial-selftest.py            # protocol first, on any box
@@ -667,8 +667,8 @@ before any bulk transfer — while the guest is echoing it is transmitting, and
 MAME's SCC drops RECEIVED bytes while it does.
 
 **Editing `streamhost/guest-agents/irix/irixagent.pl` does NOT change the
-exhibit.** Only a re-bake does, and no gate in this repo can see inside a
-golden. The agent therefore checksums its own source at startup and reports it
+exhibit.** Only a recapture does, and no gate in this repo can see inside a
+seed. The agent therefore checksums its own source at startup and reports it
 in every PING reply, so which version the guest is running is one command:
 
 ```
@@ -676,11 +676,11 @@ ssh lab 'python3 /root/irixexec.py /data/vms/streamhost/tiles/irix --ping'
 # irixser/2 2.0 <src-sum>            (exit 126 with --agent-src on a mismatch)
 ```
 
-Record the `src-sum` of every baked golden in the table below.
+Record the `src-sum` of every captured seed in the table below.
 
-### `irix65-apps-v3-serial.chd` — the agent golden
+### `irix65-apps-v3-serial.chd` — the agent seed
 
-Built from v3 (`368fcfb9b56fb4165a4e456238dc1a18`, which stays the LIVE golden
+Built from v3 (`368fcfb9b56fb4165a4e456238dc1a18`, which stays the LIVE seed
 until the cutover). Delta versus v3, and nothing else:
 
 - `/usr/local/bin/irixagent.pl`, `/usr/local/bin/irixagent.sh` (mode 755),
@@ -688,42 +688,42 @@ until the cutover). Delta versus v3, and nothing else:
 - one `/etc/inittab` line, `ia:23:respawn:/usr/local/bin/irixagent.sh …`;
   the pre-agent file is kept as `/etc/inittab.preagent`
 
-| golden | md5 | agent | src-sum |
+| seed | md5 | agent | src-sum |
 |---|---|---|---|
 | `irix65-apps-v4.chd` | `0a2118af48852b74df546afb235ab305` | irixser/1, 1.2 | — (superseded) |
 | `irix65-apps-v3-serial.chd` | `f8c67f03ccb19ee979d7aadbd60499d7` | irixser/2, 2.0 | `076e` |
 
-`v4` is kept only as the record of the first bake; it speaks `irixser/1`, which
+`v4` is kept only as the record of the first capture; it speaks `irixser/1`, which
 the current client cannot talk to, and it must not be cut over to.
 
 **The name is not `v5` on purpose.** `irix65-apps-v5.chd` was taken, on the same
-box and on the same day, by the concurrent host-only-networking work
+labhost and on the same day, by the concurrent host-only-networking work
 (`irix-network`, commit `1cab84c`). Two branches numbering the same lineage in
-parallel is how a golden gets silently swapped underneath a tile, so this one
+parallel is how a seed gets silently swapped underneath a station, so this one
 says what it is: v3 plus the serial agent, and nothing else. Whoever merges the
-two lines of work owns re-baking a single combined golden.
+two lines of work owns recapturing a single combined seed.
 
 ### Cutover (human step, in this order)
 
 ```
-# 0. the box's x11-runtime.sh must be byte-identical to main's before step 1 —
+# 0. labhost's x11-runtime.sh must be byte-identical to main's before step 1 —
 #    the live copy carries livewatch fixes that a stale scp would revert.
 ssh lab 'md5sum /data/vms/streamhost/tiles/irix/x11-runtime.sh'
 git show origin/main:streamhost/tiles/irix/x11-runtime.sh | md5sum
-#    if they differ, harvest the box copy FIRST; do not overwrite it.
+#    if they differ, harvest the labhost copy FIRST; do not overwrite it.
 # 1. deploy the launcher (adds -ioc2:rs232a pty + serial.pts). /root/irixexec.py
 #    and /usr/local/bin/labctl were ALREADY put in sync when this landed (both
 #    are inert while exec_kind is null); re-scp only if the repo has moved on.
 scp streamhost/tiles/irix/x11-runtime.sh lab:/data/vms/streamhost/tiles/irix/
 scripts/dev/verify-box-sync.sh | grep -E 'labctl|irixexec'   # both MATCH
-# 2. point the tile at the new golden and relaunch
+# 2. point the station at the new seed and relaunch
 ssh lab "sed -i 's/irix65-apps-v3.chd/irix65-apps-v3-serial.chd/' \
          /data/vms/streamhost/tiles/irix/x11-runtime.sh"   # or set IRIX_GOLDEN
 ssh lab 'systemctl restart streamhost@irix'
 ssh lab 'python3 /root/irixexec.py /data/vms/streamhost/tiles/irix --ping'
 # 3. LAST: publish the capability and prove it
 #    registry/tiles/irix.json -> "exec_kind": "serial_e"  (+ make tile-registry-generate,
-#    commit, sync the repo to the box)
+#    commit, sync the repo to labhost)
 ssh lab 'labctl gen && labctl ls | grep irix'
 ssh lab 'labctl exec irix "hinv | head -3"'
 ```
@@ -734,7 +734,7 @@ serial image is safe to boot on the old launcher too.
 
 ## Assets (large binaries, NOT in the repo)
 
-Stage / verify with `streamhost/tiles/irix/fetch-assets.sh` (run on the box).
+Stage / verify with `streamhost/tiles/irix/fetch-assets.sh` (run on labhost).
 They live in the **production** tree `/data/vms/streamhost/assets/irix/`
 (overridable via `IRIX_ASSETS` / `IRIX_MAME`). They used to be
 read straight out of `/data/vms/soltest/` — the clone/experiment scratch area —
@@ -742,13 +742,13 @@ which meant a live exhibit resting on paths other agents rebuild underneath it;
 promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
 
 - `/data/vms/streamhost/assets/irix/` — **`irix65-apps.chd`** (the exhibit
-  golden the tile actually boots: md5 `09e51dbc…`, 444 **and `chattr +i`**),
+  seed the station actually boots: md5 `09e51dbc…`, 444 **and `chattr +i`**),
   `irix65.chd` (the bare base install it was built from, md5 `430bf0ba…`, also
   444 + immutable), `roms/indy_4610/` (PROM bios b10), `nvram/` (eaddr +
-  `monitor=h` baked), `uicfg/ui.ini` (`skip_warnings 1`).
+  `monitor=h` captured), `uicfg/ui.ini` (`skip_warnings 1`).
   The launcher picks the image via `IRIX_GOLDEN`, so every roll forward and
   roll back along the lineage is a one-variable change. **The live value is set
-  in `tile.env`, and that file is the only authority on which golden is
+  in `tile.env`, and that file is the only authority on which seed is
   serving** — `x11-runtime.sh`'s own default is a fallback, not the answer.
   Today `tile.env` names **`irix65-apps-v8.chd`** (see the FSN section at the
   end of this file); the lineage behind it is v3 (deterministically bare
@@ -758,7 +758,7 @@ promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
   md5 `b8a20bbe27593889995ab57978ca75ae`), v6 (egress guest config), v7
   (v6 merged with the serial exec agent) and v8 (FSN).
 - `/data/vms/streamhost/assets/irix/mame/sgi` — MAME 0.288+ (upstream commit
-  `8f21e978`) built with the tile's whole adopted patch stack.
+  `8f21e978`) built with the station's whole adopted patch stack.
 
   **The ordered stack lives in exactly one place:
   [`scripts/build-guests/irix/irix-mame-stack.sh`](../../scripts/build-guests/irix/irix-mame-stack.sh).**
@@ -771,7 +771,7 @@ promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
   `carrier` check `start_mame()` prints, not prose.
 
   Rebuild it with [`scripts/build-guests/emulators/build-mame-irix.sh`](../../scripts/build-guests/emulators/build-mame-irix.sh)
-  (box, Linux/x86-64) or `build-mame-macos.sh` (dev Mac); both source the same
+  (labhost, Linux/x86-64) or `build-mame-macos.sh` (dev Mac); both source the same
   stack file, so they cannot drift.
 
   | patch | what it buys |
@@ -793,7 +793,7 @@ promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
 
   | patch | why it is out |
   |---|---|
-  | `mame-indy-mips3-fastram.patch` | BLOCKED — with the tile's `-ioc2:rs232a pty` the guest stops at "Memory diagnostic *FAILED* / Check or replace: SIMM S7" and never reaches the chooser. Diagnosis and the bisect table that is its acceptance test are further down this file |
+  | `mame-indy-mips3-fastram.patch` | BLOCKED — with the station's `-ioc2:rs232a pty` the guest stops at "Memory diagnostic *FAILED* / Check or replace: SIMM S7" and never reaches the chooser. Diagnosis and the bisect table that is its acceptance test are further down this file |
   | `mame-newport-vc2-restale-timing.patch` | a real MAME inaccuracy, but disproven as the cause of the black-screen boot hang; it buys nothing |
 
   **Why 8 us for the quantum.** Cold boots fail outright from 32 us up (0/6
@@ -802,36 +802,36 @@ promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
   on this image is 2-in-10, so the failures above 32 us are not that. 8 us is the
   largest value with more than one octave of margin under a measured cliff whose
   failure mode is a guest that never boots. What is still unmeasured is whether 4,
-  8 or 16 us is *faster* — the sweep ran on a box carrying 47-82% foreign CPU. See
+  8 or 16 us is *faster* — the sweep ran on labhost carrying 47-82% foreign CPU. See
   [`docs/lab/irix-pit-quantum-2026-08-03.md`](../lab/irix-pit-quantum-2026-08-03.md).
 
   Build: `make SUBTARGET=sgi SOURCES=src/mame/sgi/indy_indigo2.cpp USE_QTDEBUG=0 -j"$(nproc)"`.
-  `USE_QTDEBUG=0` is not optional on the box — the Qt debugger front end wants
+  `USE_QTDEBUG=0` is not optional on labhost — the Qt debugger front end wants
   `qmake6`, which is not installed, and genie fails the build before compiling
   anything. (`REGENIE=1` only if you changed compiler flags; it forces a full
   regen and invalidates the PCH.)
 
   **The previous binary is kept beside it** for one-variable rollback, exactly
-  as the goldens are: `sgi.prev-<md5>`.
+  as the seeds are: `sgi.prev-<md5>`.
 - `/data/vms/streamhost/assets/irix/glibc/` — **retired 2026-08-07, nothing
   reads it.** It existed only to run the trixie-built `sgi` binary on a bookworm
-  rootfs. The box is trixie (glibc 2.41 / libstdc++ 3.4.33) and the binary needs
+  rootfs. labhost is trixie (glibc 2.41 / libstdc++ 3.4.33) and the binary needs
   at most `GLIBC_2.38` / `GLIBCXX_3.4.32`, so MAME is exec'd directly and the
   `ld-linux … --library-path` indirection is gone from every launcher and rig.
-  The directory is kept on the box, unreferenced, for one rollback cycle.
+  The directory is kept on labhost, unreferenced, for one rollback cycle.
 
-### The golden CHD is copied, not overlaid — and must be immutable
+### The seed CHD is copied, not overlaid — and must be immutable
 
 `irix65.chd` is an **uncompressed** CHD, and MAME opens such an image `O_RDWR`
 and never creates a `-diff_directory` overlay. MAME runs as root, so `chmod 444`
-does not stop it: the golden was silently mutated in place for days (three
+does not stop it: the seed was silently mutated in place for days (three
 distinct md5s on 2026-07-31 before it was caught, exactly the corruption the
 444 was meant to prevent). Locking it with `chattr +i` does stop the writes, but
 MAME has no read-only fallback — it dies with
 `Unable to load image ...: Operation not permitted`.
 
-So the tile keeps the golden **immutable** and `x11-runtime.sh` re-copies it to
-a throwaway per-launch `disk.chd` in the tile dir. Use `cp --reflink=always`,
+So the station keeps the seed **immutable** and `x11-runtime.sh` re-copies it to
+a throwaway per-launch `disk.chd` in the station dir. Use `cp --reflink=always`,
 not `auto`: as a ZFS block clone the 2.24 GB copy takes **0.13 s** instead of
 the ~2 s `auto` costs when it silently falls back to a real copy. Every launch —
 and therefore every reset, which is a relaunch — boots from a pristine image.
@@ -842,7 +842,7 @@ agent traced a 4.5% run-to-run instruction-count σ to the same write-through
 master + per-run clone cut it to 0.5%.
 
 Full design + hard-won findings: `docs/history/irix-tile-issue20-handoff.md` and the
-box recipe `/data/vms/soltest/irix-mame/RECIPE.txt`.
+labhost recipe `/data/vms/soltest/irix-mame/RECIPE.txt`.
 
 ## Track A — apps + demos install rig (`scripts/build-guests/irix/irix-apps/`)
 
@@ -860,7 +860,7 @@ Findings that shape the work:
   are already present. The remaining delta is the **SGI General Demos**,
   **ONC3/NFS v3**, and a handful of Applications-CD leftovers (`gnu`,
   `accessx`, `impr_*` Impressario).
-- **Disk headroom was the blocker.** The golden is 128x16x2000x512 = 2.0 GB;
+- **Disk headroom was the blocker.** The seed is 128x16x2000x512 = 2.0 GB;
   its XFS root is 1870 MiB with only 704 MiB free. `make-work-chd.sh` builds a
   writable `work.chd` at 128x16x6000 (6.29 GB) by rewriting the SGI volume
   header (`sgi-relabel.py`); the filesystem itself is grown **in-guest** with
@@ -873,10 +873,10 @@ Findings that shape the work:
 
 Media (9 SGI CDs, ~3.6 GB) is fetched by `fetch-media.sh` from jrra.zone into
 `/data/vms/soltest/irix-apps/media/` with a `SHA256SUMS` manifest. All install
-work happens on the writable copy in that namespaced directory — the golden
+work happens on the writable copy in that namespaced directory — the seed
 CHD stays `chmod 444` and is only ever read.
 
-### Track A phase 2 — the apps/demos golden (2026-07-31)
+### Track A phase 2 — the apps/demos seed (2026-07-31)
 
 `irix65-apps.chd` (md5 `09e51dbc9080e90785149bbec7a0dd64`) is built and verified:
 root XFS grown in-guest to 5.87 GiB, the **SGI General Demos 6.5.12 (28 demos)**
@@ -899,7 +899,7 @@ What actually prints the wall of `/etc/rc2.d/S77sysevent.989[131]: unix:  not
 found` is a **leftover file with an `S`-prefixed name sitting in `/etc/rc2.d`**:
 
 - `/etc/init.d/Sysevent` (= `/etc/rc2.d/S77sysevent`) builds its merged
-  notifier config in `KMSG_TMP=$0.$$`. One boot, long before this tile existed,
+  notifier config in `KMSG_TMP=$0.$$`. One boot, long before this station existed,
   ran it as PID 989 and left `/etc/rc2.d/S77sysevent.989` behind — a 12551-byte
   **data** file of `unix irix 4194320 KERN_NONE ".*"` notifier rules, mode 644.
 - `rc2` runs *every* `/etc/rc2.d/S*`, so it feeds that data file to the shell.
@@ -909,18 +909,18 @@ found` is a **leftover file with an `S`-prefixed name sitting in `/etc/rc2.d`**:
   once. Turning the *service* off can never stop it.
 - The orphan is inherited: it is present in the base `irix65.chd` too.
 
-Fix = `rm /etc/rc2.d/S77sysevent.989`. Done in the re-bake below.
+Fix = `rm /etc/rc2.d/S77sysevent.989`. Done in the recapture below.
 `chkconfig esp off` was always fine and is what actually bought the boot time:
 `S95availmon: esp chkconfig flag is off. No action.`
 
 #### Reading a CHD's filesystem WITHOUT booting it
 
-Bisecting build stages or auditing a shipped golden does not need a 4.5-minute
+Bisecting build stages or auditing a shipped seed does not need a 4.5-minute
 boot. The IRIX root is plain XFS (big-endian on-disk, which Linux reads
 natively), behind an SGI volume header:
 
 ```sh
-cp --reflink=always <golden>.chd /data/vms/soltest/<yours>/x.chd   # never open the golden
+cp --reflink=always <golden>.chd /data/vms/soltest/<yours>/x.chd   # never open the seed
 chdman extractraw -i x.chd -o x.raw                                # ~6 s, 6.29 GB sparse
 # partition 0 (XFS root) starts at LBA 266240 => byte offset 136314880
 mount -t xfs -o ro,norecovery,nouuid,loop,offset=136314880 x.raw mnt
@@ -936,14 +936,14 @@ sector 0, three big-endian `int`s each (`nblks`, `first_lbn`, `type`).
 Verification on an intermediate `work.chd` is what let the last round ship an
 unverified claim. Verify on the exact artifact you intend to promote.
 
-**The golden must never be given to MAME directly.** MAME opens `-hard1`
+**The seed must never be given to MAME directly.** MAME opens `-hard1`
 read-write and the runtime is root, so `chmod 444` does not protect it — a single
 verification boot changed the file's md5 and size. `chattr +i` does protect it but
 makes MAME refuse to start. Use a ZFS copy-on-write clone per launch instead
 (`cp --reflink=always`, 2.24 GB in ~0.13 s) — that is what `run-golden.sh` does.
-`x11-runtime.sh` does the same, and both goldens in the production asset tree
-are 444 + `chattr +i`, so the live tile is not exposed. **Promoted to the live
-tile 2026-07-31**: the exhibit boots `irix65-apps.chd` and reaches the
+`x11-runtime.sh` does the same, and both seeds in the production asset tree
+are 444 + `chattr +i`, so the live station is not exposed. **Promoted to the live
+station 2026-07-31**: the exhibit boots `irix65-apps.chd` and reaches the
 `iconlogin` chooser in ~4.5 min (was ~6).
 
 ### Demos audit + `irix65-apps-v2.chd` (2026-07-31)
@@ -959,10 +959,10 @@ run-clone.sh` clones `master.chd`, which is the *base* `irix65.chd`
 (md5 `430bf0ba…`). That image has exactly the symptoms reported —
 `/usr/demos` → `Performer` only, and the only `atlantis` is the screensaver
 `/usr/lib/X11/savers/defaults/atlantis`. The perf tree's copy of the apps
-golden is the separate `master-apps.chd`, used only by `drc-trial.sh`. **When a
-tile has two goldens, name the one you booted in the finding.**
+seed is the separate `master-apps.chd`, used only by `drc-trial.sh`. **When a
+station has two seeds, name the one you booted in the finding.**
 
-The audit did produce a corrected golden, for the `S77sysevent.989` orphan:
+The audit did produce a corrected seed, for the `S77sysevent.989` orphan:
 
 - `/data/vms/soltest/irix-demos-audit/irix65-apps-v2.chd`,
   md5 `7ef955e262bcd31cd9f7062ef975697e`, 2,241,540,096 bytes, 444 + `chattr +i`.
@@ -974,7 +974,7 @@ The audit did produce a corrected golden, for the `S77sysevent.989` orphan:
   the framebuffer **on this exact artifact**.
 - v2's one flaw: the clean shutdown let 4Dwm write a *valid*
   `/.desktop-IRIS/0.0/4Dwmsession`, so logging in also restored a `winterm`.
-  (The shipped golden's copy of that file is torn binary garbage from its
+  (The shipped seed's copy of that file is torn binary garbage from its
   unclean exit — which is the only reason it restored nothing. Session restore
   had never been *decided*, only accidental.) Fixed properly in v3 below.
 - Evidence PNGs: `/data/vms/soltest/irix-demos-audit/evidence/`.
@@ -985,7 +985,7 @@ The audit did produce a corrected golden, for the `S77sysevent.989` orphan:
 md5 `368fcfb9b56fb4165a4e456238dc1a18`, 2,241,560,576 bytes, 444 + `chattr +i`.
 `IRIX_GOLDEN` defaults to it; `irix65-apps.chd` and `irix65.chd` stay in place
 for one-variable rollback. Cutover verified on the exhibit: the per-launch clone
-came up at the v3 size (2,241,560,576 vs the previous 2,241,540,096), the tile
+came up at the v3 size (2,241,560,576 vs the previous 2,241,540,096), the station
 reached the iconlogin chooser without watchdog intervention, and logging in gave
 the bare Toolchest-and-icons desktop (Toolchest-crop sd 0.257, screenshot-confirmed).
 
@@ -1016,9 +1016,9 @@ This is the load-bearing mechanism, and two details are traps:
   give a bare desktop — it gives you an iconified console instead.
 - **`SG_autoSave` is read at 4Dwm startup.** Editing the resource and logging
   out in the *same* session still auto-saves, because that 4Dwm was started
-  with the old value. The bake needs two logins: one to install the resource,
+  with the old value. The capture needs two logins: one to install the resource,
   a second (where 4Dwm starts with `autoSave: false`) to fix the session file
-  and shut down. This cost a full bake cycle to discover.
+  and shut down. This cost a full capture cycle to discover.
 - `4Dwmdesks` is rewritten by 4Dwm continuously and is *not* worth fighting —
   it records window placement only and launches nothing.
 
@@ -1053,7 +1053,7 @@ Two cold boots from independent `cp --reflink` clones of the staged file:
 
 One of the boots hit the known black-screen cold-boot hang at the
 console→`iconlogin` handover (X root painted, then black, MAME alive at 109%);
-relaunching cleared it. That is the documented ~8% hang the tile's boot watchdog
+relaunching cleared it. That is the documented ~8% hang the station's boot watchdog
 exists for, not a property of this image.
 
 #### Driving the guest: read coordinates from MAME snapshots only
@@ -1106,7 +1106,7 @@ So the blackness is somewhere else in the pixel path (framebuffer contents, CMAP
 palette, or XMAP mode entries) or in the guest's X server itself, and the
 `REG0`/`RAMW` evidence — while real — does not explain it. **The patch is NOT
 promoted to the production MAME build.** The boot watchdog remains the
-mitigation, and it is what actually keeps a visitor from seeing a black tile.
+mitigation, and it is what actually keeps a visitor from seeing a black station.
 
 What a hung boot does look like, consistently: the blackout lands in a very tight
 emulated window (t=59–62 across all four captured hangs, i.e. the console→X
@@ -1121,7 +1121,7 @@ Dumping to /hw/node/io/gio/hpc/scsi_ctlr/0/target/1/lun/0/disk/partition/1/block
 ```
 
 This killed the live exhibit: a visitor opening Toolchest → Help → "Welcome to
-SGI" (which launches Netscape) got a dead guest ~40 s later, and the tile stayed
+SGI" (which launches Netscape) got a dead guest ~40 s later, and the station stayed
 dead until someone restarted it. The stack pointer is byte-identical across every
 sighting, days apart, on different images.
 
@@ -1163,7 +1163,7 @@ Reading the panic message pays off, and two numbers in it are traps:
 `0x003fffc0` → `0x03ffffc0`, making the page-table base decode identically to the
 PTE field beside it. Worth upstreaming.
 
-**Evidence** (namespaced clones of golden v3, cold boot + scripted login + the
+**Evidence** (namespaced clones of seed v3, cold boot + scripted login + the
 same Toolchest → Help → "Welcome to SGI" trigger, classified from real
 framebuffer grabs):
 
@@ -1186,7 +1186,7 @@ upstream: the software-interrupt check in `mips3drc.cpp`'s
 `generate_update_cycles()` omits the `Status.IE` / `EXL` / `ERL` guards that both
 the interpreter (`set_cop0_reg(COP0_Cause)`) and the DRC's own full-interrupt
 check apply. Adding them was built and tested here and changed nothing, so it is
-**not** carried in the tile's patch stack.
+**not** carried in the station's patch stack.
 
 Reproduction rig (kept, and cheap — ~10 min per trial):
 `/data/vms/soltest/irix-panic/` — `trial2.sh` (boot → login → trigger →
@@ -1269,7 +1269,7 @@ Telling the failure modes apart from a framebuffer grab:
 | `bad istack` panic | console text, mean < 0.62, sd > 0.19 | still advancing |
 | MAME DRC segfault | MAME process is gone | stopped |
 
-**The production tile does not auto-login at all** — `x11-runtime.sh` boots to
+**The production station does not auto-login at all** — `x11-runtime.sh` boots to
 the chooser and stops, so the exhibit cannot panic itself this way. The
 boot-trial rig (`trial.sh` + `probe.lua`) contains zero input code, so the
 hang-rate measurements are unaffected by either the panic or this bug.
@@ -1304,7 +1304,7 @@ Measured, on `indy_4610` with `-networkprovider taptun`:
 - **TCP carries a full session.** A telnet login as `root` (empty password) gives
   a shell; `uname -aR; id` returned `IRIX IRIS 6.5 6.5.22f 10070055 IP22` /
   `uid=0(root) gid=0(sys)` with a real exit code, **in 5.4 s end to end**. A
-  multi-kilobyte here-document (the bake script) was pushed over the same
+  multi-kilobyte here-document (the capture script) was pushed over the same
   session without corruption.
 
 So the emulation is good enough for real work, not just for link-up.
@@ -1313,7 +1313,7 @@ So the emulation is good enough for real work, not just for link-up.
 
 `-networkprovider taptun` only enables the provider. The **binding** —
 which host device a given emulated NIC opens — normally lives in MAME's internal
-"Network Devices" UI, and this tile runs `-video none`: there is no UI at all.
+"Network Devices" UI, and this station runs `-video none`: there is no UI at all.
 
 The binding is persisted in the machine cfg file, and the load path is a **real
 apply**, not a round-trip:
@@ -1327,7 +1327,7 @@ network_manager::config_load()            # src/emu/network.cpp
 
 `set_interface()` calls `osd().open_network_device(id, *this)` and starts the
 device. That is worth stating explicitly because the obvious analogy is the trap
-this tile already hit once: `DEVICE_INPUT_DEFAULTS` in a cfg silently
+this station already hit once: `DEVICE_INPUT_DEFAULTS` in a cfg silently
 round-trips its values back into the file and applies nothing unless the mask
 matches exactly (see the 256 MB RAM patch). The network path is not like that —
 but it was still verified from inside the guest (`ifconfig ec0` UP/RUNNING,
@@ -1365,11 +1365,11 @@ The Linux taptun device does **not** use the name it is handed; it hardcodes
 sprintf(ifr.ifr_name, "tap-mess-%d-0", getuid());
 ```
 
-MAME runs as root here, so every MAME process on the box would compete for the
-single interface `tap-mess-0-0` — the live tile and any clone experiment beside
+MAME runs as root here, so every MAME process on labhost would compete for the
+single interface `tap-mess-0-0` — the live station and any clone experiment beside
 it. `scripts/build-guests/patches/mame-taptun-ifname-env.patch` adds
 `MAME_TAP_IFNAME`; unset, upstream behaviour is unchanged, so it is inert for
-every other MAME use. The tile passes `irixtap0`.
+every other MAME use. The station passes `irixtap0`.
 
 ⚠ **The patch has to be IN the binary you run.** The shipped asset
 `/data/vms/streamhost/assets/irix/mame/sgi` was built without it for several
@@ -1391,9 +1391,9 @@ the directory or fails, atomically, for exactly one caller. A check-then-create
 create, and that window is the whole bug.
 
 Slot N is `irixtapN` on the /30 at `172.31.20.(4N)` — host `.(4N+1)`, guest
-`.(4N+2)` — so slot 0 *is* the production tile's historical `irixtap0` /
+`.(4N+2)` — so slot 0 *is* the production station's historical `irixtap0` /
 `172.31.20.1` / `172.31.20.2`, and `claim` never hands slot 0 out. Nothing about
-the tile's own path changes: it still calls `tapnet.sh up irixtap0 …` with fixed
+the station's own path changes: it still calls `tapnet.sh up irixtap0 …` with fixed
 arguments and never claims anything.
 
 ```
@@ -1418,12 +1418,12 @@ Two properties worth keeping when this is touched:
   it puts the link back DOWN and exits non-zero — unless the kernel agrees the
   isolation is in place.
 
-`tests/tapnet-claim-selftest.sh` (root, on the box) proves all of it — the
+`tests/tapnet-claim-selftest.sh` (root, on labhost) proves all of it — the
 distinct-slot property, the complete-ruleset property, slot-0 protection,
 release and `gc` — in its own `tnst*` / `172.31.29.0` range, so it is safe to run
 beside live clones.
 
-A guest renumbered onto a slot's /30 has to be told: the goldens bake
+A guest renumbered onto a slot's /30 has to be told: the seeds capture
 `172.31.20.2`. Bootstrap a clone on the `.0/30`, telnet in, and
 `ifconfig ec0 inet <slot guest> netmask 0xfffffffc up` (detached — the address
 change drops the session that asked for it), then re-run `tapnet.sh up` with the
@@ -1453,7 +1453,7 @@ which is what makes it survive a relaunch and a host reboot with no extra unit):
 2. **Routing.** `net.ipv4.conf.irixtap0.forwarding=0`, so the kernel will not
    route a packet that arrives on the tap even if the guest invents a route.
    Redirects off, `rp_filter` on, IPv6 disabled on the interface.
-3. **Filter.** Fail-closed rules in the tile's own chains, so nothing here can be
+3. **Filter.** Fail-closed rules in the station's own chains, so nothing here can be
    confused with another agent's rules:
 
    ```
@@ -1471,7 +1471,7 @@ which is what makes it survive a relaunch and a host reboot with no extra unit):
 **Reachable:** guest ⇄ `172.31.20.1` (this host), any protocol.
 **Not reachable:** the LAN (192.0.2.0/24, including this host's own LAN
 address), the internet, any other guest, and any IPv6 at all. There is no NAT
-anywhere, and the box's global `ip_forward=1` (Proxmox sets it) is deliberately
+anywhere, and labhost's global `ip_forward=1` (Proxmox sets it) is deliberately
 *not* relied on being 0 — that is what layers 2 and 3 are for.
 
 ### The `chkconfig` audit — two root web servers, not one
@@ -1483,7 +1483,7 @@ Warning:  Internet Gateway web server running as root.
           Use "chkconfig webface_apache off" to disable.
 ```
 
-`chkconfig` showed a second one beside it. **Turned off in the golden:**
+`chkconfig` showed a second one beside it. **Turned off in the seed:**
 
 | service | why |
 |---|---|
@@ -1505,13 +1505,13 @@ behaviour change on a live exhibit and none is load-bearing for the isolation):
 
 Not touched, and worth naming: **the empty passwords stay**. The exhibit is a
 museum piece where a visitor logs in as `root` with no password, and that is the
-period-correct behaviour the tile exists to show. It is only safe because of the
+period-correct behaviour the station exists to show. It is only safe because of the
 isolation above, which is the whole argument for building the isolation first.
 
 ### An exec channel over TCP — and how it compares to the serial one
 
 `telnet` + the already-running inetd gives **captured stdout and a real exit
-code in ~5 s**, plus file push, with no in-guest agent to build, bake or keep
+code in ~5 s**, plus file push, with no in-guest agent to build, capture or keep
 alive:
 
 ```
@@ -1524,12 +1524,12 @@ XX_DONE_0
 Against the serial agent being built in parallel, on the evidence here:
 
 - **Nothing has to be installed in the guest.** inetd, telnetd and ftpd are
-  already running on the shipped golden; the only guest-side change networking
+  already running on the shipped seed; the only guest-side change networking
   needed was three lines of config.
 - **Bandwidth and latency are not a consideration** — a 3 KB script pushed as a
   here-document arrived intact and the round trip is milliseconds, where a
   9600-baud console is ~1 KB/s and shares the console with boot messages.
-- **It survives a golden re-bake trivially** (it is config, not a binary), and it
+- **It survives a seed recapture trivially** (it is config, not a binary), and it
   does not consume the emulated serial port.
 - **What it does not do**: it is dead until IRIX has finished booting and
   `rc2` has started inetd, whereas a serial console is attached from the PROM
@@ -1595,7 +1595,7 @@ Isolation was tested adversarially on a live clone, not argued:
 | **after `route add default 172.31.20.1`** | still 100% loss to all three, and the host's `IRIXNET-IN` chain counted the drops (`3 packets`) — the packets aimed at the host's own LAN address are the ones only that chain stops |
 | `ping 172.31.20.1` throughout | 0.0% loss |
 
-**Not switched on the live tile.** `IRIX_GOLDEN` still defaults to v3 and the
+**Not switched on the live station.** `IRIX_GOLDEN` still defaults to v3 and the
 production MAME binary is unchanged. The cutover is three coordinated moves,
 and doing fewer than all three is the failure mode to avoid:
 
@@ -1604,16 +1604,16 @@ and doing fewer than all three is the failure mode to avoid:
    `e513fbb69299ae56a0db70ad2adba636`; the live stack + `mame-taptun-ifname-env
    .patch`). Promote it to `mame/sgi`, keeping the current one as
    `sgi.prev-0db27300`.
-2. **Golden** — `IRIX_GOLDEN=/data/vms/streamhost/assets/irix/irix65-apps-v5.chd`
+2. **Seed** — `IRIX_GOLDEN=/data/vms/streamhost/assets/irix/irix65-apps-v5.chd`
    (already staged, 444 + `chattr +i`).
-3. **Tile files** — re-emit so `tapnet.sh` and the `IRIX_NET=on` fixture reach
-   the tile dir, then restart `streamhost@irix`.
+3. **Station files** — re-emit so `tapnet.sh` and the `IRIX_NET=on` fixture reach
+   the station dir, then restart `streamhost@irix`.
 
 Getting (3) without (1) is not dangerous but is silent-ish: an unpatched MAME
 ignores `MAME_TAP_IFNAME`, opens upstream's `tap-mess-0-0`, finds nothing and
 runs on with no networking. That is exactly why `start_mame()` checks
 `/sys/class/net/<tap>/carrier` after launch and says so out loud — verified by
-launching the staged golden against the *unpatched live binary* and watching the
+launching the staged seed against the *unpatched live binary* and watching the
 warning fire.
 
 Rollback at any point is `IRIX_NET=off` in `tile.env`: not one MAME argument
@@ -1645,10 +1645,10 @@ reachability at all.
 | guest → LAN, internet | **no** (`Network is unreachable`, and dropped even if a route is invented) | **yes**, masqueraded out of the host's default-route interface |
 | guest → the host's own LAN address `192.0.2.10` | **no** | **no** — `IRIXNET-IN` still drops it |
 | anything → guest | **no** | **no** — no DNAT, no port forward, no inbound `NEW` |
-| forwarding | `net.ipv4.conf.<tap>.forwarding=0` | `=1` on the tap and the uplink **only**; the box's global `ip_forward` is neither read nor written |
+| forwarding | `net.ipv4.conf.<tap>.forwarding=0` | `=1` on the tap and the uplink **only**; labhost's global `ip_forward` is neither read nor written |
 
-The rules, in this tile's own chains so nothing here collides with another
-agent's (`iptables -S` on the box, egress mode):
+The rules, in this station's own chains so nothing here collides with another
+agent's (`iptables -S` on labhost, egress mode):
 
 ```
 -A IRIXNET-FWD -s 172.31.20.2/32 -i irixtap0 -o vmbr0 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
@@ -1674,10 +1674,10 @@ internet, so treat it as an untrusted machine *on* your LAN for the purposes of
 what it might do outward (it is a 2003 OS a visitor has root on); nothing can
 connect *to* it, which is the exposure that would actually matter.
 
-### The guest side — three files, all in the golden
+### The guest side — three files, all in the seed
 
-Baked by `scripts/build-guests/irix/irix-net-egress-bake.sh` on top of v5, because
-a runtime hack would not survive a re-bake:
+Captured by `scripts/build-guests/irix/irix-net-egress-bake.sh` on top of v5, because
+a runtime hack would not survive a recapture:
 
 | file | why |
 |---|---|
@@ -1685,7 +1685,7 @@ a runtime hack would not survive a re-bake:
 | `/etc/resolv.conf` — `1.1.1.1`, `9.9.9.9`, `retrans 1000`, `retry 1` | see below: the timeouts are the load-bearing part, not the servers |
 | `/etc/nsswitch.conf` — `hosts: files dns` (was `nis dns files`) | nsd's shipped order consults **NIS first** on a machine with no NIS domain. It happens to fail fast, but "ask a service we do not use, first, on a live network" is not a thing to leave in |
 
-A golden carrying a default route is **not** a golden that has been opened up:
+A seed carrying a default route is **not** a seed that has been opened up:
 with the host in sandbox mode the route exists and the packets still die in the
 host's chains — that exact case was tested adversarially (see the table in the
 previous section). Keeping the guest identical across both host modes is what
@@ -1701,7 +1701,7 @@ visitor like a hung machine, and that is a worse exhibit bug than one that fails
 | forward lookup, egress on | `nslookup example.com` → `104.20.23.154, 172.66.147.243` |
 | reverse lookup, egress on | `ping 1.1.1.1` prints `PING one.one.one.one` |
 | **NXDOMAIN** | `Non-recoverable failure in name resolution` — **same second**, no stall |
-| no resolver at all (the pre-bake v5 state) | also instant; the `netstate=loopback` guest never gets as far as a query |
+| no resolver at all (the pre-capture v5 state) | also instant; the `netstate=loopback` guest never gets as far as a query |
 | `retrans 1000 retry 1` | bounds a doomed lookup at ~2 s (2 servers × 1 try) — this is what the sandbox-mode case costs |
 
 **One thing does hang, and it is worth knowing:** `nslookup` with no
@@ -1712,7 +1712,7 @@ script that shells out to `nslookup` on a guest without one will wedge.
 
 ### The web — the proxy was built, and then dropped
 
-Netscape Communicator **4.8a** (shipped in the golden, `versions -b`) speaks
+Netscape Communicator **4.8a** (shipped in the seed, `versions -b`) speaks
 SSL 2/3 and TLS 1.0 with 1990s ciphers and a root store that expired last
 decade. Point it at the 2026 web with perfect connectivity and it reaches every
 site and opens none of them. A host-side TLS-terminating proxy (`irixproxy.py`
@@ -1725,11 +1725,11 @@ the launcher and not in `tile.env`.
 directly. Plain `http://` works. `https://` fails at the handshake. That is the
 accepted consequence, not a defect to file.
 
-**The prefs had to move with it.** A golden left carrying
+**The prefs had to move with it.** A seed left carrying
 `network.proxy.type 1` pointing at a proxy nobody runs is strictly worse than
 no proxy at all: every page load fails, including ones the browser could serve
 itself. So `irix-net-egress-bake.sh` now writes `network.proxy.type 0` and
-`browser.startup.page 0`, and the merged golden (below) was re-baked with them.
+`browser.startup.page 0`, and the merged seed (below) was recaptured with them.
 Anything still referencing 172.31.20.1:8080 is stale.
 
 ### Measured from inside the guest, on the exact staged artifact
@@ -1754,9 +1754,9 @@ Two IRIX quirks for anyone scripting this: `ftp` uses **EPSV**, so no
 `nf_conntrack_ftp` helper is needed on the host; and root's shell is csh, so the
 exec channel drops into `/bin/sh` first (as the previous section says).
 
-### v7 — the merged golden, and what the tile now ships (2026-08-03)
+### v7 — the merged seed, and what the station now ships (2026-08-03)
 
-Two goldens had diverged from v3 and neither contained the other: **v4** carried
+Two seeds had diverged from v3 and neither contained the other: **v4** carried
 the serial exec agent, **v6** carried the egress guest config. `irix65-apps-v7.chd`
 is the merge, **md5 `4f36d0b8d88e48ae02e40668b55d9a74`**, 2,241,626,112 bytes,
 staged 444 + `chattr +i` beside the others.
@@ -1779,7 +1779,7 @@ How it was built (all of it reproducible from the repo, no hand editing):
 **Verified by cold boot on a clone running the PRODUCTION launcher** — repo
 `x11-runtime.sh`, `IRIX_CAPTURE=shm`, `-video none`, v7, `IRIX_NET=on`,
 `IRIX_NET_EGRESS=on`, the `sgi.taptun-e513fbb6` binary, pinned to one core pair —
-never the tile service, which stayed stopped throughout:
+never the station service, which stayed stopped throughout:
 
 | check | result |
 |---|---|
@@ -1807,8 +1807,8 @@ is accepted only `-i irixtap0 -o vmbr0`, the return direction is
 
 ### Cutover — what is installed, and the one move left
 
-`tapnet.sh` was **absent from the tile dir entirely** — networking was not wired
-into the live tile at all — and the tile-dir `x11-runtime.sh` was behind the
+`tapnet.sh` was **absent from the station dir entirely** — networking was not wired
+into the live station at all — and the station-dir `x11-runtime.sh` was behind the
 repo. Both are now installed, along with `tile.env` carrying `IRIX_NET=on`,
 `IRIX_NET_EGRESS=on`, `IRIX_GOLDEN=…v7.chd` and `IRIX_MAME=…sgi.taptun-e513fbb6`.
 The service stays **stopped**; nothing here starts it.
@@ -1816,7 +1816,7 @@ The service stays **stopped**; nothing here starts it.
 The one move deliberately NOT made at the time: **`mame/sgi` was not
 overwritten.** The integration phase was building a single binary carrying the
 PIT + cacheline patches, and promoting a binary it would immediately replace is
-how two changes become one confusing rollback. `IRIX_MAME` pinned the tile to
+how two changes become one confusing rollback. `IRIX_MAME` pinned the station to
 the staged taptun build until then.
 
 **Closed the same day** — see
@@ -1845,9 +1845,9 @@ Two other multi-agent hazards seen the same afternoon: a sibling rig assigned
 `172.31.20.1/30` as a **secondary address on its own tap**, so two interfaces
 held the same host address (the guest kept working, but the routing is
 ambiguous and this is worth checking with `ip -o addr | grep 172.31.20.1/30`
-before trusting a result); and the guest address itself is baked into the golden
+before trusting a result); and the guest address itself is captured into the seed
 (`/etc/hosts`), so concurrent IRIX network rigs cannot simply pick different
-/30s without a re-bake.
+/30s without a recapture.
 
 
 ### Compiler flags — measured, not adopted (2026-07-31)
@@ -1855,7 +1855,7 @@ before trusting a result); and the guest address itself is baked into the golden
 After the 256 MB RAM patch and the Newport dirty-frame cache, **compiler flags
 were the last unmeasured performance lever.** They were built and benchmarked
 properly, and the answer is **no: neither `-march=native` nor LTO is worth
-adopting.** The tile keeps stock MAME flags. This question is closed — do not
+adopting.** The station keeps stock MAME flags. This question is closed — do not
 re-open it without a new hypothesis about *why* the flags would help.
 
 Build gotchas that cost real time to rediscover (all four are load-bearing):
@@ -1889,7 +1889,7 @@ idle ~159% — so a flag effect could easily have differed between them. It did
 not.
 
 Result, as within-round paired ratios against the generic-flags control (n=6;
-median is the headline because a single perturbed round on this shared box moves
+median is the headline because a single perturbed round on this shared labhost moves
 an arm's mean by >10%):
 
 | arm | boot (emu 40–120 s) | transition (120–200 s) | idle (200–300 s) |
@@ -1922,15 +1922,15 @@ code cache (`mame-indy-drc-cache-256mb.patch`). Through 4 KiB pages that is
 ~131,000 pages, which looks like heavy dTLB and iTLB pressure. Backing both with
 2 MiB transparent hugepages **works exactly as intended and is still not worth
 adopting**: it halves TLB walks, but TLB walks are only ~2–3% of cycles on this
-workload, so there is at most ~1% to recover. The tile keeps 4 KiB pages.
+workload, so there is at most ~1% to recover. The station keeps 4 KiB pages.
 
-**Baseline state matters and was established before claiming any delta.** The
-box is `transparent_hugepage/enabled = madvise`, `defrag = madvise`,
+**Baseline state matters and was established before claiming any delta.**
+labhost is `transparent_hugepage/enabled = madvise`, `defrag = madvise`,
 `shmem_enabled = never`. `/proc/<mame>/smaps` for the stock binary shows
 `AnonHugePages: 0 kB` and `THPeligible: 0` on **every** hot mapping, so MAME
 gets zero hugepages today. No host-wide setting was changed at any point during
 the experiment — the arms are per-process `madvise()`, precisely so concurrent
-work on the box is not corrupted.
+work on labhost is not corrupted.
 
 Two mechanism findings, both non-obvious:
 
@@ -1954,11 +1954,11 @@ With both applied, `smaps` confirms the mechanism took: DRC cache **262 MB of
 Method: one binary for all arms, selected at runtime by `IRIX_HUGEPAGE=off|ram|
 drc|both`, so there is no code-layout confound between control and treatment.
 Same within-run windowing harness as the compiler-flag experiment. Headline
-figures are from a **12-round interleaved A/B on a quiesced box** (4 disjoint
+figures are from a **12-round interleaved A/B on a quiesced labhost** (4 disjoint
 core pairs; the only other emulator-class process was the standing
-another co-located VM). An earlier 16-round dataset taken while the box carried
+another co-located VM). An earlier 16-round dataset taken while labhost carried
 ~20 load average agrees on sign and mechanism but has 4× the spread, and its
-first round — taken while the tile shutdown was still draining — is discarded.
+first round — taken while the station shutdown was still draining — is discarded.
 
 | window | control | `both` (paired median, n=12) | 95% CI | Wilcoxon p |
 |---|---|---|---|---|
@@ -1980,7 +1980,7 @@ So hugepages **halve** the walk rate at boot — the mechanism is real and
 confirmed — but total page-walk cycles only fall 2.93% → 1.87%, i.e. **1.06
 points of cycles, worth ~+1.1% speed.** The measured boot delta (+1.71%) matches
 that. At idle the walk cycles barely move (2.18% → 2.13%, ~0.05 points) and the
-speed delta is correspondingly indistinguishable from zero. **Idle is the tile's
+speed delta is correspondingly indistinguishable from zero. **Idle is the station's
 actual operating regime, so the answer for the exhibit is: no effect.**
 
 Attribution between the two allocations is clean and matches the hypothesis that
@@ -2005,7 +2005,7 @@ boot is still deterministic.
 
 The experiment tree, the runtime-gated patch
 (`mame-indy-hugepage-EXPERIMENT.diff` — note it also carries the shipped
-`dma_translate` hunk), the harness and all raw results are kept on the box under
+`dma_translate` hunk), the harness and all raw results are kept on labhost under
 `/data/vms/soltest/irix-hugepage/`. **Do not re-open this without a new
 hypothesis about where the cycles would come from** — the TLB-walk budget on
 this workload is ~2–3% of cycles total, which is the whole prize even if every
@@ -2060,28 +2060,28 @@ inference: emulated t=100 s renders **byte-identically to control**
 (md5 `5bbf4cbe…`, a frame a control boot is already known to produce).
 
 **Not adopted — it is BLOCKED on a correctness defect found while landing it
-(2026-08-03, below).** Experiment tree, harness and raw results are on the box
+(2026-08-03, below).** Experiment tree, harness and raw results are on labhost
 under `/data/vms/soltest/v100-fastram-for-indy-ram/`.
 
 ### …and why it is NOT installed: it fails IRIX's own memory diagnostic
 
-Landing the patch meant running it under the tile's **exact** production
+Landing the patch meant running it under the station's **exact** production
 configuration rather than the measurement rig's. It does not survive that.
 
-With `-ioc2:rs232a pty` — a flag the tile passes on every launch — the fastram
+With `-ioc2:rs232a pty` — a flag the station passes on every launch — the fastram
 binary boots to
 
 > Memory diagnostic **\*FAILED\*** / Check or replace: **SIMM S7** /
 > Diagnostics failed. \[Press any key to continue.\]
 
 and stops there forever. The exhibit never reaches the login chooser. The
-control binary, in the same clone, on the same golden, at the same instant,
+control binary, in the same clone, on the same seed, at the same instant,
 reaches the chooser normally.
 
 The bisect, all on production-config clones, all read off the real framebuffer
 (`shmpng.py` on the shm mapping) and never inferred from a log:
 
-| binary | golden | `-ioc2:rs232a pty` | result |
+| binary | seed | `-ioc2:rs232a pty` | result |
 |---|---|---|---|
 | control (`0db27300…`, = the shipped binary) | v7 | yes | chooser ✔ (2 runs) |
 | fastram | v7 | yes | **memory diagnostic FAILED** (3 runs) |
@@ -2092,7 +2092,7 @@ The bisect, all on production-config clones, all read off the real framebuffer
 | fastram | v7 | no, but `-cfg_directory` | chooser ✔ |
 
 So it is the serial port, and only in combination with fastram — not the
-golden, not the network, not the throttle, and not the specific build (the
+seed, not the network, not the throttle, and not the specific build (the
 earlier env-gated binary `sgi.fr` with `IRIX_FASTRAM=1` fails identically,
 which is also what proves the two builds implement the same thing).
 
@@ -2124,7 +2124,7 @@ above, which is the acceptance test.
 
 ### The landing attempt's own numbers (2026-08-03) — n=1, do not believe them
 
-The A/B was re-run on the production binary/golden/flags with a new
+The A/B was re-run on the production binary/seed/flags with a new
 **`sweep`** phase in `scripts/build-guests/irix/irix-bench/irixbench.sh`: the pointer
 is dragged continuously across the 4Dwm root for the whole hold, so the guest is
 doing Newport register traffic rather than sitting in the kernel idle loop. That
@@ -2144,20 +2144,20 @@ the next attempt knows the sweep phase works and what the contention cost.
 
 Three campaigns patched MAME in the same week — the cache-line-size memo, the
 PIT idle-strobe fix + scheduling quantum pair, and MIPS3 fastram — while a
-fourth needed `mame-taptun-ifname-env.patch` promoted so the tile's tap works at
-all. The tile runs exactly one binary, so they had to become one build.
+fourth needed `mame-taptun-ifname-env.patch` promoted so the station's tap works at
+all. The station runs exactly one binary, so they had to become one build.
 
 **Result:** `/data/vms/streamhost/assets/irix/mame/sgi`, md5
 `de4eb969f8ff3d72fc5b23ae23a40056`, built by
 `scripts/build-guests/emulators/build-mame-irix.sh` from a pristine `8f21e978` plus the
 twelve patches in `scripts/build-guests/irix/irix-mame-stack.sh`, in that order,
 nothing else. The outgoing binary is kept as `sgi.prev-0db27300`. `IRIX_MAME` is
-gone from `tile.env`, so the tile takes the default again.
+gone from `tile.env`, so the station takes the default again.
 
 Relative to the binary it replaces, this one adds: the taptun interface patch
-(the tile's networking did not work without it), the cache-line-size memo, and
+(the station's networking did not work without it), the cache-line-size memo, and
 the PIT/quantum pair. `mame-indy-mips3-fastram.patch` is **not** in it — see the
-fastram section above; under the tile's real command line it fails IRIX's memory
+fastram section above; under the station's real command line it fails IRIX's memory
 diagnostic and never reaches the chooser.
 
 ### What combining them turned up that no single campaign saw
@@ -2180,19 +2180,19 @@ ordering that means anything.
 `build-mame-macos.sh` carried its own list, which was missing the Newport
 dirty-frame cache, the shm producer and the ds1386 fix — three patches that have
 been in the shipped binary for days. It now sources the same
-`irix-mame-stack.sh` the box build does, with the arch gate (256 MB DRC cache,
+`irix-mame-stack.sh` the labhost build does, with the arch gate (256 MB DRC cache,
 x86-64 only) and an OS gate (taptun, Linux only) expressed in the stack itself
 rather than duplicated per script.
 
-**`USE_QTDEBUG=0` is not optional on the box.** Without it genie looks for
+**`USE_QTDEBUG=0` is not optional on labhost.** Without it genie looks for
 `qmake6`, does not find it, and the build dies before compiling a line — a
 detail that lived only in per-campaign scratch scripts.
 
-### Smoke test — production configuration, tile service stopped
+### Smoke test — production configuration, station service stopped
 
-`smoke.sh` copies the tile's own `x11-runtime.sh`, `irixagent.lua`, `fbstat.py`
+`smoke.sh` copies the station's own `x11-runtime.sh`, `irixagent.lua`, `fbstat.py`
 and `tapnet.sh` into a namespaced clone dir, reads `tile.env` the way systemd
-does, and runs the launcher there — same golden (v7), same `SH_CAPTURE=shm`,
+does, and runs the launcher there — same seed (v7), same `SH_CAPTURE=shm`,
 same `-video none -sound none -frameskip 6`, same `IRIX_NET=on` +
 `IRIX_NET_EGRESS=on`, both watchdogs armed, throttled exactly as shipped.
 `streamhost@irix` was `inactive` throughout and was never started.
@@ -2214,12 +2214,12 @@ scheduling quantum boots to a desktop where **neither** works, and the frame
 statistics of that desktop are indistinguishable from a healthy one. Only
 driving input end to end tells the two apart.
 
-After promotion the same clone was launched a third time from the tile's
+After promotion the same clone was launched a third time from the station's
 **installed** configuration verbatim — no `IRIX_MAME`, no binary argument — and
 came up on `/data/vms/streamhost/assets/irix/mame/sgi` = `de4eb969…` with the
 tap carrier up. `streamhost@irix` was `inactive` for all three runs.
 
-## FSN — SGI's 3D file browser, and golden v8 (2026-08-03)
+## FSN — SGI's 3D file browser, and seed v8 (2026-08-03)
 
 `fsn` is the File System Navigator from *Jurassic Park* ("It's a Unix system!
 I know this!"). It lays a directory tree out as pedestals on a landscape —
@@ -2260,7 +2260,7 @@ interpreter /usr/lib/libc.so.1` — the oldest of IRIX 6.5's three ABIs, which
 COFF build (`fsn.COFF.tar.Z`, IRIX 4.0.1) would not have run here at all.
 
 **It is IRIS GL, not OpenGL**, and that turns out to cost nothing: all eleven
-`DT_NEEDED` entries resolve on the shipped golden with no additions.
+`DT_NEEDED` entries resolve on the shipped seed with no additions.
 
 ```
 libgl.so libSgm.so.1 libXm.so.1 libXt.so libXi.so libXext.so
@@ -2278,8 +2278,8 @@ already installed and running.
 
 ### How it was installed, and how it was proved
 
-On a namespaced clone of golden v7 (`/data/vms/soltest/fsn-<tag>/`) running the
-**production launcher** — the tile's own `x11-runtime.sh`, `SH_CAPTURE=shm`,
+On a namespaced clone of seed v7 (`/data/vms/soltest/fsn-<tag>/`) running the
+**production launcher** — the station's own `x11-runtime.sh`, `SH_CAPTURE=shm`,
 `-video none`, throttled, both watchdogs, its own `tapnet.sh claim` slot and its
 own core pair. `streamhost@irix` was never touched.
 
@@ -2328,22 +2328,22 @@ crosshair whose offset is a velocity — pressing it and moving once flew for a
 second or two and then stopped, so sustained flight needs the pointer moved
 continuously, not parked at an offset.
 
-### Scanning is the visitor-facing cost, and it is baked
+### Scanning is the visitor-facing cost, and it is captured
 
 The first run walks the whole tree and writes a database in the home directory
 (`/.FSN__usr`, 327 011 bytes) that later runs read in seconds. On `/usr` that
 first walk took **~18 minutes of guest clock** — process start 17:58:24, the
-database on disk at 18:16. A visitor must never pay that, so golden **v8 ships the
+database on disk at 18:16. A visitor must never pay that, so seed **v8 ships the
 scanned database**, saved through fsn's own `Session ▸ Save database` and then a
 clean `Session ▸ Quit` before the guest was halted with `shutdown -y -i0 -g0`
 (a real halt to "Okay to power off", so the XFS log is clean in the image).
 
 ### `irix65-apps-v8.chd` — LIVE since 2026-08-04
 
-| golden | md5 | size | contents |
+| seed | md5 | size | contents |
 |---|---|---|---|
 | `irix65-apps-v7.chd` | `4f36d0b8d88e48ae02e40668b55d9a74` | 2 241 626 112 | v7 — serial agent + egress config; the rollback target |
-| `irix65-apps-v8.chd` | `5c0c3b37382e47ff75880a5988a89be2` | 2 241 679 360 | **the live golden** — v7 + FSN 1.2 + the `/usr` scan database |
+| `irix65-apps-v8.chd` | `5c0c3b37382e47ff75880a5988a89be2` | 2 241 679 360 | **the live seed** — v7 + FSN 1.2 + the `/usr` scan database |
 
 Verified on the promoted artifact itself, without booting it — reflink-copy,
 `chdman extractraw`, `mount -t xfs -o ro,norecovery,nouuid,offset=136314880`:
@@ -2357,9 +2357,9 @@ the four installed files above, `/.FSN__usr`, and fsn's saved window state.
 
 **Cut over 2026-08-04 02:09:51** — `IRIX_GOLDEN` in `tile.env` now names v8 and
 `streamhost@irix` was restarted onto it. Rollback is that one variable back to
-v7 and a restart; the tile re-copies the golden per launch, so v8 itself stayed
+v7 and a restart; the station re-copies the seed per launch, so v8 itself stayed
 444 + immutable (md5 unchanged after the cutover boot). Verified on the live
-tile after the restart: cold boot to the byte-identical `iconlogin` chooser
+station after the restart: cold boot to the byte-identical `iconlogin` chooser
 (frame mean 0.702353 sd 0.166836), the shm mapping being written at
 5 275 712 bytes, `labctl exec irix` answering, and `/usr/sbin/fsn` (340 856) +
 `/.FSN__usr` (327 011) present in the running guest.
@@ -2378,10 +2378,10 @@ no visitor will do. Two period-correct ways to surface it, neither applied:
    and it changes the deterministically bare desktop that v3 was built to
    guarantee, which is load-bearing for the boot-comparison harness.
 
-Both need a golden re-bake, and both change what the exhibit looks like on
+Both need a seed recapture, and both change what the exhibit looks like on
 arrival — a curatorial call. The **desktop icon** was made; see below.
 
-### The desktop icon, and golden v9 (2026-08-04)
+### The desktop icon, and seed v9 (2026-08-04)
 
 `demos` — the account a visitor logs in as — now has an `fsn` icon on the
 Indigo Magic desktop that starts FSN on `/usr` when double-clicked.
@@ -2394,9 +2394,9 @@ Three files inside the guest, and nothing else:
 | `/usr/lib/filetype/local/Fsn.ftr` | the file-type rule: `MATCH glob("fsn")`, `SUPERTYPE Executable`, `CMD OPEN /usr/sbin/fsn /usr &` |
 | `/usr/lib/filetype/local/iconlib/Fsn.fti` | the icon picture |
 
-plus a copy of the baked scan database at `/usr/demos/.FSN__usr` (the golden's
+plus a copy of the captured scan database at `/usr/demos/.FSN__usr` (the seed's
 lives in root's home; without it `demos` pays the ~18-minute first-run walk of
-`/usr` the golden exists to avoid). `local/` is the vendor-neutral directory the
+`/usr` the seed exists to avoid). `local/` is the vendor-neutral directory the
 Makefile documents for root-written rules; `/usr/lib/filetype/local/local.otr`
 and `desktop.otr` were rebuilt with `cd /usr/lib/filetype && make`.
 
@@ -2430,11 +2430,11 @@ ranked colour bars, the white pedestal slab — in 32 polygons.
 Repo copies: `scripts/build-guests/irix/irix-fsn-icon/` (`Fsn.ftr`,
 `iconlib/Fsn.fti`, the generator, the measured colour table).
 
-| golden | md5 | size | contents |
+| seed | md5 | size | contents |
 |---|---|---|---|
 | `irix65-apps-v9.chd` | `10f6071c71170639243af8fbd523decd` | 2 241 859 584 | v8 + the FSN desktop icon (staged; **`IRIX_GOLDEN` still names v8**) |
 
-Baked on a namespaced clone of v8 running the production launcher, halted with
+Captured on a namespaced clone of v8 running the production launcher, halted with
 `shutdown -y -i0 -g0` to "Okay to power off" so the XFS log is clean, then
 promoted 444 + `chattr +i`. Everything the login touched (`.Sgiresources`,
 `.desktop-IRIS`, the `Desktop/` entries the desktop auto-creates) was restored or
@@ -2445,7 +2445,7 @@ Cutover to v9 was done 2026-08-04 (`IRIX_GOLDEN` in `tile.env`, harvested into
 
 ## Instant restore — MAME savestate (issue #44, 2026-08-04)
 
-The tile boots by **restoring a baked MAME savestate in ~5 s** instead of the
+The station boots by **restoring a captured MAME savestate in ~5 s** instead of the
 ~390 s cold boot. `indy_4610` now carries `MACHINE_SUPPORTS_SAVE`, provided by
 `scripts/build-guests/patches/mame-indy-savestate.patch` (last in the stack): the
 `sgi_mc` 256 MB RAM banks are allocated at `device_start` and registered with
@@ -2465,28 +2465,28 @@ pc_kbdc chain (I8042AH/I8051 MCU cores), diexec input lines, divtlb.
 image captured in the same instant; a mismatched (memory, disk) pair loads,
 renders a plausible frame and serves stale data behind a healthy desktop —
 invisible to criu-style checks and to `xfs_repair -n` alike (see
-`irix-criu/README.md`). The bake therefore PAUSES emulation, saves the state
+`irix-criu/README.md`). The capture therefore PAUSES emulation, saves the state
 (MAME processes a scheduled save while paused), reflink-copies `disk.chd`
 inside the same pause window, and only then resumes. Restore is the reverse:
 reflink the paired disk over `disk.chd` and launch with `-state <name>` — no
 Lua, no QMP.
 
-- **Bake**: `scripts/build-guests/irix/irix-savestate/bake-golden.sh` (tile
+- **Capture**: `scripts/build-guests/irix/irix-savestate/bake-golden.sh` (station
   stopped): boots the PRODUCTION config (launcher, tile.env, tap) in a
   namespaced clone, waits for the chooser + settle, captures the pair, installs
   `$ASSETS/state/{sta/indy_4610/golden.sta, disk-golden.chd,
   provenance-golden.md5}`. The provenance file binds the state to the exact
   MAME binary md5 — **any MAME rebuild orphans every state** (registration
   signature), and the launcher's guard turns that into a loud cold-boot
-  fallback instead of silent garbage. Rebake after every promotion.
+  fallback instead of silent garbage. Recapture after every promotion.
 - **Restore**: `IRIX_STATE=golden` in `tile.env`; every start and every
-  `labctl reset irix` / SPA "Restore to golden" (both = service restart,
+  `labctl reset irix` / UI "Restore to golden" (both = service restart,
   `SH_RESET_MODE=relaunch`) restores instead of cold-booting. Two restore
   launches without a healthy guest fall back to cold boot; livewatch's first
   successful pointer probe re-opens the budget. `IRIX_STATE=` (empty) is the
   full rollback.
 - **Measured** (rig, pinned core pair, canonical binary `00976c04`): state
-  file 47 MB; bake pause+save+pair 19 s; restore 4.4 s to first published
+  file 47 MB; capture pause+save+pair 19 s; restore 4.4 s to first published
   frame, **5.6 s to demonstrably interactive** (launch → serial exec answer)
   vs ~390 s cold boot (~70x). Verified: FS-intact marker across restore, two
   consecutive restores of one state, a save taken FROM a restored instance
@@ -2500,20 +2500,20 @@ Lua, no QMP.
 
 ### True start-paused (2026-08-11)
 
-`systemctl start streamhost@irix` now **ends with the guest frozen AT the
-restored golden**: with `IRIX_START_PAUSED=on` (tile.env), the full launch
+`systemctl start streamhost@irix` now **ends with the guest paused AT the
+restored checkpoint**: with `IRIX_START_PAUSED=on` (tile.env), the full launch
 restores, waits for the restored frame to be visible in shm (the framebuffer
 is the proof, ~4.4 s), settles 2 s, and SIGSTOPs the emulator. The first
 visitor session's unconditional `cont` (idle.rs) wakes it — the QEMU fleet's
 `-loadvm golden -S` ([instant-ready](../lab/research/instant-ready-bringup.md)),
-translated to MAME. The freeze is synchronous inside the launcher, which runs
+translated to MAME. The pause is synchronous inside the launcher, which runs
 under `ExecStartPre`, so the daemon is not yet serving and no session can race
 it — the race that matters, because the idle reconciler only heals a pause
-**it** created (idle.rs pause belief), so a guest frozen under a live session
-would stay frozen until the next session.
+**it** created (idle.rs pause belief), so a guest paused under a live session
+would stay paused until the next session.
 
-The instant-restore budget moved with the exposure. A frozen launch charges
-nothing (`.state-tries` untouched — a frozen guest exposes nothing to vet);
+The instant-restore budget moved with the exposure. A paused launch charges
+nothing (`.state-tries` untouched — a paused guest exposes nothing to vet);
 `freeze_at_state` leaves a one-shot `.state-unvetted` marker, and livewatch
 converts it into the charge at the first wake it observes ("MAME resumed —
 watching again" edge). The pointer probe clears the charge exactly as before,
@@ -2529,16 +2529,16 @@ launch RUNNING — a relaunch can happen under a live visitor. Consequences:
   crosses the `>= 2` threshold, next launch cold-boots. One extra restore
   attempt is possible when livewatch misses the first wake edge inside its
   grace sleep; bounded by `LIVE_ATTEMPTS` regardless.
-- A **cold-boot fallback** now freezes ~60 s in when unvisited (warmup 0) —
-  the same mid-boot pause every QEMU tile accepts; the first visitor watches
+- A **cold-boot fallback** now pauses ~60 s in when unvisited (warmup 0) —
+  the same mid-boot pause every QEMU station accepts; the first visitor watches
   the rest of the boot live. Loud, rare, accepted.
 - `labctl reset irix` is unchanged: mamectl-first (`LOADST golden`, guest
-  ends running, the pauser refreezes it after 60 s idle); its fallback arm is
-  a service restart, which lands frozen-at-golden like any start.
+  ends running, the pauser re-pauses it after 60 s idle); its fallback arm is
+  a service restart, which lands paused-at-checkpoint like any start.
 
-Rollback: `IRIX_START_PAUSED=off` restores the run-then-freeze launch —
+Rollback: `IRIX_START_PAUSED=off` restores the run-then-pause launch —
 restore `SH_IDLE_PAUSE_WARMUP_SECS=780` with it, or an unvisited launch is
-frozen before livewatch's probe can vet it. `IRIX_STATE=` (empty) still rolls
+paused before livewatch's probe can vet it. `IRIX_STATE=` (empty) still rolls
 back all of instant restore.
 
 ## Closed-loop 1:1 pointer — MOVEA (2026-08-04)
@@ -2571,7 +2571,7 @@ default) arms the socket and drops `-autoboot_script` — MAME_CTL_SOCK
 set means NO Lua agent (single-injector rule; two injectors fight over
 pacing budgets). `labctl mctl irix "<verb>"` is raw passthrough via
 `/root/mctl.py`; `labctl type/sh` ride the socket, and `labctl reset
-irix` is an acked `LOADST golden`. The bake
+irix` is an acked `LOADST golden`. The capture
 (`irix-savestate/bake-golden.sh`) drives acked `PAUSE`/`SAVEST` —
 `ss-agent.lua` and its log-grep side channel are gone. The launcher's
 own probes moved too: `probe_alive` nudges over the socket and
@@ -2656,7 +2656,7 @@ Three residual defects the field then found, all diagnosed from the trace:
   motion can be interleaved with it, accumulating `m_cs_dx/dy` behind
   `m_cs_seq`; the module reads what happened since it last looked. Adding
   those three save items moved the signature `2236991a`/3897 →
-  `3f091a26`/3900 and cost one golden rebake.
+  `3f091a26`/3900 and cost one checkpoint recapture.
 
   **Four earlier attempts inferred it instead, and every one failed in the
   field** — the record is kept because each failure looks reasonable until
@@ -2699,25 +2699,25 @@ Three residual defects the field then found, all diagnosed from the trace:
 
 Measured after landing: four large targets in a row converge at
 `res` ≤ 1 px with zero give-ups, against v6's 10–12 px. `MAME_CTL_DEADBAND`
-(module default 2, tile runs 1) sets the convergence residual;
+(module default 2, station runs 1) sets the convergence residual;
 `MAME_CTL_GAIN_MARGIN` (1.10) is the undershoot margin. Retired with v6:
 `MAME_CTL_SETTLE_WINDOWS`, `MAME_CTL_HOT_MS`, `MAME_CTL_CLOSE_MAX`.
 
-**An OSD-module change does not need a golden rebake.** MAME validates a
+**An OSD-module change does not need a checkpoint recapture.** MAME validates a
 savestate against its registration signature (`STAT sig=`/`entries=`), and
 the engine's state is deliberately not save-registered (COVENANT 1), so
 the signature is invariant across engine versions — verified `2236991a`
 /`3897` from v1 through v7. `x11-runtime.sh` guards on the BINARY md5,
 which is a conservative belt on top of that: for an engine iteration,
 append the new md5 to `state/provenance-golden.md5` and swap the binary
-(~20 s). A rebake is mandatory only when the signature actually moves —
+(~20 s). A recapture is mandatory only when the signature actually moves —
 adding a persistent timer, renaming the module class, or any device/
 machine-config change.
 
 ## Audio (2026-08-04) — pipeline live; guest playback tracked in #51
 
 MAME runs `-sound sdl -audiodriver disk` with `SDL_DISKAUDIODELAY=0`, writing
-S16LE 2ch 48 kHz into the tile's `audio.fifo`; the daemon
+S16LE 2ch 48 kHz into the station's `audio.fifo`; the daemon
 (`SH_AUDIO_SOURCE=fifo`) is the CLOCK — it reads exactly 192,000 B/s on a
 20 ms deadline grid, and the pipe's backpressure paces SDL (an unpaced reader
 lets SDL freewheel hold-fill ~166x realtime — 14.9 GB from one 470 s run).
@@ -2738,7 +2738,7 @@ clock globally and irreversibly for the session — subsequent UI sounds go
 silent too, and the player wedges (interruptible sginap poll loop, traced
 in-guest with `par`). This reproduces on EVERY host/engine/build combination
 tried, including Apple-silicon macOS, so it is a MAME hal2 emulation defect,
-not a box regression; the exhibit accepts it because every instant-restore
+not a labhost regression; the exhibit accepts it because every instant-restore
 reset (~5 s) restores audio, and the repro brief in #51 is ready if the hal2
 fix is ever wanted. A wedged CLI player also blocks its shell and, when run
 over the serial exec channel, wedges the agent until reset — keep exec

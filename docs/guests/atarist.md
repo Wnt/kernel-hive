@@ -1,17 +1,17 @@
-# Atari ST + EmuTOS GEM desktop — gallery tile notes (:8116)
+# Atari ST + EmuTOS GEM desktop — gallery station notes (:8116)
 
 **Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **Hatari** (WINDOWED),
 emulating an **Atari ST** that boots **EmuTOS** straight to the **GEM desktop**.
-An **"emulator bridge"** tile (see **`streamhost/docs/BRIDGE.md`**, ref impl = the c64
-tile) — streamhost captures the Linux framebuffer + AC97 audio (the ST **YM2149**
-routed through ALSA) exactly like every other tile.
+A **kiosk** (see **`streamhost/docs/BRIDGE.md`**, ref impl = the c64
+station) — streamhost captures the Linux framebuffer + AC97 audio (the ST **YM2149**
+routed through ALSA) exactly like every other station.
 
 **Shared base:** `/data/vms/bridge/bridge-base.qcow2` (read-only backing; built by
 `scripts/build-guests/lib/bridge-base.sh`). Contains VICE(x64sc)+**hatari**+cap32 + the
 bare-X kiosk + `/opt/bridge/media/etos1024k.img`.
-**Build script (tile):** `scripts/build-guests/tiles/atarist.sh` (thin overlay + kiosk
-`launch.sh` + golden bake + audio verify).
-**Tile dir (host):** `/data/vms/streamhost/tiles/atarist/` — `overlay.qcow2` (thin,
+**Build script (station):** `scripts/build-guests/tiles/atarist.sh` (thin overlay + kiosk
+`launch.sh` + checkpoint capture + audio verify).
+**Station dir (host):** `/data/vms/streamhost/tiles/atarist/` — `overlay.qcow2` (thin,
 on the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `tile.env`.
 **Mounted application disk:** guest folder `/opt/bridge/media/atarist-apps`, exposed
 by Hatari as writable GEMDOS drive **C:** (`--harddrive ... --gemdos-drive C
@@ -60,7 +60,7 @@ The five downloaded ZIP files are retained byte-for-byte under
 after assembly. NEOchrome and DEGAS were deliberately not bundled: the readily
 available releases lack a sufficiently clear redistributable PD/freeware grant.
 
-## Curated metadata (for the SPA placard)
+## Curated metadata (for the UI placard)
 - **Year:** Atari ST (520ST) = **1985**; TOS/GEM desktop = 1985. EmuTOS = 2001+
   (an open reimplementation of the ST's TOS + GEM).
 - **Lineage:** the Atari ST ("Jackintosh") — Motorola **68000**, **GEM** WIMP
@@ -73,7 +73,7 @@ available releases lack a sufficiently clear redistributable PD/freeware grant.
 - **archetypeHint:** **wedge-beige** — the low beige ST wedge with the chunky
   keyboard and a monochrome SM124 monitor; a mid-1980s 16-bit desktop.
 
-## LIVE TILE STATUS (2026-07-16) — LIVE at udp/54116, four apps + UI CONFIRMED, YM2149 non-silent
+## LIVE STATION STATUS (2026-07-16) — LIVE at udp/54116, four apps + UI CONFIRMED, YM2149 non-silent
 - **streamhost@atarist is active** and serving udp/54116. The daemon attached to
   the QMP socket, captured the framebuffer (`first frame 1024x768`), registered the
   **dbus AudioOutListener (Opus @96k)**, spawned its **ffmpeg/libx264** child, and
@@ -88,8 +88,8 @@ available releases lack a sufficiently clear redistributable PD/freeware grant.
   send-key — **PEAK=18170** (pure silence = 0), RMS_overall **1426**, loudest-1s-window
   RMS **2127** on a 48 kHz / 16-bit stereo wav; ~22% of frames non-silent. The live
   path is **YM2149 → SDL/ALSA default (hw:0,0) → AC97 → QEMU dbus audiodev → streamhost Opus**.
-- **Golden fixture:** boots straight to the application-populated GEM desktop via
-  `-loadvm golden` (INTERNAL snapshot in `overlay.qcow2`, VM_SIZE **583 MiB**, baked
+- **Checkpoint scene:** boots straight to the application-populated GEM desktop via
+  `-loadvm golden` (INTERNAL snapshot in `overlay.qcow2`, VM_SIZE **583 MiB**, captured
   2026-07-16). Verified after an explicit `loadvm golden`, after launching Pacman
   and resetting, and after a full `streamhost@atarist` restart. The three desktop
   PNGs are byte-identical, SHA-256
@@ -118,7 +118,7 @@ exec hatari --tos /opt/bridge/media/etos1024k.img --machine st --monitor mono \
   fully-visible zoom on a 1024x768 root (zoom 1.92 would be 768 tall but 1229 wide →
   clipped). Leaves ~64 px black bands top/bottom (cosmetic; whole desktop visible).
 - **`--sound 48000 --ym-mixing model`** — YM2149 → SDL → ALSA default → AC97. The
-  AC97 card (tile device set) MUST be present + `/etc/asound.conf` routes default →
+  AC97 card (station device set) MUST be present + `/etc/asound.conf` routes default →
   hw:0,0 (already true in the base).
 - Kiosk = getty autologin `bridge` on tty1 → `startx` → `~/.xinitrc` (xset s off,
   1024×768) → `exec /etc/bridge/launch.sh` (= `exec hatari`). Because `.xinitrc`
@@ -155,9 +155,9 @@ exec hatari --tos /opt/bridge/media/etos1024k.img --machine st --monitor mono \
 - streamhost UDP (WebTransport): **54116**.
 - ssh hostfwd (host→guest :22, for `labctl exec` later): **127.0.0.1:5816**
   (guest user `bridge`, key `/data/vms/bridge/bridge_key`).
-- SPA web port (reserved for integration): **8116**. VMID **216**.
+- UI web port (reserved for integration): **8116**. VMID **216**.
 
-## Proven raw QEMU profile (the exact tile device set — MUST match golden bake)
+## Proven raw QEMU profile (the exact station device set — MUST match checkpoint capture)
 ```
 qemu-system-x86_64 -name streamhost-atarist -enable-kvm -m 1536 -smp 2 -cpu host -rtc base=localtime \
   -drive file=overlay.qcow2,if=ide,format=qcow2 -boot c \
@@ -169,7 +169,7 @@ qemu-system-x86_64 -name streamhost-atarist -enable-kvm -m 1536 -smp 2 -cpu host
   -loadvm golden   # when the snapshot is present
   -qmp unix:qmp.sock,server=on,wait=off -pidfile qemu.pid
 ```
-Golden bake/verify (HMP over QMP):
+Checkpoint capture/verify (HMP over QMP):
 ```
 python3 /root/qmp_hmp.py qmp.sock 'savevm golden'
 python3 /root/qmp_hmp.py qmp.sock 'loadvm golden'
@@ -177,12 +177,12 @@ python3 /root/qmp_hmp.py qmp.sock 'info snapshots'
 ```
 
 ## Deviations / caveats
-- **Overlay is larger than the c64 tile's (~4.1 GB apparent vs 790 MB).** The
+- **Overlay is larger than the c64 station's (~4.1 GB apparent vs 790 MB).** The
   aborted `null`-slave audio-verify balloon (see trap #1) left ~3 GB of allocated
   qcow2 clusters even after the guest deleted the file + `fstrim`. Harmless on the
   **ZFS-compressed `/data`** (the zeroed clusters compress away — `df /data` is
   healthy), and functionally irrelevant. To compact it you'd `qemu-img convert`,
-  which would DESTROY the golden snapshot — so it is left as-is.
+  which would DESTROY the checkpoint — so it is left as-is.
 - **Pointer:** `SH_POINTER=abs` via usb-tablet. GEM is mouse-driven; the abs tablet
   maps into guest X → SDL → Hatari's emulated ST mouse. Desktop function keys
   F1-F4 are an additional deterministic launch path and were used for acceptance.
@@ -190,16 +190,16 @@ python3 /root/qmp_hmp.py qmp.sock 'info snapshots'
   (`loadvm golden`) restores the correct app desktop, but the existing QEMU
   process can subsequently accept hostfwd TCP/5816 without completing the guest
   SSH banner. A `systemctl restart streamhost@atarist` starts fresh QEMU slirp,
-  loads the same golden, preserves the identical framebuffer, and restores SSH.
-  The live tile was left in this cold-restart/SSH-healthy state.
+  loads the same checkpoint, preserves the identical framebuffer, and restores SSH.
+  The live station was left in this cold-restart/SSH-healthy state.
 - **Windowed, not true-fullscreen:** the GEM window is 1024x640 centred on a black
   1024x768 root (real SDL fullscreen renders black in capture). Cosmetic; the desktop
   is fully visible and captured. A future option is to match the X screen resolution
   to the Hatari window for edge-to-edge fill.
-- **Rollback for the 2026-07-16 app re-bake:** pre-change overlay copy
+- **Rollback for the 2026-07-16 app recapture:** pre-change overlay copy
   `/data/vms/streamhost/backups/atarist-apps-20260715T234437Z/overlay.qcow2`,
   SHA-256 `144888cdb7e3cef500e5d6765e8b840036c56f63d0092aa86d8e5f9728c787bf`.
   Stop `streamhost@atarist` (its ExecStop kills only the pidfile-owned QEMU), copy
-  that file over the tile overlay with `nice -n15 cp --reflink=auto`, then start
+  that file over the station overlay with `nice -n15 cp --reflink=auto`, then start
   the service. The backup contains the prior internal `golden` (543 MiB, dated
   2026-07-15 10:57:58).

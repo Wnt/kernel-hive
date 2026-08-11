@@ -3,26 +3,26 @@
 **Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **one fullscreen
 green-on-black xterm** whose only program is a chooser. Pressing `1`, `2` or `3`
 boots **RT-11 V5.3**, **RSX-11M V4.2 BL38** or **RSTS/E V9.6** on a simulated
-**DEC PDP-11** under **Open SIMH**. An **"emulator bridge"** tile — streamhost
-captures the Linux framebuffer + AC97 audio exactly like every other tile. See
+**DEC PDP-11** under **Open SIMH**. A **kiosk** — streamhost
+captures the Linux framebuffer + AC97 audio exactly like every other station. See
 **`streamhost/docs/BRIDGE.md`**.
 
 **Shared base:** `/data/vms/bridge/bridge-base-trixie.qcow2` — does **not** contain
 SIMH; see [SIMH is built into the overlay](#simh-is-built-into-the-overlay).
 Migrated from the frozen bookworm base on 2026-08-10; see
 [The trixie migration](#the-trixie-migration).
-**Build script (tile):** `scripts/build-guests/tiles/decos.sh` — thin overlay + SIMH
-build + media staging + three pack preparations + kiosk + golden bake + a
+**Build script (station):** `scripts/build-guests/tiles/decos.sh` — thin overlay + SIMH
+build + media staging + three pack preparations + kiosk + checkpoint capture + a
 framebuffer-asserted keyboard proof.
-**Tile dir (host):** `/data/vms/streamhost/tiles/decos/`.
+**Station dir (host):** `/data/vms/streamhost/tiles/decos/`.
 **Registry entry:** `registry/tiles/decos.json` (slot 126, udp 54126, VMID 229,
 ssh hostfwd 127.0.0.1:5829, 768 MB).
 
-## One tile, three operating systems
+## One station, three operating systems
 
 A visitor cannot tell RT-11's `.` from RSX-11M's `>` from RSTS/E's `$`.
-Three tiles would have read, on the exhibit floor, as one exhibit cloned by
-accident. So this is **one** tile with a chooser, and the chooser is the
+Three stations would have read, on the exhibit floor, as one exhibit cloned by
+accident. So this is **one** station with a chooser, and the chooser is the
 placard:
 
 ```
@@ -134,8 +134,8 @@ Two findings from the way in are worth keeping regardless:
   kit is refused. `9-AUG-26` is therefore not expressible, and the exhibit pins
   the clock at `9-AUG-90 10:00 AM` rather than inventing a hybrid of today's day
   with a made-up year. RT-11 has no clock at all (`DATE` answers
-  `?KMON-W-No date`), and RSX-11M gets the **real** date, from `date(1)` on the
-  box, at every boot.
+  `?KMON-W-No date`), and RSX-11M gets the **real** date, from `date(1)` on
+  labhost, at every boot.
 
 ## Media and licence — the Mentec hobbyist grant
 
@@ -152,10 +152,10 @@ licensed software, so it may live in the repo. It is transcoded CP1252 → UTF-8
 
 **"Use and copy" is not "distribute."** Consequences, and they are absolute:
 
-- The bits are **staged on the box only**, at `/data/assets-staging/decos/`,
+- The bits are **staged on labhost only**, at `/data/assets-staging/decos/`,
   and are **never committed**. Only the URL, the measured sha256 and the size
   are recorded (see `docs/lab/ASSETS-MANIFEST.md`, class **licensed**).
-- Nothing is served from the SPA webroot and **the tile offers no download
+- Nothing is served from the UI webroot and **the station offers no download
   affordance of any kind**. The exhibit is stream-only pixels.
 - The recital names **RT-11 V5.3 or prior, RSTS/E V9.6 or prior, RSX-11M V4.3 or
   prior, RSX-11M-PLUS V3.0 or prior**. RSX-11M-PLUS V4.6 and RSTS/E V10.1, the
@@ -165,7 +165,7 @@ The gallery is a private, passkey-gated, single-operator exhibit; only the git
 repo is public. That is what makes running this media fine and committing it
 not.
 
-| staged archive | contents | size | sha256 (measured on the box) | source |
+| staged archive | contents | size | sha256 (measured on labhost) | source |
 |---|---|---|---|---|
 | `rtv53swre.tar.Z` | `Disks/rtv53_rl.dsk` (RL02, RT-11 V5.3 distribution) + `Licenses/` | 1 373 083 | `9fdad109…207bc` | `http://simh.trailing-edge.com/kits/rtv53swre.tar.Z` — **host offline**; retrieved through the Wayback raw form (snapshot `20020108101052`) |
 | `rsx11m42.zip` | `m42kit.tap` (RSX-11M V4.2 BL38 TK50 kit) + `build.txt` | 6 155 772 | `c8766a53…91ba1` | `https://bitsavers.org/bits/DEC/pdp11/rsx11m/rsx11m42.zip` — live, and re-fetched 2026-08-09 to the same byte count and hash |
@@ -173,7 +173,7 @@ not.
 
 **Every `trailing-edge.com` host is down** — `simh.`, `www.`, `ftp.` and
 `mini-me.` all answer Cloudflare 520/522 or a stock Apache page as of
-2026-08-09. They also carry AAAA records while the box has no working IPv6
+2026-08-09. They also carry AAAA records while labhost has no working IPv6
 egress, so every `curl` at them needs `-4` or it hangs 40 s. Treat all DEC media
 as one-shot fetches: stage the bits, never make a builder fetch them at build
 time. `decos.sh` reads only `/data/assets-staging/decos/` and dies if it is
@@ -191,7 +191,7 @@ exists, which is the entire argument for that archive.
 The bridge base ships VICE, cap32 and LinApple — not SIMH. So,
 following the **`amiga.sh` precedent**, `decos.sh` builds **Open SIMH pinned at
 commit `a1f57fa3738ed31148d31126ba1a7278ff845c6d`** (2026-07-03 master; there is
-no v4 release tag past v4.0-Beta-1, hence the commit pin) *into this tile's
+no v4 release tag past v4.0-Beta-1, hence the commit pin) *into this station's
 overlay*:
 
 ```
@@ -216,8 +216,8 @@ non-free-firmware` trixie (checked 2026-08-10 on the host, where `vice
 3.9+dfsg-1` from contrib does resolve, so the components are not the reason).
 The source pin is the only route, on either suite.
 
-For a from-scratch NVMe rebuild, `bridge-base.sh` should bake SIMH in; the
-addition is in the build report for this tile. `libpcap-dev` is **optional**
+For a from-scratch NVMe rebuild, `bridge-base.sh` should capture SIMH in; the
+addition is in the build report for this station. `libpcap-dev` is **optional**
 (SIMH falls back to TAP + its bundled SLiRP, which is enough for 2.11BSD
 networking) and `libvdeplug-dev` is not needed.
 
@@ -226,16 +226,16 @@ networking) and `libvdeplug-dev` is not needed.
 Migrated **2026-08-10** from the frozen bookworm base onto
 `/data/vms/bridge/bridge-base-trixie.qcow2`, in wave 1 of
 [`docs/lab/BRIDGE-TRIXIE-MIGRATION.md`](../lab/BRIDGE-TRIXIE-MIGRATION.md). The
-overlay was rebuilt from scratch, all three packs re-prepared, the golden re-baked
+overlay was rebuilt from scratch, all three packs re-prepared, the checkpoint recaptured
 and `loadvm`-verified, and the chooser re-accepted on a real `labctl shot`. The
 **BEFORE and AFTER frames are 0 differing pixels** of 1024×768 — identical PNG
 md5 — so the exhibit a visitor sees is unchanged.
 
-**This was the tile's first from-scratch build, ever**, and that is not a turn of
-phrase. Since the tile landed, `install_kiosk` ran one
+**This was the station's first from-scratch build, ever**, and that is not a turn of
+phrase. Since the station landed, `install_kiosk` ran one
 `install -m 644 a b c /opt/decos/ini/`, which keeps each source's *basename*: the
 files arrived as `decos-rt11.ini` while `prep_rt11` and the chooser both read
-`rt11.ini`. Nothing in the tile could ever have found them. The step carried no
+`rt11.ini`. Nothing in the station could ever have found them. The step carried no
 `|| die` and logged "three .ini files installed" unconditionally, so it reported
 success while installing nothing usable — for months. The live exhibit worked
 only because the real files had been hand-placed during bring-up and were still
@@ -254,13 +254,13 @@ The trixie build itself was uneventful, which is the point:
 | RT-11 V5.3 pack | prepared, boots straight to `.` |
 | RSX-11M V4.2 BL38 pack | restored and boot-verified to MCR |
 | RSTS/E V9.6 pack | installed in **~6 min**, against the ~45 min this doc records for the original bookworm build |
-| golden | baked at the chooser, `loadvm`-verified, no simulator running |
+| checkpoint | captured at the chooser, `loadvm`-verified, no simulator running |
 | keyboard proof | pressing `1` booted RT-11 under SIMH, then `loadvm golden` returned to the bare chooser |
 
 That last row is the strongest statement about the `.ini` fix, because it
 exercises `rt11.ini` at **runtime** through the chooser rather than asserting a
 file exists. Presence was then confirmed separately, from **inside the running
-tile** over its production hostfwd rather than from the builder's own log:
+station** over its production hostfwd rather than from the builder's own log:
 
 ```
 $ ssh -p 5829 root@127.0.0.1 'sha256sum /opt/decos/ini/*.ini'
@@ -278,7 +278,7 @@ reports `trixie` and the guest is `Debian GNU/Linux 13 (trixie)`.
 
 | state | host cost |
 |---|---|
-| golden, nobody watching (**no simulator running**) | 0 |
+| checkpoint, nobody watching (**no simulator running**) | 0 |
 | RSX-11M V4.2 idle at `>` | 0.7–4 % of a guest vCPU |
 | RT-11 idle at `.`, `set cpu idle` only | **99 %** |
 | RT-11 idle at `.`, `set throttle 1000K` | 14 % |
@@ -297,8 +297,8 @@ reaps with `-KILL` before starting xterm.
 
 ## Device set, launcher and window fitting
 
-Identical in shape to its bridge siblings — see
-`streamhost/tiles/decos/qemu-streamhost.sh`. **768 MB** is the tile's memory and
+Identical in shape to its kiosk siblings — see
+`streamhost/tiles/decos/qemu-streamhost.sh`. **768 MB** is the station's memory and
 it is ample: the whole exhibit is one xterm plus at most one SIMH process whose
 largest configured PDP-11 has 4 MB of core (measured guest RSS 17–82 MB per
 simulator, guest total 708 MB with ~415 MB free at the chooser).
@@ -314,7 +314,7 @@ on a 1024×768 X root. There is **no window manager** in the bridge base, so
 `-fullscreen` (which needs an EWMH manager to honour it) is not used; the
 terminal is sized by `-geometry`. Font size 15 measures **80 columns = x 3…962**
 of 1024; size 16 would want 1040 px and clip column 80. That measurement is also
-the tile's readiness predicate — see below.
+the station's readiness predicate — see below.
 
 The kiosk profile starts X with `-nocursor`: this is a keyboard-only exhibit and
 without it the xterm I-beam sits in the middle of the captured framebuffer
@@ -331,11 +331,11 @@ What remains is the ordinary QEMU PS/2 → X → xterm path that `alpine`,
 `tinycore` and `haiku` already run unpaced, and the exhibit's own input
 requirement is **one digit**.
 
-The tile does run the **`vic20`/`plus4` canary binary**
+The station does run the **`vic20`/`plus4` canary binary**
 (`streamhost-bca88a2b…`), but not for pacing: the promoted fleet binary
 (`streamhost-d2652847…`) panics on `SH_INPUT_BACKEND=disabled`
 (*invalid SH_INPUT_BACKEND="disabled"; expected dbus-abs|dbus-rel|…*), and this
-tile's QEMU device set carries no pointing device at all, so naming a dbus
+station's QEMU device set carries no pointing device at all, so naming a dbus
 pointer backend the way `c64` does would be a fiction.
 
 ## How each system is prepared
@@ -370,31 +370,31 @@ regenerated five of these eight** (`cold-boot-chooser`, `ready-before-golden`,
 `golden-restored`, `keyboard-1-rt11`, `golden-restored-after-keyboard`); the
 other three still date from the 2026-08-09 bookworm build, because the builder's
 automated proof only presses `1`. Pressing `2` and `3` was therefore re-done by
-hand on the migrated tile — see the table below the artifact list.
+hand on the migrated station — see the table below the artifact list.
 
 | Artifact | Shows |
 |---|---|
 | `cold-boot-chooser.png` | the chooser after a genuine cold boot with the quiet console in force |
-| `ready-before-golden.png` | the frame that was baked — the chooser, no simulator running |
+| `ready-before-golden.png` | the frame that was captured — the chooser, no simulator running |
 | `keyboard-1-rt11.png` | pressing `1` through QMP `input-send-event`: RT-11FB V05.03 and a `.` prompt |
 | `keyboard-3-rsts.png` | pressing `3`: RSTS/E V9.6 booting to timesharing and a DCL `$` |
 | `golden-restored-after-rsts.png` | reset from inside RSTS/E, back at the chooser with no simulator running |
-| `golden-restored.png` | `loadvm golden` returning to the baked chooser |
+| `golden-restored.png` | `loadvm golden` returning to the captured chooser |
 | `golden-restored-after-keyboard.png` | the same, after the keyboard proof, with no simulator left running |
-| `live-tile-chooser.png` | the chooser as the **live `streamhost@decos`** tile serves it |
+| `live-tile-chooser.png` | the chooser as the **live `streamhost@decos`** station serves it |
 
 Each chooser frame is asserted, not eyeballed: `pnmcrop -black -verbose` reports
 the bounding box of everything lit and the 80-column rule must span
 `x = 3…962`. A bare X root, a dead xterm, a font one size too large and a
 half-drawn screen all fail it. The keyboard proof additionally requires that a
 `pdp11` process exists afterwards and that the frame is no longer byte-identical
-to the baked chooser, and that after `loadvm golden` **no** simulator is
+to the captured chooser, and that after `loadvm golden` **no** simulator is
 running.
 
 ### All three chooser entries, re-driven on trixie (2026-08-10)
 
 The builder only presses `1`, so the other two were driven by hand on the
-migrated tile through `labctl key`, each from a fresh `labctl reset`:
+migrated station through `labctl key`, each from a fresh `labctl reset`:
 
 | Key | What the framebuffer showed |
 |---|---|
@@ -404,24 +404,24 @@ migrated tile through `labctl key`, each from a fresh `labctl reset`:
 
 Every one of those frames also carries `Open SIMH V4.1-0 Current  git commit id:
 a1f57fa3` in its banner, so the pin is legible on the exhibit itself. After the
-last of them, `labctl reset` returned the tile to a chooser **byte-identical**
+last of them, `labctl reset` returned the station to a chooser **byte-identical**
 to the pre-migration one (same PNG md5), with no simulator running — which is
 both the reset contract and the proof that driving the exhibit cannot leak into
-its golden.
+its checkpoint.
 
 ## Cold boot and rollback
 
-The golden is the chooser, and a cold boot reaches the same chooser, so a clip's
-last frame would hand off to the golden's first frame cleanly. See
+The checkpoint is the chooser, and a cold boot reaches the same chooser, so a clip's
+last frame would hand off to the checkpoint's first frame cleanly. See
 `scripts/coldboot/decos-zero-input-prep.md`.
 
-To withdraw the tile: `systemctl stop streamhost@decos`, set `enabled: false`,
+To withdraw the station: `systemctl stop streamhost@decos`, set `enabled: false`,
 regenerate, republish the three runtime documents (tiles.json, gallery-manifest.json AND golden-manifest.json — the third is the reset allow-list). To rebuild:
 `scripts/build-guests/tiles/decos.sh --force`, which replaces `overlay.qcow2` and so
-**destroys the golden and all three prepared packs inside it**. Note that a
-plain re-run **deletes the existing golden snapshot first**, deliberately: a
+**destroys the checkpoint and all three prepared packs inside it**. Note that a
+plain re-run **deletes the existing checkpoint first**, deliberately: a
 `-loadvm` boot restores the snapshot's *disk* as well as its RAM, so a re-run
 that skipped that step would install new kiosk files, silently revert them, and
-bake the old fixture again while reporting PASS. That was measured, once.
+capture the old scene again while reporting PASS. That was measured, once.
 
 Credentials reference only (never values): `guest/decos`.

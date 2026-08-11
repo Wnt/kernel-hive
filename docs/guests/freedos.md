@@ -1,6 +1,6 @@
-# FreeDOS 1.3 retro-games tile
+# FreeDOS 1.3 retro-games station
 
-The tile boots a 512 MiB qcow2 directly to `MENU.BAT`, with eight DOS games and
+The station boots a 512 MiB qcow2 directly to `MENU.BAT`, with eight DOS games and
 Arachne 1.99 GPL. The authoritative launcher is the `freedos` stanza in
 `streamhost/tiles-manifest.sh`:
 `pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0`, host CPU under KVM, 64 MiB, two
@@ -11,7 +11,7 @@ required by Commander Keen 1 and Cosmo's digital effects.
 ## Game audio configuration
 
 FastDoom is staged with `FDOOM.CFG` selecting Sound Blaster digital effects and
-no music device. Duke3D's baked config selects Sound Blaster for PCM effects and
+no music device. Duke3D's captured config selects Sound Blaster for PCM effects and
 no music device. QEMU's SB16 DSP works for both, while their FM detection fails
 on this profile; selecting Sound Blaster music makes either title abort during
 sound initialization. Quake and Jill use their existing configs. Keen 1 is
@@ -56,7 +56,7 @@ For an air-gapped rebuild, drop a local copy at
 `scripts/build-guests/assets/freedos/{cosmo,jill}.zip` (gitignored) and the
 builder uses it in place of the download — still hash-verified against the
 same pins, so a stale or wrong file is refused loudly rather than silently
-baked in.
+captured in.
 
 The Arachne outer zip contains an old solid-RAR DOS self-extractor. Current 7z
 can create the directory names but leaves zero-byte files and reports an
@@ -74,7 +74,7 @@ software cursor began near `(326,244)`. Two QMP relative moves, `(38,46)` then
 button. The exact click was one QMP `input-send-event` left-button down event,
 followed 200 ms later by the matching left-button up event. The next framebuffer
 showed Arachne's installation/defaults page, proving the click registered.
-`Alt+X` then returned to the normal games menu for the golden fixture.
+`Alt+X` then returned to the normal games menu for the checkpoint scene.
 
 ## Fresh builder trial (2026-07-14)
 

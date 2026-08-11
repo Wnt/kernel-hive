@@ -1,13 +1,13 @@
-# Multitech Microprofessor II (MPF-II, 1982) — BASIC gallery tile notes (:8120)
+# Multitech Microprofessor II (MPF-II, 1982) — BASIC gallery station notes (:8120)
 
 **Guest:** a captured **Debian 12 x86_64 kiosk** running **MAME `mpf2`**
 fullscreen, emulating a **Multitech Microprofessor II (1982)** that boots
 **Applesoft-clone BASIC** to a 560×192 @ ~60 Hz composite display with 6-colour
 artifact palette (black, white, blue, orange, purple, yellow) at 2× integer
-scale (1120×384). This is an **"emulator bridge"** tile — streamhost captures the
-Linux framebuffer exactly like every other tile. See **`streamhost/docs/BRIDGE.md`**
+scale (1120×384). This is a **kiosk** — streamhost captures the
+Linux framebuffer exactly like every other station. See **`streamhost/docs/BRIDGE.md`**
 for the bridge pattern and **`docs/guests/amstradcpc.md`** for the CPC reference
-recipe this tile forks.
+recipe this station forks.
 
 **The Machine:** Taiwan's first mass-market home computer (1982), a landmark upon
 which **Acer was built**. The MPF-II is a 6502-based **Apple II ish-clone** with an
@@ -25,9 +25,9 @@ unchanged.
 the narrow MAME 0.289 `tk2000.cpp` subtarget in the Bookworm lab build chroot,
 then
 `scripts/build-guests/tiles/mpf2.sh` creates the thin overlay, kiosk `launch.sh`,
-framebuffer checks, keyboard proof, and golden cold-restore.
+framebuffer checks, keyboard proof, and checkpoint cold-restore.
 
-**Tile dir (host):** `/data/vms/streamhost/tiles/mpf2/` — `overlay.qcow2`
+**Station dir (host):** `/data/vms/streamhost/tiles/mpf2/` — `overlay.qcow2`
 (thin, on the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`,
 `tile.env`.
 
@@ -58,7 +58,7 @@ Stage per house convention: immutable intake copy at
 `docs/lab/ASSETS-MANIFEST.md` and `docs/catalog/os-media-catalog.md`, extend
 `scripts/build-guests/check-assets.sh`. Bits never committed — URL + hash only.
 
-## Display constraints (shape the tile)
+## Display constraints (shape the station)
 
 1. **560×192 @ ~60.05 Hz**, a 2.92:1 aspect ratio, composite-artifact colour
    (6 colours: black, white, blue, orange, purple, yellow). **Integer scale only**
@@ -77,7 +77,7 @@ Stage per house convention: immutable intake copy at
    software list for `mpf2`, and `apple2_cass.xml` is not a substitute (incompatible
    memory map).
 
-## Curated metadata (for the SPA placard)
+## Curated metadata (for the UI placard)
 - **Year:** **1982**.
 - **Lineage:** Multitech (Taiwan) — the MPF-II was the homeland's first mass-market
   home computer and the machine upon which **Acer was founded**. A 6502-based
@@ -93,7 +93,7 @@ Stage per house convention: immutable intake copy at
 ## Input — keyboard exhibit (NO pointer)
 The MPF-II is **keyboard/matrix-driven with no pointing device**. The device set
 mirrors the Amstrad CPC keyboard sibling: `-machine pc-i440fx-11.0,vmport=off`,
-no `usb-tablet`, `SH_INPUT_BACKEND=disabled`. The SPA still emits pointer
+no `usb-tablet`, `SH_INPUT_BACKEND=disabled`. The UI still emits pointer
 coordinates; streamhost discards pointer, button, wheel, and touch records while
 continuing to inject keyboard events into the matrix.
 
@@ -101,9 +101,9 @@ continuing to inject keyboard events into the matrix.
 - streamhost UDP (WebTransport): **54124** (slot 124).
 - ssh hostfwd (host→guest :22, for `labctl exec`): **127.0.0.1:5820** (guest user
   `root`, key `/data/vms/bridge/bridge_key`).
-- SPA web port (reserved): **8120**. VMID **220**.
+- UI web port (reserved): **8120**. VMID **220**.
 
-## Proven raw QEMU profile (the tile device set — MUST match the golden bake)
+## Proven raw QEMU profile (the station device set — MUST match the checkpoint capture)
 ```
 qemu-system-x86_64 -name streamhost-mpf2 -enable-kvm -machine pc-i440fx-11.0,vmport=off \
   -m 1536 -smp 2 -cpu host -rtc base=localtime \
@@ -136,7 +136,7 @@ exec /opt/mpf2/mame/mpf2 mpf2 \
 ```
 
 MAME runs FULLSCREEN on the bridge base's stock 1024×768 X root (`~/.xinitrc`,
-same as every sibling bridge tile), with its normal aspect correction on, so the
+same as every sibling kiosk), with its normal aspect correction on, so the
 picture fills the captured framebuffer. Forcing `-resolution 1120x384` instead —
 the raw composite pixel count with aspect correction defeated — pinned a 2.92:1
 strip in the middle of a large black root: that number is the machine's PIXEL
@@ -149,7 +149,7 @@ default PS/2 keyboard. MAME maps those physical keys to the 6502 memory-mapped
 matrix at $C000/$C010. Uppercase letters and symbols follow standard ASCII.
 
 Two registry-declared streamhost keyboard knobs make that surface usable
-(`registry/tiles/mpf2.json` → `runtime.tileEnv`; both also cover the SPA's
+(`registry/tiles/mpf2.json` → `runtime.tileEnv`; both also cover the UI's
 on-screen keyboard, since it shares the same wire record):
 
 - **`SH_KEY_REMAP=0x0e:0xe04b`** — Backspace is delivered as LEFT ARROW. The
@@ -184,9 +184,9 @@ presses Return, and visibly renders the result in the MPF-II framebuffer.
   `/data/assets-staging/mpf2/mpf_ii.rom`, and requires the host-produced
   `/data/vms/streamhost/assets/mpf2/mame/mpf2` binary. The builder installs that
   binary in the thin overlay, verifies `mpf2 -verifyroms mpf2`, captures the
-  BASIC prompt, proves keyboard input, and proves reset. SPA reset is the sibling
+  BASIC prompt, proves keyboard input, and proves reset. UI reset is the sibling
   pattern — `SH_RESET_MODE=loadvm` restoring the INTERNAL `golden` snapshot in
-  `overlay.qcow2`, baked from a clean cold boot and with no post-restore key
+  `overlay.qcow2`, captured from a clean cold boot and with no post-restore key
   injection (driving a MAME soft reset to replay the power-on beep raced the
   restore and left the screen scrolled with two prompts stacked).
 - Pointer acceptance is N/A: `SH_INPUT_BACKEND=disabled` preserves keyboard
