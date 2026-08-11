@@ -14,13 +14,13 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": null,
-      "exec_kind": null,
-      "exec_user": null,
+      "exec_port": 23,
+      "exec_kind": "telnet_e",
+      "exec_user": "Administrator",
       "exec_key": null,
       "console": "x11",
       "udp_port": 54140,
-      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); no exec channel (guest telnet server is future work); reset = relaunch (cold boot ~80 s from reflink copy of golden nt.img)"
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); exec = telnet_e: labctl exec w2kalpha runs a captured command over the guest W2K Telnet Server (blank Administrator, NTLM off) reached at 172.31.64.2:23 on the host-only veth w2kalpha-h/g that x11-runtime.sh brings up; the guest holds a static IP baked into the golden and its dec21143 (pcap backend) is at pci0.4 in es40.cfg; reset = relaunch (cold boot ~80 s from reflink copy of golden nt.img)"
     }
   },
   "render": {

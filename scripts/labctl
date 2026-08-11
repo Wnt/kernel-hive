@@ -14,7 +14,9 @@
 #   routes 'labctl exec': "ssh" (per-tile user + gallery key) | "warpd_e" (solaris
 #    E verb via /root/gexec.py) | "serial_e" (irix: irixser/2 over MAME's emulated
 #    serial line, via /root/irixexec.py — no port, the pty is discovered from the
-#    tile dir) | null (no channel). ctl (present only when tile.env sets
+#    tile dir) | "telnet_e" (w2kalpha: the guest W2K Telnet Server on a host-only
+#    veth, via /root/w2ktelnetexec.py — exec_user login, blank password, fixed
+#    guest IP) | null (no channel). ctl (present only when tile.env sets
 #   SH_MAMECTL_SOCK; irix) is the mamectl/1 unix socket of the compiled-in MAME
 #   ctlsock module (issue #45): 'labctl mctl' passes raw verbs through
 #   /root/mctl.py, and type/sh/reset route over it instead of the legacy Lua
@@ -1130,6 +1132,11 @@ def cmd_sh(argv):
 
 GEXEC = "/root/gexec.py"
 IRIXEXEC = os.environ.get("LABCTL_IRIXEXEC", "/root/irixexec.py")
+W2KTELNETEXEC = os.environ.get("LABCTL_W2KTELNETEXEC", "/root/w2ktelnetexec.py")
+# w2kalpha's guest telnet server sits on a host-only veth at a fixed static IP
+# (baked into the golden; the host end and the dec21143 pcap adapter are set up
+# by streamhost/tiles/w2kalpha/x11-runtime.sh). No per-tile host field is needed.
+W2K_TELNET_HOST = "172.31.64.2"
 
 
 def cmd_exec(argv):
@@ -1154,6 +1161,17 @@ def cmd_exec(argv):
         # real captured exec over warpd's 'E' verb (gexec.py frames the reply and
         # exits with the guest's exit code)
         r = subprocess.run(["python3", GEXEC, str(port), cmdline])
+        sys.exit(r.returncode)
+    if kind == "telnet_e":
+        # w2kalpha: captured exec over the guest W2K Telnet Server on the
+        # host-only veth. w2ktelnetexec.py logs in (user from exec_user, blank
+        # password), runs the command with errorlevel-bearing sentinels, renders
+        # the VT100 console back to plain text, and exits with the guest's code.
+        user = c.get("exec_user") or "Administrator"
+        r = subprocess.run(
+            ["python3", W2KTELNETEXEC, W2K_TELNET_HOST, cmdline],
+            env={**os.environ, "W2K_USER": user},
+        )
         sys.exit(r.returncode)
     if kind == "ssh" and port:
         user = c.get("exec_user") or "root"

@@ -47,8 +47,12 @@ ARC clock), `ali` southbridge with `vga_console`, `ali_pmu`, `sym53c810` SCSI
 (Trio64 ROM `rom/86c764x1.bin`), two TCP serial ports **21964/21965** (es40
 listens; the tile's `pumps.py` connects and drains — es40 blocks on startup
 until BOTH have a client). SRM/flash/dpr ROMs under `rom/`. `mouse.absolute =
-true`. No `ali_usb` (W2K polls it hot — upstream es40 issues #114/#169) and no
-NIC (air-gapped; a guest telnet channel over `dec21143` is future work).
+true`. No `ali_usb` (W2K polls it hot — upstream es40 issues #114/#169).
+**`dec21143` NIC at `pci0.4`** (pcap backend on the host-only veth
+`w2kalpha-g`) — added 2026-08-11 for the guest telnet exec channel (see
+[Telnet exec channel](#telnet-exec-channel)); the guest end is a private
+`172.31.64.0/30` veth that `x11-runtime.sh` brings up, **never bridged to the
+LAN**, so the exhibit is still air-gapped from anything off-box.
 
 Changing the device set does not invalidate the golden (it is a plain disk
 image, not a savestate) but DOES orphan any baked `.axp` savestates.
@@ -61,17 +65,32 @@ snapshot, taken before the dev rig's working disk was corrupted (the golden is
 a separate clean copy; the rig is retired). The launcher never opens it for
 write: every launch reflink-copies it.
 
-**Known wart (accepted for now, 2026-08-11):** the golden intermittently cold
--boots into "Active Desktop Recovery" (an IE error page over the desktop).
-The deferred golden-polish pass removes it: on a booted clone, keyboard-only —
-Win+R `desk.cpl` → Ctrl+Tab×3 (Web tab) → Space (uncheck "Show Web content")
-→ Enter, **answer No** to the "wallpaper needs Active Desktop" prompt (the
-golden's wallpaper is web-rendered; switch to None/a BMP or the prompt
-recurs), then set Mouse acceleration to None (`main.cpl` → Motion, or
-`HKCU\Control Panel\Mouse` MouseSpeed=0 Threshold1/2=0), clean shutdown,
-re-capture `nt.img`, restage. The whole sequence was proven working over the
-ctl socket on a throwaway copy (2026-08-11, framebuffer-verified) — it just
-has not been baked into the golden yet.
+**Active Desktop Recovery wart — FIXED 2026-08-11.** The golden used to
+intermittently cold-boot into "Active Desktop Recovery" (an IE error page over
+the desktop). The current golden (re-baked 2026-08-11) has "Show Web Content"
+unchecked in `desk.cpl` and a plain wallpaper, so the recovery page no longer
+appears — verified clean on 4/4 cold boots. The pre-x86prog golden is preserved
+on the box as `assets/w2kalpha/nt.img.bak-prex86prog-20260811` for rollback (and
+`es40.cfg.bak-nonic` is the device set before the NIC was added).
+
+### What else the 2026-08-11 re-bake baked in
+
+- **FX!32 / x86 translation populated.** Several x86 Win32 apps were run once so
+  FX!32 profiled and cached them to native Alpha code; **`x86prog`** (System
+  Properties → Advanced → Performance → "x86 Program Optimization", or run
+  `x86prog`) now lists them at 100%: **Winamp 2.5e** (`Winamp.exe`, installed to
+  `C:\Program Files\Winamp` with the MP3 + Disk Writer plugins), the Winamp
+  installer, and Solitaire / FreeCell / Minesweeper / Calculator / Notepad
+  (x86 copies under `C:\Apps`). Winamp 2.5e was installed on a throwaway x86
+  win2000 clone and the program folder copied in offline — its own installer
+  will not complete on the Alpha (see the interactive-x86 note below).
+- **Guest static IP + Telnet Server auto-start** for the exec channel below.
+
+**dxdiag is the clearest architecture view.** `dxdiag` (DirectX Diagnostic Tool)
+System page reports the processor outright as **"Alpha 21264 Model A - Pass 2"**
+— far more legible than System Properties' `DEC-221264` string. It is the new
+gallery hero (`spa/public/posters/w2kalpha/dxdiag.webp`), with `x86prog.webp`
+alongside it.
 
 ## Runtime (tile dir `/data/vms/streamhost/tiles/w2kalpha/`)
 
@@ -109,7 +128,40 @@ pump can never hold the ports.
   MOVEA land 1:1; keyboard is the reliable drive channel until then.
 - Client for hand-driving: `/data/vms/soltest/ALPHA-nt/uibench/ctltest.py
   <ctl.sock> <script>` (`K`/`TYPE`/`MOVEA`/`DOWN1`/`SLEEP` verbs);
-  screenshots via `uibench/shmread.py <fb.shm> <out.png>`.
+  screenshots via `uibench/shmread.py <fb.shm> <out.png>`. **ctltest only types
+  letters, digits and a few punctuation chars** — for `=`, `%`, `"` etc. drive
+  the guest over the telnet channel instead.
+
+## Telnet exec channel
+
+`labctl exec w2kalpha "<cmd>"` runs a command in the guest and returns its
+**captured stdout + exit code** — the same contract as the ssh/warpd/serial
+tiles. Wiring (all live 2026-08-11):
+
+- **Transport:** the `dec21143` NIC (`pci0.4`, pcap backend) on the host-only
+  veth `w2kalpha-h`/`w2kalpha-g` that `x11-runtime.sh` brings up. The guest holds
+  a **static IP `172.31.64.2/30`** (baked into the golden); the host answers on
+  `172.31.64.1`. Nothing bridges to the LAN — reachable only from the box.
+- **Guest side (baked):** the W2K **Telnet Server** is set to auto-start, with
+  **NTLM off** so a plain login works, and the Administrator password is blank.
+- **Helper:** `streamhost/guest-agents/w2kalpha/w2ktelnetexec.py` → box
+  `/root/w2ktelnetexec.py`. It refuses telnet option negotiation, logs in
+  (prompt-driven), wraps the command in `errorlevel`-bearing sentinels, and
+  renders the W2K VT100 *console* stream (absolute cursor moves) back to plain
+  text. `labctl`'s `exec_kind: telnet_e` routes to it.
+- **Known limitation:** `dir /b "<quoted path with spaces>"` returns empty (a
+  W2K console quirk for that exact form); every other command form — quoted
+  paths, spaces, `%VARS%`, `if exist`, 8.3 short paths — works. Also the server
+  is single-threaded, so keep exec calls sequential.
+
+**Interactive-session x86 does NOT work — telnet-session x86 does.** x86 apps
+(FX!32) launch fine from the *telnet* (network-logon) session but fail with "The
+system cannot find the path specified" from the *interactive* auto-logon console
+session — reproducible across a clean reboot, identical PATH, same Administrator
+user. So x86 GUI apps cannot be shown on the framebuffer; they are run once over
+telnet to register them in FX!32, and `x86prog` (a native Alpha app) displays
+the list on the console. Root cause unresolved (leading theory: the FX!32 server
+services x86 launches on a window station the interactive session can't reach).
 
 ## Verification (the release gate that was run)
 
