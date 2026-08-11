@@ -15,6 +15,9 @@ for Alpha, es40 emulator) work. Detailed docs, read in this order:
   (A/B numbers, the 24h-mission 2× record).
 - [`es40-tuning-research.md`](es40-tuning-research.md) — GitHub/web tuning
   research digest (ali_usb, idle_nap, savestate facts, de-bloat list).
+- [`alpha-second-os-candidates.md`](alpha-second-os-candidates.md) — desk survey
+  of a SECOND guest on the same ES40 machine (Tru64 / OpenVMS Alpha / NetBSD /
+  NT 4.0 / AXP64 2210): media, licensing, and what a second Alpha tile costs.
 
 ## Two headline results, both PROVEN
 
