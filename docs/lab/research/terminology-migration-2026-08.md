@@ -100,7 +100,16 @@ artifact labels.
   state-behaviour "golden" = checkpoint; "frozen bridge seed" keeps
   *frozen* (immutable/pinned sense); CRIU + protocol-freeze + x264-stall
   vocabulary untouched.
-- [ ] Stage 2
+- [~] Stage 2 — in progress (2026-08-12): `bake-golden.sh` →
+  `capture-checkpoint.sh` and `golden-verify.sh` → `checkpoint-verify.sh`
+  shipped as pure-rename + shim commits (`--capture` added, `--bake`
+  accepted one epoch; deployed irix capture RIG carries the old name until
+  its next redeploy). Remaining: `tiles-registry.py` + `tiles-manifest.sh`
+  — DEFERRED to a dedicated quiet window: 17–21 code callers each,
+  including the CI workflow, devwatch (Rust, needs rebuild+redeploy),
+  check-stream-tickets.py on the serving plane, the debridge agent's live
+  gallery-arms tooling, and generated outputs. Do not attempt those two
+  as a drive-by.
 - [ ] Stage 3
 - [ ] Stage 4
 - [ ] Stage 5
