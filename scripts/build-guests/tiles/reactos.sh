@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/reactos.sh — from-scratch, reproducible build of the ReactOS
-# tile for the neko+QEMU Kernel Hive.
+# station for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the ReactOS
 # guest END TO END from its real upstream source — no image backups, no
@@ -17,7 +17,7 @@
 # wizard (pick language/keyboard -> "Run ReactOS Live CD") and then lands on the
 # full blue desktop with icons (My Computer, Command Prompt, Recycle Bin, …).
 # Era ~mid-2000s (NT5 look & feel). This build is, like the KolibriOS/TempleOS
-# tiles: download upstream -> unpack the ISO -> verify it boots to the GUI.
+# stations: download upstream -> unpack the ISO -> verify it boots to the GUI.
 #
 # !!! VERSION: we use ReactOS **0.4.14** (release-125), NOT the newer 0.4.15.  !!!
 # The 0.4.15 stable live CD DETERMINISTICALLY HANGS in early kernel init on this
@@ -34,7 +34,7 @@
 # ---- AUTOMATION HONESTY -----------------------------------------------------
 #   (1) DOWNLOAD ....... FULLY AUTOMATED (official SourceForge release URL).
 #   (2) DISK CREATE .... FULLY AUTOMATED — fresh qcow2 savevm store.
-#   (3) INSTALL ........ N/A — no installer step. The live boot IS the whole tile.
+#   (3) INSTALL ........ N/A — no installer step. The live boot IS the whole station.
 #   (4) INPUT AUTOMATION FULL — QMP drives the wizard and fixture customization.
 #   (5) ERA SOFTWARE ... LiveCD desktop plus generated settings-floppy tweaks.
 #   (6) FINAL IMAGE .... ReactOS.iso + reactos-golden.qcow2 in <GUEST_DIR>.
@@ -240,7 +240,7 @@ verify_boot() {
   }
 
   log "verify: launching headless QEMU (${QEMU_BIN}) from $ISO_PATH …"
-  # Same profile as the tile: plain TCG (matches the other live-CD tiles),
+  # Same profile as the station: plain TCG (matches the other live-CD stations),
   # -cpu qemu64, std VGA, PS/2 kbd+mouse only (no usb-tablet — ReactOS 0.4.x USB
   # enumeration can stall early boot).
   "$QEMU_BIN" \
@@ -328,7 +328,7 @@ GUEST_DIR="$GUEST_DIR" REACTOS_ISO="$ISO_PATH" QEMU_BIN="$QEMU_BIN" bash "$GOLDE
 
 # =============================================================================
 # DONE — reference: how this ISO is wired into the neko+QEMU gallery.
-# (Matches the TempleOS/KolibriOS live-CD tiles; the container mounts
+# (Matches the TempleOS/KolibriOS live-CD stations; the container mounts
 #  /data/gallery-guests read-only at /guests, and launch-qemu.sh uses
 #  qemu-system-x86_64 with -audiodev pa,id=snd — hence audiodev=snd below.)
 # =============================================================================

@@ -1,4 +1,4 @@
-// Native-decoder WebRTC fallback for streamhost tiles.
+// Native-decoder WebRTC fallback for streamhost stations.
 //
 // This path is entered only when VideoDecoder is absent. Every streamhost signal
 // document advertises the same platform bridge; capable browsers never execute
@@ -379,7 +379,7 @@ export class WebRtcFallbackClient {
       } else if (peerPacketsReceived > this.lastPeerPacketsReceived
         && this.lastFrameProgressAt > 0
         && now - this.lastFrameProgressAt >= DECODE_STALL_MS) {
-        // A damage-gated tile may legitimately send neither packets nor frames
+        // A damage-gated station may legitimately send neither packets nor frames
         // while static. Only call it a decoder stall when RTP is still arriving.
         this.markStalled('RTP is arriving but decoded frames stopped advancing');
         this.scheduleReconnect('decoded frames stalled');

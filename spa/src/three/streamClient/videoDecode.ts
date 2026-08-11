@@ -166,7 +166,7 @@ export function setupVideoDecoderImpl(this: StreamClient) {
       this.noteDecodeFailure(String(e));
       // A VideoDecoder error is FATAL for the instance (state -> closed), so
       // ALWAYS tear it down and rebuild at the next keyframe — a one-shot
-      // latch here left the tile black forever after a second error (e.g. a
+      // latch here left the station black forever after a second error (e.g. a
       // mid-GOP join against an old server relaying broken references).
       // Chrome >= 150 also reports an impossible hardwareAcceleration
       // preference HERE (async), not as a configure() throw — the first

@@ -2,7 +2,7 @@
 //  input/pointerTelemetry — PURE per-stroke / per-hover-window counters.
 //  ---------------------------------------------------------------------------
 //  DIAGNOSTIC telemetry (a bonus channel; the streamhost server side is the
-//  primary one) for two mouse/pen-path symptoms on the abs tiles (win95/98):
+//  primary one) for two mouse/pen-path symptoms on the abs stations (win95/98):
 //    1. a CURVED S-Pen / finger drag in Paint arrives as a straight LINE —
 //       intermediate move samples are being lost between the browser and the
 //       guest;
@@ -205,7 +205,7 @@ export class StrokeAccumulator {
 
 /**
  * Per-hover-window accumulator for bare S-Pen hover (buttons === 0). Counts the
- * hover events SEEN vs the ones FORWARDED (allowPenHover throttles abs-tile
+ * hover events SEEN vs the ones FORWARDED (allowPenHover throttles abs-station
  * hover to a 32ms ≈ 30Hz ceiling), so the effective forwarded Hz over the
  * window is visible against that ceiling. Emits about once per second of active
  * hovering; a partial trailing window is simply dropped.

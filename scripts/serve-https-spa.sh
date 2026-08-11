@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # serve-https-spa.sh  (SERVE agent — reproducible bring-up)
 # ---------------------------------------------------------------------------
-# Stand up the HTTPS serving plane for the Kernel Hive SPA on the LAN so the
+# Stand up the HTTPS serving plane for the Kernel Hive UI on the LAN so the
 # page is a SECURE CONTEXT (required for WebTransport / WebCodecs), and expose
-# SAME-ORIGIN signaling JSON for the registry's production streamhost tiles.
+# SAME-ORIGIN signaling JSON for the registry's production streamhost stations.
 #
-# It deploys only the SPA entries present in dist/ and leaves other webroot
+# It deploys only the UI entries present in dist/ and leaves other webroot
 # content (such as boot-replay videos under boot/) in place. It does not manage
-# the streamhost tile processes or any Proxmox guests.
+# the streamhost station processes or any Proxmox guests.
 #
 # Runs from a workstation or the dev box (needs ssh to the host). Sub-commands:
 #   build     npm run build in spa/
 #   deploy    push built dist + server + ca script to the host
-#   manifests publish generated tiles.json + gallery-manifest.json (no SPA build)
+#   manifests publish generated tiles.json + gallery-manifest.json (no UI build)
 #   cert      mint/refresh the local-CA leaf on the host, pull rootCA.pem here
 #   up        (cert + deploy-if-needed +) start the HTTPS server
 #   down      stop the HTTPS server by pidfile
@@ -21,7 +21,7 @@
 #   all       build + deploy + cert + up   (full reproducible bring-up)
 #
 # Endpoints when up:
-#   SPA      https://192.0.2.10:8443/
+#   UI      https://192.0.2.10:8443/
 #   signal   https://192.0.2.10:8443/signal/<tile>.json
 # ---------------------------------------------------------------------------
 set -euo pipefail
@@ -89,7 +89,7 @@ deploy() {
   }
   msg "deploying dist + server to $HOST:$SERVE_DIR"
   $SSH "mkdir -p $WEBROOT $HOST_PKI"
-  # Timestamped safety tar of the current webroot before replacing SPA entries;
+  # Timestamped safety tar of the current webroot before replacing UI entries;
   # keep the newest 3.
   msg "backing up current webroot -> $SERVE_DIR/webroot-backup-<epoch>.tar.gz (keep 3)"
   $SSH "if [ -n \"\$(ls -A $WEBROOT 2>/dev/null)\" ]; then \
@@ -138,7 +138,7 @@ deploy() {
 }
 
 # Publish the two registry-generated runtime JSON documents with atomic per-file
-# replacement. This is independent of deploy(): ordinary new tiles need no Vite build.
+# replacement. This is independent of deploy(): ordinary new stations need no Vite build.
 publish_manifests() {
   [ -f "$TILES_SRC" ] || {
     msg "ERROR: missing generated $TILES_SRC"
@@ -156,11 +156,11 @@ publish_manifests() {
   $SSH "mkdir -p $WEBROOT"
   $SSH "set -e; tmp=$TILES.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $TILES" <"$TILES_SRC"
   $SSH "set -e; tmp=$WEBROOT/gallery-manifest.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $WEBROOT/gallery-manifest.json" <"$GALLERY_MANIFEST_SRC"
-  # Poster prose is runtime data too: the SPA fetches /poster-docs.json before
+  # Poster prose is runtime data too: the UI fetches /poster-docs.json before
   # falling back to its bundled copy, so publishing here is what makes a poster
   # edit live without a Vite build.
   $SSH "set -e; tmp=$WEBROOT/poster-docs.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $WEBROOT/poster-docs.json" <"$POSTER_DOCS_SRC"
-  # reset-tile.sh reads this to find each tile's resetMode, so a tile missing
+  # reset-tile.sh reads this to find each station's resetMode, so a station missing
   # here has a dead "Restore to golden" button. It went stale for irix and the
   # box copy simply had no entry, which reads as `unknown osId` at reset time.
   $SSH "set -e; tmp=$SERVE_DIR/golden-manifest.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $SERVE_DIR/golden-manifest.json" <"$GOLDEN_MANIFEST_SRC"

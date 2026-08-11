@@ -1,6 +1,6 @@
 // Direct WebTransport framebuffer/input proof for a streamhost signaling file.
 // It deliberately bypasses the gallery catalog, making it suitable for a
-// throwaway tile that must never be added to the live lineup.
+// throwaway station that must never be added to the live lineup.
 //
 // Usage: node direct-stream-proof.mjs <signaling.json> <out-prefix> [scancodes]
 // Example scancodes: 2e,18,20,12,2d ("codex", XT set 1). Omit for capture-only.
@@ -26,7 +26,7 @@ await page.goto(process.env.GALLERY_URL || 'https://192.0.2.10:8443/', {
 const result = await page.evaluate(async ({ sig, keys }) => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const hash = Uint8Array.from(atob(sig.certHashB64), (c) => c.charCodeAt(0));
-  // sig.path carries the signed session ticket when the tile runs with
+  // sig.path carries the signed session ticket when the station runs with
   // SH_SESSION_KEY; a hardcoded /wt is refused before accept() in that case.
   const url = sig.url || `https://${sig.host}:${sig.udpPort}${sig.path || '/wt'}`;
   const canvas = document.createElement('canvas');

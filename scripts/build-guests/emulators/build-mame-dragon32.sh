@@ -1,15 +1,15 @@
 #!/bin/bash
 # Build the shipping Dragon 32 MAME binary from a pinned upstream source revision.
 #
-# WHY A PURPOSE-BUILT BINARY AT ALL.  While this tile is on the Debian 12 bridge
+# WHY A PURPOSE-BUILT BINARY AT ALL.  While this station is on the Debian 12 bridge
 # base the lab host is not, so the host's /usr/games/mame (0.276) cannot simply
-# be copied into a tile: its glibc/libstdc++ ABI does not match.  The two
+# be copied into a station: its glibc/libstdc++ ABI does not match.  The two
 # remaining choices are Debian 12's packaged MAME or a binary built in the
-# suite's own chroot.  This tile takes the second, for the same reason mpf2 does
+# suite's own chroot.  This station takes the second, for the same reason mpf2 does
 # and for one more: mpf2 already ships MAME 0.289 built from commit f34f025 in
 # that chroot, so pinning the SAME commit here means the gallery has exactly one
 # MAME version across its two MAME bridge exhibits instead of two that drift
-# apart.  The chroot is chosen from the tile's suite in
+# apart.  The chroot is chosen from the station's suite in
 # registry/bridge-suites.json; once dragon32 moves to trixie the chroot matches
 # the host and only the pin, not the ABI, is doing the work (see
 # docs/lab/BRIDGE-TRIXIE-MIGRATION.md).
@@ -64,7 +64,7 @@ SEED="${MAME_SEED_REPO:-}"
 DEFAULT_JOBS=$(nproc)
 [ "$DEFAULT_JOBS" -gt 12 ] && DEFAULT_JOBS=12
 JOBS="${JOBS:-$DEFAULT_JOBS}"
-# MAME 0.289, the same commit the mpf2 tile ships.
+# MAME 0.289, the same commit the mpf2 station ships.
 MAME_DRAGON32_BASE="f34f02505e32c1993c6a782b6814232cbfc74e36"
 
 say() { printf '\n== %s\n' "$*"; }
@@ -106,7 +106,7 @@ if [ -n "$SEED" ]; then
 fi
 
 # Shared compiler cache at <chroot>/ccache, outside every build tree, so this
-# tile's cold tree still reuses the objects a sibling MAME build already
+# station's cold tree still reuses the objects a sibling MAME build already
 # produced (mame-ccache.sh explains why the hash survives the tree name). It
 # touches no file in the tree, so the pristine-source assertion above stands.
 mame_ccache_prepare "$CHROOT"

@@ -24,7 +24,7 @@
 #   * ptr-tags  binds ctlsock's pointer engine to THIS machine's mouse ioports
 #               by env (the module's built-in defaults name the SGI Indy's PS/2
 #               mouse). Defaults unchanged, so irix is untouched.
-# All three are freestanding: they touch only files no tile-specific patch in
+# All three are freestanding: they touch only files no station-specific patch in
 # scripts/build-guests/irix/irix-mame-stack.sh touches.
 #
 # WHY THERE IS NO CHROOT HERE, unlike build-mame-{bbcb,zx81,kc854,…}.sh. Those
@@ -38,8 +38,8 @@
 # identical run on the host and run inside a trixie bridge guest.
 #
 # PIN: tag `mame0289` == f34f02505e32c1993c6a782b6814232cbfc74e36, the same
-# release every other MAME tile ships. A version bump would re-open the romset
-# revalidation problem that makes sinclairql/zxspectrum the hardest tiles in the
+# release every other MAME station ships. A version bump would re-open the romset
+# revalidation problem that makes sinclairql/zxspectrum the hardest stations in the
 # fleet, for no gain the spike can use.
 #
 # SOURCES is the single file src/mame/atari/atarist.cpp, not the directory. The
@@ -48,7 +48,7 @@
 # (atarist_v, ataristb, stkbd, stmmu, stvideo) come in through the dependency
 # walker off its own #includes. src/mame/atari/ holds 179 .cpp files, nearly all
 # of them unrelated Atari ARCADE drivers, so the directory form would be the
-# opposite of narrow. 36 ST-family machines result; the tile wants `st`.
+# opposite of narrow. 36 ST-family machines result; the station wants `st`.
 #
 # TWO ROMS, AND ONLY ONE OF THEM IS CLEAN:
 #   * TOS — EmuTOS, GPLv2, no Atari copyright material. The 192 KB image, NOT

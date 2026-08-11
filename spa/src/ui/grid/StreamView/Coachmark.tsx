@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 
 // ---------------------------------------------------------------------------
-//  Coachmark — the touch legend. Auto-shows once on the first live tile a phone
+//  Coachmark — the touch legend. Auto-shows once on the first live station a phone
 //  user opens, and is re-openable any time via the ⋯ menu's "Touch help". This is
 //  a CONTROLLED component: the owner (useTouchControl) holds the open state + the
 //  persisted seen-flag (coachmark.ts). Touch has no cursor and no tooltips, so the

@@ -3,7 +3,7 @@
 #
 # This script is intentionally inert unless --apply or --stage-only is given.
 # The normal --apply flow snapshots the already-built release binary as
-# streamhost-<gitsha>, creates per-tile current/previous links, installs the
+# streamhost-<gitsha>, creates per-station current/previous links, installs the
 # versioned systemd template, and restarts helenos first.  It then PAUSES for a
 # human framebuffer/stream check before continuing in bounded waves.
 #
@@ -259,7 +259,7 @@ for ((i = 1; i < ${#ORDER[@]}; i += WAVE_SIZE)); do
   fi
   # Every unit in the wave has now consumed the new template. Track all of
   # them before readiness polling so the failure path returns the whole wave
-  # to the backed-up legacy template, including a tile that fails its gate.
+  # to the backed-up legacy template, including a station that fails its gate.
   RESTARTED+=("${wave[@]}")
   for t in "${wave[@]}"; do
     if readiness "$t"; then

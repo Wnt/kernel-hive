@@ -2,14 +2,14 @@
 # =============================================================================
 # tile-doctor.sh — is <tile> actually a finished exhibit?
 #
-# Adding a tile to the registry is the easy half. The other half is a scatter of
+# Adding a station to the registry is the easy half. The other half is a scatter of
 # places the generator does not write, and every one of them has been forgotten
-# at least once: the SPA scene bindings, the poster prose, the hero image, the
+# at least once: the UI scene bindings, the poster prose, the hero image, the
 # keyboard map, the pacing knobs, the golden snapshot, the operator CLI matrix.
 # The MPF-II shipped to `lifecycle: production` missing several, and each was
 # found by looking at the exhibit and noticing it was wrong.
 #
-# This runs every one of those checks for a single tile and says which failed.
+# This runs every one of those checks for a single station and says which failed.
 # It is the "am I done?" command, and it is meant to be run BEFORE claiming so.
 #
 # Usage:  scripts/dev/tile-doctor.sh <tile-id> [--live]

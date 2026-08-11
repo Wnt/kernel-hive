@@ -8,7 +8,7 @@
 #   — see docs/lab/tile-resolution-responsiveness.md.)
 #
 # WHY THIS EXISTS
-#   The winxp tile runs on the QEMU *std* (Bochs) PCI VGA under KVM. XP's inbox
+#   The winxp station runs on the QEMU *std* (Bochs) PCI VGA under KVM. XP's inbox
 #   "Standard VGA" driver is hard-capped at 640x480, and QEMU's *cirrus*
 #   emulation breaks the XP desktop bring-up above 640x480 on a cold -snapshot
 #   boot under KVM (top ~half of the framebuffer scans out, the taskbar never
@@ -43,7 +43,7 @@
 #      while dragging" -> Apply; clean ACPI shutdown.
 #   3. verify: boot, screendump, assert the PPM is 1920x1200, clean shutdown.
 #
-# QEMU_VGA stays "std" and the tile carries "-usb -device usb-tablet" (absolute
+# QEMU_VGA stays "std" and the station carries "-usb -device usb-tablet" (absolute
 # cursor) + "-device AC97" (so the audio driver is baked in before the golden).
 #
 # RUN AFTER winxp.sh has produced the auto-logon golden. Idempotent-ish: re-runs
@@ -63,7 +63,7 @@ set -euo pipefail
 
 DISK="${DISK:-/data/gallery-guests/WinXPpro/winxp.qcow2}"
 QEMU_BIN="${QEMU_BIN:-qemu-system-x86_64}"        # KVM-capable; std VGA
-QEMU_ACCEL="${QEMU_ACCEL:--enable-kvm -cpu host}" # match the live tile
+QEMU_ACCEL="${QEMU_ACCEL:--enable-kvm -cpu host}" # match the live station
 MEM="${MEM:-768}"
 RUN_DIR="${RUN_DIR:-/tmp/winxp-hires.$$}"
 LOG_DIR="${LOG_DIR:-${RUN_DIR}/log}"

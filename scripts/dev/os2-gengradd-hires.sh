@@ -3,7 +3,7 @@
 #
 # WHAT IT FIXES
 #   OS/2's IBM GRADD display stack traps c0000005 in GENPMI.DLL/VIDEOPMI.DLL at
-#   display init on QEMU `-vga std`, which pinned the os2warp tile to 640x480.
+#   display init on QEMU `-vga std`, which pinned the os2warp station to 640x480.
 #   The cause is NOT the missing VBE Protected Mode Interface (fn 4F0Ah) that the
 #   earlier investigation assumed: GENPMI never calls 4F0Ah. It enumerates modes
 #   through the OS/2 mini-VDM (real-mode INT 10h 4F00/4F01) into two fixed
@@ -15,7 +15,7 @@
 #   which still includes 1024x768x64k and 1280x1024x256. That single flag is the
 #   whole fix: no QEMU rebuild, no custom VGA BIOS ROM, no OS/2 binary patching.
 #
-#   The second half is guest-side: the tile's 4.52 build had its GRADD DLLs
+#   The second half is guest-side: the station's 4.52 build had its GRADD DLLs
 #   overwritten by a failed SciTech SNAP install, so IBM's originals must be
 #   restored from the MCP2 CD and SNAP's `\OS2\SVGADATA.PMI` (a one-line
 #   `#includecode "sddpmi.dll"` stub) moved aside — otherwise BVHSVGA loads SNAP's

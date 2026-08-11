@@ -42,7 +42,7 @@ export interface StreamhostSignal {
   audio: boolean;
   /** connect-time encoder defaults + ABR ladder (Section 3.3), if present. */
   video?: StreamVideoParams;
-  /** Server-published QUIC packet policy; absent on an old/unrestarted tile. */
+  /** Server-published QUIC packet policy; absent on an old/unrestarted station. */
   quic?: {
     maxUdpPayloadSize?: number;
     mtuDiscovery?: boolean;

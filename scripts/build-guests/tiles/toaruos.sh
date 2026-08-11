@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/tiles/toaruos.sh — reproduce the ToaruOS gallery tile from source
+# build-guests/tiles/toaruos.sh — reproduce the ToaruOS gallery station from source
 #
 # GUEST : ToaruOS v2.3.2 (klange/toaruos) — composited "Yutani" desktop
 # TYPE  : LIVE ISO, no disk/install. The prebuilt release ISO boots straight to
-#         the Yutani desktop. "Building" this tile == fetching + integrity-
+#         the Yutani desktop. "Building" this station == fetching + integrity-
 #         checking the exact upstream ISO, then a small repeatable content
 #         bake: inject repo-shipped desktop launcher stubs (assets/toaruos/) into
 #         the live CD's ramdisk so ToaruOS's OWN built-in apps/games (Mines,
@@ -30,14 +30,14 @@
 #   * Steps 1,2,6,7 are FULLY automated and reproduce with no human input.
 #   * There is exactly ONE cosmetic, non-blocking manual footnote at RUNTIME
 #     (not build time): first boot opens a "Welcome to ToaruOS!" tutorial
-#     window over the desktop. It does NOT block the tile and `esc` won't close
+#     window over the desktop. It does NOT block the station and `esc` won't close
 #     it (would need a VNC pointer click). We deliberately leave it — it is fine
-#     for a gallery tile and requires no build-time action. See PITFALLS below.
+#     for a gallery station and requires no build-time action. See PITFALLS below.
 #
 # HYGIENE (per project rules):
 #   * The verify VM is killed ONLY via its QEMU monitor `quit` (fallback: its
 #     own pidfile). NEVER `pkill qemu*` — that would catch the live gallery
-#     tiles and macOS fan-out VMs.
+#     stations and macOS fan-out VMs.
 #   * Namespaced work dir + Unix VNC/monitor sockets, so concurrent guest builds
 #     never collide or reserve a host TCP port.
 #   * OUT_DIR and WORK_DIR can keep every write under an isolated trial path.
@@ -147,7 +147,7 @@ fi
 # remastering the ISO with xorriso REPLAYING the original El-Torito boot record.
 # Idempotent (skips if the ISO already carries the launchers). Any failure
 # (no xorriso / bad ramdisk) SKIPS cleanly, copying the pristine stock ISO
-# through so the tile still boots to a plain desktop. Proven 2026-07-06: a
+# through so the station still boots to a plain desktop. Proven 2026-07-06: a
 # from-STOCK rebuild boots to the Yutani desktop with all six icons.
 # The launchers live INSIDE the compressed /ramdisk.igz (a gzip ustar), not on
 # the ISO filesystem, so we must extract the ramdisk and inspect its tar TOC.
@@ -251,7 +251,7 @@ mkdir -p "$RUN_DIR"
 rm -f "$SHOT_PNG" "${SHOT_PNG%.png}.ppm"
 
 # Clean shutdown helper: monitor `quit` first, pidfile SIGTERM as fallback.
-# NEVER pkill by name (would kill live gallery tiles / macOS VMs).
+# NEVER pkill by name (would kill live gallery stations / macOS VMs).
 mon_cmd() { printf '%s\n' "$1" | socat - "UNIX-CONNECT:${MON_SOCK}" >/dev/null 2>&1 || true; }
 
 # shellcheck disable=SC2317 # invoked only via the EXIT/INT/TERM trap below
@@ -284,7 +284,7 @@ case "$VERIFY_ACCEL" in
 esac
 
 log "Framebuffer-verify: booting headless (${VERIFY_ACCEL}, VNC ${VNC_TARGET}, monitor ${MON_SOCK})"
-# Same args as the live tile, minus real audio backend (headless host has no PA):
+# Same args as the live station, minus real audio backend (headless host has no PA):
 # use -audiodev none so the AC97 device still probes exactly as in production.
 "$QEMU_BIN" \
   -machine pc "${accel_args[@]}" -m 1024 -smp 2 \
@@ -344,8 +344,8 @@ exit "$verify_rc"
 ###############################################################################
 # PITFALLS (from the validated dry-run notes):
 #  * First boot opens a "Welcome to ToaruOS!" tutorial window over the desktop.
-#    Harmless, does NOT block the tile; `esc` will not close it (needs a VNC
-#    pointer click). Leaving it is correct for a gallery tile.
+#    Harmless, does NOT block the station; `esc` will not close it (needs a VNC
+#    pointer click). Leaving it is correct for a gallery station.
 #  * -vga std defaults to 1920x1080 and scales fine in the neko view. 512 MB
 #    RAM also works; 1024 MB is the validated value.
 #  * Requires a 64-bit CPU (guest refuses on 32-bit); host or qemu64 is correct.

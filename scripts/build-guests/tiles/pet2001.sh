@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/pet2001.sh — build the Commodore PET 2001 (1977) streamhost tile
+# build-guests/tiles/pet2001.sh — build the Commodore PET 2001 (1977) streamhost station
 # as a thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running VICE `xpet -model 2001`, emulating
@@ -8,13 +8,13 @@
 #         of blue-white text on black, no CRTC (the 1977 machine drew its video
 #         with discrete logic), chiclet "graphics" keyboard, cassette deck.
 #         streamhost captures the Linux framebuffer + AC97 audio exactly like
-#         every other bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+#         every other kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- WHY THIS TILE IS CHEAP -------------------------------------------------
 #   Same argument as vic20.sh/plus4.sh: VICE is already in the frozen bridge
-#   base (built from source for the c64 tile; `make install` ships the whole
+#   base (built from source for the c64 station; `make install` ships the whole
 #   family, so /usr/local/bin/xpet is there) and it BUNDLES the Commodore ROMs.
 #   The PET needs nothing else — no tape, no disk, no licensed media. No staged
 #   asset, no checksum gate, no check-assets.sh row.
@@ -26,7 +26,7 @@
 #     RamSize=8   Crtc=0   VideoSize=40   KeyboardType=4 (graphics/chiclet)
 #     CrtcPaletteFile="2001-blueish.vpl"  (ROM set 1 -> rom1g.vrs)
 #   Crtc=0 matters: the 2001 predates the 6545 CRTC that every later PET used.
-#   The sibling tile cbm8032 is the OTHER end of the same family (80 columns,
+#   The sibling station cbm8032 is the OTHER end of the same family (80 columns,
 #   business keyboard, BASIC 4) and is deliberately a different exhibit.
 #
 # ---- WINDOW vs X ROOT (measured here, 2026-08-09) ---------------------------
@@ -58,13 +58,13 @@
 #   The frame-derived two-frame figure (40/40) is a FLOOR, not an answer: it was
 #   bisected on this box for vic20 (scripts/dev/emu-key-pacing-bisect.py) and
 #   corrupted 1 line in 22 under host scheduling stalls, while 80/80 lost
-#   nothing in 22. Same emulator, same host, so this tile ships 80/80 too — and
+#   nothing in 22. Same emulator, same host, so this station ships 80/80 too — and
 #   the type-in proof below is typed at exactly that rate, so the proof
 #   exercises the shipped pacing rather than a faster one.
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the pet2001
-# tile dir; refuses to run while streamhost@pet2001 is active.
+# station dir; refuses to run while streamhost@pet2001 is active.
 #
 # Usage: pet2001.sh [--force] [-h]
 # =============================================================================
@@ -117,7 +117,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Commodore PET 2001 (1977) ROM BASIC kiosk launcher (bridge tile).
+# Commodore PET 2001 (1977) ROM BASIC kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/pet2001.sh for the flag rationale. The X root is
 # dropped to 800x600 because VICE's SDL window here is a fixed 768x532
 # (measured with xwininfo) and there is no window manager to place it.
@@ -140,7 +140,7 @@ EOS
 # dying a second after it starts and getty@tty1 looping into start-limit-hit,
 # with nothing anywhere naming the emulator (gdb backtrace in
 # docs/guests/vic20.md). Leave stdout on tty1, as the stock base profile and
-# every other VICE tile do.
+# every other VICE station do.
 read -r -d '' PROFILE <<'EOS' || true
 # Bridge kiosk session (pet2001 overlay). Start X with NO core pointer cursor
 # (-nocursor: keyboard-only exhibit). stdout MUST stay on tty1: VICE 3.9
@@ -154,7 +154,7 @@ fi
 EOS
 
 # The paced typist used by the post-bake proof. It runs on the HOST against this
-# tile's QMP socket and sends EXPLICIT press/release pairs at the tile's shipped
+# station's QMP socket and sends EXPLICIT press/release pairs at the station's shipped
 # 80 ms hold / 80 ms gap — QEMU's `send-key hold-time` releases asynchronously
 # and overlapping calls lose characters on their own (playbook §5.1), and
 # `labctl type` bypasses pacing entirely while still printing "ok".
@@ -484,7 +484,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 fi
 
 # One clean cold boot with the quiet console in force, then bake the golden from
-# the very state SPA reset restores for ever after. THE FIXTURE IS THE UNTOUCHED
+# the very state UI reset restores for ever after. THE FIXTURE IS THE UNTOUCHED
 # POWER-ON SCREEN — the state the machine itself chose. Nothing is typed before
 # the bake (mpf2 shipped a golden carrying its own verification output and had
 # to be re-baked; plus4 shipped one curated deep inside an application and was

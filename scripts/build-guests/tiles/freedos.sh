@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# build-guests/tiles/freedos.sh — reproduce the FreeDOS 1.3 retro-games gallery tile
+# build-guests/tiles/freedos.sh — reproduce the FreeDOS 1.3 retro-games gallery station
 #                           FROM SOURCE on a fresh Proxmox host.
 #
 # GUEST : FreeDOS 1.3 — boots straight (no login/installer) to a CHOICE-driven
@@ -60,7 +60,7 @@
 #
 # HYGIENE (per project rules):
 #   * The verify VM is killed ONLY via its QEMU monitor `quit` (fallback: its own
-#     pidfile). NEVER `pkill qemu*` — that would catch live gallery tiles / the
+#     pidfile). NEVER `pkill qemu*` — that would catch live gallery stations / the
 #     macOS fan-out VMs / VM 900/920.
 #   * A FREE nbd device is chosen dynamically and disconnected in cleanup; the
 #     mount lives in a private, PID-namespaced run dir with a unique VNC display
@@ -74,7 +74,7 @@ set -euo pipefail
 
 # ------------------------------------------------------------------ parameters
 KEY="freedos"
-DIR_NAME="FreeDOS" # matches the on-box dir + the live tile path
+DIR_NAME="FreeDOS" # matches the on-box dir + the live station path
 
 GUESTS_ROOT="${GUESTS_ROOT:-/data/gallery-guests}"
 GUEST_DIR="${OUT_DIR:-${GUESTS_ROOT}/${DIR_NAME}}"
@@ -149,10 +149,10 @@ die() {
 }
 
 ###############################################################################
-# The EXACT neko-qemu launch args this tile runs with in the live gallery.
+# The EXACT neko-qemu launch args this station runs with in the live gallery.
 # (validated headless on the dry-run box; emitted here for reference + reuse)
 #
-# PERF: this tile was flipped TCG -> KVM (perf rollout, kvm-safe-flip: DOS
+# PERF: this station was flipped TCG -> KVM (perf rollout, kvm-safe-flip: DOS
 # tolerates KVM well). Live launch is now hardware-accelerated:
 #   qemu-system-x86_64 -machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd \
 #     -enable-kvm -cpu host -m 64 -vga cirrus \
@@ -161,7 +161,7 @@ die() {
 #     -device sb16,audiodev=snd \
 #     -netdev user,id=n0 -device ne2k_pci,netdev=n0 -snapshot
 #
-# neko-qemu / launch-qemu.sh environment for this tile:
+# neko-qemu / launch-qemu.sh environment for this station:
 #   OS_NAME=FreeDOS  QEMU_MACHINE="pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd"  QEMU_MEM=64
 #   QEMU_VGA=cirrus  QEMU_SOUND="-device sb16,audiodev=snd"
 #   ACCEL=kvm   (launch-qemu.sh emits -enable-kvm; /dev/kvm is mapped into the CT)
@@ -847,7 +847,7 @@ fi
 RUN_DIR="${GUEST_DIR}/.verify-run.$$"
 MON_SOCK="${RUN_DIR}/mon.sock"
 PIDFILE="${RUN_DIR}/qemu.pid"
-VNC_DISP="${VNC_DISP:-62}" # VNC :62 -> tcp 5962; clear of gallery tiles
+VNC_DISP="${VNC_DISP:-62}" # VNC :62 -> tcp 5962; clear of gallery stations
 SHOT_PNG="${GUEST_DIR}/verify-boot-menu.png"
 mkdir -p "$RUN_DIR"
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/win2000.sh — from-scratch, reproducible build of the
-# Windows 2000 Professional SP4 tile for the neko+QEMU Kernel Hive.
+# Windows 2000 Professional SP4 station for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the Win2000
 # guest END TO END from its real upstream source — NO image backups, NO
@@ -484,7 +484,7 @@ inject_software() {
     ok=$((ok + 1))
   done
 
-  # Desktop README (All Users) so the tile explains itself.
+  # Desktop README (All Users) so the station explains itself.
   local ALLUSERS
   ALLUSERS="$(find "$MNT" -maxdepth 3 -type d -ipath '*/Documents and Settings/All Users/Desktop' -print -quit 2>/dev/null)"
   local readme="${RETRO}/RETRO-README.txt"
@@ -803,7 +803,7 @@ neko-qemu tile env (per retro-gallery-guests.md):
   QEMU_EXTRA    = -enable-kvm -cpu host -smp 1 -netdev user,id=n0 -device rtl8139,netdev=n0
                   -usb -device usb-tablet
                   # NORMAL modern KVM recipe (NT 5.0 kernel/ACPI HAL). accel=kvm +
-                  # -cpu host + -smp 1, mirroring the working winxp tile. Do NOT apply
+                  # -cpu host + -smp 1, mirroring the working winxp station. Do NOT apply
                   # the Win9x knobs (kernel-irqchip=off / -cpu pentium,-apic) here — the
                   # NT HAL has real APIC/ACPI. The builder performs the required priming
                   # boot and bakes the settled post-PnP desktop as internal snapshot golden.

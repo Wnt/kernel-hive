@@ -62,7 +62,7 @@ pub(super) fn spawn_input_bench(
                     let Some(verb) = fields.next() else { continue };
                     // `K <xt-scancode> <0|1>` — a keyboard edge through the
                     // production router, added for the de-bridging campaign:
-                    // every MAME bridge tile is keyboard-only, so keymap
+                    // every MAME kiosk is keyboard-only, so keymap
                     // acceptance needs the same loopback the pointer has.
                     if verb == "K" {
                         let (Some(code), Some(down)) = (fields.next(), fields.next()) else {

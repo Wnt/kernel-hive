@@ -3,9 +3,9 @@
 # build-guests/tiles/os2warp.sh — reproduce the IBM OS/2 Warp 4 gallery guest
 #                           FROM SOURCE on a fresh Proxmox host.
 #
-# GUEST : IBM OS/2 Warp 4 (1996, "Merlin") — the Workplace Shell tile (:8108).
+# GUEST : IBM OS/2 Warp 4 (1996, "Merlin") — the Workplace Shell station (:8108).
 # TYPE  : PREBUILT-IMAGE + AUTOMATED FIRST-BOOT TAMING + AGENT/GOLDEN BAKE.
-#         Exactly like the project's Win311 / Win95 tiles, this does NOT run the
+#         Exactly like the project's Win311 / Win95 stations, this does NOT run the
 #         OS/2 installer (an unattended OS/2 install under QEMU is multi-reboot,
 #         FDISK-driven and notoriously fragile). Instead it consumes a community
 #         PRE-INSTALLED OS/2 Warp 4.0 qcow2 from the Internet Archive and then
@@ -26,8 +26,8 @@
 # LICENSE: OS/2 Warp 4 is IBM-copyrighted — free to use in this private collection.
 #   It is fetched at build time from the Internet Archive for this PRIVATE, LAN-only
 #   home-lab museum (the same stance this project already applies to its Windows
-#   9x/XP/2000 and macOS tiles); the binary media is never committed to the GitHub
-#   repo and the tile is never exposed to the public Internet. The modern successor
+#   9x/XP/2000 and macOS stations); the binary media is never committed to the GitHub
+#   repo and the station is never exposed to the public Internet. The modern successor
 #   is ArcaOS by Arca Noae (a paid OS/2 distribution) — buy that for any real /
 #   commercial OS/2 use. No faithful free/open OS/2 exists.
 #
@@ -39,7 +39,7 @@
 #   3. PATCH C:\CONFIG.SYS via qemu-nbd to disable the NetWare Requester nag.
 #   4. BUILD the serial pointer agent with OpenWatcom 1.9, inject WARPD.EXE,
 #      and add its REXX-quoted launch command to C:\STARTUP.CMD.
-#   5. COLD-BOOT with the live tile's pinned machine/device set, wait for the
+#   5. COLD-BOOT with the live station's pinned machine/device set, wait for the
 #      real desktop, and save the internal `golden` VM-state snapshot.
 #   6. LOADVM-VERIFY the golden and capture the framebuffer after an exact
 #      serial-agent pointer move.  Production routes buttons through QEMU's
@@ -52,11 +52,11 @@
 #     desktop) so they are not blind fixed sleeps.
 #   * We deliberately do NOT install OS/2 from scratch (see TYPE above); the
 #     pre-installed qcow2 is the only non-self-authored input, used behind the
-#     gallery's LAN-only edge — identical to the Win9x/XP prebuilt-image tiles.
+#     gallery's LAN-only edge — identical to the Win9x/XP prebuilt-image stations.
 #
 # HYGIENE (per project rules):
 #   * The tame + verify VMs are killed ONLY via QEMU monitor `quit` (fallback:
-#     their own pidfile). NEVER `pkill qemu*` (would catch live gallery tiles,
+#     their own pidfile). NEVER `pkill qemu*` (would catch live gallery stations,
 #     CT 110, VM 900/925 and sibling builders).
 #   * Namespaced per-PID run dir + unique serial/VNC/monitor UNIX sockets. qemu-nbd uses
 #     the first FREE /dev/nbd* and always disconnects it.
@@ -89,7 +89,7 @@ GUESTS_ROOT="${GUESTS_ROOT:-/data/gallery-guests}"
 GUEST_DIR="${GUEST_DIR:-${GUESTS_ROOT}/${DIR_NAME}}"
 DL_DIR="${GUEST_DIR}/dl"
 PRISTINE="${DL_DIR}/os2-pristine.qcow2" # cached upstream download
-GOLDEN="${GUEST_DIR}/os2.qcow2"         # final tile image (tamed + patched)
+GOLDEN="${GUEST_DIR}/os2.qcow2"         # final station image (tamed + patched)
 PROOF_PNG="${GUEST_DIR}/os2-warp4-desktop.png"
 
 FORCE="${FORCE:-0}"
@@ -118,7 +118,7 @@ die() {
 }
 
 ###############################################################################
-# The EXACT neko-qemu launch profile this tile runs with in the live gallery.
+# The EXACT neko-qemu launch profile this station runs with in the live gallery.
 # (mirrored verbatim in docs/guests/os2warp.md as the manifest row)
 #
 #   qemu-system-x86_64 -machine pc-i440fx-11.0,acpi=off,usb=off \
@@ -129,7 +129,7 @@ die() {
 #
 # WHY THESE FLAGS (OS/2-under-QEMU lore, all verified on host QEMU 11.0.0):
 #   * TCG ONLY — OS/2 will NOT boot with hardware virtualisation (KVM). The neko
-#     tile therefore does NOT engage /dev/kvm for this guest.
+#     station therefore does NOT engage /dev/kvm for this guest.
 #   * acpi=off,usb=off — OS/2 Warp 4 predates ACPI; leaving it on wedges boot.
 #     OS/2 has no USB stack, so usb-tablet gives no cursor (PS/2 mouse only).
 #   * -cpu pentium + -smp 1 — the image ships a uniprocessor kernel.

@@ -88,7 +88,7 @@ pub(super) async fn send_params_encoder(
     // downscale (`width`/`height` above are the EFFECTIVE encoded size). The HUD
     // uses it to show a genuine "native → stepped" indicator instead of trusting
     // the hardcoded signaling.json 1280×800. Appended after the 18-byte core so an
-    // older SPA that reads only the fixed record ignores the tail harmlessly.
+    // older UI that reads only the fixed record ignores the tail harmlessly.
     buf.extend_from_slice(&p.native_width.to_le_bytes());
     buf.extend_from_slice(&p.native_height.to_le_bytes());
     let mut stream = conn.open_uni().await?.await?;
@@ -104,7 +104,7 @@ pub(super) async fn send_params_encoder(
 /// treats 0xFF as "unknown".
 ///
 /// L-1 TAIL: `skipped_frames` (cumulative per-session egress skips) is appended
-/// AFTER the 26-byte core body so an older SPA that reads only the fixed record
+/// AFTER the 26-byte core body so an older UI that reads only the fixed record
 /// ignores it harmlessly (same additive-tail contract as subtype-1's native
 /// geometry). The client subtracts its delta from its gap-derived loss so a
 /// backlog skip stops masquerading as network loss in the banner and the report.

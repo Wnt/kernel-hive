@@ -15,7 +15,7 @@ import type { GestureState, Vec2 } from './types';
 
 /** How many GUEST px one CSS px of the DISPLAYED picture covers (input/trackpad
  *  setTrack). Measured, not assumed: the picture is letterboxed inside the stage,
- *  and an era-correct tile is stretched into a display-aspect box whose width has
+ *  and an era-correct station is stretched into a display-aspect box whose width has
  *  nothing to do with its framebuffer's. Falls back to 1:1 before layout exists,
  *  which is only ever a frame before the first contact. */
 function guestPerCssPx(box: HTMLElement | null, res: Resolution, display: PresentAspect | null): number {
@@ -33,7 +33,7 @@ function guestPerCssPx(box: HTMLElement | null, res: Resolution, display: Presen
 //  switches per-event on trackpadRef (T-3):
 //    - DIRECT mode → the absolute-coordinate recognizer (input/touchGestures).
 //    - TRACKPAD mode → the relative / virtual-cursor engine (input/trackpad):
-//      rel tiles ship sendMouseMoveRel; abs tiles drive a local cursor sprite.
+//      rel stations ship sendMouseMoveRel; abs stations drive a local cursor sprite.
 //  useStreamInput's touch branch drives it with BOTH the guest px (recognizer)
 //  and the raw CSS px (trackpad deltas); the returned `badge` + `setArm` back
 //  the on-screen armed-state chip, which BOTH models use for right-click.
@@ -94,7 +94,7 @@ export function useTouchGestures({
   gestureRef: RefObject<GestureState>;
   /** The stage the picture is drawn in — measured per contact for the gain. */
   stageRef: RefObject<HTMLDivElement | null>;
-  /** Era-correct display box, when the tile has one (presentAspect.ts). */
+  /** Era-correct display box, when the station has one (presentAspect.ts). */
   presentAspect: PresentAspect | null;
 }): {
   controller: TouchGestureController;
@@ -152,7 +152,7 @@ export function useTouchGestures({
         }
       }
     };
-    // Expand trackpad ops: RelMotion for rel tiles, abs move + click for abs tiles.
+    // Expand trackpad ops: RelMotion for rel stations, abs move + click for abs stations.
     const applyTp = (ops: TrackpadOp[]) => {
       const h = controlRef.current;
       if (!h) return;

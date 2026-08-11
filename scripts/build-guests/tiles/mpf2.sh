@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the Multitech Microprofessor II (MPF-II, 1982) streamhost tile as a thin
+# Build the Multitech Microprofessor II (MPF-II, 1982) streamhost station as a thin
 # overlay on the frozen bridge base, with an INTERNAL 'golden' qcow2 snapshot —
 # the same fixture pattern as its 1980s bridge siblings c64/apple2/atarist/amiga.
 # Proof artifacts are real QEMU framebuffer dumps.
@@ -77,7 +77,7 @@ guest() {
 hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
 # MPF-II is strictly keyboard-driven. MAME runs FULLSCREEN on the bridge base's
-# stock 1024x768 X root (set by ~/.xinitrc, same as every sibling bridge tile)
+# stock 1024x768 X root (set by ~/.xinitrc, same as every sibling kiosk)
 # with its normal aspect correction on, so the exhibit is a TV-shaped picture
 # that fills the frame. Forcing `-resolution` to the raw doubled pixel count
 # (1120x384) instead pinned a 2.92:1 strip in the middle of a large black root:
@@ -310,7 +310,7 @@ fi
 # reported as "MAME exited after cold reset" — a claim about the emulator made
 # by a failure of the transport (2026-08-10).
 #
-# A FRAME IS NOT A BOOTED GUEST, and this tile's predicate is the weak kind:
+# A FRAME IS NOT A BOOTED GUEST, and this station's predicate is the weak kind:
 # wait_for_mpf2_boot accepts any warning-free frame with >100 non-black pixels,
 # which a GRUB console satisfies. On trixie it returned while the screen still
 # read "Loading Linux 6.12.101+deb13-amd64 ...".
@@ -362,7 +362,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 fi
 
 # One clean cold boot with the quiet console in force, then bake the golden
-# snapshot from the state SPA reset will restore for ever after.
+# snapshot from the state UI reset will restore for ever after.
 stop_qemu
 "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot
 boot_tile

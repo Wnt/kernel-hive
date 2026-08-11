@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #===============================================================================
-# build-guests/tiles/tinycore.sh — reproduce the TinyCore Kernel Hive tile from upstream
+# build-guests/tiles/tinycore.sh — reproduce the TinyCore Kernel Hive station from upstream
 #===============================================================================
 #
 # GUEST : tinycore (streamhost VMID 82, udp/54082)
@@ -17,10 +17,10 @@
 #   1. Resolves + downloads the latest stable TinyCore-<ver>.iso (x86) from the
 #      official site (md5-verified via the upstream .md5.txt sidecar) -> ISO_DIR.
 #   2. Creates the scratch state.qcow2 (3G, virtio) in OUT_DIR.
-#   3. Boots the LiveCD headless with EXACTLY the production tile device set
+#   3. Boots the LiveCD headless with EXACTLY the production station device set
 #      (see DEVICE-SET CONTRACT below; only display/audio BACKENDS differ,
 #      which are not part of vmstate — snapshot is loadvm-portable to the
-#      production dbus launcher; verified for this tile family 2026-07-06).
+#      production dbus launcher; verified for this station family 2026-07-06).
 #   4. Bakes the golden fixture fully automated:
 #        - at the ISOLINUX menu: TAB to edit the default 'tc' entry and append
 #          the official `text` bootcode -> GUI extensions still load (cde) but
@@ -33,7 +33,7 @@
 #        - `startx` -> FLWM desktop + wbar + an open aterm terminal.
 #        - park the pointer inside the aterm and click (FLWM focus-follows-
 #          mouse; tinyX ignores the usb-tablet, so the pointer is driven over
-#          the legacy QMP relative path, exactly like the live tile's bake).
+#          the legacy QMP relative path, exactly like the live station's bake).
 #        - clean the prompt, then `savevm golden`.
 #   5. PROVES the contract before declaring success:
 #        - ssh probe (user tc) with the gallery key through a QMP hostfwd
@@ -66,7 +66,7 @@
 # HYGIENE (per gallery rules)
 #   - Never touches /data/vms/streamhost/tiles/* — this builds the ARTIFACT
 #     (canonical /data/gallery-guests/TinyCore + /data/isos); wiring the live
-#     tile is the launcher's job (see PRODUCTION WIRING at the end).
+#     station is the launcher's job (see PRODUCTION WIRING at the end).
 #   - OUT_DIR / WORK_DIR / ISO_DIR / ports are env-overridable for fully namespaced trials.
 #
 # Usage:
@@ -93,7 +93,7 @@ ISO_DIR="${ISO_DIR:-/data/isos}"
 TC_SITE="${TC_SITE:-http://tinycorelinux.net}"                     # upstream does not serve HTTPS
 TC_MIRROR="${TC_MIRROR:-https://distro.ibiblio.org/tinycorelinux}" # official HTTPS mirror, preferred
 TC_VERSION="${TC_VERSION:-}"                                       # e.g. 17.0; empty = resolve latest stable
-TC_ARCH="${TC_ARCH:-x86}"                                          # the tile is the 32-bit x86 GUI ISO
+TC_ARCH="${TC_ARCH:-x86}"                                          # the station is the 32-bit x86 GUI ISO
 ISO_URL="${ISO_URL:-}"                                             # full override (skips resolve)
 ISO_MD5="${ISO_MD5:-}"
 
@@ -243,7 +243,7 @@ if [[ "$ISO_PATH" != "$CANONICAL_ISO" ]]; then
 fi
 
 #==============================================================================
-# STEP 3 — gallery ssh keypair (shared by all ssh-exec tiles; generate if absent)
+# STEP 3 — gallery ssh keypair (shared by all ssh-exec stations; generate if absent)
 #==============================================================================
 if [[ ! -f "${GALLERY_KEY}.pub" ]]; then
   log "generating gallery guest keypair at ${GALLERY_KEY}"
@@ -463,7 +463,7 @@ stop_vm
 #==============================================================================
 # STEP 12 — COLD-START VERIFICATION (exact production semantics)
 #   Fresh QEMU process, `-loadvm golden` at launch, hostfwd re-added via QMP —
-#   precisely what the production tile launcher does on every start. All final
+#   precisely what the production station launcher does on every start. All final
 #   proofs run here (a fresh process also sidesteps stale display-surface
 #   artifacts a long-lived clientless bake VM can accumulate). Keyboard input
 #   still lands in the aterm: pointer position and window focus are part of
@@ -541,7 +541,7 @@ cat <<EOF
   ---- PRODUCTION WIRING (streamhost tile 'tinycore', VMID 82, udp/54082) -----
   # tiles-manifest.sh emit stanza (only the --cdrom path changes vs today):
   #   --cdrom ${ISO_PATH} --boot d
-  # The tile launcher (hand-baked golden launcher) must:
+  # The station launcher (hand-baked golden launcher) must:
   #   * copy/point at ${STATE_PATH} as its state.qcow2 (create-if-missing ONLY)
   #   * keep the EXACT device set in this script's STEP 7 (swap -display/-vnc
   #     for -display dbus,p2p=on,audiodev=snd0 and -audiodev none for
@@ -550,7 +550,7 @@ cat <<EOF
   #   * after boot: QMP  hostfwd_add tcp:127.0.0.1:5882-10.0.2.15:22
   # ssh exec channel:  ssh -i ${GALLERY_KEY} -p 5882 tc@127.0.0.1
   # POINTER NOTE: SH_POINTER=abs with cursor calibration (scale 0.5, off
-  # 138/250) is the tile's streamhost transport config — re-verify it after
+  # 138/250) is the station's streamhost transport config — re-verify it after
   # any TinyCore major bump (Xvesa maps abs input at 2x with an origin shift).
   -----------------------------------------------------------------------------
 EOF

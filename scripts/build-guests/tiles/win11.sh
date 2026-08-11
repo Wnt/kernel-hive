@@ -8,7 +8,7 @@
 #   no longer exists. Every gallery exhibit today is a raw QEMU process under
 #   streamhost@<tile>, so this builder reproduces the SAME hardware recipe with a
 #   plain `qemu-system-x86_64` invocation writing a qcow2 — which is exactly what
-#   a tile boots. Each block below is the raw-QEMU equivalent of one line of the
+#   a station boots. Each block below is the raw-QEMU equivalent of one line of the
 #   locked `qm create` recipe in docs/guests/win11.md:
 #
 #     --machine q35 --bios ovmf            ->  -machine pc-q35-11.0,smm=on + pflash
@@ -34,7 +34,7 @@
 #       docs/guests/win11.md).
 #   (4) DONE PROOF ... qemu-guest-agent answers on the virtio-serial channel. That
 #       only happens after OOBE and FirstLogonCommands ran on a real desktop.
-#   (5) GOLDEN ....... Stage 2, NOT here: bake `savevm golden` on the tile.
+#   (5) GOLDEN ....... Stage 2, NOT here: bake `savevm golden` on the station.
 #
 #   The Windows ISO is operator-supplied (Microsoft copyright) — drop it in
 #   $ISO_DIR. Nothing here downloads it.

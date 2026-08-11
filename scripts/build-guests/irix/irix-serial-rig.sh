@@ -3,7 +3,7 @@
 # wired, for BAKING and VERIFYING the golden that carries irixagent.pl.
 #
 # Everything lives under /data/vms/soltest/irix-serial/<name>/ — never the
-# production tile tree — and every kill goes through clone-guard. The golden is
+# production station tree — and every kill goes through clone-guard. The golden is
 # never opened: each boot gets its own `cp --reflink=always` copy (0.13 s for
 # 2.24 GB), because MAME opens an uncompressed CHD O_RDWR and runs as root.
 #

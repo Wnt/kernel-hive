@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# clientcmd.sh — operator wrapper for the SPA client-observability plane
+# clientcmd.sh — operator wrapper for the UI client-observability plane
 # (/clientcmd + /clientlog on osgallery-https-server.py).
 #
 #   clientcmd.sh snapshot <tile|*>   enqueue: tab(s) POST a full metrics snapshot
 #   clientcmd.sh verbose  <tile|*>   enqueue: toggle verbose client debugging
 #   clientcmd.sh reload   <tile|*>   enqueue: location.reload() the tab(s)
-#   clientcmd.sh restore  <tile>     restore one tile to its golden fixture
+#   clientcmd.sh restore  <tile>     restore one station to its golden fixture
 #   clientcmd.sh eval <sessionId|tile|*> '<js code>'  run JS in targeted tab(s)
 #                                      ('*' deliberately targets every open tab)
-#   clientcmd.sh sessions            active sessions with last tile / UA / time
+#   clientcmd.sh sessions            active sessions with last station / UA / time
 #   clientcmd.sh evallog [sessionId]  reassemble the latest eval-result
 #   clientcmd.sh tail                tail -f the telemetry JSONL
-#   clientcmd.sh log <tile>          last 200 telemetry events for one tile (jq)
+#   clientcmd.sh log <tile>          last 200 telemetry events for one station (jq)
 #
 # Runs ON the box (token + files live there). Run from anywhere else and it
 # re-execs itself over `ssh lab` transparently, so both of these work:
@@ -70,7 +70,7 @@ require_eval_opt_in() {
 case "$cmd" in
   snapshot | verbose | reload)
     tile=${1:-*}
-    # jq builds the JSON so a weird tile value can never break out of the body.
+    # jq builds the JSON so a weird station value can never break out of the body.
     body=$(jq -nc --arg cmd "$cmd" --arg tile "$tile" '{cmd:$cmd,tile:$tile,args:{}}')
     enqueue "$body"
     ;;

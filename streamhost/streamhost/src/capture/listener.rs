@@ -11,7 +11,7 @@
 // Update args are `&[u8]` ON PURPOSE — zvariant deserializes borrowed byte
 // slices via the bytes fast path (one bounds check + slice borrow), whereas
 // `Vec<u8>` goes through serde's per-element sequence visitor. On the bridge
-// tiles the copy path carries ~3 MB per Update at up to 60 Hz; the per-byte
+// stations the copy path carries ~3 MB per Update at up to 60 Hz; the per-byte
 // loop capped drain at a few msgs/s (100%+ CPU), the socket backpressured, and
 // QEMU's unbounded output queue OOM'd the guest cgroup. A v1 Scanout also
 // invalidates (munmaps) any previously offered shm map so the copy path is
@@ -139,7 +139,7 @@ impl ListenerMap {
 // PERF: `data` args are `&[u8]` ON PURPOSE — zvariant deserializes borrowed
 // byte slices via the bytes fast path (one bounds check + slice borrow),
 // whereas `Vec<u8>` goes through serde's per-element sequence visitor. On the
-// bridge tiles the copy path carries ~3 MB per Update at up to 60 Hz; the
+// kiosks the copy path carries ~3 MB per Update at up to 60 Hz; the
 // per-byte loop capped drain at a few msgs/s (100%+ CPU), the socket
 // backpressured, and QEMU's unbounded output queue OOM'd the guest cgroup.
 #[zbus::interface(name = "org.qemu.Display1.Listener")]

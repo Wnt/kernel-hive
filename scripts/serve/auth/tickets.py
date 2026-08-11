@@ -20,7 +20,7 @@ import secrets
 import time
 
 # Minutes, not hours: a ticket is minted per connect, spent immediately, and the
-# SPA re-fetches signaling on every reconnect. The verifier independently caps
+# UI re-fetches signaling on every reconnect. The verifier independently caps
 # how far out an expiry may sit.
 DEFAULT_TTL_SECS = 300
 

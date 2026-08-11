@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/indyr4400.sh — build the SGI Indy (MIPS R4400) / IRIX 6.5
-# streamhost tile as a thin overlay on the shared bridge base
+# streamhost station as a thin overlay on the shared bridge base
 # (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running Iris (github.com/techomancer/iris,
 #         BSD-3), a userspace Rust emulator of a REAL SGI Indy — MIPS R4400,
 #         256 MB, XL/REX3 24-bit graphics — booting IRIX 6.5.22 to the Indigo
 #         Magic graphical login. streamhost captures the Linux framebuffer.
-# TYPE  : "emulator bridge" tile (see streamhost/docs/BRIDGE.md). Overlay + a
-#         per-tile /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
+# TYPE  : "emulator bridge" station (see streamhost/docs/BRIDGE.md). Overlay + a
+#         per-station /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
 #
-# DISTINCT FROM the 'irix' tile. Same museum machine, different silicon and a
+# DISTINCT FROM the 'irix' station. Same museum machine, different silicon and a
 # different emulator: `irix` is MAME's indy_4610 (an **R4600** Indy) and runs
-# BARE-METAL as an x11-runtime tile because MAME's Indy emulation kernel-panics
+# BARE-METAL as an x11-runtime station because MAME's Indy emulation kernel-panics
 # under a KVM vCPU. Iris is pure userspace and has no such constraint — verified
 # on 2026-08-10 by booting it inside a KVM guest to the graphical login — so this
-# exhibit is an ordinary bridge tile and inherits pointer, keyboard and
+# exhibit is an ordinary kiosk and inherits pointer, keyboard and
 # `loadvm golden` from QEMU with zero streamhost daemon changes.
 #
 # ---- AUTOMATION HONESTY -----------------------------------------------------
@@ -27,7 +27,7 @@
 #     build goes through a throwaway bookworm chroot (debootstrap + a rustup
 #     install inside it, ~10 minutes before a line of Rust compiles) and only the
 #     resulting 64 MB binary is copied into the overlay; no Rust toolchain is
-#     ever installed in the tile. On the TRIXIE suite host and guest are the same
+#     ever installed in the station. On the TRIXIE suite host and guest are the same
 #     generation (glibc 2.41 both sides), so that whole dance — and the
 #     debootstrap dependency with it — is SKIPPED and iris is built directly with
 #     the host's own cargo. Same output, same pin, one fewer moving part: this is
@@ -39,9 +39,9 @@
 #     attached as a second, read-only virtio drive; the guest mounts it at
 #     /srv/irix and Iris opens /srv/irix/disk.raw through a symlink in its own
 #     writable dir, with `overlay = true` so its copy-on-write file lands on the
-#     tile's disk instead. Read-only drives are invisible to `savevm`, so the
+#     station's disk instead. Read-only drives are invisible to `savevm`, so the
 #     golden stays small and the asset can never be dirtied.
-#   * The disk image is DERIVED from this lab's own irix-tile golden CHD via
+#   * The disk image is DERIVED from this lab's own irix-station golden CHD via
 #     `chdman extracthd` — no third-party download, same preservation-class
 #     media the gallery already runs. It is NEVER committed (the repo is
 #     public); provenance + measured sha256 live in docs/lab/ASSETS-MANIFEST.md.
@@ -50,12 +50,12 @@
 #     the bare X root with NO window manager, sized to the emulated framebuffer,
 #     so the capture is 1:1 at 1280x1024 with no resampling — verify it.
 #   * NO WINDOW MANAGER means nothing calls XSetInputFocus, and winit (unlike
-#     SDL, which every other bridge tile uses) DROPS key events for a window it
+#     SDL, which every other kiosk uses) DROPS key events for a window it
 #     does not consider focused. The pointer keeps working because winit takes
 #     it from XI2 raw device events, which ignore focus -- so the exhibit looks
 #     alive with a silently dead keyboard. launch.sh focuses the iris window
 #     explicitly with xdotool, which this script installs into the overlay.
-#   * `xset r off`: every key this tile sees is an injected press/release pair,
+#   * `xset r off`: every key this station sees is an injected press/release pair,
 #     and a late release makes X's typematic repeat hammer the held key (the
 #     Oric Atmos failure). Off before the emulator starts.
 #   * Audio is OFF for this phase (Iris `--noaudio`, no AC97 in the device set).
@@ -64,7 +64,7 @@
 #
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by
 # pidfile, idempotent, --force to rebuild the overlay. Touches ONLY the
-# indyr4400 tile dir, its asset dir, and its own chroot work dir.
+# indyr4400 station dir, its asset dir, and its own chroot work dir.
 #
 # Usage:  indyr4400.sh [--force] [--build-iris] [-h]
 # =============================================================================
@@ -126,7 +126,7 @@ guest() { ssh -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/n
 # stdout deliberately stays on tty1 (see the VICE trap in the playbook 7.2.1).
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# SGI Indy (R4400) / IRIX 6.5 kiosk launcher (bridge tile).
+# SGI Indy (R4400) / IRIX 6.5 kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/indyr4400.sh for rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export LIBGL_ALWAYS_SOFTWARE=1 # GPU-less host: llvmpipe software OpenGL
@@ -141,7 +141,7 @@ xsetroot -solid black 2>/dev/null || true
 # THERE IS NO WINDOW MANAGER, so nothing ever calls XSetInputFocus and the X
 # focus stays PointerRoot. Iris is a winit app and winit DROPS key events for a
 # window it does not consider focused -- the pointer still works (it comes from
-# XI2 raw device events, which ignore focus), so the tile looks alive while the
+# XI2 raw device events, which ignore focus), so the station looks alive while the
 # keyboard is silently dead. Focus the window explicitly once it appears.
 (
   for _ in $(seq 1 90); do
@@ -164,7 +164,7 @@ banks    = [128, 128, 0, 0]   # 256 MB, a real Indy's maximum
 nvram    = "/var/lib/iris/nvram.bin"
 
 # disk.raw is a SYMLINK to the read-only asset mounted at /srv/irix. overlay=true
-# keeps every guest write in /var/lib/iris/disk.raw.overlay on the tile's own
+# keeps every guest write in /var/lib/iris/disk.raw.overlay on the station's own
 # writable disk, so the 6.3 GB asset is never modified.
 [scsi.1]
 path    = "/var/lib/iris/disk.raw"
@@ -172,7 +172,7 @@ cdrom   = false
 overlay = true
 EOS
 
-# ---- boot the tile QEMU (exact device set; conditional -loadvm golden) -------
+# ---- boot the station QEMU (exact device set; conditional -loadvm golden) -------
 boot_tile() {
   [ -f "$PID" ] && kill "$(cat "$PID")" 2>/dev/null || true
   sleep 0.5
@@ -198,8 +198,8 @@ boot_tile() {
   log "tile booted (loadvm='${LOADVM:-<none: cold>}')"
 }
 
-# ---- build iris against the GUEST's glibc, outside the tile ------------------
-# Two paths, chosen by the tile's suite. They differ ONLY in where cargo runs:
+# ---- build iris against the GUEST's glibc, outside the station ------------------
+# Two paths, chosen by the station's suite. They differ ONLY in where cargo runs:
 # same repo, same pinned commit, same feature set, same installed binary.
 build_iris() {
   if [ "$SUITE" = bookworm ]; then build_iris_chroot; else build_iris_native; fi
@@ -210,7 +210,7 @@ build_iris() {
 # host-built binary loads in the guest unchanged. No debootstrap, no chroot, no
 # second rustup — the ~10-minute bootstrap that only ever existed to dodge
 # "GLIBC_2.39 not found" simply does not happen. If the host ever moves ahead of
-# the guest again, this tile goes back on a chroot, which is what the suite
+# the guest again, this station goes back on a chroot, which is what the suite
 # ledger is for.
 build_iris_native() {
   log "building iris ${IRIS_COMMIT} on the host (suite ${SUITE}: host and guest"

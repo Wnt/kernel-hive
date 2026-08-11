@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/amiga.sh — build the Commodore Amiga 500 + Workbench 1.3 streamhost
-# tile as a thin overlay on the shared bridge base (scripts/build-guests/lib/bridge-base.sh).
+# station as a thin overlay on the shared bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk that runs FS-UAE (WINDOWED) emulating a REAL
 #         Commodore Amiga 500 (Motorola 68000) auto-booting Workbench 1.3 off a
 #         Kickstart 1.3 ROM. streamhost captures the Linux framebuffer + AC97 audio
 #         (the Amiga Paula chip routed through OpenAL -> ALSA -> AC97).
-# TYPE  : "emulator bridge" tile (see streamhost/docs/BRIDGE.md). Overlay + a per-tile
+# TYPE  : "emulator bridge" station (see streamhost/docs/BRIDGE.md). Overlay + a per-station
 #         /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
 #
-# DISTINCT FROM the 'amigaos' tile: that tile is native AROS-on-x86 (aros-pc-i386.iso
-# booted directly by QEMU). THIS tile is the genuine 68000 Amiga 500 running the real
+# DISTINCT FROM the 'amigaos' station: that station is native AROS-on-x86 (aros-pc-i386.iso
+# booted directly by QEMU). THIS station is the genuine 68000 Amiga 500 running the real
 # Commodore Kickstart/Workbench under a software emulator — different CPU, different OS.
 #
 # ---- AUTOMATION HONESTY -----------------------------------------------------
-#   * FS-UAE is NOT baked into the frozen bridge base (the base predates this tile);
+#   * FS-UAE is NOT baked into the frozen bridge base (the base predates this station);
 #     this script `apt-get install -y fs-uae` INTO THE OVERLAY. (bridge-base.sh has
 #     also been updated to bake fs-uae + the media in on a from-scratch NVMe rebuild.)
 #   * The Kickstart ROM + Workbench ADF are copyrighted media that are free to use in
@@ -30,17 +30,17 @@
 #   * Paula audio -> OpenAL (forced to the ALSA backend, ALSOFT_DRIVERS=alsa) -> ALSA
 #     default (hw:0,0) -> QEMU AC97 -> streamhost dbus audiodev. The AC97 card MUST be
 #     in the device set or audio is silent.
-#   * The tile boots straight into the Workbench desktop by auto-`-loadvm golden` (same
+#   * The station boots straight into the Workbench desktop by auto-`-loadvm golden` (same
 #     pattern as c64/alpine): the golden INTERNAL snapshot (RAM+devices) restores the
 #     already-running desktop with no Amiga boot / floppy load / keypresses.
 #   * ACCEPTANCE is a REAL framebuffer screenshot of the Workbench desktop + a measured
 #     non-silent Paula wav — never disk/log inference.
 #
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by pidfile,
-# idempotent, --force to rebuild the overlay. Touches ONLY the amiga tile dir.
+# idempotent, --force to rebuild the overlay. Touches ONLY the amiga station dir.
 #
 # Usage:  amiga.sh [--force] [--bake] [-h]
-#   --bake  bake the golden of the ALREADY RUNNING tile and prove it restores
+#   --bake  bake the golden of the ALREADY RUNNING station and prove it restores
 #           (lib/bridge-bake-golden). Boot it under its OWN qemu-streamhost.sh
 #           first: a golden taken under a different device set will not loadvm.
 # =============================================================================
@@ -106,7 +106,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # root-owned dir (e.g. /var/log) makes bash fail the exec and the X session dies in ~1.7s.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Amiga 500 + Workbench 1.3 kiosk launcher (bridge tile). See amiga.sh header for rationale.
+# Amiga 500 + Workbench 1.3 kiosk launcher (kiosk). See amiga.sh header for rationale.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export LIBGL_ALWAYS_SOFTWARE=1     # GPU-less host: llvmpipe software OpenGL for FS-UAE
 export SDL_VIDEODRIVER=x11
@@ -127,7 +127,7 @@ exec fs-uae \
   --audio_frequency=48000 2> /tmp/fs-uae.err
 EOS
 
-# ---- boot the tile QEMU (exact device set; conditional -loadvm golden) -------
+# ---- boot the station QEMU (exact device set; conditional -loadvm golden) -------
 boot_tile() {
   [ -f "$PID" ] && kill "$(cat "$PID")" 2>/dev/null || true
   sleep 0.5

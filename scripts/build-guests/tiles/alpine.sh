@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #===============================================================================
-# build-guests/tiles/alpine.sh — reproduce the Alpine Kernel Hive tile from upstream
+# build-guests/tiles/alpine.sh — reproduce the Alpine Kernel Hive station from upstream
 #===============================================================================
 #
 # GUEST : alpine (streamhost VMID 81, udp/54081)
@@ -18,7 +18,7 @@
 #      The STANDARD flavor matters: it carries the apk repo ON the ISO
 #      (/media/cdrom/apks), so `apk add openssh` works with no network repo.
 #   2. Creates the scratch state.qcow2 (2G) in OUT_DIR.
-#   3. Boots the LiveCD headless with EXACTLY the production tile device set
+#   3. Boots the LiveCD headless with EXACTLY the production station device set
 #      (see DEVICE-SET CONTRACT below; only display/audio BACKENDS differ,
 #      which are not part of vmstate — so the snapshot is loadvm-portable to
 #      the production dbus launcher).
@@ -64,8 +64,8 @@
 #
 # HYGIENE (per gallery rules)
 #   - Never touches /data/vms/streamhost/tiles/* — this builds the ARTIFACT
-#     (canonical /data/gallery-guests/Alpine + /data/isos); wiring a live tile
-#     to it is the tile launcher's job (see PRODUCTION WIRING at the end).
+#     (canonical /data/gallery-guests/Alpine + /data/isos); wiring a live station
+#     to it is the station launcher's job (see PRODUCTION WIRING at the end).
 #   - OUT_DIR / WORK_DIR / ISO_DIR / ports are env-overridable so trial runs can be fully
 #     namespaced (e.g. under /data/vms/soltest/).
 #
@@ -238,7 +238,7 @@ if [[ "$ISO_PATH" != "$CANONICAL_ISO" ]]; then
 fi
 
 #==============================================================================
-# STEP 3 — gallery ssh keypair (shared by all ssh-exec tiles; generate if absent)
+# STEP 3 — gallery ssh keypair (shared by all ssh-exec stations; generate if absent)
 #==============================================================================
 if [[ ! -f "${GALLERY_KEY}.pub" ]]; then
   log "generating gallery guest keypair at ${GALLERY_KEY}"
@@ -425,7 +425,7 @@ stop_vm
 #==============================================================================
 # STEP 10 — COLD-START VERIFICATION (exact production semantics)
 #   Fresh QEMU process, `-loadvm golden` at launch, hostfwd re-added via QMP —
-#   precisely what the production tile launcher does on every start. All final
+#   precisely what the production station launcher does on every start. All final
 #   proofs run here (a fresh process also sidesteps stale display-surface
 #   artifacts a long-lived clientless bake VM can accumulate: the guest never
 #   re-dirties untouched regions, so only a fresh surface shows vmstate truth).
@@ -502,7 +502,7 @@ cat <<EOF
   ---- PRODUCTION WIRING (streamhost tile 'alpine', VMID 81, udp/54081) -------
   # tiles-manifest.sh emit stanza (only the --cdrom path changes vs today):
   #   --cdrom ${ISO_PATH} --boot d
-  # The tile launcher (hand-baked golden launcher) must:
+  # The station launcher (hand-baked golden launcher) must:
   #   * copy/point at ${STATE_PATH} as its state.qcow2 (create-if-missing ONLY)
   #   * keep the EXACT device set in this script's STEP 7 (swap -display none
   #     for -display dbus,p2p=on,audiodev=snd0 and -audiodev none for

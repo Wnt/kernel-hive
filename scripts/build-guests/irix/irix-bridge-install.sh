@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Overlay installer for the SGI IRIX 6.5 graphical-bridge tile (issue #20).
+# Overlay installer for the SGI IRIX 6.5 graphical-kiosk (issue #20).
 # Runs as root INSIDE the thin bookworm overlay (never the frozen base).
 #
 # Installs a prebuilt bookworm MAME 0.288 (git master; 0.276 has a fatal

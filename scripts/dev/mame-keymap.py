@@ -27,7 +27,7 @@ import argparse
 import socket
 import sys
 
-# XT set1 canonical names (the SPA's wire scancodes), plus the aliases a
+# XT set1 canonical names (the UI's wire scancodes), plus the aliases a
 # vintage machine's MAME driver plausibly uses for the same physical intent.
 # Order matters only for readability; matching is exact per entry.
 XT_KEYS: list[tuple[int, list[str]]] = [

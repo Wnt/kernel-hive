@@ -1,5 +1,5 @@
 // ff-fix-verify.mjs — E2E verification of the Firefox poisoned-session fix.
-// Loads the LOCALLY built bundle (serve-dist.mjs), opens a tile in Playwright
+// Loads the LOCALLY built bundle (serve-dist.mjs), opens a station in Playwright
 // Firefox N times, and asserts every session ends up with a FLOWING decode
 // (output frames keep growing), counting how many runs needed the watchdog's
 // session rebuild (captured from /clientlog POST bodies).

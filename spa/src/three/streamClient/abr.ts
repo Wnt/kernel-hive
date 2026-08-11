@@ -102,7 +102,7 @@ export function tickStatsImpl(this: StreamClient): void {
   }
   // SELF-HEAL (2026-07-14): a silently wedged decoder (output stops, NO error
   // callback — Firefox after a mid-stream geometry change) used to freeze the
-  // tile forever. If AUs are still ARRIVING while output is stalled, the
+  // station forever. If AUs are still ARRIVING while output is stalled, the
   // decoder instance itself is the problem: drop it so the next key AU
   // (keyframe heartbeat <= 2.5 s) rebuilds a fresh one via
   // maybeConfigureForKey. Rate-limited; never touches the transport.

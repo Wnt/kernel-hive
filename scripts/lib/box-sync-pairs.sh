@@ -137,7 +137,7 @@ box_sync_load_pairs() {
   # The rest of the deployed serving plane. These were live on the box with NO
   # pair for months, so a drifted copy was invisible: check-stream-tickets.py and
   # pen-trace.py are both named in AGENTS.md's debugging table as the thing you
-  # run when a tile will not connect or a pen feels wrong, reset-auth.sh is the
+  # run when a station will not connect or a pen feels wrong, reset-auth.sh is the
   # guarded path for the account database that must never be rm'd, and the
   # requirements pair is what decides whether the box venv matches the repo.
   for name in check-stream-tickets.py pen-trace.py reset-auth.sh sync-venv.sh \
@@ -152,10 +152,10 @@ box_sync_load_pairs() {
     [ -n "$rel" ] || continue
     box_sync_add_pair "serve/${rel#scripts/serve/}" "$rel" "$BOX_ROOT/serve/${rel#scripts/serve/}" exact repo
   done < <(git -C "$REPO" ls-files 'scripts/serve/auth/*' 'scripts/serve/authui/*' | sort)
-  # The generated manifest the SPA fetches at runtime to build the grid. It had
+  # The generated manifest the UI fetches at runtime to build the grid. It had
   # no pair, which meant a deployed manifest could differ from the generated one
   # and nothing would say so — and on 2026-08-10 exactly that was done on
-  # purpose, to hide one tile from the grid during a measurement campaign. A
+  # purpose, to hide one station from the grid during a measurement campaign. A
   # deliberate override is fine; an INVISIBLE one is not, so it is a pair now and
   # shows as DIFFERS until the override is reverted.
   box_sync_add_pair serve/webroot/gallery-manifest.json \
@@ -211,7 +211,7 @@ box_sync_load_pairs() {
     box_sync_add_pair "src/$rel" "streamhost/streamhost/src/$rel" "$BOX_ROOT/build/streamhost/src/$rel" exact repo
   done <"$tmpdir/src-union"
 
-  # Only verbatim, tracked launchers of LIVE tiles are box-authored mirror pairs.
+  # Only verbatim, tracked launchers of LIVE stations are box-authored mirror pairs.
   # Generic launchers are checked by verify-emit.sh; the tracked soltest-*
   # launchers are clone/experiment scaffolds that run out of /data/vms/soltest/,
   # never out of $BOX_ROOT/tiles, so they have no box counterpart by design.
@@ -224,7 +224,7 @@ box_sync_load_pairs() {
   # Registry tree union: box-only and repo-only allowed files must be visible as
   # MISSING rather than silently omitted. "Allowed source files" is the same
   # filter on BOTH sides (README.md, *.json, *.in, minus registry/posters/) — the
-  # poster prose and its image-candidate research feed the SPA build only, and the
+  # poster prose and its image-candidate research feed the UI build only, and the
   # gitignored local.env is operator-local; neither is part of the box mirror.
   git -C "$REPO" ls-files 'registry/**' | sed 's#^registry/##' |
     grep -E '(^|/)README\.md$|\.json$|\.in$' | grep -v '^posters/' | sort >"$tmpdir/registry-repo"

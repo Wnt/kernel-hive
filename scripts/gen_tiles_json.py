@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # gen_tiles_json.py — build /data/vms/streamhost/tiles.json capability matrix.
-# Seeds each tile from the canonical registry's generated declaration, verifies
+# Seeds each station from the canonical registry's generated declaration, verifies
 # that declaration against tile.env + qemu-streamhost.sh, then adds a live HMP
 # 'info snapshots' probe (read-only). Run ON THE BOX.
 import argparse
@@ -13,9 +13,9 @@ import socket
 TILES_DIR = "/data/vms/streamhost/tiles"
 OUT = "/data/vms/streamhost/tiles.json"
 DECLARATIONS = "/data/vms/streamhost/build/registry/generated/labctl-declarations.json"
-# Note on riscos / windows11: ordinary gallery tiles (old protection removed
-# 2026-07-08) but NOT streamhost tiles — no /data/vms/streamhost/tiles/<tile>/
-# dir, no streamhost@<tile> unit, no serve/tiles.json entry. The SPA binds them
+# Note on riscos / windows11: ordinary gallery stations (old protection removed
+# 2026-07-08) but NOT streamhost stations — no /data/vms/streamhost/tiles/<tile>/
+# dir, no streamhost@<tile> unit, no serve/tiles.json entry. The UI binds them
 # directly in archetypeRegistry as showcase posters. The declaration seed
 # naturally omits them; the old hard-block BLOCK set was removed in the 2026-07
 # restructure.
@@ -111,7 +111,7 @@ def main():
         with contextlib.suppress(OSError), open(lp) as f:
             launcher = f.read()
         pointer = pointer_mode(env)
-        # x11 runtime tiles (SH_CAPTURE=x11, IRIX/issue #20) have no QEMU/QMP: no
+        # x11 runtime stations (SH_CAPTURE=x11, IRIX/issue #20) have no QEMU/QMP: no
         # SH_QMP in tile.env, no qmp.sock, no snapshot to probe. Reflect that as a
         # null qmp + null golden instead of synthesizing a dead socket path.
         is_x11 = env.get("SH_TILE_RUNTIME") == "x11" or env.get("SH_CAPTURE") == "x11"
@@ -147,7 +147,7 @@ def main():
         golden = None if is_x11 else probe_golden(qmp)
         notes = [declared["notes"]] if declared.get("notes") else []
         if is_x11:
-            pass  # x11 tiles reset by relaunch (pristine RAM overlay), not a snapshot
+            pass  # x11 stations reset by relaunch (pristine RAM overlay), not a snapshot
         elif golden is False:
             notes.append("no 'golden' snapshot found: reset (loadvm golden) will fail; tile boots cold")
         elif golden is None:
@@ -156,7 +156,7 @@ def main():
         tiles[t]["golden_snapshot"] = golden
         tiles[t]["reset_mode"] = env.get("SH_RESET_MODE", "loadvm")
         # mamectl/1 control socket (issue #45): derived from tile.env, not
-        # declared — tiles without SH_MAMECTL_SOCK carry no field at all.
+        # declared — stations without SH_MAMECTL_SOCK carry no field at all.
         if env.get("SH_MAMECTL_SOCK"):
             tiles[t]["ctl"] = env["SH_MAMECTL_SOCK"]
         tiles[t]["notes"] = "; ".join(notes) if notes else ""

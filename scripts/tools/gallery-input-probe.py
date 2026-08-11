@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# gallery-input-probe.py -- GUEST-SIDE input->photon latency probe for a neko tile.
+# gallery-input-probe.py -- GUEST-SIDE input->photon latency probe for a neko station.
 #
 # Runs INSIDE the neko container (pushed via `docker exec -i <svc> python3 -`), so
 # the whole inject->detect loop lives behind ONE monotonic clock -- no SSH round
@@ -23,7 +23,7 @@
 # KBD    probe: per-OS keystroke that makes a deterministic visible change
 #               (Windows GUI: Super/Ctrl+Esc opens the Start/Task menu; console/DOS:
 #               a printable char echoes at the prompt). Reset returns the screen to
-#               baseline so the tile is left clean.
+#               baseline so the station is left clean.
 #
 # Output: one JSON object on stdout.  All timing in milliseconds.
 #
@@ -181,7 +181,7 @@ def run_trial_kbd(xd, neko, args):
     else:
         xd.cmd("key --clearmodifiers " + args.kbd)
     ms, hit = wait_change(neko, base, args.thresh, args.poll, args.timeout)
-    # reset back to baseline so the tile is left clean
+    # reset back to baseline so the station is left clean
     if args.kbd_reset:
         for k in args.kbd_reset.split("+space+"):
             xd.cmd("key --clearmodifiers " + k)

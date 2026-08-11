@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/qnx.sh — from-scratch, reproducible build of the QNX Neutrino
-# gallery tile for the neko+QEMU Kernel Hive.
+# gallery station for the neko+QEMU Kernel Hive.
 #
 # GUEST : QNX Neutrino RTOS 6.5.0 — the "self-hosting" LiveCD (boots the Photon
 #         microGUI desktop straight from CD; no install-to-disk needed).
@@ -18,7 +18,7 @@
 #   QNX Neutrino 6.5.0 self-hosting LiveCD = QNX's freely-distributable
 #   evaluation/DEMO image (non-commercial eval). Flagged here as a DEMO /
 #   freely-distributable image, sourced from archive.org. It is NOT open source.
-#   (Same stance the project already applies to its other copyrighted tiles: free
+#   (Same stance the project already applies to its other copyrighted stations: free
 #   to use in this private collection.)
 #
 # ---- AUTOMATION HONESTY (the hard-won recipe) -------------------------------
@@ -47,7 +47,7 @@
 #     --dir DIR      output/guest dir      (default /data/gallery-guests/QNX)
 #     --force        re-download even if a valid ISO is already present
 #     --no-verify    just fetch the ISO; skip the drive-to-desktop framebuffer proof
-#     --keep         leave the verify VM running after the proof (for tile dev)
+#     --keep         leave the verify VM running after the proof (for station dev)
 #     -h|--help      show this header
 # =============================================================================
 set -euo pipefail

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Kiosk launcher for the SGI IRIX 6.5 graphical-bridge tile (issue #20).
+# Kiosk launcher for the SGI IRIX 6.5 graphical-kiosk (issue #20).
 # Installed as /etc/bridge/launch.sh; run full-screen on the bare-X kiosk.
 #
 # Runs MAME 0.288 (indy_4610, XL 24-bit graphics) auto-booting the IRIX 6.5 CHD
 # straight to the 4Dwm desktop. The Indy renders 1280x1024, so the kiosk X is
 # forced to 1280x1024 for a 1:1 (unscaled) framebuffer.
 #
-# NOTE: this only runs on the ONE-TIME golden bake. In production the tile boots
+# NOTE: this only runs on the ONE-TIME golden bake. In production the station boots
 # via `qemu -loadvm golden`, which restores the whole kiosk (MAME already at the
 # IRIX desktop) — launch.sh is not re-executed.
 set -euo pipefail
@@ -25,7 +25,7 @@ matchbox-window-manager -use_titlebar no >/dev/null 2>&1 &
 # MAME 0.288 is run through a bundled glibc loader: MAME's SGI/Indy emulation
 # miscompiles under bookworm's gcc-12 (IRIX hits a GIO2 graphics-interrupt kernel
 # panic during boot), while the gcc-14 build of identical source boots clean. So the
-# tile ships the gcc-14 binary (/opt/mame/sgi-trixie) plus its glibc 2.41 (in
+# station ships the gcc-14 binary (/opt/mame/sgi-trixie) plus its glibc 2.41 (in
 # /opt/mame/glibc); glibc is backward-compatible so the kiosk's own SDL2/X11 still
 # load. -inipath /opt/irix -> ui.ini sets skip_warnings 1 (patched to always apply),
 # skipping the startup warning so IRIX boots with no input (clearing it by click also

@@ -2,7 +2,7 @@
 # install-public-relay.sh — set the edge VPS's UDP DNAT range for the public
 # gallery's QUIC video, idempotently and reviewably.
 #
-# RUNS ON THE EDGE (vm-control), AS ROOT. Not on the lab box, not on a tile.
+# RUNS ON THE EDGE (vm-control), AS ROOT. Not on the lab box, not on a station.
 # The box only dials out; the edge is the only place this rule exists.
 #
 # Why this file exists: the box's /etc/wireguard/wg0.conf and the old

@@ -4,7 +4,7 @@
 # (Plan 9) Kernel Hive guest.
 #
 # GOAL: on a fresh Proxmox host that already has the gallery infra, rebuild the
-# 9front tile END TO END from its real upstream source — no image backups.
+# 9front station END TO END from its real upstream source — no image backups.
 #
 # WHAT THIS PRODUCES:
 #   /data/gallery-guests/9front/9front-11554.amd64.qcow2   (agent-enabled golden)
@@ -60,7 +60,7 @@ WARPD_HOST_PORT="${WARPD_HOST_PORT:-57793}"
 # port can still be supplied for constrained build hosts.
 AGENT_HTTP_PORT="${AGENT_HTTP_PORT:-0}"
 
-# Framebuffer resolution baked into plan9.ini (change here to re-res the tile).
+# Framebuffer resolution baked into plan9.ini (change here to re-res the station).
 # 1920x1080 = full-era-correct 16:9. 9front's monitor=vesa path negotiates it from
 # QEMU 11's std-vga VGABIOS mode list (validated on a soltest clone 2026-07-27, KVM
 # + packed framebuffer; see docs/lab/tile-resolution-responsiveness.md). Keep WxHx32.

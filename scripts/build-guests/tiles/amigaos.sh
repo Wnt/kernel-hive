@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/amigaos.sh — from-scratch, reproducible build of the AmigaOS tile
+# build-guests/tiles/amigaos.sh — from-scratch, reproducible build of the AmigaOS station
 # for the neko+QEMU Kernel Hive, using the FREE/OPEN AROS path.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the "AmigaOS"
 # guest END TO END from its real upstream source — no image backups, no
 # pre-staged files. Produces the final bootable live ISO at
 #     <GUEST_DIR>/aros-pc-i386.iso   (default /data/gallery-guests/AmigaOS)
-# and a fresh tile golden-scratch.qcow2 whose internal `golden` snapshot is the
+# and a fresh station golden-scratch.qcow2 whose internal `golden` snapshot is the
 # framebuffer-verified Wanderer/Workbench desktop with an open AROS Shell and
 # Poseidon bound to QEMU's absolute USB tablet.
 #
@@ -41,7 +41,7 @@
 #                        Wanderer desktop icons via a .backdrop rewrite. Contrib is
 #                        pulled from the same nightly; remastered with xorriso, the
 #                        original El Torito boot record replayed byte-intact.
-#   (6) FINAL IMAGE .... aros-pc-i386.iso plus a freshly-created tile qcow2 with
+#   (6) FINAL IMAGE .... aros-pc-i386.iso plus a freshly-created station qcow2 with
 #                        an internal `golden` snapshot (open AROS Shell).
 #   (7) VERIFY ......... FULLY AUTOMATED — headless QEMU + framebuffer screendump,
 #                        asserted to be a real (non-blank) desktop.
@@ -350,8 +350,8 @@ verify_boot() {
   }
 
   log "verify: launching headless QEMU (${QEMU_BIN}) from $ISO_PATH …"
-  # Matches the validated tile chipset: pc-i440fx-11.0, 512M, std VGA, boot d.
-  # TCG here (no -enable-kvm) so verify runs anywhere; the live tile is identical.
+  # Matches the validated station chipset: pc-i440fx-11.0, 512M, std VGA, boot d.
+  # TCG here (no -enable-kvm) so verify runs anywhere; the live station is identical.
   "$QEMU_BIN" \
     -machine pc-i440fx-11.0 -cpu qemu64 -m 512 \
     -cdrom "$ISO_PATH" -boot d \
@@ -426,7 +426,7 @@ PY
 [ "$VERIFY" = 1 ] && verify_boot || log "verify skipped (--no-verify)."
 
 # =============================================================================
-# (8) GOLDEN FIXTURE — stage and run the tile-owned deterministic cold bake.
+# (8) GOLDEN FIXTURE — stage and run the station-owned deterministic cold bake.
 #   The helper creates a brand-new no-backing qcow2, gates on Wanderer, opens an
 #   AROS Shell, binds Poseidon to the QEMU USB tablet, proves absolute corner and
 #   centre motion, saves `golden` under pc-i440fx-11.0, then dirties the

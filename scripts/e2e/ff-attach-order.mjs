@@ -11,7 +11,7 @@ for (const mode of ['pre-ready', 'post-ready-first', 'input-streams-first']) {
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const sig = await (await fetch('/signal/freedos.json', { cache: 'no-store' })).json();
       const hash = Uint8Array.from(atob(sig.certHashB64), (c) => c.charCodeAt(0));
-      // sig.path carries the signed session ticket when the tile runs with
+      // sig.path carries the signed session ticket when the station runs with
       // SH_SESSION_KEY; a hardcoded /wt is refused before accept() in that case.
       const wt = new WebTransport(`https://${sig.host}:${sig.udpPort}${sig.path || '/wt'}`, { serverCertificateHashes: [{ algorithm: 'sha-256', value: hash.buffer }] });
       let streams = 0;

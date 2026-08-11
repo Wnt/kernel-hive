@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/nextstep.sh — build the NeXTcube / NeXTSTEP 3.3 streamhost tile
+# build-guests/tiles/nextstep.sh — build the NeXTcube / NeXTSTEP 3.3 streamhost station
 # as a thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk running the **Previous** emulator (NeXT
@@ -8,8 +8,8 @@
 #         Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66, MegaPixel 1120x832
 #         2-bit greyscale display, booting NeXTSTEP 3.3 for m68k off a SCSI disk
 #         image. streamhost captures the Linux framebuffer + AC97 audio exactly
-#         like every other bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh + an
+#         like every other kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh + an
 #         INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- WHY PREVIOUS AND NOT QEMU (the route decision, made on evidence) -------
@@ -29,7 +29,7 @@
 #   1. `panic: (Cpu 0) Root device is physically write protected.` NeXTSTEP
 #      boots, finds the disk, and dies on its first write. The kiosk runs as
 #      `bridge`, and a root-owned 0644 disk image opens read-only — the same
-#      trap the pdp11 tile hit with its MSCP pack. chown the image to `bridge`.
+#      trap the pdp11 station hit with its MSCP pack. chown the image to `bridge`.
 #   2. `SDL screen scale: 0.971`. With no window manager to answer, Previous
 #      ASSUMES a decorated desktop (50 px top and bottom, 25 px each side) and
 #      shrinks the emulated screen to fit, resampling 1120x832 down to 1088x808
@@ -77,11 +77,11 @@
 #   This is a GUI exhibit, not a type-in exhibit. There is no emulated keyboard
 #   matrix sampled once per frame here — the NeXT keyboard is a serial device
 #   polled by the KMS — so playbook 5.1's SH_KEY_MIN_HOLD_MS/GAP knobs are not
-#   set and the tile does not need the pacing canary binary.
+#   set and the station does not need the pacing canary binary.
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the
-# nextstep tile dir; refuses to run while streamhost@nextstep is active.
+# nextstep station dir; refuses to run while streamhost@nextstep is active.
 #
 # Usage: nextstep.sh [--force] [-h]
 # =============================================================================
@@ -151,7 +151,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# NeXTcube (68040) / NeXTSTEP 3.3 kiosk launcher — bridge tile 'nextstep'.
+# NeXTcube (68040) / NeXTSTEP 3.3 kiosk launcher — kiosk 'nextstep'.
 # Every flag's rationale is in scripts/build-guests/tiles/nextstep.sh.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_VIDEODRIVER=x11
@@ -286,7 +286,7 @@ bMMU = TRUE
 EOS
 
 read -r -d '' XORG_PTR <<'EOS' || true
-# nextstep tile: the exhibit is driven by ABSOLUTE coordinates that must reach
+# nextstep station: the exhibit is driven by ABSOLUTE coordinates that must reach
 # the emulator unscaled (browser -> streamhost dbus-abs -> QEMU usb-tablet ->
 # Xorg -> SDL -> Previous tablet.c -> the NeXT tabletdriver). Acceleration does
 # not apply to an absolute device, but this stanza stays: it also covers the

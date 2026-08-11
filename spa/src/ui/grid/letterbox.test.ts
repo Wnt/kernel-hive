@@ -26,7 +26,7 @@ describe('contentRectFor', () => {
   });
 
   it('fill mode makes the image occupy the whole box (no letterbox bars)', () => {
-    // Era-correct 4:3 tiles stretch (object-fit:fill) to fill the display box, so
+    // Era-correct 4:3 stations stretch (object-fit:fill) to fill the display box, so
     // the content rect is the full box regardless of the source aspect.
     const rect = contentRectFor(800, 600, { w: 720, h: 400 }, true);
     expect(rect).toEqual({ offsetX: 0, offsetY: 0, width: 800, height: 600 });

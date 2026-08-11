@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/zx81.sh — build the Sinclair ZX81 (1981) streamhost tile as a
+# build-guests/tiles/zx81.sh — build the Sinclair ZX81 (1981) streamhost station as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running a purpose-built MAME `zx81`
 #         emulating a 1 KB ZX81 with the second-revision (`-bios 2nd`) ROM,
 #         resting at the machine's own untouched power-on screen. streamhost
 #         captures the Linux framebuffer + AC97 audio exactly like every other
-#         bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+#         kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- THE FIXTURE, AND WHY IT IS ALMOST NOTHING ------------------------------
@@ -68,13 +68,13 @@
 #   any preservation set and is not pursued: it is a later, rarer revision.
 #   COPYRIGHT: the 1986 Amstrad permission that covers MAME's Spectrum ROMs
 #   does NOT extend here. Amstrad bought the Spectrum and QL rights only;
-#   Nine Tiles Networks Ltd wrote the ZX80/ZX81 ROM and still holds it. The
+#   Nine Stations Networks Ltd wrote the ZX80/ZX81 ROM and still holds it. The
 #   ROM is therefore PRESERVATION SOURCE: staged on the box, hash-recorded in
 #   docs/lab/ASSETS-MANIFEST.md, streamed as pixels, never committed, never
-#   served, and with no download affordance anywhere in the tile.
+#   served, and with no download affordance anywhere in the station.
 #
 # ---- 1 KB, ON PURPOSE -------------------------------------------------------
-#   MAME's zx81 defaults to `-ramsize 16K` (the RAM pack). This tile pins
+#   MAME's zx81 defaults to `-ramsize 16K` (the RAM pack). This station pins
 #   `-ramsize 1K`: the machine as sold, with about 750 bytes for a program once
 #   the system variables are up. The 16 KB pack — and the wobble that lost you
 #   your program — belongs on the placard, not in the fixture.
@@ -89,7 +89,7 @@
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the zx81
-# tile dir; refuses to run while streamhost@zx81 is active.
+# station dir; refuses to run while streamhost@zx81 is active.
 #
 # Usage: zx81.sh [--force] [--skip-negatives] [-h]
 # =============================================================================
@@ -112,7 +112,7 @@ TYPE_PY="$TILE_DIR/type-qmp.py"
 # stays above 200 MB with X + MAME at the fixture, and fails if it does not.
 MEM=768
 
-# PRESERVATION SOURCE. Second-revision ZX81 ROM, 8 KB. Copyright Nine Tiles
+# PRESERVATION SOURCE. Second-revision ZX81 ROM, 8 KB. Copyright Nine Stations
 # Networks Ltd (NOT covered by the Amstrad Spectrum/QL permission). Hashes
 # measured on the box 2026-08-09; the single-member extraction form is the
 # archive.org trick documented in the ADD-NEW-OS playbook §3.1.
@@ -158,7 +158,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Sinclair ZX81 (1981) kiosk launcher (bridge tile).
+# Sinclair ZX81 (1981) kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/zx81.sh for the rationale behind every flag.
 # 384x311 raster at 50.655 Hz drawn FULLSCREEN with aspect correction on the
 # bridge base's stock 1024x768 root, which is exactly 4:3 — the shape of the
@@ -180,7 +180,7 @@ EOS
 
 # Kiosk session profile: X with NO core pointer cursor (keyboard-only exhibit:
 # the ZX81's only other input was a cassette recorder). Redirecting startx's
-# output to a file is safe for MAME — it is NOT safe for the VICE tiles, whose
+# output to a file is safe for MAME — it is NOT safe for the VICE stations, whose
 # emulator segfaults when stdout is not a terminal (docs/guests/vic20.md).
 read -r -d '' PROFILE <<'EOS' || true
 # Bridge kiosk session (zx81 overlay). Start X with NO core pointer cursor
@@ -196,13 +196,13 @@ EOS
 
 # Two host-side sidecars, tracked in the repo next to the launcher rather than
 # buried in a heredoc here, because both outlive the build and are the tools an
-# operator reaches for when the tile misbehaves:
+# operator reaches for when the station misbehaves:
 #   zx81-frame.py  the readiness predicate (see the header: a photometric test
 #                  cannot tell this machine's idle screen from its blank one).
 #   type-qmp.py    a QMP typist with EXPLICIT hold/gap pacing. `labctl type` is
 #                  not a fair test of a guest keyboard — it drives QMP with no
 #                  pacing and drops characters while printing "ok" — so the
-#                  proof owns its typist and types at the tile's declared rate.
+#                  proof owns its typist and types at the station's declared rate.
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../streamhost/tiles/zx81" && pwd)"
 
 # Quiet every text-producing stage of a cold boot (GRUB -> kernel -> agetty).
@@ -318,7 +318,7 @@ wait_for_k_cursor() {
 send_keys() { python3 "$TYPE_PY" "$QMP" "$HOLD_MS" "$GAP_MS" "$@"; }
 
 # A freshly RESTORED VM SWALLOWS THE FIRST KEYSTROKES SENT TO IT — the playbook
-# records this for bridge tiles and it was measured here: the first `p` after
+# records this for kiosks and it was measured here: the first `p` after
 # `loadvm golden` left the framebuffer completely untouched, and the identical
 # key twenty seconds later put PRINT on the screen. The first version of the
 # negative below reported PREDICATE BROKEN because of it, which is the wrong
@@ -353,7 +353,7 @@ press_p_until_visible() {
 
 # ---- the negatives the predicate exists to reject ---------------------------
 # A predicate nobody has seen fail is a predicate that cannot fail. Each of
-# these is produced on the live tile AFTER the bake and required to be
+# these is produced on the live station AFTER the bake and required to be
 # REJECTED; then the fixture is restored and required to be accepted again.
 validate_predicate() {
   local out
@@ -461,7 +461,7 @@ log "ZX81 ROM staged and hash-verified: $ROM"
 install -m 755 "$SRC_DIR/zx81-frame.py" "$FRAME_PY"
 install -m 755 "$SRC_DIR/type-qmp.py" "$TYPE_PY"
 # Two emulated frames each way is the playbook's FLOOR (50.655 Hz => 19.74 ms).
-# The shipped value is the one bisected on this tile — see docs/guests/zx81.md.
+# The shipped value is the one bisected on this station — see docs/guests/zx81.md.
 HOLD_MS=${HOLD_MS:-80}
 GAP_MS=${GAP_MS:-80}
 
@@ -482,7 +482,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
   log "waiting for bridge SSH"
   wait_for_ssh
   # The distro MAME package is installed for its SDL/X11 runtime libraries and
-  # its shared data ONLY; its 0.251 binary is never launched, because the tile
+  # its shared data ONLY; its 0.251 binary is never launched, because the station
   # ships the pinned 0.289 subtarget built by build-mame-zx81.sh.
   guest "export DEBIAN_FRONTEND=noninteractive
     apt-get update -o Acquire::Retries=3 >/tmp/apt.log 2>&1
@@ -545,7 +545,7 @@ PY
 fi
 
 # One clean COLD boot with the quiet console in force, then bake the golden from
-# the very state SPA reset restores for ever after. Bake from an UNTOUCHED cold
+# the very state UI reset restores for ever after. Bake from an UNTOUCHED cold
 # boot: the mpf2 add shipped a golden carrying its own verification output.
 stop_qemu
 "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot

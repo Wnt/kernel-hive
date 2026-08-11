@@ -19,7 +19,7 @@ export default function App() {
 
   const [posterId, setPosterId] = useState<string | null>(null);
 
-  // The exhibit-info modal is opened from within the tile's /os/:osId stream
+  // The exhibit-info modal is opened from within the station's /os/:osId stream
   // route. It has no route of its own, so nothing closes it automatically —
   // without this it stays open (overlaying the grid) after navigating back
   // out of the view that opened it.
@@ -67,7 +67,7 @@ export default function App() {
         {/* ---------- DEFAULT: 2D grid ---------- */}
         <Route path="/" element={<>{TopBar}<GridView /></>} />
 
-        {/* ---------- Full-viewport live stream of one tile (deep-linkable) ---------- */}
+        {/* ---------- Full-viewport live stream of one station (deep-linkable) ---------- */}
         <Route
           path="/os/:osId"
           element={<OsStreamRoute onOpenPoster={openPoster} posterOpen={posterId !== null} />}
@@ -93,9 +93,9 @@ function MuseumRedirect() {
   return <Navigate to={{ pathname: '/museum', search }} replace />;
 }
 
-// Full-viewport live stream of a single tile, deep-linked at /os/:osId. StreamView
+// Full-viewport live stream of a single station, deep-linked at /os/:osId. StreamView
 // auto-connects on mount (useLiveStream starts whenever streamable), so loading
-// /os/<id> directly powers on + streams that tile with no extra side-effect.
+// /os/<id> directly powers on + streams that station with no extra side-effect.
 function OsStreamRoute({
   onOpenPoster,
   posterOpen,
@@ -135,7 +135,7 @@ function OsStreamRoute({
 // Browser history entries survive a document reload, unlike React component
 // state. Snapshot whether THIS entry was already opened before marking it: the
 // initial visit must still play the boot clip, while a reload (or forward-nav
-// back to the same entry) should connect straight to the live tile. Keeping the
+// back to the same entry) should connect straight to the live station. Keeping the
 // marker alongside React Router's own history fields keeps the decision scoped
 // to this navigation entry. A per-OS session mirror below covers engines that
 // restore history state late; a genuinely first visit still gets the boot.

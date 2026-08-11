@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Capture live exhibit framebuffers into the poster asset tree.
-# Whatever the tile is showing is the poster. No staging, no reset-to-golden
+# Whatever the station is showing is the poster. No staging, no reset-to-golden
 # first — the live framebuffer is the image.
 set -euo pipefail
 
@@ -31,7 +31,7 @@ for os_id in "$@"; do
 
   case "$os_id" in
     macos)
-      # Showcase posters have no tile to screendump, so they stand in with
+      # Showcase posters have no station to screendump, so they stand in with
       # generated art. win11 used to be here; it streams now and takes the
       # normal live-framebuffer path below.
       source_art="$repo_root/spa/public/assets/generated/hero-backplate.webp"

@@ -9,7 +9,7 @@ import { posterFor } from '../../data/posterIndex';
 //  GridView — the plain 2D, keyboard-navigable card grid (DEFAULT view)
 //  ---------------------------------------------------------------------------
 //  Lists the ANNOUNCED lineup — store.listedVms, i.e. the manifest minus
-//  `showcase` posters (dropped in useManifest) and minus soft-hidden tiles
+//  `showcase` posters (dropped in useManifest) and minus soft-hidden stations
 //  (registry `listing`, filtered in the store), so neither kind gets a card or
 //  counts toward the era/total sums below. Read `listedVms`, never `vms`: `vms`
 //  still carries the hidden rows so /os/:osId can resolve them. GROUPED BY ERA.
@@ -49,14 +49,14 @@ interface EraGroup {
 }
 
 // GridView unmounts while an OS stream route is open. Keep its scroll offset in
-// SPA memory so returning to the grid restores the same spot, while a real page
+// UI memory so returning to the grid restores the same spot, while a real page
 // load (including a direct /os/:osId deep-link) still starts at the top.
 let savedScrollTop: number | null = null;
 
 export default function GridView() {
   const vms = useMuseum((s) => s.listedVms);
   const gridRef = useRef<HTMLDivElement>(null);
-  // Preserve query parameters across navigation into a tile.
+  // Preserve query parameters across navigation into a station.
   const { search } = useLocation();
 
   const streamable = vms;
@@ -202,7 +202,7 @@ export default function GridView() {
                       {/* A graphical exhibit whose pointer is relative only. Not a
                           fault — the machine never had an absolute pointer, or we
                           have not built one for it yet — so it warns rather than
-                          errors, and it sits below the HW-input slot because a tile
+                          errors, and it sits below the HW-input slot because a station
                           can never have both. */}
                       {b.relativePointerOnly && (
                         <span

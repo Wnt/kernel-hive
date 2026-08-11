@@ -1,32 +1,32 @@
 #!/usr/bin/env bash
-# ckpt.sh — CRIU checkpoint/restore for a cloned IRIX tile, as one coherent pair
+# ckpt.sh — CRIU checkpoint/restore for a cloned IRIX station, as one coherent pair
 # of operations. Reset the exhibit in ~1.2 s instead of a ~4.5 min cold boot.
 #
 #   ckpt.sh bake    <tag>   freeze -> ZFS snapshot INSIDE the freeze window ->
 #                           criu dump --leave-running. The clone keeps running.
-#   ckpt.sh restore <tag>   roll the tile dataset back to the paired snapshot ->
+#   ckpt.sh restore <tag>   roll the station dataset back to the paired snapshot ->
 #                           criu restore -> measure time-to-INTERACTIVE.
 #   ckpt.sh cycle   <tag>   kill + restore, i.e. the reset a visitor triggers.
 #   ckpt.sh kill            clone-guard kill of the emulator.
 #   ckpt.sh quiesce         stand the watchdogs down (bake does this itself).
 #
 # NOT SHIPPED. This is the procedure and its traps, preserved as a working
-# script; the live tile still resets by relaunching. See README.md for the
+# script; the live station still resets by relaunching. See README.md for the
 # evidence, the required launcher deltas and the reasons a smoke test passes
 # while three of the traps below are active.
 #
 # Configuration — all required, all namespaced to YOUR clone:
 #   IRIX_CRIU_W    work dir, must be under /data/vms/soltest
-#   IRIX_CRIU_TILE tile dir inside the ZFS dataset being snapshotted
+#   IRIX_CRIU_TILE station dir inside the ZFS dataset being snapshotted
 #                  (default $IRIX_CRIU_W/tile)
-#   IRIX_CRIU_ZDS  the ZFS dataset holding the tile dir, e.g. data/vms/mycriu
+#   IRIX_CRIU_ZDS  the ZFS dataset holding the station dir, e.g. data/vms/mycriu
 #   IRIX_CRIU_NS   network namespace the emulator runs in (see nsnet.sh)
 #   IRIX_CRIU_SHM  the shm framebuffer file — MUST be outside the dataset
 #                  (default $IRIX_CRIU_W/fb.shm)
 #
 # INVARIANTS THIS ENCODES. Each one was measured, and each one has a failure
 # mode that looks healthy:
-#  * the SNAPSHOT UNIT is the whole tile directory, not just the CHD. criu
+#  * the SNAPSHOT UNIT is the whole station directory, not just the CHD. criu
 #    size-validates every open regular file, and mame.log / geo.log / irix_cmd
 #    all grow. Rolling the directory back restores their sizes for free, which
 #    is also what makes the command-file size trap unreachable.
@@ -152,7 +152,7 @@ restore() {
   t_disk="$(el "$t0")"
   rm -f "$T/mame.pid"
   # --manage-cgroups=ignore: the dump recorded whatever cgroup MAME was in (in
-  # production, the tile's `systemd-run --scope` qcap; in a rig, the launching
+  # production, the station's `systemd-run --scope` qcap; in a rig, the launching
   # ssh session scope, long dead by restore time). criu cannot re-create a dead
   # scope — it fails with "cgroupd: recv req error" — so the restore wrapper
   # owns cgroup placement and must re-apply the memory cap and the taskset pin

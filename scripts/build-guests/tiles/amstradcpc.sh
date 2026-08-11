@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the Amstrad CPC 6128 + Locomotive BASIC streamhost tile as a thin
+# Build the Amstrad CPC 6128 + Locomotive BASIC streamhost station as a thin
 # overlay on the frozen bridge base. The proof artifacts are real QEMU
 # framebuffer dumps; no disk/log state is accepted as visual evidence.
 #
@@ -221,7 +221,7 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
     systemctl restart getty@tty1"
   wait_for_cpc ready-before-golden
   # Disk checkpoint before savevm golden below; see lib/bridge-coldboot. Unlike
-  # the VICE siblings, this tile has no pre-bake rehearsal boot to plug into
+  # the VICE siblings, this station has no pre-bake rehearsal boot to plug into
   # (it bakes straight off the live provisioning VM), so one is added here.
   stop_qemu
   "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile

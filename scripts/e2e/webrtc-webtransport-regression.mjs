@@ -1,5 +1,5 @@
 // Verify an unmodified WebCodecs-capable desktop browser stays on the normal
-// WebTransport+WebCodecs path even though every tile advertises the platform
+// WebTransport+WebCodecs path even though every station advertises the platform
 // native WebRTC fallback.
 import { chromium, firefox } from 'playwright';
 

@@ -105,10 +105,10 @@ export function useCinemaMode({
       // painted for even one frame on fullscreen-enter (the FS effect below also
       // sets this, but one render later — which flashed the bar).
       if (isFs) setChromeVisible(false);
-      // Acquire whole-mouse capture HERE (streamhost tiles): Chrome honours
+      // Acquire whole-mouse capture HERE (streamhost stations): Chrome honours
       // requestPointerLock from a fullscreenchange handler but rejects it from the
       // async post-fullscreen promise continuation. mouseCapture is constant for
-      // the component's life (key={osId} remounts per tile), so the []-deps closure
+      // the component's life (key={osId} remounts per station), so the []-deps closure
       // is safe; acquireLockRef keeps the callback itself fresh.
       if (isFs && mouseCapture) acquireLockRef.current();
     };
@@ -164,9 +164,9 @@ export function useCinemaMode({
     // Ignore edge-reveal while the pointer is captured: under lock clientX/Y are
     // frozen at the click point (the top-bar Fullscreen button, clientY<=44), so
     // every movement would falsely re-reveal the bar during captured cinema play.
-    // Captured (streamhost) tiles get NO passive edge-reveal: any moment the lock
+    // Captured (streamhost) stations get NO passive edge-reveal: any moment the lock
     // is not engaged the local cursor could drift into the top 44px and resurrect
-    // the bar. The ONLY deliberate reveal for a captured tile is Cmd/Ctrl+N.
+    // the bar. The ONLY deliberate reveal for a captured station is Cmd/Ctrl+N.
     if (!mouseCapture) {
       const onMove = (e: PointerEvent) => { if (e.clientY <= 44) revealChrome(); };
       el.addEventListener('pointermove', onMove);
@@ -184,10 +184,10 @@ export function useCinemaMode({
   //  A single effect owns the pointerlockchange / pointerlockerror lifecycle and
   //  the movementX/Y integrator. It mirrors GFN's Pp() (change) / _p() (error)
   //  handlers and the mouse-input.js locked-move loop, with TWO send modes:
-  //   - ABSOLUTE tiles (default): accumulate + clamp a virtual cursor and
-  //     sendMouseMove(abs); the daemon relativizes PS/2 tiles server-side via its
+  //   - ABSOLUTE stations (default): accumulate + clamp a virtual cursor and
+  //     sendMouseMove(abs); the daemon relativizes PS/2 stations server-side via its
   //     homing bridge.
-  //   - pointerRel tiles (qnx/freedos/msdoswin1, daemon SH_POINTER=rel): ship the
+  //   - pointerRel stations (qnx/freedos/msdoswin1, daemon SH_POINTER=rel): ship the
   //     raw movementX/Y as DIRECT type=4 RelMotion datagrams (sendMouseMoveRel)
   //     for true 1:1 tracking — see onLockedMove below.
   useEffect(() => {
@@ -246,7 +246,7 @@ export function useCinemaMode({
       // Clamp per-axis (don't drop the whole event) so real motion still advances.
       if (Math.abs(dx) > MAX_LOCK_DELTA) dx = Math.sign(dx) * MAX_LOCK_DELTA;
       if (Math.abs(dy) > MAX_LOCK_DELTA) dy = Math.sign(dy) * MAX_LOCK_DELTA;
-      // RELATIVE-POINTER tiles: ship the raw delta as a DIRECT type=4 RelMotion
+      // RELATIVE-POINTER stations: ship the raw delta as a DIRECT type=4 RelMotion
       // (no abs virtual cursor, no homing bridge). This is the real 1:1 fix for
       // qnx/freedos/msdoswin1 — the guest advances its own cursor by exactly dx/dy.
       if (pointerRel && h.sendMouseMoveRel) {

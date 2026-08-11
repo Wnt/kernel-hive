@@ -31,7 +31,7 @@ pub(super) fn profile_idc_of(p: &str) -> u8 {
 }
 
 /// Per-resolution DEFAULT tier-0 maxrate (kbps) — the VBV PEAK cap. Auto rule:
-/// pick the smallest row whose area >= tile area; else area * 0.030.
+/// pick the smallest row whose area >= station area; else area * 0.030.
 ///
 /// These caps are GENEROUS on purpose: the cap is the ceiling the CRF quality
 /// target is allowed to spend up to, and a LOW cap silently re-introduces the
@@ -52,13 +52,13 @@ fn auto_maxrate_kbps(w: u32, h: u32) -> u32 {
     }
 }
 
-/// Resolve a ladder tier (SECTION 2.1) against the tile's native geometry and the
+/// Resolve a ladder tier (SECTION 2.1) against the station's native geometry and the
 /// static params. Returns (effective_w, effective_h, crf, maxrate_kbps).
 /// Tier 3 always steps resolution down (>=floor, 16-aligned); tiers 0-1 keep native;
 /// tier 2 steps only when the L-3 res ladder is enabled (SH_ABR_RES_LADDER).
 ///
 /// WAN BURST CAPS (B3, 2026-07-17): tiers >= 1 exist ONLY under sustained
-/// congestion, yet a big tile's scaled maxrate stayed LAN-sized (1920x1200:
+/// congestion, yet a big station's scaled maxrate stayed LAN-sized (1920x1200:
 /// tier-2 0.35x base = 24.2 Mbps) — every ~2.5 s heartbeat IDR flooded the
 /// bufferbloated 5G queue in one burst (FZ episodes, RTT spikes). Congested
 /// tiers are therefore additionally clamped to WAN-plausible ceilings:
@@ -135,7 +135,7 @@ pub(super) fn effective_bufsize_ratio(tier: u8, ratio: f64) -> f64 {
     }
 }
 
-/// L-2 fps ladder: the encode fps for a tier. `base_fps` is the tile's configured
+/// L-2 fps ladder: the encode fps for a tier. `base_fps` is the station's configured
 /// cap (SH_FPS). With the ladder OFF (default) EVERY tier runs the native base fps,
 /// so a bare deploy is byte-identical and a LAN session (always tier 0) is
 /// unaffected. With it ON, congested tiers cap fps — the cheapest quality-for-
@@ -202,7 +202,7 @@ mod tests {
     }
 
     /// 640x480 auto base = 12,000 kbps: the scaled rates sit below every WAN
-    /// cap, so the clamp must not touch small tiles at all.
+    /// cap, so the clamp must not touch small stations at all.
     #[test]
     fn wan_caps_inert_on_small_tiles() {
         let p = params();
@@ -272,7 +272,7 @@ mod tests {
         assert_eq!(resolve_fps(1, 60, &p), 15);
         assert_eq!(resolve_fps(2, 60, &p), 10);
         assert_eq!(resolve_fps(3, 60, &p), 10);
-        // Never raises fps above the configured base (a 24 fps tile stays <= 24).
+        // Never raises fps above the configured base (a 24 fps station stays <= 24).
         assert_eq!(resolve_fps(1, 24, &p), 15);
         assert_eq!(resolve_fps(2, 8, &p), 8);
     }

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// spa-watch.mjs — one-command watch/build/deploy loop for manual SPA edits.
+// spa-watch.mjs — one-command watch/build/deploy loop for manual UI edits.
 //
 // Watches spa/src. On any change: `npm run build` (tsc -b && vite build) with
 // its output streamed straight to this terminal, so compile errors show up

@@ -1,12 +1,12 @@
-// Per-tile runtime configuration for a single streamhost daemon.
+// Per-station runtime configuration for a single streamhost daemon.
 //
 // One streamhost process serves exactly ONE QEMU/tile (one QMP socket, one UDP
 // port). Config is read from CLI flags and/or environment (systemd/compose
 // friendly). Positional arg 0 is still the QMP socket for prototype back-compat.
 //
 //   streamhost <QMP_SOCK> [flags]
-//     --tile NAME              logical tile id (used to derive default paths/logs)
-//     --port N                 WebTransport/QUIC UDP port for this tile
+//     --tile NAME              logical station id (used to derive default paths/logs)
+//     --port N                 WebTransport/QUIC UDP port for this station
 //     --fps N                  capture/encode fps cap (default 60, clamped >= 1)
 //     --keyframe-ms N          wall-clock keyframe heartbeat while watched (default 2500)
 //     --host-ip IP             host IPv4 advertised in signaling.json (default 192.0.2.10)
@@ -122,21 +122,21 @@ pub struct Config {
     pub input_bench_addr: Option<String>,
     /// Per-guest absolute-pointer calibration (FIX 3). Applied in input::set_abs
     /// before injecting: guest = round(client * scale) + off. Identity (0/0/1.0)
-    /// for every tile except those with a measured tablet-origin offset (tinycore).
+    /// for every station except those with a measured tablet-origin offset (tinycore).
     pub cursor_off_x: i32,
     pub cursor_off_y: i32,
     pub cursor_scale: f64,
     /// host:port of the in-guest warpd agent (via a QEMU hostfwd), used when
     /// input_backend == Warpd. e.g. 127.0.0.1:7790 forwarded to the guest's :7777.
     pub warpd_addr: String,
-    /// Warpd tiles only: route mouse BUTTONS through the real QEMU (PS/2) device
+    /// Warpd stations only: route mouse BUTTONS through the real QEMU (PS/2) device
     /// instead of the in-guest agent (SH_WARPD_BUTTONS=qemu). Motion stays on the
     /// agent (absolute, drift-free). Real device buttons give true window-manager
     /// semantics (title-bar drags, menus, caption buttons) on guests whose native
     /// click-injection API is limited (e.g. Win3.11: mouse_event is a no-op under
     /// QEMU and PostMessage clicks don't drive non-client areas).
     pub warpd_buttons_qemu: bool,
-    /// Warpd tiles only: route wheel steps through the agent even when ordinary
+    /// Warpd stations only: route wheel steps through the agent even when ordinary
     /// buttons use QEMU. OS/2 Warp needs this split: native PS/2 buttons provide
     /// PM capture, while the agent translates wheel 4/5 into WM_VSCROLL.
     pub warpd_wheel_agent: bool,
@@ -151,7 +151,7 @@ pub struct Config {
     pub audio_bitrate: u32,
     /// PCM source when audio is on (SH_AUDIO_SOURCE, env-only): `dbus` (default;
     /// QEMU p2p AudioOutListener) or `fifo` (paced named-pipe reader — the only
-    /// source that works on shm/x11-capture tiles, which have no `main_conn`).
+    /// source that works on shm/x11-capture stations, which have no `main_conn`).
     /// See backends.rs and audio::start_fifo.
     pub audio_source: AudioSource,
     /// Named pipe the `fifo` source reads (SH_AUDIO_FIFO, env-only; default
@@ -172,9 +172,9 @@ pub struct Config {
     /// forms) so this only matters once such a guest installs its own driver.
     /// Default off — modern guests keep distinct dedicated-vs-keypad arrows.
     pub legacy_kbd: bool,
-    /// The three per-tile KEYBOARD QUIRK knobs. Full rationale, and the code
+    /// The three per-station KEYBOARD QUIRK knobs. Full rationale, and the code
     /// that applies them, live in `key_quirks.rs`; all three are env-only and
-    /// default to off, so no tile changes behaviour without declaring them.
+    /// default to off, so no station changes behaviour without declaring them.
     ///
     /// `SH_KEY_REMAP` — `from:to` XT set1 wire codes (hex `0x…` or decimal,
     /// extended keys in the browser's 0xE0xx form), comma-separated. Rewrites
@@ -286,15 +286,15 @@ pub struct Config {
     /// `stop`; the next accepted session issues `cont` + a forced keyframe so
     /// the joiner sees the live screen sub-second. 0 = disabled; nonzero is
     /// clamped to >= 5 (anti-thrash). Default 60. Pause != loadvm — guest
-    /// RAM/state is untouched, so cold-boot-only tiles are safe. Per-tile
+    /// RAM/state is untouched, so cold-boot-only stations are safe. Per-station
     /// opt-out: SH_IDLE_PAUSE_SECS=0 in tile.env. See idle.rs / docs/IDLE-PAUSE.md.
     pub idle_pause_secs: u64,
-    /// Process to freeze on a NON-QEMU tile (SH_IDLE_PAUSE_PIDFILE, env-only),
+    /// Process to freeze on a NON-QEMU station (SH_IDLE_PAUSE_PIDFILE, env-only),
     /// which has no QMP socket to `stop`: SIGSTOP/SIGCONT that pid instead.
     /// Unset (the QEMU fleet) keeps the QMP mechanism. See idle.rs.
     pub idle_pause_pidfile: Option<String>,
     /// Withhold the FIRST pause this long after daemon start
-    /// (SH_IDLE_PAUSE_WARMUP_SECS, env-only, default 0 = off), for a tile whose
+    /// (SH_IDLE_PAUSE_WARMUP_SECS, env-only, default 0 = off), for a station whose
     /// own health machinery needs the guest RUNNING to vet it. Resumes are
     /// never withheld. See idle.rs / docs/IDLE-PAUSE.md.
     pub idle_pause_warmup_secs: u64,
@@ -436,7 +436,7 @@ impl Config {
         // consecutive-frame SSIM 1.0) vs 0.0824 under CRF14+VBV, and is crisper
         // (61.3 vs 59.1 dB XPSNR). On ABR tiers >= 1 the same value acts as the
         // CRF anchor (+3/+6 per tier) with VBV re-enabled, so a congested WAN
-        // client still gets a hard bit ceiling. Per-tile SH_CRF override wins.
+        // client still gets a hard bit ceiling. Per-station SH_CRF override wins.
         let mut crf: u8 = env_or("SH_CRF", "10").parse().unwrap_or(10);
         let mut maxrate_kbps: u32 = env_or("SH_MAXRATE_KBPS", "0").parse().unwrap_or(0);
         let mut bufsize_ratio: f64 = env_or("SH_BUFSIZE_RATIO", "1.0").parse().unwrap_or(1.0);
@@ -619,7 +619,7 @@ impl Config {
             }
         }
 
-        // Derive defaults from the tile name so a bare `--tile foo --port N` works.
+        // Derive defaults from the station name so a bare `--tile foo --port N` works.
         let base = format!("/data/vms/streamhost/tiles/{tile}");
         let qmp = qmp.unwrap_or_else(|| "/data/vms/streamhost/run951/qmp951.sock".to_string());
         let hash_file = hash_file.unwrap_or_else(|| format!("{base}/cert_hash_b64.txt"));
@@ -668,7 +668,7 @@ impl Config {
             advertise_host,
             session_key,
             // >= 1: SH_FPS=0 parses fine and would divide-by-zero the encode
-            // loop's frame-interval math (a silent no-video tile).
+            // loop's frame-interval math (a silent no-video station).
             fps: fps.clamp(1, 240),
             keyframe_ms: keyframe_ms.clamp(100, 10_000),
             input_backend,

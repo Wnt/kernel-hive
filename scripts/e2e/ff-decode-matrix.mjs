@@ -1,7 +1,7 @@
 // ff-decode-matrix.mjs — empirical WebCodecs VideoDecoder permutation matrix.
 // Feeds REAL captured streamhost AUs (capture-aus.mjs output) to VideoDecoder
 // under every {mode × flush × hardwareAcceleration} permutation and reports
-// decoded-frame counts. Runs inside a page on the SPA https origin (WebCodecs
+// decoded-frame counts. Runs inside a page on the UI https origin (WebCodecs
 // is SecureContext-only in Firefox).
 //
 // Usage: node ff-decode-matrix.mjs [firefox|chromium] [aus-file] [--quick]

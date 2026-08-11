@@ -14,7 +14,7 @@
 //! commanded. Commanding the edge again produces a delta of ZERO, so there is
 //! nothing left that could ever push the two back into agreement — the error is
 //! frozen in for the rest of the session and every later click lands off-target
-//! by it. Measured on the IRIX tile: after a single clamp at the top edge the
+//! by it. Measured on the IRIX station: after a single clamp at the top edge the
 //! guest cursor sat 127 px below where the model said it was, and a closed-loop
 //! corrector reading the real framebuffer could not recover it, because the
 //! correction it wanted to send was a negative coordinate that does not exist.
@@ -30,7 +30,7 @@
 //! an ops script writing to the agent's command file, the desktop-park helper,
 //! the guest warping its own cursor. Dead reckoning cannot see that happen, and
 //! homing only once per process means the error then lasts for the life of the
-//! daemon. Measured on the live tile: after the park helper drove the pointer
+//! daemon. Measured on the live station: after the park helper drove the pointer
 //! out of band, a browser session tracked the guest EXACTLY in delta (moves
 //! matched to 2 px) but with a constant ~(463,232) px offset. So the reckoner
 //! re-homes after `REHOME_IDLE` of pointer silence: a visitor mid-interaction is
@@ -55,7 +55,7 @@ pub struct Step {
 
 /// Pointer silence after which the next sample re-establishes the origin.
 /// Long enough that no interactive session ever crosses it (samples arrive at
-/// tens of hertz while a visitor is moving) and short enough that the tile
+/// tens of hertz while a visitor is moving) and short enough that the station
 /// self-heals between visitors.
 const REHOME_IDLE: Duration = Duration::from_secs(30);
 

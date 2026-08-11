@@ -1,15 +1,15 @@
 // ============================================================================
 //  input/trackpad — PURE trackpad-mode pointer engine (T-3)
 //  ---------------------------------------------------------------------------
-//  Touch tiles whose guest wants RELATIVE motion (qnx/freedos/msdoswin1) are
+//  Touch stations whose guest wants RELATIVE motion (qnx/freedos/msdoswin1) are
 //  broken under the direct absolute-pointer path: a finger reports an absolute
 //  guest coordinate, but the guest draws its OWN cursor from deltas, so a tap
 //  teleports it. Trackpad mode fixes that (and is an opt-in laptop-style pointer
-//  for absolute tiles too):
-//    - REL tiles → a finger DRAG accumulates a scaled delta and ships it as a
+//  for absolute stations too):
+//    - REL stations → a finger DRAG accumulates a scaled delta and ships it as a
 //      RelMotion (control.sendMouseMoveRel); a still TAP is a click. The guest
 //      renders its own cursor — no local sprite.
-//    - ABS tiles → the SAME drag drives a LOCAL virtual cursor (clamped to the
+//    - ABS stations → the SAME drag drives a LOCAL virtual cursor (clamped to the
 //      guest bounds) and forwards control.sendMouseMove(absX,absY) at the sprite;
 //      a tap clicks at the cursor. OnScreenCursor.tsx paints the sprite.
 //  DOM-free + timer-free (the hook owns the long-press setTimeout) so the whole
@@ -113,7 +113,7 @@ export interface Trackpad {
   holds(): boolean;
   /** The active touch was cancelled (e.g. a 2nd finger stole it for a pinch). */
   cancel(): TrackpadOp[];
-  /** Current ABS virtual cursor (null on rel tiles — the guest owns its cursor). */
+  /** Current ABS virtual cursor (null on rel stations — the guest owns its cursor). */
   cursor(): Vec2 | null;
   setBounds(b: TrackpadBounds): void;
   /** How many GUEST px one CSS px of the displayed picture covers — the
@@ -138,12 +138,12 @@ export interface Trackpad {
    *  the guest's pointer is wherever the stylus left it, so the sprite has to
    *  appear THERE. Seeding centre instead would put the visible cursor and the
    *  guest's own cursor in two different places, and the first tap would land at
-   *  neither. No-op on rel tiles, which have no local cursor to place. */
+   *  neither. No-op on rel stations, which have no local cursor to place. */
   setCursor(c: Vec2): void;
 }
 
 export interface TrackpadConfig {
-  /** rel tiles ship RelMotion + a guest-drawn cursor; abs tiles drive a sprite. */
+  /** rel stations ship RelMotion + a guest-drawn cursor; abs stations drive a sprite. */
   rel: boolean;
   gain?: number;
   /** Guest px per CSS px of the displayed picture — see setTrack. */
@@ -175,7 +175,7 @@ export function createTrackpad(cfg: TrackpadConfig): Trackpad {
   let remX = 0; // fractional rel remainder — PS/2 RelMotion needs integers
   let remY = 0;
   let moved = false; // travelled past the slop → a drag, and kills the long-press
-  let cursor: Vec2 | null = null; // abs virtual cursor (rel tiles keep it null)
+  let cursor: Vec2 | null = null; // abs virtual cursor (rel stations keep it null)
   let dragging = false; // this contact inherited the held button: it is dragging
   let pendingUp = false; // a tap's DOWN went out; its UP is waiting (see header)
   // Which button this contact drives — 2 when the ⊕ arm was set, so an armed
@@ -201,7 +201,7 @@ export function createTrackpad(cfg: TrackpadConfig): Trackpad {
 
   const roundedCursor = (): Vec2 => ({ x: Math.round(cursor?.x ?? 0), y: Math.round(cursor?.y ?? 0) });
 
-  // One edge of a button at the CURRENT cursor. Rel tiles omit coords entirely —
+  // One edge of a button at the CURRENT cursor. Rel stations omit coords entirely —
   // the guest clicks wherever its own cursor sits, so a forwarded abs px would
   // teleport it (the exact bug trackpad mode exists to fix).
   const buttonEdge = (button: number, down: boolean): TrackpadOp => {

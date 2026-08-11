@@ -1,8 +1,8 @@
-// Input smoke for the per-class QUIC input client: open the freedos tile,
+// Input smoke for the per-class QUIC input client: open the freedos station,
 // wait for live video pixels, press 'c' at the RETRO GAMES boot menu to get
 // a Command prompt, type 'ver' + Enter, screenshot before/after.
 //
-// NOTE: the SPA's 2D StreamView renders a <video> element fed by
+// NOTE: the UI's 2D StreamView renders a <video> element fed by
 // canvas.captureStream() from an OFFSCREEN canvas — there is no stream
 // <canvas> in the document. Pixel probes must drawImage() the video onto a
 // temp canvas and getImageData() from that.

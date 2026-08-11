@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build the reproducible lean-X bridge overlay used by the OpenVMS DECwindows
-# tile. The frozen bridge-base backing file is never modified.
+# station. The frozen bridge-base backing file is never modified.
 set -euo pipefail
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

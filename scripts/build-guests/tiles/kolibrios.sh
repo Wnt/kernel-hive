@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/kolibrios.sh — from-scratch, reproducible build of the KolibriOS
-# tile for the neko+QEMU Kernel Hive.
+# station for the neko+QEMU Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the KolibriOS
 # guest END TO END from its real upstream source — no image backups, no
 # pre-staged files. Produces the final bootable live ISO at
 #     <GUEST_DIR>/kolibri.iso        (default /data/gallery-guests/KolibriOS)
 # and framebuffer-verifies it reaches the graphical desktop. It then stages the
-# tile-local fixture helpers, bakes the internal `golden` savevm snapshot, and
+# station-local fixture helpers, bakes the internal `golden` savevm snapshot, and
 # proves a live loadvm round-trip against the production device set.
 #
 # WHAT KOLIBRIOS IS: a tiny assembly-written GPLv2 OS that ships as a *live CD*.
@@ -181,7 +181,7 @@ fi
 #   Confirms the ISO reaches the graphical desktop. Uses unique unix sockets and
 #   a pidfile; tears the VM down via the monitor `quit` (never pkill).
 #   Sound is intentionally omitted here (a bare AC97 with no host audio backend
-#   aborts QEMU — see NOTES.md); audio is added only in the production tile.
+#   aborts QEMU — see NOTES.md); audio is added only in the production station.
 # =============================================================================
 mon_send() { # mon_send CMD...  — talk to the HMP monitor over the unix socket
   python3 - "$MONSOCK" "$@" <<'PY' 2>/dev/null || true
@@ -210,7 +210,7 @@ verify_boot() {
   }
 
   log "verify: launching headless QEMU (${QEMU_BIN}) from $ISO_PATH …"
-  # Same profile as the validated tile, minus audio, plus headless VNC+monitor.
+  # Same profile as the validated station, minus audio, plus headless VNC+monitor.
   "$QEMU_BIN" \
     -machine pc -cpu qemu32 -m 256 \
     -cdrom "$ISO_PATH" -boot d \
@@ -292,8 +292,8 @@ PY
 }
 
 # =============================================================================
-# (8) GOLDEN FIXTURE — stage and run the tile-specific deterministic bake.
-#   The production tile directory is emitted separately from this guest build,
+# (8) GOLDEN FIXTURE — stage and run the station-specific deterministic bake.
+#   The production station directory is emitted separately from this guest build,
 #   so copy only the fixture helpers/assets here; never replace its launcher.
 # =============================================================================
 FIXTURE_SRC="$REPO_ROOT/streamhost/tiles/kolibrios"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# ssrig.sh — MAME savestate bake/restore rig for the IRIX tile (issue #44).
+# ssrig.sh — MAME savestate bake/restore rig for the IRIX station (issue #44).
 #
-# Runs a candidate `sgi` binary with the tile's exact production flag set
+# Runs a candidate `sgi` binary with the station's exact production flag set
 # (shm capture, serial exec pty, no network) in a namespaced clone dir, then
 # exercises the savestate cycle the exhibit needs:
 #

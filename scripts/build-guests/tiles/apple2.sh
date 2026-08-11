@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/apple2.sh — build the Apple //e + Apple GEOS deskTop streamhost
-# tile as a thin overlay on the shared bridge base (scripts/build-guests/lib/bridge-base.sh).
+# station as a thin overlay on the shared bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-12 kiosk that runs LinApple 2.3.0 `linapple` full-screen
 #         emulating an Apple //e (enhanced) auto-booting the Apple GEOS deskTop off a
 #         ProDOS hard-disk image. streamhost captures the Linux framebuffer + AC97
 #         audio (the Apple II 1-bit speaker routed through ALSA).
-# TYPE  : "emulator bridge" tile (see streamhost/docs/BRIDGE.md). Overlay + a per-tile
+# TYPE  : "emulator bridge" station (see streamhost/docs/BRIDGE.md). Overlay + a per-station
 #         /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
 #
 # EMULATOR USED : LinApple (NOT MAME).
@@ -26,13 +26,13 @@
 #   MAME fallback, which would need apple2e.zip).
 #
 # ---- LINAPPLE KIOSK PATCH (assets/apple2/linapple-kiosk.patch, 2026-07-12) ---
-#   Three stock-LinApple bugs broke this tile and are patched in-guest before
+#   Three stock-LinApple bugs broke this station and are patched in-guest before
 #   the build (browser-stream verified fixes):
 #   1. Frame.cpp: ALL mouse-card input was gated behind a click-to-capture
 #      (SDL_WM_GrabInput) step - the first click was eaten, and grab+hidden
 #      cursor puts SDL1.2 into warp-based relative mode, which is broken with
 #      the absolute usb-tablet -> the GEOS arrow never tracked and the cursor
-#      "disappeared after one click" in the SPA. Patched: when the mouse card
+#      "disappeared after one click" in the UI. Patched: when the mouse card
 #      is active, motion + buttons feed it directly (no grab, no capture) and
 #      the host X cursor is hidden over the window (GEOS draws its own arrow).
 #   2. MouseInterface.cpp: GEOS's mouse driver is DELTA-based - each poll it
@@ -81,10 +81,10 @@
 #     no-ops now that cold boots show no dialogs.)
 #
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by pidfile,
-# idempotent, --force to rebuild the overlay. Touches ONLY the apple2 tile dir.
+# idempotent, --force to rebuild the overlay. Touches ONLY the apple2 station dir.
 #
 # Usage:  apple2.sh [--force] [--bake] [-h]     (run ON the box, as root)
-#   --bake  bake the golden of the ALREADY RUNNING tile and prove it restores
+#   --bake  bake the golden of the ALREADY RUNNING station and prove it restores
 #           (lib/bridge-bake-golden). Boot it under its OWN qemu-streamhost.sh
 #           first: a golden taken under a different device set will not loadvm.
 # =============================================================================
@@ -109,7 +109,7 @@ ASSETS_DIR="${ASSETS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../asset
 # Asimov mirror; GEOS-mouse HDV is the AppleWin-tailored (== LinApple) mouse build.
 #
 # SINGLE MIRROR + FATAL HASH GATE. mirrors.apple2.org.za is the only source this
-# tile has, so the two pins below are what turns "the mirror served something" into
+# station has, so the two pins below are what turns "the mirror served something" into
 # "the mirror served THIS". Both are sha256 measured on the LIVE apple2 overlay
 # 2026-08-10 (`labctl exec apple2 sha256sum /opt/bridge/media/…`); the HDV inside the
 # zip is dated 2009-12-05, 1 327 616 B, ProDOS volume /BIGWON. Recorded in
@@ -149,7 +149,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # LinApple config lives at /opt/bridge/media/linapple.conf and is picked up as
 # ./linapple.conf because the launcher cd's into /opt/bridge/media first.
 #   Fullscreen=0 -> WINDOW on the bare-X root: real SDL fullscreen renders BLACK in
-#     the captured std-VGA framebuffer (same gotcha as VICE -VICIIfull on the c64 tile).
+#     the captured std-VGA framebuffer (same gotcha as VICE -VICIIfull on the c64 station).
 #   Mouse in slot 4=1 (GEOS is mouse-driven) + Soundcard Type=1 (Mockingboard OFF -
 #     it shares slot 4 with the mouse; Apple II tones use the built-in SPEAKER anyway).
 #   Video Emulation=7 (Monochrome WHITE) - GEOS draws a 1-bit 560x192 double-hi-res
@@ -164,7 +164,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 #   SDL audio -> ALSA default (hw:0,0) -> AC97 -> QEMU dbus audiodev -> streamhost.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Apple //e + Apple GEOS deskTop kiosk launcher (bridge tile apple2).
+# Apple //e + Apple GEOS deskTop kiosk launcher (kiosk apple2).
 # See apple2.sh header for flag rationale. LinApple 2.3.0, bundles the //e ROM.
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export SDL_VIDEODRIVER=x11
@@ -191,7 +191,7 @@ RestartSec=30
 WantedBy=multi-user.target
 EOS
 
-# ---- boot the tile QEMU (exact device set; conditional -loadvm golden) -------
+# ---- boot the station QEMU (exact device set; conditional -loadvm golden) -------
 boot_tile() {
   [ -f "$PID" ] && kill "$(cat "$PID")" 2>/dev/null || true
   sleep 0.5

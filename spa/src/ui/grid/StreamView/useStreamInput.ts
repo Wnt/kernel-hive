@@ -46,7 +46,7 @@ export function useStreamInput({
   // T-1: the single-finger touch recognizer sink (long-press / double-tap /
   // drag-lock). Replaces the raw control.sendTouch mapping in the touch path.
   touch: TouchGestureController;
-  // T-3: rel-pointer tile flag + the live trackpad-mode mirror. In direct mode the
+  // T-3: rel-pointer station flag + the live trackpad-mode mirror. In direct mode the
   // touch path applies the T-4 fat-finger offset + drives the loupe; in trackpad
   // mode neither (the controller owns the relative / virtual-cursor mapping).
   pointerRel: boolean;
@@ -290,7 +290,7 @@ export function useStreamInput({
           // contextmenu below — and a right-button DRAG comes from the badge's
           // arm, which rides a real pointerdown/pointerup pair.
           // T-5: drop / throttle bare S-Pen hover so it can't flood the guest (a
-          // rel tile would drift its cursor on every hover move).
+          // rel station would drift its cursor on every hover move).
           if (!allowPenHover({
             pointerType: native.pointerType, buttons: native.buttons,
             rel: pointerRel, nowMs: native.timeStamp, lastMs: penHoverRef.current,

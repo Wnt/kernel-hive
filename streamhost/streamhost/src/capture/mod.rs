@@ -34,7 +34,7 @@
 //      copy path is now authoritative. Without this, a stale pre-guest-init
 //      640x480 placeholder ScanoutMap (sent on FIRST attach to a daemon-less
 //      QEMU whose console never refreshed) wins snapshot_bgra() forever and
-//      the tile streams dead pixels while the real frames flood the fallback.
+//      the station streams dead pixels while the real frames flood the fallback.
 //   3. An RSS guard (SH_QEMU_RSS_GUARD_MB, default 2048, 0=off) watches the
 //      guest QEMU's RssAnon via SH_QEMU_PIDFILE, or qemu.pid beside QMP. If it
 //      grows more than the threshold above its low-water mark, the listener
@@ -91,7 +91,7 @@ pub struct Capture {
     /// rides an out-of-band sink (XTEST / the emulator's command file) and which
     /// have no dbus audiodev — every
     /// consumer of this field guards on `Some` (dbus input is only reached on a
-    /// dbus/qemu tile; audio only starts when this is present).
+    /// dbus/qemu station; audio only starts when this is present).
     pub main_conn: Option<zbus::Connection>,
     // Keep the listener p2p connection alive; if it drops, QEMU stops pushing
     // damage/scanout updates (frozen capture). Slotted so the RSS guard can

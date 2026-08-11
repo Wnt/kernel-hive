@@ -2,7 +2,7 @@
 # =============================================================================
 # Build the shipping ZX81 MAME binary from a pinned upstream source revision.
 #
-# WHY A PURPOSE-BUILT BINARY AND NOT A PACKAGE. Whichever bridge base this tile
+# WHY A PURPOSE-BUILT BINARY AND NOT A PACKAGE. Whichever bridge base this station
 # is on, its packaged MAME is not the pinned one (bookworm ships 0.251), and on
 # bookworm the lab HOST's Debian 13 MAME 0.276 cannot be copied in either — its
 # glibc/libstdc++ ABI the bookworm guest cannot load. mpf2 already solved this by
@@ -11,7 +11,7 @@
 # built against the exact runtime the kiosk has. The suite comes from
 # registry/bridge-suites.json; see docs/lab/BRIDGE-TRIXIE-MIGRATION.md.
 # This script is that build for `sinclair/zx.cpp`, at the SAME upstream commit
-# mpf2 pins (MAME 0.289, f34f0250) so both MAME tiles ship one known version.
+# mpf2 pins (MAME 0.289, f34f0250) so both MAME stations ship one known version.
 #
 # UNLIKE mpf2 THERE IS NO PATCH. mpf2 needs mame-irix-skip-warnings.patch
 # because its driver is marked imperfect and MAME puts a full-screen red

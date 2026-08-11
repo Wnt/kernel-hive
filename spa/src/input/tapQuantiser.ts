@@ -14,10 +14,10 @@
 //
 //  EVERY THRESHOLD IS IN CSS PIXELS. This is the fix of 2026-08-05 and the whole
 //  reason the file exists: the thresholds used to be in GUEST pixels, but a hand
-//  wobbles in physical space, and the guest→CSS ratio changes with every tile.
+//  wobbles in physical space, and the guest→CSS ratio changes with every station.
 //  IRIX at 1288x1024 in a 411 px-wide rect is 3.13 guest px per CSS px, so the
 //  old 24 guest px slop was ~7.7 CSS px — about 1.3 mm of finger travel — while
-//  the same constant on win311 (~2.5x) was half again as forgiving. One tile was
+//  the same constant on win311 (~2.5x) was half again as forgiving. One station was
 //  usable and the other was not, from one number. A CSS px is ~1/96", so in this
 //  space a threshold means a physical distance and behaves the same everywhere.
 //  Guest pixels appear only in what is SENT.
@@ -104,7 +104,7 @@ interface TapPress {
  *
  *  It is not inside the touch recognizer because a stylus never reaches it:
  *  `pointerType` is `'pen'`, which is neither `'touch'` nor one of the touch-
- *  ARCHETYPE tiles, so on an ordinary desktop exhibit the pen is handled by the
+ *  ARCHETYPE stations, so on an ordinary desktop exhibit the pen is handled by the
  *  mouse path in useStreamInput. Two fixes shipped to the recognizer changed
  *  nothing on win311/IRIX for exactly that reason. */
 export interface TapQuantiser {

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-guests/tiles/riscos.sh — from-scratch, reproducible build of the RISC OS 5
-# tile (:8111) for the neko Kernel Hive.
+# station (:8111) for the neko Kernel Hive.
 #
 # GOAL: on a FRESH Proxmox host (gallery infra present), rebuild the RISC OS 5
 # guest END TO END from its real upstream sources — no image backups, no
-# pre-staged files. Unlike the QEMU tiles, this is an **EMULATOR tile**: neko
+# pre-staged files. Unlike the QEMU stations, this is an **EMULATOR station**: neko
 # streams the X window of **RPCEmu** (Peter Howkins / Sarah Walker's Acorn
 # RiscPC / A7000 emulator) running RISC OS 5. RISC OS is ARM, so there is no
 # QEMU/KVM here at all — RPCEmu is a userspace ARM(v4) emulator with an amd64
@@ -18,9 +18,9 @@
 #       rpc.cfg       — RPCEmu machine config (RPC610, 128 MB, sound on)
 #       cmos.ram      — RPCEmu NVRAM seed
 #   * A Docker image  neko-rpcemu:latest  (neko:base + Qt5 + RPCEmu 0.9.5 built
-#       from source, amd64 recompiler) — the per-tile streamer.
+#       from source, amd64 recompiler) — the per-station streamer.
 #   * A compose file  docker-compose.riscos.yml  (isolated project) wiring the
-#       live tile at :8111.
+#       live station at :8111.
 #
 # ---- LICENSING --------------------------------------------------------------
 #   * RISC OS 5 — **freely available shared-source** from RISC OS Open Ltd
@@ -29,7 +29,7 @@
 #     (This is the modern open RISC OS 5 line, NOT the proprietary Acorn
 #     RISC OS 3.x ROMs — those are the abandonware ones and are NOT used.)
 #   * RPCEmu — GPLv2 (Sarah Walker / Peter Howkins), source from marutan.net.
-#   So this whole tile is a clean free/open path — no abandonware involved.
+#   So this whole station is a clean free/open path — no abandonware involved.
 #
 # ---- AUTOMATION HONESTY -----------------------------------------------------
 #   (1) DOWNLOAD ....... FULLY AUTOMATED (real upstream URLs, re-fetched here).
@@ -42,7 +42,7 @@
 #                        the WIMP (pinboard + icon bar). Fully hands-off at run
 #                        time (the keystrokes are automated inside the image).
 #   (4) ERA SOFTWARE ... bundled in the HardDisc4 disc already (ROOL default).
-#   (5) VERIFY ......... FULLY AUTOMATED — boots the live tile and captures the
+#   (5) VERIFY ......... FULLY AUTOMATED — boots the live station and captures the
 #                        neko (v3) framebuffer via login->bearer->screen shot,
 #                        then asserts the RISC OS desktop rendered.
 #   => No manual/interactive steps. The whole build is hands-off.
@@ -54,16 +54,16 @@
 #   pinboard and bundled !Apps all come up correctly.
 #
 # IDEMPOTENT / RE-RUNNABLE: skips downloads if valid artifacts already exist
-# (override with --force). Uses a namespaced work dir. Runs the live tile as its
+# (override with --force). Uses a namespaced work dir. Runs the live station as its
 # OWN isolated compose project (osgallery-riscos) so it never disturbs other
-# gallery tiles, the shared docker-compose.gallery-guests.yml, VM 900/925, or
+# gallery stations, the shared docker-compose.gallery-guests.yml, VM 900/925, or
 # CTID 110's other services. Kills nothing by name.
 #
 # Usage:
 #   build-guests/tiles/riscos.sh [--dir DIR] [--force] [--no-verify] [--host H] [-h]
 #     --dir DIR      guest data dir       (default /data/gallery-guests/RISCOS)
 #     --force        re-download even if valid artifacts are present
-#     --no-verify    skip the live-tile framebuffer screenshot check
+#     --no-verify    skip the live-station framebuffer screenshot check
 #     --host H       Proxmox host for the live-apply step (default from $LAB_HOST
 #                    or root@192.0.2.10); "" = local (run ON the box)
 #     -h|--help      show this header
@@ -353,16 +353,16 @@ LAUNCH
 build_image
 
 # =============================================================================
-# (4) LIVE-APPLY the tile as its OWN isolated compose project (never touches
-#     the shared docker-compose.gallery-guests.yml or other tiles).
+# (4) LIVE-APPLY the station as its OWN isolated compose project (never touches
+#     the shared docker-compose.gallery-guests.yml or other stations).
 # =============================================================================
 COMPOSE_FILE="/opt/osgallery/docker-compose.riscos.yml"
 write_compose() {
   cat >"$COMPOSE_FILE" <<YML
-# Standalone RISC OS 5 tile (:${TILE_PORT}) — isolated compose project
+# Standalone RISC OS 5 station (:${TILE_PORT}) — isolated compose project
 # (${COMPOSE_PROJECT}) so it never touches the concurrently-edited
 # docker-compose.gallery-guests.yml (SailfishOS/TempleOS isolation pattern).
-# EMULATOR tile: neko streams RPCEmu (Acorn RiscPC/A7000 emulator) running
+# EMULATOR station: neko streams RPCEmu (Acorn RiscPC/A7000 emulator) running
 # RISC OS 5 (ROOL shared-source IOMD 5.30 softload ROM) as a fullscreen X app —
 # NOT QEMU, no KVM.
 services:

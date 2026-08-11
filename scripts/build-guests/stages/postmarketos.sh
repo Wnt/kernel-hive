@@ -2,7 +2,7 @@
 ###############################################################################
 # build-guests/stages/postmarketos.sh
 #
-# From-scratch, reproducible build of the Kernel Hive "postmarketOS" tile.
+# From-scratch, reproducible build of the Kernel Hive "postmarketOS" station.
 # Runs on a fresh Proxmox host that already has the gallery infra
 # (qemu-system-x86_64, qemu-img, xz, curl, socat, netpbm/pnmtopng, and the
 # pve-edk2-firmware OVMF blobs). No image backup required: this script
@@ -43,7 +43,7 @@
 #      UI but screendump goes BLACK once GL scanout starts.
 #   5. Phosh idle-blanks / auto-locks in ~30s of no input -> screendump reads
 #      black. WAKE with a pointer/key event immediately before capture. In the
-#      live neko tile the continuous user input keeps it awake.
+#      live neko station the continuous user input keeps it awake.
 #
 # HYGIENE: kills only via pidfile / monitor 'quit'. NEVER pkill by name.
 #          Namespaced work dir + unique VNC(:47)/monitor(mon47.sock) sockets.
@@ -318,22 +318,22 @@ verify_gui() {
 
 # ----------------------------------------------------------------------------
 # neko-qemu / gallery runtime args (for reference; emitted, not executed here).
-# In the live tile: drop snapshot=on if you want persistence, and swap
+# In the live station: drop snapshot=on if you want persistence, and swap
 # `-audiodev none` for the neko container's PulseAudio/PipeWire sink.
 #
 # GALLERY TILE INTEGRATION (verified on-box 2026-07-04 -> Phosh UI reached):
-#   The tile is wired by gallery-integrate-all.sh [neko-era, deleted — git history] (key 'postmarketos',
+#   The station is wired by gallery-integrate-all.sh [neko-era, deleted — git history] (key 'postmarketos',
 #   host port :8103). Two environment-specific gotchas -- BOTH now handled --
-#   were what left the tile gated:
+#   were what left the station gated:
 #
 #   1. OVMF PATHS ARE CONTAINER-RELATIVE, NOT PVE-HOST.
 #      This script builds/verifies the IMAGE on the *PVE host*, where the OVMF
-#      blobs live at /usr/share/pve-edk2-firmware/* (correct HERE). But the tile
+#      blobs live at /usr/share/pve-edk2-firmware/* (correct HERE). But the station
 #      boots inside the neko-qemu *Docker container* (Debian), which has NO such
 #      path -- its OVMF is the Debian `ovmf` package at
 #           /usr/share/OVMF/OVMF_CODE_4M.fd   (read-only CODE)
 #           /usr/share/OVMF/OVMF_VARS_4M.fd   (VARS template)
-#      So the tile must NOT hardcode pve paths. Instead the manifest sets the
+#      So the station must NOT hardcode pve paths. Instead the manifest sets the
 #      guestenv token OVMF=1, and the patched osgallery/neko-qemu/launch-qemu.sh
 #      AUTO-DISCOVERS the container's OVMF_CODE and SEEDS A FRESH, WRITABLE
 #      per-boot copy of OVMF_VARS (default /tmp/OVMF_VARS.<uid>.fd) before boot.
@@ -345,7 +345,7 @@ verify_gui() {
 #      `lxc.mount.entry ... bind` of /data/gallery-guests. A plain `bind` (not
 #      rbind) does NOT carry NESTED mounts, so if pmos-phosh.img sits in a child
 #      dataset (e.g. `zfs create data/gallery-guests/postmarketOS`) the container
-#      sees an EMPTY dir and the tile has no disk. Keep this guest's dir a plain
+#      sees an EMPTY dir and the station has no disk. Keep this guest's dir a plain
 #      subdirectory of the parent dataset (this script's $BASE is already a plain
 #      path -- do NOT `zfs create` a child dataset under it). If one already
 #      exists, flatten it:  zfs set mountpoint=/mnt/tmp <child> ; cp --sparse=always
@@ -356,7 +356,7 @@ print_gallery_args() {
 
 # ============================================================================
 # neko-qemu gallery TILE args (postmarketOS :8103) -- container-correct form.
-# NOTE: pflash is NOT hardcoded here; the tile sets OVMF=1 and launch-qemu.sh
+# NOTE: pflash is NOT hardcoded here; the station sets OVMF=1 and launch-qemu.sh
 # attaches the container's /usr/share/OVMF/OVMF_CODE_4M.fd (ro) + a freshly
 # seeded WRITABLE /tmp/OVMF_VARS.<uid>.fd. The equivalent explicit args are:
 # ============================================================================

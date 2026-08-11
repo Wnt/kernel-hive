@@ -98,7 +98,7 @@ SIGNAL_HOST = os.environ.get("SIGNAL_HOST", "192.0.2.10")
 
 # --- public listener (the edge tunnel) ---------------------------------------
 # A SECOND listener, plaintext on loopback, that the forwarder-agent proxies
-# gallery.example.com to. It shares this process (and therefore the tiles,
+# gallery.example.com to. It shares this process (and therefore the stations,
 # the cert-hash files and the restore plumbing) with the LAN HTTPS listener, but
 # NOT its trust model: every request on it goes through auth/gate.py first, and
 # its signaling doc advertises the public relay host plus a signed stream ticket
@@ -114,7 +114,7 @@ AUTH_UI = Path(os.environ.get("AUTH_UI", str(Path(__file__).resolve().parent / "
 STREAM_KEY_FILE = Path(
     os.environ.get("STREAM_KEY_FILE", str(Path(__file__).resolve().parent / "pki" / "stream-ticket.key"))
 )
-# Standalone pages the auth plane serves, outside the SPA bundle.
+# Standalone pages the auth plane serves, outside the UI bundle.
 _AUTH_PAGES = {
     "/login": "login.html",
     "/admin": "admin.html",
@@ -136,7 +136,7 @@ GOLDEN_MANIFEST = Path(os.environ.get("GOLDEN_MANIFEST", str(Path(__file__).reso
 RESTORE_ENABLE = os.environ.get("RESTORE_ENABLE", "1") not in ("0", "false", "no")
 
 # --- client observability: /clientlog + /clientcmd ---------------------------
-# Telemetry sink + command queue for the SPA (Firefox decoder debugging et al).
+# Telemetry sink + command queue for the UI (Firefox decoder debugging et al).
 # All files sit beside this server by default so a production deploy needs no
 # extra config; every one is (re-)read or appended per request — no restart
 # needed after hand-edits, and restart-https.sh's log truncation never touches
@@ -347,7 +347,7 @@ class H(BaseHTTPRequestHandler):
         # Permissions-Policy: explicitly grant the Fullscreen API to this origin.
         # The top-level document is allowed to use fullscreen by default, but
         # stating it makes the grant self-documenting and immune to any future
-        # embedding/proxying that would otherwise disable it (the SPA's Fullscreen
+        # embedding/proxying that would otherwise disable it (the UI's Fullscreen
         # button requestFullscreen()s from a direct user gesture).
         if ctype.startswith("text/html"):
             self.send_header("Permissions-Policy", "fullscreen=(self)")
@@ -457,9 +457,9 @@ class H(BaseHTTPRequestHandler):
             if not self._public_gate(path):
                 return
 
-        # Platform WebRTC signaling: every known tile routes to the ONE generic
-        # bridge by tile id. Upstream is global + loopback-only, so tiles.json can
-        # never become a per-tile proxy/gate. SDP and ICE/TURN credentials are
+        # Platform WebRTC signaling: every known station routes to the ONE generic
+        # bridge by station id. Upstream is global + loopback-only, so tiles.json can
+        # never become a per-station proxy/gate. SDP and ICE/TURN credentials are
         # intentionally never written to logs.
         if path.startswith("/webrtc/") and path.endswith("/offer"):
             tile = path[len("/webrtc/") : -len("/offer")].strip("/")
@@ -527,7 +527,7 @@ class H(BaseHTTPRequestHandler):
             _clientlog_append([_clientlog_record(e, client) for e in events])
             return self._send(200, '{"ok":true}', MIME[".json"], cache=False)
 
-        # POST /clientcmd/admin — enqueue a command for polling SPA tabs.
+        # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         # X-Admin-Token vs $SERVE/pki/clientcmd.token (read fresh per request,
         # like every other config file here). Peer IP is deliberately ignored.
         if path == "/clientcmd/admin":
@@ -573,12 +573,12 @@ class H(BaseHTTPRequestHandler):
             sys.stderr.write(f"[serve] clientcmd enqueued seq={seq} {cmd} tile={tile}\n")
             return self._send(200, json.dumps({"ok": True, "seq": seq}), MIME[".json"], cache=False)
 
-        # POST /restore/<osId> — reset ONE tile to its golden fixture. No token
+        # POST /restore/<osId> — reset ONE station to its golden fixture. No token
         # required: the endpoint is LAN-gated and non-destructive (reset-tile.sh
         # only loadvm-restores or cold-boots; it never runs savevm), so the
         # exhibit's "Restore to golden" button works for any visitor. The
         # RESTORE_ENABLE switch is the operator's off-lever; the allowed-osId set
-        # (golden-manifest keys) bounds which tiles it can touch.
+        # (golden-manifest keys) bounds which stations it can touch.
         if path.startswith("/restore/"):
             if not RESTORE_ENABLE:
                 return self._send(403, json.dumps({"error": "restore disabled"}), MIME[".json"], cache=False)
@@ -693,8 +693,8 @@ class H(BaseHTTPRequestHandler):
             # tileDir), but they are two different documents and the daemon is
             # the authority on its own: signing with the endpoint key while
             # `solaris` still ran as `solariscde` and `aros` as `amigaos` locked
-            # both tiles out of every session for four hours on 2026-08-05. Read
-            # the authority from the daemon; fall back to the key for a tile that
+            # both stations out of every session for four hours on 2026-08-05. Read
+            # the authority from the daemon; fall back to the key for a station that
             # has not published one yet.
             ticket_tile = tile
             signal_doc = None
@@ -703,7 +703,7 @@ class H(BaseHTTPRequestHandler):
                 ticket_tile = signal_doc.get("tile") or tile
             except Exception:
                 pass
-            # The stream ticket is minted for EVERY caller, LAN included: a tile
+            # The stream ticket is minted for EVERY caller, LAN included: a station
             # with SH_SESSION_KEY set refuses an unticketed session from any
             # source, so making this public-only would take the LAN gallery down.
             # Reaching this endpoint is itself the authorization — open on the
@@ -711,12 +711,12 @@ class H(BaseHTTPRequestHandler):
             if STREAM_KEY:
                 body["path"] = tickets.mint(STREAM_KEY, ticket_tile)
             if self.public:
-                # Same tile, same cert: WebTransport pins the certificate by
+                # Same station, same cert: WebTransport pins the certificate by
                 # HASH, so the hostname it is reached under is not part of
                 # verification. Only the route changes — the public relay host
                 # instead of the LAN IP.
                 body["host"] = PUBLIC_HOST
-            # WebRTC is a platform capability for every tile. The client enters
+            # WebRTC is a platform capability for every station. The client enters
             # this path only when VideoDecoder is absent; WebCodecs-capable
             # clients ignore it and retain the WebTransport default.
             body["webrtc"] = {
@@ -727,12 +727,12 @@ class H(BaseHTTPRequestHandler):
             # A restarted streamhost publishes its active QUIC policy beside
             # the cert hash (read above). Forward only that small optional
             # object so clients can report which MTU policy they actually
-            # negotiated against; old/unrestarted tiles simply omit it.
+            # negotiated against; old/unrestarted stations simply omit it.
             if isinstance(signal_doc, dict) and isinstance(signal_doc.get("quic"), dict):
                 body["quic"] = signal_doc["quic"]
             return self._send(200, json.dumps(body), MIME[".json"], cache=False)
 
-        # ---- static SPA ----
+        # ---- static UI ----
         return self._serve_static(path)
 
     @staticmethod
@@ -803,7 +803,7 @@ class H(BaseHTTPRequestHandler):
             target = WEBROOT / "index.html"
 
         if not target.is_file():
-            # SPA client-side route -> index.html, but NEVER for reserved API
+            # UI client-side route -> index.html, but NEVER for reserved API
             # prefixes or anything carrying a file extension (missing hashed
             # assets must 404 to expose deploy skew; a stray GET /restore/* or
             # /signal/* must 404, not silently render the app).

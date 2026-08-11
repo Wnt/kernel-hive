@@ -8,7 +8,7 @@
 #   scripts/build-guests/tiles/postmarketos-fixture.sh
 #
 # It first runs postmarketos.sh (download/decompress/framebuffer proof), then
-# invokes the faithfully-vendored tile helpers. The fixture provisioner converts
+# invokes the faithfully-vendored station helpers. The fixture provisioner converts
 # pmos-phosh.img -> pmos-phosh.qcow2, sets PIN 147147, installs the phosh
 # autostart fixture, and disables the tour. This wrapper then cold-boots the
 # tracked streamhost launcher, unlocks phosh, lets GNOME Console settle, and
@@ -26,7 +26,7 @@
 #   PMOS_FIXTURE_FORCE=1     back up and recreate existing qcow2/varstore
 #   PMOS_SKIP_DOWNLOAD, PMOS_FORCE, PMOS_NO_VERIFY, ... pass to postmarketos.sh
 #
-# Run on a fresh/stopped tile. This script refuses to disturb a live QEMU pid.
+# Run on a fresh/stopped station. This script refuses to disturb a live QEMU pid.
 # It starts no streamhost service and stops its own QEMU through QMP/pidfile.
 # =============================================================================
 set -euo pipefail
@@ -112,7 +112,7 @@ if [ -n "${PMOS_FIXTURE_FORCE:-}" ]; then
   done
 fi
 
-# The vendored provisioner deliberately consumes a pristine tile-local raw
+# The vendored provisioner deliberately consumes a pristine station-local raw
 # varstore. Keep that historical contract while sourcing it canonically from
 # the installed Proxmox firmware package.
 if [ ! -s "$VARS_PRISTINE" ]; then

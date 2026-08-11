@@ -3,14 +3,14 @@
 # (record-boot.sh / detect-interactive.sh / postprocess-boot.sh / gen-boot-manifest.sh).
 #
 # NOT executable on its own — `source` it. Implements: logging, a tiny QMP client
-# (qmp_capabilities handshake + one command, over the tile's unix qmp.sock via
+# (qmp_capabilities handshake + one command, over the station's unix qmp.sock via
 # python3), HMP passthrough (screendump / savevm / loadvm / delvm), an ffmpeg-SSIM
 # change-fraction probe (the Tier-1/Tier-2 detector signal), and kill-by-pidfile
 # cleanup. Model: scripts/coldboot/amiga-coldboot-watch.sh (box-side prototype, not in repo; single-shell sidecar,
 # no streamhost daemon change). See README.md "Boot-video capture" for the flow.
 #
 # Conventions (AGENTS.md hard rules honoured by every caller):
-#   * clones live under /data/vms/soltest/ (NEVER touch a live tile);
+#   * clones live under /data/vms/soltest/ (NEVER touch a live station);
 #   * VMs are killed ONLY by pidfile, never pkill-by-name;
 #   * device set of a vmstate clone MUST match the live launcher exactly
 #     (loadvm golden requires an exact device match) — the clone is a byte copy
@@ -30,9 +30,9 @@ br_die() {
   exit 1
 }
 
-# ---- central clone-guard (fail-closed; NEVER touch a live tile) ----------------
+# ---- central clone-guard (fail-closed; NEVER touch a live station) ----------------
 # Route every kill / destructive-QMP through scripts/lib/clone-guard.sh so a
-# mis-set clone path can never reach a production tile (see clone-guard.sh header
+# mis-set clone path can never reach a production station (see clone-guard.sh header
 # for the incident this prevents). The clone root here IS the guard's clone root.
 export CLONE_GUARD_CLONE_ROOT="${CLONE_GUARD_CLONE_ROOT:-$BOOTREC_CLONE_ROOT}"
 export CLONE_GUARD_PROD_TILES_ROOT="${CLONE_GUARD_PROD_TILES_ROOT:-$BOOTREC_TILES_ROOT}"
@@ -84,7 +84,7 @@ PY
 # br_hmp <qmp.sock> <hmp-command-line> -> runs a human-monitor command via QMP.
 # DESTRUCTIVE verbs (savevm/loadvm/delvm/stop/cont/quit/system_reset/powerdown)
 # are gated by the clone-guard: the socket MUST be inside the clone root, so a
-# mis-set CLONE_QMP can never savevm-clobber a live golden or stop a live tile.
+# mis-set CLONE_QMP can never savevm-clobber a live golden or stop a live station.
 br_hmp() {
   local sock="$1" line="$2" json verb
   verb="${line%% *}"
@@ -149,7 +149,7 @@ br_ssim() {
 }
 
 # br_change_fraction <a.png> <b.png> [cropspec] -> 1 - SSIM  (the "cf" signal,
-# comparable to the per-tile cf in scripts/serve/golden-manifest.json).
+# comparable to the per-station cf in scripts/serve/golden-manifest.json).
 br_change_fraction() {
   local ssim
   ssim="$(br_ssim "$1" "$2" "${3:-}")"
@@ -188,7 +188,7 @@ br_kill_pidfile() {
     return 0
   }
   case "$pid" in *[!0-9]*) br_die "REFUSED: pidfile '$pf' has a non-numeric pid '$pid'." ;; esac
-  # 2) the running PID must not be a production QEMU (argv under the tiles tree).
+  # 2) the running PID must not be a production QEMU (argv under the stations tree).
   if [ -r "/proc/$pid/cmdline" ] && tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null | grep -q '/streamhost/tiles/'; then
     br_die "REFUSED: pid $pid is a PRODUCTION QEMU (argv references $BOOTREC_TILES_ROOT/) — refusing to kill."
   fi

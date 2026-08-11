@@ -1,9 +1,9 @@
 #!/bin/bash
 # Build the shipping MPF-II MAME binary from a pinned upstream source revision.
 # The build runs in the chroot whose glibc/libstdc++ ABI matches the bridge
-# guest this tile is built on — bookworm today, trixie once mpf2 is migrated
+# guest this station is built on — bookworm today, trixie once mpf2 is migrated
 # (registry/bridge-suites.json, docs/lab/BRIDGE-TRIXIE-MIGRATION.md). On a
-# trixie tile that chroot is the host's own generation, so the ABI detour this
+# trixie station that chroot is the host's own generation, so the ABI detour this
 # script exists for finally goes away. It deliberately builds only tk2000.cpp
 # (which owns mpf2) in a namespaced soltest worktree.
 #

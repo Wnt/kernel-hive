@@ -4,12 +4,12 @@
 #
 #   Usage: detect-interactive.sh <tile> <qmp.sock> <workdir>
 #   Env:   BOOTREC_LIB (default: sibling bootrec-lib.sh)
-#          Per-tile detection params come from bootrec-tiles.conf (BR_DETECT_TIER etc).
+#          Per-station detection params come from bootrec-tiles.conf (BR_DETECT_TIER etc).
 #
-# Data-driven, 3 tiers (chosen per tile in bootrec-tiles.conf):
+# Data-driven, 3 tiers (chosen per station in bootrec-tiles.conf):
 #   Tier 1  framebuffer-stability: cf (=1-SSIM) between consecutive screendumps stays
 #           below BR_CF_THRESHOLD for BR_SETTLE_MS. Good for static desktops.
-#   Tier 2  reference-region match: SSIM of a stable crop (BR_REF_CROP) vs a per-tile
+#   Tier 2  reference-region match: SSIM of a stable crop (BR_REF_CROP) vs a per-station
 #           reference PNG (BR_REF_PNG) >= 0.985 for BR_REF_MATCH_K consecutive frames.
 #           For desktops that keep animating (clock/CDE) where Tier 1 never settles.
 #   Tier 3  fixed settle timer: sleep BR_TIER3_TIMER_MS; then, if a reference is set,

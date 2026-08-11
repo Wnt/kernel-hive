@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/cbm2.sh — build the Commodore CBM 610 (1982) streamhost tile as a
+# build-guests/tiles/cbm2.sh — build the Commodore CBM 610 (1982) streamhost station as a
 # thin overlay on the frozen bridge base (scripts/build-guests/lib/bridge-base.sh).
 #
 # GUEST : a captured Debian-13 (trixie) kiosk running VICE `xcbm2 -model 610`, emulating
 #         a PAL Commodore CBM 610 that boots its ROM straight to
 #         "*** commodore basic 128, v4.0 ***  ready." in green on black at 80
 #         columns. streamhost captures the Linux framebuffer + AC97 audio
-#         exactly like every other bridge tile (streamhost/docs/BRIDGE.md).
-# TYPE  : "emulator bridge" tile. Overlay + per-tile /etc/bridge/launch.sh +
+#         exactly like every other kiosk (streamhost/docs/BRIDGE.md).
+# TYPE  : "emulator bridge" station. Overlay + per-station /etc/bridge/launch.sh +
 #         an INTERNAL qcow2 `golden` snapshot (resetMode=loadvm).
 #
 # ---- WHY THIS TILE IS CHEAP -------------------------------------------------
 #   Same argument as vic20.sh and plus4.sh: VICE is already in the frozen bridge
-#   base (bridge-base.sh builds the whole family from source for the c64 tile)
+#   base (bridge-base.sh builds the whole family from source for the c64 station)
 #   and it BUNDLES the Commodore ROMs. A CBM 610 needs no disk, no cartridge and
 #   no licensed media of any kind — it boots to BASIC from ROM with zero media
 #   attached. So: no staged asset, no checksum gate, no check-assets.sh row.
@@ -27,7 +27,7 @@
 #   --input-backend disabled, X started with -nocursor.
 #
 #   IT LOOKS LIKE A PET, AND THAT IS THE POINT AND THE RISK. Its cold screen is
-#   a green 80-column CBM BASIC banner, as the cbm8032 tile's is. What separates
+#   a green 80-column CBM BASIC banner, as the cbm8032 station's is. What separates
 #   them is not the frame but the machine behind it: a 6509 with a banked
 #   megabyte instead of a 6502 with 32 KB, a detached low-profile box instead of
 #   an all-in-one, and a market — small business — that Commodore reached for
@@ -53,10 +53,10 @@
 #
 #   So the doubled window needs a 1600x1200-or-larger root, which would make
 #   this the largest capture in the fleet — four times the pixel area of every
-#   other bridge tile (c64/vic20/plus4 all run 800x600) — to enlarge glyphs that
+#   other kiosk (c64/vic20/plus4 all run 800x600) — to enlarge glyphs that
 #   are already only 8 px wide because the machine draws 80 columns. The native
 #   window on an 800x600 root gives the same 88% fill as a doubled window on a
-#   1600x1200 root at a quarter of the encode cost, so this tile drops
+#   1600x1200 root at a quarter of the encode cost, so this station drops
 #   -CRTCdsize rather than growing the root.
 #
 # ---- TWO TRAPS INHERITED FROM THE VIC-20 ADD (both handled below) -----------
@@ -74,14 +74,14 @@
 #
 # ---- KEY PACING -------------------------------------------------------------
 #   SH_KEY_MIN_HOLD_MS=80 / SH_KEY_MIN_GAP_MS=80 — four PAL frames each way, the
-#   figure BISECTED on this box for the vic20 tile
+#   figure BISECTED on this box for the vic20 station
 #   (scripts/dev/emu-key-pacing-bisect.py: 40/40 corrupted one line in 22 under
 #   host scheduling stalls, 80/80 none in 22). Same emulator, same 50 Hz frame,
 #   same host, so the same numbers. Two frames is a floor, not an answer.
 #
 # HYGIENE: thin overlay (no full copy), namespaced qmp.sock/pidfile, kills only
 # by pidfile, idempotent, --force rebuilds the overlay. Touches ONLY the cbm2
-# tile dir; refuses to run while streamhost@cbm2 is active.
+# station dir; refuses to run while streamhost@cbm2 is active.
 #
 # Usage: cbm2.sh [--force] [-h]
 # =============================================================================
@@ -136,7 +136,7 @@ hmp() { python3 /root/qmp_hmp.py "$QMP" "$1"; }
 # drew it.
 read -r -d '' LAUNCH <<'EOS' || true
 #!/bin/bash
-# Commodore CBM 610 (PAL) ROM BASIC kiosk launcher (bridge tile).
+# Commodore CBM 610 (PAL) ROM BASIC kiosk launcher (kiosk).
 # See scripts/build-guests/tiles/cbm2.sh for the flag rationale and the measured
 # window geometry: the native window is 704x528 and is centred by SDL on the
 # 800x600 root (88% fill); -CRTCdsize would make it 1408x1056 and be silently
@@ -213,7 +213,7 @@ EOS
 
 # ROM repair. bridge-base.sh records the trap: VICE's `make install` skips some
 # ROM data files and the emulator then segfaults on startup with NO output at
-# all (it bit the C64 tile on the BASIC ROM and the VIC-20 on basic-901486-01).
+# all (it bit the C64 station on the BASIC ROM and the VIC-20 on basic-901486-01).
 # The CBM-II tree was measured complete on this base, so the copy below is
 # expected to be a no-op — the ASSERTION is the deliverable. A CBM 610 is a
 # 128 KB low-profile model, which VICE resolves through rom128l.vrs to exactly
@@ -330,8 +330,8 @@ wait_for_basic() {
   die "no un-clipped CBM 610 BASIC framebuffer after 180 seconds"
 }
 
-# Type one character through QMP with the tile's production pacing (80 ms hold,
-# 80 ms gap = four PAL frames each), so the proof exercises what the SPA does.
+# Type one character through QMP with the station's production pacing (80 ms hold,
+# 80 ms gap = four PAL frames each), so the proof exercises what the UI does.
 send_key() {
   local qcode=$1
   {
@@ -435,9 +435,9 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
 fi
 
 # One clean cold boot with the quiet console in force, then bake the golden from
-# the very state SPA reset will restore for ever after. NOTHING IS TYPED BEFORE
+# the very state UI reset will restore for ever after. NOTHING IS TYPED BEFORE
 # THE BAKE: the fixture is the machine's own untouched power-on screen, which is
-# the lesson the plus4 tile learned the hard way (its first golden rested inside
+# the lesson the plus4 station learned the hard way (its first golden rested inside
 # an application and dropped visitors into the middle of it).
 stop_qemu
 "$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-coldboot" snapshot "$OVERLAY" --allow-tile --skip-if-golden # see lib/bridge-coldboot

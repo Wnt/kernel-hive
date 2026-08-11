@@ -9,7 +9,7 @@
 # longer half-start on a display another rig owns and silently screenshot it.
 # The display it got is printed and recorded in $D/display (irix-apps-shot.sh
 # reads it).
-# It never references the production tiles tree and never opens the golden
+# It never references the production stations tree and never opens the golden
 # /data/vms/soltest/irix-mame/irix65.chd for writing.
 set -u
 
@@ -69,7 +69,7 @@ if [ -n "$ISO" ]; then
 fi
 
 # CPU partitioning contract: this rig lives on physical cores 4-7 only.
-# 0,1,8,9 belong to the perf-benchmark agent; 2,10 to the live tile.
+# 0,1,8,9 belong to the perf-benchmark agent; 2,10 to the live station.
 CPUS="${IRIX_APPS_CPUS:-4,5,6,7,12,13,14,15}"
 
 DISPLAY="$DISP" SDL_VIDEODRIVER=x11 IRIX_CMD="$CMD" nohup \

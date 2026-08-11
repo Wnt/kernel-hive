@@ -3,7 +3,7 @@
 # Copies the LIVE win95 golden to a namespaced soltest clone, then OFFLINE (qemu-nbd):
 #   - empty WIN.INI [windows] run= (kills the Notepad auto-launch)
 #   - clear any StartUp-folder .lnk (belt & suspenders)
-# Does NOT touch the live tile. Registry (Windows-Logon) change is done GUI-side later.
+# Does NOT touch the live station. Registry (Windows-Logon) change is done GUI-side later.
 set -euo pipefail
 LIVE=/data/vms/streamhost/tiles/win95/win95-golden.qcow2
 PREP=/data/vms/soltest/win95-clean-prep
