@@ -134,25 +134,63 @@ Note for #2: dispatch is an *idle/desktop-profile* cost — the bench's
 paired holds + perf (`bench/idle-profile-pair.sh`), plus a guest-side
 workload once the telnet channel exists.
 
-## Before deep JIT work — the enabling items (in order)
+## Savestate: FIXED and shipped (2026-08-11, 24h-mission phase 1)
 
-1. **Savestate smoke test.** Boot a bench clone to desktop, trigger the
-   serial break-menu save (`autosave.axp`, `Serial.cpp:795`), kill, restore
-   under the same binary, framebuffer-verify, time the restore. Format facts
-   in [`es40-tuning-research.md`](es40-tuning-research.md) — raw
-   struct-layout dumps, same-build restore only, JIT cache intentionally
-   not saved (revalidates lazily — restore-then-recompile is safe by
-   design). If it works, benches become restore-based (seconds, not
-   minutes) and the tile's instant-resume goal is de-risked.
-2. **Guest telnet channel (operator, 2026-08-11).** Before OS-level load
-   scenarios: guest networking over the emulated `dec21143` + W2K's
-   built-in Telnet Server, so load scenarios are driven and validated over
-   text instead of emulated keystrokes + screenshots. Then apply the guest
-   de-bloat list from the research digest.
-3. **Two cheap config experiments** (from research; device-set changes go
-   BEFORE any golden savestate): remove `ali_usb` (W2K System-process
-   USB-polling burn, issues #114/#169); test `idle_nap = true` (does W2K's
-   HAL issue WTINT at all? — unverified, optional given the idle non-goal).
+The smoke test found and fixed four restore-blocking bugs (fork commits
+`ab75e70`, `d73e4dc`, all validated on the rig by full save→kill→relaunch→
+restore cycles with framebuffer proof):
+
+1. `get_primes(0)` infinite loop hung every restore (empty CD-ROM drive).
+2. PCI BAR mappings were never re-registered after the config-space fread
+   (S3 framebuffer BAR unmapped → guest ran fine but invisible).
+3. S3 saved only a vestigial struct — with a raw VRAM pointer in it. Added
+   a magic-guarded video section (vga + s3 register files + real VRAM at
+   `vga.memory`/`vga.svga_intf.vram_size`), pointer-preserving restore,
+   full derived-state recompute.
+4. `stop_threads()` destroyed the S3 thread; the recreated thread re-ran
+   `bx_gui->init()`, dropping the SDL texture that only a *resize*
+   recreates — every frame upload silently discarded (root-caused by
+   dumping correct desktop pixels at the upload call). S3 now pauses
+   across stop/start; only the destructor stops it.
+
+New primitives: serial-menu option **5 = save-and-exit** (threads are
+stopped in the menu, so state+disk exit as an atomic coherent pair — a
+state saved with option 3 while the guest keeps writing NTFS bugchecks
+STOP 0x7B on restore) and **`ES40_RESTORE=<file>`** (restore before the
+main loop: no SRM/AlphaBIOS/boot — interactive desktop in seconds).
+
+**Golden pair: `milestones/m4-warm/`** = {nt.img, autosave.axp, flash.rom,
+es40.cfg} baked via option 5 from a settled desktop.
+
+**KNOWN REMAINING BUG — post-restore guest damage under load:** an
+instant-resumed guest looks fine (desktop, Start menu) but Computer
+Management freezes mid-load, while a cold-booted guest loads it fine.
+Prime suspect: CAlphaCPU's wall-clock RPCC/interval-timer baselines
+(`cc_last_sync`, `next_timer_fire`, `tick_last_fire` — std::chrono members
+OUTSIDE `state`) are not reset to the restored `state.cc`, so the guest
+sees a violent clock discontinuity. Fix candidate: re-anchor those in
+CAlphaCPU::RestoreState. Until fixed, restore-based benching is parked.
+
+## The 24h-mission metric (operator-defined, 2026-08-11 ~03:15)
+
+**Goal: 2× desktop-interaction throughput** = a scripted UI sequence —
+launch Computer Management (MMC + snap-ins: disk IO + CPU, deliberately
+heavy) — completes in half the baseline time. Harness:
+`/data/vms/soltest/ALPHA-nt/uibench/uibench.sh <name> <binary> <iters>
+[--cold|--ref]` — private Xvfb `:93`, fresh disk copy from m4-warm per
+iteration, xdotool injection (`windowfocus` first — a bare Xvfb never
+focuses the SDL window on its own), ImageMagick RMSE against
+`refs/compmgmt-ref.png` for completion, `refs/desktop-ref.png` for
+readiness. `--cold` = full SRM boot per iteration (~4 min, the reliable
+mode today); restore mode is the fast path once the timer bug above is
+fixed. Results append to `uibench/results.log`.
+
+## Still queued
+
+- **Guest telnet channel** (operator): dec21143 networking + W2K Telnet
+  Server for text-driven load scenarios; then the guest de-bloat list.
+- **Config experiments**: remove `ali_usb` (issues #114/#169); test
+  `idle_nap`. Device-set changes before any further golden bakes.
 
 ## How to measure (the bench harness)
 
