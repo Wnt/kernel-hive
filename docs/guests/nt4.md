@@ -1,7 +1,7 @@
 # nt4 guest — Windows NT 4.0 Workstation SP6a
 
-Status: **LIVE** (production streamhost tile, VMID 89 / UDP 54089). The curated
-golden auto-logs on as Administrator to a clean accelerated
+Status: **LIVE** (production streamhost station, VMID 89 / UDP 54089). The curated
+checkpoint auto-logs on as Administrator to a clean accelerated
 1024x768x65,536-color (16bpp) Explorer desktop, uses true absolute vmmouse
 input, and resets with `loadvm golden`.
 
@@ -9,7 +9,7 @@ GH issue #23. Catalog: `docs/catalog/os-media-catalog.md` §4 "Windows NT rungs"
 
 ## Identity and source
 
-- Public ID / tile directory: `nt4`
+- Public ID / station directory: `nt4`
 - Reserved slot / UDP port: `89` / `54089`
 - Archetype: `putty-lcd`
 - OS: **Windows NT 4.0 Workstation, Service Pack 6a** (i386),
@@ -59,7 +59,7 @@ GH issue #23. Catalog: `docs/catalog/os-media-catalog.md` §4 "Windows NT rungs"
    separately versioned NT 3.51 dependency.
 6. **`-device pcnet`** — retained as part of the Stage-1 pinned hardware
    contract. The archive's AMDPCN driver does not bind to this QEMU instance and
-   is disabled in the curated golden; the gallery surface needs no guest network.
+   is disabled in the curated checkpoint; the gallery surface needs no guest network.
 7. **System partition ≤ 4 GB** — matters only for a *fresh install*; the
    preinstalled image already boots, so it is moot for the skip-install path.
 8. **boot.ini ARC path — THE blocker for the prebuilt VMware image.** The image
@@ -87,7 +87,7 @@ On a namespaced clone under `/data/vms/soltest/` with the recipe above:
    `0xc0000096`) — the leftover VMware Tools service faulting on the VMware
    backdoor I/O port outside VMware. Harmless; Stage 2 removes VMware Tools.
 
-## Stage-2 curation, input, and golden
+## Stage-2 curation, input, and checkpoint
 
 - Cleanup preserves `WINNT/system32/drivers/vmmouse.sys` and its `i8042prt`
   binding, but disables the crashing VMware Tools service and user programs.
@@ -103,9 +103,9 @@ On a namespaced clone under `/data/vms/soltest/` with the recipe above:
   existing NT4 VMware driver consumes the absolute coordinates directly.
   Streamhost therefore uses `--pointer abs`, scale `1.0`, offset `(0,0)`.
   A five-position raw framebuffer grid landed within one pixel at 10/10,
-  50/10, 90/10, 25/75, and 75/75 percent. The genuine SPA path landed within
+  50/10, 90/10, 25/75, and 75/75 percent. The genuine UI path landed within
   two pixels at the same targets; browser Ctrl+Esc visibly opened Start.
-- Reset mode is `loadvm`; snapshot `golden` lives inside the standalone
+- Reset mode is `loadvm`; checkpoint `golden` lives inside the standalone
   `nt4-golden.qcow2`. The final gate saved once, then launched three independent
   QEMU processes plus a final fresh process with `-loadvm golden`. All pre-save,
   post-save, and fresh-load idle PPMs are byte-identical at SHA-256
@@ -116,14 +116,14 @@ On a namespaced clone under `/data/vms/soltest/` with the recipe above:
   ten Notepad Page Downs, a window drag across the desktop icons, an icon move,
   the five-position pointer grid, the visible mode panel, and every fresh-load
   idle frame. `live-proof/` contains the deployed `labctl`/QMP frames and the
-  decoded SPA screenshots.
+  decoded UI screenshots.
 - The pre-promotion production disk is
   `/data/vms/streamhost/tiles/nt4/nt4-golden.qcow2.bak-preHiRes-20260728T110112Z`
   (SHA-256
   `76f1fb0e11aee51ded7b8b75e203984f7a0b97d2fad5c2d3addd7b660684b487`).
 - Credentials reference only (never values): `guest/nt4`.
 - Rebuild/rollback source remains `scripts/build-guests/tiles/nt4.sh`; production
-  always boots the tile-local copy under `/data/vms/streamhost/tiles/nt4/`.
+  always boots the station-local copy under `/data/vms/streamhost/tiles/nt4/`.
 
 ## Patched-QEMU maintenance
 
@@ -140,4 +140,4 @@ Patch 0004 is required for clean accelerated scroll and window redraw. Patch
 0005 descends the ISA Cirrus vmstate substructure so a fresh process restores
 the same framebuffer bytes saved by `savevm golden`. On a QEMU version change,
 rebuild this dedicated path and repeat the raw framebuffer gate before updating
-the tile. NT4 does not need gallery-hid patch 0003 because input is vmmouse.
+the station. NT4 does not need gallery-hid patch 0003 because input is vmmouse.

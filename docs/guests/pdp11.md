@@ -1,55 +1,55 @@
-# DEC PDP-11/70 + 2.11BSD — gallery tile notes (udp/54115)
+# DEC PDP-11/70 + 2.11BSD — gallery station notes (udp/54115)
 
 **Guest:** a captured **Debian 13 (trixie) x86_64 kiosk** running **Open SIMH's `pdp11`**
 simulator as a **DEC PDP-11/70** (22-bit, 4 MB of core, FP11 floating point)
 booting **2.11BSD** off an MSCP disk pack, displayed as green phosphor in a
-fixed 80×24 `xterm`. An **"emulator bridge"** tile — streamhost captures the
-Linux framebuffer exactly like every other bridge tile. See
+fixed 80×24 `xterm`. An **"emulator bridge"** kiosk — streamhost captures the
+Linux framebuffer exactly like every other kiosk. See
 **`streamhost/docs/BRIDGE.md`**.
 
-**Shared base:** `/data/vms/bridge/bridge-base.qcow2` — does **not** contain
+**Shared seed:** `/data/vms/bridge/bridge-base.qcow2` — does **not** contain
 SIMH (see the deviation below).
-**Build script (tile):** `scripts/build-guests/tiles/pdp11.sh` — thin overlay + SIMH
+**Build script (station):** `scripts/build-guests/tiles/pdp11.sh` — thin overlay + SIMH
 build + pack staging + 2.11BSD curation + kiosk `launch.sh` + quiet console +
-golden bake + a framebuffer-asserted keyboard proof, fully automated, ~6 min.
-**Tile dir (host):** `/data/vms/streamhost/tiles/pdp11/`.
+checkpoint capture + a framebuffer-asserted keyboard proof, fully automated, ~6 min.
+**Station dir (labhost):** `/data/vms/streamhost/tiles/pdp11/`.
 **Registry entry:** `registry/tiles/pdp11.json` (slot 115, udp 54115, VMID 227,
 ssh hostfwd 127.0.0.1:5827).
 
 This is the oldest lineage in the collection and the ancestor of most of it:
-every Unix tile descends from PDP-11 Unix, C was shaped by this machine's
+every Unix station descends from PDP-11 Unix, C was shaped by this machine's
 address space, and `openvms`' VMS was written by the team that had just
 finished RSX-11M for the PDP-11.
 
-## The deviation: SIMH is built into the tile overlay
+## The deviation: SIMH is built into the station overlay
 
-The bridge base is frozen and ships VICE, MAME, cap32, LinApple and FS-UAE — no
+The bridge seed is frozen and ships VICE, MAME, cap32, LinApple and FS-UAE — no
 SIMH. Debian's packaged `simh` is **3.8.1 built without SDL video** and is
 useless here. So, following the `amiga.sh` precedent (which `apt-get install`s
 FS-UAE into its own overlay), the builder compiles **Open SIMH from source into
-this tile's overlay**, pinned at commit
+this station's overlay**, pinned at commit
 `a1f57fa3738ed31148d31126ba1a7278ff845c6d` (master, 2026-07-03 — there is no
 v4 release tag past v4.0-Beta-1, so the commit is the pin).
 
-Every build dependency is already in the frozen base (`gcc`, `make`, `git`,
+Every build dependency is already in the frozen seed (`gcc`, `make`, `git`,
 `libsdl2-dev`, `libpcre2-dev`, `libpng-dev`, `zlib1g-dev`), so the SIMH build
 needs no `apt-get` at all: measured **1 m 32 s at `-j2`** for one 2.68 MB
 binary. `libpcap-dev` is **not** needed (SIMH falls back to TAP + SLiRP, which
-is enough for 2.11BSD networking should a future tile want it) and
+is enough for 2.11BSD networking should a future station want it) and
 `libvdeplug-dev` is not needed at all.
 
 **`xdotool` IS installed by the builder** (`apt-get install -y xdotool` into the
-overlay) — it is the one thing the frozen base lacks that the kiosk cannot do
+overlay) — it is the one thing the frozen seed lacks that the kiosk cannot do
 without; see "the focus trap" below.
 
 ### For a from-scratch NVMe rebuild
 
-`scripts/build-guests/lib/bridge-base.sh` should bake both in, so the tile builder
+`scripts/build-guests/lib/bridge-base.sh` should capture both in, so the station builder
 becomes pure configuration:
 
 ```bash
 apt-get install -y xdotool                       # kiosk window focus (pdp11)
-# Open SIMH (pdp11 tile). Deps are already installed for the VICE/MAME builds.
+# Open SIMH (pdp11 station). Deps are already installed for the VICE/MAME builds.
 git -c advice.detachedHead=false clone https://github.com/open-simh/simh.git \
   /usr/local/src/simh
 git -C /usr/local/src/simh checkout -q a1f57fa3738ed31148d31126ba1a7278ff845c6d
@@ -75,7 +75,7 @@ is *not* covered by the Caldera 2002 Ancient-Unix letter, and this prebuilt
 image carries no licence statement of its own. The gallery's posture is
 therefore the one it already takes for Kickstart, OS/2 and Win9x media: run it
 as a **stream of pixels only**. The bits are never committed to the repo, never
-served, and the tile offers no download affordance of any kind.
+served, and the station offers no download affordance of any kind.
 
 **DEC media sourcing is fragile.** `simh.trailing-edge.com` — the link in every
 2.11BSD howto on the internet, including the one inside this very kit's README
@@ -88,9 +88,9 @@ Pages mirror, which is what the builder uses. Treat every DEC fetch as one-shot
 and stage it on the box; the builder never reaches the network for media once
 the staged zip hashes correctly.
 
-## The fixture: 2.11BSD's own `login:`
+## The scene: 2.11BSD's own `login:`
 
-The golden rests where an **unattended cold boot stops** — at the multiuser
+The checkpoint rests where an **unattended cold boot stops** — at the multiuser
 login prompt, with the tail of the boot above it and the machine's own banner
 naming the system:
 
@@ -116,15 +116,15 @@ resting state and the only one a visitor cannot arrive in the middle of.
 
 **What the screen cannot say, and where it is said instead:** the account is
 `root` and there is **no password**. That fact lives in the placard
-(`registry/posters/pdp11.md`), in `SH_FIXTURE_DESC`, and in the SPA hint. Once
+(`registry/posters/pdp11.md`), in `SH_FIXTURE_DESC`, and in the UI hint. Once
 in, `uname -a` prints
 `BSD pdp11 2.11 2.11 BSD UNIX #19: Sun Jun 17 16:44:43 PDT 2012
 root@pdp11:/usr/src/sys/ZEKE  pdp11`, and `/usr/src` holds the entire 2.11BSD
 kernel and userland source tree — which is half the reason to run this machine
 rather than V6.
 
-The build proves that route by framebuffer *after* the bake, against the
-restored fixture, so nothing it types can reach the golden:
+The build proves that route by framebuffer *after* the capture, against the
+restored scene, so nothing it types can reach the checkpoint:
 `evidence/keyboard-root-shell.png`.
 
 ## What was curated on the pack, and why
@@ -151,7 +151,7 @@ actually present, applied by a scripted in-guest session at build time:
 Nothing else is touched. `/usr/src` is untouched, the kernel is the stock
 `#19` ZEKE build, and the patch level is the kit's own (PL448).
 
-## Traps this tile paid for
+## Traps this station paid for
 
 1. **`set cpu 11/70` rejects the two lines every 11/44 recipe opens with.**
    `nocis` → `%SIM-ERROR: The CIS option can't be disabled on a 11/70 CPU`;
@@ -174,7 +174,7 @@ Nothing else is touched. `/usr/src` is untouched, the kernel is the stock
 4. **`set cpu idle` costs the exhibit its reset.** It is the standard answer to
    SIMH burning a whole core and it works beautifully — until a `savevm`/
    `loadvm` cycle destroys the calibrated timer it rides on, permanently.
-   Measured on this tile against a 120 s-old snapshot:
+   Measured on this station against a 120 s-old snapshot:
 
    | ini | echo latency after `loadvm` | CPU at an idle login prompt |
    |---|---|---|
@@ -186,7 +186,7 @@ Nothing else is touched. `/usr/src` is untouched, the kernel is the stock
 
    `set timer nocatchup` ships alongside it, to stop SIMH trying to make up the
    simulated clock ticks it thinks it owes for the wall-clock gap the restore
-   invents. **This is the tile's one real compromise:** a fifth of a host core,
+   invents. **This is the station's one real compromise:** a fifth of a host core,
    for ever, to keep reset instant. If SIMH ever survives a snapshot with its
    calibration intact, put `set cpu idle` back and take 2.4 %.
 5. **The focus trap.** There is no window manager, so X's focus is
@@ -215,7 +215,7 @@ stream on a pty, and a 69-character line written to it at a **0 ms**
 inter-character gap echoed and executed intact **5 times out of 5**. What
 remains is the ordinary bridge path — browser → streamhost → QEMU PS/2 → X →
 `xterm` → pty — and **40 ms hold / 40 ms gap** through QMP delivered `root`,
-`uname -a` and `ls /usr/src` losing nothing. The tile therefore ships 40/40
+`uname -a` and `ls /usr/src` losing nothing. The station therefore ships 40/40
 rather than vic20/plus4's 80/80.
 
 The keys a visitor needs that a modern keyboard hides are 2.11BSD's own, and the
@@ -224,7 +224,7 @@ to log out).
 
 ## Device set and launcher
 
-`streamhost/tiles/pdp11/qemu-streamhost.sh`, identical in shape to its bridge
+`streamhost/tiles/pdp11/qemu-streamhost.sh`, identical in shape to its kiosk
 siblings but with **512 MB** instead of 1536:
 
 | RAM | guest MemTotal | guest MemAvailable at the login prompt | host QEMU RSS |
@@ -234,7 +234,7 @@ siblings but with **512 MB** instead of 1536:
 
 The simulated PDP-11 is 4 MB of core and the simulator's RSS is 21 MB, so this
 is comfortably the cheapest guest in the collection by memory. The AC97 card
-stays in the device set because the golden was baked with it; the exhibit itself
+stays in the device set because the checkpoint was captured with it; the exhibit itself
 is **silent** — a console terminal has nothing to say.
 
 The kiosk launcher is:
@@ -268,19 +268,19 @@ lines of the boot (including the `2.11 BSD UNIX #19` kernel banner) scroll off
 the top — exactly as they did on real glass. A visitor who wants the banner
 types `uname -a`.
 
-## Golden, reset and rollback
+## Checkpoint, reset and rollback
 
-- `SH_RESET_MODE=loadvm`, snapshot `golden`, inside `overlay.qcow2`. **Never
-  delete or recreate `overlay.qcow2`** — the golden *and* the 2.11BSD pack live
-  inside it. The device set must match the bake exactly.
-- Re-bake with `scripts/build-guests/tiles/pdp11.sh --force` (stops only this tile,
+- `SH_RESET_MODE=loadvm`, checkpoint `golden`, inside `overlay.qcow2`. **Never
+  delete or recreate `overlay.qcow2`** — the checkpoint *and* the 2.11BSD pack live
+  inside it. The device set must match the capture exactly.
+- Recapture with `scripts/build-guests/tiles/pdp11.sh --force` (stops only this station,
   refuses to run while `streamhost@pdp11` is active, re-uses the staged and
   hashed media).
-- Rollback: `systemctl stop streamhost@pdp11` — see the tile's `ROLLBACK.md`.
-- Verified reset on the live tile against a golden 15 minutes old: `loadvm
+- Rollback: `systemctl stop streamhost@pdp11` — see the station's `ROLLBACK.md`.
+- Verified reset on the live station against a checkpoint 15 minutes old: `loadvm
   golden` → first keystroke echoed in **0.8 s** → `root` / `uname -a` /
   `ls /usr/src` all correct (`evidence/post-reset-root-shell.png`), then a
-  second `loadvm golden` restored the fixture frame byte-for-byte.
+  second `loadvm golden` restored the scene frame byte-for-byte.
 - Credentials reference only (never values): `guest/pdp11`. The guest account is
   the 2.11BSD `root` with an empty password, which is a property of the
   preserved 1991 image and is deliberately public on the placard.
@@ -292,11 +292,11 @@ types `uname -a`.
 | file | what it shows |
 |---|---|
 | `cold-boot-login.png` | the first unattended cold boot of the provisioned overlay reaching `login:` |
-| `ready-before-golden.png` | the clean cold boot the golden was baked from |
+| `ready-before-golden.png` | the clean cold boot the checkpoint was captured from |
 | `golden-frame.png` | the exact frame `savevm golden` captured |
 | `golden-restored.png` | the same frame after `loadvm golden` |
-| `keyboard-root-shell.png` | root (no password) → `uname -a` → `ls /usr/src`, typed through the PS/2 path after the bake |
-| `golden-restored-after-keyboard.png` | the fixture restored again, proving the proof left no trace |
-| `post-reset-root-shell.png` | the same route on the LIVE tile against a 15-minute-old golden |
-| `golden-restored-final.png` | the live tile back at the fixture |
-| `live-tile-resumed.png` | the running `streamhost@pdp11` tile after idle auto-pause resumed it |
+| `keyboard-root-shell.png` | root (no password) → `uname -a` → `ls /usr/src`, typed through the PS/2 path after the capture |
+| `golden-restored-after-keyboard.png` | the scene restored again, proving the proof left no trace |
+| `post-reset-root-shell.png` | the same route on the LIVE station against a 15-minute-old checkpoint |
+| `golden-restored-final.png` | the live station back at the scene |
+| `live-tile-resumed.png` | the running `streamhost@pdp11` station after idle auto-pause resumed it |

@@ -1,16 +1,16 @@
-# Xerox Star 8010 "Dandelion" / Pilot + ViewPoint 2.0 — gallery tile notes (udp/54138)
+# Xerox Star 8010 "Dandelion" / Pilot + ViewPoint 2.0 — gallery station notes (udp/54138)
 
-Tile id `star`, slot 138, UDP 54138, VMID 240, kiosk ssh `127.0.0.1:5840`.
+Station id `star`, slot 138, UDP 54138, VMID 240, kiosk ssh `127.0.0.1:5840`.
 Builder: [`scripts/build-guests/tiles/star.sh`](../../scripts/build-guests/tiles/star.sh).
 Registry source: `registry/tiles/star.json`.
 
-**Emulator-in-captured-Linux bridge tile**, the same shape as `amiga`, `c64` and
+**Emulator-in-captured-Linux kiosk**, the same shape as `amiga`, `c64` and
 its sibling `daybreak`: a thin qcow2 overlay on `/data/vms/bridge/bridge-base.qcow2`
 whose `/etc/bridge/launch.sh` runs Darkstar under mono on a bare X root with no
 window manager. streamhost captures the Linux framebuffer exactly like every
-other tile.
+other station.
 
-This is **not** a duplicate of `daybreak`. That tile is the 1985 Xerox 6085
+This is **not** a duplicate of `daybreak`. That station is the 1985 Xerox 6085
 under Dwarf/Draco (Java), from the Dwarf project's own disk. This is the 1981
 8010 itself — the machine that introduced the desktop — under a different
 emulator, from bitsavers media, with a different processor, a different display
@@ -84,14 +84,14 @@ minutes. Two traps, both of which have cost this project hours:
   at 8000 too. Distinguish the three states before diagnosing: a wrong TOD
   wedges, low speed crawls, and a logged-off desktop is just waiting for NEXT.
 
-**Reading the MP code from this tile takes one extra step**, because the status
-bar is deliberately off-screen (see Display). `/root/starmp.sh` on the box slides
+**Reading the MP code from this station takes one extra step**, because the status
+bar is deliberately off-screen (see Display). `/root/starmp.sh` on labhost slides
 the window up 26 px, grabs the framebuffer and slides it straight back.
 
 ## Display — the captured frame is the Star screen and nothing else
 
 The Star's display is **1024×808 visible inside a 1088×860 DisplayBox**, one bit
-per pixel, landscape ≈1.26:1 — squarer than 4:3, so the SPA pillarboxes slightly.
+per pixel, landscape ≈1.26:1 — squarer than 4:3, so the UI pillarboxes slightly.
 None of the Alto's portrait problem.
 
 Measured window geometry under mono, with no WM: the WinForms top level is
@@ -119,7 +119,7 @@ A side effect worth knowing: the off-screen System Menu is also where
 from the centre and the Star cursor runs away.
 
 That is not a blocker and it does not need a patched emulator: it is exactly what
-the gallery's **relative** pointer path is for. Six tiles already ship it
+the gallery's **relative** pointer path is for. Six stations already ship it
 (`qnx`, `nt351`, `amstradcpc`, `c64`, `freedos`, `msdoswin1`). The chain here is:
 
 ```
@@ -150,12 +150,12 @@ Three things make it work, and all three are load-bearing:
   50 px steps at 120 ms apply 1:1 — and `rel_motion_bounded` is exactly a bounded,
   paced walk. No new mechanism was invented and none was needed.
 
-The tile therefore declares `stream.pointer.absolute = false` honestly and earns
+The station therefore declares `stream.pointer.absolute = false` honestly and earns
 the derived **`Rel. pointer`** grid badge, which is what that badge is for.
 
 ### What the pointer actually does, measured end to end
 
-Driven through the deployed SPA in a real browser (`tests/e2e-live/star-rel-probe.mjs`),
+Driven through the deployed UI in a real browser (`tests/e2e-live/star-rel-probe.mjs`),
 with the Star cursor located in the QMP framebuffer at each dwell:
 
 | commanded delta | applied to the Star cursor |
@@ -183,27 +183,27 @@ relative path rather than anything Star-specific.** Two things move it:
 
 **The recovery is a real gesture and worth knowing:** drag into the **top-left
 corner**. Both ends clamp there, and the offset goes to zero. A `loadvm golden`
-reset also re-parks the Star cursor in that corner, which is why the golden is
-baked with it there rather than somewhere prettier.
+reset also re-parks the Star cursor in that corner, which is why the checkpoint is
+captured with it there rather than somewhere prettier.
 
 Two daemon fixes landed while measuring this, both of which make the seed more
-robust for every relative tile: the homing pin is now bounded to 2048 counts per
+robust for every relative station: the homing pin is now bounded to 2048 counts per
 axis (8192 is ~65 PS/2 packets and takes most of a second to drain, and anything
 sent during the drain merges into it), and the seeding sample now sends the pin
 and nothing else, so the pin and the first walk cannot race through the queue.
 
-### Darkstar has to be told to take the mouse — once, at bake time
+### Darkstar has to be told to take the mouse — once, at capture time
 
 Darkstar does not track the pointer until **the display has been clicked once**
 ("Click on the display to capture mouse/keyboard" in its status bar); that click
 turns on the SDL grab. `launch.sh` performs it with real dwell a few seconds
-after the window appears, so the capture is armed **inside the golden** and no
+after the window appears, so the capture is armed **inside the checkpoint** and no
 visitor spends their first click buying it.
 
 The other half of the same switch: **either Alt key RELEASES the capture.** A
 visitor pressing Alt on a physical keyboard would silently kill the pointer until
-they clicked again, so the tile remaps both Alt scancodes to an inert key
-(`SH_KEY_REMAP`, see `tile.env.fixture`). The SPA's `xerox-star` on-screen
+they clicked again, so the station remaps both Alt scancodes to an inert key
+(`SH_KEY_REMAP`, see `tile.env.fixture`). The UI's `xerox-star` on-screen
 keyboard has no Alt button.
 
 ### X autorepeat must be off
@@ -230,7 +230,7 @@ produces `;` while `Shift`+`a` still produces `A` — a partially applied shift 
 looks exactly like a keymap gap. Led by its own event and held across the key it
 produces `:`. Measured on this emulator: a **200 ms lead fails, 350 ms works**.
 Since the daemon caps the gap at 250 ms, the reliable path for shifted
-punctuation is the SPA's **shift latch**, which holds Shift down across a
+punctuation is the UI's **shift latch**, which holds Shift down across a
 human-timed pause; machine-speed typing of shifted symbols is not reliable here.
 
 **And it is genuinely flaky rather than simply slow.** Building the exhibit's
@@ -245,7 +245,7 @@ another timing sweep:
 - **Verify the glyph, do not trust the timing.** In this bitmap font a colon and
   a semicolon are one descender pixel apart. The cheap discriminator is that
   `user:star:xerox2` contains no descender letters at all, so *any* ink below the
-  baseline in that field is a failed shift. `/root/cell.py` on the box prints the
+  baseline in that field is a failed shift. `/root/cell.py` on labhost prints the
   cell as ASCII art.
 - **Remapping the X keymap does NOT work.** `xmodmap -e 'keycode 47 = colon
   colon'` makes the bare key produce nothing at all in the guest: Darkstar's own
@@ -264,9 +264,9 @@ NEXT**, and the logon sheet cannot be completed without NEXT.
 On the Star these are **plain PC keys**, not Daybreak's `Ctrl+letter` layer
 (Darkstar README §3.2): `Again F1, Delete F2, Find F3, Copy F4, Same F5, Move F6,
 Open F7, Props F8, Defaults NumLock, Skip/Next Home, Undo PgUp, Defn/Expand End,
-Stop PgDn, Help Up`. The SPA family `xerox-star` in
+Stop PgDn, Help Up`. The UI family `xerox-star` in
 `spa/src/ui/keyboard/keyboardProfiles.ts` is built from the shared `LEVEL_V_META`
-table with a Star-specific binding, so the two Xerox tiles share one definition of
+table with a Star-specific binding, so the two Xerox stations share one definition of
 what the verbs *are* and differ only in what they emit. The Star's rows are longer
 than Daybreak's because SKIP, DEFAULTS and EXPAND exist here.
 
@@ -275,7 +275,7 @@ Note that on the Star **SKIP and NEXT are one key** (Darkstar's table reads
 
 ### Driving the guest by hand
 
-`/usr/local/bin/stardrv` is baked into the kiosk overlay and carries all of the
+`/usr/local/bin/stardrv` is captured into the kiosk overlay and carries all of the
 above timing:
 
 ```
@@ -292,7 +292,7 @@ inside the emulated machine and no network behind it.
 
 ## Cold-boot route (framebuffer-verified)
 
-The golden erases all of this; it is recorded so it can be reproduced.
+The checkpoint erases all of this; it is recorded so it can be reproduced.
 
 | step | what you see |
 |---|---|
@@ -310,19 +310,19 @@ Two hazards in that sequence: `Start` needs the pointer *precisely* on the
 button — a 57 px miss silently does nothing, with no hover feedback to warn you —
 and the machine logs out at the Desktop Creation step without asking.
 
-## The fixture
+## The scene
 
-The golden is baked at the **iconic ViewPoint user desktop**, not at the
+The checkpoint is captured at the **iconic ViewPoint user desktop**, not at the
 Workstation Administration console it first wakes into. That is the famous Star
 screen, and the 30-second interaction works from it: select the **Directory**
 icon, press **OPEN** (F7), and a real window lists `Workstation` and `Desktop`.
 
 Idle auto-pause is **ON** (`SH_IDLE_PAUSE_SECS=60`, the fleet default; flipped
-2026-08-11 — registration shipped `0` for fear of freezing Darkstar
-mid-Pilot-tick). The fear was misplaced for a whole-VM freeze: QMP `stop` halts
+2026-08-11 — registration shipped `0` for fear of pausing Darkstar
+mid-Pilot-tick). The fear was misplaced for a whole-VM pause: QMP `stop` halts
 the kiosk's virtual clock together with the emulator, so Pilot sees no
 discontinuity on `cont` — and the exhibit already lives on wrong wall time by
-design: every `loadvm golden` resumes the kiosk clock from bake day, with
+design: every `loadvm golden` resumes the kiosk clock from capture day, with
 Darkstar's TOD pinned by `star.cfg` at emulator start (see the time lock,
 above). Proven on a soltest clone: 2- and 20-minute QMP stop soaks both resumed
 to the intact desktop with the Star cursor still answering `stardrv rel`
@@ -339,16 +339,16 @@ BeginInvoke on a control until the window handle is created`; the process dies
 *before* `Shutdown()` and the file's mtime never moves. An hour of desktop-creation
 work was lost to this once.
 
-For the tile it is mostly moot — the golden is a QEMU RAM+device snapshot, so
+For the station it is mostly moot — the checkpoint is a QEMU RAM+device snapshot, so
 Darkstar never has to flush — but **any script that relies on the `.img` must
-drive `System → Exit`** and wait for the process to leave. On this tile the System
+drive `System → Exit`** and wait for the process to leave. On this station the System
 Menu is off-screen; slide the window to (0,0) first.
 
 ## Rollback
 
-The tile is a thin overlay with an internal `golden` snapshot. Never
-`rm`/recreate `overlay.qcow2` — the golden lives inside it. To roll the exhibit
-back to the baked desktop: `scripts/serve/reset-tile.sh star`, or by hand
+The station is a thin overlay with an internal `golden` checkpoint. Never
+`rm`/recreate `overlay.qcow2` — the checkpoint lives inside it. To roll the exhibit
+back to the captured desktop: `scripts/serve/reset-tile.sh star`, or by hand
 `python3 /root/qmp_hmp.py <qmp.sock> 'loadvm golden'` **followed by an explicit
-`info status` check** — a golden baked while the VM was stopped restores paused,
+`info status` check** — a checkpoint captured while the VM was stopped restores paused,
 which looks perfect and is dead.

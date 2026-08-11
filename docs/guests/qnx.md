@@ -1,15 +1,15 @@
-# QNX Neutrino 6.5.0 — gallery tile notes (:8112)
+# QNX Neutrino 6.5.0 — gallery station notes (:8112)
 
 **Guest:** QNX Neutrino RTOS **6.5.0** self-hosting **LiveCD** → **Photon microGUI** desktop.
 **Build script:** `scripts/build-guests/tiles/qnx.sh` (fetches ISO + drives to desktop + framebuffer-proves it).
-**Image (host):** `/data/gallery-guests/QNX/QNX650Live.iso` (in CT 110 as `/guests/QNX/QNX650Live.iso`).
+**Image (labhost):** `/data/gallery-guests/QNX/QNX650Live.iso` (in CT 110 as `/guests/QNX/QNX650Live.iso`).
 **Proof:** `/data/gallery-guests/QNX/qnx-photon-desktop.png` (blue Photon desktop) + `qnx-photon-login.png`.
-**Live-tile proof (2026-07-04):** `/opt/osgallery/gallery-guests/QNX/qnx-photon-desktop-live.jpg` — the blue Photon
-desktop captured **from the running :8112 neko tile** via the neko admin screenshot API.
+**Live-station proof (2026-07-04):** `/opt/osgallery/gallery-guests/QNX/qnx-photon-desktop-live.jpg` — the blue Photon
+desktop captured **from the running :8112 neko station** via the neko admin screenshot API.
 
-> **Historical (neko-era) wiring below.** QNX runs today as the streamhost tile
+> **Historical (neko-era) wiring below.** QNX runs today as the streamhost station
 > **`qnx`** — see its stanza in `streamhost/tiles-manifest.sh` (`streamhost@qnx`;
-> the HMP monitor channel survives as `-monitor tcp:127.0.0.1:7112` in the tile's
+> the HMP monitor channel survives as `-monitor tcp:127.0.0.1:7112` in the station's
 > `--extra`). The neko compose/:8112 wiring and the `gallery-integrate-all.sh`
 > manifest row below are neko-era; that integrator was deleted in the 2026-07
 > restructure — git history. Build script, licensing, the keyboard boot-driver
@@ -19,10 +19,10 @@ desktop captured **from the running :8112 neko tile** via the neko admin screens
 QNX Neutrino 6.5.0 self-hosting LiveCD = QNX's **freely-distributable evaluation / DEMO** image
 (non-commercial eval, widely mirrored; sourced from **archive.org** item `qnx-650-live`). **Not** open
 source. It is a **demo / freely-distributable** image, free to use in this private home-lab collection
-(same stance as the OS/2, NeXTSTEP, Win9x/XP tiles) — the only rule is not re-distributing the binary
+(same stance as the OS/2, NeXTSTEP, Win9x/XP stations) — the only rule is not re-distributing the binary
 media via the GitHub repo.
 
-## Curated metadata (for the SPA placard)
+## Curated metadata (for the UI placard)
 - **Year:** 2010 (6.5.0); Photon/QNX lineage late-1990s → 2010.
 - **Lineage:** QNX Software Systems (Quantum → QSSL → BlackBerry). POSIX hard-real-time **microkernel**
   (Neutrino) + **Photon microGUI** window system. Famous for the 1.44 MB "QNX Demo Disk" (Photon +
@@ -34,19 +34,19 @@ media via the GitHub repo.
 - **archetypeHint:** **beige-tower-crt** (late-90s/2000s embedded/industrial PC). A QNX-flavoured
   variant — an industrial/automotive panel-PC or a beige mini-tower with a CRT — would be ideal.
 
-## LIVE TILE STATUS (2026-07-04) — ✅ LIVE at :8112, Photon DESKTOP CONFIRMED, wired into :8080
-- **The live neko tile at :8112 is UP (healthy) and renders the QNX Photon microGUI DESKTOP.**
+## LIVE STATION STATUS (2026-07-04) — ✅ LIVE at :8112, Photon DESKTOP CONFIRMED, wired into :8080
+- **The live neko station at :8112 is UP (healthy) and renders the QNX Photon microGUI DESKTOP.**
   Verified via the neko admin screenshot API (POST `/api/login` admin/admin → GET
   `/api/room/screen/shot.jpg`): blue nautilus wallpaper + **Launch** bar + app shelf
   (Internet/Utilities/Games/Configure) + **System Monitor** + QNX clock. Proof:
   `/opt/osgallery/gallery-guests/QNX/qnx-photon-desktop-live.jpg`. `http://192.0.2.12:8112/` → 200.
-  Tile is **wired into the :8080 index**.
+  Station is **wired into the :8080 index**.
 - **KEY FINDING — QNX ignores SYNTHETIC MOUSE-BUTTON injection entirely.** Empirically, QNX 6.5's
   pointer accepts *motion* but **not synthetic button presses**, via **every** tested path: monitor
   `mouse_button`, VNC/RFB `PointerEvent` (both single- **and** dual-console), and `xdotool` XTest into
   the neko GTK X display `:99` — including window-focused / press-hold clicks. So the phgrafx **Exit**
   button and the login **GO** button **cannot be clicked** synthetically. (End-user clicks via a real
-  browser through neko/GTK likely hit the same wall — treat pointer *clicking* on this tile as
+  browser through neko/GTK likely hit the same wall — treat pointer *clicking* on this station as
   unreliable; keyboard works.)
 - **WHAT ACTUALLY LANDS IT — keyboard via the QEMU monitor (`-monitor tcp:0.0.0.0:7112`), which QNX
   honours at every stage.** Reproducible landing sequence (all `sendkey` over monitor :7112, no clicks):
@@ -58,22 +58,22 @@ media via the GitHub repo.
      underlined **x** → `sendkey alt-x`. Wizard closes → QNX Neutrino Photon **login** screen.
   4. Login field has focus on load: `sendkey r o o t`, then `sendkey ret` (advance to Password),
      `sendkey ret` again (empty password submit) → **Photon desktop**.
-- **Config change made for the live tile:** the tile now runs **single display console — `-display gtk`
+- **Config change made for the live station:** the station now runs **single display console — `-display gtk`
   only (the `-vnc :12` secondary was REMOVED)**. The dual GTK+VNC console setup split the absolute-tablet
   input and was pointless once we learned buttons don't inject on any path; single-console matches every
-  other gallery tile. The **HMP monitor `-monitor tcp:0.0.0.0:7112` is kept** — it is the whole driving
+  other gallery station. The **HMP monitor `-monitor tcp:0.0.0.0:7112` is kept** — it is the whole driving
   mechanism (keyboard + `device_add`). No VNC port is published anymore.
 - **Not hands-off across container restarts:** neko keeps the QEMU alive between browser sessions, so the
   desktop persists once landed; but a container restart returns to the boot menu and the 4-step monitor
   sequence above must be re-run.
-- **Recommended follow-up for a truly self-landing tile:** **install QNX 6.5 to a small qcow2** (F3
+- **Recommended follow-up for a truly self-landing station:** **install QNX 6.5 to a small qcow2** (F3
   installer) with **Photon autologin + a saved graphics mode** → boots straight from HDD to the desktop
-  (no menu, wizard, login, or driver) as a plain `GUEST_DISK=` tile. Sidesteps the boot-menu + wizard +
+  (no menu, wizard, login, or driver) as a plain `GUEST_DISK=` station. Sidesteps the boot-menu + wizard +
   login entirely and needs no monitor keystrokes.
 
 ## THE CATCH — the LiveCD does NOT self-land on the desktop
 Reaching the Photon desktop in QEMU needs a precise driven sequence (all encoded in `qnx.sh`), and the
-tile therefore needs a **boot-driver** (a one-shot input sequence run against the tile's QEMU right
+station therefore needs a **boot-driver** (a one-shot input sequence run against the station's QEMU right
 after `compose up`). The non-obvious findings:
 
 1. **Boot menu:** the CD stops at a **`Select?`** menu → press **F2** = *Run from CD* (live; writes
@@ -91,11 +91,11 @@ after `compose up`). The non-obvious findings:
    (≈ 487,361 in 640x480) → QNX Neutrino **login** screen.
 5. **Login:** user **`root`**, **EMPTY** password → the **Photon desktop**.
 
-Verified end-to-end on the dry-run box (QEMU 11.0.0 + KVM): reaches the blue Photon desktop (Launch bar,
+Verified end-to-end on the dry-run labhost (QEMU 11.0.0 + KVM): reaches the blue Photon desktop (Launch bar,
 Internet/Utilities/Games/Configure shelf, System Monitor, QNX clock).
 
 ## Ports (assigned — CONFIRMED live 2026-07-04)
-- neko web tile: **:8112** (→ 8080 in-container). Live, healthy, HTTP 200.
+- neko web station: **:8112** (→ 8080 in-container). Live, healthy, HTTP 200.
 - neko UDP EPR: **53500-53519** — FIXED, confirmed free against all live compose files (siblings occupy
   52000-52059, 53000-53419 gallery-guests/haiku/reactos/msdoswin1, 53900-53919 os2warp; 53420-53499 and
   53500-53519 are unused → 53500-53519 taken, no collision).
@@ -122,7 +122,7 @@ driven to the desktop **by keyboard** (`sendkey` + `device_add`) after `up`. **S
 input and, since QNX ignores synthetic button injection on every path, bought nothing).
 
 ```yaml
-# Standalone QNX Neutrino 6.5.0 tile (:8112) — isolated compose project (osgallery-qnx).
+# Standalone QNX Neutrino 6.5.0 station (:8112) — isolated compose project (osgallery-qnx).
 # The LiveCD does NOT self-land; after `up`, drive it to the Photon desktop via the HMP monitor :7112
 # with the KEYBOARD sequence (F2 -> device_add usb-tablet -> alt-x to Exit wizard -> root/<empty> login).
 # QNX ignores synthetic mouse BUTTONS on every path, so landing is keyboard-only.
@@ -162,11 +162,11 @@ type|key|label|mem|smp|machine|vga|sound|guestenv|extra|tier):
 ```
 qemu|qnx|QNX Neutrino 6.5|512|1|pc|cirrus|-device AC97,audiodev=snd|GUEST_CDROM=/guests/QNX/QNX650Live.iso GUEST_BOOT=d|-enable-kvm -cpu host -usb -monitor tcp:0.0.0.0:7112,server,nowait|advanced
 ```
-Tier = **advanced**: needs the keyboard boot-driver post-`up` (does not self-land like a plain live-CD tile).
+Tier = **advanced**: needs the keyboard boot-driver post-`up` (does not self-land like a plain live-CD station).
 
 ## Boot-driver — KEYBOARD-ONLY via HMP monitor :7112 (no VNC, no clicks)
-The live tile was landed with a monitor-only keyboard sequence (QNX ignores synthetic mouse buttons on
-every path — see LIVE TILE STATUS). Run once after `up`, and again after any container restart:
+The live station was landed with a monitor-only keyboard sequence (QNX ignores synthetic mouse buttons on
+every path — see LIVE STATION STATUS). Run once after `up`, and again after any container restart:
   1. wait ~35 s for the **stable `Select?` menu** → `sendkey f2`  (Run from CD)
   2. wait ~30 s for Photon (phgrafx wizard, 640x480) → `device_add usb-tablet,id=tab0`
   3. `sendkey alt-x`  (Exit mnemonic — the underlined **x**) → dismisses the phgrafx wizard → login screen
@@ -176,9 +176,9 @@ NOTE: `scripts/qnx-tile-driver.sh` (VNC-click based) never worked on QNX — its
 the keyboard sequence above is the working method. (Driver script was never used and is neko-era,
 deleted — git history.)
 
-## Caveats for the orchestrator / SPA
+## Caveats for the orchestrator / UI
 - **Not hands-off across restarts.** neko restarting the container returns to the boot menu; the driver
-  must be re-run (or wrapped in a small watch-loop on CT 110). A **cleaner long-term tile** would be an
+  must be re-run (or wrapped in a small watch-loop on CT 110). A **cleaner long-term station** would be an
   **install-to-disk** QNX qcow2 with autologin (boots straight to the desktop via the standard
   launcher, no driver) — recommended follow-up; not done here to stay within a live-CD footprint.
 - **End-user input:** neko injects PS/2 via the QEMU GTK window. The hot-added usb-tablet gives the
@@ -187,9 +187,9 @@ deleted — git history.)
 
 ## 1024x768 resolution + pointer findings (2026-07-08, workflow wxxwmkzuw)
 
-**Resolution — FIXED, baked into live golden (1024x768).** The launcher uses `--vga std`
+**Resolution — FIXED, captured into live checkpoint (1024x768).** The launcher uses `--vga std`
 (Bochs VGA). On a cold boot std VGA does NOT auto-match, so QNX presents the interactive
-`phgrafx: Display Setup` dialog offering 640/800/1024x768/1152 @ 32K colour. Verified bake
+`phgrafx: Display Setup` dialog offering 640/800/1024x768/1152 @ 32K colour. Verified capture
 sequence (fresh phgrafx, no text-caret state):
 - `Tab Tab Tab` → Resolution combobox
 - `Down Down` → cycles 640→800→**1024x768** (verify the field shows it)
@@ -203,13 +203,13 @@ CAVEAT: do NOT hand-write `/etc/system/config/display.conf` with a minimal block
 driver/format hangs io-graphics at "Waiting for the window manager". Use phgrafx.
 
 **Pointer — BLOCKED (re-investigated 2026-07-13 through the REAL streamhost browser path).**
-The live tile stays on the frozen baseline (`golden.qcow2.bak-preMouseFix`, tablet present).
+The live station stays on the frozen baseline (`golden.qcow2.bak-preMouseFix`, tablet present).
 The earlier "devi-accel" fix on this branch was **disproven** by a live browser-drag test; the
 real root cause is different and 1:1 absolute tracking is a genuine dead-end. Full findings:
 
 - **TRUE root cause of the frozen cursor: the `usb-tablet` puts QEMU in ABSOLUTE mode, and
   QEMU's dbus `Mouse.RelMotion` REFUSES to inject while a console is absolute** (returns "Mouse
-  is not relative" — see QEMU `ui/dbus-console.c`). `info mice` on the live tile shows
+  is not relative" — see QEMU `ui/dbus-console.c`). `info mice` on the live station shows
   `* QEMU HID Tablet (absolute)` as the active device. Because SH_POINTER=rel drives RelMotion,
   every move is a silent no-op → **frozen cursor**. Buttons/keys work because `Press`/`Release`/
   `SetAbsPosition` are NOT gated on abs-mode; HMP `mouse_move` works because it bypasses the dbus
@@ -230,21 +230,21 @@ real root cause is different and 1:1 absolute tracking is a genuine dead-end. Fu
     became non-deterministic (same drag landed y=760 one run, y=475 the next). No pin size /
     pacing reliably homes the cursor.
 - **Net:** motion can be un-frozen (tablet removal) but the cursor tracks with a variable
-  absolute offset, not 1:1 — so the browser-drag success gate cannot pass. Live tile rolled back
+  absolute offset, not 1:1 — so the browser-drag success gate cannot pass. Live station rolled back
   to the clean frozen baseline rather than ship a half-tracking state.
 - **usb-tablet ABSOLUTE = still a dead-end** (Photon ignores tablet abs; devi `abs`/`touch`
   clamps + needs a calib file + is contact-only/no-hover). And **in-guest agent = dead-end**
   (QNX 6.5 demo image ships no C compiler).
-- **Only viable path to true (relative) 1:1 = pointer-lock direct-rel in the SPA.** The small
+- **Only viable path to true (relative) 1:1 = pointer-lock direct-rel in the UI.** The small
   per-event rel deltas that pointer-lock (`movementX/Y`) produces ARE applied 1:1 and reliably by
   QNX — they never hit the large-delta clamp and need no corner-pin. The daemon already handles
-  wire type=4 (`input.rs` case 4 → `RelMotion`, no homing); the SPA has `sendMoveRel` but never
+  wire type=4 (`input.rs` case 4 → `RelMotion`, no homing); the UI has `sendMoveRel` but never
   calls it. Wiring `requestPointerLock` on the stream canvas + sending type=4 is the recommended
   next step (it's a capture-model UX change, not an absolute-position model).
-- **Live-tile input caveat:** the tile runs `-display dbus,p2p=on`; the only input path that
+- **Live-station input caveat:** the station runs `-display dbus,p2p=on`; the only input path that
   reaches the guest is the dbus peer (streamhost) — so QMP `input-send-event` on a `-display none`
   CLONE is NOT representative (it bypasses the abs-mode RelMotion gate that blocks the live path).
-  This is why the earlier clone "proof" was misleading. Verify on the LIVE tile via a browser drag.
+  This is why the earlier clone "proof" was misleading. Verify on the LIVE station via a browser drag.
 
 ## 2026-07-13 — clean rel-pointer fix (branch `feat/pointer-fix`)
 
@@ -260,9 +260,9 @@ section below):
    unchanged. `rel_chunks` splits a delta into ≤256 px/axis chunks paced ~16 ms
    that sum EXACTLY to the original (unit-tested; 5/5 input tests pass). Small
    deltas = one un-paced send == the old `rel_motion` (pointer-lock 1:1).
-2. **SPA** (`spa/src/three/archetypeRegistry.ts`): `pointerRel: true` restored
+2. **UI** (`spa/src/three/archetypeRegistry.ts`): `pointerRel: true` restored
    for `qnx` and `freedos` (at the time NOT `msdoswin1` — another owner; since
-   `25e27b3` all three tiles carry `pointerRel`). The type=4 wiring
+   `25e27b3` all three stations carry `pointerRel`). The type=4 wiring
    already exists in `StreamView`/`useStreamControl`.
 3. **QNX device set** — see runbook below.
 
@@ -286,13 +286,13 @@ Photon desktop via `qnx-photon-drive.sh` (MON_PORT=7212), `-display dbus,p2p=on`
   open via `query-mice`. FINAL confirmation is still a live browser drag (the
   prior live `device_del` test already saw small/mid moves track 1:1).
 
-### Promoting to the LIVE qnx tile — go/no-go for a human
+### Promoting to the LIVE qnx station — go/no-go for a human
 
 Removing `-device usb-tablet` is a **device-set change**, so it BREAKS
 `loadvm golden` (device set must match the savevm). QNX's launcher already cold-
 boots the live CD (`-boot d`, no `-loadvm` in the launcher), but `labctl reset`
-and any baked `golden` snapshot assume the tablet. Promotion therefore needs a
-**full golden re-bake**, not a `savevm`:
+and any captured `golden` checkpoint assume the tablet. Promotion therefore needs a
+**full checkpoint recapture**, not a `savevm`:
 
 1. Back up: `cp golden.qcow2 golden.qcow2.pre-reltablet` (existing `.pre-qnxfix`,
    `.bak-preMouseFix` already there). Back up `qemu-streamhost.sh`.
@@ -303,17 +303,17 @@ and any baked `golden` snapshot assume the tablet. Promotion therefore needs a
    `savevm golden` over the NEW (no-tablet) device set so `labctl reset` matches.
 4. `labctl gen` to refresh the matrix.
 5. Deploy the `feat/pointer-fix` daemon binary + restart `streamhost@qnx`, ship
-   the SPA bundle, then VERIFY 1:1 with a real browser pointer-lock drag.
+   the UI bundle, then VERIFY 1:1 with a real browser pointer-lock drag.
 
-Risk: low and reversible — the change is confined to this tile; the pre-change
-golden + launcher are backed up. The only behavioural change is pointer mode
-(abs tablet → PS/2 rel), which is the intended fix. Cost: one interactive golden
-re-bake. **Recommendation: GO**, gated on the human running step 5's live drag.
+Risk: low and reversible — the change is confined to this station; the pre-change
+checkpoint + launcher are backed up. The only behavioural change is pointer mode
+(abs tablet → PS/2 rel), which is the intended fix. Cost: one interactive checkpoint
+recapture. **Recommendation: GO**, gated on the human running step 5's live drag.
 
 ## 2026-07-14 — LIVE PROMOTION DONE (branch `integ/pointer-live`)
 
-The bounded-rel daemon + QNX no-tablet golden are now DEPLOYED to the live box.
-Everything below was framebuffer-verified on the running tiles (screendumps).
+The bounded-rel daemon + QNX no-tablet checkpoint are now DEPLOYED to the live labhost.
+Everything below was framebuffer-verified on the running stations (screendumps).
 
 ### Part A — bounded relative input (historical isolated rollout)
 
@@ -324,7 +324,7 @@ shared `streamhost/streamhost/src/input.rs`. On the next consolidated daemon
 rollout, qnx/freedos/msdoswin1 all select `InputBackend::DbusRel` through their
 legacy-compatible `SH_POINTER=rel` settings and run the shared binary.
 
-- Built the `feat/pointer-fix` daemon in a temporary isolated box directory
+- Built the `feat/pointer-fix` daemon in a temporary isolated labhost directory
   (clone of the fleet build dir with ONLY
   `src/input.rs` overlaid from `feat/pointer-fix`; `Cargo.toml`/`Cargo.lock`
   byte-identical to the fleet build → the non-rel path is provably unchanged).
@@ -335,15 +335,15 @@ legacy-compatible `SH_POINTER=rel` settings and run the shared binary.
   input tests 5/5 passed.
 - **Shared fleet binary UNTOUCHED** (`/data/vms/streamhost/build/target/release/streamhost`
   still md5 `68e78d320c149dc87e7788ecd0ceda39`, == pre-change).
-- Installed the temporary binary to an isolated path and used per-tile systemd
-  drop-ins for ONLY the 3 rel tiles. `daemon-reload` + restarted those 3; each
+- Installed the temporary binary to an isolated path and used per-station systemd
+  drop-ins for ONLY the 3 rel stations. `daemon-reload` + restarted those 3; each
   active + running the canary
   + serving (framebuffer confirmed: qnx=Photon desktop, freedos=retro-games
   menu, msdoswin1=MS-DOS Executive).
 - That temporary install/drop-in path is retired; the orchestrated shared-binary
-  rollout owns removal of any box-local historical drop-ins.
+  rollout owns removal of any labhost-local historical drop-ins.
 
-### Part B — QNX golden re-baked WITHOUT usb-tablet (PS/2 relative)
+### Part B — QNX checkpoint recaptured WITHOUT usb-tablet (PS/2 relative)
 
 - Validated on a namespaced clone (`/data/vms/soltest/qnx-relbake`, now removed):
   tablet-free launcher cold-booted to the 800x600 Photon desktop via
@@ -355,7 +355,7 @@ legacy-compatible `SH_POINTER=rel` settings and run the shared binary.
 - **Live swap** (backups timestamped `1783989096`):
   - `golden.qcow2.bak-preReltablet-1783989096`
   - `qemu-streamhost.sh.bak-preReltablet-1783989096`
-  Swapped in the validated no-tablet golden + a launcher with the
+  Swapped in the validated no-tablet checkpoint + a launcher with the
   `-usb -device usb-tablet` line removed (PS/2 relative via `-machine pc`
   default). Started QEMU, `loadvm golden`, restarted `streamhost@qnx`.
 - **Live framebuffer gate PASSED:** `labctl shot qnx` → Photon desktop (no
@@ -369,7 +369,7 @@ legacy-compatible `SH_POINTER=rel` settings and run the shared binary.
   (428,400) = exactly Δ(-220,+150). Large flicks traverse fully (chunked, no
   truncation-collapse). `labctl reset qnx` (loadvm golden) verified — device set
   matches, desktop restored. `labctl gen` refreshed tiles.json (qnx pointer=rel,
-  golden=true). Note: the re-bake is **800x600** (keyboard-drivable Accept); the
+  golden=true). Note: the recapture is **800x600** (keyboard-drivable Accept); the
   1024x768 path needs a mouse-click Accept, infeasible without the tablet.
 - **Rollback (Part B):**
   `systemctl stop streamhost@qnx` → `kill $(cat /data/vms/streamhost/tiles/qnx/qemu.pid)`
@@ -379,15 +379,15 @@ legacy-compatible `SH_POINTER=rel` settings and run the shared binary.
   → `labctl gen`.
 
 ### Remaining for the human
-- **Deploy the SPA bundle** carrying `pointerRel: true` for `qnx`/`freedos`
+- **Deploy the UI bundle** carrying `pointerRel: true` for `qnx`/`freedos`
   (`spa/src/three/archetypeRegistry.ts`; `msdoswin1` was another owner's then —
   `25e27b3` flags all three) + the
-  pointer-lock type=4 wiring — this repo does NOT touch the SPA bundle.
-- **Browser pointer-lock drag-test** through the deployed SPA against the live
-  `qnx` (and `freedos`) tile to confirm end-user 1:1 pointer in a real browser
+  pointer-lock type=4 wiring — this repo does NOT touch the UI bundle.
+- **Browser pointer-lock drag-test** through the deployed UI against the live
+  `qnx` (and `freedos`) station to confirm end-user 1:1 pointer in a real browser
   (the daemon-side 1:1 is already proven above).
-- freedos needed NO golden change (already PS/2); it just got the Part A daemon
-  override + the SPA flag.
+- freedos needed NO checkpoint change (already PS/2); it just got the Part A daemon
+  override + the UI flag.
 
 Both remaining items landed the same day: commit `25e27b3` shipped
 `pointerRel: true` for qnx/freedos/msdoswin1 and the browser drag-test verified

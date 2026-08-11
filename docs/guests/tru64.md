@@ -1,15 +1,15 @@
 # tru64 — Tru64 UNIX 5.1B on es40 (AlphaServer ES40)
 
-**Status: DARK-LAUNCHED, INSTALL IN PROGRESS (2026-08-11).** The tile is
+**Status: DARK-LAUNCHED, INSTALL IN PROGRESS (2026-08-11).** The station is
 registered with `listing.state=hidden` — `/os/tru64` streams, the grid and
 museum hall do not show it — and the exhibit currently IS the running
 Tru64 5.1B installation, performed live over the streamed framebuffer.
 This doc records the acceptance criteria and everything learned so far;
-it is rewritten to the finished-tile shape when the golden is baked.
+it is rewritten to the finished-station shape when the checkpoint is captured.
 
 The research that selected this OS (candidates, media, licensing, risk):
 [`docs/lab/research/alpha-second-os-candidates.md`](../lab/research/alpha-second-os-candidates.md).
-The sibling tile's machinery this one reuses:
+The sibling station's machinery this one reuses:
 [`docs/lab/research/w2kalpha-HANDOFF.md`](../lab/research/w2kalpha-HANDOFF.md).
 
 ## Identity
@@ -18,8 +18,8 @@ The sibling tile's machinery this one reuses:
 - The SIBLING of `w2kalpha`: the identical emulated machine (es40 fork
   `Wnt/es40`, AlphaServer ES40, Tsunami, 1× EV68 800 MHz, 512 MB, S3 Trio64,
   sym53c810 SCSI, ALi PS/2, two serial ports) with a DIFFERENT firmware
-  lineage: this tile's `flash.rom` has **no `arc` nvram autoboot** — SRM
-  boots UNIX directly. Do not share `rom/` between the two tiles.
+  lineage: this station's `flash.rom` has **no `arc` nvram autoboot** — SRM
+  boots UNIX directly. Do not share `rom/` between the two stations.
 
 ## Media (verified this session)
 
@@ -34,7 +34,7 @@ The sibling tile's machinery this one reuses:
 Associated Products vols 1–2, Patch Kit 4 and firmware v6.8 exist in the same
 archive.org ZIP if layered products are ever wanted.
 
-## Acceptance criteria (the release gate for LISTING the tile)
+## Acceptance criteria (the release gate for LISTING the station)
 
 - Installed system on `dka0`, booting via SRM `boot dka0` unattended
   (`set bootdef_dev dka0`, `set auto_action boot` in the flashed SRM env).
@@ -43,7 +43,7 @@ archive.org ZIP if layered products are ever wanted.
   base OS license `OSF-BASE` is expected on the media, CDE is a base subset).
 - Keyboard PASS (already proven at SRM), pointer verified or honestly
   UNVERIFIED with keyboard as the drive channel.
-- Golden captured (disk + flash.rom pair), launcher flipped to the w2kalpha
+- Checkpoint captured (disk + flash.rom pair), launcher flipped to the w2kalpha
   reflink shape, reset → pristine CDE, then `listing` lifted.
 
 ## What is proven so far (all framebuffer evidence, 2026-08-11)
@@ -51,7 +51,7 @@ archive.org ZIP if layered products are ever wanted.
 1. **SRM console on shm**: `AlphaServer ES40 Console V7.3-1`, `P00>>>`,
    S3 Trio64 + NCR 53C810 probed. Fresh `flash.rom` created from
    `cl67srmrom.exe` on first start — no firmware-CD flash needed for a
-   SRM-only tile (ARC/AlphaBIOS is not on the UNIX path at all).
+   SRM-only station (ARC/AlphaBIOS is not on the UNIX path at all).
 2. **Keyboard over ctlsock**: typed `show device` echoed and executed at the
    SRM prompt. Devices: `DKA0` (8 GiB system disk, shows as RZ58),
    `DKA400` (OS CD, RRD42), `DVA0`, `PKA0`.
@@ -69,8 +69,8 @@ archive.org ZIP if layered products are ever wanted.
   ephemeral port and the guest waits forever for serial clients. Fixed in
   the fork (fail loudly, `FAILURE(Configuration, ...)`); the launcher also
   waits for the old pid to exit and verifies both listeners belong to the
-  new es40 before declaring the tile up.
-- **ctlsock is MULTI-CLIENT since this tile's fork build** (`ES40_TILE_NAME`
+  new es40 before declaring the station up.
+- **ctlsock is MULTI-CLIENT since this station's fork build** (`ES40_TILE_NAME`
   names the HELLO banner): the streamhost daemon stays attached while
   `ctltest.py` injects install keystrokes beside it. w2kalpha's binary
   predates this — its single-client caveat still applies there until its
@@ -93,12 +93,12 @@ no progress), reset=relaunch REBOOTS to SRM and re-enters the installer from
 whatever the persistent disk holds. Assets:
 `/data/vms/streamhost/assets/tru64/{es40,es40.cfg,rom/,img/,root/}` — the
 disk `img/tru64.img` is the live install target, deliberately not copied
-per launch until the golden exists.
+per launch until the checkpoint exists.
 
 ## Rollback
 
-Stop `streamhost@tru64`, remove the tile dir + assets, drop the registry
-entry (+ SPA wiring: keyboardProfiles/machines/machineIdentity), regenerate,
+Stop `streamhost@tru64`, remove the station dir + assets, drop the registry
+entry (+ UI wiring: keyboardProfiles/machines/machineIdentity), regenerate,
 republish the three runtime manifests. The staged ISO under
 `/data/assets-staging/tru64/` and this doc stay as the record. w2kalpha is
 untouched by any of it (separate assets, rom lineage, serial pair, slot).

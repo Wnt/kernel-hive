@@ -1,6 +1,6 @@
-# TempleOS gallery tile — merge notes for `gallery-integrate-all.sh` (neko-era)
+# TempleOS gallery station — merge notes for `gallery-integrate-all.sh` (neko-era)
 
-> **Historical (neko-era) wiring below.** TempleOS runs today as the streamhost tile
+> **Historical (neko-era) wiring below.** TempleOS runs today as the streamhost station
 > **`templeos`** — see its stanza in `streamhost/tiles-manifest.sh`
 > (`streamhost@templeos`). `gallery-integrate-all.sh` is neko-era, deleted in the
 > 2026-07 restructure — git history; the reconciliation pass below never ran. The
@@ -23,17 +23,17 @@ bridge could not track 1:1. Fixed with a tiny in-guest HolyC task — see
   `M/P/R/B` lines, writing motion to `ms.pos.x/ms.pos.y` and clicks to
   `ms.lb/ms.rb`. The TempleOS window manager samples those globals to raise real
   click messages (a synthetic `P/R` pulls down the File menu — framebuffer-verified).
-- **Bake:** TempleOS is ISO/RAM-only, so the agent is defined + `Spawn()`ed at the
-  `T:/Home>` REPL and captured in the **golden RAM snapshot** (`state.qcow2`); every
-  `loadvm golden` (the tile reset) comes up with `WS` already running and
-  reconnect-ready. Adding the serial device changed the device set => the old golden
-  was deleted and re-baked with the agent live. Backups:
+- **Capture:** TempleOS is ISO/RAM-only, so the agent is defined + `Spawn()`ed at the
+  `T:/Home>` REPL and captured in the **checkpoint RAM snapshot** (`state.qcow2`); every
+  `loadvm golden` (the station reset) comes up with `WS` already running and
+  reconnect-ready. Adding the serial device changed the device set => the old checkpoint
+  was deleted and recaptured with the agent live. Backups:
   `state.qcow2.pre-warpd-*`, `qemu-streamhost.sh.pre-warpd-*`, `tile.env.pre-warpd-*`.
-- **Verified (clone `/data/vms/soltest/templeos-c1` then live golden):** `M 560 420`
+- **Verified (clone `/data/vms/soltest/templeos-c1` then live checkpoint):** `M 560 420`
   moves the cursor 1:1; `P 1 18 7`/`R 1 18 7` opens the File pull-down (a real click);
   the agent survives `savevm golden`->`loadvm golden` and still tracks over serial.
 
-**Status: LIVE (neko-era).** Tile `osgallery-templeos-templeos-1` was up (healthy) at
+**Status: LIVE (neko-era).** Station `osgallery-templeos-templeos-1` was up (healthy) at
 **http://192.0.2.12:8105/** and listed on the :8080 gallery index.
 Deployed as its own isolated compose project (`osgallery-templeos`) — mirroring the
 SailfishOS isolation pattern — so it never touched the concurrently-edited
@@ -49,12 +49,12 @@ chrome on top of the already-interactive desktop — the viewer presses `n`. Gal
 runs it **CD-only + ephemeral** (kiosk): no HDD, nothing to persist.
 
 ## Port / range allocation
-| host port | EPR (udp)     | project              |
+| labhost port | EPR (udp)     | project              |
 |-----------|---------------|----------------------|
 | **8105**  | **53300-53319** | `osgallery-templeos` |
 
 Next free block above SailfishOS (:8104 / 53280-53299). (Note: another agent's
-**Haiku** tile occupies :8107 / index card already present — leave a gap; do not reuse.)
+**Haiku** station occupies :8107 / index card already present — leave a gap; do not reuse.)
 
 ## Manifest row for `gallery-integrate-all.sh` (historical — neko-era, deleted; never merged)
 Add to the `GUESTS=(...)` array. Field order is
@@ -116,7 +116,7 @@ services:
       QEMU_EXTRA: "-cpu host"
 ```
 
-Bring up ONLY this service (never recreates other tiles):
+Bring up ONLY this service (never recreates other stations):
 ```bash
 cd /opt/osgallery && docker compose -p osgallery-templeos -f docker-compose.templeos.yml up -d templeos
 ```
@@ -135,7 +135,7 @@ qemu-system-x86_64 -name TempleOS -m 1024 -smp 1 \
 hardening is applied gallery-wide by launch-qemu.sh — both confirmed on the live
 cmdline, with `/dev/kvm` + `kvm-vm` + `kvm-vcpu:0` fds open in the host qemu.)
 
-## Asset staging (host)
+## Asset staging (labhost)
 `/data/gallery-guests/TempleOS/` (bind-mounted read-only at `/guests` in CT 110):
 - `TempleOS.ISO` — 17,350,656 bytes, **sha256 `5d0fc944e5d89c155c0fc17c148646715bc1db6fa5750c0b913772cfec19ba26`** (TempleOS V5.03).
 - `TempleOS.ISO.sha256` — the pin.
@@ -148,14 +148,14 @@ archive.org's item was 503 at build time). Re-fetched + verified by
 ## Gallery index (:8080)
 Added a `TempleOS` card (`http://192.0.2.12:8105/?usr=guest&pwd=neko`) to
 `/opt/osgallery/gallery/index.html` **and** `gallery-guests.html` via an idempotent,
-flock-guarded single-entry insert (no whole-file rewrite) so concurrent tile-adders
+flock-guarded single-entry insert (no whole-file rewrite) so concurrent station-adders
 (e.g. Haiku:8107) were not clobbered. `gallery-integrate-all.sh` (neko-era, deleted)
 regenerated this page from the manifest; the merge never happened — the neko index
-plane was superseded by the streamhost SPA before reconciliation.
+plane was superseded by the streamhost UI before reconciliation.
 
 ## Verification evidence
 - **Framebuffer (GUI render):** the live TempleOS V5.03 RedSea desktop streams in the
-  browser tile via neko WebRTC — blue/white 16-colour UI, two HolyC terminals, the
+  browser station via neko WebRTC — blue/white 16-colour UI, two HolyC terminals, the
   "System Keys Quick Guide", top menu bar. (Also captured headless via QEMU screendump.)
 - **Mouse:** a trusted click on the neko canvas showed *"You took the controls"* and
   moved the TempleOS caret/cursor (PS/2 mouse reaches the guest).
@@ -186,13 +186,13 @@ project. Backed up the prior compose to
 produced the pinned 17,350,656-byte ISO. QMP framebuffer captures were inspected
 through boot and showed the real RedSea desktop.
 
-The acceptance fixture used the authoritative streamhost device set (`pc`, host
+The acceptance scene used the authoritative streamhost device set (`pc`, host
 CPU under KVM, 1024 MiB, `std`, one vCPU, CD-ROM, and the COM1 Unix serial
 transport). At `T:/Home>` the vendored `warpd.HC` task was defined and spawned,
-then the clean single-terminal fixture was captured as `golden`. Before the
+then the clean single-terminal scene was captured as `golden`. Before the
 snapshot, serial `M 560 420` moved the pointer to that framebuffer coordinate.
 After quitting QEMU and starting a fresh process with `-loadvm golden`, a new
-serial connection and `M 120 300` moved it to `(120,300)`, proving that the baked
+serial connection and `M 120 300` moved it to `(120,300)`, proving that the captured
 agent task survived the process boundary.
 
 The state qcow2 was 175,964,160 host bytes (2 GiB virtual; 34.7 MiB allocated).

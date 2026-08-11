@@ -17,7 +17,7 @@ and is never committed.
 ## Isolation policy
 
 The guest is deliberately air-gapped at the emulated-hardware boundary. Every
-install, bake, proof, and production launch uses `-nodefaults` and explicitly
+install, capture, proof, and production launch uses `-nodefaults` and explicitly
 adds only disk, VGA, USB tablet, and host-side display/control backends. There
 is no NIC, `-netdev`, `-nic`, network-class `-device`, `hostfwd`, in-guest SSH,
 or warpd TCP path. `labctl` therefore declares `exec_kind: none`. Any build-time
@@ -45,7 +45,7 @@ software cursor, no accel). Cirrus's fixed 4 MiB VRAM cannot reach a 1920×1200
 16:10 mode and QEMU 11 blanks/corrupts Cirrus at hi-res, so the adapter was
 swapped to `-vga std`. Because a display-adapter change breaks `loadvm golden`
 matching, this was an atomic rebuild: the verbatim launcher's `-vga` line plus a
-golden re-baked on the std device set.
+checkpoint recaptured on the std device set.
 
 Red Star 2's 2.6.25 kernel has no `bochs-drm`, so on std VGA Xorg uses the
 **`vesa`** driver (VBE 3.0). The earlier build note — *"the installed Xorg
@@ -99,17 +99,17 @@ stable `/dev/input/event3` node under the pinned topology. Real framebuffer
 evidence proves inset versions of all four corners, center, a blank-desktop
 click, an Alt+F2 runner launch, and explicit keyboard key-down/key-up events
 immediately after `loadvm golden`. The cursor covers the entire 1920×1200
-surface; the SPA does not set `pointerRel` or compensate with scaling.
+surface; the UI does not set `pointerRel` or compensate with scaling.
 
 Registry/streamhost settings are `--pointer abs --input-dev usb`,
 `SH_POINTER=abs`, and `pointer.transport: "abs"` with `usb-tablet`.
 
-## Golden fixture and reset
+## Checkpoint scene and reset
 
-The fixture is the clean, logged-in `gallery` KDE desktop, with no modal,
+The scene is the clean, logged-in `gallery` KDE desktop, with no modal,
 wizard, screensaver, or ticking clock. KDM auto-login makes both cold boot and
-golden restore zero-input paths. The qcow2 contains the required internal
-snapshot `golden`. The bake gate performs:
+checkpoint restore zero-input paths. The qcow2 contains the required internal
+checkpoint `golden`. The capture gate performs:
 
 1. `savevm golden` and tag verification;
 2. dirty the desktop, `loadvm golden`, and compare the restored real
@@ -118,7 +118,7 @@ snapshot `golden`. The bake gate performs:
 4. start a fresh QEMU process with the final device set and `-loadvm golden`,
    then repeat framebuffer and input checks.
 
-Reset is `resetMode: loadvm`, snapshot `golden`, through
+Reset is `resetMode: loadvm`, checkpoint `golden`, through
 `reset-hmp.sock`. A service restart also executes `-loadvm golden`. The launcher
 refuses to start if the tag is absent, making launcher and disk an atomic pair.
 
@@ -132,21 +132,21 @@ this setting lives in **`kdesktoprc`** `[ScreenSaver]`, not `kscreensaverrc`
 (confirmed from `kcm_screensaver.so` / `kdesktop_lock`, which reference
 `kdesktoprc`); the logged-in desktop is user `gallery` with `KDEHOME=~/.kde`.
 
-The golden therefore bakes the saver off. In the running session
+The checkpoint therefore captures the saver off. In the running session
 `~/.kde/share/config/kdesktoprc` `[ScreenSaver]` is `Enabled=false`, `Saver=`
 (blank), `Timeout=86400`, and `kdesktop` is disabled at runtime with
 `dcop kdesktop KScreensaverIface enable false` + `configure`, so the in-RAM
-golden also reports `isEnabled=false`. A belt-and-suspenders `kscreensaverrc`
+checkpoint also reports `isEnabled=false`. A belt-and-suspenders `kscreensaverrc`
 carrying the same keys is written even though this KDE build never reads it.
 Clone proof at 1920×1200: with the saver forced to a 5 s timeout the branded
 KBanner activated on idle; after the disable, 25 s of idle left the desktop
-untouched. On the live golden, `loadvm golden` restores the clean fixture and
-`isEnabled` is `false`. This is applied on top of the std-VGA golden; the device
+untouched. On the live checkpoint, `loadvm golden` restores the clean scene and
+`isEnabled` is `false`. This is applied on top of the std-VGA checkpoint; the device
 set is unchanged.
 
 ## Rebuild and verification
 
-Run on the lab host with the password passed on fd 3 without printing it:
+Run on labhost with the password passed on fd 3 without printing it:
 
 ```bash
 scripts/build-guests/check-assets.sh --only redstar2
@@ -157,7 +157,7 @@ The canonical output is `/data/gallery-guests/RedStar2/redstar2.qcow2`.
 Before sealing, the builder creates `redstar2-pre-golden.qcow2`; deployment keeps
 `/data/gallery-guests/RedStar2/redstar2.qcow2.bak-pre-golden`. If a live disk
 already exists, it is timestamp-copied before replacement. QEMU is killed only
-through the builder/tile pidfile; never use `pkill qemu`.
+through the builder/station pidfile; never use `pkill qemu`.
 
 Release checks include the registry generate/check/validate gates, required
 `golden` tag, real framebuffer shot, input proof after restore, signal document,

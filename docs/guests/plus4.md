@@ -6,7 +6,7 @@ the **3-plus-1** office suite that lives in the machine's ROM. A **kiosk** ("emu
 captures the Linux framebuffer + AC97 audio exactly like every other station. See
 **`streamhost/docs/BRIDGE.md`**.
 
-**Shared base:** `/data/vms/bridge/bridge-base-trixie.qcow2` — already contains the
+**Shared seed:** `/data/vms/bridge/bridge-base-trixie.qcow2` — already contains the
 whole VICE family.
 **Build script (station):** `scripts/build-guests/tiles/plus4.sh` — thin overlay + kiosk
 `launch.sh` + ROM repair + quiet console + checkpoint capture + a two-step
@@ -113,7 +113,7 @@ C64 and VIC-20 hit.
 emulator, same 50 Hz frame, same host, and the failure those numbers guard
 against is a host scheduling stall rather than a property of the emulated
 machine (see [`vic20.md`](vic20.md) for the measurements). Re-bisect with
-`scripts/dev/emu-key-pacing-bisect.py` if this tile ever drops characters.
+`scripts/dev/emu-key-pacing-bisect.py` if this station ever drops characters.
 
 No `demoProgram`: the interaction here is the suite, not a BASIC type-in.
 
@@ -123,10 +123,10 @@ Evidence in `/data/vms/streamhost/tiles/plus4/evidence/`:
 
 | Artifact | Shows |
 |---|---|
-| `ready-before-golden.png` | the untouched power-on screen — the frame that was baked |
-| `keyboard-1-suite.png` | `F1`+`RETURN` after the bake, leaving the white BASIC page for the suite |
+| `ready-before-golden.png` | the untouched power-on screen — the frame that was captured |
+| `keyboard-1-suite.png` | `F1`+`RETURN` after the capture, leaving the white BASIC page for the suite |
 | `keyboard-2-spreadsheet.png` | `C=`+`C` then `tc`, drawing the spreadsheet grid |
-| `golden-restored-after-keyboard.png` | `loadvm golden` returning to the exact baked power-on screen |
+| `golden-restored-after-keyboard.png` | `loadvm golden` returning to the exact captured power-on screen |
 
 The proof walks the **whole advertised route** and asserts each step by what is
 on the screen — the suite is black where BASIC is a white page (white pixels
@@ -137,11 +137,11 @@ and typed a `0` into R1C1 — a proof that cannot fail is not a proof.
 
 ## Cold boot and rollback
 
-Zero input is genuine, and since the golden is now the power-on screen itself,
+Zero input is genuine, and since the checkpoint is now the power-on screen itself,
 a cold boot and a restore reach the same place. See
 `scripts/coldboot/plus4-zero-input-prep.md`.
 
-To withdraw the tile: `systemctl stop streamhost@plus4`, set `enabled: false`,
+To withdraw the station: `systemctl stop streamhost@plus4`, set `enabled: false`,
 regenerate, republish the three runtime documents (tiles.json, gallery-manifest.json AND golden-manifest.json — the third is the reset allow-list). To rebuild:
 `scripts/build-guests/tiles/plus4.sh --force`, which replaces `overlay.qcow2` and so
-**destroys the golden inside it**, then bakes and re-proves a new one.
+**destroys the checkpoint inside it**, then captures and re-proves a new one.

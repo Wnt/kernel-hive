@@ -15,7 +15,7 @@ installs the VirtIO guest tools and enables RDP. Nobody touches a console.
 ## Why raw QEMU and not `qm`
 
 Every gallery exhibit is a raw QEMU process under `streamhost@<tile>`, so the
-build has to end in a **qcow2 a tile can boot**. The Proxmox-era builder
+build has to end in a **qcow2 a station can boot**. The Proxmox-era builder
 (`scripts/provision/pve-win11-vm.sh`, VM 900) produced a zvol reached through an RDP bridge
 that no longer exists. `build-guests/tiles/win11.sh` keeps the hardware recipe
 identical and swaps the wrapper:
@@ -33,8 +33,8 @@ identical and swaps the wrapper:
 | `--ostype win11` | the `hv_*` enlightenments PVE implies |
 
 **The machine type is pinned to `pc-q35-11.0` on purpose.** The qcow2 becomes a
-golden with an internal `golden` snapshot, and `loadvm` refuses a device set that
-has drifted — an unpinned `q35` would silently break every tile reset on the next
+checkpoint with an internal `golden` checkpoint, and `loadvm` refuses a device set that
+has drifted — an unpinned `q35` would silently break every station reset on the next
 QEMU upgrade.
 
 The answer file and its ISO stay in the 0700 work dir (`/data/vms/build-win11`),
@@ -159,7 +159,7 @@ settled at t+12 min.
 ## Boot order
 `bootindex=100` on the Windows CD, `bootindex=200` on the `scsi-hd`. The CD wins
 the first boot; every later reboot falls through to the disk because nobody
-presses a key at the prompt. Post-install the tile launcher simply omits the
+presses a key at the prompt. Post-install the station launcher simply omits the
 three `ide-cd` drives.
 
 ## Credentials created by the answer file
@@ -173,20 +173,20 @@ three `ide-cd` drives.
 
 ---
 
-# The gallery tile (live since 2026-08-06)
+# The gallery station (live since 2026-08-06)
 
-`win11` is a production streamhost tile: **slot 123, UDP 54123**, 4 GiB / 4 cores,
+`win11` is a production streamhost station: **slot 123, UDP 54123**, 4 GiB / 4 cores,
 1280x800, `ultrafast`, audio on, abs pointer. Launcher (and device-set ledger):
 `streamhost/tiles/win11/qemu-streamhost.sh`. The pristine install stays at
-`/data/gallery-guests/Win11/win11.qcow2`; the tile boots a copy,
-`win11-golden.qcow2`, with a `golden` snapshot inside (`resetMode=loadvm`).
+`/data/gallery-guests/Win11/win11.qcow2`; the station boots a copy,
+`win11-golden.qcow2`, with a `golden` checkpoint inside (`resetMode=loadvm`).
 
 **Restore is ~9 s** to an answering guest agent — a RAM restore, not a reboot
-(guest uptime keeps counting from the bake).
+(guest uptime keeps counting from the capture).
 
 ## What the guest was changed to do
 
-Three registry/service edits make it fixture-stable; everything else is stock.
+Three registry/service edits make it scene-stable; everything else is stock.
 Applied via the guest agent (`wga.py psenc`, see pitfall 6 — plain strings get
 their backslashes eaten, `-EncodedCommand` does not).
 
@@ -229,27 +229,27 @@ hard way:
 
 `labctl` has no `qga` exec kind, so `labctl exec win11` does not work even though
 the guest agent is live on `qga.sock`. Use `labctl sh` (blind) or talk to the
-socket directly. Adding a `qga` exec kind would give this tile a real captured
+socket directly. Adding a `qga` exec kind would give this station a real captured
 stdout channel.
 
 ---
 
 <!-- merged from win11-gallery-tile-notes.md (2026-07 restructure) -->
 
-# Windows 11 Kernel Hive tile — neko-rdp bridge (notes)
+# Windows 11 Kernel Hive station — neko-rdp bridge (notes)
 
 > **Historical (neko-era) wiring — superseded, kept for the audio/latency
 > findings only.** Both the deploy script `scripts/pve-gallery-win11-tile.sh` and
 > VM 900 are gone, and nothing streams Windows over RDP any more: the current
 > path is the qcow2 built at the top of this doc, booted directly by a streamhost
-> tile like every other exhibit. `scripts/provision/pve-win11-vm.sh` is the retired
+> station like every other exhibit. `scripts/provision/pve-win11-vm.sh` is the retired
 > Proxmox builder for that retired VM. Nothing below describes live wiring.
 
-Added a **Windows 11** tile to the Kernel Hive that streams the already-running
+Added a **Windows 11** station to the Kernel Hive that streams the already-running
 Win11 VM 900 into the browser over WebRTC with **super-low-latency video +
 sound**, via a FreeRDP bridge. Verified end-to-end 2026-07-04.
 
-- Tile URL: `http://192.0.2.12:8083/?usr=guest&pwd=neko`
+- Station URL: `http://192.0.2.12:8083/?usr=guest&pwd=neko`
 - Gallery:  `http://192.0.2.12:8080/`  (behind edge auth only; no WAN exposure)
 - Deploy/redeploy: `scripts/pve-gallery-win11-tile.sh` (neko-era, deleted)
 - Source lives in CT 110 at `/opt/osgallery/neko-rdp/` + `/opt/osgallery/setup.sh`
@@ -271,7 +271,7 @@ xfreerdp3  (in neko-rdp container, on neko X display :99, 1280x720)
 neko X capture  ─────────────►  neko  ◄──── PulseAudio audio_output.monitor
    │                             │ (WebRTC: VP8 video + Opus audio)
    ▼                             ▼
-             Browser tile  http://192.0.2.12:8083/
+             Browser station  http://192.0.2.12:8083/
 ```
 
 ## The neko-rdp image
@@ -286,7 +286,7 @@ neko X capture  ─────────────►  neko  ◄───�
   used) that runs the launcher as the `neko` user with `DISPLAY=:99.0` and
   `PULSE_SERVER=unix:/tmp/pulseaudio.socket`.
 
-No `/dev/kvm`, no `shm` requirements beyond neko's — this tile is a pure RDP client.
+No `/dev/kvm`, no `shm` requirements beyond neko's — this station is a pure RDP client.
 
 ## Exact xfreerdp flags (latency + audio)
 
@@ -330,9 +330,9 @@ xfreerdp3 \
 
 ## Compose service (generated by setup.sh)
 
-`setup.sh` gained a small, additive **RDP-tiles** section that runs *after* the ISO
+`setup.sh` gained a small, additive **RDP-stations** section that runs *after* the ISO
 loop and reuses the same sequential port/EPR allocator, so it never collides with
-the QEMU tiles:
+the QEMU stations:
 
 ```yaml
 windows11:
@@ -352,16 +352,16 @@ windows11:
 ```
 
 Driven by an `RDP_GUESTS` variable (`"label|host|port|user|pass|WxH"`, newline for
-more), so extra RDP tiles are one-liners and the whole thing stays reproducible.
-The gallery `index.html` gets a **"Windows 11"** tile with the same `?usr=guest&pwd=neko`
-auto-login param as the other tiles (no neko login screen).
+more), so extra RDP stations are one-liners and the whole thing stays reproducible.
+The gallery `index.html` gets a **"Windows 11"** station with the same `?usr=guest&pwd=neko`
+auto-login param as the other stations (no neko login screen).
 
 > Note: the suggested EPR range 52060 was aligned to **52040-52059** — the next
 > block after tinycore's 52020-52039 — so the sequential allocator stays collision-free.
 
 ## Verification (observed, not inferred)
 
-- **Tile serves:** `curl http://192.0.2.12:8083/` → **HTTP 200**; container healthy.
+- **Station serves:** `curl http://192.0.2.12:8083/` → **HTTP 200**; container healthy.
 - **Desktop streams:** browser screenshot shows the live Win11 desktop (taskbar,
   Start, Edge, Recycle Bin, clock) filling a 1280x720 WebRTC `<video>`
   (`videoWidth=1280, readyState=4, paused=false`). FreeRDP window on :99 is

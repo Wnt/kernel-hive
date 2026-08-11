@@ -100,7 +100,7 @@ Fully automated, zero human interaction:
    load (`cde`) but X does not autostart — we land at a fully keyboard-
    driveable `tc@box:~$` text shell (verified reactive before proceeding).
 4. The guest fetches a payload from a one-shot loopback `http.server` via
-   SLIRP (`10.0.2.2`): openssh + gallery key + the `~/.X.d` fixture drop.
+   SLIRP (`10.0.2.2`): openssh + gallery key + the `~/.X.d` scene drop.
 5. Capture-time ssh forward (default `127.0.0.1:58821`, deliberately NOT the
    production 5882) + probe; then `startx` → curated desktop; pointer parked
    inside the aterm + click (FLWM is focus-follows-mouse); typed focus probe

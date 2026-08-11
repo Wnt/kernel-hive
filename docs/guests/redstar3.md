@@ -3,13 +3,13 @@
 ## Status and acceptance contract
 
 `redstar3` is the private, air-gapped Red Star OS 3.0 Desktop preservation
-exhibit. Its public ID, runtime tile directory, and builder key are all
+exhibit. Its public ID, runtime station directory, and builder key are all
 `redstar3`; the production slot is 121 and the stream UDP port is 54121.
 
 The accepted artifact is `/data/gallery-guests/RedStar3/redstar3.qcow2`. It
-must contain the internal snapshot tag `golden` and start at a stable,
-input-ready Red Star desktop. The snapshot and the emitted launcher are one
-atomic pair. Any guest-visible device change requires a new snapshot.
+must contain the internal checkpoint tag `golden` and start at a stable,
+input-ready Red Star desktop. The checkpoint and the emitted launcher are one
+atomic pair. Any guest-visible device change requires a new checkpoint.
 
 ## Media and provenance
 
@@ -17,7 +17,7 @@ atomic pair. Any guest-visible device change requires a new snapshot.
 - Source class: preservation source; redistribution terms are unclear.
 - Item: `https://archive.org/details/redstar_desktop3.0_sign`.
 - File: `redstar_desktop3.0_sign.iso`, 2,614,644,736 bytes.
-- SHA-256 measured on the lab host:
+- SHA-256 measured on labhost:
   `895ad0e01ae0d35a65e9ac42dd34d0a1d685d6dfa331ce5b4f24bbc753439be3`.
 - Intake path: `/data/assets-staging/redstar3/redstar_desktop3.0_sign.iso`,
   checked by its adjacent `MANIFEST.sha256`.
@@ -44,7 +44,7 @@ by `streamhost/tiles-manifest.sh`:
 - `-nodefaults`, followed by explicit devices only.
 
 There is deliberately **no guest network device**. Every install, first-boot,
-golden-bake, verification, and production command uses `-nodefaults` and has
+checkpoint-capture, verification, and production command uses `-nodefaults` and has
 no `-netdev`, `-nic`, network `-device`, or `hostfwd`. The canonical registry
 declares no exec/SSH channel. Do not remove `-nodefaults`: QEMU otherwise adds
 an implicit e1000 on this machine type even when no network option appears.
@@ -55,7 +55,7 @@ Originally shipped `-vga cirrus` at 1024x768: Cirrus's fixed 4 MiB VRAM cannot
 reach a 16:9 era-correct mode and QEMU 11 blanks/corrupts Cirrus at hi-res.
 Cirrus was swapped for `-vga std` (QEMU Bochs VBE, 16 MiB) at **1920x1080**.
 Because a display-adapter change breaks `loadvm golden` matching, this was an
-atomic rebuild (new std launcher + a golden re-baked on the std device set).
+atomic rebuild (new std launcher + a checkpoint recaptured on the std device set).
 
 Red Star 3's kernel (2.6.38) has no `bochs-drm`, so on std VGA Xorg autoconfig
 falls through cirrus → **`vesa`** (VBE 3.0, SeaBIOS). The vesa driver aborts
@@ -73,9 +73,9 @@ new resolution; calibration corners are `a=[12,12]`, `b=[1906,1068]`.
 
 ## Build and machine-vision installation
 
-Run only on the lab host. The default work directory is namespaced as
-`/data/vms/soltest/redstar3-build-YYYYMMDD`; it never uses a live tile, a
-`soltest-*` tile, or `/mnt/poc`.
+Run only on labhost. The default work directory is namespaced as
+`/data/vms/soltest/redstar3-build-YYYYMMDD`; it never uses a live station, a
+`soltest-*` station, or `/mnt/poc`.
 
 The installer has no answer-file interface. `scripts/build-guests/tiles/redstar3.sh`
 boots the ISO and drives it as a bounded machine-vision state machine:
@@ -102,37 +102,37 @@ attaches it as a second IDE disk while the install ISO rescue TTY is running,
 and applies the tracked `redstar3-offline-apply.sh`. That patch enables KDE
 auto-login for `gallery` and disables the power-manager, mixer, and recurring
 integrity-checker autostarts that would otherwise raise delayed modals over the
-fixture. This is offline file injection, not a network path. First boot remains
+scene. This is offline file injection, not a network path. First boot remains
 framebuffer-gated; a timeout or a merely non-black screen is not success.
 
-## Ready state, pointer, and golden
+## Ready state, pointer, and checkpoint
 
-The golden fixture is a logged-in, idle 1920x1080 macOS-styled desktop with no
+The checkpoint scene is a logged-in, idle 1920x1080 macOS-styled desktop with no
 wizard, modal, screen saver, or focused secret field. The wallpaper, top menu
 bar, and dock must all be fully rendered. (On a cold boot the audio subsystem
-raises a one-time "음성드라이버초기화에서의 오유" modal because the tile is
+raises a one-time "음성드라이버초기화에서의 오유" modal because the station is
 air-gapped with no audio device; dismiss it with Enter before `savevm golden` —
 `loadvm golden` then restores the modal-free state.)
 
 Pointer transport is absolute USB HID: streamhost emits
-`--pointer abs --input-dev usb`; `tile.env` has `SH_POINTER=abs`; the SPA row
+`--pointer abs --input-dev usb`; `tile.env` has `SH_POINTER=abs`; the UI row
 does not set `pointerRel`. Acceptance requires framebuffer-visible motion to
 all four corners and centre, a click, a dock/menu drag, and keyboard make/break.
 Coverage defects are fixed in the guest adapter/resolution, never hidden with
 client scaling.
 
-At the ready desktop, the bake procedure:
+At the ready desktop, the capture procedure:
 
 1. retains a pre-existing output disk as a timestamped rollback copy;
 2. deletes only an obsolete `golden` tag on the disposable build artifact;
 3. runs `savevm golden` and requires the tag in `qemu-img snapshot -l`;
 4. dirties the visible desktop/input state, runs `loadvm golden`, and requires
-   the fixture framebuffer again;
+   the scene framebuffer again;
 5. stops by pidfile, starts a fresh QEMU process with the exact production
    device set plus `-loadvm golden`, and repeats framebuffer/input checks;
 6. atomically promotes the qcow2 only after every gate passes.
 
-Reset policy is `loadvm`, snapshot `golden`. The HTTPS restore endpoint is
+Reset policy is `loadvm`, checkpoint `golden`. The HTTPS restore endpoint is
 non-destructive and may load this tag; it must never save or replace it.
 
 ## Verification and rollback
@@ -151,7 +151,7 @@ Live acceptance uses `labctl shot redstar3`, `GET /signal/redstar3.json`, and
 `POST /restore/redstar3`, followed immediately by another framebuffer/input
 proof. The signal row must report UDP 54121 and a nonempty certificate hash.
 
-Rollback is tile-local: stop only `streamhost@redstar3`, stop QEMU only through
+Rollback is station-local: stop only `streamhost@redstar3`, stop QEMU only through
 `/data/vms/streamhost/tiles/redstar3/qemu.pid`, restore the retained launcher
-and qcow2 pair, relaunch that tile, and start only its service. Never use
-`pkill qemu`, never restart the fleet, and never alter another tile.
+and qcow2 pair, relaunch that station, and start only its service. Never use
+`pkill qemu`, never restart the fleet, and never alter another station.

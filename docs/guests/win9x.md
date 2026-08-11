@@ -1,10 +1,10 @@
 # Windows 9x under KVM — reproducible recipe & root-cause
 
-Investigated 2026-07-04 on the Proxmox dry-run host (`root@192.0.2.10`,
+Investigated 2026-07-04 on the Proxmox dry-run labhost (`root@192.0.2.10`,
 QEMU 11.0.0, Intel Xeon D-2146NT / Skylake-D). All results below are verified from
 **framebuffer screendumps + vCPU register/IRQ inspection**, never logs alone. Work
-was done on a namespaced copy of the Win95 tile image in `/data/kvm9x-lab/` — the
-live win95 tile, its golden `/data/gallery-guests/Win95/win95-osr2.qcow2`, VM 900/925,
+was done on a namespaced copy of the Win95 station image in `/data/kvm9x-lab/` — the
+live win95 station, its checkpoint `/data/gallery-guests/Win95/win95-osr2.qcow2`, VM 900/925,
 CT 110 and the Solaris dir were never touched.
 
 ## Win311 hi-res SHIPPED — vbesvga.drv on `-vga std` @ 1024×768×8 (2026-07-27, LIVE)
@@ -57,24 +57,24 @@ BounceOnModeset=1
 - **`Depth=8` (256-colour, packed 1 byte/px)** is deliberate: it dodges Program
   Manager's 64 KB high-colour icon-segment limit (8bpp allows ~50 icons/group vs
   ~31 at 16bpp), keeps VRAM tiny (1024×768×1 = 768 KB, far under the 16 MiB std
-  default), and matches the Win9x tiles' packed-scanout capture path.
+  default), and matches the Win9x stations' packed-scanout capture path.
 - **`dacdepth=6` is LOAD-BEARING — do NOT use 8.** With `dacdepth=8` the driver puts
   the Bochs VBE DAC in 8-bit mode, which QEMU 11 **does not restore across
   savevm/loadvm**: the cold-boot palette is correct but the `-loadvm golden` restore
   comes back with a shifted palette (magenta Program Manager title bar, black
   Clock/min-max glyphs). `dacdepth=6` uses the standard VGA 6-bit DAC (historically
-  correct for Win3.x anyway), which survives the golden round-trip with colours
+  correct for Win3.x anyway), which survives the checkpoint round-trip with colours
   intact. This was caught by the mandatory post-`savevm`/`loadvm` re-verify — a fresh
   cold-boot screenshot alone would have missed it.
 
 **Device set** now: `-accel tcg -m 64 -smp 1 -machine pc-i440fx-11.0 -cpu pentium
 … -vga std …` (the ONLY launcher change is `-vga cirrus` → `-vga std`; SB16, ne2k,
-COM1 serial for the warpd agent, and the two IDE golden disks are unchanged). The
+COM1 serial for the warpd agent, and the two IDE checkpoint disks are unchanged). The
 COM1 `AGENT.EXE` warpd pointer agent is device-set-safe and auto-starts; it reads
 `GetSystemMetrics` so it lands 1:1 at 1024×768 with no code change.
 
 **Acceptance (all framebuffer-verified on a `/data/vms/soltest/win311-vbesvga-*`
-clone, then re-verified on the live tile):** readable Program Manager title/menu/
+clone, then re-verified on the live station):** readable Program Manager title/menu/
 group-icon glyphs; framebuffer settles bit-identical across samples; the software
 cursor is present in the scanout; warpd `M x y` lands the cursor tip pixel-exact at
 the commanded point; a group-window drag repaints cleanly (Win3.x outline-drag +
@@ -86,15 +86,15 @@ crisp reveal on release); and a streamhost points at it logging
 and the settle/readability gates pass) — but 1024×768 was shipped because the
 curated Program Manager window layout fills 1024×768 edge-to-edge (at 1280×1024 the
 group windows only occupy the top-left, leaving a large empty desktop) and it is the
-lighter egress/decode choice for this TCG tile (the resolution study caps un-bumped
-tiles at ~1280×1024 anyway).
+lighter egress/decode choice for this TCG station (the resolution study caps un-bumped
+stations at ~1280×1024 anyway).
 
-**Bake / cutover (what shipped).** Extract a consistent golden-state C:/D: with
+**Capture / cutover (what shipped).** Extract a consistent checkpoint-state C:/D: with
 `qemu-img convert -U -l golden` (immutable snapshot read — safe against the running
-tile), inject the driver + `SYSTEM.INI` offline, cold-boot `-vga std`, run the
+station), inject the driver + `SYSTEM.INI` offline, cold-boot `-vga std`, run the
 acceptance test, `savevm golden` on the std set, then a fresh `-loadvm golden`
 re-verify of readable-glyphs + cursor + colours. Live cutover: `systemctl stop
-streamhost@win311` → back up launcher + **both** goldens as `*.bak-cirrus-<ts>` →
+streamhost@win311` → back up launcher + **both** checkpoints as `*.bak-cirrus-<ts>` →
 `sed -i 's/-vga cirrus/-vga std/'` the launcher → copy **both** clone disks
 (same-`savevm` VM clock) over `win311-golden.qcow2` + `games-golden.qcow2` →
 `systemctl start streamhost@win311`. The launcher's `qemu-img snapshot -l | grep
@@ -104,8 +104,8 @@ golden` auto-adds `-loadvm golden`.
 
 The requested Win311 move from Standard VGA 640x480x16 to Cirrus 1024x768x256
 (with 800x600x256 as fallback) was proved only on namespaced copies under
-`/data/vms/soltest/win311-hires-codex-20260715*`. The live tile, launcher, and
-golden were not modified because neither Cirrus driver candidate passed the
+`/data/vms/soltest/win311-hires-codex-20260715*`. The live station, launcher, and
+checkpoint were not modified because neither Cirrus driver candidate passed the
 settled-framebuffer gate. Every launch retained the production device set:
 TCG, Pentium, `pc-i440fx-11.0`, `-vga cirrus`, SB16, NE2K PCI, and COM1, at
 nice 15 under pve-qemu 11.0.2.
@@ -145,26 +145,26 @@ SHA-256 `2810f2312a183928c74cdae77c5475ffab071b22a0affb6806df8b2bf279f23b`)
 produced a clean, settled **800x600x256** framebuffer on the same QEMU device
 set. That proves the resolution, framebuffer size, and base Windows install are
 viable; the blocker is the accelerated Cirrus Win3.1 driver path on modern
-QEMU. It is not a compliant substitute for a Cirrus-driver bake, so it was not
+QEMU. It is not a compliant substitute for a Cirrus-driver capture, so it was not
 promoted.
 
 Keep the builder's Standard VGA patch until a future QEMU/driver combination
 passes all clone gates: readable settled Program Manager at 1024x768x256 or
 800x600x256, COM1 warpd corner/centre probes using the dynamic
 `GetSystemMetrics` geometry, `savevm golden`, and a fresh exact-device-set
-`loadvm golden` framebuffer check. Do not re-bake live based only on a successful
+`loadvm golden` framebuffer check. Do not recapture live based only on a successful
 mode set or the first transient repaint.
 
 ## Builder rebuild trial: Win95, then Win98SE (2026-07-14/15)
 
-This is the reproducible fixture-bake record for `scripts/build-guests/tiles/win95.sh`
+This is the reproducible scene-capture record for `scripts/build-guests/tiles/win95.sh`
 followed by `scripts/build-guests/tiles/win98.sh`. Everything ran below one disposable
 `/data/vms/soltest/repro-win9x-<timestamp>/` namespace with unique QMP sockets,
-VNC displays, host-forward ports and pidfiles. The live tiles and
+VNC displays, host-forward ports and pidfiles. The live stations and
 `/data/gallery-guests` were read-only. Every state claim below was checked from a
 QMP `screendump` that was converted to PNG and visually inspected.
 
-| tile | verdict | end-to-end wall | final fixture size | golden round-trip | input result |
+| station | verdict | end-to-end wall | final checkpoint size | checkpoint round-trip | input result |
 |---|---|---:|---:|---|---|
 | `win95` | **PASS** | 29m 46s | 1,500,708,864 B (1.3 GiB allocated) | 25.6 MiB `golden`; fresh QEMU `-loadvm golden` reached desktop | warpnet TCP pointer probes landed exactly at (600,100), then (400,300) after restore |
 | `win98se` | **PASS** | 69m 50s | C: 1,161,625,600 B (665 MiB allocated); D: 407,699,527 B (389 MiB allocated) | C: 84 MiB and D: 0 B snapshots at the same VM clock; fresh QEMU restore framebuffer was byte-identical | no warpnet by design; QMP USB-tablet absolute event landed at 75% x / 50% y |
@@ -173,10 +173,10 @@ The full cold Win95 builder spent 842s and built/injected its source disk; its o
 verifier returned 2 because forced QEMU termination left ScanDisk running in the
 90-second proof frame. The full cold Win98 builder spent 372s after a separate 34s
 failed attempt exposed stdout logging contaminating a command-substitution path;
-its old `acpi=off`/TCG verifier returned 1 on a flat PnP frame. The fixture bakes
+its old `acpi=off`/TCG verifier returned 1 on a flat PnP frame. The scene captures
 were completed manually below. After correcting the builders, cached end-to-end
 replays returned 0: Win95 injection in 9s (`VERIFY=0`, because acceptance used the
-separate production KVM fixture), and Win98 CAB injection plus its production-profile
+separate production KVM scene), and Win98 CAB injection plus its production-profile
 framebuffer verifier in 136s.
 
 ### Hash-verified inputs and fixes discovered
@@ -201,7 +201,7 @@ framebuffer verifier in 136s.
   dialog on the emulated Pentium because the default i686 target may emit CMOV.
   The working command is
   `i686-w64-mingw32-gcc -O2 -s -mwindows -march=pentium -mtune=pentium -o warpnet.exe warpnet.c -lwsock32`;
-  the resulting 18,432-byte agent is baked as `C:\WARPNET.EXE` via `WIN.INI load=`.
+  the resulting 18,432-byte agent is captured as `C:\WARPNET.EXE` via `WIN.INI load=`.
 - Win95 no longer uses a loose archive.org regex for GTA. That regex selected an
   unrelated 837 MiB Rockstar collection with no `gtados` tree. Supply an explicit
   full `gtados` + `gtadata` ZIP through `GTA1_URL` or `payload/gta1.zip`.
@@ -236,7 +236,7 @@ when explicitly enabled, sends no blind keys.
     showed the cursor exactly at (400,300). The two desktop captures differed only
     in the tray clock advancing by one minute.
 
-The final Win95 fixture SHA-256 was
+The final Win95 checkpoint SHA-256 was
 `b2fa51ca64d1c1547c2b548b3487242d7acf8b9cfa5ad0d1c5074283ef1dd305`.
 
 ### Exact Win98SE one-time interaction transcript
@@ -300,13 +300,13 @@ location, already `C:\WINDOWS\OPTIONS\CABS`), `Enter` (Next). The repeated
     saved and restored 640x480 PPM files had the same MD5
     (`b65fc0f4c6de9e59eed3c9c88074eefe`) and the restored desktop was visually clean.
 
-Final fixture SHA-256 values: C:
+Final checkpoint SHA-256 values: C:
 `bde86b6a1ac026593d85315fad587d18100e12ee73d115d14c3f284d5ee7f564`;
 D: `4c42d99c9b9f273854ec76c7cba9d0553867efea40c34e2250ef039596c003ff`.
 
 ## TL;DR
 
-- The Win95 tile hangs under KVM because of **the guest's Cirrus Logic 5446 PCI
+- The Win95 station hangs under KVM because of **the guest's Cirrus Logic 5446 PCI
   display driver**, not because of the CPU/TSC/timer knobs everyone blames first.
 - **Fix that WORKS (verified to a full, responsive normal-mode desktop under KVM):**
   swap the guest's display driver from *Cirrus Logic 5446 PCI* to the generic
@@ -384,8 +384,8 @@ chosen encoding.
 The from-source automation in `scripts/build-guests/tiles/win95.sh` §6c downloads and
 hash-checks this archive, performs the CRLF-aware INF patch, stages `C:\VBEMP`, drives
 the Have-Disk selection on the KVM/std copy, cold-boots, imports `DRAG.REG`, and emits
-`verify-vbemp-640x480x16.ppm`. The live golden was re-baked under pinned
-`pc-i440fx-11.0` with `-vga std` and snapshot `golden` on 2026-07-16.
+`verify-vbemp-640x480x16.ppm`. The live checkpoint was recaptured under pinned
+`pc-i440fx-11.0` with `-vga std` and checkpoint `golden` on 2026-07-16.
 
 ## The QEMU/KVM launch args (the working recipe)
 
@@ -491,10 +491,10 @@ guest expects the std adapter.
 
 Even with the display driver fixed, a NIC present makes Win95 stop at the network-logon
 password dialog on a fresh `-snapshot` boot. Two clean options:
-- Keep the NIC and **click OK / send `ret`** once (the tile already dismisses this).
-- Or drop networking. If the tile does not need in-guest internet, omit the `pcnet`
+- Keep the NIC and **click OK / send `ret`** once (the station already dismisses this).
+- Or drop networking. If the station does not need in-guest internet, omit the `pcnet`
   device; the logon dialog then does not appear.
-This is the same dialog the live TCG tile shows on every boot; it is not KVM-specific
+This is the same dialog the live TCG station shows on every boot; it is not KVM-specific
 beyond the timing, and the std-VGA guest dismisses it and reaches the desktop normally.
 
 ## Before / after measurements (this host, verified)
@@ -521,11 +521,11 @@ lower idle CPU + `HLT=1` + a genuinely responsive normal-mode desktop. The price
 standard-VGA video (640×480×16). The orchestrator decides whether the speed is worth the
 visual downgrade for the museum aesthetic (see recommendation).
 
-## Recommendation for the live tile
+## Recommendation for the live station
 
 - If **responsiveness** wins: ship the std-VGA + KVM recipe. Snappy, ~1–2 % idle CPU,
-  frees the CT-110 core budget the TCG tiles fight over.
-- If **retro fidelity** (1024×768 hi-colour) wins: keep the current cirrus + TCG tile;
+  frees the CT-110 core budget the TCG stations fight over.
+- If **retro fidelity** (1024×768 hi-colour) wins: keep the current cirrus + TCG station;
   KVM cannot drive the cirrus driver on this image today.
 - A middle path worth a follow-up spike: test the cirrus driver at **256 colours** or
   **640×480** (different blit path) — it may dodge the deadlock while keeping cirrus.
@@ -543,13 +543,13 @@ visual downgrade for the museum aesthetic (see recommendation).
   (`accel=kvm`, in-kernel irqchip, `-cpu` host/pentium-class, standard VGA or QXL) and
   does **not** share this Win9x display-driver deadlock; do not carry these Win9x knobs
   to Win2000.
-- **Rain/idle-TSR** generalises to every Win9x tile (95/98/Me) to keep the idle vCPU
+- **Rain/idle-TSR** generalises to every Win9x station (95/98/Me) to keep the idle vCPU
   from pegging a core under KVM.
 
 ## Absolute pointer — two different routes (win95 = warpnet agent, win98se = usb-tablet)
 
 **win98se** now gets a true absolute pointer from a **`usb-tablet`** (`SH_POINTER=abs`),
-enabled by switching that tile to `acpi=on` — see the win98se bullet below. **win95**
+enabled by switching that station to `acpi=on` — see the win98se bullet below. **win95**
 keeps `usb=off` (part of its anti-protection-error combo) so it has no usable USB HID
 stack; its only pointing hardware is the PS/2 **relative** mouse, and Win9x pointer
 acceleration makes the streamhost abs→rel homing bridge drift. The fix **for win95** is
@@ -557,17 +557,17 @@ the in-guest agent `streamhost/guest-agents/win9x/warpnet.c` (Win32, `SetCursorP
 `mouse_event`, Winsock TCP `:7777`, speaks the warpd `M/P/R/B` newline protocol — daemon
 side `InputBackend::Warpd` is unchanged):
 
-- **win95** — WORKS, baked 2026-07 (hostfwd `127.0.0.1:57791` → `:7777`), commit
-  `3d47064`, coalescing fix `39d17b3`. Calibration 2026-07-12: driving the live tile's
+- **win95** — WORKS, captured 2026-07 (hostfwd `127.0.0.1:57791` → `:7777`), commit
+  `3d47064`, coalescing fix `39d17b3`. Calibration 2026-07-12: driving the live station's
   warpd moves the cursor to the exact commanded pixels and renders it in screendumps.
 
-- **win98se** — absolute pointer via **usb-tablet: BAKED + LIVE** (2026-07-12). The earlier
-  "PCI is dead, so it's impossible" conclusion was **misdiagnosed**. The tile now runs
-  `SH_POINTER=abs` with a `usb-tablet`; the re-baked golden restores (via `-loadvm golden`)
-  to a working 1:1 absolute pointer, verified at 3 commanded positions on the live tile.
+- **win98se** — absolute pointer via **usb-tablet: CAPTURED + LIVE** (2026-07-12). The earlier
+  "PCI is dead, so it's impossible" conclusion was **misdiagnosed**. The station now runs
+  `SH_POINTER=abs` with a `usb-tablet`; the recaptured checkpoint restores (via `-loadvm golden`)
+  to a working 1:1 absolute pointer, verified at 3 commanded positions on the live station.
 
   **Real root cause of the dead PCI bus = `acpi=off`, NOT the `usb=off`/`-apic`/
-  `kernel-irqchip=off` bundle.** This golden is an **ACPI-HAL install** — `System devices`
+  `kernel-irqchip=off` bundle.** This checkpoint is an **ACPI-HAL install** — `System devices`
   in Device Manager lists *"Advanced Configuration and Power Interface (ACPI) BIOS"*. Booting
   it with `-machine …,acpi=off` is therefore a **HAL/firmware mismatch**: the ACPI enumerator
   finds no ACPI tables, Win98 falls back to *"Plug and Play BIOS (fail safe)"* (yellow-bang,
@@ -606,15 +606,15 @@ side `InputBackend::Warpd` is unchanged):
   old KVM timer/freeze — **no `FIX95CPU`, no `kernel-irqchip=off`, no `-apic` needed**. TCG +
   `acpi=on` is an equally-clean fallback (idle auto-pause covers the TCG idle cost).
 
-  **Bake recipe (baked into `scripts/build-guests/tiles/win98.sh`):** stage `hidusb.sys` + cabs
+  **Capture recipe (captured into `scripts/build-guests/tiles/win98.sh`):** stage `hidusb.sys` + cabs
   (above) → cold-boot `acpi=on` → drive the PnP cascade, pointing any "insert disk" copy prompt
   at `C:\WINDOWS\OPTIONS\CABS` (Win98 then remembers it) and Cancel/Finish-marking the handful
   of driverless ACPI stubs (ACPI Generic Bus/EIO Bus, PnP Monitor, IDE bus-master) → idle
   desktop → verify 1:1 abs tracking + `winipcfg 10.0.2.15` → `savevm golden` →
-  `tile.env SH_POINTER=abs`. The tile boots via `-loadvm golden`, so the RAM snapshot restores
+  `tile.env SH_POINTER=abs`. The station boots via `-loadvm golden`, so the RAM snapshot restores
   the settled desktop with the pointer live (no cold-boot re-scan, no nag). Live launcher:
   `-enable-kvm -machine pc,acpi=on -cpu pentium3 … -usb -device usb-tablet,id=tab0` (backup of
-  the pre-cutover golden C: at `win98se-kvm.qcow2.pre-usbtablet-*`).
+  the pre-cutover checkpoint C: at `win98se-kvm.qcow2.pre-usbtablet-*`).
 
   The old **serial-warpnet** path (below) is obsolete for win98se — the usb-tablet is the live
   absolute-pointer route. Do **not** re-add `acpi=off` / `usb=off` / `-apic` / `kernel-irqchip=off`.
@@ -627,15 +627,15 @@ side `InputBackend::Warpd` is unchanged):
   symptom was real, but the **cause was `acpi=off`** (same no-PCI-enumeration as above), so
   the NIC will come back once ACPI is on — making the device-set-safe TCP path potentially
   usable too. The serial transport (`warpnet-serial` over an `isa-serial` chardev,
-  `SH_POINTER=warpd SH_WARPD_ADDR=unix:…`) remains a valid fallback that also needs a re-bake.
+  `SH_POINTER=warpd SH_WARPD_ADDR=unix:…`) remains a valid fallback that also needs a recapture.
   </details>
 
-## Full-window drag fix — VBEMP-9x packed linear framebuffer (win98se, BAKED + LIVE 2026-07-13; REGRESSED 07-15; RE-BAKED 2026-07-26)
+## Full-window drag fix — VBEMP-9x packed linear framebuffer (win98se, CAPTURED + LIVE 2026-07-13; REGRESSED 07-15; RE-CAPTURED 2026-07-26)
 
-> **2026-07-26 re-bake (current live state).** The 2026-07-15 full builder rebuild
-> (see "Builder rebuild trial" above) re-baked the win98se golden straight from the
-> planar base and its PnP transcript re-selected the inbox **Standard PCI Graphics
-> Adapter (VGA)** driver — so the shipped golden **silently reverted to 640×480
+> **2026-07-26 recapture (current live state).** The 2026-07-15 full builder rebuild
+> (see "Builder rebuild trial" above) recaptured the win98se checkpoint straight from the
+> planar seed and its PnP transcript re-selected the inbox **Standard PCI Graphics
+> Adapter (VGA)** driver — so the shipped checkpoint **silently reverted to 640×480
 > 16-COLOUR PLANAR** and the `DragFullWindows` crawl returned (its `labctl shot` was a
 > 4-bit-colormap PNG; win95's was 8-bit). This was re-fixed on **2026-07-26** by
 > re-applying the exact VBEMP-9x recipe below: a namespaced clone was booted from a
@@ -645,10 +645,10 @@ side `InputBackend::Warpd` is unchanged):
 > unlike Win95 OSR2), colour depth confirmed **High Color (16 bit)** with the smooth
 > gradient bar, `DragFullWindows=1` enabled on the Effects tab, and a clean shutdown.
 > The verified clone C: was then copied over `win98se-kvm.qcow2` (both disks' stale
-> `golden` snapshots removed first for a consistent pair), the tile cold-booted, the
-> **Notepad** golden fixture re-established (clock hidden, steady caret, focused), and
+> `golden` snapshots removed first for a consistent pair), the station cold-booted, the
+> **Notepad** checkpoint scene re-established (clock hidden, steady caret, focused), and
 > `savevm golden` taken (C: 82.9 MiB + D: 0 B at one VM clock). Live re-verified: the
-> served tile shows the hi-color desktop and a title-bar drag tracks the cursor with
+> served station shows the hi-color desktop and a title-bar drag tracks the cursor with
 > the full window painted at every step (device set unchanged — still `-vga std` +
 > `acpi=on` + usb-tablet, so the launcher/registry did not change).
 > **Watch out:** the Win9x guest **warm restart hangs at "Windows is now restarting…"**
@@ -660,10 +660,10 @@ side `InputBackend::Warpd` is unchanged):
 
 **Symptom.** With Windows' "Show window contents while dragging" (`DragFullWindows=1`)
 ON, dragging a window on win98se crawled at **<1 FPS** — the window body could not
-keep up with the cursor. WinXP is smooth because its tile runs the VBEMP VESA
+keep up with the cursor. WinXP is smooth because its station runs the VBEMP VESA
 linear-framebuffer miniport (`winxp-vbemp-hires.sh`); win98se did not.
 
-**Root cause (established).** The win98se golden shipped the inbox **Standard PCI
+**Root cause (established).** The win98se checkpoint shipped the inbox **Standard PCI
 Graphics Adapter (VGA)** driver, which on QEMU `-vga std` runs **640×480 × 16-COLOUR
 PLANAR** (VGA mode 12h, 4 bit-planes). Every pixel write is a read-modify-write across
 4 planes via the VGA sequencer/GC latches — **CPU-bound in the guest**, so a full-window
@@ -672,7 +672,7 @@ Settings: *Standard PCI Graphics Adapter (VGA)*, **16 Colors**, 640×480.)
 
 **Fix = give Win98 a PACKED LINEAR framebuffer, exactly like WinXP.** The device set is
 **unchanged** (`-vga std`, i.e. QEMU's Bochs VBE) — this is a GUEST-INTERNAL display-driver
-swap, so it needs a **golden re-bake** (`-loadvm golden` must still match the device set).
+swap, so it needs a **checkpoint recapture** (`-loadvm golden` must still match the device set).
 
 - **Driver = bearwindows "VBEMP 9x/ME" universal VBE display driver** — a *different*
   package from the NT-only `vbempk.zip` used for XP. NT's VBEMP (`vbempk.zip`) contains
@@ -697,19 +697,19 @@ swap, so it needs a **golden re-bake** (`-loadvm golden` must still match the de
 - **Resolution stays 640×480.** The fix is the *depth/format* change (planar→packed), not
   resolution. Keeping 640×480 preserves the streamhost capture geometry — QEMU's dbus
   display always presents a **32bpp packed** scanout surface regardless of guest depth
-  (`ScanoutMap 640x480 stride=2560`), so **no `streamhost`/SPA geometry change is needed**.
-  Win98's VBEMP does list 800×600/1024×768 at 16/32bpp if a larger tile is ever wanted;
-  bump `NEKO_SCREEN`/tile geometry to match if you do.
+  (`ScanoutMap 640x480 stride=2560`), so **no `streamhost`/UI geometry change is needed**.
+  Win98's VBEMP does list 800×600/1024×768 at 16/32bpp if a larger station is ever wanted;
+  bump `NEKO_SCREEN`/station geometry to match if you do.
 
 **Cold-boot PnP caveat (not caused by this change).** After the driver swap, a *cold* boot
 re-detects the image's driverless PnP stubs as *Add New Hardware Wizard* pop-ups
 ("Unknown Device", VBEMP's DDC **"Plug and Play Monitor"**, "Intel 82371SB … IDE
-Controller") — the same stubs the original bake Cancel/Finish-marks. **Cancel them all**
-during the bake, reach a clean desktop, then `savevm golden`. The live tile boots via
-`-loadvm golden` (RAM snapshot), so **the wizards never appear at tile launch** — the
+Controller") — the same stubs the original capture Cancel/Finish-marks. **Cancel them all**
+during the capture, reach a clean desktop, then `savevm golden`. The live station boots via
+`-loadvm golden` (RAM snapshot), so **the wizards never appear at station launch** — the
 restored settled desktop has them dismissed.
 
-**Verified smooth (framebuffer cadence).** On both the clone and the live tile, a scripted
+**Verified smooth (framebuffer cadence).** On both the clone and the live station, a scripted
 title-bar drag with `DragFullWindows=1` produced **8 distinct, fully-rendered full-window
 frames in ~0.2 s** (~30 ms/step incl. QMP round-trips → the guest repaint is *not* the
 bottleneck; it tracks the cursor in real time). Each captured frame shows the **entire
@@ -717,19 +717,19 @@ window** (title, toolbar, address bar, all icons) painted at the new position wi
 vacated desktop correctly restored — the anti-crawl signature — vs the established <1 FPS
 planar crawl. Depth confirmed *High Color (16 bit)* in Display Properties.
 
-**Bake / cutover recipe (what shipped 2026-07-13).**
+**Capture / cutover recipe (what shipped 2026-07-13).**
 1. Clone under `/data/vms/soltest/win98-drag/`: extract a **consistent** C:/D: from the
-   live golden with `qemu-img convert -l golden …` (NOT a raw `cp` of the live-mutating
+   live checkpoint with `qemu-img convert -l golden …` (NOT a raw `cp` of the live-mutating
    qcow2 — that yields a torn image → 0E BSOD on boot). Same device set + `-fda vbe9x.img`.
 2. Install VBEMP-9x (above), enable `DragFullWindows=1`, **clean Win98 shutdown**
    (flushes VCACHE so the FS is consistent), verify a clean no-floppy cold boot + smooth drag.
-3. Live cutover: confirm the live tile is idle/stable → `systemctl stop streamhost@win98se`
+3. Live cutover: confirm the live station is idle/stable → `systemctl stop streamhost@win98se`
    → kill QEMU by pidfile → back up **both** qcow2s (`*.bak-predrag-*`) → delete the stale
    `golden` snapshot from `win98se-games.qcow2` (so `savevm` can re-create a consistent
-   snapshot across both disks) → `cp clone/c.qcow2 → win98se-kvm.qcow2` → cold-boot the tile
+   snapshot across both disks) → `cp clone/c.qcow2 → win98se-kvm.qcow2` → cold-boot the station
    launcher (auto cold-boot, snapshot absent) → dismiss the PnP wizard cascade → clean
    desktop → `savevm golden` (85.7 MiB on C:, 0 B on D:) → `loadvm golden` verify →
-   relaunch QEMU (now auto `-loadvm golden`, instant fixture) → `systemctl start
+   relaunch QEMU (now auto `-loadvm golden`, instant scene) → `systemctl start
    streamhost@win98se` → confirm `[capture] ScanoutMap 640x480` + `first frame 640x480`.
    The launcher (`qemu-streamhost.sh`) is **unchanged** — still `-vga std` + usb-tablet +
    `acpi=on` (the 2026-07-12 absolute-pointer/ACPI config is preserved).
@@ -788,19 +788,19 @@ VNC_DISP=93 NONET=1 VGA=std MACHINE=pc,acpi=off,usb=off,kernel-irqchip=off \
 
 ---
 
-<!-- APPENDIX: merged from scripts/neko-win95-perf-tuning.md — audio/input/video tuning of the neko-era Win95 tile (complementary findings; the KVM recipe above is the authoritative accel story) -->
+<!-- APPENDIX: merged from scripts/neko-win95-perf-tuning.md — audio/input/video tuning of the neko-era Win95 station (complementary findings; the KVM recipe above is the authoritative accel story) -->
 
-# neko Win95 tile — audio/input/video performance tuning
+# neko Win95 station — audio/input/video performance tuning
 
 > **Historical (neko-era) appendix.** The Win9x guests run today as the streamhost
-> tiles `win95` / `win98se` / `win311` (`streamhost/tiles-manifest.sh`). The
+> stations `win95` / `win98se` / `win311` (`streamhost/tiles-manifest.sh`). The
 > neko-side artifacts referenced in this appendix — `gallery-integrate-all.sh`,
 > the compose overrides `scripts/tools/win95-perf-override.yml` /
 > `win311-perf-override.yml`, and `scripts/tools/win95-kvm-boottest.sh` — are all
 > neko-era, deleted in the 2026-07 restructure — git history. The guest-side
 > findings (KVM viability, Rain/AmnHLT idle TSR, 4:3 geometry) carry over.
 
-Investigated 2026-07-04 on CT 110 "osgallery" (host 192.0.2.10), live tile
+Investigated 2026-07-04 on CT 110 "osgallery" (labhost 192.0.2.10), live station
 http://192.0.2.12:8091. All facts below were VERIFIED against the then-running
 container and an isolated KVM boot test (VMID 961, torn down). Do NOT edit
 `gallery-integrate-all.sh` (neko-era, deleted) or `docker-compose.gallery-guests.yml`
@@ -821,7 +821,7 @@ qemu-system-x86_64 -name Windows 95 OSR2 -m 256 -smp 2 -audiodev pa,id=snd \
 
 - **NO `-enable-kvm`, no `accel=kvm`** → `-machine pc,...` defaults to **TCG software
   emulation**. `/dev/kvm` IS passed into CT 110 (crw-rw---- root:kvm) and the host
-  has virt flags, but the win95 tile never asks for it. (All other kvm-capable tiles —
+  has virt flags, but the win95 station never asks for it. (All other kvm-capable stations —
   win11, macos, android, serenity — add `-enable-kvm` in their `QEMU_EXTRA`; win95's
   `QEMU_EXTRA` does not.)
 - **`-smp 2`** comes from `launch-qemu.sh` default (`QEMU_SMP:-2`). Win95 is
@@ -834,18 +834,18 @@ qemu-system-x86_64 -name Windows 95 OSR2 -m 256 -smp 2 -audiodev pa,id=snd \
 - **Display**: `NEKO_SCREEN=1280x720@30`; live guest video mode is **640x480**
   (framebuffer screenshot: desktop fills only the top-left quadrant, black padding
   right/bottom). `zoom-to-fit=on` hardcoded in launch-qemu.sh.
-- **Host contention**: CT 110 is `cores: 4` (host has 16). Observed
-  **load average 50, 0.0% idle** — every TCG neko tile plus the sibling VMs
+- **Labhost contention**: CT 110 is `cores: 4` (labhost has 16). Observed
+  **load average 50, 0.0% idle** — every TCG neko station plus the sibling VMs
   (macOS 925, Win11 900) are contending for those 4 cores. TCG guests are
   ~10-20x more CPU-hungry than KVM, so they are the first to starve.
 
 ## KVM viability — TESTED, it works
 
-Isolated boot test: same golden qcow2, `-machine pc,acpi=off,usb=off,accel=kvm
--cpu pentium -m 256 -smp 1 -snapshot` (no writes to the golden image), headless
+Isolated boot test: same seed qcow2, `-machine pc,acpi=off,usb=off,accel=kvm
+-cpu pentium -m 256 -smp 1 -snapshot` (no writes to the seed image), headless
 VNC. Result: **boots cleanly to a 1024x768 Win95 desktop, renders live, stays
 stable, no corruption, no triple-fault.** The build-script warning "KVM
-hangs/corrupts first-boot PnP" is about the FIRST install boot — this golden
+hangs/corrupts first-boot PnP" is about the FIRST install boot — this seed
 image is already past PnP and already patcher9x-patched, so that warning no
 longer applies. Reproduce with `scripts/tools/win95-kvm-boottest.sh` (neko-era,
 deleted — recover from git history, or just replay the QEMU line above).
@@ -858,7 +858,7 @@ install a CPU-idle TSR (e.g. `AmnHLT`/`Rain`) to halt the idle loop.
 
 ## Fixes (highest impact first)
 
-### 1. Enable KVM for the win95 tile  [PRIMARY — fixes audio + input + slow desktop at once]
+### 1. Enable KVM for the win95 station  [PRIMARY — fixes audio + input + slow desktop at once]
 In the `win95:` service `QEMU_EXTRA`, prepend `-enable-kvm` and force uniprocessor:
 
 ```yaml
@@ -872,13 +872,13 @@ block instead.) Then recreate ONLY this service:
 `docker compose -f docker-compose.gallery-guests.yml up -d --force-recreate win95`.
 Expected: ~10-20x more effective guest CPU → login chime stops crackling, desktop
 appears in seconds not a minute, mouse becomes responsive. Risk: low (boot
-validated); if a specific host microcode ever destabilises it, revert the one line.
+validated); if a specific labhost microcode ever destabilises it, revert the one line.
 
 ### 2. Relieve CPU oversubscription  [supports #1]
-CT 110 is capped at 4 cores against 16 physical. Even with KVM, 8+ neko tiles plus
+CT 110 is capped at 4 cores against 16 physical. Even with KVM, 8+ neko stations plus
 sibling VMs on 4 cores contend. Raise CT 110 `cores` (e.g. to 8) in
 `/etc/pve/lxc/110.conf`, or `cpulimit`/`cpuunits` weight the win95 service. This is
-a host/orchestrator decision (coordinate — siblings share this host). TCG tiles are
+a labhost/orchestrator decision (coordinate — siblings share this labhost). TCG stations are
 the main CPU sink; moving win95 to KVM already removes the biggest one.
 
 ### 3. Audio buffer hardening  [after KVM; makes underruns impossible, not just rare]
@@ -897,7 +897,7 @@ Until launch-qemu.sh is parameterised, #1 alone is expected to clear the crackle
 ### 4. Input — keep PS/2, do NOT switch to usb-tablet
 Win95 OSR2 has no usable built-in USB HID stack, so `-usb -device usb-tablet`
 (the absolute-pointer trick that helps DOS/modern guests) will NOT be picked up by
-Win95 and risks breaking the tile — do not use it here. The mouse lag is
+Win95 and risks breaking the station — do not use it here. The mouse lag is
 overwhelmingly CPU starvation (the guest can't service the i8042 IRQ), so #1 is the
 real fix. Optional polish inside the guest image: Control Panel → Mouse → Motion →
 set pointer speed to the middle notch and disable acceleration/trails, which aligns
@@ -908,7 +908,7 @@ Blur = a 640x480 guest inside a 1280x720 neko frame, then browser-upscaled. Make
 guest resolution equal the neko screen so pixels map 1:1 (no scaling anywhere until
 the user's own browser window):
 
-- Set the guest to **1024x768 High Color** persistently: boot the golden image ONCE
+- Set the guest to **1024x768 High Color** persistently: boot the seed image ONCE
   **without `-snapshot`**, set Display Properties → Settings → 1024x768, reboot to
   confirm it sticks, `File → Shut Down` to a clean "safe to turn off", re-add
   `-snapshot`. (The image already supports 1024x768 — the KVM test came up at it.)
@@ -917,11 +917,11 @@ the user's own browser window):
   is used (no black padding). Keep 30fps.
 
 ## Do-not-touch / hygiene honoured
-- Only inspected + one isolated test VM (VMID 961, VNC :61) on the host, `-snapshot`
-  on the read-only golden image (no multi-GB copy; pool FREE was 36.5G). Torn down
+- Only inspected + one isolated test VM (VMID 961, VNC :61) on labhost, `-snapshot`
+  on the read-only seed image (no multi-GB copy; pool FREE was 36.5G). Torn down
   via QEMU monitor `quit` (no pkill). Live `osgallery-win95-1` left running/healthy.
 - Did not edit `gallery-integrate-all.sh` (neko-era, deleted), the compose file, or
-  any other tile; did not touch VM 900/925 or CT 112.
+  any other station; did not touch VM 900/925 or CT 112.
 
 ---
 
@@ -929,7 +929,7 @@ the user's own browser window):
 
 Supplements section #5 above with the exact, verified neko-side facts. Section #5's
 "make guest res == neko screen" is correct and is the single deepest fix; the items
-below are the neko encoder/client levers that also matter and need no golden-image edit.
+below are the neko encoder/client levers that also matter and need no seed-image edit.
 
 ## Verified encode pipeline (from `docker logs osgallery-win95-1`)
 Image is **n.eko v3** ("nurdism/m1k1o dev@dev"). Default pipeline in effect (no
@@ -956,11 +956,11 @@ ximagesrc display-name=:99.0 show-pointer=false use-damage=false !
 ## Blur decomposition (all three compound)
 1. **640x480 guest in a 1280x720 frame** → 72% of every frame is black; 2 Mbps CBR is spent
    ~1/3 on real content and the rest re-encoding static black, and the browser bilinear-scales
-   the whole frame (incl. black bars) to the tile so guest pixels never land 1:1. (== #5.)
+   the whole frame (incl. black bars) to the station so guest pixels never land 1:1. (== #5.)
 2. **VP8 `max-quantizer=20` + `cpu-used=4` + CBR** softens 1px text / dithered teal.
 3. **No client pixelated rendering** → final upscale is smoothed.
 
-## VIDEO changes (none require a golden-image edit; do alongside #5)
+## VIDEO changes (none require a seed-image edit; do alongside #5)
 
 ### A1 — pixelated client upscale  [HIGH perceived sharpness, LOW risk, do first]
 Client sets no `image-rendering`. Serve a CSS override (extra `<style>` mounted over
@@ -996,7 +996,7 @@ TCG guest. Only if #1 (KVM) frees CPU. Otherwise stay on VP8.
 ## Recommended VIDEO order
 A1 (instant) → #5 (guest res == neko screen, kills black-bar blur) → A2 (crisp text) → then
 A4/A3 as needed. All live screen tests here used the admin API and were RESTORED to
-1280x720@30; the running tile was left unchanged.
+1280x720@30; the running station was left unchanged.
 
 ---
 
@@ -1007,12 +1007,12 @@ exercised end-to-end. Confirms section #1 and adds the missing hard proof + one
 correction. Live `osgallery-win95-1` (pid 12, TCG) left untouched and healthy; test
 VM 961 torn down by pidfile (no pkill).
 
-## Hard proof the live tile is TCG, and KVM is available-but-unused
+## Hard proof the live station is TCG, and KVM is available-but-unused
 - Live qemu (pid 12) cmdline: no `-enable-kvm`/`-accel kvm` → TCG. Confirmed.
 - `/proc/12/fd` contains **no /dev/kvm fd** (`NO_KVM_FD_OPEN`) → definitively not using KVM.
 - ~36 min accumulated CPU on an idle desktop = TCG burn signature.
 - KVM is present and usable, just never requested:
-  - Host `/dev/kvm` = `crw-rw---- root:render (10,232)`; LXC 110.conf passes it in
+  - Labhost `/dev/kvm` = `crw-rw---- root:render (10,232)`; LXC 110.conf passes it in
     (`lxc.cgroup2.devices.allow: c 10:232 rwm` + `lxc.mount.entry: /dev/kvm`).
   - Inside the win95 container `/dev/kvm` = `crw-rw-rw-` (world-rw). This is made so at
     each start by **`/usr/local/bin/fix-kvm-perms.sh`** run as root via supervisord
@@ -1021,16 +1021,16 @@ VM 961 torn down by pidfile (no pkill).
   - `qemu-system-x86_64 -accel help` lists **tcg AND kvm**; binary is QEMU 10.0.8.
 
 ## KVM boot actually exercised (VMID 961, vnc 127.0.0.1:61, QMP)
-Same golden qcow2, `-accel kvm -cpu host -m 256 -smp 1 -snapshot` (read-only base, writes
+Same seed qcow2, `-accel kvm -cpu host -m 256 -smp 1 -snapshot` (read-only seed, writes
 to throwaway overlay). QMP `query-kvm` returned **`{"enabled":true,"present":true}`** — i.e.
 KVM was genuinely engaged, not silently falling back. Guest booted to the Win95 splash
 cleanly, no KVM error, no triple-fault. This is the direct proof the fix path works.
 
 ## Correction to sections #5 / Appendix A: guest native res is 640x480, not 1024x768
-Framebuffer truth (neko admin `screen/shot.jpg` on the LIVE tile + QMP screendump on the
+Framebuffer truth (neko admin `screen/shot.jpg` on the LIVE station + QMP screendump on the
 KVM test): the guest renders **640x480** (boot logo 640x400). Appendix A section states the
 "KVM test came up at 1024x768" (lines ~45/112) — not what I observed; the persisted mode in
-the golden image is 640x480. Practical impact: the section-#5 plan (raise guest to
+the seed image is 640x480. Practical impact: the section-#5 plan (raise guest to
 800x600/1024x768 and match `NEKO_SCREEN`) is still the right sharpness fix, but the image
 does **not** already boot at 1024x768 — you must set + persist it (boot once without
 `-snapshot`, change Display Properties, shut down clean, re-add `-snapshot`).
@@ -1043,14 +1043,14 @@ section-#1 `-enable-kvm -cpu pentium -smp 1`; only try `-cpu host`/`pentium3` if
 last few % and are willing to re-validate boot. Either way `-smp 1` (Win95 is uniprocessor).
 
 ## Disk/backend (no bottleneck for the 1-min load)
-`-drive ...,if=ide -snapshot`, no explicit `cache=`. Base qcow2 is volume-mounted **read-only**
+`-drive ...,if=ide -snapshot`, no explicit `cache=`. Seed qcow2 is volume-mounted **read-only**
 + `-snapshot` (throwaway overlay), so no image-corruption risk and no ZFS write amplification
-on the base. The ~1-min desktop appearance is **TCG CPU starvation, not I/O** — under KVM it
+on the seed. The ~1-min desktop appearance is **TCG CPU starvation, not I/O** — under KVM it
 collapses to seconds. Optional micro-opt: add `cache=unsafe` to the ephemeral overlay (safe
 precisely because `-snapshot` discards it), but it is a rounding error next to enabling KVM.
 
 ## Bottom line
-Hypothesis CONFIRMED: win95 tile is TCG. KVM is fully wired (device passthrough + perms fix +
+Hypothesis CONFIRMED: win95 station is TCG. KVM is fully wired (device passthrough + perms fix +
 binary support) and merely not requested by `launch-qemu.sh`'s assembled args. Enabling it
 (section #1) is the single highest-impact fix and is proven to boot.
 
@@ -1059,10 +1059,10 @@ binary support) and merely not requested by `launch-qemu.sh`'s assembled args. E
 # MEASUREMENT & APPLIED-FIX PASS  [2026-07-04 — measure + apply + re-measure]
 
 This pass built a reusable QoE harness, captured BEFORE numbers, APPLIED fixes to the live
-win95 tile, and re-measured. **Headline result: the diagnosis's #1 fix (enable KVM) does NOT
+win95 station, and re-measured. **Headline result: the diagnosis's #1 fix (enable KVM) does NOT
 work for this guest — Win95 HANGS under KVM — so it was reverted.** Only the TCG-safe subset
 was kept. All work touched the win95 service only (compose OVERRIDE, never the shared
-`docker-compose.gallery-guests.yml`); VMs 900/925, CT 112 and sibling tiles untouched.
+`docker-compose.gallery-guests.yml`); VMs 900/925, CT 112 and sibling stations untouched.
 
 ## Historical neko measurement harness (retired 2026-07-16)
 
@@ -1074,7 +1074,7 @@ plane. Use `labctl health`, `labctl assert`, `scripts/dev/verify-tile.sh`, and
 
 - **Retired `gallery-perf-probe.mjs`** — zero-dependency Node (>=22) probe. Drove the
   system Chrome over the DevTools Protocol using Node's built-in `WebSocket`/`fetch` (no
-  puppeteer, no chromium download). For any neko tile it reported:
+  puppeteer, no chromium download). For any neko station it reported:
   - WebRTC video via `RTCPeerConnection.getStats`: encoded frameWidth/Height, fps
     (reported + measured from `framesDecoded` delta), receive bitrate, RTT, jitter,
     packetsLost, freeze/pause counters, availableIncomingBitrate.
@@ -1088,8 +1088,8 @@ plane. Use `labctl health`, `labctl assert`, `scripts/dev/verify-tile.sh`, and
   - It required a **HEADFUL** browser for input latency: neko only forwarded mouse/keyboard to the
     guest once the client is pointer-engaged; headless Chrome gets *control* but its synthetic
     events are not forwarded. `--headless` gives WebRTC+geometry only (input reports null).
-- **Retired `gallery-perf-cpu.sh`** — host+guest CPU sampler over SSH. Reported host
-  loadavg, the tile qemu's own CPU% (host-side `/proc` utime+stime delta — it finds the qemu
+- **Retired `gallery-perf-cpu.sh`** — host+guest CPU sampler over SSH. Reported labhost
+  loadavg, the station qemu's own CPU% (host-side `/proc` utime+stime delta — it finds the qemu
   PID uniquely by the guest-disk filename so it never mis-samples a sibling VM), qemu lifetime
   %CPU, whether KVM is engaged on the live cmdline, and whether a `/dev/kvm` fd is actually
   open in the running qemu.
@@ -1099,10 +1099,10 @@ plane. Use `labctl health`, `labctl assert`, `scripts/dev/verify-tile.sh`, and
   `GET/DELETE /api/sessions` to list/clear stale viewer sessions.)
 
 ## Environment caveat that shapes the numbers
-The tile serves a **static desktop**, and neko encodes **on-change only**, so static fps is
+The station serves a **static desktop**, and neko encodes **on-change only**, so static fps is
 1–5 and bitrate is single-digit kbps *by design* — not a defect. Input->photon is therefore
 floored by the encode cadence (~250 ms–1 s between frames) on top of guest speed, and the
-shared host had reconnecting viewer sessions (a sibling "baseline-*" probe kept re-appearing)
+shared labhost had reconnecting viewer sessions (a sibling "baseline-*" probe kept re-appearing)
 that contend for neko control. Net: absolute input-latency numbers are noisy; treat them as
 order-of-magnitude, and lean on **content-fill %** and **CPU** for clean attribution.
 
@@ -1128,17 +1128,17 @@ Applied `QEMU_MACHINE=pc,acpi=off,usb=off,accel=kvm` + `QEMU_SMP=1` and force-re
 - **Consequence:** mouse lag (#1), the ~1-min desktop load (#2), and audio crackle (#3) are all
   TCG-CPU-bound and **cannot be fixed without KVM**, which is not usable on this image as-is.
   Enabling KVM needs guest-side timing work first (e.g. a Win9x CPU-idle/timing TSR, a slowed
-  TSC `-cpu pentium,tsc-frequency=…`, or re-testing the golden image after such a patch).
+  TSC `-cpu pentium,tsc-frequency=…`, or re-testing the seed image after such a patch).
   **Do not ship `accel=kvm` for win95 until the hang is resolved and framebuffer-verified.**
 
-## What was APPLIED and LEFT RUNNING on the neko tile (TCG-safe, verified booting to a full desktop)
+## What was APPLIED and LEFT RUNNING on the neko station (TCG-safe, verified booting to a full desktop)
 Compose override `scripts/tools/win95-perf-override.yml` (neko-era, deleted; was also
 placed at `/opt/osgallery/win95-perf-override.yml` on CT 110):
 
 | key | baseline | applied | why |
 |-----|----------|---------|-----|
 | `QEMU_SMP` | (default 2) | **1** | Win95 is uniprocessor; drops a whole TCG emulation thread → less host contention. Zero guest downside. |
-| `NEKO_SCREEN` | `1280x720@30` | **`800x600@30`** | match guest 4:3 → guest fills 66.8% of the frame vs 34.8% → ~half the black-bar bitrate waste; desktop fills the tile. |
+| `NEKO_SCREEN` | `1280x720@30` | **`800x600@30`** | match guest 4:3 → guest fills 66.8% of the frame vs 34.8% → ~half the black-bar bitrate waste; desktop fills the station. |
 
 Apply / revert (neko-era commands, for the record):
 ```
@@ -1149,7 +1149,7 @@ docker compose -f docker-compose.gallery-guests.yml -f win95-perf-override.yml \
 docker compose -f docker-compose.gallery-guests.yml up -d --no-deps --force-recreate win95   # revert
 ```
 
-## BEFORE / AFTER (same harness, live tile)
+## BEFORE / AFTER (same harness, live station)
 | metric | BEFORE (TCG, `-smp 2`, 1280x720) | AFTER (TCG, `-smp 1`, 800x600) | note |
 |--------|----------------------------------|--------------------------------|------|
 | capture resolution | 1280x720 (16:9) | 800x600 (4:3) | matches 4:3 guest |
@@ -1169,58 +1169,58 @@ desktop** — all icons + Start taskbar + clock — under TCG+smp1+800x600.
 
 ## Honest scorecard vs the four symptoms
 1. **Mouse lag** — NOT fixed. Root cause is TCG CPU starvation; needs KVM (hangs). smp=1 gives
-   a little host-contention relief only.
+   a little labhost-contention relief only.
 2. **~1-min desktop load** — NOT fixed (still >60 s). Pure TCG single-core speed; smp=1 doesn't
    speed the guest's one CPU. KVM required.
 3. **Audio crackle** — NOT directly addressed (KVM was the fix; reverted). smp=1 frees some CPU
    which may marginally help; the `-audiodev` buffer hardening (section #3) needs a
    `launch-qemu.sh` edit and was not applied.
 4. **Blurry video** — PARTIALLY improved: black-bar waste roughly halved (fill 34.8%→66.8%),
-   so the desktop fills the tile better and no bits are wasted on black. TRUE native-res
-   sharpness still needs the guest raised to 800x600/1024x768 **in the golden image** (below).
+   so the desktop fills the station better and no bits are wasted on black. TRUE native-res
+   sharpness still needs the guest raised to 800x600/1024x768 **in the seed image** (below).
 
-## Remaining sharpness work (NOT applied — needs careful golden-image surgery / is fragile)
-- **Raise the guest display mode** to 800x600 (or 1024x768) High Color and persist it. The base
+## Remaining sharpness work (NOT applied — needs careful seed-image surgery / is fragile)
+- **Raise the guest display mode** to 800x600 (or 1024x768) High Color and persist it. The seed
   qcow2 (`/data/gallery-guests/Win95/win95-osr2.qcow2`, 437 MB) is bind-mounted **read-only** and
   the live qemu holds a `-snapshot` read lock, so this must be done with the win95 service
-  STOPPED: stop win95 → boot the qcow2 **RW under TCG** on the host (KVM hangs, so TCG) →
+  STOPPED: stop win95 → boot the qcow2 **RW under TCG** on labhost (KVM hangs, so TCG) →
   Display Properties → 800x600 → clean `Shut Down` → restart the service with matching
   `NEKO_SCREEN`. Then the guest fills the frame ~100% at real higher resolution = genuinely
-  sharp. (Risk: a write to the shared golden image; do deliberately, ideally after a 437 MB
+  sharp. (Risk: a write to the shared seed image; do deliberately, ideally after a 437 MB
   backup — pool had 16–31 GB free during this pass.)
 - **Client-side crisp upscale** (`video{image-rendering:pixelated}`) — the largest *perceived*
   sharpness win, but it requires injecting CSS into the neko-served web root (mount over
-  `index.html`); left un-applied to avoid risking the working tile with a fragile late mount.
+  `index.html`); left un-applied to avoid risking the working station with a fragile late mount.
 - Note: the "Enter Network Password" dialog appears on **every** fresh `-snapshot` boot and must
   be OK-clicked before the desktop shows (this is the user's symptom #2 entry point). Auto-skip
-  would require a guest-image config change (also a golden-image edit).
+  would require a guest-image config change (also a seed-image edit).
 
 ---
 
-# WIN95 TILE GAMES — Duke3D + GTA fixed & baked to golden  [2026-07-12]
+# WIN95 STATION GAMES — Duke3D + GTA fixed & captured to checkpoint  [2026-07-12]
 
-Both games on the streamhost `win95` tile failed to start for gallery viewers.
+Both games on the streamhost `win95` station failed to start for gallery viewers.
 Root-caused with framebuffer evidence, fixed, clone-validated
-(`/data/vms/soltest/win95-c3/`), replayed on the live tile and baked with
+(`/data/vms/soltest/win95-c3/`), replayed on the live station and captured with
 `savevm golden`. `scripts/build-guests/tiles/win95.sh` now stages all of it for a
-fresh bake (DUKE3D.CFG / DINO.BAT / STARTUP.INI / DIG.INI / desktop PIFs /
+fresh capture (DUKE3D.CFG / DINO.BAT / STARTUP.INI / DIG.INI / desktop PIFs /
 AUTOEXEC BLASTER line are embedded verbatim in the script).
 
 ## Duke Nukem 3D — missing DUKE3D.CFG
 - Duke3D v1.1 **hard-exits at startup when `DUKE3D.CFG` is absent**
   (`ReadSetup: DUKE3D.CFG does not exist — Please run SETUP.EXE`); the DOS box
-  just flashes and dies. SETUP.EXE had never been run before the earlier bake
+  just flashes and dies. SETUP.EXE had never been run before the earlier capture
   ("run SETUP.EXE first for sound" understated it: for v1.1 the CFG is a hard
   startup requirement, not a sound nicety).
 - Fix: ran `C:\GALLERY\DUKE3D\SETUP.EXE` → Sound Blaster auto-detect
-  (0x220/IRQ5/DMA1/HDMA5 — exactly the tile's QEMU sb16; music **None**, the
-  launcher has no OPL device) → save. The resulting CFG is baked into the
-  golden and embedded in `win95.sh`.
+  (0x220/IRQ5/DMA1/HDMA5 — exactly the station's QEMU sb16; music **None**, the
+  launcher has no OPL device) → save. The resulting CFG is captured into the
+  checkpoint and embedded in `win95.sh`.
 
-## GTA 1 — gta8 froze under VBEMP; retargeted to GTA24 (2026-07-14, BAKED LIVE)
+## GTA 1 — gta8 froze under VBEMP; retargeted to GTA24 (2026-07-14, CAPTURED LIVE)
 
-The 07-12 gta8 fix below was correct **for the Standard-VGA golden it was baked
-on** — the 07-13 VBEMP re-bake broke it one screen deeper than anyone had
+The 07-12 gta8 fix below was correct **for the Standard-VGA checkpoint it was captured
+on** — the 07-13 VBEMP recapture broke it one screen deeper than anyone had
 tested. User-reported as "starting GTA crashes the VM".
 
 - **Symptom / root cause:** `GTA8.EXE` launches fine under VBEMP (windowed DOS
@@ -1235,29 +1235,29 @@ tested. User-reported as "starting GTA crashes the VM".
   stop/cont in the history. Duke3D (mode-X direct writes, no VBE flipping) is
   unaffected. NOT the idle-pause gotcha, NOT the Settings-tab wedge (that one
   is vCPU-idle; this one busy-spins).
-- **Fix (clone-validated via the desktop icon, then baked live):** retarget the
+- **Fix (clone-validated via the desktop icon, then captured live):** retarget the
   launch chain to **`GTA24.EXE`** — the high-colour **VESA-LFB** build renders
   straight to the linear framebuffer (no page flip) and plays correctly
   (320×200 in-game; intro/menu unchanged). `GTA.pif` program path patched
   in-place in the FAT partition (raw byte patch at the PIF's program field —
   preserves the long-filename desktop label "GTA"), `DINO.BAT` → `gta24.exe`
   for the K.EXE chain. `scripts/build-guests/tiles/win95.sh` §6 stages gta24 + the
-  retargeted PIF for fresh bakes.
-- **Bake record:** pre-swap golden backed up as
+  retargeted PIF for fresh captures.
+- **Capture record:** pre-swap checkpoint backed up as
   `tiles/win95/win95-golden.qcow2.bak-preGta24-1784042733`; old internal
-  snapshot dropped, cold-booted the patched disk to the settled fixture
+  snapshot dropped, cold-booted the patched disk to the settled scene
   desktop, `savevm golden` 2026-07-14 18:29, daemon restarted, `labctl gen`.
-  Verified end-to-end through the deployed SPA (Chromium): icon double-click →
+  Verified end-to-end through the deployed UI (Chromium): icon double-click →
   intro → menu → Travis → map → **streamed live gameplay**, `labctl reset`
   back to the clean desktop.
-- Client-side hardening shipped alongside (spa streamClient): the decoder is
+- Client-side hardening shipped alongside (UI streamClient): the decoder is
   now rebuilt (never reconfigured in place) on SPS change, and a silent
   no-output decoder stall self-heals at the next keyframe — GTA's
   480→400→480→320×200 mode-switch chain is the stress case.
 
 ### Follow-up the same day — stray CLICK killed the fullscreen game ("VESA function 5h failed")
 
-After the gta24 bake, launching still died for a REAL user while every scripted
+After the gta24 capture, launching still died for a REAL user while every scripted
 run passed. Discriminated live (pause/resume exonerated by a scripted
 4-minute-pause run): the difference was a **mouse click while the DOS box is
 fullscreen**. warpnet injects clicks with Win32 `mouse_event` — a WINDOWS-level
@@ -1281,14 +1281,14 @@ map → gameplay; in-game PS/2 stray clicks harmless.
 - Desktop shortcut pointed at `C:\GALLERY\GTA\gtawin\GTAWIN.EXE`, which dies at
   load: **"A required .DLL file, DPLAYX.DLL, was not found"** — Win95 OSR2
   ships only DirectX 2 (no DirectPlay); GTA1's Windows build needs DX5+.
-  Even after a DX install it would still be blocked: the KVM golden runs the
+  Even after a DX install it would still be blocked: the KVM checkpoint runs the
   **Standard VGA** display driver (640x480x16, see cirrus-KVM deadlock above)
   which exposes **no 8/16-bpp DirectDraw modes**.
 - Working fix (clone-validated to real gameplay, then replayed live): the rip's
   **DOS build** `C:\GALLERY\GTA\gtados\GTA8.EXE` (8-bit VGA) in a full-screen
   DOS box — QEMU's VGA BIOS provides the mode independent of the Windows
   display driver, and Win95 auto-switches a graphics-mode DOS box to full
-  screen under Standard VGA. Config baked:
+  screen under Standard VGA. Config captured:
   - `gtados\DINO.BAT` = `gta8.exe` (was `gtafx.exe` = 3dfx, no Voodoo in QEMU),
     `STARTUP.INI` runtype `0` (Low Color) so K.EXE's "Run GTA" defaults right.
   - `gtados\DIG.INI` = Miles SB16 driver config (K.EXE "Configure Sound
@@ -1301,13 +1301,13 @@ map → gameplay; in-game PS/2 stray clicks harmless.
     Liberty City gameplay.
 - `gta24`/univbe and a VBEMP-style VBE desktop driver were NOT needed;
   DirectX 8.0a install was NOT needed (dead-end anyway per the DirectDraw
-  point above). No CD device involved (rip is self-contained; the tile has no
+  point above). No CD device involved (rip is self-contained; the station has no
   cdrom and adding one is a forbidden device-set change).
 
-## Driving the win95 tile (quirks — verified 2026-07-12)
-- ~~The warpd pointer agent on host port 57791 is **DEAD** in this golden~~
-  **SUPERSEDED 2026-07-13:** the agent is live again after the VBEMP golden
-  re-bake — the live tile runs `SH_POINTER=warpd` on `127.0.0.1:57791`.
+## Driving the win95 station (quirks — verified 2026-07-12)
+- ~~The warpd pointer agent on host port 57791 is **DEAD** in this checkpoint~~
+  **SUPERSEDED 2026-07-13:** the agent is live again after the VBEMP checkpoint
+  recapture — the live station runs `SH_POINTER=warpd` on `127.0.0.1:57791`.
   (Historical state: TCP accepted via slirp but nothing moved; QMP **abs**
   pointer events did nothing — PS/2 **relative** mouse only, `cdrv.py rel` +
   HMP `mouse_move`/`mouse_button`.)
@@ -1320,9 +1320,9 @@ map → gameplay; in-game PS/2 stray clicks harmless.
 - Win95 shutdown on this launcher DOES power the VM off (APM): after
   "Shut down the computer?" the qemu process exits by itself ~1-2 min later
   (pidfile removed) — wait for it instead of killing.
-- Golden re-bake flow used here (disk-only changes, device set untouched):
+- Checkpoint recapture flow used here (disk-only changes, device set untouched):
   clean in-guest shutdown → qemu exits → back up qcow2 → `qemu-nbd` inject
-  files offline → `qemu-img snapshot -d golden` → tile launcher cold-boots →
+  files offline → `qemu-img snapshot -d golden` → station launcher cold-boots →
   reach clean desktop → `savevm golden` via `/root/qmp_hmp.py` → `loadvm
   golden` verify → `systemctl restart streamhost@win95`.
 
@@ -1330,14 +1330,14 @@ map → gameplay; in-game PS/2 stray clicks harmless.
 
 <!-- APPENDIX: as-built image manifests, folded in from retro-gallery-guests.md (neko-era env contract; accel guidance superseded by the KVM recipe at the top of this file) -->
 
-> **Image-name note:** the appendix predates the KVM re-bakes — the live tiles
+> **Image-name note:** the appendix predates the KVM recaptures — the live stations
 > boot the `-kvm` variants (`win95-osr2-kvm.qcow2`, `win98se-kvm.qcow2`; the
 > `win98se-games.qcow2` data disk is unchanged). See
 > `streamhost/tiles-manifest.sh`.
 
 ### Windows 95 OSR2
 
-- **Host:** `/data/gallery-guests/Win95/win95-osr2.qcow2` (2 GiB virtual, ~1.4 GB free
+- **Labhost:** `/data/gallery-guests/Win95/win95-osr2.qcow2` (2 GiB virtual, ~1.4 GB free
   inside a single FAT32 partition)
 - **Container:** `/guests-retro/Win95/win95-osr2.qcow2`
 - **Env mapping:**
@@ -1352,21 +1352,21 @@ map → gameplay; in-game PS/2 stray clicks harmless.
   QEMU_EXTRA   = -cpu pentium -netdev user,id=n0 -device pcnet,netdev=n0 -snapshot
   ```
 - **Software (all from `C:\GALLERY\`, README on desktop):** **Doom95**, **Duke Nukem 3D
-  shareware** (needs `DUKE3D.CFG` — baked since 2026-07-12; without it v1.1 exits at
+  shareware** (needs `DUKE3D.CFG` — captured since 2026-07-12; without it v1.1 exits at
   startup), **Quake shareware** (WinQuake), and **GTA 1** — via the **DOS build**
   `gtados\GTA24.EXE` (desktop `GTA.pif`); the native Win build `gtawin.exe` does **NOT**
   run on this image (DPLAYX.DLL missing — OSR2 = DX2 only — and no 8/16-bpp DirectDraw
-  modes on the Standard-VGA KVM golden; see "WIN95 TILE GAMES" section above).
+  modes on the Standard-VGA KVM checkpoint; see "WIN95 STATION GAMES" section above).
   **Netscape Communicator 4.05** and
   **Winamp 2.95** are **staged** one-click installers in `C:\GALLERY\INSTALL\`.
-- **Critical:** the original Cirrus image needs TCG. The tile-local settled fixture
+- **Critical:** the original Cirrus image needs TCG. The station-local settled scene
   uses KVM with std VGA, `kernel-irqchip=off`, and `-cpu pentium,-apic`; keep
   `acpi=off`/`usb=off`. Warpnet supplies its absolute pointer.
 - **Footprint:** 437 MB. Only ~1.4 GB free inside; don't add >1 GB without repartitioning.
 
 ### Windows 98 SE
 
-- **Host:** `/data/gallery-guests/Win98SE/win98se.qcow2` (8 GiB virtual, boot=c → **C:**),
+- **Labhost:** `/data/gallery-guests/Win98SE/win98se.qcow2` (8 GiB virtual, boot=c → **C:**),
   `/data/gallery-guests/Win98SE/win98se-games.qcow2` (→ IDE slave **D:**, all curated SW)
 - **Container:** `/guests-retro/Win98SE/win98se.qcow2`, `.../win98se-games.qcow2`
 - **Env mapping:**
