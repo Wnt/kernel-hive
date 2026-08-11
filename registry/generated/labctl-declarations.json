@@ -752,6 +752,21 @@
       "udp_port": 54098,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "tru64": {
+      "dir": "/data/vms/streamhost/tiles/tru64",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54141,
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965). INSTALL PHASE: the guest disk assets/tru64/img/tru64.img is the live install target, mutated in place — reset=relaunch REBOOTS the installer (disk persists); no golden exists yet."
+    },
     "vic20": {
       "dir": "/data/vms/streamhost/tiles/vic20",
       "qmp": "/data/vms/streamhost/tiles/vic20/qmp.sock",

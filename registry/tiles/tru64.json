@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "tru64",
+  "era_year": 2003,
+  "enabled": true,
+  "listing": {
+    "state": "hidden",
+    "since": "2026-08-11",
+    "reason": "Dark launch: Tru64 UNIX 5.1B is being installed live on this tile (the exhibit currently shows the installer, not a finished desktop). List once the install completes and the golden fixture is baked."
+  },
+  "build": {
+    "rows": []
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/tiles/tru64",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54141,
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965). INSTALL PHASE: the guest disk assets/tru64/img/tru64.img is the live install target, mutated in place — reset=relaunch REBOOTS the installer (disk persists); no golden exists yet."
+    }
+  },
+  "render": {
+    "signalOrder": 58,
+    "tilesManifestOrder": 56,
+    "tilesManifestPrelude": "\n# tru64 — x11 RUNTIME tile, NOT QEMU. es40 (AlphaServer ES40, fork Wnt/es40)\n#   SRM-booting Tru64 UNIX 5.1B — the same emulated machine as w2kalpha with a\n#   different flash.rom lineage (no arc autoboot; SRM boots dka0/dka400), NO\n#   window and NO X server (SDL_VIDEODRIVER=dummy), captured from the\n#   framebuffer es40 publishes itself: SH_CAPTURE=shm + mamesock input (es40\n#   ctlsock mamectl/1, multi-client). No SH_QMP; media + install disk staged\n#   under /data/vms/streamhost/assets/tru64. DARK LAUNCH: listing=hidden while\n#   the install runs on camera.\n",
+    "tilesManifestInvocation": "emit tru64 \\\n  --tile tru64 --udp 54141 --x11 --x11-display :42 --capture shm \\\n  --pointer abs --input-backend mamesock --audio off --fps 30 \\\n  --x11-runtime-file \"$T/tru64/x11-runtime.sh\" \\\n  --aux-file \"$T/tru64/pumps.py\" \\\n  --env-append-file \"$T/tru64/tile.env.fixture\"\n",
+    "bringUpGroup": 7,
+    "bindingOrder": 63,
+    "bindingPrelude": "",
+    "bindingLine": "  tru64:       { osId: 'tru64',       archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#2f6a9b', eraLabel: '2003 · Tru64 UNIX 5.1B — Alpha' },\n",
+    "museumOrder": 56,
+    "museumPrelude": "",
+    "museumBlock": "  {\n    id: 'tru64', displayName: 'Tru64 UNIX', year: 2003,\n    lineage: 'OSF/1 — Digital UNIX — Tru64',\n    arch: 'DEC Alpha 21264 (EV68, 64-bit)', ramMB: 512,    era: '2000s', accent: '#2f6a9b',\n    eraSoftware: ['CDE — Common Desktop Environment', 'AdvFS journaling file system', 'Korn shell', 'SRM console firmware'],\n    periodBrowser: 'Netscape Communicator',\n    iconicApps: ['CDE Front Panel', 'dtterm', 'CDE File Manager'],\n    blurb: 'DEC’s own UNIX on DEC’s own 64-bit iron. Born OSF/1 in 1992, renamed Digital UNIX and finally Tru64, this was the operating system the AlphaServer ES40 was designed around: a fully 64-bit UNIX with the CDE desktop, from the same company that built the processor under it. Version 5.1B of 2003 was the line’s last major release — HP retired Alpha and Tru64 together, and their engineering went on into HP-UX and beyond.',\n    notes: 'Live streamhost tile — third x11-runtime tile (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. DARK LAUNCH 2026-08-11: listing=hidden, the 5.1B install is performed live on the tile; golden bake + listing follow. See docs/guests/tru64.md.',\n  },\n",
+    "goldenOrder": 56
+  },
+  "tileDir": "tru64",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54141,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "mamesock",
+      "method": "mame-ioport",
+      "absolute": true,
+      "present": true,
+      "device": "ctlsock-ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 141
+  },
+  "guestDoc": "docs/guests/tru64.md",
+  "credentialsRef": "guest/tru64",
+  "runtime": {
+    "tileEnv": {
+      "SH_TILE": "tru64",
+      "SH_TILE_RUNTIME": "x11",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":42",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/tiles/tru64/tru64_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/tiles/tru64/fb.shm",
+      "SH_PORT": "54141",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_MAMECTL_SOCK": "/data/vms/streamhost/tiles/tru64/ctl.sock",
+      "SH_AUDIO": "off",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/tiles/tru64/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/tru64/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_RESET_MODE": "relaunch",
+      "SH_FIXTURE_DESC": "INSTALL PHASE — Tru64 UNIX 5.1B installer (X11, 1024x768) running from the OS CD in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. The install disk is mutated in place; relaunch REBOOTS the installer, it does not restore a golden (none exists yet).",
+      "SH_IDLE_PAUSE_SECS": "0"
+    },
+    "x11": {
+      "display": ":42",
+      "geometry": "1024x768x24",
+      "capture": "shm",
+      "launcher": "streamhost/tiles/tru64/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "tru64",
+        "--udp",
+        "54141",
+        "--x11",
+        "--x11-display",
+        ":42",
+        "--capture",
+        "shm",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--x11-runtime-file",
+        "$T/tru64/x11-runtime.sh",
+        "--aux-file",
+        "$T/tru64/pumps.py",
+        "--env-append-file",
+        "$T/tru64/tile.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/tiles/tru64/pumps.py",
+        "streamhost/tiles/tru64/tile.env.fixture"
+      ]
+    },
+    "bringUpOrder": 63
+  },
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#2f6a9b",
+    "eraLabel": "2003 · Tru64 UNIX 5.1B — Alpha"
+  },
+  "museum": {
+    "id": "tru64",
+    "displayName": "Tru64 UNIX",
+    "year": 2003,
+    "lineage": "OSF/1 — Digital UNIX — Tru64",
+    "arch": "DEC Alpha 21264 (EV68, 64-bit)",
+    "ramMB": 512,
+    "era": "2000s",
+    "accent": "#2f6a9b",
+    "eraSoftware": [
+      "CDE — Common Desktop Environment",
+      "AdvFS journaling file system",
+      "Korn shell",
+      "SRM console firmware"
+    ],
+    "periodBrowser": "Netscape Communicator",
+    "iconicApps": [
+      "CDE Front Panel",
+      "dtterm",
+      "CDE File Manager"
+    ],
+    "blurb": "DEC’s own UNIX on DEC’s own 64-bit iron. Born OSF/1 in 1992, renamed Digital UNIX and finally Tru64, this was the operating system the AlphaServer ES40 was designed around: a fully 64-bit UNIX with the CDE desktop, from the same company that built the processor under it. Version 5.1B of 2003 was the line’s last major release — HP retired Alpha and Tru64 together, and their engineering went on into HP-UX and beyond.",
+    "notes": "Live streamhost tile — third x11-runtime tile (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. DARK LAUNCH 2026-08-11: listing=hidden, the 5.1B install is performed live on the tile; golden bake + listing follow. See docs/guests/tru64.md."
+  },
+  "reset": {
+    "tileDir": "tru64",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "UNVERIFIED",
+    "keyboard": "PASS",
+    "fixture": "INSTALL PHASE — Tru64 UNIX 5.1B installer (X11, 1024x768) from the OS CD in es40 (AlphaServer ES40, EV68). resetMode=relaunch REBOOTS the machine: SRM console -> boot dka400 -> installer; the install disk persists (mutated in place, no golden yet). Keyboard PASS = SRM console echo over ctlsock, framebuffer-proven 2026-08-11. Dark launch: listing=hidden while the install runs on camera."
+  },
+  "migrationExceptions": []
+}

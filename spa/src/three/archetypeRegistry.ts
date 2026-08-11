@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/tiles/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (60 of the 62
+//    - transport   : how its LIVE framebuffer texture is obtained (61 of the 63
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -104,7 +104,7 @@ export interface OSBinding {
   bootVideo?: string;
 }
 
-// One entry per OS. 60 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 61 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos',     archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -183,6 +183,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   star:        { osId: 'star',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#D6001C', eraLabel: '1981 · Pilot + ViewPoint 2.0 on the 8010', pointerRel: true },
   daybreak:    { osId: 'daybreak',    archetypeId: 'sparc-pizzabox', transport: 'streamhost',  accentColor: '#C8102E', eraLabel: '1985 · ViewPoint 2.0.5 on the 6085' },
   w2kalpha:    { osId: 'w2kalpha',    archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#862633', eraLabel: '1999 · Windows 2000 RC2 — Alpha AXP' },
+  tru64:       { osId: 'tru64',       archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#2f6a9b', eraLabel: '2003 · Tru64 UNIX 5.1B — Alpha' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

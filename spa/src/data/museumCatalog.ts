@@ -4,11 +4,11 @@ import type { VMManifestEntry } from '../types';
 import { OS_BINDINGS } from '../three/archetypeRegistry';
 
 // ============================================================================
-//  MUSEUM CATALOG — placard metadata for the full OS lineup (62 bindings)
+//  MUSEUM CATALOG — placard metadata for the full OS lineup (63 bindings)
 //  ---------------------------------------------------------------------------
-//  TODAY'S ARCHITECTURE: 60 of the museum's exhibits are streamhost tiles —
+//  TODAY'S ARCHITECTURE: 61 of the museum's exhibits are streamhost tiles —
 //  QEMU (or emulator-bridge) guests streamed by the Rust streamhost daemon over
-//  WebTransport + WebCodecs. 57 of those 60 have their placard entries in this
+//  WebTransport + WebCodecs. 58 of those 61 have their placard entries in this
 //  file; the trio (freedos/kolibrios/toaruos) come from the bundled base
 //  manifest + data/catalog.ts. The three non-streamhost bindings are all
 //  showcase posters (art + placard, no live connection attempt):
@@ -17,8 +17,8 @@ import { OS_BINDINGS } from '../three/archetypeRegistry';
 //    - macos  — VM 925 and its VNC->WebSocket bridge were destroyed 2026-07-14,
 //    - riscos — RISC OS is ARM/RPCEmu, so it has had no QEMU streamhost tile
 //      since the neko plane was retired.
-//  This file provides rich, period-accurate placard metadata for its 59 entries
-//  so all 62 exhibits render, each with an era-accurate archetype + accent.
+//  This file provides rich, period-accurate placard metadata for its 60 entries
+//  so all 63 exhibits render, each with an era-accurate archetype + accent.
 //
 //  mergeCatalog() overlays the bundled base manifest (the trio's core rows) on
 //  top of these entries, so every osId in OS_BINDINGS becomes an exhibit.
@@ -575,6 +575,16 @@ const ENTRIES: VMManifestEntry[] = [
     iconicApps: ['Solitaire', 'Minesweeper', 'Paint'],
     blurb: 'The Windows that never shipped. Microsoft built Windows 2000 for DEC’s 64-bit Alpha right up to Release Candidate 2 — then Compaq dropped Alpha NT in August 1999 and the port died before release. RC2 build 2128 is the last Windows for Alpha ever built, running here on an AlphaServer ES40.',
     notes: 'Live streamhost tile — the second non-QEMU x11-runtime tile (after irix): the es40 AlphaServer ES40 emulator (fork Wnt/es40: JIT compile-on-2nd-encounter 2.37x interactive throughput, shm framebuffer export, mamectl/1 ctlsock input) runs headless, captured via SH_CAPTURE=shm. resetMode=relaunch cold-boots the golden nt.img in ~80 s. archetype putty-lcd. See docs/lab/research/w2kalpha-HANDOFF.md.',
+  },
+  {
+    id: 'tru64', displayName: 'Tru64 UNIX', year: 2003,
+    lineage: 'OSF/1 — Digital UNIX — Tru64',
+    arch: 'DEC Alpha 21264 (EV68, 64-bit)', ramMB: 512,    era: '2000s', accent: '#2f6a9b',
+    eraSoftware: ['CDE — Common Desktop Environment', 'AdvFS journaling file system', 'Korn shell', 'SRM console firmware'],
+    periodBrowser: 'Netscape Communicator',
+    iconicApps: ['CDE Front Panel', 'dtterm', 'CDE File Manager'],
+    blurb: 'DEC’s own UNIX on DEC’s own 64-bit iron. Born OSF/1 in 1992, renamed Digital UNIX and finally Tru64, this was the operating system the AlphaServer ES40 was designed around: a fully 64-bit UNIX with the CDE desktop, from the same company that built the processor under it. Version 5.1B of 2003 was the line’s last major release — HP retired Alpha and Tru64 together, and their engineering went on into HP-UX and beyond.',
+    notes: 'Live streamhost tile — third x11-runtime tile (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. DARK LAUNCH 2026-08-11: listing=hidden, the 5.1B install is performed live on the tile; golden bake + listing follow. See docs/guests/tru64.md.',
   },
 ];
 
