@@ -9294,11 +9294,6 @@ export const POSTERS = {
         "src": "/posters/w2kalpha/dxdiag.webp",
         "alt": "The Windows 2000 DirectX Diagnostic Tool on the Alpha guest, its System page reporting the processor outright as \"Alpha 21264 Model A - Pass 2\", the computer name W2KALPHA, Windows 2000 build 2128, and 512 MB of RAM",
         "caption": "The DirectX Diagnostic Tool names the hardware directly — Processor \"Alpha 21264 Model A - Pass 2\", a DEC Alpha rather than the Intel or AMD chip inside an ordinary PC."
-      },
-      {
-        "src": "/posters/w2kalpha/x86prog.webp",
-        "alt": "The x86 Program Optimization window (\"x86 Programs\") listing Winamp v2.5e, the Winamp installer, and Windows games — Solitaire, FreeCell, Minesweeper, Calculator, Notepad — each translated by FX!32 and shown at 100% optimization",
-        "caption": "Because the Alpha is not an x86 chip, ordinary Windows programs run through FX!32, a binary translator. This panel lists the programs FX!32 has translated to native Alpha code — Winamp 2.5e, Solitaire, Minesweeper and more — each shown at 100%."
       }
     ],
     "blocks": [
