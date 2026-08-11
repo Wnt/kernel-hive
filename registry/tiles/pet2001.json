@@ -200,17 +200,15 @@
     "displayName": "Commodore PET 2001",
     "year": 1977,
     "lineage": "Commodore PET / CBM (MOS 6502)",
-    "arch": "MOS 6502, 1 MHz, 8 KB RAM, 40×25 characters, no CRTC",
+    "arch": "MOS 6502, 1 MHz, 8 KB RAM",
     "ramMB": 0,
     "ramKB": 8,
     "era": "1970s",
     "accent": "#AEB8F0",
     "eraSoftware": [
-      "Commodore BASIC 1.0 in ROM — the first Microsoft BASIC Commodore shipped",
-      "programs loaded from the built-in Datassette, at 1500 baud if you were lucky",
-      "PET screen POKEs at 32768: the machine had no graphics mode, so games drew with characters",
-      "Microchess, Space Invaders clones, and a decade of school-lab type-in listings",
-      "later, VisiCalc and WordPro made the PET the first Commodore in an office"
+      "Commodore BASIC 1.0",
+      "VisiCalc",
+      "WordPro"
     ],
     "periodBrowser": "none — pre-web, and pre-almost-everything",
     "iconicApps": [

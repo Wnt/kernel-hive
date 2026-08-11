@@ -184,16 +184,13 @@
     "displayName": "Xerox Alto II",
     "year": 1973,
     "lineage": "Xerox PARC",
-    "arch": "Xerox Alto II XM: a custom TTL processor with no single CPU chip, microcoded into 16 priority tasks that share the datapath between the display, the disk, the Ethernet and the instruction set the software is written in; 512 KB extended memory; a 606x808 portrait bitmap refreshed at 30 Hz straight out of main memory; a 2.5 MB Diablo 31 removable cartridge; a three-button mouse and a five-key chord keyset",
+    "arch": "Xerox Alto II XM: a custom TTL processor",
     "ramMB": 0,
     "ramKB": 512,
     "era": "1970s",
     "accent": "#9FE3EA",
     "eraSoftware": [
-      "Bravo, the first WYSIWYG word processor (1974)",
-      "Draw and Markup, the illustration pair",
-      "Laurel, the mail reader that fixed the shape of every inbox since",
-      "Smalltalk-76 and the Smalltalk-80 that grew out of it",
+      "Smalltalk-76",
       "the Alto Executive, the command prompt this exhibit rests at"
     ],
     "periodBrowser": "none -- PARC had Ethernet, laser printing and electronic mail two decades before the web had a first page",
