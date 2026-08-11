@@ -30,12 +30,12 @@ declared method is pinned against the emulated device ledger — `qemu-usb-table
 requires `usb-tablet` in the launcher, `qemu-ps2-relative` forbids it,
 `gallery-hid` requires `gallery-hid-pci`.
 
-Backend census across the 59 production tiles: **dbus-abs 27, disabled 17,
+Backend census across the 59 production stations: **dbus-abs 27, disabled 17,
 dbus-rel 8, warpd 5, gallery-hid 1, mamesock 1.**
 
 | Path | Used by | Abs/rel | Mechanism | Trade-off |
 |---|---|---|---|---|
-| **dbus-abs / usb-tablet** | 24 tiles — `winxp win2000 reactos haiku alpine tinycore nextstep openvms` and every graphical bridge tile | abs | type-1 → per-session drain-coalesce → `Mouse.SetAbsPosition` after the cursor-scale affine | Simplest and truest; needs the guest to bind a usb-tablet |
+| **dbus-abs / usb-tablet** | 24 stations — `winxp win2000 reactos haiku alpine tinycore nextstep openvms` and every graphical kiosk | abs | type-1 → per-session drain-coalesce → `Mouse.SetAbsPosition` after the cursor-scale affine | Simplest and truest; needs the guest to bind a usb-tablet |
 | **dbus-abs / vmmouse** | `nt4` (explicit), `serenityos` (implicit q35 `vmport=auto`) | abs | same call; the absolute device is QEMU's VMware aux mouse | Avoids a USB stack; the implicit case is invisible in the device ledger |
 | **dbus-rel / homing bridge** | `nt351 freedos msdoswin1 qnx indyr4400 star c64 amstradcpc` | rel (client still sends abs) | first sample pins the cursor to 0,0 with an over-clamp, waits, then sends deltas from the last target | Works on any PS/2-only guest with no device change; guest acceleration and out-of-band cursor moves desync the model |
 | **type-4 direct relative** (Pointer Lock) | `freedos qnx msdoswin1 indyr4400 star` | rel | locked `movementX/Y`, clamped 300 px/axis, straight to `rel_motion_bounded` — no homing pin | True 1:1 with the guest drawing its own cursor; needs fullscreen + a user gesture |
@@ -44,13 +44,13 @@ dbus-rel 8, warpd 5, gallery-hid 1, mamesock 1.**
 | **warpd HYBRID** | `win311 os2warp win95` | abs motion + PS/2 buttons | motion via the agent, buttons via the real QEMU device so the WM sees true button semantics | The only way to open a menu or drag a title bar on Win3.11; **every reposition re-arms the button hold** |
 | **mamesock** (closed loop) | `irix` | abs | surface-clamped `MOVEA x y` over the in-emulator ctlsock with per-verb acks; the module reads the real cursor from Newport VC2 hardware-cursor registers each tick and converges | Immune to dead-reckoning drift and edge clamping; costs a patched MAME and a single-injector rule |
 | **simh-light-pen** | `gt40` | abs | ordinary dbus-abs through a usb-tablet; SIMH's VT11 vector display reads the position as the GT40's light pen | The method label is the only record of the light-pen semantics |
-| **disabled** | 17 bridge tiles — `armeval bbcmicro c128 cbm2 cbm8032 decos dragon32 kc854 mpf2 oricatmos pdp11 pet2001 plus4 sinclairql vic20 zx81 zxspectrum` | none | every non-type-3 record is dropped before any sink | Cannot strand a button or drift a cursor — **unpointable by design**, not broken |
+| **disabled** | 17 kiosks — `armeval bbcmicro c128 cbm2 cbm8032 decos dragon32 kc854 mpf2 oricatmos pdp11 pet2001 plus4 sinclairql vic20 zx81 zxspectrum` | none | every non-type-3 record is dropped before any sink | Cannot strand a button or drift a cursor — **unpointable by design**, not broken |
 
 ```mermaid
 flowchart LR
   M[Mouse] --> MP[mouse and pen branch]
   P[Stylus pointerType pen] --> MP
-  F[Finger or any pointer on a touch archetype tile] --> TP[Touch recognizer]
+  F[Finger or any pointer on a touch archetype station] --> TP[Touch recognizer]
   MP --> QT[tapQuantiser thresholds in CSS px]
   TP --> QT
   QT --> W1[Type 1 abs move plus cseq on a datagram]
@@ -83,15 +83,15 @@ flowchart LR
   silently discarded.
 - **Three client paths, and the visitor's hardware does not choose.** A mouse
   *and a stylus* take the mouse/pen branch; only a finger — or any pointer on a
-  touchscreen-archetype tile — reaches the touch recognizer. Two fixes were once
+  touchscreen-archetype station — reaches the touch recognizer. Two fixes were once
   shipped to the recognizer and changed nothing, because the pen never ran that
   code. `touchExhibit` means *the exhibit* is a touchscreen; `isTouchDevice()`
   means *the visitor's* hardware. One letter apart, opposite in effect.
-- **QMP `abs`/`click` does nothing on a warpd tile.** The guest has no working
+- **QMP `abs`/`click` does nothing on a warpd station.** The guest has no working
   absolute pointer — that is why it runs an agent. Do not use QMP to "check"
   pointer behaviour there.
 
-### Bridge tiles add a second mapping
+### Kiosks add a second mapping
 
 The outer contract is absolute: browser guest-px → `SetAbsPosition` → usb-tablet
 → kiosk Xorg → full-screen emulator. The **inner** emulator then adds its own
@@ -126,10 +126,10 @@ flowchart TD
 
 | Path | Used by | Mechanism | Pacing required | Failure mode when wrong |
 |---|---|---|---|---|
-| **QMP/dbus send-key** | most QEMU tiles | qcode injection; types uppercase and symbols correctly where the browser path mangles them | `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS` | Characters vanish or arrive scrambled |
+| **QMP/dbus send-key** | most QEMU stations | qcode injection; types uppercase and symbols correctly where the browser path mangles them | `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS` | Characters vanish or arrive scrambled |
 | **warpd / serial agent** | `win311 os2warp templeos ninefront win95` | agent verbs over TCP hostfwd or serial chardev | agent-side pace | Modifier batched into one event is not seen as a chord |
 | **mamesock** | `irix` | paced verbs with per-verb acks into the emulator | ack deadline | — |
-| **kiosk X → emulator** | bridge tiles | key reaches the kiosk's Xorg, then the full-screen emulator's own input sampling | **per-machine**, frame-derived | Dropped keys that look like flaky typing |
+| **kiosk X → emulator** | kiosks | key reaches the kiosk's Xorg, then the full-screen emulator's own input sampling | **per-machine**, frame-derived | Dropped keys that look like flaky typing |
 
 **The pacing rule is the whole story, and it is not about speed.** An emulator
 samples its key matrix once per emulated **frame**, so what must survive is the
@@ -144,11 +144,11 @@ samples its key matrix once per emulated **frame**, so what must survive is the
 
 `pdp11` is the control that proves the mechanism: a serial-line machine has no
 matrix to sample, so it has no gap requirement at all. The residual `vic20`
-failure is **host scheduling on a box running 30+ emulators**, not frame
+failure is **host scheduling on labhost running 30+ emulators**, not frame
 quantisation — it does not scale with the frame period.
 
 > `labctl type` bypasses this pacing and drops characters **while printing
-> "ok"**. It is not a fair test of whether a tile's keyboard works.
+> "ok"**. It is not a fair test of whether a station's keyboard works.
 
 ---
 
@@ -180,13 +180,13 @@ flowchart TD
 | **5 — poster** | none | — |
 
 Downstream is identical everywhere: damage-gated **and receiver-gated** capture
-(an unwatched tile encodes nothing), a depth-1 latest-wins handoff that never
+(an unwatched station encodes nothing), a depth-1 latest-wins handoff that never
 blocks the capture listener, one `sh-encode` OS thread holding the x264 handle,
 constant-quality CQP with no VBV, one access unit per unidirectional QUIC
 stream, and a forced keyframe on join so a new viewer never waits for the next
 GOP.
 
-The x11/XDamage backend still exists in the code but **no production tile
+The x11/XDamage backend still exists in the code but **no production station
 selects it** since the shm cutover; it is retained deliberately as the `irix`
 rollback.
 
@@ -196,7 +196,7 @@ rollback.
 
 Guest audio reaches the browser as **48 kHz stereo Opus, 20 ms per packet**
 (50 packets/s), on one encode path fed by two possible PCM sources. There is
-**no PulseAudio or PipeWire on the host at all**.
+**no PulseAudio or PipeWire on labhost at all**.
 
 ```mermaid
 flowchart LR
@@ -212,11 +212,11 @@ flowchart LR
 
 | Source | Used by | Guest sound device | Mechanism |
 |---|---|---|---|
-| **`dbus`** (default) | 48 production tiles | AC97 ×36, sb16 ×6, intel-hda ×5, ich9-intel-hda ×1 (`win11`), PC-speaker only ×1 (`msdoswin1`) | streamhost exports an `AudioOutListener` over the **same p2p connection the video capture already holds** |
+| **`dbus`** (default) | 48 production stations | AC97 ×36, sb16 ×6, intel-hda ×5, ich9-intel-hda ×1 (`win11`), PC-speaker only ×1 (`msdoswin1`) | streamhost exports an `AudioOutListener` over the **same p2p connection the video capture already holds** |
 | **`fifo`** | `irix` only | emulated SGI HAL2 inside MAME | MAME writes PCM into a named pipe; **the daemon is the clock**, reading exactly 3840 B per 20 ms with the pipe shrunk to 16 KiB |
 
-Audio state across the fleet: **49 tiles on, 10 off, 2 posters undeclared.**
-`sb16` exists for exactly the six DOS/Win9x tiles that ship no inbox AC97 or HDA
+Audio state across the fleet: **49 stations on, 10 off, 2 posters undeclared.**
+`sb16` exists for exactly the six DOS/Win9x stations that ship no inbox AC97 or HDA
 driver. `star` and `daybreak` keep a sound card with audio **off** purely for
 `loadvm golden` device-set parity — the emulated Xerox machines have no sound
 hardware at all.
@@ -229,8 +229,8 @@ Three things that are easy to get wrong:
 - **The wire format is fixed, not negotiated** — 48 kHz stereo Opus, hardcoded
   on the client, with no per-stream preamble and no length prefix. A previous
   client that assumed a preamble misread `seq` as the sample rate and silenced
-  audio on every tile.
-- **On `shm`/`x11` tiles the dbus source cannot work**, because there is no QEMU
+  audio on every station.
+- **On `shm`/`x11` stations the dbus source cannot work**, because there is no QEMU
   p2p connection to borrow. It logs `audio: DISABLED … SH_AUDIO_SOURCE=fifo is
   the non-QEMU path` rather than silently running video-only.
 

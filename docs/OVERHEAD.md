@@ -16,12 +16,12 @@ than a file you have to search.
    profile was taken before damage-scoped conversion and libyuv, at
    `preset=veryfast`; the fleet now runs `ultrafast`. Those rows are marked
    **superseded** below and must not be quoted as current cost.
-2. **Quiesced numbers are contradicted by the loaded tail.** x264 *wall* time
+2. **Paused numbers are contradicted by the loaded tail.** x264 *wall* time
    inflates to ~7.7–14.6 ms p50 and ~96 ms p95 under load while x264 *CPU* stays
    ~1 ms. That is scheduler queuing, not work.
-3. **Fleet-scale figures were taken at 24–28 tiles.** The lineup is now 59
-   production tiles, so host-percentage totals do not scale forward.
-4. **`SH_FPS`, resolution and viewer count dominate everything.** A tile with no
+3. **Fleet-scale figures were taken at 24–28 stations.** The lineup is now 59
+   production stations, so labhost-percentage totals do not scale forward.
+4. **`SH_FPS`, resolution and viewer count dominate everything.** A station with no
    viewer encodes nothing at all — receiver gating means most of this page
    describes the watched case only.
 
@@ -37,9 +37,9 @@ than a file you have to search.
 
 Conditions for the tier comparison: CT950, LAN Chrome, one clone active at a
 time, 1024×768, 60 fps, `SH_DBUS_UPDATE_MS=4`, ultrafast/zerolatency CQP, 30
-alternating trials after a seed. **That is a clone, not the live tile.**
+alternating trials after a seed. **That is a clone, not the live station.**
 
-So a bridge tile costs roughly **+9 ms**, and a bridge tile with a busy inner
+So a kiosk costs roughly **+9 ms**, and a kiosk with a busy inner
 emulator roughly **+14 ms**, against a direct QEMU guest. That is consistent
 with an analysis estimate of an ~8 ms Linux composition term added by the
 kiosk compositing at 60 Hz before QEMU ever polls — but note that ~8 ms sits in
@@ -64,7 +64,7 @@ number:
 | 2 | Inject into guest | ~0.5 | current |
 | 3 | Guest reacts and repaints | variable | the guest's problem, not ours |
 | 4 | Capture wait (display poll) | **~2** | was ~15 at the stock 30 ms poll |
-| 5 | H.264 encode, snap→AU | **1.8–3.2 p50** across live tiles | supersedes the ~8 ms row |
+| 5 | H.264 encode, snap→AU | **1.8–3.2 p50** across live stations | supersedes the ~8 ms row |
 | 6→7 | AU on the wire, one-way LAN | **0.3 p50 / 0.7 p95** | current |
 | 7 | WebCodecs decode | ~1.3 | current |
 | 8 | Present / paint | ~1.4 | current |
@@ -90,7 +90,7 @@ Fast-poll A/B (`freedos`, 36 matched trials per config):
 `=4` is the knee: `=2` halves the median again but the tail regresses. Source
 `streamhost/docs/CAPTURE-FASTPOLL.md`.
 
-Solaris hop decomposition (gallery-hid, 1920×1200, quiesced clone). Per-hop p95
+Solaris hop decomposition (gallery-hid, 1920×1200, paused clone). Per-hop p95
 values are **not additive**:
 
 | Hop | p50 / p95 | Status |
@@ -103,7 +103,7 @@ values are **not additive**:
 | ↳ BGRA→I420 conversion | 6.6 / 9.2 ms | **superseded** — pre-libyuv |
 | ↳ x264 wall | 5.2 / 6.0 ms, ~2.4 ms of it CPU | **superseded** |
 | publish AU to broadcast | 0.013 / 0.018 ms | current |
-| browser paint/present | ~8 / ~16 ms | **software-inflated upper bound** on a GPU-less box |
+| browser paint/present | ~8 / ~16 ms | **software-inflated upper bound** on a GPU-less labhost |
 
 A separate client-side floor nobody can optimise away: a frame waits a median
 **half refresh interval** just to reach the next presentation opportunity —
@@ -118,7 +118,7 @@ A separate client-side floor nobody can optimise away: a frame waits a median
 | **warpd hybrid** (`win311`, `os2warp`) | not measured end-to-end | `SH_WARPD_BUTTON_DELAY_MS` **80 ms**, re-armed by every reposition |
 | **dbus-rel homing** | not measured end-to-end | 250 ms settle once per session; 256 px chunks at 16 ms |
 | **mamesock** (`irix`) | not measured end-to-end | ack deadline 5 s + 200 ms per outstanding verb |
-| **dbus-abs** | not measured per-tile | `SH_ABS_PACE_MS` 30 on the 11 old-GUI dbus-abs tiles (2026-07-26 drag investigation; recorded in the registry 2026-08-11), 0 elsewhere |
+| **dbus-abs** | not measured per-station | `SH_ABS_PACE_MS` 30 on the 11 old-GUI dbus-abs stations (2026-07-26 drag investigation; recorded in the registry 2026-08-11), 0 elsewhere |
 
 The warpd-vs-gallery-hid campaign is marked **PARTIAL** in its own document and
 ran on a clone with **one vCPU onlined**, with the diagnostic driver's logging a
@@ -142,7 +142,7 @@ written terms are configured bounds:
 |---|---|
 | Opus frame | 20 ms (50 packets/s) |
 | FIFO standing latency bound (`irix`) | ≤ ~85 ms (16 KiB pipe at 192 000 B/s) |
-| SPA play-head lead | 20 ms |
+| UI play-head lead | 20 ms |
 | Egress backlog bound (video) | ~250 ms + RTT |
 
 QEMU-side audiodev buffering on the dbus path is **not documented**, and the
@@ -150,27 +150,27 @@ Opus encode's CPU cost is **not measured**.
 
 ## CPU
 
-**Fleet level.** The box's no-visitor load went from **~83% of the host** to low
+**Fleet level.** Labhost's no-visitor load went from **~83% of labhost** to low
 single digits after idle auto-pause landed. The measured idle offenders, all
 since superseded by receiver gating and auto-pause:
 
 | Offender | Cost |
 |---|---|
-| bridge-tile QEMUs (`apple2 atarist amiga c64`) | ~31% of the host |
-| streamhost zero-client encode | ~23% of the host |
-| other busy-at-idle tile QEMUs | ~12% of the host |
-| the 2 ms encode poll × 28 daemons | ~2% of the host |
+| kiosk QEMUs (`apple2 atarist amiga c64`) | ~31% of labhost |
+| streamhost zero-client encode | ~23% of labhost |
+| other busy-at-idle station QEMUs | ~12% of labhost |
+| the 2 ms encode poll × 28 daemons | ~2% of labhost |
 
 **Per tier.**
 
 | Tier | Measured |
 |---|---|
-| **1** | watched tile on the patched binary **~4% of a core** at 250 polls/s; **paused: 0%**. Fleet idle after the run-state gate: **9.9% of a core = 0.62% of host** across 26 tiles, a **6.4× cut** |
-| **2** | the v1 copy path carries **60–110 MB/s** of `Update` calls; the borrowed-bytes listener drains >110 MB/s at **~5% of one core**. Inner emulators: Iris (`indyr4400`) **~310–320%** in-guest with its QEMU at ~150%; ContrAlto (`alto`) **~170–190% of a core**; Dwarf JVM (`daybreak`) 9–15% of a core, whole tile ~18% |
-| **3** | after the shm cutover, idle IRIX desktop with **no viewer**: streamhost **3% of a core** + MAME **81% of a core**, against ~100–114% on the old x11 path. The x11 display detour cost **32–43% of host time**; paired A/B showed shm **+41–42% faster** |
+| **1** | watched station on the patched binary **~4% of a core** at 250 polls/s; **paused: 0%**. Fleet idle after the run-state gate: **9.9% of a core = 0.62% of labhost** across 26 stations, a **6.4× cut** |
+| **2** | the v1 copy path carries **60–110 MB/s** of `Update` calls; the borrowed-bytes listener drains >110 MB/s at **~5% of one core**. Inner emulators: Iris (`indyr4400`) **~310–320%** in-guest with its QEMU at ~150%; ContrAlto (`alto`) **~170–190% of a core**; Dwarf JVM (`daybreak`) 9–15% of a core, whole station ~18% |
+| **3** | after the shm cutover, idle IRIX desktop with **no viewer**: streamhost **3% of a core** + MAME **81% of a core**, against ~100–114% on the old x11 path. The x11 display detour cost **32–43% of labhost time**; paired A/B showed shm **+41–42% faster** |
 | **4** | **not measured** |
 
-**Encoder.** `x264_encoder_encode` costs **~1 ms CPU** at tile resolutions but
+**Encoder.** `x264_encoder_encode` costs **~1 ms CPU** at station resolutions but
 **~11–13 ms wall** when run synchronously on the shared runtime — which is why
 it has its own OS thread. Conversion is **~1.3 ms/frame** with a native build,
 against ~12.6–16 ms for the old scalar loop: a **15×** difference.
@@ -190,13 +190,13 @@ number):
 | 1920×1200 | 5.22 ms | 15.58 ms | 31.46 ms |
 
 At one thread, the two largest resolutions sit at the ~31 ms edge of a 30 fps
-budget — which is the real argument against raising a tile's resolution.
+budget — which is the real argument against raising a station's resolution.
 
-**A host-level side effect worth knowing**, because it silently taxes every
+**A labhost-level side effect worth knowing**, because it silently taxes every
 other measurement: the x264 encoder smears **1.07 cores over all 8 physical
 cores at 30 Hz**, pinning the package in the bottom turbo bin at ~2.47–2.50 GHz
 exactly when a visitor is watching, against 3.0 GHz available at one active
-core. Any benchmark taken while a tile streams inherits that.
+core. Any benchmark taken while a station streams inherits that.
 
 **Transport arithmetic.** An IDR at CQP q10/1920×1200 is a 1–2 MB frame whose
 encode alone spikes to ~90–100 ms p95 — which is why `SH_KEYFRAME_MS` went from
@@ -209,7 +209,7 @@ impossible: 9.2 MB per 1920×1200 frame is ~4.4 Gbps at 60 fps.
 **Tier 2 is the memory-bound class**, and it is the constraint that limits the
 lineup. Live RSS measured 2026-08-08:
 
-| Tile | RSS |
+| Station | RSS |
 |---|---:|
 | `mpf2` | 1.66 GB |
 | `c64` | 1.65 GB |
@@ -218,7 +218,7 @@ lineup. Live RSS measured 2026-08-08:
 | `atarist` | 0.78 GB |
 | `amstradcpc` | 0.70 GB |
 
-Mean ≈ **1.2 GB per bridge tile** against ~40 GB available of the box's 128 GB.
+Mean ≈ **1.2 GB per kiosk** against ~40 GB available of labhost's 128 GB.
 Thirty more at that mean would be ~36 GB and **does not fit** — so the lineup is
 memory-bound long before it is effort-bound.
 
@@ -232,9 +232,9 @@ Spot values elsewhere: `bbcmicro` 1.06 GB, `gt40` 758 MB, `kc854` 739 MB,
 |---|---|---|
 | transient `qcap` scope, `BindsTo=` its unit | `MemoryMax=3G` | `c64 atarist apple2 amiga` and `irix` |
 | graphical-bridge template scope | 6 GiB | the template only — **not** a fleet default |
-| `SH_QEMU_RSS_GUARD_MB` | default **2048 MB** (0 = off) | all QEMU tiles; verified freeing **4.6 GB → 1.7 GB** on listener recycle |
+| `SH_QEMU_RSS_GUARD_MB` | default **2048 MB** (0 = off) | all QEMU stations; verified freeing **4.6 GB → 1.7 GB** on listener recycle |
 | broadcast ring | 256 AUs ≈ 12.8 s at 20 fps | every tier |
-| golden `savevm` vmstate | 424–1442 MiB | Tier 2 |
+| checkpoint `savevm` vmstate | 424–1442 MiB | Tier 2 |
 
 The `irix` shm mapping is 64 B + 1288×1024×4 = **5 275 712 bytes**. There is no
 RSS guard on that tier because there is no QEMU to guard.
@@ -246,21 +246,21 @@ values.
 
 | Class | Mechanism | Cost |
 |---|---|---|
-| most tiles | `loadvm` of the internal `golden` snapshot | not measured |
+| most stations | `loadvm` of the internal `golden` snapshot | not measured |
 | `openvms`, `toaruos` | cold service `restart` | `openvms` forbids a warm `loadvm` — VMState revives dead X sockets and stale SLIRP state |
-| `irix` | `relaunch` | **4.4 s to first frame, 5.6 s to interactive**, against a ~390 s cold boot — a **~70×** win from a 47 MB savestate |
-| `serenityos toaruos sailfishos` | none | no golden snapshot; `labctl reset` refuses |
+| `irix` | `relaunch` | **4.4 s to first frame, 5.6 s to interactive**, against a ~390 s cold boot — a **~70×** win from a 47 MB checkpoint |
+| `serenityos toaruos sailfishos` | none | no checkpoint; `labctl reset` refuses |
 
 ## The one change that dominates everything above
 
 Moving from an ffmpeg child process to the in-process libx264 encoder on a
 dedicated thread took glass-to-glass isolated-input p50 from **390–564 ms to
 22–44 ms** — because the child's stdout pipe only flushed an access unit when
-the *next* frame's bytes arrived. Box-side quiesced snap→AU merely halved,
+the *next* frame's bytes arrived. Labhost-side paused snap→AU merely halved,
 5.7 → 2.9 ms.
 
 That gap between "halved" and "17× better" is the lesson worth carrying: the
-box-side metric barely moved while the user-visible number transformed, because
+labhost-side metric barely moved while the user-visible number transformed, because
 the defect was a **buffering boundary**, not compute. Measure where the user is.
 
 For scale, the pre-project neko/WebRTC stack measured **~200 ms** input-to-photon

@@ -8,22 +8,22 @@ the file that actually specifies the behavior.
 ## The streaming path, end to end
 
 The whole system converges on one pipeline — capture, damage, encode,
-transport — but **what sits in front of that pipeline differs per tile, and
+transport — but **what sits in front of that pipeline differs per station, and
 for nearly half the fleet it is not the machine you came to see.**
 
 ```mermaid
 flowchart TD
-  subgraph F1[Front A direct QEMU 29 tiles]
+  subgraph F1[Front A direct QEMU 29 stations]
     A1[qemu-system running the guest OS itself]
   end
 
-  subgraph F2[Front B emulator bridge 28 tiles]
+  subgraph F2[Front B emulator bridge 28 stations]
     B1[qemu-system running a Debian kiosk] --> B2[Xorg root window no window manager]
     B2 --> B3[One full screen emulator VICE MAME hatari FS-UAE SIMH Iris]
     B3 --> B4[The vintage machine C64 Atari ST PDP-11 Alto SGI Indy]
   end
 
-  subgraph F3[Front C host native 1 tile irix]
+  subgraph F3[Front C host native 1 station irix]
     C1[MAME on the host CPU with video none]
   end
 
@@ -31,10 +31,10 @@ flowchart TD
   B2 -->|dbus display scanout of the KIOSK framebuffer| S
   C1 -->|seqlock shared memory mapping| S
 
-  S[streamhost Rust daemon one instance per tile]
+  S[streamhost Rust daemon one instance per station]
   S --> C[damage tracking then H.264 in process libx264 plus Opus]
   C -->|WebTransport QUIC one unidirectional stream per access unit| BR
-  BR[browser React SPA WebCodecs VideoDecoder live tile grid]
+  BR[browser React UI WebCodecs VideoDecoder live station grid]
   BR -->|pointer and keyboard on their own QUIC streams and datagrams| S
   S -->|inject by whichever channel the guest supports| A1
   S -->|inject into the KIOSK which the emulator then re-maps| B1
@@ -43,7 +43,7 @@ flowchart TD
 
 **Note where the arrow into `streamhost` starts on Front B.** It leaves the
 *kiosk's* X root window, not the emulator and not the vintage machine. On those
-28 tiles there is an entire Linux guest between the exhibit and the encoder, and
+28 stations there is an entire Linux guest between the exhibit and the encoder, and
 what actually gets H.264-encoded is that Linux guest's framebuffer, which
 happens to be filled edge to edge by one full-screen emulator window. There is
 no window manager precisely so that nothing else can ever appear in the frame.
@@ -59,10 +59,10 @@ from:
 - **It costs about +9 ms**, mostly a Linux compositing term paid before QEMU is
   even polled, and more when the inner emulator is busy.
 - **It changes what capture costs.** A 32bpp kiosk surface is not
-  memfd-shareable, so those tiles fall back to QEMU's copy path.
-- **"The tile is up" and "the exhibit is up" are different claims.** The kiosk
+  memfd-shareable, so those stations fall back to QEMU's copy path.
+- **"The station is up" and "the exhibit is up" are different claims.** The kiosk
   can be perfectly healthy while the emulator inside it is dead — which is
-  exactly how a migrated tile can render a black screen while every log, exit
+  exactly how a migrated station can render a black screen while every log, exit
   code and assertion reports success.
 
 Front C inverts the usual assumption in the other direction: `irix` has **no
@@ -71,21 +71,21 @@ a KVM vCPU. A fourth front, `openvms`, runs *two* sibling VMs where the captured
 one does nothing but serve X. The full taxonomy is in
 [`GUEST-TIERS.md`](GUEST-TIERS.md).
 
-Each tile runs its own `streamhost` process; there is no shared fan-out
-server on the media path. A `streamhost@<tile>` systemd unit per tile is
-what's deployed on the lab box (see `AGENTS.md`'s access map for how an
-operator reaches a running tile).
+Each station runs its own `streamhost` process; there is no shared fan-out
+server on the media path. A `streamhost@<tile>` systemd unit per station is
+what's deployed on labhost (see `AGENTS.md`'s access map for how an
+operator reaches a running station).
 
 Design and the reasoning behind each piece: `streamhost/docs/DESIGN.md`.
 Encoder/transport latency work and the measured numbers:
 `streamhost/docs/LATENCY-NOTES.md`, `docs/INPUT-LATENCY.md`. The dbus-based
 fast-poll QEMU patch that cuts capture latency: `streamhost/docs/CAPTURE-FASTPOLL.md`.
-Idle-tile auto-pause/resume: `streamhost/docs/IDLE-PAUSE.md`. The `SH_*`
+Idle-station auto-pause/resume: `streamhost/docs/IDLE-PAUSE.md`. The `SH_*`
 environment-variable reference: `streamhost/docs/CONFIG.md`.
 
 ## The daemon's responsibilities
 
-One `streamhost` process, per tile, owns:
+One `streamhost` process, per station, owns:
 
 - **Capture** — pulling frames from the guest only when the emulator
   signals display damage (no fixed-rate re-encode of an unchanged screen).
@@ -100,23 +100,23 @@ One `streamhost` process, per tile, owns:
   (see below), each input class on its own QUIC stream so one class can't
   block another.
 - **Session gating** — refusing any WebTransport session that doesn't
-  present a valid ticket for that tile (see "Session tickets" below).
+  present a valid ticket for that station (see "Session tickets" below).
 - **Idle management** — QMP-pausing an unwatched guest after a grace
   period and resuming it on the next visitor.
 
-Source: `streamhost/streamhost/src/`. Per-tile launch scripts (the exact
-device set, capture channel, and any in-guest agent a tile needs) live
+Source: `streamhost/streamhost/src/`. Per-station launch scripts (the exact
+device set, capture channel, and any in-guest agent a station needs) live
 under `streamhost/tiles/<tile>/` and `scripts/build-guests/`.
 
-## The tile / registry model
+## The station / registry model
 
-A **tile** is one guest OS instance: an emulator process, its `streamhost`
-capture/encode/transport wrapper, a golden disk image with a known-good
+A **station** is one guest OS instance: an emulator process, its `streamhost`
+capture/encode/transport wrapper, a seed disk image with a known-good
 snapshot to reset to, and an entry in the registry describing all of that.
 `registry/tiles/<osId>.json` is the single typed source of truth (schema at
 `registry/schema/tile-v1.schema.json`); `scripts/tiles-registry.py generate`
 renders it into the deployed artifacts (`registry/index.json`, the
-manifest `streamhost` consumes, SPA poster data). Never hand-edit a
+manifest `streamhost` consumes, UI poster data). Never hand-edit a
 generated file — edit the registry source and regenerate; `make
 tile-registry-check` fails a drifted generated file. Current roster size:
 
@@ -124,10 +124,10 @@ tile-registry-check` fails a drifted generated file. Current roster size:
 python3 scripts/tiles-registry.py count
 ```
 
-A registry entry records a tile's **lifecycle** (`production` — running
+A registry entry records a station's **lifecycle** (`production` — running
 live; `showcase` — poster-only, backend retired; also `experiment` and
 `candidate` for work in progress), its build recipe, its runtime env
-(`SH_*` vars, ports), and — for production tiles — a poster (prose in
+(`SH_*` vars, ports), and — for production stations — a poster (prose in
 `registry/posters/`, hero image at `spa/public/posters/<tile>/desktop.webp`)
 so an exhibit is never live without something to show for it.
 
@@ -140,18 +140,18 @@ dark launch or an exhibit temporarily off the floor, and `enabled: false` (which
 removes the row, and the deep link with it) to retire one. Field reference:
 [`registry/README.md`](../registry/README.md).
 
-Turning a guest into a tile is the subject of
+Turning a guest into a station is the subject of
 [`docs/lab/ADD-NEW-OS-PLAYBOOK.md`](lab/ADD-NEW-OS-PLAYBOOK.md) — sourcing
-install media, building a golden image, wiring the registry entry, and the
-acceptance checks a new tile has to pass before it ships.
+install media, building a seed image, wiring the registry entry, and the
+acceptance checks a new station has to pass before it ships.
 
 ## Guest tiers
 
 The three capture fronts above are what `streamhost` *sees*. The full structural
-taxonomy is slightly wider — **five tiers** — because two kinds of tile do not
+taxonomy is slightly wider — **five tiers** — because two kinds of station do not
 show up as a capture front at all: the showcase posters have no runtime to
 capture, and `openvms` is a second QEMU hiding behind Front A's arrow. Which
-tier a tile is determines its input path, its capture backend and most of its
+tier a station is determines its input path, its capture backend and most of its
 cost:
 
 | Tier | Count | What runs | Layers to the exhibit |
@@ -183,13 +183,13 @@ Guests fall into a few families depending on what channel they expose:
   console (deterministic key injection, absolute pointer via `usb-tablet`
   or `dbus`, screendumps as the only proof of state) or a small in-guest
   agent (the `warpd` family: a TCP or serial listener baked into several
-  golden images that accepts pointer/exec verbs). See
+  seed images that accepts pointer/exec verbs). See
   `streamhost/guest-agents/*/README.md` per agent and
   `docs/lab/INPUT-DEBUGGING.md` for which code path a given press actually
   takes.
-- **Emulator-bridge tiles** (period 8/16-bit machines) — a captured Linux
+- **Kiosks** (period 8/16-bit machines) — a captured Linux
   kiosk running the period emulator (VICE, Hatari, FS-UAE, LinApple); input
-  reaches the emulator window the same way any bridge-tile input does, one
+  reaches the emulator window the same way any kiosk input does, one
   layer further removed from the guest OS itself.
 
 Pacing (`SH_KEY_MIN_HOLD_MS`/`SH_KEY_MIN_GAP_MS`, `SH_ABS_PACE_MS`) matters
@@ -200,7 +200,7 @@ current defaults.
 
 ## Public gallery and session tickets
 
-The LAN origin (`streamhost`'s WebTransport listeners, the HTTPS SPA
+The LAN origin (`streamhost`'s WebTransport listeners, the HTTPS UI
 origin) is open and unauthenticated by design — it's a home network. The
 public deployment adds a session-gated listener in front of it, described
 in full in [`docs/PUBLIC-GALLERY.md`](PUBLIC-GALLERY.md):
@@ -209,13 +209,13 @@ in full in [`docs/PUBLIC-GALLERY.md`](PUBLIC-GALLERY.md):
    only the login page and `/auth/*` reachable without a session.
 2. A **passkey** (WebAuthn) login that issues a server-side session cookie.
 3. A **media-plane ticket** (`streamhost/src/session_ticket.rs`): because a
-   WebTransport session carries a tile's *input* plane as well as its
+   WebTransport session carries a station's *input* plane as well as its
    video, the authenticated gateway mints a short-lived HMAC ticket per
-   connect, and every tile with `SH_SESSION_KEY` set refuses a session
+   connect, and every station with `SH_SESSION_KEY` set refuses a session
    whose path doesn't carry a live one — LAN callers included, so minting
    only for the public listener would have left the LAN gallery unusable.
 
-A WebTransport client must use the `path` from a tile's `/signal/<tile>.json`
+A WebTransport client must use the `path` from a station's `/signal/<tile>.json`
 verbatim; a hardcoded path is refused (`SESSION_REJECTED` in the daemon's
 journal).
 
@@ -227,12 +227,12 @@ journal).
 | **Pointer / keyboard / video / sound paths** | [`IO-PATHS.md`](IO-PATHS.md) |
 | **Latency, CPU and memory cost per tier and path** | [`OVERHEAD.md`](OVERHEAD.md) |
 | Daemon design, encoder, transport internals | `streamhost/docs/DESIGN.md`, `streamhost/docs/LATENCY-NOTES.md`, `streamhost/docs/CONFIG.md` |
-| Bridge-tile pattern (period emulator inside a captured kiosk) | `streamhost/docs/BRIDGE.md`, `streamhost/docs/GRAPHICAL-BRIDGE.md` |
+| Kiosk pattern (period emulator inside a captured kiosk) | `streamhost/docs/BRIDGE.md`, `streamhost/docs/GRAPHICAL-BRIDGE.md` |
 | Capture fast-poll QEMU patch | `streamhost/docs/CAPTURE-FASTPOLL.md` |
 | Idle auto-pause | `streamhost/docs/IDLE-PAUSE.md` |
 | Input latency budget and levers | `docs/INPUT-LATENCY.md` |
 | Pointer/tap/drag debugging | `docs/lab/INPUT-DEBUGGING.md` |
-| Adding a new OS tile | `docs/lab/ADD-NEW-OS-PLAYBOOK.md` |
+| Adding a new OS station | `docs/lab/ADD-NEW-OS-PLAYBOOK.md` |
 | Registry schema and generated artifacts | `registry/README.md` |
 | Public gallery (passkeys, invites, session tickets) | `docs/PUBLIC-GALLERY.md` |
 | Per-guest build/install notes | `docs/guests/<os>.md` |
