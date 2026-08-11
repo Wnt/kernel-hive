@@ -1,5 +1,17 @@
 # irix: prove/fix savestate-restore trust, then true start-paused — handover
 
+> **STATUS 2026-08-11 (same day, later session): phase 2 IMPLEMENTED; phase 1
+> SKIPPED by operator decision** — the operator validates start-paused (and
+> restore behaviour generally) by eye in the browser, which is cheaper than an
+> automated soak. Implementation: `IRIX_START_PAUSED` in
+> `streamhost/tiles/irix/x11-runtime.sh` (freeze_at_state; charge-at-first-wake
+> via `.state-unvetted`; `charge_state_budget`), fixture flips it on with
+> `SH_IDLE_PAUSE_WARMUP_SECS=0`. Design record:
+> `docs/guests/irix.md` §"True start-paused (2026-08-11)". The budget stays as
+> defense in depth (charge persists until a probe window clears it — the
+> simpler of the brief's two options, chosen because restore is treated as
+> trustworthy-until-proven-otherwise).
+
 **Written 2026-08-11 (session cleared right after; this doc is the whole
 brief).** Operator's decision, in order:
 
