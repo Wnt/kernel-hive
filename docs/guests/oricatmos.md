@@ -12,8 +12,8 @@ the station is a thin qcow2 overlay on it — migrated off the bookworm seed on
 ROM staging + kiosk `launch.sh` + quiet console + checkpoint capture + a
 framebuffer-asserted keyboard proof, fully automated.
 **Emulator build:** `scripts/build-guests/emulators/build-mame-oricatmos.sh`.
-**Station dir (labhost):** `/data/vms/streamhost/tiles/oricatmos/`.
-**Registry entry:** `registry/tiles/oricatmos.json` (slot 131, udp 54131,
+**Station dir (labhost):** `/data/vms/streamhost/stations/oricatmos/`.
+**Registry entry:** `registry/stations/oricatmos.json` (slot 131, udp 54131,
 VMID 234, ssh hostfwd 127.0.0.1:5834).
 
 ## Acceptance criteria

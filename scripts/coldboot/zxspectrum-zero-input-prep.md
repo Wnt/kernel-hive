@@ -1,7 +1,7 @@
 # zxspectrum boot capture — bridge prep
 
 Status: **AUTHORED-UNTESTED**. No clip has been recorded and `spa.bootVideo` is
-not set in `registry/tiles/zxspectrum.json`; this file and the `zxspectrum)` arm
+not set in `registry/stations/zxspectrum.json`; this file and the `zxspectrum)` arm
 in `bootrec-tiles.conf` exist so the cold-boot path is audited and ready, which
 is what the playbook requires before a tile ships.
 

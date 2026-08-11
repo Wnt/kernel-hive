@@ -90,7 +90,7 @@ Two hard reasons:
 1. **macOS local-network privacy** blocks fresh Chromes from `192.168.x.x`
    (`ERR_ADDRESS_UNREACHABLE`). The Linux host has no such wall.
 2. Guest reactions are read from each tile's **local** `qmp.sock`
-   (`/data/vms/streamhost/tiles/<stationDir>/qmp.sock`) — only reachable on the host.
+   (`/data/vms/streamhost/stations/<stationDir>/qmp.sock`) — only reachable on the host.
 
 It also needs a **proprietary-codec Chrome** (Chrome for Testing / Google Chrome),
 **not** Playwright's bundled Chromium: the wire is H.264 and the codec-stripped
@@ -116,7 +116,7 @@ spot-check those to confirm assertions match the pixels.
 |------------------------------|-----------------------------------------------------|------------------------------------------|
 | `CHROME_PATH`                | `/data/streamhost-input-test/chrome-linux64/chrome` | proprietary-codec Chrome binary          |
 | `SPA_BASE_URL`               | `https://127.0.0.1:8443`                            | deployed SPA origin                      |
-| `STREAMHOST_TILES_DIR`       | `/data/vms/streamhost/tiles`                        | dir holding each `<stationDir>/qmp.sock`    |
+| `STREAMHOST_TILES_DIR`       | `/data/vms/streamhost/stations`                        | dir holding each `<stationDir>/qmp.sock`    |
 | `STREAMHOST_SHOT_DIR`        | `/data/streamhost-input-test/shots`                 | scratch for QEMU PPM screendumps         |
 | `STREAMHOST_RESET_SCRIPT`    | `/data/vms/streamhost/serve/reset-tile.sh`          | reset authority (shared with the button) |
 | `STREAMHOST_NO_RESET`        | (unset)                                             | **disable** reset-to-golden (debug the live state) |

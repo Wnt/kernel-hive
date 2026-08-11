@@ -2,7 +2,7 @@ IRIX 6.5.22 tile — Track A (apps + demos), ORDERED INSTALL PLAN
 ===============================================================
 Phase 1 (inventory / acquisition / harness) completed 2026-07-31.
 Everything below runs in /data/vms/soltest/irix-apps. NEVER touch
-/data/vms/streamhost/tiles/irix or the chmod-444 golden irix65.chd.
+/data/vms/streamhost/stations/irix or the chmod-444 golden irix65.chd.
 
 WHAT THE GUIDE ASKS FOR vs WHAT THE IMAGE ALREADY HAS
 -----------------------------------------------------

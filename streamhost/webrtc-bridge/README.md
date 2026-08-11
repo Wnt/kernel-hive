@@ -4,7 +4,7 @@ This Go service is the native-decoder fallback egress for **every** streamhost
 tile. Despite the historical directory name, it is no longer a per-tile spike:
 
 - one service owns one HTTP listener, one ICE UDP port, and one Unix feed socket;
-- every instance of the shared Rust streamhost binary registers `SH_TILE`
+- every instance of the shared Rust streamhost binary registers `SH_STATION`
   automatically on that socket and mirrors its existing H.264/Opus output;
 - `POST /offer/<tile>` selects the registered feed on demand;
 - the HTTPS server advertises the same platform endpoint for every tile in its

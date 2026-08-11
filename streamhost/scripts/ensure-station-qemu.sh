@@ -1,5 +1,5 @@
 #!/bin/bash
-# ensure-tile-qemu.sh <tile> — idempotent systemd ExecStartPre for streamhost@.
+# ensure-station-qemu.sh <tile> — idempotent systemd ExecStartPre for streamhost@.
 # A daemon-only restart must not restart its guest. If the pidfile-owned QEMU
 # and QMP socket are both live, this is a no-op; otherwise the emitted launcher
 # owns cleanup/startup and continues to enforce pidfile-only termination.
@@ -18,13 +18,13 @@ case "$TILE" in
 esac
 
 # x11 tiles (SH_CAPTURE=x11, IRIX/issue #20) have no QEMU/QMP: hand off to the
-# Xvfb+emulator lifecycle helper. Keyed on the SH_TILE_RUNTIME marker the
+# Xvfb+emulator lifecycle helper. Keyed on the SH_STATION_RUNTIME marker the
 # EnvironmentFile provides, so the QEMU fleet is untouched.
-if [ "${SH_TILE_RUNTIME:-}" = "x11" ]; then
-  exec "$(dirname "$0")/ensure-tile-x11.sh" "$TILE"
+if [ "${SH_STATION_RUNTIME:-}" = "x11" ]; then
+  exec "$(dirname "$0")/ensure-station-x11.sh" "$TILE"
 fi
 
-BASE="/data/vms/streamhost/tiles/$TILE"
+BASE="/data/vms/streamhost/stations/$TILE"
 PIDFILE="$BASE/qemu.pid"
 QMP="$BASE/qmp.sock"
 LAUNCHER="$BASE/qemu-streamhost.sh"
@@ -75,7 +75,7 @@ case "$TILE" in
     # is a cgroup systemd will never associate with the unit, so `systemctl stop`
     # can only reach what ExecStop happens to find by pidfile — the same defect
     # that left an orphaned IRIX watchdog running after a stop. See the long note
-    # in ensure-tile-x11.sh (including why this must NOT be After=).
+    # in ensure-station-x11.sh (including why this must NOT be After=).
     exec systemd-run --scope --unit "qcap-${TILE}-$(date +%s)" \
       -p "BindsTo=streamhost@${TILE}.service" \
       -p MemoryMax=3G bash "$LAUNCHER"

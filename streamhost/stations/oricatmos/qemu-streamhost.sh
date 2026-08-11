@@ -17,7 +17,7 @@
 #   * Keyboard exhibit: no pointing device, PS/2 keyboard only (vmport=off).
 #   * 768 MB is the whole guest: Debian 13 with no desktop, X, and one 6502.
 set -e
-BASE=/data/vms/streamhost/tiles/oricatmos
+BASE=/data/vms/streamhost/stations/oricatmos
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

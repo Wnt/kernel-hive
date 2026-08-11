@@ -1,6 +1,6 @@
 # Canonical tile registry
 
-`registry/tiles/<osId>.json` is the typed source of truth for the gallery lineup.
+`registry/stations/<osId>.json` is the typed source of truth for the gallery lineup.
 Do not copy a fleet total into a new source of truth; derive the current total:
 
 ```bash
@@ -27,7 +27,7 @@ fill in the keys documented there (`SH_HOST_IP`, `SH_TUNNEL_HOST`,
 sources that file for every consumer, and is a no-op when the file is absent —
 see the header comment in that file for the exact precedence rule (explicit CLI
 flag / pre-set environment variable > `registry/local.env` > repo placeholder).
-`streamhost/scripts/streamhost-tile.sh` was the first, tile.env-emitting
+`streamhost/scripts/streamhost-station.sh` was the first, station.env-emitting
 consumer (`SH_HOST_IP`, overridden by an explicit `--host-ip` flag); the same
 mechanism now also backs `scripts/serve-https-spa.sh`,
 `scripts/serve/restart-https.sh`, `scripts/serve/gen-local-ca.sh`,
@@ -67,7 +67,7 @@ python3 scripts/stations-registry.py explain solaris
 
 `generate` validates everything before atomically replacing outputs. `--check`
 renders in memory and byte-compares every committed output; on the lab box it
-also compares the declared labctl fields with `/data/vms/streamhost/tiles.json`.
+also compares the declared labctl fields with `/data/vms/streamhost/stations.json`.
 `scripts/gen_tiles_json.py` consumes the generated declaration seed, verifies it
 against live env/launcher facts, and then adds only its read-only golden-snapshot
 probe. Observed service/socket/snapshot state remains owned by `labctl gen` and
@@ -76,7 +76,7 @@ is not written back into this registry.
 The rendered artifacts (OS binding lines, emit invocations, build-manifest
 rows) are serialized from the typed fields; the legacy pre-rendered `render.*`
 string mirrors were removed once semantic parity was proven, so `render` now
-carries only ordering, preludes, and comments. A tile's `tile.env.fixture` is
+carries only ordering, preludes, and comments. A tile's `station.env.fixture` is
 the single source for the env keys it defines — the generator merges it into
 the env view the validators and the rendered `index.json` see, and validation
 fails any key that appears in both places. Verbatim QEMU launchers remain
@@ -160,7 +160,7 @@ two are not even disjoint, since a dark-launched tile that gets listed and later
 withdrawn would have to rewrite the field anyway. What actually differs is the
 prose, so `reason` carries it and is required (with `since`, `YYYY-MM-DD`)
 whenever `state` is `hidden`, and forbidden when it is `listed`. `git log --
-registry/tiles/<id>.json` answers "who took it off"; a field would only be able
+registry/stations/<id>.json` answers "who took it off"; a field would only be able
 to go stale about it.
 
 `validate_listing()` in `scripts/stations-registry.py` enforces the shape (the

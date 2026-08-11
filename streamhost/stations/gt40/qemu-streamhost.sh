@@ -25,7 +25,7 @@
 #     (display/sim_ws.c: display_lp_sw = mev.b1_state), so the pen is on the
 #     glass only while the button is held, at the position of that same event.
 set -e
-BASE=/data/vms/streamhost/tiles/gt40
+BASE=/data/vms/streamhost/stations/gt40
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

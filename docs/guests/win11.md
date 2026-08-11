@@ -177,7 +177,7 @@ three `ide-cd` drives.
 
 `win11` is a production streamhost station: **slot 123, UDP 54123**, 4 GiB / 4 cores,
 1280x800, `ultrafast`, audio on, abs pointer. Launcher (and device-set ledger):
-`streamhost/tiles/win11/qemu-streamhost.sh`. The pristine install stays at
+`streamhost/stations/win11/qemu-streamhost.sh`. The pristine install stays at
 `/data/gallery-guests/Win11/win11.qcow2`; the station boots a copy,
 `win11-golden.qcow2`, with a `golden` checkpoint inside (`resetMode=loadvm`).
 

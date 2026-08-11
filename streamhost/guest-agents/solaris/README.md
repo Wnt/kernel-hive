@@ -44,7 +44,7 @@ Verified end-to-end through the real browser→daemon→warpd path: corner test 
 ## How it's wired (build scripts)
 - `stations-manifest.sh` — solaris emits `--pointer warpd --warpd-addr 127.0.0.1:57790` and
   the netdev carries `hostfwd=tcp:127.0.0.1:57790-10.0.2.15:7777`.
-- `scripts/streamhost-tile.sh` — `--warpd-addr` → `SH_WARPD_ADDR`; keeps `-device usb-tablet`
+- `scripts/streamhost-station.sh` — `--warpd-addr` → `SH_WARPD_ADDR`; keeps `-device usb-tablet`
   for warpd tiles so `loadvm golden` matches the snapshot's device set.
 - Daemon: `InputBackend::Warpd` (config.rs), `warpd.rs` (reconnecting TCP client), `input.rs`
   (M/P/R/B routing), `transport.rs` (per-session client).

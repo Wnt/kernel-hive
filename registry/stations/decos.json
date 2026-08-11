@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/decos",
-      "qmp": "/data/vms/streamhost/tiles/decos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/decos",
+      "qmp": "/data/vms/streamhost/stations/decos/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -78,8 +78,8 @@
   "credentialsRef": "guest/decos",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "decos",
-      "SH_QMP": "/data/vms/streamhost/tiles/decos/qmp.sock",
+      "SH_STATION": "decos",
+      "SH_QMP": "/data/vms/streamhost/stations/decos/qmp.sock",
       "SH_PORT": "54126",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -90,8 +90,8 @@
       "SH_INPUT_BACKEND": "disabled",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/decos/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/decos/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/decos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/decos/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 229,
@@ -121,11 +121,11 @@
         "--launcher-file",
         "$T/decos/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/decos/tile.env.fixture"
+        "$T/decos/station.env.fixture"
       ],
       "deviceSetId": "decos-current",
-      "launcher": "streamhost/tiles/decos/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/decos/tile.env.fixture",
+      "launcher": "streamhost/stations/decos/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/decos/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

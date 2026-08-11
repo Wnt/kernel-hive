@@ -71,7 +71,7 @@ It emits:
   `-loadvm golden`;
 - `launch-scoped.sh`: permanent `systemd-run --scope` launcher with the chosen
   `MemoryMax`;
-- `tile.env`: scratch streamhost configuration with absolute input, identity
+- `station.env`: scratch streamhost configuration with absolute input, identity
   cursor calibration, 60 fps, audio, loadvm reset, idle-pause disabled, and a
   4096 MiB QEMU RSS guard;
 - `BUILD-INFO.txt`: the assigned namespace and device-set ledger.
@@ -81,16 +81,16 @@ Changing RAM, SMP, machine type, disk bus, NIC, audio card, or tablet after
 `savevm golden` invalidates the snapshot.
 
 For production, copy the proven launcher and environment into the new tracked
-`streamhost/tiles/<id>/` source, then update the lifecycle launch paths to use a
+`streamhost/stations/<id>/` source, then update the lifecycle launch paths to use a
 6 GiB bridge scope. Today those paths are
-`streamhost/scripts/ensure-tile-qemu.sh` and the source template
+`streamhost/scripts/ensure-station-qemu.sh` and the source template
 `registry/templates/bring-up-all.sh.in`; do not hand-edit the generated
 `streamhost/bring-up-all.sh`.
 
 ### Registry JSON blueprint
 
 Do not add this example to the registry. Copy the complete shape of
-`registry/tiles/amiga.json`, then replace its exhibit-specific values with the
+`registry/stations/amiga.json`, then replace its exhibit-specific values with the
 fields below. Leave `enabled` false until the separate OS issue is authorized
 to change the production lineup, and regenerate rather than editing derived
 files.
@@ -104,8 +104,8 @@ files.
   "lifecycle": "production",
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/<tile-id>",
-      "qmp": "/data/vms/streamhost/tiles/<tile-id>/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/<tile-id>",
+      "qmp": "/data/vms/streamhost/stations/<tile-id>/qmp.sock",
       "pointer_mode": "abs",
       "ssh_port": "<unique-ssh-port>",
       "exec_port": "<unique-ssh-port>",
@@ -134,8 +134,8 @@ files.
     "vmidLabel": "<unique-vmid>",
     "qemu": {
       "mode": "verbatim",
-      "launcher": "streamhost/tiles/<tile-id>/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/<tile-id>/tile.env.fixture",
+      "launcher": "streamhost/stations/<tile-id>/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/<tile-id>/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

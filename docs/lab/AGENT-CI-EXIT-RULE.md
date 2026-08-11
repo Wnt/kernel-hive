@@ -176,7 +176,7 @@ one-line reason. Rules:
 Every file emitted by `generated()` in `scripts/stations-registry.py` (the manifest,
 bring-up list, the UI registry data, the serve JSONs, …) must be byte-identical
 to what the typed registry + templates produce now. Edit the **source**
-(`registry/tiles/*`, templates) and run `make station-registry-generate`, then
+(`registry/stations/*`, templates) and run `make station-registry-generate`, then
 commit the regenerated artifacts. Never hand-edit a generated file. `make
 station-registry-check` (and the CI `static` job) fail on any drift.
 
@@ -189,7 +189,7 @@ are the worst case for a three-way merge: they auto-merge *cleanly* and are then
 *wrong*, because git resolves them line-by-line with no idea they are a
 projection of the sources. Observed 2026-08-10 merging a tile branch —
 `registry/generated/labctl-declarations.json` came out carrying
-`nextstep.pointer_mode: "rel"` while `registry/tiles/nextstep.json` said `abs`,
+`nextstep.pointer_mode: "rel"` while `registry/stations/nextstep.json` said `abs`,
 a hybrid neither branch ever contained. No conflict was reported; only
 `make station-registry-check` caught it.
 

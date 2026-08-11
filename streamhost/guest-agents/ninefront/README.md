@@ -52,7 +52,7 @@ persistent streamhost connection.
 
 - Existing user netdev host forward:
   `127.0.0.1:57793` → guest `:7777`
-- `tile.env`: `SH_POINTER=warpd`,
+- `station.env`: `SH_POINTER=warpd`,
   `SH_WARPD_ADDR=127.0.0.1:57793`
 - No exec channel is exposed for this tile.
 

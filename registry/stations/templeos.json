@@ -48,11 +48,11 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/templeos",
-      "qmp": "/data/vms/streamhost/tiles/templeos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/templeos",
+      "qmp": "/data/vms/streamhost/stations/templeos/qmp.sock",
       "pointer_mode": "warpd",
       "warpd_port": null,
-      "warpd_addr": "unix:/data/vms/streamhost/tiles/templeos/serial.sock",
+      "warpd_addr": "unix:/data/vms/streamhost/stations/templeos/serial.sock",
       "ssh_port": null,
       "exec_port": null,
       "exec_kind": null,
@@ -60,7 +60,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54105,
-      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/templeos/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/templeos/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     }
   },
   "render": {
@@ -92,7 +92,7 @@
         0,
         0
       ],
-      "agentAddress": "unix:/data/vms/streamhost/tiles/templeos/serial.sock"
+      "agentAddress": "unix:/data/vms/streamhost/stations/templeos/serial.sock"
     },
     "slot": 105
   },
@@ -100,18 +100,18 @@
   "credentialsRef": "guest/templeos",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "templeos",
-      "SH_QMP": "/data/vms/streamhost/tiles/templeos/qmp.sock",
+      "SH_STATION": "templeos",
+      "SH_QMP": "/data/vms/streamhost/stations/templeos/qmp.sock",
       "SH_PORT": "54105",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "warpd",
-      "SH_WARPD_ADDR": "unix:/data/vms/streamhost/tiles/templeos/serial.sock",
+      "SH_WARPD_ADDR": "unix:/data/vms/streamhost/stations/templeos/serial.sock",
       "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/templeos/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/templeos/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/templeos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/templeos/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_WARPD_PACE_MS": "30"
     },
@@ -128,7 +128,7 @@
         "--pointer",
         "warpd",
         "--warpd-addr",
-        "unix:/data/vms/streamhost/tiles/templeos/serial.sock",
+        "unix:/data/vms/streamhost/stations/templeos/serial.sock",
         "--warpd-pace-ms",
         "30",
         "--audio",
@@ -138,11 +138,11 @@
         "--launcher-file",
         "$T/templeos/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/templeos/tile.env.fixture"
+        "$T/templeos/station.env.fixture"
       ],
       "deviceSetId": "templeos-current",
-      "launcher": "streamhost/tiles/templeos/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/templeos/tile.env.fixture",
+      "launcher": "streamhost/stations/templeos/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/templeos/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0",
       "accel": "kvm",

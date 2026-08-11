@@ -341,7 +341,7 @@ versus warpd with no regression in event correctness; T2 may set a stricter comm
 - Separate host/backend-to-ISR timing from ISR-to-frame timing where instrumentation permits; this
   reveals whether remaining tail latency belongs to the transport, rio redraw, or capture.
 - Ship only on the correctness/restore gates and a material tail-latency win. Otherwise select warpd
-  in `tile.env`, retain the research measurements, and do not carry an unearned kernel/QEMU fork.
+  in `station.env`, retain the research measurements, and do not carry an unearned kernel/QEMU fork.
 
 ## Reference index
 

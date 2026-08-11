@@ -6,7 +6,7 @@ D=/data/vms/soltest/freedos-fastpoll
 BIN=/data/vms/streamhost/build/target/release/streamhost
 if [ -f "$D/sh.pid" ]; then kill "$(cat "$D/sh.pid")" 2>/dev/null || true; fi
 sleep 0.3
-env SH_TILE=fastpoll SH_QMP="$D/qmp.sock" SH_PORT=54200 \
+env SH_STATION=fastpoll SH_QMP="$D/qmp.sock" SH_PORT=54200 \
   SH_POINTER=rel SH_AUDIO=off SH_FPS=240 \
   SH_HOST_IP=192.0.2.10 SH_ADVERTISE_HOST=192.0.2.10 \
   SH_HASH_FILE="$D/cert_hash_b64.txt" SH_SIGNALING_JSON="$D/signaling.json" \

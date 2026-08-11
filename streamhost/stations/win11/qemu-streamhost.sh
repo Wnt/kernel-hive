@@ -37,7 +37,7 @@
 #   * ich9-intel-hda, not the fleet's AC97: Windows 11 has no in-box AC97 driver.
 #   * The guest agent channel is kept — it is this tile's real exec channel.
 set -e
-D=/data/vms/streamhost/tiles/win11
+D=/data/vms/streamhost/stations/win11
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qga.sock" "$D/qemu.pid"

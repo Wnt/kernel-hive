@@ -167,7 +167,7 @@ Then, gated:
    (§2 of the patch) means paused/unwatched tiles pay ~0, so the fast scan is
    spent only on tiles a viewer is connected to.
 
-The tile launchers are emitted by `../scripts/streamhost-tile.sh`, which now bakes
+The tile launchers are emitted by `../scripts/streamhost-station.sh`, which now bakes
 the `SH_DBUS_UPDATE_MS` export (default 4, per-tile overridable) so regenerated
 launchers keep the knob.
 

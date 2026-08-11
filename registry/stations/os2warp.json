@@ -48,11 +48,11 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/os2warp",
-      "qmp": "/data/vms/streamhost/tiles/os2warp/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/os2warp",
+      "qmp": "/data/vms/streamhost/stations/os2warp/qmp.sock",
       "pointer_mode": "warpd",
       "warpd_port": null,
-      "warpd_addr": "unix:/data/vms/streamhost/tiles/os2warp/serial.sock",
+      "warpd_addr": "unix:/data/vms/streamhost/stations/os2warp/serial.sock",
       "ssh_port": null,
       "exec_port": null,
       "exec_kind": null,
@@ -60,7 +60,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54108,
-      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     }
   },
   "render": {
@@ -92,7 +92,7 @@
         0,
         0
       ],
-      "agentAddress": "unix:/data/vms/streamhost/tiles/os2warp/serial.sock",
+      "agentAddress": "unix:/data/vms/streamhost/stations/os2warp/serial.sock",
       "paceMs": 8,
       "buttons": "qemu",
       "wheel": "agent",
@@ -104,22 +104,22 @@
   "credentialsRef": "guest/os2warp",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "os2warp",
-      "SH_QMP": "/data/vms/streamhost/tiles/os2warp/qmp.sock",
+      "SH_STATION": "os2warp",
+      "SH_QMP": "/data/vms/streamhost/stations/os2warp/qmp.sock",
       "SH_PORT": "54108",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "warpd",
-      "SH_WARPD_ADDR": "unix:/data/vms/streamhost/tiles/os2warp/serial.sock",
+      "SH_WARPD_ADDR": "unix:/data/vms/streamhost/stations/os2warp/serial.sock",
       "SH_WARPD_BUTTONS": "qemu",
       "SH_WARPD_WHEEL": "agent",
       "SH_WARPD_PACE_MS": "30",
       "SH_WARPD_BUTTON_DELAY_MS": "80",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/os2warp/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/os2warp/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/os2warp/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/os2warp/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 108,
@@ -135,7 +135,7 @@
         "--pointer",
         "warpd",
         "--warpd-addr",
-        "unix:/data/vms/streamhost/tiles/os2warp/serial.sock",
+        "unix:/data/vms/streamhost/stations/os2warp/serial.sock",
         "--warpd-buttons",
         "qemu",
         "--warpd-wheel",
@@ -152,7 +152,7 @@
         "$T/os2warp/qemu-streamhost.sh"
       ],
       "deviceSetId": "os2warp-std-1024x768",
-      "launcher": "streamhost/tiles/os2warp/qemu-streamhost.sh",
+      "launcher": "streamhost/stations/os2warp/qemu-streamhost.sh",
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0,acpi=off,usb=off",
       "accel": "tcg",

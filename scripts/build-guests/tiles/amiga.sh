@@ -54,7 +54,7 @@ SSH_PORT=5818
 WEB_PORT=8118
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY="/data/vms/bridge/bridge_key"
-TILE_DIR="/data/vms/streamhost/tiles/${TILE}"
+TILE_DIR="/data/vms/streamhost/stations/${TILE}"
 OVERLAY="${TILE_DIR}/overlay.qcow2"
 QMP="${TILE_DIR}/qmp.sock"
 PID="${TILE_DIR}/qemu.pid"
@@ -241,7 +241,7 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
   log "   $0 --bake   # savevm + assert it landed + loadvm + assert it runs"
   log "Re-run this script after baking to boot straight into the golden fixture (-loadvm golden)."
   log "Emit + start the tile:"
-  log "   /data/vms/streamhost/scripts/streamhost-tile.sh --tile amiga --vmid ${VMID} --udp ${UDP} \\"
+  log "   /data/vms/streamhost/scripts/streamhost-station.sh --tile amiga --vmid ${VMID} --udp ${UDP} \\"
   log "       --pointer abs --audio on --audio-dev ac97 --input-dev usb --mem ${MEM} --smp 2 --cpu host --vga std --fps 60"
   log "   # then replace qemu-streamhost.sh with the bridge device set (ide overlay, e1000 hostfwd ${SSH_PORT}, conditional -loadvm golden)"
   log "   bash ${TILE_DIR}/qemu-streamhost.sh ; systemctl start streamhost@${TILE}"

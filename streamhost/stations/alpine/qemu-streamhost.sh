@@ -14,7 +14,7 @@
 #   * -boot d keeps booting the CD; the empty IDE disk is never booted/mounted by the guest.
 # Kill only by pidfile. neko is restored by ROLLBACK.md.
 set -e
-BASE=/data/vms/streamhost/tiles/alpine
+BASE=/data/vms/streamhost/stations/alpine
 STATE="$BASE/state.qcow2"
 BUILT_STATE=/data/gallery-guests/Alpine/state.qcow2
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true

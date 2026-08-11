@@ -12,7 +12,7 @@ Unlike win95 (`DISK="$D/win95-golden.qcow2"` under the tile dir), the win98se la
 references its disks by **absolute** paths:
 
 ```
-B=/data/vms/streamhost/tiles/win98se
+B=/data/vms/streamhost/stations/win98se
 KVM=/data/gallery-guests/Win98SE/win98se-kvm.qcow2      # C:  (1.16 GB, golden vmstate inside)
 GAMES=/data/gallery-guests/Win98SE/win98se-games.qcow2  # D:  (391 MB, golden marker inside)
 ```
@@ -166,9 +166,9 @@ clock hidden) — replacing the Notepad fixture.
 - **Backup** (both disks carry the vmstate golden — back up BOTH), timestamped `TS=1783974597`:
   - `/data/gallery-guests/Win98SE/win98se-kvm.qcow2.bak-promote-1783974597`   (md5 `d5c8288c…`)
   - `/data/gallery-guests/Win98SE/win98se-games.qcow2.bak-promote-1783974597` (md5 `a98792fa…`)
-  - **Rollback:** `systemctl stop streamhost@win98se; kill $(cat /data/vms/streamhost/tiles/win98se/qemu.pid);`
+  - **Rollback:** `systemctl stop streamhost@win98se; kill $(cat /data/vms/streamhost/stations/win98se/qemu.pid);`
     `cp -f …bak-promote-1783974597 → win98se-{kvm,games}.qcow2;`
-    `bash /data/vms/streamhost/tiles/win98se/qemu-streamhost.sh; systemctl start streamhost@win98se`.
+    `bash /data/vms/streamhost/stations/win98se/qemu-streamhost.sh; systemctl start streamhost@win98se`.
 - **Swap:** stop `streamhost@win98se` → kill live QEMU by pidfile → `cp` the validated clone golden
   (BOTH disks) onto the live paths (device set identical → `-loadvm golden` matches) → relaunch the
   live launcher (auto `-loadvm golden`). New live golden md5: C `453c764a…`, D `ebe63954…`.
@@ -237,9 +237,9 @@ byte-identical**, md5 `c450449f…`; chime never touched). Delivered: 640×480 H
 ### Live promotion (Phase B, gated + reversible)
 - **Backup** BOTH disks, `TS=1783988386`:
   `win98se-{kvm,games}.qcow2.bak-win98se-sound-1783988386` (pre-swap md5 C `81756638…`, D `ebe63954…`).
-  **Rollback:** `systemctl stop streamhost@win98se; kill $(cat /data/vms/streamhost/tiles/win98se/qemu.pid);`
+  **Rollback:** `systemctl stop streamhost@win98se; kill $(cat /data/vms/streamhost/stations/win98se/qemu.pid);`
   `cp -f …bak-win98se-sound-1783988386 → win98se-{kvm,games}.qcow2;`
-  `bash /data/vms/streamhost/tiles/win98se/qemu-streamhost.sh; systemctl start streamhost@win98se`.
+  `bash /data/vms/streamhost/stations/win98se/qemu-streamhost.sh; systemctl start streamhost@win98se`.
 - **Swap:** stop daemon → kill live QEMU by pidfile → `cp --reflink` the validated clone golden
   (BOTH disks) onto live (device set identical → `-loadvm golden` matches) → relaunch. New live
   golden md5: C `65a05c9e…`, D `c7c97b26…`.

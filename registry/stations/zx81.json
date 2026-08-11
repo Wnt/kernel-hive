@@ -25,8 +25,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/zx81",
-      "qmp": "/data/vms/streamhost/tiles/zx81/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/zx81",
+      "qmp": "/data/vms/streamhost/stations/zx81/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -74,8 +74,8 @@
   "credentialsRef": "guest/zx81",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "zx81",
-      "SH_QMP": "/data/vms/streamhost/tiles/zx81/qmp.sock",
+      "SH_STATION": "zx81",
+      "SH_QMP": "/data/vms/streamhost/stations/zx81/qmp.sock",
       "SH_PORT": "54128",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -86,8 +86,8 @@
       "SH_INPUT_BACKEND": "disabled",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/zx81/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/zx81/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/zx81/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/zx81/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 231,
@@ -117,14 +117,14 @@
         "--launcher-file",
         "$T/zx81/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/zx81/tile.env.fixture"
+        "$T/zx81/station.env.fixture"
       ],
       "deviceSetId": "zx81-current",
-      "launcher": "streamhost/tiles/zx81/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/zx81/tile.env.fixture",
+      "launcher": "streamhost/stations/zx81/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/zx81/station.env.fixture",
       "auxFiles": [
-        "streamhost/tiles/zx81/zx81-frame.py",
-        "streamhost/tiles/zx81/type-qmp.py"
+        "streamhost/stations/zx81/zx81-frame.py",
+        "streamhost/stations/zx81/type-qmp.py"
       ],
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
@@ -218,6 +218,6 @@
   },
   "notes": [
     "slot 128 / UDP 54128 / VMID 231 / ssh 5831",
-    "readiness predicate: streamhost/tiles/zx81/zx81-frame.py (geometric, validated against a dead emulator, an empty white field and a typed line)"
+    "readiness predicate: streamhost/stations/zx81/zx81-frame.py (geometric, validated against a dead emulator, an empty white field and a typed line)"
   ]
 }

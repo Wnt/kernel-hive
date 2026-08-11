@@ -30,7 +30,7 @@
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 MANIFEST="${GOLDEN_MANIFEST:-$HERE/golden-manifest.json}"
-TILES_ROOT="${STREAMHOST_TILES_DIR:-/data/vms/streamhost/tiles}"
+TILES_ROOT="${STREAMHOST_TILES_DIR:-/data/vms/streamhost/stations}"
 
 OSID="${1:-}"
 if [ -z "$OSID" ]; then
@@ -126,7 +126,7 @@ case "$RESETMODE" in
     GHID_PID=""
     GHID_SOCK="$TDIR/gallery-hid.sock"
     if [ "$TILEDIR" = "solaris" ] &&
-      grep -q '^SH_INPUT_BACKEND=gallery-hid$' "$TDIR/tile.env" 2>/dev/null; then
+      grep -q '^SH_INPUT_BACKEND=gallery-hid$' "$TDIR/station.env" 2>/dev/null; then
       GHID_PID="$(systemctl show -p MainPID --value "streamhost@${TILEDIR}.service" 2>/dev/null)"
       case "$GHID_PID" in
         '' | 0 | *[!0-9]*)

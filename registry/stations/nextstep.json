@@ -25,8 +25,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/nextstep",
-      "qmp": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/nextstep",
+      "qmp": "/data/vms/streamhost/stations/nextstep/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -74,8 +74,8 @@
   "credentialsRef": "guest/nextstep",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "nextstep",
-      "SH_QMP": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
+      "SH_STATION": "nextstep",
+      "SH_QMP": "/data/vms/streamhost/stations/nextstep/qmp.sock",
       "SH_PORT": "54134",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -86,8 +86,8 @@
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/nextstep/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nextstep/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/nextstep/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/nextstep/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 237,
@@ -117,11 +117,11 @@
         "--launcher-file",
         "$T/nextstep/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/nextstep/tile.env.fixture"
+        "$T/nextstep/station.env.fixture"
       ],
       "deviceSetId": "nextstep-current",
-      "launcher": "streamhost/tiles/nextstep/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/nextstep/tile.env.fixture",
+      "launcher": "streamhost/stations/nextstep/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/nextstep/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

@@ -76,7 +76,7 @@ unset BRIDGE_SUITE
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 LAB="${LAB:-lab}"
 SSH_OPTS=(-o ConnectTimeout=15)
-TILES_ROOT="${BRIDGE_TILES_ROOT:-/data/vms/streamhost/tiles}"
+TILES_ROOT="${BRIDGE_TILES_ROOT:-/data/vms/streamhost/stations}"
 CLAIM_ROOT="${MIGRATE_WAVE_CLAIM_ROOT:-/run/kh-claims}"
 MIGRATE_TILE="${MIGRATE_WAVE_TILE_CMD:-$REPO/scripts/dev/migrate-tile.sh}"
 STALL="${MIGRATE_WAVE_STALL:-1800}"

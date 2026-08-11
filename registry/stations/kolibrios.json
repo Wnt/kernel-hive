@@ -50,8 +50,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/kolibrios",
-      "qmp": "/data/vms/streamhost/tiles/kolibrios/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/kolibrios",
+      "qmp": "/data/vms/streamhost/stations/kolibrios/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -102,8 +102,8 @@
   "credentialsRef": "guest/kolibrios",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "kolibrios",
-      "SH_QMP": "/data/vms/streamhost/tiles/kolibrios/qmp.sock",
+      "SH_STATION": "kolibrios",
+      "SH_QMP": "/data/vms/streamhost/stations/kolibrios/qmp.sock",
       "SH_PORT": "54097",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -111,8 +111,8 @@
       "SH_POINTER": "abs",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/kolibrios/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/kolibrios/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/kolibrios/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/kolibrios/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 97,
@@ -134,11 +134,11 @@
         "--launcher-file",
         "$T/kolibrios/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/kolibrios/tile.env.fixture"
+        "$T/kolibrios/station.env.fixture"
       ],
       "deviceSetId": "kolibrios-current",
-      "launcher": "streamhost/tiles/kolibrios/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/kolibrios/tile.env.fixture",
+      "launcher": "streamhost/stations/kolibrios/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/kolibrios/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0",
       "accel": "kvm",

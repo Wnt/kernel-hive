@@ -30,7 +30,7 @@ committed or served.
 
 ## Pinned QEMU device set
 
-The final device set is recorded in `registry/tiles/redstar3.json` and emitted
+The final device set is recorded in `registry/stations/redstar3.json` and emitted
 by `streamhost/stations-manifest.sh`:
 
 - `qemu-system-x86_64`, KVM, `pc-i440fx-11.0`, one vCPU, 1024 MiB;
@@ -115,7 +115,7 @@ air-gapped with no audio device; dismiss it with Enter before `savevm golden` â€
 `loadvm golden` then restores the modal-free state.)
 
 Pointer transport is absolute USB HID: streamhost emits
-`--pointer abs --input-dev usb`; `tile.env` has `SH_POINTER=abs`; the UI row
+`--pointer abs --input-dev usb`; `station.env` has `SH_POINTER=abs`; the UI row
 does not set `pointerRel`. Acceptance requires framebuffer-visible motion to
 all four corners and centre, a click, a dock/menu drag, and keyboard make/break.
 Coverage defects are fixed in the guest adapter/resolution, never hidden with
@@ -152,6 +152,6 @@ Live acceptance uses `labctl shot redstar3`, `GET /signal/redstar3.json`, and
 proof. The signal row must report UDP 54121 and a nonempty certificate hash.
 
 Rollback is station-local: stop only `streamhost@redstar3`, stop QEMU only through
-`/data/vms/streamhost/tiles/redstar3/qemu.pid`, restore the retained launcher
+`/data/vms/streamhost/stations/redstar3/qemu.pid`, restore the retained launcher
 and qcow2 pair, relaunch that station, and start only its service. Never use
 `pkill qemu`, never restart the fleet, and never alter another station.

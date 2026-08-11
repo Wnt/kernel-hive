@@ -3,7 +3,7 @@
 # relaunch live QEMU (auto -loadvm golden). Framebuffer-gate happens AFTER this, before
 # the daemon is restarted. Reversible: the .bak path is printed.
 set -euo pipefail
-LIVE_DIR=/data/vms/streamhost/tiles/win95
+LIVE_DIR=/data/vms/streamhost/stations/win95
 LIVE_DISK="$LIVE_DIR/win95-golden.qcow2"
 CLONE_GOLDEN=/data/vms/soltest/bootrec-win95-4037869/win95-golden.qcow2
 TS=$(date +%Y%m%d-%H%M%S)

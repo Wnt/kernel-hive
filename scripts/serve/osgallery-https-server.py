@@ -46,7 +46,7 @@ Config: a tiles JSON file (SIGNAL_CONFIG), mapping tile-id -> deploy info. WebRT
 is deliberately NOT configured here: it is a platform capability for every key.
   {
     "reactos": { "udpPort": 4433, "hashFile": "/data/vms/streamhost/run951/cert_hash_b64.txt" },
-    "win95": { "udpPort": 54091, "hashFile": "/data/vms/streamhost/tiles/win95/cert_hash_b64.txt" }
+    "win95": { "udpPort": 54091, "hashFile": "/data/vms/streamhost/stations/win95/cert_hash_b64.txt" }
   }
 
 Env (all optional except paths):
@@ -687,7 +687,7 @@ class H(BaseHTTPRequestHandler):
                 "certHashB64": cert_hash,
             }
             # The daemon publishes its own identity beside the cert hash, and it
-            # is that identity — SH_TILE — that it verifies a ticket against, so
+            # is that identity — SH_STATION — that it verifies a ticket against, so
             # that is what the ticket is signed over. The endpoint key normally
             # equals it (the registry refuses an id that differs from its
             # stationDir), but they are two different documents and the daemon is

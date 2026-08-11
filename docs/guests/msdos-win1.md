@@ -134,10 +134,10 @@ swapped in with a timestamped backup.
   `/data/gallery-guests/MSDOSWin1/msdos-win1.qcow2.bak-preB-1783989036`. Rollback:
   ```
   systemctl stop streamhost@msdoswin1
-  kill "$(cat /data/vms/streamhost/tiles/msdoswin1/qemu.pid)" 2>/dev/null
+  kill "$(cat /data/vms/streamhost/stations/msdoswin1/qemu.pid)" 2>/dev/null
   cp -f /data/gallery-guests/MSDOSWin1/msdos-win1.qcow2.bak-preB-1783989036 \
         /data/gallery-guests/MSDOSWin1/msdos-win1.qcow2
-  bash /data/vms/streamhost/tiles/msdoswin1/qemu-streamhost.sh
+  bash /data/vms/streamhost/stations/msdoswin1/qemu-streamhost.sh
   systemctl start streamhost@msdoswin1
   ```
 - **GOTCHA — "input dead" is idle auto-pause, not a guest bug.** The shared
@@ -169,7 +169,7 @@ root-caused and two of the three shipped live (the third is device-set-blocked).
    `0xE047..=0xE053` to the BARE numeric-keypad scancode (`code & 0x7f`: Up=0x48,
    Down=0x50, Left=0x4B, Right=0x4D, …) instead of the enhanced `0x80|` form. Guest
    NumLock is OFF in the checkpoint, so the keypad codes act as cursor keys. Gated by
-   `SH_LEGACY_KBD` in `tile.env` (default off elsewhere; reuse for any pre-1986
+   `SH_LEGACY_KBD` in `station.env` (default off elsewhere; reuse for any pre-1986
    Win 1.x/2.x guest). Unit-tested (`input::tests::legacy_arrows_*`).
 
 2. **No mouse cursor in Windows 1.01 — NOT shipped (blocked; needs checkpoint recapture +
@@ -190,7 +190,7 @@ root-caused and two of the three shipped live (the third is device-set-blocked).
    `-audiodev`). Fix mirrors the freedos station but PC-speaker-only: launcher now has
    `-machine pc,pcspk-audiodev=snd0`, `-display dbus,p2p=on,audiodev=snd0`,
    `-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16`, and
-   `tile.env` sets `SH_AUDIO=on`. **No checkpoint recapture** — `pcspk-audiodev` is a
+   `station.env` sets `SH_AUDIO=on`. **No checkpoint recapture** — `pcspk-audiodev` is a
    backend-only change (the `isa-pcspk` device already exists on the `pc` machine),
    so `loadvm golden` still restores (verified). Confirmed under **KVM** (the live
    accel) on a soltest clone: a `-audiodev wav` capture of Keen produced **185,228

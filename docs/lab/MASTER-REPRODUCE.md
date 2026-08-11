@@ -33,7 +33,7 @@ Legend:  🟢 automated (one command)   🟡 interactive / needs a human   ⚙�
 | 1 | PXE/HTTP Proxmox install | `scripts/provision/` Range server + iPXE/answer templates | 🟡 |
 | 2 | ZFS pool + datasets + storages | `scripts/provision/pve-zfs-pool.sh` | 🟢 |
 | 3 | Streamhost daemon build (gallery CT retired) | repo at `/data/vms/streamhost` + `cargo build --release` | 🟢 |
-| 4 | **Build every production streamhost tile (PRIMARY; roster from `registry/tiles/`)** | `scripts/build-guests/build-all.sh` | 🟢 (default public-media set plus SDK/licensed-media opt-ins; some guests need a one-time click) |
+| 4 | **Build every production streamhost tile (PRIMARY; roster from `registry/stations/`)** | `scripts/build-guests/build-all.sh` | 🟢 (default public-media set plus SDK/licensed-media opt-ins; some guests need a one-time click) |
 | 4′ | _Historical shortcut (NOT the plan):_ copy prebuilt images off the pre-wipe host | `scripts/provision/preserve-guest-images.sh --all` | archival; source retired |
 | 5 | Wire the registry production roster as streamhost tiles + serve plane (parity-gated by `scripts/dev/verify-emit.sh`) | `streamhost/stations-manifest.sh` → `streamhost/bring-up-all.sh` (+ `scripts/serve/`) | 🟢 |
 | 6 | Optional standalone Win11 + macOS VM recreations (SPA exhibits stay posters) | `scripts/provision/pve-win11-vm.sh` / `pve-macos-vm.sh` | 🟢 / 🟡 |
@@ -292,7 +292,7 @@ copyright/SSO-gated source.
 | amiga (`amiga`) | ✅ hands-off | none — thin overlay; FS-UAE auto-boots Kickstart 1.3 + Workbench 1.3 → golden bake | ~3–5 m |
 
 🔒 = `licensed` class, skipped unless `--include-licensed`. The production roster
-and its current total come from `registry/tiles/` (`python3
+and its current total come from `registry/stations/` (`python3
 scripts/stations-registry.py count`); `build-all.sh` reports any media-gated rows it
 skips. Approximate default serial time is **3–4.5 h**.
 
@@ -309,7 +309,7 @@ snapshot (`-loadvm golden` = boot straight to the desktop). Build order therefor
 The reusable pattern — base build, kiosk launcher gotchas (true-drive, no real
 fullscreen, the AC97-modal trap, the x64sc-needs-a-tty segfault), the bridge device
 set (ide overlay + e1000 hostfwd + conditional `-loadvm golden`), and the golden-fixture
-`tile.env` stanza — is documented in **`streamhost/docs/BRIDGE.md`** and
+`station.env` stanza — is documented in **`streamhost/docs/BRIDGE.md`** and
 **`docs/guests/c64.md`** (the reference tile).
 
 The SPA also has showcase posters outside the live production roster. Run
@@ -332,7 +332,7 @@ the streamhost kit:
 ```bash
 # on the host (root), streamhost tree at /data/vms/streamhost (Phase 3), guests built (Phase 4):
 cd /data/vms/streamhost
-bash stations-manifest.sh --install     # emit every tile's per-tile files (tile.env,
+bash stations-manifest.sh --install     # emit every tile's per-tile files (station.env,
                                      # qemu-streamhost.sh, ROLLBACK.md) + drop streamhost@.service
 rsync -a <repo>/scripts/serve/ /data/vms/streamhost/serve/
                                      # serve plane files — canonical source is the repo's
@@ -358,20 +358,20 @@ bash bring-up-all.sh                 # ordered boot: launch each tile's QEMU (pi
   `streamhost/qemu-patches/README.md` (running QEMUs keep the old binary until
   relaunch).
 - **`streamhost/stations-manifest.sh`** is generated from the production entries in
-  the canonical registry; it invokes `streamhost/scripts/streamhost-tile.sh` per tile to emit
-  `/data/vms/streamhost/tiles/<tile>/`. It does NOT start anything. **Every tile now
+  the canonical registry; it invokes `streamhost/scripts/streamhost-station.sh` per tile to emit
+  `/data/vms/streamhost/stations/<tile>/`. It does NOT start anything. **Every tile now
   emits completely — no hand-patched launchers remain**: generic tiles are generated
   from flags; the golden-fixture / bridge / state-disk tiles install VERBATIM
-  launchers tracked at `streamhost/tiles/<tile>/qemu-streamhost.sh` (+ their
-  golden-fixture `tile.env.fixture` stanzas). The postmarketos writable
+  launchers tracked at `streamhost/stations/<tile>/qemu-streamhost.sh` (+ their
+  golden-fixture `station.env.fixture` stanzas). The postmarketos writable
   `OVMF_VARS.qcow2` seed is performed by the manifest itself post-emit; serenityos's
   per-boot overlay create lives inside its (verbatim) launcher.
 - **The other three SPA exhibits are posters, not missing manifest rows.** Win11,
   RISC OS, and macOS use the SPA `showcase` transport and make no connection attempt.
   Recreating VM 900 or 925 alone does not add a streamhost transport.
 - **Parity gate: `scripts/dev/verify-emit.sh`** — emits the registry production roster into a scratch
-  dir on the box (`/tmp`, never live paths) and byte-diffs each `tile.env` +
-  `qemu-streamhost.sh` against `/data/vms/streamhost/tiles/<tile>/`, with a
+  dir on the box (`/tmp`, never live paths) and byte-diffs each `station.env` +
+  `qemu-streamhost.sh` against `/data/vms/streamhost/stations/<tile>/`, with a
   justified whitelist (`scripts/dev/verify-emit-allow.diffpatterns`) for intentional
   deltas. Run it after ANY change to the manifest/emitter/tracked launchers; every
   production row must report PASS or PASS*.
@@ -492,7 +492,7 @@ steps still need a human:
    fixture/bridge/state-disk tiles; the postmarketos varstore seed is in the manifest;
    serenityos's overlay create is in its launcher) and `scripts/dev/verify-emit.sh`
    proves byte-parity with live. The seven formerly box-only bake drivers are now at
-   `streamhost/tiles/{alpine,kolibrios,solaris,templeos,tinycore,win95,win98se}/golden-bake.sh`
+   `streamhost/stations/{alpine,kolibrios,solaris,templeos,tinycore,win95,win98se}/golden-bake.sh`
    with their tile-local QMP/setup auxiliaries; postmarketOS's two fixture helpers are
    vendored beside its launcher and wired by `scripts/build-guests/tiles/postmarketos-fixture.sh`.
    Haiku's formerly manual persistent install is `scripts/build-guests/tiles/haiku-install.sh`

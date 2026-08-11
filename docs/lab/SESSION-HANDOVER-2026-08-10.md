@@ -132,7 +132,7 @@ Fleet verified after deploy: `all 59 stations accept their own tickets`,
   when it is not. The checker is placeholder-aware — scrubbing happens **on
   labhost**, so real values never reach a local artifact.
 - Not in git, needed by fresh labhost: per-station canary symlinks
-  `/usr/local/lib/streamhost/tiles/{alto,…}/current`.
+  `/usr/local/lib/streamhost/stations/{alto,…}/current`.
 
 ---
 

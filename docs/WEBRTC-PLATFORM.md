@@ -11,7 +11,7 @@ the browser has no `VideoDecoder`, the UI selects native WebRTC.
 The fallback is one platform service:
 
 1. Every instance of the shared Rust streamhost binary automatically connects
-   to `/run/osgallery-webrtc/feeds.sock` and registers its ordinary `SH_TILE`.
+   to `/run/osgallery-webrtc/feeds.sock` and registers its ordinary `SH_STATION`.
    It mirrors the existing encoded H.264 Annex-B AUs and Opus packets. There is
    no second capture or encoder.
 2. One `osgallery-webrtc-bridge.service` owns that socket, loopback HTTP

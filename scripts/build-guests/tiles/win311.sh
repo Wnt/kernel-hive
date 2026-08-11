@@ -132,7 +132,7 @@ DL_DIR="${GUEST_DIR}/dl"
 HDA_BASE="${DL_DIR}/hda.base.img"  # pristine downloaded base (cache)
 HDA_IMG="${GUEST_DIR}/hda.img"     # final C: artifact
 GAMES_IMG="${GUEST_DIR}/games.img" # final D: artifact
-FIXTURE_DIR="${WIN311_FIXTURE_DIR:-/data/vms/streamhost/tiles/win311}"
+FIXTURE_DIR="${WIN311_FIXTURE_DIR:-/data/vms/streamhost/stations/win311}"
 FIXTURE_C="${FIXTURE_DIR}/win311-golden.qcow2"
 FIXTURE_D="${FIXTURE_DIR}/games-golden.qcow2"
 

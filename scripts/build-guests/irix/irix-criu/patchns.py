@@ -3,7 +3,7 @@
 
     patchns.py <copy-of-x11-runtime.sh>
 
-The live tile's `streamhost/tiles/irix/x11-runtime.sh` is NOT checkpointable as
+The live tile's `streamhost/stations/irix/x11-runtime.sh` is NOT checkpointable as
 shipped, for four independent reasons. Each hunk below fixes exactly one, and
 each asserts its anchor is present exactly once, so a launcher that has moved on
 fails loudly here instead of producing a subtly different runtime.

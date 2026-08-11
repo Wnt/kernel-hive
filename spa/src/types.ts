@@ -15,7 +15,7 @@ export interface VMManifestEntry {
   notes?: string;
 
   // OPTIONAL curated museum metadata (used for placards), carried by the
-  // manifest itself (registry/tiles/<id>.json `museum` is the source).
+  // manifest itself (registry/stations/<id>.json `museum` is the source).
   accent?: string;         // hex accent for the exhibit unit
   era?: string;            // e.g. "1990s"
   eraSoftware?: string[];  // period software titles

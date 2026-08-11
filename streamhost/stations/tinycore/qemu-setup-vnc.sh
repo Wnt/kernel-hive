@@ -10,7 +10,7 @@
 # which needs an active graphic console -- vnc provides one; dbus-p2p with no peer
 # does not. Boots the LiveCD onto state.qcow2 with NO -snapshot.
 set -e
-BASE=/data/vms/streamhost/tiles/tinycore
+BASE=/data/vms/streamhost/stations/tinycore
 STATE="$BASE/state.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

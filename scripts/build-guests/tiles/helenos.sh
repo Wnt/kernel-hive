@@ -72,7 +72,7 @@ CPU_MODEL="${CPU_MODEL:-qemu32}"
 VGA="${VGA:-std}" # Bochs VBE, 1024x768 software fb
 
 # Golden-bake harness — unique, namespaced files (hygiene).
-TILE_DIR="${TILE_DIR:-/data/vms/streamhost/tiles/${KEY}}"
+TILE_DIR="${TILE_DIR:-/data/vms/streamhost/stations/${KEY}}"
 GOLDEN_DISK="${GOLDEN_DISK:-${TILE_DIR}/golden.qcow2}"
 GOLDEN_SIZE="${GOLDEN_SIZE:-128M}"
 GOLDEN_TMP="${GOLDEN_DISK}.bake.$$"
@@ -335,7 +335,7 @@ cat <<EOF
     -boot d \\
     -cdrom ${ISO_NAME} \\
     -usb -device usb-tablet \\
-    -drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk \\
+    -drive file=/data/vms/streamhost/stations/helenos/golden.qcow2,if=ide,index=0,media=disk \\
     -rtc base=localtime
   # neko station row (compose docker-compose.gallery-guests.yml : helenos):
   #   QEMU_MACHINE=pc-i440fx-11.0 QEMU_VGA=std QEMU_MEM=512

@@ -44,8 +44,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/solaris",
-      "qmp": "/data/vms/streamhost/tiles/solaris/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/solaris",
+      "qmp": "/data/vms/streamhost/stations/solaris/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": 57790,
       "warpd_addr": "127.0.0.1:57790",
@@ -97,8 +97,8 @@
   "credentialsRef": "guest/solaris",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "solaris",
-      "SH_QMP": "/data/vms/streamhost/tiles/solaris/qmp.sock",
+      "SH_STATION": "solaris",
+      "SH_QMP": "/data/vms/streamhost/stations/solaris/qmp.sock",
       "SH_PORT": "54100",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -106,8 +106,8 @@
       "SH_INPUT_BACKEND": "gallery-hid",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/solaris/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/solaris/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/solaris/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/solaris/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 100,
@@ -131,11 +131,11 @@
         "--launcher-file",
         "$T/solaris/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/solaris/tile.env.fixture"
+        "$T/solaris/station.env.fixture"
       ],
       "deviceSetId": "solaris-gallery-hid-golden-resume",
-      "launcher": "streamhost/tiles/solaris/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/solaris/tile.env.fixture",
+      "launcher": "streamhost/stations/solaris/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/solaris/station.env.fixture",
       "binary": "/data/vms/streamhost/qemu-gallery-hid/qemu-system-x86_64",
       "machine": "pc-i440fx-11.0",
       "accel": "kvm",

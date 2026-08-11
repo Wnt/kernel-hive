@@ -36,7 +36,7 @@ input or output.
 
 ## 1. Current scope and candidate backlog
 
-`registry/tiles/` is the source of truth for the current lineup. Each entry has
+`registry/stations/` is the source of truth for the current lineup. Each entry has
 an explicit `lifecycle`; `streamhost/stations-manifest.sh` is generated from its
 production entries rather than maintained as an independent inventory. At the
 current registry revision, `python3 scripts/stations-registry.py count` reports
@@ -203,7 +203,7 @@ Support an explicit force/rebuild option and a verification opt-out consistent
 with existing builders.
 
 Register the builder through `build.rows` in
-`registry/tiles/<osId>.json`; `scripts/build-guests/build-all.sh` is generated
+`registry/stations/<osId>.json`; `scripts/build-guests/build-all.sh` is generated
 from those rows, including `DEFAULT_ORDER`. The rendered row fields are:
 
 ```text
@@ -396,11 +396,11 @@ input immediately after a reset.
 
 | Path | Choose when | Production wiring |
 |---|---|---|
-| Absolute HID | Guest has USB HID or virtio-input and maps the full display correctly. This is the default and lowest-effort path. | Emit `--pointer abs --input-backend dbus-abs --input-dev usb` for `-usb -device usb-tablet`, or `--input-dev virtio` for virtio keyboard/tablet. `tile.env` gets `SH_INPUT_BACKEND=dbus-abs`. Add cursor scale/offset only from measured framebuffer calibration. Do not set UI `pointerRel`. |
+| Absolute HID | Guest has USB HID or virtio-input and maps the full display correctly. This is the default and lowest-effort path. | Emit `--pointer abs --input-backend dbus-abs --input-dev usb` for `-usb -device usb-tablet`, or `--input-dev virtio` for virtio keyboard/tablet. `station.env` gets `SH_INPUT_BACKEND=dbus-abs`. Add cursor scale/offset only from measured framebuffer calibration. Do not set UI `pointerRel`. |
 | Direct relative PS/2 | Guest only has a good PS/2 relative mouse and browser Pointer Lock produces usable 1:1 deltas. | Emit `--pointer rel --input-backend dbus-rel --input-dev ps2`; no tablet. Set `pointerRel: true` in the UI binding so raw relative movement is sent. QNX is the reference. |
 | TCP warpd / hybrid | Existing baked guest exposes a trustworthy absolute cursor API but its virtual HID is absent, range-limited, accelerated, or otherwise wrong. | Warpd is frozen: reuse only for its six existing stations; do not add another agent or protocol verb. Their emit form is `--pointer warpd --input-backend warpd --warpd-addr 127.0.0.1:<hostPort>`. Optional `--warpd-buttons qemu` keeps motion on the agent while real QEMU mouse buttons preserve window-manager semantics. |
 | Serial warpd agent | Existing baked guest has no reliable NIC/TCP path but reads COM1 and calls an absolute cursor API. | Warpd is frozen: retain the existing Unix socket chardev and `--pointer warpd --input-backend warpd --warpd-addr unix:<stationDir>/serial.sock` only for Win3.11/OS2/TempleOS. New OS work must not create another guest agent. |
-| `gallery-hid` | Only after the OS-specific kernel driver and patched QEMU device have passed latency, restore, and fallback gates. It is not the generic first choice. | Follow `docs/lab/research/low-latency-input/qemu-transport.md`: pinned patched QEMU; `-chardev socket,id=ghid0,path=<stationDir>/gallery-hid.sock,server=on,wait=off`; `-device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e`; guest driver installed/armed before a new checkpoint; `SH_GHID_SOCKET=<path>` in `tile.env`. Keep the old HID/warpd route available for rollback until the station is promoted. |
+| `gallery-hid` | Only after the OS-specific kernel driver and patched QEMU device have passed latency, restore, and fallback gates. It is not the generic first choice. | Follow `docs/lab/research/low-latency-input/qemu-transport.md`: pinned patched QEMU; `-chardev socket,id=ghid0,path=<stationDir>/gallery-hid.sock,server=on,wait=off`; `-device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e`; guest driver installed/armed before a new checkpoint; `SH_GHID_SOCKET=<path>` in `station.env`. Keep the old HID/warpd route available for rollback until the station is promoted. |
 
 The experimental transport contract and its promotion/rollback requirements are
 in [`qemu-transport.md`](research/low-latency-input/qemu-transport.md).
@@ -561,7 +561,7 @@ absolute HID already works.
 
 ## 6. Register the station everywhere
 
-The scaffolded `registry/tiles/<osId>.json` is the source of truth. It begins as
+The scaffolded `registry/stations/<osId>.json` is the source of truth. It begins as
 an inert candidate with the slot/port reservation; fill it using `alpine.json`
 and `android.json` as complete streamed-station examples, then set `enabled: true`
 and promote its lifecycle only after its proof passes. Audit the
@@ -605,7 +605,7 @@ the registry whenever something needs them:
 | `golden-manifest.json` | Production `id` and `reset`, ordered by `render.goldenOrder`. The reset allow-list `reset-tile.sh` reads. |
 | `gallery-action-map.json` | `operator.actionMap`, ordered by `render.actionMapOrder`. |
 | `mock-manifest.json` | `museum` for entries that have `render.mockManifestOrder`. |
-| `index.json` | The aggregate of every entry — `runtime.stationEnv` merged with the station's `tile.env.fixture` — excluding generator-only `render` data. |
+| `index.json` | The aggregate of every entry — `runtime.stationEnv` merged with the station's `station.env.fixture` — excluding generator-only `render` data. |
 
 Use this table as an exhaustive audit of the JSON entry, not as an edit list for
 derived files. `python3 scripts/stations-registry.py explain <osId>` is useful for
@@ -617,7 +617,7 @@ reviewing one entry's principal derived values.
   from the typed fields** (`spa`, `runtime.*.emitArgs`, `build.rows[].value`) —
   there is no pre-rendered string twin to keep in sync. Edit the typed field,
   then regenerate.
-- A key defined in the station's `tile.env.fixture` must NOT also appear in
+- A key defined in the station's `station.env.fixture` must NOT also appear in
   `runtime.stationEnv` — the fixture is the single source for its keys and
   `validate` fails on the overlap. The generator merges the fixture into the
   env view that the rendered `index.json` and the validators see.
@@ -631,7 +631,7 @@ reviewing one entry's principal derived values.
 
 ### 6.1 Build registry
 
-- `registry/tiles/<osId>.json`: add the typed `build.rows` entry;
+- `registry/stations/<osId>.json`: add the typed `build.rows` entry;
   use its `order` and optional `defaultOrder` for the manifest/default sequence.
   Gate licensed media with class `licensed`; gate account media with the
   `media` flag. Regeneration writes `build-all.sh`.
@@ -653,14 +653,14 @@ Describe the stream in `stream`, the declared emitted environment in
 Regeneration writes the production `emit` stanza and ordered bring-up list; do
 not edit either generated shell script.
 
-Add `streamhost/tiles/<stationDir>/` when the station needs tracked runtime material.
+Add `streamhost/stations/<stationDir>/` when the station needs tracked runtime material.
 These source sidecars remain hand-managed even when the registry references
 their paths through `runtime.qemu.launcher`, `envFixture`, or `auxFiles`:
 
 - `qemu-streamhost.sh`: required for a **verbatim** launcher; it is the complete
   guest-visible device-set ledger, creates only namespaced sockets/files, kills
   only by pidfile, and conditionally uses `-loadvm golden` where appropriate;
-- `tile.env.fixture`: appended metadata/reset stanza such as
+- `station.env.fixture`: appended metadata/reset stanza such as
   `SH_RESET_MODE`, `SH_GOLDEN_*`, and fixture notes;
 - `qemu-setup.sh` or equivalent: optional one-time, clone-safe setup/calibration;
 - `golden-bake.sh`: optional reproducible fixture creation and dirty→restore
@@ -671,9 +671,9 @@ their paths through `runtime.qemu.launcher`, `envFixture`, or `auxFiles`:
 For a verbatim runtime, set `runtime.qemu.mode` to `verbatim`, point `launcher`
 at the tracked script, and keep `launcherParity` honest. The generator records
 and reports launcher parity but does not synthesize the launcher or
-`tile.env.fixture`. The emitter produces the deployed `tile.env`, launcher, and
+`station.env.fixture`. The emitter produces the deployed `station.env`, launcher, and
 `ROLLBACK.md` from the generated invocation and referenced source material.
-Ensure `runtime.stationEnv.SH_TILE` and paths use `stationDir`, while public maps use
+Ensure `runtime.stationEnv.SH_STATION` and paths use `stationDir`, while public maps use
 `id`.
 
 Choose `runtime.bringUpOrder` and `render.bringUpGroup` after every build or
@@ -715,7 +715,7 @@ Declare `dir`, `qmp`, `pointer_mode`, `warpd_port`, `warpd_addr`, `ssh_port`,
 `notes` in `operator.labctl`. Set the exec kind, port, user, and private-key
 **path** only when a captured-output exec channel is proven; otherwise use null
 declarations. Regeneration writes the committed declaration seed. After the
-runtime station directory, launcher, and emitted `tile.env` exist, run:
+runtime station directory, launcher, and emitted `station.env` exist, run:
 
 ```bash
 ssh lab 'labctl gen'
@@ -723,7 +723,7 @@ ssh lab 'labctl ls'
 ```
 
 This verifies the declarations against live files, adds observed golden state,
-and regenerates `/data/vms/streamhost/tiles.json`; do not hand-edit it.
+and regenerates `/data/vms/streamhost/stations.json`; do not hand-edit it.
 
 ### 6.4 Runtime UI manifest (no rebuild for an existing archetype)
 
@@ -737,7 +737,7 @@ shape leaves the gallery empty and says so in the console rather than quietly
 showing a lineup from whenever the bundle was built.
 
 For an ordinary OS using an existing `ArchetypeId`, do not edit UI TypeScript or
-run Vite. After updating `registry/tiles/<osId>.json`:
+run Vite. After updating `registry/stations/<osId>.json`:
 
 ```bash
 make station-registry-generate
@@ -821,9 +821,9 @@ make station-registry-validate
 make station-registry-generate
 make station-registry-check
 bash -n scripts/build-guests/tiles/<os>.sh
-bash -n streamhost/tiles/<stationDir>/qemu-streamhost.sh  # if verbatim
+bash -n streamhost/stations/<stationDir>/qemu-streamhost.sh  # if verbatim
 python3 scripts/stations-registry.py render     # renders every runtime document
-jq empty build/registry/tiles.json
+jq empty build/registry/stations.json
 jq empty build/registry/golden-manifest.json
 jq empty build/registry/gallery-action-map.json
 scripts/build-guests/build-all.sh --list
@@ -838,8 +838,8 @@ framebuffer, input, and golden round-trip gates before registration is deployed.
 
 Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
 
-1. finish `registry/tiles/<osId>.json` and any hand-managed builder, guest doc,
-   launcher, `tile.env.fixture`, or coldboot sidecar; prepare the gitignored
+1. finish `registry/stations/<osId>.json` and any hand-managed builder, guest doc,
+   launcher, `station.env.fixture`, or coldboot sidecar; prepare the gitignored
    credential separately when required;
 2. run `make station-registry-generate`, then `make station-registry-check`;
 3. sync the tracked tree, including the registry, generated streamhost/serve/UI
@@ -877,10 +877,10 @@ change did not work.
 
 - **The station is running an old binary.** streamhost deploys are per-station
   canaries: `scripts/dev/build-deploy.sh` swaps a `current` symlink under
-  `/usr/local/lib/streamhost/tiles/<tile>/`, and the fleet is **not** promoted
+  `/usr/local/lib/streamhost/stations/<tile>/`, and the fleet is **not** promoted
   automatically. A station can therefore be running a binary that predates the knob
-  you just declared in its `tile.env`. Confirm with
-  `ssh lab 'readlink -f /usr/local/lib/streamhost/tiles/<tile>/current'` before
+  you just declared in its `station.env`. Confirm with
+  `ssh lab 'readlink -f /usr/local/lib/streamhost/stations/<tile>/current'` before
   debugging the knob.
 - **UI changes are invisible until the bundle is deployed** to
   `/data/vms/streamhost/serve/webroot/`. A local `npm run build` proves nothing
@@ -954,7 +954,7 @@ The Solaris A/B pair records the friction the canonical registry removed.
 Before the registry landed, making two experimental streams browser-visible
 required independent edits to:
 
-- two station directories with `tile.env` and bespoke launchers;
+- two station directories with `station.env` and bespoke launchers;
 - two signal rows in the serve `tiles.json` for UDP 54911/54912 and the
   corresponding certificate-hash paths;
 - two bundled `OS_BINDINGS` rows in `archetypeRegistry.ts` (before the runtime

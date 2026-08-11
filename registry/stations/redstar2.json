@@ -50,8 +50,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/redstar2",
-      "qmp": "/data/vms/streamhost/tiles/redstar2/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/redstar2",
+      "qmp": "/data/vms/streamhost/stations/redstar2/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -101,16 +101,16 @@
   "credentialsRef": "guest/redstar2",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "redstar2",
-      "SH_QMP": "/data/vms/streamhost/tiles/redstar2/qmp.sock",
+      "SH_STATION": "redstar2",
+      "SH_QMP": "/data/vms/streamhost/stations/redstar2/qmp.sock",
       "SH_PORT": "54120",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "abs",
       "SH_AUDIO": "off",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/redstar2/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/redstar2/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/redstar2/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/redstar2/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 120,
@@ -134,11 +134,11 @@
         "--launcher-file",
         "$T/redstar2/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/redstar2/tile.env.fixture"
+        "$T/redstar2/station.env.fixture"
       ],
       "deviceSetId": "redstar2-airgapped-golden-stdvga",
-      "launcher": "streamhost/tiles/redstar2/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/redstar2/tile.env.fixture",
+      "launcher": "streamhost/stations/redstar2/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/redstar2/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0",
       "accel": "kvm",

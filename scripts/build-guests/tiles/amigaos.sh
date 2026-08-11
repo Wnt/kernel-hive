@@ -105,7 +105,7 @@ ISO_PATH="${GUEST_DIR}/${ISO_NAME}"
 CACHE_DIR="${GUEST_DIR}/.cache"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-TILE_DIR="${TILE_DIR:-/data/vms/streamhost/tiles/aros}"
+TILE_DIR="${TILE_DIR:-/data/vms/streamhost/stations/aros}"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/amigaos-build.XXXXXX")"
 PIDFILE="${WORK}/qemu.pid"
 MONSOCK="${WORK}/mon.sock"
@@ -432,7 +432,7 @@ PY
 #   centre motion, saves `golden` under pc-i440fx-11.0, then dirties the
 #   framebuffer and proves loadvm restores both the Shell and tablet binding.
 # =============================================================================
-FIXTURE_SRC="$REPO_ROOT/streamhost/tiles/aros/golden-bake.sh"
+FIXTURE_SRC="$REPO_ROOT/streamhost/stations/aros/golden-bake.sh"
 [ -f "$FIXTURE_SRC" ] || die "missing golden fixture helper: $FIXTURE_SRC"
 mkdir -p "$TILE_DIR"
 install -m 0755 "$FIXTURE_SRC" "$TILE_DIR/golden-bake.sh"
@@ -445,7 +445,7 @@ if qemu-img info "$TILE_DIR/golden-scratch.qcow2" | grep -q '^backing file:'; th
   die "fresh golden-scratch.qcow2 unexpectedly has a backing file"
 fi
 log "golden: PASS — freshly-baked golden-scratch.qcow2 contains snapshot 'golden'."
-if [ "$TILE_DIR" = /data/vms/streamhost/tiles/aros ] && command -v labctl >/dev/null 2>&1; then
+if [ "$TILE_DIR" = /data/vms/streamhost/stations/aros ] && command -v labctl >/dev/null 2>&1; then
   labctl gen >/dev/null
 fi
 

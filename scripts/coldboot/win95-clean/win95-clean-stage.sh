@@ -4,7 +4,7 @@
 # so record-boot's clone rewrite (sed $TILE_DIR -> $CLONE_DIR) redirects everything
 # into the clone (and never the live station).
 set -euo pipefail
-LIVE_DIR=/data/vms/streamhost/tiles/win95
+LIVE_DIR=/data/vms/streamhost/stations/win95
 PREP=/data/vms/soltest/win95-clean-prep
 STAGEROOT=/data/vms/soltest/win95-clean-stage
 SDIR="$STAGEROOT/win95"

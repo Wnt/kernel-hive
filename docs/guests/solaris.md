@@ -1,6 +1,6 @@
 # Solaris 10 CDE guest (`solaris` station)
 
-> **Renamed 2026-08-10:** the daemon side was `solariscde` (`SH_TILE`, the station
+> **Renamed 2026-08-10:** the daemon side was `solariscde` (`SH_STATION`, the station
 > dir, `streamhost@solariscde`) until it was renamed to match the registry id
 > `solaris`. The 5 GiB seed disk keeps its `solariscde-golden.qcow2` name (a
 > data artifact, not identity), as do the `solaris-cde` build key and dated

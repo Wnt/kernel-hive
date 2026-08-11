@@ -8,7 +8,7 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/w2kalpha",
+      "dir": "/data/vms/streamhost/stations/w2kalpha",
       "qmp": null,
       "pointer_mode": "abs",
       "warpd_port": null,
@@ -59,27 +59,27 @@
   "credentialsRef": "guest/w2kalpha",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "w2kalpha",
-      "SH_TILE_RUNTIME": "x11",
+      "SH_STATION": "w2kalpha",
+      "SH_STATION_RUNTIME": "x11",
       "SH_CAPTURE": "shm",
       "SH_X11_DISPLAY": ":41",
-      "SH_X11_CMD_FILE": "/data/vms/streamhost/tiles/w2kalpha/w2kalpha_cmd",
-      "SH_SHM_PATH": "/data/vms/streamhost/tiles/w2kalpha/fb.shm",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/w2kalpha/w2kalpha_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/w2kalpha/fb.shm",
       "SH_PORT": "54140",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/w2kalpha/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/w2kalpha/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/w2kalpha/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/w2kalpha/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "x11": {
       "display": ":41",
       "geometry": "1280x1024x24",
       "capture": "shm",
-      "launcher": "streamhost/tiles/w2kalpha/x11-runtime.sh",
+      "launcher": "streamhost/stations/w2kalpha/x11-runtime.sh",
       "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
@@ -104,11 +104,11 @@
         "--aux-file",
         "$T/w2kalpha/pumps.py",
         "--env-append-file",
-        "$T/w2kalpha/tile.env.fixture"
+        "$T/w2kalpha/station.env.fixture"
       ],
       "auxFiles": [
-        "streamhost/tiles/w2kalpha/pumps.py",
-        "streamhost/tiles/w2kalpha/tile.env.fixture"
+        "streamhost/stations/w2kalpha/pumps.py",
+        "streamhost/stations/w2kalpha/station.env.fixture"
       ]
     },
     "bringUpOrder": 62

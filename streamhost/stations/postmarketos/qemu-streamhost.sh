@@ -10,7 +10,7 @@
 #   with GNOME Console focused; reset with QMP `loadvm golden` (see golden.manifest.json).
 #   If the 'golden' snapshot exists we auto-resume it on launch (-loadvm golden).
 set -e
-TILE_DIR=/data/vms/streamhost/tiles/postmarketos
+TILE_DIR=/data/vms/streamhost/stations/postmarketos
 DISK=/data/gallery-guests/postmarketOS/pmos-phosh.qcow2
 VARS=$TILE_DIR/OVMF_VARS.qcow2
 [ -f "$TILE_DIR/qemu.pid" ] && kill "$(cat "$TILE_DIR/qemu.pid")" 2>/dev/null || true

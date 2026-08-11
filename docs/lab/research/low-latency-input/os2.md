@@ -37,7 +37,7 @@ There is also a concrete wheel bug: protocol buttons 4 and 5 enter `pt_click()` 
 `else`, so both become `WM_BUTTON3DOWN/UP` (a middle click). The replacement must never encode a
 wheel notch as button 3.
 
-The emitted launcher is [`streamhost/tiles/os2warp/qemu-streamhost.sh`](../../../../streamhost/tiles/os2warp/qemu-streamhost.sh).
+The emitted launcher is [`streamhost/stations/os2warp/qemu-streamhost.sh`](../../../../streamhost/stations/os2warp/qemu-streamhost.sh).
 Its pinned machine is one TCG Pentium CPU, 128 MiB, `pc,acpi=off,usb=off`, Cirrus VGA, SB16,
 PCnet, IDE, and the default COM1 serial device. It conditionally restores `-loadvm golden`.
 Adding the input PCI function is therefore a **device-set change** and requires a new checkpoint; an

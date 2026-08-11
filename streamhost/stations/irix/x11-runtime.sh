@@ -4,9 +4,9 @@
 # SGI IRIX 6.5 inside MAME (indy_4610), which streamhost captures via
 # SH_CAPTURE=x11 + XTEST/Lua input (SH_INPUT_BACKEND=x11test).
 #
-# Installed byte-for-byte as /data/vms/streamhost/tiles/irix/x11-runtime.sh by
-# scripts/streamhost-tile.sh --x11 (verbatim, like a bridge tile's launcher).
-# ensure-tile-x11.sh execs it inside a 3 GiB qcap scope. Kill ONLY by pidfile.
+# Installed byte-for-byte as /data/vms/streamhost/stations/irix/x11-runtime.sh by
+# scripts/streamhost-station.sh --x11 (verbatim, like a bridge tile's launcher).
+# ensure-station-x11.sh execs it inside a 3 GiB qcap scope. Kill ONLY by pidfile.
 #
 # Adapted from the proven /data/vms/soltest/irix-mame/irix-launch.sh. The large
 # binaries (2 GiB CHD, PROM roms, MAME sgi binary) are NOT in the
@@ -580,7 +580,7 @@ freeze_at_state() {
 
 # The watchdog loop. Owns nothing but the MAME pidfile; it refuses to act once
 # the launch generation changes (a newer x11-runtime.sh took over) or the
-# systemd unit is no longer active (stop-tile-x11.sh is tearing the tile down),
+# systemd unit is no longer active (stop-station-x11.sh is tearing the tile down),
 # so it can never fight the service or resurrect a stopped tile.
 bootwatch() {
   local gen attempt=1 t0 t black

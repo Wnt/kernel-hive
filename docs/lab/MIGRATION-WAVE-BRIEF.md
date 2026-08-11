@@ -23,7 +23,7 @@ not "fix" them again.** All three were found the expensive way; the fixes are in
 |---|---|---|
 | Poll read a log line count as the builder's exit code | Killed healthy builds that went quiet for one 20 s interval — every bridge builder does, waiting on a guest | The status trailer is metadata-FIRST (`RC <n>` header line), with a numeric assertion on the parse |
 | Rollback raced the detached builder it had abandoned | The surviving builder re-captured a checkpoint into the **restored live overlay** — `decos`, `plus4`, `bbcmicro`, three times, all three survived on luck | The rollback kills the builder's recorded process group and verifies it gone through `/proc/<pid>/exe` before touching the overlay; it is fail-closed |
-| Staging was incomplete | Fresh per-station stages died on the first rsync; `zx81` died on a missing `streamhost/tiles/zx81` sidecar | The remote `mkdir -p` creates rsync destination parents, and host-side sidecars are staged |
+| Staging was incomplete | Fresh per-station stages died on the first rsync; `zx81` died on a missing `streamhost/stations/zx81` sidecar | The remote `mkdir -p` creates rsync destination parents, and host-side sidecars are staged |
 
 **ccache is already pulled.** 59.1% on the first cold MAME tree, then 96–100% on
 every later one. Do not go looking for build speedups; there are none left of
@@ -121,7 +121,7 @@ overlay backing files, not assets.
   that reads like a network fault. The same self-match ruins process *scans* —
   resolve each hit through `/proc/<pid>/exe`.
 - **Kill clones only via `clone-guard kill-pidfile`.** The
-  `${D:-/data/vms/streamhost/tiles/…}` default footgun in a clone launcher once
+  `${D:-/data/vms/streamhost/stations/…}` default footgun in a clone launcher once
   reached the live `solaris` station.
 - **Mount chroot API filesystems only via `chroot-guard`.** A hand
   `mount --rbind /dev` made the chroot's `/dev/pts` a *peer* of the host's and
@@ -208,7 +208,7 @@ whichever line sorts last. Also: the `_note` strings carry a hand-typed count
 stations map twelve lines below*. Recompute it; do not pick a side.
 
 **Generated files — regenerate, never merge.** `streamhost/stations-manifest.sh`,
-`spa/src/three/archetypeRegistry.ts` and the rest are outputs. Edit `registry/tiles/<tile>.json`, run `make
+`spa/src/three/archetypeRegistry.ts` and the rest are outputs. Edit `registry/stations/<tile>.json`, run `make
 station-registry-generate`, and let `make station-registry-check` be the proof.
 Hand-resolving one of these is always wrong, even when it merges cleanly. (The
 runtime documents — the public lineup, poster prose, the serve JSONs, the

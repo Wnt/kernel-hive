@@ -118,12 +118,12 @@ On a namespaced clone under `/data/vms/soltest/` with the recipe above:
   idle frame. `live-proof/` contains the deployed `labctl`/QMP frames and the
   decoded UI screenshots.
 - The pre-promotion production disk is
-  `/data/vms/streamhost/tiles/nt4/nt4-golden.qcow2.bak-preHiRes-20260728T110112Z`
+  `/data/vms/streamhost/stations/nt4/nt4-golden.qcow2.bak-preHiRes-20260728T110112Z`
   (SHA-256
   `76f1fb0e11aee51ded7b8b75e203984f7a0b97d2fad5c2d3addd7b660684b487`).
 - Credentials reference only (never values): `guest/nt4`.
 - Rebuild/rollback source remains `scripts/build-guests/tiles/nt4.sh`; production
-  always boots the station-local copy under `/data/vms/streamhost/tiles/nt4/`.
+  always boots the station-local copy under `/data/vms/streamhost/stations/nt4/`.
 
 ## Patched-QEMU maintenance
 

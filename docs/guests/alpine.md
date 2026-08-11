@@ -82,7 +82,7 @@ Fully automated, zero human interaction:
 Trial runs are fully namespaceable: `OUT_DIR= WORK_DIR= ISO_DIR=
 BAKE_SSH_PORT= HTTP_PORT=` (see the header). The builder keeps the versioned
 ISO and converges `Alpine.iso` inside the selected `ISO_DIR`. It never touches
-`/data/vms/streamhost/tiles/*`.
+`/data/vms/streamhost/stations/*`.
 
 ## Station wiring (production)
 

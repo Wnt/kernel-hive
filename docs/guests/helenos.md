@@ -55,7 +55,7 @@ ISO `-boot d`) is unchanged.
 ## Rollback
 
 `cp golden.qcow2.bak-pretablet golden.qcow2`, remove the `-usb -device usb-tablet`
-line from the launcher, set `SH_POINTER=rel` in `tile.env`, `labctl gen`,
+line from the launcher, set `SH_POINTER=rel` in `station.env`, `labctl gen`,
 restart QEMU (launcher) + `streamhost@helenos`.
 
 ## Fresh builder trial (2026-07-14)

@@ -29,7 +29,7 @@ byte-identical. Winsock 1.1 only, so the same binary runs on base Win95 and 98SE
 
 ## Deployed wiring (live tiles)
 
-| tile    | pointer | transport                            | tile.env                                           |
+| tile    | pointer | transport                            | station.env                                           |
 |---------|---------|--------------------------------------|----------------------------------------------------|
 | win95   | warpd   | hostfwd `127.0.0.1:57791` → `:7777`  | `SH_POINTER=warpd` `SH_WARPD_ADDR=127.0.0.1:57791`  |
 | win98se | abs     | usb-tablet (no agent; `acpi=on`)     | `SH_POINTER=abs`                                    |
@@ -70,7 +70,7 @@ needed. Full correction record: `docs/guests/win9x.md`.
 3. Add the hostfwd to the launcher's `-netdev user` string.
 4. COLD boot (never `loadvm` — it would resurrect pre-inject RAM), let the
    fixture settle, verify the agent moves the cursor (framebuffer screendumps).
-5. `delvm golden` + `savevm golden` via QMP, flip `tile.env` to warpd, update
+5. `delvm golden` + `savevm golden` via QMP, flip `station.env` to warpd, update
    `streamhost/stations-manifest.sh`, run `labctl gen`, restart `streamhost@<tile>`.
 
 98SE gotcha: after an unclean power-off the next cold boot may pop the

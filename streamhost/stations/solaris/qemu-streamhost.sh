@@ -23,7 +23,7 @@
 #     hand-built standalone binary is retired (its pc-bios dir is kept only for the
 #     stock BIOS blobs -L points at). VMState restore on the packaged binary verified.
 set -euo pipefail
-D="${D:-/data/vms/streamhost/tiles/solaris}"
+D="${D:-/data/vms/streamhost/stations/solaris}"
 DISK="${DISK:-$D/solariscde-golden.qcow2}"
 QEMU="${QEMU:-/usr/bin/qemu-system-x86_64}"
 QEMU_DATA="${QEMU_DATA:-/data/vms/streamhost/qemu-gallery-hid/pc-bios}"

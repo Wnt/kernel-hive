@@ -33,7 +33,7 @@
   "sharedBuildRows": [
     {
       "order": 25,
-      "prelude": "  # emulator-bridge retro home computers. bridge-base is a PREREQUISITE (shared\n  # read-only base image) — build it BEFORE c64/atarist/apple2/amiga (each is a\n  # thin overlay + golden bake over it). Artifacts land outside GALLERY_ROOT under\n  # /data/vms/bridge/ + /data/vms/streamhost/tiles/<tile>/. See streamhost/docs/BRIDGE.md.\n",
+      "prelude": "  # emulator-bridge retro home computers. bridge-base is a PREREQUISITE (shared\n  # read-only base image) — build it BEFORE c64/atarist/apple2/amiga (each is a\n  # thin overlay + golden bake over it). Artifacts land outside GALLERY_ROOT under\n  # /data/vms/bridge/ + /data/vms/streamhost/stations/<tile>/. See streamhost/docs/BRIDGE.md.\n",
       "value": {
         "key": "bridge-base",
         "script": "lib/bridge-base.sh",

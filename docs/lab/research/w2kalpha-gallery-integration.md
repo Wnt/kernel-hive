@@ -16,9 +16,9 @@ taking input over es40's mamectl/1 socket (`SH_INPUT_BACKEND=mamesock`).
   `es40` (build `fde680f2`), `nt.img`, `rom/` (flash.rom + S3/SRM/dpr roms),
   `es40.cfg`, `w2k.iso` (CD the cfg references), `root/` (es40's shared-lib
   tree, so the station does NOT depend on the retired soltest scratch area).
-- **Station launcher** `/data/vms/streamhost/tiles/w2kalpha/`: `w2kalpha-runtime.sh`
+- **Station launcher** `/data/vms/streamhost/stations/w2kalpha/`: `w2kalpha-runtime.sh`
   (reflink-copies the checkpoint per launch → cold-boots es40 headless + serial
-  pumps), `tile.env` (SH_CAPTURE=shm, SH_INPUT_BACKEND=mamesock,
+  pumps), `station.env` (SH_CAPTURE=shm, SH_INPUT_BACKEND=mamesock,
   SH_SHM_PATH, SH_MAMECTL_SOCK, SH_PORT=54199, SH_RESET_MODE=relaunch),
   `pumps.py`. **Verified end to end**: the launcher cold-booted es40 from the
   staged checkpoint to a 1280x1024 desktop published on shm, and a keyboard verb
@@ -58,11 +58,11 @@ snapshot, unaffected.
      DOWN1/UP1 at an icon selects it.
 2. **Registry entry + streamhost/UI integration.** `scripts/stations-registry.py
    new` rolls back unless the entry is complete (it needs `stream.pointer`,
-   the ordering fields, binding/museum blocks). Author `registry/tiles/
-   w2kalpha.json` modelled on `registry/tiles/irix.json` (the other non-QEMU
+   the ordering fields, binding/museum blocks). Author `registry/stations/
+   w2kalpha.json` modelled on `registry/stations/irix.json` (the other non-QEMU
    shm/mamesock station): id/stationDir=w2kalpha, lifecycle candidate→production,
    stream.pointer {transport abs, backend mamesock, absolute true},
-   runtime.stationEnv mirroring the tile.env above, render.* binding +
+   runtime.stationEnv mirroring the station.env above, render.* binding +
    museumBlock (archetype `putty-lcd` like nt4/winxp, a 2000/Alpha blurb),
    guestDoc `docs/guests/w2kalpha.md`. Then wire the systemd unit /
    ensure-tile-x11 path as IRIX does (`stations-manifest.sh` emit line with
@@ -78,4 +78,4 @@ snapshot, unaffected.
   repaint fragility); cold boot renders everything. Instant-resume via
   `ES40_RESTORE` is the future fast path once that is fixed.
 - Port 54199 is a placeholder; the registry `slot` assigns the real
-  `54000+slot`. Align tile.env `SH_PORT` to it.
+  `54000+slot`. Align station.env `SH_PORT` to it.

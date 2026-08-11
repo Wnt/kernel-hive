@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/apple2",
-      "qmp": "/data/vms/streamhost/tiles/apple2/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/apple2",
+      "qmp": "/data/vms/streamhost/stations/apple2/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -77,8 +77,8 @@
   "credentialsRef": "guest/apple2",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "apple2",
-      "SH_QMP": "/data/vms/streamhost/tiles/apple2/qmp.sock",
+      "SH_STATION": "apple2",
+      "SH_QMP": "/data/vms/streamhost/stations/apple2/qmp.sock",
       "SH_PORT": "54117",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -89,8 +89,8 @@
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/apple2/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/apple2/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/apple2/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/apple2/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_ABS_PACE_MS": "30"
     },
@@ -121,11 +121,11 @@
         "--launcher-file",
         "$T/apple2/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/apple2/tile.env.fixture"
+        "$T/apple2/station.env.fixture"
       ],
       "deviceSetId": "apple2-current",
-      "launcher": "streamhost/tiles/apple2/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/apple2/tile.env.fixture",
+      "launcher": "streamhost/stations/apple2/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/apple2/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

@@ -61,7 +61,7 @@ Repository facts:
 - [`stations-manifest.sh`](../../../../streamhost/stations-manifest.sh) pins an 8 ms warpd pace and an
   **80 ms button delay** to close the two-channel motion/button race. Removing that race is a large
   potential tail-latency win independent of the raw serial byte cost.
-- [`qemu-streamhost.sh`](../../../../streamhost/tiles/win311/qemu-streamhost.sh) currently pins
+- [`qemu-streamhost.sh`](../../../../streamhost/stations/win311/qemu-streamhost.sh) currently pins
   QEMU 11 `qemu-system-i386`, `pc-i440fx-11.0`, TCG, one Pentium CPU, 64 MiB RAM, Cirrus VGA, two IDE
   disks, NE2000 PCI, SB16, and COM1. It conditionally restores the in-qcow2 `golden` vmstate.
 - A read-only QMP `query-pci` on 2026-07-15 showed the NE2000 at `00:03.0`, INTA, IRQ 11. The new

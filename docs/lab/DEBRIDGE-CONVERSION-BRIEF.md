@@ -32,7 +32,7 @@ Debian, no X server, no kiosk getty loop:
 | Launcher | tiny, no X (`SDL_VIDEODRIVER=dummy`), `armB-mame.sh` shape | **proven** |
 
 Identity does not change: same registry id, poster, UI scene, keyboard
-profile, `/data/vms/streamhost/tiles/<tile>/` directory and cert path. Only
+profile, `/data/vms/streamhost/stations/<tile>/` directory and cert path. Only
 the launcher plane changes; `gen_tiles_json.py` already models a non-QEMU
 launcher (the irix/w2kalpha `x11-runtime` rows are the precedent — this
 campaign adds the no-X variant of that shape).

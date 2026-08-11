@@ -14,8 +14,8 @@ Migrated from the frozen bookworm base on 2026-08-10; see
 **Build script (station):** `scripts/build-guests/tiles/decos.sh` — thin overlay + SIMH
 build + media staging + three pack preparations + kiosk + checkpoint capture + a
 framebuffer-asserted keyboard proof.
-**Station dir (host):** `/data/vms/streamhost/tiles/decos/`.
-**Registry entry:** `registry/tiles/decos.json` (slot 126, udp 54126, VMID 229,
+**Station dir (host):** `/data/vms/streamhost/stations/decos/`.
+**Registry entry:** `registry/stations/decos.json` (slot 126, udp 54126, VMID 229,
 ssh hostfwd 127.0.0.1:5829, 768 MB).
 
 ## One station, three operating systems
@@ -298,7 +298,7 @@ reaps with `-KILL` before starting xterm.
 ## Device set, launcher and window fitting
 
 Identical in shape to its kiosk siblings — see
-`streamhost/tiles/decos/qemu-streamhost.sh`. **768 MB** is the station's memory and
+`streamhost/stations/decos/qemu-streamhost.sh`. **768 MB** is the station's memory and
 it is ample: the whole exhibit is one xterm plus at most one SIMH process whose
 largest configured PDP-11 has 4 MB of core (measured guest RSS 17–82 MB per
 simulator, guest total 708 MB with ~415 MB free at the chooser).
@@ -365,7 +365,7 @@ keeping:
 
 ## Verification (2026-08-09 bookworm, re-run 2026-08-10 on trixie)
 
-Evidence in `/data/vms/streamhost/tiles/decos/evidence/`. **The trixie rebuild
+Evidence in `/data/vms/streamhost/stations/decos/evidence/`. **The trixie rebuild
 regenerated five of these eight** (`cold-boot-chooser`, `ready-before-golden`,
 `golden-restored`, `keyboard-1-rt11`, `golden-restored-after-keyboard`); the
 other three still date from the 2026-08-09 bookworm build, because the builder's

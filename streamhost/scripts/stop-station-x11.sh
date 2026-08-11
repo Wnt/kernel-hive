@@ -1,9 +1,9 @@
 #!/bin/bash
-# stop-tile-x11.sh <tile> — bounded pidfile-owned teardown for x11-runtime tiles
+# stop-station-x11.sh <tile> — bounded pidfile-owned teardown for x11-runtime tiles
 # (the IRIX/MAME tile, issue #20). Signals only the recorded MAME + Xvfb PIDs
 # (under SH_CAPTURE=shm there is no Xvfb and that pidfile simply does not exist):
 # TERM first, then KILL after ~10 seconds. Never pkill by name (the pattern would
-# also match the ssh/bash wrapper). Mirrors stop-tile-qemu.sh.
+# also match the ssh/bash wrapper). Mirrors stop-station-qemu.sh.
 set -euo pipefail
 
 [ "$#" -eq 1 ] || {
@@ -18,7 +18,7 @@ case "$TILE" in
     ;;
 esac
 
-BASE="/data/vms/streamhost/tiles/$TILE"
+BASE="/data/vms/streamhost/stations/$TILE"
 
 stop_pidfile() { # $1 = pidfile
   local pidfile="$1" pid

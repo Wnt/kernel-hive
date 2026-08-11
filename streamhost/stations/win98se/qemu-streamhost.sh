@@ -18,7 +18,7 @@
 #     acpi=off/usb=off/-apic/kernel-irqchip=off. See docs/guests/win9x.md.
 # Kill only by pidfile. neko is restored by ROLLBACK.md.
 set -e
-B=/data/vms/streamhost/tiles/win98se
+B=/data/vms/streamhost/stations/win98se
 KVM=/data/gallery-guests/Win98SE/win98se-kvm.qcow2
 GAMES=/data/gallery-guests/Win98SE/win98se-games.qcow2
 [ -f "$B/qemu.pid" ] && kill "$(cat "$B/qemu.pid")" 2>/dev/null || true

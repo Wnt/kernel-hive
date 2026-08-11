@@ -3,7 +3,7 @@
 # Usage: rollout.sh <tile>
 set -u
 T="$1"
-D="/data/vms/streamhost/tiles/$T"
+D="/data/vms/streamhost/stations/$T"
 L="$D/qemu-streamhost.sh"
 PID="$D/qemu.pid"
 QMP="$D/qmp.sock"

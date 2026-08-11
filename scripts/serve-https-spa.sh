@@ -49,9 +49,9 @@ SPA_WEB="$REPO/spa"
 DIST="$SPA_WEB/dist"
 LOCAL_PKI="$REPO/scripts/serve/pki"
 # All four published documents are RENDERED, never committed: resolved from
-# registry/tiles/*.json + registry/posters/*.md on the way out
+# registry/stations/*.json + registry/posters/*.md on the way out
 # (stations-registry.py rendered()). publish_manifests re-renders before it reads.
-TILES_SRC="$REPO/build/registry/tiles.json"
+TILES_SRC="$REPO/build/registry/stations.json"
 GALLERY_MANIFEST_SRC="$REPO/build/registry/gallery-manifest.json"
 POSTER_DOCS_SRC="$REPO/build/registry/poster-docs.json"
 GOLDEN_MANIFEST_SRC="$REPO/build/registry/golden-manifest.json"

@@ -29,8 +29,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/kc854",
-      "qmp": "/data/vms/streamhost/tiles/kc854/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/kc854",
+      "qmp": "/data/vms/streamhost/stations/kc854/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -78,8 +78,8 @@
   "credentialsRef": "guest/kc854",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "kc854",
-      "SH_QMP": "/data/vms/streamhost/tiles/kc854/qmp.sock",
+      "SH_STATION": "kc854",
+      "SH_QMP": "/data/vms/streamhost/stations/kc854/qmp.sock",
       "SH_PORT": "54132",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -90,8 +90,8 @@
       "SH_INPUT_BACKEND": "disabled",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/kc854/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/kc854/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/kc854/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/kc854/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 235,
@@ -121,11 +121,11 @@
         "--launcher-file",
         "$T/kc854/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/kc854/tile.env.fixture"
+        "$T/kc854/station.env.fixture"
       ],
       "deviceSetId": "kc854-current",
-      "launcher": "streamhost/tiles/kc854/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/kc854/tile.env.fixture",
+      "launcher": "streamhost/stations/kc854/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/kc854/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

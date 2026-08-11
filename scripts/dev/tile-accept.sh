@@ -194,7 +194,7 @@ fi
 fact() { awk -F'\t' -v k="$1" '$1==k{print $2}' "$FACT_TSV"; }
 
 if [ "$DRY" -eq 0 ]; then
-  record FACTS ok "id=$(fact id) SH_TILE=$(fact sh_tile) kind=$(fact kind) (repo @ $(fact commit))"
+  record FACTS ok "id=$(fact id) SH_STATION=$(fact sh_tile) kind=$(fact kind) (repo @ $(fact commit))"
   if [ -z "$(fact suite_declared)" ]; then
     record SUITE n/a "not a bridge tile — no registry/bridge-suites.json entry; backing=$(fact backing)"
   else

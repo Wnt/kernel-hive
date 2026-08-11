@@ -5,7 +5,7 @@ labhost (192.0.2.10) as a neko-qemu gallery guest.
 
 > **CURRENT STATE — see [§12](#12-2026-07-27-rebuild--revived-at-1920×1200-after-the-nvme-migration).**
 > The station runs today as the **streamhost** guest `winxp` (VMID 94) at **1920×1200**
-> from `/data/vms/streamhost/tiles/winxp/winxp-golden.qcow2` (checkpoint,
+> from `/data/vms/streamhost/stations/winxp/winxp-golden.qcow2` (checkpoint,
 > resetMode=loadvm). §1–§11 below are the original neko-era usermedia build + the
 > 1024×768 polish, kept for the record; the paths/resolution there are superseded.
 
@@ -333,7 +333,7 @@ the **fleet resolution target was raised 1024×768 → 1920×1200** (packed-VBEM
   (=3840×2160) then 3× Left lands on **1920×1200** (Highest/32-bit). 1920×1200×32 =
   9.2 MiB fits the std-VGA default 16 MiB vgamem, so the production launcher's plain
   `-vga std` renders it full-frame; the mode persists across reboot.
-- **Checkpoint scene** (`streamhost/tiles/winxp/golden-bake.sh`, resetMode=loadvm):
+- **Checkpoint scene** (`streamhost/stations/winxp/golden-bake.sh`, resetMode=loadvm):
   station-local `winxp-golden.qcow2` (copy of the pristine `WinXPpro/winxp.qcow2`) with
   an internal `savevm golden` checkpoint. Notepad open+focused (empty, caret top-left),
   Bliss, pointer parked right; screensaver OFF, powercfg "Always On" + timeouts 0,

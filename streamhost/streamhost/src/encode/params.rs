@@ -126,7 +126,7 @@ pub(super) fn resolve_tier(
 /// transiently — accepted trade-off). Tier 0 is CQP (no VBV), so the
 /// configured ratio passes through untouched and LAN quality is unchanged.
 /// `min()` keeps this idempotent with the fleet-wide SH_BUFSIZE_RATIO=0.5
-/// tile.env stopgap (plan item C1) deployed 2026-07-17.
+/// station.env stopgap (plan item C1) deployed 2026-07-17.
 pub(super) fn effective_bufsize_ratio(tier: u8, ratio: f64) -> f64 {
     if tier >= 1 {
         ratio.min(0.5)
@@ -278,7 +278,7 @@ mod tests {
     }
 
     /// Congested-tier (>= 1) bufsize is capped at 0.5 x maxrate — idempotent
-    /// with the fleet SH_BUFSIZE_RATIO=0.5 tile.env stopgap; a tighter
+    /// with the fleet SH_BUFSIZE_RATIO=0.5 station.env stopgap; a tighter
     /// operator-set ratio stays tighter; tier 0 (CQP, no VBV) passes through.
     #[test]
     fn bufsize_ratio_capped_only_on_congested_tiers() {

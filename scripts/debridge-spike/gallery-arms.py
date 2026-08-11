@@ -4,20 +4,20 @@
 WHY THIS EXISTS, AND WHY THE ARMS ARE NOT REGISTRY ENTRIES
 ----------------------------------------------------------
 The operator wants to drive both arms by hand, side by side, in a browser on the
-gallery's HTTPS origin. The obvious route -- give each arm a `registry/tiles/`
+gallery's HTTPS origin. The obvious route -- give each arm a `registry/stations/`
 entry with a `listing: hidden` soft hide -- does not work, and the reason is
 structural rather than tedious:
 
   * `scripts/gen_tiles_json.py` (what `labctl gen` runs) hard-exits with
     "declared/live tile set mismatch" for ANY streamhost registry row that has no
-    `/data/vms/streamhost/tiles/<stationDir>/` directory. Both arms live under
+    `/data/vms/streamhost/stations/<stationDir>/` directory. Both arms live under
     `/data/vms/soltest/debridge-7f3a/`. So a registry row breaks `labctl gen` --
     and `stations-registry.py --check` on the box, which compares the same sets --
     for every other session, until the arms are MOVED into the production tile
-    directory and given a `tile.env` + `qemu-streamhost.sh`. Arm B has no QEMU
+    directory and given a `station.env` + `qemu-streamhost.sh`. Arm B has no QEMU
     launcher at all: it is host-native MAME.
   * the generated `scripts/serve/tiles.json` hardcodes each row's `hashFile` to
-    `/data/vms/streamhost/tiles/<stationDir>/cert_hash_b64.txt`, so the registry has
+    `/data/vms/streamhost/stations/<stationDir>/cert_hash_b64.txt`, so the registry has
     no way to say where these arms actually are.
   * `spa/src/data/tileWiring.test.ts` requires every streamhost manifest row to
     carry an exhibit poster, a scene identity, a machine assembly and a keyboard

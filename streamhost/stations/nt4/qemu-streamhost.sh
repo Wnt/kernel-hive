@@ -47,7 +47,7 @@
 #                              qcow2 has it rewritten to multi(0)... so NTLDR
 #                              reads this IDE disk via INT13h. See docs/guests/nt4.md.
 set -e
-D=/data/vms/streamhost/tiles/nt4
+D=/data/vms/streamhost/stations/nt4
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid"

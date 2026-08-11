@@ -14,12 +14,12 @@
 #    (reactos-settings.img) which was ejected before savevm, so the golden
 #    snapshot has an empty floppy0 — matched here by the pc machine's default
 #    empty floppy0 (no -fda). scripts/build-guests/tiles/reactos.sh invokes the fully
-#    automated streamhost/tiles/reactos/golden-bake.sh to rebuild it cold.
+#    automated streamhost/stations/reactos/golden-bake.sh to rebuild it cold.
 set -e
 GDIR=/data/gallery-guests/ReactOS
-[ -f "/data/vms/streamhost/tiles/reactos/qemu.pid" ] && kill "$(cat "/data/vms/streamhost/tiles/reactos/qemu.pid")" 2>/dev/null || true
+[ -f "/data/vms/streamhost/stations/reactos/qemu.pid" ] && kill "$(cat "/data/vms/streamhost/stations/reactos/qemu.pid")" 2>/dev/null || true
 sleep 0.3
-rm -f "/data/vms/streamhost/tiles/reactos/qmp.sock" "/data/vms/streamhost/tiles/reactos/qemu.pid"
+rm -f "/data/vms/streamhost/stations/reactos/qmp.sock" "/data/vms/streamhost/stations/reactos/qemu.pid"
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 nohup qemu-system-x86_64 \
@@ -35,11 +35,11 @@ nohup qemu-system-x86_64 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0 \
   -usb -device usb-tablet \
   \
-  -qmp unix:/data/vms/streamhost/tiles/reactos/qmp.sock,server=on,wait=off \
-  -pidfile /data/vms/streamhost/tiles/reactos/qemu.pid \
-  >"/data/vms/streamhost/tiles/reactos/qemu.log" 2>&1 &
+  -qmp unix:/data/vms/streamhost/stations/reactos/qmp.sock,server=on,wait=off \
+  -pidfile /data/vms/streamhost/stations/reactos/qemu.pid \
+  >"/data/vms/streamhost/stations/reactos/qemu.log" 2>&1 &
 for i in $(seq 1 40); do
-  [ -S "/data/vms/streamhost/tiles/reactos/qmp.sock" ] && [ -f "/data/vms/streamhost/tiles/reactos/qemu.pid" ] && break
+  [ -S "/data/vms/streamhost/stations/reactos/qmp.sock" ] && [ -f "/data/vms/streamhost/stations/reactos/qemu.pid" ] && break
   sleep 0.5
 done
-echo "tile reactos qemu pid=$(cat /data/vms/streamhost/tiles/reactos/qemu.pid 2>/dev/null) qmp=/data/vms/streamhost/tiles/reactos/qmp.sock udp=4433"
+echo "tile reactos qemu pid=$(cat /data/vms/streamhost/stations/reactos/qemu.pid 2>/dev/null) qmp=/data/vms/streamhost/stations/reactos/qmp.sock udp=4433"

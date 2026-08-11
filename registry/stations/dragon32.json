@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/dragon32",
-      "qmp": "/data/vms/streamhost/tiles/dragon32/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/dragon32",
+      "qmp": "/data/vms/streamhost/stations/dragon32/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -78,8 +78,8 @@
   "credentialsRef": "guest/dragon32",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "dragon32",
-      "SH_QMP": "/data/vms/streamhost/tiles/dragon32/qmp.sock",
+      "SH_STATION": "dragon32",
+      "SH_QMP": "/data/vms/streamhost/stations/dragon32/qmp.sock",
       "SH_PORT": "54130",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -90,8 +90,8 @@
       "SH_INPUT_BACKEND": "disabled",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/dragon32/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/dragon32/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/dragon32/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/dragon32/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 233,
@@ -121,11 +121,11 @@
         "--launcher-file",
         "$T/dragon32/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/dragon32/tile.env.fixture"
+        "$T/dragon32/station.env.fixture"
       ],
       "deviceSetId": "dragon32-current",
-      "launcher": "streamhost/tiles/dragon32/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/dragon32/tile.env.fixture",
+      "launcher": "streamhost/stations/dragon32/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/dragon32/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

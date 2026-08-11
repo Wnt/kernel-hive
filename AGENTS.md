@@ -90,7 +90,7 @@ main`. Never echo or log `~/Downloads/humanify-token`.
 
 ## Three facts that mislead if you don't know them
 
-- **A station has ONE name**: registry id == `stationDir` == `SH_TILE`, enforced by
+- **A station has ONE name**: registry id == `stationDir` == `SH_STATION`, enforced by
   `stations-registry.py`. The last two exceptions were renamed 2026-08-10. The
   serving plane still reads identity from the station's own `signaling.json` — the
   daemon is the authority on the name it verifies a ticket against.

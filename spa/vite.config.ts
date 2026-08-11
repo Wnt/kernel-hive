@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 // for the runtime documents (Vite's history fallback hands back index.html) and
 // the grid would come up empty with no poster prose. Render them from the
 // registry per request instead: the dev gallery shows the CURRENT
-// registry/tiles/*.json and registry/posters/*.md — save the file, reload the
+// registry/stations/*.json and registry/posters/*.md — save the file, reload the
 // tab — with no bundled copy to go stale and no generated file in the tree. On
 // the box the same bytes arrive the other way, published by serve-https-spa.sh.
 const RUNTIME_DOCUMENTS = ['/gallery-manifest.json', '/poster-docs.json'];

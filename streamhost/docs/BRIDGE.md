@@ -15,7 +15,7 @@ migration below. The four originals (`c64`/VICE, `atarist`/hatari,
 Linux is only the captured X server, while OpenVMS supplies the window manager
 and clients.
 
-The **C64 + GEOS** tile (`/data/vms/streamhost/tiles/c64/`) is the reference
+The **C64 + GEOS** tile (`/data/vms/streamhost/stations/c64/`) is the reference
 implementation; this doc is written so a fan-out agent can clone it for the
 other machines by only swapping the emulator, the media, and one launch script.
 
@@ -152,7 +152,7 @@ hostfwd, SPA web port — never collide with an existing tile):
 ### 3a. Thin overlay (NOT a full copy — /data is tight)
 ```
 qemu-img create -f qcow2 -b /data/vms/bridge/bridge-base.qcow2 -F qcow2 \
-  /data/vms/streamhost/tiles/<M>/overlay.qcow2
+  /data/vms/streamhost/stations/<M>/overlay.qcow2
 ```
 
 ### 3b. Boot the overlay once (tile device set, NO -loadvm) and write the launcher
@@ -272,17 +272,17 @@ Two hard-won constraints it encodes, both measured on this box:
   [`docs/lab/OFFLINE-MUTATION-MATRIX.md`](../../docs/lab/OFFLINE-MUTATION-MATRIX.md).
 
 ### 3e. Emit the streamhost tile + start the daemon
-Use the existing emitter for `tile.env`, then hand-patch `qemu-streamhost.sh` to
+Use the existing emitter for `station.env`, then hand-patch `qemu-streamhost.sh` to
 the exact device set above (the emitter defaults `--disk` to `if=virtio`; bridge
 tiles need `if=ide,format=qcow2` + the conditional `-loadvm golden`, so the
 launcher is customized — see `c64/qemu-streamhost.sh`):
 ```
-/data/vms/streamhost/scripts/streamhost-tile.sh \
+/data/vms/streamhost/scripts/streamhost-station.sh \
   --tile <M> --vmid <ID> --udp <UDP> --pointer abs \
   --audio on --audio-dev ac97 --input-dev usb \
   --mem 1536 --smp 2 --cpu host --vga std --fps 60
 # then customize qemu-streamhost.sh: ide overlay drive, e1000 hostfwd, conditional -loadvm golden
-bash /data/vms/streamhost/tiles/<M>/qemu-streamhost.sh    # launch QEMU
+bash /data/vms/streamhost/stations/<M>/qemu-streamhost.sh    # launch QEMU
 systemctl start streamhost@<M>                            # attach daemon
 ```
 
@@ -301,8 +301,8 @@ For C64, use `--pointer rel` and the tablet-free/`vmport=off` exception above.
 - `scripts/build-guests/lib/bridge-base.sh` — builds the shared base (this doc §1).
 - `scripts/build-guests/tiles/c64.sh` — overlay + kiosk `launch.sh` + golden + verify.
 - `docs/guests/c64.md` — the C64-specific findings + live status.
-- `/data/vms/streamhost/tiles/c64/` — `overlay.qcow2`, `qemu-streamhost.sh`,
-  `tile.env`, `qmp.sock`, `qemu.pid`.
+- `/data/vms/streamhost/stations/c64/` — `overlay.qcow2`, `qemu-streamhost.sh`,
+  `station.env`, `qmp.sock`, `qemu.pid`.
 
 ---
 

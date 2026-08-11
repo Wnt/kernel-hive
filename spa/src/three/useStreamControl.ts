@@ -281,7 +281,7 @@ export function createStreamController(
   // The client is GUEST-AGNOSTIC: it always emits correctly-scaled ABSOLUTE guest
   // pixels (already mapped by grid letterbox.clientToGuest). There is NO
   // client-side PS/2 "cursor correction"
-  // any more — the DAEMON owns the abs→device mapping per tile.env SH_POINTER:
+  // any more — the DAEMON owns the abs→device mapping per station.env SH_POINTER:
   //   • abs stations  → Mouse.SetAbsPosition(x,y)
   //   • rel stations  → last-position delta → rel_motion(dx,dy)  (win9x/os2/…)
   // and any per-station calibration offset (e.g. tinycore's tablet hotspot) is a

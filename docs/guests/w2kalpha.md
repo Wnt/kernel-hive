@@ -92,14 +92,14 @@ System page reports the processor outright as **"Alpha 21264 Model A - Pass 2"**
 gallery hero (`spa/public/posters/w2kalpha/dxdiag.webp`), with `x86prog.webp`
 alongside it.
 
-## Runtime (station dir `/data/vms/streamhost/tiles/w2kalpha/`)
+## Runtime (station dir `/data/vms/streamhost/stations/w2kalpha/`)
 
-`x11-runtime.sh` (tracked: `streamhost/tiles/w2kalpha/x11-runtime.sh`) —
+`x11-runtime.sh` (tracked: `streamhost/stations/w2kalpha/x11-runtime.sh`) —
 kill-by-pidfile, fresh `work/` + reflink seed copy, then headless es40
 (`SDL_VIDEODRIVER=dummy`, `ES40_SHM_PATH`, `ES40_CTL_SOCK`) + `pumps.py` on
 the serial pair. **The es40 pid lives in `mame.pid`** — that is the shared
-x11-runtime contract name (`ensure-tile-x11.sh` liveness = pid alive AND shm
-non-empty; `stop-tile-x11.sh` tears down the same pidfiles), not a claim that
+x11-runtime contract name (`ensure-station-x11.sh` liveness = pid alive AND shm
+non-empty; `stop-station-x11.sh` tears down the same pidfiles), not a claim that
 es40 is MAME. `pumps.py` self-exits on any serial-socket EOF/error so a stale
 pump can never hold the ports.
 

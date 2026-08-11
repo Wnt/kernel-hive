@@ -30,7 +30,7 @@ D="$RIG/$ARM"
 # a reason to promote one fleet-wide. Point BOTH arms at the same artifact: the
 # spike's premise is one binary, two display paths.
 BIN="$(readlink -f "$D/streamhost.bin" 2>/dev/null || true)"
-[ -x "$BIN" ] || BIN="$(readlink -f /usr/local/lib/streamhost/tiles/helenos/current)"
+[ -x "$BIN" ] || BIN="$(readlink -f /usr/local/lib/streamhost/stations/helenos/current)"
 PIDF="$D/streamhost.pid"
 
 running() {

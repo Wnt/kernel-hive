@@ -17,7 +17,7 @@ rather than open to the world.
 
 ## What's in it
 
-The registry (`registry/tiles/`, queried with
+The registry (`registry/stations/`, queried with
 `python3 scripts/stations-registry.py count`) currently lists **39 tiles: 37
 running live and 2 showcase posters** (backends retired, kept as a
 placard). They span 1982 (Commodore 64, Microprofessor II) to 2024 (Haiku,

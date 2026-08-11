@@ -15,7 +15,7 @@ bridge could not track 1:1. Fixed with a tiny in-guest HolyC task — see
 
 - **Transport:** a COM1 serial chardev unix socket added to the launcher
   (`-chardev socket,id=ser0,path=$BASE/serial.sock,server=on,wait=off -serial
-  chardev:ser0`); daemon `tile.env` gets `SH_WARPD_ADDR=unix:.../serial.sock`.
+  chardev:ser0`); daemon `station.env` gets `SH_WARPD_ADDR=unix:.../serial.sock`.
   `warpd.rs connect_agent` already speaks the `unix:` serial transport — no Rust
   change. Pure warpd (no `--warpd-buttons qemu`): the agent injects buttons itself.
 - **Agent:** `WS()` polls the 16550 UART directly (`InU8(0x3FD)&1` data-ready,
@@ -28,7 +28,7 @@ bridge could not track 1:1. Fixed with a tiny in-guest HolyC task — see
   `loadvm golden` (the station reset) comes up with `WS` already running and
   reconnect-ready. Adding the serial device changed the device set => the old checkpoint
   was deleted and recaptured with the agent live. Backups:
-  `state.qcow2.pre-warpd-*`, `qemu-streamhost.sh.pre-warpd-*`, `tile.env.pre-warpd-*`.
+  `state.qcow2.pre-warpd-*`, `qemu-streamhost.sh.pre-warpd-*`, `station.env.pre-warpd-*`.
 - **Verified (clone `/data/vms/soltest/templeos-c1` then live checkpoint):** `M 560 420`
   moves the cursor 1:1; `P 1 18 7`/`R 1 18 7` opens the File pull-down (a real click);
   the agent survives `savevm golden`->`loadvm golden` and still tracks over serial.

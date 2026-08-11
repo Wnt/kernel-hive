@@ -84,7 +84,7 @@ SSH_PORT=5830
 WEB_PORT=8130
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
-TILE_DIR=/data/vms/streamhost/tiles/zxspectrum
+TILE_DIR=/data/vms/streamhost/stations/zxspectrum
 OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
@@ -108,7 +108,7 @@ MAME_PIN=0.251
 
 # Production key pacing, also used by this script's own keyboard proof so the
 # proof exercises exactly what the UI will. Rationale in
-# streamhost/tiles/zxspectrum/tile.env.fixture.
+# streamhost/stations/zxspectrum/station.env.fixture.
 HOLD_MS=200
 GAP_MS=200
 

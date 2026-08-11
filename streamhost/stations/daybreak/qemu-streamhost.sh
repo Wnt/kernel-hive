@@ -16,7 +16,7 @@
 #   * The AC97 card stays in the device set for device-set parity with the bake even though
 #     this exhibit is SILENT: Dwarf emulates no Xerox sound hardware (SH_AUDIO=off).
 set -e
-BASE=/data/vms/streamhost/tiles/daybreak
+BASE=/data/vms/streamhost/stations/daybreak
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

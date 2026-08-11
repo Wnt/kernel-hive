@@ -213,8 +213,8 @@ Production uses the same guest-visible device set and:
 ```
 
 The production disk backup is
-`/data/vms/streamhost/tiles/nt4/nt4-golden.qcow2.bak-preHiRes-20260728T110112Z`.
-The launcher and `tile.env` have matching timestamped backups. `live-proof/`
+`/data/vms/streamhost/stations/nt4/nt4-golden.qcow2.bak-preHiRes-20260728T110112Z`.
+The launcher and `station.env` have matching timestamped backups. `live-proof/`
 contains a visible live mode panel, `labctl` pointer and keyboard proofs, stable
 raw idle frames, and genuine UI screenshots. The UI decoded 1024x768 with no
 console errors; its five browser-driven pointer targets land within two pixels,

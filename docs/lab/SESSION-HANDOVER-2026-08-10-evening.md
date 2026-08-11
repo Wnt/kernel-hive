@@ -191,7 +191,7 @@ Reproduced, then fixed with a lock on the ledger's own inode.
 
 - **Pointer fixes** for both arms (§5), including arm B's cursor colour if
   trivial. Constrained to leave `irix` byte-for-byte identical by default.
-- **`SPA id == SH_TILE`** — exactly two stations diverge (`aros`/`amigaos`,
+- **`SPA id == SH_STATION`** — exactly two stations diverge (`aros`/`amigaos`,
   `solaris`/`solariscde`). Renaming the **daemon** side to match the registry id,
   `aros` first. `solaris` is the riskiest station in the fleet (patched QEMU with
   `gallery-hid-pci`). `labctl gen` hard-fails on a declared/live mismatch, so

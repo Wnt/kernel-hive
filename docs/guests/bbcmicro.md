@@ -97,7 +97,7 @@ pinned set.
 
 ## Device set
 
-Identical in the builder and in `streamhost/tiles/bbcmicro/qemu-streamhost.sh`
+Identical in the builder and in `streamhost/stations/bbcmicro/qemu-streamhost.sh`
 (the launcher is the guest-visible ledger; changing it invalidates the checkpoint):
 
 ```
@@ -185,7 +185,7 @@ The exhibit's only input surface. No pointing device: the Model B had none, and
 Derived from the driver's own `PORT_CHAR` table (`src/mame/acorn/bbc_kbd.cpp`,
 the `bbc_keyboard` port) with `scripts/dev/mame-keymap.py`, not guessed.
 Thirteen characters sit on different keys from a US PC; the map is declared once
-in `registry/tiles/bbcmicro.json` (`keyboard.charMap`, mirrored to `SH_KEY_MAP`
+in `registry/stations/bbcmicro.json` (`keyboard.charMap`, mirrored to `SH_KEY_MAP`
 for labctl) and used by the UI typist and by the builder's proof:
 
 | BBC character | send this US key |
@@ -225,13 +225,13 @@ history below), and shipped at 80/80, the same margin as the other kiosks
 on labhost.
 
 **This station must run the pacing canary binary.** The shared fleet streamhost
-binary does not implement `SH_KEY_MIN_HOLD_MS`; `/usr/local/lib/streamhost/tiles/bbcmicro/{current,previous}`
+binary does not implement `SH_KEY_MIN_HOLD_MS`; `/usr/local/lib/streamhost/stations/bbcmicro/{current,previous}`
 point at the same build vic20/plus4/c128 use
 (`streamhost-bca88a2bed22e1ea616993995faf4379b954bb11`).
 
 ### The type-in demo
 
-`registry/tiles/bbcmicro.json` → `demoProgram`, a five-line MODE 1 line fan:
+`registry/stations/bbcmicro.json` → `demoProgram`, a five-line MODE 1 line fan:
 
 ```basic
 10 mode 1

@@ -23,8 +23,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/alto",
-      "qmp": "/data/vms/streamhost/tiles/alto/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/alto",
+      "qmp": "/data/vms/streamhost/stations/alto/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -73,8 +73,8 @@
   "credentialsRef": "guest/alto",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "alto",
-      "SH_QMP": "/data/vms/streamhost/tiles/alto/qmp.sock",
+      "SH_STATION": "alto",
+      "SH_QMP": "/data/vms/streamhost/stations/alto/qmp.sock",
       "SH_PORT": "54137",
       "SH_FPS": "30",
       "SH_ENCODER_PRESET": "ultrafast",
@@ -86,8 +86,8 @@
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/alto/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/alto/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/alto/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/alto/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 243,
@@ -115,11 +115,11 @@
         "--launcher-file",
         "$T/alto/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/alto/tile.env.fixture"
+        "$T/alto/station.env.fixture"
       ],
       "deviceSetId": "alto-current",
-      "launcher": "streamhost/tiles/alto/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/alto/tile.env.fixture",
+      "launcher": "streamhost/stations/alto/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/alto/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

@@ -22,7 +22,7 @@
 #   * Keyboard exhibit: no pointing device, PS/2 keyboard only (vmport=off).
 #   * -m 768: measured MemAvailable in the running guest is ~374 MB.
 set -e
-BASE=/data/vms/streamhost/tiles/sinclairql
+BASE=/data/vms/streamhost/stations/sinclairql
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

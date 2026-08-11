@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# gen_tiles_json.py — build /data/vms/streamhost/tiles.json capability matrix.
+# gen_tiles_json.py — build /data/vms/streamhost/stations.json capability matrix.
 # Seeds each station from the canonical registry's generated declaration, verifies
-# that declaration against tile.env + qemu-streamhost.sh, then adds a live HMP
+# that declaration against station.env + qemu-streamhost.sh, then adds a live HMP
 # 'info snapshots' probe (read-only). Run ON labhost.
 import argparse
 import contextlib
@@ -10,11 +10,11 @@ import os
 import re
 import socket
 
-TILES_DIR = "/data/vms/streamhost/tiles"
-OUT = "/data/vms/streamhost/tiles.json"
+TILES_DIR = "/data/vms/streamhost/stations"
+OUT = "/data/vms/streamhost/stations.json"
 DECLARATIONS = "/data/vms/streamhost/build/registry/generated/labctl-declarations.json"
 # Note on riscos / windows11: ordinary gallery stations (old protection removed
-# 2026-07-08) but NOT streamhost stations — no /data/vms/streamhost/tiles/<tile>/
+# 2026-07-08) but NOT streamhost stations — no /data/vms/streamhost/stations/<tile>/
 # dir, no streamhost@<tile> unit, no serve/tiles.json entry. The UI binds them
 # directly in archetypeRegistry as showcase posters. The declaration seed
 # naturally omits them; the old hard-block BLOCK set was removed in the 2026-07
@@ -105,16 +105,16 @@ def main():
     for t in sorted(declarations):
         declared = declarations[t]
         d = os.path.join(TILES_DIR, t)
-        env = read_env(os.path.join(d, "tile.env"))
+        env = read_env(os.path.join(d, "station.env"))
         launcher = ""
         lp = os.path.join(d, "qemu-streamhost.sh")
         with contextlib.suppress(OSError), open(lp) as f:
             launcher = f.read()
         pointer = pointer_mode(env)
         # x11 runtime stations (SH_CAPTURE=x11, IRIX/issue #20) have no QEMU/QMP: no
-        # SH_QMP in tile.env, no qmp.sock, no snapshot to probe. Reflect that as a
+        # SH_QMP in station.env, no qmp.sock, no snapshot to probe. Reflect that as a
         # null qmp + null golden instead of synthesizing a dead socket path.
-        is_x11 = env.get("SH_TILE_RUNTIME") == "x11" or env.get("SH_CAPTURE") == "x11"
+        is_x11 = env.get("SH_STATION_RUNTIME") == "x11" or env.get("SH_CAPTURE") == "x11"
         qmp = None if is_x11 else env.get("SH_QMP", os.path.join(d, "qmp.sock"))
         # warpd channel address the daemon dials (SH_WARPD_ADDR): tcp host:port
         # OR "unix:<path>" (serial-chardev agents like win311 speak COM1 —
@@ -155,7 +155,7 @@ def main():
         tiles[t] = dict(declared)
         tiles[t]["golden_snapshot"] = golden
         tiles[t]["reset_mode"] = env.get("SH_RESET_MODE", "loadvm")
-        # mamectl/1 control socket (issue #45): derived from tile.env, not
+        # mamectl/1 control socket (issue #45): derived from station.env, not
         # declared — stations without SH_MAMECTL_SOCK carry no field at all.
         if env.get("SH_MAMECTL_SOCK"):
             tiles[t]["ctl"] = env["SH_MAMECTL_SOCK"]

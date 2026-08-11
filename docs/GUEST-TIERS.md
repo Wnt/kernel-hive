@@ -20,7 +20,7 @@ migration ledger, not a taxonomy. So the test is:
 | Test, in order | Tier |
 |---|---|
 | `runtime` is empty — no build rows, no launcher, no unit | **5** — showcase poster |
-| `runtime.stationEnv.SH_TILE_RUNTIME == "x11"` | **3** — host-native |
+| `runtime.stationEnv.SH_STATION_RUNTIME == "x11"` | **3** — host-native |
 | id appears in `registry/bridge-suites.json` `.tiles` | **2** — emulator bridge |
 | id is `openvms` | **4** — two-QEMU X bridge |
 | otherwise | **1** — direct QEMU |
@@ -37,7 +37,7 @@ Applying that to all 61 registry entries gives **29 / 28 / 1 / 1 / 2**.
 ```mermaid
 flowchart TD
   HOST[Labhost bare metal Debian trixie no GPU]
-  HOST --> SVC[systemd streamhost at tile unit reads tile.env execs a per-station binary symlink]
+  HOST --> SVC[systemd streamhost at tile unit reads station.env execs a per-station binary symlink]
   SVC --> T1
   SVC --> T2
   SVC --> T3
@@ -131,9 +131,9 @@ constraint, not a preference. The performance consequence of that pairing is in
 directly flatters MAME, because MAME runs throttled and Iris runs free.
 
 **Every tier is served by the same systemd template and the same binary shape.**
-`streamhost@<tile>.service` reads `/data/vms/streamhost/tiles/%i/tile.env` and
+`streamhost@<tile>.service` reads `/data/vms/streamhost/stations/%i/station.env` and
 execs a per-station versioned binary symlink. The tier is expressed entirely in
-`tile.env` plus which launcher was emitted — which is why a tier change is a
+`station.env` plus which launcher was emitted — which is why a tier change is a
 config change, not a code change.
 
 **The effective environment is `stationEnv` THEN the appended fixture**, and they
@@ -150,7 +150,7 @@ campaign. Every other launcher is exec'd bare.
 
 ## Per-guest table
 
-Generated from `registry/tiles/*.json` and `registry/bridge-suites.json` — the
+Generated from `registry/stations/*.json` and `registry/bridge-suites.json` — the
 same files the daemon and the UI read. Regenerate rather than hand-edit.
 
 Pointer methods across the 59 production stations: `qemu-usb-tablet` 24, **none

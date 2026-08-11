@@ -18,7 +18,7 @@
 #     PS/2 relative kbd+mouse) so the snapshot is portable and the transport is
 #     unchanged. Only the disk (local golden, no -snapshot) differs.
 set -e
-D=/data/vms/streamhost/tiles/win95
+D=/data/vms/streamhost/stations/win95
 DISK="$D/win95-golden.qcow2"
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3

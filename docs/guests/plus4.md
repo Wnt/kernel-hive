@@ -11,8 +11,8 @@ whole VICE family.
 **Build script (station):** `scripts/build-guests/tiles/plus4.sh` — thin overlay + kiosk
 `launch.sh` + ROM repair + quiet console + checkpoint capture + a two-step
 framebuffer proof of the suite route, fully automated, ~2 minutes.
-**Station dir (labhost):** `/data/vms/streamhost/tiles/plus4/`.
-**Registry entry:** `registry/tiles/plus4.json` (slot 86, udp 54086, VMID 222,
+**Station dir (labhost):** `/data/vms/streamhost/stations/plus4/`.
+**Registry entry:** `registry/stations/plus4.json` (slot 86, udp 54086, VMID 222,
 ssh hostfwd 127.0.0.1:5822).
 
 ## Media and license — there is none to stage
@@ -91,7 +91,7 @@ changes it.
 ## Device set and launcher
 
 Identical in shape to its kiosk siblings (`c64`, `vic20`, `apple2`, `atarist`,
-`amiga`, `mpf2`) — see `streamhost/tiles/plus4/qemu-streamhost.sh`. The kiosk
+`amiga`, `mpf2`) — see `streamhost/stations/plus4/qemu-streamhost.sh`. The kiosk
 launcher is:
 
 ```
@@ -119,7 +119,7 @@ No `demoProgram`: the interaction here is the suite, not a BASIC type-in.
 
 ## Verification (2026-08-09)
 
-Evidence in `/data/vms/streamhost/tiles/plus4/evidence/`:
+Evidence in `/data/vms/streamhost/stations/plus4/evidence/`:
 
 | Artifact | Shows |
 |---|---|

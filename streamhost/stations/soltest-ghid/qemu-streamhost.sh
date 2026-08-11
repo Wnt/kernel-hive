@@ -3,7 +3,7 @@
 # VMID label 9912; UDP 54912; guest exec hostfwd 58792. Never loads VMState.
 set -euo pipefail
 
-D=/data/vms/streamhost/tiles/soltest-ghid
+D=/data/vms/streamhost/stations/soltest-ghid
 QEMU=/data/vms/soltest/lli/spike-solaris-a/qemu-build/qemu-system-x86_64
 QEMU_DATA=/data/vms/soltest/lli/spike-solaris-a/qemu-build/pc-bios
 DISK="$D/soltest-ghid.qcow2"

@@ -647,7 +647,7 @@ verify_boot() {
   #      C:\WINDOWS\OPTIONS\CABS (Win98 then remembers it). Cancel/Finish-mark the few
   #      driverless ACPI stub devices (ACPI Generic Bus/EIO Bus, PnP Monitor, IDE bus
   #      master) to reach an idle desktop. Verify 1:1 abs tracking + winipcfg 10.0.2.15.
-  #   3. savevm golden ; tile.env SH_POINTER=abs. The station boots via -loadvm golden, so
+  #   3. savevm golden ; station.env SH_POINTER=abs. The station boots via -loadvm golden, so
   #      the RAM snapshot restores the settled desktop with the pointer live (no re-scan).
   #   Do NOT re-add acpi=off / usb=off / -apic / kernel-irqchip=off.
   local drives=(-drive "file=${SYS_PATH},if=ide,index=0,media=disk,format=qcow2")

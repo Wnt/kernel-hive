@@ -2,7 +2,7 @@
 
 Status (2026-07-16): the canonical per-tile registry, generator, generated
 streamhost/serve/SPA/labctl artifacts, and drift CI described by the core of
-this proposal are implemented. See `registry/tiles/`,
+this proposal are implemented. See `registry/stations/`,
 `scripts/stations-registry.py`, the `station-registry-generate`,
 `station-registry-check`, and `station-registry-validate` Make targets, and
 `.github/workflows/tile-registry.yml`. The later runtime-driven SPA design is
@@ -12,7 +12,7 @@ bundle-time data, so an SPA rebuild is still required.
 ## Executive recommendation
 
 Introduce a versioned, JSON-Schema-validated canonical registry at
-`registry/tiles/<osId>.json`, then generate the operational registries consumed
+`registry/stations/<osId>.json`, then generate the operational registries consumed
 today. Serve the public subset of that registry to the SPA at runtime. Keep
 guest builders, bespoke launchers, golden-bake logic, boot-video detection
 recipes, and private credentials as referenced sidecars rather than trying to
@@ -241,8 +241,8 @@ For a bespoke launcher, replace the generic QEMU object with:
 ```json
 "qemu": {
   "mode": "verbatim",
-  "launcher": "streamhost/tiles/exampleos/qemu-streamhost.sh",
-  "envFixture": "streamhost/tiles/exampleos/tile.env.fixture",
+  "launcher": "streamhost/stations/exampleos/qemu-streamhost.sh",
+  "envFixture": "streamhost/stations/exampleos/station.env.fixture",
   "auxFiles": [],
   "machine": "pc-i440fx-11.0",
   "deviceSetSummary": ["ide:golden.qcow2", "cirrus", "sb16", "ps2", "com1"]
@@ -300,12 +300,12 @@ it. `check` belongs in CI and in the pre-deploy path.
 | Canonical fields | Generated output | Hand edits removed |
 |---|---|---|
 | `build.*` for enabled production tiles | a sourced/generated manifest consumed by `scripts/build-guests/build-all.sh` | `MANIFEST` and `DEFAULT_ORDER` registration |
-| `runtime.qemu`, `stream.*`, `stationDir` | `streamhost/tiles-manifest.generated.sh` emit stanzas, still invoking `streamhost-tile.sh` and referenced verbatim launchers | hand-written emit args and repeated port/pointer/device metadata |
+| `runtime.qemu`, `stream.*`, `stationDir` | `streamhost/stations-manifest.generated.sh` emit stanzas, still invoking `streamhost-station.sh` and referenced verbatim launchers | hand-written emit args and repeated port/pointer/device metadata |
 | `runtime.bringUpOrder` plus explicit dependencies | generated `TILES=(...)` include consumed by `bring-up-all.sh` | separate boot-order list |
 | `id`, `stationDir`, `stream.udpPort` | `scripts/serve/tiles.json` | signal registry row and hash path |
 | `reset.*`, pointer/touch evidence | `scripts/serve/golden-manifest.json` | reset map row |
 | public `museum`, stream transport/pointer, boot-video flag | `scripts/serve/gallery-manifest.json` | bundled OS binding + manifest/catalog row |
-| declared operator capabilities | seed input for `/data/vms/streamhost/tiles.json`; `labctl gen` then adds observed sockets/snapshots | duplicated static capability parsing |
+| declared operator capabilities | seed input for `/data/vms/streamhost/stations.json`; `labctl gen` then adds observed sockets/snapshots | duplicated static capability parsing |
 | common action profile | generated default `gallery-action-map` row, with an optional per-tile override sidecar | boilerplate probe metadata |
 | boot-video enabled/basic canvas metadata | a coldboot inventory/index | repeated enabled flags; detailed detection arm remains hand-authored |
 
@@ -361,7 +361,7 @@ runtime observation:  socket present, service active, actual hostfwd parsed,
 
 `labctl gen` merges the two and fails or warns on disagreement. The generated
 declaration removes `EXEC_CHANNELS` as another hand registry; the live probe
-retains its value. `/data/vms/streamhost/tiles.json` remains a generated box
+retains its value. `/data/vms/streamhost/stations.json` remains a generated box
 artifact, not a committed source.
 
 ## 5. Runtime-driven SPA
@@ -523,7 +523,7 @@ visible operational win by removing the SPA rebuild for ordinary additions.
 
 Generate every output beneath a temporary/shadow directory. Compare:
 
-- emit arguments and emitted `tile.env`/launchers against `verify-emit`;
+- emit arguments and emitted `station.env`/launchers against `verify-emit`;
 - `serve/tiles.json` and golden manifest structurally with `jq -S`;
 - bring-up order exactly;
 - build-all `--list` rows and default ordering;
@@ -578,13 +578,13 @@ For a normal new guest using an existing archetype:
 
 ```bash
 # Author these:
-$EDITOR registry/tiles/<osId>.json
+$EDITOR registry/stations/<osId>.json
 $EDITOR scripts/build-guests/tiles/<osId>.sh
 $EDITOR docs/guests/<osId>.md
 # Optional only for a non-generic runtime:
-$EDITOR streamhost/tiles/<stationDir>/qemu-streamhost.sh
-$EDITOR streamhost/tiles/<stationDir>/tile.env.fixture
-$EDITOR streamhost/tiles/<stationDir>/golden-bake.sh
+$EDITOR streamhost/stations/<stationDir>/qemu-streamhost.sh
+$EDITOR streamhost/stations/<stationDir>/station.env.fixture
+$EDITOR streamhost/stations/<stationDir>/golden-bake.sh
 
 scripts/stations-registry.py validate
 scripts/stations-registry.py check

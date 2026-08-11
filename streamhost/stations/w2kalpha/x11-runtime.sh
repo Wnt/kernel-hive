@@ -8,9 +8,9 @@
 # $SH_SHM_PATH itself (SH_CAPTURE=shm, src/gui/shmfb.h) and serves mamectl/1
 # input on $SH_MAMECTL_SOCK (SH_INPUT_BACKEND=mamesock, src/gui/ctlsock.h).
 #
-# Installed byte-for-byte as /data/vms/streamhost/tiles/w2kalpha/x11-runtime.sh
-# by scripts/streamhost-tile.sh --x11. The shared runtime contract
-# (ensure-tile-x11.sh / stop-tile-x11.sh) keys on FIXED pidfile names: the
+# Installed byte-for-byte as /data/vms/streamhost/stations/w2kalpha/x11-runtime.sh
+# by scripts/streamhost-station.sh --x11. The shared runtime contract
+# (ensure-station-x11.sh / stop-station-x11.sh) keys on FIXED pidfile names: the
 # emulator pid lives in mame.pid — that is the x11-runtime pidfile name, not a
 # claim that es40 is MAME — and liveness under SH_CAPTURE=shm is "mame.pid
 # alive AND $SH_SHM_PATH non-empty". Kill ONLY by pidfile.
@@ -31,7 +31,7 @@ ES40="${W2KALPHA_ES40:-$ASSETS/es40}"
 GOLDEN="${W2KALPHA_GOLDEN:-$ASSETS/nt.img}" # clean 1280x1024 cold-boot disk (m5-1280 lineage)
 LIBROOT="${W2KALPHA_LIBROOT:-$ASSETS/root/usr/lib/x86_64-linux-gnu}"
 
-# tile.env exports SH_SHM_PATH / SH_MAMECTL_SOCK; default them for standalone runs.
+# station.env exports SH_SHM_PATH / SH_MAMECTL_SOCK; default them for standalone runs.
 SHM="${SH_SHM_PATH:-$D/fb.shm}"
 CTL="${SH_MAMECTL_SOCK:-$D/ctl.sock}"
 # es40 blocks on startup until BOTH serial ports have a client; pumps.py
@@ -98,7 +98,7 @@ ip link set "$NIC_G" up
 ethtool -K "$NIC_H" tx off rx off >/dev/null 2>&1 || true
 ethtool -K "$NIC_G" tx off rx off >/dev/null 2>&1 || true
 
-# setsid detaches from this shell but stays inside ensure-tile-x11.sh's qcap
+# setsid detaches from this shell but stays inside ensure-station-x11.sh's qcap
 # scope cgroup, so BindsTo= teardown still reaches everything started here.
 setsid nohup "$ES40" >"$D/es40.log" 2>&1 </dev/null &
 echo $! >"$D/mame.pid"

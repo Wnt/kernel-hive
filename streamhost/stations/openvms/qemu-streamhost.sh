@@ -3,7 +3,7 @@
 # independent OpenVMS X client restored from the pre-connect snapshot.
 set -euo pipefail
 
-D="${OPENVMS_TILE_ROOT:-/data/vms/streamhost/tiles/openvms}"
+D="${OPENVMS_TILE_ROOT:-/data/vms/streamhost/stations/openvms}"
 BRIDGE_DISK="$D/openvms-decwindows-bridge.qcow2"
 VMS_DISK="$D/openvms-community.qcow2"
 VMS_VARS="$D/OVMF_VARS.qcow2"

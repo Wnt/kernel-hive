@@ -21,7 +21,7 @@
 #   * AC97 is wired like every other bridge tile, and is SILENT by design: the
 #     ZX81 has no sound hardware at all.
 set -e
-BASE=/data/vms/streamhost/tiles/zx81
+BASE=/data/vms/streamhost/stations/zx81
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

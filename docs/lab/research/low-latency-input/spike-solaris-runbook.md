@@ -79,7 +79,7 @@ The Stage-A disk was made with a plain independent copy of the station-local
 checkpoint.  Never point the scratch QEMU at the source image:
 
     D=/data/vms/soltest/lli/spike-solaris-a
-    L=/data/vms/streamhost/tiles/solaris
+    L=/data/vms/streamhost/stations/solaris
     ionice -c2 -n7 nice -n15 cp --sparse=always \
       "$L/solariscde-golden.qcow2" "$D/solariscde-stage-a.qcow2"
     qemu-img check "$D/solariscde-stage-a.qcow2"
@@ -666,7 +666,7 @@ variant.
 Status: **PASS**, captured 2026-07-15 on `labhost`.
 
 The tile disk is
-`/data/vms/streamhost/tiles/soltest-ghid/soltest-ghid.qcow2`. It was copied
+`/data/vms/streamhost/stations/soltest-ghid/soltest-ghid.qcow2`. It was copied
 from the still-running Stage-C spike and initially entered
 `svc:/system/filesystem/usr` maintenance with status 95 while completing the
 `add_drv` device reconfiguration. Do not recopy it from that running source.
@@ -692,10 +692,10 @@ Two fresh QEMUs, with no `-loadvm`, reached 1920x1200 CDE with
 `filesystem/usr` online, `galleryhid` in `modinfo` and `prtconf -D`, and Xorg
 reporting `GalleryMouse: Protocol: VUID` and `GalleryMouse: Core Pointer`:
 
-    /data/vms/streamhost/tiles/soltest-ghid/cert-coldboot-1/cde-gallerymouse.png
-    /data/vms/streamhost/tiles/soltest-ghid/cert-coldboot-1/guest-verification.txt
-    /data/vms/streamhost/tiles/soltest-ghid/cert-coldboot-2-final/cde-gallerymouse.png
-    /data/vms/streamhost/tiles/soltest-ghid/cert-coldboot-2-final/guest-verification.txt
+    /data/vms/streamhost/stations/soltest-ghid/cert-coldboot-1/cde-gallerymouse.png
+    /data/vms/streamhost/stations/soltest-ghid/cert-coldboot-1/guest-verification.txt
+    /data/vms/streamhost/stations/soltest-ghid/cert-coldboot-2-final/cde-gallerymouse.png
+    /data/vms/streamhost/stations/soltest-ghid/cert-coldboot-2-final/guest-verification.txt
 
 The deployed test station sets `SH_IDLE_PAUSE_SECS=0`; its 60-second default
 pause otherwise pauses the 1--2 minute Solaris cold boot before dtlogin.
@@ -711,17 +711,17 @@ The final functional proof sent streamhost warpd verbs to
     center (960,600)
 
 The labelled frames and coordinate log are
-`/data/vms/streamhost/tiles/soltest-ghid/fullpath-{tl,tr,bl,br,center}.png`
+`/data/vms/streamhost/stations/soltest-ghid/fullpath-{tl,tr,bl,br,center}.png`
 and `fullpath-coordinates.txt`. A persistent TCP session then sent
 `D 160 220`, `M 430 450`, and `U 430 450`; X reported button mask `0x100`
 while pressed/held and `0x0` after release, and the framebuffer visibly
 selected dtterm text. `B 4 430 450` delivered one wheel notch and moved the
 visible terminal range from lines 172--200 to 167--196. Evidence is:
 
-    /data/vms/streamhost/tiles/soltest-ghid/fullpath-drag-{before,pressed,held,after}.png
-    /data/vms/streamhost/tiles/soltest-ghid/fullpath-drag-coordinates.txt
-    /data/vms/streamhost/tiles/soltest-ghid/fullpath-wheel-{before,after}.png
-    /data/vms/streamhost/tiles/soltest-ghid/fullpath-wheel-coordinate.txt
+    /data/vms/streamhost/stations/soltest-ghid/fullpath-drag-{before,pressed,held,after}.png
+    /data/vms/streamhost/stations/soltest-ghid/fullpath-drag-coordinates.txt
+    /data/vms/streamhost/stations/soltest-ghid/fullpath-wheel-{before,after}.png
+    /data/vms/streamhost/stations/soltest-ghid/fullpath-wheel-coordinate.txt
 
 ## Stage D: bounded comparative measurement (PARTIAL)
 
@@ -765,7 +765,7 @@ idle result. The host clock reports 1 ns resolution, ROI inspection averaged
 about 6--8 microseconds (observed maximum 119 microseconds), and audited QMP
 screendumps cost about 19--33 ms but were outside all timed windows. Full raw
 JSONL, metadata, audit frames, load evidence, and summaries are under
-`/data/vms/streamhost/tiles/soltest-ghid/stage-d/REPORT.md` and its sibling
+`/data/vms/streamhost/stations/soltest-ghid/stage-d/REPORT.md` and its sibling
 artifacts.
 
 ## Native Rust streamhost sink remeasurement (PARTIAL / latency FAIL)
@@ -812,7 +812,7 @@ After the bounded reconnect/retry attempts, no valid new warpd sample existed;
 none is invented here. This makes the remeasurement PARTIAL, while the native
 path's latency verdict itself is a clear FAIL. Raw native JSONL, metadata,
 audits, counters, and the invalid warpd attempts are under
-`/data/vms/streamhost/tiles/soltest-ghid/native-sink/measure/`.
+`/data/vms/streamhost/stations/soltest-ghid/native-sink/measure/`.
 ## VMState and clone checkpoint-resume proof
 
 Status: **PASS**, captured 2026-07-16 on `labhost`. The live `solariscde`

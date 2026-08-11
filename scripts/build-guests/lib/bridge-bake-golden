@@ -5,7 +5,7 @@
 # It deliberately does NOT boot anything. The golden is a RAM+devices snapshot,
 # so it can only be restored by a QEMU whose device set matches the one it was
 # taken under — and the only way to guarantee that is to snapshot the QEMU that
-# the tile's own streamhost/tiles/<tile>/qemu-streamhost.sh started. A builder
+# the tile's own streamhost/stations/<tile>/qemu-streamhost.sh started. A builder
 # that boots its own copy of the device set to bake (pdp11.sh, gt40.sh do this)
 # is correct only for as long as the two QEMU command lines stay byte-identical;
 # taking the socket instead cannot drift. Mismatch does not surface at bake

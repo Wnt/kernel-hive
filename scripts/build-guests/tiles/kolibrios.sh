@@ -54,7 +54,7 @@ GUEST_DIR="${OUT_DIR:-/data/gallery-guests/KolibriOS}"
 ISO_NAME="kolibri.iso"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-TILE_DIR="${TILE_DIR:-/data/vms/streamhost/tiles/kolibrios}"
+TILE_DIR="${TILE_DIR:-/data/vms/streamhost/stations/kolibrios}"
 # Upstream nightly live ISO. NOTE the path is /en_US/ — the /eng/ path 404s.
 SRC_URL="${SRC_URL:-https://builds.kolibrios.org/en_US/latest-iso.7z}"
 FORCE="${FORCE:-0}"
@@ -296,7 +296,7 @@ PY
 #   The production station directory is emitted separately from this guest build,
 #   so copy only the fixture helpers/assets here; never replace its launcher.
 # =============================================================================
-FIXTURE_SRC="$REPO_ROOT/streamhost/tiles/kolibrios"
+FIXTURE_SRC="$REPO_ROOT/streamhost/stations/kolibrios"
 for f in golden-bake.sh qemu-setup.sh kolmouse.py state.qcow2.base-empty; do
   [ -f "$FIXTURE_SRC/$f" ] || die "missing fixture asset: $FIXTURE_SRC/$f"
 done
@@ -311,7 +311,7 @@ log "golden: baking deterministic tile fixture with pc-i440fx-11.0…"
 TILE_DIR="$TILE_DIR" KOLIBRI_ISO="$ISO_PATH" bash "$TILE_DIR/golden-bake.sh"
 qemu-img snapshot -l "$TILE_DIR/state.qcow2" | awk '{print $2}' | grep -qx golden || die "golden snapshot absent after fixture bake"
 log "golden: PASS — state.qcow2 contains the verified 'golden' snapshot."
-if [ "$TILE_DIR" = /data/vms/streamhost/tiles/kolibrios ] && command -v labctl >/dev/null 2>&1; then
+if [ "$TILE_DIR" = /data/vms/streamhost/stations/kolibrios ] && command -v labctl >/dev/null 2>&1; then
   log "golden: refreshing labctl's generated snapshot state…"
   labctl gen >/dev/null
 fi

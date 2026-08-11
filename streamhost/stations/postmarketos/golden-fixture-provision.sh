@@ -13,7 +13,7 @@
 # will auto-resume it (-loadvm golden) on every subsequent launch. resetMode=loadvm.
 set -euo pipefail
 D=/data/gallery-guests/postmarketOS
-T=/data/vms/streamhost/tiles/postmarketos
+T=/data/vms/streamhost/stations/postmarketos
 RAW=$D/pmos-phosh.img
 QCOW=$D/pmos-phosh.qcow2
 VARS_FD=$T/OVMF_VARS.fd.pristine

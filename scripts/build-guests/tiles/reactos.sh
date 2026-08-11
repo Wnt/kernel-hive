@@ -321,7 +321,7 @@ verify_boot() {
 # The helper generates its own settings floppy, drives the two-page wizard,
 # customizes the desktop, ejects the floppy, saves `golden`, and proves loadvm.
 # =============================================================================
-GOLDEN_BAKE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/streamhost/tiles/reactos/golden-bake.sh"
+GOLDEN_BAKE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/streamhost/stations/reactos/golden-bake.sh"
 [ -x "$GOLDEN_BAKE" ] || die "missing golden bake helper: $GOLDEN_BAKE"
 log "baking curated golden from the freshly produced LiveCD (no restore input)…"
 GUEST_DIR="$GUEST_DIR" REACTOS_ISO="$ISO_PATH" QEMU_BIN="$QEMU_BIN" bash "$GOLDEN_BAKE"

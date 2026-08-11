@@ -34,7 +34,7 @@
 #   * The AC97 card is in the device set both because the golden was baked with
 #     it and because the NeXT's own sound reaches ALSA through it.
 set -e
-BASE=/data/vms/streamhost/tiles/nextstep
+BASE=/data/vms/streamhost/stations/nextstep
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

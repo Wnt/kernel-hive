@@ -11,8 +11,8 @@ whole VICE family.
 **Build script (station):** `scripts/build-guests/tiles/cbm2.sh` — thin overlay + kiosk
 `launch.sh` + ROM repair/assert + quiet console + memory assertion + checkpoint capture
 + a framebuffer-asserted keyboard proof, fully automated, ~2 minutes.
-**Station dir (host):** `/data/vms/streamhost/tiles/cbm2/`.
-**Registry entry:** `registry/tiles/cbm2.json` (slot 111, udp 54111, VMID 226,
+**Station dir (host):** `/data/vms/streamhost/stations/cbm2/`.
+**Registry entry:** `registry/stations/cbm2.json` (slot 111, udp 54111, VMID 226,
 ssh hostfwd 127.0.0.1:5826).
 
 ## What the machine is — and why it is not the station next door
@@ -89,7 +89,7 @@ an honest idle screen.
 ## Device set and launcher
 
 Identical in shape to its kiosk siblings (`c64`, `vic20`, `plus4`, `apple2`,
-`atarist`, `amiga`, `mpf2`) — see `streamhost/tiles/cbm2/qemu-streamhost.sh` —
+`atarist`, `amiga`, `mpf2`) — see `streamhost/stations/cbm2/qemu-streamhost.sh` —
 with **768 MB** of guest RAM rather than the siblings' 1536 MB (measured: see
 below). The kiosk launcher is:
 
@@ -151,7 +151,7 @@ keypad is ordinary digits.
 
 ## Verification (2026-08-09)
 
-Evidence in `/data/vms/streamhost/tiles/cbm2/evidence/`:
+Evidence in `/data/vms/streamhost/stations/cbm2/evidence/`:
 
 | Artifact | Shows |
 |---|---|

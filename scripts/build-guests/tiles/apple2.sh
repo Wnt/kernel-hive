@@ -98,7 +98,7 @@ SSH_PORT=5817
 WEB_PORT=8117
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY="/data/vms/bridge/bridge_key"
-TILE_DIR="/data/vms/streamhost/tiles/${TILE}"
+TILE_DIR="/data/vms/streamhost/stations/${TILE}"
 OVERLAY="${TILE_DIR}/overlay.qcow2"
 QMP="${TILE_DIR}/qmp.sock"
 PID="${TILE_DIR}/qemu.pid"
@@ -320,7 +320,7 @@ if ! qemu-img snapshot -l "$OVERLAY" 2>/dev/null | grep -qw golden; then
   log "Then BAKE the golden fixture (with the CLEAN GEOS deskTop showing, dialogs gone):"
   log "  $0 --bake   # savevm + assert it landed + loadvm + assert it runs"
   log "Emit + start the tile (bridge device set; see qemu-streamhost.sh in ${TILE_DIR}):"
-  log "  bash /data/vms/streamhost/scripts/streamhost-tile.sh --tile apple2 --vmid ${VMID} \\"
+  log "  bash /data/vms/streamhost/scripts/streamhost-station.sh --tile apple2 --vmid ${VMID} \\"
   log "     --udp ${UDP} --pointer abs --audio on --audio-dev ac97 --input-dev usb \\"
   log "     --mem ${MEM} --smp 2 --cpu host --vga std --fps 60"
   log "  # then hand-patch qemu-streamhost.sh to the ide overlay + e1000 hostfwd + conditional -loadvm golden"

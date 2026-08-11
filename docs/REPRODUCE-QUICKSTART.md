@@ -150,7 +150,7 @@ Phase 5 then copies the tracked streamhost and serve-plane trees into their
 documented labhost locations, emits the station files, and runs
 `streamhost/bring-up-all.sh`. `scripts/dev/verify-emit.sh` is not a clone-local
 test: it requires `ssh lab`, `rsync`, and the existing live
-`/data/vms/streamhost/tiles/` tree for byte comparison. Read it, but do not run
+`/data/vms/streamhost/stations/` tree for byte comparison. Read it, but do not run
 it on a replacement labhost until there is an intentional live reference to
 compare.
 
@@ -166,7 +166,7 @@ For streamhost itself, the Linux native packages are documented in
   PKI. The UI carries only a placeholder credential example.
 - Dependency and build output: `node_modules/`, UI `dist/`, Rust `target/`,
   caches, logs, and test artifacts.
-- The built `/data/gallery-guests/` images, `/data/vms/streamhost/tiles/` live
+- The built `/data/gallery-guests/` images, `/data/vms/streamhost/stations/` live
   state, checkpoints, runtime cert hashes, service state, and the deployed
   UI webroot.
 - The original session's Range HTTP server, iPXE/answer-file scratch files, and

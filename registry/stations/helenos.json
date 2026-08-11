@@ -48,8 +48,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/helenos",
-      "qmp": "/data/vms/streamhost/tiles/helenos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/helenos",
+      "qmp": "/data/vms/streamhost/stations/helenos/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -99,8 +99,8 @@
   "credentialsRef": "guest/helenos",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "helenos",
-      "SH_QMP": "/data/vms/streamhost/tiles/helenos/qmp.sock",
+      "SH_STATION": "helenos",
+      "SH_QMP": "/data/vms/streamhost/stations/helenos/qmp.sock",
       "SH_PORT": "54099",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -111,8 +111,8 @@
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/helenos/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/helenos/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/helenos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/helenos/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 99,
@@ -156,11 +156,11 @@
         "--boot",
         "d",
         "--extra",
-        "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
+        "-drive file=/data/vms/streamhost/stations/helenos/golden.qcow2,if=ide,index=0,media=disk",
         "--env-append-file",
-        "$T/helenos/tile.env.fixture",
+        "$T/helenos/station.env.fixture",
         "--loadvm-launch",
-        "/data/vms/streamhost/tiles/helenos/golden.qcow2"
+        "/data/vms/streamhost/stations/helenos/golden.qcow2"
       ],
       "deviceSetId": "helenos-current",
       "machine": "pc-i440fx-11.0",
@@ -171,7 +171,7 @@
       "audioDevice": "hda",
       "inputDevice": "usb",
       "boot": "d",
-      "extraArgs": "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
+      "extraArgs": "-drive file=/data/vms/streamhost/stations/helenos/golden.qcow2,if=ide,index=0,media=disk",
       "cdrom": "/data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso",
       "accel": "kvm",
       "binary": "qemu-system-x86_64",
@@ -185,11 +185,11 @@
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device intel-hda -device hda-output,audiodev=snd0",
         "-usb -device usb-tablet",
-        "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
-        "-qmp unix:/data/vms/streamhost/tiles/helenos/qmp.sock,server=on,wait=off",
-        "-pidfile /data/vms/streamhost/tiles/helenos/qemu.pid"
+        "-drive file=/data/vms/streamhost/stations/helenos/golden.qcow2,if=ide,index=0,media=disk",
+        "-qmp unix:/data/vms/streamhost/stations/helenos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/helenos/qemu.pid"
       ],
-      "envFixture": "streamhost/tiles/helenos/tile.env.fixture",
+      "envFixture": "streamhost/stations/helenos/station.env.fixture",
       "sourceDeviceSet": {
         "binary": "qemu-system-x86_64",
         "machine": "pc-i440fx-11.0",
@@ -208,9 +208,9 @@
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device intel-hda -device hda-output,audiodev=snd0",
           "-usb -device usb-tablet",
-          "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
-          "-qmp unix:/data/vms/streamhost/tiles/helenos/qmp.sock,server=on,wait=off",
-          "-pidfile /data/vms/streamhost/tiles/helenos/qemu.pid"
+          "-drive file=/data/vms/streamhost/stations/helenos/golden.qcow2,if=ide,index=0,media=disk",
+          "-qmp unix:/data/vms/streamhost/stations/helenos/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/helenos/qemu.pid"
         ]
       },
       "launcherParity": {

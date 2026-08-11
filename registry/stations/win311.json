@@ -48,11 +48,11 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/win311",
-      "qmp": "/data/vms/streamhost/tiles/win311/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/win311",
+      "qmp": "/data/vms/streamhost/stations/win311/qmp.sock",
       "pointer_mode": "warpd",
       "warpd_port": null,
-      "warpd_addr": "unix:/data/vms/streamhost/tiles/win311/serial.sock",
+      "warpd_addr": "unix:/data/vms/streamhost/stations/win311/serial.sock",
       "ssh_port": null,
       "exec_port": null,
       "exec_kind": null,
@@ -60,7 +60,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54090,
-      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/win311/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/win311/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     }
   },
   "render": {
@@ -92,7 +92,7 @@
         0,
         0
       ],
-      "agentAddress": "unix:/data/vms/streamhost/tiles/win311/serial.sock",
+      "agentAddress": "unix:/data/vms/streamhost/stations/win311/serial.sock",
       "buttons": "qemu",
       "paceMs": 8,
       "buttonDelayMs": 80
@@ -103,21 +103,21 @@
   "credentialsRef": "guest/win311",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "win311",
-      "SH_QMP": "/data/vms/streamhost/tiles/win311/qmp.sock",
+      "SH_STATION": "win311",
+      "SH_QMP": "/data/vms/streamhost/stations/win311/qmp.sock",
       "SH_PORT": "54090",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "warpd",
-      "SH_WARPD_ADDR": "unix:/data/vms/streamhost/tiles/win311/serial.sock",
+      "SH_WARPD_ADDR": "unix:/data/vms/streamhost/stations/win311/serial.sock",
       "SH_WARPD_BUTTONS": "qemu",
       "SH_WARPD_PACE_MS": "30",
       "SH_WARPD_BUTTON_DELAY_MS": "80",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/win311/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win311/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/win311/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/win311/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 90,
@@ -133,7 +133,7 @@
         "--pointer",
         "warpd",
         "--warpd-addr",
-        "unix:/data/vms/streamhost/tiles/win311/serial.sock",
+        "unix:/data/vms/streamhost/stations/win311/serial.sock",
         "--warpd-buttons",
         "qemu",
         "--warpd-pace-ms",
@@ -147,11 +147,11 @@
         "--launcher-file",
         "$T/win311/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/win311/tile.env.fixture"
+        "$T/win311/station.env.fixture"
       ],
       "deviceSetId": "win311-current",
-      "launcher": "streamhost/tiles/win311/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/win311/tile.env.fixture",
+      "launcher": "streamhost/stations/win311/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/win311/station.env.fixture",
       "binary": "qemu-system-i386",
       "machine": "pc-i440fx-11.0",
       "accel": "tcg",

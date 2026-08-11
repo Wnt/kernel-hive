@@ -1,5 +1,5 @@
 #!/bin/bash
-# streamhost-tile.sh — emit one streamhost gallery tile's files. Materializes the
+# streamhost-station.sh — emit one streamhost gallery tile's files. Materializes the
 # per-tile config the systemd unit (deploy/streamhost@.service) consumes, and a
 # QEMU launch script wired for streamhost. The authoritative ledger of every
 # tile's emit invocation is ../stations-manifest.sh.
@@ -21,11 +21,11 @@
 #             -loadvm golden, state-qcow2 create-if-missing, per-boot overlays,
 #             post-boot QMP hostfwd_add, serial chardevs, reset monitors). The
 #             launcher file itself is the device-set ledger for those tiles.
-#   pve       (--pve-vmid <id>) PVE owns QEMU and its lifecycle. Only tile.env
+#   pve       (--pve-vmid <id>) PVE owns QEMU and its lifecycle. Only station.env
 #             and ROLLBACK.md are emitted; no qemu-streamhost.sh is generated.
 #
 # Usage:
-#   scripts/streamhost-tile.sh --tile reactos --vmid 106 --udp 54106 \
+#   scripts/streamhost-station.sh --tile reactos --vmid 106 --udp 54106 \
 #       [--advertise 192.0.2.12] [--pointer abs|rel|warpd|none] \
 #       [--input-backend disabled|dbus-abs|dbus-rel|warpd|gallery-hid] [--audio on|off] \
 #       [--vga std|cirrus|vmware|qxl|virtio|none] [--extra "raw qemu args"] \
@@ -34,14 +34,14 @@
 #       [--env-append-file path] \
 #       [--aux-file path]... [--out-root dir] [--pin-machine] [--install]
 #
-# Outputs under <out-root>/<tile>/ (default /data/vms/streamhost/tiles/<tile>/):
-#   tile.env             SH_* environment consumed by streamhost@<tile>.service
+# Outputs under <out-root>/<tile>/ (default /data/vms/streamhost/stations/<tile>/):
+#   station.env             SH_* environment consumed by streamhost@<tile>.service
 #   qemu-streamhost.sh   local modes only: QEMU with streamhost display wiring
 #   ROLLBACK.md          per-tile stop/restore procedure
 #
 # --out-root ONLY changes where the files are WRITTEN (e.g. a /tmp scratch dir
 # for scripts/dev/verify-emit.sh); the file CONTENTS always reference the live
-# runtime root /data/vms/streamhost/tiles/<tile>/.
+# runtime root /data/vms/streamhost/stations/<tile>/.
 #
 # --pin-machine (or SH_PIN_MACHINE=1): emit VERSIONED machine types instead of
 # the bare aliases — pc -> pc-i440fx-11.0, q35 -> pc-q35-11.0, and tiles that
@@ -64,7 +64,7 @@ FPS=60
 WARPD_ADDR="127.0.0.1:7790" # host:port of the in-guest warpd agent (POINTER=warpd only)
 WARPD_ADDR_SET=0            # SH_WARPD_ADDR is emitted only when --warpd-addr was passed
 LOADVM_LAUNCH_DISK=""       # --loadvm-launch: qcow2 holding the `golden` savevm snapshot
-# warpd fine-tuning (POINTER=warpd only). Empty = omit from tile.env so the
+# warpd fine-tuning (POINTER=warpd only). Empty = omit from station.env so the
 # daemon defaults rule; the manifest passes them for win311/os2warp.
 WARPD_BUTTONS=""
 WARPD_WHEEL=""
@@ -86,7 +86,7 @@ WARPD_BUTTON_DELAY_MS=""
 # ultrafast matches the daemon's own default (config/parse.rs) — operator
 # decision 2026-08-11: every tile streams ultrafast; the box is GPU-less and
 # a busier preset buys latency, not quality a museum stream can show. The
-# 2026-07/08 emits shipped "veryfast" here and seeded 29 live tile.envs +
+# 2026-07/08 emits shipped "veryfast" here and seeded 29 live station.envs +
 # 4 registry stationEnv records with it (all re-set to ultrafast the same day).
 ENCODER_PRESET="ultrafast"
 PROFILE="high"
@@ -137,13 +137,13 @@ INPUT_DEV="virtio" # virtio (modern Linux/Haiku) | usb (NT-era: ReactOS/Win2000)
 # -vga entirely and let --extra supply a fully-configured display device — e.g.
 # Haiku forces 1280x720 via `-device VGA,id=vga0,edid=on,...` in --extra.
 VGA="std"                             # std | cirrus | vmware | qxl | virtio | none
-OUT_ROOT="/data/vms/streamhost/tiles" # where files are WRITTEN (--out-root)
-RUN_ROOT="/data/vms/streamhost/tiles" # runtime root REFERENCED in file contents
+OUT_ROOT="/data/vms/streamhost/stations" # where files are WRITTEN (--out-root)
+RUN_ROOT="/data/vms/streamhost/stations" # runtime root REFERENCED in file contents
 LAUNCHER_FILE=""
 PVE_VMID=""
 # x11 runtime (the first non-QEMU tile, IRIX/issue #20): an emulator managed by
 # a tracked x11-runtime.sh instead of a QEMU/dbus display. --x11 switches the
-# emit to write a QMP-less tile.env (SH_CAPTURE/SH_X11_*/SH_TILE_RUNTIME) and
+# emit to write a QMP-less station.env (SH_CAPTURE/SH_X11_*/SH_STATION_RUNTIME) and
 # install that launcher.
 #
 # The FRAME SOURCE is a separate axis from the runtime kind: --capture x11 grabs
@@ -354,7 +354,7 @@ while [ $# -gt 0 ]; do
     --env-append-file)
       ENV_APPEND_FILE="$2"
       shift 2
-      ;; # verbatim tile.env tail (fixture stanza)
+      ;; # verbatim station.env tail (fixture stanza)
     --aux-file)
       AUX_FILES+=("$2")
       shift 2
@@ -400,7 +400,7 @@ fi
 
 # ===========================================================================
 # x11 RUNTIME MODE (SH_CAPTURE=x11 tiles — IRIX / issue #20)
-# Emits a QMP-less tile.env plus a tracked x11-runtime.sh launcher (Xvfb +
+# Emits a QMP-less station.env plus a tracked x11-runtime.sh launcher (Xvfb +
 # emulator). Kept fully self-contained so the QEMU emit path below is byte-for-
 # byte unchanged for the 30 QEMU tiles.
 # ===========================================================================
@@ -425,13 +425,13 @@ if [ "$X11" = 1 ]; then
   X11_PATHS="SH_X11_CMD_FILE=${BASE}/${TILE}_cmd"
   [ "$X11_CAPTURE" = shm ] && X11_PATHS="${X11_PATHS}
 SH_SHM_PATH=${BASE}/fb.shm"
-  cat >"${BASE_OUT}/tile.env" <<EOF
+  cat >"${BASE_OUT}/station.env" <<EOF
 # streamhost per-tile config for '${TILE}' (x11 runtime). Consumed by streamhost@${TILE}.service.
 # NON-QEMU tile: an emulator managed by x11-runtime.sh, not a QEMU VM; NO SH_QMP.
 # SH_CAPTURE picks the frame source: x11 grabs the Xvfb root, shm maps the
 # framebuffer the emulator publishes itself (no window, no X server).
-SH_TILE=${TILE}
-SH_TILE_RUNTIME=x11
+SH_STATION=${TILE}
+SH_STATION_RUNTIME=x11
 SH_CAPTURE=${X11_CAPTURE}
 SH_X11_DISPLAY=${X11_DISPLAY}
 ${X11_PATHS}
@@ -449,7 +449,7 @@ SH_SIGNALING_JSON=${BASE}/signaling.json
 SH_CERT_ROTATE_DAYS=10
 EOF
   if [ -n "$ENV_APPEND_FILE" ]; then
-    cat "$ENV_APPEND_FILE" >>"${BASE_OUT}/tile.env"
+    cat "$ENV_APPEND_FILE" >>"${BASE_OUT}/station.env"
   fi
   cp "$X11_RUNTIME_FILE" "${BASE_OUT}/x11-runtime.sh"
   chmod +x "${BASE_OUT}/x11-runtime.sh"
@@ -476,7 +476,7 @@ Everything here affects ONLY this tile.
 ## Reset (relaunch = pristine RAM overlay)
 1. bash ${BASE}/x11-runtime.sh                 # kill-by-pidfile + fresh Xvfb + emulator
 EOF
-  echo "emitted: ${BASE_OUT}/{tile.env,x11-runtime.sh,ROLLBACK.md}  mode=x11 transport=${TRANSPORT}"
+  echo "emitted: ${BASE_OUT}/{station.env,x11-runtime.sh,ROLLBACK.md}  mode=x11 transport=${TRANSPORT}"
   if [ "$INSTALL" = "1" ]; then
     HERE="$(cd "$(dirname "$0")/.." && pwd)"
     cp "${HERE}/deploy/streamhost@.service" /etc/systemd/system/streamhost@.service
@@ -523,9 +523,9 @@ SH_PVE_VMID=${PVE_VMID}
 SH_QEMU_PIDFILE=/var/run/qemu-server/${PVE_VMID}.pid"
 fi
 
-# ---- tile.env (consumed by streamhost@<tile>.service) ----
+# ---- station.env (consumed by streamhost@<tile>.service) ----
 # Optional lines: emitted only when the corresponding flag was passed, so the
-# daemon defaults rule otherwise (matches the live fleet's tile.envs).
+# daemon defaults rule otherwise (matches the live fleet's station.envs).
 OPT_LINES=""
 [ "$LEGACY_KBD_SET" = 1 ] && OPT_LINES="${OPT_LINES}
 SH_LEGACY_KBD=${LEGACY_KBD}"
@@ -572,9 +572,9 @@ else
   # unified backend spelling. The daemon continues to parse SH_POINTER.
   INPUT_CONFIG_LINE="SH_POINTER=${POINTER}"
 fi
-cat >"${BASE_OUT}/tile.env" <<EOF
+cat >"${BASE_OUT}/station.env" <<EOF
 # streamhost per-tile config for '${TILE}'. Consumed by streamhost@${TILE}.service.
-SH_TILE=${TILE}
+SH_STATION=${TILE}
 SH_QMP=${QMP}${MODE_LINES}
 SH_PORT=${UDP}
 SH_FPS=${FPS}
@@ -591,10 +591,10 @@ SH_CERT_ROTATE_DAYS=10${ENC_BLOCK}
 # SH_LOCAL_HTTP=1${UDP:1}   # uncomment for a plain-HTTP signaling endpoint (A/B only)
 EOF
 # Verbatim golden-fixture / metadata stanza (tracked per tile in ../tiles/<tile>/
-# tile.env.fixture) appended byte-for-byte — the SH_RESET_MODE/SH_GOLDEN_* lines
+# station.env.fixture) appended byte-for-byte — the SH_RESET_MODE/SH_GOLDEN_* lines
 # ARE read by the daemon + labctl, the rest documents the curated fixture.
 if [ -n "$ENV_APPEND_FILE" ]; then
-  cat "$ENV_APPEND_FILE" >>"${BASE_OUT}/tile.env"
+  cat "$ENV_APPEND_FILE" >>"${BASE_OUT}/station.env"
 fi
 
 # ---- qemu-streamhost.sh ----
@@ -812,9 +812,9 @@ EOF
 fi
 
 if [ "$QEMU_MODE" = "pve" ]; then
-  echo "emitted: ${BASE_OUT}/{tile.env,ROLLBACK.md}  mode=pve transport=${TRANSPORT}"
+  echo "emitted: ${BASE_OUT}/{station.env,ROLLBACK.md}  mode=pve transport=${TRANSPORT}"
 else
-  echo "emitted: ${BASE_OUT}/{tile.env,qemu-streamhost.sh,ROLLBACK.md}  mode=${QEMU_MODE} transport=${TRANSPORT}"
+  echo "emitted: ${BASE_OUT}/{station.env,qemu-streamhost.sh,ROLLBACK.md}  mode=${QEMU_MODE} transport=${TRANSPORT}"
 fi
 
 if [ "$INSTALL" = "1" ]; then

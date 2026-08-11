@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /data/vms/streamhost/tiles/sailfishos/seriald.py /data/vms/streamhost/tiles/sailfishos/serial.sock /data/vms/streamhost/tiles/sailfishos
+ExecStart=/usr/bin/python3 /data/vms/streamhost/stations/sailfishos/seriald.py /data/vms/streamhost/stations/sailfishos/serial.sock /data/vms/streamhost/stations/sailfishos
 Restart=on-failure
 RestartSec=2
 Nice=5

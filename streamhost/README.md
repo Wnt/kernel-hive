@@ -79,10 +79,10 @@ to `new WebTransport(url, {serverCertificateHashes:[{algorithm:'sha-256', value:
 
 ## Per-tile deploy (current procedure)
 Every gallery tile runs this stack. A tile is a directory
-`/data/vms/streamhost/tiles/<tile>/` holding `tile.env` (SH_* env for
+`/data/vms/streamhost/stations/<tile>/` holding `station.env` (SH_* env for
 `streamhost@<tile>.service`), `qemu-streamhost.sh` (the QEMU launcher — dbus
 display + audio + input + QMP socket + pidfile), and `ROLLBACK.md`. Those files
-are emitted by `scripts/streamhost-tile.sh`; the authoritative per-tile flag
+are emitted by `scripts/streamhost-station.sh`; the authoritative per-tile flag
 ledger — one exact emit invocation per tile — is **`stations-manifest.sh`**
 (`--install` also drops `deploy/streamhost@.service`). Neither starts anything:
 **`bring-up-all.sh`** does the ordered cold boot (install unit → emit all tiles →
@@ -124,7 +124,7 @@ hand; use the repo-root `scripts/dev/build-deploy.sh` from the workstation.
 
 ## Throwaway validation guest (namespaced, isolated; kill only by pidfile)
     run/launch_tile.sh 952 --audio on --pointer abs      # boots TinyCore, dbus display+audio+tablet
-    SH_TILE=smoke952 SH_QMP=/data/vms/streamhost/run952/qmp952.sock SH_PORT=4952 SH_AUDIO=on \
+    SH_STATION=smoke952 SH_QMP=/data/vms/streamhost/run952/qmp952.sock SH_PORT=4952 SH_AUDIO=on \
       target/release/streamhost                          # capture+cert+signaling+audio+UDP
 
 ## Standalone reference client

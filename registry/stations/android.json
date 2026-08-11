@@ -48,8 +48,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/android",
-      "qmp": "/data/vms/streamhost/tiles/android/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/android",
+      "qmp": "/data/vms/streamhost/stations/android/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -104,8 +104,8 @@
   "credentialsRef": "guest/android",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "android",
-      "SH_QMP": "/data/vms/streamhost/tiles/android/qmp.sock",
+      "SH_STATION": "android",
+      "SH_QMP": "/data/vms/streamhost/stations/android/qmp.sock",
       "SH_PORT": "54101",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -113,8 +113,8 @@
       "SH_POINTER": "abs",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/android/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/android/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/android/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/android/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 101,
@@ -136,11 +136,11 @@
         "--launcher-file",
         "$T/android/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/android/tile.env.fixture"
+        "$T/android/station.env.fixture"
       ],
       "deviceSetId": "android-current",
-      "launcher": "streamhost/tiles/android/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/android/tile.env.fixture",
+      "launcher": "streamhost/stations/android/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/android/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "machine": "pc-q35-11.0",
       "accel": "kvm",

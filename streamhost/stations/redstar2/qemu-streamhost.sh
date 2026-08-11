@@ -7,7 +7,7 @@
 # atomic pair.  Reset is HMP `loadvm golden`, never an in-guest channel.
 set -euo pipefail
 
-T=/data/vms/streamhost/tiles/redstar2
+T=/data/vms/streamhost/stations/redstar2
 DISK=/data/gallery-guests/RedStar2/redstar2.qcow2
 
 if ! qemu-img snapshot -l "$DISK" | grep -Eq '^[[:space:]]*[0-9]+[[:space:]]+golden[[:space:]]'; then

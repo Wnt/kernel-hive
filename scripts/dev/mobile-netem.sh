@@ -21,7 +21,7 @@
 #   * qdiscs attach ONLY to CT950's veth (veth950i0) and one dedicated ifb
 #     (ifbmn950) — never vmbr*/eth*/other veths (hard-guarded below).
 #   * Only streamhost flows are matched: station WebTransport UDP ports
-#     (SH_PORT= in /data/vms/streamhost/tiles/*/tile.env, discovered at `on`
+#     (SH_PORT= in /data/vms/streamhost/stations/*/station.env, discovered at `on`
 #     time) + TCP 8443 (UI https server). Everything else — ssh, mosh,
 #     ping, other guests — rides the HTB default class at 10 Gbit (downlink)
 #     or is never redirected to the ifb (uplink).
@@ -45,7 +45,7 @@ DELAY="${MN_DELAY:-45ms}"
 QUEUE_DOWN="${MN_QUEUE_DOWN:-1800}"
 QUEUE_UP="${MN_QUEUE_UP:-600}"
 AUTOOFF="${MN_AUTOOFF:-4h}"
-TILES_DIR=/data/vms/streamhost/tiles
+TILES_DIR=/data/vms/streamhost/stations
 SPA_TCP_PORT=8443
 AUTOOFF_UNIT=mobile-netem-autooff
 
@@ -63,7 +63,7 @@ guard_iface() {
 }
 
 discover_ports() {
-  grep -h '^SH_PORT=' "$TILES_DIR"/*/tile.env 2>/dev/null |
+  grep -h '^SH_PORT=' "$TILES_DIR"/*/station.env 2>/dev/null |
     cut -d= -f2 | grep -E '^[0-9]+$' | sort -un
 }
 
@@ -130,7 +130,7 @@ arm_autooff() {
 cmd_on() {
   ip link show "$VETH" >/dev/null 2>&1 || die "$VETH does not exist (CT${CTID} down?)"
   mapfile -t PORTS < <(discover_ports)
-  [ "${#PORTS[@]}" -ge 1 ] || die "no SH_PORT= found under $TILES_DIR/*/tile.env"
+  [ "${#PORTS[@]}" -ge 1 ] || die "no SH_PORT= found under $TILES_DIR/*/station.env"
   modprobe ifb numifbs=0 2>/dev/null || true
   teardown # idempotent: always start from a clean slate
   if ! setup; then

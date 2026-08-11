@@ -9,9 +9,9 @@ manager samples these to generate real click messages).
 
 ## Wiring (already live)
 
-- Launcher (`/data/vms/streamhost/tiles/templeos/qemu-streamhost.sh`):
+- Launcher (`/data/vms/streamhost/stations/templeos/qemu-streamhost.sh`):
   `-chardev socket,id=ser0,path=$BASE/serial.sock,server=on,wait=off -serial chardev:ser0`
-- `tile.env`: `SH_POINTER=warpd`, `SH_WARPD_ADDR=unix:/data/vms/streamhost/tiles/templeos/serial.sock`
+- `station.env`: `SH_POINTER=warpd`, `SH_WARPD_ADDR=unix:/data/vms/streamhost/stations/templeos/serial.sock`
 - Daemon side is OS-agnostic (`streamhost/streamhost/src/{warpd.rs,input.rs,config.rs}`);
   `connect_agent` already speaks the `unix:<path>` serial transport. No Rust changes.
 
@@ -24,10 +24,10 @@ one-line agent from `warpd.HC`, starts it, saves the snapshot, and starts the ti
 
 ```sh
 cd /data/vms/streamhost/build
-nice -n15 bash streamhost/tiles/templeos/golden-bake.sh
+nice -n15 bash streamhost/stations/templeos/golden-bake.sh
 ```
 
-The script requires the emitted `tile.env` to already select `SH_POINTER=warpd` and
+The script requires the emitted `station.env` to already select `SH_POINTER=warpd` and
 the TempleOS serial socket. The launcher pins `pc-i440fx-11.0`; changing its machine
 or device set requires another full bake because `loadvm golden` must match exactly.
 

@@ -4,7 +4,7 @@
 > SKIPPED by operator decision** — the operator validates start-paused (and
 > restore behaviour generally) by eye in the browser, which is cheaper than an
 > automated soak. Implementation: `IRIX_START_PAUSED` in
-> `streamhost/tiles/irix/x11-runtime.sh` (freeze_at_state; charge-at-first-wake
+> `streamhost/stations/irix/x11-runtime.sh` (freeze_at_state; charge-at-first-wake
 > via `.state-unvetted`; `charge_state_budget`), fixture flips it on with
 > `SH_IDLE_PAUSE_WARMUP_SECS=0`. Design record:
 > `docs/guests/irix.md` §"True start-paused (2026-08-11)". The budget stays as
@@ -36,7 +36,7 @@ brief).** Operator's decision, in order:
   nextstep/star run (never-pause: `SH_IDLE_PAUSE_SECS=0` ⇒ NO IdlePauser ⇒
   `-S` would leave them permanently dead — that exclusion is load-bearing).
   irix + w2kalpha SIGSTOPped. sailfishos found broken independently (guest
-  image AND `/usr/local/lib/streamhost/tiles/sailfishos/` missing; unit
+  image AND `/usr/local/lib/streamhost/stations/sailfishos/` missing; unit
   crash-loops; left stopped + disabled).
 
 ## Phase 1 — restore trust
@@ -98,8 +98,8 @@ measurements. Get the nuance right:
 
 ## Phase 2 — true start-paused
 
-Current blocker chain (all in `streamhost/tiles/irix/{x11-runtime.sh,
-tile.env.fixture}`):
+Current blocker chain (all in `streamhost/stations/irix/{x11-runtime.sh,
+station.env.fixture}`):
 
 - Launch restores (`IRIX_STATE=golden`) and RUNS; `SH_IDLE_PAUSE_WARMUP_SECS=780`
   holds the first pause because **livewatch's pointer probe is the only

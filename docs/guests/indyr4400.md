@@ -51,7 +51,7 @@ Iris can open it as a regular file:
 ```
 
 Preservation-class; **never committed** (the repo is public). Staged and
-verified by `streamhost/tiles/indyr4400/fetch-assets.sh`; recorded in
+verified by `streamhost/stations/indyr4400/fetch-assets.sh`; recorded in
 [`../lab/ASSETS-MANIFEST.md`](../lab/ASSETS-MANIFEST.md).
 
 ### Why an ext4 wrapper and not the bare raw disk
@@ -142,13 +142,13 @@ open-loop absolute positioning does not converge — slam to a corner first.
 
 ### 4. Re-emitting strips the launcher's exec bit
 
-`streamhost-tile.sh --launcher-file "$T/indyr4400/qemu-streamhost.sh"` copies the
+`streamhost-station.sh --launcher-file "$T/indyr4400/qemu-streamhost.sh"` copies the
 tracked launcher onto itself (the tracked sidecar and the runtime path are the
 same file for a verbatim station), which errors with `cp: ... are the same file`
-and leaves the file **non-executable**. `ensure-tile-qemu.sh` then refuses with
+and leaves the file **non-executable**. `ensure-station-qemu.sh` then refuses with
 `missing launcher: ...` and systemd restart-loops the unit while
 `/signal/<tile>.json` keeps answering 200 from the still-published map. After
-any re-emit: `chmod +x /data/vms/streamhost/tiles/indyr4400/qemu-streamhost.sh`.
+any re-emit: `chmod +x /data/vms/streamhost/stations/indyr4400/qemu-streamhost.sh`.
 
 ## Pointer
 
@@ -223,6 +223,6 @@ QMP-paused when no visitor is attached. Do not copy the amiga/gt40/irix
 ## Rollback
 
 The station is self-contained. `systemctl stop streamhost@indyr4400`, kill the
-QEMU by `/data/vms/streamhost/tiles/indyr4400/qemu.pid`. Nothing it touches is
+QEMU by `/data/vms/streamhost/stations/indyr4400/qemu.pid`. Nothing it touches is
 shared except the frozen bridge seed (read-only backing) and the `irix` station's
 CHD, which is only ever read via a copy at asset-build time.

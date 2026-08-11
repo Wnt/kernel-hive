@@ -183,7 +183,7 @@ mistake it for a dead station.
 
 ## Verification
 
-Framebuffer evidence lives in `/data/vms/streamhost/tiles/zxspectrum/evidence/`:
+Framebuffer evidence lives in `/data/vms/streamhost/stations/zxspectrum/evidence/`:
 `pristine-attempt1.png` (cold boot), `keyboard-keyword-border.png` (one keypress
 → `BORDER`), `ready-before-golden.png` (byte-identical pristine screen that was
 captured), `golden-restored.png`, `keyboard-after-restore.png`, and

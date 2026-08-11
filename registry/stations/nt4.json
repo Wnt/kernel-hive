@@ -54,8 +54,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/nt4",
-      "qmp": "/data/vms/streamhost/tiles/nt4/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/nt4",
+      "qmp": "/data/vms/streamhost/stations/nt4/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -103,16 +103,16 @@
   "credentialsRef": "guest/nt4",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "nt4",
-      "SH_QMP": "/data/vms/streamhost/tiles/nt4/qmp.sock",
+      "SH_STATION": "nt4",
+      "SH_QMP": "/data/vms/streamhost/stations/nt4/qmp.sock",
       "SH_PORT": "54089",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "abs",
       "SH_AUDIO": "off",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/nt4/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nt4/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/nt4/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/nt4/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 89,
@@ -134,11 +134,11 @@
         "--launcher-file",
         "$T/nt4/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/nt4/tile.env.fixture"
+        "$T/nt4/station.env.fixture"
       ],
       "deviceSetId": "nt4-i440fx11-isacirrus-1024x768-rop1-vmstate",
-      "launcher": "streamhost/tiles/nt4/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/nt4/tile.env.fixture",
+      "launcher": "streamhost/stations/nt4/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/nt4/station.env.fixture",
       "binary": "/opt/qemu-cirrusfix2/bin/qemu-system-i386",
       "machine": "pc-i440fx-11.0,hpet=off,vmport=on",
       "accel": "kvm",

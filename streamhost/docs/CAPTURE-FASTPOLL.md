@@ -16,7 +16,7 @@ rollback steps: `streamhost/qemu-patches/README.md`.
   `/data/vms/qemu-fastpoll-build/pve-qemu/pve-qemu-kvm_11.0.0-3_amd64.deb`.
 - **Knob:** `SH_DBUS_UPDATE_MS=4` (the knee), baked into every tile's
   `qemu-streamhost.sh` (`export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"`,
-  per-tile overridable) and into the generator `scripts/streamhost-tile.sh`.
+  per-tile overridable) and into the generator `scripts/streamhost-station.sh`.
 - **Fleet:** 26/28 tiles on the patched binary; **apple2 + win98se deliberately
   left on stock**. 28/28 `streamhost@` daemons active. Bridge tiles
   (c64/atarist/amiga) relaunched inside their `qcap-*` 3 G `systemd-run --scope`.

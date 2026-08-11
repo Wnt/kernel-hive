@@ -8,7 +8,7 @@
 # on a loaded host.
 set -euo pipefail
 
-BASE=/data/vms/streamhost/tiles/qnx
+BASE=/data/vms/streamhost/stations/qnx
 BOOTMENU_WAIT="${BOOTMENU_WAIT:-75}"
 PHOTON_WAIT="${PHOTON_WAIT:-50}"
 LOGIN_WAIT="${LOGIN_WAIT:-7}"

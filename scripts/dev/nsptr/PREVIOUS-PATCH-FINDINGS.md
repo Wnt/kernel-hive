@@ -2,7 +2,7 @@
 
 Sandbox: `/data/vms/soltest/NSPTR-previous-patch/` (torn down). The live tile
 was never touched: no `streamhost@` unit was acted on and nothing under
-`/data/vms/streamhost/tiles/` was written. The clone is a `qemu-img convert` of
+`/data/vms/streamhost/stations/` was written. The clone is a `qemu-img convert` of
 the live tile overlay's `golden` snapshot, booted cold with its own VMID,
 `qmp.sock`, pidfile and hostfwd port 5937, `-display none`.
 

@@ -11,8 +11,8 @@ in the base; `openjdk-17-jre` is installed **into this station's overlay**.
 **Build script (station):** `scripts/build-guests/tiles/daybreak.sh` — thin overlay
 + JRE + upstream Dwarf/disk fetch with verified sha256 + a US Dwarf keymap + the
 kiosk `launch.sh`, then a documented manual logon and checkpoint capture.
-**Station dir (host):** `/data/vms/streamhost/tiles/daybreak/`.
-**Registry entry:** `registry/tiles/daybreak.json` (slot 139, udp 54139,
+**Station dir (host):** `/data/vms/streamhost/stations/daybreak/`.
+**Registry entry:** `registry/stations/daybreak.json` (slot 139, udp 54139,
 VMID 239, ssh hostfwd 127.0.0.1:5849).
 
 This is **not** the GlobalView-on-Windows-3.1 route that an earlier feasibility

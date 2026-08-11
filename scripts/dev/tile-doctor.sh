@@ -13,7 +13,7 @@
 # It is the "am I done?" command, and it is meant to be run BEFORE claiming so.
 #
 # Usage:  scripts/dev/tile-doctor.sh <tile-id> [--live]
-#           --live   also check labhost: service state, tile.env, checkpoint, labctl
+#           --live   also check labhost: service state, station.env, checkpoint, labctl
 #
 # Exit 0 = every check passed. Non-zero = the count of failures.
 # =============================================================================
@@ -46,11 +46,11 @@ echo "tile-doctor: $TILE"
 echo
 echo "REGISTRY"
 
-ENTRY="$REPO/registry/tiles/$TILE.json"
+ENTRY="$REPO/registry/stations/$TILE.json"
 if [ -f "$ENTRY" ]; then
   ok "registry entry exists ($(realpath --relative-to="$REPO" "$ENTRY"))"
 else
-  bad "no registry entry" "expected registry/tiles/$TILE.json"
+  bad "no registry entry" "expected registry/stations/$TILE.json"
   echo
   echo "Nothing else can be checked without one."
   exit 1
@@ -153,7 +153,7 @@ if [ "$LIVE" = 1 ]; then
     else
       bad "labctl does not know the tile" "run 'labctl gen' on the box"
     fi
-    snap=$(ssh lab "qemu-img snapshot -l /data/vms/streamhost/tiles/$TILE/overlay.qcow2 2>/dev/null | awk 'NR>2{print \$2}'" 2>/dev/null)
+    snap=$(ssh lab "qemu-img snapshot -l /data/vms/streamhost/stations/$TILE/overlay.qcow2 2>/dev/null | awk 'NR>2{print \$2}'" 2>/dev/null)
     case "$snap" in
       *golden*) ok "golden snapshot present" ;;
       "") skip "no overlay/snapshot (not a bridge tile?)" ;;

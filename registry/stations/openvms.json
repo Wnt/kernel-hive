@@ -38,8 +38,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/openvms",
-      "qmp": "/data/vms/streamhost/tiles/openvms/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/openvms",
+      "qmp": "/data/vms/streamhost/stations/openvms/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -93,8 +93,8 @@
   "credentialsRef": "guest/openvms",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "openvms",
-      "SH_QMP": "/data/vms/streamhost/tiles/openvms/qmp.sock",
+      "SH_STATION": "openvms",
+      "SH_QMP": "/data/vms/streamhost/stations/openvms/qmp.sock",
       "SH_PORT": "54084",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -104,8 +104,8 @@
       "SH_CURSOR_OFF_X": "0",
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "off",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/openvms/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/openvms/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/openvms/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/openvms/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 84,
@@ -139,11 +139,11 @@
         "--aux-file",
         "$T/openvms/DECW_FIXTURE.COM",
         "--env-append-file",
-        "$T/openvms/tile.env.fixture"
+        "$T/openvms/station.env.fixture"
       ],
       "deviceSetId": "openvms-decwindows-bridge-xorg",
-      "launcher": "streamhost/tiles/openvms/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/openvms/tile.env.fixture",
+      "launcher": "streamhost/stations/openvms/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/openvms/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "machine": "dual: pc-i440fx-11.0 bridge + pc-q35-11.0 OpenVMS",
       "accel": "kvm",

@@ -89,7 +89,7 @@ the games stay on disk. This was baked on a clone, validated, then swapped live.
 `sed`s occurrences of `$TILE_DIR`. To feed it the **prepped** disk without touching live,
 stage a dir and point `BOOTREC_TILES_ROOT` at it — **but the staged `qemu-streamhost.sh`
 must have its `D=` line redirected to the staged dir**, else the launcher's hardcoded
-`D=/data/vms/streamhost/tiles/win95` survives the rewrite and the clone would run on the
+`D=/data/vms/streamhost/stations/win95` survives the rewrite and the clone would run on the
 LIVE tile. Verify with `record-boot.sh <tile> --dry-run`: the emitted clone launcher's
 `D=`/disk/pidfile/qmp must all be under `/data/vms/soltest/bootrec-<tile>-<pid>`.
 The existing **win95 Tier-2 arm is unchanged** — the Start-button crop `crop=56:18:2:458`

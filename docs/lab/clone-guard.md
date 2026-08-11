@@ -10,7 +10,7 @@ A clone-setup task ran a **stale labhost-side launcher** that had been copied fr
 LIVE station's `qemu-streamhost.sh`. That launcher opens with the production footgun:
 
 ```bash
-D="${D:-/data/vms/streamhost/tiles/solaris}"          # parameter-DEFAULT
+D="${D:-/data/vms/streamhost/stations/solaris}"          # parameter-DEFAULT
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")"   # unconditional kill preamble
 ```
 
@@ -29,14 +29,14 @@ Every clone kill / stop / destructive-QMP / launcher-run MUST route through the
 guard. It refuses, **loudly (non-zero exit + message)**, to touch anything that
 is not confined to `/data/vms/soltest/<namespace>/`:
 
-- any path under the production stations tree `/data/vms/streamhost/tiles/`;
+- any path under the production stations tree `/data/vms/streamhost/stations/`;
 - any `streamhost@<tile>` systemd unit (clones never run as a unit);
 - any pidfile whose **path** is outside the clone root, **or** whose **PID** is a
   QEMU whose `/proc/<pid>/cmdline` references the tiles tree (belt-and-braces:
   catches a namespaced clone dir whose `qemu.pid` was mis-populated with the live
   PID);
 - a clone launcher that statically embeds a live target — the
-  `${VAR:-…/streamhost/tiles/…}` default, a live `-pidfile`/`-qmp`/disk/kill
+  `${VAR:-…/streamhost/stations/…}` default, a live `-pidfile`/`-qmp`/disk/kill
   path, or a `systemctl stop streamhost@…`.
 
 Kills are ONLY ever by the clone's own pidfile — never `pkill`-by-name.
@@ -70,7 +70,7 @@ New per-clone launchers should:
 
 Override the roots only to point at a *different* sandbox:
 `CLONE_GUARD_CLONE_ROOT` (default `/data/vms/soltest`),
-`CLONE_GUARD_PROD_TILES_ROOT` (default `/data/vms/streamhost/tiles`).
+`CLONE_GUARD_PROD_TILES_ROOT` (default `/data/vms/streamhost/stations`).
 
 ## Where it's already wired
 

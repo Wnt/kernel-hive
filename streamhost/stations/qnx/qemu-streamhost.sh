@@ -8,7 +8,7 @@
 # Kill only by pidfile. This REPLACES the neko capture for this one tile during
 # its pilot; neko is restored by ROLLBACK.md.
 set -e
-BASE=/data/vms/streamhost/tiles/qnx
+BASE=/data/vms/streamhost/stations/qnx
 STATE="$BASE/golden.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3
@@ -31,11 +31,11 @@ nohup qemu-system-x86_64 \
   $LOADVM \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0 \
   -monitor tcp:127.0.0.1:7112,server,nowait \
-  -qmp unix:/data/vms/streamhost/tiles/qnx/qmp.sock,server=on,wait=off \
-  -pidfile /data/vms/streamhost/tiles/qnx/qemu.pid \
-  >"/data/vms/streamhost/tiles/qnx/qemu.log" 2>&1 &
+  -qmp unix:/data/vms/streamhost/stations/qnx/qmp.sock,server=on,wait=off \
+  -pidfile /data/vms/streamhost/stations/qnx/qemu.pid \
+  >"/data/vms/streamhost/stations/qnx/qemu.log" 2>&1 &
 for i in $(seq 1 40); do
-  [ -S "/data/vms/streamhost/tiles/qnx/qmp.sock" ] && [ -f "/data/vms/streamhost/tiles/qnx/qemu.pid" ] && break
+  [ -S "/data/vms/streamhost/stations/qnx/qmp.sock" ] && [ -f "/data/vms/streamhost/stations/qnx/qemu.pid" ] && break
   sleep 0.5
 done
 echo "tile qnx qemu pid=$(cat "$BASE/qemu.pid" 2>/dev/null) qmp=$BASE/qmp.sock udp=54112 loadvm='${LOADVM:-<none: cold boot>}'"

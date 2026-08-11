@@ -465,11 +465,11 @@ them.
 | templeos | `pc`, KVM, host CPU, std VGA, ISO + snapshot disk, COM1 | pin matching i440fx machine; `pci.0:1e`; HolyC/IRQ spike first, preserve RAM-snapshot behavior |
 
 Sources are the checked-in launchers
-([Solaris](../../../../streamhost/tiles/solaris/qemu-streamhost.sh),
-[Win95](../../../../streamhost/tiles/win95/qemu-streamhost.sh),
-[Win3.11](../../../../streamhost/tiles/win311/qemu-streamhost.sh),
-[OS/2](../../../../streamhost/tiles/os2warp/qemu-streamhost.sh),
-[TempleOS](../../../../streamhost/tiles/templeos/qemu-streamhost.sh)) and the
+([Solaris](../../../../streamhost/stations/solaris/qemu-streamhost.sh),
+[Win95](../../../../streamhost/stations/win95/qemu-streamhost.sh),
+[Win3.11](../../../../streamhost/stations/win311/qemu-streamhost.sh),
+[OS/2](../../../../streamhost/stations/os2warp/qemu-streamhost.sh),
+[TempleOS](../../../../streamhost/stations/templeos/qemu-streamhost.sh)) and the
 [ninefront manifest entry](../../../../streamhost/stations-manifest.sh). `addr=0x1e` is a proposed
 stable slot because it is away from current default devices; it is not considered final for a station
 until `info pci`/QMP and a cold boot prove it free on that exact machine. Record the root bus and

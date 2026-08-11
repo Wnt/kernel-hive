@@ -45,8 +45,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/nt351",
-      "qmp": "/data/vms/streamhost/tiles/nt351/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/nt351",
+      "qmp": "/data/vms/streamhost/stations/nt351/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -107,8 +107,8 @@
   "credentialsRef": "guest/nt351",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "nt351",
-      "SH_QMP": "/data/vms/streamhost/tiles/nt351/qmp.sock",
+      "SH_STATION": "nt351",
+      "SH_QMP": "/data/vms/streamhost/stations/nt351/qmp.sock",
       "SH_PORT": "54083",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -119,8 +119,8 @@
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/nt351/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nt351/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/nt351/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/nt351/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 83,
@@ -150,11 +150,11 @@
         "--launcher-file",
         "$T/nt351/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/nt351/tile.env.fixture"
+        "$T/nt351/station.env.fixture"
       ],
       "deviceSetId": "nt351-isacirrus-1024x768-rop1fix",
-      "launcher": "streamhost/tiles/nt351/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/nt351/tile.env.fixture",
+      "launcher": "streamhost/stations/nt351/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/nt351/station.env.fixture",
       "binary": "/opt/qemu-cirrusfix/bin/qemu-system-i386",
       "machine": "isapc",
       "accel": "tcg",

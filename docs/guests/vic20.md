@@ -13,10 +13,10 @@ and `make install` ships every emulator in the suite.
 **Build script (station):** `scripts/build-guests/tiles/vic20.sh` — thin overlay + kiosk
 `launch.sh` + quiet console + checkpoint capture + framebuffer/keyboard proof, fully
 automated, ~2–4 minutes.
-**Station dir (labhost):** `/data/vms/streamhost/tiles/vic20/` — `overlay.qcow2`
+**Station dir (labhost):** `/data/vms/streamhost/stations/vic20/` — `overlay.qcow2`
 (thin, on the shared seed; holds the INTERNAL `golden` checkpoint),
-`qemu-streamhost.sh`, `tile.env`, `evidence/`.
-**Registry entry:** `registry/tiles/vic20.json` (slot 85, udp 54085, VMID 221,
+`qemu-streamhost.sh`, `station.env`, `evidence/`.
+**Registry entry:** `registry/stations/vic20.json` (slot 85, udp 54085, VMID 221,
 ssh hostfwd 127.0.0.1:5821).
 
 ## Media and license — there is none to stage
@@ -203,7 +203,7 @@ with it.
 ## Verification (2026-08-08)
 
 All evidence is real QEMU framebuffer dumps in
-`/data/vms/streamhost/tiles/vic20/evidence/`:
+`/data/vms/streamhost/stations/vic20/evidence/`:
 
 | Artifact | Shows |
 |---|---|
@@ -228,7 +228,7 @@ kiosk underneath auto-logs in and execs `startx`. See
 
 The station is a thin overlay on a read-only seed and touches nothing else. To
 withdraw it: `systemctl stop streamhost@vic20`, set `enabled: false` in
-`registry/tiles/vic20.json`, regenerate, and republish the two runtime JSON
+`registry/stations/vic20.json`, regenerate, and republish the two runtime JSON
 documents. To rebuild it: `scripts/build-guests/tiles/vic20.sh --force`, which
 replaces `overlay.qcow2` — and therefore **destroys the checkpoint inside
 it** — then captures and proves a new one. Never delete `overlay.qcow2` by hand.

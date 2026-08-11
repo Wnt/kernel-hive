@@ -3,7 +3,7 @@
 # VMID label 9911; UDP 54911; hostfwd 127.0.0.1:58791 -> guest :7777.
 set -euo pipefail
 
-D=/data/vms/streamhost/tiles/soltest-warpd
+D=/data/vms/streamhost/stations/soltest-warpd
 DISK="$D/soltest-warpd.qcow2"
 PIDFILE="$D/qemu.pid"
 

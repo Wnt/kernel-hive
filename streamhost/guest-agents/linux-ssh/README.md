@@ -4,7 +4,7 @@ Real captured-output exec channels for the modern tiles: sshd inside the guest
 + a host→guest `:22` forward + the shared key `/root/.ssh/gallery_guest_key`
 (on the box; generate with `ssh-keygen -t ed25519 -N "" -f ~/.ssh/gallery_guest_key`
 if absent). `labctl exec <tile> "<cmd>"` uses these (ports in
-`/data/vms/streamhost/tiles.json`).
+`/data/vms/streamhost/stations.json`).
 
 Everything in-guest lives INSIDE the golden snapshot (`savevm golden` after
 setup, clean screendump first). The host→guest forward is host-side SLIRP

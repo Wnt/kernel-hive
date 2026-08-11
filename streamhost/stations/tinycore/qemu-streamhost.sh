@@ -18,7 +18,7 @@
 #     snapshot, so -loadvm golden is portable across this launcher and the VNC setup one.
 # Kill only by pidfile. neko is restored by ROLLBACK.md.
 set -e
-BASE=/data/vms/streamhost/tiles/tinycore
+BASE=/data/vms/streamhost/stations/tinycore
 STATE="$BASE/state.qcow2"
 BUILT_STATE=/data/gallery-guests/TinyCore/state.qcow2
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true

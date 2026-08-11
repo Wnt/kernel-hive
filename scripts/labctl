@@ -6,9 +6,9 @@
 # These two files MUST stay byte-identical. Edit the repo copy, then sync to the
 # box (scp / pipe over ssh) — same SESSION-STATE reproducibility rule as the tile
 # launchers. labctl runs ON THE BOX (it shells out to /root/cdrv.py and
-# /root/qmp_hmp.py and reads /data/vms/streamhost/tiles.json).
+# /root/qmp_hmp.py and reads /data/vms/streamhost/stations.json).
 #
-# Capability matrix: /data/vms/streamhost/tiles.json (one entry per tile:
+# Capability matrix: /data/vms/streamhost/stations.json (one entry per tile:
 #   {dir,qmp,pointer_mode,warpd_port,warpd_addr,ssh_port,exec_port,exec_kind,
 #    exec_user,exec_key,console,udp_port,golden_snapshot,ctl,notes}). exec_kind
 #   routes 'labctl exec': "ssh" (per-tile user + gallery key) | "warpd_e" (solaris
@@ -16,7 +16,7 @@
 #    serial line, via /root/irixexec.py — no port, the pty is discovered from the
 #    tile dir) | "telnet_e" (w2kalpha: the guest W2K Telnet Server on a host-only
 #    veth, via /root/w2ktelnetexec.py — exec_user login, blank password, fixed
-#    guest IP) | null (no channel). ctl (present only when tile.env sets
+#    guest IP) | null (no channel). ctl (present only when station.env sets
 #   SH_MAMECTL_SOCK; irix) is the mamectl/1 unix socket of the compiled-in MAME
 #   ctlsock module (issue #45): 'labctl mctl' passes raw verbs through
 #   /root/mctl.py, and type/sh/reset route over it instead of the legacy Lua
@@ -42,7 +42,7 @@
 # Subcommands:
 #   labctl ls                     tiles + capability summary + service state
 #   labctl facts <tile> [--json]  EVERYTHING about one tile in one call: SPA id
-#                                 vs SH_TILE, unit + state, kind, suite
+#                                 vs SH_STATION, unit + state, kind, suite
 #                                 (declared vs actual), disk + backing +
 #                                 snapshots, builder + whether it bakes, exec
 #                                 channel, resettability. Accepts either id.
@@ -59,16 +59,16 @@
 #   labctl mctl  <tile> "<verb>"  raw mamectl/1 verb passthrough (ctl tiles only)
 #   labctl reset <tile>           loadvm golden (restore tile to golden snapshot)
 #   labctl clone <tile> <N>       wrap existing clone tooling (solaris) else recipe
-#   labctl gen                    regenerate tiles.json from tile.env + launchers
+#   labctl gen                    regenerate tiles.json from station.env + launchers
 #
 # KEYSTROKE PACING: type/key/sh honour the tile's own SH_KEY_MIN_HOLD_MS /
-# SH_KEY_MIN_GAP_MS (tile.env, the same knobs the daemon applies to the browser
+# SH_KEY_MIN_GAP_MS (station.env, the same knobs the daemon applies to the browser
 # stream path) — emulators sample their keyboard once per emulated frame, so an
 # unpaced burst is silently swallowed. See the block above cmd_type.
 import json, os, re, shutil, signal, socket, subprocess, sys, tempfile, time
 
-TILES_JSON = os.environ.get("LABCTL_TILES_JSON", "/data/vms/streamhost/tiles.json")
-TILES_DIR = os.environ.get("LABCTL_TILES_DIR", "/data/vms/streamhost/tiles")
+TILES_JSON = os.environ.get("LABCTL_TILES_JSON", "/data/vms/streamhost/stations.json")
+TILES_DIR = os.environ.get("LABCTL_TILES_DIR", "/data/vms/streamhost/stations")
 CDRV = os.environ.get("LABCTL_CDRV", "/root/cdrv.py")
 QMP_HMP = os.environ.get("LABCTL_QMP_HMP", "/root/qmp_hmp.py")
 SOL_CLONE = "/data/vms/soltest/launch-clone.sh"
@@ -110,7 +110,7 @@ def is_x11_tile(c):
 def x11_display(c, name):
     """The X display an x11 tile serves + streamhost captures (SH_X11_DISPLAY)."""
     tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-    env = read_env(os.path.join(tile_dir, "tile.env"))
+    env = read_env(os.path.join(tile_dir, "station.env"))
     return env.get("SH_X11_DISPLAY", ":40")
 
 
@@ -121,13 +121,13 @@ def is_shm_tile(c, name):
     of is_x11_tile() — input still goes through the Lua cmd file — so this must
     be tested FIRST wherever the two dispatch differently."""
     tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-    return read_env(os.path.join(tile_dir, "tile.env")).get("SH_CAPTURE") == "shm"
+    return read_env(os.path.join(tile_dir, "station.env")).get("SH_CAPTURE") == "shm"
 
 
 def shm_path(c, name):
     """The framebuffer file a shm tile's emulator publishes into."""
     tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-    env = read_env(os.path.join(tile_dir, "tile.env"))
+    env = read_env(os.path.join(tile_dir, "station.env"))
     return env.get("SH_SHM_PATH", os.path.join(tile_dir, "fb.shm"))
 
 
@@ -136,16 +136,16 @@ def x11_cmd_file(c, name):
     tile runs the Lua agent, i.e. has no ctl socket — the compiled-in mamectl
     module does not tail this file, so writes there would be silently dead."""
     tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-    env = read_env(os.path.join(tile_dir, "tile.env"))
+    env = read_env(os.path.join(tile_dir, "station.env"))
     return env.get("SH_X11_CMD_FILE", os.path.join(tile_dir, "irix_cmd"))
 
 
 def pause_pidfile(c, name):
     """The process streamhost's idle auto-pause freezes on a NON-QEMU tile
-    (SH_IDLE_PAUSE_PIDFILE in tile.env), or None. QEMU tiles have no such file:
+    (SH_IDLE_PAUSE_PIDFILE in station.env), or None. QEMU tiles have no such file:
     they freeze their vCPUs over the QMP monitor instead."""
     tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-    return read_env(os.path.join(tile_dir, "tile.env")).get("SH_IDLE_PAUSE_PIDFILE")
+    return read_env(os.path.join(tile_dir, "station.env")).get("SH_IDLE_PAUSE_PIDFILE")
 
 
 def proc_stopped(pidfile):
@@ -170,11 +170,11 @@ def proc_stopped(pidfile):
 
 def ctl_sock(c, name):
     """The mamectl/1 control socket of the compiled-in MAME ctlsock module
-    (issue #45), or None. tile.env's SH_MAMECTL_SOCK is the live truth — the
+    (issue #45), or None. station.env's SH_MAMECTL_SOCK is the live truth — the
     matrix 'ctl' field is labctl-gen's snapshot of the same var — so an env
     flip takes effect before the next 'labctl gen'."""
     tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-    env = read_env(os.path.join(tile_dir, "tile.env"))
+    env = read_env(os.path.join(tile_dir, "station.env"))
     return env.get("SH_MAMECTL_SOCK") or c.get("ctl")
 
 
@@ -290,7 +290,7 @@ def qmp_command(path, command, arguments=None, timeout=3):
 
 
 def read_env(path):
-    """Read simple KEY=VALUE settings without sourcing a tile.env file."""
+    """Read simple KEY=VALUE settings without sourcing a station.env file."""
     values = {}
     try:
         with open(path, errors="replace") as f:
@@ -413,7 +413,7 @@ def tile_health(name, c):
             qemu = answer.get("status", "unknown") if isinstance(answer, dict) else "unknown"
         except Exception as exc:
             qmp_error = str(exc)
-    env = read_env(os.path.join(c.get("dir", os.path.join(TILES_DIR, name)), "tile.env"))
+    env = read_env(os.path.join(c.get("dir", os.path.join(TILES_DIR, name)), "station.env"))
     guard_mb = log["guard_mb"]
     if guard_mb is None:
         try:
@@ -880,10 +880,10 @@ SHIFT_QCODE = {
 
 def key_pacing(c, name):
     """(hold_ms, gap_ms) declared by the tile, or (None, None) when it declares
-    nothing. Source of truth is the live tile.env — the same file the daemon
+    nothing. Source of truth is the live station.env — the same file the daemon
     reads — so labctl and the stream path cannot drift apart."""
     tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-    env = read_env(os.path.join(tile_dir, "tile.env"))
+    env = read_env(os.path.join(tile_dir, "station.env"))
 
     def ms(key):
         raw = env.get(key)
@@ -919,11 +919,11 @@ def key_remap(c, name):
     """Per-tile guest-char -> host-char remap, for keyboards whose layout does
     not match a PC one (the MPF-II puts '=' on Shift+O and '-' on Shift+I, and
     its shifted number row is offset by one key; the KC 85/4 is a German
-    keyboard whose plain letter row is UPPER case). Declared as tile.env
+    keyboard whose plain letter row is UPPER case). Declared as station.env
     SH_KEY_MAP="=:O,-:I,+:P" or as a 'key_map' object in the tiles.json entry;
     absent on most tiles, so nothing is remapped unless it is declared."""
     tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-    raw = read_env(os.path.join(tile_dir, "tile.env")).get("SH_KEY_MAP")
+    raw = read_env(os.path.join(tile_dir, "station.env")).get("SH_KEY_MAP")
     mapping = {}
     if isinstance(c.get("key_map"), dict):
         mapping.update({str(k): str(v) for k, v in c["key_map"].items()})
@@ -994,7 +994,7 @@ def warn_unpaced(c, name):
     if looks_like_emulator_bridge(c, name):
         sys.stderr.write(
             "labctl: WARNING — %s declares no SH_KEY_MIN_HOLD_MS/SH_KEY_MIN_GAP_MS "
-            "in its tile.env, and it drives an emulator that samples its keyboard "
+            "in its station.env, and it drives an emulator that samples its keyboard "
             "once per emulated frame. Keys sent back-to-back CAN be silently "
             "dropped or merged, so a success line here is NOT proof the guest got "
             "the text — verify with 'labctl shot %s'.\n" % (name, name)
@@ -1135,7 +1135,7 @@ IRIXEXEC = os.environ.get("LABCTL_IRIXEXEC", "/root/irixexec.py")
 W2KTELNETEXEC = os.environ.get("LABCTL_W2KTELNETEXEC", "/root/w2ktelnetexec.py")
 # w2kalpha's guest telnet server sits on a host-only veth at a fixed static IP
 # (baked into the golden; the host end and the dec21143 pcap adapter are set up
-# by streamhost/tiles/w2kalpha/x11-runtime.sh). No per-tile host field is needed.
+# by streamhost/stations/w2kalpha/x11-runtime.sh). No per-tile host field is needed.
 W2K_TELNET_HOST = "172.31.64.2"
 
 
@@ -1232,7 +1232,7 @@ def cmd_reset(argv):
         # failure and stays loud.
         sock = ctl_sock(c, name)
         tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-        state = read_env(os.path.join(tile_dir, "tile.env")).get("IRIX_STATE")
+        state = read_env(os.path.join(tile_dir, "station.env")).get("IRIX_STATE")
         if sock and state:
             r = mctl_run(sock, verb="LOADST " + state, timeout=60)
             if r.returncode == 0:
@@ -1302,7 +1302,7 @@ def cmd_mctl(argv):
     if not sock:
         die(
             "tile '%s' has no mamectl control socket (no SH_MAMECTL_SOCK in its "
-            "tile.env, no 'ctl' field in tiles.json). See 'labctl exec/sh/type' "
+            "station.env, no 'ctl' field in tiles.json). See 'labctl exec/sh/type' "
             "for this tile's wired channels." % name
         )
     cmd = ["python3", MCTL, sock]
@@ -1340,9 +1340,9 @@ def cmd_clone(argv):
 # ---- facts -----------------------------------------------------------------
 #
 # WHY THIS EXISTS. Every one of the fields below already existed somewhere — the
-# capability matrix, tile.env, signaling.json, the generated registry, the
+# capability matrix, station.env, signaling.json, the generated registry, the
 # bridge-suite ledger, qemu-img, systemd — and so every agent session re-derived
-# them by hand out of ~10 files (unit name, SPA-id vs SH_TILE, disk + backing,
+# them by hand out of ~10 files (unit name, SPA-id vs SH_STATION, disk + backing,
 # declared vs actual suite, builder + whether it bakes, exec channel). `facts`
 # only JOINS what is already generated; it derives nothing that a generator
 # already wrote down.
@@ -1350,7 +1350,7 @@ def cmd_clone(argv):
 # DEGRADATION IS PER FIELD. The repo-declared half (registry id, builder, the
 # suite ledger) is read from a repo checkout on the box. A missing input yields
 # null for THAT field plus a line in `warnings` naming the path — never a failed
-# call, because the live half (matrix, tile.env, systemd, qemu-img) is the half
+# call, because the live half (matrix, station.env, systemd, qemu-img) is the half
 # that is always available.
 #
 # WHICH CHECKOUT, AND WHY IT REPORTS ITS OWN COMMIT. /data/kernel-hive is the
@@ -1408,8 +1408,8 @@ def repo_facts(warn):
 
 
 def registry_entry(sh_tile, warn):
-    """The canonical registry entry for a tile, keyed by its stationDir (== SH_TILE).
-    registry/tiles/ is the generated source everything else in the repo is
+    """The canonical registry entry for a tile, keyed by its stationDir (== SH_STATION).
+    registry/stations/ is the generated source everything else in the repo is
     rendered from, so the SPA id and the builder come from there rather than
     from a second guess about naming."""
     root = os.path.join(REPO, "registry", "tiles")
@@ -1622,22 +1622,22 @@ def reset_facts(c, x11):
 
 def tile_facts(sh_tile, c, warn):
     tile_dir = c.get("dir", os.path.join(TILES_DIR, sh_tile))
-    env = read_env(os.path.join(tile_dir, "tile.env"))
-    daemon_id = env.get("SH_TILE") or (load_json(os.path.join(tile_dir, "signaling.json")) or {}).get("tile") or sh_tile
+    env = read_env(os.path.join(tile_dir, "station.env"))
+    daemon_id = env.get("SH_STATION") or (load_json(os.path.join(tile_dir, "signaling.json")) or {}).get("tile") or sh_tile
     if daemon_id != sh_tile:
-        warn("tile.env SH_TILE=%s does not match the matrix key %s" % (daemon_id, sh_tile))
+        warn("station.env SH_STATION=%s does not match the matrix key %s" % (daemon_id, sh_tile))
     repo = repo_facts(warn)
     entry = registry_entry(sh_tile, warn)
-    # One tile, one name: the registry id IS the stationDir IS SH_TILE, and
+    # One tile, one name: the registry id IS the stationDir IS SH_STATION, and
     # stations-registry.py fails the build if an entry breaks that. This used to be
     # a passive `identity_diverges` field on every tile's facts, permanently true
     # for aros/amigaos and solaris/solariscde (both renamed 2026-08-10). A flag
     # that is normally set is a flag nobody reads, so it is a WARNING now — it
-    # can only fire on a live tile whose tile.env drifted from its registry entry.
+    # can only fire on a live tile whose station.env drifted from its registry entry.
     if entry.get("id") and entry["id"] != daemon_id:
         warn(
             "registry id %s but the daemon runs as %s — the two must match; "
-            "reconcile tile.env/the tile dir with registry/tiles/%s.json"
+            "reconcile station.env/the tile dir with registry/stations/%s.json"
             % (entry["id"], daemon_id, entry["id"])
         )
     launcher = launcher_text(tile_dir)
@@ -1649,7 +1649,7 @@ def tile_facts(sh_tile, c, warn):
     elif x11:
         kind, evidence = (
             "x11",
-            "SH_TILE_RUNTIME=x11 / SH_CAPTURE=%s — no QEMU, no QMP" % (env.get("SH_CAPTURE") or "x11"),
+            "SH_STATION_RUNTIME=x11 / SH_CAPTURE=%s — no QEMU, no QMP" % (env.get("SH_CAPTURE") or "x11"),
         )
     else:
         kind, evidence = "qemu", "direct QEMU with a QMP monitor"

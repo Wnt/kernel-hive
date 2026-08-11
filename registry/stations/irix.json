@@ -8,7 +8,7 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/irix",
+      "dir": "/data/vms/streamhost/stations/irix",
       "qmp": null,
       "pointer_mode": "abs",
       "warpd_port": null,
@@ -59,26 +59,26 @@
   "credentialsRef": "guest/irix",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "irix",
-      "SH_TILE_RUNTIME": "x11",
+      "SH_STATION": "irix",
+      "SH_STATION_RUNTIME": "x11",
       "SH_CAPTURE": "shm",
       "SH_X11_DISPLAY": ":40",
-      "SH_X11_CMD_FILE": "/data/vms/streamhost/tiles/irix/irix_cmd",
-      "SH_SHM_PATH": "/data/vms/streamhost/tiles/irix/fb.shm",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/irix/irix_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/irix/fb.shm",
       "SH_PORT": "54122",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/irix/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/irix/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/irix/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/irix/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "x11": {
       "display": ":40",
       "geometry": "1288x1024x24",
       "capture": "shm",
-      "launcher": "streamhost/tiles/irix/x11-runtime.sh",
+      "launcher": "streamhost/stations/irix/x11-runtime.sh",
       "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
@@ -107,13 +107,13 @@
         "--aux-file",
         "$T/irix/tapnet.sh",
         "--env-append-file",
-        "$T/irix/tile.env.fixture"
+        "$T/irix/station.env.fixture"
       ],
       "auxFiles": [
-        "streamhost/tiles/irix/irixagent.lua",
-        "streamhost/tiles/irix/tile.env.fixture",
-        "streamhost/tiles/irix/fetch-assets.sh",
-        "streamhost/tiles/irix/tapnet.sh"
+        "streamhost/stations/irix/irixagent.lua",
+        "streamhost/stations/irix/station.env.fixture",
+        "streamhost/stations/irix/fetch-assets.sh",
+        "streamhost/stations/irix/tapnet.sh"
       ]
     },
     "bringUpOrder": 34

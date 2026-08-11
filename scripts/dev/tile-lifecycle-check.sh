@@ -22,7 +22,7 @@
 #
 # NEVER point this at a production station you are not allowed to cycle. The
 # intended target is a throwaway instance of the SAME template with its own
-# tile.env, SH_PORT and station dir — that exercises the real unit, the real
+# station.env, SH_PORT and station dir — that exercises the real unit, the real
 # ExecStartPre/ExecStop and the real launcher without touching an exhibit.
 set -u
 
@@ -31,7 +31,7 @@ T="${1:-}"
   echo "usage: $0 <tile>" >&2
   exit 2
 }
-D="/data/vms/streamhost/tiles/$T"
+D="/data/vms/streamhost/stations/$T"
 SETTLE="${LIFECYCLE_SETTLE:-20}"
 FAIL=0
 

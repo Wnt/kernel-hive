@@ -48,8 +48,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/toaruos",
-      "qmp": "/data/vms/streamhost/tiles/toaruos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/toaruos",
+      "qmp": "/data/vms/streamhost/stations/toaruos/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -100,8 +100,8 @@
   "credentialsRef": "guest/toaruos",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "toaruos",
-      "SH_QMP": "/data/vms/streamhost/tiles/toaruos/qmp.sock",
+      "SH_STATION": "toaruos",
+      "SH_QMP": "/data/vms/streamhost/stations/toaruos/qmp.sock",
       "SH_PORT": "54098",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -109,8 +109,8 @@
       "SH_POINTER": "abs",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/toaruos/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/toaruos/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/toaruos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/toaruos/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 98,
@@ -148,7 +148,7 @@
         "--boot",
         "d",
         "--env-append-file",
-        "$T/toaruos/tile.env.fixture"
+        "$T/toaruos/station.env.fixture"
       ],
       "deviceSetId": "toaruos-current",
       "machine": "pc-i440fx-11.0",
@@ -172,10 +172,10 @@
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
         "-usb -device usb-tablet",
-        "-qmp unix:/data/vms/streamhost/tiles/toaruos/qmp.sock,server=on,wait=off",
-        "-pidfile /data/vms/streamhost/tiles/toaruos/qemu.pid"
+        "-qmp unix:/data/vms/streamhost/stations/toaruos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/toaruos/qemu.pid"
       ],
-      "envFixture": "streamhost/tiles/toaruos/tile.env.fixture",
+      "envFixture": "streamhost/stations/toaruos/station.env.fixture",
       "sourceDeviceSet": {
         "binary": "qemu-system-x86_64",
         "machine": "pc-i440fx-11.0",
@@ -194,8 +194,8 @@
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
           "-usb -device usb-tablet",
-          "-qmp unix:/data/vms/streamhost/tiles/toaruos/qmp.sock,server=on,wait=off",
-          "-pidfile /data/vms/streamhost/tiles/toaruos/qemu.pid"
+          "-qmp unix:/data/vms/streamhost/stations/toaruos/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/toaruos/qemu.pid"
         ]
       },
       "launcherParity": {

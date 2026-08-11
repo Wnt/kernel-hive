@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/amstradcpc",
-      "qmp": "/data/vms/streamhost/tiles/amstradcpc/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/amstradcpc",
+      "qmp": "/data/vms/streamhost/stations/amstradcpc/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -98,8 +98,8 @@
   },
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "amstradcpc",
-      "SH_QMP": "/data/vms/streamhost/tiles/amstradcpc/qmp.sock",
+      "SH_STATION": "amstradcpc",
+      "SH_QMP": "/data/vms/streamhost/stations/amstradcpc/qmp.sock",
       "SH_PORT": "54119",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -110,8 +110,8 @@
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/amstradcpc/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/amstradcpc/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/amstradcpc/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/amstradcpc/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 219,
@@ -139,11 +139,11 @@
         "--launcher-file",
         "$T/amstradcpc/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/amstradcpc/tile.env.fixture"
+        "$T/amstradcpc/station.env.fixture"
       ],
       "deviceSetId": "amstradcpc-current",
-      "launcher": "streamhost/tiles/amstradcpc/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/amstradcpc/tile.env.fixture",
+      "launcher": "streamhost/stations/amstradcpc/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/amstradcpc/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

@@ -4,7 +4,7 @@
 the execution plan.** Operator selected the terms and FULL depth on
 2026-08-11: prose, filenames, code identifiers, env vars, registry keys, and
 the live paths on labhost all migrate. Full depth cannot be a single sed —
-`SH_TILE` is read by the running daemon, `/data/vms/streamhost/tiles/` is a
+`SH_STATION` is read by the running daemon, `/data/vms/streamhost/stations/` is a
 live path under 60+ running units, and ~60 artifacts answer to the stored
 label `golden`. Each stage below is independently shippable, gate-green, and
 leaves the fleet fully operational.
@@ -47,7 +47,7 @@ renamed box-side scripts re-synced; `box-repo.sh sync` + re-emit.
 
 ## Stage 3 — code identifiers, env vars, registry keys, UI dir
 
-- **Rust daemon**: `SH_TILE` → `SH_STATION`, `SH_TILE_RUNTIME` →
+- **Rust daemon**: `SH_STATION` → `SH_STATION`, `SH_STATION_RUNTIME` →
   `SH_STATION_RUNTIME`, internal `tile` idents (~230 sites). The daemon reads
   the NEW var first and falls back to the old with a deprecation log line —
   both vocabularies work during the fleet flip. Canary-deploy per the normal
@@ -66,8 +66,8 @@ renamed box-side scripts re-synced; `box-repo.sh sync` + re-emit.
 
 ## Stage 4 — live paths and unit template (maintenance window)
 
-`/data/vms/streamhost/tiles/` → `…/stations/`, `tile.env` → `station.env`,
-`/usr/local/lib/streamhost/tiles/` → `…/stations/`. Order: create
+`/data/vms/streamhost/stations/` → `…/stations/`, `station.env` → `station.env`,
+`/usr/local/lib/streamhost/stations/` → `…/stations/`. Order: create
 `stations` → move station dirs → compat symlink `tiles` → `stations` →
 update unit template (EnvironmentFile/ExecStartPre/ExecStop paths) +
 ensure/stop scripts + labctl + clone-guard + check-stream-tickets +
@@ -93,7 +93,7 @@ artifact labels.
   `new-os-integration-architecture.md`, `xerox-build-log.md` unconverted;
   `SESSION-HANDOVER-2026-08-10-trixie.md` ~15 % converted; comment coverage
   in `scripts/build-guests/tiles/*.sh` partial; deploy-parity trees
-  (`streamhost/tiles/**`, `guest-agents/**`) untouched by design — they
+  (`streamhost/stations/**`, `guest-agents/**`) untouched by design — they
   convert with stage 2's re-emit motion. Sense rules that emerged and BIND
   future passes: "kiosk" = the bridge *pattern* noun, counted instances are
   stations; "golden vN" (versioned artifact) = seed, unversioned

@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/atarist",
-      "qmp": "/data/vms/streamhost/tiles/atarist/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/atarist",
+      "qmp": "/data/vms/streamhost/stations/atarist/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -82,8 +82,8 @@
   "credentialsRef": "guest/atarist",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "atarist",
-      "SH_QMP": "/data/vms/streamhost/tiles/atarist/qmp.sock",
+      "SH_STATION": "atarist",
+      "SH_QMP": "/data/vms/streamhost/stations/atarist/qmp.sock",
       "SH_PORT": "54116",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -94,8 +94,8 @@
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/atarist/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/atarist/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/atarist/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/atarist/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_ABS_PACE_MS": "30"
     },
@@ -126,11 +126,11 @@
         "--launcher-file",
         "$T/atarist/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/atarist/tile.env.fixture"
+        "$T/atarist/station.env.fixture"
       ],
       "deviceSetId": "atarist-current",
-      "launcher": "streamhost/tiles/atarist/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/atarist/tile.env.fixture",
+      "launcher": "streamhost/stations/atarist/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/atarist/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

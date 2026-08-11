@@ -9,7 +9,7 @@ IRIX subsystem's own second layer.
 
 | Path | What it is |
 |---|---|
-| `build-all.sh` | The orchestrator. **GENERATED** — `python3 scripts/stations-registry.py generate` renders it from `registry/templates/build-all.sh.in` + the `build.rows` of `registry/tiles/*.json`. Never hand-edit it; edit the registry entry and run `make station-registry-generate`. |
+| `build-all.sh` | The orchestrator. **GENERATED** — `python3 scripts/stations-registry.py generate` renders it from `registry/templates/build-all.sh.in` + the `build.rows` of `registry/stations/*.json`. Never hand-edit it; edit the registry entry and run `make station-registry-generate`. |
 | `check-assets.sh` | The staged-media/env preflight, also reachable as `build-all.sh --check-assets`. Reads `assets/`. |
 
 Both are pinned at the top on purpose: `build-all.sh` is hardcoded in

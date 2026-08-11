@@ -29,8 +29,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/indyr4400",
-      "qmp": "/data/vms/streamhost/tiles/indyr4400/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/indyr4400",
+      "qmp": "/data/vms/streamhost/stations/indyr4400/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -77,8 +77,8 @@
   "credentialsRef": "guest/indyr4400",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "indyr4400",
-      "SH_QMP": "/data/vms/streamhost/tiles/indyr4400/qmp.sock",
+      "SH_STATION": "indyr4400",
+      "SH_QMP": "/data/vms/streamhost/stations/indyr4400/qmp.sock",
       "SH_PORT": "54136",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -86,8 +86,8 @@
       "SH_POINTER": "rel",
       "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/indyr4400/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/indyr4400/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/indyr4400/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/indyr4400/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 239,
@@ -111,13 +111,13 @@
         "--aux-file",
         "$T/indyr4400/fetch-assets.sh",
         "--env-append-file",
-        "$T/indyr4400/tile.env.fixture"
+        "$T/indyr4400/station.env.fixture"
       ],
       "deviceSetId": "indyr4400-current",
-      "launcher": "streamhost/tiles/indyr4400/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/indyr4400/tile.env.fixture",
+      "launcher": "streamhost/stations/indyr4400/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/indyr4400/station.env.fixture",
       "auxFiles": [
-        "streamhost/tiles/indyr4400/fetch-assets.sh"
+        "streamhost/stations/indyr4400/fetch-assets.sh"
       ],
       "binary": "qemu-system-x86_64",
       "accel": "kvm",

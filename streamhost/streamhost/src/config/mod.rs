@@ -49,7 +49,7 @@
 //     --idle-pause-secs N      auto-pause the GUEST (QMP stop) after N secs with zero
 //                              sessions; resumed (cont) on the next connect (default 60, 0=off)
 //
-// Every flag has an SH_* env fallback (e.g. SH_PORT, SH_TILE, SH_AUDIO).
+// Every flag has an SH_* env fallback (e.g. SH_PORT, SH_STATION, SH_AUDIO).
 
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -287,7 +287,7 @@ pub struct Config {
     /// the joiner sees the live screen sub-second. 0 = disabled; nonzero is
     /// clamped to >= 5 (anti-thrash). Default 60. Pause != loadvm — guest
     /// RAM/state is untouched, so cold-boot-only stations are safe. Per-station
-    /// opt-out: SH_IDLE_PAUSE_SECS=0 in tile.env. See idle.rs / docs/IDLE-PAUSE.md.
+    /// opt-out: SH_IDLE_PAUSE_SECS=0 in station.env. See idle.rs / docs/IDLE-PAUSE.md.
     pub idle_pause_secs: u64,
     /// Process to pause on a NON-QEMU station (SH_IDLE_PAUSE_PIDFILE, env-only),
     /// which has no QMP socket to `stop`: SIGSTOP/SIGCONT that pid instead.
@@ -331,7 +331,7 @@ pub struct Config {
 
 /// Debug/trace env flags (SH_VIDEO_TRACE, SH_ENC_PROFILE, SH_CAP_TRACE) gate on
 /// the VALUE being exactly "1". The old `env::var(..).is_ok()` pattern treated
-/// any set value — including `SH_VIDEO_TRACE=0` in a tile.env — as ENABLED,
+/// any set value — including `SH_VIDEO_TRACE=0` in a station.env — as ENABLED,
 /// which for the per-AU trace means an eprintln storm at frame rate.
 pub fn env_flag(name: &str) -> bool {
     flag_on(std::env::var(name).ok().as_deref())
@@ -373,7 +373,13 @@ impl Config {
             env_or("SH_SHM_DAMAGE", "on").to_ascii_lowercase().as_str(),
             "on" | "1" | "true"
         );
-        let mut tile = env_or("SH_TILE", "dev951");
+        // SH_STATION is the current name; SH_STATION is read as a fallback for one
+        // epoch (terminology migration stage 3) so a station whose env has not
+        // been re-emitted yet still identifies itself correctly.
+        let mut tile = std::env::var("SH_STATION")
+            .ok()
+            .filter(|v| !v.is_empty())
+            .unwrap_or_else(|| env_or("SH_STATION", "dev951"));
         let mut port: u16 = env_or("SH_PORT", "4433").parse().unwrap_or(4433);
         let mut fps: u32 = env_or("SH_FPS", "60").parse().unwrap_or(60);
         // 2500 (was 1000): at CQP q10/1920x1200 an IDR is a ~1-2 MB frame whose
@@ -620,7 +626,7 @@ impl Config {
         }
 
         // Derive defaults from the station name so a bare `--tile foo --port N` works.
-        let base = format!("/data/vms/streamhost/tiles/{tile}");
+        let base = format!("/data/vms/streamhost/stations/{tile}");
         let qmp = qmp.unwrap_or_else(|| "/data/vms/streamhost/run951/qmp951.sock".to_string());
         let hash_file = hash_file.unwrap_or_else(|| format!("{base}/cert_hash_b64.txt"));
         let signaling_json = signaling_json.unwrap_or_else(|| format!("{base}/signaling.json"));
@@ -691,7 +697,7 @@ impl Config {
             legacy_kbd,
             key_remap,
             // 250 ms is already an eternity for a keypress; cap so a typo in a
-            // tile.env cannot wedge the keyboard.
+            // station.env cannot wedge the keyboard.
             key_min_hold_ms: key_min_hold_ms.min(250),
             key_min_gap_ms: key_min_gap_ms.min(250),
             hash_file,

@@ -48,8 +48,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/win98se",
-      "qmp": "/data/vms/streamhost/tiles/win98se/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/win98se",
+      "qmp": "/data/vms/streamhost/stations/win98se/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -99,8 +99,8 @@
   "credentialsRef": "guest/win98se",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "win98se",
-      "SH_QMP": "/data/vms/streamhost/tiles/win98se/qmp.sock",
+      "SH_STATION": "win98se",
+      "SH_QMP": "/data/vms/streamhost/stations/win98se/qmp.sock",
       "SH_PORT": "54092",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -108,8 +108,8 @@
       "SH_POINTER": "abs",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/win98se/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win98se/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/win98se/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/win98se/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_ABS_PACE_MS": "30"
     },
@@ -142,16 +142,16 @@
         "--aux-file",
         "$T/win98se/sk.py",
         "--env-append-file",
-        "$T/win98se/tile.env.fixture"
+        "$T/win98se/station.env.fixture"
       ],
       "deviceSetId": "win98se-current",
-      "launcher": "streamhost/tiles/win98se/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/win98se/tile.env.fixture",
+      "launcher": "streamhost/stations/win98se/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/win98se/station.env.fixture",
       "auxFiles": [
-        "streamhost/tiles/win98se/golden-bake.sh",
-        "streamhost/tiles/win98se/qmp.py",
-        "streamhost/tiles/win98se/shot.sh",
-        "streamhost/tiles/win98se/sk.py"
+        "streamhost/stations/win98se/golden-bake.sh",
+        "streamhost/stations/win98se/qmp.py",
+        "streamhost/stations/win98se/shot.sh",
+        "streamhost/stations/win98se/sk.py"
       ],
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0,acpi=on",

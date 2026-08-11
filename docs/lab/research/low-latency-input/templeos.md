@@ -38,7 +38,7 @@ The shared baseline and 16-byte record/ring straw man are in the
 absolute motion and real clicks after `savevm`/`loadvm`.
 
 The authoritative
-[launcher](../../../../streamhost/tiles/templeos/qemu-streamhost.sh) currently pins:
+[launcher](../../../../streamhost/stations/templeos/qemu-streamhost.sh) currently pins:
 
 - QEMU `pc`, KVM, host CPU, 1 GiB RAM, one vCPU, std VGA, RTC local time;
 - TempleOS V5.03 ISO plus an IDE qcow2 used only for `savevm golden`;
@@ -53,7 +53,7 @@ the emitted launcher really is the device-set ledger and a legacy IRQ is not nee
 is a device-set change and requires a cold checkpoint recapture.
 
 There is another reproducibility gap to fix during the bake phase: the checked-in
-[`golden-bake.sh`](../../../../streamhost/tiles/templeos/golden-bake.sh) performs the desktop cleanup
+[`golden-bake.sh`](../../../../streamhost/stations/templeos/golden-bake.sh) performs the desktop cleanup
 and snapshot, but it does not currently define or spawn `warpd.HC`; the README describes an older
 manual step. The new capture must explicitly compile and install the PCI driver before `savevm golden`.
 

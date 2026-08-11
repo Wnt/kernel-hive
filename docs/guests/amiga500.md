@@ -21,9 +21,9 @@ that predates this station — the build script installs it into the overlay (an
 NVMe rebuild).
 **Build script (station):** `scripts/build-guests/tiles/amiga.sh` (thin overlay + fs-uae
 install + media fetch + kiosk `launch.sh` + checkpoint capture + verify).
-**Station dir (host):** `/data/vms/streamhost/tiles/amiga/` — `overlay.qcow2` (thin, on
-the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `tile.env`.
-**Proof:** `/data/vms/streamhost/tiles/amiga/proof/workbench-desktop.png` (the
+**Station dir (host):** `/data/vms/streamhost/stations/amiga/` — `overlay.qcow2` (thin, on
+the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `station.env`.
+**Proof:** `/data/vms/streamhost/stations/amiga/proof/workbench-desktop.png` (the
 Workbench 1.3 desktop), `loadvm-golden-restore.png` (cold `-loadvm golden` lands on
 the same desktop), `streamhost-live.png` (the live station under streamhost@amiga).
 
@@ -178,7 +178,7 @@ Workbench desktop. The pilot was fully reverted:
   `launch.sh.golden-desktop.bak` (plain `exec fs-uae … --floppy_drive_0=workbench13.adf`);
   guest `/usr/local/bin/amiga-emu` and `/run/emu-on` removed.
 - Station launcher restored from `qemu-streamhost.sh.pre-coldboot.bak` (byte-identical to the
-  canonical device set below); `tile.env` restored from `tile.env.pre-coldboot.bak`
+  canonical device set below); `station.env` restored from `station.env.pre-coldboot.bak`
   (dropped the coldboot `SH_IDLE_PAUSE_SECS=0` line — kiosks c64/atarist don't set it).
 - **Checkpoint recaptured** on a clean Workbench 1.3 desktop: started fs-uae in the live kiosk X
   session (as user `bridge`, `DISPLAY=:0`), let it auto-boot Workbench, then HMP
@@ -189,13 +189,13 @@ Workbench desktop. The pilot was fully reverted:
 
 ## History — idle auto-pause enabled (2026-08-11)
 The revert above *said* it dropped the coldboot `SH_IDLE_PAUSE_SECS=0` line, but the
-line survived in both the live `tile.env` and the repo fixture — so amiga stayed the
+line survived in both the live `station.env` and the repo fixture — so amiga stayed the
 fleet's single always-running kiosk for another month (its daemon alone burned
 ~43% of a core draining PAL-rate FS-UAE frames with zero viewers). 2026-08-11 the
 leftover was actually removed: the fixture now carries no idle-pause stanza at all,
 so the daemon default applies (QMP stop/cont, grace 60 s) — identical to c64 and
 atarist, which have paused this way since registration, audio and all. No new capture,
-no launcher change; rollback is one line (`SH_IDLE_PAUSE_SECS=0`) in `tile.env` +
+no launcher change; rollback is one line (`SH_IDLE_PAUSE_SECS=0`) in `station.env` +
 `systemctl restart streamhost@amiga`. The pilot's disabled
 `amiga-coldboot-watch.service` unit file, also documented as removed but still
 present on labhost, was moved aside the same day.

@@ -6,7 +6,7 @@
 ## The bug
 
 After `systemctl stop streamhost@irix`, an orphaned
-`bash /data/vms/streamhost/tiles/irix/x11-runtime.sh --livewatch` was still
+`bash /data/vms/streamhost/stations/irix/x11-runtime.sh --livewatch` was still
 running. It kept its relaunch budget, so the *stopped* exhibit could have
 restarted its own guest. It had to be killed by hand, by PID.
 
@@ -18,7 +18,7 @@ measurement.
 ## Root cause — two independent defects, each sufficient
 
 **1. The guest ran in a cgroup systemd never associated with the service.**
-`ensure-tile-x11.sh` (IRIX) and `ensure-tile-qemu.sh` (the four bridge kiosks)
+`ensure-station-x11.sh` (IRIX) and `ensure-station-qemu.sh` (the four bridge kiosks)
 launched via `exec systemd-run --scope --unit qcap-<tile>-<ts> -p MemoryMax=3G`.
 That is a *transient scope*: a sibling unit in `system.slice`, with no
 dependency on `streamhost@<tile>.service` whatsoever. Observed directly on a
@@ -26,7 +26,7 @@ clone of the production configuration:
 
 ```
 CGroup /system.slice/system-streamhost.slice/streamhost@wdtest.service:
-└─1619681 /usr/local/lib/streamhost/tiles/wdtest/current      <- the daemon, alone
+└─1619681 /usr/local/lib/streamhost/stations/wdtest/current      <- the daemon, alone
 
 CGroup /system.slice/qcap-wdtest-1785775501.scope:            <- everything real
 ├─1619481 …/mame/sgi indy_4610 …
@@ -35,7 +35,7 @@ CGroup /system.slice/qcap-wdtest-1785775501.scope:            <- everything real
 ```
 
 No `KillMode=` on the service can reach that second cgroup. Teardown therefore
-rested *entirely* on `ExecStop` → `stop-tile-x11.sh` finding every pidfile.
+rested *entirely* on `ExecStop` → `stop-station-x11.sh` finding every pidfile.
 
 **2. `KillMode=process` leaked the service's own cgroup too.** For the 25 plain
 QEMU tiles there is no scope: the launcher backgrounds QEMU straight into the
@@ -43,7 +43,7 @@ service cgroup. Under `process`, systemd signals only the main process, so any
 descendant `ExecStop`'s pidfile pass did not know about simply survived.
 
 **And the pidfile pass had in fact drifted.** The labhost copy of
-`stop-tile-x11.sh` was an older revision that killed `bootwatch.pid` and
+`stop-station-x11.sh` was an older revision that killed `bootwatch.pid` and
 `mame.pid` but not `livewatch.pid` — the repo already had that line. A teardown
 that depends on one script being in sync is a teardown that will eventually
 fail; the whole point of the fix below is that it no longer has to be right.
@@ -54,8 +54,8 @@ fail; the whole point of the fix below is that it no longer has to be right.
   still goes only to the daemon, and `ExecStop` still owns the graceful, ordered
   teardown (watchdogs first, then the guest) — but whatever is left in the
   cgroup afterwards is now SIGKILLed instead of orphaned.
-- **The qcap scopes are `BindsTo=` their service** (`ensure-tile-x11.sh`,
-  `ensure-tile-qemu.sh`). When the service leaves the active state for any
+- **The qcap scopes are `BindsTo=` their service** (`ensure-station-x11.sh`,
+  `ensure-station-qemu.sh`). When the service leaves the active state for any
   reason — stop, restart, crash, failure — systemd stops the scope, and a
   scope's default `KillMode=control-group` takes the whole tree with it.
 - **`bring-up-all.sh` no longer creates those scopes itself.** A scope started
@@ -75,7 +75,7 @@ the cgroup sweep.
 
 ## Proof
 
-Run against a throwaway instance of the same template (own `tile.env`,
+Run against a throwaway instance of the same template (own `station.env`,
 `SH_PORT`, station dir) rather than an exhibit:
 
 ```

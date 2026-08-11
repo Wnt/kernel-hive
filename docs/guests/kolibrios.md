@@ -101,14 +101,14 @@ steady at 1,1.
 - Launchers `qemu-streamhost.sh` (production, dbus) and `qemu-setup.sh` (capture,
   `-display none`) both carry `-usb -device usb-tablet` after `-vga std`. Pre-change
   copies saved as `*.pre-tablet`.
-- `tile.env`: `SH_POINTER=abs` (was `rel`); checkpoint md5 comment updated. Pre-change
-  copy `tile.env.pre-tablet`.
+- `station.env`: `SH_POINTER=abs` (was `rel`); checkpoint md5 comment updated. Pre-change
+  copy `station.env.pre-tablet`.
 - Checkpoint disk backup before recapture: `state.qcow2.bak-pre-tablet-20260713`.
 - Manifest: `streamhost/stations-manifest.sh` emits `--pointer abs --input-dev usb`.
-  Run `labctl gen` after any launcher/tile.env change (done).
+  Run `labctl gen` after any launcher/station.env change (done).
 
 ## Rollback
 Restore `qemu-streamhost.sh.pre-tablet`, `qemu-setup.sh.pre-tablet`,
-`tile.env.pre-tablet`, and `state.qcow2.bak-pre-tablet-20260713` → `state.qcow2`;
+`station.env.pre-tablet`, and `state.qcow2.bak-pre-tablet-20260713` → `state.qcow2`;
 `labctl gen`; restart `streamhost@kolibrios`. That returns the station to
 `SH_POINTER=rel` with the original `ac1509e1…` checkpoint.

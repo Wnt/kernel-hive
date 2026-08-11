@@ -22,11 +22,11 @@ exactly as bright as the finished one. Ready means *a white field carrying one
 inverse-video block in the bottom-left character cell and no ink anywhere
 else*, held still for three seconds — the `K` cursor does not blink, so a frame
 that is still changing is not the fixture. That test is implemented once, in
-`streamhost/tiles/zx81/zx81-frame.py`, and any detector added to this arm
+`streamhost/stations/zx81/zx81-frame.py`, and any detector added to this arm
 should call it rather than re-deriving a threshold:
 
 ```bash
-python3 /data/vms/streamhost/tiles/zx81/zx81-frame.py <frame.ppm> --assert idle
+python3 /data/vms/streamhost/stations/zx81/zx81-frame.py <frame.ppm> --assert idle
 ```
 
 `BR_DETECT_TIER=3` (fixed timer) is therefore what the arm ships: tier 1's

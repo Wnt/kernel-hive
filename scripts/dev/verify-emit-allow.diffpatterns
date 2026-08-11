@@ -2,7 +2,7 @@
 #
 # Consumed by scripts/dev/verify-emit.sh. Line format:
 #     <tile>|<file>|<extended-regex>
-# tile = tile-dir name or *;  file = tile.env | qemu-streamhost.sh | x11-runtime.sh | *.
+# tile = tile-dir name or *;  file = station.env | qemu-streamhost.sh | x11-runtime.sh | *.
 # The regex matches a whole diff CONTENT line INCLUDING its prefix:
 #     "< " = the line exists only in the LIVE file (superseded by the repo)
 #     "> " = the line exists only in the EMITTED/repo file (repo is ahead)

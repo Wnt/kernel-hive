@@ -27,7 +27,7 @@ stops the clock only when the cursor moves in a real capture.
 | --- | --- |
 | `ckpt.sh` | the bake/restore pair, with every invariant written into it |
 | `nsnet.sh` | the private netns + veth network the procedure needs |
-| `patchns.py` | the four launcher deltas, applied to a **copy** of `streamhost/tiles/irix/x11-runtime.sh` |
+| `patchns.py` | the four launcher deltas, applied to a **copy** of `streamhost/stations/irix/x11-runtime.sh` |
 | `curs.py` | the cursor probe the restore clock stops on |
 
 Everything is namespaced through environment variables; nothing has a default

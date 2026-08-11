@@ -12,7 +12,7 @@
 # Input (produced by build-guests/stages/haiku.sh):
 #   /data/gallery-guests/Haiku/haiku.iso
 # Output (consumed by streamhost/stations-manifest.sh):
-#   /data/vms/streamhost/tiles/haiku/haiku-persist.qcow2
+#   /data/vms/streamhost/stations/haiku/haiku-persist.qcow2
 #
 # The disk-only phase uses the launcher's exact guest-visible device set:
 # pc-i440fx-11.0, KVM/host CPU, one IDE qcow2, VGA with a 1280x720 EDID,
@@ -38,7 +38,7 @@
 set -euo pipefail
 
 ISO="${HAIKU_ISO:-/data/gallery-guests/Haiku/haiku.iso}"
-OUTPUT_DISK="${HAIKU_OUTPUT_DISK:-/data/vms/streamhost/tiles/haiku/haiku-persist.qcow2}"
+OUTPUT_DISK="${HAIKU_OUTPUT_DISK:-/data/vms/streamhost/stations/haiku/haiku-persist.qcow2}"
 GALLERY_KEY="${HAIKU_GALLERY_KEY:-/root/.ssh/gallery_guest_key}"
 GALLERY_PUBKEY="${HAIKU_GALLERY_PUBKEY:-${GALLERY_KEY}.pub}"
 MACHINE="${HAIKU_MACHINE:-pc-i440fx-11.0}"

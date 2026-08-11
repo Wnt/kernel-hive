@@ -1,6 +1,6 @@
 #!/bin/bash
-# ensure-tile-x11.sh <tile> — idempotent ExecStartPre for x11-runtime streamhost
-# tiles (the IRIX/MAME tile, issue #20). Parallels ensure-tile-qemu.sh but for
+# ensure-station-x11.sh <tile> — idempotent ExecStartPre for x11-runtime streamhost
+# tiles (the IRIX/MAME tile, issue #20). Parallels ensure-station-qemu.sh but for
 # the non-QEMU emulator runtime: no QMP, no loadvm. A daemon-only restart must
 # not restart the emulator, so if the pidfile-owned emulator is live and its
 # frame source is present this is a no-op; otherwise the tracked x11-runtime.sh
@@ -24,7 +24,7 @@ case "$TILE" in
     ;;
 esac
 
-BASE="/data/vms/streamhost/tiles/$TILE"
+BASE="/data/vms/streamhost/stations/$TILE"
 MAME_PID="$BASE/mame.pid"
 LAUNCHER="$BASE/x11-runtime.sh"
 DISPLAY_NUM="${SH_X11_DISPLAY:-:40}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # shot.sh <name> : screendump the win98se tile framebuffer to /tmp/<name>.png and print md5
-B=/data/vms/streamhost/tiles/win98se
+B=/data/vms/streamhost/stations/win98se
 N=${1:-shot}
 python3 "$B/qmp.py" "$B/qmp.sock" \
   "[{\"execute\":\"screendump\",\"arguments\":{\"filename\":\"/tmp/$N.png\",\"format\":\"png\"}}]" >/dev/null

@@ -23,8 +23,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/star",
-      "qmp": "/data/vms/streamhost/tiles/star/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/star",
+      "qmp": "/data/vms/streamhost/stations/star/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -73,8 +73,8 @@
   "credentialsRef": "guest/star",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "star",
-      "SH_QMP": "/data/vms/streamhost/tiles/star/qmp.sock",
+      "SH_STATION": "star",
+      "SH_QMP": "/data/vms/streamhost/stations/star/qmp.sock",
       "SH_PORT": "54138",
       "SH_FPS": "30",
       "SH_ENCODER_PRESET": "ultrafast",
@@ -86,8 +86,8 @@
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/star/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/star/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/star/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/star/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 240,
@@ -115,11 +115,11 @@
         "--launcher-file",
         "$T/star/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/star/tile.env.fixture"
+        "$T/star/station.env.fixture"
       ],
       "deviceSetId": "star-current",
-      "launcher": "streamhost/tiles/star/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/star/tile.env.fixture",
+      "launcher": "streamhost/stations/star/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/star/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

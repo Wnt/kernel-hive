@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/pet2001",
-      "qmp": "/data/vms/streamhost/tiles/pet2001/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/pet2001",
+      "qmp": "/data/vms/streamhost/stations/pet2001/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -78,8 +78,8 @@
   "credentialsRef": "guest/pet2001",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "pet2001",
-      "SH_QMP": "/data/vms/streamhost/tiles/pet2001/qmp.sock",
+      "SH_STATION": "pet2001",
+      "SH_QMP": "/data/vms/streamhost/stations/pet2001/qmp.sock",
       "SH_PORT": "54088",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -90,8 +90,8 @@
       "SH_INPUT_BACKEND": "disabled",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/pet2001/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/pet2001/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/pet2001/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/pet2001/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 224,
@@ -121,11 +121,11 @@
         "--launcher-file",
         "$T/pet2001/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/pet2001/tile.env.fixture"
+        "$T/pet2001/station.env.fixture"
       ],
       "deviceSetId": "pet2001-current",
-      "launcher": "streamhost/tiles/pet2001/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/pet2001/tile.env.fixture",
+      "launcher": "streamhost/stations/pet2001/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/pet2001/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",
@@ -170,7 +170,7 @@
       "machine": "pc-i440fx-11.0,vmport=off",
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "the tracked streamhost/tiles/pet2001/qemu-streamhost.sh is installed verbatim by the emitter and is the device-set ledger the golden was baked under"
+        "reason": "the tracked streamhost/stations/pet2001/qemu-streamhost.sh is installed verbatim by the emitter and is the device-set ledger the golden was baked under"
       }
     },
     "bringUpOrder": 43

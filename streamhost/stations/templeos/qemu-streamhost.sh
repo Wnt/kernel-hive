@@ -18,7 +18,7 @@
 #   * The in-guest serial warpd agent provides absolute pointer input; do NOT add usb-tablet.
 # Kill only by pidfile. neko is restored by ROLLBACK.md.
 set -e
-BASE=/data/vms/streamhost/tiles/templeos
+BASE=/data/vms/streamhost/stations/templeos
 STATE="$BASE/state.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

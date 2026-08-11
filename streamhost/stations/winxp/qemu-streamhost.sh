@@ -12,7 +12,7 @@
 #     caret, screensaver off, tray clock hidden). First-ever bake (no snapshot yet)
 #     launches cold -- see golden-bake.sh.
 set -e
-D=/data/vms/streamhost/tiles/winxp
+D=/data/vms/streamhost/stations/winxp
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid"

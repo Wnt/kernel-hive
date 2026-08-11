@@ -190,8 +190,8 @@ it seven times; the first was destructive:
 - **Staging was incomplete in two ways** — the remote `mkdir -p` did not create
   the rsync destination's parent (every fresh per-tile stage died on the first
   rsync), and builders that read host-side sidecars from
-  `streamhost/tiles/<tile>/` were never given them, so `zx81` died on
-  `cd: …/streamhost/tiles/zx81: No such file or directory`.
+  `streamhost/stations/<tile>/` were never given them, so `zx81` died on
+  `cd: …/streamhost/stations/zx81: No such file or directory`.
 
 The upstream image exists and the naming substitution is exact — the URL is the
 bookworm one with `debian-12-` → `debian-13-`:
@@ -289,8 +289,8 @@ that make the migration real rather than declared.
 5. **Update the registry prose — both copies.** Every migrated tile's
    placard still says "a captured **Debian 12** kiosk". That sentence lives in
    exactly two hand-written places now:
-   - `registry/tiles/<tile>.json` → `.museum.notes`
-   - `streamhost/tiles/<tile>/tile.env.fixture` → `SH_FIXTURE_DESC` (the
+   - `registry/stations/<tile>.json` → `.museum.notes`
+   - `streamhost/stations/<tile>/station.env.fixture` → `SH_FIXTURE_DESC` (the
      fixture is the single source for its env keys; the registry entry no
      longer mirrors them)
 
@@ -362,7 +362,7 @@ overlay to `scripts/build-guests/lib/bridge-bake-golden` — drop any stale
 golden, `savevm golden`, **assert the snapshot actually landed**, `loadvm
 golden`, and assert the restored machine is `running` (a golden baked while the
 VM was stopped restores paused, which screenshots perfectly and is dead). Run it
-with the tile up under its own `streamhost/tiles/<tile>/qemu-streamhost.sh`:
+with the tile up under its own `streamhost/stations/<tile>/qemu-streamhost.sh`:
 the helper snapshots whatever QEMU owns that socket, so the golden is taken
 under the production device set by construction.
 
@@ -582,7 +582,7 @@ step 4 of the procedure is a screenshot.
 
 - **`openvms`** — not on this base. It has its own graphical-bridge image
   (`openvms-decwindows-bridge.sh`) and shares only `/data/vms/bridge/bridge_key`.
-- **`irix`** — not a bridge guest at all: `SH_TILE_RUNTIME=x11`, MAME on the
+- **`irix`** — not a bridge guest at all: `SH_STATION_RUNTIME=x11`, MAME on the
   **host** against a `.chd`. Already trixie by definition.
 
 ### Stale fact worth correcting: VICE *is* back in Debian

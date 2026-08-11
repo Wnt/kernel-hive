@@ -67,7 +67,7 @@ case "$qemu_argv" in
   *) die "clone is not running the requested patched QEMU: $qemu_argv" ;;
 esac
 case "$qemu_argv" in
-  *"/data/vms/streamhost/tiles/"*) die "QEMU argv references a production tile" ;;
+  *"/data/vms/streamhost/stations/"*) die "QEMU argv references a production tile" ;;
 esac
 
 mkdir -p "$evidence_dir"

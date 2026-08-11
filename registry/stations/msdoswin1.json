@@ -48,8 +48,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/msdoswin1",
-      "qmp": "/data/vms/streamhost/tiles/msdoswin1/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/msdoswin1",
+      "qmp": "/data/vms/streamhost/stations/msdoswin1/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -99,8 +99,8 @@
   "credentialsRef": "guest/msdoswin1",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "msdoswin1",
-      "SH_QMP": "/data/vms/streamhost/tiles/msdoswin1/qmp.sock",
+      "SH_STATION": "msdoswin1",
+      "SH_QMP": "/data/vms/streamhost/stations/msdoswin1/qmp.sock",
       "SH_PORT": "54113",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -109,8 +109,8 @@
       "SH_LEGACY_KBD": "1",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/msdoswin1/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/msdoswin1/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/msdoswin1/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/msdoswin1/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_ABS_PACE_MS": "30"
     },
@@ -140,9 +140,9 @@
         "$T/msdoswin1/qmpc.py"
       ],
       "deviceSetId": "msdoswin1-current",
-      "launcher": "streamhost/tiles/msdoswin1/qemu-streamhost.sh",
+      "launcher": "streamhost/stations/msdoswin1/qemu-streamhost.sh",
       "auxFiles": [
-        "streamhost/tiles/msdoswin1/qmpc.py"
+        "streamhost/stations/msdoswin1/qmpc.py"
       ],
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0,pcspk-audiodev=snd0",

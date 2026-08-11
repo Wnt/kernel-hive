@@ -6,7 +6,7 @@
 # No old-pool image is consulted. Kill QEMU only through this tile's pidfile.
 set -euo pipefail
 
-BASE="${TILE_DIR:-/data/vms/streamhost/tiles/aros}"
+BASE="${TILE_DIR:-/data/vms/streamhost/stations/aros}"
 ISO="${AROS_ISO:-/data/gallery-guests/AmigaOS/aros-pc-i386.iso}"
 PROOF_DIR="${PROOF_DIR:-/data/gallery-guests/AmigaOS}"
 DISK="$BASE/golden-scratch.qcow2"
@@ -193,7 +193,7 @@ command -v python3 >/dev/null 2>&1 || {
 }
 mkdir -p "$BASE" "$PROOF_DIR"
 
-if [ "$BASE" = /data/vms/streamhost/tiles/aros ]; then
+if [ "$BASE" = /data/vms/streamhost/stations/aros ]; then
   systemctl stop streamhost@aros 2>/dev/null || true
 fi
 stop_qemu

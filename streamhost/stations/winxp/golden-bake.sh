@@ -3,7 +3,7 @@
 # Use after a bare-metal/NVMe rebuild that wiped winxp-golden.qcow2. Rebuilds
 # from the PRISTINE shared gallery image (autologon + VBEMP 1920x1200 baked).
 #
-# WinXP fixture baked here (see GOLDEN.md / tile.env.fixture):
+# WinXP fixture baked here (see GOLDEN.md / station.env.fixture):
 #   * Administrator autologon (already in the pristine SOFTWARE hive).
 #   * Notepad open+focused (empty doc, caret top-left), pointer parked right.
 #   * Screensaver OFF; power scheme "Always On", all timeouts 0 (powercfg).
@@ -16,7 +16,7 @@
 # NTFS SOFTWARE/SYSTEM/NTUSER.DAT hives); the live-only bits (Notepad, powercfg,
 # pointer park) are driven over QMP with screendump feedback. Kill only by pidfile.
 set -e
-BASE=/data/vms/streamhost/tiles/winxp
+BASE=/data/vms/streamhost/stations/winxp
 DISK="$BASE/winxp-golden.qcow2"
 SRC=/data/gallery-guests/WinXPpro/winxp.qcow2
 DRIVE="python3 $BASE/drive.py $BASE/qmp.sock"

@@ -43,8 +43,8 @@ This is not a generic “old Windows” VM:
 | Win95 OSR2 | `streamhost/guest-agents/win9x/warpnet.c`: Winsock 1.1 TCP `:7777`, ASCII `M/P/R/B`, `SetCursorPos`; production buttons remain on emulated PS/2 | 256 MiB, one Pentium, `pc,acpi=off,usb=off,kernel-irqchip=off`, `-cpu pentium,-apic`, standard VGA, SB16, PCI PCnet | PIC/legacy INTx only. PCI is nevertheless alive (the working PCnet proves it). The new function must work without ACPI, APIC, USB or an in-kernel irqchip. |
 | Win98 SE | QEMU `usb-tablet`, already absolute and kernel serviced; no agent | 384 MiB, one Pentium III, `pc,acpi=on`, APIC/default irqchip, standard VGA, SB16, PCI PCnet, UHCI plus tablet | PCI enumeration depends on keeping ACPI on. The baseline is the tablet, not old serial/TCP notes. |
 
-The live launchers are `streamhost/tiles/win95/qemu-streamhost.sh` and
-`streamhost/tiles/win98se/qemu-streamhost.sh`; the current behavior and history are recorded in
+The live launchers are `streamhost/stations/win95/qemu-streamhost.sh` and
+`streamhost/stations/win98se/qemu-streamhost.sh`; the current behavior and history are recorded in
 `streamhost/guest-agents/win9x/README.md` and `docs/guests/win9x.md`. Read-only CT950 inspection on
 2026-07-15 found QEMU `11.0.2 (pve-qemu-kvm_11.0.2-1)`, only
 `i686-w64-mingw32-gcc` among the candidate historical driver tools, and an
@@ -544,9 +544,9 @@ Deliverable: paired candidate launcher+checkpoint backups and recovery evidence 
   policy, capture and measurement contract.
 - `streamhost/guest-agents/win9x/README.md`, `warpnet.c`,
   `warpwin-serial-altbuild.c` — actual agent/API/transport and current Win95-vs-Win98 split.
-- `streamhost/tiles/win95/qemu-streamhost.sh`,
-  `streamhost/tiles/win98se/qemu-streamhost.sh` — exact pinned device sets.
-- `streamhost/tiles/{win95,win98se}/golden-bake.sh` — current cold-capture/savevm flows.
+- `streamhost/stations/win95/qemu-streamhost.sh`,
+  `streamhost/stations/win98se/qemu-streamhost.sh` — exact pinned device sets.
+- `streamhost/stations/{win95,win98se}/golden-bake.sh` — current cold-capture/savevm flows.
 - `docs/guests/win9x.md` — verified ACPI/PCI/USB behavior, VBEMP state, checkpoint history and Win95
   fullscreen-DOS PS/2-button requirement.
 

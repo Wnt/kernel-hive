@@ -50,7 +50,7 @@ GOLDEN="${IRIX_GOLDEN:-$ASSETS/irix65-apps-v3.chd}"
 # moved again. Driving with it is what made an earlier revision of this rig
 # conclude the interactive workloads were undrivable on golden v3; they are not.
 # Production fidelity means the station's copy.
-AGENT_SRC="${IRIX_AGENT:-/data/vms/streamhost/tiles/irix/irixagent.lua}"
+AGENT_SRC="${IRIX_AGENT:-/data/vms/streamhost/stations/irix/irixagent.lua}"
 CG="${CLONE_GUARD:-/usr/local/bin/clone-guard}"
 
 # Framebuffer signatures. NOTE these are NOT the numbers in

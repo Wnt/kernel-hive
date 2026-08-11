@@ -117,7 +117,7 @@ done
 # atarist's curated application zips: they live ONLY in the station's assets dir,
 # appear in NO manifest, and one of their sources needs a two-step PHP cookie
 # handshake that will not survive the site changing.
-ATARIST_APPS=/data/vms/streamhost/tiles/atarist/assets/atarist-apps
+ATARIST_APPS=/data/vms/streamhost/stations/atarist/assets/atarist-apps
 if [ -d "$ATARIST_APPS" ]; then
   log "archiving atarist application zips (single-copy, unmanifested)"
   while IFS= read -r f; do put "$f" "atarist-apps/$(basename "$f")" "single copy on box; source needs a PHP cookie handshake"; done \
@@ -128,7 +128,7 @@ fi
 
 # c128's CP/M .d64 exists ONLY inside the c128 station overlay. Pull it out
 # read-only the same way as the base media.
-C128_OVERLAY=/data/vms/streamhost/tiles/c128/overlay.qcow2
+C128_OVERLAY=/data/vms/streamhost/stations/c128/overlay.qcow2
 if [ -f "$C128_OVERLAY" ]; then
   if find /proc/[0-9]*/fd -lname "$C128_OVERLAY" 2>/dev/null | grep -q .; then
     note_gap "c128 CP/M .d64: overlay is OPEN by a running tile; re-run when c128 is stopped (read-only extraction from a live qcow2 can read torn metadata)"

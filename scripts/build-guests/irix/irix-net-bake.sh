@@ -5,7 +5,7 @@
 # because the rest of the bake is a manual sequence that has to be repeatable:
 #
 #   1. Boot a namespaced clone of the current golden with IRIX_NET=on
-#      (streamhost/tiles/irix/x11-runtime.sh does the tap + cfg seeding).
+#      (streamhost/stations/irix/x11-runtime.sh does the tap + cfg seeding).
 #   2. Log in on the real framebuffer, Toolchest -> Desktop -> Open Unix Shell,
 #      and type ONE command through the key matrix (natkeyboard drops shifted
 #      characters -- see scripts/build-guests/irix/irix-apps/keys.py):

@@ -25,7 +25,7 @@
 #     the tile comes up already at the curated Program Manager fixture. The
 #     first-ever bake (no snapshot yet) launches cold -- see golden-bake.sh.
 set -e
-D=/data/vms/streamhost/tiles/nt351
+D=/data/vms/streamhost/stations/nt351
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid"

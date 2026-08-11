@@ -3,7 +3,7 @@
 #
 # This is deliberately a scratch-first template. It never writes below the
 # production station tree and never changes the frozen shared bridge base. Future
-# OS workers fork the generated tile.env/qemu-streamhost.sh after framebuffer,
+# OS workers fork the generated station.env/qemu-streamhost.sh after framebuffer,
 # audio, and checkpoint validation.
 #
 # Usage:
@@ -214,9 +214,9 @@ exec systemd-run --scope --unit "qcap-$TILE-\$(date +%s)" \
 EOF
 chmod +x "$OUT_DIR/launch-scoped.sh"
 
-cat >"$OUT_DIR/tile.env" <<EOF
+cat >"$OUT_DIR/station.env" <<EOF
 # Scratch graphical-bridge contract. This is not a registry/production station.
-SH_TILE=$TILE
+SH_STATION=$TILE
 SH_QMP=$QMP
 SH_PORT=$UDP_PORT
 SH_FPS=$FPS

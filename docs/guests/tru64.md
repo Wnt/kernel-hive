@@ -110,7 +110,7 @@ archive.org ZIP if layered products are ever wanted.
 
 ## Runtime shape (install phase)
 
-`streamhost/tiles/tru64/{x11-runtime.sh,pumps.py,tile.env.fixture}`:
+`streamhost/stations/tru64/{x11-runtime.sh,pumps.py,station.env.fixture}`:
 headless es40 (`SDL_VIDEODRIVER=dummy`, `ES40_SHM_PATH`, `ES40_CTL_SOCK`,
 `ES40_TILE_NAME=tru64`), serial pair **21974/21975** (w2kalpha owns
 21964/21965), `SH_IDLE_PAUSE_SECS=0` (an unwatched SIGSTOP'd installer makes

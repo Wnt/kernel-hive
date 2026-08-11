@@ -2,7 +2,7 @@
 # Build the prep-clone launcher (identical device set to LIVE, COLD boot, hostfwd 59791)
 # and cold-boot the prepped disk. Kill only by pidfile.
 set -euo pipefail
-LIVE_DIR=/data/vms/streamhost/tiles/win95
+LIVE_DIR=/data/vms/streamhost/stations/win95
 PREP=/data/vms/soltest/win95-clean-prep
 LAUNCH="$PREP/qemu-streamhost.sh"
 

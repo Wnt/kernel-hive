@@ -54,7 +54,7 @@ its own N-1 target, so rollback does not depend on the rest of the fleet.
 Systemd expands the instance in:
 
 ```ini
-ExecStart=/usr/local/lib/streamhost/tiles/%i/current
+ExecStart=/usr/local/lib/streamhost/stations/%i/current
 ```
 
 Old artifacts must not be removed while any `current` or `previous` symlink

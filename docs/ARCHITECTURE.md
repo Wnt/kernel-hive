@@ -106,14 +106,14 @@ One `streamhost` process, per station, owns:
 
 Source: `streamhost/streamhost/src/`. Per-station launch scripts (the exact
 device set, capture channel, and any in-guest agent a station needs) live
-under `streamhost/tiles/<tile>/` and `scripts/build-guests/`.
+under `streamhost/stations/<tile>/` and `scripts/build-guests/`.
 
 ## The station / registry model
 
 A **station** is one guest OS instance: an emulator process, its `streamhost`
 capture/encode/transport wrapper, a seed disk image with a known-good
 snapshot to reset to, and an entry in the registry describing all of that.
-`registry/tiles/<osId>.json` is the single typed source of truth (schema at
+`registry/stations/<osId>.json` is the single typed source of truth (schema at
 `registry/schema/tile-v1.schema.json`); `scripts/stations-registry.py generate`
 renders it into the committed artifacts (the shell manifests `streamhost` and
 the builders consume, the UI-compiled TS), while

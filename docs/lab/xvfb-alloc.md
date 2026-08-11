@@ -82,7 +82,7 @@ because **`:1` is the shared CT950 dev desktop** and `:0` is a real seat.
 | `scripts/build-guests/irix/irix-apps/irix-apps-launch.sh` | fixed `:41` | pool allocation, recorded in `$D/display`; `IRIX_APPS_DISPLAY` still pins |
 | `scripts/build-guests/irix/irix-apps/irix-apps-shot.sh` | fixed `:41` | reads `$D/display` (a shot can no longer be of another rig) |
 | `scripts/build-guests/irix/irix-apps/irix-apps-kill.sh` | `clone-guard kill-pidfile xvfb.pid` | `xvfb_release` (proves ownership, then clears the display's files) |
-| `streamhost/tiles/irix/x11-runtime.sh` | fixed `:40` + socket test + `rm -f $XSOCK` | pinned claim via the allocator; the socket `rm` is gone |
+| `streamhost/stations/irix/x11-runtime.sh` | fixed `:40` + socket test + `rm -f $XSOCK` | pinned claim via the allocator; the socket `rm` is gone |
 
 The production IRIX station runs `IRIX_CAPTURE=shm` (`-video none`) and starts **no
 X server at all**, so the station's converted branch is its rollback path, not its

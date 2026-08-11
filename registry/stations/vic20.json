@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/vic20",
-      "qmp": "/data/vms/streamhost/tiles/vic20/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/vic20",
+      "qmp": "/data/vms/streamhost/stations/vic20/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -78,8 +78,8 @@
   "credentialsRef": "guest/vic20",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "vic20",
-      "SH_QMP": "/data/vms/streamhost/tiles/vic20/qmp.sock",
+      "SH_STATION": "vic20",
+      "SH_QMP": "/data/vms/streamhost/stations/vic20/qmp.sock",
       "SH_PORT": "54085",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -90,8 +90,8 @@
       "SH_INPUT_BACKEND": "disabled",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/vic20/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/vic20/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/vic20/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/vic20/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 221,
@@ -121,11 +121,11 @@
         "--launcher-file",
         "$T/vic20/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/vic20/tile.env.fixture"
+        "$T/vic20/station.env.fixture"
       ],
       "deviceSetId": "vic20-current",
-      "launcher": "streamhost/tiles/vic20/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/vic20/tile.env.fixture",
+      "launcher": "streamhost/stations/vic20/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/vic20/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

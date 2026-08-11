@@ -516,7 +516,7 @@ generic architecture:
 - `spa/src/three/{ScreenSurface,useStreamControl,streamClient}.tsx` and the existing browser photon
   prototype in `streamhost/web/client.html`;
 - `streamhost/guest-agents/{solaris,ninefront,win9x,win311,os2,templeos}/`;
-- the checked-in `streamhost/tiles/<tile>/qemu-streamhost.sh` launchers, plus
+- the checked-in `streamhost/stations/<tile>/qemu-streamhost.sh` launchers, plus
   `streamhost/stations-manifest.sh`/its generation path where a station (notably ninefront) has no checked-in
   launcher;
 - `labctl`, `scripts/coldboot/`, `tests/e2e-live/e2e/streamhostInput.*`, and

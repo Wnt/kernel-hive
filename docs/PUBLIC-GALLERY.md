@@ -272,7 +272,7 @@ UDP relay.
   refuses an id that differs from its `stationDir`, so the two names agree by
   construction. The gateway still reads the daemon's, and
   `check-stream-tickets.py` still proves the relationship holds: the daemon is
-  the authority on the identity it verifies against, and a tile.env edited on
+  the authority on the identity it verifies against, and a station.env edited on
   labhost does not pass through the registry's gate.
 - **`openvms` is flaky across restarts** (`dual-VM stack did not become ready`)
   and needs a retry — unrelated to any of this, but it will stop a fleet-wide

@@ -21,10 +21,10 @@ Build on the lab box:
 Example:
 
     target/release/stage-d-measure \
-      /data/vms/streamhost/tiles/soltest-ghid/qmp.sock \
+      /data/vms/streamhost/stations/soltest-ghid/qmp.sock \
       127.0.0.1:57822 ghid-native loaded 320 \
-      /data/vms/streamhost/tiles/soltest-ghid/stage-d/native-loaded.jsonl \
-      /data/vms/streamhost/tiles/soltest-ghid/stage-d/audits
+      /data/vms/streamhost/stations/soltest-ghid/stage-d/native-loaded.jsonl \
+      /data/vms/streamhost/stations/soltest-ghid/stage-d/audits
 
 Summarize four JSONL cells:
 

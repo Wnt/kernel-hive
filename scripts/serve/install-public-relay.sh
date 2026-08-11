@@ -88,7 +88,7 @@ command -v nft >/dev/null 2>&1 || die "nft not found — is this the edge VPS?"
 
 # Refuse to run on the lab box: the rule belongs on the edge, and applying it
 # here would look like it worked while changing nothing that matters.
-if [ -e /data/vms/streamhost/tiles ] || [ -e /etc/forwarder-agent/agent.env ]; then
+if [ -e /data/vms/streamhost/stations ] || [ -e /etc/forwarder-agent/agent.env ]; then
   die "this looks like the LAB BOX, not the edge. The DNAT rule lives on vm-control."
 fi
 

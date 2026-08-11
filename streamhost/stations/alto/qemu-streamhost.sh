@@ -33,7 +33,7 @@
 #     with no calibration. All THREE buttons matter — RED/YELLOW/BLUE are host
 #     left/middle/right, and Bravo gives each of them a different selection.
 set -e
-BASE=/data/vms/streamhost/tiles/alto
+BASE=/data/vms/streamhost/stations/alto
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

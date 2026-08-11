@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/daybreak",
-      "qmp": "/data/vms/streamhost/tiles/daybreak/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/daybreak",
+      "qmp": "/data/vms/streamhost/stations/daybreak/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -77,8 +77,8 @@
   "credentialsRef": "guest/daybreak",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "daybreak",
-      "SH_QMP": "/data/vms/streamhost/tiles/daybreak/qmp.sock",
+      "SH_STATION": "daybreak",
+      "SH_QMP": "/data/vms/streamhost/stations/daybreak/qmp.sock",
       "SH_PORT": "54139",
       "SH_FPS": "60",
       "SH_ENCODER_PRESET": "ultrafast",
@@ -90,8 +90,8 @@
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/daybreak/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/daybreak/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/daybreak/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/daybreak/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 239,
@@ -119,11 +119,11 @@
         "--launcher-file",
         "$T/daybreak/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/daybreak/tile.env.fixture"
+        "$T/daybreak/station.env.fixture"
       ],
       "deviceSetId": "daybreak-current",
-      "launcher": "streamhost/tiles/daybreak/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/daybreak/tile.env.fixture",
+      "launcher": "streamhost/stations/daybreak/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/daybreak/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

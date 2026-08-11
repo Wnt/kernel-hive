@@ -76,5 +76,5 @@ Before promoting it to /data/vms/streamhost/assets/irix/mame/sgi:
   1. smoke-test it on a CLONE running the production launcher and config
      (cold boot to 4Dwm, framebuffer screendump, serial exec, tap carrier up),
   2. keep the outgoing binary beside it as sgi.prev-<md5>,
-  3. make sure no tile.env pins IRIX_MAME to some other staged binary.
+  3. make sure no station.env pins IRIX_MAME to some other staged binary.
 EOF

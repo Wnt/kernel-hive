@@ -110,6 +110,6 @@ NBD=""
 trap - EXIT
 
 log "done: $OUT_QCOW"
-log "NEXT (Stage 2): boot on the pinned device set (see streamhost/tiles/nt4/"
+log "NEXT (Stage 2): boot on the pinned device set (see streamhost/stations/nt4/"
 log "qemu-streamhost.sh), remove VMware Tools, calibrate the abs pointer,"
-log "then bake 'savevm golden' and finalize registry/tiles/nt4.json."
+log "then bake 'savevm golden' and finalize registry/stations/nt4.json."

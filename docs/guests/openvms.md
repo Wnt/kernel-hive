@@ -64,7 +64,7 @@ mapping with scale 1 and zero offsets.
 
 ## DECwindows fixture and pre-connect capture
 
-`streamhost/tiles/openvms/DECW_FIXTURE.COM` is copied into the OpenVMS system
+`streamhost/stations/openvms/DECW_FIXTURE.COM` is copied into the OpenVMS system
 disk during the clone-only capture. It creates display 610:
 
 ```text
@@ -103,7 +103,7 @@ absent.
 
 ## Launch and reset
 
-`streamhost/tiles/openvms/qemu-streamhost.sh` is the production dual-VM
+`streamhost/stations/openvms/qemu-streamhost.sh` is the production dual-VM
 launcher. A pidfile-owned supervisor starts the bridge, gates on the private
 X11 listener, restores a fresh OpenVMS QEMU from `leanx-preconnect`, and owns
 both child QEMUs. Terminating the recorded supervisor reaps both children.
@@ -117,7 +117,7 @@ X sockets and stale SLIRP state. The only supported visitor reset is:
 systemctl restart streamhost@openvms
 ```
 
-`SH_RESET_MODE=restart` is emitted into `tile.env`. `labctl gen` records that
+`SH_RESET_MODE=restart` is emitted into `station.env`. `labctl gen` records that
 observed mode and `labctl reset openvms` maps it to the same cold service
 restart. The restart creates a fresh bridge Xorg process, a fresh OpenVMS
 SLIRP process, restores the pre-connect snapshot, and replays every fixture
@@ -136,7 +136,7 @@ changed. Framebuffer acceptance requires:
 
 Save PPM and PNG evidence beneath the clone's `evidence/` directory. After a
 green clone, back up the whole live station directory and
-`registry/tiles/openvms.json` to a timestamped rollback directory before
+`registry/stations/openvms.json` to a timestamped rollback directory before
 installing the three qcow2 artifacts and generated runtime files.
 
 If any live framebuffer, keyboard, pointer, or reset check fails, stop only

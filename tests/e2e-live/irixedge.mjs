@@ -6,7 +6,7 @@ import { execSync } from 'node:child_process';
 const URL = process.env.GALLERY_URL || 'https://192.0.2.10:8443';
 const cursor = () =>
   execSync(
-    "ssh lab '/data/vms/streamhost/tiles/irix/fbstat.py --cursor /data/vms/streamhost/tiles/irix/fb.shm'",
+    "ssh lab '/data/vms/streamhost/stations/irix/fbstat.py --cursor /data/vms/streamhost/stations/irix/fb.shm'",
   ).toString().trim();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

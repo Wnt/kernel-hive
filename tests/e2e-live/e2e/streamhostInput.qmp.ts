@@ -5,7 +5,7 @@
 //  The neko suites pixel-verify a guest reaction through the neko ADMIN API on a
 //  second browser page. streamhost tiles have NO such admin API — instead every
 //  tile is a QEMU process exposing a QMP unix socket at
-//    /data/vms/streamhost/tiles/<stationDir>/qmp.sock
+//    /data/vms/streamhost/stations/<stationDir>/qmp.sock
 //  so we verify a guest reaction DIRECTLY off the authoritative guest framebuffer
 //  via QMP `screendump` (PPM). This is stronger than the neko path: it reads the
 //  real VGA framebuffer, not a re-encoded stream, and is completely independent
@@ -23,7 +23,7 @@ import path from 'node:path';
 
 /** Root dir holding each tile's qmp.sock (…/<stationDir>/qmp.sock). */
 export const TILES_ROOT =
-  process.env.STREAMHOST_TILES_DIR ?? '/data/vms/streamhost/tiles';
+  process.env.STREAMHOST_TILES_DIR ?? '/data/vms/streamhost/stations';
 
 /** Scratch dir for the PPM screendumps QEMU writes (must be writable by QEMU). */
 export const SHOT_DIR = process.env.STREAMHOST_SHOT_DIR ?? '/data/streamhost-input-test/shots';

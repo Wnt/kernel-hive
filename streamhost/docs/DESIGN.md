@@ -299,7 +299,7 @@ content-addressed copy under `/usr/local/lib/streamhost/` and points each tile's
 `current` symlink at it — and the symlink is what systemd actually runs.
 
 - **Authoritative build output:** `/data/vms/streamhost/build/target/release/streamhost`
-- **What a tile runs:** `/usr/local/lib/streamhost/tiles/<tile>/current`
+- **What a tile runs:** `/usr/local/lib/streamhost/stations/<tile>/current`
   (→ `streamhost-<sha>`; `previous` beside it is the rollback target)
 - **Stale, renamed to `streamhost.STALE-<date>.DO-NOT-USE` 2026-07-31:**
   `/data/vms/streamhost/target/release/` (an older layout — its `bootrec-tap` IS
@@ -671,7 +671,7 @@ Per `tiles/<tile>/ROLLBACK.md`. To revert a single tile with no effect on the ot
 
 ```
 systemctl stop streamhost@<tile> \
-  && kill "$(cat /data/vms/streamhost/tiles/<tile>/qemu.pid)" 2>/dev/null \
+  && kill "$(cat /data/vms/streamhost/stations/<tile>/qemu.pid)" 2>/dev/null \
   && pct exec 110 -- docker start osgallery-<tile>-1 \
   && python3 - <<'PY'   # drop <osId> from the SPA signaling registry
 import json,sys; p="/data/vms/streamhost/serve/tiles.json"
@@ -689,14 +689,14 @@ to `tiles.json`.
 
 The **entire streamhost control plane is now in the project repo** and self-consistent:
 Rust source (`streamhost/src/*.rs`, verified byte-identical to host build), the tile emitter
-`scripts/streamhost-tile.sh` (synced to the live version with `--accel kvm|tcg`), the systemd
+`scripts/streamhost-station.sh` (synced to the live version with `--accel kvm|tcg`), the systemd
 unit `deploy/streamhost@.service`, the serve plane in the repo's top-level **`scripts/serve/`**
 (the HTTPS+signaling server `osgallery-https-server.py`, the local-CA generator
 `gen-local-ca.sh`, the signaling registry `tiles.json` — no longer duplicated in this
 streamhost tree; mirrored to `/data/vms/streamhost/serve/` on the host, see
 `docs/lab/MASTER-REPRODUCE.md` Phase 5), the
-**per-tile manifest `stations-manifest.sh`** (exact `streamhost-tile.sh` invocations, verified
-to re-emit every `tile.env`/`qemu-streamhost.sh` byte-identically), and the ordered
+**per-tile manifest `stations-manifest.sh`** (exact `streamhost-station.sh` invocations, verified
+to re-emit every `station.env`/`qemu-streamhost.sh` byte-identically), and the ordered
 **`bring-up-all.sh`** orchestrator (install unit → emit → launch QEMU + wait QMP → start
 daemon → postmarketOS res-settle restart → serenity overlay → tiles.json + CA + server).
 Only two things are **external by design** (not in git): the guest disk images/ISOs under

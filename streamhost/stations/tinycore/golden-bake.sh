@@ -7,7 +7,7 @@
 # snapshot is portable to the production dbus launcher (verified: loadvm golden gives
 # a byte-identical framebuffer under both).
 set -e
-BASE=/data/vms/streamhost/tiles/tinycore
+BASE=/data/vms/streamhost/stations/tinycore
 STATE="$BASE/state.qcow2"
 DRIVE="python3 $BASE/drive.py $BASE/qmp.sock"
 

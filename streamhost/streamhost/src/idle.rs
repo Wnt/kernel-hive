@@ -57,7 +57,7 @@
 // reconciler's re-assert and the unconditional cont on connect stay free.
 //
 // Config: SH_IDLE_PAUSE_SECS / --idle-pause-secs (default 60; 0 = disabled;
-// per-station override via tile.env), SH_IDLE_PAUSE_PIDFILE +
+// per-station override via station.env), SH_IDLE_PAUSE_PIDFILE +
 // SH_IDLE_PAUSE_PROC_MATCH (non-QEMU stations). See docs/IDLE-PAUSE.md.
 
 use std::io::{BufRead, BufReader, Write};

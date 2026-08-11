@@ -40,14 +40,14 @@ type RegistryTile = {
 };
 
 const lineup = Object.values(
-  import.meta.glob<RegistryTile>('../../../registry/tiles/*.json', { eager: true, import: 'default' }),
+  import.meta.glob<RegistryTile>('../../../registry/stations/*.json', { eager: true, import: 'default' }),
 )
   .filter((tile) => tile.enabled === true && tile.render.bindingOrder !== undefined)
   .sort((a, b) => (a.render.bindingOrder ?? 0) - (b.render.bindingOrder ?? 0));
 
 const streamhostTiles = lineup.filter((tile) => tile.stream.transport === 'streamhost');
 
-// The visitor-facing museum copy (registry/tiles/<id>.json `museum`), checked at
+// The visitor-facing museum copy (registry/stations/<id>.json `museum`), checked at
 // its source rather than in the rendered projection of it.
 type MuseumCopy = {
   id: string;

@@ -9,9 +9,9 @@
 # device-set-safe unix-socket serial chardev on the default serial0. The golden
 # RAM snapshot is baked with WARPD.EXE already running, and we boot straight into
 # it (-loadvm golden) so absolute cursor tracking is live from first frame and the
-# OS/2 register nag never reappears. tile.env: SH_POINTER=warpd + SH_WARPD_ADDR.
+# OS/2 register nag never reappears. station.env: SH_POINTER=warpd + SH_WARPD_ADDR.
 set -e
-D=/data/vms/streamhost/tiles/os2warp
+D=/data/vms/streamhost/stations/os2warp
 DISK=/data/gallery-guests/OS2Warp/os2.qcow2
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3

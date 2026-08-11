@@ -146,7 +146,7 @@ systemd-run --unit=vm-idle-watch-940 \
 
 * `SH_IDLE_PAUSE_SECS` / `--idle-pause-secs` — grace seconds; `0` disables;
   nonzero clamped to ≥ 5. Default **60**, on for every tile. Per-tile opt-out:
-  add `SH_IDLE_PAUSE_SECS=0` to `/data/vms/streamhost/tiles/<tile>/tile.env`
+  add `SH_IDLE_PAUSE_SECS=0` to `/data/vms/streamhost/stations/<tile>/station.env`
   and restart `streamhost@<tile>`.
 * `SH_IDLE_PAUSE_PIDFILE` (env-only) — pidfile of the process to freeze on a
   NON-QEMU tile. Unset on a non-QEMU tile means no auto-pause at all: signalling
@@ -162,5 +162,5 @@ The daemon prints which mechanism it resolved at start:
 
 ```
 [streamhost] idle auto-pause ON (grace 60s; all platform transports; \
-  SIGSTOP/SIGCONT on pid from /data/vms/streamhost/tiles/irix/mame.pid)
+  SIGSTOP/SIGCONT on pid from /data/vms/streamhost/stations/irix/mame.pid)
 ```

@@ -16,7 +16,7 @@
 #                   is immediately reusable
 set -u
 
-TAPNET="${TAPNET_SH:-$(cd "$(dirname "$0")/.." && pwd)/streamhost/tiles/irix/tapnet.sh}"
+TAPNET="${TAPNET_SH:-$(cd "$(dirname "$0")/.." && pwd)/streamhost/stations/irix/tapnet.sh}"
 MIN=40
 MAX=46
 while [ "$#" -gt 0 ]; do

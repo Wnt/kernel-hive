@@ -18,7 +18,7 @@
 set -uo pipefail
 
 # ---- paths / constants ---------------------------------------------------------
-BOOTREC_TILES_ROOT="${BOOTREC_TILES_ROOT:-/data/vms/streamhost/tiles}"
+BOOTREC_TILES_ROOT="${BOOTREC_TILES_ROOT:-/data/vms/streamhost/stations}"
 BOOTREC_CLONE_ROOT="${BOOTREC_CLONE_ROOT:-/data/vms/soltest}"
 BOOTREC_STAGING_ROOT="${BOOTREC_STAGING_ROOT:-/data/vms/streamhost/boot-rec}"
 
@@ -179,7 +179,7 @@ br_kill_pidfile() {
     *) br_die "REFUSED: pidfile '$pf' is not inside the clone root $BOOTREC_CLONE_ROOT/ — refusing to kill (possible production target)." ;;
   esac
   case "$(realpath -m -- "$pf" 2>/dev/null || echo "$pf")" in
-    */streamhost/tiles/*) br_die "REFUSED: pidfile '$pf' traverses the production tiles tree — refusing to kill." ;;
+    */streamhost/stations/*) br_die "REFUSED: pidfile '$pf' traverses the production tiles tree — refusing to kill." ;;
   esac
   [ -f "$pf" ] || return 0
   pid="$(cat "$pf" 2>/dev/null || true)"
@@ -189,7 +189,7 @@ br_kill_pidfile() {
   }
   case "$pid" in *[!0-9]*) br_die "REFUSED: pidfile '$pf' has a non-numeric pid '$pid'." ;; esac
   # 2) the running PID must not be a production QEMU (argv under the stations tree).
-  if [ -r "/proc/$pid/cmdline" ] && tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null | grep -q '/streamhost/tiles/'; then
+  if [ -r "/proc/$pid/cmdline" ] && tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null | grep -q '/streamhost/stations/'; then
     br_die "REFUSED: pid $pid is a PRODUCTION QEMU (argv references $BOOTREC_TILES_ROOT/) — refusing to kill."
   fi
   if kill -0 "$pid" 2>/dev/null; then

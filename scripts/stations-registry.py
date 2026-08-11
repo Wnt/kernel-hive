@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and generate all tile lineup artifacts from registry/tiles/*.json."""
+"""Validate and generate all tile lineup artifacts from registry/stations/*.json."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from poster_registry import PosterError, load_posters
 
 REPO = Path(__file__).resolve().parents[1]
 REGISTRY = REPO / "registry"
-TILES = REGISTRY / "tiles"
+TILES = REGISTRY / "stations"
 TEMPLATES = REGISTRY / "templates"
 POSTERS = REGISTRY / "posters"
 
@@ -66,7 +66,7 @@ def is_x11_runtime(row: dict[str, Any]) -> bool:
     """True for the non-QEMU x11 streamhost runtime (SH_CAPTURE=x11 tiles).
 
     Discriminated by a runtime.x11 block; the stationEnv carries the matching
-    SH_TILE_RUNTIME=x11 marker the service dispatch keys on. The block is still
+    SH_STATION_RUNTIME=x11 marker the service dispatch keys on. The block is still
     called `x11` because that names the RUNTIME (an emulator managed by
     x11-runtime.sh rather than a QEMU VM). Its FRAME SOURCE is chosen separately
     by runtime.x11.capture and may be `shm`, in which case no X server is
@@ -82,7 +82,7 @@ def fixture_path(row: dict[str, Any]) -> Path | None:
     args = source.get("emitArgs", [])
     if "--env-append-file" in args:
         raw = args[args.index("--env-append-file") + 1]
-        return REPO / raw.replace("$T", "streamhost/tiles")
+        return REPO / raw.replace("$T", "streamhost/stations")
     return None
 
 
@@ -109,7 +109,7 @@ def load() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         except json.JSONDecodeError as exc:
             raise RegistryError(f"{path.relative_to(REPO)}:{exc.lineno}: {exc.msg}") from exc
         row["_path"] = path
-        # The tile.env.fixture owns its keys; the registry entry owns the
+        # The station.env.fixture owns its keys; the registry entry owns the
         # emitter-written keys. Everything downstream (validators, index.json)
         # sees the merged view — the same env the emitter's append produces.
         fixture = fixture_path(row)
@@ -124,7 +124,7 @@ def load() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             runtime["stationEnv"] = merged
         rows.append(row)
     if not rows:
-        raise RegistryError("registry/tiles contains no entries")
+        raise RegistryError("registry/stations contains no entries")
     return globals_doc, rows
 
 
@@ -530,7 +530,7 @@ def validate_pointer_method(rows: list[dict[str, Any]], errors: list[str]) -> No
                 f"{'/'.join(sorted(backends))}, but this tile runs {backend!r} "
                 f"(stream.pointer.backend / runtime.stationEnv SH_INPUT_BACKEND / "
                 f"legacy SH_POINTER={ptr.get('transport')!r}). Correct the method or "
-                f"the backend -- the LIVE tile.env on the box is the truth about "
+                f"the backend -- the LIVE station.env on the box is the truth about "
                 f"which one is wrong.",
             )
         present = backend != "disabled"
@@ -631,7 +631,7 @@ def validate_fleet_encoder(globals_doc: dict[str, Any], errors: list[str]) -> No
     declared = (globals_doc.get("fleetEncoder") or {}).get("bufsizeRatio")
     if declared is None:
         return
-    emitter = REPO / "streamhost/scripts/streamhost-tile.sh"
+    emitter = REPO / "streamhost/scripts/streamhost-station.sh"
     text = emitter.read_text()
     found = re.search(r'^BUFSIZE_RATIO="([0-9.]+)"', text, re.M)
     if not found:
@@ -767,7 +767,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         tile_dir = row["stationDir"]
         # ONE station, ONE name. The id is the user-facing half (/os/<id>, the poster
         # path, docs/guests/<id>.md, the UI binding); stationDir is the daemon half
-        # (SH_TILE, the runtime dir, streamhost@<dir>). They used to be allowed to
+        # (SH_STATION, the runtime dir, streamhost@<dir>). They used to be allowed to
         # differ behind an explicit alias block, and the two that did — aros/amigaos
         # and solaris/solariscde — cost a special case in every tool that spanned
         # them, plus a four-hour outage on 2026-08-05 when the gateway signed a
@@ -827,7 +827,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                 fail(errors, row, "x11 tile reset must be relaunch or criu")
         env = runtime.get("stationEnv", {})
         expected_env = {
-            "SH_TILE": tile_dir,
+            "SH_STATION": tile_dir,
             "SH_PORT": str(stream["udpPort"]),
             "SH_FPS": str(stream["fps"]),
             "SH_AUDIO": "on" if stream["audio"] else "off",
@@ -862,12 +862,12 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                 {
                     "SH_CAPTURE": capture,
                     "SH_X11_DISPLAY": x11cfg.get("display"),
-                    "SH_TILE_RUNTIME": "x11",
-                    "SH_X11_CMD_FILE": f"/data/vms/streamhost/tiles/{tile_dir}/{tile_dir}_cmd",
+                    "SH_STATION_RUNTIME": "x11",
+                    "SH_X11_CMD_FILE": f"/data/vms/streamhost/stations/{tile_dir}/{tile_dir}_cmd",
                 }
             )
             if capture == "shm":
-                expected_env["SH_SHM_PATH"] = f"/data/vms/streamhost/tiles/{tile_dir}/fb.shm"
+                expected_env["SH_SHM_PATH"] = f"/data/vms/streamhost/stations/{tile_dir}/fb.shm"
             if "SH_QMP" in env:
                 fail(errors, row, "x11 tile must not emit SH_QMP (no QEMU/QMP)")
         for key, value in expected_env.items():
@@ -894,7 +894,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                 errors,
                 row,
                 f"runtime.stationEnv duplicates fixture-owned key(s) {overlap}: the tile's "
-                f"tile.env.fixture is the single source for the keys it defines — "
+                f"station.env.fixture is the single source for the keys it defines — "
                 f"delete them from the registry entry",
             )
     if set(by_id) != {p.stem for p in TILES.glob("*.json")}:
@@ -1055,7 +1055,7 @@ def render_keyboards(rows: list[dict[str, Any]]) -> bytes:
     encoded = json.dumps(boards, indent=2, ensure_ascii=False)
     return (
         "// DO NOT EDIT — generated by scripts/stations-registry.py generate from\n"
-        "// registry/tiles/*.json (keyboard); run `make station-registry-generate`.\n"
+        "// registry/stations/*.json (keyboard); run `make station-registry-generate`.\n"
         "import type { GuestKeyboard } from '../types';\n\n"
         f"const KEYBOARDS = {encoded} as const satisfies Record<string, GuestKeyboard>;\n\n"
         "export function keyboardFor(osId: string): GuestKeyboard | undefined {\n"
@@ -1072,7 +1072,7 @@ def render_demo_programs(rows: list[dict[str, Any]]) -> bytes:
     encoded = json.dumps(programs, indent=2, ensure_ascii=False)
     return (
         "// DO NOT EDIT — generated by scripts/stations-registry.py generate from\n"
-        "// registry/tiles/*.json (demoProgram); run `make station-registry-generate`.\n"
+        "// registry/stations/*.json (demoProgram); run `make station-registry-generate`.\n"
         "import type { DemoProgram } from '../types';\n\n"
         f"const DEMO_PROGRAMS = {encoded} as const satisfies Record<string, DemoProgram>;\n\n"
         "export function demoProgramFor(osId: string): DemoProgram | undefined {\n"
@@ -1191,7 +1191,7 @@ def rendered() -> OrderedDict[str, bytes]:
     for row in sorted(streamed, key=lambda x: x["render"]["signalOrder"]):
         signal[row["id"]] = {
             "udpPort": row["stream"]["udpPort"],
-            "hashFile": f"/data/vms/streamhost/tiles/{row['stationDir']}/cert_hash_b64.txt",
+            "hashFile": f"/data/vms/streamhost/stations/{row['stationDir']}/cert_hash_b64.txt",
         }
     out["tiles.json"] = (json.dumps(signal, indent=2, ensure_ascii=False) + "\n").encode()
 
@@ -1547,7 +1547,7 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
             path.unlink(missing_ok=True)
         raise
     print(f"scaffolded {os_id}: tier={tier} archetype={archetype} slot={slot} udp={udp_port}")
-    print(f"  registry/tiles/{os_id}.json")
+    print(f"  registry/stations/{os_id}.json")
     print(f"  scripts/build-guests/tiles/{os_id}.sh")
     print(f"  docs/guests/{os_id}.md")
     print(f"  scripts/coldboot/{os_id}-bootrec-arm.sh")
@@ -1594,9 +1594,9 @@ def cmd_emit(name: str) -> int:
 
 
 def compare_live_labctl(outputs: OrderedDict[str, bytes]) -> list[str]:
-    live = Path("/data/vms/streamhost/tiles.json")
+    live = Path("/data/vms/streamhost/stations.json")
     if not live.exists():
-        return ["SKIP live labctl semantic check (/data/vms/streamhost/tiles.json absent)"]
+        return ["SKIP live labctl semantic check (/data/vms/streamhost/stations.json absent)"]
     current = json.loads(live.read_text()).get("tiles", {})
     declared = json.loads(outputs["registry/generated/labctl-declarations.json"])["tiles"]
     mismatches = []
@@ -1696,7 +1696,7 @@ def cmd_explain(os_id: str) -> int:
                 "signal",
                 {
                     "udpPort": row.get("stream", {}).get("udpPort"),
-                    "hashFile": f"/data/vms/streamhost/tiles/{row.get('stationDir')}/cert_hash_b64.txt"
+                    "hashFile": f"/data/vms/streamhost/stations/{row.get('stationDir')}/cert_hash_b64.txt"
                     if row.get("stationDir")
                     else None,
                 },

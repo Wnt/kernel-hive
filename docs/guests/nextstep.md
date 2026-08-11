@@ -6,10 +6,10 @@
 every other kiosk (`streamhost/docs/BRIDGE.md`). The acceptance scene —
 the grey NeXTSTEP Workspace with the right-hand Dock — is reached on an
 untouched cold boot with zero input and is framebuffer-verified in
-`/data/vms/streamhost/tiles/nextstep/evidence/`.
+`/data/vms/streamhost/stations/nextstep/evidence/`.
 
 Builder: `scripts/build-guests/tiles/nextstep.sh` (fully automated, `--force`,
-idempotent). Runtime sources: `streamhost/tiles/nextstep/`. Patch:
+idempotent). Runtime sources: `streamhost/stations/nextstep/`. Patch:
 `scripts/build-guests/patches/previous-wmless-window-borders.patch`. Kiosk helper:
 `scripts/build-guests/stages/nextstep-kiosk-frame.sh` == guest
 `/usr/local/bin/nextstep-kiosk-frame.sh`.
@@ -266,7 +266,7 @@ carrier of the driver.) The install automation ends by pixel-diffing the
 desktop back onto the frame it started from, and refuses to continue if too
 much differs. Restore is verified by framebuffer in the same run.
 
-Evidence in `/data/vms/streamhost/tiles/nextstep/evidence/`:
+Evidence in `/data/vms/streamhost/stations/nextstep/evidence/`:
 `coldboot-desktop.png` (the state that was captured), `golden-baked.png`,
 `golden-restored.png` (after `loadvm golden`), `live-streaming.png` (with
 `streamhost@nextstep` running).
@@ -293,7 +293,7 @@ lands on the Workspace with no input at all.
   stations that this branch does not have and a rebuild would delete them.
 - `labctl gen` was **not** run: it fails closed on live station dirs (`alto`,
   `indyr4400`) that have no declaration in the deployed file yet. The nextstep
-  row was merged into `/data/vms/streamhost/tiles.json` additively instead, and
+  row was merged into `/data/vms/streamhost/stations.json` additively instead, and
   `labctl ls` shows `abs`. Regenerating the whole matrix is a merge-time step.
 - The **cold-boot pointer asymmetry** in §4 is CLOSED (2026-08-11): the disk
   carries an rc.local hook that loads the tablet server during /etc/rc, and a

@@ -20,7 +20,7 @@ values belong only in the gitignored files (`registry/local.env` and similar).
 ## Never hand-edit a generated file
 
 The `streamhost` manifest, the serve JSONs and the SPA poster data are all
-generated from `registry/tiles/*.json` by
+generated from `registry/stations/*.json` by
 `scripts/stations-registry.py generate`. Edit the registry source and
 regenerate — `make station-registry-check` fails the build if a generated
 file has drifted from its source. The runtime JSON documents are not committed
@@ -102,5 +102,5 @@ to a running `streamhost@<tile>` unit, or anything in `tests/e2e-live/`
 - Match the local style of the code you touch; `.editorconfig` covers the
   basics.
 - If your change touches a generated file's source
-  (`registry/tiles/*.json` and similar), run the corresponding `generate`
+  (`registry/stations/*.json` and similar), run the corresponding `generate`
   step and commit the regenerated output in the same PR.

@@ -96,7 +96,7 @@ snapshot, overlay, and daemon are untouched throughout.
   launchers gain `-S`.
 - **sailfishos is broken independently of this work**: its guest image
   (`/data/gallery-guests/SailfishOS/…`) does not exist on labhost and the
-  per-station daemon dir `/usr/local/lib/streamhost/tiles/sailfishos/` was never
+  per-station daemon dir `/usr/local/lib/streamhost/stations/sailfishos/` was never
   installed — the unit crash-loops if started. Stopped, left disabled
   (operator's enablement exclusion). Needs media restore + daemon symlinks
   before it can ever run.

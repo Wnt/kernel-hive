@@ -203,21 +203,21 @@ ROWS=(
   "req-file|decos|RT-11 V5.3 distribution kit (RL02 pack + the Mentec licence text)|$ASSET_STAGING/decos/rtv53swre.tar.Z|sha256:9fdad10969f1f391b13d9d97aa8fc1aa8fcb44472dac363d23eb2d31500207bc|preservation-source"
   "req-file|decos|RSX-11M V4.2 BL38 TK50 kit|$ASSET_STAGING/decos/rsx11m42.zip|sha256:c8766a53ae5b32c060560d5cea6302715c046322c80dbc234cc7e63ab2391ba1|preservation-source"
   "req-file|decos|RSTS/E V9.6 installation tape (TPC)|$ASSET_STAGING/decos/rsts_v9_6_install.zip|sha256:aaf4aa978e13318fe304dfbf75e20090206e17caa5b76bab69bec2704d9c694f|preservation-source"
-  "req-file|pdp11|2.11BSD prebuilt MSCP pack (Don North), pristine zip|/data/vms/streamhost/tiles/pdp11/media/2.11BSD_rq.dsk.zip|sha256:94abeca02f001619e7aa2252cb2336ffe79af0cb3fb35cbd8c14240af3125a6b|preservation-source"
+  "req-file|pdp11|2.11BSD prebuilt MSCP pack (Don North), pristine zip|/data/vms/streamhost/stations/pdp11/media/2.11BSD_rq.dsk.zip|sha256:94abeca02f001619e7aa2252cb2336ffe79af0cb3fb35cbd8c14240af3125a6b|preservation-source"
   # -- atarist app archives: sha256-gated in the builder, but the SOURCES are
   # three small sites (one behind a two-step PHP cookie handshake, one an opaque
   # atarimania numeric id). The builder re-fetches when they are absent, so this
   # is not a gate on the fetch — it is here so a lost cache fails the preflight
   # instead of failing three fragile HTTP requests deep into a build. Same
   # reasoning as the dragon32 row above. Pending population into the media cache.
-  "req-file|atarist|AIM 3.1 image manager (Floppyshop ART-3488)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/ART-3488.zip|sha256:a5b245ae886aaeedc7d98a0d7ae774c75c214faa567f5b3f88321c89a210e147|abandonware-URL"
-  "req-file|atarist|GEMBench 4.03 (Floppyshop UTL-3762)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/UTL-3762.zip|sha256:74bce9ec2c7ec4d0da144887e0a5848bde3feff165e4cdabde52c3a395824567|abandonware-URL"
-  "req-file|atarist|Ballerburg (Eckhard Kruse, PD)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/baller.zip|sha256:8bcb4214cc6a30c02413f73923cabcf65437b9294f6148f3018f01bac9115d45|freely-fetchable-pinned"
-  "req-file|atarist|Ballerburg sources (Eckhard Kruse, PD)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/baller_sources.zip|sha256:63fb6c5aa14f4f912e4d5cff61f42fa35951932d0635b185e14da434212ed593|freely-fetchable-pinned"
-  "req-file|atarist|Pacman for GEM 0.2.5 (atarimania pgedump id=31902)|/data/vms/streamhost/tiles/atarist/assets/atarist-apps/pacman_for_gem_0_25.zip|sha256:6f33a9e7371f9fb6bd635dd6d67250e1c5adc6c0b44b609e726e0fed84f5fe3e|abandonware-URL"
+  "req-file|atarist|AIM 3.1 image manager (Floppyshop ART-3488)|/data/vms/streamhost/stations/atarist/assets/atarist-apps/ART-3488.zip|sha256:a5b245ae886aaeedc7d98a0d7ae774c75c214faa567f5b3f88321c89a210e147|abandonware-URL"
+  "req-file|atarist|GEMBench 4.03 (Floppyshop UTL-3762)|/data/vms/streamhost/stations/atarist/assets/atarist-apps/UTL-3762.zip|sha256:74bce9ec2c7ec4d0da144887e0a5848bde3feff165e4cdabde52c3a395824567|abandonware-URL"
+  "req-file|atarist|Ballerburg (Eckhard Kruse, PD)|/data/vms/streamhost/stations/atarist/assets/atarist-apps/baller.zip|sha256:8bcb4214cc6a30c02413f73923cabcf65437b9294f6148f3018f01bac9115d45|freely-fetchable-pinned"
+  "req-file|atarist|Ballerburg sources (Eckhard Kruse, PD)|/data/vms/streamhost/stations/atarist/assets/atarist-apps/baller_sources.zip|sha256:63fb6c5aa14f4f912e4d5cff61f42fa35951932d0635b185e14da434212ed593|freely-fetchable-pinned"
+  "req-file|atarist|Pacman for GEM 0.2.5 (atarimania pgedump id=31902)|/data/vms/streamhost/stations/atarist/assets/atarist-apps/pacman_for_gem_0_25.zip|sha256:6f33a9e7371f9fb6bd635dd6d67250e1c5adc6c0b44b609e726e0fed84f5fe3e|abandonware-URL"
   # -- c128: one file, one mirror (zimmers.net). c128.sh re-fetches when the host
   # copy is absent; the row exists so a dead mirror is discovered at preflight.
-  "req-file|c128|Commodore CP/M 3.0 system disk for the C128 (Z80 side)|/data/vms/streamhost/tiles/c128/media/cpm.d64|sha256:69159226bf1996d8fc8c8921f094cd03955c7a8b9ecf800069d1c369dc6e5a1d|preservation-source"
+  "req-file|c128|Commodore CP/M 3.0 system disk for the C128 (Z80 side)|/data/vms/streamhost/stations/c128/media/cpm.d64|sha256:69159226bf1996d8fc8c8921f094cd03955c7a8b9ecf800069d1c369dc6e5a1d|preservation-source"
   # -- apple2: the GEOS media lives INSIDE the station overlay at /opt/bridge/media/,
   # not on the host, so these read "will fetch" exactly like the nextstep and
   # daybreak rows above. apple2.sh gates BOTH sha256s in-guest on every run.

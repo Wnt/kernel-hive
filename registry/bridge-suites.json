@@ -20,7 +20,7 @@
     "declaration and the box disagree.",
     "",
     "Consumed by scripts/build-guests/lib/bridge-suite.sh. Not generated: never",
-    "run stations-registry.py against it, and do not move it into registry/tiles/."
+    "run stations-registry.py against it, and do not move it into registry/stations/."
   ],
   "defaultSuite": "bookworm",
   "suites": {
@@ -82,6 +82,6 @@
     "kc854": "Wave 2 attempted and rolled back (2026-08-10). Same shape as mpf2: the trixie build reaches a genuine CAOS 4.2 screen (bright 27868, nag-red 0) and then `pgrep -x kc85` finds no MAME after the second cold boot, with SSH proven up first. Per-tile work.",
     "c64": "Its overlay was flattened on 2026-08-07 (a standalone 5.21 GiB qcow2 with an internal `golden` snapshot, no backing file). The status checker reports it as DETACHED rather than as drift; migrating it means a full rebuild, not a rebase.",
     "openvms": "Not on this base. openvms/openvms-decwindows-bridge.qcow2 is built by scripts/build-guests/stages/openvms-decwindows-bridge.sh and only shares /data/vms/bridge/bridge_key. Out of scope for this ledger.",
-    "irix": "Not a bridge guest at all: SH_TILE_RUNTIME=x11, MAME on the HOST against a .chd. Already trixie by definition."
+    "irix": "Not a bridge guest at all: SH_STATION_RUNTIME=x11, MAME on the HOST against a .chd. Already trixie by definition."
   }
 }

@@ -19,9 +19,9 @@
 # install completes and a golden is captured, this launcher switches to the
 # w2kalpha shape: reflink-copy the golden per launch, pristine cold boot.
 #
-# Installed byte-for-byte as /data/vms/streamhost/tiles/tru64/x11-runtime.sh
-# by scripts/streamhost-tile.sh --x11. The shared runtime contract
-# (ensure-tile-x11.sh / stop-tile-x11.sh) keys on FIXED pidfile names: the
+# Installed byte-for-byte as /data/vms/streamhost/stations/tru64/x11-runtime.sh
+# by scripts/streamhost-station.sh --x11. The shared runtime contract
+# (ensure-station-x11.sh / stop-station-x11.sh) keys on FIXED pidfile names: the
 # emulator pid lives in mame.pid — that is the x11-runtime pidfile name, not
 # a claim that es40 is MAME — and liveness under SH_CAPTURE=shm is "mame.pid
 # alive AND $SH_SHM_PATH non-empty". Kill ONLY by pidfile.
@@ -32,7 +32,7 @@ ASSETS="${TRU64_ASSETS:-/data/vms/streamhost/assets/tru64}"
 ES40="${TRU64_ES40:-$ASSETS/es40}"
 LIBROOT="${TRU64_LIBROOT:-$ASSETS/root/usr/lib/x86_64-linux-gnu}"
 
-# tile.env exports SH_SHM_PATH / SH_MAMECTL_SOCK; default them for standalone runs.
+# station.env exports SH_SHM_PATH / SH_MAMECTL_SOCK; default them for standalone runs.
 SHM="${SH_SHM_PATH:-$D/fb.shm}"
 CTL="${SH_MAMECTL_SOCK:-$D/ctl.sock}"
 # es40 blocks on startup until BOTH serial ports have a client; pumps.py
@@ -78,7 +78,7 @@ export ES40_SHM_PATH="$SHM"
 export ES40_CTL_SOCK="$CTL"
 export ES40_TILE_NAME=tru64
 
-# setsid detaches from this shell but stays inside ensure-tile-x11.sh's qcap
+# setsid detaches from this shell but stays inside ensure-station-x11.sh's qcap
 # scope cgroup, so BindsTo= teardown still reaches everything started here.
 setsid nohup "$ES40" >"$D/es40.log" 2>&1 </dev/null &
 echo $! >"$D/mame.pid"

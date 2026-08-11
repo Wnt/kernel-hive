@@ -10,13 +10,13 @@
 #   kiosk : amiga-launch-coldboot.sh -> guest /etc/bridge/launch.sh    (supervisor loop;
 #           REPLACES the plain `exec fs-uae` launcher that scripts/build-guests/tiles/amiga.sh bakes)
 #
-# Requires tile.env SH_IDLE_PAUSE_SECS=0 for amiga (the daemon must never
+# Requires station.env SH_IDLE_PAUSE_SECS=0 for amiga (the daemon must never
 # QMP-pause the kiosk out from under the watcher) — asserted below.
 set -euo pipefail
 
 SSH_PORT="${SSH_PORT:-5818}"
 KEY="${KEY:-/data/vms/bridge/bridge_key}"
-TILE_ENV="${TILE_ENV:-/data/vms/streamhost/tiles/amiga/tile.env}"
+TILE_ENV="${TILE_ENV:-/data/vms/streamhost/stations/amiga/station.env}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UNIT="$HERE/../../streamhost/deploy/amiga-coldboot-watch.service"
 log() { printf '[amiga-coldboot] %s\n' "$*"; }

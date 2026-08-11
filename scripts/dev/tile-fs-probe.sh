@@ -22,7 +22,7 @@
 # Usage: tile-fs-probe.sh [--tiles-root DIR] [--json] [station…]
 set -uo pipefail
 
-TILES_ROOT="${TILES_ROOT:-/data/vms/streamhost/tiles}"
+TILES_ROOT="${TILES_ROOT:-/data/vms/streamhost/stations}"
 JSON=0
 ONLY=()
 while [ $# -gt 0 ]; do case "$1" in

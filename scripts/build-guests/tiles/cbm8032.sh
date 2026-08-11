@@ -93,7 +93,7 @@ UDP=54109
 SSH_PORT=5825
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
-TILE_DIR=/data/vms/streamhost/tiles/cbm8032
+TILE_DIR=/data/vms/streamhost/stations/cbm8032
 OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
@@ -175,7 +175,7 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
 fi
 EOS
 
-# The demo driver: types the REGISTRY listing (registry/tiles/cbm8032.json
+# The demo driver: types the REGISTRY listing (registry/stations/cbm8032.json
 # spa/demoProgram) into the emulated PET over this station's QMP socket, at the
 # station's production key pacing. Runs on the HOST; the guest has no idea.
 read -r -d '' DEMO_PY <<'EOS' || true

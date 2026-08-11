@@ -71,7 +71,7 @@ real desktop**, `region-ssim 1.0 ×3`.
 
 The `haiku` arm resolves `BR_REF_PNG` via an override hook:
 
-    BR_REF_PNG="${HAIKU_BOOT_REF:-${BOOTREC_TILES_ROOT:-/data/vms/streamhost/tiles}/haiku/boot-ref-desktop.png}"
+    BR_REF_PNG="${HAIKU_BOOT_REF:-${BOOTREC_TILES_ROOT:-/data/vms/streamhost/stations}/haiku/boot-ref-desktop.png}"
 
 - **Clone proof (this run):** `export HAIKU_BOOT_REF=<staged settled-desktop
   screendump>` so nothing is written under the live tile dir. Here it was
@@ -163,6 +163,6 @@ desktop (HAIKU wallpaper, Deskbar leaf+Tracker, icons; **no Terminal**).
   (Content-Range …/1001584); index has amiga+win95+haiku; poster/sprite/vtt 200.
 
 The SPA `▶Boot` badge/registry flag is wired separately (SPA agent); this work only
-re-baked the golden and served the assets. NOTE: `tile.env` `SH_FIXTURE_DESC` still
+re-baked the golden and served the assets. NOTE: `station.env` `SH_FIXTURE_DESC` still
 describes the *focused-Terminal* fixture — now stale (bare desktop); left unchanged
 (purely descriptive, no behavioral effect) for a human to refresh.

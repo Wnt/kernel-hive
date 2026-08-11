@@ -80,8 +80,8 @@ for required in "$BRIDGE_BASE" "$BRIDGE_KEY"; do
   [ -s "$required" ] || die "missing required input: $required"
 done
 for source in \
-  "$REPO_ROOT/streamhost/tiles/openvms/bridge-launch.sh" \
-  "$REPO_ROOT/streamhost/tiles/openvms/bridge-xserverrc"; do
+  "$REPO_ROOT/streamhost/stations/openvms/bridge-launch.sh" \
+  "$REPO_ROOT/streamhost/stations/openvms/bridge-xserverrc"; do
   [ -s "$source" ] || die "missing tracked bridge source: $source"
 done
 
@@ -132,10 +132,10 @@ log "installing the pinned lean Xorg runtime and kiosk files"
   "sudo env DEBIAN_FRONTEND=noninteractive apt-get update -o Acquire::Retries=3 >/tmp/openvms-decw-apt.log 2>&1 &&
    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xserver-xorg-core xinit x11-xserver-utils >>/tmp/openvms-decw-apt.log 2>&1"
 "${SCP[@]}" \
-  "$REPO_ROOT/streamhost/tiles/openvms/bridge-launch.sh" \
+  "$REPO_ROOT/streamhost/stations/openvms/bridge-launch.sh" \
   bridge@127.0.0.1:/tmp/openvms-decwindows-launch.sh >/dev/null
 "${SCP[@]}" \
-  "$REPO_ROOT/streamhost/tiles/openvms/bridge-xserverrc" \
+  "$REPO_ROOT/streamhost/stations/openvms/bridge-xserverrc" \
   bridge@127.0.0.1:/tmp/openvms-decwindows-xserverrc >/dev/null
 "${SSH[@]}" \
   "sudo install -o root -g root -m 0755 /tmp/openvms-decwindows-launch.sh /etc/bridge/launch.sh &&

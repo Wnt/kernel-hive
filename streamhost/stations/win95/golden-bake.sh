@@ -19,7 +19,7 @@
 # match the OSR2 Start menu on this image (New/Open Office Document at the top).
 # Kill only by pidfile.
 set -e
-BASE=/data/vms/streamhost/tiles/win95
+BASE=/data/vms/streamhost/stations/win95
 DISK="$BASE/win95-golden.qcow2"
 SRC=/data/gallery-guests/Win95/win95-osr2-kvm.qcow2
 BUILD_ROOT="${STREAMHOST_BUILD_ROOT:-/data/vms/streamhost/build}"

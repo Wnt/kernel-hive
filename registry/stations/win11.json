@@ -45,8 +45,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/win11",
-      "qmp": "/data/vms/streamhost/tiles/win11/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/win11",
+      "qmp": "/data/vms/streamhost/stations/win11/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -96,8 +96,8 @@
   "credentialsRef": "guest/win11",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "win11",
-      "SH_QMP": "/data/vms/streamhost/tiles/win11/qmp.sock",
+      "SH_STATION": "win11",
+      "SH_QMP": "/data/vms/streamhost/stations/win11/qmp.sock",
       "SH_PORT": "54123",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -105,8 +105,8 @@
       "SH_POINTER": "abs",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/win11/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win11/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/win11/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/win11/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 123,
@@ -128,11 +128,11 @@
         "--launcher-file",
         "$T/win11/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/win11/tile.env.fixture"
+        "$T/win11/station.env.fixture"
       ],
       "deviceSetId": "win11-current",
-      "launcher": "streamhost/tiles/win11/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/win11/tile.env.fixture",
+      "launcher": "streamhost/stations/win11/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/win11/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "machine": "pc-q35-11.0",
       "accel": "kvm",

@@ -1,7 +1,7 @@
 # IRIX serial exec agent (`irixser/2`)
 
 > **STATUS: built and verified on a clone, NOT cut over.** The live tile still
-> runs the golden without the agent and `registry/tiles/irix.json` still has
+> runs the golden without the agent and `registry/stations/irix.json` still has
 > `exec_kind: null`, so `labctl exec irix` errors out exactly as it did before.
 > The cutover — new launcher, new golden, registry flip, `labctl gen` — is a
 > human step, written out in `../../../docs/guests/irix.md`. Everything below

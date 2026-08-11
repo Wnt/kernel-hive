@@ -10,7 +10,7 @@
 # (resetMode=loadvm) -- see golden.json. If the snapshot is ever missing, the guest
 # cold-boots and AUTOEXEC.BAT auto-launches Windows, landing at the same GUI.
 set -e
-TILEDIR=/data/vms/streamhost/tiles/msdoswin1
+TILEDIR=/data/vms/streamhost/stations/msdoswin1
 S="$TILEDIR/qmp.sock"
 [ -f "$TILEDIR/qemu.pid" ] && kill "$(cat "$TILEDIR/qemu.pid")" 2>/dev/null || true
 sleep 0.3

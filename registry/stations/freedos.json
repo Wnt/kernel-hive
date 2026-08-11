@@ -40,8 +40,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/freedos",
-      "qmp": "/data/vms/streamhost/tiles/freedos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/freedos",
+      "qmp": "/data/vms/streamhost/stations/freedos/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -92,8 +92,8 @@
   "credentialsRef": "guest/freedos",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "freedos",
-      "SH_QMP": "/data/vms/streamhost/tiles/freedos/qmp.sock",
+      "SH_STATION": "freedos",
+      "SH_QMP": "/data/vms/streamhost/stations/freedos/qmp.sock",
       "SH_PORT": "54095",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -101,8 +101,8 @@
       "SH_POINTER": "rel",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/freedos/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/freedos/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/freedos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/freedos/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 95,
@@ -124,11 +124,11 @@
         "--launcher-file",
         "$T/freedos/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/freedos/tile.env.fixture"
+        "$T/freedos/station.env.fixture"
       ],
       "deviceSetId": "freedos-current",
-      "launcher": "streamhost/tiles/freedos/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/freedos/tile.env.fixture",
+      "launcher": "streamhost/stations/freedos/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/freedos/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
       "accel": "kvm",
@@ -146,8 +146,8 @@
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
         "-drive file=/data/gallery-guests/FreeDOS/freedos.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device ne2k_pci,netdev=n0",
-        "-qmp unix:/data/vms/streamhost/tiles/freedos/qmp.sock,server=on,wait=off",
-        "-pidfile /data/vms/streamhost/tiles/freedos/qemu.pid"
+        "-qmp unix:/data/vms/streamhost/stations/freedos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/freedos/qemu.pid"
       ],
       "sourceDeviceSet": {
         "binary": "qemu-system-x86_64",
@@ -167,8 +167,8 @@
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
           "-drive file=/data/gallery-guests/FreeDOS/freedos.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device ne2k_pci,netdev=n0",
-          "-qmp unix:/data/vms/streamhost/tiles/freedos/qmp.sock,server=on,wait=off",
-          "-pidfile /data/vms/streamhost/tiles/freedos/qemu.pid"
+          "-qmp unix:/data/vms/streamhost/stations/freedos/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/freedos/qemu.pid"
         ]
       },
       "launcherParity": {

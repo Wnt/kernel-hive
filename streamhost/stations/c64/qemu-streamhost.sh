@@ -13,7 +13,7 @@
 #     snapshot lives inside it). Runs WITHOUT -snapshot so savevm persists.
 #   * Device set MUST match the golden bake EXACTLY or -loadvm golden fails.
 set -e
-BASE=/data/vms/streamhost/tiles/c64
+BASE=/data/vms/streamhost/stations/c64
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

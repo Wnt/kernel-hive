@@ -23,7 +23,7 @@
 #     MAME maps host LEFT shift to CAPS SHIFT and host RIGHT shift to SYMBOL
 #     SHIFT, which is why the SPA ships a zxspectrum keyboard profile.
 set -e
-BASE=/data/vms/streamhost/tiles/zxspectrum
+BASE=/data/vms/streamhost/stations/zxspectrum
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

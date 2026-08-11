@@ -47,7 +47,7 @@ the lab box (`https://192.0.2.10:8443`).
 ## Data contract
 
 The app consumes a manifest of VMs, fetched at runtime from
-`/gallery-manifest.json` (rendered from `registry/tiles/*.json`; the dev server
+`/gallery-manifest.json` (rendered from `registry/stations/*.json`; the dev server
 renders it per request, see `vite.config.ts`). Nothing is bundled as a fallback:
 a bundled copy could only be a stale second answer, so a failed fetch leaves the
 lineup empty and logs it. Placard fields (era software, period browser, iconic

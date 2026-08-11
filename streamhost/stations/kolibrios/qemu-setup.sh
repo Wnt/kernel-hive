@@ -6,7 +6,7 @@
 #   - attaches the scratch state.qcow2 (virtio) that will HOLD the 'golden' snapshot
 # Runs WITHOUT -snapshot so savevm can persist. Kill only by pidfile.
 set -e
-BASE="${TILE_DIR:-/data/vms/streamhost/tiles/kolibrios}"
+BASE="${TILE_DIR:-/data/vms/streamhost/stations/kolibrios}"
 ISO="${KOLIBRI_ISO:-/data/gallery-guests/KolibriOS/kolibri.iso}"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

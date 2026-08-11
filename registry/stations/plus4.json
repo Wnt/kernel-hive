@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/plus4",
-      "qmp": "/data/vms/streamhost/tiles/plus4/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/plus4",
+      "qmp": "/data/vms/streamhost/stations/plus4/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -78,8 +78,8 @@
   "credentialsRef": "guest/plus4",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "plus4",
-      "SH_QMP": "/data/vms/streamhost/tiles/plus4/qmp.sock",
+      "SH_STATION": "plus4",
+      "SH_QMP": "/data/vms/streamhost/stations/plus4/qmp.sock",
       "SH_PORT": "54086",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -90,8 +90,8 @@
       "SH_INPUT_BACKEND": "disabled",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/plus4/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/plus4/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/plus4/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/plus4/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 222,
@@ -121,11 +121,11 @@
         "--launcher-file",
         "$T/plus4/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/plus4/tile.env.fixture"
+        "$T/plus4/station.env.fixture"
       ],
       "deviceSetId": "plus4-current",
-      "launcher": "streamhost/tiles/plus4/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/plus4/tile.env.fixture",
+      "launcher": "streamhost/stations/plus4/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/plus4/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

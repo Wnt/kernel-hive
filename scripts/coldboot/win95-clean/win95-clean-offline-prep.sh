@@ -5,7 +5,7 @@
 #   - clear any StartUp-folder .lnk (belt & suspenders)
 # Does NOT touch the live station. Registry (Windows-Logon) change is done GUI-side later.
 set -euo pipefail
-LIVE=/data/vms/streamhost/tiles/win95/win95-golden.qcow2
+LIVE=/data/vms/streamhost/stations/win95/win95-golden.qcow2
 PREP=/data/vms/soltest/win95-clean-prep
 DISK="$PREP/win95-golden.qcow2"
 NBD=/dev/nbd2

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # bake-golden.sh — capture the IRIX station's instant-restore state (issue #44).
 #
-# Boots the PRODUCTION configuration (the station's own launcher, tile.env, checkpoint
+# Boots the PRODUCTION configuration (the station's own launcher, station.env, checkpoint
 # and tap networking) in a namespaced clone, waits for the exhibit's resting
 # state (the login chooser, or — with --login — a logged-in 4Dwm desktop), then
 # captures the (savestate, disk) pair ATOMICALLY
@@ -68,7 +68,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-T="${IRIX_TILE_DIR:-/data/vms/streamhost/tiles/irix}"
+T="${IRIX_TILE_DIR:-/data/vms/streamhost/stations/irix}"
 A="${IRIX_ASSETS:-/data/vms/streamhost/assets/irix}"
 CG="${CLONE_GUARD:-/usr/local/bin/clone-guard}"
 RIG="$(cd -- "$(dirname -- "$0")" && pwd)"
@@ -137,9 +137,9 @@ say "launching the production configuration in $V (cold boot, ~7 min)"
   while IFS= read -r line; do
     case "$line" in '#'* | '') continue ;; esac
     export "${line%%=*}=${line#*=}"
-  done <"$T/tile.env"
+  done <"$T/station.env"
   export IRIX_CPUS="$CPUS" IRIX_WATCH_UNIT="" IRIX_STATE=""
-  # Namespace EVERY producer path into the clone dir — tile.env's values point
+  # Namespace EVERY producer path into the clone dir — station.env's values point
   # at the live station tree (the audio fifo included, since the audio arm).
   export SH_SHM_PATH="$V/fb.shm" SH_X11_CMD_FILE="$V/irix_cmd"
   export SH_AUDIO_FIFO="$V/audio.fifo"
@@ -148,8 +148,8 @@ say "launching the production configuration in $V (cold boot, ~7 min)"
   cat "$V/launch.log" >&2
   die "launch failed"
 }
-# The binary the launcher used: a tile.env IRIX_MAME pin, else the default.
-MAME_BIN="$(grep '^IRIX_MAME=' "$T/tile.env" | tail -1 | cut -d= -f2)"
+# The binary the launcher used: a station.env IRIX_MAME pin, else the default.
+MAME_BIN="$(grep '^IRIX_MAME=' "$T/station.env" | tail -1 | cut -d= -f2)"
 MAME_BIN="${MAME_BIN:-$A/mame/sgi}"
 touch "$V/serial.lock"
 
@@ -256,4 +256,4 @@ done
 sleep 2
 pgrep -f "$V/disk.chd" >/dev/null && die "MAME survived the stop"
 [ "$KEEP" = 1 ] || rm -rf "$V"
-say "baked: IRIX_STATE=$STATE is ready (tile.env enables it); teardown verified clean"
+say "baked: IRIX_STATE=$STATE is ready (station.env enables it); teardown verified clean"

@@ -52,8 +52,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/redstar3",
-      "qmp": "/data/vms/streamhost/tiles/redstar3/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/redstar3",
+      "qmp": "/data/vms/streamhost/stations/redstar3/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -103,8 +103,8 @@
   "credentialsRef": "guest/redstar3",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "redstar3",
-      "SH_QMP": "/data/vms/streamhost/tiles/redstar3/qmp.sock",
+      "SH_STATION": "redstar3",
+      "SH_QMP": "/data/vms/streamhost/stations/redstar3/qmp.sock",
       "SH_PORT": "54121",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -112,8 +112,8 @@
       "SH_POINTER": "abs",
       "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/redstar3/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/redstar3/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/redstar3/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/redstar3/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 121,
@@ -151,7 +151,7 @@
         "--extra",
         "-nodefaults",
         "--env-append-file",
-        "$T/redstar3/tile.env.fixture",
+        "$T/redstar3/station.env.fixture",
         "--loadvm-launch",
         "/data/gallery-guests/RedStar3/redstar3.qcow2"
       ],
@@ -176,10 +176,10 @@
         "-display dbus,p2p=on",
         "-usb -device usb-tablet",
         "-loadvm golden",
-        "-qmp unix:/data/vms/streamhost/tiles/redstar3/qmp.sock,server=on,wait=off",
-        "-pidfile /data/vms/streamhost/tiles/redstar3/qemu.pid"
+        "-qmp unix:/data/vms/streamhost/stations/redstar3/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/redstar3/qemu.pid"
       ],
-      "envFixture": "streamhost/tiles/redstar3/tile.env.fixture",
+      "envFixture": "streamhost/stations/redstar3/station.env.fixture",
       "sourceDeviceSet": {
         "binary": "qemu-system-x86_64",
         "machine": "pc-i440fx-11.0",

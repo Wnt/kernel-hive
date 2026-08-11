@@ -43,7 +43,7 @@ was the intermittent black-screen boot hang. That is wrong:
 
 So the blackness lives elsewhere -- framebuffer contents, the CMAP palette, the
 XMAP mode entries, or the guest's X server -- and the mitigation that actually
-works is the boot watchdog in `streamhost/tiles/irix/x11-runtime.sh`.
+works is the boot watchdog in `streamhost/stations/irix/x11-runtime.sh`.
 
 THE CHANGE
 

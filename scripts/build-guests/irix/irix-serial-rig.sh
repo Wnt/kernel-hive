@@ -147,7 +147,7 @@ start_mame() {
 # Non-black framebuffer == the guest is drawing. Never infer from logs.
 fb_bright() {
   if [ "$CAPTURE" = shm ]; then
-    python3 "${IRIX_FBSTAT:-/data/vms/streamhost/tiles/irix/fbstat.py}" "$D/fb.shm" 2>/dev/null
+    python3 "${IRIX_FBSTAT:-/data/vms/streamhost/stations/irix/fbstat.py}" "$D/fb.shm" 2>/dev/null
   else
     DISPLAY="$DISP" import -window root "$D/.watch.png" 2>/dev/null || return 1
     identify -format '%[fx:max(mean.r,max(mean.g,mean.b))]' "$D/.watch.png" 2>/dev/null

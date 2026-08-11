@@ -45,7 +45,7 @@
 # ---- MEASUREMENTS THIS SCRIPT ENCODES (on labhost, 2026-08-10) --------------
 #   * Key pacing: 20-character line, explicit press/release pairs — 16/16 ms
 #     landed 15 of 20; 33/33, 66/66 and 120/120 all landed 20 of 20. One Alto
-#     field is 33 ms, so the station ships two fields (66/66) in tile.env.
+#     field is 33 ms, so the station ships two fields (66/66) in station.env.
 #   * MODIFIERS MUST LEAD. shift+letter in one event lost the capital every
 #     time ("Bravo" -> "ravo"). The driver presses the modifier a full gap early.
 #   * Absolute pointer, uncalibrated: requested (300,400) put the Alto cursor at
@@ -78,7 +78,7 @@ UDP=54137
 SSH_PORT=5843
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
-TILE_DIR=/data/vms/streamhost/tiles/alto
+TILE_DIR=/data/vms/streamhost/stations/alto
 OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
@@ -97,7 +97,7 @@ SDK="$WORK/dotnet"
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 PATCH="$REPO/scripts/build-guests/patches/contralto2-wmless-kiosk.patch"
 # Tracked runtime sidecars (registry runtime.qemu.auxFiles).
-SIDECAR="$REPO/streamhost/tiles/alto"
+SIDECAR="$REPO/streamhost/stations/alto"
 
 # ContrAlto 2, Josh Dersch's maintained successor to the Living Computers
 # ContrAlto. There is no release tag, so the pin is a commit.

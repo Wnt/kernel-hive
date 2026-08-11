@@ -6,7 +6,7 @@ set -euo pipefail
 
 REPO="${REPO:-/data/vms/streamhost/build}"
 SRC="$REPO/streamhost/guest-agents/solaris"
-TILE=/data/vms/streamhost/tiles/solaris
+TILE=/data/vms/streamhost/stations/solaris
 DISK="$TILE/solariscde-golden.qcow2"
 QMP="$TILE/qmp.sock"
 CDRIVE=(python3 /root/cdrv.py "$QMP")
@@ -69,7 +69,7 @@ echo "[warpd-bake] preserve pre-bake disk as $backup"
 cp --reflink=auto "$DISK" "$backup"
 
 echo "[warpd-bake] launch the pinned pc-i440fx-11.0 tile at nice 15; launcher loads clean golden"
-nice -n15 bash "$REPO/streamhost/tiles/solaris/qemu-streamhost.sh"
+nice -n15 bash "$REPO/streamhost/stations/solaris/qemu-streamhost.sh"
 sleep 3
 
 echo "[warpd-bake] serve the vendored agent to the guest over SLIRP"

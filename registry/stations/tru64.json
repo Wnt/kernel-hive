@@ -13,7 +13,7 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/tru64",
+      "dir": "/data/vms/streamhost/stations/tru64",
       "qmp": null,
       "pointer_mode": "abs",
       "warpd_port": null,
@@ -64,27 +64,27 @@
   "credentialsRef": "guest/tru64",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "tru64",
-      "SH_TILE_RUNTIME": "x11",
+      "SH_STATION": "tru64",
+      "SH_STATION_RUNTIME": "x11",
       "SH_CAPTURE": "shm",
       "SH_X11_DISPLAY": ":42",
-      "SH_X11_CMD_FILE": "/data/vms/streamhost/tiles/tru64/tru64_cmd",
-      "SH_SHM_PATH": "/data/vms/streamhost/tiles/tru64/fb.shm",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/tru64/tru64_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/tru64/fb.shm",
       "SH_PORT": "54141",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/tru64/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/tru64/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/tru64/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/tru64/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "x11": {
       "display": ":42",
       "geometry": "1024x768x24",
       "capture": "shm",
-      "launcher": "streamhost/tiles/tru64/x11-runtime.sh",
+      "launcher": "streamhost/stations/tru64/x11-runtime.sh",
       "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
@@ -109,11 +109,11 @@
         "--aux-file",
         "$T/tru64/pumps.py",
         "--env-append-file",
-        "$T/tru64/tile.env.fixture"
+        "$T/tru64/station.env.fixture"
       ],
       "auxFiles": [
-        "streamhost/tiles/tru64/pumps.py",
-        "streamhost/tiles/tru64/tile.env.fixture"
+        "streamhost/stations/tru64/pumps.py",
+        "streamhost/stations/tru64/station.env.fixture"
       ]
     },
     "bringUpOrder": 63

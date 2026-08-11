@@ -12,7 +12,7 @@
 #   nag-dismiss -> DOS regedit /s (screensaver off + steady caret) -> clean restart
 #   -> nag-dismiss -> hide taskbar clock (GUI) -> Notepad + banner -> focus -> savevm.
 set -e
-B=/data/vms/streamhost/tiles/win98se
+B=/data/vms/streamhost/stations/win98se
 SK="python3 $B/sk.py $B/qmp.sock"
 QM="python3 $B/qmp.py $B/qmp.sock"
 hmp() { $QM "[{\"execute\":\"human-monitor-command\",\"arguments\":{\"command-line\":\"$1\"}}]" >/dev/null; }

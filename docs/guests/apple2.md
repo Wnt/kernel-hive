@@ -16,9 +16,9 @@ was not needed — LinApple reaches the GEOS deskTop reliably and bundles the //
 at `/usr/local/src/linapple` (its build had failed in the base).
 **Build script (station):** `scripts/build-guests/tiles/apple2.sh` (thin overlay + LinApple
 build fix + GEOS media + kiosk `launch.sh` + checkpoint capture + verify).
-**Station dir (host):** `/data/vms/streamhost/tiles/apple2/` — `overlay.qcow2` (thin, on
-the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `tile.env`.
-**Proof:** `/data/vms/streamhost/tiles/apple2/proof/geos-desktop.png` (the GEOS
+**Station dir (host):** `/data/vms/streamhost/stations/apple2/` — `overlay.qcow2` (thin, on
+the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `station.env`.
+**Proof:** `/data/vms/streamhost/stations/apple2/proof/geos-desktop.png` (the GEOS
 deskTop in monochrome white, BIGWON window open; refreshed 2026-07-12 v2 — earlier
 proofs kept as `geos-desktop-color-pre-2026-07-12.png` / `geos-desktop-green-2026-07-12.png`),
 `geos-loadvm-golden-restore.png` (cold `-loadvm golden`

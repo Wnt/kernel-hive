@@ -7,7 +7,7 @@
 # WHY a watcher instead of QMP idle-pause: this is a BRIDGE station — a Debian kiosk running
 # FS-UAE. QMP stop would freeze the WHOLE kiosk (X + capture + ssh). Cold-boot here means
 # restarting the *emulator inside the kiosk*, so the kiosk X server + streamhost capture
-# stay live and we drive FS-UAE over ssh. Set SH_IDLE_PAUSE_SECS=0 in the tile.env so the
+# stay live and we drive FS-UAE over ssh. Set SH_IDLE_PAUSE_SECS=0 in the station.env so the
 # daemon never freezes the kiosk out from under this watcher.
 #
 # Session accounting (robust against abnormal exits):

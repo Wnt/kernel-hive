@@ -4,7 +4,7 @@
 RUN ON THE BOX:  python3 /data/vms/streamhost/serve/check-stream-tickets.py
 
 The gateway signs a stream ticket over the tile's identity, and streamhost
-verifies it against its own `SH_TILE`. Those are still two different SOURCES for
+verifies it against its own `SH_STATION`. Those are still two different SOURCES for
 one name. They disagreed by design until 2026-08-10, when the last two exhibits
 whose id differed from their daemon's — `solaris`/`solariscde` and
 `aros`/`amigaos` — were renamed; on 2026-08-05 the gateway had signed with the
@@ -15,7 +15,7 @@ client reconnected, which reads to a visitor as "it froze after I clicked".
 Nothing detected it: the tile was up, the daemon was healthy, the signalling doc
 looked perfect, and the failure lived in the relationship between two documents.
 The names agree by construction now (stations-registry.py refuses an id that
-differs from its stationDir), but a tile.env is edited ON THE BOX and never passes
+differs from its stationDir), but a station.env is edited ON THE BOX and never passes
 through that gate, so the relationship is still worth proving. This checks it —
 it recomputes each ticket's HMAC exactly as the daemon does and reports the
 tiles that would refuse a connection.

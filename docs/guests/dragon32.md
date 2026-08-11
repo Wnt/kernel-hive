@@ -176,7 +176,7 @@ dragon_keyboard`, lines 332–399):
 Letters are **unshifted capitals** (`keyboard.letterCase: "upper-only"` in the
 registry): Shift+letter is the Dragon's lower case, which the MC6847 can only
 render as inverse video. The map is declared once in the registry entry's
-`keyboard.charMap`; `SH_KEY_MAP` in `tile.env.fixture` is the same map joined,
+`keyboard.charMap`; `SH_KEY_MAP` in `station.env.fixture` is the same map joined,
 because labctl drives QMP directly and cannot read the registry.
 
 Two encoding details that bit during the add:
@@ -270,7 +270,7 @@ every shifted key wrong.
 ## Verification (2026-08-09)
 
 All on labhost, MAME 0.289, station `dragon32`, in the order the builder runs them.
-Framebuffer dumps are in `/data/vms/streamhost/tiles/dragon32/evidence/`.
+Framebuffer dumps are in `/data/vms/streamhost/stations/dragon32/evidence/`.
 
 | check | result |
 |---|---|
@@ -283,7 +283,7 @@ Framebuffer dumps are in `/data/vms/streamhost/tiles/dragon32/evidence/`.
 | restore after the keyboard proof | `evidence/golden-restored-after-keyboard.png` |
 | service | `streamhost@dragon32` active; `LISTENING udp/54130 tile=dragon32 audio=true`; first frame 1024x768 |
 | pacing env reached the daemon | `SH_KEY_MIN_HOLD_MS=80`, `SH_KEY_MIN_GAP_MS=80`, `SH_KEY_MAP=@:[,":@,…` all present in `/proc/<MainPID>/environ` |
-| daemon binary implements the knob | `/usr/local/lib/streamhost/tiles/dragon32/current` → `streamhost-bca88a2…`, the same pacing build vic20/plus4/c128 run |
+| daemon binary implements the knob | `/usr/local/lib/streamhost/stations/dragon32/current` → `streamhost-bca88a2…`, the same pacing build vic20/plus4/c128 run |
 | memory | host QEMU RSS 740 MB (of `-m 768`), streamhost RSS 76 MB, guest `MemAvailable` 407 MB of 725 MB, MAME RSS 183 MB |
 
 ## Cold boot and rollback
@@ -297,5 +297,5 @@ Rollback: the overlay is a thin file on the frozen shared base and the checkpoin
 lives inside it. To rebuild from scratch, stop `streamhost@dragon32`, run
 `scripts/build-guests/tiles/dragon32.sh --force` (which stops only this station, replaces
 the overlay and recaptures), then re-emit. Nothing outside
-`/data/vms/streamhost/tiles/dragon32/` and `/data/assets-staging/dragon32/` is
+`/data/vms/streamhost/stations/dragon32/` and `/data/assets-staging/dragon32/` is
 touched.

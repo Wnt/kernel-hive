@@ -17,7 +17,7 @@
 #   * Keyboard exhibit: browser absolute coords translate to tablet-free PS/2 REL
 #     (vmport=off); the CPC has no pointer, so mouse motion is inert by design.
 set -e
-BASE=/data/vms/streamhost/tiles/amstradcpc
+BASE=/data/vms/streamhost/stations/amstradcpc
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

@@ -26,7 +26,7 @@
 # root/solaris (also the single-user maintenance password). Kill only by pidfile.
 # ============================================================================
 set -e
-BASE=/data/vms/streamhost/tiles/solaris
+BASE=/data/vms/streamhost/stations/solaris
 DISK="$BASE/solariscde-golden.qcow2"
 SRC=/data/gallery-guests/SolarisCDE/solaris.qcow2
 DRIVE="python3 $BASE/drive.py $BASE/qmp.sock"

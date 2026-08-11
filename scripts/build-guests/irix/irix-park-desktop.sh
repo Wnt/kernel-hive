@@ -39,7 +39,7 @@ MAME_BIN="${IRIX_MAME:-$ASSETS/mame/sgi}"
 # The Lua input agent is the ONLY reliable keyboard channel: a WM-less
 # full-screen Xvfb never mouse-captures, so SDL drops keys and buttons. Read it
 # from the read-only ASSET stage, never from a live station's directory — a
-# parameter-default pointing into /data/vms/streamhost/tiles is the exact
+# parameter-default pointing into /data/vms/streamhost/stations is the exact
 # footgun clone-guard refuses (and it once killed a production QEMU).
 AGENT_SRC="${IRIX_AGENT:-$ASSETS/irixagent.lua}"
 

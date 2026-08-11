@@ -20,7 +20,7 @@ the patched QEMU, not by streamhost (see CAPTURE-FASTPOLL.md).
 | Env | Flag | Default | Effect | Module |
 |---|---|---|---|---|
 | `SH_QMP` | positional arg 0 | `/data/vms/streamhost/run951/qmp951.sock` | QMP unix socket of the tile's QEMU (also anchors the rss-guard pidfile lookup) | config, capture |
-| `SH_TILE` | `--tile` | `dev951` | Logical tile id; derives default paths under `/data/vms/streamhost/tiles/<tile>/` | config |
+| `SH_STATION` | `--tile` | `dev951` | Logical tile id; derives default paths under `/data/vms/streamhost/stations/<tile>/` | config |
 | `SH_PORT` | `--port` | `4433` | WebTransport/QUIC UDP port for this tile | transport |
 | `SH_FPS` | `--fps` | `60` | Capture→encode fps cap (feed spacing, not a pacing clock) | encode |
 | `SH_KEYFRAME_MS` | `--keyframe-ms` | `2500` (clamp 100–10000) | Wall-clock IDR heartbeat while watched; joiners are primed from the cached last IDR, so this only bounds datagram-loss recovery | encode |
@@ -32,7 +32,7 @@ the patched QEMU, not by streamhost (see CAPTURE-FASTPOLL.md).
 | Env | Flag | Default | Effect | Module |
 |---|---|---|---|---|
 | `SH_INPUT_BACKEND` | `--input-backend` | derived from legacy `SH_POINTER`, otherwise `dbus-abs` | Unified pointer backend: `dbus-abs` (QEMU tablet), `dbus-rel` (bounded/paced QEMU PS/2), `warpd` (frozen in-guest agent), `gallery-hid` (Solaris/QNX-only native sink), `x11test` (XTEST motion + Lua-agent buttons, pairs with `SH_CAPTURE=x11`), or `mamecmd` (every event down the Lua agent's command file, pairs with `SH_CAPTURE=shm` where there is no window to XTEST into) | config, input, realtime_input, x11_input, mame_input |
-| `SH_POINTER` | `--pointer` | `abs` | **Legacy parse-only compatibility:** `abs`→`dbus-abs`, `rel`→`dbus-rel`, `warpd`→`warpd` when the unified knob is absent. Old `SH_INPUT_BACKEND=dbus` still combines with `abs`/`rel`; old explicit `warpd`/`gallery-hid` overrides still parse. New tile.env files should use `SH_INPUT_BACKEND` | config |
+| `SH_POINTER` | `--pointer` | `abs` | **Legacy parse-only compatibility:** `abs`→`dbus-abs`, `rel`→`dbus-rel`, `warpd`→`warpd` when the unified knob is absent. Old `SH_INPUT_BACKEND=dbus` still combines with `abs`/`rel`; old explicit `warpd`/`gallery-hid` overrides still parse. New station.env files should use `SH_INPUT_BACKEND` | config |
 | `SH_CURSOR_OFF_X` | `--cursor-off-x` | `0` | Absolute-client origin calibration X (guest px), applied before either `dbus-abs` injection or the `dbus-rel` PS/2 bridge | input |
 | `SH_CURSOR_OFF_Y` | `--cursor-off-y` | `0` | Absolute-client origin calibration Y (guest px), applied before either dbus path | input |
 | `SH_CURSOR_SCALE` | `--cursor-scale` | `1.0` | Absolute-client scale applied before the offset and before either dbus path; non-identity `dbus-rel` values calibrate a relative guest's pointer gain | input |
@@ -116,7 +116,7 @@ PCM. The samples feed the same Opus encode loop the dbus source uses, so the
 wire is unchanged (48 k stereo, packet kind 2) and the SPA needs nothing.
 
 Producer-side resilience is the launcher's job (see
-`streamhost/tiles/irix/x11-runtime.sh` `audio_up()`): MAME inherits SIGPIPE
+`streamhost/stations/irix/x11-runtime.sh` `audio_up()`): MAME inherits SIGPIPE
 ignored and an O_RDWR reader-of-last-resort fd on the FIFO, so with the daemon
 dead or restarting the pipe simply fills (~85 ms) and SDL's audio thread blocks
 while emulation continues — the exhibit itself is never at risk.
@@ -139,7 +139,7 @@ while emulation continues — the exhibit itself is never at risk.
 | `SH_TUNE` | `--tune` | `zerolatency` | x264 tune | encode |
 | `SH_CRF` | `--crf` | `10` (clamp 10–40) | Tier 0: CONSTANT QP (CQP kills the idle "dancing" — static screens code as bit-exact SKIP); ABR tiers ≥1: CRF anchor (+3/+6 per tier) with VBV | encode |
 | `SH_MAXRATE_KBPS` | `--maxrate` | `0` = auto | Tier-0 maxrate/bufsize cap in kbps (auto = per-resolution table) | encode |
-| `SH_BUFSIZE_RATIO` | `--bufsize-ratio` | daemon `1.0`, but **every emitted tile.env carries `0.5`** (the fleet value, declared in `registry/registry-v1.json` `fleetEncoder.bufsizeRatio` and pinned to the emitter default by `stations-registry.py validate`) | VBV bufsize = ratio × maxrate. ABR tiers ≥1 apply `min(ratio, 0.5)` (WAN burst cap; tier 0 is CQP/no-VBV, so LAN is unaffected). Congested-tier maxrate is also clamped: T1 12 Mbps / T2 8 Mbps / T3 5 Mbps | encode |
+| `SH_BUFSIZE_RATIO` | `--bufsize-ratio` | daemon `1.0`, but **every emitted station.env carries `0.5`** (the fleet value, declared in `registry/registry-v1.json` `fleetEncoder.bufsizeRatio` and pinned to the emitter default by `stations-registry.py validate`) | VBV bufsize = ratio × maxrate. ABR tiers ≥1 apply `min(ratio, 0.5)` (WAN burst cap; tier 0 is CQP/no-VBV, so LAN is unaffected). Congested-tier maxrate is also clamped: T1 12 Mbps / T2 8 Mbps / T3 5 Mbps | encode |
 | `SH_ABR` | `--abr` | `on` | Adaptive-bitrate controller (off pins tier 0) | abr |
 | `SH_ABR_MIN_RESTART_MS` | `--abr-min-restart-ms` | `25000` (clamp 2000–30000) | DWELL: min ms between any two tier changes (anti-oscillation) | abr |
 | `SH_ABR_FLOOR_HEIGHT` | `--abr-floor-height` | `480` (min 240) | Tier-3 resolution floor height, px | abr |
@@ -159,7 +159,7 @@ while emulation continues — the exhibit itself is never at risk.
 
 | Env | Flag | Default | Effect | Module |
 |---|---|---|---|---|
-| `SH_IDLE_PAUSE_SECS` | `--idle-pause-secs` | `60` (`0` = off; nonzero clamped ≥5) | Freeze the guest after this many seconds with ZERO WebTransport sessions; the next accepted session thaws it + forces a keyframe, so the visitor sees the live screen sub-second. Pause ≠ loadvm (guest RAM/state untouched — safe on cold-boot-only tiles). Guest clocks freeze while paused. A reconciler re-asserts the pause every 60 s (heals external resumes, e.g. `labctl`, which auto-resumes before driving) and resumes a paused guest whenever a session is active. Per-tile opt-out: `SH_IDLE_PAUSE_SECS=0` in `tile.env`. See `IDLE-PAUSE.md`. | idle, transport |
+| `SH_IDLE_PAUSE_SECS` | `--idle-pause-secs` | `60` (`0` = off; nonzero clamped ≥5) | Freeze the guest after this many seconds with ZERO WebTransport sessions; the next accepted session thaws it + forces a keyframe, so the visitor sees the live screen sub-second. Pause ≠ loadvm (guest RAM/state untouched — safe on cold-boot-only tiles). Guest clocks freeze while paused. A reconciler re-asserts the pause every 60 s (heals external resumes, e.g. `labctl`, which auto-resumes before driving) and resumes a paused guest whenever a session is active. Per-tile opt-out: `SH_IDLE_PAUSE_SECS=0` in `station.env`. See `IDLE-PAUSE.md`. | idle, transport |
 | `SH_IDLE_PAUSE_PIDFILE` | — | unset | Pidfile of the process to freeze on a NON-QEMU tile, where there is no QMP monitor to `stop`: the daemon `SIGSTOP`/`SIGCONT`s that process instead (`irix`, whose MAME otherwise runs flat out unwatched). Unset on a non-QEMU tile = no auto-pause; ignored on QEMU tiles. Re-read on every stop/cont, so a watchdog relaunch is followed. | idle |
 | `SH_IDLE_PAUSE_PROC_MATCH` | — | unset (no check) | Substring that must appear in the pid's `/proc/<pid>/cmdline` before `SH_IDLE_PAUSE_PIDFILE`'s pid is signalled, so a stale pidfile whose pid the kernel recycled cannot freeze an unrelated process. `irix` uses `indy_4610`. | idle |
 | `SH_IDLE_PAUSE_WARMUP_SECS` | — | `0` (off) | Withhold the FIRST freeze this long after daemon start, for a tile whose own health machinery needs the guest RUNNING to vet it. `irix` uses `780`: its livewatch waits 600 s before its first pointer probe, and that probe is the only thing that clears the instant-restore budget, so freezing at 60 s would leave an unvisited tile's budget to ratchet up until every launch fell back to the 390 s cold boot. Resumes are never withheld — only the freeze waits. | idle |
@@ -179,6 +179,6 @@ All trace flags gate on the value being exactly `1` (`config::env_flag`) —
 
 ## Launcher-only vars (NOT read by the daemon)
 
-`tile.env` files also carry `SH_GOLDEN_SNAPSHOT` and `SH_RESET_MODE` — those are
+`station.env` files also carry `SH_GOLDEN_SNAPSHOT` and `SH_RESET_MODE` — those are
 consumed by the tile launcher/reset tooling (`loadvm golden` fixture), never by
-the streamhost binary. They share the `SH_` prefix for tile.env convenience only.
+the streamhost binary. They share the `SH_` prefix for station.env convenience only.

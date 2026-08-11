@@ -10,7 +10,7 @@ side on the box.
 
 Protocol (mamectl/1, issue #45 design section 3), socket `MAME_CTL_SOCK`
 (convention `<tile-dir>/ctl.sock`, published to labctl as the matrix `ctl`
-field from `SH_MAMECTL_SOCK` in tile.env):
+field from `SH_MAMECTL_SOCK` in station.env):
 
     on accept: HELLO mamectl/1 <build-id> <machine> caps=<flag,...> screen=<WxH>
     request  := seq SP verb [SP args] LF        ; seq = uint, or "-" = no reply

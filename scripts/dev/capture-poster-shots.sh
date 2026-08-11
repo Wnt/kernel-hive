@@ -17,7 +17,7 @@ for os_id in "$@"; do
     exit 2
   fi
 
-  registry_file="$repo_root/registry/tiles/$os_id.json"
+  registry_file="$repo_root/registry/stations/$os_id.json"
   if [[ ! -f "$registry_file" ]]; then
     echo "no registry tile: $os_id" >&2
     exit 2

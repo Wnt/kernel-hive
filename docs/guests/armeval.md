@@ -172,7 +172,7 @@ near-duplicate. Two capture-time gates, both on the same frame:
 
 ### The type-in (the headline)
 
-`registry/tiles/armeval.json` `demoProgram`, typed through the station's own key
+`registry/stations/armeval.json` `demoProgram`, typed through the station's own key
 path at its declared 80/80 ms pacing:
 
 ```

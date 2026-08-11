@@ -124,7 +124,7 @@ def main():
     if not clone_dir.startswith(allowed_root):
         fail("refusing non-clone path outside %s: %s" %
              (allowed_root, clone_dir))
-    if "/streamhost/tiles/" in clone_dir or clone_dir.endswith("/solaris"):
+    if "/streamhost/stations/" in clone_dir or clone_dir.endswith("/solaris"):
         fail("refusing a live tile path: %s" % clone_dir)
     if not re.fullmatch(r"[A-Za-z0-9_.-]+", args.snapshot):
         fail("snapshot name contains unsupported characters")

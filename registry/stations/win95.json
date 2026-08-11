@@ -50,8 +50,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/win95",
-      "qmp": "/data/vms/streamhost/tiles/win95/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/win95",
+      "qmp": "/data/vms/streamhost/stations/win95/qmp.sock",
       "pointer_mode": "warpd",
       "warpd_port": 57791,
       "warpd_addr": "127.0.0.1:57791",
@@ -103,8 +103,8 @@
   "credentialsRef": "guest/win95",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "win95",
-      "SH_QMP": "/data/vms/streamhost/tiles/win95/qmp.sock",
+      "SH_STATION": "win95",
+      "SH_QMP": "/data/vms/streamhost/stations/win95/qmp.sock",
       "SH_PORT": "54091",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -114,8 +114,8 @@
       "SH_WARPD_BUTTONS": "qemu",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/win95/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win95/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/win95/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/win95/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_WARPD_PACE_MS": "30"
     },
@@ -148,14 +148,14 @@
         "--aux-file",
         "$T/win95/golden-bake.sh",
         "--env-append-file",
-        "$T/win95/tile.env.fixture"
+        "$T/win95/station.env.fixture"
       ],
       "deviceSetId": "win95-current",
-      "launcher": "streamhost/tiles/win95/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/win95/tile.env.fixture",
+      "launcher": "streamhost/stations/win95/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/win95/station.env.fixture",
       "auxFiles": [
-        "streamhost/tiles/win95/drive.py",
-        "streamhost/tiles/win95/golden-bake.sh"
+        "streamhost/stations/win95/drive.py",
+        "streamhost/stations/win95/golden-bake.sh"
       ],
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0,acpi=off,usb=off,kernel-irqchip=off,accel=kvm",

@@ -101,7 +101,7 @@ UDP=54128
 SSH_PORT=5831
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
-TILE_DIR=/data/vms/streamhost/tiles/zx81
+TILE_DIR=/data/vms/streamhost/stations/zx81
 OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
@@ -203,7 +203,7 @@ EOS
 #                  not a fair test of a guest keyboard — it drives QMP with no
 #                  pacing and drops characters while printing "ok" — so the
 #                  proof owns its typist and types at the station's declared rate.
-SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../streamhost/tiles/zx81" && pwd)"
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../streamhost/stations/zx81" && pwd)"
 
 # Quiet every text-producing stage of a cold boot (GRUB -> kernel -> agetty).
 quiet_console() {

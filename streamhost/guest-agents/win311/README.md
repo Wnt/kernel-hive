@@ -85,7 +85,7 @@ Launcher gets a COM1 backend socket (guest COM1 device unchanged, so a
 -serial chardev:ser0
 ```
 
-tile.env:
+station.env:
 
 ```
 SH_POINTER=warpd

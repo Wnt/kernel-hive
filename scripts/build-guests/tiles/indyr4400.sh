@@ -35,7 +35,7 @@
 #     The suite comes from registry/bridge-suites.json (resolver:
 #     scripts/build-guests/lib/bridge-suite.sh, docs/lab/BRIDGE-TRIXIE-MIGRATION.md).
 #   * THE 6.3 GB IRIX DISK IS AN ASSET, NOT OVERLAY CONTENT. It is staged by
-#     streamhost/tiles/indyr4400/fetch-assets.sh as a READ-ONLY ext4 image and
+#     streamhost/stations/indyr4400/fetch-assets.sh as a READ-ONLY ext4 image and
 #     attached as a second, read-only virtio drive; the guest mounts it at
 #     /srv/irix and Iris opens /srv/irix/disk.raw through a symlink in its own
 #     writable dir, with `overlay = true` so its copy-on-write file lands on the
@@ -78,7 +78,7 @@ SSH_PORT=5839
 WEB_PORT=8136
 MEM=2048
 KEY="/data/vms/bridge/bridge_key"
-TILE_DIR="/data/vms/streamhost/tiles/${TILE}"
+TILE_DIR="/data/vms/streamhost/stations/${TILE}"
 OVERLAY="${TILE_DIR}/overlay.qcow2"
 QMP="${TILE_DIR}/qmp.sock"
 PID="${TILE_DIR}/qemu.pid"
@@ -284,7 +284,7 @@ build_iris_chroot() {
   echo "no $SUITE bridge base: $BRIDGE_BASE (run bridge-base.sh --suite $SUITE)"
   exit 1
 }
-bash "$(dirname "$0")/../../../streamhost/tiles/${TILE}/fetch-assets.sh"
+bash "$(dirname "$0")/../../../streamhost/stations/${TILE}/fetch-assets.sh"
 [ -f "$IRIS_BIN" ] || BUILD_IRIS=1
 [ "$BUILD_IRIS" -eq 1 ] && build_iris
 mkdir -p "$TILE_DIR"
@@ -354,9 +354,9 @@ REMOTE
   log "   python3 /root/qmp_hmp.py $QMP 'loadvm golden'   # verify restore lands on the login"
   log "Re-run this script after baking to boot straight into the golden fixture (-loadvm golden)."
   log "Emit + start the tile:"
-  log "   /data/vms/streamhost/scripts/streamhost-tile.sh --tile ${TILE} --vmid ${VMID} --udp ${UDP} \\"
+  log "   /data/vms/streamhost/scripts/streamhost-station.sh --tile ${TILE} --vmid ${VMID} --udp ${UDP} \\"
   log "       --pointer rel --audio off --mem ${MEM} --smp 4 --cpu host --vga std --fps 30"
-  log "   # then replace qemu-streamhost.sh with streamhost/tiles/${TILE}/qemu-streamhost.sh"
+  log "   # then replace qemu-streamhost.sh with streamhost/stations/${TILE}/qemu-streamhost.sh"
   log "   bash ${TILE_DIR}/qemu-streamhost.sh ; systemctl start streamhost@${TILE}"
 fi
 

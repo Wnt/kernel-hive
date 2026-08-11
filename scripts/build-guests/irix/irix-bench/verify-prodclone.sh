@@ -5,7 +5,7 @@
 #   verify-prodclone.sh <binary> <outdir> <cpus> [dump-seconds ...]
 #
 # This is a CORRECTNESS check, not a speed measurement: same launcher, same
-# tile.env values, same golden, both watchdogs armed, and THROTTLED exactly as
+# station.env values, same golden, both watchdogs armed, and THROTTLED exactly as
 # shipped. Use `irixbench.sh` for speed.
 #
 # It exists because a binary can be green in the bench rig and broken on the
@@ -27,7 +27,7 @@ shift 3
 DUMPS=("$@")
 [ ${#DUMPS[@]} -gt 0 ] || DUMPS=(180 300 420 540 660)
 
-T="${IRIX_TILE_DIR:-/data/vms/streamhost/tiles/irix}"
+T="${IRIX_TILE_DIR:-/data/vms/streamhost/stations/irix}"
 CG="${CLONE_GUARD:-/usr/local/bin/clone-guard}"
 RIG="$(cd -- "$(dirname -- "$0")" && pwd)"
 
@@ -54,14 +54,14 @@ cp "$T/x11-runtime.sh" "$T/irixagent.lua" "$T/fbstat.py" "$T/tapnet.sh" "$V/"
 md5sum "$BIN" >"$V/binary.md5"
 
 (
-  # tile.env is a systemd EnvironmentFile, NOT a shell script: values are
+  # station.env is a systemd EnvironmentFile, NOT a shell script: values are
   # unquoted and SH_FIXTURE_DESC contains spaces and parentheses, so sourcing it
   # is a syntax error. Read it the way systemd does — split on the first `=` and
   # take the rest of the line verbatim.
   while IFS= read -r line; do
     case "$line" in '#'* | '') continue ;; esac
     export "${line%%=*}=${line#*=}"
-  done <"$T/tile.env"
+  done <"$T/station.env"
   export IRIX_MAME="$BIN" IRIX_CPUS="$CPUS" IRIX_WATCH_UNIT=""
   # One-variable departures from the station's own env, for bisecting a
   # production-only failure (e.g. IRIX_NET_OVERRIDE=off to take the tap and the

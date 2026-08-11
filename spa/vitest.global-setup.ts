@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 
-// The public lineup is rendered from registry/tiles/*.json on demand and never
+// The public lineup is rendered from registry/stations/*.json on demand and never
 // committed, so the suite renders it once here and hands the document to every
 // test that needs a real lineup (see src/data/lineupFixture.ts). Nothing in the
 // SPA's build, lint or type gates depends on it existing — only the tests do,

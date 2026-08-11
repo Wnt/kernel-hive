@@ -2,8 +2,8 @@
 # =============================================================================
 # scripts/dev/verify-emit.sh — launcher-parity gate for the registry production roster.
 #
-# Proves that this repo's streamhost/stations-manifest.sh + streamhost-tile.sh
-# reproduce every LIVE station's {tile.env,qemu-streamhost.sh,x11-runtime.sh}
+# Proves that this repo's streamhost/stations-manifest.sh + streamhost-station.sh
+# reproduce every LIVE station's {station.env,qemu-streamhost.sh,x11-runtime.sh}
 # BYTE-FOR-BYTE,
 # modulo the whitelisted-and-justified deltas in verify-emit-allow.diffpatterns.
 # This checker is the definition of done for launcher-emit completeness: run it
@@ -15,7 +15,7 @@
 #   1b. copy labhost's /data/kernel-hive/registry/local.env (if present) into
 #      the kit as registry/local.env, so the emitter resolves the operator's
 #      real SH_HOST_IP/SH_ADVERTISE_HOST exactly as a production emit does.
-#      Without it every tile.env diffs on the two address lines and the gate
+#      Without it every station.env diffs on the two address lines and the gate
 #      was blind (2026-08-11). No secret leaves labhost: the file is copied
 #      labhost-side into the /tmp scratch kit the EXIT trap removes.
 #   2. on labhost: stations-manifest.sh --out-root /tmp/verify-emit.<id>/out
@@ -78,7 +78,7 @@ done
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ALLOW="$REPO/scripts/dev/verify-emit-allow.diffpatterns"
-LIVE_ROOT=/data/vms/streamhost/tiles
+LIVE_ROOT=/data/vms/streamhost/stations
 RID="verify-emit.$$.$(date +%s)"
 REMOTE="/tmp/$RID"
 LOCAL="$(mktemp -d)"
@@ -110,7 +110,7 @@ if [ "$LOCAL_MODE" = 1 ]; then
 else
   DEST="$HOST:$REMOTE/streamhost/"
 fi
-rsync -a --delete "$REPO/streamhost/scripts" "$REPO/streamhost/tiles" \
+rsync -a --delete "$REPO/streamhost/scripts" "$REPO/streamhost/stations" \
   "$REPO/streamhost/stations-manifest.sh" "$DEST" || {
   echo "FATAL: rsync failed" >&2
   exit 1
@@ -130,7 +130,7 @@ host_run "bash $REMOTE/streamhost/stations-manifest.sh --out-root $REMOTE/out $P
 
 echo "[verify-emit] diff emitted vs live ($LIVE_ROOT)"
 host_run "cd $REMOTE/out && mkdir -p $REMOTE/diffs && for t in */; do t=\${t%/}; \
-  for f in tile.env qemu-streamhost.sh x11-runtime.sh; do \
+  for f in station.env qemu-streamhost.sh x11-runtime.sh; do \
     [ -f \$t/\$f ] || continue; \
     if [ ! -f $LIVE_ROOT/\$t/\$f ]; then echo 'LIVE FILE MISSING' > $REMOTE/diffs/\$t--\$f.diff; \
     else diff $LIVE_ROOT/\$t/\$f \$t/\$f > $REMOTE/diffs/\$t--\$f.diff; fi; done; done; \
@@ -153,7 +153,7 @@ fi
 
 # ---- whitelist filter -------------------------------------------------------
 # Whitelist line format:  <tile>|<file>|<extended-regex>
-#   station: exact station-dir name or *      file: tile.env | qemu-streamhost.sh | *
+#   station: exact station-dir name or *      file: station.env | qemu-streamhost.sh | *
 # The regex is matched against each diff CONTENT line INCLUDING its leading
 # "< " (live-only line) or "> " (emitted/repo-only line). Hunk headers are
 # ignored. A station file PASSes* when every content line matches some pattern.
@@ -171,18 +171,18 @@ allowed_for() { # $1=tile $2=file -> prints applicable regexes, one per line
 }
 
 overall_rc=0
-printf '%-14s %-12s %-22s %-16s %s\n' "TILE" "tile.env" "qemu-streamhost.sh" "x11-runtime.sh" "notes"
+printf '%-14s %-12s %-22s %-16s %s\n' "TILE" "station.env" "qemu-streamhost.sh" "x11-runtime.sh" "notes"
 printf '%-14s %-12s %-22s %-16s %s\n' "----" "--------" "------------------" "--------------" "-----"
 while IFS= read -r t; do
   notes=""
   declare -A verdict=()
-  for f in tile.env qemu-streamhost.sh x11-runtime.sh; do
+  for f in station.env qemu-streamhost.sh x11-runtime.sh; do
     d="$LOCAL/diffs/$t--$f.diff"
     if [ ! -f "$d" ]; then
       # No diff file = the emit did not produce this file for this station (an
       # x11 station has no qemu-streamhost.sh and vice versa) — not a failure.
-      # tile.env is emitted for every station, so its absence IS one.
-      if [ "$f" = tile.env ]; then
+      # station.env is emitted for every station, so its absence IS one.
+      if [ "$f" = station.env ]; then
         verdict[$f]="MISSING"
         overall_rc=1
       else
@@ -225,7 +225,7 @@ while IFS= read -r t; do
       else notes="$notes $f:${#residual[@]}residual"; fi
     fi
   done
-  printf '%-14s %-12s %-22s %-16s %s\n' "$t" "${verdict["tile.env"]}" "${verdict["qemu-streamhost.sh"]}" "${verdict["x11-runtime.sh"]}" "${notes# }"
+  printf '%-14s %-12s %-22s %-16s %s\n' "$t" "${verdict["station.env"]}" "${verdict["qemu-streamhost.sh"]}" "${verdict["x11-runtime.sh"]}" "${notes# }"
 done <"$LOCAL/diffs/EMITTED_TILES"
 
 echo

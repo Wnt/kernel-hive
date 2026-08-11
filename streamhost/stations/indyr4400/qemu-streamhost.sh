@@ -32,7 +32,7 @@
 #     window and feeds the emulated Indy PS/2 deltas, so the browser drives this
 #     tile through Pointer Lock (spa pointerRel), like the qnx tile.
 set -e
-BASE=/data/vms/streamhost/tiles/indyr4400
+BASE=/data/vms/streamhost/stations/indyr4400
 OVERLAY="$BASE/overlay.qcow2"
 IRIXDISK="${IRISINDY_ASSET:-/data/gallery-guests/IrisIndy/irix65-r4400-disk.ext4}"
 [ -f "$IRIXDISK" ] || {

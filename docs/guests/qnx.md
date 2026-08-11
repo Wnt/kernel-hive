@@ -297,7 +297,7 @@ and any captured `golden` checkpoint assume the tablet. Promotion therefore need
 1. Back up: `cp golden.qcow2 golden.qcow2.pre-reltablet` (existing `.pre-qnxfix`,
    `.bak-preMouseFix` already there). Back up `qemu-streamhost.sh`.
 2. Edit the launcher: delete the `-usb -device usb-tablet` line (keep everything
-   else; `-machine pc` already provides the PS/2 mouse). tile.env keeps
+   else; `-machine pc` already provides the PS/2 mouse). station.env keeps
    `SH_POINTER=rel`.
 3. Cold-boot + drive to the Photon desktop (`qnx-photon-drive.sh`), then
    `savevm golden` over the NEW (no-tablet) device set so `labctl reset` matches.
@@ -372,7 +372,7 @@ legacy-compatible `SH_POINTER=rel` settings and run the shared binary.
   golden=true). Note: the recapture is **800x600** (keyboard-drivable Accept); the
   1024x768 path needs a mouse-click Accept, infeasible without the tablet.
 - **Rollback (Part B):**
-  `systemctl stop streamhost@qnx` → `kill $(cat /data/vms/streamhost/tiles/qnx/qemu.pid)`
+  `systemctl stop streamhost@qnx` → `kill $(cat /data/vms/streamhost/stations/qnx/qemu.pid)`
   → `cp golden.qcow2.bak-preReltablet-1783989096 golden.qcow2`
   → `cp qemu-streamhost.sh.bak-preReltablet-1783989096 qemu-streamhost.sh`
   → `bash qemu-streamhost.sh` → `loadvm golden` (QMP) → `systemctl start streamhost@qnx`
@@ -465,7 +465,7 @@ clone run was discarded by its pidfile and restarted.
 
 ### Live promotion and verification
 
-- Promoted the stopped clone to `/data/vms/streamhost/tiles/qnx/golden.qcow2`
+- Promoted the stopped clone to `/data/vms/streamhost/stations/qnx/golden.qcow2`
   under a stopped `streamhost@qnx`; clone and live SHA-256 both
   `f9994f3e9542583c6164a44b928a0cab9809d8eff8e8cd40c4393d88e6ae31b0`.
   The deployed launcher SHA-256 is

@@ -290,7 +290,7 @@ mod tests {
     }
 
     /// The rejection must name every accepted value, or an operator debugging a
-    /// tile.env typo cannot see that the new backend exists.
+    /// station.env typo cannot see that the new backend exists.
     #[test]
     #[should_panic(expected = "mamesock")]
     fn unknown_backend_error_lists_mamesock() {

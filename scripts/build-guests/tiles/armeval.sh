@@ -159,7 +159,7 @@ WEB_PORT=8135
 # kc854 station's, and 5835 is a real hostfwd, so QEMU refused to start on it.
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
-TILE_DIR=/data/vms/streamhost/tiles/armeval
+TILE_DIR=/data/vms/streamhost/stations/armeval
 ROMDIR=/data/assets-staging/armeval
 MAME=/data/vms/streamhost/assets/bbcmicro/mame/bbcb
 # 768 MB, the same as bbcmicro: the same binary, the same 800x600 X root, two
@@ -190,7 +190,7 @@ DISC_FILE="armevaluationsystem-disc3.adl"
 DISC_SHA1="f5114ff744f6f742da3959a91a1b98af0bd1db5d"
 
 # The listing the exhibit types, kept in ONE place so the builder's proof and
-# registry/tiles/armeval.json's demoProgram cannot drift apart.
+# registry/stations/armeval.json's demoProgram cannot drift apart.
 DEMO='10 T%=TIME\n20 FOR I%=1 TO 20000:NEXT\n30 PRINT"20000 LOOPS ";(TIME-T%)/100\nRUN\n'
 
 FORCE=0

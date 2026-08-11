@@ -253,14 +253,14 @@ IRIX: `SH_RESET_MODE=relaunch`, es40 cold-boots headless per launch (~2.5
 min to desktop at the new NVRAM settings). Instant-ready via ES40_RESTORE
 becomes the fast path once the post-restore repaint/timer issue is fixed.
 
-**Final wiring — the w2kalpha station (tile.env, mirroring `tiles/irix`):**
+**Final wiring — the w2kalpha station (station.env, mirroring `tiles/irix`):**
 ```
-SH_TILE=w2kalpha
-SH_TILE_RUNTIME=x11            # launcher-managed emulator, not QEMU
+SH_STATION=w2kalpha
+SH_STATION_RUNTIME=x11            # launcher-managed emulator, not QEMU
 SH_CAPTURE=shm
-SH_SHM_PATH=/data/vms/streamhost/tiles/w2kalpha/fb.shm   # -> ES40_SHM_PATH
+SH_SHM_PATH=/data/vms/streamhost/stations/w2kalpha/fb.shm   # -> ES40_SHM_PATH
 SH_INPUT_BACKEND=mamesock
-SH_MAMECTL_SOCK=/data/vms/streamhost/tiles/w2kalpha/ctl.sock  # -> ES40_CTL_SOCK
+SH_MAMECTL_SOCK=/data/vms/streamhost/stations/w2kalpha/ctl.sock  # -> ES40_CTL_SOCK
 SH_RESET_MODE=relaunch
 SH_PORT=54000+slot ; SH_FPS=30 ; SH_AUDIO=off
 ```

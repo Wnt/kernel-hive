@@ -15,9 +15,9 @@ to the classic **yellow-on-blue `Ready`** prompt. This is a **kiosk**
 base, so this station needs NO base rebuild.
 **Build script (station):** `scripts/build-guests/tiles/amstradcpc.sh` (thin overlay +
 kiosk `launch.sh` + framebuffer checks + keyboard proof + checkpoint cold-restore).
-**Station dir (host):** `/data/vms/streamhost/tiles/amstradcpc/` — `overlay.qcow2`
+**Station dir (host):** `/data/vms/streamhost/stations/amstradcpc/` — `overlay.qcow2`
 (thin, on the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`,
-`tile.env`.
+`station.env`.
 
 ## License / provenance
 - **Caprice32 (`cap32`)** — GPLv2 emulator.

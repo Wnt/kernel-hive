@@ -84,7 +84,7 @@ SSH_PORT=5834
 WEB_PORT=8134
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY=/data/vms/bridge/bridge_key
-TILE_DIR=/data/vms/streamhost/tiles/oricatmos
+TILE_DIR=/data/vms/streamhost/stations/oricatmos
 OVERLAY="$TILE_DIR/overlay.qcow2"
 QMP="$TILE_DIR/qmp.sock"
 PID="$TILE_DIR/qemu.pid"
@@ -378,7 +378,7 @@ keyboard_proof() {
 read -r -d '' TYPE_PY <<'EOS' || true
 #!/usr/bin/env python3
 """Type one BASIC line + RETURN into this tile's QEMU over QMP, at the tile's
-own SH_KEY_MIN_HOLD_MS/GAP_MS pacing (80/80 -- bisected, see the tile.env
+own SH_KEY_MIN_HOLD_MS/GAP_MS pacing (80/80 -- bisected, see the station.env
 fixture). Explicit press/release pairs, never `send-key hold-time`: QEMU
 releases that asynchronously and back-to-back calls overlap and lose keys."""
 

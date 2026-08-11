@@ -7,7 +7,7 @@
 # QMP savevm/loadvm can create/restore the live "golden" reset point.
 # resetMode=loadvm  (see GOLDEN.md). Disks are standalone qcow2 (no backing dep).
 set -e
-D=/data/vms/streamhost/tiles/win311
+D=/data/vms/streamhost/stations/win311
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock"

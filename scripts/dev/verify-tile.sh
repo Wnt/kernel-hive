@@ -40,7 +40,7 @@ done
 
 LABCTL="${LABCTL:-labctl}"
 BASE_URL="${VERIFY_TILE_BASE_URL:-https://${SH_HOST_IP:-192.0.2.10}:8443}"
-MATRIX="${LABCTL_TILES_JSON:-/data/vms/streamhost/tiles.json}"
+MATRIX="${LABCTL_TILES_JSON:-/data/vms/streamhost/stations.json}"
 MANIFEST="${GOLDEN_MANIFEST:-/data/vms/streamhost/serve/golden-manifest.json}"
 RESET_TOOL="${RESET_TOOL:-/data/vms/streamhost/serve/reset-tile.sh}"
 WEBROOT="${WEBROOT:-/data/vms/streamhost/serve/webroot}"

@@ -5,7 +5,7 @@
 #   1) bash tiles/alpine/qemu-streamhost.sh    # cold boot (no -loadvm; snapshot absent)
 #   2) bash tiles/alpine/golden-bake.sh        # this script
 set -e
-BASE=/data/vms/streamhost/tiles/alpine
+BASE=/data/vms/streamhost/stations/alpine
 SK="python3 $BASE/sk.py $BASE/qmp.sock"
 b64() { printf '%s' "$1" | base64 | tr -d '\n'; }
 type_line() {

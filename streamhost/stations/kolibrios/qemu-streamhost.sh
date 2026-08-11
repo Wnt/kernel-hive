@@ -10,7 +10,7 @@
 # -loadvm golden (device models here are IDENTICAL to qemu-setup.sh, only display/
 # audio backends differ, which are NOT part of vmstate). NEVER delete state.qcow2.
 set -e
-BASE=/data/vms/streamhost/tiles/kolibrios
+BASE=/data/vms/streamhost/stations/kolibrios
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$BASE/qmp.sock" "$BASE/qemu.pid"

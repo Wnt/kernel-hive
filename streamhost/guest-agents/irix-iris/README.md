@@ -3,7 +3,7 @@
 > **STATUS: works, verified live — but NOT durable and NOT wired.** The copy
 > that lived in the kiosk at `/root/iexec.py` was **never in the golden**: a
 > `systemctl restart` (which starts with `-loadvm golden`) deleted it, measured
-> 2026-08-10. `registry/tiles/indyr4400.json` still describes exec as reaching
+> 2026-08-10. `registry/stations/indyr4400.json` still describes exec as reaching
 > the Debian kiosk only. Until the cutover below, this file **is** the agent —
 > it must be pushed into the kiosk each time.
 
@@ -88,6 +88,6 @@ hand-edited. Roughly:
 2. Decide the verb. Either a new `exec_kind` that routes into IRIX, or keep
    `labctl exec` on the kiosk and add a separate one for the Indy. The sibling
    MAME tile uses `exec_kind: serial_e`, which is the closer precedent.
-3. Update `registry/tiles/indyr4400.json`, `make station-registry-generate`,
+3. Update `registry/stations/indyr4400.json`, `make station-registry-generate`,
    `labctl gen`, and fix the matrix `notes` — they still assert the Indy is
    reachable only by framebuffer + PS/2.

@@ -92,7 +92,7 @@ framebuffer:
   **`streamhost/docs/BRIDGE.md`**. Rows marked **`needs-bridge`** are here.
 
 **The bridge is proven.** The **C64 + GEOS** tile is the live reference
-implementation (`/data/vms/streamhost/tiles/c64/`, udp/54114, GEOS deskTop +
+implementation (`/data/vms/streamhost/stations/c64/`, udp/54114, GEOS deskTop +
 non-silent SID confirmed 2026-07-08 — see `docs/guests/c64.md`). The
 shared base `/data/vms/bridge/bridge-base.qcow2` already ships VICE `x64sc` +
 `hatari` + `cap32` — **Atari ST and Apple II are now LIVE** on that same base

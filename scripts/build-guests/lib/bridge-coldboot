@@ -170,7 +170,7 @@ set -euo pipefail
 SELF="$(basename "$0")"
 COLD_TAG="coldboot"
 GOLD_TAG="golden"
-PROD_TILES_ROOT="${PROD_TILES_ROOT:-/data/vms/streamhost/tiles}"
+PROD_TILES_ROOT="${PROD_TILES_ROOT:-/data/vms/streamhost/stations}"
 
 log() { echo "[coldboot] $*"; }
 die() {

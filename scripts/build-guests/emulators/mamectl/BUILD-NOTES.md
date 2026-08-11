@@ -85,7 +85,7 @@ pre-review build, kept for provenance). Final patch re-verified freestanding
   `src/emu/save.cpp` (loud validate_header reason line), and adds
   `src/osd/modules/ctlsock/ctlsock.{h,cpp}`. No overlap with any of the other
   13 patches (grep-verified), so pristine-apply == post-stack-apply.
-- `streamhost/tiles/irix/irixagent.lua` — stale-XTEST header corrected; file
+- `streamhost/stations/irix/irixagent.lua` — stale-XTEST header corrected; file
   stays as the rollback arm.
 - Local patch build tree (a/ pristine, b/ patched, module sources):
   `<this dir>/a`, `<this dir>/b`, `<this dir>/src/osd/modules/ctlsock/`.

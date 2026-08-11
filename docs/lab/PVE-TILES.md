@@ -7,7 +7,7 @@ There is no VNC/SPICE bridge and no QEMU launcher in the station directory.
 
 The second QMP is intentional. PVE's primary monitor belongs to `pvedaemon` and
 `qmeventd`; sharing it would introduce client contention. The only runtime
-coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
+coupling is `/data/vms/streamhost/stations/<tile>/qmp.sock`.
 
 ## Add a PVE station
 
@@ -17,7 +17,7 @@ coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
 
    ```bash
    qm set <vmid> --vga std --args \
-     "-display dbus,p2p=on -qmp unix:/data/vms/streamhost/tiles/<tile>/qmp.sock,server=on,wait=off"
+     "-display dbus,p2p=on -qmp unix:/data/vms/streamhost/stations/<tile>/qmp.sock,server=on,wait=off"
    ```
 
    Valid VGA choices are `std`, `vmware`, and `qxl`. For audio, use
@@ -58,8 +58,8 @@ coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
          }
        },
        "stationEnv": {
-         "SH_TILE": "example",
-         "SH_QMP": "/data/vms/streamhost/tiles/example/qmp.sock",
+         "SH_STATION": "example",
+         "SH_QMP": "/data/vms/streamhost/stations/example/qmp.sock",
          "SH_QEMU_MODE": "pve",
          "SH_PVE_VMID": "990",
          "SH_QEMU_PIDFILE": "/var/run/qemu-server/990.pid"
@@ -85,7 +85,7 @@ coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
    bash streamhost/stations-manifest.sh
    ```
 
-   The emitter writes `tile.env` and `ROLLBACK.md`, and emits no
+   The emitter writes `station.env` and `ROLLBACK.md`, and emits no
    `qemu-streamhost.sh`. `SH_QEMU_PIDFILE` points the streamhost RSS guard at
    PVE's `/var/run/qemu-server/<vmid>.pid`.
 

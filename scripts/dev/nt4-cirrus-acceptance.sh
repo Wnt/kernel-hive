@@ -68,7 +68,7 @@ case "$qemu_argv" in
   *) die "clone is not running the dedicated patched QEMU with its data path: $qemu_argv" ;;
 esac
 case "$qemu_argv" in
-  *"/data/vms/streamhost/tiles/"*) die "QEMU argv references a production tile" ;;
+  *"/data/vms/streamhost/stations/"*) die "QEMU argv references a production tile" ;;
 esac
 case "$EXPECT_OPTION:$qemu_argv" in
   A:*"-machine pc-i440fx-11.0,hpet=off,vmport=on "*" -device cirrus-vga "*) ;;

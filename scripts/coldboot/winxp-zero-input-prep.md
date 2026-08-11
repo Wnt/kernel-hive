@@ -67,7 +67,7 @@ Settled at **+21.7 s** on the full clean desktop.
 
 `boot-ref-desktop.png` (the settled clean-desktop screendump) lives beside the golden in the
 tile dir. For a live re-bake it is placed at
-`/data/vms/streamhost/tiles/winxp/boot-ref-desktop.png`.
+`/data/vms/streamhost/stations/winxp/boot-ref-desktop.png`.
 
 ## Invariant result (clone, framebuffer truth)
 

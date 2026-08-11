@@ -27,9 +27,9 @@ then
 `scripts/build-guests/tiles/mpf2.sh` creates the thin overlay, kiosk `launch.sh`,
 framebuffer checks, keyboard proof, and checkpoint cold-restore.
 
-**Station dir (host):** `/data/vms/streamhost/tiles/mpf2/` — `overlay.qcow2`
+**Station dir (host):** `/data/vms/streamhost/stations/mpf2/` — `overlay.qcow2`
 (thin, on the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`,
-`tile.env`.
+`station.env`.
 
 ## License / provenance
 - **MAME `mpf2`** — emulation driver in `src/mame/apple/tk2000.cpp`, GPLv2 licensed.
@@ -149,7 +149,7 @@ default PS/2 keyboard. MAME maps those physical keys to the 6502 memory-mapped
 matrix at $C000/$C010. Uppercase letters and symbols follow standard ASCII.
 
 Two registry-declared streamhost keyboard knobs make that surface usable
-(`registry/tiles/mpf2.json` → `runtime.stationEnv`; both also cover the UI's
+(`registry/stations/mpf2.json` → `runtime.stationEnv`; both also cover the UI's
 on-screen keyboard, since it shares the same wire record):
 
 - **`SH_KEY_REMAP=0x0e:0xe04b`** — Backspace is delivered as LEFT ARROW. The

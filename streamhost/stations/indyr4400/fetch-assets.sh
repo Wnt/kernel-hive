@@ -2,7 +2,7 @@
 # fetch-assets.sh — stage the large IRIX disk asset the indyr4400 tile needs at
 # runtime. It is NOT committed to the repo (a 6.3 GB IRIX 6.5 disk image, and
 # the repo is PUBLIC); this script documents, derives and verifies it, the same
-# way streamhost/tiles/irix/fetch-assets.sh does for the MAME tile's CHD.
+# way streamhost/stations/irix/fetch-assets.sh does for the MAME tile's CHD.
 #
 # WHAT THE ASSET IS
 #   /data/gallery-guests/IrisIndy/irix65-r4400-disk.ext4

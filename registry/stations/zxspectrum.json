@@ -27,8 +27,8 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/zxspectrum",
-      "qmp": "/data/vms/streamhost/tiles/zxspectrum/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/zxspectrum",
+      "qmp": "/data/vms/streamhost/stations/zxspectrum/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -78,8 +78,8 @@
   "credentialsRef": "guest/zxspectrum",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "zxspectrum",
-      "SH_QMP": "/data/vms/streamhost/tiles/zxspectrum/qmp.sock",
+      "SH_STATION": "zxspectrum",
+      "SH_QMP": "/data/vms/streamhost/stations/zxspectrum/qmp.sock",
       "SH_PORT": "54127",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
@@ -90,8 +90,8 @@
       "SH_INPUT_BACKEND": "disabled",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/zxspectrum/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/zxspectrum/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/zxspectrum/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/zxspectrum/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 230,
@@ -121,11 +121,11 @@
         "--launcher-file",
         "$T/zxspectrum/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/zxspectrum/tile.env.fixture"
+        "$T/zxspectrum/station.env.fixture"
       ],
       "deviceSetId": "zxspectrum-current",
-      "launcher": "streamhost/tiles/zxspectrum/qemu-streamhost.sh",
-      "envFixture": "streamhost/tiles/zxspectrum/tile.env.fixture",
+      "launcher": "streamhost/stations/zxspectrum/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/zxspectrum/station.env.fixture",
       "binary": "qemu-system-x86_64",
       "accel": "kvm",
       "cpu": "host",

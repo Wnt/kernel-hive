@@ -112,7 +112,7 @@ is_secret_path() {
 allowed_repo_path() {
   case "$1" in
     streamhost/Cargo.toml | streamhost/Cargo.lock | streamhost/streamhost/Cargo.toml | streamhost/streamhost/src/*.rs) selected src ;;
-    streamhost/tiles/*/qemu-streamhost.sh) selected launchers ;;
+    streamhost/stations/*/qemu-streamhost.sh) selected launchers ;;
     scripts/labctl) selected labctl ;;
     scripts/tiles.json.sample) selected tiles-json ;;
     scripts/serve/clientcmd.sh | scripts/serve/gen-local-ca.sh | scripts/serve/osgallery-https-server.py | scripts/serve/reset-tile.sh | scripts/serve/restart-https.sh | scripts/serve/tiles.json | scripts/serve/golden-manifest.json) selected serve ;;
@@ -156,8 +156,8 @@ fi
 
 if selected launchers; then
   note "[launchers] tracked verbatim qemu-streamhost.sh files only"
-  git -C "$REPO" ls-files 'streamhost/tiles/*/qemu-streamhost.sh' |
-    sed 's#^streamhost/tiles/##' | sort >"$tmpdir/repo-launchers"
+  git -C "$REPO" ls-files 'streamhost/stations/*/qemu-streamhost.sh' |
+    sed 's#^streamhost/stations/##' | sort >"$tmpdir/repo-launchers"
   ssh -o ConnectTimeout=15 "$LAB" \
     "find '$BOX_ROOT/tiles' -mindepth 2 -maxdepth 2 -type f -name qemu-streamhost.sh -printf '%P\\n' | sort" \
     >"$tmpdir/box-launchers"
@@ -165,7 +165,7 @@ if selected launchers; then
   comm -23 "$tmpdir/repo-launchers" "$tmpdir/box-launchers" |
     sed 's/^/harvest:   tracked launcher missing on box: /' >&2 || true
   rsync "${RSYNC[@]}" --files-from="$tmpdir/launchers" -e "$SSH_TRANSPORT" \
-    "$LAB:$BOX_ROOT/tiles/" "$REPO/streamhost/tiles/"
+    "$LAB:$BOX_ROOT/tiles/" "$REPO/streamhost/stations/"
 fi
 
 if selected labctl; then
@@ -187,7 +187,7 @@ if selected serve; then
   # tiles.json and golden-manifest.json are deliberately absent: both are
   # RENDERED from the registry (stations-registry.py rendered()) and have no repo
   # copy to harvest into. A live/repo divergence in those is fixed in
-  # registry/tiles/<id>.json and republished, never pulled back.
+  # registry/stations/<id>.json and republished, never pulled back.
   cat >"$tmpdir/serve-files" <<'EOF'
 clientcmd.sh
 gen-local-ca.sh
@@ -233,7 +233,7 @@ fi
 if [ -n "$(git -C "$REPO" status --porcelain --untracked-files=all)" ]; then
   git -C "$REPO" add -- \
     streamhost/Cargo.toml streamhost/Cargo.lock streamhost/streamhost/Cargo.toml \
-    streamhost/streamhost/src streamhost/tiles scripts/labctl scripts/tiles.json.sample \
+    streamhost/streamhost/src streamhost/stations scripts/labctl scripts/tiles.json.sample \
     scripts/serve registry
   while IFS= read -r -d '' path; do
     is_secret_path "$path" && die "refusing to commit secret-like path: $path"

@@ -3,8 +3,8 @@
   "_schema": "declared tile capabilities; labctl gen adds observed state",
   "tiles": {
     "alpine": {
-      "dir": "/data/vms/streamhost/tiles/alpine",
-      "qmp": "/data/vms/streamhost/tiles/alpine/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/alpine",
+      "qmp": "/data/vms/streamhost/stations/alpine/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -18,8 +18,8 @@
       "notes": "exec: labctl exec alpine \"<cmd>\" (ssh root@:5881, key gallery_guest_key)"
     },
     "alto": {
-      "dir": "/data/vms/streamhost/tiles/alto",
-      "qmp": "/data/vms/streamhost/tiles/alto/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/alto",
+      "qmp": "/data/vms/streamhost/stations/alto/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -33,8 +33,8 @@
       "notes": "exec: labctl exec alto \"<cmd>\" (ssh root@:5843, key bridge_key) reaches the Debian KIOSK, not the Alto -- the emulated machine has no shell and no network. Drive the Alto itself with labctl type/key (it is paced at 66/66 ms, two Alto fields) or with the tile's own alto-drive.py, which leads modifiers by a gap and can measure ink in a rect."
     },
     "amiga": {
-      "dir": "/data/vms/streamhost/tiles/amiga",
-      "qmp": "/data/vms/streamhost/tiles/amiga/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/amiga",
+      "qmp": "/data/vms/streamhost/stations/amiga/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -48,8 +48,8 @@
       "notes": "exec: labctl exec amiga \"<cmd>\" (ssh root@:5818, key bridge_key)"
     },
     "amstradcpc": {
-      "dir": "/data/vms/streamhost/tiles/amstradcpc",
-      "qmp": "/data/vms/streamhost/tiles/amstradcpc/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/amstradcpc",
+      "qmp": "/data/vms/streamhost/stations/amstradcpc/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -63,8 +63,8 @@
       "notes": "exec: labctl exec amstradcpc \"<cmd>\" (ssh root@:5819, key bridge_key)"
     },
     "android": {
-      "dir": "/data/vms/streamhost/tiles/android",
-      "qmp": "/data/vms/streamhost/tiles/android/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/android",
+      "qmp": "/data/vms/streamhost/stations/android/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -78,8 +78,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "apple2": {
-      "dir": "/data/vms/streamhost/tiles/apple2",
-      "qmp": "/data/vms/streamhost/tiles/apple2/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/apple2",
+      "qmp": "/data/vms/streamhost/stations/apple2/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -93,8 +93,8 @@
       "notes": "exec: labctl exec apple2 \"<cmd>\" (ssh root@:5817, key bridge_key)"
     },
     "armeval": {
-      "dir": "/data/vms/streamhost/tiles/armeval",
-      "qmp": "/data/vms/streamhost/tiles/armeval/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/armeval",
+      "qmp": "/data/vms/streamhost/stations/armeval/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -108,8 +108,8 @@
       "notes": "exec: labctl exec armeval \"<cmd>\" (ssh root@:5838, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro or the ARM"
     },
     "aros": {
-      "dir": "/data/vms/streamhost/tiles/aros",
-      "qmp": "/data/vms/streamhost/tiles/aros/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/aros",
+      "qmp": "/data/vms/streamhost/stations/aros/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -123,8 +123,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "atarist": {
-      "dir": "/data/vms/streamhost/tiles/atarist",
-      "qmp": "/data/vms/streamhost/tiles/atarist/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/atarist",
+      "qmp": "/data/vms/streamhost/stations/atarist/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -138,8 +138,8 @@
       "notes": "exec: labctl exec atarist \"<cmd>\" (ssh root@:5816, key bridge_key)"
     },
     "bbcmicro": {
-      "dir": "/data/vms/streamhost/tiles/bbcmicro",
-      "qmp": "/data/vms/streamhost/tiles/bbcmicro/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/bbcmicro",
+      "qmp": "/data/vms/streamhost/stations/bbcmicro/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -153,8 +153,8 @@
       "notes": "exec: labctl exec bbcmicro \"<cmd>\" (ssh root@:5832, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro"
     },
     "c128": {
-      "dir": "/data/vms/streamhost/tiles/c128",
-      "qmp": "/data/vms/streamhost/tiles/c128/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/c128",
+      "qmp": "/data/vms/streamhost/stations/c128/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -168,8 +168,8 @@
       "notes": "exec: labctl exec c128 \"<cmd>\" (ssh root@:5823, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated C128 — drive the machine with labctl type/key and read it with labctl shot."
     },
     "c64": {
-      "dir": "/data/vms/streamhost/tiles/c64",
-      "qmp": "/data/vms/streamhost/tiles/c64/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/c64",
+      "qmp": "/data/vms/streamhost/stations/c64/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -183,8 +183,8 @@
       "notes": "exec: labctl exec c64 \"<cmd>\" (ssh root@:5814, key bridge_key)"
     },
     "cbm2": {
-      "dir": "/data/vms/streamhost/tiles/cbm2",
-      "qmp": "/data/vms/streamhost/tiles/cbm2/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/cbm2",
+      "qmp": "/data/vms/streamhost/stations/cbm2/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -198,8 +198,8 @@
       "notes": "exec: labctl exec cbm2 \"<cmd>\" (ssh root@:5826, key bridge_key) — reaches the Debian kiosk, not the emulated 6509"
     },
     "cbm8032": {
-      "dir": "/data/vms/streamhost/tiles/cbm8032",
-      "qmp": "/data/vms/streamhost/tiles/cbm8032/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/cbm8032",
+      "qmp": "/data/vms/streamhost/stations/cbm8032/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -213,8 +213,8 @@
       "notes": "exec: labctl exec cbm8032 \"<cmd>\" (ssh root@:5825, key bridge_key) — that reaches the Debian KIOSK, not the emulated PET; the 8032 itself is keyboard-only and is driven with labctl type/key + labctl shot"
     },
     "daybreak": {
-      "dir": "/data/vms/streamhost/tiles/daybreak",
-      "qmp": "/data/vms/streamhost/tiles/daybreak/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/daybreak",
+      "qmp": "/data/vms/streamhost/stations/daybreak/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -228,8 +228,8 @@
       "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5849, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
     },
     "decos": {
-      "dir": "/data/vms/streamhost/tiles/decos",
-      "qmp": "/data/vms/streamhost/tiles/decos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/decos",
+      "qmp": "/data/vms/streamhost/stations/decos/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -243,8 +243,8 @@
       "notes": "exec: labctl exec decos \"<cmd>\" (ssh root@:5829, key bridge_key) — lands in the Debian kiosk, not in the PDP-11. The simulator's console is the xterm; drive it with labctl type/key and read it with labctl shot."
     },
     "dragon32": {
-      "dir": "/data/vms/streamhost/tiles/dragon32",
-      "qmp": "/data/vms/streamhost/tiles/dragon32/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/dragon32",
+      "qmp": "/data/vms/streamhost/stations/dragon32/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -258,8 +258,8 @@
       "notes": "exec: labctl exec dragon32 \"<cmd>\" (ssh root@:5833, key bridge_key)"
     },
     "freedos": {
-      "dir": "/data/vms/streamhost/tiles/freedos",
-      "qmp": "/data/vms/streamhost/tiles/freedos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/freedos",
+      "qmp": "/data/vms/streamhost/stations/freedos/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -273,8 +273,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "gt40": {
-      "dir": "/data/vms/streamhost/tiles/gt40",
-      "qmp": "/data/vms/streamhost/tiles/gt40/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/gt40",
+      "qmp": "/data/vms/streamhost/stations/gt40/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -288,8 +288,8 @@
       "notes": "exec: labctl exec gt40 \"<cmd>\" (ssh root@:5828, key bridge_key) reaches the Debian KIOSK, not the PDP-11 — the simulated machine has no shell. Light-pen exhibit: labctl type/key do nothing here; drive it with tiles/gt40/pen-drive.py (QMP abs move + button 1)."
     },
     "haiku": {
-      "dir": "/data/vms/streamhost/tiles/haiku",
-      "qmp": "/data/vms/streamhost/tiles/haiku/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/haiku",
+      "qmp": "/data/vms/streamhost/stations/haiku/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -303,8 +303,8 @@
       "notes": "exec: labctl exec haiku \"<cmd>\" (ssh user@:5807, key gallery_guest_key)"
     },
     "helenos": {
-      "dir": "/data/vms/streamhost/tiles/helenos",
-      "qmp": "/data/vms/streamhost/tiles/helenos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/helenos",
+      "qmp": "/data/vms/streamhost/stations/helenos/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -318,8 +318,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "indyr4400": {
-      "dir": "/data/vms/streamhost/tiles/indyr4400",
-      "qmp": "/data/vms/streamhost/tiles/indyr4400/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/indyr4400",
+      "qmp": "/data/vms/streamhost/stations/indyr4400/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -333,7 +333,7 @@
       "notes": "exec: labctl exec indyr4400 \"<cmd>\" (ssh root@:5839, key bridge_key) — reaches the Debian kiosk, NOT the emulated SGI Indy. The Indy itself is driven only through the framebuffer + PS/2. Pointer is RELATIVE: Iris grabs the pointer on the first left click inside its window and feeds the emulated Indy PS/2 deltas; Right-Ctrl releases the grab."
     },
     "irix": {
-      "dir": "/data/vms/streamhost/tiles/irix",
+      "dir": "/data/vms/streamhost/stations/irix",
       "qmp": null,
       "pointer_mode": "abs",
       "warpd_port": null,
@@ -348,8 +348,8 @@
       "notes": "x11 runtime (MAME indy_4610, -video none + shm capture); no QMP; input = streamhost mamesock -> mamectl OSD module unix socket ctl.sock (pointer + keys; rollback SH_INPUT_BACKEND=mamecmd + module file tail, deep rollback IRIX_CTL=off = Lua agent); exec = serial_e — irixser/2 over MAME -ioc2:rs232a pty to irixagent.pl baked into the golden, host client /root/irixexec.py, no port; reset = relaunch"
     },
     "kc854": {
-      "dir": "/data/vms/streamhost/tiles/kc854",
-      "qmp": "/data/vms/streamhost/tiles/kc854/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/kc854",
+      "qmp": "/data/vms/streamhost/stations/kc854/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -363,8 +363,8 @@
       "notes": "exec: labctl exec kc854 \"<cmd>\" (ssh root@:5835, key bridge_key). Reaches the DEBIAN kiosk, not the emulated KC."
     },
     "kolibrios": {
-      "dir": "/data/vms/streamhost/tiles/kolibrios",
-      "qmp": "/data/vms/streamhost/tiles/kolibrios/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/kolibrios",
+      "qmp": "/data/vms/streamhost/stations/kolibrios/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -378,8 +378,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "mpf2": {
-      "dir": "/data/vms/streamhost/tiles/mpf2",
-      "qmp": "/data/vms/streamhost/tiles/mpf2/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/mpf2",
+      "qmp": "/data/vms/streamhost/stations/mpf2/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -393,8 +393,8 @@
       "notes": "exec: labctl exec mpf2 \"<cmd>\" (ssh root@:5820, key bridge_key)"
     },
     "msdoswin1": {
-      "dir": "/data/vms/streamhost/tiles/msdoswin1",
-      "qmp": "/data/vms/streamhost/tiles/msdoswin1/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/msdoswin1",
+      "qmp": "/data/vms/streamhost/stations/msdoswin1/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -408,8 +408,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "nextstep": {
-      "dir": "/data/vms/streamhost/tiles/nextstep",
-      "qmp": "/data/vms/streamhost/tiles/nextstep/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/nextstep",
+      "qmp": "/data/vms/streamhost/stations/nextstep/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -423,8 +423,8 @@
       "notes": "exec: labctl exec nextstep \"<cmd>\" (ssh root@:5837, key bridge_key) reaches the DEBIAN KIOSK, not NeXTSTEP; the NeXT side has no exec channel"
     },
     "ninefront": {
-      "dir": "/data/vms/streamhost/tiles/ninefront",
-      "qmp": "/data/vms/streamhost/tiles/ninefront/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/ninefront",
+      "qmp": "/data/vms/streamhost/stations/ninefront/qmp.sock",
       "pointer_mode": "warpd",
       "warpd_port": 57793,
       "warpd_addr": "127.0.0.1:57793",
@@ -438,8 +438,8 @@
       "notes": "warpd agent on host port 57793 (guest :7777); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "nt351": {
-      "dir": "/data/vms/streamhost/tiles/nt351",
-      "qmp": "/data/vms/streamhost/tiles/nt351/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/nt351",
+      "qmp": "/data/vms/streamhost/stations/nt351/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -453,8 +453,8 @@
       "notes": "no exec channel; PS/2 relative guest pointer is calibrated through streamhost's abs-coordinate path"
     },
     "nt4": {
-      "dir": "/data/vms/streamhost/tiles/nt4",
-      "qmp": "/data/vms/streamhost/tiles/nt4/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/nt4",
+      "qmp": "/data/vms/streamhost/stations/nt4/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -468,8 +468,8 @@
       "notes": "true absolute vmmouse pointer; no exec channel: use labctl keyboard/pointer/framebuffer operations"
     },
     "openvms": {
-      "dir": "/data/vms/streamhost/tiles/openvms",
-      "qmp": "/data/vms/streamhost/tiles/openvms/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/openvms",
+      "qmp": "/data/vms/streamhost/stations/openvms/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -483,8 +483,8 @@
       "notes": "dual-VM DECwindows bridge; qmp is the captured Xorg bridge; reset_mode=restart cold-replays fresh X connections"
     },
     "oricatmos": {
-      "dir": "/data/vms/streamhost/tiles/oricatmos",
-      "qmp": "/data/vms/streamhost/tiles/oricatmos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/oricatmos",
+      "qmp": "/data/vms/streamhost/stations/oricatmos/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -498,11 +498,11 @@
       "notes": "exec: labctl exec oricatmos \"<cmd>\" (ssh root@:5834, key bridge_key) — reaches the Debian kiosk, not the emulated Oric"
     },
     "os2warp": {
-      "dir": "/data/vms/streamhost/tiles/os2warp",
-      "qmp": "/data/vms/streamhost/tiles/os2warp/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/os2warp",
+      "qmp": "/data/vms/streamhost/stations/os2warp/qmp.sock",
       "pointer_mode": "warpd",
       "warpd_port": null,
-      "warpd_addr": "unix:/data/vms/streamhost/tiles/os2warp/serial.sock",
+      "warpd_addr": "unix:/data/vms/streamhost/stations/os2warp/serial.sock",
       "ssh_port": null,
       "exec_port": null,
       "exec_kind": null,
@@ -510,11 +510,11 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54108,
-      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "pdp11": {
-      "dir": "/data/vms/streamhost/tiles/pdp11",
-      "qmp": "/data/vms/streamhost/tiles/pdp11/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/pdp11",
+      "qmp": "/data/vms/streamhost/stations/pdp11/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -528,8 +528,8 @@
       "notes": "exec: labctl exec pdp11 \"<cmd>\" (ssh root@:5827, key bridge_key) reaches the Debian KIOSK, not the PDP-11. The simulated machine is driven only through its console: type into the tile, or read /tmp/pdp11-console.log in the kiosk for the full transcript."
     },
     "pet2001": {
-      "dir": "/data/vms/streamhost/tiles/pet2001",
-      "qmp": "/data/vms/streamhost/tiles/pet2001/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/pet2001",
+      "qmp": "/data/vms/streamhost/stations/pet2001/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -543,8 +543,8 @@
       "notes": "exec: labctl exec pet2001 \"<cmd>\" (ssh root@:5824, key bridge_key) — reaches the Debian kiosk, not the emulated PET"
     },
     "plus4": {
-      "dir": "/data/vms/streamhost/tiles/plus4",
-      "qmp": "/data/vms/streamhost/tiles/plus4/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/plus4",
+      "qmp": "/data/vms/streamhost/stations/plus4/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -558,8 +558,8 @@
       "notes": "exec: labctl exec plus4 \"<cmd>\" (ssh root@:5822, key bridge_key)"
     },
     "postmarketos": {
-      "dir": "/data/vms/streamhost/tiles/postmarketos",
-      "qmp": "/data/vms/streamhost/tiles/postmarketos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/postmarketos",
+      "qmp": "/data/vms/streamhost/stations/postmarketos/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -573,8 +573,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "qnx": {
-      "dir": "/data/vms/streamhost/tiles/qnx",
-      "qmp": "/data/vms/streamhost/tiles/qnx/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/qnx",
+      "qmp": "/data/vms/streamhost/stations/qnx/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -588,8 +588,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "reactos": {
-      "dir": "/data/vms/streamhost/tiles/reactos",
-      "qmp": "/data/vms/streamhost/tiles/reactos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/reactos",
+      "qmp": "/data/vms/streamhost/stations/reactos/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -603,8 +603,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "redstar2": {
-      "dir": "/data/vms/streamhost/tiles/redstar2",
-      "qmp": "/data/vms/streamhost/tiles/redstar2/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/redstar2",
+      "qmp": "/data/vms/streamhost/stations/redstar2/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -618,8 +618,8 @@
       "notes": "air-gapped guest: no emulated NIC and no exec channel; framebuffer/QMP/HMP only"
     },
     "redstar3": {
-      "dir": "/data/vms/streamhost/tiles/redstar3",
-      "qmp": "/data/vms/streamhost/tiles/redstar3/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/redstar3",
+      "qmp": "/data/vms/streamhost/stations/redstar3/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -633,8 +633,8 @@
       "notes": "air-gapped guest: no NIC and no exec/SSH channel; framebuffer/QMP only"
     },
     "sailfishos": {
-      "dir": "/data/vms/streamhost/tiles/sailfishos",
-      "qmp": "/data/vms/streamhost/tiles/sailfishos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/sailfishos",
+      "qmp": "/data/vms/streamhost/stations/sailfishos/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -648,8 +648,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "serenityos": {
-      "dir": "/data/vms/streamhost/tiles/serenityos",
-      "qmp": "/data/vms/streamhost/tiles/serenityos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/serenityos",
+      "qmp": "/data/vms/streamhost/stations/serenityos/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -663,8 +663,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "sinclairql": {
-      "dir": "/data/vms/streamhost/tiles/sinclairql",
-      "qmp": "/data/vms/streamhost/tiles/sinclairql/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/sinclairql",
+      "qmp": "/data/vms/streamhost/stations/sinclairql/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -678,8 +678,8 @@
       "notes": "exec: labctl exec sinclairql \"<cmd>\" (ssh root@:5836, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated QL — drive the machine with labctl type/key and read it with labctl shot."
     },
     "solaris": {
-      "dir": "/data/vms/streamhost/tiles/solaris",
-      "qmp": "/data/vms/streamhost/tiles/solaris/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/solaris",
+      "qmp": "/data/vms/streamhost/stations/solaris/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": 57790,
       "warpd_addr": "127.0.0.1:57790",
@@ -693,8 +693,8 @@
       "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solaris \"<cmd>\""
     },
     "star": {
-      "dir": "/data/vms/streamhost/tiles/star",
-      "qmp": "/data/vms/streamhost/tiles/star/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/star",
+      "qmp": "/data/vms/streamhost/stations/star/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
@@ -708,11 +708,11 @@
       "notes": "exec: labctl exec star \"<cmd>\" (ssh root@:5840, key bridge_key) — reaches the Debian kiosk, NOT the Star. Drive the Star itself with the guest's own /usr/local/bin/stardrv (key/shift/rel/click, all with the dwell Darkstar needs) or through the framebuffer; the Level-V verbs are plain PC keys here (NEXT=Home, OPEN=F7, PROPS=F8), not Daybreak's Ctrl+letter layer."
     },
     "templeos": {
-      "dir": "/data/vms/streamhost/tiles/templeos",
-      "qmp": "/data/vms/streamhost/tiles/templeos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/templeos",
+      "qmp": "/data/vms/streamhost/stations/templeos/qmp.sock",
       "pointer_mode": "warpd",
       "warpd_port": null,
-      "warpd_addr": "unix:/data/vms/streamhost/tiles/templeos/serial.sock",
+      "warpd_addr": "unix:/data/vms/streamhost/stations/templeos/serial.sock",
       "ssh_port": null,
       "exec_port": null,
       "exec_kind": null,
@@ -720,11 +720,11 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54105,
-      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/templeos/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/templeos/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "tinycore": {
-      "dir": "/data/vms/streamhost/tiles/tinycore",
-      "qmp": "/data/vms/streamhost/tiles/tinycore/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/tinycore",
+      "qmp": "/data/vms/streamhost/stations/tinycore/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -738,8 +738,8 @@
       "notes": "exec: labctl exec tinycore \"<cmd>\" (ssh tc@:5882, key gallery_guest_key)"
     },
     "toaruos": {
-      "dir": "/data/vms/streamhost/tiles/toaruos",
-      "qmp": "/data/vms/streamhost/tiles/toaruos/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/toaruos",
+      "qmp": "/data/vms/streamhost/stations/toaruos/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -753,7 +753,7 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "tru64": {
-      "dir": "/data/vms/streamhost/tiles/tru64",
+      "dir": "/data/vms/streamhost/stations/tru64",
       "qmp": null,
       "pointer_mode": "abs",
       "warpd_port": null,
@@ -768,8 +768,8 @@
       "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965). INSTALL PHASE: the guest disk assets/tru64/img/tru64.img is the live install target, mutated in place — reset=relaunch REBOOTS the installer (disk persists); no golden exists yet."
     },
     "vic20": {
-      "dir": "/data/vms/streamhost/tiles/vic20",
-      "qmp": "/data/vms/streamhost/tiles/vic20/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/vic20",
+      "qmp": "/data/vms/streamhost/stations/vic20/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -783,7 +783,7 @@
       "notes": "exec: labctl exec vic20 \"<cmd>\" (ssh root@:5821, key bridge_key)"
     },
     "w2kalpha": {
-      "dir": "/data/vms/streamhost/tiles/w2kalpha",
+      "dir": "/data/vms/streamhost/stations/w2kalpha",
       "qmp": null,
       "pointer_mode": "abs",
       "warpd_port": null,
@@ -798,8 +798,8 @@
       "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); exec = telnet_e: labctl exec w2kalpha runs a captured command over the guest W2K Telnet Server (blank Administrator, NTLM off) reached at 172.31.64.2:23 on the host-only veth w2kalpha-h/g that x11-runtime.sh brings up; the guest holds a static IP baked into the golden and its dec21143 (pcap backend) is at pci0.4 in es40.cfg; reset = relaunch (cold boot ~80 s from reflink copy of golden nt.img)"
     },
     "win11": {
-      "dir": "/data/vms/streamhost/tiles/win11",
-      "qmp": "/data/vms/streamhost/tiles/win11/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/win11",
+      "qmp": "/data/vms/streamhost/stations/win11/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -813,8 +813,8 @@
       "notes": "qemu-guest-agent is live on the virtio-serial channel at qga.sock (wga.py); labctl has no qga exec_kind yet, so use 'labctl sh' (blind) or the socket directly"
     },
     "win2000": {
-      "dir": "/data/vms/streamhost/tiles/win2000",
-      "qmp": "/data/vms/streamhost/tiles/win2000/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/win2000",
+      "qmp": "/data/vms/streamhost/stations/win2000/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -828,11 +828,11 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "win311": {
-      "dir": "/data/vms/streamhost/tiles/win311",
-      "qmp": "/data/vms/streamhost/tiles/win311/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/win311",
+      "qmp": "/data/vms/streamhost/stations/win311/qmp.sock",
       "pointer_mode": "warpd",
       "warpd_port": null,
-      "warpd_addr": "unix:/data/vms/streamhost/tiles/win311/serial.sock",
+      "warpd_addr": "unix:/data/vms/streamhost/stations/win311/serial.sock",
       "ssh_port": null,
       "exec_port": null,
       "exec_kind": null,
@@ -840,11 +840,11 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54090,
-      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/tiles/win311/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/win311/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "win95": {
-      "dir": "/data/vms/streamhost/tiles/win95",
-      "qmp": "/data/vms/streamhost/tiles/win95/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/win95",
+      "qmp": "/data/vms/streamhost/stations/win95/qmp.sock",
       "pointer_mode": "warpd",
       "warpd_port": 57791,
       "warpd_addr": "127.0.0.1:57791",
@@ -858,8 +858,8 @@
       "notes": "warpd agent on host port 57791 (guest :7777); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "win98se": {
-      "dir": "/data/vms/streamhost/tiles/win98se",
-      "qmp": "/data/vms/streamhost/tiles/win98se/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/win98se",
+      "qmp": "/data/vms/streamhost/stations/win98se/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -873,8 +873,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "winxp": {
-      "dir": "/data/vms/streamhost/tiles/winxp",
-      "qmp": "/data/vms/streamhost/tiles/winxp/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/winxp",
+      "qmp": "/data/vms/streamhost/stations/winxp/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -888,8 +888,8 @@
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "zx81": {
-      "dir": "/data/vms/streamhost/tiles/zx81",
-      "qmp": "/data/vms/streamhost/tiles/zx81/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/zx81",
+      "qmp": "/data/vms/streamhost/stations/zx81/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
@@ -903,8 +903,8 @@
       "notes": "exec: labctl exec zx81 \"<cmd>\" (ssh root@:5831, key bridge_key) — reaches the Debian kiosk, not the emulated ZX81"
     },
     "zxspectrum": {
-      "dir": "/data/vms/streamhost/tiles/zxspectrum",
-      "qmp": "/data/vms/streamhost/tiles/zxspectrum/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/zxspectrum",
+      "qmp": "/data/vms/streamhost/stations/zxspectrum/qmp.sock",
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,

@@ -34,12 +34,12 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 RAW_BUILDER="$HERE/../stages/postmarketos.sh"
-FIXTURE_DIR="$REPO_ROOT/streamhost/tiles/postmarketos"
+FIXTURE_DIR="$REPO_ROOT/streamhost/stations/postmarketos"
 PROVISION="$FIXTURE_DIR/golden-fixture-provision.sh"
 LAUNCHER="$FIXTURE_DIR/qemu-streamhost.sh"
 
 GUEST_DIR=/data/gallery-guests/postmarketOS
-TILE_DIR=/data/vms/streamhost/tiles/postmarketos
+TILE_DIR=/data/vms/streamhost/stations/postmarketos
 RAW="$GUEST_DIR/pmos-phosh.img"
 QCOW="$GUEST_DIR/pmos-phosh.qcow2"
 VARS_SRC="${OVMF_VARS_SRC:-/usr/share/pve-edk2-firmware/OVMF_VARS_4M.fd}"

@@ -1,7 +1,7 @@
 # systemd template unit — one streamhost daemon per gallery tile.
 #   Instance name %i = tile name, e.g. streamhost@reactos.
-#   Per-tile config lives in /data/vms/streamhost/tiles/%i/tile.env, emitted by
-#   scripts/streamhost-tile.sh. streamhost attaches to that tile's QEMU QMP
+#   Per-tile config lives in /data/vms/streamhost/stations/%i/station.env, emitted by
+#   scripts/streamhost-station.sh. streamhost attaches to that tile's QEMU QMP
 #   socket and serves WebTransport on that tile's dedicated UDP port.
 #
 # The versioned binary is selected independently for every tile.  The symlink
@@ -19,10 +19,10 @@ After=network.target
 
 [Service]
 Type=simple
-EnvironmentFile=/data/vms/streamhost/tiles/%i/tile.env
-ExecStart=/usr/local/lib/streamhost/tiles/%i/current
-ExecStartPre=/data/vms/streamhost/build/streamhost/scripts/ensure-tile-qemu.sh %i
-ExecStop=/data/vms/streamhost/build/streamhost/scripts/stop-tile-qemu.sh %i
+EnvironmentFile=/data/vms/streamhost/stations/%i/station.env
+ExecStart=/usr/local/lib/streamhost/stations/%i/current
+ExecStartPre=/data/vms/streamhost/build/streamhost/scripts/ensure-station-qemu.sh %i
+ExecStop=/data/vms/streamhost/build/streamhost/scripts/stop-station-qemu.sh %i
 Restart=on-failure
 # ExecStop owns the bounded, ORDERED teardown by pidfile (watchdogs, then the
 # guest). KillMode is the sweep behind it, not the plan: `process` used to leave
@@ -41,7 +41,7 @@ RestartSec=2
 # damage-gated (~0 CPU); cap a runaway busy tile so it can't starve the box.
 Nice=5
 CPUWeight=100
-# streamhost reads SH_* from the EnvironmentFile (SH_QMP, SH_PORT, SH_TILE, ...).
+# streamhost reads SH_* from the EnvironmentFile (SH_QMP, SH_PORT, SH_STATION, ...).
 
 [Install]
 WantedBy=multi-user.target

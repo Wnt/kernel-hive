@@ -48,8 +48,8 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/tiles/aros",
-      "qmp": "/data/vms/streamhost/tiles/aros/qmp.sock",
+      "dir": "/data/vms/streamhost/stations/aros",
+      "qmp": "/data/vms/streamhost/stations/aros/qmp.sock",
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
@@ -100,8 +100,8 @@
   "credentialsRef": "guest/aros",
   "runtime": {
     "stationEnv": {
-      "SH_TILE": "aros",
-      "SH_QMP": "/data/vms/streamhost/tiles/aros/qmp.sock",
+      "SH_STATION": "aros",
+      "SH_QMP": "/data/vms/streamhost/stations/aros/qmp.sock",
       "SH_PORT": "54110",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -109,8 +109,8 @@
       "SH_POINTER": "abs",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/tiles/aros/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/aros/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/aros/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/aros/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_ABS_PACE_MS": "30"
     },
@@ -136,7 +136,7 @@
         "$T/aros/qemu-streamhost.sh"
       ],
       "deviceSetId": "aros-usb-tablet",
-      "launcher": "streamhost/tiles/aros/qemu-streamhost.sh",
+      "launcher": "streamhost/stations/aros/qemu-streamhost.sh",
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0",
       "accel": "kvm",

@@ -35,7 +35,7 @@
 #   --bake  bake the golden snapshot of the ALREADY RUNNING station and prove it
 #           restores (lib/bridge-bake-golden). Run it once the acceptance below
 #           has passed on a real screenshot, with the station up under its own
-#           streamhost/tiles/atarist/qemu-streamhost.sh — NOT under this
+#           streamhost/stations/atarist/qemu-streamhost.sh — NOT under this
 #           script's boot_tile: a golden taken under a device set that differs
 #           from the launcher's will not loadvm, and that only surfaces later,
 #           at the first visitor reset. EmuTOS has no machine-checkable "the
@@ -52,7 +52,7 @@ SSH_PORT=5816
 WEB_PORT=8116
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY="/data/vms/bridge/bridge_key"
-TILE_DIR="/data/vms/streamhost/tiles/${TILE}"
+TILE_DIR="/data/vms/streamhost/stations/${TILE}"
 OVERLAY="${TILE_DIR}/overlay.qcow2"
 QMP="${TILE_DIR}/qmp.sock"
 PID="${TILE_DIR}/qemu.pid"

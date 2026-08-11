@@ -132,7 +132,7 @@ date +%s.%N >"$D/video_t0"
 say "recorder up (sampler $(cat "$D/sampler.pid"), ffmpeg $(cat "$D/ffmpeg.pid")) -> $MP4"
 
 # ── audio capture: the PROM chime is real PCM from the emulated HAL2 ─────────
-# With the audio arm live (IRIX_AUDIO=on in tile.env), the capture's launcher
+# With the audio arm live (IRIX_AUDIO=on in station.env), the capture's launcher
 # creates $CLONE/audio.fifo and MAME's SDL disk driver writes S16LE 2ch 48k
 # into it continuously from sound init. Here ffmpeg is the fifo's consumer (the
 # daemon never attaches to a clone). Two-pipe house pattern (record-boot.sh

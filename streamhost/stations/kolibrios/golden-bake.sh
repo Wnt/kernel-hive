@@ -11,7 +11,7 @@
 # resetMode=loadvm.
 # ============================================================================
 set -e
-BASE="${TILE_DIR:-/data/vms/streamhost/tiles/kolibrios}"
+BASE="${TILE_DIR:-/data/vms/streamhost/stations/kolibrios}"
 Q="python3 $BASE/kolmouse.py $BASE/qmp.sock"
 
 stop_qemu() {

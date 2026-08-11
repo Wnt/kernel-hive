@@ -15,7 +15,7 @@
 #
 # Kill only by pidfile.
 set -e
-T=/data/vms/streamhost/tiles/android
+T=/data/vms/streamhost/stations/android
 DISK=/data/gallery-guests/Android/android.qcow2
 LOADVM=()
 if qemu-img snapshot -l "$DISK" | grep -Eq '^[[:space:]]*[0-9]+[[:space:]]+golden[[:space:]]'; then

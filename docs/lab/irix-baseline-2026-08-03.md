@@ -49,7 +49,7 @@ The deploy workstream needs this to prove what it replaced.
 | `irix65-apps-v6.chd` | `e5777f6e2a48edf5831e13ca0233075a` |
 | `irix65.chd` (bare base install) | `430bf0badd61fb35e28c69c7e3bba83a` |
 | station `x11-runtime.sh` | `b1cd3d2142b34974e07068bebace5548` |
-| station `tile.env` | `978b6b371ba0d53f8fdaa5bac71ccfed` |
+| station `station.env` | `978b6b371ba0d53f8fdaa5bac71ccfed` |
 | station `irixagent.lua` | `566edbbd22e03488141a168ea1fd40ad` |
 | station `fbstat.py` | `bfa823b5fe8fc482edafd3d9c1dff71c` |
 | station `fetch-assets.sh` | `c7750c575225c1c8c77ad9d8a31d5248` |

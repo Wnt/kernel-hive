@@ -22,7 +22,7 @@
 #     xterm plus at most one SIMH process whose largest configured PDP-11 has
 #     4 MB of core (measured guest RSS 17-82 MB per simulator).
 set -e
-BASE=/data/vms/streamhost/tiles/decos
+BASE=/data/vms/streamhost/stations/decos
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

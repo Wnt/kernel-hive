@@ -3,7 +3,7 @@
 # Kill only by pidfile. This REPLACES the neko capture for this one tile during
 # its pilot; neko is restored by ROLLBACK.md.
 set -e
-BASE=/data/vms/streamhost/tiles/aros
+BASE=/data/vms/streamhost/stations/aros
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$BASE/qmp.sock" "$BASE/qemu.pid"

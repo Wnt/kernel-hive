@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # Persistent serial multiplexer for a QEMU -serial unix socket (sailfishos tile).
 #
-# SOURCE OF TRUTH: streamhost/tiles/sailfishos/seriald.py (osgallery repo)
-# LIVE COPY:       /data/vms/streamhost/tiles/sailfishos/seriald.py (lab box)
+# SOURCE OF TRUTH: streamhost/stations/sailfishos/seriald.py (osgallery repo)
+# LIVE COPY:       /data/vms/streamhost/stations/sailfishos/seriald.py (lab box)
 # Keep byte-identical (same rule as scripts/labctl).
 #
 # Holds ONE connection (QEMU serialsock server allows a single client).

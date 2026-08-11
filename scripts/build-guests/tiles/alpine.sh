@@ -63,7 +63,7 @@
 #     via its own pidfile (never pkill); the payload http.server dies with us.
 #
 # HYGIENE (per gallery rules)
-#   - Never touches /data/vms/streamhost/tiles/* — this builds the ARTIFACT
+#   - Never touches /data/vms/streamhost/stations/* — this builds the ARTIFACT
 #     (canonical /data/gallery-guests/Alpine + /data/isos); wiring a live station
 #     to it is the station launcher's job (see PRODUCTION WIRING at the end).
 #   - OUT_DIR / WORK_DIR / ISO_DIR / ports are env-overridable so trial runs can be fully

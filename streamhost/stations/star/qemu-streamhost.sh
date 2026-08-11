@@ -26,7 +26,7 @@
 # The AC97 card stays in the device set for parity with the bake even though this exhibit
 # is SILENT: the 8010 has no sound hardware (SH_AUDIO=off).
 set -e
-BASE=/data/vms/streamhost/tiles/star
+BASE=/data/vms/streamhost/stations/star
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

@@ -17,7 +17,7 @@ The gallery's first **non-QEMU** streamhost station. SGI's IRIX 6.5 runs inside
 no window at all — publishing each finished frame into a shared-memory mapping
 that streamhost reads via **`SH_CAPTURE=shm`**, with pointer and keys going back
 through **`SH_INPUT_BACKEND=mamesock`**. It is an x11 station
-(`SH_TILE_RUNTIME=x11`), not a QEMU VM, because MAME's SGI Indy emulation
+(`SH_STATION_RUNTIME=x11`), not a QEMU VM, because MAME's SGI Indy emulation
 kernel-panics under a KVM vCPU and must run
 on the bare-metal host CPU.
 
@@ -30,12 +30,12 @@ on the bare-metal host CPU.
   two per-field entries (`0x000f`/`0x00f0`). Verify a binary offline with
   `sgi -listxml indy_4610` → `4x32M` must be `default="yes"` for banks A and B.
 - OS: IRIX 6.5 (4Dwm Indigo Magic desktop). Login `root`, empty password.
-- Launcher: `streamhost/tiles/irix/x11-runtime.sh` (Xvfb :40 + MAME) — installed
-  as the station launcher by `scripts/streamhost-tile.sh --x11`.
+- Launcher: `streamhost/stations/irix/x11-runtime.sh` (Xvfb :40 + MAME) — installed
+  as the station launcher by `scripts/streamhost-station.sh --x11`.
 - Input: the mamectl control socket (`SH_INPUT_BACKEND=mamesock`, issue #45 —
   see "mamectl control plane" below). The Lua agent below is the `IRIX_CTL=off`
   deep-rollback arm only; its description is kept as the design record.
-- Input agent (ROLLBACK ARM): `streamhost/tiles/irix/irixagent.lua` (natkeyboard + PS/2 buttons
+- Input agent (ROLLBACK ARM): `streamhost/stations/irix/irixagent.lua` (natkeyboard + PS/2 buttons
   **and pointer axes** from the `SH_X11_CMD_FILE` command file; streamhost's own
   motion path is still XTEST). The `MOVE <dx> <dy>` verb drives
   `:ioc2:aux:hle_ps2_mouse:mouse_x_axis` / `mouse_y_axis` directly, exactly as
@@ -59,7 +59,7 @@ on the bare-metal host CPU.
   previously did dozens a second.
 - Reset: `relaunch` — a service restart kills MAME+Xvfb by pidfile and
   relaunches. Since the savestate work (issue #44, `mame-indy-savestate.patch`)
-  a relaunch with `IRIX_STATE=golden` set in `tile.env` **restores the captured
+  a relaunch with `IRIX_STATE=golden` set in `station.env` **restores the captured
   MAME savestate + its paired disk in seconds** instead of the ~390 s cold
   boot; see "Instant restore" below. With `IRIX_STATE` empty the launch is the
   historical pristine cold boot, unchanged.
@@ -68,7 +68,7 @@ on the bare-metal host CPU.
   discarded anyway; Newport scan-out is ~31% of runtime and is costed per frame
   generated, so this buys ~+18% emulation speed with no guest-visible timing
   change. Do not raise it — fs7 has zero margin and fs8 drops 34% of frames.
-- CPU pin: `IRIX_CPUS` in `tile.env` (currently `2,10` = one physical core plus
+- CPU pin: `IRIX_CPUS` in `station.env` (currently `2,10` = one physical core plus
   its SMT sibling). MAME saturates whatever core it lands on and labhost is
   shared with build/benchmark agents.
 
@@ -106,7 +106,7 @@ its own:
    shared-path edits are inert for QEMU stations by construction, but 35 exhibits
    is not where that is worth trusting to reasoning alone.
 2. **MAME binary promoted**, previous kept as `mame/sgi.prev-a33944d3`.
-3. **Registry flip + emit.** The emitted `tile.env` was diffed against live
+3. **Registry flip + emit.** The emitted `station.env` was diffed against live
    before installing: every changed line was an intended part of the cutover.
 4. **Live station switched.** No Xvfb process at all any more, MAME running
    `-video none` with no `DISPLAY` in its environment, `fb.shm` 5,275,712 bytes
@@ -214,10 +214,10 @@ pointer route and the ImageMagick boot watchdog are all still in
 `x11-runtime.sh` and still work. Reverting is three variables and a restart:
 
 ```sh
-# in /data/vms/streamhost/tiles/irix/tile.env
+# in /data/vms/streamhost/stations/irix/station.env
 SH_CAPTURE=x11
 SH_INPUT_BACKEND=x11test
-IRIX_CAPTURE=x11        # (tile.env.fixture stanza)
+IRIX_CAPTURE=x11        # (station.env.fixture stanza)
 systemctl restart streamhost@irix
 ```
 
@@ -226,7 +226,7 @@ The MAME binary does not need reverting with it: the producer is env-gated on
 binary runs the old path unchanged. If the BINARY itself is suspect, the
 previous one is kept beside it as `mame/sgi.prev-<md5>` — swap it back and
 restart. Reverting in the repo is the same three values in
-`registry/tiles/irix.json` (`runtime.x11.capture`, `stream.pointer.backend`)
+`registry/stations/irix.json` (`runtime.x11.capture`, `stream.pointer.backend`)
 plus `make station-registry-generate`.
 
 ### Measured win
@@ -534,7 +534,7 @@ watchdog** (`x11-runtime.sh --bootwatch`, backgrounded at launch, pidfile
   boots in total. Every attempt is logged.
 - It cannot fight the service: `x11-runtime.sh` stamps a `bootwatch.gen` token
   at each full launch and the watchdog aborts if that token changes, it refuses
-  to relaunch unless `streamhost@irix` is active, and `stop-tile-x11.sh` kills
+  to relaunch unless `streamhost@irix` is active, and `stop-station-x11.sh` kills
   `bootwatch.pid` *before* `mame.pid`.
 - `IRIX_WATCH_DEADLINE` (1800 s) caps how long one attempt is watched; after
   that the watchdog exits and leaves whatever is on screen.
@@ -549,7 +549,7 @@ own exit code, like the ssh and bridge kiosks.
 
 > **Status.** Built, and verified end to end on a clone. The LIVE station is
 > untouched: it runs the seed without the agent, `x11-runtime.sh` on labhost
-> has no `-ioc2:rs232a pty`, and `registry/tiles/irix.json` keeps
+> has no `-ioc2:rs232a pty`, and `registry/stations/irix.json` keeps
 > `exec_kind: null` on purpose — so `labctl exec irix` errors out exactly as it
 > did before, rather than advertising a channel that cannot work. The cutover
 > below is a deliberate human step, and the registry flip is the LAST part of it.
@@ -672,7 +672,7 @@ seed. The agent therefore checksums its own source at startup and reports it
 in every PING reply, so which version the guest is running is one command:
 
 ```
-ssh lab 'python3 /root/irixexec.py /data/vms/streamhost/tiles/irix --ping'
+ssh lab 'python3 /root/irixexec.py /data/vms/streamhost/stations/irix --ping'
 # irixser/2 2.0 <src-sum>            (exit 126 with --agent-src on a mismatch)
 ```
 
@@ -708,21 +708,21 @@ two lines of work owns recapturing a single combined seed.
 ```
 # 0. labhost's x11-runtime.sh must be byte-identical to main's before step 1 —
 #    the live copy carries livewatch fixes that a stale scp would revert.
-ssh lab 'md5sum /data/vms/streamhost/tiles/irix/x11-runtime.sh'
-git show origin/main:streamhost/tiles/irix/x11-runtime.sh | md5sum
+ssh lab 'md5sum /data/vms/streamhost/stations/irix/x11-runtime.sh'
+git show origin/main:streamhost/stations/irix/x11-runtime.sh | md5sum
 #    if they differ, harvest the labhost copy FIRST; do not overwrite it.
 # 1. deploy the launcher (adds -ioc2:rs232a pty + serial.pts). /root/irixexec.py
 #    and /usr/local/bin/labctl were ALREADY put in sync when this landed (both
 #    are inert while exec_kind is null); re-scp only if the repo has moved on.
-scp streamhost/tiles/irix/x11-runtime.sh lab:/data/vms/streamhost/tiles/irix/
+scp streamhost/stations/irix/x11-runtime.sh lab:/data/vms/streamhost/stations/irix/
 scripts/dev/verify-box-sync.sh | grep -E 'labctl|irixexec'   # both MATCH
 # 2. point the station at the new seed and relaunch
 ssh lab "sed -i 's/irix65-apps-v3.chd/irix65-apps-v3-serial.chd/' \
-         /data/vms/streamhost/tiles/irix/x11-runtime.sh"   # or set IRIX_GOLDEN
+         /data/vms/streamhost/stations/irix/x11-runtime.sh"   # or set IRIX_GOLDEN
 ssh lab 'systemctl restart streamhost@irix'
-ssh lab 'python3 /root/irixexec.py /data/vms/streamhost/tiles/irix --ping'
+ssh lab 'python3 /root/irixexec.py /data/vms/streamhost/stations/irix --ping'
 # 3. LAST: publish the capability and prove it
-#    registry/tiles/irix.json -> "exec_kind": "serial_e"  (+ make station-registry-generate,
+#    registry/stations/irix.json -> "exec_kind": "serial_e"  (+ make station-registry-generate,
 #    commit, sync the repo to labhost)
 ssh lab 'labctl gen && labctl ls | grep irix'
 ssh lab 'labctl exec irix "hinv | head -3"'
@@ -734,7 +734,7 @@ serial image is safe to boot on the old launcher too.
 
 ## Assets (large binaries, NOT in the repo)
 
-Stage / verify with `streamhost/tiles/irix/fetch-assets.sh` (run on labhost).
+Stage / verify with `streamhost/stations/irix/fetch-assets.sh` (run on labhost).
 They live in the **production** tree `/data/vms/streamhost/assets/irix/`
 (overridable via `IRIX_ASSETS` / `IRIX_MAME`). They used to be
 read straight out of `/data/vms/soltest/` — the clone/experiment scratch area —
@@ -748,9 +748,9 @@ promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
   `monitor=h` captured), `uicfg/ui.ini` (`skip_warnings 1`).
   The launcher picks the image via `IRIX_GOLDEN`, so every roll forward and
   roll back along the lineage is a one-variable change. **The live value is set
-  in `tile.env`, and that file is the only authority on which seed is
+  in `station.env`, and that file is the only authority on which seed is
   serving** — `x11-runtime.sh`'s own default is a fallback, not the answer.
-  Today `tile.env` names **`irix65-apps-v8.chd`** (see the FSN section at the
+  Today `station.env` names **`irix65-apps-v8.chd`** (see the FSN section at the
   end of this file); the lineage behind it is v3 (deterministically bare
   desktop — two cold boots from independent clones gave md5-identical
   framebuffers — plus `/.sgisession` running `xset m 1/1 0` for a 1:1 pointer
@@ -1222,7 +1222,7 @@ Lua agent → emulated PS/2), so a dead agent trips it too. Anything ambiguous �
 including a failed sample — counts as alive. Two consecutive failed probes
 relaunch MAME, bounded by `IRIX_LIVE_ATTEMPTS` (3) and gated on the same
 `bootwatch.gen` token and `systemctl is-active` check as the boot watchdog, so it
-can never fight a teardown. `stop-tile-x11.sh` kills it before MAME.
+can never fight a teardown. `stop-station-x11.sh` kills it before MAME.
 
 `fbstat.py --sig` prints the frame signature the shm path uses for this;
 `identify -format '%#'` is the x11 equivalent.
@@ -1442,7 +1442,7 @@ passwords**. Anything that can reach this machine owns it. The containment is
 therefore not a formality, and it is built in three independent layers so that
 any one of them failing is not sufficient.
 
-`streamhost/tiles/irix/tapnet.sh` (run by `x11-runtime.sh` on **every** launch,
+`streamhost/stations/irix/tapnet.sh` (run by `x11-runtime.sh` on **every** launch,
 which is what makes it survive a relaunch and a host reboot with no extra unit):
 
 1. **Topology.** A persistent tap `irixtap0`, host `172.31.20.1/30`, guest
@@ -1616,7 +1616,7 @@ runs on with no networking. That is exactly why `start_mame()` checks
 launching the staged seed against the *unpatched live binary* and watching the
 warning fire.
 
-Rollback at any point is `IRIX_NET=off` in `tile.env`: not one MAME argument
+Rollback at any point is `IRIX_NET=off` in `station.env`: not one MAME argument
 changes and the tap is never created.
 
 ## Outbound networking — the guest dials out, nothing dials in (2026-08-03)
@@ -1636,7 +1636,7 @@ reachability at all.
 
 ### The switch, and what each side of it does
 
-`IRIX_NET_EGRESS` (default `off`) in `tile.env`, passed through
+`IRIX_NET_EGRESS` (default `off`) in `station.env`, passed through
 `x11-runtime.sh` to `tapnet.sh`, which is where the rules live:
 
 | | `off` — sandbox (unchanged) | `on` — egress |
@@ -1719,7 +1719,7 @@ site and opens none of them. A host-side TLS-terminating proxy (`irixproxy.py`
 on 172.31.20.1:8080, HTML de-modernised on the way through) solved that, was
 verified on the framebuffer against live example.com and Wikipedia — and was
 then **dropped by user decision on 2026-08-03.** It is not in the repo, not in
-the launcher and not in `tile.env`.
+the launcher and not in `station.env`.
 
 **What that means for the exhibit, stated plainly:** Netscape connects
 directly. Plain `http://` works. `https://` fails at the handshake. That is the
@@ -1809,7 +1809,7 @@ is accepted only `-i irixtap0 -o vmbr0`, the return direction is
 
 `tapnet.sh` was **absent from the station dir entirely** — networking was not wired
 into the live station at all — and the station-dir `x11-runtime.sh` was behind the
-repo. Both are now installed, along with `tile.env` carrying `IRIX_NET=on`,
+repo. Both are now installed, along with `station.env` carrying `IRIX_NET=on`,
 `IRIX_NET_EGRESS=on`, `IRIX_GOLDEN=…v7.chd` and `IRIX_MAME=…sgi.taptun-e513fbb6`.
 The service stays **stopped**; nothing here starts it.
 
@@ -1822,7 +1822,7 @@ the staged taptun build until then.
 **Closed the same day** — see
 [the integration section](#the-integrated-binary-2026-08-03) below. `mame/sgi`
 is now the combined build (which does carry `mame-taptun-ifname-env.patch`) and
-the `IRIX_MAME` pin has been deleted from `tile.env`.
+the `IRIX_MAME` pin has been deleted from `station.env`.
 
 ### The chain names had to become per-interface, and that is a real bug fix
 
@@ -2152,7 +2152,7 @@ all. The station runs exactly one binary, so they had to become one build.
 `scripts/build-guests/emulators/build-mame-irix.sh` from a pristine `8f21e978` plus the
 twelve patches in `scripts/build-guests/irix/irix-mame-stack.sh`, in that order,
 nothing else. The outgoing binary is kept as `sgi.prev-0db27300`. `IRIX_MAME` is
-gone from `tile.env`, so the station takes the default again.
+gone from `station.env`, so the station takes the default again.
 
 Relative to the binary it replaces, this one adds: the taptun interface patch
 (the station's networking did not work without it), the cache-line-size memo, and
@@ -2191,7 +2191,7 @@ detail that lived only in per-campaign scratch scripts.
 ### Smoke test — production configuration, station service stopped
 
 `smoke.sh` copies the station's own `x11-runtime.sh`, `irixagent.lua`, `fbstat.py`
-and `tapnet.sh` into a namespaced clone dir, reads `tile.env` the way systemd
+and `tapnet.sh` into a namespaced clone dir, reads `station.env` the way systemd
 does, and runs the launcher there — same seed (v7), same `SH_CAPTURE=shm`,
 same `-video none -sound none -frameskip 6`, same `IRIX_NET=on` +
 `IRIX_NET_EGRESS=on`, both watchdogs armed, throttled exactly as shipped.
@@ -2355,7 +2355,7 @@ all `cksum` byte-identical to the tarball's copies (`2643466609 340856`,
 Staged 444 + `chattr +i` beside the others. Delta versus v7 and nothing else:
 the four installed files above, `/.FSN__usr`, and fsn's saved window state.
 
-**Cut over 2026-08-04 02:09:51** — `IRIX_GOLDEN` in `tile.env` now names v8 and
+**Cut over 2026-08-04 02:09:51** — `IRIX_GOLDEN` in `station.env` now names v8 and
 `streamhost@irix` was restarted onto it. Rollback is that one variable back to
 v7 and a restart; the station re-copies the seed per launch, so v8 itself stayed
 444 + immutable (md5 unchanged after the cutover boot). Verified on the live
@@ -2440,8 +2440,8 @@ promoted 444 + `chattr +i`. Everything the login touched (`.Sgiresources`,
 `.desktop-IRIS`, the `Desktop/` entries the desktop auto-creates) was restored or
 removed before the halt, so the delta against v8 is the three files above, the
 scan-database copy, and the regenerated `.otr`/`mime.types`/`mailcap`.
-Cutover to v9 was done 2026-08-04 (`IRIX_GOLDEN` in `tile.env`, harvested into
-`tile.env.fixture` with the savestate work below).
+Cutover to v9 was done 2026-08-04 (`IRIX_GOLDEN` in `station.env`, harvested into
+`station.env.fixture` with the savestate work below).
 
 ## Instant restore — MAME savestate (issue #44, 2026-08-04)
 
@@ -2472,14 +2472,14 @@ reflink the paired disk over `disk.chd` and launch with `-state <name>` — no
 Lua, no QMP.
 
 - **Capture**: `scripts/build-guests/irix/irix-savestate/capture-checkpoint.sh` (station
-  stopped): boots the PRODUCTION config (launcher, tile.env, tap) in a
+  stopped): boots the PRODUCTION config (launcher, station.env, tap) in a
   namespaced clone, waits for the chooser + settle, captures the pair, installs
   `$ASSETS/state/{sta/indy_4610/golden.sta, disk-golden.chd,
   provenance-golden.md5}`. The provenance file binds the state to the exact
   MAME binary md5 — **any MAME rebuild orphans every state** (registration
   signature), and the launcher's guard turns that into a loud cold-boot
   fallback instead of silent garbage. Recapture after every promotion.
-- **Restore**: `IRIX_STATE=golden` in `tile.env`; every start and every
+- **Restore**: `IRIX_STATE=golden` in `station.env`; every start and every
   `labctl reset irix` / UI "Restore to golden" (both = service restart,
   `SH_RESET_MODE=relaunch`) restores instead of cold-booting. Two restore
   launches without a healthy guest fall back to cold boot; livewatch's first
@@ -2501,7 +2501,7 @@ Lua, no QMP.
 ### True start-paused (2026-08-11)
 
 `systemctl start streamhost@irix` now **ends with the guest paused AT the
-restored checkpoint**: with `IRIX_START_PAUSED=on` (tile.env), the full launch
+restored checkpoint**: with `IRIX_START_PAUSED=on` (station.env), the full launch
 restores, waits for the restored frame to be visible in shm (the framebuffer
 is the proof, ~4.4 s), settles 2 s, and SIGSTOPs the emulator. The first
 visitor session's unconditional `cont` (idle.rs) wakes it — the QEMU fleet's

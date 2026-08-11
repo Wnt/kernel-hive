@@ -4,9 +4,9 @@
 # installs the vendored launcher, deletes only the old golden snapshot, cold-boots,
 # injects + starts the serial warpd agent, saves golden, and starts the tile again.
 # Run from the box checkout:
-#   nice -n15 bash streamhost/tiles/templeos/golden-bake.sh
+#   nice -n15 bash streamhost/stations/templeos/golden-bake.sh
 set -euo pipefail
-BASE=/data/vms/streamhost/tiles/templeos
+BASE=/data/vms/streamhost/stations/templeos
 HERE="$(cd "$(dirname "$0")" && pwd)"
 STATE="$BASE/state.qcow2"
 AGENT="$HERE/../../guest-agents/templeos/warpd.HC"
@@ -22,8 +22,8 @@ holyc() {
 test -f "$AGENT"
 test -f "$HERE/qemu-streamhost.sh"
 test -f /data/gallery-guests/TempleOS/TempleOS.ISO
-grep -qx 'SH_POINTER=warpd' "$BASE/tile.env"
-grep -qx "SH_WARPD_ADDR=unix:$BASE/serial.sock" "$BASE/tile.env"
+grep -qx 'SH_POINTER=warpd' "$BASE/station.env"
+grep -qx "SH_WARPD_ADDR=unix:$BASE/serial.sock" "$BASE/station.env"
 
 echo "[bake] stopping live tile and installing the vendored pinned launcher ..."
 systemctl stop streamhost@templeos

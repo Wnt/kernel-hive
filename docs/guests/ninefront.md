@@ -33,7 +33,7 @@ Wiring:
 
 - hostfwd on the existing user netdev: `127.0.0.1:57793 -> guest :7777`
   (backend property — device set unchanged, `loadvm golden` matches).
-- `tile.env`: `SH_POINTER=warpd`, `SH_WARPD_ADDR=127.0.0.1:57793`.
+- `station.env`: `SH_POINTER=warpd`, `SH_WARPD_ADDR=127.0.0.1:57793`.
 - Autostart: `/cfg/cirno/termrc` (net up via `ip/ipconfig` + `ndb/cs`, then
   `bind -a '#m' /dev` and a retry loop around `warpd`). The bind + retry are
   REQUIRED: `/dev/mousein` is not bound into /dev yet when termrc sources the

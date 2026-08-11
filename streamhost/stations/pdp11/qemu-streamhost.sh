@@ -22,7 +22,7 @@
 #   * The AC97 card stays in the device set because the golden was baked with
 #     it; the exhibit itself is silent (a console terminal has nothing to say).
 set -e
-BASE=/data/vms/streamhost/tiles/pdp11
+BASE=/data/vms/streamhost/stations/pdp11
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

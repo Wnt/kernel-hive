@@ -84,9 +84,9 @@ stage a normalised src tile dir and point `BOOTREC_TILES_ROOT` at it:
 ```sh
 ROOT=/data/vms/soltest/w2ksrc-root ; TD=$ROOT/win2000 ; mkdir -p "$TD"
 cp --reflink=auto <prepped>.qcow2 "$TD/win2000-golden.qcow2"
-sed -e 's#/data/vms/streamhost/tiles/win2000#'"$TD"'#g' \
+sed -e 's#/data/vms/streamhost/stations/win2000#'"$TD"'#g' \
     -e 's#/data/gallery-guests/Win2000/win2k-pro.qcow2#'"$TD"'/win2000-golden.qcow2#g' \
-    /data/vms/streamhost/tiles/win2000/qemu-streamhost.sh > "$TD/qemu-streamhost.sh"
+    /data/vms/streamhost/stations/win2000/qemu-streamhost.sh > "$TD/qemu-streamhost.sh"
 cp <settled-desktop>.png "$TD/boot-ref-desktop.png"
 BOOTREC_TILES_ROOT=$ROOT SH_DBUS_TAP=/path/to/bootrec-tap \
   record-boot.sh win2000 && postprocess-boot.sh win2000 && trim-boot.sh $BOOTREC_STAGING_ROOT/win2000

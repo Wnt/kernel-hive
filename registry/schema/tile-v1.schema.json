@@ -40,7 +40,7 @@
         "reason": {
           "type": "string",
           "minLength": 1,
-          "description": "Required when hidden, forbidden when listed. Why it is off the floor, and what would put it back. `git log -- registry/tiles/<id>.json` answers who took it off."
+          "description": "Required when hidden, forbidden when listed. Why it is off the floor, and what would put it back. `git log -- registry/stations/<id>.json` answers who took it off."
         },
         "since": {
           "type": "string",
@@ -192,7 +192,7 @@
     },
     "keyboard": {
       "type": "object",
-      "description": "How this MACHINE's keyboard differs from a PC's. Consumed by the SPA typist and by labctl (via SH_KEY_MAP in tile.env). Derive it with scripts/dev/mame-keymap.py.",
+      "description": "How this MACHINE's keyboard differs from a PC's. Consumed by the SPA typist and by labctl (via SH_KEY_MAP in station.env). Derive it with scripts/dev/mame-keymap.py.",
       "properties": {
         "charMap": {
           "type": "object",

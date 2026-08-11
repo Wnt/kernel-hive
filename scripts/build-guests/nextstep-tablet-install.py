@@ -322,7 +322,7 @@ def ensure_boot_hook():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dir", default="/data/vms/streamhost/tiles/nextstep")
+    parser.add_argument("--dir", default="/data/vms/streamhost/stations/nextstep")
     parser.add_argument("--ssh-port", type=int, default=5837)
     parser.add_argument("--key", default="/data/vms/bridge/bridge_key")
     parser.add_argument("--evidence", default=None)

@@ -2,7 +2,7 @@
 
 Station id `star`, slot 138, UDP 54138, VMID 240, kiosk ssh `127.0.0.1:5840`.
 Builder: [`scripts/build-guests/tiles/star.sh`](../../scripts/build-guests/tiles/star.sh).
-Registry source: `registry/tiles/star.json`.
+Registry source: `registry/stations/star.json`.
 
 **Emulator-in-captured-Linux kiosk**, the same shape as `amiga`, `c64` and
 its sibling `daybreak`: a thin qcow2 overlay on `/data/vms/bridge/bridge-base.qcow2`
@@ -203,7 +203,7 @@ visitor spends their first click buying it.
 The other half of the same switch: **either Alt key RELEASES the capture.** A
 visitor pressing Alt on a physical keyboard would silently kill the pointer until
 they clicked again, so the station remaps both Alt scancodes to an inert key
-(`SH_KEY_REMAP`, see `tile.env.fixture`). The UI's `xerox-star` on-screen
+(`SH_KEY_REMAP`, see `station.env.fixture`). The UI's `xerox-star` on-screen
 keyboard has no Alt button.
 
 ### X autorepeat must be off

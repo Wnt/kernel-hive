@@ -43,7 +43,7 @@ unset BRIDGE_SUITE
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/build-guests/lib/bridge-suite.sh"
 
 LAB="${LAB:-lab}"
-TILES_ROOT="${BRIDGE_TILES_ROOT:-/data/vms/streamhost/tiles}"
+TILES_ROOT="${BRIDGE_TILES_ROOT:-/data/vms/streamhost/stations}"
 ONE_TILE=""
 AS_JSON=0
 STRICT=0

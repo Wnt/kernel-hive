@@ -14,8 +14,8 @@ contain ContrAlto or a .NET runtime; see
 checkout + patch + self-contained publish + thin overlay + kiosk `launch.sh` +
 quiet console + checkpoint capture + framebuffer-asserted keyboard, pointer and reset
 proofs, fully automated, ~12–18 minutes from scratch.
-**Station dir (host):** `/data/vms/streamhost/tiles/alto/`.
-**Registry entry:** `registry/tiles/alto.json` (slot 137, udp 54137, VMID 243,
+**Station dir (host):** `/data/vms/streamhost/stations/alto/`.
+**Registry entry:** `registry/stations/alto.json` (slot 137, udp 54137, VMID 243,
 ssh hostfwd 127.0.0.1:5843).
 **Feasibility study:** [`docs/lab/research/xerox-add.md`](../lab/research/xerox-add.md)
 §1. **Build log for the three-station Xerox wave:**
@@ -253,7 +253,7 @@ machine answering "what can I run", and it is the closest thing the Alto has to
 | Overlay | thin qcow2 on the shared bridge seed; ~150 MB of emulator tree plus the checkpoint |
 
 The Alto never idles — the display task repaints 30 fields a second whatever is on
-screen — so `SH_IDLE_PAUSE_SECS=60` is left explicitly ON in `tile.env.fixture`.
+screen — so `SH_IDLE_PAUSE_SECS=60` is left explicitly ON in `station.env.fixture`.
 Do not copy `amiga`'s `SH_IDLE_PAUSE_SECS=0` here.
 
 ## Operating
@@ -271,10 +271,10 @@ and no network in this station. To drive the Alto itself use `labctl type/key`
 modifiers by a gap and can count ink in a rectangle of the framebuffer:
 
 ```bash
-ssh lab 'python3 /data/vms/streamhost/tiles/alto/alto-drive.py \
-  /data/vms/streamhost/tiles/alto/qmp.sock type 66 66 bravo'
-ssh lab 'python3 /data/vms/streamhost/tiles/alto/alto-drive.py \
-  /data/vms/streamhost/tiles/alto/qmp.sock ink 0 88 608 40'   # banner ink
+ssh lab 'python3 /data/vms/streamhost/stations/alto/alto-drive.py \
+  /data/vms/streamhost/stations/alto/qmp.sock type 66 66 bravo'
+ssh lab 'python3 /data/vms/streamhost/stations/alto/alto-drive.py \
+  /data/vms/streamhost/stations/alto/qmp.sock ink 0 88 608 40'   # banner ink
 ```
 
 ## Rebuilding

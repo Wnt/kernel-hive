@@ -20,7 +20,7 @@
 #     Device set MUST match the golden bake EXACTLY or -loadvm golden fails.
 #   * Keyboard exhibit: no pointing device, PS/2 keyboard only (vmport=off).
 set -e
-BASE=/data/vms/streamhost/tiles/plus4
+BASE=/data/vms/streamhost/stations/plus4
 OVERLAY="$BASE/overlay.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3

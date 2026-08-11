@@ -21,7 +21,7 @@ MEMORY="${MEMORY:-1024}"
 CORES="${CORES:-2}"
 VGA="${VGA:-std}"
 AUDIO="${AUDIO:-off}"
-TILES_ROOT="${TILES_ROOT:-/data/vms/streamhost/tiles}"
+TILES_ROOT="${TILES_ROOT:-/data/vms/streamhost/stations}"
 TILE_DIR="${TILES_ROOT}/${TILE}"
 
 case "$VMID" in '' | *[!0-9]*)

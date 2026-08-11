@@ -335,7 +335,7 @@ QEMU's TCG Cirrus renders the mode cleanly (the pre-existing "unreliable above
 
 ### fps
 
-`registry/tiles/os2warp.json` `.stream.fps` was left at **60** (unchanged): the
+`registry/stations/os2warp.json` `.stream.fps` was left at **60** (unchanged): the
 planned 60→30 drop was justified only by the (non-occurring) resolution jump's
 extra encode load, so it carries no independent motivation here.
 
@@ -628,7 +628,7 @@ the offline disk surgery and the clone launcher; run it on labhost against a
 - Launcher `tiles/os2warp/qemu-streamhost.sh`: `-vga cirrus` → `-vga std -global
   VGA.vgamem_mb=2`, `-m 128` → `-m 256`. Everything else — TCG, `-cpu pentium`,
   `acpi=off,usb=off`, sb16, pcnet, the COM1 warpd chardev — is unchanged.
-- `registry/tiles/os2warp.json` retargeted (`deviceSetId` `os2warp-std-1024x768`,
+- `registry/stations/os2warp.json` retargeted (`deviceSetId` `os2warp-std-1024x768`,
   memory 256, fps **60 → 30** to match every other hi-res station at 2.56× the pixels)
   and regenerated; `labctl gen` re-run.
 - Startup-folder cleanup: the three broken MCP2 startup objects (TCP/IP Startup,

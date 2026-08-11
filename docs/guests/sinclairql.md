@@ -81,7 +81,7 @@ a table in the script.
 QEMU device set is the bridge standard (`pc-i440fx-11.0,vmport=off`, IDE
 overlay, `-vga std`, dbus display, AC97, e1000 with hostfwd 5836→22, no tablet),
 with `-m 768`. The launcher is
-`streamhost/tiles/sinclairql/qemu-streamhost.sh`.
+`streamhost/stations/sinclairql/qemu-streamhost.sh`.
 
 The kiosk X root is the bridge seed's stock **1024×768**, and that is the lucky
 size for this machine: the QL's 512×256 monitor mode scales to it by exactly 2×
@@ -150,7 +150,7 @@ taking X with it and leaving getty@tty1 to relaunch the kiosk every ~90 s.
 In production streamhost registers a dbus audio listener at startup, so the sink
 always drains.
 
-Evidence in `/data/vms/streamhost/tiles/sinclairql/evidence/`:
+Evidence in `/data/vms/streamhost/stations/sinclairql/evidence/`:
 `mame-warning.png`, `chooser.png` (the poster frame), `monitor-mode.png`,
 `golden-restored.png`, `production-loadvm.png`, `keyboard-print-7.png`,
 `golden-restored-after-keyboard.png`.

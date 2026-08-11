@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
 import { loadGalleryManifest, validateGalleryManifest } from '../src/data/galleryManifest.ts';
 
-// The public lineup is RENDERED from registry/tiles/*.json, never committed, so
+// The public lineup is RENDERED from registry/stations/*.json, never committed, so
 // this check renders it here and validates those exact bytes — the document the
 // box will be handed, not a copy of it that could have gone stale in the tree.
 const rendered = execFileSync(

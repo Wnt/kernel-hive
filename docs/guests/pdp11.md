@@ -12,8 +12,8 @@ SIMH (see the deviation below).
 **Build script (station):** `scripts/build-guests/tiles/pdp11.sh` — thin overlay + SIMH
 build + pack staging + 2.11BSD curation + kiosk `launch.sh` + quiet console +
 checkpoint capture + a framebuffer-asserted keyboard proof, fully automated, ~6 min.
-**Station dir (labhost):** `/data/vms/streamhost/tiles/pdp11/`.
-**Registry entry:** `registry/tiles/pdp11.json` (slot 115, udp 54115, VMID 227,
+**Station dir (labhost):** `/data/vms/streamhost/stations/pdp11/`.
+**Registry entry:** `registry/stations/pdp11.json` (slot 115, udp 54115, VMID 227,
 ssh hostfwd 127.0.0.1:5827).
 
 This is the oldest lineage in the collection and the ancestor of most of it:
@@ -68,7 +68,7 @@ install -m 755 /usr/local/src/simh/BIN/pdp11 /usr/local/bin/simh-pdp11
 | zip sha256 | `94abeca02f001619e7aa2252cb2336ffe79af0cb3fb35cbd8c14240af3125a6b` (49 850 663 B) |
 | dsk sha256 | `2f100ee585f229fd55923e1d1c44108e72df96f649f28a31df35985e6a481805` (1 000 047 616 B) |
 | class | **preservation-source** |
-| staged at | `/data/vms/streamhost/tiles/pdp11/media/` (host, outside the overlay) |
+| staged at | `/data/vms/streamhost/stations/pdp11/media/` (host, outside the overlay) |
 
 2.11BSD is a 1991 UC Berkeley release that **predates the Net/2 split**, so it
 is *not* covered by the Caldera 2002 Ancient-Unix letter, and this prebuilt
@@ -224,7 +224,7 @@ to log out).
 
 ## Device set and launcher
 
-`streamhost/tiles/pdp11/qemu-streamhost.sh`, identical in shape to its kiosk
+`streamhost/stations/pdp11/qemu-streamhost.sh`, identical in shape to its kiosk
 siblings but with **512 MB** instead of 1536:
 
 | RAM | guest MemTotal | guest MemAvailable at the login prompt | host QEMU RSS |
@@ -287,7 +287,7 @@ types `uname -a`.
 
 ## Evidence
 
-`/data/vms/streamhost/tiles/pdp11/evidence/`
+`/data/vms/streamhost/stations/pdp11/evidence/`
 
 | file | what it shows |
 |---|---|

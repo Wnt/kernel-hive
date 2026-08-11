@@ -1,7 +1,7 @@
 //! devwatch — the dev-mode watcher for the station registry's single-source files.
 //!
-//! Watches the hand-written sources (registry/tiles, registry/posters,
-//! registry-v1.json, templates, streamhost/tiles fixtures, spa/src) and, on
+//! Watches the hand-written sources (registry/stations, registry/posters,
+//! registry-v1.json, templates, streamhost/stations fixtures, spa/src) and, on
 //! every debounced change, runs `stations-registry.py generate` and `render`
 //! (both validate first). Only when the change PARSES does anything deploy:
 //! runtime manifests (gallery-manifest.json, poster-docs.json, tiles.json,
@@ -30,7 +30,7 @@ use notify_debouncer_full::{new_debouncer, DebounceEventResult, DebouncedEvent};
 /// changes nothing else, which is exactly the save that must still reach the
 /// gallery.
 const MANIFEST_OUTPUTS: &[&str] = &[
-    "build/registry/tiles.json",
+    "build/registry/stations.json",
     "build/registry/gallery-manifest.json",
     "build/registry/poster-docs.json",
     "build/registry/golden-manifest.json",
@@ -87,7 +87,8 @@ impl Dirty {
 fn find_repo(start: &Path) -> Result<PathBuf> {
     let mut dir = start.to_path_buf();
     loop {
-        if dir.join("scripts/stations-registry.py").is_file() && dir.join("registry/tiles").is_dir()
+        if dir.join("scripts/stations-registry.py").is_file()
+            && dir.join("registry/stations").is_dir()
         {
             return Ok(dir);
         }
@@ -205,9 +206,9 @@ fn classify(repo: &Path, outputs: &BTreeSet<String>, paths: &[PathBuf]) -> Dirty
         if ignorable(&rel) || outputs.contains(rel.as_str()) {
             continue;
         }
-        if let Some(rest) = rel.strip_prefix("streamhost/tiles/") {
+        if let Some(rest) = rel.strip_prefix("streamhost/stations/") {
             let tile = rest.split('/').next().unwrap_or("").to_string();
-            if rest.ends_with("tile.env.fixture") {
+            if rest.ends_with("station.env.fixture") {
                 // The rendered index embeds fixture keys, so a fixture edit is a
                 // registry change too.
                 dirty.registry = true;
@@ -336,7 +337,7 @@ fn pipeline(
 
     for tile in &dirty.fixtures {
         println!(
-            "devwatch: {tile}/tile.env.fixture changed — NOT auto-deployed. Re-emit per \
+            "devwatch: {tile}/station.env.fixture changed — NOT auto-deployed. Re-emit per \
              docs (stage emit kit + registry/local.env, byte-review the diff, then \
              `systemctl restart streamhost@{tile}`; the restart RESETS a golden tile)."
         );
@@ -393,12 +394,12 @@ fn main() -> Result<()> {
 
     let (tx, rx) = mpsc::channel();
     let mut debouncer = new_debouncer(Duration::from_millis(300), None, tx)?;
-    for root in ["registry", "streamhost/tiles", "spa/src", "spa/public"] {
+    for root in ["registry", "streamhost/stations", "spa/src", "spa/public"] {
         debouncer
             .watch(repo.join(root), RecursiveMode::Recursive)
             .with_context(|| format!("watching {root}"))?;
     }
-    println!("devwatch: watching registry/, streamhost/tiles/, spa/ — Ctrl-C to stop");
+    println!("devwatch: watching registry/, streamhost/stations/, spa/ — Ctrl-C to stop");
 
     let classify_batch = |dirty: &mut Dirty, batch: DebounceEventResult| match batch {
         Ok(events) => {

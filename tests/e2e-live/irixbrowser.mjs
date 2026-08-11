@@ -9,13 +9,13 @@ const ENGINE = process.env.ENGINE || 'firefox';
 
 const cursor = () =>
   execSync(
-    "ssh lab '/data/vms/streamhost/tiles/irix/fbstat.py --cursor /data/vms/streamhost/tiles/irix/fb.shm'",
+    "ssh lab '/data/vms/streamhost/stations/irix/fbstat.py --cursor /data/vms/streamhost/stations/irix/fb.shm'",
   )
     .toString()
     .trim();
 const shot = (n) =>
   execSync(
-    `ssh lab '/data/vms/soltest/irix-wedge/shmshot.py /data/vms/streamhost/tiles/irix/fb.shm /tmp/live-${n}.png'`,
+    `ssh lab '/data/vms/soltest/irix-wedge/shmshot.py /data/vms/streamhost/stations/irix/fb.shm /tmp/live-${n}.png'`,
   ).toString().trim();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

@@ -26,7 +26,7 @@ not a sample and must be discarded rather than averaged in.
 
 | script | what it does |
 | --- | --- |
-| `verify-prodclone.sh` | boots a candidate binary under the tile's **exact** production configuration (its launcher, its `tile.env`, both watchdogs, throttled) and screendumps on a schedule |
+| `verify-prodclone.sh` | boots a candidate binary under the tile's **exact** production configuration (its launcher, its `station.env`, both watchdogs, throttled) and screendumps on a schedule |
 | `rawrun.sh` | runs the raw production command line with one flag added or removed — the bisector for a production-only failure |
 | `shmpng.py` | renders the shm framebuffer MAME publishes to PNG; the output channel for every "it worked" claim |
 

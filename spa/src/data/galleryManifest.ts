@@ -95,7 +95,7 @@ export function validateGalleryManifest(value: unknown): GalleryManifest | null 
 }
 
 // The lineup has ONE source: /gallery-manifest.json, rendered from
-// registry/tiles/*.json and served from the same origin as this bundle. There is
+// registry/stations/*.json and served from the same origin as this bundle. There is
 // deliberately no embedded copy to fall back on — a bundled snapshot is a second
 // answer to "what is in the museum" that goes stale silently (it is why a
 // registry edit used to need a Vite build to show up), and the origin that would

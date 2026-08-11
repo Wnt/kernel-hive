@@ -1,5 +1,5 @@
 #!/bin/bash
-# stop-tile-qemu.sh <tile> — bounded pidfile-owned QEMU teardown for streamhost@.
+# stop-station-qemu.sh <tile> — bounded pidfile-owned QEMU teardown for streamhost@.
 # Signal only the recorded tile process: TERM first, then KILL after 10 seconds.
 # Once it is gone, remove only that tile's stale pidfile and QMP socket.
 set -euo pipefail
@@ -17,12 +17,12 @@ case "$TILE" in
 esac
 
 # x11 tiles (SH_CAPTURE=x11, IRIX/issue #20) have no QEMU/QMP: hand off to the
-# Xvfb+emulator teardown helper (keyed on the SH_TILE_RUNTIME marker).
-if [ "${SH_TILE_RUNTIME:-}" = "x11" ]; then
-  exec "$(dirname "$0")/stop-tile-x11.sh" "$TILE"
+# Xvfb+emulator teardown helper (keyed on the SH_STATION_RUNTIME marker).
+if [ "${SH_STATION_RUNTIME:-}" = "x11" ]; then
+  exec "$(dirname "$0")/stop-station-x11.sh" "$TILE"
 fi
 
-BASE="/data/vms/streamhost/tiles/$TILE"
+BASE="/data/vms/streamhost/stations/$TILE"
 PIDFILE="$BASE/qemu.pid"
 QMP="$BASE/qmp.sock"
 

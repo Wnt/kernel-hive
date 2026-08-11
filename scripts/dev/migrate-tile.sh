@@ -22,7 +22,7 @@
 #     Any failed mechanical check restores it automatically and leaves the
 #     trixie attempt beside it as overlay.qcow2.trixie-failed for the postmortem.
 #   * The station's REAL daemon identity is read from its signaling.json, because
-#     an UI id is not always an SH_TILE and the systemd unit follows the
+#     an UI id is not always an SH_STATION and the systemd unit follows the
 #     daemon's (AGENTS.md).
 #
 # The registry prose is deliberately not automated — the twinned .museum.notes /
@@ -61,7 +61,7 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 LAB="${LAB:-lab}"
 SSH_OPTS=(-o ConnectTimeout=15)
 BOX_BUILD_SSH=(ssh "${SSH_OPTS[@]}" "$LAB")
-TILES_ROOT="${BRIDGE_TILES_ROOT:-/data/vms/streamhost/tiles}"
+TILES_ROOT="${BRIDGE_TILES_ROOT:-/data/vms/streamhost/stations}"
 BRIDGE_KEY=/data/vms/bridge/bridge_key
 TARGET_SUITE=trixie
 LEDGER="$REPO/registry/bridge-suites.json"
@@ -241,11 +241,11 @@ while IFS='=' read -r k v; do [ -n "$k" ] && P["$k"]="$v"; done <<<"$PROBE_OUT"
 [ -n "${P[shtile]:-}" ] ||
   die "cannot read the daemon identity from $D/signaling.json (${P[shtileerr]:-unknown}) — the unit name would be a guess"
 
-SH_TILE="${P[shtile]}"
-UNIT="streamhost@$SH_TILE"
-[ "$SH_TILE" = "$TILE" ] ||
-  log "NOTE: SPA id '$TILE' != daemon id '$SH_TILE'; the unit follows the daemon"
-log "daemon identity $SH_TILE (unit $UNIT), overlay backs onto ${P[backing]:-<none>}"
+SH_STATION="${P[shtile]}"
+UNIT="streamhost@$SH_STATION"
+[ "$SH_STATION" = "$TILE" ] ||
+  log "NOTE: SPA id '$TILE' != daemon id '$SH_STATION'; the unit follows the daemon"
+log "daemon identity $SH_STATION (unit $UNIT), overlay backs onto ${P[backing]:-<none>}"
 log "golden snapshot present before the rebuild: ${P[golden]:-?}"
 
 case "${P[backing]:-}" in
@@ -401,10 +401,10 @@ echo "  and the ledger resolve relatively. Log: $BUILD_LOG"
 
 # Some builders read HOST-SIDE SIDECARS kept next to the station's launcher rather
 # than in build-guests/: zx81.sh takes its readiness predicate and paced QMP
-# typist from ../../../streamhost/tiles/zx81, as do win95/win311/indyr4400. Stage
-# those too, or the builder dies 20 s in on `cd: .../streamhost/tiles/<tile>: No
+# typist from ../../../streamhost/stations/zx81, as do win95/win311/indyr4400. Stage
+# those too, or the builder dies 20 s in on `cd: .../streamhost/stations/<tile>: No
 # such file or directory` (zx81, 2026-08-10), which reads like a bad station.
-LAUNCHER_SRC="$REPO/streamhost/tiles/$TILE"
+LAUNCHER_SRC="$REPO/streamhost/stations/$TILE"
 STAGE_LAUNCHER=0
 [ -d "$LAUNCHER_SRC" ] && STAGE_LAUNCHER=1
 
@@ -413,7 +413,7 @@ if [ "$DRY" -eq 1 ]; then
     "$REPO" "$LAB" "$STAGE"
   printf '  [would] rsync -a %s %s:%s/registry/bridge-suites.json\n' "$LEDGER" "$LAB" "$STAGE"
   [ "$STAGE_LAUNCHER" -eq 1 ] &&
-    printf '  [would] rsync -a %s/ %s:%s/streamhost/tiles/%s/   (host-side sidecars)\n' \
+    printf '  [would] rsync -a %s/ %s:%s/streamhost/stations/%s/   (host-side sidecars)\n' \
       "$LAUNCHER_SRC" "$LAB" "$STAGE" "$TILE"
   printf '  [would] ssh %s: cd %s && BRIDGE_SUITE=trixie setsid bash %s --force >%s 2>&1\n' \
     "$LAB" "$STAGE" "$BUILDER_REL" "$BUILD_LOG"
@@ -424,7 +424,7 @@ else
   # died on `mkdir "$STAGE/scripts/build-guests" failed: No such file or directory`
   # — after step 3 had already moved the live overlay aside, so every run ended in
   # a rollback that looked like a build failure.
-  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry $(printf '%q' "$STAGE")/scripts/build-guests $(printf '%q' "$STAGE")/streamhost/tiles" ||
+  box_ro "mkdir -p $(printf '%q' "$STAGE")/registry $(printf '%q' "$STAGE")/scripts/build-guests $(printf '%q' "$STAGE")/streamhost/stations" ||
     fail "cannot create the staging dir $STAGE"
   rsync -a --delete -e "ssh ${SSH_OPTS[*]}" \
     "$REPO/scripts/build-guests/" "$LAB:$STAGE/scripts/build-guests/" ||
@@ -433,7 +433,7 @@ else
     fail "staging rsync of the ledger failed"
   if [ "$STAGE_LAUNCHER" -eq 1 ]; then
     rsync -a -e "ssh ${SSH_OPTS[*]}" \
-      "$LAUNCHER_SRC/" "$LAB:$STAGE/streamhost/tiles/$TILE/" ||
+      "$LAUNCHER_SRC/" "$LAB:$STAGE/streamhost/stations/$TILE/" ||
       fail "staging rsync of the host-side sidecars failed"
   fi
 
@@ -603,9 +603,9 @@ non-silent the way its original build did (docs/lab/BRIDGE-TRIXIE-MIGRATION.md
 Still to do BY HAND, in the same commit as the ledger flip — these are prose and
 judgement, so they are deliberately not automated:
 
-  1. registry/tiles/$TILE.json -> .museum.notes         ("a captured Debian 12
+  1. registry/stations/$TILE.json -> .museum.notes         ("a captured Debian 12
      kiosk" is now wrong)
-  2. registry/tiles/$TILE.json -> .render.museumBlock   (the pre-rendered TWIN of
+  2. registry/stations/$TILE.json -> .render.museumBlock   (the pre-rendered TWIN of
      that same prose — edit both or the twin check fails)
   3. scripts/build-guests/tiles/$TILE.sh header, and the $TILE launcher comment,
      wherever either names bookworm / Debian 12

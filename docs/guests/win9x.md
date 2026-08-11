@@ -373,7 +373,7 @@ post-`labctl reset win95` live capture had 0/14. Warpnet motion landed at all fo
 corners and centre at 16-bit, while QMP-delivered buttons opened Start and completed
 a full-window drag. Evidence is under
 `/data/vms/soltest/win95-paint-tearing-vbemp-ship-20260715/` and
-`/data/vms/streamhost/tiles/win95/vbemp-live-verify-20260716/`.
+`/data/vms/streamhost/stations/win95/vbemp-live-verify-20260716/`.
 
 Do not infer the guest depth from `file(1)` on a screenshot: `labctl shot` may
 losslessly optimise the mostly flat Win95 desktop into a 4-bit paletted PNG even
@@ -611,7 +611,7 @@ side `InputBackend::Warpd` is unchanged):
   at `C:\WINDOWS\OPTIONS\CABS` (Win98 then remembers it) and Cancel/Finish-marking the handful
   of driverless ACPI stubs (ACPI Generic Bus/EIO Bus, PnP Monitor, IDE bus-master) → idle
   desktop → verify 1:1 abs tracking + `winipcfg 10.0.2.15` → `savevm golden` →
-  `tile.env SH_POINTER=abs`. The station boots via `-loadvm golden`, so the RAM snapshot restores
+  `station.env SH_POINTER=abs`. The station boots via `-loadvm golden`, so the RAM snapshot restores
   the settled desktop with the pointer live (no cold-boot re-scan, no nag). Live launcher:
   `-enable-kvm -machine pc,acpi=on -cpu pentium3 … -usb -device usb-tablet,id=tab0` (backup of
   the pre-cutover checkpoint C: at `win98se-kvm.qcow2.pre-usbtablet-*`).
@@ -1268,7 +1268,7 @@ click, yanks the VGA, and the game's next VESA call fails → windowed
 garbled desktop. Reproduced deterministically with one mid-intro click; also
 explains historical flakiness reports for the other fullscreen DOS games.
 
-**Fix (live, tile.env + manifest):** `SH_WARPD_BUTTONS=qemu` — the win311
+**Fix (live, station.env + manifest):** `SH_WARPD_BUTTONS=qemu` — the win311
 hybrid-buttons mode. Motion stays on the warpnet agent (absolute, drift-free);
 buttons ride the real PS/2 device, so a fullscreen-DOS click lands in the
 game's own INT 33h (no-op) instead of backgrounding it, and desktop clicks

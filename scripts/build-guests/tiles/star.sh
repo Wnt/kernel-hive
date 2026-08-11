@@ -84,7 +84,7 @@ UDP=54138
 SSH_PORT=5840
 BRIDGE_BASE="${BRIDGE_BASE:-$("$(dirname "${BASH_SOURCE[0]}")/../lib/bridge-base-for" "$TILE")}" # suite: registry/bridge-suites.json
 KEY="/data/vms/bridge/bridge_key"
-TILE_DIR="/data/vms/streamhost/tiles/${TILE}"
+TILE_DIR="/data/vms/streamhost/stations/${TILE}"
 OVERLAY="${TILE_DIR}/overlay.qcow2"
 QMP="${TILE_DIR}/qmp.sock"
 PID="${TILE_DIR}/qemu.pid"
@@ -289,7 +289,7 @@ for _ in $(seq 1 120); do
     # already armed inside the golden and no visitor spends their first click
     # buying it. NOTE the other half of the same switch: EITHER Alt key RELEASES
     # the capture, which is why the station remaps both Alt scancodes away
-    # (SH_KEY_REMAP in tile.env.fixture).
+    # (SH_KEY_REMAP in station.env.fixture).
     sleep 3
     xdotool mousemove 544 430 2>/dev/null || true
     xdotool mousedown 1 2>/dev/null || true
@@ -476,10 +476,10 @@ and is dead):
 
 Re-run this script afterwards to boot straight into the fixture. Emit + start:
 
-   /data/vms/streamhost/scripts/streamhost-tile.sh --tile ${TILE} --vmid ${VMID} --udp ${UDP} \\
+   /data/vms/streamhost/scripts/streamhost-station.sh --tile ${TILE} --vmid ${VMID} --udp ${UDP} \\
        --pointer rel --audio off --fps 30 \\
-       --launcher-file  <repo>/streamhost/tiles/${TILE}/qemu-streamhost.sh \\
-       --env-append-file <repo>/streamhost/tiles/${TILE}/tile.env.fixture
+       --launcher-file  <repo>/streamhost/stations/${TILE}/qemu-streamhost.sh \\
+       --env-append-file <repo>/streamhost/stations/${TILE}/station.env.fixture
    bash ${TILE_DIR}/qemu-streamhost.sh && systemctl start streamhost@${TILE}
    labctl gen
 

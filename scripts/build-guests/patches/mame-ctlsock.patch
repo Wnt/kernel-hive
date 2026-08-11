@@ -109,7 +109,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +    (convention: <tile-dir>/ctl.sock, beside qmp.sock). The relative-
 +    pointer, key and button engines are ports — ALGORITHM-IDENTICAL,
 +    bug-for-bug — of the proven Lua agent
-+    streamhost/tiles/irix/irixagent.lua; that file stays in the repo as
++    streamhost/stations/irix/irixagent.lua; that file stays in the repo as
 +    the rollback arm. The MOVEA absolute engine is V2 — dead-reckoned
 +    open loop in PIXELS, with a learned per-axis counts->px gain and
 +    settle-time delta verification (see the engine block)

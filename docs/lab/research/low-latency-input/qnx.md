@@ -298,7 +298,7 @@ different-widget gate on a fresh clone checkpoint:
    (`golden.qcow2` + the `golden` VM-state), keep a `.bak-preGalleryHid` copy, so
    rollback is one `cp` + `loadvm` (follow the `qnx-upgrade` backup pattern).
 2. **Add the device to the live launcher** —
-   `streamhost/tiles/qnx/qemu-streamhost.sh` (and the manifest
+   `streamhost/stations/qnx/qemu-streamhost.sh` (and the manifest
    `streamhost/stations-manifest.sh`): add the `-chardev` + `-device gallery-hid-pci`
    exactly as validated on the clone. This is a device-set change → the existing
    checkpoint's `loadvm` will mismatch → a **full fresh checkpoint recapture is mandatory**
@@ -308,7 +308,7 @@ different-widget gate on a fresh clone checkpoint:
    producer. Keyboard stays on PS/2. Requires the `GalleryHidSink` merged to
    `main` + built on labhost (the ghid-native-sink work).
 4. **Regenerate the capability matrix** — `labctl gen` (update
-   `/data/vms/streamhost/tiles.json`) after the launcher change.
+   `/data/vms/streamhost/stations.json`) after the launcher change.
 5. **Verify on the LIVE station via a browser drag** (not a `-display none` clone —
    the live station runs `-display dbus,p2p=on`; only the dbus peer path is
    representative). Prove full-screen absolute tracking + clicks land on the
