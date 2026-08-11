@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,2785 @@
+@@ -0,0 +1,2841 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -196,7 +196,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +                             hardware-cursor X,Y[,ENABLE] registers; on
 +                             the irix tile:
 +                               :vc2/0/m_cursor_x,:vc2/0/m_cursor_y,:vc2/0/m_enable_cursor
-+                             ABSENT => MOVEA degrades to open loop
++                             ABSENT => MOVEA degrades to open-loop
++                             dead reckoning, latest-wins over the queue
 +      MAME_CTL_CAL_X/Y       cursor register -> pixel calibration  [-31]
 +      MAME_CTL_MOVE_STEP     pacing budget, counts per window      [120]
 +      MAME_CTL_MOVE_WINDOW   pacing window, EMULATED ms             [40]
@@ -508,6 +509,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	{
 +		long x, y;
 +		ack_ref ack;       // fires when the entry is fully drained
++		bool travel = false;  // open-loop MOVEA travel: a newer target may drop
++		                      // this entry's un-issued remainder (latest-wins)
 +	};
 +
 +	struct key_entry       // one key edge awaiting the hold/gap-paced drain
@@ -1335,6 +1338,19 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_mq.push_back(move_entry{ dx, dy, std::move(ack) });
 +	}
 +
++	// Open-loop MOVEA travel: move_paced, with the entry marked droppable --
++	// a newer target supersedes its un-issued remainder (latest-wins). Slams
++	// and explicit MOVE/MOVEP entries are never marked: an edge overshoot
++	// must still die against the guest's clamp, and a client's own relative
++	// move is not ours to skip.
++	void move_paced_travel(long dx, long dy)
++	{
++		if (dx == 0 && dy == 0)
++			return;
++		move_paced(dx, dy, ack_ref());
++		m_mq.back().travel = true;
++	}
++
 +	long clamp_budget(long pend, long used) const
 +	{
 +		long const room = m_move_step - used;
@@ -1635,10 +1651,46 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				// never merge into the real move's first window (measured in
 +				// the Lua sim harness: 2048 % 120 = 8 px short, permanently)
 +				move_paced(-(18 * m_move_step), -(18 * m_move_step));
-+				move_paced(x, y);
++				move_paced_travel(x, y);
 +			}
 +			else
-+				move_paced(x - m_flx, y - m_fly);
++			{
++				// LATEST-WINS over the backlog. A streamed sweep enqueues travel
++				// counts faster than the device ceiling drains them (the ST
++				// accepts ~125/s/axis), and a FIFO replays the whole path long
++				// after the pointer stopped -- measured on the spike arm: a 10 s
++				// circle left mq=390 queued and 17 s of catch-up. Drop the
++				// un-issued travel remainders; non-travel entries (slams,
++				// explicit MOVE/MOVEP) keep their place and their semantics.
++				//
++				// The new delta is stated from the CLAMPED belief plus a clamp
++				// simulation of the counts still queued -- never by folding the
++				// dropped remainders back in. Counts bound for a clamp never
++				// move the guest: the sink's re-home preamble restates the
++				// origin with travel that is 100% clamp-fodder, and reclaiming
++				// it displaced every later target by the full grid width
++				// (measured: verify worst error went 0.6 -> 38.8 counts).
++				for (auto it = m_mq.begin(); it != m_mq.end();)
++				{
++					if (it->travel)
++					{
++						m_skx += std::abs(it->x);
++						m_sky += std::abs(it->y);
++						m_cum_skx += std::abs(it->x);
++						m_cum_sky += std::abs(it->y);
++						it = m_mq.erase(it);
++					}
++					else
++						++it;
++				}
++				long px = m_bx, py = m_by;
++				for (move_entry const &e : m_mq)
++				{
++					px = clamp_px_x(px + e.x);
++					py = clamp_px_y(py + e.y);
++				}
++				move_paced_travel(x - px, y - py);
++			}
 +			m_flx = x;
 +			m_fly = y;
 +			m_fl_valid = true;
@@ -1733,7 +1785,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				// the closed loop died with targets still queued: apply them
 +				// open-loop so neither the motion nor the buttons behind it
 +				// are ever dropped
-+				move_paced(a.x - m_flx, a.y - m_fly);
++				move_paced_travel(a.x - m_flx, a.y - m_fly);
 +				m_flx = a.x;
 +				m_fly = a.y;
 +				m_fl_valid = true;
@@ -2676,7 +2728,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		std::string s = util::string_format(
 +				"ver=1 paused=%d mtime=%.3f frames=%s ticks=%s conns=%d accepts=%s "
 +				"cmds=%s filecmds=%s errs=%s movep=%s move=%s movea=%s key=%s post=%s "
-+				"applied=%s,%s mq=%d kq=%d aq=%d clickq=%d tgt=%s res=%d,%d giveups=%s "
++				"applied=%s,%s skipped=%s,%s mq=%d kq=%d aq=%d clickq=%d tgt=%s res=%d,%d giveups=%s "
 +				"movea_mode=%s reseeds=%s last_in_ms=%d bel=%d,%d bias=%d,%d gain=%.2f,%.2f",
 +				m_machine.paused() ? 1 : 0, emu_now(),
 +				std::to_string(m_frames), std::to_string(m_ticks),
@@ -2685,6 +2737,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				std::to_string(m_c_movep), std::to_string(m_c_move),
 +				std::to_string(m_c_movea), std::to_string(m_c_key), std::to_string(m_c_post),
 +				std::to_string(m_cum_ax), std::to_string(m_cum_ay),
++				std::to_string(m_cum_skx), std::to_string(m_cum_sky),
 +				int(m_mq.size()), int(m_kq.size()), int(m_aq.size()), int(m_clickq.size()),
 +				m_ta_active ? util::string_format("%d,%d", int(m_ta.x), int(m_ta.y)) : std::string("-"),
 +				int(m_res_x), int(m_res_y), std::to_string(m_giveups),
@@ -2718,17 +2771,18 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			return;
 +		m_last_stats = now;
 +		emit_ev(util::string_format(
-+				"STATS movep=%s move=%s movea=%s key=%s queued=%s,%s applied=%s,%s "
++				"STATS movep=%s move=%s movea=%s key=%s queued=%s,%s applied=%s,%s skipped=%s,%s "
 +				"mq=%d kq=%d aq=%d tgt=%s res=%d,%d giveups=%s emu=%d",
 +				std::to_string(m_p_movep), std::to_string(m_p_move),
 +				std::to_string(m_p_movea), std::to_string(m_p_key),
 +				std::to_string(m_qx), std::to_string(m_qy),
 +				std::to_string(m_ax), std::to_string(m_ay),
++				std::to_string(m_skx), std::to_string(m_sky),
 +				int(m_mq.size()), int(m_kq.size()), int(m_aq.size()),
 +				m_ta_active ? util::string_format("%d,%d", int(m_ta.x), int(m_ta.y)) : std::string("-"),
 +				int(m_res_x), int(m_res_y), std::to_string(m_giveups), int(emu_now())));
 +		m_p_movep = m_p_move = m_p_movea = m_p_key = 0;
-+		m_qx = m_qy = m_ax = m_ay = 0;
++		m_qx = m_qy = m_ax = m_ay = m_skx = m_sky = 0;
 +	}
 +
 +	void heartbeat()
@@ -2861,6 +2915,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	u64 m_p_move = 0, m_p_movep = 0, m_p_movea = 0, m_p_key = 0;
 +	u64 m_qx = 0, m_qy = 0, m_ax = 0, m_ay = 0;   // per-period queued/applied counts
 +	u64 m_cum_ax = 0, m_cum_ay = 0;
++	u64 m_skx = 0, m_sky = 0;                     // per-period superseded travel
++	u64 m_cum_skx = 0, m_cum_sky = 0;             // cumulative (STAT skipped=)
 +	u64 m_giveups = 0;                            // cumulative (rare; must survive)
 +	u64 m_hist[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };   // receipt->apply ms buckets
 +	steady_tp m_last_input{};
