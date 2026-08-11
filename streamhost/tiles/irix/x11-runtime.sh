@@ -480,7 +480,7 @@ start_mame() {
     fi
   fi
   publish_serial "$p"
-  echo "irix runtime up: mame pid=$p capture=$CAPTURE xvfb=$DISP shm=$SHM cmd=$CMD serial=$(cat "$D/serial.pts" 2>/dev/null) boot=${restore:+restore:$restore}${restore:-cold} ctl=$([ "$CTL" = on ] && echo "$D/ctl.sock" || echo off)"
+  echo "irix runtime up: mame pid=$p capture=$CAPTURE xvfb=$DISP shm=$SHM cmd=$CMD serial=$(cat "$D/serial.pts" 2>/dev/null) boot=${restore:+restore:}${restore:-cold} ctl=$([ "$CTL" = on ] && echo "$D/ctl.sock" || echo off)"
 }
 
 # The exec channel (`labctl exec irix`, /root/irixexec.py, irixser/2 to
