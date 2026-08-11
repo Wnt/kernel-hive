@@ -119,24 +119,38 @@ highlights and never fires, a title-bar drag does not move the window. An
 explicit `mousedown 1 / sleep 0.4 / mouseup 1` works every time. This cost a
 confusing half hour: the click looks delivered, the framebuffer says otherwise.
 
-**The one asymmetry, stated plainly.** The driver is a kernel server loaded at
-install time; Previous's own README warns it must be reinstalled after every
-*boot*. `loadvm golden` is not a boot — it restores RAM and device state — so the
-golden keeps the driver for every visitor and every reset, which is exactly why
-this fits the exhibit's reset model. **A COLD boot does not have it** and falls
-back to Previous's relative mouse, which against an absolute usb-tablet is not a
-usable pointer. The tile only ever cold-boots when the golden is missing (i.e.
-the fixture is gone and the tile is being rebuilt anyway), and the recovery is
-one command:
+**The cold-boot asymmetry is CLOSED (2026-08-11).** The driver is a kernel
+server, and Previous's own README warns it must be reinstalled after every
+*boot* — which was true only because nothing loaded it at boot. The reloc's own
+kern_loader load commands (`Loaded Server/Load Commands` section, read straight
+out of the Mach-O) end in `CALL tablet_attach 0`: **loading the server IS
+attaching** — tablet_attach swaps the kernel's low-memory pointer vectors
+(0x2c0–0x2e8) from the KMS mouse routines to the tablet routines, and when that
+happens during `/etc/rc`, *before* the WindowServer starts, login's own device
+init runs the serial probe and the pointer comes up absolute with zero input.
+So the disk now carries two lines at the end of `/etc/rc.local`:
 
-```bash
-ssh lab 'python3 scripts/build-guests/nextstep-tablet-install.py'   # from a repo copy on the box
+```
+kl_util -l tablet
+kl_util -a /usr/lib/kern_loader/Tablet/tablet_reloc
 ```
 
-which is the same automation `scripts/build-guests/tiles/nextstep.sh` runs
-between its last cold boot and `savevm golden`. It is deliberately NOT wired into
-the kiosk's boot path: it drives the guest GUI, and nothing should be clicking
-around inside an exhibit a visitor may already be watching.
+(`-l` when a clean shutdown persisted the server into kern_loader's conf, `-a`
+adds AND loads when it did not. Do not append to `/etc/kern_loader.conf` by
+hand — kern_loader owns that file and rewrites it.) `loadvm golden` keeps
+working exactly as before; the golden since 2026-08-11 carries the hook on its
+disk. `nextstep-tablet-install.py` writes the hook, probes a booted disk and
+skips the GUI dance when the boot already came up absolute — the GUI install
+is only needed ONCE per fresh disk image, to make InstallTablet.app write
+tablet_reloc and the /dev nodes in the first place.
+
+Two behaviors this changes: a guest reboot inside the exhibit now re-attaches
+the tablet at the end of its boot (the old trap — Previous keeping
+`bTabletEnabled` across a guest reboot with no driver on the other side —
+closes itself once rc runs, though the pointer is dead *during* the boot); and
+mid-session `kl_util -l tablet` on a machine whose WindowServer is already up
+swaps the vectors but probes nothing — the pointer freezes until reboot or
+`kl_util -u tablet`. Loading the server is only useful at rc time.
 
 **How the install is driven, since it cannot be scripted from a shell.**
 NeXTSTEP refuses a DPS connection to a telnet session (`DPS client library
@@ -245,10 +259,12 @@ visibly backed up.
 menu at the top left, the File Viewer NeXTSTEP opens for itself at login, and the
 Dock down the right-hand edge. Nothing is curated — this is where the machine
 stops on its own — but the snapshot is **not** taken on an untouched boot any
-more: it is taken after §4's tablet-driver install, because a kernel server is
-the one thing a cold boot cannot carry. The install automation ends by pixel-
-diffing the desktop back onto the frame it started from, and refuses to continue
-if too much differs. Restore is verified by framebuffer in the same run.
+more: it is taken after §4's tablet-driver install. (Since 2026-08-11 the disk
+itself re-attaches the driver on every boot via the rc.local hook, so the
+snapshot's job is back to being just the instant-resume state, not the sole
+carrier of the driver.) The install automation ends by pixel-diffing the
+desktop back onto the frame it started from, and refuses to continue if too
+much differs. Restore is verified by framebuffer in the same run.
 
 Evidence in `/data/vms/streamhost/tiles/nextstep/evidence/`:
 `coldboot-desktop.png` (the state that was baked), `golden-baked.png`,
@@ -279,9 +295,15 @@ lands on the Workspace with no input at all.
   `indyr4400`) that have no declaration in the deployed file yet. The nextstep
   row was merged into `/data/vms/streamhost/tiles.json` additively instead, and
   `labctl ls` shows `abs`. Regenerating the whole matrix is a merge-time step.
-- The **cold-boot pointer asymmetry** in §4: a cold-booted tile has no tablet
-  driver and no usable pointer until the installer is re-run. Documented and
-  one command away, deliberately not automatic.
+- The **cold-boot pointer asymmetry** in §4 is CLOSED (2026-08-11): the disk
+  carries an rc.local hook that loads the tablet server during /etc/rc, and a
+  cold boot comes up absolute on its own (proven on a soltest clone: commanded
+  (100,100) → arrow at exactly (100,100) after a plain boot, no GUI driven).
+  The live golden was re-baked the same day with the hook on its disk.
+- **Idle auto-pause is ON since 2026-08-11** (`SH_IDLE_PAUSE_SECS=60`, the
+  fleet's QMP arm). The original opt-out feared QMP-freezing the kiosk "out
+  from under" the frame watcher, but the watcher runs INSIDE the guest — stop
+  freezes watcher and window together. The unwatched tile was 138% of a core.
 - Only `nTabletType = 2` (SummaGraphics MM 1201) was tried. The WACOM types
   report a finer coordinate range and might behave differently at the edges;
   there was no reason to look.
