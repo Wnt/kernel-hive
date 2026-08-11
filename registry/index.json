@@ -518,8 +518,7 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_FIXTURE_DESC": "Amiga 500 (68000) Workbench 1.3 desktop in FS-UAE; Kickstart 1.3; Paula->ALSA->AC97.",
-          "SH_IDLE_PAUSE_SECS": "0"
+          "SH_FIXTURE_DESC": "Amiga 500 (68000) Workbench 1.3 desktop in FS-UAE; Kickstart 1.3; Paula->ALSA->AC97."
         },
         "vmidLabel": 218,
         "qemu": {

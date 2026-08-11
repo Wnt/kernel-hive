@@ -186,3 +186,16 @@ Workbench desktop. The pilot was fully reverted:
   unchanged). Verified: cold service restart with `-loadvm golden` and `labctl reset amiga`
   both land on the Workbench 1.3 desktop; daemon LISTENING udp/54118, AC97→dbus audio intact.
   Prior overlay preserved at `overlay.qcow2.bak-prerecover`.
+
+## History — idle auto-pause enabled (2026-08-11)
+The revert above *said* it dropped the coldboot `SH_IDLE_PAUSE_SECS=0` line, but the
+line survived in both the live `tile.env` and the repo fixture — so amiga stayed the
+fleet's single always-running bridge tile for another month (its daemon alone burned
+~43% of a core draining PAL-rate FS-UAE frames with zero viewers). 2026-08-11 the
+leftover was actually removed: the fixture now carries no idle-pause stanza at all,
+so the daemon default applies (QMP stop/cont, grace 60 s) — identical to c64 and
+atarist, which have paused this way since registration, audio and all. No new bake,
+no launcher change; rollback is one line (`SH_IDLE_PAUSE_SECS=0`) in `tile.env` +
+`systemctl restart streamhost@amiga`. The pilot's disabled
+`amiga-coldboot-watch.service` unit file, also documented as removed but still
+present on the box, was moved aside the same day.

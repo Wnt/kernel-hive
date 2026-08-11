@@ -502,8 +502,8 @@ emit apple2 \
   --env-append-file "$T/apple2/tile.env.fixture"
 
 # amiga (VMID 218) — FS-UAE -> Amiga 500 -> Kickstart 1.3 + Workbench 1.3.
-#   ssh 5818. Fixture stanza also pins SH_IDLE_PAUSE_SECS=0 (never QMP-freeze
-#   the kiosk out from under the watcher).
+#   ssh 5818. Idle auto-pause: daemon default (like c64/atarist); the old
+#   SH_IDLE_PAUSE_SECS=0 pin was a leftover of the reverted cold-boot pilot.
 emit amiga \
   --tile amiga --vmid 218 --udp 54118 --pointer abs \
   --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \
