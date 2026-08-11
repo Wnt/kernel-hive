@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# verify-box-sync.sh — MD5-gate every documented repo/live box mirror.
+# verify-box-sync.sh — MD5-gate every documented repo/live labhost mirror.
 #
 # The pair table, the secret guard and the scrub map moved to the sourceable
 # scripts/lib/box-sync-pairs.sh so that the RECONCILE half —
@@ -12,16 +12,16 @@
 # this repo is scrubbed for public release — the operator's real LAN IP and
 # public hostnames live ONLY in gitignored registry/local.env, and tracked
 # files carry RFC 5737 / RFC 2606 placeholders instead (see AGENTS.md and
-# registry/README.md). A handful of box copies are DEPLOYED with the real
+# registry/README.md). A handful of labhost copies are DEPLOYED with the real
 # values substituted in, so a naive md5 compare marks them drifted forever.
-# Those pairs are declared `scrub`: the box-side hash is taken AFTER reversing
-# the substitution (real value -> repo placeholder), on the box, inside the one
+# Those pairs are declared `scrub`: the labhost-side hash is taken AFTER reversing
+# the substitution (real value -> repo placeholder), on labhost, inside the one
 # batched SSH session. Real values therefore never touch the wire in a hash,
 # never land in a local temp file, and are never printed. With no
 # registry/local.env (a fresh public clone) scrubbed pairs report UNCHECKED —
 # they never silently pass and never spuriously fail.
 #
-# Darklaunch awareness: a deliberate, additive, box-side overlay (a rig
+# Darklaunch awareness: a deliberate, additive, labhost-side overlay (a rig
 # exposing rows from a git worktree) may DECLARE itself in
 # $BOX_ROOT/serve/darklaunch.d/. A declared row is verified subtractively —
 # box copy minus the declared ids must still match the repo — and reported

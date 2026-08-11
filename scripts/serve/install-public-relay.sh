@@ -2,10 +2,10 @@
 # install-public-relay.sh — set the edge VPS's UDP DNAT range for the public
 # gallery's QUIC video, idempotently and reviewably.
 #
-# RUNS ON THE EDGE (vm-control), AS ROOT. Not on the lab box, not on a station.
-# The box only dials out; the edge is the only place this rule exists.
+# RUNS ON THE EDGE (vm-control), AS ROOT. Not on labhost, not on a station.
+# labhost only dials out; the edge is the only place this rule exists.
 #
-# Why this file exists: the box's /etc/wireguard/wg0.conf and the old
+# Why this file exists: labhost's /etc/wireguard/wg0.conf and the old
 # docs pointed at "scripts/serve/install-public-relay.sh in Wnt/osgallery" as
 # the source of truth. That file was never written (`git log --all` in
 # osgallery has no trace of it) and osgallery is now abandoned — kernel-hive
@@ -36,7 +36,7 @@ set -u
 
 # MUST equal ports.publicRelayLow-publicRelayHigh in registry/registry-v1.json.
 # scripts/tiles-registry.py asserts these agree, because the failure mode when
-# they drift is invisible: every check on the box stays green.
+# they drift is invisible: every check on labhost stays green.
 RELAY_RANGE_DEFAULT="54080-54200"
 RELAY_PEER_DEFAULT="10.66.0.3"
 NFT_PERSIST="/etc/nftables.conf"

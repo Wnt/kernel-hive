@@ -24,7 +24,7 @@ export BIND_IP="${BIND_IP:-0.0.0.0}"
 export PORT="${PORT:-8443}"
 # Arbitrary browser JavaScript stays off unless the operator opts in for this restart.
 export OSG_ADMIN_EVAL="${OSG_ADMIN_EVAL:-0}"
-# Restore-to-golden endpoint authority (defaults sit beside the server).
+# Restore-to-checkpoint endpoint authority (defaults sit beside the server).
 export RESET_SCRIPT="${RESET_SCRIPT:-$SERVE/reset-tile.sh}"
 export GOLDEN_MANIFEST="${GOLDEN_MANIFEST:-$SERVE/golden-manifest.json}"
 

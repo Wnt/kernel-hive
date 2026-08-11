@@ -13,7 +13,7 @@
 #
 # ---- THE ONE DEVIATION FROM THE OTHER BRIDGE TILES --------------------------
 #   The frozen bridge base ships five emulators and SIMH is not one of them, so
-#   this script BUILDS OPEN SIMH INTO THE TILE OVERLAY — the amiga.sh precedent.
+#   this script BUILDS OPEN SIMH INTO THE STATION OVERLAY — the amiga.sh precedent.
 #   Nothing else is needed: the base already carries gcc, make, git, libsdl2-dev,
 #   libpng-dev and libpcre2-dev, so `make pdp11` compiles with -DUSE_DISPLAY
 #   -DHAVE_LIBSDL -DUSE_SIM_VIDEO out of the box, in 90 s. docs/guests/gt40.md
@@ -36,7 +36,7 @@
 #   glass only WHILE the button is held, at the position carried by that same
 #   event. A press IS the gesture; there is no hover.
 #
-# ---- MEASUREMENTS THIS SCRIPT ENCODES (all taken on the box, 2026-08-09) -----
+# ---- MEASUREMENTS THIS SCRIPT ENCODES (all taken on labhost, 2026-08-09) -----
 #   * `set vt crt=vr17` + `set vt hspace=narrow` — with vr14 the menu column is
 #     clipped mid-word (ALTITUD, FUEL LEF). vr17 at scale=1 is a fixed 1024x1024
 #     SDL window; xwininfo reports it at 1024x1024+128+0 on a 1280x1024 root, the

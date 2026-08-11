@@ -5,7 +5,7 @@
 # Adding a station to the registry is the easy half. The other half is a scatter of
 # places the generator does not write, and every one of them has been forgotten
 # at least once: the UI scene bindings, the poster prose, the hero image, the
-# keyboard map, the pacing knobs, the golden snapshot, the operator CLI matrix.
+# keyboard map, the pacing knobs, the checkpoint, the operator CLI matrix.
 # The MPF-II shipped to `lifecycle: production` missing several, and each was
 # found by looking at the exhibit and noticing it was wrong.
 #
@@ -13,7 +13,7 @@
 # It is the "am I done?" command, and it is meant to be run BEFORE claiming so.
 #
 # Usage:  scripts/dev/tile-doctor.sh <tile-id> [--live]
-#           --live   also check the box: service state, tile.env, golden, labctl
+#           --live   also check labhost: service state, tile.env, checkpoint, labctl
 #
 # Exit 0 = every check passed. Non-zero = the count of failures.
 # =============================================================================

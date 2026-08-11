@@ -11,7 +11,7 @@
 #   boot, retry the black-screen hang, log in char-by-char, confirm the desktop
 #   on the REAL framebuffer, and hand back the display number.
 #
-# Run ON the box (root@192.0.2.10). Everything lives under
+# Run ON labhost (root@192.0.2.10). Everything lives under
 # /data/vms/soltest/irix-park/<name>/ — never the production station tree — and
 # every kill goes through clone-guard.
 #
@@ -205,7 +205,7 @@ EOF
   # A parked desktop OUTLIVES this script (that is the whole point), so the
   # allocator's exit-release is off and the display is owned by the pidfile until
   # `stop`. The trap below still frees it if the park never reaches a desktop —
-  # a failed park used to leak its Xvfb for as long as the box stayed up.
+  # a failed park used to leak its Xvfb for as long as labhost stayed up.
   local alloc=(--screen 1280x1024x24 --no-trap --tag "park-$NAME"
     --pidfile "$D/xvfb.pid" --log "$D/xvfb.log")
   [ -n "$DISPNUM" ] && alloc+=(--display "$DISPNUM")

@@ -392,7 +392,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   },
 
   // C128: the c64 keys (Commodore reused the keyboard) plus the one thing no
-  // other station in the lineup can do. The fixture is the machine's untouched
+  // other station in the lineup can do. The scene is the machine's untouched
   // 80-column BASIC 7.0 power-on screen with the CP/M 3.0 system disk already
   // in drive 8, so its second CPU is exactly one BASIC keyword away — but only
   // if you know the keyword, which is why it is a button. The load is slow
@@ -572,7 +572,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     ], fkeyRow(1, 6)],
   },
 
-  // Sinclair QL. The fixture is the machine's own idle SuperBASIC screen, which
+  // Sinclair QL. The scene is the machine's own idle SuperBASIC screen, which
   // says nothing and offers nothing — the QL does not even print READY — so the
   // affordances have to come from here. All three macros are SuperBASIC lines
   // the machine answers immediately and visibly:
@@ -580,7 +580,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   //   MODE 4  back to the 512-pixel four-colour mode this exhibit rests in
   //   CLS     clears the command window, which is the only way to tidy up
   // F1..F5 are the QL's own function keys: F1/F2 are what the machine asks for
-  // at power-on (monitor or TV — already answered in the golden), and QL
+  // at power-on (monitor or TV — already answered in the checkpoint), and QL
   // software of the period hangs its menus off all five.
   sinclairql: {
     family: 'sinclairql',
@@ -647,10 +647,10 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
   // The ARM Evaluation System has no operating system and no application — the
   // exhibit IS its 16 KB supervisor ROM, so the keyboard is the whole exhibit
   // and these four macros are its entire guided tour. Every one of them was
-  // driven against the restored golden by framebuffer before it shipped.
+  // driven against the restored checkpoint by framebuffer before it shipped.
   // The exhibit rests INSIDE ARM BBC Basic V, not at the supervisor's `A*`
   // prompt, so this profile is BASIC's, not the supervisor's. Every button
-  // below was driven against the restored golden by framebuffer before it was
+  // below was driven against the restored checkpoint by framebuffer before it was
   // written down, and the supervisor's four commands were driven too and are
   // gone because they FAILED there:
   //   `*QUIT` / `*DIS 3000000` / `*SHOWREGS` -> "Bad command". DIS and SHOWREGS
@@ -677,7 +677,7 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
 
   // Xerox Alto. The exhibit rests at the Alto Executive, the machine's own
   // command prompt, exactly as a cold boot leaves it -- so, as on plus4, the
-  // choice of application lives HERE rather than inside the golden. Four
+  // choice of application lives HERE rather than inside the checkpoint. Four
   // buttons, in the order a visitor needs them: the disk's own directory, then
   // the three programs on it that are worth thirty seconds.
   //

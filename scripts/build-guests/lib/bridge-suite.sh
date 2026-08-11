@@ -3,10 +3,10 @@
 # build-guests/lib/bridge-suite.sh — sourceable resolver for the gradual
 # bookworm -> trixie migration of the emulator-bridge guest base.
 #
-# WHY THIS EXISTS. The lab host is Debian 13 (trixie); the shared bridge guest
+# WHY THIS EXISTS. labhost is Debian 13 (trixie); the shared bridge guest
 # base is still Debian 12 (bookworm) and ~29 stations overlay it read-only. The
 # base cannot be migrated in one shot -- every overlay would have to be rebuilt,
-# re-baked and re-accepted on the same day, and several stations need real work
+# re-captured and re-accepted on the same day, and several stations need real work
 # first (docs/lab/BRIDGE-TRIXIE-MIGRATION.md). So TWO bases coexist and each
 # station declares which one it is built on, in registry/bridge-suites.json.
 #
@@ -32,8 +32,8 @@
 #
 # OVERRIDE for experiments: set BRIDGE_SUITE=trixie in the environment to force
 # a suite for one build without editing the ledger. Intended for a clone under
-# /data/vms/soltest/ while migrating a station; never for a production re-bake --
-# the ledger and the box must agree, and scripts/dev/bridge-suite-status.sh is
+# /data/vms/soltest/ while migrating a station; never for a production recapture --
+# the ledger and labhost must agree, and scripts/dev/bridge-suite-status.sh is
 # what proves they do.
 # =============================================================================
 
@@ -46,7 +46,7 @@ bridge_suite_ledger() {
 }
 
 # _bridge_suite_query <verb> [arg…]
-# Internal. Uses python3 (always present on the box and in CI) rather than jq,
+# Internal. Uses python3 (always present on labhost and in CI) rather than jq,
 # which is not a declared dependency anywhere else in build-guests/. Verbs are
 # a fixed, explicit set -- deliberately not an eval'd expression, so a caller
 # typo is a clean "unknown verb" instead of an arbitrary lookup that silently
@@ -149,7 +149,7 @@ _bridge_suite_field() {
   _bridge_suite_query field "$suite" "$field"
 }
 
-# bridge_base_for <suite> — path of that suite's frozen base qcow2 on the box.
+# bridge_base_for <suite> — path of that suite's frozen base qcow2 on labhost.
 bridge_base_for() { _bridge_suite_field "$1" base; }
 
 # bridge_mame_chroot_for <suite> — the chroot whose glibc/libstdc++ ABI matches

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # mobile-netem — emulate the user's mobile 5G + WireGuard path for STREAMHOST
-# TRAFFIC ONLY between the lab box and dev container CT950 (osgallery-dev,
+# TRAFFIC ONLY between labhost and dev container CT950 (osgallery-dev,
 # 192.0.2.11). Chrome DevTools throttling cannot shape WebTransport/QUIC,
-# so the shaping happens here, in the kernel, on the box.
+# so the shaping happens here, in the kernel, on labhost.
 #
 # SOURCE OF TRUTH: scripts/dev/mobile-netem.sh (osgallery repo)
-# LIVE COPY:       /usr/local/bin/mobile-netem (on the lab box)
+# LIVE COPY:       /usr/local/bin/mobile-netem (on labhost)
 # These two files MUST stay byte-identical (same rule as scripts/labctl).
-# The script runs ON THE BOX as root:  ssh lab 'mobile-netem on|off|status'
+# The script runs ON labhost as root:  ssh lab 'mobile-netem on|off|status'
 #
 # EMULATED PROFILE — measured phone baseline (fast.com over 5G + WireGuard,
 # 2026-07-17): 44 Mbps down / 29 Mbps up, 42 ms unloaded latency, ~510 ms

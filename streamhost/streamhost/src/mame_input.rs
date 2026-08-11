@@ -29,11 +29,11 @@
 //!   cursor into the top-left corner to establish a known (0,0) origin;
 //! - after that each absolute client target becomes a delta from the last one.
 //!
-//! Dead reckoning requires the guest to apply the delta 1:1, so the golden's
+//! Dead reckoning requires the guest to apply the delta 1:1, so the checkpoint's
 //! `/.sgisession` runs **`xset m 1/1 0`** — NOT `xset m 0 0`, which sets a zero
 //! numerator (`acceleration: 0/1`) rather than unity. IRIX otherwise applies
 //! ~2.75x horizontal / ~1.77x vertical acceleration above a 4 px threshold,
-//! which no constant calibration can undo. Measured on golden v3 at the 4Dwm
+//! which no constant calibration can undo. Measured on checkpoint v3 at the 4Dwm
 //! desktop: 1000 px commanded -> 1000 px moved, three sweeps running.
 //!
 //! PACING is the agent's job, not ours. `hle_ps2_mouse::sample()` runs at the

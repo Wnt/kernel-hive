@@ -1,5 +1,5 @@
 #!/bin/bash
-# PHASE B swap: back up live golden, replace with the validated clean-desktop golden,
+# PHASE B swap: back up live checkpoint, replace with the validated clean-desktop checkpoint,
 # relaunch live QEMU (auto -loadvm golden). Framebuffer-gate happens AFTER this, before
 # the daemon is restarted. Reversible: the .bak path is printed.
 set -euo pipefail

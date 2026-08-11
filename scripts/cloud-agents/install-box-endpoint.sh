@@ -2,9 +2,9 @@
 # install-box-endpoint.sh — workstation-side installer for the cloud-agent
 # SSH endpoint (see docs/lab/CLOUD-AGENTS.md for the whole picture).
 #
-# It does the three things the box cannot do for itself:
+# It does the three things labhost cannot do for itself:
 #   1. fetch the `forwarder-agent` binary (Wnt/forwarder CI artifact, or a local
-#      build you point it at) and ship it to the box,
+#      build you point it at) and ship it to labhost,
 #   2. read the forwarder's shared token off the VPS (never printed, never
 #      written to the repo),
 #   3. run scripts/cloud-agents/box-endpoint-setup.sh over ssh, which installs
@@ -91,7 +91,7 @@ echo "   got it (${#TOKEN} chars, not printed)"
 
 echo "== box-side install"
 # The secrets ride in the piped script body, not in the remote argv — otherwise
-# the token would sit in the box's process list for the length of the run.
+# the token would sit in labhost's process list for the length of the run.
 {
   printf 'export CA_PUBKEY=%q CA_TOKEN=%q CA_CONTROL_HOST=%q CA_PUBLIC_PORT=%q\n' \
     "$(cat "$PUBKEY_FILE")" "$TOKEN" "$FORWARDER_HOST" "$PUBLIC_PORT"

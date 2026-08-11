@@ -1,6 +1,6 @@
 #!/bin/bash
 # win95 CLEAN-desktop offline prep (PHASE A step 1, offline portion).
-# Copies the LIVE win95 golden to a namespaced soltest clone, then OFFLINE (qemu-nbd):
+# Copies the LIVE win95 checkpoint to a namespaced soltest clone, then OFFLINE (qemu-nbd):
 #   - empty WIN.INI [windows] run= (kills the Notepad auto-launch)
 #   - clear any StartUp-folder .lnk (belt & suspenders)
 # Does NOT touch the live station. Registry (Windows-Logon) change is done GUI-side later.

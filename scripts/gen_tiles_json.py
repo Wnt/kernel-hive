@@ -2,7 +2,7 @@
 # gen_tiles_json.py — build /data/vms/streamhost/tiles.json capability matrix.
 # Seeds each station from the canonical registry's generated declaration, verifies
 # that declaration against tile.env + qemu-streamhost.sh, then adds a live HMP
-# 'info snapshots' probe (read-only). Run ON THE BOX.
+# 'info snapshots' probe (read-only). Run ON labhost.
 import argparse
 import contextlib
 import json

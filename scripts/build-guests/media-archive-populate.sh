@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # media-archive-populate.sh — seed /data/media-archive from what is ALREADY on
-# the box. Run it on the lab box (`ssh lab`), it needs /data.
+# labhost. Run it on labhost (`ssh lab`), it needs /data.
 #
 # The point of this pass is not tidiness, it is survival: several of these blobs
 # exist in exactly ONE place today, inside a guest image or a station directory,

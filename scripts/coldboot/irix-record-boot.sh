@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
-# irix-record-boot.sh — COMBINED record+rebake boot video for the IRIX station.
+# irix-record-boot.sh — COMBINED record+recapture boot video for the IRIX station.
 #
-# RUN ON THE BOX as root, with streamhost@irix STOPPED. The IRIX exhibit is
-# MAME (indy_4610), not QEMU: record-boot.sh's dbus tap and savevm/loadvm bake
+# RUN ON labhost as root, with streamhost@irix STOPPED. The IRIX exhibit is
+# MAME (indy_4610), not QEMU: record-boot.sh's dbus tap and savevm/loadvm capture
 # do not exist here. What DOES exist is the fb.shm framebuffer mapping the
 # patched MAME publishes (wire format + seqlock read protocol:
 # streamhost/streamhost/src/capture/shm.rs; python reader precedent:
-# scripts/build-guests/irix/irix-bench/shmpng.py) and the (savestate, disk) golden
+# scripts/build-guests/irix/irix-bench/shmpng.py) and the (savestate, disk) checkpoint
 # that scripts/build-guests/irix/irix-savestate/bake-golden.sh captures inside a
 # pause window.
 #
-# So the recording RIDES a bake. The sampler beside this script streams fb.shm
+# So the recording RIDES a capture. The sampler beside this script streams fb.shm
 # as constant-canvas BGRA into the house §6.1 encode (params byte-for-byte from
 # scripts/coldboot/record-boot.sh) while bake-golden.sh cold-boots the
 # production configuration and freezes it at the login chooser. The clip's
 # final frames and the instant-restore savestate are the SAME paused
 # framebuffer, so the recorded-video -> live-stream seam is exact BY
 # CONSTRUCTION — no SSIM tolerance, no re-shoot on drift. The ~120 s settle
-# tail the bake sleeps before PAUSE is dead footage; trim-boot.sh removes it
+# tail the capture sleeps before PAUSE is dead footage; trim-boot.sh removes it
 # afterwards while keeping the final GOP verbatim, so the trimmed clip still
 # ends on the exact savestate frame.
 #
 #   Usage: irix-record-boot.sh            (~8-10 min: ~340 s boot + 120 s settle)
-#   Env:   RIG           dir holding the deployed bake rig (bake-golden.sh)
+#   Env:   RIG           dir holding the deployed capture rig (bake-golden.sh)
 #                        [default /data/vms/soltest/irix-ss44/rig]
 #          IRIX_SHM_TAP  the fb.shm sampler [default: sibling irix-shm-tap.py]
 #          REC_CPUS / BAKE_CPUS  core pins [4,12 / 6,14] — disjoint on purpose:
@@ -47,7 +47,7 @@ die() {
 }
 
 # ── preflight: refuse loudly, never work around ──────────────────────────────
-# The bake owns the station's tap networking + fb.shm path. Do NOT stop the
+# The capture owns the station's tap networking + fb.shm path. Do NOT stop the
 # service ourselves — someone may be mid-measurement (AGENTS.md).
 if systemctl is-active --quiet streamhost@irix.service; then
   echo "streamhost@irix is ACTIVE — the bake needs the tap free. Stop it first:" >&2
@@ -74,7 +74,7 @@ mkdir -p "$D"
 # ── teardown on EVERY exit — part of "done" (AGENTS.md) ──────────────────────
 # sampler/ffmpeg are OUR helper children, not emulators: plain kill by THEIR
 # pidfiles (the bake-golden.sh watchdog pattern), truncate for idempotence.
-# The bake kills its own MAME through clone-guard on every exit; --keep keeps
+# The capture kills its own MAME through clone-guard on every exit; --keep keeps
 # only the DIRECTORY — so the clone needs no killing here, only verification.
 teardown() {
   local rc=$? pf pid
@@ -106,16 +106,16 @@ teardown() {
 }
 trap teardown EXIT INT TERM
 
-# ── recorder first, bake second: the pre-boot black lead-in belongs on tape ──
+# ── recorder first, capture second: the pre-boot black lead-in belongs on tape ──
 # Encode is the house §6.1 line from record-boot.sh (single video pipe — this
 # station has no audio path, hence -an), fed fixed-size BGRA through a fifo. The
-# sampler polls for $CLONE/fb.shm (it does not exist until the bake's launcher
+# sampler polls for $CLONE/fb.shm (it does not exist until the capture's launcher
 # starts MAME), emits black until the first valid frame, and takes tear-free
 # seqlock reads per shm.rs (seq even + unchanged around the copy, bounded
 # retries).
 # || die: no `set -e` here, and a missing fifo would NOT fail the pipeline —
 # the sampler's `>"$FIFO"` redirect would create a REGULAR file and write raw
-# BGRA at ~158 MB/s for the whole ~9 min bake before [ -s "$MP4" ] finally
+# BGRA at ~158 MB/s for the whole ~9 min capture before [ -s "$MP4" ] finally
 # noticed.
 mkfifo "$FIFO" || die "mkfifo failed: $FIFO"
 XPARAMS="keyint=15:min-keyint=15:no-scenecut=1:bframes=0:rc-lookahead=0"
@@ -132,7 +132,7 @@ date +%s.%N >"$D/video_t0"
 say "recorder up (sampler $(cat "$D/sampler.pid"), ffmpeg $(cat "$D/ffmpeg.pid")) -> $MP4"
 
 # ── audio capture: the PROM chime is real PCM from the emulated HAL2 ─────────
-# With the audio arm live (IRIX_AUDIO=on in tile.env), the bake's launcher
+# With the audio arm live (IRIX_AUDIO=on in tile.env), the capture's launcher
 # creates $CLONE/audio.fifo and MAME's SDL disk driver writes S16LE 2ch 48k
 # into it continuously from sound init. Here ffmpeg is the fifo's consumer (the
 # daemon never attaches to a clone). Two-pipe house pattern (record-boot.sh
@@ -160,7 +160,7 @@ with open(fifo, "rb") as f, open(out, "wb") as o:
     while True:
         buf = f.read(CHUNK)
         if not buf:
-            break  # writer gone (MAME killed at bake teardown)
+            break  # writer gone (MAME killed at capture teardown)
         if first:
             open(t0f, "w").write(f"{time.time():.6f}\n")
             first = False
@@ -175,7 +175,7 @@ PY
 ) >/dev/null 2>&1 &
 echo $! >"$D/audcap.pid"
 
-# ── the bake IS the boot driver ──────────────────────────────────────────────
+# ── the capture IS the boot driver ──────────────────────────────────────────────
 say "running the bake (cold boot ~340 s, settle, PAUSE + SAVEST, install)"
 if ! IRIX_BAKE_DIR="$CLONE" bash "$BAKE" --state golden --cpus "$BAKE_CPUS" --keep \
   2>&1 | tee "$D/bake.log"; then
@@ -195,7 +195,7 @@ wait "$(cat "$D/ffmpeg.pid")" 2>/dev/null || true
 [ -s "$MP4" ] || die "recorder produced no video (see $D/ffmpeg.log + $D/sampler.log)"
 
 # ── audio finalize + mux (skip cleanly if the audio arm was off) ─────────────
-# The bake killed MAME, so the fifo writer is gone; stop the capture helper and
+# The capture killed MAME, so the fifo writer is gone; stop the capture helper and
 # mux if PCM arrived. Offset = first-PCM-byte wall time minus video-start wall
 # time: SDL opens the fifo at MAME sound init, seconds into the video's black
 # lead-in, and both clocks are this host's. -c copy on both streams; -shortest
@@ -223,7 +223,7 @@ fi
 ffmpeg -hide_banner -y -sseof -0.3 -i "$MP4" -update 1 "$D/last.png" \
   >/dev/null 2>&1 || die "last-frame extract failed"
 POSTER_SRC="$D/last.png"
-[ -s "$CLONE/boot.png" ] && POSTER_SRC="$CLONE/boot.png" # bake's chooser shot
+[ -s "$CLONE/boot.png" ] && POSTER_SRC="$CLONE/boot.png" # capture's chooser shot
 
 # ── stage (conventions: record-boot.sh; downstream stages are file-only) ─────
 mkdir -p "$STAGE"

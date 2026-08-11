@@ -8,10 +8,10 @@
 # another had already hit. 25 stations remain, so it is a script now: one
 # invocation per station, plus a human looking at two screenshots.
 #
-# Everything runs on the box over `ssh lab` (the only door). The nine steps
+# Everything runs on labhost over `ssh lab` (the only door). The nine steps
 # announce themselves as "N/9", and the two wave-1 traps are explained at the
 # step that handles them — 4/9 the stale SSH host key, 7/9 the builders that
-# print the bake commands instead of baking. Three things to know first:
+# print the capture commands instead of capturing. Three things to know first:
 #
 #   * It does NOT claim visual acceptance, and cannot. It prints the BEFORE and
 #     AFTER PNGs and says a human must compare them: the failure this migration
@@ -118,11 +118,11 @@ die() {
 }
 
 # box_ro <cmd…> — read-only probe. ALWAYS runs, including under --dry-run: the
-# plan is only worth reviewing if its facts came off the real box.
+# plan is only worth reviewing if its facts came off real labhost.
 # shellcheck disable=SC2029 # every caller quotes its own %q substitutions
 box_ro() { ssh "${SSH_OPTS[@]}" "$LAB" "$@"; }
 
-# box_sh <label> <program> [arg…] — run a bash program on the box. Mutating, so
+# box_sh <label> <program> [arg…] — run a bash program on labhost. Mutating, so
 # --dry-run prints the program verbatim instead of running it.
 box_sh() {
   local label="$1" prog="$2"

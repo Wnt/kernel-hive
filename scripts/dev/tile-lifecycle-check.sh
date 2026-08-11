@@ -1,6 +1,6 @@
 #!/bin/bash
 # tile-lifecycle-check.sh <tile> — assert that `systemctl stop streamhost@<tile>`
-# leaves NOTHING behind. Run ON the box as root.
+# leaves NOTHING behind. Run ON labhost as root.
 #
 # Why this exists. The IRIX station's liveness watchdog was found alive after
 # `systemctl stop streamhost@irix`, still holding a relaunch budget — i.e. the

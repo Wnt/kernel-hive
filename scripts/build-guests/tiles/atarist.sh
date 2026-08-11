@@ -72,8 +72,8 @@ APP_WORK="${TILE_DIR}/app-build"
 #   * eckhardkruse.net — the author's own site. Supplies Ballerburg + sources.
 #   * atarimania.com/pgedump.awp?id=31902 — an opaque numeric id, not a filename.
 #     Supplies Pacman for GEM 0.2.5.
-# The only copies that exist on the box are the build cache at $APP_CACHE, which
-# is inside a TILE directory rather than an asset location. They are declared in
+# The only copies that exist on labhost are the build cache at $APP_CACHE, which
+# is inside a STATION directory rather than an asset location. They are declared in
 # docs/lab/ASSETS-MANIFEST.md §2 and checked by check-assets.sh; they are pending
 # population into the shared media cache. Do not clean $APP_CACHE.
 AIM_ZIP=ART-3488.zip

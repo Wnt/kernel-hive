@@ -13,7 +13,7 @@
 #   clientcmd.sh tail                tail -f the telemetry JSONL
 #   clientcmd.sh log <tile>          last 200 telemetry events for one station (jq)
 #
-# Runs ON the box (token + files live there). Run from anywhere else and it
+# Runs ON labhost (token + files live there). Run from anywhere else and it
 # re-execs itself over `ssh lab` transparently, so both of these work:
 #   ssh lab '/data/vms/streamhost/serve/clientcmd.sh snapshot amiga'
 #   scripts/serve/clientcmd.sh verbose '*'
@@ -34,7 +34,7 @@ usage() {
   exit 2
 }
 
-# No token file here and ssh fallback not disabled -> we are not on the box:
+# No token file here and ssh fallback not disabled -> we are not on labhost:
 # pipe this very script over `ssh lab` with the same (safely re-quoted) args.
 if [ ! -r "$TOKEN_FILE" ] && [ "${CLIENTCMD_NO_SSH:-}" != "1" ]; then
   exec ssh lab "CLIENTCMD_NO_SSH=1 OSG_ADMIN_EVAL=$(printf '%q' "$OSG_ADMIN_EVAL") bash -s -- $(printf '%q ' "$@")" <"$0"

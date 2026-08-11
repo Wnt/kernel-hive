@@ -333,7 +333,7 @@ export default function StreamView({
     fsRef, lockedRef, wantControlRef, vcursorRef, lastGuestRef, unknownErrRef, unadjustedRef,
   });
 
-  // ---- RESTORE TO GOLDEN (streamhost only) ---------------------------------
+  // ---- RESTORE TO CHECKPOINT (streamhost only) ---------------------------------
   const { restoreToGolden } = useRestoreFlow({
     osId: os.osId, restoreState, setRestoreState,
     beginRestoreReconnect, finishRestoreReconnect, restoreTimer,
@@ -457,7 +457,7 @@ export default function StreamView({
             )}
             {bootVideo ? (
               // BOOT-VIDEO stations: replay the recorded power-on clip while the live
-              // golden connects behind it, then swap invisibly on the first live
+              // checkpoint connects behind it, then swap invisibly on the first live
               // frame. Takes the overlay slot ahead of coldBoot + the spinner.
               <BootVideoOverlay
                 src={bootManifest?.mp4 ?? bootVideo}

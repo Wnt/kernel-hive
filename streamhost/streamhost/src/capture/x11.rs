@@ -6,7 +6,7 @@
 // KVM guest but runs fine in an LXC container / on the host). Those stations render
 // into an Xvfb; this module grabs that X server's root window straight into the
 // same `FrameState.fb` BGRA copy-path the encoder already consumes, so the whole
-// encode/transport/SPA stack is reused unchanged.
+// encode/transport/UI stack is reused unchanged.
 //
 // Design (proven by the x11rb spike, docs/history/irix-tile-issue20-handoff.md):
 //   * pure-Rust x11rb, no C libraries.

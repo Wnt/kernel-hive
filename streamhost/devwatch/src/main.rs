@@ -1,15 +1,15 @@
-//! devwatch — the dev-mode watcher for the tile registry's single-source files.
+//! devwatch — the dev-mode watcher for the station registry's single-source files.
 //!
 //! Watches the hand-written sources (registry/tiles, registry/posters,
 //! registry-v1.json, templates, streamhost/tiles fixtures, spa/src) and, on
 //! every debounced change, runs `tiles-registry.py generate` (which validates
 //! first). Only when the change PARSES does anything deploy: runtime manifests
 //! (gallery-manifest.json, poster-docs.json, tiles.json, golden-manifest.json)
-//! publish to the box via `serve-https-spa.sh manifests`; SPA-compiled outputs
+//! publish to labhost via `serve-https-spa.sh manifests`; UI-compiled outputs
 //! request (or, with --spa-autodeploy, run) a Vite build + deploy.
 //!
-//! Never automated: per-tile re-emit and `systemctl restart streamhost@<tile>`
-//! — a daemon restart resets a golden-fixture tile, so fixture edits print the
+//! Never automated: per-station re-emit and `systemctl restart streamhost@<tile>`
+//! — a daemon restart resets a checkpoint-scene station, so scene edits print the
 //! recipe instead of applying it.
 
 use std::collections::BTreeSet;
@@ -23,7 +23,7 @@ use clap::Parser;
 use notify::{EventKind, RecursiveMode};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, DebouncedEvent};
 
-/// Generated outputs that `serve-https-spa.sh manifests` publishes to the box.
+/// Generated outputs that `serve-https-spa.sh manifests` publishes to labhost.
 const MANIFEST_OUTPUTS: &[&str] = &[
     "scripts/serve/tiles.json",
     "scripts/serve/webroot/gallery-manifest.json",
@@ -31,7 +31,7 @@ const MANIFEST_OUTPUTS: &[&str] = &[
     "scripts/serve/golden-manifest.json",
 ];
 
-/// Generated outputs compiled into the SPA bundle: changing them needs a build.
+/// Generated outputs compiled into the UI bundle: changing them needs a build.
 const SPA_OUTPUTS: &[&str] = &[
     "spa/src/three/archetypeRegistry.ts",
     "spa/src/mock/manifest.json",
@@ -52,7 +52,7 @@ struct Args {
     /// then the main checkout's when running from a worktree)
     #[arg(long)]
     local_env: Option<PathBuf>,
-    /// Also run `serve-https-spa.sh build` + `deploy` when SPA sources change
+    /// Also run `serve-https-spa.sh build` + `deploy` when UI sources change
     #[arg(long)]
     spa_autodeploy: bool,
     /// Validate + regenerate only; never run a deploy command

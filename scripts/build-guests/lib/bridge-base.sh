@@ -11,7 +11,7 @@
 # + fullscreen flags). Build it once, freeze it, fan out.
 #
 # ---- TWO SUITES COEXIST (the bookworm -> trixie migration) ------------------
-#  The lab host is Debian 13 (trixie); the base that 28 live overlays back onto
+#  labhost is Debian 13 (trixie); the base that 28 live overlays back onto
 #  is still Debian 12 (bookworm) and is FROZEN. The migration is GRADUAL: this
 #  script builds EITHER base, selected with `--suite <bookworm|trixie>`, and
 #  every suite-dependent value (base path, genericcloud URL, package deltas)
@@ -35,7 +35,7 @@
 # ---- AUTOMATION HONESTY (the hard-won, non-obvious recipe) ------------------
 #  The build is deterministic: Debian genericcloud qcow2 + a cloud-init NoCloud
 #  seed ISO drives ALL provisioning. But three gotchas cost real debugging and
-#  are baked in here so an NVMe rebuild "just works":
+#  are captured in here so an NVMe rebuild "just works":
 #
 #  1. NIC / KERNEL. The genericcloud image ships the trimmed `linux-image-cloud`
 #     kernel which has NO e1000 driver (virtio only). The streamhost station device
@@ -201,7 +201,7 @@ trap cleanup EXIT
 # An existing base marked frozen in the ledger is the read-only backing file of
 # every overlay listed below. Rebuilding it does not "refresh" them — it makes
 # each overlay's recorded backing file describe a DIFFERENT disk, i.e. every one
-# of those stations is destroyed at once, silently, and no golden snapshot survives
+# of those stations is destroyed at once, silently, and no checkpoint survives
 # it. --force alone is a plausible typo, so it is not sufficient authority here.
 #
 # "Frozen" is BOTH declared and DERIVED. The ledger's `frozen` flag is the
@@ -379,7 +379,7 @@ write_files:
       # ---- FS-UAE (Amiga 500 station; scripts/build-guests/tiles/amiga.sh). In Debian main.
       # Installed WITH recommends so it pulls libopenal (Paula audio) + mesa (llvmpipe
       # software GL for the GPU-less host). Not part of the original 4-emulator set;
-      # baked here so the amiga station needs no per-station fs-uae install on a fresh base.
+      # captured here so the amiga station needs no per-station fs-uae install on a fresh base.
       # On trixie the package has NO Recommends: at all, so mesa is named explicitly
       # in \$FSUAE_PKGS on the host side (see the package-delta note there).
       apt-get install -y ${FSUAE_PKGS} && command -v fs-uae >/dev/null && FSUAE_OK=yes || FSUAE_OK=no
@@ -450,7 +450,7 @@ write_files:
       fi
       # ---- Amiga 500 station media (scripts/build-guests/tiles/amiga.sh): Kickstart 1.3 ROM
       # + Workbench 1.3 Boot ADF. Copyrighted, free to use in this private collection — NEVER committed;
-      # baked into /opt/bridge/media/amiga/ so the amiga station needs no per-station fetch.
+      # captured into /opt/bridge/media/amiga/ so the amiga station needs no per-station fetch.
       mkdir -p ${MEDIA_DIR}/amiga
       if [ ! -f ${MEDIA_DIR}/amiga/kick13.rom ]; then
         curl -fsSL --retry 3 --max-time 180 -o /tmp/amiga-kick.zip "${AMIGA_KICK_URL}" \\
@@ -469,7 +469,7 @@ write_files:
       # script already writes into \${MEDIA_DIR}/LICENSES as prose. Asserting them
       # here turns that prose into a gate: a truncated download, an HTML error
       # page saved as a .rom, or a mirror that silently started serving a
-      # different Kickstart revision all fail the build instead of being baked
+      # different Kickstart revision all fail the build instead of being captured
       # into a frozen base that 28 overlays then depend on.
       MEDIA_OK=yes
       check_media() { # <path> <md5> <label>

@@ -351,7 +351,7 @@ async fn apply_move_abs(
         .await
     } else {
         // FIX 2: Rel (PS/2, no usb-tablet) guests: convert abs -> relative delta.
-        // FIX 4: HOME on seed. The guest cursor after a (golden) reset sits at
+        // FIX 4: HOME on seed. The guest cursor after a (checkpoint) reset sits at
         // an UNKNOWN position, but naively seeding lx/ly to the first client
         // target assumes the guest cursor already matches it — leaving a fixed
         // offset that confines the cursor to a sub-rectangle (audited: win95/

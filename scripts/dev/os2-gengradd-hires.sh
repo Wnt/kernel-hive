@@ -26,7 +26,7 @@
 #   os2-gengradd-hires.sh run  <clone-dir> [cold|golden]   # launch the clone
 #   os2-gengradd-hires.sh shot <clone-dir> [name]          # screendump -> PNG
 #
-#   Run it ON the box. <clone-dir> MUST live under /data/vms/soltest (clone-guard
+#   Run it ON labhost. <clone-dir> MUST live under /data/vms/soltest (clone-guard
 #   refuses anything else). `prep` needs the guest's IBM GRADD files already
 #   staged in C:\IBMGRADD — extract them in-guest with the MCP2 CD mounted:
 #     UNPACK2 E:\OS2IMAGE\DISP_1\VGA     C:\IBMGRADD     (GENPMI, BVHSVGA, VIDEOPMI…)

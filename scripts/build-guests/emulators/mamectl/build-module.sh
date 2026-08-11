@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build the ctlsock module ON THE BOX, in the pinned trixie chroot: apply the
+# Build the ctlsock module ON labhost, in the pinned trixie chroot: apply the
 # full patch stack, build, and restore the tree unconditionally -- a failed
 # chain that leaves the stack applied poisons the next run with "TREE NOT
 # PRISTINE".
@@ -12,7 +12,7 @@ set -eo pipefail
 # The chroot below runs in a PRIVATE mount namespace: nothing it mounts is
 # visible to the host, and no unmount can propagate out (the 2026-08-10
 # "PTY allocation failed" incident — scripts/lib/chroot-guard.sh). This script
-# is also copied to the box, so the guard is loaded from the repo if it is
+# is also copied to labhost, so the guard is loaded from the repo if it is
 # beside us and from /usr/local/bin/chroot-guard otherwise.
 CHROOT_GUARD_LIB="$(dirname "${BASH_SOURCE[0]}")/../../../lib/chroot-guard.sh"
 # shellcheck disable=SC1090,SC1091
@@ -36,7 +36,7 @@ restore() {
 }
 trap restore EXIT
 
-# shellcheck source=/dev/null  # lives on the box, beside the patches
+# shellcheck source=/dev/null  # lives on labhost, beside the patches
 . "$PATCHES/irix-mame-stack.sh"
 irix_mame_apply "$T" "$PATCHES" || {
   echo "STACK APPLY FAILED"

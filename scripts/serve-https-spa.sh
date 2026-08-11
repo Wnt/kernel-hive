@@ -114,21 +114,21 @@ deploy() {
   $SSH "cat > $CA_SH && chmod +x $CA_SH" <"$REPO/scripts/serve/gen-local-ca.sh"
   # The server shells out to this for POST /restore/<osId>, so it has to travel
   # with the server that calls it — it is a tracked box-sync pair, and leaving it
-  # out of deploy meant a fix in the repo silently never reached the box.
+  # out of deploy meant a fix in the repo silently never reached labhost.
   $SSH "cat > $RESET_SH && chmod +x $RESET_SH" <"$REPO/scripts/serve/reset-tile.sh"
   # The public gallery's plane: the auth package the server imports, the
   # sign-in/people pages it serves, and the lockfile + venv builder its unit
   # runs as ExecStartPre. These travel WITH the server for the same reason
   # reset-tile.sh does — the server fails to import half a deploy.
   # Replaced wholesale, not merged: a module dropped from the repo must not
-  # linger on the box, where the package would happily keep importing it.
+  # linger on labhost, where the package would happily keep importing it.
   msg "shipping the auth plane"
   tar czf - -C "$REPO/scripts/serve" --exclude __pycache__ auth authui |
     $SSH "set -e; rm -rf $SERVE_DIR/auth $SERVE_DIR/authui; tar xzf - -C $SERVE_DIR"
   $SSH "cat > $SERVE_DIR/requirements.txt" <"$REPO/scripts/serve/requirements.txt"
   $SSH "cat > $SERVE_DIR/requirements.in" <"$REPO/scripts/serve/requirements.in"
   $SSH "cat > $SERVE_DIR/sync-venv.sh && chmod +x $SERVE_DIR/sync-venv.sh" <"$REPO/scripts/serve/sync-venv.sh"
-  # The guarded account reset. It must live ON the box, because the failure mode
+  # The guarded account reset. It must live ON labhost, because the failure mode
   # it exists to prevent is someone reaching for `rm auth-state.json` there.
   $SSH "cat > $SERVE_DIR/reset-auth.sh && chmod +x $SERVE_DIR/reset-auth.sh" <"$REPO/scripts/serve/reset-auth.sh"
   $SSH "cat > $SERVE_DIR/check-stream-tickets.py" <"$REPO/scripts/serve/check-stream-tickets.py"

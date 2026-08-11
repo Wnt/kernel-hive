@@ -1,6 +1,6 @@
 // Per-station runtime configuration for a single streamhost daemon.
 //
-// One streamhost process serves exactly ONE QEMU/tile (one QMP socket, one UDP
+// One streamhost process serves exactly ONE QEMU/station (one QMP socket, one UDP
 // port). Config is read from CLI flags and/or environment (systemd/compose
 // friendly). Positional arg 0 is still the QMP socket for prototype back-compat.
 //
@@ -282,14 +282,14 @@ pub struct Config {
     /// SH_DAMAGE_FULL_PCT, clamped 1..100.
     pub damage_full_pct: u8,
     /// Idle guest auto-pause (SH_IDLE_PAUSE_SECS): seconds with ZERO
-    /// WebTransport sessions before the guest's vCPUs are frozen with QMP
+    /// WebTransport sessions before the guest's vCPUs are paused with QMP
     /// `stop`; the next accepted session issues `cont` + a forced keyframe so
     /// the joiner sees the live screen sub-second. 0 = disabled; nonzero is
     /// clamped to >= 5 (anti-thrash). Default 60. Pause != loadvm — guest
     /// RAM/state is untouched, so cold-boot-only stations are safe. Per-station
     /// opt-out: SH_IDLE_PAUSE_SECS=0 in tile.env. See idle.rs / docs/IDLE-PAUSE.md.
     pub idle_pause_secs: u64,
-    /// Process to freeze on a NON-QEMU station (SH_IDLE_PAUSE_PIDFILE, env-only),
+    /// Process to pause on a NON-QEMU station (SH_IDLE_PAUSE_PIDFILE, env-only),
     /// which has no QMP socket to `stop`: SIGSTOP/SIGCONT that pid instead.
     /// Unset (the QEMU fleet) keeps the QMP mechanism. See idle.rs.
     pub idle_pause_pidfile: Option<String>,
@@ -300,7 +300,7 @@ pub struct Config {
     pub idle_pause_warmup_secs: u64,
     /// Guard for the pidfile above (SH_IDLE_PAUSE_PROC_MATCH, env-only): signal
     /// only when this substring is in the pid's /proc/<pid>/cmdline, so a stale
-    /// pidfile whose pid was recycled cannot freeze an unrelated process.
+    /// pidfile whose pid was recycled cannot pause an unrelated process.
     pub idle_pause_proc_match: Option<String>,
     /// Bounded per-session egress backlog (SH_SEND_MAX_BACKLOG, frames; env-only).
     /// When a session is more than this many frames ahead of the client's acked
@@ -629,7 +629,7 @@ impl Config {
             .unwrap_or(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 126)));
         let advertise_host = advertise.unwrap_or_else(|| host_ip.to_string());
         // Env-only: a shared secret on a command line is visible in `ps` to every
-        // process on the box. Empty is the same as unset (the gate stays off).
+        // process on labhost. Empty is the same as unset (the gate stays off).
         let session_key = std::env::var("SH_SESSION_KEY")
             .ok()
             .map(|s| s.trim().to_string())

@@ -736,7 +736,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             if "reset" not in row:
                 fail(errors, row, "production entry missing reset policy")
             # A station outside the edge's DNAT range is unreachable from the public
-            # gallery while looking entirely healthy on the box -- service active,
+            # gallery while looking entirely healthy on labhost -- service active,
             # ticket accepted, signalling fine, and the daemon simply never sees a
             # session. Four stations shipped that way on 2026-08-09.
             low = globals_doc["ports"]["publicRelayLow"]
@@ -1320,7 +1320,7 @@ def check_gate_lists(output_keys: list[str]) -> list[str]:
         mismatches.append(f"GENERATED_SHELL not a subset of generated outputs: {sorted(set(GENERATED_SHELL) - keys)}")
 
     # The edge's DNAT range lives in three places that must agree, and when they
-    # drift nothing on the box notices: the station is active, its ticket is
+    # drift nothing on labhost notices: the station is active, its ticket is
     # accepted, signalling is valid, and the daemon simply never sees a session.
     # registry-v1.json is the source of truth; assert the installer matches it.
     relay = json.loads((REGISTRY / "registry-v1.json").read_text())["ports"]

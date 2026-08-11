@@ -8,7 +8,7 @@
 # on the bookworm suite, Trixie once it is migrated (registry/bridge-suites.json,
 # docs/lab/BRIDGE-TRIXIE-MIGRATION.md). On bookworm the two packaged options are
 # both wrong for different reasons:
-#   * the LAB HOST's `/usr/games/mame` is Debian *trixie* 0.276 — newer, but
+#   * labhost's `/usr/games/mame` is Debian *trixie* 0.276 — newer, but
 #     linked against a glibc the Bookworm guest does not have;
 #   * Bookworm's own `mame` is 0.251 (2022), and `bookworm-backports` has no
 #     mame at all (checked 2026-08-09).

@@ -150,7 +150,7 @@ check "restore ran expected tile" win95 "$(cat "$TMP/reset-proof")"
 c=$(code -X POST "$BASE/restore/not-a-tile" "${AUTH[@]}")
 check "unknown authenticated restore -> 404" 404 "$c"
 
-# 10. Public SPA/signaling/WebRTC stay reachable without an admin token. A
+# 10. Public UI/signaling/WebRTC stay reachable without an admin token. A
 # missing generic bridge is 502, never a per-station 404 gate.
 c=$(code "$BASE/")
 check "public SPA index -> 200" 200 "$c"

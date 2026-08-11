@@ -69,7 +69,7 @@
 #   COPYRIGHT: the 1986 Amstrad permission that covers MAME's Spectrum ROMs
 #   does NOT extend here. Amstrad bought the Spectrum and QL rights only;
 #   Nine Stations Networks Ltd wrote the ZX80/ZX81 ROM and still holds it. The
-#   ROM is therefore PRESERVATION SOURCE: staged on the box, hash-recorded in
+#   ROM is therefore PRESERVATION SOURCE: staged on labhost, hash-recorded in
 #   docs/lab/ASSETS-MANIFEST.md, streamed as pixels, never committed, never
 #   served, and with no download affordance anywhere in the station.
 #
@@ -114,7 +114,7 @@ MEM=768
 
 # PRESERVATION SOURCE. Second-revision ZX81 ROM, 8 KB. Copyright Nine Stations
 # Networks Ltd (NOT covered by the Amstrad Spectrum/QL permission). Hashes
-# measured on the box 2026-08-09; the single-member extraction form is the
+# measured on labhost 2026-08-09; the single-member extraction form is the
 # archive.org trick documented in the ADD-NEW-OS playbook §3.1.
 ROM=/data/assets-staging/zx81/zx81a.rom
 ROM_URL="https://archive.org/download/MAME_0.224_ROMs_merged/zx81.zip/zx81a.rom"

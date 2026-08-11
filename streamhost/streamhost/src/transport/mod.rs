@@ -239,7 +239,7 @@ async fn handle_session(
         conn.remote_address()
     );
 
-    // AUTO-PAUSE: resume a frozen guest FIRST — before priming/keyframe work —
+    // AUTO-PAUSE: resume a paused guest FIRST — before priming/keyframe work —
     // so the joiner's forced IDR captures the live (resuming) screen. The RAII
     // guard reports the session end on every exit path below, which starts the
     // idle-pause grace clock once the last session is gone.

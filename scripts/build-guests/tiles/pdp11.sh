@@ -127,7 +127,7 @@ MEM=512
 # never committed, never served, no download affordance anywhere in the station.
 # simh.trailing-edge.com (which every howto links) has been Cloudflare-dead
 # since at least 2026-08-09; this is Don North's kit on GitHub Pages. Hashes
-# measured on the box 2026-08-09.
+# measured on labhost 2026-08-09.
 MEDIA_URL="https://ak6dn.github.io/PDP-11/2.11BSD/2.11BSD_rq.dsk.zip"
 MEDIA_ZIP_SHA=94abeca02f001619e7aa2252cb2336ffe79af0cb3fb35cbd8c14240af3125a6b
 MEDIA_DSK_SHA=2f100ee585f229fd55923e1d1c44108e72df96f649f28a31df35985e6a481805
@@ -637,7 +637,7 @@ printf '%s\n' "$TYPE_PY" >"$TYPE_DRIVER"
 chmod 755 "$TYPE_DRIVER"
 
 # ---- stage the pack ONCE, on the host, hash-gated ----------------------------
-# DEC media sourcing is fragile and the box has NO working IPv6 egress, so the
+# DEC media sourcing is fragile and labhost has NO working IPv6 egress, so the
 # curl needs -4 or it hangs 40 s on the AAAA record. The bits are staged here,
 # outside the overlay, so --force never re-fetches them.
 if [ ! -s "$STAGE/2.11BSD_rq.dsk.zip" ] ||

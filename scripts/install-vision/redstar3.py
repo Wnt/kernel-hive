@@ -221,8 +221,8 @@ class Driver:
 
     def park(self) -> None:
         # Red Star's dock auto-hides unless the absolute pointer rests at its
-        # lower reveal edge.  Bake that input state so reset visibly restores
-        # the complete menubar + wallpaper + dock fixture.
+        # lower reveal edge.  Capture that input state so reset visibly restores
+        # the complete menubar + wallpaper + dock scene.
         self.move(890, 765)
         time.sleep(3)
         frame = self.shot("fixture-pointer-parked")

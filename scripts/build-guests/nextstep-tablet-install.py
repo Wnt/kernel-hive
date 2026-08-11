@@ -13,7 +13,7 @@ SCC serial port B and feeds it the host's ABSOLUTE window coordinates whenever
 NeXTSTEP 3.3 ships that driver in /NextAdmin/InstallTablet.app, but the app is
 GUI-only: NeXTSTEP refuses a DPS connection from a telnet session ("Could not
 form connection"), so the install has to be driven through the framebuffer.
-Nothing is compiled -- the golden carries no m68k toolchain.
+Nothing is compiled -- the checkpoint carries no m68k toolchain.
 
 The driver survives `loadvm golden` (RAM + device state, not a boot). Since
 2026-08-11 it also survives a COLD boot: the reloc's own kern_loader load
@@ -360,7 +360,7 @@ def main():
     # `bTabletEnabled` across a GUEST reboot, so a rebooted guest has no driver
     # while the emulator is still routing every motion to tablet_pen_move(): the
     # cursor freezes completely and nothing can be clicked. (Same trap live: if
-    # anyone ever reboots NeXTSTEP inside the exhibit, reset the station to golden.)
+    # anyone ever reboots NeXTSTEP inside the exhibit, reset the station to checkpoint.)
     log("linking InstallTablet.app into /me")
     nextstep(
         "rm -f /me/InstallTablet.app",

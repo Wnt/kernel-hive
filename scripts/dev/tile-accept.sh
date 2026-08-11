@@ -6,24 +6,24 @@
 #   scripts/dev/migrate-tile.sh ends at "HUMAN REQUIRED" with two PNG paths, and
 #   everything after that was done by hand, differently, by each of the three
 #   agents who ran a wave on 2026-08-10. This is that tail, written down: unit,
-#   daemon health, stream-ticket acceptance, the exec channel, the golden
+#   daemon health, stream-ticket acceptance, the exec channel, the checkpoint
 #   restore, and one fresh framebuffer measured by scripts/dev/frame-compare.py.
 #
 #   The order is not arbitrary — each step also sets up the next. `labctl exec`
 #   resumes an idle-paused guest and re-proves the suite from INSIDE the
 #   production boot (not the builder's); `labctl reset` proves `loadvm golden`
 #   restores under the station's OWN qemu-streamhost.sh, which migrate-tile.sh
-#   never checks when the builder baked the golden itself (it returns at "golden
+#   never checks when the builder captured the checkpoint itself (it returns at "golden
 #   snapshot already present" — all six wave-4 stations took that branch, and the
 #   plan doc says that class "surfaces at some visitor's first reset"); and
 #   shooting AFTER that reset is what makes the AFTER frame the same KIND of
 #   frame as migrate-tile.sh's BEFORE, which is reset + settle + shot. Comparing
-#   a settled golden against a just-started unit was never a fair test.
+#   a settled checkpoint against a just-started unit was never a fair test.
 #
 # WHAT IT WILL NOT DO
 #   * It never starts a stopped station. Four kiosks are down right now and
 #     only three of them are declared anywhere (indyr4400, star, nextstep are
-#     the operator's quiesce; amiga fell over at 02:12 on 2026-08-10 with
+#     the operator's pause; amiga fell over at 02:12 on 2026-08-10 with
 #     ExecMainStatus=15). Starting someone else's stopped station corrupts a
 #     measurement campaign, and "it exists" is not "it is mine" — a station this
 #     script did not stop is a refusal, not a silent `systemctl start`.
@@ -41,7 +41,7 @@
 #   --expect WxH     require this framebuffer geometry
 #   --evidence DIR   where the PNGs are copied locally (default
 #                    ./tile-accept-evidence/<tile>)
-#   --keep           leave the box-side run directory in place
+#   --keep           leave the labhost-side run directory in place
 #   -n, --dry-run    print every command this would run, touch nothing
 #
 # exit: 0  every mechanical check passed (a human still owes the identity call)
@@ -136,7 +136,7 @@ box() { # box <command…> — a read of the box; stdout is the answer
   ssh -o ConnectTimeout=15 "$LAB" "$@"
 }
 
-# --- 0. the box has to be there --------------------------------------------
+# --- 0. labhost has to be there --------------------------------------------
 if [ "$DRY" -eq 0 ] && ! ssh -o ConnectTimeout=8 -o BatchMode=yes "$LAB" true 2>/dev/null; then
   die "ssh $LAB unreachable — NOTHING was verified (this is not a pass)" 3
 fi
@@ -332,7 +332,7 @@ else
     fi
     ARGS+=(--label "$TILE")
     [ -z "$EXPECT" ] || ARGS+=(--expect "$EXPECT")
-    # The frames are on the box and the box has numpy+Pillow, so the analysis
+    # The frames are on labhost and labhost has numpy+Pillow, so the analysis
     # runs where the pixels are; the script travels on stdin, never on argv.
     REMOTE_ARGS="$(printf ' %q' "${ARGS[@]}")"
     FRAME_OUT="$(ssh -o ConnectTimeout=30 "$LAB" "python3 -${REMOTE_ARGS}" <"$COMPARE" 2>&1)"

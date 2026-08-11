@@ -272,7 +272,7 @@ export const EXHIBIT_IDENTITIES = {
   },
   // Anthracite plastic, the colour East German industrial equipment was
   // actually moulded in, and nothing like the beige of every Western machine
-  // beside it. The accent is not chosen: a ppmhist of the station's own golden
+  // beside it. The accent is not chosen: a ppmhist of the station's own checkpoint
   // frame contains exactly TWO colours, RGB(0,0,160) and white, so #0000A0 is
   // literally the only colour this exhibit emits.
   kc854: {
@@ -294,10 +294,10 @@ export const EXHIBIT_IDENTITIES = {
   },
   // Acorn's cream-beige again, because the case IS a BBC Micro — but the accent
   // is not bbcmicro's red function-key row, it is SAMPLED. A ppmhist of this
-  // station's baked golden contains exactly three colours: black, white, and pure
+  // station's captured checkpoint contains exactly three colours: black, white, and pure
   // RGB(0,0,255), the reverse-video teletext field behind the ARM supervisor's
   // `A*` prompt. That blue is literally the only colour the exhibit emits, and
-  // it is also the bake-time identity gate — a plain BBC Micro banner has zero
+  // it is also the capture-time identity gate — a plain BBC Micro banner has zero
   // blue pixels — so it is the honest badge colour for "there is an ARM on the
   // other end of the Tube".
   armeval: {

@@ -8,7 +8,7 @@
 # host" is a per-filesystem question with three answers, not two — rw, ro, and
 # not-at-all — and the middle one is the dangerous one. A partial or buggy write
 # to an exotic filesystem (Amiga OFS/FFS, Haiku BFS, Solaris UFS, ODS-5) is
-# WORSE than no write: it corrupts a golden that took hours to bake, and the
+# WORSE than no write: it corrupts a checkpoint that took hours to capture, and the
 # corruption surfaces later, on a visitor reset. So the matrix is measured, and
 # the mutate path refuses anything not positively verified.
 #
@@ -129,7 +129,7 @@ boot_medium_note() {
 # verdict <fstype> — can we mount this read-write from this host, at all?
 # Derived from /proc/filesystems + the modules present + the userspace helpers
 # installed. Kept deliberately conservative: anything not positively known good
-# is NOT-SUPPORTED, because the cost of being wrong is a corrupted golden.
+# is NOT-SUPPORTED, because the cost of being wrong is a corrupted checkpoint.
 verdict() {
   case "$1" in
     ext2 | ext3 | ext4) echo "MOUNTABLE-RW|kernel ext4" ;;

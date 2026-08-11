@@ -117,7 +117,7 @@ pub(super) async fn rss_guard(
     );
     loop {
         tokio::time::sleep(std::time::Duration::from_secs(3)).await;
-        // Re-read the pidfile every poll: `labctl reset`/tile restarts can
+        // Re-read the pidfile every poll: `labctl reset`/station restarts can
         // replace QEMU under us. A changed pid means the old baseline is
         // meaningless — re-baseline from a fresh read. A vanished pidfile or
         // /proc entry means the station is being torn down: stop the guard

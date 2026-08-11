@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build-deploy.sh — build streamhost on the lab box and deploy it safely.
+# build-deploy.sh — build streamhost on labhost and deploy it safely.
 #
 # Ordinary (legacy-unit) operation:
 #   build-deploy.sh                 release build + restart helenos only
@@ -272,8 +272,8 @@ sync_workspace() {
   rsync -a --checksum --itemize-changes -e "ssh -o ConnectTimeout=15" \
     "$REPO_CONFIG" "${LAB}:${BOX_BUILD}/.cargo/config.toml" ||
     die "Cargo config rsync failed"
-  # The mirror just made the box source identical to the repo's, so the marker's
-  # premise ("the box may hold changes the repo has not seen") is satisfied by
+  # The mirror just made labhost's source identical to the repo's, so the marker's
+  # premise ("labhost may hold changes the repo has not seen") is satisfied by
   # definition — re-stamp it. Without this the guard fires on the NEXT run of
   # this same script with DIGEST_MISMATCH though nothing was at risk: four manual
   # re-stamps in one session (2026-08-05), which teaches the next agent to

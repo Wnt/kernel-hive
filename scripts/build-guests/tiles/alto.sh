@@ -42,7 +42,7 @@
 #   document templates. (xmsmall.dsk, which the study used, has neither Bravo
 #   nor Draw and greets the visitor with a USER.CM warning.)
 #
-# ---- MEASUREMENTS THIS SCRIPT ENCODES (on the box, 2026-08-10) --------------
+# ---- MEASUREMENTS THIS SCRIPT ENCODES (on labhost, 2026-08-10) --------------
 #   * Key pacing: 20-character line, explicit press/release pairs — 16/16 ms
 #     landed 15 of 20; 33/33, 66/66 and 120/120 all landed 20 of 20. One Alto
 #     field is 33 ms, so the station ships two fields (66/66) in tile.env.

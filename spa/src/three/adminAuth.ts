@@ -13,7 +13,7 @@ export function getAdminToken(): string | null {
   }
 }
 
-// Only the console operator-login helpers below use these now (golden restore no
+// Only the console operator-login helpers below use these now (checkpoint restore no
 // longer needs a token), so they stay module-local — exporting them would trip
 // knip's unused-export check.
 function requestAdminToken(): string | null {

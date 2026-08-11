@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Capture live exhibit framebuffers into the poster asset tree.
-# Whatever the station is showing is the poster. No staging, no reset-to-golden
+# Whatever the station is showing is the poster. No staging, no reset-to-checkpoint
 # first — the live framebuffer is the image.
 set -euo pipefail
 

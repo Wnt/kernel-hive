@@ -65,12 +65,12 @@
 #     --force        re-download even if valid artifacts are present
 #     --no-verify    skip the live-station framebuffer screenshot check
 #     --host H       Proxmox host for the live-apply step (default from $LAB_HOST
-#                    or root@192.0.2.10); "" = local (run ON the box)
+#                    or root@192.0.2.10); "" = local (run ON labhost)
 #     -h|--help      show this header
 #
 # NOTE: this script is written to run ON the Proxmox host (it drives `pct exec
 # 110 -- docker ...`). When run from a workstation, set --host and it will ssh.
-# The reference commands below assume it runs on the box.
+# The reference commands below assume it runs on labhost.
 # =============================================================================
 set -euo pipefail
 

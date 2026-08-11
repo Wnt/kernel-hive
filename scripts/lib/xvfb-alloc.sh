@@ -52,7 +52,7 @@
 # if N is not free you get a non-zero exit, never someone else's server.
 #
 # SOURCE OF TRUTH: scripts/lib/xvfb-alloc.sh in the osgallery repo, kept
-# byte-identical to the box copy /usr/local/bin/xvfb-alloc (box-sync pair, see
+# byte-identical to the labhost copy /usr/local/bin/xvfb-alloc (box-sync pair, see
 # scripts/README.md). Re-sync after any edit.
 
 # ---- configuration ---------------------------------------------------------

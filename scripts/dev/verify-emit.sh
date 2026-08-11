@@ -9,16 +9,16 @@
 # This checker is the definition of done for launcher-emit completeness: run it
 # after ANY change to the manifest, the emitter, or a tracked per-station file.
 #
-# What it does (the box's /data is treated as READ-ONLY; only /tmp is written):
+# What it does (labhost's /data is treated as READ-ONLY; only /tmp is written):
 #   1. rsync the repo's streamhost/{scripts,tiles,tiles-manifest.sh} to
 #      $HOST:/tmp/verify-emit.<id>/streamhost/   (NEVER into live paths)
-#   1b. copy the BOX's /data/kernel-hive/registry/local.env (if present) into
+#   1b. copy labhost's /data/kernel-hive/registry/local.env (if present) into
 #      the kit as registry/local.env, so the emitter resolves the operator's
 #      real SH_HOST_IP/SH_ADVERTISE_HOST exactly as a production emit does.
 #      Without it every tile.env diffs on the two address lines and the gate
-#      was blind (2026-08-11). No secret leaves the box: the file is copied
-#      box-side into the /tmp scratch kit the EXIT trap removes.
-#   2. on the box: tiles-manifest.sh --out-root /tmp/verify-emit.<id>/out
+#      was blind (2026-08-11). No secret leaves labhost: the file is copied
+#      labhost-side into the /tmp scratch kit the EXIT trap removes.
+#   2. on labhost: tiles-manifest.sh --out-root /tmp/verify-emit.<id>/out
 #      (emits every registry production station into the scratch dir; file CONTENTS still reference
 #      the live runtime root, so a clean emit is byte-identical to live)
 #   3. per station, per emitted file: diff LIVE (left, `<`) vs EMITTED (right,
@@ -33,7 +33,7 @@
 # Usage:
 #   scripts/dev/verify-emit.sh [--host lab|--local] [--pin-machine] [--keep] [--verbose]
 #     --host <ssh-host>  box to verify against (default: lab)
-#     --local            run directly on the box (no second SSH hop)
+#     --local            run directly on labhost (no second SSH hop)
 #     --pin-machine      emit versioned machine types for fresh-rebuild parity
 #     --keep             keep the remote scratch dir (prints its path)
 #     --verbose          print the residual (non-whitelisted) diff lines,
@@ -116,7 +116,7 @@ rsync -a --delete "$REPO/streamhost/scripts" "$REPO/streamhost/tiles" \
   exit 1
 }
 
-# The operator's real addresses, from the box's own canonical checkout (see
+# The operator's real addresses, from labhost's own canonical checkout (see
 # header 1b). Absent file = placeholder emit, exactly the old blind behaviour.
 host_run "if [ -f /data/kernel-hive/registry/local.env ]; then mkdir -p $REMOTE/registry && cp /data/kernel-hive/registry/local.env $REMOTE/registry/local.env; fi"
 

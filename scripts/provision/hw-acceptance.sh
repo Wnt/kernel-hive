@@ -2,7 +2,7 @@
 # hw-acceptance.sh — acceptance / burn-in for the USED Supermicro SYS-5019D-FN8TP
 # (X11SDV-8C-TP8F, Xeon D-2146NT, 128 GB ECC, Kingston DC2000B + WD Black SN7100).
 # Run from a Debian/Ubuntu live env or the freshly-installed Proxmox host BEFORE
-# trusting the box. Phases gate on hard-FAIL conditions. memtest + BMC steps are
+# trusting labhost. Phases gate on hard-FAIL conditions. memtest + BMC steps are
 # manual (noted); everything else is automated here.
 #
 # Validated baselines (vendor/STH, 2026): SN7100 1TB 7250/6900 MB/s, 600 TBW;

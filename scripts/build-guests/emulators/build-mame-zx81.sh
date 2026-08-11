@@ -4,7 +4,7 @@
 #
 # WHY A PURPOSE-BUILT BINARY AND NOT A PACKAGE. Whichever bridge base this station
 # is on, its packaged MAME is not the pinned one (bookworm ships 0.251), and on
-# bookworm the lab HOST's Debian 13 MAME 0.276 cannot be copied in either — its
+# bookworm labhost's Debian 13 MAME 0.276 cannot be copied in either — its
 # glibc/libstdc++ ABI the bookworm guest cannot load. mpf2 already solved this by
 # building a SUBTARGET in a suite-matched chroot, so the collection keeps one
 # MAME provenance story instead of two: pinned upstream source, one driver file,

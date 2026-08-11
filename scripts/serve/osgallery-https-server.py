@@ -163,7 +163,7 @@ CLIENTCMD_KEEP = 100  # queue trimmed to the last N commands
 # The edge tunnel can make public visitors appear to have an RFC1918 socket
 # peer, so client_address is telemetry only and NEVER authorization. Every
 # operator/observability endpoint requires the file-backed X-Admin-Token; public
-# SPA/static/signaling/WebRTC routes do not. Arbitrary-JS eval has a second,
+# UI/static/signaling/WebRTC routes do not. Arbitrary-JS eval has a second,
 # default-off switch so possession of the token alone cannot enable it.
 OSG_ADMIN_EVAL = os.environ.get("OSG_ADMIN_EVAL", "0").strip().lower() in (
     "1",

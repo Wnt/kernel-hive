@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build the SHIPPING `sgi` binary for the IRIX station, on the lab box (Linux/x86-64).
+# Build the SHIPPING `sgi` binary for the IRIX station, on labhost (Linux/x86-64).
 #
 # This is the reproducer. The binary in
 # /data/vms/streamhost/assets/irix/mame/sgi is what this script produces from a
@@ -62,7 +62,7 @@ else
 fi
 
 say "building with $JOBS jobs (30-60 min from cold, a few minutes incremental)"
-# USE_QTDEBUG=0 is required on the box: the Qt debugger front end wants qmake6,
+# USE_QTDEBUG=0 is required on labhost: the Qt debugger front end wants qmake6,
 # which is not installed, and genie fails the build before compiling anything.
 nice -n 5 make SUBTARGET=sgi SOURCES=src/mame/sgi/indy_indigo2.cpp USE_QTDEBUG=0 -j"$JOBS"
 

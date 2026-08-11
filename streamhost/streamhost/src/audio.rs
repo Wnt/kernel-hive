@@ -197,7 +197,7 @@ pub async fn start(main_conn: zbus::Connection, bitrate: u32) -> anyhow::Result<
 // a path — pointed at a named pipe (`-sound sdl -audiodriver disk` +
 // SDL_DISKAUDIOFILE=<tile>/audio.fifo, SDL_DISKAUDIODELAY=0), that PCM is live.
 // Probed on the station before this design was approved: the disk driver writes
-// real PCM including the PROM boot chime, the golden savestate loads with the
+// real PCM including the PROM boot chime, the checkpoint savestate loads with the
 // sound flags changed, and emulation survives reader stalls.
 //
 // THE DAEMON IS THE CLOCK. With SDL_DISKAUDIODELAY=0 the SDL audio thread

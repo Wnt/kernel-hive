@@ -1,6 +1,6 @@
 #!/bin/bash
 # check-tunnel.sh — prove the cloud-agent path end to end, the way a cloud agent
-# sees it: from OUTSIDE the LAN, through the public tunnel port, into the box.
+# sees it: from OUTSIDE the LAN, through the public tunnel port, into labhost.
 #
 #   scripts/cloud-agents/check-tunnel.sh --key ~/.ssh/lab_cloudagent
 #

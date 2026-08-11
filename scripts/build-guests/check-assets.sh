@@ -224,11 +224,11 @@ ROWS=(
   # mirrors.apple2.org.za is the only source, so the pin is the whole defence.
   "opt-file|apple2|Apple GEOS deskTop mouse HDV, zipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos-mouse.hdv.zip|sha256:64b7bef2440e2f0424586a893c641b566901403ad3ce6b3b5adaab573ae23e35|abandonware-URL"
   "opt-file|apple2|Apple GEOS deskTop ProDOS image geos.hdv, unzipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos.hdv|sha256:5aba89dda3450abf17b8cc05d9de98149abe0bb072e5b01cc29b7fff995fc681|abandonware-URL"
-  # -- indyr4400: DERIVED from this lab's own irix golden, not downloaded. The
+  # -- indyr4400: DERIVED from labhost's own irix checkpoint, not downloaded. The
   # ext4 container's hash is not reproducible (mkfs stamps a random UUID), so
   # this row is presence-only; the inner disk.raw hash is in ASSETS-MANIFEST §0.
   "req-file|indyr4400|IRIX 6.5.22 r4400 read-only asset drive (derived from irix65-apps.chd)|$GALLERY_ROOT/IrisIndy/irix65-r4400-disk.ext4||preservation-source"
-  # -- base-media: the four media blobs BAKED INTO the frozen bridge base at
+  # -- base-media: the four media blobs CAPTURED INTO the frozen bridge base at
   # /opt/bridge/media/ inside /data/vms/bridge/bridge-base.qcow2. Every bridge
   # station inherits them through its overlay; c64 boots GEOS.D64, atarist boots
   # etos1024k.img, amiga boots the Kickstart + Workbench pair. They are on no

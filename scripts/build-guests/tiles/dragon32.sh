@@ -68,7 +68,7 @@
 #   A whole-frame histogram would not do: both screens are the same two greens.
 #
 # ---- MAME BINARY PROVENANCE -------------------------------------------------
-#   Neither the suite's packaged MAME nor the lab host's 0.276 is a pin anybody
+#   Neither the suite's packaged MAME nor labhost's 0.276 is a pin anybody
 #   chose, so this station ships MAME 0.289 built in the TRIXIE chroot by
 #   scripts/build-guests/emulators/build-mame-dragon32.sh — the same upstream commit mpf2
 #   ships, so the gallery runs one MAME version and not two. Unlike mpf2's it is

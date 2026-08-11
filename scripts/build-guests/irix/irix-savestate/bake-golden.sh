@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# bake-golden.sh — bake the IRIX station's instant-restore state (issue #44).
+# bake-golden.sh — capture the IRIX station's instant-restore state (issue #44).
 #
-# Boots the PRODUCTION configuration (the station's own launcher, tile.env, golden
+# Boots the PRODUCTION configuration (the station's own launcher, tile.env, checkpoint
 # and tap networking) in a namespaced clone, waits for the exhibit's resting
 # state (the login chooser, or — with --login — a logged-in 4Dwm desktop), then
 # captures the (savestate, disk) pair ATOMICALLY
 # inside a pause window and installs it under $ASSETS/state/ with a provenance
 # file binding it to the exact MAME binary. x11-runtime.sh refuses to restore a
 # state whose provenance does not list the running binary's md5 — a MAME rebuild
-# orphans every state (registration-signature change), so REBAKE AFTER EVERY
+# orphans every state (registration-signature change), so RECAPTURE AFTER EVERY
 # MAME PROMOTION: stop the station, run this, start the station.
 #
 #   bake-golden.sh [--state NAME] [--cpus LIST] [--settle S] [--keep]
@@ -19,9 +19,9 @@
 # --login-wait seconds for the session to paint, and REQUIRES the 4Dwm Toolchest
 # on the real framebuffer before saving. The exhibit then restores straight into
 # that user's desktop instead of the chooser. Accounts with a password cannot be
-# baked this way (nothing types one); `demos` is passwordless in the golden.
+# captured this way (nothing types one); `demos` is passwordless in the checkpoint.
 #
-# Run ON the box, with streamhost@irix STOPPED (it refuses otherwise).
+# Run ON labhost, with streamhost@irix STOPPED (it refuses otherwise).
 set -u
 
 STATE=golden

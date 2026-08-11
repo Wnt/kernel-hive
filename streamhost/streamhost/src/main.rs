@@ -170,7 +170,7 @@ async fn main() -> Result<()> {
     // viewer must wake/hold the guest exactly like a WebTransport viewer; the
     // generic bridge sends S/E lease commands as peers connect and leave.
     // A QEMU station freezes its vCPUs over QMP. The x11/shm (emulator) stations have
-    // no QMP socket, so they freeze the emulator process itself — but only when
+    // no QMP socket, so they pause the emulator process itself — but only when
     // the station names its pidfile, because signalling is not something to infer.
     let freezer = if cfg.capture_backend.is_qemu() {
         Some(idle::Freezer::Qmp {

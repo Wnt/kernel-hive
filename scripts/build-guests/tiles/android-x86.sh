@@ -170,7 +170,7 @@ vm_stop() {
 }
 
 # Boot the VM.  $1 = iso | disk
-# These args are IDENTICAL in spirit to the box's android-boot.sh, minus the
+# These args are IDENTICAL in spirit to labhost's android-boot.sh, minus the
 # renamed binary, plus a namespaced monitor socket + pidfile.
 vm_boot() {
   local mode="$1" bootargs

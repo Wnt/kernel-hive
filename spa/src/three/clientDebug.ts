@@ -13,7 +13,7 @@
 //                               station '<osId>'|'*'. eval may also target one
 //                               sessionId through args.sessionId.
 //  This module NEVER throws into the app: telemetry is best-effort diagnostics
-//  for an authenticated operator (clientlog.jsonl on the box), not a dependency.
+//  for an authenticated operator (clientlog.jsonl on labhost), not a dependency.
 //  It is intentionally free of any streamClient import (streamClient imports
 //  US) and free of React.
 // ============================================================================
@@ -401,7 +401,7 @@ function emitEvalResult(payload: string): void {
 
 /** Emit the full metrics snapshot as `snapshot` events. The JSON (metrics + UA
  *  + bundle marker) usually exceeds the 512-char detail cap, so it is split
- *  into `[i/n] <chunk>` parts — reassemble with jq/sort on the box. */
+ *  into `[i/n] <chunk>` parts — reassemble with jq/sort on labhost. */
 function emitSnapshot(): void {
   let payload: string;
   try {

@@ -101,7 +101,7 @@ EVIDENCE="$TILE_DIR/evidence"
 DEMO_DRIVER="$TILE_DIR/demo-drive.py"
 # 768 MB, not the 1536 the other kiosks carry. Measured in the guest with
 # xpet up at 1600x1200: MemAvailable 397736 kB, i.e. 388 MB still free, so the
-# station costs the box half of what its siblings do. assert_memory() below keeps
+# station costs labhost half of what its siblings do. assert_memory() below keeps
 # that honest on every build.
 MEM=768
 ROOT_W=1600

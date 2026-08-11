@@ -5,7 +5,7 @@
 #
 # WHY A PURPOSE-BUILT BINARY AND NOT THE HOST PACKAGE
 #   The bridge guest is Debian 12 (bookworm) while this station is on that suite;
-#   the lab host is Debian 13 and its packaged MAME is 0.276, so a trixie-linked
+#   labhost is Debian 13 and its packaged MAME is 0.276, so a trixie-linked
 #   binary will not run in a bookworm guest — and bookworm's own package is MAME
 #   0.251, the release in which `kc85_4` is still a *clone* of `kc85_2` with a
 #   different ROM split. Pinning one binary and assembling the romset against

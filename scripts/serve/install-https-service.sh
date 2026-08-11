@@ -1,7 +1,7 @@
 #!/bin/bash
 # install-https-service.sh — install + enable the systemd unit that supervises
-# the osgallery single-origin HTTPS SPA/signaling server (:8443) so it comes back
-# on its own after a reboot / power cycle. RUN ON THE BOX from a repo checkout
+# the osgallery single-origin HTTPS UI/signaling server (:8443) so it comes back
+# on its own after a reboot / power cycle. RUN ON labhost from a repo checkout
 # (or `ssh lab 'bash /data/vms/streamhost/serve/install-https-service.sh'`).
 #
 # Idempotent: re-running re-installs the unit, reloads systemd, and leaves the

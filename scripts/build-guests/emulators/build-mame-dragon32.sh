@@ -2,7 +2,7 @@
 # Build the shipping Dragon 32 MAME binary from a pinned upstream source revision.
 #
 # WHY A PURPOSE-BUILT BINARY AT ALL.  While this station is on the Debian 12 bridge
-# base the lab host is not, so the host's /usr/games/mame (0.276) cannot simply
+# base labhost is not, so labhost's /usr/games/mame (0.276) cannot simply
 # be copied into a station: its glibc/libstdc++ ABI does not match.  The two
 # remaining choices are Debian 12's packaged MAME or a binary built in the
 # suite's own chroot.  This station takes the second, for the same reason mpf2 does

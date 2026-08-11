@@ -83,10 +83,10 @@
 # HYGIENE: overlay (no full copy), unique qmp.sock/pidfile, kill ONLY by pidfile,
 # idempotent, --force to rebuild the overlay. Touches ONLY the apple2 station dir.
 #
-# Usage:  apple2.sh [--force] [--bake] [-h]     (run ON the box, as root)
-#   --bake  bake the golden of the ALREADY RUNNING station and prove it restores
+# Usage:  apple2.sh [--force] [--bake] [-h]     (run ON labhost, as root)
+#   --bake  capture the checkpoint of the ALREADY RUNNING station and prove it restores
 #           (lib/bridge-bake-golden). Boot it under its OWN qemu-streamhost.sh
-#           first: a golden taken under a different device set will not loadvm.
+#           first: a checkpoint taken under a different device set will not loadvm.
 # =============================================================================
 set -euo pipefail
 

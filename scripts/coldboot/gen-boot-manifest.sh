@@ -1,5 +1,5 @@
 #!/bin/bash
-# gen-boot-manifest.sh — P2b: publish. RUN ON THE BOX.
+# gen-boot-manifest.sh — P2b: publish. RUN ON labhost.
 #   1. rsync each staged station's assets  /data/vms/streamhost/boot-rec/<id>/{boot.mp4,
 #      poster.jpg,sprite.jpg,thumbs.vtt}  ->  $WEBROOT/boot/<id>/   (large binaries stay
 #      OUT of git / the vite bundle; §2.8).

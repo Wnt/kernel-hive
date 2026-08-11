@@ -84,7 +84,7 @@ PY
 # br_hmp <qmp.sock> <hmp-command-line> -> runs a human-monitor command via QMP.
 # DESTRUCTIVE verbs (savevm/loadvm/delvm/stop/cont/quit/system_reset/powerdown)
 # are gated by the clone-guard: the socket MUST be inside the clone root, so a
-# mis-set CLONE_QMP can never savevm-clobber a live golden or stop a live station.
+# mis-set CLONE_QMP can never savevm-clobber a live checkpoint or stop a live station.
 br_hmp() {
   local sock="$1" line="$2" json verb
   verb="${line%% *}"
@@ -112,9 +112,9 @@ PY
 }
 
 # br_screendump <qmp.sock> <out.png> — framebuffer -> PNG.
-# NOTE: this box's pve-qemu 11.0.0 is built WITHOUT libpng, so HMP `screendump -f png`
+# NOTE: labhost's pve-qemu 11.0.0 is built WITHOUT libpng, so HMP `screendump -f png`
 # errors ("Enable PNG support with libpng"). Dump the always-available PPM instead and
-# convert to the requested (PNG) file with ffmpeg (present on the box).
+# convert to the requested (PNG) file with ffmpeg (present on labhost).
 br_screendump() {
   local sock="$1" out="$2" ppm i
   rm -f "$out"
@@ -139,7 +139,7 @@ br_screendump() {
 # br_ssim <a.png> <b.png> [cropspec] -> prints SSIM "All" in [0,1] (1 == identical).
 # cropspec (optional) is an ffmpeg crop= filter applied to BOTH inputs, e.g.
 # "crop=200:40:20:8" for a Tier-2 reference region. Uses ffmpeg's ssim filter and
-# parses "All:<x>" from stderr. ffmpeg 7.1.5 is present on the box.
+# parses "All:<x>" from stderr. ffmpeg 7.1.5 is present on labhost.
 br_ssim() {
   local a="$1" b="$2" crop="${3:-}" pre=""
   [ -n "$crop" ] && pre="${crop},"

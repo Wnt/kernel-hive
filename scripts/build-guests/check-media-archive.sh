@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # check-media-archive.sh — verify the persistent media archive, and the media
-# baked INSIDE the two bridge bases (which nothing checked before this).
+# captured INSIDE the two bridge bases (which nothing checked before this).
 #
 # Sibling of check-assets.sh, deliberately not folded into it: check-assets.sh
 # answers "can a build start?" by looking at staged paths, this answers "is the

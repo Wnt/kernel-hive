@@ -2,7 +2,7 @@
 # The IRIX / SGI Indy MAME patch stack -- ONE authoritative ordered list.
 #
 # Source this, do not copy the list. Two build scripts consume it
-# (build-mame-irix.sh for the lab box, build-mame-macos.sh for a dev Mac) and
+# (build-mame-irix.sh for labhost, build-mame-macos.sh for a dev Mac) and
 # the whole point is that they cannot drift apart. A stale second copy of this
 # list is exactly what left `mame-taptun-ifname-env.patch` documented as
 # adopted while the shipped binary did not carry it, and the failure mode there

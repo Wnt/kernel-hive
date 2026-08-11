@@ -1,10 +1,10 @@
 #!/bin/bash
-# box-endpoint-setup.sh — install the cloud-agent SSH endpoint ON the box.
+# box-endpoint-setup.sh — install the cloud-agent SSH endpoint ON labhost.
 #
 # WHAT THIS BUILDS (and why it is not just "open port 22")
 #   Cloud coding agents (Google Jules, Claude cloud sessions, …) run outside the
 #   LAN and still need `ssh lab` to drive stations. Two rules shape the design:
-#     * no inbound port on the home WAN — the box dials OUT to the forwarder VPS
+#     * no inbound port on the home WAN — labhost dials OUT to the forwarder VPS
 #       (Wnt/forwarder), which publishes the far end on a public TCP port;
 #     * the publicly reachable sshd is NOT the LAN sshd. This installs a second,
 #       purpose-built sshd instance that
@@ -14,9 +14,9 @@
 #         - has passwords/keyboard-interactive off, so a stolen password is
 #           worthless and the public port cannot be brute-forced.
 #   Revoking every cloud agent is therefore one file truncate + one restart, and
-#   it never touches how you or the LAN reach the box.
+#   it never touches how you or the LAN reach labhost.
 #
-# RUN IT (from a workstation checkout — the file never lives on the box):
+# RUN IT (from a workstation checkout — the file never lives on labhost):
 #   ssh lab 'CA_PUBKEY="ssh-ed25519 AAAA… cloud-agent" CA_TOKEN=… bash -s' \
 #     < scripts/cloud-agents/box-endpoint-setup.sh
 #   `scripts/cloud-agents/install-box-endpoint.sh` is the wrapper that also

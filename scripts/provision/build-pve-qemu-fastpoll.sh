@@ -6,11 +6,11 @@
 #   0001-dbus-display-fast-poll.patch   -> pve/0047  SH_DBUS_UPDATE_MS fast-poll
 #   0002-sphinx-serial-doc-build.patch  -> pve/0048  serial Sphinx build fix
 #   0003-gallery-hid-device.patch       -> pve/0049  gallery-hid-pci device
-# (AS FIRST BUILT 2026-07-13 in /data/vms/qemu-fastpoll-build/ on the box;
+# (AS FIRST BUILT 2026-07-13 in /data/vms/qemu-fastpoll-build/ on labhost;
 # procedure captured from its builddir*.log / dpkg-build*.log and
 # streamhost/qemu-patches/README.md.)
 #
-#   RUN ON THE BOX (needs the pve build-dep set + ~20 min).
+#   RUN ON labhost (needs the pve build-dep set + ~20 min).
 #   Output: $WORK/pve-qemu/pve-qemu-kvm_<ver>_amd64.deb
 #
 # WHY fast-poll: stations capture via `-display dbus,p2p=on`; stock QEMU polls the

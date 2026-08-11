@@ -1,7 +1,7 @@
 #!/bin/bash
 # golden-verify.sh <tileDir> [--bake]
 #
-# Clone-only proof for a vmstate golden.  It never opens a production QMP socket,
+# Clone-only proof for a vmstate checkpoint.  It never opens a production QMP socket,
 # never launches against a live writable disk, and routes teardown through
 # clone-guard.  Per-station disk/port/ready metadata comes from bootrec-tiles.conf.
 set -euo pipefail
@@ -145,14 +145,14 @@ if [ "$BAKE" -eq 1 ]; then
   log "fresh-launching clone for bake"
   launch "$CLONE_LAUNCHER"
   if qdrv querysnap | grep -qw golden; then
-    # Existing-golden rebake: the launcher normally resumed the ready fixture.
+    # Existing-checkpoint recapture: the launcher normally resumed the ready scene.
     # Load explicitly as well so launchers which cold-start are handled uniformly.
     qdrv loadvm golden >/dev/null
     sleep "$RESTORE_SECONDS"
     log "ready: existing golden loaded as the rebake seed"
   else
-    # First-ever bake: no tag exists for the launcher to resume, so reach the
-    # OS-specific persisted fixture through the coldboot driver/detector.
+    # First-ever capture: no tag exists for the launcher to resume, so reach the
+    # OS-specific persisted scene through the coldboot driver/detector.
     if [ -n "$BR_BOOT_DRIVER" ]; then
       log "running ready-state driver: $BR_BOOT_DRIVER"
       "$COLD_DIR/$BR_BOOT_DRIVER" "$CLONE_QMP" "$CLONE_DIR"

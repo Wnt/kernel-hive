@@ -28,7 +28,7 @@
 #   * FULLY AUTOMATED end-to-end: download, checksum verify, decompress, OVMF
 #     seed, boot, PIN-unlock (147147), framebuffer screenshot verification.
 #   * The one thing that is intrinsically stock (not scripted here) is the
-#     first-boot user/PIN provisioning -- it is BAKED INTO the official image
+#     first-boot user/PIN provisioning -- it is CAPTURED INTO the official image
 #     (default unlock PIN 147147). We do not create a user; pmOS already did.
 #
 # CRITICAL PITFALLS (encoded below, do not "fix"):

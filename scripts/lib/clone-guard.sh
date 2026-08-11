@@ -40,7 +40,7 @@
 #       clone-guard kill-pidfile    <pidfile>    # the GUARDED kill (path + /proc)
 #
 # SOURCE OF TRUTH: scripts/lib/clone-guard.sh in the osgallery repo. Kept
-# byte-identical to the box copy /usr/local/bin/clone-guard (see scripts/README.md
+# byte-identical to the labhost copy /usr/local/bin/clone-guard (see scripts/README.md
 # box-sync pairs). Re-sync after any edit.
 
 # ---- configuration (override via env only to point at a *different* sandbox) ----

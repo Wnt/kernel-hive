@@ -1,5 +1,5 @@
 // ============================================================================
-//  PER-TILE PRESENTATION ASPECT  (UI-only, hand-authored — NOT generated)
+//  PER-STATION PRESENTATION ASPECT  (UI-only, hand-authored — NOT generated)
 //  ---------------------------------------------------------------------------
 //  A handful of vintage / emulator-kiosks have NON-SQUARE-PIXEL native
 //  framebuffers that, on a period 4:3 CRT, were stretched to FILL the tube edge

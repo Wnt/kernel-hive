@@ -9,7 +9,7 @@
 #         256 MB, XL/REX3 24-bit graphics — booting IRIX 6.5.22 to the Indigo
 #         Magic graphical login. streamhost captures the Linux framebuffer.
 # TYPE  : "emulator bridge" station (see streamhost/docs/BRIDGE.md). Overlay + a
-#         per-station /etc/bridge/launch.sh + an INTERNAL qcow2 golden snapshot.
+#         per-station /etc/bridge/launch.sh + an INTERNAL qcow2 checkpoint.
 #
 # DISTINCT FROM the 'irix' station. Same museum machine, different silicon and a
 # different emulator: `irix` is MAME's indy_4610 (an **R4600** Indy) and runs
@@ -21,7 +21,7 @@
 #
 # ---- AUTOMATION HONESTY -----------------------------------------------------
 #   * THE IRIS BINARY IS BUILT AGAINST THE GUEST'S SUITE, NOT BLINDLY AGAINST
-#     THE HOST. On the BOOKWORM suite the lab box (Debian 13 trixie, glibc 2.41)
+#     THE HOST. On the BOOKWORM suite labhost (Debian 13 trixie, glibc 2.41)
 #     and the frozen bridge base (Debian 12, glibc 2.36) disagree, and a
 #     host-built iris dies in the guest with "GLIBC_2.39 not found" — so the
 #     build goes through a throwaway bookworm chroot (debootstrap + a rustup

@@ -7,8 +7,8 @@ import { useCallback, useEffect, type Dispatch, type RefObject, type SetStateAct
 
 type RestoreState = 'idle' | 'busy' | 'ok' | 'err';
 
-// ---- RESTORE TO GOLDEN (streamhost only) ---------------------------------
-//  Non-destructive host-side reset of THIS station to its curated golden fixture
+// ---- RESTORE TO CHECKPOINT (streamhost only) ---------------------------------
+//  Non-destructive host-side reset of THIS station to its curated checkpoint scene
 //  (the same clean starting state the input regression suite certifies). Same
 //  origin as the UI; no operator token required — the endpoint is LAN-gated
 //  and non-destructive, so the exhibit's "Restore to golden snapshot" button
@@ -42,7 +42,7 @@ export function useRestoreFlow({
         setRestoreState('err');
       })
       .finally(() => {
-        // Success means the golden is ready; failure means the old live guest is
+        // Success means the checkpoint is ready; failure means the old live guest is
         // still the recovery target. Either way, signal immediately instead of
         // waiting for WebTransport close/stall detection.
         finishRestoreReconnect?.();

@@ -26,7 +26,7 @@
 #   reject LIVE, ACCEPTED exhibits:
 #     * "at least N distinct colours" — bbcmicro, zx81, mpf2, kc854 and
 #       oricatmos each render exactly 2 colours;
-#     * "non-black pixels >= N% of the frame" — mpf2's accepted golden is
+#     * "non-black pixels >= N% of the frame" — mpf2's accepted checkpoint is
 #       99.71% black (2248 lit pixels of 786432).
 #   Non-dominant pixel count is the one measure that separates every real frame
 #   from an empty one, and it GENERALISES non-black: on a black frame the

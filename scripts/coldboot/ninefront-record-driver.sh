@@ -1,6 +1,6 @@
 #!/bin/bash
-# Launch the same lively, keyboard-ready rio fixture used by the production
-# golden. This runs only against record-boot.sh's copied disk/QMP clone.
+# Launch the same lively, keyboard-ready rio scene used by the production
+# checkpoint. This runs only against record-boot.sh's copied disk/QMP clone.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=bootrec-lib.sh disable=SC1091
@@ -8,10 +8,10 @@ source "${BOOTREC_LIB:-$HERE/bootrec-lib.sh}"
 
 QMP="${1:?qmp.sock required}"
 WORK="${2:?workdir required}/ninefront-driver"
-# 1920x1080 curated fixture (must match scripts/build-guests/tiles/9front.sh FIXTURE_COMMAND
-# and the golden geometry, or the boot-video->live-golden seam breaks).
+# 1920x1080 curated scene (must match scripts/build-guests/tiles/9front.sh FIXTURE_COMMAND
+# and the checkpoint geometry, or the boot-video->live-checkpoint seam breaks).
 FIXTURE_COMMAND="window -r 20 130 1250 1050 acme; window -r 1268 130 1900 430 stats; window -r 1268 442 1900 770 games/catclock; window -r 1268 782 1900 1050"
-# Golden pointer-park (matches 9front.sh PARK_X/PARK_Y); reached over the clone's
+# Checkpoint pointer-park (matches 9front.sh PARK_X/PARK_Y); reached over the clone's
 # warpd hostfwd so the boot video's last frame is seam-identical to loadvm golden.
 PARK_X=1580
 PARK_Y=916
@@ -146,7 +146,7 @@ for i in $(seq 1 30); do
 done
 [ "$fixture" -eq 1 ] || br_die "ninefront driver: lively rio fixture did not settle"
 
-# Park the pointer at the golden's position via the clone's warpd hostfwd. Q both
+# Park the pointer at the checkpoint's position via the clone's warpd hostfwd. Q both
 # proves the agent is live and emits the move, so the boot video's final frame
 # lands the cursor exactly where loadvm golden does (seam-identical, SSIM ~= 1).
 parked=0

@@ -44,7 +44,7 @@
 #   The strongest form is `run-private` (or chroot_guard_reexec_private in a
 #   script): inside a private mount namespace an escaping umount is structurally
 #   impossible, and the kernel tears every mount down when the last process
-#   exits. Use it for ad-hoc chroot work on the box:
+#   exits. Use it for ad-hoc chroot work on labhost:
 #       chroot-guard run-private bash        # then mount/chroot freely
 #
 # SOURCE OF TRUTH: scripts/lib/chroot-guard.sh in the kernel-hive repo. Repo

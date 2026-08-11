@@ -4,21 +4,21 @@
 #
 # migrate-tile.sh does one station. A wave is several, and on 2026-08-10 three
 # agents ran three waves in parallel and each hand-rolled the same three things
-# around it — a concurrency cap, a box-load check, and a summary table typed by
+# around it — a concurrency cap, a labhost-load check, and a summary table typed by
 # hand into BRIDGE-TRIXIE-MIGRATION.md. None of that was code, so none of it was
 # enforced, and the two constraints that matter most were prose in a handover:
 #
-#   * BOX LOAD. Four parallel builds once took the box from load 9 to 34 on 16
+#   * LABHOST LOAD. Four parallel builds once took labhost from load 9 to 34 on 16
 #     threads and starved everything else on it, including someone's timing run.
 #     So a station is LAUNCHED only while the 1-minute load is under a ceiling —
 #     checked before each launch, and waited out rather than piled onto.
 #   * THE SHARED MAME CHROOT. Every MAME builder chroots into the SAME
 #     directory and mounts API filesystems in it; two at once is the failure
-#     that took the host's /dev/pts down and broke every new login on the box.
+#     that took the host's /dev/pts down and broke every new login on labhost.
 #     chroot-guard fixed the mount-propagation half. The who-owns-it half is
 #     here: those stations form a SERIALIZATION GROUP declared in
 #     registry/bridge-waves.json, and the group holds ONE claim taken by
-#     `mkdir` ON THE BOX — so it serializes across agents, not merely within
+#     `mkdir` ON labhost — so it serializes across agents, not merely within
 #     one wave. The claim IS the proof (AGENTS.md "claim atomically"): a claim
 #     this run did not create is never adopted, it is reported with its holder
 #     and that station simply does not start.
@@ -43,7 +43,7 @@
 #
 # usage: migrate-wave.sh [TILE…] | --wave <N> | --remaining
 #   -j, --jobs N        stations in flight at once (default 2)
-#   --max-load F        do not LAUNCH while the box's 1-min load is >= F
+#   --max-load F        do not LAUNCH while labhost's 1-min load is >= F
 #                       (default 10.0 of 16 threads; running stations continue)
 #   --allow-stopped     run stations whose streamhost@ unit is inactive. Default
 #                       refuses them BY NAME: four of the remaining stations are

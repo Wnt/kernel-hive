@@ -43,7 +43,7 @@
 # trixie gcc-14 cache could never share an entry anyway.
 #
 # HOST-NATIVE BUILDS SHARE THE TRIXIE CHROOT'S CACHE, and that is the same rule,
-# not an exception to it. Since the 2026-08-10 trixie migration the lab host and
+# not an exception to it. Since the 2026-08-10 trixie migration labhost and
 # the trixie build chroot ARE one compiler — /usr/bin/x86_64-linux-gnu-{gcc,g++}-14
 # and cc1plus are byte-identical files on both sides (sha256-checked). Giving a
 # host build its own cache would buy nothing and cost a ~1 h cold compile for a

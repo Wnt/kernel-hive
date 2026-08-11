@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # mac-preflight.sh — verify the Mac is ready to drive the NVMe migration BEFORE
-# the lab box goes offline. Run this on the Mac while CT950 is still alive; fix
+# labhost goes offline. Run this on the Mac while CT950 is still alive; fix
 # every [FAIL] before taking the hardware down (once CT950 is gone you cannot
 # re-fetch the secrets/memory it holds).
 #

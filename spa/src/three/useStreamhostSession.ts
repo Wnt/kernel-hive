@@ -283,7 +283,7 @@ export function useStreamhostSession(
       clearTimers();
       teardownAttempt();
       attempt++;
-      // Log every retry (don't hide it) so slow/idle-tile negotiation is diagnosable.
+      // Log every retry (don't hide it) so slow/idle-station negotiation is diagnosable.
       console.warn(`[streamhost] ${signalEndpoint} reconnect attempt ${attempt} — ${why}`);
       if (!liveReached && attempt >= MAX_INITIAL_ATTEMPTS) {
         fail('timed out negotiating tile stream (poster fallback)');

@@ -1,7 +1,7 @@
 #!/bin/bash
 # record-boot.sh — P1a (capture) + P1c (bake) for the boot-video replay feature.
-# RUN ON THE BOX (ssh lab). Records a station's cold power-on to a scrub-optimised MP4
-# whose LAST FRAME is byte-identical to the golden's first live frame, so the UI's
+# RUN ON labhost (ssh lab). Records a station's cold power-on to a scrub-optimised MP4
+# whose LAST FRAME is byte-identical to the checkpoint's first live frame, so the UI's
 # recorded-video -> live-stream handoff is invisible (spec §1.1, §3.1).
 #
 #   Usage: record-boot.sh <tile> [--dry-run]
@@ -15,9 +15,9 @@
 # does, and feeds raw BGRA + PCM into a single-pass ffmpeg encode (§2.3 RECOMMENDED:
 # fixed canvas, no mid-boot SPS/resolution problem). Kills the clone ONLY by pidfile.
 #
-# ── THE dbus TAP (the one piece that needs the box + a tiny companion binary) ──────
+# ── THE dbus TAP (the one piece that needs labhost + a tiny companion binary) ──────
 # Tapping QEMU's p2p D-Bus display/audio needs SCM_RIGHTS fd-passing + zbus — it is
-# NOT expressible in bash and cannot be exercised off-box. It is the EXACT mechanism
+# NOT expressible in bash and cannot be exercised off labhost. It is the EXACT mechanism
 # streamhost already ships:
 #     video: streamhost/streamhost/src/capture.rs  `pub async fn connect(qmp)`  — QMP
 #            getfd(dbusdisp)+add_client{@dbus-display} then Console RegisterListener,
@@ -33,7 +33,7 @@
 #       the station has an audiodev but no card, else ffmpeg blocks on the missing writer).
 # Point record-boot at it via  SH_DBUS_TAP=/path/to/bootrec-tap  (contract below). Any
 # producer honouring that contract works — e.g. a synthetic BGRA generator for testing
-# the ffmpeg/detect/bake plumbing off-box (mirrors amiga-coldboot-watch.sh's SH_FEED_CMD; box-side prototype, not in repo).
+# the ffmpeg/detect/capture plumbing off labhost (mirrors amiga-coldboot-watch.sh's SH_FEED_CMD; labhost-side prototype, not in repo).
 #
 #   SH_DBUS_TAP contract:  $SH_DBUS_TAP <qmp.sock> <video.fifo> <audio.fifo|""> <WxH> <fps> <arate> <ach>
 #     writes constant-size BGRA frames at <fps> to <video.fifo>; s16le PCM to <audio.fifo>
@@ -240,12 +240,12 @@ main() {
     return 0
   fi
 
-  # 1. COLD LAUNCH the clone (vmstate: no loadvm; bridge: loadvm the kiosk golden).
+  # 1. COLD LAUNCH the clone (vmstate: no loadvm; bridge: loadvm the kiosk checkpoint).
   br_log "launching clone: $CLONE_LAUNCHER"
   bash "$CLONE_LAUNCHER" >>"$CLONE_DIR/launch.log" 2>&1 || br_die "clone launch failed (see $CLONE_DIR/launch.log)"
   br_wait_qmp "$CLONE_QMP" 80 || br_die "clone QMP never came up"
 
-  # A bridge clone resumes the kiosk golden. Stop the emulator before capture so
+  # A bridge clone resumes the kiosk checkpoint. Stop the emulator before capture so
   # the recorded first frame is its powered-off surface, not yesterday's desktop.
   if [ "$BR_BOOT_KIND" = "bridge" ] && [ -n "$BR_EMU_PREP_CMD" ]; then
     br_log "bridge: preparing powered-off emulator via ssh :$BR_EMU_SSH_PORT"
@@ -275,13 +275,13 @@ main() {
   # 3. DETECT interactive-reached (bounded by BR_MAX_MS).
   bash "$HERE/detect-interactive.sh" "$TILE" "$CLONE_QMP" "$CLONE_DIR/detect" || true
 
-  # 4. FREEZE at the settle frame; poster == last encoded video frame == golden 1st frame.
+  # 4. PAUSE at the settle frame; poster == last encoded video frame == checkpoint 1st frame.
   br_log "freeze: QMP stop"
   br_qmp "$CLONE_QMP" '{"execute":"stop"}' >/dev/null || br_die "QMP stop failed"
   br_screendump "$CLONE_QMP" "$POSTER_PNG" || br_die "poster screendump failed"
   ffmpeg -hide_banner -y -i "$POSTER_PNG" -qscale:v 3 "$POSTER_JPG" >/dev/null 2>&1 || br_die "poster.jpg failed"
 
-  # 5. BAKE (vmstate only): savevm golden ON THE PAUSED STATE (the §1.1 invariant).
+  # 5. CAPTURE (vmstate only): savevm golden ON THE PAUSED STATE (the §1.1 invariant).
   if [ "$BR_BOOT_KIND" = "vmstate" ]; then
     br_log "bake: delvm golden (ignore-if-absent) then savevm golden on the PAUSED VM"
     br_hmp "$CLONE_QMP" "delvm golden" >/dev/null 2>&1 || true

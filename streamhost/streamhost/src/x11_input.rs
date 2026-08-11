@@ -18,7 +18,7 @@
 //!   ioport. Every button carries real press/release edges (DOWN1/UP1,
 //!   DOWN2/UP2, DOWN3/UP3), which spring-loaded 4Dwm menus require.
 //!
-//! See docs/history/irix-tile-issue20-handoff.md and the RECIPE on the box.
+//! See docs/history/irix-tile-issue20-handoff.md and the RECIPE on labhost.
 
 use std::io::Write;
 use std::sync::{Arc, Mutex};

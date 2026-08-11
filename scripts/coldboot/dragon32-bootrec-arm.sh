@@ -7,7 +7,7 @@
 #
 # Bridge kind: the emulator cold-boots per visit, so record the kiosk restart
 # and SKIP savevm/verify. Nothing is curated into this station's fixture, so the
-# clip's last frame is the golden's first frame.
+# clip's last frame is the checkpoint's first frame.
 bootrec_scaffold_dragon32() {
   BR_BOOT_KIND="bridge"
   BR_CANVAS_W=1024

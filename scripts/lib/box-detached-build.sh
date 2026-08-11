@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # =============================================================================
-# box-detached-build.sh — run a LONG build on the lab box, detached from the ssh
+# box-detached-build.sh — run a LONG build on labhost, detached from the ssh
 # session that started it, stream its log back, and be able to stop it again.
 #
 # Sourced, not executed. Extracted from scripts/dev/migrate-tile.sh, where all
@@ -24,7 +24,7 @@
 #     it had just been handed back, re-baking a golden into the PRODUCTION
 #     overlay. Whoever abandons the build owes it a kill.
 #
-# The caller supplies how to reach the box, as an array:
+# The caller supplies how to reach labhost, as an array:
 #     BOX_BUILD_SSH=(ssh -o ConnectTimeout=15 lab)
 #
 #     box_build_start <stage> <relpath> <log> [VAR=VAL …]
@@ -34,7 +34,7 @@
 #     box_build_wait <log> <timeout-s> [poll-s]
 #         Stream new log lines to stdout, prefixed. Sets BOX_BUILD_RC to the
 #         builder's exit code, or leaves it empty on timeout. Returns non-zero
-#         only if the box became unreadable.
+#         only if labhost became unreadable.
 #     box_build_stop <log>
 #         Kill the builder's whole process group, but ONLY while it is genuinely
 #         still running: an existing <log>.rc means it finished on its own and

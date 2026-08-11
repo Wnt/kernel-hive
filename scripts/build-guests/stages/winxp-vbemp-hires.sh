@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 ###############################################################################
 # build-guests/stages/winxp-vbemp-hires.sh
-#   Bake 1920x1200x32 display + "show window contents while dragging = OFF" into
-#   the post-install Windows XP gallery golden (winxp.qcow2), reproducibly.
+#   Capture 1920x1200x32 display + "show window contents while dragging = OFF" into
+#   the post-install Windows XP gallery checkpoint (winxp.qcow2), reproducibly.
 #   (Fleet resolution target raised 1024x768 -> 1920x1200 on 2026-07-27; the
 #   unaccelerated packed-VBEMP path stays inside the 30 fps encode budget on KVM
 #   — see docs/lab/tile-resolution-responsiveness.md.)
@@ -44,11 +44,11 @@
 #   3. verify: boot, screendump, assert the PPM is 1920x1200, clean shutdown.
 #
 # QEMU_VGA stays "std" and the station carries "-usb -device usb-tablet" (absolute
-# cursor) + "-device AC97" (so the audio driver is baked in before the golden).
+# cursor) + "-device AC97" (so the audio driver is captured in before the checkpoint).
 #
-# RUN AFTER winxp.sh has produced the auto-logon golden. Idempotent-ish: re-runs
+# RUN AFTER winxp.sh has produced the auto-logon checkpoint. Idempotent-ish: re-runs
 # re-install the driver over itself (harmless) but prefer running once on a fresh
-# golden. Timing-driven GUI automation — each phase drops a screendump PNG into
+# checkpoint. Timing-driven GUI automation — each phase drops a screendump PNG into
 # $LOG_DIR so you can eyeball the checkpoints.
 #
 # DEPS (host): qemu-system-x86_64 (or -i386), socat, curl, unzip, mcopy, and

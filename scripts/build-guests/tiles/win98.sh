@@ -744,7 +744,7 @@ PY
 # a DIFFERENT package from the NT-only vbempk.zip used for XP (that zip has no 9x
 # build). The Win9x driver is bearwindows `vbe9x.htm` -> latest `191201.zip`,
 # `032MB` build (VBEMP.DRV + VBE.vxd + vbemp.inf); 032MB fits QEMU std-vga's 16 MB
-# VRAM. Resolution stays 640x480 so the streamhost/SPA capture geometry is
+# VRAM. Resolution stays 640x480 so the streamhost/UI capture geometry is
 # unchanged (dbus always presents a 32bpp packed scanout regardless of guest depth).
 # Verified 2026-07-13: smooth drag (8 clean full-window frames in ~0.2 s) vs the
 # <1 FPS planar crawl; baked into the live win98se golden (acpi=on + usb-tablet

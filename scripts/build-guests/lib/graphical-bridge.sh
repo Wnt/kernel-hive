@@ -4,7 +4,7 @@
 # This is deliberately a scratch-first template. It never writes below the
 # production station tree and never changes the frozen shared bridge base. Future
 # OS workers fork the generated tile.env/qemu-streamhost.sh after framebuffer,
-# audio, and golden-snapshot validation.
+# audio, and checkpoint validation.
 #
 # Usage:
 #   graphical-bridge.sh --tile NAME --vmid 99NNN --udp PORT --ssh-port PORT \
