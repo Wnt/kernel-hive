@@ -2471,7 +2471,7 @@ inside the same pause window, and only then resumes. Restore is the reverse:
 reflink the paired disk over `disk.chd` and launch with `-state <name>` — no
 Lua, no QMP.
 
-- **Capture**: `scripts/build-guests/irix/irix-savestate/bake-golden.sh` (station
+- **Capture**: `scripts/build-guests/irix/irix-savestate/capture-checkpoint.sh` (station
   stopped): boots the PRODUCTION config (launcher, tile.env, tap) in a
   namespaced clone, waits for the chooser + settle, captures the pair, installs
   `$ASSETS/state/{sta/indy_4610/golden.sta, disk-golden.chd,
@@ -2572,7 +2572,7 @@ set means NO Lua agent (single-injector rule; two injectors fight over
 pacing budgets). `labctl mctl irix "<verb>"` is raw passthrough via
 `/root/mctl.py`; `labctl type/sh` ride the socket, and `labctl reset
 irix` is an acked `LOADST golden`. The capture
-(`irix-savestate/bake-golden.sh`) drives acked `PAUSE`/`SAVEST` —
+(`irix-savestate/capture-checkpoint.sh`) drives acked `PAUSE`/`SAVEST` —
 `ss-agent.lua` and its log-grep side channel are gone. The launcher's
 own probes moved too: `probe_alive` nudges over the socket and
 livewatch's mid-drag guard reads `STAT last_in_ms` (the cmd file no

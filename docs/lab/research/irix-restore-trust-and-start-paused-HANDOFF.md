@@ -85,7 +85,7 @@ measurements. Get the nuance right:
 - `provenance-golden.md5` binds the checkpoint state to the exact binary md5 —
   **ANY rebuild orphans every state** (registration signature) and the
   launcher then cold-boots loudly. After a MAME fix: rebuild → RECAPTURE
-  (`scripts/build-guests/irix/irix-savestate/bake-golden.sh`, station stopped;
+  (`scripts/build-guests/irix/irix-savestate/capture-checkpoint.sh`, station stopped;
   it pauses emulation, saves state + reflinks the disk INSIDE the same pause
   window — the (memory, disk) pairing is the invariant) → verify → promote.
 - Measurement rules: `docs/lab/MEASUREMENT-METHODOLOGY.md`; bench numbers are

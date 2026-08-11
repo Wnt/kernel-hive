@@ -27,7 +27,7 @@ and cold-boot arm. Disabled means it does not enter the streamhost, signaling,
 reset, or UI lineups while its TODOs remain. The paved path is now **scaffold →
 fill → verify**: builders use [`scripts/lib/labqmp.py`](../../scripts/lib/labqmp.py)
 for build-time QMP console/input, and clone-only checkpoint proof uses
-[`scripts/lib/golden-verify.sh`](../../scripts/lib/golden-verify.sh).
+[`scripts/lib/checkpoint-verify.sh`](../../scripts/lib/checkpoint-verify.sh).
 
 All commands which affect labhost are examples for a planned maintenance
 window. Develop and validate against a clone or scratch output first. Never
@@ -331,8 +331,8 @@ standard clone-only proof on labhost:
 
 ```bash
 # Capture/recapture on copied disks, then independently verify the retained tag.
-scripts/lib/golden-verify.sh <tileDir> --bake
-scripts/lib/golden-verify.sh <tileDir>
+scripts/lib/checkpoint-verify.sh <tileDir> --capture
+scripts/lib/checkpoint-verify.sh <tileDir>
 ```
 
 The helper uses the station's `bootrec-tiles.conf` disk/port/ready metadata, copies

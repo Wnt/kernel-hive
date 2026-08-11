@@ -7,12 +7,12 @@
 # patched MAME publishes (wire format + seqlock read protocol:
 # streamhost/streamhost/src/capture/shm.rs; python reader precedent:
 # scripts/build-guests/irix/irix-bench/shmpng.py) and the (savestate, disk) checkpoint
-# that scripts/build-guests/irix/irix-savestate/bake-golden.sh captures inside a
+# that scripts/build-guests/irix/irix-savestate/capture-checkpoint.sh captures inside a
 # pause window.
 #
 # So the recording RIDES a capture. The sampler beside this script streams fb.shm
 # as constant-canvas BGRA into the house §6.1 encode (params byte-for-byte from
-# scripts/coldboot/record-boot.sh) while bake-golden.sh cold-boots the
+# scripts/coldboot/record-boot.sh) while capture-checkpoint.sh cold-boots the
 # production configuration and freezes it at the login chooser. The clip's
 # final frames and the instant-restore savestate are the SAME paused
 # framebuffer, so the recorded-video -> live-stream seam is exact BY
@@ -22,7 +22,7 @@
 # ends on the exact savestate frame.
 #
 #   Usage: irix-record-boot.sh            (~8-10 min: ~340 s boot + 120 s settle)
-#   Env:   RIG           dir holding the deployed capture rig (bake-golden.sh)
+#   Env:   RIG           dir holding the deployed capture rig (capture-checkpoint.sh)
 #                        [default /data/vms/soltest/irix-ss44/rig]
 #          IRIX_SHM_TAP  the fb.shm sampler [default: sibling irix-shm-tap.py]
 #          REC_CPUS / BAKE_CPUS  core pins [4,12 / 6,14] — disjoint on purpose:
@@ -31,7 +31,7 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 RIG="${RIG:-/data/vms/soltest/irix-ss44/rig}"
-BAKE="$RIG/bake-golden.sh"
+BAKE="$RIG/capture-checkpoint.sh"
 SAMPLER="${IRIX_SHM_TAP:-$HERE/irix-shm-tap.py}"
 A="${IRIX_ASSETS:-/data/vms/streamhost/assets/irix}"
 STAGE="${BOOTREC_STAGING_ROOT:-/data/vms/streamhost/boot-rec}/irix"
@@ -63,17 +63,17 @@ fi
 command -v ffmpeg >/dev/null || die "ffmpeg not found"
 python3 -c 'import numpy' 2>/dev/null || die "python3+numpy required (the sampler needs it)"
 [ -f "$SAMPLER" ] || die "sampler not found: $SAMPLER"
-[ -f "$BAKE" ] || die "bake-golden.sh not found: $BAKE (deploy scripts/build-guests/irix/irix-savestate/ there, or set RIG=)"
+[ -f "$BAKE" ] || die "capture-checkpoint.sh not found: $BAKE (deploy scripts/build-guests/irix/irix-savestate/ there, or set RIG=)"
 
 D="/data/vms/soltest/irix-bootrec-$(date +%s)"
-CLONE="$D/clone" # becomes IRIX_BAKE_DIR — bake-golden.sh rm-rf's + creates it
+CLONE="$D/clone" # becomes IRIX_BAKE_DIR — capture-checkpoint.sh rm-rf's + creates it
 FIFO="$D/video.fifo"
 MP4="$D/boot_video.mp4"
 mkdir -p "$D"
 
 # ── teardown on EVERY exit — part of "done" (AGENTS.md) ──────────────────────
 # sampler/ffmpeg are OUR helper children, not emulators: plain kill by THEIR
-# pidfiles (the bake-golden.sh watchdog pattern), truncate for idempotence.
+# pidfiles (the capture-checkpoint.sh watchdog pattern), truncate for idempotence.
 # The capture kills its own MAME through clone-guard on every exit; --keep keeps
 # only the DIRECTORY — so the clone needs no killing here, only verification.
 teardown() {
@@ -139,7 +139,7 @@ say "recorder up (sampler $(cat "$D/sampler.pid"), ffmpeg $(cat "$D/ffmpeg.pid")
 # measured a two-input ffmpeg starving at ~5 fps): capture raw beside the
 # video, mux AFTER with a measured offset — audio starts when MAME does,
 # seconds after the video's black lead-in, and the first-byte timestamp is
-# that offset. bake-golden.sh rm-rf's $CLONE, so wait for the fifo to appear
+# that offset. capture-checkpoint.sh rm-rf's $CLONE, so wait for the fifo to appear
 # rather than pre-creating it.
 # The reader MUST pace at exactly 192,000 B/s like the daemon does — SDL with
 # SDL_DISKAUDIODELAY=0 never sleeps, so an unpaced reader (cat) lets it
@@ -179,7 +179,7 @@ echo $! >"$D/audcap.pid"
 say "running the bake (cold boot ~340 s, settle, PAUSE + SAVEST, install)"
 if ! IRIX_BAKE_DIR="$CLONE" bash "$BAKE" --state golden --cpus "$BAKE_CPUS" --keep \
   2>&1 | tee "$D/bake.log"; then
-  echo "BLOCKED: bake-golden.sh failed — nothing staged. Tail of $D/bake.log:" >&2
+  echo "BLOCKED: capture-checkpoint.sh failed — nothing staged. Tail of $D/bake.log:" >&2
   tail -n 25 "$D/bake.log" >&2
   exit 1
 fi

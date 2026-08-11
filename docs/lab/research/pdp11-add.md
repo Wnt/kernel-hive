@@ -96,7 +96,7 @@ make tile-registry-check
   its pty. 2.11BSD itself has only telnet/rsh, so exec lands in the kiosk, not
   in the guest.
 - **Checkpoint.** `resetMode: loadvm`, snapshot `golden`, captured from a **cold boot,
-  untouched**, via `scripts/lib/golden-verify.sh pdp11 --bake` then re-verified
+  untouched**, via `scripts/lib/checkpoint-verify.sh pdp11 --capture` then re-verified
   without `--bake`. The internal snapshot covers the disk too, so visitor
   writes to the 2.11BSD filesystem — and any unclean-shutdown fsck — vanish on
   reset.
