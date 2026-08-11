@@ -74,7 +74,14 @@ export MAME_CTL_PTR_MOD=256
 # sensitivity="1"), not here.
 export MAME_CTL_MOVE_STEP=1
 export MAME_CTL_MOVE_WINDOW=8
-export MAME_CTL_SCREEN=79x52
+# FLOW CONTROL (2026-08-11): pace each count against the ikbd's own consumed
+# latch instead of a blind 8 ms window. Blind pacing occasionally lands two
+# counts (or a reversal pair) in one latch period; the stkbd emits ONE
+# quadrature step per period, so GEM silently loses the rest — measured 5.6
+# counts adrift after a 5 s fast circle while the latch VALUE was exact.
+# Gating on the latch changing makes issue:consume 1:1 at the same top speed.
+export MAME_CTL_FLOW_ITEMS="m_mouse_x,m_mouse_y"
+export MAME_CTL_SCREEN=81x52
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
 
