@@ -3,7 +3,7 @@
 //  ---------------------------------------------------------------------------
 //  SHARED FACTS COME FROM THE GOLDEN MANIFEST (de-drifted 2026-07-14): per-tile
 //  `tileDir` / `pointer` / `touch` / `resetMode` / `snapshot` are READ AT LOAD
-//  from the RENDERED golden manifest (tiles-registry.py; the copy deployed to
+//  from the RENDERED golden manifest (stations-registry.py; the copy deployed to
 //  `/data/vms/streamhost/serve/golden-manifest.json` is what reset-tile.sh and
 //  the SPA restore endpoint read). This file keeps only the TEST-SIDE fields:
 //
@@ -79,7 +79,7 @@ function loadGoldenManifest(): GoldenManifest {
   if (process.env.GOLDEN_MANIFEST) {
     return JSON.parse(readFileSync(process.env.GOLDEN_MANIFEST, 'utf8')) as GoldenManifest;
   }
-  const registry = fileURLToPath(new URL('../../../scripts/tiles-registry.py', import.meta.url));
+  const registry = fileURLToPath(new URL('../../../scripts/stations-registry.py', import.meta.url));
   if (existsSync(registry)) {
     const rendered = spawnSync('python3', [registry, 'emit', 'golden-manifest.json'], {
       encoding: 'utf8',

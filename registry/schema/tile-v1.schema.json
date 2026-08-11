@@ -87,7 +87,7 @@
         "touch": { "type": "boolean" },
         "pointer": {
           "type": "object",
-          "description": "How a visitor's pointer reaches this guest. `transport`/`backend` name the DAEMON's delivery route (streamhost SH_POINTER / SH_INPUT_BACKEND); `method`/`absolute`/`present` name what the GUEST actually gets, and are cross-checked against the route, the device ledger and operator.labctl.pointer_mode by validate_pointer_method() in scripts/tiles-registry.py.",
+          "description": "How a visitor's pointer reaches this guest. `transport`/`backend` name the DAEMON's delivery route (streamhost SH_POINTER / SH_INPUT_BACKEND); `method`/`absolute`/`present` name what the GUEST actually gets, and are cross-checked against the route, the device ledger and operator.labctl.pointer_mode by validate_pointer_method() in scripts/stations-registry.py.",
           "required": ["transport", "method", "absolute", "present", "device", "scale", "offset"],
           "properties": {
             "transport": { "enum": ["abs", "rel", "warpd", "none"] },

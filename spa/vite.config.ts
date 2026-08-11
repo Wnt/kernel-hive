@@ -22,7 +22,7 @@ function registryDocuments(): Plugin {
           try {
             const body = execFileSync(
               'python3',
-              ['../scripts/tiles-registry.py', 'emit', artifact],
+              ['../scripts/stations-registry.py', 'emit', artifact],
               { cwd: import.meta.dirname, maxBuffer: 32 * 1024 * 1024 },
             );
             res.setHeader('Content-Type', 'application/json');

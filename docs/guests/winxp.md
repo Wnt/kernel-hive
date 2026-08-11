@@ -290,7 +290,7 @@ DOSidle/AmnHLT-class tool needed (that's a DOS/Win9x problem).
   driver floppy, and replays the exact monitor-driven install + 1024×768 +
   drag-off + verify sequence. Called from `winxp.sh` after auto-logon injection
   (guard `HIRES=1`). This is the surviving reproducer; the guest runs today as
-  the streamhost station `winxp` (see its stanza in `streamhost/tiles-manifest.sh`).
+  the streamhost station `winxp` (see its stanza in `streamhost/stations-manifest.sh`).
 - Neko-era canvas wiring (historical): `gallery-integrate-all.sh` carried
   `FIXED_SCREEN[winxp]="1024x768@30"` and the winxp block of
   `docker-compose.gallery-guests.yml` pinned `NEKO_SCREEN=1024x768@30`

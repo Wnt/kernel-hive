@@ -38,7 +38,7 @@ Repository findings:
   Professional SP4 VMware `.7z`, converts its preinstalled VMDK, and applies
   offline disk/registry repairs. Its automation-honesty section explicitly says
   there is no installer, answer file, or install-time input.
-- `streamhost/tiles-manifest.sh` boots `win2k-pro.qcow2` as an IDE disk on
+- `streamhost/stations-manifest.sh` boots `win2k-pro.qcow2` as an IDE disk on
   `pc`, one vCPU, 512 MB, Cirrus VGA, AC97, USB tablet, and RTL8139.
 - `docs/lab/ASSETS-MANIFEST.md` lists only the WinWorld preinstalled VM archive
   for Win2000. It lists no Win2000 ISO, key file, or Win2000 key environment

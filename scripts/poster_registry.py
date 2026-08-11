@@ -40,7 +40,7 @@ GALLERY_IMAGE_KEYS = frozenset(
 # every gallery image emitted into the generated spa/src/data/posters.ts.
 # Deriving it by iterating the GALLERY_IMAGE_KEYS frozenset made that order
 # depend on the interpreter's per-process hash seed, so two runs of
-# `make tile-registry-generate` produced byte-different output and the
+# `make station-registry-generate` produced byte-different output and the
 # generated-file drift gate failed at random. sha256 is deliberately absent --
 # it guards the shipped asset, and the UI type does not carry it.
 GALLERY_IMAGE_TS_KEYS = (

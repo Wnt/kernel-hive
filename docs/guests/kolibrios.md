@@ -104,7 +104,7 @@ steady at 1,1.
 - `tile.env`: `SH_POINTER=abs` (was `rel`); checkpoint md5 comment updated. Pre-change
   copy `tile.env.pre-tablet`.
 - Checkpoint disk backup before recapture: `state.qcow2.bak-pre-tablet-20260713`.
-- Manifest: `streamhost/tiles-manifest.sh` emits `--pointer abs --input-dev usb`.
+- Manifest: `streamhost/stations-manifest.sh` emits `--pointer abs --input-dev usb`.
   Run `labctl gen` after any launcher/tile.env change (done).
 
 ## Rollback

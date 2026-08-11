@@ -1,21 +1,21 @@
-.PHONY: tile-registry-generate tile-registry-check tile-registry-validate \
+.PHONY: station-registry-generate station-registry-check station-registry-validate \
 	gallery-manifest-check check-file-size check-generated-drift quality-gate \
 	poster-gallery-fetch poster-gallery-verify devwatch
 
-tile-registry-generate:
-	python3 scripts/tiles-registry.py generate
+station-registry-generate:
+	python3 scripts/stations-registry.py generate
 
 # Watch the hand-written registry sources; regenerate + publish runtime
 # manifests to the box whenever a save validates (see registry/README.md).
 devwatch:
 	cargo run --manifest-path streamhost/Cargo.toml -p devwatch --release --
 
-tile-registry-check:
-	python3 scripts/tiles-registry.py --check
+station-registry-check:
+	python3 scripts/stations-registry.py --check
 	$(MAKE) gallery-manifest-check
 
-tile-registry-validate:
-	python3 scripts/tiles-registry.py validate
+station-registry-validate:
+	python3 scripts/stations-registry.py validate
 
 gallery-manifest-check:
 	cd spa && node --experimental-strip-types scripts/test-gallery-manifest.mjs
@@ -40,3 +40,10 @@ check-generated-drift:
 
 # The two gates every branch owes, regardless of language touched.
 quality-gate: check-file-size check-generated-drift
+
+# Old target names (terminology stage 2, 2026-08-12) — one-epoch aliases so
+# muscle memory and in-flight agent briefs keep working. Removed in stage 5.
+.PHONY: tile-registry-generate tile-registry-check tile-registry-validate
+tile-registry-generate: station-registry-generate
+tile-registry-check: station-registry-check
+tile-registry-validate: station-registry-validate

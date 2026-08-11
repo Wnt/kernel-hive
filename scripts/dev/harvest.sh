@@ -185,7 +185,7 @@ if selected serve; then
   # repo), so pulling them verbatim would commit real addresses. The labhost copy
   # is a scrubbed deployment of repo content, never a harvest source.
   # tiles.json and golden-manifest.json are deliberately absent: both are
-  # RENDERED from the registry (tiles-registry.py rendered()) and have no repo
+  # RENDERED from the registry (stations-registry.py rendered()) and have no repo
   # copy to harvest into. A live/repo divergence in those is fixed in
   # registry/tiles/<id>.json and republished, never pulled back.
   cat >"$tmpdir/serve-files" <<'EOF'

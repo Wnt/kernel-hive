@@ -256,7 +256,7 @@ UDP relay.
   the daemon never saw a single session: service active, ticket accepted,
   `/signal/<id>.json` returning a valid path, and nothing in the journal.
   `check-stream-tickets.py` cannot see this — it validates the ticket, not the
-  path the packets take. `tiles-registry.py` now fails validation for any
+  path the packets take. `stations-registry.py` now fails validation for any
   production station whose `udpPort` falls outside `ports.publicRelayLow..High` in
   `registry/registry-v1.json`, which is the source of truth these three places
   must agree on: that key, `UDP_RELAY_PORT_RANGE` in the forwarder repo's

@@ -18,7 +18,7 @@ import { posterFor } from './posterIndex';
 //    - posters              -> registry/posters/<id>.md and the 1024x768 hero
 //                              at spa/public/posters/<id>/desktop.webp. mpf2
 //                              shipped with neither. Their presence on disk is
-//                              enforced by `tiles-registry.py validate`; here we
+//                              enforced by `stations-registry.py validate`; here we
 //                              check the poster reached the generated UI data.
 //
 //  Everything here is checked against the REGISTRY ENTRIES, so adding a station
@@ -80,7 +80,7 @@ describe('every production tile is fully wired into the SPA', () => {
 
   it.each(streamhostTiles.map((tile) => tile.id))('%s has an exhibit poster', (id) => {
     // The .md and its hero image existing on disk is checked by
-    // `tiles-registry.py validate`, which can see the filesystem; here we
+    // `stations-registry.py validate`, which can see the filesystem; here we
     // assert the generated poster actually reached the UI.
     expect(posterFor(id)).toBeDefined();
   });

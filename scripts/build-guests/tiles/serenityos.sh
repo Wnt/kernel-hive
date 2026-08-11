@@ -345,7 +345,7 @@ cat >"$OUT_DIR/boot.sh" <<'BOOTSH'
 # So we NEVER boot the golden directly: we boot a FRESH throwaway copy-on-write
 # qcow2 overlay backed by the read-only _disk_image. The golden stays pristine, and
 # the writable footprint is only tens of KB. The streamhost station does the same
-# on every launch (see streamhost/tiles-manifest.sh).
+# on every launch (see streamhost/stations-manifest.sh).
 set -e
 BASE="$(cd "$(dirname "$0")" && pwd)"
 VNC_TARGET=${1:-unix:${BASE}/.build-work/vnc.sock}
@@ -413,7 +413,7 @@ See boot.sh in this directory. Usage: ./boot.sh <vnc_target> <accel> <work_dir>
 # _disk_image (writable root, tiny footprint, clean on every restart). -vga std gives a single
 # clean 1920x1080 framebuffer (resolution set in /etc/WindowServer.ini, step 4d; bochs-display
 # exposes a dual-head desktop that half-fills the stream canvas; std avoids that).
-# See streamhost/tiles-manifest.sh.
+# See streamhost/stations-manifest.sh.
 qemu-system-x86_64 \\
   -machine q35 -cpu host -enable-kvm -m 2G -smp 2 -vga std \\
   -kernel Kernel/Kernel -append "root=nvme0:1:0" \\

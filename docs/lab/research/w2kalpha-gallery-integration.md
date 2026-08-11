@@ -56,7 +56,7 @@ snapshot, unaffected.
      avoids the NTFS-dirty cold-boot pause.
    - Re-verify pointer: MOVEA to known coordinates lands pixel-exact; a
      DOWN1/UP1 at an icon selects it.
-2. **Registry entry + streamhost/UI integration.** `scripts/tiles-registry.py
+2. **Registry entry + streamhost/UI integration.** `scripts/stations-registry.py
    new` rolls back unless the entry is complete (it needs `stream.pointer`,
    the ordering fields, binding/museum blocks). Author `registry/tiles/
    w2kalpha.json` modelled on `registry/tiles/irix.json` (the other non-QEMU
@@ -65,9 +65,9 @@ snapshot, unaffected.
    runtime.tileEnv mirroring the tile.env above, render.* binding +
    museumBlock (archetype `putty-lcd` like nt4/winxp, a 2000/Alpha blurb),
    guestDoc `docs/guests/w2kalpha.md`. Then wire the systemd unit /
-   ensure-tile-x11 path as IRIX does (`tiles-manifest.sh` emit line with
+   ensure-tile-x11 path as IRIX does (`stations-manifest.sh` emit line with
    `--x11-runtime-file .../w2kalpha-runtime.sh --capture shm --input-backend
-   mamesock`), `make tile-registry-check` green, signaling.json generated.
+   mamesock`), `make station-registry-check` green, signaling.json generated.
 3. **Enable + live-verify** through the streamhost daemon: framebuffer, input,
    and the relaunch reset path, per the playbook gate, before making visible.
 

@@ -539,7 +539,7 @@ cat <<EOF
   Build manifest        : ${OUT_DIR}/BUILD-INFO.txt
 
   ---- PRODUCTION WIRING (streamhost tile 'tinycore', VMID 82, udp/54082) -----
-  # tiles-manifest.sh emit stanza (only the --cdrom path changes vs today):
+  # stations-manifest.sh emit stanza (only the --cdrom path changes vs today):
   #   --cdrom ${ISO_PATH} --boot d
   # The station launcher (hand-baked golden launcher) must:
   #   * copy/point at ${STATE_PATH} as its state.qcow2 (create-if-missing ONLY)

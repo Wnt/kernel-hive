@@ -83,7 +83,7 @@ Every gallery tile runs this stack. A tile is a directory
 `streamhost@<tile>.service`), `qemu-streamhost.sh` (the QEMU launcher — dbus
 display + audio + input + QMP socket + pidfile), and `ROLLBACK.md`. Those files
 are emitted by `scripts/streamhost-tile.sh`; the authoritative per-tile flag
-ledger — one exact emit invocation per tile — is **`tiles-manifest.sh`**
+ledger — one exact emit invocation per tile — is **`stations-manifest.sh`**
 (`--install` also drops `deploy/streamhost@.service`). Neither starts anything:
 **`bring-up-all.sh`** does the ordered cold boot (install unit → emit all tiles →
 per-tile launch QEMU by pidfile, wait for its QMP socket, `systemctl start

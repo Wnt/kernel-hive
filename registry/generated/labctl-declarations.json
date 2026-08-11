@@ -1,5 +1,5 @@
 {
-  "_generated_by": "scripts/tiles-registry.py",
+  "_generated_by": "scripts/stations-registry.py",
   "_schema": "declared tile capabilities; labctl gen adds observed state",
   "tiles": {
     "alpine": {

@@ -119,7 +119,7 @@ BAKE_SSH_PORT= HTTP_PORT=`. The builder keeps the versioned ISO and converges
 
 ## Station wiring (production)
 
-- Manifest stanza: `emit tinycore` in `streamhost/tiles-manifest.sh`
+- Manifest stanza: `emit tinycore` in `streamhost/stations-manifest.sh`
   (`--pointer abs --cursor-scale 0.783 --cursor-off-x 0 --cursor-off-y 0
   --audio-dev ac97 --input-dev usb --mem 768 --smp 2 --machine pc --cpu host
   --vga std --cdrom <ISO> --boot d`).

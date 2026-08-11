@@ -21,7 +21,7 @@ from poster_registry import PosterError, load_gallery, load_posters
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TILES_REGISTRY = importlib.machinery.SourceFileLoader(
     "tiles_registry_under_test",
-    str(REPO_ROOT / "scripts" / "tiles-registry.py"),
+    str(REPO_ROOT / "scripts" / "stations-registry.py"),
 ).load_module()
 
 POSTER_MD = """---

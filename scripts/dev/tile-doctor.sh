@@ -56,16 +56,16 @@ else
   exit 1
 fi
 
-if out=$(cd "$REPO" && python3 scripts/tiles-registry.py validate 2>&1); then
+if out=$(cd "$REPO" && python3 scripts/stations-registry.py validate 2>&1); then
   ok "registry validates"
 else
   bad "registry validation fails" "$(printf '%s' "$out" | grep -F "$TILE" | head -3)"
 fi
 
-if out=$(cd "$REPO" && make tile-registry-check 2>&1); then
+if out=$(cd "$REPO" && make station-registry-check 2>&1); then
   ok "generated files are in sync"
 else
-  bad "generated-file drift" "run: make tile-registry-generate"
+  bad "generated-file drift" "run: make station-registry-generate"
 fi
 
 LIFECYCLE=$(python3 -c "import json;print(json.load(open('$ENTRY')).get('lifecycle','?'))")

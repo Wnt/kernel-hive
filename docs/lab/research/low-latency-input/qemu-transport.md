@@ -470,7 +470,7 @@ Sources are the checked-in launchers
 [Win3.11](../../../../streamhost/tiles/win311/qemu-streamhost.sh),
 [OS/2](../../../../streamhost/tiles/os2warp/qemu-streamhost.sh),
 [TempleOS](../../../../streamhost/tiles/templeos/qemu-streamhost.sh)) and the
-[ninefront manifest entry](../../../../streamhost/tiles-manifest.sh). `addr=0x1e` is a proposed
+[ninefront manifest entry](../../../../streamhost/stations-manifest.sh). `addr=0x1e` is a proposed
 stable slot because it is away from current default devices; it is not considered final for a station
 until `info pci`/QMP and a cold boot prove it free on that exact machine. Record the root bus and
 slot explicitly in each emitted launcher. Never rely on QEMU auto-placement for a saved VM.

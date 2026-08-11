@@ -22,7 +22,7 @@
     "builders (see `derivation`) and refuses to run if the two disagree, so a new",
     "chroot tile cannot join the fleet without joining the group.",
     "",
-    "Not generated: never run tiles-registry.py against it. Same rule as",
+    "Not generated: never run stations-registry.py against it. Same rule as",
     "registry/bridge-suites.json, and for the same reason."
   ],
   "waves": {

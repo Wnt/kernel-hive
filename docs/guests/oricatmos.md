@@ -220,7 +220,7 @@ reference that is itself broken.
 The station ships **80/80** anyway: it is what every other 50 Hz station in the fleet
 uses, it is four frames of margin, and it measured no worse than the floor.
 `spa.demoProgram.perCharMs` is **160** to match — `validate_demo_pacing` in
-`scripts/tiles-registry.py` fails the build if the UI's typist would outrun the
+`scripts/stations-registry.py` fails the build if the UI's typist would outrun the
 station's drain rate. The whole 105-character listing types and `RUN`s correctly at
 those values (`evidence/demo-typein-listing.png`, `evidence/demo-typein-run.png`).
 

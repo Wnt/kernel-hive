@@ -8,7 +8,7 @@ import { loadGalleryManifest, validateGalleryManifest } from '../src/data/galler
 // box will be handed, not a copy of it that could have gone stale in the tree.
 const rendered = execFileSync(
   'python3',
-  ['scripts/tiles-registry.py', 'emit', 'gallery-manifest.json'],
+  ['scripts/stations-registry.py', 'emit', 'gallery-manifest.json'],
   { cwd: new URL('../../', import.meta.url), maxBuffer: 32 * 1024 * 1024 },
 );
 const source = JSON.parse(rendered.toString('utf8'));

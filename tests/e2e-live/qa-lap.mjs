@@ -92,10 +92,10 @@ function relativeToOut(out, path) {
 function decadesFromRegistry() {
   const result = spawnSync(
     'python3',
-    [join(repoRoot, 'scripts/tiles-registry.py'), 'emit', 'index.json'],
+    [join(repoRoot, 'scripts/stations-registry.py'), 'emit', 'index.json'],
     { cwd: repoRoot, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 },
   );
-  if (result.status !== 0) fail(`tiles-registry.py emit index.json failed: ${result.stderr ?? ''}`);
+  if (result.status !== 0) fail(`stations-registry.py emit index.json failed: ${result.stderr ?? ''}`);
   const registry = JSON.parse(result.stdout);
   const decades = registry.tiles
     .filter((tile) => tile.enabled !== false)

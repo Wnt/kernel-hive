@@ -9,7 +9,7 @@ Anything else added here is paid for once per agent, forever — put it in the
 linked doc instead.
 
 Single-box Proxmox home-lab ("living computer museum"). 63 registry entries —
-61 production streamhost stations + 2 posters (`python3 scripts/tiles-registry.py
+61 production streamhost stations + 2 posters (`python3 scripts/stations-registry.py
 count`). Rust `streamhost` daemon → React UI. Repo:
 https://github.com/Wnt/kernel-hive (private; this dir is the git root).
 
@@ -62,7 +62,7 @@ fails too.
 - Rust `cd streamhost && cargo fmt --all --check && cargo clippy --all-targets -- -D warnings`
 - Python `ruff check scripts && ruff format --check scripts`
 - Bash `shfmt -d $(scripts/lint/shell-sources.sh) && shellcheck $(scripts/lint/shell-sources.sh)`
-- All `node scripts/check-file-size.mjs --strict` and `make tile-registry-check`
+- All `node scripts/check-file-size.mjs --strict` and `make station-registry-check`
 
 **Integrate continuously** — merge to `main` early and always `git push origin
 main`. Never echo or log `~/Downloads/humanify-token`.
@@ -91,7 +91,7 @@ main`. Never echo or log `~/Downloads/humanify-token`.
 ## Three facts that mislead if you don't know them
 
 - **A station has ONE name**: registry id == `tileDir` == `SH_TILE`, enforced by
-  `tiles-registry.py`. The last two exceptions were renamed 2026-08-10. The
+  `stations-registry.py`. The last two exceptions were renamed 2026-08-10. The
   serving plane still reads identity from the station's own `signaling.json` — the
   daemon is the authority on the name it verifies a ticket against.
 - **A station that looks broken may just be stopped or paused** — `ssh lab 'labctl ls'`. The

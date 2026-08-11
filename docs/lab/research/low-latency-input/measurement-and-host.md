@@ -517,7 +517,7 @@ generic architecture:
   prototype in `streamhost/web/client.html`;
 - `streamhost/guest-agents/{solaris,ninefront,win9x,win311,os2,templeos}/`;
 - the checked-in `streamhost/tiles/<tile>/qemu-streamhost.sh` launchers, plus
-  `streamhost/tiles-manifest.sh`/its generation path where a station (notably ninefront) has no checked-in
+  `streamhost/stations-manifest.sh`/its generation path where a station (notably ninefront) has no checked-in
   launcher;
 - `labctl`, `scripts/coldboot/`, `tests/e2e-live/e2e/streamhostInput.*`, and
   `scripts/tools/gallery-input-probe.py`;

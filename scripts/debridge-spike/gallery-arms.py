@@ -12,7 +12,7 @@ structural rather than tedious:
     "declared/live tile set mismatch" for ANY streamhost registry row that has no
     `/data/vms/streamhost/tiles/<tileDir>/` directory. Both arms live under
     `/data/vms/soltest/debridge-7f3a/`. So a registry row breaks `labctl gen` --
-    and `tiles-registry.py --check` on the box, which compares the same sets --
+    and `stations-registry.py --check` on the box, which compares the same sets --
     for every other session, until the arms are MOVED into the production tile
     directory and given a `tile.env` + `qemu-streamhost.sh`. Arm B has no QEMU
     launcher at all: it is host-native MAME.

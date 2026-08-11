@@ -12,7 +12,7 @@ it to back both a "MS-DOS 6.22" exhibit and a "Windows 1.0" exhibit later.
   `verify-win101-gui.png` (Win 1.01 MS-DOS Executive GUI)
 
 > **Historical (neko-era) wiring below.** The exhibit runs today as the streamhost
-> station **`msdoswin1`** — see its stanza in `streamhost/tiles-manifest.sh`
+> station **`msdoswin1`** — see its stanza in `streamhost/stations-manifest.sh`
 > (`streamhost@msdoswin1`). The neko compose/:8113 wiring and the
 > `gallery-integrate-all.sh` reconciliation plan below are neko-era; that integrator
 > was deleted in the 2026-07 restructure — git history. Build script, artifact and

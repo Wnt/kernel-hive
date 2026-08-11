@@ -1,7 +1,7 @@
 # Haiku gallery station (:8107) — integration notes
 
 > **Historical (neko-era) wiring below.** Haiku runs today as the streamhost station
-> **`haiku`** — see its stanza in `streamhost/tiles-manifest.sh` (`streamhost@haiku`;
+> **`haiku`** — see its stanza in `streamhost/stations-manifest.sh` (`streamhost@haiku`;
 > in-guest shell via `labctl exec haiku "<cmd>"`, ssh port 5807). The merge hand-off
 > below targeted `gallery-integrate-all.sh` and `docker-compose.haiku.yml`, both
 > neko-era, deleted in the 2026-07 restructure — git history. The image build and
@@ -136,6 +136,6 @@ scripts/build-guests/stages/haiku.sh              # fetch + SHA256-verify + head
 #   --no-verify        skip the boot check
 # → /data/gallery-guests/Haiku/haiku.iso  (+ haiku-desktop.png proof)
 # then wire it as the streamhost station: the `haiku` stanza in
-# streamhost/tiles-manifest.sh emits the station files; bring-up-all.sh boots it and
+# streamhost/stations-manifest.sh emits the station files; bring-up-all.sh boots it and
 # starts streamhost@haiku. (Neko-era: docker-compose.haiku.yml — deleted.)
 ```

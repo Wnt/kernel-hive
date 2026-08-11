@@ -30,7 +30,7 @@ NBD=/dev/nbd1
 MNT=/mnt/win95g
 
 grep -Eq -- '-machine pc-i440fx-[0-9]+\.[0-9]+,' "$BASE/qemu-streamhost.sh" || {
-  echo "[bake] FAIL: launcher machine type is not pinned (emit with tiles-manifest.sh --pin-machine)" >&2
+  echo "[bake] FAIL: launcher machine type is not pinned (emit with stations-manifest.sh --pin-machine)" >&2
   exit 1
 }
 

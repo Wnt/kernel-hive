@@ -7,7 +7,7 @@ build: `scripts/build-guests/tiles/riscos.sh` (bash -n clean).
 
 > **Restructure note:** the reconciliation below never ran — the neko compose plane
 > was superseded by streamhost. RISC OS (RPCEmu, a plain X app — not a QEMU guest)
-> is NOT in the streamhost station manifest (`streamhost/tiles-manifest.sh`), so the
+> is NOT in the streamhost station manifest (`streamhost/stations-manifest.sh`), so the
 > neko-era wiring documented here remains this station's record; verify its current
 > serving state on labhost before relying on it.
 

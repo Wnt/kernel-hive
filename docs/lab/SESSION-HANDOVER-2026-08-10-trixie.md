@@ -110,7 +110,7 @@ neither ccache nor the MAME chroot and can run whenever.
 
 | File | Role |
 |---|---|
-| `registry/bridge-suites.json` | **The ledger.** Per-tile suite map + both suite definitions. Hand-maintained, *not* generated — never run `tiles-registry.py` against it |
+| `registry/bridge-suites.json` | **The ledger.** Per-tile suite map + both suite definitions. Hand-maintained, *not* generated — never run `stations-registry.py` against it |
 | `scripts/build-guests/lib/bridge-suite.sh` | Resolver. Fails closed on any unknown tile/suite; a missing key is an error, never `""`, because `""` would flow into a `qemu-img -b` argument |
 | `scripts/build-guests/lib/bridge-base-for` | One-line shim for the 28 dense builders (they sit near the 600-line cap) |
 | `scripts/build-guests/lib/bridge-base.sh` | `--suite bookworm\|trixie` |
@@ -391,7 +391,7 @@ README; it is a behaviour change on a live exhibit, so it was left as a decision
    `labctl exec indyr4400` *means* is the decision that gates it.
 9. **`indyr4400`'s matrix `notes` are now wrong** — they assert the Indy "is
    driven only through the framebuffer + PS/2". True when written, false since
-   §7.2. Fix with the registry source + `make tile-registry-generate`, never by
+   §7.2. Fix with the registry source + `make station-registry-generate`, never by
    hand-editing the generated matrix.
 10. **Three tiles are deliberately STOPPED** — `indyr4400`, `star` and
     `nextstep`, the box's three largest CPU consumers (319%, 175%, 134% of a

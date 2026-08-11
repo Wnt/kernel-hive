@@ -23,7 +23,7 @@ redeploys of `scripts/dev/build-deploy.sh`.
 | file | role |
 |------|------|
 | `bootrec-lib.sh`        | sourced helpers: QMP/HMP client, `screendump`, ffmpeg-SSIM change-fraction, kill-by-pidfile — kills + destructive HMP route through `clone-guard` (fail-closed; never touches a live tile — see `docs/lab/clone-guard.md`) |
-| `bootrec-tiles.conf`    | **per-tile data** (canvas res, audio, detect tier/thresholds, hostfwd/fixed ports, tile-local/external disks, boot kind and optional boot driver); compare its `case` arms with the canonical production roster (`python3 scripts/tiles-registry.py count`) when adding a tile |
+| `bootrec-tiles.conf`    | **per-tile data** (canvas res, audio, detect tier/thresholds, hostfwd/fixed ports, tile-local/external disks, boot kind and optional boot driver); compare its `case` arms with the canonical production roster (`python3 scripts/stations-registry.py count`) when adding a tile |
 | `record-boot.sh`        | **P1a+P1c** — clone-launch, dbus tap → ffmpeg, detect, freeze → poster → `savevm golden` → verify |
 | `detect-interactive.sh` | **P1b** — 3-tier "interactive reached" detector (framebuffer-stability / reference-region / fixed timer) |
 | `postprocess-boot.sh`   | **P2a** — `boot.mp4` re-encode (§6.1) + `sprite.jpg` (§6.2) + `thumbs.vtt` (§6.3) + `durationMs` |

@@ -39,7 +39,7 @@ export const DEMO_LINE_DELAY_MS = 260;
  *
  * This is only the DEFAULT. A station whose drain rate exceeds it declares its own
  * `demoProgram.perCharMs` in the registry (vic20 paces 80+80, so 170), and
- * `validate_demo_pacing` in scripts/tiles-registry.py fails the build if the
+ * `validate_demo_pacing` in scripts/stations-registry.py fails the build if the
  * value that applies is below that station's hold+gap.
  */
 export const DEMO_PER_CHAR_MS = 70;

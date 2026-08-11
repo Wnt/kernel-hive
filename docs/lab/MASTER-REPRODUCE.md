@@ -35,14 +35,14 @@ Legend:  🟢 automated (one command)   🟡 interactive / needs a human   ⚙�
 | 3 | Streamhost daemon build (gallery CT retired) | repo at `/data/vms/streamhost` + `cargo build --release` | 🟢 |
 | 4 | **Build every production streamhost tile (PRIMARY; roster from `registry/tiles/`)** | `scripts/build-guests/build-all.sh` | 🟢 (default public-media set plus SDK/licensed-media opt-ins; some guests need a one-time click) |
 | 4′ | _Historical shortcut (NOT the plan):_ copy prebuilt images off the pre-wipe host | `scripts/provision/preserve-guest-images.sh --all` | archival; source retired |
-| 5 | Wire the registry production roster as streamhost tiles + serve plane (parity-gated by `scripts/dev/verify-emit.sh`) | `streamhost/tiles-manifest.sh` → `streamhost/bring-up-all.sh` (+ `scripts/serve/`) | 🟢 |
+| 5 | Wire the registry production roster as streamhost tiles + serve plane (parity-gated by `scripts/dev/verify-emit.sh`) | `streamhost/stations-manifest.sh` → `streamhost/bring-up-all.sh` (+ `scripts/serve/`) | 🟢 |
 | 6 | Optional standalone Win11 + macOS VM recreations (SPA exhibits stay posters) | `scripts/provision/pve-win11-vm.sh` / `pve-macos-vm.sh` | 🟢 / 🟡 |
 | 7 | Post-install hygiene | inline below | ⚙️ |
 | 9 | **Perf rollout — DONE** (TCG→KVM + audio-buffer knob) | baked into the Phase-4 builders + Phase-5 tile launchers; results doc retired (see git history) | 🟢 (already in Phases 4–5) |
 
 > **Phase 9 (perf) is not a separate run** — its outputs are already carried by the Phase-4
 > `build-guests/tiles/*.sh` (per-OS `-enable-kvm`/`ACCEL=kvm` + the Win9x recipe) and the Phase-5
-> per-tile launchers (`qemu-streamhost.sh`, emitted from `streamhost/tiles-manifest.sh`, which
+> per-tile launchers (`qemu-streamhost.sh`, emitted from `streamhost/stations-manifest.sh`, which
 > carries each tile's `-enable-kvm -cpu host` + audio wiring). A fresh Phase 4→5 run reproduces
 > the tuned (KVM) gallery directly. In the neko era the same tuning lived in the
 > `gallery-integrate-all.sh` manifest rows + the gallery-wide `launch-qemu.sh` audio/KVM plumbing
@@ -293,7 +293,7 @@ copyright/SSO-gated source.
 
 🔒 = `licensed` class, skipped unless `--include-licensed`. The production roster
 and its current total come from `registry/tiles/` (`python3
-scripts/tiles-registry.py count`); `build-all.sh` reports any media-gated rows it
+scripts/stations-registry.py count`); `build-all.sh` reports any media-gated rows it
 skips. Approximate default serial time is **3–4.5 h**.
 
 #### Emulator-bridge tiles (the reusable "captured-Linux" bridge)
@@ -313,7 +313,7 @@ set (ide overlay + e1000 hostfwd + conditional `-loadvm golden`), and the golden
 **`docs/guests/c64.md`** (the reference tile).
 
 The SPA also has showcase posters outside the live production roster. Run
-`python3 scripts/tiles-registry.py count` for the current split (currently 30
+`python3 scripts/stations-registry.py count` for the current split (currently 30
 production tiles and 3 posters: Win11, RISC OS, and macOS). VM 900 was deleted
 on 2026-07-08 and VM 925 on 2026-07-14;
 RISC OS lost its RPCEmu/neko transport when that plane was retired. The Win11 and
@@ -332,7 +332,7 @@ the streamhost kit:
 ```bash
 # on the host (root), streamhost tree at /data/vms/streamhost (Phase 3), guests built (Phase 4):
 cd /data/vms/streamhost
-bash tiles-manifest.sh --install     # emit every tile's per-tile files (tile.env,
+bash stations-manifest.sh --install     # emit every tile's per-tile files (tile.env,
                                      # qemu-streamhost.sh, ROLLBACK.md) + drop streamhost@.service
 rsync -a <repo>/scripts/serve/ /data/vms/streamhost/serve/
                                      # serve plane files — canonical source is the repo's
@@ -357,7 +357,7 @@ bash bring-up-all.sh                 # ordered boot: launch each tile's QEMU (pi
   rollback, `dpkg -i` the patched deb, then relaunch tiles per
   `streamhost/qemu-patches/README.md` (running QEMUs keep the old binary until
   relaunch).
-- **`streamhost/tiles-manifest.sh`** is generated from the production entries in
+- **`streamhost/stations-manifest.sh`** is generated from the production entries in
   the canonical registry; it invokes `streamhost/scripts/streamhost-tile.sh` per tile to emit
   `/data/vms/streamhost/tiles/<tile>/`. It does NOT start anything. **Every tile now
   emits completely — no hand-patched launchers remain**: generic tiles are generated
@@ -378,7 +378,7 @@ bash bring-up-all.sh                 # ordered boot: launch each tile's QEMU (pi
   On a fresh pinned rebuild, run it directly on the box as
   `bash scripts/dev/verify-emit.sh --local --pin-machine`.
 - **Machine-type pinning:** `labhost` was emitted with pinning **ON** —
-  `SH_PIN_MACHINE=1 bash bring-up-all.sh` (or `tiles-manifest.sh --pin-machine`) —
+  `SH_PIN_MACHINE=1 bash bring-up-all.sh` (or `stations-manifest.sh --pin-machine`) —
   so every launcher carries `pc-i440fx-11.0`/`pc-q35-11.0` explicitly (identical
   resolution on today's QEMU 11.0.x) and the new goldens
   survive a future QEMU alias retarget (savevm/loadvm needs an exact device-set
@@ -471,7 +471,7 @@ registry-generated production streamhost manifest.
 
 **How close to one-command reproduce?** The **host + gallery** path is essentially
 **four commands** — `pve-zfs-pool.sh` → `build-guests/build-all.sh` →
-`streamhost/tiles-manifest.sh --install` → `streamhost/bring-up-all.sh` (plus the
+`streamhost/stations-manifest.sh --install` → `streamhost/bring-up-all.sh` (plus the
 one-time `cargo build --release` of the daemon, Phase 3). The neko-era chain
 (`pve-osgallery-hardened.sh` → `gallery-integrate-all.sh` ×2 around one CT reboot) is
 gone (neko-era, deleted).
@@ -488,7 +488,7 @@ steps still need a human:
    off`, watching the HTML KVM, and **memtest** (no network output) all need eyes/hands.
    Everything after "Proxmox is installed + SSH-reachable" is scripted.
 2. **Phase-5 emit is complete — the golden bake sources are now vendored too.**
-   All registry production tiles emit from `tiles-manifest.sh` (verbatim tracked launchers for the
+   All registry production tiles emit from `stations-manifest.sh` (verbatim tracked launchers for the
    fixture/bridge/state-disk tiles; the postmarketos varstore seed is in the manifest;
    serenityos's overlay create is in its launcher) and `scripts/dev/verify-emit.sh`
    proves byte-parity with live. The seven formerly box-only bake drivers are now at
@@ -524,7 +524,7 @@ steps still need a human:
    `scripts/build-guests/tiles/postmarketos-fixture.sh` runs the existing upstream-image
    builder, converts `pmos-phosh.img` to the live qcow2, invokes the vendored offline
    provisioner, boots/unlocks phosh, and saves `golden`. It is UEFI (OVMF pflash); the
-   writable **`OVMF_VARS.qcow2`** varstore is seeded by `tiles-manifest.sh` post-emit
+   writable **`OVMF_VARS.qcow2`** varstore is seeded by `stations-manifest.sh` post-emit
    (idempotent safety net in `bring-up-all.sh` step 3). Root MUST be **AHCI/NVMe**
    (no `virtio_blk` in the initramfs). Unlock PIN **147147**. The live tile boots the
    qcow2 disk (`pmos-phosh.qcow2`, golden-fixture, no snapshot=on) — the builder's

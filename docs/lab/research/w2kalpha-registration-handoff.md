@@ -54,7 +54,7 @@ the canonical station doc is now [`docs/guests/w2kalpha.md`](../../guests/w2kalp
 
 ## Machinery knowledge earned this session (generalizes beyond w2kalpha)
 
-- **`tiles-registry.py new` scaffold rolls back** if the entry is incomplete
+- **`stations-registry.py new` scaffold rolls back** if the entry is incomplete
   (its own template lacks `stream.pointer`) — author the JSON by hand from
   irix/nt4 and let `validate` drive the TODO list.
 - **Enabled production stations fail validation without a poster + hero**

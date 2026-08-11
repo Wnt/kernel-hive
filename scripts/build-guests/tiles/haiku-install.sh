@@ -11,7 +11,7 @@
 #
 # Input (produced by build-guests/stages/haiku.sh):
 #   /data/gallery-guests/Haiku/haiku.iso
-# Output (consumed by streamhost/tiles-manifest.sh):
+# Output (consumed by streamhost/stations-manifest.sh):
 #   /data/vms/streamhost/tiles/haiku/haiku-persist.qcow2
 #
 # The disk-only phase uses the launcher's exact guest-visible device set:

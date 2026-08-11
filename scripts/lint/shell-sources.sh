@@ -19,11 +19,11 @@
 # global excludes, so node_modules/, build output and scratch dirs stay
 # invisible. On a clean CI checkout every variant is the tracked set.
 #
-# EXCLUDES generated shell files (produced by scripts/tiles-registry.py). Those
+# EXCLUDES generated shell files (produced by scripts/stations-registry.py). Those
 # are verified by the generated-file drift gate (they must match the generator
 # byte-for-byte); the generator's output is not hand-formatted, so linting them
 # would fight the drift gate. Keep this list in lockstep with the GENERATED set
-# in scripts/check-file-size.mjs and generated() in scripts/tiles-registry.py.
+# in scripts/check-file-size.mjs and generated() in scripts/stations-registry.py.
 set -euo pipefail
 
 MODE=(--cached --others --exclude-standard)
@@ -38,6 +38,6 @@ esac
 
 git ls-files "${MODE[@]}" '*.sh' \
   ':(exclude)scripts/build-guests/build-all.sh' \
-  ':(exclude)streamhost/tiles-manifest.sh' \
+  ':(exclude)streamhost/stations-manifest.sh' \
   ':(exclude)streamhost/bring-up-all.sh' |
   sort -u

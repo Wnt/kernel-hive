@@ -215,7 +215,7 @@ route concretely rather than tediously:
 - `scripts/gen_tiles_json.py` — what `labctl gen` runs — hard-exits with
   `declared/live tile set mismatch` for any streamhost registry row with no
   `/data/vms/streamhost/tiles/<tileDir>/` directory, and
-  `tiles-registry.py --check` on the box compares the same two sets. Both arms
+  `stations-registry.py --check` on the box compares the same two sets. Both arms
   live under `/data/vms/soltest/debridge-7f3a/`, so a registry row **breaks
   `labctl gen` for every other session** until the arms are moved into the
   production tile directory and given a `tile.env` + `qemu-streamhost.sh`. Arm B

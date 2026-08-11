@@ -9,7 +9,7 @@ IRIX subsystem's own second layer.
 
 | Path | What it is |
 |---|---|
-| `build-all.sh` | The orchestrator. **GENERATED** — `python3 scripts/tiles-registry.py generate` renders it from `registry/templates/build-all.sh.in` + the `build.rows` of `registry/tiles/*.json`. Never hand-edit it; edit the registry entry and run `make tile-registry-generate`. |
+| `build-all.sh` | The orchestrator. **GENERATED** — `python3 scripts/stations-registry.py generate` renders it from `registry/templates/build-all.sh.in` + the `build.rows` of `registry/tiles/*.json`. Never hand-edit it; edit the registry entry and run `make station-registry-generate`. |
 | `check-assets.sh` | The staged-media/env preflight, also reachable as `build-all.sh --check-assets`. Reads `assets/`. |
 
 Both are pinned at the top on purpose: `build-all.sh` is hardcoded in
@@ -57,7 +57,7 @@ authoritative ordered stack (the order is load-bearing) and is sourced by both
 
 ## Adding a new OS
 
-`python3 scripts/tiles-registry.py new-os …` scaffolds
+`python3 scripts/stations-registry.py new-os …` scaffolds
 `scripts/build-guests/tiles/<id>.sh` and writes the matching registry entry, so
 the manifest row and the file land together. The full procedure — sourcing
 media through to the acceptance matrix — is

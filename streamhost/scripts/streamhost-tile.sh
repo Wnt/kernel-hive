@@ -2,7 +2,7 @@
 # streamhost-tile.sh — emit one streamhost gallery tile's files. Materializes the
 # per-tile config the systemd unit (deploy/streamhost@.service) consumes, and a
 # QEMU launch script wired for streamhost. The authoritative ledger of every
-# tile's emit invocation is ../tiles-manifest.sh.
+# tile's emit invocation is ../stations-manifest.sh.
 #
 # THIS SCRIPT NEVER STARTS A TILE ON ITS OWN. It only writes files + (with
 # --install) drops the systemd unit. Starting is a deliberate
@@ -386,7 +386,7 @@ done
 
 # ---- deployment-local override (registry/local.env, gitignored) ----
 # The repo ships a placeholder HOST_IP (192.0.2.10) so the registry's outputs stay
-# a deterministic public artifact (checked by `make tile-registry-check`). An
+# a deterministic public artifact (checked by `make station-registry-check`). An
 # operator's real address lives ONLY in registry/local.env on the box, never in
 # a tracked file. --host-ip on the command line still wins over both.
 if [ "$HOST_IP_SET" != 1 ]; then

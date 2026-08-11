@@ -10,7 +10,7 @@ type Project = { provide: (key: 'galleryManifest', value: unknown) => void };
 export default function setup(project: Project) {
   const rendered = execFileSync(
     'python3',
-    ['scripts/tiles-registry.py', 'emit', 'gallery-manifest.json'],
+    ['scripts/stations-registry.py', 'emit', 'gallery-manifest.json'],
     { cwd: new URL('../', import.meta.url), maxBuffer: 32 * 1024 * 1024 },
   );
   project.provide('galleryManifest', JSON.parse(rendered.toString('utf8')));

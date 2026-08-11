@@ -50,7 +50,7 @@ DIST="$SPA_WEB/dist"
 LOCAL_PKI="$REPO/scripts/serve/pki"
 # All four published documents are RENDERED, never committed: resolved from
 # registry/tiles/*.json + registry/posters/*.md on the way out
-# (tiles-registry.py rendered()). publish_manifests re-renders before it reads.
+# (stations-registry.py rendered()). publish_manifests re-renders before it reads.
 TILES_SRC="$REPO/build/registry/tiles.json"
 GALLERY_MANIFEST_SRC="$REPO/build/registry/gallery-manifest.json"
 POSTER_DOCS_SRC="$REPO/build/registry/poster-docs.json"
@@ -147,7 +147,7 @@ publish_manifests() {
   # registry, and publish those bytes. A registry that no longer validates fails
   # HERE, with the live serving plane untouched.
   msg "rendering the runtime documents from the registry"
-  python3 "$REPO/scripts/tiles-registry.py" render >/dev/null || {
+  python3 "$REPO/scripts/stations-registry.py" render >/dev/null || {
     msg "ERROR: render failed (registry does not validate) — nothing published"
     exit 1
   }

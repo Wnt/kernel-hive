@@ -147,7 +147,7 @@ consecutive unvisited restarts (must NOT degrade to cold boot); reset path
   production station owns its tap/core-pin/ports.
 - Gates before done: bash (`shfmt`+`shellcheck` via `scripts/lint/
   shell-sources.sh`), `node scripts/check-file-size.mjs --strict`,
-  `make tile-registry-check`; C++ (MAME fork) has no repo gate — the station's
+  `make station-registry-check`; C++ (MAME fork) has no repo gate — the station's
   verification IS the gate.
 - Deploy: mirrored files go through `scripts/dev/box-sync-push.sh` (the
   pre-push gate blocks on drift); launcher/fixture changes for irix are

@@ -21,7 +21,7 @@ p95/p99 win under guest CPU load; otherwise keep the already-working warpd path.
 
 ## Actual station and baseline
 
-The checked-in source of truth is `streamhost/tiles-manifest.sh`; the generated launcher is not in
+The checked-in source of truth is `streamhost/stations-manifest.sh`; the generated launcher is not in
 this checkout, so its emitted copy was also inspected read-only on `lab`. The current pinned device
 set is:
 
@@ -236,7 +236,7 @@ its `Dev.init`. Installation and bake should be:
 5. Quiesce the input backend and require `producer == consumer` with no asserted IRQ. Cleanly
    `fshalt`, cold boot with the final production device set, reach stable rio, then `delvm golden`
    and `savevm golden`. Relaunch normally with `-loadvm golden` and retest.
-6. Update `streamhost/tiles-manifest.sh`—the device-set ledger—and the reproducible 9front build/bake
+6. Update `streamhost/stations-manifest.sh`—the device-set ledger—and the reproducible 9front build/bake
    automation. Retain `virtio-net-pci` and the host forward initially for rollback; removing them is
    a separate device-set change.
 

@@ -186,7 +186,7 @@ Two encoding details that bit during the add:
   would render as `::-`, and `labctl`'s `split(":", 1)` returns an empty guest
   and **silently drops it** — one missing character, not an error. `%`, `,` and
   `:` are therefore percent-encoded (`keymap_escape` in
-  `scripts/tiles-registry.py`, `keymap_unescape` in `scripts/labctl`), so the
+  `scripts/stations-registry.py`, `keymap_unescape` in `scripts/labctl`), so the
   shipped value reads `…,%3A:-,*:_,+:%3A,…`. The KC 85/4 add hit the same wall
   from the German side in the same wave; this station adopts that mechanism rather
   than inventing a second one.
@@ -243,7 +243,7 @@ Two other things moved the numbers, and both are worth knowing:
 Shipped: `SH_KEY_MIN_HOLD_MS=80`, `SH_KEY_MIN_GAP_MS=80`, matching
 vic20/plus4/c128. The registry declares `demoProgram.perCharMs: 170`, above the
 160 ms drain rate those two knobs impose; `validate_demo_pacing` in
-`scripts/tiles-registry.py` fails the build if they ever disagree.
+`scripts/stations-registry.py` fails the build if they ever disagree.
 
 ## Checkpoint scene
 

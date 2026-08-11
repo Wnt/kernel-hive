@@ -16,9 +16,9 @@ Start every Tier 1–3 add with the scaffold command, then fill and prove what i
 creates:
 
 ```bash
-python3 scripts/tiles-registry.py new <osId> \
+python3 scripts/stations-registry.py new <osId> \
   --tier <1|2|3> --archetype <existing-archetype-id> --slot auto
-make tile-registry-check
+make station-registry-check
 ```
 
 The command reserves `slot` and UDP `54000+slot`, writes a schema-valid disabled
@@ -37,9 +37,9 @@ input or output.
 ## 1. Current scope and candidate backlog
 
 `registry/tiles/` is the source of truth for the current lineup. Each entry has
-an explicit `lifecycle`; `streamhost/tiles-manifest.sh` is generated from its
+an explicit `lifecycle`; `streamhost/stations-manifest.sh` is generated from its
 production entries rather than maintained as an independent inventory. At the
-current registry revision, `python3 scripts/tiles-registry.py count` reports
+current registry revision, `python3 scripts/stations-registry.py count` reports
 **39 lineup entries: 37 streamhost production stations and 2 showcase posters**.
 Use that command for the current roster count and `labctl ls` for observed live
 service state; do not copy the number into another inventory.
@@ -96,7 +96,7 @@ tileDir       runtime directory and systemd instance — MUST equal osId
 displayName   museum label, e.g. Solaris CDE
 ```
 
-`osId` and `tileDir` are the same string, and `tiles-registry.py` fails
+`osId` and `tileDir` are the same string, and `stations-registry.py` fails
 validation if they differ; the builder key may differ (it names a build script,
 not a running station). The two exhibits that once diverged
 (`solaris` → `solariscde`, `aros` → `amigaos`) required repeated special-case
@@ -528,7 +528,7 @@ that was itself broken. Look at the reference frame before believing a rung.
 hold+gap drain rate a backlog builds and BASIC loses the characters that arrive
 while it is tokenising. Declare `demoProgram.perCharMs` in the registry when a
 station drains slower than the fleet default — `validate_demo_pacing` in
-`scripts/tiles-registry.py` fails the build if the two disagree.
+`scripts/stations-registry.py` fails the build if the two disagree.
 
 **A guest's keyboard is not necessarily laid out like a PC's.** The UI's
 `typeText()` maps ASCII to US set1 scancodes. The MPF-II's 8×8 matrix puts `=` on
@@ -574,18 +574,18 @@ references it.
 Regenerate and prove byte parity after every registry edit:
 
 ```bash
-make tile-registry-validate
-make tile-registry-generate
-make tile-registry-check
+make station-registry-validate
+make station-registry-generate
+make station-registry-check
 ```
 
-`tile-registry-check` recomputes every output and fails on drift. The **Station
+`station-registry-check` recomputes every output and fails on drift. The **Station
 registry** GitHub Actions workflow runs the same check for pull requests and
 pushes to `main`. The generated surfaces and their actual inputs are:
 
 | Generated artifact (do not hand-edit) | Registry fields used |
 |---|---|
-| `streamhost/tiles-manifest.sh` | Production rows ordered by `render.tilesManifestOrder`; `render.tilesManifestPrelude` plus the emit invocation rendered from `tileDir` and `runtime.qemu.emitArgs` (`runtime.x11.emitArgs` for x11 stations). |
+| `streamhost/stations-manifest.sh` | Production rows ordered by `render.tilesManifestOrder`; `render.tilesManifestPrelude` plus the emit invocation rendered from `tileDir` and `runtime.qemu.emitArgs` (`runtime.x11.emitArgs` for x11 stations). |
 | `streamhost/bring-up-all.sh` | Production `tileDir` values grouped by `render.bringUpGroup` and ordered by `runtime.bringUpOrder`. |
 | `scripts/build-guests/build-all.sh` | `build.rows` entries (`order`, `prelude`, typed `value`, and optional `defaultOrder`) rendered as aligned manifest lines, plus shared rows in `registry/registry-v1.json`. |
 | `spa/src/three/archetypeRegistry.ts` | `id` and `spa`, rendered as an OS binding line (`render.bindingPrelude` kept, optional `render.bindingComment` appended) and ordered by `render.bindingOrder`. |
@@ -593,7 +593,7 @@ pushes to `main`. The generated surfaces and their actual inputs are:
 | `registry/generated/labctl-declarations.json` | Streamhost `tileDir` plus the declared keys in `operator.labctl`. Live observed checkpoint state is intentionally excluded. |
 
 Two more documents are **rendered, never committed** — they have no copy in the
-tree to hand-edit or to go stale, and `tiles-registry.py render` (into the
+tree to hand-edit or to go stale, and `stations-registry.py render` (into the
 gitignored `build/registry/`) or `emit <name>` (to stdout) resolves them from
 the registry whenever something needs them:
 
@@ -608,7 +608,7 @@ the registry whenever something needs them:
 | `index.json` | The aggregate of every entry — `runtime.tileEnv` merged with the station's `tile.env.fixture` — excluding generator-only `render` data. |
 
 Use this table as an exhaustive audit of the JSON entry, not as an edit list for
-derived files. `python3 scripts/tiles-registry.py explain <osId>` is useful for
+derived files. `python3 scripts/stations-registry.py explain <osId>` is useful for
 reviewing one entry's principal derived values.
 
 ### 6.0 Writing the entry: rendered blocks and visitor-facing fields
@@ -740,8 +740,8 @@ For an ordinary OS using an existing `ArchetypeId`, do not edit UI TypeScript or
 run Vite. After updating `registry/tiles/<osId>.json`:
 
 ```bash
-make tile-registry-generate
-make tile-registry-check
+make station-registry-generate
+make station-registry-check
 
 # On an authorized deploy run (not from a source-only task), publish the
 # generated signaling map and public lineup with atomic per-file replacement:
@@ -817,12 +817,12 @@ runtime-driven.
 ### 7.1 Pre-deploy checks
 
 ```bash
-make tile-registry-validate
-make tile-registry-generate
-make tile-registry-check
+make station-registry-validate
+make station-registry-generate
+make station-registry-check
 bash -n scripts/build-guests/tiles/<os>.sh
 bash -n streamhost/tiles/<tileDir>/qemu-streamhost.sh  # if verbatim
-python3 scripts/tiles-registry.py render     # renders every runtime document
+python3 scripts/stations-registry.py render     # renders every runtime document
 jq empty build/registry/tiles.json
 jq empty build/registry/golden-manifest.json
 jq empty build/registry/gallery-action-map.json
@@ -841,7 +841,7 @@ Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
 1. finish `registry/tiles/<osId>.json` and any hand-managed builder, guest doc,
    launcher, `tile.env.fixture`, or coldboot sidecar; prepare the gitignored
    credential separately when required;
-2. run `make tile-registry-generate`, then `make tile-registry-check`;
+2. run `make station-registry-generate`, then `make station-registry-check`;
 3. sync the tracked tree, including the registry, generated streamhost/serve/UI
    files, generated labctl declarations, and hand-managed tracked sidecars;
 4. emit with pinned machine types into scratch and pass `verify-emit`;
@@ -944,7 +944,7 @@ Then verify in a browser, not only with curl:
 - stopping/restarting this station by pidfile/systemd does not affect another station;
 - no secret appears in the UI bundle, network response, Git diff, or logs.
 
-Finally, run `make tile-registry-check`, compare the live signal and labctl
+Finally, run `make station-registry-check`, compare the live signal and labctl
 outputs with the canonical entry, and keep the pre-change launcher+golden pair
 until repeated cold boots and restores have passed.
 

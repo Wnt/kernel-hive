@@ -86,7 +86,7 @@ ISO and converges `Alpine.iso` inside the selected `ISO_DIR`. It never touches
 
 ## Station wiring (production)
 
-- Manifest stanza: `emit alpine` in `streamhost/tiles-manifest.sh`
+- Manifest stanza: `emit alpine` in `streamhost/stations-manifest.sh`
   (`--pointer abs --audio-dev ac97 --input-dev usb --mem 1024 --smp 2
   --cpu host --vga std --cdrom <ISO> --boot d`, no `--machine`).
 - The live launcher `tiles/alpine/qemu-streamhost.sh` is the hand-baked checkpoint

@@ -164,10 +164,10 @@ box_sync_load_pairs() {
   # shows as DIFFERS until the override is reverted.
   #
   # The repo side of all four runtime documents is RENDERED, not committed
-  # (tiles-registry.py rendered()), so render them here: each pair then compares
+  # (stations-registry.py rendered()), so render them here: each pair then compares
   # the deployed bytes against what the registry says right now, which is the
   # only comparison worth making.
-  python3 "$REPO/scripts/tiles-registry.py" render --out "$REPO/build/registry" >/dev/null ||
+  python3 "$REPO/scripts/stations-registry.py" render --out "$REPO/build/registry" >/dev/null ||
     {
       echo "box-sync: render failed (registry does not validate)" >&2
       return 1

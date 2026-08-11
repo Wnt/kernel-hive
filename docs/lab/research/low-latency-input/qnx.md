@@ -299,7 +299,7 @@ different-widget gate on a fresh clone checkpoint:
    rollback is one `cp` + `loadvm` (follow the `qnx-upgrade` backup pattern).
 2. **Add the device to the live launcher** —
    `streamhost/tiles/qnx/qemu-streamhost.sh` (and the manifest
-   `streamhost/tiles-manifest.sh`): add the `-chardev` + `-device gallery-hid-pci`
+   `streamhost/stations-manifest.sh`): add the `-chardev` + `-device gallery-hid-pci`
    exactly as validated on the clone. This is a device-set change → the existing
    checkpoint's `loadvm` will mismatch → a **full fresh checkpoint recapture is mandatory**
    (cold-boot to Photon, load the driver line, clean screendump, `savevm golden`).

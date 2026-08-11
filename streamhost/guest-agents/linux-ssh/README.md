@@ -53,7 +53,7 @@ mkdir -p /boot/home/config/settings/boot/launch && ln -s /bin/sshd /boot/home/co
 ```
 NOTE: the live haiku launcher boots a persistent `haiku-persist.qcow2` (`-boot c`),
 NOT the manifest's `--cdrom` LiveCD emit — the launcher is hand-baked; don't
-regenerate it blindly from `tiles-manifest.sh`.
+regenerate it blindly from `stations-manifest.sh`.
 
 ## Verify (from the box, all non-interactive)
 ```sh

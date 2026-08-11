@@ -2,7 +2,7 @@
 
 The station boots a 512 MiB qcow2 directly to `MENU.BAT`, with eight DOS games and
 Arachne 1.99 GPL. The authoritative launcher is the `freedos` stanza in
-`streamhost/tiles-manifest.sh`:
+`streamhost/stations-manifest.sh`:
 `pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0`, host CPU under KVM, 64 MiB, two
 vCPUs, Cirrus VGA, SB16, an NE2000 PCI NIC, and a PS/2 relative mouse. The
 machine's existing PC speaker is routed to the same `snd0` backend; this is

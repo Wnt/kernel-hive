@@ -1,7 +1,7 @@
 # TempleOS gallery station — merge notes for `gallery-integrate-all.sh` (neko-era)
 
 > **Historical (neko-era) wiring below.** TempleOS runs today as the streamhost station
-> **`templeos`** — see its stanza in `streamhost/tiles-manifest.sh`
+> **`templeos`** — see its stanza in `streamhost/stations-manifest.sh`
 > (`streamhost@templeos`). `gallery-integrate-all.sh` is neko-era, deleted in the
 > 2026-07 restructure — git history; the reconciliation pass below never ran. The
 > ISO pin, build script and guest facts still apply.

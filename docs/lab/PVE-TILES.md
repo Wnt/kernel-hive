@@ -80,9 +80,9 @@ coupling is `/data/vms/streamhost/tiles/<tile>/qmp.sock`.
 4. Generate and install the non-Rust artifacts:
 
    ```bash
-   make tile-registry-generate
-   make tile-registry-check
-   bash streamhost/tiles-manifest.sh
+   make station-registry-generate
+   make station-registry-check
+   bash streamhost/stations-manifest.sh
    ```
 
    The emitter writes `tile.env` and `ROLLBACK.md`, and emits no

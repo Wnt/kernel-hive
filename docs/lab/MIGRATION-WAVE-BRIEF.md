@@ -178,7 +178,7 @@ Report exactly this, in this order:
 4. **Gate results** — the four you owe:
    `shfmt -d` + `shellcheck` over `$(scripts/lint/shell-sources.sh)`,
    `ruff check scripts && ruff format --check scripts`,
-   `node scripts/check-file-size.mjs --strict`, `make tile-registry-check`.
+   `node scripts/check-file-size.mjs --strict`, `make station-registry-check`.
    Plus `scripts/dev/bridge-suite-status.sh` (needs labhost; not a CI gate).
    Red is not done — report **BLOCKED**, not done.
 5. **Box-sync line.** `verify-box-sync.sh` clean, or which rows you pushed with
@@ -207,9 +207,9 @@ whichever line sorts last. Also: the `_note` strings carry a hand-typed count
 ("20 live overlays") that every wave rewrites and that is *derivable from the
 stations map twelve lines below*. Recompute it; do not pick a side.
 
-**Generated files — regenerate, never merge.** `streamhost/tiles-manifest.sh`,
+**Generated files — regenerate, never merge.** `streamhost/stations-manifest.sh`,
 `spa/src/three/archetypeRegistry.ts` and the rest are outputs. Edit `registry/tiles/<tile>.json`, run `make
-tile-registry-generate`, and let `make tile-registry-check` be the proof.
+station-registry-generate`, and let `make station-registry-check` be the proof.
 Hand-resolving one of these is always wrong, even when it merges cleanly. (The
 runtime documents — the public lineup, poster prose, the serve JSONs, the
 registry aggregate — are rendered, not committed, so they cannot conflict at

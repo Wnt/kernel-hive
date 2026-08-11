@@ -2,7 +2,7 @@
 # =============================================================================
 # scripts/dev/verify-emit.sh — launcher-parity gate for the registry production roster.
 #
-# Proves that this repo's streamhost/tiles-manifest.sh + streamhost-tile.sh
+# Proves that this repo's streamhost/stations-manifest.sh + streamhost-tile.sh
 # reproduce every LIVE station's {tile.env,qemu-streamhost.sh,x11-runtime.sh}
 # BYTE-FOR-BYTE,
 # modulo the whitelisted-and-justified deltas in verify-emit-allow.diffpatterns.
@@ -10,7 +10,7 @@
 # after ANY change to the manifest, the emitter, or a tracked per-station file.
 #
 # What it does (labhost's /data is treated as READ-ONLY; only /tmp is written):
-#   1. rsync the repo's streamhost/{scripts,tiles,tiles-manifest.sh} to
+#   1. rsync the repo's streamhost/{scripts,tiles,stations-manifest.sh} to
 #      $HOST:/tmp/verify-emit.<id>/streamhost/   (NEVER into live paths)
 #   1b. copy labhost's /data/kernel-hive/registry/local.env (if present) into
 #      the kit as registry/local.env, so the emitter resolves the operator's
@@ -18,7 +18,7 @@
 #      Without it every tile.env diffs on the two address lines and the gate
 #      was blind (2026-08-11). No secret leaves labhost: the file is copied
 #      labhost-side into the /tmp scratch kit the EXIT trap removes.
-#   2. on labhost: tiles-manifest.sh --out-root /tmp/verify-emit.<id>/out
+#   2. on labhost: stations-manifest.sh --out-root /tmp/verify-emit.<id>/out
 #      (emits every registry production station into the scratch dir; file CONTENTS still reference
 #      the live runtime root, so a clean emit is byte-identical to live)
 #   3. per station, per emitted file: diff LIVE (left, `<`) vs EMITTED (right,
@@ -111,7 +111,7 @@ else
   DEST="$HOST:$REMOTE/streamhost/"
 fi
 rsync -a --delete "$REPO/streamhost/scripts" "$REPO/streamhost/tiles" \
-  "$REPO/streamhost/tiles-manifest.sh" "$DEST" || {
+  "$REPO/streamhost/stations-manifest.sh" "$DEST" || {
   echo "FATAL: rsync failed" >&2
   exit 1
 }
@@ -121,7 +121,7 @@ rsync -a --delete "$REPO/streamhost/scripts" "$REPO/streamhost/tiles" \
 host_run "if [ -f /data/kernel-hive/registry/local.env ]; then mkdir -p $REMOTE/registry && cp /data/kernel-hive/registry/local.env $REMOTE/registry/local.env; fi"
 
 echo "[verify-emit] emit registry production tiles into $REMOTE/out (scratch; live paths untouched)"
-host_run "bash $REMOTE/streamhost/tiles-manifest.sh --out-root $REMOTE/out $PIN_ARG" \
+host_run "bash $REMOTE/streamhost/stations-manifest.sh --out-root $REMOTE/out $PIN_ARG" \
   >"$LOCAL/emit.log" 2>&1 || {
   echo "FATAL: emit failed —"
   tail -20 "$LOCAL/emit.log"

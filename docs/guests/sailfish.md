@@ -6,7 +6,7 @@ build: `scripts/build-guests/tiles/sailfishos-gui.sh`. This is a **merge hand-of
 the orchestrator — it does NOT edit any shared script.
 
 > **Current state:** the live gallery runs this as the streamhost station
-> **`sailfishos`** — see its stanza in `streamhost/tiles-manifest.sh` (disk
+> **`sailfishos`** — see its stanza in `streamhost/stations-manifest.sh` (disk
 > `/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2`, `streamhost@sailfishos`).
 > The neko-era material below is historical: `gallery-integrate-all.sh` and the
 > losing VirtualBox Option-A driver `scripts/build-guests/tiles/sailfishos-vbox.sh` are

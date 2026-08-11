@@ -20,7 +20,7 @@
     "declaration and the box disagree.",
     "",
     "Consumed by scripts/build-guests/lib/bridge-suite.sh. Not generated: never",
-    "run tiles-registry.py against it, and do not move it into registry/tiles/."
+    "run stations-registry.py against it, and do not move it into registry/tiles/."
   ],
   "defaultSuite": "bookworm",
   "suites": {

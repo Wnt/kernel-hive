@@ -3,8 +3,8 @@
 Status (2026-07-16): the canonical per-tile registry, generator, generated
 streamhost/serve/SPA/labctl artifacts, and drift CI described by the core of
 this proposal are implemented. See `registry/tiles/`,
-`scripts/tiles-registry.py`, the `tile-registry-generate`,
-`tile-registry-check`, and `tile-registry-validate` Make targets, and
+`scripts/stations-registry.py`, the `station-registry-generate`,
+`station-registry-check`, and `station-registry-validate` Make targets, and
 `.github/workflows/tile-registry.yml`. The later runtime-driven SPA design is
 not yet implemented; bindings and catalog rows are generated but remain
 bundle-time data, so an SPA rebuild is still required.
@@ -37,7 +37,7 @@ but it should not need repeated ID, port, pointer, reset, and placard edits.
 
 There are three independent lineup authorities:
 
-1. **Runtime/build authority:** `streamhost/tiles-manifest.sh`, plus the separate
+1. **Runtime/build authority:** `streamhost/stations-manifest.sh`, plus the separate
    order in `streamhost/bring-up-all.sh` and builder registration in
    `scripts/build-guests/build-all.sh`.
 2. **Serve/reset authority:** `scripts/serve/tiles.json` for signal routing and
@@ -54,7 +54,7 @@ The sets do not mean the same thing and already have different sizes:
 
 | Source | Rows | Meaning |
 |---|---:|---|
-| `streamhost/tiles-manifest.sh` | 28 | production tiles which can be emitted |
+| `streamhost/stations-manifest.sh` | 28 | production tiles which can be emitted |
 | `scripts/serve/golden-manifest.json` | 28 | production reset fixtures |
 | `scripts/serve/tiles.json` | 30 | 28 production signals plus two `soltest-*` experiments |
 | SPA `OS_BINDINGS` | 33 | 30 signal-visible rows plus three showcase posters |
@@ -281,7 +281,7 @@ validate that the path exists.
 
 ## 4. Generators and validation
 
-Add one tool, for example `scripts/tiles-registry.py`, with four modes:
+Add one tool, for example `scripts/stations-registry.py`, with four modes:
 
 ```text
 validate   schema + cross-entry uniqueness + referenced-path checks
@@ -313,7 +313,7 @@ it. `check` belongs in CI and in the pre-deploy path.
 data rather than themselves becoming generated monoliths. Their control flow and
 special cases remain reviewable code.
 
-The current `tiles-manifest.sh` can be preserved as a thin wrapper:
+The current `stations-manifest.sh` can be preserved as a thin wrapper:
 
 ```bash
 source "$HERE/generated/tiles-emits.sh"
@@ -586,8 +586,8 @@ $EDITOR streamhost/tiles/<tileDir>/qemu-streamhost.sh
 $EDITOR streamhost/tiles/<tileDir>/tile.env.fixture
 $EDITOR streamhost/tiles/<tileDir>/golden-bake.sh
 
-scripts/tiles-registry.py validate
-scripts/tiles-registry.py check
+scripts/stations-registry.py validate
+scripts/stations-registry.py check
 scripts/build-guests/build-all.sh --check-assets --only <builderKey>
 scripts/build-guests/build-all.sh --only <builderKey>
 # prove framebuffer/input/reset, then deploy generated artifacts atomically

@@ -3,7 +3,7 @@
 > **Historical (neko-era) wiring below.** The CT-110 neko station (:8110, its compose
 > project and the `gallery-integrate-all.sh` manifest row) is superseded: AROS runs
 > today as the streamhost station **`aros`** — see its stanza in
-> `streamhost/tiles-manifest.sh` and the `streamhost@aros` unit.
+> `streamhost/stations-manifest.sh` and the `streamhost@aros` unit.
 > `gallery-integrate-all.sh` / `exotic-guests-add.sh` are neko-era, deleted in the
 > 2026-07 restructure — git history. The build script, licensing and in-guest
 > behaviour notes still apply.

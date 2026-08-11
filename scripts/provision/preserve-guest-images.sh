@@ -239,7 +239,7 @@ What landed on ${DST:-<DST>}:
 Next on the real box, in order (see MASTER-REPRODUCE.md):
   1. VMs:      qm set <id> --delete ide2,sata0,sata1 2>/dev/null; qm start <id>
                (Win11 900 boots straight to desktop; RDP tile then bridges to it.)
-  2. Gallery:  wire the streamhost tiles (streamhost/tiles-manifest.sh emit
+  2. Gallery:  wire the streamhost tiles (streamhost/stations-manifest.sh emit
                invocations + streamhost/bring-up-all.sh; see MASTER-REPRODUCE.md).
 
 INCREMENTALS: this used snapshot @${SNAP}. To ship only the delta later, keep the

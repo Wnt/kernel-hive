@@ -88,6 +88,6 @@ hand-edited. Roughly:
 2. Decide the verb. Either a new `exec_kind` that routes into IRIX, or keep
    `labctl exec` on the kiosk and add a separate one for the Indy. The sibling
    MAME tile uses `exec_kind: serial_e`, which is the closer precedent.
-3. Update `registry/tiles/indyr4400.json`, `make tile-registry-generate`,
+3. Update `registry/tiles/indyr4400.json`, `make station-registry-generate`,
    `labctl gen`, and fix the matrix `notes` — they still assert the Indy is
    reachable only by framebuffer + PS/2.

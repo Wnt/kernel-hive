@@ -31,7 +31,7 @@ committed or served.
 ## Pinned QEMU device set
 
 The final device set is recorded in `registry/tiles/redstar3.json` and emitted
-by `streamhost/tiles-manifest.sh`:
+by `streamhost/stations-manifest.sh`:
 
 - `qemu-system-x86_64`, KVM, `pc-i440fx-11.0`, one vCPU, 1024 MiB;
 - `-cpu Nehalem,kvm=off`, the stable fallback selected after `-cpu host`
@@ -142,9 +142,9 @@ Repository gates:
 ```bash
 bash -n scripts/build-guests/tiles/redstar3.sh
 scripts/build-guests/check-assets.sh --only redstar3
-make tile-registry-generate
-make tile-registry-check
-make tile-registry-validate
+make station-registry-generate
+make station-registry-check
+make station-registry-validate
 ```
 
 Live acceptance uses `labctl shot redstar3`, `GET /signal/redstar3.json`, and

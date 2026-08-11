@@ -2,7 +2,7 @@
 //!
 //! Watches the hand-written sources (registry/tiles, registry/posters,
 //! registry-v1.json, templates, streamhost/tiles fixtures, spa/src) and, on
-//! every debounced change, runs `tiles-registry.py generate` and `render`
+//! every debounced change, runs `stations-registry.py generate` and `render`
 //! (both validate first). Only when the change PARSES does anything deploy:
 //! runtime manifests (gallery-manifest.json, poster-docs.json, tiles.json,
 //! golden-manifest.json) publish to labhost via `serve-https-spa.sh manifests`;
@@ -26,7 +26,7 @@ use notify_debouncer_full::{new_debouncer, DebounceEventResult, DebouncedEvent};
 
 /// Outputs that `serve-https-spa.sh manifests` publishes to labhost. All four
 /// are RENDERED (never committed), so they are watched at their build paths —
-/// `tiles-registry.py render` writes them, and a museum-copy or poster edit
+/// `stations-registry.py render` writes them, and a museum-copy or poster edit
 /// changes nothing else, which is exactly the save that must still reach the
 /// gallery.
 const MANIFEST_OUTPUTS: &[&str] = &[
@@ -87,11 +87,12 @@ impl Dirty {
 fn find_repo(start: &Path) -> Result<PathBuf> {
     let mut dir = start.to_path_buf();
     loop {
-        if dir.join("scripts/tiles-registry.py").is_file() && dir.join("registry/tiles").is_dir() {
+        if dir.join("scripts/stations-registry.py").is_file() && dir.join("registry/tiles").is_dir()
+        {
             return Ok(dir);
         }
         if !dir.pop() {
-            bail!("not inside a kernel-hive checkout (scripts/tiles-registry.py not found); pass --repo");
+            bail!("not inside a kernel-hive checkout (scripts/stations-registry.py not found); pass --repo");
         }
     }
 }
@@ -149,16 +150,16 @@ fn load_local_env(
 }
 
 fn output_paths(repo: &Path, extra: &[&str]) -> Result<BTreeSet<String>> {
-    let mut args = vec!["scripts/tiles-registry.py", "paths"];
+    let mut args = vec!["scripts/stations-registry.py", "paths"];
     args.extend_from_slice(extra);
     let out = Command::new("python3")
         .args(&args)
         .current_dir(repo)
         .output()
-        .context("running tiles-registry.py paths")?;
+        .context("running stations-registry.py paths")?;
     if !out.status.success() {
         bail!(
-            "tiles-registry.py paths failed:\n{}",
+            "stations-registry.py paths failed:\n{}",
             String::from_utf8_lossy(&out.stderr)
         );
     }
@@ -257,10 +258,10 @@ fn run(repo: &Path, env: &[(String, String)], program: &str, args: &[&str]) -> R
 fn produce(repo: &Path, command: &str) -> Result<bool> {
     let started = Instant::now();
     let out = Command::new("python3")
-        .args(["scripts/tiles-registry.py", command])
+        .args(["scripts/stations-registry.py", command])
         .current_dir(repo)
         .output()
-        .with_context(|| format!("running tiles-registry.py {command}"))?;
+        .with_context(|| format!("running stations-registry.py {command}"))?;
     let secs = started.elapsed().as_secs_f32();
     if out.status.success() {
         println!("devwatch: {command} ok ({secs:.1}s)");

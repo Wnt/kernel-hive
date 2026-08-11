@@ -99,7 +99,7 @@ log() { printf '[%s] %s\n' "$KEY" "$*" >&2; }
 #   (ACCEL=kvm -> -enable-kvm, -cpu host). VERIFIED: full desktop render + live
 #   input under KVM. The current manifest uses a USB tablet for absolute input.
 #   Revert acceleration only by setting VERIFY_ACCEL=tcg in this verifier; the
-#   production source of truth is streamhost/tiles-manifest.sh.
+#   production source of truth is streamhost/stations-manifest.sh.
 ###############################################################################
 
 # --------------------------------------------------------------- 0. workspace

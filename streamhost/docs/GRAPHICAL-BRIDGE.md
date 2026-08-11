@@ -158,9 +158,9 @@ files.
 Before committing a real registry source:
 
 ```bash
-python3 scripts/tiles-registry.py count
-make tile-registry-generate
-make tile-registry-check
+python3 scripts/stations-registry.py count
+make station-registry-generate
+make station-registry-check
 ```
 
 ## 2. Guaranteed absolute-pointer contract

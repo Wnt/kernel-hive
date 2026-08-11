@@ -27,7 +27,7 @@
 // stale entry so the budget re-arms. An exclusion pointing at a file we never
 // scan (generated / removed / renamed) is stale too.
 //
-// Generated artifacts (see generated() in scripts/tiles-registry.py) and vendored
+// Generated artifacts (see generated() in scripts/stations-registry.py) and vendored
 // trees are never budgeted — they are not hand-authored source.
 //
 // WHICH FILES ARE SCANNED — it depends on the CONTEXT, and the difference is
@@ -67,7 +67,7 @@ const CAPS = {
   bash: { soft: 400, hard: 600, label: "Bash" },
 };
 
-// Generated files — kept in lockstep with generated() in scripts/tiles-registry.py.
+// Generated files — kept in lockstep with generated() in scripts/stations-registry.py.
 // These are emitted from the typed registry + templates; never hand-authored.
 const GENERATED = new Set([
   "spa/src/data/posterIndex.ts",
@@ -75,7 +75,7 @@ const GENERATED = new Set([
   "spa/src/data/keyboards.ts",
   "spa/src/three/archetypeRegistry.ts",
   "scripts/build-guests/build-all.sh",
-  "streamhost/tiles-manifest.sh",
+  "streamhost/stations-manifest.sh",
   "streamhost/bring-up-all.sh",
 ]);
 const GENERATED_PREFIXES = ["registry/generated/"];

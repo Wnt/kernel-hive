@@ -25,7 +25,7 @@ stale — a lost click is worse than a backwards cursor. Relative moves carry no
 `cseq` at all, because deltas accumulate.
 
 `pointer_mode` is **derived, not chosen**: it is a projection of the backend,
-and `tiles-registry.py` re-derives it and *fails the build* on disagreement. The
+and `stations-registry.py` re-derives it and *fails the build* on disagreement. The
 declared method is pinned against the emulated device ledger — `qemu-usb-tablet`
 requires `usb-tablet` in the launcher, `qemu-ps2-relative` forbids it,
 `gallery-hid` requires `gallery-hid-pci`.

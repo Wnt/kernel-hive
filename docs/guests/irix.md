@@ -227,7 +227,7 @@ binary runs the old path unchanged. If the BINARY itself is suspect, the
 previous one is kept beside it as `mame/sgi.prev-<md5>` — swap it back and
 restart. Reverting in the repo is the same three values in
 `registry/tiles/irix.json` (`runtime.x11.capture`, `stream.pointer.backend`)
-plus `make tile-registry-generate`.
+plus `make station-registry-generate`.
 
 ### Measured win
 
@@ -722,7 +722,7 @@ ssh lab "sed -i 's/irix65-apps-v3.chd/irix65-apps-v3-serial.chd/' \
 ssh lab 'systemctl restart streamhost@irix'
 ssh lab 'python3 /root/irixexec.py /data/vms/streamhost/tiles/irix --ping'
 # 3. LAST: publish the capability and prove it
-#    registry/tiles/irix.json -> "exec_kind": "serial_e"  (+ make tile-registry-generate,
+#    registry/tiles/irix.json -> "exec_kind": "serial_e"  (+ make station-registry-generate,
 #    commit, sync the repo to labhost)
 ssh lab 'labctl gen && labctl ls | grep irix'
 ssh lab 'labctl exec irix "hinv | head -3"'

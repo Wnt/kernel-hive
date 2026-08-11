@@ -10,7 +10,7 @@ on `-vga std` via IBM GENGRADD (2026-07-27) — see "SOLVED" at the end of this 
 the 640×480 sections below are historical.
 
 > **Historical (neko-era) wiring below.** OS/2 runs today as the streamhost station
-> **`os2warp`** — see its stanza in `streamhost/tiles-manifest.sh`
+> **`os2warp`** — see its stanza in `streamhost/stations-manifest.sh`
 > (`streamhost@os2warp`). The neko compose/:8108 wiring and the
 > `gallery-integrate-all.sh` manifest row below are neko-era; that integrator was
 > deleted in the 2026-07 restructure — git history. Build script, licensing and

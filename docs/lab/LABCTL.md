@@ -65,7 +65,7 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
 - **`labctl reset`** is `loadvm golden`, and refuses stations without a checkpoint
   snapshot (`serenityos`, `toaruos`, `sailfishos`).
 - **One station, one name.** A station's registry id, its `tileDir` and its `SH_TILE`
-  are the same string, and `tiles-registry.py` fails the build if an entry
+  are the same string, and `stations-registry.py` fails the build if an entry
   breaks that. The last two exceptions — `aros`/`amigaos` and
   `solaris`/`solariscde` — were renamed on 2026-08-10. The serving plane still
   reads the daemon's identity from the station's own `signaling.json` rather than

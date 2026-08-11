@@ -335,7 +335,7 @@ Base-media smoke-test command (validated on host, QEMU 11.0.0):
     -cdrom kolibri.iso -boot d -vga std \\
     -audiodev pa,id=snd -device AC97,audiodev=snd -rtc base=localtime
 
-Production contract (streamhost/tiles-manifest.sh):
+Production contract (streamhost/stations-manifest.sh):
   The emitted launcher adds usb-tablet and a persistent virtio state.qcow2.
   That qcow2 holds savevm 'golden', and startup passes '-loadvm golden' when
   the snapshot exists. The bake and production launchers must use identical

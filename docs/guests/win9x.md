@@ -793,7 +793,7 @@ VNC_DISP=93 NONET=1 VGA=std MACHINE=pc,acpi=off,usb=off,kernel-irqchip=off \
 # neko Win95 station — audio/input/video performance tuning
 
 > **Historical (neko-era) appendix.** The Win9x guests run today as the streamhost
-> stations `win95` / `win98se` / `win311` (`streamhost/tiles-manifest.sh`). The
+> stations `win95` / `win98se` / `win311` (`streamhost/stations-manifest.sh`). The
 > neko-side artifacts referenced in this appendix — `gallery-integrate-all.sh`,
 > the compose overrides `scripts/tools/win95-perf-override.yml` /
 > `win311-perf-override.yml`, and `scripts/tools/win95-kvm-boottest.sh` — are all
@@ -1110,7 +1110,7 @@ order-of-magnitude, and lean on **content-fill %** and **CPU** for clean attribu
 
 > **SUPERSEDED.** The hang was resolved by the Standard-VGA display-driver swap
 > (the KVM recipe near the top of this file); the live `win95` launcher runs
-> `accel=kvm` today (`streamhost/tiles-manifest.sh`, image
+> `accel=kvm` today (`streamhost/stations-manifest.sh`, image
 > `win95-osr2-kvm.qcow2`). Kept for the diagnostic record.
 Applied `QEMU_MACHINE=pc,acpi=off,usb=off,accel=kvm` + `QEMU_SMP=1` and force-recreated win95.
 - KVM genuinely engaged: live cmdline had `accel=kvm`, and `/dev/kvm` fd was **open** in the
@@ -1333,7 +1333,7 @@ map → gameplay; in-game PS/2 stray clicks harmless.
 > **Image-name note:** the appendix predates the KVM recaptures — the live stations
 > boot the `-kvm` variants (`win95-osr2-kvm.qcow2`, `win98se-kvm.qcow2`; the
 > `win98se-games.qcow2` data disk is unchanged). See
-> `streamhost/tiles-manifest.sh`.
+> `streamhost/stations-manifest.sh`.
 
 ### Windows 95 OSR2
 

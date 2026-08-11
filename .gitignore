@@ -3,7 +3,7 @@
 # ============================================================================
 
 # ---- Dependencies / build output ----
-# build/ also covers build/registry/, where `tiles-registry.py render` drops the
+# build/ also covers build/registry/, where `stations-registry.py render` drops the
 # runtime documents that are deliberately NOT committed (gallery-manifest.json,
 # index.json) — see registry/README.md "Generated vs rendered".
 node_modules/
@@ -93,7 +93,7 @@ spa/src/data/credentials.ts
 
 # Deployment-local operator values (real host IP etc.) — provide locally from
 # registry/local.env.example. Never publish; the registry's generated and
-# rendered outputs must keep the placeholder for tile-registry-check
+# rendered outputs must keep the placeholder for station-registry-check
 # determinism.
 registry/local.env
 

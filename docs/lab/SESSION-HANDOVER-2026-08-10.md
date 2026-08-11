@@ -66,7 +66,7 @@ Fleet verified after deploy: `all 59 stations accept their own tickets`,
   (added this session) for additive publishing; the integrator does one
   wholesale publish after the merge. Deploy the bundle with
   `--exclude='*.json'` so rsync cannot take the manifest with it.
-- **`make tile-registry-generate` ABORTS on a validation error**, so it never
+- **`make station-registry-generate` ABORTS on a validation error**, so it never
   rewrites the generated files — and `tsc` then reports "merge conflict marker
   encountered" in a *generated* file. That reads as an unresolved merge but is
   really a registry validation failure two steps upstream. Fix the validation

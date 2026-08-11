@@ -55,7 +55,7 @@ registry/posters/gallery/<id>.candidates.json   ← authored by research agents
         ▼
 registry/posters/gallery/<id>.resolved.json     ← GENERATED, committed
 spa/public/posters/<id>/gallery/*.webp          ← GENERATED, committed
-        │  scripts/poster_registry.py  →  scripts/tiles-registry.py generate
+        │  scripts/poster_registry.py  →  scripts/stations-registry.py generate
         ▼
 spa/src/data/posters.ts  (PosterDoc.gallery)  →  spa/src/ui/ExhibitPoster.tsx
 ```
@@ -133,8 +133,8 @@ markdown, TypeScript, or the generator. Nothing else authors the resolved file.
    `registry/posters/gallery/<id>.resolved.json` exists, validate it and attach
    it as `gallery`. A malformed or non-free entry is a load error, not a
    warning. Absent file = no `gallery` key (must not emit `null`).
-3. `make tile-registry-generate` regenerates `spa/src/data/posters.ts`;
-   `make tile-registry-check` must stay green (never hand-edit generated files).
+3. `make station-registry-generate` regenerates `spa/src/data/posters.ts`;
+   `make station-registry-check` must stay green (never hand-edit generated files).
 4. `spa/src/ui/ExhibitPoster.tsx` + `ExhibitPoster.css`: render the carousel
    **immediately after the last block of the `Origins` section** (i.e. before
    the next `h2`), only when `poster.gallery?.images.length`.
@@ -156,7 +156,7 @@ markdown, TypeScript, or the generator. Nothing else authors the resolved file.
    round-trips, and a fixture without one renders no carousel.
 6. Full gate green: `cd spa && npx eslint . --max-warnings=0 && npx knip &&
    npm run build`, `ruff check scripts && ruff format --check scripts`,
-   `node scripts/check-file-size.mjs --strict`, `make tile-registry-check`.
+   `node scripts/check-file-size.mjs --strict`, `make station-registry-check`.
    `ExhibitPoster.tsx` is near a size cap — extract the carousel into its own
    component file rather than growing that file past its budget.
 

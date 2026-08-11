@@ -139,7 +139,7 @@ while emulation continues — the exhibit itself is never at risk.
 | `SH_TUNE` | `--tune` | `zerolatency` | x264 tune | encode |
 | `SH_CRF` | `--crf` | `10` (clamp 10–40) | Tier 0: CONSTANT QP (CQP kills the idle "dancing" — static screens code as bit-exact SKIP); ABR tiers ≥1: CRF anchor (+3/+6 per tier) with VBV | encode |
 | `SH_MAXRATE_KBPS` | `--maxrate` | `0` = auto | Tier-0 maxrate/bufsize cap in kbps (auto = per-resolution table) | encode |
-| `SH_BUFSIZE_RATIO` | `--bufsize-ratio` | daemon `1.0`, but **every emitted tile.env carries `0.5`** (the fleet value, declared in `registry/registry-v1.json` `fleetEncoder.bufsizeRatio` and pinned to the emitter default by `tiles-registry.py validate`) | VBV bufsize = ratio × maxrate. ABR tiers ≥1 apply `min(ratio, 0.5)` (WAN burst cap; tier 0 is CQP/no-VBV, so LAN is unaffected). Congested-tier maxrate is also clamped: T1 12 Mbps / T2 8 Mbps / T3 5 Mbps | encode |
+| `SH_BUFSIZE_RATIO` | `--bufsize-ratio` | daemon `1.0`, but **every emitted tile.env carries `0.5`** (the fleet value, declared in `registry/registry-v1.json` `fleetEncoder.bufsizeRatio` and pinned to the emitter default by `stations-registry.py validate`) | VBV bufsize = ratio × maxrate. ABR tiers ≥1 apply `min(ratio, 0.5)` (WAN burst cap; tier 0 is CQP/no-VBV, so LAN is unaffected). Congested-tier maxrate is also clamped: T1 12 Mbps / T2 8 Mbps / T3 5 Mbps | encode |
 | `SH_ABR` | `--abr` | `on` | Adaptive-bitrate controller (off pins tier 0) | abr |
 | `SH_ABR_MIN_RESTART_MS` | `--abr-min-restart-ms` | `25000` (clamp 2000–30000) | DWELL: min ms between any two tier changes (anti-oscillation) | abr |
 | `SH_ABR_FLOOR_HEIGHT` | `--abr-floor-height` | `480` (min 240) | Tier-3 resolution floor height, px | abr |

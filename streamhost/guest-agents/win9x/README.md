@@ -42,7 +42,7 @@ matches (`loadvm golden` keeps working).
 
 win98se gets a true absolute pointer from a **usb-tablet** under `acpi=on`
 (golden re-baked 2026-07-12, 1:1 tracking verified on the restored golden; see
-`docs/guests/win9x.md` and the `win98se` entry in `streamhost/tiles-manifest.sh`).
+`docs/guests/win9x.md` and the `win98se` entry in `streamhost/stations-manifest.sh`).
 
 <details><summary>superseded finding (2026-07-12): "warpnet-TCP BLOCKED, serial is the path" — kept for history</summary>
 
@@ -71,7 +71,7 @@ needed. Full correction record: `docs/guests/win9x.md`.
 4. COLD boot (never `loadvm` — it would resurrect pre-inject RAM), let the
    fixture settle, verify the agent moves the cursor (framebuffer screendumps).
 5. `delvm golden` + `savevm golden` via QMP, flip `tile.env` to warpd, update
-   `streamhost/tiles-manifest.sh`, run `labctl gen`, restart `streamhost@<tile>`.
+   `streamhost/stations-manifest.sh`, run `labctl gen`, restart `streamhost@<tile>`.
 
 98SE gotcha: after an unclean power-off the next cold boot may pop the
 "Display adapter is not configured properly" wizard and/or run scandisk before

@@ -27,7 +27,7 @@
 #
 # The registry prose is deliberately not automated — the twinned .museum.notes /
 # .render.museumBlock, the builder header, the launcher comment and the
-# per-guest doc are judgement, and `make tile-registry-generate` runs after a
+# per-guest doc are judgement, and `make station-registry-generate` runs after a
 # human has written them. --flip edits the ledger only; the rest is printed.
 #
 # usage: migrate-tile.sh <tile> [--flip] [--dry-run] [--no-restart]
@@ -610,8 +610,8 @@ judgement, so they are deliberately not automated:
   3. scripts/build-guests/tiles/$TILE.sh header, and the $TILE launcher comment,
      wherever either names bookworm / Debian 12
   4. docs/guests/$TILE.md
-  5. make tile-registry-generate     (never hand-edit a generated file)
-  6. make tile-registry-check && scripts/dev/bridge-suite-status.sh
+  5. make station-registry-generate     (never hand-edit a generated file)
+  6. make station-registry-check && scripts/dev/bridge-suite-status.sh
 EOM
 if [ "$FLIP" -eq 1 ]; then
   printf '\nThe ledger entry is already flipped (--flip); commit it WITH 1-6 above.\n'

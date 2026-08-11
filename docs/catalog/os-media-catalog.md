@@ -2,7 +2,7 @@
 
 A **verified installation-media + boot-recipe catalog** for candidate operating
 systems that could join the OS gallery. The current roster is registry-derived;
-`python3 scripts/tiles-registry.py count` currently reports **39 lineup entries:
+`python3 scripts/stations-registry.py count` currently reports **39 lineup entries:
 37 production streamhost tiles and 2 showcase posters**. For each candidate OS it records
 **where the install media lives**, its **licensing posture**, the **format**,
 whether a **ROM** is needed, an approximate **size**, an **effort/feasibility/

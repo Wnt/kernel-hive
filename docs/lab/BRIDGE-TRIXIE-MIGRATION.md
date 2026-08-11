@@ -235,7 +235,7 @@ the suite, not the host, decides the chroot — see §2.
 
 | File | Role |
 |---|---|
-| `registry/bridge-suites.json` | **The ledger.** `defaultSuite`, both suite definitions (base path, MAME chroot, genericcloud URL, glibc/gcc, `frozen`), and the per-tile suite map. Hand-maintained; *not* a generated file — never run `tiles-registry.py` against it. |
+| `registry/bridge-suites.json` | **The ledger.** `defaultSuite`, both suite definitions (base path, MAME chroot, genericcloud URL, glibc/gcc, `frozen`), and the per-tile suite map. Hand-maintained; *not* a generated file — never run `stations-registry.py` against it. |
 | `scripts/build-guests/lib/bridge-suite.sh` | The sourceable resolver: `bridge_suite_for`, `bridge_base_for`, `bridge_mame_chroot_for`, `bridge_genericcloud_url_for`, `bridge_debian_version_for`, `bridge_suite_is_frozen`, `bridge_suite_tiles`, `bridge_suite_assert`. Fails closed on an unknown tile, an unknown suite or a malformed ledger — a missing key is an error, never `""`, because `""` would otherwise flow into a `qemu-img -b` argument. `BRIDGE_SUITE=trixie` in the environment overrides, for experiment clones only. |
 | `scripts/build-guests/lib/bridge-base.sh` | Gains `--suite bookworm\|trixie`; builds either base from that suite's genericcloud URL to that suite's path. |
 | the six `build-mame-*.sh` + `indyr4400.sh` | Pick their build chroot from the tile's suite instead of hardcoding bookworm. |
@@ -294,11 +294,11 @@ that make the migration real rather than declared.
      fixture is the single source for its env keys; the registry entry no
      longer mirrors them)
 
-   Then `make tile-registry-generate`. **Never hand-edit the generated files** —
-   `streamhost/tiles-manifest.sh`, `spa/src/data/keyboards.ts` and the rest
-   are outputs. `make tile-registry-check` is the gate and it goes red
+   Then `make station-registry-generate`. **Never hand-edit the generated files** —
+   `streamhost/stations-manifest.sh`, `spa/src/data/keyboards.ts` and the rest
+   are outputs. `make station-registry-check` is the gate and it goes red
    on any of these. The public lineup the visitor sees is rendered on demand
-   (`tiles-registry.py render`), so a `.museum.notes` edit reaches the gallery
+   (`stations-registry.py render`), so a `.museum.notes` edit reaches the gallery
    with `serve-https-spa.sh manifests` and no rebuild.
 6. **Flip the ledger in the same commit** as steps 2–5. A commit that flips the
    ledger without the rebuild, or rebuilds without the flip, produces drift that
@@ -448,7 +448,7 @@ contract is in one place rather than re-derived per caller.
 A tile is migrated when, and only when: the overlay's real backing file is the
 trixie base; `loadvm golden` restores; `labctl shot` shows the machine's own
 screen; audio (where the tile has it) is measured above the silence floor;
-`make tile-registry-check` is green; `bridge-suite-status.sh` exits 0. Steps
+`make station-registry-check` is green; `bridge-suite-status.sh` exits 0. Steps
 short of that are progress, not completion.
 
 Most of that list is now one command — `scripts/dev/tile-accept.sh <tile>

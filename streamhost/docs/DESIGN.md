@@ -6,7 +6,7 @@
 > its neko commands and rollback sections are not current deployment guidance.
 > The canonical registry now reports **33 lineup entries: 30 production
 > streamhost tiles and 3 showcase posters**. Derive the live number with
-> `python3 scripts/tiles-registry.py count` rather than copying a count from this
+> `python3 scripts/stations-registry.py count` rather than copying a count from this
 > narrative.
 
 **Status:** prototype validated end-to-end on real hardware + real LAN. This
@@ -444,7 +444,7 @@ The plan is to implement a new transport **behind the identical handle** so the 
   `gallery-integrate-all.sh` conventions so the gallery stays reproducible from
   scratch. Add a streamhost manifest row per tile mirroring the neko notes files.
   *(Since done: `gallery-integrate-all.sh` is neko-era, deleted in the 2026-07
-  restructure — git history; the per-tile manifest became `tiles-manifest.sh` +
+  restructure — git history; the per-tile manifest became `stations-manifest.sh` +
   `bring-up-all.sh`, and `MASTER-REPRODUCE.md` Phase 5 now routes through them.)*
 - Build artifact: `cargo build --release` on the host (or a thin container image
   if we keep the containerized model — §6).
@@ -559,7 +559,7 @@ the remaining work is hardening and rollout mechanics, not research.
 
 > **Historical — 2026-07-06 snapshot.** Everything below describes the fleet as
 > it stood on cutover day. The current fleet is registry-derived (run
-> `python3 scripts/tiles-registry.py count`); the neko plane has been retired
+> `python3 scripts/stations-registry.py count`); the neko plane has been retired
 > entirely, VM 900 has
 > been deleted, and the riscos/windows11 guardrails were removed 2026-07-08.
 
@@ -695,7 +695,7 @@ unit `deploy/streamhost@.service`, the serve plane in the repo's top-level **`sc
 `gen-local-ca.sh`, the signaling registry `tiles.json` — no longer duplicated in this
 streamhost tree; mirrored to `/data/vms/streamhost/serve/` on the host, see
 `docs/lab/MASTER-REPRODUCE.md` Phase 5), the
-**per-tile manifest `tiles-manifest.sh`** (exact `streamhost-tile.sh` invocations, verified
+**per-tile manifest `stations-manifest.sh`** (exact `streamhost-tile.sh` invocations, verified
 to re-emit every `tile.env`/`qemu-streamhost.sh` byte-identically), and the ordered
 **`bring-up-all.sh`** orchestrator (install unit → emit → launch QEMU + wait QMP → start
 daemon → postmarketOS res-settle restart → serenity overlay → tiles.json + CA + server).

@@ -37,7 +37,7 @@ session back to it. The Mac is a disposable bootstrap bridge, nothing more.**
 The repo is now self-reproducing: **no derived artifacts transfer** — guest images,
 checkpoints, and boot videos all rebuild from the repo on the new box. The gap-closure
 program (`docs/history/REPRO-GAP-CLOSURE.md`) is green through L2: 11 builders proven end
-to end, all 28 launchers emit from `tiles-manifest.sh` (verify-emit gate), checkpoint-capture
+to end, all 28 launchers emit from `stations-manifest.sh` (verify-emit gate), checkpoint-capture
 helpers + the provisioning kit + the fast-poll pve-qemu recipe all vendored, and the
 licensed/abandonware inputs are staged as a sha-verified bundle. The migration itself
 (a full rebuild on the NVMe box) is L3 — the final proof.

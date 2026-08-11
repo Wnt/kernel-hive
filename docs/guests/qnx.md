@@ -8,7 +8,7 @@
 desktop captured **from the running :8112 neko station** via the neko admin screenshot API.
 
 > **Historical (neko-era) wiring below.** QNX runs today as the streamhost station
-> **`qnx`** — see its stanza in `streamhost/tiles-manifest.sh` (`streamhost@qnx`;
+> **`qnx`** — see its stanza in `streamhost/stations-manifest.sh` (`streamhost@qnx`;
 > the HMP monitor channel survives as `-monitor tcp:127.0.0.1:7112` in the station's
 > `--extra`). The neko compose/:8112 wiring and the `gallery-integrate-all.sh`
 > manifest row below are neko-era; that integrator was deleted in the 2026-07

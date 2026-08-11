@@ -142,7 +142,7 @@ getty — is why the builder asserts both conditions explicitly.
 - **`demoProgram.perCharMs: 170`.** The UI typist waits `line.length *
   perCharMs` before submitting the next line, and this station drains typed keys at
   hold+gap = 160 ms/char — more than twice the fleet default's assumed 70.
-  `validate_demo_pacing` in `scripts/tiles-registry.py` fails the build if the
+  `validate_demo_pacing` in `scripts/stations-registry.py` fails the build if the
   budget that applies is below a station's drain rate, so the two cannot drift.
 - **No `SH_KEY_MAP`.** Unlike the MPF-II, this matrix does not have to be
   re-derived: VICE's default SDL **symbolic** keymap (`sdl_sym.vkm`) already

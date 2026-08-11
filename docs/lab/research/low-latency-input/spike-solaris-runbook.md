@@ -926,4 +926,4 @@ through the normal clone-to-production procedure. Keep warpd installed and
 available as fallback until the production framebuffer, reconnect, corners,
 click, and resize-drag pass. Then remove the `soltest` clones and add the
 registry-owned `HW input` grid badge; never hand-edit generated
-`tiles-manifest.sh`. Do not deploy the UI during that handoff.
+`stations-manifest.sh`. Do not deploy the UI during that handoff.

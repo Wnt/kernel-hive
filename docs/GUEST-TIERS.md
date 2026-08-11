@@ -27,7 +27,7 @@ migration ledger, not a taxonomy. So the test is:
 
 Applying that to all 61 registry entries gives **29 / 28 / 1 / 1 / 2**.
 
-> **Roster note.** `python3 scripts/tiles-registry.py count` prints *61 lineup
+> **Roster note.** `python3 scripts/stations-registry.py count` prints *61 lineup
 > entries: 59 streamhost production stations, 2 showcase posters*. If a doc tells
 > you 39/37, it is stale — run the command. The posters today are `riscos` and
 > `macos`; `win11` is a live Tier-1 station, not a poster.

@@ -267,8 +267,8 @@ SH_PORT=54000+slot ; SH_FPS=30 ; SH_AUDIO=off
 Launcher (x11-runtime.sh analogue): `SDL_VIDEODRIVER=dummy
 ES40_SHM_PATH=$SH_SHM_PATH ES40_CTL_SOCK=$SH_MAMECTL_SOCK` + the pumps for
 the two serial ports, es40 from the m5-1280 device set (cold boot; drop
-ES40_RESTORE for relaunch mode). Then `scripts/tiles-registry.py new
-w2kalpha --tier 3`, fill the entry, `make tile-registry-check` green, and
+ES40_RESTORE for relaunch mode). Then `scripts/stations-registry.py new
+w2kalpha --tier 3`, fill the entry, `make station-registry-check` green, and
 keep it DISABLED until framebuffer+input+reset pass the playbook gate.
 
 ## Still queued

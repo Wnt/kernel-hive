@@ -4,7 +4,7 @@
 Do not copy a fleet total into a new source of truth; derive the current total:
 
 ```bash
-python3 scripts/tiles-registry.py count
+python3 scripts/stations-registry.py count
 # 39 lineup entries: 37 streamhost production tiles, 2 showcase posters
 ```
 
@@ -16,7 +16,7 @@ The public repo was scrubbed for release: the operator's real LAN IP, box
 hostname, and public domains were replaced with RFC 5737 / documentation
 placeholders (`192.0.2.10`, `labhost`, `example.com`, `gallery.example.com`,
 `tunnel.example.com`). Every tool keeps its placeholder as the DEFAULT so a
-fresh public clone works out of the box and `make tile-registry-check` stays
+fresh public clone works out of the box and `make station-registry-check` stays
 deterministic across machines — every generated and rendered artifact keeps
 the placeholder regardless of local configuration.
 
@@ -35,14 +35,14 @@ mechanism now also backs `scripts/serve-https-spa.sh`,
 `streamhost/run/serve_client.sh`, `streamhost/bring-up-all.sh` (generated from
 `registry/templates/bring-up-all.sh.in` — edit the template, not the generated
 file), and the `scripts/cloud-agents/` tunnel-endpoint tooling.
-`registry/local.env` never affects `scripts/tiles-registry.py generate` output.
+`registry/local.env` never affects `scripts/stations-registry.py generate` output.
 
 ## Exhibit posters
 
 A tile's optional long-form poster is the sibling Markdown document
 `registry/posters/<id>.md`. The filename match is the association: there is no
 second id or hand-maintained lookup. The JSON Schema records this convention in
-`x-posterAssociation`, and `scripts/tiles-registry.py` validates and compiles
+`x-posterAssociation`, and `scripts/stations-registry.py` validates and compiles
 matching documents into `spa/src/data/posters.ts`. A tile may have no document.
 An unmatched document is intentionally warned about and skipped so posters may
 land before their tile entry on another branch.
@@ -58,11 +58,11 @@ inject Markdown.
 The operational files are deterministic products of the registry:
 
 ```bash
-python3 scripts/tiles-registry.py validate
-python3 scripts/tiles-registry.py count
-python3 scripts/tiles-registry.py generate
-python3 scripts/tiles-registry.py --check
-python3 scripts/tiles-registry.py explain solaris
+python3 scripts/stations-registry.py validate
+python3 scripts/stations-registry.py count
+python3 scripts/stations-registry.py generate
+python3 scripts/stations-registry.py --check
+python3 scripts/stations-registry.py explain solaris
 ```
 
 `generate` validates everything before atomically replacing outputs. `--check`
@@ -88,13 +88,13 @@ generator.
 Two classes of output, and the difference is where they live:
 
 - **Generated** (`generate`): written into the tree and committed — the three
-  shell manifests (`streamhost/tiles-manifest.sh`, `bring-up-all.sh`,
+  shell manifests (`streamhost/stations-manifest.sh`, `bring-up-all.sh`,
   `build-guests/build-all.sh`), the four SPA-compiled TS modules
   (`archetypeRegistry.ts`, `posterIndex.ts`, `demoPrograms.ts`,
   `keyboards.ts`), and `registry/generated/labctl-declarations.json`. Each has
   a consumer that opens it as a file with no generator available: a shell that
   runs it, the Vite build that compiles it, the box's `gen_tiles_json.py` that
-  reads it. `make tile-registry-check` proves each is byte-identical to what
+  reads it. `make station-registry-check` proves each is byte-identical to what
   the registry produces now.
 - **Rendered** (`render` / `emit`): never committed, never in the tree — every
   JSON document that is *served or published* rather than compiled:
@@ -163,14 +163,14 @@ whenever `state` is `hidden`, and forbidden when it is `listed`. `git log --
 registry/tiles/<id>.json` answers "who took it off"; a field would only be able
 to go stale about it.
 
-`validate_listing()` in `scripts/tiles-registry.py` enforces the shape (the
+`validate_listing()` in `scripts/stations-registry.py` enforces the shape (the
 schema's `additionalProperties` and conditionals are decorative — see below) and
 rejects a hide on an entry that is not in the public lineup anyway, so a
 declared hide can never be a no-op that a later session believes.
 
 ## Generated artifacts and their gate lists
 
-`generated()` in `scripts/tiles-registry.py` is the single authoritative list of
+`generated()` in `scripts/stations-registry.py` is the single authoritative list of
 generated output paths. Three lint/CI gates carry their own copies of that list
 and MUST stay in lockstep with it:
 
@@ -179,14 +179,14 @@ and MUST stay in lockstep with it:
 - `scripts/lint/shell-sources.sh` (the `:(exclude)` list — the generated `.sh`
   subset that shfmt/shellcheck skip)
 
-`python3 scripts/tiles-registry.py paths` prints the authoritative list, and
-`make tile-registry-check` fails if any gate list drifts from it, so the copies
+`python3 scripts/stations-registry.py paths` prints the authoritative list, and
+`make station-registry-check` fails if any gate list drifts from it, so the copies
 cannot silently rot when outputs are added or renamed.
 
 ## Schema rules the homegrown validator does NOT enforce
 
 `registry/schema/tile-v1.schema.json` is Draft-2020-12, but the repo does not run
-a standards validator. `validate_json_schema()` in `scripts/tiles-registry.py` is
+a standards validator. `validate_json_schema()` in `scripts/stations-registry.py` is
 a dependency-free evaluator that implements only `type` / `const` / `enum` /
 `pattern` / `minimum` / `required` / `properties` / `items`. It SILENTLY IGNORES
 `allOf` / `if` / `then` and does not honour `additionalProperties`. Consequences a
@@ -261,7 +261,7 @@ port (`win95`, `ninefront`) from one on a serial chardev (`win311`, `os2warp`,
 `templeos`).
 
 Nothing at runtime reads these three fields, so `validate_pointer_method()` in
-`scripts/tiles-registry.py` DERIVES all three from the places that do decide and
+`scripts/stations-registry.py` DERIVES all three from the places that do decide and
 fails on any disagreement: the effective `SH_INPUT_BACKEND` (or the legacy
 `SH_POINTER` it comes from), the tile's device ledger (launcher command lines,
 `deviceSetSummary`, `emitArgs`) and `operator.labctl.pointer_mode`. A tile
@@ -282,7 +282,7 @@ SPA bundle, which renders none of them.
 
 The input-backend and pve rules live in THREE places that are kept in sync by
 hand — there is no generator binding them: (1) the schema enums here, (2) the
-Python evaluator + business rules in `scripts/tiles-registry.py`, and (3) the
+Python evaluator + business rules in `scripts/stations-registry.py`, and (3) the
 Rust `streamhost/streamhost/src/config.rs` (`InputBackend`, mode parsing). A
 future hardening — swapping in a real Draft-2020-12 validator so `allOf`/`if`/
 `then`/`additionalProperties` actually run — WOULD change validation behaviour

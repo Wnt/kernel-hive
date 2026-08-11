@@ -180,5 +180,5 @@ ABR ownership, and fleet observability.
 Phase 4 performs a small canary rollout, validates audio sync/mobile autoplay and
 accessibility, then rolls out station-by-station with per-station kill switches. Only after
 canary acceptance does the fallback become available for every production station
-listed by the canonical registry (`python3 scripts/tiles-registry.py count`).
+listed by the canonical registry (`python3 scripts/stations-registry.py count`).
 WebTransport/WebCodecs remains the default throughout.

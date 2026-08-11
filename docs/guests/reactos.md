@@ -1,7 +1,7 @@
 # ReactOS gallery station — merge notes (:8106)
 
 > **Historical (neko-era) wiring below.** ReactOS runs today as the streamhost station
-> **`reactos`** — see its stanza in `streamhost/tiles-manifest.sh`
+> **`reactos`** — see its stanza in `streamhost/stations-manifest.sh`
 > (`streamhost@reactos`). The compose project, `scripts/docker-compose.reactos.yml`
 > and the `gallery-integrate-all.sh` manifest row below are neko-era, deleted in the
 > 2026-07 restructure — git history. The version pin, build script and QEMU profile
@@ -32,7 +32,7 @@ qemu-system-x86_64 -machine pc -enable-kvm -cpu host -m 512 -smp 1 \
 - Verified to the full desktop under **BOTH plain TCG and KVM** with 0.4.14.
 - **PERF (2026-07-04) — flipped TCG → KVM.** `perf-baseline-report.md` §4 classifies ReactOS as **KVM-SAFE** (NT-like kernel tolerates hardware accel). The station now sets `ACCEL=kvm` (launch-qemu.sh emits `-enable-kvm`) with `-cpu host` for native CPUID. Verified after the flip: cmdline shows `-enable-kvm -cpu host`, qemu launched with **no** kvm-init error (a bare `-enable-kvm` aborts if KVM is unavailable), the guest reached the LiveCD wizard in ≈90 s (vs 2–4 min cold TCG), the wizard renders cleanly, and an xdotool `mousemove` on X:99 moves the guest cursor (≈98% neko-frame byte-delta → input→photon confirmed live). The gallery-wide **audio-buffer hardening** (`out.buffer-length=100000,out.latency=50000`) is applied automatically by the rebuilt `neko-qemu` image on recreate. Prior stance ("uses plain TCG to avoid contention") is superseded.
 - **`-cpu host`** under KVM (was `-cpu qemu64` under TCG; `qemu32/qemu64` also boot 0.4.14 if KVM is ever unavailable and you fall back to TCG).
-- **PS/2 kbd+mouse only** *(neko-era guidance — superseded)* — a boot-time `-device usb-tablet` could stall ReactOS 0.4.x USB enumeration on that setup; the live **streamhost** station runs `usb-tablet` (absolute pointer) without issue — see `streamhost/tiles-manifest.sh`.
+- **PS/2 kbd+mouse only** *(neko-era guidance — superseded)* — a boot-time `-device usb-tablet` could stall ReactOS 0.4.x USB enumeration on that setup; the live **streamhost** station runs `usb-tablet` (absolute pointer) without issue — see `streamhost/stations-manifest.sh`.
 - `-smp 1` — ReactOS SMP is fragile; single core is safest.
 - Cold TCG boot to the wizard/desktop is slow (~2–4 min); neko streams it fine once up.
 - **First screen = the "ReactOS LiveCD" language wizard** (normal LiveCD behaviour, not a fault). Two clicks — `Next` → `Run ReactOS Live CD` — land on the desktop (My Computer, Command Prompt, Recycle Bin, Read Me, Start button, tray clock).

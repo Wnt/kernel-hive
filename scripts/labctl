@@ -908,7 +908,7 @@ def keymap_unescape(tok):
     guest char renders as `::-`, whose split(':', 1) yields an empty guest and
     is silently DROPPED. That bites any German-layout machine — the KC 85/4
     puts ':' on the host '-' key — and it fails as one missing character rather
-    than as an error. scripts/tiles-registry.py percent-encodes exactly '%',
+    than as an error. scripts/stations-registry.py percent-encodes exactly '%',
     ',' and ':' when it renders the value; nothing else is touched, so every
     map written before this existed parses unchanged.
     """
@@ -1629,7 +1629,7 @@ def tile_facts(sh_tile, c, warn):
     repo = repo_facts(warn)
     entry = registry_entry(sh_tile, warn)
     # One tile, one name: the registry id IS the tileDir IS SH_TILE, and
-    # tiles-registry.py fails the build if an entry breaks that. This used to be
+    # stations-registry.py fails the build if an entry breaks that. This used to be
     # a passive `identity_diverges` field on every tile's facts, permanently true
     # for aros/amigaos and solaris/solariscde (both renamed 2026-08-10). A flag
     # that is normally set is a flag nobody reads, so it is a WARNING now — it

@@ -14,7 +14,7 @@ You only owe the gate for the languages your branch **touches**, plus the two
 cross-cutting gates, which every branch owes:
 
 - **file-size budget** — `node scripts/check-file-size.mjs --strict`
-- **generated-file drift** — `make tile-registry-check`
+- **generated-file drift** — `make station-registry-check`
 
 Plus one gate CI cannot run, enforced by the pre-push hook whenever labhost is
 reachable: **box-sync drift** — `scripts/dev/verify-box-sync.sh` (see below).
@@ -44,7 +44,7 @@ shfmt -d $(bash scripts/lint/shell-sources.sh) && shellcheck $(bash scripts/lint
 node scripts/check-file-size.mjs --strict
 
 # 3. generated-file drift (every branch)
-make tile-registry-check          # byte-parity, non-mutating
+make station-registry-check          # byte-parity, non-mutating
 #   or the regenerate-and-diff form CI runs on a clean checkout:
 scripts/check-generated-drift.sh --regen
 
@@ -151,7 +151,7 @@ Run it locally with `CARGO_TARGET_DIR=/tmp/kh-target GATE_FULL=1`.
 ### Gates that still read the working tree
 
 Known and accepted, listed so nobody rediscovers them as bugs:
-`check-generated-drift.sh` / `make tile-registry-check` renders from
+`check-generated-drift.sh` / `make station-registry-check` renders from
 `registry/` on disk (so an *uncommitted* registry edit is what gets checked —
 self-consistent, and a stale generated file is worth surfacing either way), and
 `scripts/dev/verify-box-sync.sh` hashes worktree files against labhost and
@@ -173,16 +173,16 @@ one-line reason. Rules:
 
 ## Generated-file drift
 
-Every file emitted by `generated()` in `scripts/tiles-registry.py` (the manifest,
+Every file emitted by `generated()` in `scripts/stations-registry.py` (the manifest,
 bring-up list, the UI registry data, the serve JSONs, …) must be byte-identical
 to what the typed registry + templates produce now. Edit the **source**
-(`registry/tiles/*`, templates) and run `make tile-registry-generate`, then
+(`registry/tiles/*`, templates) and run `make station-registry-generate`, then
 commit the regenerated artifacts. Never hand-edit a generated file. `make
-tile-registry-check` (and the CI `static` job) fail on any drift.
+station-registry-check` (and the CI `static` job) fail on any drift.
 
 What `rendered()` emits — `gallery-manifest.json` and `index.json` — has no
 committed copy to drift, by design; the check proves those still RENDER, and
-`tiles-registry.py render` / `emit` produces them where they are needed.
+`stations-registry.py render` / `emit` produces them where they are needed.
 
 **Regenerate after every MERGE, not just after every edit.** Generated artifacts
 are the worst case for a three-way merge: they auto-merge *cleanly* and are then
@@ -191,9 +191,9 @@ projection of the sources. Observed 2026-08-10 merging a tile branch —
 `registry/generated/labctl-declarations.json` came out carrying
 `nextstep.pointer_mode: "rel"` while `registry/tiles/nextstep.json` said `abs`,
 a hybrid neither branch ever contained. No conflict was reported; only
-`make tile-registry-check` caught it.
+`make station-registry-check` caught it.
 
-So in a multi-branch wave, run `make tile-registry-generate` **after each branch
+So in a multi-branch wave, run `make station-registry-generate` **after each branch
 lands**, not once at the end — otherwise a later merge resolves against
 already-wrong generated content and the mess compounds.
 

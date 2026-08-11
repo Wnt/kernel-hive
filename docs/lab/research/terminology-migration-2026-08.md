@@ -14,7 +14,7 @@ leaves the fleet fully operational.
 - A literal in docs (code fence, backtick) names the thing **as it exists on
   labhost at that moment** — prose leads, literals follow their stage.
 - `docs/history/**` and `third_party/**` are records: never re-worded.
-- Generated files are never hand-edited (`tiles-manifest.sh`,
+- Generated files are never hand-edited (`stations-manifest.sh`,
   `registry/index.json`, `catalog.ts`, …) — their vocabulary changes when
   their **generator** does.
 - Stored artifact labels (`loadvm golden`, `golden.sta`,
@@ -37,9 +37,9 @@ partition, pushed promptly (three parallel-agent merge races today alone).
 ## Stage 2 — repo file renames + log strings
 
 `git mv` + update every caller + gates, one rename per commit:
-`bake-golden.sh` → `capture-checkpoint.sh`; `tiles-manifest.sh` →
+`bake-golden.sh` → `capture-checkpoint.sh`; `stations-manifest.sh` →
 `stations-manifest.sh` (generator output name — change in
-`tiles-registry.py` → `stations-registry.py` the same commit);
+`stations-registry.py` → `stations-registry.py` the same commit);
 `ADD-NEW-OS-PLAYBOOK` internal wording; box-sync pair labels/paths in
 `box-sync-pairs.sh` (mirror rows move with their files). Log/echo strings
 rename only after `grep -r "<string>"` proves nothing parses them. Deploy:
@@ -104,7 +104,7 @@ artifact labels.
   `capture-checkpoint.sh` and `golden-verify.sh` → `checkpoint-verify.sh`
   shipped as pure-rename + shim commits (`--capture` added, `--bake`
   accepted one epoch; deployed irix capture RIG carries the old name until
-  its next redeploy). Remaining: `tiles-registry.py` + `tiles-manifest.sh`
+  its next redeploy). Remaining: `stations-registry.py` + `stations-manifest.sh`
   — DEFERRED to a dedicated quiet window: 17–21 code callers each,
   including the CI workflow, devwatch (Rust, needs rebuild+redeploy),
   check-stream-tickets.py on the serving plane, the debridge agent's live

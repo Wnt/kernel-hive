@@ -58,7 +58,7 @@ Repository facts:
   `mouse_event` is a no-op on this guest. The working movement path is `SetCursorPos`; direct
   `WM_*BUTTON*` posting fails for menus and non-client operations, so production currently delays
   QEMU PS/2 buttons behind serial motion.
-- [`tiles-manifest.sh`](../../../../streamhost/tiles-manifest.sh) pins an 8 ms warpd pace and an
+- [`stations-manifest.sh`](../../../../streamhost/stations-manifest.sh) pins an 8 ms warpd pace and an
   **80 ms button delay** to close the two-channel motion/button race. Removing that race is a large
   potential tail-latency win independent of the raw serial byte cost.
 - [`qemu-streamhost.sh`](../../../../streamhost/tiles/win311/qemu-streamhost.sh) currently pins

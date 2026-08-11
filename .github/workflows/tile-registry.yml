@@ -18,4 +18,4 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate registry and byte-parity of generated artifacts
-        run: python3 scripts/tiles-registry.py --check
+        run: python3 scripts/stations-registry.py --check

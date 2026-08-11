@@ -79,9 +79,9 @@ sentimental and legally safest pick but gives a visitor less in 30 seconds.
 ## 5. Concrete integration sketch
 
 ```bash
-python3 scripts/tiles-registry.py new pdp11 --tier 2 --archetype mono-terminal --slot auto
+python3 scripts/stations-registry.py new pdp11 --tier 2 --archetype mono-terminal --slot auto
 # slots 81–124 are taken (gaps at 85–88, 109, 111, 115); next free is 125 → UDP 54125
-make tile-registry-check
+make station-registry-check
 ```
 
 - **Archetype** `mono-terminal` (as `helenos`, `ninefront`) — a glass-TTY

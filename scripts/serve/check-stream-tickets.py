@@ -14,7 +14,7 @@ client reconnected, which reads to a visitor as "it froze after I clicked".
 
 Nothing detected it: the tile was up, the daemon was healthy, the signalling doc
 looked perfect, and the failure lived in the relationship between two documents.
-The names agree by construction now (tiles-registry.py refuses an id that
+The names agree by construction now (stations-registry.py refuses an id that
 differs from its tileDir), but a tile.env is edited ON THE BOX and never passes
 through that gate, so the relationship is still worth proving. This checks it —
 it recomputes each ticket's HMAC exactly as the daemon does and reports the

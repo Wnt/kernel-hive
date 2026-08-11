@@ -5,7 +5,7 @@
 # hostname, public domains) were replaced with RFC 5737 / documentation
 # placeholders (192.0.2.10, labhost, example.com, ...). Every tool keeps that
 # placeholder as its DEFAULT so a fresh public clone works and
-# `make tile-registry-check` stays deterministic. The operator's real values
+# `make station-registry-check` stays deterministic. The operator's real values
 # live only in the gitignored `registry/local.env` on labhost (copy of
 # `registry/local.env.example`) and are picked up at run/deploy time only.
 #
