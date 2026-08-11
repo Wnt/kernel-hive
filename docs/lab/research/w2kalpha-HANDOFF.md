@@ -3,8 +3,12 @@
 **Written 2026-08-11.** Single entry point for the w2kalpha (Windows 2000 RC2
 for Alpha, es40 emulator) work. Detailed docs, read in this order:
 
+- [`w2kalpha-registration-handoff.md`](w2kalpha-registration-handoff.md) —
+  **2026-08-11 session: the tile is REGISTERED + LIVE** (60th production
+  exhibit). End state, deploy-machinery knowledge, warts, remaining queue.
 - [`w2kalpha-gallery-integration.md`](w2kalpha-gallery-integration.md) — the
-  gallery tile: what's built/verified, exact remaining registration steps.
+  gallery tile: what's built/verified, exact remaining registration steps
+  (now historical — items 2–3 done, see the registration handoff).
 - [`alpha-nt-optimization-handoff.md`](alpha-nt-optimization-handoff.md) — the
   emulator-optimization working handoff (queue, bench harness, epochs).
 - [`alpha-nt-add.md`](alpha-nt-add.md) §10 — the optimization results log
