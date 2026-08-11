@@ -1,0 +1,48 @@
+Atari ST ikbd: env-tunable quadrature tick rate (default untouched, 500 Hz).
+
+MAME's stkbd emits at most ONE mouse count per axis per quadrature period --
+the 500 Hz tick over a 4-phase cycle = 125 counts/s -- so a fast pointer
+flick crawls across the desktop at ~0.65 s per full traverse, visibly
+iterating through every intermediate position. A real ST mouse (200 counts
+per inch; a flick is well over 10 in/s) delivers 2000+ counts/s and the
+ikbd's HD6301 (4 MHz XTAL) counts its quadrature edges without complaint:
+the 500 Hz tick is the conservative part of the emulation, not the hardware.
+
+MAME_ST_MOUSE_HZ raises the tick, clamped to 500..8000; unset or out of
+range reproduces upstream byte for byte. The de-bridging arm B runs 2000
+(= 500 counts/s): 4x faster travel, still conservative against the metal,
+and with 2 ms periods still slow enough for ctlsock's 1 kHz quadrature
+sampler (MAME_CTL_QUAD_ITEMS) to observe every period's phase verdict.
+
+No save items are added or removed; the timer is scheduler state, and the
+spike arm never restores a savestate baked under another rate.
+--- a/src/mame/atari/stkbd.cpp
++++ b/src/mame/atari/stkbd.cpp
+@@ -3,6 +3,7 @@
+
+ #include "emu.h"
+ #include "stkbd.h"
++#include <cstdlib>
+
+ DEFINE_DEVICE_TYPE(ST_KBD, st_kbd_device, "st_kbd", "Atari ST Keyboard/Mouse/Joystick")
+
+@@ -66,8 +67,18 @@
+ 	save_item(NAME(m_tx));
+ 	save_item(NAME(m_joy_disabled));
+
+ 	m_mouse_timer = timer_alloc(FUNC(st_kbd_device::mouse_tick), this);
+-	m_mouse_timer->adjust(attotime::zero, 0, attotime::from_hz(500));
++	// [kernel-hive] MAME_ST_MOUSE_HZ: quadrature tick override -- see the
++	// patch header. Unset or out of range reproduces upstream exactly.
++	long mouse_hz = 500;
++	if (char const *const e = std::getenv("MAME_ST_MOUSE_HZ"))
++	{
++		char *end = nullptr;
++		long const v = std::strtol(e, &end, 10);
++		if (end && *end == '\0' && v >= 500 && v <= 8000)
++			mouse_hz = v;
++	}
++	m_mouse_timer->adjust(attotime::zero, 0, attotime::from_hz(u32(mouse_hz)));
+ }
+
+ void st_kbd_device::tx_w(int state)
