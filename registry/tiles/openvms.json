@@ -10,7 +10,6 @@
       {
         "order": 33,
         "prelude": "",
-        "line": "  \"openvms     |tiles/openvms.sh              |OpenVMS       |licensed |~3-8m   |full    |OpenVMS disks; openvms-decwindows-bridge.sh builds lean-X bridge\"\n",
         "value": {
           "key": "openvms",
           "script": "tiles/openvms.sh",
@@ -58,14 +57,9 @@
     "signalOrder": 33,
     "tilesManifestOrder": 31,
     "tilesManifestPrelude": "\n# openvms (slot 84) — TWO-VM DECwindows bridge. A captured 1024x768 Debian\n#   bridge runs lean Xorg only (no Linux WM/DM) with usb-tablet. OpenVMS is an\n#   independent SLIRP X client restored from leanx-preconnect, then replays the\n#   DECterm/FileView/Clock/Calculator fixture. Reset is a cold service restart;\n#   warm loadvm is forbidden because it restores dead X sockets.\n",
-    "tilesManifestInvocation": "emit openvms \\\n  --tile openvms --vmid 84 --udp 54084 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off --fps 30 \\\n  --launcher-file \"$T/openvms/qemu-streamhost.sh\" \\\n  --aux-file \"$T/openvms/bridge-launch.sh\" \\\n  --aux-file \"$T/openvms/bridge-xserverrc\" \\\n  --aux-file \"$T/openvms/DECW_FIXTURE.COM\" \\\n  --env-append-file \"$T/openvms/tile.env.fixture\"\n",
     "bringUpGroup": 3,
     "bindingOrder": 37,
     "bindingPrelude": "",
-    "bindingLine": "  openvms:     { osId: 'openvms',     archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#00a6d6', eraLabel: '2024 · OpenVMS 9.2 · DECwindows' },\n",
-    "museumOrder": 31,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'openvms', displayName: 'OpenVMS x86-64 9.2', year: 2024,\n    lineage: 'VMS / OpenVMS', arch: 'x86_64', ramMB: 8960,    era: '2020s', accent: '#00a6d6',\n    eraSoftware: ['DECwindows Motif', 'DCL', 'FileView', 'DECterm'],\n    periodBrowser: 'none — DECwindows desktop exhibit',\n    iconicApps: ['DECterm', 'FileView', 'Clock', 'Calculator'],\n    blurb: 'The durable VMS lineage on modern x86-64, presented as its classic network-transparent DECwindows Motif desktop.',\n    notes: 'A two-VM graphical bridge: OpenVMS supplies MWM and the applications while a private lean-X Debian guest supplies only the captured Xorg scanout and absolute tablet input.',\n  },\n",
     "goldenOrder": 31,
     "actionMapOrder": 30
   },
@@ -112,11 +106,7 @@
       "SH_AUDIO": "off",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/openvms/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/openvms/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "restart",
-      "SH_GOLDEN_SNAPSHOT": "leanx-preconnect",
-      "SH_GOLDEN_DISKS": "openvms-community.qcow2 OVMF_VARS.qcow2 openvms-decwindows-bridge.qcow2",
-      "SH_FIXTURE_DESC": "OpenVMS DECwindows Motif at 1024x768; DECterm DCL prompt, FileView, Clock, Calculator; cold service restart replays fresh X connections"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 84,
     "qemu": {

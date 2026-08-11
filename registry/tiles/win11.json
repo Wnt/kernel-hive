@@ -8,7 +8,6 @@
       {
         "order": 25,
         "prelude": "",
-        "line": "  \"win11       |tiles/win11.sh                |Win11       |licensed |~20-25m |full    |win11.qcow2 (needs Win11 ISO)\"\n",
         "value": {
           "key": "win11",
           "script": "tiles/win11.sh",
@@ -65,14 +64,9 @@
     "signalOrder": 35,
     "tilesManifestOrder": 33,
     "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP H — UEFI Windows. Secure Boot + virtio-scsi + HD Audio; nothing here is\n#           shared with the legacy Windows tiles above.\n# ---------------------------------------------------------------------------\n\n# win11 (VMID 123) — Windows 11 Pro 25H2, the only q35/OVMF Windows tile. The\n#   launcher is the device-set ledger and its header explains three things that\n#   look wrong but are not: the system disk is declared BEFORE the pflash pair\n#   (savevm picks its vmstate device by -drive order, so this keeps the RAM\n#   image out of the 528 KiB variable store), the variable store is qcow2 and\n#   WRITABLE (read-only hangs OVMF before display init), and there is no vTPM\n#   (Win11 needs one to install, not to run; BitLocker verified off first).\n#   restrict=on isolates the guest: adapter up, no default route, no DNS.\n#   VERBATIM LAUNCHER: boots the tile-LOCAL win11-golden.qcow2 (the pristine\n#   install stays at /data/gallery-guests/Win11/win11.qcow2) with a golden\n#   snapshot inside (resetMode=loadvm).\n",
-    "tilesManifestInvocation": "emit win11 \\\n  --tile win11 --vmid 123 --udp 54123 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/win11/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/win11/tile.env.fixture\"\n",
     "bringUpGroup": 3,
     "bindingOrder": 30,
     "bindingPrelude": "",
-    "bindingLine": "  win11:       { osId: 'win11',       archetypeId: 'apple-studio',    transport: 'streamhost',  accentColor: '#2d9bd6', eraLabel: '2021 · Windows 11' },\n",
-    "museumOrder": 5,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'win11', displayName: 'Windows 11', year: 2021,\n    lineage: 'Windows NT 10.0', arch: 'x86_64', ramMB: 4096,    era: '2020s', accent: '#2d9bd6',\n    eraSoftware: ['Centered taskbar', 'Edge', 'Fluent design', 'Widgets'],\n    periodBrowser: 'Microsoft Edge (Chromium)',\n    iconicApps: ['Snipping Tool', 'Terminal', 'Solitaire Collection'],\n    blurb: 'The rounded, centered present day, running on the same wall as the machines it descends from.',\n  },\n",
     "goldenOrder": 33,
     "actionMapOrder": 4
   },
@@ -113,10 +107,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/win11/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win11/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISKS": "win11-golden.qcow2 OVMF_VARS.qcow2"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 123,
     "qemu": {

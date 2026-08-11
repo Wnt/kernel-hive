@@ -14,8 +14,8 @@ export interface VMManifestEntry {
   ramKB?: number;
   notes?: string;
 
-  // OPTIONAL curated museum metadata (used for placards). We enrich from a
-  // local catalog when absent.
+  // OPTIONAL curated museum metadata (used for placards), carried by the
+  // manifest itself (registry/tiles/<id>.json `museum` is the source).
   accent?: string;         // hex accent for the exhibit unit
   era?: string;            // e.g. "1990s"
   eraSoftware?: string[];  // period software titles

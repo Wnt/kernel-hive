@@ -8,7 +8,6 @@
       {
         "order": 4,
         "prelude": "",
-        "line": "  \"reactos     |tiles/reactos.sh              |ReactOS     |fast     |~3-5m   |full   |ReactOS.iso (live CD)\"\n",
         "value": {
           "key": "reactos",
           "script": "tiles/reactos.sh",
@@ -70,14 +69,9 @@
     "signalOrder": 0,
     "tilesManifestOrder": 2,
     "tilesManifestPrelude": "\n# reactos (VMID 106) — NT-era LiveCD + golden fixture. UDP 4433. VERBATIM\n#   LAUNCHER: boots the LiveCD (-boot d) with reactos-golden.qcow2 attached\n#   solely to hold the savevm 'golden' snapshot (no -snapshot, no floppy —\n#   matches the baked device set). Golden store canonical at\n#   /data/gallery-guests/ReactOS/ (old /data/reactos-golden whitelisted).\n",
-    "tilesManifestInvocation": "emit reactos \\\n  --tile reactos --vmid 106 --udp 4433 --pointer abs --abs-pace-ms 30 --audio on --fps 30 \\\n  --launcher-file \"$T/reactos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/reactos/tile.env.fixture\"\n",
     "bringUpGroup": 0,
     "bindingOrder": 20,
     "bindingPrelude": "",
-    "bindingLine": "  reactos:     { osId: 'reactos',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#2f6fba', eraLabel: '2024 · ReactOS 0.4.14' },\n",
-    "museumOrder": 17,
-    "museumPrelude": "\n  // ---- 7 newest gallery OSes ----\n",
-    "museumBlock": "  {\n    id: 'reactos', displayName: 'ReactOS 0.4.14', year: 2024,\n    lineage: 'Windows NT / ReactOS', arch: 'i386', ramMB: 512,    era: '2020s', accent: '#2f6fba',\n    eraSoftware: ['ReactOS Explorer', 'Start menu / taskbar', 'App Manager', 'ReactOS Shell'],\n    periodBrowser: 'no bundled browser (NT 5.x live CD)',\n    iconicApps: ['ReactOS Explorer', 'Command Prompt', 'App Manager', 'Winefile'],\n    blurb: 'The open-source Windows-2000 — a from-scratch, binary-compatible reimplementation of the NT 5.x kernel and Win32.',\n    notes: 'Live streamhost tile. ReactOS 0.4.14 live CD (0.4.15 hangs QEMU 11 kernel init). Archetype: beige-tower-crt (a Windows-2000-era beige tower is the right period fit).',\n  },\n",
     "goldenOrder": 0,
     "actionMapOrder": 21
   },
@@ -120,10 +114,6 @@
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/reactos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/reactos/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
-      "GOLDEN_RESET_MODE": "loadvm",
-      "GOLDEN_SNAPSHOT": "golden",
-      "GOLDEN_SNAPSHOT_STORE": "/data/gallery-guests/ReactOS/reactos-golden.qcow2",
-      "GOLDEN_MANIFEST": "/data/gallery-guests/ReactOS/golden-manifest.json",
       "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 106,

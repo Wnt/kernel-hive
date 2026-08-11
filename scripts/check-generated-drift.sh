@@ -22,15 +22,14 @@ GENERATED_PATHS=(
   scripts/build-guests/build-all.sh
   scripts/serve/tiles.json
   scripts/serve/webroot/gallery-manifest.json
+  scripts/serve/webroot/poster-docs.json
   scripts/serve/golden-manifest.json
   scripts/tools/gallery-action-map.json
   spa/src/three/archetypeRegistry.ts
   spa/src/mock/manifest.json
-  spa/src/data/museumCatalog.ts
-  spa/src/data/posters.ts
+  spa/src/data/posterIndex.ts
   spa/src/data/demoPrograms.ts
   spa/src/data/keyboards.ts
-  spa/src/data/catalog.ts
   registry/index.json
   registry/generated/labctl-declarations.json
 )

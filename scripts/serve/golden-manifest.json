@@ -601,6 +601,16 @@
    "mouse": "UNVERIFIED",
    "keyboard": "PASS",
    "fixture": "Windows 2000 RC2 (build 2128, Alpha AXP) 1280x1024 desktop in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. resetMode=relaunch: every reset reflink-copies the golden nt.img and cold-boots (~80 s). x11-runtime (es40) tile added 2026-08-11."
+  },
+  "tru64": {
+   "tileDir": "tru64",
+   "pointer": "abs",
+   "touch": false,
+   "resetMode": "relaunch",
+   "snapshot": null,
+   "mouse": "UNVERIFIED",
+   "keyboard": "PASS",
+   "fixture": "INSTALL PHASE — Tru64 UNIX 5.1B installer (X11, 1024x768) from the OS CD in es40 (AlphaServer ES40, EV68). resetMode=relaunch REBOOTS the machine: SRM console -> boot dka400 -> installer; the install disk persists (mutated in place, no golden yet). Keyboard PASS = SRM console echo over ctlsock, framebuffer-proven 2026-08-11. Dark launch: listing=hidden while the install runs on camera."
   }
  }
 }

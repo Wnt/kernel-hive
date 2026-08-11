@@ -8,7 +8,6 @@
       {
         "order": 36,
         "prelude": "",
-        "line": "  \"plus4        |tiles/plus4.sh                |bridge/plus4    |retro    |~2-4m   |full   |tiles/plus4 overlay + golden (VICE xplus4 → 3-plus-1 suite)\"\n",
         "value": {
           "key": "plus4",
           "script": "tiles/plus4.sh",
@@ -47,15 +46,10 @@
     "signalOrder": 37,
     "tilesManifestOrder": 35,
     "tilesManifestPrelude": "\n# plus4 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit plus4 \\\n  --tile plus4 --vmid 222 --udp 54086 --pointer none --input-backend disabled \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/plus4/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/plus4/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 41,
     "bindingPrelude": "",
-    "bindingLine": "  plus4:       { osId: 'plus4',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#C2CF5F', eraLabel: '1984 · Plus/4 (3-plus-1 in ROM)' },\n",
-    "museumOrder": 35,
-    "goldenOrder": 35,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'plus4', displayName: 'Commodore Plus/4', year: 1984,\n    lineage: 'Commodore 264 series (MOS 7501, TED)',\n    arch: 'MOS 7501, 1.77 MHz (PAL), 64 KB RAM, 32 KB application ROM', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#C2CF5F',\n    eraSoftware: ['3-plus-1: a word processor, spreadsheet, database and graphing package, in ROM', 'Commodore BASIC V3.5, with a machine-language monitor built in', 'the 264-series cartridges and the 1531 Datasette', 'a small, mostly European software scene it never grew out of'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['the 3-plus-1 word processor', 'the 3-plus-1 spreadsheet', 'Commodore BASIC V3.5'],\n    blurb: 'Commodore’s misfire, and the reason it is worth looking at: an office suite — word processor, spreadsheet, database, graphing — burned into ROM and running one second after you switch the machine on, with no disk in sight.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (xplus4) emulating a PAL Plus/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs INCLUDING both 3-plus-1 banks, so this tile needs no external media. The golden is the machine\\'s own untouched power-on screen, whose ROM message “3-PLUS-1 ON KEY F1” is the exhibit\\'s launcher. The suite’s command prompt is one-shot — C= + C opens it, one command runs, it closes — so module switching needs the Commodore key (Tab under VICE’s symbolic keymap); the SPA’s plus4 on-screen keyboard therefore carries one-tap Word/Calc/File buttons that send the whole sequence. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/plus4.md.',\n  },\n"
+    "goldenOrder": 35
   },
   "tileDir": "plus4",
   "lifecycle": "production",
@@ -98,12 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/plus4/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/plus4/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_FIXTURE_DESC": "Commodore Plus/4 (PAL) at its own untouched power-on screen: \"COMMODORE BASIC V3.5 / 60671 BYTES FREE / 3-PLUS-1 ON KEY F1 / READY.\" in black on a white page inside a lavender border, drawn double-size (-TEDdsize) by VICE xplus4 on an 800x600 X root. Nothing is curated and nothing is typed: the ROM's own message is the exhibit's launcher, and F1+RETURN enters the built-in 3-plus-1 office suite. Module switching inside the suite needs C= + C (Tab under VICE's symbolic keymap) followed by tw/tc/tf, which the SPA's plus4 on-screen keyboard sends from one labelled button each. Keyboard-only exhibit; no pointer device; TED sound -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 222,
     "qemu": {

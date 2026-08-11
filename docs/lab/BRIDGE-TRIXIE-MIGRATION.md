@@ -286,18 +286,17 @@ that make the migration real rather than declared.
    note below exists to prevent; disk and log inference will not catch it. If
    the tile has audio, re-prove it non-silent the same way the original build
    did.
-5. **Update the registry prose — all four copies.** Every migrated tile's
+5. **Update the registry prose — both copies.** Every migrated tile's
    placard still says "a captured **Debian 12** kiosk". That sentence lives in
-   more than one place and they are validated against each other:
+   exactly two hand-written places now:
    - `registry/tiles/<tile>.json` → `.museum.notes`
-   - `registry/tiles/<tile>.json` → `.render.museumBlock` (the pre-rendered
-     twin of the same prose — edit both or the twin check fails)
-   - for `star`, `daybreak`, `indyr4400`: `.runtime.tileEnv.SH_FIXTURE_DESC`
-   - and its on-disk copy `streamhost/tiles/<tile>/tile.env.fixture`
+   - `streamhost/tiles/<tile>/tile.env.fixture` → `SH_FIXTURE_DESC` (the
+     fixture is the single source for its env keys; the registry entry no
+     longer mirrors them)
 
    Then `make tile-registry-generate`. **Never hand-edit the generated files** —
    `registry/index.json`, `scripts/serve/webroot/gallery-manifest.json`,
-   `spa/src/data/museumCatalog.ts` and 14 others are outputs. `make
+   `scripts/serve/webroot/poster-docs.json` and the rest are outputs. `make
    tile-registry-check` is the gate and it goes red on any of these.
 6. **Flip the ledger in the same commit** as steps 2–5. A commit that flips the
    ledger without the rebuild, or rebuilds without the flip, produces drift that

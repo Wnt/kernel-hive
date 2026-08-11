@@ -8,7 +8,6 @@
       {
         "order": 45,
         "prelude": "",
-        "line": "  \"dragon32     |tiles/dragon32.sh             |bridge/dragon32 |retro    |~4-6m   |full   |tiles/dragon32 overlay + golden (MAME dragon32 -ext '' → Microsoft BASIC)\"\n",
         "value": {
           "key": "dragon32",
           "script": "tiles/dragon32.sh",
@@ -47,15 +46,10 @@
     "signalOrder": 48,
     "tilesManifestOrder": 46,
     "tilesManifestPrelude": "\n# dragon32 (VMID 233) — MAME dragon32 -ext \"\" (Dragon 32, PAL, 1982) -> Microsoft Extended Color BASIC. ssh 5833. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit dragon32 \\\n  --tile dragon32 --vmid 233 --udp 54130 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/dragon32/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/dragon32/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 52,
     "bindingPrelude": "",
-    "bindingLine": "  dragon32:    { osId: 'dragon32', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#30D200', eraLabel: '1982 · Dragon 32 (Microsoft BASIC)' },\n",
-    "museumOrder": 46,
-    "goldenOrder": 46,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'dragon32', displayName: 'Dragon 32', year: 1982,\n    lineage: 'Dragon Data (Port Talbot, Wales) — Motorola 6809 / MC6847, Tandy CoCo lineage',\n    arch: 'Motorola MC6809E, 0.89 MHz, 32 KB RAM, 16 KB ROM', ramMB: 0, ramKB: 32,    era: '1980s', accent: '#30D200',\n    eraSoftware: ['Microsoft 16K Extended Color BASIC in ROM', 'cassette games from Microdeal, Salamander and Dragon Data itself', 'DragonDOS on the optional disk interface', 'OS-9 Level 1, a real multitasking Unix-alike on a home micro', 'Dragon User magazine and its monthly type-in listings'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['Microsoft Extended Color BASIC', 'Telewriter, the word processor that gave the Dragon lower case', 'Microdeal\\'s cassette games'],\n    blurb: 'Britain\\'s Welsh-built answer to the home-computer boom: a Motorola 6809 — the best 8-bit processor anyone shipped — wired to a video chip that could draw nine colours and no lower-case letters, and sold against the Spectrum.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs MAME 0.289\\'s dragon32 driver, built from the same pinned upstream commit the mpf2 tile ships; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. THE LAUNCHER MUST EMPTY THE `ext` SLOT (-ext \"\"): its default is dragon_fdc, which boots DRAGONDOS instead of BASIC, and -verifyroms demands the FDC ROM that causes it. The romset is assembled BY SHA1 and gated against the shipped binary\\'s own -listxml (0.276 declares one 16 KB d32.rom, 0.289 the same bits as two 8 KB halves named after their chips), and the build asserts the banner by OCR plus a text-pixel count of the framebuffer. Driver status is `good`, so MAME never raises its red \"doesn\\'t work\" panel. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/dragon32.md.',\n  },\n"
+    "goldenOrder": 46
   },
   "tileDir": "dragon32",
   "lifecycle": "production",
@@ -98,13 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/dragon32/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/dragon32/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_KEY_MAP": "@:[,\":@,&:^,':&,(:*,):(,%3A:-,*:_,+:%3A,-:=,=:+",
-      "SH_FIXTURE_DESC": "Dragon 32 (PAL) at its own untouched power-on screen: \"(C) 1982 DRAGON DATA LTD / 16K BASIC INTERPRETER 1.0 / (C) 1982 BY MICROSOFT / OK\", dark green on the MC6847's bright green page, drawn fullscreen with aspect correction by MAME 0.289's dragon32 driver on a 1024x768 X root (the dark surround is the Dragon's own border, not letterboxing). The launcher empties the driver's `ext` slot with -ext \"\": with the default dragon_fdc cartridge the machine boots DRAGONDOS 1.0 instead, and -verifyroms actively demands the FDC ROM that produces that wrong screen. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; 6-bit DAC sound -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 233,
     "qemu": {

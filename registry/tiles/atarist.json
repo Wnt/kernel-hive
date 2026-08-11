@@ -8,7 +8,6 @@
       {
         "order": 27,
         "prelude": "",
-        "line": "  \"atarist      |tiles/atarist.sh              |bridge/atarist |retro    |~3-5m   |full   |tiles/atarist overlay + golden (hatari → EmuTOS GEM)\"\n",
         "value": {
           "key": "atarist",
           "script": "tiles/atarist.sh",
@@ -47,14 +46,9 @@
     "signalOrder": 27,
     "tilesManifestOrder": 25,
     "tilesManifestPrelude": "\n# atarist (VMID 216) — hatari -> Atari ST -> EmuTOS GEM desktop. ssh 5816.\n",
-    "tilesManifestInvocation": "emit atarist \\\n  --tile atarist --vmid 216 --udp 54116 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --abs-pace-ms 30 --audio on --fps 60 \\\n  --launcher-file \"$T/atarist/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/atarist/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 27,
     "bindingPrelude": "",
-    "bindingLine": "  atarist:     { osId: 'atarist',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#E4002B', eraLabel: '1985 · Atari ST (GEM)' },\n",
-    "museumOrder": 25,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'atarist', displayName: 'Atari ST (EmuTOS GEM)', year: 1985,\n    lineage: 'Atari ST / Digital Research GEM',\n    arch: 'Motorola 68000 (m68k)', ramMB: 0, ramKB: 1024,    era: '1980s', accent: '#E4002B',\n    eraSoftware: ['GEM desktop (TOS)', 'NEODESK', 'Cubase / Notator (MIDI)', 'Degas Elite', 'First Word / First Word Plus'],\n    periodBrowser: 'none — pre-web 16-bit era',\n    iconicApps: ['GEM desktop (DISK A/B, TRASH, PRINTER)', 'GEM file manager', 'Atari BASIC / GFA BASIC', 'Cubase MIDI sequencer'],\n    blurb: 'The 16-bit “Jackintosh” — a 68000 with the GEM windows-icons-menus desktop and built-in MIDI, shown here booting the open-source EmuTOS straight to the classic monochrome GEM desktop.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs the hatari Atari ST emulator full-screen (EmuTOS → GEM desktop); streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Atari ST wedge). See streamhost/docs/BRIDGE.md.',\n  },\n",
     "goldenOrder": 25
   },
   "tileDir": "atarist",
@@ -103,9 +97,6 @@
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/atarist/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/atarist/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "Atari ST EmuTOS GEM desktop (menu bar, DISK A/B, TRASH, PRINTER) in Hatari, mono ST-high; YM2149->ALSA->AC97.",
       "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 216,

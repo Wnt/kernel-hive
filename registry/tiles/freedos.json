@@ -8,7 +8,6 @@
       {
         "order": 11,
         "prelude": "",
-        "line": "  \"freedos     |tiles/freedos.sh              |FreeDOS     |retro    |~10-15m |full*  |freedos.qcow2 (games+Arachne)\"\n",
         "value": {
           "key": "freedos",
           "script": "tiles/freedos.sh",
@@ -60,15 +59,10 @@
     "signalOrder": 9,
     "tilesManifestOrder": 16,
     "tilesManifestPrelude": "\n# freedos (VMID 95) — sb16 + routed PC-speaker audio, pc-i440fx-11.0,acpi=off, cirrus, ne2k NIC, PS/2 relative.\n#   VERBATIM LAUNCHER: golden fixture — NO -snapshot (writes persist in\n#   freedos.qcow2) and boots straight into the baked snapshot via an\n#   unconditional -loadvm golden (fixture = the retro-games CHOICE menu).\n",
-    "tilesManifestInvocation": "emit freedos \\\n  --tile freedos --vmid 95 --udp 54095 --pointer rel --audio on --fps 30 \\\n  --launcher-file \"$T/freedos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/freedos/tile.env.fixture\"\n",
     "bringUpGroup": 4,
     "bindingOrder": 0,
     "bindingPrelude": "  // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----\n",
-    "bindingLine": "  freedos:     { osId: 'freedos',     archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },\n",
     "mockManifestOrder": 2,
-    "catalogOrder": 2,
-    "catalogPrelude": "",
-    "catalogBlock": "  freedos: {\n    accent: '#5fa85f',\n    era: '1990s',\n    eraSoftware: ['EDIT', 'FDISK', '4DOS', 'Arachne browser'],\n    periodBrowser: 'Arachne / Lynx (DOS)',\n    iconicApps: ['Rogue', 'Nibbles', 'DOOM (shareware)'],\n    blurb: \"The DOS command prompt that never died — C:\\\\> is still alive and well.\",\n  },\n",
     "goldenOrder": 8,
     "actionMapOrder": 10
   },
@@ -109,10 +103,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/freedos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/freedos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "clean-freedos-games-menu"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 95,
     "qemu": {

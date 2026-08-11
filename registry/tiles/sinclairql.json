@@ -8,7 +8,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"sinclairql   |tiles/sinclairql.sh           |bridge/sinclairql|retro    |~8-12m  |full   |tiles/sinclairql overlay + golden (MAME ql → QDOS monitor mode)\"\n",
         "value": {
           "key": "sinclairql",
           "script": "tiles/sinclairql.sh",
@@ -42,16 +41,11 @@
   "render": {
     "tilesManifestOrder": 49,
     "bindingOrder": 55,
-    "museumOrder": 49,
     "goldenOrder": 49,
     "bringUpGroup": 6,
     "signalOrder": 51,
-    "tilesManifestInvocation": "emit sinclairql \\\n  --tile sinclairql --vmid 236 --udp 54133 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/sinclairql/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/sinclairql/tile.env.fixture\"\n",
-    "bindingLine": "  sinclairql:  { osId: 'sinclairql', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2EE65A', eraLabel: '1984 · Sinclair QL (QDOS · SuperBASIC)' },\n",
-    "museumBlock": "  {\n    id: 'sinclairql', displayName: 'Sinclair QL', year: 1984,\n    lineage: 'Sinclair Research (post-ZX Spectrum, Motorola 68008)',\n    arch: 'Motorola 68008, 7.5 MHz, 128 KB RAM, two Microdrive tape loops', ramMB: 0, ramKB: 128,    era: '1980s', accent: '#2EE65A',\n    eraSoftware: ['QDOS with SuperBASIC — multitasking in 48 KB of ROM', 'Psion\\'s Quill, Abacus, Archive and Easel, bundled on Microdrive cartridges', 'Microdrives: 100 KB endless tape loops, the machine\\'s only built-in storage', 'a small, stubborn developer scene that outlived Sinclair itself'],\n    periodBrowser: 'none — pre-web 8/16-bit era',\n    iconicApps: ['SuperBASIC', 'Quill (word processor)', 'Abacus (spreadsheet)'],\n    blurb: 'Sinclair\\'s serious machine, launched before it was finished: a 68008 workstation-in-a-wedge announced twelve days before the Macintosh, sold months before it could be delivered, and shipped with firmware that did not fit — the earliest buyers got the missing part on a ROM cartridge hanging out of the back.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.251\\'s `ql` driver; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The romset is a preservation-source set reduced by SHA1 to the four entries the default JS v1.10 BIOS needs, and re-verified at build time against the shipped binary\\'s own -listxml; the QL\\'s hal16l8.ic38 PLD has never been dumped anywhere, so MAME reports it missing on every boot and puts up an imperfect-dump warning, which the builder answers before baking. The golden is the machine\\'s own 80-column monitor-mode screen, one keystroke past the `F1...monitor / F2...TV` chooser it insists on at power-on; the chooser is kept as the poster image. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/sinclairql.md.',\n  },\n",
     "tilesManifestPrelude": "",
-    "bindingPrelude": "",
-    "museumPrelude": ""
+    "bindingPrelude": ""
   },
   "tileDir": "sinclairql",
   "lifecycle": "production",
@@ -94,12 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/sinclairql/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/sinclairql/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "120",
-      "SH_KEY_MIN_GAP_MS": "120",
-      "SH_FIXTURE_DESC": "Sinclair QL (1984) in MAME's `ql` driver, resting where the machine itself stops: the 80-column MONITOR-mode SuperBASIC screen it draws once F1 is answered — window #2 a white page on the left, window #1 red on the right, the black command window along the bottom with nothing typed in it. 512x256 drawn at an exact 2x3 integer scale on the kiosk's 1024x768 X root, so every QL pixel is one identical block and the picture keeps the machine's 4:3 shape. The `F1...monitor / F2...TV` chooser that precedes it, and MAME's imperfect-dump warning before that (the QL's hal16l8.ic38 PLD has never been dumped anywhere), are both answered during the bake and never seen by a visitor; the chooser is the exhibit's poster image instead. Keyboard-only exhibit; no pointer device; QL beeper -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 236,
     "qemu": {

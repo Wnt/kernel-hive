@@ -1,0 +1,13 @@
+[package]
+name = "devwatch"
+version = "0.1.0"
+edition = "2021"
+description = "Dev-mode watcher: registry/poster/fixture edits regenerate and publish to the box the moment they parse"
+repository = "https://github.com/Wnt/kernel-hive"
+license = "GPL-2.0-or-later"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+notify = "8"
+notify-debouncer-full = "0.5"

@@ -9,7 +9,6 @@ import difflib
 import json
 import os
 import re
-import shlex
 import sys
 import tempfile
 from collections import OrderedDict
@@ -71,6 +70,28 @@ def is_x11_runtime(row: dict[str, Any]) -> bool:
     return "x11" in row.get("runtime", {})
 
 
+def fixture_path(row: dict[str, Any]) -> Path | None:
+    """The tile's --env-append-file: the hand-written source of its append env keys."""
+    runtime = row.get("runtime", {})
+    source = runtime.get("x11") if is_x11_runtime(row) else runtime.get("qemu", {})
+    args = source.get("emitArgs", [])
+    if "--env-append-file" in args:
+        raw = args[args.index("--env-append-file") + 1]
+        return REPO / raw.replace("$T", "streamhost/tiles")
+    return None
+
+
+def parse_env_fixture(path: Path) -> OrderedDict[str, str]:
+    env: OrderedDict[str, str] = OrderedDict()
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        env[key.strip()] = value
+    return env
+
+
 def load() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     try:
         globals_doc = json.loads((REGISTRY / "registry-v1.json").read_text(), object_pairs_hook=OrderedDict)
@@ -83,6 +104,19 @@ def load() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         except json.JSONDecodeError as exc:
             raise RegistryError(f"{path.relative_to(REPO)}:{exc.lineno}: {exc.msg}") from exc
         row["_path"] = path
+        # The tile.env.fixture owns its keys; the registry entry owns the
+        # emitter-written keys. Everything downstream (validators, index.json)
+        # sees the merged view — the same env the emitter's append produces.
+        fixture = fixture_path(row)
+        if fixture is not None and fixture.is_file():
+            fixture_env = parse_env_fixture(fixture)
+            row["_fixtureEnv"] = fixture_env
+            runtime = row.setdefault("runtime", OrderedDict())
+            recorded = runtime.get("tileEnv", OrderedDict())
+            row["_recordedTileEnv"] = recorded
+            merged = OrderedDict(recorded)
+            merged.update(fixture_env)
+            runtime["tileEnv"] = merged
         rows.append(row)
     if not rows:
         raise RegistryError("registry/tiles contains no entries")
@@ -634,7 +668,10 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         raise RegistryError(f"cannot load tile JSON Schema: {exc}") from exc
     for row in rows:
         validate_json_schema(
-            {k: v for k, v in row.items() if k != "_path"}, schema, str(row["_path"].relative_to(REPO)), errors
+            {k: v for k, v in row.items() if not str(k).startswith("_")},
+            schema,
+            str(row["_path"].relative_to(REPO)),
+            errors,
         )
     validate_schema_shape(rows, errors)
     validate_listing(rows, errors)
@@ -842,63 +879,21 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             fail(errors, row, f"referenced path does not exist: {x11_launcher}")
         if not re.fullmatch(r"guest/[a-z0-9-]+", row.get("credentialsRef", "")):
             fail(errors, row, "credentialsRef must be an opaque guest/<id> reference")
-        render = row.get("render", {})
-        for item in row.get("build", {}).get("rows", []):
-            match = re.fullmatch(r'  "([^\n"]+)"\n', item.get("line", ""))
-            if not match:
-                fail(errors, row, "build render line has unsupported format")
-                continue
-            columns = [part.strip() for part in match.group(1).split("|")]
-            parsed_build = {
-                "key": columns[0],
-                "script": columns[1],
-                "outputDir": columns[2],
-                "class": columns[3],
-                "estimated": columns[4],
-                "automation": columns[5],
-                "produces": columns[6],
-                "flags": columns[7:],
-            }
-            if parsed_build != item.get("value"):
-                fail(errors, row, f"rendered build row {columns[0]} disagrees with typed fields")
-        if "tilesManifestInvocation" in render:
-            tokens = shlex.split(render["tilesManifestInvocation"].replace("\\\n", " "))
-            expected_emit = runtime.get("x11", {}).get("emitArgs") if x11 else qemu.get("emitArgs")
-            if tokens[:2] != ["emit", tile_dir] or tokens[2:] != expected_emit:
-                fail(errors, row, "rendered emit invocation disagrees with runtime emitArgs")
-        if "bindingLine" in render:
-            parsed = parse_js_object(render["bindingLine"])
-            if parsed.pop("osId", None) != os_id or dict(parsed) != dict(row.get("spa", {})):
-                fail(errors, row, "rendered OS binding disagrees with spa fields")
-        if "museumBlock" in render and dict(parse_js_object(render["museumBlock"])) != dict(row["museum"]):
-            fail(errors, row, "rendered museum block disagrees with museum fields")
-        if "catalogBlock" in render:
-            parsed = parse_js_object(render["catalogBlock"])
-            curated = {
-                k: row["museum"][k] for k in ("accent", "era", "eraSoftware", "periodBrowser", "iconicApps", "blurb")
-            }
-            if dict(parsed) != curated:
-                fail(errors, row, "rendered catalog adapter block disagrees with museum fields")
+        declared_fixture = qemu.get("envFixture")
+        resolved_fixture = fixture_path(row)
+        if declared_fixture and (resolved_fixture is None or (REPO / declared_fixture) != resolved_fixture):
+            fail(errors, row, "runtime.qemu.envFixture disagrees with the emitArgs --env-append-file path")
+        overlap = sorted(set(row.get("_recordedTileEnv", {})) & set(row.get("_fixtureEnv", {})))
+        if overlap:
+            fail(
+                errors,
+                row,
+                f"runtime.tileEnv duplicates fixture-owned key(s) {overlap}: the tile's "
+                f"tile.env.fixture is the single source for the keys it defines — "
+                f"delete them from the registry entry",
+            )
     if set(by_id) != {p.stem for p in TILES.glob("*.json")}:
         errors.append("registry filename/id set mismatch")
-    for item in globals_doc.get("sharedBuildRows", []):
-        match = re.fullmatch(r'  "([^\n"]+)"\n', item.get("line", ""))
-        if not match:
-            errors.append("registry/registry-v1.json: shared build render line has unsupported format")
-            continue
-        columns = [part.strip() for part in match.group(1).split("|")]
-        parsed = {
-            "key": columns[0],
-            "script": columns[1],
-            "outputDir": columns[2],
-            "class": columns[3],
-            "estimated": columns[4],
-            "automation": columns[5],
-            "produces": columns[6],
-            "flags": columns[7:],
-        }
-        if parsed != item.get("value"):
-            errors.append(f"registry/registry-v1.json: shared build row {columns[0]} disagrees with typed fields")
     if errors:
         raise RegistryError("validation failed:\n  - " + "\n  - ".join(errors))
     return globals_doc, rows
@@ -917,10 +912,6 @@ def apply_count_tokens(data: bytes, rows: list[dict[str, Any]]) -> bytes:
         b"@@PRODUCTION_COUNT@@": sum(r["lifecycle"] == "production" for r in rows),
         b"@@STREAMED_COUNT@@": sum(r["stream"]["transport"] == "streamhost" for r in rows),
         b"@@SHOWCASE_COUNT@@": sum(r["lifecycle"] == "showcase" for r in rows),
-        b"@@MUSEUM_ENTRY_COUNT@@": sum("museumBlock" in r["render"] for r in rows),
-        b"@@STREAMED_MUSEUM_ENTRY_COUNT@@": sum(
-            r["stream"]["transport"] == "streamhost" and "museumBlock" in r["render"] for r in rows
-        ),
     }
     for token, count in counts.items():
         data = data.replace(token, str(count).encode())
@@ -947,17 +938,100 @@ def render_mock(rows: list[dict[str, Any]]) -> bytes:
     return ("\n".join(lines) + "\n").encode()
 
 
-def render_posters(posters: OrderedDict[str, dict[str, Any]]) -> bytes:
-    encoded = json.dumps(posters, indent=2, ensure_ascii=False)
+def ts_scalar(value: Any) -> str:
+    """Render a flat registry value as a TypeScript literal (single-quoted strings)."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, str):
+        return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'"
+    return str(value)
+
+
+def render_binding_line(row: dict[str, Any], id_width: int) -> str:
+    """One OS_BINDINGS row, derived from the typed spa fields."""
+    parts = [f"osId: {ts_scalar(row['id'])}"]
+    parts += [f"{key}: {ts_scalar(value)}" for key, value in row["spa"].items()]
+    comment = row["render"].get("bindingComment")
+    suffix = f" // {comment}" if comment else ""
+    label = f"{row['id']}:"
+    return f"  {label:<{id_width}}{{ {', '.join(parts)} }},{suffix}\n"
+
+
+SHELL_BARE_TOKEN = re.compile(r"[A-Za-z0-9@%_+=:,./-]+")
+
+
+def shell_token(token: str) -> str:
+    """Quote an emit argument for tiles-manifest.sh; $ stays live for $T expansion."""
+    if SHELL_BARE_TOKEN.fullmatch(token):
+        return token
+    return '"' + token.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def render_emit_invocation(row: dict[str, Any]) -> str:
+    """The tiles-manifest.sh emit line, derived from the typed runtime emitArgs."""
+    runtime = row.get("runtime", {})
+    source = runtime.get("x11", {}) if is_x11_runtime(row) else runtime.get("qemu", {})
+    words = [shell_token(str(arg)) for arg in source.get("emitArgs", [])]
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}" if current else word
+        if current and len(candidate) > 74:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return f"emit {row['tileDir']} \\\n  " + " \\\n  ".join(lines) + "\n"
+
+
+BUILD_COLUMNS = ("key", "script", "outputDir", "class", "estimated", "automation")
+
+
+def build_line_widths(items: list[dict[str, Any]]) -> list[int]:
+    widths = [0] * len(BUILD_COLUMNS)
+    for item in items:
+        for i, column in enumerate(BUILD_COLUMNS):
+            widths[i] = max(widths[i], len(item["value"][column]) + 1)
+    return widths
+
+
+def render_build_line(item: dict[str, Any], widths: list[int]) -> str:
+    """One build-all.sh manifest row, derived from the typed build fields."""
+    value = item["value"]
+    padded = "|".join(f"{value[column]:<{width}}" for column, width in zip(BUILD_COLUMNS, widths))
+    tail = "|".join([value["produces"], *value["flags"]])
+    return f'  "{padded}|{tail}"\n'
+
+
+def render_poster_index(posters: OrderedDict[str, dict[str, Any]]) -> bytes:
+    """The eager, bundle-side poster surface: existence + hero path only.
+
+    The full prose lives in poster-docs.json, fetched at runtime, so poster
+    copy edits reach the gallery without an SPA rebuild.
+    """
+    index = OrderedDict((os_id, ({"hero": doc["hero"]} if "hero" in doc else {})) for os_id, doc in posters.items())
+    encoded = json.dumps(index, indent=2, ensure_ascii=False)
     return (
         "// DO NOT EDIT — generated by scripts/tiles-registry.py generate from\n"
         "// registry/posters/*.md; run `make tile-registry-generate`.\n"
-        "import type { PosterDoc } from '../types';\n\n"
-        f"export const POSTERS = {encoded} as const satisfies Record<string, PosterDoc>;\n\n"
-        "export function posterFor(osId: string): PosterDoc | undefined {\n"
-        "  return POSTERS[osId as keyof typeof POSTERS];\n"
+        "// Existence + hero only — the prose is runtime data (/poster-docs.json).\n\n"
+        f"const POSTER_INDEX = {encoded} as const satisfies Record<string, {{ hero?: string }}>;\n\n"
+        "export function posterFor(osId: string): { hero?: string } | undefined {\n"
+        "  return POSTER_INDEX[osId as keyof typeof POSTER_INDEX];\n"
         "}\n"
     ).encode()
+
+
+def render_poster_docs(posters: OrderedDict[str, dict[str, Any]]) -> bytes:
+    document = OrderedDict(
+        [
+            ("_generated", "scripts/tiles-registry.py generate; PUBLIC DATA ONLY; DO NOT EDIT"),
+            ("posters", posters),
+        ]
+    )
+    return (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
 
 
 def render_keyboards(rows: list[dict[str, Any]]) -> bytes:
@@ -1072,14 +1146,11 @@ def generated() -> OrderedDict[str, bytes]:
     streamed = [r for r in rows if r["stream"]["transport"] == "streamhost"]
     production = [r for r in rows if r["lifecycle"] == "production"]
 
-    def emit_invocation(row: dict[str, Any]) -> str:
-        # No --encoder-preset: the daemon default (ultrafast) governs the whole
-        # fleet. A per-tile value here was 36 restatements of the default and one
-        # silent divergence (irix on veryfast, with no recorded reason).
-        return row["render"]["tilesManifestInvocation"].rstrip("\n") + "\n"
-
+    # No --encoder-preset in emitArgs: the daemon default (ultrafast) governs the
+    # whole fleet. A per-tile value here was 36 restatements of the default and
+    # one silent divergence (irix on veryfast, with no recorded reason).
     emits = "".join(
-        r["render"].get("tilesManifestPrelude", "") + emit_invocation(r)
+        r["render"].get("tilesManifestPrelude", "") + render_emit_invocation(r)
         for r in sorted(production, key=lambda x: x["render"]["tilesManifestOrder"])
     )
     out["streamhost/tiles-manifest.sh"] = apply_count_tokens(
@@ -1097,7 +1168,8 @@ def generated() -> OrderedDict[str, bytes]:
     build_rows = [item for row in rows for item in row.get("build", {}).get("rows", [])]
     build_rows += globals_doc.get("sharedBuildRows", [])
     build_rows.sort(key=lambda item: item["order"])
-    manifest = "".join(item.get("prelude", "") + item["line"] for item in build_rows).rstrip("\n")
+    widths = build_line_widths(build_rows)
+    manifest = "".join(item.get("prelude", "") + render_build_line(item, widths) for item in build_rows).rstrip("\n")
     default: dict[int, list[tuple[int, str]]] = {}
     for item in build_rows:
         if "defaultOrder" in item:
@@ -1150,9 +1222,10 @@ def generated() -> OrderedDict[str, bytes]:
         action[item["key"]] = item["value"]
     out["scripts/tools/gallery-action-map.json"] = (json.dumps(action, indent=2, ensure_ascii=True) + "\n").encode()
 
-    binding_rows = [r for r in rows if r.get("enabled") and "bindingLine" in r["render"]]
+    binding_rows = [r for r in rows if r.get("enabled") and "bindingOrder" in r["render"]]
+    id_width = max(len(r["id"]) for r in binding_rows) + 1
     bindings = "".join(
-        r["render"].get("bindingPrelude", "") + r["render"]["bindingLine"]
+        r["render"].get("bindingPrelude", "") + render_binding_line(r, id_width)
         for r in sorted(binding_rows, key=lambda x: x["render"]["bindingOrder"])
     )
     out["spa/src/three/archetypeRegistry.ts"] = apply_count_tokens(
@@ -1160,27 +1233,14 @@ def generated() -> OrderedDict[str, bytes]:
     )
     out["spa/src/mock/manifest.json"] = render_mock(rows)
 
-    museum_rows = [r for r in rows if "museumBlock" in r["render"]]
-    museum = "".join(
-        r["render"].get("museumPrelude", "") + r["render"]["museumBlock"]
-        for r in sorted(museum_rows, key=lambda x: x["render"]["museumOrder"])
-    )
-    out["spa/src/data/museumCatalog.ts"] = apply_count_tokens(
-        template("museumCatalog.ts.in", "@@MUSEUM_ENTRIES@@", museum.rstrip("\n")), rows
-    )
-    out["spa/src/data/posters.ts"] = render_posters(posters)
+    out["spa/src/data/posterIndex.ts"] = render_poster_index(posters)
+    out["scripts/serve/webroot/poster-docs.json"] = render_poster_docs(posters)
     out["spa/src/data/demoPrograms.ts"] = render_demo_programs(rows)
     out["spa/src/data/keyboards.ts"] = render_keyboards(rows)
-    catalog_rows = [r for r in rows if "catalogBlock" in r["render"]]
-    catalog = "".join(
-        r["render"].get("catalogPrelude", "") + r["render"]["catalogBlock"]
-        for r in sorted(catalog_rows, key=lambda x: x["render"]["catalogOrder"])
-    )
-    out["spa/src/data/catalog.ts"] = template("catalog.ts.in", "@@CATALOG_ENTRIES@@", catalog.rstrip("\n"))
 
     public_rows = []
     for row in sorted(rows, key=lambda x: x["id"]):
-        clean = OrderedDict((k, v) for k, v in row.items() if k not in {"_path", "render"})
+        clean = OrderedDict((k, v) for k, v in row.items() if not str(k).startswith("_") and k != "render")
         public_rows.append(clean)
     index = OrderedDict(
         [
@@ -1354,7 +1414,7 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
     line_value = OrderedDict(
         [
             ("key", os_id),
-            ("script", f"{os_id}.sh"),
+            ("script", f"tiles/{os_id}.sh"),
             ("outputDir", output_dir),
             ("class", build_class),
             ("estimated", estimated),
@@ -1362,10 +1422,6 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
             ("produces", "TODO"),
             ("flags", []),
         ]
-    )
-    script_col = f"tiles/{os_id}.sh"
-    rendered_line = (
-        f'  "{os_id:<12}|{script_col:<30}|{output_dir:<14}|{build_class:<9}|{estimated:<8}|{automation:<8}|TODO"\n'
     )
     row = OrderedDict(
         [
@@ -1375,7 +1431,7 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
             ("tileDir", os_id),
             ("lifecycle", "candidate"),
             ("enabled", False),
-            ("build", {"rows": [{"order": build_order, "prelude": "", "line": rendered_line, "value": line_value}]}),
+            ("build", {"rows": [{"order": build_order, "prelude": "", "value": line_value}]}),
             ("operator", {}),
             ("render", {}),
             # A disabled candidate reserves identity/slot/port without entering any

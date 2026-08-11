@@ -8,7 +8,6 @@
       {
         "order": 0,
         "prelude": "",
-        "line": "  \"kolibrios   |tiles/kolibrios.sh            |KolibriOS   |fast     |~2-3m   |full   |kolibri.iso (live CD)\"\n",
         "value": {
           "key": "kolibrios",
           "script": "tiles/kolibrios.sh",
@@ -70,15 +69,10 @@
     "signalOrder": 15,
     "tilesManifestOrder": 7,
     "tilesManifestPrelude": "\n# kolibrios (VMID 97) — LiveCD, usb-tablet, AC97. VERBATIM LAUNCHER:\n#   state.qcow2 (virtio) holds the golden snapshot; conditional -loadvm golden.\n# POINTER=abs (Pattern A): KolibriOS's native USB HID stack consumes usb-tablet\n# absolute coordinates 1:1; golden re-baked 2026-07-13 with the tablet present.\n",
-    "tilesManifestInvocation": "emit kolibrios \\\n  --tile kolibrios --vmid 97 --udp 54097 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/kolibrios/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/kolibrios/tile.env.fixture\"\n",
     "bringUpGroup": 1,
     "bindingOrder": 1,
     "bindingPrelude": "",
-    "bindingLine": "  kolibrios:   { osId: 'kolibrios',   archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#39c6d6', eraLabel: '2004 · asm GUI OS' },\n",
     "mockManifestOrder": 0,
-    "catalogOrder": 0,
-    "catalogPrelude": "",
-    "catalogBlock": "  kolibrios: {\n    accent: '#39c6d6',\n    era: '2000s',\n    eraSoftware: ['KolibriOS desktop', 'TinyBasic', 'Fasm IDE', 'Animage paint'],\n    periodBrowser: 'WebView (HTMLv)',\n    iconicApps: ['Fara (dungeon crawler)', 'MineSweeper', '3D Cube demo'],\n    blurb: 'A complete graphical OS that fits on a single floppy — written in pure asm.',\n  },\n",
     "goldenOrder": 10,
     "actionMapOrder": 12
   },

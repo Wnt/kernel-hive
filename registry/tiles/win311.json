@@ -8,7 +8,6 @@
       {
         "order": 13,
         "prelude": "",
-        "line": "  \"win311      |tiles/win311.sh               |Win311      |retro    |~10m    |full   |hda.img + games.img\"\n",
         "value": {
           "key": "win311",
           "script": "tiles/win311.sh",
@@ -68,14 +67,9 @@
     "signalOrder": 5,
     "tilesManifestOrder": 13,
     "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP E — Win9x / DOS / OS/2: PS/2-only (usb=off), Sound Blaster 16 (only\n#           inbox codec that works), acpi=off/kernel-irqchip=off, legacy\n#           -cpu pentium*. rel/warpd pointer. ALL VERBATIM (golden fixtures).\n# ---------------------------------------------------------------------------\n\n# win311 (VMID 90) — Windows 3.11, sb16, two golden qcow2 disks (tile-local,\n#   NO -snapshot; savevm/loadvm 'golden' persists). VERBATIM LAUNCHER with the\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (hybrid): usb=off => PS/2 RELATIVE-only mouse, and the Win3.x\n# DOS mouse driver applies acceleration so an abs->rel bridge desyncs. Fix\n# (guest-agents/win311/agent.c): an in-guest Win16 agent OpenComm(\"COM1\")s and\n# SetCursorPos()es the cursor absolutely from the warpd M/P/R/B protocol over\n# COM1. SH_WARPD_BUTTONS=qemu keeps MOTION on the agent but routes BUTTONS\n# through the real QEMU PS/2 device for true window-manager semantics. The COM1\n# device comes from machine 'pc'; -serial chardev:ser0 only redirects its\n# BACKEND so the guest device set is UNCHANGED and loadvm golden still matches.\n# LAG+DRAG FIX (baked 2026-07-08): AGENT.EXE coalesces moves per COM1 drain\n# batch; the two-channel race is closed by SH_WARPD_BUTTON_DELAY_MS=80 with\n# SH_WARPD_PACE_MS=8 write pacing (empirical floor 50; 80 = 0 races observed).\n",
-    "tilesManifestInvocation": "emit win311 \\\n  --tile win311 --vmid 90 --udp 54090 --pointer warpd \\\n  --warpd-addr unix:/data/vms/streamhost/tiles/win311/serial.sock \\\n  --warpd-buttons qemu --warpd-pace-ms 30 --warpd-button-delay-ms 80 \\\n  --audio on --fps 30 \\\n  --launcher-file \"$T/win311/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/win311/tile.env.fixture\"\n",
     "bringUpGroup": 4,
     "bindingOrder": 3,
     "bindingPrelude": "",
-    "bindingLine": "  win311:      { osId: 'win311',      archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#7fb0d6', eraLabel: '1993 · Windows 3.11' },\n",
-    "museumOrder": 0,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'win311', displayName: 'Windows 3.11', year: 1993,\n    lineage: 'MS-DOS + Windows 3.x', arch: 'i386', ramMB: 16,    era: '1990s', accent: '#7fb0d6',\n    eraSoftware: ['Program Manager', 'File Manager', 'Write', 'Paintbrush'],\n    periodBrowser: 'Mosaic / early Netscape',\n    iconicApps: ['Solitaire', 'Minesweeper', 'Reversi'],\n    blurb: 'Windows for Workgroups — the tiled Program Manager era, riding on top of DOS.',\n  },\n",
     "goldenOrder": 3,
     "actionMapOrder": 5
   },
@@ -124,10 +118,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/win311/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win311/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISKS": "win311-golden.qcow2,games-golden.qcow2"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 90,
     "qemu": {

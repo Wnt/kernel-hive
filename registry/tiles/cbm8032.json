@@ -8,7 +8,6 @@
       {
         "order": 39,
         "prelude": "",
-        "line": "  \"cbm8032      |tiles/cbm8032.sh              |bridge/cbm8032  |retro    |~2-4m   |full   |tiles/cbm8032 overlay + golden (VICE xpet -model 8032 → BASIC 4.0)\"\n",
         "value": {
           "key": "cbm8032",
           "script": "tiles/cbm8032.sh",
@@ -46,16 +45,11 @@
   "render": {
     "tilesManifestOrder": 38,
     "bindingOrder": 44,
-    "museumOrder": 38,
     "goldenOrder": 38,
     "bringUpGroup": 6,
     "signalOrder": 40,
-    "tilesManifestInvocation": "emit cbm8032 \\\n  --tile cbm8032 --vmid 225 --udp 54109 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/cbm8032/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/cbm8032/tile.env.fixture\"\n",
-    "bindingLine": "  cbm8032:     { osId: 'cbm8032', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#41FF00', eraLabel: '1980 · CBM 8032 (BASIC 4.0, 80 columns)' },\n",
-    "museumBlock": "  {\n    id: 'cbm8032', displayName: 'Commodore CBM 8032', year: 1980,\n    lineage: 'Commodore PET / CBM 8000 series (MOS 6502)',\n    arch: 'MOS 6502, 1 MHz, 32 KB RAM, 80x25 monochrome CRTC, 12-inch integrated green monitor', ramMB: 0, ramKB: 32,    era: '1980s', accent: '#41FF00',\n    eraSoftware: ['Commodore BASIC 4.0, with the PET\\'s disk commands built into the language', 'WordPro — the word processor that sold 8032s to offices', 'VisiCalc and Silicon Office on the 8000 series', 'the 8050 dual floppy and the 4022 tractor printer on the IEEE-488 bus', 'Waterloo microSystems\\' languages, from the SuperPET side of the family'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['Commodore BASIC 4.0', 'WordPro', 'the built-in machine-language monitor'],\n    blurb: 'Commodore\\'s office computer: 80 columns of green text, 32 KB, a proper business keyboard, and no colour, no sprites and no sound chip at all. Everything its home-computer siblings are famous for is deliberately missing.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (xpet -model 8032) emulating a CBM 8032; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. VICE bundles the Commodore ROMs, so this tile needs no external media — BASIC 4.0, KERNAL 4, the 80-column business editor and the character generator all come from the emulator\\'s own data tree. The golden is the machine\\'s own untouched power-on screen; the exhibit\\'s interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns. Drawn double-size (-CRTCdsize) on a 1600x1200 X root, the tightest advertised mode that contains the 1408x1064 SDL window. Keyboard-only exhibit; mono-terminal archetype — the 8032 is an all-in-one with an integrated 12-inch green monitor, which is what that archetype models. See streamhost/docs/BRIDGE.md and docs/guests/cbm8032.md.',\n  },\n",
     "tilesManifestPrelude": "",
-    "bindingPrelude": "",
-    "museumPrelude": ""
+    "bindingPrelude": ""
   },
   "tileDir": "cbm8032",
   "lifecycle": "production",
@@ -98,12 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/cbm8032/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/cbm8032/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_FIXTURE_DESC": "Commodore CBM 8032 (1980) at its own untouched power-on screen: \"*** commodore basic 4.0 *** / 31743 bytes free / ready.\" in green on black with a solid block cursor, 80 columns wide, drawn double-size (-CRTCdsize) by VICE xpet on a 1600x1200 X root — the tightest advertised mode that contains the 1408x1064 SDL window, and the 4:3 shape of the machine's own 12-inch monitor. No colour, no sprites and no sound generator: the 8032 had none. Keyboard-only exhibit; no pointer device. The interaction is the registry demoProgram, a BASIC 4.0 times table that fills all 80 columns, typed by the SPA and started by the visitor's own RETURN."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 225,
     "qemu": {

@@ -8,7 +8,6 @@
       {
         "order": 2,
         "prelude": "",
-        "line": "  \"helenos     |tiles/helenos.sh              |HelenOS     |fast     |~3m     |full   |HelenOS-0.14.1-ia32.iso (live)\"\n",
         "value": {
           "key": "helenos",
           "script": "tiles/helenos.sh",
@@ -68,14 +67,9 @@
     "signalOrder": 13,
     "tilesManifestOrder": 6,
     "tilesManifestPrelude": "\n# helenos (VMID 99) — ia32 LiveCD on -cpu qemu32, intel-hda. GENERIC.\n# POINTER=abs (2026-07-13): HelenOS's upstream USB HID stack binds the QEMU\n# usb-tablet over the default PIIX3 UHCI controller (`--input-dev usb` -> `-usb\n# -device usb-tablet`) and consumes absolute coordinates 1:1 — verified on a\n# clone then live via QMP-abs framebuffer tracking. The golden snapshot was\n# re-baked with the tablet present. golden.qcow2 (--extra) holds the savevm\n# 'golden' snapshot for the diskless LiveCD; loadvm needs this exact device set.\n",
-    "tilesManifestInvocation": "emit helenos \\\n  --tile helenos --vmid 99 --udp 54099 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --audio-dev hda \\\n  --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu qemu32 --vga std --fps 30 \\\n  --cdrom /data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso --boot d \\\n  --extra \"-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk\" \\\n  --env-append-file \"$T/helenos/tile.env.fixture\" \\\n  --loadvm-launch /data/vms/streamhost/tiles/helenos/golden.qcow2\n",
     "bringUpGroup": 1,
     "bindingOrder": 11,
     "bindingPrelude": "",
-    "bindingLine": "  helenos:     { osId: 'helenos',     archetypeId: 'mono-terminal',   transport: 'streamhost',  accentColor: '#b58fd6', eraLabel: '2006 · HelenOS' },\n",
-    "museumOrder": 9,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'helenos', displayName: 'HelenOS', year: 2006,\n    lineage: 'Microkernel multiserver OS', arch: 'x86_64', ramMB: 512,    era: '2000s', accent: '#b58fd6',\n    eraSoftware: ['spartan microkernel', 'HelenOS GUI', 'bdsh shell'],\n    periodBrowser: 'no period browser (research OS)',\n    iconicApps: ['Terminal', 'Calculator', 'Viewer'],\n    blurb: 'A from-scratch microkernel research OS — a whole desktop built on message passing.',\n  },\n",
     "goldenOrder": 12,
     "actionMapOrder": 14
   },
@@ -119,12 +113,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/helenos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/helenos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISK": "/data/vms/streamhost/tiles/helenos/golden.qcow2",
-      "SH_GOLDEN_RESET_CMD": "loadvm golden",
-      "SH_GOLDEN_MANIFEST": "/data/vms/streamhost/tiles/helenos/golden-manifest.json"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 99,
     "qemu": {

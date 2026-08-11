@@ -8,7 +8,6 @@
       {
         "order": 12,
         "prelude": "",
-        "line": "  \"msdos-win1  |tiles/msdos-win1.sh           |MSDOSWin1   |retro    |~10-15m |full   |msdos-win1.qcow2 (DOS 6.22 + Windows 1.01, from real floppies)\"\n",
         "value": {
           "key": "msdos-win1",
           "script": "tiles/msdos-win1.sh",
@@ -68,14 +67,9 @@
     "signalOrder": 10,
     "tilesManifestOrder": 17,
     "tilesManifestPrelude": "\n# msdoswin1 (VMID 113) — MS-DOS 6.22 + Windows 1.01, tiny 16MB, PS/2, ide disk.\n#   VERBATIM LAUNCHER: golden fixture — no -snapshot; post-boot `loadvm golden`\n#   + `cont` via the tile-local qmpc.py helper (installed via --aux-file).\n#   2026-07-13/14 streamhost fixes (docs/guests/msdos-win1.md):\n#   - SOUND: PC-speaker only — `-machine pc,pcspk-audiodev=snd0` (backend-only).\n#   - KEYBOARD: SH_LEGACY_KBD=1 — input.rs remaps the cursor cluster to bare\n#     keypad scancodes for this pre-1986 guest.\n#   - MOUSE: genuine Win 1.01 re-SETUP with the Windows 2.03 MOUSE.DRV (PS/2)\n#     + SETVER entries baked into the golden (\"Option B — PROMOTED LIVE\").\n",
-    "tilesManifestInvocation": "emit msdoswin1 \\\n  --tile msdoswin1 --vmid 113 --udp 54113 --pointer rel --legacy-kbd 1 \\\n  --abs-pace-ms 30 --audio on --fps 60 \\\n  --launcher-file \"$T/msdoswin1/qemu-streamhost.sh\" \\\n  --aux-file \"$T/msdoswin1/qmpc.py\"\n",
     "bringUpGroup": 4,
     "bindingOrder": 25,
     "bindingPrelude": "",
-    "bindingLine": "  msdoswin1:   { osId: 'msdoswin1',    archetypeId: 'beige-ibm-pc',    transport: 'streamhost', accentColor: '#c8a24a', eraLabel: '1994 · MS-DOS 6.22 + Win 1.0', pointerRel: true },\n",
-    "museumOrder": 23,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'msdoswin1', displayName: 'MS-DOS 6.22 + Windows 1.0', year: 1994,\n    lineage: 'Microsoft MS-DOS / Windows', arch: 'i386', ramMB: 16,    era: '1990s', accent: '#c8a24a',\n    eraSoftware: ['COMMAND.COM', 'MS-DOS Executive', 'EDIT', 'QBASIC'],\n    periodBrowser: 'none — pre-web (1985/1994)',\n    iconicApps: ['COMMAND.COM', 'Windows 1.0 tiled windows', 'EDIT', 'QBASIC'],\n    blurb: 'The C:\\\\> prompt of MS-DOS 6.22 (1994) with Microsoft’s first Windows 1.0 (1985) layered on top — the tiled-window dawn before the desktop metaphor.',\n    notes: 'Live streamhost tile. One combined image: boots MS-DOS 6.22 to C:\\\\> and launches Windows 1.01 via WIN — presented here as a single exhibit. Archetype: beige-ibm-pc (the boxy DOS-era CRT + IBM-PC fit).',\n  },\n",
     "goldenOrder": 23,
     "actionMapOrder": 25
   },

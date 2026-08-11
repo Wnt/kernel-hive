@@ -238,5 +238,9 @@
   "w2kalpha": {
     "udpPort": 54140,
     "hashFile": "/data/vms/streamhost/tiles/w2kalpha/cert_hash_b64.txt"
+  },
+  "tru64": {
+    "udpPort": 54141,
+    "hashFile": "/data/vms/streamhost/tiles/tru64/cert_hash_b64.txt"
   }
 }

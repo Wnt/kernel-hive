@@ -8,7 +8,6 @@
       {
         "order": 8,
         "prelude": "",
-        "line": "  \"qnx         |tiles/qnx.sh                  |QNX         |fast     |~5-10m  |full   |QNX650Live.iso (drives Photon first-run to desktop)\"\n",
         "value": {
           "key": "qnx",
           "script": "tiles/qnx.sh",
@@ -47,14 +46,9 @@
     "signalOrder": 22,
     "tilesManifestOrder": 19,
     "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP F — SPECIAL tiles (non-standard boot/firmware/overlay). Read the notes.\n# ---------------------------------------------------------------------------\n\n# qnx (VMID 112) — QNX 6.5 LiveCD, Cirrus VGA, AC97, TABLET-FREE (PS/2 relative).\n#   VERBATIM LAUNCHER: golden.qcow2 (ide, the savevm store — the LiveCD still\n#   boots via -boot d) + the legacy HMP monitor on tcp 7112 (bring-up guest\n#   keystrokes). Re-baked 2026-07-15 (docs/guests/qnx.md \"LIVE PROMOTION\"): the\n#   usb-tablet made qemu_input_is_absolute() true and dbus RelMotion refuse,\n#   freezing the pointer; the tablet-free golden is 1024x768 Photon with\n#   SH_POINTER=rel driving the built-in i8042 PS/2 mouse 1:1 (SPA pointer-lock\n#   type=4 direct-rel). loadvm needs exactly this device set: NO usb, NO tablet.\n",
-    "tilesManifestInvocation": "emit qnx \\\n  --tile qnx --vmid 112 --udp 54112 --pointer rel --abs-pace-ms 30 --audio on --fps 30 \\\n  --launcher-file \"$T/qnx/qemu-streamhost.sh\"\n",
     "bringUpGroup": 5,
     "bindingOrder": 24,
     "bindingPrelude": "",
-    "bindingLine": "  qnx:         { osId: 'qnx',          archetypeId: 'putty-lcd',       transport: 'streamhost', accentColor: '#1b6fb5', eraLabel: '2010 · QNX Neutrino 6.5', pointerRel: true },\n",
-    "museumOrder": 22,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'qnx', displayName: 'QNX Neutrino 6.5', year: 2010,\n    lineage: 'QNX/BlackBerry', arch: 'i386', ramMB: 256,    era: '2010s', accent: '#1b6fb5',\n    eraSoftware: ['Photon microGUI', 'the app shelf', 'pterm', 'Voyager'],\n    periodBrowser: 'Voyager',\n    iconicApps: ['Photon microGUI', 'the app shelf', 'Voyager'],\n    blurb: 'A hard-real-time microkernel OS whose Photon microGUI once fit a web browser and a whole desktop onto a single floppy.',\n    notes: 'Live streamhost tile with a true 1:1 relative mouse — the guest owns a PS/2 pointer, so under pointer lock the SPA ships raw deltas straight to it. QNX 6.5.0 self-hosting live CD. Archetype: putty-lcd (early-2000s embedded/industrial panel-PC fit).',\n  },\n",
     "goldenOrder": 22
   },
   "tileDir": "qnx",

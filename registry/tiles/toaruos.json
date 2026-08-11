@@ -8,7 +8,6 @@
       {
         "order": 1,
         "prelude": "",
-        "line": "  \"toaruos     |tiles/toaruos.sh              |toaruos     |fast     |~3m     |full   |image.iso (live CD)\"\n",
         "value": {
           "key": "toaruos",
           "script": "tiles/toaruos.sh",
@@ -68,15 +67,10 @@
     "signalOrder": 12,
     "tilesManifestOrder": 3,
     "tilesManifestPrelude": "\n# toaruos (VMID 98) — LiveCD, AC97 + usb-tablet. GENERIC. The remastered\n#   image.iso IS the golden artifact (no snapshottable disk): resetMode=restart.\n",
-    "tilesManifestInvocation": "emit toaruos \\\n  --tile toaruos --vmid 98 --udp 54098 --pointer abs --audio on --audio-dev ac97 \\\n  --input-dev usb --mem 1024 --smp 2 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \\\n  --cdrom /data/gallery-guests/toaruos/image.iso --boot d \\\n  --env-append-file \"$T/toaruos/tile.env.fixture\"\n",
     "bringUpGroup": 0,
     "bindingOrder": 2,
     "bindingPrelude": "",
-    "bindingLine": "  toaruos:     { osId: 'toaruos',     archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#c98b3a', eraLabel: '2011 · hobby UNIX' },\n",
     "mockManifestOrder": 1,
-    "catalogOrder": 1,
-    "catalogPrelude": "",
-    "catalogBlock": "  toaruos: {\n    accent: '#c98b3a',\n    era: '2010s',\n    eraSoftware: ['Yutani compositor', 'Bim editor', 'Kuroko shell', 'Terminal'],\n    periodBrowser: 'no period browser (demo apps)',\n    iconicApps: ['Julia fractal viewer', 'Bomberman-style demo', 'Clock widget'],\n    blurb: \"One developer's from-scratch UNIX with a real windowing compositor.\",\n  },\n",
     "goldenOrder": 11,
     "actionMapOrder": 13
   },
@@ -117,11 +111,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/toaruos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/toaruos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "restart",
-      "SH_GOLDEN_MANIFEST": "/data/vms/streamhost/tiles/toaruos/golden.json",
-      "SH_GOLDEN_ISO": "/data/gallery-guests/toaruos/image.iso",
-      "SH_GOLDEN_ISO_BACKUP": "/data/gallery-guests/toaruos/image.iso.golden-backup-1783370359"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 98,
     "qemu": {

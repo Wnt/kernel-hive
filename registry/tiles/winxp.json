@@ -8,7 +8,6 @@
       {
         "order": 23,
         "prelude": "",
-        "line": "  \"winxp       |tiles/winxp.sh                |WinXPpro    |licensed |~30-50m |supplied|winxp.qcow2 (needs XP ISO)\"\n",
         "value": {
           "key": "winxp",
           "script": "tiles/winxp.sh",
@@ -64,14 +63,9 @@
     "signalOrder": 7,
     "tilesManifestOrder": 12,
     "tilesManifestPrelude": "\n# winxp (VMID 94) — boots hdd + attaches the retro-software LiveCD;\n#   -boot order=c,menu=off. AC97 + usb-tablet. VERBATIM LAUNCHER: boots the\n#   tile-LOCAL winxp-golden.qcow2 (gallery WinXPpro/winxp.qcow2 stays pristine)\n#   WITHOUT -snapshot; golden snapshot inside (resetMode=loadvm).\n",
-    "tilesManifestInvocation": "emit winxp \\\n  --tile winxp --vmid 94 --udp 54094 --pointer abs --abs-pace-ms 30 --audio on --fps 30 \\\n  --launcher-file \"$T/winxp/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/winxp/tile.env.fixture\"\n",
     "bringUpGroup": 3,
     "bindingOrder": 7,
     "bindingPrelude": "",
-    "bindingLine": "  winxp:       { osId: 'winxp',       archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#5aa832', eraLabel: '2001 · Windows XP' },\n",
-    "museumOrder": 4,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'winxp', displayName: 'Windows XP', year: 2001,\n    lineage: 'Windows NT 5.1', arch: 'i386', ramMB: 256,    era: '2000s', accent: '#5aa832',\n    eraSoftware: ['Luna theme', 'IE6', 'Windows Media Player 8', 'Movie Maker'],\n    periodBrowser: 'Internet Explorer 6',\n    iconicApps: ['Bliss wallpaper', 'Pinball', 'Solitaire'],\n    blurb: 'Bliss. The green hill and blue taskbar the whole world remembers.',\n  },\n",
     "goldenOrder": 7,
     "actionMapOrder": 9
   },
@@ -113,9 +107,6 @@
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/winxp/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/winxp/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISKS": "winxp-golden.qcow2",
       "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 94,

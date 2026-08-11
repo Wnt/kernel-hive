@@ -10,7 +10,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"nextstep    |tiles/nextstep.sh             |bridge/nextstep|graphical|~25-40m |full   |tiles/nextstep overlay + golden (Previous 4.4 → NeXTcube → NeXTSTEP 3.3)\"\n",
         "value": {
           "key": "nextstep",
           "script": "tiles/nextstep.sh",
@@ -44,16 +43,11 @@
   "render": {
     "tilesManifestOrder": 50,
     "bindingOrder": 56,
-    "museumOrder": 50,
     "goldenOrder": 50,
     "bringUpGroup": 6,
     "signalOrder": 52,
-    "tilesManifestInvocation": "emit nextstep \\\n  --tile nextstep --vmid 237 --udp 54134 --pointer abs --input-backend dbus-abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/nextstep/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/nextstep/tile.env.fixture\"\n",
-    "bindingLine": "  nextstep:    { osId: 'nextstep', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#8C8C8C', eraLabel: '1995 · NeXTSTEP 3.3 (NeXTcube)' },\n",
-    "museumBlock": "  {\n    id: 'nextstep', displayName: 'NeXTSTEP 3.3', year: 1995,\n    lineage: 'NeXT Computer (Mach + 4.3BSD + Display PostScript)',\n    arch: 'Motorola 68040, 25 MHz (NeXTcube), 64 MB RAM, 1120x832 MegaPixel display', ramMB: 64,    era: '1990s', accent: '#8C8C8C',\n    eraSoftware: ['Workspace Manager, the Dock and the File Viewer', 'Interface Builder and Project Builder', 'Mail.app, Edit, Terminal and the Digital Librarian', 'WorldWideWeb — the first web browser, written on a machine like this one'],\n    periodBrowser: 'WorldWideWeb / OmniWeb (NeXTSTEP was where the web browser was invented)',\n    iconicApps: ['Workspace Manager', 'the right-hand Dock', 'Interface Builder', 'Digital Librarian'],\n    blurb: 'The workstation Steve Jobs built after Apple threw him out, and the software that outlived the hardware: object-oriented Unix with a Display PostScript screen, whose NS-prefixed frameworks became Cocoa and are still what every Mac and iPhone app is written against. Tim Berners-Lee wrote the first web browser on one.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs the Previous emulator (SVN r1847 = 4.4, built into the tile\\'s own overlay together with SDL3) as a real NeXTcube — Motorola 68040 at 25 MHz, 64 MB, ROM Rev 2.5 v66 — booting NeXTSTEP 3.3 for m68k off a SCSI disk image; streamhost captures the Linux framebuffer + AC97 audio like every other bridge tile. The X root is made EXACTLY the 1120x832 of the NeXT MegaPixel display so the picture is pixel-exact and both cursors clamp at the same edges. This is deliberately NOT the Intel build of NeXTSTEP, which cannot survive a modern QEMU\\'s SCSI/IDE timing — see docs/guests/nextstep.md. Pointer is ABSOLUTE: Previous emulates a SummaGraphics digitiser on the NeXT\\'s serial port B, and NeXTSTEP\\'s own tablet driver is attached inside the golden, so the coordinate a QEMU usb-tablet delivers is the pixel the NeXT arrow lands on; the guest draws that arrow itself. archetype mono-terminal; the ideal asset is a bespoke matte-black cube. See streamhost/docs/BRIDGE.md.',\n  },\n",
     "tilesManifestPrelude": "",
-    "bindingPrelude": "",
-    "museumPrelude": ""
+    "bindingPrelude": ""
   },
   "stream": {
     "transport": "streamhost",
@@ -94,11 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/nextstep/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nextstep/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "NeXTcube (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) running NeXTSTEP 3.3 for m68k under the Previous emulator, resting on the Workspace the machine brings up for itself at login: grey workspace, the Workspace menu down the top left, the File Viewer showing the home directory, and the Dock along the right-hand edge with the recycler at the bottom. Nothing is curated: this is the desktop the machine brings up for itself, pixel-diffed back to that exact state after the one-time tablet-driver install the golden has to carry. 1120x832 MegaPixel display, pixel-exact on a 1120x832 X root. Pointer is ABSOLUTE: NeXTSTEP's own SummaGraphics tablet driver is attached inside the snapshot, so a commanded pixel is the pixel the NeXT arrow lands on; the guest draws that arrow itself.",
-      "SH_IDLE_PAUSE_SECS": "0"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 237,
     "qemu": {

@@ -10,7 +10,6 @@
       {
         "order": 44,
         "prelude": "",
-        "line": "  \"oricatmos   |tiles/oricatmos.sh            |bridge/oricatmos|retro    |~4-8m   |full   |tiles/oricatmos overlay + golden (MAME 0.289 orica → Oric Extended BASIC V1.1)\"\n",
         "value": {
           "key": "oricatmos",
           "script": "tiles/oricatmos.sh",
@@ -48,16 +47,11 @@
   "render": {
     "tilesManifestOrder": 47,
     "bindingOrder": 53,
-    "museumOrder": 47,
     "goldenOrder": 47,
     "bringUpGroup": 6,
     "signalOrder": 49,
-    "tilesManifestInvocation": "emit oricatmos \\\n  --tile oricatmos --vmid 234 --udp 54131 --pointer none --input-backend \\\n  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \\\n  --fps 60 --launcher-file \"$T/oricatmos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/oricatmos/tile.env.fixture\"\n",
-    "bindingLine": "  oricatmos:   { osId: 'oricatmos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D8402F', eraLabel: '1984 · Oric Atmos (Extended BASIC V1.1)' },\n",
-    "museumBlock": "  {\n    id: 'oricatmos', displayName: 'Oric Atmos', year: 1984,\n    lineage: 'Tangerine Computer Systems / Oric Products International (UK)',\n    arch: 'MOS 6502A, 1 MHz, 48 KB RAM, ULA video (40x28 text / 240x200 HIRES, 8 colours), AY-3-8912 sound', ramMB: 0, ramKB: 48,    era: '1980s', accent: '#D8402F',\n    eraSoftware: ['Oric Extended BASIC V1.1, with ZAP, PING, SHOOT and EXPLODE as language keywords', 'Tansoft\\'s own range — Oric Base, Oric Calc, Zorgon\\'s Revenge', 'a large French catalogue: the Atmos sold better in France than anywhere else', 'the 3-inch Microdisc drive and its Sedoric disc operating system', 'a demoscene that is still writing new Oric software four decades later'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['Oric Extended BASIC V1.1', 'Zorgon\\'s Revenge', 'Sedoric on the Microdisc'],\n    blurb: 'The ZX Spectrum\\'s most direct British rival, and the one that won France: a black wedge with a red stripe, eight colours, three-voice sound, and a BASIC in which the words ZAP, PING, SHOOT and EXPLODE each make the noise they are named after.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs MAME\\'s `orica` driver emulating an Oric Atmos; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The emulator is a pinned MAME 0.289 built for oric.cpp only in the trixie chroot (scripts/build-guests/emulators/build-mame-oricatmos.sh) — the lab host\\'s packaged 0.276 is trixie-ABI and Bookworm\\'s own is 0.251. One 16 KB preservation-source ROM (basic11b.rom, Extended BASIC V1.1) is staged outside the repo and gated by asking the shipped binary\\'s own -listxml which sha1 it demands for bios ver11. Drawn fullscreen with aspect correction on an 800x600 X root, which is 4:3 — the shape the machine drew on a television, and the mode that measured 1.6x cheaper to blit than 1024x768 on this box. The golden is the machine\\'s own untouched power-on screen; the interaction is the registry demoProgram. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/oricatmos.md.',\n  },\n",
     "tilesManifestPrelude": "",
-    "bindingPrelude": "",
-    "museumPrelude": ""
+    "bindingPrelude": ""
   },
   "stream": {
     "transport": "streamhost",
@@ -98,12 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/oricatmos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/oricatmos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_FIXTURE_DESC": "Oric Atmos (1984) at its own untouched power-on screen: \"ORIC EXTENDED BASIC V1.1 / (c) 1983 TANGERINE / 37631 BYTES FREE / Ready\" in black on a white page, with the machine's own CAPS marker in the top-right corner, drawn fullscreen with aspect correction by MAME 0.289's `orica` driver on an 800x600 X root — 4:3, the shape the Atmos drew on a television, and measured 1.6x cheaper to blit than 1024x768 on this box. Nothing is curated and nothing is typed. Keyboard-only exhibit; no pointer device; AY-3-8912 sound -> ALSA -> AC97. The interaction is the registry demoProgram, a colour-and-sound listing in Oric Extended BASIC that the SPA types and the visitor runs."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 234,
     "qemu": {

@@ -8,7 +8,6 @@
       {
         "order": 34,
         "prelude": "",
-        "line": "  \"mpf2         |tiles/mpf2.sh                 |bridge/mpf2     |retro    |~3-5m   |full   |tiles/mpf2 cold-boot overlay (MAME mpf2 → Applesoft BASIC)\"\n",
         "value": {
           "key": "mpf2",
           "script": "tiles/mpf2.sh",
@@ -47,15 +46,10 @@
     "signalOrder": 34,
     "tilesManifestOrder": 32,
     "tilesManifestPrelude": "\n# mpf2 (VMID 220) — MAME mpf2 (Multitech Microprofessor II, 1982) -> Applesoft BASIC. ssh 5820. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit mpf2 \\\n  --tile mpf2 --vmid 220 --udp 54124 --pointer none --input-backend disabled \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/mpf2/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/mpf2/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 39,
     "bindingPrelude": "",
-    "bindingLine": "  mpf2:        { osId: 'mpf2',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#8B4513', eraLabel: '1982 · MPF-II BASIC' },\n",
-    "museumOrder": 32,
-    "goldenOrder": 32,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'mpf2', displayName: 'Multitech Microprofessor II', year: 1982,\n    lineage: 'Multitech / Apple II clone',\n    arch: 'MOS 6502, 1 MHz, 64 KB RAM, 16 KB ROM', ramMB: 0, ramKB: 64,    era: '1980s', accent: '#8B4513',\n    eraSoftware: ['MPF-II BASIC in ROM', 'the built-in machine-language monitor', 'cassette titles: Blitz, Snake, Head On, Reverse, Sabotage', 'type-in listings from the computer magazines'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['MPF-II BASIC', 'the machine-language monitor'],\n    blurb: 'Taiwan\\'s first mass-market home computer — a chiclet-keyboard Apple II clone that boots straight to BASIC, in 6 colours on a television set.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME (mpf2 driver) emulating a Multitech MPF-II that boots its ROM BASIC; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Keyboard-only exhibit (no pointing device — the real machine had none); uses the beige-tower-crt fallback until a bespoke MPF-II archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/mpf2.md.',\n  },\n"
+    "goldenOrder": 32
   },
   "tileDir": "mpf2",
   "lifecycle": "production",
@@ -98,14 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/mpf2/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/mpf2/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_REMAP": "0x0e:0xe04b",
-      "SH_KEY_MIN_HOLD_MS": "32",
-      "SH_KEY_MIN_GAP_MS": "32",
-      "SH_FIXTURE_DESC": "Multitech Microprofessor II Applesoft BASIC 560x192 @ 60 Hz composite (6-colour artifact) drawn fullscreen with aspect correction on a 1024x768 X root in MAME mpf2; golden snapshot restores X (-nocursor) + MAME at the BASIC prompt and a MAME soft reset re-runs the ROM power-on beep; keyboard-only exhibit; no pointer device. Keyboard quirks: SH_KEY_REMAP delivers Backspace as Left (the machine's matrix has no Backspace; Left is its rubout key), SH_KEY_MIN_HOLD_MS=32 holds every key for 2 emulated frames, and SH_KEY_MIN_GAP_MS=32 keeps 2 frames of gap between one key's release and the next key's press — measured on the live tile, a release-to-press gap under ~8 ms makes the machine read two keystrokes as one held chord (browser typing leaves ~2 ms).",
-      "SH_KEY_MAP": "=:O,-:I,+:P,(:*,):(,*:)"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 220,
     "qemu": {

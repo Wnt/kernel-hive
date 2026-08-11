@@ -8,7 +8,6 @@
       {
         "order": 58,
         "prelude": "",
-        "line": "  \"alto         |tiles/alto.sh                 |bridge/alto     |retro    |~12-18m |full   |tiles/alto overlay + golden (ContrAlto 2 Alto II XM -> Alto Executive)\"\n",
         "value": {
           "key": "alto",
           "script": "tiles/alto.sh",
@@ -42,16 +41,11 @@
   "render": {
     "tilesManifestOrder": 52,
     "bindingOrder": 59,
-    "museumOrder": 52,
     "goldenOrder": 52,
     "bringUpGroup": 6,
     "signalOrder": 54,
-    "tilesManifestInvocation": "emit alto \\\n  --tile alto --vmid 243 --udp 54137 --pointer abs --cursor-scale 1.0 \\\n  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 --launcher-file \\\n  \"$T/alto/qemu-streamhost.sh\" --env-append-file \"$T/alto/tile.env.fixture\"\n",
-    "bindingLine": "  alto:        { osId: 'alto', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#9FE3EA', eraLabel: '1973 · Alto II XM (portrait page display)' },\n",
-    "museumBlock": "  {\n    id: 'alto', displayName: 'Xerox Alto II', year: 1973,\n    lineage: 'Xerox PARC',\n    arch: 'Xerox Alto II XM: a custom TTL processor with no single CPU chip, microcoded into 16 priority tasks that share the datapath between the display, the disk, the Ethernet and the instruction set the software is written in; 512 KB extended memory; a 606x808 portrait bitmap refreshed at 30 Hz straight out of main memory; a 2.5 MB Diablo 31 removable cartridge; a three-button mouse and a five-key chord keyset',\n    ramMB: 0, ramKB: 512,\n    era: '1970s', accent: '#9FE3EA',\n    eraSoftware: ['Bravo, the first WYSIWYG word processor (1974)', 'Draw and Markup, the illustration pair', 'Laurel, the mail reader that fixed the shape of every inbox since', 'Smalltalk-76 and the Smalltalk-80 that grew out of it', 'the Alto Executive, the command prompt this exhibit rests at'],\n    periodBrowser: 'none -- PARC had Ethernet, laser printing and electronic mail two decades before the web had a first page',\n    iconicApps: ['Bravo', 'Draw', 'Laurel', 'the Alto Executive'],\n    blurb: 'The machine that invented the screen you are reading this on: overlapping windows, a mouse with buttons, a what-you-see-is-what-you-get editor and Ethernet, all in 1973, none of them for sale. Its display stands on end because it is a sheet of paper -- 606 by 808 dots, 8.5 by 11 inches -- and that is why every document window since has been taller than it is wide.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs ContrAlto 2 (jdersch/Contralto2, BSD-3-Clause, .NET 8 + Avalonia, pinned at e3681fbc) as an Alto II XM. Zero external media -- the Alto I and Alto II microcode PROMs and eight Diablo disk packs ship inside the emulator\\'s own repository and arrive with the source it is built from, so nothing is downloaded, staged or committed; the exhibit boots nonprog.dsk, the Non-Programmer\\'s Disk, whose sha256 the builder asserts. THE ONLY PORTRAIT EXHIBIT IN THE COLLECTION: the kiosk X root is 608x808, the Alto\\'s own bitmap, so the capture is exactly the machine\\'s picture with no letterbox -- and crt-f.glb, the tall tube it is displayed on in the 3D museum, was modelled for this tile and is used by nothing else. Two upstream patches are required and both are in scripts/build-guests/patches/contralto2-wmless-kiosk.patch: ContrAlto\\'s KioskMode (the only switch that hides its menu and status bars) crashes before the first frame, and with no window manager nothing places the window or gives its display control keyboard focus -- unfixed, every keystroke is dropped silently and the exhibit reads as a dead emulator. MAME\\'s alto2 driver was tried first and never boots here (five packs, 120 s runs, a uniform white field, PC pinned at 1); that negative result is recorded in docs/lab/research/xerox-add.md so nobody pays for it twice. See streamhost/docs/BRIDGE.md and docs/guests/alto.md.',\n  },\n",
     "tilesManifestPrelude": "",
-    "bindingPrelude": "",
-    "museumPrelude": ""
+    "bindingPrelude": ""
   },
   "tileDir": "alto",
   "lifecycle": "production",
@@ -94,13 +88,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/alto/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/alto/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_IDLE_PAUSE_SECS": "60",
-      "SH_KEY_MIN_HOLD_MS": "66",
-      "SH_KEY_MIN_GAP_MS": "66",
-      "SH_FIXTURE_DESC": "Xerox Alto II XM (1973) at the Alto Executive, the machine's own command prompt, exactly as a cold boot leaves it and with nothing typed into it: the two banner lines \"-- XEROX Alto Executive/11 ----------- Date and Time Unknown - 1609 Pages --\" and \"--- OS Version 20/16 --- Alto 0#42# --- NoName --- Non-Prog.BFS ------------\" across the top, then \"// eventBooted\" and a waiting \">\" prompt. Faintly blue-white text on black, in the Alto's own proportional serif face, on a PORTRAIT 606x808 page display -- the only exhibit in the collection whose screen is taller than it is wide. ContrAlto 2 renders that into a 608-wide bitmap and the kiosk X root is 608x808 to match exactly, so there is no letterbox and no surround anywhere in the capture. The disk is the Non-Programmer's Disk, so BRAVO and DRAW are each one Executive command away and the SPA's alto on-screen keyboard sends both from a labelled button. Three-button mouse (RED/YELLOW/BLUE = host left/middle/right), absolute; keyboard paced at two Alto fields."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 243,
     "qemu": {

@@ -8,7 +8,6 @@
       {
         "order": 24,
         "prelude": "",
-        "line": "  \"solaris-cde |tiles/solaris-cde.sh          |SolarisCDE  |licensed |~40-60m |supplied|solaris.qcow2 (needs OTN ISO)\"\n",
         "value": {
           "key": "solaris-cde",
           "script": "tiles/solaris-cde.sh",
@@ -64,14 +63,9 @@
     "signalOrder": 16,
     "tilesManifestOrder": 10,
     "tilesManifestPrelude": "\n# solaris (VMID 100) — Solaris 10 CDE on the standalone\n# gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses\n# the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.\n# SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.\n# SH_GHID_SOCKET selects its chardev; hostfwd 57790 and the guest warpd agent are\n# retained for rollback/exec only.\n",
-    "tilesManifestInvocation": "emit solaris \\\n  --tile solaris --vmid 100 --udp 54100 --pointer abs --input-backend gallery-hid --audio on --fps 60 \\\n  --launcher-file \"$T/solaris/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/solaris/tile.env.fixture\"\n",
     "bringUpGroup": 2,
     "bindingOrder": 12,
     "bindingPrelude": "",
-    "bindingLine": "  solaris:     { osId: 'solaris',     archetypeId: 'sparc-pizzabox',  transport: 'streamhost',  accentColor: '#d68a3a', eraLabel: '1994 · Solaris CDE', hardwareInput: true, bootVideo: '/boot/solaris/boot.mp4' },\n",
-    "museumOrder": 10,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'solaris', displayName: 'Solaris CDE', year: 1994,\n    lineage: 'SunOS / System V Unix', arch: 'SPARC', ramMB: 512,    era: '1990s', accent: '#d68a3a',\n    eraSoftware: ['CDE (Common Desktop Environment)', 'dtterm', 'OpenWindows'],\n    periodBrowser: 'HotJava / early Netscape',\n    iconicApps: ['Front Panel', 'File Manager', 'dtterm'],\n    blurb: 'The workstation Unix of the 90s — CDE’s front panel on classic Sun hardware.',\n  },\n",
     "goldenOrder": 13,
     "actionMapOrder": 15
   },
@@ -110,17 +104,11 @@
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_INPUT_BACKEND": "gallery-hid",
-      "SH_GHID_SOCKET": "/data/vms/streamhost/tiles/solaris/gallery-hid.sock",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/solaris/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/solaris/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISK": "solariscde-golden.qcow2",
-      "SH_GOLDEN_MANIFEST": "tiles/solaris/golden.json",
-      "SH_WARPD_ADDR": "127.0.0.1:57790"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 100,
     "qemu": {

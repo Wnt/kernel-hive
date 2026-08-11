@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/tiles/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (60 of the 62
+//    - transport   : how its LIVE framebuffer texture is obtained (61 of the 63
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -104,64 +104,64 @@ export interface OSBinding {
   bootVideo?: string;
 }
 
-// One entry per OS. 60 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 61 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
-  freedos:     { osId: 'freedos',     archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
-  kolibrios:   { osId: 'kolibrios',   archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#39c6d6', eraLabel: '2004 · asm GUI OS' },
-  toaruos:     { osId: 'toaruos',     archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#c98b3a', eraLabel: '2011 · hobby UNIX' },
-  win311:      { osId: 'win311',      archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#7fb0d6', eraLabel: '1993 · Windows 3.11' },
-  win95:       { osId: 'win95',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#2f8f5b', eraLabel: '1995 · Windows 95', bootVideo: '/boot/win95/boot.mp4' },
-  win98se:     { osId: 'win98se',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3a7fc9', eraLabel: '1999 · Windows 98 SE', bootVideo: '/boot/win98se/boot.mp4' },
-  win2000:     { osId: 'win2000',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#5b6fc9', eraLabel: '2000 · Windows 2000', bootVideo: '/boot/win2000/boot.mp4' },
-  winxp:       { osId: 'winxp',       archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#5aa832', eraLabel: '2001 · Windows XP' },
-  alpine:      { osId: 'alpine',      archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#0d597f', eraLabel: '2005 · Alpine Linux' },
-  tinycore:    { osId: 'tinycore',    archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#4a9fd6', eraLabel: '2009 · Tiny Core' },
-  ninefront:   { osId: 'ninefront',   archetypeId: 'mono-terminal',   transport: 'streamhost',  accentColor: '#c9c05b', eraLabel: '2011 · 9front (Plan 9)', bootVideo: '/boot/ninefront/boot.mp4' },
-  helenos:     { osId: 'helenos',     archetypeId: 'mono-terminal',   transport: 'streamhost',  accentColor: '#b58fd6', eraLabel: '2006 · HelenOS' },
-  solaris:     { osId: 'solaris',     archetypeId: 'sparc-pizzabox',  transport: 'streamhost',  accentColor: '#d68a3a', eraLabel: '1994 · Solaris CDE', hardwareInput: true, bootVideo: '/boot/solaris/boot.mp4' },
-  nt351:       { osId: 'nt351',       archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#3a6ea5', eraLabel: '1995 · Windows NT 3.51' },
-  serenityos:  { osId: 'serenityos',  archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#c95a8f', eraLabel: '2018 · SerenityOS' },
-  android:     { osId: 'android',     archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#3ddc84', eraLabel: '2008 · Android' },
-  postmarketos:{ osId: 'postmarketos',archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#008b4b', eraLabel: '2017 · postmarketOS' },
-  sailfishos:  { osId: 'sailfishos',  archetypeId: 'touch-phone',     transport: 'streamhost',  accentColor: '#e60d42', eraLabel: '2013 · Sailfish (Jolla)' },
-  templeos:    { osId: 'templeos',    archetypeId: 'beige-ibm-pc',    transport: 'streamhost',  accentColor: '#f2c14e', eraLabel: '2013 · TempleOS' },
-  reactos:     { osId: 'reactos',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#2f6fba', eraLabel: '2024 · ReactOS 0.4.14' },
-  haiku:       { osId: 'haiku',        archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#ffca3a', eraLabel: '2024 · Haiku R1/beta5', bootVideo: '/boot/haiku/boot.mp4' }, // ideal: BeBox
-  os2warp:     { osId: 'os2warp',      archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#1e5aa8', eraLabel: '1996 · OS/2 Warp 4', bootVideo: '/boot/os2warp/boot.mp4' },
-  aros:        { osId: 'aros',         archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#e87a17', eraLabel: '2024 · AROS (Amiga)' }, // ideal: Amiga wedge
-  qnx:         { osId: 'qnx',          archetypeId: 'putty-lcd',       transport: 'streamhost', accentColor: '#1b6fb5', eraLabel: '2010 · QNX Neutrino 6.5', pointerRel: true },
-  msdoswin1:   { osId: 'msdoswin1',    archetypeId: 'beige-ibm-pc',    transport: 'streamhost', accentColor: '#c8a24a', eraLabel: '1994 · MS-DOS 6.22 + Win 1.0', pointerRel: true },
+  freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
+  kolibrios:   { osId: 'kolibrios', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#39c6d6', eraLabel: '2004 · asm GUI OS' },
+  toaruos:     { osId: 'toaruos', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#c98b3a', eraLabel: '2011 · hobby UNIX' },
+  win311:      { osId: 'win311', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#7fb0d6', eraLabel: '1993 · Windows 3.11' },
+  win95:       { osId: 'win95', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2f8f5b', eraLabel: '1995 · Windows 95', bootVideo: '/boot/win95/boot.mp4' },
+  win98se:     { osId: 'win98se', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3a7fc9', eraLabel: '1999 · Windows 98 SE', bootVideo: '/boot/win98se/boot.mp4' },
+  win2000:     { osId: 'win2000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#5b6fc9', eraLabel: '2000 · Windows 2000', bootVideo: '/boot/win2000/boot.mp4' },
+  winxp:       { osId: 'winxp', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#5aa832', eraLabel: '2001 · Windows XP' },
+  alpine:      { osId: 'alpine', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#0d597f', eraLabel: '2005 · Alpine Linux' },
+  tinycore:    { osId: 'tinycore', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#4a9fd6', eraLabel: '2009 · Tiny Core' },
+  ninefront:   { osId: 'ninefront', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#c9c05b', eraLabel: '2011 · 9front (Plan 9)', bootVideo: '/boot/ninefront/boot.mp4' },
+  helenos:     { osId: 'helenos', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#b58fd6', eraLabel: '2006 · HelenOS' },
+  solaris:     { osId: 'solaris', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#d68a3a', eraLabel: '1994 · Solaris CDE', hardwareInput: true, bootVideo: '/boot/solaris/boot.mp4' },
+  nt351:       { osId: 'nt351', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#3a6ea5', eraLabel: '1995 · Windows NT 3.51' },
+  serenityos:  { osId: 'serenityos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#c95a8f', eraLabel: '2018 · SerenityOS' },
+  android:     { osId: 'android', archetypeId: 'touch-phone', transport: 'streamhost', accentColor: '#3ddc84', eraLabel: '2008 · Android' },
+  postmarketos:{ osId: 'postmarketos', archetypeId: 'touch-phone', transport: 'streamhost', accentColor: '#008b4b', eraLabel: '2017 · postmarketOS' },
+  sailfishos:  { osId: 'sailfishos', archetypeId: 'touch-phone', transport: 'streamhost', accentColor: '#e60d42', eraLabel: '2013 · Sailfish (Jolla)' },
+  templeos:    { osId: 'templeos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#f2c14e', eraLabel: '2013 · TempleOS' },
+  reactos:     { osId: 'reactos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2f6fba', eraLabel: '2024 · ReactOS 0.4.14' },
+  haiku:       { osId: 'haiku', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#ffca3a', eraLabel: '2024 · Haiku R1/beta5', bootVideo: '/boot/haiku/boot.mp4' }, // ideal: BeBox
+  os2warp:     { osId: 'os2warp', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#1e5aa8', eraLabel: '1996 · OS/2 Warp 4', bootVideo: '/boot/os2warp/boot.mp4' },
+  aros:        { osId: 'aros', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#e87a17', eraLabel: '2024 · AROS (Amiga)' }, // ideal: Amiga wedge
+  qnx:         { osId: 'qnx', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#1b6fb5', eraLabel: '2010 · QNX Neutrino 6.5', pointerRel: true },
+  msdoswin1:   { osId: 'msdoswin1', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#c8a24a', eraLabel: '1994 · MS-DOS 6.22 + Win 1.0', pointerRel: true },
 
   // ---- emulator-bridge retro home computers (captured-Linux kiosk running a
   //      period emulator; streamhost captures the Linux framebuffer + AC97.
   //      See streamhost/docs/BRIDGE.md. beige-tower-crt is the closest era
   //      archetype; bespoke breadbin/wedge/all-in-one models are the ideal
   //      follow-ups). ----
-  c64:         { osId: 'c64',         archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#6c5eb5', eraLabel: '1982 · C64 + GEOS' },
-  atarist:     { osId: 'atarist',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#E4002B', eraLabel: '1985 · Atari ST (GEM)' },
-  apple2:      { osId: 'apple2',      archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#8A8577', eraLabel: '1988 · Apple II — GEOS' },
-  amiga:       { osId: 'amiga',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#0055AA', eraLabel: '1987 · Amiga Workbench 1.3', bootVideo: '/boot/amiga/boot.mp4' },
-  win11:       { osId: 'win11',       archetypeId: 'apple-studio',    transport: 'streamhost',  accentColor: '#2d9bd6', eraLabel: '2021 · Windows 11' },
+  c64:         { osId: 'c64', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6c5eb5', eraLabel: '1982 · C64 + GEOS' },
+  atarist:     { osId: 'atarist', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#E4002B', eraLabel: '1985 · Atari ST (GEM)' },
+  apple2:      { osId: 'apple2', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#8A8577', eraLabel: '1988 · Apple II — GEOS' },
+  amiga:       { osId: 'amiga', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#0055AA', eraLabel: '1987 · Amiga Workbench 1.3', bootVideo: '/boot/amiga/boot.mp4' },
+  win11:       { osId: 'win11', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#2d9bd6', eraLabel: '2021 · Windows 11' },
 
   // ---- riscos — SHOWCASE poster. RISC OS is ARM (the old tile streamed RPCEmu
   // through the now-deleted neko plane at :8111), so it has no QEMU streamhost
   // tile yet; poster + placard only, no connection attempt. // ideal: Acorn RiscPC
-  riscos:      { osId: 'riscos',      archetypeId: 'beige-tower-crt', transport: 'showcase',    accentColor: '#4a7c3a', eraLabel: '2022 · RISC OS 5.30' },
+  riscos:      { osId: 'riscos', archetypeId: 'beige-tower-crt', transport: 'showcase', accentColor: '#4a7c3a', eraLabel: '2022 · RISC OS 5.30' },
 
   // ---- macos — SHOWCASE poster. VM 925 (the macOS guest) was destroyed
   // 2026-07-14 along with its VNC->WebSocket bridge (ws :8115 / wss :8116), so
   // there is nothing to connect to; poster + placard only, no connection attempt.
-  macos:       { osId: 'macos',       archetypeId: 'apple-studio',    transport: 'showcase',    accentColor: '#a0a0a8', eraLabel: '2024 · macOS Sequoia' },
-  redstar2:    { osId: 'redstar2',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#c8102e', eraLabel: '2009 · Red Star OS 2.0', bootVideo: '/boot/redstar2/boot.mp4' },
-  redstar3:    { osId: 'redstar3',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#b3202a', eraLabel: '2013 · Red Star OS 3.0', bootVideo: '/boot/redstar3/boot.mp4' },
-  amstradcpc:  { osId: 'amstradcpc',  archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#F0C000', eraLabel: '1985 · CPC 6128 (Locomotive BASIC)' },
-  nt4:         { osId: 'nt4',         archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#1f7a7a', eraLabel: '1996 · Windows NT 4.0' },
-  openvms:     { osId: 'openvms',     archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#00a6d6', eraLabel: '2024 · OpenVMS 9.2 · DECwindows' },
-  irix:        { osId: 'irix',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#5B8FA8', eraLabel: '1993 · SGI Indy — IRIX 6.5', bootVideo: '/boot/irix/boot.mp4' },
-  mpf2:        { osId: 'mpf2',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#8B4513', eraLabel: '1982 · MPF-II BASIC' },
-  vic20:       { osId: 'vic20',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3FBFC7', eraLabel: '1980 · VIC-20 (CBM BASIC V2)' },
-  plus4:       { osId: 'plus4',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#C2CF5F', eraLabel: '1984 · Plus/4 (3-plus-1 in ROM)' },
+  macos:       { osId: 'macos', archetypeId: 'apple-studio', transport: 'showcase', accentColor: '#a0a0a8', eraLabel: '2024 · macOS Sequoia' },
+  redstar2:    { osId: 'redstar2', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#c8102e', eraLabel: '2009 · Red Star OS 2.0', bootVideo: '/boot/redstar2/boot.mp4' },
+  redstar3:    { osId: 'redstar3', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#b3202a', eraLabel: '2013 · Red Star OS 3.0', bootVideo: '/boot/redstar3/boot.mp4' },
+  amstradcpc:  { osId: 'amstradcpc', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#F0C000', eraLabel: '1985 · CPC 6128 (Locomotive BASIC)' },
+  nt4:         { osId: 'nt4', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#1f7a7a', eraLabel: '1996 · Windows NT 4.0' },
+  openvms:     { osId: 'openvms', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#00a6d6', eraLabel: '2024 · OpenVMS 9.2 · DECwindows' },
+  irix:        { osId: 'irix', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#5B8FA8', eraLabel: '1993 · SGI Indy — IRIX 6.5', bootVideo: '/boot/irix/boot.mp4' },
+  mpf2:        { osId: 'mpf2', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#8B4513', eraLabel: '1982 · MPF-II BASIC' },
+  vic20:       { osId: 'vic20', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3FBFC7', eraLabel: '1980 · VIC-20 (CBM BASIC V2)' },
+  plus4:       { osId: 'plus4', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#C2CF5F', eraLabel: '1984 · Plus/4 (3-plus-1 in ROM)' },
   c128:        { osId: 'c128', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7FD4C1', eraLabel: '1985 · C128 (80-column BASIC 7.0 · CP/M 3.0)' },
   pet2001:     { osId: 'pet2001', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#AEB8F0', eraLabel: '1977 · PET 2001 (COMMODORE BASIC)' },
   cbm8032:     { osId: 'cbm8032', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#41FF00', eraLabel: '1980 · CBM 8032 (BASIC 4.0, 80 columns)' },
@@ -178,11 +178,12 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   sinclairql:  { osId: 'sinclairql', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2EE65A', eraLabel: '1984 · Sinclair QL (QDOS · SuperBASIC)' },
   nextstep:    { osId: 'nextstep', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#8C8C8C', eraLabel: '1995 · NeXTSTEP 3.3 (NeXTcube)' },
   armeval:     { osId: 'armeval', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#0000FF', eraLabel: '1986 · ARM Evaluation System (ARM BBC Basic V)' },
-  indyr4400:   { osId: 'indyr4400',   archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3E6E9E', eraLabel: '1993 · SGI Indy R4400 — IRIX 6.5', pointerRel: true },
+  indyr4400:   { osId: 'indyr4400', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3E6E9E', eraLabel: '1993 · SGI Indy R4400 — IRIX 6.5', pointerRel: true },
   alto:        { osId: 'alto', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#9FE3EA', eraLabel: '1973 · Alto II XM (portrait page display)' },
-  star:        { osId: 'star',        archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#D6001C', eraLabel: '1981 · Pilot + ViewPoint 2.0 on the 8010', pointerRel: true },
-  daybreak:    { osId: 'daybreak',    archetypeId: 'sparc-pizzabox', transport: 'streamhost',  accentColor: '#C8102E', eraLabel: '1985 · ViewPoint 2.0.5 on the 6085' },
-  w2kalpha:    { osId: 'w2kalpha',    archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#862633', eraLabel: '1999 · Windows 2000 RC2 — Alpha AXP' },
+  star:        { osId: 'star', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D6001C', eraLabel: '1981 · Pilot + ViewPoint 2.0 on the 8010', pointerRel: true },
+  daybreak:    { osId: 'daybreak', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#C8102E', eraLabel: '1985 · ViewPoint 2.0.5 on the 6085' },
+  w2kalpha:    { osId: 'w2kalpha', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#862633', eraLabel: '1999 · Windows 2000 RC2 — Alpha AXP' },
+  tru64:       { osId: 'tru64', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#2f6a9b', eraLabel: '2003 · Tru64 UNIX 5.1B — Alpha' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

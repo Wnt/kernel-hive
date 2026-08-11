@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useMuseum } from '../../state/store';
 import { bindingFromManifest } from '../../three/archetypeRegistry';
 import type { EnrichedVM } from '../../types';
-import { posterFor } from '../../data/posters';
+import { posterFor } from '../../data/posterIndex';
 
 // ============================================================================
 //  GridView — the plain 2D, keyboard-navigable card grid (DEFAULT view)

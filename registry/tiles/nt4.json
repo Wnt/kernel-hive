@@ -16,7 +16,6 @@
       {
         "order": 32,
         "prelude": "",
-        "line": "  \"nt4         |tiles/nt4.sh                  |Nt4           |fast     |~2-5m   |full    |nt4-golden.qcow2 (prebuilt VMware VM -> qcow2 + boot.ini scsi->multi fix)\"\n",
         "value": {
           "key": "nt4",
           "script": "tiles/nt4.sh",
@@ -74,14 +73,9 @@
     "signalOrder": 18,
     "tilesManifestOrder": 30,
     "tilesManifestPrelude": "\n# nt4 (VMID 89) — Windows NT 4.0 Workstation SP6a, accelerated ISA Cirrus\n#   1024x768x65536 colors (16bpp), pcnet device, audio off. VERBATIM launcher:\n#   boots the tile-local nt4-golden.qcow2 without -snapshot; conditional\n#   -loadvm golden. Pins /opt/qemu-cirrusfix2 with patches 0004 (ROP1 fill) and\n#   0005 (ISA Cirrus vmstate substructure restore); rebuild and reverify on a\n#   packaged-QEMU version change. pc vmport=on auto-instantiates vmmouse, which\n#   the preserved NT4 driver consumes as true absolute 1:1 input.\n",
-    "tilesManifestInvocation": "emit nt4 \\\n  --tile nt4 --vmid 89 --udp 54089 --pointer abs --audio off --fps 30 \\\n  --launcher-file \"$T/nt4/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/nt4/tile.env.fixture\"\n",
     "bringUpGroup": 3,
     "bindingOrder": 36,
     "bindingPrelude": "",
-    "bindingLine": "  nt4:         { osId: 'nt4',         archetypeId: 'putty-lcd',       transport: 'streamhost',  accentColor: '#1f7a7a', eraLabel: '1996 · Windows NT 4.0' },\n",
-    "museumOrder": 30,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'nt4', displayName: 'Windows NT 4.0', year: 1996,\n    lineage: 'Windows NT 4.0', arch: 'i386', ramMB: 128,    era: '1990s', accent: '#1f7a7a',\n    eraSoftware: ['Explorer shell', 'Internet Explorer 2.0', 'Solitaire', 'Paint'],\n    periodBrowser: 'Internet Explorer 2.0',\n    iconicApps: ['Solitaire', 'Minesweeper', 'Paint'],\n    blurb: 'The classic Explorer shell on the NT kernel. The teal desktop that brought the Windows 95 look to enterprise NT.',\n  },\n",
     "goldenOrder": 30,
     "actionMapOrder": 29
   },
@@ -119,10 +113,7 @@
       "SH_AUDIO": "off",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/nt4/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/nt4/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_DISKS": "nt4-golden.qcow2"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 89,
     "qemu": {

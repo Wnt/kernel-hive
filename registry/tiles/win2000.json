@@ -8,7 +8,6 @@
       {
         "order": 16,
         "prelude": "",
-        "line": "  \"win2000     |tiles/win2000.sh              |Win2000     |retro    |~15-30m |full*  |win2k-pro.qcow2\"\n",
         "value": {
           "key": "win2000",
           "script": "tiles/win2000.sh",
@@ -70,14 +69,9 @@
     "signalOrder": 6,
     "tilesManifestOrder": 11,
     "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP D — Windows NT family (usb-tablet + AC97), abs pointer.\n# ---------------------------------------------------------------------------\n\n# win2000 (VMID 93) — std VGA (VBEMP-NT/framebuf, 1600x1200x32), AC97,\n#   usb-tablet, rtl8139 NIC. GENERIC.\n#   Golden fixture: the disk runs WITHOUT -snapshot so the savevm 'golden'\n#   snapshot persists inside win2k-pro.qcow2 (resetMode=loadvm).\n",
-    "tilesManifestInvocation": "emit win2000 \\\n  --tile win2000 --vmid 93 --udp 54093 --pointer abs --audio on --audio-dev ac97 \\\n  --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0\" \\\n  --env-append-file \"$T/win2000/tile.env.fixture\" \\\n  --loadvm-launch /data/gallery-guests/Win2000/win2k-pro.qcow2\n",
     "bringUpGroup": 3,
     "bindingOrder": 6,
     "bindingPrelude": "",
-    "bindingLine": "  win2000:     { osId: 'win2000',     archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#5b6fc9', eraLabel: '2000 · Windows 2000', bootVideo: '/boot/win2000/boot.mp4' },\n",
-    "museumOrder": 3,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'win2000', displayName: 'Windows 2000', year: 2000,\n    lineage: 'Windows NT 5.0', arch: 'i386', ramMB: 128,    era: '2000s', accent: '#5b6fc9',\n    eraSoftware: ['NTFS', 'Active Directory', 'IE5.5', 'MMC'],\n    periodBrowser: 'Internet Explorer 5.5',\n    iconicApps: ['Pinball', 'Solitaire', 'Paint'],\n    blurb: 'NT stability meets the 9x desktop — the professional workstation of the millennium.',\n  },\n",
     "goldenOrder": 6,
     "actionMapOrder": 8
   },
@@ -118,10 +112,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/win2000/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win2000/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_GOLDEN_MANIFEST": "/data/vms/streamhost/tiles/win2000/golden-manifest.json"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 93,
     "qemu": {

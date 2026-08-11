@@ -8,7 +8,6 @@
       {
         "order": 35,
         "prelude": "",
-        "line": "  \"vic20        |tiles/vic20.sh                |bridge/vic20    |retro    |~2-4m   |full   |tiles/vic20 overlay + golden (VICE xvic → CBM BASIC V2)\"\n",
         "value": {
           "key": "vic20",
           "script": "tiles/vic20.sh",
@@ -47,15 +46,10 @@
     "signalOrder": 36,
     "tilesManifestOrder": 34,
     "tilesManifestPrelude": "\n# vic20 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.\n",
-    "tilesManifestInvocation": "emit vic20 \\\n  --tile vic20 --vmid 221 --udp 54085 --pointer none --input-backend disabled \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \\\n  --launcher-file \"$T/vic20/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/vic20/tile.env.fixture\"\n",
     "bringUpGroup": 6,
     "bindingOrder": 40,
     "bindingPrelude": "",
-    "bindingLine": "  vic20:       { osId: 'vic20',       archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#3FBFC7', eraLabel: '1980 · VIC-20 (CBM BASIC V2)' },\n",
-    "museumOrder": 34,
-    "goldenOrder": 34,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'vic20', displayName: 'Commodore VIC-20', year: 1980,\n    lineage: 'Commodore 8-bit (MOS 6502)',\n    arch: 'MOS 6502, 1.108 MHz (PAL), 5 KB RAM, 20 KB ROM', ramMB: 0, ramKB: 5,    era: '1980s', accent: '#3FBFC7',\n    eraSoftware: ['CBM BASIC V2 in ROM', 'cartridge games: Jelly Monsters, Radar Rat Race, Gorf, Omega Race', 'Scott Adams text adventures on cassette', 'the VIC-1530 Datasette and the VIC-1541 disk drive', 'type-in listings from Compute!’s Gazette'],\n    periodBrowser: 'none — pre-web 8-bit era',\n    iconicApps: ['CBM BASIC V2', 'VIC-20 cartridge games', 'the Datasette'],\n    blurb: 'The first computer of any kind to sell a million: 5 KB of memory, 22 columns of blue text on a television set, and William Shatner asking why you would buy just a video game.',\n    notes: 'Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (xvic) emulating a PAL VIC-20 that boots its ROM to the CBM BASIC V2 READY prompt; streamhost captures the Linux framebuffer + AC97 audio (the VIC-I sound routed through ALSA) exactly like every other tile. VICE is already in the frozen bridge base (built from source for the c64 tile) and bundles the Commodore ROMs, so this tile needs no external media at all. Keyboard-only exhibit (the machine’s other input was a joystick); uses the beige-tower-crt fallback until a bespoke VIC-20 archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/vic20.md.',\n  },\n"
+    "goldenOrder": 34
   },
   "tileDir": "vic20",
   "lifecycle": "production",
@@ -98,12 +92,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/vic20/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/vic20/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_KEY_MIN_HOLD_MS": "80",
-      "SH_KEY_MIN_GAP_MS": "80",
-      "SH_FIXTURE_DESC": "Commodore VIC-20 (PAL) ROM BASIC power-on screen — \"**** CBM BASIC V2 **** / 3583 BYTES FREE / READY.\" in blue on white paper inside a cyan border, drawn double-size (-VICdsize) by VICE xvic on an 800x600 X root; golden snapshot restores X (-nocursor) + xvic at the READY prompt exactly as baked from an untouched cold boot; keyboard-only exhibit; no pointer device; VIC-I sound -> ALSA -> AC97."
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 221,
     "qemu": {

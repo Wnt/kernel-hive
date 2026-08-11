@@ -634,6 +634,15 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerD', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // The SAME iron as w2kalpha — an AlphaServer ES40 pedestal — running the
+  // UNIX it was designed for, so the same towerD body reads as the sibling it
+  // is. The tube differs (paramCrt, the parametric workstation CRT) so the
+  // pair towerD|paramCrt stays distinct from w2kalpha's towerD|crtE on the
+  // floor; same DEC glass-terminal keyboard/mouse set.
+  tru64: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'paramCrt',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

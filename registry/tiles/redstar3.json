@@ -8,7 +8,6 @@
       {
         "order": 31,
         "prelude": "",
-        "line": "  \"redstar3    |tiles/redstar3.sh             |RedStar3    |retro    |~15-30m |vision |redstar3.qcow2|media\"\n",
         "value": {
           "key": "redstar3",
           "script": "tiles/redstar3.sh",
@@ -72,14 +71,9 @@
     "signalOrder": 31,
     "tilesManifestOrder": 29,
     "tilesManifestPrelude": "\n# redstar3 (VMID 121) — private Red Star OS 3.0 Desktop preservation tile.\n#   KVM/i440fx, stable Nehalem CPU, std VGA (Xorg vesa + ShadowFB, 1920x1080),\n#   IDE, USB tablet, no audio.\n#   -nodefaults is mandatory: it prevents QEMU's implicit e1000; zero guest NICs.\n",
-    "tilesManifestInvocation": "emit redstar3 \\\n  --tile redstar3 --vmid 121 --udp 54121 --pointer abs --audio off --fps 30 \\\n  --input-dev usb --mem 1024 --smp 1 --machine pc-i440fx-11.0 --cpu Nehalem,kvm=off --vga std \\\n  --disk-raw \"-drive file=/data/gallery-guests/RedStar3/redstar3.qcow2,format=qcow2,if=ide,index=0,media=disk -drive if=ide,index=2,media=cdrom\" \\\n  --boot c --extra \"-nodefaults\" \\\n  --env-append-file \"$T/redstar3/tile.env.fixture\" \\\n  --loadvm-launch /data/gallery-guests/RedStar3/redstar3.qcow2\n",
     "bringUpGroup": 2,
     "bindingOrder": 34,
     "bindingPrelude": "",
-    "bindingLine": "  redstar3:    { osId: 'redstar3',    archetypeId: 'beige-tower-crt', transport: 'streamhost',  accentColor: '#b3202a', eraLabel: '2013 · Red Star OS 3.0', bootVideo: '/boot/redstar3/boot.mp4' },\n",
-    "museumOrder": 29,
-    "museumPrelude": "",
-    "museumBlock": "  {\n    id: 'redstar3', displayName: 'Red Star OS 3.0 Desktop', year: 2013,\n    lineage: 'Linux (Fedora lineage)', arch: 'i386', ramMB: 1024,    era: '2010s', accent: '#b3202a',\n    eraSoftware: ['KDE desktop', 'Naenara browser', 'Red Star file manager', 'system tools'],\n    periodBrowser: 'Naenara (Firefox-derived)',\n    iconicApps: ['Naenara', 'File Manager', 'System Preferences'],\n    blurb: 'A macOS-styled desktop distribution from the DPRK: Fedora/KDE foundations reshaped into a tightly controlled national-computing environment.',\n    notes: 'Private air-gapped preservation exhibit. The guest has no emulated network interface.',\n  },\n",
     "goldenOrder": 29,
     "actionMapOrder": 27
   },
@@ -120,11 +114,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/redstar3/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/redstar3/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_RESET_MODE": "loadvm",
-      "SH_GOLDEN_SNAPSHOT": "golden",
-      "SH_FIXTURE_DESC": "\"Logged-in idle Red Star OS 3.0 Desktop; complete 1920x1080 menubar, wallpaper, and dock; absolute USB-tablet and keyboard ready\"",
-      "SH_BASE_BACKUP": "/data/gallery-guests/RedStar3/redstar3.qcow2.bak-pre-redstar3"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 121,
     "qemu": {
