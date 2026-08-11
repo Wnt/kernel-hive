@@ -34,11 +34,18 @@ for i in $(seq 1 40); do
   [ -S "$S" ] && [ -f "$TILEDIR/qemu.pid" ] && break
   sleep 0.5
 done
-# Jump straight to the golden fixture (live-RAM snapshot). Tolerant: if the snapshot
-# is absent (fresh build before savevm), loadvm errors and leaves the VM stopped in
-# restore-vm state -- the following unconditional `cont` resumes it (and is a harmless
-# no-op after a successful loadvm, since golden was saved while running).
+# Jump straight to the golden fixture (live-RAM snapshot) and leave it FROZEN
+# (~0 CPU): stop first so a successful loadvm ends with vCPUs stopped at the
+# fixture — the first visitor session's cont (idle.rs) wakes it sub-second.
+# Tolerant: if the snapshot is absent (fresh build before savevm), loadvm
+# errors and the `cont` resumes the interrupted cold boot RUNNING so
+# golden-bake.sh can drive it, same recovery as before.
 sleep 1
-python3 "$TILEDIR/qmpc.py" "$S" loadvm golden 2>/dev/null || true
-python3 "$TILEDIR/qmpc.py" "$S" raw '{"execute":"cont"}' 2>/dev/null || true
-echo "tile msdoswin1 qemu pid=$(cat "$TILEDIR/qemu.pid" 2>/dev/null) qmp=$S udp=54113 (loadvm golden + cont)"
+python3 "$TILEDIR/qmpc.py" "$S" raw '{"execute":"stop"}' >/dev/null 2>&1 || true
+# qmpc always exits 0 and prints the QMP result; HMP loadvm success is exactly
+# {"return": ""} — anything else (Error text, timeout, empty) takes the cont.
+LV=$(python3 "$TILEDIR/qmpc.py" "$S" loadvm golden 2>/dev/null || true)
+if [ "$LV" != '{"return": ""}' ]; then
+  python3 "$TILEDIR/qmpc.py" "$S" raw '{"execute":"cont"}' >/dev/null 2>&1 || true
+fi
+echo "tile msdoswin1 qemu pid=$(cat "$TILEDIR/qemu.pid" 2>/dev/null) qmp=$S udp=54113 (loadvm golden, frozen until first visit; cold boot resumes RUNNING if no snapshot)"

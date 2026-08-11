@@ -65,3 +65,38 @@ full-fleet restart drill with the load ceiling recorded.
 
 **Rollback:** per tile, revert the launcher line and restart the unit; the
 snapshot, overlay, and daemon are untouched throughout.
+
+## Results (2026-08-11, all cohorts SHIPPED)
+
+- **Pilot (alpine):** `-S -loadvm golden` = runstate `prelaunch` at 0.0% CPU;
+  the daemon received a first frame FROM THE RESTORED SURFACE, published its
+  cert and LISTENed; QMP `cont` → keystroke echoed on the framebuffer; the
+  reconciler re-froze it unaided; `reset-tile.sh` on a paused guest lands AT
+  the golden, still frozen (with a visitor connected the guest is running, and
+  loadvm keeps it running). Ticket accepted throughout.
+- **Cohort 2 (42 verbatim launchers):** rolling restart in bring-up order —
+  all 42 frozen at start, 0 failures, 1-min load stayed ~13 (the 2026-08-11
+  morning bring-up with running restores had hit 67).
+- **Cohort 3:** generator `--loadvm-launch <qcow2>` (byte-parity proven: an
+  unflagged generic tile emits byte-identical output). Six generic tiles
+  emitted + restarted — ninefront/win2000/redstar3 had loadvm'd
+  unconditionally via `--extra` (a missing snapshot failed the launch); the
+  flag supersedes that inline arg with the tolerant conditional. msdoswin1's
+  bespoke QMP path now does stop→loadvm, cont only when loadvm did not
+  restore (`qmpc` always exits 0 — success is matched on `{"return": ""}`).
+  win11's feared guest-wait was a grep false positive (its qga chardev line);
+  it took the standard one-liner. All frozen after restart.
+- **Fleet census after rollout:** 53 QEMU tiles frozen (prelaunch/paused),
+  the only runners the four never-pause tiles, irix + w2kalpha SIGSTOPped
+  (state T). All 60 tiles accept their tickets.
+- **The never-pause exclusion is load-bearing:** a tile with
+  `SH_IDLE_PAUSE_SECS=0` has NO IdlePauser, so nothing would ever `cont` a
+  start-frozen guest — `-S` there produces a permanently dead exhibit. Any
+  future pause-arm for amiga/daybreak/nextstep/star must land BEFORE their
+  launchers gain `-S`.
+- **sailfishos is broken independently of this work**: its guest image
+  (`/data/gallery-guests/SailfishOS/…`) does not exist on the box and the
+  per-tile daemon dir `/usr/local/lib/streamhost/tiles/sailfishos/` was never
+  installed — the unit crash-loops if started. Stopped, left disabled
+  (operator's enablement exclusion). Needs media restore + daemon symlinks
+  before it can ever run.

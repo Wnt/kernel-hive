@@ -4398,7 +4398,9 @@
             "--extra",
             "-device VGA,id=vga0,edid=on,xres=1920,yres=1200 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:5807-:22 -device e1000,netdev=n0",
             "--env-append-file",
-            "$T/haiku/tile.env.fixture"
+            "$T/haiku/tile.env.fixture",
+            "--loadvm-launch",
+            "/data/vms/streamhost/tiles/haiku/haiku-persist.qcow2"
           ],
           "deviceSetId": "haiku-current",
           "machine": "pc-i440fx-11.0",
@@ -4656,7 +4658,9 @@
             "--extra",
             "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
             "--env-append-file",
-            "$T/helenos/tile.env.fixture"
+            "$T/helenos/tile.env.fixture",
+            "--loadvm-launch",
+            "/data/vms/streamhost/tiles/helenos/golden.qcow2"
           ],
           "deviceSetId": "helenos-current",
           "machine": "pc-i440fx-11.0",
@@ -6528,7 +6532,9 @@
             "--boot",
             "c",
             "--extra",
-            "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0 -loadvm golden"
+            "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0",
+            "--loadvm-launch",
+            "/data/gallery-guests/9front/9front-11554.amd64.qcow2"
           ],
           "deviceSetId": "ninefront-current",
           "machine": "pc-q35-11.0",
@@ -9511,9 +9517,11 @@
             "--boot",
             "c",
             "--extra",
-            "-nodefaults -loadvm golden",
+            "-nodefaults",
             "--env-append-file",
-            "$T/redstar3/tile.env.fixture"
+            "$T/redstar3/tile.env.fixture",
+            "--loadvm-launch",
+            "/data/gallery-guests/RedStar3/redstar3.qcow2"
           ],
           "deviceSetId": "redstar3-airgapped-v2-stdvga",
           "machine": "pc-i440fx-11.0",
@@ -9832,7 +9840,9 @@
             "--boot",
             "c",
             "--extra",
-            "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot"
+            "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot",
+            "--loadvm-launch",
+            "/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2"
           ],
           "deviceSetId": "sailfishos-current",
           "machine": "pc-i440fx-11.0",
@@ -12283,9 +12293,11 @@
             "--boot",
             "c",
             "--extra",
-            "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden",
+            "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0",
             "--env-append-file",
-            "$T/win2000/tile.env.fixture"
+            "$T/win2000/tile.env.fixture",
+            "--loadvm-launch",
+            "/data/gallery-guests/Win2000/win2k-pro.qcow2"
           ],
           "deviceSetId": "win2000-stdvga-vbemp-1600",
           "machine": "pc-i440fx-11.0",

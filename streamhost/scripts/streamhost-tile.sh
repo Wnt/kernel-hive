@@ -63,6 +63,7 @@ AUDIO="on"
 FPS=60
 WARPD_ADDR="127.0.0.1:7790" # host:port of the in-guest warpd agent (POINTER=warpd only)
 WARPD_ADDR_SET=0            # SH_WARPD_ADDR is emitted only when --warpd-addr was passed
+LOADVM_LAUNCH_DISK=""       # --loadvm-launch: qcow2 holding the `golden` savevm snapshot
 # warpd fine-tuning (POINTER=warpd only). Empty = omit from tile.env so the
 # daemon defaults rule; the manifest passes them for win311/os2warp.
 WARPD_BUTTONS=""
@@ -305,6 +306,10 @@ while [ $# -gt 0 ]; do
       EXTRA="$2"
       shift 2
       ;; # extra raw qemu args
+    --loadvm-launch)
+      LOADVM_LAUNCH_DISK="$2"
+      shift 2
+      ;; # generic mode: launch into this qcow2's `golden` snapshot, FROZEN (-S)
     --launcher-file)
       LAUNCHER_FILE="$2"
       shift 2
@@ -700,6 +705,24 @@ sleep 0.3; rm -f "${QMP}" "${PID}"
 # polls every SH_DBUS_UPDATE_MS ms (default 4; clamp 1..29; 0/unset = stock 30 ms).
 # Overridable per-tile by exporting SH_DBUS_UPDATE_MS before this launcher runs.
 export SH_DBUS_UPDATE_MS="\${SH_DBUS_UPDATE_MS:-4}"
+EOF
+  # --loadvm-launch: emit the conditional golden-restore block. The \$LOADVM arg
+  # splices into the qemu line via ${LOADVM_VAR} below, which stays EMPTY (and
+  # byte-identical output) for tiles without the flag — verify-emit parity.
+  LOADVM_VAR=""
+  if [ -n "$LOADVM_LAUNCH_DISK" ]; then
+    # shellcheck disable=SC2016 # literal on purpose: $LOADVM expands in the EMITTED launcher, not here
+    LOADVM_VAR=' $LOADVM'
+    cat >>"${BASE_OUT}/qemu-streamhost.sh" <<EOF
+# Boot straight into the golden fixture when the snapshot exists; -S starts it
+# FROZEN (~0 CPU) — the first visitor session's cont (idle.rs) wakes it
+# sub-second. A first-ever bake (no snapshot yet) cold-boots RUNNING for the
+# golden bake to drive. shellcheck disable=SC2086: \$LOADVM must word-split.
+LOADVM=""
+qemu-img snapshot -l "${LOADVM_LAUNCH_DISK}" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
+EOF
+  fi
+  cat >>"${BASE_OUT}/qemu-streamhost.sh" <<EOF
 nohup qemu-system-x86_64 \\
   -name streamhost-${TILE} \\
   ${ACCEL_ARG} -m ${MEM} -smp ${SMP} \\
@@ -710,7 +733,7 @@ nohup qemu-system-x86_64 \\
   -display ${DISPLAY_ARG} \\
   ${AUDIO_ARGS} \\
   ${INPUT} \\
-  ${EXTRA} \\
+  ${EXTRA}${LOADVM_VAR} \\
   -qmp unix:${QMP},server=on,wait=off \\
   -pidfile ${PID} \\
   >"${BASE}/qemu.log" 2>&1 &
