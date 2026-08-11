@@ -2498,6 +2498,49 @@ Lua, no QMP.
   saved upstream; RAM was not). Never accept a restore on a screenshot —
   verify interactivity (pointer probe) and the guest itself (serial exec).
 
+### True start-paused (2026-08-11)
+
+`systemctl start streamhost@irix` now **ends with the guest frozen AT the
+restored golden**: with `IRIX_START_PAUSED=on` (tile.env), the full launch
+restores, waits for the restored frame to be visible in shm (the framebuffer
+is the proof, ~4.4 s), settles 2 s, and SIGSTOPs the emulator. The first
+visitor session's unconditional `cont` (idle.rs) wakes it — the QEMU fleet's
+`-loadvm golden -S` ([instant-ready](../lab/research/instant-ready-bringup.md)),
+translated to MAME. The freeze is synchronous inside the launcher, which runs
+under `ExecStartPre`, so the daemon is not yet serving and no session can race
+it — the race that matters, because the idle reconciler only heals a pause
+**it** created (idle.rs pause belief), so a guest frozen under a live session
+would stay frozen until the next session.
+
+The instant-restore budget moved with the exposure. A frozen launch charges
+nothing (`.state-tries` untouched — a frozen guest exposes nothing to vet);
+`freeze_at_state` leaves a one-shot `.state-unvetted` marker, and livewatch
+converts it into the charge at the first wake it observes ("MAME resumed —
+watching again" edge). The pointer probe clears the charge exactly as before,
+and also consumes an unconsumed marker (a wake livewatch slept through still
+gets vetted). Watchdog relaunches and `--mame-only` keep charge-at-launch and
+launch RUNNING — a relaunch can happen under a live visitor. Consequences:
+
+- **Unvisited restarts can never ratchet the budget** into the 390 s
+  cold-boot fallback — the decay `SH_IDLE_PAUSE_WARMUP_SECS=780` existed to
+  prevent. Warmup is now `0`.
+- A dead restore is still caught at first exposure: wake charges, probes
+  fail, livewatch relaunches (that launch charges at launch), second failure
+  crosses the `>= 2` threshold, next launch cold-boots. One extra restore
+  attempt is possible when livewatch misses the first wake edge inside its
+  grace sleep; bounded by `LIVE_ATTEMPTS` regardless.
+- A **cold-boot fallback** now freezes ~60 s in when unvisited (warmup 0) —
+  the same mid-boot pause every QEMU tile accepts; the first visitor watches
+  the rest of the boot live. Loud, rare, accepted.
+- `labctl reset irix` is unchanged: mamectl-first (`LOADST golden`, guest
+  ends running, the pauser refreezes it after 60 s idle); its fallback arm is
+  a service restart, which lands frozen-at-golden like any start.
+
+Rollback: `IRIX_START_PAUSED=off` restores the run-then-freeze launch —
+restore `SH_IDLE_PAUSE_WARMUP_SECS=780` with it, or an unvisited launch is
+frozen before livewatch's probe can vet it. `IRIX_STATE=` (empty) still rolls
+back all of instant restore.
+
 ## Closed-loop 1:1 pointer — MOVEA (2026-08-04)
 
 The mamecmd input path is ABSOLUTE: streamhost emits surface-clamped

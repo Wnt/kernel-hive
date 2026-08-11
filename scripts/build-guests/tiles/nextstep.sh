@@ -580,10 +580,10 @@ guest "pgrep -x previous >/dev/null" || die "the Previous emulator is not runnin
 guest "grep -q 'window=' /tmp/nextstep-frame.log" ||
   die "the frame watcher never found the Previous window (input and geometry would both be wrong)"
 
-# Attach NeXTSTEP's own tablet driver and prove the 1:1 map BEFORE the snapshot:
-# the driver is a kernel server that a cold boot does not carry, so the golden is
-# the only thing that can keep it. This also leaves the desktop pixel-diffed back
-# onto the fixture it started from.
+# Attach NeXTSTEP's own tablet driver and prove the 1:1 map BEFORE the snapshot.
+# Since 2026-08-11 the installer persists an rc.local boot hook, so an installed
+# disk cold-boots absolute and the installer short-circuits to a probe; the GUI
+# dance runs once per fresh disk image (docs/guests/nextstep.md §4).
 log "attaching the NeXTSTEP tablet driver (absolute pointer) before the bake"
 python3 "$HERE/../nextstep-tablet-install.py" --dir "$TILE_DIR" --ssh-port "$SSH_PORT" \
   --key "$KEY" --evidence "$EVIDENCE" || die "the tablet driver did not attach"

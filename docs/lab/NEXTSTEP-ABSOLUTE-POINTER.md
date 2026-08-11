@@ -159,3 +159,32 @@ Still unproven:
   box was carrying a load average of ~10-12 from the rest of the fleet.
 - Only MM 1201 was tried. The WACOM types report a finer coordinate range and
   might behave differently at the edges; there was no need to look.
+
+## Addendum 2026-08-11 — the cold-boot asymmetry is closed
+
+The "driver must be reinstalled after every boot" limit was NeXTSTEP default
+behavior, not an emulator fact, and it fell to a two-line rc.local hook. What a
+soltest clone (`NSTAB-coldboot`) established, in order:
+
+- `kl_util -a <reloc>` allocates AND loads the server, but persists nothing:
+  **kern_loader owns `/etc/kern_loader.conf`** and rewrites it (a manual append
+  was pruned; so was the stale NeXTdimension line). rc.local is the reliable
+  hook: `kl_util -l tablet` + `kl_util -a /usr/lib/kern_loader/Tablet/
+  tablet_reloc`, one of which always lands.
+- The reloc's Mach-O has a `Loaded Server/Load Commands` section ending in
+  `CALL tablet_attach 0` — **loading is attaching**. Disassembly of
+  `tablet_attach` (m68k, 186 bytes): check an "already attached" flag via an
+  ioctl on dev 0x1001 (= /dev/tabletb, major 16 minor 1), then with interrupts
+  masked copy 11 function pointers from the reloc's `__DATA` over the kernel's
+  low-memory pointer vectors at 0x2c0–0x2e8. `tablet_detach` (the Unload
+  Command) restores the saved KMS vectors.
+- **Timing is everything.** Loaded mid-session (WindowServer already up), the
+  swap disconnects the KMS mouse and probes nothing — the pointer freezes
+  (observed; `kl_util -u tablet` recovers). Loaded during `/etc/rc`, the
+  WindowServer's own device init runs the serial probe and the pointer comes up
+  absolute: after a plain guest boot with the hook, a commanded warp to
+  (100,100) put the NeXT arrow at exactly (100,100), no GUI touched.
+- The InstallTablet.app GUI dance is therefore a ONCE-PER-DISK event (it writes
+  tablet_reloc and the /dev nodes); `nextstep-tablet-install.py` now probes
+  first, skips the GUI when a boot is already absolute, and writes the rc hook
+  on both paths. The live golden was re-baked 2026-08-11 with the hook on disk.

@@ -3,8 +3,9 @@
 
 Runs ON THE LAB BOX against a *running* nextstep QEMU (the tile or a
 /data/vms/soltest clone). Called by scripts/build-guests/nextstep.sh between the
-last cold boot and `savevm golden`; safe to re-run by hand after any COLD boot,
-which is the one state that loses the driver (see docs/guests/nextstep.md §4).
+last cold boot and `savevm golden`; safe to re-run by hand at any time — it
+probes first and only drives the GUI when the boot did not come up absolute
+(see docs/guests/nextstep.md §4).
 
 Why this exists at all: Previous emulates a SummaGraphics digitiser on the NeXT
 SCC serial port B and feeds it the host's ABSOLUTE window coordinates whenever
@@ -14,8 +15,15 @@ GUI-only: NeXTSTEP refuses a DPS connection from a telnet session ("Could not
 form connection"), so the install has to be driven through the framebuffer.
 Nothing is compiled -- the golden carries no m68k toolchain.
 
-The driver survives `loadvm golden` (RAM + device state, not a boot), which is
-why the exhibit's reset model fits; it does NOT survive a cold boot.
+The driver survives `loadvm golden` (RAM + device state, not a boot). Since
+2026-08-11 it also survives a COLD boot: the reloc's own kern_loader load
+commands run `CALL tablet_attach` at load time, and a server loaded during
+/etc/rc — before the WindowServer starts — comes up attached, so two rc.local
+lines (`kl_util -l tablet` + `kl_util -a <reloc>`) make every boot absolute.
+This script writes that hook (ensure_boot_hook), and when a boot already came
+up absolute it skips the GUI install entirely. The GUI dance below is only
+needed ONCE per fresh disk image, to make InstallTablet.app write tablet_reloc
+and the /dev nodes in the first place.
 
 Usage: nextstep-tablet-install.py [--dir DIR] [--ssh-port N] [--key PATH]
 """
@@ -289,6 +297,29 @@ def diff_px(before, after):
     return int(np.count_nonzero(changed))
 
 
+def ensure_boot_hook():
+    """Persist the attach on the DISK: load the tablet server from rc.local.
+
+    kern_loader owns /etc/kern_loader.conf and rewrites it (it pruned a manual
+    append during testing), so the reliable hook is rc.local: `-l` loads the
+    server when a previous shutdown persisted it into the conf, and `-a` adds
+    AND loads it when it did not. Loading during /etc/rc runs the reloc's own
+    `CALL tablet_attach` before the WindowServer starts, and login's device
+    init then probes the tablet — the pointer is absolute with zero input.
+    """
+    if "kl_util" in nextstep("grep kl_util /etc/rc.local"):
+        log("boot hook already in /etc/rc.local")
+        return
+    log("writing the tablet boot hook into /etc/rc.local")
+    nextstep(
+        "echo kl_util -l tablet >> /etc/rc.local",
+        "echo kl_util -a /usr/lib/kern_loader/Tablet/tablet_reloc >> /etc/rc.local",
+        "sync",
+    )
+    if "kl_util" not in nextstep("grep kl_util /etc/rc.local"):
+        raise SystemExit("the boot hook did not land in /etc/rc.local")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dir", default="/data/vms/streamhost/tiles/nextstep")
@@ -303,6 +334,19 @@ def main():
         raise SystemExit("previous.cfg still has nTabletType = 0; nothing to attach to")
     if not wait_workspace("tablet-00-workspace"):
         raise SystemExit("no NeXTSTEP Workspace on the framebuffer")
+
+    # A disk that already carries the rc.local boot hook comes up absolute on
+    # its own; probe before driving any GUI. Three tries, because a loaded box
+    # lags the emulated tablet's serial stream and a single early screendump
+    # can catch the software cursor mid-erase.
+    for _ in range(3):
+        worst = absolute_ok("tablet-02-preinstalled")
+        if worst is not None and worst <= 2:
+            log(f"pointer already absolute on this boot (max error {worst} px)")
+            ensure_boot_hook()
+            log("PASS: tablet attached by the disk's own boot hook, nothing to install")
+            return
+        time.sleep(3)
 
     pristine = frame("tablet-01-pristine")
 
@@ -364,6 +408,7 @@ def main():
         frame("tablet-03-FAILED")
         raise SystemExit(f"tablet did not attach: absolute probe error {worst!r}")
     log(f"driver attached; absolute probe max error {worst} px")
+    ensure_boot_hook()
 
     # Leave the machine on the fixture it was on: quit the app (its menu is pinned
     # at the top left while it is active), drop the symlink, and re-open /me so the
