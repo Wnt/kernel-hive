@@ -6,6 +6,12 @@ quo); **arm B** is the *same binary* on the bare host publishing frames through
 `drawshm` (tier 3, the candidate). The live `atarist` tile — hatari in the
 kiosk — is arm C and nothing here touches it.
 
+**Arm A was terminated and abandoned on 2026-08-11** (operator decision — the
+CPU verdict no longer needs a live contrast pair). Its files stay under
+`armA/` for the record, but its QEMU and streamhost are down, its gallery row
+is withdrawn, and it is **not** kept in sync with binary changes — the
+one-binary invariant ended with it. Only arm B runs.
+
 These are **not tiles**. They have no registry entry, no poster and no SPA
 scene, they live entirely under `/data/vms/soltest/debridge-7f3a/`, and they are
 run by hand rather than by `streamhost@`. That last part is deliberate: the
@@ -132,6 +138,19 @@ unchanged, and `STAT skipped=x,y` records every dropped count. Slams and
 explicit MOVE/MOVEP entries are never dropped — an edge overshoot still dies
 against the guest's clamp. The fix is `mame-ctlsock.patch`'s open-loop branch;
 streamhost needed nothing (its sink already coalesces `latest_move`).
+
+**And the settle is emission-true (2026-08-11, later the same day).** The ikbd
+discards magnitude — one quadrature cycle per 8 ms period, direction only — so
+a pacing beat or a reversal pair during a fast sweep silently loses counts and
+the cursor parked a few counts short until an edge slam re-pinned it (measured:
+5.6 counts adrift after a 5 s fast circle while the ikbd's value latch stayed
+exact; a consumed-VALUE flow gate was tried first, made it worse — 12.8 — and
+was reverted). `MAME_CTL_QUAD_ITEMS` names the stkbd's per-period phase save
+items; the module's belief integrates EMITTED cycles — the ground truth of
+what the guest receives, wrap-inversions included — and a settle corrector
+re-issues whatever merged away once the queues have been quiet for three
+windows. Measured after: jump +0.21, slow drag −0.32, fast circle +0.42
+counts; `verify` worst axis error 0.64 counts; catch-up still ≤1 s.
 
 **The pointer is measurable without a browser, and should be measured that way.**
 `armB-ptr-grid.py verify` reports where the cursor actually lands, in counts.
