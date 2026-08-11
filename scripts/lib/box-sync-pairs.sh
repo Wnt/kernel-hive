@@ -131,9 +131,13 @@ box_sync_load_pairs() {
   box_sync_add_pair xvfb-alloc scripts/lib/xvfb-alloc.sh /usr/local/bin/xvfb-alloc exact repo
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
   box_sync_add_pair gen-tiles-json scripts/gen_tiles_json.py /root/gen_tiles_json.py exact repo
-  for name in clientcmd.sh gen-local-ca.sh osgallery-https-server.py reset-tile.sh install-https-service.sh; do
+  # gen-local-ca.sh deploys with the operator's real hostname substituted in
+  # (discovered 2026-08-11 when the writer's reverse-scrub check refused the
+  # row): scrub, not exact, or a push writes a placeholder over it.
+  for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
+  box_sync_add_pair serve/gen-local-ca.sh scripts/serve/gen-local-ca.sh "$BOX_ROOT/serve/gen-local-ca.sh" scrub repo
   # The rest of the deployed serving plane. These were live on the box with NO
   # pair for months, so a drifted copy was invisible: check-stream-tickets.py and
   # pen-trace.py are both named in AGENTS.md's debugging table as the thing you
@@ -184,7 +188,9 @@ box_sync_load_pairs() {
   box_sync_add_pair irix-mctl streamhost/guest-agents/irix/mctl.py /root/mctl.py exact repo
   box_sync_add_pair qmp-hmp scripts/qmp_hmp.py /root/qmp_hmp.py exact repo
   box_sync_add_pair shmshot scripts/shmshot.py /root/shmshot.py exact repo
-  box_sync_add_pair mobile-netem scripts/dev/mobile-netem.sh /usr/local/bin/mobile-netem exact repo
+  # Deployed with a real address baked in (same 2026-08-11 discovery as
+  # serve/gen-local-ca.sh): scrub keeps the live value on push.
+  box_sync_add_pair mobile-netem scripts/dev/mobile-netem.sh /usr/local/bin/mobile-netem scrub repo
   box_sync_add_pair amiga-coldboot-watch scripts/coldboot/amiga-coldboot-watch.sh /usr/local/bin/amiga-coldboot-watch.sh exact repo
   box_sync_add_pair streamhost-unit streamhost/deploy/streamhost@.service /etc/systemd/system/streamhost@.service exact repo daemon-reload
   box_sync_add_pair amiga-coldboot-unit streamhost/deploy/amiga-coldboot-watch.service /etc/systemd/system/amiga-coldboot-watch.service exact repo daemon-reload
