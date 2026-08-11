@@ -11,15 +11,14 @@ The arm copies only the bridge `overlay.qcow2` — its shared base
 over clone SSH; after capture it starts the kiosk again. Bridge kind
 intentionally skips `savevm`: every visit cold-boots the emulator.
 
-**A cold boot is NOT pointer-equivalent to the live tile, and that is by
-design.** The exhibit's absolute pointer comes from NeXTSTEP's own tablet driver,
-a kernel server that is attached once at build time and carried by the `golden`
-snapshot (`loadvm` restores RAM, it does not boot). A cold boot — which is what
-this arm records — has no tablet driver and falls back to Previous's relative
-mouse. Nothing in a boot capture touches the pointer, so the clip is unaffected;
-but do not read a cold-booted nextstep as a working exhibit, and do not use this
-arm to test input. `docs/guests/nextstep.md` §4 has the full asymmetry and the
-one-command re-install.
+**A cold boot IS pointer-equivalent to the live tile since 2026-08-11.** The
+exhibit's absolute pointer comes from NeXTSTEP's own tablet driver, and the
+disk now loads it during `/etc/rc` (an rc.local `kl_util` hook whose load-time
+`CALL tablet_attach` runs before the WindowServer starts), so a cold boot comes
+up absolute on its own. Nothing in a boot capture touches the pointer either
+way. Caveat for OLD media: a disk image that predates the hook (or a fresh
+`NS33_2GB.dd` that never had the driver installed) still cold-boots relative;
+`docs/guests/nextstep.md` §4 has the history and the once-per-disk install.
 
 **Zero input is genuine, but only from the second boot of a given disk image
 onwards.** NeXTSTEP 3.3 runs a one-time Welcome panel (language + keyboard) the

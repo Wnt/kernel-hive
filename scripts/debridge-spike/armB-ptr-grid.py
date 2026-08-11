@@ -25,11 +25,12 @@ commands surface points and reports how far the cursor landed from each, in
 counts -- under one count is exact, because one count is the finest step this
 machine has.
 
-Expect ~0.5 counts of error on a jump and 2-3 counts after a long walk: the
-module paces one count per 8 emulated ms against a latch on its own 8 ms phase,
-so a few percent of counts merge and are lost. That drift is bounded, not
-cumulative: entering any screen edge carries a full-axis slam that re-pins the
-guest and the model together, and 30 s of pointer silence re-homes outright.
+Expect under one count of error everywhere (measured worst 0.64 across the
+grid, 2026-08-11). The ikbd merges counts that land in one 8 ms latch period,
+but the module's belief now integrates the EMITTED quadrature phases
+(MAME_CTL_QUAD_ITEMS) and a settle corrector re-issues whatever merged away,
+so the loss no longer parks the cursor short of the target. Edge slams and the
+30 s re-home remain as belt-and-braces re-anchors.
 """
 
 import socket

@@ -75,7 +75,12 @@ WARPD_BUTTON_DELAY_MS=""
 # encoder block is emitted only when one of its flags is passed; otherwise the
 # daemon defaults still rule (CQP q10 at tier 0, high/zerolatency, auto
 # maxrate, ABR on with 25 s dwell + 480p floor; see config.rs).
-ENCODER_PRESET="veryfast"
+# ultrafast matches the daemon's own default (config/parse.rs) — operator
+# decision 2026-08-11: every tile streams ultrafast; the box is GPU-less and
+# a busier preset buys latency, not quality a museum stream can show. The
+# 2026-07/08 emits shipped "veryfast" here and seeded 29 live tile.envs +
+# 4 registry tileEnv records with it (all re-set to ultrafast the same day).
+ENCODER_PRESET="ultrafast"
 PROFILE="high"
 CRF=""
 MAXRATE=0

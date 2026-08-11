@@ -44,12 +44,27 @@ GOLDEN="${IRIX_GOLDEN:-$ASSETS/irix65-apps-v3.chd}"
 # exactly as before. A savestate is only valid against the CHD captured in the
 # same pause window and the binary that wrote it — a MAME rebuild orphans every
 # state (registration-signature change), which the md5 guard turns from silent
-# garbage into a loud cold-boot fallback. After two restore launches without a
-# healthy guest (watchdog relaunches), the next launch cold-boots; livewatch
-# clears the counter on its first successful pointer probe. Bake states with
+# garbage into a loud cold-boot fallback. After two EXPOSED restore launches
+# without a healthy guest, the next launch cold-boots; livewatch clears the
+# counter on its first successful pointer probe. "Exposed" is when the charge
+# lands: at launch for a launch that runs, at the first observed wake for one
+# frozen by IRIX_START_PAUSED (a frozen guest exposes nothing, so there is
+# nothing to vet yet). Bake states with
 # scripts/build-guests/irix/irix-savestate/bake-golden.sh.
 STATE="${IRIX_STATE:-}"
 STATE_DIR="${IRIX_STATE_DIR:-$ASSETS/state}"
+# True start-paused (2026-08-11): `on` makes a FULL launch that restores
+# $STATE freeze the emulator (SIGSTOP) the moment the restored frame is
+# visible, so `systemctl start` ends with the guest AT the golden state at
+# ~0 CPU; the first visitor session's unconditional cont (streamhost idle.rs)
+# wakes it — the QEMU fleet's `-loadvm golden -S`, translated to MAME. FULL
+# launch only: watchdog relaunches and --mame-only leave the guest running,
+# because a relaunch can happen under a live visitor and the daemon's
+# reconciler only heals a pause IT created (idle.rs pause belief). The freeze
+# is synchronous inside this script, which runs under ExecStartPre, so the
+# daemon is not serving yet and no session can race it. off = the
+# run-then-let-the-pauser-freeze launch, byte-for-byte.
+START_PAUSED="${IRIX_START_PAUSED:-off}"
 
 # Capture mode. `x11` (default, and what the live tile ships) renders MAME into
 # an Xvfb that streamhost grabs with SH_CAPTURE=x11. `shm` runs MAME with
@@ -127,6 +142,9 @@ CMD="${SH_X11_CMD_FILE:-$D/irix_cmd}"
 AGENT="$D/irixagent.lua"
 FBSTAT="$D/fbstat.py"
 MODE="${1:-full}"
+# Set by start_mame: the state name it restored, "" on a cold boot. The full
+# launch reads it to decide whether there is a restored state to freeze at.
+LAUNCHED_RESTORE=""
 
 # --- boot watchdog tunables -------------------------------------------------
 # A cold boot hangs on a permanently BLACK framebuffer roughly 2 times in 3
@@ -292,6 +310,12 @@ mame_stopped() {
   [ "$st" = T ] || [ "$st" = t ]
 }
 
+# Charge one exposed restore launch to the instant-restore budget
+# (.state-tries; see the INSTANT RESTORE block for when a charge lands).
+charge_state_budget() {
+  echo $(($(cat "$D/.state-tries" 2>/dev/null || echo 0) + 1)) >"$D/.state-tries"
+}
+
 # Writable per-tile disk, re-made from the golden on EVERY launch so each boot
 # (and every reset, which is a relaunch) starts pristine.
 #
@@ -334,9 +358,17 @@ start_mame() {
     else
       restore="$STATE"
       starg=(-state_directory "$STATE_DIR/sta" -state "$STATE")
-      echo $((tries + 1)) >"$D/.state-tries"
+      # The budget charges when EXPOSURE begins. A start-paused full launch
+      # freezes before anyone can touch the guest, so its charge is deferred
+      # to the first observed wake (livewatch, via the .state-unvetted marker
+      # freeze_at_state writes) — or lands right back here-equivalent if the
+      # freeze fails and the guest is left running. Every other caller
+      # (watchdog relaunch, --mame-only) leaves the guest running, so the
+      # launch itself is the exposure and the charge stays here.
+      [ -n "${FREEZE_THIS_LAUNCH:-}" ] || charge_state_budget
     fi
   fi
+  LAUNCHED_RESTORE="$restore"
   rm -f -- "$disk"
   if [ -n "$restore" ]; then
     # The disk that was reflink-snapshotted in the same pause window the state
@@ -448,7 +480,7 @@ start_mame() {
     fi
   fi
   publish_serial "$p"
-  echo "irix runtime up: mame pid=$p capture=$CAPTURE xvfb=$DISP shm=$SHM cmd=$CMD serial=$(cat "$D/serial.pts" 2>/dev/null) boot=${restore:+restore:$restore}${restore:-cold} ctl=$([ "$CTL" = on ] && echo "$D/ctl.sock" || echo off)"
+  echo "irix runtime up: mame pid=$p capture=$CAPTURE xvfb=$DISP shm=$SHM cmd=$CMD serial=$(cat "$D/serial.pts" 2>/dev/null) boot=${restore:+restore:}${restore:-cold} ctl=$([ "$CTL" = on ] && echo "$D/ctl.sock" || echo off)"
 }
 
 # The exec channel (`labctl exec irix`, /root/irixexec.py, irixser/2 to
@@ -497,6 +529,53 @@ fb_is_black() {
   fi
   [ -n "$m" ] || return 1
   awk -v m="$m" -v e="$BLACK_EPS" 'BEGIN { exit !(m < e) }'
+}
+
+# The POSITIVE mirror of fb_is_black: the frame is PRESENT and not black. The
+# polarity of a failed sample flips with the caller: fb_is_black reads one as
+# "not black" so a watchdog never relaunches blind, while this reads it as
+# "not visible", because its caller is about to freeze the guest on the
+# strength of this frame and must not freeze what it cannot see.
+fb_visible() {
+  local png="$D/.startpause.png" m
+  if [ "$CAPTURE" = shm ]; then
+    m="$(shm_max_channel_mean)" || return 1
+  else
+    DISPLAY="$DISP" import -window root "$png" 2>/dev/null || return 1
+    m="$(identify -format '%[fx:max(mean.r,max(mean.g,mean.b))]' "$png" 2>/dev/null)" || return 1
+  fi
+  [ -n "$m" ] || return 1
+  awk -v m="$m" -v e="$BLACK_EPS" 'BEGIN { exit !(m >= e) }'
+}
+
+# True start-paused: freeze the guest AT the restored state. Waits for the
+# restored frame to be VISIBLE in the framebuffer (the only proof a restore
+# painted; ~4.4 s from launch), gives it a short settle (frame -> interactive
+# is ~1.2 s more — SIGSTOP pauses that work, it does not lose it), SIGSTOPs,
+# and writes .state-unvetted: the one-shot marker livewatch converts into the
+# deferred budget charge at the first wake it observes. Non-zero = the guest
+# is still RUNNING (no visible frame inside the deadline, or the pid is
+# wrong/gone); the caller must then charge the budget itself — a running
+# restore is exposed from that moment — and leave the black screen to
+# bootwatch, which is armed before this runs.
+freeze_at_state() {
+  local p i
+  p="$(cat "$D/mame.pid" 2>/dev/null || true)"
+  [ -n "$p" ] && [ -e "/proc/$p" ] || return 1
+  for ((i = 0; i < 60; i++)); do
+    if fb_visible; then
+      sleep 2
+      # The daemon freezer's stale-pid guard (idle.rs signal_pidfile), same
+      # reason: never SIGSTOP a pid that is not this tile's emulator.
+      grep -q indy_4610 "/proc/$p/cmdline" 2>/dev/null || return 1
+      kill -STOP "$p" 2>/dev/null || return 1
+      date +%s >"$D/.state-unvetted"
+      echo "irix start-paused: frozen at restored '$LAUNCHED_RESTORE' (pid $p, ~0 CPU; first session wakes it)"
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
 }
 
 # The watchdog loop. Owns nothing but the MAME pidfile; it refuses to act once
@@ -703,6 +782,16 @@ livewatch() {
     if [ "$paused" = 1 ]; then
       llog "livewatch: MAME resumed — watching again"
       paused=0
+      # Start-paused: EXPOSURE of a frozen restore launch begins at its first
+      # wake, so this is where its deferred budget charge lands. The marker is
+      # one-shot — later freeze/wake cycles of the same launch charge nothing —
+      # and the pointer probe below clears the charge, exactly as it clears a
+      # charge made at launch.
+      if [ -f "$D/.state-unvetted" ]; then
+        rm -f "$D/.state-unvetted"
+        charge_state_budget
+        llog "livewatch: first wake of a start-paused restore — instant-restore budget charged"
+      fi
     fi
     sig="$(fb_sig)"
     [ -n "$sig" ] || continue
@@ -734,8 +823,10 @@ livewatch() {
       fails=0
       first_fail=0
       # A live pointer is the health signal instant-restore trusts: reopen the
-      # restore budget so a LATER relaunch may restore again.
-      rm -f "$D/.state-tries"
+      # restore budget so a LATER relaunch may restore again. The unvetted
+      # marker goes with it — if livewatch never saw the wake edge (it was in
+      # its grace sleep), the launch is hereby vetted without ever charging.
+      rm -f "$D/.state-tries" "$D/.state-unvetted"
       continue
     fi
     fails=$((fails + 1))
@@ -787,8 +878,9 @@ esac
 
 # ---- full launch -----------------------------------------------------------
 # Fresh start: never leave a second Xvfb/MAME/watchdog behind. A fresh service
-# start also gets a fresh instant-restore budget.
-rm -f "$D/.state-tries"
+# start also gets a fresh instant-restore budget (and any unconsumed
+# start-paused wake marker goes with it — it described the previous launch).
+rm -f "$D/.state-tries" "$D/.state-unvetted"
 kill_pidfile "$D/bootwatch.pid"
 kill_pidfile "$D/livewatch.pid"
 kill_pidfile "$D/mame.pid"
@@ -820,7 +912,10 @@ if [ "$CAPTURE" != shm ]; then
   }
 fi
 
-# 2) MAME/IRIX.
+# 2) MAME/IRIX. Under start-paused this launch defers its budget charge
+# (start_mame's restore arm) and is frozen at the restored state below, after
+# the watchdogs are armed.
+[ "$START_PAUSED" = on ] && FREEZE_THIS_LAUNCH=1
 start_mame || exit 1
 
 # 3) Boot watchdog — a new generation token invalidates any older watchdog.
@@ -834,3 +929,20 @@ echo "$!" >"$D/bootwatch.pid"
 wlog "launch: livewatch armed (grace=${LIVE_GRACE}s interval=${LIVE_INTERVAL}s static=$LIVE_STATIC_HITS fails=$LIVE_PROBE_FAILS attempts=$LIVE_ATTEMPTS) — log: $LLOG"
 nohup bash "$0" --livewatch >>"$LLOG" 2>&1 </dev/null &
 echo "$!" >"$D/livewatch.pid"
+
+# 5) True start-paused: freeze at the restored state, SYNCHRONOUSLY — this
+# script runs under ExecStartPre, so the daemon is not serving yet and no
+# session can connect between the restore and the SIGSTOP (the one race worth
+# fearing: idle.rs only heals a pause IT created, so a guest frozen under a
+# live session would stay frozen until the next session). If the freeze fails,
+# the guest is left RUNNING and therefore exposed: charge the budget now,
+# exactly as a non-paused restore launch charges at launch, and let the armed
+# watchdogs own whatever is wrong (a never-visible frame is bootwatch's black
+# screen). A cold-boot fallback never freezes here — it must boot.
+if [ "$START_PAUSED" = on ] && [ -n "$LAUNCHED_RESTORE" ]; then
+  if ! freeze_at_state; then
+    charge_state_budget
+    echo "irix start-paused: no visible restored frame — left RUNNING (budget charged; watchdogs own it)" >&2
+    wlog "start-paused: freeze skipped (no visible restored frame) — guest left running, budget charged"
+  fi
+fi

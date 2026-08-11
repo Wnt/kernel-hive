@@ -74,7 +74,16 @@ export MAME_CTL_PTR_MOD=256
 # sensitivity="1"), not here.
 export MAME_CTL_MOVE_STEP=1
 export MAME_CTL_MOVE_WINDOW=8
-export MAME_CTL_SCREEN=79x52
+# QUADRATURE SENSOR (2026-08-11): the stkbd latches a DIRECTION once per 8 ms
+# period and emits one cycle — magnitude is discarded, so a pacing beat or a
+# reversal pair silently loses counts (measured: 5.6 counts adrift after a
+# 5 s fast circle while the ikbd's value latch was exact; a consumed-value
+# flow gate was tried first and made it WORSE, 12.8 counts). With the phase
+# items named, the module's belief integrates EMITTED cycles — the ground
+# truth of what the guest receives — and a settle corrector re-issues
+# whatever merged away once the pipe has been quiet for three windows.
+export MAME_CTL_QUAD_ITEMS="m_mouse_px,m_mouse_py,m_mouse_pc"
+export MAME_CTL_SCREEN=81x52
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
 
