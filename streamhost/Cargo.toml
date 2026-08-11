@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["streamhost"]
+members = ["streamhost", "devwatch"]
 
 # Member-level profiles are ignored by cargo; the release profile lives here.
 [profile.release]

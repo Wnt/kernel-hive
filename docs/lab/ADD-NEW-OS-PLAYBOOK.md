@@ -585,17 +585,17 @@ pushes to `main`. The generated surfaces and their actual inputs are:
 
 | Generated artifact (do not hand-edit) | Registry fields used |
 |---|---|
-| `streamhost/tiles-manifest.sh` | Production rows ordered by `render.tilesManifestOrder`; `render.tilesManifestPrelude` and `render.tilesManifestInvocation`, with the invocation validated against `tileDir` and `runtime.qemu.emitArgs`. |
+| `streamhost/tiles-manifest.sh` | Production rows ordered by `render.tilesManifestOrder`; `render.tilesManifestPrelude` plus the emit invocation rendered from `tileDir` and `runtime.qemu.emitArgs` (`runtime.x11.emitArgs` for x11 tiles). |
 | `streamhost/bring-up-all.sh` | Production `tileDir` values grouped by `render.bringUpGroup` and ordered by `runtime.bringUpOrder`. |
-| `scripts/build-guests/build-all.sh` | `build.rows` entries (`order`, rendered `line`/`prelude`, typed `value`, and optional `defaultOrder`) plus shared rows in `registry/registry-v1.json`. |
+| `scripts/build-guests/build-all.sh` | `build.rows` entries (`order`, `prelude`, typed `value`, and optional `defaultOrder`) rendered as aligned manifest lines, plus shared rows in `registry/registry-v1.json`. |
 | `scripts/serve/tiles.json` | Every streamhost row's `id`, `stream.udpPort`, `tileDir`-derived certificate-hash path, and `render.signalOrder`. |
 | `scripts/serve/golden-manifest.json` | Production `id` and `reset`, ordered by `render.goldenOrder`. |
 | `scripts/tools/gallery-action-map.json` | `operator.actionMap`, ordered by `render.actionMapOrder`. |
-| `spa/src/three/archetypeRegistry.ts` | `id` and `spa`, represented by the validated `render.bindingLine`/`bindingPrelude` and ordered by `render.bindingOrder`. |
+| `spa/src/three/archetypeRegistry.ts` | `id` and `spa`, rendered as an OS binding line (`render.bindingPrelude` kept, optional `render.bindingComment` appended) and ordered by `render.bindingOrder`. |
 | `spa/src/mock/manifest.json` | `museum` for entries that have `render.mockManifestOrder`. |
-| `spa/src/data/museumCatalog.ts` | `museum`, represented by the validated `render.museumBlock`/`museumPrelude` and ordered by `render.museumOrder`. |
-| `spa/src/data/catalog.ts` | The `museum` catalog subset (`accent`, `era`, `eraSoftware`, `periodBrowser`, `iconicApps`, and `blurb`), represented by the validated `render.catalogBlock`/`catalogPrelude` and ordered by `render.catalogOrder`. |
-| `registry/index.json` | The aggregate of every entry, excluding generator-only `render` data. |
+| `spa/src/data/posterIndex.ts` | Poster existence + hero path per `registry/posters/<id>.md` (the prose ships separately at runtime). |
+| `scripts/serve/webroot/poster-docs.json` | The full poster documents compiled from `registry/posters/*.md`, fetched by the SPA at runtime. |
+| `registry/index.json` | The aggregate of every entry — `runtime.tileEnv` merged with the tile's `tile.env.fixture` — excluding generator-only `render` data. |
 | `registry/generated/labctl-declarations.json` | Streamhost `tileDir` plus the declared keys in `operator.labctl`. Live observed golden state is intentionally excluded. |
 
 Use this table as an exhaustive audit of the JSON entry, not as an edit list for
@@ -604,23 +604,25 @@ reviewing one entry's principal derived values.
 
 ### 6.0 Writing the entry: rendered blocks and visitor-facing fields
 
-- `render.museumBlock`, `render.catalogBlock` and `render.bindingLine` are
-  **pre-rendered strings** validated against the entry's `museum`/`spa` source
-  fields. Editing one side without the other fails
-  `python3 scripts/tiles-registry.py validate`. Change the source field, then
-  regenerate.
+- The OS binding line, emit invocation, and build-manifest rows are **rendered
+  from the typed fields** (`spa`, `runtime.*.emitArgs`, `build.rows[].value`) —
+  there is no pre-rendered string twin to keep in sync. Edit the typed field,
+  then regenerate.
+- A key defined in the tile's `tile.env.fixture` must NOT also appear in
+  `runtime.tileEnv` — the fixture is the single source for its keys and
+  `validate` fails on the overlap. The generator merges the fixture into the
+  env view that `registry/index.json` and the validators see.
 - **`museum` describes the real machine, never how the gallery runs it.**
   `lineage` is a heritage — "Windows NT 3.x", "Multitech (Taiwan)" — not a
-  paragraph. `notes` is the one operator-facing field, but
-  `spa/src/data/catalog.ts` falls back to `notes` when `blurb` is absent, so a
-  tile shipped without a `blurb` leaks rig detail onto the public placard.
-  Always set `blurb`.
+  paragraph. `notes` is the one operator-facing field; `blurb` is what the
+  public placard shows, and the SPA test suite fails any manifest row without
+  one. Always set `blurb`.
 - `ramMB` cannot express a sub-megabyte machine. Use `ramKB` (the MPF-II has
   64 KB); both are accepted by the schema and the museum renderer.
 
 ### 6.1 Build registry
 
-- `registry/tiles/<osId>.json`: add the typed and rendered `build.rows` entry;
+- `registry/tiles/<osId>.json`: add the typed `build.rows` entry;
   use its `order` and optional `defaultOrder` for the manifest/default sequence.
   Gate licensed media with class `licensed`; gate account media with the
   `media` flag. Regeneration writes `build-all.sh`.

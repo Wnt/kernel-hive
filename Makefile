@@ -1,9 +1,14 @@
 .PHONY: tile-registry-generate tile-registry-check tile-registry-validate \
 	gallery-manifest-check check-file-size check-generated-drift quality-gate \
-	poster-gallery-fetch poster-gallery-verify
+	poster-gallery-fetch poster-gallery-verify devwatch
 
 tile-registry-generate:
 	python3 scripts/tiles-registry.py generate
+
+# Watch the hand-written registry sources; regenerate + publish runtime
+# manifests to the box whenever a save validates (see registry/README.md).
+devwatch:
+	cargo run --manifest-path streamhost/Cargo.toml -p devwatch --release --
 
 tile-registry-check:
 	python3 scripts/tiles-registry.py --check

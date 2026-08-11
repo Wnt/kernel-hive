@@ -73,12 +73,24 @@ against live env/launcher facts, and then adds only its read-only golden-snapsho
 probe. Observed service/socket/snapshot state remains owned by `labctl gen` and
 is not written back into this registry.
 
-The `render` keys preserve the old files' byte layout during this migration.
-Validation parses those legacy Bash/TypeScript rows and rejects disagreement
-with the typed fields. New entries may use the default renderers once the
-legacy formatting shims are normalized in a later, separately reviewed change.
-Verbatim QEMU launchers remain authoritative device ledgers and are referenced,
-never rewritten, by this generator.
+The rendered artifacts (OS binding lines, emit invocations, build-manifest
+rows) are serialized from the typed fields; the legacy pre-rendered `render.*`
+string mirrors were removed once semantic parity was proven, so `render` now
+carries only ordering, preludes, and comments. A tile's `tile.env.fixture` is
+the single source for the env keys it defines — the generator merges it into
+the env view the validators and `registry/index.json` see, and validation fails
+any key that appears in both places. Verbatim QEMU launchers remain
+authoritative device ledgers and are referenced, never rewritten, by this
+generator.
+
+For a live-edit loop, `devwatch` (Rust, `streamhost/devwatch`) watches the
+hand-written sources, runs `generate` on every save, and — only when the change
+validates — publishes the runtime manifests (gallery manifest, poster docs) to
+the box via `scripts/serve-https-spa.sh manifests`:
+
+```bash
+make devwatch          # deploys need registry/local.env; --help for flags
+```
 
 For an ordinary new OS, author one registry entry, its builder, and its guest
 documentation; add a bespoke launcher only when the generic runtime is not

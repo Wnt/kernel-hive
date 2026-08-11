@@ -208,8 +208,8 @@ whichever line sorts last. Also: the `_note` strings carry a hand-typed count
 tiles map twelve lines below*. Recompute it; do not pick a side.
 
 **Generated files — regenerate, never merge.** `registry/index.json`,
-`scripts/serve/webroot/gallery-manifest.json`, `spa/src/data/museumCatalog.ts`
-and 14 others are outputs. Edit `registry/tiles/<tile>.json`, run
+`scripts/serve/webroot/gallery-manifest.json`, `spa/src/three/archetypeRegistry.ts`
+and the rest are outputs. Edit `registry/tiles/<tile>.json`, run
 `make tile-registry-generate`, and let `make tile-registry-check` be the proof.
 Hand-resolving one of these is always wrong, even when it merges cleanly.
 
