@@ -160,17 +160,57 @@ def load(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
-def cmd_publish(serve: Path, rig: Path) -> int:
+def write_declaration(serve: Path, tiles: dict) -> None:
+    """(Re)write the darklaunch declaration from the rows ACTUALLY overlaid.
+
+    The declaration must name exactly what is deployed — a superset is a lie
+    the gate cannot catch, and an empty one is a stale claim it can. Derived
+    from tiles.json after every publish/withdraw, never from ARMS: an
+    abandoned arm (arm A, 2026-08-11) stays out the moment its row is gone.
+    """
+    decl_path = darklaunch_path(serve)
+    present = sorted(ARM_IDS & set(tiles))
+    if not present:
+        decl_path.unlink(missing_ok=True)
+        print(f"removed {decl_path}")
+        return
+    decl_path.parent.mkdir(parents=True, exist_ok=True)
+    decl = {
+        "darklaunch": DARKLAUNCH_NAME,
+        "owner": str(Path(__file__).resolve()),
+        "note": "de-bridging spike arms ("
+        + ", ".join(f"/os/{a}" for a in present)
+        + "); revert with: gallery-arms.py withdraw",
+        "files": {
+            str(serve / "tiles.json"): {"kind": "json-object-keys", "ids": present},
+            str(serve / "webroot" / "gallery-manifest.json"): {"kind": "json-entries", "ids": present},
+        },
+    }
+    write_json(decl_path, decl, 2)
+    print(f"declared darklaunch: {decl_path} ids={present}")
+
+
+def select_arms(ids: list[str]) -> list[dict]:
+    if not ids:
+        return list(ARMS)
+    bad = set(ids) - ARM_IDS
+    if bad:
+        sys.exit(f"unknown arm id(s): {sorted(bad)} — known: {sorted(ARM_IDS)}")
+    return [arm for arm in ARMS if arm["id"] in ids]
+
+
+def cmd_publish(serve: Path, rig: Path, ids: list[str]) -> int:
     tiles_path = serve / "tiles.json"
     manifest_path = serve / "webroot" / "gallery-manifest.json"
     tiles = load(tiles_path)
     manifest = load(manifest_path)
+    selected = select_arms(ids)
 
     rows = {}
-    for arm in ARMS:
+    for arm in selected:
         rows[arm["id"]] = read_signaling(rig / arm["dir"], arm)
 
-    for arm in ARMS:
+    for arm in selected:
         tiles[arm["id"]] = rows[arm["id"]]
         entry = manifest_entry(arm)
         manifest["entries"] = [e for e in manifest["entries"] if e.get("id") != arm["id"]]
@@ -180,60 +220,46 @@ def cmd_publish(serve: Path, rig: Path) -> int:
     write_json(tiles_path, tiles, 2)
     write_json(manifest_path, manifest, 2)
 
+    # The side-by-side page only makes sense while EVERY arm is published.
     page_src = Path(__file__).resolve().parent / "compare.html"
     page_dst = serve / "webroot" / PAGE_NAME
-    if page_src.is_file():
-        shutil.copyfile(page_src, page_dst)
-    else:
-        print(f"warning: {page_src} absent — compare page not installed", file=sys.stderr)
+    if set(tiles) >= ARM_IDS:
+        if page_src.is_file():
+            shutil.copyfile(page_src, page_dst)
+        else:
+            print(f"warning: {page_src} absent — compare page not installed", file=sys.stderr)
 
-    # The darklaunch declaration: the claim box-sync verifies instead of
-    # blocking on. It must name EXACTLY the rows written above — nothing else
-    # this overlay diverges by is forgiven by the gate.
-    decl_path = darklaunch_path(serve)
-    decl_path.parent.mkdir(parents=True, exist_ok=True)
-    decl = {
-        "darklaunch": DARKLAUNCH_NAME,
-        "owner": str(Path(__file__).resolve()),
-        "note": "de-bridging spike arms at /os/dbr-arma and /os/dbr-armb; revert with: gallery-arms.py withdraw",
-        "files": {
-            str(tiles_path): {"kind": "json-object-keys", "ids": sorted(ARM_IDS)},
-            str(manifest_path): {"kind": "json-entries", "ids": sorted(ARM_IDS)},
-        },
-    }
-    write_json(decl_path, decl, 2)
+    write_declaration(serve, tiles)
 
-    for arm in ARMS:
+    for arm in selected:
         print(f"published {arm['id']}: udp {rows[arm['id']]['udpPort']}  /os/{arm['id']}")
-    print(f"published {page_dst.name}")
-    print(f"declared darklaunch: {decl_path}")
     return 0
 
 
-def cmd_withdraw(serve: Path, _rig: Path) -> int:
+def cmd_withdraw(serve: Path, _rig: Path, ids: list[str]) -> int:
     tiles_path = serve / "tiles.json"
     manifest_path = serve / "webroot" / "gallery-manifest.json"
     tiles = load(tiles_path)
     manifest = load(manifest_path)
+    withdraw_ids = {arm["id"] for arm in select_arms(ids)}
 
-    removed = sorted(ARM_IDS & set(tiles))
-    for arm_id in ARM_IDS:
+    removed = sorted(withdraw_ids & set(tiles))
+    for arm_id in withdraw_ids:
         tiles.pop(arm_id, None)
     before = len(manifest["entries"])
-    manifest["entries"] = [e for e in manifest["entries"] if e.get("id") not in ARM_IDS]
+    manifest["entries"] = [e for e in manifest["entries"] if e.get("id") not in withdraw_ids]
 
     write_json(tiles_path, tiles, 2)
     write_json(manifest_path, manifest, 2)
-    page = serve / "webroot" / PAGE_NAME
-    page.unlink(missing_ok=True)
-    decl = darklaunch_path(serve)
-    decl.unlink(missing_ok=True)
+    if not (set(tiles) >= ARM_IDS):
+        page = serve / "webroot" / PAGE_NAME
+        page.unlink(missing_ok=True)
+        print(f"removed {page}")
+    write_declaration(serve, tiles)
 
     print(f"withdrew signaling rows: {removed or 'none'}")
     print(f"withdrew manifest entries: {before - len(manifest['entries'])}")
-    print(f"removed {page}")
-    print(f"removed {decl}")
-    print("the arms themselves are untouched and still running")
+    print("the arms themselves are untouched")
     return 0
 
 
@@ -258,11 +284,14 @@ def cmd_status(serve: Path, rig: Path) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=("publish", "withdraw", "status"))
+    ap.add_argument("arm", nargs="*", help="arm id(s) to act on (default: all)")
     ap.add_argument("--serve-root", default=SERVE_ROOT)
     ap.add_argument("--rig", default=RIG_ROOT)
     args = ap.parse_args()
-    handler = {"publish": cmd_publish, "withdraw": cmd_withdraw, "status": cmd_status}[args.command]
-    return handler(Path(args.serve_root), Path(args.rig))
+    if args.command == "status":
+        return cmd_status(Path(args.serve_root), Path(args.rig))
+    handler = {"publish": cmd_publish, "withdraw": cmd_withdraw}[args.command]
+    return handler(Path(args.serve_root), Path(args.rig), args.arm)
 
 
 if __name__ == "__main__":

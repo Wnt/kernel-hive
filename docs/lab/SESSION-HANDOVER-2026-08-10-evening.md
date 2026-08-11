@@ -21,11 +21,13 @@ wave) and
 | `atarist` | Stopped **and soft-hidden** so nobody opens it mid-measurement | The de-bridging spike ends |
 | `amiga` | Pre-existing, cleanly stopped at 02:12 (`ExecMainStatus=15`), **not** part of the above | Before migrating it — prove it healthy on bookworm first |
 
-**Two de-bridging spike arms are running on purpose** and must not be killed —
-they are a persistent contrast pair, expensive to rebuild:
+**One de-bridging spike arm is running on purpose** and must not be killed:
 
-- arm A `dbr-arma` — MAME Atari ST inside a bridge kiosk (tier 2), QEMU pid 1799750
-- arm B `dbr-armb` — the same binary host-native via `drawshm` (tier 3), MAME pid 1820339
+- arm B `dbr-armb` — host-native MAME ST via `drawshm` (tier 3)
+- arm A `dbr-arma` was **terminated and abandoned 2026-08-11** (operator
+  decision after the CPU verdict): QEMU down, streamhost stopped, gallery row
+  withdrawn, no longer kept in sync with binary changes. Its `armA/` files
+  stay on disk for the record.
 
 **A deliberate serve-manifest overlay is published**, exposing both arms at
 `/os/dbr-arma` and `/os/dbr-armb` while hiding them from the grid.
