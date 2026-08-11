@@ -518,7 +518,8 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_FIXTURE_DESC": "Amiga 500 (68000) Workbench 1.3 desktop in FS-UAE; Kickstart 1.3; Paula->ALSA->AC97."
+          "SH_FIXTURE_DESC": "Amiga 500 (68000) Workbench 1.3 desktop in FS-UAE; Kickstart 1.3; Paula->ALSA->AC97.",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 218,
         "qemu": {
@@ -538,6 +539,8 @@
             "0",
             "--cursor-off-y",
             "0",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -1203,7 +1206,8 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_FIXTURE_DESC": "Apple GEOS deskTop (BIGWON disk window open) in LinApple 2.3.0 on an Apple //e; speaker->ALSA->AC97."
+          "SH_FIXTURE_DESC": "Apple GEOS deskTop (BIGWON disk window open) in LinApple 2.3.0 on an Apple //e; speaker->ALSA->AC97.",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 217,
         "qemu": {
@@ -1223,6 +1227,8 @@
             "0",
             "--cursor-off-y",
             "0",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -1684,7 +1690,8 @@
           "SH_AUDIO_BITRATE": "96000",
           "SH_HASH_FILE": "/data/vms/streamhost/tiles/aros/cert_hash_b64.txt",
           "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/aros/signaling.json",
-          "SH_CERT_ROTATE_DAYS": "10"
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 110,
         "qemu": {
@@ -1698,6 +1705,8 @@
             "54110",
             "--pointer",
             "abs",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -1893,7 +1902,8 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_FIXTURE_DESC": "Atari ST EmuTOS GEM desktop (menu bar, DISK A/B, TRASH, PRINTER) in Hatari, mono ST-high; YM2149->ALSA->AC97."
+          "SH_FIXTURE_DESC": "Atari ST EmuTOS GEM desktop (menu bar, DISK A/B, TRASH, PRINTER) in Hatari, mono ST-high; YM2149->ALSA->AC97.",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 216,
         "qemu": {
@@ -1913,6 +1923,8 @@
             "0",
             "--cursor-off-y",
             "0",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -2574,7 +2586,8 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_FIXTURE_DESC": "C64 GEOS 2.0 deskTop with COMM 1351 active; browser absolute coordinates translated to tablet-free PS/2 REL (vmport=off); SID->ALSA->AC97."
+          "SH_FIXTURE_DESC": "C64 GEOS 2.0 deskTop with COMM 1351 active; browser absolute coordinates translated to tablet-free PS/2 REL (vmport=off); SID->ALSA->AC97.",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 214,
         "qemu": {
@@ -2594,6 +2607,8 @@
             "0",
             "--cursor-off-y",
             "0",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -6050,7 +6065,8 @@
           "SH_AUDIO_BITRATE": "96000",
           "SH_HASH_FILE": "/data/vms/streamhost/tiles/msdoswin1/cert_hash_b64.txt",
           "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/msdoswin1/signaling.json",
-          "SH_CERT_ROTATE_DAYS": "10"
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 113,
         "qemu": {
@@ -6066,6 +6082,8 @@
             "rel",
             "--legacy-kbd",
             "1",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -7687,7 +7705,7 @@
           "SH_WARPD_ADDR": "unix:/data/vms/streamhost/tiles/os2warp/serial.sock",
           "SH_WARPD_BUTTONS": "qemu",
           "SH_WARPD_WHEEL": "agent",
-          "SH_WARPD_PACE_MS": "8",
+          "SH_WARPD_PACE_MS": "30",
           "SH_WARPD_BUTTON_DELAY_MS": "80",
           "SH_AUDIO": "on",
           "SH_AUDIO_BITRATE": "96000",
@@ -7714,7 +7732,7 @@
             "--warpd-wheel",
             "agent",
             "--warpd-pace-ms",
-            "8",
+            "30",
             "--warpd-button-delay-ms",
             "80",
             "--audio",
@@ -8797,7 +8815,8 @@
           "SH_AUDIO_BITRATE": "96000",
           "SH_HASH_FILE": "/data/vms/streamhost/tiles/qnx/cert_hash_b64.txt",
           "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/qnx/signaling.json",
-          "SH_CERT_ROTATE_DAYS": "10"
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 112,
         "qemu": {
@@ -8811,6 +8830,8 @@
             "54112",
             "--pointer",
             "rel",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -9024,7 +9045,8 @@
           "GOLDEN_RESET_MODE": "loadvm",
           "GOLDEN_SNAPSHOT": "golden",
           "GOLDEN_SNAPSHOT_STORE": "/data/gallery-guests/ReactOS/reactos-golden.qcow2",
-          "GOLDEN_MANIFEST": "/data/gallery-guests/ReactOS/golden-manifest.json"
+          "GOLDEN_MANIFEST": "/data/gallery-guests/ReactOS/golden-manifest.json",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 106,
         "qemu": {
@@ -9038,6 +9060,8 @@
             "4433",
             "--pointer",
             "abs",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -10930,7 +10954,8 @@
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
           "SH_GOLDEN_STATE_DISK": "/data/vms/streamhost/tiles/templeos/state.qcow2",
-          "SH_FIXTURE_DESC": "clean-templeos-holyc-prompt"
+          "SH_FIXTURE_DESC": "clean-templeos-holyc-prompt",
+          "SH_WARPD_PACE_MS": "30"
         },
         "vmidLabel": 105,
         "qemu": {
@@ -10946,6 +10971,8 @@
             "warpd",
             "--warpd-addr",
             "unix:/data/vms/streamhost/tiles/templeos/serial.sock",
+            "--warpd-pace-ms",
+            "30",
             "--audio",
             "off",
             "--fps",
@@ -12660,7 +12687,7 @@
           "SH_POINTER": "warpd",
           "SH_WARPD_ADDR": "unix:/data/vms/streamhost/tiles/win311/serial.sock",
           "SH_WARPD_BUTTONS": "qemu",
-          "SH_WARPD_PACE_MS": "8",
+          "SH_WARPD_PACE_MS": "30",
           "SH_WARPD_BUTTON_DELAY_MS": "80",
           "SH_AUDIO": "on",
           "SH_AUDIO_BITRATE": "96000",
@@ -12688,7 +12715,7 @@
             "--warpd-buttons",
             "qemu",
             "--warpd-pace-ms",
-            "8",
+            "30",
             "--warpd-button-delay-ms",
             "80",
             "--audio",
@@ -12909,7 +12936,8 @@
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
           "SH_GOLDEN_DISK": "win95-golden.qcow2",
-          "SH_GOLDEN_MANIFEST": "tiles/win95/golden.json"
+          "SH_GOLDEN_MANIFEST": "tiles/win95/golden.json",
+          "SH_WARPD_PACE_MS": "30"
         },
         "vmidLabel": 91,
         "qemu": {
@@ -12927,6 +12955,8 @@
             "127.0.0.1:57791",
             "--warpd-buttons",
             "qemu",
+            "--warpd-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -13140,7 +13170,8 @@
           "SH_AUDIO_BITRATE": "96000",
           "SH_HASH_FILE": "/data/vms/streamhost/tiles/win98se/cert_hash_b64.txt",
           "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win98se/signaling.json",
-          "SH_CERT_ROTATE_DAYS": "10"
+          "SH_CERT_ROTATE_DAYS": "10",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 92,
         "qemu": {
@@ -13154,6 +13185,8 @@
             "54092",
             "--pointer",
             "abs",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",
@@ -13379,7 +13412,8 @@
           "SH_CERT_ROTATE_DAYS": "10",
           "SH_RESET_MODE": "loadvm",
           "SH_GOLDEN_SNAPSHOT": "golden",
-          "SH_GOLDEN_DISKS": "winxp-golden.qcow2"
+          "SH_GOLDEN_DISKS": "winxp-golden.qcow2",
+          "SH_ABS_PACE_MS": "30"
         },
         "vmidLabel": 94,
         "qemu": {
@@ -13393,6 +13427,8 @@
             "54094",
             "--pointer",
             "abs",
+            "--abs-pace-ms",
+            "30",
             "--audio",
             "on",
             "--fps",

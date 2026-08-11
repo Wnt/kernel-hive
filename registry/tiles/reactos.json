@@ -70,7 +70,7 @@
     "signalOrder": 0,
     "tilesManifestOrder": 2,
     "tilesManifestPrelude": "\n# reactos (VMID 106) — NT-era LiveCD + golden fixture. UDP 4433. VERBATIM\n#   LAUNCHER: boots the LiveCD (-boot d) with reactos-golden.qcow2 attached\n#   solely to hold the savevm 'golden' snapshot (no -snapshot, no floppy —\n#   matches the baked device set). Golden store canonical at\n#   /data/gallery-guests/ReactOS/ (old /data/reactos-golden whitelisted).\n",
-    "tilesManifestInvocation": "emit reactos \\\n  --tile reactos --vmid 106 --udp 4433 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/reactos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/reactos/tile.env.fixture\"\n",
+    "tilesManifestInvocation": "emit reactos \\\n  --tile reactos --vmid 106 --udp 4433 --pointer abs --abs-pace-ms 30 --audio on --fps 30 \\\n  --launcher-file \"$T/reactos/qemu-streamhost.sh\" \\\n  --env-append-file \"$T/reactos/tile.env.fixture\"\n",
     "bringUpGroup": 0,
     "bindingOrder": 20,
     "bindingPrelude": "",
@@ -123,7 +123,8 @@
       "GOLDEN_RESET_MODE": "loadvm",
       "GOLDEN_SNAPSHOT": "golden",
       "GOLDEN_SNAPSHOT_STORE": "/data/gallery-guests/ReactOS/reactos-golden.qcow2",
-      "GOLDEN_MANIFEST": "/data/gallery-guests/ReactOS/golden-manifest.json"
+      "GOLDEN_MANIFEST": "/data/gallery-guests/ReactOS/golden-manifest.json",
+      "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 106,
     "qemu": {
@@ -137,6 +138,8 @@
         "4433",
         "--pointer",
         "abs",
+        "--abs-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",

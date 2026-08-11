@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,2921 @@
+@@ -0,0 +1,2955 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -1320,6 +1320,14 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			m_bx = clamp_px_x(m_bx + long(std::llround(double(dx) * m_gx)));
 +			m_by = clamp_px_y(m_by + long(std::llround(double(dy) * m_gy)));
 +		}
++		else
++		{
++			// belief moves at EMISSION (quad_sample); until then the issued
++			// counts are in flight, and every position statement must add
++			// them or a 60 Hz restate re-issues what is already coming.
++			m_pend_x += dx;
++			m_pend_y += dy;
++		}
 +		m_last_issue = emu_now();
 +		// The un-landed ledger is fed HERE, not from the MOVEA step: this is
 +		// the one choke point every count passes through, whoever issued it.
@@ -1414,24 +1422,47 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		long const px = long(m_qd_px.read());
 +		long const py = long(m_qd_py.read());
 +		if (px == 1)
++		{
 +			m_bx = clamp_px_x(m_bx + 1);
++			m_pend_x -= 1;
++		}
 +		else if (px == 2)
++		{
 +			m_bx = clamp_px_x(m_bx - 1);
++			m_pend_x += 1;
++		}
 +		if (py == 1)
++		{
 +			m_by = clamp_px_y(m_by + 1);
++			m_pend_y -= 1;
++		}
 +		else if (py == 2)
++		{
 +			m_by = clamp_px_y(m_by - 1);
-+		// Settle corrector: queues empty, nothing issued for three windows
-+		// (so every issued count has been emitted and counted), and the
-+		// belief still disagrees with the last stated target -- the
-+		// difference is exactly what merged away; re-issue it.
++			m_pend_y += 1;
++		}
++		double const quiet = emu_now() - m_last_issue;
++		// After three quiet windows every issued count has had its emission
++		// chance; whatever pend still carries is the CONFIRMED merge loss.
++		if (quiet >= 3.0 * m_move_window)
++		{
++			m_pend_x = 0;
++			m_pend_y = 0;
++		}
++		// Settle corrector: nothing in flight anywhere -- queues empty and
++		// pend drained or decayed -- and the belief still disagrees with
++		// the last stated target: the difference is what merged away.
 +		if (!m_movea_ok && m_fl_valid && m_mq.empty() && m_aq.empty()
-+				&& (emu_now() - m_last_issue) >= 3.0 * m_move_window)
++				&& m_pend_x == 0 && m_pend_y == 0
++				&& quiet >= 3.0 * m_move_window)
 +		{
 +			long const rx = m_flx - m_bx;
 +			long const ry = m_fly - m_by;
 +			if (rx != 0 || ry != 0)
++			{
++				++m_corr;
 +				move_paced_travel(rx, ry);
++			}
 +		}
 +	}
 +
@@ -1759,7 +1790,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +					else
 +						++it;
 +				}
-+				long px = m_bx, py = m_by;
++				long px = clamp_px_x(m_bx + m_pend_x), py = clamp_px_y(m_by + m_pend_y);
 +				for (move_entry const &e : m_mq)
 +				{
 +					px = clamp_px_x(px + e.x);
@@ -2804,7 +2835,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		std::string s = util::string_format(
 +				"ver=1 paused=%d mtime=%.3f frames=%s ticks=%s conns=%d accepts=%s "
 +				"cmds=%s filecmds=%s errs=%s movep=%s move=%s movea=%s key=%s post=%s "
-+				"applied=%s,%s skipped=%s,%s mq=%d kq=%d aq=%d clickq=%d tgt=%s res=%d,%d giveups=%s "
++				"applied=%s,%s skipped=%s,%s pend=%d,%d corr=%s mq=%d kq=%d aq=%d clickq=%d tgt=%s res=%d,%d giveups=%s "
 +				"movea_mode=%s reseeds=%s last_in_ms=%d bel=%d,%d bias=%d,%d gain=%.2f,%.2f",
 +				m_machine.paused() ? 1 : 0, emu_now(),
 +				std::to_string(m_frames), std::to_string(m_ticks),
@@ -2814,6 +2845,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				std::to_string(m_c_movea), std::to_string(m_c_key), std::to_string(m_c_post),
 +				std::to_string(m_cum_ax), std::to_string(m_cum_ay),
 +				std::to_string(m_cum_skx), std::to_string(m_cum_sky),
++				int(m_pend_x), int(m_pend_y), std::to_string(m_corr),
 +				int(m_mq.size()), int(m_kq.size()), int(m_aq.size()), int(m_clickq.size()),
 +				m_ta_active ? util::string_format("%d,%d", int(m_ta.x), int(m_ta.y)) : std::string("-"),
 +				int(m_res_x), int(m_res_y), std::to_string(m_giveups),
@@ -2969,6 +3001,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	bool m_quad_active = false;
 +	long m_qd_prev_pc = -1;
 +	double m_last_issue = -1.0;              // emu time of the last issued count
++	long m_pend_x = 0, m_pend_y = 0;         // issued, not yet emission-counted
++	u64 m_corr = 0;                          // settle-corrector re-issues, cumulative
 +	bool m_fl_valid = false;
 +	bool m_fb_logged = false;
 +	long m_res_x = 0, m_res_y = 0;
