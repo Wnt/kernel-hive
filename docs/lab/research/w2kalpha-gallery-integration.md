@@ -31,6 +31,17 @@ snapshot, unaffected.
 
 ## REMAINING
 
+> **UPDATE 2026-08-11 (later the same day): items 2 and 3 are DONE — the tile
+> is REGISTERED and LIVE** as the 60th production exhibit (slot 140, udp
+> 54140, `streamhost@w2kalpha` active; ticket/framebuffer/reset verified;
+> repo `main` 97ce80b+4d79d21, docs/guests/w2kalpha.md is now the canonical
+> tile doc). Item 1 (golden polish) was deferred by the operator and is the
+> only remainder — until it lands, EVERY cold boot (so every reset) shows the
+> Active Desktop Recovery page (observed 3/3 that day), and the pointer stays
+> open-loop-inexact. The keyboard-only fix sequence is proven and recorded in
+> docs/guests/w2kalpha.md §Golden. Also learned: es40's ctlsock is
+> single-client — with the daemon attached, direct socket probes time out.
+
 1. **Golden guest polish, then re-capture.** On a cold-booted golden, over the
    working socket keyboard (or a VNC to a windowed run):
    - **Turn OFF Active Desktop** — it intermittently drops to "Active Desktop
