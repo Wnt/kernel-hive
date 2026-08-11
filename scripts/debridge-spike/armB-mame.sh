@@ -73,7 +73,7 @@ export MAME_CTL_PTR_MOD=256
 # It is fixed in MAME's own input configuration (armA-ptr-cfg.py: reverse="yes"
 # sensitivity="1"), not here.
 export MAME_CTL_MOVE_STEP=1
-export MAME_CTL_MOVE_WINDOW=2
+export MAME_CTL_MOVE_WINDOW=4
 # QUADRATURE SENSOR (2026-08-11): the stkbd latches a DIRECTION once per 8 ms
 # period and emits one cycle — magnitude is discarded, so a pacing beat or a
 # reversal pair silently loses counts (measured: 5.6 counts adrift after a
@@ -84,12 +84,14 @@ export MAME_CTL_MOVE_WINDOW=2
 # whatever merged away once the pipe has been quiet for three windows.
 export MAME_CTL_QUAD_ITEMS="m_mouse_px,m_mouse_py,m_mouse_pc"
 # FAST MOUSE (2026-08-11): mame-st-fastmouse.patch makes the stkbd quadrature
-# tick env-tunable. 2000 Hz = 2 ms periods = 500 counts/s — a real ST mouse
-# (200 counts/inch) delivers far more on a flick, so this is still
-# conservative against the metal, and 2 ms periods stay observable by the
-# module's 1 kHz quadrature sampler. MOVE_WINDOW drops to 2 to match: still
-# exactly one issued count per device period.
-export MAME_ST_MOUSE_HZ=2000
+# tick env-tunable. 1000 Hz = 4 ms periods = 250 counts/s, twice stock — and
+# still conservative against a real ST mouse (200 counts/inch). 1000 is the
+# measured fidelity ceiling: at 2000 the emulated 6301 firmware drops a
+# couple of counts per burst BELOW the module's emission sensor (constant
+# +2-count Y skew the settle corrector cannot see), while at 1000 every
+# fixture lands within 0.9 counts. MOVE_WINDOW=4 matches: exactly one issued
+# count per device period.
+export MAME_ST_MOUSE_HZ=1000
 export MAME_CTL_SCREEN=81x52
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
