@@ -202,6 +202,50 @@ across iterations so A/Bs stay valid; clean up when re-baking).
 Computer Management launch = 28.28 / 23.03 / 23.62 s (mean 25.0 s).
 The 2× goal: ≤ 12.5 s under the identical protocol.**
 
+## Gallery integration (2026-08-11, operator directive)
+
+Directive: wire w2kalpha into the gallery, remove the X11 wrapper (direct
+capture, MAME-IRIX style), and raise the guest to 1280x1024.
+
+**DONE + VERIFIED:**
+- **Resolution 1280x1024 / High Color 16-bit** set in the guest (Display
+  Properties; the S3's 4MB VRAM caps 32-bit here, so W2K auto-selected
+  16-bit). Persisted in the guest registry; survives cold boot.
+- **Direct shm capture, no X11** — fork `66c5b2f`: es40 publishes its S3
+  framebuffer to a POSIX-mmap file in the streamhost IFB1 format
+  (`src/gui/shmfb.h`), gated on `ES40_SHM_PATH`; `dimension_update`
+  skips all SDL window calls in that mode so es40 runs under
+  `SDL_VIDEODRIVER=dummy` with NO X server and NO window. Verified two
+  ways: (1) pixel-exact 1280x1024 desktop read from shm vs the SDL window;
+  (2) fully headless (no DISPLAY, dummy driver) cold boot AND instant-
+  resume from the golden, both publishing correct frames. Reader:
+  `uibench/shmread.py`.
+- **New golden `milestones/m5-1280/`** {nt.img, autosave.axp, flash.rom,
+  es40.cfg} baked at 1280x1024 via menu-5 save-and-exit. Headless
+  `ES40_RESTORE` from it → 1280x1024 desktop in shm in seconds.
+
+**REMAINING — the input socket (clearly scoped, NO streamhost changes):**
+es40 needs a unix-socket input server speaking mamectl/1 so the existing
+streamhost `mamesock` backend drives it (as it drives IRIX). Verified
+viable: the streamhost KEY verb carries (port, field-NAME), and the 104
+field-names are UNIQUE (an earlier worry about Newport-matrix collisions
+was wrong — checked), so es40 maps each field name → BX_KEY and injects via
+`theKeyboard->gen_scancode`. Design:
+- `src/gui/ctlsock.h`: listen on `ES40_CTL_SOCK`, accept one client, send
+  `HELLO mamectl/1 1 w2kalpha caps=natkbd,savest screen=1280x1024`, poll
+  from `handle_events()` (non-blocking), ack every verb `<seq> OK`.
+- Keyboard: field-name → BX_KEY table (104 entries), gen_scancode make/break.
+- Pointer: `MOVEA x y` absolute via CLOSED-LOOP homing on the S3 hardware
+  cursor (`s3.cursor_x/cursor_y` exist) — emit corrective PS/2 deltas via
+  `mouse_motion` until the S3 cursor reaches the target; this is the
+  standard fix for the guest's 2x PS/2 acceleration (no open-loop drift).
+  `DOWN1/UP1..DOWN3/UP3` → button state. Mirrors streamhost `mame_sock.rs`.
+Then the gallery tile: scaffold `scripts/tiles-registry.py new w2kalpha
+--tier 3`, tile dir mirroring `tiles/irix` (SH_CAPTURE=shm, SH_SHM_PATH,
+SH_INPUT_BACKEND=mamesock, SH_MAMECTL_SOCK, SH_RESET_MODE via ES40_RESTORE
+from m5-1280), launch script runs es40 headless. Keep DISABLED until
+framebuffer+input+reset pass (playbook gate).
+
 ## Still queued
 
 - **Guest telnet channel** (operator): dec21143 networking + W2K Telnet
