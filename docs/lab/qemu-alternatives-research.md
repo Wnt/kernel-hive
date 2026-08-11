@@ -83,7 +83,7 @@ add. Top picks by appeal × maturity × low effort:
 1. **Classic Mac OS 9 / System 7** — SheepShaver (PPC) + Basilisk II (68k),
    actively maintained SDL apps. The biggest gap on the roster (we have modern
    macOS and the 8-bit machines, but not the iconic 1990s Mac). ★★★★★, LOW.
-2. **NeXTSTEP / OPENSTEP** — Previous (built on Hatari, which the bridge base
+2. **NeXTSTEP / OPENSTEP** — Previous (built on Hatari, which the bridge seed
    already carries). Arguably the highest story value in computing history.
    ★★★★★, LOW–MED.
 3. **SGI IRIX 6.5** — MAME `indy_4610`; boots the teal 4Dwm desktop in ~45 s.

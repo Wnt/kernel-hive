@@ -24,7 +24,7 @@ kiosk `launch.sh` + framebuffer checks + keyboard proof + checkpoint cold-restor
 - **Amstrad CPC ROMs** (Locomotive BASIC + firmware, ~48 KB) — **redistributable
   by Amstrad's granted permission** (Cliff Lawson, on behalf of Amstrad/Sky).
   **Keep the UNALTERED Amstrad copyright string** on screen to stay within the
-  permission. The ROM set ships bundled with cap32 in the bridge base.
+  permission. The ROM set ships bundled with cap32 in the bridge seed.
 - No proprietary media beyond the bundled ROMs is required — the machine boots
   straight to BASIC with no disk.
 
@@ -95,7 +95,7 @@ then `RUN`, and visibly renders `HELLO` in the CPC framebuffer.
 
 ## LIVE status (2026-07-27)
 - Production/enabled streamhost station, VMID 219, UDP 54119, slot 119.
-- Thin `overlay.qcow2` on the frozen bridge base, with an internal `golden`
+- Thin `overlay.qcow2` on the frozen bridge seed, with an internal `golden`
   snapshot of the colour `Ready` prompt.
 - A cold QEMU start with the tracked device set and `-loadvm golden` returns to
   `Ready`; `labctl reset amstradcpc` uses the same snapshot.

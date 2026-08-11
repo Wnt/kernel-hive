@@ -35,7 +35,7 @@ That inversion is the exhibit.
 |---|---|
 | Public ID / station directory | `armeval` |
 | Emulator | MAME **0.289**, driver `bbcb` **with `-tube arm`** — the *same* purpose-built binary the `bbcmicro` station ships (`/data/vms/streamhost/assets/bbcmicro/mame/bbcb`), unmodified, carrying `mame-skip-warnings.patch` |
-| Guest | Debian 13 (trixie) X kiosk on a thin overlay of the trixie bridge base, 768 MB, 2 vCPU |
+| Guest | Debian 13 (trixie) X kiosk on a thin overlay of the trixie bridge seed, 768 MB, 2 vCPU |
 | X root | 800x600 (an emulation-**speed** choice inherited from `bbcmicro`, not a picture one) |
 | Builder | `scripts/build-guests/armeval.sh` |
 | Reset | internal qcow2 `golden` snapshot, `resetMode=loadvm` |
@@ -74,7 +74,7 @@ them:
 
 Paths differ from angle A's clone, which ran out of the `bbcmicro` station's
 `/opt/bbcmicro` tree because it was cloned from it. A station built fresh on the
-bridge base has no `/opt/bbcmicro`, so everything here lives under
+bridge seed has no `/opt/bbcmicro`, so everything here lives under
 `/opt/armeval`. Nothing else about the invocation changed.
 
 ### `bbcb -tube arm`, not the `bbcmarm` driver

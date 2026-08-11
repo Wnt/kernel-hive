@@ -1,7 +1,7 @@
 # Bridge guest base: bookworm → trixie, one tile at a time
 
 The lab **host** finished bookworm → trixie on 2026-07-15 and now runs Debian
-13.6. The **guests** did not come with it. The shared emulator-bridge base
+13.6. The **guests** did not come with it. The shared emulator-bridge seed
 `/data/vms/bridge/bridge-base.qcow2` is still Debian 12 (bookworm, glibc 2.36),
 and **18 tile overlays back onto it read-only** (28 before waves 1 and 4). That is the
 whole problem in one sentence: the base is not a package set you upgrade, it is

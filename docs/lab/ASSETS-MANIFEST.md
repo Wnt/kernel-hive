@@ -12,7 +12,7 @@ presence + sha256 of the required staged set and prints a missing-list;
 **The bits now have a permanent home.** `/data/media-archive` (ZFS dataset
 `data/media-archive`, 150 G quota) is a content-addressed, **never-evicting**
 archive of every external build input we could reach — created 2026-08-10 with
-131 blobs / 15.8 G, including the media baked inside both bridge bases. This
+131 blobs / 15.8 G, including the media baked inside both bridge seeds. This
 manifest remains the **index of record** (licence class, provenance, the
 reasoning about redistribution); the archive holds bytes and cross-references
 back here by sha256. Being archived is **not** permission to redistribute:
@@ -24,7 +24,7 @@ the classes below still govern.
   replaces the `curl … || true` pattern, which let a media-less build report
   success.
 - `scripts/build-guests/check-media-archive.sh` — verifies every blob against
-  its own hash, **and the media inside the two frozen bridge bases** (which
+  its own hash, **and the media inside the two frozen bridge seeds** (which
   nothing checked before), read-only. `--manifest` cross-references this file.
 - `/data/media-archive/NOT-POPULATED.md` — what could *not* be archived. That
   list is the set of things this lab would lose today.
@@ -33,7 +33,7 @@ the classes below still govern.
 extended on this date to cover the bridge fleet's external inputs — the DEC media
 (decos, pdp11), the five atarist app archives, the c128 CP/M disk, the apple2 GEOS
 media, the derived indyr4400 asset drive, and a new **`base-media`** class for the
-four blobs captured into the frozen bridge base. Some stations still have **no row on
+four blobs captured into the frozen bridge seed. Some stations still have **no row on
 purpose**, and that is the honest answer rather than a gap: the six VICE tiles
 (c64, vic20, plus4, pet2001, cbm8032, cbm2) and gt40 consume **no external media
 whatsoever**, and alto's disk packs ship inside the pinned ContrAlto2 git tree. A
@@ -61,7 +61,7 @@ License classes:
   archive. Provenance and a locally measured hash are recorded, but the bits
   stay private on labhost because redistribution terms are unclear.
 - **base-media** — media that is not staged anywhere, because it is BAKED INTO
-  the frozen bridge base qcow2 and inherited by every kiosk's overlay. The
+  the frozen bridge seed qcow2 and inherited by every kiosk's overlay. The
   hash record is the whole point; there is no path to stat. Its underlying terms
   are per-file (see the `base-media` table in §2).
 - **VSI Community** — account/application-gated OpenVMS Community media. It is
@@ -250,7 +250,7 @@ then `dl.php` — and another of which addresses its file by an opaque numeric i
 | `baller_sources.zip` (Ballerburg sources) | `63fb6c5aa14f4f912e4d5cff61f42fa35951932d0635b185e14da434212ed593` | 66 041 | same author site | **freely-fetchable-pinned** — same PD grant; shipped in the guest's `ORIGINAL/` folder alongside the binary |
 | `pacman_for_gem_0_25.zip` (Pacman for GEM 0.2.5) | `6f33a9e7371f9fb6bd635dd6d67250e1c5adc6c0b44b609e726e0fed84f5fe3e` | 177 423 | `atarimania.com/pgedump.awp?id=31902` — an opaque numeric id, not a filename | **abandonware-URL** — freeware; the original archive's own terms permit redistribution. Private exhibit, never committed |
 
-### `base-media` — the four blobs captured into the frozen bridge base
+### `base-media` — the four blobs captured into the frozen bridge seed
 
 These are on **no host path**. They live inside
 `/data/vms/bridge/bridge-base.qcow2` at `/opt/bridge/media/`, and every bridge

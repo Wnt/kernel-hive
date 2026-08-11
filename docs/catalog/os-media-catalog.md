@@ -151,7 +151,7 @@ Ship these first; they reuse existing tile recipes and fill glaring gaps.
 
 ### Wave 2 — Needs the bridge (build the bridge, then these unlock)
 
-**8-bit wing (bridge base already has the emulators):**
+**8-bit wing (bridge seed already has the emulators):**
 - **C64 + GEOS 2.0** — ✅ **LIVE** (reference tile).
 - **Atari ST + GEM (EmuTOS)** — ✅ **LIVE** (`atarist` tile). 100% GPLv2, zero proprietary ROM; `hatari` in base.
 - **Apple IIe + GEOS** — ✅ **LIVE** (`apple2` tile, LinApple). Apple II GEOS is official freeware.
@@ -356,7 +356,7 @@ Notable recipes / gotchas:
 Atari 8-bit), Z80 (CPC), or the m68k **Atari ST** (QEMU has no ST machine, only
 q800/next-cube/virt). Native SDL emulator mandatory each time, full-screen in an
 x86-64 KVM Linux tile. Build the bridge ONCE (medium) → each is a small
-near-identical drop-in. **The bridge base already ships VICE/hatari/cap32** — C64,
+near-identical drop-in. **The bridge seed already ships VICE/hatari/cap32** — C64,
 Atari ST and Apple II are LIVE; CPC is the direct next drop.
 
 Notable recipes / gotchas (inside the Linux tile; outer QEMU = `-device virtio-vga -display dbus,p2p=on`):

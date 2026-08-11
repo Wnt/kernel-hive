@@ -135,7 +135,7 @@ exec /opt/mpf2/mame/mpf2 mpf2 \
   -nofilter
 ```
 
-MAME runs FULLSCREEN on the bridge base's stock 1024×768 X root (`~/.xinitrc`,
+MAME runs FULLSCREEN on the bridge seed's stock 1024×768 X root (`~/.xinitrc`,
 same as every sibling kiosk), with its normal aspect correction on, so the
 picture fills the captured framebuffer. Forcing `-resolution 1120x384` instead —
 the raw composite pixel count with aspect correction defeated — pinned a 2.92:1

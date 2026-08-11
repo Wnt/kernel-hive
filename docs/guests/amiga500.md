@@ -81,7 +81,7 @@ media files via the GitHub repo. They are **gitignored** (`*.adf`, `*.rom`, `Kic
 ## THE HARD-WON RECIPE (all non-obvious, all baked into the scripts)
 
 ### FS-UAE install (amiga.sh -> overlay)
-1. **FS-UAE is NOT in the frozen bridge base** (this station postdates the base freeze).
+1. **FS-UAE is NOT in the frozen bridge seed** (this station postdates the base freeze).
    `apt-get install -y fs-uae` runs INTO the overlay (`fs-uae 3.1.66-2` on bookworm).
    It pulls `libopenal1` (Paula audio) + mesa (llvmpipe software GL). The guest has
    working SLIRP internet (static `10.0.2.15`, dns `10.0.2.3`), so apt + the media

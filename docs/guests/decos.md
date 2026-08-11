@@ -188,7 +188,7 @@ exists, which is the entire argument for that archive.
 
 ## SIMH is built into the overlay
 
-The bridge base ships VICE, cap32 and LinApple — not SIMH. So,
+The bridge seed ships VICE, cap32 and LinApple — not SIMH. So,
 following the **`amiga.sh` precedent**, `decos.sh` builds **Open SIMH pinned at
 commit `a1f57fa3738ed31148d31126ba1a7278ff845c6d`** (2026-07-03 master; there is
 no v4 release tag past v4.0-Beta-1, hence the commit pin) *into this station's
@@ -310,7 +310,7 @@ xterm -class DECOS -geometry 80x31+0+0 -fa "DejaVu Sans Mono" -fs 15 \
       -fg '#33ff55' -bg '#000000' +sb -e /opt/decos/chooser.sh
 ```
 
-on a 1024×768 X root. There is **no window manager** in the bridge base, so
+on a 1024×768 X root. There is **no window manager** in the bridge seed, so
 `-fullscreen` (which needs an EWMH manager to honour it) is not used; the
 terminal is sized by `-geometry`. Font size 15 measures **80 columns = x 3…962**
 of 1024; size 16 would want 1040 px and clip column 80. That measurement is also

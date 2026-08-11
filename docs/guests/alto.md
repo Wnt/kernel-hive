@@ -69,7 +69,7 @@ ContrAlto 2 is C# on **.NET 8** with an Avalonia UI. The station carries **none*
 that as a dependency: `alto.sh` runs `dotnet publish -c Release -r linux-x64
 --self-contained true` on the **host**, and only the ~150 MB output tree crosses
 into the overlay, where it runs with no runtime installed and no apt package
-added to the shared bridge base. The ~350 MB SDK is downloaded once into
+added to the shared bridge seed. The ~350 MB SDK is downloaded once into
 `/data/gallery-guests/Alto/dotnet` and never enters a station.
 
 That publish output is also where the exhibit's *content* comes from. ContrAlto
@@ -142,7 +142,7 @@ bits") around the 606 visible pixels. 608 **is** a multiple of 8.
 
 So the kiosk root is exactly `608x808` — the Alto's own picture, no letterbox, no
 painted surround, no 2-pixel slop, and no `presentAspect.ts` entry. `bochs-drm`
-advertises no such mode and the bridge base has no `cvt`, so the launcher carries
+advertises no such mode and the bridge seed has no `cvt`, so the launcher carries
 a hardcoded modeline:
 
 ```sh
@@ -250,7 +250,7 @@ machine answering "what can I run", and it is the closest thing the Alto has to
 | ContrAlto RSS (in guest) | ~180 MB |
 | CPU | ~170–190 % of a core while the Alto runs (`ThrottleSpeed = True` holds it near real Alto speed) |
 | Guest RAM | 1024 MB |
-| Overlay | thin qcow2 on the shared bridge base; ~150 MB of emulator tree plus the checkpoint |
+| Overlay | thin qcow2 on the shared bridge seed; ~150 MB of emulator tree plus the checkpoint |
 
 The Alto never idles — the display task repaints 30 fields a second whatever is on
 screen — so `SH_IDLE_PAUSE_SECS=60` is left explicitly ON in `tile.env.fixture`.

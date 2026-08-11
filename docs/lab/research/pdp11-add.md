@@ -49,7 +49,7 @@ does for VICE, cap32 and LinApple.
 **The one wrinkle in path A.** `bridge-base.qcow2` is explicitly frozen and
 ships five emulators, none of them SIMH. The builder must therefore install and
 build SIMH **into the station's writable overlay**, exactly as `amiga.sh` already
-does for FS-UAE ("FS-UAE is NOT baked into the frozen bridge base … this script
+does for FS-UAE ("FS-UAE is NOT baked into the frozen bridge seed … this script
 `apt-get install -y fs-uae` INTO THE OVERLAY"). Follow that precedent, record
 the deviation in `docs/guests/pdp11.md`, and — as `amiga.sh` did — also add
 SIMH to `bridge-base.sh` so a from-scratch NVMe rebuild bakes it in.

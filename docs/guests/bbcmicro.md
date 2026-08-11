@@ -16,7 +16,7 @@ MAME driver — see *The ARM angle* below for the division of labour.
 | Slot / UDP | 129 / 54129 |
 | VMID label / bridge SSH | 232 / `127.0.0.1:5832` (key `/data/vms/bridge/bridge_key`) |
 | Emulator | MAME **0.289** driver `bbcb`, purpose-built subtarget |
-| Guest | Debian 13 (trixie) X kiosk on a thin overlay of the trixie bridge base |
+| Guest | Debian 13 (trixie) X kiosk on a thin overlay of the trixie bridge seed |
 | Archetype | `beige-tower-crt` (fallback; no bespoke Acorn archetype exists) |
 | Builder | `scripts/build-guests/tiles/bbcmicro.sh` (+ `build-mame-bbcb.sh`) |
 | Credentials | none — the machine has no login (`guest/bbcmicro` is a placeholder) |
@@ -41,7 +41,7 @@ Three reasons it is not simply apt's MAME:
 - labhost's own `/usr/games/mame` is 0.276, and the romset here is
   assembled against **this** binary's `-listxml`, not against whatever the
   distro froze;
-- the bridge base's own `apt install mame` would be an unpinned suite freeze;
+- the bridge seed's own `apt install mame` would be an unpinned suite freeze;
 - MAME moves ROM requirements between versions, so a romset is only meaningful
   against **one** binary. The builder therefore asks the *shipped* binary
   (`bbcb -listxml bbcb`) which entries it wants and asserts the staged SHA-1s
@@ -127,7 +127,7 @@ bbcb -rompath /opt/bbcmicro/roms -inipath /opt/bbcmicro
      -keepaspect -nowindow -nofilter
 ```
 
-MAME runs fullscreen on the bridge base's **stock 1024×768** X root (unlike the
+MAME runs fullscreen on the bridge seed's **stock 1024×768** X root (unlike the
 VICE stations, whose fixed SDL window forces the root down to 800×600). The BBC's
 MODE 7 raster is 480×500 — 40×25 teletext cells of 12×20 pixels — which is the
 pixel count, not the picture's shape; `-keepaspect` reconstructs the 4:3 image

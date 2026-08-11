@@ -169,7 +169,7 @@ decision that determines whether this station is worth building:
 - **Tier 3**, bridge/captured-X shape: the es40 SDL3 window inside a Debian-X
   kiosk, built into the station overlay (the `amiga.sh`/FS-UAE precedent) because
   es40 is not in the frozen `bridge-base.qcow2`. It needs **SDL3, which bookworm
-  lacks** — the bridge base's Debian version must be checked. **UNVERIFIED.**
+  lacks** — the bridge seed's Debian version must be checked. **UNVERIFIED.**
 - **~330–390 MB RSS for es40 and ~101 % CPU — one core saturated
   continuously.** It does not idle down the way a QEMU guest does. With the
   kiosk, expect ~1.3–1.8 GB total: in line with other kiosks, but with a

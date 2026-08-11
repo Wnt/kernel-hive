@@ -72,11 +72,11 @@ dirtied. IDE is not usable for the asset: QEMU has no read-only IDE hard disk
 ## Build
 
 `scripts/build-guests/tiles/indyr4400.sh` — a thin overlay on the frozen
-bridge base, same shape as `amiga.sh`.
+bridge seed, same shape as `amiga.sh`.
 
 ### The iris binary is built against bookworm, not against the host
 
-The lab box is Debian 13 (trixie, glibc 2.41); the frozen bridge base is
+The lab box is Debian 13 (trixie, glibc 2.41); the frozen bridge seed is
 Debian 12 (bookworm, glibc 2.36). A host-built `iris` dies in the guest with
 
 ```
@@ -224,5 +224,5 @@ QMP-paused when no visitor is attached. Do not copy the amiga/gt40/irix
 
 The station is self-contained. `systemctl stop streamhost@indyr4400`, kill the
 QEMU by `/data/vms/streamhost/tiles/indyr4400/qemu.pid`. Nothing it touches is
-shared except the frozen bridge base (read-only backing) and the `irix` station's
+shared except the frozen bridge seed (read-only backing) and the `irix` station's
 CHD, which is only ever read via a copy at asset-build time.

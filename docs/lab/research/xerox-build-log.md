@@ -146,7 +146,7 @@ only one of them mattered here, and knowing which saves the next agent an hour.
   `PointerRoot`, so key events go to the window *under the pointer*. The
   ContrAlto window covers the entire root (608x808+0+0), so the pointer is
   always over it and no `XSetInputFocus` is needed. This only bites a tile whose
-  emulator window is smaller than the root. (The bridge base has no `xdotool`
+  emulator window is smaller than the root. (The bridge seed has no `xdotool`
   anyway.)
 
 ### Pacing: ContrAlto DOES follow the frame-quantisation model
@@ -180,7 +180,7 @@ whole 608-wide bitmap. 608 IS a multiple of 8, so QEMU `-vga std` takes it
 directly. The kiosk root is therefore exactly **608x808** — the Alto's own
 picture, no letterbox, no painted surround, no 2 px slop.
 
-The bridge base's `bochs-drm` advertises no such mode, but a custom one is
+The bridge seed's `bochs-drm` advertises no such mode, but a custom one is
 accepted verbatim; the tile launcher does
 `xrandr --newmode alto608x808 33.00 608 640 704 800 808 811 821 838 -hsync
 +vsync` then `--addmode`/`--output --mode`, and a QMP `screendump` comes back

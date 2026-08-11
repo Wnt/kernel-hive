@@ -7,7 +7,7 @@ form [`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expects.
 **Built since:** the **VIC-20** (§4.1) is live as the production station `vic20`
 (slot 85, udp 54085) — see [`docs/guests/vic20.md`](../../guests/vic20.md). It
 was taken first because it is the cheapest item in the whole study: `xvic` is
-already in the frozen bridge base (VICE is built from source there for the `c64`
+already in the frozen bridge seed (VICE is built from source there for the `c64`
 station and `make install` ships the entire family), VICE bundles the Commodore
 ROMs, and an unexpanded VIC-20 needs no media at all — so it required no staged
 asset, no checksum gate and no new emulator build, only a launcher, a checkpoint and
@@ -43,7 +43,7 @@ Headline findings:
 
 | Station | Machine | Backend |
 |---|---|---|
-| `c64` | Commodore 64 (breadbin) — GEOS 2.0, 1982 | VICE `x64sc`, built from source in the bridge base |
+| `c64` | Commodore 64 (breadbin) — GEOS 2.0, 1982 | VICE `x64sc`, built from source in the bridge seed |
 | `amiga` | Amiga 500 — Workbench 1.3, 1987 | FS-UAE, installed into the station overlay |
 | `aros` | AROS on x86 | native QEMU — *not* a 68k Amiga |
 | `atarist` | Atari ST — EmuTOS GEM, 1985 | hatari |

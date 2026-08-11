@@ -3,7 +3,7 @@
 Live streamhost **kiosk**: a captured Debian 13 (trixie) X kiosk runs MAME's
 `dragon32` driver, and streamhost captures the Linux framebuffer + AC97 audio
 exactly as it does for every other station. Reset is `loadvm golden` on an
-INTERNAL qcow2 snapshot inside a thin overlay on the frozen shared bridge base.
+INTERNAL qcow2 snapshot inside a thin overlay on the frozen shared bridge seed.
 
 | | |
 |---|---|
@@ -11,7 +11,7 @@ INTERNAL qcow2 snapshot inside a thin overlay on the frozen shared bridge base.
 | VMID label / UDP | 233 / 54130 |
 | ssh (host-side) | `127.0.0.1:5833`, key `/data/vms/bridge/bridge_key` |
 | guest RAM | 768 MB |
-| X root | 1024×768 (bridge base stock) |
+| X root | 1024×768 (bridge seed stock) |
 | emulator | MAME 0.289, `SUBTARGET=dragon`, `/opt/dragon32/mame/dragon` |
 | builder | `scripts/build-guests/tiles/dragon32.sh` (+ `build-mame-dragon32.sh`) |
 | pointer | none — keyboard-only exhibit |
@@ -143,7 +143,7 @@ runtime libraries only; its 0.251 binary is never launched. The builder asserts
 
 The Dragon draws 372×293 at 49.97 Hz (MC6847 PAL, including its overscan
 border). MAME runs fullscreen with `-keepaspect -prescale 2 -nofilter -video
-soft` on the bridge base's stock 1024×768 root. 1024×768 is 4:3, so the picture
+soft` on the bridge seed's stock 1024×768 root. 1024×768 is 4:3, so the picture
 fills the whole root and the dark surround a visitor sees is the **Dragon's own
 border**, not letterboxing. Do not pin `-resolution 372x293`: that is the pixel
 count, not the picture's shape, and it strands a small strip in a black root —

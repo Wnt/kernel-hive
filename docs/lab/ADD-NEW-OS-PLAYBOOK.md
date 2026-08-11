@@ -273,7 +273,7 @@ captured surface is the kiosk's X root, so the emulator must fill it:
   count.** That number is the pixel count, not the picture's shape, and setting
   it defeats the emulator's aspect correction. MPF-II at `-resolution 1120x384`
   sat as a 2.92:1 strip in the middle of a black root; fullscreen plus
-  `-keepaspect` on the bridge base's stock root reconstructs the roughly 4:3
+  `-keepaspect` on the bridge seed's stock root reconstructs the roughly 4:3
   image the real machine drew on a television.
 - **Where the emulator's window cannot grow, shrink the root to it.** VICE's SDL
   window is a fixed 719×544 at `-VICIIdsize`, so the X root drops to the smallest
