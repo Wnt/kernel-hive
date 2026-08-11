@@ -252,9 +252,18 @@ box_sync_load_pairs() {
     "find '$BOX_ROOT/build/registry' -path '$BOX_ROOT/build/registry/posters' -prune -o -type f \\( -name README.md -o -name '*.json' -o -name '*.in' \\) -printf '%P\\n' | sort" \
     >"$tmpdir/registry-box"
   sort -u "$tmpdir/registry-repo" "$tmpdir/registry-box" >"$tmpdir/registry-union"
+  # bring-up-all.sh.in renders the ordered boot script, which carries the
+  # operator's real address — so its DEPLOYED copy holds a real value and the
+  # row is scrub, not exact (discovered 2026-08-12 when the writer's
+  # reverse-scrub check refused it). Everything else in the tree is verbatim.
+  local mode
   while IFS= read -r rel; do
     [ -n "$rel" ] || continue
-    box_sync_add_pair "registry/$rel" "registry/$rel" "$BOX_ROOT/build/registry/$rel" exact repo
+    case "$rel" in
+      templates/bring-up-all.sh.in) mode=scrub ;;
+      *) mode=exact ;;
+    esac
+    box_sync_add_pair "registry/$rel" "registry/$rel" "$BOX_ROOT/build/registry/$rel" "$mode" repo
   done <"$tmpdir/registry-union"
 }
 
