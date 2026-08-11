@@ -70,7 +70,7 @@
     "signalOrder": 6,
     "tilesManifestOrder": 11,
     "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP D — Windows NT family (usb-tablet + AC97), abs pointer.\n# ---------------------------------------------------------------------------\n\n# win2000 (VMID 93) — std VGA (VBEMP-NT/framebuf, 1600x1200x32), AC97,\n#   usb-tablet, rtl8139 NIC. GENERIC.\n#   Golden fixture: the disk runs WITHOUT -snapshot so the savevm 'golden'\n#   snapshot persists inside win2k-pro.qcow2 (resetMode=loadvm).\n",
-    "tilesManifestInvocation": "emit win2000 \\\n  --tile win2000 --vmid 93 --udp 54093 --pointer abs --audio on --audio-dev ac97 \\\n  --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden\" \\\n  --env-append-file \"$T/win2000/tile.env.fixture\"\n",
+    "tilesManifestInvocation": "emit win2000 \\\n  --tile win2000 --vmid 93 --udp 54093 --pointer abs --audio on --audio-dev ac97 \\\n  --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0\" \\\n  --env-append-file \"$T/win2000/tile.env.fixture\" \\\n  --loadvm-launch /data/gallery-guests/Win2000/win2k-pro.qcow2\n",
     "bringUpGroup": 3,
     "bindingOrder": 6,
     "bindingPrelude": "",
@@ -156,9 +156,11 @@
         "--boot",
         "c",
         "--extra",
-        "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden",
+        "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0",
         "--env-append-file",
-        "$T/win2000/tile.env.fixture"
+        "$T/win2000/tile.env.fixture",
+        "--loadvm-launch",
+        "/data/gallery-guests/Win2000/win2k-pro.qcow2"
       ],
       "deviceSetId": "win2000-stdvga-vbemp-1600",
       "machine": "pc-i440fx-11.0",

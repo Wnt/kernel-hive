@@ -68,7 +68,7 @@
     "signalOrder": 14,
     "tilesManifestOrder": 8,
     "tilesManifestPrelude": "\n# ninefront / 9front (VMID 96) — q35 disk, PS/2, intel-hda. GENERIC. Disk is a\n#   virtio-less ide-hd on bus ide.0; whole drive+net string + the baked\n#   `-loadvm golden` (the golden lives INSIDE the 9front qcow2; the disk runs\n#   WITHOUT -snapshot so savevm persists) goes in --extra.\n# POINTER=warpd: 9front's kernel devmouse accepts true absolute injection via\n# /dev/mousein \"A x y buttons msec\" lines. In-guest agent /amd64/bin/warpd\n# (guest-agents/ninefront/warpd.c, compiled IN-GUEST with 6c/6l) listens on\n# tcp!*!7777; autostarted at boot by /cfg/cirno/termrc. The daemon reaches it\n# via the hostfwd baked onto the EXISTING -netdev user below (host\n# 127.0.0.1:57793 -> guest :7777; a netdev backend property, NOT a -device =>\n# loadvm golden matches). Agent BAKED into the golden qcow2 disk AND the settled\n# rio/app RAM snapshot with boot replay (2026-07-15).\n",
-    "tilesManifestInvocation": "emit ninefront \\\n  --tile ninefront --vmid 96 --udp 54096 --pointer warpd --warpd-addr 127.0.0.1:57793 --audio on --audio-dev hda \\\n  --input-dev ps2 --mem 1024 --smp 2 --machine pc-q35-11.0 --cpu host --vga std --fps 60 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0 -loadvm golden\"\n",
+    "tilesManifestInvocation": "emit ninefront \\\n  --tile ninefront --vmid 96 --udp 54096 --pointer warpd --warpd-addr 127.0.0.1:57793 --audio on --audio-dev hda \\\n  --input-dev ps2 --mem 1024 --smp 2 --machine pc-q35-11.0 --cpu host --vga std --fps 60 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0\" \\\n  --loadvm-launch /data/gallery-guests/9front/9front-11554.amd64.qcow2\n",
     "bringUpGroup": 1,
     "bindingOrder": 10,
     "bindingPrelude": "",
@@ -155,7 +155,9 @@
         "--boot",
         "c",
         "--extra",
-        "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0 -loadvm golden"
+        "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0",
+        "--loadvm-launch",
+        "/data/gallery-guests/9front/9front-11554.amd64.qcow2"
       ],
       "deviceSetId": "ninefront-current",
       "machine": "pc-q35-11.0",

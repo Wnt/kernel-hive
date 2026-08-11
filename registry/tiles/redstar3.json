@@ -72,7 +72,7 @@
     "signalOrder": 31,
     "tilesManifestOrder": 29,
     "tilesManifestPrelude": "\n# redstar3 (VMID 121) — private Red Star OS 3.0 Desktop preservation tile.\n#   KVM/i440fx, stable Nehalem CPU, std VGA (Xorg vesa + ShadowFB, 1920x1080),\n#   IDE, USB tablet, no audio.\n#   -nodefaults is mandatory: it prevents QEMU's implicit e1000; zero guest NICs.\n",
-    "tilesManifestInvocation": "emit redstar3 \\\n  --tile redstar3 --vmid 121 --udp 54121 --pointer abs --audio off --fps 30 \\\n  --input-dev usb --mem 1024 --smp 1 --machine pc-i440fx-11.0 --cpu Nehalem,kvm=off --vga std \\\n  --disk-raw \"-drive file=/data/gallery-guests/RedStar3/redstar3.qcow2,format=qcow2,if=ide,index=0,media=disk -drive if=ide,index=2,media=cdrom\" \\\n  --boot c --extra \"-nodefaults -loadvm golden\" \\\n  --env-append-file \"$T/redstar3/tile.env.fixture\"\n",
+    "tilesManifestInvocation": "emit redstar3 \\\n  --tile redstar3 --vmid 121 --udp 54121 --pointer abs --audio off --fps 30 \\\n  --input-dev usb --mem 1024 --smp 1 --machine pc-i440fx-11.0 --cpu Nehalem,kvm=off --vga std \\\n  --disk-raw \"-drive file=/data/gallery-guests/RedStar3/redstar3.qcow2,format=qcow2,if=ide,index=0,media=disk -drive if=ide,index=2,media=cdrom\" \\\n  --boot c --extra \"-nodefaults\" \\\n  --env-append-file \"$T/redstar3/tile.env.fixture\" \\\n  --loadvm-launch /data/gallery-guests/RedStar3/redstar3.qcow2\n",
     "bringUpGroup": 2,
     "bindingOrder": 34,
     "bindingPrelude": "",
@@ -159,9 +159,11 @@
         "--boot",
         "c",
         "--extra",
-        "-nodefaults -loadvm golden",
+        "-nodefaults",
         "--env-append-file",
-        "$T/redstar3/tile.env.fixture"
+        "$T/redstar3/tile.env.fixture",
+        "--loadvm-launch",
+        "/data/gallery-guests/RedStar3/redstar3.qcow2"
       ],
       "deviceSetId": "redstar3-airgapped-v2-stdvga",
       "machine": "pc-i440fx-11.0",

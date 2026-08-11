@@ -170,7 +170,8 @@ emit haiku \
   --disk-raw "-drive file=/data/vms/streamhost/tiles/haiku/haiku-persist.qcow2,format=qcow2,if=ide" \
   --boot c \
   --extra "-device VGA,id=vga0,edid=on,xres=1920,yres=1200 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:5807-:22 -device e1000,netdev=n0" \
-  --env-append-file "$T/haiku/tile.env.fixture"
+  --env-append-file "$T/haiku/tile.env.fixture" \
+  --loadvm-launch /data/vms/streamhost/tiles/haiku/haiku-persist.qcow2
 
 # ---------------------------------------------------------------------------
 # GROUP B — legacy guests with explicit input handling. 9front uses bare i8042
@@ -198,7 +199,8 @@ emit helenos \
   --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu qemu32 --vga std --fps 30 \
   --cdrom /data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso --boot d \
   --extra "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk" \
-  --env-append-file "$T/helenos/tile.env.fixture"
+  --env-append-file "$T/helenos/tile.env.fixture" \
+  --loadvm-launch /data/vms/streamhost/tiles/helenos/golden.qcow2
 
 # kolibrios (VMID 97) — LiveCD, usb-tablet, AC97. VERBATIM LAUNCHER:
 #   state.qcow2 (virtio) holds the golden snapshot; conditional -loadvm golden.
@@ -225,7 +227,8 @@ emit ninefront \
   --tile ninefront --vmid 96 --udp 54096 --pointer warpd --warpd-addr 127.0.0.1:57793 --audio on --audio-dev hda \
   --input-dev ps2 --mem 1024 --smp 2 --machine pc-q35-11.0 --cpu host --vga std --fps 60 \
   --boot c \
-  --extra "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0 -loadvm golden"
+  --extra "-drive file=/data/gallery-guests/9front/9front-11554.amd64.qcow2,if=none,id=hd0,format=qcow2 -device ide-hd,drive=hd0,bus=ide.0 -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57793-:7777 -device virtio-net-pci,netdev=n0" \
+  --loadvm-launch /data/gallery-guests/9front/9front-11554.amd64.qcow2
 
 # ---------------------------------------------------------------------------
 # GROUP C — disk-image Linux/Unix guests, USB-tablet abs pointer.
@@ -263,8 +266,9 @@ emit win2000 \
   --tile win2000 --vmid 93 --udp 54093 --pointer abs --audio on --audio-dev ac97 \
   --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \
   --boot c \
-  --extra "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden" \
-  --env-append-file "$T/win2000/tile.env.fixture"
+  --extra "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0" \
+  --env-append-file "$T/win2000/tile.env.fixture" \
+  --loadvm-launch /data/gallery-guests/Win2000/win2k-pro.qcow2
 
 # winxp (VMID 94) — boots hdd + attaches the retro-software LiveCD;
 #   -boot order=c,menu=off. AC97 + usb-tablet. VERBATIM LAUNCHER: boots the
@@ -409,7 +413,8 @@ emit sailfishos \
   --tile sailfishos --vmid 104 --udp 54104 --pointer abs --audio off \
   --input-dev usb --mem 1536 --smp 2 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \
   --boot c \
-  --extra "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot"
+  --extra "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot" \
+  --loadvm-launch /data/gallery-guests/SailfishOS/sailfishos-gui.qcow2
 
 # templeos (VMID 105) — LiveCD (TempleOS.ISO), audio OFF, PS/2, plain std VGA.
 #   VERBATIM LAUNCHER: state.qcow2 (create-if-missing) holds the savevm
@@ -523,8 +528,9 @@ emit redstar3 \
   --tile redstar3 --vmid 121 --udp 54121 --pointer abs --audio off --fps 30 \
   --input-dev usb --mem 1024 --smp 1 --machine pc-i440fx-11.0 --cpu Nehalem,kvm=off --vga std \
   --disk-raw "-drive file=/data/gallery-guests/RedStar3/redstar3.qcow2,format=qcow2,if=ide,index=0,media=disk -drive if=ide,index=2,media=cdrom" \
-  --boot c --extra "-nodefaults -loadvm golden" \
-  --env-append-file "$T/redstar3/tile.env.fixture"
+  --boot c --extra "-nodefaults" \
+  --env-append-file "$T/redstar3/tile.env.fixture" \
+  --loadvm-launch /data/gallery-guests/RedStar3/redstar3.qcow2
 
 # amstradcpc (VMID 219) — cap32 (Caprice32) -> Amstrad CPC 6128 -> Locomotive BASIC Ready. ssh 5819.
 emit amstradcpc \

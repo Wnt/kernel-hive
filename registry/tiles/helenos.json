@@ -68,7 +68,7 @@
     "signalOrder": 13,
     "tilesManifestOrder": 6,
     "tilesManifestPrelude": "\n# helenos (VMID 99) — ia32 LiveCD on -cpu qemu32, intel-hda. GENERIC.\n# POINTER=abs (2026-07-13): HelenOS's upstream USB HID stack binds the QEMU\n# usb-tablet over the default PIIX3 UHCI controller (`--input-dev usb` -> `-usb\n# -device usb-tablet`) and consumes absolute coordinates 1:1 — verified on a\n# clone then live via QMP-abs framebuffer tracking. The golden snapshot was\n# re-baked with the tablet present. golden.qcow2 (--extra) holds the savevm\n# 'golden' snapshot for the diskless LiveCD; loadvm needs this exact device set.\n",
-    "tilesManifestInvocation": "emit helenos \\\n  --tile helenos --vmid 99 --udp 54099 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --audio-dev hda \\\n  --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu qemu32 --vga std --fps 30 \\\n  --cdrom /data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso --boot d \\\n  --extra \"-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk\" \\\n  --env-append-file \"$T/helenos/tile.env.fixture\"\n",
+    "tilesManifestInvocation": "emit helenos \\\n  --tile helenos --vmid 99 --udp 54099 --pointer abs \\\n  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --audio-dev hda \\\n  --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu qemu32 --vga std --fps 30 \\\n  --cdrom /data/gallery-guests/HelenOS/HelenOS-0.14.1-ia32.iso --boot d \\\n  --extra \"-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk\" \\\n  --env-append-file \"$T/helenos/tile.env.fixture\" \\\n  --loadvm-launch /data/vms/streamhost/tiles/helenos/golden.qcow2\n",
     "bringUpGroup": 1,
     "bindingOrder": 11,
     "bindingPrelude": "",
@@ -169,7 +169,9 @@
         "--extra",
         "-drive file=/data/vms/streamhost/tiles/helenos/golden.qcow2,if=ide,index=0,media=disk",
         "--env-append-file",
-        "$T/helenos/tile.env.fixture"
+        "$T/helenos/tile.env.fixture",
+        "--loadvm-launch",
+        "/data/vms/streamhost/tiles/helenos/golden.qcow2"
       ],
       "deviceSetId": "helenos-current",
       "machine": "pc-i440fx-11.0",

@@ -91,7 +91,7 @@
     "signalOrder": 25,
     "tilesManifestOrder": 20,
     "tilesManifestPrelude": "\n# sailfishos (VMID 104) — audio OFF, usb-tablet + usb-kbd, ide disk, e1000 NIC.\n#   GENERIC (+ -snapshot: ephemeral; no golden — labctl reset refuses it).\n",
-    "tilesManifestInvocation": "emit sailfishos \\\n  --tile sailfishos --vmid 104 --udp 54104 --pointer abs --audio off \\\n  --input-dev usb --mem 1536 --smp 2 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot\"\n",
+    "tilesManifestInvocation": "emit sailfishos \\\n  --tile sailfishos --vmid 104 --udp 54104 --pointer abs --audio off \\\n  --input-dev usb --mem 1536 --smp 2 --machine pc-i440fx-11.0 --cpu host --vga std --fps 30 \\\n  --boot c \\\n  --extra \"-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot\" \\\n  --loadvm-launch /data/gallery-guests/SailfishOS/sailfishos-gui.qcow2\n",
     "bringUpGroup": 5,
     "bindingOrder": 18,
     "bindingPrelude": "",
@@ -177,7 +177,9 @@
         "--boot",
         "c",
         "--extra",
-        "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot"
+        "-drive file=/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2,format=qcow2,if=ide -device usb-kbd -netdev user,id=n0 -device e1000,netdev=n0 -snapshot",
+        "--loadvm-launch",
+        "/data/gallery-guests/SailfishOS/sailfishos-gui.qcow2"
       ],
       "deviceSetId": "sailfishos-current",
       "machine": "pc-i440fx-11.0",
