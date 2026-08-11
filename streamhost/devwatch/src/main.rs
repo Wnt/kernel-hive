@@ -168,12 +168,20 @@ fn output_paths(repo: &Path, extra: &[&str]) -> Result<BTreeSet<String>> {
         .collect())
 }
 
-/// Every artifact the registry produces: the generated files committed to the
-/// tree, plus the rendered documents that only ever exist under build/.
-fn all_outputs(repo: &Path) -> Result<BTreeSet<String>> {
-    let mut paths = output_paths(repo, &[])?;
-    paths.extend(output_paths(repo, &["--rendered"])?);
-    Ok(paths)
+/// Every artifact the registry produces, in the two classes that matter here:
+/// `all` is what a save can change (watched for self-writes and snapshotted),
+/// `rendered` is the subset that exists only under build/ — never committed and
+/// never box-synced, so it must not be reported as work still owed.
+struct Outputs {
+    all: BTreeSet<String>,
+    rendered: BTreeSet<String>,
+}
+
+fn load_outputs(repo: &Path) -> Result<Outputs> {
+    let rendered = output_paths(repo, &["--rendered"])?;
+    let mut all = output_paths(repo, &[])?;
+    all.extend(rendered.iter().cloned());
+    Ok(Outputs { all, rendered })
 }
 
 fn ignorable(rel: &str) -> bool {
@@ -267,7 +275,7 @@ fn produce(repo: &Path, command: &str) -> Result<bool> {
 fn pipeline(
     repo: &Path,
     env: &[(String, String)],
-    outputs: &BTreeSet<String>,
+    outputs: &Outputs,
     dirty: &Dirty,
     args: &Args,
     deploys_enabled: bool,
@@ -275,7 +283,7 @@ fn pipeline(
     let mut spa_dirty = dirty.spa;
 
     if dirty.registry {
-        let before = snapshot(repo, outputs);
+        let before = snapshot(repo, &outputs.all);
         if !produce(repo, "generate")? || !produce(repo, "render")? {
             return Ok(());
         }
@@ -312,7 +320,9 @@ fn pipeline(
         let ops: Vec<&String> = changed
             .iter()
             .filter(|p| {
-                !MANIFEST_OUTPUTS.contains(&p.as_str()) && !SPA_OUTPUTS.contains(&p.as_str())
+                !MANIFEST_OUTPUTS.contains(&p.as_str())
+                    && !SPA_OUTPUTS.contains(&p.as_str())
+                    && !outputs.rendered.contains(p.as_str())
             })
             .collect();
         if !ops.is_empty() {
@@ -350,7 +360,7 @@ fn main() -> Result<()> {
         Some(path) => path.canonicalize().context("--repo does not exist")?,
         None => find_repo(&std::env::current_dir()?)?,
     };
-    let outputs = all_outputs(&repo)?;
+    let outputs = load_outputs(&repo)?;
     let (env, env_path) = load_local_env(&repo, args.local_env.as_deref());
     let host_ip = std::env::var("SH_HOST_IP").ok().or_else(|| {
         env.iter()
@@ -395,7 +405,7 @@ fn main() -> Result<()> {
                 // The pipeline's own `generate` READS every source file; acting
                 // on Access events would make the watcher re-trigger itself.
                 if mutates(event) {
-                    dirty.merge(classify(&repo, &outputs, &event.paths));
+                    dirty.merge(classify(&repo, &outputs.all, &event.paths));
                 }
             }
         }
