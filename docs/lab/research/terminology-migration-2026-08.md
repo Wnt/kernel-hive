@@ -100,16 +100,18 @@ artifact labels.
   state-behaviour "golden" = checkpoint; "frozen bridge seed" keeps
   *frozen* (immutable/pinned sense); CRIU + protocol-freeze + x264-stall
   vocabulary untouched.
-- [~] Stage 2 — in progress (2026-08-12): `bake-golden.sh` →
-  `capture-checkpoint.sh` and `golden-verify.sh` → `checkpoint-verify.sh`
-  shipped as pure-rename + shim commits (`--capture` added, `--bake`
-  accepted one epoch; deployed irix capture RIG carries the old name until
-  its next redeploy). Remaining: `stations-registry.py` + `stations-manifest.sh`
-  — DEFERRED to a dedicated quiet window: 17–21 code callers each,
-  including the CI workflow, devwatch (Rust, needs rebuild+redeploy),
-  check-stream-tickets.py on the serving plane, the debridge agent's live
-  gallery-arms tooling, and generated outputs. Do not attempt those two
-  as a drive-by.
+- [x] Stage 2 — done 2026-08-12. Renamed with pure-rename + refs/shim
+  commit pairs: `bake-golden.sh` → `capture-checkpoint.sh`,
+  `golden-verify.sh` → `checkpoint-verify.sh` (`--capture`; `--bake` still
+  accepted), `tiles-registry.py` → `stations-registry.py`,
+  `tiles-manifest.sh(.in)` → `stations-manifest.sh(.in)`, make targets
+  `station-registry-*`. One-epoch compat kept for in-flight work: exec
+  shims at both old script names and alias make targets (stage 5 removes
+  them). `size-exclusions.json`'s ledger key follows a renamed file — a
+  stale entry fails the gate too. Two box-sync rows had to be redeclared
+  `scrub` (`serve/gen-local-ca.sh`, `mobile-netem`, then
+  `registry/templates/bring-up-all.sh.in`): a row only reveals a
+  mis-declaration when it has content to push.
 - [ ] Stage 3
 - [ ] Stage 4
 - [ ] Stage 5
