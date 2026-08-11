@@ -68,7 +68,7 @@
     "signalOrder": 21,
     "tilesManifestOrder": 5,
     "tilesManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP B — legacy guests with explicit input handling. 9front uses bare i8042\n#           PS/2; AROS binds Poseidon hid.class to a QEMU USB HID tablet.\n# ---------------------------------------------------------------------------\n\n# aros (VMID 110) — AROS LiveCD, AC97, usb-tablet, abs pointer.\n#   VERBATIM LAUNCHER: golden-scratch.qcow2 holds the diskless LiveCD savevm.\n#   The device-set-matched golden preserves `AddUSBHardware pciusb.device 0` and\n#   is auto-loaded so AROS owns the absolute tablet immediately after launch.\n",
-    "tilesManifestInvocation": "emit aros \\\n  --tile aros --vmid 110 --udp 54110 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/aros/qemu-streamhost.sh\"\n",
+    "tilesManifestInvocation": "emit aros \\\n  --tile aros --vmid 110 --udp 54110 --pointer abs --abs-pace-ms 30 --audio on --fps 30 \\\n  --launcher-file \"$T/aros/qemu-streamhost.sh\"\n",
     "bringUpGroup": 1,
     "bindingOrder": 23,
     "bindingPrelude": "",
@@ -116,7 +116,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/aros/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/aros/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 110,
     "qemu": {
@@ -130,6 +131,8 @@
         "54110",
         "--pointer",
         "abs",
+        "--abs-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",

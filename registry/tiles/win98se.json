@@ -68,7 +68,7 @@
     "signalOrder": 8,
     "tilesManifestOrder": 15,
     "tilesManifestPrelude": "\n# win98se (VMID 92) — Win98SE, sb16, two qcow2 disks (system + games), pcnet,\n#   usb-tablet. VERBATIM LAUNCHER: golden snapshot lives INSIDE the base disks\n#   (NO -snapshot); conditional -loadvm golden.\n# POINTER=abs via usb-tablet — BAKED + LIVE 2026-07-12. WINNING accel = KVM +\n# acpi=on + -cpu pentium3 (apic ON, default irqchip): acpi=on is REQUIRED for\n# PCI enumeration (this golden is an ACPI-HAL install; acpi=off left it on the\n# fail-safe PnP BIOS with no PCI/NIC/USB). hidusb.sys staged from the base cabs\n# by scripts/build-guests/tiles/win98.sh. Full evidence: docs/guests/win9x.md.\n",
-    "tilesManifestInvocation": "emit win98se \\\n  --tile win98se --vmid 92 --udp 54092 --pointer abs --audio on --fps 30 \\\n  --launcher-file \"$T/win98se/qemu-streamhost.sh\" \\\n  --aux-file \"$T/win98se/golden-bake.sh\" \\\n  --aux-file \"$T/win98se/qmp.py\" \\\n  --aux-file \"$T/win98se/shot.sh\" \\\n  --aux-file \"$T/win98se/sk.py\" \\\n  --env-append-file \"$T/win98se/tile.env.fixture\"\n",
+    "tilesManifestInvocation": "emit win98se \\\n  --tile win98se --vmid 92 --udp 54092 --pointer abs --abs-pace-ms 30 --audio on --fps 30 \\\n  --launcher-file \"$T/win98se/qemu-streamhost.sh\" \\\n  --aux-file \"$T/win98se/golden-bake.sh\" \\\n  --aux-file \"$T/win98se/qmp.py\" \\\n  --aux-file \"$T/win98se/shot.sh\" \\\n  --aux-file \"$T/win98se/sk.py\" \\\n  --env-append-file \"$T/win98se/tile.env.fixture\"\n",
     "bringUpGroup": 4,
     "bindingOrder": 5,
     "bindingPrelude": "",
@@ -116,7 +116,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/win98se/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/win98se/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 92,
     "qemu": {
@@ -130,6 +131,8 @@
         "54092",
         "--pointer",
         "abs",
+        "--abs-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",

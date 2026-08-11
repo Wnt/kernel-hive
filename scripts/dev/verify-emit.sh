@@ -3,7 +3,8 @@
 # scripts/dev/verify-emit.sh — launcher-parity gate for the registry production roster.
 #
 # Proves that this repo's streamhost/tiles-manifest.sh + streamhost-tile.sh
-# reproduce every LIVE tile's {tile.env,qemu-streamhost.sh} BYTE-FOR-BYTE,
+# reproduce every LIVE tile's {tile.env,qemu-streamhost.sh,x11-runtime.sh}
+# BYTE-FOR-BYTE,
 # modulo the whitelisted-and-justified deltas in verify-emit-allow.diffpatterns.
 # This checker is the definition of done for launcher-emit completeness: run it
 # after ANY change to the manifest, the emitter, or a tracked per-tile file.
@@ -11,10 +12,19 @@
 # What it does (the box's /data is treated as READ-ONLY; only /tmp is written):
 #   1. rsync the repo's streamhost/{scripts,tiles,tiles-manifest.sh} to
 #      $HOST:/tmp/verify-emit.<id>/streamhost/   (NEVER into live paths)
+#   1b. copy the BOX's /data/kernel-hive/registry/local.env (if present) into
+#      the kit as registry/local.env, so the emitter resolves the operator's
+#      real SH_HOST_IP/SH_ADVERTISE_HOST exactly as a production emit does.
+#      Without it every tile.env diffs on the two address lines and the gate
+#      was blind (2026-08-11). No secret leaves the box: the file is copied
+#      box-side into the /tmp scratch kit the EXIT trap removes.
 #   2. on the box: tiles-manifest.sh --out-root /tmp/verify-emit.<id>/out
 #      (emits every registry production tile into the scratch dir; file CONTENTS still reference
 #      the live runtime root, so a clean emit is byte-identical to live)
-#   3. per tile, per file: diff LIVE (left, `<`) vs EMITTED (right, `>`)
+#   3. per tile, per emitted file: diff LIVE (left, `<`) vs EMITTED (right,
+#      `>`). Only files the emit PRODUCED are compared — an x11 tile emits
+#      x11-runtime.sh and no qemu-streamhost.sh, and demanding the latter
+#      used to hard-fail irix/w2kalpha on every run (NO-LIVE artifact).
 #   4. filter each diff through the whitelist and print a per-tile report:
 #         PASS   byte-identical
 #         PASS*  differs only in whitelisted lines (intentional deltas)
@@ -106,6 +116,10 @@ rsync -a --delete "$REPO/streamhost/scripts" "$REPO/streamhost/tiles" \
   exit 1
 }
 
+# The operator's real addresses, from the box's own canonical checkout (see
+# header 1b). Absent file = placeholder emit, exactly the old blind behaviour.
+host_run "if [ -f /data/kernel-hive/registry/local.env ]; then mkdir -p $REMOTE/registry && cp /data/kernel-hive/registry/local.env $REMOTE/registry/local.env; fi"
+
 echo "[verify-emit] emit registry production tiles into $REMOTE/out (scratch; live paths untouched)"
 host_run "bash $REMOTE/streamhost/tiles-manifest.sh --out-root $REMOTE/out $PIN_ARG" \
   >"$LOCAL/emit.log" 2>&1 || {
@@ -116,7 +130,8 @@ host_run "bash $REMOTE/streamhost/tiles-manifest.sh --out-root $REMOTE/out $PIN_
 
 echo "[verify-emit] diff emitted vs live ($LIVE_ROOT)"
 host_run "cd $REMOTE/out && mkdir -p $REMOTE/diffs && for t in */; do t=\${t%/}; \
-  for f in tile.env qemu-streamhost.sh; do \
+  for f in tile.env qemu-streamhost.sh x11-runtime.sh; do \
+    [ -f \$t/\$f ] || continue; \
     if [ ! -f $LIVE_ROOT/\$t/\$f ]; then echo 'LIVE FILE MISSING' > $REMOTE/diffs/\$t--\$f.diff; \
     else diff $LIVE_ROOT/\$t/\$f \$t/\$f > $REMOTE/diffs/\$t--\$f.diff; fi; done; done; \
   ls $REMOTE/out > $REMOTE/diffs/EMITTED_TILES; ls $LIVE_ROOT > $REMOTE/diffs/LIVE_TILES" ||
@@ -156,16 +171,23 @@ allowed_for() { # $1=tile $2=file -> prints applicable regexes, one per line
 }
 
 overall_rc=0
-printf '%-14s %-12s %-22s %s\n' "TILE" "tile.env" "qemu-streamhost.sh" "notes"
-printf '%-14s %-12s %-22s %s\n' "----" "--------" "------------------" "-----"
+printf '%-14s %-12s %-22s %-16s %s\n' "TILE" "tile.env" "qemu-streamhost.sh" "x11-runtime.sh" "notes"
+printf '%-14s %-12s %-22s %-16s %s\n' "----" "--------" "------------------" "--------------" "-----"
 while IFS= read -r t; do
   notes=""
   declare -A verdict=()
-  for f in tile.env qemu-streamhost.sh; do
+  for f in tile.env qemu-streamhost.sh x11-runtime.sh; do
     d="$LOCAL/diffs/$t--$f.diff"
     if [ ! -f "$d" ]; then
-      verdict[$f]="MISSING"
-      overall_rc=1
+      # No diff file = the emit did not produce this file for this tile (an
+      # x11 tile has no qemu-streamhost.sh and vice versa) — not a failure.
+      # tile.env is emitted for every tile, so its absence IS one.
+      if [ "$f" = tile.env ]; then
+        verdict[$f]="MISSING"
+        overall_rc=1
+      else
+        verdict[$f]="-"
+      fi
       continue
     fi
     if grep -q '^LIVE FILE MISSING' "$d"; then
@@ -203,7 +225,7 @@ while IFS= read -r t; do
       else notes="$notes $f:${#residual[@]}residual"; fi
     fi
   done
-  printf '%-14s %-12s %-22s %s\n' "$t" "${verdict["tile.env"]}" "${verdict["qemu-streamhost.sh"]}" "${notes# }"
+  printf '%-14s %-12s %-22s %-16s %s\n' "$t" "${verdict["tile.env"]}" "${verdict["qemu-streamhost.sh"]}" "${verdict["x11-runtime.sh"]}" "${notes# }"
 done <"$LOCAL/diffs/EMITTED_TILES"
 
 echo

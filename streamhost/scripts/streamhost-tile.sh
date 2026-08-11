@@ -69,12 +69,20 @@ LOADVM_LAUNCH_DISK=""       # --loadvm-launch: qcow2 holding the `golden` savevm
 WARPD_BUTTONS=""
 WARPD_WHEEL=""
 WARPD_PACE_MS=""
+# dbus-abs inject pacing (SH_ABS_PACE_MS). The 2026-07-26 drag investigation
+# hand-set 30 on the old GUI tiles and the manifest never learned it — the
+# 2026-08-11 drift sweep found 10 live tiles a re-emit would have silently
+# unpaced. Per-tile via --abs-pace-ms; empty = no line (daemon default 0).
+ABS_PACE_MS=""
 WARPD_BUTTON_DELAY_MS=""
-# Higher-quality / ABR encoder knobs (SECTION 1 + 5b). The preset is always
-# emitted because it is a canonical per-tile registry value. The remaining
-# encoder block is emitted only when one of its flags is passed; otherwise the
-# daemon defaults still rule (CQP q10 at tier 0, high/zerolatency, auto
-# maxrate, ABR on with 25 s dwell + 480p floor; see config.rs).
+# Higher-quality / ABR encoder knobs (SECTION 1 + 5b). The preset and the
+# bufsize ratio are ALWAYS emitted because they are canonical fleet values
+# (registry-v1.json fleetEncoder; the 2026-08-11 drift sweep found 23 live
+# tiles whose hand-applied 0.5 a re-emit would have silently reverted to the
+# daemon's 1.0). The remaining encoder block is emitted only when one of its
+# flags is passed; otherwise the daemon defaults still rule (CQP q10 at
+# tier 0, high/zerolatency, auto maxrate, ABR on with 25 s dwell + 480p
+# floor; see config.rs).
 # ultrafast matches the daemon's own default (config/parse.rs) — operator
 # decision 2026-08-11: every tile streams ultrafast; the box is GPU-less and
 # a busier preset buys latency, not quality a museum stream can show. The
@@ -196,6 +204,10 @@ while [ $# -gt 0 ]; do
       WARPD_PACE_MS="$2"
       shift 2
       ;; # min ms between agent writes
+    --abs-pace-ms)
+      ABS_PACE_MS="$2"
+      shift 2
+      ;; # min ms between dbus-abs injects (SH_ABS_PACE_MS; 30 on the old GUI tiles)
     --warpd-button-delay-ms)
       WARPD_BUTTON_DELAY_MS="$2"
       shift 2
@@ -426,6 +438,7 @@ ${X11_PATHS}
 SH_PORT=${UDP}
 SH_FPS=${FPS}
 SH_ENCODER_PRESET=${ENCODER_PRESET}
+SH_BUFSIZE_RATIO=${BUFSIZE_RATIO:-0.5}
 SH_HOST_IP=${HOST_IP}
 SH_ADVERTISE_HOST=${ADVERTISE}
 SH_INPUT_BACKEND=${INPUT_BACKEND}
@@ -524,6 +537,8 @@ SH_WARPD_BUTTONS=${WARPD_BUTTONS}"
 SH_WARPD_WHEEL=${WARPD_WHEEL}"
 [ -n "$WARPD_PACE_MS" ] && OPT_LINES="${OPT_LINES}
 SH_WARPD_PACE_MS=${WARPD_PACE_MS}"
+[ -n "$ABS_PACE_MS" ] && OPT_LINES="${OPT_LINES}
+SH_ABS_PACE_MS=${ABS_PACE_MS}"
 [ -n "$WARPD_BUTTON_DELAY_MS" ] && OPT_LINES="${OPT_LINES}
 SH_WARPD_BUTTON_DELAY_MS=${WARPD_BUTTON_DELAY_MS}"
 [ "$CURSOR_SET" = 1 ] && OPT_LINES="${OPT_LINES}
@@ -544,7 +559,6 @@ SH_PROFILE=${PROFILE:-high}
 SH_TUNE=zerolatency
 ${CRF_LINE}
 SH_MAXRATE_KBPS=${MAXRATE:-0}
-SH_BUFSIZE_RATIO=${BUFSIZE_RATIO:-0.5}
 SH_ABR=${ABR:-on}
 # DWELL between tier changes (anti-oscillation). 25 s so the ABR controller can
 # never ping-pong; downshift is network-driven (loss / RTT growth) only.
@@ -565,6 +579,7 @@ SH_QMP=${QMP}${MODE_LINES}
 SH_PORT=${UDP}
 SH_FPS=${FPS}
 SH_ENCODER_PRESET=${ENCODER_PRESET}
+SH_BUFSIZE_RATIO=${BUFSIZE_RATIO:-0.5}
 SH_HOST_IP=${HOST_IP}
 SH_ADVERTISE_HOST=${ADVERTISE}
 ${INPUT_CONFIG_LINE}${OPT_LINES}

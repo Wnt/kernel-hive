@@ -68,7 +68,7 @@
     "signalOrder": 10,
     "tilesManifestOrder": 17,
     "tilesManifestPrelude": "\n# msdoswin1 (VMID 113) — MS-DOS 6.22 + Windows 1.01, tiny 16MB, PS/2, ide disk.\n#   VERBATIM LAUNCHER: golden fixture — no -snapshot; post-boot `loadvm golden`\n#   + `cont` via the tile-local qmpc.py helper (installed via --aux-file).\n#   2026-07-13/14 streamhost fixes (docs/guests/msdos-win1.md):\n#   - SOUND: PC-speaker only — `-machine pc,pcspk-audiodev=snd0` (backend-only).\n#   - KEYBOARD: SH_LEGACY_KBD=1 — input.rs remaps the cursor cluster to bare\n#     keypad scancodes for this pre-1986 guest.\n#   - MOUSE: genuine Win 1.01 re-SETUP with the Windows 2.03 MOUSE.DRV (PS/2)\n#     + SETVER entries baked into the golden (\"Option B — PROMOTED LIVE\").\n",
-    "tilesManifestInvocation": "emit msdoswin1 \\\n  --tile msdoswin1 --vmid 113 --udp 54113 --pointer rel --legacy-kbd 1 \\\n  --audio on --fps 60 \\\n  --launcher-file \"$T/msdoswin1/qemu-streamhost.sh\" \\\n  --aux-file \"$T/msdoswin1/qmpc.py\"\n",
+    "tilesManifestInvocation": "emit msdoswin1 \\\n  --tile msdoswin1 --vmid 113 --udp 54113 --pointer rel --legacy-kbd 1 \\\n  --abs-pace-ms 30 --audio on --fps 60 \\\n  --launcher-file \"$T/msdoswin1/qemu-streamhost.sh\" \\\n  --aux-file \"$T/msdoswin1/qmpc.py\"\n",
     "bringUpGroup": 4,
     "bindingOrder": 25,
     "bindingPrelude": "",
@@ -117,7 +117,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/tiles/msdoswin1/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/tiles/msdoswin1/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_ABS_PACE_MS": "30"
     },
     "vmidLabel": 113,
     "qemu": {
@@ -133,6 +134,8 @@
         "rel",
         "--legacy-kbd",
         "1",
+        "--abs-pace-ms",
+        "30",
         "--audio",
         "on",
         "--fps",
