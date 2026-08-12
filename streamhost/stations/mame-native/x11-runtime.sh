@@ -64,6 +64,12 @@ rm -f "$PIDFILE" "$CTL"
 
 mkdir -p "$BASE/cfg" "$BASE/nvram" "$BASE/sta"
 
+# MACHINE_NOT_WORKING/imperfect drivers nag on a red panel that would BE the
+# exhibit; the skip-warnings build patch adds this ui.ini-only option.
+if [ "${MAME_NATIVE_SKIP_WARNINGS:-0}" = 1 ]; then
+  printf 'skip_warnings 1\n' >"$BASE/ui.ini"
+fi
+
 SND=(-sound none)
 if [ -n "$AFIFO" ]; then
   [ -p "$AFIFO" ] || { rm -f -- "$AFIFO" && mkfifo "$AFIFO"; }

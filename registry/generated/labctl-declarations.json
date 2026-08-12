@@ -94,18 +94,18 @@
     },
     "armeval": {
       "dir": "/data/vms/streamhost/stations/armeval",
-      "qmp": "/data/vms/streamhost/stations/armeval/qmp.sock",
+      "qmp": null,
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5838,
-      "exec_port": 5838,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54135,
-      "notes": "exec: labctl exec armeval \"<cmd>\" (ssh root@:5838, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro or the ARM"
+      "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/armeval/sta."
     },
     "aros": {
       "dir": "/data/vms/streamhost/stations/aros",
@@ -139,18 +139,18 @@
     },
     "bbcmicro": {
       "dir": "/data/vms/streamhost/stations/bbcmicro",
-      "qmp": "/data/vms/streamhost/stations/bbcmicro/qmp.sock",
+      "qmp": null,
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5832,
-      "exec_port": 5832,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54129,
-      "notes": "exec: labctl exec bbcmicro \"<cmd>\" (ssh root@:5832, key bridge_key) — reaches the Debian kiosk, NOT the emulated BBC Micro"
+      "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/bbcmicro/sta."
     },
     "c128": {
       "dir": "/data/vms/streamhost/stations/c128",

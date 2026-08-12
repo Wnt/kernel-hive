@@ -683,10 +683,11 @@ emit zx81 \
 
 # bbcmicro (VMID 232) — MAME 0.289 bbcb (Acorn BBC Micro Model B, 1981) -> BBC BASIC II. ssh 5832. Keyboard-only.
 emit bbcmicro \
-  --tile bbcmicro --vmid 232 --udp 54129 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/bbcmicro/qemu-streamhost.sh" \
-  --env-append-file "$T/bbcmicro/station.env.fixture"
+  --tile bbcmicro --udp 54129 --x11 --x11-display :43 --capture shm \
+  --pointer none --input-backend mamesock --audio on --fps 60 \
+  --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
+  "$T/bbcmicro/bbcmicro.keymap" --env-append-file \
+  "$T/bbcmicro/station.env.fixture"
 
 # dragon32 (VMID 233) — MAME dragon32 -ext "" (Dragon 32, PAL, 1982) -> Microsoft Extended Color BASIC. ssh 5833. Keyboard-only.
 emit dragon32 \
@@ -716,10 +717,10 @@ emit nextstep \
   --fps 60 --launcher-file "$T/nextstep/qemu-streamhost.sh" \
   --env-append-file "$T/nextstep/station.env.fixture"
 emit armeval \
-  --tile armeval --vmid 238 --udp 54135 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/armeval/qemu-streamhost.sh" --env-append-file \
-  "$T/armeval/station.env.fixture"
+  --tile armeval --udp 54135 --x11 --x11-display :44 --capture shm --pointer \
+  none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/armeval/armeval.keymap" \
+  --env-append-file "$T/armeval/station.env.fixture"
 emit alto \
   --tile alto --vmid 243 --udp 54137 --pointer abs --cursor-scale 1.0 \
   --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 --launcher-file \

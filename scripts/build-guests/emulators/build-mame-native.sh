@@ -60,6 +60,44 @@ die() {
   exit 1
 }
 
+# Shared smoke gate for stanzas (the operator batch-validates the scene, so
+# per the 2026-08-12 directive most stanzas only prove "the machine draws
+# SOMETHING on the published surface"): run the machine on drawshm for a few
+# emulated seconds, count pixels with any channel above 40/255, assert a floor.
+#   native_gate_nonblack <bin> <romdir> <gatedir> <floor> <emulated-secs>
+native_gate_nonblack() {
+  local bin="$1" roms="$2" gate="$3" floor="$4" secs="$5" lit
+  rm -rf "$gate"
+  mkdir -p "$gate/cfg" "$gate/nvram"
+  [ "${NATIVE_SKIP_WARNINGS:-0}" = 1 ] && printf 'skip_warnings 1\n' >"$gate/ui.ini"
+  (cd "$gate" && MAME_SHM_PATH="$gate/fb.shm" MAME_SHM_SIZE="$NATIVE_GEOM" \
+    "$bin" "$NATIVE_DRIVER" -rompath "$roms" "${NATIVE_MAME_ARGS[@]}" \
+    -video shm -sound none -nothrottle -str "$secs" -skip_gameinfo \
+    -homepath . -cfg_directory ./cfg -nvram_directory ./nvram -inipath . \
+    >"$gate/mame.log" 2>&1) || die "gate MAME exited non-zero; see $gate/mame.log"
+  lit=$(
+    python3 - "$gate/fb.shm" <<'PY'
+import struct
+import sys
+
+b = open(sys.argv[1], "rb").read()
+magic, _v, w, h, stride, _bpp = struct.unpack_from("<6I", b, 0)
+if magic != 0x31424649:
+    sys.exit("bad drawshm magic")
+n = 0
+for y in range(h):
+    row = b[64 + y * stride : 64 + y * stride + w * 4]
+    for x in range(0, w * 4, 4):
+        if row[x] > 40 or row[x + 1] > 40 or row[x + 2] > 40:
+            n += 1
+print(n)
+PY
+  ) || die "drawshm mapping unreadable; see $gate/mame.log"
+  [ "$lit" -ge "$floor" ] ||
+    die "smoke gate: only $lit lit pixel(s) on the drawshm frame (floor $floor); see $gate/mame.log"
+  echo "  smoke gate PASSED: $lit lit pixels on the published surface (floor $floor)"
+}
+
 STATION="${1:?usage: build-mame-native.sh <station> [work-dir] [output-binary]}"
 STANZA="$HERE/native.d/$STATION.sh"
 [ -f "$STANZA" ] || die "no conversion stanza for '$STATION': $STANZA"
