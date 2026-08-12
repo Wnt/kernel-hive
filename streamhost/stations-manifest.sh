@@ -690,10 +690,11 @@ emit bbcmicro \
 
 # dragon32 (VMID 233) — MAME dragon32 -ext "" (Dragon 32, PAL, 1982) -> Microsoft Extended Color BASIC. ssh 5833. Keyboard-only.
 emit dragon32 \
-  --tile dragon32 --vmid 233 --udp 54130 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/dragon32/qemu-streamhost.sh" \
-  --env-append-file "$T/dragon32/station.env.fixture"
+  --tile dragon32 --udp 54130 --x11 --x11-display :42 --capture shm \
+  --pointer none --input-backend mamesock --audio on --fps 60 \
+  --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
+  "$T/dragon32/dragon32.keymap" --env-append-file \
+  "$T/dragon32/station.env.fixture"
 emit oricatmos \
   --tile oricatmos --vmid 234 --udp 54131 --pointer none --input-backend \
   disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \

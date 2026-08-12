@@ -439,7 +439,10 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
 # backend column mirrors InputBackend in streamhost/streamhost/src/config/
 # backends.rs; the ledger columns are what the launcher/emitArgs must show.
 POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = {
-    "none": ({"disabled"}, (), ("usb-tablet", "vmmouse", "gallery-hid-pci")),
+    # "none" admits mamesock as well as disabled: a de-bridged keyboard-only
+    # MAME station has NO pointer, but its KEYS ride the mamesock backend --
+    # the module acks pointer verbs as silent no-ops (btns=0 axes=0).
+    "none": ({"disabled", "mamesock"}, (), ("usb-tablet", "vmmouse", "gallery-hid-pci")),
     "qemu-usb-tablet": ({"dbus-abs"}, ("usb-tablet",), ()),
     "qemu-vmmouse": ({"dbus-abs"}, ("vmmouse", "vmport=on"), ("usb-tablet",)),
     "qemu-ps2-relative": ({"dbus-rel"}, (), ("usb-tablet",)),
@@ -533,7 +536,9 @@ def validate_pointer_method(rows: list[dict[str, Any]], errors: list[str]) -> No
                 f"the backend -- the LIVE station.env on the box is the truth about "
                 f"which one is wrong.",
             )
-        present = backend != "disabled"
+        # method "none" means no pointer regardless of backend: a keys-only
+        # mamesock station carries an input backend but nothing to point with.
+        present = backend != "disabled" and method != "none"
         absolute = present and backend != "dbus-rel"
         if ptr.get("present") is not present or ptr.get("absolute") is not absolute:
             fail(
@@ -545,7 +550,7 @@ def validate_pointer_method(rows: list[dict[str, Any]], errors: list[str]) -> No
                 f"absolute={absolute}/present={present}",
             )
         pointer_mode = row.get("operator", {}).get("labctl", {}).get("pointer_mode")
-        expected_mode = POINTER_MODE_BY_BACKEND[backend]
+        expected_mode = "none" if method == "none" else POINTER_MODE_BY_BACKEND[backend]
         if pointer_mode is not None and pointer_mode != expected_mode:
             fail(
                 errors,
