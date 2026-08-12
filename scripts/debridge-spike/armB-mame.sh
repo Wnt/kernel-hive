@@ -102,6 +102,25 @@ unset DISPLAY
 # a single floppydisk device (`-listmedia st`), so GEMBNCH (256 KB, the
 # largest) and the ORIGINAL/ duplicate tree are dropped to make it fit.
 # apps2.st is built anyway, ready if a second drive is ever wired up.
+# ST HIGH RESOLUTION (640x400 mono). The ST's video mode follows the MONITOR
+# it is plugged into, not a window size: colour (SC1224) gives 320x200 /
+# 640x200, only the mono SM124 gives 640x400 — and GEM Bench refuses to run
+# below that. The monitor is a config ioport, which MAME reads at startup
+# from its per-machine cfg, so it is set here rather than at runtime (a live
+# flip does not re-init TOS's video). Written once; edit or delete to change.
+if [ ! -f "$D/cfg/st.cfg" ]; then
+  cat >"$D/cfg/st.cfg" <<'XML'
+<?xml version="1.0"?>
+<mameconfig version="10">
+    <system name="st">
+        <input>
+            <port tag=":config" type="CONFIG" mask="128" defvalue="128" value="0" />
+        </input>
+    </system>
+</mameconfig>
+XML
+fi
+
 FLOP=/data/vms/streamhost/assets/atarist-mame/floppies
 FLOPARG=()
 [ -f "$FLOP/apps1.st" ] && FLOPARG+=(-flop1 "$FLOP/apps1.st")
