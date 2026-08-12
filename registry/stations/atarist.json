@@ -53,11 +53,6 @@
   },
   "stationDir": "atarist",
   "lifecycle": "production",
-  "listing": {
-    "state": "hidden",
-    "since": "2026-08-10",
-    "reason": "Off the floor for the de-bridging spike: atarist is the measured tile, and a visitor opening it mid-run corrupts the latency numbers. The unit is deliberately stopped. Delete this block to put it back on the floor when the spike lands."
-  },
   "stream": {
     "transport": "streamhost",
     "udpPort": 54116,
