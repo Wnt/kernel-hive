@@ -26,9 +26,11 @@
 #                        needs a literal empty argument, `-ext ""`)
 #
 # RESET = RELAUNCH: if a pidfile-owned emulator is alive we KILL it (verified
-# through /proc/<pid>/exe, never a name match) and start fresh; with a baked
-# golden savestate ($BASE/sta/golden.sta) the fresh start RESTORES it — the
-# QEMU fleet's `-loadvm golden`, translated to MAME.
+# through /proc/<pid>/exe, never a name match) and start fresh; with a
+# captured checkpoint ($BASE/sta/<driver>/golden.sta — the stored label lags
+# by design, docs/GLOSSARY.md) the fresh start RESTORES it — the QEMU
+# fleet's `-loadvm golden`, translated to MAME. MAME_NATIVE_CHECKPOINT=0
+# opts a station out (drivers without MACHINE_SUPPORTS_SAVE).
 # =============================================================================
 set -euo pipefail
 
@@ -92,15 +94,16 @@ export MAME_CTL_SOCK="$CTL"
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
 
-# MAME nests savestates per machine: SAVEST golden lands in
-# sta/<driver>/golden.sta (verified on the dragon32 cutover).
-# MAME_NATIVE_GOLDEN=0 disables the restore for drivers WITHOUT
-# MACHINE_SUPPORTS_SAVE: on those, -state golden restores garbage — bbcb
-# died outright and kc85_4 restored to a black screen (2026-08-12, the
-# operator's report). Their reset is the cold boot, which for every one of
-# them reaches the documented power-on scene in seconds.
+# MAME nests savestates per machine: the checkpoint (stored label `golden`,
+# which lags by design — docs/GLOSSARY.md) lands in sta/<driver>/golden.sta
+# (verified on the dragon32 cutover). MAME_NATIVE_CHECKPOINT=0 disables the
+# restore for drivers WITHOUT MACHINE_SUPPORTS_SAVE: on those, -state golden
+# restores garbage — bbcb died outright and kc85_4 restored to a black
+# screen (2026-08-12, the operator's report). Their reset is the cold boot,
+# which for every one of them reaches the documented power-on scene in
+# seconds.
 STARG=(-state_directory "$BASE/sta")
-if [ "${MAME_NATIVE_GOLDEN:-1}" = 1 ] && [ -f "$BASE/sta/$DRIVER/golden.sta" ]; then
+if [ "${MAME_NATIVE_CHECKPOINT:-1}" = 1 ] && [ -f "$BASE/sta/$DRIVER/golden.sta" ]; then
   STARG+=(-state golden)
 fi
 
