@@ -24,6 +24,8 @@
 #   MAME_NATIVE_GEOM     published surface (MAME_SHM_SIZE)
 #   MAME_NATIVE_ARGS     extra flags, shell-quoted string (eval'd: the Dragon
 #                        needs a literal empty argument, `-ext ""`)
+#   MAME_NATIVE_STANDBY_DELAY_S  settle before the standby freeze (see below)
+#   SH_IDLE_PAUSE_PIDFILE/_SECS  the daemon's freezer; also arms standby here
 #
 # RESET = RELAUNCH: if a pidfile-owned emulator is alive we KILL it (verified
 # through /proc/<pid>/exe, never a name match) and start fresh; with a
@@ -91,6 +93,11 @@ fi
 export MAME_SHM_PATH="$SHM"
 export MAME_SHM_SIZE="$GEOM"
 export MAME_CTL_SOCK="$CTL"
+# The exhibit is the guest's framebuffer and nothing else: no savestate
+# popmessage ("Loaded state from ... Warning: Save states are not officially
+# supported"), no FPS overlay, no menu, no paused banner. Emulator chrome on
+# a 1982 screen is the wrong machine (mame-kiosk-no-ui.patch).
+export MAME_NO_UI=1
 # The module's PER-FIELD key dwell floors (a release waits this long after
 # its own press; a re-press after its own release) derive from the station's
 # bisected SH_KEY_MIN_* pacing — the same knobs labctl types with. The
@@ -135,3 +142,35 @@ for _ in $(seq 1 40); do
 done
 echo "mame-native[$TILE]: pid=$(cat "$PIDFILE") shm=$SHM ctl=$CTL audio=${AFIFO:-none} state=${STARG[*]}"
 grep -m1 'ctlsock: setup' "$BASE/mame.log" || true
+
+# ---------------------------------------------------------------------------
+# STANDBY (instant-ready): an emulator nobody is watching must cost ~0 CPU.
+# ---------------------------------------------------------------------------
+# The fleet contract (docs/GLOSSARY.md "instant-ready"): launch restored-to-
+# checkpoint and PAUSED; the first session resumes. The daemon owns the
+# steady state through SH_IDLE_PAUSE_PIDFILE (SIGSTOP after the idle grace,
+# and an UNCONDITIONAL SIGCONT on connect — idle.rs session_started, which is
+# what makes a launcher-side freeze safe to hand over). What the daemon
+# cannot do is cover the FIRST grace period: a station restarted at 03:00 and
+# unvisited would burn a full core until its first idle tick. So freeze here,
+# once the scene is actually on the mapping, and let the daemon take it from
+# there.
+#
+# Backgrounded: ExecStartPre must return promptly, and this subshell lives in
+# the unit's BindsTo scope, so `systemctl stop` takes it with everything else.
+# Only ever signals a pid whose /proc/<pid>/exe is still OUR binary — the same
+# stale-pid guard the daemon's freezer applies (idle.rs signal_pidfile).
+if [ -n "${SH_IDLE_PAUSE_PIDFILE:-}" ] && [ "${SH_IDLE_PAUSE_SECS:-60}" != 0 ]; then
+  (
+    # Let the scene settle before freezing it. A checkpoint restore paints in
+    # ~1 s; a cold-boot station needs its ROM banner; armeval's autoboot types
+    # two supervisor lines at ~16 emulated seconds. Per-station via the
+    # fixture, because only the station knows when its scene is DONE.
+    sleep "${MAME_NATIVE_STANDBY_DELAY_S:-8}"
+    p="$(cat "$PIDFILE" 2>/dev/null || true)"
+    [ -n "$p" ] || exit 0
+    [ "$(readlink -f "/proc/$p/exe" 2>/dev/null)" = "$(readlink -f "$BIN")" ] || exit 0
+    kill -STOP "$p" 2>/dev/null &&
+      echo "mame-native[$TILE]: standby — frozen at the scene (pid $p, ~0 CPU; first session wakes it)"
+  ) &
+fi

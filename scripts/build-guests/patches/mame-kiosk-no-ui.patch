@@ -1,0 +1,69 @@
+Suppress every non-guest overlay MAME draws into the video pipeline.
+
+WHY. A Kernel Hive station streams ONE thing: the machine's own framebuffer.
+MAME's UI layer composes its own primitives onto the same target — the
+savestate popmessage ("Loaded state from <path>. Warning: Save states are not
+officially supported for this system." — seen by the operator on a golden
+restore, 2026-08-12), the FPS/profiler overlays, the menu system, the paused
+banner. None of that is the exhibit; a visitor seeing emulator chrome on a
+1982 Dragon 32 screen is looking at the wrong machine.
+
+`-skip_gameinfo` and `skip_warnings 1` each remove ONE such screen and neither
+touches popmessage, so the fix belongs at the seam where UI primitives enter a
+render target rather than at the dozen sites that raise them. render_target
+composes the UI container into every target's primitive list; gating that one
+condition removes all of it at once, for every renderer (drawshm included) and
+every target, with no per-message allow-list to keep in sync with upstream.
+
+GATED AT RUNTIME, like every other patch in this stack: with MAME_NO_UI unset
+the tree behaves exactly as upstream, so the same binary still shows its UI if
+anyone ever runs it by hand to debug a machine. The stations set it in
+streamhost/stations/mame-native/x11-runtime.sh.
+
+NOT the same thing as input: the UI's INPUT path (menus reachable by Tab) is
+untouched — these stations simply never deliver those keys, and a keymap only
+carries fields the machine itself declares.
+
+diff --git a/src/emu/render.cpp b/src/emu/render.cpp
+--- a/src/emu/render.cpp
++++ b/src/emu/render.cpp
+@@ -53,12 +53,14 @@
+ 
+ #include "util/ioprocsfilter.h"
+ #include "util/language.h"
+ #include "util/path.h"
+ #include "util/xmlfile.h"
+ 
++#include <cstdlib>
++
+ #include "corestr.h"
+ 
+ #include <algorithm>
+ #include <limits>
+ 
+ 
+@@ -1727,14 +1729,23 @@ render_primitive_list &render_target::get_primitives()
+ 			prim->texture.base = nullptr;
+ 			prim->flags = PRIMFLAG_BLENDMODE(BLENDMODE_ALPHA);
+ 			list.append(*prim);
+ 		}
+ 	}
+ 
++	// KERNEL HIVE (MAME_NO_UI): a station streams the guest's framebuffer and
++	// nothing else -- no popmessage, no FPS overlay, no menu, no paused banner.
++	// Read once; this runs per composed frame.
++	static int const kh_no_ui = []
++			{
++				char const *const e = std::getenv("MAME_NO_UI");
++				return (e && *e && *e != '0') ? 1 : 0;
++			}();
++
+ 	// process UI elements if applicable
+-	if (m_ui_container)
++	if (m_ui_container && !kh_no_ui)
+ 	{
+ 		// compute the transform for the UI
+ 		object_transform ui_xform;
+ 		ui_xform.xoffs = 0;
+ 		ui_xform.yoffs = 0;
+ 		ui_xform.xscale = (float) m_width;

@@ -119,7 +119,15 @@ JOBS="${JOBS:-$(nproc)}"
 MAME_TAG=mame0289
 MAME_BASE=f34f02505e32c1993c6a782b6814232cbfc74e36
 PATCHDIR="$HERE/../patches"
-PATCHES=(mame-ctlsock.patch mame-drawshm.patch "${NATIVE_EXTRA_PATCHES[@]}")
+# mame-kiosk-no-ui: a station streams the guest's framebuffer and NOTHING
+# else — no savestate popmessage, no FPS overlay, no menus (env-gated on
+# MAME_NO_UI, which the shared launcher sets).
+PATCHES=(
+  mame-ctlsock.patch
+  mame-drawshm.patch
+  mame-kiosk-no-ui.patch
+  "${NATIVE_EXTRA_PATCHES[@]}"
+)
 for p in "${PATCHES[@]}"; do
   [ -f "$PATCHDIR/$p" ] || die "missing patch: $PATCHDIR/$p"
 done
