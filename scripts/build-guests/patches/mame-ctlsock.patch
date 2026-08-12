@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,3041 @@
+@@ -0,0 +1,3059 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -220,7 +220,10 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +                             mutually exclusive: a press waits until
 +                             no other matching field is down (CPU-
 +                             scanned keyboards whose ROM needs an
-+                             empty matrix between keys; MPF-II) [off]
++                             empty matrix between keys; MPF-II).
++                             Shift/Ctrl-named fields are exempt (a
++                             held modifier is a level, not a key) and
++                             the queue drains in STRICT order [off]
 +      MAME_CTL_MOVEA_TRIES   accepted, INERT since engine V2 (V2
 +                             flights terminate by construction)     [40]
 +      MAME_CTL_SWAP_ITEMS    "<seq>,<dx>,<dy>": the VC2 cursor-swap
@@ -272,6 +275,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +
 +#include <algorithm>
 +#include <atomic>
++#include <cctype>
 +#include <cerrno>
 +#include <chrono>
 +#include <cmath>
@@ -1549,12 +1553,14 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			return;
 +		double const now = emu_now();
 +		std::unordered_set<std::string> blocked;
-+		bool excl_wait = false;
 +		for (auto it = m_kq.begin(); it != m_kq.end(); )
 +		{
 +			key_entry &e = *it;
 +			if (blocked.count(e.field))
 +			{
++				if (!m_key_excl.empty())
++					break;  // strict order in exclusive-scan mode: a shift
++					        // release must never overtake a deferred press
 +				++it;  // later edge of a gated field: per-field order holds
 +				continue;
 +			}
@@ -1563,6 +1569,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			auto const g = gates.find(e.field);
 +			if (g != gates.end() && now < g->second + dwell)
 +			{
++				if (!m_key_excl.empty())
++					break;
 +				blocked.insert(e.field);
 +				++it;
 +				continue;
@@ -1575,16 +1583,12 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			// presses stay queued in arrival order (excl_wait); the shift
 +			// port (:keyb_special) does not match and flows per-field.
 +			bool const excl = !m_key_excl.empty()
-+					&& e.port.find(m_key_excl) != std::string::npos;
-+			if (excl && e.val == 1)
++					&& e.port.find(m_key_excl) != std::string::npos
++					&& !field_is_modifier(e.field);
++			if (excl && e.val == 1
++					&& (!m_excl_down.empty() || now < m_excl_up_at + m_key_gap))
 +			{
-+				if (excl_wait || !m_excl_down.empty() || now < m_excl_up_at + m_key_gap)
-+				{
-+					excl_wait = true;
-+					blocked.insert(e.field);
-+					++it;
-+					continue;
-+				}
++				break;  // strict order: the whole queue waits behind this press
 +			}
 +			ioport_port *const pt = resolve_port(e.port);
 +			ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;
@@ -1650,6 +1654,20 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			if (f.name() == name)
 +				return &f;
 +		return nullptr;
++	}
++
++	// Modifiers are exempt from exclusive-scan by FIELD NAME, not port: the
++	// MPF-II's Shift lives on :ROW0 with the ordinary keys, and a shift held
++	// through a chord must not count as "matrix busy" (the ROM reads it as a
++	// level, not a keystroke).
++	static bool field_is_modifier(std::string const &n)
++	{
++		std::string u;
++		u.reserve(n.size());
++		for (char c : n)
++			u += char(toupper(static_cast<unsigned char>(c)));
++		return u.find("SHIFT") != std::string::npos || u.find("CTRL") != std::string::npos
++				|| u.find("CONTROL") != std::string::npos;
 +	}
 +
 +	// ---- buttons -----------------------------------------------------------
