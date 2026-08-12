@@ -39,30 +39,30 @@
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SH="$HERE/scripts/streamhost-station.sh"
-T="$HERE/tiles"                        # tracked verbatim launchers + env fixtures
+T="$HERE/stations"                        # tracked verbatim launchers + env fixtures
 RUNTIME_T="/data/vms/streamhost/stations" # runtime tile root (referenced in args)
 
 FWD=()
 OUT_ROOT="$RUNTIME_T"
 while [ $# -gt 0 ]; do
   case "$1" in
-    --install)
-      FWD+=(--install)
-      shift
-      ;;
-    --pin-machine)
-      FWD+=(--pin-machine)
-      shift
-      ;;
-    --out-root)
-      OUT_ROOT="$2"
-      FWD+=(--out-root "$2")
-      shift 2
-      ;;
-    *)
-      echo "unknown arg: $1" >&2
-      exit 2
-      ;;
+  --install)
+    FWD+=(--install)
+    shift
+    ;;
+  --pin-machine)
+    FWD+=(--pin-machine)
+    shift
+    ;;
+  --out-root)
+    OUT_ROOT="$2"
+    FWD+=(--out-root "$2")
+    shift 2
+    ;;
+  *)
+    echo "unknown arg: $1" >&2
+    exit 2
+    ;;
   esac
 done
 

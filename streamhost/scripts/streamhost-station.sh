@@ -136,7 +136,7 @@ INPUT_DEV="virtio" # virtio (modern Linux/Haiku) | usb (NT-era: ReactOS/Win2000)
 # `std` == QEMU's plain -vga std (1280x800 EDID). Use `none` to omit the built-in
 # -vga entirely and let --extra supply a fully-configured display device — e.g.
 # Haiku forces 1280x720 via `-device VGA,id=vga0,edid=on,...` in --extra.
-VGA="std"                             # std | cirrus | vmware | qxl | virtio | none
+VGA="std"                                # std | cirrus | vmware | qxl | virtio | none
 OUT_ROOT="/data/vms/streamhost/stations" # where files are WRITTEN (--out-root)
 RUN_ROOT="/data/vms/streamhost/stations" # runtime root REFERENCED in file contents
 LAUNCHER_FILE=""

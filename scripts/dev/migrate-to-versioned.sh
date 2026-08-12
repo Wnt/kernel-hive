@@ -94,7 +94,7 @@ if [ -z "$SOURCE_SHA" ]; then SOURCE_SHA="$(git -C "$REPO_TOP" rev-parse HEAD)";
 [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || die "--git-sha must be a full 40-character lowercase SHA"
 ARTIFACT="streamhost-${SOURCE_SHA}"
 [ -f "$UNIT_SOURCE" ] || die "missing versioned unit source: $UNIT_SOURCE"
-grep -Fq "ExecStart=${INSTALL_ROOT}/tiles/%i/current" "$UNIT_SOURCE" ||
+grep -Fq "ExecStart=${INSTALL_ROOT}/stations/%i/current" "$UNIT_SOURCE" ||
   die "unit source does not use the versioned per-tile path"
 
 mapfile -t LIVE < <(ssh -o ConnectTimeout=15 "$LAB" \
@@ -180,9 +180,9 @@ done
 ok "all ${#LIVE[@]} units still use the legacy path"
 
 step "install immutable artifact and per-tile symlink layout"
-ssh -o ConnectTimeout=15 "$LAB" "set -eu; dst='${INSTALL_ROOT}/${ARTIFACT}'; install -d -m 0755 '${INSTALL_ROOT}/tiles'; if [ -e \"\$dst\" ]; then cmp -s '${BOX_BINARY}' \"\$dst\"; else tmp=\"\$dst.tmp.\$\$\"; install -m 0755 '${BOX_BINARY}' \"\$tmp\"; mv -Tf \"\$tmp\" \"\$dst\"; fi"
+ssh -o ConnectTimeout=15 "$LAB" "set -eu; dst='${INSTALL_ROOT}/${ARTIFACT}'; install -d -m 0755 '${INSTALL_ROOT}/stations'; if [ -e \"\$dst\" ]; then cmp -s '${BOX_BINARY}' \"\$dst\"; else tmp=\"\$dst.tmp.\$\$\"; install -m 0755 '${BOX_BINARY}' \"\$tmp\"; mv -Tf \"\$tmp\" \"\$dst\"; fi"
 for t in "${LIVE[@]}"; do
-  ssh -o ConnectTimeout=15 "$LAB" "set -eu; d='${INSTALL_ROOT}/tiles/${t}'; install -d -m 0755 \"\$d\"; for link in current previous; do tmp=\"\$d/.\$link.\$\$\"; ln -s '../../${ARTIFACT}' \"\$tmp\"; mv -Tf \"\$tmp\" \"\$d/\$link\"; done"
+  ssh -o ConnectTimeout=15 "$LAB" "set -eu; d='${INSTALL_ROOT}/stations/${t}'; install -d -m 0755 \"\$d\"; for link in current previous; do tmp=\"\$d/.\$link.\$\$\"; ln -s '../../${ARTIFACT}' \"\$tmp\"; mv -Tf \"\$tmp\" \"\$d/\$link\"; done"
 done
 ok "versioned filesystem layout ready (current=previous=${ARTIFACT})"
 

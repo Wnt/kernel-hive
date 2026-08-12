@@ -13,7 +13,10 @@ PIDFILE="$WORK/qemu.pid"
 EVIDENCE="$WORK/evidence"
 
 log() { printf '[build:%s] %s\n' "$OS_ID" "$*" >&2; }
-die() { log "ERROR: $*"; exit 1; }
+die() {
+  log "ERROR: $*"
+  exit 1
+}
 # shellcheck disable=SC2317 # scaffold hook becomes reachable when TODO flow is filled
 qmp() { python3 "$LABQMP" "$QMP" "$@"; }
 

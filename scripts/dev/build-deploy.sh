@@ -354,7 +354,7 @@ install_versioned_artifact() {
 service_uses_versioned() {
   local tile="$1"
   ssh_lab "systemctl show -p ExecStart --value 'streamhost@${tile}.service'" |
-    grep -Fq "path=${INSTALL_ROOT}/tiles/${tile}/current"
+    grep -Fq "path=${INSTALL_ROOT}/stations/${tile}/current"
 }
 
 require_versioned_service() {
@@ -371,13 +371,13 @@ switch_tile() {
     printf '%s\n' "DRY_RUN_PREVIOUS"
     return
   fi
-  ssh_lab "set -eu; d='${INSTALL_ROOT}/tiles/${tile}'; a='${INSTALL_ROOT}/${artifact}'; [ -x \"\$a\" ]; [ -L \"\$d/current\" ]; old=\$(readlink -f \"\$d/current\"); [ -x \"\$old\" ]; old_name=\$(basename \"\$old\"); ptmp=\"\$d/.previous.\$\$\"; ctmp=\"\$d/.current.\$\$\"; ln -s \"../../\$old_name\" \"\$ptmp\"; mv -Tf \"\$ptmp\" \"\$d/previous\"; ln -s '../../${artifact}' \"\$ctmp\"; mv -Tf \"\$ctmp\" \"\$d/current\"; printf '%s\\n' \"\$old_name\""
+  ssh_lab "set -eu; d='${INSTALL_ROOT}/stations/${tile}'; a='${INSTALL_ROOT}/${artifact}'; [ -x \"\$a\" ]; [ -L \"\$d/current\" ]; old=\$(readlink -f \"\$d/current\"); [ -x \"\$old\" ]; old_name=\$(basename \"\$old\"); ptmp=\"\$d/.previous.\$\$\"; ctmp=\"\$d/.current.\$\$\"; ln -s \"../../\$old_name\" \"\$ptmp\"; mv -Tf \"\$ptmp\" \"\$d/previous\"; ln -s '../../${artifact}' \"\$ctmp\"; mv -Tf \"\$ctmp\" \"\$d/current\"; printf '%s\\n' \"\$old_name\""
 }
 
 set_tile_links() {
   local tile="$1" current="$2" previous="$3"
   [ "$DRY_RUN" -eq 0 ] || return 0
-  ssh_lab "set -eu; d='${INSTALL_ROOT}/tiles/${tile}'; [ -x '${INSTALL_ROOT}/${current}' ]; [ -x '${INSTALL_ROOT}/${previous}' ]; ctmp=\"\$d/.current.\$\$\"; ptmp=\"\$d/.previous.\$\$\"; ln -s '../../${current}' \"\$ctmp\"; mv -Tf \"\$ctmp\" \"\$d/current\"; ln -s '../../${previous}' \"\$ptmp\"; mv -Tf \"\$ptmp\" \"\$d/previous\""
+  ssh_lab "set -eu; d='${INSTALL_ROOT}/stations/${tile}'; [ -x '${INSTALL_ROOT}/${current}' ]; [ -x '${INSTALL_ROOT}/${previous}' ]; ctmp=\"\$d/.current.\$\$\"; ptmp=\"\$d/.previous.\$\$\"; ln -s '../../${current}' \"\$ctmp\"; mv -Tf \"\$ctmp\" \"\$d/current\"; ln -s '../../${previous}' \"\$ptmp\"; mv -Tf \"\$ptmp\" \"\$d/previous\""
 }
 
 readiness() {
@@ -480,7 +480,7 @@ promote_canary() {
 
   if [ "$DRY_RUN" -eq 0 ]; then
     ssh_lab "test -x '${INSTALL_ROOT}/${ARTIFACT_NAME}'" || die "gated artifact is missing"
-    [ "$(ssh_lab "basename \"\$(readlink -f '${INSTALL_ROOT}/tiles/${CANARY_TILE}/current')\"")" = "$ARTIFACT_NAME" ] ||
+    [ "$(ssh_lab "basename \"\$(readlink -f '${INSTALL_ROOT}/stations/${CANARY_TILE}/current')\"")" = "$ARTIFACT_NAME" ] ||
       die "canary tile no longer points at gated artifact"
   fi
   for t in "${promote_targets[@]}"; do require_versioned_service "$t"; done
@@ -534,7 +534,7 @@ rollback_tile() {
     ok "DRY-RUN would atomically swap current and previous, restart, and require LISTENING readiness"
     return
   fi
-  read -r cur prev < <(ssh_lab "d='${INSTALL_ROOT}/tiles/${tile}'; printf '%s %s\\n' \"\$(basename \"\$(readlink -f \"\$d/current\")\")\" \"\$(basename \"\$(readlink -f \"\$d/previous\")\")\"")
+  read -r cur prev < <(ssh_lab "d='${INSTALL_ROOT}/stations/${tile}'; printf '%s %s\\n' \"\$(basename \"\$(readlink -f \"\$d/current\")\")\" \"\$(basename \"\$(readlink -f \"\$d/previous\")\")\"")
   if ! valid_artifact "$cur" || ! valid_artifact "$prev"; then
     die "invalid current/previous links for ${tile}"
   fi

@@ -64,7 +64,7 @@ GALLERY_ROOT="${GALLERY_ROOT:-/data/gallery-guests}"
 #
 # ---------------------------------------------------------------------------
 MANIFEST=(
-  "kolibrios      |tiles/kolibrios.sh            |KolibriOS         |fast      |~2-3m   |full     |kolibri.iso (live CD)"
+    "kolibrios      |tiles/kolibrios.sh            |KolibriOS         |fast      |~2-3m   |full     |kolibri.iso (live CD)"
   "toaruos        |tiles/toaruos.sh              |toaruos           |fast      |~3m     |full     |image.iso (live CD)"
   "helenos        |tiles/helenos.sh              |HelenOS           |fast      |~3m     |full     |HelenOS-0.14.1-ia32.iso (live)"
   "9front         |tiles/9front.sh               |9front            |fast      |~5-8m   |full     |9front-11554.amd64.qcow2"
@@ -201,67 +201,67 @@ SKIP_VERIFY=0
 CHECK_ASSETS=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --list)
-      print_manifest
-      exit 0
-      ;;
-    --only)
-      [ $# -ge 2 ] || {
-        err "--only requires a guest key"
-        exit 2
-      }
-      ONLY+=("$2")
-      shift 2
-      ;;
-    --only=*)
-      ONLY+=("${1#*=}")
-      shift
-      ;;
-    --class)
-      [ $# -ge 2 ] || {
-        err "--class requires a class"
-        exit 2
-      }
-      CLASS_FILTER="$2"
-      shift 2
-      ;;
-    --class=*)
-      CLASS_FILTER="${1#*=}"
-      shift
-      ;;
-    --with-media)
-      WITH_MEDIA=1
-      shift
-      ;;
-    --include-licensed)
-      INCLUDE_LICENSED=1
-      shift
-      ;;
-    --check-assets)
-      CHECK_ASSETS=1
-      shift
-      ;;
-    --fail-fast)
-      FAIL_FAST=1
-      shift
-      ;;
-    --skip-verify)
-      SKIP_VERIFY=1
-      shift
-      ;;
-    --dry-run)
-      DRY_RUN=1
-      shift
-      ;;
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    *)
-      err "unknown arg: $1"
-      usage
+  --list)
+    print_manifest
+    exit 0
+    ;;
+  --only)
+    [ $# -ge 2 ] || {
+      err "--only requires a guest key"
       exit 2
-      ;;
+    }
+    ONLY+=("$2")
+    shift 2
+    ;;
+  --only=*)
+    ONLY+=("${1#*=}")
+    shift
+    ;;
+  --class)
+    [ $# -ge 2 ] || {
+      err "--class requires a class"
+      exit 2
+    }
+    CLASS_FILTER="$2"
+    shift 2
+    ;;
+  --class=*)
+    CLASS_FILTER="${1#*=}"
+    shift
+    ;;
+  --with-media)
+    WITH_MEDIA=1
+    shift
+    ;;
+  --include-licensed)
+    INCLUDE_LICENSED=1
+    shift
+    ;;
+  --check-assets)
+    CHECK_ASSETS=1
+    shift
+    ;;
+  --fail-fast)
+    FAIL_FAST=1
+    shift
+    ;;
+  --skip-verify)
+    SKIP_VERIFY=1
+    shift
+    ;;
+  --dry-run)
+    DRY_RUN=1
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    err "unknown arg: $1"
+    usage
+    exit 2
+    ;;
   esac
 done
 
