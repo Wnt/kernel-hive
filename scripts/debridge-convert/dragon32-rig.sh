@@ -69,7 +69,9 @@ case "$ACT" in
       # (SDL's) blocking open() succeeds whichever side comes up first and a
       # daemon restart never delivers SIGPIPE. ~0.3 s of audio can pool in
       # the pipe while no daemon reads; the daemon drains it on attach.
-      sleep infinity 3<>"$AFIFO" &
+      # stdio detached: an inherited ssh stdout would hold the session open
+      # for the holder's whole life (observed 2026-08-12).
+      sleep infinity 3<>"$AFIFO" >/dev/null 2>&1 &
       echo $! >"$D/afifo-holder.pid"
     fi
 
@@ -84,9 +86,11 @@ case "$ACT" in
     # Instant-restore: once a golden savestate is baked (ctlsock SAVEST after
     # the operator-approved scene), every start RESTORES it — the QEMU fleet's
     # `-loadvm golden`, translated to MAME (the irix pattern, minus the CHD
-    # pairing a ROM-only machine does not have).
-    STARG=()
-    [ -f "$D/sta/golden.sta" ] && STARG=(-state_directory "$D/sta" -state golden)
+    # pairing a ROM-only machine does not have). The state dir is ALWAYS
+    # pinned: MAME's default resolves relative to the launch cwd, which for a
+    # remote start is nowhere near the rig.
+    STARG=(-state_directory "$D/sta")
+    [ -f "$D/sta/golden.sta" ] && STARG+=(-state golden)
 
     nohup "$M" dragon32 \
       -rompath "$ROMS" -inipath "$D" -homepath "$D" \
