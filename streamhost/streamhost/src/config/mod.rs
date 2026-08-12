@@ -373,13 +373,13 @@ impl Config {
             env_or("SH_SHM_DAMAGE", "on").to_ascii_lowercase().as_str(),
             "on" | "1" | "true"
         );
-        // SH_STATION is the current name; SH_STATION is read as a fallback for one
+        // SH_STATION is the current name; SH_TILE is read as a fallback for one
         // epoch (terminology migration stage 3) so a station whose env has not
         // been re-emitted yet still identifies itself correctly.
         let mut tile = std::env::var("SH_STATION")
             .ok()
             .filter(|v| !v.is_empty())
-            .unwrap_or_else(|| env_or("SH_STATION", "dev951"));
+            .unwrap_or_else(|| env_or("SH_TILE", "dev951"));
         let mut port: u16 = env_or("SH_PORT", "4433").parse().unwrap_or(4433);
         let mut fps: u32 = env_or("SH_FPS", "60").parse().unwrap_or(60);
         // 2500 (was 1000): at CQP q10/1920x1200 an IDR is a ~1-2 MB frame whose
