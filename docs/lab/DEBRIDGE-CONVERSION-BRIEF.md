@@ -10,6 +10,15 @@ keymap loaded by the daemon (verified in its journal), a lit-pixel frame
 check matching the documented scene, and a PAUSE'd `SAVEST golden`
 (armeval's carries its baked `*LIB $` / `AB` lines; sinclairql's carries F1,
 and its skip-warnings binary means the old x-dismissed panel never exists).
+**Every converted station sets `MAME_CTL_KEY_EXCL`** (2026-08-12, three
+operator reports): these guests scan their own keyboard matrix, so two keys
+down at once are ambiguous, and the browser delivers a typed line as ONE
+burst — the daemon's `SH_KEY_MIN_*` gate paces only the QEMU/dbus path.
+The knob serializes presses on the keyboard's port-tag family (modifier
+fields exempt by name), which is the serialized delivery every station's
+pacing was bisected under and what `typeDemoProgram` /
+`validate_demo_pacing` already assume. A new conversion must set it.
+
 Rollback per station is one move each way: `ROLLBACK.md` in the station dir,
 `qemu-streamhost.sh.debridged-bak` + `overlay.qcow2.debridged-bak`, and the
 daemon pool's `previous` symlink. The cutover procedure is
