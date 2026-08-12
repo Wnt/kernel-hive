@@ -56,12 +56,14 @@ native_stage_roms() {
 # (DRAGONDOS instead of BASIC) is the same two greens to a histogram:
 #   * OCR tokens MICROSOFT + DATA + 1.0 present, DRAGONDOS absent — the only
 #     words tesseract has never mangled on this blocky 8x12 font;
-#   * text-ink floor in the banner band, immune to OCR. The kiosk measured
-#     6376 px of exact 0,124,0 in 1024x230+0+60 for the BASIC banner vs ~1170
-#     for DRAGONDOS at the same scale; the floor below splits those even if
-#     drawshm's scaler blends edge pixels the X root path kept exact. The gate
-#     PRINTS the measured value — re-pin the floor from it once the template
-#     write-up records the drawshm number.
+#   * text-ink floor in the banner band, immune to OCR. drawshm renders the
+#     banner BYTE-IDENTICALLY to the kiosk's X root (measured 2026-08-12:
+#     exactly the kiosk's 6376 px of 0,124,0 in 1024x230+0+60), so the floor
+#     is the kiosk gate's own 3000 — between BASIC's 6376 and DRAGONDOS's
+#     ~1170 with room on both sides.
+# The shm pixels go through python straight to P6 — `convert bgra:`-style raw
+# decoding was tried first and silently crushed the channels ~128:1 while
+# keeping the LAYOUT intact, which passed OCR and zeroed the ink count.
 native_boot_gate() {
   local bin="$1" roms="$2" gate="$3"
   local ink text token
@@ -73,7 +75,7 @@ native_boot_gate() {
     -video shm -sound none -nothrottle -str 15 -skip_gameinfo \
     -homepath . -cfg_directory ./cfg -nvram_directory ./nvram -inipath . \
     >"$gate/mame.log" 2>&1) || die "gate MAME exited non-zero; see $gate/mame.log"
-  python3 - "$gate/fb.shm" "$gate/frame.raw" <<'PY' || die "drawshm mapping unreadable"
+  python3 - "$gate/fb.shm" "$gate/frame.ppm" <<'PY' || die "drawshm mapping unreadable"
 import struct
 import sys
 
@@ -81,11 +83,15 @@ b = open(sys.argv[1], "rb").read()
 magic, _ver, w, h, stride, _bpp = struct.unpack_from("<6I", b, 0)
 if magic != 0x31424649:
     sys.exit("bad drawshm magic")
-rows = [b[64 + y * stride : 64 + y * stride + w * 4] for y in range(h)]
-open(sys.argv[2], "wb").write(b"".join(rows))
+out = bytearray()
+for y in range(h):
+    row = b[64 + y * stride : 64 + y * stride + w * 4]
+    for x in range(0, w * 4, 4):
+        out += bytes((row[x + 2], row[x + 1], row[x]))
+open(sys.argv[2], "wb").write(b"P6\n%d %d\n255\n" % (w, h) + bytes(out))
 PY
-  convert -size "$NATIVE_GEOM" -depth 8 bgra:"$gate/frame.raw" "$gate/frame.png"
-  convert "$gate/frame.png" -crop 1024x230+0+60 +repage "$gate/band.ppm"
+  convert "$gate/frame.ppm" "$gate/frame.png"
+  convert "$gate/frame.ppm" -crop 1024x230+0+60 +repage "$gate/band.ppm"
   ink=$(ppmhist "$gate/band.ppm" 2>/dev/null |
     awk '$1" "$2" "$3 == "0 124 0" { print $5; f = 1 } END { if (!f) print 0 }')
   # 40% threshold: the MC6847's bright-green page sits at luma ~117 and its
@@ -106,8 +112,8 @@ PY
   look at $gate/frame.png, not the log. OCR read: $text" ;;
     esac
   done
-  [ "${ink:-0}" -ge "${MIN_BANNER_INK:-1500}" ] ||
-    die "boot gate: banner ink $ink px < floor ${MIN_BANNER_INK:-1500} while OCR passed —
+  [ "${ink:-0}" -ge "${MIN_BANNER_INK:-3000}" ] ||
+    die "boot gate: banner ink $ink px < floor ${MIN_BANNER_INK:-3000} while OCR passed —
   drawshm is rendering the banner differently than the kiosk did; look at $gate/frame.png"
   echo "  boot gate PASSED: Microsoft BASIC banner on the drawshm frame"
   echo "  ($gate/frame.png; banner ink $ink px, kiosk reference 6376)"
