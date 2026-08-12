@@ -349,18 +349,18 @@
     },
     "kc854": {
       "dir": "/data/vms/streamhost/stations/kc854",
-      "qmp": "/data/vms/streamhost/stations/kc854/qmp.sock",
+      "qmp": null,
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5835,
-      "exec_port": 5835,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54132,
-      "notes": "exec: labctl exec kc854 \"<cmd>\" (ssh root@:5835, key bridge_key). Reaches the DEBIAN kiosk, not the emulated KC."
+      "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/kc854/sta."
     },
     "kolibrios": {
       "dir": "/data/vms/streamhost/stations/kolibrios",
@@ -379,18 +379,18 @@
     },
     "mpf2": {
       "dir": "/data/vms/streamhost/stations/mpf2",
-      "qmp": "/data/vms/streamhost/stations/mpf2/qmp.sock",
+      "qmp": null,
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5820,
-      "exec_port": 5820,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54124,
-      "notes": "exec: labctl exec mpf2 \"<cmd>\" (ssh root@:5820, key bridge_key)"
+      "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/mpf2/sta."
     },
     "msdoswin1": {
       "dir": "/data/vms/streamhost/stations/msdoswin1",

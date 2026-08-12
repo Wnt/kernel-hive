@@ -596,10 +596,10 @@ emit irix \
 
 # mpf2 (VMID 220) — MAME mpf2 (Multitech Microprofessor II, 1982) -> Applesoft BASIC. ssh 5820. Keyboard-only.
 emit mpf2 \
-  --tile mpf2 --vmid 220 --udp 54124 --pointer none --input-backend disabled \
-  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \
-  --launcher-file "$T/mpf2/qemu-streamhost.sh" --env-append-file \
-  "$T/mpf2/station.env.fixture"
+  --tile mpf2 --udp 54124 --x11 --x11-display :47 --capture shm --pointer \
+  none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/mpf2/mpf2.keymap" \
+  --env-append-file "$T/mpf2/station.env.fixture"
 
 # ---------------------------------------------------------------------------
 # GROUP H — UEFI Windows. Secure Boot + virtio-scsi + HD Audio; nothing here is
@@ -703,10 +703,10 @@ emit oricatmos \
   "$T/oricatmos/oricatmos.keymap" --env-append-file \
   "$T/oricatmos/station.env.fixture"
 emit kc854 \
-  --tile kc854 --vmid 235 --udp 54132 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/kc854/qemu-streamhost.sh" --env-append-file \
-  "$T/kc854/station.env.fixture"
+  --tile kc854 --udp 54132 --x11 --x11-display :48 --capture shm --pointer \
+  none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/kc854/kc854.keymap" \
+  --env-append-file "$T/kc854/station.env.fixture"
 emit sinclairql \
   --tile sinclairql --vmid 236 --udp 54133 --pointer none --input-backend \
   disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
