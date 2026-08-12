@@ -676,10 +676,10 @@ emit zxspectrum \
   --fps 60 --launcher-file "$T/zxspectrum/qemu-streamhost.sh" \
   --env-append-file "$T/zxspectrum/station.env.fixture"
 emit zx81 \
-  --tile zx81 --vmid 231 --udp 54128 --pointer none --input-backend disabled \
-  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \
-  --launcher-file "$T/zx81/qemu-streamhost.sh" --env-append-file \
-  "$T/zx81/station.env.fixture"
+  --tile zx81 --udp 54128 --x11 --x11-display :45 --capture shm --pointer \
+  none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/zx81/zx81.keymap" \
+  --env-append-file "$T/zx81/station.env.fixture"
 
 # bbcmicro (VMID 232) — MAME 0.289 bbcb (Acorn BBC Micro Model B, 1981) -> BBC BASIC II. ssh 5832. Keyboard-only.
 emit bbcmicro \
@@ -697,10 +697,11 @@ emit dragon32 \
   "$T/dragon32/dragon32.keymap" --env-append-file \
   "$T/dragon32/station.env.fixture"
 emit oricatmos \
-  --tile oricatmos --vmid 234 --udp 54131 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/oricatmos/qemu-streamhost.sh" \
-  --env-append-file "$T/oricatmos/station.env.fixture"
+  --tile oricatmos --udp 54131 --x11 --x11-display :46 --capture shm \
+  --pointer none --input-backend mamesock --audio on --fps 60 \
+  --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
+  "$T/oricatmos/oricatmos.keymap" --env-append-file \
+  "$T/oricatmos/station.env.fixture"
 emit kc854 \
   --tile kc854 --vmid 235 --udp 54132 --pointer none --input-backend \
   disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \

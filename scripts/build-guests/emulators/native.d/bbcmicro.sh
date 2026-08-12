@@ -20,7 +20,8 @@ NATIVE_SKIP_WARNINGS=1
 native_stage_roms() {
   local roms="$1"
   python3 "$HERE/../../debridge-convert/stage-romset.py" \
-    "$OUT" bbcb /data/assets-staging/bbcmicro "$roms" bbcb saa5050
+    "$OUT" bbcb /data/assets-staging/bbcmicro "$roms" \
+    bbcb saa5050 bbc_acorn8271
 }
 
 # Power-on is "BBC Computer 32K / Acorn DFS / BASIC / >" in white MODE 7 on
