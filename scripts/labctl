@@ -1623,7 +1623,8 @@ def reset_facts(c, x11):
 def tile_facts(sh_tile, c, warn):
     tile_dir = c.get("dir", os.path.join(TILES_DIR, sh_tile))
     env = read_env(os.path.join(tile_dir, "station.env"))
-    daemon_id = env.get("SH_STATION") or (load_json(os.path.join(tile_dir, "signaling.json")) or {}).get("tile") or sh_tile
+    signaling = load_json(os.path.join(tile_dir, "signaling.json")) or {}
+    daemon_id = env.get("SH_STATION") or signaling.get("tile") or sh_tile
     if daemon_id != sh_tile:
         warn("station.env SH_STATION=%s does not match the matrix key %s" % (daemon_id, sh_tile))
     repo = repo_facts(warn)
