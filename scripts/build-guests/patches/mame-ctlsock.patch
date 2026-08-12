@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,2961 @@
+@@ -0,0 +1,2972 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -2569,7 +2569,18 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +					continue;
 +				for (ioport_field &f : p.second->fields())
 +				{
-+					reply_data(ack, p.first + " | " + f.name());
++					// Third column: the field's default assignment as a
++					// config token (KEYCODE_MINUS, ...). PORT_CODE-positional
++					// drivers (the CoCo/Dragon family) encode the exhibit's
++					// real layout there, not in the display name --
++					// scripts/dev/mame-keymap.py matches tokens first and
++					// falls back to names.
++					std::string tok;
++					input_seq const &dseq = f.defseq();
++					if (dseq.length() > 0)
++						tok = m_machine.input().code_to_token(dseq[0]);
++					reply_data(ack, p.first + " | " + f.name()
++							+ (tok.empty() ? std::string() : " | " + tok));
 +					++n;
 +				}
 +			}

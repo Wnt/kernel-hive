@@ -4,9 +4,19 @@
 Phase 0 of the de-bridging conversion campaign
 (docs/lab/DEBRIDGE-CONVERSION-BRIEF.md): the map is DUMPED from the machine
 via the ctlsock module's KEYDUMP verb — the same rule the IRIX matrix was
-built under — never hand-guessed. Matching is deliberately conservative:
-a field binds to an XT scancode only on an exact (case-insensitive) name or
-alias hit. Everything that does not match is listed LOUDLY at the end; the
+built under — never hand-guessed. Matching is deliberately conservative,
+in two exact tiers:
+
+  1. DEFAULT-ASSIGNMENT TOKEN (KEYDUMP's third column, when the module is
+     new enough to emit it): a field whose PORT_CODE is KEYCODE_MINUS binds
+     to XT 0x0C, full stop. PORT_CODE-positional drivers (the CoCo/Dragon
+     family) encode the exhibit's real layout there — the Dragon's ':'/'*'
+     key IS the key a PC labels '-', and that binding, not the legend, is
+     what the kiosk chain the SPA charMaps were calibrated against used.
+  2. NAME/ALIAS: exact (case-insensitive) hit on the field's display name,
+     for drivers that name their keys but assign no positional code.
+
+Everything that does not match is listed LOUDLY at the end; the
 per-tile answer to that list is an --override file, not a looser matcher —
 a key that lands on the wrong field is precisely the failure this pipeline
 exists to end.
@@ -130,8 +140,118 @@ XT_KEYS: list[tuple[int, list[str]]] = [
     (0xE053, ["Delete", "Del"]),
 ]
 
+# XT scancode -> MAME default-assignment token (tier 1). This is the mechanical
+# mirror of MAME's own KEYCODE_* naming: the ';' key is COLON, the '.' key is
+# STOP, the "'" key is QUOTE and the '`' key is TILDE. A field whose PORT_CODE
+# carries one of these tokens is bound to the XT code a PC keyboard sends from
+# that physical position — the same binding the bridge kiosk chain (PS/2 -> X
+# -> SDL -> MAME) produced, which is what the SPA charMaps were tuned against.
+XT_TOKENS: dict[int, str] = {
+    0x01: "KEYCODE_ESC",
+    0x02: "KEYCODE_1",
+    0x03: "KEYCODE_2",
+    0x04: "KEYCODE_3",
+    0x05: "KEYCODE_4",
+    0x06: "KEYCODE_5",
+    0x07: "KEYCODE_6",
+    0x08: "KEYCODE_7",
+    0x09: "KEYCODE_8",
+    0x0A: "KEYCODE_9",
+    0x0B: "KEYCODE_0",
+    0x0C: "KEYCODE_MINUS",
+    0x0D: "KEYCODE_EQUALS",
+    0x0E: "KEYCODE_BACKSPACE",
+    0x0F: "KEYCODE_TAB",
+    0x10: "KEYCODE_Q",
+    0x11: "KEYCODE_W",
+    0x12: "KEYCODE_E",
+    0x13: "KEYCODE_R",
+    0x14: "KEYCODE_T",
+    0x15: "KEYCODE_Y",
+    0x16: "KEYCODE_U",
+    0x17: "KEYCODE_I",
+    0x18: "KEYCODE_O",
+    0x19: "KEYCODE_P",
+    0x1A: "KEYCODE_OPENBRACE",
+    0x1B: "KEYCODE_CLOSEBRACE",
+    0x1C: "KEYCODE_ENTER",
+    0x1D: "KEYCODE_LCONTROL",
+    0x1E: "KEYCODE_A",
+    0x1F: "KEYCODE_S",
+    0x20: "KEYCODE_D",
+    0x21: "KEYCODE_F",
+    0x22: "KEYCODE_G",
+    0x23: "KEYCODE_H",
+    0x24: "KEYCODE_J",
+    0x25: "KEYCODE_K",
+    0x26: "KEYCODE_L",
+    0x27: "KEYCODE_COLON",
+    0x28: "KEYCODE_QUOTE",
+    0x29: "KEYCODE_TILDE",
+    0x2A: "KEYCODE_LSHIFT",
+    0x2B: "KEYCODE_BACKSLASH",
+    0x2C: "KEYCODE_Z",
+    0x2D: "KEYCODE_X",
+    0x2E: "KEYCODE_C",
+    0x2F: "KEYCODE_V",
+    0x30: "KEYCODE_B",
+    0x31: "KEYCODE_N",
+    0x32: "KEYCODE_M",
+    0x33: "KEYCODE_COMMA",
+    0x34: "KEYCODE_STOP",
+    0x35: "KEYCODE_SLASH",
+    0x36: "KEYCODE_RSHIFT",
+    0x37: "KEYCODE_ASTERISK",
+    0x38: "KEYCODE_LALT",
+    0x39: "KEYCODE_SPACE",
+    0x3A: "KEYCODE_CAPSLOCK",
+    0x3B: "KEYCODE_F1",
+    0x3C: "KEYCODE_F2",
+    0x3D: "KEYCODE_F3",
+    0x3E: "KEYCODE_F4",
+    0x3F: "KEYCODE_F5",
+    0x40: "KEYCODE_F6",
+    0x41: "KEYCODE_F7",
+    0x42: "KEYCODE_F8",
+    0x43: "KEYCODE_F9",
+    0x44: "KEYCODE_F10",
+    0x47: "KEYCODE_7_PAD",
+    0x48: "KEYCODE_8_PAD",
+    0x49: "KEYCODE_9_PAD",
+    0x4A: "KEYCODE_MINUS_PAD",
+    0x4B: "KEYCODE_4_PAD",
+    0x4C: "KEYCODE_5_PAD",
+    0x4D: "KEYCODE_6_PAD",
+    0x4E: "KEYCODE_PLUS_PAD",
+    0x4F: "KEYCODE_1_PAD",
+    0x50: "KEYCODE_2_PAD",
+    0x51: "KEYCODE_3_PAD",
+    0x52: "KEYCODE_0_PAD",
+    0x53: "KEYCODE_DEL_PAD",
+    0x57: "KEYCODE_F11",
+    0x58: "KEYCODE_F12",
+    0xE01C: "KEYCODE_ENTER_PAD",
+    0xE01D: "KEYCODE_RCONTROL",
+    0xE035: "KEYCODE_SLASH_PAD",
+    0xE038: "KEYCODE_RALT",
+    0xE047: "KEYCODE_HOME",
+    0xE048: "KEYCODE_UP",
+    0xE049: "KEYCODE_PGUP",
+    0xE04B: "KEYCODE_LEFT",
+    0xE04D: "KEYCODE_RIGHT",
+    0xE04F: "KEYCODE_END",
+    0xE050: "KEYCODE_DOWN",
+    0xE051: "KEYCODE_PGDN",
+    0xE052: "KEYCODE_INSERT",
+    0xE053: "KEYCODE_DEL",
+}
 
-def keydump(sock_path: str, tags: str) -> list[tuple[str, str]]:
+# The third KEYDUMP column is only trusted when it looks like an input token;
+# a field NAME that happens to contain " | " must never be split as one.
+TOKEN_PREFIXES = ("KEYCODE_", "JOYCODE_", "MOUSECODE_", "GUNCODE_")
+
+
+def keydump(sock_path: str, tags: str) -> list[tuple[str, str, str]]:
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.connect(sock_path)
     s.settimeout(10)
@@ -151,7 +271,7 @@ def keydump(sock_path: str, tags: str) -> list[tuple[str, str]]:
     if not banner.startswith("HELLO "):
         sys.exit(f"not a ctlsock endpoint: {banner!r}")
     s.sendall(f"1 KEYDUMP {tags}".rstrip().encode() + b"\n")
-    rows: list[tuple[str, str]] = []
+    rows: list[tuple[str, str, str]] = []
     while True:
         reply = line()
         if reply.startswith("1 D "):
@@ -159,7 +279,14 @@ def keydump(sock_path: str, tags: str) -> list[tuple[str, str]]:
             port, sep, field = body.partition(" | ")
             if not sep:
                 sys.exit(f"unparsable KEYDUMP row: {reply!r}")
-            rows.append((port, field))
+            # Newer modules append " | <default-assignment token>"; older ones
+            # (and fields with no assignment) emit two columns. Only a tail
+            # that LOOKS like a token is split off — see TOKEN_PREFIXES.
+            token = ""
+            head, sep, tail = field.rpartition(" | ")
+            if sep and tail.startswith(TOKEN_PREFIXES):
+                field, token = head, tail
+            rows.append((port, field, token))
         elif reply.startswith("1 OK "):
             return rows
         elif reply.startswith("1 ERR"):
@@ -179,14 +306,17 @@ def main() -> int:
     if not fields:
         sys.exit("KEYDUMP returned no fields — wrong --tags for this machine?")
     by_name: dict[str, list[tuple[str, str]]] = {}
-    for port, field in fields:
+    by_token: dict[str, list[tuple[str, str]]] = {}
+    for port, field, token in fields:
         by_name.setdefault(field.strip().upper(), []).append((port, field))
+        if token:
+            by_token.setdefault(token, []).append((port, field))
 
     # Dual-legend fields — MAME's `<unshifted>  <shifted>` PORT_NAMEs
     # ("1  !", "; +") — additionally index under their unshifted token. Still
     # exact matching: two tokens only, and the shifted legend must be a single
     # non-alphanumeric glyph, so "Left Shift" can never alias to "Left".
-    for port, field in fields:
+    for port, field, _token in fields:
         toks = field.split()
         if len(toks) == 2 and len(toks[1]) == 1 and not toks[1].isalnum():
             by_name.setdefault(toks[0].upper(), []).append((port, field))
@@ -195,6 +325,19 @@ def main() -> int:
     used: set[tuple[str, str]] = set()
     ambiguous: list[str] = []
     for code, names in XT_KEYS:
+        # Tier 1: the field's own default assignment. When a driver says
+        # PORT_CODE(KEYCODE_MINUS), that field IS the PC's '-' key regardless
+        # of what its legend reads (the Dragon's ':'/'*'). Names never override
+        # a token hit.
+        tok = XT_TOKENS.get(code)
+        hits = by_token.get(tok) if tok else None
+        if hits:
+            if len(hits) > 1:
+                ambiguous.append(f"  {tok} -> {hits} (took the first; override to pin)")
+            entries[code] = hits[0]
+            used.add(hits[0])
+            continue
+        # Tier 2: exact display-name/alias match.
         for name in names:
             hits = by_name.get(name.strip().upper())
             if not hits:
@@ -234,7 +377,7 @@ def main() -> int:
     else:
         sys.stdout.write(text)
 
-    unmatched = [f"  {port} | {field}" for port, field in fields if (port, field) not in used]
+    unmatched = [f"  {port} | {field}" for port, field, _token in fields if (port, field) not in used]
     if ambiguous:
         print("AMBIGUOUS field names (first match taken):", file=sys.stderr)
         print("\n".join(ambiguous), file=sys.stderr)
