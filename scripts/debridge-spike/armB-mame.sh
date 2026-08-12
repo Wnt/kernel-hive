@@ -96,8 +96,18 @@ export MAME_CTL_SCREEN=81x52
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
 
+# The atarist exhibit's apps, carried over from the hatari station's GEMDOS
+# folder mount (which MAME has no equivalent for) as two 1.44 MB ST floppies:
+# A: = AIM/PACMAN/BALLER + EMUDESK.INF, B: = GEMBNCH. The ORIGINAL/ tree is
+# deliberately left out — pristine duplicates of the same programs.
+FLOP=/data/vms/streamhost/assets/atarist-mame/floppies
+FLOPARG=()
+[ -f "$FLOP/apps1.st" ] && FLOPARG+=(-flop1 "$FLOP/apps1.st")
+[ -f "$FLOP/apps2.st" ] && FLOPARG+=(-flop2 "$FLOP/apps2.st")
+
 nohup "$M" st \
   -rompath "$ROMS" -inipath "$D" -homepath "$D" \
+  ${FLOPARG[@]+"${FLOPARG[@]}"} \
   -cfg_directory "$D/cfg" -nvram_directory "$D/nvram" \
   -video shm -nofilter \
   -sound none -skip_gameinfo -throttle -frameskip 0 -noautoframeskip \
