@@ -78,10 +78,17 @@
     "zxspectrum": "bookworm"
   },
   "_notes": {
-    "mpf2": "Wave 2 attempted and rolled back (2026-08-10). Its MAME 0.289 binary is already built in the trixie chroot and its FIRST cold boot under trixie draws the real MPF-II banner and > prompt, so the emulator is fine; the builder's SECOND cold boot then fails its in-guest liveness probe, and its readiness predicate is weak enough to accept a GRUB console. Per-tile work on a soltest clone, not a chroot swap.",
-    "kc854": "Wave 2 attempted and rolled back (2026-08-10). Same shape as mpf2: the trixie build reaches a genuine CAOS 4.2 screen (bright 27868, nag-red 0) and then `pgrep -x kc85` finds no MAME after the second cold boot, with SSH proven up first. Per-tile work.",
+    "mpf2": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
+    "kc854": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
     "c64": "Its overlay was flattened on 2026-08-07 (a standalone 5.21 GiB qcow2 with an internal `golden` snapshot, no backing file). The status checker reports it as DETACHED rather than as drift; migrating it means a full rebuild, not a rebase.",
     "openvms": "Not on this base. openvms/openvms-decwindows-bridge.qcow2 is built by scripts/build-guests/stages/openvms-decwindows-bridge.sh and only shares /data/vms/bridge/bridge_key. Out of scope for this ledger.",
-    "irix": "Not a bridge guest at all: SH_STATION_RUNTIME=x11, MAME on the HOST against a .chd. Already trixie by definition."
+    "irix": "Not a bridge guest at all: SH_STATION_RUNTIME=x11, MAME on the HOST against a .chd. Already trixie by definition.",
+    "dragon32": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
+    "bbcmicro": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
+    "armeval": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
+    "zx81": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
+    "oricatmos": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
+    "zxspectrum": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
+    "sinclairql": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it"
   }
 }

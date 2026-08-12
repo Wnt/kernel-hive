@@ -1,5 +1,22 @@
 # De-bridging conversion brief — MAME kiosks to host-native
 
+**STATUS 2026-08-12: ALL NINE CONVERTED, LIVE, awaiting the operator's batch
+eyeball.** Mid-campaign the operator redirected to live cutover with smoke
+checks only ("no production system to worry about; move fast; I validate in
+one go"), so the per-station framebuffer/browser-plane acceptance below was
+deliberately skipped. What each station got instead: host-native build with
+its gates (build-mame-native.sh + native.d stanza), a KEYDUMP-generated
+keymap loaded by the daemon (verified in its journal), a lit-pixel frame
+check matching the documented scene, and a PAUSE'd `SAVEST golden`
+(armeval's carries its baked `*LIB $` / `AB` lines; sinclairql's carries F1,
+and its skip-warnings binary means the old x-dismissed panel never exists).
+Rollback per station is one move each way: `ROLLBACK.md` in the station dir,
+`qemu-streamhost.sh.debridged-bak` + `overlay.qcow2.debridged-bak`, and the
+daemon pool's `previous` symlink. The cutover procedure is
+`scripts/debridge-convert/cutover.sh`; the registry surgery
+`scripts/debridge-convert/registry-to-native.py`; romsets
+`scripts/debridge-convert/stage-romset.py`.
+
 **The campaign this file starts.** The de-bridging spike answered its question:
 running the same emulator host-native costs **69% of running it in a
 kiosk** (~half a core per station, streamhost at a third of its bridged cost;
