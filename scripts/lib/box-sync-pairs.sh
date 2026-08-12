@@ -209,7 +209,7 @@ box_sync_load_pairs() {
   box_sync_add_pair streamhost-unit streamhost/deploy/streamhost@.service /etc/systemd/system/streamhost@.service exact repo daemon-reload
   box_sync_add_pair amiga-coldboot-unit streamhost/deploy/amiga-coldboot-watch.service /etc/systemd/system/amiga-coldboot-watch.service exact repo daemon-reload
   box_sync_add_pair sailfish-seriald-unit streamhost/deploy/seriald-sailfishos.service /etc/systemd/system/seriald-sailfishos.service exact repo daemon-reload
-  box_sync_add_pair sailfish-seriald streamhost/stations/sailfishos/seriald.py "$BOX_ROOT/tiles/sailfishos/seriald.py" exact repo
+  box_sync_add_pair sailfish-seriald streamhost/stations/sailfishos/seriald.py "$BOX_ROOT/stations/sailfishos/seriald.py" exact repo
 
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.
@@ -234,11 +234,11 @@ box_sync_load_pairs() {
   # Only verbatim, tracked launchers of LIVE stations are box-authored mirror pairs.
   # Generic launchers are checked by verify-emit.sh; the tracked soltest-*
   # launchers are clone/experiment scaffolds that run out of /data/vms/soltest/,
-  # never out of $BOX_ROOT/tiles, so they have no box counterpart by design.
+  # never out of $BOX_ROOT/stations, so they have no box counterpart by design.
   while IFS= read -r path; do
     rel="${path#streamhost/stations/}"
     case "$rel" in soltest-*) continue ;; esac
-    box_sync_add_pair "launcher/$rel" "$path" "$BOX_ROOT/tiles/$rel" exact repo
+    box_sync_add_pair "launcher/$rel" "$path" "$BOX_ROOT/stations/$rel" exact repo
   done < <(git -C "$REPO" ls-files 'streamhost/stations/*/qemu-streamhost.sh' | sort)
 
   # Registry tree union: box-only and repo-only allowed files must be visible as
