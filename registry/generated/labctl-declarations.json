@@ -664,18 +664,18 @@
     },
     "sinclairql": {
       "dir": "/data/vms/streamhost/stations/sinclairql",
-      "qmp": "/data/vms/streamhost/stations/sinclairql/qmp.sock",
+      "qmp": null,
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5836,
-      "exec_port": 5836,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54133,
-      "notes": "exec: labctl exec sinclairql \"<cmd>\" (ssh root@:5836, key bridge_key). The exec channel reaches the Debian KIOSK, not the emulated QL — drive the machine with labctl type/key and read it with labctl shot."
+      "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/sinclairql/sta."
     },
     "solaris": {
       "dir": "/data/vms/streamhost/stations/solaris",
@@ -904,18 +904,18 @@
     },
     "zxspectrum": {
       "dir": "/data/vms/streamhost/stations/zxspectrum",
-      "qmp": "/data/vms/streamhost/stations/zxspectrum/qmp.sock",
+      "qmp": null,
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5830,
-      "exec_port": 5830,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54127,
-      "notes": "exec: labctl exec zxspectrum \"<cmd>\" (ssh root@:5830, key bridge_key)"
+      "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/zxspectrum/sta."
     }
   }
 }

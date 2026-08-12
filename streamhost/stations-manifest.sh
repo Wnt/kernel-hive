@@ -671,10 +671,11 @@ emit decos \
   --fps 60 --launcher-file "$T/decos/qemu-streamhost.sh" --env-append-file \
   "$T/decos/station.env.fixture"
 emit zxspectrum \
-  --tile zxspectrum --vmid 230 --udp 54127 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/zxspectrum/qemu-streamhost.sh" \
-  --env-append-file "$T/zxspectrum/station.env.fixture"
+  --tile zxspectrum --udp 54127 --x11 --x11-display :49 --capture shm \
+  --pointer none --input-backend mamesock --audio on --fps 60 \
+  --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
+  "$T/zxspectrum/zxspectrum.keymap" --env-append-file \
+  "$T/zxspectrum/station.env.fixture"
 emit zx81 \
   --tile zx81 --udp 54128 --x11 --x11-display :45 --capture shm --pointer \
   none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
@@ -708,10 +709,11 @@ emit kc854 \
   "$T/mame-native/x11-runtime.sh" --aux-file "$T/kc854/kc854.keymap" \
   --env-append-file "$T/kc854/station.env.fixture"
 emit sinclairql \
-  --tile sinclairql --vmid 236 --udp 54133 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/sinclairql/qemu-streamhost.sh" \
-  --env-append-file "$T/sinclairql/station.env.fixture"
+  --tile sinclairql --udp 54133 --x11 --x11-display :50 --capture shm \
+  --pointer none --input-backend mamesock --audio on --fps 60 \
+  --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
+  "$T/sinclairql/sinclairql.keymap" --env-append-file \
+  "$T/sinclairql/station.env.fixture"
 emit nextstep \
   --tile nextstep --vmid 237 --udp 54134 --pointer abs --input-backend \
   dbus-abs --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
