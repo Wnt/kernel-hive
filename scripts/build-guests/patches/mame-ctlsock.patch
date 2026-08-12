@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,2999 @@
+@@ -0,0 +1,3041 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -216,6 +216,11 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +                             corrector re-issues whatever merged
 +                             away once the pipe is quiet.   [unset]
 +      MAME_CTL_KEY_HOLD/GAP  key edge pacing, EMULATED ms       [100/50]
++      MAME_CTL_KEY_EXCL      port-tag substring whose fields are
++                             mutually exclusive: a press waits until
++                             no other matching field is down (CPU-
++                             scanned keyboards whose ROM needs an
++                             empty matrix between keys; MPF-II) [off]
 +      MAME_CTL_MOVEA_TRIES   accepted, INERT since engine V2 (V2
 +                             flights terminate by construction)     [40]
 +      MAME_CTL_SWAP_ITEMS    "<seq>,<dx>,<dy>": the VC2 cursor-swap
@@ -426,6 +431,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_move_window = double(env_long("MAME_CTL_MOVE_WINDOW", 40)) / 1e3;
 +		m_key_hold = double(env_long("MAME_CTL_KEY_HOLD", 100)) / 1e3;
 +		m_key_gap = double(env_long("MAME_CTL_KEY_GAP", 50)) / 1e3;
++		if (char const *e = std::getenv("MAME_CTL_KEY_EXCL"); e && *e)
++			m_key_excl = e;
 +		m_cal_x = env_long("MAME_CTL_CAL_X", -31);
 +		m_cal_y = env_long("MAME_CTL_CAL_Y", -31);
 +		m_movea_tries = int(env_long("MAME_CTL_MOVEA_TRIES", 40));
@@ -1262,6 +1269,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_win_t0 = -1.0;
 +		m_kdown_at.clear();
 +		m_kup_at.clear();
++		m_excl_down.clear();
++		m_excl_up_at = -1e9;
 +		m_esc_frames = 0;
 +		m_probe_frames = 0;
 +	}
@@ -1540,6 +1549,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			return;
 +		double const now = emu_now();
 +		std::unordered_set<std::string> blocked;
++		bool excl_wait = false;
 +		for (auto it = m_kq.begin(); it != m_kq.end(); )
 +		{
 +			key_entry &e = *it;
@@ -1557,6 +1567,25 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				++it;
 +				continue;
 +			}
++			// Exclusive-scan mode (MAME_CTL_KEY_EXCL, matched against the
++			// PORT tag): the MPF-II lesson — its ROM scans the matrix itself
++			// and accepts a new key only after seeing it EMPTY, so a press
++			// on a matching port waits until every other matching field is
++			// up plus KEY_GAP past the last matching release. Later matching
++			// presses stay queued in arrival order (excl_wait); the shift
++			// port (:keyb_special) does not match and flows per-field.
++			bool const excl = !m_key_excl.empty()
++					&& e.port.find(m_key_excl) != std::string::npos;
++			if (excl && e.val == 1)
++			{
++				if (excl_wait || !m_excl_down.empty() || now < m_excl_up_at + m_key_gap)
++				{
++					excl_wait = true;
++					blocked.insert(e.field);
++					++it;
++					continue;
++				}
++			}
 +			ioport_port *const pt = resolve_port(e.port);
 +			ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;
 +			if (f)
@@ -1571,6 +1600,16 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			else
 +				reply_err(e.ack, "noport", "no port/field " + e.port + " | " + e.field);
 +			((e.val == 1) ? m_kdown_at : m_kup_at)[e.field] = now;
++			if (excl)
++			{
++				if (e.val == 1)
++					m_excl_down.insert(e.field);
++				else
++				{
++					m_excl_down.erase(e.field);
++					m_excl_up_at = now;
++				}
++			}
 +			it = m_kq.erase(it);
 +		}
 +	}
@@ -3003,6 +3042,9 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	// per-field pacing gates: last APPLIED press/release, emulated seconds
 +	std::unordered_map<std::string, double> m_kdown_at;
 +	std::unordered_map<std::string, double> m_kup_at;
++	std::string m_key_excl;                       // MAME_CTL_KEY_EXCL port-tag substring
++	std::unordered_set<std::string> m_excl_down;  // matching fields currently applied down
++	double m_excl_up_at = -1e9;                   // last matching release (emu s)
 +
 +	std::deque<click_entry> m_clickq;
 +	click_entry m_click_cur{};

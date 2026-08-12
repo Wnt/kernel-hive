@@ -95,17 +95,22 @@ struct Counters {
     dropped: AtomicU64,
     overflow: AtomicU64,
     backend_down: AtomicU64,
+    /// Key edges whose scancode has no keymap row. Counted AND logged per
+    /// edge: a silent unmapped reject was the one loss the 2026-08-12 typing
+    /// investigation could not see in any counter.
+    unmapped: AtomicU64,
 }
 
 impl Counters {
     fn line(&self) -> String {
         format!(
-            "accepted={} coalesced={} dropped={} overflow={} backend-down={}",
+            "accepted={} coalesced={} dropped={} overflow={} backend-down={} unmapped={}",
             self.accepted.load(Ordering::Relaxed),
             self.coalesced.load(Ordering::Relaxed),
             self.dropped.load(Ordering::Relaxed),
             self.overflow.load(Ordering::Relaxed),
             self.backend_down.load(Ordering::Relaxed),
+            self.unmapped.load(Ordering::Relaxed),
         )
     }
 }
@@ -385,8 +390,15 @@ impl RealtimeInputSink for MameSockSink {
 
     fn try_key(&self, event: KeyEvent) -> Result<AcceptedSeq, Reject> {
         // Unmapped scancode: rejected before touching any state, never folded
-        // onto a neighbouring key (same rule as MameCmdSink).
+        // onto a neighbouring key (same rule as MameCmdSink) — but counted
+        // and NAMED, so a visitor key the map cannot deliver is evidence,
+        // not a silent hole in the telemetry.
         let Some((port, field)) = key_for(&self.shared.keymap, event.key) else {
+            self.shared.counters.unmapped.fetch_add(1, Ordering::Relaxed);
+            eprintln!(
+                "[mamesock] unmapped scancode 0x{:04x} down={}",
+                event.key, event.down
+            );
             return Err(Reject::Unsupported);
         };
         let mut p = self.lock_pending()?;
