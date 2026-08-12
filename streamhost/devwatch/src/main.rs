@@ -30,7 +30,7 @@ use notify_debouncer_full::{new_debouncer, DebounceEventResult, DebouncedEvent};
 /// changes nothing else, which is exactly the save that must still reach the
 /// gallery.
 const MANIFEST_OUTPUTS: &[&str] = &[
-    "build/registry/stations.json",
+    "build/registry/tiles.json",
     "build/registry/gallery-manifest.json",
     "build/registry/poster-docs.json",
     "build/registry/golden-manifest.json",

@@ -183,7 +183,7 @@ box_sync_load_pairs() {
   # them: a live SIGNAL_CONFIG and the reset allow-list are replaced by
   # `serve-https-spa.sh manifests`, deliberately and atomically, never as a
   # side effect of a file sync.
-  box_sync_add_pair serve/tiles.json build/registry/stations.json "$BOX_ROOT/serve/tiles.json" exact box
+  box_sync_add_pair serve/tiles.json build/registry/tiles.json "$BOX_ROOT/serve/tiles.json" exact box
   box_sync_add_pair serve/golden-manifest.json build/registry/golden-manifest.json "$BOX_ROOT/serve/golden-manifest.json" exact box
   # The serving plane is deployed WITH the operator's real host/gallery names
   # substituted in (scripts/serve/restart-https.sh's SIGNAL_HOST default and the
