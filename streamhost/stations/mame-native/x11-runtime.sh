@@ -86,8 +86,10 @@ export MAME_CTL_SOCK="$CTL"
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
 
+# MAME nests savestates per machine: SAVEST golden lands in
+# sta/<driver>/golden.sta (verified on the dragon32 cutover).
 STARG=(-state_directory "$BASE/sta")
-[ -f "$BASE/sta/golden.sta" ] && STARG+=(-state golden)
+[ -f "$BASE/sta/$DRIVER/golden.sta" ] && STARG+=(-state golden)
 
 EXTRA=()
 # shellcheck disable=SC2294 # the fixture value is a shell-quoted string on
