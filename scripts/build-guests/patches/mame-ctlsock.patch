@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,2972 @@
+@@ -0,0 +1,2973 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -249,6 +249,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +
 +#include "emuopts.h"
 +#include "fileio.h"
++#include "input.h"
 +#include "main.h"
 +#include "natkeyboard.h"
 +#include "screen.h"
