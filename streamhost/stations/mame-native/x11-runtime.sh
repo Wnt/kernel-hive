@@ -94,8 +94,15 @@ unset DISPLAY
 
 # MAME nests savestates per machine: SAVEST golden lands in
 # sta/<driver>/golden.sta (verified on the dragon32 cutover).
+# MAME_NATIVE_GOLDEN=0 disables the restore for drivers WITHOUT
+# MACHINE_SUPPORTS_SAVE: on those, -state golden restores garbage — bbcb
+# died outright and kc85_4 restored to a black screen (2026-08-12, the
+# operator's report). Their reset is the cold boot, which for every one of
+# them reaches the documented power-on scene in seconds.
 STARG=(-state_directory "$BASE/sta")
-[ -f "$BASE/sta/$DRIVER/golden.sta" ] && STARG+=(-state golden)
+if [ "${MAME_NATIVE_GOLDEN:-1}" = 1 ] && [ -f "$BASE/sta/$DRIVER/golden.sta" ]; then
+  STARG+=(-state golden)
+fi
 
 EXTRA=()
 # shellcheck disable=SC2294 # the fixture value is a shell-quoted string on

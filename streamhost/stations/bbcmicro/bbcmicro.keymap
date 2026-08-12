@@ -72,3 +72,6 @@
 0xe04f	:kbd:COL9	COPY
 0xe050	:kbd:COL9	↓
 0xe053	:kbd:COL9	DELETE
+# override: PC Backspace -> the BBC's DELETE (its rubout key carries
+# KEYCODE_DEL only, so the generator binds 0xe053 alone; operator 2026-08-12)
+0x0e	:kbd:COL9	DELETE

@@ -124,11 +124,14 @@
         "--x11-runtime-file",
         "$T/mame-native/x11-runtime.sh",
         "--aux-file",
+        "$T/armeval/armeval-boot.lua",
+        "--aux-file",
         "$T/armeval/armeval.keymap",
         "--env-append-file",
         "$T/armeval/station.env.fixture"
       ],
       "auxFiles": [
+        "streamhost/stations/armeval/armeval-boot.lua",
         "streamhost/stations/armeval/armeval.keymap",
         "streamhost/stations/armeval/station.env.fixture"
       ]

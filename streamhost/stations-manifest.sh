@@ -722,8 +722,9 @@ emit nextstep \
 emit armeval \
   --tile armeval --udp 54135 --x11 --x11-display :44 --capture shm --pointer \
   none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
-  "$T/mame-native/x11-runtime.sh" --aux-file "$T/armeval/armeval.keymap" \
-  --env-append-file "$T/armeval/station.env.fixture"
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/armeval/armeval-boot.lua" \
+  --aux-file "$T/armeval/armeval.keymap" --env-append-file \
+  "$T/armeval/station.env.fixture"
 emit alto \
   --tile alto --vmid 243 --udp 54137 --pointer abs --cursor-scale 1.0 \
   --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 --launcher-file \
