@@ -91,6 +91,12 @@ fi
 export MAME_SHM_PATH="$SHM"
 export MAME_SHM_SIZE="$GEOM"
 export MAME_CTL_SOCK="$CTL"
+# The module's PER-FIELD key dwell floors (a release waits this long after
+# its own press; a re-press after its own release) derive from the station's
+# bisected SH_KEY_MIN_* pacing — the same knobs labctl types with. The
+# module defaults (100/50, IRIX's) are the fallback.
+[ -n "${SH_KEY_MIN_HOLD_MS:-}" ] && export MAME_CTL_KEY_HOLD="$SH_KEY_MIN_HOLD_MS"
+[ -n "${SH_KEY_MIN_GAP_MS:-}" ] && export MAME_CTL_KEY_GAP="$SH_KEY_MIN_GAP_MS"
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
 

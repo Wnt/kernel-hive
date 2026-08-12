@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,2973 @@
+@@ -0,0 +1,2999 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -279,6 +279,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +#include <string_view>
 +#include <thread>
 +#include <unordered_map>
++#include <unordered_set>
 +#include <vector>
 +
 +namespace {
@@ -1259,7 +1260,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			reply_err(s, "busy", why);
 +		m_syncs.clear();
 +		m_win_t0 = -1.0;
-+		m_k_next = -1.0;
++		m_kdown_at.clear();
++		m_kup_at.clear();
 +		m_esc_frames = 0;
 +		m_probe_frames = 0;
 +	}
@@ -1501,9 +1503,15 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +
 +	// ---- key engine (matrix ports, never natkeyboard — see irixagent.lua
 +	// for why natkeyboard:post drops every shifted character on this tile).
-+	// A FIFO drained at most one edge per pass, never faster than KEY_HOLD
-+	// (after a press) / KEY_GAP (after a release) of EMULATED time; setting
-+	// a field down and up inside one device scan is invisible to the guest.
++	// PER-FIELD pacing (2026-08-12): edges apply the pass they arrive —
++	// like desktop MAME sampling a real keyboard — EXCEPT that a field's
++	// release waits KEY_HOLD after ITS OWN press (down-and-up inside one
++	// device scan is invisible to the guest) and a field's re-press waits
++	// KEY_GAP after ITS OWN release (two presses would otherwise merge).
++	// The old engine drained ONE edge per GLOBAL hold/gap slot — a ~6
++	// keys/second ceiling across the whole keyboard that serialized fast
++	// typing into seconds of lag and, past the daemon's bounded queue,
++	// into dropped keystrokes (operator report, /os/mpf2).
 +
 +	void key_enqueue(std::string port, std::string field, int val, ack_ref ack)
 +	{
@@ -1531,24 +1539,40 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		if (m_kq.empty())
 +			return;
 +		double const now = emu_now();
-+		if (m_k_next >= 0 && now < m_k_next)
-+			return;
-+		key_entry e = std::move(m_kq.front());
-+		m_kq.pop_front();
-+		ioport_port *const pt = resolve_port(e.port);
-+		ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;
-+		if (f)
++		std::unordered_set<std::string> blocked;
++		for (auto it = m_kq.begin(); it != m_kq.end(); )
 +		{
-+			f->set_value(u32(e.val));
-+			pt->frame_update();  // mid-frame re-latch (V6-proven on the button
-+			                     // port; kbd matrix re-checked in the harness)
-+			trace("verb KEY seq=%s %s|%s=%d applied", e.ack.seq, e.port, e.field, e.val);
-+			hist_apply(e.ack);
-+			reply_ok(e.ack);
++			key_entry &e = *it;
++			if (blocked.count(e.field))
++			{
++				++it;  // later edge of a gated field: per-field order holds
++				continue;
++			}
++			auto const &gates = (e.val == 1) ? m_kup_at : m_kdown_at;
++			double const dwell = (e.val == 1) ? m_key_gap : m_key_hold;
++			auto const g = gates.find(e.field);
++			if (g != gates.end() && now < g->second + dwell)
++			{
++				blocked.insert(e.field);
++				++it;
++				continue;
++			}
++			ioport_port *const pt = resolve_port(e.port);
++			ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;
++			if (f)
++			{
++				f->set_value(u32(e.val));
++				pt->frame_update();  // mid-frame re-latch (V6-proven on the
++				                     // button port; kbd matrix re-checked)
++				trace("verb KEY seq=%s %s|%s=%d applied", e.ack.seq, e.port, e.field, e.val);
++				hist_apply(e.ack);
++				reply_ok(e.ack);
++			}
++			else
++				reply_err(e.ack, "noport", "no port/field " + e.port + " | " + e.field);
++			((e.val == 1) ? m_kdown_at : m_kup_at)[e.field] = now;
++			it = m_kq.erase(it);
 +		}
-+		else
-+			reply_err(e.ack, "noport", "no port/field " + e.port + " | " + e.field);
-+		m_k_next = now + (e.val == 1 ? m_key_hold : m_key_gap);
 +	}
 +
 +	// wire port name -> ioport_port: exact tag when it starts with ':',
@@ -2976,7 +3000,9 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +
 +	std::deque<key_entry> m_kq;
 +	std::unordered_map<std::string, int> m_kwant;
-+	double m_k_next = -1.0;
++	// per-field pacing gates: last APPLIED press/release, emulated seconds
++	std::unordered_map<std::string, double> m_kdown_at;
++	std::unordered_map<std::string, double> m_kup_at;
 +
 +	std::deque<click_entry> m_clickq;
 +	click_entry m_click_cur{};
