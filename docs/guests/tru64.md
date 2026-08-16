@@ -1,59 +1,66 @@
 # tru64 — Tru64 UNIX 5.1B on es40 (AlphaServer ES40)
 
-**Status: DARK-LAUNCHED, INSTALL COMPLETE (2026-08-11/12) — checkpoint
-bake pending.** The station is registered with `listing.state=hidden` —
-`/os/tru64` streams, the grid and museum hall do not show it. The full
-"All Software" install (115 subsets, AdvFS on dka0) was performed live
-over the streamed station and is DONE: the machine SRM-auto-boots
-unattended (`auto_action=BOOT`, `bootdef_dev=dka0`) to the CDE login
-greeter, and root logs into a full CDE desktop. **The PAK question is
-settled: a PAK-less base install boots root into CDE** ("Can't find an
-OSF-BASE … PAK" appears in the console log and gates non-root logins
-only). Re-install = restore, never re-run: milestone pairs live under
-`/data/vms/soltest/TRU64/milestones/` — `m1-installed-frozen-copy/`
-(post-install, frozen live copy) and `m2-clean-shutdown/` (cleanly halted
-disk+flash+cfg with `MANIFEST.sha256`; **this is the checkpoint-lineage
-source**). Remaining: checkpoint bake from m2 + launcher flip to the
-w2kalpha reflink shape, fixture/registry rewrite, poster hero swap to the
-CDE desktop, lift `listing`.
+**Status: LIVE AND LISTED (2026-08-16).** `/os/tru64` streams and the
+station appears in the grid and museum hall. A cold boot lands on the CDE
+desktop with **no greeter** — the Tru64 equivalent of w2kalpha's Windows
+autologon — and every launch is pristine because the launcher reflink-copies
+a seed disk, exactly the w2kalpha shape.
 
-## Boot-to-desktop: findings 2026-08-16 (blocking the checkpoint)
+## How boot-to-desktop works (mimics w2kalpha)
 
-Proven this session, driving the live station over `ctl.sock` with
-`/data/vms/soltest/ALPHA-nt/uibench/ctltest.py` + `shmread.py`:
+Three pieces, all baked into the seed:
 
-- **The station boots to the CDE greeter, not a desktop** — dtlogin has no
-  native autologin (same as `solaris`, whose station solves it by resuming a
-  logged-in desktop from its checkpoint, not by autologin).
-- **Keyboard is the only reliable input channel.** `MOVEA`+`DOWN1` clicks do
-  not land (the es40 pointer needs the same seed-polish pass w2kalpha
-  documents); every step below was done keyboard-only. Working key fields:
-  `Enter`, `Tab`, `Space`, `Escape`, `F10`, `Left Alt`, `F4`.
-- **Login works and the desktop is reachable**: `root` / `Hive-2003` at the
-  greeter. dtlogin's state transitions are SLOW — a failed login takes
-  >30 s to return to the username field, and typing into the gap silently
-  lands in the wrong field. Any scripted login needs framebuffer feedback,
-  not fixed sleeps.
-- **A clean exhibit scene exists**: closing Help Viewer, dxconsole and the
-  window list (Alt+Tab / Alt+F4) leaves the bare CDE backdrop + full front
-  panel. That is the scene a checkpoint should capture.
-- **The blocker: this es40 build cannot SAVE a checkpoint.** `HELLO`
-  advertises `caps=natkbd,savest`, but the verb table implements only
-  `KEY`/`MOVEA`/`MOVEP` — `SAVE` and `SAVEST` both answer `ERR unknownverb`,
-  and the binary exports `ES40_RESTORE` with no save counterpart. The
-  spike source (`/data/vms/soltest/v456-spike/ctlsock/ctlsock.cpp`) DOES
-  implement `SAVE`/`SCHEDSAVE`, so capturing a checkpoint needs that build
-  promoted to `$ASSETS/es40` first (and w2kalpha's post-restore repaint
-  fragility re-verified on it).
+1. **dtlogin autoLogin.** `/etc/dt/config/Xconfig` carries
+   `Dtlogin*autoLogin: root` (plus the display-scoped `Dtlogin*0*autoLogin`).
+   The resource is UNDOCUMENTED but real — `strings /usr/dt/bin/dtlogin`
+   shows `autoLogin`/`AutoLogin`/`AUTOLOGIN`, and with only the resource set
+   dtlogin greets "Welcome root" and then fails with "Login incorrect",
+   which is what proved it live.
+2. **Passwordless root.** dtlogin's auto-attempt supplies no password, so
+   root's hash was cleared in `/etc/passwd` (`root::0:1:…`). The station is
+   air-gapped (no NIC in `es40.cfg`), so this is console-only exposure —
+   the same trade w2kalpha's blank Administrator makes.
+3. **Clean session.** `/etc/dt/config/C/sys.session` is a copy of
+   `/usr/dt/config/C/sys.session` minus the `dtfile` and `dthelpview` lines,
+   so the desktop comes up bare (front panel only) instead of with a File
+   Manager and "Introducing the Desktop" window.
 
-**So the two open routes**, both still to be decided:
-1. **Checkpoint route** (matches solaris/irix): promote a save-capable es40,
-   capture the clean-desktop scene, restore per launch. Also delivers
-   instant-ready. Cost: an emulator build + restore-fidelity proof.
-2. **Auto-type route** (no new binary): launcher drives the proven key
-   sequence after boot, with a framebuffer poll to detect the greeter and
-   retry — the pattern the keyboard-only exhibits already use. Cheaper, but
-   every launch pays the full cold boot plus the login wait.
+**Seed**: `assets/tru64/img/tru64-seed.img` (8 GiB), lineage = the install
+disk `img/tru64.img` after the three changes above and a clean `halt`.
+`TRU64_SEED` pins a different one. The launcher never opens it for write.
+
+## Driving this station by hand (what works, what does not)
+
+- **Keyboard only.** `MOVEA`+`DOWN1` clicks do NOT land — the es40 pointer
+  needs the seed-polish pass w2kalpha documents. Everything below is
+  keyboard.
+- **Root shell without a desktop**: restart the station and send Ctrl+C
+  repeatedly through the rc phase (`K 1 Left Ctrl` / `K 1 C`); rc aborts into
+  **INIT: SINGLE-USER MODE** with a `#` prompt on the console. `mount -a`
+  first — `/usr` is not mounted in single-user.
+- **Typing symbols**: `uibench/ctltest.py` only emits letters, digits and a
+  few punctuation marks, which cannot write a config file. Use
+  `/tmp/gtype.py` (this session; source in the job dir) — it maps the full US
+  layout onto the key fields the ctlsock accepts. Keep the inter-key delay at
+  ~45 ms; faster drops and transposes characters, and a mangled `sed` can
+  corrupt a system file.
+- **Screenshots**: `uibench/shmread.py <fb.shm> <out.png>`.
+
+## Known cosmetic item
+
+The Tru64 `dxconsole` "Console Log" window still opens bottom-right and
+shows `Can't find an OSF-BASE … PAK`. It is not started from any
+`/usr/dt/config` or `/etc/dt/config` file (grep finds nothing), so silencing
+it needs a different hook; the PAK line itself is expected on a PAK-less
+base install and gates non-root logins only.
+
+## Not used: es40 savestates
+
+The deployed `assets/tru64/es40` carries a `SAVEST <path>` ctlsock verb added
+2026-08-16 (previous binary kept as `es40.prev-b52678995574`) while a
+checkpoint route was explored. It is UNUSED: this station boots from a seed
+like w2kalpha, whose doc records why restore is avoided (post-restore repaint
+fragility). The verb is harmless and left in place for future work.
 
 The research that selected this OS (candidates, media, licensing, risk):
 [`docs/lab/research/alpha-second-os-candidates.md`](../lab/research/alpha-second-os-candidates.md).
