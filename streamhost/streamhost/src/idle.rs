@@ -122,6 +122,48 @@ impl Cmd {
     }
 }
 
+/// Is the emulator this freezer owns OBSERVED to be in state `T` (stopped)?
+///
+/// Only meaningful for the signal freezer — a QMP-paused guest is a running
+/// process, so `false` is the right answer for QEMU and the belief-based rule
+/// covers it. Resolution goes through the same pidfile + `proc_match` gate as
+/// `signal_pidfile`: an unreadable pidfile, a dead pid or a cmdline that no
+/// longer carries the marker all answer `false`, because "I cannot see it" must
+/// never become "it is stopped, resume it" — that is how an unrelated process
+/// gets signalled.
+///
+/// `/proc/<pid>/stat` field 3 is the state character. The comm field (2) can
+/// contain spaces and parentheses, so parse after the LAST `)`.
+fn pid_is_stopped(pidfile: &str, proc_match: Option<&str>) -> bool {
+    let Ok(raw) = std::fs::read_to_string(pidfile) else {
+        return false;
+    };
+    let Ok(pid) = raw.trim().parse::<i32>() else {
+        return false;
+    };
+    if pid <= 1 {
+        return false;
+    }
+    if let Some(want) = proc_match {
+        let Ok(cmdline) = std::fs::read(format!("/proc/{pid}/cmdline")) else {
+            return false;
+        };
+        if !String::from_utf8_lossy(&cmdline)
+            .replace('\0', " ")
+            .contains(want)
+        {
+            return false;
+        }
+    }
+    let Ok(stat) = std::fs::read_to_string(format!("/proc/{pid}/stat")) else {
+        return false;
+    };
+    let Some(after_comm) = stat.rsplit_once(')') else {
+        return false;
+    };
+    matches!(after_comm.1.split_whitespace().next(), Some("T"))
+}
+
 /// Read `pidfile`, verify the pid is the process we meant, and signal it.
 ///
 /// Every failure is an Err the reconciler retries on its next tick: a pidfile
@@ -173,6 +215,15 @@ enum Action {
 /// Reconciler decision:
 ///   * sessions active + still believed paused  -> Cont (never leave a guest
 ///     paused under a live session; a resume is NEVER withheld, warmup or not).
+///   * sessions active + OBSERVED stopped, whatever we believe -> Cont. Belief
+///     is not enough: on the non-QEMU path the LAUNCHER also freezes the
+///     emulator (it covers the first grace period, which the daemon cannot),
+///     and its delayed SIGSTOP lands ~8 s after launch — i.e. exactly when the
+///     first visitor of a cold station arrives, since the visit is what starts
+///     the station. The daemon never stopped it, so `paused` is false, so the
+///     old belief-only rule did nothing and the guest stayed frozen under a
+///     live session: no frames, no keys, and a reconnect storm on the control
+///     socket. Observed on vic20 2026-08-16. See `pid_is_stopped`.
 ///   * still inside the warmup window -> never Stop (see `warmed_up`).
 ///   * zero sessions, idle past grace, not yet paused -> Stop.
 ///   * zero sessions, idle past grace, believed paused + heal window elapsed
@@ -189,9 +240,10 @@ fn reconcile_action(
     grace: Duration,
     heal_due: bool,
     warmed_up: bool,
+    observed_stopped: bool,
 ) -> Action {
     if sessions > 0 {
-        if paused {
+        if paused || observed_stopped {
             Action::Cont
         } else {
             Action::None
@@ -287,6 +339,18 @@ impl IdlePauser {
             let mut st = self.st.lock().await;
             st.heal_ticks = st.heal_ticks.saturating_add(1);
             let heal_due = st.heal_ticks >= HEAL_EVERY;
+            // Only probed while a session is live and we do not already believe
+            // we paused it — the belief path already resolves to Cont, and a
+            // station with no visitor is stopped on purpose.
+            let observed_stopped = st.sessions > 0
+                && !st.paused
+                && match &*self.freezer {
+                    Freezer::Signal {
+                        pidfile,
+                        proc_match,
+                    } => pid_is_stopped(pidfile, proc_match.as_deref()),
+                    _ => false,
+                };
             let act = reconcile_action(
                 st.sessions,
                 st.paused,
@@ -294,6 +358,7 @@ impl IdlePauser {
                 self.grace,
                 heal_due,
                 self.started.elapsed() >= self.warmup,
+                observed_stopped,
             );
             match act {
                 Action::Stop => {
@@ -407,7 +472,7 @@ mod tests {
     #[test]
     fn pauses_after_grace_when_idle() {
         assert_eq!(
-            reconcile_action(0, false, Duration::from_secs(61), G, false, true),
+            reconcile_action(0, false, Duration::from_secs(61), G, false, true, false),
             Action::Stop
         );
     }
@@ -415,7 +480,7 @@ mod tests {
     #[test]
     fn no_pause_before_grace() {
         assert_eq!(
-            reconcile_action(0, false, Duration::from_secs(59), G, false, true),
+            reconcile_action(0, false, Duration::from_secs(59), G, false, true, false),
             Action::None
         );
     }
@@ -424,12 +489,37 @@ mod tests {
     fn never_paused_under_active_session() {
         // Active session + stale pause belief (a cont failed): must resume.
         assert_eq!(
-            reconcile_action(1, true, Duration::from_secs(999), G, true, true),
+            reconcile_action(1, true, Duration::from_secs(999), G, true, true, false),
             Action::Cont
         );
         // Active session, running: nothing to do, regardless of idle clock.
         assert_eq!(
-            reconcile_action(2, false, Duration::from_secs(999), G, true, true),
+            reconcile_action(2, false, Duration::from_secs(999), G, true, true, false),
+            Action::None
+        );
+    }
+
+    #[test]
+    fn resumes_a_guest_someone_else_stopped_under_a_live_session() {
+        // vic20, 2026-08-16: the LAUNCHER's delayed standby freeze (it covers
+        // the first grace period, which the daemon cannot) SIGSTOPped the
+        // emulator ~8 s after launch — which on a cold station is exactly when
+        // the first visitor arrives, because the visit is what starts it. We
+        // never paused it, so the belief is false; only the OBSERVATION saves
+        // the session. Without this the guest stays frozen: no frames, no keys.
+        assert_eq!(
+            reconcile_action(1, false, Duration::from_secs(1), G, false, true, true),
+            Action::Cont
+        );
+        // Warmup must not withhold a resume, same as the belief path.
+        assert_eq!(
+            reconcile_action(1, false, Duration::from_secs(1), G, false, false, true),
+            Action::Cont
+        );
+        // No session: an observed-stopped guest is stopped ON PURPOSE. Never
+        // resume it — that would undo standby and burn a core forever.
+        assert_eq!(
+            reconcile_action(0, true, Duration::from_secs(1), G, false, true, true),
             Action::None
         );
     }
@@ -438,12 +528,12 @@ mod tests {
     fn believed_pause_reasserted_only_on_heal_tick() {
         // Already paused: no per-tick QMP chatter...
         assert_eq!(
-            reconcile_action(0, true, Duration::from_secs(300), G, false, true),
+            reconcile_action(0, true, Duration::from_secs(300), G, false, true, false),
             Action::None
         );
         // ...but the heal tick re-stops (self-heal after an external labctl cont).
         assert_eq!(
-            reconcile_action(0, true, Duration::from_secs(300), G, true, true),
+            reconcile_action(0, true, Duration::from_secs(300), G, true, true, false),
             Action::Stop
         );
     }
@@ -455,23 +545,23 @@ mod tests {
     fn warmup_withholds_the_freeze_but_never_a_resume() {
         // Long past grace, but not warmed up: do not pause.
         assert_eq!(
-            reconcile_action(0, false, Duration::from_secs(999), G, false, false),
+            reconcile_action(0, false, Duration::from_secs(999), G, false, false, false),
             Action::None
         );
         // Not even the heal re-assert fires early.
         assert_eq!(
-            reconcile_action(0, true, Duration::from_secs(999), G, true, false),
+            reconcile_action(0, true, Duration::from_secs(999), G, true, false, false),
             Action::None
         );
         // A resume is never withheld: a session under a stale pause belief
         // must be thawed no matter where the warmup clock stands.
         assert_eq!(
-            reconcile_action(1, true, Duration::from_secs(1), G, false, false),
+            reconcile_action(1, true, Duration::from_secs(1), G, false, false, false),
             Action::Cont
         );
         // ...and once warm, the same idle state freezes as usual.
         assert_eq!(
-            reconcile_action(0, false, Duration::from_secs(999), G, false, true),
+            reconcile_action(0, false, Duration::from_secs(999), G, false, true, false),
             Action::Stop
         );
     }
