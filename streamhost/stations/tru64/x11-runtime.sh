@@ -124,6 +124,13 @@ export SDL_VIDEODRIVER=dummy
 export ES40_SHM_PATH="$SHM"
 export ES40_CTL_SOCK="$CTL"
 export ES40_TILE_NAME=tru64
+# This guest's X pointer stack moves TWO screen pixels per injected PS/2 count
+# (measured against XQueryPointer: 10/25/50/100/200 counts -> 20/50/100/200/400
+# px, with X acceleration already flat at 1/1, so it is not acceleration).
+# Without this the daemon's absolute pointer lands at twice the intended delta
+# and clamps at the screen edge; with it, MOVEA is pixel-exact on even
+# coordinates and 1 px short on odd ones (a count cannot express one pixel).
+export ES40_POINTER_GAIN=2
 if [ "$DISK" = "$CKPT/tru64.img" ]; then
   cp --reflink=auto "$CKPT/tru64.axp" "$WORK/checkpoint.axp"
   export ES40_RESTORE="$WORK/checkpoint.axp"
