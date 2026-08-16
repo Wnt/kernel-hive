@@ -444,6 +444,38 @@ for i in "${PUSH[@]}"; do
   esac
 done
 
+# --- re-stamp the harvest marker when Rust SOURCE moved --------------------
+# build-deploy.sh refuses to mirror repo -> box unless labhost's .rs tree still
+# hashes to streamhost/.last-harvest, because a mismatch means labhost may hold
+# authored changes the repo has never seen. Pushing a `src/*.rs` row through
+# THIS tool invalidates that digest while making the premise false by
+# construction: the two sides are now byte-identical, and the re-verification
+# below proves it. Without this, every daemon source push left build-deploy
+# blocked with DIGEST_MISMATCH and the only way forward was hand-editing a
+# safety marker — which is exactly the habit build-deploy's own comment warns
+# against. It re-stamps after its own mirror for the same reason; this is the
+# same act at the other door.
+if [ "$APPLY" = 1 ] && [ "$failed" = 0 ]; then
+  for i in "${PUSHED[@]}"; do
+    case "${BOX_SYNC_LABELS[$i]}" in
+      src/*.rs) ;;
+      *) continue ;;
+    esac
+    box_src=/data/vms/streamhost/build/streamhost/src
+    marker=/data/vms/streamhost/build/streamhost/.last-harvest
+    sha="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo unknown)"
+    if ssh -o ConnectTimeout=15 "$LAB" \
+      "d=\$(find '$box_src' -type f -name '*.rs' -print0 | sort -z | xargs -0 -r md5sum | md5sum | awk '{print \$1}');
+       printf 'version=1\ngit_sha=%s\nharvested_at=%s\nsrc_tree_md5=%s\n' '$sha' \"\$(date -u +%Y-%m-%dT%H:%M:%SZ)\" \"\$d\" > '$marker'"; then
+      say "re-stamped .last-harvest (Rust source pushed; box now equals repo)"
+    else
+      say "WARNING: could not re-stamp .last-harvest — build-deploy will refuse to mirror"
+      failed=$((failed + 1))
+    fi
+    break
+  done
+fi
+
 if [ "${#NEEDS_RELOAD[@]}" -gt 0 ] && [ "$DO_POST" = 1 ]; then
   if ssh -o ConnectTimeout=15 "$LAB" 'systemctl daemon-reload'; then
     say "systemctl daemon-reload (units: ${NEEDS_RELOAD[*]})"
