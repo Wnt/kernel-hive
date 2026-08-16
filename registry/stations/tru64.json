@@ -15,12 +15,12 @@
       "warpd_addr": null,
       "ssh_port": null,
       "exec_port": null,
-      "exec_kind": null,
-      "exec_user": null,
+      "exec_kind": "serialcon_e",
+      "exec_user": "root",
       "exec_key": null,
       "console": "x11",
       "udp_port": 54141,
-      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965). reset = relaunch restoring the CHECKPOINT: the launcher reflink-copies assets/tru64/checkpoint/tru64.img and restores checkpoint/tru64.axp (ES40_RESTORE), CDE desktop ~3 s after exec instead of the ~7-10 min cold boot; rollback = delete assets/tru64/checkpoint/ and it cold-boots img/tru64-seed.img."
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965); ser1 doubles as the EXEC channel — exec_kind serialcon_e: the guest runs a getty on /dev/tty01 and the tile's pumps.py lends that line one client at a time over serial-exec.sock in the tile dir, so `labctl exec tru64 <cmd>` returns captured stdout and the guest's exit code with no network device in the machine. Pointer is ABSOLUTE and pixel-exact: the launcher sets ES40_POINTER_GAIN=2 because this guest moves 2 px per injected PS/2 count (odd targets land 1 px short), and the checkpoint carries X acceleration 1/1 threshold 0. Screen is 1280x1024 via -screen on the X server line in /etc/dt/config/Xservers. reset = relaunch restoring the CHECKPOINT: the launcher reflink-copies assets/tru64/checkpoint/tru64.img and restores checkpoint/tru64.axp (ES40_RESTORE), CDE desktop ~3 s after exec instead of the ~7-10 min cold boot; rollback = delete assets/tru64/checkpoint/ and it cold-boots img/tru64-seed.img."
     }
   },
   "render": {
@@ -77,7 +77,7 @@
     },
     "x11": {
       "display": ":42",
-      "geometry": "1024x768x24",
+      "geometry": "1280x1024x24",
       "capture": "shm",
       "launcher": "streamhost/stations/tru64/x11-runtime.sh",
       "resetMode": "relaunch",
@@ -149,9 +149,9 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "UNVERIFIED",
+    "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "Tru64 UNIX 5.1B, CDE desktop with dtlogin autologin (root), 1024x768, in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. resetMode=relaunch: every reset reflink-copies assets/tru64/checkpoint/tru64.img and restores the checkpoint/tru64.axp savestate baked from it (~3 s to the desktop); with no checkpoint staged it cold-boots img/tru64-seed.img (~7-10 min). Keyboard PASS = SRM console echo and CDE navigation over ctlsock, framebuffer-proven. Instant checkpoint restore 2026-08-16."
+    "fixture": "Tru64 UNIX 5.1B, CDE desktop with dtlogin autologin (root), 1024x768, in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. resetMode=relaunch: every reset reflink-copies assets/tru64/checkpoint/tru64.img and restores the checkpoint/tru64.axp savestate baked from it (~3 s to the desktop); with no checkpoint staged it cold-boots img/tru64-seed.img (~7-10 min). Keyboard PASS = SRM console echo and CDE navigation over ctlsock, framebuffer-proven. Mouse PASS = MOVEA measured against the guest's own XQueryPointer (exact on even coordinates, 1 px short on odd) and a MOVEA+DOWN1/UP1 pressing a CDE button, 2026-08-17. Instant checkpoint restore 2026-08-16."
   },
   "migrationExceptions": []
 }

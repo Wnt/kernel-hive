@@ -510,7 +510,8 @@ def cmd_ls(argv):
                 c.get("pointer_mode", "?"),
                 c.get("warpd_port") or "-",
                 c.get("ssh_port") or "-",
-                c.get("exec_port") or ("serial" if c.get("exec_kind") == "serial_e" else "-"),
+                c.get("exec_port")
+                or ("serial" if c.get("exec_kind") in ("serial_e", "serialcon_e") else "-"),
                 c.get("console", "?"),
                 g,
                 svc_state(name),
@@ -1133,6 +1134,7 @@ def cmd_sh(argv):
 GEXEC = "/root/gexec.py"
 IRIXEXEC = os.environ.get("LABCTL_IRIXEXEC", "/root/irixexec.py")
 W2KTELNETEXEC = os.environ.get("LABCTL_W2KTELNETEXEC", "/root/w2ktelnetexec.py")
+TRU64EXEC = os.environ.get("LABCTL_TRU64EXEC", "/root/tru64exec.py")
 # w2kalpha's guest telnet server sits on a host-only veth at a fixed static IP
 # (baked into the golden; the host end and the dec21143 pcap adapter are set up
 # by streamhost/stations/w2kalpha/x11-runtime.sh). No per-tile host field is needed.
@@ -1156,6 +1158,15 @@ def cmd_exec(argv):
         # which is authoritative across relaunches. Extra argv is passed through
         # so operators can reach --detach / --fast / --timeout.
         r = subprocess.run(["python3", IRIXEXEC, c["dir"], cmdline, *argv[2:]])
+        sys.exit(r.returncode)
+    if kind == "serialcon_e":
+        # tru64: the guest has NO network device, so exec rides the emulated
+        # com2 that es40 already carries — a getty on /dev/tty01, lent one
+        # client at a time by the tile's pumps.py over serial-exec.sock in the
+        # tile dir. No port: the tile DIRECTORY is the address, which is what
+        # keeps the channel stable across relaunches. Extra argv passes through
+        # (--timeout).
+        r = subprocess.run(["python3", TRU64EXEC, c["dir"], cmdline, *argv[2:]])
         sys.exit(r.returncode)
     if kind == "warpd_e" and port:
         # real captured exec over warpd's 'E' verb (gexec.py frames the reply and
