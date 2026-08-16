@@ -243,7 +243,32 @@ corner-slams on the first sample of a session
 from a known 0,0. No launcher-side corner-slam is needed, and none should be
 added — only the pin's *magnitude* needed fixing.
 
-## Phase 5 — station wiring, deploy, acceptance
+## Phase 5 — station wiring, deploy, acceptance — **DONE, station LIVE**
+
+Deployed 2026-08-16. Capture, audio, signaling, the reset endpoint and idle
+auto-pause are all proven on the live station; see
+[`docs/guests/macos753.md`](../../guests/macos753.md) for the evidence table.
+
+Three things the deploy path itself taught, all now fixed in the tools rather
+than worked around:
+
+- **`stations-registry.py new` emitted a scaffold its own `validate` rejected**
+  (the `stream.pointer` requirement was tightened after the scaffold was
+  written). A `new` command that cannot produce a valid entry is a command
+  nobody can use.
+- **The pointer-method enum had no ADB entry.** Reusing `qemu-ps2-relative`
+  would have made the device ledger claim a PS/2 controller this machine does
+  not have.
+- **`box-sync-push` never re-stamped `.last-harvest`.** Pushing daemon source to
+  the box invalidated the digest `build-deploy` checks, so the build that needed
+  the source was blocked by the push that delivered it — with hand-editing a
+  safety marker as the only way out.
+
+A fourth is left as debt: **`harvest.sh` is broken by the terminology
+migration** — it still rsyncs `/data/vms/streamhost/tiles/`, which no longer
+exists.
+
+### Original plan for this phase
 
 Ordinary playbook work, in order: §5 input transport → §6 registry
 (`registry/stations/macos753.json`, streamhost station dir, serve/reset/operator

@@ -1,7 +1,7 @@
 # macos753 — Mac OS 7.5.3 (Quadra 800, m68k)
 
-**Status:** built, checkpointed, wired. Streaming through the daemon is the last
-unproven step — see [Blockers](#blockers).
+**Status:** LIVE. Built, checkpointed, wired, deployed and streaming; the
+station serves on udp/54142 and its reset endpoint restores the checkpoint.
 
 The fleet's **first foreign-architecture QEMU station**. Every other QEMU
 station launches `qemu-system-x86_64` or `qemu-system-i386`; the two non-x86
@@ -74,6 +74,11 @@ Recorded in [`ASSETS-MANIFEST.md`](../lab/ASSETS-MANIFEST.md).
 | `loadvm golden` | **0.32 s** |
 | Restore proof | window opened = 86 357 px differ; after restore **0 px** differ |
 
+**The vmstate is in the PRAM image, not the disk.** QEMU writes it to the first
+snapshot-capable drive, and on this machine that is the 256-byte PRAM. The two
+qcow2 files are therefore one unit: back up or clone `macos753-golden.qcow2`
+alone and you have a `golden` tag with no machine state behind it.
+
 The scene is a quiet Finder desktop: `Macintosh HD` top-right, empty Trash
 bottom-right, no window open, nothing selected.
 
@@ -141,18 +146,31 @@ Partition Map host-side, then let Finder's *instant* Erase Disk lay HFS across
 all of it. Patch images through `qemu-nbd`; `qemu-img dd` writes a **raw** image
 and destroys a qcow2 header.
 
+## Proven live (2026-08-16)
+
+| Check | Result |
+|---|---|
+| Capture | `first frame 1152x870 (shm=true)`; x264 encoder up at 1152x870 |
+| Audio | dbus `AudioOutListener` registered, Opus @96k, `Init bits=16 freq=48000 ch=2` — the Apple Sound Chip reaches the daemon |
+| Signaling | `/signal/macos753.json` → 200, udpPort 54142, cert hash present |
+| Framebuffer | `labctl shot macos753` = the checkpoint scene |
+| Reset endpoint | `POST /restore/macos753` → 200, `loadvm golden on macos753: OK` |
+| **Idle auto-pause** | guest **paused** with no visitor, **0.50 % of one core** measured over 20 s |
+
+The idle result is the one that matters most for this station: m68k is TCG-only,
+so an unpaused idle exhibit would burn a real core continuously. It does not.
+
 ## Blockers
 
-1. **Never streamed.** Every frame verified so far came from QMP `screendump`.
-   Capture, audio and input through the daemon are unproven, and with them the
-   XT set1 → qcode → ADB keyboard path (Command and Option arrive from a browser
-   as Meta and Alt).
-2. **Idle auto-pause unproven across a TCG guest.** Declared
-   (`SH_IDLE_PAUSE_SECS=60`) and the launcher starts paused, but not observed.
-3. **No interactive latency number yet.** TCG latency is a finding about the
+1. **Pointer and keyboard are UNVERIFIED through a browser** — deliberately, and
+   the registry says so. The daemon only injects while a client is connected, so
+   1:1 pointing and the XT set1 → qcode → ADB keyboard path (Command and Option
+   arrive from a browser as Meta and Alt) are an operator eyeball pass. The
+   `classicmac` on-screen keyboard profile exists for exactly that reason.
+2. **No interactive latency number yet.** TCG latency is a finding about the
    *tier*, and it should be measured before HP-UX/SunOS are planned on this
    pattern.
-4. **Cosmetic:** an empty `untitled folder` inside the System Folder, from a
+3. **Cosmetic:** an empty `untitled folder` inside the System Folder, from a
    stray Command-N while hand-driving. Invisible to visitors; the builder does
    not create it.
 
