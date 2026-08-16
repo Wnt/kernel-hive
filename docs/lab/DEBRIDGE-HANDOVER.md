@@ -66,17 +66,28 @@ the terminology migration, but other agents were mid-flight in those files.
    modifier fields are exempt BY NAME (the MPF-II's Shift lives on `:ROW0`,
    inside the pattern — that is why shifted characters silently typed
    unshifted). Every converted station sets it; a new conversion must too.
-3. **Exclusive-scan needs an escape valve, or it deadlocks on ordinary
-   typing.** Rule 2's serializer makes a press wait until no other key is
-   down — and real typing OVERLAPS, so that release is *behind* the press in
-   the same queue. Draining in strict arrival order therefore wedges the whole
-   keyboard after one key. The vicectl module hit this exactly (fixed
-   2026-08-17, fork `8612806414`): a NON-modifier release must be allowed past
-   a deferred press, a MODIFIER release must not (that is lesson 2 again), and
-   a press must never overtake a press. MAME's ctlsock has the same serializer;
-   it has not been audited against an overlapping fire-and-forget burst.
-   **A clean press/release/press/release test will NOT reproduce this** — it is
-   why typing slowly always looked fine.
+3. **Key ORDER in the module is its own subsystem, and it broke twice in
+   opposite directions.** Rule 2's serializer makes a press wait until no other
+   key is down, so ordering is not arrival order — but it is not free-for-all
+   either. Both failures were live, operator-visible, and neither is
+   reproducible by a clean press/release/press/release test:
+   - **Too strict ⇒ DEADLOCK.** Real typing OVERLAPS, so the deferred press is
+     waiting on a release that sits *behind* it in the same queue. Draining in
+     arrival order wedged the keyboard after ONE key (fork `8612806414`).
+   - **Too loose ⇒ THE SHIFT LANDS ON THE PREVIOUS CHARACTER.** A browser sends
+     a character's press and release milliseconds apart, so that release is
+     still inside its HOLD dwell when the next character's Shift arrives — and
+     modifiers are exempt from the EXCL gate. `print 12+34` typed `PRINT 1"+34`
+     (fork `c75afffaae`).
+
+   The shape that satisfies both: **a modifier edge never moves relative to
+   anything** (a level that slides one edge lands on the wrong character), a
+   press never overtakes a press, and a NON-modifier release may overtake a
+   waiting press — the one reordering that is required, because nothing else
+   can unblock it. Barriers must be raised only by an edge waiting on its own
+   dwell, never by an edge waiting on a barrier, or the fix is a second
+   deadlock. **MAME's ctlsock has the same serializer and has been audited for
+   neither.**
 4. **Checkpoint restore only works where the driver has `MACHINE_SUPPORTS_SAVE`.**
    bbcb/zx81/kc85_4/spectrum lack it and restored garbage (bbcb killed the
    process; kc85_4 came back black). Those five run `MAME_NATIVE_CHECKPOINT=0`
@@ -90,7 +101,23 @@ the terminology migration, but other agents were mid-flight in those files.
    emulator's pidfile** (`SH_IDLE_PAUSE_PIDFILE` + `_PROC_MATCH` scoped to its
    own asset path — bbcmicro and armeval both run a binary called `bbcb`).
    Without it every station burns a core forever.
-7. **Harness traps.** Launching an emulator as `( … ) &` and killing `$!` kills
+7. **`systemctl restart` does NOT kill the previous emulator, and two
+   publishers into one mapping is what "two machines at once" looks like.**
+   Proven live 2026-08-17: after a binary swap, plus4, cbm2 and cbm8032 each
+   had TWO emulators, both still mapping the station's `fb.shm`, and the
+   exhibit showed the golden frame every other frame. Two independent causes,
+   both now fixed in BOTH shared launchers:
+   - `readlink -f /proc/<pid>/exe` on a REPLACED binary yields
+     `"<path> (deleted)"`, which never equals `$BIN`, so the pidfile guard
+     spared exactly the process a deploy most needs to kill;
+   - a standby emulator is **SIGSTOPped**, and a stopped process never runs to
+     handle SIGTERM. **SIGCONT first, then TERM, then KILL.**
+
+   The launchers now sweep `/proc` scoped to the station's own asset directory
+   (not the pidfile alone, which a crashed launcher leaks), and **refuse to
+   start** if anything survives SIGKILL — a visible outage beats a flicker
+   nobody diagnoses.
+8. **Harness traps.** Launching an emulator as `( … ) &` and killing `$!` kills
    the SUBSHELL, not the emulator: eleven orphans (~2.2 cores) accumulated
    before a cgroup check found them. And never `pgrep -f` a pattern your own
    command line carries — use `[c]lass` tricks or file markers.
@@ -339,14 +366,33 @@ reports otherwise — all four of the second wave shipped it unchanged, and none
 dropped or corrupted a character. Everything else in a conversion is now the
 stanza, the fixture and two script invocations.
 
-**What none of the five caught, because nothing tested it: the module wedged on
-OVERLAPPING typing** (lesson 3, fixed 2026-08-17 in fork `8612806414`). Every
-acceptance burst in this wave was press/release/press/release, and that shape
-cannot reproduce it. A conversion's keyboard check must now fire a
-FIRE-AND-FORGET burst whose next key goes DOWN before the previous comes UP,
-and assert that every edge is acked — not just that the line appears. Harness:
-`lab:/data/vms/soltest/vice-kbd/` (`vkbd.py`, `burst.py`, `bisect.py`,
-`hard.py`).
+**The keyboard acceptance check this wave did not have.** Every acceptance
+burst in the wave was a clean press/release/press/release sequence fired at the
+control socket, and that shape reproduces NEITHER of lesson 3's two live
+defects. A conversion's keyboard check must now be all three of these, because
+each one catches something the others cannot:
+
+| Check | Catches | Where |
+|---|---|---|
+| FIRE-AND-FORGET **overlapping** burst (next key DOWN before the previous is UP), asserting every edge is ACKED — not just that the line appears | the EXCL deadlock | `bisect.py --mode rollover`, `hard.py` |
+| **Browser timing**: press/release ~5 ms apart, characters ~90 ms apart, on a line with a SHIFTED character next to an unshifted one (`print 12+34` is the cheapest), compared against the same text typed with wide character spacing | the misplaced shift level | `shift.py` |
+| The **real SPA in a real browser** over the real transport | everything above, plus the daemon path, the first-visit standby race, and anything the socket cannot see | `scripts/e2e/typing-pace-probe.mjs` on CT950 |
+
+Socket harness: `lab:/data/vms/soltest/vice-kbd/` (`vkbd.py`, `burst.py`,
+`bisect.py`, `hard.py`, `shift.py`, `reaptest.sh`). Browser probe:
+`pct exec 950 -- bash -lc "cd /root/e2e && GALLERY_URL=https://<host>:8443 node
+typing-pace-probe.mjs 'VIC-20' 'print 12+34' 90"`.
+
+**Two traps in the CHECKS themselves**, both of which produced a confidently
+wrong answer before they were spotted:
+
+- **A reference is slow TYPING, not slow EDGES.** Holding each key 400 ms to
+  build a "slow" baseline made the VIC-20 KERNAL auto-repeat the space bar: the
+  reference read `PRINT   12+34` and disagreed with every correct run. Hold
+  briefly; space the characters.
+- **The judge must survive the cursor.** A BASIC prompt blinks, so a single
+  frame never compares equal. AND together several frames sampled over a few
+  seconds and hash the resulting stable-ink mask.
 
 ## The four-station wave: plus4, cbm2, pet2001, cbm8032
 
@@ -465,14 +511,16 @@ re-measure in high res.
 
 ## Open debts
 
-- **The EXCL-deadlock fix is live on vic20 ONLY.** `plus4`, `cbm2`, `pet2001`
-  and `cbm8032` still run the wedging binary; the fixed one is STAGED beside
-  each as `<emu>.kbdfix` and reproduced/verified on `xpet` (old: 1 of 34 edges
-  then permanently `queued=1`; new: 34 of 34 in 2.43 s, `PRINT "HI PET"` on the
-  framebuffer). Activating one station is
-  `mv $A/xpet.kbdfix $A/xpet && systemctl restart streamhost@pet2001` — do it
-  when nobody is mid-bake on them. The durable route is a rebuild through
-  `build-vice-native.sh` once the submodule pin is merged.
+- **All five VICE stations run the fixed module** (fork `c75afffaae`,
+  deployed 2026-08-17) and the fixed launcher, verified through the real
+  browser. What is NOT durable: those binaries were installed from a rig build,
+  so the first `build-vice-native.sh` run after the submodule pin merges must
+  rebuild and reinstall all five, and the interim `<emu>.prekbdfix` /
+  `xvic.prekbdfix-4210340770` rollback copies can be deleted then.
+- **The nine MAME stations have the fixed launcher but were NOT restarted** —
+  lesson 7 only bites at a restart, so the fix is in place for their next one.
+  Their `ctlsock` module still has neither of lesson 3's fixes and no station
+  has been audited for them.
 - Operator batch validation of the nine is done; per-station polish is ongoing.
 - Temporary per-edge diagnostics (`SH_MAMESOCK_TRACE`, `MAME_CTL_TRACE`) are
   still live in mpf2's and dragon32's `station.env` — strip when the typing

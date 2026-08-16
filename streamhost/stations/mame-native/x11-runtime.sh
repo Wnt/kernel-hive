@@ -52,18 +52,67 @@ PIDFILE="$BASE/mame.pid"
   exit 1
 }
 
-# Relaunch semantics: kill only what the pidfile names AND /proc proves is ours.
-if [ -f "$PIDFILE" ]; then
-  P="$(cat "$PIDFILE" 2>/dev/null || true)"
-  if [ -n "$P" ] && [ "$(readlink -f "/proc/$P/exe" 2>/dev/null)" = "$(readlink -f "$BIN")" ]; then
-    kill "$P" 2>/dev/null || true
-    for _ in $(seq 1 40); do
-      kill -0 "$P" 2>/dev/null || break
-      sleep 0.25
-    done
-    kill -0 "$P" 2>/dev/null && kill -9 "$P" 2>/dev/null
-  fi
-fi
+# TWO PROVEN LIVE-VIDEO BUGS ARE FIXED HERE, both found on 2026-08-17 after a
+# binary swap left plus4, cbm2 and cbm8032 (the VICE wave) with TWO emulators
+# each, both still
+# mapping the station's fb.shm and both still publishing. What the visitor saw
+# was the golden frame every other frame and the real machine every other
+# frame — the operator's "two machines at once".
+#
+#   1. `readlink -f /proc/$P/exe` on a REPLACED binary yields "<path>
+#      (deleted)", which never equals "$BIN", so the old guard silently spared
+#      exactly the process a deploy most needs to kill. Strip the suffix.
+#   2. A standby emulator is SIGSTOPped, and a stopped process NEVER RUNS to
+#      handle SIGTERM. It just sits there holding the mapping until the wait
+#      loop gives up. SIGCONT first, then TERM, then KILL.
+#
+# And the pidfile is not the whole truth (a crashed launcher leaks one), so the
+# sweep is over /proc, scoped to THIS station's own asset directory — the same
+# anti-footgun as SH_IDLE_PAUSE_PROC_MATCH, and necessary because bbcmicro and armeval both run a
+# binary called bbcb. Resolution is /proc/<pid>/exe, NEVER a cmdline
+# match, which would match the shell running this script.
+ASSET_DIR="$(dirname "$(readlink -f "$BIN")")"
+
+station_emu_pids() {
+  local d p exe
+  for d in /proc/[0-9]*; do
+    [ -d "$d" ] || continue
+    p="${d#/proc/}"
+    [ "$p" = "$$" ] && continue
+    exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
+    exe="${exe% (deleted)}"
+    case "$exe" in
+      "$ASSET_DIR"/*) printf '%s\n' "$p" ;;
+    esac
+  done
+}
+
+reap_previous() {
+  local p
+  for p in $(station_emu_pids); do
+    kill -CONT "$p" 2>/dev/null || true
+    kill -TERM "$p" 2>/dev/null || true
+  done
+  for _ in $(seq 1 40); do
+    [ -z "$(station_emu_pids)" ] && return 0
+    sleep 0.25
+  done
+  for p in $(station_emu_pids); do
+    kill -CONT "$p" 2>/dev/null || true
+    kill -KILL "$p" 2>/dev/null || true
+  done
+  sleep 0.5
+  [ -z "$(station_emu_pids)" ]
+}
+
+# FAIL LOUDLY rather than start a second publisher: a station that refuses to
+# start is a visible outage someone fixes, while two publishers into one
+# mapping is a subtle flicker nobody diagnoses.
+reap_previous || {
+  echo "mame-native[$TILE]: previous emulator(s) still alive after SIGKILL:" \
+    "$(station_emu_pids | tr '\n' ' ')— refusing to start a second publisher" >&2
+  exit 1
+}
 rm -f "$PIDFILE" "$CTL"
 
 mkdir -p "$BASE/cfg" "$BASE/nvram" "$BASE/sta"
