@@ -795,7 +795,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54140,
-      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); exec = telnet_e: labctl exec w2kalpha runs a captured command over the guest W2K Telnet Server (blank Administrator, NTLM off) reached at 172.31.64.2:23 on the host-only veth w2kalpha-h/g that x11-runtime.sh brings up; the guest holds a static IP baked into the golden and its dec21143 (pcap backend) is at pci0.4 in es40.cfg; reset = relaunch (cold boot ~80 s from reflink copy of golden nt.img)"
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); exec = telnet_e: labctl exec w2kalpha runs a captured command over the guest W2K Telnet Server (blank Administrator, NTLM off) reached at 172.31.64.2:23 on the host-only veth w2kalpha-h/g that x11-runtime.sh brings up; the guest holds a static IP baked into the golden and its dec21143 (pcap backend) is at pci0.4 in es40.cfg; reset = relaunch restoring the golden CHECKPOINT: the launcher reflink-copies the golden nt.img and hands es40 the golden.axp savestate baked from that same image (ES40_RESTORE), pristine desktop ~3 s after exec (~15 s end to end through the unit); rollback = remove assets/w2kalpha/golden.axp and it cold-boots"
     },
     "win11": {
       "dir": "/data/vms/streamhost/stations/win11",

@@ -53,8 +53,10 @@ by bring-up group, per-cohort acceptance below.
 **Explicitly out of scope:** openvms/serenityos/toaruos (restart-mode: cold
 boot is the design; idle pause already bounds them), irix (livewatch needs the
 guest running through its 780 s warmup; has its own instant-restore machinery),
-w2kalpha (es40 restore-under-load unverified — pause path fixed 2026-08-11,
-restore path is a separate re-verify), the four never-pause stations (amiga,
+w2kalpha (had its own restore blocker; that is fixed and its
+restore reset shipped 2026-08-16 — es40 fork `a09816d`, see
+docs/guests/w2kalpha.md. It still launches RUNNING and is bounded by idle
+pause; a start-paused equivalent would be a separate change), the four never-pause stations (amiga,
 daybreak, nextstep, star; SH_IDLE_PAUSE_SECS=0 — separate policy item).
 
 **Acceptance per cohort** (framebuffer is the only proof of guest state):

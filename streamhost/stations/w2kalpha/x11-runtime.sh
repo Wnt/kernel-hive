@@ -15,10 +15,16 @@
 # claim that es40 is MAME — and liveness under SH_CAPTURE=shm is "mame.pid
 # alive AND $SH_SHM_PATH non-empty". Kill ONLY by pidfile.
 #
-# resetMode=relaunch: every launch reflink-copies the golden nt.img, so each
-# boot is pristine (~80 s to desktop). es40's savestate restore is NOT used —
-# a restored guest partial-paints new dialogs (post-restore repaint fragility,
-# docs/lab/research/w2kalpha-HANDOFF.md); cold boot renders everything.
+# resetMode=relaunch, restored from the golden CHECKPOINT: every launch
+# reflink-copies the golden nt.img AND hands es40 the golden.axp savestate
+# baked from that exact image (ES40_RESTORE), so each launch is the same
+# pristine desktop ~3 s after exec instead of an ~80 s cold boot. The pair is
+# atomic by construction (serial-menu option 5 = save-and-exit: no guest write
+# can land between the state file and the image), and the guest only ever
+# writes to the per-launch copy, so the pair stays coherent forever.
+#
+# Drop golden.axp out of the asset tree and this falls back to a cold boot on
+# its own — that is the rollback, and it needs no edit here.
 #
 # The defaults are the PRODUCTION asset tree /data/vms/streamhost/assets/
 # w2kalpha. NEVER point a live tile at /data/vms/soltest (agent scratch that
@@ -28,7 +34,8 @@ set -u
 D="$(cd "$(dirname "$0")" && pwd)" # tile runtime dir (writable: pidfiles/work/shm)
 ASSETS="${W2KALPHA_ASSETS:-/data/vms/streamhost/assets/w2kalpha}"
 ES40="${W2KALPHA_ES40:-$ASSETS/es40}"
-GOLDEN="${W2KALPHA_GOLDEN:-$ASSETS/nt.img}" # clean 1280x1024 cold-boot disk (m5-1280 lineage)
+GOLDEN="${W2KALPHA_GOLDEN:-$ASSETS/nt.img}"             # clean 1280x1024 disk (m5-1280 lineage)
+GOLDEN_AXP="${W2KALPHA_GOLDEN_AXP:-$ASSETS/golden.axp}" # savestate BAKED FROM THAT IMAGE
 LIBROOT="${W2KALPHA_LIBROOT:-$ASSETS/root/usr/lib/x86_64-linux-gnu}"
 
 # station.env exports SH_SHM_PATH / SH_MAMECTL_SOCK; default them for standalone runs.
@@ -72,6 +79,19 @@ export LD_LIBRARY_PATH="$LIBROOT"
 export SDL_VIDEODRIVER=dummy
 export ES40_SHM_PATH="$SHM"
 export ES40_CTL_SOCK="$CTL"
+export ES40_TILE_NAME=w2kalpha # names this es40 in the mamectl HELLO banner
+
+# Instant resume from the checkpoint. es40 restores the state file BEFORE its
+# main loop and skips the SRM decompress entirely when it can read one (that
+# decompress is the ~30 s the old cold boot spent inflating a console the
+# restore overwrites anyway). An absent or unreadable file cold-boots instead,
+# so this is safe to have unconditionally.
+BOOT="cold (~80 s to desktop)"
+if [ -f "$GOLDEN_AXP" ]; then
+  cp --reflink=auto "$GOLDEN_AXP" "$WORK/golden.axp"
+  export ES40_RESTORE="$WORK/golden.axp"
+  BOOT="restore from golden.axp (~3 s to desktop)"
+fi
 
 # Host-only guest network for the telnet exec channel (labctl exec w2kalpha).
 # es40.cfg's dec21143 uses the pcap backend on the GUEST end of a veth pair; the
@@ -112,4 +132,4 @@ if [ ! -e "/proc/$P" ]; then
   cat "$D/es40.log" >&2 || true
   exit 1
 fi
-echo "w2kalpha runtime up: es40 pid=$P pumps=$(cat "$D/pumps.pid") shm=$SHM ctl=$CTL boot=cold (~80 s to desktop)"
+echo "w2kalpha runtime up: es40 pid=$P pumps=$(cat "$D/pumps.pid") shm=$SHM ctl=$CTL boot=$BOOT"

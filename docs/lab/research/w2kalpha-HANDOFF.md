@@ -65,15 +65,18 @@ the checkpoint is a separate clean snapshot, unaffected).
 | `ab75e70`,`d73e4dc` | savestate fixed + menu-5 save-and-exit + `ES40_RESTORE` | restore→desktop |
 | `66c5b2f` | shm framebuffer export (`src/gui/shmfb.h`, `ES40_SHM_PATH`) | pixel-exact, X-free |
 | `849039a`,`6986997` | mamectl/1 input socket (`src/gui/ctlsock.h`, `ES40_CTL_SOCK`) | keyboard opens Start menu |
+| `fc82f05` | host-freeze re-anchor (idle-pause SIGSTOP safety) | 45 s freeze absorbed |
+| `a09816d` | savestate: 8514/A accel section, NIC host pointers, skip SRM decompress on restore | **instant restore, full repaint** |
 
 ## Station: DONE + VERIFIED
 
-The station **launcher** works end to end: `w2kalpha-runtime.sh` cold-boots es40
-headless from the checkpoint (reflink copy per launch) to a **1280×1024 desktop
-published on shm in ~80 s**, mamectl socket accepts input, keyboard reaches
-the guest. Reset mode = **relaunch (cold boot)** — a restored guest paints
-new dialogs only partially (post-restore fragility); cold boot renders
-everything.
+The station **launcher** works end to end: `x11-runtime.sh` reflink-copies the
+golden image per launch and **restores the `golden.axp` checkpoint** (fork
+`a09816d`) to a **1280×1024 desktop published on shm 2.3 s after exec**
+(~15 s end to end through the systemd unit; the cold-boot path it replaced was
+~80 s), mamectl socket accepts input, keyboard reaches the guest. Reset mode =
+**relaunch, restoring the checkpoint**; dropping `golden.axp` out of the asset
+tree cold-boots instead, which is the rollback.
 
 ## Remaining work — status and benefit
 
@@ -81,7 +84,7 @@ everything.
 |---|---|---|---|
 | **Checkpoint guest-polish + re-capture** | **needed for a clean live station** (deferred by operator 2026-08-11; the recovery page showed on 3/3 cold boots that day — every visitor/reset sees it until this lands) | removes the flaky "Active Desktop Recovery"; 1:1 mouse makes the open-loop pointer pixel-exact. The keyboard-only fix sequence was PROVEN on a throwaway copy over the socket (Win+R `desk.cpl` → Ctrl+Tab×3 → Space → Enter → **No** to the "wallpaper needs Active Desktop" prompt — the checkpoint's wallpaper is web-rendered, switch it to None/BMP or the prompt recurs); see docs/guests/w2kalpha.md | On a cold checkpoint, via socket keyboard (dialogs render on cold boot): desk.cpl → Web tab → uncheck "Show Web Content"; main.cpl → Motion → Acceleration None (or `HKCU\Control Panel\Mouse` MouseSpeed=0, Threshold1/2=0). Clean shutdown, re-capture `nt.img`, restage. Then verify: MOVEA lands pixel-exact, DOWN1/UP1 selects an icon. Do this in a scratch copy, not the production asset. |
 | **Register the station (task #9)** | **DONE 2026-08-11 — LIVE** | the actual live exhibit | Registered as the 60th production station: `registry/stations/w2kalpha.json` (slot 140, udp 54140), tracked `streamhost/stations/w2kalpha/{x11-runtime.sh,pumps.py,station.env.fixture}` conforming to the ensure/stop-tile-x11 contract (es40 pid in `mame.pid`), poster + hero, `docs/guests/w2kalpha.md`, UI scene/keyboard/identity wiring. Deployed, `streamhost@w2kalpha` active; verified: ticket accepted, 1280×1024 desktop on shm, reset-tile.sh relaunch → fresh boot. Repo `main` 97ce80b+4d79d21. NOTE: es40's ctlsock is **single-client** — while the daemon is attached, direct `ctltest.py`/labctl socket probes time out (stop the unit first, or add multi-client accept to the fork). |
-| **post-restore-under-load wedge** | open bug | unlocks instant-ready (<5 s) reset instead of ~80 s cold boot — the operator's original vision | An instant-resumed guest wedges under load / partial-paints dialogs. Prime suspect: wall-clock RPCC + interval-timer baselines (`cc_last_sync`, `next_timer_fire`, `tick_last_fire` — std::chrono members OUTSIDE `state`) are not re-anchored to the restored `state.cc` in `CAlphaCPU::RestoreState`, so the guest sees a clock discontinuity. Candidate fix: re-anchor them on restore. NOTE 2026-08-11: the sibling fault (SIGSTOP idle-pause clock jump) was fixed by fork `fc82f05` `host_freeze_reanchor` — idle auto-pause is now ON for the station. That commit's gap detector fires at any cc sync point, which may also soften the restore path, but restore-under-load has NOT been re-verified — this row stays open. |
+| **post-restore partial paint / wedge** | **FIXED 2026-08-16 — restore reset is LIVE** | the operator's original vision: reset in ~3 s instead of an ~80 s cold boot | Root cause was NOT the RPCC/interval-timer suspicion below: the **8514/A drawing engine (`m_8514`) is a device member and was in no saved section**, so a restored guest drew through a power-on accelerator and every accelerated fill/blit landed off-screen (CPU-drawn menus/text appeared, window frames and client areas did not). Second defect found the same session: `CDEC21143`'s saved state carries two HOST pointers (`tx/rx.cur_buf`), restored verbatim → SIGSEGV in `dec21143_tx` the moment a restored guest transmitted (this is the "wedges under load" half). Third: `ES40_RESTORE` now skips `LoadROM`'s ~30 s SRM decompress, whose output the restore overwrites — that is what makes it *instant* (first frame 2.3 s after exec). All three in fork `a09816d`. The old suspicion (`cc_last_sync`/`next_timer_fire`/`tick_last_fire` not re-anchored) was already covered by `fc82f05`'s gap detector; a 45 s SIGSTOP of a restored guest resumes clean. |
 | **guest telnet channel** | not started | text-driven load scenarios (operator-requested); faster than screenshot/keystroke driving | W2K built-in Telnet Server over the emulated `dec21143`. Guest networking first. |
 | **ali_usb removal** | not started | lowers guest idle CPU | Remove `ali_usb` from es40.cfg — W2K's System process pegs a core polling the emulated USB (upstream es40 issues #114/#169). Device-set change → do BEFORE any checkpoint recapture; then verify idle CPU drop. |
 | **guest de-bloat** | not started | marginal idle/interactive gain, faster boot | Disable Indexing Service, Task Scheduler, transition effects, screensaver; keep pagefile. See `es40-tuning-research.md`. Fold into the checkpoint-polish pass. |

@@ -764,11 +764,13 @@ emit daybreak \
   "$T/daybreak/station.env.fixture"
 
 # w2kalpha — x11 RUNTIME tile, NOT QEMU. es40 (AlphaServer ES40, fork Wnt/es40)
-#   cold-booting Windows 2000 RC2 build 2128 for Alpha AXP with NO window and
+#   restoring Windows 2000 RC2 build 2128 for Alpha AXP from a savestate
+#   checkpoint (ES40_RESTORE golden.axp, ~3 s) with NO window and
 #   NO X server (SDL_VIDEODRIVER=dummy), captured from the framebuffer es40
 #   publishes itself: SH_CAPTURE=shm (src/gui/shmfb.h) + mamesock input (es40
 #   ctlsock mamectl/1, src/gui/ctlsock.h). No SH_QMP; large media staged under
-#   /data/vms/streamhost/assets/w2kalpha (es40 fork binary + golden nt.img).
+#   /data/vms/streamhost/assets/w2kalpha (es40 fork binary + the golden
+#   nt.img/golden.axp checkpoint pair).
 emit w2kalpha \
   --tile w2kalpha --udp 54140 --x11 --x11-display :41 --capture shm \
   --pointer abs --input-backend mamesock --audio off --fps 30 \
