@@ -1,10 +1,12 @@
 # tru64 — Tru64 UNIX 5.1B on es40 (AlphaServer ES40)
 
 **Status: LIVE AND LISTED (2026-08-16).** `/os/tru64` streams and the
-station appears in the grid and museum hall. A cold boot lands on the CDE
-desktop with **no greeter** — the Tru64 equivalent of w2kalpha's Windows
-autologon — and every launch is pristine because the launcher reflink-copies
-a seed disk, exactly the w2kalpha shape.
+station appears in the grid and museum hall. Every launch is pristine because
+the launcher reflink-copies a read-only disk, exactly the w2kalpha shape — and
+since the same day it **restores a checkpoint**: the CDE desktop is back
+**~3 s after exec** instead of the ~7-10 min cold boot (see
+[Checkpoint restore](#checkpoint-restore)). The cold path still exists as the
+fallback and still needs no greeter (dtlogin autologin).
 
 ## How boot-to-desktop works (mimics w2kalpha)
 
@@ -46,37 +48,88 @@ disk `img/tru64.img` after the three changes above and a clean `halt`.
   corrupt a system file.
 - **Screenshots**: `uibench/shmread.py <fb.shm> <out.png>`.
 
-## Idle auto-pause — what "instant" means here (2026-08-16)
+## Idle auto-pause and checkpoint restore — the two halves of "instant"
 
-This station is the w2kalpha family, not the QEMU family, and the two get
-their instant feel differently:
+This station is the w2kalpha family, not the QEMU family, and it now gets its
+instant feel the same way its sibling does — from two mechanisms that compose:
 
-- **QEMU stations** hold a `savevm golden` snapshot inside the qcow2. They
-  launch `-loadvm golden -S` (restored, paused) and their reset is a QMP
-  `loadvm` — a genuine instant restore, no boot.
-- **es40 stations (w2kalpha, tru64)** do not use savestate restore at all
-  (see w2kalpha's post-restore repaint fragility). They boot ONCE from the
-  seed and then simply stay powered on: `SH_IDLE_PAUSE_SECS=60` SIGSTOPs the
-  emulator at ~0 CPU when no visitor is connected, and the next session
-  SIGCONTs it sub-second. Fork `fc82f05` (`host_freeze_reanchor`) makes the
-  guest clocks resume where they stopped.
+- **Between visits** the guest stays powered on and SIGSTOPped:
+  `SH_IDLE_PAUSE_SECS=60` freezes the emulator at ~0 CPU when no visitor is
+  connected, and the next session SIGCONTs it sub-second. Fork `fc82f05`
+  (`host_freeze_reanchor`) makes the guest clocks resume where they stopped.
+- **On reset (and on every launch)** the launcher restores a checkpoint —
+  an es40 savestate baked from the very disk image it reflink-copies — so the
+  station reaches the finished CDE desktop in ~3 s instead of ~7-10 min. This
+  is what QEMU stations get from `-loadvm golden`; it needed es40 fork
+  `a09816d`, which fixed the savestate defects that made restore unusable
+  (8514/A accelerator state missing from the state file, host pointers in the
+  NIC's saved state, and the ~30 s SRM decompress that every restore
+  overwrote). See [`w2kalpha.md`](w2kalpha.md) for the full diagnosis.
 
-tru64 had `SH_IDLE_PAUSE_SECS=0` left over from the install phase, so it
-burned a core around the clock and had no resume path. It now carries the
-w2kalpha stanza, with one deliberate difference: `SH_IDLE_PAUSE_WARMUP_SECS`
-is **540**, not w2kalpha's 120, because this guest needs ~400-450 s to reach
-the CDE desktop. A shorter warmup would freeze an unvisited station
-mid-boot and the next visitor would sit through the rest of it. Verified
-2026-08-16: boot completes, then `[idle] no sessions for 60s -> guest paused`
-with es40 in state `T` at 0.0 % CPU and the finished desktop in shm.
+`SH_IDLE_PAUSE_WARMUP_SECS` came down from **540 s to 60 s** with the
+checkpoint: 540 existed only because a cold boot took ~400-450 s to reach CDE
+and a mid-boot freeze would strand an unvisited station part-booted. Verified
+2026-08-16: boot/restore completes, then `[idle] no sessions for 60s -> guest
+paused` with es40 in state `T` at 0.0 % CPU and the finished desktop in shm.
 
-**"Restore to golden" still relaunches** on this station — reset mode is
-`relaunch` for the whole es40 family (w2kalpha included), so it is a cold
-boot, which here costs the full ~7 min rather than w2kalpha's ~80 s. Making
-reset instant would need es40 savestate restore (`ES40_RESTORE` exists; a
-`SAVEST` ctlsock verb was added 2026-08-16) plus the pairing and repaint
-proofs w2kalpha's doc calls out — not done, and not required for the
-visitor-facing instant resume above.
+## Checkpoint restore
+
+`assets/tru64/checkpoint/` holds the pair — `tru64.axp` (es40 savestate),
+`tru64.img` (the disk it was baked from) and `rom/` (dpr/flash carry state).
+The launcher restores when all of it is present and cold-boots
+`img/tru64-seed.img` when it is not, so **deleting the checkpoint directory is
+the whole rollback**.
+
+The state and the disk are a PAIR: restoring a memory image onto a disk the
+guest kept writing to corrupts the filesystem, which is why the bake exits the
+emulator in the same breath as the save.
+
+**Re-bake** — in a namespaced clone under `/data/vms/soltest/`, never on the
+live station:
+
+1. Boot the clone (cold from the seed, or restored from the current
+   checkpoint if you are amending it) and drive it to the state you want,
+   framebuffer-verified.
+2. Send a telnet `IAC BREAK` (`\xff\xf3`) on serial0 and answer **5** — "save
+   state to autosave.axp and exit". Device threads are stopped for the menu,
+   so no guest write can land after the save.
+3. Stage `work/img/tru64.img`, `work/autosave.axp` and `work/rom/` as
+   `checkpoint/{tru64.img,tru64.axp,rom/}` — write to a temp name and `mv`
+   into place so a running es40 never has its mapped image truncated — keeping
+   `.bak-<reason>-<date>` copies of what you replace.
+4. Restart the station and check the framebuffer: the desktop must come back
+   in seconds AND a **new** window must paint in full (open the File Manager
+   from the front panel, then `Ctrl+T` for a dtterm — frame, menu bar and
+   client area all present, not just the title bar).
+
+A device-set change (`es40.cfg`) orphans the checkpoint — re-bake after one.
+Host-side config (serial ports, file paths) does not.
+
+## Driving the desktop by keyboard — the route to a root shell
+
+There is no network in this device set, so the ctlsock keyboard is the only
+channel into the running desktop. The route that works:
+
+1. Focus starts on the Front Panel. `Alt+Space` opens ITS window menu (proof
+   of where focus is); `Esc` closes it — the key field is `Esc`, not
+   `Escape`.
+2. `Cursor Down` moves onto the panel's icon row, `Enter` activates the
+   focused control. The File Manager control opens `dtfile`.
+3. In `dtfile`, **`Ctrl+T` opens a dtterm** — a root shell (`#`), the guest is
+   passwordless root.
+4. Type into it with `scripts/dev/es40-gtype.py <ctl.sock>` (full US layout;
+   `ctltest.py` cannot type `*`, `:` or `/`).
+
+**The screen lock is disabled in the checkpoint** (2026-08-16). CDE ships
+`dtsession*saverTimeout: 10` / `dtsession*lockTimeout: 30`, so the live
+station used to blank after 10 idle minutes and then sit behind "Display
+locked by user root" — a black screen for the next visitor, and the empty root
+password did not unlock it from the injected keyboard. The checkpoint's disk
+carries `/etc/dt/config/C/sys.resources` (a copy of the CDE default with both
+timeouts set to **0**) and was baked from a session started after that change,
+so the restored desktop never blanks. **The seed still has the CDE defaults**:
+a cold-boot fallback will blank and lock again — re-bake the seed from a
+checkpoint-restored, cleanly halted guest to close that.
 
 ## Known cosmetic item
 
@@ -174,9 +227,8 @@ archive.org ZIP if layered products are ever wanted.
   new es40 before declaring the station up.
 - **ctlsock is MULTI-CLIENT since this station's fork build** (`ES40_TILE_NAME`
   names the HELLO banner): the streamhost daemon stays attached while
-  `ctltest.py` injects install keystrokes beside it. w2kalpha's binary
-  predates this — its single-client caveat still applies there until its
-  binary is promoted.
+  `ctltest.py` injects keystrokes beside it. w2kalpha carries the same binary
+  since 2026-08-16, so its old single-client caveat is gone too.
 - **Guest TOY clock**: the cfg pins `time` (es40 knob) so the installer does
   not start from a "preposterous time" 1996 reset. Set before the install's
   first boot; Tru64 has no timebomb, this is date sanity, not license work.
