@@ -20,7 +20,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54141,
-      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965). INSTALL PHASE: the guest disk assets/tru64/img/tru64.img is the live install target, mutated in place — reset=relaunch REBOOTS the installer (disk persists); no golden exists yet."
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965). reset = relaunch restoring the CHECKPOINT: the launcher reflink-copies assets/tru64/checkpoint/tru64.img and restores checkpoint/tru64.axp (ES40_RESTORE), CDE desktop ~3 s after exec instead of the ~7-10 min cold boot; rollback = delete assets/tru64/checkpoint/ and it cold-boots img/tru64-seed.img."
     }
   },
   "render": {
@@ -141,7 +141,7 @@
       "CDE File Manager"
     ],
     "blurb": "DEC’s own UNIX on DEC’s own 64-bit iron. Born OSF/1 in 1992, renamed Digital UNIX and finally Tru64, this was the operating system the AlphaServer ES40 was designed around: a fully 64-bit UNIX with the CDE desktop, from the same company that built the processor under it. Version 5.1B of 2003 was the line’s last major release — HP retired Alpha and Tru64 together, and their engineering went on into HP-UX and beyond.",
-    "notes": "Live streamhost station — third x11-runtime station (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. LISTED 2026-08-16: the 5.1B install (115 subsets, AdvFS) was performed live on the station, then a seed disk was baked from the cleanly halted result and the launcher flipped to the w2kalpha shape — every launch reflink-copies the seed, so each boot is pristine. The guest auto-logs into CDE (dtlogin autoLogin + passwordless root), so a cold boot lands on the Common Desktop Environment with no greeter. See docs/guests/tru64.md."
+    "notes": "Live streamhost station — third x11-runtime station (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. LISTED 2026-08-16: the 5.1B install (115 subsets, AdvFS) was performed live on the station, then a seed disk was baked from the cleanly halted result and the launcher flipped to the w2kalpha shape — every launch reflink-copies a read-only disk, so each launch is pristine. Instant checkpoint restore 2026-08-16 (es40 fork a09816d): a reset restores the baked CDE desktop in ~3 s rather than cold-booting it in ~7-10 min. The guest auto-logs into CDE (dtlogin autoLogin + passwordless root), so a cold boot lands on the Common Desktop Environment with no greeter. See docs/guests/tru64.md."
   },
   "reset": {
     "stationDir": "tru64",
@@ -151,7 +151,7 @@
     "snapshot": null,
     "mouse": "UNVERIFIED",
     "keyboard": "PASS",
-    "fixture": "INSTALL PHASE — Tru64 UNIX 5.1B installer (X11, 1024x768) from the OS CD in es40 (AlphaServer ES40, EV68). resetMode=relaunch REBOOTS the machine: SRM console -> boot dka400 -> installer; the install disk persists (mutated in place, no golden yet). Keyboard PASS = SRM console echo over ctlsock, framebuffer-proven 2026-08-11. Dark launch: listing=hidden while the install runs on camera."
+    "fixture": "Tru64 UNIX 5.1B, CDE desktop with dtlogin autologin (root), 1024x768, in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. resetMode=relaunch: every reset reflink-copies assets/tru64/checkpoint/tru64.img and restores the checkpoint/tru64.axp savestate baked from it (~3 s to the desktop); with no checkpoint staged it cold-boots img/tru64-seed.img (~7-10 min). Keyboard PASS = SRM console echo and CDE navigation over ctlsock, framebuffer-proven. Instant checkpoint restore 2026-08-16."
   },
   "migrationExceptions": []
 }

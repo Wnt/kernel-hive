@@ -765,7 +765,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54141,
-      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965). INSTALL PHASE: the guest disk assets/tru64/img/tru64.img is the live install target, mutated in place — reset=relaunch REBOOTS the installer (disk persists); no golden exists yet."
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965). reset = relaunch restoring the CHECKPOINT: the launcher reflink-copies assets/tru64/checkpoint/tru64.img and restores checkpoint/tru64.axp (ES40_RESTORE), CDE desktop ~3 s after exec instead of the ~7-10 min cold boot; rollback = delete assets/tru64/checkpoint/ and it cold-boots img/tru64-seed.img."
     },
     "vic20": {
       "dir": "/data/vms/streamhost/stations/vic20",
