@@ -17,6 +17,44 @@ source**). Remaining: checkpoint bake from m2 + launcher flip to the
 w2kalpha reflink shape, fixture/registry rewrite, poster hero swap to the
 CDE desktop, lift `listing`.
 
+## Boot-to-desktop: findings 2026-08-16 (blocking the checkpoint)
+
+Proven this session, driving the live station over `ctl.sock` with
+`/data/vms/soltest/ALPHA-nt/uibench/ctltest.py` + `shmread.py`:
+
+- **The station boots to the CDE greeter, not a desktop** — dtlogin has no
+  native autologin (same as `solaris`, whose station solves it by resuming a
+  logged-in desktop from its checkpoint, not by autologin).
+- **Keyboard is the only reliable input channel.** `MOVEA`+`DOWN1` clicks do
+  not land (the es40 pointer needs the same seed-polish pass w2kalpha
+  documents); every step below was done keyboard-only. Working key fields:
+  `Enter`, `Tab`, `Space`, `Escape`, `F10`, `Left Alt`, `F4`.
+- **Login works and the desktop is reachable**: `root` / `Hive-2003` at the
+  greeter. dtlogin's state transitions are SLOW — a failed login takes
+  >30 s to return to the username field, and typing into the gap silently
+  lands in the wrong field. Any scripted login needs framebuffer feedback,
+  not fixed sleeps.
+- **A clean exhibit scene exists**: closing Help Viewer, dxconsole and the
+  window list (Alt+Tab / Alt+F4) leaves the bare CDE backdrop + full front
+  panel. That is the scene a checkpoint should capture.
+- **The blocker: this es40 build cannot SAVE a checkpoint.** `HELLO`
+  advertises `caps=natkbd,savest`, but the verb table implements only
+  `KEY`/`MOVEA`/`MOVEP` — `SAVE` and `SAVEST` both answer `ERR unknownverb`,
+  and the binary exports `ES40_RESTORE` with no save counterpart. The
+  spike source (`/data/vms/soltest/v456-spike/ctlsock/ctlsock.cpp`) DOES
+  implement `SAVE`/`SCHEDSAVE`, so capturing a checkpoint needs that build
+  promoted to `$ASSETS/es40` first (and w2kalpha's post-restore repaint
+  fragility re-verified on it).
+
+**So the two open routes**, both still to be decided:
+1. **Checkpoint route** (matches solaris/irix): promote a save-capable es40,
+   capture the clean-desktop scene, restore per launch. Also delivers
+   instant-ready. Cost: an emulator build + restore-fidelity proof.
+2. **Auto-type route** (no new binary): launcher drives the proven key
+   sequence after boot, with a framebuffer poll to detect the greeter and
+   retry — the pattern the keyboard-only exhibits already use. Cheaper, but
+   every launch pays the full cold boot plus the login wait.
+
 The research that selected this OS (candidates, media, licensing, risk):
 [`docs/lab/research/alpha-second-os-candidates.md`](../lab/research/alpha-second-os-candidates.md).
 The sibling station's machinery this one reuses:
