@@ -643,6 +643,19 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerD', monitor: 'paramCrt',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // Quadra 800: a compact MINI-tower, not a full pedestal — towerA is the
+  // shortest body in the kit (0.38) and reads correctly beside the PC towers
+  // without pretending to be one. The glass is crtE, the big workstation tube,
+  // because this station runs the Apple 21-inch 1152x870 mode and a small CRT
+  // would make the exhibit's own resolution look like a mistake. towerA|crtE is
+  // a pair nothing else in the hall holds. keyboardH is the widest keyboard in
+  // the kit, which is the honest silhouette for the Apple Extended Keyboard II,
+  // and paramMouseF is the least-used mouse — fitting for the one machine here
+  // whose mouse has a single button.
+  macos753: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseF',
+  },
 } as const satisfies Record<string, Assembly>;
 
 export function assemblyForTile(tileId: string): Assembly {

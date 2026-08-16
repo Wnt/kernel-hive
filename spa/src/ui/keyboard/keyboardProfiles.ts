@@ -41,7 +41,8 @@ export type Family =
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
   | 'zxspectrum' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
-  | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star';
+  | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
+  | 'classicmac';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -742,6 +743,38 @@ export const PROFILES: Record<Family, KeyboardProfile> = {
     moreRows: [fkeyRow(1, 10)],
   },
 
+  // Classic Mac OS (macos753). The one profile in this file whose modifier is
+  // not optional: System 7 has NO command line, so every verb a visitor might
+  // want is either a menu item or a Command chord, and a browser cannot be
+  // relied on to deliver ⌘ itself — the host swallows Meta for its own
+  // shortcuts. Super_L is the right keysym: it reaches the guest as XT set1
+  // 0xE05B -> QEMU qcode meta_l -> ADB 0x37, which IS Command (verified on the
+  // live guest: Command-O opened a selected Finder icon, Command-W closed the
+  // window).
+  //
+  // ⌘. is the classic Mac cancel and has no Windows equivalent, so it is spelled
+  // out rather than left to the QWERTY row. Function keys are omitted on
+  // purpose: the Quadra's ADB keyboard has them, but System 7 binds none of
+  // them, so a row of F-keys would be twelve buttons that do nothing.
+  classicmac: {
+    family: 'classicmac',
+    rows: [[
+      latch('cmd', '⌘', XK.Super_L, 'Command'),
+      latch('opt', '⌥', XK.Alt_L, 'Option'),
+      latch('shift', 'Shift', XK.Shift_L),
+      tap('esc', 'Esc', XK.Escape),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+    moreRows: [[
+      chord('cmd-o', '⌘O', XK.Super_L, 'o'.charCodeAt(0), 'Open the selected item'),
+      chord('cmd-w', '⌘W', XK.Super_L, 'w'.charCodeAt(0), 'Close window'),
+      chord('cmd-q', '⌘Q', XK.Super_L, 'q'.charCodeAt(0), 'Quit the application'),
+      chord('cmd-n', '⌘N', XK.Super_L, 'n'.charCodeAt(0), 'New folder'),
+      chord('cmd-period', '⌘.', XK.Super_L, '.'.charCodeAt(0), 'Cancel'),
+    ]],
+  },
+
   // amiga + aros. F1..F10 ONLY — FS-UAE reserves F11/F12 for fullscreen/menu
   // (test-enforced). Help + Ctrl+A◀+A▶ reset ship only after T1.
   amiga: {
@@ -878,6 +911,7 @@ export const OS_FAMILY: Record<string, Family> = {
   win11: 'windows', // Same Explorer shortcut family; Fluent chrome, not new chords
   w2kalpha: 'windows', // W2K RC2 on Alpha — the same NT 5.0 Explorer shell as win2000
   tru64: 'suncde', // CDE desktop — the same CDE chord set the Solaris profile carries
+  macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   win311: 'win3x', nt351: 'win3x', // NT 3.51 runs the Program Manager shell
   amstradcpc: 'generic',
   mpf2: 'generic', // BASIC prompt only; no shell chords to profile

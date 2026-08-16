@@ -377,6 +377,21 @@
       "udp_port": 54097,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "macos753": {
+      "dir": "/data/vms/streamhost/stations/macos753",
+      "qmp": "/data/vms/streamhost/stations/macos753/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54142,
+      "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console — the framebuffer is the only observation surface. Drive it with scripts/install-vision/adb_pointer.py against a CLONE, never this dir."
+    },
     "mpf2": {
       "dir": "/data/vms/streamhost/stations/mpf2",
       "qmp": null,
