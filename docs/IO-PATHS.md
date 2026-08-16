@@ -31,7 +31,7 @@ requires `usb-tablet` in the launcher, `qemu-ps2-relative` forbids it,
 `gallery-hid` requires `gallery-hid-pci`.
 
 Backend census across the 59 production stations: **dbus-abs 27, disabled 17,
-dbus-rel 8, warpd 5, gallery-hid 1, mamesock 1.**
+dbus-rel 8, warpd 5, gallery-hid 1, mamesock 3** (`irix`, `w2kalpha`, `tru64`).
 
 | Path | Used by | Abs/rel | Mechanism | Trade-off |
 |---|---|---|---|---|
@@ -43,6 +43,7 @@ dbus-rel 8, warpd 5, gallery-hid 1, mamesock 1.**
 | **warpd agent** (pure) | `ninefront templeos`, `solaris` (rollback + `E` exec) | abs | newline `M/P/R/B` verbs over TCP hostfwd or a serial chardev; the agent calls XTEST / the Plan 9 absolute mouse / writes `ms.pos` | Reaches full-screen absolute where the tablet is capped or absent; protocol is **frozen** |
 | **warpd HYBRID** | `win311 os2warp win95` | abs motion + PS/2 buttons | motion via the agent, buttons via the real QEMU device so the WM sees true button semantics | The only way to open a menu or drag a title bar on Win3.11; **every reposition re-arms the button hold** |
 | **mamesock** (closed loop) | `irix` | abs | surface-clamped `MOVEA x y` over the in-emulator ctlsock with per-verb acks; the module reads the real cursor from Newport VC2 hardware-cursor registers each tick and converges | Immune to dead-reckoning drift and edge clamping; costs a patched MAME and a single-injector rule |
+| **mamesock** (open loop) | `tru64`, `w2kalpha` | abs | same verb into es40's ctlsock, but there is no cursor readback: the emulator corner-homes once, then believes its own arithmetic. Exactness therefore depends on the guest moving **1 px per injected count** — flat X acceleration, and `ES40_POINTER_GAIN` where it does not (Tru64 moves 2 px/count) | No patched cursor readback needed, but any guest-side acceleration or gain silently doubles every move; measure before declaring `reset.mouse` PASS |
 | **simh-light-pen** | `gt40` | abs | ordinary dbus-abs through a usb-tablet; SIMH's VT11 vector display reads the position as the GT40's light pen | The method label is the only record of the light-pen semantics |
 | **disabled** | 17 kiosks — `armeval bbcmicro c128 cbm2 cbm8032 decos dragon32 kc854 mpf2 oricatmos pdp11 pet2001 plus4 sinclairql vic20 zx81 zxspectrum` | none | every non-type-3 record is dropped before any sink | Cannot strand a button or drift a cursor — **unpointable by design**, not broken |
 
@@ -87,6 +88,15 @@ flowchart LR
   shipped to the recognizer and changed nothing, because the pen never ran that
   code. `touchExhibit` means *the exhibit* is a touchscreen; `isTouchDevice()`
   means *the visitor's* hardware. One letter apart, opposite in effect.
+- **An open-loop absolute pointer is only as true as the guest's gain.** es40's
+  ctlsock homes the cursor to (0,0) once and then dead-reckons, so a guest that
+  moves two pixels per injected PS/2 count lands every target at twice the
+  delta and ends up clamped in a corner — which looks exactly like "the pointer
+  is broken", not like "the pointer is scaled". Measure it from inside the
+  guest (Tru64: `xptr`, an XQueryPointer one-liner in `/usr/local/bin`) before
+  believing any pointer claim, and set `ES40_POINTER_GAIN` to the measured
+  pixels-per-count. On a gain-2 guest the reachable positions are an even
+  lattice, so odd targets land 1 px short.
 - **QMP `abs`/`click` does nothing on a warpd station.** The guest has no working
   absolute pointer — that is why it runs an agent. Do not use QMP to "check"
   pointer behaviour there.
@@ -128,7 +138,7 @@ flowchart TD
 |---|---|---|---|---|
 | **QMP/dbus send-key** | most QEMU stations | qcode injection; types uppercase and symbols correctly where the browser path mangles them | `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS` | Characters vanish or arrive scrambled |
 | **warpd / serial agent** | `win311 os2warp templeos ninefront win95` | agent verbs over TCP hostfwd or serial chardev | agent-side pace | Modifier batched into one event is not seen as a chord |
-| **mamesock** | `irix` | paced verbs with per-verb acks into the emulator | ack deadline | — |
+| **mamesock** | `irix`, `w2kalpha`, `tru64` | paced verbs with per-verb acks into the emulator | ack deadline | — |
 | **kiosk X → emulator** | kiosks | key reaches the kiosk's Xorg, then the full-screen emulator's own input sampling | **per-machine**, frame-derived | Dropped keys that look like flaky typing |
 
 **The pacing rule is the whole story, and it is not about speed.** An emulator

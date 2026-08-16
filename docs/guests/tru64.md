@@ -3,8 +3,8 @@
 **Status: LIVE AND LISTED (2026-08-16).** `/os/tru64` streams and the
 station appears in the grid and museum hall. Every launch is pristine because
 the launcher reflink-copies a read-only disk, exactly the w2kalpha shape — and
-since the same day it **restores a checkpoint**: the CDE desktop is back
-**~3 s after exec** instead of the ~7-10 min cold boot (see
+since the same day it **restores a checkpoint**: the 1280x1024 CDE desktop is
+back **~3 s after exec** instead of the ~7-10 min cold boot (see
 [Checkpoint restore](#checkpoint-restore)). The cold path still exists as the
 fallback and still needs no greeter (dtlogin autologin).
 
@@ -31,22 +31,81 @@ Three pieces, all baked into the seed:
 disk `img/tru64.img` after the three changes above and a clean `halt`.
 `TRU64_SEED` pins a different one. The launcher never opens it for write.
 
-## Driving this station by hand (what works, what does not)
+## Driving this station: `labctl exec tru64 "<cmd>"`
 
-- **Keyboard only.** `MOVEA`+`DOWN1` clicks do NOT land — the es40 pointer
-  needs the seed-polish pass w2kalpha documents. Everything below is
-  keyboard.
-- **Root shell without a desktop**: restart the station and send Ctrl+C
-  repeatedly through the rc phase (`K 1 Left Ctrl` / `K 1 C`); rc aborts into
-  **INIT: SINGLE-USER MODE** with a `#` prompt on the console. `mount -a`
-  first — `/usr` is not mounted in single-user.
-- **Typing symbols**: `uibench/ctltest.py` only emits letters, digits and a
-  few punctuation marks, which cannot write a config file. Use
-  `/tmp/gtype.py` (this session; source in the job dir) — it maps the full US
-  layout onto the key fields the ctlsock accepts. Keep the inter-key delay at
-  ~45 ms; faster drops and transposes characters, and a mangled `sed` can
-  corrupt a system file.
-- **Screenshots**: `uibench/shmread.py <fb.shm> <out.png>`.
+**Use the exec channel, not the screen.** This machine has no network device,
+so exec rides the emulated **com2**: the guest runs a getty on `/dev/tty01`
+(`/etc/inittab`, `/etc/securettys`), and the station's `pumps.py` — which must
+hold both serial ports from boot anyway, because es40 blocks until they have
+clients — lends that line to one client at a time over `serial-exec.sock` in
+the station dir. So the address is the station DIRECTORY, not a port, and the
+channel survives relaunches.
+
+    labctl exec tru64 "uname -a"          # captured stdout, guest's exit code
+    labctl exec tru64 "DISPLAY=:0 xdpyinfo | grep dimensions"
+
+What the client (`streamhost/guest-agents/tru64/tru64exec.py`) does per call:
+fresh login as root (passwordless), `exec /bin/ksh` (root's login shell is csh,
+and Tru64's `/bin/sh` predates `$(...)`), `stty -echo` so the shell's own echo
+cannot be mistaken for output, then the command inside a **subshell** between
+sentinels — a bare `exit 3` returns 3 rather than killing the session. stdout
+and stderr come back merged: it is one serial line.
+
+**The same relay bakes checkpoints.** A telnet `IAC BREAK` (`\xff\xf3`) written
+into `serial-exec.sock` opens es40's serial menu; answer `5` for
+save-and-exit. No fifo, no keyboard, no pixels.
+
+### When you must drive the desktop instead
+
+- **Keyboard** over the ctlsock: focus starts on the Front Panel. `Alt+Space`
+  opens ITS window menu (which is how you tell where focus is); `Esc` closes it
+  — the key field is `Esc`, not `Escape`. `Cursor Down` moves to the icon row,
+  `Enter` activates: File Manager, then **`Ctrl+T`** for a dtterm.
+- **Pointer** is absolute now (see below), so `MOVEA x y` + `DOWN1`/`UP1`
+  presses what is at those coordinates.
+- Typing symbols: `scripts/dev/es40-gtype.py <ctl.sock>` maps the full US
+  layout; `ctltest.py` only does letters, digits and a little punctuation.
+- Screenshots: `uibench/shmread.py <fb.shm> <out.png>`.
+
+## Screen: 1280x1024 (2026-08-17)
+
+The X server takes the mode on its command line, so the site copy of the
+dtlogin server file does it:
+
+    /etc/dt/config/Xservers:
+      :0   Local local@console /usr/bin/X11/X :0 -screen 1280x1024 -a 1 -t 0
+
+`-screen WxH` is a Tru64 X option (`X -help`, "Device Dependent Usage"), and
+`-a 1 -t 0` pins pointer acceleration flat at the server rather than trusting
+the session. Depth stays 8 planes — period-correct for CDE, and 1280x1024x8 is
+1.25 MB of the emulated S3's VRAM. Restarting X after a change is
+`/sbin/init.d/xlogin stop`, kill any surviving `dtlogin`, then `start`; the
+station's own reset does it for free by restoring the checkpoint.
+
+## Pointer: absolute and pixel-exact (2026-08-17)
+
+`reset.mouse` is **PASS**. Two things had to be true:
+
+1. **The guest must not accelerate.** X's default was `2/1 threshold 4`; the
+   server line pins `1/1 threshold 0`, and `/root/.dt/sessionetc` re-applies
+   `xset m 1/1 0` (plus `xset s off` / `-dpms`) at session start, because CDE
+   restores its own saved mouse settings over the server flags.
+2. **The gain had to be measured, not assumed.** Even with acceleration flat,
+   this guest moves **2 screen pixels per injected PS/2 count** — injected
+   10/25/50/100/200 moved 20/50/100/200/400, linearly. es40's ctlsock
+   dead-reckons an absolute target from injected deltas, so every MOVEA landed
+   at twice its delta and the cursor ended up clamped in a corner. The
+   launcher now exports **`ES40_POINTER_GAIN=2`** (es40 fork `936760c`), which
+   divides the delta and carries the leftover pixel.
+
+Measured after the fix, against the guest's own `XQueryPointer`: exact on even
+coordinates, 1 px short on odd ones (a count cannot express one pixel), and a
+`MOVEA` + `DOWN1`/`UP1` at a CDE button's coordinates presses that button.
+
+**`xptr` is the measuring instrument** — `/usr/local/bin/xptr` in the guest
+prints the true pointer position; it is 6 lines of C compiled in-guest (`cc`
+and `libXtst`/`libX11` are present in this install). Use it before believing
+any pointer claim here.
 
 ## Idle auto-pause and checkpoint restore — the two halves of "instant"
 
@@ -105,20 +164,7 @@ live station:
 A device-set change (`es40.cfg`) orphans the checkpoint — re-bake after one.
 Host-side config (serial ports, file paths) does not.
 
-## Driving the desktop by keyboard — the route to a root shell
-
-There is no network in this device set, so the ctlsock keyboard is the only
-channel into the running desktop. The route that works:
-
-1. Focus starts on the Front Panel. `Alt+Space` opens ITS window menu (proof
-   of where focus is); `Esc` closes it — the key field is `Esc`, not
-   `Escape`.
-2. `Cursor Down` moves onto the panel's icon row, `Enter` activates the
-   focused control. The File Manager control opens `dtfile`.
-3. In `dtfile`, **`Ctrl+T` opens a dtterm** — a root shell (`#`), the guest is
-   passwordless root.
-4. Type into it with `scripts/dev/es40-gtype.py <ctl.sock>` (full US layout;
-   `ctltest.py` cannot type `*`, `:` or `/`).
+## Screen lock: disabled in the checkpoint
 
 **The screen lock is disabled in the checkpoint** (2026-08-16). CDE ships
 `dtsession*saverTimeout: 10` / `dtsession*lockTimeout: 30`, so the live
@@ -139,13 +185,14 @@ shows `Can't find an OSF-BASE … PAK`. It is not started from any
 it needs a different hook; the PAK line itself is expected on a PAK-less
 base install and gates non-root logins only.
 
-## Not used: es40 savestates
+## es40 savestates: this station's reset
 
-The deployed `assets/tru64/es40` carries a `SAVEST <path>` ctlsock verb added
-2026-08-16 (previous binary kept as `es40.prev-b52678995574`) while a
-checkpoint route was explored. It is UNUSED: this station boots from a seed
-like w2kalpha, whose doc records why restore is avoided (post-restore repaint
-fragility). The verb is harmless and left in place for future work.
+The station restores an es40 savestate on every launch — see
+[Checkpoint restore](#checkpoint-restore). The deployed binary also carries a
+`SAVEST <path>` ctlsock verb added 2026-08-16 while the checkpoint route was
+being explored; the shipped bake path does not use it (the serial menu's
+save-and-exit is what guarantees the state and the disk cannot disagree), and
+it is left in place for future work.
 
 The research that selected this OS (candidates, media, licensing, risk):
 [`docs/lab/research/alpha-second-os-candidates.md`](../lab/research/alpha-second-os-candidates.md).

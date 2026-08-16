@@ -31,7 +31,19 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
    verb), the ssh stations `alpine`/`tinycore`/`haiku`, and the kiosks
    `c64`/`atarist`/`apple2`/`amiga`. `irix` is declared (`exec_kind`
    `serial_e`) but needs MAME running, so with the station stopped it says so and
-   exits 125. Other stations exit 2 with alternatives.
+   exits 125. `w2kalpha` (`telnet_e`) runs it over the guest's Telnet Server on
+   a host-only veth; `tru64` (`serialcon_e`) has NO network device at all and
+   runs it over the emulated com2 — a getty on `/dev/tty01`, lent one client at
+   a time by the station's `pumps.py` over `serial-exec.sock` in the station
+   dir, so the address is the DIRECTORY and survives relaunches. Other stations
+   exit 2 with alternatives.
+
+   The `serialcon_e` client (`streamhost/guest-agents/tru64/tru64exec.py`) logs
+   in fresh per call, pins `ksh` (root's login shell is csh, and Tru64's
+   `/bin/sh` has no `$(...)`), silences the tty so shell echo cannot be mistaken
+   for output, and runs the command in a SUBSHELL so a bare `exit 3` returns 3
+   instead of killing the session. stdout and stderr arrive merged — it is one
+   serial line.
 2. **In-guest agent (warpd family)** — pointer + exec over a hostfwd, under the
    `labctl` layer. Captured and live on `solaris`, `ninefront`, `win95`, and
    `win311`/`os2warp`/`templeos` over serial. Sources in
