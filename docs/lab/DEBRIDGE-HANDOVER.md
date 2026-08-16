@@ -13,20 +13,22 @@ host-native MAME with no QEMU, no guest Debian, no X, and idles at ~0 % CPU
 in standby. The operator has validated them in use; the fixes below all came
 out of that validation.
 
-**vic20 is converted and live** (2026-08-16) — the VICE wave's template, and
-the first non-MAME station on this path. Details in
-[§The VICE wave](#the-vice-wave-vic20-is-the-template-and-it-is-live).
+**Five VICE stations are converted and live**: vic20 (2026-08-16, the wave's
+template) and then **plus4, cbm2, pet2001 and cbm8032 in one wave the same
+day**. Details in
+[§The VICE wave](#the-vice-wave-vic20-is-the-template-and-it-is-live) and
+[§The four-station wave](#the-four-station-wave-plus4-cbm2-pet2001-cbm8032).
 
-**Eighteen stations still run a Debian bridge kiosk**, deliberately: each uses
+**Fourteen stations still run a Debian bridge kiosk**, deliberately: each uses
 a different emulator, and the frame/input machinery is engine-specific.
 
 | Emulator | Stations |
 |---|---|
-| VICE (6 left) | c64, c128, plus4, pet2001, cbm8032, cbm2 |
+| VICE (2 left) | c64, c128 |
 | SIMH (3) | pdp11, gt40, decos |
 | one each | atarist (hatari), amstradcpc (Caprice32), apple2 (LinApple), amiga (FS-UAE), alto (ContrAlto), star (Darkstar), daybreak (Dove/Mesa), nextstep (Previous), indyr4400 (iris) |
 
-Ten of the eighteen are still on bookworm and are the last customers of the
+Ten of the fourteen are still on bookworm and are the last customers of the
 per-tile ABI chroots; converting or migrating them retires that dependency.
 
 ## What a converted station is
@@ -241,10 +243,12 @@ launcher and its `MAME_NATIVE_*` fixture knobs.
 | `cutover.sh` + `DEBRIDGE_DAEMON=<artifact>` | run it; `previous` is the rollback |
 | the daemon (`vice_sock.rs`, `us-layout.keysyms`) | nothing — it is shared and station-agnostic |
 
-The daemon artifact carrying `vice_sock.rs` is
-`streamhost-490283f0912f7a05b96dc1bff82d967471386ef5`, installed and canaried on
-vic20. **It has not been promoted to the fleet** — the next VICE conversion can
-canary the same or a newer build; the other 120 stations are untouched.
+The daemon artifact carrying `vice_sock.rs` is now
+`streamhost-3fa7646e8b7662547db5bdf4314a08b34fd57819` (it superseded
+`490283f…` on 2026-08-16 by adding the idle-reconciler fix in landmine 7
+below), installed and canaried on **all five** converted VICE stations.
+**It has not been promoted to the fleet** — the next VICE conversion can canary
+the same or a newer build; the other 116 stations are untouched.
 
 ### Measured on vic20 (a following station re-measures only the geometry)
 
@@ -276,36 +280,125 @@ canary the same or a newer build; the other 120 stations are untouched.
 5. **`git clone --local` fails on the box**: `/data/kernel-hive` and `/data/vms`
    are different filesystems, so the builder clones the submodule
    `--no-hardlinks`.
-6. **`KEY`'s argument is frozen as a decimal numeric keysym.** No change was
+7. **TWO things can freeze a de-bridged emulator, and the daemon only used to
+   know about one.** The launcher's delayed standby SIGSTOP
+   (`VICE_NATIVE_STANDBY_DELAY_S`, ~8 s) covers the first grace period, which
+   the daemon cannot — and on a cold station it lands exactly when the FIRST
+   visitor arrives, because the visit is what starts the station. The
+   reconciler's "never leave a guest paused under a live session" rule only
+   fired on its own pause BELIEF, so the guest stayed frozen: no frames, no
+   keys, ack timeout with 27 outstanding edges, connect/banner EAGAIN every
+   second, 2.4 fps. Fixed 2026-08-16 (`idle.rs` `pid_is_stopped`): the
+   reconciler now also OBSERVES `/proc/<pid>/stat` state `T` and resumes on it
+   while a session is live, behind the same pidfile + `proc_match` gate.
+   Signal freezer only. Zero sessions plus observed-stopped stays `None` — that
+   guest is stopped on purpose. **Any new non-QEMU station needs this build.**
+8. **`KEY`'s argument is frozen as a decimal numeric keysym.** No change was
    needed on either side: the module parses it with `strtol(..., 0)` (decimal
    and `0x` hex both work, names do not) and `vice_sock.rs` emits decimal. The
    generated table's name column stays a legend, not a wire form.
 
-### What the next six still have to discover
+### What the next two still have to discover
 
 - **their own geometry** — measure it, then pin it in the stanza's
   `VICE_GEOM_EXPECT` so a later resource change cannot silently move a live
   stream;
 - **their own gate floors** — a machine with a dark power-on page wants a
   different lit-pixel floor than the VIC-20's all-lit white page;
-- **plus4**: the C=+C chord leak, a VICE keymap property, and its single-shift
-  keyboard (`LSHIFT == RSHIFT`);
-- **pet2001 + cbm8032**: ONE `xpet` binary, TWO models, and keyboards that share
-  nothing — batch them but keep the `-model` flag in the stanza, and note
-  cbm8032 retires the wave's 1600×1200 X root;
-- **cbm2**: mechanical; keep its position-based readiness gate;
+- **whether their checkpoint restore is usable at all** — see
+  [§The four-station wave](#the-four-station-wave-plus4-cbm2-pet2001-cbm8032).
+  Four of five said no;
 - **c128**: two canvases. `VICE_SHM_CHIP` still does not exist, so the
   conversion must PROVE from the framebuffer that the VDC (80-column) screen is
   the one published, and its CP/M disk needs `vice_stage_extra`. Its
-  `-remotemonitor` must become `-binarymonitor`;
+  `-remotemonitor` must become `-binarymonitor`. Its VDC is a CRTC-family
+  canvas, so assume its restore moves the surface until measured otherwise, and
+  note that with `VICE_NATIVE_CHECKPOINT=0` the CP/M disk's drive-8 autoboot is
+  no longer dodged by restore-to-checkpoint — that dodge has to be re-planned;
 - **c64**: last. Only pointer station, only in-application golden, only
   external media, true-drive emulation — and the vicesock sink has no pointer
-  verb at all, so that verb is real work, not a knob.
+  verb at all, so that verb is real work, not a knob. Its in-application golden
+  is the one scene in the family that a cold boot CANNOT reproduce, so c64 is
+  the station that actually needs the checkpoint plane to work; it is VIC-II
+  like vic20, which is the one family member whose restore held.
 
 Key pacing does NOT need a full re-bisect per station: the curve is a property
 of the guest's scanned matrix, and 80/80 is the wave default until a station
-reports otherwise. Everything else in a conversion is now the stanza, the
-fixture and two script invocations.
+reports otherwise — all four of the second wave shipped it unchanged, and none
+dropped or corrupted a character. Everything else in a conversion is now the
+stanza, the fixture and two script invocations.
+
+## The four-station wave: plus4, cbm2, pet2001, cbm8032
+
+**All four converted and cut over live on 2026-08-16**, in one wave, on ONE
+build of the engine. Everything the template promised held except the
+checkpoint plane, which is the wave's one real finding.
+
+| Station | Binary + machine flags | MEASURED surface | Gate floors (lit / ink) | Notes |
+|---|---|---|---|---|
+| plus4 | `xplus4 -pal -TEDdsize -TEDborders 0` | **768×576** (1 769 536 B) | 300 000 / 200 000 | WHITE page like the VIC-20: 439 036 of 442 368 lit, so the ink floor is the real scene check. `PRINT 3` typed through vicectl and read back off the shm mapping |
+| cbm2 | `xcbm2 -model 610 -pal` | **704×532** (1 498 176 B) | 1 000 / 1 800 | Native size, no `-CRTCdsize` — the kiosk dropped doubling to fit an 800×600 root, and host-native there is no root, so the emulated screen simply IS the stream. Position gate kept |
+| pet2001 | `xpet -model 2001 -CRTCdsize` | **768×432** (1 327 168 B) | 3 500 / 5 000 | NOT the 768×532 SDL window the kiosk sized its root around. `PET/gtk3_grus_sym.vkm` (graphics keyboard) |
+| cbm8032 | `xpet -model 8032 -CRTCdsize` | **1408×1088** (6 127 680 B) | 5 000 / 9 000 | **Retires the fleet's only 1600×1200 X root** — that root existed solely to contain a fixed 1408×1064 SDL window, and streamhost encoded the black margin around it. 36 % fewer pixels, same picture. `PET/gtk3_buuk_sym.vkm` (business-UK keyboard) |
+
+**The checkpoint plane does NOT generalise, and this is the finding to carry
+forward.** The survey's "PROVEN, and better than MAME's" verdict was measured
+on `dump`/`undump` round-tripping, which does succeed on all seven binaries —
+but round-tripping is not the same as *the machine still running correctly
+afterwards*, and on four of five converted stations it does not:
+
+- **plus4** — a restored snapshot runs for a few seconds and then CRASHES INTO
+  TEDMON, the machine's own ROM monitor: BREAK, a register dump at `PC=$0005`,
+  and a shorter TED paper area. Reproduced on both a station-baked and a
+  rig-baked (`dump`/`undump`, no client) checkpoint, so it is the restore and
+  not the bake.
+- **cbm2 / pet2001 / cbm8032** — restoring a CRTC machine's snapshot CHANGES
+  THE PUBLISHED SURFACE: 704×532 → 704×658, 768×432 → 768×552, 1408×1088 →
+  1408×1316. The restored CRTC register state resolves to a different screen
+  size than the one the ROM programs on a cold boot. cbm8032 additionally
+  CORRUPTS THE RUNNING BASIC — the restored screen printed
+  `?illegal quantity error in  0` under the ready prompt, measured on the live
+  station.
+- **vic20** — holds. Stable at 20 M, 45 M and 120 M cycles, which is why the
+  template shipped with a checkpoint and looked settled.
+
+All four therefore ship `VICE_NATIVE_CHECKPOINT=0` and cold-boot on reset,
+which is the VICE wave's answer to the MAME wave's five
+`MAME_NATIVE_CHECKPOINT=0` stations and uses the same knob. **The exhibit loses
+nothing**: every one of these scenes IS an untouched cold boot, so the
+checkpoint only ever bought the ~2 s the ROM takes to reach its prompt. Cold
+boots were measured stable to 120 M cycles on every machine.
+
+Their `sta/golden.vsf` files are shelved on the box as
+`golden.vsf.unusable-20260816`, not deleted, in case someone wants to chase the
+restore bug on the fork.
+
+**Two additions to the shared builder**, both earned by this wave and both
+available to c128 and c64:
+
+- `make install prefix="$OUT"` — plain automake takes it on the command line,
+  so ONE build tree serves the whole wave: pass the same work dir and a
+  different station and the compile is skipped entirely. plus4 paid the ~9 min
+  build; cbm2, pet2001 and cbm8032 each cost seconds. The prefix baked into the
+  binary is inert, because the launcher and the gate both pass `-directory`.
+- `VICE_GATE_BBOX=y0:y1:x0:x1` — cbm2's bridge-era readiness gate was
+  POSITION-based, and that is worth keeping: a pixel COUNT cannot tell a
+  correctly framed banner from one drawn at the wrong offset. Containment with
+  slack, not equality, because the cursor blinks. pet2001 and cbm8032 take it
+  too, and on cbm8032 it earns its keep twice — for ~2 s after `xpet` starts the
+  CRTC paints all 2000 cells of uninitialised RAM as random glyphs, and a count
+  alone cannot reject that frame.
+
+**Nothing in the SPA changed.** plus4's C=+C chord, its single shift
+(`LSHIFT == RSHIFT`) and the chord's documented cosmetic letter leak are
+properties of `PLUS4/gtk3_sym.vkm` — the same keymap file the bridged kiosk
+used — so they are unchanged by construction, and the station's on-screen
+keyboard profile still sends the same host keys it always did.
+
+**Canary**: all five VICE stations run
+`streamhost-3fa7646e8b7662547db5bdf4314a08b34fd57819`, which carries
+`vice_sock.rs` AND the idle-reconciler fix below. It has **not** been promoted
+to the fleet.
 
 ## atarist
 
@@ -329,7 +422,11 @@ re-measure in high res.
   their `museum.notes` prose still says "bridge tile" (vic20's `reset.fixture`
   and manifest prelude WERE rewritten; its `museum.notes` was left with the
   other nine so the rewrite happens once, for all of them).
-- The vicesock daemon artifact is canaried on vic20 only, never promoted.
+- The vicesock daemon artifact is canaried on the five converted VICE stations
+  only, never promoted.
+- The four second-wave stations' unusable checkpoints are shelved on the box as
+  `sta/golden.vsf.unusable-20260816`; delete only if nobody intends to chase the
+  VICE restore bug.
 - Kiosk overlays are retained as `*.debridged-bak`; delete only on the
   operator's word.
 - ~~Box-sync drift~~ RESOLVED 2026-08-16: the live-artifact rows
