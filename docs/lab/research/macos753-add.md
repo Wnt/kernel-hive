@@ -124,6 +124,38 @@ mistake cost one rebuild here.
 1900 MB keeps the boot partition under the 2 GB limit with room for apps and
 games. The Easy Install itself is only **29.5 MB**.
 
+### Checkpoint — **PROVEN**, and the one device that blocked it
+
+`savevm golden` **fails outright** while the PRAM is a raw `if=mtd` drive:
+
+```
+Error: Device 'mtd0' is writable but does not support snapshots
+```
+
+Converting the PRAM to qcow2 (`qemu-img convert -f raw -O qcow2`) fixes it and
+costs nothing — it is a 256-byte device. **This is a device-set decision, so it
+has to be made before the checkpoint is baked, not after.**
+
+Measured on the production device set (dbus display + dbus audio, no NIC):
+
+| | |
+|---|---|
+| `savevm golden` | **0.5 s**, 130 MiB vmstate |
+| `loadvm golden` | **0.32 s** |
+| dirty → restore proof | window opened = **86 357 px** differ; after restore **0 px** differ from the checkpoint scene |
+
+So this station gets **instant checkpoint restore** in the same class as
+`w2kalpha` and `tru64`, and the whole m68k savevm question is settled in
+practice, not just by reading `VMStateDescription` lists.
+
+**A stale checkpoint trap, hit for real:** an unclean stop (QMP `quit` on a
+running guest) makes the *next* cold boot open with "This computer may not have
+been shut down properly", and baking then captures **the dialog** as the scene.
+Always `Special → Shut Down` in the guest, or re-verify the scene on the
+framebuffer before `savevm`. The General Controls checkbox that suppresses the
+warning is a nice-to-have; process discipline is the actual fix, since the
+station's normal lifecycle is checkpoint-restore and never a cold boot.
+
 ### Checkpoint scene
 
 A quiet Finder desktop at 1152x870: `Macintosh HD` top-right, empty Trash
@@ -232,7 +264,9 @@ acceptance matrix.
 2. Pointer tracks relatively via `dbus-rel` with guest acceleration off and
    `cursor_scale` **2.7778** (measured on the framebuffer, not assumed); 1:1
    confirmation through a real browser client is an operator pass.
-3. Checkpoint reset returns to the quiet Finder scene.
+3. Checkpoint reset returns to the quiet Finder scene. **Proven**: `loadvm
+   golden` in 0.32 s, 0 px difference from the baked scene after an 86 357 px
+   dirty.
 4. `registry/stations/macos753.json` exists and `make station-registry-check`
    passes.
 5. Idle auto-pause proven: station at ~0 % CPU with no visitor.
