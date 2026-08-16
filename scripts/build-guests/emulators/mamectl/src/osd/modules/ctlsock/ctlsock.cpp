@@ -1555,6 +1555,27 @@ private:
 				++it;
 				continue;
 			}
+			// A MODIFIER PRESS WAITS FOR AN EMPTY MATRIX TOO — the same gate,
+			// without the KEY_GAP settle (a level costs the guest no scan).
+			// Measured on the dragon32 and bbcmicro rigs: with REAL rollover
+			// typing (hold 110 ms > pace 90 ms) the browser's Shift for the
+			// NEXT character legitimately arrives while the PREVIOUS key is
+			// still held — and because exclusive-scan defers that key's press
+			// until the matrix clears, the guest had not yet scanned it when
+			// the level changed underneath it. `print 12+34` rendered
+			// `PRINT 1"÷34`; on real hardware the key would have been scanned
+			// long before, so this is our own pacing showing through. Holding
+			// the modifier to the same barrier as the character it belongs to
+			// puts the level back where the browser meant it. It cannot wedge:
+			// the gate clears when the held key's RELEASE applies, and rule 3
+			// always lets a non-modifier release past.
+			if (excl_mode && mod_key && e.val == 1 && !m_excl_down.empty())
+			{
+				bar_press = true;  // it is a press: presses and modifiers wait
+				blocked.insert(e.field);
+				++it;
+				continue;
+			}
 			ioport_port *const pt = resolve_port(e.port);
 			ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;
 			if (f)

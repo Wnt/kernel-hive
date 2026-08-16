@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,3124 @@
+@@ -0,0 +1,3145 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -1651,6 +1651,27 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +					&& (!m_excl_down.empty() || now < m_excl_up_at + m_key_gap))
 +			{
 +				bar_press = true;  // a non-modifier press, by the branch above
++				blocked.insert(e.field);
++				++it;
++				continue;
++			}
++			// A MODIFIER PRESS WAITS FOR AN EMPTY MATRIX TOO — the same gate,
++			// without the KEY_GAP settle (a level costs the guest no scan).
++			// Measured on the dragon32 and bbcmicro rigs: with REAL rollover
++			// typing (hold 110 ms > pace 90 ms) the browser's Shift for the
++			// NEXT character legitimately arrives while the PREVIOUS key is
++			// still held — and because exclusive-scan defers that key's press
++			// until the matrix clears, the guest had not yet scanned it when
++			// the level changed underneath it. `print 12+34` rendered
++			// `PRINT 1"÷34`; on real hardware the key would have been scanned
++			// long before, so this is our own pacing showing through. Holding
++			// the modifier to the same barrier as the character it belongs to
++			// puts the level back where the browser meant it. It cannot wedge:
++			// the gate clears when the held key's RELEASE applies, and rule 3
++			// always lets a non-modifier release past.
++			if (excl_mode && mod_key && e.val == 1 && !m_excl_down.empty())
++			{
++				bar_press = true;  // it is a press: presses and modifiers wait
 +				blocked.insert(e.field);
 +				++it;
 +				continue;
