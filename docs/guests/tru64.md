@@ -45,11 +45,25 @@ channel survives relaunches.
     labctl exec tru64 "DISPLAY=:0 xdpyinfo | grep dimensions"
 
 What the client (`streamhost/guest-agents/tru64/tru64exec.py`) does per call:
-fresh login as root (passwordless), `exec /bin/ksh` (root's login shell is csh,
-and Tru64's `/bin/sh` predates `$(...)`), `stty -echo` so the shell's own echo
-cannot be mistaken for output, then the command inside a **subshell** between
-sentinels — a bare `exit 3` returns 3 rather than killing the session. stdout
-and stderr come back merged: it is one serial line.
+thaws the guest if idle auto-pause has it SIGSTOPped (a frozen guest answers
+nothing, and the pauser can re-freeze it mid-command), converges whatever it
+finds on the line back to a fresh `login:`, logs in as root (passwordless),
+`exec /bin/ksh` (root's login shell is csh, and Tru64's `/bin/sh` predates
+`$(...)`), `stty -echo` so the shell's own echo cannot be mistaken for output,
+then the command inside a **subshell** between sentinels — a bare `exit 3`
+returns 3 rather than killing the session. stdout and stderr come back merged:
+it is one serial line.
+
+Two details are load-bearing, both learned the hard way here:
+
+- **Synchronise, never sleep.** After `stty -echo` the client waits for a
+  marker it asked the shell to echo. A fixed pause let the next line interleave
+  with the previous one still being echoed (`stt# y -echo`), producing a
+  corrupted command and no sentinel — intermittently, about one call in three.
+- **One retry on a fresh login.** The line is shared with a getty and carries
+  state this client did not create; restarting the exchange is the honest
+  recovery. Measured after both: 8/8 clean calls, exit codes 0/3/5 preserved,
+  including a call issued while the guest was frozen.
 
 **The same relay bakes checkpoints.** A telnet `IAC BREAK` (`\xff\xf3`) written
 into `serial-exec.sock` opens es40's serial menu; answer `5` for
