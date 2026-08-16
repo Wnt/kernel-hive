@@ -154,8 +154,11 @@ Environment: `VICE_SHM_PATH` (required; unset = inert), `VICE_SHM_TRACE`
 
 ## 3. The proof — the framebuffer, not the log
 
-All runs: **no `DISPLAY`, no X server, no SDL** (the headless UI links none),
-stdout to a file, `-directory` at the source data tree, `+sound`.
+All runs: **no `DISPLAY`, no X server**, stdout to a file, `-directory` at the
+source data tree, `+sound`. `ldd` on the binary shows **no SDL and no GTK** at
+all; `libX11` is still there, pulled in transitively by pulse/usb/ffmpeg
+dependencies, but nothing on this path opens a display — unset `DISPLAY` and the
+emulator runs and publishes exactly as recorded here.
 
 | Run | Machine | Mapping bytes | Geometry | 64 + w·h·4 |
 |---|---|---|---|---|
