@@ -187,8 +187,37 @@ geometry == producer geometry; only ABR tier 3 downscales), so native VICE
 surfaces need no change — and the x128 canvas is a FORK selector
 (`VICE_SHM_CHIP`), with `c128` obliged to state and prove it publishes the VDC.
 
+**The pin is DONE and re-verified on the pinned tree**
+(`docs/lab/research/vice-fork-pin.md`). The tag has **no `v`** — it is `3.10.0`
+= `4d283a2e7dd59b7e378524878e81ecc7826b700c` — and because the mirror also tags
+every SVN revision as `rNNNNN`, a `--depth 1` clone will NOT have it. The
+rebase took zero conflicts and changed no content: `kernel-hive/shmfb` →
+`84a5c66a04` (byte-identical patch; `src/arch/headless/` has no upstream drift
+between the tag and `main`), `kernel-hive/vicectl` → `f3e19575a9` (renamed from
+`kernel-hive-vicectl`; hunk offsets only), and **`kernel-hive/integrated` →
+`75646dfab6` is what the submodule pins**. All four planes were re-proven on
+the rebased tree, keys verified through the shm mapping rather than the
+module's own `SHOT` so the two planes prove each other, plus the covenant
+(stock 3.10.0 built alongside in the same rig; screenshots byte-identical with
+the env unset).
+
+**NEW LANDMINE — a launcher requirement, not a version quirk:** a headless VICE
+whose **stdout is not a tty segfaults in `vice_banner()`**. `log_helper` hands
+NULL colour-stripped strings to `log_archdep` when no log file is open, and
+`-logfile` does NOT save you because the banner runs first. Cure:
+`mkdir -p "$HOME/.local/state/vice"` before launch — VICE creates `.cache` and
+`.config` itself but not `.local/state`. It is upstream (reproduces on
+3.10-dev; the frame spike simply had a pre-existing `$HOME`) and it WILL hit
+every converted station, because each gives the emulator a fresh per-station
+`HOME`.
+
 Remaining before the first station: create the `third_party/vice-kernel-hive`
-submodule at the pinned tag and land both patch branches on it. Other open items from the spikes: x128 has two
+submodule pinning `kernel-hive/integrated`, and write the builder — with
+`ln -sf xa bin/xa65` (xa65 ships as `xa`) and the fork's one new warning
+(`vicectl.c:273`, format-truncation in `reply_ok`) silenced before the builder
+starts asserting a clean build. Only `x64sc` was exercised on the pinned tree,
+so vic20 re-runs its own `xvic` proof as step one. Other open items from the
+spikes: x128 has two
 canvases (needs a chip selector; its `SHOT` takes canvas 0 = VDC, correct for
 the 80-column exhibit but must be stated), VICE surfaces are native-size so
 streamhost scales, key pacing must be re-bisected rather than inherited from

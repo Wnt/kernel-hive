@@ -2239,8 +2239,10 @@ fetched from the Internet Archive item
 own FTP directory. Full provenance and the licence stance are in
 [`lab/ASSETS-MANIFEST.md`](../lab/ASSETS-MANIFEST.md) §0. It is **not
 redistributed with this repo**: SGI-copyright freeware with no redistribution
-grant, from a company that no longer exists to give one. An operator supplies
-their own copy.
+grant, from a company that no longer exists to give one. That is a statement
+about **redistribution**, not about sourcing: the artifact was agent-fetched
+from the archival item above, as preservation media normally is (playbook §3.1)
+— it simply is not carried in git, and a fresh box re-fetches it.
 
 The tarball is five files and no installer — SGI shipped a `Makefile`, not an
 `inst` subsystem, so there is nothing for `inst`/`swmgr` to do and no dependency

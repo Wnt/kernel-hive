@@ -128,6 +128,17 @@ checking. If the newest stable release regresses under the pinned QEMU, document
 the failing framebuffer evidence and pin the newest proven-compatible stable
 release instead (ReactOS is the existing pattern).
 
+**The normal mode is that the AGENT researches and sources the media.** Do not
+stop and ask the operator to hand you an ISO or a ROM — find it, verify it,
+record its provenance. The archival sources this lab uses are listed at the top
+of [`docs/catalog/os-media-catalog.md`](../catalog/os-media-catalog.md)
+(archive.org, WinWorld, Macintosh Garden / Macintosh Repository, TUHS,
+fsck.technology, PalmDB, and the canonical project release pages). Operator
+staging is the **exception**, not the default, and it applies only to the
+`licensed` and `account/EULA gated` classes below — today that is essentially
+just Windows media (`win11`, `win2000`, the `w2kalpha` beta). Preservation-class
+media is agent-sourced like anything else.
+
 Classify every external input:
 
 - **free/open:** fetch from the canonical project/release service and verify the
@@ -168,7 +179,8 @@ should place or derive their canonical artifacts beneath
 explicitly reference belong under `/data/isos/`.
 
 ```bash
-# On labhost, after the operator has supplied media when required.
+# On labhost, after you have fetched the media (or, for the licensed/EULA-gated
+# exceptions only, after the operator has staged it).
 install -d -m 0750 /data/assets-staging/<osId>
 sha256sum /data/assets-staging/<osId>/<media> \
   | tee /data/assets-staging/<osId>/MANIFEST.sha256

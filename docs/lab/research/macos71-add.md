@@ -59,10 +59,13 @@ The gating phase. Nothing else can start.
 puts a Happy Mac on a framebuffer that streamhost can capture. Not a log line —
 the framebuffer.
 
-## Phase 2 — media (operator-gated)
+## Phase 2 — media (agent-sourced)
 
-Per playbook §3, preservation media is **supplied by the operator**, staged and
-hashed on labhost, and **never committed**. Two artifacts:
+**The agent fetches this media.** Both artifacts are preservation-class from
+archival sources this lab already uses, so no operator hand-off is involved —
+that exception is reserved for licensed/EULA-gated Windows media. Stage and
+hash on labhost per playbook §3.2, record provenance in `ASSETS-MANIFEST.md`,
+and **never commit the bits**. Two artifacts:
 
 | Artifact | Source | Note |
 |---|---|---|
@@ -71,6 +74,13 @@ hashed on labhost, and **never committed**. Two artifacts:
 
 The gallery is private, so running any of this locally needs no approval — but
 the bits stay out of git, always.
+
+Worth knowing before fetching: archive.org's download endpoint can extract a
+single member from a ZIP stored at an item's root
+(`https://archive.org/download/<item>/<file>.zip/<path-inside-the-zip>`), which
+is how the MPF-II add pulled a 16 KB ROM out of a 20 GB set. If the Quadra 800
+ROM is only available inside `mac-rom-archive-20110819.zip`, try that before
+downloading the whole archive.
 
 ## Phase 3 — install to a golden checkpoint
 
