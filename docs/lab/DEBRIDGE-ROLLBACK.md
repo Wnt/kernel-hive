@@ -1,14 +1,16 @@
 # De-bridging rollback — putting a converted station back on its kiosk
 
 The nine converted MAME stations (dragon32, bbcmicro, armeval, zx81,
-oricatmos, mpf2, kc854, zxspectrum, sinclairql) each kept everything their
-bridge kiosk needed. Rollback is per station and takes three moves; nothing
-was deleted, so no rebuild or re-bake is involved.
+oricatmos, mpf2, kc854, zxspectrum, sinclairql) and the first converted VICE
+station (vic20) each kept everything their bridge kiosk needed. Rollback is per
+station and takes three moves; nothing was deleted, so no rebuild or re-bake is
+involved. **The VICE stations roll back exactly the same way** — the engine
+differs, the shelved files and the daemon pool do not.
 
 On labhost, for one `<station>`:
 
 1. **Stop it.** `systemctl stop streamhost@<station>` — the BindsTo scope
-   takes the host-native MAME with it.
+   takes the host-native emulator (MAME, or VICE on vic20) with it.
 2. **Put the kiosk files back.** In
    `/data/vms/streamhost/stations/<station>/`, rename
    `qemu-streamhost.sh.debridged-bak` → `qemu-streamhost.sh` and
