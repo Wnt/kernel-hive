@@ -44,4 +44,12 @@ if [[ "${1:-}" == "--regen" ]]; then
   fi
 fi
 
+# The VICE wave's shared browser-scancode -> X11-keysym table
+# (streamhost/stations/vice-native/us-layout.keysyms). Generated from ONE
+# hand-written source, scripts/dev/vice-keymap.py, and cross-checked against the
+# SPA's own CODE_TO_SCANCODE — so a new key in the browser's vocabulary that has
+# no keysym fails HERE rather than as a dead key on an exhibit.
+echo "== generated-file drift: vice keysym table =="
+python3 scripts/dev/vice-keymap.py --check
+
 echo "generated-file drift gate: OK"

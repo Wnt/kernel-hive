@@ -174,9 +174,21 @@ restore-to-checkpoint dodges the drive-8 autoboot; its `-remotemonitor` must
 become `-binarymonitor`) → **c64** last (only pointer station, only
 in-application golden, only external media, true-drive emulation).
 
+**Daemon plane: BUILT, green, deployed nowhere** (2026-08-16) —
+`docs/lab/research/vice-daemon-plane.md`. `SH_INPUT_BACKEND=vicesock` +
+`vice_sock.rs` speak the `vicectl/1` wire with per-edge acks and an `unmapped`
+counter; `scripts/dev/vice-keymap.py` generates the ONE shared
+scancode -> keysym table (`streamhost/stations/vice-native/us-layout.keysyms`,
+103 keys, drift-gated against the SPA's own `CODE_TO_SCANCODE`); the shared
+launcher `streamhost/stations/vice-native/x11-runtime.sh` is committed and
+referenced by no station. Pure addition; no existing station's routing changes.
+The two loose ends are answered there: streamhost NEVER upscales (encode
+geometry == producer geometry; only ABR tier 3 downscales), so native VICE
+surfaces need no change — and the x128 canvas is a FORK selector
+(`VICE_SHM_CHIP`), with `c128` obliged to state and prove it publishes the VDC.
+
 Remaining before the first station: create the `third_party/vice-kernel-hive`
-submodule at the pinned tag, land both patch branches on it, and write
-`scripts/dev/vice-keymap.py`. Other open items from the spikes: x128 has two
+submodule at the pinned tag and land both patch branches on it. Other open items from the spikes: x128 has two
 canvases (needs a chip selector; its `SHOT` takes canvas 0 = VDC, correct for
 the 80-column exhibit but must be stated), VICE surfaces are native-size so
 streamhost scales, key pacing must be re-bisected rather than inherited from

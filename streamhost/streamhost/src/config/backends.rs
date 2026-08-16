@@ -143,6 +143,15 @@ pub enum InputBackend {
     /// Single-injector rule: the station must then NOT launch MAME with
     /// `-autoboot_script irixagent.lua`.
     MameSock,
+    /// Native `vicectl/1` route for a host-native headless VICE station (the
+    /// VICE de-bridging wave). Same socket/ack state machine as `MameSock`, but
+    /// the key verb carries an X11 KEYSYM rather than a matrix cell: VICE
+    /// resolves it through the machine's own `.vkm` keymap, so one shared
+    /// host-layout table serves all seven stations. Keyboard-only. Never
+    /// inferred — only set explicitly via `SH_INPUT_BACKEND=vicesock`.
+    /// Single-injector rule: the station must then NOT be driven through VICE's
+    /// binary monitor.
+    ViceSock,
 }
 
 impl InputBackend {
@@ -156,6 +165,7 @@ impl InputBackend {
             Self::X11Test => "x11test",
             Self::MameCmd => "mamecmd",
             Self::MameSock => "mamesock",
+            Self::ViceSock => "vicesock",
         }
     }
 
@@ -167,7 +177,9 @@ impl InputBackend {
     /// Transport selection itself is reported by `as_str()`.
     pub fn pointer_mode(self) -> &'static str {
         match self {
-            Self::Disabled => "none",
+            // Keyboard-only, exactly like a `pointer: none` station: the
+            // vicesock sink has no pointer verb at all.
+            Self::Disabled | Self::ViceSock => "none",
             Self::DbusRel => "rel",
             Self::Warpd => "warpd",
             Self::DbusAbs | Self::GalleryHid | Self::X11Test | Self::MameCmd | Self::MameSock => {
@@ -203,12 +215,13 @@ pub(super) fn parse_input_backend(legacy_pointer: &str, backend: Option<&str>) -
         Some(v) if v.eq_ignore_ascii_case("x11test") => InputBackend::X11Test,
         Some(v) if v.eq_ignore_ascii_case("mamecmd") => InputBackend::MameCmd,
         Some(v) if v.eq_ignore_ascii_case("mamesock") => InputBackend::MameSock,
+        Some(v) if v.eq_ignore_ascii_case("vicesock") => InputBackend::ViceSock,
         Some(v) if v.eq_ignore_ascii_case("dbus") && legacy_pointer.is_dbus() => legacy_pointer,
         Some(v) if v.eq_ignore_ascii_case("dbus") => panic!(
             "invalid legacy input combination SH_POINTER=warpd + SH_INPUT_BACKEND=dbus; use SH_INPUT_BACKEND=dbus-abs|dbus-rel|warpd|gallery-hid"
         ),
         Some(v) => panic!(
-            "invalid SH_INPUT_BACKEND={v:?}; expected disabled|dbus-abs|dbus-rel|warpd|gallery-hid|x11test|mamecmd|mamesock (legacy dbus also accepted with SH_POINTER=abs|rel)"
+            "invalid SH_INPUT_BACKEND={v:?}; expected disabled|dbus-abs|dbus-rel|warpd|gallery-hid|x11test|mamecmd|mamesock|vicesock (legacy dbus also accepted with SH_POINTER=abs|rel)"
         ),
         None => legacy_pointer,
     }
@@ -287,6 +300,11 @@ mod tests {
             parse_input_backend("abs", Some("mamesock")),
             InputBackend::MameSock
         );
+        assert_eq!(
+            parse_input_backend("abs", Some("vicesock")),
+            InputBackend::ViceSock
+        );
+        assert_eq!(InputBackend::ViceSock.pointer_mode(), "none");
     }
 
     /// The rejection must name every accepted value, or an operator debugging a
@@ -294,6 +312,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "mamesock")]
     fn unknown_backend_error_lists_mamesock() {
+        parse_input_backend("abs", Some("garbage"));
+    }
+
+    /// ...and every value added since, or the same operator cannot see the
+    /// backend their fixture is supposed to name.
+    #[test]
+    #[should_panic(expected = "vicesock")]
+    fn unknown_backend_error_lists_vicesock() {
         parse_input_backend("abs", Some("garbage"));
     }
 

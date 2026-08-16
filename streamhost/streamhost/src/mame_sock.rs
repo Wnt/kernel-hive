@@ -394,7 +394,10 @@ impl RealtimeInputSink for MameSockSink {
         // and NAMED, so a visitor key the map cannot deliver is evidence,
         // not a silent hole in the telemetry.
         let Some((port, field)) = key_for(&self.shared.keymap, event.key) else {
-            self.shared.counters.unmapped.fetch_add(1, Ordering::Relaxed);
+            self.shared
+                .counters
+                .unmapped
+                .fetch_add(1, Ordering::Relaxed);
             eprintln!(
                 "[mamesock] unmapped scancode 0x{:04x} down={}",
                 event.key, event.down

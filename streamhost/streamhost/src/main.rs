@@ -29,6 +29,8 @@ mod realtime_input;
 mod session_ticket;
 mod signaling;
 mod transport;
+mod vice_keymap;
+mod vice_sock;
 mod warpd;
 mod webrtc_bridge;
 mod x11_input;

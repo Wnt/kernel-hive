@@ -571,6 +571,10 @@ impl InputRouter {
                 crate::ptr_grid::PtrGrid::from_env(),
                 crate::mame_input::KeyMap::from_env(),
             ),
+            InputBackend::ViceSock => crate::vice_sock::ViceSockSink::new(
+                cfg.vicectl_sock.clone(),
+                crate::vice_keymap::ViceKeyMap::from_env(),
+            ),
             InputBackend::X11Test => {
                 match crate::x11_input::X11TestSink::new(&cfg.x11_display, &cfg.x11_cmd_file) {
                     Ok(sink) => sink,

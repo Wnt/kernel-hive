@@ -117,6 +117,7 @@ pub struct Config {
     /// only by the explicit mamesock backend (SH_MAMECTL_SOCK; default
     /// `<tile-dir>/ctl.sock`, the module's MAME_CTL_SOCK launcher convention).
     pub mamectl_sock: String,
+    pub vicectl_sock: String, // SH_VICECTL_SOCK; the vicesock backend's twin of the above
     /// Optional loopback-only Stage-D ingress. It accepts the existing `M x y`
     /// lines but feeds the process-wide production router rather than a backend.
     pub input_bench_addr: Option<String>,
@@ -395,6 +396,7 @@ impl Config {
         let mut input_backend_env = std::env::var("SH_INPUT_BACKEND").ok();
         let ghid_socket_env = std::env::var("SH_GHID_SOCKET").ok();
         let mamectl_sock_env = std::env::var("SH_MAMECTL_SOCK").ok();
+        let vicectl_sock_env = std::env::var("SH_VICECTL_SOCK").ok();
         let input_bench_addr = std::env::var("SH_INPUT_BENCH_ADDR").ok();
         let mut cursor_off_x: i32 = env_or("SH_CURSOR_OFF_X", "0").parse().unwrap_or(0);
         let mut cursor_off_y: i32 = env_or("SH_CURSOR_OFF_Y", "0").parse().unwrap_or(0);
@@ -680,6 +682,7 @@ impl Config {
             input_backend,
             ghid_socket,
             mamectl_sock,
+            vicectl_sock: vicectl_sock_env.unwrap_or_else(|| format!("{base}/ctl.sock")),
             input_bench_addr,
             cursor_off_x,
             cursor_off_y,

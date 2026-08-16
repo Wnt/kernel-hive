@@ -560,9 +560,9 @@ pub async fn handle(
             // try_key: it is scoped to Solaris/QNX pointer drivers and has no
             // keyboard minor, so keys stay on QEMU's normal keyboard path. The
             // stock guest keyboard driver consumes this D-Bus injection.
-            if let Some(router) =
-                router.filter(|r| r.backend() == "mamecmd" || r.backend() == "mamesock")
-            {
+            if let Some(router) = router.filter(|r| {
+                r.backend() == "mamecmd" || r.backend() == "mamesock" || r.backend() == "vicesock"
+            }) {
                 let _ = router.try_key(code as u16, down, false);
                 return;
             }
