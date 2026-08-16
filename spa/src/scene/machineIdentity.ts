@@ -345,6 +345,15 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'ALPHASERVER ES40', spec: 'EV68 ALPHA • TRU64 5.1B • 2003',
     kit: 'workstation',
   },
+  // Apple's "platinum" — the warm grey every Mac wore from 1987 to the iMac.
+  // A very low tintMix on purpose: the Quadra's whole visual identity IS the
+  // uniform case colour, so an accent that reads as a stripe would be wrong.
+  // The accent is the muted beige-grey of the case's own darker mouldings.
+  macos753: {
+    caseTint: '#cfccc2', accentTint: '#8c8a85', tintMix: 0.12,
+    badge: 'MACINTOSH QUADRA 800', spec: '68040 25MHz • MAC OS 7.5.3 • 1996',
+    kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

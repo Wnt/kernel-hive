@@ -99,6 +99,7 @@
                 "qemu-usb-tablet",
                 "qemu-vmmouse",
                 "qemu-ps2-relative",
+                                "qemu-adb-relative",
                 "gallery-hid",
                 "warpd-agent",
                 "mame-ioport",
