@@ -218,9 +218,13 @@ re-measure in high res.
   their `museum.notes` prose still says "bridge tile".
 - Kiosk overlays are retained as `*.debridged-bak`; delete only on the
   operator's word.
-- **Box-sync drift, not ours**: `serve/webroot/gallery-manifest.json`,
-  `serve/golden-manifest.json`, `registry/generated/labctl-declarations.json`,
-  `registry/stations/w2kalpha.json` and a `debridge-arms` darklaunch overlay
-  block the pre-push gate for anyone whose change is unrelated. Whoever owns
-  those live artifacts should reconcile with
-  `scripts/dev/verify-box-sync.sh --all`.
+- ~~Box-sync drift~~ RESOLVED 2026-08-16: the live-artifact rows
+  (`gallery-manifest.json`, `golden-manifest.json`, `labctl-declarations.json`,
+  `w2kalpha.json`) settled on their own, and the eight daemon-source rows the
+  vicesock work created were pushed box-ward with
+  `scripts/dev/box-sync-push.sh --all-drift --apply` (repo is authoritative for
+  source). Gate green, 224 MATCH. Only the two `debridge-arms` darklaunch rows
+  remain, and those are declared divergence that does not block. Note for
+  agents with no box access: you CANNOT clear a source-side drift row, and
+  `SKIP_GATE=1` on a branch is the right call — say so rather than pretending
+  green.
