@@ -93,16 +93,52 @@ worktree, pushing BRANCHES only (not main). Nothing has touched a live station.
   recommended conversion order.
   → `docs/lab/research/vice-audio-checkpoint-survey.md`
 
-All three develop changes as clean commits in a local VICE clone, env-gated so
-an unset build is identical to upstream — the shape needed to become a
-`third_party/vice-kernel-hive` fork submodule alongside the MAME forks.
+**Frame plane: PROVEN.** One seam — `video_canvas_refresh()` in VICE's
+*headless* arch backend — publishes into the existing shm wire format,
+byte-exact on four machines, containing the real boot screens, and read back by
+the unmodified tool written for the MAME-era producer. Fidelity against VICE's
+own screenshot path: 0 of 104,448 pixels differ. Damage comes free (the core
+hands over the refreshed rect). Publish costs ~0.7% of a core. With the env var
+unset the binary is indistinguishable from pre-patch. Branch
+`kernel-hive/shmfb` in `lab:/data/vms/soltest/vice-vid/vice-src`.
 
-**Decisions held for the coordinating session**, pending their evidence: fork
-submodule vs patch files; the input mechanism; whether VICE stations can be
-instant-ready or must cold-boot; and the conversion order.
+**Input plane: PROVEN, and the design differs from MAME on purpose.** The wire
+carries an **X11 keysym**, not a scancode or a matrix cell: VICE resolves
+keysym → matrix through the machine's own `.vkm` keymap — the same file the
+bridged kiosk used — so a converted station reproduces the kiosk's character
+behaviour BY CONSTRUCTION (virtual shift, deshift, shift-lock, the C128 alt
+set). The daemon therefore needs no per-station matrix map, just one host-layout
+table shared by all seven, and the SPA needs no hand-authored `charMap`s (VICE's
+symbolic keymap already does that job — going positional would have recreated
+the exact problem Phase 0 existed to end). VICE's binary remote monitor was
+evaluated and REJECTED: its whole keyboard surface is `kbdbuf_feed()`, PETSCII
+poked into the KERNAL buffer — no key-down/up, no chords, and invisible to
+anything that scans the matrix itself, which includes the c64 station's GEOS.
+Proven headless with a 66-edge burst typing a BASIC line onto the framebuffer.
+Branch `kernel-hive-vicectl` in `lab:/data/vms/soltest/vice-in/vice-src`.
 
-Nothing about VICE is proven yet. Do not start a station conversion on the
-strength of this section alone.
+Two MAME lessons transferred intact: **exclusive-scan is mandatory** (the same
+burst without it prints `N ''N`), and the gating covenant was measured
+(byte-identical screenshot with the socket env unset). One MAME problem does
+NOT transfer: VICE snapshots are explicit per-module blocks, so the control
+socket changes no snapshot format and forces no golden rebake.
+
+**Decided by the coordinating session:** the fork exists —
+`github.com/Wnt/vice`, matching the MAME/QEMU fork convention. Both spikes were
+developed on the mirror's moving `main` (3.10-dev); the fork must be pinned to
+a RELEASE tag before any station work. Both `v3.9.0` (what the fleet runs) and
+`v3.10.0` exist. Leaning 3.10.0 — both planes are proven there and the headless
+keymap plumbing differs between versions — accepting that a conversion is then
+also a version bump. NOT yet decided; the audio/checkpoint agent's verdict may
+move it.
+
+**Still unproven: audio and checkpoint** (third agent running), and no station
+conversion should start before those land, the fork is pinned, and a
+`scripts/dev/vice-keymap.py` exists. Other open items from the spikes:
+x128 has two canvases (needs a chip selector; its `SHOT` takes canvas 0 = VDC,
+correct for the 80-column exhibit but must be stated), VICE surfaces are
+native-size so streamhost scales, and key pacing must be re-bisected rather
+than inherited from the bridged values.
 
 ## atarist
 
