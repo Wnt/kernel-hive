@@ -16,7 +16,7 @@ this file is the working contract.
 | Which version | **7.5.3**, outright. Not 7.1, and no fallback dance. |
 | Station id | **`macos753`** — id == `stationDir` == `SH_STATION`, and the name must not lie about the version. Slot **142**, udpPort **54142** (next after `tru64` at 141). |
 | Autonomy | Build, install, bake, wire, deploy **live**, green gate, merge to `main`. |
-| Pointer calibration | Ship `scale 1.0` with linear mouse tracking baked into the checkpoint; operator eyeballs and re-calibrates later if it is not 1:1. |
+| Pointer calibration | Ship `scale 1.0` with linear mouse tracking baked into the checkpoint; operator eyeballs and re-calibrates later if it is not 1:1. **Superseded by measurement** — the gain turned out to be cleanly measurable from the framebuffer, so the station ships `2.7778` instead of an unverified 1.0. |
 
 ## What is actually new here
 
