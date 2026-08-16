@@ -156,6 +156,39 @@ const REL_STEP_PACE_MS: u64 = 16;
 /// the session, i.e. exactly what the pin exists to prevent.
 const HOME_PIN: i32 = 2048;
 
+/// The corner-pin actually sent, for a station whose guest SCALES the deltas it
+/// receives.
+///
+/// `HOME_PIN` above states its own invariant — exceed the largest guest surface
+/// — but that is stated in PIXELS while the pin is sent in guest DELTA UNITS,
+/// which silently assumes the guest turns one unit into one pixel. Mac OS 7.5.3
+/// on the ADB mouse does not: at its only non-accelerated tracking setting it
+/// applies a measured, dead-linear **0.36 px per unit**, so a 2048 pin travels
+/// 737 px and cannot cross the 1152 px `macos753` screen. The cursor would stop
+/// short while the model believed it was pinned at 0,0 — the exact fixed offset
+/// FIX 4 exists to prevent.
+///
+/// `cursor_scale` is already that factor's reciprocal (it is what converts a
+/// client pixel into the delta needed to move the guest one pixel), so scaling
+/// the pin by it restores the invariant for any guest. `max(1.0)` keeps every
+/// gain>=1 station **byte-identical**: the fleet's other relative station,
+/// `nt351`, has `cursor_scale` 1.0 and still sends exactly 2048.
+///
+/// The Xerox Star reasoning that shrank this pin from 8192 is PS/2-specific and
+/// does NOT generalise to ADB: measured on `macos753`, a 3200-unit pin followed
+/// by a walk is observed as two separate movements at every settle from 250 ms
+/// to 3 s, so `HOME_SETTLE_MS` still covers it.
+fn home_pin(cursor_scale: f64) -> i32 {
+    let scaled = f64::from(HOME_PIN) * cursor_scale.max(1.0);
+    // Saturate rather than wrap: a nonsense calibration must not become a
+    // negative pin that throws the cursor the wrong way.
+    if scaled >= f64::from(i32::MAX) {
+        i32::MAX
+    } else {
+        scaled as i32
+    }
+}
+
 /// Settle time after the homing corner-pin, before the origin -> target walk.
 ///
 /// The pin and the walk must be OBSERVED as two separate movements. That takes
@@ -374,7 +407,8 @@ async fn apply_move_abs(
                 // Deliberate over-clamp into the top-left corner: a merge/clamp
                 // is the goal here, not a truncation hazard, and it establishes
                 // a known 0,0 origin.
-                rel_motion(cap, -HOME_PIN, -HOME_PIN).await;
+                let pin = home_pin(cfg.cursor_scale);
+                rel_motion(cap, -pin, -pin).await;
                 tokio::time::sleep(std::time::Duration::from_millis(HOME_SETTLE_MS)).await;
                 // The seeding sample sends NO motion of its own. It sets the
                 // model to the origin it just pinned and stops; the NEXT sample
@@ -606,7 +640,45 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
-    use super::{calibrated_abs, newer, rel_chunks, MAX_REL_STEP};
+    use super::{calibrated_abs, home_pin, newer, rel_chunks, HOME_PIN, MAX_REL_STEP};
+
+    // The pin is sent in guest DELTA UNITS but its invariant ("exceed the guest
+    // surface") is stated in PIXELS, so it has to scale with the guest's own
+    // units-to-pixels factor. Every gain>=1 station must keep sending EXACTLY
+    // the historical 2048 — this is fleet-visible behavior, not a free knob.
+    #[test]
+    fn home_pin_is_unchanged_for_every_gain_at_or_above_one() {
+        for scale in [1.0, 0.783, 0.5, 0.0, -3.0] {
+            assert_eq!(
+                home_pin(scale),
+                HOME_PIN,
+                "scale {scale} must not shrink the pin"
+            );
+        }
+    }
+
+    // macos753: Mac OS 7.5.3 moves 0.36 px per unit, so cursor_scale is 1/0.36
+    // and the pin must grow enough to cross a 1152 px screen. At the bare 2048
+    // it would travel 737 px and strand the cursor mid-screen.
+    #[test]
+    fn home_pin_grows_enough_to_cross_a_scaling_guests_screen() {
+        let scale = 1.0 / 0.36;
+        let pin = home_pin(scale);
+        assert!(pin > HOME_PIN, "a >1 scale must grow the pin");
+        let travelled = f64::from(pin) * 0.36;
+        assert!(
+            travelled > 1152.0,
+            "pin travels {travelled} px, short of the 1152 px screen"
+        );
+    }
+
+    // A nonsense calibration must saturate, never wrap into a negative pin that
+    // throws the cursor away from the corner it is meant to clamp into.
+    #[test]
+    fn home_pin_saturates_instead_of_wrapping() {
+        assert_eq!(home_pin(f64::MAX), i32::MAX);
+        assert!(home_pin(1e9) > 0);
+    }
 
     #[test]
     fn absolute_calibration_scales_and_clamps_for_both_dbus_paths() {
