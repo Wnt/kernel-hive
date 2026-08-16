@@ -46,6 +46,38 @@ disk `img/tru64.img` after the three changes above and a clean `halt`.
   corrupt a system file.
 - **Screenshots**: `uibench/shmread.py <fb.shm> <out.png>`.
 
+## Idle auto-pause — what "instant" means here (2026-08-16)
+
+This station is the w2kalpha family, not the QEMU family, and the two get
+their instant feel differently:
+
+- **QEMU stations** hold a `savevm golden` snapshot inside the qcow2. They
+  launch `-loadvm golden -S` (restored, paused) and their reset is a QMP
+  `loadvm` — a genuine instant restore, no boot.
+- **es40 stations (w2kalpha, tru64)** do not use savestate restore at all
+  (see w2kalpha's post-restore repaint fragility). They boot ONCE from the
+  seed and then simply stay powered on: `SH_IDLE_PAUSE_SECS=60` SIGSTOPs the
+  emulator at ~0 CPU when no visitor is connected, and the next session
+  SIGCONTs it sub-second. Fork `fc82f05` (`host_freeze_reanchor`) makes the
+  guest clocks resume where they stopped.
+
+tru64 had `SH_IDLE_PAUSE_SECS=0` left over from the install phase, so it
+burned a core around the clock and had no resume path. It now carries the
+w2kalpha stanza, with one deliberate difference: `SH_IDLE_PAUSE_WARMUP_SECS`
+is **540**, not w2kalpha's 120, because this guest needs ~400-450 s to reach
+the CDE desktop. A shorter warmup would freeze an unvisited station
+mid-boot and the next visitor would sit through the rest of it. Verified
+2026-08-16: boot completes, then `[idle] no sessions for 60s -> guest paused`
+with es40 in state `T` at 0.0 % CPU and the finished desktop in shm.
+
+**"Restore to golden" still relaunches** on this station — reset mode is
+`relaunch` for the whole es40 family (w2kalpha included), so it is a cold
+boot, which here costs the full ~7 min rather than w2kalpha's ~80 s. Making
+reset instant would need es40 savestate restore (`ES40_RESTORE` exists; a
+`SAVEST` ctlsock verb was added 2026-08-16) plus the pairing and repaint
+proofs w2kalpha's doc calls out — not done, and not required for the
+visitor-facing instant resume above.
+
 ## Known cosmetic item
 
 The Tru64 `dxconsole` "Console Log" window still opens bottom-right and
