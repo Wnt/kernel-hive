@@ -48,8 +48,8 @@ What the client (`streamhost/guest-agents/tru64/tru64exec.py`) does per call:
 thaws the guest if idle auto-pause has it SIGSTOPped (a frozen guest answers
 nothing, and the pauser can re-freeze it mid-command), converges whatever it
 finds on the line back to a fresh `login:`, logs in as root (passwordless),
-`exec /bin/ksh` (root's login shell is csh, and Tru64's `/bin/sh` predates
-`$(...)`), `stty -echo` so the shell's own echo cannot be mistaken for output,
+`exec /bin/ksh` (root's login shell is `/bin/sh`, Tru64's legacy Bourne shell,
+which predates `$(...)`), `stty -echo` so the shell's own echo cannot be mistaken for output,
 then the command inside a **subshell** between sentinels — a bare `exit 3`
 returns 3 rather than killing the session. stdout and stderr come back merged:
 it is one serial line.
@@ -191,13 +191,16 @@ so the restored desktop never blanks. **The seed still has the CDE defaults**:
 a cold-boot fallback will blank and lock again — re-bake the seed from a
 checkpoint-restored, cleanly halted guest to close that.
 
-## Known cosmetic item
+## The scene: a bare CDE desktop
 
-The Tru64 `dxconsole` "Console Log" window still opens bottom-right and
-shows `Can't find an OSF-BASE … PAK`. It is not started from any
-`/usr/dt/config` or `/etc/dt/config` file (grep finds nothing), so silencing
-it needs a different hook; the PAK line itself is expected on a PAK-less
-base install and gates non-root logins only.
+What visitors see is the finished desktop and nothing else — wallpaper and the
+front panel. The `dxconsole` "Console Log" window that used to open
+bottom-right (repeating `Can't find an OSF-BASE … PAK`) was closed before the
+checkpoint was baked 2026-08-17, so the restore no longer brings it back. It
+was never started from any `/usr/dt/config` or `/etc/dt/config` file — grep
+finds nothing — which is why closing it in the CHECKPOINT was the fix that
+worked; a cold boot from the seed still opens it. The PAK line itself is
+expected on a PAK-less base install and gates non-root logins only.
 
 ## es40 savestates: this station's reset
 
@@ -298,17 +301,23 @@ archive.org ZIP if layered products are ever wanted.
   the one window where in-place disk mutation could corrupt the target
   filesystem. During the dark phase only the operator holds the URL.
 
-## Runtime shape (install phase)
+## Runtime shape
 
 `streamhost/stations/tru64/{x11-runtime.sh,pumps.py,station.env.fixture}`:
 headless es40 (`SDL_VIDEODRIVER=dummy`, `ES40_SHM_PATH`, `ES40_CTL_SOCK`,
-`ES40_TILE_NAME=tru64`), serial pair **21974/21975** (w2kalpha owns
-21964/21965), `SH_IDLE_PAUSE_SECS=0` (an unwatched SIGSTOP'd installer makes
-no progress), reset=relaunch REBOOTS to SRM and re-enters the installer from
-whatever the persistent disk holds. Assets:
-`/data/vms/streamhost/assets/tru64/{es40,es40.cfg,rom/,img/,root/}` — the
-disk `img/tru64.img` is the live install target, deliberately not copied
-per launch until the checkpoint exists.
+`ES40_TILE_NAME=tru64`, `ES40_POINTER_GAIN=2`, and `ES40_RESTORE` when a
+checkpoint is staged), serial pair **21974/21975** (w2kalpha owns
+21964/21965) with ser1 lent out as the exec channel, `SH_IDLE_PAUSE_SECS=60`
+with a 60 s warmup, reset=relaunch restoring the checkpoint. Assets:
+`/data/vms/streamhost/assets/tru64/{es40,es40.cfg,rom/,img/,checkpoint/,root/}`
+— every launch reflink-copies a read-only disk into the station's `work/`, so
+`img/tru64-seed.img` and `checkpoint/tru64.img` are never opened for write.
+
+**The install phase is history.** It ran 2026-08-11/12 with the disk mutated
+in place, `SH_IDLE_PAUSE_SECS=0`, and reset=relaunch REBOOTING into the
+installer; the notes above about parking at installer dialogs and the
+mid-`setld` corruption window describe that period, not the exhibit as it
+stands.
 
 ## Rollback
 

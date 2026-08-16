@@ -157,9 +157,10 @@ def run_once(station_dir, cmd, timeout, tag):
         se.close()
         return 125, "", ""
 
-    # root's login shell here is csh, where `$(...)` is a syntax error; Tru64's
-    # /bin/sh is the legacy Bourne shell, which does not have it either. ksh
-    # does, and it is what every other station's exec effectively gives you, so
+    # root's login shell here is /bin/sh — Tru64's LEGACY Bourne shell, where
+    # `$(...)` is not command substitution but a syntax error, so a caller's
+    # ordinary-looking command comes back with the substitution untouched. ksh
+    # has it, and is what every other station's exec effectively gives you, so
     # pin ksh and fall back to sh if this guest somehow lacks it. `exec`
     # replaces the login shell, so `exit` below still logs the session out.
     se.send("exec /bin/ksh")

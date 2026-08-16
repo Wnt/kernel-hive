@@ -39,8 +39,8 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
    exit 2 with alternatives.
 
    The `serialcon_e` client (`streamhost/guest-agents/tru64/tru64exec.py`) logs
-   in fresh per call, pins `ksh` (root's login shell is csh, and Tru64's
-   `/bin/sh` has no `$(...)`), silences the tty so shell echo cannot be mistaken
+   in fresh per call, pins `ksh` (root's login shell is Tru64's legacy Bourne
+   `/bin/sh`, which has no `$(...)`), silences the tty so shell echo cannot be mistaken
    for output, and runs the command in a SUBSHELL so a bare `exit 3` returns 3
    instead of killing the session. stdout and stderr arrive merged — it is one
    serial line.
