@@ -66,20 +66,31 @@ the terminology migration, but other agents were mid-flight in those files.
    modifier fields are exempt BY NAME (the MPF-II's Shift lives on `:ROW0`,
    inside the pattern — that is why shifted characters silently typed
    unshifted). Every converted station sets it; a new conversion must too.
-3. **Checkpoint restore only works where the driver has `MACHINE_SUPPORTS_SAVE`.**
+3. **Exclusive-scan needs an escape valve, or it deadlocks on ordinary
+   typing.** Rule 2's serializer makes a press wait until no other key is
+   down — and real typing OVERLAPS, so that release is *behind* the press in
+   the same queue. Draining in strict arrival order therefore wedges the whole
+   keyboard after one key. The vicectl module hit this exactly (fixed
+   2026-08-17, fork `8612806414`): a NON-modifier release must be allowed past
+   a deferred press, a MODIFIER release must not (that is lesson 2 again), and
+   a press must never overtake a press. MAME's ctlsock has the same serializer;
+   it has not been audited against an overlapping fire-and-forget burst.
+   **A clean press/release/press/release test will NOT reproduce this** — it is
+   why typing slowly always looked fine.
+4. **Checkpoint restore only works where the driver has `MACHINE_SUPPORTS_SAVE`.**
    bbcb/zx81/kc85_4/spectrum lack it and restored garbage (bbcb killed the
    process; kc85_4 came back black). Those five run `MAME_NATIVE_CHECKPOINT=0`
    and cold-boot on reset; armeval re-types its curated supervisor lines from a
    MAME `-autoboot_script` instead.
-4. **The exhibit is the guest's framebuffer and nothing else.**
+5. **The exhibit is the guest's framebuffer and nothing else.**
    `mame-kiosk-no-ui.patch` (`MAME_NO_UI=1`) gates the single seam where UI
    primitives enter a render target, killing savestate popmessages, FPS
    overlays, menus and pause banners at once. A/B proved 3620 chrome pixels → 0.
-5. **A non-QEMU station only gets idle auto-pause if its env names the
+6. **A non-QEMU station only gets idle auto-pause if its env names the
    emulator's pidfile** (`SH_IDLE_PAUSE_PIDFILE` + `_PROC_MATCH` scoped to its
    own asset path — bbcmicro and armeval both run a binary called `bbcb`).
    Without it every station burns a core forever.
-6. **Harness traps.** Launching an emulator as `( … ) &` and killing `$!` kills
+7. **Harness traps.** Launching an emulator as `( … ) &` and killing `$!` kills
    the SUBSHELL, not the emulator: eleven orphans (~2.2 cores) accumulated
    before a cgroup check found them. And never `pgrep -f` a pattern your own
    command line carries — use `[c]lass` tricks or file markers.
@@ -259,7 +270,7 @@ the same or a newer build; the other 116 stations are untouched.
 | Keys | `10 PRINT "HI VIC20"` / `RUN` / `HI VIC20` typed as ONE 48-edge burst and read off the **shm mapping**, not VICE's own `SHOT`, so the two planes prove each other. Quote characters correct, i.e. host-layout shift substitution works end to end |
 | Audio | cold-boot floor rms **0.0**, sustained SID-style tone rms **5169–6211**, ~**191 232 B/s** against the daemon's 192 000 B/s contract |
 | Guest speed | **100.0 %** of the sound-off throttled baseline with the FIFO attached. (Measure it as a RATIO: the VIC-20's KERNAL jiffy runs at **60 Hz even on PAL**, so dividing by 50 reports a nonsense 113 %.) |
-| Key pacing | re-bisected against THIS engine, 12 trials/step, framebuffer-compared: **20/20 corrupted 12 of 12; 40/40 3 of 12; 60/60 and 80/80 clean.** Ships 80/80, one clear step above the last observed failure |
+| Key pacing | re-bisected against THIS engine, 12 trials/step, framebuffer-compared: **20/20 corrupted 12 of 12; 40/40 3 of 12; 60/60 and 80/80 clean.** Ships 80/80, one clear step above the last observed failure. RE-BISECTED AGAIN 2026-08-17 with realistic OVERLAPPING bursts once the EXCL deadlock was fixed, same judge: **80/80 12/12 clean (6.1 keys/s), 60/60 12/12 clean (7.8 keys/s), 40/40 6/12 corrupt, 20/20 0/12.** Still ships 80/80; 60/60 is the honest floor and is worth 28 % more throughput if the exhibit ever feels laggy |
 | Checkpoint | `SAVEST` through vicectl → 1 051 671 B `.vsf`; reset clears it, `undump` restores it, and restore-at-startup works with **no `-binarymonitor` at all** — which is what the launcher actually does |
 
 ### Landmines confirmed on the real path
@@ -327,6 +338,15 @@ of the guest's scanned matrix, and 80/80 is the wave default until a station
 reports otherwise — all four of the second wave shipped it unchanged, and none
 dropped or corrupted a character. Everything else in a conversion is now the
 stanza, the fixture and two script invocations.
+
+**What none of the five caught, because nothing tested it: the module wedged on
+OVERLAPPING typing** (lesson 3, fixed 2026-08-17 in fork `8612806414`). Every
+acceptance burst in this wave was press/release/press/release, and that shape
+cannot reproduce it. A conversion's keyboard check must now fire a
+FIRE-AND-FORGET burst whose next key goes DOWN before the previous comes UP,
+and assert that every edge is acked — not just that the line appears. Harness:
+`lab:/data/vms/soltest/vice-kbd/` (`vkbd.py`, `burst.py`, `bisect.py`,
+`hard.py`).
 
 ## The four-station wave: plus4, cbm2, pet2001, cbm8032
 
@@ -445,6 +465,14 @@ re-measure in high res.
 
 ## Open debts
 
+- **The EXCL-deadlock fix is live on vic20 ONLY.** `plus4`, `cbm2`, `pet2001`
+  and `cbm8032` still run the wedging binary; the fixed one is STAGED beside
+  each as `<emu>.kbdfix` and reproduced/verified on `xpet` (old: 1 of 34 edges
+  then permanently `queued=1`; new: 34 of 34 in 2.43 s, `PRINT "HI PET"` on the
+  framebuffer). Activating one station is
+  `mv $A/xpet.kbdfix $A/xpet && systemctl restart streamhost@pet2001` — do it
+  when nobody is mid-bake on them. The durable route is a rebuild through
+  `build-vice-native.sh` once the submodule pin is merged.
 - Operator batch validation of the nine is done; per-station polish is ongoing.
 - Temporary per-edge diagnostics (`SH_MAMESOCK_TRACE`, `MAME_CTL_TRACE`) are
   still live in mpf2's and dragon32's `station.env` — strip when the typing
