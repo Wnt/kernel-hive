@@ -439,10 +439,15 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
 # backend column mirrors InputBackend in streamhost/streamhost/src/config/
 # backends.rs; the ledger columns are what the launcher/emitArgs must show.
 POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = {
-    # "none" admits mamesock as well as disabled: a de-bridged keyboard-only
-    # MAME station has NO pointer, but its KEYS ride the mamesock backend --
-    # the module acks pointer verbs as silent no-ops (btns=0 axes=0).
-    "none": ({"disabled", "mamesock"}, (), ("usb-tablet", "vmmouse", "gallery-hid-pci")),
+    # "none" admits mamesock and vicesock as well as disabled: a de-bridged
+    # keyboard-only station has NO pointer, but its KEYS ride that backend --
+    # the MAME module acks pointer verbs as silent no-ops (btns=0 axes=0), and
+    # the vicesock sink rejects them outright (there is no pointer verb).
+    "none": (
+        {"disabled", "mamesock", "vicesock"},
+        (),
+        ("usb-tablet", "vmmouse", "gallery-hid-pci"),
+    ),
     "qemu-usb-tablet": ({"dbus-abs"}, ("usb-tablet",), ()),
     "qemu-vmmouse": ({"dbus-abs"}, ("vmmouse", "vmport=on"), ("usb-tablet",)),
     "qemu-ps2-relative": ({"dbus-rel"}, (), ("usb-tablet",)),
@@ -464,6 +469,9 @@ POINTER_MODE_BY_BACKEND = {
     "x11test": "abs",
     "mamecmd": "abs",
     "mamesock": "abs",
+    # Keyboard-only by construction: InputBackend::pointer_mode() reports
+    # "none" for ViceSock, and the sink has no pointer verb at all.
+    "vicesock": "none",
 }
 LEGACY_POINTER_BACKEND = {"abs": "dbus-abs", "rel": "dbus-rel", "warpd": "warpd", "none": "disabled"}
 # serenityos gets QEMU's absolute VMware aux mouse from the q35 default

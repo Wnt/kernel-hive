@@ -3,13 +3,11 @@
 # stations/vice-native/x11-runtime.sh — the SHARED launcher for host-native
 # (de-bridged) VICE stations: vic20, plus4, pet2001, cbm8032, cbm2, c128, c64.
 #
-# SKETCH, NOT YET LIVE. No station references this file: the wave's first
-# conversion (vic20) wires it up together with the fork submodule and the
-# builder. It is committed now because the daemon-side plumbing
-# (SH_INPUT_BACKEND=vicesock, SH_VICESOCK_KEYMAP) is meaningless without the
-# launcher half of the contract, and because the audio recipe below is the one
-# place the MAME wave's shape must NOT be copied. See
-# docs/lab/research/vice-daemon-plane.md.
+# LIVE since the vic20 conversion (2026-08-16), which is the wave's template:
+# the fork submodule (third_party/vice-kernel-hive), the builder
+# (scripts/build-guests/emulators/build-vice-native.sh) and this launcher are
+# one contract. The audio recipe below is the one place the MAME wave's shape
+# must NOT be copied. See docs/lab/research/vice-daemon-plane.md.
 #
 # Modelled on stations/mame-native/x11-runtime.sh, and like it there is NO X:
 # VICE is built --enable-headlessui, publishes frames into $SH_SHM_PATH
@@ -69,6 +67,18 @@ fi
 rm -f "$PIDFILE" "$CTL"
 mkdir -p "$BASE/sta"
 
+# THE LANDMINE, and it is a LAUNCHER requirement, not a version quirk: a
+# headless VICE whose stdout is not a tty SEGFAULTS in vice_banner() before it
+# prints anything. log_helper() computes the colour-stripped strings only when
+# a log file is open, then hands those NULL pointers to log_archdep(), which
+# strlen()s them. `-logfile` does NOT save you — the banner runs first. The
+# cure is that VICE's own log file must be openable, and VICE creates
+# $HOME/.cache and $HOME/.config itself but NOT $HOME/.local/state. Every
+# station hands the emulator a fresh per-station HOME, so every station walks
+# into this unless the directory exists first.
+export HOME="$BASE/home"
+mkdir -p "$HOME/.local/state/vice"
+
 # ---------------------------------------------------------------------------
 # AUDIO. NOT the MAME recipe. `-sound sdl -audiodriver disk` is right for MAME
 # because MAME's disk driver is a dumb sink; VICE's `sdl` device is flagged
@@ -123,9 +133,9 @@ EXTRA=()
 # purpose, matching the MAME wave's MAME_NATIVE_ARGS.
 [ -n "${VICE_NATIVE_ARGS:-}" ] && eval 'EXTRA=('"$VICE_NATIVE_ARGS"')'
 
-# VICE 3.9/3.10 segfaults when stdout is not a terminal (vice_banner() ->
-# strlen(NULL)); the fork carries the one-line log.c fix, and the redirect below
-# is what would trip it on an unpatched build. Keep both.
+# stdout is a file here, which is exactly the vice_banner() segfault condition
+# above; the `mkdir -p "$HOME/.local/state/vice"` near the top is what makes it
+# survive. Do not remove one without the other.
 nohup "$BIN" \
   -directory "$DATA" \
   "${SND[@]}" \

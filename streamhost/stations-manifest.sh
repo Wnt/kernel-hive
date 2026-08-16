@@ -622,11 +622,12 @@ emit win11 \
   --launcher-file "$T/win11/qemu-streamhost.sh" --env-append-file \
   "$T/win11/station.env.fixture"
 
-# vic20 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.
+# vic20 — host-native VICE 3.10.0 xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. De-bridged 2026-08-16: no QEMU, no guest, no X, no ssh. Keyboard-only.
 emit vic20 \
-  --tile vic20 --vmid 221 --udp 54085 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/vic20/qemu-streamhost.sh" --env-append-file \
+  --tile vic20 --udp 54085 --x11 --x11-display :51 --capture shm --pointer \
+  none --input-backend vicesock --audio on --fps 60 --x11-runtime-file \
+  "$T/vice-native/x11-runtime.sh" --aux-file \
+  "$T/vice-native/us-layout.keysyms" --env-append-file \
   "$T/vic20/station.env.fixture"
 
 # plus4 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.

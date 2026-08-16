@@ -28,24 +28,24 @@
   "operator": {
     "labctl": {
       "dir": "/data/vms/streamhost/stations/vic20",
-      "qmp": "/data/vms/streamhost/stations/vic20/qmp.sock",
+      "qmp": null,
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5821,
-      "exec_port": 5821,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54085,
-      "notes": "exec: labctl exec vic20 \"<cmd>\" (ssh root@:5821, key bridge_key)"
+      "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/vic20/sta/golden.vsf."
     }
   },
   "render": {
     "signalOrder": 36,
     "stationsManifestOrder": 34,
-    "stationsManifestPrelude": "\n# vic20 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.\n",
+    "stationsManifestPrelude": "\n# vic20 — host-native VICE 3.10.0 xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. De-bridged 2026-08-16: no QEMU, no guest, no X, no ssh. Keyboard-only.\n",
     "bringUpGroup": 6,
     "bindingOrder": 40,
     "bindingPrelude": "",
@@ -61,11 +61,11 @@
     "touch": false,
     "pointer": {
       "transport": "none",
-      "backend": "disabled",
+      "backend": "vicesock",
       "method": "none",
       "absolute": false,
       "present": false,
-      "device": "ps2-keyboard",
+      "device": "ioport-keyboard",
       "scale": 1.0,
       "offset": [
         0,
@@ -79,101 +79,60 @@
   "runtime": {
     "stationEnv": {
       "SH_STATION": "vic20",
-      "SH_QMP": "/data/vms/streamhost/stations/vic20/qmp.sock",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "vicesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":51",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/vic20/vic20_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/vic20/fb.shm",
       "SH_PORT": "54085",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
-      "SH_CURSOR_SCALE": "1.0",
-      "SH_CURSOR_OFF_X": "0",
-      "SH_CURSOR_OFF_Y": "0",
-      "SH_INPUT_BACKEND": "disabled",
-      "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/vic20/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/vic20/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 221,
-    "qemu": {
-      "mode": "verbatim",
+    "bringUpOrder": 37,
+    "x11": {
+      "display": ":51",
+      "geometry": "896x568x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/vice-native/x11-runtime.sh",
+      "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
         "vic20",
-        "--vmid",
-        "221",
         "--udp",
         "54085",
+        "--x11",
+        "--x11-display",
+        ":51",
+        "--capture",
+        "shm",
         "--pointer",
         "none",
         "--input-backend",
-        "disabled",
-        "--cursor-scale",
-        "1.0",
-        "--cursor-off-x",
-        "0",
-        "--cursor-off-y",
-        "0",
+        "vicesock",
         "--audio",
         "on",
         "--fps",
         "60",
-        "--launcher-file",
-        "$T/vic20/qemu-streamhost.sh",
+        "--x11-runtime-file",
+        "$T/vice-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/vice-native/us-layout.keysyms",
         "--env-append-file",
         "$T/vic20/station.env.fixture"
       ],
-      "deviceSetId": "vic20-current",
-      "launcher": "streamhost/stations/vic20/qemu-streamhost.sh",
-      "envFixture": "streamhost/stations/vic20/station.env.fixture",
-      "binary": "qemu-system-x86_64",
-      "accel": "kvm",
-      "cpu": "host",
-      "memoryMB": 1536,
-      "smp": 2,
-      "vga": "std",
-      "deviceSetSummary": [
-        "-name streamhost-vic20",
-        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
-        "-rtc base=localtime",
-        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
-        "-vga std",
-        "-display dbus,p2p=on,audiodev=snd0",
-        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-        "-usb",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5821-:22 -device e1000,netdev=n0",
-        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
-        "-pidfile $BASE/qemu.pid"
-      ],
-      "sourceDeviceSet": {
-        "binary": "qemu-system-x86_64",
-        "machine": "pc-i440fx-11.0,vmport=off",
-        "accel": "kvm",
-        "cpu": "host",
-        "memoryMB": 1536,
-        "smp": 2,
-        "vga": "std",
-        "deviceSetSummary": [
-          "-name streamhost-vic20",
-          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
-          "-rtc base=localtime",
-          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
-          "-vga std",
-          "-display dbus,p2p=on,audiodev=snd0",
-          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-          "-usb",
-          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5821-:22 -device e1000,netdev=n0",
-          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
-          "-pidfile $BASE/qemu.pid"
-        ]
-      },
-      "machine": "pc-i440fx-11.0,vmport=off",
-      "launcherParity": {
-        "status": "semantic-identical",
-        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the QEMU 11 device set the golden was baked under"
-      }
-    },
-    "bringUpOrder": 37
+      "auxFiles": [
+        "streamhost/stations/vice-native/us-layout.keysyms",
+        "streamhost/stations/vic20/station.env.fixture"
+      ]
+    }
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
@@ -226,10 +185,10 @@
     "stationDir": "vic20",
     "pointer": "none",
     "touch": false,
-    "resetMode": "loadvm",
-    "snapshot": "golden",
+    "resetMode": "relaunch",
+    "snapshot": null,
     "mouse": "N/A",
     "keyboard": "PASS",
-    "fixture": "Commodore VIC-20 (PAL) CBM BASIC V2 READY prompt in VICE xvic, double-size on an 800x600 X root; golden INTERNAL snapshot restores X (-nocursor) + xvic showing the power-on banner and READY prompt exactly as baked from an untouched cold boot. No post-restore keys (the mpf2 add proved they race the restore). Keyboard path certified 2026-08-08 by typing PRINT 3 through QMP at the tile’s production pacing and reading 3 back off the framebuffer. Keyboard-only exhibit (no mouse); AC97 audio."
+    "fixture": "Commodore VIC-20 (PAL) CBM BASIC V2 READY prompt, HOST-NATIVE: VICE 3.10.0's xvic runs on the host, headless, and publishes the emulated screen straight into the shm mapping at 896x568 (double-size, full borders). resetMode=relaunch: the launcher restarts xvic and restores sta/golden.vsf through the monitor's own playback file (-moncommands + -initbreak ready) — VICE has no -loadsnapshot. The checkpoint is an untouched cold boot; nothing is curated and no keys are typed after the restore. Unlike MAME there is no MACHINE_SUPPORTS_SAVE lottery: snapshot.c gates on machine name and per-module version and fails loudly. Keyboard path re-proven 2026-08-16 by typing a BASIC line through vicectl and reading it back off the shm framebuffer, not off VICE's own screenshot. Keyboard-only exhibit (no mouse); VIC-I sound -> FIFO."
   }
 }

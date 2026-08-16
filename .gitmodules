@@ -10,3 +10,7 @@
 	path = third_party/qemu-kernel-hive
 	url = https://github.com/Wnt/qemu.git
 	branch = kernel-hive
+[submodule "third_party/vice-kernel-hive"]
+	path = third_party/vice-kernel-hive
+	url = https://github.com/Wnt/vice.git
+	branch = kernel-hive/integrated

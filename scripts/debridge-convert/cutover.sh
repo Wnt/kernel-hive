@@ -1,8 +1,9 @@
 #!/bin/bash
-# cutover.sh <station> — LIVE swap of one MAME bridge kiosk to host-native.
-# Run ON THE BOX from the repo mirror (/data/kernel-hive), AFTER
-# build-mame-native.sh <station> has produced binary+roms and the station's
-# registry entry carries the runtime.x11 shape (registry-to-native.py).
+# cutover.sh <station> — LIVE swap of one bridge kiosk to host-native.
+# Run ON THE BOX from the repo mirror (/data/kernel-hive), AFTER the engine's
+# builder (build-mame-native.sh / build-vice-native.sh) has produced the binary
+# and its data, and the station's registry entry carries the runtime.x11 shape
+# (registry-to-native.py, --engine mame|vice).
 #
 # What it does, in order:
 #   1. emit the station kit (station.env / x11-runtime.sh / aux) from the
@@ -23,8 +24,13 @@ TILE="${1:?usage: cutover.sh <station>}"
 REPO=/data/kernel-hive
 B="/data/vms/streamhost/stations/$TILE"
 POOL="/usr/local/lib/streamhost/stations/$TILE"
-NEW=streamhost-cb701260035a06aacf2ceef2d83f7df829ab4775
-SCRATCH=/tmp/emit-668c8ea1
+# The daemon artifact this station must land on. The MAME wave's nine all took
+# the campaign build below; the VICE wave needs a build carrying vice_sock.rs,
+# so pass DEBRIDGE_DAEMON=streamhost-<gitsha> (produced by
+# scripts/dev/build-deploy.sh --canary <station>). Whatever `current` names
+# before the swap becomes `previous`, which IS the rollback.
+NEW="${DEBRIDGE_DAEMON:-streamhost-cb701260035a06aacf2ceef2d83f7df829ab4775}"
+SCRATCH="${SCRATCH:-/tmp/emit-668c8ea1}"
 
 [ -x "/usr/local/lib/streamhost/$NEW" ] || {
   echo "campaign daemon artifact missing: $NEW" >&2
@@ -48,13 +54,12 @@ streamhost/scripts/streamhost-station.sh "${ARGS[@]}" --out-root "$SCRATCH"
 systemctl stop "streamhost@$TILE" || true
 
 OLD="$(readlink "$POOL/current")"
-case "$OLD" in
-  *cb701260*) ;; # already canaried (a re-run)
-  *)
-    ln -sfn "$OLD" "$POOL/previous"
-    ln -sfn "../../$NEW" "$POOL/current"
-    ;;
-esac
+if [ "$OLD" = "../../$NEW" ]; then
+  : # already canaried (a re-run) — keep `previous` pointing at the kiosk-era binary
+else
+  ln -sfn "$OLD" "$POOL/previous"
+  ln -sfn "../../$NEW" "$POOL/current"
+fi
 
 for f in "$SCRATCH/$TILE"/*; do
   install -m 644 "$f" "$B/$(basename "$f")"

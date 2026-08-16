@@ -769,18 +769,18 @@
     },
     "vic20": {
       "dir": "/data/vms/streamhost/stations/vic20",
-      "qmp": "/data/vms/streamhost/stations/vic20/qmp.sock",
+      "qmp": null,
       "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5821,
-      "exec_port": 5821,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54085,
-      "notes": "exec: labctl exec vic20 \"<cmd>\" (ssh root@:5821, key bridge_key)"
+      "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/vic20/sta/golden.vsf."
     },
     "w2kalpha": {
       "dir": "/data/vms/streamhost/stations/w2kalpha",
