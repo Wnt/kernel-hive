@@ -175,7 +175,10 @@ mkdir -p "$WORK/bin"
 if [ ! -d "$SRC/.git" ]; then
   if [ -e "$SUBMODULE/.git" ]; then
     say "cloning from the checked-out third_party/vice-kernel-hive submodule"
-    git clone -q --local "$SUBMODULE" "$SRC"
+    # --no-hardlinks is not optional on the box: /data/kernel-hive and
+    # /data/vms are separate filesystems, and a plain --local clone dies with
+    # "failed to create link ... Invalid cross-device link".
+    git clone -q --local --no-hardlinks "$SUBMODULE" "$SRC"
   else
     say "cloning the published fork (submodule not checked out: git submodule update --init third_party/vice-kernel-hive)"
     git clone -q --branch "$VICE_FORK_BRANCH" "$VICE_FORK_URL" "$SRC"
