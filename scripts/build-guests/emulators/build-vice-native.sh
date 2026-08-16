@@ -28,7 +28,20 @@
 #   VICE_GEOM_EXPECT    optional WxH; when set the gate asserts the measured
 #                       geometry matches, so a resource change cannot silently
 #                       move a live station's surface
+#   VICE_GATE_BBOX      optional y0:y1:x0:x1; when set the non-dominant pixels
+#                       must all fall INSIDE that rectangle. cbm2's bridged
+#                       builder gated on position for a reason worth keeping:
+#                       a count alone cannot tell a correctly framed banner
+#                       from one drawn at the wrong offset. Containment, not
+#                       equality — the blinking cursor is inside the box on
+#                       some frames and gone on others.
 #   vice_stage_extra <outdir>   optional hook for media (c128's CP/M disk)
+#
+# ONE BUILD SERVES THE WAVE. `make install` takes prefix= on the command line
+# (plain automake), so a second station can point the SAME work dir at its own
+# output tree and skip the compile entirely — pass the same [work-dir] and a
+# different station. The prefix baked into the binary at compile time is inert:
+# the launcher and this gate both pass `-directory` explicitly.
 #
 # UNLIKE THE MAME BUILDER THERE ARE NO LOOSE PATCHES. Every kernel-hive change
 # to VICE is a commit on the published fork (github.com/Wnt/vice, branch
@@ -132,11 +145,21 @@ for y in range(h):
 # Non-dominant pixels: everything that is not the single most common colour.
 # A flooded frame - which "lit" alone cannot tell from a real scene, because a
 # white VIC-20 page lights every pixel - has ~none.
-nondom = (w * h) - max(hist.values())
-print("%dx%d %d %d %d" % (w, h, lit, nondom, len(hist)))
+dom = max(hist, key=hist.get)
+nondom = (w * h) - hist[dom]
+y0 = x0 = 1 << 30
+y1 = x1 = -1
+for y in range(h):
+    row = b[64 + y * stride : 64 + y * stride + w * 4]
+    for x in range(0, w * 4, 4):
+        if row[x : x + 3] != dom:
+            c = x // 4
+            x0, x1 = min(x0, c), max(x1, c)
+            y0, y1 = min(y0, y), max(y1, y)
+print("%dx%d %d %d %d %d:%d:%d:%d" % (w, h, lit, nondom, len(hist), y0, y1, x0, x1))
 PY
   ) || die "shm mapping unreadable or malformed; see $gate/vice.log"
-  read -r GATE_GEOM GATE_LIT GATE_NONDOM GATE_COLOURS <<<"$out"
+  read -r GATE_GEOM GATE_LIT GATE_NONDOM GATE_COLOURS GATE_BBOX <<<"$out"
   [ "$GATE_LIT" -ge "${VICE_GATE_FLOOR:?stanza does not set VICE_GATE_FLOOR}" ] ||
     die "smoke gate: only $GATE_LIT lit pixel(s) on the published $GATE_GEOM surface (floor $VICE_GATE_FLOOR); see $gate/vice.log"
   [ "$GATE_NONDOM" -ge "${VICE_GATE_INK_FLOOR:?stanza does not set VICE_GATE_INK_FLOOR}" ] ||
@@ -147,7 +170,16 @@ PY
   VICE has no MAME_SHM_SIZE: the surface IS the emulated screen x <CHIP>DoubleSize,
   so a VICE_GATE_ARGS change moved a live station's stream. Re-measure deliberately."
   fi
-  echo "  smoke gate PASSED: ${GATE_GEOM} surface, $GATE_LIT lit (floor $VICE_GATE_FLOOR), $GATE_NONDOM non-dominant (floor $VICE_GATE_INK_FLOOR), $GATE_COLOURS colours"
+  if [ -n "${VICE_GATE_BBOX:-}" ]; then
+    IFS=: read -r wy0 wy1 wx0 wx1 <<<"$VICE_GATE_BBOX"
+    IFS=: read -r gy0 gy1 gx0 gx1 <<<"$GATE_BBOX"
+    if [ "$gy0" -lt "$wy0" ] || [ "$gy1" -gt "$wy1" ] || [ "$gx0" -lt "$wx0" ] || [ "$gx1" -gt "$wx1" ]; then
+      die "smoke gate: the scene's ink sits at rows $gy0..$gy1 cols $gx0..$gx1, outside the
+  expected band rows $wy0..$wy1 cols $wx0..$wx1. A pixel COUNT cannot tell a correctly
+  framed banner from one drawn at the wrong offset; this is that check. See $gate/vice.log"
+    fi
+  fi
+  echo "  smoke gate PASSED: ${GATE_GEOM} surface, $GATE_LIT lit (floor $VICE_GATE_FLOOR), $GATE_NONDOM non-dominant (floor $VICE_GATE_INK_FLOOR), $GATE_COLOURS colours, ink bbox $GATE_BBOX"
 }
 
 STATION="${1:?usage: build-vice-native.sh <station> [work-dir] [output-dir]}"
@@ -248,7 +280,9 @@ echo "  clean: no warnings from vicectl.c, keymap.c or src/arch/headless/"
 
 say "installing to $OUT"
 rm -rf "$OUT"
-(cd "$BUILD" && make install >"$WORK/install.log" 2>&1) || die "make install failed; see $WORK/install.log"
+# prefix= on the command line, not just at configure time: that is what lets a
+# shared work dir install a second station's tree without recompiling.
+(cd "$BUILD" && make install prefix="$OUT" >"$WORK/install.log" 2>&1) || die "make install failed; see $WORK/install.log"
 BIN="$OUT/bin/$VICE_EMU"
 [ -x "$BIN" ] || die "make install produced no $VICE_EMU at $BIN"
 # Belt and braces on the headless promise: an SDL or GTK link would mean the

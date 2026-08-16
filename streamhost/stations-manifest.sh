@@ -630,31 +630,41 @@ emit vic20 \
   "$T/vice-native/us-layout.keysyms" --env-append-file \
   "$T/vic20/station.env.fixture"
 
-# plus4 (VMID 221) — VICE xvic (Commodore VIC-20, PAL, 1980) -> CBM BASIC V2. ssh 5821. Keyboard-only.
+# plus4 — host-native VICE 3.10.0 xplus4 (Commodore Plus/4, PAL, 1984) -> BASIC V3.5 + 3-plus-1 in ROM. De-bridged 2026-08-16: no QEMU, no guest, no X, no ssh. Keyboard-only.
 emit plus4 \
-  --tile plus4 --vmid 222 --udp 54086 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/plus4/qemu-streamhost.sh" --env-append-file \
+  --tile plus4 --udp 54086 --x11 --x11-display :52 --capture shm --pointer \
+  none --input-backend vicesock --audio on --fps 60 --x11-runtime-file \
+  "$T/vice-native/x11-runtime.sh" --aux-file \
+  "$T/vice-native/us-layout.keysyms" --env-append-file \
   "$T/plus4/station.env.fixture"
 emit c128 \
   --tile c128 --vmid 223 --udp 54087 --pointer none --input-backend disabled \
   --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \
   --launcher-file "$T/c128/qemu-streamhost.sh" --env-append-file \
   "$T/c128/station.env.fixture"
+
+# pet2001 — host-native VICE 3.10.0 xpet -model 2001 (Commodore PET 2001, 1977) -> COMMODORE BASIC. De-bridged 2026-08-16: no QEMU, no guest, no X, no ssh. Keyboard-only. Same binary as cbm8032, different model.
 emit pet2001 \
-  --tile pet2001 --vmid 224 --udp 54088 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/pet2001/qemu-streamhost.sh" --env-append-file \
+  --tile pet2001 --udp 54088 --x11 --x11-display :53 --capture shm --pointer \
+  none --input-backend vicesock --audio on --fps 60 --x11-runtime-file \
+  "$T/vice-native/x11-runtime.sh" --aux-file \
+  "$T/vice-native/us-layout.keysyms" --env-append-file \
   "$T/pet2001/station.env.fixture"
+
+# cbm8032 — host-native VICE 3.10.0 xpet -model 8032 (Commodore CBM 8032, 1980) -> commodore basic 4.0. De-bridged 2026-08-16: no QEMU, no guest, no X (this is the conversion that retired the fleet's only 1600x1200 X root), no ssh. Keyboard-only. Same binary as pet2001, different model.
 emit cbm8032 \
-  --tile cbm8032 --vmid 225 --udp 54109 --pointer none --input-backend \
-  disabled --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/cbm8032/qemu-streamhost.sh" --env-append-file \
+  --tile cbm8032 --udp 54109 --x11 --x11-display :54 --capture shm --pointer \
+  none --input-backend vicesock --audio on --fps 60 --x11-runtime-file \
+  "$T/vice-native/x11-runtime.sh" --aux-file \
+  "$T/vice-native/us-layout.keysyms" --env-append-file \
   "$T/cbm8032/station.env.fixture"
+
+# cbm2 — host-native VICE 3.10.0 xcbm2 -model 610 (Commodore CBM 610, PAL, 1982) -> commodore basic 128 v4.0. De-bridged 2026-08-16: no QEMU, no guest, no X, no ssh. Keyboard-only.
 emit cbm2 \
-  --tile cbm2 --vmid 226 --udp 54111 --pointer none --input-backend disabled \
-  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \
-  --launcher-file "$T/cbm2/qemu-streamhost.sh" --env-append-file \
+  --tile cbm2 --udp 54111 --x11 --x11-display :55 --capture shm --pointer \
+  none --input-backend vicesock --audio on --fps 60 --x11-runtime-file \
+  "$T/vice-native/x11-runtime.sh" --aux-file \
+  "$T/vice-native/us-layout.keysyms" --env-append-file \
   "$T/cbm2/station.env.fixture"
 emit pdp11 \
   --tile pdp11 --vmid 227 --udp 54115 --pointer none --input-backend \
