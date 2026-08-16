@@ -33,7 +33,9 @@ record), and `es40-tuning-research.md`.
 | `849039a`+`6986997` | mamectl/1 input socket (`src/gui/ctlsock.h`, `ES40_CTL_SOCK`) — keys + open-loop abs pointer |
 | `0e22e9f` | JIT deliverability-gated int kicks + chain-granular IRQ drain + compile-on-2nd-encounter — **2.37×** interactive throughput (Computer Management launch 24.4 s → 10.3 s, n=8) |
 | `6a525d1` | media-mailbox lock-free poll (−24.7% boot) |
-| `ab75e70`,`d73e4dc` | savestate fix + `ES40_RESTORE` (NOT used by the station — see reset) |
+| `ab75e70`,`d73e4dc` | savestate fix + `ES40_RESTORE` — the instant-resume path the station now resets through |
+| `fc82f05` | host-freeze re-anchor — makes idle-pause SIGSTOP safe (composes with restore) |
+| `a09816d` | savestate: 8514/A accelerator state + NIC host pointers + skip the SRM decompress on restore — **the commit that made restore usable** |
 
 Build: `cd es40src/src && make -j6` (ccache). One fork commit added a virtual
 to `CDisk` — always clean-rebuild across it (stale objects are vtable-broken).
@@ -55,7 +57,11 @@ true`. No `ali_usb` (W2K polls it hot — upstream es40 issues #114/#169).
 LAN**, so the exhibit is still air-gapped from anything off-labhost.
 
 Changing the device set does not invalidate the seed (it is a plain disk
-image, not a savestate) but DOES orphan any captured `.axp` savestates.
+image, not a savestate) but DOES orphan `golden.axp` — **re-bake the
+checkpoint after any device-set change** ([Checkpoint restore](#checkpoint-restore)).
+Host-side config that is NOT part of the device set — the serial port numbers,
+the pcap adapter name, file paths — does not orphan it (proven 2026-08-16 by
+restoring the same checkpoint under different ports and a different veth).
 
 ## Seed
 
@@ -103,16 +109,21 @@ non-empty; `stop-station-x11.sh` tears down the same pidfiles), not a claim that
 es40 is MAME. `pumps.py` self-exits on any serial-socket EOF/error so a stale
 pump can never hold the ports.
 
-- **Reset = `relaunch`** (cold boot ~80 s): service restart → fresh reflink →
-  pristine desktop. `ES40_RESTORE` restore is deliberately NOT used: a
-  restored guest partial-paints new dialogs (post-restore repaint fragility);
-  the prime suspect is wall-clock RPCC/interval-timer baselines not being
-  re-anchored in `CAlphaCPU::RestoreState` — fix that, re-verify, and the
-  station can move to restore reset.
+- **Reset = `relaunch`, restored from the checkpoint** (2026-08-16): a
+  service restart reflink-copies the golden `nt.img` AND hands es40 the
+  `golden.axp` savestate baked from that same image (`ES40_RESTORE`), so a
+  reset lands on the pristine desktop **~3 s after exec** (~15 s end to end
+  through the systemd unit) instead of the old ~80 s cold boot. The pair is
+  atomic by construction — serial-menu option 5 is save-and-exit, so no guest
+  write can land between the state file and the image — and the guest writes
+  only to the per-launch copy, so it stays coherent forever. **Rollback is
+  removing `assets/w2kalpha/golden.axp`**: the launcher cold-boots on its own,
+  no edit needed. See [Checkpoint restore](#checkpoint-restore).
+
 - **Idle auto-pause is ON** (2026-08-11): the daemon SIGSTOPs es40 (pid from
   `mame.pid`, cmdline guard `assets/w2kalpha/es40`) after 60 s with no
-  session, SIGCONTs on the next visit; warmup 120 s covers the ~80 s cold
-  boot. Safe since fork commit `fc82f05` (`host_freeze_reanchor`): a
+  session, SIGCONTs on the next visit; warmup 30 s (was 120 s, sized for the
+  cold boot the checkpoint restore replaced). Safe since fork commit `fc82f05` (`host_freeze_reanchor`): a
   wall-clock gap ≥ 5 s at a cc sync point is recognized as a host-side pause
   and every guest-visible clock (RPCC, Cchip interval timer, TOY/RTC, ACPI PM
   timer) re-anchors, so the guest resumes exactly where it stopped — the QMP
@@ -174,15 +185,27 @@ services x86 launches on a window station the interactive session can't reach).
 ## Verification (the release gate that was run)
 
 1. Framebuffer: `shmread.py` frame is a 1280×1024 desktop (not black, not the
-   ARC/AlphaBIOS screen) after ~80 s.
+   ARC/AlphaBIOS screen) ~3 s after exec (restore) — and a **new** window must
+   paint in FULL: open Notepad over the ctlsock and check the frame, menu bar
+   and client area are all there, not just the title bar (that fragment
+   pattern is the accelerator-state bug, fixed in `a09816d`).
 2. Input: keyboard verbs over `ctl.sock` visibly drive the guest (dialogs
    open/close in the framebuffer).
-3. Reset: `systemctl restart streamhost@w2kalpha` cold-boots a pristine
-   desktop from a fresh reflink copy.
+3. Reset: `systemctl restart streamhost@w2kalpha` (or `reset-tile.sh
+   w2kalpha`) lands the pristine desktop from a fresh reflink copy + the
+   restored checkpoint, ~15 s end to end.
+4. NIC: `labctl exec w2kalpha "ver"` returns the version banner — the restored
+   guest transmitting is what used to SIGSEGV es40 (`a09816d`).
 
 ## Rollback
 
 - Station off: `systemctl stop streamhost@w2kalpha` (ExecStop kills by pidfile).
+- Checkpoint: `rm assets/w2kalpha/golden.axp` → the launcher cold-boots (put
+  `SH_IDLE_PAUSE_WARMUP_SECS` back to 120 if that becomes permanent). The
+  pre-restore assets are preserved as `es40.bak-preinstant-20260816`,
+  `nt.img.bak-preinstant-20260816` and `rom.bak-preinstant-20260816/`, and the
+  station dir keeps `station.env.bak-preinstant-20260816` +
+  `x11-runtime.sh.bak-preinstant-20260816`.
 - Binary: control builds preserved on labhost (`es40.O2/O3/pgo/lto` beside the
   staged binary); the fork's commits are individually revertable (each was
   A/B-verified in isolation).
@@ -190,9 +213,36 @@ services x86 launches on a window station the interactive session can't reach).
   (three documents: `serve/tiles.json`, `webroot/gallery-manifest.json`,
   `serve/golden-manifest.json`).
 
+## Checkpoint restore
+
+The station resets by restoring a **checkpoint**: `assets/w2kalpha/golden.axp`,
+an es40 savestate baked from `assets/w2kalpha/nt.img`. The two are a PAIR —
+restoring a state onto a disk the guest kept writing to bugchecks NT (STOP
+0x7B), which is why the bake exits the emulator in the same breath as the save.
+
+**Re-bake** (after any guest change you want visitors to see, or any device-set
+change) — in a namespaced clone under `/data/vms/soltest/`, never on the live
+station:
+
+1. Cold-boot the clone from the current `nt.img` (`ES40_RESTORE` unset) and
+   drive it to the state you want, framebuffer-verified — **a bake is only as
+   good as the frame you baked it at** (an early bake once captured the logon
+   dialog, and every restore then came back to the logon dialog).
+2. Send a telnet `IAC BREAK` (`\xff\xf3`) on serial0 and answer **5** —
+   "save state to autosave.axp and exit". All device threads are stopped for
+   the menu, so no guest write can land after the save.
+3. The clone's `work/img/nt.img` + `work/autosave.axp` (+ `work/rom/`, whose
+   `dpr.rom`/`flash.rom` are rewritten on exit) are the new coherent set.
+   Stage them as `nt.img`, `golden.axp` and `rom/` — write to a temp name and
+   `mv` into place so a running es40 never has its mapped binary/image
+   truncated — keeping `.bak-<reason>-<date>` copies of what you replace.
+4. Restart the station and re-run the verification list above.
+
+Restore is ~1.5 s of actual work; the launcher's `ES40_RESTORE` also makes es40
+skip the ~30 s SRM decompress (the console it inflates is overwritten by the
+restored memory image anyway).
+
 ## Remaining work (tracked in w2kalpha-HANDOFF.md)
 
-seed polish + re-capture (Active Desktop off, wallpaper None/BMP, 1:1
-mouse) → then flip `reset.mouse` after a MOVEA/DOWN1 proof; post-restore
-RPCC re-anchor → restore reset; guest telnet channel (needs emulated
-NIC); guest de-bloat; PGO final rebuild (+10% measured).
+seed polish + re-capture (1:1 mouse) → then flip `reset.mouse` after a
+MOVEA/DOWN1 proof; guest de-bloat; PGO final rebuild (+10% measured).
