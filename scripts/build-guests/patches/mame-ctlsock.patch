@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,3059 @@
+@@ -0,0 +1,3124 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -223,7 +223,10 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +                             empty matrix between keys; MPF-II).
 +                             Shift/Ctrl-named fields are exempt (a
 +                             held modifier is a level, not a key) and
-+                             the queue drains in STRICT order [off]
++                             the queue drains under the three-barrier
++                             order of drain_keys(), NOT arrival order
++                             (strict arrival order deadlocks on real,
++                             overlapping typing)                 [off]
 +      MAME_CTL_MOVEA_TRIES   accepted, INERT since engine V2 (V2
 +                             flights terminate by construction)     [40]
 +      MAME_CTL_SWAP_ITEMS    "<seq>,<dx>,<dy>": the VC2 cursor-swap
@@ -1547,21 +1550,76 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_kq.push_back(key_entry{ std::move(port), std::move(field), val, std::move(ack) });
 +	}
 +
++	// ORDER IS NOT ARRIVAL ORDER, AND IT IS NOT FREE-FOR-ALL EITHER. In
++	// exclusive-scan mode an edge that cannot be applied this pass raises a
++	// BARRIER, and what a later edge may slip past depends on which barriers
++	// stand (the vicectl shape, fork commit c75afffaae, ported here after the
++	// same two defects were audited on this module):
++	//
++	//   bar_press    a PRESS is waiting          -> blocks presses and modifiers
++	//   bar_mod      a MODIFIER edge is waiting  -> blocks EVERYTHING
++	//   bar_release  a NON-mod RELEASE waiting   -> blocks modifiers only
++	//
++	// Read as three sentences:
++	//   1. A modifier edge never moves relative to anything. It carries a
++	//      LEVEL, and a level that slides one edge in either direction lands
++	//      on the wrong character.
++	//   2. A press never overtakes a press (that reorders the typed
++	//      characters) and never overtakes a waiting modifier (that types it
++	//      at the wrong level).
++	//   3. A NON-modifier release MAY overtake a waiting press. This is the
++	//      one reordering the design NEEDS, because nothing else can ever
++	//      unblock that press — and it is safe: a release carries no level and
++	//      the key it ends is already down.
++	//
++	// Barriers are raised ONLY by an edge held back by its OWN dwell gate or
++	// by the EXCL gate, NEVER by an edge held back by a barrier. That is what
++	// keeps the relation acyclic: every barrier clears through the passage of
++	// time (a dwell elapsing) or through a release that rule 3 always lets
++	// past, so no set of barriers can wait on itself.
++	//
++	// THE TWO DEFECTS THIS SHAPE EXISTS FOR (both live on the VICE stations,
++	// the first also REPRODUCED on this module, 2026-08-17, dragon32 rig):
++	//   Rule 3 missing => DEADLOCK. Real typing OVERLAPS (`A v  B v  A ^  B ^`),
++	//   so under EXCL the deferred B-press waits on the A-release sitting
++	//   BEHIND it in the same queue. Draining in strict arrival order
++	//   (`break` on every blocking condition, which is what this module did)
++	//   wedged the keyboard after ONE edge: a browser-timed 24-edge burst of
++	//   `print 12+34` applied 1 of 24 and left kq=23 forever, frames still
++	//   ticking. The identical burst typed slowly (no overlap) applied 24/24.
++	//   Rule 1 missing => THE SHIFT LANDS ON THE PREVIOUS CHARACTER. A browser
++	//   sends a character's press and release milliseconds apart, so that
++	//   release is still inside its HOLD dwell when the NEXT character's Shift
++	//   arrives — and modifiers are exempt from the EXCL gate. On VICE,
++	//   `print 12+34` rendered `PRINT 1"+34`.
++	// Neither is reproducible by a clean, slow, one-key-at-a-time test.
++	//
++	// Without MAME_CTL_KEY_EXCL (the irix tile) nothing changes: per-field
++	// order only, every edge free to apply the pass it arrives.
 +	void drain_keys()
 +	{
 +		if (m_kq.empty())
 +			return;
 +		double const now = emu_now();
++		bool const excl_mode = !m_key_excl.empty();
 +		std::unordered_set<std::string> blocked;
++		bool bar_press = false, bar_mod = false, bar_release = false;
 +		for (auto it = m_kq.begin(); it != m_kq.end(); )
 +		{
 +			key_entry &e = *it;
 +			if (blocked.count(e.field))
 +			{
-+				if (!m_key_excl.empty())
-+					break;  // strict order in exclusive-scan mode: a shift
-+					        // release must never overtake a deferred press
 +				++it;  // later edge of a gated field: per-field order holds
++				continue;
++			}
++			bool const mod_key = field_is_modifier(e.field);
++			// rules 1, 2 and 3 — a barrier defers, it never raises a barrier
++			if (excl_mode
++					&& (mod_key ? (bar_press || bar_mod || bar_release)
++					            : (e.val == 1 ? (bar_press || bar_mod) : bar_mod)))
++			{
++				blocked.insert(e.field);
++				++it;
 +				continue;
 +			}
 +			auto const &gates = (e.val == 1) ? m_kup_at : m_kdown_at;
@@ -1569,8 +1627,12 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			auto const g = gates.find(e.field);
 +			if (g != gates.end() && now < g->second + dwell)
 +			{
-+				if (!m_key_excl.empty())
-+					break;
++				if (mod_key)
++					bar_mod = true;
++				else if (e.val == 1)
++					bar_press = true;
++				else
++					bar_release = true;
 +				blocked.insert(e.field);
 +				++it;
 +				continue;
@@ -1579,16 +1641,19 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			// PORT tag): the MPF-II lesson — its ROM scans the matrix itself
 +			// and accepts a new key only after seeing it EMPTY, so a press
 +			// on a matching port waits until every other matching field is
-+			// up plus KEY_GAP past the last matching release. Later matching
-+			// presses stay queued in arrival order (excl_wait); the shift
-+			// port (:keyb_special) does not match and flows per-field.
-+			bool const excl = !m_key_excl.empty()
++			// up plus KEY_GAP past the last matching release. The shift port
++			// (:keyb_special) does not match, and a modifier field is exempt
++			// BY NAME wherever it lives (the MPF-II's Shift is on :ROW0).
++			bool const excl = excl_mode
 +					&& e.port.find(m_key_excl) != std::string::npos
-+					&& !field_is_modifier(e.field);
++					&& !mod_key;
 +			if (excl && e.val == 1
 +					&& (!m_excl_down.empty() || now < m_excl_up_at + m_key_gap))
 +			{
-+				break;  // strict order: the whole queue waits behind this press
++				bar_press = true;  // a non-modifier press, by the branch above
++				blocked.insert(e.field);
++				++it;
++				continue;
 +			}
 +			ioport_port *const pt = resolve_port(e.port);
 +			ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;

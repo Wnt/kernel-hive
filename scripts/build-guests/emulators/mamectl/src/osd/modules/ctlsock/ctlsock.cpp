@@ -96,11 +96,37 @@
                              hardware-cursor X,Y[,ENABLE] registers; on
                              the irix tile:
                                :vc2/0/m_cursor_x,:vc2/0/m_cursor_y,:vc2/0/m_enable_cursor
-                             ABSENT => MOVEA degrades to open loop
+                             ABSENT => MOVEA degrades to open-loop
+                             dead reckoning, latest-wins over the queue
       MAME_CTL_CAL_X/Y       cursor register -> pixel calibration  [-31]
       MAME_CTL_MOVE_STEP     pacing budget, counts per window      [120]
       MAME_CTL_MOVE_WINDOW   pacing window, EMULATED ms             [40]
+      MAME_CTL_QUAD_ITEMS    "<px>,<py>,<pc>" save-item suffixes of
+                             the device's quadrature EMISSION state
+                             (ST ikbd: m_mouse_px,m_mouse_py,
+                             m_mouse_pc). The ikbd latches a
+                             direction once per 8 ms period and
+                             emits ONE cycle -- magnitude discarded,
+                             so a pacing beat or a reversal pair
+                             silently loses counts (measured: 5.6
+                             counts adrift after a 5 s fast circle;
+                             a consumed-VALUE flow gate made it
+                             WORSE, 12.8). Set, the belief
+                             integrates emitted cycles and a settle
+                             corrector re-issues whatever merged
+                             away once the pipe is quiet.   [unset]
       MAME_CTL_KEY_HOLD/GAP  key edge pacing, EMULATED ms       [100/50]
+      MAME_CTL_KEY_EXCL      port-tag substring whose fields are
+                             mutually exclusive: a press waits until
+                             no other matching field is down (CPU-
+                             scanned keyboards whose ROM needs an
+                             empty matrix between keys; MPF-II).
+                             Shift/Ctrl-named fields are exempt (a
+                             held modifier is a level, not a key) and
+                             the queue drains under the three-barrier
+                             order of drain_keys(), NOT arrival order
+                             (strict arrival order deadlocks on real,
+                             overlapping typing)                 [off]
       MAME_CTL_MOVEA_TRIES   accepted, INERT since engine V2 (V2
                              flights terminate by construction)     [40]
       MAME_CTL_SWAP_ITEMS    "<seq>,<dx>,<dy>": the VC2 cursor-swap
@@ -134,6 +160,7 @@
 
 #include "emuopts.h"
 #include "fileio.h"
+#include "input.h"
 #include "main.h"
 #include "natkeyboard.h"
 #include "screen.h"
@@ -151,6 +178,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cerrno>
 #include <chrono>
 #include <cmath>
@@ -163,6 +191,7 @@
 #include <string_view>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace {
@@ -309,6 +338,8 @@ public:
 		m_move_window = double(env_long("MAME_CTL_MOVE_WINDOW", 40)) / 1e3;
 		m_key_hold = double(env_long("MAME_CTL_KEY_HOLD", 100)) / 1e3;
 		m_key_gap = double(env_long("MAME_CTL_KEY_GAP", 50)) / 1e3;
+		if (char const *e = std::getenv("MAME_CTL_KEY_EXCL"); e && *e)
+			m_key_excl = e;
 		m_cal_x = env_long("MAME_CTL_CAL_X", -31);
 		m_cal_y = env_long("MAME_CTL_CAL_Y", -31);
 		m_movea_tries = int(env_long("MAME_CTL_MOVEA_TRIES", 40));
@@ -408,6 +439,8 @@ private:
 	{
 		long x, y;
 		ack_ref ack;       // fires when the entry is fully drained
+		bool travel = false;  // open-loop MOVEA travel: a newer target may drop
+		                      // this entry's un-issued remainder (latest-wins)
 	};
 
 	struct key_entry       // one key edge awaiting the hold/gap-paced drain
@@ -952,6 +985,23 @@ private:
 				m_cs_dy = find_item(m_swap_items.substr(c2 + 1));
 			}
 		}
+		// QUAD sensor (MAME_CTL_QUAD_ITEMS): the emission-side ground
+		// truth of a quadrature mouse -- see the header. The belief and
+		// the settle corrector run on EMITTED cycles, not issued counts.
+		{
+			std::string const qi = env_str("MAME_CTL_QUAD_ITEMS");
+			size_t const c1 = qi.find(',');
+			size_t const c2 = (c1 == std::string::npos) ? std::string::npos : qi.find(',', c1 + 1);
+			if (!qi.empty() && c2 != std::string::npos)
+			{
+				m_qd_px = find_item(qi.substr(0, c1));
+				m_qd_py = find_item(qi.substr(c1 + 1, c2 - c1 - 1));
+				m_qd_pc = find_item(qi.substr(c2 + 1));
+				m_quad_active = m_qd_px.ok() && m_qd_py.ok() && m_qd_pc.ok();
+				std::fprintf(stderr, "ctlsock: quadrature sensor %s (%s)\n",
+						m_quad_active ? "ON" : "FAILED to resolve", qi.c_str());
+			}
+		}
 		m_movea_ok = m_cur_x.ok() && m_cur_y.ok();
 		swap_rebase();
 		if (m_movea_ok)
@@ -1124,7 +1174,10 @@ private:
 			reply_err(s, "busy", why);
 		m_syncs.clear();
 		m_win_t0 = -1.0;
-		m_k_next = -1.0;
+		m_kdown_at.clear();
+		m_kup_at.clear();
+		m_excl_down.clear();
+		m_excl_up_at = -1e9;
 		m_esc_frames = 0;
 		m_probe_frames = 0;
 	}
@@ -1143,6 +1196,7 @@ private:
 		// ioport this pass — the no-added-latency-for-the-common-case rule
 		movea_step();
 		movea_rest();
+		quad_sample();
 		drain_move();
 		drain_keys();
 		check_syncs();
@@ -1180,8 +1234,20 @@ private:
 		// belief is BOOKKEEPING ONLY under V7 (STAT, and the open-loop
 		// degradation used when the cursor registers cannot be read): the
 		// closed loop sizes every step from the reading, never from B.
-		m_bx = clamp_px_x(m_bx + long(std::llround(double(dx) * m_gx)));
-		m_by = clamp_px_y(m_by + long(std::llround(double(dy) * m_gy)));
+		if (!m_quad_active)
+		{
+			m_bx = clamp_px_x(m_bx + long(std::llround(double(dx) * m_gx)));
+			m_by = clamp_px_y(m_by + long(std::llround(double(dy) * m_gy)));
+		}
+		else
+		{
+			// belief moves at EMISSION (quad_sample); until then the issued
+			// counts are in flight, and every position statement must add
+			// them or a 60 Hz restate re-issues what is already coming.
+			m_pend_x += dx;
+			m_pend_y += dy;
+		}
+		m_last_issue = emu_now();
 		// The un-landed ledger is fed HERE, not from the MOVEA step: this is
 		// the one choke point every count passes through, whoever issued it.
 		// Feeding it from the step alone missed MOVEP, MOVE and the sink's
@@ -1235,12 +1301,88 @@ private:
 		m_mq.push_back(move_entry{ dx, dy, std::move(ack) });
 	}
 
+	// Open-loop MOVEA travel: move_paced, with the entry marked droppable --
+	// a newer target supersedes its un-issued remainder (latest-wins). Slams
+	// and explicit MOVE/MOVEP entries are never marked: an edge overshoot
+	// must still die against the guest's clamp, and a client's own relative
+	// move is not ours to skip.
+	void move_paced_travel(long dx, long dy)
+	{
+		if (dx == 0 && dy == 0)
+			return;
+		move_paced(dx, dy, ack_ref());
+		m_mq.back().travel = true;
+	}
+
 	long clamp_budget(long pend, long used) const
 	{
 		long const room = m_move_step - used;
 		if (room <= 0)
 			return 0;
 		return std::max(-room, std::min(room, pend));
+	}
+
+	// Quadrature-emission sensor: the ikbd sets a per-period phase at its
+	// tick 0 and emits one cycle across the period's four ticks; counting
+	// phases is counting what the guest will actually receive -- even when
+	// the device's own byte compare got the direction wrong at a wrap.
+	// Sampled every module tick (1 kHz vs the 500 Hz device tick): a
+	// period boundary is the tick counter wrapping, and the phase items
+	// then already hold the NEW period's verdict.
+	void quad_sample()
+	{
+		if (!m_quad_active)
+			return;
+		long const pc = long(m_qd_pc.read());
+		long const prev = m_qd_prev_pc;
+		m_qd_prev_pc = pc;
+		if (prev < 0 || pc >= prev)
+			return;
+		long const px = long(m_qd_px.read());
+		long const py = long(m_qd_py.read());
+		if (px == 1)
+		{
+			m_bx = clamp_px_x(m_bx + 1);
+			m_pend_x -= 1;
+		}
+		else if (px == 2)
+		{
+			m_bx = clamp_px_x(m_bx - 1);
+			m_pend_x += 1;
+		}
+		if (py == 1)
+		{
+			m_by = clamp_px_y(m_by + 1);
+			m_pend_y -= 1;
+		}
+		else if (py == 2)
+		{
+			m_by = clamp_px_y(m_by - 1);
+			m_pend_y += 1;
+		}
+		double const quiet = emu_now() - m_last_issue;
+		// After three quiet windows every issued count has had its emission
+		// chance; whatever pend still carries is the CONFIRMED merge loss.
+		if (quiet >= 3.0 * m_move_window)
+		{
+			m_pend_x = 0;
+			m_pend_y = 0;
+		}
+		// Settle corrector: nothing in flight anywhere -- queues empty and
+		// pend drained or decayed -- and the belief still disagrees with
+		// the last stated target: the difference is what merged away.
+		if (!m_movea_ok && m_fl_valid && m_mq.empty() && m_aq.empty()
+				&& m_pend_x == 0 && m_pend_y == 0
+				&& quiet >= 3.0 * m_move_window)
+		{
+			long const rx = m_flx - m_bx;
+			long const ry = m_fly - m_by;
+			if (rx != 0 || ry != 0)
+			{
+				++m_corr;
+				move_paced_travel(rx, ry);
+			}
+		}
 	}
 
 	void drain_move()
@@ -1277,9 +1419,15 @@ private:
 
 	// ---- key engine (matrix ports, never natkeyboard — see irixagent.lua
 	// for why natkeyboard:post drops every shifted character on this tile).
-	// A FIFO drained at most one edge per pass, never faster than KEY_HOLD
-	// (after a press) / KEY_GAP (after a release) of EMULATED time; setting
-	// a field down and up inside one device scan is invisible to the guest.
+	// PER-FIELD pacing (2026-08-12): edges apply the pass they arrive —
+	// like desktop MAME sampling a real keyboard — EXCEPT that a field's
+	// release waits KEY_HOLD after ITS OWN press (down-and-up inside one
+	// device scan is invisible to the guest) and a field's re-press waits
+	// KEY_GAP after ITS OWN release (two presses would otherwise merge).
+	// The old engine drained ONE edge per GLOBAL hold/gap slot — a ~6
+	// keys/second ceiling across the whole keyboard that serialized fast
+	// typing into seconds of lag and, past the daemon's bounded queue,
+	// into dropped keystrokes (operator report, /os/mpf2).
 
 	void key_enqueue(std::string port, std::string field, int val, ack_ref ack)
 	{
@@ -1302,29 +1450,137 @@ private:
 		m_kq.push_back(key_entry{ std::move(port), std::move(field), val, std::move(ack) });
 	}
 
+	// ORDER IS NOT ARRIVAL ORDER, AND IT IS NOT FREE-FOR-ALL EITHER. In
+	// exclusive-scan mode an edge that cannot be applied this pass raises a
+	// BARRIER, and what a later edge may slip past depends on which barriers
+	// stand (the vicectl shape, fork commit c75afffaae, ported here after the
+	// same two defects were audited on this module):
+	//
+	//   bar_press    a PRESS is waiting          -> blocks presses and modifiers
+	//   bar_mod      a MODIFIER edge is waiting  -> blocks EVERYTHING
+	//   bar_release  a NON-mod RELEASE waiting   -> blocks modifiers only
+	//
+	// Read as three sentences:
+	//   1. A modifier edge never moves relative to anything. It carries a
+	//      LEVEL, and a level that slides one edge in either direction lands
+	//      on the wrong character.
+	//   2. A press never overtakes a press (that reorders the typed
+	//      characters) and never overtakes a waiting modifier (that types it
+	//      at the wrong level).
+	//   3. A NON-modifier release MAY overtake a waiting press. This is the
+	//      one reordering the design NEEDS, because nothing else can ever
+	//      unblock that press — and it is safe: a release carries no level and
+	//      the key it ends is already down.
+	//
+	// Barriers are raised ONLY by an edge held back by its OWN dwell gate or
+	// by the EXCL gate, NEVER by an edge held back by a barrier. That is what
+	// keeps the relation acyclic: every barrier clears through the passage of
+	// time (a dwell elapsing) or through a release that rule 3 always lets
+	// past, so no set of barriers can wait on itself.
+	//
+	// THE TWO DEFECTS THIS SHAPE EXISTS FOR (both live on the VICE stations,
+	// the first also REPRODUCED on this module, 2026-08-17, dragon32 rig):
+	//   Rule 3 missing => DEADLOCK. Real typing OVERLAPS (`A v  B v  A ^  B ^`),
+	//   so under EXCL the deferred B-press waits on the A-release sitting
+	//   BEHIND it in the same queue. Draining in strict arrival order
+	//   (`break` on every blocking condition, which is what this module did)
+	//   wedged the keyboard after ONE edge: a browser-timed 24-edge burst of
+	//   `print 12+34` applied 1 of 24 and left kq=23 forever, frames still
+	//   ticking. The identical burst typed slowly (no overlap) applied 24/24.
+	//   Rule 1 missing => THE SHIFT LANDS ON THE PREVIOUS CHARACTER. A browser
+	//   sends a character's press and release milliseconds apart, so that
+	//   release is still inside its HOLD dwell when the NEXT character's Shift
+	//   arrives — and modifiers are exempt from the EXCL gate. On VICE,
+	//   `print 12+34` rendered `PRINT 1"+34`.
+	// Neither is reproducible by a clean, slow, one-key-at-a-time test.
+	//
+	// Without MAME_CTL_KEY_EXCL (the irix tile) nothing changes: per-field
+	// order only, every edge free to apply the pass it arrives.
 	void drain_keys()
 	{
 		if (m_kq.empty())
 			return;
 		double const now = emu_now();
-		if (m_k_next >= 0 && now < m_k_next)
-			return;
-		key_entry e = std::move(m_kq.front());
-		m_kq.pop_front();
-		ioport_port *const pt = resolve_port(e.port);
-		ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;
-		if (f)
+		bool const excl_mode = !m_key_excl.empty();
+		std::unordered_set<std::string> blocked;
+		bool bar_press = false, bar_mod = false, bar_release = false;
+		for (auto it = m_kq.begin(); it != m_kq.end(); )
 		{
-			f->set_value(u32(e.val));
-			pt->frame_update();  // mid-frame re-latch (V6-proven on the button
-			                     // port; kbd matrix re-checked in the harness)
-			trace("verb KEY seq=%s %s|%s=%d applied", e.ack.seq, e.port, e.field, e.val);
-			hist_apply(e.ack);
-			reply_ok(e.ack);
+			key_entry &e = *it;
+			if (blocked.count(e.field))
+			{
+				++it;  // later edge of a gated field: per-field order holds
+				continue;
+			}
+			bool const mod_key = field_is_modifier(e.field);
+			// rules 1, 2 and 3 — a barrier defers, it never raises a barrier
+			if (excl_mode
+					&& (mod_key ? (bar_press || bar_mod || bar_release)
+					            : (e.val == 1 ? (bar_press || bar_mod) : bar_mod)))
+			{
+				blocked.insert(e.field);
+				++it;
+				continue;
+			}
+			auto const &gates = (e.val == 1) ? m_kup_at : m_kdown_at;
+			double const dwell = (e.val == 1) ? m_key_gap : m_key_hold;
+			auto const g = gates.find(e.field);
+			if (g != gates.end() && now < g->second + dwell)
+			{
+				if (mod_key)
+					bar_mod = true;
+				else if (e.val == 1)
+					bar_press = true;
+				else
+					bar_release = true;
+				blocked.insert(e.field);
+				++it;
+				continue;
+			}
+			// Exclusive-scan mode (MAME_CTL_KEY_EXCL, matched against the
+			// PORT tag): the MPF-II lesson — its ROM scans the matrix itself
+			// and accepts a new key only after seeing it EMPTY, so a press
+			// on a matching port waits until every other matching field is
+			// up plus KEY_GAP past the last matching release. The shift port
+			// (:keyb_special) does not match, and a modifier field is exempt
+			// BY NAME wherever it lives (the MPF-II's Shift is on :ROW0).
+			bool const excl = excl_mode
+					&& e.port.find(m_key_excl) != std::string::npos
+					&& !mod_key;
+			if (excl && e.val == 1
+					&& (!m_excl_down.empty() || now < m_excl_up_at + m_key_gap))
+			{
+				bar_press = true;  // a non-modifier press, by the branch above
+				blocked.insert(e.field);
+				++it;
+				continue;
+			}
+			ioport_port *const pt = resolve_port(e.port);
+			ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;
+			if (f)
+			{
+				f->set_value(u32(e.val));
+				pt->frame_update();  // mid-frame re-latch (V6-proven on the
+				                     // button port; kbd matrix re-checked)
+				trace("verb KEY seq=%s %s|%s=%d applied", e.ack.seq, e.port, e.field, e.val);
+				hist_apply(e.ack);
+				reply_ok(e.ack);
+			}
+			else
+				reply_err(e.ack, "noport", "no port/field " + e.port + " | " + e.field);
+			((e.val == 1) ? m_kdown_at : m_kup_at)[e.field] = now;
+			if (excl)
+			{
+				if (e.val == 1)
+					m_excl_down.insert(e.field);
+				else
+				{
+					m_excl_down.erase(e.field);
+					m_excl_up_at = now;
+				}
+			}
+			it = m_kq.erase(it);
 		}
-		else
-			reply_err(e.ack, "noport", "no port/field " + e.port + " | " + e.field);
-		m_k_next = now + (e.val == 1 ? m_key_hold : m_key_gap);
 	}
 
 	// wire port name -> ioport_port: exact tag when it starts with ':',
@@ -1363,6 +1619,20 @@ private:
 			if (f.name() == name)
 				return &f;
 		return nullptr;
+	}
+
+	// Modifiers are exempt from exclusive-scan by FIELD NAME, not port: the
+	// MPF-II's Shift lives on :ROW0 with the ordinary keys, and a shift held
+	// through a chord must not count as "matrix busy" (the ROM reads it as a
+	// level, not a keystroke).
+	static bool field_is_modifier(std::string const &n)
+	{
+		std::string u;
+		u.reserve(n.size());
+		for (char c : n)
+			u += char(toupper(static_cast<unsigned char>(c)));
+		return u.find("SHIFT") != std::string::npos || u.find("CTRL") != std::string::npos
+				|| u.find("CONTROL") != std::string::npos;
 	}
 
 	// ---- buttons -----------------------------------------------------------
@@ -1535,10 +1805,46 @@ private:
 				// never merge into the real move's first window (measured in
 				// the Lua sim harness: 2048 % 120 = 8 px short, permanently)
 				move_paced(-(18 * m_move_step), -(18 * m_move_step));
-				move_paced(x, y);
+				move_paced_travel(x, y);
 			}
 			else
-				move_paced(x - m_flx, y - m_fly);
+			{
+				// LATEST-WINS over the backlog. A streamed sweep enqueues travel
+				// counts faster than the device ceiling drains them (the ST
+				// accepts ~125/s/axis), and a FIFO replays the whole path long
+				// after the pointer stopped -- measured on the spike arm: a 10 s
+				// circle left mq=390 queued and 17 s of catch-up. Drop the
+				// un-issued travel remainders; non-travel entries (slams,
+				// explicit MOVE/MOVEP) keep their place and their semantics.
+				//
+				// The new delta is stated from the CLAMPED belief plus a clamp
+				// simulation of the counts still queued -- never by folding the
+				// dropped remainders back in. Counts bound for a clamp never
+				// move the guest: the sink's re-home preamble restates the
+				// origin with travel that is 100% clamp-fodder, and reclaiming
+				// it displaced every later target by the full grid width
+				// (measured: verify worst error went 0.6 -> 38.8 counts).
+				for (auto it = m_mq.begin(); it != m_mq.end();)
+				{
+					if (it->travel)
+					{
+						m_skx += std::abs(it->x);
+						m_sky += std::abs(it->y);
+						m_cum_skx += std::abs(it->x);
+						m_cum_sky += std::abs(it->y);
+						it = m_mq.erase(it);
+					}
+					else
+						++it;
+				}
+				long px = clamp_px_x(m_bx + m_pend_x), py = clamp_px_y(m_by + m_pend_y);
+				for (move_entry const &e : m_mq)
+				{
+					px = clamp_px_x(px + e.x);
+					py = clamp_px_y(py + e.y);
+				}
+				move_paced_travel(x - px, y - py);
+			}
 			m_flx = x;
 			m_fly = y;
 			m_fl_valid = true;
@@ -1633,7 +1939,7 @@ private:
 				// the closed loop died with targets still queued: apply them
 				// open-loop so neither the motion nor the buttons behind it
 				// are ever dropped
-				move_paced(a.x - m_flx, a.y - m_fly);
+				move_paced_travel(a.x - m_flx, a.y - m_fly);
 				m_flx = a.x;
 				m_fly = a.y;
 				m_fl_valid = true;
@@ -2297,14 +2603,31 @@ private:
 		}
 		else if (verb == "KEYDUMP")
 		{
+			// Optional argument: the port-tag substring to dump. The default
+			// ":kbd:" is the Indy's own naming and every machine differs
+			// (the ST keeps its matrix under :keyboard, the Dragon under
+			// :row) -- pass ":" to dump every port and let the caller
+			// filter by field name (scripts/dev/mame-keymap.py does).
+			std::string const want = rest.empty() ? std::string(":kbd:") : rest;
 			int n = 0;
 			for (auto const &p : m_machine.ioport().ports())
 			{
-				if (p.first.find(":kbd:") == std::string::npos)
+				if (p.first.find(want) == std::string::npos)
 					continue;
 				for (ioport_field &f : p.second->fields())
 				{
-					reply_data(ack, p.first + " | " + f.name());
+					// Third column: the field's default assignment as a
+					// config token (KEYCODE_MINUS, ...). PORT_CODE-positional
+					// drivers (the CoCo/Dragon family) encode the exhibit's
+					// real layout there, not in the display name --
+					// scripts/dev/mame-keymap.py matches tokens first and
+					// falls back to names.
+					std::string tok;
+					input_seq const &dseq = f.defseq();
+					if (dseq.length() > 0)
+						tok = m_machine.input().code_to_token(dseq[0]);
+					reply_data(ack, p.first + " | " + f.name()
+							+ (tok.empty() ? std::string() : " | " + tok));
 					++n;
 				}
 			}
@@ -2576,7 +2899,7 @@ private:
 		std::string s = util::string_format(
 				"ver=1 paused=%d mtime=%.3f frames=%s ticks=%s conns=%d accepts=%s "
 				"cmds=%s filecmds=%s errs=%s movep=%s move=%s movea=%s key=%s post=%s "
-				"applied=%s,%s mq=%d kq=%d aq=%d clickq=%d tgt=%s res=%d,%d giveups=%s "
+				"applied=%s,%s skipped=%s,%s pend=%d,%d corr=%s mq=%d kq=%d aq=%d clickq=%d tgt=%s res=%d,%d giveups=%s "
 				"movea_mode=%s reseeds=%s last_in_ms=%d bel=%d,%d bias=%d,%d gain=%.2f,%.2f",
 				m_machine.paused() ? 1 : 0, emu_now(),
 				std::to_string(m_frames), std::to_string(m_ticks),
@@ -2585,6 +2908,8 @@ private:
 				std::to_string(m_c_movep), std::to_string(m_c_move),
 				std::to_string(m_c_movea), std::to_string(m_c_key), std::to_string(m_c_post),
 				std::to_string(m_cum_ax), std::to_string(m_cum_ay),
+				std::to_string(m_cum_skx), std::to_string(m_cum_sky),
+				int(m_pend_x), int(m_pend_y), std::to_string(m_corr),
 				int(m_mq.size()), int(m_kq.size()), int(m_aq.size()), int(m_clickq.size()),
 				m_ta_active ? util::string_format("%d,%d", int(m_ta.x), int(m_ta.y)) : std::string("-"),
 				int(m_res_x), int(m_res_y), std::to_string(m_giveups),
@@ -2618,17 +2943,18 @@ private:
 			return;
 		m_last_stats = now;
 		emit_ev(util::string_format(
-				"STATS movep=%s move=%s movea=%s key=%s queued=%s,%s applied=%s,%s "
+				"STATS movep=%s move=%s movea=%s key=%s queued=%s,%s applied=%s,%s skipped=%s,%s "
 				"mq=%d kq=%d aq=%d tgt=%s res=%d,%d giveups=%s emu=%d",
 				std::to_string(m_p_movep), std::to_string(m_p_move),
 				std::to_string(m_p_movea), std::to_string(m_p_key),
 				std::to_string(m_qx), std::to_string(m_qy),
 				std::to_string(m_ax), std::to_string(m_ay),
+				std::to_string(m_skx), std::to_string(m_sky),
 				int(m_mq.size()), int(m_kq.size()), int(m_aq.size()),
 				m_ta_active ? util::string_format("%d,%d", int(m_ta.x), int(m_ta.y)) : std::string("-"),
 				int(m_res_x), int(m_res_y), std::to_string(m_giveups), int(emu_now())));
 		m_p_movep = m_p_move = m_p_movea = m_p_key = 0;
-		m_qx = m_qy = m_ax = m_ay = 0;
+		m_qx = m_qy = m_ax = m_ay = m_skx = m_sky = 0;
 	}
 
 	void heartbeat()
@@ -2696,7 +3022,12 @@ private:
 
 	std::deque<key_entry> m_kq;
 	std::unordered_map<std::string, int> m_kwant;
-	double m_k_next = -1.0;
+	// per-field pacing gates: last APPLIED press/release, emulated seconds
+	std::unordered_map<std::string, double> m_kdown_at;
+	std::unordered_map<std::string, double> m_kup_at;
+	std::string m_key_excl;                       // MAME_CTL_KEY_EXCL port-tag substring
+	std::unordered_set<std::string> m_excl_down;  // matching fields currently applied down
+	double m_excl_up_at = -1e9;                   // last matching release (emu s)
 
 	std::deque<click_entry> m_clickq;
 	click_entry m_click_cur{};
@@ -2735,6 +3066,12 @@ private:
 	double m_gain_margin = 1.10;         // MAME_CTL_GAIN_MARGIN (user rule)
 	std::deque<defer_entry> m_aq;
 	long m_flx = 0, m_fly = 0;               // open-loop fallback origin
+	save_item_handle m_qd_px, m_qd_py, m_qd_pc;  // quadrature emission phase + tick
+	bool m_quad_active = false;
+	long m_qd_prev_pc = -1;
+	double m_last_issue = -1.0;              // emu time of the last issued count
+	long m_pend_x = 0, m_pend_y = 0;         // issued, not yet emission-counted
+	u64 m_corr = 0;                          // settle-corrector re-issues, cumulative
 	bool m_fl_valid = false;
 	bool m_fb_logged = false;
 	long m_res_x = 0, m_res_y = 0;
@@ -2761,6 +3098,8 @@ private:
 	u64 m_p_move = 0, m_p_movep = 0, m_p_movea = 0, m_p_key = 0;
 	u64 m_qx = 0, m_qy = 0, m_ax = 0, m_ay = 0;   // per-period queued/applied counts
 	u64 m_cum_ax = 0, m_cum_ay = 0;
+	u64 m_skx = 0, m_sky = 0;                     // per-period superseded travel
+	u64 m_cum_skx = 0, m_cum_sky = 0;             // cumulative (STAT skipped=)
 	u64 m_giveups = 0;                            // cumulative (rare; must survive)
 	u64 m_hist[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };   // receipt->apply ms buckets
 	steady_tp m_last_input{};
