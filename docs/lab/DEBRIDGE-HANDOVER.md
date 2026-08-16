@@ -335,6 +335,26 @@ the same or a newer build; the other 116 stations are untouched.
    needed on either side: the module parses it with `strtol(..., 0)` (decimal
    and `0x` hex both work, names do not) and `vice_sock.rs` emits decimal. The
    generated table's name column stays a legend, not a wire form.
+9. **`[encode] … N fps` is NOT the emulation rate, and reading it as one costs
+   a day.** It is the rate at which the CONTENT of the mapping changed, so a
+   guest left running an animated program reports ~25-28 fps and a guest at a
+   `READY.` prompt reports ~2 fps — both while the emulator publishes exactly
+   50.0 (PAL) or 60.3 (PET). The capture backend drops a frame whose pixels are
+   bit-identical to the last (`capture/shm.rs`, `changed_bbox`), which is the
+   whole idle-CPU design. Investigated 2026-08-17 as "vic20 emulates at 25 fps,
+   half of PAL"; it was neither an emulation nor a pipeline defect — a visitor
+   had left a screen-filling BASIC loop running, and `SH_RESET_MODE=relaunch`
+   cleared it. **Measure the emulation rate from the mapping's own seqlock**
+   (`sequence`/2 per second, 64-byte IFB1 header) or from the guest's jiffy
+   ratio, never from the encoder. All five VICE stations measured healthy.
+10. **A rig VICE dies the moment its FIFO drain stops.** The paced reader must
+    outlive every measurement in the same run: when it exits, the blocking
+    `wav` write fills the pipe, the emulator stops, and the binary monitor
+    stops answering — which reads exactly like a hung rig. (Same fact as the
+    audio survey's "a stalled VICE services nothing", met again from the other
+    end.) Consequence for probes: **poll the framebuffer, not the monitor.**
+    Hammering `MON_CMD_MEM_GET` in a loop starves the emulation thread of the
+    mainlock, so screen RAM appears frozen while the guest is in fact typing.
 
 ### What the next two still have to discover
 
