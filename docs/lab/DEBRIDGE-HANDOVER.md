@@ -123,22 +123,66 @@ burst without it prints `N ''N`), and the gating covenant was measured
 NOT transfer: VICE snapshots are explicit per-module blocks, so the control
 socket changes no snapshot format and forces no golden rebake.
 
-**Decided by the coordinating session:** the fork exists —
-`github.com/Wnt/vice`, matching the MAME/QEMU fork convention. Both spikes were
-developed on the mirror's moving `main` (3.10-dev); the fork must be pinned to
-a RELEASE tag before any station work. Both `v3.9.0` (what the fleet runs) and
-`v3.10.0` exist. Leaning 3.10.0 — both planes are proven there and the headless
-keymap plumbing differs between versions — accepting that a conversion is then
-also a version bump. NOT yet decided; the audio/checkpoint agent's verdict may
-move it.
+**Audio plane: PROVEN, and the MAME recipe does NOT port.** The working
+recipe is `-sounddev wav -soundarg <fifo> -soundrate 48000 -soundoutput 2`,
+plus the irix-style resident `O_RDWR` holder fd on the FIFO. VICE's header is
+`channels=2 rate=48000 byterate=192000 bits=16` — the daemon's contract exactly
+— and a sustained SID tone measured RMS 2050 against a cold-boot floor of 0.0,
+~188–192 kB/s. The reason to pick `wav` (a *record* device, accepted as
+playback) over the MAME-style `sdl`+disk backend is one flag: VICE marks `sdl`
+`is_timing_source=true`, so pointing it at a pipe makes the PIPE the emulator's
+clock — measured **24 % speed** from the guest's own jiffy counter, and no
+buffer/fragment/pipe-size tuning moved it. `wav`→FIFO runs at 98 %. Cost is a
+44-byte RIFF header (4-byte aligned, so framing survives; the daemon eats ~11
+frames of garbage at open); a ~40-line `soundfifo.c` patch removes even that.
+Traps: without the holder fd, EPIPE kills audio silently and unlogged; a
+stalled VICE services NOTHING, including its own monitor, while still holding
+its port.
 
-**Still unproven: audio and checkpoint** (third agent running), and no station
-conversion should start before those land, the fork is pinned, and a
-`scripts/dev/vice-keymap.py` exists. Other open items from the spikes:
-x128 has two canvases (needs a chip selector; its `SHOT` takes canvas 0 = VDC,
-correct for the 80-column exhibit but must be stated), VICE surfaces are
-native-size so streamhost scales, and key pacing must be re-bisected rather
-than inherited from the bridged values.
+**Checkpoint plane: PROVEN, and better than MAME's.** `dump`/`undump`
+round-tripped on all seven binaries, and restore-at-startup works from the
+command line (`-moncommands <file>` + `-initbreak ready`) with no client
+attached. Unlike MAME there is no silent-garbage failure mode: `src/snapshot.c`
+gates on machine name and per-module version and fails LOUDLY, and the binary
+monitor returns an assertable error code — so nothing here needs the
+`MACHINE_SUPPORTS_SAVE` dance. Consequences to respect: a checkpoint belongs to
+ONE machine type and ONE VICE build, `dump` stores no ROMs, the text
+`-remotemonitor` is dead in a headless build (use `-binarymonitor`), and a
+checkpoint taken mid-note restores SILENT — never bake one inside music. All
+seven documented scenes are silent prompts, so this costs nothing today.
+→ `docs/lab/research/vice-audio-checkpoint-survey.md`
+
+**Decided by the coordinating session:** the fork exists —
+`github.com/Wnt/vice`, matching the MAME/QEMU fork convention — and it is
+pinned to **`v3.10.0`**. Both spikes were developed on the mirror's moving
+`main` (3.10-dev), which is not shippable. 3.9.0 is what the bridged fleet
+runs, but `--enable-headlessui` is a 3.10 feature and all three planes are
+proven on 3.10; the audio and checkpoint findings are version-neutral and did
+not move the decision. A conversion is therefore also a version bump, which is
+acceptable because the `.vkm` keymaps — the thing that actually determines
+character behaviour — carry over.
+
+**Conversion order** (from the survey, adopted): **vic20** first as the
+template (one binary, no media, cold-boot golden, keyboard-only, has a
+demoProgram, and it owns the family's two canonical build landmines: a segfault
+when stdout is not a tty, and `make install` skipping ROMs) → **plus4** (same
+shape; forces the C=+C chord leak, a VICE keymap property, into the open early)
+→ **pet2001 + cbm8032** batched (one `xpet` binary, two models; cbm8032 retires
+the wave's 1600×1200 X root, its biggest simplification) → **cbm2** (mechanical;
+keep its position-based readiness gate) → **c128** (CP/M disk + attach helper;
+restore-to-checkpoint dodges the drive-8 autoboot; its `-remotemonitor` must
+become `-binarymonitor`) → **c64** last (only pointer station, only
+in-application golden, only external media, true-drive emulation).
+
+Remaining before the first station: create the `third_party/vice-kernel-hive`
+submodule at the pinned tag, land both patch branches on it, and write
+`scripts/dev/vice-keymap.py`. Other open items from the spikes: x128 has two
+canvases (needs a chip selector; its `SHOT` takes canvas 0 = VDC, correct for
+the 80-column exhibit but must be stated), VICE surfaces are native-size so
+streamhost scales, key pacing must be re-bisected rather than inherited from
+the bridged values, and the build needs `dos2unix` and `xa65`. Four landmine
+families in the current kiosks (fixed SDL window, black real-fullscreen, xrandr
+root dance, modal ALSA dialog) are bridge artefacts that die with the bridge.
 
 ## atarist
 
@@ -162,3 +206,9 @@ re-measure in high res.
   their `museum.notes` prose still says "bridge tile".
 - Kiosk overlays are retained as `*.debridged-bak`; delete only on the
   operator's word.
+- **Box-sync drift, not ours**: `serve/webroot/gallery-manifest.json`,
+  `serve/golden-manifest.json`, `registry/generated/labctl-declarations.json`,
+  `registry/stations/w2kalpha.json` and a `debridge-arms` darklaunch overlay
+  block the pre-push gate for anyone whose change is unrelated. Whoever owns
+  those live artifacts should reconcile with
+  `scripts/dev/verify-box-sync.sh --all`.
