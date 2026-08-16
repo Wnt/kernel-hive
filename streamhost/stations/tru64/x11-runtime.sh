@@ -11,13 +11,14 @@
 # differs from w2kalpha is the boot path: this tile's flash.rom carries NO
 # arc autoboot script — SRM boots the disk/CD directly (dka0 / dka400).
 #
-# INSTALL PHASE (current): there is NO golden yet. The guest disk
-# $ASSETS/img/tru64.img is the live install target and is mutated IN PLACE —
-# this launcher deliberately does NOT copy it. A relaunch therefore REBOOTS
-# the machine (SRM console; boot resumes whatever the disk holds) and loses
-# only unsynced guest state, not install progress already on disk. After the
-# install completes and a golden is captured, this launcher switches to the
-# w2kalpha shape: reflink-copy the golden per launch, pristine cold boot.
+# SEED PHASE (since 2026-08-16): the install is done and this launcher runs
+# the w2kalpha shape — every launch reflink-copies $ASSETS/img/tru64-seed.img
+# into a throwaway work dir, so each boot is pristine and the seed is never
+# opened for write. The guest auto-logs into CDE (dtlogin's autoLogin
+# resource in /etc/dt/config/Xconfig + passwordless root), so a cold boot
+# lands on the desktop with no greeter — the Tru64 equivalent of w2kalpha's
+# Windows autologon. The install-era disk img/tru64.img is retained as the
+# seed's lineage; nothing reads it at runtime.
 #
 # Installed byte-for-byte as /data/vms/streamhost/stations/tru64/x11-runtime.sh
 # by scripts/streamhost-station.sh --x11. The shared runtime contract
@@ -66,10 +67,29 @@ kill_pidfile() { # $1 = pidfile; kill ONLY the recorded pid, then WAIT for it.
 kill_pidfile "$D/mame.pid"
 kill_pidfile "$D/pumps.pid"
 
-# INSTALL PHASE: run in the asset tree itself — es40.cfg's relative paths
-# (img/tru64.img, img/tru64os.iso, rom/flash.rom) resolve against $ASSETS and
-# every write (install disk, SRM environment in flash.rom) persists.
-cd "$ASSETS" || exit 1
+# Per-launch pristine state, the w2kalpha shape: throwaway work dir + reflink
+# seed copy (COW on ZFS — instant; --sparse keeps the fallback cheap). The
+# guest writes to the copy only; the seed is never opened for write, so every
+# launch is the same cold boot into the autologin CDE desktop.
+#
+# The install phase (2026-08-11/12) ran in the asset tree itself and mutated
+# img/tru64.img in place; that disk — cleanly halted, autologin configured —
+# IS the lineage of img/tru64-seed.img. Set TRU64_SEED to pin a different one.
+# es40.cfg's paths are relative, so they resolve against $WORK here.
+SEED="${TRU64_SEED:-$ASSETS/img/tru64-seed.img}"
+[ -f "$SEED" ] || {
+  echo "FATAL: tru64 seed missing: $SEED" >&2
+  exit 1
+}
+WORK="$D/work"
+rm -rf "$WORK"
+mkdir -p "$WORK/img" "$WORK/rom"
+cp --reflink=auto --sparse=always "$SEED" "$WORK/img/tru64.img"
+ln -sf "$ASSETS/img/tru64os.iso" "$WORK/img/tru64os.iso"
+cp "$ASSETS/rom/"* "$WORK/rom/"
+cp "$ASSETS/es40.cfg" "$WORK/es40.cfg"
+
+cd "$WORK" || exit 1
 rm -f -- "$SHM" "$CTL"
 
 export LD_LIBRARY_PATH="$LIBROOT"
