@@ -352,11 +352,20 @@ afterwards*, and on four of five converted stations it does not:
   and a shorter TED paper area. Reproduced on both a station-baked and a
   rig-baked (`dump`/`undump`, no client) checkpoint, so it is the restore and
   not the bake.
-- **cbm2 / pet2001 / cbm8032** — restoring a CRTC machine's snapshot CHANGES
-  THE PUBLISHED SURFACE: 704×532 → 704×658, 768×432 → 768×552, 1408×1088 →
-  1408×1316. The restored CRTC register state resolves to a different screen
-  size than the one the ROM programs on a cold boot. cbm8032 additionally
-  CORRUPTS THE RUNNING BASIC — the restored screen printed
+- **cbm2 / pet2001 / cbm8032 — THE RESTORE PATH REINITIALISES THE CRTC TO A
+  DIFFERENT REGISTER SET, and the published surface moves with it.** This is
+  the sharp form of the finding, and it is the one to carry: not "restore is
+  unreliable" but "restore lands the CRTC in a different geometry than the ROM
+  programs on a cold boot". Measured, all three:
+
+  | Station | cold boot | after restore |
+  |---|---|---|
+  | cbm2 | 704×532 | **704×658** |
+  | pet2001 | 768×432 | **768×552** |
+  | cbm8032 | 1408×1088 | **1408×1316** |
+
+  A live station whose surface moves on reset is not shippable on its own, and
+  cbm8032 additionally CORRUPTS THE RUNNING BASIC — the restored screen printed
   `?illegal quantity error in  0` under the ready prompt, measured on the live
   station.
 - **vic20** — holds. Stable at 20 M, 45 M and 120 M cycles, which is why the
@@ -372,6 +381,28 @@ boots were measured stable to 120 M cycles on every machine.
 Their `sta/golden.vsf` files are shelved on the box as
 `golden.vsf.unusable-20260816`, not deleted, in case someone wants to chase the
 restore bug on the fork.
+
+### OPEN RISK, and it lands on c64
+
+`VICE_NATIVE_CHECKPOINT=0` worked for these four for ONE reason only: their
+scenes are untouched cold boots, so a cold boot reproduces them exactly.
+**c64's golden is IN-APPLICATION — the GEOS desktop — and a cold boot cannot
+reproduce it.** The fallback that saved this wave is therefore NOT available to
+c64. If c64's checkpoint does not hold, that station needs a different answer
+entirely (curated post-boot typing the way armeval re-types its supervisor
+lines, an attached image that boots to the scene, or keeping c64 bridged), and
+the worst outcome is discovering it at the end of the conversion.
+
+**Whoever takes c64 should test its restore FIRST, before writing a stanza.**
+The test is cheap and needs no station: bake a checkpoint in a scratch rig with
+`dump`, restore it with `undump`, and read the shm mapping at 20 M, 45 M and
+120 M cycles. If the geometry or the scene moves, stop and re-plan the station
+rather than the stanza. c64 is VIC-II like vic20, the one family member whose
+restore held, so there is reason for optimism — but vic20 is a sample of one.
+
+c128's VDC is CRTC-family, so assume its restore moves the surface until
+measured otherwise; and with `CHECKPOINT=0` its CP/M disk's drive-8 autoboot is
+no longer dodged by restore-to-checkpoint, which has to be re-planned too.
 
 **Two additions to the shared builder**, both earned by this wave and both
 available to c128 and c64:

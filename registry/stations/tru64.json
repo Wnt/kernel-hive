@@ -151,7 +151,7 @@
     "snapshot": null,
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "Tru64 UNIX 5.1B, CDE desktop with dtlogin autologin (root), 1024x768, in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. resetMode=relaunch: every reset reflink-copies assets/tru64/checkpoint/tru64.img and restores the checkpoint/tru64.axp savestate baked from it (~3 s to the desktop); with no checkpoint staged it cold-boots img/tru64-seed.img (~7-10 min). Keyboard PASS = SRM console echo and CDE navigation over ctlsock, framebuffer-proven. Mouse PASS = MOVEA measured against the guest's own XQueryPointer (exact on even coordinates, 1 px short on odd) and a MOVEA+DOWN1/UP1 pressing a CDE button, 2026-08-17. Instant checkpoint restore 2026-08-16."
+    "fixture": "Tru64 UNIX 5.1B, CDE desktop with dtlogin autologin (root), 1280x1024 (X -screen, 2026-08-17), in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. resetMode=relaunch: every reset reflink-copies assets/tru64/checkpoint/tru64.img and restores the checkpoint/tru64.axp savestate baked from it (~3 s to the desktop); with no checkpoint staged it cold-boots img/tru64-seed.img (~7-10 min). Keyboard PASS = SRM console echo and CDE navigation over ctlsock, framebuffer-proven. Mouse PASS = MOVEA measured against the guest's own XQueryPointer (exact on even coordinates, 1 px short on odd) and a MOVEA+DOWN1/UP1 pressing a CDE button, 2026-08-17. Instant checkpoint restore 2026-08-16."
   },
   "migrationExceptions": []
 }

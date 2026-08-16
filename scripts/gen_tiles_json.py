@@ -48,6 +48,18 @@ def pointer_mode(env):
     # Keyboard-only exhibits (mpf2) run the daemon with no pointer sink at all.
     if backend == "disabled":
         return "none"
+    if backend and backend != "dbus":
+        # Every remaining in-emulator backend (mamesock on irix/w2kalpha/tru64
+        # and armeval, vicesock on the native VICE stations) carries NO pointer
+        # semantic in station.env: the emitter writes SH_INPUT_BACKEND *instead
+        # of* SH_POINTER, and one backend serves both the absolute-pointer
+        # stations and the keyboard-only ones. Guessing "abs" made every
+        # keyboard-only station of that kind look like drift, and one such
+        # station refused regeneration for all 62. The registry is the authority
+        # here — stations-registry.py re-derives pointer_mode from the
+        # pointer/device ledger and fails ITS build on disagreement — so report
+        # "no observation" and let the declaration stand.
+        return None
     # Legacy SH_INPUT_BACKEND=dbus still needs SH_POINTER to distinguish abs/rel.
     return env.get("SH_POINTER", "abs")
 
@@ -138,6 +150,12 @@ def main():
             "udp_port": int(env["SH_PORT"]) if env.get("SH_PORT", "").isdigit() else None,
         }
         for key, value in observed.items():
+            # A None here means station.env cannot express this field (see
+            # pointer_mode for mamesock); that is "no observation", not
+            # "observed null", so there is nothing to contradict the declaration.
+            if value is None and key == "pointer_mode":
+                observed[key] = declared.get(key)
+                continue
             if declared.get(key) != value:
                 raise SystemExit(f"declared/live mismatch {t}.{key}: declared={declared.get(key)!r} live={value!r}")
         if warpd_port is not None and declared.get("warpd_port") != warpd_port:
