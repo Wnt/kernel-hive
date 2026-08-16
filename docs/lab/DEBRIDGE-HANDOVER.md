@@ -86,8 +86,28 @@ the terminology migration, but other agents were mid-flight in those files.
    waiting press — the one reordering that is required, because nothing else
    can unblock it. Barriers must be raised only by an edge waiting on its own
    dwell, never by an edge waiting on a barrier, or the fix is a second
-   deadlock. **MAME's ctlsock has the same serializer and has been audited for
-   neither.**
+   deadlock.
+
+   **MAME's ctlsock was audited on 2026-08-17 and carried the deadlock**
+   (`5effc7f`). Same signature: a browser-shaped burst of `print 12+34` with
+   real ROLLOVER (hold 110 ms > pace 90 ms) applied **1 of 24 edges and left
+   `kq=23` forever** on the dragon32 and bbcmicro rigs, while the identical 24
+   edges without overlap applied 24/24 — including at a 40 ms pace, 2.5x the
+   module's own 80/80 ceiling. It now runs the same three barriers.
+   The *too loose* half could not occur there (the strictness that deadlocks
+   also prevented it), but the SYMPTOM did, by a different road: with real
+   rollover the next character's Shift legitimately arrives while the previous
+   key is still HELD, and exclusive-scan had deferred that key's press, so the
+   guest had not scanned it yet when the level changed — `PRINT 1"÷34`,
+   reproducible with the EXCL gate switched OFF, which is what proves it is
+   OUR PACING showing through and not the queue order. So on ctlsock **a
+   modifier press also waits for an empty matrix** (raising the press barrier
+   while it waits, and never blocking the release that clears it) — `864f06c`.
+   A held modifier still never counts as matrix-busy, so chords are unchanged.
+   The tool that produced the evidence is `/data/vms/soltest/ctlaudit`
+   (`rig.sh`, `burst.py`): a fire-and-forget burst on a wall clock, with
+   `--hold` > `--period` as the switch that turns rollover on. A synchronous
+   driver cannot see either defect.
 4. **Checkpoint restore only works where the driver has `MACHINE_SUPPORTS_SAVE`.**
    bbcb/zx81/kc85_4/spectrum lack it and restored garbage (bbcb killed the
    process; kc85_4 came back black). Those five run `MAME_NATIVE_CHECKPOINT=0`
