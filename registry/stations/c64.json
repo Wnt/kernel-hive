@@ -169,13 +169,13 @@
   },
   "reset": {
     "stationDir": "c64",
-    "pointer": "rel",
+    "pointer": "none",
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "PASS",
-    "keyboard": "UNVERIFIED",
-    "fixture": "C64 GEOS 2.0 deskTop with COMM 1351 active in VICE x64sc; browser absolute coordinates translated to tablet-free PS/2 relative motion (vmport=off); cursor tracking and CONFIGURE-icon click certified 2026-07-16."
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "C64 GEOS 2.0 deskTop, HOST-NATIVE: VICE 3.10.0's x64sc runs on the host, headless, with true drive emulation on drive 8 (-drive8truedrive -autostart-handle-tde), and publishes the emulated screen straight into the shm mapping at 768x544 (-VICIIdsize). resetMode=relaunch: the launcher restarts x64sc and restores sta/golden.vsf through the monitor's own playback file (-moncommands + -initbreak ready), with the same GEOS-1351.D64 re-attached via -8, because a snapshot stores the drive's state but not its media. THE ONLY IN-APPLICATION SCENE IN THE VICE WAVE: a cold boot reaches BASIC, not a deskTop, so this is the station that actually needed the checkpoint plane to work; restore verified live at 768x544 with 256429 lit / 258645 non-dominant / 315 colours, the bake's own numbers. KEYBOARD-ONLY as of 2026-08-17: the bridged station's COMM 1351 mouse is NOT wired on the host-native path (no pointer verb in vicectl or vice_sock.rs), so the mouse certification of 2026-07-16 no longer applies and wiring it is scoped follow-up work. The keyboard path was proven by typing PRINT 12+34 through vicectl into a cold-booted rig of this station's own binary and reading ' 46' off the shm framebuffer, because the live deskTop echoes no keystrokes and so cannot show a keyboard check itself. SID sound -> FIFO."
   },
   "migrationExceptions": [
     "spa-pointer-rel"
