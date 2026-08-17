@@ -136,6 +136,7 @@ deploy() {
   $SSH "cat > $SERVE_DIR/reset-auth.sh && chmod +x $SERVE_DIR/reset-auth.sh" <"$REPO/scripts/serve/reset-auth.sh"
   $SSH "cat > $SERVE_DIR/check-stream-tickets.py" <"$REPO/scripts/serve/check-stream-tickets.py"
   $SSH "cat > $SERVE_DIR/pen-trace.py" <"$REPO/scripts/serve/pen-trace.py"
+  $SSH "cat > $SERVE_DIR/key-trace.py" <"$REPO/scripts/serve/key-trace.py"
   publish_manifests
   msg "deployed."
 }

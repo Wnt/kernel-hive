@@ -144,8 +144,8 @@ box_sync_load_pairs() {
   # run when a station will not connect or a pen feels wrong, reset-auth.sh is the
   # guarded path for the account database that must never be rm'd, and the
   # requirements pair is what decides whether the labhost venv matches the repo.
-  for name in check-stream-tickets.py pen-trace.py reset-auth.sh sync-venv.sh \
-    test-clientlog.sh requirements.in requirements.txt; do
+  for name in check-stream-tickets.py pen-trace.py key-trace.py reset-auth.sh \
+    sync-venv.sh test-clientlog.sh requirements.in requirements.txt; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
   # The auth plane (session gate, passkeys, tickets, and its UI), as a TREE
