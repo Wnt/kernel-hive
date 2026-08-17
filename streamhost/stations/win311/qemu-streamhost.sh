@@ -15,11 +15,23 @@ rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock"
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 LOADVM=""
 qemu-img snapshot -l "$D/win311-golden.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
+# Patched SeaBIOS: INT 16h "check keystroke" returns IF=1 like the IBM AT BIOS.
+# Stock SeaBIOS hands DOS POWER.EXE's INT 16h chain IF=0 back, WfW's VMM copies
+# that into the System VM and the guest runs with interrupts disabled until reset
+# (docs/lab/win311-interrupts-disabled-freeze.md). Built by
+# scripts/provision/build-seabios-int16if.sh. ROM bytes live in the vmstate, so
+# the golden MUST be re-baked from a cold boot whenever this file changes.
+BIOS=/data/vms/streamhost/firmware/bios-256k-int16if.bin
+[ -s "$BIOS" ] || {
+  echo "win311: missing $BIOS — run scripts/provision/build-seabios-int16if.sh" >&2
+  exit 1
+}
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
 nohup qemu-system-i386 \
   -name streamhost-win311 \
   -accel tcg -m 64 -smp 1 \
   -machine pc-i440fx-11.0 -cpu pentium \
+  -bios $BIOS \
   -rtc base=localtime \
   -boot c \
   $LOADVM \

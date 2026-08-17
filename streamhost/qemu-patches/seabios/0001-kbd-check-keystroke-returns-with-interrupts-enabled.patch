@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kernel-hive <wnt@example.com>
+Date: Mon, 17 Aug 2026 19:06:19 +0300
+Subject: [PATCH] kbd: return from the check-keystroke functions with
+ interrupts enabled
+
+The IBM AT BIOS executes STI on entry to INT 16h and returns from the
+"check keystroke" functions (AH=01h/11h) via RET 2, so the caller always
+gets IF=1 back regardless of the IF it pushed.  DOS resident software
+relies on that: MS-DOS 6 POWER.EXE chains INT 16h with "pushf; call far"
+while IF is still clear (it was itself entered through INT), then returns
+to its own caller with RETF 2 to hand back ZF, which also hands back IF.
+
+SeaBIOS returns via iretw with the pushed IF, so through such a chain the
+caller ends up with interrupts disabled.  Under Windows for Workgroups
+3.11 (386 enhanced mode) that IF=0 is copied back into the protected-mode
+System VM after every keyboard-driver INT 16h poll and, when the running
+app never yields, the guest runs with IF clear until reset (kernel-hive:
+the win311 station freeze).
+
+Set F_IF for the non-blocking dequeue, matching the AT BIOS contract.
+---
+ src/kbd.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/src/kbd.c b/src/kbd.c
+index 15e5ae7..9e8d5fc 100644
+--- a/src/kbd.c
++++ b/src/kbd.c
+@@ -55,6 +55,16 @@ static void
+ dequeue_key(struct bregs *regs, int incr, int extended)
+ {
+     yield();
++    // The IBM AT BIOS executes STI on entry and returns from the
++    // "check keystroke" functions (01h/11h) via RET 2, so the caller
++    // always gets IF=1 back regardless of the IF it pushed.  DOS
++    // resident software (e.g. MS-DOS 6 POWER.EXE) chains INT 16h with
++    // "pushf; call far" while IF is clear and then returns to its own
++    // caller with RETF 2, relying on this to re-enable interrupts.
++    // Returning the pushed IF instead leaves such callers with
++    // interrupts disabled for good (kernel-hive: WfW 3.11 wedge).
++    if (!incr)
++        regs->flags |= F_IF;
+     u16 buffer_head;
+     u16 buffer_tail;
+     for (;;) {
+-- 
+2.47.3
+

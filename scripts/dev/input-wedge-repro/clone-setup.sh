@@ -5,6 +5,17 @@
 # namespaced soltest dir with private sockets and its own pidfile. The guest
 # DEVICE SET is byte-for-byte the live one (so `loadvm golden` still matches);
 # only the host-side display/audio BACKEND differs, which is not part of vmstate.
+#
+# The generated launch.sh honours, at launch time:
+#   COLD=1        cold-boot instead of `-loadvm golden`
+#   SNAP=<tag>    restore a different internal snapshot
+#   BIOS=<file>   ROM to boot; default is the live station's patched SeaBIOS
+#                 (/data/vms/streamhost/firmware/bios-256k-int16if.bin).
+#                 BIOS=stock boots QEMU's stock ROM — the one the freeze
+#                 reproduces on. NOTE: a golden baked on one ROM restores THAT
+#                 ROM's bytes whatever -bios says (pc.bios is in the vmstate),
+#                 so compare ROMs on COLD=1 boots only.
+#   QEMU_BIN=...  alternative qemu binary;  QEMU_EXTRA='...'  extra args (-d int …)
 set -euo pipefail
 
 NS="${NS:-w311frz-a1}"
@@ -30,11 +41,18 @@ if [ "\${COLD:-0}" != 1 ]; then
   qemu-img snapshot -l "\$D/win311-golden.qcow2" 2>/dev/null | grep -qw "\${SNAP:-golden}" \
     && LOADVM="-loadvm \${SNAP:-golden}"
 fi
+BIOS="\${BIOS:-/data/vms/streamhost/firmware/bios-256k-int16if.bin}"
+BIOSARG=""
+if [ "\$BIOS" != stock ]; then
+  [ -s "\$BIOS" ] || { echo "missing \$BIOS (BIOS=stock for QEMU's own ROM)" >&2; exit 1; }
+  BIOSARG="-bios \$BIOS"
+fi
 # shellcheck disable=SC2086
-nohup qemu-system-i386 \
+nohup \${QEMU_BIN:-qemu-system-i386} \${QEMU_EXTRA:-} \
   -name w311-freeze-repro-$NS \
   -accel tcg -m 64 -smp 1 \
   -machine pc-i440fx-11.0 -cpu pentium \
+  \$BIOSARG \
   -rtc base=localtime \
   -boot c \
   \$LOADVM \

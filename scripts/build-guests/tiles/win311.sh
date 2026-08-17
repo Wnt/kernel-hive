@@ -140,6 +140,13 @@ FIXTURE_D="${FIXTURE_DIR}/games-golden.qcow2"
 VERIFY="${VERIFY:-1}"            # VERIFY=0 to skip the framebuffer boot
 VERIFY_WAIT="${VERIFY_WAIT:-90}" # WfW 3.11 under TCG needs ~60-90 s to desktop
 QEMU_BIN="${QEMU_BIN:-qemu-system-i386}"
+# Patched SeaBIOS (INT 16h "check keystroke" returns IF=1 like the IBM AT BIOS).
+# The rtts base loads DOS POWER.EXE for CPU idling; under stock SeaBIOS its
+# INT 16h chain hands WfW's VMM IF=0 back and the guest ends up running with
+# interrupts disabled (docs/lab/win311-interrupts-disabled-freeze.md). The live
+# launcher boots this ROM, and the ROM bytes are part of the vmstate, so the
+# golden MUST be baked on it too. Built by scripts/provision/build-seabios-int16if.sh.
+WIN311_BIOS="${WIN311_BIOS:-/data/vms/streamhost/firmware/bios-256k-int16if.bin}"
 
 # Unique, namespaced runtime handles (never reused across concurrent builds)
 RUN_DIR="${GUEST_DIR}/.build-run.$$"
@@ -590,8 +597,18 @@ log "framebuffer-verify: cold-booting pinned pc-i440fx-11.0 fixture (VNC :${VNC_
 # Match the live launcher's guest-visible device set and pinned machine type.
 # Display/audio backends are headless here, but the cirrus, SB16, NE2K, IDE and
 # COM1 devices exactly match qemu-streamhost.sh for loadvm compatibility.
+BIOS_ARGS=()
+if [[ -s "$WIN311_BIOS" ]]; then
+  BIOS_ARGS=(-bios "$WIN311_BIOS")
+elif [[ "$BAKE_GOLDEN" -eq 1 ]]; then
+  log "VERIFY FAIL: $WIN311_BIOS missing — a golden baked on the stock SeaBIOS re-introduces the interrupts-disabled freeze; run scripts/provision/build-seabios-int16if.sh"
+  exit 2
+else
+  log "WARN: $WIN311_BIOS missing — verify boot uses the stock SeaBIOS (no golden is baked in this mode)"
+fi
 nice -n15 "$QEMU_BIN" \
   -machine pc-i440fx-11.0 -accel tcg -cpu pentium -m 64 -smp 1 \
+  "${BIOS_ARGS[@]}" \
   -rtc base=localtime -boot c \
   -drive "file=${VERIFY_C},format=${VERIFY_C_FMT},if=ide" \
   -drive "file=${VERIFY_D},format=${VERIFY_D_FMT},if=ide,index=1" \
