@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { PosterDoc } from '../types';
 
+// '/' for the live gallery, '/staging/<session>/' for a staged UI
+// (scripts/dev/stage.sh) whose runtime documents are rendered from that
+// session's registry. Read defensively: the registry checks import this file
+// under plain node, where import.meta.env does not exist.
+const RUNTIME_BASE: string = (import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
+
+
 // Runtime poster prose. /poster-docs.json is rendered from registry/posters/*.md
 // and published to the webroot by `serve-https-spa.sh manifests`, so poster copy
 // edits go live on a browser refresh with no UI rebuild. Nothing is bundled:
@@ -20,7 +27,7 @@ function isDocsFile(value: unknown): value is DocsFile {
 
 async function fetchDocs(): Promise<Record<string, PosterDoc>> {
   try {
-    const response = await fetch(`${import.meta.env.BASE_URL}poster-docs.json`, { cache: 'no-cache' });
+    const response = await fetch(`${RUNTIME_BASE}poster-docs.json`, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const parsed: unknown = await response.json();
     if (!isDocsFile(parsed)) throw new Error('schema validation failed');

@@ -1,6 +1,13 @@
 import type { ArchetypeId, Transport } from '../three/archetypeRegistry';
 import type { RuntimeVMManifestEntry } from '../types';
 
+// '/' for the live gallery, '/staging/<session>/' for a staged UI
+// (scripts/dev/stage.sh) whose runtime documents are rendered from that
+// session's registry. Read defensively: the registry checks import this file
+// under plain node, where import.meta.env does not exist.
+const RUNTIME_BASE: string = (import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
+
+
 export interface GalleryManifest {
   schemaVersion: 1;
   entries: RuntimeVMManifestEntry[];
@@ -103,9 +110,9 @@ export function validateGalleryManifest(value: unknown): GalleryManifest | null 
 // manifest. An empty lineup is the honest, loud failure.
 export async function loadGalleryManifest(fetcher: FetchLike = fetch): Promise<RuntimeVMManifestEntry[]> {
   try {
-    // BASE_URL is '/' live and '/staging/<session>/' for a staged UI, whose
+    // RUNTIME_BASE is '/' live and '/staging/<session>/' for a staged UI, whose
     // manifest is rendered from that session's registry, not the live one.
-    const response = await fetcher(`${import.meta.env.BASE_URL}gallery-manifest.json`, { cache: 'no-cache' });
+    const response = await fetcher(`${RUNTIME_BASE}gallery-manifest.json`, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const runtime = validateGalleryManifest(await response.json());
     if (!runtime) throw new Error('schema validation failed');
