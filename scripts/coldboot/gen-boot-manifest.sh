@@ -26,7 +26,11 @@ mkdir -p "$BOOT_WEBROOT"
 TILES=("$@")
 if [ "${#TILES[@]}" -eq 0 ]; then
   for d in "$BOOTREC_STAGING_ROOT"/*/; do
-    [ -f "${d}boot.json" ] && TILES+=("$(basename "$d")")
+    id="$(basename "$d")"
+    # station ids only — a re-record keeps its predecessor as <id>.bak-<when>/,
+    # complete with boot.json, and that must never publish as a station.
+    [[ "$id" =~ ^[a-z0-9_-]+$ ]] || continue
+    [ -f "${d}boot.json" ] && TILES+=("$id")
   done
 fi
 [ "${#TILES[@]}" -gt 0 ] || br_die "no staged tiles (need $BOOTREC_STAGING_ROOT/<id>/boot.json)"

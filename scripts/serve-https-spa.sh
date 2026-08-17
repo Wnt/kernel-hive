@@ -6,13 +6,14 @@
 # SAME-ORIGIN signaling JSON for the registry's production streamhost stations.
 #
 # It deploys only the UI entries present in dist/ and leaves other webroot
-# content (such as boot-replay videos under boot/) in place. It does not manage
+# content in place and republishes boot/ (boot-replay videos, baked on the box —
+# see publish_boot) from the box staging every time. It does not manage
 # the streamhost station processes or any Proxmox guests.
 #
 # Runs from a workstation or the dev box (needs ssh to the host). Sub-commands:
 #   build     npm run build in spa/
 #   deploy    push built dist + server + ca script to the host
-#   manifests publish generated tiles.json + gallery-manifest.json (no UI build)
+#   manifests publish generated tiles.json + gallery-manifest.json + boot/ (no UI build)
 #   cert      mint/refresh the local-CA leaf on the host, pull rootCA.pem here
 #   up        (cert + deploy-if-needed +) start the HTTPS server
 #   down      stop the HTTPS server by pidfile
@@ -58,6 +59,7 @@ GOLDEN_MANIFEST_SRC="$REPO/build/registry/golden-manifest.json"
 
 # host-side layout
 SERVE_DIR="/data/vms/streamhost/serve"
+BOX_REPO="${BOX_REPO:-/data/kernel-hive}" # the box checkout (scripts/dev/box-repo.sh)
 WEBROOT="$SERVE_DIR/webroot"
 HOST_PKI="$SERVE_DIR/pki"
 TILES="$SERVE_DIR/tiles.json"
@@ -138,7 +140,25 @@ deploy() {
   $SSH "cat > $SERVE_DIR/pen-trace.py" <"$REPO/scripts/serve/pen-trace.py"
   $SSH "cat > $SERVE_DIR/key-trace.py" <"$REPO/scripts/serve/key-trace.py"
   publish_manifests
+  publish_boot
   msg "deployed."
+}
+
+# Republish the boot-replay assets (/boot/<id>/boot.mp4 … + /boot/index.json).
+# They are baked ON labhost (scripts/coldboot/, staging /data/vms/streamhost/
+# boot-rec/) and never enter git or the Vite bundle, so nothing off-box can
+# restore them — and a wholesale webroot swap once dropped the whole tree,
+# leaving every boot-video station 404ing for a week. gen-boot-manifest.sh is an
+# idempotent rsync + index merge, so running it on every deploy costs nothing
+# and makes the published tree a function of the staging dir again. No staging
+# on this box (fresh install) is not an error; a failing publish is.
+publish_boot() {
+  msg "republishing boot-replay assets from the box staging -> $WEBROOT/boot/"
+  $SSH "set -e; \
+    staging=/data/vms/streamhost/boot-rec; gen=$BOX_REPO/scripts/coldboot/gen-boot-manifest.sh; \
+    ls \"\$staging\"/*/boot.json >/dev/null 2>&1 || { echo '[serve-https] no staged boot recordings on this box; boot/ left as is'; exit 0; }; \
+    test -x \"\$gen\" || { echo \"[serve-https] ERROR: \$gen missing — sync the box checkout (scripts/dev/box-repo.sh)\" >&2; exit 1; }; \
+    WEBROOT=$WEBROOT \"\$gen\""
 }
 
 # Publish the two registry-generated runtime JSON documents with atomic per-file
@@ -275,7 +295,10 @@ EOF
 case "${1:-up}" in
   build) build ;;
   deploy) deploy ;;
-  manifests) publish_manifests ;;
+  manifests)
+    publish_manifests
+    publish_boot
+    ;;
   cert) cert ;;
   trust) trust ;;
   up) up ;;
