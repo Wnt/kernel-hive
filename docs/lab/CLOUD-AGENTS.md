@@ -56,6 +56,30 @@ both doors.
 | Agent identity | ed25519, comment `cloud-agent@osgallery-lab (jules)` |
 | Login | `root` (labhost is driven as root — `labctl`, QMP sockets, systemd) |
 
+## CT950, `/data`, and `labrun`
+
+`ssh lab` lands you on labhost, not in CT950 — CT950 is a separate container
+(`ssh lab 'pct exec 950 -- <cmd>'`). Since 2026-08-17 CT950 has `/data/vms`,
+`/data/kernel-hive`, `/data/gallery-guests`, `/data/isos` and
+`/data/media-archive` bind-mounted (`pct` mountpoints, survive restarts), so a
+session running inside CT950 reads/edits box files directly with local tools
+— no `scp`, no heredoc round trip for a probe. **Process control is still a
+labhost-only door**: `systemctl`, `qm`, `pct`, `clone-guard`, `chroot-guard`
+and any kill act on guests only via `ssh lab` from CT950 (or the cloud-agent
+tunnel above), never by reaching into `/data` and touching a live process's
+files directly.
+
+For anything past a one-liner, use `scripts/dev/labrun <<'EOF' … EOF` (or
+`labrun file.sh args`) instead of a hand-quoted `ssh lab 'bash -s' <<EOF`
+heredoc: it ships the script by stdin with no local quoting, runs it under
+`set -euo pipefail` with `$KH_SESSION` forwarded, uses `ssh -n` so a loop of
+calls cannot eat the outer script's stdin, and keeps the exact script on
+labhost under `/run/kh-labrun/<session>/` on failure (`--keep`) for a replay.
+Never nest `ssh lab` inside `ssh lab`. `~/.ssh/config` on CT950 sets
+`ControlMaster auto` / `ControlPersist` for `Host lab`, so a warm connection
+is ~14 ms instead of ~0.4 s per hop — the same win applies to a cloud agent's
+tunnelled `ssh lab` once it is configured the same way.
+
 ## Install / re-run
 
 Everything is idempotent; re-run after a key rotation, a port change, or a

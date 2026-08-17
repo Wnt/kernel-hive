@@ -145,6 +145,24 @@ back to `~/.opencode/bin/opencode` and reads the key file itself; override
 either with `OPENCODE_HOME` / `OPENROUTER_KEY_FILE`. **Do not re-export these in
 a brief or a wrapper** — if the fallback ever stops working, fix it there once.
 
+## What qwenit is for, and what it is not
+
+**Offload only bounded, mechanical tasks with a machine-checkable
+done-condition** — a rename sweep, a lint-fixup pass, a mechanical
+translation of N files against a fixed template, anything a script could
+grade pass/fail without a human reading prose. **Never offload open-ended
+debugging where "is this my code or the platform underneath it" has to be
+judged** — that judgment call is exactly where a 27B model without this
+repo's accumulated context burns money re-deriving conclusions the brief
+already contained, or worse, confidently blaming the wrong layer.
+
+Cost of getting this wrong, measured: a SinclairQL keyboard-lag task run
+qwenit on 2026-08-17 spent **$2.47 over 96 minutes** chasing whether the lag
+was in the guest, the emulator, or the pacing-queue floor in the emulator ctl
+module — a diagnosis call, not a mechanical task — and did not reach a
+verdict a human could act on. Route that class of work to Claude (or do it
+yourself); reserve qwenit for the mechanical tail once the diagnosis is done.
+
 ## Deliberately not built
 
 `harvest` and `land` subcommands. The predecessor repo's equivalent accumulated
