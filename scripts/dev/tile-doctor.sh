@@ -110,7 +110,7 @@ echo
 echo "SPA WIRING (hand-maintained — the generator does not write these)"
 for pair in \
   "spa/src/ui/keyboard/keyboardProfiles.ts:keyboard profile (OS_FAMILY)" \
-  "spa/src/scene/machines.ts:machine assembly" \
+  "spa/src/scene/assembliesByTile.ts:machine assembly" \
   "spa/src/scene/machineIdentity.ts:exhibit identity (build-only type check!)"; do
   f="${pair%%:*}"
   what="${pair#*:}"
