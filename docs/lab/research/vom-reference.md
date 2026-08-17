@@ -73,6 +73,20 @@ unzip -p ~/virtualosmuseum/virtual_os_museum-2026.06.12-full.zip \
 `/dev/nbd*`, no `/dev/loop-control` and no `/dev/fuse`. Serve it from wherever
 the file is and attach from labhost, which has the kernel side:
 
+**Simpler, when the file is on CT950:** labhost can already see the container's
+filesystem, so no network serve is needed — point `qemu-nbd` straight at the
+path and skip the first half:
+
+```bash
+# on labhost, one step:
+modprobe nbd max_part=8
+qemu-nbd -c /dev/nbd1 --read-only --format=vdi \
+  /data/subvol-950-disk-0/home/wnt/vom-extract/guest_images.vdi
+mount -o ro /dev/nbd1p1 /mnt/vom      # btrfs; plain -o ro, NOT ext4's noload
+```
+
+The network form still applies if the file lives somewhere labhost cannot see:
+
 ```bash
 # on the box holding the file (userspace server, no kernel module needed):
 qemu-nbd --read-only --format=vdi --port 10809 --bind 0.0.0.0 --persistent --fork \
@@ -80,10 +94,16 @@ qemu-nbd --read-only --format=vdi --port 10809 --bind 0.0.0.0 --persistent --for
 # on labhost:
 modprobe nbd max_part=8
 qemu-nbd -c /dev/nbd0 --read-only nbd://<that-box-ip>:10809
-mount -o ro /dev/nbd0p1 /mnt/vom      # btrfs; plain -o ro, NOT ext4's noload
-# afterwards
-umount /mnt/vom && qemu-nbd -d /dev/nbd0
+mount -o ro /dev/nbd0p1 /mnt/vom
 ```
+
+**Teardown is `umount /mnt/vom && qemu-nbd -d /dev/nbd1`** — but note the
+mount-guard hook refuses `umount` on labhost, so tearing this down needs the
+operator. The collection is read-only and idle when nothing is reading it, so
+leaving it attached between sessions is cheap and is the operator's stated
+preference; it goes away at the next reboot.
+
+**Currently attached** (2026-08-17): `/dev/nbd1` → `/mnt/vom`, read-only.
 
 What you can and cannot open once mounted: their **config directories are plain
 files** (`cfg.emu`, `PASSWD`, `INFO/info`, the disk image) and readable, but a
