@@ -127,8 +127,38 @@ touches() {
   printf '%s\n' "$CHANGED" | grep -qE "$1"
 }
 
-echo "pre-push-gate: running quality gate (SKIP_GATE=1 to bypass)"
+echo "pre-push-gate: running quality gate (SKIP_GATE=1 to bypass; GATE_VERBOSE=1 for full stage output)"
 fail=0
+FAILED_STAGES=()
+GATE_TMP="$(mktemp -d)"
+trap 'rm -rf "$GATE_TMP"' EXIT
+
+# stage <name> <remedy> <cmd...> — run a stage QUIETLY. A green stage is one
+# line; a red one shows its last 40 lines (GATE_VERBOSE=1: all) and the remedy.
+# On 2026-08-17 a green push printed 217 lines (100 of them the size-exclusion
+# ledger, 95 the registry's BYTE-IDENTICAL roll call) and the FAIL sat at line
+# 211 — three greps to find it. Output is for the failure, not the ceremony.
+stage() {
+  local name="$1" remedy="$2" log="$GATE_TMP/stage.log" rc
+  shift 2
+  ("$@") >"$log" 2>&1
+  rc=$?
+  if [[ "$rc" -eq 0 ]]; then
+    if [[ "${GATE_VERBOSE:-0}" == "1" ]]; then
+      echo "== $name =="
+      sed 's/^/    /' "$log"
+    fi
+    echo "== $name == ok"
+  else
+    echo "== $name == FAIL"
+    if [[ "${GATE_VERBOSE:-0}" == "1" ]]; then sed 's/^/    /' "$log"; else
+      grep -v '^  excl \|^BYTE-IDENTICAL \|^RENDERED \|^  ~ ' "$log" | tail -40 | sed 's/^/    /'
+    fi
+    [[ -z "$remedy" ]] || echo "    → $remedy"
+    FAILED_STAGES+=("$name")
+    fail=1
+  fi
+}
 
 # --- per-language lint: owed only when that language changed in the range -----
 if ! touches '^spa/|\.(ts|tsx|js|jsx|mjs|cjs)$'; then
@@ -136,13 +166,8 @@ if ! touches '^spa/|\.(ts|tsx|js|jsx|mjs|cjs)$'; then
 elif ! have npx; then
   echo "== TS/JS lint == SKIPPED: npx not found (CI covers this)"
 else
-  echo "== TS/JS lint (eslint + knip) =="
-  if (cd spa && npx eslint . --max-warnings=0 && npx knip); then
-    echo "  ok"
-  else
-    echo "  FAIL"
-    fail=1
-  fi
+  stage "TS/JS lint (eslint + knip)" "cd spa && npx eslint . --max-warnings=0 && npx knip" \
+    bash -c 'cd spa && npx eslint . --max-warnings=0 && npx knip'
 fi
 
 # The Rust target dir is an ABSOLUTE BOX PATH (streamhost/.cargo/config.toml:
@@ -176,13 +201,8 @@ elif ! path_writable "$(rust_target_dir)"; then
   echo "     it is the box's shared target tree (streamhost/.cargo/config.toml)."
   echo "     To run it here anyway: CARGO_TARGET_DIR=/tmp/kh-target GATE_FULL=1 …"
 else
-  echo "== Rust lint (fmt + clippy) =="
-  if (cd streamhost && cargo fmt --all --check && cargo clippy --all-targets -- -D warnings); then
-    echo "  ok"
-  else
-    echo "  FAIL"
-    fail=1
-  fi
+  stage "Rust lint (fmt + clippy)" "cd streamhost && cargo fmt --all && cargo clippy --all-targets -- -D warnings" \
+    bash -c 'cd streamhost && cargo fmt --all --check && cargo clippy --all-targets -- -D warnings'
 fi
 
 if ! touches '\.py$'; then
@@ -190,13 +210,8 @@ if ! touches '\.py$'; then
 elif ! have ruff; then
   echo "== Python lint == SKIPPED: ruff not found (CI covers this)"
 else
-  echo "== Python lint (ruff) =="
-  if ruff check scripts && ruff format --check scripts; then
-    echo "  ok"
-  else
-    echo "  FAIL"
-    fail=1
-  fi
+  stage "Python lint (ruff)" "ruff check --fix scripts && ruff format scripts" \
+    bash -c 'ruff check scripts && ruff format --check scripts'
 fi
 
 # Shell: the eligible list is committed-only (no sibling's untracked file), and
@@ -223,13 +238,8 @@ else
   if [[ "${#SH_LIVE[@]}" -eq 0 ]]; then
     echo "== Bash lint == not owed (the range's shell files are deleted or generated)"
   else
-    echo "== Bash lint (shfmt + shellcheck) — ${#SH_LIVE[@]} file(s) from the range =="
-    if shfmt -d "${SH_LIVE[@]}" && shellcheck "${SH_LIVE[@]}"; then
-      echo "  ok"
-    else
-      echo "  FAIL"
-      fail=1
-    fi
+    stage "Bash lint (shfmt + shellcheck, ${#SH_LIVE[@]} file(s))" "shfmt -w <files> && shellcheck <files>" \
+      bash -c 'shfmt -d "$@" && shellcheck "$@"' _ "${SH_LIVE[@]}"
   fi
 fi
 
@@ -237,21 +247,13 @@ fi
 # --committed, not the default union: by push time your own new file is tracked,
 # so a real breach is still caught (proven), while a sibling's untracked
 # in-flight file cannot block a push its author has nothing to do with.
-echo "== file-size budget (--strict --committed) =="
-if node scripts/check-file-size.mjs --strict --committed; then
-  echo "  ok"
-else
-  echo "  FAIL"
-  fail=1
-fi
+stage "file-size budget (--strict --committed)" \
+  "split the file, or (never to hide a breach you caused) size-exclusions.json; stale entries must be deleted" \
+  node scripts/check-file-size.mjs --strict --committed
 
-echo "== generated-file drift =="
-if bash scripts/check-generated-drift.sh; then
-  echo "  ok"
-else
-  echo "  FAIL"
-  fail=1
-fi
+stage "generated-file drift" \
+  "python3 scripts/stations-registry.py generate && make station-registry-check   (never hand-edit generated files)" \
+  bash scripts/check-generated-drift.sh
 
 # --- box state (ONLY when the box is actually reachable) ---
 # A public clone, an offline laptop and GitHub Actions have no `ssh lab`, so
@@ -276,6 +278,7 @@ if ssh -n -o ConnectTimeout=4 -o BatchMode=yes "${LAB:-lab}" true 2>/dev/null; t
       echo "  FAIL — live files differ from the box checkout ($boxsha): changed=$changed new=$newr refused=$refused"
       echo "         → scripts/dev/box-deploy.sh            (plan: which rows, and why)"
       echo "         → scripts/dev/box-deploy.sh --apply    (install the checkout; hand edits are backed up)"
+      FAILED_STAGES+=("box state")
       fail=1
     fi
     if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" "$boxsha" 2>/dev/null; then
@@ -285,6 +288,7 @@ if ssh -n -o ConnectTimeout=4 -o BatchMode=yes "${LAB:-lab}" true 2>/dev/null; t
     # old-style fallback: the box checkout has no box-install.sh yet
     if bash scripts/dev/verify-box-sync.sh; then echo "  ok"; else
       echo "  FAIL — repo and box have drifted; scripts/dev/box-deploy.sh --apply"
+      FAILED_STAGES+=("box state")
       fail=1
     fi
   fi
@@ -293,7 +297,8 @@ else
 fi
 
 if [[ "$fail" != "0" ]]; then
-  echo "pre-push-gate: BLOCKED — fix the failures above (report BLOCKED, not done)."
+  echo "pre-push-gate: BLOCKED — failed: ${FAILED_STAGES[*]}"
+  echo "               fix per the → lines above, then push again (report BLOCKED, not done)."
   echo "               Emergency bypass: SKIP_GATE=1 git push  (never for main)."
   exit 1
 fi
