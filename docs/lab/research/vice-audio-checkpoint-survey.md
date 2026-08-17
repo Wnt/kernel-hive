@@ -63,6 +63,13 @@ its device struct (`src/arch/shared/sounddrv/soundwav.c`) is
 a pure sink whose backpressure paces the writer — exactly the shape the daemon
 wants.
 
+> **SUPERSEDED 2026-08-17 — the header was audible and the blocking write was
+> worse.** The fork now has `soundfifo.c` (`-sounddev fifo`): raw stereo PCM,
+> no header, `is_timing_source=false`, and **non-blocking** — a full pipe drops
+> samples instead of stalling the emulator, which is what a station with no
+> visitor connected always is. See `docs/lab/DEBRIDGE-HANDOVER.md` §The restore
+> moment. The paragraph below is kept as the reasoning that chose `wav` first.
+
 **The 44-byte RIFF header.** `wav_init` writes a header before the PCM. It is
 4-byte aligned, so stereo s16 framing is preserved; the daemon consumes it as 11
 frames of garbage at open (measured peak 28 006 in the first window, then clean).
