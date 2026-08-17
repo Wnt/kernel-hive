@@ -42,14 +42,23 @@ alone**.
 what is deployed on the box, who else is here, what is staged, what is
 stopped/paused, what to run next.
 
-**Every worker gets its own full stack by default.** `scripts/dev/wt.sh new
-<name>` makes a worktree of `/data/kernel-hive` on branch `<name>` at
-`/data/vms/sandbox/<name>/repo` (same path on CT950 and labhost) plus its own
-sandbox dir, build dir, staging slot and claim — fix problems at the right
-location in **your own stack**, never a workaround on someone else's. Merge to
-`main` early; `wt.sh gc` prunes merged sandboxes. `scripts/dev/stage.sh`
-previews a UI/registry change at `/staging/<session>/` on the live origin
-before it goes live.
+**Every task runs in its own full stack; the shared clone is land-only.**
+`scripts/dev/wt.sh new <name>` makes a worktree of `/data/kernel-hive` on
+branch `<name>` at `/data/vms/sandbox/<name>/repo` (same path on CT950 and
+labhost) plus its own sandbox dir, build dir, staging slot and claim. Do ALL
+edits, builds and tests there — fix problems at the right location in **your
+own stack**, never a workaround on someone else's. **Every new task starts
+with `wt.sh new`, including a follow-up after `wt.sh rm`** — the shared clone
+(`/home/wnt/kernel-hive`, or wherever `here.sh` says "shared clone") holds
+NO uncommitted edits, ever: it is where merges land and nothing else (an
+Edit/Write there is refused by the harness hook; `KH_ALLOW_SHARED_EDIT=1`
+overrides for a deliberate orchestrator fix). Land from the sandbox: commit,
+`git push origin <name>`, then either the orchestrator merges, or you do
+`git fetch origin && git merge --ff-only origin/main` (or a `--no-ff` merge)
+in the sandbox and `git push origin HEAD:main`, then
+`scripts/dev/box-deploy.sh --apply`. `wt.sh gc` prunes merged sandboxes.
+`scripts/dev/stage.sh` previews a UI/registry change at `/staging/<session>/`
+on the live origin before it goes live.
 
 **Never experiment on a live station.** Clone under `/data/vms/sandbox/`
 (`wt.sh new` does this for you), keep the SAME device set (`loadvm golden`

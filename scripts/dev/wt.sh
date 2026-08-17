@@ -224,7 +224,7 @@ rm -rf "/data/vms/sandbox/$1"
 kh-claim release sandbox "$1" --force >/dev/null 2>&1 || true
 EOF
   git -C "$BOX_REPO" worktree prune
-  echo "wt.sh: removed $name"
+  echo "wt.sh: removed $name   (next task? wt.sh new <name> — the shared clone is land-only)"
 }
 
 cmd_rm() {
