@@ -10,7 +10,7 @@ mechanically against the Commons API by `scripts/tools/fetch-poster-gallery.py`,
 which refuses any license outside a fixed free-license allowlist. Re-check the
 shipped set at any time with `make poster-gallery-verify`.
 
-**216 images across 47 exhibits.** 111 of them are share-alike
+**204 images across 46 exhibits.** 102 of them are share-alike
 (CC BY-SA): if you redistribute a modified version of one of those images, you
 must license the modification under the same terms. The images are not combined
 with the source code and do not affect the MIT license of the code itself.
@@ -19,17 +19,16 @@ Period advertisements and sales posters are essentially never freely licensed.
 None are redistributed here; where one is relevant it is referenced as an
 outbound link only (2 such link(s) below).
 
-License breakdown: CC BY-SA 4.0 (46), CC BY-SA 3.0 (34), CC BY 2.0 (30), CC BY-SA 2.0 (24), CC0 (22), Public domain (22), CC BY 3.0 (20), CC BY 4.0 (11), CC BY-SA 2.5 (7).
+License breakdown: CC BY-SA 4.0 (40), CC BY-SA 3.0 (33), CC BY 2.0 (30), CC BY-SA 2.0 (23), Public domain (21), CC BY 3.0 (20), CC0 (20), CC BY 4.0 (11), CC BY-SA 2.5 (6).
 
 ## alto
 
 | Image | Author | License | Source |
 |---|---|---|---|
 | `01-xerox-alto-computer.webp` | Maksym Kozlenko | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_computer.jpg) |
-| `02-xerox-alto.webp` | Unknown | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto.jpg) |
-| `03-xerox-alto-mit-rechner.webp` | Joho345 | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_mit_Rechner.JPG) |
-| `04-xerox-alto-at-the-computer-history-museum.webp` | Don DeBold | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_at_the_Computer_History_Museum.jpg) |
-| `05-xerox-alto-keyset.webp` | Vincent Lextrait | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_keyset.jpg) |
+| `02-xerox-alto-mit-rechner.webp` | Joho345 | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_mit_Rechner.JPG) |
+| `03-xerox-alto-at-the-computer-history-museum.webp` | Don DeBold | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_at_the_Computer_History_Museum.jpg) |
+| `04-xerox-alto-keyset.webp` | Vincent Lextrait | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_keyset.jpg) |
 
 ## amiga
 
@@ -84,8 +83,7 @@ License breakdown: CC BY-SA 4.0 (46), CC BY-SA 3.0 (34), CC BY 2.0 (30), CC BY-S
 | `01-acorn-bbc-micro.webp` | simon.inns | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Acorn_BBC_Micro.jpg) |
 | `02-acorn-bbc-model-b-retrosystems-2010.webp` | Soupmeister | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Acorn_BBC_Model_B_-_Retrosystems_2010.jpg) |
 | `03-bbc-micro-model-b-rear-ports.webp` | Barney Livingston | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:BBC_Micro_Model_B_rear_ports.jpg) |
-| `04-bbc-b-econet.webp` | Mincebert | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:BBC_B_Econet.jpg) |
-| `05-model-b-with-arm7tdmi-coprocessor-7020151809.webp` | Trevor Johnson from Bristol, UK | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Model_B_with_ARM7TDMI_coprocessor_(7020151809).jpg) |
+| `04-model-b-with-arm7tdmi-coprocessor-7020151809.webp` | Trevor Johnson from Bristol, UK | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Model_B_with_ARM7TDMI_coprocessor_(7020151809).jpg) |
 
 ## c128
 
@@ -93,9 +91,8 @@ License breakdown: CC BY-SA 4.0 (46), CC BY-SA 3.0 (34), CC BY 2.0 (30), CC BY-S
 |---|---|---|---|
 | `01-commodore-128.webp` | Evan-Amos | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore-128.jpg) |
 | `02-commodore-128-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_128_Tietokonemuseo.JPG) |
-| `03-commodore-128-002.webp` | Public domainPublic domainfalsefalse This work has been released into the public domain by its author, Cbmeeks, at the English Wikipedia project. This applies worldwide. In case this is not legally possible: Cbmeeks grants anyone the right to use this work for any purpose, without any conditions, unless such conditions are required by law. . | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_128_002.jpg) |
-| `04-commodore-128-set-up-with-a-1541-1571-1200-baud-modem-and-two-displays-filtered.webp` | Alex Lozupone | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_128_set-up_with_a_1541,_1571,_1200_baud_Modem,_and_two_displays_(filtered).jpg) |
-| `05-c128-running-cpm.webp` | matthewab2001 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:C128_running_CPM.jpg) |
+| `03-commodore-128-set-up-with-a-1541-1571-1200-baud-modem-and-two-displays-filtered.webp` | Alex Lozupone | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_128_set-up_with_a_1541,_1571,_1200_baud_Modem,_and_two_displays_(filtered).jpg) |
+| `04-c128-running-cpm.webp` | matthewab2001 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:C128_running_CPM.jpg) |
 
 ## c64
 
@@ -110,10 +107,8 @@ License breakdown: CC BY-SA 4.0 (46), CC BY-SA 3.0 (34), CC BY 2.0 (30), CC BY-S
 | Image | Author | License | Source |
 |---|---|---|---|
 | `01-commodore-cbm-610-thomas-cont-a.webp` | Thomas Conté | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_CBM_610_(Thomas_Cont%C3%A9)_A.jpg) |
-| `02-commodore-cbm-610-thomas-cont-closeup.webp` | Thomas Conté | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_CBM_610_(Thomas_Cont%C3%A9)_Closeup.jpg) |
-| `03-1-1111-cbm610-04.webp` | 1-1111 | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:1-1111_CBM610_04.JPG) |
-| `04-cbm610-klein-01.webp` | 1-1111 | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Cbm610_klein_01.jpg) |
-| `05-cbm610-back.webp` | 1-1111 | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:CBM610_back.jpg) |
+| `02-1-1111-cbm610-04.webp` | 1-1111 | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:1-1111_CBM610_04.JPG) |
+| `03-cbm610-back.webp` | 1-1111 | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:CBM610_back.jpg) |
 
 ## cbm8032
 
@@ -130,9 +125,8 @@ License breakdown: CC BY-SA 4.0 (46), CC BY-SA 3.0 (34), CC BY 2.0 (30), CC BY-S
 |---|---|---|---|
 | `01-xeroxworkstation.webp` | William Ward | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:XeroxWorkstation.jpg) |
 | `02-tsd-computer-schreib-und-b-rotechnik-computer-system-xerox-8010-6085-i.webp` | NoRud | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:TSD_Computer-,_Schreib-_und_B%C3%BCrotechnik_Computer_System_Xerox_8010_-_6085_I.jpg) |
-| `03-tsd-computer-schreib-und-b-rotechnik-computer-system-xerox-8010-6085-ii.webp` | NoRud | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:TSD_Computer_-,Schreib_und_B%C3%BCrotechnik_Computer_System_Xerox_8010_-_6085_II.jpg) |
-| `04-tsd-xerox-8010-kol.webp` | Kolossos | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:TSD-Xerox-8010-kol.jpg) |
-| `05-technische-sammlungen-dresden-rechentechnik-068.webp` | Ronny Ueckermann | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Technische_Sammlungen_Dresden_Rechentechnik_068.jpg) |
+| `03-tsd-xerox-8010-kol.webp` | Kolossos | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:TSD-Xerox-8010-kol.jpg) |
+| `04-technische-sammlungen-dresden-rechentechnik-068.webp` | Ronny Ueckermann | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Technische_Sammlungen_Dresden_Rechentechnik_068.jpg) |
 
 ## decos
 
@@ -178,20 +172,9 @@ License breakdown: CC BY-SA 4.0 (46), CC BY-SA 3.0 (34), CC BY 2.0 (30), CC BY-S
 | Image | Author | License | Source |
 |---|---|---|---|
 | `01-tsd-kc85-4-kol.webp` | Kolossos | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:TSD-KC85-4-kol.jpg) |
-| `02-kc85-the-expensive-gdr-home-computer-48929506503.webp` | stiefkind | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:KC85_%E2%80%93_the_(expensive)_GDR_home_computer_-_48929506503.jpg) |
-| `03-heimcomputer-kc-85-tsd.webp` | Dr. Bernd Gross | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Heimcomputer_KC_85_TSD.JPG) |
-| `04-kc85-eastern-germany-homecomputer-3497498967.webp` | Wolfgang Stief from Tittmoning, Germany | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:KC85,_Eastern_Germany_Homecomputer_(3497498967).jpg) |
-| `05-kc85-34000684590.webp` | Wolfgang Stief from Tittmoning, Germany | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:KC85_(34000684590).jpg) |
-
-## macos
-
-| Image | Author | License | Source |
-|---|---|---|---|
-| `01-m4-mac-mini.webp` | Kyu3a | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:M4_Mac_mini.jpg) |
-| `02-mac-mini-m4-2024-backside.webp` | AzureSaturn | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Mac_mini_(M4,_2024)_-_Backside.jpg) |
-| `03-m2-macbook-air-starlight-model.webp` | KKPCW（Kyu3） | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:M2_Macbook_Air_Starlight_model.jpg) |
-| `04-macbook-air-a2681-front.webp` | メイド理世 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:MacBook_Air_(A2681)_front.jpg) |
-| `05-macbook-air-15-inch-1.webp` | KKPCW（Kyu3） | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Macbook_Air_15_inch_-_1.jpg) |
+| `02-heimcomputer-kc-85-tsd.webp` | Dr. Bernd Gross | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Heimcomputer_KC_85_TSD.JPG) |
+| `03-kc85-eastern-germany-homecomputer-3497498967.webp` | Wolfgang Stief from Tittmoning, Germany | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:KC85,_Eastern_Germany_Homecomputer_(3497498967).jpg) |
+| `04-kc85-34000684590.webp` | Wolfgang Stief from Tittmoning, Germany | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:KC85_(34000684590).jpg) |
 
 ## macos753
 

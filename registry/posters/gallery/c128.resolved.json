@@ -33,22 +33,7 @@
       "height": 1067
     },
     {
-      "src": "/posters/c128/gallery/03-commodore-128-002.webp",
-      "alt": "Close view of a Commodore 128 keyboard and case, showing the function keys and Commodore badge",
-      "caption": "The 128 had to be a Commodore 64 as well as its own machine: the C64 was still the best-selling computer in the world, and nothing could be allowed to break it.",
-      "author": "Public domainPublic domainfalsefalse This work has been released into the public domain by its author, Cbmeeks, at the English Wikipedia project. This applies worldwide. In case this is not legally possible: Cbmeeks grants anyone the right to use this work for any purpose, without any conditions, unless such conditions are required by law. .",
-      "license": "Public domain",
-      "licenseId": "pd",
-      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
-      "shareAlike": false,
-      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_128_002.jpg",
-      "sourceName": "Wikimedia Commons",
-      "sha256": "736b71e01a1eab834ad2690f3dfe68c43fff347e0b37b702f055523902d33d61",
-      "width": 1600,
-      "height": 1202
-    },
-    {
-      "src": "/posters/c128/gallery/04-commodore-128-set-up-with-a-1541-1571-1200-baud-modem-and-two-displays-filtered.webp",
+      "src": "/posters/c128/gallery/03-commodore-128-set-up-with-a-1541-1571-1200-baud-modem-and-two-displays-filtered.webp",
       "alt": "A Commodore 128 computer connected to two external disk drives, a modem, and two monitors",
       "caption": "The 1571 drive could read the actual MFM disk formats other CP/M machines wrote, so a home computer bought for games could read an office's floppies.",
       "author": "Alex Lozupone",
@@ -63,7 +48,7 @@
       "height": 1152
     },
     {
-      "src": "/posters/c128/gallery/05-c128-running-cpm.webp",
+      "src": "/posters/c128/gallery/04-c128-running-cpm.webp",
       "alt": "A Commodore 128 computer with its monitor displaying a CP/M boot sequence and command prompt",
       "caption": "Press the exhibit's CP/M button and the Z80 takes the bus: this is the operating system that ran the office before MS-DOS did.",
       "author": "matthewab2001",

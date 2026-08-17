@@ -18,22 +18,7 @@
       "height": 1063
     },
     {
-      "src": "/posters/kc854/gallery/02-kc85-the-expensive-gdr-home-computer-48929506503.webp",
-      "alt": "A KC 85 series East German home computer displayed with its keyboard, photographed for a museum or collection",
-      "caption": "Most KC 85/4 units went where the state plan sent them — schools and after-school technical clubs — rather than to private buyers.",
-      "author": "stiefkind",
-      "license": "CC0",
-      "licenseId": "cc0",
-      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-      "shareAlike": false,
-      "sourceUrl": "https://commons.wikimedia.org/wiki/File:KC85_%E2%80%93_the_(expensive)_GDR_home_computer_-_48929506503.jpg",
-      "sourceName": "Wikimedia Commons",
-      "sha256": "2cd7242839a8103f86e902be27fc4cc56a283e787dadddcf2686416f993ad57e",
-      "width": 1600,
-      "height": 898
-    },
-    {
-      "src": "/posters/kc854/gallery/03-heimcomputer-kc-85-tsd.webp",
+      "src": "/posters/kc854/gallery/02-heimcomputer-kc-85-tsd.webp",
       "alt": "A KC 85 home computer on display, shown with its case and keyboard in a technical collection",
       "caption": "Inside was a U880, an East German Z80 clone built without a licence from Zilog.",
       "author": "Dr. Bernd Gross",
@@ -48,7 +33,7 @@
       "height": 899
     },
     {
-      "src": "/posters/kc854/gallery/04-kc85-eastern-germany-homecomputer-3497498967.webp",
+      "src": "/posters/kc854/gallery/03-kc85-eastern-germany-homecomputer-3497498967.webp",
       "alt": "A KC 85 series East German home computer, photographed showing its full case and keyboard",
       "caption": "The machine's slots let it grow: RAM and ROM modules, a floppy interface, an assembler, all pushed into the side of the case.",
       "author": "Wolfgang Stief from Tittmoning, Germany",
@@ -63,7 +48,7 @@
       "height": 1067
     },
     {
-      "src": "/posters/kc854/gallery/05-kc85-34000684590.webp",
+      "src": "/posters/kc854/gallery/04-kc85-34000684590.webp",
       "alt": "A KC 85 series computer with its keyboard and case visible, photographed at an angle",
       "caption": "CAOS, the Cassette Aided Operating System, prints its own command menu at power-on so the first screen is also the documentation.",
       "author": "Wolfgang Stief from Tittmoning, Germany",

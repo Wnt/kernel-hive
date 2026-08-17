@@ -18,22 +18,7 @@
       "height": 1319
     },
     {
-      "src": "/posters/alto/gallery/02-xerox-alto.webp",
-      "alt": "A Xerox Alto workstation with its tall portrait monitor, keyboard, and three-button mouse on a desk",
-      "caption": "Desk, chair, keyboard, mouse, and a screen shaped like a page: the Alto's whole claim was that a computer could look like this.",
-      "author": "Unknown",
-      "license": "CC BY-SA 2.5",
-      "licenseId": "cc-by-sa-2.5",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
-      "shareAlike": true,
-      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Xerox_Alto.jpg",
-      "sourceName": "Wikimedia Commons",
-      "sha256": "abd3e5bb0c45bf228da49450372e66bad69a8f17dc28cc48924fbc5505c33b86",
-      "width": 1200,
-      "height": 1600
-    },
-    {
-      "src": "/posters/alto/gallery/03-xerox-alto-mit-rechner.webp",
+      "src": "/posters/alto/gallery/02-xerox-alto-mit-rechner.webp",
       "alt": "A Xerox Alto system with its processor cabinet, portrait display, keyboard, and mouse set up together",
       "caption": "About two thousand Altos were built at Xerox PARC and given away inside the company and to a handful of universities; none were ever sold.",
       "author": "Joho345",
@@ -48,7 +33,7 @@
       "height": 1600
     },
     {
-      "src": "/posters/alto/gallery/04-xerox-alto-at-the-computer-history-museum.webp",
+      "src": "/posters/alto/gallery/03-xerox-alto-at-the-computer-history-museum.webp",
       "alt": "A preserved Xerox Alto on display, showing the processor cabinet and portrait monitor",
       "caption": "A surviving Alto, decades later: the machine that first put overlapping windows, a mouse, and Ethernet in front of one person at a desk.",
       "author": "Don DeBold",
@@ -63,7 +48,7 @@
       "height": 1600
     },
     {
-      "src": "/posters/alto/gallery/05-xerox-alto-keyset.webp",
+      "src": "/posters/alto/gallery/04-xerox-alto-keyset.webp",
       "alt": "Close-up of the Xerox Alto's five-key chorded keyset, a separate input device beside the keyboard",
       "caption": "Beside the keyboard sat a five-key chorded keyset, borrowed from Doug Engelbart's oN-Line System, for issuing commands with one hand.",
       "author": "Vincent Lextrait",

@@ -33,22 +33,7 @@
       "height": 1012
     },
     {
-      "src": "/posters/daybreak/gallery/03-tsd-computer-schreib-und-b-rotechnik-computer-system-xerox-8010-6085-ii.webp",
-      "alt": "A closer view of a Xerox 8010/6085 workstation's keyboard and monitor in a museum collection",
-      "caption": "The Daybreak keyboard carried dedicated keys for the interface's verbs — NEXT, OPEN, PROPERTIES, MOVE, COPY — rather than menu shortcuts.",
-      "author": "NoRud",
-      "license": "CC BY-SA 4.0",
-      "licenseId": "cc-by-sa-4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "shareAlike": true,
-      "sourceUrl": "https://commons.wikimedia.org/wiki/File:TSD_Computer_-,Schreib_und_B%C3%BCrotechnik_Computer_System_Xerox_8010_-_6085_II.jpg",
-      "sourceName": "Wikimedia Commons",
-      "sha256": "ba50bcb3d881c933ee95522c1274e3c225c6e04ecb7e81e7f4a51ae9a62b1ba9",
-      "width": 1600,
-      "height": 969
-    },
-    {
-      "src": "/posters/daybreak/gallery/04-tsd-xerox-8010-kol.webp",
+      "src": "/posters/daybreak/gallery/03-tsd-xerox-8010-kol.webp",
       "alt": "A Xerox 8010/6085 workstation photographed in a technology museum, with monitor, keyboard and mouse",
       "caption": "By 1985 Xerox had renamed the Star environment ViewPoint and sold its applications as separately licensed options.",
       "author": "Kolossos",
@@ -63,7 +48,7 @@
       "height": 1600
     },
     {
-      "src": "/posters/daybreak/gallery/05-technische-sammlungen-dresden-rechentechnik-068.webp",
+      "src": "/posters/daybreak/gallery/04-technische-sammlungen-dresden-rechentechnik-068.webp",
       "alt": "A Xerox Daybreak-era workstation displayed among other historical computing equipment in a museum",
       "caption": "The 6085 shipped the same desktop vocabulary as the Star four years earlier — icons, windows, WYSIWYG editing — largely unmatched by contemporaries.",
       "author": "Ronny Ueckermann",

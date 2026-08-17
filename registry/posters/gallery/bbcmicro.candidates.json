@@ -21,12 +21,6 @@
       "role": "photo"
     },
     {
-      "commonsFile": "File:BBC B Econet.jpg",
-      "alt": "A BBC Micro Model B fitted with an Econet network interface module",
-      "caption": "Econet networked a classroom of BBC Micros together before networking was a consumer idea anywhere else.",
-      "role": "photo"
-    },
-    {
       "commonsFile": "File:Model B with ARM7TDMI coprocessor (7020151809).jpg",
       "alt": "A BBC Micro Model B fitted with a second-processor expansion board carrying an ARM7TDMI chip, connected via the Tube interface",
       "caption": "The Tube interface let a second processor take over as the main CPU. Acorn's own next processor, the ARM, was first developed on a board plugged in here.",
