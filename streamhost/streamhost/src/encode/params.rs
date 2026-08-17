@@ -76,10 +76,17 @@ pub(super) fn resolve_tier(
     } else {
         auto_maxrate_kbps(native_w as u32, native_h as u32)
     };
+    // FRAMERATE-FIRST LADDER (2026-08-17, operator's call). These exhibits are
+    // near-static retro desktops, so SMOOTHNESS is the cheapest thing to give up
+    // and SHARPNESS the most valuable thing to keep: text that stays crisp at
+    // 10 fps beats blurry text at 30. The CRF steps are therefore gentle
+    // (+0/+1/+3/+6 — was +0/+3/+6/+6, a visible cliff at the very first step)
+    // and the fps ladder (resolve_fps) does the real work of fitting the budget.
+    // Resolution is the LAST resort: tiers 0-2 keep native, only tier 3 steps.
     let (crf, scale, cap_kbps): (u8, f64, u32) = match tier {
         0 => (params.crf, 1.0, u32::MAX), // LAN tier: no WAN cap
-        1 => (params.crf.saturating_add(3), 0.60, 12_000),
-        2 => (params.crf.saturating_add(6), 0.35, 8_000),
+        1 => (params.crf.saturating_add(1), 0.60, 12_000),
+        2 => (params.crf.saturating_add(3), 0.35, 8_000),
         _ => (params.crf.saturating_add(6), 0.35, 5_000), // tier 3
     };
     let crf = crf.min(51);
@@ -135,13 +142,16 @@ pub(super) fn effective_bufsize_ratio(tier: u8, ratio: f64) -> f64 {
     }
 }
 
-/// L-2 fps ladder: the encode fps for a tier. `base_fps` is the station's configured
-/// cap (SH_FPS). With the ladder OFF (default) EVERY tier runs the native base fps,
-/// so a bare deploy is byte-identical and a LAN session (always tier 0) is
-/// unaffected. With it ON, congested tiers cap fps — the cheapest quality-for-
-/// bitrate lever for near-static retro desktops: tier1 <=15, tier2/3 <=10. Never
-/// raises fps above the configured base, never returns 0 (the feed-interval math
-/// divides by it).
+/// fps ladder: the encode fps for a tier. `base_fps` is the station's configured
+/// cap (SH_FPS).
+///
+/// ON BY DEFAULT since 2026-08-17 (`SH_ABR_FPS_LADDER=off` opts out). This is the
+/// PRIMARY congestion lever now: for a near-static retro desktop, halving the
+/// framerate halves the bitrate while leaving every delivered frame exactly as
+/// sharp, which is the trade the operator asked for. Because fps absorbs the
+/// budget, the CRF steps in resolve_tier could be made gentle and resolution now
+/// only moves at tier 3. Never raises fps above the configured base, never
+/// returns 0 (the feed-interval math divides by it).
 pub(super) fn resolve_fps(tier: u8, base_fps: u32, params: &EncodeParams) -> u32 {
     if !params.abr_fps_ladder {
         return base_fps;
@@ -149,7 +159,8 @@ pub(super) fn resolve_fps(tier: u8, base_fps: u32, params: &EncodeParams) -> u32
     let cap = match tier {
         0 => base_fps,
         1 => 15,
-        _ => 10,
+        2 => 10,
+        _ => 5,
     };
     base_fps.min(cap).max(1)
 }

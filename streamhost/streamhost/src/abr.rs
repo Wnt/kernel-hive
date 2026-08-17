@@ -170,6 +170,21 @@ const UP_RTT_EXCESS_MS: f32 = 20.0;
 /// A breach (either direction's condition) must persist this long to count as real
 /// (>= 3 report intervals @ ~100 ms; comfortably >= 1.5 s).
 const BREACH: Duration = Duration::from_millis(1500);
+/// An RTT-ONLY breach must persist far longer than a loss breach (2026-08-17).
+///
+/// WHY: the client's RTT ping is a datagram on the SAME QUIC connection as the
+/// video, so it queues behind whatever we just sent. Tier 0 is the one tier with
+/// no bitrate ceiling (CQP, no VBV — encode/x264.rs), so a big station's ~2.5 s
+/// heartbeat IDR is emitted as one unpaced burst and every ping measured during
+/// it reads hundreds of ms. That is REAL queueing delay, but it is OURS, not the
+/// network's, and "lower the bitrate" is the wrong response — it shrinks the
+/// keyframe, the link reads healthy, we climb back to tier 0, and the burst
+/// returns. tru64 rode that limit cycle 0->1->2->3->0 every 25 s on a 3 ms LAN.
+///
+/// A genuinely bufferbloated path holds RTT high CONTINUOUSLY, so it still trips
+/// this; a per-keyframe burst cannot. Loss and backlog keep the short BREACH —
+/// they are not self-inflicted, so they must still react fast.
+const RTT_BREACH: Duration = Duration::from_secs(4);
 /// A healthy window must persist this long before stepping the tier back up.
 const UP_HOLD: Duration = Duration::from_secs(8);
 /// L-1 backlog trigger (armed by SH_ABR_BACKLOG_DOWNSHIFT): downshift when the
@@ -385,9 +400,12 @@ impl Abr {
         // HOLD. On a LAN worst_loss~0 and worst_excess~0 => always HEALTHY, so a
         // station at tier 0 never moves.
         let armed = self.cfg.abr_backlog_downshift;
-        let congested = worst_loss >= DOWN_LOSS_PCT
-            || worst_excess >= DOWN_RTT_EXCESS_MS
-            || skip_congested(worst_skip, armed);
+        // Split by signal: loss/backlog are not self-inflicted and keep the short
+        // BREACH; an RTT-only breach must hold for RTT_BREACH (see its comment).
+        let fast_congested =
+            worst_loss >= DOWN_LOSS_PCT || skip_congested(worst_skip, armed);
+        let rtt_congested = worst_excess >= DOWN_RTT_EXCESS_MS;
+        let congested = fast_congested || rtt_congested;
         // A session still skipping is not healthy-enough to upshift (L-1 veto).
         let healthy = worst_loss <= UP_LOSS_PCT
             && worst_excess <= UP_RTT_EXCESS_MS
@@ -410,11 +428,16 @@ impl Abr {
             if g.down_since.is_none() {
                 g.down_since = Some(now);
             }
+            let need = if fast_congested { BREACH } else { RTT_BREACH };
             let sustained = g
                 .down_since
-                .map(|t| now.duration_since(t) >= BREACH)
+                .map(|t| now.duration_since(t) >= need)
                 .unwrap_or(false);
             if sustained && cur < MAX_TIER && can_change_down {
+                let why = if fast_congested { "loss/backlog" } else { "rtt" };
+                eprintln!(
+                    "[abr] DOWN why={why} loss={worst_loss:.1}% rtt_excess={worst_excess:.0}ms skip={worst_skip:.2} sessions={n_active}"
+                );
                 self.apply_tier(&mut g, cur + 1, now);
             }
         } else if healthy {
@@ -427,6 +450,9 @@ impl Abr {
                 .map(|t| now.duration_since(t) >= UP_HOLD)
                 .unwrap_or(false);
             if sustained && cur > 0 && can_change_up {
+                eprintln!(
+                    "[abr] UP loss={worst_loss:.1}% rtt_excess={worst_excess:.0}ms skip={worst_skip:.2} sessions={n_active}"
+                );
                 self.apply_tier(&mut g, cur - 1, now);
             }
         } else {
@@ -507,8 +533,18 @@ fn fold(s: &mut SessionState, server_skips: u64) {
         s.lat_ewma = lw(s.lat_ewma, lat, 16.0);
         s.loss_ewma = lw(s.loss_ewma, loss, 8.0);
         s.bw_ewma = lw(s.bw_ewma, bw, 16.0);
-        s.rtt_ewma = lw(s.rtt_ewma, rtt, 16.0);
         s.overall_ewma = lw(s.overall_ewma, overall_raw, 4.0);
+
+        // ASYMMETRIC RTT SMOOTHING (2026-08-17): rise SLOWLY (m=16), fall FAST
+        // (m=4). A symmetric m=16 window decays far more slowly than the spike
+        // that filled it — one second of pings queued behind a keyframe burst
+        // held the smoothed excess above DOWN_RTT_EXCESS_MS for many seconds
+        // AFTER the link was healthy again, which is how a burst shorter than
+        // the persistence window still satisfied it. Falling fast means a
+        // transient cannot leave a tail; sustained bufferbloat keeps feeding
+        // high samples, so it still accumulates and still trips.
+        let m = if rtt < s.rtt_ewma { 4.0 } else { 16.0 };
+        s.rtt_ewma = lw(s.rtt_ewma, rtt, m);
 
         // ---- NETWORK-decision signals ----
         // Smoothed loss %, reacts a touch faster than the HUD score (m=8).

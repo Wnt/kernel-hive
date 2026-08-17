@@ -542,6 +542,35 @@ while it is tokenising. Declare `demoProgram.perCharMs` in the registry when a
 station drains slower than the fleet default — `validate_demo_pacing` in
 `scripts/stations-registry.py` fails the build if the two disagree.
 
+**One rejected line can impersonate a broken input plane — check the LISTING
+before you touch the pacing.** A BASIC that rejects a line may leave the
+rejected text sitting in its edit buffer for correction, and then every
+subsequent line *appends to it* instead of starting fresh. On the QL
+(2026-08-17) a listing whose line 120 read `END PROC` — not SuperBASIC; the
+terminator is `END DEFine` — produced this, and it reads exactly like keys being
+dropped:
+
+```
+10..110 stored fine, LIST shows them
+120 END PROC130 FOR a=0 TO 315 STEP 45140 PROC petal(...)150 END FOR160 ...
+bad line
+```
+
+The apparent "first 11 lines work, then ENTER stops landing" boundary is
+**content**, not count, and no amount of extra delay moves it — an agent spent
+$2.47 of model time bisecting delays against it. Two cheap discriminators, in
+order:
+
+1. type N trivial numbered lines (`10 REM A` … `150 REM A`) and LIST them. All
+   present ⇒ the plane is fine and your listing has a syntax error;
+2. type one deliberately invalid line between two valid ones and watch whether
+   the next line concatenates onto it — that identifies the edit-buffer
+   behaviour for this machine in one shot.
+
+Syntax-check a type-in listing against the machine's *own* dialect before
+blaming delivery. `END DEFine`/`END FOR`/`END REPeat` on the QL are not the
+`NEXT`/`RETURN` of the 8-bit BASICs the other exhibits use.
+
 **A guest's keyboard is not necessarily laid out like a PC's.** The UI's
 `typeText()` maps ASCII to US set1 scancodes. The MPF-II's 8×8 matrix puts `=` on
 Shift+O, `-` on Shift+I and `+` on Shift+P, and its shifted number row is offset
