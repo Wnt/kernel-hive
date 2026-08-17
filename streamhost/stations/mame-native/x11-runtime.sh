@@ -153,6 +153,10 @@ export MAME_NO_UI=1
 # module defaults (100/50, IRIX's) are the fallback.
 [ -n "${SH_KEY_MIN_HOLD_MS:-}" ] && export MAME_CTL_KEY_HOLD="$SH_KEY_MIN_HOLD_MS"
 [ -n "${SH_KEY_MIN_GAP_MS:-}" ] && export MAME_CTL_KEY_GAP="$SH_KEY_MIN_GAP_MS"
+# Separation between a modifier edge and the next character press, for guests
+# whose keyboard is sampled by a controller rather than by the main CPU (the
+# QL's 8049 IPC). Off unless the station's env asks for it.
+[ -n "${SH_KEY_MOD_SEP_MS:-}" ] && export MAME_CTL_KEY_MOD_SEP="$SH_KEY_MOD_SEP_MS"
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
 

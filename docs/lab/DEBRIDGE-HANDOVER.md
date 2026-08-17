@@ -1,6 +1,6 @@
 # De-bridging campaign — handover
 
-**State as of 2026-08-16.** Read this first, then
+**State as of 2026-08-17.** Read this first, then
 [`DEBRIDGE-CONVERSION-BRIEF.md`](DEBRIDGE-CONVERSION-BRIEF.md) (the campaign's
 rules and per-station procedure) and
 [`DEBRIDGE-ROLLBACK.md`](DEBRIDGE-ROLLBACK.md) (how to undo a conversion).
@@ -108,20 +108,70 @@ the terminology migration, but other agents were mid-flight in those files.
    (`rig.sh`, `burst.py`): a fire-and-forget burst on a wall clock, with
    `--hold` > `--period` as the switch that turns rollover on. A synchronous
    driver cannot see either defect.
-4. **Checkpoint restore only works where the driver has `MACHINE_SUPPORTS_SAVE`.**
+4. **NOT EVERY GUEST SCANS ITS OWN MATRIX, AND THE ONE THAT DOESN'T NEEDS THE
+   OPPOSITE FIX.** Lessons 1-3 were all bisected against machines whose ROM
+   scans the keyboard with the main CPU. The **Sinclair QL does not**: an 8049
+   IPC scans the matrix and hands the result to the 68008 over a slow serial
+   link, so the guest sees the matrix through the IPC's sampling window. Two
+   consequences, both measured on the rig on 2026-08-17 with the framebuffer as
+   the judge and the module's own `MAME_CTL_TRACE` as the correlate:
+   - **Two matrix edges applied in the SAME drain pass are lost, not merged.**
+     The trace made it exact: every dropped character was applied in the same
+     emulated instant as another edge, and every surviving one was applied at
+     least one 20 ms guest scan clear of its neighbours. This is a DROP, not a
+     wrong character — `+` simply never appears.
+   - It therefore fires at **any** typing pace, including paces far too slow for
+     any queue-order hazard to exist, which is what distinguishes it from
+     lesson 3. `print 12+34` typed with 450 ms between characters lost the `+`
+     in 7 of 8 trials.
+
+   Two independent causes, both now fixed and both worth checking on any new
+   conversion:
+   - **The EXCL pattern has to cover every port the matrix really occupies.**
+     The QL wires its joysticks INTO the keyboard matrix, so MAME's `ql` driver
+     puts SPACE on `:JOY1 | P2 Button 1` and F1..F5 / the cursor keys on
+     `:JOY0`/`:JOY1`. `MAME_CTL_KEY_EXCL=:Y` matched only `:Y0..:Y7`, leaving
+     the space bar exempt from exclusive-scan: `print 12+34` at a 90 ms browser
+     pace applied `t` and SPACE in the same instant and the guest lost BOTH
+     (`prin12+34`, 12 of 12 trials). The station now sets `Y`, which matches
+     `:Y0..:Y7` AND `:JOY0`/`:JOY1` and nothing else on the driver. **Read the
+     driver's port list (`KEYDUMP :`), do not assume the matrix tag.**
+   - **A modifier edge and the character press that follows it must not land in
+     the same guest sample.** The browser sends Shift and its character ~5 ms
+     apart, inside one drain pass, and a modifier is exempt from the EXCL gate —
+     so on the QL the shifted character vanished. New knob
+     `MAME_CTL_KEY_MOD_SEP` (station env `SH_KEY_MOD_SEP_MS`, **default 0 =
+     every other station unchanged**) makes a non-modifier press wait that long
+     after the last applied modifier edge. It is TIME only: nothing is
+     reordered, so lesson 3's three barriers are untouched. sinclairql ships
+     **40 ms** — two guest scans, one clear step above the last observed
+     failure. Measured: 0 corrupt in 36 trials against 7/8 and 12/12 before.
+
+   **Why a rig burst alone would have got this wrong.** A "slow reference" built
+   by HOLDING each key longer is not slow typing, and on this machine the EXCL
+   gap settle silently hands Shift its lead whenever the previous character has
+   just been released — so the defect HIDES at fast paces and appears at slow
+   ones. Sweep the pace in BOTH directions, and separate shifted from unshifted
+   characters before concluding anything about rate.
+
+   Harness: `lab:/data/vms/soltest/ql-keys/` (`rig.sh`, `qltype.sh`,
+   `qltrial.py`, and `qljudge.py`, which OCRs the QL command window off the shm
+   mapping through a glyph atlas so a sweep does not need an eye per trial).
+
+5. **Checkpoint restore only works where the driver has `MACHINE_SUPPORTS_SAVE`.**
    bbcb/zx81/kc85_4/spectrum lack it and restored garbage (bbcb killed the
    process; kc85_4 came back black). Those five run `MAME_NATIVE_CHECKPOINT=0`
    and cold-boot on reset; armeval re-types its curated supervisor lines from a
    MAME `-autoboot_script` instead.
-5. **The exhibit is the guest's framebuffer and nothing else.**
+6. **The exhibit is the guest's framebuffer and nothing else.**
    `mame-kiosk-no-ui.patch` (`MAME_NO_UI=1`) gates the single seam where UI
    primitives enter a render target, killing savestate popmessages, FPS
    overlays, menus and pause banners at once. A/B proved 3620 chrome pixels → 0.
-6. **A non-QEMU station only gets idle auto-pause if its env names the
+7. **A non-QEMU station only gets idle auto-pause if its env names the
    emulator's pidfile** (`SH_IDLE_PAUSE_PIDFILE` + `_PROC_MATCH` scoped to its
    own asset path — bbcmicro and armeval both run a binary called `bbcb`).
    Without it every station burns a core forever.
-7. **`systemctl restart` does NOT kill the previous emulator, and two
+8. **`systemctl restart` does NOT kill the previous emulator, and two
    publishers into one mapping is what "two machines at once" looks like.**
    Proven live 2026-08-17: after a binary swap, plus4, cbm2 and cbm8032 each
    had TWO emulators, both still mapping the station's `fb.shm`, and the
@@ -137,7 +187,7 @@ the terminology migration, but other agents were mid-flight in those files.
    (not the pidfile alone, which a crashed launcher leaks), and **refuse to
    start** if anything survives SIGKILL — a visible outage beats a flicker
    nobody diagnoses.
-8. **Harness traps.** Launching an emulator as `( … ) &` and killing `$!` kills
+9. **Harness traps.** Launching an emulator as `( … ) &` and killing `$!` kills
    the SUBSHELL, not the emulator: eleven orphans (~2.2 cores) accumulated
    before a cgroup check found them. And never `pgrep -f` a pattern your own
    command line carries — use `[c]lass` tricks or file markers.
@@ -538,9 +588,32 @@ re-measure in high res.
   rebuild and reinstall all five, and the interim `<emu>.prekbdfix` /
   `xvic.prekbdfix-4210340770` rollback copies can be deleted then.
 - **The nine MAME stations have the fixed launcher but were NOT restarted** —
-  lesson 7 only bites at a restart, so the fix is in place for their next one.
+  lesson 8 only bites at a restart, so the fix is in place for their next one.
   Their `ctlsock` module still has neither of lesson 3's fixes and no station
-  has been audited for them.
+  has been audited for them. **sinclairql is the exception**: it was restarted
+  on 2026-08-17 onto a binary that carries lesson 3's two ordering fixes AND
+  lesson 4's `MAME_CTL_KEY_MOD_SEP`, built from a rig tree
+  (`/data/vms/soltest/ql-keys/mame`, sha `3f3db307cb41`) — so the first
+  `build-mame-native.sh sinclairql` after this merges must rebuild and
+  reinstall it, and `ql.premodsep-20260817T005936Z` is the rollback. The other
+  eight got the launcher line only, which is INERT without `SH_KEY_MOD_SEP_MS`
+  and does not need a restart.
+- **The QL still mistypes under REAL rollover, and it is not fixable in the
+  module.** When a visitor's key HOLD exceeds the inter-character pace, the
+  browser genuinely sends the next character's press before the previous
+  character's Shift release, and the EXCL gate then stretches that press by
+  hold+gap while the Shift release is barred behind it (lesson 3's rule 1 —
+  modifiers never move). Measured: `print 12+34` at pace 90 ms / hold 110 ms
+  still loses the `3`. The two orderings that mean "shift belongs to the
+  previous character" and "this is a Ctrl chord" are IDENTICAL on a scancode
+  wire, so only the SPA — which holds the character — can tell them apart. Not
+  reproduced through the real browser at any pace (Playwright and an ordinary
+  typist both release well inside the pace), so it is recorded, not shipped as
+  a fix.
+- **`sinclairql.keymap` has no Backspace row** (PC scancode `0x0e`): the QL has
+  no Backspace key and deletes with CTRL+←, which the station's on-screen
+  keyboard offers. A visitor pressing their own Backspace gets nothing. Not
+  this fix's business, but it is the same class as the BBC's DELETE override.
 - Operator batch validation of the nine is done; per-station polish is ongoing.
 - Temporary per-edge diagnostics (`SH_MAMESOCK_TRACE`, `MAME_CTL_TRACE`) are
   still live in mpf2's and dragon32's `station.env` — strip when the typing

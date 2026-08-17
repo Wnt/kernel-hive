@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,3145 @@
+@@ -0,0 +1,3186 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -227,6 +227,21 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +                             order of drain_keys(), NOT arrival order
 +                             (strict arrival order deadlocks on real,
 +                             overlapping typing)                 [off]
++      MAME_CTL_KEY_MOD_SEP   EMULATED ms a non-modifier PRESS must
++                             wait after the last applied modifier
++                             edge. For guests that do NOT scan the
++                             matrix with the main CPU but hand it to
++                             a slow keyboard controller with its own
++                             sampling window (the Sinclair QL's 8049
++                             IPC): a Shift that goes down in the SAME
++                             sample as its character makes that
++                             character vanish, at ANY typing pace,
++                             because the browser sends the two edges
++                             milliseconds apart and the drain applies
++                             both in one pass. Measured on the QL rig:
++                             0 ms lead drops the shifted character,
++                             one guest scan (20 ms) of lead does not.
++                                                                   [0]
 +      MAME_CTL_MOVEA_TRIES   accepted, INERT since engine V2 (V2
 +                             flights terminate by construction)     [40]
 +      MAME_CTL_SWAP_ITEMS    "<seq>,<dx>,<dy>": the VC2 cursor-swap
@@ -438,6 +453,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_move_window = double(env_long("MAME_CTL_MOVE_WINDOW", 40)) / 1e3;
 +		m_key_hold = double(env_long("MAME_CTL_KEY_HOLD", 100)) / 1e3;
 +		m_key_gap = double(env_long("MAME_CTL_KEY_GAP", 50)) / 1e3;
++		m_key_mod_sep = double(env_long("MAME_CTL_KEY_MOD_SEP", 0)) / 1e3;
 +		if (char const *e = std::getenv("MAME_CTL_KEY_EXCL"); e && *e)
 +			m_key_excl = e;
 +		m_cal_x = env_long("MAME_CTL_CAL_X", -31);
@@ -1278,6 +1294,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_kup_at.clear();
 +		m_excl_down.clear();
 +		m_excl_up_at = -1e9;
++		m_mod_edge_at = -1e9;
 +		m_esc_frames = 0;
 +		m_probe_frames = 0;
 +	}
@@ -1637,6 +1654,26 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				++it;
 +				continue;
 +			}
++			// A MODIFIER EDGE AND THE PRESS THAT FOLLOWS IT MUST NOT LAND IN
++			// THE SAME GUEST SAMPLE (MAME_CTL_KEY_MOD_SEP, off by default).
++			// The QL hands its matrix to an 8049 IPC, not to the 68008: the
++			// controller samples on its own clock and reports the key with the
++			// modifier level it saw, so a Shift whose DOWN edge arrives in the
++			// same sample as its character makes that character VANISH — not
++			// arrive unshifted, vanish. The browser sends those two edges ~5 ms
++			// apart, well inside one drain pass, so the guest saw them together
++			// at EVERY typing pace, which is why `+` dropped from `print 12+34`
++			// at 220 ms spacing while every unshifted character survived.
++			// Time only: nothing is reordered, so rules 1-3 above still hold,
++			// and the gate clears by the passage of time like every other.
++			if (m_key_mod_sep > 0.0 && !mod_key && e.val == 1
++					&& now < m_mod_edge_at + m_key_mod_sep)
++			{
++				bar_press = true;
++				blocked.insert(e.field);
++				++it;
++				continue;
++			}
 +			// Exclusive-scan mode (MAME_CTL_KEY_EXCL, matched against the
 +			// PORT tag): the MPF-II lesson — its ROM scans the matrix itself
 +			// and accepts a new key only after seeing it EMPTY, so a press
@@ -1690,6 +1727,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			else
 +				reply_err(e.ack, "noport", "no port/field " + e.port + " | " + e.field);
 +			((e.val == 1) ? m_kdown_at : m_kup_at)[e.field] = now;
++			if (mod_key)
++				m_mod_edge_at = now;
 +			if (excl)
 +			{
 +				if (e.val == 1)
@@ -3149,6 +3188,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	std::string m_key_excl;                       // MAME_CTL_KEY_EXCL port-tag substring
 +	std::unordered_set<std::string> m_excl_down;  // matching fields currently applied down
 +	double m_excl_up_at = -1e9;                   // last matching release (emu s)
++	double m_key_mod_sep = 0.0;                   // MAME_CTL_KEY_MOD_SEP (emu s)
++	double m_mod_edge_at = -1e9;                  // last applied modifier edge (emu s)
 +
 +	std::deque<click_entry> m_clickq;
 +	click_entry m_click_cur{};
