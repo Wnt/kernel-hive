@@ -1,6 +1,6 @@
 # Workflow friction audit, 2026-08-07 → 08-17 — and the plan to fix it
 
-**Status: PROPOSAL** (nothing here is implemented yet). Source: all 23 Claude
+**Status: IMPLEMENTED 2026-08-17 (see §5).** Source: all 23 Claude
 Code transcripts of this project from the last ten days (~228 MB, mined by
 four parallel readers), cross-checked against the scripts they name.
 
@@ -146,3 +146,40 @@ the *reactive* work — a rejected push, a phantom 404, a forensic PID hunt.
    `--status` is green fleet-wide.
 4. P2 UI staging (`releases/<sha>` + `/staging/`), then station `stage/promote`.
 5. P4/P5 as they come up — `here.sh` first.
+
+---
+
+## 5. What landed (2026-08-17)
+
+All in one day, same order as §4's suggested first session.
+
+| Proposal | Landed as | Commits |
+|---|---|---|
+| P3.1 (bind mount) | CT950 got `/data/vms`, `/data/kernel-hive`, `/data/gallery-guests`, `/data/isos`, `/data/media-archive` as `pct` mountpoints (operator `pct set`, outside this repo) — AGENTS.md's CT950 line rewritten | — (box-side `pct` config) |
+| P3.2/P3.3 (`labrun`, pointers) | `scripts/dev/labrun`, `~/.ssh/config` `ControlMaster` for `Host lab` (0.4 s → ~14 ms) | `12f2f5f` |
+| P1 (deploy from a commit) | `scripts/dev/box-deploy.sh` (plan/`--apply`/`--status`) + `scripts/host/box-install.sh` (installs from `/data/kernel-hive` over the existing pair table, stamps `.deployed-rev`); pre-push gate's box-state check flipped from "drift blocks" to "live files vs box checkout commit blocks, behind-main is a note" | `88bd063`, `b69d9b8`, `f854e3c` |
+| P2 (UI staging) | `scripts/dev/stage.sh` — per-session `/staging/<session>/` on the live origin, SPA built base-relative, server staged-route fallback; `stage.sh station <id>` scaffold (not the full clone/promote verb pair §2 sketched — see below) | `acb1671`/`7987a5d`, `cecc764`, `4ce3b31` |
+| P4 (claims + identity) | `scripts/lib/kh-session.sh` (`$KH_SESSION` resolution), `scripts/lib/kh-claim.sh` (`/run/kh-claims/` registry), `labctl who`/`claims`/`wait-for`; `scripts/dev/wt.sh` full-stack sandboxes (worktree + build dir + clones + staging slot under one name); scratch area renamed `soltest` → `sandbox` (compat symlink) | `12f2f5f`, `bdd9b7e`, `b3fd318` |
+| P5 (session tax) | `scripts/dev/here.sh` — one screen, first command of a session | `3f1fd1e` |
+
+**Operator addition, beyond the proposal:** every worker agent gets its own
+worktree **and** its own full stack by default, not just on request —
+`wt.sh new <name>` — so a fix always has a right place to land without
+touching a shared checkout or another session's rig. `wt.sh gc` prunes merged
+sandboxes and merged legacy `.claude/worktrees/` trees (37 GB of the latter
+purged 2026-08-17, outside this repo's history).
+
+**Deliberately not done:**
+
+- **Generic station clone/promote** (§2's `labctl stage <station>` /
+  `labctl promote` / `labctl rollback` verb trio). What shipped is
+  `stage.sh station <id>` — a **scaffold** of one live station's launcher +
+  env into a sandbox (paths rewritten, `SH_STATION=stg-<name>-<id>`) that
+  prints what it could not derive. A full clone/promote pair needs a
+  per-family device-set story this session didn't have time to generalise;
+  do it when a second real use turns up, not speculatively.
+- **Harvest cron** (§2's "a cron on labhost committing to `harvest/auto`").
+  `harvest.sh` stays a manually-run, dry-run-first tool.
+- **`box-sync-push.sh` was kept, not removed** — it and
+  `verify-box-sync.sh` are now the deep-detector / emergency-push pair behind
+  `box-deploy.sh`, not the primary door. See `scripts/README.md`.

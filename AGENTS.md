@@ -27,13 +27,34 @@ gitignored: SSH keys, PKI, `uptoken`, `unifitoken`,
 
 **Labhost.** `ssh lab '<cmd>'` is the one door, as root, from a LAN workstation
 and a cloud VM alike. stdout/stderr stay separate and the guest's exit code is
-yours. CT950 (`ssh lab 'pct exec 950 -- <cmd>'`) is the dev container and has
-**no `/data` mount**, so labhost-side checks run on labhost itself. Other guests on this
-hardware belong to unrelated projects — **leave them alone**.
+yours. CT950 (`ssh lab 'pct exec 950 -- <cmd>'`) is the dev container this
+session runs in and, since 2026-08-17, has `/data/vms`, `/data/kernel-hive`,
+`/data/gallery-guests`, `/data/isos` and `/data/media-archive` bind-mounted —
+read/Edit/grep files on the box directly. **Process control still goes
+through `ssh lab` / `scripts/dev/labrun`**: `systemctl`, `qm`, `pct`, guards
+and kills act on guests only over that door. Multi-line remote work goes
+through `scripts/dev/labrun <<'EOF' … EOF` (no quoting, `ssh -n`, forwards
+`KH_SESSION`); never nest `ssh lab` inside `ssh lab`, and loops call `ssh -n`.
+Other guests on this hardware belong to unrelated projects — **leave them
+alone**.
 
-**Never experiment on a live station.** Clone under `/data/vms/sandbox/`, keep the
-SAME device set (`loadvm golden` requires it), and namespace every dir, VMID,
-socket and port so concurrent agents cannot collide.
+**Start a session with `scripts/dev/here.sh`** — one screen: where you are,
+what is deployed on the box, who else is here, what is staged, what is
+stopped/paused, what to run next.
+
+**Every worker gets its own full stack by default.** `scripts/dev/wt.sh new
+<name>` makes a worktree of `/data/kernel-hive` on branch `<name>` at
+`/data/vms/sandbox/<name>/repo` (same path on CT950 and labhost) plus its own
+sandbox dir, build dir, staging slot and claim — fix problems at the right
+location in **your own stack**, never a workaround on someone else's. Merge to
+`main` early; `wt.sh gc` prunes merged sandboxes. `scripts/dev/stage.sh`
+previews a UI/registry change at `/staging/<session>/` on the live origin
+before it goes live.
+
+**Never experiment on a live station.** Clone under `/data/vms/sandbox/`
+(`wt.sh new` does this for you), keep the SAME device set (`loadvm golden`
+requires it), and namespace every dir, VMID, socket and port so concurrent
+agents cannot collide.
 
 **Kill and mount through the guards.** Every clone kill/stop goes through
 `clone-guard`; every chroot mount through `chroot-guard`, and ad-hoc chroot
@@ -47,7 +68,10 @@ which matches the shell running it.
 **Claim shared things atomically, and make the claim the proof.** Displays,
 taps, labhost IPs, iptables chains, core pairs, ports, VMIDs. Never
 check-then-create; namespace per rig; **fail loudly instead of falling back —
-"it exists" is not "it is mine".**
+"it exists" is not "it is mine".** `$KH_SESSION` (`scripts/lib/kh-session.sh`)
+tags every rig and claim; claims live under `/run/kh-claims/` via `kh-claim` /
+`labctl claims`; `ssh lab 'labctl who'` answers "whose is this?" instead of
+`/proc` forensics.
 
 **Teardown is part of "done"** and must be stated in the report: what you
 released and the check that proved it.
@@ -67,7 +91,11 @@ fails too.
 - All `node scripts/check-file-size.mjs --strict` and `make station-registry-check`
 
 **Integrate continuously** — merge to `main` early and always `git push origin
-main`. Never echo or log `~/Downloads/humanify-token`.
+main`. After any push that touches deployed files, put it on the box:
+`scripts/dev/box-deploy.sh --apply` (installs from the commit; restarts are a
+separate decision — `build-deploy.sh`/`systemctl restart streamhost@<x>`/
+`serve-https-spa.sh deploy`). Never echo or log
+`~/Downloads/humanify-token`.
 
 **"qwenit"** — offload substantial work to headless OpenCode sessions on a cheap
 open-weight model (`scripts/dev/qwen-task.sh`) and stay orchestrator: briefs,
@@ -81,6 +109,10 @@ SAME guardrails as any agent brief and **do not push** — they commit to
 
 | I need to… | Go to |
 |---|---|
+| Start a session | `scripts/dev/here.sh` — run it first, every time |
+| Whose rig/claim is this | `ssh lab 'labctl who'` |
+| Preview a UI/registry change before it's live | `scripts/dev/stage.sh` — `/staging/<session>/` on the live origin |
+| Deploy a pushed commit to the box | `scripts/dev/box-deploy.sh` (plan) / `--apply`; `--status` for deployed rev vs `main` |
 | What a word means (station, seed, checkpoint, scene…) | [`docs/GLOSSARY.md`](docs/GLOSSARY.md); identifiers/paths still carry old names until [the migration](docs/lab/research/terminology-migration-2026-08.md) lands |
 | Understand how any of this works | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) → tiers, I/O paths, costs |
 | Drive a guest / run a command in one | [`docs/lab/LABCTL.md`](docs/lab/LABCTL.md). Start with `labctl facts <tile>`; `labctl` prints its own usage |
@@ -109,4 +141,7 @@ SAME guardrails as any agent brief and **do not push** — they commit to
   anything.
 - **A fix may not have taken effect**: streamhost deploys are per-station canaries
   and the fleet is not auto-promoted; UI edits need the bundle redeployed; a
-  launcher or geometry change needs the checkpoint **recaptured**.
+  launcher or geometry change needs the checkpoint **recaptured**; and a push
+  is not a deploy — check `scripts/dev/box-deploy.sh --status` (or
+  `/data/vms/streamhost/.deployed-rev`) for what commit the box is actually
+  running.
