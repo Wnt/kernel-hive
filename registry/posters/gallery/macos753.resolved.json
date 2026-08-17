@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "macos753",
+  "images": [
+    {
+      "src": "/posters/macos753/gallery/01-q8002.webp",
+      "alt": "A Macintosh Quadra 800 desktop computer case, a beige tower-style Macintosh from 1993",
+      "caption": "A Macintosh Quadra 800 — the 1993 machine this exhibit's Mac OS 7.5.3 boots from, built around Motorola's 68040.",
+      "author": "GeneralFreddy",
+      "license": "CC BY 4.0",
+      "licenseId": "cc-by-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Q8002.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "153602d5096c4f2efe216a3bd5defdea9c57fdbd45b3e9383e7e730823284413",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/macos753/gallery/02-apple-mac-quadra-800.webp",
+      "alt": "An Apple Macintosh Quadra 800 computer, beige case, photographed for a computer museum collection",
+      "caption": "The Quadra 800 was the last and fastest of the 68000-family Macintoshes, the line every Mac had used since 1984.",
+      "author": "Unknown",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_mac_quadra_800.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "9ae8547f25700cd82c049cd5a81cb12879e2e3d794b00b907abd07b3f41ec71f",
+      "width": 836,
+      "height": 893
+    },
+    {
+      "src": "/posters/macos753/gallery/03-apple-museum-prague-quadra-700-1991.webp",
+      "alt": "A Macintosh Quadra 700 on display at the Apple Museum in Prague",
+      "caption": "A sibling model, the Quadra 700 of 1991, from the same 68040-based generation of Macintosh workstations.",
+      "author": "Benoît Prieur",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_Museum_(Prague)_Quadra_700_(1991).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "92d47ad6a69c8deea3d1e8d62ed6833e61b78a040153a4f536f6faa5536c03b8",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/macos753/gallery/04-macintosh-quadra-610.webp",
+      "alt": "A Macintosh Quadra 610 desktop computer, a compact beige case Macintosh from the early 1990s",
+      "caption": "The Quadra 610's compact case shows how far the same 68040-based family stretched, from tower to pizza-box.",
+      "author": "Unknown",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Macintosh_Quadra_610.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "4ee8807ebb548e9a4e8400dd3bf5b132e5837b33daec5508caf0fd3facd97301",
+      "width": 800,
+      "height": 600
+    },
+    {
+      "src": "/posters/macos753/gallery/05-quadra-605-insides.webp",
+      "alt": "The interior of a Macintosh Quadra 605, showing its logic board and 68040-family components",
+      "caption": "Inside the case: the Motorola 68040 logic board that ran System 7.5.3, the last processor family classic Mac OS ever used.",
+      "author": "Unknown",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Quadra_605_insides.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "046f48a6100c82f425f0cd08eaf875eded2e4d1e31172aef7fddb865e2bfe0a4",
+      "width": 817,
+      "height": 704
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "pdp11",
+  "images": [
+    {
+      "commonsFile": "File:LCM - DEC PDP-11-70 - 01.jpg",
+      "alt": "A DEC PDP-11/70 minicomputer in its tall cabinets at the Living Computer Museum, shown from the front with its operator console panel",
+      "caption": "The PDP-11/70, announced in 1975, was the top of the line: 22-bit addressing, a cache, and the floating-point processor as standard.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:DEC PDP-11 at Computer Museum of America (23) (cropped).jpg",
+      "alt": "A DEC PDP-11/70 minicomputer on display in a museum, showing its front cabinet and control panel",
+      "caption": "One bus, the Unibus, carried memory, registers, terminals and disks alike — a single addressing scheme that made the PDP-11 a pleasure to program.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:PDP-11-70 Minicomputer from Digital Equipment Corporation (DEC), exhibited at Living Computer Museum in Seattle, USA (edited image without background).jpg",
+      "alt": "A DEC PDP-11/70 minicomputer cabinet, isolated against a plain background, showing its full height and control panel",
+      "caption": "DEC sold something like 600,000 PDP-11s and kept the line in production until 1997, twenty-seven years after the first one shipped.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:DECTape unit for the DEC PDP-11.jpg",
+      "alt": "A DECtape drive unit made for the DEC PDP-11, photographed at the Living Computer Museum",
+      "caption": "Disk and tape drives like this one hung off the same Unibus as everything else — DEC's PDP-11 had no separate instructions for talking to a device.",
+      "role": "photo"
+    }
+  ]
+}

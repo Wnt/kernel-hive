@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "indyr4400",
+  "images": [
+    {
+      "src": "/posters/indyr4400/gallery/01-silicon-graphics-indy.webp",
+      "alt": "A blue-violet SGI Indy workstation photographed from the front against a white background",
+      "caption": "The Indy's blue-violet \"pizza box\" case, introduced by SGI in July 1993 as its entry-level workstation.",
+      "author": "Bilby",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Silicon_Graphics_Indy.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "e7914b0e132ac1d5ba10ace845bf8525d6abf10171a994f66d94a0d23595d24a",
+      "width": 1600,
+      "height": 1038
+    },
+    {
+      "src": "/posters/indyr4400/gallery/02-sgi-indy-crt-keyboard-mouse.webp",
+      "alt": "A complete SGI Indy workstation with its original 17-inch CRT monitor, keyboard and mouse",
+      "caption": "A full Indy system as SGI shipped it: pizza-box unit, CRT, keyboard and mouse, priced for universities and design studios to buy by the dozen.",
+      "author": "Thomas Kaiser",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SGI_Indy_CRT_Keyboard_Mouse.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "4f57352b7bae49b0ea4ff9b07af4a1a0d15fb53c9bb25c689aa7e9e7af4dc31d",
+      "width": 1088,
+      "height": 782
+    },
+    {
+      "src": "/posters/indyr4400/gallery/03-sgi-indy-mit-originalkamera.webp",
+      "alt": "An SGI Indy workstation with its original IndyCam video camera attached on top",
+      "caption": "The camera on top is the IndyCam — SGI put digital video capture in the box rather than on the options list, unusual for 1993.",
+      "author": "Dirk Liesch",
+      "license": "CC BY 4.0",
+      "licenseId": "cc-by-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SGI_Indy_mit_Originalkamera.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "0be67843a56c55c492b99040e30f101b5c62f529c344bdb8726611d880650185",
+      "width": 1220,
+      "height": 1600
+    },
+    {
+      "src": "/posters/indyr4400/gallery/04-indycam-1993.webp",
+      "alt": "A close-up of an SGI IndyCam, the small video camera bundled with the Indy workstation",
+      "caption": "The IndyCam, 1993 — a standard-issue peripheral that made the Indy one of the first desktop machines built for video from day one.",
+      "author": "Dirk Liesch",
+      "license": "CC BY 4.0",
+      "licenseId": "cc-by-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:IndyCam_(1993).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ee6d1a07843462634759b6e507ea862cceb8504070a76ccffe26fb76f98faea2",
+      "width": 1494,
+      "height": 654
+    },
+    {
+      "src": "/posters/indyr4400/gallery/05-sgi-indy-back.webp",
+      "alt": "The rear panel of an SGI Indy workstation showing its ports and connectors",
+      "caption": "The Indy's back panel carried the ports for the era's new desktop expectation: networked, graphical, and increasingly video-capable.",
+      "author": "Rules666",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SGI_indy_back.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "531d1e01abe4e906a1887134d03c873dce0301cf158d14b07142af634562075f",
+      "width": 1600,
+      "height": 1067
+    }
+  ]
+}

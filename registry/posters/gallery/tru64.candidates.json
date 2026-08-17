@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "tru64",
+  "images": [
+    {
+      "commonsFile": "File:Compaq Alphaserver ES40, DEC server and Dell monitor.jpg",
+      "alt": "A Compaq AlphaServer ES40 tower next to another DEC server and a monitor",
+      "caption": "A Compaq AlphaServer ES40 — the exact class of machine emulated here, DEC's own iron built around its own 64-bit Alpha processor.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:AlphaServer ES40 close-up - IMG 0622.jpg",
+      "alt": "A close-up view of an AlphaServer ES40 chassis with its front panel and drive bays visible",
+      "caption": "The ES40's front bays, built for the workload Tru64 5.1B was engineered against: DEC hardware running the operating system DEC wrote for it.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:DECAlphaServer2100APed.jpg",
+      "alt": "A DEC AlphaServer 2100A pedestal-chassis server tower, photographed from the front",
+      "caption": "A DEC AlphaServer 2100A pedestal server — an earlier member of the same AlphaServer line Tru64 was tested against release after release.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Inside a DEC AlphaServer 1000A 5-400.jpg",
+      "alt": "The interior of a decommissioned DEC AlphaServer 1000A, showing the CPU board and heat sink mounting",
+      "caption": "Inside an AlphaServer: the CPU board and its heat sink, the kind of Alpha silicon Tru64's AdvFS and TruCluster were built to drive.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:AlphaServer-2100-guts.jpg",
+      "alt": "The interior of a DEC AlphaServer 2100 with its case open, showing internal boards and cabling",
+      "caption": "The inside of an AlphaServer 2100 — server-class Alpha hardware from the same family line as the ES40 emulated here.",
+      "role": "photo"
+    }
+  ]
+}

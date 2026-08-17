@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "decos",
+  "images": [
+    {
+      "src": "/posters/decos/gallery/01-pdp11-34.webp",
+      "alt": "A DEC PDP-11/34 minicomputer cabinet on display in a computer museum",
+      "caption": "A PDP-11/34 — one of the many cabinet sizes DEC built around the same 16-bit architecture between 1970 and 1997.",
+      "author": "MHKII",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:PDP11-34.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "dab471aa32392d6f291801357c3cb710667d2c7f0ff923b2af241bec276f8e95",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/decos/gallery/02-pdp-11-34-front-panel.webp",
+      "alt": "Close-up of a PDP-11/34 front panel showing its octal keypad and row of LED indicator lights",
+      "caption": "The front panel's switches and lamps are the machine's own address and data display — no PDP-11 came without one.",
+      "author": "Autopilot",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:PDP-11-34_front_panel.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "7e6d9bce8b7276b838f39f2ec2e23915271feb6a187310289d4acadad1ba009c",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/decos/gallery/03-dec-pdp-11-40-minicomputer-1973-technisches-museum-wien-edited-white-background.webp",
+      "alt": "A DEC PDP-11/40 minicomputer cabinet, 1973, photographed against a plain white background",
+      "caption": "A PDP-11/40, 1973 — one of the many DEC-built variants that ran RT-11, RSX-11M, or RSTS/E depending on what the customer bought.",
+      "author": "Jeff Keyzer",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_PDP-11-40_Minicomputer,_1973,_Technisches_Museum_Wien_(edited,_white_background).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "3b540befea0d31d95919299ff2fa20b7670acece5bbd1f702bd08b83f7cc1bb5",
+      "width": 1086,
+      "height": 1600
+    },
+    {
+      "src": "/posters/decos/gallery/04-dec-vt100-terminal.webp",
+      "alt": "A DEC VT100 video display terminal with keyboard, the kind commonly attached to a PDP-11",
+      "caption": "A terminal like this is how most people met a PDP-11: not the cabinet, but a keyboard and a screen at the end of a serial line.",
+      "author": "Jason Scott",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_VT100_terminal.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "28eb037d7c92b0f75816038c58948ca6faa8a937dd65f506ba1169fd46387a4d",
+      "width": 1600,
+      "height": 1420
+    },
+    {
+      "src": "/posters/decos/gallery/05-dec-rl02-data-cartridge.webp",
+      "alt": "A DEC RL02 removable disk data cartridge, the kind used to boot and store data on PDP-11 systems",
+      "caption": "An RL02 cartridge — the removable disk pack that held RT-11, RSX-11M, and RSTS/E on real PDP-11 hardware.",
+      "author": "Selquim",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_RL02_Data_Cartridge.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ac3c9e010fc3fd2972131773dfc977579a2f9d16fa569d97c945cdea63c2427b",
+      "width": 1325,
+      "height": 1600
+    }
+  ]
+}

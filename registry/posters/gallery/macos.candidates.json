@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "macos",
+  "images": [
+    {
+      "commonsFile": "File:M4 Mac mini.jpg",
+      "alt": "An Apple Mac mini with an M4 processor, a small square desktop computer",
+      "caption": "The Mac mini, redesigned around Apple's own M-series silicon, is the smallest way to run a modern Mac desktop.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Mac mini (M4, 2024) - Backside.jpg",
+      "alt": "The rear of a Mac mini (M4, 2024) showing its ethernet, HDMI and Thunderbolt ports",
+      "caption": "Apple's control of processor, ports and operating system together is what let the ARM transition reshape performance and power at once.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:M2 Macbook Air Starlight model.jpg",
+      "alt": "A MacBook Air laptop in the Starlight color finish, closed, showing the Apple logo on its lid",
+      "caption": "The MacBook Air, built on Apple silicon, carries the same Finder-centred desktop identity forward from Mac OS X two decades earlier.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:MacBook Air (A2681) front.jpg",
+      "alt": "A MacBook Air laptop open, viewed from the front, showing its keyboard and display",
+      "caption": "Rosetta 2 let Intel-era software run on this Apple-silicon hardware, treating the transition as a migration rather than a hard break.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Macbook Air 15 inch - 1.jpg",
+      "alt": "A 15-inch MacBook Air laptop photographed at an angle in a retail store",
+      "caption": "By the 2020s, Apple's own chip design, compilers and hardware were built together as one controlled whole.",
+      "role": "photo"
+    }
+  ]
+}

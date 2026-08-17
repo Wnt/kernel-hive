@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "indyr4400",
+  "images": [
+    {
+      "commonsFile": "File:Silicon Graphics Indy.jpg",
+      "alt": "A blue-violet SGI Indy workstation photographed from the front against a white background",
+      "caption": "The Indy's blue-violet \"pizza box\" case, introduced by SGI in July 1993 as its entry-level workstation.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:SGI Indy CRT Keyboard Mouse.jpg",
+      "alt": "A complete SGI Indy workstation with its original 17-inch CRT monitor, keyboard and mouse",
+      "caption": "A full Indy system as SGI shipped it: pizza-box unit, CRT, keyboard and mouse, priced for universities and design studios to buy by the dozen.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:SGI Indy mit Originalkamera.jpg",
+      "alt": "An SGI Indy workstation with its original IndyCam video camera attached on top",
+      "caption": "The camera on top is the IndyCam — SGI put digital video capture in the box rather than on the options list, unusual for 1993.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:IndyCam (1993).jpg",
+      "alt": "A close-up of an SGI IndyCam, the small video camera bundled with the Indy workstation",
+      "caption": "The IndyCam, 1993 — a standard-issue peripheral that made the Indy one of the first desktop machines built for video from day one.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:SGI indy back.jpg",
+      "alt": "The rear panel of an SGI Indy workstation showing its ports and connectors",
+      "caption": "The Indy's back panel carried the ports for the era's new desktop expectation: networked, graphical, and increasingly video-capable.",
+      "role": "photo"
+    }
+  ]
+}

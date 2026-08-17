@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "cbm8032",
+  "images": [
+    {
+      "commonsFile": "File:Commodore PET 8032.jpg",
+      "alt": "A Commodore CBM/PET 8032 all-in-one computer with an 80-column monitor built into its case, photographed beside a window",
+      "caption": "The CBM 8032: a 12-inch, 80-column screen built into the same case as the keyboard, the width that separated a business machine from a home one.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore CBM 8032 mit Peripherie (37650524544).jpg",
+      "alt": "A Commodore CBM 8032 computer connected to its disk drive peripherals",
+      "caption": "By 1980 Commodore's PET line had grown a full business keyboard, doubled its memory, and moved from 40 columns to 80.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Cbm-8032-anlage.jpg",
+      "alt": "A Commodore CBM 8032 computer set up with external disk drive and printer peripherals",
+      "caption": "An IEEE-488 bus on the back, borrowed from laboratory instrumentation, connected the 8032 to disk drives and printers for an office's day of file work.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore CBM 8032-SK (33575329583).jpg",
+      "alt": "A Commodore CBM 8032-SK computer, a later case revision of the 8032 with a detached keyboard",
+      "caption": "A later 8032 case revision moved the keyboard off the main housing; the screen, memory, and BASIC 4.0 underneath stayed the same.",
+      "role": "photo"
+    }
+  ]
+}

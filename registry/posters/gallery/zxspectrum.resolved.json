@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "zxspectrum",
+  "images": [
+    {
+      "src": "/posters/zxspectrum/gallery/01-zxspectrum48k.webp",
+      "alt": "A Sinclair ZX Spectrum 48K computer with its grey rubber keyboard, photographed from above",
+      "caption": "The ZX Spectrum, launched 23 April 1982, kept Sinclair's one-key-one-keyword BASIC but added colour, sound, and forty rubber keys.",
+      "author": "Bill Bertram",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:ZXSpectrum48k.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "c702ad5062d887a263e25632601919aa9fb45165f4d195637a8d898a994fb842",
+      "width": 1600,
+      "height": 1176
+    },
+    {
+      "src": "/posters/zxspectrum/gallery/02-sinclair-zx-spectrum-1982-1.webp",
+      "alt": "A Sinclair ZX Spectrum 48K computer viewed from the front, showing its black case and grey rubber keyboard",
+      "caption": "A single Ferranti uncommitted logic array replaced most of the board a machine like this would otherwise have needed, and gave the Spectrum its price and its personality.",
+      "author": "Jzh2074",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_ZX_Spectrum_(1982)_1.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2af8f5e906784c9c1cb3e43cab960c46f718427770246ae3d45e83d44853b9b0",
+      "width": 1507,
+      "height": 1600
+    },
+    {
+      "src": "/posters/zxspectrum/gallery/03-zx-spectrum-showing-rubber-key-mat.webp",
+      "alt": "A Sinclair ZX Spectrum 48K with its metal keyboard template removed, exposing the single-piece bluish-grey rubber key mat underneath",
+      "caption": "Steve Vickers' tokenising BASIC spared the rubber keyboard from constant use by making one keypress enter a whole command — PRINT, GO TO, RUN — rather than a single letter.",
+      "author": "Multicherry",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:ZX_Spectrum_showing_rubber_key_mat.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b0b89969a97c675263d8ed76a0f29a7cdcc648436da219e64c58e8c2d43285b0",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/zxspectrum/gallery/04-zx-spectrum-3126220123.webp",
+      "alt": "A Sinclair ZX Spectrum 48K computer photographed at an angle, showing its rainbow stripe logo and rubber keyboard",
+      "caption": "The rainbow stripe below the keyboard advertised the Spectrum's colour display, a first for a Sinclair computer.",
+      "author": "Marcin Wichary from San Francisco, Calif.",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:ZX_Spectrum_(3126220123).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "cc77e3ce44cf3321ba71124623450ec2b700fb1fa104045731c3315a4e69165b",
+      "width": 1600,
+      "height": 1065
+    },
+    {
+      "src": "/posters/zxspectrum/gallery/05-sinclair-zx-spectrum-7091646959.webp",
+      "alt": "A Sinclair ZX Spectrum 48K computer, shown close up with its keyboard and edge connector visible",
+      "caption": "Attribute clash — two moving objects forced to share the ink and paper colour of an 8×8 pixel block — became the Spectrum's most recognisable visual signature.",
+      "author": "ccwoodcock",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_ZX_Spectrum_(7091646959).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2a8a119f50d81e923e49a877424b297041f26601258e7ca3b508c8f130732dd0",
+      "width": 1600,
+      "height": 1018
+    }
+  ]
+}

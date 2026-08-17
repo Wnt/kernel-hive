@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "decos",
+  "images": [
+    {
+      "commonsFile": "File:PDP11-34.jpg",
+      "alt": "A DEC PDP-11/34 minicomputer cabinet on display in a computer museum",
+      "caption": "A PDP-11/34 — one of the many cabinet sizes DEC built around the same 16-bit architecture between 1970 and 1997.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:PDP-11-34 front panel.jpg",
+      "alt": "Close-up of a PDP-11/34 front panel showing its octal keypad and row of LED indicator lights",
+      "caption": "The front panel's switches and lamps are the machine's own address and data display — no PDP-11 came without one.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:DEC PDP-11-40 Minicomputer, 1973, Technisches Museum Wien (edited, white background).jpg",
+      "alt": "A DEC PDP-11/40 minicomputer cabinet, 1973, photographed against a plain white background",
+      "caption": "A PDP-11/40, 1973 — one of the many DEC-built variants that ran RT-11, RSX-11M, or RSTS/E depending on what the customer bought.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:DEC VT100 terminal.jpg",
+      "alt": "A DEC VT100 video display terminal with keyboard, the kind commonly attached to a PDP-11",
+      "caption": "A terminal like this is how most people met a PDP-11: not the cabinet, but a keyboard and a screen at the end of a serial line.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:DEC RL02 Data Cartridge.jpg",
+      "alt": "A DEC RL02 removable disk data cartridge, the kind used to boot and store data on PDP-11 systems",
+      "caption": "An RL02 cartridge — the removable disk pack that held RT-11, RSX-11M, and RSTS/E on real PDP-11 hardware.",
+      "role": "photo"
+    }
+  ]
+}

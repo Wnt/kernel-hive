@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "dragon32",
+  "images": [
+    {
+      "commonsFile": "File:Dragon 32.jpg",
+      "alt": "A Dragon 32 home computer in its cream case, photographed from the front with its full-travel keyboard visible",
+      "caption": "The Dragon 32, built in Port Talbot to Motorola's own reference design around the MC6809E processor.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Dragon 32 (RetroMadrid 2018).jpg",
+      "alt": "A Dragon 32 computer on display at a vintage computing exhibition, shown from the front with its keyboard and cartridge slot",
+      "caption": "Full-travel keys were one of the Dragon's genuine strengths, at a time when rival machines were selling rubber membranes.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Dragon 32 (1982) (24493991688).jpg",
+      "alt": "Close view of a Dragon 32 computer casing showing its keyboard and Dragon Data branding",
+      "caption": "Dragon Data set up in South Wales in 1982 to build a home computer for Britain's boom, priced just under £200.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Dragon 32 computer at Play Expo 2013.JPG",
+      "alt": "A Dragon 32 computer displayed at a retro computing expo, shown at an angle with its case and keyboard visible",
+      "caption": "Underneath the case sat an MC6809E, an 8-bit processor with two accumulators, hardware multiply and genuinely position-independent code.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Dragon 32 top view.jpg",
+      "alt": "Overhead view of a Dragon 32 computer showing the full keyboard layout and cartridge port",
+      "caption": "The keyboard's unshifted letters are capitals — lower case comes out as inverse video, a quirk of the machine's MC6847 video chip.",
+      "role": "photo"
+    }
+  ]
+}

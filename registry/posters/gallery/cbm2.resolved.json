@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "cbm2",
+  "images": [
+    {
+      "src": "/posters/cbm2/gallery/01-commodore-cbm-610-thomas-cont-a.webp",
+      "alt": "A Commodore CBM 610 business computer, a low beige case with an integrated keyboard, photographed from the front",
+      "caption": "The CBM 610: a low-profile business machine with the keyboard built into the case, banking a megabyte of address space through a 6502-derived 6509.",
+      "author": "Thomas Conté",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_CBM_610_(Thomas_Cont%C3%A9)_A.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "73604faafd8fc5bd1f3fdd5dfe6fc3119d5b7f5bff18babf85da69424f4bd125",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/cbm2/gallery/02-commodore-cbm-610-thomas-cont-closeup.webp",
+      "alt": "Close-up view of a Commodore CBM 610 keyboard and case badge",
+      "caption": "A full business keyboard with a numeric pad, built for an office that would rather have bought an IBM.",
+      "author": "Thomas Conté",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_CBM_610_(Thomas_Cont%C3%A9)_Closeup.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ddc6f8b10d04ecfe775106ea7464d809fdc4adb1d7f7353afda44368750542b6",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/cbm2/gallery/03-1-1111-cbm610-04.webp",
+      "alt": "A Commodore CBM 610 business computer shown at an angle with its low-profile case",
+      "caption": "The CBM-II line sold in the tens of thousands, not the millions, and was quietly discontinued after Jack Tramiel left Commodore.",
+      "author": "1-1111",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:1-1111_CBM610_04.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "aa95c791730bb6ded66f497168bc9e9a42734fab59d2bc7d78eb516bc5d80792",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/cbm2/gallery/04-cbm610-klein-01.webp",
+      "alt": "A Commodore CBM 610 computer photographed in a collection setting",
+      "caption": "A megabyte of banked address space through a 1975-vintage 6502 derivative was genuinely clever engineering, aimed at a market that had already moved on.",
+      "author": "1-1111",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cbm610_klein_01.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "41f9ab8606e54c6c74493e15ac520605ba35fbd4d39458ee6f9ce7b6e36ce8a0",
+      "width": 1600,
+      "height": 1170
+    },
+    {
+      "src": "/posters/cbm2/gallery/05-cbm610-back.webp",
+      "alt": "The rear panel of a Commodore CBM 610, showing its IEEE-488 and other connectors",
+      "caption": "IEEE-488 on the back connected the CBM 610 to the same business drives and printers Commodore already sold — the right bus for Commodore's own peripherals, and the wrong one for everybody else's.",
+      "author": "1-1111",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:CBM610_back.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "df38500e22567596191bc4b34313457d1a6692e4ea6404fe65c78e26618e79d0",
+      "width": 1600,
+      "height": 422
+    }
+  ]
+}

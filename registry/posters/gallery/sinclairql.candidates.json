@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "sinclairql",
+  "images": [
+    {
+      "commonsFile": "File:Sinclair QL (RetroMadrid 2018).jpg",
+      "alt": "A Sinclair QL home computer, a flat black wedge the size of a keyboard, photographed from the front",
+      "caption": "Announced 12 January 1984, twelve days before the Macintosh, the QL was Clive Sinclair's move to leave the toy market behind.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Working-Sinclair-QL.jpg",
+      "alt": "A Sinclair QL computer connected to a monitor and switched on, shown as a complete working system",
+      "caption": "Inside the wedge sat a Motorola 68008 — a 32-bit processor with an eight-bit bus, at a price Sinclair could bear.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Sinclair QL Top.jpg",
+      "alt": "Overhead view of a Sinclair QL computer showing its full keyboard layout",
+      "caption": "QDOS multitasked pre-emptively out of 48 KB of ROM, at a time when the Macintosh and the IBM PC ran one program at a time.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Sinclair QL Microdrive cartridge.jpg",
+      "alt": "A Sinclair QL Microdrive cartridge, a small tape-loop cartridge about the size of a matchbox",
+      "caption": "Storage came from two built-in Microdrives — a continuous loop of tape, fast for its kind but never reliable enough for work you cared about.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Sincalir-QL-68008-Processor.jpg",
+      "alt": "Close-up view of the Motorola 68008 processor chip removed from a Sinclair QL circuit board",
+      "caption": "The 68008 gave the QL a 32-bit-class processor for the price of an eight-bit one, the compromise that made the machine possible at £399.",
+      "role": "photo"
+    }
+  ]
+}

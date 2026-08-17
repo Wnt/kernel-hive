@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "zx81",
+  "images": [
+    {
+      "commonsFile": "File:Sinclair ZX81 (RetroMadrid 2018).jpg",
+      "alt": "A matt black Sinclair ZX81 with its membrane keyboard, photographed from the front",
+      "caption": "The ZX81, launched in March 1981, folded the ZX80's twenty-one chips down to four inside Jim Westwood's redesign.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Sinclair ZX81 Tietokonemuseo.JPG",
+      "alt": "A Sinclair ZX81 on display in a computer museum, shown from the front with its printed membrane keyboard",
+      "caption": "Rick Dickinson's wedge-shaped case and flat membrane keyboard replaced moving keys entirely, to hold the kit price at £49.95.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Sinclair ZX-81.jpg",
+      "alt": "A Sinclair ZX81 computer viewed at a three-quarter angle, showing its black wedge case and rear edge connector",
+      "caption": "Every keyword on the membrane is a single keystroke, because the machine's one kilobyte of memory has no room to spare for spelling them out.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Sinclair ZX81 - Retrosystems 2010.jpg",
+      "alt": "A Sinclair ZX81 with its 16 KB RAM pack plugged into the rear edge connector, on display at a retrocomputing event",
+      "caption": "The 16 KB RAM pack turned the ZX81 into a machine you could write a real program on — and was notorious for working loose and losing an evening's typing.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:SinclairZX81.jpg",
+      "alt": "A Sinclair ZX81 computer photographed close up, showing the keyword labels printed on each key of the membrane keyboard",
+      "caption": "Three or four BASIC keywords are printed on every key, because Sinclair BASIC never expects you to type one out letter by letter.",
+      "role": "photo"
+    }
+  ]
+}

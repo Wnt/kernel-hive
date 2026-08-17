@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "zx81",
+  "images": [
+    {
+      "src": "/posters/zx81/gallery/01-sinclair-zx81-retromadrid-2018.webp",
+      "alt": "A matt black Sinclair ZX81 with its membrane keyboard, photographed from the front",
+      "caption": "The ZX81, launched in March 1981, folded the ZX80's twenty-one chips down to four inside Jim Westwood's redesign.",
+      "author": "AUIC Oficial",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_ZX81_(RetroMadrid_2018).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "c93ad0884195c773477920cd9775ae8bdb20fa5e91efa04c6cc17dec258b184a",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/zx81/gallery/02-sinclair-zx81-tietokonemuseo.webp",
+      "alt": "A Sinclair ZX81 on display in a computer museum, shown from the front with its printed membrane keyboard",
+      "caption": "Rick Dickinson's wedge-shaped case and flat membrane keyboard replaced moving keys entirely, to hold the kit price at £49.95.",
+      "author": "MKFI",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_ZX81_Tietokonemuseo.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "bb1e91f0dee76b2e98ef19002837ecc56ec4c665ec3a7a8ef1856abf347aaada",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/zx81/gallery/03-sinclair-zx-81.webp",
+      "alt": "A Sinclair ZX81 computer viewed at a three-quarter angle, showing its black wedge case and rear edge connector",
+      "caption": "Every keyword on the membrane is a single keystroke, because the machine's one kilobyte of memory has no room to spare for spelling them out.",
+      "author": "MOS6502",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_ZX-81.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "d0c693a8f3e4c84de263fe6c3c957788e3b532088c5100c1014f299fd1e58dcc",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/zx81/gallery/04-sinclair-zx81-retrosystems-2010.webp",
+      "alt": "A Sinclair ZX81 with its 16 KB RAM pack plugged into the rear edge connector, on display at a retrocomputing event",
+      "caption": "The 16 KB RAM pack turned the ZX81 into a machine you could write a real program on — and was notorious for working loose and losing an evening's typing.",
+      "author": "Soupmeister",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_ZX81_-_Retrosystems_2010.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "8c625ec3f6ac951797805bc9c6bef5906093f8ce99f5402d9b0c55756776e2c4",
+      "width": 1200,
+      "height": 797
+    },
+    {
+      "src": "/posters/zx81/gallery/05-sinclairzx81.webp",
+      "alt": "A Sinclair ZX81 computer photographed close up, showing the keyword labels printed on each key of the membrane keyboard",
+      "caption": "Three or four BASIC keywords are printed on every key, because Sinclair BASIC never expects you to type one out letter by letter.",
+      "author": "babbagecabbage",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:SinclairZX81.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "3e4df39c12545d2c302582fc35922d3a0223054ed04f39f705bb74cc8c66094e",
+      "width": 1600,
+      "height": 1304
+    }
+  ]
+}

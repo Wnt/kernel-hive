@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "kc854",
+  "images": [
+    {
+      "commonsFile": "File:TSD-KC85-4-kol.jpg",
+      "alt": "A KC 85/4 home computer in its case, photographed from the front showing the keyboard and cassette port",
+      "caption": "The KC 85/4 shipped in 1988 from VEB Mikroelektronik in Mühlhausen, Thuringia, the last major revision of the line.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:KC85 – the (expensive) GDR home computer - 48929506503.jpg",
+      "alt": "A KC 85 series East German home computer displayed with its keyboard, photographed for a museum or collection",
+      "caption": "Most KC 85/4 units went where the state plan sent them — schools and after-school technical clubs — rather than to private buyers.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Heimcomputer KC 85 TSD.JPG",
+      "alt": "A KC 85 home computer on display, shown with its case and keyboard in a technical collection",
+      "caption": "Inside was a U880, an East German Z80 clone built without a licence from Zilog.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:KC85, Eastern Germany Homecomputer (3497498967).jpg",
+      "alt": "A KC 85 series East German home computer, photographed showing its full case and keyboard",
+      "caption": "The machine's slots let it grow: RAM and ROM modules, a floppy interface, an assembler, all pushed into the side of the case.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:KC85 (34000684590).jpg",
+      "alt": "A KC 85 series computer with its keyboard and case visible, photographed at an angle",
+      "caption": "CAOS, the Cassette Aided Operating System, prints its own command menu at power-on so the first screen is also the documentation.",
+      "role": "photo"
+    }
+  ]
+}

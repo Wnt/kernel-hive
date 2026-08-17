@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "alto",
+  "images": [
+    {
+      "src": "/posters/alto/gallery/01-xerox-alto-computer.webp",
+      "alt": "A Xerox Alto minicomputer cabinet beside its keyboard, mouse, and tall portrait-format bitmap display",
+      "caption": "The Alto's cabinet held a full minicomputer's worth of logic, wheeled up beside a desk rather than housed in a machine room.",
+      "author": "Maksym Kozlenko",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Xerox_Alto_computer.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2875b6e25da6a334206c8335e73bb3360fcb2ec0669969484d2e515e0a8b279a",
+      "width": 1600,
+      "height": 1319
+    },
+    {
+      "src": "/posters/alto/gallery/02-xerox-alto.webp",
+      "alt": "A Xerox Alto workstation with its tall portrait monitor, keyboard, and three-button mouse on a desk",
+      "caption": "Desk, chair, keyboard, mouse, and a screen shaped like a page: the Alto's whole claim was that a computer could look like this.",
+      "author": "Unknown",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Xerox_Alto.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "abd3e5bb0c45bf228da49450372e66bad69a8f17dc28cc48924fbc5505c33b86",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/alto/gallery/03-xerox-alto-mit-rechner.webp",
+      "alt": "A Xerox Alto system with its processor cabinet, portrait display, keyboard, and mouse set up together",
+      "caption": "About two thousand Altos were built at Xerox PARC and given away inside the company and to a handful of universities; none were ever sold.",
+      "author": "Joho345",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Xerox_Alto_mit_Rechner.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ee7d0a42ab57645283d08c4593b942757f9652a4a3bced79937695d81312a9d5",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/alto/gallery/04-xerox-alto-at-the-computer-history-museum.webp",
+      "alt": "A preserved Xerox Alto on display, showing the processor cabinet and portrait monitor",
+      "caption": "A surviving Alto, decades later: the machine that first put overlapping windows, a mouse, and Ethernet in front of one person at a desk.",
+      "author": "Don DeBold",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Xerox_Alto_at_the_Computer_History_Museum.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "1d6ebbbef9e4309726f4ff2a30582a6d6a8dd1403c8e063a8d0d496b4d856133",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/alto/gallery/05-xerox-alto-keyset.webp",
+      "alt": "Close-up of the Xerox Alto's five-key chorded keyset, a separate input device beside the keyboard",
+      "caption": "Beside the keyboard sat a five-key chorded keyset, borrowed from Doug Engelbart's oN-Line System, for issuing commands with one hand.",
+      "author": "Vincent Lextrait",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Xerox_Alto_keyset.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "d81749c4a65b9653bb35475cd1c1c29bf47894122d96e68a74f5860406b337e7",
+      "width": 1200,
+      "height": 1600
+    }
+  ]
+}
