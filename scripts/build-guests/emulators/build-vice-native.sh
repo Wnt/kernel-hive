@@ -93,7 +93,7 @@ die() {
 # published chip instead of racing for it.
 VICE_FORK_URL="${VICE_FORK_URL:-https://github.com/Wnt/vice.git}"
 VICE_FORK_BRANCH=kernel-hive/integrated
-VICE_FORK_PIN=507cf3e8323ab11feec96258f78832060a558e79
+VICE_FORK_PIN=ff72e402ee1959f82c32df9b107dd5816c645799
 SUBMODULE="$REPO_ROOT/third_party/vice-kernel-hive"
 
 # ---------------------------------------------------------------------------
@@ -342,7 +342,7 @@ cat <<EOF
 
 Station:  $STATION (host-native VICE conversion)
 Binary:   $BIN
-Source:   github.com/Wnt/vice $VICE_FORK_BRANCH @ $VICE_FORK_PIN (5 commits on tag 3.10.0)
+Source:   github.com/Wnt/vice $VICE_FORK_BRANCH @ $VICE_FORK_PIN (13 commits on tag 3.10.0)
 Data:     $DATA
 Geometry: $GATE_GEOM  (MEASURED — VICE has no MAME_SHM_SIZE; the surface is the
           emulated screen x <CHIP>DoubleSize. Put this in the fixture desc.)
