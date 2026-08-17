@@ -175,7 +175,7 @@
     "displayName": "Acorn ARM Evaluation System",
     "year": 1986,
     "lineage": "Acorn Computers (Cambridge) — Atom, BBC Micro, ARM Evaluation System, Archimedes, ARM Ltd",
-    "arch": "Acorn ARM1, 8 MHz, 4 MB RAM on a BBC Micro Tube podule; MOS 1.20 6502A host with Acorn ADFS 1.30 and the 1770 disc interface",
+    "arch": "Acorn ARM1, 8 MHz, 4 MB RAM",
     "ramMB": 4,
     "ramKB": 0,
     "era": "1980s",

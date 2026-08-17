@@ -4,8 +4,8 @@ subtitle: 2003 · DEC's own UNIX on DEC's own 64-bit iron
 hero: /posters/tru64/desktop.webp
 images:
   - src: /posters/tru64/desktop.webp
-    alt: The Tru64 UNIX 5.1B desktop at 1280×1024 — the Common Desktop Environment's blue-grey stippled backdrop, empty, with the CDE front panel across the bottom: analogue clock, date calendar, file manager, text editor, mail, a four-square workspace switcher flanked by lock and exit controls, then printer, style manager, application manager, help and trash
-    caption: The Common Desktop Environment on DEC's own UNIX — the 5.1B desktop as it comes up, logged in and idle, drawn by Tru64's own X server on the emulated AlphaServer's S3 graphics.
+    alt: The Tru64 UNIX 5.1B desktop at 1280×1024 — a terminal window titled "Web browser – lynx on Tru64 UNIX" fills most of the Common Desktop Environment's blue-grey backdrop, showing the 1992 CERN page "World Wide Web" with its list of links (executive summary, Mailing lists, Policy, What's out there?, Software Products), and the CDE front panel runs along the bottom
+    caption: The first website, fetched live by a 2003 UNIX workstation — Lynx in a CDE terminal on Tru64 5.1B, over the machine's own TCP/IP stack.
 ---
 ## Origins
 
@@ -19,7 +19,9 @@ The AlphaServer ES40 emulated here is the natural home of this operating system 
 
 ## What you're looking at
 
-A finished Tru64 UNIX 5.1B system, logged in and sitting at its desktop: the Common Desktop Environment at 1280×1024, its front panel along the bottom edge — clock, calendar, file manager, text editor, mail, four workspaces, and the tools of a 2003 commercial UNIX workstation. This is CDE as the industry standardised it, the same desktop shipped by Sun, HP, IBM and DEC, here in DEC's own colours on DEC's own operating system.
+A finished Tru64 UNIX 5.1B system at its desktop, with a browser open on the web. The desktop is the Common Desktop Environment at 1280×1024 — CDE as the industry standardised it, the same environment shipped by Sun, HP, IBM and DEC, here in DEC's own colours on DEC's own operating system. The window on top is Lynx, the text browser that was how most UNIX workstations of this era read the web, showing the page CERN put online in 1992 and never took down.
+
+The page is not a recording. This machine has a DEC 21143 Ethernet controller, a real TCP/IP stack, and a route to the internet; it resolved the name and fetched the document itself. The arrow keys follow links, so the web this machine reaches is the live one — as much of it as still speaks plain HTTP to a browser from 1997.
 
 Nothing is staged. The installation you would otherwise be reading about really happened on this exhibit — all 115 software subsets onto an AdvFS file system — and what you see is that installed machine, brought back to this exact moment. Between visits it is frozen mid-instruction rather than shut down, so it resumes where it stood; and when it is reset it returns to this desktop in about three seconds, however the previous visitor left it.
 

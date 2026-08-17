@@ -145,7 +145,7 @@
     "displayName": "Commodore 128",
     "year": 1985,
     "lineage": "Commodore 8-bit line (MOS 8502 + Zilog Z80, VIC-II + VDC)",
-    "arch": "MOS 8502 at 2.04/1.02 MHz (PAL) + Zilog Z80A, 128 KB RAM, 64 KB VDC video RAM",
+    "arch": "MOS 8502 + Zilog Z80A, 128 KB RAM",
     "ramMB": 0,
     "ramKB": 128,
     "era": "1980s",

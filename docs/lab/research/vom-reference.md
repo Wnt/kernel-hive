@@ -51,6 +51,46 @@ Cloned locally, deliberately **outside** this repo so nothing NC-SA can be
 committed by accident: `~/vom-repo` (launcher), `~/vom-site` (catalogue),
 `~/vom-host-scripts` (VM runner).
 
+### The media itself, and how to read it without running the VM
+
+The full edition is downloaded to **`~/virtualosmuseum/virtual_os_museum-2026.06.12-full.zip`**
+(130 GB), and its guest-image disk is extracted, kept, and reusable at:
+
+**`~/vom-extract/guest_images.vdi`** — 173 GB apparent, ~126 GB on disk (written
+sparse), a 5 TB VDI holding one **btrfs** filesystem with every installation
+under `/images/<platform>/.../<name>_config/`.
+
+Extract it again, if it is ever lost, with a sparse stream — no unzip to a
+temporary file, and zeros never hit the disk:
+
+```bash
+unzip -p ~/virtualosmuseum/virtual_os_museum-2026.06.12-full.zip \
+  "virtual_os_museum-2026.06.12-full/VirtualOSMuseum.utm/Data/guest_images.vdi" |
+  dd of=~/vom-extract/guest_images.vdi bs=4M conv=sparse status=progress   # ~35 min
+```
+
+**Mounting it needs labhost**, because the dev container (CT950) has no
+`/dev/nbd*`, no `/dev/loop-control` and no `/dev/fuse`. Serve it from wherever
+the file is and attach from labhost, which has the kernel side:
+
+```bash
+# on the box holding the file (userspace server, no kernel module needed):
+qemu-nbd --read-only --format=vdi --port 10809 --bind 0.0.0.0 --persistent --fork \
+  ~/vom-extract/guest_images.vdi
+# on labhost:
+modprobe nbd max_part=8
+qemu-nbd -c /dev/nbd0 --read-only nbd://<that-box-ip>:10809
+mount -o ro /dev/nbd0p1 /mnt/vom      # btrfs; plain -o ro, NOT ext4's noload
+# afterwards
+umount /mnt/vom && qemu-nbd -d /dev/nbd0
+```
+
+What you can and cannot open once mounted: their **config directories are plain
+files** (`cfg.emu`, `PASSWD`, `INFO/info`, the disk image) and readable, but a
+guest's own filesystem usually is not — Tru64's `dka0.dd` is **AdvFS**, which
+Linux cannot mount at all. For those, read the raw image with `grep -a` /
+`strings`, which is enough to answer most questions, or boot it in an emulator.
+
 The launcher repo is **3.5 MB and contains no media**. Images are delivered as
 Debian packages named `os-museum-machine-<name>-image` from an apt mirror; the
 mirror URLs committed to the repo are placeholders (`10.0.2.2`, the VM's SLIRP
@@ -152,6 +192,35 @@ it happens to use.
 evidence about their toolchain, not about the world.** A hit here is a strong
 positive — someone has it working. A miss is only a hint, and it must never
 outrank an experiment.
+
+### Tru64 and the OSF-BASE PAK — they did not solve it either
+
+Asked in 2026-08-17 whether VOM had an answer to the licence wall blocking
+non-root logins on our `tru64` station (no OSF-BASE PAK -> dtlogin refuses a
+non-root autologin with "Too many users logged on already"). Read out of their
+own media, not inferred:
+
+- **Their guest logs the identical complaint.** `vmunix: Can't find an OSF-BASE,
+  UNIX-WORKSTATION, or UNIX-SERVER license PAK` appears in the syslog inside
+  `dka0.dd`. A registered base PAK would silence it. They are running the same
+  unlicensed state we are.
+- **No PAK is registered.** The only PAK-shaped text in their disk is the blank
+  `lmf` entry template (`Authorization Number:` with nothing after it).
+- **Their exhibit is used as root.** Login records inside the image show only
+  `root` on `:0`; there is no `Dtlogin*autoLogin` resource at all, so a visitor
+  meets the CDE greeter and logs in with the password their config publishes
+  (`PASSWD`: `root: decosf1`). A second account, `decuser`, exists in
+  `/etc/passwd` — it appears in FTP contexts, never in a login record.
+- **Their emulator is AlphaVM Free, not es40** (`cfg.emu`: `type = es40_833`,
+  `ssn = 'AlphaVM-00000001'`, `ether ... dec21143 ... server = tap`, a
+  `scsi_disk dka0.dd` and the 5.1B CD). Worth knowing for a different reason:
+  AlphaVM exposes the **system serial number** as a config knob, and a Tru64 PAK
+  binds to exactly that field. It is the seam a legitimately-held PAK would need;
+  they do not use it for that, and neither can we without a PAK.
+
+So the answer for our station is that there is nothing to copy: **the museum
+that has run Tru64 the longest ships it root-only, exactly as ours does now.**
+See [`docs/guests/tru64.md`](../../guests/tru64.md) for our side of the same wall.
 
 ### Xerox — Duchess confirmed, and a variant we missed
 

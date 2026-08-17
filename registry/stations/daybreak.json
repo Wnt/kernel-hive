@@ -184,7 +184,7 @@
     "displayName": "Xerox 6085",
     "year": 1985,
     "lineage": "Xerox Star / Pilot-Mesa office workstations",
-    "arch": "Xerox Mesa processor (Daybreak/Dove), 1152×861 mono display",
+    "arch": "Xerox Mesa processor (Daybreak/Dove)",
     "ramMB": 4,
     "era": "1980s",
     "accent": "#C8102E",

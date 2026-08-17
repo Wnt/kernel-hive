@@ -105,14 +105,11 @@ class Session:
             pass
 
 
-def run_once(station_dir, cmd, timeout, tag):
-    """One login + one command.
-
-    Returns (rc, stdout, raw). rc None means the EXCHANGE failed — no sentinels
-    came back, i.e. the line was corrupted or the guest never answered — which
-    is the one case worth retrying on a fresh login."""
-    begin, end = f"BX{tag}", f"EX{tag}"
-
+def open_session(station_dir, timeout, tag):
+    """Connect, converge on a login, and hand back a Session at a silent ksh
+    prompt — or None. Callers that run many commands (a file push is one
+    `echo` per line) should open ONCE: a login per line is both slow and the
+    thing most likely to leave the getty in a state the next call trips over."""
     try:
         se = Session(f"{station_dir}/serial-exec.sock", timeout)
     except OSError as e:
@@ -120,7 +117,7 @@ def run_once(station_dir, cmd, timeout, tag):
             f"tru64exec: cannot reach {station_dir}/serial-exec.sock ({e}).\n"
             "The station must be running (pumps.py owns the line and serves this socket).\n"
         )
-        return 125, "", ""
+        return None
 
     # Converge on a FRESH login prompt. The line is shared and persistent: a
     # previous call that timed out (or a guest frozen mid-exchange) can leave
@@ -129,12 +126,25 @@ def run_once(station_dir, cmd, timeout, tag):
     # state we find back to "login:" — answer a stray Password:, log out of a
     # live shell — before touching the command.
     logged_in = False
+    probe = f"PB{tag}"
     for _ in range(6):
         thaw(station_dir)
         se.buf.clear()
         se.send("")
         se.read_until(rb"(?i)login:|password:|[#$] ?$", 8)
         tail = bytes(se.buf)[-200:]
+        if not tail.strip():
+            # SILENT line. Either nothing is listening, or — the state this
+            # client can create itself — a previous session died leaving a live
+            # shell with `stty -echo` and an empty PS1, which answers a bare
+            # newline with exactly nothing. Ask a question only a shell can
+            # answer before concluding the channel is dead.
+            se.buf.clear()
+            se.send(f"echo {probe}")
+            if se.read_until(probe.encode(), 8):
+                logged_in = True
+                break
+            continue
         if PASSWORD.search(tail):
             se.send("")  # empty password -> "Login incorrect" -> fresh login:
             continue
@@ -155,7 +165,7 @@ def run_once(station_dir, cmd, timeout, tag):
             "The guest may be frozen (idle auto-pause) or the getty on tty01 is gone.\n"
         )
         se.close()
-        return 125, "", ""
+        return None
 
     # root's login shell here is /bin/sh — Tru64's LEGACY Bourne shell, where
     # `$(...)` is not command substitution but a syntax error, so a caller's
@@ -181,6 +191,14 @@ def run_once(station_dir, cmd, timeout, tag):
     se.send(f"echo {sync}")
     se.read_until(sync.encode(), 20)
     se.buf.clear()
+    return se
+
+
+def run_command(se, station_dir, cmd, timeout, tag):
+    """Run one command in an open session. Returns (rc, stdout, raw); rc None
+    means no sentinels came back — the exchange failed, not the command."""
+    begin, end = f"BX{tag}", f"EX{tag}"
+    se.buf.clear()
 
     # The command runs in a SUBSHELL: a bare `exit 3` (or a command that ends
     # with one) would otherwise kill the login before the closing sentinel is
@@ -195,12 +213,6 @@ def run_once(station_dir, cmd, timeout, tag):
         se.read_until(end_re, min(30.0, timeout))
 
     text = bytes(se.buf).replace(b"\r", b"").decode("latin1", "replace")
-    try:
-        se.send("exit")
-    except OSError:
-        pass
-    se.close()
-
     m = re.search(re.escape(begin) + r"\n(.*?)" + re.escape(end) + r"(\d+)", text, re.S)
     if not m:
         return None, "", text
@@ -227,7 +239,16 @@ def main():
     # is to start the exchange over rather than to guess what the line means.
     raw = ""
     for attempt in range(2):
-        rc, out, raw = run_once(station_dir, cmd, timeout, uuid.uuid4().hex[:12].upper())
+        tag = uuid.uuid4().hex[:12].upper()
+        se = open_session(station_dir, timeout, tag)
+        if se is None:
+            return 125
+        rc, out, raw = run_command(se, station_dir, cmd, timeout, tag)
+        try:
+            se.send("exit")
+        except OSError:
+            pass
+        se.close()
         if rc is not None:
             if out:
                 sys.stdout.write(out + "\n")
