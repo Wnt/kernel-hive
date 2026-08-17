@@ -172,3 +172,30 @@ This is an unvalidated first pass written under a 5-minute timebox. No media
 search, no emulator run, and no cross-check against `~/vom-repo/info/emulators/`
 beyond a filename grep were performed. Treat every recipe value above as a
 starting guess to be revised once real media is in hand.
+
+---
+
+## VOM hints (reference only, added 2026-08-17)
+
+The Virtual OS Museum collection on this box ships a working installation of
+this OS. **We take no media from it** — see the media rule in
+[`AGENTS.md`](../../../AGENTS.md); it is a recipe reference only. These hints were read from its *package metadata* (dpkg file
+lists on the host rootfs), which names the emulator, the ROM/firmware files and
+the author's own screenshots — the screenshot filenames are effectively his
+verdict on what the install actually reaches. The boot scripts themselves live
+on the 173 GB guest-image disk, which has NOT been extracted, so the exact
+command lines below are inferred from filenames, not read.
+
+**VOM install:** `pcx86/.../rhapsody_5.1_config/` with `RUN_QEMU` +
+`hda.qcow_img`.
+
+- **Emulator: plain QEMU x86** — no ROM, no firmware blob, no bridge. Supports
+  the Tier-1 assumption in this note, and confirms **5.1 for Intel is the
+  release that is actually made to run**, which is what this note targets.
+- VOM keeps pinned old QEMU i386 builds (`0.8.2`, `0.9.1`, `3.0.92`, `5.2.0`,
+  `7.0.0`, `8.0.5`). For NeXT-family x86 guests that is exactly the knob the
+  NeXTSTEP 3.3 gotchas predict; if a modern QEMU fails, walk the versions back.
+- **No screenshot and no `PASSWD` file** — so VOM is *not* independent evidence
+  that this install reaches the Workspace. Combined with the absence of any
+  catalog entry or prior art in this repo, Rhapsody remains the least-evidenced
+  candidate of the six.
