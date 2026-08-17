@@ -45,7 +45,11 @@ That leaves two routes to VUE:
 Primary. PA-RISC, Tier 1, no ROM to source, and the machine/firmware/recipe
 shape is the same one the catalog already documents for 11.11, so nothing about
 the QEMU side is new work. There is a published writeup of exactly this
-combination — 10.20 on an emulated 9000/778 under QEMU, running VUE.
+combination — 10.20 on an emulated 9000/778 under QEMU, running VUE. The
+Virtual OS Museum reinforces this from a different angle: its 10.20 and 11i v1
+installs are configured *identically* — same machine, same emulator, same
+flags, same firmware — so the QEMU side of Route A is exercised and working in
+a real install, just under a different disk image than the one we'd boot.
 
 **Route B — HP-UX 9.x on an HP 9000/300-series under MAME.**
 Fallback. The authentic VUE-era pairing: 9.x is the release VUE was born on,
@@ -65,26 +69,38 @@ on this candidate.
 VOM ships three working HP-UX installs. We take no media from it — it is a
 recipe reference only, per the media rule in
 [`AGENTS.md`](../../../AGENTS.md) — but its package metadata names each
-install's emulator and files, and the author's screenshot filenames are
-effectively his verdict on what each one reaches:
+install's emulator, machine and flags, and the author's screenshot filenames
+are effectively his verdict on what each one reaches:
 
-| VOM install | Family | Emulator + files | Screenshot |
+| VOM install | Family | Emulator + config | Screenshot |
 |---|---|---|---|
-| `hp-ux-9.10` | `hp9k68k/s300` | **MAME** — `hpux_9.10.chd`, `cfg/hp9k370.cfg`, `nvram/hp9k370/`, `roms/` | `00_VUE_with_applications.png` |
-| `hp-ux-10.20` | `hp9kpa` | **QEMU** — `RUN_QEMU`, `hpux.img`, `hppa-firmware.img` | *(none)* |
-| `hp-ux-11i-v1` | `hp9kpa` | **QEMU** — `RUN_QEMU` | `00_CDE_with_utilities.png` |
+| `hp-ux-9.10` | `hp9k68k/s300` | **MAME 0.238**, driver `hp9k370` (HP 9000/370, Series 300), mouse enabled, HIL keyboard `hp_46021a`, HP 98643 LAN card in slot 2 | `00_VUE_with_applications.png` |
+| `hp-ux-10.20` | `hp9kpa` | **QEMU**, machine `B160L`, 4 CPUs, 512 MB, SCSI index 6, `tulip` NIC, explicit `hppa-firmware.img`, `-d nochain`, TFTP enabled | *(none)* |
+| `hp-ux-11i-v1` | `hp9kpa` | **QEMU**, same machine/CPU/RAM/SCSI-index/NIC/firmware/`-d nochain` as 10.20 | `00_CDE_with_utilities.png` |
 
 What this tells us:
 
-- **Route B is corroborated**: VUE genuinely runs, on a 68k HP 9000/370 under
-  MAME. If Route A fails, the fallback is known to work somewhere.
-- **Route A is not corroborated**: 10.20 carries no screenshot and no recorded
-  credentials, the only one of the three that doesn't. Weak evidence — possibly
-  just unphotographed — but nobody has confirmed 10.20-under-QEMU for us.
-- **Pin the emulator and carry a firmware blob.** VOM runs its hppa installs on
-  a git build (`qemu-system-hppa-10.1.94-rc4-git-bb7fc154`) with an external
-  `hppa-firmware.img` (SeaBIOS-hppa), rather than a distro package with
-  built-in PDC. Expect to do the same.
+- **Route B is corroborated in detail**: VUE genuinely runs, on a 68k HP
+  9000/370 under MAME 0.238 with driver `hp9k370`, HIL keyboard `hp_46021a`,
+  and an HP 98643 LAN card in slot 2. If Route A fails, the fallback is known
+  to work somewhere, with a concrete config to start from.
+- **Route A is mechanically corroborated, VUE itself is not.** 10.20 carries no
+  screenshot, but its QEMU configuration is *identical* to the 11i v1 install
+  that does have one — same `B160L` machine, same 4 CPUs/512 MB, same SCSI
+  index 6, same `tulip` NIC, same explicit firmware, same `-d nochain`. Only
+  the disk image differs. So the emulator/machine/firmware stack is proven to
+  boot HP-UX on this hardware; what's still unconfirmed is narrower than it
+  looked — specifically whether the VUE session is present and selectable on
+  the 10.20 media, not whether 10.20-under-QEMU works at all.
+- **Pin the emulator and carry a firmware blob.** VOM runs both hppa installs
+  on a pinned git build (`qemu-system-hppa-10.1.94-rc4-git-bb7fc154`), not a
+  release, with an external `hppa-firmware.img` (SeaBIOS-hppa) rather than a
+  distro package's built-in PDC. Expect to pin a version and carry firmware the
+  same way rather than relying on whatever `qemu-system-hppa` the distro ships.
+- **`-d nochain` is a known-needed workaround, not a stray debug flag.** Both
+  hppa installs set it, and it disables TCG translation-block chaining — a
+  real speed cost, paid deliberately. Worth finding out *why* it's needed
+  before assuming we must carry it too.
 
 ## Media
 
@@ -110,24 +126,28 @@ Nothing has been downloaded or hashed yet.
 ## Emulator, machine, boot recipe
 
 Route A, adapted from the catalog's 11.11 recipe (virtuallyfun.com, Oct 2025,
-qemu 10.1 — works-known elsewhere, unverified here):
+qemu 10.1) and now doubly grounded — the same shape is also what the Virtual
+OS Museum runs for both of its working hppa installs. Our own recipe, in our
+own words: `qemu-system-hppa` on machine `B160L`, 4 vCPUs, multi-threaded TCG,
+512 MB RAM, system disk as qcow2 on the SCSI bus at index 6, a `tulip` NIC on
+user networking, QEMU pointed at an explicit `hppa-firmware.img` rather than
+its built-in PDC, `-d nochain` set, plus our own `-display dbus,p2p=on` for
+host-native capture.
 
-```
-qemu-system-hppa -machine B160L -smp cpus=4 -accel tcg,thread=multi \
-  -boot d -drive if=scsi,bus=0,index=6,file=hpux.qcow2,format=qcow2 \
-  -m 512 -d nochain -cdrom <install>.iso \
-  -net nic,model=tulip -net user \
-  -display dbus,p2p=on
-```
-
-- **Machine** `B160L`, an HP Visualize workstation. VOM's 10.20 install uses
-  the same `hp9kpa` family.
-- **Firmware**: PA-RISC boots via built-in PDC, so no ROM to source — but see
-  the VOM note above about carrying an explicit `hppa-firmware.img`.
+- **Machine** `B160L`, an HP Visualize workstation, `hp9kpa` family — the same
+  machine the Virtual OS Museum uses for both its 10.20 and 11i v1 installs.
+- **Firmware**: PA-RISC boots via built-in PDC, but both of VOM's working hppa
+  installs instead point QEMU at an explicit `hppa-firmware.img`
+  (SeaBIOS-hppa). Treat that as required, not optional, until proven otherwise.
+- **`-d nochain`**: disables TCG translation-block chaining. A known-needed
+  workaround in the corroborated configs, at a real speed cost. Why it's
+  needed here is still open — see below.
 - **Accel**: TCG only (non-x86 target), multi-threaded. Slow but usable, same
   posture as every foreign-arch station here.
-- **Disk** on SCSI; **NIC** must be `tulip` (HP-UX's native driver
+- **Disk** on SCSI at index 6; **NIC** must be `tulip` (HP-UX's native driver
   expectation), not virtio/e1000.
+- **RAM**: 512 MB, 4 vCPUs — both corroborated configs agree on this, so it's
+  a safe default rather than a guess.
 
 ## Graphical target
 
@@ -158,7 +178,9 @@ being a real crash boundary rather than a preference.
 Route B would instead be Tier 3 — MAME on the host with its video backend off,
 following `docs/lab/DEBRIDGE-CONVERSION-BRIEF.md`: shared `x11-runtime.sh`,
 KEYDUMP-generated keymap, `SAVEST golden` checkpoint (subject to the driver
-setting `MACHINE_SUPPORTS_SAVE`).
+setting `MACHINE_SUPPORTS_SAVE`). The corroborated config to start from is
+driver `hp9k370` with the HIL keyboard `hp_46021a` and mouse enabled, plus an
+HP 98643 LAN card in slot 2 if network is wanted.
 
 ## Known gotchas
 
@@ -170,6 +192,11 @@ setting `MACHINE_SUPPORTS_SAVE`).
 - **No OpenGL** — irrelevant for VUE/Motif.
 - **TCG speed**: slow install. Budget for it, and check whether HP-UX's
   installer has any scripted/unattended mode.
+- **Route B boot-ROM input hang**: pressing keys or moving the mouse while the
+  MAME `hp9k370` boot ROM is still searching for a boot disk can hang the
+  boot. Directly threatens any automated type-at-boot or early-input behaviour
+  a station might have — Route B needs to stay hands-off until the boot disk
+  is found.
 
 ## Effort, risk, open questions
 
@@ -178,13 +205,17 @@ shape is documented and the gotchas are known going in.
 
 **Risks**, in the order they would bite:
 
-1. **VUE may not be reachable on the 10.20 media we source** — the assumption
-   the whole station rests on, and the cheapest to test.
+1. **VUE may not be present or selectable on the 10.20 media we source** — the
+   platform underneath is now mechanically corroborated (same machine, RAM,
+   firmware and flags as the working 11i v1 install), so this narrows to a
+   media/fileset question rather than a QEMU-side one, but it's still the
+   assumption the whole station rests on, and the cheapest to test.
 2. **Media sourcing**: 10.20 is a different release from the catalogued 11.11
    rows, and preservation mirrors for contested-commercial OSes go stale.
-3. **Recipe reproducibility**: single external writeup on qemu 10.1, not yet
-   reproduced on this box's QEMU, and VOM's use of a pinned git build hints
-   that the version matters.
+3. **Recipe reproducibility**: the corroborated configs (VOM and the
+   virtuallyfun.com writeup) run a pinned QEMU git build with a carried
+   firmware image and `-d nochain` set, not yet reproduced on this box's QEMU.
+   Budget for pinning a version rather than using the distro package.
 4. **The 1280×1024 ceiling** constrains geometry choices harder than most
    stations.
 
@@ -194,8 +225,12 @@ shape is documented and the gotchas are known going in.
   hashed against a known-good checksum?
 - Does 10.20's `dtlogin` offer a VUE session out of the box, or does VUE need
   installing/selecting explicitly from the media?
+- Why does `-d nochain` matter here — what does it work around, and does this
+  box's QEMU need it too?
 - Does `-machine B160L` behave identically on this box's QEMU build, or do we
-  need to pin a version and carry `hppa-firmware.img` as VOM does?
+  need to pin the same git build VOM and the writeup use and carry
+  `hppa-firmware.img` alongside it?
 - What pointer gain does this platform need? No measurement exists.
-- For Route B: is HP 9000/370 ROM material sourceable, and does MAME's driver
-  set `MACHINE_SUPPORTS_SAVE` (i.e. can the station have a checkpoint at all)?
+- For Route B: is HP 9000/370 ROM material sourceable, and does MAME's
+  `hp9k370` driver set `MACHINE_SUPPORTS_SAVE` (i.e. can the station have a
+  checkpoint at all)?

@@ -26,17 +26,23 @@ and the Platinum-over-Mach chimera look are unique to this one release window.
 
 Public/semi-public Rhapsody-family builds, in rough chronology:
 
-- **Developer Release 1 (DR1, 1997)** and **DR2 (1998)** — early developer
-  previews, PowerPC-only or PowerPC-first; x86 support was present but thin
-  and buggy. Hard to source and harder to boot reliably. **Not the target.**
-- **Rhapsody 5.1** — the mature developer release, ships as **Mac OS X Server
-  1.0** for shipping purposes; this is the one most commonly circulating in
-  preservation channels with an Intel installer track, and the one this
-  candidate targets.
-- **Mac OS X Server 1.2 (build 5.3 / "Hera")** — later refinement of the same
-  lineage; PowerPC-focused in practice, Intel path less commonly preserved.
+- **Developer Release 1 (DR1, 1997)** — the earliest developer preview,
+  PowerPC-only or PowerPC-first with x86 support present but thin and buggy.
+  Hard to source and harder to boot reliably. **Not the target.**
+- **Rhapsody 5.1 / Developer Release 2 (DR2, 1998)** — the release this
+  candidate targets, and the one the Virtual OS Museum's own working install
+  confirms: its package metadata identifies the disc as **Rhapsody 5.1 DR2**,
+  dated **1998**, marked **beta** release level, and recorded as a
+  **NeXTSTEP-derived variant**. "5.1" and "DR2" are the same build under its
+  internal version number and its developer-release name — this is the one
+  most commonly circulating in preservation channels with an Intel installer
+  track, and VOM's install is independent confirmation that its x86 path is
+  the one actually reachable in practice.
+- **Mac OS X Server 1.0 GM / 1.2 (build 5.3 / "Hera")** — the shipping
+  refinements that followed DR2 in the same lineage; PowerPC-focused in
+  practice, Intel path less commonly preserved.
 
-**Target: Rhapsody 5.1 for Intel specifically**, not PowerPC. Two reasons:
+**Target: Rhapsody 5.1 DR2 for Intel specifically**, not PowerPC. Two reasons:
 (1) this repo's whole guest fleet is host-native x86/x86_64 QEMU — there is no
 PowerPC (`mac99`) NeXT-lineage station yet and standing one up is a much
 bigger lift than reusing the existing i386 QEMU path already proven for

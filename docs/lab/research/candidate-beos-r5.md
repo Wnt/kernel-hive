@@ -43,13 +43,18 @@ VOM's collection on this box ships a working BeOS 5.0.3 install:
 media from it — recipe reference only, per the media rule in
 [`AGENTS.md`](../../../AGENTS.md).
 
-- **Plain QEMU x86, one disk image, no ROM and no firmware blob.** This
-  confirms the Tier 1 plan below: nothing exotic is needed.
-- VOM keeps many pinned old QEMU builds (`qemu-system-i386-0.9.1`, `-3.0.92`,
-  `-5.2.0`, `-7.0.0`, `-8.0.5`) for fussy guests. Which one BeOS uses is in a
-  boot script that has not been read. Useful as a known move in that
-  collection: if a modern QEMU misbehaves on R5, walking the version back is
-  normal practice here, not a hack.
+- **Plain QEMU x86, one disk image, no ROM and no firmware blob, and no
+  per-install overrides at all** — default PC machine, one IDE hard disk,
+  nothing else specified. This confirms the Tier 1 plan below: nothing exotic
+  is needed, and BeOS is the simplest install VOM has for the whole NeXT/Be/Mac
+  cluster.
+- The one thing VOM does override is the QEMU version itself: this install is
+  **pinned to QEMU 5.2.0**, not whatever the collection's default is. VOM
+  keeps many pinned old QEMU builds (`qemu-system-i386-0.9.1`, `-3.0.92`,
+  `-5.2.0`, `-7.0.0`, `-8.0.5`) for fussy guests, and BeOS's working reference
+  sits on a 2020-era build, not a current one. Useful as a known move in that
+  collection: if a modern QEMU misbehaves on R5, walking the version back
+  toward 5.2.0 is normal practice here, not a hack.
 - **No screenshot and no `PASSWD` file** in VOM's info package for this
   install, unlike most entries. Weak signal — possibly just unphotographed —
   but it means VOM is not independent evidence that this install reaches the
@@ -78,6 +83,10 @@ qemu-system-i386 -M pc -cpu pentium3 -m 512 \
   needs an explicit VESA mode set post-install (see Graphical target).
 - **NIC**: `ne2k_pci` specifically (catalog gotcha) — BeOS R5's driver set is
   narrow; other NIC models are not known-good.
+- **QEMU version**: the only independently-confirmed working reference (the
+  Virtual OS Museum's install) runs QEMU 5.2.0, not this box's current build.
+  Try a current QEMU first since the guest itself needs nothing exotic, but
+  treat 5.2.0 as the fallback to walk back to if boot or install misbehaves.
 - **Media prep**: source is bin/cue, not ISO — must extract with `bchunk`
   before QEMU can use it as `-cdrom`.
 
@@ -146,5 +155,8 @@ licensing nuance if a non-PE image is substituted later.
 3. Whether the archive.org disc is a clean single-CD install or needs a
    second (Pro) disc for full driver coverage.
 4. No second media source has been cross-checked against the archive.org one.
-5. Which QEMU version VOM's install actually pins, and whether this box's
-   current QEMU needs to walk back to match if a modern build misbehaves.
+5. **Which QEMU version actually boots BeOS R5 on this box.** The only
+   confirmed-working reference (VOM) pins 5.2.0, a 2020-era build, rather than
+   whatever this box currently runs by default — worth testing a current QEMU
+   first (nothing in the guest's device set looks exotic enough to demand an
+   old build) but budgeting the walk-back to 5.2.0 as the likely fallback.
