@@ -141,7 +141,7 @@
     "displayName": "Sinclair ZX81",
     "year": 1981,
     "lineage": "Sinclair Research (ZX80 → ZX81 → ZX Spectrum)",
-    "arch": "Zilog Z80A at 3.25 MHz, 1 KB RAM, 8 KB ROM, 32×24 characters, monochrome",
+    "arch": "Zilog Z80A, 3.25 MHz, 1 KB RAM",
     "ramMB": 0,
     "ramKB": 1,
     "era": "1980s",

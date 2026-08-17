@@ -160,7 +160,7 @@
     "displayName": "Sinclair ZX Spectrum 48K",
     "year": 1982,
     "lineage": "Sinclair Research (ZX80 → ZX81 → ZX Spectrum)",
-    "arch": "Zilog Z80A, 3.5 MHz, 48 KB RAM, 16 KB ROM, Ferranti ULA",
+    "arch": "Zilog Z80A, 3.5 MHz, 48 KB RAM",
     "ramMB": 0,
     "ramKB": 48,
     "era": "1980s",

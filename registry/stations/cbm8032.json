@@ -157,7 +157,7 @@
     "displayName": "Commodore CBM 8032",
     "year": 1980,
     "lineage": "Commodore PET / CBM 8000 series (MOS 6502)",
-    "arch": "MOS 6502, 1 MHz, 32 KB RAM, 80x25 monochrome CRTC, 12-inch integrated green monitor",
+    "arch": "MOS 6502, 1 MHz, 32 KB RAM",
     "ramMB": 0,
     "ramKB": 32,
     "era": "1980s",

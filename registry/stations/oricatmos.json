@@ -159,7 +159,7 @@
     "displayName": "Oric Atmos",
     "year": 1984,
     "lineage": "Tangerine Computer Systems / Oric Products International (UK)",
-    "arch": "MOS 6502A, 1 MHz, 48 KB RAM, ULA video (40x28 text / 240x200 HIRES, 8 colours), AY-3-8912 sound",
+    "arch": "MOS 6502A, 1 MHz, 48 KB RAM",
     "ramMB": 0,
     "ramKB": 48,
     "era": "1980s",

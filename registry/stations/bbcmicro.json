@@ -174,7 +174,7 @@
     "displayName": "Acorn BBC Micro Model B",
     "year": 1981,
     "lineage": "Acorn Computers (Cambridge) — Atom, BBC Micro, Archimedes, ARM",
-    "arch": "MOS 6502A, 2 MHz, 32 KB RAM, 32 KB ROM (MOS 1.20 + BBC BASIC II), SAA5050 teletext, SN76489 sound",
+    "arch": "MOS 6502A, 2 MHz, 32 KB RAM",
     "ramMB": 0,
     "ramKB": 32,
     "era": "1980s",
