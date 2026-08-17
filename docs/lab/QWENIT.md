@@ -100,8 +100,16 @@ environment — OpenRouter is a native provider, so no `opencode.json` credentia
 block exists and none should be created. **The key is never in this repo, in any
 form, including an env-var reference in a committed config.**
 
-`qwen-task.sh` refuses to launch if `OPENROUTER_API_KEY` is unset rather than
-failing deep inside a run.
+`qwen-task.sh` validates both the binary and the key before launching, rather
+than failing deep inside a run.
+
+**An agent-launched shell is non-interactive and never sources `~/.bashrc`**, so
+neither the installer's PATH entry for `~/.opencode/bin` nor the exported key is
+present — the first agent to try this hit `'opencode' not on PATH` on a box
+where opencode was installed and working. `require_opencode` therefore falls
+back to `~/.opencode/bin/opencode` and reads the key file itself; override
+either with `OPENCODE_HOME` / `OPENROUTER_KEY_FILE`. **Do not re-export these in
+a brief or a wrapper** — if the fallback ever stops working, fix it there once.
 
 ## Deliberately not built
 

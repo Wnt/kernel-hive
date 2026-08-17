@@ -46,6 +46,8 @@ if [ -z "${QWEN_REPO_DIR:-}" ]; then
 fi
 ROOT="${QWEN_TASKS_DIR:-$REPO/.claude/qwen-tasks}"
 OPENCODE="${OPENCODE_BIN:-opencode}"
+OPENCODE_HOME="${OPENCODE_HOME:-$HOME/.opencode/bin}"
+OPENROUTER_KEY_FILE="${OPENROUTER_KEY_FILE:-$HOME/.config/openrouter/api-key}"
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 DEFAULT_MODEL="${QWEN_TASK_MODEL:-openrouter/qwen/qwen3.8-27b}"
 DEFAULT_MAX_WALL="${QWEN_MAX_WALL:-7200}"
@@ -89,11 +91,24 @@ resolve_task_dir() {
   echo "$d"
 }
 
+# An agent-launched shell is non-interactive and never sources ~/.bashrc, so
+# neither the installer's PATH entry nor the exported key is present. Both live
+# at fixed, documented paths — find them here rather than making every caller
+# re-export them.
 require_opencode() {
-  command -v "$OPENCODE" >/dev/null 2>&1 ||
-    die "'$OPENCODE' not on PATH (install: curl -fsSL https://opencode.ai/install | bash)"
-  [ -n "${OPENROUTER_API_KEY:-}" ] ||
-    die "OPENROUTER_API_KEY unset — see docs/lab/QWENIT.md (key lives at ~/.config/openrouter/api-key)"
+  if ! command -v "$OPENCODE" >/dev/null 2>&1; then
+    [ -x "$OPENCODE_HOME/opencode" ] ||
+      die "'$OPENCODE' not on PATH and no $OPENCODE_HOME/opencode (install: curl -fsSL https://opencode.ai/install | bash)"
+    PATH="$OPENCODE_HOME:$PATH"
+    export PATH
+  fi
+  if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+    [ -r "$OPENROUTER_KEY_FILE" ] ||
+      die "OPENROUTER_API_KEY unset and $OPENROUTER_KEY_FILE unreadable — see docs/lab/QWENIT.md"
+    OPENROUTER_API_KEY="$(tr -d '\n' <"$OPENROUTER_KEY_FILE")"
+    export OPENROUTER_API_KEY
+    [ -n "$OPENROUTER_API_KEY" ] || die "$OPENROUTER_KEY_FILE is empty"
+  fi
 }
 
 # --- event-stream readers ---------------------------------------------------
