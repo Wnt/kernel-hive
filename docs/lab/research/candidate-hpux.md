@@ -1,7 +1,8 @@
 # Candidate: HP-UX on PA-RISC
 
 Initial research notes for adding HP-UX as a gallery station. Primary target
-**HP-UX 11i v1 (11.11) with CDE**; 10.20 assessed as a fallback.
+**HP-UX 10.20 with HP VUE** (operator decision 2026-08-17 — the gallery has
+enough CDE); 11.11/CDE and HP-UX 9.x-on-MAME assessed as alternatives.
 
 ## What the exhibit is
 
@@ -112,16 +113,43 @@ preference.
   scripted/unattended install path if HP-UX's installer supports one (not
   yet checked).
 
-## 11i v1 (11.11) vs 10.20
+## Which release — OPERATOR DECISION 2026-08-17: target VUE, not CDE
 
-Recommend **11.11** as primary target. The catalog's verified recipe and
-writeup target 11.11 specifically, it's the newest release still reachable
-on PA-RISC 1.1/32-bit media (QEMU's ceiling), and CDE is standard/complete on
-11.11 whereas 10.20 predates CDE being the default desktop on many HP-UX
-configs (VUE was the 10.x-era desktop in some configurations) — 11.11 gets a
-cleaner, more recognizable "museum CDE" exhibit for the same or less
-install effort. 10.20 is worth keeping as a fallback only if 11.11 media
-turns out to be unobtainable or the install proves intractable on this box.
+**Superseded recommendation.** This note originally recommended 11.11 for its
+CDE. The operator's judgement is that the gallery already has enough CDE —
+`solaris`, `tru64` and `openvms` all show one — so **another CDE is not worth a
+slot; HP VUE is.** Retarget accordingly.
+
+What VUE actually is, and where it lives (checked 2026-08-17):
+
+- **HP VUE 3.0 shipped with HP-UX 9.0** (July 1992) and remained available
+  through the 10.x line. **CDE became the default desktop in 10.20**, with VUE
+  still shipped and selectable at the login screen. **VUE is gone entirely in
+  11.00.** So 11.11 can only ever be a CDE exhibit.
+- That leaves two ways to put VUE on the wall:
+
+**Option A — HP-UX 10.20 on `qemu-system-hppa`, VUE chosen at login.**
+Same machine, firmware and recipe shape as the 11.11 plan above, so everything
+in this note carries over; only the media and the session choice change. VUE is
+present on the 10.20 media, and there is a published writeup of exactly this
+combination (10.20 on an emulated 9000/778 under QEMU, running VUE). **Tier 1,
+no ROM.** Recommended.
+
+**Option B — HP-UX 9.x on a Series 300 under MAME.**
+The authentic VUE-era pairing, and the one VOM demonstrates (`hp-ux-9.10` on an
+HP 9000/370, screenshot `00_VUE_with_applications.png`). But it is a **68030
+machine under MAME, needing the machine ROM set — a Tier 3 station** following
+the de-bridging template, and slower. Keep as the fallback if 10.20's VUE turns
+out to be broken or absent on the media we source.
+
+**Open question that decides it:** does the 10.20 media we can actually source
+include the VUE filesets, and does `dtlogin`/the 10.20 login screen still offer
+a VUE session? One boot answers it. Until then Option A is the plan and Option B
+is the hedge.
+
+Note that 10.20 is the least-evidenced of VOM's three HP-UX installs (no
+screenshot, no recorded credentials) — see the VOM hints section below. That is
+weak evidence, but it means nobody has corroborated 10.20-under-QEMU for us.
 
 ## Effort, risk, open questions
 
@@ -152,3 +180,35 @@ turns out to be unobtainable or the install proves intractable on this box.
 This is an unvalidated first pass written under a 5-minute research timebox —
 shallow, not exhaustive. Media has not been sourced or hashed; no boot has
 been attempted on this box.
+
+---
+
+## VOM hints (reference only, added 2026-08-17)
+
+The Virtual OS Museum collection on this box ships a working installation of
+this OS. **We take no media from it** — see the media rule in
+[`AGENTS.md`](../../../AGENTS.md); it is a recipe reference only. These hints were read from its *package metadata* (dpkg file
+lists on the host rootfs), which names the emulator, the ROM/firmware files and
+the author's own screenshots — the screenshot filenames are effectively his
+verdict on what the install actually reaches. The boot scripts themselves live
+on the 173 GB guest-image disk, which has NOT been extracted, so the exact
+command lines below are inferred from filenames, not read.
+
+**Two different exhibits, two different emulators.** VOM ships three HP-UX
+installs and their metadata settles the VUE-vs-CDE question:
+
+| VOM install | Family | Emulator + files | Author's screenshot |
+|---|---|---|---|
+| `hp-ux-9.10` | `hp9k68k/s300` | **MAME**, `hpux_9.10.chd`, `cfg/hp9k370.cfg`, `nvram/hp9k370/`, `roms/` | `00_VUE_with_applications.png` |
+| `hp-ux-10.20` | `hp9kpa` | **QEMU**, `RUN_QEMU`, `hpux.img`, **`hppa-firmware.img`** | *(none)* |
+| `hp-ux-11i-v1` | `hp9kpa` | **QEMU**, `RUN_QEMU` | `00_CDE_with_utilities.png` |
+
+- **VUE is proven on 9.10 under MAME, on an HP 9000/370** (68030, Series 300) —
+  not on PA-RISC and not under QEMU. That would be a **Tier 3** station needing
+  the machine's ROM set, following the de-bridging template.
+- 10.20 has **no screenshot and no `PASSWD`** — the least-evidenced of the three
+  in VOM. It is still the right target (see below), just not corroborated here.
+- 11i v1's CDE is corroborated, matching our catalog entry.
+- VOM uses a **git build**, `qemu-system-hppa-10.1.94-rc4-git-bb7fc154`, plus an
+  external `hppa-firmware.img` (SeaBIOS-hppa). Expect to pin a specific QEMU and
+  carry a firmware blob rather than rely on the distro package.

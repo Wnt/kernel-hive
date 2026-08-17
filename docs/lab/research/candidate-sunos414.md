@@ -144,3 +144,38 @@ This is an unvalidated first pass, written under a ~5-minute research
 timebox. Treat every claim above as needing verification before it drives a
 real builder; only the recipe/`-vga cg3` note is carried over from the
 already-verified `docs/catalog/os-media-catalog.md` §5 entry.
+
+---
+
+## VOM hints (reference only, added 2026-08-17)
+
+The Virtual OS Museum collection on this box ships a working installation of
+this OS. **We take no media from it** — see the media rule in
+[`AGENTS.md`](../../../AGENTS.md); it is a recipe reference only. These hints were read from its *package metadata* (dpkg file
+lists on the host rootfs), which names the emulator, the ROM/firmware files and
+the author's own screenshots — the screenshot filenames are effectively his
+verdict on what the install actually reaches. The boot scripts themselves live
+on the 173 GB guest-image disk, which has NOT been extracted, so the exact
+command lines below are inferred from filenames, not read.
+
+**VOM install:** `sun4/.../sunos_4.1.4_config/`, and it does **not** use QEMU.
+
+- **Emulator: TME (The Machine Emulator)** — the config is `config.tmesh`, and
+  the host carries `tmesh`, `tme-sun-eeprom`, `tme-sun-idprom`. The machine is a
+  **sun4c** (`sun4-75-rev-2.9.bin` = SPARCstation 2), driven by **real Sun PROM
+  dumps** (`SUNW,501-1415.bin`, `SUNW,501-1561.bin`) and a hand-built NVRAM
+  (`my-sun4c-nvram.bin`).
+- **This is the most important hint in the set, and it is a warning.** VOM has
+  `qemu-system-sparc-5.2.0` installed and uses it for its Solaris entries, yet
+  chose TME + real PROMs specifically for SunOS 4.1.4. That is circumstantial
+  evidence that the `qemu-system-sparc -M SS-5` + OpenBIOS path in our catalog
+  is harder than its "works-known" score suggests. Treat the QEMU recipe as
+  unproven until someone boots it, and hold TME/sun4c in reserve as the fallback
+  — which would make this a Tier 3 station with a PROM-sourcing problem.
+- Corroboration that the exhibit is worth it: `00_OpenWindows_with_terminal_,
+  _help_,_and_file_manager.png` and `01_OpenWindows_SunView_compatibility.png`.
+- `sun-keyboards.txt` and `my-sun-macros.txt` sit beside the config — the Sun
+  keyboard mapping is evidently fiddly enough that the author kept notes.
+- Curiosity: this install also carries GlobalView (`PASSWD.pilot_globalview_
+  1.05_x`, and a `dmachine` dependency) — the Xerox environment running on top
+  of SunOS. That is a direct cross-link to our `star` and `daybreak` stations.

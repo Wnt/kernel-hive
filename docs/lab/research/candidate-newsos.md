@@ -117,3 +117,36 @@ pending upstream MAME framebuffer support, not pursued as a bridge.
 *Unvalidated first pass, written under a ~5-minute timebox — one web search,
 one VOM directory check, no primary-source fetch, no MAME source read, no
 box access. Expect significant revision before this is actionable.*
+
+---
+
+## VOM hints (reference only, added 2026-08-17)
+
+The Virtual OS Museum collection on this box ships a working installation of
+this OS. **We take no media from it** — see the media rule in
+[`AGENTS.md`](../../../AGENTS.md); it is a recipe reference only. These hints were read from its *package metadata* (dpkg file
+lists on the host rootfs), which names the emulator, the ROM/firmware files and
+the author's own screenshots — the screenshot filenames are effectively his
+verdict on what the install actually reaches. The boot scripts themselves live
+on the 173 GB guest-image disk, which has NOT been extracted, so the exact
+command lines below are inferred from filenames, not read.
+
+**VOM install:** `newsmips/.../news_os_4.2.1ard_config/` — and its file list
+**corroborates the framebuffer blocker recorded above, while also showing the
+author's way around it.**
+
+- MAME shape confirmed: `news_os_4.2.1ard.chd`, `nvram/nws5000x/`, `roms/`.
+- **But it also ships `run_x11`, `xdmcp.py`, and a `fonts/sony/` tree.** The
+  clear reading: the GUI is not painted into a local framebuffer at all — the
+  guest is driven to an **X server over XDMCP**, with Sony's own fonts supplied
+  host-side so the session renders correctly. The screenshots
+  (`00_Login_Window.png`, `01_Desktop_Applications.png`) are of that X session.
+- **This reframes the candidate rather than killing it.** Our converted MAME
+  stations already run **Xvfb + emulator, host-native** (`x11-runtime.sh`, as
+  `tru64` does). An Xvfb hosting an XDMCP session from NEWS-OS is still
+  host-native capture — no Debian kiosk guest required. What changes is the
+  input path: keys and pointer would go to the X server (XTEST), not through
+  `mamesock`/ctlsock, so none of the keymap/`MAME_CTL_KEY_EXCL` machinery
+  applies and a new input plane would be needed.
+- Also note the exhibit would then be "NEWS-OS's desktop displayed on our X
+  server", which is a caption-honesty question worth settling before building.

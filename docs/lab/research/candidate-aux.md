@@ -151,3 +151,36 @@ even sourced, and is far cheaper than starting the install.
 **This is an unvalidated first pass written under a 5-minute timebox.** No
 media or ROM has been sourced, no MAME boot attempted, no version pairing
 confirmed. Treat every "unverified" claim above as a to-do, not a fact.
+
+---
+
+## VOM hints (reference only, added 2026-08-17)
+
+The Virtual OS Museum collection on this box ships a working installation of
+this OS. **We take no media from it** — see the media rule in
+[`AGENTS.md`](../../../AGENTS.md); it is a recipe reference only. These hints were read from its *package metadata* (dpkg file
+lists on the host rootfs), which names the emulator, the ROM/firmware files and
+the author's own screenshots — the screenshot filenames are effectively his
+verdict on what the install actually reaches. The boot scripts themselves live
+on the 173 GB guest-image disk, which has NOT been extracted, so the exact
+command lines below are inferred from filenames, not read.
+
+**VOM install:** `mac68k/.../aux_3.1.1_config/` — and it **overturns the
+machine/tier conclusion above.**
+
+- Files: `RUN_QEMU`, `aux_3.1.1.qcow2`, **`quadra800.rom`**, **`mac_qfb.rom`**,
+  `pram.bin`, `AUXBootfloppy.img`, `TuneUp2.0.img`, `systemupdate.sh`.
+- **A/UX runs under QEMU `q800`, not MAME `maciici`.** The host carries a
+  purpose-built **`qemu-system-m68k-7.1.50-q800`** binary — a patched QEMU, and
+  the extra `mac_qfb.rom` is the Nubus-framebuffer piece that goes with the
+  community q800 A/UX work. So the PMMU objection in the section above is wrong
+  for this path: the target is the same machine our **`macos753` station already
+  runs**, with a patched QEMU and one extra ROM.
+- That moves A/UX from "Tier 3 MAME, largely unknown" to **"Tier 1, reuse the
+  `macos753` pattern, plus a patched-QEMU build"** — a much better position, and
+  the QEMU fork is the main new work.
+- `00_Finder_with_utilities.png` resolves the biggest open question in this
+  note positively: **A/UX does reach the Finder** in this configuration.
+- `AUXBootfloppy.img` + `TuneUp2.0.img` + `systemupdate.sh` say the boot needs a
+  helper floppy and a post-install update step — budget for choreography.
+- Version signal: **3.1.1 has a screenshot and 3.0.0 does not.** Target 3.1.1.

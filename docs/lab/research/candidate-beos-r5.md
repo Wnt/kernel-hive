@@ -124,3 +124,28 @@ and PE-vs-Pro licensing nuance if a non-PE image is substituted later.
 This is an unvalidated first pass written under a 5-minute research timebox —
 treat every "unverified" and "best-known" line above as a starting point for
 the actual scaffold-and-boot work, not a confirmed recipe.
+
+---
+
+## VOM hints (reference only, added 2026-08-17)
+
+The Virtual OS Museum collection on this box ships a working installation of
+this OS. **We take no media from it** — see the media rule in
+[`AGENTS.md`](../../../AGENTS.md); it is a recipe reference only. These hints were read from its *package metadata* (dpkg file
+lists on the host rootfs), which names the emulator, the ROM/firmware files and
+the author's own screenshots — the screenshot filenames are effectively his
+verdict on what the install actually reaches. The boot scripts themselves live
+on the 173 GB guest-image disk, which has NOT been extracted, so the exact
+command lines below are inferred from filenames, not read.
+
+**VOM install:** `pcx86/.../beos_5.0.3_config/` with `RUN_QEMU` + `hda.qcow2`.
+
+- **Emulator: plain QEMU x86**, one qcow2, no ROM, no firmware image. Confirms
+  the Tier-1 plan in this note — nothing exotic is needed.
+- VOM keeps many pinned old QEMU builds (`qemu-system-i386-0.9.1`, `-3.0.92`,
+  `-5.2.0`, `-7.0.0`, `-8.0.5`) for fussy guests. Which one BeOS uses is in the
+  unread boot script; if a modern QEMU misbehaves, trying an older build is a
+  known move in this collection rather than a hack.
+- **No screenshot and no `PASSWD` file** in the info package, unlike most
+  entries here. Weak signal — possibly just unphotographed — but it means VOM
+  is *not* independent evidence that this install reaches the desktop.
