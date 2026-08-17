@@ -129,6 +129,7 @@ MANIFEST=(
   "star           |tiles/star.sh                 |bridge/star       |graphical |~5-8m   |partial  |tiles/star overlay + golden (Darkstar → Pilot/ViewPoint 2.0)"
   "alto           |tiles/alto.sh                 |bridge/alto       |retro     |~12-18m |full     |tiles/alto overlay + golden (ContrAlto 2 Alto II XM -> Alto Executive)"
   "macos753       |tiles/macos753.sh             |Macos753          |graphical |~30-60m |vision   |macos753-golden.qcow2 + pram-golden.qcow2 + checkpoint (System 7.5.3 -> quiet Finder desktop, 1152x870x8)"
+  "hpuxvue        |tiles/hpuxvue.sh              |Hpuxvue           |graphical |~2-4h   |vision   |hpuxvue-golden.qcow2 + checkpoint (HP-UX 10.20 -> HP VUE desktop over Artist fb, 1280x1024)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

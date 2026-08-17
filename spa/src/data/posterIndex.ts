@@ -66,6 +66,9 @@ const POSTER_INDEX = {
   "helenos": {
     "hero": "/posters/helenos/desktop.webp"
   },
+  "hpuxvue": {
+    "hero": "/posters/hpuxvue/desktop.webp"
+  },
   "indyr4400": {
     "hero": "/posters/indyr4400/desktop.webp"
   },
