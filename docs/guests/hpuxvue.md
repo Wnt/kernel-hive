@@ -43,8 +43,25 @@ disk; else boot CD). The device set is identical in all three.
   attached (QMP `info qtree`: `scsi-hd` id 6 on the `lsi53c895a` at Dino
   PCI 00:00.0). Diagnosis: the 1996 install kernel predates the B/C/J-class
   workstations and has no 53c8xx PCI SCSI driver — the firmware read the CD,
-  the kernel cannot see the bus. Fix in flight: swap disc1 for the July-1997
-  **ACE Install/Core disc for B/C/J class** (`B3782-10178`).
+  the kernel cannot see the bus. Confirmed by Helge Deller on qemu-discuss
+  (2020-09): the emulated B160L has a PCI 53c895a where the real one has a
+  LASI 53c710, and older install kernels only claim the latter.
+- 00:37 — the July-1997 **ACE B/C/J-class disc** (`B3782-10178`) boots the SAME
+  June-1996 install kernel (`install/init $Revision: 5.30G`) and fails the same
+  way; `-smp 4` also fails ("Processor 1..3 did not start") — back to 1 vCPU.
+- **00:44 — WORKS: the 10.20 Install/Core CD from archive.org `hpux_20200510`
+  (`cd1.iso`, 508 MB, md5 `54f0d43ce09d7e6c8450e59b9409c1c1`) — a later press
+  whose `install/init` is `$Revision: 10.3`, the revision the qemu-discuss
+  thread names as the one that finds disks.** Disk seen at `8/0/0/0.6.0`
+  (QEMUHARDDISK, 4000 MB). Keyboard language 61 `PS2_DIN_US_English`.
+  Whole-system config: Standard LVM; **Software Selection = "VUE Runtime
+  Environment"** (the list offers VUE / CDE / Minimal / Minimal+networking —
+  the open question is answered: VUE is on the media and selectable);
+  "Load 10.20 Networking ACE" = True (the sanctioned way; the SD-UX warning
+  is about hand-picking bundle B6378xx, which we do not); no SD-UX
+  interaction. FS sizes enlarged up front to dodge the LVM-growth gotcha:
+  / 300, /stand 48, swap 512, /home 100, /opt 700, /tmp 100, /usr 1000,
+  /var 480 (756 MB spare in vg00). Then unattended: LVM + swinstall.
 
 ## Golden, input, and rollback
 
