@@ -56,10 +56,24 @@ for row, base in (("qwertyuiop", 0x10), ("asdfghjkl", 0x1E), ("zxcvbnm", 0x2C)):
         XT[ch] = (base + i, False)
 for plain, shifted in zip("1234567890", "!@#$%^&*()"):
     XT[shifted] = (XT[plain][0], True)
-XT.update({" ": (0x39, False), "\n": (0x1C, False), "-": (0x0C, False), "=": (0x0D, False),
-           "+": (0x0D, True), "_": (0x0C, True), ";": (0x27, False), ":": (0x27, True),
-           ",": (0x33, False), ".": (0x34, False), "/": (0x35, False), "?": (0x35, True),
-           "'": (0x28, False), '"': (0x28, True)})
+XT.update(
+    {
+        " ": (0x39, False),
+        "\n": (0x1C, False),
+        "-": (0x0C, False),
+        "=": (0x0D, False),
+        "+": (0x0D, True),
+        "_": (0x0C, True),
+        ";": (0x27, False),
+        ":": (0x27, True),
+        ",": (0x33, False),
+        ".": (0x34, False),
+        "/": (0x35, False),
+        "?": (0x35, True),
+        "'": (0x28, False),
+        '"': (0x28, True),
+    }
+)
 for ch in "abcdefghijklmnopqrstuvwxyz":
     XT[ch.upper()] = (XT[ch][0], True)
 
@@ -129,9 +143,11 @@ def main() -> int:
 
     if bool(args.text) == bool(args.replay):
         ap.error("exactly one of <replay file> or --type")
-    edges = synth(args.text, args.cps, args.hold_ms) if args.text else [
-        json.loads(ln) for ln in args.replay.read_text(encoding="utf-8").splitlines() if ln.strip()
-    ]
+    edges = (
+        synth(args.text, args.cps, args.hold_ms)
+        if args.text
+        else [json.loads(ln) for ln in args.replay.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    )
     if not edges:
         raise SystemExit("no edges to replay")
 
@@ -233,9 +249,11 @@ def main() -> int:
     worst = max(acked, key=lambda a: a[1])
     print(f"\n{len(acked)} edges acked, {len(sent)} still UNACKED after {args.timeout:g}s drain")
     print(f"burst duration {burst_ms:.0f} ms, last ack at +{max(a[2] for a in acked) - t0:.0f} ms")
-    print(f"queue lag (ack - scheduled send): "
-          f"max {worst[1]:.0f} ms on `{worst[0]}`, "
-          f"p50 {sorted(a[1] for a in acked)[len(acked) // 2]:.0f} ms")
+    print(
+        f"queue lag (ack - scheduled send): "
+        f"max {worst[1]:.0f} ms on `{worst[0]}`, "
+        f"p50 {sorted(a[1] for a in acked)[len(acked) // 2]:.0f} ms"
+    )
     if sent:
         for s, (_sched, _tx, cmd) in sorted(sent.items()):
             print(f"  UNACKED seq={s} {cmd}")

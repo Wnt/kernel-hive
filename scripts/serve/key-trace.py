@@ -110,8 +110,7 @@ def main() -> int:
         prev_now = now
     if presses > 1 and first_now is not None and last_now and last_now > first_now:
         cps = (presses - 1) * 1000 / (last_now - first_now)
-        print(f"\n{presses} presses, cps={cps:.1f} "
-              f"(station ceiling = 1000 / (SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS))")
+        print(f"\n{presses} presses, cps={cps:.1f} (station ceiling = 1000 / (SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS))")
 
     if args.replay:
         base = data[0][3]
