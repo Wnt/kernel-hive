@@ -119,3 +119,6 @@ scripts/coldboot/*-evidence/
 scripts/build-guests/assets/freedos/cosmo.zip
 scripts/build-guests/assets/freedos/jill.zip
 scripts/build-guests/assets/winxp/Winamp-2.95-installed.tar.gz
+
+# per-worker session identity written by scripts/dev/wt.sh
+.kh-session

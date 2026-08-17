@@ -4,8 +4,8 @@
 set -euo pipefail
 
 D=/data/vms/streamhost/stations/soltest-ghid
-QEMU=/data/vms/soltest/lli/spike-solaris-a/qemu-build/qemu-system-x86_64
-QEMU_DATA=/data/vms/soltest/lli/spike-solaris-a/qemu-build/pc-bios
+QEMU=/data/vms/sandbox/lli/spike-solaris-a/qemu-build/qemu-system-x86_64
+QEMU_DATA=/data/vms/sandbox/lli/spike-solaris-a/qemu-build/pc-bios
 DISK="$D/soltest-ghid.qcow2"
 PIDFILE="$D/qemu.pid"
 

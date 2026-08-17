@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# labrun — run a multi-line script on labhost with NO quoting.
+#
+# WHY. Ten days of transcripts (docs/lab/research/workflow-friction-2026-08.md)
+# show every multi-step remote action as a 20–60 line `ssh lab 'bash -s' <<EOF`
+# heredoc re-sent per iteration, nested `ssh lab "… ssh lab \"…\""` quoting
+# that silently mis-executed, `echo` expanding `\n` in a pushed file, and a
+# loop of `ssh lab` calls eating the outer script's stdin. labrun ships the
+# script as bytes, runs it under `set -euo pipefail` with $KH_SESSION exported,
+# keeps stdin free (`ssh -n`), and leaves the exact script on labhost under
+# /run/kh-labrun/<session>/ so a failure can be replayed by name.
+#
+# usage:
+#   labrun <<'EOF'            # script on stdin (the common case)
+#     labctl ls | head
+#   EOF
+#   labrun file.sh [args…]    # ship a local script and run it with args
+#   labrun -c 'cmd args'      # one-liner, still no local quoting past -c
+#   labrun --keep …           # do not delete the shipped script afterwards
+#
+# env: LAB (ssh host alias, default lab), KH_SESSION (see scripts/lib/kh-session.sh)
+# exit: the remote script's exit code; 2 on usage.
+set -uo pipefail
+
+LAB="${LAB:-lab}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/../lib/kh-session.sh"
+
+keep=0
+src=""
+mode=stdin
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+  --keep) keep=1 ;;
+  -c)
+    shift
+    [ "$#" -gt 0 ] || {
+      echo "labrun: -c needs a command" >&2
+      exit 2
+    }
+    src="$1"
+    mode='cmd'
+    ;;
+  -h | --help)
+    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+  --)
+    shift
+    break
+    ;;
+  -*)
+    echo "labrun: unknown flag $1" >&2
+    exit 2
+    ;;
+  *)
+    if [ "$mode" = stdin ] && [ -f "$1" ]; then
+      src="$(cat "$1")"
+      mode='file'
+    else
+      break
+    fi
+    ;;
+  esac
+  shift
+done
+
+if [ "$mode" = stdin ]; then
+  if [ -t 0 ]; then
+    echo "labrun: no script on stdin (use a heredoc, a file, or -c)" >&2
+    exit 2
+  fi
+  src="$(cat)"
+fi
+
+# Remote argv, each word shell-quoted once, so "$@" inside the script is exact.
+rargs=""
+for a in "$@"; do
+  rargs="$rargs $(printf '%q' "$a")"
+done
+
+id="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+rdir="/run/kh-labrun/$KH_SESSION"
+rfile="$rdir/$id.sh"
+b64="$(printf '%s\n' "$src" | base64 -w0)"
+
+# The wrapper: materialise the script, run it with a clean env contract, then
+# tidy. `ssh -n` keeps OUR stdin untouched (loops of labrun are safe).
+remote="umask 077; mkdir -p $rdir && printf %s '$b64' | base64 -d >$rfile && \
+export KH_SESSION=$(printf '%q' "$KH_SESSION") KH_LABRUN=$rfile; \
+bash -euo pipefail $rfile$rargs; rc=\$?; \
+[ $keep = 1 ] || rm -f $rfile; exit \$rc"
+
+exec ssh -n "$LAB" "$remote"

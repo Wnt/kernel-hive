@@ -60,6 +60,9 @@
 #   labctl reset <tile>           loadvm golden (restore tile to golden snapshot)
 #   labctl clone <tile> <N>       wrap existing clone tooling (solaris) else recipe
 #   labctl gen                    regenerate tiles.json from station.env + launchers
+#   labctl who                    claims + sandbox processes grouped by session
+#   labctl claims <verb> …        kh-claim passthrough (take/release/ls/who/gc)
+#   labctl wait-for …             block on the box until a unit/file/port/cmd condition
 #
 # KEYSTROKE PACING: type/key/sh honour the tile's own SH_KEY_MIN_HOLD_MS /
 # SH_KEY_MIN_GAP_MS (station.env, the same knobs the daemon applies to the browser
@@ -510,8 +513,7 @@ def cmd_ls(argv):
                 c.get("pointer_mode", "?"),
                 c.get("warpd_port") or "-",
                 c.get("ssh_port") or "-",
-                c.get("exec_port")
-                or ("serial" if c.get("exec_kind") in ("serial_e", "serialcon_e") else "-"),
+                c.get("exec_port") or ("serial" if c.get("exec_kind") in ("serial_e", "serialcon_e") else "-"),
                 c.get("console", "?"),
                 g,
                 svc_state(name),
@@ -1213,9 +1215,7 @@ def cmd_exec(argv):
         '  * labctl sh %s "<cmd>"   (BLIND — types into console, no capture)' % name,
     ]
     if name == "solaris":
-        alt.append(
-            "  * labctl clone solaris <N>  then: ssh -p $((2300+N)) root@127.0.0.1 '<cmd>'  (clone has ssh 22)"
-        )
+        alt.append("  * labctl clone solaris <N>  then: ssh -p $((2300+N)) root@127.0.0.1 '<cmd>'  (clone has ssh 22)")
     alt.append(
         "  * to add a live ssh channel safely: qmp_hmp.py <qmp> "
         "'hostfwd_add net0 tcp:127.0.0.1:<port>-:22' (adds to the "
@@ -1649,8 +1649,7 @@ def tile_facts(sh_tile, c, warn):
     if entry.get("id") and entry["id"] != daemon_id:
         warn(
             "registry id %s but the daemon runs as %s — the two must match; "
-            "reconcile station.env/the tile dir with registry/stations/%s.json"
-            % (entry["id"], daemon_id, entry["id"])
+            "reconcile station.env/the tile dir with registry/stations/%s.json" % (entry["id"], daemon_id, entry["id"])
         )
     launcher = launcher_text(tile_dir)
     disk, snapshots = disk_facts(boot_disk(tile_dir, launcher), warn)
@@ -1812,6 +1811,131 @@ def cmd_gen(argv):
         die(r.stderr.strip())
 
 
+# ---- who / claims / wait-for ------------------------------------------------
+# Session identity + the claim registry (kh-claim, scripts/lib/kh-claim.sh)
+# and a wait primitive that runs ON the box so a session does not burn a turn
+# on `sleep 1500`. See docs/lab/research/workflow-friction-2026-08.md.
+SANDBOX_ROOT = os.environ.get("KH_SANDBOX_ROOT", "/data/vms/sandbox")
+
+
+def _sandbox_procs():
+    """pid -> (exe, sandbox top-level dir) for processes living in a sandbox."""
+    out = {}
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        try:
+            cwd = os.readlink("/proc/%s/cwd" % pid)
+        except OSError:
+            continue
+        if cwd == SANDBOX_ROOT or cwd.startswith(SANDBOX_ROOT + "/"):
+            rel = cwd[len(SANDBOX_ROOT) + 1 :].split("/", 1)[0] or "."
+            try:
+                exe = os.readlink("/proc/%s/exe" % pid)
+            except OSError:
+                exe = "?"
+            out[int(pid)] = (exe, rel)
+    return out
+
+
+def cmd_who(argv):
+    """claims + sandbox processes, grouped by session — 'whose is this?' in one call."""
+    if not shutil.which("kh-claim"):
+        die("kh-claim not installed on box (box-sync pair kh-claim)")
+    r = subprocess.run(["kh-claim", "ls", "--json"], capture_output=True, text=True)
+    claims = json.loads(r.stdout or "[]")
+    procs = _sandbox_procs()
+    if "--json" in argv:
+        sp = {str(k): {"exe": v[0], "sandbox": v[1]} for k, v in procs.items()}
+        print(json.dumps({"claims": claims, "sandbox_procs": sp}, indent=2))
+        return
+    if claims:
+        print("claims (kh-claim ls):")
+        for c in claims:
+            row = (c["state"], c["class"], c["name"], c["session"], c["pid"] or "-", c["purpose"])
+            print("  %-6s %-9s %-26s %-20s pid=%-8s %s" % row)
+    else:
+        print("claims: none")
+    by = {}
+    for pid, (exe, top) in procs.items():
+        by.setdefault(top, []).append((pid, exe))
+    if by:
+        print("sandbox processes (cwd under %s):" % SANDBOX_ROOT)
+        claimed = {c["name"]: c["session"] for c in claims if c["class"] == "sandbox"}
+        for top in sorted(by):
+            owner = claimed.get(top, "UNCLAIMED")
+            procs_s = " ".join("%d:%s" % (p, os.path.basename(e)) for p, e in sorted(by[top])[:6])
+            print("  %-28s %-16s %s" % (top, owner, procs_s))
+    else:
+        print("sandbox processes: none")
+
+
+def cmd_claims(argv):
+    """passthrough: labctl claims take|release|ls|who|gc ..."""
+    if not shutil.which("kh-claim"):
+        die("kh-claim not installed on box")
+    os.execvp("kh-claim", ["kh-claim", *argv])
+
+
+def cmd_wait_for(argv):
+    """block ON THE BOX until a condition holds; exit 0 met, 3 timeout.
+    labctl wait-for [--timeout S] [--interval S] --unit NAME [--state active]
+                                                  | --file PATH | --gone PATH
+                                                  | --port N | --cmd 'shell'"""
+    timeout, interval = 600.0, 2.0
+    cond = None
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        nxt = argv[i + 1] if i + 1 < len(argv) else None
+        if a == "--timeout":
+            timeout, i = float(nxt), i + 1
+        elif a == "--interval":
+            interval, i = float(nxt), i + 1
+        elif a == "--unit":
+            state = "active"
+            if i + 2 < len(argv) and argv[i + 2] == "--state":
+                state = argv[i + 3]
+                i += 2
+            cond = ("unit", nxt, state)
+            i += 1
+        elif a in ("--file", "--gone", "--port", "--cmd"):
+            cond = (a[2:], nxt)
+            i += 1
+        else:
+            die("wait-for: unknown argument %s" % a)
+        i += 1
+    if not cond:
+        die(cmd_wait_for.__doc__)
+
+    def met():
+        k = cond[0]
+        if k == "unit":
+            r = subprocess.run(["systemctl", "is-active", cond[1]], capture_output=True, text=True)
+            return r.stdout.strip() == cond[2]
+        if k == "file":
+            return os.path.exists(cond[1])
+        if k == "gone":
+            return not os.path.exists(cond[1])
+        if k == "port":
+            with socket.socket() as s:
+                s.settimeout(1)
+                return s.connect_ex(("127.0.0.1", int(cond[1]))) == 0
+        if k == "cmd":
+            return subprocess.run(cond[1], shell=True, capture_output=True).returncode == 0
+        return False
+
+    t0 = time.time()
+    while True:
+        if met():
+            print("wait-for: met after %.0fs (%s)" % (time.time() - t0, " ".join(map(str, cond))))
+            return
+        if time.time() - t0 > timeout:
+            print("wait-for: TIMEOUT after %.0fs (%s)" % (timeout, " ".join(map(str, cond))), file=sys.stderr)
+            sys.exit(3)
+        time.sleep(interval)
+
+
 USAGE = """usage: labctl <command> [args]
 
 Read-only inspection:
@@ -1830,6 +1954,11 @@ Framebuffer and guest operations:
   labctl reset <tile>
   labctl clone <tile> <N>
   labctl gen
+
+Sessions and shared things:
+  labctl who [--json]                 claims + sandbox processes by session
+  labctl claims take|release|ls|who|gc ...   (kh-claim passthrough)
+  labctl wait-for [--timeout S] --unit U [--state S] | --file P | --gone P | --port N | --cmd C
 """
 
 
@@ -1853,6 +1982,9 @@ def main():
         "reset": cmd_reset,
         "clone": cmd_clone,
         "gen": cmd_gen,
+        "who": cmd_who,
+        "claims": cmd_claims,
+        "wait-for": cmd_wait_for,
     }
     fn = table.get(cmd)
     if not fn:

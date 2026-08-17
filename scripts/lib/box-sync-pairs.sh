@@ -128,6 +128,8 @@ box_sync_load_pairs() {
   # scripts/README.md "Box-sync pairs" (expanded to one byte pair per row).
   box_sync_add_pair labctl scripts/labctl /usr/local/bin/labctl exact repo
   box_sync_add_pair clone-guard scripts/lib/clone-guard.sh /usr/local/bin/clone-guard exact repo
+  box_sync_add_pair kh-claim scripts/lib/kh-claim.sh /usr/local/bin/kh-claim exact repo
+  box_sync_add_pair kh-session scripts/lib/kh-session.sh /usr/local/lib/kh-session.sh exact repo
   box_sync_add_pair xvfb-alloc scripts/lib/xvfb-alloc.sh /usr/local/bin/xvfb-alloc exact repo
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
   # The healer behind chroot-guard: restores host API mounts a rogue teardown
