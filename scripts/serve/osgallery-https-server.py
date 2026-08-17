@@ -24,8 +24,10 @@ Serves:
   POST /clientlog               -> untokened LAN/VPN browser telemetry sink. Body is one
                                    JSON event object or an ARRAY of events; each
                                    is appended as one JSONL line (+srvTs, +ip) to
-                                   CLIENTLOG (clientlog.jsonl, 4 MiB rotation to
-                                   a single .1 generation).
+                                   CLIENTLOG (clientlog.jsonl). Retention is a
+                                   ROLLING WINDOW (CLIENTLOG_RETENTION_SECS,
+                                   default 36 h) pruned by age, with
+                                   CLIENTLOG_MAX as a runaway size backstop.
   GET  /clientcmd?since=<seq>   -> authenticated command polling for operator SPA tabs. Re-reads
                                    CLIENTCMD (clientcmd.json) fresh per request
                                    and returns only cmds with seq > since.
@@ -60,7 +62,8 @@ Env (all optional except paths):
   WEBRTC_BRIDGE_UPSTREAM one generic loopback bridge base (default http://127.0.0.1:18080)
   WEBRTC_ICE_SERVERS_FILE platform ICE JSON (default <server dir>/webrtc-ice-servers.json)
   CLIENTLOG      telemetry JSONL path        (default <server dir>/clientlog.jsonl)
-  CLIENTLOG_MAX  rotate threshold in bytes                     (default 4194304)
+  CLIENTLOG_MAX  size backstop in bytes                       (default 67108864)
+  CLIENTLOG_RETENTION_SECS rolling telemetry window in seconds   (default 129600)
   CLIENTCMD      command queue JSON path      (default <server dir>/clientcmd.json)
   CLIENTCMD_TOKEN admin token file    (default <server dir>/pki/clientcmd.token)
   OSG_ADMIN_EVAL enable arbitrary-JS eval commands                (default 0)
@@ -142,7 +145,14 @@ RESTORE_ENABLE = os.environ.get("RESTORE_ENABLE", "1") not in ("0", "false", "no
 # needed after hand-edits, and restart-https.sh's log truncation never touches
 # clientlog.jsonl.
 CLIENTLOG = Path(os.environ.get("CLIENTLOG", str(Path(__file__).resolve().parent / "clientlog.jsonl")))
-CLIENTLOG_MAX = int(os.environ.get("CLIENTLOG_MAX", str(4 * 1024 * 1024)))
+CLIENTLOG_MAX = int(os.environ.get("CLIENTLOG_MAX", str(64 * 1024 * 1024)))
+# Rolling RETENTION WINDOW (seconds) for the client telemetry log. The size cap
+# above is only a runaway backstop now: what the operator actually wants is "the
+# last day of streaming diagnostics", and since the client samples its full
+# overlay state every 5 s (see streamClient/telemetry.ts formatStatsLine) a
+# blind size rotation could drop this morning's evidence by lunchtime under
+# heavy use. Rotation therefore PRUNES BY AGE and keeps one generation.
+CLIENTLOG_RETENTION_SECS = int(os.environ.get("CLIENTLOG_RETENTION_SECS", str(36 * 3600)))
 CLIENTLOG_BODY_MAX = 16 * 1024  # request-body cap (shared by /clientcmd/admin)
 WEBRTC_OFFER_BODY_MAX = 128 * 1024
 WEBRTC_BRIDGE_UPSTREAM = os.environ.get("WEBRTC_BRIDGE_UPSTREAM", "http://127.0.0.1:18080").rstrip("/")
@@ -238,12 +248,56 @@ def _clientlog_record(ev: dict, client: str) -> dict:
     return rec
 
 
+def _clientlog_prune_by_age(path, cutoff):
+    """Rewrite `path` in place keeping only records with srvTs >= cutoff.
+
+    Returns the number of rows dropped, or None if the file was left alone.
+    Unparseable/timestamp-less rows are KEPT: this prunes by age, and a row we
+    cannot date is not evidence we are entitled to throw away.
+    """
+    tmp = path.with_name(path.name + ".prune")
+    kept = dropped = 0
+    try:
+        with open(path, encoding="utf-8", errors="replace") as src, open(tmp, "w", encoding="utf-8") as dst:
+            for line in src:
+                try:
+                    ts = json.loads(line).get("srvTs")
+                except (ValueError, AttributeError):
+                    ts = None
+                if isinstance(ts, (int, float)) and ts < cutoff:
+                    dropped += 1
+                    continue
+                dst.write(line)
+                kept += 1
+        os.replace(tmp, path)
+        return dropped
+    except OSError as e:
+        sys.stderr.write(f"[serve] clientlog prune failed: {e}\n")
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        return None
+
+
 def _clientlog_append(records):
-    """Append records under the lock; rotate a single .1 generation at 4 MiB."""
+    """Append records under the lock, pruning to the rolling retention window.
+
+    Age-prune first (cheap, keeps the working file inside the window); only if
+    that still leaves the file over the size backstop do we rotate a single .1
+    generation, so a runaway client cannot fill the disk.
+    """
     with _log_lock:
         try:
             if CLIENTLOG.exists() and CLIENTLOG.stat().st_size > CLIENTLOG_MAX:
-                os.replace(CLIENTLOG, CLIENTLOG.with_name(CLIENTLOG.name + ".1"))
+                cutoff = time.time() - CLIENTLOG_RETENTION_SECS
+                dropped = _clientlog_prune_by_age(CLIENTLOG, cutoff)
+                if dropped:
+                    sys.stderr.write(
+                        f"[serve] clientlog pruned {dropped} rows older than {CLIENTLOG_RETENTION_SECS}s\n"
+                    )
+                # Still oversized after pruning => the window itself is too big
+                # for the disk budget; fall back to the generational rotate.
+                if CLIENTLOG.stat().st_size > CLIENTLOG_MAX:
+                    os.replace(CLIENTLOG, CLIENTLOG.with_name(CLIENTLOG.name + ".1"))
         except OSError as e:
             sys.stderr.write(f"[serve] clientlog rotate failed: {e}\n")
         with open(CLIENTLOG, "a", encoding="utf-8") as f:

@@ -113,6 +113,66 @@ export interface StreamDiagnostics {
   tierChanges: number;
 }
 
+/** The live values that are NOT derived from the rolling window, for the log line. */
+export interface StatsLineInputs {
+  tier: number | null;
+  crf: number | null;
+  w: number | null;
+  h: number | null;
+  fpsCap: number | null;
+  recvKbps: number;
+  decodeFps: number;
+  decodeMs: number;
+  decodeQueue: number;
+  lossPct: number;
+  framesDropped: number;
+  freezeCount: number;
+  rttMs: number | null;
+  banner: string;
+  decodePath: string;
+  decodeErrors: number;
+  sessionRebuilds: number;
+  stalled: boolean;
+}
+
+/**
+ * Render one periodic telemetry sample for the server-side rolling log
+ * (POST /clientlog). Deliberately COMPACT — the sink truncates `detail` at 512
+ * chars — and deliberately the SAME set the Ctrl+N overlay renders, so a
+ * post-mortem from the log sees exactly what an operator would have seen live.
+ *
+ * The server cannot derive most of this: its 29-byte T_STATS feed carries only
+ * rtt, recv_kbps, the decode counters, frames_dropped, freeze_count, loss_pct
+ * and last_frame_id.
+ * Every windowed figure below (peaks, sample sizes, rates, tier history) exists
+ * only in the browser, which is why streaming post-mortems had nothing to read.
+ */
+export function formatStatsLine(d: StreamDiagnostics, m: StatsLineInputs): string {
+  const n = (x: number | null, p = 0) => (x == null ? '-' : x.toFixed(p));
+  const parts = [
+    `T${m.tier ?? '-'}/crf${m.crf ?? '-'}`,
+    `${m.w ?? '-'}x${m.h ?? '-'}@${m.fpsCap ?? '-'}`,
+    `rx${(m.recvKbps / 1000).toFixed(1)}M`,
+    `fps${m.decodeFps.toFixed(0)}`,
+    `dec${m.decodeMs.toFixed(1)}/q${m.decodeQueue}`,
+    `rtt${n(m.rttMs, 1)}/fl${n(d.rttFloorMs, 1)}/ex${n(d.rttExcessMs)}`,
+    `rttpk${n(d.rttPeakMs)}@${n(d.rttPeakAgeMs)}ms/br${d.rttBreachTicks}`,
+    `loss${m.lossPct.toFixed(1)}/w${d.windowLossPct.toFixed(1)}n${d.windowFrames}`,
+    `pk${d.peakLossPct.toFixed(0)}n${d.peakLossFrames}${d.peakLossUntrustworthy ? '!' : ''}`,
+    `dr${m.framesDropped}/${d.dropsPerMin.toFixed(0)}pm`,
+    `fz${m.freezeCount}/${d.freezesPerMin.toFixed(0)}pm`,
+    `tier${d.tierChanges}ch`,
+    d.tierPath ? `path${d.tierPath}` : '',
+    d.lastTierChangeAgeMs != null ? `age${Math.round(d.lastTierChangeAgeMs / 1000)}s` : '',
+    m.banner,
+    m.decodePath,
+    m.decodeErrors ? `err${m.decodeErrors}` : '',
+    m.sessionRebuilds ? `rb${m.sessionRebuilds}` : '',
+    m.stalled ? 'STALLED' : '',
+  ].filter(Boolean);
+  return parts.join(' ');
+}
+
 /** One tick's worth of input. `tier` may be null before the first params push. */
 export interface TelemetryTick {
   now: number;

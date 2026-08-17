@@ -15,6 +15,7 @@ import { logClientEvent } from '../clientDebug';
 import { clampU16 } from './format';
 import { ewma, rawScores } from './scoring';
 import { bankServerSkips, spendSkipCredit } from './skipCredit';
+import { formatStatsLine } from './telemetry';
 import { T_STATS, FRAME_STALL_MS, MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS } from './constants';
 
 /** Rolling window the REPORTED loss percentage is measured over (ms). */
@@ -25,6 +26,13 @@ const LOSS_WINDOW_MS = 3000;
  * out of one is 100 %, not a congested link — so we report 0 instead.
  */
 const LOSS_MIN_FRAMES = 10;
+/**
+ * Cadence of the periodic telemetry sample posted to the server-side rolling
+ * log. 5 s matches clientDebug's normal batch flush, so a sample costs no extra
+ * request; a session-hour is ~720 rows (~250 KB), which the sink's retention
+ * comfortably holds.
+ */
+const STATS_LOG_MS = 5000;
 
 /**
  * Roll the interval accumulators into rates, run the `el` scorer, update the
@@ -177,6 +185,37 @@ export function tickStatsImpl(this: StreamClient): void {
 
   // ---- banner state machine (Section 2.6) ----
   this.updateBanner(now);
+
+  // ---- periodic telemetry sample -> server-side rolling log ----
+  // The overlay's diagnostics live ONLY in the browser, so a session that dies
+  // takes its evidence with it: the 2026-08-17 win311 mid-game drop left no
+  // client-side record at all. Sampling on a fixed cadence (and relying on
+  // clientDebug's pagehide/visibilitychange keepalive flush) means the last
+  // seconds before a drop are on disk even when the tab never comes back.
+  if (now - this.lastStatsLogAt >= STATS_LOG_MS) {
+    this.lastStatsLogAt = now;
+    const enc = this.encParams;
+    logClientEvent('stats', formatStatsLine(this.telemetry.snapshot(now), {
+      tier: enc?.tier ?? null,
+      crf: enc?.crf ?? null,
+      w: enc?.width ?? null,
+      h: enc?.height ?? null,
+      fpsCap: enc?.fpsCap ?? null,
+      recvKbps: this.recvKbps,
+      decodeFps: this.decodeFps,
+      decodeMs: this.decodeMs,
+      decodeQueue,
+      lossPct: this.lossPct,
+      framesDropped: this.framesDropped,
+      freezeCount: this.freezeCount,
+      rttMs: this.lastRtt ?? null,
+      banner: this.banner,
+      decodePath: this.decodePath,
+      decodeErrors: this.decodeErrors,
+      sessionRebuilds: this.sessionRebuilds,
+      stalled: this.frameStalled,
+    }));
+  }
 
   // ---- fire the feedback datagram + a fresh RTT ping ----
   this.sendStats(decodeQueue, missedThisInterval);
