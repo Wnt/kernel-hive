@@ -194,6 +194,7 @@ cmd_ls() {
 
 _remove_one() { # name force
   local name="$1" force="$2" dir="$SANDBOX/$1" repo="$SANDBOX/$1/repo" pids unmerged
+  cd "$MAIN_REPO" || return 1 # never stand inside the tree being removed
   pids="$(live_pids "$name")"
   if [ -n "$pids" ] && [ "$force" != 1 ]; then
     echo "wt.sh: REFUSED $name — live processes in its sandbox:" >&2
