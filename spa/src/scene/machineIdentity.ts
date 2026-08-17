@@ -354,6 +354,15 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'MACINTOSH QUADRA 800', spec: '68040 25MHz • MAC OS 7.5.3 • 1996',
     kit: 'workstation',
   },
+  // HP's Visualize B-class wore the mid-90s HP workstation two-tone: a light
+  // warm-grey chassis with the darker slate-blue front bezel band, and the
+  // "hp" badge in that same blue. Moderate tintMix so the band reads as HP's
+  // stripe without swallowing the case.
+  hpuxvue: {
+    caseTint: '#c9c8c3', accentTint: '#5b7c99', tintMix: 0.34,
+    badge: 'HP 9000 / 778 VISUALIZE B160L', spec: 'PA-7300LC 160MHz • HP-UX 10.20 • 1996',
+    kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
