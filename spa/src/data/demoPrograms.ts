@@ -113,6 +113,28 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 180
   },
+  "sinclairql": {
+    "label": "Draw a rose in SuperBASIC",
+    "lines": [
+      "10 MODE 4",
+      "20 WINDOW #1,512,200,0,0",
+      "30 PAPER #1,0",
+      "40 CLS #1",
+      "50 SCALE #1,100,0,0",
+      "60 DEFine PROCedure rose(n,c)",
+      "70 INK #1,c",
+      "80 FOR a=0 TO 175 STEP 180/n",
+      "90 CIRCLE #1,94,50,38,.28,a*PI/180",
+      "100 END FOR a",
+      "110 END DEFine",
+      "120 rose 5,4",
+      "130 rose 7,2",
+      "140 INK #1,7",
+      "150 CIRCLE #1,94,50,4"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 400
+  },
   "vic20": {
     "label": "Type in a demo program",
     "lines": [
