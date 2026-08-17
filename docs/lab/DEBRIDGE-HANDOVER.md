@@ -1,6 +1,6 @@
 # De-bridging campaign — handover
 
-**State as of 2026-08-16.** Read this first, then
+**State as of 2026-08-17.** Read this first, then
 [`DEBRIDGE-CONVERSION-BRIEF.md`](DEBRIDGE-CONVERSION-BRIEF.md) (the campaign's
 rules and per-station procedure) and
 [`DEBRIDGE-ROLLBACK.md`](DEBRIDGE-ROLLBACK.md) (how to undo a conversion).
@@ -18,6 +18,11 @@ template) and then **plus4, cbm2, pet2001 and cbm8032 in one wave the same
 day**. Details in
 [§The VICE wave](#the-vice-wave-vic20-is-the-template-and-it-is-live) and
 [§The four-station wave](#the-four-station-wave-plus4-cbm2-pet2001-cbm8032).
+**2026-08-17: the checkpoint restore bug was found, fixed on the fork, and
+cbm2, pet2001 and cbm8032 have their checkpoints back** —
+[§The restore bug, and what it actually was](#the-restore-bug-and-what-it-actually-was).
+**c128 and c64 are still bridged**, but both are de-risked and measured:
+[§c128 and c64 — measured, but NOT converted](#c128-and-c64--measured-but-not-converted).
 
 **Fourteen stations still run a Debian bridge kiosk**, deliberately: each uses
 a different emulator, and the frame/input machinery is engine-specific.
@@ -427,6 +432,11 @@ checkpoint plane, which is the wave's one real finding.
 | pet2001 | `xpet -model 2001 -CRTCdsize` | **768×432** (1 327 168 B) | 3 500 / 5 000 | NOT the 768×532 SDL window the kiosk sized its root around. `PET/gtk3_grus_sym.vkm` (graphics keyboard) |
 | cbm8032 | `xpet -model 8032 -CRTCdsize` | **1408×1088** (6 127 680 B) | 5 000 / 9 000 | **Retires the fleet's only 1600×1200 X root** — that root existed solely to contain a fixed 1408×1064 SDL window, and streamhost encoded the black margin around it. 36 % fewer pixels, same picture. `PET/gtk3_buuk_sym.vkm` (business-UK keyboard) |
 
+> **SUPERSEDED 2026-08-17 — the restore bug was found and fixed.** Three of
+> these four now run with their checkpoint again; see
+> [§The restore bug, and what it actually was](#the-restore-bug-and-what-it-actually-was).
+> The measurements below are kept because they are the reproduction cases.
+
 **The checkpoint plane does NOT generalise, and this is the finding to carry
 forward.** The survey's "PROVEN, and better than MAME's" verdict was measured
 on `dump`/`undump` round-tripping, which does succeed on all seven binaries —
@@ -468,27 +478,22 @@ Their `sta/golden.vsf` files are shelved on the box as
 `golden.vsf.unusable-20260816`, not deleted, in case someone wants to chase the
 restore bug on the fork.
 
-### OPEN RISK, and it lands on c64
+### ~~OPEN RISK, and it lands on c64~~ — CLOSED 2026-08-17
 
-`VICE_NATIVE_CHECKPOINT=0` worked for these four for ONE reason only: their
-scenes are untouched cold boots, so a cold boot reproduces them exactly.
-**c64's golden is IN-APPLICATION — the GEOS desktop — and a cold boot cannot
-reproduce it.** The fallback that saved this wave is therefore NOT available to
-c64. If c64's checkpoint does not hold, that station needs a different answer
-entirely (curated post-boot typing the way armeval re-types its supervisor
-lines, an attached image that boots to the scene, or keeping c64 bridged), and
-the worst outcome is discovering it at the end of the conversion.
+The risk was: `VICE_NATIVE_CHECKPOINT=0` worked for the four for ONE reason
+only — their scenes are untouched cold boots — and **c64's golden is
+IN-APPLICATION (the GEOS deskTop), which a cold boot cannot reproduce**, so the
+fallback that rescued the wave did not exist for it.
 
-**Whoever takes c64 should test its restore FIRST, before writing a stanza.**
-The test is cheap and needs no station: bake a checkpoint in a scratch rig with
-`dump`, restore it with `undump`, and read the shm mapping at 20 M, 45 M and
-120 M cycles. If the geometry or the scene moves, stop and re-plan the station
-rather than the stanza. c64 is VIC-II like vic20, the one family member whose
-restore held, so there is reason for optimism — but vic20 is a sample of one.
-
-c128's VDC is CRTC-family, so assume its restore moves the surface until
-measured otherwise; and with `CHECKPOINT=0` its CP/M disk's drive-8 autoboot is
-no longer dodged by restore-to-checkpoint, which has to be re-planned too.
+**Tested first, before any stanza, and c64's restore HOLDS.** Rig
+`/data/vms/soltest/vice-restore/c64`: host-native headless `x64sc
+-drive8truedrive -autostart-handle-tde -VICIIdsize` autostarted GEOS-1351.D64,
+reached the deskTop, `dump`ed, and a FRESH process restored it through
+`-moncommands` + `-initbreak ready`. The restored mapping is **768×544, 256 429
+lit, 258 645 non-dominant, 315 colours — identical to the bake's own numbers**,
+the deskTop is pixel-correct, and GEOS's own on-screen clock keeps advancing, so
+the machine is alive and not merely painted. In-place `undump` on a running
+machine works too. **c64 needs no different answer; it can ship a checkpoint.**
 
 **Two additions to the shared builder**, both earned by this wave and both
 available to c128 and c64:
@@ -516,6 +521,160 @@ keyboard profile still sends the same host keys it always did.
 `streamhost-3fa7646e8b7662547db5bdf4314a08b34fd57819`, which carries
 `vice_sock.rs` AND the idle-reconciler fix below. It has **not** been promoted
 to the fleet.
+
+## The restore bug, and what it actually was
+
+**2026-08-17. It was TWO bugs, not one, and only one of them was a restore.**
+Both were found in a namespaced rig (`/data/vms/soltest/vice-restore`) driven
+from the four shelved `golden.vsf.unusable-20260816` checkpoints, and both are
+fixed on the fork. Pin moved `42103407` → **`507cf3e832`** (ten commits on tag
+`3.10.0`), and cbm2, pet2001, cbm8032 and plus4 were rebuilt from it, which
+also retires the "installed from a rig build" debt for those four.
+
+### 1. The CRTC canvas grew — an UPSTREAM bug, `src/crtc`
+
+`crtc.framelines` carries **two different meanings**. Between frames the raster
+alarm handler assigns it the number of rasterlines the frame ACTUALLY took
+(`crtc.framelines = crtc.current_line` — the whole frame, borders and vertical
+retrace included: 260 on a 60 Hz PET, 313 on a 50 Hz CBM-II), because that is
+what its end-of-frame test needs. `crtc_update_window()` instead sizes the
+canvas as `framelines + CRTC_EXTRA_RASTERLINES + 2 * CRTC_SCREEN_BORDERHEIGHT`,
+which only makes sense for the **nominal** active-line count — and every other
+caller sets `framelines = regs[VDISP] * (regs[SCANLINE] + 1)` first (see the
+`delayed_resize` branch of the alarm handler, and `crtc_set_screen_options()`).
+
+`crtc_snapshot_read_module()` was the exception: it restored the saved runtime
+value and handed THAT to `crtc_update_window()`, which **only ever grows**
+`screen_height`, so the enlargement was permanent. The observed deltas are
+exactly borders-plus-retrace: pet2001 216→276 (+60), cbm2 266→329 and cbm8032
+272→329 (+63/+57, ×2 for the CRTC's 1×2 render mode, ×2 again for `-CRTCdsize`
+where used). There is a **second half**: `crtc_update_window()` resizes the
+viewport only when it moved the height itself, and a restore arrives with the
+height already right and the viewport wrong, because the machine's own snapshot
+read path calls `crtc_set_screen_options()` first (which resets `screen_height`
+to its power-on value and resizes the viewport) and nothing put it back. Fixing
+only the framelines left pet2001 at 768×544. The fix is one new entry point,
+`crtc_restore_window_from_snapshot()`, doing both.
+
+**Worth reporting upstream**: it reproduces on stock 3.10.0 and needs no
+kernel-hive patch to see — any CRTC machine snapshotted and restored comes back
+with a taller canvas.
+
+### 2. SAVEST wrote STALE CPU REGISTERS — OURS, `src/vicectl.c`
+
+This is the one that looked like a per-machine restore defect and was not.
+`dispatch()` runs from `vicectl_frame()`, i.e. from vsync, i.e. from inside the
+raster alarm while `maincpu_mainloop()` is between instructions but has **not
+exported its registers**: the 6502 registers live in locals in `6510core.c` and
+reach the global `maincpu_regs` only inside an `EXPORT_REGISTERS()` bracket,
+which the core opens for traps, DMA and the monitor and for nothing else. A
+`machine_write_snapshot()` called straight from `dispatch()` therefore saved a
+stale CPU, and restoring it dropped the CPU at a dead PC:
+
+- **plus4** — fell into TEDMON (`BREAK`, `PC=$0005`) seconds later;
+- **cbm8032** — printed `?illegal quantity error in  0` into a live BASIC.
+
+The discriminator that cracked it: **the same machines snapshotted through the
+monitor's own `dump` restore perfectly**, because `dump` runs inside
+`monitor_startup()` and so inside `EXPORT_REGISTERS()`. Baking a plus4 golden
+through vicectl `SAVEST` in a clean rig reproduced TEDMON to the pixel
+(`lit=386843 nondom=343009`) while a `dump`-baked one did not. SAVEST/LOADST now
+run from a **CPU trap**, the way every in-tree caller does
+(`arch/gtk3/uisnapshot.c` does it for all four of its paths), and ack when the
+snapshot has actually happened.
+
+**Every golden baked through vicectl SAVEST before this fix is suspect**,
+including **vic20's live one** — it "held" only because a VIC-20 sitting at
+READY has its CPU in a tight KERNAL loop where a stale PC still lands
+somewhere harmless. vic20 was left alone here (another agent owns that lane);
+**its golden should be rebaked and its binary rebuilt from the pin.**
+
+### What went back on, and what did not
+
+| station | checkpoint | evidence |
+|---|---|---|
+| cbm2 | **ON** | restore = 704×532, 1649 lit / 3031 non-dominant — the cold-boot gate's own numbers, to the pixel; alive at 120 M cycles |
+| pet2001 | **ON** | restore = 768×432, 8222 non-dominant (gate's number); alive at 120 M |
+| cbm8032 | **ON** | restore = 1408×1088, 8322 / 15268 (gate's numbers); alive at 120 M, nothing printed into BASIC |
+| plus4 | **still OFF** | see below |
+| c64 | would hold | see [§OPEN RISK … CLOSED](#-open-risk-and-it-lands-on-c64--closed-2026-08-17) |
+
+All three were rebaked with the monitor's `dump` against the pin's binary,
+installed as `sta/golden.vsf`, restarted, and verified live: exactly ONE
+publisher into each `fb.shm`, right surface, right scene.
+
+**plus4 stays off for a much smaller reason than before.** Its TEDMON crash is
+gone. What remains is cosmetic but disqualifying: a restored TED comes back with
+**the top ~40 emulated lines of the canvas never repainted** — a black band
+where the cold boot draws the purple TED border, still black at 120 M cycles
+(published rows 0..78 black on restore, purple on cold boot; everything below is
+correct and within one line of the cold-boot position). TED-only: vic20's VIC
+and all three CRTC machines restore pixel-clean. The lead is
+`ted.raster.current_line = TED_RASTER_Y(maincpu_clk); /* FIXME? */` in
+`ted_snapshot_read_module()`.
+
+### Landmines this work added
+
+- **`-limitcycles` counts ABSOLUTE `maincpu_clk`, and a restore JUMPS the
+  clock** to the golden's own value. A gate whose limit is below that exits the
+  instant the snapshot lands, and the frame you read is the pre-restore one.
+  This produced a confident "c64's restore does nothing" before it was spotted:
+  a 90 s golden restored under `-limitcycles 20000000` exits immediately. Set
+  the limit well above the golden's clock, or do not use one.
+- **A snapshot does not carry the disk image.** `dump` with `save_disks=0`
+  stores the drive's state but not its media, so a restore of a true-drive
+  station must have the same image attached (`-8 <d64>`) or the drive comes back
+  with nothing under the head.
+- **Bake goldens through the monitor's `dump` when you can.** It is the path
+  that was never broken, and it needs no client.
+
+## c128 and c64 — measured, but NOT converted
+
+Neither station was converted. What IS established, so the next agent starts
+from measurements rather than assumptions:
+
+**c128's published canvas must be CHOSEN, and the default is WRONG.** This
+handover previously recorded that the shm publisher "takes canvas 0 = VDC by
+refresh-order accident". It does not. Measured with `x128 -pal -80col
+-VDCdsize`:
+
+| | claims the mapping | surface |
+|---|---|---|
+| no selector | **chip VICII** | 768×544 (the 40-column screen) |
+| `VICE_SHM_CHIP=VDC` | chip VDC | **1712×1152**, the C128's own 80-column power-on screen in cyan on black |
+
+`-80col` makes the VDC the machine's ACTIVE display and decides which screen it
+boots into, but it does not change which canvas refreshes first — so a c128
+conversion that took the default would have shipped the 40-column VIC-II screen.
+**`VICE_SHM_CHIP` now exists** (fork `507cf3e832`): the chip's own resource
+prefix, compared case-insensitively (`VICII`, `VDC`, `VIC`, `TED`, `CRTC`);
+unset keeps the old behaviour byte for byte so the six single-canvas stations
+are unaffected; a name that matches nothing publishes nothing, which the boot
+gate reads as an empty mapping — loud, not quietly wrong. The shared launcher
+passes it through as the fixture knob **`VICE_NATIVE_SHM_CHIP`**.
+
+Still owed by c128: the geometry pin (1712×1152 measured with `-VDCdsize`, but
+the exhibit's own doubling choice is not settled — the bridged kiosk's 1578×1152
+window was sized to an 800×600 root that no longer exists), gate floors for a
+mostly-black VDC page, `-remotemonitor` → `-binarymonitor`, the CP/M disk
+through `vice_stage_extra`, a restore test of the **VDC**, which is CRTC-family
+and was NOT covered by the CRTC fix above (that fix is in `src/crtc`; the VDC is
+`src/vdc` and has its own snapshot module — assume nothing), and the drive-8
+autoboot question.
+
+**c64's pointer is real work, not a knob, and it is unscoped.** `vice_sock.rs`
+has no pointer verb at all: `try_pointer_abs()` REJECTS the record and logs once
+(`streamhost/streamhost/src/vice_sock.rs`, "KEYBOARD ONLY" in the module doc).
+vicectl has no pointer verb either. Making the GEOS exhibit mouse-driven means a
+new verb on both sides AND a decision the keyboard path never had to make: the
+station is `pointer: none` today, the browser sends ABSOLUTE coordinates, and
+the 1351 is a **proportional** device whose POT lines VICE drives from
+*relative* host motion — the bridged station's own notes call out that the fix
+there was "relative transport at VICE's host-mouse boundary". So an absolute
+browser pointer has to be turned into relative deltas somewhere, and the
+existing bridged c64 is the only place that ever worked end to end. Converting
+c64 as a **keyboard-only** exhibit is possible today; converting it with its
+mouse is a separate piece of work that should be scoped on its own.
 
 ## atarist
 
@@ -551,9 +710,19 @@ re-measure in high res.
   other nine so the rewrite happens once, for all of them).
 - The vicesock daemon artifact is canaried on the five converted VICE stations
   only, never promoted.
-- The four second-wave stations' unusable checkpoints are shelved on the box as
-  `sta/golden.vsf.unusable-20260816`; delete only if nobody intends to chase the
-  VICE restore bug.
+- ~~The four second-wave stations' unusable checkpoints are shelved on the box~~
+  RESOLVED 2026-08-17: the restore bug was chased and fixed (fork
+  `507cf3e832`); cbm2, pet2001 and cbm8032 run rebaked goldens again. The
+  `sta/golden.vsf.unusable-20260816` files are still on the box and are now the
+  reproduction cases for the two bugs — keep them until someone wants the disk
+  space back.
+- **vic20 was NOT rebuilt or rebaked**, because another agent owns that lane. It
+  is the last VICE station running a rig-built binary, and its live golden was
+  baked through the pre-fix vicectl `SAVEST`, so it carries stale CPU registers.
+  It restores correctly today; rebuild it from the pin and rebake anyway.
+- **plus4's restore leaves the top ~40 canvas lines unpainted** (TED, not CRTC).
+  It is why plus4 keeps `VICE_NATIVE_CHECKPOINT=0`; the lead is recorded in its
+  fixture and in §The restore bug.
 - Kiosk overlays are retained as `*.debridged-bak`; delete only on the
   operator's word.
 - ~~Box-sync drift~~ RESOLVED 2026-08-16: the live-artifact rows
