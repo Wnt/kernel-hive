@@ -73,6 +73,7 @@ import contextlib
 import hmac
 import json
 import os
+import re
 import ssl
 import subprocess
 import sys
@@ -853,14 +854,23 @@ class H(BaseHTTPRequestHandler):
         if target != WEBROOT and WEBROOT not in target.parents:
             return self._send(403, "forbidden\n", "text/plain")
 
+        # A staged UI (scripts/dev/stage.sh) lives at webroot/staging/<session>/
+        # — a complete vite build with base=/staging/<session>/ plus its own
+        # rendered gallery-manifest.json + poster-docs.json. Its client routes
+        # fall back to ITS index.html, never the live one.
+        staged = re.match(r"^/staging/([a-z0-9-]{1,24})(?:/|$)", path)
+        staged_index = (WEBROOT / "staging" / staged.group(1) / "index.html") if staged else None
+
         if path == "/" or target.is_dir():
-            target = WEBROOT / "index.html"
+            target = staged_index if staged_index and staged_index.is_file() else WEBROOT / "index.html"
 
         if not target.is_file():
             # UI client-side route -> index.html, but NEVER for reserved API
             # prefixes or anything carrying a file extension (missing hashed
             # assets must 404 to expose deploy skew; a stray GET /restore/* or
             # /signal/* must 404, not silently render the app).
+            if staged_index and staged_index.is_file() and not Path(path).suffix:
+                target = staged_index
             reserved = (
                 "/signal/",
                 "/webrtc/",

@@ -103,7 +103,9 @@ export function validateGalleryManifest(value: unknown): GalleryManifest | null 
 // manifest. An empty lineup is the honest, loud failure.
 export async function loadGalleryManifest(fetcher: FetchLike = fetch): Promise<RuntimeVMManifestEntry[]> {
   try {
-    const response = await fetcher('/gallery-manifest.json', { cache: 'no-cache' });
+    // BASE_URL is '/' live and '/staging/<session>/' for a staged UI, whose
+    // manifest is rendered from that session's registry, not the live one.
+    const response = await fetcher(`${import.meta.env.BASE_URL}gallery-manifest.json`, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const runtime = validateGalleryManifest(await response.json());
     if (!runtime) throw new Error('schema validation failed');

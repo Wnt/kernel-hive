@@ -20,7 +20,7 @@ function isDocsFile(value: unknown): value is DocsFile {
 
 async function fetchDocs(): Promise<Record<string, PosterDoc>> {
   try {
-    const response = await fetch('/poster-docs.json', { cache: 'no-cache' });
+    const response = await fetch(`${import.meta.env.BASE_URL}poster-docs.json`, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const parsed: unknown = await response.json();
     if (!isDocsFile(parsed)) throw new Error('schema validation failed');

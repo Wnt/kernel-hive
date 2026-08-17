@@ -41,7 +41,13 @@ function registryDocuments(): Plugin {
   };
 }
 
+// A staged UI (scripts/dev/stage.sh) is served under /staging/<session>/ from
+// the same origin, so its hashed assets and its two runtime documents resolve
+// against that base; the live gallery keeps base '/'.
+const BASE = process.env.VITE_BASE ?? '/';
+
 export default defineConfig({
+  base: BASE,
   plugins: [react(), registryDocuments()],
   server: {
     host: '127.0.0.1',
