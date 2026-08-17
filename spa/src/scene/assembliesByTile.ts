@@ -1,0 +1,388 @@
+// ============================================================================
+//  ASSEMBLIES_BY_TILE — split out of machines.ts (ts-src 600-line hard cap).
+//  ---------------------------------------------------------------------------
+//  Isolating this table also removes a recurring merge hazard: every new
+//  tile appends to ASSEMBLIES_BY_TILE at the same spot, so two parallel tile
+//  branches conflicted here on every merge while it lived inside the far
+//  busier machines.ts. See machines.ts for MachineModel/MODELS, the
+//  AssemblyKind/Assembly types, and assemblyForTile/hasIntegratedKeyboard.
+// ============================================================================
+
+import type { Assembly } from './machines';
+
+// Every registry lineup entry is bound explicitly. Keep entries that do not
+// fit in today's 22 slots here so a future hall expansion requires no modeling
+// fallback or index-cycle changes.
+export const ASSEMBLIES_BY_TILE = {
+  freedos: {
+    kind: 'pizzaBox', body: 'pizzaBoxB', monitor: 'crtA',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  kolibrios: {
+    kind: 'towerSetup', body: 'paramTower', monitor: 'crtC',
+    keyboard: 'keyboardB', mouse: 'paramMouseD',
+  },
+  toaruos: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'lcdB',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  win311: {
+    kind: 'pizzaBox', body: 'pizzaBoxB', monitor: 'paramCrt',
+    keyboard: 'keyboardB', mouse: 'paramMouseA',
+  },
+  win95: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'paramCrt',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
+  win98se: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
+    keyboard: 'keyboardB', mouse: 'paramMouseB',
+  },
+  win2000: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseD',
+  },
+  winxp: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'lcdA',
+    keyboard: 'keyboardE', mouse: 'paramMouseD',
+  },
+  alpine: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdA',
+    keyboard: 'keyboardA', mouse: 'paramMouseD',
+  },
+  tinycore: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtA',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
+  ninefront: {
+    kind: 'towerSetup', body: 'paramTower', monitor: 'crtC',
+    keyboard: 'paramKeyboard', mouse: 'paramMouseD',
+  },
+  helenos: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'lcdC',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  solaris: {
+    kind: 'pizzaBox', body: 'pizzaBoxC', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  nt351: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
+    keyboard: 'paramKeyboard', mouse: 'paramMouseB',
+  },
+  serenityos: {
+    kind: 'towerSetup', body: 'modernD', monitor: 'lcdB',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  android: { kind: 'phoneDock', body: 'phoneA' },
+  postmarketos: { kind: 'phoneDock', body: 'phoneC' },
+  sailfishos: { kind: 'phoneDock', body: 'phoneB' },
+  templeos: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'paramCrt',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  reactos: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  haiku: {
+    kind: 'towerSetup', body: 'modernTower', monitor: 'lcdB',
+    keyboard: 'keyboardG', mouse: 'paramMouseE',
+  },
+  os2warp: {
+    kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtC',
+    keyboard: 'paramKeyboard', mouse: 'paramMouseB',
+  },
+  aros: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'lcdC',
+    keyboard: 'keyboardE', mouse: 'paramMouseE',
+  },
+  qnx: {
+    kind: 'industrial', body: 'industrialBox', monitor: 'lcdC',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  msdoswin1: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtD',
+    keyboard: 'keyboardD', mouse: 'paramMouseA',
+  },
+  c64: {
+    kind: 'homeMicro', body: 'c64A', monitor: 'homeCrtB', mouse: 'paramMouseA',
+  },
+  atarist: {
+    kind: 'homeMicro', body: 'atariSt', monitor: 'homeCrtC', mouse: 'paramMouseA',
+  },
+  apple2: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtD',
+    mouse: 'paramMouseC',
+  },
+  amiga: {
+    kind: 'homeMicro', body: 'amigaA', monitor: 'homeCrtA', mouse: 'paramMouseA',
+  },
+  win11: {
+    kind: 'towerSetup', body: 'modernTower', monitor: 'lcdB',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  riscos: {
+    kind: 'homeMicro', body: 'acornA3000', monitor: 'crtA', mouse: 'paramMouseG',
+  },
+  macos: {
+    kind: 'pizzaBox', body: 'modernMini', monitor: 'lcdB',
+    keyboard: 'keyboardG', mouse: 'paramMouseF',
+  },
+  redstar2: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'lcdC',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  redstar3: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
+    keyboard: 'keyboardF', mouse: 'paramMouseD',
+  },
+  amstradcpc: {
+    kind: 'homeMicro', body: 'amstradCpc', monitor: 'homeCrtE',
+  },
+  nt4: {
+    kind: 'pizzaBox', body: 'pizzaBoxF', monitor: 'paramCrt',
+    keyboard: 'keyboardB', mouse: 'paramMouseB',
+  },
+  // The later registry addition remains a distinct DEC-terminal signature.
+  openvms: { kind: 'terminal', body: 'terminalA' },
+  // SGI Indy: same small blue Unix pizza-box family as solaris, paired with the
+  // one unused compact CRT so the signature stays distinct without a new asset.
+  irix: {
+    kind: 'pizzaBox', body: 'pizzaBoxC', monitor: 'compactA',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  // No mouse: the MPF-II has no pointing device and no port for one, so the
+  // bench carries the machine and a television and nothing else.
+  mpf2: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtD',
+  },
+  // The VIC-20 shares the breadbin shell with the c64 station because the real
+  // machines did: the Commodore 64 reused the VIC-20's case, keyboard and port
+  // layout wholesale. No mouse — the VIC-20's only other input was a joystick.
+  vic20: {
+    kind: 'homeMicro', body: 'c64A', monitor: 'homeCrtD',
+  },
+  // The Plus/4 shares nothing with the breadbin: a charcoal wedge with cream
+  // keys, not beige. Same wedge silhouette as apple2/mpf2, distinguished by its
+  // identity tint below rather than by a bespoke asset.
+  plus4: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtB',
+  },
+  // The C128 is not a breadbin: a wide, low wedge with a full numeric keypad,
+  // closer in silhouette to the Amiga 500 than to the c64 station's case. amigaA is
+  // the widest wedge body in the kit, so it carries the machine; the identity
+  // tint below is what keeps it from reading as an Amiga. Keyboard-only.
+  c128: {
+    kind: 'homeMicro', body: 'amigaA', monitor: 'homeCrtC',
+  },
+  // The PET 2001 is one sealed object — a 9-inch CRT, a chiclet keyboard and a
+  // cassette deck in a single sheet-metal trapezoid — so it takes a terminal
+  // assembly rather than a body with a separate monitor behind it.
+  pet2001: { kind: 'terminal', body: 'terminalC' },
+  // The CBM 8032 is not a home micro either: an all-in-one steel case with a
+  // 12-inch green monitor and a business keyboard built in. No mouse — the PET
+  // had no pointing device and no port for one.
+  cbm8032: { kind: 'terminal', body: 'terminalB' },
+  // The CBM 610 is the deliberate contrast to the 8032 above: a low-profile
+  // business box with the keyboard in the chassis and a DETACHED office CRT on
+  // top. The two machines stream near-identical green 80-column text, so the
+  // 3D exhibit is what has to tell them apart — hence a different silhouette
+  // and a boxy office monitor rather than another all-in-one.
+  cbm2: {
+    kind: 'homeMicro', body: 'amigaA', monitor: 'crtA',
+  },
+  // The three DEC minicomputers are RACK PLUS TERMINAL, not bare glass TTYs.
+  // That is both historically right — a PDP-11 filled cabinets and you sat at a
+  // VT in front of it — and forced: every exhibit needs a distinct hardware
+  // signature, `terminalA/B/C` are already taken by openvms, cbm8032 and
+  // pet2001, and three identical terminals would read as one exhibit cloned
+  // three times. Each takes a different cabinet so they stay distinct from each
+  // other too.
+  //
+  // openvms deliberately stays a bare terminal: it is x86 VMS on modern iron,
+  // with no rack to draw.
+  pdp11: { kind: 'towerSetup', body: 'towerC', monitor: 'terminalA' },
+  // The GT40 is really one cabinet — a PDP-11/05, a VT11 and the CRT above it —
+  // so the tower stands in for that cabinet and the round CRT for the vector
+  // tube. No mouse: the pointing device was a LIGHT PEN, which the kit has no
+  // model for, and which is the whole point of this exhibit.
+  gt40: { kind: 'towerSetup', body: 'towerE', monitor: 'crtE' },
+  // Three DEC operating systems behind one chooser, on the biggest rack.
+  decos: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalA' },
+  // The ZX Spectrum is the smallest object in the hall — a 23 cm rubber-keyed
+  // slab that plugged into the family television. The kit has no body that
+  // small, so it takes the smallest wedge (eightBitWedgeA, shared with
+  // apple2/mpf2/plus4) paired with the LARGEST home CRT, which is the honest
+  // relationship: the machine was tiny and the telly was not. That pairing is
+  // free — amiga holds amigaA|homeCrtA — so the signature stays distinct, and
+  // the black case and rainbow-flash red in machineIdentity.ts are what read as
+  // Sinclair. No mouse and no keyboard model: the keyboard IS the machine, and
+  // no pointing device was ever made for it.
+  zxspectrum: { kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtA' },
+  // The smallest object in the collection: a ZX81 is a black wedge the size of
+  // a paperback with a printed membrane where the keys should be, plugged into
+  // whatever television was free. eightBitWedgeA is the narrowest wedge in the
+  // kit and homeCrtC the smallest set, which is as close as the parametric
+  // assets get to that pairing; the black-plastic tint below is what stops it
+  // reading as another beige home micro. No mouse and no joystick: the ZX81's
+  // only other port was a cassette recorder.
+  zx81: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtC',
+  },
+  // The Dragon 32 is a chunky sloped wedge with the keyboard in the lid and a
+  // television behind it — the same silhouette family as apple2/mpf2/plus4, so
+  // it takes the shared wedge body and the one home CRT that wedge has not yet
+  // been paired with (homeCrtA is otherwise only under the Amiga's separate
+  // desktop case). No keyboard and no mouse: the keys are in the machine, and
+  // the Dragon's only other port took a pair of analogue joysticks.
+  // The BBC Micro takes the Acorn wedge that riscos also uses, because it is
+  // Acorn's own case language and the closest silhouette in the kit to a Model
+  // B: a deep beige wedge with a full-travel keyboard in the chassis. The two
+  // stay distinct through the monitor — riscos pairs it with the boxy office
+  // crtA, this one with homeCrtE, the largest home CRT, which is what a
+  // Microvitec Cub was next to a school BBC. No mouse: the Model B had no
+  // pointing device and no port for one (its analogue port took joysticks).
+  bbcmicro: {
+    kind: 'homeMicro', body: 'acornA3000', monitor: 'homeCrtE',
+  },
+  // homeCrtE (the largest set) rather than homeCrtA: the Dragon was sold to be
+  // plugged into the family television, and zxspectrum already holds
+  // eightBitWedgeA|homeCrtA. Every exhibit needs a distinct hardware signature.
+  dragon32: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtE',
+  },
+  // The Oric Atmos is a small wedge — the same silhouette family as apple2,
+  // mpf2 and plus4 — so it takes the generic 8-bit wedge body and is told apart
+  // by the one home television nothing else is paired with (homeCrtA belongs to
+  // the amiga's assembly, not to that CRT alone) and by its identity tint: a
+  // BLACK case with a red stripe, which is what the Atmos actually looked like.
+  // No mouse: the Atmos's other ports were tape, printer and expansion.
+  // compactA keeps this distinct from the other wedge machines -- zxspectrum
+  // holds homeCrtA, zx81 homeCrtC and dragon32 homeCrtE. A small set also
+  // suits the Atmos, a compact machine sold against the Spectrum.
+  oricatmos: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'compactA',
+  },
+  // KC 85/4: NOT a home-micro wedge. The Mühlhausen machine is a flat, dark
+  // slab with its module slots on the right-hand side, a DETACHED keyboard on a
+  // cable, and a monitor standing on top of the case — a pizza-box station, and
+  // the only 8-bit one in the lineup, which is also what keeps its silhouette
+  // distinct from the Commodore wedges. No mouse: the KC's pointing devices
+  // were a light pen and a joystick module, neither of which this station streams.
+  kc854: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'homeCrtA', keyboard: 'keyboardD',
+  },
+  // The Sinclair QL is a long, flat, matt-black wedge with the keyboard in the
+  // chassis and two microdrive slots on the right cheek — much closer in
+  // silhouette to the Atari ST body than to any Commodore breadbin, which is
+  // why it takes atariSt rather than another eightBitWedge. The ST pairs that
+  // body with homeCrtC; the QL takes the dedicated monitor homeCrtE, which is
+  // also the exhibit's own subject matter: the first thing the machine asks is
+  // whether it is plugged into a monitor or a television, and this one answered
+  // monitor. No mouse — the QL shipped without a pointing device of any kind.
+  sinclairql: { kind: 'homeMicro', body: 'atariSt', monitor: 'homeCrtE' },
+  // The NeXTcube is a one-foot matte-black magnesium box with a separate
+  // MegaPixel monitor, keyboard and two-button mouse — a workstation
+  // silhouette, not a home micro and not a pizza box. towerE is the shortest
+  // tower in the kit and the closest thing to a cube; crtE plus the wide Unix
+  // keyboard and workstation mouse keep the signature distinct from gt40
+  // (towerE|crtE and nothing else) and from solaris/irix, which share crtE but
+  // sit on pizza-box bodies. The right long-term asset is a bespoke black cube.
+  nextstep: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  // The ARM Evaluation System IS a BBC Micro Model B — the ARM is a podule on
+  // the far end of its Tube — so it takes the same Acorn wedge, and the pair
+  // reading as the same case language is correct rather than a collision. What
+  // separates them is the DESK: bbcmicro is the school machine with the largest
+  // home set (a Microvitec Cub), and this one was a £4,500 developer's tool, so
+  // it gets crtE, the boxy office monitor. That keeps the signature distinct
+  // from both Acorn siblings (riscos holds acornA3000|crtA and has a mouse) and
+  // from every crtE user (solaris pizzaBoxC, nextstep towerE). No keyboard and
+  // no mouse for the same reason as bbcmicro: the keys are in the chassis and
+  // the Model B had no pointing device or port for one.
+  armeval: {
+    kind: 'homeMicro', body: 'acornA3000', monitor: 'crtE',
+  },
+  // The second SGI Indy. It is the SAME machine as the irix station — the same
+  // blue pizza-box, a different MIPS grade inside it — so it takes the same
+  // pizzaBoxC body and the same SGI-flavoured wide keyboard and puck mouse
+  // that irix and solaris share. What has to keep the two Indys apart on the
+  // floor is the DESK: irix holds pizzaBoxC|compactA and solaris
+  // pizzaBoxC|crtE, so this one takes crtA, the boxy office monitor nothing
+  // has ever paired with a pizza box. The cooler blue tint in
+  // machineIdentity.ts and the R4400 badge do the rest.
+  indyr4400: {
+    kind: 'pizzaBox', body: 'pizzaBoxC', monitor: 'crtA',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  // Xerox 6085 "Daybreak": a low flat processor case that lived UNDER the desk,
+  // a large landscape monochrome display, a wide keyboard whose left-hand column
+  // carries the Level-V verb keys, and a two-button mouse. pizzaBox is the right
+  // kind, and pizzaBoxD|crtD is a combination nothing else in the hall holds —
+  // deliberately distinct from solaris (pizzaBoxC|crtE) and from nt351
+  // (pizzaBoxD|crtC), which share one part each. keyboardE is the widest board
+  // in the kit, which is what the Level-V column needs; paramMouseC keeps the
+  // two-button silhouette away from the workstation mouse nextstep holds.
+  // The one exhibit whose screen is TALLER than it is wide, which IS the
+  // exhibit. crtF was modelled for this station and used by nothing else — a
+  // portrait tube whose glass is a sheet of paper standing up — so the
+  // signature cannot collide. The body is a floor cabinet because the Alto
+  // proper was one: a beige box the size of a small fridge, under the desk.
+  alto: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtF',
+    keyboard: 'keyboardD', mouse: 'paramMouseC',
+  },
+  // Xerox 8010: a DESKSIDE cabinet beside the desk — the 6085 is what flattened
+  // it into a pizza box — so the Star is a towerSetup where its successor is a
+  // pizzaBox, and towerC|crtD is a pair nothing else holds.
+  star: { kind: 'towerSetup', body: 'towerC', monitor: 'crtD', keyboard: 'keyboardD', mouse: 'paramMouseA' },
+  // Xerox 6085 "Daybreak": a low flat processor case that lived UNDER the desk,
+  // a large landscape monochrome display, a wide keyboard whose left-hand column
+  // carries the Level-V verb keys, and a two-button mouse. pizzaBox is the right
+  // kind, and pizzaBoxD|crtD is a combination nothing else in the hall holds —
+  // deliberately distinct from solaris (pizzaBoxC|crtE) and from nt351
+  // (pizzaBoxD|crtC), which share one part each. keyboardE is the widest board
+  // in the kit, which is what the Level-V column needs; paramMouseC keeps the
+  // two-button silhouette away from the workstation mouse nextstep holds.
+  daybreak: {
+    kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
+    keyboard: 'keyboardE', mouse: 'paramMouseC',
+  },
+  // Compaq AlphaServer ES40: a wide pedestal server, not a desktop PC — towerD
+  // already reads as DEC on the floor (decos holds towerD|terminalA). The glass
+  // is crtE, the big workstation tube gt40 and nextstep hold; towerD|crtE is a
+  // pair nothing else in the hall has, so the one Windows machine on non-Intel
+  // iron cannot be mistaken for the PC towers around it. Workstation
+  // keyboard/mouse (keyboardH|paramMouseG) because the ES40 console was DEC
+  // glass, not a family-PC set.
+  w2kalpha: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  // The SAME iron as w2kalpha — an AlphaServer ES40 pedestal — running the
+  // UNIX it was designed for, so the same towerD body reads as the sibling it
+  // is. The tube differs (paramCrt, the parametric workstation CRT) so the
+  // pair towerD|paramCrt stays distinct from w2kalpha's towerD|crtE on the
+  // floor; same DEC glass-terminal keyboard/mouse set.
+  tru64: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'paramCrt',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  // Quadra 800: a compact MINI-tower, not a full pedestal — towerA is the
+  // shortest body in the kit (0.38) and reads correctly beside the PC towers
+  // without pretending to be one. The glass is crtE, the big workstation tube,
+  // because this station runs the Apple 21-inch 1152x870 mode and a small CRT
+  // would make the exhibit's own resolution look like a mistake. towerA|crtE is
+  // a pair nothing else in the hall holds. keyboardH is the widest keyboard in
+  // the kit, which is the honest silhouette for the Apple Extended Keyboard II,
+  // and paramMouseF is the least-used mouse — fitting for the one machine here
+  // whose mouse has a single button.
+  macos753: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseF',
+  },
+} as const satisfies Record<string, Assembly>;
+

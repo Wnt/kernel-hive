@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest';
 
 import { OS_BINDINGS } from '../../three/archetypeRegistry';
 import { asciiToScancode, keysymToScancode } from '../../three/guestQuirks';
-import { OS_FAMILY, PROFILES, keyboardProfileFor, type Family } from './keyboardProfiles';
+import { OS_FAMILY, type Family } from './keyboardProfiles';
+import { PROFILES, keyboardProfileFor } from './keyboardProfiles.data';
 import type { KeyDef, KeyboardProfile } from './keyTypes';
 
 const allProfiles: KeyboardProfile[] = Object.values(PROFILES);

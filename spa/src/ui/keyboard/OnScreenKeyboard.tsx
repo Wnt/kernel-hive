@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { XK, type StreamControlHandle } from '../../three/useStreamControl';
 import type { KeyDef, KeyRow } from './keyTypes';
-import { keyboardProfileFor } from './keyboardProfiles';
+import { keyboardProfileFor } from './keyboardProfiles.data';
 import { ABC_ROWS, SYM_ROWS, QFUNC, ACTION_ROW, type QRow, type QKey } from './qwertyLayout';
 import { LayerTabs, type OskLayer } from './LayerTabs';
 import { createKeySender, type KeySender } from './keySender';
