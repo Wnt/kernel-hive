@@ -30,9 +30,15 @@
 # this — including model transcripts — can reach the PUBLIC repo.)
 #
 # THERE IS NO SANDBOX. `opencode run` executes bash and writes files with no
-# permission gate (verified: `--auto` is not needed for either). The worktree
-# and the dev container are the containment. Dial scope with the brief, not
-# with a flag that does not exist.
+# permission gate. The worktree and the dev container are the containment. Dial
+# scope with the brief, not with a flag.
+#
+# We nonetheless pass `--auto`, because SOME tools DO ask: a read of a path
+# matching an env-file pattern raises a permission request, and headless there
+# is nobody to answer it, so opencode auto-REJECTS and the run ENDS mid-task.
+# That killed the ql-demo task on `streamhost/stations/sinclairql/
+# station.env.fixture` (2026-08-17). `--auto` widens nothing that bash did not
+# already allow; it stops a task dying on a file it was told to read.
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
@@ -276,7 +282,7 @@ launch() { # name, task dir, workdir, prompt, rest: opencode run args
   local name="$1" d="$2" wd="$3" prompt="$4"
   shift 4
   (
-    cd "$wd" && setsid nohup "$OPENCODE" run --format json "$@" "$prompt" \
+    cd "$wd" && setsid nohup "$OPENCODE" run --format json --auto "$@" "$prompt" \
       >>"$d/events.jsonl" 2>>"$d/stderr.log" &
     echo $! >"$d/pid"
   )

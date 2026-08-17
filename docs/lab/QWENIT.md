@@ -61,11 +61,22 @@ estimate.
 
 ## Three facts that mislead if you don't know them
 
-- **There is no sandbox.** `opencode run` executes bash and writes files with no
-  permission gate — verified: the `--auto` flag exists but is *not required* for
-  either. Codex's `--sandbox read-only` has no equivalent here. The git worktree
-  and the dev container are the entire containment. Scope a task with its brief,
-  not with a flag that does not exist.
+- **There is no sandbox, but there IS a permission gate — and headless it is
+  lethal.** `opencode run` executes bash and writes files with no gate; Codex's
+  `--sandbox read-only` has no equivalent. But *some* tool calls do ask, and the
+  set is not the one you would guess: a **read** of a path matching an env-file
+  pattern raises a permission request. Headless there is nobody to answer, so
+  opencode auto-**rejects** and **the run ends mid-task** — no error, just a
+  final message that stops in the middle of a sentence. The `ql-demo` task died
+  this way on `streamhost/stations/sinclairql/station.env.fixture`
+  (2026-08-17), a perfectly ordinary committed file. `qwen-task.sh` therefore
+  launches with `--auto`, which widens nothing bash did not already allow. The
+  git worktree and the dev container remain the entire containment: scope a task
+  with its brief.
+
+  **A truncated final message is the signature.** If `result` ends mid-thought,
+  read `stderr.log` for `permission requested: … auto-rejecting` before assuming
+  the model wandered off.
 
 - **Token usage is per-step, not cumulative.** `step_finish.part.tokens` reports
   that step only; totals are summed across events. Anything reading a single
