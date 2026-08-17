@@ -63,10 +63,13 @@ VICE_GEOM_EXPECT=856x576
 VICE_GATE_FLOOR=5000
 VICE_GATE_INK_FLOOR=6500
 VICE_GATE_CYCLES=20000000
-# Position gate, the cbm2 pattern: measured ink bbox rows 93..187, cols
-# 112..584 (the four banner lines and the READY. prompt with its cursor).
-# Containment with slack, not equality — the cursor blinks.
-VICE_GATE_BBOX=80:200:100:600
+# Position gate, the cbm2 pattern: measured ink bbox rows 93..203, cols
+# 111..584 — the four banner lines, the READY. prompt, and the cursor on the
+# line BELOW it. Containment with slack, not equality, and the slack is not
+# decoration: the first pass of this stanza wrote 80:200 from a run that had
+# sampled the cursor in its blink-OFF phase, and the gate rejected the build
+# for an ink bbox 16 rows taller. That is the check working.
+VICE_GATE_BBOX=80:215:100:600
 
 # The CP/M Plus system disk — the ONE external file this station needs, and the
 # only customer of this hook in the wave. It is NOT put on the command line and
