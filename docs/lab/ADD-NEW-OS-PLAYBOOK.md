@@ -50,10 +50,13 @@ service state; do not copy the number into another inventory.
 lab's archival sources and recorded with hashes in
 [`../catalog/os-media-catalog.md`](../catalog/os-media-catalog.md); the operator
 supplies only Windows licensing. Pre-built collections are **reference material,
-not a supply**: the Virtual OS Museum image under `~/virtualosmuseum` is worth
-reading for *how* an install was solved and *which* emulator and settings the
-author used, but no disk image, ROM or media file is ever taken from it into a
-station.
+not a supply** — but read the reference first: the Virtual OS Museum
+([`research/vom-reference.md`](research/vom-reference.md)) has 1703 working
+installations and usually already answers which emulator, which machine and
+which settings this OS needs, plus an attribution index pointing at each image's
+real upstream. It is CC BY-NC-SA and this repo is MIT and public, so **read the
+facts and write our own recipe; never copy its files, configs or argument
+strings**, and never take a disk image, ROM or media file from it.
 
 **Land host-native.** The shipped form of every station is direct framebuffer
 capture plus input forwarding — Tier 1 (QEMU over dbus) or Tier 3 (the emulator

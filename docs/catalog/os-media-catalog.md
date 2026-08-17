@@ -54,12 +54,15 @@ streamhost captures a **QEMU framebuffer over dbus**, on an **x86-64, no-GPU** h
 > [`../GUEST-TIERS.md`](../GUEST-TIERS.md) and
 > [`../lab/DEBRIDGE-CONVERSION-BRIEF.md`](../lab/DEBRIDGE-CONVERSION-BRIEF.md).
 
-> **Where media comes from.** This catalog's URLs are the supply. Pre-built
-> collections are **reference only** — notably the Virtual OS Museum image under
-> `~/virtualosmuseum`, whose 1546 ready-to-run installations are a good place to
-> learn *which* emulator and settings solve a given install (and to discover
-> candidates), but from which **no image, ROM or media file is ever taken**. We
-> source and hash our own.
+> **Where media comes from.** This catalog's URLs are the supply. We source and
+> hash our own media, always. Pre-built collections are **reference only** — and
+> the one that matters is the Virtual OS Museum, whose 1703 installations
+> usually already answer *which* emulator and settings solve a given install,
+> and whose credits index points at each image's real upstream. Start there
+> before spending an agent on recon: [`../lab/research/vom-reference.md`](../lab/research/vom-reference.md)
+> covers what it holds, how to mount and read it, and the licence boundary —
+> it is CC BY-NC-SA against our MIT public repo, so **read the facts, never copy
+> its files, configs or argument strings**.
 
 **Difficulty scale:** 🟢 Easy · 🟡 Medium · 🟠 Hard · 🔴 Very Hard / impractical.
 

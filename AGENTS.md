@@ -69,10 +69,12 @@ agents cannot collide.
 **A new station: source your own media, land it host-native.** Fetch install
 media and ROMs yourself from the lab's archival sources (see
 [`docs/catalog/os-media-catalog.md`](docs/catalog/os-media-catalog.md)); the
-operator supplies only Windows licensing. Bundled collections — including the
-Virtual OS Museum copy under `~/virtualosmuseum` — are a **reference for
-recipes, emulator choice and known-good settings only, never a source of
-images or media**. The end state of every station is **host-native: direct
+operator supplies only Windows licensing. Before any recon, read
+[`docs/lab/research/vom-reference.md`](docs/lab/research/vom-reference.md) —
+the Virtual OS Museum's 1703 installations already answer "which emulator,
+which settings" for most candidates, and it is **CC BY-NC-SA against our MIT
+public repo: read the facts, never copy its files, configs or argument
+strings**. The end state of every station is **host-native: direct
 framebuffer capture + input forwarding, no kiosk**. A Debian/trixie kiosk
 bridge is allowed only as a throwaway proof-of-concept while an emulator is
 still being proven; it is never what ships. The 28 surviving Tier-2 bridges
@@ -144,6 +146,7 @@ SAME guardrails as any agent brief and **do not push** — they commit to
 | Debug keys vanishing or scrambling | [`ADD-NEW-OS-PLAYBOOK.md` §5.1](docs/lab/ADD-NEW-OS-PLAYBOOK.md#51-keyboard-only-exhibits--pacing-layout-and-the-type-in-demo) |
 | Debug ANY streaming complaint (froze, blurry, laggy, stopped, dropped quality) | [`docs/lab/STREAM-DEBUGGING.md`](docs/lab/STREAM-DEBUGGING.md) — the client already recorded it; start with `clientlog.jsonl`, not a repro |
 | Fix a station that freezes or won't connect | `ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'` |
+| Which emulator runs a given OS, and with what settings | [`docs/lab/research/vom-reference.md`](docs/lab/research/vom-reference.md) — read it BEFORE spending an agent on recon |
 | Add a new OS station | [`docs/lab/ADD-NEW-OS-PLAYBOOK.md`](docs/lab/ADD-NEW-OS-PLAYBOOK.md) |
 | Migrate a kiosk to trixie | [`docs/lab/MIGRATION-WAVE-BRIEF.md`](docs/lab/MIGRATION-WAVE-BRIEF.md) |
 | Build the daemon, a guest, or the UI | [`scripts/README.md`](scripts/README.md); host-side builders run only from `/data/kernel-hive` (`scripts/dev/box-repo.sh`) |
