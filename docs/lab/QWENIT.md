@@ -28,6 +28,29 @@ Launch through Bash `run_in_background` so completion re-invokes the session.
 `qwen-task.sh --help` prints the full flag list; it is self-documenting and the
 flags are deliberately not duplicated here.
 
+## Watching a run
+
+`status` is a snapshot; [`scripts/dev/qwen-watch.py`](../../scripts/dev/qwen-watch.py)
+is the live view — an irssi-style TUI where each task is a channel and channel 0
+is the aggregate feed. **←/→ switch channel** (wrapping at both ends), `0`..`9`
+jump straight to one, PgUp/PgDn scroll, End follows, `q` quits.
+
+```bash
+scripts/dev/qwen-watch.py                    # curses TUI
+scripts/dev/qwen-watch.py --plain            # line stream (also used when piped)
+scripts/dev/qwen-watch.py --tasks ql-demo    # filter; named tasks join regardless of age
+```
+
+**The title bar carries live spend against the cap** — `$0.67/$5.00  11.1k/300k
+tok` — which is the number you actually want while a task is running, and the one
+the Codex-era watcher could not show because Codex never reported cost. Tasks are
+aggregated from the main checkout and every Claude worktree (labeled
+`<task>@<worktree>`); only active ones join, meaning RUNNING or an event log that
+moved in the last 30 minutes.
+
+A long `bash` step emits nothing for minutes — a silent channel on a RUNNING task
+is normal, not a hang. Check the wall clock in `status` before assuming otherwise.
+
 ## What it costs
 
 The default model is `openrouter/qwen/qwen3.8-27b` — 262 144-token context,
