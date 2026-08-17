@@ -846,6 +846,11 @@ class H(BaseHTTPRequestHandler):
         return self._send(200, target.read_bytes(), ctype, cache=False)
 
     def _serve_static(self, path):
+        # The auth pages carry no <link rel=icon>, so browsers ask for the
+        # conventional /favicon.ico (already OPEN on the public gate); answer it
+        # with the SPA's generated icon instead of a 404 on every sign-in.
+        if path == "/favicon.ico":
+            path = "/assets/generated/favicon.ico"
         rel = path.lstrip("/")
         target = (WEBROOT / rel).resolve()
         # containment guard — a true ancestor check (NOT a string prefix, which
