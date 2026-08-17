@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "daybreak",
+  "images": [
+    {
+      "src": "/posters/daybreak/gallery/01-xeroxworkstation.webp",
+      "alt": "A Xerox 6085 Daybreak workstation with its keyboard, mouse and monitor on a desk",
+      "caption": "The Xerox 6085 \"Daybreak\" — a full Star-derived desktop for about a third of the price of the 1981 original.",
+      "author": "William Ward",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:XeroxWorkstation.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "31d13cb462301faaa654da5bc7996d478b56428cb656613cc19605fedb368c1d",
+      "width": 1070,
+      "height": 900
+    },
+    {
+      "src": "/posters/daybreak/gallery/02-tsd-computer-schreib-und-b-rotechnik-computer-system-xerox-8010-6085-i.webp",
+      "alt": "A Xerox 8010/6085 computer system on display, showing the low flat case, keyboard and monitor together",
+      "caption": "The low, flat 6085 case was built to fit under a desk, where its bulkier 1981 predecessor, the Xerox 8010 Star, would not.",
+      "author": "NoRud",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:TSD_Computer-,_Schreib-_und_B%C3%BCrotechnik_Computer_System_Xerox_8010_-_6085_I.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "bc197dc83b4f2a26a9f19fd7ce522f4422b0134198eeb26d4640694f78a3ce5c",
+      "width": 1600,
+      "height": 1012
+    },
+    {
+      "src": "/posters/daybreak/gallery/03-tsd-computer-schreib-und-b-rotechnik-computer-system-xerox-8010-6085-ii.webp",
+      "alt": "A closer view of a Xerox 8010/6085 workstation's keyboard and monitor in a museum collection",
+      "caption": "The Daybreak keyboard carried dedicated keys for the interface's verbs — NEXT, OPEN, PROPERTIES, MOVE, COPY — rather than menu shortcuts.",
+      "author": "NoRud",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:TSD_Computer_-,Schreib_und_B%C3%BCrotechnik_Computer_System_Xerox_8010_-_6085_II.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ba50bcb3d881c933ee95522c1274e3c225c6e04ecb7e81e7f4a51ae9a62b1ba9",
+      "width": 1600,
+      "height": 969
+    },
+    {
+      "src": "/posters/daybreak/gallery/04-tsd-xerox-8010-kol.webp",
+      "alt": "A Xerox 8010/6085 workstation photographed in a technology museum, with monitor, keyboard and mouse",
+      "caption": "By 1985 Xerox had renamed the Star environment ViewPoint and sold its applications as separately licensed options.",
+      "author": "Kolossos",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:TSD-Xerox-8010-kol.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "7795dbe6a1b336770dc7b4be898f40f9c7895642626a801b69fd7c34bcf3b1a9",
+      "width": 1524,
+      "height": 1600
+    },
+    {
+      "src": "/posters/daybreak/gallery/05-technische-sammlungen-dresden-rechentechnik-068.webp",
+      "alt": "A Xerox Daybreak-era workstation displayed among other historical computing equipment in a museum",
+      "caption": "The 6085 shipped the same desktop vocabulary as the Star four years earlier — icons, windows, WYSIWYG editing — largely unmatched by contemporaries.",
+      "author": "Ronny Ueckermann",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Technische_Sammlungen_Dresden_Rechentechnik_068.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "276013c5e4852eddd1af2a6b2da1569ac15a18c873e6ead7c6b379a6b687b6cb",
+      "width": 1600,
+      "height": 1067
+    }
+  ]
+}

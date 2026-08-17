@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "pet2001",
+  "images": [
+    {
+      "commonsFile": "File:Commodore PET 2001.jpg",
+      "alt": "A Commodore PET 2001 computer, a sheet-metal trapezoid with built-in monitor, chiclet keyboard and cassette deck, photographed from the front",
+      "caption": "Screen, keyboard, cassette deck and computer sealed into one metal case — in 1977 nothing else you could buy arrived like this.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore PET 2001 (1).jpg",
+      "alt": "A Commodore PET 2001 computer shown at an angle, with its monitor, chiclet keyboard and built-in cassette deck visible",
+      "caption": "Chuck Peddle's argument to Jack Tramiel was that Commodore should sell a whole computer, not just the 6502 chip inside it.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore pet 2001 internal cassette recorder.jpg",
+      "alt": "Close-up view of the built-in cassette recorder on the front panel of a Commodore PET 2001",
+      "caption": "The cassette deck was built into the case itself — no recorder to buy separately, no cables to wire up.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore-pet-tastatur.jpg",
+      "alt": "Close-up view of the calculator-style chiclet keyboard and numeric keypad on a Commodore PET 2001",
+      "caption": "The PET's calculator-style chiclet keys were disliked from the start; Commodore replaced them with a full-travel keyboard in 1979.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore PET2001.jpg",
+      "alt": "A Commodore PET 2001 computer photographed from the front, showing its integrated monitor, keyboard and cassette deck",
+      "caption": "The PET's character set and screen-poking habits carried on into the VIC-20 and Commodore 64, machines that sold in the millions.",
+      "role": "photo"
+    }
+  ]
+}

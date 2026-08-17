@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "pet2001",
+  "images": [
+    {
+      "src": "/posters/pet2001/gallery/01-commodore-pet-2001.webp",
+      "alt": "A Commodore PET 2001 computer, a sheet-metal trapezoid with built-in monitor, chiclet keyboard and cassette deck, photographed from the front",
+      "caption": "Screen, keyboard, cassette deck and computer sealed into one metal case — in 1977 nothing else you could buy arrived like this.",
+      "author": "Jean-Christophe BENOIST",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_PET_2001.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "965b6a3feadea4516f966eb966745bbd458ea24dd71fcc110ef32597ed031996",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/pet2001/gallery/02-commodore-pet-2001-1.webp",
+      "alt": "A Commodore PET 2001 computer shown at an angle, with its monitor, chiclet keyboard and built-in cassette deck visible",
+      "caption": "Chuck Peddle's argument to Jack Tramiel was that Commodore should sell a whole computer, not just the 6502 chip inside it.",
+      "author": "Alexander Svensson",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_PET_2001_(1).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "d5d383770e74137e533f38e091c43e6f4f2f29be52b8967d7c986ca907eb6adb",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/pet2001/gallery/03-commodore-pet-2001-internal-cassette-recorder.webp",
+      "alt": "Close-up view of the built-in cassette recorder on the front panel of a Commodore PET 2001",
+      "caption": "The cassette deck was built into the case itself — no recorder to buy separately, no cables to wire up.",
+      "author": "Parrot of Doom",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_pet_2001_internal_cassette_recorder.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2d5a4df59bb09f12d70dd7d184e4b1a0e34884d7f9ab4f159ba5f1f70d5f34ab",
+      "width": 1600,
+      "height": 1055
+    },
+    {
+      "src": "/posters/pet2001/gallery/04-commodore-pet-tastatur.webp",
+      "alt": "Close-up view of the calculator-style chiclet keyboard and numeric keypad on a Commodore PET 2001",
+      "caption": "The PET's calculator-style chiclet keys were disliked from the start; Commodore replaced them with a full-travel keyboard in 1979.",
+      "author": "Erkaha",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-pet-tastatur.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "a338868f14e46fee11cc1402b45385eb2434e56ed979cee9bd0626c5924b05bd",
+      "width": 938,
+      "height": 338
+    },
+    {
+      "src": "/posters/pet2001/gallery/05-commodore-pet2001.webp",
+      "alt": "A Commodore PET 2001 computer photographed from the front, showing its integrated monitor, keyboard and cassette deck",
+      "caption": "The PET's character set and screen-poking habits carried on into the VIC-20 and Commodore 64, machines that sold in the millions.",
+      "author": "Photographer: Tomislav Medak from Flickr / Editing: Bill Bertram (Pixel8)",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_PET2001.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "24be17e3b8b173d4d4080f83f4a19467a8e1ea76ff89333983628387e9cc2d63",
+      "width": 1600,
+      "height": 1295
+    }
+  ]
+}

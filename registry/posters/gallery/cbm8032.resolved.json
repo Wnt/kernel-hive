@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "cbm8032",
+  "images": [
+    {
+      "src": "/posters/cbm8032/gallery/01-commodore-pet-8032.webp",
+      "alt": "A Commodore CBM/PET 8032 all-in-one computer with an 80-column monitor built into its case, photographed beside a window",
+      "caption": "The CBM 8032: a 12-inch, 80-column screen built into the same case as the keyboard, the width that separated a business machine from a home one.",
+      "author": "phreakindee",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_PET_8032.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "96bb246162a979371df65b11a404b58267461f416c8de7b761e0e90baef0769e",
+      "width": 1600,
+      "height": 1022
+    },
+    {
+      "src": "/posters/cbm8032/gallery/02-commodore-cbm-8032-mit-peripherie-37650524544.webp",
+      "alt": "A Commodore CBM 8032 computer connected to its disk drive peripherals",
+      "caption": "By 1980 Commodore's PET line had grown a full business keyboard, doubled its memory, and moved from 40 columns to 80.",
+      "author": "Wolfgang Stief from Tittmoning, Germany",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_CBM_8032_mit_Peripherie_(37650524544).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "af0271f95552641243ccf14a35d8d371d893d7025d5f5b97f870e0b0e1d0cf60",
+      "width": 1600,
+      "height": 898
+    },
+    {
+      "src": "/posters/cbm8032/gallery/03-cbm-8032-anlage.webp",
+      "alt": "A Commodore CBM 8032 computer set up with external disk drive and printer peripherals",
+      "caption": "An IEEE-488 bus on the back, borrowed from laboratory instrumentation, connected the 8032 to disk drives and printers for an office's day of file work.",
+      "author": "Oguenther",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cbm-8032-anlage.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "4605bc0e31dc38868c72e0f0c06e736dc6c67d4ec6aa83e4467cc45eb9da727a",
+      "width": 1070,
+      "height": 421
+    },
+    {
+      "src": "/posters/cbm8032/gallery/04-commodore-cbm-8032-sk-33575329583.webp",
+      "alt": "A Commodore CBM 8032-SK computer, a later case revision of the 8032 with a detached keyboard",
+      "caption": "A later 8032 case revision moved the keyboard off the main housing; the screen, memory, and BASIC 4.0 underneath stayed the same.",
+      "author": "Wolfgang Stief from Tittmoning, Germany",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_CBM_8032-SK_(33575329583).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "733ed5fe81dd61b26ccf4d4e6117937a4a1d0ccaa14297c03397fb4b7da379b9",
+      "width": 1600,
+      "height": 898
+    }
+  ]
+}

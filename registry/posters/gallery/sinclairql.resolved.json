@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "sinclairql",
+  "images": [
+    {
+      "src": "/posters/sinclairql/gallery/01-sinclair-ql-retromadrid-2018.webp",
+      "alt": "A Sinclair QL home computer, a flat black wedge the size of a keyboard, photographed from the front",
+      "caption": "Announced 12 January 1984, twelve days before the Macintosh, the QL was Clive Sinclair's move to leave the toy market behind.",
+      "author": "AUIC Oficial",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_QL_(RetroMadrid_2018).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "8ac31eab20249934383696f806e604d1d9c2c20d97f1d48c7f9ae2bfa335e223",
+      "width": 1600,
+      "height": 829
+    },
+    {
+      "src": "/posters/sinclairql/gallery/02-working-sinclair-ql.webp",
+      "alt": "A Sinclair QL computer connected to a monitor and switched on, shown as a complete working system",
+      "caption": "Inside the wedge sat a Motorola 68008 — a 32-bit processor with an eight-bit bus, at a price Sinclair could bear.",
+      "author": "Telecarlos",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Working-Sinclair-QL.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "49cd80c85180b037bae68084637b180e61d6a24ae624f90a4887af546104fbd8",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/sinclairql/gallery/03-sinclair-ql-top.webp",
+      "alt": "Overhead view of a Sinclair QL computer showing its full keyboard layout",
+      "caption": "QDOS multitasked pre-emptively out of 48 KB of ROM, at a time when the Macintosh and the IBM PC ran one program at a time.",
+      "author": "\"Ewx\" (Minor non-creditworthy tweaks by Ubcule)",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_QL_Top.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "695231d4a30cb3bce77e72d2da56998dcda0e4cbe25a5022131b50bce886824b",
+      "width": 1600,
+      "height": 502
+    },
+    {
+      "src": "/posters/sinclairql/gallery/04-sinclair-ql-microdrive-cartridge.webp",
+      "alt": "A Sinclair QL Microdrive cartridge, a small tape-loop cartridge about the size of a matchbox",
+      "caption": "Storage came from two built-in Microdrives — a continuous loop of tape, fast for its kind but never reliable enough for work you cared about.",
+      "author": "Tonyingesson",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sinclair_QL_Microdrive_cartridge.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "0bef904a329b0c3acf63496fb2bc0ce63372ac43f6d71ab3e907885cf93376cd",
+      "width": 1242,
+      "height": 828
+    },
+    {
+      "src": "/posters/sinclairql/gallery/05-sincalir-ql-68008-processor.webp",
+      "alt": "Close-up view of the Motorola 68008 processor chip removed from a Sinclair QL circuit board",
+      "caption": "The 68008 gave the QL a 32-bit-class processor for the price of an eight-bit one, the compromise that made the machine possible at £399.",
+      "author": "Telecarlos",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sincalir-QL-68008-Processor.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b0f2c2c0aa1b140476093ddff6e52d87be7ea4f80696e50c092390e7e4897ea5",
+      "width": 1024,
+      "height": 768
+    }
+  ]
+}

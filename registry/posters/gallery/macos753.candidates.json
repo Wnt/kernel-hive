@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "macos753",
+  "images": [
+    {
+      "commonsFile": "File:Q8002.jpg",
+      "alt": "A Macintosh Quadra 800 desktop computer case, a beige tower-style Macintosh from 1993",
+      "caption": "A Macintosh Quadra 800 — the 1993 machine this exhibit's Mac OS 7.5.3 boots from, built around Motorola's 68040.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Apple mac quadra 800.jpg",
+      "alt": "An Apple Macintosh Quadra 800 computer, beige case, photographed for a computer museum collection",
+      "caption": "The Quadra 800 was the last and fastest of the 68000-family Macintoshes, the line every Mac had used since 1984.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Apple Museum (Prague) Quadra 700 (1991).jpg",
+      "alt": "A Macintosh Quadra 700 on display at the Apple Museum in Prague",
+      "caption": "A sibling model, the Quadra 700 of 1991, from the same 68040-based generation of Macintosh workstations.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Macintosh Quadra 610.jpg",
+      "alt": "A Macintosh Quadra 610 desktop computer, a compact beige case Macintosh from the early 1990s",
+      "caption": "The Quadra 610's compact case shows how far the same 68040-based family stretched, from tower to pizza-box.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Quadra 605 insides.jpg",
+      "alt": "The interior of a Macintosh Quadra 605, showing its logic board and 68040-family components",
+      "caption": "Inside the case: the Motorola 68040 logic board that ran System 7.5.3, the last processor family classic Mac OS ever used.",
+      "role": "photo"
+    }
+  ]
+}

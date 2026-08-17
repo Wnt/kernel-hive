@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "w2kalpha",
+  "images": [
+    {
+      "src": "/posters/w2kalpha/gallery/01-dec-alphastation-600a.webp",
+      "alt": "A DEC AlphaStation 600A workstation tower photographed from the front",
+      "caption": "A DEC AlphaStation 600A — the class of Alpha workstation Windows NT targeted through the 1990s, before Compaq ended the port in 1999.",
+      "author": "htomari",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_AlphaStation_600A.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2fe632e2d3604ee11de1787fbe8b54fb158368d0ec2f9ba9bb0621ad346bbd4d",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/w2kalpha/gallery/02-alphastation-500-400-4139803972.webp",
+      "alt": "A DEC AlphaStation 500/400 workstation case",
+      "caption": "An AlphaStation 500/400, one generation of the desktop Alpha hardware Windows NT and Windows 2000 RC2 were built and tested against.",
+      "author": "htomari",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:AlphaStation_500_400_(4139803972).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "573410b779cfe9aa3e544745e1e6c7e3aa015c76941474fc50c286f3c5aea9eb",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "src": "/posters/w2kalpha/gallery/03-digital-alphastation-200-1.webp",
+      "alt": "A Digital Equipment Corporation AlphaStation 200 4/233 workstation on display at a vintage computer fair",
+      "caption": "A Digital AlphaStation 200 4/233 — an entry-level Alpha workstation from the same NT-on-Alpha era, preserved and shown at a vintage computer fair.",
+      "author": "leighklotz",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Digital_AlphaStation_200_(1).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "cf28ab88c5d8386bb1be85810d7e6a7975aaec1d04852f2dd6d2b430ee0a7a9a",
+      "width": 1600,
+      "height": 972
+    },
+    {
+      "src": "/posters/w2kalpha/gallery/04-alpha21164-600mhz.webp",
+      "alt": "A close-up photograph of a DEC Alpha 21164 600 MHz processor chip",
+      "caption": "The Alpha 21164 processor: DEC's out-of-order successor chip, the family whose 21264 revision the Windows 2000 RC2 dxdiag panel names outright.",
+      "author": "Copyright: Atsushi Nunome (Computer System Laboratory at Kyoto Institute of Technology)",
+      "license": "CC BY 4.0",
+      "licenseId": "cc-by-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Alpha21164_600MHz.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "a7d5db57a57c4f0495901a829dadb4980550239ae48ace66b64c728c524a9623",
+      "width": 804,
+      "height": 534
+    }
+  ]
+}

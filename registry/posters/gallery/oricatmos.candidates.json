@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "oricatmos",
+  "images": [
+    {
+      "commonsFile": "File:Oric Atmos - Clean.jpg",
+      "alt": "A black Oric Atmos home computer with a red stripe, photographed from the front showing its full keyboard",
+      "caption": "The Atmos answered complaints about the Oric-1's hard calculator keys with a new case and a keyboard that actually moved.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Oric Atmos 01.jpg",
+      "alt": "An Oric Atmos computer shown at an angle, displaying its black case, red accent stripe and keyboard",
+      "caption": "Built by Oric Products International in Cambridgeshire, the Atmos shipped in February 1984 with a 6502A and eight-colour graphics.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Oric-1 and Oric Atmos (2224286887).jpg",
+      "alt": "An Oric-1 and an Oric Atmos home computer photographed side by side, showing the case redesign between the two models",
+      "caption": "The Atmos kept the Oric-1's 6502A and AY-3-8912 sound chip, but replaced the case and the keyboard reviewers had disliked.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Oric Atmos 48k - Retrosystems 2010.jpg",
+      "alt": "An Oric Atmos computer on display at a retro computing exhibition, shown with its keyboard and case",
+      "caption": "Britain treated the Oric as a permanent runner-up to the Spectrum; in France it was sold as a first-class machine and became a phenomenon.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Oric Atmos 02.jpg",
+      "alt": "Close-up detail of an Oric Atmos computer's keyboard and case texture",
+      "caption": "Oric BASIC gave the Atmos's better sound hardware four ready-made noises: ZAP, PING, SHOOT and EXPLODE.",
+      "role": "photo"
+    }
+  ]
+}

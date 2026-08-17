@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "dragon32",
+  "images": [
+    {
+      "src": "/posters/dragon32/gallery/01-dragon-32.webp",
+      "alt": "A Dragon 32 home computer in its cream case, photographed from the front with its full-travel keyboard visible",
+      "caption": "The Dragon 32, built in Port Talbot to Motorola's own reference design around the MC6809E processor.",
+      "author": "Liftarn, Editing by: Bill Bertram (Pixel8)",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dragon_32.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "9b25fdd6bf3e002fbd7ae0d4ba32a9e176de91e94ec56510b5b0ee423c587dc1",
+      "width": 1600,
+      "height": 1263
+    },
+    {
+      "src": "/posters/dragon32/gallery/02-dragon-32-retromadrid-2018.webp",
+      "alt": "A Dragon 32 computer on display at a vintage computing exhibition, shown from the front with its keyboard and cartridge slot",
+      "caption": "Full-travel keys were one of the Dragon's genuine strengths, at a time when rival machines were selling rubber membranes.",
+      "author": "AUIC Oficial",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dragon_32_(RetroMadrid_2018).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "969429c55c8bb3595635b04e116ea31414dec493e55965ce823936a57ea188d0",
+      "width": 1600,
+      "height": 948
+    },
+    {
+      "src": "/posters/dragon32/gallery/03-dragon-32-1982-24493991688.webp",
+      "alt": "Close view of a Dragon 32 computer casing showing its keyboard and Dragon Data branding",
+      "caption": "Dragon Data set up in South Wales in 1982 to build a home computer for Britain's boom, priced just under £200.",
+      "author": "Wolfgang Stief from Tittmoning, Germany",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dragon_32_(1982)_(24493991688).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "f1994669170ec6c146810fc18798e6861879e97839ad438921cd271b99ade0e4",
+      "width": 1600,
+      "height": 1501
+    },
+    {
+      "src": "/posters/dragon32/gallery/04-dragon-32-computer-at-play-expo-2013.webp",
+      "alt": "A Dragon 32 computer displayed at a retro computing expo, shown at an angle with its case and keyboard visible",
+      "caption": "Underneath the case sat an MC6809E, an 8-bit processor with two accumulators, hardware multiply and genuinely position-independent code.",
+      "author": "Rept0n1x",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dragon_32_computer_at_Play_Expo_2013.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "1bf8248cb878439953d59980dcfd8b6ddaa84b7c3c85f93bbce4e26af3806e2f",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/dragon32/gallery/05-dragon-32-top-view.webp",
+      "alt": "Overhead view of a Dragon 32 computer showing the full keyboard layout and cartridge port",
+      "caption": "The keyboard's unshifted letters are capitals — lower case comes out as inverse video, a quirk of the machine's MC6847 video chip.",
+      "author": "Miguel Durán",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dragon_32_top_view.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b1f42e8eedd3bc38e3a8830826b108048a840f4e23af523519391889b0803af4",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}

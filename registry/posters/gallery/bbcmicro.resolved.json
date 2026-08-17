@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "bbcmicro",
+  "images": [
+    {
+      "src": "/posters/bbcmicro/gallery/01-acorn-bbc-micro.webp",
+      "alt": "An Acorn BBC Micro Model B keyboard computer photographed from the front, showing its function keys and red keyboard trim",
+      "caption": "The BBC Micro Model B, as it shipped in December 1981: 32 KB of memory, a full complement of ports, and BBC BASIC in ROM.",
+      "author": "simon.inns",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Acorn_BBC_Micro.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ce653bedcddc575c0546b24dfc4358826fe586548770c62e903e42918214fa2f",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/bbcmicro/gallery/02-acorn-bbc-model-b-retrosystems-2010.webp",
+      "alt": "An Acorn BBC Model B computer displayed at a retrocomputing exhibition, shown at an angle",
+      "caption": "Acorn expected to sell twelve thousand of these. It sold well over a million, most of them into British schools.",
+      "author": "Soupmeister",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Acorn_BBC_Model_B_-_Retrosystems_2010.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "f052b3bd84511ada829c73cb024a846c0fcfb5ec759b839201a3f13903d4e01b",
+      "width": 1200,
+      "height": 797
+    },
+    {
+      "src": "/posters/bbcmicro/gallery/03-bbc-micro-model-b-rear-ports.webp",
+      "alt": "The rear panel of a BBC Micro Model B, showing its array of analogue, user, printer, and expansion ports",
+      "caption": "Every port on the back was documented and meant to be wired to something: an analogue port, a user port, a printer port, and the Tube.",
+      "author": "Barney Livingston",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:BBC_Micro_Model_B_rear_ports.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ad0df163a61027237bca61d7e823823359fcc179c5fb471eb72b3d35ff7691c1",
+      "width": 1280,
+      "height": 853
+    },
+    {
+      "src": "/posters/bbcmicro/gallery/04-bbc-b-econet.webp",
+      "alt": "A BBC Micro Model B fitted with an Econet network interface module",
+      "caption": "Econet networked a classroom of BBC Micros together before networking was a consumer idea anywhere else.",
+      "author": "Mincebert",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:BBC_B_Econet.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "4309ca2c4e249f1f3bddcc54f9959ab4b25b34705b9104934e258ae93935e40e",
+      "width": 1280,
+      "height": 960
+    },
+    {
+      "src": "/posters/bbcmicro/gallery/05-model-b-with-arm7tdmi-coprocessor-7020151809.webp",
+      "alt": "A BBC Micro Model B fitted with a second-processor expansion board carrying an ARM7TDMI chip, connected via the Tube interface",
+      "caption": "The Tube interface let a second processor take over as the main CPU. Acorn's own next processor, the ARM, was first developed on a board plugged in here.",
+      "author": "Trevor Johnson from Bristol, UK",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Model_B_with_ARM7TDMI_coprocessor_(7020151809).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "7de76a9f93f0b12a9bd99251b46efb1cbdcb0553a7fe09fbde08af3b7bf77e74",
+      "width": 800,
+      "height": 600
+    }
+  ]
+}

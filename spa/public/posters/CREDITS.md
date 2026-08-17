@@ -10,7 +10,7 @@ mechanically against the Commons API by `scripts/tools/fetch-poster-gallery.py`,
 which refuses any license outside a fixed free-license allowlist. Re-check the
 shipped set at any time with `make poster-gallery-verify`.
 
-**109 images across 25 exhibits.** 52 of them are share-alike
+**216 images across 47 exhibits.** 111 of them are share-alike
 (CC BY-SA): if you redistribute a modified version of one of those images, you
 must license the modification under the same terms. The images are not combined
 with the source code and do not affect the MIT license of the code itself.
@@ -19,7 +19,17 @@ Period advertisements and sales posters are essentially never freely licensed.
 None are redistributed here; where one is relevant it is referenced as an
 outbound link only (2 such link(s) below).
 
-License breakdown: CC BY-SA 4.0 (26), CC BY 3.0 (14), Public domain (14), CC0 (11), CC BY-SA 3.0 (13), CC BY 2.0 (11), CC BY-SA 2.0 (12), CC BY 4.0 (7), CC BY-SA 2.5 (1).
+License breakdown: CC BY-SA 4.0 (46), CC BY-SA 3.0 (34), CC BY 2.0 (30), CC BY-SA 2.0 (24), CC0 (22), Public domain (22), CC BY 3.0 (20), CC BY 4.0 (11), CC BY-SA 2.5 (7).
+
+## alto
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-xerox-alto-computer.webp` | Maksym Kozlenko | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_computer.jpg) |
+| `02-xerox-alto.webp` | Unknown | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto.jpg) |
+| `03-xerox-alto-mit-rechner.webp` | Joho345 | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_mit_Rechner.JPG) |
+| `04-xerox-alto-at-the-computer-history-museum.webp` | Don DeBold | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_at_the_Computer_History_Museum.jpg) |
+| `05-xerox-alto-keyset.webp` | Vincent Lextrait | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Alto_keyset.jpg) |
 
 ## amiga
 
@@ -67,6 +77,26 @@ License breakdown: CC BY-SA 4.0 (26), CC BY 3.0 (14), Public domain (14), CC0 (1
 | `02-atari-520st-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Atari_520ST_Tietokonemuseo.JPG) |
 | `03-atari-520st-2102314521.webp` | vonguard from Oakland, Nmibia | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Atari_520ST_(2102314521).jpg) |
 
+## bbcmicro
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-acorn-bbc-micro.webp` | simon.inns | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Acorn_BBC_Micro.jpg) |
+| `02-acorn-bbc-model-b-retrosystems-2010.webp` | Soupmeister | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Acorn_BBC_Model_B_-_Retrosystems_2010.jpg) |
+| `03-bbc-micro-model-b-rear-ports.webp` | Barney Livingston | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:BBC_Micro_Model_B_rear_ports.jpg) |
+| `04-bbc-b-econet.webp` | Mincebert | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:BBC_B_Econet.jpg) |
+| `05-model-b-with-arm7tdmi-coprocessor-7020151809.webp` | Trevor Johnson from Bristol, UK | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Model_B_with_ARM7TDMI_coprocessor_(7020151809).jpg) |
+
+## c128
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-commodore-128.webp` | Evan-Amos | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore-128.jpg) |
+| `02-commodore-128-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_128_Tietokonemuseo.JPG) |
+| `03-commodore-128-002.webp` | Public domainPublic domainfalsefalse This work has been released into the public domain by its author, Cbmeeks, at the English Wikipedia project. This applies worldwide. In case this is not legally possible: Cbmeeks grants anyone the right to use this work for any purpose, without any conditions, unless such conditions are required by law. . | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_128_002.jpg) |
+| `04-commodore-128-set-up-with-a-1541-1571-1200-baud-modem-and-two-displays-filtered.webp` | Alex Lozupone | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_128_set-up_with_a_1541,_1571,_1200_baud_Modem,_and_two_displays_(filtered).jpg) |
+| `05-c128-running-cpm.webp` | matthewab2001 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:C128_running_CPM.jpg) |
+
 ## c64
 
 | Image | Author | License | Source |
@@ -74,6 +104,65 @@ License breakdown: CC BY-SA 4.0 (26), CC BY 3.0 (14), Public domain (14), CC0 (1
 | `01-commodore-64-computer-fl.webp` | Evan-Amos | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-FL.jpg) |
 | `02-commodore-64-computer-bl.webp` | Evan-Amos | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-BL.jpg) |
 | `03-commodore-64-computer-br.webp` | Evan-Amos | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore-64-Computer-BR.jpg) |
+
+## cbm2
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-commodore-cbm-610-thomas-cont-a.webp` | Thomas Conté | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_CBM_610_(Thomas_Cont%C3%A9)_A.jpg) |
+| `02-commodore-cbm-610-thomas-cont-closeup.webp` | Thomas Conté | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_CBM_610_(Thomas_Cont%C3%A9)_Closeup.jpg) |
+| `03-1-1111-cbm610-04.webp` | 1-1111 | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:1-1111_CBM610_04.JPG) |
+| `04-cbm610-klein-01.webp` | 1-1111 | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Cbm610_klein_01.jpg) |
+| `05-cbm610-back.webp` | 1-1111 | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:CBM610_back.jpg) |
+
+## cbm8032
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-commodore-pet-8032.webp` | phreakindee | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_PET_8032.jpg) |
+| `02-commodore-cbm-8032-mit-peripherie-37650524544.webp` | Wolfgang Stief from Tittmoning, Germany | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_CBM_8032_mit_Peripherie_(37650524544).jpg) |
+| `03-cbm-8032-anlage.webp` | Oguenther | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Cbm-8032-anlage.jpg) |
+| `04-commodore-cbm-8032-sk-33575329583.webp` | Wolfgang Stief from Tittmoning, Germany | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_CBM_8032-SK_(33575329583).jpg) |
+
+## daybreak
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-xeroxworkstation.webp` | William Ward | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:XeroxWorkstation.jpg) |
+| `02-tsd-computer-schreib-und-b-rotechnik-computer-system-xerox-8010-6085-i.webp` | NoRud | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:TSD_Computer-,_Schreib-_und_B%C3%BCrotechnik_Computer_System_Xerox_8010_-_6085_I.jpg) |
+| `03-tsd-computer-schreib-und-b-rotechnik-computer-system-xerox-8010-6085-ii.webp` | NoRud | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:TSD_Computer_-,Schreib_und_B%C3%BCrotechnik_Computer_System_Xerox_8010_-_6085_II.jpg) |
+| `04-tsd-xerox-8010-kol.webp` | Kolossos | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:TSD-Xerox-8010-kol.jpg) |
+| `05-technische-sammlungen-dresden-rechentechnik-068.webp` | Ronny Ueckermann | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Technische_Sammlungen_Dresden_Rechentechnik_068.jpg) |
+
+## decos
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-pdp11-34.webp` | MHKII | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:PDP11-34.jpg) |
+| `02-pdp-11-34-front-panel.webp` | Autopilot | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:PDP-11-34_front_panel.jpg) |
+| `03-dec-pdp-11-40-minicomputer-1973-technisches-museum-wien-edited-white-background.webp` | Jeff Keyzer | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:DEC_PDP-11-40_Minicomputer,_1973,_Technisches_Museum_Wien_(edited,_white_background).jpg) |
+| `04-dec-vt100-terminal.webp` | Jason Scott | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:DEC_VT100_terminal.jpg) |
+| `05-dec-rl02-data-cartridge.webp` | Selquim | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:DEC_RL02_Data_Cartridge.jpg) |
+
+## dragon32
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-dragon-32.webp` | Liftarn, Editing by: Bill Bertram (Pixel8) | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Dragon_32.jpg) |
+| `02-dragon-32-retromadrid-2018.webp` | AUIC Oficial | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Dragon_32_(RetroMadrid_2018).jpg) |
+| `03-dragon-32-1982-24493991688.webp` | Wolfgang Stief from Tittmoning, Germany | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Dragon_32_(1982)_(24493991688).jpg) |
+| `04-dragon-32-computer-at-play-expo-2013.webp` | Rept0n1x | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Dragon_32_computer_at_Play_Expo_2013.JPG) |
+| `05-dragon-32-top-view.webp` | Miguel Durán | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Dragon_32_top_view.jpg) |
+
+## indyr4400
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-silicon-graphics-indy.webp` | Bilby | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Silicon_Graphics_Indy.jpg) |
+| `02-sgi-indy-crt-keyboard-mouse.webp` | Thomas Kaiser | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SGI_Indy_CRT_Keyboard_Mouse.jpg) |
+| `03-sgi-indy-mit-originalkamera.webp` | Dirk Liesch | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:SGI_Indy_mit_Originalkamera.jpg) |
+| `04-indycam-1993.webp` | Dirk Liesch | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:IndyCam_(1993).jpg) |
+| `05-sgi-indy-back.webp` | Rules666 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SGI_indy_back.jpg) |
 
 ## irix
 
@@ -83,6 +172,36 @@ License breakdown: CC BY-SA 4.0 (26), CC BY 3.0 (14), Public domain (14), CC0 (1
 | `02-sgi-indy-front.webp` | Rules666 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SGI_indy_front.jpg) |
 | `03-sgi-indy-back.webp` | Rules666 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SGI_indy_back.jpg) |
 | `04-silicon-graphics-indy.webp` | Bilby | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Silicon_Graphics_Indy.jpg) |
+
+## kc854
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-tsd-kc85-4-kol.webp` | Kolossos | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:TSD-KC85-4-kol.jpg) |
+| `02-kc85-the-expensive-gdr-home-computer-48929506503.webp` | stiefkind | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:KC85_%E2%80%93_the_(expensive)_GDR_home_computer_-_48929506503.jpg) |
+| `03-heimcomputer-kc-85-tsd.webp` | Dr. Bernd Gross | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Heimcomputer_KC_85_TSD.JPG) |
+| `04-kc85-eastern-germany-homecomputer-3497498967.webp` | Wolfgang Stief from Tittmoning, Germany | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:KC85,_Eastern_Germany_Homecomputer_(3497498967).jpg) |
+| `05-kc85-34000684590.webp` | Wolfgang Stief from Tittmoning, Germany | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:KC85_(34000684590).jpg) |
+
+## macos
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-m4-mac-mini.webp` | Kyu3a | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:M4_Mac_mini.jpg) |
+| `02-mac-mini-m4-2024-backside.webp` | AzureSaturn | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Mac_mini_(M4,_2024)_-_Backside.jpg) |
+| `03-m2-macbook-air-starlight-model.webp` | KKPCW（Kyu3） | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:M2_Macbook_Air_Starlight_model.jpg) |
+| `04-macbook-air-a2681-front.webp` | メイド理世 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:MacBook_Air_(A2681)_front.jpg) |
+| `05-macbook-air-15-inch-1.webp` | KKPCW（Kyu3） | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Macbook_Air_15_inch_-_1.jpg) |
+
+## macos753
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-q8002.webp` | GeneralFreddy | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Q8002.jpg) |
+| `02-apple-mac-quadra-800.webp` | Unknown | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Apple_mac_quadra_800.jpg) |
+| `03-apple-museum-prague-quadra-700-1991.webp` | Benoît Prieur | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Apple_Museum_(Prague)_Quadra_700_(1991).jpg) |
+| `04-macintosh-quadra-610.webp` | Unknown | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Macintosh_Quadra_610.jpg) |
+| `05-quadra-605-insides.webp` | Unknown | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Quadra_605_insides.jpg) |
 
 ## mpf2
 
@@ -101,6 +220,17 @@ License breakdown: CC BY-SA 4.0 (26), CC BY 3.0 (14), Public domain (14), CC0 (1
 | `04-ibm-5170-pc-at-8861873514.webp` | htomari | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:IBM_5170_(PC_AT)_(8861873514).jpg) |
 | `05-ibm-personal-computer-xt-with-5153-color-monitor-53998049768.webp` | Ethan Long | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:IBM_Personal_Computer_XT_with_5153_Color_Monitor_(53998049768).jpg) |
 | `06-ibm-model-f-122-key-keyboard.webp` | Themavery | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:IBM_Model_F_122-key_Keyboard.jpg) |
+
+## nextstep
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-nextcube.webp` | Unknown | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:NeXTcube.jpg) |
+| `02-19920405-nextcube-hannovermesse1992.webp` | Krajazz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:19920405_nextcube_hannovermesse1992.jpg) |
+| `03-nextcube-1990-center-for-computer-research-in-music-and-acoustics-ccrma-stanford-university-2015-04-26-01-47-06-by-daniel-hartwig.webp` | Daniel Hartwig from Des Moines, IA, USA | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:NeXTcube_(1990),_Center_for_Computer_Research_in_Music_and_Acoustics_(CCRMA),_Stanford_University_(2015-04-26_01.47.06_by_Daniel_Hartwig).jpg) |
+| `04-next-cubes-and-nextstation-48930235377.webp` | stiefkind | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:NeXT_Cubes_and_NeXTstation_-_48930235377.jpg) |
+| `05-nextcube-motherboard.webp` | Autopilot | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:NeXTcube_motherboard.jpg) |
+| `06-next-cube-15450397722.webp` | Kai Wegner from Berlin, Deutschland | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Next_Cube_(15450397722).jpg) |
 
 ## ninefront
 
@@ -147,6 +277,16 @@ Period advertising, referenced by outbound link only (not redistributed here):
 | `05-vax-11-750-donostiako-informatika-fakultatea-1988-01.webp` | Donostiako Informatika Fakultatea, eta Eduardo Mena | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:VAX_11-750_Donostiako_Informatika_Fakultatea_1988_01.png) |
 | `06-computer-history-museum-vax-11-780-313530644.webp` | Takuya Oikawa | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Computer_History_Museum_VAX_11_780_(313530644).jpg) |
 
+## oricatmos
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-oric-atmos-clean.webp` | Kerbdog | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Oric_Atmos_-_Clean.jpg) |
+| `02-oric-atmos-01.webp` | Unknown | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Oric_Atmos_01.jpg) |
+| `03-oric-1-and-oric-atmos-2224286887.webp` | Marcin Wichary from San Francisco, U.S.A. | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Oric-1_and_Oric_Atmos_(2224286887).jpg) |
+| `04-oric-atmos-48k-retrosystems-2010.webp` | Soupmeister | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Oric_Atmos_48k_-_Retrosystems_2010.jpg) |
+| `05-oric-atmos-02.webp` | Unknown | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Oric_Atmos_02.jpg) |
+
 ## os2warp
 
 | Image | Author | License | Source |
@@ -160,6 +300,25 @@ Period advertising, referenced by outbound link only (not redistributed here):
 Period advertising, referenced by outbound link only (not redistributed here):
 
 - ["This is OS/2 Warp" — IBM television advertisement](https://archive.org/details/IMOS4753) — Internet Archive
+
+## pdp11
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-lcm-dec-pdp-11-70-01.webp` | Joe Mabel | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:LCM_-_DEC_PDP-11-70_-_01.jpg) |
+| `02-dec-pdp-11-at-computer-museum-of-america-23-cropped.webp` | Bubba73 | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:DEC_PDP-11_at_Computer_Museum_of_America_(23)_(cropped).jpg) |
+| `03-pdp-11-70-minicomputer-from-digital-equipment-corporation-dec-exhibited-at-living-computer-museum-in-seattle-usa-edited-image-without-background.webp` | Joe Mabel | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:PDP-11-70_Minicomputer_from_Digital_Equipment_Corporation_(DEC),_exhibited_at_Living_Computer_Museum_in_Seattle,_USA_(edited_image_without_background).jpg) |
+| `04-dectape-unit-for-the-dec-pdp-11.webp` | ndiggity | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:DECTape_unit_for_the_DEC_PDP-11.jpg) |
+
+## pet2001
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-commodore-pet-2001.webp` | Jean-Christophe BENOIST | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_PET_2001.jpg) |
+| `02-commodore-pet-2001-1.webp` | Alexander Svensson | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_PET_2001_(1).jpg) |
+| `03-commodore-pet-2001-internal-cassette-recorder.webp` | Parrot of Doom | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_pet_2001_internal_cassette_recorder.jpg) |
+| `04-commodore-pet-tastatur.webp` | Erkaha | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore-pet-tastatur.jpg) |
+| `05-commodore-pet2001.webp` | Photographer: Tomislav Medak from Flickr / Editing: Bill Bertram (Pixel8) | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_PET2001.jpg) |
 
 ## plus4
 
@@ -197,6 +356,16 @@ Period advertising, referenced by outbound link only (not redistributed here):
 | `04-jolla-tablet-16928861447.webp` | Maurizio Pesce from Milan, Italia | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Jolla_Tablet_(16928861447).jpg) |
 | `05-jolla-sailfish-tablet-mwc-2015.webp` | Kārlis Dambrāns | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Jolla_Sailfish_tablet_-_MWC_2015.jpg) |
 
+## sinclairql
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-sinclair-ql-retromadrid-2018.webp` | AUIC Oficial | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_QL_(RetroMadrid_2018).jpg) |
+| `02-working-sinclair-ql.webp` | Telecarlos | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Working-Sinclair-QL.jpg) |
+| `03-sinclair-ql-top.webp` | "Ewx" (Minor non-creditworthy tweaks by Ubcule) | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_QL_Top.jpg) |
+| `04-sinclair-ql-microdrive-cartridge.webp` | Tonyingesson | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_QL_Microdrive_cartridge.jpg) |
+| `05-sincalir-ql-68008-processor.webp` | Telecarlos | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Sincalir-QL-68008-Processor.jpg) |
+
 ## solaris
 
 | Image | Author | License | Source |
@@ -204,6 +373,25 @@ Period advertising, referenced by outbound link only (not redistributed here):
 | `01-sun-sparcstation-5.webp` | NapoliRoma | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Sun_SPARCstation_5.JPG) |
 | `02-sparcstation-51332334771.webp` | Steve Elliott from UK | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SPARCStation_(51332334771).jpg) |
 | `03-sun-sparcstation-ipx-prototype.webp` | NapoliRoma | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Sun_SPARCstation_IPX_prototype.JPG) |
+
+## star
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-xerox-star-8010-2.webp` | vonguard | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Star_8010_(2).jpg) |
+| `02-old-computers-with-a-xerox-star.webp` | Marcin Wichary | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Old_computers_with_a_Xerox_Star.jpg) |
+| `03-xerox-star-on-a-vintage-computer-faire-west-2019.webp` | leighklotz | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Xerox_Star_on_a_Vintage_Computer_Faire_West_2019.jpg) |
+| `04-desktop-icons-for-xerox-star-8010.webp` | J R | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Desktop_icons_for_Xerox_Star_8010.jpg) |
+
+## tru64
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-compaq-alphaserver-es40-dec-server-and-dell-monitor.webp` | Robert | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Compaq_Alphaserver_ES40,_DEC_server_and_Dell_monitor.jpg) |
+| `02-alphaserver-es40-close-up-img-0622.webp` | Jemimus | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:AlphaServer_ES40_close-up_-_IMG_0622.jpg) |
+| `03-decalphaserver2100aped.webp` | WhiteTimberwolf | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:DECAlphaServer2100APed.jpg) |
+| `04-inside-a-dec-alphaserver-1000a-5-400.webp` | walknboston | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Inside_a_DEC_AlphaServer_1000A_5-400.jpg) |
+| `05-alphaserver-2100-guts.webp` | Adamantios | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:AlphaServer-2100-guts.jpg) |
 
 ## vic20
 
@@ -214,6 +402,15 @@ Period advertising, referenced by outbound link only (not redistributed here):
 | `03-commodore-founder-jack-tramiel-and-vic20-product-manager-michael-tomczyk-celebrated-the-first-million-units-in-1982-which-jump-started-the-home-computer-revolution.webp` | Michael Tomczyk | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_Founder_Jack_Tramiel_and_VIC20_Product_Manager_Michael_Tomczyk_celebrated_the_first_million_units_in_1982_which_jump-started_the_home_computer_revolution.jpg) |
 | `04-vic-1001-keyboard.webp` | Darklanlan | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:VIC-1001_keyboard.jpg) |
 | `05-commodore-vic-20-video-rf-adapter.webp` | Evan-Amos | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore-VIC-20-Video-RF-Adapter.jpg) |
+
+## w2kalpha
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-dec-alphastation-600a.webp` | htomari | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:DEC_AlphaStation_600A.jpg) |
+| `02-alphastation-500-400-4139803972.webp` | htomari | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:AlphaStation_500_400_(4139803972).jpg) |
+| `03-digital-alphastation-200-1.webp` | leighklotz | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Digital_AlphaStation_200_(1).jpg) |
+| `04-alpha21164-600mhz.webp` | Copyright: Atsushi Nunome (Computer System Laboratory at Kyoto Institute of Technology) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Alpha21164_600MHz.jpg) |
 
 ## win2000
 
@@ -262,5 +459,25 @@ Period advertising, referenced by outbound link only (not redistributed here):
 | `04-ibm-thinkpad-a31p-transnote-and-two-workpads.webp` | FAndrey | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:IBM_ThinkPad_A31p,_transNote_and_two_WorkPads.jpg) |
 | `05-dell-latitude-d610.webp` | zencat7 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Dell_Latitude_D610.jpg) |
 | `06-dell-inspiron-6000-and-latitude-d610.webp` | Craig Wyzik from Olympia, WA, USA | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Dell_Inspiron_6000_and_Latitude_D610.jpg) |
+
+## zx81
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-sinclair-zx81-retromadrid-2018.webp` | AUIC Oficial | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_ZX81_(RetroMadrid_2018).jpg) |
+| `02-sinclair-zx81-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_ZX81_Tietokonemuseo.JPG) |
+| `03-sinclair-zx-81.webp` | MOS6502 | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_ZX-81.jpg) |
+| `04-sinclair-zx81-retrosystems-2010.webp` | Soupmeister | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_ZX81_-_Retrosystems_2010.jpg) |
+| `05-sinclairzx81.webp` | babbagecabbage | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:SinclairZX81.jpg) |
+
+## zxspectrum
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-zxspectrum48k.webp` | Bill Bertram | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:ZXSpectrum48k.jpg) |
+| `02-sinclair-zx-spectrum-1982-1.webp` | Jzh2074 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_ZX_Spectrum_(1982)_1.jpg) |
+| `03-zx-spectrum-showing-rubber-key-mat.webp` | Multicherry | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:ZX_Spectrum_showing_rubber_key_mat.jpg) |
+| `04-zx-spectrum-3126220123.webp` | Marcin Wichary from San Francisco, Calif. | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:ZX_Spectrum_(3126220123).jpg) |
+| `05-sinclair-zx-spectrum-7091646959.webp` | ccwoodcock | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_ZX_Spectrum_(7091646959).jpg) |
 
 ⚖️ = share-alike license.

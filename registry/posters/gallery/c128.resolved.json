@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "c128",
+  "images": [
+    {
+      "src": "/posters/c128/gallery/01-commodore-128.webp",
+      "alt": "A beige Commodore 128 home computer with a full-width keyboard and numeric keypad, photographed from above",
+      "caption": "The Commodore 128, wider than a C64 to hold a full numeric keypad and function keys, and three computers in one case.",
+      "author": "Evan-Amos",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore-128.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2ddc31cf40942dc2c8ac43fe2cb7ded58d3e94e045de3a77feb30982b5d57797",
+      "width": 1600,
+      "height": 850
+    },
+    {
+      "src": "/posters/c128/gallery/02-commodore-128-tietokonemuseo.webp",
+      "alt": "A Commodore 128 computer on display in a computer museum",
+      "caption": "Designed against a punishing schedule by a small hardware team led by Bil Herd, in time for the January 1985 Consumer Electronics Show.",
+      "author": "MKFI",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_128_Tietokonemuseo.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "913f70249a325d2926fbc715165ea1c5ab22c178c58b36ae85beca730833e4a1",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/c128/gallery/03-commodore-128-002.webp",
+      "alt": "Close view of a Commodore 128 keyboard and case, showing the function keys and Commodore badge",
+      "caption": "The 128 had to be a Commodore 64 as well as its own machine: the C64 was still the best-selling computer in the world, and nothing could be allowed to break it.",
+      "author": "Public domainPublic domainfalsefalse This work has been released into the public domain by its author, Cbmeeks, at the English Wikipedia project. This applies worldwide. In case this is not legally possible: Cbmeeks grants anyone the right to use this work for any purpose, without any conditions, unless such conditions are required by law. .",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_128_002.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "736b71e01a1eab834ad2690f3dfe68c43fff347e0b37b702f055523902d33d61",
+      "width": 1600,
+      "height": 1202
+    },
+    {
+      "src": "/posters/c128/gallery/04-commodore-128-set-up-with-a-1541-1571-1200-baud-modem-and-two-displays-filtered.webp",
+      "alt": "A Commodore 128 computer connected to two external disk drives, a modem, and two monitors",
+      "caption": "The 1571 drive could read the actual MFM disk formats other CP/M machines wrote, so a home computer bought for games could read an office's floppies.",
+      "author": "Alex Lozupone",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Commodore_128_set-up_with_a_1541,_1571,_1200_baud_Modem,_and_two_displays_(filtered).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "02dd91ee7eb237a4c3efcb8e83500f82d5133a584581f1e8f89892697340e145",
+      "width": 1600,
+      "height": 1152
+    },
+    {
+      "src": "/posters/c128/gallery/05-c128-running-cpm.webp",
+      "alt": "A Commodore 128 computer with its monitor displaying a CP/M boot sequence and command prompt",
+      "caption": "Press the exhibit's CP/M button and the Z80 takes the bus: this is the operating system that ran the office before MS-DOS did.",
+      "author": "matthewab2001",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:C128_running_CPM.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b517d4ae88ba8006cd85c5f4c11c1ade5d18e2fdd6806d7bfd5f99fe494301af",
+      "width": 1200,
+      "height": 1600
+    }
+  ]
+}

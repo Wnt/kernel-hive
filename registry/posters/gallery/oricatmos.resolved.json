@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "oricatmos",
+  "images": [
+    {
+      "src": "/posters/oricatmos/gallery/01-oric-atmos-clean.webp",
+      "alt": "A black Oric Atmos home computer with a red stripe, photographed from the front showing its full keyboard",
+      "caption": "The Atmos answered complaints about the Oric-1's hard calculator keys with a new case and a keyboard that actually moved.",
+      "author": "Kerbdog",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Oric_Atmos_-_Clean.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "59fd884bb5c9a2ca7c100ab3aa8706085f3ac599f91904a24fc36a8803854215",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/oricatmos/gallery/02-oric-atmos-01.webp",
+      "alt": "An Oric Atmos computer shown at an angle, displaying its black case, red accent stripe and keyboard",
+      "caption": "Built by Oric Products International in Cambridgeshire, the Atmos shipped in February 1984 with a 6502A and eight-colour graphics.",
+      "author": "Unknown",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Oric_Atmos_01.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "9eb0c6ff188885dc6d4eb24c391c12d3f186900c630cea3fd53e63a8507ec484",
+      "width": 1600,
+      "height": 940
+    },
+    {
+      "src": "/posters/oricatmos/gallery/03-oric-1-and-oric-atmos-2224286887.webp",
+      "alt": "An Oric-1 and an Oric Atmos home computer photographed side by side, showing the case redesign between the two models",
+      "caption": "The Atmos kept the Oric-1's 6502A and AY-3-8912 sound chip, but replaced the case and the keyboard reviewers had disliked.",
+      "author": "Marcin Wichary from San Francisco, U.S.A.",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Oric-1_and_Oric_Atmos_(2224286887).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "207f856dd4feddad6a55a498a838339cb8dc87b5103c9419750389a1dc1c58c5",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/oricatmos/gallery/04-oric-atmos-48k-retrosystems-2010.webp",
+      "alt": "An Oric Atmos computer on display at a retro computing exhibition, shown with its keyboard and case",
+      "caption": "Britain treated the Oric as a permanent runner-up to the Spectrum; in France it was sold as a first-class machine and became a phenomenon.",
+      "author": "Soupmeister",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Oric_Atmos_48k_-_Retrosystems_2010.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2f8e9bbba4db7ef079c413a982429e1380cce8106e8f53a24a1bd1f57fed7b2f",
+      "width": 1200,
+      "height": 797
+    },
+    {
+      "src": "/posters/oricatmos/gallery/05-oric-atmos-02.webp",
+      "alt": "Close-up detail of an Oric Atmos computer's keyboard and case texture",
+      "caption": "Oric BASIC gave the Atmos's better sound hardware four ready-made noises: ZAP, PING, SHOOT and EXPLODE.",
+      "author": "Unknown",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Oric_Atmos_02.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "de46f8361e416d8f2b6aef045bd8759531b6e50d816608d30500dcd17febea99",
+      "width": 1600,
+      "height": 389
+    }
+  ]
+}

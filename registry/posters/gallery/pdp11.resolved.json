@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "pdp11",
+  "images": [
+    {
+      "src": "/posters/pdp11/gallery/01-lcm-dec-pdp-11-70-01.webp",
+      "alt": "A DEC PDP-11/70 minicomputer in its tall cabinets at the Living Computer Museum, shown from the front with its operator console panel",
+      "caption": "The PDP-11/70, announced in 1975, was the top of the line: 22-bit addressing, a cache, and the floating-point processor as standard.",
+      "author": "Joe Mabel",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:LCM_-_DEC_PDP-11-70_-_01.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "27d84a0378c1c0e5fa9c86adc80b0e296f1ffa5667ab0f8c13f335fcf27bdf0a",
+      "width": 1063,
+      "height": 1600
+    },
+    {
+      "src": "/posters/pdp11/gallery/02-dec-pdp-11-at-computer-museum-of-america-23-cropped.webp",
+      "alt": "A DEC PDP-11/70 minicomputer on display in a museum, showing its front cabinet and control panel",
+      "caption": "One bus, the Unibus, carried memory, registers, terminals and disks alike — a single addressing scheme that made the PDP-11 a pleasure to program.",
+      "author": "Bubba73",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DEC_PDP-11_at_Computer_Museum_of_America_(23)_(cropped).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "0a7d262b29d600040b0cde11ef84edfe60442825c120657aab557cd391e13164",
+      "width": 1372,
+      "height": 1600
+    },
+    {
+      "src": "/posters/pdp11/gallery/03-pdp-11-70-minicomputer-from-digital-equipment-corporation-dec-exhibited-at-living-computer-museum-in-seattle-usa-edited-image-without-background.webp",
+      "alt": "A DEC PDP-11/70 minicomputer cabinet, isolated against a plain background, showing its full height and control panel",
+      "caption": "DEC sold something like 600,000 PDP-11s and kept the line in production until 1997, twenty-seven years after the first one shipped.",
+      "author": "Joe Mabel",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:PDP-11-70_Minicomputer_from_Digital_Equipment_Corporation_(DEC),_exhibited_at_Living_Computer_Museum_in_Seattle,_USA_(edited_image_without_background).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "9efd7373e2ac56cc0b98c7dedda6d2a9d7be71a3ad7f83428a6b5fe7db608552",
+      "width": 1033,
+      "height": 1600
+    },
+    {
+      "src": "/posters/pdp11/gallery/04-dectape-unit-for-the-dec-pdp-11.webp",
+      "alt": "A DECtape drive unit made for the DEC PDP-11, photographed at the Living Computer Museum",
+      "caption": "Disk and tape drives like this one hung off the same Unibus as everything else — DEC's PDP-11 had no separate instructions for talking to a device.",
+      "author": "ndiggity",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DECTape_unit_for_the_DEC_PDP-11.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b1fb3a2341f97c60c8fc2ebbcf2297ce7bd9119d46b5ba59c94b370eca36b54e",
+      "width": 1600,
+      "height": 1115
+    }
+  ]
+}

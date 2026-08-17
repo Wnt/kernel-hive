@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "tru64",
+  "images": [
+    {
+      "src": "/posters/tru64/gallery/01-compaq-alphaserver-es40-dec-server-and-dell-monitor.webp",
+      "alt": "A Compaq AlphaServer ES40 tower next to another DEC server and a monitor",
+      "caption": "A Compaq AlphaServer ES40 — the exact class of machine emulated here, DEC's own iron built around its own 64-bit Alpha processor.",
+      "author": "Robert",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compaq_Alphaserver_ES40,_DEC_server_and_Dell_monitor.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2dae758afe45c4410d83ee515110bc2b163ad543f3b74d373b8f0f23160b2086",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/tru64/gallery/02-alphaserver-es40-close-up-img-0622.webp",
+      "alt": "A close-up view of an AlphaServer ES40 chassis with its front panel and drive bays visible",
+      "caption": "The ES40's front bays, built for the workload Tru64 5.1B was engineered against: DEC hardware running the operating system DEC wrote for it.",
+      "author": "Jemimus",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:AlphaServer_ES40_close-up_-_IMG_0622.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "8c684362d46b2055bd1c1a6b3bc598791cc819f59f0b493f2c45b881f7efe7f4",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/tru64/gallery/03-decalphaserver2100aped.webp",
+      "alt": "A DEC AlphaServer 2100A pedestal-chassis server tower, photographed from the front",
+      "caption": "A DEC AlphaServer 2100A pedestal server — an earlier member of the same AlphaServer line Tru64 was tested against release after release.",
+      "author": "WhiteTimberwolf",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DECAlphaServer2100APed.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "6939a9d30cff13326e9ca85e997daa8ba1720d8dc6094f479ea1b1c4b4b5612c",
+      "width": 1498,
+      "height": 1600
+    },
+    {
+      "src": "/posters/tru64/gallery/04-inside-a-dec-alphaserver-1000a-5-400.webp",
+      "alt": "The interior of a decommissioned DEC AlphaServer 1000A, showing the CPU board and heat sink mounting",
+      "caption": "Inside an AlphaServer: the CPU board and its heat sink, the kind of Alpha silicon Tru64's AdvFS and TruCluster were built to drive.",
+      "author": "walknboston",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Inside_a_DEC_AlphaServer_1000A_5-400.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "99bf119f1dd8e34318860d5ff1a26e2338b6448a7905620ea6617280741f5f11",
+      "width": 1600,
+      "height": 1374
+    },
+    {
+      "src": "/posters/tru64/gallery/05-alphaserver-2100-guts.webp",
+      "alt": "The interior of a DEC AlphaServer 2100 with its case open, showing internal boards and cabling",
+      "caption": "The inside of an AlphaServer 2100 — server-class Alpha hardware from the same family line as the ES40 emulated here.",
+      "author": "Adamantios",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:AlphaServer-2100-guts.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "6f398564915b4e908aa63fc4b3bb154e484ee37ad0ff80465098b98224282d95",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}

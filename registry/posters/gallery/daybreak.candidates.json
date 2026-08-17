@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "daybreak",
+  "images": [
+    {
+      "commonsFile": "File:XeroxWorkstation.jpg",
+      "alt": "A Xerox 6085 Daybreak workstation with its keyboard, mouse and monitor on a desk",
+      "caption": "The Xerox 6085 \"Daybreak\" — a full Star-derived desktop for about a third of the price of the 1981 original.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:TSD Computer-, Schreib- und Bürotechnik Computer System Xerox 8010 - 6085 I.jpg",
+      "alt": "A Xerox 8010/6085 computer system on display, showing the low flat case, keyboard and monitor together",
+      "caption": "The low, flat 6085 case was built to fit under a desk, where its bulkier 1981 predecessor, the Xerox 8010 Star, would not.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:TSD Computer -,Schreib und Bürotechnik Computer System Xerox 8010 - 6085 II.jpg",
+      "alt": "A closer view of a Xerox 8010/6085 workstation's keyboard and monitor in a museum collection",
+      "caption": "The Daybreak keyboard carried dedicated keys for the interface's verbs — NEXT, OPEN, PROPERTIES, MOVE, COPY — rather than menu shortcuts.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:TSD-Xerox-8010-kol.jpg",
+      "alt": "A Xerox 8010/6085 workstation photographed in a technology museum, with monitor, keyboard and mouse",
+      "caption": "By 1985 Xerox had renamed the Star environment ViewPoint and sold its applications as separately licensed options.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Technische Sammlungen Dresden Rechentechnik 068.jpg",
+      "alt": "A Xerox Daybreak-era workstation displayed among other historical computing equipment in a museum",
+      "caption": "The 6085 shipped the same desktop vocabulary as the Star four years earlier — icons, windows, WYSIWYG editing — largely unmatched by contemporaries.",
+      "role": "photo"
+    }
+  ]
+}

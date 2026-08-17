@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "kc854",
+  "images": [
+    {
+      "src": "/posters/kc854/gallery/01-tsd-kc85-4-kol.webp",
+      "alt": "A KC 85/4 home computer in its case, photographed from the front showing the keyboard and cassette port",
+      "caption": "The KC 85/4 shipped in 1988 from VEB Mikroelektronik in Mühlhausen, Thuringia, the last major revision of the line.",
+      "author": "Kolossos",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:TSD-KC85-4-kol.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2d93c9ec9554b1b68cafd154b5914a71ca43acb9e3082df81c5ed15746c74904",
+      "width": 1600,
+      "height": 1063
+    },
+    {
+      "src": "/posters/kc854/gallery/02-kc85-the-expensive-gdr-home-computer-48929506503.webp",
+      "alt": "A KC 85 series East German home computer displayed with its keyboard, photographed for a museum or collection",
+      "caption": "Most KC 85/4 units went where the state plan sent them — schools and after-school technical clubs — rather than to private buyers.",
+      "author": "stiefkind",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:KC85_%E2%80%93_the_(expensive)_GDR_home_computer_-_48929506503.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2cd7242839a8103f86e902be27fc4cc56a283e787dadddcf2686416f993ad57e",
+      "width": 1600,
+      "height": 898
+    },
+    {
+      "src": "/posters/kc854/gallery/03-heimcomputer-kc-85-tsd.webp",
+      "alt": "A KC 85 home computer on display, shown with its case and keyboard in a technical collection",
+      "caption": "Inside was a U880, an East German Z80 clone built without a licence from Zilog.",
+      "author": "Dr. Bernd Gross",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Heimcomputer_KC_85_TSD.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "bb4b5cc2ca0cbe014bda39e912f6199fa2919f32dcbabfecb86d9d246ebc9e56",
+      "width": 1600,
+      "height": 899
+    },
+    {
+      "src": "/posters/kc854/gallery/04-kc85-eastern-germany-homecomputer-3497498967.webp",
+      "alt": "A KC 85 series East German home computer, photographed showing its full case and keyboard",
+      "caption": "The machine's slots let it grow: RAM and ROM modules, a floppy interface, an assembler, all pushed into the side of the case.",
+      "author": "Wolfgang Stief from Tittmoning, Germany",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:KC85,_Eastern_Germany_Homecomputer_(3497498967).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ac80abd30f0133d5c1263315a856d1937f168985c5cabe9d811640267190b9bd",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/kc854/gallery/05-kc85-34000684590.webp",
+      "alt": "A KC 85 series computer with its keyboard and case visible, photographed at an angle",
+      "caption": "CAOS, the Cassette Aided Operating System, prints its own command menu at power-on so the first screen is also the documentation.",
+      "author": "Wolfgang Stief from Tittmoning, Germany",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:KC85_(34000684590).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "a744edda75228d6a896960b504fd754947a8f647f4505037f48cbc37eaf98703",
+      "width": 1600,
+      "height": 958
+    }
+  ]
+}

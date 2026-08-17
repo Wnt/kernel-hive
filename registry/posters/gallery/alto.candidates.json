@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "alto",
+  "images": [
+    {
+      "commonsFile": "File:Xerox Alto computer.jpg",
+      "alt": "A Xerox Alto minicomputer cabinet beside its keyboard, mouse, and tall portrait-format bitmap display",
+      "caption": "The Alto's cabinet held a full minicomputer's worth of logic, wheeled up beside a desk rather than housed in a machine room.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Xerox Alto.jpg",
+      "alt": "A Xerox Alto workstation with its tall portrait monitor, keyboard, and three-button mouse on a desk",
+      "caption": "Desk, chair, keyboard, mouse, and a screen shaped like a page: the Alto's whole claim was that a computer could look like this.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Xerox Alto mit Rechner.JPG",
+      "alt": "A Xerox Alto system with its processor cabinet, portrait display, keyboard, and mouse set up together",
+      "caption": "About two thousand Altos were built at Xerox PARC and given away inside the company and to a handful of universities; none were ever sold.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Xerox Alto at the Computer History Museum.jpg",
+      "alt": "A preserved Xerox Alto on display, showing the processor cabinet and portrait monitor",
+      "caption": "A surviving Alto, decades later: the machine that first put overlapping windows, a mouse, and Ethernet in front of one person at a desk.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Xerox Alto keyset.jpg",
+      "alt": "Close-up of the Xerox Alto's five-key chorded keyset, a separate input device beside the keyboard",
+      "caption": "Beside the keyboard sat a five-key chorded keyset, borrowed from Doug Engelbart's oN-Line System, for issuing commands with one hand.",
+      "role": "photo"
+    }
+  ]
+}

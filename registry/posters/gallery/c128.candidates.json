@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "c128",
+  "images": [
+    {
+      "commonsFile": "File:Commodore-128.jpg",
+      "alt": "A beige Commodore 128 home computer with a full-width keyboard and numeric keypad, photographed from above",
+      "caption": "The Commodore 128, wider than a C64 to hold a full numeric keypad and function keys, and three computers in one case.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore 128 Tietokonemuseo.JPG",
+      "alt": "A Commodore 128 computer on display in a computer museum",
+      "caption": "Designed against a punishing schedule by a small hardware team led by Bil Herd, in time for the January 1985 Consumer Electronics Show.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore 128 002.jpg",
+      "alt": "Close view of a Commodore 128 keyboard and case, showing the function keys and Commodore badge",
+      "caption": "The 128 had to be a Commodore 64 as well as its own machine: the C64 was still the best-selling computer in the world, and nothing could be allowed to break it.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Commodore 128 set-up with a 1541, 1571, 1200 baud Modem, and two displays (filtered).jpg",
+      "alt": "A Commodore 128 computer connected to two external disk drives, a modem, and two monitors",
+      "caption": "The 1571 drive could read the actual MFM disk formats other CP/M machines wrote, so a home computer bought for games could read an office's floppies.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:C128 running CPM.jpg",
+      "alt": "A Commodore 128 computer with its monitor displaying a CP/M boot sequence and command prompt",
+      "caption": "Press the exhibit's CP/M button and the Z80 takes the bus: this is the operating system that ran the office before MS-DOS did.",
+      "role": "photo"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "bbcmicro",
+  "images": [
+    {
+      "commonsFile": "File:Acorn BBC Micro.jpg",
+      "alt": "An Acorn BBC Micro Model B keyboard computer photographed from the front, showing its function keys and red keyboard trim",
+      "caption": "The BBC Micro Model B, as it shipped in December 1981: 32 KB of memory, a full complement of ports, and BBC BASIC in ROM.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Acorn BBC Model B - Retrosystems 2010.jpg",
+      "alt": "An Acorn BBC Model B computer displayed at a retrocomputing exhibition, shown at an angle",
+      "caption": "Acorn expected to sell twelve thousand of these. It sold well over a million, most of them into British schools.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:BBC Micro Model B rear ports.jpg",
+      "alt": "The rear panel of a BBC Micro Model B, showing its array of analogue, user, printer, and expansion ports",
+      "caption": "Every port on the back was documented and meant to be wired to something: an analogue port, a user port, a printer port, and the Tube.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:BBC B Econet.jpg",
+      "alt": "A BBC Micro Model B fitted with an Econet network interface module",
+      "caption": "Econet networked a classroom of BBC Micros together before networking was a consumer idea anywhere else.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Model B with ARM7TDMI coprocessor (7020151809).jpg",
+      "alt": "A BBC Micro Model B fitted with a second-processor expansion board carrying an ARM7TDMI chip, connected via the Tube interface",
+      "caption": "The Tube interface let a second processor take over as the main CPU. Acorn's own next processor, the ARM, was first developed on a board plugged in here.",
+      "role": "photo"
+    }
+  ]
+}

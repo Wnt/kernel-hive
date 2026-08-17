@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "star",
+  "images": [
+    {
+      "commonsFile": "File:Xerox Star 8010 (2).jpg",
+      "alt": "A Xerox Star 8010 workstation with its cabinet, black-and-white bitmapped display, keyboard and mouse, photographed at a vintage computer show",
+      "caption": "A Xerox Star 8010, announced 27 April 1981 as the Information System — a bitmapped screen, a mouse, and icons for documents and folders, sold as a finished product with a price list and a service contract.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Old computers with a Xerox Star.jpg",
+      "alt": "A collection of vintage computers including a Xerox Star workstation with its distinctive keyboard and display",
+      "caption": "The Star's cabinet stood on the floor beside the desk, the size of a two-drawer filing cabinet, driving the 1024x808 display on top of it.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Xerox Star on a Vintage Computer Faire West 2019.jpg",
+      "alt": "A Xerox Star computer on display at a vintage computer exhibition",
+      "caption": "A Star preserved and running at a vintage computer fair — one of only a low tens of thousands ever sold.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Desktop icons for Xerox Star 8010.jpg",
+      "alt": "A close-up view of the icon-based desktop interface on a Xerox Star 8010 monitor",
+      "caption": "Icons for documents, folders and printers on the Star's ViewPoint desktop — the vocabulary every graphical interface since has borrowed from.",
+      "role": "photo"
+    }
+  ]
+}

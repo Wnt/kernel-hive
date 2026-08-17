@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "zxspectrum",
+  "images": [
+    {
+      "commonsFile": "File:ZXSpectrum48k.jpg",
+      "alt": "A Sinclair ZX Spectrum 48K computer with its grey rubber keyboard, photographed from above",
+      "caption": "The ZX Spectrum, launched 23 April 1982, kept Sinclair's one-key-one-keyword BASIC but added colour, sound, and forty rubber keys.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Sinclair ZX Spectrum (1982) 1.jpg",
+      "alt": "A Sinclair ZX Spectrum 48K computer viewed from the front, showing its black case and grey rubber keyboard",
+      "caption": "A single Ferranti uncommitted logic array replaced most of the board a machine like this would otherwise have needed, and gave the Spectrum its price and its personality.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:ZX Spectrum showing rubber key mat.jpg",
+      "alt": "A Sinclair ZX Spectrum 48K with its metal keyboard template removed, exposing the single-piece bluish-grey rubber key mat underneath",
+      "caption": "Steve Vickers' tokenising BASIC spared the rubber keyboard from constant use by making one keypress enter a whole command — PRINT, GO TO, RUN — rather than a single letter.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:ZX Spectrum (3126220123).jpg",
+      "alt": "A Sinclair ZX Spectrum 48K computer photographed at an angle, showing its rainbow stripe logo and rubber keyboard",
+      "caption": "The rainbow stripe below the keyboard advertised the Spectrum's colour display, a first for a Sinclair computer.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Sinclair ZX Spectrum (7091646959).jpg",
+      "alt": "A Sinclair ZX Spectrum 48K computer, shown close up with its keyboard and edge connector visible",
+      "caption": "Attribute clash — two moving objects forced to share the ink and paper colour of an 8×8 pixel block — became the Spectrum's most recognisable visual signature.",
+      "role": "photo"
+    }
+  ]
+}
