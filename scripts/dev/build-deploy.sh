@@ -36,6 +36,7 @@ set -euo pipefail
 LAB="${LAB:-lab}"
 SAFE_TILE="${SAFE_TILE:-helenos}"
 LOCK_WAIT_SECS="${LOCK_WAIT_SECS:-30}"
+READINESS_SECS="${READINESS_SECS:-120}"
 WAVE_SIZE=4
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -193,22 +194,9 @@ acquire_lock() {
   ok "exclusive flock held"
 }
 
-# LIVE = the streamhost@ instances that are ACTIVE right now.
-#
-# Two filters, both load-bearing (2026-08-17):
-#   --state=active  A station that is deliberately stopped or disabled must
-#                   never be dragged into a promotion wave. sailfishos has been
-#                   `failed` since 2026-08-11 by intent; including it aborted a
-#                   whole fleet promotion at wave 11 and rolled that wave back.
-#   grep -v '@'     A tile id can never contain '@'. Malformed DOUBLE-instance
-#                   units (`streamhost@streamhost@alpine.service`, 60 of them
-#                   crash-looping ~211k times over five days) otherwise strip to
-#                   `streamhost@alpine` and land in LIVE, where a restart would
-#                   instantiate a THIRD level. Fail closed on the name shape.
-enumerate_live() {
+enumerate_live() { # ACTIVE only + no '@' in an id; see docs/lab/STREAM-DEBUGGING.md
   mapfile -t LIVE < <(ssh_lab \
-    "systemctl list-units --plain --no-legend --state=active 'streamhost@*.service' 2>/dev/null | awk '{print \$1}' | sed -E 's/^streamhost@(.*)\\.service$/\\1/'" |
-    grep -v '@' | sort)
+    "systemctl list-units --plain --no-legend --state=active 'streamhost@*.service' 2>/dev/null | awk '{print \$1}' | sed -E 's/^streamhost@(.*)\\.service$/\\1/' | grep -v @" | sort)
   [ "${#LIVE[@]}" -gt 0 ] || die "could not enumerate live streamhost@ tiles"
   ok "live tiles: ${#LIVE[@]} (${LIVE[*]})"
 }
@@ -393,17 +381,7 @@ set_tile_links() {
   ssh_lab "set -eu; d='${INSTALL_ROOT}/stations/${tile}'; [ -x '${INSTALL_ROOT}/${current}' ]; [ -x '${INSTALL_ROOT}/${previous}' ]; ctmp=\"\$d/.current.\$\$\"; ptmp=\"\$d/.previous.\$\$\"; ln -s '../../${current}' \"\$ctmp\"; mv -Tf \"\$ctmp\" \"\$d/current\"; ln -s '../../${previous}' \"\$ptmp\"; mv -Tf \"\$ptmp\" \"\$d/previous\""
 }
 
-# Seconds to wait for a restarted station to print its LISTENING line.
-#
-# Was 30s, which is fine for a single-QEMU station but NOT for the slowest
-# launchers: openvms brings up a DUAL-VM stack and its ensure-station-qemu.sh
-# needs ~40s+, so a fleet promotion aborted on it twice (2026-08-17) — and the
-# abort's own restore restarted it again mid-boot, compounding the failure.
-# A generous ceiling costs nothing on a healthy station (the loop exits on the
-# first match) and only delays the verdict on one that is genuinely stuck.
-READINESS_SECS="${READINESS_SECS:-120}"
-
-readiness() {
+readiness() { # waits READINESS_SECS; openvms' dual-VM stack needs ~40s+ (30 was too short)
   local tile="$1" out
   if [ "$DRY_RUN" -eq 1 ]; then
     ok "DRY-RUN would require active streamhost@${tile} and its PID's 'LISTENING ... tile=${tile}' line"
