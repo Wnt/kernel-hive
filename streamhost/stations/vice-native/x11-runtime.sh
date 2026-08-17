@@ -135,13 +135,14 @@ mkdir -p "$HOME/.local/state/vice"
 # because MAME's disk driver is a dumb sink; VICE's `sdl` device is flagged
 # is_timing_source=true, so pointing it at a pipe makes THE PIPE the emulator's
 # clock — measured 24 % speed from the guest's own jiffy counter, and no
-# buffer/fragment/pipe-size tuning moved it. `wav` is registered as a record
-# device but accepted as playback, is not a timing source, and blocking-writes
-# raw PCM: measured 98 % speed and the daemon's contract exactly
-# (channels=2 rate=48000 byterate=192000 bits=16). It prepends a 44-byte RIFF
-# header, which is 4-byte aligned so stereo s16 framing survives; the daemon
-# eats ~11 frames of garbage at open. -soundoutput 2 is "always stereo" — 3 is
-# a hard parse error.
+# buffer/fragment/pipe-size tuning moved it. `fifo` is the fork's own record
+# device (soundfifo.c): raw stereo PCM, NO header, is_timing_source=false —
+# the daemon's contract exactly (channels=2 rate=48000 byterate=192000
+# bits=16) and the same speed as `wav`. It replaced `wav` because a WAV stream
+# opens with 44 bytes of RIFF header, which a consumer reading raw PCM decodes
+# as ~11 frames of full-scale samples: an audible CLICK at every relaunch, i.e.
+# on every reset of the exhibit. -soundoutput 2 is "always stereo" — 3 is a
+# hard parse error.
 # ---------------------------------------------------------------------------
 SND=(-sounddev dummy)
 if [ -n "$AFIFO" ]; then
@@ -155,7 +156,14 @@ if [ -n "$AFIFO" ]; then
     sleep infinity 3<>"$AFIFO" >/dev/null 2>&1 &
     echo $! >"$BASE/afifo-holder.pid"
   fi
-  SND=(-sounddev wav -soundarg "$AFIFO" -soundrate 48000 -soundoutput 2)
+  # ASK THE BINARY, do not assume the pin. This launcher is shared, and a
+  # station whose binary predates soundfifo.c would take `-sounddev fifo` as an
+  # unknown device and lose its audio silently. The device advertises itself in
+  # the binary's own device table, so grep for that string and fall back to the
+  # header-prepending `wav` when it is not there.
+  DEV=wav
+  grep -aq 'Raw PCM stream (no header, stereo)' "$BIN" && DEV=fifo
+  SND=(-sounddev "$DEV" -soundarg "$AFIFO" -soundrate 48000 -soundoutput 2)
 fi
 
 export VICE_SHM_PATH="$SHM"
@@ -198,6 +206,15 @@ if [ "${VICE_NATIVE_CHECKPOINT:-1}" = 1 ] && [ -f "$BASE/sta/golden.vsf" ]; then
     printf 'x\n'
   } >"$BASE/sta/restore.mon"
   REST=(-moncommands "$BASE/sta/restore.mon" -initbreak ready)
+  # THE RESET MOMENT IS A CUT, NOT A BOOT. Restoring means the ROM's power-on
+  # screen is painted first, cell by cell, and the monitor is open over a
+  # cleared canvas while the snapshot lands — all of it published, which is
+  # what the operator sees as black dashes across a half-drawn text row. With
+  # this set the publisher leaves the mapping alone until the machine has
+  # finished a frame of the RESTORED scene, so the exhibit cuts from the last
+  # frame of the previous session straight to the scene. Only set alongside
+  # the restore itself: a cold-booting station must publish its boot.
+  export VICE_SHM_HOLD_RESTORE=1
 fi
 
 EXTRA=()
