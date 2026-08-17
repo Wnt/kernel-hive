@@ -45,7 +45,7 @@
 #
 # UNLIKE THE MAME BUILDER THERE ARE NO LOOSE PATCHES. Every kernel-hive change
 # to VICE is a commit on the published fork (github.com/Wnt/vice, branch
-# kernel-hive/integrated, nine commits on upstream tag 3.10.0), carried as the
+# kernel-hive/integrated, ten commits on upstream tag 3.10.0), carried as the
 # third_party/vice-kernel-hive submodule. Note the tag has NO leading `v`, and
 # the VICE mirror tags every SVN revision as rNNNNN, so a --depth 1 clone will
 # NOT contain it — this script never shallow-clones.
@@ -77,16 +77,16 @@ die() {
   exit 1
 }
 
-# The pin. Nine commits on upstream tag 3.10.0 (4d283a2e7dd59b7e378524878e81
-# ecc7826b700c): shmfb (2), vicectl (5 — the socket, the headless keymap, the
-# reply_ok warning fix that lets the warning gate below mean something, and the
-# two key-ordering fixes), and the CRTC restore fix. The last three are the
-# 2026-08-17 wave: the two key-order defects (a release outranks a deferred
-# press; a modifier is a barrier in both directions) and the checkpoint pair —
-# CRTC canvas growth on restore, and SAVEST/LOADST from a CPU trap.
+# The pin. Ten commits on upstream tag 3.10.0 (4d283a2e7dd59b7e378524878e81
+# ecc7826b700c): shmfb (3), vicectl (6) and the CRTC restore fix. The four from
+# 2026-08-17 are the two key-order defects (a release outranks a deferred
+# press; a modifier is a barrier in both directions), the checkpoint pair —
+# CRTC canvas growth on restore, and SAVEST/LOADST from a CPU trap — and
+# VICE_SHM_CHIP, which lets a two-canvas machine (x128: VICII + VDC) CHOOSE the
+# published chip instead of racing for it.
 VICE_FORK_URL="${VICE_FORK_URL:-https://github.com/Wnt/vice.git}"
 VICE_FORK_BRANCH=kernel-hive/integrated
-VICE_FORK_PIN=c2287e1137514b47c176226cd4f490312d44351e
+VICE_FORK_PIN=507cf3e8323ab11feec96258f78832060a558e79
 SUBMODULE="$REPO_ROOT/third_party/vice-kernel-hive"
 
 # ---------------------------------------------------------------------------
