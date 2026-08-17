@@ -139,6 +139,16 @@ box_sync_load_pairs() {
 
   # scripts/README.md "Box-sync pairs" (expanded to one byte pair per row).
   box_sync_add_pair labctl scripts/labctl /usr/local/bin/labctl exact repo
+  # labctl's pure-function modules (size-exclusions.json split, 2026-08-17):
+  # scripts/labctl.d/*.py -> /usr/local/lib/labctl/*.py, one row per file, as
+  # a TREE rather than a name list for the same reason the auth-plane loop
+  # below is one — a file added to labctl.d/ and forgotten here would be
+  # DEPLOYED-INVISIBLE, exactly the auth-plane gap this pattern already closed.
+  while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    box_sync_add_pair "labctl.d/${rel#scripts/labctl.d/}" "$rel" \
+      "/usr/local/lib/labctl/${rel#scripts/labctl.d/}" exact repo
+  done < <(git -C "$REPO" ls-files 'scripts/labctl.d/*.py' | sort)
   box_sync_add_pair clone-guard scripts/lib/clone-guard.sh /usr/local/bin/clone-guard exact repo
   box_sync_add_pair kh-claim scripts/lib/kh-claim.sh /usr/local/bin/kh-claim exact repo
   box_sync_add_pair kh-session scripts/lib/kh-session.sh /usr/local/lib/kh-session.sh exact repo

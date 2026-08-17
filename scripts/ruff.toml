@@ -27,6 +27,13 @@ ignore = ["E401", "E701", "E702", "E741"]
 # already enforced for it) rather than pulling ~700 lines of unrelated
 # behavior-risking modernization into an unrelated change.
 "labctl" = ["I", "UP", "B", "SIM", "W"]
+# labctl.d/*.py are the pure-function modules split out of labctl verbatim
+# (size-exclusions.json split, 2026-08-17): same dense box-CLI style, same
+# byte-for-byte-move requirement (AGENTS.md splits are BEHAVIOUR-PRESERVING
+# pure moves — no reformatting beyond what the formatter demands), so they
+# inherit the labctl exemption above rather than getting rewritten to earn a
+# clean UP031/SIM pass on code that never changed.
+"labctl.d/*.py" = ["I", "UP", "B", "SIM", "W"]
 
 # PAUSED-INVESTIGATION RESEARCH INSTRUMENTS. These are the measurement tools
 # from the five-angle NeXTSTEP absolute-pointer run (docs/lab/HARD-PROBLEM-
