@@ -33,6 +33,9 @@ const POSTER_INDEX = {
   "bbcmicro": {
     "hero": "/posters/bbcmicro/desktop.webp"
   },
+  "beos": {
+    "hero": "/posters/beos/desktop.webp"
+  },
   "c128": {
     "hero": "/posters/c128/desktop.webp"
   },

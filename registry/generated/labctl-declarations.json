@@ -152,6 +152,21 @@
       "udp_port": 54129,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/bbcmicro/sta."
     },
+    "beos": {
+      "dir": "/data/vms/streamhost/stations/beos",
+      "qmp": "/data/vms/streamhost/stations/beos/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54143,
+      "notes": "no exec channel; PS/2 relative pointer (pointerRel); type into the Terminal window through labctl keyboard operations; KDL/kernel debug on serial.log"
+    },
     "c128": {
       "dir": "/data/vms/streamhost/stations/c128",
       "qmp": null,

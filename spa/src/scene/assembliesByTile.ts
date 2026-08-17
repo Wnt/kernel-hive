@@ -395,5 +395,11 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // beos: BeOS R5, the original behind haiku — a beige 2000 tower rather than
+  // haiku's modern DIY case; CRT era, so crtC.
+  beos: {
+    kind: 'towerSetup', body: 'modernTower', monitor: 'crtC',
+    keyboard: 'keyboardG', mouse: 'paramMouseE',
+  },
 } as const satisfies Record<string, Assembly>;
 

@@ -269,6 +269,7 @@ export const OS_FAMILY: Record<string, Family> = {
   helenos: 'generic', serenityos: 'generic', toaruos: 'generic', kolibrios: 'generic',
   tinycore: 'generic', redstar2: 'generic', redstar3: 'generic', postmarketos: 'generic',
   sailfishos: 'generic', templeos: 'generic', qnx: 'generic', haiku: 'generic',
+  beos: 'generic',
   openvms: 'generic',
   alpine: 'linux-tty',
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',

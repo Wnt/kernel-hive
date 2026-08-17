@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (63 of the 65
+//    - transport   : how its LIVE framebuffer texture is obtained (64 of the 66
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -104,7 +104,7 @@ export interface OSBinding {
   bootVideo?: string;
 }
 
-// One entry per OS. 63 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 64 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -186,6 +186,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   tru64:       { osId: 'tru64', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#2f6a9b', eraLabel: '2003 · Tru64 UNIX 5.1B — Alpha' },
   macos753:    { osId: 'macos753', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#8c8a85', eraLabel: '1996 · Mac OS 7.5.3 — Quadra 800', pointerRel: true },
   hpuxvue:     { osId: 'hpuxvue', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#5b7c99', eraLabel: '1996 · HP-UX 10.20 — HP VUE', pointerRel: true },
+  beos:        { osId: 'beos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3466a0', eraLabel: '2000 · BeOS R5 Professional', pointerRel: true }, // BeOS<->Haiku pairing
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

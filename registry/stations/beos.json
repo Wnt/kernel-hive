@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "id": "beos",
+  "era_year": 2000,
+  "stationDir": "beos",
+  "lifecycle": "production",
+  "enabled": true,
+  "listing": {
+    "state": "hidden",
+    "reason": "bring-up 2026-08-17: framebuffer + golden proven, pointer/keyboard await operator eyeball via /os/beos; audio open item",
+    "since": "2026-08-18"
+  },
+  "build": {
+    "rows": [
+      {
+        "order": 61,
+        "prelude": "",
+        "value": {
+          "key": "beos",
+          "script": "tiles/beos.sh",
+          "outputDir": "Beos",
+          "class": "installed",
+          "estimated": "~20-40m",
+          "automation": "partial",
+          "produces": "beos-r5.qcow2 (BFS on MBR, R5 makebootable) -> tile beos-golden.qcow2 + golden",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "beos",
+      "value": {
+        "os": "BeOS R5",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            600,
+            200
+          ]
+        },
+        "kbd": "alt+Escape",
+        "kbd_reset": "Escape",
+        "kbd_note": "Terminal window from UserBootscript echoes keys; unverified via UI",
+        "audio_trigger": null,
+        "note": "1024x768x16 VESA stub desktop; PS/2 relative pointer driven 1:1 via browser pointer-lock (pointerRel), BeOS's own acceleration applies."
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/beos",
+      "qmp": "/data/vms/streamhost/stations/beos/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54143,
+      "notes": "no exec channel; PS/2 relative pointer (pointerRel); type into the Terminal window through labctl keyboard operations; KDL/kernel debug on serial.log"
+    }
+  },
+  "render": {
+    "signalOrder": 61,
+    "stationsManifestOrder": 59,
+    "stationsManifestPrelude": "\n# beos (VMID 143) — BeOS R5 Professional 5.0.3, the original behind haiku.\n#   TCG (R5 #GPs under KVM: unhandled MSRs), pentium3, 1 CPU, 512 MB, IDE\n#   qcow2 on an MBR partition, std VGA at the vesa-settings 1024x768x16, PS/2\n#   relative pointer via the daemon's abs->rel path, ne2k_pci. VERBATIM launcher\n#   with conditional -loadvm golden. Two fixes live INSIDE the volume:\n#   config_manager/isa removed (PnP BIOS call page-faults input_server under\n#   SeaBIOS) and multiprocessor_support disabled (PCI IRQs via the PIC).\n",
+    "bringUpGroup": 0,
+    "bindingOrder": 66,
+    "bindingPrelude": "",
+    "goldenOrder": 59,
+    "actionMapOrder": 33,
+    "bindingComment": "BeOS<->Haiku pairing"
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54143,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 143
+  },
+  "guestDoc": "docs/guests/beos.md",
+  "credentialsRef": "guest/beos",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#3466a0",
+    "eraLabel": "2000 · BeOS R5 Professional",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "beos",
+    "displayName": "BeOS R5",
+    "year": 2000,
+    "lineage": "Be Inc. BeOS",
+    "arch": "i386",
+    "ramMB": 512,
+    "era": "2000s",
+    "accent": "#3466a0",
+    "eraSoftware": [
+      "Tracker",
+      "Deskbar",
+      "NetPositive",
+      "MediaPlayer",
+      "Terminal"
+    ],
+    "periodBrowser": "NetPositive",
+    "iconicApps": [
+      "Tracker",
+      "Deskbar",
+      "NetPositive",
+      "SoundPlay"
+    ],
+    "blurb": "Be Inc.'s BeOS R5 (2000) — the multithreaded media OS behind Haiku's yellow tabs, running as it shipped.",
+    "notes": "Live streamhost tile. BeOS R5 Professional 5.0.3 installed from the archive.org Pro CD onto an MBR BFS partition; TCG-only (KVM #GP). Archetype: beige-tower-crt; a BeBox would be the ideal model but R5 x86 shipped on commodity PCs."
+  },
+  "notes": [
+    "slot 143/UDP 54143 reserved by stations-registry.py new (2026-08-17)",
+    "dark-launched during bring-up via scripts/dev/darklaunch-station.py from sandbox beos-r5"
+  ],
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "beos",
+      "SH_QMP": "/data/vms/streamhost/stations/beos/qmp.sock",
+      "SH_PORT": "54143",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/beos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/beos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_POINTER": "rel",
+      "SH_ABS_PACE_MS": "30",
+      "SH_AUDIO_BITRATE": "96000"
+    },
+    "vmidLabel": 143,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "beos",
+        "--vmid",
+        "143",
+        "--udp",
+        "54143",
+        "--pointer",
+        "rel",
+        "--abs-pace-ms",
+        "30",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/beos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/beos/station.env.fixture"
+      ],
+      "deviceSetId": "beos-r5-tcg-p3-std-1024x768",
+      "launcher": "streamhost/stations/beos/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/beos/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "tcg",
+      "cpu": "pentium3",
+      "memoryMB": 512,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "qemu-system-x86_64",
+        "-name streamhost-beos",
+        "-accel tcg -m 512 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu pentium3",
+        "-rtc base=localtime",
+        "-drive file=$D/beos-golden.qcow2,format=qcow2,if=ide,index=0 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on",
+        "-netdev user,id=n0 -device ne2k_pci,netdev=n0",
+        "-serial file:$D/serial.log",
+        "$LOADVM",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off",
+        "-pidfile $D/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "tcg",
+        "cpu": "pentium3",
+        "memoryMB": 512,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "qemu-system-x86_64",
+          "-name streamhost-beos",
+          "-accel tcg -m 512 -smp 1",
+          "-machine pc-i440fx-11.0 -cpu pentium3",
+          "-rtc base=localtime",
+          "-drive file=$D/beos-golden.qcow2,format=qcow2,if=ide,index=0 -boot c",
+          "-vga std",
+          "-display dbus,p2p=on",
+          "-netdev user,id=n0 -device ne2k_pci,netdev=n0",
+          "-serial file:$D/serial.log",
+          "$LOADVM",
+          "-qmp unix:$D/qmp.sock,server=on,wait=off",
+          "-pidfile $D/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher is the deployed launcher; golden baked with this device set"
+      }
+    },
+    "bringUpOrder": 66
+  },
+  "reset": {
+    "stationDir": "beos",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "BeOS R5 1024x768x16 desktop, Deskbar top-right, Tracker, one Terminal window (UserBootscript) focused."
+  },
+  "migrationExceptions": []
+}
