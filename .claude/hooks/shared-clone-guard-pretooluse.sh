@@ -16,13 +16,16 @@
 #     (/data/vms/sandbox/<name>/repo) or an agent worktree (.claude/worktrees/);
 #   * … unless the path is under .claude/ (hooks/settings are per-clone) or is
 #     gitignored scratch the repo never sees (registry/local.env, build/);
-#   * … unless KH_ALLOW_SHARED_EDIT=1 (a deliberate orchestrator fix, or the
-#     operator working solo — say so in the commit).
+#   * … unless the operator said so: the phrase "use shared clone" means
+#     `touch .claude/shared-clone-ok` (gitignored, per clone) and work in
+#     place until "back to sandboxes" removes it; here.sh shows it while set.
+#     KH_ALLOW_SHARED_EDIT=1 is the same switch as an env var.
 # Bash heredocs are not caught; the pre-commit path and here.sh's "dirty"
 # line are the second and third nets.
 set -uo pipefail
 
 [ "${KH_ALLOW_SHARED_EDIT:-0}" = 1 ] && exit 0
+[ -e "${CLAUDE_PROJECT_DIR:-.}/.claude/shared-clone-ok" ] && exit 0
 PAYLOAD="$(cat 2>/dev/null || true)"
 export PAYLOAD
 python3 <<'PY'

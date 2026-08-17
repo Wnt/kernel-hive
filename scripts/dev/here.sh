@@ -32,8 +32,13 @@ ab="$(git -C "$REPO" rev-list --left-right --count origin/main...HEAD 2>/dev/nul
 printf 'vs main   %s\n' "${ab:-?}"
 case "$REPO" in
   "$SANDBOX"/*) ;;
-  *) [ "$(git -C "$REPO" rev-parse --abbrev-ref HEAD 2>/dev/null)" = main ] &&
-    echo "note      you are on main in the shared clone — for real work: scripts/dev/wt.sh new <name>" ;;
+  *)
+    if [ -e "$REPO/.claude/shared-clone-ok" ]; then
+      echo "note      SHARED-CLONE EDITS ALLOWED (.claude/shared-clone-ok, operator said 'use shared clone'; 'back to sandboxes' removes it)"
+    elif [ "$(git -C "$REPO" rev-parse --abbrev-ref HEAD 2>/dev/null)" = main ]; then
+      echo "note      shared clone is land-only — for work: scripts/dev/wt.sh new <name>  (operator: 'use shared clone' lifts this)"
+    fi
+    ;;
 esac
 git -C "$REPO" log -3 --format='  %h %<(60,trunc)%s %cr' 2>/dev/null
 

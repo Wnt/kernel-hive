@@ -51,8 +51,9 @@ own stack**, never a workaround on someone else's. **Every new task starts
 with `wt.sh new`, including a follow-up after `wt.sh rm`** — the shared clone
 (`/home/wnt/kernel-hive`, or wherever `here.sh` says "shared clone") holds
 NO uncommitted edits, ever: it is where merges land and nothing else (an
-Edit/Write there is refused by the harness hook; `KH_ALLOW_SHARED_EDIT=1`
-overrides for a deliberate orchestrator fix). Land from the sandbox: commit,
+Edit/Write there is refused by the harness hook). The operator's phrase
+**"use shared clone"** lifts that for this clone: `touch .claude/shared-clone-ok`
+and work in place; **"back to sandboxes"** = `rm` it. `here.sh` shows it while set. Land from the sandbox: commit,
 `git push origin <name>`, then either the orchestrator merges, or you do
 `git fetch origin && git merge --ff-only origin/main` (or a `--no-ff` merge)
 in the sandbox and `git push origin HEAD:main`, then
