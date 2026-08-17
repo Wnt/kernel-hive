@@ -479,9 +479,10 @@ emit postmarketos \
 
 # c64 (VMID 214) — VICE x64sc -> Commodore 64 -> GEOS 2.0 deskTop. ssh 5814.
 emit c64 \
-  --tile c64 --vmid 214 --udp 54114 --pointer rel --cursor-scale 1.0 \
-  --cursor-off-x 0 --cursor-off-y 0 --abs-pace-ms 30 --audio on --fps 60 \
-  --launcher-file "$T/c64/qemu-streamhost.sh" --env-append-file \
+  --tile c64 --udp 54114 --x11 --x11-display :57 --capture shm --pointer \
+  none --input-backend vicesock --audio on --fps 60 --x11-runtime-file \
+  "$T/vice-native/x11-runtime.sh" --aux-file \
+  "$T/vice-native/us-layout.keysyms" --env-append-file \
   "$T/c64/station.env.fixture"
 
 # atarist (VMID 216) — hatari -> Atari ST -> EmuTOS GEM desktop. ssh 5816.
@@ -638,9 +639,10 @@ emit plus4 \
   "$T/vice-native/us-layout.keysyms" --env-append-file \
   "$T/plus4/station.env.fixture"
 emit c128 \
-  --tile c128 --vmid 223 --udp 54087 --pointer none --input-backend disabled \
-  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 \
-  --launcher-file "$T/c128/qemu-streamhost.sh" --env-append-file \
+  --tile c128 --udp 54087 --x11 --x11-display :56 --capture shm --pointer \
+  none --input-backend vicesock --audio on --fps 60 --x11-runtime-file \
+  "$T/vice-native/x11-runtime.sh" --aux-file \
+  "$T/vice-native/us-layout.keysyms" --env-append-file \
   "$T/c128/station.env.fixture"
 
 # pet2001 — host-native VICE 3.10.0 xpet -model 2001 (Commodore PET 2001, 1977) -> COMMODORE BASIC. De-bridged 2026-08-16: no QEMU, no guest, no X, no ssh. Keyboard-only. Same binary as cbm8032, different model.

@@ -28,18 +28,18 @@
   "operator": {
     "labctl": {
       "dir": "/data/vms/streamhost/stations/c64",
-      "qmp": "/data/vms/streamhost/stations/c64/qmp.sock",
-      "pointer_mode": "rel",
+      "qmp": null,
+      "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5814,
-      "exec_port": 5814,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54114,
-      "notes": "exec: labctl exec c64 \"<cmd>\" (ssh root@:5814, key bridge_key)"
+      "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/c64/sta/golden.vsf. KEYBOARD-ONLY: the bridged station's COMM 1351 mouse is NOT wired on this path — vice_sock.rs and vicectl both lack a pointer verb — so drive GEOS with labctl type/key and read it with labctl shot."
     }
   },
   "render": {
@@ -60,16 +60,17 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "method": "qemu-ps2-relative",
+      "transport": "none",
+      "method": "none",
       "absolute": false,
-      "present": true,
-      "device": "ps2-mouse",
+      "present": false,
+      "device": "ioport-keyboard",
       "scale": 1.0,
       "offset": [
         0,
         0
-      ]
+      ],
+      "backend": "vicesock"
     },
     "slot": 114
   },
@@ -78,102 +79,60 @@
   "runtime": {
     "stationEnv": {
       "SH_STATION": "c64",
-      "SH_QMP": "/data/vms/streamhost/stations/c64/qmp.sock",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "vicesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":57",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/c64/c64_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/c64/fb.shm",
       "SH_PORT": "54114",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
-      "SH_POINTER": "rel",
-      "SH_CURSOR_SCALE": "1.0",
-      "SH_CURSOR_OFF_X": "0",
-      "SH_CURSOR_OFF_Y": "0",
-      "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/c64/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/c64/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_ABS_PACE_MS": "30"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 214,
-    "qemu": {
-      "mode": "verbatim",
+    "bringUpOrder": 24,
+    "x11": {
+      "display": ":57",
+      "geometry": "768x544x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/vice-native/x11-runtime.sh",
+      "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
         "c64",
-        "--vmid",
-        "214",
         "--udp",
         "54114",
+        "--x11",
+        "--x11-display",
+        ":57",
+        "--capture",
+        "shm",
         "--pointer",
-        "rel",
-        "--cursor-scale",
-        "1.0",
-        "--cursor-off-x",
-        "0",
-        "--cursor-off-y",
-        "0",
-        "--abs-pace-ms",
-        "30",
+        "none",
+        "--input-backend",
+        "vicesock",
         "--audio",
         "on",
         "--fps",
         "60",
-        "--launcher-file",
-        "$T/c64/qemu-streamhost.sh",
+        "--x11-runtime-file",
+        "$T/vice-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/vice-native/us-layout.keysyms",
         "--env-append-file",
         "$T/c64/station.env.fixture"
       ],
-      "deviceSetId": "c64-current",
-      "launcher": "streamhost/stations/c64/qemu-streamhost.sh",
-      "envFixture": "streamhost/stations/c64/station.env.fixture",
-      "binary": "qemu-system-x86_64",
-      "accel": "kvm",
-      "cpu": "host",
-      "memoryMB": 1536,
-      "smp": 2,
-      "vga": "std",
-      "deviceSetSummary": [
-        "-name streamhost-c64",
-        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
-        "-rtc base=localtime",
-        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
-        "-vga std",
-        "-display dbus,p2p=on,audiodev=snd0",
-        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-        "-usb",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5814-:22 -device e1000,netdev=n0",
-        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
-        "-pidfile $BASE/qemu.pid"
-      ],
-      "sourceDeviceSet": {
-        "binary": "qemu-system-x86_64",
-        "machine": "pc-i440fx-11.0,vmport=off",
-        "accel": "kvm",
-        "cpu": "host",
-        "memoryMB": 1536,
-        "smp": 2,
-        "vga": "std",
-        "deviceSetSummary": [
-          "-name streamhost-c64",
-          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
-          "-rtc base=localtime",
-          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
-          "-vga std",
-          "-display dbus,p2p=on,audiodev=snd0",
-          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-          "-usb",
-          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5814-:22 -device e1000,netdev=n0",
-          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
-          "-pidfile $BASE/qemu.pid"
-        ]
-      },
-      "machine": "pc-i440fx-11.0,vmport=off",
-      "launcherParity": {
-        "status": "semantic-identical",
-        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the running/golden-compatible QEMU 11 machine"
-      }
-    },
-    "bringUpOrder": 24
+      "auxFiles": [
+        "streamhost/stations/vice-native/us-layout.keysyms",
+        "streamhost/stations/c64/station.env.fixture"
+      ]
+    }
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
@@ -206,14 +165,14 @@
       "the 1541 disk drive"
     ],
     "blurb": "A full windows-icons-menus desktop (GEOS) running on a 1 MHz, 64 KB home computer — the 8-bit era’s answer to the Macintosh.",
-    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x64sc) full-screen emulating a C64 that auto-boots the GEOS 2.0 deskTop; streamhost captures the Linux framebuffer + AC97 audio (the C64 SID routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke C64 breadbin + 1541 + CRT). See streamhost/docs/BRIDGE.md."
+    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x64sc) full-screen emulating a C64 that auto-boots the GEOS 2.0 deskTop; streamhost captures the Linux framebuffer + AC97 audio (the C64 SID routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke C64 breadbin + 1541 + CRT). See streamhost/docs/BRIDGE.md. HOST-NATIVE SINCE 2026-08-17 (de-bridging campaign): VICE x64sc runs on the host, headless — no QEMU, no guest Debian, no X — and the scene is restored from a VICE checkpoint rather than a QEMU snapshot. ONE CAPABILITY IS NOT BACK YET: the bridged exhibit had a COMM 1351 mouse on control port 1, and the host-native input path has no pointer verb at all, so this station is KEYBOARD-ONLY for now and the registry declares pointer.present false. GEOS still runs; it is driven from the keyboard. Wiring the mouse is scoped follow-up work (the browser sends absolute coordinates, the 1351 is a proportional device VICE drives from relative host motion). The prose above still describes the retired bridge tile and is rewritten with the other nine."
   },
   "reset": {
     "stationDir": "c64",
     "pointer": "rel",
     "touch": false,
-    "resetMode": "loadvm",
-    "snapshot": "golden",
+    "resetMode": "relaunch",
+    "snapshot": null,
     "mouse": "PASS",
     "keyboard": "UNVERIFIED",
     "fixture": "C64 GEOS 2.0 deskTop with COMM 1351 active in VICE x64sc; browser absolute coordinates translated to tablet-free PS/2 relative motion (vmport=off); cursor tracking and CONFIGURE-icon click certified 2026-07-16."
