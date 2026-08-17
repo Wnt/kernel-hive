@@ -84,6 +84,53 @@ class Qmp:
         with open(p, "rb") as fh:
             return hashlib.md5(fh.read()).hexdigest()
 
+    def fb_region_hash(self, x, y, w, h):
+        """Hash ONE RECTANGLE of the framebuffer.
+
+        Whole-frame hashing is a poor liveness signal for a game: it changes
+        when any pixel does, and it goes static both when the app is wedged AND
+        when the app is simply idle (a skier who has stopped, a crash screen).
+        Hashing the HUD instead reads the game's OWN COUNTERS — SkiFree's
+        Dist/Speed advance whenever its logic is running — which separates
+        "wedged" from "nothing is moving on screen".
+        """
+        p = os.path.join(self.work, ".probe-shot.ppm")
+        with contextlib.suppress(OSError):
+            os.unlink(p)
+        self.cmd("screendump", filename=p)
+        for _ in range(60):
+            if os.path.exists(p) and os.path.getsize(p) > 0:
+                break
+            time.sleep(0.05)
+        with open(p, "rb") as fh:
+            data = fh.read()
+        # P6 header: magic, width, height, maxval — each possibly separated by
+        # arbitrary whitespace, with '#' comment lines allowed between them.
+        pos, fields = 0, []
+        while len(fields) < 4:
+            while pos < len(data) and data[pos : pos + 1].isspace():
+                pos += 1
+            if data[pos : pos + 1] == b"#":
+                while pos < len(data) and data[pos : pos + 1] != b"\n":
+                    pos += 1
+                continue
+            start = pos
+            while pos < len(data) and not data[pos : pos + 1].isspace():
+                pos += 1
+            fields.append(data[start:pos])
+        pos += 1  # single whitespace byte after maxval
+        (
+            fw,
+            fh_,
+        ) = int(fields[1]), int(fields[2])
+        px = data[pos:]
+        x2, y2 = min(x + w, fw), min(y + h, fh_)
+        out = bytearray()
+        for row in range(max(0, y), max(0, y2)):
+            off = (row * fw + max(0, x)) * 3
+            out += px[off : off + (x2 - max(0, x)) * 3]
+        return hashlib.md5(bytes(out)).hexdigest()
+
     def running(self):
         return bool(self.cmd("query-status").get("running"))
 
