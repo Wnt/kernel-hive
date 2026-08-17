@@ -279,6 +279,16 @@ every boot. `su` to the account works, which is why the browser can run as it.
 Registering a PAK, or starting the session by another route, is an operator
 decision and is not done here — `Dtlogin*autoLogin` is back to `root`.
 
+**The Virtual OS Museum hit the same wall and did not solve it either** — its
+Tru64 5.1B image logs the same `Can't find an OSF-BASE ...` line, registers no
+PAK, has no autologin at all, and is used as root at the CDE greeter (checked
+inside their media 2026-08-17; see
+[`../lab/research/vom-reference.md`](../lab/research/vom-reference.md#tru64-and-the-osf-base-pak--they-did-not-solve-it-either)).
+One transferable detail from their setup: they run **AlphaVM**, which exposes
+the machine's **system serial number** as a config knob — the field a Tru64 PAK
+binds to. es40 has no such knob, so a PAK obtained for some other serial would
+not validate here without one.
+
 ## es40 savestates: this station's reset
 
 The station restores an es40 savestate on every launch — see
