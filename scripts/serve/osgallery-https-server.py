@@ -70,6 +70,7 @@ Env (all optional except paths):
 """
 
 import contextlib
+import email.utils
 import hmac
 import json
 import os
@@ -379,8 +380,42 @@ def load_tiles():
         return {}
 
 
+# Vite content-hashes its bundle output as <name>-<8+ chars>.<ext>; the
+# generated icons under assets/generated/ are NOT hashed and must not be immutable.
+_HASHED_ASSET = re.compile(r"^/(?:staging/[a-z0-9-]{1,24}/)?assets/[^/]+-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$")
+
+
+def _static_cache_policy(target: Path, path: str):
+    """Cache-Control for a static file, or None for "no-store" (index.html:
+    a redeploy must show on the next load, so it is never cached at all)."""
+    if target.name == "index.html":
+        return None
+    if _HASHED_ASSET.match(path):
+        return "public, max-age=31536000, immutable"
+    if target.suffix.lower() == ".json":
+        # Rendered runtime documents (gallery-manifest, poster-docs, boot/index):
+        # reuse only after a revalidation, so a registry edit is live on the
+        # next load — as a 304 when nothing changed.
+        return "no-cache"
+    # Poster thumbnails, boot-replay clips, generated icons: serve straight from
+    # cache for a minute, then show the cached copy while revalidating in the
+    # background — the grid <-> station round trip never waits on the network,
+    # and a recaptured poster is on screen within a load or two.
+    return "public, max-age=60, stale-while-revalidate=600"
+
+
 class H(BaseHTTPRequestHandler):
     server_version = "osgallery-https/1.0"
+    # HTTP/1.1 = persistent connections. The grid fetches 60+ poster thumbnails
+    # and a station page a dozen hashed assets; under HTTP/1.0 (the stdlib
+    # default) every one of those was a fresh TCP + TLS handshake, which is
+    # what made the grid visibly reload on every navigation. Every response
+    # this server writes is Content-Length framed (_send, the 206/416 paths,
+    # auth _reply), which is what keep-alive requires; a request whose body we
+    # may not have consumed closes the connection instead (do_POST / do_GET).
+    protocol_version = "HTTP/1.1"
+    # Reap idle keep-alive connections so parked threads don't accumulate.
+    timeout = 75
     # Overridden by PublicH. Gates the auth check, the signaling rewrite and CORS.
     public = False
 
@@ -392,13 +427,15 @@ class H(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 
-    def _send(self, code, body, ctype, cache=True):
+    def _send(self, code, body, ctype, cache=True, extra=None):
         if isinstance(body, str):
             body = body.encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self._cors()
+        for k, v in (extra or {}).items():
+            self.send_header(k, v)
         # Permissions-Policy: explicitly grant the Fullscreen API to this origin.
         # The top-level document is allowed to use fullscreen by default, but
         # stating it makes the grant self-documenting and immune to any future
@@ -505,6 +542,11 @@ class H(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = unquote(urlparse(self.path).path)
+        # POSTs are rare (auth, one clientlog batch, restore, WebRTC offer) and
+        # several branches reply before reading the body — under keep-alive an
+        # unread body would be parsed as the NEXT request. Close after every
+        # POST; only the GET-heavy static/thumbnail traffic needs persistence.
+        self.close_connection = True
 
         if self.public:
             if auth_routes.dispatch(self, path, "POST", AUTH, PUBLIC_ORIGIN):
@@ -686,6 +728,10 @@ class H(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = unquote(urlparse(self.path).path)
+        # A GET carrying a body is never read here; don't let it poison the
+        # keep-alive stream (see do_POST).
+        if self.headers.get("Content-Length") or self.headers.get("Transfer-Encoding"):
+            self.close_connection = True
 
         if self.public:
             if auth_routes.dispatch(self, path, "GET", AUTH, PUBLIC_ORIGIN):
@@ -845,6 +891,20 @@ class H(BaseHTTPRequestHandler):
         ctype = MIME.get(target.suffix, "application/octet-stream")
         return self._send(200, target.read_bytes(), ctype, cache=False)
 
+    def _not_modified(self, etag, mtime):
+        """Conditional GET: True when the client's cached copy is still current."""
+        inm = self.headers.get("If-None-Match")
+        if inm:
+            return etag in [t.strip() for t in inm.split(",")] or inm.strip() == "*"
+        ims = self.headers.get("If-Modified-Since")
+        if ims:
+            try:
+                since = email.utils.parsedate_to_datetime(ims).timestamp()
+            except (TypeError, ValueError, OverflowError):
+                return False
+            return int(mtime) <= int(since)
+        return False
+
     def _serve_static(self, path):
         # The auth pages carry no <link rel=icon>, so browsers ask for the
         # conventional /favicon.ico (already OPEN on the public gate); answer it
@@ -892,14 +952,30 @@ class H(BaseHTTPRequestHandler):
                 return self._send(404, "not found\n", "text/plain")
 
         ctype = MIME.get(target.suffix.lower(), "application/octet-stream")
-        # index.html must never be cached (so redeploys show up); assets are
-        # content-hashed by vite so they can cache hard.
-        cache = target.name != "index.html"
 
         try:
-            size = target.stat().st_size
+            st = target.stat()
         except Exception:
             return self._send(404, "not found\n", "text/plain")
+        size = st.st_size
+        # Validators + an EXPLICIT policy for every static file. Before this,
+        # static responses carried no Cache-Control / Last-Modified / ETag at
+        # all, so browsers could neither reuse nor revalidate them — every
+        # poster thumbnail was a full 200 on every grid visit. (Adding a
+        # Last-Modified without a Cache-Control would be worse: heuristic
+        # freshness would let a re-rendered manifest or recaptured poster go
+        # stale for hours.)
+        etag = f'"{st.st_mtime_ns:x}-{size:x}"'
+        last_mod = email.utils.formatdate(st.st_mtime, usegmt=True)
+        cache_ctl = _static_cache_policy(target, path)
+        if cache_ctl is not None and self._not_modified(etag, st.st_mtime):
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", cache_ctl)
+            self._cors()
+            self.end_headers()
+            return
+        extra = {"ETag": etag, "Last-Modified": last_mod, "Cache-Control": cache_ctl} if cache_ctl is not None else {}
 
         # HTTP Range (single "bytes=start-end") — lets <video> scrub/seek without
         # pulling the whole clip. Absent/malformed/multi-range headers fall
@@ -910,7 +986,7 @@ class H(BaseHTTPRequestHandler):
                 data = target.read_bytes()
             except Exception:
                 return self._send(404, "not found\n", "text/plain")
-            return self._send(200, data, ctype, cache=cache)
+            return self._send(200, data, ctype, cache=cache_ctl is not None, extra=extra)
 
         start, end = rng  # inclusive offsets
         if start > end or start >= size:
@@ -937,8 +1013,10 @@ class H(BaseHTTPRequestHandler):
         self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
         self.send_header("Accept-Ranges", "bytes")
         self._cors()
-        if not cache:
+        if cache_ctl is None:
             self.send_header("Cache-Control", "no-store")
+        for k, v in extra.items():
+            self.send_header(k, v)
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(data)
