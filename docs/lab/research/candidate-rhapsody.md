@@ -218,26 +218,41 @@ treat as the working prior until disproven):
 ## Effort, risk, open questions
 
 **Effort/risk: high, comparable to or above NeXTSTEP 3.3** (which the catalog
-already scores MV 5, its top difficulty tier) — Rhapsody adds an extra layer
-of uncertainty on top of NeXTSTEP's known fussiness: media is unconfirmed to
-even exist in an accessible preservation form, and there is no prior art in
-this repo (no catalog entry, no independently-confirmed vom-repo hint, no
-prior gotcha writeup) to lean on beyond the NeXTSTEP 3.3 analogy used
-throughout this note. **Risk is gated first on whether obtainable Intel media
-exists at all** — everything else is downstream of that one fact.
+already scores MV 5, its top difficulty tier) — Rhapsody adds two extra
+layers of uncertainty on top of NeXTSTEP's known fussiness. First, media is
+unconfirmed to even exist in an accessible preservation form, and there is no
+prior art in this repo (no catalog entry, no prior gotcha writeup) beyond the
+NeXTSTEP 3.3 analogy and the Virtual OS Museum's install used throughout this
+note. Second, and now confirmed rather than guessed: the only working
+reference runs on a 2006-era QEMU with no version override, so getting a
+modern build to boot this guest at all is a real risk, not a formality — it
+could turn into its own sub-project (bisecting QEMU versions, or building an
+old one) before the rest of the recipe is even testable. **Risk is gated
+first on whether obtainable Intel media exists at all, and second on whether
+any QEMU newer than the museum's ancient default can boot it** — everything
+else is downstream of those two facts.
 
 **Open questions, in priority order:**
 
-1. Does a bootable Rhapsody 5.1 (or DR2) **Intel** install image actually
-   exist in an archive.org / WinWorld holding? This is unconfirmed and gates
+1. Does a bootable Rhapsody 5.1 DR2 **Intel** install image actually exist in
+   an archive.org / WinWorld holding? This is unconfirmed and gates
    everything else.
-2. If found, does it boot at all under `qemu-system-i386` with a
-   NeXTSTEP-3.3-style device set, or does it need a materially different
-   machine/driver configuration?
+2. **What is the *newest* QEMU that boots Rhapsody DR2?** The only confirmed
+   fact is that the collection's 0.8.2-era default works; that is not the
+   same as 0.8.2 being *required* — a materially newer build may well boot it
+   too, and finding that ceiling (rather than assuming the oldest known-good
+   version is the only option) is the real question. This needs an actual
+   boot ladder to answer, working down from a current QEMU.
+3. If media and a working QEMU version are both in hand, does it boot at all
+   under `qemu-system-i386` with the minimal, serial-mouse device set implied
+   by the museum's configuration, or does it need something materially
+   different?
 
 **Fastest single experiment to resolve the most uncertainty**: do the media
 search (archive.org + WinWorld, ~15 minutes) and, if an image turns up,
-attempt one raw boot to the installer's first graphical (or text) screen under
-the NeXTSTEP-3.3-derived QEMU command line above, with no attempt at a full
-install. That one boot attempt answers "is this even reachable with known
-tooling" before any further recipe tuning is worth doing.
+attempt one raw boot to the installer's first graphical (or text) screen —
+first under whatever QEMU is current on this box, then, if that fails, under
+progressively older pinned builds toward the museum's 0.8.2 reference — with
+no attempt at a full install. That one boot ladder answers both "is this even
+reachable with known tooling" and "which QEMU version does it take" before
+any further recipe tuning is worth doing.
