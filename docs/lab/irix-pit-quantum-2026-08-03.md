@@ -10,7 +10,7 @@ one R4600, 256 MB, IRIX 6.5.22 + 4Dwm, seed `irix65-apps-v3.chd`
 (`368fcfb9b56fb4165a4e456238dc1a18`). Production binary
 `0db273009ecd1d41634b5527c8fa6be8`. The live `streamhost@irix` service was
 STOPPED for the whole of this work and every measurement is a clone under
-`/data/vms/soltest/irix-pit-4c8e/`.
+`/data/vms/sandbox/irix-pit-4c8e/`.
 
 ## The defect
 

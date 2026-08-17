@@ -113,7 +113,7 @@ babysit, and one guest OS from the update surface.
 ## 4. Per-station procedure (the template `dragon32` will refine)
 
 1. **Clone first, never the station.** Namespaced rig under
-   `/data/vms/soltest/debridge-<tile>/`, arm-B layout. The live station keeps
+   `/data/vms/sandbox/debridge-<tile>/`, arm-B layout. The live station keeps
    serving until step 6.
 2. Host-native build: generalize `build-mame-atarist.sh` into
    `build-mame-native.sh <tile>` (subtarget/driver/patches from a per-station

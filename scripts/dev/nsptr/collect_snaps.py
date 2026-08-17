@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 
-sys.path.insert(0, "/data/vms/soltest/NSPTR-closed-loop/tools")
+sys.path.insert(0, "/data/vms/sandbox/NSPTR-closed-loop/tools")
 from nsctl import Qmp, shot_locate, slam  # noqa: E402
 
 SSH = "/root/nsclone-ssh.sh"

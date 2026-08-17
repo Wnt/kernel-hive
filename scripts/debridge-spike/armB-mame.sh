@@ -6,7 +6,7 @@
 # over the ctlsock control socket (SH_INPUT_BACKEND=mamesock). This is the irix
 # station's shape, minus the parts that are IRIX's own.
 #
-# NOT A TILE. Namespaced under /data/vms/soltest/. Kill ONLY by pidfile, via
+# NOT A TILE. Namespaced under /data/vms/sandbox/. Kill ONLY by pidfile, via
 # `clone-guard kill-pidfile`.
 #
 # The env that is NOT a free choice:
@@ -35,9 +35,9 @@
 #   -throttle -frameskip 0   identical to arm A, for the same reasons.
 #   MAME_CTL_MOVE_STEP/WINDOW the emulated mouse's own delivery rate; see below.
 set -e
-D=/data/vms/soltest/debridge-7f3a/armB
+D=/data/vms/sandbox/debridge-7f3a/armB
 M=/data/vms/streamhost/assets/atarist-mame/mame/atarist
-ROMS=/data/vms/soltest/BUILD-atarist-mame/roms
+ROMS=/data/vms/sandbox/BUILD-atarist-mame/roms
 mkdir -p "$D/cfg" "$D/nvram"
 printf 'skip_warnings 1\n' >"$D/ui.ini"
 

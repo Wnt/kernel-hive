@@ -72,7 +72,7 @@
 # ---- configuration --------------------------------------------------------
 # Space-separated prefixes a chroot root may live under. Override ONLY to point
 # at a different sandbox; the point is that a "root" can never be a host dir.
-CHROOT_GUARD_ALLOWED_ROOTS="${CHROOT_GUARD_ALLOWED_ROOTS:-/data/vms/soltest /data/vms/chroots /var/tmp /tmp}"
+CHROOT_GUARD_ALLOWED_ROOTS="${CHROOT_GUARD_ALLOWED_ROOTS:-/data/vms/sandbox /data/vms/chroots /var/tmp /tmp}"
 
 # ---- logging --------------------------------------------------------------
 _chg_err() { printf 'chroot-guard: REFUSED: %s\n' "$*" >&2; }

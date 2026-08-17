@@ -182,7 +182,7 @@ D="$TILES_ROOT/$TILE"
 OVERLAY="$D/overlay.qcow2"
 BAK="$OVERLAY.bookworm-bak"
 FAILED="$OVERLAY.trixie-failed"
-STAGE="/data/vms/soltest/migrate-$TILE-trixie"
+STAGE="/data/vms/sandbox/migrate-$TILE-trixie"
 BUILD_LOG="$STAGE/build.log"
 EVIDENCE="${MIGRATE_EVIDENCE:-${TMPDIR:-/tmp}/migrate-tile/$TILE}"
 

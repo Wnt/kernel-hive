@@ -4,7 +4,7 @@
 import sys
 import time
 
-sys.path.insert(0, "/data/vms/soltest/NSPTR-closed-loop/tools")
+sys.path.insert(0, "/data/vms/sandbox/NSPTR-closed-loop/tools")
 from ctrl import Loop  # noqa: E402
 from nsctl import Agent, Qmp, locate_ppm, read_ppm  # noqa: E402
 
@@ -49,8 +49,8 @@ for i, (tx, ty) in enumerate(TARGETS):
     errs.append(e)
     extra = ""
     if i % max(1, len(TARGETS) // fb_checks) == 0:
-        q.dump("/data/vms/soltest/NSPTR-closed-loop/acc.ppm")
-        hits = locate_ppm(read_ppm("/data/vms/soltest/NSPTR-closed-loop/acc.ppm"))
+        q.dump("/data/vms/sandbox/NSPTR-closed-loop/acc.ppm")
+        hits = locate_ppm(read_ppm("/data/vms/sandbox/NSPTR-closed-loop/acc.ppm"))
         extra = "  fb={}{}".format(hits, "" if hits == [p] else "  <-- FB DISAGREES")
     print(
         "  %-2d (%4d,%4d)  (%4d,%4d)  %-4d  %-5d  %-6.1f%s" % (i, tx, ty, p[0], p[1], e, len(trace) - 1, ms, extra),

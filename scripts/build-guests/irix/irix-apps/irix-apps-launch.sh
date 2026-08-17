@@ -4,18 +4,18 @@
 #
 #   irix-apps-launch.sh [iso-basename]      e.g. irix-apps-launch.sh apps2003.iso
 #
-# Namespaced to /data/vms/soltest/irix-apps (own pidfiles, own command file), and
+# Namespaced to /data/vms/sandbox/irix-apps (own pidfiles, own command file), and
 # its X display is ALLOCATED by xvfb-alloc rather than hand-picked: a rig can no
 # longer half-start on a display another rig owns and silently screenshot it.
 # The display it got is printed and recorded in $D/display (irix-apps-shot.sh
 # reads it).
 # It never references the production stations tree and never opens the golden
-# /data/vms/soltest/irix-mame/irix65.chd for writing.
+# /data/vms/sandbox/irix-mame/irix65.chd for writing.
 set -u
 
-D="${IRIX_APPS_DIR:-/data/vms/soltest/irix-apps}"
-ASSETS="${IRIX_ASSETS:-/data/vms/soltest/irix-mame}" # roms/, uicfg/, nvram/ (read-only)
-MAME_BIN="${IRIX_MAME:-/data/vms/soltest/mame-build/mame/sgi}"
+D="${IRIX_APPS_DIR:-/data/vms/sandbox/irix-apps}"
+ASSETS="${IRIX_ASSETS:-/data/vms/sandbox/irix-mame}" # roms/, uicfg/, nvram/ (read-only)
+MAME_BIN="${IRIX_MAME:-/data/vms/sandbox/mame-build/mame/sgi}"
 
 GEOM="${IRIX_GEOMETRY:-1280x1024x24}"
 CHD="${IRIX_APPS_CHD:-$D/work.chd}"
@@ -35,7 +35,7 @@ source "$XVFB_ALLOC_LIB" || {
   echo "FATAL: $CHD missing - run make-work-chd.sh first" >&2
   exit 1
 }
-case "$CHD" in /data/vms/soltest/*) ;; *)
+case "$CHD" in /data/vms/sandbox/*) ;; *)
   echo "FATAL: refusing to write outside the clone root: $CHD" >&2
   exit 1
   ;;

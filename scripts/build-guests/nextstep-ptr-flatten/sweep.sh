@@ -4,7 +4,7 @@
 # cursor position off the framebuffer.
 # shellcheck disable=SC2086  # $FLAT/$D/$E/$TAG are unquoted on purpose (optional flags, no spaces)
 # shellcheck source=/dev/null  # box-only rig library, not in the repo
-source /data/vms/soltest/NSPTR-flatten-accel/lib.sh
+source /data/vms/sandbox/NSPTR-flatten-accel/lib.sh
 S=$1
 N=$2
 T=$3

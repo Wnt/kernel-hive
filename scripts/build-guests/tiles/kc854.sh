@@ -486,7 +486,7 @@ fi
 # the wait in place the connection succeeds and `pgrep -x kc85` then genuinely
 # finds no MAME, on a boot whose framebuffer this script had just accepted as
 # CAOS-ready (bright 27868, nag-red 0). So there is a real second-cold-boot
-# regression here, and it needs its own investigation on a soltest clone — see
+# regression here, and it needs its own investigation on a sandbox clone — see
 # docs/lab/BRIDGE-TRIXIE-MIGRATION.md, wave 2. This helper only makes the
 # failure honest about which layer failed.
 wait_for_ssh() {

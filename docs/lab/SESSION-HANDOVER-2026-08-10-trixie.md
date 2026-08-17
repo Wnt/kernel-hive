@@ -65,7 +65,7 @@ and it is where the shared ccache pays: all seven pin `mame0289`, so the
 `emu`/`osd`/`3rdparty` core is identical across trees.
 
 > **Serialize the MAME builds.** All seven chroot into the *same*
-> `/data/vms/soltest/trixie-chroot`, and two concurrent builds mounting API
+> `/data/vms/sandbox/trixie-chroot`, and two concurrent builds mounting API
 > filesystems in one chroot is the failure class that took the host's
 > `/dev/pts` down (§5.2). ccache, not parallelism, is what makes this wave
 > cheap. Build the first tile alone and confirm the cache actually grew before
@@ -365,7 +365,7 @@ README; it is a behaviour change on a live exhibit, so it was left as a decision
    which sidesteps the propagation class in §5.2. Top recommended follow-up for
    offline mutation.
 3. **A stale overlayfs is still mounted** — `overlay-xstarb` on
-   `/data/vms/soltest/XEROX-star-b/root`, left from the Xerox wave. The ccache
+   `/data/vms/sandbox/XEROX-star-b/root`, left from the Xerox wave. The ccache
    install wrote into what is currently its lowerdir (additive only, but
    formally undefined). Should be unmounted.
 4. **`/root/kh-bridge`** — a hand-copy used to build the trixie base. Same

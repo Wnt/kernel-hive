@@ -79,7 +79,7 @@ showed Arachne's installation/defaults page, proving the click registered.
 ## Fresh builder trial (2026-07-14)
 
 The final empty-directory run was
-`/data/vms/soltest/repro-freedos-1784060537`. The builder took 262 seconds,
+`/data/vms/sandbox/repro-freedos-1784060537`. The builder took 262 seconds,
 including the isolated Arachne extraction and a real QMP boot-menu screenshot.
 It emitted a 320,654,848-byte qcow2 before snapshotting (512 MiB virtual).
 

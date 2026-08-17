@@ -62,7 +62,7 @@ AGENT_HTTP_PORT="${AGENT_HTTP_PORT:-0}"
 
 # Framebuffer resolution baked into plan9.ini (change here to re-res the station).
 # 1920x1080 = full-era-correct 16:9. 9front's monitor=vesa path negotiates it from
-# QEMU 11's std-vga VGABIOS mode list (validated on a soltest clone 2026-07-27, KVM
+# QEMU 11's std-vga VGABIOS mode list (validated on a sandbox clone 2026-07-27, KVM
 # + packed framebuffer; see docs/lab/tile-resolution-responsiveness.md). Keep WxHx32.
 VGASIZE="${VGASIZE:-1920x1080x32}"
 # Geometry + golden pointer-park position parsed from VGASIZE, threaded into the

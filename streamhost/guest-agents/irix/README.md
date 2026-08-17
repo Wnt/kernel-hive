@@ -295,7 +295,7 @@ ssh lab '/data/vms/.../irix-serial-rig.sh boot bake1 --console --display 171'
 ssh lab '/data/vms/.../irix-serial-install.sh bake1'
 ssh lab '/data/vms/.../irix-serial-rig.sh exec bake1 "uname -a"'
 ssh lab '/data/vms/.../irix-serial-rig.sh halt bake1'
-# -> /data/vms/soltest/irix-serial/bake1/disk.chd is the new golden
+# -> /data/vms/sandbox/irix-serial/bake1/disk.chd is the new golden
 ```
 
 The installer types the agent into the guest through the console getty's own

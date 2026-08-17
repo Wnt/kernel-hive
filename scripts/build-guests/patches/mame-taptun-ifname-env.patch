@@ -5,7 +5,7 @@ WHY
 Upstream hardcodes the tap device name as `tap-mess-<uid>-0`, so every MAME
 process running as the same user competes for one interface — and MAME runs as
 root here. The gallery needs a tap per tile (and namespaced taps for the clone
-experiments under /data/vms/soltest, which run beside the live exhibit), and
+experiments under /data/vms/sandbox, which run beside the live exhibit), and
 TUNSETIFF only ever attaches to the one name it is given.
 
 `MAME_TAP_IFNAME` selects the interface. Unset keeps upstream's name byte for

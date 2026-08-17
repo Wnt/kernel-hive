@@ -89,7 +89,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/mame-ccache.sh"
 
 SUITE="$(bridge_suite_for atarist)"
-WORK="${1:-/data/vms/soltest/BUILD-atarist-mame}"
+WORK="${1:-/data/vms/sandbox/BUILD-atarist-mame}"
 OUT="${2:-/data/vms/streamhost/assets/atarist-mame/mame/atarist}"
 STAGING="${ASSET_STAGING:-/data/assets-staging}/atarist-mame"
 ROMS="$WORK/roms"

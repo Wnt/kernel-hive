@@ -19,7 +19,7 @@ record), and `es40-tuning-research.md`.
   shipped). Preserved beta media, operator-supplied ISO staged as
   `/data/vms/streamhost/assets/w2kalpha/w2k.iso`. Not in Git, never commit it.
 - **Emulator**: es40 (AlphaServer ES40 emulator), **fork `Wnt/es40`**, local
-  labhost checkout `/data/vms/soltest/ALPHA-nt/es40src`. The production binary is
+  labhost checkout `/data/vms/sandbox/ALPHA-nt/es40src`. The production binary is
   the fork build staged as `assets/w2kalpha/es40` with its shared-lib tree
   under `assets/w2kalpha/root/` (the station does not depend on any scratch area).
 - **Acceptance state**: autologged-on 1280×1024 desktop; the framebuffer is
@@ -66,7 +66,7 @@ restoring the same checkpoint under different ports and a different veth).
 ## Seed
 
 `assets/w2kalpha/nt.img` (4 GiB, sym53c810 disk image), lineage
-`/data/vms/soltest/ALPHA-nt/milestones/m5-1280/` — clean 1280×1024 autologon
+`/data/vms/sandbox/ALPHA-nt/milestones/m5-1280/` — clean 1280×1024 autologon
 snapshot, taken before the dev rig's working disk was corrupted (the seed is
 a separate clean copy; the rig is retired). The launcher never opens it for
 write: every launch reflink-copies it.
@@ -145,7 +145,7 @@ pump can never hold the ports.
   injected motion overshoots (observed: MOVEA 522,141 pinned the cursor to the
   top-left corner). The seed-polish pass (acceleration → None) is what makes
   MOVEA land 1:1; keyboard is the reliable drive channel until then.
-- Client for hand-driving: `/data/vms/soltest/ALPHA-nt/uibench/ctltest.py
+- Client for hand-driving: `/data/vms/sandbox/ALPHA-nt/uibench/ctltest.py
   <ctl.sock> <script>` (`K`/`TYPE`/`MOVEA`/`DOWN1`/`SLEEP` verbs);
   screenshots via `uibench/shmread.py <fb.shm> <out.png>`. **ctltest only types
   letters, digits and a few punctuation chars** — for `=`, `%`, `"` etc. drive
@@ -221,7 +221,7 @@ restoring a state onto a disk the guest kept writing to bugchecks NT (STOP
 0x7B), which is why the bake exits the emulator in the same breath as the save.
 
 **Re-bake** (after any guest change you want visitors to see, or any device-set
-change) — in a namespaced clone under `/data/vms/soltest/`, never on the live
+change) — in a namespaced clone under `/data/vms/sandbox/`, never on the live
 station:
 
 1. Cold-boot the clone from the current `nt.img` (`ES40_RESTORE` unset) and

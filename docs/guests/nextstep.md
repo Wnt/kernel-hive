@@ -297,7 +297,7 @@ lands on the Workspace with no input at all.
   `labctl ls` shows `abs`. Regenerating the whole matrix is a merge-time step.
 - The **cold-boot pointer asymmetry** in §4 is CLOSED (2026-08-11): the disk
   carries an rc.local hook that loads the tablet server during /etc/rc, and a
-  cold boot comes up absolute on its own (proven on a soltest clone: commanded
+  cold boot comes up absolute on its own (proven on a sandbox clone: commanded
   (100,100) → arrow at exactly (100,100) after a plain boot, no GUI driven).
   The live checkpoint was recaptured the same day with the hook on its disk.
 - **Idle auto-pause is ON since 2026-08-11** (`SH_IDLE_PAUSE_SECS=60`, the

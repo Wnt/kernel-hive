@@ -23,10 +23,10 @@ import subprocess
 import sys
 import time
 
-RIG = "/data/vms/soltest/debridge-7f3a"
+RIG = "/data/vms/sandbox/debridge-7f3a"
 EV = RIG + "/evidence"
 BENCH = {"armB": ("127.0.0.1", 57932)}
-SHMPNG = "/data/vms/soltest/drawshm-9c1e/shmpng.py"
+SHMPNG = "/data/vms/sandbox/drawshm-9c1e/shmpng.py"
 SURF = (1024, 768)
 
 # Where things are on the published surface, read off a real capture.

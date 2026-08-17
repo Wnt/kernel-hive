@@ -7,7 +7,7 @@
 # Device set intentionally simplified for a headless clone (display none, no audio);
 # cold boot means it need not match the golden snapshot. Kill ONLY by this pidfile.
 set -e
-D=/data/vms/soltest/win95-c1
+D=/data/vms/sandbox/win95-c1
 DISK="$D/disk.qcow2"
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3

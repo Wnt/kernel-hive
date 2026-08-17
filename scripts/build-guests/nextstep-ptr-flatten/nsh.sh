@@ -4,7 +4,7 @@
 # The line travels as a FILE all the way to xdotool --file, so nothing in it is
 # ever re-parsed by a shell.
 # shellcheck source=/dev/null  # box-only rig library, not in the repo
-source /data/vms/soltest/NSPTR-flatten-accel/lib.sh
+source /data/vms/sandbox/NSPTR-flatten-accel/lib.sh
 F=$1
 TAG=${2:-nsh}
 S=${3:-4}

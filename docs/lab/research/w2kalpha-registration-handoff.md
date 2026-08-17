@@ -99,7 +99,7 @@ the canonical station doc is now [`docs/guests/w2kalpha.md`](../../guests/w2kalp
    amplifies the synthesized deltas). Keyboard is the drive channel.
    Key names are Bochs-style from `ctlsock.h field_to_bxkey`: `Left Win`,
    `Left Ctrl`, `Cursor Up`, `Enter`, `Space`, `Tab`, `F1`… Tools:
-   `/data/vms/soltest/ALPHA-nt/uibench/{ctltest.py,shmread.py}`.
+   `/data/vms/sandbox/ALPHA-nt/uibench/{ctltest.py,shmread.py}`.
 4. es40 serial ports **21964/21965** are the production station's claim (listen
    bind in `assets/w2kalpha/es40.cfg`) — scratch clones must renumber.
 5. The station dir emit leaves `SH_INPUT_BACKEND` duplicated in station.env (emit
@@ -121,4 +121,4 @@ inactive as found. Hero-capture es40 killed by pidfile (exe-verified); old
 hand-made `w2kalpha-runtime.sh`/`station.env`/pidfiles replaced by the emitted
 set; labhost `/tmp` scratch removed; `.presync-*` backups left beside the synced
 registry mirrors (delete when satisfied); nothing created under
-`/data/vms/soltest` (only read the existing uibench tools).
+`/data/vms/sandbox` (only read the existing uibench tools).

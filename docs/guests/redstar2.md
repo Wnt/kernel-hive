@@ -65,7 +65,7 @@ the pointer stays 1:1 full-screen (calibration corners `a=[100,100]`,
 ## Machine-vision installation
 
 `scripts/build-guests/tiles/redstar2.sh` is fail-fast and uses a uniquely namespaced
-`/data/vms/soltest/redstar2-build-YYYYMMDD/` directory. It drives Anaconda with
+`/data/vms/sandbox/redstar2-build-YYYYMMDD/` directory. It drives Anaconda with
 bounded QMP framebuffer state transitions, Korean/English OCR, and saved failure
 frames:
 

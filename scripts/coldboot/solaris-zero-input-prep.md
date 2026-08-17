@@ -3,7 +3,7 @@
 Reproduction notes for baking a boot video on the **solaris** vmstate tile
 (Oracle Solaris 10 1/13, genuine CDE, 1920x1200 std-VGA) with `record-boot.sh`
 (spec `BOOT-VIDEO-REPLAY-SPEC.md` §3.1/§3.2). Verified end to end on a
-`/data/vms/soltest` clone 2026-07-13; the **live tile was never touched** (the
+`/data/vms/sandbox` clone 2026-07-13; the **live tile was never touched** (the
 `golden` snapshot stayed byte-identical: ID 1, 732 MiB, 2026-07-08 00:14:51).
 
 ## Why prep is needed (cold boot ≠ zero-input) — the HARD blocker

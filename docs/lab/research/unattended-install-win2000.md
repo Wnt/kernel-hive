@@ -4,7 +4,7 @@ Date: 2026-07-14/15 UTC
 
 Branch: `codex/research-win2000-unattend`
 
-Trial namespace: `/data/vms/soltest/repro-win2000-unattend-1784064580/`
+Trial namespace: `/data/vms/sandbox/repro-win2000-unattend-1784064580/`
 
 ## Verdict
 

@@ -27,7 +27,7 @@ import sys
 import time
 
 PORT = ":ioc2:kbd:ms_naturl:"
-D = os.environ.get("IRIX_APPS_DIR", "/data/vms/soltest/irix-apps")
+D = os.environ.get("IRIX_APPS_DIR", "/data/vms/sandbox/irix-apps")
 CMD = os.path.join(D, "irix_cmd")
 HOLD = int(os.environ.get("IRIX_KEY_HOLD", "7"))  # frames a key stays down
 GAP = int(os.environ.get("IRIX_KEY_GAP", "5"))  # frames between keys

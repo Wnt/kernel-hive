@@ -8,7 +8,7 @@
 # 2.24 GB copy-on-write clone in ~0.13 s, so every launch gets its own writable
 # clone and the golden is never opened.
 set -euo pipefail
-D="${IRIX_APPS_DIR:-/data/vms/soltest/irix-apps}"
+D="${IRIX_APPS_DIR:-/data/vms/sandbox/irix-apps}"
 GOLDEN="${IRIX_GOLDEN_APPS:-$D/irix65-apps.chd}"
 RUN="$D/run.chd"
 rm -f "$RUN"

@@ -4,7 +4,7 @@
 # the Photon framebuffer between commands so we can see the cursor track.
 import socket, json, subprocess, sys, time, os
 
-DIR = "/data/vms/soltest/qnx-ghid-spike-3112"
+DIR = "/data/vms/sandbox/qnx-ghid-spike-3112"
 CTRL = DIR + "/ctrl.sock"
 QMP  = DIR + "/qmp.sock"
 

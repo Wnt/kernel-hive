@@ -18,11 +18,11 @@ CHROOT_GUARD_LIB="$(dirname "${BASH_SOURCE[0]}")/../../../lib/chroot-guard.sh"
 # shellcheck disable=SC1090,SC1091
 if [ -f "$CHROOT_GUARD_LIB" ]; then . "$CHROOT_GUARD_LIB"; else . /usr/local/bin/chroot-guard; fi
 chroot_guard_reexec_private "$@"
-C=${MAMECTL_CHROOT:-/data/vms/soltest/trixie-chroot}
+C=${MAMECTL_CHROOT:-/data/vms/sandbox/trixie-chroot}
 T=$C/build/mame
 PATCHES=${MAMECTL_PATCHES:-/root/mame-stack-v3}
-OUT=${1:-/data/vms/soltest/movea-v2-build/sgi-dev}
-LOG=${MAMECTL_LOG:-/data/vms/soltest/movea-v2-build/mamectl-build.log}
+OUT=${1:-/data/vms/sandbox/movea-v2-build/sgi-dev}
+LOG=${MAMECTL_LOG:-/data/vms/sandbox/movea-v2-build/mamectl-build.log}
 
 cd "$T"
 git status --porcelain | grep -q . && {

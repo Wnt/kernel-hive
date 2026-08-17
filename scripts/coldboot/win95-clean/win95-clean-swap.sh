@@ -5,7 +5,7 @@
 set -euo pipefail
 LIVE_DIR=/data/vms/streamhost/stations/win95
 LIVE_DISK="$LIVE_DIR/win95-golden.qcow2"
-CLONE_GOLDEN=/data/vms/soltest/bootrec-win95-4037869/win95-golden.qcow2
+CLONE_GOLDEN=/data/vms/sandbox/bootrec-win95-4037869/win95-golden.qcow2
 TS=$(date +%Y%m%d-%H%M%S)
 BAK="$LIVE_DISK.bak-clean-swap-$TS"
 

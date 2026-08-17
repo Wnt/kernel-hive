@@ -15,7 +15,7 @@ const cursor = () =>
     .trim();
 const shot = (n) =>
   execSync(
-    `ssh lab '/data/vms/soltest/irix-wedge/shmshot.py /data/vms/streamhost/stations/irix/fb.shm /tmp/live-${n}.png'`,
+    `ssh lab '/data/vms/sandbox/irix-wedge/shmshot.py /data/vms/streamhost/stations/irix/fb.shm /tmp/live-${n}.png'`,
   ).toString().trim();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

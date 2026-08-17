@@ -11,7 +11,7 @@
 #   tile while logging success. `coldboot` is the missing checkpoint: the disk as
 #   the builder left it, before any driving.
 #
-# WHY IT IS CHEAP (measured, not asserted — 2026-08-10, /data/vms/soltest)
+# WHY IT IS CHEAP (measured, not asserted — 2026-08-10, /data/vms/sandbox)
 #   `savevm golden` runs on a RUNNING VM and writes the whole VM RAM image into
 #   the qcow2: 424-1442 MiB across the live bridge tiles (pdp11 424, atarist 515,
 #   gt40 538, amiga 541, alto 589, c64 815, apple2 875, star 1442).
@@ -236,7 +236,7 @@ assert_not_production() {
     "$PROD_TILES_ROOT"/*)
       [ "$ALLOW_TILE" -eq 1 ] || die "$OVERLAY is a PRODUCTION tile overlay.
   Pass --allow-tile if you mean it. Experiment on a clone under
-  /data/vms/soltest/ first (AGENTS.md 'Clones / experiments')."
+  /data/vms/sandbox/ first (AGENTS.md 'Clones / experiments')."
       ;;
   esac
 }

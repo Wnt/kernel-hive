@@ -35,7 +35,7 @@ VISION="$REPO/scripts/install-vision"
 . "$REPO/scripts/build-guests/lib/media-cache.sh"
 
 OS_ID="macos753"
-WORK="${WORK:-/data/vms/soltest/build-$OS_ID}"
+WORK="${WORK:-/data/vms/sandbox/build-$OS_ID}"
 QMP="$WORK/qmp.sock"
 PIDFILE="$WORK/qemu.pid"
 EVIDENCE="$WORK/evidence"

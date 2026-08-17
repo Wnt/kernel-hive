@@ -4,7 +4,7 @@
 the toolkit's Tesseract text matching, multi-scale OpenCV templates, relative
 ROIs, frame settling, and QMP input/screendump plumbing. Use it only with a
 namespaced build/clone QMP socket, never a live tile. The CLI fails closed
-unless `--qmp` resolves below `/data/vms/soltest`; set
+unless `--qmp` resolves below `/data/vms/sandbox`; set
 `CLONE_GUARD_CLONE_ROOT` only when the clone guard uses a different sandbox.
 
 Install the CPU-only dependencies once per checkout:
@@ -37,8 +37,8 @@ Run a flow and retain its PNG/JSON evidence:
 REDSTAR3_PASSWORD='<from the credential store>' \
   scripts/install-vision/install-vision run \
   scripts/install-vision/redstar3.flow.yaml \
-  --qmp /data/vms/soltest/my-redstar3-clone/qmp.sock \
-  --work-dir /data/vms/soltest/my-redstar3-clone/vision-evidence
+  --qmp /data/vms/sandbox/my-redstar3-clone/qmp.sock \
+  --work-dir /data/vms/sandbox/my-redstar3-clone/vision-evidence
 ```
 
 The final JSON summary is also written to `WORK_DIR/run.json`. Progress logs
@@ -156,8 +156,8 @@ into the flow's `fixtures_dir`:
 ssh -X lab
 scripts/install-vision/install-vision capture license-accepted \
   --flow scripts/install-vision/example.flow.yaml \
-  --qmp /data/vms/soltest/example-author/qmp.sock \
-  --work-dir /data/vms/soltest/example-author/captures
+  --qmp /data/vms/sandbox/example-author/qmp.sock \
+  --work-dir /data/vms/sandbox/example-author/captures
 ```
 
 Drag a rectangle over a stable, distinctive region and press Enter. Escape
@@ -178,7 +178,7 @@ The lower-level detector and one-step driver remain available for diagnostics:
 scripts/install-vision/.venv/bin/python scripts/install-vision/find_text.py screen.png "SET UP OFFLINE"
 scripts/install-vision/.venv/bin/python scripts/install-vision/find_template.py screen.png templates/example/next.png
 scripts/install-vision/.venv/bin/python scripts/install-vision/driver.py step \
-  --qmp /data/vms/soltest/example-author/qmp.sock \
-  --work-dir /data/vms/soltest/example-author/one-step \
+  --qmp /data/vms/sandbox/example-author/qmp.sock \
+  --work-dir /data/vms/sandbox/example-author/one-step \
   welcome --text START --template templates/example/start.png
 ```

@@ -2,7 +2,7 @@
 # Stand up an ISOLATED win311 clone for freeze-repro work.
 #
 # Never experiment on a live station: this copies the golden disks into a
-# namespaced soltest dir with private sockets and its own pidfile. The guest
+# namespaced sandbox dir with private sockets and its own pidfile. The guest
 # DEVICE SET is byte-for-byte the live one (so `loadvm golden` still matches);
 # only the host-side display/audio BACKEND differs, which is not part of vmstate.
 #
@@ -20,7 +20,7 @@ set -euo pipefail
 
 NS="${NS:-w311frz-a1}"
 SRC=/data/vms/streamhost/stations/win311
-D="/data/vms/soltest/$NS"
+D="/data/vms/sandbox/$NS"
 
 mkdir -p "$D"
 if [ ! -f "$D/win311-golden.qcow2" ]; then

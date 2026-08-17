@@ -6,7 +6,7 @@ workstreams ran, so that "did it get faster" has an answer that predates the
 answerer.
 
 Rig: `scripts/build-guests/irix/irix-bench/`. Raw data and the production-state
-snapshot: `/data/vms/soltest/irix-baseline-b7f2/` on labhost.
+snapshot: `/data/vms/sandbox/irix-baseline-b7f2/` on labhost.
 
 ## 1. labhost conditions when the baseline was taken
 
@@ -18,7 +18,7 @@ against an assumption that labhost was quiet.
   including `streamhost@irix`. Nothing was started to take this baseline; every
   measurement below comes from a clone.
 - **Zero IRIX MAME processes**, zero taps allocated (`/run/irix-taps` empty),
-  zero core-pair claims (`/data/vms/soltest/corepairs` empty), no `taskset`
+  zero core-pair claims (`/data/vms/sandbox/corepairs` empty), no `taskset`
   pins anywhere on labhost.
 - One `Xvfb :1` — the shared dev desktop. Left alone.
 - The only real CPU consumer was **a co-located VM at ~29.5% of one
@@ -31,7 +31,7 @@ i.e. the station had been run and stopped earlier that day. It was **not** runni
 
 ## 2. Production state snapshot (rollback + diff reference)
 
-Full file: `/data/vms/soltest/irix-baseline-b7f2/PRODUCTION-SNAPSHOT.md5`.
+Full file: `/data/vms/sandbox/irix-baseline-b7f2/PRODUCTION-SNAPSHOT.md5`.
 The deploy workstream needs this to prove what it replaced.
 
 | what | md5 |
@@ -86,7 +86,7 @@ measures **within-run** windows.
   `<host_epoch> <emulated_seconds>` twice a second. Every window is converted
   through that trace, inside the run that produced it. Cross-run differencing
   is invalid on this exhibit: IRIX boot diverges from ~t=120 s.
-- **One core pair per run**, claimed in `/data/vms/soltest/corepairs`. Both
+- **One core pair per run**, claimed in `/data/vms/sandbox/corepairs`. Both
   logical CPUs of the pair are sampled once a second from `/proc/stat`, and the
   analyser reports `foreign%` — CPU burnt on the pair by anything that is not
   this MAME. A busy SMT sibling costs MAME ~39%, so this is an assertion, not a
@@ -209,7 +209,7 @@ small.
   without both is not comparable to this table.
 
 Raw data, per-run tables and provenance:
-`/data/vms/soltest/irix-baseline-b7f2/RESULTS.md`, with per-run directories
+`/data/vms/sandbox/irix-baseline-b7f2/RESULTS.md`, with per-run directories
 (`perf.csv`, `trace.txt`, `phases.txt`, `cpustat.txt`, `provenance.txt` and the
 framebuffer PNGs) beside it.
 

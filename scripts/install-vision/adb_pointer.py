@@ -29,7 +29,7 @@ macos753 build, and are handled here so the next one does not pay again:
   lands beside the target and the drop silently does nothing.
 
 Clone-only, exactly like `flow.py`: the QMP socket must resolve below
-`/data/vms/soltest` (`CLONE_GUARD_CLONE_ROOT` to override) so this can never be
+`/data/vms/sandbox` (`CLONE_GUARD_CLONE_ROOT` to override) so this can never be
 pointed at a live station.
 """
 
@@ -62,7 +62,7 @@ DROP_OFFSET = (31, 11)
 
 def assert_clone_socket(path: str | Path) -> Path:
     """Fail closed unless the QMP socket is inside the clone sandbox."""
-    root = Path(os.environ.get("CLONE_GUARD_CLONE_ROOT", "/data/vms/soltest")).resolve()
+    root = Path(os.environ.get("CLONE_GUARD_CLONE_ROOT", "/data/vms/sandbox")).resolve()
     resolved = Path(path).resolve()
     if root not in resolved.parents:
         raise SystemExit(f"adb_pointer: REFUSED: {resolved} is not below {root}")

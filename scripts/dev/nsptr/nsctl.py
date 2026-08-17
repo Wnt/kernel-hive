@@ -15,7 +15,7 @@ import json
 import socket
 import time
 
-QMP_SOCK = "/data/vms/soltest/NSPTR-closed-loop/qmp.sock"
+QMP_SOCK = "/data/vms/sandbox/NSPTR-closed-loop/qmp.sock"
 AGENT = ("127.0.0.1", 5993)
 W, H = 1120, 832
 
@@ -130,7 +130,7 @@ def locate_ppm(px, near=None, radius=None):
     return hits
 
 
-def shot_locate(q, path="/data/vms/soltest/NSPTR-closed-loop/loc.ppm", **kw):
+def shot_locate(q, path="/data/vms/sandbox/NSPTR-closed-loop/loc.ppm", **kw):
     q.dump(path)
     hits = locate_ppm(read_ppm(path), **kw)
     return hits

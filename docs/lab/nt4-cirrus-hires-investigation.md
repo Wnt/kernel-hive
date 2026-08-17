@@ -13,12 +13,12 @@ promoted to accelerated 1024x768x16bpp with true-absolute vmmouse.
 
 The clone-only gate is `scripts/dev/nt4-cirrus-acceptance.sh`; its guarded
 launcher is `scripts/dev/nt4-cirrus-clone-launch.sh`. Both require a path below
-`/data/vms/soltest/nt4-cirrus-*`, assert the QMP and pidfile through
+`/data/vms/sandbox/nt4-cirrus-*`, assert the QMP and pidfile through
 `clone-guard`, reject a QEMU process that references a production station, and pin
 the executable used for the promotion to:
 
 ```text
-/data/vms/soltest/cvmstate-trace-20260728T084646Z-14233/qemu-fixed-clean
+/data/vms/sandbox/cvmstate-trace-20260728T084646Z-14233/qemu-fixed-clean
 -L /usr/share/kvm
 ```
 
@@ -35,7 +35,7 @@ icon move. It saves `golden` once and repeats the sequence from a new
 Clone:
 
 ```text
-/data/vms/soltest/nt4-cirrus-20260728T070630Z-GJyobY/
+/data/vms/sandbox/nt4-cirrus-20260728T070630Z-GJyobY/
 ```
 
 Device set:
@@ -69,7 +69,7 @@ Key framebuffers:
 Fresh clone:
 
 ```text
-/data/vms/soltest/nt4-cirrus-isafresh-20260728T074009Z-eyoH9H/
+/data/vms/sandbox/nt4-cirrus-isafresh-20260728T074009Z-eyoH9H/
 ```
 
 Both `-cpu 486` and `-cpu pentium` on `-machine isapc` stopped during kernel
@@ -166,7 +166,7 @@ f39c586fafaa0a18bb5cd277ad7e381a4b43ed55e20658c4aaeda7c7e1830983
 The same test was recaptured under TCG in:
 
 ```text
-/data/vms/soltest/nt4-cirrus-tcg-20260728T082415Z-shHLYf/
+/data/vms/sandbox/nt4-cirrus-tcg-20260728T082415Z-shHLYf/
 ```
 
 TCG also changed a correct teal pre-save framebuffer
@@ -187,7 +187,7 @@ in `docs/lab/nt4-cirrus-vmstate-trace-fix.md`.
 The successful clone and proof root is:
 
 ```text
-/data/vms/soltest/nt4-cirrus-promote-20260728T-SAP4aj/
+/data/vms/sandbox/nt4-cirrus-promote-20260728T-SAP4aj/
 ```
 
 The authentic SP6a `cirrus.sys` and `cirrus.dll` payloads were installed, the

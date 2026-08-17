@@ -293,7 +293,7 @@ no CLAUDE.md clobber was detected.
   same-statement `local name=$2` made `name` visible, producing `cache/.part` and
   an invalid same-file `mv` on an empty-cache test · declare URL/name/hash first,
   then derive `dst`/cookie in a second `local` statement · concrete value:
-  failing path `/data/vms/soltest/atarist-apps-codex-0715/builder-repro/cache/.part` ·
+  failing path `/data/vms/sandbox/atarist-apps-codex-0715/builder-repro/cache/.part` ·
   doc-to-update: builder implementation (completed).
 - [applied] · Atari ST golden bake procedure · saving immediately after a guest
   `system_reset` captured a Linux boot-console state while the QMP display still

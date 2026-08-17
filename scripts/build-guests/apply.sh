@@ -1,7 +1,7 @@
 #!/bin/bash
 # shellcheck disable=SC2086  # $O is an ssh/scp OPTION LIST; it must word-split
 set -e
-D=/data/vms/soltest/NSPTR-previous-patch
+D=/data/vms/sandbox/NSPTR-previous-patch
 K=/data/vms/bridge/bridge_key
 O="-i $K -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 scp -q $O -P 5937 "$D/abspointer.c" root@127.0.0.1:/usr/local/src/previous-code/src/abspointer.c

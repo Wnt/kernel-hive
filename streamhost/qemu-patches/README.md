@@ -194,5 +194,5 @@ launchers keep the knob.
   inject→wire join (each key's glyph detected in its own cell; blink-immune).
   Pairs with the rig's `wt_probe.py` (WebTransport AU capture).
 
-Full run scripts live on the box under `/data/vms/soltest/freedos-fastpoll/`
+Full run scripts live on the box under `/data/vms/sandbox/freedos-fastpoll/`
 (`launch-qemu.sh`, `launch-streamhost.sh`, `measure.sh` cadence, `g2g-run.sh`).

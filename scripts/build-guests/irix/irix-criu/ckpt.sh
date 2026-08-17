@@ -16,7 +16,7 @@
 # while three of the traps below are active.
 #
 # Configuration — all required, all namespaced to YOUR clone:
-#   IRIX_CRIU_W    work dir, must be under /data/vms/soltest
+#   IRIX_CRIU_W    work dir, must be under /data/vms/sandbox
 #   IRIX_CRIU_TILE station dir inside the ZFS dataset being snapshotted
 #                  (default $IRIX_CRIU_W/tile)
 #   IRIX_CRIU_ZDS  the ZFS dataset holding the station dir, e.g. data/vms/mycriu
@@ -42,11 +42,11 @@
 #    fails the restore outright.
 set -u
 
-W="${IRIX_CRIU_W:?set IRIX_CRIU_W to a namespaced dir under /data/vms/soltest}"
+W="${IRIX_CRIU_W:?set IRIX_CRIU_W to a namespaced dir under /data/vms/sandbox}"
 case "$W" in
-  /data/vms/soltest/*) : ;;
+  /data/vms/sandbox/*) : ;;
   *)
-    echo "refusing to work outside /data/vms/soltest" >&2
+    echo "refusing to work outside /data/vms/sandbox" >&2
     exit 1
     ;;
 esac

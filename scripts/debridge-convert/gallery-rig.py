@@ -3,7 +3,7 @@
 
 The spike's gallery-arms.py, carried over to the conversion campaign
 (docs/lab/DEBRIDGE-CONVERSION-BRIEF.md §5): a converted-station rig under
-/data/vms/soltest/debridge-<station>/ gets a `/os/dbr-<station>` row for the
+/data/vms/sandbox/debridge-<station>/ gets a `/os/dbr-<station>` row for the
 operator's side-by-side eyeball while the LIVE station keeps serving. Same
 structural reasons keep rigs out of the registry (gen_tiles_json hard-exits on
 a row with no /data/vms/streamhost/stations/ dir; the SPA tests demand exhibit
@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 SERVE_ROOT = "/data/vms/streamhost/serve"
-SOLTEST = "/data/vms/soltest"
+SOLTEST = "/data/vms/sandbox"
 DARKLAUNCH_NAME = "debridge-rigs"
 
 # One entry per campaign rig. Display identity mirrors the real station's

@@ -15,12 +15,12 @@
 #
 # Usage:
 #   EXPECT_OPTION=A-ISA scripts/dev/nt4-cirrus-acceptance.sh \
-#     /data/vms/soltest/nt4-cirrus-UNIQ
+#     /data/vms/sandbox/nt4-cirrus-UNIQ
 set -euo pipefail
 
-readonly CLONE_ROOT=/data/vms/soltest
+readonly CLONE_ROOT=/data/vms/sandbox
 readonly CDRV=/root/cdrv.py
-readonly PATCHED_QEMU=${PATCHED_QEMU:-/data/vms/soltest/cvmstate-trace-20260728T084646Z-14233/qemu-fixed-clean}
+readonly PATCHED_QEMU=${PATCHED_QEMU:-/data/vms/sandbox/cvmstate-trace-20260728T084646Z-14233/qemu-fixed-clean}
 readonly CLONE_LAUNCHER=${CLONE_LAUNCHER:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/nt4-cirrus-clone-launch.sh}
 readonly EXPECT_OPTION=${EXPECT_OPTION:-A}
 readonly SKIP_MODE_PROOF=${SKIP_MODE_PROOF:-0}

@@ -10,7 +10,7 @@
 # no streamhost daemon change). See README.md "Boot-video capture" for the flow.
 #
 # Conventions (AGENTS.md hard rules honoured by every caller):
-#   * clones live under /data/vms/soltest/ (NEVER touch a live station);
+#   * clones live under /data/vms/sandbox/ (NEVER touch a live station);
 #   * VMs are killed ONLY by pidfile, never pkill-by-name;
 #   * device set of a vmstate clone MUST match the live launcher exactly
 #     (loadvm golden requires an exact device match) — the clone is a byte copy
@@ -19,7 +19,7 @@ set -uo pipefail
 
 # ---- paths / constants ---------------------------------------------------------
 BOOTREC_TILES_ROOT="${BOOTREC_TILES_ROOT:-/data/vms/streamhost/stations}"
-BOOTREC_CLONE_ROOT="${BOOTREC_CLONE_ROOT:-/data/vms/soltest}"
+BOOTREC_CLONE_ROOT="${BOOTREC_CLONE_ROOT:-/data/vms/sandbox}"
 BOOTREC_STAGING_ROOT="${BOOTREC_STAGING_ROOT:-/data/vms/streamhost/boot-rec}"
 
 # ---- logging -------------------------------------------------------------------

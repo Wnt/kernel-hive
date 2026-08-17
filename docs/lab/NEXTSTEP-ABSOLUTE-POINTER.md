@@ -164,7 +164,7 @@ Still unproven:
 
 The "driver must be reinstalled after every boot" limit was NeXTSTEP default
 behavior, not an emulator fact, and it fell to a two-line rc.local hook. What a
-soltest clone (`NSTAB-coldboot`) established, in order:
+sandbox clone (`NSTAB-coldboot`) established, in order:
 
 - `kl_util -a <reloc>` allocates AND loads the server, but persists nothing:
   **kern_loader owns `/etc/kern_loader.conf`** and rewrites it (a manual append

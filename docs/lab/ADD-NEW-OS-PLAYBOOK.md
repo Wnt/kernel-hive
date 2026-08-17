@@ -348,7 +348,7 @@ scripts/lib/checkpoint-verify.sh <stationDir>
 ```
 
 The helper uses the station's `bootrec-tiles.conf` disk/port/ready metadata, copies
-every writable disk under a namespaced `/data/vms/soltest/golden-verify-*`
+every writable disk under a namespaced `/data/vms/sandbox/golden-verify-*`
 directory, statically checks the rewritten launcher, gates destructive QMP by
 `clone-guard`, and tears the clone down. Its required sequence is:
 

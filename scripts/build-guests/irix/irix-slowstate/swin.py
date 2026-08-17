@@ -26,7 +26,7 @@ import sys
 
 REF_HZ = 2.5e9
 EVENTS = ("asid", "tlbwi", "tlbwr", "cmpint")
-BENCH_RIG = os.environ.get("IRIX_BENCH_RIG", "/data/vms/soltest/irix-baseline-b7f2/rig")
+BENCH_RIG = os.environ.get("IRIX_BENCH_RIG", "/data/vms/sandbox/irix-baseline-b7f2/rig")
 sys.path.insert(0, BENCH_RIG)
 
 import bwin  # noqa: E402  (path has to be set before the import)

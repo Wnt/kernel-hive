@@ -268,7 +268,7 @@ section below):
 
 ### Clone validation (framebuffer proof, not live)
 
-Clone `/data/vms/soltest/qnx-pfix` = QNX launcher with `-usb -device usb-tablet`
+Clone `/data/vms/sandbox/qnx-pfix` = QNX launcher with `-usb -device usb-tablet`
 REMOVED, cold-booted from the live CD (`-boot d`, no loadvm) to the 800×600
 Photon desktop via `qnx-photon-drive.sh` (MON_PORT=7212), `-display dbus,p2p=on`.
 
@@ -345,7 +345,7 @@ legacy-compatible `SH_POINTER=rel` settings and run the shared binary.
 
 ### Part B — QNX checkpoint recaptured WITHOUT usb-tablet (PS/2 relative)
 
-- Validated on a namespaced clone (`/data/vms/soltest/qnx-relbake`, now removed):
+- Validated on a namespaced clone (`/data/vms/sandbox/qnx-relbake`, now removed):
   tablet-free launcher cold-booted to the 800x600 Photon desktop via
   `qnx-photon-drive.sh` (MON_PORT=7212). `query-mice` = **only `QEMU PS/2 Mouse`,
   current, absolute=false** (the RelMotion precondition). rel(-250,+140) tracked
@@ -441,13 +441,13 @@ the tablet path.
 
 ### Clone validation, proofs, and rollback
 
-- Stable clone: `/data/vms/soltest/qnx-upgrade-20260715T223953Z-final/clone.qcow2`.
+- Stable clone: `/data/vms/sandbox/qnx-upgrade-20260715T223953Z-final/clone.qcow2`.
   It cold-booted, reached phgrafx after one correctly timed F2, saved `golden`,
   then restarted with the exact D-Bus production profile and `-loadvm golden`.
   Both frames were 1024x768; `query-mice` showed only `QEMU PS/2 Mouse`, current,
   `absolute=false`.
 - First desktop proof:
-  `/data/vms/soltest/qnx-upgrade-20260715T223953Z-final/desktop.png`, SHA-256
+  `/data/vms/sandbox/qnx-upgrade-20260715T223953Z-final/desktop.png`, SHA-256
   `8cc99c81b79185a6a71de9e0c741965b9d12cad29b33badf1de83c38c9c1743c`.
   Reload proof: `reload.png`, SHA-256
   `907db62abde589281ad594a40d1060be3709c4423e4eea34c75ee92ba53b7137`.

@@ -6,7 +6,7 @@ and `win98se` launchers, disks, services, and checkpoints were not edited, stopp
 reset, or recaptured. Live interaction was limited to opening read-only property
 pages and a drag route that returned the Win95 window to its starting position.
 All driver changes were made to copies below
-`/data/vms/soltest/win95-paint-tearing-20260715/`.
+`/data/vms/sandbox/win95-paint-tearing-20260715/`.
 
 ## Result
 
@@ -63,11 +63,11 @@ position and screendump, and returned to its original title-bar coordinate
 before release. Every inspected PPM has at most the expected 16 VGA colours.
 
 - Contact sheet:
-  `/data/vms/soltest/win95-paint-tearing-20260715/live-win95-drag/seq/contact.png`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/live-win95-drag/seq/contact.png`
 - Original PPMs and hashes:
-  `/data/vms/soltest/win95-paint-tearing-20260715/live-win95-drag/seq/`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/live-win95-drag/seq/`
 - Post-test clean framebuffer:
-  `/data/vms/soltest/win95-paint-tearing-20260715/live-win95-drag/live-left-clean.png`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/live-win95-drag/live-left-clean.png`
 
 Nine evenly spaced samples all contain one or more characteristic incomplete
 repaints: a title/client edge at an old Y coordinate, a horizontal strip from a
@@ -76,9 +76,9 @@ portion has not arrived. The independent standard-VGA clone reproduced the
 same signature:
 
 - Clone contact sheet:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-std/evidence/std-drag-slow/contact.png`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-std/evidence/std-drag-slow/contact.png`
 - Clone originals:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-std/evidence/std-drag-slow/`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-std/evidence/std-drag-slow/`
 
 Because QMP `screendump` reads the real emulated framebuffer and catches these
 states, the artifacts are upstream of input delivery, WebRTC frame rate, and
@@ -91,9 +91,9 @@ unchanged. That isolates the guest display driver/depth as the causal variable.
 The Win98SE contact sheet shows only the moving XOR outline; the Notepad body is
 never repainted during the drag:
 
-- `/data/vms/soltest/win95-paint-tearing-20260715/live-win98-drag/seq/contact.png`
+- `/data/vms/sandbox/win95-paint-tearing-20260715/live-win98-drag/seq/contact.png`
 - Originals and hashes:
-  `/data/vms/soltest/win95-paint-tearing-20260715/live-win98-drag/seq/`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/live-win98-drag/seq/`
 
 This is consistent with its unchecked Effects option. It is useful evidence
 that the observed live difference is configuration-confounded, but it cannot be
@@ -113,8 +113,8 @@ select, so a colour-depth-only fix is impossible with the current driver.
 
 Evidence:
 
-- `/data/vms/soltest/win95-paint-tearing-20260715/live-baseline/win95-colour-options.png`
-- `/data/vms/soltest/win95-paint-tearing-20260715/live-baseline/win95-display-settings.png`
+- `/data/vms/sandbox/win95-paint-tearing-20260715/live-baseline/win95-colour-options.png`
+- `/data/vms/sandbox/win95-paint-tearing-20260715/live-baseline/win95-display-settings.png`
 
 ### (b) VBEMP on `-vga std`: effective and least invasive
 
@@ -152,15 +152,15 @@ The installed clone reported:
 Evidence:
 
 - Driver page:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/vbemp-advanced-driver.png`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/vbemp-advanced-driver.png`
 - Depth page:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/vbemp-display-settings.png`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/vbemp-display-settings.png`
 - Clean packed-mode drag contact sheet:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/vbemp-drag/contact.png`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/vbemp-drag/contact.png`
 - Original packed drag PPMs/hashes:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/vbemp-drag/`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/vbemp-drag/`
 - Key artifact hashes:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/key-evidence.sha256`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-vbemp-191201/evidence/key-evidence.sha256`
 
 The packed capture used the same 45 ms drag/capture interval. Zero of eight
 evenly sampled frames contains the baseline's stale bands or partial bodies;
@@ -207,11 +207,11 @@ KVM profile.
 Evidence:
 
 - Driver page:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-cirrus/evidence/cirrus-advanced.png`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-cirrus/evidence/cirrus-advanced.png`
 - Offered palette:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-cirrus/evidence/cirrus-colour-options.png`
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-cirrus/evidence/cirrus-colour-options.png`
 - Deadlock frames/hashes/registers:
-  `/data/vms/soltest/win95-paint-tearing-20260715/clone-cirrus/evidence/deadlock-a.ppm`,
+  `/data/vms/sandbox/win95-paint-tearing-20260715/clone-cirrus/evidence/deadlock-a.ppm`,
   `deadlock-b.ppm`, `deadlock.sha256`, and `deadlock-registers.txt`
 
 ## Recommendation and ranking
@@ -268,13 +268,13 @@ saved RAM state from the Cirrus experiment with the standard-VGA device set.
 ## Reproduction helpers
 
 - `streamhost/guest-agents/win9x/launch-win95-paint-clone.sh` requires an
-  explicit inactive `SOURCE_DISK`, creates only a namespaced soltest directory,
+  explicit inactive `SOURCE_DISK`, creates only a namespaced sandbox directory,
   keeps the production KVM profile, and terminates only by its own pidfile.
 - `streamhost/guest-agents/win9x/capture-win95-drag.py` captures real QMP PPMs
   while warpnet performs a deterministic full-window drag and returns the
   window to its starting position.
 
 The complete experiment root is
-`/data/vms/soltest/win95-paint-tearing-20260715/`; aggregate contact-sheet
+`/data/vms/sandbox/win95-paint-tearing-20260715/`; aggregate contact-sheet
 hashes are in `analysis/contact-sheets.sha256`, and all experiment QEMUs stopped
 by pidfile are recorded in `clone-stop.log`.

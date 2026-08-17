@@ -2,7 +2,7 @@
 # De-bridging spike ARM A (tier 2): the MAME Atari ST binary inside the shared
 # Debian trixie bridge kiosk, captured the ordinary way (QEMU dbus display).
 #
-# NOT A TILE. A namespaced clone under /data/vms/soltest/ — its own overlay,
+# NOT A TILE. A namespaced clone under /data/vms/sandbox/ — its own overlay,
 # qmp.sock, pidfile and ssh port. The LIVE `atarist` station (hatari) is arm C and
 # is never touched by anything here.
 #
@@ -10,7 +10,7 @@
 # between this and a production kiosk is which emulator the kiosk runs.
 # Kill ONLY via `clone-guard kill-pidfile`.
 set -e
-D=/data/vms/soltest/debridge-7f3a/armA
+D=/data/vms/sandbox/debridge-7f3a/armA
 rm -f "$D/qmp.sock" "$D/qemu.pid"
 nohup qemu-system-x86_64 \
   -name debridge-7f3a-armA \

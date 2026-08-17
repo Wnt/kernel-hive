@@ -2,7 +2,7 @@
 # Launch an isolated NT4 Cirrus candidate. Never use this for a production station.
 set -euo pipefail
 
-readonly PATCHED_QEMU=${PATCHED_QEMU:-/data/vms/soltest/cvmstate-trace-20260728T084646Z-14233/qemu-fixed-clean}
+readonly PATCHED_QEMU=${PATCHED_QEMU:-/data/vms/sandbox/cvmstate-trace-20260728T084646Z-14233/qemu-fixed-clean}
 
 die() {
   printf 'FAIL: %s\n' "$*" >&2
@@ -17,7 +17,7 @@ start=${3:-cold}
 disk=$D/nt4-candidate.qcow2
 
 case "$D/" in
-  /data/vms/soltest/nt4-cirrus-*/*) ;;
+  /data/vms/sandbox/nt4-cirrus-*/*) ;;
   *) die "refusing non-NT4-Cirrus clone path: $D" ;;
 esac
 case "$option:$start" in

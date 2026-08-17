@@ -19,7 +19,7 @@ import os
 import sys
 import time
 
-RIG = "/data/vms/soltest/debridge-7f3a"
+RIG = "/data/vms/sandbox/debridge-7f3a"
 HZ = os.sysconf("SC_CLK_TCK")
 
 ARMS = {

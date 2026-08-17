@@ -3,7 +3,7 @@
 What it takes to make Windows 2000 Pro **cold-boot to a settled desktop with ZERO
 input** *and* play its **startup chime**, so `record-boot.sh win2000` (vmstate,
 win95-style) can bake a clean seam-invariant boot video. Verified 2026-07-14 on a
-`/data/vms/soltest` clone; promoted onto the live tile the same run.
+`/data/vms/sandbox` clone; promoted onto the live tile the same run.
 
 ## The guest
 
@@ -82,7 +82,7 @@ Because the live launcher's disk is outside the tile dir and it already cold-boo
 stage a normalised src tile dir and point `BOOTREC_TILES_ROOT` at it:
 
 ```sh
-ROOT=/data/vms/soltest/w2ksrc-root ; TD=$ROOT/win2000 ; mkdir -p "$TD"
+ROOT=/data/vms/sandbox/w2ksrc-root ; TD=$ROOT/win2000 ; mkdir -p "$TD"
 cp --reflink=auto <prepped>.qcow2 "$TD/win2000-golden.qcow2"
 sed -e 's#/data/vms/streamhost/stations/win2000#'"$TD"'#g' \
     -e 's#/data/gallery-guests/Win2000/win2k-pro.qcow2#'"$TD"'/win2000-golden.qcow2#g' \

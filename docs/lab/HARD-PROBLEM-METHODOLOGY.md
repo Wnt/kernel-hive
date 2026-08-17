@@ -61,7 +61,7 @@ wasting effort. Instead:
 
 - Repo work: a **git worktree** per agent (branch `agent/<angle>`), so file edits never
   collide.
-- labhost work: a **namespaced clone** per agent under `/data/vms/soltest/<name>-<uniq>/`
+- labhost work: a **namespaced clone** per agent under `/data/vms/sandbox/<name>-<uniq>/`
   with a **unique** dir / VMID / `qmp.sock` / pidfile / hostfwd ports, so N concurrent
   QEMU clones don't step on each other. Kill VMs **only** via `clone-guard
   kill-pidfile` (never `pkill` by name). Keep `loadvm golden` device-set parity.
@@ -124,7 +124,7 @@ each one had already been reported as a result.
 - **Agents:** one bounded agent per angle, isolated in its own git worktree, run at
   default time/token caps; salvage a partial result before relaunching or converging.
 - **Isolation / safety:** `clone-guard` (`docs/lab/clone-guard.md`), namespaced
-  `/data/vms/soltest` clones, pidfile-only kills.
+  `/data/vms/sandbox` clones, pidfile-only kills.
 - **Verification:** `labctl shot` / QMP `screendump` → PNG → look at the framebuffer.
 - **Green-before-done:** any branch intended for `main` owes the CI gate
   ([AGENT-CI-EXIT-RULE.md](AGENT-CI-EXIT-RULE.md)).

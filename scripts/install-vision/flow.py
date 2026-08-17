@@ -117,7 +117,7 @@ def load_flow(path: Path) -> dict[str, Any]:
 
 
 def assert_clone_qmp(value: str) -> None:
-    root = Path(os.environ.get("CLONE_GUARD_CLONE_ROOT", "/data/vms/soltest")).resolve()
+    root = Path(os.environ.get("CLONE_GUARD_CLONE_ROOT", "/data/vms/sandbox")).resolve()
     path = Path(value).resolve()
     if path == root or root not in path.parents:
         raise FlowError(f"QMP socket must be inside clone root {root}/")

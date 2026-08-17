@@ -36,7 +36,7 @@ tile's reset) comes up with the agent already polling COM1 and reconnect-ready.
 
 ## Verification (framebuffer, 2026-07-13)
 
-Proven on an isolated clone (`/data/vms/soltest/templeos-c1`) and then on the live
+Proven on an isolated clone (`/data/vms/sandbox/templeos-c1`) and then on the live
 golden: raw writes to `serial.sock` of `M 560 420` move the cursor 1:1, and
 `P 1 18 7` / `R 1 18 7` open the File pull-down menu (a real click). The agent
 survives `savevm golden` -> `loadvm golden` and still tracks over serial afterward.

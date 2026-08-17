@@ -11,14 +11,14 @@ checkpoint-resume proof.
 ## Fixed paths and identities
 
     repo=/data/vms/streamhost/build
-    scratch=/data/vms/soltest/lli/spike-solaris-a
+    scratch=/data/vms/sandbox/lli/spike-solaris-a
     source=/data/vms/qemu-fastpoll-build.1784076046-22671/pve-qemu/pve-qemu-kvm-11.0.2
-    qemu=/data/vms/soltest/lli/spike-solaris-a/qemu-build/qemu-system-x86_64
-    disk=/data/vms/soltest/lli/spike-solaris-a/solariscde-stage-a.qcow2
-    launcher=/data/vms/soltest/lli/spike-solaris-a/launch-stage-a.sh
-    qmp=/data/vms/soltest/lli/spike-solaris-a/qmp.sock
-    ghid_socket=/data/vms/soltest/lli/spike-solaris-a/gallery-hid.sock
-    pidfile=/data/vms/soltest/lli/spike-solaris-a/qemu.pid
+    qemu=/data/vms/sandbox/lli/spike-solaris-a/qemu-build/qemu-system-x86_64
+    disk=/data/vms/sandbox/lli/spike-solaris-a/solariscde-stage-a.qcow2
+    launcher=/data/vms/sandbox/lli/spike-solaris-a/launch-stage-a.sh
+    qmp=/data/vms/sandbox/lli/spike-solaris-a/qmp.sock
+    ghid_socket=/data/vms/sandbox/lli/spike-solaris-a/gallery-hid.sock
+    pidfile=/data/vms/sandbox/lli/spike-solaris-a/qemu.pid
     VMID label=9910
     VNC=127.0.0.1:5991
     hostfwd=127.0.0.1:58790 to guest 10.0.2.15:7777
@@ -39,7 +39,7 @@ present.
 
     cd /data/vms/streamhost/build
     S=/data/vms/qemu-fastpoll-build.1784076046-22671/pve-qemu/pve-qemu-kvm-11.0.2
-    O=/data/vms/soltest/lli/spike-solaris-a/qemu-build
+    O=/data/vms/sandbox/lli/spike-solaris-a/qemu-build
     streamhost/qemu-patches/gallery-hid/build-standalone.sh "$S" "$O"
 
 This copies the device/header/test into the configured pinned source, applies
@@ -50,7 +50,7 @@ installs anything.
     cd streamhost/qemu-patches/gallery-hid/tools/ghid-inject
     cargo build --release
     install -m 0755 target/release/ghid-inject \
-      /data/vms/soltest/lli/spike-solaris-a/bin/ghid-inject
+      /data/vms/sandbox/lli/spike-solaris-a/bin/ghid-inject
 
 The nested tool manifest contains an empty local workspace.  Without it Cargo
 mistakes the utility for an omitted member of the parent streamhost workspace.
@@ -78,7 +78,7 @@ adds and passes a fifth save/load test; parser fuzzing remains follow-up work.
 The Stage-A disk was made with a plain independent copy of the station-local
 checkpoint.  Never point the scratch QEMU at the source image:
 
-    D=/data/vms/soltest/lli/spike-solaris-a
+    D=/data/vms/sandbox/lli/spike-solaris-a
     L=/data/vms/streamhost/stations/solaris
     ionice -c2 -n7 nice -n15 cp --sparse=always \
       "$L/solariscde-golden.qcow2" "$D/solariscde-stage-a.qcow2"
@@ -118,7 +118,7 @@ coordinates are normalized 0..32767, not framebuffer pixels.  For this
 (960,651) is approximately (16392,17783).  Use the existing lab credential
 source programmatically and do not print it.  The final framebuffer proof is:
 
-    /data/vms/soltest/lli/spike-solaris-a/cde-proven.png
+    /data/vms/sandbox/lli/spike-solaris-a/cde-proven.png
 
 It visibly shows the 1920x1200 CDE desktop and scene dtterm.  The earlier
 boot and dtlogin evidence is in framebuffer.png and framebuffer-2.png.
@@ -130,7 +130,7 @@ the available ffmpeg instead:
 
 To stop, and only to stop this clone:
 
-    D=/data/vms/soltest/lli/spike-solaris-a
+    D=/data/vms/sandbox/lli/spike-solaris-a
     kill "$(cat "$D/qemu.pid")"
 
 ## Enumeration gate
@@ -275,8 +275,8 @@ The exact source path is:
 
 Smoke commands against the clone:
 
-    GH=/data/vms/soltest/lli/spike-solaris-a/bin/ghid-inject
-    S=/data/vms/soltest/lli/spike-solaris-a/gallery-hid.sock
+    GH=/data/vms/sandbox/lli/spike-solaris-a/bin/ghid-inject
+    S=/data/vms/sandbox/lli/spike-solaris-a/gallery-hid.sock
     "$GH" "$S" pointer 16384 12000 1 -1 0
     "$GH" "$S" key 0x001e down 0
     "$GH" "$S" key 0x001e up 0
@@ -339,7 +339,7 @@ Insert the exact ISO without restarting or changing the saved device set:
     ISO=/data/assets-staging/SolarisCDE/sol10.iso
     python3 - <<'PY'
     import json, socket
-    qmp = "/data/vms/soltest/lli/spike-solaris-a/qmp.sock"
+    qmp = "/data/vms/sandbox/lli/spike-solaris-a/qmp.sock"
     s = socket.socket(socket.AF_UNIX)
     s.connect(qmp)
     f = s.makefile("rwb", buffering=0)
@@ -436,8 +436,8 @@ or hardcodes that value.
 
 Run separate commands so one-event interrupt accounting is visible:
 
-    GH=/data/vms/soltest/lli/spike-solaris-a/bin/ghid-inject
-    S=/data/vms/soltest/lli/spike-solaris-a/gallery-hid.sock
+    GH=/data/vms/sandbox/lli/spike-solaris-a/bin/ghid-inject
+    S=/data/vms/sandbox/lli/spike-solaris-a/gallery-hid.sock
     "$GH" "$S" pointer 16384 12000 1 -1 0
     "$GH" "$S" key 0x001e down 0
     "$GH" "$S" key 0x001e up 0
@@ -468,7 +468,7 @@ ISRs/ring IRQs and the same payloads. This final module is the one left loaded.
 
 Stage C was completed on 2026-07-15 against the same disposable standalone
 clone. The final QEMU PID is recorded in
-`/data/vms/soltest/lli/spike-solaris-a/qemu.pid`; it was `990736` at handoff.
+`/data/vms/sandbox/lli/spike-solaris-a/qemu.pid`; it was `990736` at handoff.
 The clone remains running, `galleryhid` is loaded, CDE is logged in, and Xorg
 has `/dev/gallerymouse` open.
 
@@ -604,7 +604,7 @@ for Xorg to consume each event, queried X's root pointer with
 `xquery-pointer`, then took a QMP `screendump` and converted the PPM with
 `pnmtopng`. The exact results are saved in:
 
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-final-coordinates.txt
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-final-coordinates.txt
 
 They are:
 
@@ -617,11 +617,11 @@ They are:
 The full 1920x1200 frames were individually inspected, including the clipped
 edge cursor at each corner:
 
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-final-tl.png
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-final-tr.png
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-final-bl.png
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-final-br.png
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-final-center.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-final-tl.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-final-tr.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-final-bl.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-final-br.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-final-center.png
 
 The 1024x768 cap did **not** reproduce: both bottom corners reached y=1199
 and both right corners reached x=1919.
@@ -633,9 +633,9 @@ moved from normalized 2732,6012 (pixel 160,220) to 7342,12298 (pixel
 430,450). X reported mask `0x100` while held and `0x0` after release; the
 selected region is visibly inverted in the held and after frames:
 
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-drag-select-before.png
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-drag-select-held.png
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-drag-select-after.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-drag-select-before.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-drag-select-held.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-drag-select-after.png
 
 Allow about one second between state changes in this functional proof. A
 zero-delay diagnostic query can race Xorg and observe the coordinate before
@@ -647,8 +647,8 @@ One vertical wheel notch was sent at the same pointer location with transport
 `wheel_v=1, wheel_h=0`. The after frame visibly moves dtterm scrollback and
 its scrollbar upward:
 
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-wheel-notch-before.png
-    /data/vms/soltest/lli/spike-solaris-a/stage-c-proof-wheel-notch-after.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-wheel-notch-before.png
+    /data/vms/sandbox/lli/spike-solaris-a/stage-c-proof-wheel-notch-after.png
 
 ### Stage-D handoff
 
@@ -819,7 +819,7 @@ Status: **PASS**, captured 2026-07-16 on `labhost`. The live `solariscde`
 station was not modified or restarted by this work; its warpd-backed QEMU stayed
 running. All installation, capturing, and restore testing used the isolated clone:
 
-    /data/vms/soltest/ghid-vmstate-codex
+    /data/vms/sandbox/ghid-vmstate-codex
 
 The standalone QEMU was rebuilt from the pinned assembled QEMU 11.0.2/PVE
 tree. The stable tested binary and runtime data are:
@@ -863,7 +863,7 @@ pending ring record and asserted INTA, verifies PCI/BAR2/control state at the
 destination, proves backend-disconnected plus stale-INTA-deasserted state,
 then reconnects, re-arms, and publishes the next sequence. TAP is:
 
-    /data/vms/soltest/ghid-vmstate-codex/qtests-vmstate.tap
+    /data/vms/sandbox/ghid-vmstate-codex/qtests-vmstate.tap
 
 ### Reproducible capture
 
@@ -874,7 +874,7 @@ paths, verifies the pidfile uses a disk below the clone, rejects an established
 gallery backend, reads BAR0/BAR2 through QMP, and requires an empty ring,
 matching armed epoch, driver-ready, all IRQs enabled, and no pending cause:
 
-    D=/data/vms/soltest/ghid-vmstate-codex
+    D=/data/vms/sandbox/ghid-vmstate-codex
     streamhost/qemu-patches/gallery-hid/golden-bake-solaris-clone.py \
       --dry-run "$D"
     streamhost/qemu-patches/gallery-hid/golden-bake-solaris-clone.py \
@@ -901,7 +901,7 @@ driver-ready, restore re-arm required); after the kernel ISR re-armed, the
 tested corner or centre was exact and the X button mask was zero. The cycle
 record is:
 
-    /data/vms/soltest/ghid-vmstate-codex/process-loadvm-cycles.txt
+    /data/vms/sandbox/ghid-vmstate-codex/process-loadvm-cycles.txt
 
 On the first restored process, all four corners plus centre were exact, a left
 click changed X mask `0x0 -> 0x100 -> 0x0`, and a right-border drag changed the
@@ -924,6 +924,6 @@ Do not cold-boot production. The next session promotes the proven launcher,
 standalone QEMU, driver/Xorg state, and `golden` to the live `solariscde` station
 through the normal clone-to-production procedure. Keep warpd installed and
 available as fallback until the production framebuffer, reconnect, corners,
-click, and resize-drag pass. Then remove the `soltest` clones and add the
+click, and resize-drag pass. Then remove the `sandbox` clones and add the
 registry-owned `HW input` grid badge; never hand-edit generated
 `stations-manifest.sh`. Do not deploy the UI during that handoff.

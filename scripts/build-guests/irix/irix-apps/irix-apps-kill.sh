@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Tear the Track A install rig down. Kills ONLY by pidfile, through clone-guard
-# (which refuses any pidfile outside /data/vms/soltest or any production QEMU).
+# (which refuses any pidfile outside /data/vms/sandbox or any production QEMU).
 # NEVER pkill: the pattern would also match the ssh/bash wrapper.
 #
 # Prefer a CLEAN shutdown first: irix-apps-cmd.sh exit   (MAME flushes work.chd).
 set -u
-D="${IRIX_APPS_DIR:-/data/vms/soltest/irix-apps}"
+D="${IRIX_APPS_DIR:-/data/vms/sandbox/irix-apps}"
 GUARD=/usr/local/bin/clone-guard
 
 if [ -f "$D/mame.pid" ]; then

@@ -13,7 +13,7 @@ is withdrawn, and it is **not** kept in sync with binary changes — the
 one-binary invariant ended with it. Only arm B runs.
 
 These are **not tiles**. They have no registry entry, no poster and no SPA
-scene, they live entirely under `/data/vms/soltest/debridge-7f3a/`, and they are
+scene, they live entirely under `/data/vms/sandbox/debridge-7f3a/`, and they are
 run by hand rather than by `streamhost@`. That last part is deliberate: the
 systemd template pulls in `session-key.conf`, which makes every WebTransport
 session require a ticket the public-gallery gateway mints for a tile it knows
@@ -40,7 +40,7 @@ variable at runtime, so a measured difference can never be a build difference.
 /data/kernel-hive/scripts/build-guests/emulators/build-mame-atarist.sh
 
 # 1. arm A — the bridge kiosk
-/data/vms/soltest/debridge-7f3a/armA/launch-qemu.sh      # == armA-qemu.sh here
+/data/vms/sandbox/debridge-7f3a/armA/launch-qemu.sh      # == armA-qemu.sh here
 #    first time only: the trixie bridge base has hatari's SDL2 but not
 #    libsdl2-ttf, which MAME needs, and the kiosk launcher + binary + rompath
 #    have to be inside the guest:
@@ -53,10 +53,10 @@ variable at runtime, so a measured difference can never be a build difference.
 #      python3 armA-ptr-cfg.py /opt/bridge/atarist-mame/cfg/st.cfg
 #      systemctl restart getty@tty1
 # 2. arm B — host-native
-/data/vms/soltest/debridge-7f3a/armB/launch-mame.sh      # == armB-mame.sh here
+/data/vms/sandbox/debridge-7f3a/armB/launch-mame.sh      # == armB-mame.sh here
 # 3. one streamhost per arm
-/data/vms/soltest/debridge-7f3a/run-streamhost.sh armA start
-/data/vms/soltest/debridge-7f3a/run-streamhost.sh armB start
+/data/vms/sandbox/debridge-7f3a/run-streamhost.sh armA start
+/data/vms/sandbox/debridge-7f3a/run-streamhost.sh armB start
 ```
 
 Namespace: ssh 5793, UDP 54793/54794, plain-HTTP signaling 14793/14794, input
@@ -188,8 +188,8 @@ required.
 Publish / revert, on the box:
 
 ```sh
-/data/vms/soltest/debridge-7f3a/gallery-arms.py publish     # or: status
-ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py withdraw'   # THE REVERT
+/data/vms/sandbox/debridge-7f3a/gallery-arms.py publish     # or: status
+ssh lab '/data/vms/sandbox/debridge-7f3a/gallery-arms.py withdraw'   # THE REVERT
 ```
 
 `withdraw` removes the two signalling rows, the two manifest entries and the
@@ -209,14 +209,14 @@ declaration left behind after the rows are gone fails it as
 ### Why the arms are NOT registry entries with a `listing` soft hide
 
 The soft hide (`registry/README.md`) hides a row that **belongs** in the lineup.
-It is not a way to admit a `soltest` rig into it, and three things block that
+It is not a way to admit a `sandbox` rig into it, and three things block that
 route concretely rather than tediously:
 
 - `scripts/gen_tiles_json.py` — what `labctl gen` runs — hard-exits with
   `declared/live tile set mismatch` for any streamhost registry row with no
   `/data/vms/streamhost/stations/<stationDir>/` directory, and
   `stations-registry.py --check` on the box compares the same two sets. Both arms
-  live under `/data/vms/soltest/debridge-7f3a/`, so a registry row **breaks
+  live under `/data/vms/sandbox/debridge-7f3a/`, so a registry row **breaks
   `labctl gen` for every other session** until the arms are moved into the
   production tile directory and given a `station.env` + `qemu-streamhost.sh`. Arm B
   has no QEMU launcher at all — it is host-native MAME.

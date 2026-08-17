@@ -15,7 +15,7 @@ better instruction scheduling of the hot loop.
 ## Method
 
 Isolated from the live station: a private es40src clone
-(`/data/vms/soltest/ALPHA-nt-pgo/es40src`), private serial ports
+(`/data/vms/sandbox/ALPHA-nt-pgo/es40src`), private serial ports
 (25964/25965), private shm/ctl paths, **no Xvfb** (headless shm capture),
 and a reflink copy of the production seed per boot. Metric =
 **boot-to-settled-desktop** (process start → the Start/quick-launch taskbar
@@ -69,5 +69,5 @@ make clean && make -j6 CXXFLAGS="$BASE -fprofile-use -fprofile-correction -Wno-m
 **LTO** remains a measured **null** (earlier A/B); PGO+LTO combined was not
 retested since PGO alone is already marginal.
 
-Scratch env `/data/vms/soltest/ALPHA-nt-pgo/` can be removed once this is
+Scratch env `/data/vms/sandbox/ALPHA-nt-pgo/` can be removed once this is
 recorded (it holds the private es40src clone + control/pgo binaries + bench).

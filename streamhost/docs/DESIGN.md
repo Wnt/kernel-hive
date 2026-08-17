@@ -308,7 +308,7 @@ content-addressed copy under `/usr/local/lib/streamhost/` and points each tile's
   the source subdir). Both predate the `SH_CAPTURE=x11` backend and **panic on
   `SH_INPUT_BACKEND=x11test`**, so running one against the irix tile fails in a
   way that looks like a tile bug.
-- Builds under `/data/vms/soltest/**` (e.g. `sh-x11-target`) are experiments, not
+- Builds under `/data/vms/sandbox/**` (e.g. `sh-x11-target`) are experiments, not
   release candidates. Promote by rebuilding through `build-deploy.sh`.
 
 **Target production module split** (adds crates, keeps the same pipeline):

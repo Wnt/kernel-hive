@@ -5,7 +5,7 @@
 # pidfile. Kill ONLY by pidfile. Device set mirrors the live freedos tile minus
 # audio (audio irrelevant to capture latency). NEVER point this at a fleet tile.
 set -eu
-D=/data/vms/soltest/freedos-fastpoll
+D=/data/vms/sandbox/freedos-fastpoll
 QEMU_BIN="${QEMU_BIN:-$D/../qemu-fastpoll/qemu-11.0.0/build/qemu-system-x86_64}"
 if [ -f "$D/qemu.pid" ]; then kill "$(cat "$D/qemu.pid")" 2>/dev/null || true; fi
 sleep 0.3

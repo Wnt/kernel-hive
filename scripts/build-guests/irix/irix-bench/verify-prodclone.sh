@@ -32,9 +32,9 @@ CG="${CLONE_GUARD:-/usr/local/bin/clone-guard}"
 RIG="$(cd -- "$(dirname -- "$0")" && pwd)"
 
 case "$V" in
-  /data/vms/soltest/*) : ;;
+  /data/vms/sandbox/*) : ;;
   *)
-    echo "refusing to work outside /data/vms/soltest" >&2
+    echo "refusing to work outside /data/vms/sandbox" >&2
     exit 1
     ;;
 esac

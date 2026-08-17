@@ -85,7 +85,7 @@ will not have it — clone full, or fetch `refs/tags/3.10.0` explicitly.
 
 ## 3. Building the pinned tree
 
-Host-native on labhost (trixie, gcc 14.2), rig `/data/vms/soltest/vice-pin/`,
+Host-native on labhost (trixie, gcc 14.2), rig `/data/vms/sandbox/vice-pin/`,
 out-of-tree, `--enable-headlessui`, `make -j12`, **`make rc=0`**. The two build
 tools the box does not have are still the frame spike's rig-local pair
 (`dos2unix` sed shim, `xa65` unpacked from a `.deb` into the rig's own `bin/`,
@@ -146,7 +146,7 @@ requirement, not a version quirk.
 ## 4. Verification — all four planes, on the rebased tree
 
 Everything below ran on the `kernel-hive/integrated` build, headless, **no X, no
-`DISPLAY`**, rig `/data/vms/soltest/vice-pin/`, port `47251` claimed with a
+`DISPLAY`**, rig `/data/vms/sandbox/vice-pin/`, port `47251` claimed with a
 loud preflight (`ss -lntH` + a `/proc/<pid>/exe` sweep that refuses to start if
 any binary under the rig path is alive).
 
@@ -252,7 +252,7 @@ seed and differs between two runs of the *same* binary.
 
 ## 6. Teardown
 
-Rig `/data/vms/soltest/vice-pin/` (406 MB: the pinned source, the integrated
+Rig `/data/vms/sandbox/vice-pin/` (406 MB: the pinned source, the integrated
 build, the stock-3.10.0 build, and the evidence) left in place for the vic20
 work; **nothing live was touched** — no station, no `/data/vms/streamhost/`, no
 package installed on labhost, no display, tap, VMID or iptables chain claimed.

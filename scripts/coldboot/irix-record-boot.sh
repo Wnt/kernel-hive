@@ -23,14 +23,14 @@
 #
 #   Usage: irix-record-boot.sh            (~8-10 min: ~340 s boot + 120 s settle)
 #   Env:   RIG           dir holding the deployed capture rig (capture-checkpoint.sh)
-#                        [default /data/vms/soltest/irix-ss44/rig]
+#                        [default /data/vms/sandbox/irix-ss44/rig]
 #          IRIX_SHM_TAP  the fb.shm sampler [default: sibling irix-shm-tap.py]
 #          REC_CPUS / BAKE_CPUS  core pins [4,12 / 6,14] — disjoint on purpose:
 #                        the encode must never steal the emulator's cores.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-RIG="${RIG:-/data/vms/soltest/irix-ss44/rig}"
+RIG="${RIG:-/data/vms/sandbox/irix-ss44/rig}"
 BAKE="$RIG/capture-checkpoint.sh"
 SAMPLER="${IRIX_SHM_TAP:-$HERE/irix-shm-tap.py}"
 A="${IRIX_ASSETS:-/data/vms/streamhost/assets/irix}"
@@ -57,7 +57,7 @@ fi
 if pgrep -f irix-shm-tap >/dev/null; then
   echo "a previous run's sampler is still alive:" >&2
   pgrep -af irix-shm-tap >&2
-  echo "tear it down by ITS pidfile (/data/vms/soltest/irix-bootrec-*/sampler.pid) first." >&2
+  echo "tear it down by ITS pidfile (/data/vms/sandbox/irix-bootrec-*/sampler.pid) first." >&2
   exit 2
 fi
 command -v ffmpeg >/dev/null || die "ffmpeg not found"
@@ -65,7 +65,7 @@ python3 -c 'import numpy' 2>/dev/null || die "python3+numpy required (the sample
 [ -f "$SAMPLER" ] || die "sampler not found: $SAMPLER"
 [ -f "$BAKE" ] || die "capture-checkpoint.sh not found: $BAKE (deploy scripts/build-guests/irix/irix-savestate/ there, or set RIG=)"
 
-D="/data/vms/soltest/irix-bootrec-$(date +%s)"
+D="/data/vms/sandbox/irix-bootrec-$(date +%s)"
 CLONE="$D/clone" # becomes IRIX_BAKE_DIR — capture-checkpoint.sh rm-rf's + creates it
 FIFO="$D/video.fifo"
 MP4="$D/boot_video.mp4"

@@ -116,7 +116,7 @@ class Qmp:
             time.sleep(0.05)
 
 
-DECOYS = "/data/vms/soltest/NSPTR-guest-daemon/decoys.json"
+DECOYS = "/data/vms/sandbox/NSPTR-guest-daemon/decoys.json"
 
 
 def raw_hits(px, w=W, h=H):

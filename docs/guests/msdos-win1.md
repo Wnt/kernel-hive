@@ -21,7 +21,7 @@ it to back both a "MS-DOS 6.22" exhibit and a "Windows 1.0" exhibit later.
 ## Win 1.01 four-issue deep fix — 2026-07-13 (PROMOTED LIVE 2026-07-14 via Option B below)
 
 Four user-reported Windows 1.01 problems were root-caused and fixed on a **clone**
-(`/data/vms/soltest/win101-aeeb/`), every step verified by real framebuffer
+(`/data/vms/sandbox/win101-aeeb/`), every step verified by real framebuffer
 screendumps, then promoted into the live checkpoint on 2026-07-14 (see "Option B —
 PROMOTED LIVE"). **Supersedes the "mouse BLOCKED" note in the older section below.**
 
@@ -96,7 +96,7 @@ damaged.
   broken.
 - **Option B — complete (issues 1+2, recommended).** Replace the prebuilt `C:\WIN10`
   tree with the **clone-validated genuine Win 1.01 install + Windows 2.03 MOUSE.DRV**
-  (already built at `/data/vms/soltest/win101-aeeb/disk_install2.qcow2`), keep the
+  (already built at `/data/vms/sandbox/win101-aeeb/disk_install2.qcow2`), keep the
   SETVER entries, point the `WIN` launcher/menu at the install dir, and re-save
   `golden`. **No device-set change** (default PS/2 mouse) -> `loadvm golden` stays
   valid; but it is a **from-scratch Windows rebuild**, so it needs a human go and a
@@ -106,7 +106,7 @@ damaged.
 ### Option B — PROMOTED LIVE 2026-07-14 (user-approved; guest checkpoint done + framebuffer-gated)
 
 The complete fix (issues 1+2) is now **captured into the live `msdoswin1` checkpoint**.
-Built on a namespaced clone (`/data/vms/soltest/win101-integ`, since removed) from
+Built on a namespaced clone (`/data/vms/sandbox/win101-integ`, since removed) from
 `disk_install2.qcow2`, framebuffer-gated on the clone AND on the live station, then
 swapped in with a timestamped backup.
 
@@ -179,7 +179,7 @@ root-caused and two of the three shipped live (the third is device-set-blocked).
    has **no mouse driver bound into `WIN.COM`** (only `HPLASER.DRV` ships as a
    separate `.drv`; display/kbd/mouse drivers are bound at SETUP time) and the tree
    has **no `SETUP.EXE`** to add one — so a cold-boot with the serial mouse still
-   shows no cursor (framebuffer-verified on a soltest clone). Completing this needs
+   shows no cursor (framebuffer-verified on a sandbox clone). Completing this needs
    the genuine Win 1.01 SETUP disk set (WinWorldPC/archive.org), an interactive
    re-SETUP selecting *Microsoft Mouse → Com1* to rebuild `WIN.COM`, then a checkpoint
    recapture with the new device set. Deferred for green-light — the serial device is
@@ -193,7 +193,7 @@ root-caused and two of the three shipped live (the third is device-set-blocked).
    `station.env` sets `SH_AUDIO=on`. **No checkpoint recapture** — `pcspk-audiodev` is a
    backend-only change (the `isa-pcspk` device already exists on the `pc` machine),
    so `loadvm golden` still restores (verified). Confirmed under **KVM** (the live
-   accel) on a soltest clone: a `-audiodev wav` capture of Keen produced **185,228
+   accel) on a sandbox clone: a `-audiodev wav` capture of Keen produced **185,228
    non-silent samples, peak level 24831/32767 (max_volume −2.4 dB)** — a real
    PC-speaker square wave. Live daemon logs the active path: `audio=true`,
    `registered dbus AudioOutListener (Opus @96k)`, `[audio] Init … freq=48000 ch=2`.

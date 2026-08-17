@@ -24,8 +24,8 @@ as older notes below imply.
 directory with both live-path overrides exercised:
 
 ```sh
-OUT_DIR=/data/vms/soltest/repro-kolibrios-1784058917/out \\
-WORK_DIR=/data/vms/soltest/repro-kolibrios-1784058917/work \\
+OUT_DIR=/data/vms/sandbox/repro-kolibrios-1784058917/out \\
+WORK_DIR=/data/vms/sandbox/repro-kolibrios-1784058917/work \\
   ./kolibrios.sh --force
 ```
 
@@ -70,7 +70,7 @@ No pointer acceleration is applied, so the mapping is exact across the whole
 1024x768 surface.
 
 ### Verification (real framebuffer screendumps)
-- **Clone probe** (`/data/vms/soltest/kolibrios-c1`, LiveCD + usb-tablet, QMP
+- **Clone probe** (`/data/vms/sandbox/kolibrios-c1`, LiveCD + usb-tablet, QMP
   `input-send-event` abs axis 0..32767): cursor landed at the requested pixels at
   (150,120), (820,620), (512,384); a click at the Menu button (33,753) opened the
   KolibriOS start menu — abs move **and** click both correct.

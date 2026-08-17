@@ -23,7 +23,7 @@ is the compact "where things stand right now".
   current `origin/main`, pre-push gate green). New files only — trivially
   mergeable to `main`; not force-merged, to avoid racing the other agent's
   in-flight commits.
-- Private scratch `/data/vms/soltest/ALPHA-nt-pgo/` (1.7G) **torn down**; the
+- Private scratch `/data/vms/sandbox/ALPHA-nt-pgo/` (1.7G) **torn down**; the
   live station was never touched.
 
 ## Broader state (unchanged this session)
@@ -34,7 +34,7 @@ is the compact "where things stand right now".
 - **Station is LIVE** — the other agent registered it (slot 140, udp 54140,
   `streamhost@w2kalpha` active). `docs/guests/w2kalpha.md` is canonical.
 - es40 fork `github.com/Wnt/es40` main `6986997` (local `~/es40`); labhost
-  es40src `/data/vms/soltest/ALPHA-nt/es40src`.
+  es40src `/data/vms/sandbox/ALPHA-nt/es40src`.
 
 ## The one open user-facing item (station/gallery side, not mine)
 

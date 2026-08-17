@@ -149,7 +149,7 @@ Both of the following push it far higher, measured 2026-08-09:
   A non-repeating 20-character line lost 1 character at 80/80 and none at
   200/200.
 
-Re-measured properly on a **soltest clone of this station's own checkpoint** with
+Re-measured properly on a **sandbox clone of this station's own checkpoint** with
 [`scripts/dev/emu-key-pacing-bisect.py`](../../scripts/dev/emu-key-pacing-bisect.py)
 (this add added its `PACE_GRID` and `PACE_SETTLE_S` knobs, and fixed its
 relative-`out_dir` bug — `screendump` runs in QEMU's cwd, not the harness's).

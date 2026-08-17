@@ -2,7 +2,7 @@
 # nav.sh X Y [click|dblclick] — home the cursor, feed-forward to (X,Y), act, shoot.
 # shellcheck disable=SC2086  # $FLAT/$D/$E/$TAG are unquoted on purpose (optional flags, no spaces)
 # shellcheck source=/dev/null  # box-only rig library, not in the repo
-source /data/vms/soltest/NSPTR-flatten-accel/lib.sh
+source /data/vms/sandbox/NSPTR-flatten-accel/lib.sh
 TX=$1
 TY=$2
 ACT=${3:-none}

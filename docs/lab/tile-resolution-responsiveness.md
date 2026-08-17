@@ -4,7 +4,7 @@ Investigation date 2026-07-27, QEMU 11.0.2 on `labhost`. **READ-ONLY**: no live
 station was re-captured or reconfigured; the four already-bumped stations were driven only
 with input that was immediately reverted (`loadvm golden`) and framebuffer-verified
 back to their curated scenes. Old-resolution baselines were measured on a
-disposable `/data/vms/soltest/` clone (killed via `clone-guard`). All backups
+disposable `/data/vms/sandbox/` clone (killed via `clone-guard`). All backups
 (`*.bak-res*`) were left intact.
 
 ## The question
@@ -191,7 +191,7 @@ No severe live regression was found, so nothing was rolled back.
 
 ## Reproduction
 
-Measurement scripts live under `/data/vms/soltest/resmeas/` on labhost:
+Measurement scripts live under `/data/vms/sandbox/resmeas/` on labhost:
 `drawmeas.py` (warpd drag + QMP screendump cadence), `absdrag.py` (tablet-abs drag),
 `x264bench.sh` (encode-only scaling bench). Live encode figures come from the
 `[encode] enc latency (snap->AU)` journal line (always emitted per 120 frames;

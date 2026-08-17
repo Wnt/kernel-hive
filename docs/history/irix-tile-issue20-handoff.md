@@ -62,7 +62,7 @@ sgi indy_4610 -bios b10 -rompath <roms> -gio64_gfx xl24 \
   00:00:00:00:00:00" and never reaches login. See `setup_irix.sh` (drives the PROM
   menu via a controlled-rate XTEST injector `relmove.c` — SGI menu items need
   press-hold-release, not a click; MAME's slow emulated keyboard needs ~150 ms key
-  holds). A ready nvram dir is staged at `/data/vms/soltest/irix-mame/nvram/`.
+  holds). A ready nvram dir is staged at `/data/vms/sandbox/irix-mame/nvram/`.
 - **Login:** user `root`, empty password → 4Dwm desktop. (No auto-login yet;
   golden/reset should snapshot the logged-in desktop, or configure IRIX autologin.)
 - **Disk:** the CHD's write-diff grows during first-boot postinst; give the host
@@ -71,7 +71,7 @@ sgi indy_4610 -bios b10 -rompath <roms> -gio64_gfx xl24 \
   turbo when the box is quiesced** (see box state below). Intrinsic MIPS-in-software
   ceiling — Track B (profile+patch MAME) is the lever.
 
-## Artifacts on the box (all under /data/vms/soltest)
+## Artifacts on the box (all under /data/vms/sandbox)
 
 - `irix-mame/` — media: `irix65.chd` (currently b1ac93e3 = post-postinst, boots to
   login fast; original download md5 189f95fb), `roms/indy_4610/`
@@ -126,7 +126,7 @@ sgi indy_4610 -bios b10 -rompath <roms> -gio64_gfx xl24 \
 ## Spike PROVEN (2026-07-30) — x11rb capture + XTEST 1:1
 
 Before touching the production binary, both load-bearing unknowns were validated
-in isolation with a throwaway `x11rb` spike (`/data/vms/soltest/x11spike`, binary
+in isolation with a throwaway `x11rb` spike (`/data/vms/sandbox/x11spike`, binary
 in the shared `…/streamhost/build/target/release/x11spike`) against a live
 MAME/IRIX on host `DISPLAY=:99` (1280x1024x24):
 
@@ -217,7 +217,7 @@ is grinding it). Hard-won facts:
   restore resumes) — the reset primitive is viable; checkpoint the {Xvfb+MAME}
   tree at the golden desktop.
 - Cold boot to login is ~3-4 min at ~44% realtime — minimize reboots.
-- Prototype launcher: `/data/vms/soltest/irix-mame/irix-run.sh`.
+- Prototype launcher: `/data/vms/sandbox/irix-mame/irix-run.sh`.
 
 ## x11 tile-runtime integration design (for the post-enablement pass)
 
@@ -262,12 +262,12 @@ plan — mirror the existing `SH_QEMU_MODE=pve` early-branch pattern:
 ## Production asset promotion + 256 MB RAM (2026-07-31)
 
 The live tile used to read its emulator, glibc bundle and media straight out of
-`/data/vms/soltest/` — the clone/experiment scratch area — i.e. a live exhibit
+`/data/vms/sandbox/` — the clone/experiment scratch area — i.e. a live exhibit
 resting on paths other agents rebuild and delete underneath it (one did exactly
 that, mid-session). Everything is now copied into the production tree
 **`/data/vms/streamhost/assets/irix/`** (`irix65.chd`, `roms/`, `nvram/`,
 `uicfg/`, `mame/sgi`, `glibc/`; 769 MB) and `x11-runtime.sh` /
-`fetch-assets.sh` default there. The soltest copies stay put as the build stage.
+`fetch-assets.sh` default there. The sandbox copies stay put as the build stage.
 
 - **The golden CHD was being mutated in place, and `chmod 444` never stopped
   it.** `irix65.chd` is an *uncompressed* CHD: MAME opens such an image `O_RDWR`
@@ -324,7 +324,7 @@ deadline without intervening.
 
 ### Measured hang rate
 
-Rig: `/data/vms/soltest/irix-boot-trials/` — `trial.sh` (one namespaced trial:
+Rig: `/data/vms/sandbox/irix-boot-trials/` — `trial.sh` (one namespaced trial:
 own dir, own Xvfb display, own nvram, own reflink clone of the golden, killed
 only through `clone-guard`), `runner.sh` (serial batches), `probe.lua` (per-
 second emulated-time / maincpu-PC / screen-geometry sampling plus MAME-internal
@@ -513,7 +513,7 @@ The emulated screen geometry stays correct at 1288x1024 through the blackout, so
 MAME is faithfully scanning out a framebuffer IRIX itself left black. That moves
 the search inside the guest, and the guest writes down what it did.
 
-**Recipe, scripted as `/data/vms/soltest/irix-forensics/hang-forensics.sh`:** the
+**Recipe, scripted as `/data/vms/sandbox/irix-forensics/hang-forensics.sh`:** the
 golden is an uncompressed CHD, so `chdman extractraw` takes ~9 s, and IRIX XFS
 mounts read-only on this kernel with
 `mount -t xfs -o ro,norecovery,nouuid,loop,offset=136314880` (`norecovery`
@@ -588,7 +588,7 @@ description is in `docs/guests/irix.md`; knobs in `streamhost/docs/CONFIG.md`.
   the new `streamhost/tiles/irix/fbstat.py` instead of `import -window root`.
   Default is still `x11`, so the launcher is behaviour-identical until switched.
 
-### What was verified on the clone (`/data/vms/soltest/irix-shmcap`)
+### What was verified on the clone (`/data/vms/sandbox/irix-shmcap`)
 
 All evidence is the real framebuffer read out of the mapping, never log inference.
 
@@ -745,14 +745,14 @@ used `-rtc`. The exhibit is unaffected either way.
 
 ### Reusable assets left behind
 
-`/data/vms/soltest/irix-boot-trials/` — `trial.sh` (one namespaced trial,
+`/data/vms/sandbox/irix-boot-trials/` — `trial.sh` (one namespaced trial,
 framebuffer-classified, clone-guard kills, overlay preservation + hang soak),
 `runner4/5/6.sh` (interleaved arms; **always build control and treatment from one
 tree** — an earlier arm compared binaries that also differed in an unrelated
 patch and showed a 2x speed difference having nothing to do with the variable
 under test), `syncbatch.sh`, `probe.lua` (per-second emu/PC/geometry plus
 emulated-time snapshots), `results*.txt`, and 4 preserved `hang-disk.chd`
-overlays. `/data/vms/soltest/irix-forensics/hang-forensics.sh` reads a guest's
+overlays. `/data/vms/sandbox/irix-forensics/hang-forensics.sh` reads a guest's
 logs out of any overlay. `scripts/build-guests/irix/irix-park-desktop.sh` parks a
 clone at a real 4Dwm desktop unattended.
 
@@ -878,5 +878,5 @@ bake rig wires it and uses it once, to type the agent in.
 namespaced clone with the channel wired, with black-screen-hang retries and
 readiness measured by the CHANNEL answering, not by a timer) and
 `irix-serial-install.sh` (bake + `cksum` verification on both sides). Clones live
-under `/data/vms/soltest/irix-serial/<name>` and every kill goes through
+under `/data/vms/sandbox/irix-serial/<name>` and every kill goes through
 clone-guard.

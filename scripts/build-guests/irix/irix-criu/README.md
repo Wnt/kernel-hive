@@ -31,7 +31,7 @@ stops the clock only when the cursor moves in a real capture.
 | `curs.py` | the cursor probe the restore clock stops on |
 
 Everything is namespaced through environment variables; nothing has a default
-that points at a live tile. Run only against a clone under `/data/vms/soltest`.
+that points at a live tile. Run only against a clone under `/data/vms/sandbox`.
 
 ## Every attachment survives, simultaneously
 

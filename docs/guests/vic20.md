@@ -160,7 +160,7 @@ The station shipped at 40/40 (the playbook's two frames) and a visitor's type-in
 came back corrupted: `PRINT CHR(147)` for `CHR$(147)`, `GOTO 0` for `GOTO 20`,
 and therefore `?BAD SUBSCRIPT ERROR IN 10`. Two characters lost out of ~85.
 
-Bisected on a `/data/vms/soltest` clone with
+Bisected on a `/data/vms/sandbox` clone with
 `scripts/dev/emu-key-pacing-bisect.py`: restore checkpoint, type one fixed 40-character
 line (`print chr$(147)+int(rnd(1)*8)-abcdefghij`, which exercises the same
 shifted set the listing uses) with explicit press → hold → release → gap

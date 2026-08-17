@@ -12,7 +12,7 @@ converge on the same verdict, event path, and plan.
 ## 0. 2026-07-16 gate result
 
 The decisive abs-Y risk is closed: **GO**. On namespaced clone
-`/data/vms/soltest/qnx-ghid-spike-3112` (VMID 3112, 640x480), framebuffer
+`/data/vms/sandbox/qnx-ghid-spike-3112` (VMID 3112, 640x480), framebuffer
 screendumps showed the Photon cursor at `(30,30)` and `(30,455)` as distinct top
 and bottom Y positions, as well as all four corners and centre. A press at
 `(560,427)` expanded the Volume widget at that Y. Button-free samples also moved
@@ -264,7 +264,7 @@ nor a NIC.
    `packet_abs`/stock-`abs`/Photon output path and framebuffer-proved distinct Y,
    hover movement, press hit-testing, and drag. The custom `fake-abs.so` variant
    was not buildable without the missing toolchain/DDK.
-2. **Clone** the `qnx` station under `/data/vms/soltest/qnx-ghid-<ts>` with unique
+2. **Clone** the `qnx` station under `/data/vms/sandbox/qnx-ghid-<ts>` with unique
    dir/VMID/`qmp.sock`/pidfile/ports; **copy** the checkpoint qcow2. Launch with the
    patched pve-qemu that carries `gallery-hid-pci`, adding
    `-chardev socket,id=ghid0,path=$D/gallery-hid.sock,server=on,wait=off`

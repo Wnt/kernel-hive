@@ -29,7 +29,7 @@ bridge could not track 1:1. Fixed with a tiny in-guest HolyC task — see
   reconnect-ready. Adding the serial device changed the device set => the old checkpoint
   was deleted and recaptured with the agent live. Backups:
   `state.qcow2.pre-warpd-*`, `qemu-streamhost.sh.pre-warpd-*`, `station.env.pre-warpd-*`.
-- **Verified (clone `/data/vms/soltest/templeos-c1` then live checkpoint):** `M 560 420`
+- **Verified (clone `/data/vms/sandbox/templeos-c1` then live checkpoint):** `M 560 420`
   moves the cursor 1:1; `P 1 18 7`/`R 1 18 7` opens the File pull-down (a real click);
   the agent survives `savevm golden`->`loadvm golden` and still tracks over serial.
 
@@ -182,7 +182,7 @@ project. Backed up the prior compose to
 ## Fresh builder and agent trial (2026-07-14)
 
 `scripts/build-guests/tiles/templeos.sh --dir` was run against an empty
-`/data/vms/soltest/repro-templeos-*` directory. The build took 61 seconds and
+`/data/vms/sandbox/repro-templeos-*` directory. The build took 61 seconds and
 produced the pinned 17,350,656-byte ISO. QMP framebuffer captures were inspected
 through boot and showed the real RedSea desktop.
 

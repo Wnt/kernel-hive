@@ -1,7 +1,7 @@
 #!/bin/bash
 # De-bridging conversion campaign: run ONE streamhost daemon for one
 # conversion rig, in the background, from a plain env file. The spike's
-# run-streamhost.sh generalized to /data/vms/soltest/debridge-<station>/.
+# run-streamhost.sh generalized to /data/vms/sandbox/debridge-<station>/.
 #
 # NOT a `streamhost@<station>` unit on purpose — the systemd template's
 # session-key drop-in would demand gallery tickets for a rig the gateway has
@@ -16,7 +16,7 @@
 set -euo pipefail
 STATION="${1:?usage: rig-streamhost.sh <station> [start|stop|status]}"
 ACT="${2:-start}"
-D="/data/vms/soltest/debridge-$STATION"
+D="/data/vms/sandbox/debridge-$STATION"
 [ -d "$D" ] || {
   echo "no such rig: $D" >&2
   exit 2

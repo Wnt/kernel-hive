@@ -11,7 +11,7 @@
 #   rawrun.sh <name> <binary> <cpus> <dump-seconds> [extra MAME args ...]
 #
 #   GOLDEN=<path>   golden to clone (default irix65-apps-v3.chd)
-#   RAWRUN_ROOT=<dir>  work root, must be under /data/vms/soltest
+#   RAWRUN_ROOT=<dir>  work root, must be under /data/vms/sandbox
 #
 # Example — the bisect that found the blocker:
 #   rawrun.sh v7-fr  ./sgi.fastram 6,14 620 -ioc2:rs232a pty   # MEMDIAG
@@ -28,11 +28,11 @@ CPUS="${3:?cpus}"
 T="${4:?dump seconds}"
 shift 4
 
-W="${RAWRUN_ROOT:?set RAWRUN_ROOT to a namespaced dir under /data/vms/soltest}"
+W="${RAWRUN_ROOT:?set RAWRUN_ROOT to a namespaced dir under /data/vms/sandbox}"
 case "$W" in
-  /data/vms/soltest/*) : ;;
+  /data/vms/sandbox/*) : ;;
   *)
-    echo "refusing to work outside /data/vms/soltest" >&2
+    echo "refusing to work outside /data/vms/sandbox" >&2
     exit 1
     ;;
 esac

@@ -69,9 +69,9 @@ since moved to 11.0.2-1 (a plain `apt reinstall` would no longer give 11.0.0-3).
 ---
 
 **Date:** 2026-07-12 · **Box:** root@192.0.2.10, pve-qemu-kvm 11.0.0-3, QEMU 11.0.0
-**Clone:** `/data/vms/soltest/freedos-fastpoll/` (FreeDOS, `-display dbus,p2p=on`,
+**Clone:** `/data/vms/sandbox/freedos-fastpoll/` (FreeDOS, `-display dbus,p2p=on`,
 non-destructive cold-boot overlay — the fleet was never touched).
-**Patched binary:** `/data/vms/soltest/qemu-fastpoll/qemu-11.0.0/build/qemu-system-x86_64`
+**Patched binary:** `/data/vms/sandbox/qemu-fastpoll/qemu-11.0.0/build/qemu-system-x86_64`
 (upstream QEMU 11.0.0 + `streamhost/qemu-patches/0001-dbus-display-fast-poll.patch`).
 
 ## The change
@@ -152,7 +152,7 @@ low ROI once Option 1 ships. Pursue only if a future target needs sub-ms capture
 Applies only to the bridge tiles (c64/atarist/apple2/amiga), whose in-guest
 Linux KMS/X kiosk composites at ~60 Hz and adds ~8 ms of its own *before* QEMU
 polls — orthogonal to and additive with the QEMU patch. Prototype path on a
-soltest clone (no rebuild): raise the guest X modeline/refresh to 120–240 Hz
+sandbox clone (no rebuild): raise the guest X modeline/refresh to 120–240 Hz
 (halves/quarters that ~8 ms compose term) and re-run the §2 rig against the
 bridge clone. Not executed this session (all four bridge tiles are live and a
 bridge boot is heavy); N/A to plain-VGA text tiles, where the QEMU poll binds —
@@ -172,7 +172,7 @@ the AS-DEPLOYED section at the top.
 
 ## Reproduce
 
-Patched binary + clone live under `/data/vms/soltest/` (kept for follow-up).
+Patched binary + clone live under `/data/vms/sandbox/` (kept for follow-up).
 Harness (also in `streamhost/qemu-patches/harness/`, shellcheck-clean):
 `launch-qemu.sh` (env: `QEMU_BIN`, `SH_DBUS_UPDATE_MS`, `SH_DBUS_TRACE`),
 `launch-streamhost.sh`, `measure.sh <label>` (cadence),

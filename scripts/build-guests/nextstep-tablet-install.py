@@ -2,7 +2,7 @@
 """Attach the NeXTSTEP tablet driver in the `nextstep` tile, and prove it 1:1.
 
 Runs ON THE LAB BOX against a *running* nextstep QEMU (the tile or a
-/data/vms/soltest clone). Called by scripts/build-guests/nextstep.sh between the
+/data/vms/sandbox clone). Called by scripts/build-guests/nextstep.sh between the
 last cold boot and `savevm golden`; safe to re-run by hand at any time — it
 probes first and only drives the GUI when the boot did not come up absolute
 (see docs/guests/nextstep.md §4).

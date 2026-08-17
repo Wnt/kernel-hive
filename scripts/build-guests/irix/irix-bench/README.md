@@ -40,7 +40,7 @@ in the rig, and it stops IRIX at its own memory diagnostic once the tile's
 
 Every script takes its work root from the environment (`IRIX_BENCH_ROOT`,
 `RAWRUN_ROOT`, an explicit outdir) and refuses to run outside
-`/data/vms/soltest`. Concurrent agents must pick **unique** roots, **unique**
-core pairs (claimed in `/data/vms/soltest/corepairs`), unique tap slots
+`/data/vms/sandbox`. Concurrent agents must pick **unique** roots, **unique**
+core pairs (claimed in `/data/vms/sandbox/corepairs`), unique tap slots
 (`tapnet.sh claim`) and unique displays (`xvfb-alloc`). Kill only through
 `clone-guard kill-pidfile`.

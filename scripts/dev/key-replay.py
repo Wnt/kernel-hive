@@ -3,7 +3,7 @@
 
 The other half of the keyboard-lag evidence chain: key-trace.py --replay turns
 a visitor's real, browser-timed key edges (spa/src/input/keyRecorder.ts) into a
-JSONL file; this fires that file — SAME edges, SAME timing — at a soltest
+JSONL file; this fires that file — SAME edges, SAME timing — at a sandbox
 clone's control socket and measures what the module's pacing engine does with
 it. Ack latency per edge IS the visitor's keyboard lag: the module acks a KEY
 when it is APPLIED to the matrix, past the hold/gap dwells and the
@@ -11,7 +11,7 @@ exclusive-scan gate (scripts/build-guests/patches/mame-ctlsock.patch).
 
     # record on the gallery, then on labhost:
     python3 serve/key-trace.py --session ab12cd34 --replay burst.jsonl
-    python3 key-replay.py --sock /data/vms/soltest/<rig>/ctl.sock \\
+    python3 key-replay.py --sock /data/vms/sandbox/<rig>/ctl.sock \\
         --keymap .../sinclairql.keymap burst.jsonl
 
     # no recording yet? synthesize a realistic rollover burst:

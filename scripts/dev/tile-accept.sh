@@ -109,7 +109,7 @@ done
 case "$SETTLE" in '' | *[!0-9]*) die "--settle wants whole seconds, got '$SETTLE'" ;; esac
 [ -z "$BEFORE" ] || [ -f "$BEFORE" ] || die "--before: no such file: $BEFORE"
 EVIDENCE="${EVIDENCE:-./tile-accept-evidence/$TILE}"
-RUNDIR="/data/vms/soltest/tile-accept/$TILE-$RUN_TAG"
+RUNDIR="/data/vms/sandbox/tile-accept/$TILE-$RUN_TAG"
 
 # --- reporting -------------------------------------------------------------
 # One row per check, printed together at the end: a check whose result is only

@@ -2,7 +2,7 @@
 
 Reproduction notes for baking a boot video on the **haiku** vmstate tile with
 `record-boot.sh` (spec `BOOT-VIDEO-REPLAY-SPEC.md` §3.1/§3.2). Verified end to end
-on a `/data/vms/soltest` clone 2026-07-13; **the live tile was never touched**
+on a `/data/vms/sandbox` clone 2026-07-13; **the live tile was never touched**
 (service `active`, `qmp.sock` unchanged, golden snapshot still the original
 ID 1 / 719 MiB / 2026-07-08 throughout).
 

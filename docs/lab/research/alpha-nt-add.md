@@ -215,14 +215,14 @@ Museum does catalogue **NT 4 for MIPS** as a working installation
 ([`vom-reference.md`](vom-reference.md)). PowerPC NT (PReP) is the third option
 and the least supported anywhere.
 
-Evidence: `/data/vms/soltest/ALPHA-nt/` on labhost (1.1 GB, inert) — es40
+Evidence: `/data/vms/sandbox/ALPHA-nt/` on labhost (1.1 GB, inert) — es40
 source and binaries, the four media files, the flashed `rom/flash.rom`, the
 partial install image, and screenshots `shot1`–`shot39`.
 
 ## 9. Install session, 2026-08-10 — the §7 experiment, completed
 
 Every UNVERIFIED from the study above is now resolved. Evidence:
-`/data/vms/soltest/ALPHA-nt/` (`run/` live rig, `milestones/m2-desktop/` the
+`/data/vms/sandbox/ALPHA-nt/` (`run/` live rig, `milestones/m2-desktop/` the
 clean installed pair, `run/perf-shot*.png` + `gui-*.png` + `boot-*.png` +
 `cold-*.png` the framebuffer record).
 
@@ -290,7 +290,7 @@ reaches a visitor. Method: measure first. All numbers below on a loaded host
 
 ### The boot benchmark harness (built, validated)
 
-`/data/vms/soltest/ALPHA-nt/bench/bench.sh <name> [--binary PATH]
+`/data/vms/sandbox/ALPHA-nt/bench/bench.sh <name> [--binary PATH]
 [--until CKPT] [--timeout S] [--interval S] [--record-all] [--keep]
 [--hold-secs S]` — boots a throwaway ZFS-clone of the `m2-desktop` pair under
 a private Xvfb and framebuffer-detects checkpoints against

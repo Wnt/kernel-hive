@@ -8,7 +8,7 @@
 # $D/snap). Fallback: ImageMagick import off the Xvfb root (flaky on a WM-less
 # display, so it is only used if SNAP produced nothing).
 set -u
-D="${IRIX_APPS_DIR:-/data/vms/soltest/irix-apps}"
+D="${IRIX_APPS_DIR:-/data/vms/sandbox/irix-apps}"
 # The display is whatever irix-apps-launch.sh was ALLOCATED (recorded on start);
 # never a hardcoded guess, which is how a shot ends up being of another rig.
 DISP="${IRIX_APPS_DISPLAY:-$(cat "$D/display" 2>/dev/null)}"

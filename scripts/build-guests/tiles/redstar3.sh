@@ -12,7 +12,7 @@ FLOW=$VISION_DIR/redstar3.flow.yaml
 TEMPLATES=$VISION_DIR/templates/redstar3
 
 DATE_TAG=${DATE_TAG:-$(date +%Y%m%d)}
-WORK_DIR=${WORK_DIR:-/data/vms/soltest/redstar3-build-$DATE_TAG}
+WORK_DIR=${WORK_DIR:-/data/vms/sandbox/redstar3-build-$DATE_TAG}
 STAGE_DIR=${STAGE_DIR:-/data/assets-staging/redstar3}
 ISO_NAME=redstar_desktop3.0_sign.iso
 ISO=$STAGE_DIR/$ISO_NAME

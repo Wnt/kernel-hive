@@ -29,9 +29,9 @@ import time
 import numpy as np
 from PIL import Image
 
-D = os.environ.get("IRIX_APPS_DIR", "/data/vms/soltest/irix-apps")
+D = os.environ.get("IRIX_APPS_DIR", "/data/vms/sandbox/irix-apps")
 DISPLAY = os.environ.get("IRIX_APPS_DISPLAY", ":41")
-RELMOVE = os.environ.get("IRIX_RELMOVE", "/data/vms/soltest/irix-mame/relmove")
+RELMOVE = os.environ.get("IRIX_RELMOVE", "/data/vms/sandbox/irix-mame/relmove")
 SNAPDIR = os.path.join(D, "snap")
 CMD = os.path.join(D, "irix_cmd")
 STEP_US = os.environ.get("IRIX_RELMOVE_US", "1500")

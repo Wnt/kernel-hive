@@ -53,7 +53,7 @@ builder trials pass on the current box → **L3** the full rebuild on the NVMe b
 ## Operating rules for trials (standing lab rules apply)
 
 Never touch live tiles or `/data/gallery-guests` (read-only reference). Namespace
-everything under `/data/vms/soltest/repro-<name>-<ts>/` (own QMP sockets, ports,
+everything under `/data/vms/sandbox/repro-<name>-<ts>/` (own QMP sockets, ports,
 pidfiles); kill QEMU only by pidfile; `nice -n15`; delete work dirs after each trial
 (headroom came from deleting VM 925 — don't burn it); verify guest state only via
 real framebuffer screenshots.

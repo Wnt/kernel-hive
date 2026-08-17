@@ -23,6 +23,7 @@ today. `docs/history/` is a record and is never re-worded.
 | **labhost** | The physical Proxmox machine. "host" is reserved strictly for host-vs-guest contexts. | the box, the lab (machine sense) |
 | **launcher** | Any per-station process-starting script (`qemu-streamhost.sh`, `x11-runtime.sh`). | runtime (script sense) |
 | **reset** | The visitor-facing umbrella action ("put the station back"). **restore** = loading a checkpoint specifically; **relaunch/restart** = process-level mechanisms. | (overlapping use of all four) |
+| **sandbox** | `/data/vms/sandbox/`, the only place clones and scratch rigs live; namespaced per session as `/data/vms/sandbox/<KH_SESSION>-<purpose>/`. | soltest (compat symlink kept on labhost) |
 
 **Stored labels lag by design:** the QEMU snapshot label `golden`, the
 `golden.sta` / `provenance-golden.md5` / `golden-manifest.json` filenames and

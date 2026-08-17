@@ -8,7 +8,7 @@ VICE feeds the daemon audio**, and **whether it can be made instant-ready**
 input planes are separate work.
 
 Everything below was measured on labhost in a namespaced rig,
-`/data/vms/soltest/vice-aud/` (tag `vice-aud`), against **VICE 3.9 built
+`/data/vms/sandbox/vice-aud/` (tag `vice-aud`), against **VICE 3.9 built
 host-native**, not inferred from documentation. Teardown is recorded in §6.
 
 ---
@@ -91,7 +91,7 @@ A real SID tone (`petcat`-built BASIC that pokes 54272-54296 and loops):
 | the same tone restored from a checkpoint at startup | 1390.7 | 4145 | ~188 000 B/s |
 
 The reader was a deliberate stand-in for the daemon: 3840 B per 20 ms deadline
-tick with `F_SETPIPE_SZ` 16 KiB (`/data/vms/soltest/vice-aud/run/reader2.py`).
+tick with `F_SETPIPE_SZ` 16 KiB (`/data/vms/sandbox/vice-aud/run/reader2.py`).
 Its "starved ticks" (≈1.5 %) are an artefact of its own 15 ms give-up cap; the
 daemon does a blocking read of a whole tick and tolerates lateness up to
 `FIFO_STALL` (250 ms), so those become jitter, not gaps.
@@ -149,7 +149,7 @@ VICE's monitor has `dump "<file>"` (write snapshot) and `undump "<file>"`
 | channel | works headless? | notes |
 |---|---|---|
 | `-moncommands <file>` (+ `-initbreak ready`) | **yes** — measured | The startup restore. Log shows `Monitor playback command: undump "…"`. **The first `x` ends playback**, so one command block per file. |
-| `-binarymonitor -binarymonitoraddress ip4://127.0.0.1:<port>` | **yes** — measured | `MON_CMD_DUMP 0x41`, `MON_CMD_UNDUMP 0x42`, plus `RESET 0xcc`, `KEYBOARD_FEED 0x72`, `DISPLAY_GET 0x84`, `MEM_GET 0x01`. Returns an error byte you can assert on. Client used here: `/data/vms/soltest/vice-aud/run/vicemon.py`. |
+| `-binarymonitor -binarymonitoraddress ip4://127.0.0.1:<port>` | **yes** — measured | `MON_CMD_DUMP 0x41`, `MON_CMD_UNDUMP 0x42`, plus `RESET 0xcc`, `KEYBOARD_FEED 0x72`, `DISPLAY_GET 0x84`, `MEM_GET 0x01`. Returns an error byte you can assert on. Client used here: `/data/vms/sandbox/vice-aud/run/vicemon.py`. |
 | `-remotemonitor` (text) | **NO** in a headless build | `src/arch/headless/uimon.c:uimon_get_in()` returns `NULL`, so the interactive monitor never reads a line. The socket listens and answers nothing — which looks exactly like a hung emulator. |
 
 `-loadsnapshot` does not exist; **`-moncommands` + `-initbreak ready` is the
@@ -311,7 +311,7 @@ assembler (`xa65` in Debian). Contrary to the guest builders' warning,
 builders' `repair_*_roms()` + assert blocks should still be carried over, since
 the assertion is what makes a future incomplete tree fail loudly.
 
-Rig scripts (kept, read-only reference): `/data/vms/soltest/vice-aud/run/` —
+Rig scripts (kept, read-only reference): `/data/vms/sandbox/vice-aud/run/` —
 `reader2.py` (the daemon-clock stand-in), `vicemon.py` (binary-monitor client),
 `screen.py` / `jiffy.py` / `shot.py` (screen RAM, guest clock, DISPLAY_GET),
 `final.sh` (preflight + cold/restore/resets/speed), `fleet.sh` (all seven
@@ -325,6 +325,6 @@ scan for any executable under `vice-aud` (that sweep is how the ten stale
 `x64sc` processes were found). Final state, verified: **no `vice-aud`
 executable running**, no `reader2.py` drain and no FIFO holder alive, ports
 `47231-47239` free (`ss -lntH`), 260 MB of build + rig artefacts left in place
-under `/data/vms/soltest/vice-aud/`. No live station was started, stopped,
-read-modified or otherwise touched; nothing outside `/data/vms/soltest/vice-aud/`
+under `/data/vms/sandbox/vice-aud/`. No live station was started, stopped,
+read-modified or otherwise touched; nothing outside `/data/vms/sandbox/vice-aud/`
 was created.

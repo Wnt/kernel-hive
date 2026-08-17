@@ -9,7 +9,7 @@
 #   its own source by hand-copying it — `/root/kh-bridge/{scripts,registry}` for
 #   the trixie base, a per-run rsync staging dir inside
 #   scripts/dev/migrate-tile.sh for every single station migration, and a copy of
-#   scripts/build-guests/tiles/gt40.sh in /data/vms/soltest/BUILD-gt40/ that went
+#   scripts/build-guests/tiles/gt40.sh in /data/vms/sandbox/BUILD-gt40/ that went
 #   stale across the bookworm->trixie flip and would have silently built the station
 #   on the WRONG base. A hand-copy has no version, no drift signal and no way to
 #   tell which commit a build actually ran.

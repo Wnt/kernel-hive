@@ -148,7 +148,7 @@ read trustworthy. Recorded in `scripts/dev/nsptr/FINDINGS.md`.
    Longhorn/WinFS study (`longhorn-add.md`, not yet written). Recommendation so
    far: ship **`gvwin` first** — Tier 2, ~0.19 GB, no new emulator or backend,
    proven boot→login→checkpoint→reset on a clone — then `alto`.
-5. `/data/vms/soltest` holds **339 GB** of inert research clones. Safe to delete
+5. `/data/vms/sandbox` holds **339 GB** of inert research clones. Safe to delete
    once findings are accepted; `NSPTR-native-tablet/overlay.qcow2` is
    deliberately kept as the promotion source for the pointer fix.
 

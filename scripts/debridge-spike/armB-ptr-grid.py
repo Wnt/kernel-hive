@@ -38,9 +38,9 @@ import subprocess
 import sys
 import time
 
-RIG = "/data/vms/soltest/debridge-7f3a"
+RIG = "/data/vms/sandbox/debridge-7f3a"
 SHM = RIG + "/armB/fb.shm"
-SHMPNG = "/data/vms/soltest/drawshm-9c1e/shmpng.py"
+SHMPNG = "/data/vms/sandbox/drawshm-9c1e/shmpng.py"
 BENCH = ("127.0.0.1", 57932)
 PARK = (880, 690)  # empty desktop, far from the menu bar and every icon
 

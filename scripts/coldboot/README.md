@@ -69,7 +69,7 @@ export WEBROOT=<the SPA webroot the https server uses>   # os.environ["WEBROOT"]
 #    device set (must match live exactly, or loadvm golden will fail).
 scripts/coldboot/record-boot.sh amiga --dry-run
 
-# 1. RECORD + BAKE (P1a+P1c). Clone under /data/vms/soltest/, killed only by pidfile.
+# 1. RECORD + BAKE (P1a+P1c). Clone under /data/vms/sandbox/, killed only by pidfile.
 #    vmstate tiles: cold-launch (no loadvm) → detect → stop → poster → savevm golden
 #                   (on the PAUSED state) → verify (loadvm → SSIM vs poster ≥ 0.999).
 #    bridge tiles : loadvm the kiosk golden → ssh the in-kiosk emu cold-boot → record;
@@ -110,7 +110,7 @@ plus `$WEBROOT/boot/index.json`.
   paths (→ clone dir), `-name`, the guest **hostfwd port**, and (vmstate) `-loadvm golden`
   rewritten. **No `-device`/`-audiodev` is added or removed** — `loadvm golden` requires an
   exact device match; adding a device would poison the snapshot.
-- Clones live under `/data/vms/soltest/`; the launcher's `savevm` writes the **copied**
+- Clones live under `/data/vms/sandbox/`; the launcher's `savevm` writes the **copied**
   disk, never live. VMs are killed **only by pidfile**.
 - `BR_EXTERNAL_DISKS` covers writable qcow2 files outside the tile directory: each is
   copied into the namespace and its absolute launcher path is rewritten before launch.
@@ -134,7 +134,7 @@ guard (`:510`) so a missing asset 404s (exposes bake skew) instead of returning
 Nothing here runs off-box (no live tile, no dbus). On the box, in order:
 1. Build `bootrec-tap` from `capture.rs`+`audio.rs` and export `SH_DBUS_TAP` (once).
 2. `record-boot.sh amiga --dry-run` → eyeball the rewritten clone launcher device set.
-3. `record-boot.sh amiga` → watch `/data/vms/soltest/bootrec-amiga-*/{launch,ffmpeg,tap}.log`
+3. `record-boot.sh amiga` → watch `/data/vms/sandbox/bootrec-amiga-*/{launch,ffmpeg,tap}.log`
    and the framebuffer; confirm t0 non-black, Workbench reached, `boot.mp4` non-empty.
 4. `postprocess-boot.sh amiga`, then `gen-boot-manifest.sh amiga`.
 

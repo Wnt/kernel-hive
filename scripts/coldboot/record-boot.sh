@@ -9,7 +9,7 @@
 # It is a STANDALONE SIDECAR (model: scripts/coldboot/amiga-coldboot-watch.sh) — NO
 # streamhost daemon change, so it is unaffected by the shared-binary redeploys of
 # scripts/dev/build-deploy.sh. It cold-launches a CLONE of the station under
-# /data/vms/soltest/ on the station's EXACT live device set (a byte copy of the live
+# /data/vms/sandbox/ on the station's EXACT live device set (a byte copy of the live
 # qemu-streamhost.sh with only paths/ports/loadvm rewritten — loadvm golden requires
 # an exact device match), taps QEMU's dbus display + audio the same way the daemon
 # does, and feeds raw BGRA + PCM into a single-pass ffmpeg encode (§2.3 RECOMMENDED:

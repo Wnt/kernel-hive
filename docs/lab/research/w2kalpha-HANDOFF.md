@@ -38,17 +38,17 @@ the checkpoint is a separate clean snapshot, unaffected).
 - **kernel-hive repo** `/home/wnt/kernel-hive`, pushed `main` (`1139acb`).
 - **es40 fork** `github.com/Wnt/es40`, local clone `~/es40`, pushed `main`
   (`6986997`). Push flow (labhost can't auth to github): `git push origin
-  main:refs/heads/sync`; on labhost `cd /data/vms/soltest/ALPHA-nt/es40src &&
+  main:refs/heads/sync`; on labhost `cd /data/vms/sandbox/ALPHA-nt/es40src &&
   git merge --ff-only sync && git branch -d sync`.
 - **labhost** `ssh lab '<cmd>'` (root). es40 src/build:
-  `/data/vms/soltest/ALPHA-nt/es40src` (`cd src && make -j6`, ccache).
+  `/data/vms/sandbox/ALPHA-nt/es40src` (`cd src && make -j6`, ccache).
 - **Station (production)**: assets `/data/vms/streamhost/assets/w2kalpha/`
   (es40 `fde680f2`, clean 1280×1024 `nt.img`, `rom/`, `es40.cfg`, `w2k.iso`,
   `root/` lib tree); launcher `/data/vms/streamhost/stations/w2kalpha/`
   (`w2kalpha-runtime.sh`, `station.env` — SH_CAPTURE=shm,
   SH_INPUT_BACKEND=mamesock, SH_PORT=54199, SH_RESET_MODE=relaunch,
   `pumps.py`).
-- **Checkpoint lineage**: `/data/vms/soltest/ALPHA-nt/milestones/m5-1280/`
+- **Checkpoint lineage**: `/data/vms/sandbox/ALPHA-nt/milestones/m5-1280/`
   {nt.img, autosave.axp, flash.rom, es40.cfg}. The staged station asset nt.img
   is a copy of m5-1280.
 - **Harness** (scratchpad + box `uibench/`): `uibench.sh` (CM-launch metric,

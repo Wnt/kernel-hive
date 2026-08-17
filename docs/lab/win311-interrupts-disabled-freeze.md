@@ -16,11 +16,11 @@ All commands run on labhost.
 ```bash
 # 1. Stand up an isolated clone (never experiment on a live station).
 NS=w311frz-a1 bash scripts/dev/input-wedge-repro/clone-setup.sh
-/data/vms/soltest/w311frz-a1/launch.sh
+/data/vms/sandbox/w311frz-a1/launch.sh
 
 # 2. Launch SkiFree and hammer its direction keys, watching CPU interrupt state.
 cd scripts/dev/input-wedge-repro
-python3 irqprobe.py --qmp /data/vms/soltest/w311frz-a1/qmp.sock --launch
+python3 irqprobe.py --qmp /data/vms/sandbox/w311frz-a1/qmp.sock --launch
 ```
 
 `irqprobe.py` opens SkiFree from the Program Manager scene, starts a run, then

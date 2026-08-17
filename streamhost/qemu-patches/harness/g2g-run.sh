@@ -2,7 +2,7 @@
 # g2g-run.sh <label> <ntrials> — keystroke glass-to-glass (inject->wire) for one
 # config. Env: QEMU_BIN, SH_DBUS_UPDATE_MS (unset = stock 30ms). Fresh boot.
 set -eu
-D=/data/vms/soltest/freedos-fastpoll
+D=/data/vms/sandbox/freedos-fastpoll
 Q="$D/qmp.sock"
 LABEL="$1"
 NT="${2:-40}"

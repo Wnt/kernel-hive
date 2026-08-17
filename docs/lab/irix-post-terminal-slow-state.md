@@ -187,6 +187,6 @@ disarms nothing.
   live station service stayed stopped throughout; `/data/vms/streamhost/` was read
   only to this work.
 
-Evidence, raw: `/data/vms/soltest/slowstate-7c1d/run/{r1,r5,r6}/` — `perf.csv`,
+Evidence, raw: `/data/vms/sandbox/slowstate-7c1d/run/{r1,r5,r6}/` — `perf.csv`,
 `trace.txt`, `phases.txt`, `cpustat.txt`, `census-*.csv`, `pc-*.log`,
 `console.log`, `provenance.txt` and a framebuffer PNG per window.
