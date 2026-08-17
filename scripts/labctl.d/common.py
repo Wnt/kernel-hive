@@ -9,6 +9,7 @@ ledger entry this split satisfies (size-exclusions.json, scripts/labctl).
 import json, os, re, signal, socket, subprocess, sys
 
 TILES_DIR = os.environ.get("LABCTL_TILES_DIR", "/data/vms/streamhost/stations")
+TILES_JSON = os.environ.get("LABCTL_TILES_JSON", "/data/vms/streamhost/stations.json")
 CDRV = os.environ.get("LABCTL_CDRV", "/root/cdrv.py")
 QMP_HMP = os.environ.get("LABCTL_QMP_HMP", "/root/qmp_hmp.py")
 SHMSHOT = os.environ.get("LABCTL_SHMSHOT", "/root/shmshot.py")
@@ -17,6 +18,22 @@ SHMSHOT = os.environ.get("LABCTL_SHMSHOT", "/root/shmshot.py")
 def die(msg, code=2):
     sys.stderr.write("labctl: " + msg + "\n")
     sys.exit(code)
+
+
+def load_matrix():
+    try:
+        with open(TILES_JSON) as f:
+            return json.load(f)
+    except OSError:
+        die("cannot read %s — run 'labctl gen' first" % TILES_JSON)
+
+
+def tile_conf(name):
+    m = load_matrix()
+    tiles = m.get("tiles", {})
+    if name not in tiles:
+        die("unknown tile '%s'. known: %s" % (name, ", ".join(sorted(tiles))))
+    return tiles[name]
 
 
 def read_env(path):
