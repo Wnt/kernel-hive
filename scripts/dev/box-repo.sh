@@ -167,6 +167,10 @@ if [ "$cmd" = sync ]; then
 elif [ "$want_fetch" = 1 ]; then
   git fetch --quiet origin "$branch" || die "fetch failed"
 fi
+# This runs as root; the checkout is owned by the dev user (uid 1000) who
+# adds worktrees to it from CT950 (scripts/dev/wt.sh). Leave no root-owned
+# index/refs behind, or the next `git worktree add` fails with EACCES.
+chown -R --reference="$dir" "$dir/.git" 2>/dev/null || true
 
 # --- status ------------------------------------------------------------------
 head=$(git rev-parse --short HEAD)

@@ -73,8 +73,9 @@ own_box_git() {
   if [ -n "$key" ] && [ ! -r "$key" ]; then
     export GIT_SSH_COMMAND="ssh"
   fi
-  owner="$(stat -c %u "$BOX_REPO/.git")"
-  if [ "$owner" != "$(id -u)" ]; then
+  # root (box-repo.sh sync over ssh) leaves root-owned index/refs behind
+  owner="$(find "$BOX_REPO/.git" -not -user "$(id -u)" -print -quit 2>/dev/null)"
+  if [ -n "$owner" ] || [ "$(stat -c %u "$BOX_REPO/.git")" != "$(id -u)" ]; then
     sudo chown -R "$(id -u):$(id -g)" "$BOX_REPO/.git" || die "cannot chown $BOX_REPO/.git"
   fi
 }
