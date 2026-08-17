@@ -1019,10 +1019,25 @@ re-measure in high res.
   `build-vice-native.sh` from the pin, and the `xvic.prekbdfix-4210340770`
   rollback copy is gone (the builder's own `rm -rf "$OUT"` took it). No
   `*.prekbdfix*` remains anywhere under `assets/`.
-- **The nine MAME stations have the fixed launcher but were NOT restarted** —
-  lesson 7 only bites at a restart, so the fix is in place for their next one.
-  Their `ctlsock` module still has neither of lesson 3's fixes and no station
-  has been audited for them.
+- ~~The nine MAME stations have the fixed launcher but were NOT restarted~~ —
+  DONE: `ctlsock` audited and fixed (lesson 3), all nine rebuilt and restarted.
+- **A DAEMON FIX IS NOT DEPLOYED UNTIL THE STATION'S POOL SYMLINK MOVES**
+  (2026-08-17, operator-reported on sinclairql: "stops responding to typing a
+  few seconds after a golden restore"). The `idle.rs` observe fix — resume a
+  guest that someone ELSE froze under a live session — shipped in
+  `streamhost-3fa7646e…` and was canaried on the VICE stations ONLY. The nine
+  MAME stations were still pointing at `streamhost-cb701260…` (mpf2 at
+  `3cd30cca…`), i.e. the PRE-FIX daemon, so lesson 7's race was still live for
+  them. Golden restore = RELAUNCH, and the launcher's standby freeze lands
+  ~8 s later — with the visitor still sitting there. That is exactly "works,
+  then dies a few seconds after a restore".
+  All nine were promoted to `3fa7646e…` (each station's `previous` symlink
+  kept, so rollback is one `ln -sfn`). Verified on sinclairql: with a live
+  browser session, a hand `SIGSTOP` was reconciled back to `R` **within 3 s**
+  and a 13-character line typed across the freeze landed intact.
+  The general lesson: a canary is per station, and "the fix is committed" says
+  nothing about which binary a given station runs. Check
+  `readlink /usr/local/lib/streamhost/stations/<id>/current` per station.
 - Operator batch validation of the nine is done; per-station polish is ongoing.
 - Temporary per-edge diagnostics (`SH_MAMESOCK_TRACE`, `MAME_CTL_TRACE`) are
   still live in mpf2's and dragon32's `station.env` — strip when the typing
