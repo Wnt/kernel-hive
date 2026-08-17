@@ -384,5 +384,16 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerA', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseF',
   },
+  // HP 9000/778 (Visualize B160L): a low, wide desktop workstation — a pizza
+  // box, like solaris and irix, but HP's box was the broad flat one, so it takes
+  // pizzaBoxA. crtE is the big workstation tube (the station runs the 1280x1024
+  // ceiling of the Artist framebuffer). pizzaBoxA|crtE is a pair nothing else
+  // in the hall holds: solaris is pizzaBoxC|crtE, the other pizzaBoxA users sit
+  // under crtD and homeCrtA. keyboardH/paramMouseG is the shared Unix
+  // workstation set — HP's HIL keyboard and three-button mouse read the same.
+  hpuxvue: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
 } as const satisfies Record<string, Assembly>;
 

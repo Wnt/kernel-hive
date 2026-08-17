@@ -55,7 +55,12 @@ below).
   and SunOS 4.1.4 has no driver for it. `cg3` (the older Sun color
   framebuffer) is what SunOS actually ships a driver for. Omitting this flag
   is the single most likely way to get a black screen that looks like a boot
-  failure but is actually a missing video driver.
+  failure but is actually a missing video driver. This isn't just catalog
+  lore: the Virtual OS Museum's own working SunOS 4.1.4 install, running
+  under a completely different emulator (TME, see Evidence below), also
+  wires up a `cgthree` framebuffer on SBus slot 1 with its own declaration
+  ROM — independent corroboration that SunOS 4.1.4's graphics expectation is
+  a CG3, not whatever a given emulator defaults to.
 - Firmware: none to source on this route — QEMU's OpenBIOS covers SPARC
   boot.
 
@@ -73,28 +78,45 @@ inferred from filenames, not read.
   (`sun4/.../sunos_4.1.4_config/`) runs under **TME (The Machine Emulator)**
   — config `config.tmesh` — on a host that carries `tmesh`,
   `tme-sun-eeprom`, `tme-sun-idprom`.
-- **The machine is a sun4c** (`sun4-75-rev-2.9.bin` = SPARCstation 2), driven
-  by **real Sun PROM dumps** (`SUNW,501-1415.bin`, `SUNW,501-1561.bin`) and a
-  hand-built NVRAM image (`my-sun4c-nvram.bin`) — not OpenBIOS.
+- **The machine is a sun4c, SPARCstation-2-class**
+  (`sun4-75-rev-2.9.bin` = a real sun4/75 rev 2.9 PROM dump), driven by that
+  **real Sun PROM** plus a second dump (`SUNW,501-1415.bin`,
+  `SUNW,501-1561.bin`) and a hand-built, persistent NVRAM image
+  (`my-sun4c-nvram.bin`) — not OpenBIOS. The machine description names the
+  CPU as a Cypress CY7C601 (SPARC v7) with a TMS390 FPU and caps RAM at a
+  spare **16 MB** — real SS-2 hardware, not a generous modern default. SCSI
+  disk (system disk at ID 3) plus a SCSI tape round out the storage; the
+  framebuffer is the `cgthree` on SBus slot 1 noted above.
+- **Keyboard and mouse are serial, not PS/2/USB**: a Sun Type-4 US keyboard
+  and a "mousesystems-5" protocol mouse, both hung off the machine's Zilog
+  UARTs, with an explicit scancode mapping table plus a macro file shipped
+  alongside the config (`sun-keyboards.txt`, `my-sun-macros.txt`) — evidence
+  that Sun keyboard mapping is genuinely fiddly rather than an incidental
+  detail, and worth budgeting time for regardless of which emulator wins.
+  Because the mouse is a serial relative-motion protocol, there is no
+  absolute-pointer device anywhere on this hardware profile to fall back to.
 - **This is the important part.** VOM has `qemu-system-sparc-5.2.0`
-  installed and uses it for its Solaris entries, yet chose TME + real PROMs
+  installed and uses it for its Solaris entries, yet chose TME + a real PROM
   specifically for SunOS 4.1.4. That is circumstantial evidence that the
   QEMU/OpenBIOS `-M SS-5` path is harder than the catalog's "works-known"
   score implies — the author had QEMU available and passed on it for this
-  OS.
+  OS. One concrete, testable hypothesis for why: TME's machine is **sun4c**
+  (SPARCstation-2 generation) while QEMU's `-M SS-5` target is **sun4m** — a
+  different machine generation with its own device set, which would explain
+  a documented-working recipe on one and a cold trail on the other without
+  either recipe being "wrong."
 - **What the fallback would cost us.** TME is not QEMU, so a sun4c station
   lands as **Tier 3** (host-native, per the de-bridging template) rather
-  than Tier 1, and it trades "no firmware to source" for a real-PROM
-  sourcing problem the QEMU route does not have.
+  than Tier 1, and it trades "no firmware to source" for a real-PROM-plus-
+  NVRAM sourcing problem the QEMU route does not have.
 - **Corroboration the exhibit is worth building**, independent of which
   emulator wins: `00_OpenWindows_with_terminal_,_help_,_and_file_manager.png`
   and `01_OpenWindows_SunView_compatibility.png` show a live, working
   OpenWindows desktop.
-- `sun-keyboards.txt` and `my-sun-macros.txt` sit beside the config — Sun
-  keyboard mapping is evidently fiddly enough that the author kept notes.
 - One more cross-link worth noting: this install also carries Xerox
   GlobalView on top of SunOS (a `dmachine` dependency and
-  `PASSWD.pilot_globalview_1.05_x`) — a direct tie to our existing `star`
+  `PASSWD.pilot_globalview_1.05_x`), launched from a terminal inside
+  OpenWindows with the command `gvx` — a direct tie to our existing `star`
   and `daybreak` Xerox stations.
 
 ## Media
@@ -124,17 +146,25 @@ color) — and needs confirming against an actual boot.
 
 ## Pointer and keyboard
 
-- Expect the same relative-mouse story as other SPARC/QEMU stations: QEMU's
-  SPARC pointer input is relative, so the streamhost side needs a
-  `cursor_scale` calibration pass against the guest's actual pointer
-  acceleration. Copy the `solaris` station's calibration approach rather
-  than re-deriving it, but confirm the value transfers — SunOS 4.1.4's older
-  mouse driver may need its own pass.
-- Sun type-4/5 keyboard layout differences (compose key, `Stop`/`Again`
-  L-keys, different placement of some punctuation) are a known class of
-  gotcha on Sun guests generally. Check `solaris`'s keyboard notes first;
-  unverified whether SunOS 4.1.4 under QEMU needs any remap beyond what that
-  station already solved.
+- **The pointer is definitely relative, not just probably.** This isn't
+  QEMU-specific behavior to hope goes away: the platform itself has no
+  absolute-pointer device. VOM's real-hardware-derived machine description
+  confirms the mouse is a serial "mousesystems-5" protocol device hung off a
+  Zilog UART — the same relative-motion family QEMU's SPARC pointer input
+  presents. So a `cursor_scale` calibration pass against the guest's actual
+  pointer acceleration is a mandatory step for this station, not a fallback
+  to reach for if absolute input doesn't work. Copy the `solaris` station's
+  calibration approach as a starting point rather than re-deriving it from
+  scratch, but confirm the value transfers — SunOS 4.1.4's older mouse
+  driver may need its own pass.
+- **Budget real time for Sun keyboard mapping.** The keyboard is a Sun
+  Type-4 US layout (compose key, `Stop`/`Again` L-keys, different placement
+  of some punctuation vs. a PC keyboard) — a known class of gotcha on Sun
+  guests generally, and VOM's own install needed an explicit scancode
+  mapping table plus a macro file to drive it, which is evidence the mapping
+  work is genuinely fiddly rather than incidental. Check `solaris`'s
+  keyboard notes first; unverified whether SunOS 4.1.4 under QEMU needs any
+  remap beyond what that station already solved.
 
 ## Host-native capture plan
 

@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "id": "hpuxvue",
+  "era_year": 1996,
+  "stationDir": "hpuxvue",
+  "lifecycle": "production",
+  "enabled": true,
+  "listing": {
+    "state": "hidden",
+    "since": "2026-08-18",
+    "reason": "Dark launch: HP-UX 10.20 is being installed live on this station from the Install/Core OS CD (the exhibit currently shows the installer, not the HP VUE desktop). List once the install completes, VUE is chosen at login and the golden checkpoint is baked."
+  },
+  "build": {
+    "rows": [
+      {
+        "order": 60,
+        "prelude": "",
+        "value": {
+          "key": "hpuxvue",
+          "script": "tiles/hpuxvue.sh",
+          "outputDir": "Hpuxvue",
+          "class": "graphical",
+          "estimated": "~2-4h",
+          "automation": "vision",
+          "produces": "hpuxvue-golden.qcow2 + checkpoint (HP-UX 10.20 -> HP VUE desktop over Artist fb, 1280x1024)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "hpuxvue",
+      "value": {
+        "os": "HP-UX 10.20 (HP 9000/778 B160L)",
+        "win": "qemu",
+        "mouse": "vue-desktop",
+        "kbd": "term:hpterm",
+        "kbd_reset": "Escape",
+        "kbd_note": "INSTALL PHASE: keyboard proof is the installer TUI echoing keystrokes; VUE front panel once installed",
+        "audio_trigger": null,
+        "validated": false,
+        "note": "relative LASI PS/2 pointer: cursor_scale 1.0 UNMEASURED (install phase). Foreign-arch TCG station on /opt/qemu-hppa (kernel-hive fork), like macos753"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/hpuxvue",
+      "qmp": "/data/vms/streamhost/stations/hpuxvue/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54144,
+      "notes": "INSTALL PHASE (dark launch). No exec channel yet: the installer runs on the Artist framebuffer; a serial console is on the QEMU serial socket only for the builder. Drive it via labctl key/pointer or the browser."
+    }
+  },
+  "render": {
+    "stationsManifestOrder": 58,
+    "bindingOrder": 65,
+    "goldenOrder": 58,
+    "bringUpGroup": 7,
+    "signalOrder": 60,
+    "actionMapOrder": 32,
+    "stationsManifestPrelude": "\n# hpuxvue (slot 144) — HP-UX 10.20 / HP VUE on a PA-RISC HP 9000/778 (B160L):\n#   qemu-system-hppa from the kernel-hive QEMU fork, installed to /opt/qemu-hppa\n#   (pve-qemu ships no hppa target). TCG only, no KVM. Artist framebuffer\n#   scanout at 1280x1024 (HARD ceiling: higher crashes / dtwm pointer dead zone).\n#   RELATIVE LASI PS/2 pointer (dbus-rel). DARK LAUNCH: listing=hidden while\n#   the install runs on camera; SH_IDLE_PAUSE_SECS=0 until the golden exists.\n",
+    "bindingPrelude": ""
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54144,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "lasi-ps2-mouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 144
+  },
+  "guestDoc": "docs/guests/hpuxvue.md",
+  "credentialsRef": "guest/hpuxvue",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "hpuxvue",
+      "SH_QMP": "/data/vms/streamhost/stations/hpuxvue/qmp.sock",
+      "SH_PORT": "54144",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/hpuxvue/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/hpuxvue/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "bringUpOrder": 65,
+    "vmidLabel": 144,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "hpuxvue",
+        "--vmid",
+        "144",
+        "--udp",
+        "54144",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/hpuxvue/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/hpuxvue/station.env.fixture"
+      ],
+      "deviceSetId": "hpuxvue-b160l-pa7300lc-1280x1024",
+      "launcher": "streamhost/stations/hpuxvue/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/hpuxvue/station.env.fixture",
+      "binary": "/opt/qemu-hppa/bin/qemu-system-hppa",
+      "machine": "B160L",
+      "accel": "tcg",
+      "cpu": "hppa",
+      "memoryMB": 512,
+      "smp": 1,
+      "vga": "artist",
+      "deviceSetSummary": [
+        "/opt/qemu-hppa/bin/qemu-system-hppa",
+        "-name streamhost-hpuxvue",
+        "-M B160L -accel tcg,thread=multi -smp 1 -m 512 -d nochain",
+        "-display dbus,p2p=on",
+        "-drive if=scsi,bus=0,index=6,file=$D/hpuxvue-golden.qcow2,format=qcow2,cache=writeback,aio=threads",
+        "-drive if=scsi,bus=0,index=2,media=cdrom,file=$A/disc1.iso (install phase; -boot d)",
+        "-net nic,model=tulip -net user",
+        "-serial unix:$D/serial.sock,server=on,wait=off",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "install phase: tracked verbatim launcher IS the deployed launcher; the device set is pinned now so the eventual checkpoint is baked with it"
+      }
+    }
+  },
+  "reset": {
+    "stationDir": "hpuxvue",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "restart",
+    "snapshot": null,
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "INSTALL PHASE — HP-UX 10.20 installer booted from the Install/Core OS CD on qemu-system-hppa (B160L, TCG) over the Artist framebuffer. resetMode=restart re-runs the launcher only when QEMU is not live (ensure-station-qemu); the install disk is mutated in place, no golden yet. Dark launch: listing=hidden while the install runs on camera."
+  },
+  "spa": {
+    "archetypeId": "sparc-pizzabox",
+    "transport": "streamhost",
+    "accentColor": "#5b7c99",
+    "eraLabel": "1996 · HP-UX 10.20 — HP VUE",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "hpuxvue",
+    "displayName": "HP-UX 10.20 / HP VUE",
+    "year": 1996,
+    "lineage": "HP-UX (System V Unix)",
+    "arch": "PA-RISC",
+    "ramMB": 512,
+    "era": "1990s",
+    "accent": "#5b7c99",
+    "eraSoftware": [
+      "HP VUE 3.0",
+      "vuewm",
+      "hpterm",
+      "SAM"
+    ],
+    "periodBrowser": "Netscape Navigator 3 / Mosaic",
+    "iconicApps": [
+      "VUE Front Panel",
+      "File Manager",
+      "hpterm",
+      "SAM"
+    ],
+    "blurb": "HP’s own Visual User Environment — the Motif desktop that CDE was built from — on the PA-RISC workstation Unix of the HP 9000 line.",
+    "notes": "Install running live on camera (dark launch). Second non-CDE Motif workstation desktop in the hall; PA-RISC under TCG on a standalone qemu-system-hppa build."
+  }
+}

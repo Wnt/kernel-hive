@@ -27,18 +27,31 @@ suit" angle is the slot it earns.
 ## Machine and emulator
 
 **QEMU `q800` — the same Quadra 800 target the `macos753` station already
-runs — via a patched build, plus one extra ROM.** A/UX 3.1.1 wants a
+runs — via a patched build, with its built-in framebuffer turned off and
+video supplied by a Nubus card instead.** A/UX 3.1.1 wants a
 68851/68030-integral PMMU for its memory management; that requirement rules
 out the *stock* `q800` machine model, but it does not rule out `q800`
 itself, because the community A/UX-on-q800 work adds PMMU support to a
-patched QEMU rather than switching machines. Concretely, that build is
-`qemu-system-m68k-7.1.50-q800` — the Quadra 800 ROM already in use for
-macos753 (`quadra800.rom`), plus a second ROM, `mac_qfb.rom`, which is the
-Nubus-framebuffer piece the patched build expects.
+patched QEMU rather than switching machines. A/UX also doesn't drive the
+q800's built-in framebuffer at all: per the Virtual OS Museum's working
+install, the machine is booted with the built-in fb disabled (`fb=none`)
+and video comes from a separate Nubus framebuffer card device,
+`nubus-qfb`, configured for 1280×1024 at 16-bit depth. `mac_qfb.rom` —
+already known from the VOM package metadata — is that card's Nubus
+declaration ROM, not a general graphics-path patch; it sits alongside the
+Quadra 800 ROM already in use for macos753 (`quadra800.rom`), which A/UX
+still uses as the machine BIOS. RAM is 128 MB. Concretely, the patched
+binary the museum records is `qemu-system-m68k-7.1.50-q800` — a ~7.2-era
+QEMU development build carrying the community A/UX/q800 PMMU and
+`nubus-qfb` work, not a mainline release.
 
-The practical effect: the machine, ROM base, and capture shape are not new
-work — they're the `macos753` recipe. The new work is building (or sourcing
-a prebuilt) `qemu-system-m68k-7.1.50-q800`, plus wiring in `mac_qfb.rom`.
+The practical effect: the machine, ROM base, PRAM-as-mtd pattern, and
+capture shape are not new work — they're the `macos753` recipe. The new
+work is (a) building or sourcing a QEMU with the `nubus-qfb` device and the
+A/UX-capable PMMU, and (b) wiring in `mac_qfb.rom` as that card's
+declaration ROM. Whether (a) is actually new work — i.e. whether
+`nubus-qfb` already exists in the QEMU built in this repo — is the first
+thing to check; see Open questions.
 
 **Fallback — MAME `maciici`.** A Mac IIci-class machine with a genuine
 hardware PMMU would also satisfy A/UX's memory-management requirement, using
@@ -69,9 +82,21 @@ What this tells us:
 
 - **QEMU `q800`, not MAME `maciici`**, and via a purpose-built
   `qemu-system-m68k-7.1.50-q800` binary — a patched QEMU, not a distro
-  package.
-- **The target machine is the same one `macos753` already runs.** The
-  Quadra-800 ROM is shared; `mac_qfb.rom` is the one addition.
+  package. The `RUN_QEMU` scriptlet and `INFO/info` file (read, not the
+  guest image itself) confirm the machine is `q800` with the built-in
+  framebuffer disabled and a `nubus-qfb` card at 1280×1024×16 doing the
+  actual display work, 128 MB RAM, and the Quadra 800 ROM as BIOS.
+- **The target machine and ROM base are the same ones `macos753` already
+  runs**, including PRAM attached as an `mtd` drive — the same pattern
+  already in use for macos753's checkpoint/vmstate. `mac_qfb.rom` and the
+  `nubus-qfb` device are the one addition, needed because A/UX doesn't use
+  the built-in fb at all.
+- **Disk choreography**: the A/UX system disk is a SCSI hard disk at SCSI ID
+  1; the A/UX boot floppy image (`AUXBootfloppy.img`) is attached as a SCSI
+  *hard disk* at ID 0, not as a floppy device — a specific, easy-to-miss
+  wiring choice. A commented-out CD-ROM line for the 3.0.1 install ISO shows
+  the install was originally done from CD, then that device removed once
+  the system disk was in place.
 - **A/UX reaches the Finder** in this configuration — `00_Finder_with_
   utilities.png` is direct confirmation, resolving what would otherwise be
   the biggest open question here.
@@ -79,7 +104,9 @@ What this tells us:
   choreography**: `AUXBootfloppy.img` plus `TuneUp2.0.img` plus
   `systemupdate.sh` imply the install isn't a single pass — budget for it.
 - **Version signal**: 3.1.1 has a screenshot and 3.0.0 does not (VOM doesn't
-  carry a 3.0.x install at all) — target 3.1.1, not 3.0.1.
+  carry a 3.0.x install at all) — target 3.1.1, not 3.0.1. The museum
+  credits this particular install to its own author rather than a
+  third-party image, dated 1995.
 
 ## Media and ROMs
 
@@ -95,28 +122,38 @@ software" posture as the other classic-Mac entries in the catalog, not
 free/open.
 
 ROMs needed: `quadra800.rom` (already sourced and hashed for `macos753` —
-reuse it) and `mac_qfb.rom` (not yet sourced; needs identifying against the
-community q800-A/UX work that produces it). If the MAME fallback is taken
-instead, that needs a Mac IIci ROM from the same archive family, hashed
-separately.
+reuse it) and `mac_qfb.rom`, the declaration ROM for the `nubus-qfb`
+framebuffer card (not yet sourced; needs identifying against the community
+q800-A/UX work that produces it). If the MAME fallback is taken instead,
+that needs a Mac IIci ROM from the same archive family, hashed separately.
 
 ## Boot recipe
 
-Not yet reproduced on this box. Shape, inferred from VOM's file list rather
-than a read command line: `qemu-system-m68k-7.1.50-q800` (patched build),
-`-M q800`, `quadra800.rom` + `mac_qfb.rom` as the ROM pair, `aux_3.1.1.qcow2`
-as the boot disk, `pram.bin` for PRAM state, `AUXBootfloppy.img` attached for
-first boot, and `systemupdate.sh` run post-install per `TuneUp2.0.img`. The
-first real task on this candidate is building or sourcing the patched
-binary and confirming this shape holds.
+Not yet reproduced on this box. Our own derived invocation, built from the
+facts above rather than copied from the museum's scriptlet: the patched
+`qemu-system-m68k-7.1.50-q800`-equivalent binary, `q800` as the machine with
+its built-in framebuffer turned off, a `nubus-qfb` card added and sized to
+1280×1024×16, 128 MB of RAM, `quadra800.rom` as the machine BIOS, the PRAM
+image attached as an `mtd` drive (the macos753 pattern), the A/UX system
+disk as a SCSI hard disk at ID 1, the boot-helper image
+(`AUXBootfloppy.img`-equivalent) as a second SCSI hard disk at ID 0, and our
+own standard `-display dbus,p2p=on` for host-native capture in place of
+VOM's VDE networking setup, which we don't need. `systemupdate.sh`-equivalent
+post-install steps run once the system disk boots, per `TuneUp2.0.img`. The
+first real task on this candidate is confirming the `nubus-qfb` device
+exists in the QEMU built for this repo (see Open questions), then building
+or sourcing the patched binary and confirming this shape holds.
 
 ## Graphical target
 
-Quadra 800 built-in video via the `mac_qfb.rom` Nubus-framebuffer path —
-same display pipeline family as `macos753`, so expect a comparable
-resolution/depth ceiling rather than the low-res/1-bit path a Mac II-class
-machine would have implied under MAME. Exact resolution/depth is unverified
-until the build boots.
+**1280×1024 at 16-bit depth is the known-good geometry** — the Nubus
+`nubus-qfb` card's configuration in the Virtual OS Museum's working install,
+not the Quadra 800's built-in framebuffer, which A/UX doesn't use at all
+(booted with `fb=none`). This is a materially different display pipeline
+from `macos753`, which does use the built-in fb — the shared piece between
+the two stations is the ROM and machine, not the graphics path. Expect this
+resolution/depth to hold once the `nubus-qfb` device is confirmed working
+here; it's a known-good number from a working install, not a guess.
 
 ## Pointer and keyboard
 
@@ -147,6 +184,14 @@ checkpoint contingent on `MACHINE_SUPPORTS_SAVE` covering `maciici`.
   repo's existing QEMU fork does not have the A/UX-capable PMMU/build; a
   separate `qemu-system-m68k-7.1.50-q800`-equivalent build has to be
   reproduced or sourced.
+- **The built-in framebuffer must be disabled, not just unused.** A/UX
+  drives display through the `nubus-qfb` card with `fb=none` set on the
+  machine; leaving the built-in fb on is not merely redundant with
+  `macos753`'s setup, it's the wrong device for this guest.
+- **The boot-helper floppy image attaches as a SCSI hard disk, not a floppy
+  device.** `AUXBootfloppy.img`-equivalent goes on SCSI ID 0 as a second
+  hard disk, with the system disk on SCSI ID 1 — attaching it as an actual
+  floppy device would silently fail to reproduce the working shape.
 - **Choreographed install**: boot floppy (`AUXBootfloppy.img`) plus a
   post-install update pass (`TuneUp2.0.img` + `systemupdate.sh`) on top of
   the base install — expect a materially longer, more multi-stage install
@@ -187,9 +232,17 @@ install even when everything works.
 
 **Open questions**:
 
-- Can `qemu-system-m68k-7.1.50-q800` (or an equivalent patched build) be
-  reproduced from source on this box, and what exactly does the patch touch
-  relative to the fork already running `macos753`?
+- **Does the `nubus-qfb` device exist in the QEMU already built for this
+  repo, or only in the A/UX/q800 patch series the museum used?** This is now
+  the first question to answer, and it's cheaper to resolve than anything
+  else on this list — no media or ROM sourcing required, just a `-device
+  help`/`-M help`-style probe of the QEMU already built here. It decides
+  whether "patched QEMU" is real new work or whether the piece we actually
+  need has already landed upstream.
+- If it isn't there yet: can `qemu-system-m68k-7.1.50-q800` (or an
+  equivalent patched build) be reproduced from source on this box, and what
+  exactly does the patch touch relative to the fork already running
+  `macos753`?
 - Where are the A/UX 3.1.1 install CD images and `mac_qfb.rom` archived, and
   do their hashes check out?
 - What does `AUXBootfloppy.img` → install → `TuneUp2.0.img` +
@@ -198,9 +251,13 @@ install even when everything works.
 - Does checkpoint/instant-resume work the same way on the patched build as
   it does for `macos753`, or does the PMMU patch change save-state behavior?
 
-**Fastest-resolving experiment**: build (or source) the patched
-`qemu-system-m68k-7.1.50-q800` binary and boot `aux_3.1.1.qcow2` with
-`quadra800.rom` + `mac_qfb.rom` by hand — no station scaffold, no install —
-and confirm it reaches the Finder on this box's hardware. That single boot
-validates the entire plan above before any media is sourced independently or
-any scaffolding work begins.
+**Fastest-resolving experiment**: check whether the `nubus-qfb` device is
+already present in the QEMU built for this repo. If it is, the "patched
+QEMU" risk collapses to just the PMMU/A/UX piece, and the plan gets
+materially cheaper; if it isn't, that confirms the patched build is real new
+work before any media is sourced. Either way, follow up by building or
+sourcing the patched binary and booting the system disk with
+`quadra800.rom` + `mac_qfb.rom`, `fb=none`, and the `nubus-qfb` card wired up
+by hand — no station scaffold, no install — and confirm it reaches the
+Finder on this box's hardware. That single boot validates the entire plan
+above before any scaffolding work begins.

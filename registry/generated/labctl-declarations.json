@@ -317,6 +317,21 @@
       "udp_port": 54099,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "hpuxvue": {
+      "dir": "/data/vms/streamhost/stations/hpuxvue",
+      "qmp": "/data/vms/streamhost/stations/hpuxvue/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54144,
+      "notes": "INSTALL PHASE (dark launch). No exec channel yet: the installer runs on the Artist framebuffer; a serial console is on the QEMU serial socket only for the builder. Drive it via labctl key/pointer or the browser."
+    },
     "indyr4400": {
       "dir": "/data/vms/streamhost/stations/indyr4400",
       "qmp": "/data/vms/streamhost/stations/indyr4400/qmp.sock",
