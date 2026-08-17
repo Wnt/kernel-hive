@@ -321,6 +321,18 @@ def main() -> int:
         if len(toks) == 2 and len(toks[1]) == 1 and not toks[1].isalnum():
             by_name.setdefault(toks[0].upper(), []).append((port, field))
 
+    def prefer_keyboard(hits: list[tuple[str, str]]) -> tuple[str, str]:
+        """A driver often declares the SAME default assignment twice: once on
+        the real keyboard matrix and once as a joystick alias (the QL carries
+        KEYCODE_SPACE on both :Y1 SPACE and :JOY1 'P2 Button 1'). The joystick
+        row types nothing — and, sitting outside the MAME_CTL_KEY_EXCL port
+        class, its edge lands in the same drain pass as the letter it rides
+        with: two new keys in one IPC scan, BOTH dropped (sinclairql,
+        2026-08-17, every space and its neighbouring letter). Prefer the
+        non-joystick port; ambiguity within a class still takes the first."""
+        kb = [h for h in hits if "JOY" not in h[0].upper()]
+        return kb[0] if kb else hits[0]
+
     entries: dict[int, tuple[str, str]] = {}
     used: set[tuple[str, str]] = set()
     ambiguous: list[str] = []
@@ -332,20 +344,22 @@ def main() -> int:
         tok = XT_TOKENS.get(code)
         hits = by_token.get(tok) if tok else None
         if hits:
+            pick = prefer_keyboard(hits)
             if len(hits) > 1:
-                ambiguous.append(f"  {tok} -> {hits} (took the first; override to pin)")
-            entries[code] = hits[0]
-            used.add(hits[0])
+                ambiguous.append(f"  {tok} -> {hits} (took {pick}; override to pin)")
+            entries[code] = pick
+            used.add(pick)
             continue
         # Tier 2: exact display-name/alias match.
         for name in names:
             hits = by_name.get(name.strip().upper())
             if not hits:
                 continue
+            pick = prefer_keyboard(hits)
             if len(hits) > 1:
-                ambiguous.append(f"  {name!r} -> {hits} (took the first; override to pin)")
-            entries[code] = hits[0]
-            used.add(hits[0])
+                ambiguous.append(f"  {name!r} -> {hits} (took {pick}; override to pin)")
+            entries[code] = pick
+            used.add(pick)
             break
 
     if args.override:
