@@ -28,6 +28,21 @@ in-repo tooling (`g2g_*.py`, `harness/`, `tools/`, `build-standalone.sh`,
 `golden-bake-*.py`, `launch-*.sh`) stay development-only and are not part of
 the fork.
 
+## `seabios/` — firmware patches (not QEMU, not on the fork)
+
+`seabios/0001-kbd-check-keystroke-returns-with-interrupts-enabled.patch` is a
+one-hunk patch against SeaBIOS `rel-1.17.0` (the release pve-qemu-kvm ships
+prebuilt as `/usr/share/kvm/bios-256k.bin`): INT 16h "check keystroke"
+(AH=01h/11h) returns with IF=1, the IBM AT BIOS contract (`STI` … `RET 2`).
+Stock SeaBIOS returns the *pushed* IF, and DOS POWER.EXE's INT 16h chain turns
+that into a WfW 3.11 guest running with interrupts disabled — the win311
+freeze, [`docs/lab/win311-interrupts-disabled-freeze.md`](../../docs/lab/win311-interrupts-disabled-freeze.md).
+Built and installed on labhost by `scripts/provision/build-seabios-int16if.sh`
+→ `/data/vms/streamhost/firmware/bios-256k-int16if.bin`; consumed by the win311
+launcher's `-bios`. It is **not** part of the pve-qemu quilt series or the QEMU
+fork — a different tree, its own build. Any station that switches ROM must
+re-bake its golden from a cold boot (the ROM bytes are in the vmstate).
+
 # QEMU display-capture fast-poll patch
 
 Cuts the **capture-wait** — the time a finished guest frame sits idle before

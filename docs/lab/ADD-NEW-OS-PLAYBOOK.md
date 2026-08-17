@@ -399,6 +399,12 @@ Keep the launcher and checkpoint as an atomic pair. Adding/removing a disk, tabl
 NIC, serial device, firmware property, PCI device, or machine version after
 `savevm golden` requires a new golden. Display/audio **backends** can sometimes
 vary without changing guest-visible state, but prove this rather than assuming.
+A **firmware image** (`-bios`, option ROMs) is the sneaky case: the ROM bytes are
+RAM blocks inside the vmstate, so `loadvm golden` silently restores the *old*
+ROM whatever the launcher now passes, and a recapture that seeds from the
+existing golden carries it along. Re-bake from a **cold boot** and prove the
+guest's ROM bytes match the new file
+([win311 example](win311-interrupts-disabled-freeze.md#the-fix)).
 
 ## 5. Choose and wire pointer/input transport
 
