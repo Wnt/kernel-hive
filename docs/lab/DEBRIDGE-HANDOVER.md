@@ -1014,6 +1014,20 @@ re-measure in high res.
 
 ## Open debts
 
+- **The spike arms are withdrawn AND their emulator is finally dead** —
+  and the way that was nearly missed is the lesson. The arm B MAME Atari ST
+  had been burning **99.9 % of a core** since the spike, because a RIG IS NOT A
+  STATION: idle auto-pause is a streamhost feature driven by a station's
+  `SH_IDLE_PAUSE_PIDFILE`, and a hand-launched rig has no daemon watching it,
+  so nothing ever freezes it. Any rig left running costs a core forever, in
+  silence. Worse, a sweep for it came back EMPTY and I concluded the rigs were
+  dead: MAME's per-machine binary here is named **`atarist`**, not `mame`, so
+  `pgrep -x mame` matched nothing. **Sweep by `/proc/<pid>/exe` path, never by
+  an assumed process name** — the same discipline the kill guards use, for the
+  same reason. Killed via `clone-guard kill-pidfile`; the arms' directories
+  under `/data/vms/soltest/debridge-7f3a/` are intact, so re-arming for the
+  still-open atarist question is `armB-mame.sh` + `gallery-arms.py publish`.
+
 - ~~All five VICE stations run the fixed module … rebuild and reinstall all
   five~~ RESOLVED 2026-08-17: all seven now run binaries built by
   `build-vice-native.sh` from the pin, and the `xvic.prekbdfix-4210340770`
