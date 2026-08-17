@@ -869,8 +869,6 @@ class H(BaseHTTPRequestHandler):
             # prefixes or anything carrying a file extension (missing hashed
             # assets must 404 to expose deploy skew; a stray GET /restore/* or
             # /signal/* must 404, not silently render the app).
-            if staged_index and staged_index.is_file() and not Path(path).suffix:
-                target = staged_index
             reserved = (
                 "/signal/",
                 "/webrtc/",
@@ -881,7 +879,9 @@ class H(BaseHTTPRequestHandler):
                 "/clientlog",
                 "/clientcmd",
             )
-            if not path.startswith(reserved) and not Path(path).suffix:
+            if staged_index and staged_index.is_file() and not Path(path).suffix:
+                target = staged_index
+            elif not path.startswith(reserved) and not Path(path).suffix:
                 target = WEBROOT / "index.html"
             else:
                 return self._send(404, "not found\n", "text/plain")
