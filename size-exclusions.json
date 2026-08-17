@@ -3,7 +3,6 @@
   "streamhost/scripts/streamhost-station.sh": "651L; shfmt reformat pushed it just over the 600 hard cap; split candidate",
   "streamhost/stations/irix/x11-runtime.sh": "781L; tile launcher (boot + 2 watchdogs + instant-restore #44 + audio fifo + mamectl socket plane #45); cohesive lifecycle unit, split candidate",
   "scripts/build-guests/tiles/os2warp.sh": "620L golden builder, just over the 600 hard cap; split candidate",
-  "scripts/serve/osgallery-https-server.py": "HTTPS static/dev server (700L); split candidate",
   "scripts/build-guests/tiles/win95.sh": "golden builder (1065L); long install script, split candidate",
   "scripts/build-guests/tiles/freedos.sh": "golden builder (812L); split candidate",
   "scripts/build-guests/tiles/9front.sh": "golden builder (803L); split candidate",

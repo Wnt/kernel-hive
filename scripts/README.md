@@ -133,7 +133,7 @@ tracked `streamhost/stations/soltest-*/` launchers (clone scaffolds that run out
 | `scripts/lib/xvfb-alloc.sh` | `/usr/local/bin/xvfb-alloc` | **display allocator** — every rig that needs an Xvfb claims it through this (atomic, loud on collision, self-releasing); scp + `chmod +x`; verify with md5sum |
 | `scripts/gen_tiles_json.py` | `/root/gen_tiles_json.py` | `labctl gen` execs the box copy; run `ssh lab 'labctl gen'` after sync |
 | `scripts/tiles.json.sample` | `/data/vms/streamhost/stations.json` | committed reference of the generated live labctl matrix |
-| `scripts/serve/*` five code files¹ | `/data/vms/streamhost/serve/*` | `restart-https.sh` hardcodes the box path; after server/auth changes sync every changed file, verify byte identity, then restart HTTPS. Branch-only work is **NOT DEPLOYED** until that handoff is completed; `test-clientlog.sh` + `README.md` are repo-only. |
+| `scripts/serve/*` twelve code files¹ | `/data/vms/streamhost/serve/*` | `restart-https.sh` hardcodes the box path; after server/auth changes sync every changed file, verify byte identity, then restart HTTPS. Branch-only work is **NOT DEPLOYED** until that handoff is completed; `test-clientlog.sh` + `README.md` are repo-only. |
 | `scripts/serve/*` two JSONs² | `/data/vms/streamhost/serve/*.json` | committed reference copies (signaling registry + golden manifest) |
 | `scripts/vm-idle-watch.sh` | `/data/vms/streamhost/serve/vm-idle-watch.sh` | idle auto-pause watcher; installed 2026-08-09 (the pair had never been deployed) |
 | `streamhost/guest-agents/solaris/cdrv.py`, `gexec.py` | `/root/cdrv.py`, `/root/gexec.py` | labctl shells out to the box copies |
@@ -149,7 +149,9 @@ tracked `streamhost/stations/soltest-*/` launchers (clone scaffolds that run out
 | tracked `streamhost/stations/*/qemu-streamhost.sh` | `/data/vms/streamhost/stations/*/qemu-streamhost.sh` | verbatim launcher mirrors; generated launchers are gated separately by `verify-emit.sh` |
 | `registry/` allowed source files (`README.md`, `*.json`, `*.in`; **not** `posters/`) | `/data/vms/streamhost/build/registry/` | registry tree union is checked with the same filter on both sides, so one-sided files report drift |
 
-¹ `clientcmd.sh`, `gen-local-ca.sh`, `osgallery-https-server.py`, `reset-tile.sh`, `restart-https.sh`.
+¹ `clientcmd.sh`, `gen-local-ca.sh`, `osgallery-https-server.py`, `reset-tile.sh`, `restart-https.sh`,
+`config.py`, `static_files.py`, `webrtc.py`, `clientlog.py`, `clientcmd.py`, `restore.py`, `signal_route.py`
+(the last seven are osgallery-https-server.py's route/config modules, split out 2026-08-17).
 ² `tiles.json`, `golden-manifest.json`.
 
 ## Top-level scripts
