@@ -47,10 +47,13 @@ venv/
 
 # ---- Agent state / worktrees ----
 # Ignore all agent scratch (worktrees/, settings) but track the
-# committed git hooks under .claude/hooks/ (the pre-push quality gate).
+# committed git hooks under .claude/hooks/ (the pre-push quality gate), plus
+# the shared settings.json that wires PreToolUse hooks (mount-guard) into
+# every agent session — local overrides belong in .claude/settings.local.json.
 .claude/*
 !.claude/hooks/
 !.claude/hooks/**
+!.claude/settings.json
 
 # ---- Test artifacts (Playwright) ----
 test-results*/

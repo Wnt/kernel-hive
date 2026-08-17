@@ -1,0 +1,7 @@
+[Unit]
+Description=Restore stripped host API mounts (securityfs, /dev/pts, /dev/shm, ...)
+Documentation=file:/usr/local/bin/mount-sentinel
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mount-sentinel

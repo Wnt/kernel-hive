@@ -20,6 +20,22 @@
 #   real /dev/pts. Recovery was one line:
 #       mount -t devpts devpts /dev/pts -o rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000
 #
+# IT HAPPENED AGAIN (2026-08-17) — same mechanism, nastier symptom chain
+#   An overnight chroot build hand-rolled its teardown and stripped TEN host
+#   mounts: securityfs, /dev/shm, /dev/mqueue, /dev/hugepages, debugfs,
+#   tracefs, configfs, bpf, pstore, fusectl. With securityfs gone, dbus-daemon
+#   could no longer resolve AppArmor peer labels and denied D-Bus calls from
+#   anything confined under the /usr/bin/lxc-start profile — so the Proxmox
+#   pre-start hook's `timedatectl` call failed ("Failed to parse bus message:
+#   Operation not supported") and `pct start` died for EVERY container. Latent
+#   for hours until the first guest restart; the visible error (an apparmor
+#   dbus denial in dmesg) sat three causal steps from the root cause.
+#   Defense-in-depth since then: the repo's PreToolUse hook
+#   (.claude/hooks/mount-guard-pretooluse.sh) blocks raw umount/bind-mount
+#   over `ssh lab`, and mount-sentinel.timer on labhost re-mounts a stripped
+#   host mount within minutes and logs the timestamp (journalctl -t
+#   mount-sentinel). Neither replaces this guard: USE run-private.
+#
 # WHAT THIS GUARANTEES (fail-CLOSED — non-zero exit + loud message on any doubt)
 #   * a mount target must be strictly INSIDE the chroot root, and the root
 #     itself must live under a sanctioned sandbox prefix — never /, /dev, /proc,
@@ -267,7 +283,7 @@ _chroot_guard_cli() {
     umount-all) chroot_guard_umount_all "$@" ;;
     run-private) chroot_guard_run_private "$@" ;;
     '' | -h | --help | help)
-      sed -n '2,60p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,76p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       return 0
       ;;
     *)

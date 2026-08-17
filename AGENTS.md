@@ -36,8 +36,10 @@ SAME device set (`loadvm golden` requires it), and namespace every dir, VMID,
 socket and port so concurrent agents cannot collide.
 
 **Kill and mount through the guards.** Every clone kill/stop goes through
-`clone-guard`; every chroot mount through `chroot-guard` (the host's `/dev` is
-`shared:2`, so a hand-rolled teardown unmounts the host's `/dev/pts`). Never
+`clone-guard`; every chroot mount through `chroot-guard`, and ad-hoc chroot
+work inside `chroot-guard run-private bash` (the host's `/dev` is `shared:2`,
+so a hand-rolled teardown unmounts the host's own mounts — it has broken ssh
+logins once and `pct start` fleet-wide once). Never
 `pkill -f` from `ssh lab` — it matches your own ssh command line and kills your
 session. Resolve processes through `/proc/<pid>/exe`, never a cmdline grep,
 which matches the shell running it.

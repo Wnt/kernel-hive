@@ -123,11 +123,18 @@ overlay backing files, not assets.
 - **Kill clones only via `clone-guard kill-pidfile`.** The
   `${D:-/data/vms/streamhost/stations/…}` default footgun in a clone launcher once
   reached the live `solaris` station.
-- **Mount chroot API filesystems only via `chroot-guard`.** A hand
-  `mount --rbind /dev` made the chroot's `/dev/pts` a *peer* of the host's and
-  the teardown propagated back out, killing every new interactive login on
-  labhost — while non-interactive `ssh lab '<cmd>'` kept working, so no automation
-  noticed. Five of the 13 remaining stations are chroot builds.
+- **All chroot work runs inside `chroot-guard run-private bash`; API mounts
+  only via `chroot-guard`.** A hand `mount --rbind /dev` made the chroot's
+  `/dev/pts` a *peer* of the host's and the teardown propagated back out,
+  killing every new interactive login on labhost — while non-interactive
+  `ssh lab '<cmd>'` kept working, so no automation noticed. It happened again
+  2026-08-17: a hand teardown stripped securityfs (+9 more host mounts), which
+  broke AppArmor D-Bus mediation and with it `pct start` for every container.
+  Inside `run-private`'s private mount namespace an escaping umount is
+  kernel-impossible and every mount is reaped on exit. Raw umount/bind-mounts
+  over `ssh lab` are now also blocked by the repo's PreToolUse hook, and
+  `mount-sentinel.timer` on labhost heals a stripped host mount within minutes.
+  Five of the 13 remaining stations are chroot builds.
 - **Never modify `/data/vms/bridge/bridge-base.qcow2` or
   `bridge-base-trixie.qcow2`.** An overlay names its backing file *by path*;
   rebuilding one breaks every overlay on it simultaneously, and the failure

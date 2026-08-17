@@ -130,6 +130,12 @@ box_sync_load_pairs() {
   box_sync_add_pair clone-guard scripts/lib/clone-guard.sh /usr/local/bin/clone-guard exact repo
   box_sync_add_pair xvfb-alloc scripts/lib/xvfb-alloc.sh /usr/local/bin/xvfb-alloc exact repo
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
+  # The healer behind chroot-guard: restores host API mounts a rogue teardown
+  # stripped (2026-08-10 /dev/pts, 2026-08-17 securityfs). Script + timer-driven
+  # oneshot unit, installed live on labhost.
+  box_sync_add_pair mount-sentinel scripts/host/mount-sentinel.sh /usr/local/bin/mount-sentinel exact repo
+  box_sync_add_pair mount-sentinel-unit scripts/host/mount-sentinel.service /etc/systemd/system/mount-sentinel.service exact repo daemon-reload
+  box_sync_add_pair mount-sentinel-timer scripts/host/mount-sentinel.timer /etc/systemd/system/mount-sentinel.timer exact repo daemon-reload
   box_sync_add_pair gen-tiles-json scripts/gen_tiles_json.py /root/gen_tiles_json.py exact repo
   # gen-local-ca.sh deploys with the operator's real hostname substituted in
   # (discovered 2026-08-11 when the writer's reverse-scrub check refused the
