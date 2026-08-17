@@ -230,10 +230,10 @@ pub struct Config {
     /// couple of seconds while still probing back up slowly. Default 0 =>
     /// abr_min_restart_ms (fully symmetric = today's behavior). Clamped 500..30000.
     pub abr_down_dwell_ms: u64,
-    /// FPS ladder (L-2, SH_ABR_FPS_LADDER, env-only, default OFF). When on, congested
-    /// tiers cap encode fps (tier1 <=15, tier2/3 <=10) — the cheapest quality-for-
-    /// bitrate lever for near-static retro desktops. OFF => native fps at every tier
-    /// (today's behavior); LAN sessions never leave tier 0, so this is inert there.
+    /// FPS ladder (SH_ABR_FPS_LADDER, env-only, **default ON** since 2026-08-17;
+    /// `off` opts out). Congested tiers cap encode fps (t1 <=15, t2 <=10, t3 <=5):
+    /// the PRIMARY congestion lever for near-static retro desktops — half the
+    /// framerate is half the bitrate at identical sharpness. Inert at tier 0.
     pub abr_fps_ladder: bool,
     /// Progressive RESOLUTION ladder (L-3, SH_ABR_RES_LADDER, env-only, default OFF).
     /// When on, tier 2 ALSO steps encode resolution down (a gentler ~0.85x step) so
@@ -456,7 +456,7 @@ impl Config {
         // L-1 / L-2 ABR extensions — all default to today's behavior (env-only opt-in).
         let abr_backlog_downshift = env_flag("SH_ABR_BACKLOG_DOWNSHIFT");
         let abr_down_dwell_ms: u64 = env_or("SH_ABR_DOWN_DWELL_MS", "0").parse().unwrap_or(0);
-        let abr_fps_ladder = env_flag("SH_ABR_FPS_LADDER");
+        let abr_fps_ladder = !matches!(env_or("SH_ABR_FPS_LADDER", "on").as_str(), "off" | "0");
         let abr_res_ladder = env_flag("SH_ABR_RES_LADDER");
         let abr_idr_backoff = env_flag("SH_ABR_IDR_BACKOFF");
         let abr_start_rtt_ms: u32 = env_or("SH_ABR_START_RTT_MS", "0").parse().unwrap_or(0);

@@ -199,6 +199,9 @@ export class StreamClient {
   missedInterval = 0;
   receivedInterval = 0;
   lossPct = 0;
+  /** Rolling per-tick frame counts the REPORTED lossPct is measured over, so a
+   *  low-fps station cannot report 100 % loss off a single dropped frame. */
+  lossWindow: Array<{ at: number; recv: number; missed: number }> = [];
   /** Rolling diagnostic record behind the Ctrl+N overlay (passive recorder). */
   telemetry = new StreamTelemetry();
   // L-1: server-known egress skips must not read as network loss. `serverStats`

@@ -17,6 +17,15 @@ import { ewma, rawScores } from './scoring';
 import { bankServerSkips, spendSkipCredit } from './skipCredit';
 import { T_STATS, FRAME_STALL_MS, MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS } from './constants';
 
+/** Rolling window the REPORTED loss percentage is measured over (ms). */
+const LOSS_WINDOW_MS = 3000;
+/**
+ * Frames the window must hold before a loss percentage is reported at all.
+ * Below this the ratio is dominated by its own quantisation — one missed frame
+ * out of one is 100 %, not a congested link — so we report 0 instead.
+ */
+const LOSS_MIN_FRAMES = 10;
+
 /**
  * Roll the interval accumulators into rates, run the `el` scorer, update the
  * banner, and emit the T_STATS feedback datagram. Called on a ~100 ms cadence
@@ -47,8 +56,26 @@ export function tickStatsImpl(this: StreamClient): void {
   bankServerSkips(this, this.serverStats?.skippedFrames);
   this.missedInterval = spendSkipCredit(this, this.missedInterval);
 
-  const totalFrames = this.receivedInterval + this.missedInterval;
-  this.lossPct = totalFrames > 0 ? (this.missedInterval * 100) / totalFrames : 0;
+  // ---- REPORTED loss: a rolling window with a MINIMUM DENOMINATOR ----
+  // A percentage over one ~100 ms tick is meaningless on a low-fps station: at
+  // 2 fps the denominator is 0-1 frames, so ONE dropped frame reports 100 %
+  // loss and the server's 5 % downshift threshold (abr.rs DOWN_LOSS_PCT) trips
+  // on statistical noise. That collapsed tru64 to the floor tier repeatedly on
+  // a flawless LAN, and did the same on every low-fps 8-bit station.
+  // We therefore report loss over the last LOSS_WINDOW_MS, and report ZERO
+  // until the window has seen LOSS_MIN_FRAMES — an unmeasurable loss rate must
+  // read as "no evidence of congestion", never as "total loss".
+  this.lossWindow.push({
+    at: now, recv: this.receivedInterval, missed: this.missedInterval,
+  });
+  while (this.lossWindow.length && this.lossWindow[0].at < now - LOSS_WINDOW_MS) {
+    this.lossWindow.shift();
+  }
+  let wRecv = 0;
+  let wMissed = 0;
+  for (const w of this.lossWindow) { wRecv += w.recv; wMissed += w.missed; }
+  const wTotal = wRecv + wMissed;
+  this.lossPct = wTotal >= LOSS_MIN_FRAMES ? (wMissed * 100) / wTotal : 0;
   const missedThisInterval = this.missedInterval;
   const receivedThisInterval = this.receivedInterval;
   this.receivedInterval = 0;

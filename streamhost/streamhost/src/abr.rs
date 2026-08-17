@@ -402,8 +402,7 @@ impl Abr {
         let armed = self.cfg.abr_backlog_downshift;
         // Split by signal: loss/backlog are not self-inflicted and keep the short
         // BREACH; an RTT-only breach must hold for RTT_BREACH (see its comment).
-        let fast_congested =
-            worst_loss >= DOWN_LOSS_PCT || skip_congested(worst_skip, armed);
+        let fast_congested = worst_loss >= DOWN_LOSS_PCT || skip_congested(worst_skip, armed);
         let rtt_congested = worst_excess >= DOWN_RTT_EXCESS_MS;
         let congested = fast_congested || rtt_congested;
         // A session still skipping is not healthy-enough to upshift (L-1 veto).
@@ -434,7 +433,11 @@ impl Abr {
                 .map(|t| now.duration_since(t) >= need)
                 .unwrap_or(false);
             if sustained && cur < MAX_TIER && can_change_down {
-                let why = if fast_congested { "loss/backlog" } else { "rtt" };
+                let why = if fast_congested {
+                    "loss/backlog"
+                } else {
+                    "rtt"
+                };
                 eprintln!(
                     "[abr] DOWN why={why} loss={worst_loss:.1}% rtt_excess={worst_excess:.0}ms skip={worst_skip:.2} sessions={n_active}"
                 );
@@ -600,6 +603,71 @@ mod tests {
         assert_eq!(start_tier_for_rtt(120.0, 120), 1);
         assert_eq!(start_tier_for_rtt(239.0, 120), 1);
         assert_eq!(start_tier_for_rtt(240.0, 120), 2);
+    }
+
+    /// ASYMMETRIC RTT SMOOTHING: a keyframe-burst transient must not leave a
+    /// tail. A short spike is absorbed within a few samples of the link
+    /// recovering (m=4 falling), so it cannot hold the excess above
+    /// DOWN_RTT_EXCESS_MS long enough to satisfy RTT_BREACH.
+    #[test]
+    fn rtt_spike_decays_without_a_tail() {
+        let mut s = SessionState::new();
+        let mut r = Report {
+            rtt_ms: 3,
+            ..Report::default()
+        };
+        fold(&mut s, 0);
+        for _ in 0..40 {
+            s.last = r;
+            fold(&mut s, 0);
+        }
+        let floor = s.rtt_floor;
+        // A burst: ten samples of badly-queued pings.
+        r.rtt_ms = 400;
+        for _ in 0..10 {
+            s.last = r;
+            fold(&mut s, 0);
+        }
+        assert!(s.rtt_ewma - floor > DOWN_RTT_EXCESS_MS, "spike registers");
+        // The link recovers; the excess must collapse fast, not linger.
+        r.rtt_ms = 3;
+        for _ in 0..15 {
+            s.last = r;
+            fold(&mut s, 0);
+        }
+        assert!(
+            s.rtt_ewma - s.rtt_floor < DOWN_RTT_EXCESS_MS,
+            "excess must not linger after recovery: ewma={} floor={}",
+            s.rtt_ewma,
+            s.rtt_floor
+        );
+    }
+
+    /// Sustained bufferbloat must STILL trip: rising is slow (m=16) but a path
+    /// that holds RTT high keeps feeding high samples, so the excess accumulates.
+    #[test]
+    fn sustained_rtt_growth_still_trips() {
+        let mut s = SessionState::new();
+        let mut r = Report {
+            rtt_ms: 20,
+            ..Report::default()
+        };
+        fold(&mut s, 0);
+        for _ in 0..60 {
+            s.last = r;
+            fold(&mut s, 0);
+        }
+        r.rtt_ms = 300;
+        for _ in 0..60 {
+            s.last = r;
+            fold(&mut s, 0);
+        }
+        assert!(
+            s.rtt_ewma - s.rtt_floor >= DOWN_RTT_EXCESS_MS,
+            "genuine bufferbloat must still read as congested: ewma={} floor={}",
+            s.rtt_ewma,
+            s.rtt_floor
+        );
     }
 
     /// The smoothed skip rate: first fold seeds the baseline (delta 0, not the whole

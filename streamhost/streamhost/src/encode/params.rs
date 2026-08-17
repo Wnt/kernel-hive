@@ -265,10 +265,10 @@ mod tests {
         );
     }
 
-    /// L-2 fps ladder: OFF (default) => native fps at every tier (byte-identical
-    /// deploy); ON => tier1 <=15, tier2/3 <=10, never above the base, never 0.
+    /// The fps ladder is ON by default in Config now; `SH_ABR_FPS_LADDER=off`
+    /// opts out and restores native fps at every tier.
     #[test]
-    fn fps_ladder_default_off_is_native() {
+    fn fps_ladder_opt_out_is_native() {
         let p = params(); // abr_fps_ladder: false
         assert_eq!(resolve_fps(0, 60, &p), 60);
         assert_eq!(resolve_fps(1, 60, &p), 60);
@@ -282,10 +282,35 @@ mod tests {
         assert_eq!(resolve_fps(0, 60, &p), 60); // LAN tier untouched
         assert_eq!(resolve_fps(1, 60, &p), 15);
         assert_eq!(resolve_fps(2, 60, &p), 10);
-        assert_eq!(resolve_fps(3, 60, &p), 10);
+        assert_eq!(resolve_fps(3, 60, &p), 5);
         // Never raises fps above the configured base (a 24 fps station stays <= 24).
         assert_eq!(resolve_fps(1, 24, &p), 15);
         assert_eq!(resolve_fps(2, 8, &p), 8);
+    }
+
+    /// FRAMERATE-FIRST ladder: the CRF steps are gentle (+0/+1/+3/+6) so
+    /// sharpness is held while the fps ladder absorbs the budget. The first
+    /// step in particular must be nearly invisible — it used to be +3.
+    #[test]
+    fn crf_steps_are_gentle_so_sharpness_is_held() {
+        let p = params(); // crf 10
+        assert_eq!(resolve_tier(1280, 1024, 0, &p).2, 10);
+        assert_eq!(resolve_tier(1280, 1024, 1, &p).2, 11);
+        assert_eq!(resolve_tier(1280, 1024, 2, &p).2, 13);
+        assert_eq!(resolve_tier(1280, 1024, 3, &p).2, 16);
+    }
+
+    /// Resolution is the LAST resort: tiers 0-2 hold native (no browser
+    /// upscaling blur), only tier 3 steps down.
+    #[test]
+    fn resolution_holds_native_until_the_floor_tier() {
+        let p = params(); // abr_res_ladder: false
+        for tier in 0..=2u8 {
+            let (w, h, _, _) = resolve_tier(1280, 1024, tier, &p);
+            assert_eq!((w, h), (1280, 1024), "tier {tier} must keep native");
+        }
+        let (w3, h3, _, _) = resolve_tier(1280, 1024, 3, &p);
+        assert!(h3 < 1024, "tier 3 steps down: {w3}x{h3}");
     }
 
     /// Congested-tier (>= 1) bufsize is capped at 0.5 x maxrate — idempotent
