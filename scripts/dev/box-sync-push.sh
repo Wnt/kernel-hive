@@ -2,6 +2,13 @@
 # =============================================================================
 # box-sync-push.sh — the reconcile half of verify-box-sync.sh: repo -> labhost.
 #
+# SINCE 2026-08-17 THIS IS THE EMERGENCY DOOR, NOT THE DEPLOY PATH. The box is
+# installed from a COMMIT: scripts/dev/box-deploy.sh (--apply) syncs
+# /data/kernel-hive and runs scripts/host/box-install.sh there over this same
+# pair table, then stamps .deployed-rev. Use this tool only to push a single
+# row from an UNPUSHED working tree (e.g. a launcher you are iterating on)
+# and expect the next box-deploy to overwrite it with the committed form.
+#
 # WHY THIS EXISTS. On 2026-08-10 the detector said DIFFERS four separate times
 # and the only remedy in the repo was a human typing `scp` at a production path,
 # one file at a time. `verify-box-sync.sh` ends at "decide which side is

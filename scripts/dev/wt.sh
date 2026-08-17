@@ -13,7 +13,8 @@
 #
 #     /data/vms/sandbox/<name>/
 #       repo/        git worktree of /data/kernel-hive on branch <name>
-#       build/       its own streamhost build mirror + cargo target (box side)
+#       build/       scratch for box-side builds (cargo itself uses the warm
+#                    shared target dir from streamhost/.cargo/config.toml)
 #       <station>-*/ its clones (clone-guard root is the sandbox)
 #       .kh-session  = <name>
 #
@@ -159,7 +160,8 @@ wt.sh: full stack ready — $name
   sandbox   $dir/            clones + build/ live here; clone-guard root
   session   KH_SESSION=$name  (auto from $repo/.kh-session)
   staging   scripts/dev/box-deploy.sh --stage        → https://<lab>:8443/staging/$name/
-  build     scripts/dev/build-deploy.sh --sandbox    (streamhost from this tree)
+  build     scripts/dev/labrun -c 'cd $repo/streamhost && cargo build --release'   (warm shared target)
+            then land on main → scripts/dev/build-deploy.sh --canary <station>
 next:  cd $repo
 EOM
 }
