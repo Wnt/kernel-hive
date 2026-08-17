@@ -59,14 +59,23 @@ reference only, per the media rule in [`AGENTS.md`](../../../AGENTS.md) — but
 its package metadata (dpkg file lists on the host rootfs) names the emulator
 and files, and the absence of the author's screenshots is itself evidence:
 
-- **Emulator: plain QEMU x86** — no ROM, no firmware blob, no bridge. This
-  supports the **Tier 1** assumption above, and confirms **5.1 for Intel is
-  the release that is actually made to run**, which is what this candidate
-  targets.
+- **Emulator: plain QEMU x86** — no bridge. This supports the **Tier 1**
+  assumption above, and confirms **5.1 DR2 for Intel is the release that is
+  actually made to run**, which is what this candidate targets. Unlike BeOS
+  R5's install elsewhere in this collection, Rhapsody is not device-minimal —
+  it does carry per-install overrides: RAM is cut to **64 MB**, the mouse is
+  attached as a **serial Microsoft mouse** rather than PS/2 or USB, and the
+  collection's standard floppy and second-hard-disk devices are disabled, i.e.
+  the working configuration is a deliberately pared-down device set, not the
+  collection default.
 - VOM keeps pinned old QEMU i386 builds (`0.8.2`, `0.9.1`, `3.0.92`, `5.2.0`,
-  `7.0.0`, `8.0.5`). For NeXT-family x86 guests that is exactly the knob the
-  NeXTSTEP 3.3 gotchas predict: if a modern QEMU fails, walk the versions
-  back.
+  `7.0.0`, `8.0.5`), and the collection's **default x86 QEMU is 0.8.2**, a
+  2006-era build. Rhapsody's install specifies **no QEMU version override** —
+  it simply runs on whatever the collection default is, which means the only
+  confirmed-working reference for this guest is that 2006-era QEMU. This is a
+  much sharper version of the "walk it back if a modern build fails" move the
+  NeXTSTEP 3.3 gotchas predict: for Rhapsody, walking back is not a
+  contingency, it is the only path anyone has confirmed works at all.
 - **No screenshot and no `PASSWD` file** in VOM's info package — unlike its
   HP-UX installs, which do carry screenshots as the author's own verdict on
   what each reaches. So VOM is **not independent evidence** that this install
@@ -107,11 +116,13 @@ several-hundred-MB range for the CD.
 
 Tier 1 expected — native x86 QEMU, no bridge, same pipeline as NeXTSTEP 3.3,
 and now corroborated by VOM's own `RUN_QEMU` install. No Rhapsody-specific
-recipe has been tested; every value below is **inferred by analogy** with the
-working NeXTSTEP 3.3 x86 station:
+recipe has been tested end to end; the shape below is our own starting point,
+derived from what the Virtual OS Museum's working configuration establishes
+(a deliberately minimal device set) plus analogy with the working NeXTSTEP
+3.3 x86 station where VOM gives no more specific guidance:
 
 ```
-qemu-system-i386 -M pc -cpu pentium2 -m 256 \
+qemu-system-i386 -M pc -cpu pentium2 -m 64 \
   -drive file=rhapsody.qcow2,format=qcow2,if=ide \
   -drive file=rhapsody-cd.iso,format=raw,media=cdrom,if=ide \
   -device VGA -netdev user,id=n0 -device ne2k_pci,netdev=n0 \
@@ -121,10 +132,12 @@ qemu-system-i386 -M pc -cpu pentium2 -m 256 \
 - **CPU**: conservative Pentium-II-class model — Rhapsody's Mach kernel and
   driver set are period Intel PC hardware, not tolerant of exotic CPU feature
   bits. Exact ceiling unverified.
-- **RAM**: NeXT-lineage kernels of this era are typically capped well under
-  1 GB; NeXTSTEP 3.3's practical ceiling is far lower still. Start low (256 MB)
-  and raise only if boot succeeds; no confirmed number for Rhapsody
-  specifically.
+- **RAM**: the Virtual OS Museum's working install cuts this down to **64
+  MB** — a real data point, not a guess by analogy. Use 64 MB as the starting
+  point and only raise it if boot or install needs more; NeXT-lineage kernels
+  of this era are typically capped well under 1 GB, and NeXTSTEP 3.3's
+  practical ceiling is far lower still, so there is little reason to expect
+  headroom above 64 MB matters for this exhibit anyway.
 - **Disk controller**: IDE is the safer first guess (NeXTSTEP 3.3's SCSI
   install path is the known-fussy one on this same lineage, per the gotchas
   below) — but Rhapsody's Hardware Compatibility List may push the other way;
@@ -135,9 +148,15 @@ qemu-system-i386 -M pc -cpu pentium2 -m 256 \
 - **NIC**: `ne2k_pci` as the first guess, same reasoning as BeOS R5 and the
   NeXTSTEP precedent (narrow, old driver sets favor the oldest common NIC
   model) — unverified for Rhapsody.
+- **Device set**: keep it minimal by design, not just by convention — VOM's
+  working install disables the collection's standard floppy and second-disk
+  devices entirely, leaving just the one hard disk, the CD for install, VGA,
+  NIC, and the serial mouse (see Pointer below). Adding devices back in is a
+  regression from the only confirmed-working shape, not a neutral choice.
 - **KVM vs TCG**: NeXTSTEP 3.3's catalog gotcha says TCG or a plain `-cpu` is
   *more* stable than aggressive KVM on this OS family; treat that as the prior
-  for Rhapsody too until proven otherwise.
+  for Rhapsody too until proven otherwise. It is also the safer prior given
+  how old the only confirmed-working QEMU build is (see QEMU version below).
 
 ## Graphical target
 
@@ -151,16 +170,30 @@ achievable at all.
 
 ## Pointer and keyboard
 
-No confirmed answer. NeXTSTEP-family systems of this era generally expect
-**relative PS/2** input rather than absolute USB tablet — the NeXTSTEP 3.3
-precedent implies calibration via `cursor_scale` rather than `usb-tablet`
-would be the safer first attempt, but Rhapsody's driver stack (closer to early
-Mac OS X's IOKit than to raw NeXTSTEP) may behave differently. **Try
-`usb-tablet` first for the lower integration cost, fall back to PS/2 +
-calibration if pointer tracking is unusable** — same triage order the project
-already uses elsewhere.
+Confirmed, not a guess: the Virtual OS Museum's working install attaches the
+mouse as a **serial Microsoft mouse**, not PS/2 and not USB. Rhapsody DR2 on
+x86 is driven by the serial pointer path inherited from NeXTSTEP-era PC
+hardware, and there is no absolute-pointer option available at all here —
+`usb-tablet` is not on the table for this guest, full stop. The exhibit needs
+**relative pointer input over a serial mouse device, with `cursor_scale`
+calibration mandatory** to get 1:1-feeling tracking, the same posture as
+NeXTSTEP 3.3's PS/2 path but one layer more constrained: NeXTSTEP 3.3 at
+least has a PS/2 option to fall back to, Rhapsody DR2's confirmed
+configuration does not offer PS/2 as an alternative. Keyboard is unconfirmed
+but expected to follow the same PC-era assumptions as NeXTSTEP 3.3, including
+the same remap-after-update risk noted below.
 
 ## Known gotchas
+
+- **QEMU version is the single biggest unknown, and possibly the whole
+  ballgame.** The only confirmed-working reference for this guest — the
+  Virtual OS Museum's own install — specifies no version override, which
+  means it simply runs on the collection's default x86 QEMU, version
+  **0.8.2**, a 2006-era build. Nothing else in this note's evidence says
+  whether a modern QEMU can boot Rhapsody DR2 at all. Budget real time for
+  this: it may mean building an old QEMU from source (0.8.2-era, or whatever
+  the actual minimum turns out to be) as a prerequisite before any of the
+  rest of this recipe is even testable.
 
 Carried forward from the NeXTSTEP 3.3 x86 entry (catalog line, same lineage,
 treat as the working prior until disproven):
