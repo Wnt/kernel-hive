@@ -158,6 +158,11 @@ fi
 
 export VICE_SHM_PATH="$SHM"
 export VICE_CTL_SOCK="$CTL"
+# TWO-CANVAS MACHINES MUST CHOOSE. x128 has a VICII canvas and a VDC canvas and
+# only one may publish; without this the VICII wins by refresh order even under
+# -80col, which is measured, not feared (fork 507cf3e832). One-canvas stations
+# leave it unset and the binary behaves exactly as before.
+[ -n "${VICE_NATIVE_SHM_CHIP:-}" ] && export VICE_SHM_CHIP="$VICE_NATIVE_SHM_CHIP"
 # PER-KEY dwell floors, applied inside the module (the daemon's SH_KEY_MIN_*
 # gate runs only on the QEMU/dbus path). EXCL is MANDATORY: these guests scan
 # their own matrix, the browser sends a typed line as ONE burst, and the same
