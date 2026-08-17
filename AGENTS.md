@@ -11,7 +11,7 @@ linked doc instead.
 Single-box Proxmox home-lab ("living computer museum"). 63 registry entries —
 61 production streamhost stations + 2 posters (`python3 scripts/stations-registry.py
 count`). Rust `streamhost` daemon → React UI. Repo:
-https://github.com/Wnt/kernel-hive (private; this dir is the git root).
+https://github.com/Wnt/kernel-hive (**public**; this dir is the git root).
 
 ---
 
@@ -67,6 +67,12 @@ fails too.
 **Integrate continuously** — merge to `main` early and always `git push origin
 main`. Never echo or log `~/Downloads/humanify-token`.
 
+**"qwenit"** — offload substantial work to headless OpenCode sessions on a cheap
+open-weight model (`scripts/dev/qwen-task.sh`) and stay orchestrator: briefs,
+review, merge, user comms. Do trivial lookups inline. Offloaded tasks get the
+SAME guardrails as any agent brief and **do not push** — they commit to
+`qwen/<name>` and you land them. [`docs/lab/QWENIT.md`](docs/lab/QWENIT.md).
+
 ---
 
 ## Where to look
@@ -85,6 +91,7 @@ main`. Never echo or log `~/Downloads/humanify-token`.
 | Work on the public gallery or passkeys | [`docs/PUBLIC-GALLERY.md`](docs/PUBLIC-GALLERY.md). **Never `rm auth-state.json`** — passkeys cannot be regenerated |
 | Measure performance | [`docs/lab/MEASUREMENT-METHODOLOGY.md`](docs/lab/MEASUREMENT-METHODOLOGY.md) |
 | Get a cloud agent onto labhost | [`docs/lab/CLOUD-AGENTS.md`](docs/lab/CLOUD-AGENTS.md) |
+| Offload heavy work cheaply ("qwenit") | [`docs/lab/QWENIT.md`](docs/lab/QWENIT.md) |
 | Know why the gate is shaped this way | [`docs/lab/AGENT-CI-EXIT-RULE.md`](docs/lab/AGENT-CI-EXIT-RULE.md) |
 | Find anything else | [`docs/README.md`](docs/README.md) |
 
