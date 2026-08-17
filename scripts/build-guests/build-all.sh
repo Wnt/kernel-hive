@@ -128,6 +128,7 @@ MANIFEST=(
   "daybreak       |tiles/daybreak.sh             |bridge/daybreak   |graphical |~8-12m  |full     |tiles/daybreak overlay + golden (Dwarf/Draco → ViewPoint 2.0.5)"
   "star           |tiles/star.sh                 |bridge/star       |graphical |~5-8m   |partial  |tiles/star overlay + golden (Darkstar → Pilot/ViewPoint 2.0)"
   "alto           |tiles/alto.sh                 |bridge/alto       |retro     |~12-18m |full     |tiles/alto overlay + golden (ContrAlto 2 Alto II XM -> Alto Executive)"
+  "macos753       |tiles/macos753.sh             |Macos753          |graphical |~30-60m |vision   |macos753-golden.qcow2 + pram-golden.qcow2 + checkpoint (System 7.5.3 -> quiet Finder desktop, 1152x870x8)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

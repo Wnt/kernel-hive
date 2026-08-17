@@ -451,6 +451,11 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     "qemu-usb-tablet": ({"dbus-abs"}, ("usb-tablet",), ()),
     "qemu-vmmouse": ({"dbus-abs"}, ("vmmouse", "vmport=on"), ("usb-tablet",)),
     "qemu-ps2-relative": ({"dbus-rel"}, (), ("usb-tablet",)),
+    # The m68k q800's mouse is ADB. Same daemon backend as the PS/2 relative
+    # stations and the same abs->rel bridge, but it is NOT a PS/2 mouse and the
+    # ledger must not claim it is: the machine has no PS/2 controller, no USB
+    # bus to hang a tablet off, and no absolute pointer path of any kind.
+    "qemu-adb-relative": ({"dbus-rel"}, (), ("usb-tablet",)),
     "gallery-hid": ({"gallery-hid"}, ("gallery-hid-pci",), ()),
     "warpd-agent": ({"warpd"}, (), ("usb-tablet",)),
     "mame-ioport": ({"mamecmd", "mamesock"}, (), ()),
@@ -1491,7 +1496,28 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
             # A disabled candidate reserves identity/slot/port without entering any
             # generated runtime surface. Promotion changes transport to streamhost and
             # fills runtime/reset/render after the builder and golden are proven.
-            ("stream", {"transport": "showcase", "udpPort": udp_port, "slot": slot}),
+            # `pointer` is required on EVERY entry, posters included, so the
+            # scaffold has to declare one or `new` emits a row that its own
+            # `validate` rejects. A disabled candidate has no proven input path
+            # yet, so it declares the honest none-pointer a showcase row uses;
+            # promotion replaces it with the measured transport/backend.
+            (
+                "stream",
+                {
+                    "transport": "showcase",
+                    "udpPort": udp_port,
+                    "slot": slot,
+                    "pointer": {
+                        "transport": "none",
+                        "method": "none",
+                        "absolute": False,
+                        "present": False,
+                        "device": "none",
+                        "scale": 1.0,
+                        "offset": [0, 0],
+                    },
+                },
+            ),
             ("guestDoc", f"docs/guests/{os_id}.md"),
             ("credentialsRef", f"guest/{os_id}"),
             (

@@ -45,7 +45,7 @@
 #
 # UNLIKE THE MAME BUILDER THERE ARE NO LOOSE PATCHES. Every kernel-hive change
 # to VICE is a commit on the published fork (github.com/Wnt/vice, branch
-# kernel-hive/integrated, five commits on upstream tag 3.10.0), carried as the
+# kernel-hive/integrated, nine commits on upstream tag 3.10.0), carried as the
 # third_party/vice-kernel-hive submodule. Note the tag has NO leading `v`, and
 # the VICE mirror tags every SVN revision as rNNNNN, so a --depth 1 clone will
 # NOT contain it — this script never shallow-clones.
@@ -77,12 +77,16 @@ die() {
   exit 1
 }
 
-# The pin. Five commits on upstream tag 3.10.0 (4d283a2e7dd59b7e378524878e81
-# ecc7826b700c): shmfb (2), vicectl (2), and the reply_ok warning fix that lets
-# the warning gate below mean something.
+# The pin. Nine commits on upstream tag 3.10.0 (4d283a2e7dd59b7e378524878e81
+# ecc7826b700c): shmfb (2), vicectl (5 — the socket, the headless keymap, the
+# reply_ok warning fix that lets the warning gate below mean something, and the
+# two key-ordering fixes), and the CRTC restore fix. The last three are the
+# 2026-08-17 wave: the two key-order defects (a release outranks a deferred
+# press; a modifier is a barrier in both directions) and the checkpoint pair —
+# CRTC canvas growth on restore, and SAVEST/LOADST from a CPU trap.
 VICE_FORK_URL="${VICE_FORK_URL:-https://github.com/Wnt/vice.git}"
 VICE_FORK_BRANCH=kernel-hive/integrated
-VICE_FORK_PIN=42103407700d3950a133a6d4ed2da90f301ee7de
+VICE_FORK_PIN=c2287e1137514b47c176226cd4f490312d44351e
 SUBMODULE="$REPO_ROOT/third_party/vice-kernel-hive"
 
 # ---------------------------------------------------------------------------
@@ -272,11 +276,11 @@ say "building VICE with $JOBS jobs"
 # rewriting upstream to reach zero is not this campaign's job; every warning
 # from a file the fork touches is.
 say "warning gate: the fork's own files must compile clean"
-OURWARN="$(grep -E '^(.*/)?(vicectl\.c|keymap\.c|arch/headless/[^:]*)(\.[ch])?:[0-9]+:[0-9]+: warning:' "$WORK/make.log" || true)"
+OURWARN="$(grep -E '^(.*/)?(vicectl\.c|keymap\.c|crtc/crtc\.[ch]|crtc/crtc-snapshot\.c|arch/headless/[^:]*)(\.[ch])?:[0-9]+:[0-9]+: warning:' "$WORK/make.log" || true)"
 [ -z "$OURWARN" ] || die "the fork's files produced warnings:
 $OURWARN
   fix them on the fork (they are commits, not loose patches), then move the pin."
-echo "  clean: no warnings from vicectl.c, keymap.c or src/arch/headless/"
+echo "  clean: no warnings from vicectl.c, keymap.c, src/crtc/ or src/arch/headless/"
 
 say "installing to $OUT"
 rm -rf "$OUT"

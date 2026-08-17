@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "id": "macos753",
+  "era_year": 1996,
+  "stationDir": "macos753",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 59,
+        "prelude": "",
+        "value": {
+          "key": "macos753",
+          "script": "tiles/macos753.sh",
+          "outputDir": "Macos753",
+          "class": "graphical",
+          "estimated": "~30-60m",
+          "automation": "vision",
+          "produces": "macos753-golden.qcow2 + pram-golden.qcow2 + checkpoint (System 7.5.3 -> quiet Finder desktop, 1152x870x8)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "macos753",
+      "value": {
+        "os": "Mac OS 7.5.3 (Quadra 800)",
+        "win": "qemu",
+        "mouse": "finder-desktop",
+        "kbd": "cmd:shift-1",
+        "kbd_reset": "Escape",
+        "kbd_note": "Command-Shift-1 ejects; the Finder is the only shell, so key proof is a menu or a dialog, never a prompt",
+        "audio_trigger": "beep",
+        "validated": false,
+        "note": "relative ADB pointer: cursor_scale 2.7778 (guest gain 0.36). No exec channel \u2014 System 7 has no shell at all"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/macos753",
+      "qmp": "/data/vms/streamhost/stations/macos753/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54142,
+      "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console \u2014 the framebuffer is the only observation surface. Drive it with scripts/install-vision/adb_pointer.py against a CLONE, never this dir."
+    }
+  },
+  "render": {
+    "stationsManifestOrder": 57,
+    "bindingOrder": 64,
+    "goldenOrder": 57,
+    "bringUpGroup": 7,
+    "signalOrder": 59,
+    "actionMapOrder": 31,
+    "stationsManifestPrelude": "\n# macos753 (slot 142) \u2014 the fleet's FIRST foreign-architecture QEMU station:\n#   qemu-system-m68k -M q800 (Motorola 68040), Mac OS 7.5.3. Built from the\n#   kernel-hive QEMU fork and installed to /opt/qemu-m68k, NOT from pve-qemu \u2014\n#   the fleet package ships no m68k target, and a checkpoint baked and loaded by\n#   the same standalone binary never needs pve's pbs-state vmstate section.\n#   TCG only (no KVM for m68k), so idle auto-pause carries its cost.\n#   RELATIVE ADB pointer \u2014 no absolute path exists on this machine, and the\n#   guest moves 0.36 px per delta unit, hence SH_CURSOR_SCALE=2.7778.\n#   PRAM is a qcow2, not raw: a raw if=mtd drive makes savevm refuse outright.\n",
+    "bindingPrelude": ""
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54142,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-adb-relative",
+      "absolute": false,
+      "present": true,
+      "device": "adb-mouse",
+      "scale": 2.7778,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 142
+  },
+  "guestDoc": "docs/guests/macos753.md",
+  "credentialsRef": "guest/macos753",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "macos753",
+      "SH_QMP": "/data/vms/streamhost/stations/macos753/qmp.sock",
+      "SH_PORT": "54142",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/macos753/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/macos753/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "bringUpOrder": 64,
+    "vmidLabel": 142,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "macos753",
+        "--vmid",
+        "142",
+        "--udp",
+        "54142",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "2.7778",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/macos753/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/macos753/station.env.fixture"
+      ],
+      "deviceSetId": "macos753-q800-m68040-1152x870x8",
+      "launcher": "streamhost/stations/macos753/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/macos753/station.env.fixture",
+      "binary": "/opt/qemu-m68k/bin/qemu-system-m68k",
+      "machine": "q800",
+      "accel": "tcg",
+      "cpu": "m68040",
+      "memoryMB": 128,
+      "smp": 1,
+      "vga": "macfb",
+      "deviceSetSummary": [
+        "/opt/qemu-m68k/bin/qemu-system-m68k",
+        "-name streamhost-macos753",
+        "-accel tcg -m 128",
+        "-M q800,audiodev=snd0 -cpu m68040",
+        "-bios /data/vms/streamhost/assets/macos753/800.ROM",
+        "-g 1152x870x8",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+        "-drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd",
+        "-device scsi-hd,scsi-id=6,drive=hd0",
+        "-drive file=$D/macos753-golden.qcow2,format=qcow2,cache=writeback,aio=threads,if=none,id=hd0",
+        "-loadvm golden -S (when the checkpoint exists)",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals the live launcher; the checkpoint was baked with this exact guest-visible device set on the standalone /opt/qemu-m68k build"
+      }
+    }
+  },
+  "reset": {
+    "stationDir": "macos753",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "Quiet Mac OS 7.5.3 Finder desktop at 1152x870x8 (Apple 21-inch mode): Macintosh HD top-right, empty Trash bottom-right, no window open, nothing selected. Mouse tracking pinned to 'Very Slow', the only NON-accelerated setting Mac OS offers and therefore the only one under which 1:1 is reachable; double-click speed slowest so a click pair survives the stream. 32-bit addressing on (it defaults OFF, capping usable RAM at 8 MB of the 128) and disk cache raised from 32K to 7680K. loadvm restores in 0.32 s, framebuffer-identical to the baked scene."
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#8c8a85",
+    "eraLabel": "1996 \u00b7 Mac OS 7.5.3 \u2014 Quadra 800",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "macos753",
+    "displayName": "Mac OS 7.5.3",
+    "year": 1996,
+    "lineage": "Classic Mac OS",
+    "arch": "m68k",
+    "ramMB": 128,
+    "era": "1990s",
+    "accent": "#8c8a85",
+    "eraSoftware": [
+      "Finder 7.5.3",
+      "SimpleText",
+      "Scrapbook",
+      "Note Pad",
+      "Jigsaw Puzzle"
+    ],
+    "periodBrowser": "Netscape Navigator 3 / early Internet Explorer",
+    "iconicApps": [
+      "Finder",
+      "SimpleText",
+      "Calculator",
+      "Jigsaw Puzzle"
+    ],
+    "blurb": "The Macintosh at its most familiar \u2014 grey desktop, one menu bar, a Trash in the corner \u2014 running on the 68040 Quadra that closed out the pre-PowerPC era.",
+    "notes": "The only station in the lineup emulating a 68000-family machine. Everything here is drawn by an OS with no protected memory and no command line at all."
+  }
+}
