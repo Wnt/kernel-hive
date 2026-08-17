@@ -4,8 +4,11 @@ subtitle: 2003 · DEC's own UNIX on DEC's own 64-bit iron
 hero: /posters/tru64/desktop.webp
 images:
   - src: /posters/tru64/desktop.webp
-    alt: The Tru64 UNIX 5.1B desktop at 1280×1024 — a terminal window titled "Web browser – lynx on Tru64 UNIX" fills most of the Common Desktop Environment's blue-grey backdrop, showing the 1992 CERN page "World Wide Web" with its list of links (executive summary, Mailing lists, Policy, What's out there?, Software Products), and the CDE front panel runs along the bottom
-    caption: The first website, fetched live by a 2003 UNIX workstation — Lynx in a CDE terminal on Tru64 5.1B, over the machine's own TCP/IP stack.
+    alt: The Tru64 UNIX 5.1B desktop at 1280×1024 — the Common Desktop Environment's blue-grey backdrop, bare except for a small "Console Log for tru64" window, with the CDE front panel (clock, calendar, file manager, workspace switches, style manager, help, trash) running along the bottom
+    caption: The Common Desktop Environment on Tru64 UNIX 5.1B, logged in as an ordinary unprivileged user — the desktop a 2003 DEC Alpha operator sat down to.
+  - src: /posters/tru64/netscape.webp
+    alt: Netscape Navigator 4.76 running on the Tru64 CDE desktop, its window showing "http://info.cern.ch – home of the first website" with a list of links, the classic Netscape toolbar and location bar above
+    caption: Netscape Navigator 4.76 on Tru64/Alpha, fetching the first website live over the machine's own TCP/IP stack — opened from the CDE front panel.
 ---
 ## Origins
 
@@ -19,13 +22,11 @@ The AlphaServer ES40 emulated here is the natural home of this operating system 
 
 ## What you're looking at
 
-A finished Tru64 UNIX 5.1B system at its desktop, with a browser open on the web. The desktop is the Common Desktop Environment at 1280×1024 — CDE as the industry standardised it, the same environment shipped by Sun, HP, IBM and DEC, here in DEC's own colours on DEC's own operating system. The window on top is Lynx, the text browser that was how most UNIX workstations of this era read the web, showing the page CERN put online in 1992 and never took down.
+A finished Tru64 UNIX 5.1B system at its desktop, logged in as an ordinary unprivileged user — the seat a DEC Alpha operator took in 2003. The desktop is the Common Desktop Environment at 1280×1024: CDE as the industry standardised it, the same environment shipped by Sun, HP, IBM and DEC, here in DEC's own colours on DEC's own operating system. It opens bare — the front panel and a console-log window — because the interesting object is the environment itself: press the controls, open the file manager, walk the file system of a UNIX that was engineered alongside the processor it runs on.
 
-The page is not a recording. This machine has a DEC 21143 Ethernet controller, a real TCP/IP stack, and a route to the internet; it resolved the name and fetched the document itself. The arrow keys follow links, so the web this machine reaches is the live one — as much of it as still speaks plain HTTP to a browser from 1997.
+There is a real machine underneath. It has a DEC 21143 Ethernet controller, a genuine TCP/IP stack, and a route to the internet — so from the front panel's Netscape control you can open **Netscape Navigator 4.76** and browse the live web, as much of it as still speaks plain HTTP to a browser from the turn of the century. The second image shows exactly that: Netscape on this machine, fetching the page CERN put online in 1992 and never took down. The machine resolved the name and fetched the document itself; nothing is a recording.
 
 Nothing is staged. The installation you would otherwise be reading about really happened on this exhibit — all 115 software subsets onto an AdvFS file system — and what you see is that installed machine, brought back to this exact moment. Between visits it is frozen mid-instruction rather than shut down, so it resumes where it stood; and when it is reset it returns to this desktop in about three seconds, however the previous visitor left it.
-
-The desktop is deliberately bare. CDE opens with the front panel and nothing else, because the interesting object here is the environment itself: press the controls, open the file manager, walk the file system of a UNIX that was engineered alongside the processor it runs on.
 
 ## Legacy
 

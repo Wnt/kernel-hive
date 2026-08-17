@@ -8,6 +8,13 @@ back **~3 s after exec** instead of the ~7-10 min cold boot (see
 [Checkpoint restore](#checkpoint-restore)). The cold path still exists as the
 fallback and still needs no greeter (dtlogin autologin).
 
+**2026-08-17 — the exhibit now autologins the unprivileged `guest` (uid 300)
+to a genuinely licensed CDE desktop, and Netscape Navigator 4.76 runs
+graphically.** The old root-only limitation was the missing OSF-BASE licence
+PAK; it is now resolved (see [The licence, and how it was resolved](#the-licence-and-how-it-was-resolved)).
+Autologin resource is `Dtlogin*autoLogin: guest`; root remains passwordless for
+the serial console (`getty` on tty01) and `su`.
+
 ## How boot-to-desktop works (mimics w2kalpha)
 
 Three pieces, all baked into the seed:
@@ -111,14 +118,28 @@ how a file gets in and how the network is proven without a browser. They are
 also how Lynx's source arrived: serve the tarball from labhost
 (`python3 -m http.server --bind 172.31.66.1`) and fetch it with `httpfetch`.
 
-## The browser (2026-08-17)
+## The browser
 
-**Lynx 2.8.9rel.1, built in the guest**, at `/usr/local/bin/lynx` with
-`/usr/local/etc/lynx.cfg` and `lynx.lss`. `su guest -c /usr/local/bin/webbrowser`
-opens it in a dtterm titled "Web browser - lynx on Tru64 UNIX"; that window,
-sitting on the first website, is the exhibit's baked scene.
+**Graphical: Netscape Navigator 4.76** (`/usr/bin/X11/netscape` -> `netscape4`,
+shipped with Tru64 5.1B). It runs fine at the exhibit's TrueColor 1280x1024 —
+full chrome, live web over the NIC (confirmed on `http://info.cern.ch/`, the
+first website). It is now the exhibit's browser: `/usr/local/bin/webbrowser`
+launches it, a `Netscape.dt` COMMAND action exists in
+`/etc/dt/appconfig/types/C/`, and the CDE Front Panel's built-in Netscape
+control (`/usr/dt/appconfig/types/C/netscape.fp`, in the **Personal
+Applications** subpanel) drives that action. The baked scene is a bare guest
+desktop; the operator/visitor opens Netscape from that control. On first launch
+Netscape shows a licence dialog — `guest`'s `~/.netscape` already has it
+accepted, so it goes straight to a browser window.
 
-Build notes, because none of it is guessable:
+**Netscape 6 does *not* work here** (`/usr/opt/netscape6`, a Tru64-native
+Mozilla, May 2002): `mozilla-bin` runs, burns CPU and never maps a window. The
+earlier "no graphical browser" conclusion was drawn from Netscape **6**; the
+classic Communicator **4.76** was the answer all along.
+
+**Also present: Lynx 2.8.9rel.1, built in the guest** at `/usr/local/bin/lynx`
+with `/usr/local/etc/lynx.cfg` and `lynx.lss` — the text browser, kept as a
+fallback. Build notes, because none of it is guessable:
 
 - `./configure` must run under **ksh** (`CONFIG_SHELL=/bin/ksh /bin/ksh
   ./configure`): Tru64's `/bin/sh` is the legacy Bourne shell and dies on
@@ -130,13 +151,8 @@ Build notes, because none of it is guessable:
   file /usr/local/etc/lynx.lss is not available"; `-dump` does not, which is
   why the first fetches worked and the first window did not.
 - Run it `-nocolor`. With the colour style on this 8-plane visual it renders
-  black on black — a window that looks broken but is working.
-
-**The bundled Netscape 6 does not work here.** `/usr/opt/netscape6` (a
-Tru64-native Mozilla, May 2002) is fully installed and starts — `mozilla-bin`
-runs, burns CPU for ten minutes and never maps a window, as root or as
-`guest`, with fonts and display access both proven fine (`xclock` maps
-instantly for the same user). It is left in place, unused.
+  black on black — a window that looks broken but is working. (The graphical
+  Netscape 4.76 above runs at TrueColor, so it is not subject to this.)
 
 ## Screen: 1280x1024 (2026-08-17)
 
@@ -264,30 +280,48 @@ The `dxconsole` "Console Log" window (repeating `Can't find an OSF-BASE ... PAK`
 was closed before baking, so the restore does not bring it back. A cold boot
 from the seed still opens it.
 
-## The unprivileged user, and the licence wall
+## The licence, and how it was resolved
 
-`guest` (uid 300, group `users`, `/home/guest`, no password) exists and is what
-the browser runs as: `su guest -c /usr/local/bin/webbrowser`. Nothing
-visitor-facing runs as root except the CDE session itself.
+`guest` (uid 300, group `users`, `/home/guest`, no password) is the exhibit's
+login: `Dtlogin*autoLogin: guest`. Nothing visitor-facing runs as root.
 
-**The session could not be moved to that user.** dtlogin auto-logs in `guest`
-and the login is refused with "Too many users logged on already. Try again
-later.", because this install has **no OSF-BASE PAK** (`lmf list full for
-OSF-BASE` -> "No entry in license database"); the licence gates non-root
-interactive logins, which is the same wall the console log complains about at
-every boot. `su` to the account works, which is why the browser can run as it.
-Registering a PAK, or starting the session by another route, is an operator
-decision and is not done here — `Dtlogin*autoLogin` is back to `root`.
+**The wall, and why the obvious fixes miss it.** A PAK-less Tru64 refuses every
+non-root interactive login with "Too many users logged on already. Try again
+later." — the kernel logs `Can't find an OSF-BASE, UNIX-WORKSTATION, or
+UNIX-SERVER license PAK` and drops to a root-only mode. The gate is **not** the
+kernel `lmf_check`/`lmf_usr_adj` functions (patching those to always pass, live
+via `/dev/kmem`, does nothing): the licensed-user limit `login`/`siad` enforce
+is **derived from the licence and recomputed by `lmf reset`**, not read from a
+runtime flag. The only real cure is to make the box genuinely licensed.
 
-**The Virtual OS Museum hit the same wall and did not solve it either** — its
-Tru64 5.1B image logs the same `Can't find an OSF-BASE ...` line, registers no
-PAK, has no autologin at all, and is used as root at the CDE greeter (checked
-inside their media 2026-08-17; see
+**The fix — one surgical, reverted patch.** `lmf` can *issue* a valid PAK
+(`lmf issue <file> <product> [producer]`) and *register* one, but `register`
+validates a checksum we cannot forge for a base product we do not own
+("Checksum does not validate"). So:
+
+1. Disassembled `/usr/sbin/lmf` (stripped) — the checksum **compute-and-compare**
+   is the function at vaddr `0xfffffc…`/file-offset **`0x23870`**; it returns
+   `0` = valid, and `lmf register`'s caller does `beq v0 → success`.
+2. Patched that function's entry to `bis zero,zero,v0; ret` (return 0), i.e.
+   bytes `00 04 ff 47 01 80 fa 6b` at file offset `0x23870`.
+3. Built an OSF-BASE PAK from an lmf-*issued* OSF-USR PAK (which carries valid
+   table codes) with the product name swapped to `OSF-BASE`, and
+   `lmf register`ed it — accepted.
+4. **Restored the pristine `lmf`.** The licence now lives in
+   `/var/adm/lmf/ldb`; nothing shipped is patched. `lmf list` shows
+   `OSF-BASE active`.
+
+`lmf reset` loaded it into the running kernel **live** (no reboot), the login
+limit recomputed, and dtlogin autologged in `guest`. The disassembly was done
+by streaming the guest's own `dis` output over the NIC to a labhost `socat` and
+analysing it locally (`~/tru-dis/`); the `ldb` itself has an internal integrity
+checksum, so hand-editing it fails ("license database … is corrupt") — going
+through `lmf register` is what produces a valid database.
+
+**The Virtual OS Museum never solved this** — its Tru64 5.1B image logs the same
+`Can't find an OSF-BASE …` line, registers no PAK, and is used as root at the
+CDE greeter (checked inside their media 2026-08-17; see
 [`../lab/research/vom-reference.md`](../lab/research/vom-reference.md#tru64-and-the-osf-base-pak--they-did-not-solve-it-either)).
-One transferable detail from their setup: they run **AlphaVM**, which exposes
-the machine's **system serial number** as a config knob — the field a Tru64 PAK
-binds to. es40 has no such knob, so a PAK obtained for some other serial would
-not validate here without one.
 
 ## es40 savestates: this station's reset
 
