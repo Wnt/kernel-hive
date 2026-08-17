@@ -49,11 +49,22 @@ const LOW_CONFIDENCE_FRAMES = 10;
  */
 const SERVER_DOWN_LOSS_PCT = 5;
 
+/**
+ * The server's RTT-excess downshift threshold (streamhost `abr.rs`
+ * DOWN_RTT_EXCESS_MS). Mirrored so the overlay can count how many ticks in the
+ * window were over it — a spike lasting one keyframe burst is invisible in an
+ * instantaneous reading but is exactly what moves the tier.
+ */
+const SERVER_DOWN_RTT_EXCESS_MS = 80;
+
 /** One ~100 ms tick's raw counters. */
 interface Sample {
   at: number;
   received: number;
   missed: number;
+  /** Raw RTT sample, and the excess over the floor AT THAT TICK. */
+  rttMs: number | null;
+  excessMs: number | null;
 }
 
 /** One observed tier transition. */
@@ -88,6 +99,12 @@ export interface StreamDiagnostics {
   rttFloorMs: number | null;
   /** Smoothed RTT minus the floor — the congestion signal the server acts on. */
   rttExcessMs: number | null;
+  /** Worst RAW RTT in the window — the transient an instantaneous reading misses. */
+  rttPeakMs: number | null;
+  /** ms since that worst sample, or null if no RTT samples in the window. */
+  rttPeakAgeMs: number | null;
+  /** Ticks in the window whose excess was over the server's downshift threshold. */
+  rttBreachTicks: number;
   /** ms since the last tier change, or null if none observed this session. */
   lastTierChangeAgeMs: number | null;
   /** Compact recent trajectory, oldest→newest, e.g. "0→1→2→3". Empty if none. */
@@ -125,7 +142,21 @@ export class StreamTelemetry {
 
   /** Fold one tick. Pure bookkeeping — never mutates the caller's state. */
   tick(t: TelemetryTick): void {
-    this.samples.push({ at: t.now, received: t.received, missed: t.missed });
+    // RTT floor FIRST, so this tick's sample can carry the excess it produced.
+    // Mirrors streamhost abr.rs `fold`: EWMA m=16, the floor snaps DOWN to any
+    // new minimum immediately and decays UP at 0.1 %/sample, so a LAN floor
+    // stays ~0 and only genuine queueing growth reads as excess.
+    if (t.rttMs != null) {
+      this.rttEwma = this.rttEwma == null ? t.rttMs : this.rttEwma * (15 / 16) + t.rttMs / 16;
+      if (this.rttFloor == null || this.rttEwma < this.rttFloor) this.rttFloor = this.rttEwma;
+      else this.rttFloor += (this.rttEwma - this.rttFloor) * 0.001;
+    }
+    const excess = this.rttEwma != null && this.rttFloor != null
+      ? Math.max(0, this.rttEwma - this.rttFloor)
+      : null;
+    this.samples.push({
+      at: t.now, received: t.received, missed: t.missed, rttMs: t.rttMs, excessMs: excess,
+    });
 
     // Cumulative counters → per-window deltas. Seed on the first tick so a
     // mid-session attach doesn't report the whole backlog as a burst.
@@ -138,15 +169,6 @@ export class StreamTelemetry {
     this.prevDropped = t.framesDropped;
     this.prevFreezes = t.freezeCount;
     this.seeded = true;
-
-    // RTT floor, mirroring streamhost abr.rs `fold`: EWMA m=16, the floor snaps
-    // DOWN to any new minimum immediately and decays UP at 0.1 %/sample, so a
-    // LAN floor stays ~0 and only genuine queueing growth reads as excess.
-    if (t.rttMs != null) {
-      this.rttEwma = this.rttEwma == null ? t.rttMs : this.rttEwma * (15 / 16) + t.rttMs / 16;
-      if (this.rttFloor == null || this.rttEwma < this.rttFloor) this.rttFloor = this.rttEwma;
-      else this.rttFloor += (this.rttEwma - this.rttFloor) * 0.001;
-    }
 
     // Tier transitions.
     if (t.tier != null) {
@@ -176,9 +198,16 @@ export class StreamTelemetry {
     let peakPct = 0;
     let peakFrames = 0;
     let peakAt: number | null = null;
+    let rttPeak: number | null = null;
+    let rttPeakAt: number | null = null;
+    let breaches = 0;
     for (const s of this.samples) {
       recv += s.received;
       missed += s.missed;
+      if (s.rttMs != null && (rttPeak == null || s.rttMs > rttPeak)) {
+        rttPeak = s.rttMs; rttPeakAt = s.at;
+      }
+      if (s.excessMs != null && s.excessMs >= SERVER_DOWN_RTT_EXCESS_MS) breaches++;
       const n = s.received + s.missed;
       if (n === 0 || s.missed === 0) continue;
       const pct = (s.missed * 100) / n;
@@ -206,6 +235,9 @@ export class StreamTelemetry {
       rttExcessMs: this.rttEwma != null && this.rttFloor != null
         ? Math.max(0, this.rttEwma - this.rttFloor)
         : null,
+      rttPeakMs: rttPeak,
+      rttPeakAgeMs: rttPeakAt == null ? null : Math.max(0, now - rttPeakAt),
+      rttBreachTicks: breaches,
       lastTierChangeAgeMs: last == null ? null : Math.max(0, now - last.at),
       tierPath: this.history.length
         ? [this.history[0].from, ...this.history.map((h) => h.to)].join('→')

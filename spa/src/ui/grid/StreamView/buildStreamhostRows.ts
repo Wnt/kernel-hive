@@ -79,6 +79,19 @@ export function buildStreamhostRows(
   }
   rows.push({ k: 'rtt', v: rttRow });
 
+  // 6b. RTT PEAK over the window. The ping datagram shares the QUIC connection
+  //     with the video, so it queues behind a large keyframe: a tier-0 burst can
+  //     push a 3 ms LAN RTT into the hundreds for the duration of that burst.
+  //     That transient is what crosses the server's 80 ms excess threshold, and
+  //     an instantaneous reading samples BETWEEN bursts and never sees it.
+  if (d.rttPeakMs != null && d.rttPeakAgeMs != null) {
+    const breach = d.rttBreachTicks > 0 ? ` ⚠ ${d.rttBreachTicks} ticks over 80ms` : '';
+    rows.push({
+      k: 'rtt peak',
+      v: `${d.rttPeakMs.toFixed(0)} ms · ${fmtAge(d.rttPeakAgeMs)} ago${breach}`,
+    });
+  }
+
   // 7. Loss — the instantaneous tick AND the 3 s window WITH ITS SAMPLE SIZE.
   //    `lossPct` is missed/(received+missed) over one ~100 ms tick; on a low-fps
   //    station that denominator is 0–1 frames, so a single dropped frame reads as

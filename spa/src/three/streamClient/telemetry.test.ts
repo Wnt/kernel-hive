@@ -108,5 +108,33 @@ describe('StreamTelemetry', () => {
     const s = t.snapshot(0);
     expect(s.rttFloorMs).toBeNull();
     expect(s.rttExcessMs).toBeNull();
+    expect(s.rttPeakMs).toBeNull();
+    expect(s.rttBreachTicks).toBe(0);
+  });
+
+  // A keyframe burst queues the RTT ping behind it: the raw RTT spikes for the
+  // duration of the burst and is back to normal by the time anyone reads the
+  // panel. The peak and the breach count are what survive the transient.
+  it('captures an RTT spike that the instantaneous reading misses', () => {
+    const t = new StreamTelemetry();
+    for (let i = 0; i < 40; i++) t.tick(quiet(i * 100, { rttMs: 3 }));
+    // A burst: ten ticks of badly-queued pings, then straight back to 3 ms.
+    for (let i = 40; i < 50; i++) t.tick(quiet(i * 100, { rttMs: 400 }));
+    for (let i = 50; i < 60; i++) t.tick(quiet(i * 100, { rttMs: 3 }));
+    const s = t.snapshot(6000);
+    expect(s.rttPeakMs).toBe(400);
+    // The FIRST 400 ms tick (t=4000), since equal maxima keep the earliest.
+    expect(s.rttPeakAgeMs).toBe(2000);
+    expect(s.rttBreachTicks).toBeGreaterThan(0);
+
+    // THE TAIL, and why a burst shorter than the server's 1.5 s persistence
+    // window still trips it: the m=16 EWMA decays far more slowly than the
+    // burst lasted, so a SECOND of bad pings leaves the excess above the 80 ms
+    // downshift threshold for many seconds after the link is healthy again.
+    expect(s.rttExcessMs!).toBeGreaterThan(80);
+
+    // Only after a long quiet spell does it actually settle.
+    for (let i = 60; i < 200; i++) t.tick(quiet(i * 100, { rttMs: 3 }));
+    expect(t.snapshot(20_000).rttExcessMs!).toBeLessThan(80);
   });
 });
