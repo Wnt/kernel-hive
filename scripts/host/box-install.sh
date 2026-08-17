@@ -135,11 +135,23 @@ for i in "${!BOX_SYNC_LABELS[@]}"; do
     cp -- "$rf" "$d"
   fi
   DESIRED[$i]="$d"
+  # "same" for a scrub row is judged the way the gate judges it — reverse-scrub
+  # the live copy and compare canonical forms — so a live copy that carries the
+  # placeholder-with-shell-fallback form (serve-https-spa.sh writes that) is
+  # not rewritten to the flat real form on every install and back again.
+  same=0
+  if [ -f "$bf" ]; then
+    if [ "$mode" = scrub ]; then
+      if cmp -s <(sed -e "$BOX_SYNC_REVERSE_PROG" -- "$bf") <(sed -e "$BOX_SYNC_CANON_PROG" -- "$rf"); then same=1; fi
+    elif cmp -s "$d" "$bf"; then
+      same=1
+    fi
+  fi
   if [ ! -f "$bf" ]; then
     NEWROWS+=("$label")
     n_new=$((n_new + 1))
     PLAN_I+=("$i")
-  elif cmp -s "$d" "$bf"; then
+  elif [ "$same" = 1 ]; then
     n_same=$((n_same + 1))
   else
     CHANGED+=("$label")
