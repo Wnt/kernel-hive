@@ -136,6 +136,38 @@ if [ "$DISK" = "$CKPT/tru64.img" ]; then
   export ES40_RESTORE="$WORK/checkpoint.axp"
 fi
 
+# Guest network for the browser exhibit (added 2026-08-17). es40.cfg's dec21143
+# uses the pcap backend on the GUEST end of a veth pair; the guest holds a
+# static 172.31.66.2/30 (baked into the checkpoint) and the host answers on
+# .1. Creating the pair is this station's atomic claim on the name — a second
+# launcher for the same station cannot duplicate it — and it is idempotent
+# across relaunches.
+#
+# Unlike w2kalpha's host-only veth this one is NAT'd OUTBOUND, because the
+# exhibit is a 2003 UNIX browsing the actual web. Outbound only: nothing
+# bridges to the LAN, no port is forwarded in, and the guest is unreachable
+# from anywhere but this box. A 2003 TCP/IP stack facing inbound traffic is
+# exactly what we are not doing.
+NIC_H=tru64-h
+NIC_G=tru64-g
+if ! ip link show "$NIC_G" >/dev/null 2>&1; then
+  ip link add "$NIC_H" type veth peer name "$NIC_G" ||
+    {
+      echo "veth claim failed for $NIC_H/$NIC_G" >&2
+      exit 1
+    }
+fi
+ip addr replace 172.31.66.1/30 dev "$NIC_H"
+ip link set "$NIC_H" up
+ip link set "$NIC_G" up
+# veth TX checksum offload leaves locally-originated packets with unfilled
+# checksums, which es40's pcap capture then sees as corrupt; disable on both.
+ethtool -K "$NIC_H" tx off rx off >/dev/null 2>&1 || true
+ethtool -K "$NIC_G" tx off rx off >/dev/null 2>&1 || true
+sysctl -qw net.ipv4.ip_forward=1
+iptables -t nat -C POSTROUTING -s 172.31.66.0/30 -j MASQUERADE 2>/dev/null ||
+  iptables -t nat -A POSTROUTING -s 172.31.66.0/30 -j MASQUERADE
+
 # setsid detaches from this shell but stays inside ensure-station-x11.sh's qcap
 # scope cgroup, so BindsTo= teardown still reaches everything started here.
 setsid nohup "$ES40" >"$D/es40.log" 2>&1 </dev/null &

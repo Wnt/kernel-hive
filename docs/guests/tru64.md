@@ -81,6 +81,63 @@ save-and-exit. No fifo, no keyboard, no pixels.
   layout; `ctltest.py` only does letters, digits and a little punctuation.
 - Screenshots: `uibench/shmread.py <fb.shm> <out.png>`.
 
+## Network (2026-08-17)
+
+The device set gained a **`dec21143`** at `pci0.4` (pcap backend on the
+host-only veth `tru64-h`/`tru64-g`), which is a DEVICE-SET change: it orphans
+any checkpoint baked before it, so the checkpoint was re-baked from a cold boot
+of the checkpoint DISK with the NIC present.
+
+- Guest: `tu0`, static **172.31.66.2/30**, default route 172.31.66.1, set in
+  `/etc/rc.config` (`NETDEV_0`, `IFCONFIG_0`, `NUM_NETCONFIG`) and
+  `/etc/routes` so it survives a boot.
+- Host: `tru64-h` holds .1, and the launcher NATs the /30 outbound
+  (`iptables -t nat MASQUERADE`, `ip_forward=1`). **Outbound only** — nothing
+  bridges to the LAN, no port is forwarded in, and the guest is reachable from
+  nowhere but this box. A 2003 TCP/IP stack should not face inbound traffic.
+- Resolver: `/etc/resolv.conf` (1.1.1.1, 8.8.8.8) **plus** `hosts=local,bind`
+  in `/etc/svc.conf` — Tru64 will not consult DNS at all without that switch
+  entry, and `nslookup` succeeding while `ping <name>` says "unknown host" is
+  exactly that gap. The resolver also wants a `domain`/`search` line to work.
+- `/etc/hosts` must map the machine's own name (`172.31.66.2 tru64`), or CDE
+  comes up with "The DT messaging system could not be started": ToolTalk
+  resolves the hostname at session start, and an IP-configured machine whose
+  name does not resolve fails there rather than at boot.
+
+`/usr/local/bin/httpget <host> <path> [port]` and `httpfetch <host> <path>
+<out> [port]` are two small C clients compiled in the guest for exactly this
+work — the base install has no `wget`, `curl` or `ftp`-over-HTTP, so they are
+how a file gets in and how the network is proven without a browser. They are
+also how Lynx's source arrived: serve the tarball from labhost
+(`python3 -m http.server --bind 172.31.66.1`) and fetch it with `httpfetch`.
+
+## The browser (2026-08-17)
+
+**Lynx 2.8.9rel.1, built in the guest**, at `/usr/local/bin/lynx` with
+`/usr/local/etc/lynx.cfg` and `lynx.lss`. `su guest -c /usr/local/bin/webbrowser`
+opens it in a dtterm titled "Web browser - lynx on Tru64 UNIX"; that window,
+sitting on the first website, is the exhibit's baked scene.
+
+Build notes, because none of it is guessable:
+
+- `./configure` must run under **ksh** (`CONFIG_SHELL=/bin/ksh /bin/ksh
+  ./configure`): Tru64's `/bin/sh` is the legacy Bourne shell and dies on
+  modern autoconf with `syntax error at line 1297: '(' unexpected`.
+- Configure takes ~35 min and the build ~45 min on this emulated Alpha. Run
+  them detached with a log and poll — a `labctl exec` call that outlives its
+  timeout leaves the serial line mid-command.
+- Interactive Lynx needs `lynx.lss` present or it exits at once with "Lynx
+  file /usr/local/etc/lynx.lss is not available"; `-dump` does not, which is
+  why the first fetches worked and the first window did not.
+- Run it `-nocolor`. With the colour style on this 8-plane visual it renders
+  black on black — a window that looks broken but is working.
+
+**The bundled Netscape 6 does not work here.** `/usr/opt/netscape6` (a
+Tru64-native Mozilla, May 2002) is fully installed and starts — `mozilla-bin`
+runs, burns CPU for ten minutes and never maps a window, as root or as
+`guest`, with fonts and display access both proven fine (`xclock` maps
+instantly for the same user). It is left in place, unused.
+
 ## Screen: 1280x1024 (2026-08-17)
 
 The X server takes the mode on its command line, so the site copy of the
@@ -191,16 +248,36 @@ so the restored desktop never blanks. **The seed still has the CDE defaults**:
 a cold-boot fallback will blank and lock again — re-bake the seed from a
 checkpoint-restored, cleanly halted guest to close that.
 
-## The scene: a bare CDE desktop
+## The scene: a browser on the first website
 
-What visitors see is the finished desktop and nothing else — wallpaper and the
-front panel. The `dxconsole` "Console Log" window that used to open
-bottom-right (repeating `Can't find an OSF-BASE … PAK`) was closed before the
-checkpoint was baked 2026-08-17, so the restore no longer brings it back. It
-was never started from any `/usr/dt/config` or `/etc/dt/config` file — grep
-finds nothing — which is why closing it in the CHECKPOINT was the fix that
-worked; a cold boot from the seed still opens it. The PAK line itself is
-expected on a PAK-less base install and gates non-root logins only.
+The checkpoint is baked with the exhibit's scene already up: the CDE desktop,
+the front panel, and one window — Lynx showing
+`http://info.cern.ch/hypertext/WWW/TheProject.html`, the first website, fetched
+live through the guest's own TCP/IP stack. A visitor arrives at a browser that
+already works, and the arrow keys follow links.
+
+That is the whole point of baking a checkpoint rather than booting: the browser
+took ten minutes of guest time to reach that page the first time, and every
+visitor now gets it in three seconds.
+
+The `dxconsole` "Console Log" window (repeating `Can't find an OSF-BASE ... PAK`)
+was closed before baking, so the restore does not bring it back. A cold boot
+from the seed still opens it.
+
+## The unprivileged user, and the licence wall
+
+`guest` (uid 300, group `users`, `/home/guest`, no password) exists and is what
+the browser runs as: `su guest -c /usr/local/bin/webbrowser`. Nothing
+visitor-facing runs as root except the CDE session itself.
+
+**The session could not be moved to that user.** dtlogin auto-logs in `guest`
+and the login is refused with "Too many users logged on already. Try again
+later.", because this install has **no OSF-BASE PAK** (`lmf list full for
+OSF-BASE` -> "No entry in license database"); the licence gates non-root
+interactive logins, which is the same wall the console log complains about at
+every boot. `su` to the account works, which is why the browser can run as it.
+Registering a PAK, or starting the session by another route, is an operator
+decision and is not done here — `Dtlogin*autoLogin` is back to `root`.
 
 ## es40 savestates: this station's reset
 
