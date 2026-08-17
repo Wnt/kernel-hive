@@ -31,8 +31,10 @@
 # keeps paying for (`|| true` media fetches, an installer logging success it
 # never earned). A stage that does not run says so, and says why.
 #
-# Plus one gate CI cannot run: repo/box sync drift (scripts/dev/verify-box-sync.sh),
-# probe-gated on `ssh lab` reachability.
+# Plus one gate CI cannot run: box state — live labhost files must equal the
+# commit the box checkout is at (scripts/host/box-install.sh dry-run; the box
+# is installed from a commit by scripts/dev/box-deploy.sh). Probe-gated on
+# `ssh lab` reachability. "Box behind main" is a note, not a failure.
 #
 # OPTIONAL MANUAL polish gate (needs the box; deliberately never blocking here):
 #   npm --prefix tests/e2e-live run qa:lap
@@ -251,22 +253,40 @@ else
   fail=1
 fi
 
-# --- box-sync drift (ONLY when the box is actually reachable) ---
+# --- box state (ONLY when the box is actually reachable) ---
 # A public clone, an offline laptop and GitHub Actions have no `ssh lab`, so
 # this is probe-gated: unreachable box => SKIP with a message, never a failure.
-# That is also why it is deliberately absent from .github/workflows/quality.yml
-# — a CI job that can never reach the box would be permanently red.
-# Reachable box + drift => hard fail, because that is exactly the state that let
-# 228 rows pile up unnoticed. Cost when it does run: one batched SSH session.
-echo "== box-sync drift =="
-if ssh -o ConnectTimeout=4 -o BatchMode=yes "${LAB:-lab}" true 2>/dev/null; then
-  if bash scripts/dev/verify-box-sync.sh; then
-    echo "  ok"
+# Since 2026-08-17 the box is INSTALLED FROM A COMMIT (scripts/dev/box-deploy.sh
+# → scripts/host/box-install.sh from /data/kernel-hive), so "box behind main"
+# is the normal state between a push and its deploy and is only a WARN here.
+# What still hard-fails is the thing that used to hide inside "drift": live
+# files that differ from the commit the box checkout is at — i.e. someone
+# edited labhost by hand, or an install was left half done. That is one
+# in-process dry-run of box-install on labhost, no hashes over the wire.
+echo "== box state (deployed commit vs live files) =="
+if ssh -n -o ConnectTimeout=4 -o BatchMode=yes "${LAB:-lab}" true 2>/dev/null; then
+  if bs="$(ssh -n -o ConnectTimeout=15 "${LAB:-lab}" '/data/kernel-hive/scripts/host/box-install.sh --repo /data/kernel-hive --json 2>/dev/null')" && [ -n "$bs" ]; then
+    changed="$(printf '%s' "$bs" | sed -n 's/.*"changed":\([0-9]*\).*/\1/p')"
+    newr="$(printf '%s' "$bs" | sed -n 's/.*"new":\([0-9]*\).*/\1/p')"
+    refused="$(printf '%s' "$bs" | sed -n 's/.*"refused":\([0-9]*\).*/\1/p')"
+    boxsha="$(printf '%s' "$bs" | sed -n 's/.*"sha":"\([0-9a-f]\{12\}\).*/\1/p')"
+    if [ "${changed:-0}" = 0 ] && [ "${newr:-0}" = 0 ] && [ "${refused:-0}" = 0 ]; then
+      echo "  ok — live files match the box checkout ($boxsha)"
+    else
+      echo "  FAIL — live files differ from the box checkout ($boxsha): changed=$changed new=$newr refused=$refused"
+      echo "         → scripts/dev/box-deploy.sh            (plan: which rows, and why)"
+      echo "         → scripts/dev/box-deploy.sh --apply    (install the checkout; hand edits are backed up)"
+      fail=1
+    fi
+    if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" "$boxsha" 2>/dev/null; then
+      echo "  note: after this push, deploy it: scripts/dev/box-deploy.sh --apply"
+    fi
   else
-    echo "  FAIL — repo and box have drifted; reconcile per-row (the box is"
-    echo "         authoritative for generated/live artifacts, the repo for source)."
-    echo "         Full table: scripts/dev/verify-box-sync.sh --all"
-    fail=1
+    # old-style fallback: the box checkout has no box-install.sh yet
+    if bash scripts/dev/verify-box-sync.sh; then echo "  ok"; else
+      echo "  FAIL — repo and box have drifted; scripts/dev/box-deploy.sh --apply"
+      fail=1
+    fi
   fi
 else
   echo "  SKIPPED: ssh ${LAB:-lab} unreachable (public clone, offline, or CI)"
