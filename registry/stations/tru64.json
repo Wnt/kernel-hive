@@ -134,15 +134,15 @@
       "Korn shell",
       "SRM console firmware"
     ],
-    "periodBrowser": "Lynx 2.8.9 (the bundled Netscape 6 is installed but never reaches a window here)",
+    "periodBrowser": "Netscape Navigator 4.76 (graphical, at TrueColor; Lynx 2.8.9 also built in as a text fallback)",
     "iconicApps": [
-      "Lynx web browser",
+      "Netscape Navigator 4.76",
       "CDE Front Panel",
       "dtterm",
       "CDE File Manager"
     ],
     "blurb": "DEC’s own UNIX on DEC’s own 64-bit iron. Born OSF/1 in 1992, renamed Digital UNIX and finally Tru64, this was the operating system the AlphaServer ES40 was designed around: a fully 64-bit UNIX with the CDE desktop, from the same company that built the processor under it. Version 5.1B of 2003 was the line’s last major release — HP retired Alpha and Tru64 together, and their engineering went on into HP-UX and beyond.",
-    "notes": "Live streamhost station — third x11-runtime station (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. The 5.1B install (115 subsets, AdvFS) was performed live on the station 2026-08-11/12; LISTED 2026-08-16. Scene: the CDE desktop at 1280x1024 with Lynx 2.8.9 (built in the guest) showing the first website, fetched over the guest's own TCP/IP stack — dec21143 at pci0.4 on the host-only veth tru64-h/g, static 172.31.66.2/30, NAT'd OUTBOUND ONLY by the launcher. Browser runs as the unprivileged user guest; the CDE session stays root because this PAK-less install refuses non-root logins (no OSF-BASE licence). Reset restores that whole scene in ~3 s. Pointer absolute and pixel-exact (ES40_POINTER_GAIN=2); labctl exec tru64 runs captured commands over a getty on the emulated com2 (serialcon_e). See docs/guests/tru64.md."
+    "notes": "Live streamhost station — third x11-runtime station (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. The 5.1B install (115 subsets, AdvFS) was performed live on the station 2026-08-11/12; LISTED 2026-08-16. Scene (since 2026-08-17): a bare CDE desktop at 1280x1024 autologged-in as the UNPRIVILEGED user guest (uid 300) — the operator's seat — with Netscape Navigator 4.76 a click away on the Front Panel, browsing the live web over the guest's own TCP/IP stack (dec21143 at pci0.4 on the veth tru64-h/g, static 172.31.66.2/30, NAT'd OUTBOUND ONLY). Non-root login was gated by the missing OSF-BASE PAK; that is now RESOLVED — an OSF-BASE licence is registered in /var/adm/lmf/ldb (see docs/guests/tru64.md), so the machine is genuinely licensed and lmf list shows OSF-BASE active. Reset restores that whole scene in ~3 s. Pointer absolute and pixel-exact (ES40_POINTER_GAIN=2); labctl exec tru64 runs captured commands over a getty on the emulated com2 (serialcon_e). See docs/guests/tru64.md."
   },
   "reset": {
     "stationDir": "tru64",
@@ -152,7 +152,7 @@
     "snapshot": null,
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "Tru64 UNIX 5.1B, CDE desktop with dtlogin autologin (root), 1280x1024 (X -screen, 2026-08-17), in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. The baked scene is the desktop with Lynx 2.8.9 open on the first website, fetched live through the guest dec21143 (static 172.31.66.2/30 on the host-only veth, NAT outbound). resetMode=relaunch: every reset reflink-copies assets/tru64/checkpoint/tru64.img and restores the checkpoint/tru64.axp savestate baked from it (~3 s to that scene); with no checkpoint staged it cold-boots img/tru64-seed.img (~7-10 min) with no network config and no browser. Keyboard PASS = SRM console echo and CDE navigation over ctlsock, framebuffer-proven. Mouse PASS = MOVEA measured against the guest XQueryPointer (exact on even coordinates, 1 px short on odd) and MOVEA+DOWN1/UP1 pressing a CDE button, 2026-08-17."
+    "fixture": "Tru64 UNIX 5.1B, CDE desktop with dtlogin autologin as the UNPRIVILEGED user guest (Dtlogin*autoLogin: guest, 2026-08-17), 1280x1024 (X -screen), in es40 (AlphaServer ES40, EV68); SH_CAPTURE=shm (headless SDL dummy, no X server) + mamesock ctlsock input. The baked scene is a bare guest CDE desktop; Netscape Navigator 4.76 is wired to the Front Panel (netscape.fp Personal-Apps control + Netscape.dt action + /usr/local/bin/webbrowser) and reaches the live web through the guest dec21143 (static 172.31.66.2/30 on the veth, NAT outbound). Non-root login is possible because an OSF-BASE licence is registered in /var/adm/lmf/ldb (the PAK wall was resolved 2026-08-17; /usr/sbin/lmf is pristine). resetMode=relaunch: every reset reflink-copies assets/tru64/checkpoint/tru64.img and restores the checkpoint/tru64.axp savestate baked from it (~3 s to that scene); with no checkpoint staged it cold-boots the (also licensed) img/tru64-seed.img (~7-10 min). Keyboard PASS = SRM console echo and CDE navigation over ctlsock, framebuffer-proven. Mouse PASS = MOVEA measured against the guest XQueryPointer (exact on even coordinates, 1 px short on odd) and MOVEA+DOWN1/UP1 pressing a CDE button, 2026-08-17."
   },
   "migrationExceptions": []
 }
