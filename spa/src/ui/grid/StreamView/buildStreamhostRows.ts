@@ -7,6 +7,13 @@ import { codecStringFor, profileName, levelName, presetName } from '../../../thr
 //  tagged in the spec: P1=KIND3/1, P2=KIND3/2, L=client-local, SIG=signaling,
 //  PING=type-9. Everything is guarded so partial data still renders a clean row.
 // ---------------------------------------------------------------------------
+/** Compact age readout for the diagnostic rows: "820ms", "28s", "4m10s". */
+function fmtAge(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  const s = Math.round(ms / 1000);
+  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}s`;
+}
+
 export function buildStreamhostRows(
   m: NonNullable<StreamStats['streamhost']>,
   stats: StreamStats | null,
@@ -62,11 +69,43 @@ export function buildStreamhostRows(
   const kfMs = enc?.keyframeMs ?? sig?.keyframeMs ?? null;
   rows.push({ k: 'gop / kf', v: `GOP ${gop ?? dash} / KF ${kfMs ?? dash} ms` });
 
-  // 6. RTT.  [PING]
-  rows.push({ k: 'rtt', v: stats?.rttMs != null ? `${stats.rttMs.toFixed(1)} ms` : `${dash} ms` });
+  // 6. RTT — raw, plus the learned path floor and the EXCESS over it. The server
+  //    ABR decides on the excess (abr.rs DOWN_RTT_EXCESS_MS = 80), never the raw
+  //    RTT, so showing only the raw number hid the actual decision input.  [PING, L]
+  const d = m.diag;
+  let rttRow = stats?.rttMs != null ? `${stats.rttMs.toFixed(1)} ms` : `${dash} ms`;
+  if (d.rttFloorMs != null && d.rttExcessMs != null) {
+    rttRow += ` · floor ${d.rttFloorMs.toFixed(1)} · excess ${d.rttExcessMs.toFixed(1)}`;
+  }
+  rows.push({ k: 'rtt', v: rttRow });
 
-  // 7. Loss / Drops.  [L]
-  rows.push({ k: 'loss / drops', v: `PL ${m.lossPct.toFixed(1)}% / DR ${m.framesDropped} / FZ ${m.freezeCount}` });
+  // 7. Loss — the instantaneous tick AND the 3 s window WITH ITS SAMPLE SIZE.
+  //    `lossPct` is missed/(received+missed) over one ~100 ms tick; on a low-fps
+  //    station that denominator is 0–1 frames, so a single dropped frame reads as
+  //    100 % loss. The percentage means nothing without `n`.  [L]
+  rows.push({
+    k: 'loss',
+    v: `now ${m.lossPct.toFixed(1)}% · 3s ${d.windowLossPct.toFixed(1)}% (n=${d.windowFrames})`,
+  });
+
+  // 7b. The worst tick in the window — the transient that actually moves the
+  //     tier, and which an instantaneous reading always misses. Flagged when it
+  //     was big enough to trip the server's 5 % downshift yet computed from too
+  //     few frames to be meaningful.  [L]
+  if (d.peakLossAgeMs != null) {
+    const warn = d.peakLossUntrustworthy ? ' ⚠ TOO FEW FRAMES' : '';
+    rows.push({
+      k: 'loss peak',
+      v: `${d.peakLossPct.toFixed(0)}% from n=${d.peakLossFrames} · ${fmtAge(d.peakLossAgeMs)} ago${warn}`,
+    });
+  }
+
+  // 7c. Drops / freezes — cumulative totals were unfalsifiable ("9 drops" could
+  //     be an hour old); the windowed rate says whether it is happening NOW.  [L]
+  rows.push({
+    k: 'drops',
+    v: `DR ${m.framesDropped} (${d.dropsPerMin.toFixed(0)}/min) · FZ ${m.freezeCount} (${d.freezesPerMin.toFixed(0)}/min)`,
+  });
 
   // 8. Decode — queue · ms/frame.  [L]
   rows.push({ k: 'decode', v: `Q ${m.decodeQueue} · ${m.decodeMs.toFixed(1)} ms/f` });
@@ -87,9 +126,17 @@ export function buildStreamhostRows(
   if (enc) {
     const tierName = sig?.ladder?.find((r) => r.tier === enc.tier)?.name
       ?? ['high', 'med', 'low', 'floor'][enc.tier] ?? `t${enc.tier}`;
-    rows.push({ k: 'abr tier', v: `T${enc.tier} ${tierName} (CRF ${enc.crf})` });
+    const age = d.lastTierChangeAgeMs != null ? ` · ${fmtAge(d.lastTierChangeAgeMs)} ago` : '';
+    rows.push({ k: 'abr tier', v: `T${enc.tier} ${tierName} (CRF ${enc.crf})${age}` });
   } else {
     rows.push({ k: 'abr tier', v: dash });
+  }
+
+  // 9b. Tier HISTORY — the single most diagnostic row. A station cycling
+  //     0→1→2→3→0 is flapping, not adapting, and one current-tier number can
+  //     never show that. Only rendered once a change has actually happened.  [L]
+  if (d.tierChanges > 0) {
+    rows.push({ k: 'abr history', v: `${d.tierPath} · ${d.tierChanges} changes/5min` });
   }
 
   // 10. Preset / tune.  [SIG or P1 preset]

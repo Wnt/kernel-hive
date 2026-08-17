@@ -76,6 +76,7 @@ import {
 } from './streamClient/videoDecode';
 import { tickStatsImpl, updateBannerImpl, sendStatsImpl } from './streamClient/abr';
 import { VideoAuGate } from './streamClient/auGate';
+import { StreamTelemetry } from './streamClient/telemetry';
 import {
   T_PING,
   IS_FIREFOX,
@@ -198,6 +199,8 @@ export class StreamClient {
   missedInterval = 0;
   receivedInterval = 0;
   lossPct = 0;
+  /** Rolling diagnostic record behind the Ctrl+N overlay (passive recorder). */
+  telemetry = new StreamTelemetry();
   // L-1: server-known egress skips must not read as network loss. `serverStats`
   // (KIND_PARAMS subtype 2) carries the CUMULATIVE per-session skip count at 1 Hz;
   // we diff it into a CREDIT bucket and spend that credit against the 100ms
@@ -531,6 +534,7 @@ export class StreamClient {
       lastDecodeError: this.lastDecodeError,
       decodePath: this.decodePath,
       sessionRebuilds: this.sessionRebuilds,
+      diag: this.telemetry.snapshot(performance.now()),
     };
   }
 

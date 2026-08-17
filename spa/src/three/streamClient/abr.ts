@@ -50,8 +50,22 @@ export function tickStatsImpl(this: StreamClient): void {
   const totalFrames = this.receivedInterval + this.missedInterval;
   this.lossPct = totalFrames > 0 ? (this.missedInterval * 100) / totalFrames : 0;
   const missedThisInterval = this.missedInterval;
+  const receivedThisInterval = this.receivedInterval;
   this.receivedInterval = 0;
   this.missedInterval = 0;
+
+  // ---- diagnostic recorder (passive; never feeds the scorer or T_STATS) ----
+  // Fed the RAW per-tick counters, not lossPct, so the overlay can show the
+  // sample size behind every percentage — see telemetry.ts for why that matters.
+  this.telemetry.tick({
+    now,
+    received: receivedThisInterval,
+    missed: missedThisInterval,
+    rttMs: this.lastRtt ?? null,
+    framesDropped: this.framesDropped,
+    freezeCount: this.freezeCount,
+    tier: this.encParams?.tier ?? null,
+  });
 
   // ---- freeze detection: no paint >250ms while AUs still arrive ----
   if (this.lastDecodeOutAt > 0 && (now - this.lastDecodeOutAt > 250)

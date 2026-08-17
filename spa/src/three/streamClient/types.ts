@@ -5,6 +5,8 @@
 //  streamClient.ts, StreamLadderRung + StreamhostSignal are internal.
 // ============================================================================
 
+import type { StreamDiagnostics } from './telemetry';
+
 // One rung of the ABR ladder as advertised in signaling.json `video.ladder`.
 export interface StreamLadderRung {
   tier: number;
@@ -175,6 +177,9 @@ export interface StreamMetrics {
   /** Firefox poisoned-session rebuilds this client performed (incoming
    *  uni-stream delivery dead-on-arrival — see FF_STALL_* in streamClient). */
   sessionRebuilds: number;
+  /** Rolling diagnostic window: loss peaks WITH their sample size, drop/freeze
+   *  rates, RTT floor/excess and the tier-change history. See telemetry.ts. */
+  diag: StreamDiagnostics;
 }
 
 export interface StreamClientStats {
