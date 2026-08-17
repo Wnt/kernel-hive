@@ -78,6 +78,7 @@ fi
 printf 'checkout  %s@%s\n' "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" "$(git -C "$REPO" rev-parse --short HEAD)"
 printf 'origin    main@%s\n' "$WANT"
 if [ -n "$short" ] && [ "$short" != "$WANT" ]; then
+  git -C "$REPO" fetch -q origin main 2>/dev/null || true
   n="$(git -C "$REPO" rev-list --count "$short..origin/main" 2>/dev/null || echo '?')"
   echo "box is BEHIND origin/main by $n commit(s)  → scripts/dev/box-deploy.sh --apply"
 fi
