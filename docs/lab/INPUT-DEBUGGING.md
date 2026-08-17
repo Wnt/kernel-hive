@@ -125,10 +125,15 @@ python3 keywedge.py --key a --edges 200   # CONTROL: survives (not volume)
 python3 keywedge.py --idle                # CONTROL: survives (not elapsed time)
 ```
 
-The win311 result: keys SkiFree ACTS ON wedge the guest keyboard in ~44 edges
-while 5x the volume of a key it ignores does nothing, and `loadvm` recovers it
-— which is why "Restore to golden" appears to fix it. Signature gap worth
-closing: the live freeze still recovered via Ctrl+Esc, this repro does not.
+The win311 result was root-caused on 2026-08-17: the guest ends up running with
+the CPU interrupt flag clear, so timer and keyboard IRQs sit pending forever and
+the WHOLE guest stops (the Clock stops too, not just the app). Full report,
+evidence and the eleven hypotheses it killed:
+[`win311-interrupts-disabled-freeze.md`](win311-interrupts-disabled-freeze.md).
+
+Use `clockprobe.py` when a station has a clock visible: a passive probe beats an
+injected one, because Ctrl+Esc cannot distinguish "input is dead" from "Windows
+is dead" — it needs input to work in order to answer.
 
 ## Reproducing without the hardware
 
