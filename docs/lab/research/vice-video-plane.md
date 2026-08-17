@@ -13,7 +13,7 @@ the per-emulator plane [`DEBRIDGE-CONVERSION-BRIEF.md`](../DEBRIDGE-CONVERSION-B
 Scope of this research: **frames only.** Input (the ctlsock analogue), audio,
 and checkpoints are untouched and unproven for VICE.
 
-Rig (namespaced, nothing live touched): `/data/vms/soltest/vice-vid/` on
+Rig (namespaced, nothing live touched): `/data/vms/sandbox/vice-vid/` on
 labhost.
 
 ---
@@ -27,25 +27,25 @@ bridged kiosks carry.
 ```sh
 # 1. source (50 MB shallow; the mirror tags every SVN revision, so no tag fetch)
 git clone --depth 1 --no-single-branch \
-    https://github.com/VICE-Team/svn-mirror /data/vms/soltest/vice-vid/vice-src
+    https://github.com/VICE-Team/svn-mirror /data/vms/sandbox/vice-vid/vice-src
 
 # 2. two build tools labhost does not have, obtained WITHOUT touching the host:
 #    - dos2unix: a 5-line sed shim in the rig's own bin/ satisfies configure
 #    - xa65:     apt-get download + dpkg-deb -x into the rig, never installed
-mkdir -p /data/vms/soltest/vice-vid/bin
+mkdir -p /data/vms/sandbox/vice-vid/bin
 printf '%s\n' '#!/bin/sh' \
   'for a in "$@"; do case "$a" in -*) continue;; esac; [ -f "$a" ] && sed -i "s/\r$//" "$a"; done' \
-  'exit 0' > /data/vms/soltest/vice-vid/bin/dos2unix
-chmod +x /data/vms/soltest/vice-vid/bin/dos2unix
-cd /data/vms/soltest/vice-vid && apt-get download xa65 &&
+  'exit 0' > /data/vms/sandbox/vice-vid/bin/dos2unix
+chmod +x /data/vms/sandbox/vice-vid/bin/dos2unix
+cd /data/vms/sandbox/vice-vid && apt-get download xa65 &&
   dpkg-deb -x xa65_*.deb pkg && cp pkg/usr/bin/* bin/
 
 # 3. configure + build (out-of-tree), headless UI: no GTK, no SDL, no X
-export PATH=/data/vms/soltest/vice-vid/bin:$PATH
-cd /data/vms/soltest/vice-vid/vice-src/vice && ./autogen.sh
-mkdir -p /data/vms/soltest/vice-vid/build && cd /data/vms/soltest/vice-vid/build
+export PATH=/data/vms/sandbox/vice-vid/bin:$PATH
+cd /data/vms/sandbox/vice-vid/vice-src/vice && ./autogen.sh
+mkdir -p /data/vms/sandbox/vice-vid/build && cd /data/vms/sandbox/vice-vid/build
 ../vice-src/vice/configure --enable-headlessui \
-    --prefix=/data/vms/soltest/vice-vid/install
+    --prefix=/data/vms/sandbox/vice-vid/install
 make -j12          # ~4 min on the box (gcc 14.2, trixie), zero warnings added
 ```
 
@@ -126,7 +126,7 @@ binary's screenshot of the same run.
 
 ### The commits
 
-Local clone `/data/vms/soltest/vice-vid/vice-src`, branch `kernel-hive/shmfb`,
+Local clone `/data/vms/sandbox/vice-vid/vice-src`, branch `kernel-hive/shmfb`,
 on top of upstream `223e31ac` (`main`). Two commits, ready to become a fork
 submodule in the shape of `third_party/mame-irix`:
 
@@ -190,7 +190,7 @@ booting) and t≈5 s (the full boot screen, mean/sd identical to the exit-time
 frame), then killed by a pid whose `/proc/<pid>/exe` was verified to be the rig
 binary. The mapping is live while the emulator runs.
 
-Artefacts on labhost (`/data/vms/soltest/vice-vid/run/`): `shm.png`,
+Artefacts on labhost (`/data/vms/sandbox/vice-vid/run/`): `shm.png`,
 `shm1x.png`, `shot1x.png`, `live-t1.png`, `live-t5.png`, `xplus4.png`,
 `xvic.png`, `base.png` / `base2.png` (the gating covenant pair).
 
@@ -249,7 +249,7 @@ having a picture, not an increment over a windowed build.)
 
 ## 5. Teardown
 
-Rig left in place at `/data/vms/soltest/vice-vid/` (220 MB) **because it holds
+Rig left in place at `/data/vms/sandbox/vice-vid/` (220 MB) **because it holds
 the fork clone with the commits**; there is nowhere to push it yet. Nothing
 else was touched: no live station, no `/data/vms/streamhost/`, no packages
 installed on labhost, no shared claims taken (no display, tap, port, VMID or

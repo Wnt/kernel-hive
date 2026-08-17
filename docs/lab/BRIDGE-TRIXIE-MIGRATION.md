@@ -34,7 +34,7 @@ fails on *both* suites, so it is a pre-existing flake, not a migration
 regression. The frozen bookworm base was re-`stat`ed afterwards and is untouched
 (size 3162308608, mtime 2026-07-15 10:52:41).
 
-A clone under `/data/vms/soltest/` then booted an overlay of it under the real
+A clone under `/data/vms/sandbox/` then booted an overlay of it under the real
 **bridge tile device set**, which settled the four things apt could not:
 
 | Question | Answer, from a real framebuffer |
@@ -134,7 +134,7 @@ by their own builders and `loadvm`-verified, `/etc/bridge/suite` reporting
 to compare. `mpf2` and `kc854` were attempted, **failed and were rolled back**;
 they stay bookworm, which is the correct state for them (see below).
 
-All six MAME binaries were rebuilt in `/data/vms/soltest/trixie-chroot` first,
+All six MAME binaries were rebuilt in `/data/vms/sandbox/trixie-chroot` first,
 one at a time. **ccache is what made the wave cheap, and the measurement is the
 headline:** the first build (`bbcb`, the widest SOURCES set) ran 16 min at a
 59.1% hit rate and grew the cache 82 → 110 MB; every later build reused it —
@@ -162,7 +162,7 @@ only the first is fixed:
   even though the same build had just accepted the frame (kc854: CAOS ready,
   bright 27868, nag-red 0) and, on mpf2, had drawn the real MPF-II banner and `>`
   prompt on its FIRST cold boot. So the emulators run on trixie; something about
-  the SECOND cold boot does not. That is per-tile work on a soltest clone, not a
+  the SECOND cold boot does not. That is per-tile work on a sandbox clone, not a
   chroot swap, and it is why these two are not in the table above.
 
 `mpf2` has a second, independent defect the migration exposed: its readiness
@@ -210,7 +210,7 @@ Two bases coexist. The migration moves tiles between them, one at a time.
 | | bookworm | trixie |
 |---|---|---|
 | base qcow2 | `/data/vms/bridge/bridge-base.qcow2` | `/data/vms/bridge/bridge-base-trixie.qcow2` |
-| MAME build chroot | `/data/vms/soltest/bookworm-chroot` | `/data/vms/soltest/trixie-chroot` |
+| MAME build chroot | `/data/vms/sandbox/bookworm-chroot` | `/data/vms/sandbox/trixie-chroot` |
 | glibc / gcc | 2.36 / 12 | 2.41 / 14 |
 | frozen | **yes** (25 live overlays) | **yes, in fact** (3 live overlays since wave 1; the ledger flag is still `false`, but `bridge-base.sh` derives frozen-ness from "any tile declares this suite") |
 
@@ -273,7 +273,7 @@ that make the migration real rather than declared.
    empty. For `star`, `daybreak`, `sinclairql`, `zxspectrum`, `apple2` and
    `amiga` it is not, and it must land *before* the overlay is rebuilt.
 2. **Rebuild the overlay against the trixie base.** Experiment on a clone under
-   `/data/vms/soltest/` first (`BRIDGE_SUITE=trixie` forces the suite without
+   `/data/vms/sandbox/` first (`BRIDGE_SUITE=trixie` forces the suite without
    touching the ledger), kill only via `clone-guard kill-pidfile`. Then
    `qemu-img create -f qcow2 -b /data/vms/bridge/bridge-base-trixie.qcow2 -F
    qcow2 …` and re-run the tile's builder. Device set must be byte-identical to
@@ -676,7 +676,7 @@ The migration is finished when the ledger's `tiles` map is all `trixie` and
 - **`/data/vms/bridge/bridge-base.qcow2`** — the frozen bookworm base — becomes
   deletable, once no overlay's backing file names it. That is a
   `bridge-suite-status.sh` question, not a judgement call.
-- **`/data/vms/soltest/bookworm-chroot`** goes with it. The chroot exists only
+- **`/data/vms/sandbox/bookworm-chroot`** goes with it. The chroot exists only
   to build binaries for a guest older than the host; when guest and host are
   both trixie, a host-built binary runs in the guest unchanged and the
   ABI-matching machinery has nothing left to match.

@@ -38,9 +38,9 @@
 #   irixbench.sh shot <name> [out.png]
 set -u
 
-BENCH_ROOT="${IRIX_BENCH_ROOT:-/data/vms/soltest/irix-baseline-b7f2/run}"
+BENCH_ROOT="${IRIX_BENCH_ROOT:-/data/vms/sandbox/irix-baseline-b7f2/run}"
 ASSETS="${IRIX_ASSETS:-/data/vms/streamhost/assets/irix}"
-RIG="${IRIX_BENCH_RIG:-/data/vms/soltest/irix-baseline-b7f2/rig}"
+RIG="${IRIX_BENCH_RIG:-/data/vms/sandbox/irix-baseline-b7f2/rig}"
 MAME_BIN="${IRIX_MAME:-$ASSETS/mame/sgi}"
 GOLDEN="${IRIX_GOLDEN:-$ASSETS/irix65-apps-v3.chd}"
 # The agent the LIVE TILE runs, which is the station-directory copy — NOT
@@ -180,7 +180,7 @@ cmd_run() {
   [ -n "$cpus" ] || die "--cpus A,B is required (claim the pair first)"
   [ "$throttle" = 1 ] || thr=(-nothrottle)
   D="$BENCH_ROOT/$name"
-  case "$D" in /data/vms/soltest/*) : ;; *) die "refusing to work outside /data/vms/soltest" ;; esac
+  case "$D" in /data/vms/sandbox/*) : ;; *) die "refusing to work outside /data/vms/sandbox" ;; esac
   rm -rf "$D"
   mkdir -p "$D"
   : >"$D/cmd"

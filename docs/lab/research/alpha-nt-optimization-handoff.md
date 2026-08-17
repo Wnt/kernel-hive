@@ -44,7 +44,7 @@ commits (operator rule: **no .patch files**).
   `es40.O3`, `es40.652f7c2` (`a2a21bde…`), `es40.baseline` (`29ecb300…`).
   **The fast-flag commit added a virtual to CDisk — always clean-rebuild
   across it (stale objects are vtable-broken).**
-- **Live rig** `/data/vms/soltest/ALPHA-nt/run/`: on the canonical -O3
+- **Live rig** `/data/vms/sandbox/ALPHA-nt/run/`: on the canonical -O3
   binary since 2026-08-11 (clean NTFS shutdown → `start.sh`), at the
   desktop. **Its `flash.rom` (persisted 02:47:51) carries the new NVRAM:
   Auto Start Count 5 s + Power-up Memory Test Disabled — the bench copies
@@ -54,7 +54,7 @@ commits (operator rule: **no .patch files**).
   `alpha-nt-vnc64.service` on Xvfb `:64`); drive it from the host with
   `DISPLAY=:64 xdotool key …` + `import -window root` screenshots (the
   AlphaBIOS setup session used exactly this).
-- **Bench harness** `/data/vms/soltest/ALPHA-nt/bench/` — built, validated,
+- **Bench harness** `/data/vms/sandbox/ALPHA-nt/bench/` — built, validated,
   slots clear. See "How to measure".
 - **Mouse verified post-restart** (operator, 2026-08-11): pointer moves fine
   over VNC. Note it is still tracking *relative* — "OK for testing." The
@@ -185,7 +185,7 @@ CAlphaCPU::RestoreState. Until fixed, restore-based benching is parked.
 **Goal: 2× desktop-interaction throughput** = a scripted UI sequence —
 launch Computer Management (MMC + snap-ins: disk IO + CPU, deliberately
 heavy) — completes in half the baseline time. Harness:
-`/data/vms/soltest/ALPHA-nt/uibench/uibench.sh <name> <binary> <iters>
+`/data/vms/sandbox/ALPHA-nt/uibench/uibench.sh <name> <binary> <iters>
 [--cold|--ref]` — private Xvfb `:93`, fresh disk copy from m4-warm per
 iteration, xdotool injection (`windowfocus` first — a bare Xvfb never
 focuses the SDL window on its own), ImageMagick RMSE against
@@ -281,7 +281,7 @@ keep it DISABLED until framebuffer+input+reset pass the playbook gate.
 ## How to measure (the bench harness)
 
 ```
-ssh lab '/data/vms/soltest/ALPHA-nt/bench/bench.sh <name> [--until kernel] \
+ssh lab '/data/vms/sandbox/ALPHA-nt/bench/bench.sh <name> [--until kernel] \
          [--binary PATH] [--timeout S] [--record-all] [--hold-secs S] [--keep]'
 ```
 
@@ -305,14 +305,14 @@ ssh lab '/data/vms/soltest/ALPHA-nt/bench/bench.sh <name> [--until kernel] \
   runs at 2 (plus the rig) and `taskset` precision runs to distinct
   physical cores (CPU N and N+8 are siblings).
 - labhost pause state: 52 `streamhost@*` station units stopped 2026-08-11
-  (restore list `/data/vms/soltest/ALPHA-nt/quiesced-units-20260811.txt`);
+  (restore list `/data/vms/sandbox/ALPHA-nt/quiesced-units-20260811.txt`);
   debridge-7f3a experiment + openvms killed on operator's order. k3s and
   non-streamhost guests untouched.
 
 **The A/B recipe for target #1:**
 ```
 # control (pre-patch): note the baseline binary
-bench.sh ctrl --until kernel --binary /data/vms/soltest/ALPHA-nt/es40src/src/es40.baseline
+bench.sh ctrl --until kernel --binary /data/vms/sandbox/ALPHA-nt/es40src/src/es40.baseline
 # build your change, then:
 bench.sh flagfix --until kernel     # uses the freshly built es40
 ```
@@ -325,7 +325,7 @@ trusting wall-time alone.
 ## Build / commit / verify loop
 
 - Edit locally → `scp` the file to `es40src/src/...` on the box → build **on the
-  box**: `cd /data/vms/soltest/ALPHA-nt/es40src/src && touch <file> && make -j6`
+  box**: `cd /data/vms/sandbox/ALPHA-nt/es40src/src && touch <file> && make -j6`
   (top-level `make` says "nothing to do" — build in `src/`). Needs the extracted
   deb tree already on RUNPATH; binary self-links fine.
 - Commit on the fork with a descriptive body; **push via SSH remote**:

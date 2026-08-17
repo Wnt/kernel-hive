@@ -25,7 +25,7 @@ import os
 import sys
 from collections import Counter
 
-IMAGES = os.environ.get("IRIX_PC_IMAGES", "/data/vms/soltest/guest-pchist/images.json")
+IMAGES = os.environ.get("IRIX_PC_IMAGES", "/data/vms/sandbox/guest-pchist/images.json")
 
 
 PREFIXES = ("n32:", "o32:", "_usr_sbin_", "_usr_bin_X11_", "_sbin_", "_usr_bin_")

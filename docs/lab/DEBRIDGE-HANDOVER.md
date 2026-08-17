@@ -108,7 +108,7 @@ the terminology migration, but other agents were mid-flight in those files.
    modifier press also waits for an empty matrix** (raising the press barrier
    while it waits, and never blocking the release that clears it) — `864f06c`.
    A held modifier still never counts as matrix-busy, so chords are unchanged.
-   The tool that produced the evidence is `/data/vms/soltest/ctlaudit`
+   The tool that produced the evidence is `/data/vms/sandbox/ctlaudit`
    (`rig.sh`, `burst.py`): a fire-and-forget burst on a wall clock, with
    `--hold` > `--period` as the switch that turns rollover on. A synchronous
    driver cannot see either defect.
@@ -176,7 +176,7 @@ the unmodified tool written for the MAME-era producer. Fidelity against VICE's
 own screenshot path: 0 of 104,448 pixels differ. Damage comes free (the core
 hands over the refreshed rect). Publish costs ~0.7% of a core. With the env var
 unset the binary is indistinguishable from pre-patch. Branch
-`kernel-hive/shmfb` in `lab:/data/vms/soltest/vice-vid/vice-src`.
+`kernel-hive/shmfb` in `lab:/data/vms/sandbox/vice-vid/vice-src`.
 
 **Input plane: PROVEN, and the design differs from MAME on purpose.** The wire
 carries an **X11 keysym**, not a scancode or a matrix cell: VICE resolves
@@ -191,7 +191,7 @@ evaluated and REJECTED: its whole keyboard surface is `kbdbuf_feed()`, PETSCII
 poked into the KERNAL buffer — no key-down/up, no chords, and invisible to
 anything that scans the matrix itself, which includes the c64 station's GEOS.
 Proven headless with a 66-edge burst typing a BASIC line onto the framebuffer.
-Branch `kernel-hive-vicectl` in `lab:/data/vms/soltest/vice-in/vice-src`.
+Branch `kernel-hive-vicectl` in `lab:/data/vms/sandbox/vice-in/vice-src`.
 
 Two MAME lessons transferred intact: **exclusive-scan is mandatory** (the same
 burst without it prints `N ''N`), and the gating covenant was measured
@@ -423,7 +423,7 @@ each one catches something the others cannot:
 | **Browser timing**: press/release ~5 ms apart, characters ~90 ms apart, on a line with a SHIFTED character next to an unshifted one (`print 12+34` is the cheapest), compared against the same text typed with wide character spacing | the misplaced shift level | `shift.py` |
 | The **real SPA in a real browser** over the real transport | everything above, plus the daemon path, the first-visit standby race, and anything the socket cannot see | `scripts/e2e/typing-pace-probe.mjs` on CT950 |
 
-Socket harness: `lab:/data/vms/soltest/vice-kbd/` (`vkbd.py`, `burst.py`,
+Socket harness: `lab:/data/vms/sandbox/vice-kbd/` (`vkbd.py`, `burst.py`,
 `bisect.py`, `hard.py`, `shift.py`, `reaptest.sh`). Browser probe:
 `pct exec 950 -- bash -lc "cd /root/e2e && GALLERY_URL=https://<host>:8443 node
 typing-pace-probe.mjs 'VIC-20' 'print 12+34' 90"`.
@@ -506,7 +506,7 @@ IN-APPLICATION (the GEOS deskTop), which a cold boot cannot reproduce**, so the
 fallback that rescued the wave did not exist for it.
 
 **Tested first, before any stanza, and c64's restore HOLDS.** Rig
-`/data/vms/soltest/vice-restore/c64`: host-native headless `x64sc
+`/data/vms/sandbox/vice-restore/c64`: host-native headless `x64sc
 -drive8truedrive -autostart-handle-tde -VICIIdsize` autostarted GEOS-1351.D64,
 reached the deskTop, `dump`ed, and a FRESH process restored it through
 `-moncommands` + `-initbreak ready`. The restored mapping is **768×544, 256 429
@@ -545,7 +545,7 @@ to the fleet.
 ## The restore bug, and what it actually was
 
 **2026-08-17. It was TWO bugs, not one, and only one of them was a restore.**
-Both were found in a namespaced rig (`/data/vms/soltest/vice-restore`) driven
+Both were found in a namespaced rig (`/data/vms/sandbox/vice-restore`) driven
 from the four shelved `golden.vsf.unusable-20260816` checkpoints, and both are
 fixed on the fork. Pin moved `42103407` → **`507cf3e832`** (ten commits on tag
 `3.10.0`), and cbm2, pet2001, cbm8032 and plus4 were rebuilt from it, which
@@ -629,7 +629,7 @@ publisher into each `fb.shm`, right surface, right scene.
 "the moment a station resets is not clean", two of them operator-reported. Fork
 pin moved `507cf3e832` → **`d518f3dbc5`** (14 commits on tag 3.10.0); plus4,
 cbm2, pet2001 and cbm8032 were rebuilt from it, redeployed and verified live.
-Rig: `/data/vms/soltest/vice-clean` (`sampler.py` reads every published frame
+Rig: `/data/vms/sandbox/vice-clean` (`sampler.py` reads every published frame
 off the mapping, `fbtool.py` scores one, `restore-run.sh` / `live-run.sh` /
 `ab.sh` drive a restore, `speed.sh` measures the audio sink).
 
@@ -708,7 +708,7 @@ module sets it for the VDC's benefit. `src/vdc` never having to call
 
 **What it costs is margin, and that is the number to carry: 536 held frames of
 a 600-frame bound, 89 %.** Measured three times in
-`/data/vms/soltest/vice-gen3`, byte-identical every run — and it CANNOT drift
+`/data/vms/sandbox/vice-gen3`, byte-identical every run — and it CANNOT drift
 with box load, because the counter ticks per emulated frame, not per wall
 second. The 536 is simply the C128's own ROM boot to the `ready` breakpoint:
 ~5.3 s at PAL 50 Hz **× two canvases**, VICII and VDC each incrementing the
@@ -911,7 +911,7 @@ station's `fb.shm`, resolved through `/proc/<pid>/exe` + `/proc/<pid>/maps`.
 
 vic20, c128 and c64 were still on `507cf3e832` and were rebuilt onto the
 `d518f3dbc5` pin, which is what turned on `-sounddev fifo` and the restore
-hold for them. Rig: `/data/vms/soltest/vice-gen3`.
+hold for them. Rig: `/data/vms/sandbox/vice-gen3`.
 
 **The launcher was half the job, and it is the trap to remember.** Those three
 also still carried the PRE-`fifo` copy of the shared `x11-runtime.sh`
@@ -1025,7 +1025,7 @@ re-measure in high res.
   `pgrep -x mame` matched nothing. **Sweep by `/proc/<pid>/exe` path, never by
   an assumed process name** — the same discipline the kill guards use, for the
   same reason. Killed via `clone-guard kill-pidfile`; the arms' directories
-  under `/data/vms/soltest/debridge-7f3a/` are intact, so re-arming for the
+  under `/data/vms/sandbox/debridge-7f3a/` are intact, so re-arming for the
   still-open atarist question is `armB-mame.sh` + `gallery-arms.py publish`.
 
 - ~~All five VICE stations run the fixed module … rebuild and reinstall all
@@ -1090,7 +1090,7 @@ re-measure in high res.
 - ~~Only plus4, cbm2, pet2001 and cbm8032 run the `d518f3dbc5` binaries~~
   RESOLVED 2026-08-17: **all seven now run one binary generation.** vic20, c128
   and c64 were rebuilt from the pin through `build-vice-native.sh` (one shared
-  work dir, `/data/vms/soltest/BUILD-vice-gen3` — vic20 paid the compile, the
+  work dir, `/data/vms/sandbox/BUILD-vice-gen3` — vic20 paid the compile, the
   other two cost seconds), and the shared launcher was redeployed to them,
   which is what they were ALSO missing: `x11-runtime.sh` on those three was the
   pre-`fifo` copy, so the binary swap alone would not have turned the fixes on.

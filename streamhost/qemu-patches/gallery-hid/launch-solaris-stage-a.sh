@@ -3,7 +3,7 @@
 # process-start restore proof; the default remains a cold boot for baking.
 set -euo pipefail
 
-D="${D:-/data/vms/soltest/lli/spike-solaris-a}"
+D="${D:-/data/vms/sandbox/lli/spike-solaris-a}"
 QEMU="${QEMU:-$D/qemu-build/qemu-system-x86_64}"
 QEMU_DATA="${QEMU_DATA:-$D/qemu-build/pc-bios}"
 DISK="${DISK:-$D/solariscde-stage-a.qcow2}"

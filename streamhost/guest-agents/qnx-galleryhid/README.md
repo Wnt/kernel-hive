@@ -7,7 +7,7 @@ the keyboard remains on the stock PS/2 path.
 ## Status: abs-Y GO; driver implementation partial
 
 The decisive Photon output-path gate passed on the namespaced 640x480 clone
-`/data/vms/soltest/qnx-ghid-spike-3112` (VMID 3112). The full PCI module is
+`/data/vms/sandbox/qnx-ghid-spike-3112` (VMID 3112). The full PCI module is
 design source only: it has not been compiled, loaded, or framebuffer-verified.
 
 Preflight, captured in `evidence/preflight-qcc-ddk.png`:

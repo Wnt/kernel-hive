@@ -5,7 +5,7 @@
 # (registry/bridge-suites.json, docs/lab/BRIDGE-TRIXIE-MIGRATION.md). On a
 # trixie station that chroot is the host's own generation, so the ABI detour this
 # script exists for finally goes away. It deliberately builds only tk2000.cpp
-# (which owns mpf2) in a namespaced soltest worktree.
+# (which owns mpf2) in a namespaced sandbox worktree.
 #
 # Usage:
 #   scripts/build-guests/emulators/build-mame-mpf2.sh [work-dir] [output-binary]

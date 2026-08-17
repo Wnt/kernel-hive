@@ -251,7 +251,7 @@ daemon's own per-window coalescing in `warpd.rs`): within each `DosRead` drain i
 PENDs only the newest `M` and applies it once via `flush_move()`; any
 button/wheel/drag verb (`P/R/B/C/D/U/W`) flushes the pending move first so click and
 drag ordering/position stay correct; the final pended position is applied once the
-port is drained. Verified on a `/data/vms/soltest` clone under an 8% CPU throttle
+port is drained. Verified on a `/data/vms/sandbox` clone under an 8% CPU throttle
 (reproducing encoder starvation): with the OLD agent a 167/s feed backlogged
 9.2 s (T=1) → 26 s (T=3) — settle grows with feed length; with the coalescing agent
 the same feed settled in ~0.1–0.5 s flat, and a pace=30 18 s hover on the recaptured
@@ -273,7 +273,7 @@ the registry generator plus `labctl gen`, and restart only the OS/2 service.
 ## Resolution + wheel recapture investigation (2026-07-27)
 
 Attempted to (a) raise resolution toward 1280×1024 and (b) re-verify / fold in the
-"long-pending mouse-WHEEL fix". Investigated entirely on a `/data/vms/soltest`
+"long-pending mouse-WHEEL fix". Investigated entirely on a `/data/vms/sandbox`
 clone (byte copy of the live checkpoint, identical device set, `loadvm golden`), with
 every step framebuffer-verified. **Live checkpoint, service, and all backups were
 left untouched — no recapture was performed, because nothing needed to change.**
@@ -346,7 +346,7 @@ extra encode load, so it carries no independent motivation here.
 Follow-up to the resolution investigation above: a 7-angle study recommended
 switching `-vga cirrus` → `-vga std` (Bochs DISPI/VBE, packed-linear, software PM
 cursor) and installing a **generic-VESA** display driver that does not depend on
-OS/2 auto-identifying the chipset. Investigated end-to-end on `/data/vms/soltest`
+OS/2 auto-identifying the chipset. Investigated end-to-end on `/data/vms/sandbox`
 clones (byte copies of the live checkpoint, device set cirrus→std, cold-boot,
 framebuffer-verified). **The live checkpoint, launcher, service, and all backups were
 left untouched — os2warp stays at `-vga cirrus` 640×480×16.** The live checkpoint
@@ -411,7 +411,7 @@ exhibit's OS identity** (Warp 4 "Merlin" → ArcaOS/eCS) and so is deliberately 
 as a go/no-go for the maintainer. Until then os2warp remains **640×480×16 on
 `-vga cirrus`**, fully interactive with warpd 1:1 + the live coalescing agent.
 
-Reusable artifacts left on labhost: `/data/vms/soltest/os2-isos/os2_snap.iso`
+Reusable artifacts left on labhost: `/data/vms/sandbox/os2-isos/os2_snap.iso`
 (SNAP 3.1.8 + WP4FP15), and the unattended-FixPak recipe (`fservice
 /r:<response>` with `REPLACE_NEWER`, source dir holding `\FIX`, `csfcdromdir`
 env). Note the guest keyboard is **UK layout** (backslash = the 102nd/`less`
@@ -421,7 +421,7 @@ qcode, not `backslash`) — matters for any QMP send-key path driving it.
 
 Executed the previous section's recommendation ("Warp 4.52 MCP with a 14.1xx
 kernel"): an **in-place UPDATE** of the GA image to Warp 4.52 CP2 on a
-`/data/vms/soltest` clone, preserving the curated apps/games. **Result: the
+`/data/vms/sandbox` clone, preserving the curated apps/games. **Result: the
 upgrade works and keeps everything, but hi-res is still blocked** because the only
 freely-available CP2 ISO ships kernel **14.089** (not the 14.1xx hoped for; still
 < Panorama's 14.096) and the VESA-PMI trap is fundamental to QEMU `-vga std`
@@ -433,7 +433,7 @@ intact); all work on a reflink clone. Framebuffer-verified every step.
 ### ISO / provenance
 
 WinWorld "OS/2 Warp 4.52 (14.089_W4) (CP 2 Refresh)" →
-`/data/vms/soltest/os2-isos/mcp2-refresh-{boot,install}-en.iso` (ISO vol
+`/data/vms/sandbox/os2-isos/mcp2-refresh-{boot,install}-en.iso` (ISO vol
 `WARP_4_CP2`). The MCP2 **client** installer is built on the WSeB/Aurora codebase,
 so its banners say *"Installing OS/2 Warp Server for e-business"* and it runs
 `CHKINST.EXE` — normal, not the wrong media. Installed base level is
@@ -506,7 +506,7 @@ ISO ships) **plus** a licensed generic-VESA **Panorama** — or a seed swap to
 ### Reusable artifacts
 
 Working, VGA-clean **4.52 build preserved** at
-`/data/vms/soltest/os2-452-upgrade/install.qcow2` (`CONFIG.VGAOK` = known-good VGA,
+`/data/vms/sandbox/os2-452-upgrade/install.qcow2` (`CONFIG.VGAOK` = known-good VGA,
 `CONFIG.SNAP` = the SNAP/SDDGRADD variant, `CONFIG.PRE452FIX` = as MCP2 left it).
 Helper scripts in that dir: `run-install.sh` (clone launcher, `$1`=boot dev),
 `mrel.py` (relative-PS/2 dead-reckoning click helper for pre-warpd install
@@ -604,7 +604,7 @@ is what shipped.
 
 **Tooling:** `scripts/dev/os2-gengradd-hires.sh` (`prep` / `run` / `shot`) scripts
 the offline disk surgery and the clone launcher; run it on labhost against a
-`/data/vms/soltest` clone.
+`/data/vms/sandbox` clone.
 
 ### Acceptance (all framebuffer-verified on the clone, then live)
 
@@ -683,7 +683,7 @@ authoritative. Both `scripts/build-guests/tiles/os2warp.sh` and
 builds and hi-res recaptures therefore use one inventory.
 
 Clone verification ran under
-`/data/vms/soltest/os2warp-shortcuts-20260727T193043Z-167630/` with the exact
+`/data/vms/sandbox/os2warp-shortcuts-20260727T193043Z-167630/` with the exact
 `os2warp-std-1024x768` guest device set. Framebuffers proved the restored
 desktop, live DOOM gameplay, an EPM window, and held-button EPM window dragging.
 After replacing the clone's internal `golden`, two stopped-QEMU screendumps after

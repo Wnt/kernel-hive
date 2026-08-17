@@ -51,7 +51,7 @@ if [ "$fail" -ne 0 ]; then
   cat >&2 <<EOF
 
 Some assets are missing. Rebuild recipe (see docs/history/irix-tile-issue20-handoff.md
-and /data/vms/soltest/irix-mame/RECIPE.txt):
+and /data/vms/sandbox/irix-mame/RECIPE.txt):
   * Media from archive.org item 'irix65.7z' (bundles indy_4610.7z PROM + CHD):
       7z e -y irix65.7z && chmod 444 irix65.chd
   * MAME 0.288+ built with scripts/build-guests/patches/mame-irix-skip-warnings.patch

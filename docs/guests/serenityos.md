@@ -63,8 +63,8 @@ builder time was **2,741.72 s (45m41.72s)**.
 The final invocation exercised the direct path overrides:
 
 ```sh
-OUT_DIR=/data/vms/soltest/repro-serenityos-1784060537/out-final2 \
-WORK_DIR=/data/vms/soltest/repro-serenityos-1784060537/work-final2 \
+OUT_DIR=/data/vms/sandbox/repro-serenityos-1784060537/out-final2 \
+WORK_DIR=/data/vms/sandbox/repro-serenityos-1784060537/work-final2 \
 SERENITY_CTID=112 ./serenityos.sh
 ```
 

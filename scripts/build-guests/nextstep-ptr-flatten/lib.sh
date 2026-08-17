@@ -1,6 +1,6 @@
 #!/bin/bash
 # NSPTR-flatten-accel helper library (box-side).
-D=/data/vms/soltest/NSPTR-flatten-accel
+D=/data/vms/sandbox/NSPTR-flatten-accel
 E=$D/evidence
 SSH_PORT=5948
 KEY=/data/vms/bridge/bridge_key

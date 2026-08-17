@@ -6,7 +6,7 @@
 # SH_CAP_TRACE, and reports the QEMU poll-tick rate ([dbus_poll], patched binary
 # only) + streamhost capstat over a ~12s window.
 set -eu
-D=/data/vms/soltest/freedos-fastpoll
+D=/data/vms/sandbox/freedos-fastpoll
 LABEL="$1"
 Q="$D/qmp.sock"
 kill "$(cat "$D/qemu.pid")" 2>/dev/null || true

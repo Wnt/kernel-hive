@@ -56,9 +56,9 @@
 #   slowrig.sh shot <name> [out.png]
 set -u
 
-SLOW_ROOT="${IRIX_SLOW_ROOT:-/data/vms/soltest/slowstate-7c1d/run}"
-RIG="${IRIX_SLOW_RIG:-/data/vms/soltest/slowstate-7c1d/rig}"
-BENCH_RIG="${IRIX_BENCH_RIG:-/data/vms/soltest/irix-baseline-b7f2/rig}"
+SLOW_ROOT="${IRIX_SLOW_ROOT:-/data/vms/sandbox/slowstate-7c1d/run}"
+RIG="${IRIX_SLOW_RIG:-/data/vms/sandbox/slowstate-7c1d/rig}"
+BENCH_RIG="${IRIX_BENCH_RIG:-/data/vms/sandbox/irix-baseline-b7f2/rig}"
 ASSETS="${IRIX_ASSETS:-/data/vms/streamhost/assets/irix}"
 MAME_BIN="${IRIX_MAME:-$RIG/sgi}"
 # The SHIPPED golden, unmodified. Earlier drafts of this rig used the newer
@@ -327,7 +327,7 @@ cmd_run() {
   [ -n "$cpus" ] || die "--cpus A,B is required (claim the pair first)"
   UGROUP="${IRIX_SLOW_UGROUP:-irixss_$name}"
   D="$SLOW_ROOT/$name"
-  case "$D" in /data/vms/soltest/*) : ;; *) die "refusing to work outside /data/vms/soltest" ;; esac
+  case "$D" in /data/vms/sandbox/*) : ;; *) die "refusing to work outside /data/vms/sandbox" ;; esac
   assert_offsets
   rm -rf "$D"
   mkdir -p "$D/nvram"

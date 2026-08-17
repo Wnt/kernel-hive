@@ -23,7 +23,7 @@ every queued `M` under a sustained pen-hover chain made the guest fall behind
 and the cursor rubber-band ever farther. `serve()` now pends only the newest
 `M`, flushing it before any non-move verb (Q/P/R/B) and once per `read()` chunk,
 so guest apply is capped to ~1 move/cycle and the cursor snaps to the latest
-position. Framebuffer-verified on a soltest clone and the live checkpoint: a 18 s
+position. Framebuffer-verified on a sandbox clone and the live checkpoint: a 18 s
 sustained sweep left the cursor tracking the commanded x to within the cursor
 hotspot offset (flat, no growth) and settling on the final point in ~0.01 s;
 the pre-coalescing agent lagged 80–400 px during the sweep and took 6–15 s to
@@ -96,7 +96,7 @@ of the current coalescing seed disk (the `/amd64/bin/warpd` binary is untouched
 — the latest-wins move-coalescing agent is preserved and re-verified live: an
 1200-move sustained sweep drained in ~0.04s with the cursor snapping flat to the
 final point and zero trailing). Validated clone-first under
-`/data/vms/soltest/ninefront-res1080/` (killed via `clone-guard`).
+`/data/vms/sandbox/ninefront-res1080/` (killed via `clone-guard`).
 
 The official disk also includes mothra, abaco, and the full `/bin/games`
 collection. The checkpoint keeps the uncluttered four-window composition above; the

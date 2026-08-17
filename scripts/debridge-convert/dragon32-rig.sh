@@ -5,7 +5,7 @@
 # through a named FIFO the streamhost daemon clocks (the irix tile's audio
 # contract, x11-runtime.sh §audio).
 #
-# NOT A STATION. Namespaced under /data/vms/soltest/debridge-dragon32; the live
+# NOT A STATION. Namespaced under /data/vms/sandbox/debridge-dragon32; the live
 # dragon32 kiosk keeps serving untouched. Kill ONLY through the guard
 # (`stop` below wraps `clone-guard kill-pidfile`).
 #
@@ -25,7 +25,7 @@
 #
 #   usage: dragon32-rig.sh [start|stop|status]
 set -euo pipefail
-D=/data/vms/soltest/debridge-dragon32
+D=/data/vms/sandbox/debridge-dragon32
 M=/data/vms/streamhost/assets/dragon32/mame-native/dragon
 ROMS=/data/vms/streamhost/assets/dragon32/mame-native/roms
 AFIFO="$D/audio.fifo"

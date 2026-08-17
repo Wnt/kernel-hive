@@ -27,7 +27,7 @@ MAME driver — see *The ARM angle* below for the division of labour.
 (`f34f02505e32c1993c6a782b6814232cbfc74e36` — the newest stable tag when this
 station was added, confirmed with `git ls-remote --tags`; the same release the mpf2
 station ships) inside the **trixie** chroot at
-`/data/vms/soltest/trixie-chroot`, with `SUBTARGET=bbcb
+`/data/vms/sandbox/trixie-chroot`, with `SUBTARGET=bbcb
 SOURCES=src/mame/acorn`.
 
 Migrated bookworm → trixie on 2026-08-10 (wave 2 of

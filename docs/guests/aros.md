@@ -133,7 +133,7 @@ qemu-system-x86_64 -machine pc -enable-kvm -cpu host -m 512 \
   the AROS binding before `savevm golden`; the launcher conditionally uses
   `-loadvm golden`, because this live CD has nowhere else to persist Poseidon's
   controller state. The checkpoint and launcher must retain exactly the same tablet
-  device. On `/data/vms/soltest/aros-abs-codex-20260715T2328Z`, QMP inputs
+  device. On `/data/vms/sandbox/aros-abs-codex-20260715T2328Z`, QMP inputs
   `(3277,3277)`, `(29490,3277)`, `(3277,29490)`, `(29490,29490)`, and
   `(16384,16384)` visibly landed at the four inset framebuffer corners and centre.
   An absolute-positioned right click opened Wanderer's full menu. After killing

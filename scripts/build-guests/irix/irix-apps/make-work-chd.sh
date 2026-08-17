@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Build a WRITABLE, GROWN working copy of the pristine IRIX golden CHD.
 #
-# The golden /data/vms/soltest/irix-mame/irix65.chd is chmod 444 and is only
-# ever read. This produces /data/vms/soltest/irix-apps/work.chd with the root
+# The golden /data/vms/sandbox/irix-mame/irix65.chd is chmod 444 and is only
+# ever read. This produces /data/vms/sandbox/irix-apps/work.chd with the root
 # XFS grown from 1.87 GiB to WORK_GB, ready for the Track A app/demo installs.
 #
 # Host-side only: no MAME is started anywhere in this script.
 set -euo pipefail
 
-GOLDEN="${IRIX_GOLDEN:-/data/vms/soltest/irix-mame/irix65.chd}"
-WORK="${IRIX_APPS_DIR:-/data/vms/soltest/irix-apps}"
+GOLDEN="${IRIX_GOLDEN:-/data/vms/sandbox/irix-mame/irix65.chd}"
+WORK="${IRIX_APPS_DIR:-/data/vms/sandbox/irix-apps}"
 TOOLS="${IRIX_APPS_TOOLS:-$WORK}"
 # 128 cyls x 16 heads x SECS sectors x 512 B. 6000 -> 6.29 GB total.
 SECS="${IRIX_WORK_SECS:-6000}"

@@ -210,7 +210,7 @@ VICE_ROM_REQUIRED=()
 [ "${#VICE_DATA_DIRS[@]}" -gt 0 ] || die "$STANZA does not set VICE_DATA_DIRS"
 [ "${#VICE_ROM_REQUIRED[@]}" -gt 0 ] || die "$STANZA does not set VICE_ROM_REQUIRED"
 
-WORK="${2:-/data/vms/soltest/BUILD-vice-$STATION}"
+WORK="${2:-/data/vms/sandbox/BUILD-vice-$STATION}"
 OUT="${3:-/data/vms/streamhost/assets/$STATION/vice-native}"
 JOBS="${JOBS:-$(nproc)}"
 SRC="$WORK/vice-src"

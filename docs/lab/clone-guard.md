@@ -27,7 +27,7 @@ clone.
 
 Every clone kill / stop / destructive-QMP / launcher-run MUST route through the
 guard. It refuses, **loudly (non-zero exit + message)**, to touch anything that
-is not confined to `/data/vms/soltest/<namespace>/`:
+is not confined to `/data/vms/sandbox/<namespace>/`:
 
 - any path under the production stations tree `/data/vms/streamhost/stations/`;
 - any `streamhost@<tile>` systemd unit (clones never run as a unit);
@@ -46,7 +46,7 @@ Kills are ONLY ever by the clone's own pidfile — never `pkill`-by-name.
 **CLI** (exits non-zero on refusal):
 
 ```bash
-clone-guard assert-path    <path>       # path must be inside /data/vms/soltest/
+clone-guard assert-path    <path>       # path must be inside /data/vms/sandbox/
 clone-guard assert-unit    <unit|tile>  # refuse a streamhost@<tile> unit
 clone-guard assert-qmp     <qmp.sock>   # sock must be inside the clone root
 clone-guard assert-vmid    <vmid>       # refuse a production-range VMID (<900)
@@ -64,12 +64,12 @@ clone_guard_kill_pidfile   "$D/qemu.pid"             # instead of a raw kill
 ```
 
 New per-clone launchers should:
-1. hard-code `D=/data/vms/soltest/<namespace>` (never a `${D:-/live/tile}` default);
+1. hard-code `D=/data/vms/sandbox/<namespace>` (never a `${D:-/live/tile}` default);
 2. `source /usr/local/bin/clone-guard` and replace the
    `kill "$(cat "$D/qemu.pid")"` preamble with `clone_guard_kill_pidfile "$D/qemu.pid"`.
 
 Override the roots only to point at a *different* sandbox:
-`CLONE_GUARD_CLONE_ROOT` (default `/data/vms/soltest`),
+`CLONE_GUARD_CLONE_ROOT` (default `/data/vms/sandbox`),
 `CLONE_GUARD_PROD_TILES_ROOT` (default `/data/vms/streamhost/stations`).
 
 ## Where it's already wired

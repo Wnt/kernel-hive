@@ -6,7 +6,7 @@ MAME `indy_4610`, one R4600, 256 MB, IRIX 6.5.22, seed v3
 `-frameskip 6`, `-nothrottle`, pinned to core pair 1,9.
 
 Patch: `scripts/build-guests/patches/mame-osd-cache-line-size-memo.patch`.
-Work dir on labhost: `/data/vms/soltest/cacheline-memo-3d91/`.
+Work dir on labhost: `/data/vms/sandbox/cacheline-memo-3d91/`.
 
 ## The defect
 
@@ -86,7 +86,7 @@ cheap here. Two independent measurements:
 ## Effect in MAME
 
 Both arms were built from **one** source tree
-(`/data/vms/soltest/cacheline-memo-3d91/mame`, MAME 8f21e978 + the ten shipped
+(`/data/vms/sandbox/cacheline-memo-3d91/mame`, MAME 8f21e978 + the ten shipped
 IRIX patches), differing only in `osdlib_unix.cpp`; only that file was reverted
 between the two links, so nothing else moved.
 

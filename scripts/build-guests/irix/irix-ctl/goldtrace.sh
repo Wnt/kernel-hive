@@ -4,8 +4,8 @@
 # Records the production-shaped command corpus (goldtrace-corpus.txt) against
 # ONE arm on an ALREADY-RUNNING clone, or diffs two recorded traces:
 #
-#   goldtrace.sh record lua /data/vms/soltest/<rig>/cloneA lua.jsonl
-#   goldtrace.sh record ctl /data/vms/soltest/<rig>/cloneB ctl.jsonl
+#   goldtrace.sh record lua /data/vms/sandbox/<rig>/cloneA lua.jsonl
+#   goldtrace.sh record ctl /data/vms/sandbox/<rig>/cloneB ctl.jsonl
 #   goldtrace.sh compare lua.jsonl ctl.jsonl
 #   goldtrace.sh corpus            # print the corpus path in use
 #

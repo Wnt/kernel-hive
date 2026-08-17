@@ -119,7 +119,7 @@ repaints even when a 16-bit app is wedged. Repaint = input alive.
 
 ```bash
 NS=w311frz-a1 bash scripts/dev/input-wedge-repro/clone-setup.sh   # on labhost
-/data/vms/soltest/w311frz-a1/launch.sh
+/data/vms/sandbox/w311frz-a1/launch.sh
 python3 keywedge.py --key left            # reproduces in ~6 s / ~44 key edges
 python3 keywedge.py --key a --edges 200   # CONTROL: survives (not volume)
 python3 keywedge.py --idle                # CONTROL: survives (not elapsed time)

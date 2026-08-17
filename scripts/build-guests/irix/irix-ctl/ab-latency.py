@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A/B pointer-latency rig for issue #45 (Stage 1): Lua agent vs mamectl.
 
-Port of the Stage-0 spike rig (lab:/data/vms/soltest/irix-ss44/mv1files/v1b.py)
+Port of the Stage-0 spike rig (lab:/data/vms/sandbox/irix-ss44/mv1files/v1b.py)
 with every Stage-0 verdict correction applied — the corrections are BINDING:
 
   * DELTAS, never absolutes: the fb.shm publish gap under production settings

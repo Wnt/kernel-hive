@@ -23,7 +23,7 @@ STACK_LOG="$D/qemu.log"
 CLONE_GUARD_LOADED=0
 
 case "$(realpath -m -- "$D")" in
-  /data/vms/soltest/vmsgui-promote-?*)
+  /data/vms/sandbox/vmsgui-promote-?*)
     # shellcheck disable=SC1091
     source /usr/local/bin/clone-guard
     clone_guard_assert_clone_path "$D" "OpenVMS DECwindows clone root"

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Track A phase 1: acquire the IRIX 6.5.22 app/demo media named by
 # https://sgi.neocities.org/installguide from jrra.zone (public SGI CD archive).
-# Namespaced: everything lands in /data/vms/soltest/irix-apps/media.
+# Namespaced: everything lands in /data/vms/sandbox/irix-apps/media.
 set -uo pipefail
 
-MEDIA="${IRIX_APPS_MEDIA:-/data/vms/soltest/irix-apps/media}"
+MEDIA="${IRIX_APPS_MEDIA:-/data/vms/sandbox/irix-apps/media}"
 BASE="https://jrra.zone/sgi/cds"
 mkdir -p "$MEDIA"
 

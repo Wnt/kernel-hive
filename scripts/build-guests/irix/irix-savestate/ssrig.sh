@@ -28,11 +28,11 @@
 # (see irix-criu/README.md), so it is prevented, never detected.
 set -u
 
-SS_ROOT="${SS_ROOT:-/data/vms/soltest/irix-ss44}"
+SS_ROOT="${SS_ROOT:-/data/vms/sandbox/irix-ss44}"
 case "$SS_ROOT" in
-  /data/vms/soltest/*) : ;;
+  /data/vms/sandbox/*) : ;;
   *)
-    echo "refusing to work outside /data/vms/soltest" >&2
+    echo "refusing to work outside /data/vms/sandbox" >&2
     exit 1
     ;;
 esac

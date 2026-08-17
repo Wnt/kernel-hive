@@ -25,8 +25,8 @@ The stock ISO hash is the durable integrity pin.
 The final builder was run with direct, empty output and work directories:
 
 ```sh
-OUT_DIR=/data/vms/soltest/repro-toaruos-1784059437/out-clean2 \
-WORK_DIR=/data/vms/soltest/repro-toaruos-1784059437/work-clean2 \
+OUT_DIR=/data/vms/sandbox/repro-toaruos-1784059437/out-clean2 \
+WORK_DIR=/data/vms/sandbox/repro-toaruos-1784059437/work-clean2 \
   ./toaruos.sh
 ```
 

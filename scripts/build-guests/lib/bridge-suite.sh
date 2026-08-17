@@ -32,7 +32,7 @@
 #
 # OVERRIDE for experiments: set BRIDGE_SUITE=trixie in the environment to force
 # a suite for one build without editing the ledger. Intended for a clone under
-# /data/vms/soltest/ while migrating a station; never for a production recapture --
+# /data/vms/sandbox/ while migrating a station; never for a production recapture --
 # the ledger and labhost must agree, and scripts/dev/bridge-suite-status.sh is
 # what proves they do.
 # =============================================================================

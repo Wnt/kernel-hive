@@ -276,7 +276,7 @@ ViewPoint with TOD 1997-12-01 and `AltBootMode=Rigid`, and read `Fields/Sec` off
 the status bar. **≥78 f/s → risk retired, build the Star. <78 f/s → ship Draco
 instead** and label it honestly as the Star's successor.
 
-Evidence: `/data/vms/soltest/XEROX-star/` (84 MB, inert) — the hashed zip and
+Evidence: `/data/vms/sandbox/XEROX-star/` (84 MB, inert) — the hashed zip and
 frames showing MP codes advancing, the Xerox Set Time Utility banner, and the
 live ViewPoint desktop on Draco.
 
@@ -460,7 +460,7 @@ capture path — `scripts/build-guests/tiles/win311.sh` is the template. Estimat
 follow; the three are complementary, not redundant. If only one Xerox exhibit is
 ever built, this is the one achievable this month.
 
-Evidence: `/data/vms/soltest/XEROX-viewpoint/` on labhost (595 MB, inert —
+Evidence: `/data/vms/sandbox/XEROX-viewpoint/` on labhost (595 MB, inert —
 screenshots `s*.png` `g*.png` `h*.png` `m*.png` `routeA/*.png`, the `golden`
 overlay, the Dwarf/JRE tree). Delete when the space is wanted.
 
@@ -507,5 +507,5 @@ independently that ViewPoint is unusable without it — `Tab` is not NEXT.
 - [Dwarf — Mesa emulators (Draco/Duchess)](https://github.com/devhawala/dwarf) ·
   [gvwin pre-built image](https://github.com/davidar/gvwin) ·
   [archive.org `win3_globalview_21`](https://archive.org/details/win3_globalview_21)
-- Evidence from this study: `/data/vms/soltest/XEROX-alto/` on labhost (1.8 GB,
+- Evidence from this study: `/data/vms/sandbox/XEROX-alto/` on labhost (1.8 GB,
   inert — delete when the space is wanted).

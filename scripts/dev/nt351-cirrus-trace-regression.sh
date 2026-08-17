@@ -16,7 +16,7 @@ evidence_dir=$clone_dir/regression-640
 : "${QEMU_BIN:?set QEMU_BIN to the locally-built patched binary}"
 
 case "$clone_dir/" in
-  /data/vms/soltest/qcirrus-trace-*/*) ;;
+  /data/vms/sandbox/qcirrus-trace-*/*) ;;
   *) die "refusing non-trace clone path: $clone_dir" ;;
 esac
 case "$QEMU_BIN" in

@@ -37,8 +37,8 @@ before a push is no longer needed. See "Darklaunch overlays" in
 `scripts/README.md`.)*
 
 ```
-ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py withdraw'   # remove the exposure
-ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py publish'    # re-expose
+ssh lab '/data/vms/sandbox/debridge-7f3a/gallery-arms.py withdraw'   # remove the exposure
+ssh lab '/data/vms/sandbox/debridge-7f3a/gallery-arms.py publish'    # re-expose
 ```
 
 **The trixie migration is PAUSED** so labhost stays quiet for the latency

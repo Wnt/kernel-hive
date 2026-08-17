@@ -21,7 +21,7 @@
 --   DUMP            log agent state
 --
 -- Everything here bypasses SDL, which never delivers keys/buttons on a WM-less
--- full-screen Xvfb (see /data/vms/soltest/irix-mame/RECIPE.txt).
+-- full-screen Xvfb (see /data/vms/sandbox/irix-mame/RECIPE.txt).
 
 local CMD = os.getenv("IRIX_CMD") or "/tmp/irix_apps_cmd"
 local LOG = CMD .. ".agent.log"

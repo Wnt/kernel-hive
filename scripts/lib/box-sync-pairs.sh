@@ -239,7 +239,7 @@ box_sync_load_pairs() {
 
   # Only verbatim, tracked launchers of LIVE stations are box-authored mirror pairs.
   # Generic launchers are checked by verify-emit.sh; the tracked soltest-*
-  # launchers are clone/experiment scaffolds that run out of /data/vms/soltest/,
+  # launchers are clone/experiment scaffolds that run out of /data/vms/sandbox/,
   # never out of $BOX_ROOT/stations, so they have no box counterpart by design.
   while IFS= read -r path; do
     rel="${path#streamhost/stations/}"

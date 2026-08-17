@@ -90,7 +90,7 @@ live path.
 
 ## Long tail on labhost
 
-`/data/vms/soltest/**` holds ~44 one-off copies of these rigs from past
+`/data/vms/sandbox/**` holds ~44 one-off copies of these rigs from past
 campaigns, most with a hardcoded number (7 × `DISPNUM=151`, 2 × `:77`, plus
 `:60`, `:99`, `:160`, `:170`, `:171`). They are spent experiment artifacts, not
 templates; the fix is at the sources above, which is what new rigs get copied

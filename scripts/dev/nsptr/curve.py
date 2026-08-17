@@ -9,7 +9,7 @@ framebuffer; the framebuffer is re-checked at the end of the sweep.
 import sys
 import time
 
-sys.path.insert(0, "/data/vms/soltest/NSPTR-closed-loop/tools")
+sys.path.insert(0, "/data/vms/sandbox/NSPTR-closed-loop/tools")
 from nsctl import Agent, Qmp, slam  # noqa: E402
 
 q = Qmp()

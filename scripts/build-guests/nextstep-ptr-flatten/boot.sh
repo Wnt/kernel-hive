@@ -1,7 +1,7 @@
 #!/bin/bash
 # NSPTR-flatten-accel clone launcher. Namespaced dir/qmp/pidfile/hostfwd.
 set -euo pipefail
-D=/data/vms/soltest/NSPTR-flatten-accel
+D=/data/vms/sandbox/NSPTR-flatten-accel
 SSH_PORT=5948
 # shellcheck source=/dev/null  # box-only HARD guard, installed at /usr/local/bin
 source /usr/local/bin/clone-guard

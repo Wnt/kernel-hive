@@ -142,7 +142,7 @@
 # station path through an unset variable — that parameter-default is the exact
 # footgun that once killed a live station (docs/lab/clone-guard.md) — so a bake-off
 # or experiment run is made by REWRITING the three constants below into a
-# /data/vms/soltest/<ns> copy, which then passes check-launcher on its own.
+# /data/vms/sandbox/<ns> copy, which then passes check-launcher on its own.
 #
 # Usage: armeval.sh [--force] [-h]
 # =============================================================================

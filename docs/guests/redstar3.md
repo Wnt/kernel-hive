@@ -67,14 +67,14 @@ that is tear-free and captured 1:1 by streamhost's scanout path. The earlier
 build note that "`std` tears the graphical installer into vertical stripes" was
 the *installer's* own video path; the installed KDE desktop under vesa+ShadowFB
 renders the wallpaper, top menubar, dock, and anti-aliased dialogs as complete,
-tear-free 1920x1080 frames (clone-proven on `/data/vms/soltest/redstar3-res-*`
+tear-free 1920x1080 frames (clone-proven on `/data/vms/sandbox/redstar3-res-*`
 before the live cutover). The absolute USB-tablet stays 1:1 full-screen at the
 new resolution; calibration corners are `a=[12,12]`, `b=[1906,1068]`.
 
 ## Build and machine-vision installation
 
 Run only on labhost. The default work directory is namespaced as
-`/data/vms/soltest/redstar3-build-YYYYMMDD`; it never uses a live station, a
+`/data/vms/sandbox/redstar3-build-YYYYMMDD`; it never uses a live station, a
 `soltest-*` station, or `/mnt/poc`.
 
 The installer has no answer-file interface. `scripts/build-guests/tiles/redstar3.sh`

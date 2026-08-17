@@ -8,12 +8,12 @@
 # scripts/streamhost-station.sh --x11 (verbatim, like a bridge tile's launcher).
 # ensure-station-x11.sh execs it inside a 3 GiB qcap scope. Kill ONLY by pidfile.
 #
-# Adapted from the proven /data/vms/soltest/irix-mame/irix-launch.sh. The large
+# Adapted from the proven /data/vms/sandbox/irix-mame/irix-launch.sh. The large
 # binaries (2 GiB CHD, PROM roms, MAME sgi binary) are NOT in the
 # repo — stage them with fetch-assets.sh; their locations are overridable below.
 #
 # The defaults are the PRODUCTION asset tree /data/vms/streamhost/assets/irix.
-# NEVER point a live tile at /data/vms/soltest (the clone/experiment scratch
+# NEVER point a live tile at /data/vms/sandbox (the clone/experiment scratch
 # area): agents rebuild and delete things there under a running exhibit.
 #
 # MODES
@@ -215,7 +215,7 @@ LIVE_NUDGE="${IRIX_LIVE_NUDGE:-80}"      # probe amplitude, emulated mouse count
 LIVE_PROBE_EVERY="${IRIX_LIVE_PROBE_EVERY:-600}"
 LLOG="$D/livewatch.log"
 # systemd unit whose liveness gates a relaunch. Set to "" to disable the check
-# (clone rigs under /data/vms/soltest have no unit).
+# (clone rigs under /data/vms/sandbox have no unit).
 WATCH_UNIT="${IRIX_WATCH_UNIT-streamhost@$(basename "$D")}"
 
 wlog() { echo "$(date '+%F %T') $*" >>"$WLOG"; }

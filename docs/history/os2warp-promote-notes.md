@@ -19,8 +19,8 @@ needed).
 
 **Staging** (os2warp's launcher references its disk by the ABSOLUTE path
 `/data/gallery-guests/OS2Warp/os2.qcow2`, outside `$TILE_DIR`, so record-boot's
-`$TILE_DIR`→clone sed can't redirect it): a soltest staging tiles root
-`/data/vms/soltest/os2warp-stage-tiles/os2warp/` held a copy of `os2.qcow2`, a
+`$TILE_DIR`→clone sed can't redirect it): a sandbox staging tiles root
+`/data/vms/sandbox/os2warp-stage-tiles/os2warp/` held a copy of `os2.qcow2`, a
 byte-copy launcher with only `D=`/`DISK=$D/os2.qcow2` made tile-dir-relative, and
 `boot-ref-desktop.png` (the Tier-2 reference = a **read-only** `labctl shot` of the
 live golden's settled desktop — the left-icon-column crop carries no clock/pointer).
@@ -84,6 +84,6 @@ live path → **relaunch qemu via the launcher** → daemon auto-reconnects.
   `Content-Range bytes 0-1023/21940615`; `/boot/index.json` keys
   `[amiga, win95, haiku, os2warp]`.
 
-Clone + staging (`/data/vms/soltest/{bootrec-os2warp-*,os2warp-stage-tiles}`) removed
+Clone + staging (`/data/vms/sandbox/{bootrec-os2warp-*,os2warp-stage-tiles}`) removed
 by pidfile-safe teardown. Live `streamhost@os2warp` healthy on the new golden.
 SPA bundle intentionally **not** touched (flagged for a later step).

@@ -3,7 +3,7 @@
 Reproduction notes for baking a boot video on the **os2warp** vmstate tile
 (IBM OS/2 Warp 4 GA "Merlin") with `record-boot.sh` (spec
 `BOOT-VIDEO-REPLAY-SPEC.md` §3.1/§3.2). Verified end to end on a
-`/data/vms/soltest` clone 2026-07-13; the live tile was **never touched**
+`/data/vms/sandbox` clone 2026-07-13; the live tile was **never touched**
 (golden snapshot `2026-07-13 12:38:54`, service, `qmp.sock`/`serial.sock` all
 unchanged at the end).
 
@@ -70,7 +70,7 @@ The live launcher references its disk by the **absolute** path
 `record-boot.sh`'s `$TILE_DIR`→clone `sed` does not redirect it; a naive run
 would leave the clone (and `savevm golden`!) pointing at the LIVE disk (and would
 also fail QEMU's qcow2 lock against the running live service). Run with
-`BOOTREC_TILES_ROOT` pointed at a soltest staging tiles root holding:
+`BOOTREC_TILES_ROOT` pointed at a sandbox staging tiles root holding:
 
 - a **copy** of `os2.qcow2`,
 - a launcher that is a byte copy of live with only `D=<staging/os2warp>` and

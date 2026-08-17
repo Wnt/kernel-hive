@@ -2,7 +2,7 @@
 
 Reproduction notes for baking a boot video on the **win98se** vmstate tile with
 `record-boot.sh` (spec `BOOT-VIDEO-REPLAY-SPEC.md` §3.1/§3.2). Verified end to end on a
-`/data/vms/soltest` clone 2026-07-13; the **live win98se tile / golden / service were never
+`/data/vms/sandbox` clone 2026-07-13; the **live win98se tile / golden / service were never
 touched**. Model: `win95-zero-input-prep.md` (win98se is win95-like — absolute pointer via
 usb-tablet under acpi=on — but its cold-boot needs MORE prep than win95).
 
@@ -22,23 +22,23 @@ clone's `-drive` lines (and therefore `savevm golden`!) pointing at the **LIVE**
 catastrophic. Both disks also carry the `golden` VM-state snapshot (spans C:+D:), so both are
 part of the device set and both must be present.
 
-**Fix (staging), used here:** point `BOOTREC_TILES_ROOT` at a soltest staging dir holding
+**Fix (staging), used here:** point `BOOTREC_TILES_ROOT` at a sandbox staging dir holding
 COPIES of both disks and a launcher whose `B=`/`KVM=`/`GAMES=` use `$B` so the sed redirects
 them into the clone:
 
 ```
-STAGE=/data/vms/soltest/w98se-bootrec-stage/win98se
+STAGE=/data/vms/sandbox/w98se-bootrec-stage/win98se
 cp /data/gallery-guests/Win98SE/win98se-kvm.qcow2   $STAGE/    # cross-dataset => full copy
 cp /data/gallery-guests/Win98SE/win98se-games.qcow2 $STAGE/
 # staged launcher: sed the live launcher so
 #   B=$STAGE   KVM=$B/win98se-kvm.qcow2   GAMES=$B/win98se-games.qcow2
-BOOTREC_TILES_ROOT=/data/vms/soltest/w98se-bootrec-stage record-boot.sh win98se --dry-run
+BOOTREC_TILES_ROOT=/data/vms/sandbox/w98se-bootrec-stage record-boot.sh win98se --dry-run
 ```
 `--dry-run` + a `diff` of the emitted clone launcher vs the live launcher must show **only**
 `B/KVM/GAMES` paths, `LOADVM` neutralise, and `-name …-bootrec` changed — the whole device set
 (`-machine pc,acpi=on -cpu pentium3 -vga std -display dbus -audiodev dbus -device sb16 -drive
 C:/D: IDE -netdev user -device pcnet -usb -device usb-tablet -qmp -pidfile`) byte-identical.
-(`/data/gallery-guests` and `/data/vms` are separate ZFS datasets, so gallery→soltest is a full
+(`/data/gallery-guests` and `/data/vms` are separate ZFS datasets, so gallery→sandbox is a full
 copy; the record-boot clone of the staged disk is a same-dataset reflink → instant CoW.)
 
 ## Why cold boot ≠ zero-input (FOUR blockers, all seen on the clone framebuffer)
@@ -136,12 +136,12 @@ records + verifies + STAGES on the clone; it never promotes.
 ## LIVE promotion (2026-07-13, supervised — DONE)
 
 The clean-desktop cold-boot golden **was promoted** (human go-ahead). Re-baked fresh on a
-`/data/vms/soltest` clone (the discovery run's clone had been cleaned up), then swapped live with a
+`/data/vms/sandbox` clone (the discovery run's clone had been cleaned up), then swapped live with a
 backup + framebuffer gate. The live golden is now the **bare clean desktop** (teal + game icons,
 clock hidden) — replacing the Notepad fixture.
 
 ### Re-bake + validate (Phase A, on the clone)
-- Staged COPIES of BOTH disks under `/data/vms/soltest/w98se-bootrec-stage/win98se` (reflink from
+- Staged COPIES of BOTH disks under `/data/vms/sandbox/w98se-bootrec-stage/win98se` (reflink from
   the live `/data/gallery-guests/Win98SE/`), applied the documented zero-input prep on the staged
   qcow2 via a headless prep VM (`-display none`, own `prep-qmp.sock`/`prep.pid`; usb-tablet abs
   clicks + HMP sendkey, screendump every step): worked every PnP wizard to Finish (2× *Unknown
@@ -198,7 +198,7 @@ undriven since the image was built.)
 
 ### The fix — install the Sound Blaster 16 driver in-guest (on the CLONE only)
 Headless prep VM off the CURRENT live golden (staged COPIES of BOTH disks under
-`/data/vms/soltest/w98snd-stage/win98se`, reflink; own `prep-qmp.sock`/`prep.pid`, cold-boot
+`/data/vms/sandbox/w98snd-stage/win98se`, reflink; own `prep-qmp.sock`/`prep.pid`, cold-boot
 forced, full golden device set incl. `-audiodev dbus … -device sb16`; usb-tablet abs clicks + HMP
 sendkey via `/root/cdrv.py`, screendump every step):
 

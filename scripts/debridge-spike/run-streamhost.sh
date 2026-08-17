@@ -13,7 +13,7 @@
 #
 #   usage: run-streamhost.sh <armA|armB> [start|stop|status]
 set -euo pipefail
-RIG=/data/vms/soltest/debridge-7f3a
+RIG=/data/vms/sandbox/debridge-7f3a
 ARM="${1:?usage: run-streamhost.sh <armA|armB> [start|stop|status]}"
 ACT="${2:-start}"
 D="$RIG/$ARM"

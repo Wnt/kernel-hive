@@ -35,7 +35,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from qmp_probe import Qmp, log  # noqa: E402
 
-DEFAULT_QMP = "/data/vms/soltest/w311frz-a1/qmp.sock"
+DEFAULT_QMP = "/data/vms/sandbox/w311frz-a1/qmp.sock"
 START_SNAP = "skifree"
 MID_SNAP = "skifree-mid"
 

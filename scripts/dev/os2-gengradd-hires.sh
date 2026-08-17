@@ -26,7 +26,7 @@
 #   os2-gengradd-hires.sh run  <clone-dir> [cold|golden]   # launch the clone
 #   os2-gengradd-hires.sh shot <clone-dir> [name]          # screendump -> PNG
 #
-#   Run it ON labhost. <clone-dir> MUST live under /data/vms/soltest (clone-guard
+#   Run it ON labhost. <clone-dir> MUST live under /data/vms/sandbox (clone-guard
 #   refuses anything else). `prep` needs the guest's IBM GRADD files already
 #   staged in C:\IBMGRADD — extract them in-guest with the MCP2 CD mounted:
 #     UNPACK2 E:\OS2IMAGE\DISP_1\VGA     C:\IBMGRADD     (GENPMI, BVHSVGA, VIDEOPMI…)
@@ -39,7 +39,7 @@
 # Full write-up + the live cutover record: docs/guests/os2warp.md.
 set -euo pipefail
 
-CLONE_ROOT=/data/vms/soltest
+CLONE_ROOT=/data/vms/sandbox
 NBD=${NBD:-/dev/nbd6}
 MNT=${MNT:-/mnt/os2gradd}
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

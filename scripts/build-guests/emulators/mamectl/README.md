@@ -53,7 +53,7 @@ Edit `src/…/ctlsock.cpp`, then:
 
     ./regen-patch.sh                                  # patch <- src
     scp mame-ctlsock.patch lab:/root/mame-stack-v3/
-    ssh lab '/root/build-module.sh /data/vms/soltest/movea-v2-build/sgi-vN'
+    ssh lab '/root/build-module.sh /data/vms/sandbox/movea-v2-build/sgi-vN'
 
 `build-module.sh` applies the full 14-patch stack to the pinned trixie chroot
 tree, builds, and restores the tree on EVERY exit — a failed run that leaves

@@ -87,7 +87,7 @@ The snapshot `leanx-preconnect` must be taken while:
 - `SET DISPLAY` has not run and no live X socket exists.
 
 A reproducible capture uses copies of both OpenVMS qcow2 files in a guarded
-`/data/vms/soltest/openvms-<unique>/` namespace:
+`/data/vms/sandbox/openvms-<unique>/` namespace:
 
 1. Boot the exact OpenVMS device set from its existing logged-in checkpoint.
 2. Create `SYS$LOGIN:DECW_FIXTURE.COM` from the tracked file without printing

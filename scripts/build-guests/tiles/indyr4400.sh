@@ -96,7 +96,7 @@ BRIDGE_BASE="${BRIDGE_BASE:-$(bridge_base_for "$SUITE")}" # env override wins
 IRIS_BIN="${ASSET_DIR}/iris-${SUITE}" # ABI-matched binary, built by --build-iris
 IRIS_REPO="https://github.com/techomancer/iris"
 IRIS_COMMIT="1e05210" # pinned; features lightning,rex-jit,chd
-CHROOT="/data/vms/soltest/indyr4400-${SUITE}"
+CHROOT="/data/vms/sandbox/indyr4400-${SUITE}"
 
 FORCE=0
 BUILD_IRIS=0

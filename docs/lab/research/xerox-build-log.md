@@ -265,7 +265,7 @@ it from the tree you actually proved, and diff the file count.
 ## Agent B — Star / Pilot
 
 **Build rig (reproducible):** overlay chroot `xstarb` at
-`/data/vms/soltest/XEROX-star-b/` — `bookworm-chroot` as read-only lower,
+`/data/vms/sandbox/XEROX-star-b/` — `bookworm-chroot` as read-only lower,
 `apt install mono-complete mono-xbuild nuget libgdiplus xvfb imagemagick xdotool`.
 Debian *bookworm* ships **mono 6.8.0.105**, not 6.12; it builds and runs
 Darkstar fine. `nuget restore D.sln` → `xbuild /p:Configuration=Release D.sln`

@@ -324,7 +324,7 @@ the kiosk's virtual clock together with the emulator, so Pilot sees no
 discontinuity on `cont` — and the exhibit already lives on wrong wall time by
 design: every `loadvm golden` resumes the kiosk clock from capture day, with
 Darkstar's TOD pinned by `star.cfg` at emulator start (see the time lock,
-above). Proven on a soltest clone: 2- and 20-minute QMP stop soaks both resumed
+above). Proven on a sandbox clone: 2- and 20-minute QMP stop soaks both resumed
 to the intact desktop with the Star cursor still answering `stardrv rel`
 nudges.
 

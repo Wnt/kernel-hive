@@ -230,7 +230,7 @@ The state and the disk are a PAIR: restoring a memory image onto a disk the
 guest kept writing to corrupts the filesystem, which is why the bake exits the
 emulator in the same breath as the save.
 
-**Re-bake** — in a namespaced clone under `/data/vms/soltest/`, never on the
+**Re-bake** — in a namespaced clone under `/data/vms/sandbox/`, never on the
 live station:
 
 1. Boot the clone (cold from the seed, or restored from the current

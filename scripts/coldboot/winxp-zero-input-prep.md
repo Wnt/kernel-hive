@@ -2,7 +2,7 @@
 
 Reproduction notes for baking a boot video on the **winxp** vmstate tile with
 `record-boot.sh` (spec `BOOT-VIDEO-REPLAY-SPEC.md` §3.1/§3.2). Verified end to end
-on a `/data/vms/soltest` clone 2026-07-14; the live tile was only touched by the
+on a `/data/vms/sandbox` clone 2026-07-14; the live tile was only touched by the
 gated promotion at the end.
 
 ## Why prep is needed (cold boot ≠ the served golden)

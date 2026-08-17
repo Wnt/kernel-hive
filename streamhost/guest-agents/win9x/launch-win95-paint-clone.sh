@@ -24,7 +24,7 @@ if [[ "$VGA" != std && "${LOAD_GOLDEN:-0}" == 1 ]]; then
   exit 2
 fi
 
-D="/data/vms/soltest/win95-paint-tearing-${TAG}"
+D="/data/vms/sandbox/win95-paint-tearing-${TAG}"
 DISK="$D/disk.qcow2"
 mkdir -p "$D/evidence"
 if [[ ! -f "$DISK" ]]; then
@@ -53,7 +53,7 @@ if [[ "${LOAD_GOLDEN:-0}" == 1 ]]; then
 fi
 
 nohup nice -n15 qemu-system-x86_64 \
-  -name "soltest-win95-paint-${TAG}" \
+  -name "sandbox-win95-paint-${TAG}" \
   -enable-kvm -m 256 -smp 1 \
   -machine pc-i440fx-11.0,acpi=off,usb=off,kernel-irqchip=off,accel=kvm \
   -cpu pentium,-apic -rtc base=localtime -boot c \

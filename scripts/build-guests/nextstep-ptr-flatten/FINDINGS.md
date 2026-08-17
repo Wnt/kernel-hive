@@ -1,6 +1,6 @@
 # nextstep pointer — angle "flatten-accel", PAUSED mid-run (2026-08-09)
 
-Measured on clone `/data/vms/soltest/NSPTR-flatten-accel` (copy of the tile
+Measured on clone `/data/vms/sandbox/NSPTR-flatten-accel` (copy of the tile
 overlay, `-loadvm golden`, hostfwd 5948), by framebuffer only.
 
 ## Instrument

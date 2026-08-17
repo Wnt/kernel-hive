@@ -2,7 +2,7 @@
 # irix-serial-rig.sh — namespaced IRIX/MAME clone with the serial exec channel
 # wired, for BAKING and VERIFYING the golden that carries irixagent.pl.
 #
-# Everything lives under /data/vms/soltest/irix-serial/<name>/ — never the
+# Everything lives under /data/vms/sandbox/irix-serial/<name>/ — never the
 # production station tree — and every kill goes through clone-guard. The golden is
 # never opened: each boot gets its own `cp --reflink=always` copy (0.13 s for
 # 2.24 GB), because MAME opens an uncompressed CHD O_RDWR and runs as root.
@@ -31,7 +31,7 @@
 #     into the guest.
 set -u
 
-ROOT="${IRIX_SERIAL_ROOT:-/data/vms/soltest/irix-serial}"
+ROOT="${IRIX_SERIAL_ROOT:-/data/vms/sandbox/irix-serial}"
 ASSETS="${IRIX_ASSETS:-/data/vms/streamhost/assets/irix}"
 MAME_BIN="${IRIX_MAME:-$ASSETS/mame/sgi}"
 AGENT_SRC="${IRIX_AGENT:-$ASSETS/irixagent.lua}"

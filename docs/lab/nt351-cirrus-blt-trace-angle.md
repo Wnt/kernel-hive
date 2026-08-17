@@ -95,7 +95,7 @@ gallery fast-poll, Sphinx serialization, and gallery-hid already applied.
 The exact incremental experiment was:
 
 ```sh
-clone=/data/vms/soltest/qcirrus-trace-20260728T015851Z-428914
+clone=/data/vms/sandbox/qcirrus-trace-20260728T015851Z-428914
 source=/data/vms/qemu-fastpoll-build.1784076046-22671/pve-qemu/pve-qemu-kvm-11.0.2
 build=$clone/build/pve-qemu-kvm-11.0.2
 
@@ -142,8 +142,8 @@ isolated experiment.
 The isolated clone and build directory were:
 
 ```text
-/data/vms/soltest/qcirrus-trace-20260728T015851Z-428914/
-/data/vms/soltest/qcirrus-trace-20260728T015851Z-428914/build/pve-qemu-kvm-11.0.2/
+/data/vms/sandbox/qcirrus-trace-20260728T015851Z-428914/
+/data/vms/sandbox/qcirrus-trace-20260728T015851Z-428914/build/pve-qemu-kvm-11.0.2/
 ```
 
 The repeatable scripts are:
@@ -195,8 +195,8 @@ had:
 The exact baseline and fixed BLT streams are retained as:
 
 ```text
-/data/vms/soltest/qcirrus-trace-20260728T015851Z-428914/qemu-baseline.log
-/data/vms/soltest/qcirrus-trace-20260728T015851Z-428914/qemu-final.log
+/data/vms/sandbox/qcirrus-trace-20260728T015851Z-428914/qemu-baseline.log
+/data/vms/sandbox/qcirrus-trace-20260728T015851Z-428914/qemu-final.log
 ```
 
 Their SHA-256 hashes are:
@@ -222,7 +222,7 @@ A second isolated clone used a reflink copy of the current clean NT 3.51
 640x480 checkpoint and the exact same local fixed binary:
 
 ```text
-/data/vms/soltest/qcirrus-trace-20260728T015851Z-428914-regression640/
+/data/vms/sandbox/qcirrus-trace-20260728T015851Z-428914-regression640/
 ```
 
 `regression-640/` contains the clean checkpoint desktop, opened README, README

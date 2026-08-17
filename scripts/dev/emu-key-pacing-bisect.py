@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Measure a bridge tile's key-drop rate against SH_KEY_MIN_HOLD_MS/GAP_MS.
 
-Runs ONLY against a clone under /data/vms/soltest (never the live tile). For
+Runs ONLY against a clone under /data/vms/sandbox (never the live tile). For
 each (hold, gap) pair it restores the clone's golden snapshot, types one fixed
 40-character line with that pacing, screendumps, and compares the framebuffer
 with a reference captured at a deliberately generous pacing. A differing frame

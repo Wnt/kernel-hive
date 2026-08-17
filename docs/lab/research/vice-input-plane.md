@@ -7,8 +7,8 @@ nine MAME kiosks; the seven VICE stations — `c64`, `c128`, `vic20`, `plus4`,
 **with no X server and no XTEST, how does the streamhost daemon put a keystroke
 into a host-native VICE?**
 
-Rig: `/data/vms/soltest/vice-in/` on labhost, tag `vice-in`. Fork commits live
-in `/data/vms/soltest/vice-in/vice-src` on branch `kernel-hive-vicectl`, off the
+Rig: `/data/vms/sandbox/vice-in/` on labhost, tag `vice-in`. Fork commits live
+in `/data/vms/sandbox/vice-in/vice-src` on branch `kernel-hive-vicectl`, off the
 VICE-Team `svn-mirror` `main` (3.10-dev, `223e31a`). No live station was
 touched.
 
@@ -140,7 +140,7 @@ entries flagged `MAP_MOD_SHIFT` keep working.
 ## 3. What was built
 
 Branch `kernel-hive-vicectl`, two commits, in
-`/data/vms/soltest/vice-in/vice-src`.
+`/data/vms/sandbox/vice-in/vice-src`.
 
 ### 3.1 `vicectl` — `src/vicectl.c`, `src/vicectl.h` (commit 1)
 
@@ -320,7 +320,7 @@ reuse `scripts/dev/mame-keymap.py`'s `XT_KEYS` table for the scancode side.
 
 ## 7. Rig, artefacts, teardown
 
-Everything under `/data/vms/soltest/vice-in/`, tag `vice-in`:
+Everything under `/data/vms/sandbox/vice-in/`, tag `vice-in`:
 
 - `vice-src/` — the fork clone, branch `kernel-hive-vicectl`, 2 commits.
   Untracked autotools output (`configure`, `Makefile.in`, `autom4te.cache/`)

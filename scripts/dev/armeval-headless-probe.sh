@@ -3,7 +3,7 @@
 # usage: probe.sh <tag> <snap-frames-csv> <run-seconds> <keyfile|-> [mame args...]
 # keyfile lines: "<frame> <text to emu.keypost>"
 set -euo pipefail
-R=/data/vms/soltest/ARMEVAL-armbasic
+R=/data/vms/sandbox/ARMEVAL-armbasic
 MAME=/data/vms/streamhost/assets/bbcmicro/mame/bbcb
 # The hash/ dir is MAME's software lists, and it lives in the build tree of the
 # bbcb binary above -- i.e. in whichever suite chroot armeval is built for

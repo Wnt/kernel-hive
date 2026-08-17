@@ -10,15 +10,15 @@
 #
 # Usage:
 #   scripts/build-guests/emulators/build-mame-irix.sh [work-dir]
-# Default work-dir is /data/vms/soltest/mame-irix-build-$$ -- namespaced under
-# soltest on purpose. NEVER build in a live station directory.
+# Default work-dir is /data/vms/sandbox/mame-irix-build-$$ -- namespaced under
+# sandbox on purpose. NEVER build in a live station directory.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/build-guests/irix/irix-mame-stack.sh
 . "$HERE/../irix/irix-mame-stack.sh"
 
-WORK="${1:-/data/vms/soltest/mame-irix-build-$$}"
+WORK="${1:-/data/vms/sandbox/mame-irix-build-$$}"
 UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"
 JOBS="${JOBS:-$(nproc)}"
 # Published fork submodule (github.com/Wnt/mame, branch `irix`): each patch in

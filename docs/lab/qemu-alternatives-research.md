@@ -54,7 +54,7 @@ QEMU device-model change and every existing checkpoint `loadvm`s unchanged.
 
 - **Variant B1 — cheap de-risk probe (hours):** build the LGPL Bochs vgabios
   (`bochs-emu/VGABIOS` v0.9c, actively maintained, *has* the PMI incl.
-  set-palette) and `romfile=` it onto a soltest clone of the on-box
+  set-palette) and `romfile=` it onto a sandbox clone of the on-box
   4.52-with-apps build (`os2-452-mcp2-apps-preserved.qcow2`); install
   GENGRADD/SNAP; framebuffer-verify no `c0000005` + a settled readable
   1280×1024 WPS. Honest unknown: the legacy blob hardcodes an LFB base for bank

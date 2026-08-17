@@ -816,7 +816,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         if qemu.get("patchedDevice") == "gallery-hid-pci":
             binary = qemu.get("binary", "")
             stable_binary = "/data/vms/streamhost/qemu-gallery-hid/qemu-system-x86_64"
-            if not (binary.startswith("/data/vms/soltest/") or binary == stable_binary):
+            if not (binary.startswith("/data/vms/sandbox/") or binary == stable_binary):
                 fail(errors, row, "gallery-hid must use the standalone patched QEMU")
             companions = {item.get("name") for item in runtime.get("companions", [])}
             native_sink = runtime.get("stationEnv", {}).get("SH_INPUT_BACKEND") == "gallery-hid"

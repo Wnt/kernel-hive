@@ -12,7 +12,7 @@
 #   irix-apps-cmd.sh eject|cdinfo|snap|dump|reset|exit
 #   irix-apps-cmd.sh raw "<VERB args>"     anything else
 set -u
-D="${IRIX_APPS_DIR:-/data/vms/soltest/irix-apps}"
+D="${IRIX_APPS_DIR:-/data/vms/sandbox/irix-apps}"
 CMD="$D/irix_cmd"
 send() { printf '%s\n' "$1" >>"$CMD"; }
 

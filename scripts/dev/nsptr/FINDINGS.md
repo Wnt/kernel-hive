@@ -1,6 +1,6 @@
 # nextstep pointer — the CLOSED-LOOP angle (paused mid-flight, 2026-08-09)
 
-Sandbox: `/data/vms/soltest/NSPTR-closed-loop/` (torn down). Everything below was
+Sandbox: `/data/vms/sandbox/NSPTR-closed-loop/` (torn down). Everything below was
 measured on a reflink clone of the live tile's `overlay.qcow2`, booted from its
 own `golden` snapshot, driven on the production wire (QMP `input-send-event`
 rel -> QEMU PS/2 -> kiosk X -> SDL xrel -> Previous -> NeXT KMS), and verified

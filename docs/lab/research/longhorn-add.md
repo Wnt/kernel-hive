@@ -244,6 +244,6 @@ Cross-reference: the Virtual OS Museum catalogues five pre-reset builds (3683,
 [`vom-reference.md`](vom-reference.md). Notably **4074 is not among them**, and
 **4020 is**.
 
-Evidence: `/data/vms/soltest/LH-4074-a7f3/` on labhost (7.3 GB, inert) — five
+Evidence: `/data/vms/sandbox/LH-4074-a7f3/` on labhost (7.3 GB, inert) — five
 hashed images, converted qcow2s, 20 framebuffer screendumps, and namespaced
 helpers. Delete if the candidate is dropped.

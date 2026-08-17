@@ -1,12 +1,12 @@
 #!/bin/bash
 # win95 CLEAN-desktop offline prep (PHASE A step 1, offline portion).
-# Copies the LIVE win95 checkpoint to a namespaced soltest clone, then OFFLINE (qemu-nbd):
+# Copies the LIVE win95 checkpoint to a namespaced sandbox clone, then OFFLINE (qemu-nbd):
 #   - empty WIN.INI [windows] run= (kills the Notepad auto-launch)
 #   - clear any StartUp-folder .lnk (belt & suspenders)
 # Does NOT touch the live station. Registry (Windows-Logon) change is done GUI-side later.
 set -euo pipefail
 LIVE=/data/vms/streamhost/stations/win95/win95-golden.qcow2
-PREP=/data/vms/soltest/win95-clean-prep
+PREP=/data/vms/sandbox/win95-clean-prep
 DISK="$PREP/win95-golden.qcow2"
 NBD=/dev/nbd2
 MNT=/mnt/win95clean

@@ -65,7 +65,7 @@ healthy bookworm scene, not a cold start.
 ## 2. The remaining 13 — blocker, risk, and what a correct AFTER frame shows
 
 Risk classes: **mechanical** = run it. **needs-work** = a known, small fix
-first. **risky** = prove it on a `/data/vms/soltest/` clone before the station.
+first. **risky** = prove it on a `/data/vms/sandbox/` clone before the station.
 
 The acceptance signal is the important column. It is what stops you accepting a
 GRUB console as a booted machine — which already happened: `mpf2`'s readiness
@@ -192,7 +192,7 @@ Report exactly this, in this order:
    `box-sync-push.sh --apply`.
 6. **Teardown line.** What was released and the check that proved it: no
    surviving builder process groups (resolved through `/proc/<pid>/exe`, not
-   `pgrep` on a pattern), no QEMU under any `/data/vms/soltest/migrate-*`, the
+   `pgrep` on a pattern), no QEMU under any `/data/vms/sandbox/migrate-*`, the
    chroot claim released, no clones alive. "Done" without this line is not done.
 
 ---

@@ -2,7 +2,7 @@
 
 Companion to `win95-zero-input-prep.md`. Records what a boot-video capture of the
 **reactos** tile requires, what was rehearsed on a clone 2026-07-13, and why the
-result is **NOT promote-ready**. All work was clone-only (`/data/vms/soltest/`);
+result is **NOT promote-ready**. All work was clone-only (`/data/vms/sandbox/`);
 the live tile/golden/service were never touched.
 
 ## What reactos actually is (the thing that breaks the standard flow)

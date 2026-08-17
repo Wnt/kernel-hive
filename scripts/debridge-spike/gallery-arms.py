@@ -11,7 +11,7 @@ structural rather than tedious:
   * `scripts/gen_tiles_json.py` (what `labctl gen` runs) hard-exits with
     "declared/live tile set mismatch" for ANY streamhost registry row that has no
     `/data/vms/streamhost/stations/<stationDir>/` directory. Both arms live under
-    `/data/vms/soltest/debridge-7f3a/`. So a registry row breaks `labctl gen` --
+    `/data/vms/sandbox/debridge-7f3a/`. So a registry row breaks `labctl gen` --
     and `stations-registry.py --check` on the box, which compares the same sets --
     for every other session, until the arms are MOVED into the production tile
     directory and given a `station.env` + `qemu-streamhost.sh`. Arm B has no QEMU
@@ -26,7 +26,7 @@ structural rather than tedious:
     already an exhibit, so all of that would be invented exhibit identity.
 
 `listing: hidden` hides a row that BELONGS in the lineup. It is not a way to
-admit a soltest rig into it. So the arms stay out of the registry, and this tool
+admit a sandbox rig into it. So the arms stay out of the registry, and this tool
 carries the same SHAPE of divergence the soft hide produces -- the row exists and
 `/os/<id>` resolves, `listed: false` keeps it out of the grid and the 3D hall --
 as an explicit, committed, one-command-revertible deployment overlay owned by the
@@ -38,7 +38,7 @@ real tile cannot be clobbered. The HTTPS server re-reads both documents per
 request, so nothing needs restarting.
 
 WHAT IT WRITES
-    <serve>/tiles.json                      2 signaling rows (real soltest paths)
+    <serve>/tiles.json                      2 signaling rows (real sandbox paths)
     <serve>/webroot/gallery-manifest.json   2 entries, both `"listed": false`
     <serve>/webroot/debridge-compare.html   the side-by-side page
     <serve>/darklaunch.d/debridge-arms.json the darklaunch declaration: it names
@@ -49,7 +49,7 @@ WHAT IT WRITES
                                             of DIFFERS (push-blocking)
 
 REVERT (removes all four, leaves the arms running)
-    ssh lab '/data/vms/soltest/debridge-7f3a/gallery-arms.py withdraw'
+    ssh lab '/data/vms/sandbox/debridge-7f3a/gallery-arms.py withdraw'
 
 USAGE
     gallery-arms.py publish | withdraw | status [--serve-root DIR] [--rig DIR]
@@ -66,7 +66,7 @@ import sys
 from pathlib import Path
 
 SERVE_ROOT = "/data/vms/streamhost/serve"
-RIG_ROOT = "/data/vms/soltest/debridge-7f3a"
+RIG_ROOT = "/data/vms/sandbox/debridge-7f3a"
 PAGE_NAME = "debridge-compare.html"
 
 # order: parked far above the lineup so these can never collide with a real

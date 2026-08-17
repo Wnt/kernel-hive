@@ -326,7 +326,7 @@ teardown() {
   echo "(the decos/plus4 incident). Stop each builder group and read its log"
   echo "BEFORE touching any overlay; the pgid is in <log>.pid:"
   for t in "${!PID[@]}"; do
-    printf '  %-12s /data/vms/soltest/migrate-%s-trixie/build.log  (local: %s)\n' \
+    printf '  %-12s /data/vms/sandbox/migrate-%s-trixie/build.log  (local: %s)\n' \
       "$t" "$t" "${LOGP[$t]:-?}"
   done
 }

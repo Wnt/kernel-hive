@@ -220,7 +220,7 @@ effect — the exact retraction class this project has hit repeatedly.
 
 - The lab runner takes **one job at a time** (`concurrency` group at the workflow
   level, and a single runner process).
-- Build and smoke jobs **claim a core pair** via `/data/vms/soltest/corepairs/`,
+- Build and smoke jobs **claim a core pair** via `/data/vms/sandbox/corepairs/`,
   the same protocol agents use, and release it on exit.
 - A job that finds the box non-quiet when it needs quiet must **fail loudly**
   rather than produce a number.

@@ -319,7 +319,7 @@ fi
 # the wait in place the connection succeeds and the pgrep then genuinely finds no
 # MAME — while the FIRST cold boot of the same build drew the real MPF-II banner
 # and `>` prompt, so the emulator itself is fine on trixie. Both the predicate
-# and the second-cold-boot behaviour need their own investigation on a soltest
+# and the second-cold-boot behaviour need their own investigation on a sandbox
 # clone — see docs/lab/BRIDGE-TRIXIE-MIGRATION.md, wave 2.
 wait_for_ssh() {
   log "waiting for bridge SSH"

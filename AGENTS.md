@@ -31,7 +31,7 @@ yours. CT950 (`ssh lab 'pct exec 950 -- <cmd>'`) is the dev container and has
 **no `/data` mount**, so labhost-side checks run on labhost itself. Other guests on this
 hardware belong to unrelated projects — **leave them alone**.
 
-**Never experiment on a live station.** Clone under `/data/vms/soltest/`, keep the
+**Never experiment on a live station.** Clone under `/data/vms/sandbox/`, keep the
 SAME device set (`loadvm golden` requires it), and namespace every dir, VMID,
 socket and port so concurrent agents cannot collide.
 

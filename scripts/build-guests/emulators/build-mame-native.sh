@@ -111,7 +111,7 @@ done
 declare -F native_stage_roms >/dev/null || die "$STANZA does not define native_stage_roms"
 declare -F native_boot_gate >/dev/null || die "$STANZA does not define native_boot_gate"
 
-WORK="${2:-/data/vms/soltest/BUILD-native-$STATION}"
+WORK="${2:-/data/vms/sandbox/BUILD-native-$STATION}"
 OUT="${3:-/data/vms/streamhost/assets/$STATION/mame-native/$NATIVE_SUBTARGET}"
 ROMS="$(dirname "$OUT")/roms"
 UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"

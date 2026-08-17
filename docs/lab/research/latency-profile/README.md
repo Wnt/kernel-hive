@@ -15,7 +15,7 @@ feels — up-path (event → server → gallery-hid → Solaris) + guest render 
 > (5.2 ms)** dominate — every tiny cursor move pays a *full 1920×1200* re-convert +
 > re-encode.
 
-Measurements are from a **namespaced clone** (`/data/vms/soltest/latprobe`, VMID 199,
+Measurements are from a **namespaced clone** (`/data/vms/sandbox/latprobe`, VMID 199,
 2 vCPUs via `sockets=2` + `hv-vendor-id=XenVMMXenVMM`, reflink copy of a paused
 checkpoint — **the live `solariscde` station was never touched**), plus live-UI transport
 probes from CT950 and the reused stage-d D-Bus ROI harness. labhost was **quiesced**

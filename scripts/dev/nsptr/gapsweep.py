@@ -5,7 +5,7 @@ it as a fresh event? This sets the closed loop's minimum step period."""
 import sys
 import time
 
-sys.path.insert(0, "/data/vms/soltest/NSPTR-closed-loop/tools")
+sys.path.insert(0, "/data/vms/sandbox/NSPTR-closed-loop/tools")
 from nsctl import Agent, Qmp, slam  # noqa: E402
 
 q = Qmp()

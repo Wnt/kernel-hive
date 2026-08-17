@@ -37,7 +37,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from qmp_probe import Qmp, kbd_alive, log  # noqa: E402
 
-DEFAULT_QMP = "/data/vms/soltest/w311frz-a1/qmp.sock"
+DEFAULT_QMP = "/data/vms/sandbox/w311frz-a1/qmp.sock"
 
 
 def drive(q, key, edges, rng, hold_lo, hold_hi, overlap):

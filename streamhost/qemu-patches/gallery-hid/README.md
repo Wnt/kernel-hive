@@ -33,7 +33,7 @@ QEMU swap. Regenerate the quilt patch after any device/source change (see
   iteration only; production uses the quilt patch).
 - launch-solaris-stage-a.sh: isolated cold-boot or `LOADVM=golden` launcher.
 - golden-bake-solaris-clone.py: clone-only empty-ring validator and snapshot
-  helper; it refuses paths outside `/data/vms/soltest/`.
+  helper; it refuses paths outside `/data/vms/sandbox/`.
 
 ## Regenerating the quilt patch
 
@@ -60,7 +60,7 @@ The validated build used:
     assembled source:
       /data/vms/qemu-fastpoll-build.1784076046-22671/pve-qemu/pve-qemu-kvm-11.0.2
     output:
-      /data/vms/soltest/lli/spike-solaris-a/qemu-build
+      /data/vms/sandbox/lli/spike-solaris-a/qemu-build
 
 The source already has the complete PVE quilt series, fast-poll patch 0047,
 and serial Sphinx build patch 0048.  The produced standalone binary therefore
@@ -72,7 +72,7 @@ built by `scripts/provision/build-pve-qemu-fastpoll.sh`.
 Build:
 
     S=/data/vms/qemu-fastpoll-build.1784076046-22671/pve-qemu/pve-qemu-kvm-11.0.2
-    O=/data/vms/soltest/lli/spike-solaris-a/qemu-build
+    O=/data/vms/sandbox/lli/spike-solaris-a/qemu-build
     /data/vms/streamhost/build/streamhost/qemu-patches/gallery-hid/build-standalone.sh "$S" "$O"
 
 Run tests from the configured tree so QEMU finds its generated runtime data:

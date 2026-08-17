@@ -6,7 +6,7 @@
 #   irix-serial-install.sh bake1                     # ~3 min
 #   irix-serial-rig.sh exec bake1 "uname -a"         # REAL captured stdout
 #   irix-serial-rig.sh halt bake1                    # clean shutdown
-#   # -> /data/vms/soltest/irix-serial/bake1/disk.chd is the new golden
+#   # -> /data/vms/sandbox/irix-serial/bake1/disk.chd is the new golden
 #
 # WHY THE CONSOLE AND NOT AN ISO.  /etc/inittab ships `t1:23:respawn:...getty
 # ttyd1 console`, so an IRIX login prompt is sitting on serial port 1 from the
@@ -16,13 +16,13 @@
 # getty's echo is off; guest->host is not, which is why nothing here reads the
 # console back — verification goes through the agent, on the OTHER port.
 #
-# Runs ON labhost. Touches only /data/vms/soltest/irix-serial/<name>.
+# Runs ON labhost. Touches only /data/vms/sandbox/irix-serial/<name>.
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 RIG="${IRIX_SERIAL_RIG:-$HERE/irix-serial-rig.sh}"
 SRC="${IRIX_AGENT_SRC:-$HERE/../../../streamhost/guest-agents/irix}"
-ROOT="${IRIX_SERIAL_ROOT:-/data/vms/soltest/irix-serial}"
+ROOT="${IRIX_SERIAL_ROOT:-/data/vms/sandbox/irix-serial}"
 # Seconds between console lines. The guest's ttyd1 runs at 9600 baud in
 # canonical mode, so a ~70-character line needs ~75 ms on the wire plus the
 # shell's own read; 0.18 s has a comfortable margin and pushes the 11 KB agent

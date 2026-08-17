@@ -143,7 +143,7 @@ consecutive unvisited restarts (must NOT degrade to cold boot); reset path
 
 - Kill/stop clones only via `clone-guard`; resolve pids via `/proc/<pid>/exe`;
   never `pkill -f` from `ssh lab`.
-- Namespace every scratch dir/socket/port under `/data/vms/soltest/`; the
+- Namespace every scratch dir/socket/port under `/data/vms/sandbox/`; the
   production station owns its tap/core-pin/ports.
 - Gates before done: bash (`shfmt`+`shellcheck` via `scripts/lint/
   shell-sources.sh`), `node scripts/check-file-size.mjs --strict`,
@@ -153,6 +153,6 @@ consecutive unvisited restarts (must NOT degrade to cold boot); reset path
   pre-push gate blocks on drift); launcher/fixture changes for irix are
   repo-tracked verbatim files; `scripts/dev/box-repo.sh --fetch sync` after
   pushing main.
-- A parallel agent was active on labhost today (soltest rigs `debridge-7f3a`,
+- A parallel agent was active on labhost today (sandbox rigs `debridge-7f3a`,
   `NSTAB-coldboot`, a host atarist MAME) — check `labctl ls` + running
   processes before claiming resources; leave their rigs alone.

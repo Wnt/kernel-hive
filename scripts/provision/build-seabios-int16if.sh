@@ -32,7 +32,7 @@ set -euo pipefail
 SEABIOS_REPO="${SEABIOS_REPO:-https://github.com/coreboot/seabios.git}"
 SEABIOS_REF="${SEABIOS_REF:-rel-1.17.0}"
 SEABIOS_COMMIT="${SEABIOS_COMMIT:-b52ca86e094d19b58e2304417787e96b940e39c6}"
-WORK="${WORK:-/data/vms/soltest/BUILD-seabios-int16if.$$}"
+WORK="${WORK:-/data/vms/sandbox/BUILD-seabios-int16if.$$}"
 DEST_DIR="${DEST_DIR:-/data/vms/streamhost/firmware}"
 DEST_NAME="${DEST_NAME:-bios-256k-int16if.bin}"
 JOBS="${JOBS:-$(nproc)}"

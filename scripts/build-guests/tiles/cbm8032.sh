@@ -38,7 +38,7 @@
 #   There is no window manager in the kiosk, so an SDL window larger than the X
 #   root is silently CLIPPED and mispositioned — recon's first attempt at this
 #   machine left only the tail of "ytes free" visible on a 1024x768 root and
-#   nothing anywhere said why. Measured here on a soltest clone by painting the
+#   nothing anywhere said why. Measured here on a sandbox clone by painting the
 #   X root navy and taking the bounding box of everything that was not navy:
 #
 #     flags          window       fits 1024x768?  fits 1600x1200?  fits 1920x1080?

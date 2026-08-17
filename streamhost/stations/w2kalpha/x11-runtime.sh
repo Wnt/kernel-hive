@@ -27,7 +27,7 @@
 # its own — that is the rollback, and it needs no edit here.
 #
 # The defaults are the PRODUCTION asset tree /data/vms/streamhost/assets/
-# w2kalpha. NEVER point a live tile at /data/vms/soltest (agent scratch that
+# w2kalpha. NEVER point a live tile at /data/vms/sandbox (agent scratch that
 # gets rebuilt/deleted under a running exhibit).
 set -u
 

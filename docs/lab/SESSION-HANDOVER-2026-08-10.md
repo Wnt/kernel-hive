@@ -122,7 +122,7 @@ Fleet verified after deploy: `all 59 stations accept their own tickets`,
   `systemctl start streamhost@amiga` → `labctl exec amiga "ls -l
   /usr/local/bin/amiga-emu /etc/bridge/launch.sh"` → if missing, run
   `scripts/coldboot/install-amiga-coldboot.sh` first.
-- **Disk**: `soltest` swept 359 G → 131 G. Note the pool only gained **19 G**:
+- **Disk**: `sandbox` swept 359 G → 131 G. Note the pool only gained **19 G**:
   most of the deleted bulk was ZFS **block-cloned** from production checkpoints
   (`bclonesaved` 173 G), so `du` was counting shared blocks. Kept deliberately:
   `bookworm-chroot` (live overlay lowerdir + referenced by 8 builders),

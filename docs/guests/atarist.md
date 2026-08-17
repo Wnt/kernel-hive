@@ -17,7 +17,7 @@ on the base; holds the INTERNAL `golden` snapshot), `qemu-streamhost.sh`, `stati
 by Hatari as writable GEMDOS drive **C:** (`--harddrive ... --gemdos-drive C
 --protect-hd off`). Root `EMUDESK.INF` creates four GEM desktop launchers and F1-F4
 shortcuts.
-**Proof:** clone `/data/vms/soltest/atarist-apps-codex-0715/apps-top.png` and
+**Proof:** clone `/data/vms/sandbox/atarist-apps-codex-0715/apps-top.png` and
 `pacman-launch-final.png`; live `/data/vms/streamhost/stations/atarist/proof/` contains
 `apps-desktop-final-cold-restart.png`, `pacman-final-golden.png`, and
 `apps-desktop-final-loadvm.png`. All are real QMP framebuffer screendumps. Clone

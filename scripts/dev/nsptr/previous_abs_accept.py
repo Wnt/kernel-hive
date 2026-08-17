@@ -24,7 +24,7 @@ import time
 
 import numpy as np
 
-D = "/data/vms/soltest/NSPTR-previous-patch"
+D = "/data/vms/sandbox/NSPTR-previous-patch"
 W, H = 1120, 832
 VRAM_STRIDE = W // 4  # 1120 px at 2 bpp = 280 bytes per scanline
 VRAM_LEN = VRAM_STRIDE * H

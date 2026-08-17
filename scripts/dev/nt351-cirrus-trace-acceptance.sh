@@ -11,15 +11,15 @@
 # verifying a production package build that intentionally omits instrumentation.
 #
 # Usage:
-#   QEMU_BIN=/data/vms/soltest/qcirrus-trace-UNIQ/build/qemu-system-i386-trace \
+#   QEMU_BIN=/data/vms/sandbox/qcirrus-trace-UNIQ/build/qemu-system-i386-trace \
 #     scripts/dev/nt351-cirrus-trace-acceptance.sh \
-#     /data/vms/soltest/qcirrus-trace-UNIQ
+#     /data/vms/sandbox/qcirrus-trace-UNIQ
 #
 # This gate is intentionally visual: PASS requires manual inspection of every
 # PNG. Image hashes cannot reliably classify stale/overlapping glyphs.
 set -euo pipefail
 
-readonly CLONE_ROOT=/data/vms/soltest
+readonly CLONE_ROOT=/data/vms/sandbox
 readonly CDRV=/root/cdrv.py
 readonly REQUIRE_BLT_TRACE=${REQUIRE_BLT_TRACE:-1}
 readonly INSTALLED_QEMU=/opt/qemu-cirrusfix/bin/qemu-system-i386

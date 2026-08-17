@@ -2,7 +2,7 @@
 
 Status: **AUDITED, NOT YET RECORDED**, 2026-08-16. The cold-boot behaviour below
 was observed repeatedly on the build clone at
-`/data/vms/soltest/macos753-build/`; no clip has been captured and the live
+`/data/vms/sandbox/macos753-build/`; no clip has been captured and the live
 station was only read (`labctl shot macos753`).
 
 The station is a 1152×870×8 Quadra 800 under **TCG with no acceleration path**,

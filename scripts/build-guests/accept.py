@@ -8,7 +8,7 @@ import time
 
 import numpy as np
 
-D = "/data/vms/soltest/NSPTR-previous-patch"
+D = "/data/vms/sandbox/NSPTR-previous-patch"
 W, H = 1120, 832
 
 TARGETS = [

@@ -1,7 +1,7 @@
 IRIX 6.5.22 tile — Track A (apps + demos), ORDERED INSTALL PLAN
 ===============================================================
 Phase 1 (inventory / acquisition / harness) completed 2026-07-31.
-Everything below runs in /data/vms/soltest/irix-apps. NEVER touch
+Everything below runs in /data/vms/sandbox/irix-apps. NEVER touch
 /data/vms/streamhost/stations/irix or the chmod-444 golden irix65.chd.
 
 WHAT THE GUIDE ASKS FOR vs WHAT THE IMAGE ALREADY HAS
@@ -29,7 +29,7 @@ DISK HEADROOM — the blocker, already solved host-side
 Golden CHD: 128x16x2000x512 = 2.00 GB; SGI label part0 = XFS 1870 MiB with only
 704 MiB free (1166 MiB used), 512-byte blocks, XFS V4 (0x30b4, dirv2), 8 AGs.
 Not enough headroom for a comfortable install, so make-work-chd.sh produced
-  /data/vms/soltest/irix-apps/work.chd   128x16x6000x512 = 6.29 GB
+  /data/vms/sandbox/irix-apps/work.chd   128x16x6000x512 = 6.29 GB
 with the SGI volume header rewritten (secs/track, capacity, part0 + part10
 lengths, checksum). THE FILESYSTEM IS NOT GROWN YET — grow it IN-GUEST at
 step 2 (`xfs_growfs /`), because Linux cannot replay IRIX's XFS log
@@ -44,12 +44,12 @@ THE RIG
   irix-apps-cmd.sh <verb> [arg]    drive it (line/slow/code/click*/cd/snap/exit)
   irix-apps-shot.sh out.png        REAL framebuffer PNG (MAME snapshot)
   irix-apps-kill.sh                clone-guard pidfile kill (last resort)
-MAME CD attach at launch:  -cdrm1 /data/vms/soltest/irix-apps/media/<x>.iso
+MAME CD attach at launch:  -cdrm1 /data/vms/sandbox/irix-apps/media/<x>.iso
   (scsibus:1 = harddisk = -hard1, scsibus:6 = SCSI CD-ROM SGI = -cdrm1;
    -cdrm6/-cdrom6 are rejected by the option parser.)
 Hot CD swap without restarting MAME:  irix-apps-cmd.sh cd <basename>
   (Lua image:unload()/load(); confirm the device tag once with `cdinfo`.)
-Pointer motion: XTest relative via /data/vms/soltest/irix-mame/relmove on
+Pointer motion: XTest relative via /data/vms/sandbox/irix-mame/relmove on
 DISPLAY=:41, after `xset m 0 0` in-guest (RECIPE.txt). Buttons + keyboard go
 through the Lua agent — SDL never delivers them on a WM-less full-screen Xvfb.
 
@@ -225,7 +225,7 @@ They are not missing. Ground truth on the SHIPPED golden irix65-apps.chd
   * real framebuffer: `ls /usr/demos` shows General_Demos; `versions demos`
     lists every demos.sw.* subsystem as "I = Installed"; Seahaven Towers and
     the GL `ideas` demo both render.
-The false report came from booting the WRONG image: /data/vms/soltest/irix-perf/
+The false report came from booting the WRONG image: /data/vms/sandbox/irix-perf/
 run-clone.sh clones master.chd == the BASE irix65.chd (md5 430bf0ba...), whose
 /usr/demos holds only Performer and whose only `atlantis` is the screensaver
 /usr/lib/X11/savers/defaults/atlantis -- exactly the symptoms reported. The perf
@@ -255,7 +255,7 @@ THE S77sysevent NOISE WAS NEVER A SERVICE
   FIX: rm /etc/rc2.d/S77sysevent.989.
 
 NEW GOLDEN
-  /data/vms/soltest/irix-demos-audit/irix65-apps-v2.chd
+  /data/vms/sandbox/irix-demos-audit/irix65-apps-v2.chd
   md5 7ef955e262bcd31cd9f7062ef975697e, 2,241,540,096 bytes, 444 + chattr +i.
   Diff vs irix65-apps.chd: the orphan deleted, plus a CLEAN IRIX shutdown
   (/etc/shutdown -y -g0 -i0) before the MAME `exit` verb.
@@ -271,7 +271,7 @@ NEW GOLDEN
   step and finish with sync + the MAME `exit` verb -- /etc/shutdown re-saves it.
 
 RIG USED (namespaced clone of the Track A harness)
-  /data/vms/soltest/irix-demos-audit/ -- own Xvfb :43, own pidfiles, own command
+  /data/vms/sandbox/irix-demos-audit/ -- own Xvfb :43, own pidfiles, own command
   file, MAME pinned to cores 6,7,14,15, env.sh carrying the overrides. It reads
   roms/nvram/uicfg/mame/glibc from the PRODUCTION asset tree and never opens a
   production golden (both are 444 + chattr +i and their md5s were re-checked
@@ -337,7 +337,7 @@ VERIFIED ON THE EXACT ARTIFACT, TWICE (independent cp --reflink clones)
   * boot console free of the S77sysevent wall; esp still off.
   * xset q -> acceleration 1/1, threshold 0, applied automatically at login.
   * 28 demos present; seahaven (2D) + ideas (GL) both launched and rendering.
-  * Evidence: /data/vms/soltest/irix-demos-audit/evidence/v3-*.png
+  * Evidence: /data/vms/sandbox/irix-demos-audit/evidence/v3-*.png
   * One boot hit the known black-screen cold-boot hang at the console->iconlogin
     handover (X root painted then black, MAME alive at 109% CPU). Relaunching
     cleared it -- that is the documented ~8% hang, not an image property.

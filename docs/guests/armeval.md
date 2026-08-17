@@ -323,7 +323,7 @@ that file for what a record driver would have to do.
 - `clone-guard check-launcher` **refuses** a builder that can reach a production
   station path through an unset variable, so `armeval.sh` deliberately has no
   `ARMEVAL_TILE_DIR`-style override. A sandbox run is made by rewriting the
-  constants into a `/data/vms/soltest/<ns>` copy, which then passes
+  constants into a `/data/vms/sandbox/<ns>` copy, which then passes
   `check-launcher` on its own.
 - **The scaffold's port allocation was wrong and QEMU is what found it.** The
   reserved VMID 235 / ssh 5835 both belong to the live `kc854` station, and 5835 is

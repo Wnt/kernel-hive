@@ -6,7 +6,7 @@ exactly as it went on the wire — into `key` telemetry rows and pushes them to
 /clientlog every ~2 s. This turns that back into a readable burst, so a
 keyboard-lag reproduction can be measured, and exports it as a replay file for
 scripts/dev/key-replay.py so the SAME browser-timed burst can be fired at a
-soltest clone under candidate pacing knobs.
+sandbox clone under candidate pacing knobs.
 
     ssh lab 'python3 /data/vms/streamhost/serve/key-trace.py'
     ssh lab 'python3 .../key-trace.py --since-min 5 --session ab12cd34'

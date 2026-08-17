@@ -45,7 +45,7 @@ if [ ! -f "$ASSET" ]; then
 Rebuild recipe (needs ~7 GB free and chdman from the mame-tools package):
   # 1. Work on a COPY of the irix tile's golden CHD. Never open the live one.
   install -d -m 0755 "$ASSET_DIR"
-  W=\$(mktemp -d /data/vms/soltest/irisindy-asset-XXXX)
+  W=\$(mktemp -d /data/vms/sandbox/irisindy-asset-XXXX)
   cp "$SRC_CHD" "\$W/disk.chd"
   chdman extracthd -i "\$W/disk.chd" -o "\$W/disk.raw"
   # 2. Wrap it in a read-only ext4 the bridge guest can mount.

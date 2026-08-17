@@ -120,7 +120,7 @@ def main():
     args = parser.parse_args()
 
     clone_dir = os.path.realpath(args.clone_dir)
-    allowed_root = "/data/vms/soltest/"
+    allowed_root = "/data/vms/sandbox/"
     if not clone_dir.startswith(allowed_root):
         fail("refusing non-clone path outside %s: %s" %
              (allowed_root, clone_dir))

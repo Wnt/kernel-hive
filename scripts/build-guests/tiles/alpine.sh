@@ -67,7 +67,7 @@
 #     (canonical /data/gallery-guests/Alpine + /data/isos); wiring a live station
 #     to it is the station launcher's job (see PRODUCTION WIRING at the end).
 #   - OUT_DIR / WORK_DIR / ISO_DIR / ports are env-overridable so trial runs can be fully
-#     namespaced (e.g. under /data/vms/soltest/).
+#     namespaced (e.g. under /data/vms/sandbox/).
 #
 # Usage:
 #   scripts/build-guests/tiles/alpine.sh

@@ -7,7 +7,7 @@ umask 077
 SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 ASSET_DIR="$SELF_DIR/../assets/redstar2"
 STAMP=${REDSTAR2_BUILD_DATE:-$(date +%Y%m%d)}
-WORK=${REDSTAR2_WORK:-/data/vms/soltest/redstar2-build-$STAMP}
+WORK=${REDSTAR2_WORK:-/data/vms/sandbox/redstar2-build-$STAMP}
 STAGE=/data/assets-staging/redstar2
 ISO=$STAGE/redstar.iso
 DISK=$WORK/redstar2.qcow2
@@ -43,7 +43,7 @@ die() {
 
 mkdir -p "$WORK" "$EVIDENCE" "$FAILURES"
 [ "$WORK" != /mnt/poc ] || die "refusing /mnt/poc"
-[[ "$WORK" == /data/vms/soltest/redstar2-build-* ]] || die "WORK must be namespaced under /data/vms/soltest/redstar2-build-*"
+[[ "$WORK" == /data/vms/sandbox/redstar2-build-* ]] || die "WORK must be namespaced under /data/vms/sandbox/redstar2-build-*"
 [ -c /dev/kvm ] || die "/dev/kvm missing"
 qemu-system-x86_64 -machine help | grep -q 'pc-i440fx-11.0' || die "pc-i440fx-11.0 unavailable"
 

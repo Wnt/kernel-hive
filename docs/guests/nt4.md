@@ -77,7 +77,7 @@ GH issue #23. Catalog: `docs/catalog/os-media-catalog.md` §4 "Windows NT rungs"
 
 ## First-light (2026-07-27)
 
-On a namespaced clone under `/data/vms/soltest/` with the recipe above:
+On a namespaced clone under `/data/vms/sandbox/` with the recipe above:
 
 1. Cold boot → NTLDR "OS Loader V4.01" (proves the NT boot chain executes).
 2. After the boot.ini `scsi→multi` fix → the "Microsoft Windows NT Workstation
@@ -111,7 +111,7 @@ On a namespaced clone under `/data/vms/soltest/` with the recipe above:
   post-save, and fresh-load idle PPMs are byte-identical at SHA-256
   `4f35ac3b50ee031543781740209f21bc9d5f30ca9ac978ca01c10b2d2c30db42`.
 - Promotion proof root:
-  `/data/vms/soltest/nt4-cirrus-promote-20260728T-SAP4aj/`.
+  `/data/vms/sandbox/nt4-cirrus-promote-20260728T-SAP4aj/`.
   `acceptance/` contains the three full adversarial raw-QMP runs:
   ten Notepad Page Downs, a window drag across the desktop icons, an icon move,
   the five-position pointer grid, the visible mode panel, and every fresh-load

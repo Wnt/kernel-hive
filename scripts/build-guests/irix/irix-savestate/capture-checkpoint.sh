@@ -88,11 +88,11 @@ if [ -z "$MCTL" ]; then
     fi
   done
 fi
-V="${IRIX_BAKE_DIR:-/data/vms/soltest/irix-ss-bake-$$}"
+V="${IRIX_BAKE_DIR:-/data/vms/sandbox/irix-ss-bake-$$}"
 case "$V" in
-  /data/vms/soltest/*) : ;;
+  /data/vms/sandbox/*) : ;;
   *)
-    echo "refusing to work outside /data/vms/soltest" >&2
+    echo "refusing to work outside /data/vms/sandbox" >&2
     exit 1
     ;;
 esac

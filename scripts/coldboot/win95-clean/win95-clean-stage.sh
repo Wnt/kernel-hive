@@ -5,8 +5,8 @@
 # into the clone (and never the live station).
 set -euo pipefail
 LIVE_DIR=/data/vms/streamhost/stations/win95
-PREP=/data/vms/soltest/win95-clean-prep
-STAGEROOT=/data/vms/soltest/win95-clean-stage
+PREP=/data/vms/sandbox/win95-clean-prep
+STAGEROOT=/data/vms/sandbox/win95-clean-stage
 SDIR="$STAGEROOT/win95"
 
 rm -rf "$STAGEROOT"

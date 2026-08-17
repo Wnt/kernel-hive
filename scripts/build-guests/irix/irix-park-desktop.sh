@@ -12,7 +12,7 @@
 #   on the REAL framebuffer, and hand back the display number.
 #
 # Run ON labhost (root@192.0.2.10). Everything lives under
-# /data/vms/soltest/irix-park/<name>/ — never the production station tree — and
+# /data/vms/sandbox/irix-park/<name>/ — never the production station tree — and
 # every kill goes through clone-guard.
 #
 #   irix-park-desktop.sh start <name> [--display N] [--cpus LIST] [--chd PATH]
@@ -33,7 +33,7 @@
 #   irix-park-desktop.sh stop soak1
 set -u
 
-ROOT="${IRIX_PARK_ROOT:-/data/vms/soltest/irix-park}"
+ROOT="${IRIX_PARK_ROOT:-/data/vms/sandbox/irix-park}"
 ASSETS="${IRIX_ASSETS:-/data/vms/streamhost/assets/irix}"
 MAME_BIN="${IRIX_MAME:-$ASSETS/mame/sgi}"
 # The Lua input agent is the ONLY reliable keyboard channel: a WM-less

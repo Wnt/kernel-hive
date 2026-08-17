@@ -16,7 +16,7 @@ QEMU_BIN=$2
 QEMU_DATADIR=${QEMU_DATADIR:-$D/build/pve-qemu-kvm-11.0.2/build/qemu-bundle/usr/share/kvm}
 
 case "$D/" in
-  /data/vms/soltest/qcirrus-trace-*/*) ;;
+  /data/vms/sandbox/qcirrus-trace-*/*) ;;
   *) die "refusing non-trace clone path: $D" ;;
 esac
 case "$QEMU_BIN" in

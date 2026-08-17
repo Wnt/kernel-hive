@@ -73,7 +73,7 @@ COM1 serial for the warpd agent, and the two IDE checkpoint disks are unchanged)
 COM1 `AGENT.EXE` warpd pointer agent is device-set-safe and auto-starts; it reads
 `GetSystemMetrics` so it lands 1:1 at 1024×768 with no code change.
 
-**Acceptance (all framebuffer-verified on a `/data/vms/soltest/win311-vbesvga-*`
+**Acceptance (all framebuffer-verified on a `/data/vms/sandbox/win311-vbesvga-*`
 clone, then re-verified on the live station):** readable Program Manager title/menu/
 group-icon glyphs; framebuffer settles bit-identical across samples; the software
 cursor is present in the scanout; warpd `M x y` lands the cursor tip pixel-exact at
@@ -104,7 +104,7 @@ golden` auto-adds `-loadvm golden`.
 
 The requested Win311 move from Standard VGA 640x480x16 to Cirrus 1024x768x256
 (with 800x600x256 as fallback) was proved only on namespaced copies under
-`/data/vms/soltest/win311-hires-codex-20260715*`. The live station, launcher, and
+`/data/vms/sandbox/win311-hires-codex-20260715*`. The live station, launcher, and
 checkpoint were not modified because neither Cirrus driver candidate passed the
 settled-framebuffer gate. Every launch retained the production device set:
 TCG, Pentium, `pc-i440fx-11.0`, `-vga cirrus`, SB16, NE2K PCI, and COM1, at
@@ -159,7 +159,7 @@ mode set or the first transient repaint.
 
 This is the reproducible scene-capture record for `scripts/build-guests/tiles/win95.sh`
 followed by `scripts/build-guests/tiles/win98.sh`. Everything ran below one disposable
-`/data/vms/soltest/repro-win9x-<timestamp>/` namespace with unique QMP sockets,
+`/data/vms/sandbox/repro-win9x-<timestamp>/` namespace with unique QMP sockets,
 VNC displays, host-forward ports and pidfiles. The live stations and
 `/data/gallery-guests` were read-only. Every state claim below was checked from a
 QMP `screendump` that was converted to PNG and visually inspected.
@@ -372,7 +372,7 @@ samples; the validated VBEMP clone had 0/8, the fresh ship clone had 0/14, and t
 post-`labctl reset win95` live capture had 0/14. Warpnet motion landed at all four
 corners and centre at 16-bit, while QMP-delivered buttons opened Start and completed
 a full-window drag. Evidence is under
-`/data/vms/soltest/win95-paint-tearing-vbemp-ship-20260715/` and
+`/data/vms/sandbox/win95-paint-tearing-vbemp-ship-20260715/` and
 `/data/vms/streamhost/stations/win95/vbemp-live-verify-20260716/`.
 
 Do not infer the guest depth from `file(1)` on a screenshot: `labctl shot` may
@@ -718,7 +718,7 @@ vacated desktop correctly restored — the anti-crawl signature — vs the estab
 planar crawl. Depth confirmed *High Color (16 bit)* in Display Properties.
 
 **Capture / cutover recipe (what shipped 2026-07-13).**
-1. Clone under `/data/vms/soltest/win98-drag/`: extract a **consistent** C:/D: from the
+1. Clone under `/data/vms/sandbox/win98-drag/`: extract a **consistent** C:/D: from the
    live checkpoint with `qemu-img convert -l golden …` (NOT a raw `cp` of the live-mutating
    qcow2 — that yields a torn image → 0E BSOD on boot). Same device set + `-fda vbe9x.img`.
 2. Install VBEMP-9x (above), enable `DragFullWindows=1`, **clean Win98 shutdown**
@@ -1201,7 +1201,7 @@ desktop** — all icons + Start taskbar + clock — under TCG+smp1+800x600.
 
 Both games on the streamhost `win95` station failed to start for gallery viewers.
 Root-caused with framebuffer evidence, fixed, clone-validated
-(`/data/vms/soltest/win95-c3/`), replayed on the live station and captured with
+(`/data/vms/sandbox/win95-c3/`), replayed on the live station and captured with
 `savevm golden`. `scripts/build-guests/tiles/win95.sh` now stages all of it for a
 fresh capture (DUKE3D.CFG / DINO.BAT / STARTUP.INI / DIG.INI / desktop PIFs /
 AUTOEXEC BLASTER line are embedded verbatim in the script).
@@ -1230,7 +1230,7 @@ tested. User-reported as "starting GTA crashes the VM".
   Signature = VESA **page flipping**: gta8 flips display pages via VBE
   set-display-start, and under the VBEMP-era DOS-box display virtualization the
   scanout never follows — the game draws to a page that is never shown.
-  Reproduced deterministically on a `/data/vms/soltest/win95-gta` clone with NO
+  Reproduced deterministically on a `/data/vms/sandbox/win95-gta` clone with NO
   streamhost attached (so not a daemon/capture issue), with and without a QMP
   stop/cont in the history. Duke3D (mode-X direct writes, no VBE flipping) is
   unaffected. NOT the idle-pause gotcha, NOT the Settings-tab wedge (that one

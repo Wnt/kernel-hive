@@ -2,7 +2,7 @@
 
 Reproduction notes for baking a boot video on the **win95** vmstate tile with
 `record-boot.sh` (spec `BOOT-VIDEO-REPLAY-SPEC.md` §3.1/§3.2). Verified end to end
-on a `/data/vms/soltest` clone 2026-07-13; the live tile was never touched.
+on a `/data/vms/sandbox` clone 2026-07-13; the live tile was never touched.
 
 ## Why prep is needed (cold boot ≠ zero-input)
 
@@ -70,7 +70,7 @@ the games stay on disk. This was baked on a clone, validated, then swapped live.
 2. **`C:\WINDOWS\Start Menu\Programs\StartUp\Rain.lnk`** — a second StartUp auto-launch
    also present on the base FS.
 
-### Clean-desktop prep (offline + GUI, on a `/data/vms/soltest` clone)
+### Clean-desktop prep (offline + GUI, on a `/data/vms/sandbox` clone)
 1. **OFFLINE (qemu-nbd, reliable):** mount the copied qcow2's C: (vfat `${NBD}p1`), set
    WIN.INI `[windows]` `run=` **empty**, and delete any StartUp `*.lnk`/`*.pif`. (Win9x
    registry is CREG format — no offline Linux editor — so the logon change is GUI, below.)
@@ -91,7 +91,7 @@ stage a dir and point `BOOTREC_TILES_ROOT` at it — **but the staged `qemu-stre
 must have its `D=` line redirected to the staged dir**, else the launcher's hardcoded
 `D=/data/vms/streamhost/stations/win95` survives the rewrite and the clone would run on the
 LIVE tile. Verify with `record-boot.sh <tile> --dry-run`: the emitted clone launcher's
-`D=`/disk/pidfile/qmp must all be under `/data/vms/soltest/bootrec-<tile>-<pid>`.
+`D=`/disk/pidfile/qmp must all be under `/data/vms/sandbox/bootrec-<tile>-<pid>`.
 The existing **win95 Tier-2 arm is unchanged** — the Start-button crop `crop=56:18:2:458`
 is identical clean vs. Notepad, so no `bootrec-tiles.conf` edit was needed; capture the
 clean settled-desktop screendump as `boot-ref-desktop.png` beside the staged disk.

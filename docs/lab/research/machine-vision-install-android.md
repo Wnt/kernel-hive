@@ -5,7 +5,7 @@
 
 Date: 2026-07-14/15 UTC  
 Host: CT950 lab host `pve-dryrun` (CPU only)  
-Task clone: `/data/vms/soltest/repro-android-cv-1784064830/`
+Task clone: `/data/vms/sandbox/repro-android-cv-1784064830/`
 
 ## Verdict
 
@@ -31,7 +31,7 @@ A/B run.
   `91cedb534ba095a0c9b3eceede4147967fd27beea9bba640776f787dc3555021`,
   761,266,176 bytes, Android-x86 9.0-r2.
 - The task disk is a fresh 8 GiB qcow2. QEMU ran under `nice -n15`, with its
-  own PID file and `/data/vms/soltest/repro-android-cv-1784064830/qmp.sock`.
+  own PID file and `/data/vms/sandbox/repro-android-cv-1784064830/qmp.sock`.
 - Pool free space was checked before installation and at each expensive
   milestone. It started at 19.6 GiB, never crossed the 8 GiB stop boundary,
   and was 10.9 GiB after retaining the checkpoint set and `golden`.

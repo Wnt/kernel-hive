@@ -77,7 +77,7 @@
     never uses those options, and no tile carrying this patch may.
 
     Init-hook wiring and computed_signature() are reused from the proven
-    Stage-0 spike (lab:/data/vms/soltest/v456-spike/ctlsock/): the spike
+    Stage-0 spike (lab:/data/vms/sandbox/v456-spike/ctlsock/): the spike
     validated init at machine_phase::INIT visibility and reproduced the
     savestate header signature byte-for-byte via the public save_manager
     registration walk. computed_signature() is kept behind STAT

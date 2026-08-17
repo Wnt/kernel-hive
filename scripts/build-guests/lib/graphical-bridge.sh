@@ -9,7 +9,7 @@
 # Usage:
 #   graphical-bridge.sh --tile NAME --vmid 99NNN --udp PORT --ssh-port PORT \
 #     --install-script GUEST_INSTALL.sh --launch-script KIOSK_LAUNCH.sh \
-#     [--payload-dir DIR] [--out-dir /data/vms/soltest/NAME] [--force]
+#     [--payload-dir DIR] [--out-dir /data/vms/sandbox/NAME] [--force]
 set -euo pipefail
 
 # shellcheck source=/dev/null
@@ -125,7 +125,7 @@ esac
 [ -f "$LAUNCH_SCRIPT" ] || die "launch script not found: $LAUNCH_SCRIPT"
 [ -z "$PAYLOAD_DIR" ] || [ -d "$PAYLOAD_DIR" ] || die "payload directory not found: $PAYLOAD_DIR"
 
-OUT_DIR="${OUT_DIR:-/data/vms/soltest/$TILE}"
+OUT_DIR="${OUT_DIR:-/data/vms/sandbox/$TILE}"
 WEB_PORT="${WEB_PORT:-$((UDP_PORT - 46000))}"
 for value in "$VMID" "$UDP_PORT" "$SSH_PORT" "$WEB_PORT" "$MEM_MB" "$SMP" "$FPS"; do
   case "$value" in

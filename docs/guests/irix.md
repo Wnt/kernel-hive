@@ -655,7 +655,7 @@ irix-serial-rig.sh boot bake1 --console --display 171   # ~5 min cold boot
 irix-serial-install.sh bake1                            # ~90 s, cksum-verified
 irix-serial-rig.sh ping bake1 --agent-src streamhost/guest-agents/irix/irixagent.pl
 irix-serial-rig.sh halt bake1                           # clean shutdown -i0
-# -> /data/vms/soltest/irix-serial/bake1/disk.chd
+# -> /data/vms/sandbox/irix-serial/bake1/disk.chd
 ```
 
 The installer types the agent in through the console getty's own here-document.
@@ -737,9 +737,9 @@ serial image is safe to boot on the old launcher too.
 Stage / verify with `streamhost/stations/irix/fetch-assets.sh` (run on labhost).
 They live in the **production** tree `/data/vms/streamhost/assets/irix/`
 (overridable via `IRIX_ASSETS` / `IRIX_MAME`). They used to be
-read straight out of `/data/vms/soltest/` — the clone/experiment scratch area —
+read straight out of `/data/vms/sandbox/` — the clone/experiment scratch area —
 which meant a live exhibit resting on paths other agents rebuild underneath it;
-promoted 2026-07-31. The soltest copies stay as the build/experiment stage.
+promoted 2026-07-31. The sandbox copies stay as the build/experiment stage.
 
 - `/data/vms/streamhost/assets/irix/` — **`irix65-apps.chd`** (the exhibit
   seed the station actually boots: md5 `09e51dbc…`, 444 **and `chattr +i`**),
@@ -842,7 +842,7 @@ agent traced a 4.5% run-to-run instruction-count σ to the same write-through
 master + per-run clone cut it to 0.5%.
 
 Full design + hard-won findings: `docs/history/irix-tile-issue20-handoff.md` and the
-labhost recipe `/data/vms/soltest/irix-mame/RECIPE.txt`.
+labhost recipe `/data/vms/sandbox/irix-mame/RECIPE.txt`.
 
 ## Track A — apps + demos install rig (`scripts/build-guests/irix/irix-apps/`)
 
@@ -872,7 +872,7 @@ Findings that shape the work:
   CDs can also be hot-swapped from the Lua agent without restarting MAME.
 
 Media (9 SGI CDs, ~3.6 GB) is fetched by `fetch-media.sh` from jrra.zone into
-`/data/vms/soltest/irix-apps/media/` with a `SHA256SUMS` manifest. All install
+`/data/vms/sandbox/irix-apps/media/` with a `SHA256SUMS` manifest. All install
 work happens on the writable copy in that namespaced directory — the seed
 CHD stays `chmod 444` and is only ever read.
 
@@ -920,7 +920,7 @@ boot. The IRIX root is plain XFS (big-endian on-disk, which Linux reads
 natively), behind an SGI volume header:
 
 ```sh
-cp --reflink=always <golden>.chd /data/vms/soltest/<yours>/x.chd   # never open the seed
+cp --reflink=always <golden>.chd /data/vms/sandbox/<yours>/x.chd   # never open the seed
 chdman extractraw -i x.chd -o x.raw                                # ~6 s, 6.29 GB sparse
 # partition 0 (XFS root) starts at LBA 266240 => byte offset 136314880
 mount -t xfs -o ro,norecovery,nouuid,loop,offset=136314880 x.raw mnt
@@ -954,7 +954,7 @@ confirmed both offline (XFS mount, `/usr/demos/General_Demos`) and on the real
 framebuffer (`ls /usr/demos`, `versions demos` all `I = Installed`, plus
 Seahaven Towers and the GL `ideas` demo rendering side by side).
 
-The report came from booting the **wrong image**: `/data/vms/soltest/irix-perf/
+The report came from booting the **wrong image**: `/data/vms/sandbox/irix-perf/
 run-clone.sh` clones `master.chd`, which is the *base* `irix65.chd`
 (md5 `430bf0ba…`). That image has exactly the symptoms reported —
 `/usr/demos` → `Performer` only, and the only `atlantis` is the screensaver
@@ -964,7 +964,7 @@ station has two seeds, name the one you booted in the finding.**
 
 The audit did produce a corrected seed, for the `S77sysevent.989` orphan:
 
-- `/data/vms/soltest/irix-demos-audit/irix65-apps-v2.chd`,
+- `/data/vms/sandbox/irix-demos-audit/irix65-apps-v2.chd`,
   md5 `7ef955e262bcd31cd9f7062ef975697e`, 2,241,540,096 bytes, 444 + `chattr +i`.
 - Diff vs `irix65-apps.chd`: `/etc/rc2.d/S77sysevent.989` deleted, and IRIX was
   shut down cleanly (`/etc/shutdown -y -g0 -i0`) instead of having MAME yanked
@@ -977,7 +977,7 @@ The audit did produce a corrected seed, for the `S77sysevent.989` orphan:
   (The shipped seed's copy of that file is torn binary garbage from its
   unclean exit — which is the only reason it restored nothing. Session restore
   had never been *decided*, only accidental.) Fixed properly in v3 below.
-- Evidence PNGs: `/data/vms/soltest/irix-demos-audit/evidence/`.
+- Evidence PNGs: `/data/vms/sandbox/irix-demos-audit/evidence/`.
 
 ### `irix65-apps-v3.chd` — bare desktop + 1:1 pointer (2026-08-02)
 
@@ -1049,7 +1049,7 @@ Two cold boots from independent `cp --reflink` clones of the staged file:
 - `xset q` → `acceleration: 1/1  threshold: 0`, applied automatically at login.
 - 28 demos in `/usr/demos/General_Demos`; `seahaven` (2D) and the GL `ideas`
   demo both launched and rendering.
-- Evidence: `/data/vms/soltest/irix-demos-audit/evidence/v3-*.png`.
+- Evidence: `/data/vms/sandbox/irix-demos-audit/evidence/v3-*.png`.
 
 One of the boots hit the known black-screen cold-boot hang at the
 console→`iconlogin` handover (X root painted, then black, MAME alive at 109%);
@@ -1145,7 +1145,7 @@ with 16 MB. The bug is in MAME 0.288 and unchanged in 0.289 and on master.
 A run that does *not* panic is not healthy either — it just corrupted something
 less load-bearing. Both surviving 256 MB controls rendered a visibly **garbled
 Netscape window** (missing toolbars, shredded text); with the fix the same page
-renders pixel-perfect. Evidence PNGs: `/data/vms/soltest/irix-panic/results/`
+renders pixel-perfect. Evidence PNGs: `/data/vms/sandbox/irix-panic/results/`
 (`ctl4.final.png`, `ctl6.final.png` vs `mcfix1.final.png`).
 
 Reading the panic message pays off, and two numbers in it are traps:
@@ -1189,7 +1189,7 @@ check apply. Adding them was built and tested here and changed nothing, so it is
 **not** carried in the station's patch stack.
 
 Reproduction rig (kept, and cheap — ~10 min per trial):
-`/data/vms/soltest/irix-panic/` — `trial2.sh` (boot → login → trigger →
+`/data/vms/sandbox/irix-panic/` — `trial2.sh` (boot → login → trigger →
 classify), `retrig.sh` (re-trigger an already-parked desktop), `pt.py`
 (closed-loop MOVEP pointer on MAME snapshots). Two harness lessons are baked in:
 a mis-aimed press must never score as a survival (hence `pt.py menuopen`
@@ -2006,7 +2006,7 @@ boot is still deterministic.
 The experiment tree, the runtime-gated patch
 (`mame-indy-hugepage-EXPERIMENT.diff` — note it also carries the shipped
 `dma_translate` hunk), the harness and all raw results are kept on labhost under
-`/data/vms/soltest/irix-hugepage/`. **Do not re-open this without a new
+`/data/vms/sandbox/irix-hugepage/`. **Do not re-open this without a new
 hypothesis about where the cycles would come from** — the TLB-walk budget on
 this workload is ~2–3% of cycles total, which is the whole prize even if every
 walk were eliminated.
@@ -2061,7 +2061,7 @@ inference: emulated t=100 s renders **byte-identically to control**
 
 **Not adopted — it is BLOCKED on a correctness defect found while landing it
 (2026-08-03, below).** Experiment tree, harness and raw results are on labhost
-under `/data/vms/soltest/v100-fastram-for-indy-ram/`.
+under `/data/vms/sandbox/v100-fastram-for-indy-ram/`.
 
 ### …and why it is NOT installed: it fails IRIX's own memory diagnostic
 
@@ -2226,7 +2226,7 @@ I know this!"). It lays a directory tree out as pedestals on a landscape —
 pedestal height ∝ directory size, a box per file, box colour by age — and you
 fly through it. **It is not part of IRIX 6.5.** The base install carries no
 `fsn` subsystem, and neither do the nine SGI CDs staged in
-`/data/vms/soltest/irix-apps/media/` (checked by mounting each EFS volume and
+`/data/vms/sandbox/irix-apps/media/` (checked by mounting each EFS volume and
 searching its `dist`/`install` trees and every `.idb` file list — zero hits).
 SGI distributed it separately, for free, from `ftp.sgi.com:/sgi/fsn/`.
 
@@ -2280,7 +2280,7 @@ already installed and running.
 
 ### How it was installed, and how it was proved
 
-On a namespaced clone of seed v7 (`/data/vms/soltest/fsn-<tag>/`) running the
+On a namespaced clone of seed v7 (`/data/vms/sandbox/fsn-<tag>/`) running the
 **production launcher** — the station's own `x11-runtime.sh`, `SH_CAPTURE=shm`,
 `-video none`, throttled, both watchdogs, its own `tapnet.sh claim` slot and its
 own core pair. `streamhost@irix` was never touched.

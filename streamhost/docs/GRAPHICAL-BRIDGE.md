@@ -32,7 +32,7 @@ The reusable builder is:
 scripts/build-guests/lib/graphical-bridge.sh
 ```
 
-It is fail-closed to `/data/vms/soltest/<name>/`, sources
+It is fail-closed to `/data/vms/sandbox/<name>/`, sources
 `/usr/local/bin/clone-guard`, requires a clone-range VMID, and kills only its
 namespaced pidfile through `clone_guard_kill_pidfile`. It creates a thin overlay
 whose backing is the read-only
@@ -56,7 +56,7 @@ The reference build, run on the lab box from a synced repository, is:
 scripts/build-guests/lib/graphical-bridge.sh \
   --tile gbridge-issue16 --vmid 99916 \
   --udp 54996 --ssh-port 5896 --web-port 8296 \
-  --out-dir /data/vms/soltest/gbridge-issue16 \
+  --out-dir /data/vms/sandbox/gbridge-issue16 \
   --install-script scripts/tools/graphical-bridge-probe-install.sh \
   --launch-script scripts/tools/graphical-bridge-probe-launch.sh \
   --payload-dir scripts/tools \
@@ -245,8 +245,8 @@ The host acceptance runner is
 
 ```bash
 python3 scripts/tools/graphical_bridge_pointer_probe.py \
-  --qmp /data/vms/soltest/<tile>/qmp.sock \
-  --out-dir /data/vms/soltest/<tile>/pointer-proof \
+  --qmp /data/vms/sandbox/<tile>/qmp.sock \
+  --out-dir /data/vms/sandbox/<tile>/pointer-proof \
   --tolerance 2 --settle-ms 150
 ```
 
@@ -276,7 +276,7 @@ Reference result, 2026-07-29, scoped cold boot at 1024×768:
 | bottom-right | 1023,767 | 1022,766 | -1,-1 |
 
 All 9/9 pass the two-pixel gate. Evidence is under
-`/data/vms/soltest/gbridge-issue16/pointer-proof-scoped/`. The center PNG was
+`/data/vms/sandbox/gbridge-issue16/pointer-proof-scoped/`. The center PNG was
 also visually inspected; the green/magenta marker is visibly centered on the
 real black framebuffer.
 
@@ -324,9 +324,9 @@ its additional frame cost.
 Evidence JSON:
 
 ```
-/data/vms/soltest/gbridge-issue16/latency/native-kolibrios-30.json
-/data/vms/soltest/gbridge-issue16/latency/graphical-template-30.json
-/data/vms/soltest/gbridge-issue16/latency/amiga-fsuae-30.json
+/data/vms/sandbox/gbridge-issue16/latency/native-kolibrios-30.json
+/data/vms/sandbox/gbridge-issue16/latency/graphical-template-30.json
+/data/vms/sandbox/gbridge-issue16/latency/amiga-fsuae-30.json
 ```
 
 Audio was proven through the same browser session, not inferred from an ALSA

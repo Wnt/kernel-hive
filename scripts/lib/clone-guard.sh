@@ -17,7 +17,7 @@
 #   Clone tooling MUST route every kill / stop / destructive-QMP / launcher-run
 #   through this guard. The guard refuses, LOUDLY, to touch anything that is not
 #   confined to the clone namespace root ($CLONE_GUARD_CLONE_ROOT, default
-#   /data/vms/soltest):
+#   /data/vms/sandbox):
 #     * any path under the production stations tree /data/vms/streamhost/stations/,
 #     * any `streamhost@<tile>` systemd unit,
 #     * any pidfile whose PATH is outside the clone root, OR whose PID is a QEMU
@@ -44,7 +44,7 @@
 # box-sync pairs). Re-sync after any edit.
 
 # ---- configuration (override via env only to point at a *different* sandbox) ----
-CLONE_GUARD_CLONE_ROOT="${CLONE_GUARD_CLONE_ROOT:-/data/vms/soltest}"
+CLONE_GUARD_CLONE_ROOT="${CLONE_GUARD_CLONE_ROOT:-/data/vms/sandbox}"
 CLONE_GUARD_PROD_TILES_ROOT="${CLONE_GUARD_PROD_TILES_ROOT:-/data/vms/streamhost/stations}"
 # VMIDs below this look like production stations (real stations are 100..~130; clones use
 # 99xxx / 9911 / 9912 etc). Advisory numeric backstop for check-launcher/assert-vmid.

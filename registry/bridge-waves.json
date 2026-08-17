@@ -40,7 +40,7 @@
   "serialization": {
     "mame-chroot": {
       "claim": "bridge-mame-chroot",
-      "resource": "the suite's mameChroot -- registry/bridge-suites.json suites.<suite>.mameChroot, i.e. /data/vms/soltest/trixie-chroot for trixie",
+      "resource": "the suite's mameChroot -- registry/bridge-suites.json suites.<suite>.mameChroot, i.e. /data/vms/sandbox/trixie-chroot for trixie",
       "why": "All the MAME builders chroot into the SAME directory and mount API filesystems inside it. Two concurrent builds doing that is the failure class that took the host's /dev/pts down and broke every new interactive login on the box for hours (AGENTS.md, the PTY-allocation-failed row). chroot-guard fixed the mount-propagation half; this claim is the who-owns-it half. ccache -- not parallelism -- is what makes a MAME wave cheap: 59.1% on the first cold build and 96-100% on every tree after it, so serializing these costs almost nothing.",
       "derivation": "a tile is a member iff scripts/build-guests/tiles/<tile>.sh names an emulators/build-mame-*.sh helper that itself calls bridge_mame_chroot_for",
       "tiles": [

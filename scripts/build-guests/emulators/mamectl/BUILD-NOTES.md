@@ -1,7 +1,7 @@
 # mamectl (issue #45 Stage 1) — build orders for the build/validation phase
 
 MOVEA ENGINE V2 (2026-08-04, patch md5 2586a68e3347e6b14918e4d391fdb894, dev
-binary lab:/data/vms/soltest/movea-v2-build/sgi-v2 md5
+binary lab:/data/vms/sandbox/movea-v2-build/sgi-v2 md5
 ca6fbe85ec936e0665d37ed83a8f3969): the closed loop is replaced by dead-
 reckoned open loop + settle-time delta verification (belief B fed by every
 move_rel count, screen-clamped; reading consulted ONLY at settle,
@@ -23,7 +23,7 @@ e4307541/3845. SDLMAME defaults cfg/nvram under /root/.mame when
 Written by the module-writer subagent; BUILT AND SMOKE-TESTED 2026-08-04 by
 the build subagent; ADVERSARIALLY REVIEWED + two Lua-parity fixes landed the
 same day (patch now 2222 lines, md5 90f75dda3e1762cd0866e791db832c39; fixed
-dev binary lab:/data/vms/soltest/mamectl-dev/sgi-ctl2 md5
+dev binary lab:/data/vms/sandbox/mamectl-dev/sgi-ctl2 md5
 893272bbe5343b722cbacb6f8ade2c3e, build log mamectl-build4.log — sgi-ctl is
 the PRE-review binary, superseded):
 
@@ -62,13 +62,13 @@ patch, `regen-patch.sh` in this dir rebuilds it byte-stably from a/ + b/):
    guarantee for free: emu.register_periodic only fires once running.)
 
 Build evidence: chroot build clean (logs at
-lab:/data/vms/soltest/mamectl-dev/mamectl-build[123].log), ctlsock.o
+lab:/data/vms/sandbox/mamectl-dev/mamectl-build[123].log), ctlsock.o
 compiles warning-free even under -Werror. Smoke on a PROM-only boot
-(lab:/data/vms/soltest/mamectl-dev/smoke/): HELLO parsed by mctl-probe.py,
+(lab:/data/vms/sandbox/mamectl-dev/smoke/): HELLO parsed by mctl-probe.py,
 STAT ver=1 with ticks==mtime*1000 (1 kHz timer true), sig=2236991a
 entries=3897 == the Stage-0 V4 skeleton signature exactly (9-entry covenant
 holds), MOVEP OK, FROB -> ERR badverb exit 2, KEYDUMP 128 rows. Dev binary
-for validation: lab:/data/vms/soltest/mamectl-dev/sgi-ctl2 md5
+for validation: lab:/data/vms/sandbox/mamectl-dev/sgi-ctl2 md5
 893272bbe5343b722cbacb6f8ade2c3e (post-review; sgi-ctl 4272f8d2… is the
 pre-review build, kept for provenance). Final patch re-verified freestanding
 (dry-run on the restored pristine tree, again after the review fixes).
@@ -78,7 +78,7 @@ pre-review build, kept for provenance). Final patch re-verified freestanding
 - `scripts/build-guests/patches/mame-ctlsock.patch` — patch #14, appended LAST in
   `irix-mame-stack.sh`. Freestanding: dry-run-applies clean on the PRISTINE
   pinned tree (verified 2026-08-04 against lab
-  `/data/vms/soltest/trixie-chroot/build/mame` at 8f21e978, git-clean).
+  `/data/vms/sandbox/trixie-chroot/build/mame` at 8f21e978, git-clean).
   Touches: `scripts/src/osd/modules.lua` (2 build lines),
   `src/osd/modules/lib/osdobj_common.cpp` (include + unconditional
   `ctlsock_init(machine)` at the end of `osd_common_t::init`),
@@ -92,13 +92,13 @@ pre-review build, kept for provenance). Final patch re-verified freestanding
 
 ## Coordination (BINDING)
 
-The build chroot is now `lab:/data/vms/soltest/trixie-chroot` (fresh
+The build chroot is now `lab:/data/vms/sandbox/trixie-chroot` (fresh
 debootstrap trixie + gcc-14, 2026-08-04; same compiler generation as the box,
 so chroot builds are representative of shipping builds). Its pinned tree
 `/build/mame` (8f21e978, kept git-clean between builds) is SHARED — bisect
 workflows may still use it. Before building there: wait until
 `ssh lab 'ps -eo pcpu,comm --sort=-pcpu | head'` shows no make/cc1plus in the
-chroot, and prefer a namespaced copy under `/data/vms/soltest/` for anything
+chroot, and prefer a namespaced copy under `/data/vms/sandbox/` for anything
 destructive. NEVER build in a live tile directory.
 
 `bookworm-chroot` (gcc-12) is retired **for the IRIX build** but is NOT
@@ -118,7 +118,7 @@ Incremental on the pinned chroot tree (after the stack is applied) — the
 PROVEN trixie-chroot flag set (2026-08-04 cold build clean, smoke
 sig=2236991a/3897 confirmed):
 
-    chroot /data/vms/soltest/trixie-chroot /bin/bash -c \
+    chroot /data/vms/sandbox/trixie-chroot /bin/bash -c \
       'cd /build/mame && make SUBTARGET=sgi SOURCES=src/mame/sgi/indy_indigo2.cpp \
        REGENIE=1 USE_QTDEBUG=0 TOOLS=0 -j16'
 

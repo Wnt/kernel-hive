@@ -15,7 +15,7 @@ taking input over es40's mamectl/1 socket (`SH_INPUT_BACKEND=mamesock`).
 - **Production assets staged** `/data/vms/streamhost/assets/w2kalpha/`:
   `es40` (build `fde680f2`), `nt.img`, `rom/` (flash.rom + S3/SRM/dpr roms),
   `es40.cfg`, `w2k.iso` (CD the cfg references), `root/` (es40's shared-lib
-  tree, so the station does NOT depend on the retired soltest scratch area).
+  tree, so the station does NOT depend on the retired sandbox scratch area).
 - **Station launcher** `/data/vms/streamhost/stations/w2kalpha/`: `w2kalpha-runtime.sh`
   (reflink-copies the checkpoint per launch → cold-boots es40 headless + serial
   pumps), `station.env` (SH_CAPTURE=shm, SH_INPUT_BACKEND=mamesock,
@@ -24,7 +24,7 @@ taking input over es40's mamectl/1 socket (`SH_INPUT_BACKEND=mamesock`).
   staged checkpoint to a 1280x1024 desktop published on shm, and a keyboard verb
   over the socket reached the guest (Start highlighted).
 
-The dev rig `/data/vms/soltest/ALPHA-nt/run/` is RETIRED — its working disk
+The dev rig `/data/vms/sandbox/ALPHA-nt/run/` is RETIRED — its working disk
 was corrupted (STOP 0x7B) by repeated restore-onto-mutated-disk cycles during
 input testing. The checkpoint (m5-1280 / the staged assets) is a separate clean
 snapshot, unaffected.
