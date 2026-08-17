@@ -96,6 +96,18 @@ box_sync_scrub_init() {
   BOX_SYNC_FORWARD_PROG="$BOX_SYNC_CANON_PROG$fwd_prog"
 }
 
+# --- where the box is -------------------------------------------------------
+# LAB=local means "this shell IS labhost" (scripts/host/box-install.sh running
+# from /data/kernel-hive): the same discovery commands run in-process instead
+# of over ssh, so the install path reads exactly the rows the gate reads.
+box_sync_remote() { # <lab> <script>   (stdin passes through)
+  if [ "$1" = local ]; then
+    bash -c "$2"
+  else
+    ssh -o ConnectTimeout=15 "$1" "$2"
+  fi
+}
+
 # --- pair table ------------------------------------------------------------
 # box_sync_add_pair <label> <repo-relative> <box-absolute> <mode> <authority> [post]
 box_sync_add_pair() {
@@ -230,7 +242,7 @@ box_sync_load_pairs() {
   box_sync_add_pair streamhost/member-Cargo.toml streamhost/streamhost/Cargo.toml "$BOX_ROOT/build/streamhost/Cargo.toml" exact repo
   git -C "$REPO" ls-files 'streamhost/streamhost/src/**' |
     sed 's#^streamhost/streamhost/src/##' | sort >"$tmpdir/src-repo"
-  ssh -o ConnectTimeout=15 "$LAB" \
+  box_sync_remote "$LAB" \
     "find '$BOX_ROOT/build/streamhost/src' -type f -name '*.rs' -printf '%P\\n' | sort" \
     >"$tmpdir/src-box"
   sort -u "$tmpdir/src-repo" "$tmpdir/src-box" >"$tmpdir/src-union"
@@ -256,7 +268,7 @@ box_sync_load_pairs() {
   # gitignored local.env is operator-local; neither is part of the labhost mirror.
   git -C "$REPO" ls-files 'registry/**' | sed 's#^registry/##' |
     grep -E '(^|/)README\.md$|\.json$|\.in$' | grep -v '^posters/' | sort >"$tmpdir/registry-repo"
-  ssh -o ConnectTimeout=15 "$LAB" \
+  box_sync_remote "$LAB" \
     "find '$BOX_ROOT/build/registry' -path '$BOX_ROOT/build/registry/posters' -prune -o -type f \\( -name README.md -o -name '*.json' -o -name '*.in' \\) -printf '%P\\n' | sort" \
     >"$tmpdir/registry-box"
   sort -u "$tmpdir/registry-repo" "$tmpdir/registry-box" >"$tmpdir/registry-union"
@@ -396,7 +408,7 @@ box_sync_darklaunch_load() {
     BOX_SYNC_DL_MD5["$path"]="$md5"
     BOX_SYNC_DL_FOUND["$path"]="${nfound:-0}"
   done < <(printf '%s\n' "$box_root/serve/darklaunch.d" |
-    ssh -o ConnectTimeout=15 "$lab" "$BOX_SYNC_REMOTE_DARKLAUNCH")
+    box_sync_remote "$lab" "$BOX_SYNC_REMOTE_DARKLAUNCH")
 }
 
 # --- the one batched remote hash pass --------------------------------------
