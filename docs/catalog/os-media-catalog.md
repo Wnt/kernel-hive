@@ -37,10 +37,29 @@ streamhost captures a **QEMU framebuffer over dbus**, on an **x86-64, no-GPU** h
 - **Non-x86 but a QEMU target with a framebuffer** (m68k, PPC, SPARC, HPPA, MIPS, ARM,
   RISC-V) → works, but TCG-slow and finickier.
 - **Serial/3270-only, or needs a non-QEMU emulator** (SIMH, Hercules, Previous, VICE,
-  gxemul, POSE, vendor SDK emulators) → needs a reusable
-  **"emulator-inside-a-captured-Linux/Windows guest" bridge**, built once. That bridge is
-  the single highest-leverage investment — it unlocks entire wings (teletype UNIX,
-  mainframes, 8-bit home computers, and most mobile/watch OSes).
+  gxemul, POSE, vendor SDK emulators) → the emulator runs **host-native** on
+  labhost with its own video backend disabled, and streamhost captures its
+  framebuffer directly (the Tier-3 path proven by `irix` and the nine converted
+  MAME stations). This unlocks entire wings (teletype UNIX, mainframes, 8-bit
+  home computers, most mobile/watch OSes) at roughly **69% of the cost** of the
+  kiosk it replaces.
+
+> **Policy update, 2026-08-17 — "needs-bridge" is now a PoC label, not a plan.**
+> Every row below that this catalog scored as `needs-bridge` was written when a
+> captured-Linux kiosk was the delivery form. It no longer is. A kiosk is
+> allowed only as a throwaway step to prove an emulator reaches a desktop; the
+> shipped station is always **direct framebuffer capture + input forwarding**.
+> Read `needs-bridge` as "needs a non-QEMU emulator, therefore Tier 3
+> host-native", and add the host-native work to the effort score. See
+> [`../GUEST-TIERS.md`](../GUEST-TIERS.md) and
+> [`../lab/DEBRIDGE-CONVERSION-BRIEF.md`](../lab/DEBRIDGE-CONVERSION-BRIEF.md).
+
+> **Where media comes from.** This catalog's URLs are the supply. Pre-built
+> collections are **reference only** — notably the Virtual OS Museum image under
+> `~/virtualosmuseum`, whose 1546 ready-to-run installations are a good place to
+> learn *which* emulator and settings solve a given install (and to discover
+> candidates), but from which **no image, ROM or media file is ever taken**. We
+> source and hash our own.
 
 **Difficulty scale:** 🟢 Easy · 🟡 Medium · 🟠 Hard · 🔴 Very Hard / impractical.
 

@@ -44,12 +44,35 @@ current registry revision, `python3 scripts/stations-registry.py count` reports
 Use that command for the current roster count and `labctl ls` for observed live
 service state; do not copy the number into another inventory.
 
+### Two standing constraints on every add
+
+**Source your own media.** Install ISOs, floppies and ROMs are fetched from the
+lab's archival sources and recorded with hashes in
+[`../catalog/os-media-catalog.md`](../catalog/os-media-catalog.md); the operator
+supplies only Windows licensing. Pre-built collections are **reference material,
+not a supply**: the Virtual OS Museum image under `~/virtualosmuseum` is worth
+reading for *how* an install was solved and *which* emulator and settings the
+author used, but no disk image, ROM or media file is ever taken from it into a
+station.
+
+**Land host-native.** The shipped form of every station is direct framebuffer
+capture plus input forwarding — Tier 1 (QEMU over dbus) or Tier 3 (the emulator
+running on the host with `-video none`). A Debian/trixie kiosk running the
+emulator inside a captured Linux guest is acceptable **only as a throwaway
+proof-of-concept**, to prove an emulator reaches a desktop at all, and must not
+be the form the station ships in. The 28 remaining Tier-2 bridges are a legacy
+population being converted
+([`DEBRIDGE-CONVERSION-BRIEF.md`](DEBRIDGE-CONVERSION-BRIEF.md)), not a pattern
+to extend. Plan the host-native path before you build the PoC, and say in the
+station's guest doc what the host-native capture path will be.
+
 Difficulty tiers used below:
 
 - **Tier 1 — direct:** pinned live ISO or prebuilt free disk; stock QEMU devices;
   deterministic framebuffer in minutes.
-- **Tier 2 — install:** ordinary unattended install, offline image injection, or
-  a captured-Linux emulator bridge; no new guest driver.
+- **Tier 2 — install:** ordinary unattended install or offline image injection;
+  no new guest driver. (A captured-Linux emulator bridge is a PoC step here, not
+  a delivery form — see the standing constraints above.)
 - **Tier 3 — legacy/gated:** licensed or account-gated media, fragile old
   drivers, manual calibration, multiple install stages, or a non-QEMU backend.
 - **Tier 4 — research:** emulator incompatibility, bespoke kernel/device work,
@@ -68,8 +91,10 @@ The planned/recovery set is:
 
 `amiga500` is not a missing candidate: it is the active production station
 `amiga`, a Debian kiosk running FS-UAE with Kickstart/Workbench. It is distinct
-from the active x86 AROS station `aros`. Use the Amiga 500 path as a Tier-2
-bridge template.
+from the active x86 AROS station `aros`. It is also one of the bridges still
+awaiting conversion — read it to understand FS-UAE's media and settings, but
+build new emulator stations host-native (the nine converted MAME stations are
+the template).
 
 Candidate details and the live bridge distinction are recorded in the existing
 guest notes: [`macos.md`](../guests/macos.md),

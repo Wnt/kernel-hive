@@ -6,6 +6,17 @@ pixels**. Everything downstream of the framebuffer — damage tracking, encode,
 transport, client — is identical across tiers. Everything upstream differs, and
 that difference is what this page is about.
 
+**Direction of travel.** Tiers are not equal options. The target form for every
+station is **direct framebuffer capture + input forwarding** — Tier 1 for
+anything QEMU can run, Tier 3 for anything that needs another emulator. Tier 2
+(emulator inside a captured Linux kiosk) is a **legacy population under
+conversion**, not a design choice: the spike measured host-native at ~69% of the
+kiosk's cost, nine MAME stations were converted on that verdict
+([`lab/DEBRIDGE-CONVERSION-BRIEF.md`](lab/DEBRIDGE-CONVERSION-BRIEF.md)), and the
+rest follow. A new station may pass *through* a trixie kiosk as a
+proof-of-concept while its emulator is still being proven, but must not ship in
+one.
+
 Companion pages: [`IO-PATHS.md`](IO-PATHS.md) for how input and sound reach each
 tier, [`OVERHEAD.md`](OVERHEAD.md) for what each tier costs, and
 [`ARCHITECTURE.md`](ARCHITECTURE.md) for the map of the whole system.

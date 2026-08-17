@@ -1,5 +1,13 @@
 # The "emulator bridge" pattern — one captured Linux guest, many retro machines
 
+> **Status 2026-08-17 — legacy pattern, PoC use only.** New stations ship
+> **host-native** (the emulator on labhost with its video backend off,
+> framebuffer captured directly); a kiosk is acceptable only as a throwaway
+> proof-of-concept while an emulator is still being proven. This page stays
+> because 28 bridges are still live and because the kiosk remains a legitimate
+> first step — but do not choose it as a station's delivery form. Conversion
+> path: [`../../docs/lab/DEBRIDGE-CONVERSION-BRIEF.md`](../../docs/lab/DEBRIDGE-CONVERSION-BRIEF.md).
+
 This is the reusable recipe for putting a machine that streamhost/QEMU can't run
 natively (a Commodore 64, an Atari ST, an Apple //e, an Amiga 500, …) into the
 gallery: run a **software emulator of that machine full-screen inside a captured

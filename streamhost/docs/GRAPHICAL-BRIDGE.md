@@ -1,5 +1,12 @@
 # Graphical bridge template, absolute-pointer contract, and latency budget
 
+> **Status 2026-08-17 — PoC scaffolding.** The pointer contract and latency
+> budget below still apply, but the kiosk they are written around is a
+> proof-of-concept step only: a graphical emulator station ships **host-native**
+> (emulator on labhost, video backend off, framebuffer captured directly), as
+> `irix` does. Use this page to prove an emulator reaches a desktop with a 1:1
+> pointer, then convert.
+
 This is the shared foundation for the heavier graphical emulator exhibits:
 Mac OS 9 in SheepShaver, NeXTSTEP in Previous, and IRIX in MAME. It extends the
 8-bit bridge pattern in [BRIDGE.md](BRIDGE.md), but it does **not** add a

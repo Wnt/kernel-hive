@@ -66,6 +66,20 @@ on the live origin before it goes live.
 requires it), and namespace every dir, VMID, socket and port so concurrent
 agents cannot collide.
 
+**A new station: source your own media, land it host-native.** Fetch install
+media and ROMs yourself from the lab's archival sources (see
+[`docs/catalog/os-media-catalog.md`](docs/catalog/os-media-catalog.md)); the
+operator supplies only Windows licensing. Bundled collections — including the
+Virtual OS Museum copy under `~/virtualosmuseum` — are a **reference for
+recipes, emulator choice and known-good settings only, never a source of
+images or media**. The end state of every station is **host-native: direct
+framebuffer capture + input forwarding, no kiosk**. A Debian/trixie kiosk
+bridge is allowed only as a throwaway proof-of-concept while an emulator is
+still being proven; it is never what ships. The 28 surviving Tier-2 bridges
+are legacy to be converted, not a template to copy —
+[`docs/GUEST-TIERS.md`](docs/GUEST-TIERS.md),
+[`docs/lab/DEBRIDGE-CONVERSION-BRIEF.md`](docs/lab/DEBRIDGE-CONVERSION-BRIEF.md).
+
 **Kill and mount through the guards.** Every clone kill/stop goes through
 `clone-guard`; every chroot mount through `chroot-guard`, and ad-hoc chroot
 work inside `chroot-guard run-private bash` (the host's `/dev` is `shared:2`,
