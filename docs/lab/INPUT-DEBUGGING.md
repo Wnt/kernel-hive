@@ -104,6 +104,32 @@ DOWN atMove=4064  UP 4065   DOWN 4065  UP 4067     <- cursor moving mid-click
 guest ACTED. A click that reaches the daemon and does nothing visible is still a
 failure.
 
+## When a station "freezes": is it even the input plane?
+
+Run `scripts/dev/input-wedge-repro/` FIRST. It drives keys straight into QEMU
+over QMP on an isolated clone, so streamhost is not in the loop: a wedge there
+is the guest or the emulator, and a clean run means the fault is above QEMU.
+
+**Probe input LIVENESS, not framebuffer motion.** A station whose picture stops
+changing is ambiguous — a game can legitimately stop animating, and reading a
+static framebuffer as "the freeze" is what sent the 2026-08-17 win311
+investigation through four wrong theories. The probe is Ctrl+Esc, which
+Windows 3.x handles BELOW the focused app (it opens the Task List) and so
+repaints even when a 16-bit app is wedged. Repaint = input alive.
+
+```bash
+NS=w311frz-a1 bash scripts/dev/input-wedge-repro/clone-setup.sh   # on labhost
+/data/vms/soltest/w311frz-a1/launch.sh
+python3 keywedge.py --key left            # reproduces in ~6 s / ~44 key edges
+python3 keywedge.py --key a --edges 200   # CONTROL: survives (not volume)
+python3 keywedge.py --idle                # CONTROL: survives (not elapsed time)
+```
+
+The win311 result: keys SkiFree ACTS ON wedge the guest keyboard in ~44 edges
+while 5x the volume of a key it ignores does nothing, and `loadvm` recovers it
+— which is why "Restore to golden" appears to fix it. Signature gap worth
+closing: the live freeze still recovered via Ctrl+Esc, this repro does not.
+
 ## Reproducing without the hardware
 
 For a REAL stylus there is no substitute for the device: inject
