@@ -186,7 +186,7 @@
     "displayName": "DEC PDP-11 — RT-11, RSX-11M, RSTS/E",
     "year": 1970,
     "lineage": "DEC PDP-11",
-    "arch": "PDP-11/73 (J-11) with 256 KB and an RL02 pack, and PDP-11/70 with 4 MB and RD52/RD54 disks",
+    "arch": "PDP-11/73 (J-11), 256 KB",
     "ramMB": 4,
     "ramKB": 0,
     "era": "1970s",

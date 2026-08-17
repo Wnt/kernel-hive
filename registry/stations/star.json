@@ -181,7 +181,7 @@
     "displayName": "Xerox Star 8010",
     "year": 1981,
     "lineage": "Xerox Star / Pilot-Mesa office workstations",
-    "arch": "Xerox \"Dandelion\" bit-slice Mesa processor, 1024×808 mono display",
+    "arch": "Xerox \"Dandelion\" bit-slice Mesa processor",
     "ramMB": 2,
     "era": "1980s",
     "accent": "#D6001C",

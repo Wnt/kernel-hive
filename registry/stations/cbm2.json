@@ -141,7 +141,7 @@
     "displayName": "Commodore CBM 610",
     "year": 1982,
     "lineage": "Commodore CBM-II / B-series (MOS 6509, 6545 CRTC, SID)",
-    "arch": "MOS 6509, 2 MHz, 128 KB RAM banked out of a 1 MB address space, 80x25 monochrome",
+    "arch": "MOS 6509, 2 MHz, 128 KB RAM",
     "ramMB": 0,
     "ramKB": 128,
     "era": "1980s",

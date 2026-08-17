@@ -215,7 +215,7 @@
     "displayName": "KC 85/4",
     "year": 1988,
     "lineage": "VEB Mikroelektronik \"Wilhelm Pieck\" Mühlhausen — HC 900 / KC 85 line",
-    "arch": "U880 (Z80 clone), 1.77 MHz, 64 KB RAM + 64 KB screen RAM, 320x256 in 16 colours",
+    "arch": "U880 (Z80 clone), 1.77 MHz, 64 KB RAM",
     "ramMB": 0,
     "ramKB": 64,
     "era": "1980s",

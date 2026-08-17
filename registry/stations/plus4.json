@@ -145,7 +145,7 @@
     "displayName": "Commodore Plus/4",
     "year": 1984,
     "lineage": "Commodore 264 series (MOS 7501, TED)",
-    "arch": "MOS 7501, 1.77 MHz (PAL), 64 KB RAM, 32 KB application ROM",
+    "arch": "MOS 7501, 1.77 MHz (PAL), 64 KB RAM",
     "ramMB": 0,
     "ramKB": 64,
     "era": "1980s",

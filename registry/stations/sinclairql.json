@@ -141,7 +141,7 @@
     "displayName": "Sinclair QL",
     "year": 1984,
     "lineage": "Sinclair Research (post-ZX Spectrum, Motorola 68008)",
-    "arch": "Motorola 68008, 7.5 MHz, 128 KB RAM, two Microdrive tape loops",
+    "arch": "Motorola 68008, 7.5 MHz, 128 KB RAM",
     "ramMB": 0,
     "ramKB": 128,
     "era": "1980s",
