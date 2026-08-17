@@ -193,9 +193,22 @@ acquire_lock() {
   ok "exclusive flock held"
 }
 
+# LIVE = the streamhost@ instances that are ACTIVE right now.
+#
+# Two filters, both load-bearing (2026-08-17):
+#   --state=active  A station that is deliberately stopped or disabled must
+#                   never be dragged into a promotion wave. sailfishos has been
+#                   `failed` since 2026-08-11 by intent; including it aborted a
+#                   whole fleet promotion at wave 11 and rolled that wave back.
+#   grep -v '@'     A tile id can never contain '@'. Malformed DOUBLE-instance
+#                   units (`streamhost@streamhost@alpine.service`, 60 of them
+#                   crash-looping ~211k times over five days) otherwise strip to
+#                   `streamhost@alpine` and land in LIVE, where a restart would
+#                   instantiate a THIRD level. Fail closed on the name shape.
 enumerate_live() {
   mapfile -t LIVE < <(ssh_lab \
-    "systemctl list-units --plain --no-legend 'streamhost@*.service' 2>/dev/null | awk '{print \$1}' | sed -E 's/^streamhost@(.*)\\.service$/\\1/'" | sort)
+    "systemctl list-units --plain --no-legend --state=active 'streamhost@*.service' 2>/dev/null | awk '{print \$1}' | sed -E 's/^streamhost@(.*)\\.service$/\\1/'" |
+    grep -v '@' | sort)
   [ "${#LIVE[@]}" -gt 0 ] || die "could not enumerate live streamhost@ tiles"
   ok "live tiles: ${#LIVE[@]} (${LIVE[*]})"
 }
@@ -380,13 +393,23 @@ set_tile_links() {
   ssh_lab "set -eu; d='${INSTALL_ROOT}/stations/${tile}'; [ -x '${INSTALL_ROOT}/${current}' ]; [ -x '${INSTALL_ROOT}/${previous}' ]; ctmp=\"\$d/.current.\$\$\"; ptmp=\"\$d/.previous.\$\$\"; ln -s '../../${current}' \"\$ctmp\"; mv -Tf \"\$ctmp\" \"\$d/current\"; ln -s '../../${previous}' \"\$ptmp\"; mv -Tf \"\$ptmp\" \"\$d/previous\""
 }
 
+# Seconds to wait for a restarted station to print its LISTENING line.
+#
+# Was 30s, which is fine for a single-QEMU station but NOT for the slowest
+# launchers: openvms brings up a DUAL-VM stack and its ensure-station-qemu.sh
+# needs ~40s+, so a fleet promotion aborted on it twice (2026-08-17) — and the
+# abort's own restore restarted it again mid-boot, compounding the failure.
+# A generous ceiling costs nothing on a healthy station (the loop exits on the
+# first match) and only delays the verdict on one that is genuinely stuck.
+READINESS_SECS="${READINESS_SECS:-120}"
+
 readiness() {
   local tile="$1" out
   if [ "$DRY_RUN" -eq 1 ]; then
     ok "DRY-RUN would require active streamhost@${tile} and its PID's 'LISTENING ... tile=${tile}' line"
     return
   fi
-  if out=$(ssh_lab "set -u; t='${tile}'; for i in \$(seq 1 30); do active=\$(systemctl is-active \"streamhost@\$t.service\" 2>/dev/null || true); pid=\$(systemctl show -p MainPID --value \"streamhost@\$t.service\" 2>/dev/null || true); if [ \"\$active\" = active ] && [ \"\${pid:-0}\" -gt 0 ] 2>/dev/null; then line=\$(journalctl _PID=\"\$pid\" -n 120 --no-pager 2>/dev/null | grep -F 'LISTENING udp/' | grep -F \" tile=\$t \" | tail -1); if [ -n \"\$line\" ]; then printf '%s\\n' \"\$line\"; exit 0; fi; fi; sleep 1; done; exit 3"); then
+  if out=$(ssh_lab "set -u; t='${tile}'; for i in \$(seq 1 ${READINESS_SECS}); do active=\$(systemctl is-active \"streamhost@\$t.service\" 2>/dev/null || true); pid=\$(systemctl show -p MainPID --value \"streamhost@\$t.service\" 2>/dev/null || true); if [ \"\$active\" = active ] && [ \"\${pid:-0}\" -gt 0 ] 2>/dev/null; then line=\$(journalctl _PID=\"\$pid\" -n 120 --no-pager 2>/dev/null | grep -F 'LISTENING udp/' | grep -F \" tile=\$t \" | tail -1); if [ -n \"\$line\" ]; then printf '%s\\n' \"\$line\"; exit 0; fi; fi; sleep 1; done; exit 3"); then
     ok "streamhost@${tile} ready: $(printf '%s' "$out" | tail -1)"
   else
     return 1

@@ -84,6 +84,7 @@ import {
   NO_VIDEO_DEADLINE_MS,
 } from './streamClient/constants';
 import { flushNow, logClientEvent } from './clientDebug';
+import { recordKeyEdge } from '../input/keyRecorder';
 import type { ByteReader } from './streamClient/byteReader';
 import type {
   StreamBannerState,
@@ -469,7 +470,12 @@ export class StreamClient {
   sendButton(button: number, down: boolean, x?: number, y?: number) {
     sendButtonImpl(this, button, down, x, y);
   }
-  sendKeyScancode(keycode: number, down: boolean) { sendKeyScancodeImpl(this, keycode, down); }
+  sendKeyScancode(keycode: number, down: boolean) {
+    // Keyboard-lag evidence chain, client link: record the edge exactly as it
+    // goes on the wire (OSK, typeText chords and physical keys all funnel here).
+    recordKeyEdge(keycode, down);
+    sendKeyScancodeImpl(this, keycode, down);
+  }
   sendWheel(dx: number, dy: number) { sendWheelImpl(this, dx, dy); }
   /** Send an RTT ping datagram and resolve the round-trip in ms (or null). */
   async pingRtt(timeoutMs = 500): Promise<number | null> {

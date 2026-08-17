@@ -40,6 +40,67 @@ pub fn enabled() -> bool {
     LEVEL.load(Ordering::Relaxed) >= 1
 }
 
+/// Wall-clock epoch milliseconds — the SAME clock the ctlsock module's
+/// CTLTRACE lines stamp, so a daemon `[key-tel]` line and a module
+/// `CTLTRACE ... applied` line for the same edge subtract directly.
+pub fn epoch_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// One key edge as the daemon RECEIVED it from the browser (input.rs type=3),
+/// before any routing, remap having already run. The keyboard-lag evidence
+/// chain starts here: client keyRecorder row -> this line -> the sink's
+/// `tx`/`ack` lines -> the module's CTLTRACE `applied` line. No-op when off.
+pub fn key_recv(backend: &str, code: u32, down: bool) {
+    if !enabled() {
+        return;
+    }
+    eprintln!(
+        "[key-tel {backend}] recv ms={} code=0x{code:04x} down={}",
+        epoch_ms(),
+        u8::from(down),
+    );
+}
+
+/// One key verb WRITTEN to a control socket (mamesock/vicesock), seq-stamped
+/// so the matching `ack` line names the same edge. No-op when off.
+pub fn key_tx(backend: &str, seq: u64, line: &str) {
+    if !enabled() {
+        return;
+    }
+    eprintln!("[key-tel {backend}] tx ms={} seq={seq} {line}", epoch_ms());
+}
+
+/// The module's OK/ERR for a key verb. `rtt_us` covers the module's whole
+/// hold/gap/exclusive-scan pacing queue: a key the visitor is still waiting
+/// on shows up here as seconds, not the wire's microseconds. No-op when off.
+pub fn key_ack(backend: &str, seq: u64, rtt_us: u64) {
+    if !enabled() {
+        return;
+    }
+    eprintln!(
+        "[key-tel {backend}] ack ms={} seq={seq} rttMs={}",
+        epoch_ms(),
+        rtt_us / 1000,
+    );
+}
+
+/// A key edge injected on the QEMU/dbus path, AFTER the SH_KEY_MIN_* gate let
+/// it through — the recv->sent delta IS that gate's queue delay. No-op when off.
+pub fn key_sent(code: u32, down: bool) {
+    if !enabled() {
+        return;
+    }
+    eprintln!(
+        "[key-tel dbus] sent ms={} code=0x{code:04x} down={}",
+        epoch_ms(),
+        u8::from(down),
+    );
+}
+
 /// One backend's rolling 1 s window. All fields reset (swap 0) each summary tick.
 #[derive(Default)]
 struct BackendWindow {

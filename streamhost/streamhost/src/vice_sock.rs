@@ -306,6 +306,8 @@ struct Sent {
     seq: u64,
     at: Instant,
     paced: bool,
+    /// KEY verb: its ack closes a `[key-tel]` tx/ack pair (keyboard-lag chain).
+    key: bool,
 }
 
 /// Deadline for the OLDEST unacked write; the paced allowance is recomputed from
@@ -334,6 +336,11 @@ fn on_reply(line: &str, outstanding: &mut VecDeque<Sent>) {
         if trace_on() {
             eprintln!("[vicesock-trace] ack {seq} rtt_us={rtt_us}");
         }
+        if sent.key {
+            // For a KEY this RTT is the module's whole pacing queue — the
+            // number the visitor experiences as keyboard lag.
+            crate::input_telemetry::key_ack("vicesock", seq, rtt_us);
+        }
         crate::input_telemetry::record_inject("vicesock", 1, rtt_us, None);
     }
     // An ERR is an ack for liveness (the module processed the verb) but the verb
@@ -355,10 +362,15 @@ async fn send_cmd(
     if trace_on() {
         eprintln!("[vicesock-trace] tx {} {}", *seq, cmd.line);
     }
+    let key = cmd.line.starts_with("KEY ");
+    if key {
+        crate::input_telemetry::key_tx("vicesock", *seq, &cmd.line);
+    }
     outstanding.push_back(Sent {
         seq: *seq,
         at: Instant::now(),
         paced: cmd.paced,
+        key,
     });
     Ok(())
 }
@@ -697,6 +709,7 @@ mod tests {
             seq: 1,
             at,
             paced: false,
+            key: false,
         });
         assert_eq!(ack_deadline(&q), Some(at + ACK_BASE));
         for seq in 2..=4 {
@@ -704,6 +717,7 @@ mod tests {
                 seq,
                 at,
                 paced: true,
+                key: false,
             });
         }
         assert_eq!(ack_deadline(&q), Some(at + ACK_BASE + ACK_PER_PACED * 3));

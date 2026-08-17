@@ -265,6 +265,7 @@ async fn send_key(conn: &zbus::Connection, code: u32, qnum: u32, down: bool) {
     {
         eprintln!("[input] key {m} code=0x{code:x} qnum=0x{qnum:x} ERR: {e}");
     }
+    crate::input_telemetry::key_sent(code, down);
 }
 
 pub async fn key(cap: &Capture, code: u32, down: bool, cfg: &Config) {
@@ -583,6 +584,19 @@ pub async fn handle(
             // below (and key_qnum's legacy-kbd quirk) sees the key the emulated
             // hardware actually has.
             let code = remap_key(u16::from_le_bytes([rec[2], rec[3]]) as u32, &cfg.key_remap);
+            // Keyboard-lag evidence chain, first daemon-side link: when this
+            // edge ARRIVED, on the wall clock CTLTRACE and the sink tx/ack
+            // lines share (SH_INPUT_TELEMETRY >= 1, else free). The backend
+            // named is where the edge is ROUTED below: the matrix sinks by
+            // name, everything else lands on the QEMU/dbus keyboard path.
+            crate::input_telemetry::key_recv(
+                router
+                    .map(|r| r.backend())
+                    .filter(|b| matches!(*b, "mamecmd" | "mamesock" | "vicesock"))
+                    .unwrap_or("dbus"),
+                code,
+                down,
+            );
             // mamecmd/mamesock (the IRIX station) have no D-Bus connection at all —
             // Capture.main_conn is None for every non-QEMU backend, which is
             // exactly why browser keys had never reached that guest. Route it to

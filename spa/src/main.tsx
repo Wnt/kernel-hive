@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
+import { exposeKeyRecorder } from './input/keyRecorder';
 import './index.css';
 
 type ErrorReporterInput = {
@@ -91,6 +92,10 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBounda
 // on exactly that reload — costing a re-arm round trip per iteration.
 installPointerRecorder();
 exposePointerRecorder();
+// Key-edge capture for the keyboard-lag investigation: no listeners to install
+// (it records at the wire choke point inside streamClient), only the operator
+// plane readers to expose. Armed by default — see input/keyRecorder.ts.
+exposeKeyRecorder();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
