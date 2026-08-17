@@ -91,7 +91,22 @@ def main() -> int:
     aux_repo = eng["aux_repo"].format(station=station)
 
     # Keys-only pointer model: no pointer, but the KEYS ride the engine's sink.
-    doc["stream"]["pointer"].update({"backend": eng["backend"], "device": "ioport-keyboard"})
+    # The whole model is written, not just the two engine fields: the nine MAME
+    # kiosks and the first five VICE stations were ALREADY keyboard-only, so
+    # only c64 exercises the rest of it — its bridged entry carried a real PS/2
+    # relative mouse (transport "rel", present true) for the GEOS 1351, and the
+    # host-native input path has no pointer verb at all. Leaving those fields
+    # behind would have the SPA offer a mouse affordance nothing can honour.
+    doc["stream"]["pointer"].update(
+        {
+            "transport": "none",
+            "backend": eng["backend"],
+            "method": "none",
+            "absolute": False,
+            "present": False,
+            "device": "ioport-keyboard",
+        }
+    )
 
     runtime = doc["runtime"]
     runtime.pop("qemu", None)
@@ -160,6 +175,11 @@ def main() -> int:
             "exec_user": None,
             "exec_key": None,
             "console": "x11",
+            # Must move with stream.pointer above, and the registry validator
+            # enforces it: labctl and the SPA both choose their pointer
+            # transport from this field, so a leftover "rel" here (c64's, for
+            # the GEOS 1351) contradicts a keys-only sink.
+            "pointer_mode": "none",
             "notes": eng["notes"].format(base=base),
         }
     )

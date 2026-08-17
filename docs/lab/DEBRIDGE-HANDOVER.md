@@ -13,27 +13,26 @@ host-native MAME with no QEMU, no guest Debian, no X, and idles at ~0 % CPU
 in standby. The operator has validated them in use; the fixes below all came
 out of that validation.
 
-**Five VICE stations are converted and live**: vic20 (2026-08-16, the wave's
-template) and then **plus4, cbm2, pet2001 and cbm8032 in one wave the same
-day**. Details in
+**ALL SEVEN VICE stations are converted and live**: vic20 (2026-08-16, the
+wave's template), then **plus4, cbm2, pet2001 and cbm8032 in one wave the same
+day**, and finally **c128 and c64 on 2026-08-17**, which completes the wave. Details in
 [§The VICE wave](#the-vice-wave-vic20-is-the-template-and-it-is-live) and
 [§The four-station wave](#the-four-station-wave-plus4-cbm2-pet2001-cbm8032).
 **2026-08-17: the checkpoint restore bug was found, fixed on the fork, and
 cbm2, pet2001 and cbm8032 have their checkpoints back** —
 [§The restore bug, and what it actually was](#the-restore-bug-and-what-it-actually-was).
-**c128 and c64 are still bridged**, but both are de-risked and measured:
-[§c128 and c64 — measured, but NOT converted](#c128-and-c64--measured-but-not-converted).
+**2026-08-17: the wave is COMPLETE** —
+[§The VICE wave is COMPLETE](#the-vice-wave-is-complete--c128-and-c64-are-live-2026-08-17).
 
-**Fourteen stations still run a Debian bridge kiosk**, deliberately: each uses
+**Twelve stations still run a Debian bridge kiosk**, deliberately: each uses
 a different emulator, and the frame/input machinery is engine-specific.
 
 | Emulator | Stations |
 |---|---|
-| VICE (2 left) | c64, c128 |
 | SIMH (3) | pdp11, gt40, decos |
 | one each | atarist (hatari), amstradcpc (Caprice32), apple2 (LinApple), amiga (FS-UAE), alto (ContrAlto), star (Darkstar), daybreak (Dove/Mesa), nextstep (Previous), indyr4400 (iris) |
 
-Ten of the fourteen are still on bookworm and are the last customers of the
+Ten of the twelve are still on bookworm and are the last customers of the
 per-tile ABI chroots; converting or migrating them retires that dependency.
 
 ## What a converted station is
@@ -239,7 +238,7 @@ not move the decision. A conversion is therefore also a version bump, which is
 acceptable because the `.vkm` keymaps — the thing that actually determines
 character behaviour — carry over.
 
-**Conversion order** (from the survey, adopted): **vic20** first as the
+**Conversion order** (from the survey, adopted; ALL SEVEN are now done): **vic20** first as the
 template (one binary, no media, cold-boot golden, keyboard-only, has a
 demoProgram, and it owns the family's two canonical build landmines: a segfault
 when stdout is not a tty, and `make install` skipping ROMs) → **plus4** (same
@@ -648,7 +647,120 @@ and all three CRTC machines restore pixel-clean. The lead is
 - **Bake goldens through the monitor's `dump` when you can.** It is the path
   that was never broken, and it needs no client.
 
-## c128 and c64 — measured, but NOT converted
+## The VICE wave is COMPLETE — c128 and c64 are live (2026-08-17)
+
+**All seven VICE stations are host-native.** c128 and c64 were converted and cut
+over live on 2026-08-17, vic20 was rebuilt from the pin and rebaked, and the
+whole wave moved to 60/60 key pacing. Every one of the seven was verified
+through the REAL SPA in a real browser, which is the check the wave did not
+have — and it earned its keep immediately (see pet2001 below).
+
+| Station | Binary + machine flags | MEASURED surface | Gate floors (lit / ink) | Checkpoint |
+|---|---|---|---|---|
+| c128 | `x128 -pal -80col`, `VICE_SHM_CHIP=VDC` | **856×576** (1 972 288 B) | 5 000 / 6 500 | **ON** |
+| c64 | `x64sc -drive8truedrive -autostart-handle-tde -VICIIdsize -8 <d64>` | **768×544** (1 671 232 B) | 150 000 / 150 000 | **ON** |
+
+### c128 — the canvas is chosen, and the CP/M disk got a better answer
+
+**856×576, and NOT the doubled 1712×1152.** `VICE_SHM_CHIP=VDC` is what makes
+the VDC publish; with no selector the VICII claims the mapping and the station
+would have shipped the 40-column screen at 768×544, under the right flags.
+Proven from the framebuffer, not a resource dump: the C128's own 80-column
+power-on page in cyan on black. Native size was chosen for the **cbm2 reason** —
+the bridged kiosk drew the VDC 1:1 in a 789×576 window on an 800×600 X root, so
+native size is *the same glyph size the visitor has always seen*, at a quarter
+of the encode cost of doubling. **Do not "fix" this to `-VDCdsize` later.**
+
+**Its VDC restore HOLDS**, which was not safe to assume: the VDC is CRTC-family
+but lives in `src/vdc` with its own snapshot module, so the `src/crtc` fix did
+not cover it. Tested before the stanza existed — a golden baked through the
+monitor's `dump`, restored in a fresh process, comes back 856×576 with 8 719 lit
+and 11 263 non-dominant, the cold-boot gate's own numbers to the pixel, alive at
+150 M cycles with nothing printed into BASIC.
+
+**The CP/M disk is attached at the restore breakpoint, and the in-guest helper
+is retired.** A snapshot stores drive 8's state but not its media, and the C128
+KERNAL boots any CP/M disk it finds in drive 8 AT RESET — so `-8 <d64>` would
+autoboot. The bridged kiosk dodged that with `c128-attach-cpm.sh` inside the
+guest, which waited ~10 s and spoke VICE's text monitor over TCP. The launcher
+now attaches it in the SAME monitor command block as the undump, at the READY
+breakpoint, already past the boot-sector check: **`VICE_NATIVE_ATTACH8`**,
+documented in `stations/vice-native/x11-runtime.sh`. Synchronous, no helper,
+nothing to race. Proven from the visitor's side: `DIRECTORY` typed through the
+browser lists `0 "CP/M PLUS ..." 65 2A`.
+
+### c64 — keyboard-only, with its real GEOS golden
+
+Its gate does not cold-boot: it autostarts the GEOS disk and runs 120 M cycles,
+so **the build proves the deskTop** (256 429 lit, 258 645 non-dominant, 315
+colours). The golden is baked through the monitor's `dump` against the station's
+own installed binary and restores live to those numbers exactly.
+
+**The 1351 mouse is NOT wired, and that is a visible capability loss.** The
+registry now carries the keys-only pointer model (`registry-to-native.py` writes
+the whole model plus `labctl.pointer_mode`, because c64 is the first station
+that had a real pointer to take away), and the museum/labctl notes say so.
+What the browser check showed, and what the next agent should weigh:
+**the GEOS deskTop echoes nothing, so c64's keyboard cannot be verified from the
+station's own framebuffer at all.** The input path was verified two other ways —
+the daemon accepted 10 edges with `dropped=0 unmapped=0`, and a rig cold-booted
+to BASIC with the station's own binary and keysym table typed `PRINT 12+34` → `46`
+at 60/60, 26/26 edges acked. So the plumbing is sound; the *exhibit* is a
+mouse-driven application whose mouse is missing, and a visitor can currently look
+but not touch. That makes the pointer verb the highest-value follow-up in this
+lane, not a nice-to-have.
+
+### Pacing: 60/60 across the wave
+
+All seven ship `SH_KEY_MIN_HOLD_MS=60` / `_GAP_MS=60`. **No station was reverted
+for pacing.** pet2001 failed its browser check, and 60/60 was proven NOT to be
+the cause (byte-identical corruption at 80/80) — see below.
+
+### pet2001 — THE RESTORE SWAPS ITS KEYBOARD (found by the browser check)
+
+The first browser check this station ever had typed `print 12+34` and got
+`4GNHJ]"!Z[$P` — every character wrong, nothing dropped. **vicectl's own banner
+is the discriminator**, because it reports how many keysyms the machine's `.vkm`
+resolved:
+
+| | keys= | map |
+|---|---|---|
+| cold boot | **149** | `PET/gtk3_grus_sym.vkm` — the GRAPHICS keyboard this model has |
+| after a restore | **137** | `PET/gtk3_buuk_sym.vkm` — the BUSINESS-UK one, cbm8032's |
+
+The restore reinitialises the PET keyboard TYPE to the family default and VICE
+reloads the business keymap, while the machine underneath is still a 2001 with a
+graphics matrix, so every keysym lands in the wrong cell. Same shape as the CRTC
+canvas-growth bug: a restore leaving a machine resource at something other than
+what the model programs. Reproduced in a namespaced rig with the restore as the
+ONLY variable, and **not fixed by rebaking** — a golden freshly baked from a
+correct `-model 2001` cold boot still comes back 137. cbm8032 is immune because
+business IS its keyboard, which is why five stations' worth of rig bursts never
+saw it, and why a socket burst could not have.
+
+**pet2001 therefore runs `VICE_NATIVE_CHECKPOINT=0` again** and cold-boots on
+reset. The exhibit loses nothing — its scene IS an untouched cold boot, so the
+checkpoint only ever bought ~2 s — and the keyboard works: re-verified through
+the browser, `PRINT 12+34` → ` 46`. The fork lead is the PET keyboard-type
+restore in `src/pet` (petmodel / pet-snapshot); it belongs to whoever owns the
+fork's restore lane.
+
+### Browser verdict, all seven
+
+| Station | typed through the real SPA | verdict |
+|---|---|---|
+| vic20 | `PRINT 12+34` → ` 46` | clean |
+| plus4 | `PRINT 12+34` → ` 46` | clean |
+| cbm2 | `print 12+34` → ` 46` | clean |
+| pet2001 | `PRINT 12+34` → ` 46` (after checkpoint OFF) | clean; corrupt before |
+| cbm8032 | `print 12+34` → ` 46` | clean |
+| c128 | `PRINT 12+34` → ` 46`, and `DIRECTORY` lists the CP/M disk | clean |
+| c64 | GEOS echoes nothing — verified in rig + daemon counters | see above |
+
+After every restart, exactly ONE emulator was confirmed publishing into each
+station's `fb.shm`, resolved through `/proc/<pid>/exe` + `/proc/<pid>/maps`.
+
+## c128 and c64 — the measurements this conversion started from
 
 Neither station was converted. What IS established, so the next agent starts
 from measurements rather than assumptions:
@@ -710,12 +822,11 @@ re-measure in high res.
 
 ## Open debts
 
-- **All five VICE stations run the fixed module** (fork `c75afffaae`,
-  deployed 2026-08-17) and the fixed launcher, verified through the real
-  browser. What is NOT durable: those binaries were installed from a rig build,
-  so the first `build-vice-native.sh` run after the submodule pin merges must
-  rebuild and reinstall all five, and the interim `<emu>.prekbdfix` /
-  `xvic.prekbdfix-4210340770` rollback copies can be deleted then.
+- ~~All five VICE stations run the fixed module … rebuild and reinstall all
+  five~~ RESOLVED 2026-08-17: all seven now run binaries built by
+  `build-vice-native.sh` from the pin, and the `xvic.prekbdfix-4210340770`
+  rollback copy is gone (the builder's own `rm -rf "$OUT"` took it). No
+  `*.prekbdfix*` remains anywhere under `assets/`.
 - **The nine MAME stations have the fixed launcher but were NOT restarted** —
   lesson 7 only bites at a restart, so the fix is in place for their next one.
   Their `ctlsock` module still has neither of lesson 3's fixes and no station
@@ -736,10 +847,18 @@ re-measure in high res.
   `sta/golden.vsf.unusable-20260816` files are still on the box and are now the
   reproduction cases for the two bugs — keep them until someone wants the disk
   space back.
-- **vic20 was NOT rebuilt or rebaked**, because another agent owns that lane. It
-  is the last VICE station running a rig-built binary, and its live golden was
-  baked through the pre-fix vicectl `SAVEST`, so it carries stale CPU registers.
-  It restores correctly today; rebuild it from the pin and rebake anyway.
+- ~~vic20 was NOT rebuilt or rebaked~~ RESOLVED 2026-08-17: rebuilt from the pin
+  and its golden rebaked through the monitor's `dump` (508 928 lit / 383 477
+  non-dominant / 918 colours, the template's own numbers). The pre-fix golden is
+  shelved beside it as `golden.vsf.prefix-savest-20260817`.
+- **NEW, and it belongs to the fork's restore lane: pet2001's restore swaps the
+  machine's KEYBOARD TYPE** (graphics → business), which is why that station is
+  back on `VICE_NATIVE_CHECKPOINT=0`. Lead: `src/pet` petmodel / pet-snapshot.
+  Full evidence in §pet2001 above and in the station's fixture.
+- **c64's 1351 pointer is the highest-value open item in this lane.** The
+  station is live and keyboard-only, but its exhibit is a mouse-driven desktop,
+  so a visitor can look and not touch. Needs a pointer verb on BOTH vicectl and
+  `vice_sock.rs`, plus an absolute→relative decision.
 - **plus4's restore leaves the top ~40 canvas lines unpainted** (TED, not CRTC).
   It is why plus4 keeps `VICE_NATIVE_CHECKPOINT=0`; the lead is recorded in its
   fixture and in §The restore bug.

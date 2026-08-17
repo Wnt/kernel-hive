@@ -19,6 +19,13 @@
 #                       IS ALSO WHAT DECIDES THE PUBLISHED GEOMETRY — VICE has
 #                       no MAME_SHM_SIZE equivalent: the surface IS the
 #                       emulated screen times <CHIP>DoubleSize (and Filter).
+#   VICE_GATE_SHM_CHIP  optional; which canvas publishes, for a machine that has
+#                       more than one (x128: VICII + VDC). Unset means "whichever
+#                       claims the mapping first", which is the only correct
+#                       answer for a single-canvas machine and the WRONG one for
+#                       the C128 — measured, not feared. Must match the station
+#                       fixture's VICE_NATIVE_SHM_CHIP, or the gate measures a
+#                       different screen than the exhibit publishes.
 #   VICE_GATE_FLOOR     lit-pixel floor for the non-black boot gate
 #   VICE_GATE_INK_FLOOR non-dominant-pixel floor for the same gate. A VIC-20
 #                       power-on page is WHITE: "not black" passes on a frame
@@ -111,9 +118,14 @@ vice_gate_nonblack() {
   # an ERROR exit — so the exit status cannot be the gate. The log line is the
   # discriminator between "ran to the limit" and "died", and the mapping below
   # is the actual proof.
+  # VICE_SHM_CHIP is exported only when the stanza asks for it: unset keeps the
+  # publisher byte-identical to its pre-selector behaviour, which is what the
+  # six single-canvas stations depend on.
+  local chip=()
+  [ -n "${VICE_GATE_SHM_CHIP:-}" ] && chip=("VICE_SHM_CHIP=$VICE_GATE_SHM_CHIP")
   (
     cd "$gate" &&
-      HOME="$gate/home" VICE_SHM_PATH="$gate/fb.shm" \
+      env HOME="$gate/home" VICE_SHM_PATH="$gate/fb.shm" ${chip[@]+"${chip[@]}"} \
         "$bin" -directory "$data" +sound \
         -limitcycles "${VICE_GATE_CYCLES:-20000000}" \
         "${VICE_GATE_ARGS[@]}" >"$gate/vice.log" 2>&1

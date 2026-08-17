@@ -26,6 +26,8 @@
 #   VICE_NATIVE_ARGS        machine flags, shell-quoted (e.g. -model 8032)
 #   VICE_NATIVE_DATA        VICE's data tree (-directory): ROMs, palettes, .vkm
 #   VICE_NATIVE_CHECKPOINT  0 opts out of restore-at-startup (cold boot)
+#   VICE_NATIVE_SHM_CHIP    which canvas publishes on a two-canvas machine (c128)
+#   VICE_NATIVE_ATTACH8     disk image to put in drive 8 AFTER the restore (c128)
 #   VICE_NATIVE_STANDBY_DELAY_S  settle before the standby freeze
 #   SH_KEY_MIN_HOLD_MS/_GAP_MS   per-key dwell floors, handed to the module
 #   SH_IDLE_PAUSE_PIDFILE/_SECS  the daemon's freezer; also arms standby here
@@ -176,9 +178,25 @@ unset DISPLAY
 # Restore-at-startup: VICE has no -loadsnapshot, so the checkpoint is replayed
 # through the monitor's own command file. The FIRST `x` ends playback, so this
 # is one command block per file.
+#
+# VICE_NATIVE_ATTACH8 rides in the SAME block, between the undump and the `x`,
+# and c128 is why it exists. A snapshot stores a drive's state but not its
+# MEDIA, so a station whose exhibit has a disk in drive 8 has to put the image
+# back — and the C128 cannot simply carry `-8 <d64>` on its command line,
+# because its KERNAL boots any CP/M disk it finds in drive 8 AT RESET and this
+# station's scene is the BASIC power-on screen. The bridged kiosk dodged that
+# with a helper inside the guest that waited ~10 s and spoke the text monitor;
+# here the attach happens at the READY breakpoint, which is already past the
+# boot-sector check, synchronously, with nothing to race. A station whose disk
+# does NOT autoboot (c64's GEOS) puts `-8 <image>` in VICE_NATIVE_ARGS instead
+# and never needs this.
 REST=()
 if [ "${VICE_NATIVE_CHECKPOINT:-1}" = 1 ] && [ -f "$BASE/sta/golden.vsf" ]; then
-  printf 'undump "%s"\nx\n' "$BASE/sta/golden.vsf" >"$BASE/sta/restore.mon"
+  {
+    printf 'undump "%s"\n' "$BASE/sta/golden.vsf"
+    [ -n "${VICE_NATIVE_ATTACH8:-}" ] && printf 'attach "%s" 8\n' "$VICE_NATIVE_ATTACH8"
+    printf 'x\n'
+  } >"$BASE/sta/restore.mon"
   REST=(-moncommands "$BASE/sta/restore.mon" -initbreak ready)
 fi
 
