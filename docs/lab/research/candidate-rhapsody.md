@@ -1,5 +1,11 @@
 # Candidate: Rhapsody 5.1 for Intel (Mac OS X Server 1.x era)
 
+**Status: nothing verified on this box, and almost nothing verified anywhere.**
+No media sourced or hashed, no boot attempted, no catalog entry, no prior art
+in this repo. Everything below is desk research by analogy with the working
+NeXTSTEP 3.3 x86 station. This is the least-evidenced candidate on the current
+shortlist — see below.
+
 ## What the exhibit is
 
 A visitor sees Apple's Platinum Finder — Mac-style menu bar, Finder windows,
@@ -8,13 +14,13 @@ NeXT-style installer, `bash`/Display PostScript underpinnings, NetInfo). The
 story: this is the moment Apple grafted the Mac face onto the NeXT operating
 system it had just bought, mid-transition, before the Aqua redesign. It is the
 **direct ancestor of Mac OS X** — not a NeXTSTEP variant with a new skin, but
-literally the release where "Mac OS X" (as Mac OS X Server 1.0) starts. Placed
-next to the existing `nextstep` station (NeXTSTEP 3.3, pure NeXT UI) and the
-`macos` poster (classic/OS X showcase), Rhapsody is the hinge exhibit: it
-makes the NeXT→Mac OS X lineage visible in a way neither endpoint can alone.
-That is what makes it a distinct third exhibit rather than "NeXTSTEP again" —
-the Yellow Box/Blue Box duality and the Platinum-over-Mach chimera look are
-unique to this one release window.
+literally the release where "Mac OS X" (as Mac OS X Server 1.0) starts.
+
+Placed next to the existing `nextstep` station (NeXTSTEP 3.3, pure NeXT UI)
+and the `macos` poster (classic/OS X showcase), Rhapsody is the **hinge**
+between them, not a third NeXT rung: it makes the NeXT→Mac OS X lineage
+visible in a way neither endpoint can alone. The Yellow Box/Blue Box duality
+and the Platinum-over-Mach chimera look are unique to this one release window.
 
 ## Which release
 
@@ -39,12 +45,39 @@ family as the NeXTSTEP 3.3 station, so its install gotchas (SCSI driver
 quirks, NIC driver narrowness, keyboard remap) are a direct precedent to reuse
 rather than a fresh unknown.
 
+## Evidence from the Virtual OS Museum
+
+VOM ships a working Rhapsody install: `pcx86/.../rhapsody_5.1_config/` with
+`RUN_QEMU` + `hda.qcow_img`. We take no media from it — it is a recipe
+reference only, per the media rule in [`AGENTS.md`](../../../AGENTS.md) — but
+its package metadata (dpkg file lists on the host rootfs) names the emulator
+and files, and the absence of the author's screenshots is itself evidence:
+
+- **Emulator: plain QEMU x86** — no ROM, no firmware blob, no bridge. This
+  supports the **Tier 1** assumption above, and confirms **5.1 for Intel is
+  the release that is actually made to run**, which is what this candidate
+  targets.
+- VOM keeps pinned old QEMU i386 builds (`0.8.2`, `0.9.1`, `3.0.92`, `5.2.0`,
+  `7.0.0`, `8.0.5`). For NeXT-family x86 guests that is exactly the knob the
+  NeXTSTEP 3.3 gotchas predict: if a modern QEMU fails, walk the versions
+  back.
+- **No screenshot and no `PASSWD` file** in VOM's info package — unlike its
+  HP-UX installs, which do carry screenshots as the author's own verdict on
+  what each reaches. So VOM is **not independent evidence** that this install
+  reaches the Workspace. Combined with the absence of any media-catalog entry
+  and any prior art in this repo, **Rhapsody remains the least-evidenced
+  candidate of the six** on the current shortlist.
+
+The boot scripts themselves live on VOM's 173 GB guest-image disk, which has
+not been extracted, so even the command line above is inferred from
+filenames, not read.
+
 ## Media
 
-**Unverified — no search performed this pass beyond a repo grep (no hits in
-`docs/catalog/os-media-catalog.md` or `~/vom-repo/info/emulators/`).** Rhapsody
-is not currently in the media catalog at all. Candidate sources to check next,
-per this project's standing sourcing rule (source ourselves, hash it):
+Rhapsody is not currently in `docs/catalog/os-media-catalog.md`, and a repo
+grep of `~/vom-repo/info/emulators/` turns up no hits beyond the install
+directory name above. Candidate sources to check next, per this project's
+standing sourcing rule (source ourselves, hash it):
 
 - **archive.org** — searches for "Rhapsody 5.1", "Mac OS X Server 1.0 Intel",
   "Rhapsody DR2 x86" have historically turned up ISO/floppy sets in Apple
@@ -66,9 +99,10 @@ several-hundred-MB range for the CD.
 
 ## Emulator, machine, boot recipe
 
-Tier 1 expected — native x86 QEMU, no bridge, same pipeline as NeXTSTEP 3.3.
-No Rhapsody-specific recipe verified this pass; best-known starting point by
-direct analogy with the working NeXTSTEP 3.3 x86 station:
+Tier 1 expected — native x86 QEMU, no bridge, same pipeline as NeXTSTEP 3.3,
+and now corroborated by VOM's own `RUN_QEMU` install. No Rhapsody-specific
+recipe has been tested; every value below is **inferred by analogy** with the
+working NeXTSTEP 3.3 x86 station:
 
 ```
 qemu-system-i386 -M pc -cpu pentium2 -m 256 \
@@ -80,21 +114,21 @@ qemu-system-i386 -M pc -cpu pentium2 -m 256 \
 
 - **CPU**: conservative Pentium-II-class model — Rhapsody's Mach kernel and
   driver set are period Intel PC hardware, not tolerant of exotic CPU feature
-  bits. **Unverified** exact ceiling.
+  bits. Exact ceiling unverified.
 - **RAM**: NeXT-lineage kernels of this era are typically capped well under
   1 GB; NeXTSTEP 3.3's practical ceiling is far lower still. Start low (256 MB)
-  and raise only if boot succeeds; no confirmed number for Rhapsody specifically.
+  and raise only if boot succeeds; no confirmed number for Rhapsody
+  specifically.
 - **Disk controller**: IDE is the safer first guess (NeXTSTEP 3.3's SCSI
-  install path is the known-fussy one on this same lineage per the catalog
-  gotcha below) — but Rhapsody's Hardware Compatibility List may push the
-  other way; needs checking once media is in hand.
+  install path is the known-fussy one on this same lineage, per the gotchas
+  below) — but Rhapsody's Hardware Compatibility List may push the other way;
+  needs checking once media is in hand.
 - **VGA**: stock `VGA` device, matching the rest of the native-QEMU fleet.
   Display PostScript compositing may be heavier than a plain framebuffer OS;
   worth watching for redraw/damage-tracking cost once a checkpoint exists.
-  **Unverified.**
-  - **NIC**: `ne2k_pci` as the first guess, same reasoning as BeOS R5 and the
+- **NIC**: `ne2k_pci` as the first guess, same reasoning as BeOS R5 and the
   NeXTSTEP precedent (narrow, old driver sets favor the oldest common NIC
-  model) — **unverified for Rhapsody**.
+  model) — unverified for Rhapsody.
 - **KVM vs TCG**: NeXTSTEP 3.3's catalog gotcha says TCG or a plain `-cpu` is
   *more* stable than aggressive KVM on this OS family; treat that as the prior
   for Rhapsody too until proven otherwise.
@@ -111,9 +145,9 @@ achievable at all.
 
 ## Pointer and keyboard
 
-No confirmed answer this pass. NeXTSTEP-family systems of this era generally
-expect **relative PS/2** input rather than absolute USB tablet — the NeXTSTEP
-3.3 precedent implies calibration via `cursor_scale` rather than `usb-tablet`
+No confirmed answer. NeXTSTEP-family systems of this era generally expect
+**relative PS/2** input rather than absolute USB tablet — the NeXTSTEP 3.3
+precedent implies calibration via `cursor_scale` rather than `usb-tablet`
 would be the safer first attempt, but Rhapsody's driver stack (closer to early
 Mac OS X's IOKit than to raw NeXTSTEP) may behave differently. **Try
 `usb-tablet` first for the lower integration cost, fall back to PS/2 +
@@ -147,11 +181,14 @@ treat as the working prior until disproven):
 **Effort/risk: high, comparable to or above NeXTSTEP 3.3** (which the catalog
 already scores MV 5, its top difficulty tier) — Rhapsody adds an extra layer
 of uncertainty on top of NeXTSTEP's known fussiness: media is unconfirmed to
-even exist in an accessible preservation form, and there is zero prior art in
-this repo (no catalog entry, no vom-repo hint, no prior gotcha writeup) to
-lean on beyond the NeXTSTEP 3.3 analogy used throughout this note.
+even exist in an accessible preservation form, and there is no prior art in
+this repo (no catalog entry, no independently-confirmed vom-repo hint, no
+prior gotcha writeup) to lean on beyond the NeXTSTEP 3.3 analogy used
+throughout this note. **Risk is gated first on whether obtainable Intel media
+exists at all** — everything else is downstream of that one fact.
 
 **Open questions, in priority order:**
+
 1. Does a bootable Rhapsody 5.1 (or DR2) **Intel** install image actually
    exist in an archive.org / WinWorld holding? This is unconfirmed and gates
    everything else.
@@ -165,37 +202,3 @@ attempt one raw boot to the installer's first graphical (or text) screen under
 the NeXTSTEP-3.3-derived QEMU command line above, with no attempt at a full
 install. That one boot attempt answers "is this even reachable with known
 tooling" before any further recipe tuning is worth doing.
-
----
-
-This is an unvalidated first pass written under a 5-minute timebox. No media
-search, no emulator run, and no cross-check against `~/vom-repo/info/emulators/`
-beyond a filename grep were performed. Treat every recipe value above as a
-starting guess to be revised once real media is in hand.
-
----
-
-## VOM hints (reference only, added 2026-08-17)
-
-The Virtual OS Museum collection on this box ships a working installation of
-this OS. **We take no media from it** — see the media rule in
-[`AGENTS.md`](../../../AGENTS.md); it is a recipe reference only. These hints were read from its *package metadata* (dpkg file
-lists on the host rootfs), which names the emulator, the ROM/firmware files and
-the author's own screenshots — the screenshot filenames are effectively his
-verdict on what the install actually reaches. The boot scripts themselves live
-on the 173 GB guest-image disk, which has NOT been extracted, so the exact
-command lines below are inferred from filenames, not read.
-
-**VOM install:** `pcx86/.../rhapsody_5.1_config/` with `RUN_QEMU` +
-`hda.qcow_img`.
-
-- **Emulator: plain QEMU x86** — no ROM, no firmware blob, no bridge. Supports
-  the Tier-1 assumption in this note, and confirms **5.1 for Intel is the
-  release that is actually made to run**, which is what this note targets.
-- VOM keeps pinned old QEMU i386 builds (`0.8.2`, `0.9.1`, `3.0.92`, `5.2.0`,
-  `7.0.0`, `8.0.5`). For NeXT-family x86 guests that is exactly the knob the
-  NeXTSTEP 3.3 gotchas predict; if a modern QEMU fails, walk the versions back.
-- **No screenshot and no `PASSWD` file** — so VOM is *not* independent evidence
-  that this install reaches the Workspace. Combined with the absence of any
-  catalog entry or prior art in this repo, Rhapsody remains the least-evidenced
-  candidate of the six.
