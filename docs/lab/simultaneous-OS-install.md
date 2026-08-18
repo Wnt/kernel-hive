@@ -89,12 +89,13 @@ port/slot you hold, when you will republish manifests, and when you land.
 
 QMP is enough for a TUI/Motif installer, and it works with the daemon attached:
 
-- keys: `qmp_hmp.py <qmp.sock> "sendkey <name>"` (`ret`, `tab`, `f5`, `ctrl-c`,
-  `shift-2`…); text: a 40-line typing helper mapping chars → sendkey names
-  (`/data/vms/sandbox/hpuxvue/hpt.py`; promote to `scripts/dev/` when the next
-  station needs it). Motif dialogs: Enter = default button; the softkey row is
-  F1..F8.
-- pointer: `mouse_move dx dy` / `mouse_button 1|0`; measure the guest gain
+- `scripts/dev/qmp-type.py --station <id> "text\n"` types text (char → sendkey
+  map), `--keys ret tab f5 ctrl-c` sends raw names, `--mouse DX DY --click`
+  drives the pointer, and every run ends with a screendump (`cur.png`) — the
+  one-liner `scripts/dev/qmp-key.sh <id> <wait> key…` wraps it. Both run on
+  the box (`ssh lab '/data/kernel-hive/scripts/dev/qmp-key.sh hpuxvue 25 y ret'`).
+  Motif dialogs: Enter = default button; the softkey row is F1..F8.
+- pointer gain: `--mouse 50 0` between two shots and measure with
   first with two screendumps and `PIL ImageChops.difference().getbbox()` —
   hpuxvue's "2× gain" was plain X acceleration (`xset m 1 1` fixes it);
   macos753's 0.36 was real.

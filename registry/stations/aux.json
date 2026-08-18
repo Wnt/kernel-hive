@@ -8,7 +8,7 @@
   "build": {
     "rows": [
       {
-        "order": 62,
+        "order": 64,
         "prelude": "",
         "value": {
           "key": "aux",
@@ -55,12 +55,12 @@
     }
   },
   "render": {
-    "stationsManifestOrder": 60,
-    "bindingOrder": 67,
-    "goldenOrder": 60,
+    "stationsManifestOrder": 62,
+    "bindingOrder": 69,
+    "goldenOrder": 62,
     "bringUpGroup": 7,
-    "signalOrder": 62,
-    "actionMapOrder": 34,
+    "signalOrder": 64,
+    "actionMapOrder": 36,
     "stationsManifestPrelude": "\n# aux (slot 145) — A/UX 3.0.1 (Apple's SVR2 Unix under the Mac Finder) on the\n#   same q800/68040 machine as macos753: /opt/qemu-m68k (kernel-hive fork), TCG\n#   only, dbus display 1152x870x8, RELATIVE ADB pointer (dbus-rel), qcow2 PRAM.\n#   DARK LAUNCH: listing=hidden while the install runs on camera from a helper\n#   System 7.5.3 disk + the A/UX CD; SH_IDLE_PAUSE_SECS=0 until the golden.\n",
     "bindingPrelude": ""
   },
@@ -103,7 +103,7 @@
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/aux/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
-    "bringUpOrder": 67,
+    "bringUpOrder": 69,
     "vmidLabel": 145,
     "qemu": {
       "mode": "verbatim",

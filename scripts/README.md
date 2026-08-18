@@ -191,6 +191,7 @@ tracked `streamhost/stations/soltest-*/` launchers (clone scaffolds that run out
 > per-agent one.
 | `vm-idle-watch.sh` | Idle auto-pause/resume watcher for the tile QEMUs (the idle-CPU 80%→~1.4% fix) | box (**sync pair**) |
 | `qmp_hmp.py` | Run one HMP command through a tile's QMP socket (savevm/loadvm/hostfwd_add …) | box (**sync pair**) |
+| `dev/qmp-type.py` / `dev/qmp-key.sh` | Drive an exec-channel-less guest through QMP during an install: type text (char→sendkey map), raw keys, relative mouse + click, always ending in a screendump — the agent's keyboard while the operator's browser stays a read-only monitor (`docs/lab/simultaneous-OS-install.md` §5) | box |
 | `stations-registry.py new <id> --tier … --archetype … --slot auto` | Creates an inert candidate registry row plus tier builder, guest-doc, and coldboot-arm stubs; reserves UDP `54000+slot` and regenerates canonical outputs | workstation |
 | `../streamhost/scripts/streamhost-station.sh` | Emits one tile's `station.env` / launcher / `ROLLBACK.md`. `SH_HOST_IP` defaults to the repo placeholder `192.0.2.10`; an operator's real address goes in gitignored `registry/local.env` (see `registry/local.env.example` and `registry/README.md`), never in a tracked file | box |
 

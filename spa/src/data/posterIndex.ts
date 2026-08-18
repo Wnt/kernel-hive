@@ -99,6 +99,9 @@ const POSTER_INDEX = {
   "msdoswin1": {
     "hero": "/posters/msdoswin1/desktop.webp"
   },
+  "newsos": {
+    "hero": "/posters/newsos/desktop.webp"
+  },
   "nextstep": {
     "hero": "/posters/nextstep/desktop.webp"
   },
@@ -161,6 +164,9 @@ const POSTER_INDEX = {
   },
   "star": {
     "hero": "/posters/star/desktop.webp"
+  },
+  "sunos414": {
+    "hero": "/posters/sunos414/desktop.webp"
   },
   "templeos": {
     "hero": "/posters/templeos/desktop.webp"
