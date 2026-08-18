@@ -35,7 +35,8 @@ entry and briceonk's notes.
 `scripts/build-guests/emulators/native.d/newsos.sh` →
 `build-mame-native.sh newsos`: MAME 0.289 subtarget `newsos`,
 `SOURCES=src/mame/sony/news_r3k.cpp`, base patches (ctlsock, drawshm,
-kiosk-no-ui) **plus `mame-irix-skip-warnings.patch`**: `idrom.bin` is a
+kiosk-no-ui) **plus `mame-irix-skip-warnings.patch`** and
+**`mame-news-hid-kbd-order.patch`** (the keyboard fix, below): `idrom.bin` is a
 `BAD_DUMP` in MAME and its "ROM NEEDS REDUMP" panel is a *modal* wait that
 `skip_warnings` alone does not cover — without the patch MAME sits in
 `display_startup_screens` forever (found 2026-08-18: black frame, no ctlsock
@@ -96,9 +97,10 @@ Row: `registry/stations/newsos.json` (dragon32's host-native shape:
 `SH_CAPTURE=shm`, `SH_INPUT_BACKEND=mamesock`, launcher
 `stations/mame-native/x11-runtime.sh`, `resetMode=relaunch`, `snapshot:null`).
 Fixture: `streamhost/stations/newsos/station.env.fixture`
-(`MAME_NATIVE_ARGS=-hard1 …/newsos-disk.img -cfg_directory …/cfg`,
+(`MAME_NATIVE_ARGS=-hard1 …/newsos-disk.img -cfg_directory …/cfg -serial0 pty`,
 `MAME_NATIVE_SKIP_WARNINGS=1`, `MAME_CTL_PTR_PORTS=:hid`,
-`SH_IDLE_PAUSE_SECS=0`). The disk is a **writable raw image** (not a CHD +
+`SH_IDLE_PAUSE_SECS=0`). The `-serial0 pty` line carries the exec channel
+(below). The disk is a **writable raw image** (not a CHD +
 diff — a mid-boot relaunch left the CHD diff dirty and corrupted the next
 boot, 2026-08-18): it persists across relaunches like a real workstation's
 disk, and NEWS-OS's own boot-time `fsck -p` repairs any unclean stop. The
@@ -122,6 +124,47 @@ slam reaches the guest before the OS driver attaches, so drive the ROM
 monitor with the daemon detached, or let Automatic Boot skip the monitor
 entirely (the shipped config). The sxsession menus are press-and-hold
 (DOWN1, drag, UP1); proven by opening Application → Terminal Emulator.
+
+## Keyboard (the `news_hid` shift-order fix)
+
+`mame-news-hid-kbd-order.patch` — without it, typed Shifted characters come out
+unshifted (`The`→`the`, `#`→`3`, `$HOME`→`$hOME`). MAME's `news_hid` HLE
+keyboard is a `device_matrix_keyboard_interface` that scans 8 rows round-robin
+and reports scancodes in **row order**, not the order edges were applied. The
+ctlsock path presses Shift and the character in the *same* sweep; L-Shift sits
+in a later row than most letters, so the character's row is scanned (and
+latched, unshifted) first. The patch buffers a scan sweep's key edges and
+flushes them in a safe order — modifier-makes → char-makes → char-breaks →
+modifier-breaks — and deepens the key FIFO 8→256 so a burst can't silently
+drop. Chosen from three independent bring-up attempts (2026-08-18); re-validated
+byte-exact (`echo The_Quick-Brown.Fox JUMPED 42 over ok-123` types and echoes
+exactly).
+
+## labctl exec + the demo login
+
+**Non-root desktop.** The install has a passwordless **`demo`** guest (uid 300,
+`/usr/people/demo`, `/bin/csh`); at the sxdm greeter type `demo` (no password)
+→ the sxsession NEWS Desk desktop as `Username: demo`. Root (`root`, no
+password) stays available for operators. There is **no autologin**: NEWS-OS
+4.1R `login` has no `-f`, `getty` ignores the `al` capability, and an
+`/etc/init` wrapper around `login`/`su` fails without a getty's tty setup — so
+the demo login is manual, by design. (`news` uid 6 is the system Usenet user —
+unrelated; the guest is `demo`.)
+
+**`labctl exec newsos "<cmd>"`** (`exec_kind serialcsh_e`). MAME runs a getty on
+the guest's `/dev/tty00`, exposed to the host as a pty by `-serial0 pty` (the
+`on` entry for `tty00` in `/etc/ttys`). `streamhost/guest-agents/newsos/newsosexec.py`
+scrapes that pty straight out of MAME's fd table — the irix transport, **no
+pump** — takes an exclusive `serial.lock`, logs in as passwordless root, and
+runs the command with tru64's sentinel-framed capture, returning byte-exact
+stdout and the guest's own exit code. Two NEWS specifics: the login shell is
+`/bin/csh` and there is **no ksh**, so the client does `exec /bin/sh`; and
+`/bin/sh`'s default PATH is too thin, so it sets
+`PATH=/bin:/usr/bin:/usr/ucb:/etc:/usr/etc` (this BSD has no `uname`/`id`;
+`whoami`/`w` live in `/usr/ucb`). Deployed to the box as `/root/newsosexec.py`
+via the `newsos-exec` `box-sync-pairs` entry; dispatched from
+`scripts/labctl.d/guest.py`. The getty is fresh on every cold boot (validated
+no-HUP), which is all this station ever does — reset = relaunch, no savestate.
 
 ## Open
 
