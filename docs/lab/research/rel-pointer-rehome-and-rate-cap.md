@@ -2,10 +2,15 @@
 
 **Status: plan, 2026-08-18. Nothing implemented.** Operator direction: work on
 the **live stations** directly (canary daemon + `POST /restore/<id>` to put the
-scene back), no clones. Scope: the twelve
+scene back), no clones. Scope: the eleven
 `dbus-rel` homing-bridge stations (`aux macos753 hpuxvue sunos414 rhapsody
-nt351 freedos msdoswin1 star indyr4400 c64 amstradcpc`; the pointer-lock
-type-4 stations `qnx beos` are a different path and out of scope). Goal: the
+freedos msdoswin1 star indyr4400 c64 amstradcpc`) plus `beos` for its
+absolute-fallback path. **`nt351` is dropped from this plan**: it is a Win32
+guest with TCP/IP, so it gets the win95/win311 route instead — a warpd hybrid
+agent (`SetCursorPos` motion, real PS/2 buttons; port of
+`guest-agents/win9x/warpnet.c` built for the 3.51 subsystem) — which is
+absolute by the guest's own API and needs no bridge. `qnx` (pointer-lock) is
+out of scope. Goal: the
 guest cursor sits under the visitor's browser pointer **without the visitor
 ever chasing it to a corner**, and stays there through fast sweeps, app
 switches and resets — with the guest untouched (no agents, drivers, HW
@@ -144,7 +149,7 @@ it (`scripts/install-vision/adb_pointer.py`: goto/where/gain), reset is an
 instant `loadvm` so the "cursor teleported by reset" symptom is reproducible
 on demand, and it is the same machine as aux (its slowness is a guest-side
 ceiling, see §2 — not what this plan fixes). Then **beos** (the drift complaint; PS/2, acceleration off, KVM),
-`nt351`/`rhapsody` (plain x86 shapes), `aux`, then the rest by measurement.
+`rhapsody` (plain x86 PS/2 shape), `aux`, then the rest by measurement.
 
 ## Steps
 
@@ -163,9 +168,31 @@ ceiling, see §2 — not what this plan fixes). Then **beos** (the drift complai
    of the target after ≤ N frames, no residual; (c) fast scribble of 30 random
    targets ends with `res = 0,0` (the irix acceptance); (d) edge trigger: drag
    to the top edge then back — model/guest agree afterwards.
-4. **Feel** via the CT950 headed-Chrome browser probe
-   ([`browser-probe`](../research/) memory): human sweeps, Cmd-Tab away and
-   back, window drag; operator eyeball on the live station after canary.
+4. **Feel + evidence, on the operator's Mac browser** (not a probe): with
+   pointer telemetry ON at both ends —
+   - client: `spa/src/input/pointerRecorder.ts` already rings every
+     pointerdown/up/cancel/move with two clocks and pushes `ptr` rows to
+     `POST /clientlog` every ~2 s (`scripts/serve/pen-trace.py` decodes it);
+     it currently **drops mouse events** (built for the S-Pen investigation).
+     Change: a `?ptrrec=1` switch (and `window.__osgPtrRec`) that keeps mouse
+     rows, and stamp each row with the station id, the mapped guest coordinates
+     and the wire `cseq` so rows join exactly with the daemon side; keep the
+     pen default untouched.
+   - daemon: `SH_INPUT_TELEMETRY=2` on the station (exists: per-inject lines
+     with move sequence, batch length, inject RTT, button transitions) — add
+     the client `cseq` and the bridge's pending/sent model values to the
+     level-2 line.
+   Sessions to record: human sweeps at several speeds, Cmd-Tab away and back,
+   window drags, edge touches, a reset mid-session. Verdict from the joined
+   logs (target vs sent vs framebuffer spot checks) + eyeball on the live
+   station after the canary.
+   **The same captures become the test harness**: a replay tool feeds recorded
+   `ptr` rows as type-1/type-2 records into the daemon (extend the input-bench
+   loopback, `SH_INPUT_BENCH_ADDR`, to the dbus backends — today it only serves
+   router backends) against the live station, then reads the framebuffer
+   residual; the recorded traces are the fixtures, replayed with the recorded
+   timings.
+
 5. Roll out by measurement to the remaining stations; `docs/IO-PATHS.md`
    homing-bridge row updated.
 
@@ -185,6 +212,8 @@ ceiling, see §2 — not what this plan fixes). Then **beos** (the drift complai
   servers clamp at W-2): use `>= W-2`.
 - Client hint needs a wire-protocol bump (record type 7): SPA + daemon land
   together, old clients simply never send it.
+- Telemetry volume: mouse rows at 60–120 Hz for a few minutes is fine for the
+  rotating `clientlog.jsonl` (~36 h retention), but keep it opt-in per tab.
 - Idle re-home must never fire during a held button (drag) — check
   `last_abs`/button state.
 - TCG stations: the settle after a pin is longer under load; make
