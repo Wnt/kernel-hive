@@ -381,6 +381,12 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'SUN SPARCSTATION 5', spec: 'microSPARC-II 70MHz • SUNOS 4.1.4 • 1994',
     kit: 'workstation',
   },
+  // rhapsody: a plain beige Pentium II tower — Apple's Intel build ran on
+  // whatever PC was on the desk. Muted NeXT-ish slate accent.
+  rhapsody: {
+    caseTint: '#d9d5c9', accentTint: '#7a8fb0', tintMix: 0.4,
+    badge: 'Pentium II PC', spec: 'x86 • Rhapsody DR2 • 1998', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

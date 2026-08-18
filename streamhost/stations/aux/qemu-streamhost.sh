@@ -18,8 +18,15 @@
 # baked WITHOUT them — a checkpoint's device set is fixed at bake time and this
 # one must not depend on 450 MB of install media.
 #
+# THE A/UX DISK IS SCSI 0 (c0d0s*), the A/UX default the distribution's
+# /etc/fstab, swap (slice 1) and A/UX Startup's launch all assume; MacPartition
+# on it carries the CD's minimal System + A/UX Startup and is what the ROM
+# boots. THE INSTALL CD IS ATTACHED AS A WRITABLE scsi-hd (qcow2 overlay over
+# the ISO), NOT scsi-cd: A/UX Startup's standalone SCSI code hangs forever on a
+# CD-ROM and on a read-only disk (tested both), and reads a writable disk fine.
+#
 # THE PRAM IS A qcow2 (raw if=mtd makes savevm refuse) and it carries the boot
-# device selection (offset 120): SCSI 5 (helper) during the install, SCSI 6
+# device selection (offset 120): SCSI 5 (helper) during the install, SCSI 0
 # afterwards. AUDIO IS NOT OPTIONAL on -M q800 (Apple Sound Chip).
 #
 # POINTER: ADB relative (dbus-rel). SH_CURSOR_SCALE is 1.0 until measured
@@ -27,9 +34,9 @@
 #
 # THREE LAUNCH SHAPES, decided by what exists in $D:
 #   1. golden snapshot in the disk -> -loadvm golden -S (the exhibit)
-#   2. $D/INSTALLED marker         -> cold boot from the A/UX disk (SCSI 6)
-#   3. neither                     -> INSTALL PHASE (helper at 5 + CD at 3),
-#      boot the helper. Dark launch: the installer runs on camera at /os/aux.
+#   2. $D/INSTALLED marker         -> cold boot from the A/UX disk (SCSI 0)
+#   3. neither                     -> INSTALL PHASE (helper at 5 + CD overlay
+#      at 3), boot the helper. Dark launch: on camera at /os/aux.
 set -e
 D=/data/vms/streamhost/stations/aux
 A=/data/vms/streamhost/assets/aux
@@ -42,12 +49,13 @@ rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock"
 [ -f "$DISK" ] || qemu-img create -f qcow2 "$DISK" 1000M >/dev/null
 LOADVM=""
 INSTALL=""
-BOOT_SCSI=6
+BOOT_SCSI=0
 if qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden; then
   LOADVM="-loadvm golden -S"
 elif [ ! -f "$D/INSTALLED" ]; then
   BOOT_SCSI=5
-  INSTALL="-device scsi-hd,scsi-id=5,drive=hd5 -drive file=$D/helper.qcow2,format=qcow2,cache=writeback,aio=threads,if=none,id=hd5 -device scsi-cd,scsi-id=3,drive=cd0 -drive file=$A/AUX_3.0.1_Install.iso,format=raw,media=cdrom,if=none,id=cd0"
+  [ -f "$D/cd-overlay.qcow2" ] || qemu-img create -q -f qcow2 -b "$A/AUX_3.0.1_Install.iso" -F raw "$D/cd-overlay.qcow2"
+  INSTALL="-device scsi-hd,scsi-id=5,drive=hd5 -drive file=$D/helper.qcow2,format=qcow2,cache=writeback,aio=threads,if=none,id=hd5 -device scsi-hd,scsi-id=3,drive=cd0 -drive file=$D/cd-overlay.qcow2,format=qcow2,if=none,id=cd0"
 fi
 # PRAM: create if missing; outside a checkpoint force the boot-device bytes
 # (offset 120: ffff + ~(scsi+32) big-endian) so the shape above is what boots.
@@ -74,7 +82,7 @@ nohup "$QEMU" \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 \
   -drive file=$PRAM,format=qcow2,if=mtd \
-  -device scsi-hd,scsi-id=6,drive=hd0 \
+  -device scsi-hd,scsi-id=0,drive=hd0 \
   -drive file=$DISK,format=qcow2,cache=writeback,aio=threads,if=none,id=hd0 \
   $INSTALL \
   -serial unix:$D/serial.sock,server=on,wait=off \

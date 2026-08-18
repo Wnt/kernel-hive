@@ -96,12 +96,32 @@ Row: `registry/stations/newsos.json` (dragon32's host-native shape:
 `SH_CAPTURE=shm`, `SH_INPUT_BACKEND=mamesock`, launcher
 `stations/mame-native/x11-runtime.sh`, `resetMode=relaunch`, `snapshot:null`).
 Fixture: `streamhost/stations/newsos/station.env.fixture`
-(`MAME_NATIVE_ARGS=-hard1 …/newsos-disk.img`, `MAME_NATIVE_SKIP_WARNINGS=1`,
-`SH_IDLE_PAUSE_SECS=0` until the install is done). Bring-up rig (until the
+(`MAME_NATIVE_ARGS=-hard1 …/newsos-disk.img -cfg_directory …/cfg`,
+`MAME_NATIVE_SKIP_WARNINGS=1`, `MAME_CTL_PTR_PORTS=:hid`,
+`SH_IDLE_PAUSE_SECS=0`). The disk is a **writable raw image** (not a CHD +
+diff — a mid-boot relaunch left the CHD diff dirty and corrupted the next
+boot, 2026-08-18): it persists across relaunches like a real workstation's
+disk, and NEWS-OS's own boot-time `fsck -p` repairs any unclean stop. The
+shipped cfg sets the **SW2:5 Automatic Boot DIP** (DIPs live only in MAME's
+cfg) so a cold `reset=relaunch` power-cycles straight to sxdm; `rc.local`
+re-arms `/fastboot` so the reboot skips fsck (~90-120 s to login). Bring-up rig (until the
 unit takes over): `/data/vms/sandbox/newsos/rig/newsos-rig.sh start|stop|
 status|daemon` — MAME + a borrowed released daemon from `stream.env`, overlay
 via `darklaunch-station.py publish newsos --rig … --entry entry.json`;
 `install-phase` marker file selects the install media args.
+
+## Pointer
+
+Bound via the base ctlsock module (`MAME_CTL_PTR_PORTS=:hid`; the NEWS HLE
+mouse uses MAME's default `mouse_{buttons,x_axis,y_axis}` port names, so no
+ptr-tags patch). No hardware cursor, so MOVEA degrades to open-loop dead
+reckoning — made 1:1 by `-a 1 -t 1` on the X server (in `/etc/sxdm/Xservers`;
+`xset m 1 1` covers a running session too). **Binding the pointer freezes the
+ROM monitor's `bo`** (measured 2026-08-18): the daemon's connect-time homing
+slam reaches the guest before the OS driver attaches, so drive the ROM
+monitor with the daemon detached, or let Automatic Boot skip the monitor
+entirely (the shipped config). The sxsession menus are press-and-hold
+(DOWN1, drag, UP1); proven by opening Application → Terminal Emulator.
 
 ## Open
 
@@ -110,7 +130,11 @@ via `darklaunch-station.py publish newsos --rig … --entry entry.json`;
   axis path (`mame-ctlsock-ptr-tags.patch`, irix's shape) is the next step
   once X is up; until then the exhibit is keyboard-only.
 - Golden: none possible (no save state); "checkpoint" = the installed disk
-  + Automatic Boot. Set `SH_IDLE_PAUSE_SECS=60` only after that boots to sxdm.
+  + Automatic Boot DIP + `/fastboot`. Standby (`SH_IDLE_PAUSE_SECS`) is OFF
+  during dark launch: the launcher's SIGSTOP is unconditional after
+  `MAME_NATIVE_STANDBY_DELAY_S`, so a delay shorter than the ~90-120 s boot
+  freezes a half-painted console. Enable it only when listed, with a delay
+  >= 200 s so the freeze lands on the login.
 - Hero photo: placeholder is the live LCD frame; a real NWS-3260 photo
   (Commons) is the operator's pick.
 - Sound: driver has none.

@@ -4,8 +4,8 @@ subtitle: 1993 · Apple's own System V Unix, wearing the Macintosh Finder
 hero: /posters/aux/desktop.webp
 images:
   - src: /posters/aux/desktop.webp
-    alt: Placeholder card for the A/UX station while the operating system is being installed live — a dark slate frame with the station name
-    caption: Install in progress. This card is replaced by the real A/UX desktop once the installation completes and the golden fixture is baked.
+    alt: The A/UX 3.0.1 desktop at 1152×870 — a Macintosh menu bar reading File, Edit, Window, Fonts, Commands, Preferences, Keys; a CommandShell window top-left with a "WELCOME TO A/UX" banner, a directory listing of / and a "localhost.root #" prompt; the Unix root "/" and "MacPartition" disk icons top-right; the Trash bottom-right
+    caption: A Unix root prompt in a Macintosh window, with the Unix root directory sitting on the desktop as a disk. That is the whole idea of A/UX in one screen.
 ---
 ## Origins
 
@@ -21,7 +21,7 @@ The machine is a **Quadra 800** — a 33 MHz 68040 tower from 1993, the same emu
 
 ## What you're looking at
 
-Right now: the A/UX 3.0.1 installer, running live from the install CD, on an emulated Quadra 800. Because the archived install CD is not itself ROM-bootable, a small System 7.5.3 helper disk boots the machine and launches Apple's own A/UX disk-setup and startup tools from the CD. The install is being done on camera; this station is not yet announced in the hall.
+A/UX 3.0.1 booted to its desktop on an emulated Quadra 800 at 1152×870, logged in as root. The window top-left is **CommandShell** — a Bourne shell in a Macintosh window, showing the system's welcome banner and a listing of `/`. The disk icon named `/` top-right *is* the Unix root filesystem, browsable in the Finder like any Macintosh volume; `MacPartition` is the small HFS volume that holds A/UX Startup, the Mac program that boots the Unix kernel. Type into the shell, or open folders in the Finder — it is the same filesystem either way.
 
 ## Legacy
 

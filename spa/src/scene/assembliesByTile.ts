@@ -414,5 +414,11 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxC', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // rhapsody: Rhapsody DR2 for Intel — a 1998 beige PC tower (the Intel build
+  // ran on commodity hardware, not a Mac), CRT era, so crtC like beos.
+  rhapsody: {
+    kind: 'towerSetup', body: 'modernTower', monitor: 'crtC',
+    keyboard: 'keyboardG', mouse: 'paramMouseE',
+  },
 } as const satisfies Record<string, Assembly>;
 

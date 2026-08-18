@@ -1,0 +1,67 @@
+From 7179110c191be86c5ef12e99f915a6a7b98a4d13 Mon Sep 17 00:00:00 2001
+From: Jonni Madekivi <jonni@example.com>
+Date: Tue, 18 Aug 2026 09:40:22 +0300
+Subject: [PATCH] i8259: opt-in leniency for a spurious cascaded INTA
+ (KH_I8259_LENIENT_CASCADE=1)
+
+NeXT-lineage Mach kernels (Rhapsody 5.1 DR2, NeXTSTEP 3.3 for Intel) never
+EOI the master on a spurious IRQ15, so once the timer and an IDE interrupt
+land in the same window the cascade stays in service and every later slave
+interrupt is lost (hc0: interrupt timeout / Resetting drives). Rare on
+hardware, constant under QEMU. Take ISR2 back out of service when the slave
+had nothing to offer.
+---
+ hw/intc/i8259.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/hw/intc/i8259.c b/hw/intc/i8259.c
+index 8f2aa1f..93ffe90 100644
+--- a/hw/intc/i8259.c
++++ b/hw/intc/i8259.c
+@@ -170,6 +170,17 @@ static void pic_intack(PICCommonState *s, int irq)
+     pic_update_irq(s);
+ }
+ 
++static bool kh_i8259_lenient_cascade(void)
++{
++    static int lenient = -1;
++
++    if (lenient < 0) {
++        const char *v = getenv("KH_I8259_LENIENT_CASCADE");
++        lenient = (v && v[0] == '1') ? 1 : 0;
++    }
++    return lenient == 1;
++}
++
+ int pic_read_irq(PICCommonState *s)
+ {
+     int irq, intno;
+@@ -188,6 +199,25 @@ int pic_read_irq(PICCommonState *s)
+             }
+             intno = slave_pic->irq_base + irq2;
+             pic_intack(s, irq);
++            if (irq2 == 7 && !(slave_pic->isr & 0x80) &&
++                kh_i8259_lenient_cascade()) {
++                /*
++                 * kernel-hive: the slave had nothing to offer (its request
++                 * was masked between the master latching the cascade edge
++                 * and this INTA), so this is a spurious IRQ15.  A real 8259
++                 * leaves the master's ISR2 in service and expects the guest
++                 * to EOI the master; NeXT-lineage Mach kernels (Rhapsody
++                 * 5.1 DR2, NeXTSTEP 3.3 for Intel) never do, and every
++                 * later slave interrupt (IDE 14/15) is then blocked for
++                 * good -- "hc0: interrupt timeout ... Resetting drives".
++                 * The race is rare on hardware but frequent under QEMU,
++                 * whose IRQs land in batches between TB boundaries.  Take
++                 * the cascade back out of service instead of trusting the
++                 * guest.  Opt-in: KH_I8259_LENIENT_CASCADE=1.
++                 */
++                s->isr &= ~(1 << 2);
++                pic_update_irq(s);
++            }
+             irq = irq2 + 8;
+         } else {
+             intno = s->irq_base + irq;
+-- 
+2.47.3
+

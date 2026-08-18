@@ -51,7 +51,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54148,
-      "notes": "HOST-NATIVE: MAME 0.289 nws3260 runs on the host, no QEMU/QMP, no exec channel. Frames drawshm->shm, keys ctlsock + newsos.keymap, pointer ctlsock MOVEA (open-loop, X server -a 1 -t 1 so 1 count = 1 px). Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (driver has no save state) power-cycles: Automatic Boot DIP + /fastboot -> sxdm login in ~90 s. Disk = read-only CHD master + diff in the station dir. DARK LAUNCH: listing=hidden until the operator eyeballs it."
+      "notes": "HOST-NATIVE: MAME 0.289 nws3260 runs on the host, no QEMU/QMP, no exec channel. Frames drawshm->shm, keys ctlsock + newsos.keymap, pointer ctlsock MOVEA (open-loop, X server -a 1 -t 1 so 1 count = 1 px). Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (driver has no save state) power-cycles: Automatic Boot DIP + /fastboot -> sxdm login in ~90 s. Disk = a writable raw image (persists across relaunches; reset=relaunch is a power-cycle, fsck -p repairs any unclean stop). DARK LAUNCH: listing=hidden until the operator eyeballs it."
     }
   },
   "render": {
@@ -189,6 +189,6 @@
     "snapshot": null,
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "NEWS-OS 4.1R on the NWS-3260 LCD (1120x780 mono) at the sxdm login (NEWS logo, 'NEWS-OS Release 4.1R (localhost)'); relaunch power-cycles the machine (no save state in the driver): Automatic Boot DIP + /fastboot -> login in ~90 s from a read-only CHD master + diff. Keyboard PASS = ROM monitor, installer TUI and xterm answered typed text over ctlsock; mouse PASS = MOVEP/DOWN1/UP1 opened the sxsession Application menu and launched xterm, 1:1 after Xservers -a 1 -t 1 — all framebuffer-proven 2026-08-18. Operator eyeball pending."
+    "fixture": "NEWS-OS 4.1R on the NWS-3260 LCD (1120x780 mono) at the sxdm login (NEWS logo, 'NEWS-OS Release 4.1R (localhost)'); relaunch power-cycles the machine (no save state in the driver): Automatic Boot DIP + /fastboot -> login in ~90 s from a writable raw disk image (fsck -p repairs any unclean stop). Keyboard PASS = ROM monitor, installer TUI and xterm answered typed text over ctlsock; mouse PASS = MOVEP/DOWN1/UP1 opened the sxsession Application menu and launched xterm, 1:1 after Xservers -a 1 -t 1 — all framebuffer-proven 2026-08-18. Operator eyeball pending."
   }
 }

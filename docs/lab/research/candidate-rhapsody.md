@@ -1,10 +1,12 @@
 # Candidate: Rhapsody 5.1 for Intel (Mac OS X Server 1.x era)
 
-**Status: nothing verified on this box, and almost nothing verified anywhere.**
-No media sourced or hashed, no boot attempted, no catalog entry, no prior art
-in this repo. Everything below is desk research by analogy with the working
-NeXTSTEP 3.3 x86 station. This is the least-evidenced candidate on the current
-shortlist — see below.
+**Status (2026-08-18): IN BRING-UP — station `rhapsody`, dark-launched at
+`/os/rhapsody`.** Media sourced and hashed, the installer boots on this box's
+QEMU, the one real blocker (a guest PIC race that stock QEMU makes constant) is
+diagnosed and fixed with a station-specific QEMU build, and the install is
+running on camera. The live facts, boot ladder and recipe are in
+[`docs/guests/rhapsody.md`](../../guests/rhapsody.md); this note keeps the
+research framing and records which of its original open questions closed how.
 
 ## What the exhibit is
 
@@ -215,44 +217,33 @@ treat as the working prior until disproven):
   static museum boot (it should not, since no third-party apps are being
   installed — but this is a guess, not a checked fact).
 
-## Effort, risk, open questions
+## Effort, risk, open questions — how they closed
 
-**Effort/risk: high, comparable to or above NeXTSTEP 3.3** (which the catalog
-already scores MV 5, its top difficulty tier) — Rhapsody adds two extra
-layers of uncertainty on top of NeXTSTEP's known fussiness. First, media is
-unconfirmed to even exist in an accessible preservation form, and there is no
-prior art in this repo (no catalog entry, no prior gotcha writeup) beyond the
-NeXTSTEP 3.3 analogy and the Virtual OS Museum's install used throughout this
-note. Second, and now confirmed rather than guessed: the only working
-reference runs on a 2006-era QEMU with no version override, so getting a
-modern build to boot this guest at all is a real risk, not a formality — it
-could turn into its own sub-project (bisecting QEMU versions, or building an
-old one) before the rest of the recipe is even testable. **Risk is gated
-first on whether obtainable Intel media exists at all, and second on whether
-any QEMU newer than the museum's ancient default can boot it** — everything
-else is downstream of those two facts.
+The three gating questions this note ended on, answered on the box:
 
-**Open questions, in priority order:**
+1. **Does bootable Intel media exist?** Yes: archive.org `rhapsody5.1` — boot
+   floppy + Device Drivers floppy + 630 MB raw CD (md5s published and
+   verified). Two other items hold pre-installed disks (VMware VMDK; a QEMU 0.9
+   disk) — reference only.
+2. **What is the newest QEMU that boots it?** The *installer and kernel* boot
+   fine on stock QEMU 11.0.2 (pve-qemu) — the drivers floppy even auto-detects
+   the i440fx PIIX IDE. What fails on every QEMU newer than ~0.9 is not the
+   boot but sustained IDE I/O: `hc0: interrupt timeout … Resetting drives`.
+   Traced to a guest bug — Rhapsody's Mach kernel never EOIs the master 8259
+   on a spurious cascaded IRQ15, which QEMU's batched interrupt delivery
+   provokes on the first coincidence of the timer and an IDE completion (old
+   QEMU completed IDE synchronously inside the outb, so the coincidence never
+   arose). Fixed by a 30-line opt-in leniency in `hw/intc/i8259.c`
+   (`streamhost/qemu-patches/0006-i8259-lenient-spurious-cascade.patch`), built
+   into `/opt/qemu-rhapsody`. So: **QEMU 11 with one patch, no version
+   walk-back needed** — the 0.8.2 pin was masking a guest bug, not a QEMU
+   regression in the usual sense.
+3. **Does it boot with the museum's minimal serial-mouse device set?** Yes:
+   IDE disk + IDE ATAPI CD + floppy + std VGA + ne2k_pci + `-chardev
+   msmouse` on COM1, TCG, `-cpu pentium2 -m 64`. KVM boots the kernel too and
+   is worth re-testing now that the PIC race is fixed (its failures were the
+   same lost-IRQ signature, only sooner).
 
-1. Does a bootable Rhapsody 5.1 DR2 **Intel** install image actually exist in
-   an archive.org / WinWorld holding? This is unconfirmed and gates
-   everything else.
-2. **What is the *newest* QEMU that boots Rhapsody DR2?** The only confirmed
-   fact is that the collection's 0.8.2-era default works; that is not the
-   same as 0.8.2 being *required* — a materially newer build may well boot it
-   too, and finding that ceiling (rather than assuming the oldest known-good
-   version is the only option) is the real question. This needs an actual
-   boot ladder to answer, working down from a current QEMU.
-3. If media and a working QEMU version are both in hand, does it boot at all
-   under `qemu-system-i386` with the minimal, serial-mouse device set implied
-   by the museum's configuration, or does it need something materially
-   different?
-
-**Fastest single experiment to resolve the most uncertainty**: do the media
-search (archive.org + WinWorld, ~15 minutes) and, if an image turns up,
-attempt one raw boot to the installer's first graphical (or text) screen —
-first under whatever QEMU is current on this box, then, if that fails, under
-progressively older pinned builds toward the museum's 0.8.2 reference — with
-no attempt at a full install. That one boot ladder answers both "is this even
-reachable with known tooling" and "which QEMU version does it take" before
-any further recipe tuning is worth doing.
+Effort so far: media + first frame streaming in the first hour; the IRQ trace
+and QEMU patch took the second. Remaining: finish the install, first disk
+boot, video mode/pointer gain, golden, listing.
