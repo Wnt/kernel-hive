@@ -236,6 +236,11 @@
     ],
     "blurb": "The Start button that changed everything — the desktop metaphor that defined a decade."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "win95",
     "pointer": "rel",

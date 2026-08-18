@@ -208,6 +208,12 @@
     "blurb": "A 1987 home computer whose custom chips (blitter + copper + 4-channel Paula sound) gave it colour multitasking and arcade graphics the PC and Mac couldn’t touch for years — booting the real Kickstart 1.3 + Workbench 1.3 on a genuine 68000.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Amiga emulator full-screen booting the real Kickstart 1.3 + Workbench 1.3; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Amiga 500 wedge). See streamhost/docs/BRIDGE.md."
   },
+  "emulator": {
+    "family": "FS-UAE",
+    "version": "3.1.66",
+    "source": "apt fs-uae in the bookworm overlay (scripts/build-guests/tiles/amiga.sh)",
+    "driver": "A1200"
+  },
   "reset": {
     "stationDir": "amiga",
     "pointer": "abs",

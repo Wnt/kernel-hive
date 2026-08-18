@@ -226,6 +226,12 @@
     "blurb": "The British 8-bit all-in-one — an integrated Z80 micro with monitor and disk drive that boots to the iconic yellow-on-blue Locomotive BASIC Ready prompt.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Caprice32 (cap32) in a verified scale-3 SDL/X11 window emulating an Amstrad CPC 6128 that boots Locomotive BASIC; streamhost captures the Linux framebuffer + AC97 audio (the CPC AY-3-8912 routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke CPC 6128 + CTM monitor). See streamhost/docs/BRIDGE.md."
   },
+  "emulator": {
+    "family": "Caprice32",
+    "version": "4.6.0",
+    "source": "built from source in bridge-base.sh, unpinned (docs/guests/amstradcpc.md)",
+    "driver": "CPC 6128"
+  },
   "reset": {
     "stationDir": "amstradcpc",
     "pointer": "rel",

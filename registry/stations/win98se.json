@@ -238,6 +238,11 @@
     ],
     "blurb": "The polished peak of the 9x line — USB, Active Desktop, and Space Cadet pinball."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "win98se",
     "pointer": "rel",

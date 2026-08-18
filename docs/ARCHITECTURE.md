@@ -118,8 +118,8 @@ snapshot to reset to, and an entry in the registry describing all of that.
 renders it into the committed artifacts (the shell manifests `streamhost` and
 the builders consume, the UI-compiled TS), while
 `scripts/stations-registry.py render` resolves every never-committed runtime
-document — the public `gallery-manifest.json` and `poster-docs.json` the UI
-fetches, the serve `tiles.json` and `golden-manifest.json`, and the
+document — the public `gallery-manifest.json`, `poster-docs.json` and `fleet-table.json`
+the UI fetches, the serve `tiles.json` and `golden-manifest.json`, and the
 whole-registry `index.json`. Never hand-edit a generated file — edit the
 registry source and regenerate; `make station-registry-check` fails a drifted
 generated file. Current roster size:

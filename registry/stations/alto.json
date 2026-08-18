@@ -203,6 +203,12 @@
     "blurb": "The machine that invented the screen you are reading this on: overlapping windows, a mouse with buttons, a what-you-see-is-what-you-get editor and Ethernet, all in 1973, none of them for sale. Its display stands on end because it is a sheet of paper -- 606 by 808 dots, 8.5 by 11 inches -- and that is why every document window since has been taller than it is wide.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs ContrAlto 2 (jdersch/Contralto2, BSD-3-Clause, .NET 8 + Avalonia, pinned at e3681fbc) as an Alto II XM. Zero external media -- the Alto I and Alto II microcode PROMs and eight Diablo disk packs ship inside the emulator's own repository and arrive with the source it is built from, so nothing is downloaded, staged or committed; the exhibit boots nonprog.dsk, the Non-Programmer's Disk, whose sha256 the builder asserts. THE ONLY PORTRAIT EXHIBIT IN THE COLLECTION: the kiosk X root is 608x808, the Alto's own bitmap, so the capture is exactly the machine's picture with no letterbox -- and crt-f.glb, the tall tube it is displayed on in the 3D museum, was modelled for this tile and is used by nothing else. Two upstream patches are required and both are in scripts/build-guests/patches/contralto2-wmless-kiosk.patch: ContrAlto's KioskMode (the only switch that hides its menu and status bars) crashes before the first frame, and with no window manager nothing places the window or gives its display control keyboard focus -- unfixed, every keystroke is dropped silently and the exhibit reads as a dead emulator. MAME's alto2 driver was tried first and never boots here (five packs, 120 s runs, a uniform white field, PC pinned at 1); that negative result is recorded in docs/lab/research/xerox-add.md so nobody pays for it twice. See streamhost/docs/BRIDGE.md and docs/guests/alto.md."
   },
+  "emulator": {
+    "family": "ContrAlto 2",
+    "version": "e3681fbc",
+    "source": "scripts/build-guests/tiles/alto.sh (.NET, wmless-kiosk patch)",
+    "driver": "Alto II XM"
+  },
   "spa": {
     "archetypeId": "mono-terminal",
     "transport": "streamhost",

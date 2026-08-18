@@ -212,6 +212,11 @@
     ],
     "blurb": "A love letter to the late-90s desktop, written entirely from scratch on YouTube."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "serenityos",
     "pointer": "abs",

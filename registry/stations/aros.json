@@ -218,6 +218,11 @@
     "blurb": "The free, from-scratch AmigaOS — Wanderer brings back the Workbench desktop with no copyrighted Kickstart ROM required.",
     "notes": "Live streamhost tile. Official AROS pc-i386 live CD. Archetype: beige-tower-crt; a bespoke Amiga wedge (the low-profile Amiga 500/1200 keyboard-box) would be the ideal era-accurate model."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "aros",
     "pointer": "abs",

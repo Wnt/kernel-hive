@@ -200,5 +200,15 @@
     ],
     "blurb": "HP’s own Visual User Environment — the Motif desktop that CDE was built from — on the PA-RISC workstation Unix of the HP 9000 line.",
     "notes": "Second non-CDE Motif workstation desktop in the hall (HP VUE 3.0 — what CDE was derived from); PA-RISC under TCG on a standalone qemu-system-hppa build."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "github.com/Wnt/qemu @ kernel-hive (11.0.2 + fast-poll), built to /opt/qemu-hppa",
+    "driver": "B160L"
+  },
+  "network": {
+    "status": "nic-only",
+    "note": "tulip on SLIRP user-mode, but set_parms was answered standalone: no IP configured in HP-UX (docs/guests/hpuxvue.md)"
   }
 }

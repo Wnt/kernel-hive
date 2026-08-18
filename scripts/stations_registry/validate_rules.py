@@ -8,6 +8,7 @@ from typing import Any
 
 from .constants import REGISTRY, REPO, TILES
 from .loading import RegistryError, fixture_path, is_x11_runtime, load
+from .validate_emulator import validate_emulator
 from .validate_schema import fail, validate_json_schema, validate_schema_shape
 
 
@@ -369,6 +370,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     validate_exhibit_assets(rows, errors)
     validate_keyboard_env(rows, errors)
     validate_pointer_method(rows, errors)
+    validate_emulator(rows, errors)
     validate_demo_pacing(rows, errors)
     validate_fleet_encoder(globals_doc, errors)
     ids: dict[str, str] = {}

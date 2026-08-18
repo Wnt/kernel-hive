@@ -58,5 +58,10 @@
     ],
     "blurb": "The modern Apple desktop on a Studio Display — currently a showcase poster awaiting a rebuilt guest.",
     "notes": "Showcase poster: VM 925 (the macOS guest) and the VNC->WebSocket bridge that fronted it were destroyed on 2026-07-14, so there is nothing to connect to; a rebuilt macOS tile is the pending fix."
+  },
+  "emulator": {
+    "family": "none",
+    "version": null,
+    "source": "retired VNC-bridged VM 925 (destroyed); poster only"
   }
 }

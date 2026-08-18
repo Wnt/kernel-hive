@@ -238,6 +238,11 @@
     "blurb": "A macOS-styled desktop distribution from the DPRK: Fedora/KDE foundations reshaped into a tightly controlled national-computing environment.",
     "notes": "Private air-gapped preservation exhibit. The guest has no emulated network interface."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "redstar3",
     "pointer": "abs",

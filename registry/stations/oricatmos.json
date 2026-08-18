@@ -180,6 +180,12 @@
     "blurb": "The ZX Spectrum's most direct British rival, and the one that won France: a black wedge with a red stripe, eight colours, three-voice sound, and a BASIC in which the words ZAP, PING, SHOOT and EXPLODE each make the noise they are named after.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs MAME's `orica` driver emulating an Oric Atmos; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The emulator is a pinned MAME 0.289 built for oric.cpp only in the trixie chroot (scripts/build-guests/emulators/build-mame-oricatmos.sh) — the lab host's packaged 0.276 is trixie-ABI and Bookworm's own is 0.251. One 16 KB preservation-source ROM (basic11b.rom, Extended BASIC V1.1) is staged outside the repo and gated by asking the shipped binary's own -listxml which sha1 it demands for bios ver11. Drawn fullscreen with aspect correction on an 800x600 X root, which is 4:3 — the shape the machine drew on a television, and the mode that measured 1.6x cheaper to blit than 1024x768 on this box. The golden is the machine's own untouched power-on screen; the interaction is the registry demoProgram. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/oricatmos.md."
   },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
+    "driver": "oricatmos"
+  },
   "reset": {
     "stationDir": "oricatmos",
     "pointer": "none",

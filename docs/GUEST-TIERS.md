@@ -23,7 +23,9 @@ tier, [`OVERHEAD.md`](OVERHEAD.md) for what each tier costs, and
 
 ## There is no `tier` field
 
-Tier is **derived**, not declared. The registry distinguishes only
+Tier is **derived**, not declared (the derivation below is code in
+`scripts/stations_registry/fleet_table.py`, and the UI's `/fleet` table shows
+the result per station). The registry distinguishes only
 `runtime.qemu` vs `runtime.x11` vs an empty runtime, and pushes bridge
 membership into a separate file whose header says outright that it is a
 migration ledger, not a taxonomy. So the test is:

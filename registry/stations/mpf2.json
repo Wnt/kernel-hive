@@ -191,6 +191,12 @@
     "blurb": "Taiwan's first mass-market home computer — a chiclet-keyboard Apple II clone that boots straight to BASIC, in 6 colours on a television set.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME (mpf2 driver) emulating a Multitech MPF-II that boots its ROM BASIC; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Keyboard-only exhibit (no pointing device — the real machine had none); uses the beige-tower-crt fallback until a bespoke MPF-II archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/mpf2.md."
   },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
+    "driver": "mpf2"
+  },
   "reset": {
     "stationDir": "mpf2",
     "pointer": "none",

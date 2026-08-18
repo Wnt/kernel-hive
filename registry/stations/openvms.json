@@ -216,6 +216,15 @@
     "blurb": "The durable VMS lineage on modern x86-64, presented as its classic network-transparent DECwindows Motif desktop.",
     "notes": "A two-VM graphical bridge: OpenVMS supplies MWM and the applications while a private lean-X Debian guest supplies only the captured Xorg scanout and absolute tablet input."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "network": {
+    "status": "host-only",
+    "note": "the OpenVMS VM speaks X over SLIRP to the captured lean-Xorg bridge VM; neither has internet (docs/GUEST-TIERS.md Tier 4)"
+  },
   "reset": {
     "stationDir": "openvms",
     "pointer": "PASS (usb-tablet 1:1 at 20%, 50%, 80%)",

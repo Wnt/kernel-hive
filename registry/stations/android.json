@@ -223,6 +223,11 @@
     ],
     "blurb": "The pocket Linux that ate the world — the original touchscreen candybar."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "android",
     "pointer": "abs",

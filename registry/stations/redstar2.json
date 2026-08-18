@@ -216,6 +216,11 @@
     ],
     "blurb": "A preserved KDE-era North Korean desktop distribution, presented offline with no network hardware."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "redstar2",
     "pointer": "abs",

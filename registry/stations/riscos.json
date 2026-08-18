@@ -59,5 +59,11 @@
     ],
     "blurb": "Acorn’s ARM desktop, still shipping from RISC OS Open — the icon bar and pinboard that defined British computing.",
     "notes": "Showcase poster: RISC OS is ARM (the retired tile ran RPCEmu, not QEMU), so it has had no streamhost tile since the neko plane was deleted — poster + placard only for now. ROOL 5.30 softload ROM + HardDisc4. Archetype: beige-tower-crt; a bespoke Acorn RiscPC (the stackable slab that ran RISC OS) would be the ideal era-accurate model."
+  },
+  "emulator": {
+    "family": "RPCEmu",
+    "version": "0.9.5",
+    "source": "retired neko tile (docs/guests/riscos.md); poster only",
+    "driver": "RPC610"
   }
 }

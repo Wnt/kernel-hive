@@ -224,6 +224,11 @@
     "blurb": "Terry Davis’ divine 640x480 16-colour temple — a ring-0, single-address-space OS written from scratch in HolyC.",
     "notes": "Live streamhost tile. PS/2 input only — TempleOS has no USB stack. Ring-0, single-address-space, no networking by design; CD-only ephemeral live boot."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "templeos",
     "pointer": "rel",

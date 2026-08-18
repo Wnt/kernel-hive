@@ -237,6 +237,11 @@
     ],
     "blurb": "The last workstation NT built around Program Manager — compact, blue, and unmistakably mid-1990s."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": null,
+    "source": "/opt/qemu-cirrusfix: pve QEMU + 0004-cirrus-blt-rop1-fill patch; version not recorded (docs/guests/nt351.md)"
+  },
   "reset": {
     "stationDir": "nt351",
     "pointer": "abs",
