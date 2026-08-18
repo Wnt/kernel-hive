@@ -209,6 +209,7 @@
     "source": "scripts/build-guests/tiles/alto.sh (.NET, wmless-kiosk patch)",
     "driver": "Alto II XM"
   },
+  "ui": "text-console",
   "spa": {
     "archetypeId": "mono-terminal",
     "transport": "streamhost",

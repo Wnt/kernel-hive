@@ -205,6 +205,7 @@
     "source": "scripts/build-guests/tiles/indyr4400.sh (github.com/techomancer/iris main)",
     "driver": "SGI Indy R4400"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "indyr4400",
     "pointer": "rel",

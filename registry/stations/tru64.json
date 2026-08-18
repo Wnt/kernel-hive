@@ -150,6 +150,7 @@
     "source": "github.com/Wnt/es40 main — no commit pinned in the repo",
     "driver": "AlphaServer ES40"
   },
+  "ui": "desktop",
   "network": {
     "status": "internet",
     "note": "dec21143 at pci0.4 via pcap on the host-only veth tru64-h/tru64-g, static 172.31.66.2/30; outbound-only NAT masquerade on the host (docs/guests/tru64.md §Network)"

@@ -184,6 +184,7 @@
     "source": "scripts/build-guests/emulators/build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
     "driver": "xpet"
   },
+  "ui": "home-computer",
   "reset": {
     "stationDir": "pet2001",
     "pointer": "none",

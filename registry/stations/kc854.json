@@ -241,6 +241,7 @@
     "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
     "driver": "kc85"
   },
+  "ui": "home-computer",
   "reset": {
     "stationDir": "kc854",
     "pointer": "none",

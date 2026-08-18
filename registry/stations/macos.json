@@ -63,5 +63,6 @@
     "family": "none",
     "version": null,
     "source": "retired VNC-bridged VM 925 (destroyed); poster only"
-  }
+  },
+  "ui": "desktop"
 }

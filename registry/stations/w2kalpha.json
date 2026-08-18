@@ -149,6 +149,7 @@
     "source": "github.com/Wnt/es40 main — no commit pinned in the repo",
     "driver": "AlphaServer ES40"
   },
+  "ui": "desktop",
   "network": {
     "status": "host-only",
     "note": "dec21143 at pci0.4 via pcap on the 172.31.64.0/30 veth x11-runtime.sh brings up, never bridged; telnet exec rides it (docs/guests/w2kalpha.md)"

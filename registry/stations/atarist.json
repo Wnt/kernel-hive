@@ -214,6 +214,7 @@
     "source": "apt hatari in the trixie overlay + EmuTOS (scripts/build-guests/tiles/atarist.sh)",
     "driver": "Atari ST"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "atarist",
     "pointer": "abs",

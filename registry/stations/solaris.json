@@ -231,6 +231,7 @@
     "version": "11.0.0",
     "source": "streamhost/qemu-patches (upstream 11.0.0 + gallery-hid-pci), built to /data/vms/streamhost/qemu-gallery-hid"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "solaris",
     "pointer": "abs",

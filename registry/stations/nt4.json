@@ -224,6 +224,7 @@
     "version": "11.0.2",
     "source": "/opt/qemu-cirrusfix2: pve-qemu 11.0.2 + cirrus patches 0004/0005 (docs/guests/nt4.md)"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "nt4",
     "pointer": "abs",
