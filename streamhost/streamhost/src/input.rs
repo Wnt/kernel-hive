@@ -94,6 +94,22 @@ impl MouseState {
     pub(crate) fn applied_cseq(&self) -> u32 {
         self.applied_cseq
     }
+
+    /// Re-arm the per-CONNECTION fields for a new client session while KEEPING
+    /// the guest-cursor position model (`rel`) and the daemon-wide re-home epochs.
+    /// The guest cursor belongs to the guest, not the browser tab: a reload (a new
+    /// WebTransport session) must keep tracking from where the cursor actually is,
+    /// not re-seed and force the visitor to corner-chase. Only the per-client stamp
+    /// state resets, because the SPA restarts its `cseq` counter each session --
+    /// persisting a high stamp would drop the new client's early moves as stale.
+    pub(crate) fn reset_for_session(&mut self) {
+        self.applied_cseq = 0;
+        self.last_abs = None;
+        self.last_move = None;
+        self.buttons = 0;
+        self.last_sample = None;
+        self.idle_homed = false;
+    }
 }
 
 impl Drop for MouseState {

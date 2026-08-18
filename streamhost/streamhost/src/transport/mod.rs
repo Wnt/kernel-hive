@@ -134,6 +134,23 @@ pub async fn serve(
         eprintln!("[transport] ABR OFF (pinned tier 0)");
     }
 
+    // DAEMON-WIDE abs->rel pointer model: the guest cursor is a property of the
+    // guest, not of a browser tab, so its tracked position must survive a client
+    // reload. Sessions share this one MouseState (each re-arms only its own
+    // per-connection fields via reset_for_session); a reload keeps tracking from
+    // the known position instead of re-seeding and making the visitor corner-chase.
+    let mouse = input::new_mouse();
+    // SH_REL_PACED: the paced sender owns every bridge RelMotion. Spawned ONCE
+    // here (not per session) now that the model is daemon-wide, so a reload does
+    // not stack a second pacer on the same state.
+    if cfg.rel_paced && cfg.input_backend == crate::config::InputBackend::DbusRel {
+        tokio::spawn(crate::rel_bridge::run_pacer(
+            cap.clone(),
+            cfg.clone(),
+            std::sync::Arc::downgrade(&mouse),
+        ));
+    }
+
     // Outer loop: (re)generate cert, (re)bind endpoint, serve until the rotation
     // deadline, then rebuild on the same UDP port.
     loop {
@@ -190,8 +207,9 @@ pub async fn serve(
                     let abr = abr.clone();
                     let pauser = pauser.clone();
                     let input_router = input_router.clone();
+                    let mouse = mouse.clone();
                     tokio::spawn(async move {
-                        if let Err(e) = handle_session(incoming, cfg, cap, enc, audio, abr, pauser, input_router).await {
+                        if let Err(e) = handle_session(incoming, cfg, cap, enc, audio, abr, pauser, input_router, mouse).await {
                             eprintln!("[transport] session error: {e:?}");
                         }
                     });
@@ -222,6 +240,7 @@ async fn handle_session(
     abr: Arc<Abr>,
     pauser: Option<Arc<crate::idle::IdlePauser>>,
     input_router: Option<Arc<crate::realtime_input::InputRouter>>,
+    mouse: input::SharedMouse,
 ) -> Result<()> {
     let req = incoming.await?;
     eprintln!("[transport] SESSION path={}", req.path());
@@ -263,19 +282,10 @@ async fn handle_session(
     // (the gate never skips there), so every downstream use is a no-op there.
     let skip_count = Arc::new(AtomicU64::new(0));
 
-    // FIX 2: one per-SESSION abs->rel pointer state, SHARED between the datagram
-    // task (moves) and the reliable-stream task (position-carrying clicks) so both
-    // update the same last-position and relative deltas stay continuous.
-    let mouse = input::new_mouse();
-    // SH_REL_PACED: the session's paced sender (rel_bridge.rs) owns every
-    // bridge RelMotion; it holds only a Weak ref so it ends with the session.
-    if cfg.rel_paced && cfg.input_backend == crate::config::InputBackend::DbusRel {
-        tokio::spawn(crate::rel_bridge::run_pacer(
-            cap.clone(),
-            cfg.clone(),
-            Arc::downgrade(&mouse),
-        ));
-    }
+    // The abs->rel model is DAEMON-WIDE (created in serve()); a new client session
+    // re-arms only its own per-connection fields and keeps the tracked guest
+    // position, so a browser reload continues tracking without a corner-chase.
+    mouse.lock().await.reset_for_session();
 
     // MOVE COALESCER for the dbus (abs/rel) stations — mirrors warpd.rs. The datagram
     // receive loop must NOT apply each move as an awaited dbus call_method
