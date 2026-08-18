@@ -148,6 +148,16 @@ License breakdown: CC BY-SA 4.0 (40), CC BY-SA 3.0 (33), CC BY 2.0 (30), CC BY-S
 | `04-dragon-32-computer-at-play-expo-2013.webp` | Rept0n1x | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Dragon_32_computer_at_Play_Expo_2013.JPG) |
 | `05-dragon-32-top-view.webp` | Miguel Durán | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Dragon_32_top_view.jpg) |
 
+## hpuxvue
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-hp-hp9000-b180-workstation-02.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_02.jpg) |
+| `02-hp-hp9000-b180-workstation-34.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_34.jpg) |
+| `03-hp-hp9000-b180-workstation-54.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_54.jpg) |
+| `04-hp-hp9000-b180-workstation-22.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_22.jpg) |
+| `05-hp-hp9000-b180-workstation-25.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_25.jpg) |
+
 ## indyr4400
 
 | Image | Author | License | Source |

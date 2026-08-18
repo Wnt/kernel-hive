@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "hpuxvue",
+  "images": [
+    {
+      "commonsFile": "File:HP-HP9000-B180-Workstation 02.jpg",
+      "alt": "A Hewlett-Packard HP 9000 B180L workstation with its 20-inch HP A4033A colour CRT monitor, keyboard and mouse, running HP-UX 10.20",
+      "caption": "An HP 9000 Visualize B180L — the same B-class desktop chassis as the B160L emulated here, one speed grade up — with HP's 20-inch monitor, running HP-UX 10.20.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:HP-HP9000-B180-Workstation 34.jpg",
+      "alt": "A Hewlett-Packard HP 9000 B180L workstation set-up with its HP A4033A 20-inch CRT, PS/2 keyboard and mouse, running HP-UX 10.20",
+      "caption": "The complete B-class desk: system unit, HP monitor, PS/2 keyboard and mouse — the hardware the Visualize line was sold as in 1996–97.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:HP-HP9000-B180-Workstation 54.jpg",
+      "alt": "A Hewlett-Packard HP 9000 B-class B180L workstation with an HP A4032A 17-inch colour CRT, running HP-UX 10.20 with CDE",
+      "caption": "A B180L with the smaller 17-inch HP CRT. The B-class carried PCI, 100 Mbit LAN, 16-bit audio and Visualize-EG graphics on the board — the machine QEMU's B160L model reproduces.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:HP-HP9000-B180-Workstation 22.jpg",
+      "alt": "A Hewlett-Packard HP 9000 B180L workstation, PA-RISC 7300LC at 180 MHz",
+      "caption": "The B180L system unit — a low, wide desktop box around a 180 MHz PA-7300LC, the processor family this station's emulated B160L runs.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:HP-HP9000-B180-Workstation 25.jpg",
+      "alt": "The system board of a Hewlett-Packard HP 9000 B180L workstation, PA-RISC 7300LC CPU, with memory, SCSI and Visualize graphics on board",
+      "caption": "Inside: the B180L system board with the PA-7300LC, its memory and the on-board SCSI and Visualize graphics — the LASI/Dino chipset that HP-UX 10.20's install kernel had to be recent enough to drive.",
+      "role": "photo"
+    }
+  ]
+}

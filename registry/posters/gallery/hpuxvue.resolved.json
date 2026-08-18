@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "hpuxvue",
+  "images": [
+    {
+      "src": "/posters/hpuxvue/gallery/01-hp-hp9000-b180-workstation-02.webp",
+      "alt": "A Hewlett-Packard HP 9000 B180L workstation with its 20-inch HP A4033A colour CRT monitor, keyboard and mouse, running HP-UX 10.20",
+      "caption": "An HP 9000 Visualize B180L — the same B-class desktop chassis as the B160L emulated here, one speed grade up — with HP's 20-inch monitor, running HP-UX 10.20.",
+      "author": "Thomas Schanz",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_02.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "7506d1ee71bb96ddb28d0f829dc5bac9f444c00cee2d6681c5f7f05bddb9d39a",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/hpuxvue/gallery/02-hp-hp9000-b180-workstation-34.webp",
+      "alt": "A Hewlett-Packard HP 9000 B180L workstation set-up with its HP A4033A 20-inch CRT, PS/2 keyboard and mouse, running HP-UX 10.20",
+      "caption": "The complete B-class desk: system unit, HP monitor, PS/2 keyboard and mouse — the hardware the Visualize line was sold as in 1996–97.",
+      "author": "Thomas Schanz",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_34.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "5a8a8ced3a70c0fbecc9e98940aa1a92e5783c02f9a4ad1450e5939616e57331",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/hpuxvue/gallery/03-hp-hp9000-b180-workstation-54.webp",
+      "alt": "A Hewlett-Packard HP 9000 B-class B180L workstation with an HP A4032A 17-inch colour CRT, running HP-UX 10.20 with CDE",
+      "caption": "A B180L with the smaller 17-inch HP CRT. The B-class carried PCI, 100 Mbit LAN, 16-bit audio and Visualize-EG graphics on the board — the machine QEMU's B160L model reproduces.",
+      "author": "Thomas Schanz",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_54.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "484fc078694bbba982482e3cacc06e4ac1cad0a355b7be98142e06b9dc3b0a41",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/hpuxvue/gallery/04-hp-hp9000-b180-workstation-22.webp",
+      "alt": "A Hewlett-Packard HP 9000 B180L workstation, PA-RISC 7300LC at 180 MHz",
+      "caption": "The B180L system unit — a low, wide desktop box around a 180 MHz PA-7300LC, the processor family this station's emulated B160L runs.",
+      "author": "Thomas Schanz",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_22.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "586ecc9320b242a6609b89a4f526c7ce7327a0ef7f8e071d03a652fea67c980c",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/hpuxvue/gallery/05-hp-hp9000-b180-workstation-25.webp",
+      "alt": "The system board of a Hewlett-Packard HP 9000 B180L workstation, PA-RISC 7300LC CPU, with memory, SCSI and Visualize graphics on board",
+      "caption": "Inside: the B180L system board with the PA-7300LC, its memory and the on-board SCSI and Visualize graphics — the LASI/Dino chipset that HP-UX 10.20's install kernel had to be recent enough to drive.",
+      "author": "Thomas Schanz",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_25.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "0123d68c007eb1663ecd3bcb957a50bc08a54c0d8e68e6b41d6b0f8369f1b022",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}
