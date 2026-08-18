@@ -1,162 +1,120 @@
-# Candidate: BeOS R5 (Personal/Professional Edition)
+# BeOS R5 (Professional Edition) — verified
 
-**Target: BeOS R5 5.0.3 on `qemu-system-i386`, native VGA/VESA framebuffer.**
-Tier 1, no bridge, no ROM. The cheapest, best-evidenced candidate on the
-current shortlist: media already verified in the catalog, plain x86 QEMU, and
-a deliberate **BeOS↔Haiku pairing** with the `haiku` station already live in
-the gallery.
+**BeOS R5 5.0.3 on `qemu-system-x86_64 -accel tcg`, native VGA/VESA
+framebuffer.** Tier 2, no bridge, no ROM. The deliberate **BeOS↔Haiku
+pairing** with the `haiku` station already live in the gallery. Full guest
+note: [`docs/guests/beos.md`](../../guests/beos.md).
 
-**Status: nothing verified on this box.** No media sourced or hashed, no boot
-attempted. The recipe below is desk research from the catalog plus VOM's
-package metadata; the pointer mode and the second-source question are the
-things to test first.
+**Status: bring-up done, interactive, not yet promoted.** Media sourced and
+hashed, disk built, both real R5-under-QEMU blockers diagnosed and fixed,
+station boots to a usable desktop under TCG. What was previously open
+questions in this document are now closed — see below. Remaining: golden
+bake/promotion, audio device choice, and builder-script automation.
 
 ## What the exhibit is
 
-A visitor lands on BeOS's native desktop — the Tracker file manager, Deskbar,
-and the pervasive multithreaded-media demos (`Pulse`, media player scrubbing
-video with zero stutter on period hardware) that made BeOS famous as "the OS
-that never dropped a frame." It earns a slot as the deliberate BeOS↔Haiku
-pairing already called out in the media catalog (§ "Deliberate pairings"):
-Haiku is the open-source recreation, already live in the gallery
-(`registry/stations/haiku.json`); BeOS R5 is the original it recreates. Seeing
-both side by side is the exhibit.
+A visitor lands on BeOS's native desktop — Tracker, Deskbar, a Terminal — the
+same three components a Haiku visitor sees, which is the point of the
+pairing: Haiku is the open-source recreation, already live
+(`registry/stations/haiku.json`); BeOS R5 is the original it recreates.
 
-## Media
+## Media — resolved
 
-From `docs/catalog/os-media-catalog.md` §3:
+- **BeOS R5 Professional 5.0.3**, archive.org item
+  `beos-5.0.3-professional-gobe` (the item this document previously pointed to,
+  `beos-professional-edition-5.0.3`, no longer exists).
+  `beos-5.0.3-professional-gobe.bin` (772,302,720 B,
+  sha256 `1889fd6cf5af4259b01c9d1925e62f664effdf9dd88f924dc9b4da41ce1f0106`) +
+  `.cue` (186 B, sha256
+  `a57d9552cdadbbdbe6f608e8dbe9ac2bec2a010da1ad801fc0176e4d66bb234c`). Staged
+  `/data/assets-staging/beos/` with `MANIFEST.sha256`.
+- The item's download redirector returns HTTP 500; the fix is to resolve the
+  direct storage-node URL from the item's own metadata JSON (`server`/`dir`
+  fields), not to retry the redirector.
+- Three MODE1/2352 tracks: track 1 is the bootable ISO 9660 `BeOS_Tools`
+  installer/rescue CD, track 2 is the raw BFS `BeOS 5 Pro Edition` system
+  volume (325 MB, this is what's installed), track 3 is other/PPC content,
+  unused.
+- No second source was checked, and none was needed — the one item was
+  sufficient.
 
-- **BeOS R5 Personal Edition / Professional 5.0.3** —
-  `https://archive.org/details/beos-professional-edition-5.0.3` — verified
-  present in catalog. Format: bin/cue CD image(s). Size ~641 MB. Licensing
-  posture: preservation (PE was freeware at release, so redistribution risk is
-  low relative to Pro).
-- No second/alternate source has been checked. WinWorld likely also mirrors
-  BeOS R5; unverified, not looked up.
-- Whether the archive.org disc is a clean single-CD install or needs a second
-  (Pro) disc for full driver coverage is also unconfirmed.
+## Install — resolved (not the disc's own Installer)
 
-## Evidence from the Virtual OS Museum
+QEMU cannot present a multi-track disc, so the disc's installer path is not
+usable. Instead:
 
-VOM's collection on this box ships a working BeOS 5.0.3 install:
-`pcx86/.../beos_5.0.3_config/`, with just `RUN_QEMU` + `hda.qcow2`. We take no
-media from it — recipe reference only, per the media rule in
-[`AGENTS.md`](../../../AGENTS.md).
+1. `sfdisk` a fresh disk image: one MBR partition, type `0xEB`, sector 63,
+   bootable; MBR boot code from Haiku's `writembr`.
+2. Create a fresh BFS filesystem in that partition and copy the track-2 BFS
+   volume's files **with attributes** using a Haiku R1/beta5 helper VM (a
+   sandbox clone of the `haiku` station's persistent disk, reached over ssh)
+   — the only readily-available BFS-aware tooling on the box.
+3. Boot the resulting disk **directly** (`-boot c`). Booting the CD's loader
+   with the partition selected as boot volume also boots, but **ignores the
+   volume's own kernel/vesa settings** — those are only honoured when BeOS's
+   own on-disk boot loader starts the kernel.
+4. Run BeOS's own `makebootable /boot` from a Terminal launched by
+   `/boot/home/config/boot/UserBootscript`.
 
-- **Plain QEMU x86, one disk image, no ROM and no firmware blob, and no
-  per-install overrides at all** — default PC machine, one IDE hard disk,
-  nothing else specified. This confirms the Tier 1 plan below: nothing exotic
-  is needed, and BeOS is the simplest install VOM has for the whole NeXT/Be/Mac
-  cluster.
-- The one thing VOM does override is the QEMU version itself: this install is
-  **pinned to QEMU 5.2.0**, not whatever the collection's default is. VOM
-  keeps many pinned old QEMU builds (`qemu-system-i386-0.9.1`, `-3.0.92`,
-  `-5.2.0`, `-7.0.0`, `-8.0.5`) for fussy guests, and BeOS's working reference
-  sits on a 2020-era build, not a current one. Useful as a known move in that
-  collection: if a modern QEMU misbehaves on R5, walking the version back
-  toward 5.2.0 is normal practice here, not a hack.
-- **No screenshot and no `PASSWD` file** in VOM's info package for this
-  install, unlike most entries. Weak signal — possibly just unphotographed —
-  but it means VOM is not independent evidence that this install reaches the
-  desktop.
+## The two blockers — root-caused and fixed
 
-## Emulator, machine, boot recipe
+1. **ISA `config_manager/isa` calls the 16-bit PnP BIOS; SeaBIOS doesn't
+   implement it.** Kernel page fault (`eip 8`) inside `input_server`'s devfs
+   driver scan → `input_server` never starts → `Bootscript` hangs at
+   `waitfor _input_server_event_loop_` → desktop shows only the flat colour,
+   no cursor, no Tracker. Diagnosed via KDL's mirror to COM1 (serial always
+   gets KDL output, regardless of video state). **Fix**: move the add-on to
+   `config_manager_off/isa`.
+2. **KVM traps the idle thread; TCG doesn't.** `-cpu pentium2`/`pentium3`
+   under KVM → GPF (trap `0d`) in the idle thread almost immediately;
+   `-cpu qemu32` gets further, still hangs. Under **TCG** `-cpu pentium3`,
+   clean boot and interactive use. Consistent with an unhandled MSR read: KVM
+   injects a real `#GP`, TCG's MSR path returns 0. **Fix**: ship on TCG only,
+   same posture as `os2warp`. Which specific MSR is not identified — see open
+   items.
 
-Tier 1, native x86 QEMU — no bridge needed (BeOS R5 has a plain VGA/VESA
-framebuffer QEMU scans out directly). Best-known recipe, adapted from the
-catalog's NT4/Mac patterns plus the BeOS-specific gotchas below (unverified
-end-to-end):
+Neither blocker is covered by the R5 boot menu's "Don't call the BIOS"
+toggle.
 
-```
-qemu-system-i386 -M pc -cpu pentium3 -m 512 \
-  -drive file=beos.qcow2,format=qcow2 \
-  -drive file=beos-r5.iso,format=raw,media=cdrom \
-  -device VGA -device ne2k_pci,netdev=n0 -netdev user,id=n0 \
-  -display dbus,p2p=on -boot d
-```
+## Device set — resolved
 
-- **CPU**: `pentium3` (or plain default) — BeOS R5 predates SSE-heavy guest
-  assumptions; not yet stress-tested against `-cpu host`.
-- **RAM**: cap ≤768 MB (catalog gotcha — R5's kernel has a hard ceiling; above
-  it, boot fails or behaves unpredictably).
-- **VGA**: stock `VGA` device; BeOS boots to 640×480 greyscale by default and
-  needs an explicit VESA mode set post-install (see Graphical target).
-- **NIC**: `ne2k_pci` specifically (catalog gotcha) — BeOS R5's driver set is
-  narrow; other NIC models are not known-good.
-- **QEMU version**: the only independently-confirmed working reference (the
-  Virtual OS Museum's install) runs QEMU 5.2.0, not this box's current build.
-  Try a current QEMU first since the guest itself needs nothing exotic, but
-  treat 5.2.0 as the fallback to walk back to if boot or install misbehaves.
-- **Media prep**: source is bin/cue, not ISO — must extract with `bchunk`
-  before QEMU can use it as `-cdrom`.
+`qemu-system-x86_64 -accel tcg -M pc-i440fx-11.0 -cpu pentium3 -m 512 -smp 1
+-rtc base=localtime`, one IDE raw/qcow2 disk, `-vga std` (R5's "stub/
+unsupported" driver — dismiss the nag with Don't nag), `ne2k_pci` NIC
+(`rtl8139` driver also present in R5 if ever needed), PS/2 keyboard + PS/2
+relative mouse (BeOS applies its own acceleration; **`usb-tablet` absolute
+pointer is not supported by R5** — this closes the pointer-mode open question
+below in favour of PS/2 relative, not the guess of "needs an actual boot to
+confirm" this document previously carried).
 
-## Graphical target
+## Graphical target — resolved
 
-Out of the box: 640×480, 256-colour/greyscale VESA fallback. Target after
-setup: **1024×768×16** via the BeOS "Screen" preferences — if it isn't set
-explicitly, it defaults back to 640×480 greyscale. Desktop is Tracker +
-Deskbar, consistent with what a Haiku station visitor already sees, which is
-the point of the pairing.
+`/boot/home/config/settings/kernel/drivers/vesa` = `mode 1024 768 16`, applied
+via the volume's own settings tree — only takes effect on direct disk boot
+(see Install above). Ready scene: 1024×768×16 blue desktop, Deskbar
+top-right, Tracker, Terminal open from `UserBootscript`. Framebuffer-verified.
 
-## Pointer and keyboard
+## Still open
 
-**Open question.** BeOS R5 is contemporaneous with PS/2-only mice (R5 predates
-broad USB tablet/absolute-pointer support in its driver stack), so the working
-assumption is relative pointer (PS/2 + `cursor_scale` calibration), same
-family as other pre-USB-era Tier 1 stations, rather than `usb-tablet` absolute
-mode like Haiku uses. This needs an actual boot to confirm: watch whether the
-BeOS cursor tracks 1:1 with a QEMU `usb-tablet` device (if BeOS enumerates it
-at all) or drifts/scales, which would confirm PS/2 relative mode is required
-instead.
+1. **Audio device**: ES1370 (`es137x` driver) vs AC97 (`i801` driver) — not
+   yet probed in-guest. Write "TBD" wherever the device set is quoted until
+   resolved.
+2. **Builder automation**: `scripts/build-guests/tiles/beos.sh` does not exist
+   yet. The install recipe above is currently manual/interactive (partition,
+   BFS create+copy-with-attributes via the Haiku helper VM, `makebootable`,
+   settings write) and needs scripting before this is a from-scratch
+   reproducible build like the Tier 1 native-x86 stations.
+3. **Which MSR** triggers the KVM `#GP` is not identified. TCG sidesteps it;
+   a real fix would let this station run accelerated like the rest of the
+   fleet, but was out of scope for getting one exhibit interactive.
+4. **Golden bake/promotion**: not done. See `docs/guests/beos.md` "Golden /
+   reset".
+5. **Second/Pro-disc driver coverage**: not needed — the one archive.org item
+   was sufficient; no missing-driver symptom was observed.
 
-## Host-native capture plan
+## Effort, risk (final)
 
-Tier 1 — direct QEMU framebuffer via `-display dbus,p2p=on`, same pipeline as
-every other native x86 Tier 1 station (NT 3.51/4.0, etc.). No bridge, no
-captured-Linux kiosk PoC needed — BeOS produces a real VGA/VESA framebuffer
-natively. streamhost needs: a station dir under
-`/data/vms/streamhost/stations/beosr5/` (scaffold via
-`stations-registry.py new`), a QMP socket for build-time automation
-(`scripts/lib/labqmp.py`), a checkpoint captured post-VESA-mode-setup so the
-station launches straight to the 1024×768 Tracker desktop, and — pending the
-pointer question above — either `usb-tablet` or PS/2 relative wiring in the
-station's device set to match whatever the pointer test finds.
-
-## Known gotchas
-
-- **bin/cue extraction**: source images are bin/cue, need `bchunk` to produce
-  a plain ISO/raw image QEMU can mount.
-- **"Disable BIOS calls"**: at the R5 boot menu, must be toggled off before
-  the first install completes — a known R5-under-QEMU install blocker.
-- **RAM cap ≤768 MB**: exceeding it breaks boot/install.
-- **VESA mode**: defaults to 640×480 greyscale; must be explicitly set to
-  1024×768×16 post-install for a presentable exhibit.
-- **NIC must be `ne2k_pci`**: other NIC emulations are not known-good with
-  R5's driver set.
-
-## Effort, risk, open questions
-
-**Effort**: small–medium (catalog rates it MV 5 / "works-known" — someone else
-has clearly booted this combination before, but not on this box). Comparable
-in shape to the NT 3.51/NT 4.0 native x86 recipes already in the lineup.
-
-**Risk**: low on the emulation side (native x86, no ROM dependency, no
-bridge) — VOM's install confirms the shape independently. Main risk is the
-pointer-mode unknown turning into real calibration work, and PE-vs-Pro
-licensing nuance if a non-PE image is substituted later.
-
-**Open questions**:
-
-1. Absolute (`usb-tablet`) vs relative (PS/2) pointer — needs an actual boot
-   to determine; the PS/2 assumption above is a guess based on era, not a
-   tested fact.
-2. Audio support and whether it's worth wiring for the exhibit (BeOS's media
-   story is part of its historical draw).
-3. Whether the archive.org disc is a clean single-CD install or needs a
-   second (Pro) disc for full driver coverage.
-4. No second media source has been cross-checked against the archive.org one.
-5. **Which QEMU version actually boots BeOS R5 on this box.** The only
-   confirmed-working reference (VOM) pins 5.2.0, a 2020-era build, rather than
-   whatever this box currently runs by default — worth testing a current QEMU
-   first (nothing in the guest's device set looks exotic enough to demand an
-   old build) but budgeting the walk-back to 5.2.0 as the likely fallback.
+Landed at **small–medium**, matching the earlier MV-5/"works-known" estimate:
+comparable in shape to the NT 3.51/4.0 native-x86 recipes, plus the two R5-
+specific fixes above, which were well within a single bring-up session once
+diagnosed via serial KDL output.

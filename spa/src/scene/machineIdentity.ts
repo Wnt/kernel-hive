@@ -101,6 +101,10 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#404547', accentTint: '#5d7886', tintMix: 0.62,
     badge: 'AIRFLOW DIY', spec: 'x86-64 • 2024', kit: 'modern',
   },
+  beos: {
+    caseTint: '#d9d5c9', accentTint: '#3466a0', tintMix: 0.5,
+    badge: 'BeBox', spec: 'x86 • 2000', kit: 'office90',
+  },
   os2warp: {
     caseTint: '#aeb1aa', accentTint: '#536578', tintMix: 0.38,
     badge: 'PS/2 77', spec: 'BUSINESS • 1996', kit: 'office90',
