@@ -68,6 +68,49 @@ borrowed daemon), `t.sh <wait> "text\n" | --keys …` (QMP typing + screendump),
    (`sunos 4.1.4 sun4m media`). Form UI: `x` selects, RET ends a text field,
    `^F`/`^B` move; the trailing `[y/n]?` prompt only takes input once the
    cursor is past the last field.
+8. **`Versatec` cannot be extracted from this disc** (`/usr/etc/install/tar/
+   export/exec/sun4_sunos_4_1_4/versatec: cannot extract file`, then an
+   endless "mount volume 1" loop). Both fsck.technology copies are
+   byte-identical, so it is the press, not the transfer. Ctrl-C, re-run
+   `suninstall` (host/disk data survive as `+`), software → edit existing
+   release → choice **own choice** → answer `y` to every category except
+   `Versatec` (a plotter driver nobody misses). Everything else re-extracts.
+9. Station dir on the box created by `box-deploy --apply` (launcher) +
+   `station.env`/`ROLLBACK.md` from a scratch emit of
+   `streamhost/scripts/streamhost-station.sh` with the row's `emitArgs`
+   (`registry/local.env` supplies the real IPs) + `labctl gen`. The unit is
+   left stopped while the sandbox rig owns UDP 54147; the switch happens when
+   the installed disk moves into the station dir.
+
+## Post-install: desktop up, pointer is the open blocker
+
+Booted the installed GENERIC kernel (`boot /iommu/sbus/espdma/esp/sd@3,0:a` —
+OpenBIOS's `disk` alias is not the target-3 disk, so `-boot c` drops to the
+`0 >` prompt; type the full path, or rely on the loadvm golden which never
+cold-boots). Logged in as root, ran `/usr/openwin/bin/openwin`:
+**OpenWindows 3 desktop comes up on the cg3** — cmdtool console, File Manager,
+Help Viewer "Introducing Your Sun Desktop", olwm, the OPEN LOOK look. Verified
+on the framebuffer 2026-08-18.
+
+**KEYBOARD** works into the console (typed `root` + the openwin command over
+QMP sendkey, they executed). A telnet exec channel is available for driving:
+`hostfwd_add tcp:127.0.0.1:12347-:23` + `rig/tn.py "<cmd>"` (root, no password,
+inetd/in.telnetd is up). Slirp hostfwd is per-process — re-add after every
+relaunch.
+
+**POINTER DOES NOT REACH X — open blocker.** QMP `mouse_move` produces the
+right escc bytes (trace `escc_sunmouse_event dx/dy` → `escc_put_queue channel
+b` → `escc_get_queue channel b`, i.e. the SunOS zs driver's ISR drains them),
+but the cursor never moves (0 changed pixels after 20 injections) and
+`/dev/mouse` yields nothing. So the bytes reach the kernel on the mouse
+channel and are lost between the zs driver and X. This is the "Sun serial
+mouse is fiddly, relative-only, mandatory calibration" risk the candidate
+brief called out. Keyboard (escc channel A) works, mouse (escc channel B)
+does not — same ESCC. Next avenues: (a) inspect QEMU `hw/char/escc.c`
+sunmouse baud/reset handshake vs SunOS's zs mouse silo; (b) OpenWindows mouse
+type/`-dev` config; (c) the TME/sun4c fallback in the brief. **A golden should
+NOT be baked until the pointer works** — a mouse-less OPEN LOOK desktop is not
+a usable exhibit.
 
 ## Golden, input, and rollback
 
