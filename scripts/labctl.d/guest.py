@@ -200,6 +200,7 @@ GEXEC = "/root/gexec.py"
 IRIXEXEC = os.environ.get("LABCTL_IRIXEXEC", "/root/irixexec.py")
 W2KTELNETEXEC = os.environ.get("LABCTL_W2KTELNETEXEC", "/root/w2ktelnetexec.py")
 TRU64EXEC = os.environ.get("LABCTL_TRU64EXEC", "/root/tru64exec.py")
+SUNEXEC = os.environ.get("LABCTL_SUNEXEC", "/root/sunexec.py")
 # w2kalpha's guest telnet server sits on a host-only veth at a fixed static IP
 # (baked into the golden; the host end and the dec21143 pcap adapter are set up
 # by streamhost/stations/w2kalpha/x11-runtime.sh). No per-tile host field is needed.
@@ -247,6 +248,18 @@ def cmd_exec(argv):
         r = subprocess.run(
             ["python3", W2KTELNETEXEC, W2K_TELNET_HOST, cmdline],
             env={**os.environ, "W2K_USER": user},
+        )
+        sys.exit(r.returncode)
+    if kind == "telnet_unix_e" and port:
+        # sunos414: captured exec over the guest's in-guest telnetd on QEMU's
+        # SLIRP net, reached at 127.0.0.1:<exec_port> via the hostfwd the
+        # launcher (re-)adds on every start. sunexec.py logs in (user from
+        # exec_user, blank password), runs the command bracketed by unique
+        # markers, prints stdout+stderr and exits with the guest's code.
+        user = c.get("exec_user") or "root"
+        r = subprocess.run(
+            ["python3", SUNEXEC, "127.0.0.1", str(port), cmdline],
+            env={**os.environ, "SUN_USER": user},
         )
         sys.exit(r.returncode)
     if kind == "ssh" and port:

@@ -30,9 +30,9 @@
         "os": "SunOS 4.1.4 (SPARCstation 5)",
         "win": "qemu",
         "mouse": "openwindows-desktop",
-        "kbd": "term:cmdtool",
+        "kbd": "term:cmdtool / telnet exec",
         "kbd_reset": "Escape",
-        "kbd_note": "INSTALL PHASE: keyboard proof is suninstall's forms echoing keystrokes; OpenWindows cmdtool once installed",
+        "kbd_note": "keyboard proof = suninstall/console echo and OpenWindows cmdtool; exec proof = labctl exec sunos414 \"uname -a\" over telnet_unix_e",
         "audio_trigger": null,
         "validated": false,
         "note": "relative Sun serial mouse: cursor_scale 1.0 UNMEASURED (install phase). Foreign-arch TCG station on /opt/qemu-sparc (kernel-hive fork), like macos753/hpuxvue"
@@ -45,13 +45,13 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": null,
-      "exec_kind": null,
-      "exec_user": null,
+      "exec_port": 5947,
+      "exec_kind": "telnet_unix_e",
+      "exec_user": "root",
       "exec_key": null,
       "console": "fb",
       "udp_port": 54147,
-      "notes": "INSTALL PHASE (dark launch). No exec channel yet: the installer runs on the cg3 framebuffer; ttya is on the QEMU serial socket for a future getty. Drive it via QMP (qmp-type.py) or the browser."
+      "notes": "exec = telnet_unix_e: labctl exec sunos414 runs a captured command over the guest's in-guest in.telnetd (SunOS 4.1.4 predates ssh; inetd runs telnetd, root has no password on a fresh suninstall), reached at 127.0.0.1:5947 via the SLIRP hostfwd the launcher re-adds on every start (client: /root/sunexec.py <- streamhost/guest-agents/sunos414/sunexec.py). No QMP-less exec before that; drive early boot via QMP (qmp-type.py). Requires the guest booted to multiuser: live once the loadvm golden restores the running system; at the bare OpenBIOS prompt there is no telnetd yet."
     }
   },
   "render": {
