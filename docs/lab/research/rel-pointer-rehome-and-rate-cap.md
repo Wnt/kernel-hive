@@ -1,6 +1,8 @@
 # Relative-pointer stations: auto re-home + paced sends (plan)
 
-**Status: plan, 2026-08-18. Nothing implemented.** Scope: the twelve
+**Status: plan, 2026-08-18. Nothing implemented.** Operator direction: work on
+the **live stations** directly (canary daemon + `POST /restore/<id>` to put the
+scene back), no clones. Scope: the twelve
 `dbus-rel` homing-bridge stations (`aux macos753 hpuxvue sunos414 rhapsody
 nt351 freedos msdoswin1 star indyr4400 c64 amstradcpc`; the pointer-lock
 type-4 stations `qnx beos` are a different path and out of scope). Goal: the
@@ -48,8 +50,8 @@ much work, see [`candidate-aux.md`](candidate-aux.md) discussion 2026-08-18).
   delivers ±63 per report at the ADB poll rate (~11 ms), so nothing is ever
   lost — the guest just lags. The lag is guest-side bandwidth × the linear but
   slow gain we chose ("Very Slow", 0.36 px/count: 1152 px ≈ 3200 counts ≈ 50
-  reports ≈ 0.5 s). Faster Mac tracking settings are accelerated, which the
-  open-loop model could not follow — until §3 below.
+  reports ≈ 0.5 s). Faster Mac tracking settings are accelerated, so they stay off:
+  the ceiling is the link, see §2 "Speed ceiling".
 - **beos (fast, drifts):** a pointer-lock (type-4) station: raw deltas with
   BeOS's own acceleration on — that is the speed. Under lock there is no
   browser cursor to disagree with; when the lock drops (Cmd-Tab away and back)
@@ -123,14 +125,14 @@ ceiling; the one cheap avenue for the q800 pair is the ADB poll interval in
 our QEMU fork (`mac_via` autopoll) — a follow-up to measure, outside this
 plan.
 
-## Spike first (measurement only, clones, no daemon change)
+## Spike first (measurement only, on the LIVE stations, no daemon change)
 
-1. **macos753 clone**: the loss knee — send N counts per tick for k ticks
+1. **macos753** (live station; the sweeps are QMP `mouse_move`s + screendumps, and `POST /restore` puts the scene back): the loss knee — send N counts per tick for k ticks
    (N ∈ {16, 32, 63, 128, 256}, pace ∈ {8, 16, 20 ms}), read the framebuffer;
    the largest N/pace applied losslessly is the station's `SH_REL_MAX_STEP` /
    `SH_REL_STEP_PACE_MS`. Also the resulting px/s ceiling, to state the
    "catching up" number.
-2. **beos clone** (acceleration off): gain (expect 1.0), then the same knee for
+2. **beos** (live, acceleration off — persist it in the golden first): gain (expect 1.0), then the same knee for
    PS/2 steps {32, 64, 128, 255}; reproduce "lock dropped → abs fallback" drift
    and confirm it vanishes with the bridge re-homed and paced.
 3. Result: per-station pace/step values, in the fixtures with the measurement.
@@ -156,7 +158,7 @@ ceiling, see §2 — not what this plan fixes). Then **beos** (the drift complai
    + the loss knee sweep at the tracking setting baked in the checkpoint;
    record both in the fixture with the measurement. beos: re-bake the golden
    with acceleration off first.
-3. **PoC on macos753 clone**: (a) reset → first sample lands on target without
+3. **PoC on macos753** (live station, canary daemon): (a) reset → first sample lands on target without
    an edge visit (framebuffer proof); (b) 2000 px jump lands within one quantum
    of the target after ≤ N frames, no residual; (c) fast scribble of 30 random
    targets ends with `res = 0,0` (the irix acceptance); (d) edge trigger: drag
