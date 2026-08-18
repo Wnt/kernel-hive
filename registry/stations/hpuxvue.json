@@ -206,5 +206,9 @@
     "version": "11.0.2",
     "source": "github.com/Wnt/qemu @ kernel-hive (11.0.2 + fast-poll), built to /opt/qemu-hppa",
     "driver": "B160L"
+  },
+  "network": {
+    "status": "nic-only",
+    "note": "tulip on SLIRP user-mode, but set_parms was answered standalone: no IP configured in HP-UX (docs/guests/hpuxvue.md)"
   }
 }

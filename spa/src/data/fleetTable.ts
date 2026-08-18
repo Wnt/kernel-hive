@@ -52,6 +52,21 @@ interface FleetGolden {
   instant: boolean;
 }
 
+interface FleetExec {
+  kind: string;
+  supported: boolean;
+  port: number | null;
+  user: string | null;
+  detail: string | null;
+}
+
+interface FleetNetwork {
+  status: 'internet' | 'host-only' | 'isolated' | 'nic-only' | 'none' | string;
+  detail: string;
+  hostfwd: string[];
+  source: string;
+}
+
 export interface FleetEntry {
   id: string;
   displayName: string;
@@ -77,7 +92,8 @@ export interface FleetEntry {
   audioSource: string | null;
   idlePauseSecs: number | null;
   golden: FleetGolden | null;
-  execKind: string | null;
+  exec: FleetExec | null;
+  network: FleetNetwork | null;
   slot: number | null;
   guestDoc: string | null;
 }

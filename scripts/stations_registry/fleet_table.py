@@ -13,6 +13,7 @@ de-bridged stations, so it is not a kiosk oracle on its own.
 from __future__ import annotations
 
 import json
+import re
 from collections import OrderedDict
 from typing import Any
 
@@ -156,6 +157,88 @@ def _machine(row: dict[str, Any], tier: int) -> dict[str, Any]:
     return out
 
 
+_NIC_RE = re.compile(
+    r"-(netdev|nic|net\b|device (e1000|rtl8139|virtio-net|pcnet|ne2k|i8255|tulip|lance|dp8393|sunhme|usb-net))"
+)
+_HOSTFWD_RE = re.compile(r"hostfwd=(tcp|udp):[^,\s]+")
+_MODEL_RE = re.compile(r"(?:-device |model=)([a-z0-9_-]+)")
+
+
+def _net(status: str, detail: str, source: str, hostfwd: list[str] | None = None) -> dict[str, Any]:
+    return OrderedDict(status=status, detail=detail, hostfwd=hostfwd or [], source=source)
+
+
+def _network_from_ledger(qemu: dict[str, Any]) -> dict[str, Any]:
+    extra = qemu.get("extraArgs") or []
+    parts = list(qemu.get("deviceSetSummary") or []) + ([extra] if isinstance(extra, str) else list(extra))
+    args = " ".join(str(p) for p in parts)
+    net_args = [a for a in re.split(r"\s(?=-)", args) if _NIC_RE.match(a)]
+    hostfwd = [m.group(0).removeprefix("hostfwd=") for m in _HOSTFWD_RE.finditer(args)]
+    ledger = "device ledger"
+    if any("nic none" in a or "net none" in a for a in net_args):
+        return _net("none", "-nic none in the device ledger", ledger)
+    if not net_args:
+        if "-nodefaults" in args:
+            return _net("none", "-nodefaults and no NIC in the device ledger", ledger)
+        detail = "implicit QEMU default NIC on SLIRP user-mode NAT (no -netdev/-nic in ledger); guest use not recorded"
+        return _net("internet", detail, "device ledger (implicit)", hostfwd)
+    models = sorted({m.group(1) for a in net_args for m in _MODEL_RE.finditer(a)} - {"user"})
+    nic = "/".join(models) if models else "nic"
+    if "restrict=on" in args:
+        return _net("isolated", f"{nic} on SLIRP restrict=on: link up, nothing reachable", ledger, hostfwd)
+    if any("user" in a for a in net_args):
+        detail = f"{nic} on SLIRP user-mode NAT (guest reaches out; host reaches in via hostfwd)"
+        return _net("internet", detail, ledger, hostfwd)
+    if any(("tap" in a or "bridge" in a) for a in net_args):
+        return _net("host-only", f"{nic} on a tap/bridge backend", ledger, hostfwd)
+    return _net("nic-only", f"{nic}: {' '.join(net_args)}", ledger, hostfwd)
+
+
+def _network(row: dict[str, Any], tier: int, env: dict[str, str]) -> dict[str, Any] | None:
+    """Guest networking as the launcher declares it; a registry `network` block wins.
+
+    Derived from the QEMU device ledger (deviceSetSummary + extraArgs) — a NIC
+    on SLIRP, restrict=on, an explicit `-nic none`, or nothing at all (which for
+    a stock QEMU machine still means an IMPLICIT default SLIRP NIC unless
+    -nodefaults). x11 runtimes only know what their env says (IRIX_NET/TAP).
+    A NIC in the ledger is not proof the guest configured it, so the derived
+    status is the ledger's word, not the guest's; the declared block exists for
+    exactly the cases where the ledger misleads.
+    """
+    if tier == 5:
+        return None
+    declared = row.get("network")
+    if declared:
+        return _net(declared["status"], declared["note"], "registry network block")
+    qemu = row.get("runtime", {}).get("qemu") or {}
+    if qemu:
+        return _network_from_ledger(qemu)
+    if env.get("IRIX_NET") == "on":
+        egress = env.get("IRIX_NET_EGRESS") == "on"
+        tap = f"{env.get('IRIX_TAP_IF', 'tap')} {env.get('IRIX_TAP_HOST_CIDR', '')}"
+        tap += f" -> guest {env.get('IRIX_TAP_GUEST_IP', '')}"
+        detail = f"host-only tap {tap}" + (" + NAT egress" if egress else "")
+        return _net("internet" if egress else "host-only", detail, "station env")
+    return _net("none", "no network device declared for this host-native emulator", "station env")
+
+
+def _exec(row: dict[str, Any], tier: int) -> dict[str, Any] | None:
+    """labctl exec: the out-of-band command channel into the guest (operator.labctl)."""
+    if tier == 5:
+        return None
+    labctl = row.get("operator", {}).get("labctl") or {}
+    kind = labctl.get("exec_kind")
+    if kind in (None, "none"):
+        return OrderedDict(kind="none", supported=False, port=None, user=None, detail=labctl.get("notes"))
+    return OrderedDict(
+        kind=kind,
+        supported=True,
+        port=labctl.get("exec_port"),
+        user=labctl.get("exec_user"),
+        detail=labctl.get("notes"),
+    )
+
+
 def emit_fleet_table(rows: list[dict[str, Any]]) -> bytes:
     ledger = _bridge_ledger()
     bridge_tiles = ledger[0]
@@ -164,7 +247,6 @@ def emit_fleet_table(rows: list[dict[str, Any]]) -> bytes:
         tier = _tier(row, bridge_tiles)
         env = row.get("runtime", {}).get("stationEnv") or {}
         museum = row["museum"]
-        labctl = row.get("operator", {}).get("labctl") or {}
         entries.append(
             OrderedDict(
                 [
@@ -192,7 +274,8 @@ def emit_fleet_table(rows: list[dict[str, Any]]) -> bytes:
                     ("audioSource", env.get("SH_AUDIO_SOURCE", "dbus") if row["stream"].get("audio") else None),
                     ("idlePauseSecs", None if tier == 5 else _idle_pause(env)),
                     ("golden", _golden(row, tier, env)),
-                    ("execKind", labctl.get("exec_kind")),
+                    ("exec", _exec(row, tier)),
+                    ("network", _network(row, tier, env)),
                     ("slot", row["stream"].get("slot")),
                     ("guestDoc", row.get("guestDoc")),
                 ]

@@ -101,8 +101,9 @@ Two classes of output, and the difference is where they live:
   `gallery-manifest.json`, `poster-docs.json`, `tiles.json`,
   `golden-manifest.json`, `gallery-action-map.json`, `mock-manifest.json`,
   `fleet-table.json` (the SPA's `/fleet` operator table: derived tier, the
-  declared `emulator` block, kiosk suite, I/O paths, memory, idle-pause,
-  golden scene — `scripts/stations_registry/fleet_table.py` holds every
+  declared `emulator` block, kiosk suite, I/O paths, labctl exec channel,
+  guest networking (device ledger, or the optional declared `network` block),
+  memory, idle-pause, golden scene — `scripts/stations_registry/fleet_table.py` holds every
   derivation rule), and `index.json` (the whole-registry aggregate). Every consumer can ask: the
   publish path renders then ships, the SPA fetches over HTTP, the tests render
   into memory, the Vite dev server answers a request by rendering, the box-sync

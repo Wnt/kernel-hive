@@ -60,6 +60,7 @@
 }
 .fleet-badge--ok { background: rgba(29, 122, 76, 0.14); color: var(--ok); }
 .fleet-badge--warn { background: rgba(143, 100, 7, 0.16); color: var(--warn); }
+.fleet-badge--info { background: rgba(47, 109, 156, 0.14); color: var(--info); }
 .fleet-badge--muted { background: var(--tint-1); color: var(--ink-muted); }
 .fleet-tier-1 { background: rgba(47, 109, 156, 0.14); color: var(--info); }
 .fleet-tier-2 { background: rgba(143, 100, 7, 0.16); color: var(--warn); }
@@ -72,3 +73,4 @@
   .fleet-view { padding: 76px 10px 32px; }
   .fleet-summary { margin-left: 0; }
 }
+.fleet-badge + .fleet-badge { margin-left: 4px; }

@@ -237,6 +237,19 @@
       },
       "additionalProperties": false
     },
+    "network": {
+      "type": "object",
+      "description": "OPTIONAL hand-declared truth about the GUEST's networking, for the cases the QEMU device ledger cannot answer (fleet_table.py derives NIC/backend/hostfwd from runtime.qemu for everything else): a NIC the guest never configured, a pcap/veth path outside QEMU, two VMs talking to each other, or 'none, deliberately'. Only declare it when the ledger would mislead; a declared block overrides the derived status in fleet-table.json and is labelled as declared.",
+      "required": ["status", "note"],
+      "properties": {
+        "status": {
+          "enum": ["internet", "host-only", "isolated", "nic-only", "none"],
+          "description": "internet: guest reaches out (NAT/SLIRP or masquerade). host-only: guest and host talk, no egress. isolated: link up, nothing reachable (e.g. SLIRP restrict=on). nic-only: a NIC exists but the guest has no IP configured. none: no network device at all."
+        },
+        "note": { "type": "string", "minLength": 1, "description": "The mechanism and where it is documented." }
+      },
+      "additionalProperties": false
+    },
     "credentialsRef": { "type": "string", "pattern": "^guest/[a-z0-9-]+$" },
     "guestDoc": { "type": "string" },
     "migrationExceptions": { "type": "array", "items": { "type": "string" } },

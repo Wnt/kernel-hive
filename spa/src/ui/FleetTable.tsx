@@ -10,7 +10,7 @@ import './FleetTable.css';
 
 type SortKey =
   | 'name' | 'year' | 'tier' | 'emulator' | 'kiosk' | 'arch' | 'lineage'
-  | 'memory' | 'accel' | 'capture' | 'keyboard' | 'pointer' | 'idle' | 'golden' | 'stream';
+  | 'memory' | 'accel' | 'capture' | 'keyboard' | 'pointer' | 'exec' | 'network' | 'idle' | 'golden' | 'stream';
 
 interface Column {
   key: SortKey;
@@ -21,6 +21,10 @@ interface Column {
 }
 
 const dash = <span className="fleet-dash">—</span>;
+const NET_ORDER: Record<string, number> = { internet: 0, 'host-only': 1, isolated: 2, 'nic-only': 3, none: 4 };
+const NET_BADGE: Record<string, string> = {
+  internet: 'fleet-badge--ok', 'host-only': 'fleet-badge--info', isolated: 'fleet-badge--warn', 'nic-only': 'fleet-badge--warn', none: 'fleet-badge--muted',
+};
 const num = (v: number | null | undefined, unit: string) => (v == null ? '' : `${v} ${unit}`);
 
 function ram(e: FleetEntry): string {
@@ -116,6 +120,30 @@ const COLUMNS: Column[] = [
     ) : <span className="fleet-muted">{e.pointer.method === 'none' && e.tier !== 5 ? 'none (keyboard-only)' : '—'}</span>,
   },
   {
+    key: 'exec', label: 'labctl exec', title: 'operator.labctl exec_kind: the out-of-band command channel into the guest; hover for how it is wired',
+    sort: (e) => (e.exec?.supported ? e.exec.kind : 'zz'),
+    render: (e) => !e.exec ? dash : e.exec.supported ? (
+      <span title={e.exec.detail ?? ''}>
+        <span className="fleet-badge fleet-badge--ok">{e.exec.kind}</span>
+        <span className="fleet-sub">{[e.exec.user && `${e.exec.user}@`, e.exec.port != null && `:${e.exec.port}`].filter(Boolean).join('')}</span>
+      </span>
+    ) : (
+      <span title={e.exec.detail ?? ''}><span className="fleet-badge fleet-badge--muted">none</span></span>
+    ),
+  },
+  {
+    key: 'network', label: 'Guest network', title: 'derived from the QEMU device ledger / station env, or the registry network block; hover for the mechanism',
+    sort: (e) => NET_ORDER[e.network?.status ?? ''] ?? 9,
+    render: (e) => !e.network ? dash : (
+      <span title={`${e.network.detail} — source: ${e.network.source}`}>
+        <span className={`fleet-badge ${NET_BADGE[e.network.status] ?? 'fleet-badge--muted'}`}>{e.network.status}</span>
+        {e.network.source.startsWith('registry') && <span className="fleet-badge fleet-badge--muted" title="hand-declared in the registry">declared</span>}
+        {e.network.source.includes('implicit') && <span className="fleet-badge fleet-badge--muted" title="QEMU default NIC; nothing declares the guest uses it">implicit</span>}
+        {e.network.hostfwd.length > 0 && <span className="fleet-sub">{e.network.hostfwd.join(', ')}</span>}
+      </span>
+    ),
+  },
+  {
     key: 'idle', label: 'Idle auto-pause', title: 'SH_IDLE_PAUSE_SECS (daemon default 60; 0 = off)',
     sort: (e) => e.idlePauseSecs ?? -1,
     render: (e) => e.idlePauseSecs == null ? dash : e.idlePauseSecs === 0
@@ -138,7 +166,6 @@ const COLUMNS: Column[] = [
     render: (e) => e.fps == null ? dash : (
       <>
         {e.fps} fps{e.audio ? ` · audio (${e.audioSource})` : ' · silent'}
-        {e.execKind && <span className="fleet-sub">exec: {e.execKind}</span>}
       </>
     ),
   },
@@ -149,7 +176,7 @@ function matches(e: FleetEntry, q: string): boolean {
   const hay = [
     e.id, e.displayName, e.arch, e.lineage, e.tierLabel, e.emulator?.family, e.emulator?.version, e.emulator?.driver,
     e.kiosk?.distro, e.machine.qemuBinary, e.machine.accel, e.capture, e.keyboardPath, e.pointer.method, e.pointer.backend,
-    e.golden?.resetMode,
+    e.golden?.resetMode, e.exec?.kind, e.network?.status,
   ].filter(Boolean).join(' ').toLowerCase();
   return q.split(/\s+/).every((word) => hay.includes(word));
 }
