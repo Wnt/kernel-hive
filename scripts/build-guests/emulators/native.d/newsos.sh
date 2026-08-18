@@ -19,7 +19,7 @@ NATIVE_SOURCES=src/mame/sony/news_r3k.cpp
 # The LCD's native raster; the station streams it 1:1.
 NATIVE_GEOM=1120x780
 NATIVE_MAME_ARGS=()
-NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch)
+NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-news-hid-kbd-order.patch)
 NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {
