@@ -4,8 +4,8 @@ subtitle: 1998 · Apple's Mac face on the NeXT operating system
 hero: /posters/rhapsody/desktop.webp
 images:
   - src: /posters/rhapsody/desktop.webp
-    alt: Placeholder card for the Rhapsody station while the operating system is being installed live — a dark slate frame with the station name
-    caption: Install in progress. This card is replaced by the real Platinum Finder desktop once the installation completes and the golden fixture is baked.
+    alt: The Rhapsody 5.1 DR2 desktop — Apple's Platinum grey menu bar across the top, a Finder window titled "guest — /Local/Users", and NeXT-style application icons down the right edge
+    caption: Rhapsody 5.1 DR2 for Intel at 1024×768 — the Platinum Finder (Mac OS 8's look) over the NeXT Workspace, the exact desktop the machine brings up for itself at login.
 ---
 ## Origins
 
@@ -19,7 +19,7 @@ Rhapsody is the hinge between two systems shown elsewhere in this hall. Next to 
 
 ## What you're looking at
 
-Right now: the installation itself, running live. Once installed, the Platinum Finder desktop over the NeXT Workspace at 800×600 — Mac OS 8 looks, NeXT bones.
+The Platinum Finder desktop over the NeXT Workspace at 1024×768 — Mac OS 8's grey menu bar, Finder windows and folder icons, drawn by Display PostScript on top of a Mach/BSD Unix. The application icons down the right edge (Mail, TextEdit, Preferences) and the vertical Workspace layout are pure NeXT; the menu bar, window chrome and Finder are the Mac face Apple grafted on. Open a Terminal from the Apple menu and you are in a Unix shell — `bash`, NetInfo, the whole NeXTSTEP substrate — under the Macintosh appearance.
 
 ## Legacy
 
