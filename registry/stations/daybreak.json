@@ -210,6 +210,7 @@
     "source": "scripts/build-guests/tiles/daybreak.sh (Java, OpenJDK 17)",
     "driver": "Xerox 6085 Daybreak"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "daybreak",
     "pointer": "abs",

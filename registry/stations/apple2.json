@@ -214,6 +214,7 @@
     "source": "scripts/build-guests/tiles/apple2.sh",
     "driver": "Apple //e enhanced"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "apple2",
     "pointer": "abs",

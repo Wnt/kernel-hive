@@ -133,6 +133,7 @@
     "version": "11.0.2",
     "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
   },
+  "ui": "desktop",
   "notes": [
     "slot 143/UDP 54143 reserved by stations-registry.py new (2026-08-17)",
     "dark-launched during bring-up via scripts/dev/darklaunch-station.py from sandbox beos-r5"

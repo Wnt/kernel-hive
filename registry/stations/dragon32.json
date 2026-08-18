@@ -202,6 +202,7 @@
     "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
     "driver": "dragon"
   },
+  "ui": "home-computer",
   "reset": {
     "stationDir": "dragon32",
     "pointer": "none",

@@ -81,6 +81,8 @@ export interface FleetEntry {
   tier: number;
   tierLabel: string;
   emulator: FleetEmulator | null;
+  ui: 'desktop' | 'text-console' | 'home-computer' | 'mobile' | 'other' | null;
+  screen: { width: number | null; height: number | null; bpp: number | null; source: string } | null;
   kiosk: FleetKiosk | null;
   machine: FleetMachine;
   capture: string | null;

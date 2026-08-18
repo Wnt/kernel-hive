@@ -237,6 +237,10 @@
       },
       "additionalProperties": false
     },
+    "ui": {
+      "enum": ["desktop", "text-console", "home-computer", "mobile", "other"],
+      "description": "What kind of interface the exhibited scene IS, so the fleet table can answer 'graphical desktop or not' (nothing else records it: reset.mouse is a test status and the fixture prose is not parseable). desktop = windowing GUI (incl. GEOS/GEM/Workbench on 8-bit/16-bit machines); text-console = an OS shell or login on a text screen; home-computer = an 8-bit power-on BASIC/monitor screen; mobile = phone UI; other = anything else (gt40 vector-display game). Required for production entries."
+    },
     "network": {
       "type": "object",
       "description": "OPTIONAL hand-declared truth about the GUEST's networking, for the cases the QEMU device ledger cannot answer (fleet_table.py derives NIC/backend/hostfwd from runtime.qemu for everything else): a NIC the guest never configured, a pcap/veth path outside QEMU, two VMs talking to each other, or 'none, deliberately'. Only declare it when the ledger would mislead; a declared block overrides the derived status in fleet-table.json and is labelled as declared.",

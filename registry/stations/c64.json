@@ -173,6 +173,7 @@
     "source": "scripts/build-guests/emulators/build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
     "driver": "x64sc"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "c64",
     "pointer": "none",

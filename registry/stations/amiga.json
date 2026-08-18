@@ -214,6 +214,7 @@
     "source": "apt fs-uae in the bookworm overlay (scripts/build-guests/tiles/amiga.sh)",
     "driver": "A1200"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "amiga",
     "pointer": "abs",

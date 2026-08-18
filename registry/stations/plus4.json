@@ -171,6 +171,7 @@
     "source": "scripts/build-guests/emulators/build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
     "driver": "xplus4"
   },
+  "ui": "home-computer",
   "reset": {
     "stationDir": "plus4",
     "pointer": "none",

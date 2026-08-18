@@ -242,6 +242,7 @@
     "version": null,
     "source": "/opt/qemu-cirrusfix: pve QEMU + 0004-cirrus-blt-rop1-fill patch; version not recorded (docs/guests/nt351.md)"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "nt351",
     "pointer": "abs",

@@ -124,6 +124,7 @@
     "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
     "driver": "nws3260"
   },
+  "ui": "desktop",
   "network": {
     "status": "none",
     "note": "MAME nws3260 with no TAP in the rig; NEWS-OS installed without the network package (docs/guests/newsos.md)"

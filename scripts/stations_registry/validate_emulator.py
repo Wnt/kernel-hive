@@ -1,4 +1,4 @@
-"""Business rule for the per-station `emulator` block (family/version/source/driver).
+"""Business rules for the per-station `emulator` block (family/version/source/driver) and the `ui` kind.
 
 Lives beside validate_rules.py rather than in it only because that module is at
 its size cap; validate() calls this exactly like its sibling rules.
@@ -34,3 +34,10 @@ def validate_emulator(rows: list[dict[str, Any]], errors: list[str]) -> None:
         version = emulator.get("version")
         if version is not None and (not isinstance(version, str) or not version.strip()):
             fail(errors, row, "emulator.version must be a non-empty string or null")
+
+
+def validate_ui(rows: list[dict[str, Any]], errors: list[str]) -> None:
+    """Every production entry declares its `ui` kind (the schema holds the enum)."""
+    for row in rows:
+        if row.get("lifecycle") == "production" and "ui" not in row:
+            fail(errors, row, "production entry must declare ui (desktop|text-console|home-computer|mobile|other)")

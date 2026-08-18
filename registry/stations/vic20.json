@@ -187,6 +187,7 @@
     "source": "scripts/build-guests/emulators/build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
     "driver": "xvic"
   },
+  "ui": "home-computer",
   "reset": {
     "stationDir": "vic20",
     "pointer": "none",

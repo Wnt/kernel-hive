@@ -197,6 +197,7 @@
     "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
     "driver": "mpf2"
   },
+  "ui": "home-computer",
   "reset": {
     "stationDir": "mpf2",
     "pointer": "none",

@@ -101,7 +101,8 @@ Two classes of output, and the difference is where they live:
   `gallery-manifest.json`, `poster-docs.json`, `tiles.json`,
   `golden-manifest.json`, `gallery-action-map.json`, `mock-manifest.json`,
   `fleet-table.json` (the SPA's `/fleet` operator table: derived tier, the
-  declared `emulator` block, kiosk suite, I/O paths, labctl exec channel,
+  declared `emulator` block, the declared `ui` kind, screen geometry
+  (display block > x11 geometry > fixture prose), kiosk suite, I/O paths, labctl exec channel,
   guest networking (device ledger, or the optional declared `network` block),
   memory, idle-pause, golden scene — `scripts/stations_registry/fleet_table.py` holds every
   derivation rule), and `index.json` (the whole-registry aggregate). Every consumer can ask: the

@@ -22,9 +22,9 @@ from .loading import RegistryError, is_x11_runtime
 from .validate_rules import is_hidden
 
 TIER_LABELS = {
-    1: "direct QEMU",
+    1: "direct QEMU (host-native)",
     2: "emulator bridge (kiosk)",
-    3: "host-native",
+    3: "direct non-QEMU emulator (host-native)",
     4: "two-QEMU X bridge (kiosk)",
     5: "showcase poster",
 }
@@ -222,6 +222,43 @@ def _network(row: dict[str, Any], tier: int, env: dict[str, str]) -> dict[str, A
     return _net("none", "no network device declared for this host-native emulator", "station env")
 
 
+_GEOM_RE = re.compile(r"(?<!\d)(\d{3,4})\s*[x×]\s*(\d{3,4})(?:\s*[x×@]\s*(\d{1,2})(?!\d))?")
+_DEPTH_RE = re.compile(
+    r"(\d{1,2})\s*-?\s*bpp|(\d{1,2})-bit\b|(\d{1,2})bit\b|(\d+) colou?rs|(\d+)K colou?rs|True Color|65K", re.I
+)
+
+
+def _screen(row: dict[str, Any], tier: int) -> dict[str, Any] | None:
+    """Exhibited screen geometry: display block > x11 geometry > fixture prose (labelled)."""
+    if tier == 5:
+        return None
+    disp = row.get("display")
+    if disp:
+        src = "registry display block"
+        return OrderedDict(width=disp["width"], height=disp["height"], bpp=disp["bitsPerPixel"], source=src)
+    geom = (row.get("runtime", {}).get("x11") or {}).get("geometry")
+    if geom:
+        w, h, bpp = (int(x) for x in geom.split("x"))
+        return OrderedDict(width=w, height=h, bpp=bpp, source="runtime.x11.geometry")
+    reset = row.get("reset") or {}
+    env = row.get("runtime", {}).get("stationEnv") or {}
+    prose = " ".join(str(x) for x in (reset.get("fixture"), env.get("SH_FIXTURE_DESC")) if x)
+    m = _GEOM_RE.search(prose)
+    if not m:
+        return OrderedDict(width=None, height=None, bpp=None, source="not recorded")
+    bpp = int(m.group(3)) if m.group(3) else None
+    if bpp is None:
+        d = _DEPTH_RE.search(prose)
+        if d:
+            txt = d.group(0).lower()
+            if "true" in txt or "65k" in txt:
+                bpp = 24 if "true" in txt else 16
+            else:
+                n = next(g for g in d.groups() if g)
+                bpp = int(n) if int(n) <= 32 else {2: 1, 4: 2, 16: 4, 256: 8, 65536: 16}.get(int(n))
+    return OrderedDict(width=int(m.group(1)), height=int(m.group(2)), bpp=bpp, source="fixture prose (heuristic)")
+
+
 def _exec(row: dict[str, Any], tier: int) -> dict[str, Any] | None:
     """labctl exec: the out-of-band command channel into the guest (operator.labctl)."""
     if tier == 5:
@@ -263,6 +300,8 @@ def emit_fleet_table(rows: list[dict[str, Any]]) -> bytes:
                     ("tier", tier),
                     ("tierLabel", TIER_LABELS[tier]),
                     ("emulator", row.get("emulator")),
+                    ("ui", row.get("ui")),
+                    ("screen", _screen(row, tier)),
                     ("kiosk", _kiosk(row, tier, ledger)),
                     ("machine", _machine(row, tier)),
                     ("capture", _capture(row, tier)),

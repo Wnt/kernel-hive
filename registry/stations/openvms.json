@@ -221,6 +221,7 @@
     "version": "11.0.2",
     "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
   },
+  "ui": "desktop",
   "network": {
     "status": "host-only",
     "note": "the OpenVMS VM speaks X over SLIRP to the captured lean-Xorg bridge VM; neither has internet (docs/GUEST-TIERS.md Tier 4)"

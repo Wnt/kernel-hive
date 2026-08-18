@@ -187,6 +187,7 @@
     "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
     "driver": "spectrum"
   },
+  "ui": "home-computer",
   "reset": {
     "stationDir": "zxspectrum",
     "pointer": "none",

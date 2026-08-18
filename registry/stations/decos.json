@@ -213,6 +213,7 @@
     "source": "Open SIMH @ a1f57fa3 (V4.1-0 Current), pinned in scripts/build-guests/tiles/<id>.sh",
     "driver": "pdp11"
   },
+  "ui": "text-console",
   "reset": {
     "stationDir": "decos",
     "pointer": "none",

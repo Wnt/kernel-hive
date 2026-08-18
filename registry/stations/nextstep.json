@@ -208,6 +208,7 @@
     "source": "scripts/build-guests/tiles/nextstep.sh",
     "driver": "NeXTstation"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "nextstep",
     "pointer": "abs",

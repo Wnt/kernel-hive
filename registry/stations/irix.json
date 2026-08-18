@@ -157,6 +157,7 @@
     "source": "scripts/build-guests/irix/irix-mame-stack.sh (patched indy_4610 stack)",
     "driver": "indy_4610"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "irix",
     "pointer": "abs",

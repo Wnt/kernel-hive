@@ -207,6 +207,7 @@
     "source": "scripts/build-guests/tiles/star.sh (mono 6.8.0.105)",
     "driver": "Xerox 8010 Star"
   },
+  "ui": "desktop",
   "reset": {
     "stationDir": "star",
     "pointer": "rel",

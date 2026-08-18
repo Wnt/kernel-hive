@@ -232,6 +232,7 @@
     "source": "built from source in bridge-base.sh, unpinned (docs/guests/amstradcpc.md)",
     "driver": "CPC 6128"
   },
+  "ui": "home-computer",
   "reset": {
     "stationDir": "amstradcpc",
     "pointer": "rel",
