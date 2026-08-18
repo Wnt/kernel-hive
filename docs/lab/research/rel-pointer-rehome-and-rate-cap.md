@@ -258,3 +258,155 @@ ceiling, see §2 — not what this plan fixes). Then **beos** (the drift complai
   `HOME_SETTLE_MS` per-station if measurements say so.
 - Effort: daemon ~1 day incl. tests, SPA hint ~1 h, per-station calibration
   ~10 min each + eyeball.
+
+---
+
+# Rollout to the remaining relative-cursor stations (plan, 2026-08-19)
+
+**Status: macos753 shipped, this is the plan for the rest.** The hard, one-time
+pieces are already fleet-wide; what remains is a uniform, low-risk per-station
+**calibration**. This section supersedes the "Steps 5 / roll out by measurement"
+line above with a concrete, device-family-aware sequence.
+
+## What every rel station already has (fleet-wide, no per-station work)
+
+1. **Daemon-wide abs→rel model** (`transport::serve`, promoted 2026-08-19,
+   `streamhost-5c9da37`). A browser reload keeps its anchor — the tracked guest
+   position survives across sessions; only `reset_for_session` per-connection
+   fields re-arm. This alone fixes the "reload → corner-chase" symptom on **every**
+   dbus-rel station.
+2. **`reset-tile.sh` `cont` after `loadvm`** (`973e5c9`). A mid-session Restore no
+   longer freezes the guest. Fleet-wide (every QMP loadvm station).
+
+So the remaining work is **not** code — it is turning on the re-home trigger and
+measuring one constant per station.
+
+## The uniform per-station step (the bulk of the rollout, ~10 min each)
+
+For each in-scope dbus-rel bridge station, set two fixture knobs:
+
+    SH_REL_HOME_ON=reset
+    SH_REL_HOME_TO=<gx>,<gy>        # the guest-pixel hotspot of the cursor in the golden
+
+`HOME_TO` is the cursor's baked position in the golden checkpoint. On a reset the
+bridge seeds the model straight there with **no corner pin**, so the guest snaps
+under the visitor's pointer on the first move. It is correct because a `loadvm`
+puts the cursor at exactly that position; between resets the daemon-wide model
+carries the position across reloads.
+
+**Measuring `HOME_TO` is OS-agnostic** — do NOT shape-match the cursor (it differs
+per guest). Use nudge-diff against a live clone (or the live station off-hours):
+screendump, inject a small relative nudge, screendump, diff the two frames; the
+changed pixels bound the cursor, its top-left is the hotspot. This is exactly the
+method that measured macos753 (599,500). Proposed helper:
+`scripts/install-vision/measure-golden-cursor.py <station>` — reset to golden via
+`POST /restore`, nudge-diff, print `gx,gy`; a ~40-line generalisation of the
+throwaway script used for macos753. **Build this first**; it turns each station
+into a two-minute job.
+
+Keep each station's existing device knobs (they solve a different problem, see
+below): aux's `QUANTUM`/`MAX_STEP`, the PS/2 stations' `MAX_STEP`/`STEP_PACE`.
+
+## Why the device-level work does NOT need to be repeated
+
+The ADB button-barrier FIFO + 5 ms autopoll (fork `70c62de`) was needed because
+**ADB rate-limits**: `adb_mouse_poll` delivers ≤63 counts per autopoll and reports
+the current button state each time, so a button-up raced the still-draining motion.
+**PS/2 does not have this race**: `ps2_mouse_sync` (`hw/input/ps2.c`) drains *all*
+accumulated motion in one burst (`while (ps2_mouse_send_packet(s))`) before the next
+button state is reported, so a drag already releases where it ends. PS/2's opposite
+problem — a 16-byte queue that *overflows* on a big fast move — is what the existing
+`SH_REL_MAX_STEP`/`STEP_PACE` chunking already handles. **So no PS/2 device change
+is required**; keep the chunking, add the two knobs above.
+
+## By device family
+
+### (a) ADB — `aux` (do first; the binary is already there)
+
+`aux` runs the *same* `/opt/qemu-m68k` binary as macos753, so it **already has the
+FIFO + 5 ms autopoll**. Remaining:
+- Measure `HOME_TO` for the A/UX golden; set `SH_REL_HOME_ON=reset` + `SH_REL_HOME_TO`.
+- **Keep** `SH_REL_MAX_STEP=32` + `SH_REL_QUANTUM=4` (A/UX truncates `trunc(0.75·units)`
+  per event; the quantum keeps sends on the model — a real drift guard, not pacing).
+  Send raw otherwise (no `SH_REL_PACED`).
+- Re-verify the A/UX pointer is still exact at the new 5 ms poll (the quantum math is
+  poll-rate-independent, but eyeball a drag + a scribble).
+- Acceptance: reload keeps anchor; reset snaps; drag releases at the end; no drift.
+
+### (b) PS/2 dbus-rel — `rhapsody` (PoC), then `hpuxvue`, `freedos`, `msdoswin1`
+
+No device change. For each: `SH_REL_HOME_ON=reset` + measured `SH_REL_HOME_TO`,
+**keep** the existing `MAX_STEP`/`STEP_PACE` (rhapsody 24/16; set a conservative
+`MAX_STEP` for the others if a fast sweep overflows the PS/2 queue — the
+`−1024→~500px` / `−8192→no-op` measurements are on qnx). Notes:
+- `rhapsody` (`/opt/qemu-rhapsody`, scale 2.09) — the "plain x86 PS/2 shape" PoC.
+- `hpuxvue` (`/opt/qemu-hppa`, `lasi-ps2-mouse`) — accel already off via `xset m 1 1`.
+- `freedos`, `msdoswin1` — dual-path: Pointer-Lock (type-4) is the primary feel and
+  bypasses the bridge; `HOME_TO` only improves the non-locked / lock-drop path. Lower
+  priority, but cheap once the helper exists. `msdoswin1` has **no fixture** — create
+  one from the registry `stationEnv` first.
+
+### (c) PS/2 needing a golden re-bake first — `beos`
+
+`beos` is the drift case, and its acceleration is ON in the golden (the operator
+disabled it 2026-08-18 but it is **not yet persisted**). Order:
+1. Re-bake the golden with BeOS mouse acceleration OFF (linear), so `cursor_scale`
+   is one constant. 2. `SH_REL_HOME_ON=reset` + measured `HOME_TO` for the fallback
+   path. With accel off + daemon-wide model + reset re-home, the lock-drop drift that
+   started this whole investigation should be gone. Validate the Cmd-Tab-away-and-back
+   case explicitly.
+
+### (d) Sun serial — `sunos414` (needs two measurements + a device check)
+
+`sunos414` (`/opt/qemu-sparc` SS-5, `sun-serial-mouse`, `SH_CURSOR_SCALE=1.0`
+placeholder). Before the two knobs:
+1. **Measure the gain** (px per delta unit) with a `mouse_move` sweep vs framebuffer,
+   set the real `SH_CURSOR_SCALE` (macos753's `adb_pointer.py gain` is the template).
+2. **Analyse `sun-serial-mouse`** in the sparc fork the way ADB/PS/2 were analysed:
+   does it rate-limit like ADB (→ needs a FIFO) or drain-per-sync like PS/2 (→ nothing
+   to do)? Don't assume; read the device's event/poll path first.
+3. Then `SH_REL_HOME_ON=reset` + measured `HOME_TO`. `exec` (telnet_unix_e) gives a
+   closed loop for validation here — read the X pointer, don't just eyeball.
+
+### (e) Out of scope / deferred
+
+- **`qnx`** — explicitly out (pointer-lock is its intended feel).
+- **`c64`** — host-native VICE, pointer not wired (`method=none`); nothing to calibrate.
+- **`amstradcpc`** — the CPC has no mouse hardware; motion is inert by design.
+- **`nt351`** — leaving the bridge regime for the warpd-hybrid route (SetCursorPos +
+  real PS/2 buttons); do not calibrate as a bridge station.
+- **`indyr4400` (Iris)`, `star` (Darkstar)** — Debian **kiosk bridges** being
+  de-bridged; Iris/Darkstar grab the pointer internally and Pointer-Lock is the real
+  feel. `HOME_TO` only helps the non-locked bridge path — defer to their host-native
+  conversion (`DEBRIDGE-CONVERSION-BRIEF.md`) rather than calibrating a throwaway.
+
+## Suggested order
+
+1. **Helper**: `measure-golden-cursor.py` (unblocks everything, ~1 h).
+2. **aux** (ADB, binary ready — parity with macos753).
+3. **rhapsody** (PS/2 PoC — proves the "no device change, two knobs" path).
+4. **hpuxvue** (PS/2, accel already off).
+5. **beos** (after the accel-off re-bake).
+6. **sunos414** (after gain measurement + device check).
+7. **freedos / msdoswin1** (dual-path, low priority; msdoswin1 needs a fixture).
+
+## Acceptance (every station)
+
+- Reload the browser → cursor keeps tracking, no corner chase.
+- Reset to golden → cursor snaps under the pointer on the first move.
+- Fast window-drag → releases where it ends (ADB via FIFO; PS/2 via immediate drain).
+- Fast scribble → no residual drift (accel off + daemon-wide model).
+- Ordinary motion unchanged frame-for-frame vs today.
+
+## Risks / open
+
+- `HOME_TO` assumes the guest is at golden at session start. The daemon-wide model
+  covers reloads; `reset` covers restores. The residual edge — first session after an
+  idle-resume that left the cursor moved — degrades gracefully to one manual corner
+  chase, no worse than today.
+- Keep PS/2 `MAX_STEP` chunking; a raw send can still overflow the 16-byte PS/2 queue
+  on a pathological sweep.
+- `beos` re-bake must land before its `HOME_TO`, or the constant is measured against
+  the wrong (accelerated) golden.
+- `sun-serial-mouse` is unanalysed; treat the "PS/2 needs no device change" conclusion
+  as PS/2-only until its event/poll path is read.
