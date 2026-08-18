@@ -29,19 +29,19 @@
       "value": {
         "os": "NEWS-OS 4.1R (Sony NWS-3260)",
         "win": "mame",
-        "mouse": "x-desktop",
+        "mouse": "sxsession-menus",
         "kbd": "term:xterm",
         "kbd_reset": "Escape",
         "kbd_note": "sxdm login on the LCD; xterm from the root menu is the keyboard proof",
         "audio_trigger": null,
         "validated": false,
-        "note": "HOST-NATIVE MAME nws3260 (drawshm 1120x780 mono LCD, ctlsock keys via generated keymap). No save-state in the driver: reset=relaunch cold-boots the installed disk. Pointer TBD (hid mouse axes exist; ctlsock ptr path not wired yet)."
+        "note": "HOST-NATIVE MAME nws3260 (drawshm 1120x780 mono LCD, ctlsock keys via generated keymap, pointer via ctlsock MOVEA open-loop at 1:1). No save-state in the driver: reset=relaunch cold-boots the installed disk (~90 s to sxdm). root / no password; xterm via sxsession Application menu (press-and-hold)."
       }
     },
     "labctl": {
       "dir": "/data/vms/streamhost/stations/newsos",
       "qmp": null,
-      "pointer_mode": "none",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -51,7 +51,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54148,
-      "notes": "HOST-NATIVE: MAME 0.289 nws3260 runs on the host, no QEMU/QMP, no exec channel. Frames drawshm->shm, keys ctlsock + newsos.keymap. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (driver has no save state) reboots the installed NEWS-OS 4.1R disk. DARK LAUNCH: listing=hidden while the install runs on camera; SH_IDLE_PAUSE_SECS=0 until the disk is installed."
+      "notes": "HOST-NATIVE: MAME 0.289 nws3260 runs on the host, no QEMU/QMP, no exec channel. Frames drawshm->shm, keys ctlsock + newsos.keymap, pointer ctlsock MOVEA (open-loop, X server -a 1 -t 1 so 1 count = 1 px). Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (driver has no save state) power-cycles: Automatic Boot DIP + /fastboot -> sxdm login in ~90 s. Disk = read-only CHD master + diff in the station dir. DARK LAUNCH: listing=hidden until the operator eyeballs it."
     }
   },
   "render": {
@@ -71,12 +71,12 @@
     "audio": false,
     "touch": false,
     "pointer": {
-      "transport": "none",
+      "transport": "abs",
       "backend": "mamesock",
-      "method": "none",
-      "absolute": false,
-      "present": false,
-      "device": "ioport-keyboard",
+      "method": "mame-ioport",
+      "absolute": true,
+      "present": true,
+      "device": "news-hid-mouse",
       "scale": 1.0,
       "offset": [
         0,
@@ -91,7 +91,8 @@
     "archetypeId": "putty-lcd",
     "transport": "streamhost",
     "accentColor": "#7a6f9b",
-    "eraLabel": "1991 · NEWS-OS 4.1R — Sony NWS-3260"
+    "eraLabel": "1991 · NEWS-OS 4.1R — Sony NWS-3260",
+    "pointerRel": false
   },
   "museum": {
     "id": "newsos",
@@ -155,7 +156,7 @@
         "--capture",
         "shm",
         "--pointer",
-        "none",
+        "abs",
         "--input-backend",
         "mamesock",
         "--audio",
@@ -182,12 +183,12 @@
   },
   "reset": {
     "stationDir": "newsos",
-    "pointer": "none",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "N/A",
+    "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "NEWS-OS 4.1R on the NWS-3260 LCD (1120x780 mono) at the sxdm login / X desktop; relaunch cold-boots the installed disk (no save state in the driver). Keyboard PASS = the ROM monitor and the installer TUI answered typed text over ctlsock, framebuffer-proven 2026-08-18."
+    "fixture": "NEWS-OS 4.1R on the NWS-3260 LCD (1120x780 mono) at the sxdm login (NEWS logo, 'NEWS-OS Release 4.1R (localhost)'); relaunch power-cycles the machine (no save state in the driver): Automatic Boot DIP + /fastboot -> login in ~90 s from a read-only CHD master + diff. Keyboard PASS = ROM monitor, installer TUI and xterm answered typed text over ctlsock; mouse PASS = MOVEP/DOWN1/UP1 opened the sxsession Application menu and launched xterm, 1:1 after Xservers -a 1 -t 1 — all framebuffer-proven 2026-08-18. Operator eyeball pending."
   }
 }

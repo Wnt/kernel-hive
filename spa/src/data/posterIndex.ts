@@ -30,6 +30,9 @@ const POSTER_INDEX = {
   "atarist": {
     "hero": "/posters/atarist/desktop.webp"
   },
+  "aux": {
+    "hero": "/posters/aux/desktop.webp"
+  },
   "bbcmicro": {
     "hero": "/posters/bbcmicro/desktop.webp"
   },
