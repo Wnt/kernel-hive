@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "newsos",
+  "era_year": 2026,
+  "stationDir": "newsos",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 62,
+        "prelude": "",
+        "value": {
+          "key": "newsos",
+          "script": "tiles/newsos.sh",
+          "outputDir": "Newsos",
+          "class": "graphical",
+          "estimated": "~30-90m",
+          "automation": "vision",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54148,
+    "slot": 148,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "none",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
+  "guestDoc": "docs/guests/newsos.md",
+  "credentialsRef": "guest/newsos",
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · newsos"
+  },
+  "museum": {
+    "id": "newsos",
+    "displayName": "newsos",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 3 scaffold; reserved slot 148/UDP 54148",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}
