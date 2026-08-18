@@ -39,6 +39,11 @@ static MOVE_SEQ: AtomicU64 = AtomicU64::new(0);
 pub fn enabled() -> bool {
     LEVEL.load(Ordering::Relaxed) >= 1
 }
+/// The configured level (0/1/2), for callers that emit their own per-event line.
+#[inline]
+pub fn level() -> u8 {
+    LEVEL.load(Ordering::Relaxed)
+}
 
 /// Wall-clock epoch milliseconds — the SAME clock the ctlsock module's
 /// CTLTRACE lines stamp, so a daemon `[key-tel]` line and a module

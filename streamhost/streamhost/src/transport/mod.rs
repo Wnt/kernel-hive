@@ -267,6 +267,15 @@ async fn handle_session(
     // task (moves) and the reliable-stream task (position-carrying clicks) so both
     // update the same last-position and relative deltas stay continuous.
     let mouse = input::new_mouse();
+    // SH_REL_PACED: the session's paced sender (rel_bridge.rs) owns every
+    // bridge RelMotion; it holds only a Weak ref so it ends with the session.
+    if cfg.rel_paced && cfg.input_backend == crate::config::InputBackend::DbusRel {
+        tokio::spawn(crate::rel_bridge::run_pacer(
+            cap.clone(),
+            cfg.clone(),
+            Arc::downgrade(&mouse),
+        ));
+    }
 
     // MOVE COALESCER for the dbus (abs/rel) stations — mirrors warpd.rs. The datagram
     // receive loop must NOT apply each move as an awaited dbus call_method

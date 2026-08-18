@@ -24,6 +24,13 @@
 //  Either switch also works as an OPT-OUT while the default stands: `= false`, or
 //  `?penrec=0`.
 //
+//  MOUSE ROWS are dropped by default (a mouse would drown the pen rings). The
+//  relative-pointer bridge work (docs/lab/research/rel-pointer-rehome-and-rate-cap.md)
+//  needs them: `?ptrrec=1` (or `window.__osgPtrRec = true`) keeps mouse rows AND
+//  adds one `w` (wire) row per absolute move datagram — the MAPPED guest
+//  coordinates and the wire `cseq`, which is exactly what the daemon's
+//  `[input-tel rel] cseq=…` lines carry, so the two logs join row for row.
+//
 //  IT PUSHES, so nobody has to ask. Every ~2 s the captured rows are packed into
 //  `ptr` telemetry events and POSTed to /clientlog like any other client event,
 //  where the server keeps them in its rotating log. That means a reproduction is
@@ -61,7 +68,8 @@ interface PointerRecRow {
   ts: number;
   /** performance.now() read in the handler: when this actually arrived. */
   now: number;
-  /** 'p'=pen 't'=touch 'm'=mouse '-'=not a pointer event */
+  /** 'p'=pen 't'=touch 'm'=mouse '-'=not a pointer event; 'g' = a wire row
+   *  (t='w'): x,y are GUEST coordinates and btn carries the wire cseq. */
   pt: string;
   btn: number;
   x: number;
@@ -104,6 +112,25 @@ function penRecorderOn(): boolean {
     if (q === '0') return false;
   } catch { /* no location */ }
   return DEFAULT_ON;
+}
+
+/** Mouse + wire rows: an explicit opt-in per tab (never on by default — a
+ *  mouse at 60-120 Hz for minutes is fine for the rotating clientlog, but only
+ *  when someone asked for it). */
+function ptrRecOn(): boolean {
+  if (typeof window === 'undefined') return false;
+  const w = window as unknown as { __osgPtrRec?: unknown };
+  if (typeof w.__osgPtrRec === 'boolean') return w.__osgPtrRec;
+  try {
+    return new URLSearchParams(window.location.search).get('ptrrec') === '1';
+  } catch { return false; }
+}
+
+/** One absolute move as it went on the wire (inputWire.sendMoveAbs): the mapped
+ *  guest point and its `cseq`. Only recorded under the `ptrrec` switch. */
+export function recordWireMove(gx: number, gy: number, cseq: number): void {
+  if (!ptrRecOn()) return;
+  push({ t: 'w', ts: 0, now: Math.round(performance.now()), pt: 'g', btn: cseq >>> 0, x: gx, y: gy });
 }
 
 /** One row as a compact string: `t,now,pt,btn,x,y`. Packed rather than JSON
@@ -155,13 +182,15 @@ export function installPointerRecorder(): void {
   if (installed || typeof window === 'undefined') return;
   installed = true;
   const on = (e: Event) => {
-    if (!penRecorderOn()) return;
+    const mouseToo = ptrRecOn();
+    if (!penRecorderOn() && !mouseToo) return;
     const p = e as PointerEvent;
     const t = TAG[e.type];
     if (!t) return;
     // Pen and touch only for pointer events; a mouse would drown the ring and is
-    // not what these bugs are about. contextmenu/auxclick have no pointerType.
-    if (p.pointerType && p.pointerType !== 'pen' && p.pointerType !== 'touch') return;
+    // not what these bugs are about — unless the `ptrrec` switch asked for it.
+    // contextmenu/auxclick have no pointerType.
+    if (p.pointerType && p.pointerType !== 'pen' && p.pointerType !== 'touch' && !mouseToo) return;
     push({
       t,
       ts: Math.round(p.timeStamp),
@@ -191,6 +220,8 @@ declare global {
   interface Window {
     /** Live capture switch + readers, exposed for the operator eval plane. */
     __osgPenRec?: boolean;
+    /** Mouse + wire rows switch (see header). */
+    __osgPtrRec?: boolean;
     penRecorderDump?: () => string;
     penRecorderReset?: () => void;
   }

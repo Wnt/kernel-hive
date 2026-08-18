@@ -21,6 +21,7 @@
 //    datagrams (unreliable, high-rate, < ~200 B so they fit path MTU):
 //      type 1  mouse move ABSOLUTE : u16 x, u16 y, u32 cseq   (guest needs usb-tablet)
 //      type 4  mouse move RELATIVE : i16 dx, i16 dy           (PS/2-only guests)
+//      type 7  re-home hint        : (no payload)             (rel-bridge stations)
 //      type 9  RTT ping            : u32 seq           (echoed back)
 //    PER-TYPE reliable QUIC streams (Moonlight-style HOL avoidance): one CLIENT-
 //    opened UNIDIRECTIONAL reliable stream per input CLASS (ICLASS_* tag), so a
@@ -53,7 +54,7 @@
 import { AudioPlayer } from './streamClient/audioPlayer';
 import {
   moveWireSnapshotImpl, noteMoveWireImpl, sendButtonImpl, sendKeyScancodeImpl,
-  sendMoveAbsImpl, sendMoveRelImpl, sendWheelImpl,
+  sendMoveAbsImpl, sendMoveRelImpl, sendRehomeHintImpl, sendWheelImpl,
 } from './streamClient/inputWire';
 import {
   connectImpl,
@@ -462,6 +463,7 @@ export class StreamClient {
 
   sendMoveAbs(x: number, y: number) { sendMoveAbsImpl(this, x, y); }
   sendMoveRel(dx: number, dy: number) { sendMoveRelImpl(this, dx, dy); }
+  sendRehomeHint() { sendRehomeHintImpl(this); }
   noteMoveWire() { noteMoveWireImpl(this); }
   moveWireSnapshot(): { sent: number; rejected: number; desiredSizeMin: number | null } {
     return moveWireSnapshotImpl(this);

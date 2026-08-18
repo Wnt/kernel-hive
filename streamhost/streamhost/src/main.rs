@@ -26,6 +26,7 @@ mod mame_sock;
 mod ptr_grid;
 mod ptr_reckon;
 mod realtime_input;
+mod rel_bridge;
 mod session_ticket;
 mod signaling;
 mod transport;
@@ -210,6 +211,11 @@ async fn main() -> Result<()> {
 
     if let Some(p) = cfg.local_http_port {
         signaling::spawn_http(cfg.clone(), p);
+    }
+    // Relative-pointer stations: SIGUSR2 = "guest state replaced" (reset-tile.sh
+    // sends it after a loadvm) -> the bridge re-homes on the next motion.
+    if cfg.input_backend == config::InputBackend::DbusRel && cfg.rel_home_on.reset {
+        rel_bridge::spawn_reset_signal();
     }
 
     transport::serve(cfg.clone(), cap, enc, audio, pauser).await?;
