@@ -142,7 +142,15 @@ impl RelModel {
     }
     /// The pin landed: the guest cursor is at the origin, by construction.
     pub fn homed_at_origin(&mut self) {
-        self.sent = (0, 0);
+        self.homed_at(0, 0);
+    }
+    /// Re-home to a KNOWN guest position (guest delta units): mark the model
+    /// homed with `sent` = that position, no motion. Used when the guest cursor
+    /// sits at a baked constant after a `loadvm` restore (`SH_REL_HOME_TO`), so
+    /// the first browser move produces an exact delta and the cursor snaps under
+    /// the pointer with no corner excursion or drain backlog.
+    pub fn homed_at(&mut self, sx: i32, sy: i32) {
+        self.sent = (sx, sy);
         self.homed = true;
         self.home_pending = false;
         self.edge_done = (false, false);
@@ -249,6 +257,25 @@ pub(crate) fn focus_hint(st: &mut MouseState, cfg: &Config) {
 /// session, i.e. exactly what the pin exists to prevent. Held under the mouse
 /// lock by every caller so no sample can interleave.
 pub(crate) async fn pin_home(cap: &Capture, cfg: &Config, st: &mut MouseState) {
+    // KNOWN-POSITION seed (SH_REL_HOME_TO=x,y guest px): the guest cursor sits
+    // at a baked constant after a loadvm restore, so instead of driving it to
+    // the corner and walking back — a ~1 s excursion on a slow ADB link that
+    // never anchors while the visitor is moving — just tell the model where the
+    // guest already is. No motion; the next browser move is an exact delta.
+    if let Some((px, py)) = cfg.rel_home_to {
+        let (sx, sy) = crate::input::calibrated_abs(
+            px as u32,
+            py as u32,
+            cfg.cursor_off_x,
+            cfg.cursor_off_y,
+            cfg.cursor_scale,
+        );
+        st.rel.homed_at(sx, sy);
+        if crate::input_telemetry::enabled() {
+            eprintln!("[input-tel rel] rehome seed guest=({px},{py}) sent=({sx},{sy})");
+        }
+        return;
+    }
     let pin = home_pin(cfg.cursor_scale);
     rel_motion(cap, -pin, -pin).await;
     tokio::time::sleep(Duration::from_millis(HOME_SETTLE_MS)).await;
@@ -452,6 +479,20 @@ mod tests {
         assert_eq!(m.pending(), (2, 0));
         m.set_target(34, 0, (0, 0));
         assert_eq!(m.next_step(32, 4), (4, 0));
+    }
+
+    #[test]
+    fn known_position_seed_makes_the_first_move_an_exact_delta() {
+        // homed_at(sent) instead of the pin: a browser target at the SAME guest
+        // position yields a zero delta (already anchored); elsewhere, exactly
+        // the offset — no corner excursion.
+        let mut m = RelModel::default();
+        m.homed_at(1665, 1389); // 599*2.78, 500*2.78 (macos753 golden)
+        m.set_target(1665, 1389, (0, 0));
+        assert_eq!(m.next_step(i32::MAX / 4, 0), (0, 0));
+        m.set_target(0, 0, (0, 0));
+        assert_eq!(m.next_step(i32::MAX / 4, 0), (-1665, -1389));
+        assert!(!m.needs_home());
     }
 
     #[test]

@@ -156,7 +156,7 @@ fn env_num<T: std::str::FromStr>(k: &str, default: T) -> T {
 /// Apply per-guest calibration to an absolute client coordinate. The same
 /// transform feeds a real absolute tablet or the absolute-client -> relative
 /// PS/2 bridge; identity settings preserve the previous relative behavior.
-fn calibrated_abs(x: u32, y: u32, off_x: i32, off_y: i32, scale: f64) -> (i32, i32) {
+pub(crate) fn calibrated_abs(x: u32, y: u32, off_x: i32, off_y: i32, scale: f64) -> (i32, i32) {
     let xf = (x as f64 * scale).round() as i32 + off_x;
     let yf = (y as f64 * scale).round() as i32 + off_y;
     (xf.max(0), yf.max(0))
