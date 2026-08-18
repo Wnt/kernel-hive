@@ -1,7 +1,7 @@
 # hpuxvue guest — HP-UX 10.20 with HP VUE (HP 9000/778, PA-RISC)
 
-Status: **INSTALLED — HP VUE desktop reached 2026-08-18 02:45, dark-launched** (production, `listing=hidden`, slot 144 /
-UDP 54144). `/os/hpuxvue` streams the installer live; nothing is baked yet.
+Status: **LISTED — golden checkpoint baked 2026-08-18 03:57** (production, slot 144 /
+UDP 54144). `/os/hpuxvue` restores the VUE desktop from the `golden` snapshot in the station-local disk; the guest starts frozen until the first visitor.
 Research note: [`docs/lab/research/candidate-hpux.md`](../lab/research/candidate-hpux.md).
 
 ## Identity and source
@@ -92,13 +92,29 @@ disk; else boot CD). The device set is identical in all three.
 
 ## Golden, input, and rollback
 
-- Reset mode: `restart` during install (re-runs the launcher only when QEMU is
-  not live). Becomes `loadvm golden` once baked; `SH_IDLE_PAUSE_SECS` 0 → 60
-  at the same time.
-- Pointer gain, click/drag proof, keyboard modifiers: TODO after install.
-- Known post-install steps (catalog): copy `/etc/nsswitch.files` →
-  `/etc/nsswitch.conf` or the login manager hangs; grow filesystems with
-  `lvextend`+`extendfs`.
+- Reset mode: `loadvm golden` (baked 03:57 with QMP `savevm`; 98.5 MiB
+  vmstate; restore proven framebuffer-identical bar the front-panel clock, and
+  the guest is live afterwards). `SH_IDLE_PAUSE_SECS=60`, launcher starts the
+  guest `-S` at the checkpoint.
+- Baked into the guest: `/.vue/sessionetc` = `xset m 1 1` (pointer 1:1);
+  `/etc/vue/config/sys.resources` `Vuesession*saverTimeout: 0` and
+  `lockTimeout: 0`; `/etc/vue/config/Xconfig` `Vuelogin*autoLogin: root`
+  (unverified on a cold boot — the checkpoint restores a logged-in desktop);
+  hostname `hpuxvue`, TZ EET, standalone (no network), root without password
+  (recorded in the gitignored credential stores as `guest/hpuxvue`).
+- Kernel is the media's generic recovery `vmunix` (works; `mk_kernel` from
+  `/stand/system` never ran — optional future tidy-up, keep a copy first).
+- Catalog gotchas checked: there is NO `/etc/nsswitch.*` on 10.20 (that fix is
+  11.x); LVM growth stays `lvextend`+`extendfs` (756 MB spare in vg00).
+- Pointer: `SH_CURSOR_SCALE=1.0`, click/drag/wheel and keyboard modifiers left
+  to the operator's browser eyeball (`reset.mouse` = UNVERIFIED on purpose).
+- Exec channel: none yet. `/dev/tty0p0` exists and QEMU exposes it as
+  `serial.sock` in the station dir; a getty in `/etc/inittab` plus a
+  serialcon-style client (see tru64) would give `labctl exec`.
+- Automation path for a future builder: HP's install runs a config from the
+  CD's INSTALLFS (`post_load_cmd`/`post_config_cmd` hooks — the "user
+  specified script" seen on camera is HP's own); patching that config is the
+  scripted-install route instead of driving the TUI.
 - Credentials reference only: `guest/hpuxvue`.
 - Rollback: `systemctl stop streamhost@hpuxvue`; the install disk is a single
   station-local qcow2 — delete it and the launcher re-creates an empty one.

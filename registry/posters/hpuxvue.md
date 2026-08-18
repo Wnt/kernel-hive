@@ -4,8 +4,8 @@ subtitle: 1996 · Hewlett-Packard's own Motif desktop on PA-RISC
 hero: /posters/hpuxvue/desktop.webp
 images:
   - src: /posters/hpuxvue/desktop.webp
-    alt: Placeholder card for the HP-UX 10.20 station while the operating system is being installed live — a dark slate frame with the station name
-    caption: Install in progress. This card is replaced by the real HP VUE desktop once the installation completes and the golden fixture is baked.
+    alt: The HP VUE 3.0 desktop on HP-UX 10.20 at 1280×1024 — a slate-blue backdrop, the Helpview window "Welcome to Your HP Workstation!" with a photograph of a 1994 HP workstation, a File Manager showing the root directory, and along the bottom the VUE front panel with a clock, six workspace buttons labelled One to Six, printer, mail, toolbox and trash controls
+    caption: HP VUE as it came up on first login — front panel, welcome help and a file manager. Everything CDE later standardised is already here, in HP's colours.
 ---
 ## Origins
 
@@ -21,7 +21,7 @@ The hardware underneath is a **HP 9000 Model 778 (Visualize B160L)** — a 160 M
 
 ## What you're looking at
 
-Right now: the HP-UX 10.20 installer, running live from the Install and Core OS CD, on an emulated B160L. The install is being done on camera; this station is not yet announced in the hall. When it is finished, this card will show the HP VUE desktop at 1280×1024 — the highest resolution the emulated Artist framebuffer can be trusted at.
+HP-UX 10.20 booted from its own disk on an emulated HP 9000/778, logged into an HP VUE 3.0 session at 1280×1024 — the highest resolution the emulated Artist framebuffer can be trusted at. The front panel along the bottom is the original of the one CDE made famous: a clock, six workspaces, and drawers for the printer, mail, toolbox and trash. Above it sit the two windows VUE opens for a new user, the "Welcome to Your HP Workstation!" help volume and a File Manager on the root directory. Open the Directory menu of that File Manager and choose Terminal for an `hpterm` root shell.
 
 ## Legacy
 

@@ -330,7 +330,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54144,
-      "notes": "INSTALL PHASE (dark launch). No exec channel yet: the installer runs on the Artist framebuffer; a serial console is on the QEMU serial socket only for the builder. Drive it via labctl key/pointer or the browser."
+      "notes": "No exec channel yet: /dev/tty0p0 exists in the guest and QEMU exposes it on serial.sock in the station dir; wire a getty (inittab) + a serialcon-style client to get labctl exec. Until then drive it via QMP sendkey/mouse_move against a CLONE."
     },
     "indyr4400": {
       "dir": "/data/vms/streamhost/stations/indyr4400",
