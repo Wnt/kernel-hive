@@ -28,16 +28,14 @@
 # POINTER: Sun serial mouse, relative only (no absolute device exists on this
 # platform), so the daemon runs SH_INPUT_BACKEND=dbus-rel.
 #
-# THREE LAUNCH SHAPES, decided by what exists in $D:
-#   1. golden snapshot in the disk -> -loadvm golden -S (the exhibit; frozen at
-#      the OpenWindows desktop until the first visitor)
-#   2. $D/INSTALLED marker         -> cold boot from the SCSI disk (-boot c =
-#      OpenBIOS "disk:a")
-#   3. neither                     -> INSTALL PHASE: cold boot the install CD
-#      (-boot d = "cdrom:d", the sun4m MUNIX kernel) against a fresh/persistent
-#      install disk. Dark-launch shape: the installer runs on camera.
-# The DEVICE SET IS IDENTICAL in all three (CD always attached with the same
-# ISO, same disk, same NIC) so a checkpoint baked in shape 2 loads in shape 1.
+# BOOT: OpenBIOS will NOT auto-boot the target-3 SCSI disk (its `disk` alias is
+# not sd@3, and SunOS must see the disk as sd0 = target 3), so there is no cold
+# auto-boot. The golden loadvm IS the boot path: with a `golden` snapshot the
+# launcher restores the booted system instantly (-loadvm golden -S, frozen
+# until the first visitor); without one the guest sits at the OpenBIOS "0 >"
+# prompt for a human/baker to drive `boot /iommu/sbus/espdma/esp/sd@3,0:a`.
+# The CD stays attached with the same ISO either way, so the device set is
+# loadvm-exact.
 set -e
 D=/data/vms/streamhost/stations/sunos414
 A=/data/vms/streamhost/assets/sunos414
@@ -47,18 +45,24 @@ DISK=$D/sunos414-golden.qcow2
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock"
 [ -f "$DISK" ] || qemu-img create -f qcow2 "$DISK" 4G >/dev/null
-BOOT="-boot d"
+# Boot shape: a golden loadvm restores the booted SunOS instantly (the exhibit,
+# frozen -S until the first visitor). Without a golden the guest lands at the
+# OpenBIOS "0 >" prompt — OpenBIOS will not auto-boot the target-3 disk that
+# SunOS needs to see as sd0, so the golden IS the boot path (bake it by driving
+# `boot /iommu/sbus/espdma/esp/sd@3,0:a` once, then savevm golden). No -boot.
 LOADVM=""
 if qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden; then
   LOADVM="-loadvm golden -S"
-  BOOT="-boot c"
-elif [ -f "$D/INSTALLED" ]; then
-  BOOT="-boot c"
 fi
+# Telnet exec forward (labctl exec sunos414 -> sunexec.py). SLIRP forwards are
+# host-side, NOT in the loadvm snapshot, so re-add on every start (alpine does
+# the same for its ssh forward). Guest is 10.0.2.15 (static in the golden);
+# in.telnetd runs from inetd, root has no password.
+EXEC_PORT=5947
 # streamhost display fast-poll: dbus poll every SH_DBUS_UPDATE_MS ms (fork
 # patch; its run-state idle gate keeps a paused TCG station at ~0 cost).
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
-# shellcheck disable=SC2086 # $LOADVM/$BOOT must word-split into flags
+# shellcheck disable=SC2086 # $LOADVM must word-split into flags
 nohup "$QEMU" -L /opt/qemu-sparc/share/qemu \
   -name streamhost-sunos414 \
   -M SS-5 -accel tcg -m 64 \
@@ -71,7 +75,7 @@ nohup "$QEMU" -L /opt/qemu-sparc/share/qemu \
   -device scsi-cd,scsi-id=6,drive=cd0,physical_block_size=512 \
   -net nic,model=lance -net user \
   -serial unix:$D/serial.sock,server=on,wait=off \
-  $BOOT $LOADVM \
+  $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
   -pidfile $D/qemu.pid \
   >"$D/qemu.log" 2>&1 &
@@ -79,4 +83,8 @@ for i in $(seq 1 40); do
   [ -S "$D/qmp.sock" ] && [ -f "$D/qemu.pid" ] && break
   sleep 0.5
 done
-echo "station sunos414 qemu pid=$(cat "$D/qemu.pid" 2>/dev/null) qmp=$D/qmp.sock udp=54147 boot='$BOOT' loadvm='${LOADVM:-<none>}'"
+# re-establish the host->guest telnet forward for labctl exec (best-effort;
+# harmless if the guest is still at OpenBIOS with no telnetd yet).
+[ -S "$D/qmp.sock" ] && python3 /root/qmp_hmp.py "$D/qmp.sock" \
+  "hostfwd_add tcp:127.0.0.1:${EXEC_PORT}-10.0.2.15:23" >/dev/null 2>&1 || true
+echo "station sunos414 qemu pid=$(cat "$D/qemu.pid" 2>/dev/null) qmp=$D/qmp.sock udp=54147 exec=127.0.0.1:${EXEC_PORT} loadvm='${LOADVM:-<none: OpenBIOS prompt>}'"

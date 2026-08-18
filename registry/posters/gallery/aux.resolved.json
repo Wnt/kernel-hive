@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "aux",
+  "images": [
+    {
+      "src": "/posters/aux/gallery/01-q8002.webp",
+      "alt": "A Macintosh Quadra 800 mini-tower seen from the front-left: beige case, CD-ROM and floppy drive bays at the top, the Apple logo and 'Macintosh Quadra 800' badge low on the front",
+      "caption": "The Macintosh Quadra 800 (1993) — Apple's 33 MHz 68040 mini-tower, the machine this station emulates. A/UX 3.0.1 was the release that added support for it.",
+      "author": "GeneralFreddy",
+      "license": "CC BY 4.0",
+      "licenseId": "cc-by-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Q8002.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "153602d5096c4f2efe216a3bd5defdea9c57fdbd45b3e9383e7e730823284413",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "src": "/posters/aux/gallery/02-apple-mac-quadra-800.webp",
+      "alt": "A Macintosh Quadra 800 tower photographed against white, showing the drive bays and the front panel with its power light and vents",
+      "caption": "Quadra 800 from the front. Under the beige is a 68040 with its PMMU and FPU — both of which A/UX requires; A/UX never ran on the FPU-less LC or Performa lines.",
+      "author": "Unknown",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple_mac_quadra_800.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "9ae8547f25700cd82c049cd5a81cb12879e2e3d794b00b907abd07b3f41ec71f",
+      "width": 836,
+      "height": 893
+    },
+    {
+      "src": "/posters/aux/gallery/03-quadra-840av-macintosh-16-inch-color-display-appledesign-powered-speakers-apple-extended-keyboard-ii-apple-desktop-bus-mouse-ii.webp",
+      "alt": "A complete Macintosh desk: a Quadra 840AV mini-tower next to a 16-inch Apple colour display, AppleDesign powered speakers, an Apple Extended Keyboard II and an ADB Mouse II",
+      "caption": "The same tower chassis one step up — a Quadra 840AV — with the 16-inch Apple display, Extended Keyboard II and ADB Mouse II. That ADB mouse is the pointer this station drives, and why the cursor here is a tracked, relative one.",
+      "author": "Gona.eu",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Quadra_840AV_%26_Macintosh_16-inch_Color_Display_%26_AppleDesign_Powered_Speakers_%26_Apple_Extended_Keyboard_II_%26_Apple_Desktop_Bus_Mouse_II.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "39a11706bc93ba82ec001c67272883662d9453e5187a4b4a615cc08fdafdd705",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/aux/gallery/04-macintosh-quadra-840av-logic-board-820-0382-10-661-1700.webp",
+      "alt": "The logic board of a Macintosh Quadra 840AV: the large 68040 processor under a heatsink, RAM SIMM sockets, three NuBus slots along one edge and the SCSI, ADB and serial ports",
+      "caption": "Inside the tower: a Quadra logic board with the 68040, RAM SIMMs, NuBus slots and the on-board SCSI. A/UX's autoconfig walked exactly this hardware at first boot and rebuilt its kernel to match.",
+      "author": "Gona.eu",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Macintosh_Quadra_840AV_logic_board_820-0382-10_(661-1700).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "afd2e718dd66573f290448337b2b5a08d105453dbf9f03af618dd64e88c7a266",
+      "width": 1600,
+      "height": 1384
+    },
+    {
+      "src": "/posters/aux/gallery/05-aux-system-manuals.webp",
+      "alt": "One end of a long shelf of grey Apple A/UX 3.0 manuals: Command Reference, User Interface, System Administrator's Reference, Network System Administration and Local System Administration, each with the Apple logo on the spine",
+      "caption": "The A/UX 3.0 documentation set — a whole shelf of it. This was a commercial Unix sold to government and universities, and it came with the paperwork of one.",
+      "author": "Bill Woodcock",
+      "license": "CC BY-SA 4.0",
+      "licenseId": "cc-by-sa-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:AUX_system_manuals.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "16fab55c16e8af40f885ba3c1a1c879620593677bfb6f37d75c6e3d35178d48a",
+      "width": 652,
+      "height": 566
+    }
+  ]
+}

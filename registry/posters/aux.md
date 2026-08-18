@@ -4,8 +4,11 @@ subtitle: 1993 · Apple's own System V Unix, wearing the Macintosh Finder
 hero: /posters/aux/desktop.webp
 images:
   - src: /posters/aux/desktop.webp
-    alt: Placeholder card for the A/UX station while the operating system is being installed live — a dark slate frame with the station name
-    caption: Install in progress. This card is replaced by the real A/UX desktop once the installation completes and the golden fixture is baked.
+    alt: The A/UX 3.0.1 desktop at 1152×870 — a Macintosh menu bar reading File, Edit, Window, Fonts, Commands, Preferences, Keys; a CommandShell window top-left with a "WELCOME TO A/UX" banner, `uname -a`, the date, a fortune and a "localhost.root #" prompt; the Unix root "/" and "MacPartition" disk icons top-right; the Trash bottom-right
+    caption: A Unix root prompt in a Macintosh window, with the Unix root directory sitting on the desktop as a disk. That is the whole idea of A/UX in one screen.
+  - src: /posters/aux/startup.webp
+    alt: A Macintosh System 7 desktop showing the small MacPartition volume open — A/UX Startup, launch, bin, Read Me, TeachText, Apple HD SC Setup — and a centred dialog reading "Welcome to The Apple Workgroup Server 95 — Loading…" with a progress bar and a Cancel button
+    caption: How A/UX boots — a tiny Mac OS on a 20 MB HFS partition runs "A/UX Startup", which loads the Unix kernel from the disk's Unix slices. Cancel it and you get the standalone "startup#" shell instead.
 ---
 ## Origins
 
@@ -21,7 +24,17 @@ The machine is a **Quadra 800** — a 33 MHz 68040 tower from 1993, the same emu
 
 ## What you're looking at
 
-Right now: the A/UX 3.0.1 installer, running live from the install CD, on an emulated Quadra 800. Because the archived install CD is not itself ROM-bootable, a small System 7.5.3 helper disk boots the machine and launches Apple's own A/UX disk-setup and startup tools from the CD. The install is being done on camera; this station is not yet announced in the hall.
+A/UX 3.0.1 booted to its desktop on an emulated Quadra 800 at 1152×870, logged in as root. The window top-left is **CommandShell** — a Bourne shell in a Macintosh window, showing the system's welcome banner, `uname -a` and a fortune. The disk icon named `/` top-right *is* the Unix root filesystem, browsable in the Finder like any Macintosh volume; `MacPartition` is the small HFS volume that holds A/UX Startup, the Mac program that boots the Unix kernel. It is the same filesystem either way: a folder you open in the Finder is a directory you can `ls` in the shell.
+
+## Things to try
+
+- **Type in the shell**: `ls /`, `ps -ef`, `df`, `who`, `man ls` (the manual pages are installed), `fortune`, or `cd /usr/games` for the BSD games — `wump`, `aliens`, `bj`, `arithmetic`, `quiz`, `fish`.
+- **Open the `/` disk** and walk into `mac`, `bin` — CommandShell, TextEditor, TeachText, Commando and the other Mac-side tools live there as ordinary Finder icons, on a Unix filesystem.
+- **Apple menu → Control Panels** — Mouse, Sound, General Controls: System 7's control panels, running under Unix. Apple menu → CommandShell opens a fresh shell window if you close the last one.
+- Watch the menu bar change as you click between the shell and the desktop: CommandShell and the Finder are separate Mac applications, each in its own Unix process under the A/UX Toolbox.
+- **Reset** returns the machine to this exact scene in a fraction of a second — a saved snapshot, not a reboot; a real A/UX boot on this Quadra takes about three minutes.
+
+Notes for the curious: the mouse here is an ADB mouse — a relative device — so the pointer is tracked rather than teleported; the A/UX Toolbox also ignores very quick clicks, so click deliberately. Games, QuickTime, the manual pages and networking were added from the CD's `/ARCHIVES`; X11 and MacX are on the disk but not installed.
 
 ## Legacy
 

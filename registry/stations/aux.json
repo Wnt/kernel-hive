@@ -17,7 +17,7 @@
           "class": "graphical",
           "estimated": "~2-4h",
           "automation": "vision",
-          "produces": "aux-golden.qcow2 + pram-golden.qcow2 + checkpoint (A/UX 3.0.1 -> Finder/CommandShell desktop, 1152x870x8)",
+          "produces": "aux-golden.qcow2 + pram-golden.qcow2 + checkpoint (A/UX 3.0.1 -> Finder + CommandShell desktop, 1152x870x8)",
           "flags": []
         }
       }
@@ -32,10 +32,10 @@
         "mouse": "finder-desktop",
         "kbd": "term:CommandShell",
         "kbd_reset": "Escape",
-        "kbd_note": "INSTALL PHASE: keyboard proof is a Finder dialog; CommandShell prompt once A/UX is up",
+        "kbd_note": "keyboard proof: type in the CommandShell (prompt echoes); the A/UX Finder drops fast clicks — hold ~0.3 s",
         "audio_trigger": "beep",
         "validated": false,
-        "note": "relative ADB pointer: cursor_scale 1.0 UNMEASURED (install phase). Same q800/TCG machine and /opt/qemu-m68k binary as macos753"
+        "note": "relative ADB pointer made exact: cursor_scale 1.3333 (guest = trunc(0.75 px/unit)), SH_REL_MAX_STEP=32 + SH_REL_QUANTUM=4 keep every send in the linear range and on the model. Same q800/TCG machine and /opt/qemu-m68k binary as macos753"
       }
     },
     "labctl": {
@@ -51,7 +51,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54145,
-      "notes": "INSTALL PHASE (dark launch). No exec channel yet; the CommandShell/serial (-serial unix:$D/serial.sock) is the future labctl exec channel once A/UX runs a getty on it. Framebuffer + adb_pointer.py against a CLONE meanwhile."
+      "notes": "No exec channel yet: A/UX runs no getty on the serial line (-serial unix:$D/serial.sock is wired for it). Framebuffer + adb_pointer.py against a CLONE; the CommandShell in the checkpoint scene is the keyboard proof."
     }
   },
   "render": {
@@ -61,7 +61,7 @@
     "bringUpGroup": 7,
     "signalOrder": 64,
     "actionMapOrder": 36,
-    "stationsManifestPrelude": "\n# aux (slot 145) — A/UX 3.0.1 (Apple's SVR2 Unix under the Mac Finder) on the\n#   same q800/68040 machine as macos753: /opt/qemu-m68k (kernel-hive fork), TCG\n#   only, dbus display 1152x870x8, RELATIVE ADB pointer (dbus-rel), qcow2 PRAM.\n#   DARK LAUNCH: listing=hidden while the install runs on camera from a helper\n#   System 7.5.3 disk + the A/UX CD; SH_IDLE_PAUSE_SECS=0 until the golden.\n",
+    "stationsManifestPrelude": "\n# aux (slot 145) — A/UX 3.0.1 (Apple's SVR2 Unix under the Mac Finder) on the\n#   same q800/68040 machine as macos753: /opt/qemu-m68k (kernel-hive fork), TCG\n#   only, dbus display 1152x870x8, RELATIVE ADB pointer (dbus-rel), qcow2 PRAM.\n#   A/UX disk at SCSI 0 (c0d0s0 root, s1 swap, MacPartition boots A/UX Startup).\n#   Checkpoint 'golden' in the disk+PRAM pair; -loadvm golden -S; idle pause 60.\n",
     "bindingPrelude": ""
   },
   "stream": {
@@ -77,7 +77,7 @@
       "absolute": false,
       "present": true,
       "device": "adb-mouse",
-      "scale": 1.0,
+      "scale": 1.3333,
       "offset": [
         0,
         0
@@ -119,7 +119,7 @@
         "--input-backend",
         "dbus-rel",
         "--cursor-scale",
-        "1.0",
+        "1.3333",
         "--cursor-off-x",
         "0",
         "--cursor-off-y",
@@ -153,16 +153,16 @@
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
         "-drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd",
-        "-device scsi-hd,scsi-id=6,drive=hd0",
+        "-device scsi-hd,scsi-id=0,drive=hd0",
         "-drive file=$D/aux-golden.qcow2,format=qcow2,cache=writeback,aio=threads,if=none,id=hd0",
-        "INSTALL PHASE ONLY: -device scsi-hd,scsi-id=5 helper.qcow2 (System 7.5.3) + -device scsi-cd,scsi-id=3 AUX_3.0.1_Install.iso",
+        "INSTALL PHASE ONLY: -device scsi-hd,scsi-id=5 helper.qcow2 (System 7.5.3) + -device scsi-hd,scsi-id=3 cd-overlay.qcow2 (writable overlay over AUX_3.0.1_Install.iso; scsi-cd hangs A/UX Startup)",
         "-serial unix:$D/serial.sock,server=on,wait=off",
         "-loadvm golden -S (when the checkpoint exists)",
         "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "install phase: tracked verbatim launcher IS the deployed launcher; the post-install device set (no helper, no CD) is what the checkpoint will be baked with"
+        "reason": "tracked verbatim launcher equals the deployed launcher; the checkpoint was baked with this exact post-install device set (A/UX disk at SCSI 0, no helper, no CD) on the standalone /opt/qemu-m68k build"
       }
     }
   },
@@ -170,11 +170,11 @@
     "stationDir": "aux",
     "pointer": "rel",
     "touch": false,
-    "resetMode": "restart",
-    "snapshot": null,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "INSTALL PHASE — A/UX 3.0.1 being installed on camera: helper System 7.5.3 disk (SCSI 5) + A/UX install CD (SCSI 3) + 1000M target (SCSI 6) on qemu-system-m68k q800 (TCG). resetMode=restart re-runs the launcher only when QEMU is not live; no golden yet. Dark launch: listing=hidden."
+    "fixture": "A/UX 3.0.1 desktop at 1152x870x8, root logged in: CommandShell (WELCOME TO A/UX banner, ls of /, root prompt) top-left, the Unix root '/' and MacPartition volumes top-right, Trash bottom-right. Mouse tracking pinned to Very Slow (trunc(0.75 px/unit), the bridge's exact-quantum regime); games, QuickTime, man pages and networking installed from /ARCHIVES. Baked with the A/UX disk at SCSI 0 only (no helper, no CD); loadvm restores framebuffer-identical (proven: dirty -> restore -> same md5)."
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
@@ -195,22 +195,18 @@
     "eraSoftware": [
       "Finder (A/UX Toolbox)",
       "CommandShell",
-      "MacX / X11",
-      "A/UX Startup"
+      "QuickTime 1.x",
+      "/usr/games (fortune, wump, aliens…)",
+      "man pages"
     ],
     "periodBrowser": "NCSA Mosaic / Netscape 1 (X11)",
     "iconicApps": [
       "Finder",
       "CommandShell",
-      "MacX",
-      "TextEditor"
+      "TextEditor",
+      "fortune"
     ],
     "blurb": "Apple's own System V Unix in a Macintosh business suit — the Finder is the shell, and /bin/sh, NFS and X11 run underneath it, on the 68040 Quadra 800.",
-    "notes": "Install running live on camera (dark launch). The only station where a proprietary GUI and a real Unix share one desktop: Mac apps and Unix processes side by side via the A/UX Toolbox."
-  },
-  "listing": {
-    "state": "hidden",
-    "since": "2026-08-18",
-    "reason": "Dark launch: A/UX 3.0.1 is being installed live on this station (helper System 7.5.3 disk + install CD; the exhibit currently shows the installer, not the A/UX Finder). List once A/UX boots to its desktop and the golden checkpoint is baked."
+    "notes": "The only station where a proprietary GUI and a real Unix share one desktop: Mac apps and Unix processes side by side via the A/UX Toolbox. Installed on camera 2026-08-18 by copying the CD's pristine root slice; A/UX's own Easy Install then finished MacPartition and rebuilt the kernel."
   }
 }

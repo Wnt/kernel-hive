@@ -161,21 +161,57 @@ QEMU fork (11.0.2 + fast-poll) into **`/opt/qemu-rhapsody`**, like
   snapshot, 52.5 MiB vmstate) from a cold boot on the production launcher's
   device set: the desktop after autologin, nothing curated. `loadvm golden -S`
   restores the identical frame; `SH_RESET_MODE=loadvm`, `SH_IDLE_PAUSE_SECS=60`.
-- Pointer: PS/2 relative through the daemon's abs→rel bridge,
-  `SH_CURSOR_SCALE=2.09` (measured 0.478 px/unit); the guest's own
-  acceleration prefs apply on top. Click/drag/wheel and keyboard through the UI
-  are **for the operator to eyeball** — nothing verified via the browser yet.
+- Pointer: **absolute-feeling** — the browser sends absolute coordinates and
+  the daemon dead-reckons them to the exact guest pixel via its abs→rel bridge
+  (`SH_INPUT_BACKEND=dbus-rel`, home-pin seed + `SH_CURSOR_SCALE=2.09`).
+  Rhapsody DR2 has **no hardware absolute path** (no usb-tablet driver), so
+  this is the only "absolute" available and is the same route every other rel
+  station uses. The guest's Mouse-Speed pref is set to its **slowest** notch =
+  dead-linear **0.478 px/unit** (measured; the default acceleration curve is
+  non-linear and unusable for dead reckoning). The DR2 PS/2 driver takes only
+  the FIRST packet of a chained relative move and desyncs above ~30 units/send
+  at any pace, so the daemon caps each send with **`SH_REL_MAX_STEP=24`**
+  (`SH_REL_STEP_PACE_MS=16`) — a new per-station daemon knob (default 256 =
+  byte-identical for every other rel station). Verified accurate and in-phase:
+  homing then a 45-chunk walk lands the cursor at the commanded pixel (aimed
+  512,384 → 515,390). Click/drag/wheel feel is still **for the operator to
+  eyeball** through the browser.
 - Credentials reference only (never values): `guest/rhapsody`
 - Rollback: `systemctl stop streamhost@rhapsody`; the station's single disk is
   the whole state — replace it with the pristine copy above (or rebuild with
   `tiles/rhapsody.sh`) and re-bake. Withdraw the dark launch with
   `darklaunch-station.py withdraw rhapsody`.
 
+## labctl exec, resolution, absolute pointer (2026-08-18)
+
+- **Resolution 1024×768** (up from 800×600). Set in Configure.app → Display →
+  Cirrus GD5446 → 1024×768 RGB:555/16 @60, saved to the driver Instance table;
+  Preferences → Monitor "Minutes Until Screen Dims" set to **Never** so the
+  exhibit never blanks. Modes up to 1152×864 are offered.
+- **labctl exec** over a getty on COM1 (`exec_kind: serial_getty`). DR2 has no
+  network exec, so the launcher exposes COM1 as `<dir>/serial.sock` and the
+  guest runs a getty on `ttyda`: added the **TTY Port Server** pseudo-driver
+  in Configure.app → Other (it provides the `/dev/tty*`/`cu*` nodes the bare
+  ISASerialPort driver does not), then `ttyda "/usr/libexec/getty std.9600"
+  ... on` in `/etc/ttys`. `scripts/labctl.d/serialexec.py` logs in as `root`
+  (password in the gitignored `<dir>/serial-exec.passwd`, never the registry),
+  runs one command per session between sentinels, and returns the guest's exit
+  code. Verified: `labctl exec rhapsody "uname -sr"` etc., exit codes and
+  quoting propagate, five back-to-back calls clean.
+- **Absolute pointer**: see the pointer bullet above — abs→rel dead reckoning
+  with the new `SH_REL_MAX_STEP` daemon cap.
+
 ## Open
 
-- Operator eyeball of desktop/pointer/keyboard at `/os/rhapsody`, then drop
-  `listing` and republish the three runtime documents (coordinated with the
-  other dark launches — a republish wipes every overlay).
+- Operator eyeball of desktop/pointer feel/keyboard at `/os/rhapsody`, then
+  drop `listing` and republish the three runtime documents (coordinated with
+  the other dark launches — a republish wipes every overlay).
+- Push the QEMU patch (`0006-i8259-lenient-spurious-cascade.patch`, now the
+  level-cascade version) to the `Wnt/qemu` `kernel-hive` branch + submodule
+  bump; `/opt/qemu-rhapsody` on the box is already built from it.
+- After landing, rebuild+deploy the daemon from main
+  (`build-deploy.sh --canary rhapsody`) so `current` points at a
+  `streamhost-<gitsha>` instead of the hand-built canary.
 - KVM re-test with the fixed PIC (would take the station off TCG).
 - Real poster hero (a desktop screenshot) instead of the placeholder card.
 - Builder `tiles/rhapsody.sh` has not been run end-to-end.

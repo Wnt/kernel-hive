@@ -19,9 +19,12 @@
 #   * Cirrus GD5446 PCI (-vga cirrus; DR2 ships a "Cirrus Logic GD5446 PCI
 #     Display Adapter (2MB)" driver — configured for 800x600 RGB:555/16 @60),
 #     Intel EtherExpress PRO/100B PCI (-device i82557b) user-net, PS/2 mouse
-#     (relative, through the daemon's abs->rel bridge, SH_INPUT_BACKEND=
-#     dbus-rel; DR2's PS/2 driver mis-decodes deltas when the i8042 queue is
-#     flooded — the daemon paces), COM1 to serial.log.
+#     (relative, dead-reckoned to absolute by the daemon's abs->rel bridge,
+#     SH_INPUT_BACKEND=dbus-rel; the guest's Mouse Speed pref is at its slowest
+#     = dead-linear 0.478 px/unit; QEMU splits one big RelMotion into many PS/2
+#     packets of which the guest takes only the first, so SH_REL_MAX_STEP caps
+#     each send at one packet), COM1 = serial.sock (getty on tty00 -> `labctl
+#     exec`, kind serial_getty), COM2 = serial.log.
 #   * -loadvm golden -S when the snapshot exists (frozen at the checkpoint,
 #     the daemon wakes it); cold disk boot otherwise (install phase / rebake).
 set -e
@@ -44,6 +47,7 @@ nohup "$QEMU" \
   -vga cirrus \
   -display dbus,p2p=on \
   -netdev user,id=n0 -device i82557b,netdev=n0 \
+  -serial unix:$D/serial.sock,server=on,wait=off \
   -serial file:$D/serial.log \
   $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \

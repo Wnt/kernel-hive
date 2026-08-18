@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "rhapsody",
+  "images": [
+    {
+      "src": "/posters/rhapsody/gallery/01-power-macintosh-9600-350.webp",
+      "alt": "A Power Macintosh 9600 — a tall platinum-grey Apple minitower with stacked CD-ROM and floppy drive bays at the top of the front panel and the Apple logo below",
+      "caption": "The Power Macintosh 9600 (1997) — Apple's top PowerPC 604e workstation and the machine Rhapsody was actually developed on. This station runs the parallel Intel build of the same OS; the PowerPC releases ran here.",
+      "author": "Gona.eu",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Power_Macintosh_9600_350.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "13ec5ac905e853a7a94a4d1b836df265611e4748f9da7e4926a537e6c857160a",
+      "width": 980,
+      "height": 1492
+    },
+    {
+      "src": "/posters/rhapsody/gallery/02-power-macintosh-9500-150.webp",
+      "alt": "A Power Macintosh 9500 platinum-grey minitower photographed from the front, its tall case carrying the CD and floppy bays over a vented lower panel",
+      "caption": "The Power Macintosh 9500 (1995), the first of Apple's PCI-based PowerPC 604 workstations. The 9500/9600 and their 8500/8600 siblings were the hardware Rhapsody's PowerPC Developer Releases and Mac OS X Server 1.0 targeted.",
+      "author": "Unknown",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Power_Macintosh_9500_150.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "99b6a45f54fa0cb957fac4d5fa184df01360ad863224ad39443306c94c2faf34",
+      "width": 473,
+      "height": 800
+    },
+    {
+      "src": "/posters/rhapsody/gallery/03-power-mac-8500-4055398.webp",
+      "alt": "A Power Macintosh 8500 desktop computer, a wide platinum-grey Apple case with a CD-ROM drive and front ports, photographed against a plain background",
+      "caption": "The Power Macintosh 8500 (1995) — the desktop member of the same PowerPC 604 family, notable for built-in video capture. Rhapsody, the NeXT-derived system this station shows, was Apple's plan to unify all of these machines under one modern OS.",
+      "author": "cogdogblog",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Power_Mac_8500_(4055398).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "c43c1684941ac41adfc4ccd063184b627c9d8f875b3816419741f97ee0af362d",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/rhapsody/gallery/04-power-macintosh-8500-logic-board.webp",
+      "alt": "The logic board of a Power Macintosh 8500: a large PowerPC 604 processor, rows of RAM SIMM sockets, PCI expansion slots along one edge and the on-board ports",
+      "caption": "Inside an 8500: the PowerPC 604 on its PCI logic board. Rhapsody ran natively on this chip on the Mac side; on this station the very same OS runs on an Intel Pentium II instead — the two-architecture bet that became Mac OS X.",
+      "author": "Stephen Edmonds",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Power_Macintosh_8500_-_logic_board.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "d7b9844105922c389bb86aac665c6f4ab36343d5e191fdfbe670c1a4a8add55f",
+      "width": 1200,
+      "height": 900
+    },
+    {
+      "src": "/posters/rhapsody/gallery/05-power-macintosh-8600-250.webp",
+      "alt": "A Power Macintosh 8600 minitower in platinum-grey, with the drive bays at the top of the front panel and the Apple logo beneath",
+      "caption": "The Power Macintosh 8600 (1997), the 604e minitower that rounded out the family. By the time these shipped, Apple had bought NeXT and Rhapsody — the Platinum Finder over a NeXT/Mach core seen on this screen — was the announced future for the whole line.",
+      "author": "Unknown",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Power_Macintosh_8600_250.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "783cb4a7ef74ccb393debf1581f5042ca9c959fc590760fd5ff51b4f5ac55329",
+      "width": 600,
+      "height": 800
+    }
+  ]
+}

@@ -82,35 +82,73 @@ borrowed daemon), `t.sh <wait> "text\n" | --keys …` (QMP typing + screendump),
    left stopped while the sandbox rig owns UDP 54147; the switch happens when
    the installed disk moves into the station dir.
 
-## Post-install: desktop up, pointer is the open blocker
+## Desktop, autologin, and the input fix
 
-Booted the installed GENERIC kernel (`boot /iommu/sbus/espdma/esp/sd@3,0:a` —
-OpenBIOS's `disk` alias is not the target-3 disk, so `-boot c` drops to the
-`0 >` prompt; type the full path, or rely on the loadvm golden which never
-cold-boots). Logged in as root, ran `/usr/openwin/bin/openwin`:
-**OpenWindows 3 desktop comes up on the cg3** — cmdtool console, File Manager,
-Help Viewer "Introducing Your Sun Desktop", olwm, the OPEN LOOK look. Verified
-on the framebuffer 2026-08-18.
+Golden fixture: the **OpenWindows 3** desktop on SunOS 4.1.4, logged in as the
+**unprivileged `guest` user** (uid 100, home `/export/home/guest`, `sunos414%`
+csh prompt) — cmdtool console, File Manager, and the "Introducing Your Sun
+Desktop" Help Viewer on the cg3 at 1024x768x8. `resetMode: loadvm`, snapshot
+`golden`; restore is instant and the guest starts frozen (`-S`) until the first
+visitor.
 
-**KEYBOARD** works into the console (typed `root` + the openwin command over
-QMP sendkey, they executed). A telnet exec channel is available for driving:
-`hostfwd_add tcp:127.0.0.1:12347-:23` + `rig/tn.py "<cmd>"` (root, no password,
-inetd/in.telnetd is up). Slirp hostfwd is per-process — re-add after every
-relaunch.
+**Autologin → desktop.** The guest logs in on the console (getty → login →
+`~/.login`), and on `/dev/console` its `.login` execs
+`/usr/openwin/bin/gallery-session` (a wrapper that `exec`s `openwin -noauth`).
+`.Xdefaults` sets `OpenWindows.SetInput: followmouse`. Because the golden
+captures the already-logged-in session, the unit never cold-boots — so the
+console-login path only has to work once, at bake time.
 
-**POINTER DOES NOT REACH X — open blocker.** QMP `mouse_move` produces the
-right escc bytes (trace `escc_sunmouse_event dx/dy` → `escc_put_queue channel
-b` → `escc_get_queue channel b`, i.e. the SunOS zs driver's ISR drains them),
-but the cursor never moves (0 changed pixels after 20 injections) and
-`/dev/mouse` yields nothing. So the bytes reach the kernel on the mouse
-channel and are lost between the zs driver and X. This is the "Sun serial
-mouse is fiddly, relative-only, mandatory calibration" risk the candidate
-brief called out. Keyboard (escc channel A) works, mouse (escc channel B)
-does not — same ESCC. Next avenues: (a) inspect QEMU `hw/char/escc.c`
-sunmouse baud/reset handshake vs SunOS's zs mouse silo; (b) OpenWindows mouse
-type/`-dev` config; (c) the TME/sun4c fallback in the brief. **A golden should
-NOT be baked until the pointer works** — a mouse-less OPEN LOOK desktop is not
-a usable exhibit.
+**The input fix (why openwin MUST run from a console login).** xnews only grabs
+the keyboard + mouse when it owns the **console controlling terminal**
+(`ps` shows `TT=co`). Started any other way — from `rc.local`, or `su ... <
+/dev/console` — xnews comes up with `TT=?` and gets **no input at all** (the
+cursor never moves; the escc mouse/keyboard bytes reach the kernel but never
+reach X). SunOS 4.1.4's `login` has no `-f`, so OS-level autologin via ttytab
+is not used; the golden-of-a-logged-in-session sidesteps it entirely.
+
+**Mouse: PASS.** Motion, buttons and the OPEN LOOK workspace menu are
+framebuffer-proven (2026-08-18) and survive the loadvm restore. The Sun serial
+mouse is relative-only; `SH_CURSOR_SCALE=1.0` pending an operator eyeball.
+
+**Keyboard-in-X: PASS (was a false alarm).** Two competing agents chased this
+(one on the SunOS side, one patching QEMU's escc). The escc angle was decisively
+ruled out — every keystroke emits a correct Sun make/break scancode and the guest
+kernel reads it; the emulator is blameless. **Root cause: the OpenWindows input-
+focus model.** The golden had shipped `OpenWindows.SetInput: followmouse`, under
+which keyboard focus follows the pointer — keys only reach a window while the
+pointer physically sits over it. Every "dead keyboard" test had the pointer on
+the root/backdrop, on a menu, or typed into the special cmdtool CONSOLE. The fix
+is `OpenWindows.SetInput: select` (click-to-focus) in guest's `~/.Xdefaults`:
+click a window and it keeps focus with the pointer anywhere — the intuitive model
+for visitors. Framebuffer-proven: click a shelltool, move the pointer off it,
+type `whoami` → `guest`. The golden was re-baked with select; keyboard also works
+at the console and via `labctl exec`.
+
+Applying it needs a re-bake, not just the file: olwm reads SetInput at session
+start and the golden captures the running xnews, so the integration is: set
+`select` in `/export/home/guest/.Xdefaults`, restart openwin (re-login guest at
+the console so olwm re-reads it), then `savevm golden`.
+
+## labctl exec (telnet_unix_e)
+
+`labctl exec sunos414 "<cmd>"` returns real captured stdout+stderr and the
+guest's exit code. SunOS 4.1.4 predates ssh, so the channel is the guest's own
+**in.telnetd** (inetd runs it; root has no password on a fresh suninstall):
+
+- client `streamhost/guest-agents/sunos414/sunexec.py` → deployed to
+  `/root/sunexec.py` (box-sync-pairs `sunos414-sunexec`). It logs in, quiets the
+  line, and brackets each command with unique START/END markers (immune to csh
+  prompt echo), so `false`→1, `test -f /vmunix`→0 come back correctly.
+- labctl dispatch: `telnet_unix_e` branch in `scripts/labctl.d/guest.py`.
+- transport: QEMU SLIRP. The guest is `10.0.2.15`; the launcher re-adds
+  `hostfwd_add tcp:127.0.0.1:5947-10.0.2.15:23` on every start (SLIRP forwards
+  are host-side, not in the loadvm snapshot — same reason alpine re-adds its ssh
+  forward). Declaration: `exec_kind=telnet_unix_e`, `exec_port=5947`,
+  `exec_user=root`.
+- **Liveness**: needs the guest booted to multiuser (inetd up). That is instant
+  once the loadvm golden restores the running system; at the bare OpenBIOS
+  prompt there is no telnetd yet. Proven 2026-08-18 against the running bring-up
+  guest: `labctl exec sunos414 "uname -a"` → `SunOS sunos414 4.1.4 2 sun4m`.
 
 ## Golden, input, and rollback
 

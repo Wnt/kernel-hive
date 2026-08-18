@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "aux",
+  "images": [
+    {
+      "commonsFile": "File:Q8002.jpg",
+      "alt": "A Macintosh Quadra 800 mini-tower seen from the front-left: beige case, CD-ROM and floppy drive bays at the top, the Apple logo and 'Macintosh Quadra 800' badge low on the front",
+      "caption": "The Macintosh Quadra 800 (1993) — Apple's 33 MHz 68040 mini-tower, the machine this station emulates. A/UX 3.0.1 was the release that added support for it.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Apple mac quadra 800.jpg",
+      "alt": "A Macintosh Quadra 800 tower photographed against white, showing the drive bays and the front panel with its power light and vents",
+      "caption": "Quadra 800 from the front. Under the beige is a 68040 with its PMMU and FPU — both of which A/UX requires; A/UX never ran on the FPU-less LC or Performa lines.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Quadra 840AV & Macintosh 16-inch Color Display & AppleDesign Powered Speakers & Apple Extended Keyboard II & Apple Desktop Bus Mouse II.jpg",
+      "alt": "A complete Macintosh desk: a Quadra 840AV mini-tower next to a 16-inch Apple colour display, AppleDesign powered speakers, an Apple Extended Keyboard II and an ADB Mouse II",
+      "caption": "The same tower chassis one step up — a Quadra 840AV — with the 16-inch Apple display, Extended Keyboard II and ADB Mouse II. That ADB mouse is the pointer this station drives, and why the cursor here is a tracked, relative one.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Macintosh Quadra 840AV logic board 820-0382-10 (661-1700).jpg",
+      "alt": "The logic board of a Macintosh Quadra 840AV: the large 68040 processor under a heatsink, RAM SIMM sockets, three NuBus slots along one edge and the SCSI, ADB and serial ports",
+      "caption": "Inside the tower: a Quadra logic board with the 68040, RAM SIMMs, NuBus slots and the on-board SCSI. A/UX's autoconfig walked exactly this hardware at first boot and rebuilt its kernel to match.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:AUX system manuals.jpg",
+      "alt": "One end of a long shelf of grey Apple A/UX 3.0 manuals: Command Reference, User Interface, System Administrator's Reference, Network System Administration and Local System Administration, each with the Apple logo on the spine",
+      "caption": "The A/UX 3.0 documentation set — a whole shelf of it. This was a commercial Unix sold to government and universities, and it came with the paperwork of one.",
+      "role": "photo"
+    }
+  ]
+}
