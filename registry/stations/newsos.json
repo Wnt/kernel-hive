@@ -187,11 +187,6 @@
       ]
     }
   },
-  "listing": {
-    "state": "hidden",
-    "since": "2026-08-18",
-    "reason": "Dark launch: NEWS-OS 4.1R is being installed on camera at /os/newsos; the row is hidden from the grid and the hall until the installed disk boots to sxdm and the operator has eyeballed it."
-  },
   "reset": {
     "stationDir": "newsos",
     "pointer": "abs",

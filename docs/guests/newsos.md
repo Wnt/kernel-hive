@@ -1,8 +1,10 @@
 # newsos — Sony NEWS-OS 4.1R on an NWS-3260 (host-native MAME)
 
-**Status 2026-08-18: DARK LAUNCH.** `/os/newsos` streams the bring-up rig
-(`listing.state=hidden`, slot 148 / UDP 54148); the NEWS-OS 4.1R install is
-running on camera. Not yet: pointer plane, golden/idle-pause, hero photo.
+**Status 2026-08-18: LISTED.** `streamhost@newsos` is live and published (slot
+148 / UDP 54148): keyboard fixed, `labctl exec` (serialcsh_e) and the `demo`
+login working, hero + exhibition notes + a Sony NEWS hardware gallery in place.
+Still open: pointer plane (open-loop only), golden/idle-pause (no save state in
+the driver).
 
 ## What it is
 

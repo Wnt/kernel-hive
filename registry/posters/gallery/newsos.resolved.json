@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "newsos",
+  "images": [
+    {
+      "src": "/posters/newsos/gallery/01-sony-news-nws-3710-01.webp",
+      "alt": "Front view of a Sony NWS-3710 RISC workstation: a beige desktop tower with a hinged front cover, power button and status lights",
+      "caption": "A Sony NWS-3710 — a desktop RISC workstation from Sony's NEWS (Network Engineering WorkStation) line, the same MIPS-based family as this station's portable NWS-3260. No NWS-3260 photograph exists on Commons, so its stablemate stands in for it.",
+      "author": "SupremeDalek",
+      "license": "CC BY 3.0",
+      "licenseId": "cc-by-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_01.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b5be7661bdd4392686485d873399f9af66f3d9e6a1351000a8e0e44d5b9a34c0",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/newsos/gallery/02-sony-news-nws-3710-03.webp",
+      "alt": "The front of a Sony NWS-3710 with its cover tilted down, exposing an empty 5.25-inch drive bay, a floppy drive, a configuration DIP switch and a reset button",
+      "caption": "The front panel opened up: floppy drive, the configuration DIP switches and a reset button. It is a DIP switch just like these — set for Automatic Boot — that brings NEWS-OS up unattended on the NWS-3260 emulated here.",
+      "author": "SupremeDalek",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_03.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "0c2a1075704897f43a05d5eb8009dd680ecb3e82fd8a3faad6a3102a4423dbeb",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/newsos/gallery/03-sony-news-nws-3710-05.webp",
+      "alt": "Rear view of a Sony NWS-3710 workstation showing three expansion bays, one holding a video card, and the rear connector panel",
+      "caption": "The back of the machine: three expansion bays and the connector panel of a late-1980s Japanese Unix workstation. Sony's NEWS line ran a BSD-derived Unix, the ancestor of the NEWS-OS 4.1R booting on this station.",
+      "author": "SupremeDalek",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_05.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "da860966b189392aa99cc4ff88f1ab9b299792aa77c2a8c69225c7c547f05d84",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/newsos/gallery/04-sony-news-nws-3710-06.webp",
+      "alt": "Top view of a Sony NEWS UNIX workstation with the upper cover removed, showing the internal boards, drives and power supply",
+      "caption": "Inside, cover removed — the boards, drives and single cooling fan of a NEWS workstation. The NWS-3260 packed this same MIPS R3000A architecture into a portable, LCD-equipped chassis instead of a desktop box.",
+      "author": "SupremeDalek",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_06.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "b33816e95d8b8b44095fc8167904cae6659fa0ed72d699841195e7a6375efb67",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/newsos/gallery/05-sony-news-nws-3710-10.webp",
+      "alt": "A video card removed from a Sony NEWS 3710 workstation, held up to show the components on the board",
+      "caption": "The graphics board lifted out of the machine. On the NWS-3260 the equivalent display hardware drove a built-in 1120x780 monochrome LCD — the framebuffer this station captures directly.",
+      "author": "SupremeDalek",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_10.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "772a5b7e0972e1db480b94160333f90202c1b6a1ac47e49d950a7c2c81167969",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}
