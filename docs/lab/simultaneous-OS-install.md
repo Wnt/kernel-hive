@@ -32,7 +32,7 @@ Two more rules that keep the picture live while you work:
 - Reset mode `restart` during the install re-runs the launcher only when QEMU
   is *not* live (`ensure-station-qemu`), so a stray "reset" click from the
   browser does not reboot the installer. Drive the guest yourself through QMP
-  (§6) and let the operator's browser be a read-only monitor — two people
+  (§5) and let the operator's browser be a read-only monitor — two people
   typing into one installer is chaos.
 
 Registry-row dark launch (`listing.state=hidden`, a real
