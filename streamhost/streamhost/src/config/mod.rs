@@ -56,7 +56,7 @@ use std::net::{IpAddr, Ipv4Addr};
 mod backends;
 mod parse;
 mod rel_home;
-pub use rel_home::RelHomeOn;
+pub use rel_home::{parse_home_to, RelHomeOn};
 
 use backends::{
     parse_audio_source, parse_capture_backend, parse_input_backend, parse_key_remap,
@@ -331,11 +331,8 @@ pub struct Config {
     /// per-session pacer — one bounded step (SH_REL_MAX_STEP) per pace tick
     /// (SH_REL_STEP_PACE_MS) across all samples, latest target wins. Default off.
     pub rel_paced: bool,
-    /// SH_REL_HOME_TO="x,y" (env, dbus-rel): the guest-pixel position the cursor
-    /// occupies right after a `loadvm` restore (a baked constant). When set, a
-    /// re-home seeds the model there with NO corner pin, so the guest snaps
-    /// under the pointer on the first move. Measure once from a golden
-    /// screendump. rel_bridge.rs.
+    /// SH_REL_HOME_TO="x,y" (guest px): known cursor position after a `loadvm`
+    /// restore; a re-home seeds the model there with NO corner pin. rel_bridge.rs.
     pub rel_home_to: Option<(i32, i32)>,
     /// Closed-loop absolute pointer for the mamecmd backend (SH_MAMECMD_ABS,
     /// env-only, default on): try_pointer_abs emits surface-clamped `MOVEA x y`
@@ -486,10 +483,9 @@ impl Config {
         let abs_pace_ms: u64 = env_or("SH_ABS_PACE_MS", "0").parse().unwrap_or(0);
         let rel_home_on = RelHomeOn::parse(&env_or("SH_REL_HOME_ON", ""));
         let rel_paced = matches!(env_or("SH_REL_PACED", "0").as_str(), "1" | "on" | "true");
-        let rel_home_to = std::env::var("SH_REL_HOME_TO").ok().and_then(|v| {
-            let (a, b) = v.split_once(',')?;
-            Some((a.trim().parse().ok()?, b.trim().parse().ok()?))
-        });
+        let rel_home_to = std::env::var("SH_REL_HOME_TO")
+            .ok()
+            .and_then(|v| parse_home_to(&v));
         let mamecmd_abs = matches!(
             env_or("SH_MAMECMD_ABS", "on").to_ascii_lowercase().as_str(),
             "on" | "1" | "true"

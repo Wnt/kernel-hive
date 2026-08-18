@@ -46,3 +46,10 @@ impl RelHomeOn {
         self.reset || self.resume || self.focus || self.idle || self.edge
     }
 }
+
+/// Parse SH_REL_HOME_TO="x,y" (guest px) into the known-position seed target.
+/// None (unset / malformed) falls back to the corner pin. See rel_bridge.rs.
+pub fn parse_home_to(v: &str) -> Option<(i32, i32)> {
+    let (a, b) = v.split_once(',')?;
+    Some((a.trim().parse().ok()?, b.trim().parse().ok()?))
+}
