@@ -127,18 +127,6 @@ pub struct Config {
     pub cursor_off_x: i32,
     pub cursor_off_y: i32,
     pub cursor_scale: f64,
-    /// dbus-rel bridge only: send relative motion ONLY in multiples of this many
-    /// guest units, carrying the sub-quantum remainder in the model until more
-    /// motion arrives (SH_REL_QUANTUM, 0 = off = every station today). For a
-    /// guest whose tracking truncates per event (A/UX at "Very Slow": px =
-    /// trunc(0.75 * units)) a quantum of 4 makes every send land exactly
-    /// (4 -> 3 px), so the homing bridge stays 1:1 instead of drifting.
-    pub rel_quantum: i32,
-    /// dbus-rel bridge only: per-send chunk cap in guest units (SH_REL_MAX_STEP,
-    /// default 256 = the historical PS/2 clamp window). Guests that ACCELERATE
-    /// large single events (A/UX above ~32 units) need it lowered so no chunk
-    /// ever crosses into the accelerated range.
-    pub rel_max_step: i32,
     /// host:port of the in-guest warpd agent (via a QEMU hostfwd), used when
     /// input_backend == Warpd. e.g. 127.0.0.1:7790 forwarded to the guest's :7777.
     pub warpd_addr: String,
@@ -413,11 +401,6 @@ impl Config {
         let mut cursor_off_x: i32 = env_or("SH_CURSOR_OFF_X", "0").parse().unwrap_or(0);
         let mut cursor_off_y: i32 = env_or("SH_CURSOR_OFF_Y", "0").parse().unwrap_or(0);
         let mut cursor_scale: f64 = env_or("SH_CURSOR_SCALE", "1.0").parse().unwrap_or(1.0);
-        let rel_quantum: i32 = env_or("SH_REL_QUANTUM", "0").parse().unwrap_or(0).max(0);
-        let rel_max_step: i32 = env_or("SH_REL_MAX_STEP", "256")
-            .parse()
-            .unwrap_or(256)
-            .max(1);
         let mut warpd_addr = env_or("SH_WARPD_ADDR", "127.0.0.1:7790");
         let mut warpd_buttons_qemu = env_or("SH_WARPD_BUTTONS", "agent") == "qemu";
         let mut warpd_wheel = env_or("SH_WARPD_WHEEL", "auto");
@@ -703,8 +686,6 @@ impl Config {
             input_bench_addr,
             cursor_off_x,
             cursor_off_y,
-            rel_quantum,
-            rel_max_step,
             cursor_scale,
             warpd_addr,
             warpd_buttons_qemu,

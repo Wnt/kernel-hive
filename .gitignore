@@ -122,3 +122,6 @@ scripts/build-guests/assets/winxp/Winamp-2.95-installed.tar.gz
 
 # per-worker session identity written by scripts/dev/wt.sh
 .kh-session
+
+# Per-station serial-exec password (box-only; never in the repo tree)
+streamhost/stations/*/serial-exec.passwd

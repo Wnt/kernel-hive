@@ -1,27 +1,30 @@
-From 7179110c191be86c5ef12e99f915a6a7b98a4d13 Mon Sep 17 00:00:00 2001
+From 8f37bd844cd1f2854fe8a469e7e757d670c889a8 Mon Sep 17 00:00:00 2001
 From: Jonni Madekivi <jonni@example.com>
-Date: Tue, 18 Aug 2026 09:40:22 +0300
-Subject: [PATCH] i8259: opt-in leniency for a spurious cascaded INTA
+Date: Tue, 18 Aug 2026 13:19:46 +0300
+Subject: [PATCH] i8259: opt-in leniency for the cascade
  (KH_I8259_LENIENT_CASCADE=1)
 
-NeXT-lineage Mach kernels (Rhapsody 5.1 DR2, NeXTSTEP 3.3 for Intel) never
-EOI the master on a spurious IRQ15, so once the timer and an IDE interrupt
-land in the same window the cascade stays in service and every later slave
-interrupt is lost (hc0: interrupt timeout / Resetting drives). Rare on
-hardware, constant under QEMU. Take ISR2 back out of service when the slave
-had nothing to offer.
+NeXT-lineage Mach kernels (Rhapsody 5.1 DR2, NeXTSTEP 3.3 for Intel) mask the
+slave PIC and EOI early in every interrupt prologue. With the master's cascade
+input edge-latched, a slave request masked between the latched edge and the
+INTA becomes a spurious IRQ15: Rhapsody never EOIs the master for it (ISR2
+stuck, every later IDE interrupt lost: 'hc0: interrupt timeout / Resetting
+drives') and its PS/2 mouse driver goes out of phase after one. Rare on
+hardware, constant under QEMU. Opt-in: (1) follow the slave INT level on the
+master's IRQ2 so a spurious cascaded INTA cannot arise; (2) if one still
+does, take ISR2 back out of service.
 ---
- hw/intc/i8259.c | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ hw/intc/i8259.c | 42 +++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 41 insertions(+), 1 deletion(-)
 
 diff --git a/hw/intc/i8259.c b/hw/intc/i8259.c
-index 8f2aa1f..93ffe90 100644
+index 8f2aa1f..41eede6 100644
 --- a/hw/intc/i8259.c
 +++ b/hw/intc/i8259.c
-@@ -170,6 +170,17 @@ static void pic_intack(PICCommonState *s, int irq)
-     pic_update_irq(s);
+@@ -115,6 +115,17 @@ static void pic_update_irq(PICCommonState *s)
  }
  
+ /* set irq level. If an edge is detected, then the IRR is set to 1 */
 +static bool kh_i8259_lenient_cascade(void)
 +{
 +    static int lenient = -1;
@@ -33,10 +36,29 @@ index 8f2aa1f..93ffe90 100644
 +    return lenient == 1;
 +}
 +
- int pic_read_irq(PICCommonState *s)
+ static void pic_set_irq(void *opaque, int irq, int level)
  {
-     int irq, intno;
-@@ -188,6 +199,25 @@ int pic_read_irq(PICCommonState *s)
+     PICCommonState *s = opaque;
+@@ -130,7 +141,17 @@ static void pic_set_irq(void *opaque, int irq, int level)
+     }
+ #endif
+ 
+-    if (s->ltim || (s->elcr & mask)) {
++    /*
++     * kernel-hive (KH_I8259_LENIENT_CASCADE=1): treat the master's cascade
++     * input as level-triggered.  With the edge latch, a slave request that is
++     * masked at the slave between the master latching the edge and the INTA
++     * turns into a spurious IRQ15 -- which Rhapsody's Mach kernel neither
++     * EOIs on the master nor tolerates in its PS/2 mouse driver.  Following
++     * the slave INT line instead means the master only ever offers IRQ2 while
++     * the slave really has something to hand over.
++     */
++    if (s->ltim || (s->elcr & mask) ||
++        (s->master && irq == 2 && kh_i8259_lenient_cascade())) {
+         /* level triggered */
+         if (level) {
+             s->irr |= mask;
+@@ -188,6 +209,25 @@ int pic_read_irq(PICCommonState *s)
              }
              intno = slave_pic->irq_base + irq2;
              pic_intack(s, irq);
