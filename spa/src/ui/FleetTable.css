@@ -119,3 +119,5 @@
 .fleet-pop-list label:hover { background: var(--tint-1); }
 .fleet-pop-value { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fleet-empty { text-align: center; color: var(--ink-muted); padding: 24px !important; }
+.fleet-sort-mark { margin-left: 3px; font-size: 10px; }
+.fleet-sort-mark sup { font-size: 9px; margin-left: 1px; }
