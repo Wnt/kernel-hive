@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "id": "rhapsody",
+  "era_year": 1998,
+  "stationDir": "rhapsody",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 62,
+        "prelude": "",
+        "value": {
+          "key": "rhapsody",
+          "script": "tiles/rhapsody.sh",
+          "outputDir": "Rhapsody",
+          "class": "installed",
+          "estimated": "~1-2h",
+          "automation": "partial",
+          "produces": "rhapsody-golden.qcow2 (Rhapsody 5.1 DR2 x86 on a 2 GB IDE disk, /opt/qemu-rhapsody) + golden",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "rhapsody",
+      "value": {
+        "os": "Rhapsody 5.1 DR2 (Intel)",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            400,
+            200
+          ]
+        },
+        "kbd": "",
+        "kbd_reset": "Escape",
+        "kbd_note": "INSTALL PHASE: keyboard proof is the installer echoing keystrokes",
+        "audio_trigger": null,
+        "validated": false,
+        "note": "serial Microsoft mouse, relative (dbus-rel); cursor_scale 1.0 UNMEASURED (install phase). Station-specific QEMU at /opt/qemu-rhapsody (i8259 lenient-cascade patch)."
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/rhapsody",
+      "qmp": "/data/vms/streamhost/stations/rhapsody/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54146,
+      "notes": "INSTALL PHASE (dark launch). No exec channel: drive it via labctl key/pointer or scripts/dev/qmp-type.py; COM1 is the serial mouse, COM2 -> serial.log."
+    }
+  },
+  "render": {
+    "signalOrder": 62,
+    "stationsManifestOrder": 60,
+    "bindingOrder": 67,
+    "goldenOrder": 60,
+    "actionMapOrder": 34,
+    "bringUpGroup": 0,
+    "stationsManifestPrelude": "\n# rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one\n#   2 GB IDE disk, std VGA, ne2k_pci, serial Microsoft mouse (dbus-rel). DARK\n#   LAUNCH: listing=hidden while the install runs on camera.\n",
+    "bindingPrelude": "",
+    "bindingComment": "NeXTSTEP -> Rhapsody -> Mac OS X lineage"
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54146,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "msmouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 146
+  },
+  "guestDoc": "docs/guests/rhapsody.md",
+  "credentialsRef": "guest/rhapsody",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#7a8fb0",
+    "eraLabel": "1998 · Rhapsody DR2 — Apple/NeXT",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "rhapsody",
+    "displayName": "Rhapsody DR2",
+    "year": 1998,
+    "lineage": "Apple Rhapsody (NeXTSTEP/Mach → Mac OS X Server 1.0)",
+    "arch": "i386",
+    "ramMB": 64,
+    "era": "1990s",
+    "accent": "#7a8fb0",
+    "eraSoftware": [
+      "Platinum Finder",
+      "Workspace Manager",
+      "Terminal",
+      "OmniWeb"
+    ],
+    "periodBrowser": "OmniWeb 3",
+    "iconicApps": [
+      "Finder",
+      "Workspace Manager",
+      "Terminal",
+      "TextEdit"
+    ],
+    "blurb": "Apple's Mac OS 8 face grafted onto the NeXT operating system it had just bought — the 1998 developer release where Mac OS X begins.",
+    "notes": "Install running live on camera (dark launch). Intel build under TCG on a station-specific QEMU (/opt/qemu-rhapsody). Sits between the nextstep station and the macos poster."
+  },
+  "notes": [
+    "slot 146/UDP 54146 reserved by stations-registry.py new (2026-08-18)",
+    "dark-launched during bring-up via scripts/dev/darklaunch-station.py from sandbox rhapsody"
+  ],
+  "listing": {
+    "state": "hidden",
+    "since": "2026-08-18",
+    "reason": "Dark launch: Rhapsody 5.1 DR2 for Intel is being installed live on this station (the exhibit currently shows the installer / first boot, not the Platinum Finder desktop). List once the install completes and the golden checkpoint is baked."
+  },
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "rhapsody",
+      "SH_QMP": "/data/vms/streamhost/stations/rhapsody/qmp.sock",
+      "SH_PORT": "54146",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/rhapsody/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/rhapsody/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "bringUpOrder": 67,
+    "vmidLabel": 146,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "rhapsody",
+        "--vmid",
+        "146",
+        "--udp",
+        "54146",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/rhapsody/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/rhapsody/station.env.fixture"
+      ],
+      "deviceSetId": "rhapsody-dr2-tcg-p2-std-ide2g",
+      "launcher": "streamhost/stations/rhapsody/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/rhapsody/station.env.fixture",
+      "binary": "/opt/qemu-rhapsody/bin/qemu-system-i386",
+      "machine": "pc-i440fx-11.0",
+      "accel": "tcg",
+      "cpu": "pentium2",
+      "memoryMB": 64,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "/opt/qemu-rhapsody/bin/qemu-system-i386",
+        "-name streamhost-rhapsody",
+        "-accel tcg -m 64 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu pentium2",
+        "-rtc base=localtime",
+        "-drive file=$D/rhapsody-golden.qcow2,format=qcow2,if=ide,index=0 -boot c",
+        "-vga std",
+        "-display dbus,p2p=on",
+        "-netdev user,id=n0 -device ne2k_pci,netdev=n0",
+        "-chardev msmouse,id=ms0 -serial chardev:ms0",
+        "-serial file:$D/serial.log",
+        "$LOADVM",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off",
+        "-pidfile $D/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "install phase: tracked verbatim launcher IS the deployed launcher; the device set is pinned now so the eventual checkpoint is baked with it"
+      }
+    }
+  },
+  "reset": {
+    "stationDir": "rhapsody",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "restart",
+    "snapshot": null,
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "INSTALL PHASE — Rhapsody 5.1 DR2 installer / first disk boot on /opt/qemu-rhapsody (TCG). resetMode=restart re-runs the launcher only when QEMU is not live; the disk is mutated in place, no golden yet. Dark launch: listing=hidden while the install runs on camera."
+  },
+  "migrationExceptions": []
+}

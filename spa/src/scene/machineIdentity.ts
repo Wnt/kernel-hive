@@ -367,6 +367,12 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'HP 9000 / 778 VISUALIZE B160L', spec: 'PA-7300LC 160MHz • HP-UX 10.20 • 1996',
     kit: 'workstation',
   },
+  // rhapsody: a plain beige Pentium II tower — Apple's Intel build ran on
+  // whatever PC was on the desk. Muted NeXT-ish slate accent.
+  rhapsody: {
+    caseTint: '#d9d5c9', accentTint: '#7a8fb0', tintMix: 0.4,
+    badge: 'Pentium II PC', spec: 'x86 • Rhapsody DR2 • 1998', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

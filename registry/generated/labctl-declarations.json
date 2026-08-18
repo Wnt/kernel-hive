@@ -677,6 +677,21 @@
       "udp_port": 54121,
       "notes": "air-gapped guest: no NIC and no exec/SSH channel; framebuffer/QMP only"
     },
+    "rhapsody": {
+      "dir": "/data/vms/streamhost/stations/rhapsody",
+      "qmp": "/data/vms/streamhost/stations/rhapsody/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54146,
+      "notes": "INSTALL PHASE (dark launch). No exec channel: drive it via labctl key/pointer or scripts/dev/qmp-type.py; COM1 is the serial mouse, COM2 -> serial.log."
+    },
     "sailfishos": {
       "dir": "/data/vms/streamhost/stations/sailfishos",
       "qmp": "/data/vms/streamhost/stations/sailfishos/qmp.sock",

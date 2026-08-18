@@ -277,6 +277,7 @@ export const OS_FAMILY: Record<string, Family> = {
   win11: 'windows', // Same Explorer shortcut family; Fluent chrome, not new chords
   w2kalpha: 'windows', // W2K RC2 on Alpha — the same NT 5.0 Explorer shell as win2000
   hpuxvue: 'suncde', // HP VUE — the Motif desktop CDE was built from; the CDE chord set (F1 Help, edit chords) is VUE's too
+  rhapsody: 'generic', // Platinum Finder over NeXT Workspace — install phase; revisit once the desktop is up
   tru64: 'suncde', // CDE desktop — the same CDE chord set the Solaris profile carries
   macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   win311: 'win3x', nt351: 'win3x', // NT 3.51 runs the Program Manager shell

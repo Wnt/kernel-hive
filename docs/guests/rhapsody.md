@@ -1,0 +1,121 @@
+# rhapsody guest — Rhapsody 5.1 Developer Release 2 for Intel
+
+Status: **BRING-UP, dark-launched** (`/os/rhapsody` streams from the sandbox
+rig `/data/vms/sandbox/rhapsody/rig`; `listing.state=hidden`). The install is
+being run on camera. The one real blocker — a guest PIC race that QEMU makes
+frequent — is diagnosed and fixed with a station-specific QEMU build (below).
+Candidate research: [`docs/lab/research/candidate-rhapsody.md`](../lab/research/candidate-rhapsody.md).
+
+Why it is here: the hinge between the `nextstep` station (pure NeXT) and the
+`macos` poster — Apple's Platinum Finder on the NeXT/Mach substrate, the
+release where "Mac OS X" (as Mac OS X Server 1.0) starts.
+
+## Identity and source
+
+- Public ID / tile directory: `rhapsody`
+- Reserved slot / UDP port: `146` / `54146` (`kh-claim take udp 54146` during bring-up)
+- Archetype: `beige-tower-crt`
+- OS: **Rhapsody 5.1 Developer Release 2 (DR2) for Intel**, kernel banner
+  `Rhapsody Operating System Release 5.1 ... Apple 5.1 Mach for Intel`,
+  built `Fri Apr 17 1998` — Apple, preservation-class (commercial, no freeware
+  re-release; same posture as NeXTSTEP 3.3).
+- Media: archive.org item **`rhapsody5.1`** ("Apple Rhapsody 5.1 DR2 for i386"),
+  directory `Rhapsody_5.1/`, three gzipped raw images (md5 as published by
+  archive.org, verified after download):
+  - `rhapsody_5.1_boot.img.gz` — 1,003,159 B, md5 `3ecf7b827aeacba44c57ab834d02d942`
+    → `rhapsody_5.1_boot.img` 1,474,560 B (1.44 MB boot floppy)
+  - `rhapsody_5.1_drivers.img.gz` — 454,392 B, md5 `001b684b921cd10b39f8463860f77985`
+    → `rhapsody_5.1_drivers.img` 1,474,560 B (Device Drivers floppy)
+  - `rhapsody_5.1_install_cd.img.gz` — 261,172,123 B, md5 `f3d7d0766abe320aa52e100a4cbca803`
+    → `rhapsody_5.1_install_cd.img` 630,116,352 B (raw CD image, label `RhapsodyDR2`)
+  - Staged in the sandbox at `/data/vms/sandbox/rhapsody/media/`.
+- Reference only (not used by the station): archive.org
+  `rhapsody-install-ready-to-configure` — a DR2 disk (`rhapsody.vmdk`, 8 GiB
+  virtual) installed by someone else on a **patched QEMU 0.9.0**
+  (`-rhapsodymouse`, `-m 128`, `-hda`, `-cdrom`, `-net nic,model=ne2k_pci`).
+  It documents which QEMU generation the community had this working on, and
+  is kept as a fallback disk at `media/r2c-preinstalled.qcow2`.
+
+## Boot ladder (what actually happened, in order)
+
+All on the box's stock `qemu-system-i386` 11.0.2 (pve-qemu) unless noted,
+`-M pc-i440fx-11.0 -cpu pentium2 -m 64`, one IDE disk (2 GB qcow2), IDE
+ATAPI CD, floppy, `-vga std`, `ne2k_pci`, serial Microsoft mouse
+(`-chardev msmouse -serial chardev:`), `-display dbus,p2p=on`.
+
+1. Boot floppy boots on QEMU 11 under TCG: language prompt (720x400 text)
+   → "prepare to install" → asks for the Device Drivers floppy (`change floppy0`
+   over QMP). The drivers disk lists SCSI adapters first; **page 3, option 4
+   "Intel PIIX PCI EIDE/ATAPI Device Controller (v5.01)"** is our i440fx and
+   is auto-detected as `Dev:1 Func:1 Bus:0`. Then "no more drivers" (1) loads
+   the Mach kernel from the CD.
+2. Kernel comes up (640x480 installer window), sees `IDE Disk 0 (Type 255) -
+   2047 MB` and the ATAPI CD (`sd0: QEMU DVD-ROM`); erase whole disk → "Copying
+   base system…".
+3. **The wall**: after 0–90 MB, `hc0: interrupt timeout, cmd: 0xc5` (Write
+   Multiple) or `hc1: interrupt timeout, cmd: 0x28` (ATAPI READ), "Resetting
+   drives…", and every later IDE command times out (writes trickle at
+   ~1 MB/min through retries). Under KVM it happens on the first ATAPI read.
+   This is the "endless lockups with the EIDE driver" the community reports for
+   every QEMU newer than ~0.9, and the reason VOM pins 0.8.2.
+4. Dead ends tried: KVM (worse), `-M isapc` + the generic "EIDE and ATAPI"
+   driver (garbage screen under KVM), QEMU 7.0.0 build (moot once the root
+   cause was found — its IDE/PIC core is the same as 11's).
+
+## Root cause: a guest PIC race QEMU makes frequent
+
+Traced with `-trace enable=pic_*,ide_*` (QMP `info pic` shows the end state:
+master `isr=04 irr=04`, slave `irr=80 isr=00`). Sequence at the last IRQ15
+that was ever delivered:
+
+1. The ATAPI read completes; QEMU raises IRQ15 (slave line 7 → master IRQ2,
+   edge-latched into the master's IRR). The 100 Hz timer (IRQ0) fires in the
+   same window — under TCG both land between two TB boundaries.
+2. The CPU takes IRQ0 (higher priority). Mach's interrupt prologue **masks the
+   slave PIC (`imr=0xff`) and the master except the cascade (`0xfb`), then sends
+   a non-specific EOI to both PICs before running the handler**. Masking the
+   slave drops the slave INT line, but the master's edge-latched IRR2 stays.
+3. The master's EOI clears ISR0; the master now delivers IRQ2 → INTA → the
+   slave has nothing unmasked → **spurious IRQ15** (vector 0x4f). Rhapsody's
+   handler reads the slave ISR, sees 0, and returns **without EOI'ing the
+   master** — leaving ISR2 in service forever. From then on no slave interrupt
+   (IDE 14/15) can be delivered: `interrupt timeout`.
+
+A real 8259 pair behaves the same way, but the coincidence is rare on hardware
+and constant under QEMU. Fix: `hw/intc/i8259.c` — on a spurious cascaded INTA
+(slave supplied 7 with nothing in service) take the master's ISR2 back out of
+service. Opt-in via `KH_I8259_LENIENT_CASCADE=1` so the same tree stays stock
+otherwise. Built as a station-specific `qemu-system-i386` from the kernel-hive
+QEMU fork (11.0.2 + fast-poll) into **`/opt/qemu-rhapsody`**, like
+`/opt/qemu-hppa` for hpuxvue; patch source
+`streamhost/qemu-patches/0006-i8259-lenient-spurious-cascade.patch`.
+
+## Install (in progress)
+
+- Rig: `/data/vms/sandbox/rhapsody/rig/launch.sh` (kills by pidfile, boots,
+  restarts the borrowed daemon; `BOOT=disk|floppy`, `QEMU=`, `ACCEL=`, `FDA=`),
+  `drive-install.sh` (the installer keystrokes via `qmp-type.py --qmp`), `k.sh
+  <wait> [keys]` (send keys + screendump to `shot/cur.png`).
+- Installer choices: English (1) → 1 → drivers floppy → 7, 7, 4 → 1 → Ok (1)
+  → IDE Disk 0 (1) → erase entire disk (1) → start (1).
+
+TODO once the install completes: resolution/depth the installed video driver
+gives, pointer gain for the serial mouse (`SH_CURSOR_SCALE`), keyboard, the
+golden checkpoint, real hero, listing.
+
+## Build and device set
+
+- Builder: `scripts/build-guests/tiles/rhapsody.sh` (TODO — recipe from the rig)
+- Canonical output: `rhapsody-golden.qcow2` + internal `golden` snapshot
+- QEMU: `/opt/qemu-rhapsody/bin/qemu-system-i386`, `pc-i440fx-11.0`, TCG
+  (KVM to be re-tested with the fixed PIC), `pentium2`, 64 MB, `-vga std`,
+  IDE disk 2 GB, `ne2k_pci` user-net, serial Microsoft mouse on COM1, COM2 to
+  `serial.log`, `-display dbus,p2p=on`.
+
+## Golden, input, and rollback
+
+- Reset mode and fixture: TODO (loadvm golden once installed)
+- Pointer/click/drag/wheel/keyboard proof: TODO
+- Credentials reference only (never values): `guest/rhapsody`
+- Rollback plan: withdraw the darklaunch overlay (`darklaunch-station.py
+  withdraw rhapsody`), stop the rig, release `udp/54146`.
