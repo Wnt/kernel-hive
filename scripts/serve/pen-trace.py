@@ -32,7 +32,7 @@ from pathlib import Path
 
 CLIENTLOG = Path(os.environ.get("CLIENTLOG", str(Path(__file__).resolve().parent / "clientlog.jsonl")))
 
-TAGS = {"d": "down", "u": "up", "c": "cancel", "m": "move", "X": "ctxmenu", "A": "auxclick"}
+TAGS = {"d": "down", "u": "up", "c": "cancel", "m": "move", "X": "ctxmenu", "A": "auxclick", "w": "wire"}
 
 
 def rows(path: Path, since_ms: float, session: str | None):
@@ -87,6 +87,12 @@ def main() -> int:
             print(f"\n=== session {sid[:8]}  tile {tile} ===")
             last_sid, down_at, moves_since = sid, {}, 0
 
+        if tag == "w":
+            # ?ptrrec=1 wire row: mapped GUEST point + the datagram's cseq (the
+            # join key with the daemon's `[input-tel rel] cseq=` lines).
+            if args.moves:
+                print(f"  {now:>9}  wire      cseq={btn} guest=({x},{y})")
+            continue
         if tag == "m":
             moves_since += 1
             if args.moves:

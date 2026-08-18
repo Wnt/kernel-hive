@@ -60,3 +60,28 @@ pub(super) fn normalize_encoder_preset(preset: &str) -> String {
     }
     .to_string()
 }
+
+/// SH_IDLE_PAUSE_SECS clamp: 0 stays 0 (disabled); any nonzero grace is at
+/// least 5 s so a misconfigured tiny value can't thrash QMP stop/cont around
+/// every reconnect blip.
+pub(super) fn clamp_idle_pause(secs: u64) -> u64 {
+    if secs == 0 {
+        0
+    } else {
+        secs.max(5)
+    }
+}
+
+#[cfg(test)]
+mod idle_tests {
+    use super::clamp_idle_pause;
+
+    // 0 = disabled must survive the clamp; tiny nonzero graces are floored.
+    #[test]
+    fn idle_pause_clamp() {
+        assert_eq!(clamp_idle_pause(0), 0);
+        assert_eq!(clamp_idle_pause(1), 5);
+        assert_eq!(clamp_idle_pause(5), 5);
+        assert_eq!(clamp_idle_pause(60), 60);
+    }
+}

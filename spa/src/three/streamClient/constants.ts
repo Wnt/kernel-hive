@@ -12,6 +12,8 @@ export const T_BUTTON = 2;
 export const T_KEY = 3;
 export const T_MOVE_REL = 4;
 export const T_WHEEL = 5;
+// Re-home hint for the relative-pointer bridge (input.rs type 7, no payload).
+export const T_HINT = 7;
 export const T_PING = 9;
 
 // ---- per-type reliable-input CLASS tags (client-opened uni streams) --------

@@ -55,6 +55,8 @@ use std::net::{IpAddr, Ipv4Addr};
 
 mod backends;
 mod parse;
+mod rel_home;
+pub use rel_home::RelHomeOn;
 
 use backends::{
     parse_audio_source, parse_capture_backend, parse_input_backend, parse_key_remap,
@@ -62,8 +64,8 @@ use backends::{
 };
 pub use backends::{AudioSource, CaptureBackend, InputBackend};
 use parse::{
-    encoder_preset_env, env_or, normalize_encoder_preset, parse_cc, parse_enc_nice,
-    parse_telemetry_level,
+    clamp_idle_pause, encoder_preset_env, env_or, normalize_encoder_preset, parse_cc,
+    parse_enc_nice, parse_telemetry_level,
 };
 
 #[derive(Clone, Debug)]
@@ -321,6 +323,14 @@ pub struct Config {
     /// S-Pen's ~120/s flood to ~mouse rate so win98 Paint renders a held drag as a
     /// curve, not a down->up line (the tablet floods faster than Paint draws).
     pub abs_pace_ms: u64,
+    /// SH_REL_HOME_ON (env, dbus-rel): which events re-home the abs->rel bridge
+    /// beyond the once-per-session seed — reset,resume,focus,idle,edge (or all).
+    /// Default: none extra. rel_bridge.rs.
+    pub rel_home_on: RelHomeOn,
+    /// SH_REL_PACED (env, dbus-rel): route every bridge send through the
+    /// per-session pacer — one bounded step (SH_REL_MAX_STEP) per pace tick
+    /// (SH_REL_STEP_PACE_MS) across all samples, latest target wins. Default off.
+    pub rel_paced: bool,
     /// Closed-loop absolute pointer for the mamecmd backend (SH_MAMECMD_ABS,
     /// env-only, default on): try_pointer_abs emits surface-clamped `MOVEA x y`
     /// targets and `irixagent.lua` closes the loop against the Newport VC2
@@ -340,17 +350,6 @@ pub fn env_flag(name: &str) -> bool {
 
 fn flag_on(v: Option<&str>) -> bool {
     v == Some("1")
-}
-
-/// SH_IDLE_PAUSE_SECS clamp: 0 stays 0 (disabled); any nonzero grace is at
-/// least 5 s so a misconfigured tiny value can't thrash QMP stop/cont around
-/// every reconnect blip.
-fn clamp_idle_pause(secs: u64) -> u64 {
-    if secs == 0 {
-        0
-    } else {
-        secs.max(5)
-    }
 }
 
 impl Config {
@@ -479,6 +478,8 @@ impl Config {
         let cc_bbr = parse_cc(&env_or("SH_CC", "bbr"));
         let input_telemetry = parse_telemetry_level(&env_or("SH_INPUT_TELEMETRY", "0"));
         let abs_pace_ms: u64 = env_or("SH_ABS_PACE_MS", "0").parse().unwrap_or(0);
+        let rel_home_on = RelHomeOn::parse(&env_or("SH_REL_HOME_ON", ""));
+        let rel_paced = matches!(env_or("SH_REL_PACED", "0").as_str(), "1" | "on" | "true");
         let mamecmd_abs = matches!(
             env_or("SH_MAMECMD_ABS", "on").to_ascii_lowercase().as_str(),
             "on" | "1" | "true"
@@ -739,6 +740,8 @@ impl Config {
             cc_bbr,
             input_telemetry,
             abs_pace_ms: abs_pace_ms.min(100),
+            rel_home_on,
+            rel_paced,
             mamecmd_abs,
         }
     }
@@ -746,9 +749,7 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        clamp_idle_pause, flag_on, normalize_encoder_preset, parse_cc, parse_telemetry_level,
-    };
+    use super::{flag_on, normalize_encoder_preset, parse_cc, parse_telemetry_level};
 
     #[test]
     fn telemetry_level_parse() {
@@ -768,15 +769,6 @@ mod tests {
         assert!(!flag_on(Some("")));
         assert!(!flag_on(Some("on"))); // strict "1", matching the SH_CAP_TRACE precedent
         assert!(!flag_on(None));
-    }
-
-    // 0 = disabled must survive the clamp; tiny nonzero graces are floored.
-    #[test]
-    fn idle_pause_clamp() {
-        assert_eq!(clamp_idle_pause(0), 0);
-        assert_eq!(clamp_idle_pause(1), 5);
-        assert_eq!(clamp_idle_pause(5), 5);
-        assert_eq!(clamp_idle_pause(60), 60);
     }
 
     // Only an explicit "cubic" opts out of BBR; garbage falls back to the

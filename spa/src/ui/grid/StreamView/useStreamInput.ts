@@ -22,6 +22,10 @@ import type { Vec2 } from './types';
 // The keyboard + pointer + wheel + pinch-zoom event machinery — the contiguous
 // run of effects (#50–55) lifted verbatim out of StreamView. Ordering, deps and
 // listener wiring are byte-for-byte identical to the god-component.
+/** A pointer that left the surface for at least this long gets a re-home hint
+ *  on re-entry (relative-pointer bridge); shorter excursions are edge brushes. */
+const REENTER_HINT_MS = 1000;
+
 export function useStreamInput({
   streamable, inputSuspended, releaseHeldButtons, control, live, touchExhibit, mouseCapture, acquireLock,
   directCanvas, revealChrome, setDebug, touch, pointerRel, presentFill,
@@ -173,11 +177,18 @@ export function useStreamInput({
   //  listeners reuse the SAME releaseAllKeys the blur path calls: on the document
   //  going hidden we flush held scancodes; on pagehide we also release control.
   //  Purely new listeners — the keydown/keyup forwarder is untouched.
+  //  Coming BACK (tab visible again, window focus) sends the relative-pointer
+  //  bridge a re-home HINT: the browser pointer may re-enter far from where it
+  //  left (the Cmd-Tab case) and the guest may have moved its own cursor
+  //  meanwhile. One datagram; absolute stations and old daemons ignore it.
   useEffect(() => {
+    const hint = () => { try { controlRef.current?.sendRehomeHint?.(); } catch { /* noop */ } };
     const onVisibility = () => {
       if (document.hidden) {
         try { controlRef.current?.releaseAllKeys(); } catch { /* noop */ }
         releaseHeldButtons();
+      } else {
+        hint();
       }
     };
     const onPageHide = () => {
@@ -187,9 +198,11 @@ export function useStreamInput({
     };
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('focus', hint);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('focus', hint);
     };
   }, [releaseHeldButtons]);
 
@@ -466,6 +479,20 @@ export function useStreamInput({
       rightClick(e, e.timeStamp - lastCtxSynthMs);
     };
 
+    // Pointer re-entering the surface after a real absence: same re-home hint
+    // (a mouse that left the exhibit and came back may find the guest cursor
+    // elsewhere). Brushing the edge of the surface is not an absence — a
+    // re-home costs the guest a pin + settle + walk, so only a leave of
+    // REENTER_HINT_MS or more (or the first entry) sends it.
+    let leftAt = 0;
+    const onLeave = (e: PointerEvent) => { if (e.pointerType !== 'touch') leftAt = e.timeStamp; };
+    const onEnter = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return;
+      if (leftAt !== 0 && e.timeStamp - leftAt < REENTER_HINT_MS) return;
+      try { control.sendRehomeHint?.(); } catch { /* noop */ }
+    };
+    surface.addEventListener('pointerleave', onLeave);
+    surface.addEventListener('pointerenter', onEnter);
     surface.addEventListener('pointerdown', onDown);
     surface.addEventListener('pointermove', onMove);
     surface.addEventListener('pointerup', onUp);
@@ -475,6 +502,8 @@ export function useStreamInput({
     surface.addEventListener('contextmenu', onCtx, true);
     surface.addEventListener('auxclick', onAux, true);
     return () => {
+      surface.removeEventListener('pointerleave', onLeave);
+      surface.removeEventListener('pointerenter', onEnter);
       surface.removeEventListener('pointerdown', onDown);
       surface.removeEventListener('pointermove', onMove);
       surface.removeEventListener('pointerup', onUp);

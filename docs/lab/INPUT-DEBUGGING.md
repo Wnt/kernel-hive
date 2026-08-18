@@ -59,6 +59,12 @@ is open; `?penrec=0` opts out. Its in-memory rings are still readable live with
 at a running tab, but it needs a FOREGROUND tab to answer its poll, which is
 exactly what the push removes.
 
+Mouse rows are dropped by default; for the relative-pointer bridge add
+`?ptrrec=1` (or `window.__osgPtrRec = true`): mouse rows are kept and every
+absolute move datagram adds a `w` row — the mapped guest point and the wire
+`cseq`, which joins row-for-row with the daemon's `[input-tel rel] cseq=`
+lines under `SH_INPUT_TELEMETRY=2` (`pen-trace.py --moves` prints both).
+
 ## Three further telemetry sources, cheapest first
 
 **1. `pen-tap` / `drag-tel` / `hover-tel` in the client log.** No setup — the UI

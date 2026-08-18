@@ -79,6 +79,9 @@ type TouchPhase = 'start' | 'move' | 'end';
 export interface StreamControlHandle {
   sendMouseMove(guestX: number, guestY: number): void;
   sendMouseMoveRel?(dx: number, dy: number): void;
+  /** Re-home hint for relative-pointer stations (tab visible / focus / pointer
+   *  re-entered the surface). Optional: non-streamhost handles need not implement it. */
+  sendRehomeHint?(): void;
   /** Diagnostic move-datagram wire counters (input/pointerTelemetry). Optional
    *  so non-streamhost handles need not implement it. */
   moveWireSnapshot?(): { sent: number; rejected: number; desiredSizeMin: number | null };
@@ -198,6 +201,9 @@ export function createStreamController(
   const sendMouseMoveRel = (dx: number, dy: number) => {
     if (disposed) return;
     client.sendMoveRel(dx, dy);
+  };
+  const sendRehomeHint = () => {
+    if (!disposed) client.sendRehomeHint();
   };
 
   const sendMouseButton = (button: number, down: boolean, x?: number, y?: number) => {
@@ -489,6 +495,7 @@ export function createStreamController(
   const handle: StreamControlHandle = {
     sendMouseMove,
     sendMouseMoveRel,
+    sendRehomeHint,
     moveWireSnapshot: () => client.moveWireSnapshot(),
     sendMouseButton,
     sendWheel,

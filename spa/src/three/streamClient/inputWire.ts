@@ -5,6 +5,7 @@
 //    datagrams (unreliable, high-rate, < ~200 B so they fit path MTU):
 //      type 1  mouse move ABSOLUTE : u16 x, u16 y, u32 cseq  (guest needs usb-tablet)
 //      type 4  mouse move RELATIVE : i16 dx, i16 dy          (PS/2-only guests)
+//      type 7  re-home hint        : (no payload)            (rel-bridge stations)
 //    per-CLASS reliable QUIC streams (Moonlight-style HOL avoidance):
 //      ICLASS_BUTTON=2 → type 2  button : u8 button, u8 down, u16 x, u16 y, u32 cseq
 //      ICLASS_WHEEL=3  → type 5  wheel  : i16 dx, i16 dy
@@ -25,8 +26,9 @@
 //  Relative moves deliberately carry no cseq: deltas accumulate, so a late one
 //  is still owed to the guest and dropping it would lose motion.
 // ============================================================================
+import { recordWireMove } from '../../input/pointerRecorder';
 import {
-  ICLASS_BUTTON, ICLASS_KEY, ICLASS_WHEEL, T_BUTTON, T_KEY, T_MOVE_ABS, T_MOVE_REL, T_WHEEL,
+  ICLASS_BUTTON, ICLASS_KEY, ICLASS_WHEEL, T_BUTTON, T_HINT, T_KEY, T_MOVE_ABS, T_MOVE_REL, T_WHEEL,
 } from './constants';
 
 /** The parts of StreamClient these encoders touch. */
@@ -53,12 +55,21 @@ export function sendMoveAbsImpl(c: StreamClientLike, x: number, y: number) {
     const cx = clampU16(x), cy = clampU16(y);
     dv.setUint16(1, cx, true);
     dv.setUint16(3, cy, true);
-    dv.setUint32(5, c.nextCseq(), true);
+    const cseq = c.nextCseq();
+    dv.setUint32(5, cseq, true);
     // The authoritative cursor position, for any button that follows without one
     // of its own (a tap releases where it pressed, so it sends no fresh point).
     c.lastAbsX = cx; c.lastAbsY = cy;
     c.noteMoveWire();
     c.writeDatagram(b);
+    recordWireMove(cx, cy, cseq);
+  }
+/** Re-home HINT (type 7, no payload): tells a relative-pointer station's bridge
+ *  that the browser pointer may have moved without it seeing (tab became
+ *  visible, window focus, pointer re-entered the surface). One datagram; a
+ *  daemon that predates it, or an absolute station, ignores it. */
+export function sendRehomeHintImpl(c: StreamClientLike) {
+    c.writeDatagram(new Uint8Array([T_HINT]));
   }
 export function sendMoveRelImpl(c: StreamClientLike, dx: number, dy: number) {
     const b = new Uint8Array(5); b[0] = T_MOVE_REL;
