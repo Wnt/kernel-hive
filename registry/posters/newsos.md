@@ -1,22 +1,42 @@
 ---
 title: NEWS-OS 4.1R
-subtitle: Sony NWS-3260 · MIPS R3000 · 1991
+subtitle: 1991 · Sony's BSD Unix workstation, folded into a laptop
 hero: /posters/newsos/desktop.webp
+images:
+  - src: /posters/newsos/desktop.webp
+    alt: The NEWS-OS 4.1R desktop on a 1120×780 monochrome LCD — Sony's NEWS Desk environment with three windows open: sxbitmap (a 48×48 bitmap editor showing "sxbitmap Version 2.1, Copyright 1990, 1991 Sony Corp."), a file manager browsing "/usr" with rows of folder icons (bin, etc, games, man, people, sony, ucb…), and sxedit, a small text editor
+    caption: NEWS-OS 4.1R at work on the NWS-3260's monochrome LCD. This is a full 4.3BSD Unix — X11, a windowing desktop and Sony's own tools — running on a MIPS laptop from 1991, logged in as the guest user `demo`.
 ---
+## Origins
 
-## Japan's workstation Unix
+**Sony NEWS** — the name stands for *Network Engineering WorkStation* — was Sony's line of Unix workstations, launched in 1987 and sold mostly inside Japan. It was Sony's bid for the same engineering and research market Sun Microsystems was winning in the United States: a real Unix machine, on the engineer's desk, at a price a university lab could justify. The first NEWS machines ran on Motorola 68020/68030 processors; by the early 1990s the line had moved to MIPS, and later still to Sony's own R4000-class designs.
 
-Sony's NEWS line — *Network Engineering Workstation* — was Japan's answer to
-Sun and the Apollo/DEC crowd: a 4.3BSD-derived Unix with X11 on top, sold
-into universities and research labs from 1987. NEWS-OS 4 moved the line from
-68k to MIPS. The NWS-3260 was the portable of the family: an R3000 folded
-under a 1120×780 monochrome LCD.
+The operating system, **NEWS-OS**, was a 4.3BSD-derived Unix with Sony's additions on top — an X11 server, the **NEWS Desk** windowing environment, and thorough support for Japanese text (the machines were built for a Japanese-language market that most American workstations served only as an afterthought). Release 4.1R, running on this station, is the mature 4.3BSD generation, with X11R4 and the `sxdm` graphical login.
 
-## What you are looking at
+The machine underneath is a **Sony NWS-3260** (1991) — the *portable* of the MIPS generation. Where most workstations of the era were deskside boxes tethered to a heavy CRT, the 3260 folded a **20 MHz MIPS R3000A**, 16 MB of RAM and a **1120×780 monochrome LCD** into a luggable, laptop-shaped case. It is, in effect, a BSD Unix laptop from 1991 — years before that phrase meant anything ordinary.
 
-The exhibit runs MAME's `nws3260` machine host-native and streams the LCD
-itself — the ROM monitor's `NEWS>` prompt, the NEWS-OS 4.1R installer, and
-finally the `sxdm` login and X desktop. This station was installed live in
-the gallery from the original MO installation kit.
+## Significance
 
-- Bring-up notes: `docs/guests/newsos.md`
+Almost every Unix workstation in this hall is an American machine: Sun's Solaris, SGI's IRIX, DEC's Tru64, HP's HP-UX. NEWS is the one that came from the other side of the Pacific — Japan's own answer to the workstation, from a company far better known for the Walkman and the Trinitron than for `/etc/passwd`. Seeing NEWS-OS next to its American cousins is seeing that the BSD-Unix-on-a-workstation idea was genuinely global, and that Sony, at the height of its hardware confidence, built a credible one.
+
+And it is the only *portable* Unix workstation here. The 1120×780 monochrome panel is not a compromise the emulator imposes — it is the real hardware: a high-resolution flat panel at a time when flat panels were exotic, driving a full X11 desktop. This is what a mobile engineer's Unix machine looked like in 1991, and there was almost nothing else like it.
+
+## What you're looking at
+
+NEWS-OS 4.1R booted from its own disk on an emulated NWS-3260, drawn on the machine's 1120×780 monochrome LCD, logged in as the unprivileged guest user **`demo`**. The environment is **NEWS Desk** (`sxsession`): Sony's own X11 desktop, with a menu bar of Session / Environment / Application and a set of bundled tools. In the captured scene three of them are open — **sxbitmap**, a 48×48 bitmap editor; a **file manager** browsing the Unix filesystem under `/usr`; and **sxedit**, a small text editor. Underneath the desktop is an ordinary 4.3BSD system: a real shell, real manual pages, TCP/IP and NFS, all reachable from an `xterm`.
+
+Because there is no colour here, the whole interface is rendered in crisp black-and-white dithering — the native look of the LCD, not a limitation of the capture.
+
+## Things to try
+
+- **Log in as `demo`** at the `sxdm` greeter (no password) to reach the NEWS Desk desktop. There is no autologin on this machine, so the first login is by hand — as it would have been in 1991.
+- **Open the Application menu** on the desktop's menu bar for Sony's bundled tools — a **Terminal Emulator** (`xterm`) for a Bourne/C-shell prompt, the **sxbitmap** editor, **sxedit**, and the **file manager**.
+- **In an xterm, poke at a 1991 BSD**: `ls /`, `ps ax`, `df`, `w`, `cat /etc/motd`, `man ls` (the manual pages are installed). The C shell (`csh`) is the login shell; `/usr/ucb` holds the Berkeley classics.
+- **Browse the filesystem** in the file manager — walk into `/usr`, `/bin`, `/usr/games` — the same directories you can `ls` in the shell, shown as folders and icons.
+- **Reset** power-cycles the machine: the driver has no snapshot to restore, so a reset cold-boots the disk from the ROM monitor back to the `sxdm` login — about a minute and a half, the way a real NWS-3260 would start its day.
+
+Note for the curious: the pointer is a tracked, open-loop device (the emulated NEWS mouse reports no absolute cursor), so move it deliberately; the on-screen menus open by press-and-hold rather than a single click.
+
+## Legacy
+
+Sony kept the NEWS line going into the mid-1990s — later releases of NEWS-OS moved to a System V R4 base — but the workstation market it was built for was already narrowing around Sun and SGI, and then collapsing as commodity PCs running Windows NT and, soon, Linux took over the engineer's desk. Sony wound NEWS down and, a few years later, put its computing energy into the consumer PC instead: the VAIO. The NEWS workstations became one of the great might-have-beens of Japanese computing — technically strong, genuinely original, and almost unknown outside the labs that used them. This station is a rare chance to see one run.
