@@ -90,6 +90,31 @@ read-only monitor. Keymap: `scripts/dev/mame-keymap.py <ctl.sock> --tags ":"`
 → `streamhost/stations/newsos/newsos.keymap` (78 keys; unmatched: keypad,
 Nfer/Xfer, Help/Clear — irrelevant to the exhibit).
 
+### Shift ordering (`MAME_CTL_KEY_SCAN_MS`, 2026-08-18)
+
+`news_hid` is MAME's `device_matrix_keyboard_interface`: it scans the 8 rows
+in **fixed order** (`start_processing(from_hz(1'200))`, a 6.7 ms full sweep)
+and emits make/break **scancodes in ROW order**, from which the guest's X
+server reconstructs the Shift *level*. L/R-Shift live on ROW3/ROW4 but most
+characters on ROW0–ROW3, so when the browser's Shift-down and character-down
+land in the **same** ctlsock drain pass — which `typeText` guarantees, it
+sends them at ~0 gap (a press following a press is not gap-delayed) — the
+device samples both bits together and scans the character's *lower* row first,
+emitting the character **before** Shift. The guest types it unshifted:
+`The_Quick`→`the-Quick`, `&`→`7`, `$HOME`→`$hOME`. The per-key HOLD/GAP dwell
+does not fix this (it paces a field against *itself*, not Shift-vs-character),
+and a text console tolerated it (it cares less about Shift edge order than X
+does) which is why the raw installer was clean but xterm/sxdm mangled.
+
+Fix: `MAME_CTL_KEY_SCAN_MS=8` in the fixture. `drain_keys()` then applies at
+most **one matrix transition per full scan sweep**, in queue order, so every
+edge is scanned in isolation and in the order the browser sent it. 8 ms ≥ one
+6.7 ms sweep. Validated byte-exact at the shipped 80/80 across mixed case and
+every shifted symbol (`!@#$%^&*()_+`, `&` vs bare `7`, `HUP`, `$`). The knob
+is opt-in and inert (0) everywhere else; it lives in the shared ctlsock module
+(`scripts/build-guests/patches/mame-ctlsock.patch`), so a change needs the
+`newsos` MAME binary rebuilt (`build-mame-native.sh newsos`).
+
 ## Runtime shape
 
 Row: `registry/stations/newsos.json` (dragon32's host-native shape:

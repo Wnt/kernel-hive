@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,3145 @@
+@@ -0,0 +1,3181 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -227,6 +227,24 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +                             order of drain_keys(), NOT arrival order
 +                             (strict arrival order deadlocks on real,
 +                             overlapping typing)                 [off]
++      MAME_CTL_KEY_SCAN_MS   scan-settle, EMULATED ms. For a guest
++                             whose keyboard is MAME's
++                             device_matrix_keyboard_interface
++                             (news_hid: Sony NEWS): the device scans
++                             rows 0..N in FIXED order and emits
++                             make/break scancodes in ROW order, and
++                             the guest rebuilds Shift LEVEL from that
++                             order. When a Shift edge and a character
++                             edge land in the SAME drain pass, the
++                             character's (lower) row is scanned before
++                             Shift's (higher) row and the guest types
++                             it at the wrong level. Set to at least one
++                             full matrix-scan sweep (nws3260: 8 rows /
++                             1200 Hz = 6.7 ms -> use 8) and drain_keys
++                             applies at most ONE matrix transition per
++                             this window, in queue order, so the device
++                             scans every edge in isolation and in the
++                             order the browser sent it.            [0]
 +      MAME_CTL_MOVEA_TRIES   accepted, INERT since engine V2 (V2
 +                             flights terminate by construction)     [40]
 +      MAME_CTL_SWAP_ITEMS    "<seq>,<dx>,<dy>": the VC2 cursor-swap
@@ -440,6 +458,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_key_gap = double(env_long("MAME_CTL_KEY_GAP", 50)) / 1e3;
 +		if (char const *e = std::getenv("MAME_CTL_KEY_EXCL"); e && *e)
 +			m_key_excl = e;
++		m_key_scan = double(env_long("MAME_CTL_KEY_SCAN_MS", 0)) / 1e3;
 +		m_cal_x = env_long("MAME_CTL_CAL_X", -31);
 +		m_cal_y = env_long("MAME_CTL_CAL_Y", -31);
 +		m_movea_tries = int(env_long("MAME_CTL_MOVEA_TRIES", 40));
@@ -1278,6 +1297,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_kup_at.clear();
 +		m_excl_down.clear();
 +		m_excl_up_at = -1e9;
++		m_matrix_edge_at = -1e9;
 +		m_esc_frames = 0;
 +		m_probe_frames = 0;
 +	}
@@ -1676,6 +1696,19 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				++it;
 +				continue;
 +			}
++			// SCAN-SETTLE (MAME_CTL_KEY_SCAN_MS): a device_matrix_keyboard_interface
++			// guest (news_hid) scans rows in FIXED order and emits make/break in
++			// ROW order; the guest rebuilds Shift LEVEL from that order. If a Shift
++			// edge and a character edge are applied in the same pass, the device
++			// samples both bits together and emits the lower row first — a shifted
++			// character on a low row (digit/'-'/letter) is typed at the wrong
++			// level. So apply at most ONE matrix transition per full scan sweep,
++			// in queue order: every edge is then scanned in isolation and in the
++			// order the browser sent it. This edge is next in line (it passed the
++			// barrier, dwell and excl gates); if the previous applied edge has not
++			// yet had its sweep, defer the whole remainder to a later pass.
++			if (m_key_scan > 0.0 && now < m_matrix_edge_at + m_key_scan)
++				break;
 +			ioport_port *const pt = resolve_port(e.port);
 +			ioport_field *const f = pt ? find_field(pt, e.field) : nullptr;
 +			if (f)
@@ -1683,6 +1716,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				f->set_value(u32(e.val));
 +				pt->frame_update();  // mid-frame re-latch (V6-proven on the
 +				                     // button port; kbd matrix re-checked)
++				m_matrix_edge_at = now;  // scan-settle: this transition owns the next sweep
 +				trace("verb KEY seq=%s %s|%s=%d applied", e.ack.seq, e.port, e.field, e.val);
 +				hist_apply(e.ack);
 +				reply_ok(e.ack);
@@ -3103,6 +3137,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	double m_move_window = 0.04;
 +	double m_key_hold = 0.10;
 +	double m_key_gap = 0.05;
++	double m_key_scan = 0.0;                       // MAME_CTL_KEY_SCAN_MS (0 = off)
 +	long m_cal_x = -31;
 +	long m_cal_y = -31;
 +	int m_movea_tries = 40;
@@ -3149,6 +3184,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	std::string m_key_excl;                       // MAME_CTL_KEY_EXCL port-tag substring
 +	std::unordered_set<std::string> m_excl_down;  // matching fields currently applied down
 +	double m_excl_up_at = -1e9;                   // last matching release (emu s)
++	double m_matrix_edge_at = -1e9;               // last APPLIED matrix edge (emu s), for MAME_CTL_KEY_SCAN_MS
 +
 +	std::deque<click_entry> m_clickq;
 +	click_entry m_click_cur{};
