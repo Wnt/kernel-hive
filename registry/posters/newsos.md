@@ -19,13 +19,15 @@ The machine underneath is a **Sony NWS-3260** (1991) — the *portable* of the M
 
 Almost every Unix workstation in this hall is an American machine: Sun's Solaris, SGI's IRIX, DEC's Tru64, HP's HP-UX. NEWS is the one that came from the other side of the Pacific — Japan's own answer to the workstation, from a company far better known for the Walkman and the Trinitron than for `/etc/passwd`. Seeing NEWS-OS next to its American cousins is seeing that the BSD-Unix-on-a-workstation idea was genuinely global, and that Sony, at the height of its hardware confidence, built a credible one.
 
-And it is the only *portable* Unix workstation here. The 1120×780 monochrome panel is not a compromise the emulator imposes — it is the real hardware: a high-resolution flat panel at a time when flat panels were exotic, driving a full X11 desktop. This is what a mobile engineer's Unix machine looked like in 1991, and there was almost nothing else like it.
+And there is a twist of games history buried here. **Early Sony PlayStation development kits were built on NEWS hardware** — the machines that produced one of the best-selling consoles ever made were NEWS Unix workstations with PlayStation graphics hardware bolted on. Nintendo, too, developed its first Super NES titles on Sony NEWS machines. Before Sony made game consoles, it made the workstations the game industry designed them on.
+
+And it is the only *portable* Unix workstation here. The 1120×780 monochrome panel is no downgrade — it is the real hardware: a high-resolution flat panel at a time when flat panels were exotic, driving a full X11 desktop. This is what a mobile engineer's Unix machine looked like in 1991, and there was almost nothing else like it.
 
 ## What you're looking at
 
-NEWS-OS 4.1R booted from its own disk on an emulated NWS-3260, drawn on the machine's 1120×780 monochrome LCD, logged in as the unprivileged guest user **`demo`**. The environment is **NEWS Desk** (`sxsession`): Sony's own X11 desktop, with a menu bar of Session / Environment / Application and a set of bundled tools. In the captured scene three of them are open — **sxbitmap**, a 48×48 bitmap editor; a **file manager** browsing the Unix filesystem under `/usr`; and **sxedit**, a small text editor. Underneath the desktop is an ordinary 4.3BSD system: a real shell, real manual pages, TCP/IP and NFS, all reachable from an `xterm`.
+NEWS-OS 4.1R booted from its own disk on an emulated NWS-3260, drawn on the machine's 1120×780 monochrome LCD, logged in as the unprivileged guest user **`demo`**. The environment is **NEWS Desk** (`sxsession`): Sony's own X11 desktop, with a menu bar of Session / Environment / Application and a set of bundled tools. Three of them are open here — **sxbitmap**, a 48×48 bitmap editor; a **file manager** browsing the Unix filesystem under `/usr`; and **sxedit**, a small text editor. Underneath the desktop is an ordinary 4.3BSD system: a real shell, real manual pages, TCP/IP and NFS, all reachable from an `xterm`.
 
-Because there is no colour here, the whole interface is rendered in crisp black-and-white dithering — the native look of the LCD, not a limitation of the capture.
+Because there is no colour here, the whole interface is rendered in crisp black-and-white dithering — the native look of the LCD.
 
 ## Things to try
 
@@ -33,9 +35,9 @@ Because there is no colour here, the whole interface is rendered in crisp black-
 - **Open the Application menu** on the desktop's menu bar for Sony's bundled tools — a **Terminal Emulator** (`xterm`) for a Bourne/C-shell prompt, the **sxbitmap** editor, **sxedit**, and the **file manager**.
 - **In an xterm, poke at a 1991 BSD**: `ls /`, `ps ax`, `df`, `w`, `cat /etc/motd`, `man ls` (the manual pages are installed). The C shell (`csh`) is the login shell; `/usr/ucb` holds the Berkeley classics.
 - **Browse the filesystem** in the file manager — walk into `/usr`, `/bin`, `/usr/games` — the same directories you can `ls` in the shell, shown as folders and icons.
-- **Reset** power-cycles the machine: the driver has no snapshot to restore, so a reset cold-boots the disk from the ROM monitor back to the `sxdm` login — about a minute and a half, the way a real NWS-3260 would start its day.
+- **Reset** power-cycles the machine — a cold boot from the ROM monitor back to the `sxdm` login, about a minute and a half, the way a real NWS-3260 would start its day.
 
-Note for the curious: the pointer is a tracked, open-loop device (the emulated NEWS mouse reports no absolute cursor), so move it deliberately; the on-screen menus open by press-and-hold rather than a single click.
+Note for the curious: the NEWS Desk menus open by press-and-hold rather than a single click.
 
 ## Legacy
 

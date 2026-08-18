@@ -3,9 +3,24 @@
   "id": "newsos",
   "images": [
     {
-      "src": "/posters/newsos/gallery/01-sony-news-nws-3710-01.webp",
+      "src": "/posters/newsos/gallery/01-sony-news.webp",
+      "alt": "A Sony NEWS workstation running NEWS-OS: a desktop Unix box beside a colour monitor showing a windowed X11 desktop",
+      "caption": "A Sony NEWS workstation running NEWS-OS — the BSD-Unix-and-X11 environment this exhibit shows. NEWS machines were widely used as software-development workstations: early Sony PlayStation development kits were built on NEWS hardware, and Nintendo developed its first Super NES titles on them too.",
+      "author": "Mike Chapman",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sony_news.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "bd27e78a5cc075e0d8d83b2008f46d653327b75feab62bcec8461762449c4f5d",
+      "width": 1216,
+      "height": 732
+    },
+    {
+      "src": "/posters/newsos/gallery/02-sony-news-nws-3710-01.webp",
       "alt": "Front view of a Sony NWS-3710 RISC workstation: a beige desktop tower with a hinged front cover, power button and status lights",
-      "caption": "A Sony NWS-3710 — a desktop RISC workstation from Sony's NEWS (Network Engineering WorkStation) line, the same MIPS-based family as this station's portable NWS-3260. No NWS-3260 photograph exists on Commons, so its stablemate stands in for it.",
+      "caption": "A Sony NWS-3710 — a desktop RISC workstation from Sony's NEWS (Network Engineering WorkStation) line, the same MIPS-based family as this station's portable NWS-3260.",
       "author": "SupremeDalek",
       "license": "CC BY 3.0",
       "licenseId": "cc-by-3.0",
@@ -18,9 +33,9 @@
       "height": 1200
     },
     {
-      "src": "/posters/newsos/gallery/02-sony-news-nws-3710-03.webp",
+      "src": "/posters/newsos/gallery/03-sony-news-nws-3710-03.webp",
       "alt": "The front of a Sony NWS-3710 with its cover tilted down, exposing an empty 5.25-inch drive bay, a floppy drive, a configuration DIP switch and a reset button",
-      "caption": "The front panel opened up: floppy drive, the configuration DIP switches and a reset button. It is a DIP switch just like these — set for Automatic Boot — that brings NEWS-OS up unattended on the NWS-3260 emulated here.",
+      "caption": "The front panel opened up: floppy drive, the configuration DIP switches and a reset button. It is a DIP switch just like these — set for Automatic Boot — that brings NEWS-OS up unattended on the NWS-3260.",
       "author": "SupremeDalek",
       "license": "Public domain",
       "licenseId": "pd",
@@ -33,9 +48,9 @@
       "height": 1200
     },
     {
-      "src": "/posters/newsos/gallery/03-sony-news-nws-3710-05.webp",
+      "src": "/posters/newsos/gallery/04-sony-news-nws-3710-05.webp",
       "alt": "Rear view of a Sony NWS-3710 workstation showing three expansion bays, one holding a video card, and the rear connector panel",
-      "caption": "The back of the machine: three expansion bays and the connector panel of a late-1980s Japanese Unix workstation. Sony's NEWS line ran a BSD-derived Unix, the ancestor of the NEWS-OS 4.1R booting on this station.",
+      "caption": "The back of the machine: three expansion bays and the connector panel of a late-1980s Japanese Unix workstation. Sony's NEWS line ran a BSD-derived Unix, the ancestor of the NEWS-OS 4.1R on this station.",
       "author": "SupremeDalek",
       "license": "Public domain",
       "licenseId": "pd",
@@ -48,7 +63,7 @@
       "height": 1200
     },
     {
-      "src": "/posters/newsos/gallery/04-sony-news-nws-3710-06.webp",
+      "src": "/posters/newsos/gallery/05-sony-news-nws-3710-06.webp",
       "alt": "Top view of a Sony NEWS UNIX workstation with the upper cover removed, showing the internal boards, drives and power supply",
       "caption": "Inside, cover removed — the boards, drives and single cooling fan of a NEWS workstation. The NWS-3260 packed this same MIPS R3000A architecture into a portable, LCD-equipped chassis instead of a desktop box.",
       "author": "SupremeDalek",
@@ -63,9 +78,9 @@
       "height": 1200
     },
     {
-      "src": "/posters/newsos/gallery/05-sony-news-nws-3710-10.webp",
+      "src": "/posters/newsos/gallery/06-sony-news-nws-3710-10.webp",
       "alt": "A video card removed from a Sony NEWS 3710 workstation, held up to show the components on the board",
-      "caption": "The graphics board lifted out of the machine. On the NWS-3260 the equivalent display hardware drove a built-in 1120x780 monochrome LCD — the framebuffer this station captures directly.",
+      "caption": "The graphics board lifted out of the machine. On the NWS-3260 the equivalent display hardware drove a built-in 1120x780 monochrome LCD — the screen this exhibit shows.",
       "author": "SupremeDalek",
       "license": "Public domain",
       "licenseId": "pd",

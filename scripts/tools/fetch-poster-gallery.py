@@ -271,7 +271,12 @@ def fetch_tile(tile_id: str, candidates: dict[str, Any]) -> dict[str, Any]:
                 "src": f"/posters/{tile_id}/gallery/{filename}",
                 "alt": entry["alt"],
                 "caption": entry["caption"],
-                "author": license_info["author"],
+                # A candidate may override the credited author: Commons'
+                # machine-readable Artist field is often the uploader or a
+                # "No machine-readable author provided" placeholder, not the
+                # photographer named in the page's prose. The override is a
+                # courtesy credit only — it never affects the license gate.
+                "author": entry.get("author") or license_info["author"],
                 "license": license_info["license"],
                 "licenseId": license_info["licenseId"],
                 "licenseUrl": license_info["licenseUrl"],
