@@ -131,16 +131,34 @@ class Telnet:
         text = text.rsplit(e_mark.encode(), 1)[0]
         return text.decode("latin-1"), rc
 
+    def put(self, path, content):
+        """Write CONTENT to guest PATH by streaming it into `cat` — no shell
+        quoting (the guest is csh, whose quoting differs from sh). Ends with a
+        line-leading Ctrl-D so cat closes the file."""
+        self.send("cat > " + path)
+        time.sleep(0.3)
+        body = content
+        if not body.endswith("\n"):
+            body += "\n"
+        self.s.sendall(body.replace("\n", "\r\n").encode("latin-1"))
+        self.s.sendall(b"\x04")  # EOF at line start -> cat writes the file
+        time.sleep(0.5)
+        self._drain(1.5)
+
 
 def main():
     if len(sys.argv) < 4:
         sys.stderr.write('usage: sunexec.py <host> <port> "<cmd>"\n')
+        sys.stderr.write('       sunexec.py <host> <port> --put <guest_path>   (content on stdin)\n')
         sys.exit(2)
-    host, port, cmd = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+    host, port = sys.argv[1], int(sys.argv[2])
     user = os.environ.get("SUN_USER", "root")
     t = Telnet(host, port)
     t.login(user)
-    text, rc = t.run(cmd)
+    if sys.argv[3] == "--put":
+        t.put(sys.argv[4], sys.stdin.read())
+        sys.exit(0)
+    text, rc = t.run(sys.argv[3])
     sys.stdout.write(text)
     if text and not text.endswith("\n"):
         sys.stdout.write("\n")

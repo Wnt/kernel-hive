@@ -810,7 +810,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54147,
-      "notes": "exec = telnet_unix_e: labctl exec sunos414 runs a captured command over the guest's in-guest in.telnetd (SunOS 4.1.4 predates ssh; inetd runs telnetd, root has no password on a fresh suninstall), reached at 127.0.0.1:5947 via the SLIRP hostfwd the launcher re-adds on every start (client: /root/sunexec.py <- streamhost/guest-agents/sunos414/sunexec.py). No QMP-less exec before that; drive early boot via QMP (qmp-type.py). Requires the guest booted to multiuser: live once the loadvm golden restores the running system; at the bare OpenBIOS prompt there is no telnetd yet."
+      "notes": "OpenWindows 3 desktop as the unprivileged guest, restored via loadvm golden. Mouse and keyboard both work (keyboard needs SetInput: select click-to-focus, baked in the golden's ~/.Xdefaults; with followmouse keys only land while the pointer is over the window). exec = telnet_unix_e: labctl exec sunos414 over in.telnetd at 127.0.0.1:5947 (launcher re-adds the SLIRP hostfwd each start; client /root/sunexec.py)."
     },
     "templeos": {
       "dir": "/data/vms/streamhost/stations/templeos",
