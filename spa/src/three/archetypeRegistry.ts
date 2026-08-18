@@ -187,7 +187,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   macos753:    { osId: 'macos753', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#8c8a85', eraLabel: '1996 · Mac OS 7.5.3 — Quadra 800', pointerRel: true },
   hpuxvue:     { osId: 'hpuxvue', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#5b7c99', eraLabel: '1996 · HP-UX 10.20 — HP VUE', pointerRel: true },
   beos:        { osId: 'beos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3466a0', eraLabel: '2000 · BeOS R5 Professional', pointerRel: true }, // BeOS<->Haiku pairing
-  newsos:      { osId: 'newsos', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#7a6f9b', eraLabel: '1991 · NEWS-OS 4.1R — Sony NWS-3260' },
+  newsos:      { osId: 'newsos', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#7a6f9b', eraLabel: '1991 · NEWS-OS 4.1R — Sony NWS-3260', pointerRel: false },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

@@ -849,7 +849,7 @@ emit beos \
 #   disk. DARK LAUNCH: listing=hidden while the install runs on camera.
 emit newsos \
   --tile newsos --udp 54148 --x11 --x11-display :63 --capture shm --pointer \
-  none --input-backend mamesock --audio off --fps 30 --x11-runtime-file \
+  abs --input-backend mamesock --audio off --fps 30 --x11-runtime-file \
   "$T/mame-native/x11-runtime.sh" --aux-file "$T/newsos/newsos.keymap" \
   --env-append-file "$T/newsos/station.env.fixture"
 
