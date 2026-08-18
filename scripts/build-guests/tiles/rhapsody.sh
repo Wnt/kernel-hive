@@ -95,8 +95,9 @@ phase_qemu() {
     --disable-docs --disable-gtk --disable-sdl --disable-vnc --disable-spice \
     --disable-opengl --disable-werror --disable-tools --disable-xkbcommon \
     --prefix="$QEMU_PREFIX" >"$WORK/configure.log" 2>&1) || die "configure failed; see $WORK/configure.log"
-  (cd "$src/build" && nice -n 15 ninja qemu-system-i386 >"$WORK/ninja.log" 2>&1) || die "build failed; see $WORK/ninja.log"
-  install -Dm755 "$src/build/qemu-system-i386" "$QEMU"
+  # ninja install, not a bare copy: the binary looks for bios-256k.bin and
+  # friends under $QEMU_PREFIX/share/qemu.
+  (cd "$src/build" && nice -n 15 ninja >"$WORK/ninja.log" 2>&1 && ninja install >>"$WORK/ninja.log" 2>&1) || die "build failed; see $WORK/ninja.log"
   strings "$QEMU" | grep -q KH_I8259_LENIENT_CASCADE || die "built binary lacks the lenient-cascade switch"
   strings "$QEMU" | grep -q SH_DBUS_UPDATE_MS || die "built binary lacks the fork's fast-poll patch"
   log "built and verified $QEMU"

@@ -847,11 +847,11 @@ emit beos \
 #   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from
 #   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without
 #   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one
-#   2 GB IDE disk, std VGA, ne2k_pci, serial Microsoft mouse (dbus-rel). DARK
-#   LAUNCH: listing=hidden while the install runs on camera.
+#   2 GB IDE disk, Cirrus GD5446 at 800x600x16, i82557b, PS/2 mouse (dbus-rel).
+#   DARK LAUNCH: listing=hidden while the install runs on camera.
 emit rhapsody \
   --tile rhapsody --vmid 146 --udp 54146 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
+  dbus-rel --cursor-scale 2.09 --cursor-off-x 0 --cursor-off-y 0 --audio off \
   --fps 30 --launcher-file "$T/rhapsody/qemu-streamhost.sh" \
   --env-append-file "$T/rhapsody/station.env.fixture"
 

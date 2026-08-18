@@ -690,7 +690,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54146,
-      "notes": "INSTALL PHASE (dark launch). No exec channel: drive it via labctl key/pointer or scripts/dev/qmp-type.py; COM1 is the serial mouse, COM2 -> serial.log."
+      "notes": "INSTALL PHASE (dark launch). No exec channel: drive it via labctl key/pointer or scripts/dev/qmp-type.py; COM1 -> serial.log. PS/2 deltas mis-decode if the i8042 queue is flooded — pace pointer moves."
     },
     "sailfishos": {
       "dir": "/data/vms/streamhost/stations/sailfishos",

@@ -16,9 +16,12 @@
 #   * ONE IDE disk (rhapsody-golden.qcow2, 2 GB, MBR + Rhapsody UFS) — the
 #     device set is deliberately minimal (VOM's shape). Never delete/recreate
 #     it: the golden snapshot lives inside it.
-#   * std VGA, ne2k_pci user-net, serial Microsoft mouse on COM1 (the only
-#     pointer this guest supports — relative, driven through the daemon's
-#     abs->rel bridge, SH_INPUT_BACKEND=dbus-rel), COM2 to serial.log.
+#   * Cirrus GD5446 PCI (-vga cirrus; DR2 ships a "Cirrus Logic GD5446 PCI
+#     Display Adapter (2MB)" driver — configured for 800x600 RGB:555/16 @60),
+#     Intel EtherExpress PRO/100B PCI (-device i82557b) user-net, PS/2 mouse
+#     (relative, through the daemon's abs->rel bridge, SH_INPUT_BACKEND=
+#     dbus-rel; DR2's PS/2 driver mis-decodes deltas when the i8042 queue is
+#     flooded — the daemon paces), COM1 to serial.log.
 #   * -loadvm golden -S when the snapshot exists (frozen at the checkpoint,
 #     the daemon wakes it); cold disk boot otherwise (install phase / rebake).
 set -e
@@ -38,10 +41,9 @@ nohup "$QEMU" \
   -machine pc-i440fx-11.0 -cpu pentium2 \
   -rtc base=localtime \
   -drive file=$D/rhapsody-golden.qcow2,format=qcow2,if=ide,index=0 -boot c \
-  -vga std \
+  -vga cirrus \
   -display dbus,p2p=on \
-  -netdev user,id=n0 -device ne2k_pci,netdev=n0 \
-  -chardev msmouse,id=ms0 -serial chardev:ms0 \
+  -netdev user,id=n0 -device i82557b,netdev=n0 \
   -serial file:$D/serial.log \
   $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \

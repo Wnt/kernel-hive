@@ -43,6 +43,10 @@ All on the box's stock `qemu-system-i386` 11.0.2 (pve-qemu) unless noted,
 ATAPI CD, floppy, `-vga std`, `ne2k_pci`, serial Microsoft mouse
 (`-chardev msmouse -serial chardev:`), `-display dbus,p2p=on`.
 
+(The install-phase rig used `-vga std`, `ne2k_pci` and a serial Microsoft
+mouse; the installed system's device set is what the launcher ships — see
+"Install" below.)
+
 1. Boot floppy boots on QEMU 11 under TCG: language prompt (720x400 text)
    → "prepare to install" → asks for the Device Drivers floppy (`change floppy0`
    over QMP). The drivers disk lists SCSI adapters first; **page 3, option 4
@@ -90,27 +94,50 @@ QEMU fork (11.0.2 + fast-poll) into **`/opt/qemu-rhapsody`**, like
 `/opt/qemu-hppa` for hpuxvue; patch source
 `streamhost/qemu-patches/0006-i8259-lenient-spurious-cascade.patch`.
 
-## Install (in progress)
+## Install (what was done, in order)
 
 - Rig: `/data/vms/sandbox/rhapsody/rig/launch.sh` (kills by pidfile, boots,
-  restarts the borrowed daemon; `BOOT=disk|floppy`, `QEMU=`, `ACCEL=`, `FDA=`),
-  `drive-install.sh` (the installer keystrokes via `qmp-type.py --qmp`), `k.sh
-  <wait> [keys]` (send keys + screendump to `shot/cur.png`).
-- Installer choices: English (1) → 1 → drivers floppy → 7, 7, 4 → 1 → Ok (1)
-  → IDE Disk 0 (1) → erase entire disk (1) → start (1).
-
-TODO once the install completes: resolution/depth the installed video driver
-gives, pointer gain for the serial mouse (`SH_CURSOR_SCALE`), keyboard, the
-golden checkpoint, real hero, listing.
+  restarts the borrowed daemon; `BOOT=disk|floppy`, `QEMU=`, `ACCEL=`, `FDA=`,
+  `VGA=`, `NIC=`), `drive-install.sh` (the installer keystrokes via
+  `qmp-type.py --qmp`), `k.sh <wait> [keys]` (keys + screendump to
+  `shot/cur.png`), `goto.sh X Y [click]` / `mm.py dx dy step` (paced PS/2
+  pointer moves; see the pointer note below).
+- Text installer (boot floppy → drivers floppy → CD): English (1) → 1 →
+  drivers floppy (`change floppy0` over QMP) → 7, 7, 4 (Intel PIIX PCI
+  EIDE/ATAPI) → 1 → Ok (1) → IDE Disk 0 (1) → erase entire disk (1) → start
+  (1). ~450 MB of writes, ~35 min under TCG on a loaded box. Ends with
+  "Copying of Files Completed … Remove the disk … press Return" →
+  `eject -f floppy0`, Return → reboots from the disk.
+- First disk boot lands in the graphical **Configure.app** (640x480, grey
+  desktop pattern, Platinum look). Choices made there:
+  - Display: **Cirrus Logic GD5446 PCI Display Adapter (2MB) (v5.00)** — an
+    exact match for QEMU `-vga cirrus`; mode **800x600 60 Hz RGB:555/16**
+    (list goes up to 1152x864; 640x480 and 1024x768 exist too). "Default VGA
+    Adapter" and "Generic SVGA Adapter" also exist but were not needed.
+  - Pointing Device: **PS/2 Mouse** (the default — so the candidate note's
+    "serial mouse only" was wrong: the serial mouse is what VOM chose, not
+    what DR2 requires; the rig now runs without `msmouse`).
+  - Network: **Intel EtherExpress PRO/100B PCI LAN Adapter (v5.00)** — QEMU
+    `-device i82557b`. No NE2000/PCnet driver in DR2's list; DEC 21x4x
+    (QEMU `tulip`) is the alternative.
+  - Save → the graphical **Install Rhapsody** package picker (Essentials
+    104 MB + all Other Packages = 384 MB) → Install.
+- Pointer facts (measured with QMP `mouse_move` + screendump diffs):
+  **1 unit → 0.478 px** in both axes (`SH_CURSOR_SCALE=2.09`); the guest's
+  PS/2 driver decodes garbage (sign flips, jumps to the far corner) when
+  moves are pushed faster than it drains the i8042 queue — pace moves
+  (~150 ms apart in the rig helper; the daemon's own pacing is fine) and keep
+  single deltas ≤ ~100 units. In NeXT lists, Return = default button (Add),
+  but inside a table Return moves the selection — click OK with the pointer.
 
 ## Build and device set
 
 - Builder: `scripts/build-guests/tiles/rhapsody.sh` (TODO — recipe from the rig)
 - Canonical output: `rhapsody-golden.qcow2` + internal `golden` snapshot
 - QEMU: `/opt/qemu-rhapsody/bin/qemu-system-i386`, `pc-i440fx-11.0`, TCG
-  (KVM to be re-tested with the fixed PIC), `pentium2`, 64 MB, `-vga std`,
-  IDE disk 2 GB, `ne2k_pci` user-net, serial Microsoft mouse on COM1, COM2 to
-  `serial.log`, `-display dbus,p2p=on`.
+  (KVM to be re-tested with the fixed PIC), `pentium2`, 64 MB, `-vga cirrus`
+  (GD5446, 800x600x16), IDE disk 2 GB, `-device i82557b` user-net, PS/2
+  mouse, COM1 to `serial.log`, `-display dbus,p2p=on`.
 
 ## Golden, input, and rollback
 
