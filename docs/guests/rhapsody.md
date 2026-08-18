@@ -1,9 +1,11 @@
 # rhapsody guest — Rhapsody 5.1 Developer Release 2 for Intel
 
-Status: **BRING-UP, dark-launched** (`/os/rhapsody` streams from the sandbox
-rig `/data/vms/sandbox/rhapsody/rig`; `listing.state=hidden`). The install is
-being run on camera. The one real blocker — a guest PIC race that QEMU makes
-frequent — is diagnosed and fixed with a station-specific QEMU build (below).
+Status: **INSTALLED, golden baked, running as `streamhost@rhapsody`,
+dark-launched** (`/os/rhapsody` resolves through a darklaunch overlay;
+`listing.state=hidden` until the operator eyeballs desktop, pointer and
+keyboard). Installed on camera 2026-08-18. The one real blocker — a guest PIC
+race that QEMU makes frequent — is diagnosed and fixed with a station-specific
+QEMU build (below).
 Candidate research: [`docs/lab/research/candidate-rhapsody.md`](../lab/research/candidate-rhapsody.md).
 
 Why it is here: the hinge between the `nextstep` station (pure NeXT) and the
@@ -141,8 +143,26 @@ QEMU fork (11.0.2 + fast-poll) into **`/opt/qemu-rhapsody`**, like
 
 ## Golden, input, and rollback
 
-- Reset mode and fixture: TODO (loadvm golden once installed)
-- Pointer/click/drag/wheel/keyboard proof: TODO
+- `golden` baked 2026-08-18 on the station itself
+  (`/data/vms/streamhost/stations/rhapsody/rhapsody-golden.qcow2`, internal
+  snapshot, 52.5 MiB vmstate) from a cold boot on the production launcher's
+  device set: the desktop after autologin, nothing curated. `loadvm golden -S`
+  restores the identical frame; `SH_RESET_MODE=loadvm`, `SH_IDLE_PAUSE_SECS=60`.
+- Pointer: PS/2 relative through the daemon's abs→rel bridge,
+  `SH_CURSOR_SCALE=2.09` (measured 0.478 px/unit); the guest's own
+  acceleration prefs apply on top. Click/drag/wheel and keyboard through the UI
+  are **for the operator to eyeball** — nothing verified via the browser yet.
 - Credentials reference only (never values): `guest/rhapsody`
-- Rollback plan: withdraw the darklaunch overlay (`darklaunch-station.py
-  withdraw rhapsody`), stop the rig, release `udp/54146`.
+- Rollback: `systemctl stop streamhost@rhapsody`; the station's single disk is
+  the whole state — replace it with the pristine copy above (or rebuild with
+  `tiles/rhapsody.sh`) and re-bake. Withdraw the dark launch with
+  `darklaunch-station.py withdraw rhapsody`.
+
+## Open
+
+- Operator eyeball of desktop/pointer/keyboard at `/os/rhapsody`, then drop
+  `listing` and republish the three runtime documents (coordinated with the
+  other dark launches — a republish wipes every overlay).
+- KVM re-test with the fixed PIC (would take the station off TCG).
+- Real poster hero (a desktop screenshot) instead of the placeholder card.
+- Builder `tiles/rhapsody.sh` has not been run end-to-end.

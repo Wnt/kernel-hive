@@ -41,7 +41,7 @@
         },
         "kbd": "",
         "kbd_reset": "Escape",
-        "kbd_note": "INSTALL PHASE: keyboard proof is the installer echoing keystrokes",
+        "kbd_note": "Workspace Manager desktop; type into TextEdit/Terminal (Apple menu) — unverified via UI",
         "audio_trigger": null,
         "validated": false,
         "note": "PS/2 relative pointer (dbus-rel), gain 0.478 px/unit -> cursor_scale 2.09 (measured on the 800x600 desktop). Station-specific QEMU at /opt/qemu-rhapsody (i8259 lenient-cascade patch)."
@@ -60,7 +60,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54146,
-      "notes": "INSTALL PHASE (dark launch). No exec channel: drive it via labctl key/pointer or scripts/dev/qmp-type.py; COM1 -> serial.log. PS/2 deltas mis-decode if the i8042 queue is flooded — pace pointer moves."
+      "notes": "No exec channel: drive it via labctl key/pointer or scripts/dev/qmp-type.py; COM1 -> serial.log. PS/2 deltas mis-decode if the i8042 queue is flooded — pace pointer moves. loadvm golden."
     }
   },
   "render": {
@@ -70,7 +70,7 @@
     "goldenOrder": 63,
     "actionMapOrder": 37,
     "bringUpGroup": 0,
-    "stationsManifestPrelude": "\n# rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one\n#   2 GB IDE disk, Cirrus GD5446 at 800x600x16, i82557b, PS/2 mouse (dbus-rel).\n#   DARK LAUNCH: listing=hidden while the install runs on camera.\n",
+    "stationsManifestPrelude": "\n# rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one\n#   2 GB IDE disk, Cirrus GD5446 at 800x600x16, i82557b, PS/2 mouse (dbus-rel).\n#   loadvm golden -S (the daemon resumes). DARK LAUNCH: listing=hidden until the\n#   operator eyeballs it.\n",
     "bindingPrelude": "",
     "bindingComment": "NeXTSTEP -> Rhapsody -> Mac OS X lineage"
   },
@@ -127,7 +127,7 @@
       "TextEdit"
     ],
     "blurb": "Apple's Mac OS 8 face grafted onto the NeXT operating system it had just bought — the 1998 developer release where Mac OS X begins.",
-    "notes": "Install running live on camera (dark launch). Intel build under TCG on a station-specific QEMU (/opt/qemu-rhapsody). Sits between the nextstep station and the macos poster."
+    "notes": "Intel build under TCG on a station-specific QEMU (/opt/qemu-rhapsody, i8259 lenient-cascade patch). Sits between the nextstep station and the macos poster. Dark-launched; hidden until the operator eyeballs it."
   },
   "notes": [
     "slot 146/UDP 54146 reserved by stations-registry.py new (2026-08-18)",
@@ -136,7 +136,7 @@
   "listing": {
     "state": "hidden",
     "since": "2026-08-18",
-    "reason": "Dark launch: Rhapsody 5.1 DR2 for Intel is being installed live on this station (the exhibit currently shows the installer / first boot, not the Platinum Finder desktop). List once the install completes and the golden checkpoint is baked."
+    "reason": "Dark launch: Rhapsody 5.1 DR2 installed, golden baked; listing hidden until the operator eyeballs the desktop, pointer and keyboard at /os/rhapsody."
   },
   "runtime": {
     "stationEnv": {
@@ -210,7 +210,7 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "install phase: tracked verbatim launcher IS the deployed launcher; the device set is pinned now so the eventual checkpoint is baked with it"
+        "reason": "tracked verbatim launcher is the deployed launcher; golden baked with this device set on the station 2026-08-18"
       }
     }
   },
@@ -218,11 +218,11 @@
     "stationDir": "rhapsody",
     "pointer": "rel",
     "touch": false,
-    "resetMode": "restart",
-    "snapshot": null,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "INSTALL PHASE — Rhapsody 5.1 DR2 installer / first disk boot on /opt/qemu-rhapsody (TCG). resetMode=restart re-runs the launcher only when QEMU is not live; the disk is mutated in place, no golden yet. Dark launch: listing=hidden while the install runs on camera."
+    "fixture": "Rhapsody 5.1 DR2 Platinum desktop after autologin as guest — Workspace Manager menu bar, guest home window open, disk/home/Applications icons on the right, Trash bottom right; 800x600 RGB:555/16 on Cirrus GD5446 (TCG, /opt/qemu-rhapsody). loadvm golden -S, the daemon resumes."
   },
   "migrationExceptions": []
 }
