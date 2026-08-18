@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "beos",
+  "images": [
+    {
+      "commonsFile": "File:Bebox Face.jpg",
+      "alt": "The front panel of a BeBox, a beige tower with a row of red LED lights above the drive bays",
+      "caption": "The BeBox (1995), Be Inc.'s dual-PowerPC workstation — the LED row across the front, nicknamed the 'Blinkenlights,' showed CPU load per core in real time.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Prototype BeBox (386486580).jpg",
+      "alt": "An early prototype BeBox tower, beige case with a rounded top and front LED array, photographed at an angle",
+      "caption": "An early BeBox prototype, before the design was finalized for production in 1995.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Production BeBox in use (386488165).jpg",
+      "alt": "A production BeBox tower sitting on a desk next to a monitor and keyboard, in use",
+      "caption": "A production BeBox on a desk. Fewer than 2,000 units were built before Be shifted BeOS to standard PowerPC Macs and then x86 PCs.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Expansion board from production BeBox (386487921).jpg",
+      "alt": "An expansion board removed from a production BeBox, showing chips and connectors",
+      "caption": "An expansion board from inside a BeBox. Alongside standard PCI slots, the machine exposed a proprietary 'GeekPort' for driving external electronics directly from software.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:JLGassee.jpg",
+      "alt": "Portrait photograph of Jean-Louis Gassée",
+      "caption": "Jean-Louis Gassée, former Apple executive who co-founded Be Inc. in 1990 and led it through the BeBox, BeOS, and the 2001 sale to Palm.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Serial number of production BeBox (386487382).jpg",
+      "alt": "A close-up of a metal identification plate on a production BeBox, showing its serial number",
+      "caption": "A production BeBox's serial tag. Be Inc. stopped selling its own hardware in 1997 and refocused on licensing BeOS for standard PowerPC Macs and PCs.",
+      "role": "photo"
+    }
+  ]
+}
