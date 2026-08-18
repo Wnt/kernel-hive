@@ -112,6 +112,27 @@ type/`-dev` config; (c) the TME/sun4c fallback in the brief. **A golden should
 NOT be baked until the pointer works** — a mouse-less OPEN LOOK desktop is not
 a usable exhibit.
 
+## labctl exec (telnet_unix_e)
+
+`labctl exec sunos414 "<cmd>"` returns real captured stdout+stderr and the
+guest's exit code. SunOS 4.1.4 predates ssh, so the channel is the guest's own
+**in.telnetd** (inetd runs it; root has no password on a fresh suninstall):
+
+- client `streamhost/guest-agents/sunos414/sunexec.py` → deployed to
+  `/root/sunexec.py` (box-sync-pairs `sunos414-sunexec`). It logs in, quiets the
+  line, and brackets each command with unique START/END markers (immune to csh
+  prompt echo), so `false`→1, `test -f /vmunix`→0 come back correctly.
+- labctl dispatch: `telnet_unix_e` branch in `scripts/labctl.d/guest.py`.
+- transport: QEMU SLIRP. The guest is `10.0.2.15`; the launcher re-adds
+  `hostfwd_add tcp:127.0.0.1:5947-10.0.2.15:23` on every start (SLIRP forwards
+  are host-side, not in the loadvm snapshot — same reason alpine re-adds its ssh
+  forward). Declaration: `exec_kind=telnet_unix_e`, `exec_port=5947`,
+  `exec_user=root`.
+- **Liveness**: needs the guest booted to multiuser (inetd up). That is instant
+  once the loadvm golden restores the running system; at the bare OpenBIOS
+  prompt there is no telnetd yet. Proven 2026-08-18 against the running bring-up
+  guest: `labctl exec sunos414 "uname -a"` → `SunOS sunos414 4.1.4 2 sun4m`.
+
 ## Golden, input, and rollback
 
 - Reset mode and fixture: TODO

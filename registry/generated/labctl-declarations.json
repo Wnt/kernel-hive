@@ -150,7 +150,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54145,
-      "notes": "INSTALL PHASE (dark launch). No exec channel yet; the CommandShell/serial (-serial unix:$D/serial.sock) is the future labctl exec channel once A/UX runs a getty on it. Framebuffer + adb_pointer.py against a CLONE meanwhile."
+      "notes": "No exec channel yet: A/UX runs no getty on the serial line (-serial unix:$D/serial.sock is wired for it). Framebuffer + adb_pointer.py against a CLONE; the CommandShell in the checkpoint scene is the keyboard proof."
     },
     "bbcmicro": {
       "dir": "/data/vms/streamhost/stations/bbcmicro",
@@ -804,13 +804,13 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": null,
-      "exec_kind": null,
-      "exec_user": null,
+      "exec_port": 5947,
+      "exec_kind": "telnet_unix_e",
+      "exec_user": "root",
       "exec_key": null,
       "console": "fb",
       "udp_port": 54147,
-      "notes": "INSTALL PHASE (dark launch). No exec channel yet: the installer runs on the cg3 framebuffer; ttya is on the QEMU serial socket for a future getty. Drive it via QMP (qmp-type.py) or the browser."
+      "notes": "exec = telnet_unix_e: labctl exec sunos414 runs a captured command over the guest's in-guest in.telnetd (SunOS 4.1.4 predates ssh; inetd runs telnetd, root has no password on a fresh suninstall), reached at 127.0.0.1:5947 via the SLIRP hostfwd the launcher re-adds on every start (client: /root/sunexec.py <- streamhost/guest-agents/sunos414/sunexec.py). No QMP-less exec before that; drive early boot via QMP (qmp-type.py). Requires the guest booted to multiuser: live once the loadvm golden restores the running system; at the bare OpenBIOS prompt there is no telnetd yet."
     },
     "templeos": {
       "dir": "/data/vms/streamhost/stations/templeos",
