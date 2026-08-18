@@ -137,6 +137,21 @@
       "udp_port": 54116,
       "notes": "exec: labctl exec atarist \"<cmd>\" (ssh root@:5816, key bridge_key)"
     },
+    "aux": {
+      "dir": "/data/vms/streamhost/stations/aux",
+      "qmp": "/data/vms/streamhost/stations/aux/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54145,
+      "notes": "INSTALL PHASE (dark launch). No exec channel yet; the CommandShell/serial (-serial unix:$D/serial.sock) is the future labctl exec channel once A/UX runs a getty on it. Framebuffer + adb_pointer.py against a CLONE meanwhile."
+    },
     "bbcmicro": {
       "dir": "/data/vms/streamhost/stations/bbcmicro",
       "qmp": null,

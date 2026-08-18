@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "aux",
+  "era_year": 1993,
+  "stationDir": "aux",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 62,
+        "prelude": "",
+        "value": {
+          "key": "aux",
+          "script": "tiles/aux.sh",
+          "outputDir": "Aux",
+          "class": "graphical",
+          "estimated": "~2-4h",
+          "automation": "vision",
+          "produces": "aux-golden.qcow2 + pram-golden.qcow2 + checkpoint (A/UX 3.0.1 -> Finder/CommandShell desktop, 1152x870x8)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "aux",
+      "value": {
+        "os": "A/UX 3.0.1 (Quadra 800)",
+        "win": "qemu",
+        "mouse": "finder-desktop",
+        "kbd": "term:CommandShell",
+        "kbd_reset": "Escape",
+        "kbd_note": "INSTALL PHASE: keyboard proof is a Finder dialog; CommandShell prompt once A/UX is up",
+        "audio_trigger": "beep",
+        "validated": false,
+        "note": "relative ADB pointer: cursor_scale 1.0 UNMEASURED (install phase). Same q800/TCG machine and /opt/qemu-m68k binary as macos753"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/aux",
+      "qmp": "/data/vms/streamhost/stations/aux/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54145,
+      "notes": "INSTALL PHASE (dark launch). No exec channel yet; the CommandShell/serial (-serial unix:$D/serial.sock) is the future labctl exec channel once A/UX runs a getty on it. Framebuffer + adb_pointer.py against a CLONE meanwhile."
+    }
+  },
+  "render": {
+    "stationsManifestOrder": 60,
+    "bindingOrder": 67,
+    "goldenOrder": 60,
+    "bringUpGroup": 7,
+    "signalOrder": 62,
+    "actionMapOrder": 34,
+    "stationsManifestPrelude": "\n# aux (slot 145) — A/UX 3.0.1 (Apple's SVR2 Unix under the Mac Finder) on the\n#   same q800/68040 machine as macos753: /opt/qemu-m68k (kernel-hive fork), TCG\n#   only, dbus display 1152x870x8, RELATIVE ADB pointer (dbus-rel), qcow2 PRAM.\n#   DARK LAUNCH: listing=hidden while the install runs on camera from a helper\n#   System 7.5.3 disk + the A/UX CD; SH_IDLE_PAUSE_SECS=0 until the golden.\n",
+    "bindingPrelude": ""
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54145,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-adb-relative",
+      "absolute": false,
+      "present": true,
+      "device": "adb-mouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 145
+  },
+  "guestDoc": "docs/guests/aux.md",
+  "credentialsRef": "guest/aux",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "aux",
+      "SH_QMP": "/data/vms/streamhost/stations/aux/qmp.sock",
+      "SH_PORT": "54145",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/aux/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/aux/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "bringUpOrder": 67,
+    "vmidLabel": 145,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "aux",
+        "--vmid",
+        "145",
+        "--udp",
+        "54145",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/aux/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/aux/station.env.fixture"
+      ],
+      "deviceSetId": "aux-q800-m68040-1152x870x8",
+      "launcher": "streamhost/stations/aux/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/aux/station.env.fixture",
+      "binary": "/opt/qemu-m68k/bin/qemu-system-m68k",
+      "machine": "q800",
+      "accel": "tcg",
+      "cpu": "m68040",
+      "memoryMB": 128,
+      "smp": 1,
+      "vga": "macfb",
+      "deviceSetSummary": [
+        "/opt/qemu-m68k/bin/qemu-system-m68k",
+        "-name streamhost-aux",
+        "-accel tcg -m 128",
+        "-M q800,audiodev=snd0 -cpu m68040",
+        "-bios /data/vms/streamhost/assets/aux/800.ROM",
+        "-g 1152x870x8",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+        "-drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd",
+        "-device scsi-hd,scsi-id=6,drive=hd0",
+        "-drive file=$D/aux-golden.qcow2,format=qcow2,cache=writeback,aio=threads,if=none,id=hd0",
+        "INSTALL PHASE ONLY: -device scsi-hd,scsi-id=5 helper.qcow2 (System 7.5.3) + -device scsi-cd,scsi-id=3 AUX_3.0.1_Install.iso",
+        "-serial unix:$D/serial.sock,server=on,wait=off",
+        "-loadvm golden -S (when the checkpoint exists)",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "install phase: tracked verbatim launcher IS the deployed launcher; the post-install device set (no helper, no CD) is what the checkpoint will be baked with"
+      }
+    }
+  },
+  "reset": {
+    "stationDir": "aux",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "restart",
+    "snapshot": null,
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "INSTALL PHASE — A/UX 3.0.1 being installed on camera: helper System 7.5.3 disk (SCSI 5) + A/UX install CD (SCSI 3) + 1000M target (SCSI 6) on qemu-system-m68k q800 (TCG). resetMode=restart re-runs the launcher only when QEMU is not live; no golden yet. Dark launch: listing=hidden."
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#6b7f8e",
+    "eraLabel": "1993 · A/UX 3.0.1 — Quadra 800",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "aux",
+    "displayName": "A/UX 3.0.1",
+    "year": 1993,
+    "lineage": "A/UX (System V Unix, Macintosh Finder shell)",
+    "arch": "m68k",
+    "ramMB": 128,
+    "era": "1990s",
+    "accent": "#6b7f8e",
+    "eraSoftware": [
+      "Finder (A/UX Toolbox)",
+      "CommandShell",
+      "MacX / X11",
+      "A/UX Startup"
+    ],
+    "periodBrowser": "NCSA Mosaic / Netscape 1 (X11)",
+    "iconicApps": [
+      "Finder",
+      "CommandShell",
+      "MacX",
+      "TextEditor"
+    ],
+    "blurb": "Apple's own System V Unix in a Macintosh business suit — the Finder is the shell, and /bin/sh, NFS and X11 run underneath it, on the 68040 Quadra 800.",
+    "notes": "Install running live on camera (dark launch). The only station where a proprietary GUI and a real Unix share one desktop: Mac apps and Unix processes side by side via the A/UX Toolbox."
+  },
+  "listing": {
+    "state": "hidden",
+    "since": "2026-08-18",
+    "reason": "Dark launch: A/UX 3.0.1 is being installed live on this station (helper System 7.5.3 disk + install CD; the exhibit currently shows the installer, not the A/UX Finder). List once A/UX boots to its desktop and the golden checkpoint is baked."
+  }
+}
