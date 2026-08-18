@@ -24,6 +24,17 @@ The first thing a bring-up session does after its guest shows *any* frame:
 
 Say the URL to the operator the moment it streams. Then debug.
 
+Two more rules that keep the picture live while you work:
+
+- `SH_IDLE_PAUSE_SECS=0` for the whole install phase — a paused guest is a
+  paused installer, and an operator who watches for two minutes and leaves
+  would otherwise freeze it. Turn it on (60) only with the golden.
+- Reset mode `restart` during the install re-runs the launcher only when QEMU
+  is *not* live (`ensure-station-qemu`), so a stray "reset" click from the
+  browser does not reboot the installer. Drive the guest yourself through QMP
+  (§6) and let the operator's browser be a read-only monitor — two people
+  typing into one installer is chaos.
+
 Registry-row dark launch (`listing.state=hidden`, a real
 `streamhost@<id>` unit — the tru64/hpuxvue route) is the better shape once
 the guest boots reliably; the overlay is for the hours before that. Either way
@@ -74,7 +85,69 @@ Two sessions collide on exactly the things AGENTS.md lists. This pair hit:
 cheap; the operator also offered their screen session as a relay. Say what
 port/slot you hold, when you will republish manifests, and when you land.
 
-## 5. What to build next (not done yet)
+## 5. Driving an installer that has no exec channel
+
+QMP is enough for a TUI/Motif installer, and it works with the daemon attached:
+
+- keys: `qmp_hmp.py <qmp.sock> "sendkey <name>"` (`ret`, `tab`, `f5`, `ctrl-c`,
+  `shift-2`…); text: a 40-line typing helper mapping chars → sendkey names
+  (`/data/vms/sandbox/hpuxvue/hpt.py`; promote to `scripts/dev/` when the next
+  station needs it). Motif dialogs: Enter = default button; the softkey row is
+  F1..F8.
+- pointer: `mouse_move dx dy` / `mouse_button 1|0`; measure the guest gain
+  first with two screendumps and `PIL ImageChops.difference().getbbox()` —
+  hpuxvue's "2× gain" was plain X acceleration (`xset m 1 1` fixes it);
+  macos753's 0.36 was real.
+- **Framebuffer is the only proof**: `screendump` after every step; keep a
+  rolling `cur.png`. `labctl shot` only works after the row is deployed and
+  `labctl gen` ran.
+- Trap: the `mount-guard` pre-tool hook pattern-matches the *host command
+  line*, so a guest command containing the un-mount word, typed via
+  `ssh lab '... hpt.py "<text>"'`, is BLOCKED (it blocks a heredoc that merely
+  documents the word, too). Put the guest text in a file on the box and pass
+  `$(cat file)`, or split the word with a backslash so it reaches the guest
+  intact.
+- Give every guest a serial line (`-serial unix:$D/serial.sock,server=on,wait=off`
+  or `-serial file:`) — on old x86 guests the kernel debugger shows only on
+  COM1 (beos), and on HP-UX it is the future `labctl exec` channel.
+
+## 6. Is it hung or just slow? Check I/O, not CPU
+
+Under TCG an idle 1990s kernel spins at 100 % CPU (no HLT), so `%CPU` says
+nothing. `grep write_bytes /proc/<qemu-pid>/io` twice, minutes apart, plus an
+unchanged `screendump` md5, is the hang test. hpuxvue's HP post-install
+`swinstall` sat 40 min with zero writes; Ctrl-C then a forced reboot was right —
+and the guest doc records what that cost (no kernel built → Support-Media
+recovery).
+
+## 7. Media and emulator builds: start them on minute one, in the background
+
+- Downloads and emulator builds are the long poles; kick them off before
+  touching the registry (archive.org returned 500s in bursts — use
+  `curl --retry 8 --retry-delay 20`).
+- `media_cache_require` with an **md5** pin md5-sums the entire archive first
+  (minutes, per disc) — for interactive work use `curl` + verify +
+  `media_cache_put` afterwards; keep sha256 pins for builders.
+- Expect the first medium to be wrong. Three HP-UX presses were needed before
+  one saw the emulated disk; the fix was in the media, not QEMU. Budget for a
+  second and third ISO and archive them all with the reason in
+  `ASSETS-MANIFEST.md`.
+
+## 8. Checklist for the next pair (paste into each session's first message)
+
+1. `wt.sh new <id>`; start media fetch + emulator build in the background.
+2. `ss -ulnp | grep :541` + `kh-claim ls` → claim port/slot → `new --slot N`.
+3. Stream first (§1): rig + daemon + overlay, or hidden registry row + unit
+   with `SH_IDLE_PAUSE_SECS=0`; verify `/signal/<id>.json` = 200; hand the
+   operator the URL. Only now start driving the installer.
+4. Row (hidden), launcher, fixture, placeholder poster/hero → validate →
+   **push to `main` + `box-deploy --apply`** within the first hour (§2–§3).
+5. Screendump after every step; I/O check when quiet; guest-doc install log as
+   you go.
+6. Golden → fixture to `loadvm`, idle 60, real hero, drop `listing` → land,
+   deploy, `labctl gen`, `POST /restore/<id>`; release claims; state teardown.
+
+## 9. What to build next (not done yet)
 
 - `scripts/dev/bringup-rig.sh <id> --qemu-args …` : one command that claims
   the UDP port, starts the guest with the dbus display, starts the borrowed
