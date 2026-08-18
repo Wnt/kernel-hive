@@ -329,9 +329,25 @@ FIFO + 5 ms autopoll**. Remaining:
 - **Keep** `SH_REL_MAX_STEP=32` + `SH_REL_QUANTUM=4` (A/UX truncates `trunc(0.75·units)`
   per event; the quantum keeps sends on the model — a real drift guard, not pacing).
   Send raw otherwise (no `SH_REL_PACED`).
-- Re-verify the A/UX pointer is still exact at the new 5 ms poll (the quantum math is
-  poll-rate-independent, but eyeball a drag + a scribble).
 - Acceptance: reload keeps anchor; reset snaps; drag releases at the end; no drift.
+
+**FINDING 2026-08-19 (cursor-track.mjs + gain measurement):** with HOME_TO applied,
+aux's reset/reload anchor is correct, BUT tracking DRIFTS on fast moves (browser
+harness: right-side targets overshoot ~90 px, drag off 89 px; macos753 is 4 px on the
+same harness). Gain is exactly right (a clean 100-unit inject → 75 px = 0.75, so
+`SH_CURSOR_SCALE=1.3333` stands). Root cause: the global **5 ms autopoll delivers
+reports 4× faster, which trips A/UX's X-server pointer acceleration** on rapid moves
+— macos753's Mac OS is linear ("Very Slow") so it is immune. aux's "accel off" was
+only the Mac Finder side; its **X server still accelerates**.
+FIX (the plan's own "acceleration OFF, baked into every checkpoint" precondition,
+which aux never met for X): bake `xset m 0 0` (or a high threshold) into the golden's
+A/UX X session, then 5 ms is both fast and linear. aux has no exec channel and X
+keyboard is broken, so this needs a `.xinitrc`/`.Xdefaults` bake or a blind
+`labctl sh` — a golden re-bake, same shape as beos below.
+ALTERNATIVE if the re-bake is deferred: make the ADB autopoll rate per-station
+(read `SH_ADB_POLL_MS` in `adb_bus` init/post_load, default 5) so aux keeps 20 ms
+and its pre-existing exact tracking, trading the speed boost it did not need (gain
+0.75 already makes it 2× macos753's speed at any poll).
 
 ### (b) PS/2 dbus-rel — `rhapsody` (PoC), then `hpuxvue`, `freedos`, `msdoswin1`
 
