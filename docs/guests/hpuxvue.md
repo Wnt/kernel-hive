@@ -1,6 +1,6 @@
 # hpuxvue guest — HP-UX 10.20 with HP VUE (HP 9000/778, PA-RISC)
 
-Status: **INSTALL PHASE, dark-launched** (production, `listing=hidden`, slot 144 /
+Status: **INSTALLED — HP VUE desktop reached 2026-08-18 02:45, dark-launched** (production, `listing=hidden`, slot 144 /
 UDP 54144). `/os/hpuxvue` streams the installer live; nothing is baked yet.
 Research note: [`docs/lab/research/candidate-hpux.md`](../lab/research/candidate-hpux.md).
 
@@ -62,6 +62,33 @@ disk; else boot CD). The device set is identical in all three.
   interaction. FS sizes enlarged up front to dodge the LVM-growth gotcha:
   / 300, /stand 48, swap 512, /home 100, /opt 700, /tmp 100, /usr 1000,
   /var 480 (756 MB spare in vg00). Then unattended: LVM + swinstall.
+- 01:05–01:45 — swinstall loaded 246 filesets (VUE.VUE-RUN etc.), configured
+  ("/etc/inittab modified to start HP VUE at system startup"). The
+  post-install "user specified script" from the media (HP's, not ours) then
+  ran a second `swinstall -x match_target=true -s <CD>` for the ACE bundles and
+  **hung for 40+ min at "Beginning Execution"** with zero disk I/O (loopback
+  RPC to swagentd was already failing: "Connection request rejected
+  (dce / rpc)"). Ctrl-C ended swinstall cleanly; the following `swlist` hung
+  the same way and ignored Ctrl-C. Forced reboot from disk.
+- **The interrupted finale never built the kernel**: `/stand` had ioconfig,
+  bootconf, system, kernrel but no `vmunix` (ISL: "Cannot find /stand/vmunix"),
+  and no `/stand/rootconf`. Fix, from the CD's Support Media shell
+  ("Run a Recovery Shell"): the RAM fs has ~200 KB free so no LVM tool loads;
+  instead `mount /dev/dsk/c0t6d0s1lvm /ROOT` (the boot LV is addressable as
+  the s1lvm section without LVM), write `/ROOT/rootconf` = `deadbeef` +
+  root-LV start + size in 1 K blocks read from the disk's LIF `LABEL`
+  (host: `qemu-io -r -c "read -v 0xd0800 512"`; here 0x0008cb60 / 0x0004b000,
+  i.e. `/` at PE 140, 300 MB), then Recovery MENU → **d. Replace only the
+  kernel** installs the media's generic `vmunix` (7.4 MB) onto the boot LV.
+- 02:25 — boots from disk on that kernel; manual `fsck -y` of lvol6/7/8 at
+  the bcheckrc prompt (dirty from the forced reset); Ctrl-D → **X11 first-boot
+  `set_parms`**: standalone (no network), hostname `hpuxvue`, TZ EET, no root
+  password, no font server. Then **`vuelogin`** (HP greeter) → root → **HP VUE
+  3.0 desktop**: front panel, six workspaces, Helpview welcome, File Manager.
+- Pointer: guest gain measured 50 units → 96 px on both axes = plain X
+  acceleration (2×, threshold 4), i.e. `xset m 1 1` gives 1:1 and
+  `SH_CURSOR_SCALE=1.0` is right. QMP `mouse_move`/`mouse_button` clicks
+  Motif buttons reliably.
 
 ## Golden, input, and rollback
 
