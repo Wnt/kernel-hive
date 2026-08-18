@@ -110,13 +110,24 @@ is not used; the golden-of-a-logged-in-session sidesteps it entirely.
 framebuffer-proven (2026-08-18) and survive the loadvm restore. The Sun serial
 mouse is relative-only; `SH_CURSOR_SCALE=1.0` pending an operator eyeball.
 
-**Keyboard-in-X: known limitation (SKIP).** Even with the console tty, xnews
-grabs the mouse but not the keyboard under QEMU sun4m: keystrokes reach the
-guest kernel (escc channel A make/break codes are correct) but are not
-delivered to X clients. Keyboard works at the console and via `labctl exec`.
-Candidate fixes for a follow-up: how xnews takes `/dev/kbd` from the console
-(KIOCSDIRECT), or a QEMU escc keyboard tweak. The exhibit is mouse-driven and
-does not depend on it.
+**Keyboard-in-X: PASS (was a false alarm).** Two competing agents chased this
+(one on the SunOS side, one patching QEMU's escc). The escc angle was decisively
+ruled out — every keystroke emits a correct Sun make/break scancode and the guest
+kernel reads it; the emulator is blameless. **Root cause: the OpenWindows input-
+focus model.** The golden had shipped `OpenWindows.SetInput: followmouse`, under
+which keyboard focus follows the pointer — keys only reach a window while the
+pointer physically sits over it. Every "dead keyboard" test had the pointer on
+the root/backdrop, on a menu, or typed into the special cmdtool CONSOLE. The fix
+is `OpenWindows.SetInput: select` (click-to-focus) in guest's `~/.Xdefaults`:
+click a window and it keeps focus with the pointer anywhere — the intuitive model
+for visitors. Framebuffer-proven: click a shelltool, move the pointer off it,
+type `whoami` → `guest`. The golden was re-baked with select; keyboard also works
+at the console and via `labctl exec`.
+
+Applying it needs a re-bake, not just the file: olwm reads SetInput at session
+start and the golden captures the running xnews, so the integration is: set
+`select` in `/export/home/guest/.Xdefaults`, restart openwin (re-login guest at
+the console so olwm re-reads it), then `savevm golden`.
 
 ## labctl exec (telnet_unix_e)
 
