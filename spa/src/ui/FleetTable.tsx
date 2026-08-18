@@ -34,8 +34,11 @@ export function FleetTable() {
   const doc = useFleetTable();
   const [query, setQuery] = useState('');
   const [facets, setFacets] = useState<Facets>(new Map());
-  const [sortKey, setSortKey] = useState<ColKey>('year');
-  const [sortDir, setSortDir] = useState<1 | -1>(1);
+  // Sort chain: sorts[0] is primary, sorts[1] secondary, … Click a header to
+  // make it primary (click again to flip); Shift+click to add it as the next
+  // level (or flip it in place). An empty chain is the default order (year,
+  // then id) — the same tiebreak every chain ends in.
+  const [sorts, setSorts] = useState<Array<{ key: ColKey; dir: 1 | -1 }>>([]);
   const [open, setOpen] = useState<{ key: ColKey; x: number; y: number } | null>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
@@ -54,15 +57,20 @@ export function FleetTable() {
   const q = query.trim().toLowerCase();
   const rows = useMemo(() => {
     if (!doc) return [];
-    const col = FLEET_COLUMNS.find((c) => c.key === sortKey) ?? FLEET_COLUMNS[0];
+    const chain = sorts
+      .map((s) => ({ col: FLEET_COLUMNS.find((c) => c.key === s.key), dir: s.dir }))
+      .filter((s): s is { col: Column; dir: 1 | -1 } => s.col !== undefined);
     return doc.entries
       .filter((e) => matchesQuery(e, q) && matchesFacets(e, facets))
       .sort((a, b) => {
-        const av = col.sort(a), bv = col.sort(b);
-        const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv));
-        return (cmp || a.year - b.year || a.id.localeCompare(b.id)) * sortDir;
+        for (const { col, dir } of chain) {
+          const av = col.sort(a), bv = col.sort(b);
+          const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv));
+          if (cmp) return cmp * dir;
+        }
+        return a.year - b.year || a.id.localeCompare(b.id);
       });
-  }, [doc, q, facets, sortKey, sortDir]);
+  }, [doc, q, facets, sorts]);
 
   if (doc === undefined) return <div className="fleet-view"><p className="fleet-status">Loading fleet table…</p></div>;
   if (doc === null) {
@@ -73,10 +81,16 @@ export function FleetTable() {
     );
   }
 
-  const onSort = (key: ColKey) => {
-    if (key === sortKey) setSortDir((d) => (d === 1 ? -1 : 1));
-    else { setSortKey(key); setSortDir(1); }
-  };
+  const onSort = (key: ColKey, additive: boolean) => setSorts((prev) => {
+    const at = prev.findIndex((s) => s.key === key);
+    if (additive) {
+      if (at >= 0) return prev.map((s, i) => (i === at ? { key, dir: s.dir === 1 ? -1 : 1 } : s));
+      return [...prev, { key, dir: 1 }];
+    }
+    if (at === 0) return [{ key, dir: prev[0].dir === 1 ? -1 : 1 }, ...prev.slice(1)];
+    return [{ key, dir: 1 }, ...prev.filter((s) => s.key !== key)];
+  });
+  const sortRank = (key: ColKey) => sorts.findIndex((s) => s.key === key);
   const toggleValue = (key: ColKey, value: string) => setFacets((prev) => {
     const next = new Map(prev);
     const set = new Set(next.get(key) ?? []);
@@ -124,6 +138,11 @@ export function FleetTable() {
             <button type="button" className="fleet-chip fleet-chip--clear" onClick={() => setFacets(new Map())}>clear all</button>
           </div>
         )}
+        {sorts.length > 0 && (
+          <button type="button" className="fleet-chip fleet-chip--clear" title="Reset to the default order (year)" onClick={() => setSorts([])}>
+            sort: {sorts.map((s) => `${FLEET_COLUMNS.find((c) => c.key === s.key)?.label ?? s.key} ${s.dir === 1 ? '▲' : '▼'}`).join(' → ')} ×
+          </button>
+        )}
         <span className="fleet-summary">{rows.length} / {doc.entries.length} stations</span>
       </div>
       <div className="fleet-scroll">
@@ -133,10 +152,21 @@ export function FleetTable() {
               {FLEET_COLUMNS.map((c) => {
                 const active = facets.get(c.key)?.size ?? 0;
                 return (
-                  <th key={c.key} scope="col" className={`fleet-col-${c.key}`} title={c.title} aria-sort={sortKey === c.key ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'}>
+                  <th key={c.key} scope="col" className={`fleet-col-${c.key}`} title={c.title} aria-sort={sortRank(c.key) === 0 && sorts.length ? (sorts[0].dir === 1 ? 'ascending' : 'descending') : 'none'}>
                     <span className="fleet-th">
-                      <button type="button" className={`fleet-sort${sortKey === c.key ? ' active' : ''}`} onClick={() => onSort(c.key)}>
-                        {c.label}{sortKey === c.key ? (sortDir === 1 ? ' ▲' : ' ▼') : ''}
+                      <button
+                        type="button"
+                        className={`fleet-sort${sortRank(c.key) >= 0 ? ' active' : ''}`}
+                        title="Click: sort by this column (again to flip). Shift+click: add as the next sort level."
+                        onClick={(ev) => onSort(c.key, ev.shiftKey)}
+                      >
+                        {c.label}
+                        {sortRank(c.key) >= 0 && (
+                          <span className="fleet-sort-mark">
+                            {sorts[sortRank(c.key)].dir === 1 ? '▲' : '▼'}
+                            {sorts.length > 1 && <sup>{sortRank(c.key) + 1}</sup>}
+                          </span>
+                        )}
                       </button>
                       <button
                         type="button"
@@ -195,7 +225,7 @@ export function FleetTable() {
       )}
       <p className="fleet-footnote">
         Rendered from <code>registry/stations/*.json</code> + <code>registry/bridge-suites.json</code> by <code>stations-registry.py</code> (<code>fleet-table.json</code>).
-        Tier is derived per <code>docs/GUEST-TIERS.md</code>; emulator and UI kind are the registry's <code>emulator</code> / <code>ui</code> fields. Hover a header or cell for the source of each value; ▽ filters a column.
+        Tier is derived per <code>docs/GUEST-TIERS.md</code>; emulator and UI kind are the registry's <code>emulator</code> / <code>ui</code> fields. Hover a header or cell for the source of each value; ▽ filters a column; click a header to sort, Shift+click to add a secondary sort.
       </p>
     </div>
   );
