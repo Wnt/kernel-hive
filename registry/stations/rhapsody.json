@@ -127,18 +127,13 @@
       "TextEdit"
     ],
     "blurb": "Apple's Mac OS 8 face grafted onto the NeXT operating system it had just bought — the 1998 developer release where Mac OS X begins.",
-    "notes": "Intel build under TCG on a station-specific QEMU (/opt/qemu-rhapsody, i8259 lenient-cascade patch). Sits between the nextstep station and the macos poster. Dark-launched; hidden until the operator eyeballs it."
+    "notes": "Intel build under TCG on a station-specific QEMU (/opt/qemu-rhapsody, i8259 lenient-cascade patch). Sits between the nextstep station and the macos poster."
   },
   "notes": [
     "slot 146/UDP 54146 reserved by stations-registry.py new (2026-08-18)",
     "dark-launched during bring-up via scripts/dev/darklaunch-station.py",
     "labctl exec via serial getty on COM1 (serial_getty); credentials in gitignored serial-exec.passwd"
   ],
-  "listing": {
-    "state": "hidden",
-    "since": "2026-08-18",
-    "reason": "Dark launch: Rhapsody 5.1 DR2 installed, golden baked; listing hidden until the operator eyeballs the desktop, pointer and keyboard at /os/rhapsody."
-  },
   "runtime": {
     "stationEnv": {
       "SH_STATION": "rhapsody",

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "rhapsody",
+  "images": [
+    {
+      "commonsFile": "File:Power Macintosh 9600 350.jpg",
+      "alt": "A Power Macintosh 9600 — a tall platinum-grey Apple minitower with stacked CD-ROM and floppy drive bays at the top of the front panel and the Apple logo below",
+      "caption": "The Power Macintosh 9600 (1997) — Apple's top PowerPC 604e workstation and the machine Rhapsody was actually developed on. This station runs the parallel Intel build of the same OS; the PowerPC releases ran here.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Power Macintosh 9500 150.jpg",
+      "alt": "A Power Macintosh 9500 platinum-grey minitower photographed from the front, its tall case carrying the CD and floppy bays over a vented lower panel",
+      "caption": "The Power Macintosh 9500 (1995), the first of Apple's PCI-based PowerPC 604 workstations. The 9500/9600 and their 8500/8600 siblings were the hardware Rhapsody's PowerPC Developer Releases and Mac OS X Server 1.0 targeted.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Power Mac 8500 (4055398).jpg",
+      "alt": "A Power Macintosh 8500 desktop computer, a wide platinum-grey Apple case with a CD-ROM drive and front ports, photographed against a plain background",
+      "caption": "The Power Macintosh 8500 (1995) — the desktop member of the same PowerPC 604 family, notable for built-in video capture. Rhapsody, the NeXT-derived system this station shows, was Apple's plan to unify all of these machines under one modern OS.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Power Macintosh 8500 - logic board.jpg",
+      "alt": "The logic board of a Power Macintosh 8500: a large PowerPC 604 processor, rows of RAM SIMM sockets, PCI expansion slots along one edge and the on-board ports",
+      "caption": "Inside an 8500: the PowerPC 604 on its PCI logic board. Rhapsody ran natively on this chip on the Mac side; on this station the very same OS runs on an Intel Pentium II instead — the two-architecture bet that became Mac OS X.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Power Macintosh 8600 250.jpg",
+      "alt": "A Power Macintosh 8600 minitower in platinum-grey, with the drive bays at the top of the front panel and the Apple logo beneath",
+      "caption": "The Power Macintosh 8600 (1997), the 604e minitower that rounded out the family. By the time these shipped, Apple had bought NeXT and Rhapsody — the Platinum Finder over a NeXT/Mach core seen on this screen — was the announced future for the whole line.",
+      "role": "photo"
+    }
+  ]
+}
