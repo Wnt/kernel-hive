@@ -1,7 +1,6 @@
 # beos guest — BeOS R5 Professional 5.0.3
 
-Status: **bring-up in progress** (Tier 2, disabled candidate; dark-launched for
-review, not yet in the public lineup). Booted, installed, and interactive on a
+Status: **LIVE, listed** (production tile since 2026-08-18). Booted, installed, and interactive on a
 `/data/vms/sandbox/beos-r5` rig; the two real R5-under-QEMU blockers are
 diagnosed and fixed. What remains open is listed at the bottom.
 
@@ -184,9 +183,8 @@ restart only the BeOS service.
 During bring-up the station streamed from the sandbox rig
 (`/data/vms/sandbox/beos-r5/exp/F`) as `/os/beos` through
 `scripts/dev/darklaunch-station.py`; that overlay was withdrawn when the
-production `streamhost@beos` unit took over on 2026-08-18. The registry row is
-`listing: hidden` (deep link only) until the operator has eyeballed pointer
-and keyboard.
+production `streamhost@beos` unit took over on 2026-08-18. The row is listed in the
+lineup (operator decision 2026-08-18: no clone-only proof gate for stations).
 
 ## Open items
 

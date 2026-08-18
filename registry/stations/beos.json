@@ -5,11 +5,6 @@
   "stationDir": "beos",
   "lifecycle": "production",
   "enabled": true,
-  "listing": {
-    "state": "hidden",
-    "reason": "bring-up 2026-08-17: framebuffer + golden proven, pointer/keyboard await operator eyeball via /os/beos; audio open item",
-    "since": "2026-08-18"
-  },
   "build": {
     "rows": [
       {
