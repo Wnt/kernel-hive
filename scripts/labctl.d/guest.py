@@ -201,6 +201,7 @@ IRIXEXEC = os.environ.get("LABCTL_IRIXEXEC", "/root/irixexec.py")
 W2KTELNETEXEC = os.environ.get("LABCTL_W2KTELNETEXEC", "/root/w2ktelnetexec.py")
 TRU64EXEC = os.environ.get("LABCTL_TRU64EXEC", "/root/tru64exec.py")
 SUNEXEC = os.environ.get("LABCTL_SUNEXEC", "/root/sunexec.py")
+NEWSOSEXEC = os.environ.get("LABCTL_NEWSOSEXEC", "/root/newsosexec.py")
 # w2kalpha's guest telnet server sits on a host-only veth at a fixed static IP
 # (baked into the golden; the host end and the dec21143 pcap adapter are set up
 # by streamhost/stations/w2kalpha/x11-runtime.sh). No per-tile host field is needed.
@@ -233,6 +234,15 @@ def cmd_exec(argv):
         # keeps the channel stable across relaunches. Extra argv passes through
         # (--timeout).
         r = subprocess.run(["python3", TRU64EXEC, c["dir"], cmdline, *argv[2:]])
+        sys.exit(r.returncode)
+    if kind == "serialcsh_e":
+        # newsos: like tru64's serialcon_e (getty login, sentinel-framed
+        # capture, the guest's exit code) but the transport is irix's — MAME's
+        # -serial0 pty scraped straight out of the emulator's fd table, no pump.
+        # The guest's login shell is csh with no ksh, so newsosexec.py does
+        # `exec /bin/sh` and sets PATH. No port: the station DIRECTORY is the
+        # address. Extra argv passes through (--timeout).
+        r = subprocess.run(["python3", NEWSOSEXEC, c["dir"], cmdline, *argv[2:]])
         sys.exit(r.returncode)
     if kind == "serial_getty":
         # rhapsody: a getty on the guest's COM1 (`<dir>/serial.sock`), one login

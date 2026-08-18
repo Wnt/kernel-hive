@@ -232,6 +232,7 @@ box_sync_load_pairs() {
   box_sync_add_pair irix-irixexec streamhost/guest-agents/irix/irixexec.py /root/irixexec.py exact repo
   box_sync_add_pair irix-mctl streamhost/guest-agents/irix/mctl.py /root/mctl.py exact repo
   box_sync_add_pair sunos414-sunexec streamhost/guest-agents/sunos414/sunexec.py /root/sunexec.py exact repo
+  box_sync_add_pair newsos-exec streamhost/guest-agents/newsos/newsosexec.py /root/newsosexec.py exact repo
   box_sync_add_pair qmp-hmp scripts/qmp_hmp.py /root/qmp_hmp.py exact repo
   box_sync_add_pair shmshot scripts/shmshot.py /root/shmshot.py exact repo
   # Deployed with a real address baked in (same 2026-08-11 discovery as
