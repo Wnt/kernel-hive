@@ -94,6 +94,37 @@ fn debug_input() -> bool {
     })
 }
 
+/// SH_REL_MAX_STEP (1..=MAX_REL_STEP) / SH_REL_STEP_PACE_MS (<=200): the
+/// per-station override for the rel chunk cap and inter-chunk pace. Defaults
+/// keep every existing rel station byte-identical; a guest that takes only the
+/// first PS/2 packet of a chained move (Rhapsody DR2) lowers the cap. See
+/// docs/guests/rhapsody.md.
+fn rel_max_step() -> i32 {
+    static V: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
+    *V.get_or_init(|| env_num("SH_REL_MAX_STEP", MAX_REL_STEP).clamp(1, MAX_REL_STEP))
+}
+/// SH_REL_QUANTUM (0 = off, every station today): the rel bridge sends motion
+/// ONLY in multiples of this many guest units and keeps the sub-quantum
+/// remainder pending in its model. For a guest whose per-event response is a
+/// deterministic truncation (A/UX at "Very Slow": px = trunc(0.75 * units) up
+/// to 32 units, accelerated above) a quantum of 4 (= 3 px exactly) with
+/// SH_REL_MAX_STEP=32 makes every send land on the model: 1:1, no drift.
+/// See docs/guests/aux.md.
+fn rel_quantum() -> i32 {
+    static V: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
+    *V.get_or_init(|| env_num("SH_REL_QUANTUM", 0).clamp(0, MAX_REL_STEP))
+}
+fn rel_step_pace_ms() -> u64 {
+    static V: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
+    *V.get_or_init(|| env_num("SH_REL_STEP_PACE_MS", REL_STEP_PACE_MS).min(200))
+}
+fn env_num<T: std::str::FromStr>(k: &str, default: T) -> T {
+    std::env::var(k)
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(default)
+}
+
 /// Apply per-guest calibration to an absolute client coordinate. The same
 /// transform feeds a real absolute tablet or the absolute-client -> relative
 /// PS/2 bridge; identity settings preserve the previous relative behavior.
@@ -132,14 +163,11 @@ pub async fn rel_motion(cap: &Capture, dx: i32, dy: i32) {
         .await;
 }
 
-/// Max per-send relative delta per axis. QEMU's PS/2 emulation accumulates rel
-/// deltas and clamps/truncates a single large `RelMotion` (measured on QNX: a
-/// lone -8192 is a no-op, -1024 moves only ~500 px), so a big/fast pointer move
-/// sent as ONE event loses distance. Splitting into <=256 px chunks keeps every
-/// send inside the per-injection clamp window.
+/// Default max per-send relative delta per axis, and inter-chunk pace (ms).
+/// QEMU's PS/2 emulation accumulates rel deltas and clamps a single large
+/// `RelMotion` (measured on QNX: a lone -8192 is a no-op), so a big move is
+/// chunked and paced. SH_REL_MAX_STEP / SH_REL_STEP_PACE_MS override per-station.
 const MAX_REL_STEP: i32 = 256;
-/// Pace between chunks (ms). Back-to-back sends re-merge in QEMU's PS/2
-/// accumulator and re-clamp; a small gap lets each chunk drain first.
 const REL_STEP_PACE_MS: u64 = 16;
 
 /// How far the homing corner-pin throws the guest cursor, per axis.
@@ -205,23 +233,51 @@ const HOME_SETTLE_MS: u64 = 250;
 /// (dx,dy) — no rounding drift, so tracking stays 1:1. A move that already fits
 /// in one step returns a single chunk (empty for a zero move), i.e. the common
 /// pointer-lock small-delta case is byte-identical to a bare `rel_motion`.
-fn rel_chunks(dx: i32, dy: i32) -> Vec<(i32, i32)> {
-    if dx.abs() <= MAX_REL_STEP && dy.abs() <= MAX_REL_STEP {
+#[cfg(test)]
+fn rel_chunks(dx: i32, dy: i32, max_step: i32) -> Vec<(i32, i32)> {
+    rel_chunks_q(dx, dy, max_step, 0)
+}
+
+/// Round `v` toward zero to a multiple of `q` (`q <= 1` = identity).
+fn quantize(v: i32, q: i32) -> i32 {
+    if q <= 1 {
+        v
+    } else {
+        v - v % q
+    }
+}
+
+/// `rel_chunks` with a QUANTUM: with `quantum > 1` every chunk delta is a
+/// multiple of `quantum` on both axes (the caller passes an already-quantized
+/// (dx,dy); the last chunk absorbs the rounding of the intermediate targets, so
+/// the sum stays exact and no chunk exceeds `max_step` by more than one quantum).
+/// `quantum <= 1` is the plain chunker, byte for byte.
+fn rel_chunks_q(dx: i32, dy: i32, max_step: i32, quantum: i32) -> Vec<(i32, i32)> {
+    let max_step = max_step.max(1);
+    if dx.abs() <= max_step && dy.abs() <= max_step {
         return if dx == 0 && dy == 0 {
             Vec::new()
         } else {
             vec![(dx, dy)]
         };
     }
-    let steps = (dx.abs().max(dy.abs()) + MAX_REL_STEP - 1) / MAX_REL_STEP;
+    let steps = (dx.abs().max(dy.abs()) + max_step - 1) / max_step;
     let steps = steps.max(1);
     let mut out = Vec::with_capacity(steps as usize);
     let (mut sent_x, mut sent_y) = (0i32, 0i32);
     for i in 1..=steps {
-        // Cumulative target at chunk i, then the incremental delta. Integer
-        // division here can never make a chunk exceed MAX_REL_STEP.
-        let tx = dx * i / steps;
-        let ty = dy * i / steps;
+        // Cumulative target at chunk i (rounded to the quantum, the final
+        // step being the exact total), then the incremental delta. Integer
+        // division here can never make a chunk exceed max_step by more than
+        // one quantum.
+        let (tx, ty) = if i == steps {
+            (dx, dy)
+        } else {
+            (
+                quantize(dx * i / steps, quantum),
+                quantize(dy * i / steps, quantum),
+            )
+        };
         let (cx, cy) = (tx - sent_x, ty - sent_y);
         sent_x = tx;
         sent_y = ty;
@@ -237,12 +293,12 @@ fn rel_chunks(dx: i32, dy: i32) -> Vec<(i32, i32)> {
 /// QNX / rel-station fix). A small delta is one un-paced send == `rel_motion`, so the
 /// pointer-lock direct-rel (type=4) small-delta path stays exactly 1:1.
 pub async fn rel_motion_bounded(cap: &Capture, dx: i32, dy: i32) {
-    let chunks = rel_chunks(dx, dy);
+    let chunks = rel_chunks_q(dx, dy, rel_max_step(), rel_quantum());
     let n = chunks.len();
     for (i, (cx, cy)) in chunks.into_iter().enumerate() {
         rel_motion(cap, cx, cy).await;
         if i + 1 < n {
-            tokio::time::sleep(std::time::Duration::from_millis(REL_STEP_PACE_MS)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(rel_step_pace_ms())).await;
         }
     }
 }
@@ -429,6 +485,20 @@ async fn apply_move_abs(
                 st.ly = 0;
                 st.seeded = true;
                 (0, 0)
+            } else if rel_quantum() > 1 {
+                // QUANTIZED bridge (SH_REL_QUANTUM): send only whole quanta and
+                // leave the remainder PENDING in the model — lx/ly advance by
+                // what was actually sent, not to the target — so a guest that
+                // truncates per event (A/UX: trunc(0.75 * units) px) never
+                // loses a fraction the model believed it moved. The residual
+                // is < one quantum (< 3 px on A/UX) and is made up as soon as
+                // the pointer moves on.
+                let q = rel_quantum();
+                let dx = quantize(tx - st.lx, q);
+                let dy = quantize(ty - st.ly, q);
+                st.lx += dx;
+                st.ly += dy;
+                (dx, dy)
             } else {
                 let dx = tx - st.lx;
                 let dy = ty - st.ly;
@@ -653,114 +723,5 @@ pub async fn handle(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{calibrated_abs, home_pin, newer, rel_chunks, HOME_PIN, MAX_REL_STEP};
-
-    // The pin is sent in guest DELTA UNITS but its invariant ("exceed the guest
-    // surface") is stated in PIXELS, so it has to scale with the guest's own
-    // units-to-pixels factor. Every gain>=1 station must keep sending EXACTLY
-    // the historical 2048 — this is fleet-visible behavior, not a free knob.
-    #[test]
-    fn home_pin_is_unchanged_for_every_gain_at_or_above_one() {
-        for scale in [1.0, 0.783, 0.5, 0.0, -3.0] {
-            assert_eq!(
-                home_pin(scale),
-                HOME_PIN,
-                "scale {scale} must not shrink the pin"
-            );
-        }
-    }
-
-    // macos753: Mac OS 7.5.3 moves 0.36 px per unit, so cursor_scale is 1/0.36
-    // and the pin must grow enough to cross a 1152 px screen. At the bare 2048
-    // it would travel 737 px and strand the cursor mid-screen.
-    #[test]
-    fn home_pin_grows_enough_to_cross_a_scaling_guests_screen() {
-        let scale = 1.0 / 0.36;
-        let pin = home_pin(scale);
-        assert!(pin > HOME_PIN, "a >1 scale must grow the pin");
-        let travelled = f64::from(pin) * 0.36;
-        assert!(
-            travelled > 1152.0,
-            "pin travels {travelled} px, short of the 1152 px screen"
-        );
-    }
-
-    // A nonsense calibration must saturate, never wrap into a negative pin that
-    // throws the cursor away from the corner it is meant to clamp into.
-    #[test]
-    fn home_pin_saturates_instead_of_wrapping() {
-        assert_eq!(home_pin(f64::MAX), i32::MAX);
-        assert!(home_pin(1e9) > 0);
-    }
-
-    #[test]
-    fn absolute_calibration_scales_and_clamps_for_both_dbus_paths() {
-        assert_eq!(calibrated_abs(640, 480, 0, 0, 0.5), (320, 240));
-        assert_eq!(calibrated_abs(100, 200, 4, -10, 0.75), (79, 140));
-        assert_eq!(calibrated_abs(2, 3, -20, -30, 1.0), (0, 0));
-    }
-
-    // Small deltas (within one step) are a SINGLE un-paced send == bare
-    // rel_motion, so the pointer-lock direct-rel path stays exactly 1:1.
-    #[test]
-    fn rel_chunks_small_is_single() {
-        assert_eq!(rel_chunks(0, 0), vec![]); // zero move: nothing sent
-        assert_eq!(rel_chunks(5, -3), vec![(5, -3)]);
-        assert_eq!(rel_chunks(256, -256), vec![(256, -256)]); // exactly at bound
-    }
-
-    // Large/fast deltas are chunked; every chunk stays within the per-axis clamp
-    // window and the chunks SUM EXACTLY to the original delta (no 1:1 drift).
-    #[test]
-    fn rel_chunks_large_bounded_and_exact() {
-        for (dx, dy) in [
-            (2000, 0),
-            (0, -1500),
-            (1920, 1200),
-            (-8192, -8192),
-            (1000, -37),
-            (13, 4096),
-        ] {
-            let chunks = rel_chunks(dx, dy);
-            let (mut sx, mut sy) = (0i32, 0i32);
-            for (cx, cy) in &chunks {
-                assert!(cx.abs() <= MAX_REL_STEP, "chunk dx {cx} exceeds bound");
-                assert!(cy.abs() <= MAX_REL_STEP, "chunk dy {cy} exceeds bound");
-                sx += cx;
-                sy += cy;
-            }
-            assert_eq!((sx, sy), (dx, dy), "chunks must sum to the original delta");
-        }
-    }
-
-    // ---- cseq: the client's statement of what it sent first ----------------
-    // Moves ride unreliable datagrams, buttons a reliable stream. The network is
-    // free to reorder the two against each other, and a press that lost the race
-    // to its own position used to press at the PREVIOUS point and then slide the
-    // cursor there under a held button — a drag, to every guest (IRIX, 2026-08-05).
-
-    #[test]
-    fn a_later_stamp_is_newer_and_an_earlier_one_is_not() {
-        assert!(newer(2, 1));
-        assert!(!newer(1, 2));
-        assert!(!newer(7, 7)); // a REPLAYED stamp is not newer: idempotent
-    }
-
-    // The gate must not become a cliff every 2^32 records: a session that stays
-    // up long enough to wrap would otherwise drop every move forever after.
-    #[test]
-    fn the_stamp_wraps_without_stranding_the_pointer() {
-        assert!(newer(1, u32::MAX));
-        assert!(newer(0, u32::MAX));
-        assert!(!newer(u32::MAX, 1));
-    }
-
-    // The distances are not symmetric on purpose: half the space is "newer".
-    #[test]
-    fn a_stamp_half_a_space_away_is_still_ordered() {
-        let far = 1u32 << 31;
-        assert!(newer(far - 1, 0));
-        assert!(!newer(far + 1, 0)); // beyond the window, read as older
-    }
-}
+#[path = "input_tests.rs"]
+mod tests;

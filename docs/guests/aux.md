@@ -142,21 +142,39 @@ getty on the modem port — the future `labctl exec` channel) and, **install
 phase only**, the helper disk at SCSI 5 and the CD as a writable `scsi-hd`
 overlay at SCSI 3. The checkpoint will be baked without helper and CD.
 
-## Pointer / keyboard
+## Pointer / keyboard — the bridge made exact (2026-08-18)
 
-`dbus-rel`, scale 1.0 **unmeasured**. Mac OS "Very Slow" tracking is 0.36
-px/unit on the same hardware; A/UX's Finder and X11 apply their own factors —
-measure with `adb_pointer.py gain` on the installed desktop before listing.
+No absolute path exists on a q800 (no USB tablet, no vmmouse, no PCI for
+gallery-hid), so the station runs the daemon's `dbus-rel` homing bridge. It is
+**exact by construction, not by feedback**: with the Mouse control panel at
+"Very Slow" (baked into the checkpoint) the A/UX Toolbox moves exactly
+`trunc(0.75 * units)` px per event for events up to 32 units, and accelerates
+above that. Measured with `mouse_move` sweeps against the framebuffer (both
+axes, diagonals): 4->3, 8->6, 16->12, 32->24, 50x8 units -> 300 px; single
+64/100/200/500-unit events -> 63/85/192/442 px. Two per-station daemon knobs
+(new, default-off for every other station):
+
+- `SH_REL_MAX_STEP=32` — chunk cap; no send crosses into the accelerated range.
+- `SH_REL_QUANTUM=4` — every send is a multiple of 4 units (= 3 px exactly, no
+  truncation loss); the sub-quantum remainder stays pending in the model.
+
+`SH_CURSOR_SCALE=1.3333` (1/0.75). Residual < 3 px, no drift, corner-pinned on
+the first sample. Not a closed loop (no cursor readback exists here); a
+closed loop would need an in-guest agent (`basicC`/`macprog` archives are on
+disk) — see the follow-up in the guest doc's Open list. The A/UX Finder also
+DROPS fast button presses over ADB (~0.3 s registers): keyboard proof is
+typing in the CommandShell.
 
 ## Open
 
-- Optional packages (X11 Server, MacX, X clients, Games, QuickTime, man
-  pages, networking): on disk under `/ARCHIVES`, not installed — the Easy
-  Install GUI refuses on the free-space bug; install from the CommandShell.
+- Optional packages: Games, QuickTime, man pages and networking installed
+  2026-08-18 from `/ARCHIVES` (`cd / && cpio -idmu < /ARCHIVES/<pkg>`; only
+  `network` has a `/DATA/POSTINSTALL` script, run as `sh … / /`). Still on
+  disk, not installed: X11 Server, MacX, X clients, C compilers, macprog.
+- Closed-loop pointer (readback) would need an in-guest agent; the exact
+  open-loop bridge above is what ships.
 - A/UX 3.1 update (`AUX_3.1_Update.iso`, archived) not applied.
-- Pointer scale unmeasured (A/UX Toolbox acceleration); the A/UX Finder
-  drops fast button presses (hold ~0.3 s) — operator eyeball through the
-  browser. Keyboard proof = typing in the CommandShell.
+- Pointer 1:1 in the browser: operator eyeball (bridge exact by measurement).
 - No exec channel (no getty on the serial line yet).
 
 ## Rollback

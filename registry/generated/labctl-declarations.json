@@ -715,12 +715,12 @@
       "warpd_addr": null,
       "ssh_port": null,
       "exec_port": null,
-      "exec_kind": null,
-      "exec_user": null,
+      "exec_kind": "serial_getty",
+      "exec_user": "root",
       "exec_key": null,
       "console": "fb",
       "udp_port": 54146,
-      "notes": "No exec channel: drive it via labctl key/pointer or scripts/dev/qmp-type.py; COM1 -> serial.log. PS/2 deltas mis-decode if the i8042 queue is flooded — pace pointer moves. loadvm golden."
+      "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. PS/2 deltas mis-decode if the i8042 queue is flooded — the daemon paces; SH_REL_MAX_STEP caps each send at one packet. loadvm golden."
     },
     "sailfishos": {
       "dir": "/data/vms/streamhost/stations/sailfishos",

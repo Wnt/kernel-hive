@@ -873,8 +873,8 @@ emit sunos414 \
 #   Checkpoint 'golden' in the disk+PRAM pair; -loadvm golden -S; idle pause 60.
 emit aux \
   --tile aux --vmid 145 --udp 54145 --pointer rel --input-backend dbus-rel \
-  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 \
-  --launcher-file "$T/aux/qemu-streamhost.sh" --env-append-file \
+  --cursor-scale 1.3333 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps \
+  30 --launcher-file "$T/aux/qemu-streamhost.sh" --env-append-file \
   "$T/aux/station.env.fixture"
 
 # rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):
