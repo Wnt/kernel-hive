@@ -147,6 +147,9 @@ const POSTER_INDEX = {
   "redstar3": {
     "hero": "/posters/redstar3/desktop.webp"
   },
+  "rhapsody": {
+    "hero": "/posters/rhapsody/desktop.webp"
+  },
   "riscos": {
     "hero": "/posters/riscos/desktop.webp"
   },

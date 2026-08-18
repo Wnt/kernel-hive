@@ -470,7 +470,7 @@
     "newsos": {
       "dir": "/data/vms/streamhost/stations/newsos",
       "qmp": null,
-      "pointer_mode": "none",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -480,7 +480,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54148,
-      "notes": "HOST-NATIVE: MAME 0.289 nws3260 runs on the host, no QEMU/QMP, no exec channel. Frames drawshm->shm, keys ctlsock + newsos.keymap. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (driver has no save state) reboots the installed NEWS-OS 4.1R disk. DARK LAUNCH: listing=hidden while the install runs on camera; SH_IDLE_PAUSE_SECS=0 until the disk is installed."
+      "notes": "HOST-NATIVE: MAME 0.289 nws3260 runs on the host, no QEMU/QMP, no exec channel. Frames drawshm->shm, keys ctlsock + newsos.keymap, pointer ctlsock MOVEA (open-loop, X server -a 1 -t 1 so 1 count = 1 px). Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (driver has no save state) power-cycles: Automatic Boot DIP + /fastboot -> sxdm login in ~90 s. Disk = a writable raw image (persists across relaunches; reset=relaunch is a power-cycle, fsck -p repairs any unclean stop). DARK LAUNCH: listing=hidden until the operator eyeballs it."
     },
     "nextstep": {
       "dir": "/data/vms/streamhost/stations/nextstep",
@@ -706,6 +706,21 @@
       "console": "fb",
       "udp_port": 54121,
       "notes": "air-gapped guest: no NIC and no exec/SSH channel; framebuffer/QMP only"
+    },
+    "rhapsody": {
+      "dir": "/data/vms/streamhost/stations/rhapsody",
+      "qmp": "/data/vms/streamhost/stations/rhapsody/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54146,
+      "notes": "No exec channel: drive it via labctl key/pointer or scripts/dev/qmp-type.py; COM1 -> serial.log. PS/2 deltas mis-decode if the i8042 queue is flooded — pace pointer moves. loadvm golden."
     },
     "sailfishos": {
       "dir": "/data/vms/streamhost/stations/sailfishos",
