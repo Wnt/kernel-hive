@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "sunos414",
+  "era_year": 2026,
+  "stationDir": "sunos414",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 62,
+        "prelude": "",
+        "value": {
+          "key": "sunos414",
+          "script": "tiles/sunos414.sh",
+          "outputDir": "Sunos414",
+          "class": "fast",
+          "estimated": "~2-5m",
+          "automation": "full",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54147,
+    "slot": 147,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "none",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
+  "guestDoc": "docs/guests/sunos414.md",
+  "credentialsRef": "guest/sunos414",
+  "spa": {
+    "archetypeId": "sparc-pizzabox",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · sunos414"
+  },
+  "museum": {
+    "id": "sunos414",
+    "displayName": "sunos414",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 1 scaffold; reserved slot 147/UDP 54147",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}
