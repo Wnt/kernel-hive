@@ -401,6 +401,19 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'modernTower', monitor: 'crtC',
     keyboard: 'keyboardG', mouse: 'paramMouseE',
   },
+  // newsos: Sony NWS-3260 — the NEWS line's portable, an R3000 pizza-box
+  // slab under a monochrome LCD lid; the shared Unix-workstation keyboard/mouse.
+  newsos: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'lcdA',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  // sunos414: SPARCstation 5 — Sun's 1994 pizza box, the same slab family as
+  // the solaris station (pizzaBoxC) under the big workstation tube (crtE); the
+  // Type-4/5 keyboard and three-button mouse are the shared Unix set.
+  sunos414: {
+    kind: 'pizzaBox', body: 'pizzaBoxC', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
   // rhapsody: Rhapsody DR2 for Intel — a 1998 beige PC tower (the Intel build
   // ran on commodity hardware, not a Mac), CRT era, so crtC like beos.
   rhapsody: {

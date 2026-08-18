@@ -8,7 +8,7 @@
   "build": {
     "rows": [
       {
-        "order": 62,
+        "order": 65,
         "prelude": "",
         "value": {
           "key": "rhapsody",
@@ -64,11 +64,11 @@
     }
   },
   "render": {
-    "signalOrder": 62,
-    "stationsManifestOrder": 60,
-    "bindingOrder": 67,
-    "goldenOrder": 60,
-    "actionMapOrder": 34,
+    "signalOrder": 65,
+    "stationsManifestOrder": 63,
+    "bindingOrder": 70,
+    "goldenOrder": 63,
+    "actionMapOrder": 37,
     "bringUpGroup": 0,
     "stationsManifestPrelude": "\n# rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one\n#   2 GB IDE disk, Cirrus GD5446 at 800x600x16, i82557b, PS/2 mouse (dbus-rel).\n#   DARK LAUNCH: listing=hidden while the install runs on camera.\n",
     "bindingPrelude": "",
@@ -153,7 +153,7 @@
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/rhapsody/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
-    "bringUpOrder": 67,
+    "bringUpOrder": 70,
     "vmidLabel": 146,
     "qemu": {
       "mode": "verbatim",
