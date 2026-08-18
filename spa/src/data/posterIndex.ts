@@ -96,6 +96,9 @@ const POSTER_INDEX = {
   "msdoswin1": {
     "hero": "/posters/msdoswin1/desktop.webp"
   },
+  "newsos": {
+    "hero": "/posters/newsos/desktop.webp"
+  },
   "nextstep": {
     "hero": "/posters/nextstep/desktop.webp"
   },

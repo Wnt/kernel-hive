@@ -401,5 +401,11 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'modernTower', monitor: 'crtC',
     keyboard: 'keyboardG', mouse: 'paramMouseE',
   },
+  // newsos: Sony NWS-3260 — the NEWS line's portable, an R3000 pizza-box
+  // slab under a monochrome LCD lid; the shared Unix-workstation keyboard/mouse.
+  newsos: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'lcdA',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
 } as const satisfies Record<string, Assembly>;
 

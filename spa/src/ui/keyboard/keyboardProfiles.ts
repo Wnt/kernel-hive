@@ -270,6 +270,7 @@ export const OS_FAMILY: Record<string, Family> = {
   tinycore: 'generic', redstar2: 'generic', redstar3: 'generic', postmarketos: 'generic',
   sailfishos: 'generic', templeos: 'generic', qnx: 'generic', haiku: 'generic',
   beos: 'generic',
+  newsos: 'generic', // NEWS-OS 4.1R: sxdm login + twm/xterm — no shell chord set to profile
   openvms: 'generic',
   alpine: 'linux-tty',
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',

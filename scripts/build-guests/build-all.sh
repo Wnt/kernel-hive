@@ -131,7 +131,7 @@ MANIFEST=(
   "macos753       |tiles/macos753.sh             |Macos753          |graphical |~30-60m |vision   |macos753-golden.qcow2 + pram-golden.qcow2 + checkpoint (System 7.5.3 -> quiet Finder desktop, 1152x870x8)"
   "hpuxvue        |tiles/hpuxvue.sh              |Hpuxvue           |graphical |~2-4h   |vision   |hpuxvue-golden.qcow2 + checkpoint (HP-UX 10.20 -> HP VUE desktop over Artist fb, 1280x1024)"
   "beos           |tiles/beos.sh                 |Beos              |installed |~20-40m |partial  |beos-r5.qcow2 (BFS on MBR, R5 makebootable) -> tile beos-golden.qcow2 + golden"
-  "newsos         |tiles/newsos.sh               |Newsos            |graphical |~30-90m |vision   |TODO"
+  "newsos         |tiles/newsos.sh               |newsos            |graphical |~2-3h   |vision   |host-native MAME nws3260 (news_r3k) + NEWS-OS 4.1R disk image (MO-kit install, X at boot on the 1120x780 LCD)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

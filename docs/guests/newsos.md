@@ -1,27 +1,116 @@
-# newsos guest
+# newsos — Sony NEWS-OS 4.1R on an NWS-3260 (host-native MAME)
 
-Status: **scaffold only** (Tier 3, disabled candidate; not in the lineup).
+**Status 2026-08-18: DARK LAUNCH.** `/os/newsos` streams the bring-up rig
+(`listing.state=hidden`, slot 148 / UDP 54148); the NEWS-OS 4.1R install is
+running on camera. Not yet: pointer plane, golden/idle-pause, hero photo.
 
-## Identity and source
+## What it is
 
-- Public ID / tile directory: `newsos`
-- Reserved slot / UDP port: `148` / `54148`
-- Archetype: `putty-lcd`
-- Stable release, architecture, source/license class, URL, size, and SHA-256: TODO
+Sony's NEWS (Network Engineering Workstation) line — Japan's BSD workstation
+family, 1987–1990s. NEWS-OS 4 is 4.3BSD-derived with X11R4 and Sony's own
+NEWS Desk on top. The **NWS-3260** (1991) is the portable of the MIPS
+generation: R3000A @ 20 MHz, 16 MB, a **1120×780 monochrome LCD**, HLE
+keyboard/mouse (`news_hid`), am79c90 Ethernet, CXD1185 SCSI.
 
-## Build and device set
+## Why this machine, not the nws5000x the candidate doc named
 
-- Builder: `scripts/build-guests/tiles/newsos.sh`
-- Canonical output: TODO
-- QEMU binary, machine, accelerator, CPU, RAM, display, storage, NIC, audio, and input: TODO
-- Ready framebuffer and bounded automation path: TODO
+[`docs/lab/research/candidate-newsos.md`](../lab/research/candidate-newsos.md)
+planned NEWS-OS 4.2.1aRD on MAME `nws5000x`, whose driver has **no local
+framebuffer** (confirmed against `news_r4k.cpp` in 0.250 and master: the
+DSC-39 XB card is a TODO; the desktop only exists over XDMCP), which would
+have needed an Xvfb+XDMCP capture and a brand-new XTEST input path. MAME's
+`nws3260` (`news_r3k.cpp`, Patrick Mackinlay) is `MACHINE_NO_SOUND` only,
+paints a real LCD framebuffer (`news_lcdfb`), and its keyboard is a normal
+ioport matrix — i.e. exactly the shape the nine converted MAME stations
+already ship (drawshm frames + ctlsock keys). Direct framebuffer capture is
+the lab's host-native rule; the 3260 satisfies it and the 5000X cannot.
+Neither driver has `MACHINE_SUPPORTS_SAVE`, so both would be reset=relaunch.
 
-## Golden, input, and rollback
+The OS is therefore **NEWS-OS 4.1R** (`nwf_672rb`, the NWS-3000-series MO
+kit): the 4.2.1aRD CD is "usable only on NWS-5000 series" per its softlist
+entry and briceonk's notes.
 
-- Reset mode and fixture: TODO
-- Run `scripts/lib/golden-verify.sh newsos --bake` on a namespaced clone, then
-  rerun without `--bake` before promotion.
-- Pointer/click/drag/wheel/keyboard proof: TODO
-- Cold-boot zero-input state and optional clip: TODO
-- Credentials reference only (never values): `guest/newsos`
-- Rollback plan: TODO
+## Emulator
+
+`scripts/build-guests/emulators/native.d/newsos.sh` →
+`build-mame-native.sh newsos`: MAME 0.289 subtarget `newsos`,
+`SOURCES=src/mame/sony/news_r3k.cpp`, base patches (ctlsock, drawshm,
+kiosk-no-ui) **plus `mame-irix-skip-warnings.patch`**: `idrom.bin` is a
+`BAD_DUMP` in MAME and its "ROM NEEDS REDUMP" panel is a *modal* wait that
+`skip_warnings` alone does not cover — without the patch MAME sits in
+`display_startup_screens` forever (found 2026-08-18: black frame, no ctlsock
+heartbeat, gdb stack). `NATIVE_GEOM=1120x780` (the LCD's raster, streamed
+1:1). Gate: 863,507 lit pixels (the LCD's white page) at 15 emulated seconds.
+
+Binary/roms during bring-up: `/data/vms/sandbox/newsos/build/mame-native/`;
+production: `/data/vms/streamhost/assets/newsos/mame-native/{newsos,roms/}`.
+
+## ROMs and media (sourced 2026-08-18; hashes verified against MAME's pins)
+
+| what | where | hash |
+|---|---|---|
+| `nws3260.zip` (mpu-16 ver 2.0A ic64, 051_aa.ic109, 052_aa.ic110, idrom.bin) | archive.org item `mame-0.250-roms-split_202212`, `MAME 0.250 ROMs (split)/nws3260.zip` (same bytes in `mame-roms-non-merged`) | md5 ec8fe868944b6ec9c5fd4191c95d2383; all four sha1s match `-listxml` |
+| `nwf_672rb_mo.chd` — NEWS-OS 4.1R Version Up Kit, MO image | archive.org item `nwf_672rb` | md5 be5b4c8fe82e988ed2ec1ddcd0dc3556 |
+| `nwf_672rb_installation_program.img` (floppy) | same item | sha1 ed9499211ccf133570defa136199f331a38368f5 (softlist `install`) |
+| `nwf_672rb_format_program.img` (floppy, unused — unsupported by the driver) | same item | sha1 64ff03dace6e8b91569bef6f2f8855fa59c39abe |
+| `hd1307.img.gz` — blank, pre-labelled 1.3 GB disk image | `briceonk/news-os` `src/news-inst/blank-images/` | 1388496896 bytes unpacked |
+| fallback, unused: `nws5000x.zip`, `nwf_683rd1.chd` (4.2.1aRD CD) | `mame-0.250-roms-split_202212`, item `nwf_683rd1` | md5 7688edcc…, 546247f8… |
+
+Staged raw blobs: `/data/assets-staging/newsos/` (ROMs, sha1-matched by
+`stage-romset.py`); media in `/data/vms/sandbox/newsos/media/` during
+bring-up. Nothing under `roms/`, `media/` or a disk image is ever committed.
+
+## Install recipe (as driven, 2026-08-18 — briceonk's `nws3260-mame.md` shape)
+
+MAME args for the install: `-scsi:4 harddisk -hard1 hd1307.img -hard2
+nwf_672rb_mo.chd -flop nwf_672rb_installation_program.img` (a second
+"harddisk" at SCSI 4 stands in for the MO drive; the system disk is SCSI 0).
+
+1. `NEWS>` `bo fh()copy/i` → "NEWS-OS 4.1 Install Program (news3200)".
+2. `Install from:` delete `tape`, type `mo`; MO SCSI channel `4`; onto `hd`,
+   channel `0`; "Tahoe disklabel is already set, use this" → `y`. Miniroot
+   copies (24576 sectors), primary boot installs, miniroot kernel boots
+   (`NEWS-OS Release 4.1R #0`).
+3. Installer TUI: `a` Installation → `c` MO disk → `y` (sd04) → language
+   `f` US_English → timezone `c` EUROPE, `d` FINLAND → date `y` →
+   `/usr` local `y` → packages `0 1 2 4 5 6 b s u x y` (network, X11-core,
+   X11-appl, X11-font, NEWS Desk, sys, man, games, sound, sample, 3D =
+   97,844 kB of the 105,672 kB default layout, so no partition resize) →
+   `y` → network `n` (no TAP in the rig) → display manager **Yes** (X at
+   boot) → `y`. newfs runs, then the package copy.
+4. Per the driver's known issue, the kernel's reboot does not work: after
+   "Install Complete" hard-restart MAME (relaunch), then `bo` from the
+   ROM monitor (Automatic Boot DIP for the station); first boot fscks.
+   `root`, no password. `sxdm` is the graphical login on the LCD.
+
+Driver: `nkey.py post "text\n"` / `key <field>` / `shot` on the box
+(`/data/vms/sandbox/newsos/rig/`) — speaks the ctlsock protocol directly
+(`<seq> KEY 1|0 <port> <field>`, `SHOT <abs path>`), the browser stays a
+read-only monitor. Keymap: `scripts/dev/mame-keymap.py <ctl.sock> --tags ":"`
+→ `streamhost/stations/newsos/newsos.keymap` (78 keys; unmatched: keypad,
+Nfer/Xfer, Help/Clear — irrelevant to the exhibit).
+
+## Runtime shape
+
+Row: `registry/stations/newsos.json` (dragon32's host-native shape:
+`SH_CAPTURE=shm`, `SH_INPUT_BACKEND=mamesock`, launcher
+`stations/mame-native/x11-runtime.sh`, `resetMode=relaunch`, `snapshot:null`).
+Fixture: `streamhost/stations/newsos/station.env.fixture`
+(`MAME_NATIVE_ARGS=-hard1 …/newsos-disk.img`, `MAME_NATIVE_SKIP_WARNINGS=1`,
+`SH_IDLE_PAUSE_SECS=0` until the install is done). Bring-up rig (until the
+unit takes over): `/data/vms/sandbox/newsos/rig/newsos-rig.sh start|stop|
+status|daemon` — MAME + a borrowed released daemon from `stream.env`, overlay
+via `darklaunch-station.py publish newsos --rig … --entry entry.json`;
+`install-phase` marker file selects the install media args.
+
+## Open
+
+- **Pointer**: `news_hid` exposes `mouse_x_axis`/`mouse_y_axis`/buttons and
+  ctlsock reports "MOVEA unsupported (no cursor items)" — the relative
+  axis path (`mame-ctlsock-ptr-tags.patch`, irix's shape) is the next step
+  once X is up; until then the exhibit is keyboard-only.
+- Golden: none possible (no save state); "checkpoint" = the installed disk
+  + Automatic Boot. Set `SH_IDLE_PAUSE_SECS=60` only after that boots to sxdm.
+- Hero photo: placeholder is the live LCD frame; a real NWS-3260 photo
+  (Commons) is the operator's pick.
+- Sound: driver has none.
