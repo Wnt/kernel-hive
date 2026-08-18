@@ -110,6 +110,38 @@ status|daemon` — MAME + a borrowed released daemon from `stream.env`, overlay
 via `darklaunch-station.py publish newsos --rig … --entry entry.json`;
 `install-phase` marker file selects the install media args.
 
+## Keyboard (delivery order + FIFO depth)
+
+`news_hid` is a **scanned ioport matrix**: MAME's `device_matrix_keyboard_interface`
+samples one row per tick (`start_processing(1'200 Hz)`) and reports make/break in
+row-then-column order. Two consequences bit the ctlsock input path (kbdfix,
+2026-08-18):
+
+- **A modifier and the character it qualifies, pressed inside the same scan
+  cycle, could reach the guest character-first** — the guest then latched the
+  unshifted key. Fast typing produced `HUP`→`HUp`, shift-7 `&`→`7`,
+  `$HOME`→`$hOME`, worst inside the X server. It is a same-emulated-instant
+  artifact (the daemon sets Shift and the key in one drain frame; a real MAME
+  user never does), not a pacing bug — 40 ms of driver-side settle only
+  *reduced* the misfires.
+- **The key FIFO was 8 bytes** (four plain keystrokes) and `util::fifo`
+  **silently drops on overflow**, so a burst the guest drained slowly lost
+  chunks.
+
+Fix: `scripts/build-guests/patches/mame-news-hid-kbd-order.patch` (in
+`native.d/newsos.sh` `NATIVE_EXTRA_PATCHES`). It buffers one scan cycle's key
+edges and flushes them **modifiers-first on press / modifiers-last on release**,
+so the level is always established before (and torn down after) the character
+regardless of matrix position, and deepens the FIFO to 256. Validated
+byte-exact at normal cadence in an xterm:
+`echo The_Quick-Brown.Fox JUMPED 42 over #the@lazy!dog` and a symbol-heavy
+`!@#$_ & ^ * ()` string, repeated fast with no drops. Purely reorders events
+already produced this cycle (≤ one ~0.83 ms scan period of added latency);
+`natkeyboard` POST benefits too. Residual: a character in a *later* matrix row
+than its modifier (with L-Shift only `/` `?`; some Ctrl-chords) can still split
+across a cycle boundary — none of the ASCII graphic set needs it, and no
+reported symptom involved one.
+
 ## Pointer
 
 Bound via the base ctlsock module (`MAME_CTL_PTR_PORTS=:hid`; the NEWS HLE

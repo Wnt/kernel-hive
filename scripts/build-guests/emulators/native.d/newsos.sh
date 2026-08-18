@@ -19,7 +19,13 @@ NATIVE_SOURCES=src/mame/sony/news_r3k.cpp
 # The LCD's native raster; the station streams it 1:1.
 NATIVE_GEOM=1120x780
 NATIVE_MAME_ARGS=()
-NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch)
+# mame-news-hid-kbd-order.patch: the news_hid HLE keyboard is a scanned matrix,
+# so a modifier and the character it qualifies pressed in the same scan cycle
+# could reach the guest character-first and mistype it (HUP->HUp, shift-7 &->7,
+# $HOME->$hOME) — worst in the X server. The patch delivers modifier edges
+# before/after the characters they qualify and deepens the 8-byte key FIFO
+# (which silently dropped on overflow) so fast bursts survive. docs/guests/newsos.md.
+NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-news-hid-kbd-order.patch)
 NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {

@@ -1,0 +1,151 @@
+Matrix-keyboard delivery order + FIFO depth for the Sony NEWS HLE
+keyboard (nws3260 / newsos station). Guest-side fix: modifier edges are
+delivered before/after the characters they qualify within a scan cycle,
+and the key FIFO is deepened so fast bursts are not silently dropped.
+See scripts/build-guests/emulators/native.d/newsos.sh. (kbdfix 2026-08-18)
+
+--- a/src/mame/sony/news_hid.h	2026-08-18 18:10:08.729024168 +0000
++++ b/src/mame/sony/news_hid.h	2026-08-18 18:11:05.509778552 +0000
+@@ -8,6 +8,8 @@
+ 
+ #include "machine/keyboard.h"
+ 
++#include <vector>
++
+ class news_hid_hle_device
+ 	: public device_t
+ 	, public device_matrix_keyboard_interface<8U>
+@@ -40,7 +42,19 @@
+ 	virtual void scan_complete() override;
+ 
+ private:
+-	void push_key(u8 code);
++	// Matrix-scan robustness (kbdfix, 2026-08-18). The base matrix scanner
++	// samples one row per tick and reports make/break in row-then-column
++	// order, so a modifier (Shift/Ctrl/Alt) and the character it qualifies,
++	// pressed inside the same scan cycle, can reach the guest with the
++	// character AHEAD of its modifier — the guest then latches the unshifted
++	// key (HUP->HUp, shift-7 & ->7, $HOME->$hOME). We buffer one cycle's key
++	// edges and flush them modifiers-first on press / modifiers-last on
++	// release, so the level is always established before (and torn down after)
++	// the character regardless of where each sits in the matrix. Purely an
++	// ordering of events already produced this cycle; adds at most one scan
++	// period (~0.83 ms) of latency and never reorders same-class edges.
++	static bool code_is_modifier(u8 code);
++	void flush_pending_keys();
+ 
+ 	template <news_hid_device Device> void out_irq(bool state);
+ 
+@@ -58,10 +72,19 @@
+ 
+ 	devcb_write_line::array<2> m_irq_out_cb;
+ 
+-	util::fifo<u8, 8> m_fifo[2];
++	// Was fifo<u8, 8>: eight bytes is four plain keystrokes (make+break), or
++	// two shifted ones — a burst typed faster than the guest drains its IRQ
++	// (worst inside the X server) overran it, and util::fifo silently DROPS
++	// on overflow, losing/scrambling chunks of fast input. Deepened so a
++	// realistic burst is absorbed (kbdfix, 2026-08-18).
++	util::fifo<u8, 256> m_fifo[2];
+ 	bool m_irq_enabled[2];
+ 	bool m_irq_out_state[2];
+ 
++	// key edges gathered during the current scan cycle, flushed modifier-
++	// ordered by flush_pending_keys() at scan_complete()
++	std::vector<u8> m_key_pending;
++
+ 	// mouse state
+ 	s16 m_mouse_x;
+ 	s16 m_mouse_y;
+--- a/src/mame/sony/news_hid.cpp	2026-08-18 18:10:08.727024141 +0000
++++ b/src/mame/sony/news_hid.cpp	2026-08-18 18:11:01.697727905 +0000
+@@ -132,6 +132,8 @@
+ 
+ void news_hid_hle_device::device_reset()
+ {
++	m_key_pending.clear();
++
+ 	m_fifo[KEYBOARD].clear();
+ 	m_fifo[MOUSE].clear();
+ 
+@@ -148,26 +150,75 @@
+ {
+ 	LOG("key_make row %d col %d\n", row, column);
+ 
+-	push_key((row << 4) | column);
++	// buffer; flushed modifier-ordered at scan_complete()
++	m_key_pending.push_back((row << 4) | column);
+ }
+ 
+ void news_hid_hle_device::key_break(u8 row, u8 column)
+ {
+ 	LOG("key_break row %d col %d\n", row, column);
+ 
+-	push_key(0x80 | (row << 4) | column);
++	// buffer; flushed modifier-ordered at scan_complete()
++	m_key_pending.push_back(0x80 | (row << 4) | column);
++}
++
++// A make/break code is a modifier iff its (row, column) is one of the
++// Shift / Control / Alternate matrix positions (see INPUT_PORTS below):
++//   L Shift  ROW3 col6   R Shift ROW4 col2
++//   Control  ROW2 col8   Alternate ROW4 col3
++// Caps Lock is a lock, not a per-character qualifier, so it is NOT treated
++// as a modifier here.
++bool news_hid_hle_device::code_is_modifier(u8 code)
++{
++	u8 const rc = code & 0x7f;
++	return rc == ((3 << 4) | 6) || rc == ((4 << 4) | 2)
++		|| rc == ((2 << 4) | 8) || rc == ((4 << 4) | 3);
+ }
+ 
+-void news_hid_hle_device::push_key(u8 code)
++// Flush this scan cycle's key edges in an order the guest can always latch:
++//   1. non-modifier releases   2. modifier releases
++//   3. modifier presses        4. non-modifier presses
++// so a modifier press is delivered before every character press this cycle,
++// and a modifier release after every character release. Same-class edges keep
++// their (row-scan) arrival order — plain typing is paced far wider than a
++// scan cycle, so two ordinary characters never share one flush.
++void news_hid_hle_device::flush_pending_keys()
+ {
+-	m_fifo[KEYBOARD].enqueue(code);
++	if (m_key_pending.empty())
++		return;
+ 
+-	out_irq<KEYBOARD>(true);
++	bool queued = false;
++	auto const emit = [this, &queued] (bool want_break, bool want_mod)
++	{
++		for (u8 const code : m_key_pending)
++		{
++			bool const is_break = bool(code & 0x80);
++			if (is_break != want_break)
++				continue;
++			if (code_is_modifier(code) != want_mod)
++				continue;
++			m_fifo[KEYBOARD].enqueue(code);
++			queued = true;
++		}
++	};
++
++	emit(true, false);   // non-modifier releases
++	emit(true, true);    // modifier releases
++	emit(false, true);   // modifier presses
++	emit(false, false);  // non-modifier presses
++
++	m_key_pending.clear();
++
++	if (queued)
++		out_irq<KEYBOARD>(true);
+ }
+ 
+ // HACK: abuse the keyboard row scanner to sample the mouse too
+ void news_hid_hle_device::scan_complete()
+ {
++	// deliver this cycle's key edges modifier-ordered before sampling mouse
++	flush_pending_keys();
++
+ 	// read mouse state
+ 	s16 const x = m_mouse_x_axis->read();
+ 	s16 const y = m_mouse_y_axis->read();
