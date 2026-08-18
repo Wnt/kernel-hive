@@ -127,7 +127,7 @@ monitor with the daemon detached, or let Automatic Boot skip the monitor
 entirely (the shipped config). The sxsession menus are press-and-hold
 (DOWN1, drag, UP1); proven by opening Application → Terminal Emulator.
 
-## Keyboard (the `news_hid` shift-order fix)
+## Keyboard (`news_hid` ordering + fast-typing)
 
 `mame-news-hid-kbd-order.patch` — without it, typed Shifted characters come out
 unshifted (`The`→`the`, `#`→`3`, `$HOME`→`$hOME`). MAME's `news_hid` HLE
@@ -141,6 +141,19 @@ modifier-breaks — and deepens the key FIFO 8→256 so a burst can't silently
 drop. Chosen from three independent bring-up attempts (2026-08-18); re-validated
 byte-exact (`echo The_Quick-Brown.Fox JUMPED 42 over ok-123` types and echoes
 exactly).
+
+That patch handles Shift-vs-character ordering *within* one sweep, but not two
+different characters that overlap across sweeps: a scanned matrix reads each row
+once per ~6.7 ms sweep, so at fast browser speed the makes of two rolled-over
+keys still emit in **row order** (fast `root` → `roto`) and a key whose whole
+press+release falls between two samples of its row is dropped (`asd` → `ad`).
+The cure is **`MAME_CTL_KEY_EXCL`** in the fixture: it serialises non-modifier
+keys so only one is ever down, and the guest scans each alone, in order. It
+matches a **case-sensitive** substring of the port tag, and the NEWS rows are
+`:hid:ROW0..` — so the value must be **`:ROW`**. It was mistakenly `:row`
+(lowercase), which matched nothing and silently left EXCL off; slow one-key
+typing hid it. Fixed 2026-08-18 with `EXCL=:ROW` and 40/40 ms hold/gap
+(~12 chars/s), validated byte-exact under a fast burst.
 
 ## labctl exec + the demo login
 
