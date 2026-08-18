@@ -1,0 +1,170 @@
+Sony NEWS HLE keyboard (news_hid): make ctlsock/browser typing byte-exact.
+
+Two defects in the stock HLE made keyboard input through the ctlsock matrix
+path unreliable on the newsos station (NEWS-OS 4.1R, nws3260), especially
+inside the X (sxsession) desktop:
+
+  1. SHIFTED CHARACTERS LAND AT THE WRONG LEVEL.  device_matrix_keyboard_
+     interface scans the 8 rows round-robin, one row per 1200 Hz tick, and
+     reports a changed cell in ROW order the instant it reaches that row --
+     not in the order the edges were applied.  The ctlsock module (and a real
+     browser typing through it) applies a Shift press and the character press
+     within the same ~6.7 ms full sweep.  L Shift is on ROW3 while most
+     letters/digits are on ROW0..ROW2, so the character's row is scanned first
+     and the guest sees the character MAKE before the Shift MAKE, registering
+     it unshifted.  Measured on the live station: `The`->`the`, `#`->`3`,
+     `JUMPED`->`JUMpeD`.  Intermittent -- it depends on where the round-robin
+     pointer sits when the two edges land.
+
+     Fix: buffer a sweep's make/break edges and flush them at scan_complete()
+     in a shift-correct order -- modifier makes, then character makes, then
+     character breaks, then modifier breaks -- preserving per-key order within
+     each class.  The sender always applies the modifier before the character
+     it shifts, so stabilising the order within the sweep is sufficient.
+
+  2. FAST BURSTS OVERFLOW THE 8-DEEP FIFO AND ARE DROPPED SILENTLY.  A shifted
+     character is up to 4 scancodes; util::fifo has WriteWrap=false, so once
+     full it discards new bytes.  Deepen the host FIFO to 256 so no realistic
+     typed burst overruns it.
+
+Neither is reproducible by clean, slow, one-key-at-a-time typing; both bite at
+normal typing cadence where Shift and the character overlap.
+
+--- a/src/mame/sony/news_hid.cpp
++++ b/src/mame/sony/news_hid.cpp
+@@ -140,22 +140,80 @@
+ 	out_irq<KEYBOARD>(false);
+ 	out_irq<MOUSE>(false);
+ 
++	m_key_pending.clear();
++
+ 	reset_key_state();
+ 	start_processing(attotime::from_hz(1'200));
+ }
+ 
++// The Shift/Control/Alt keys are LEVELS the guest tracks from make/break
++// scancodes; every other key is a CHARACTER. Ordering the two correctly
++// within a scan sweep (flush_keys) needs to tell them apart by matrix cell.
++bool news_hid_hle_device::key_is_modifier(u8 row, u8 column)
++{
++	return (row == 2 && column == 8)                      // Control (ROW2 bit8)
++		|| (row == 3 && column == 6)                      // L Shift (ROW3 bit6)
++		|| (row == 4 && (column == 2 || column == 3));    // R Shift / Alternate (ROW4 bit2/bit3)
++}
++
+ void news_hid_hle_device::key_make(u8 row, u8 column)
+ {
+ 	LOG("key_make row %d col %d\n", row, column);
+ 
+-	push_key((row << 4) | column);
++	// Buffer, don't push yet: flush_keys() at scan_complete() emits the
++	// sweep's edges in a shift-correct order.
++	m_key_pending.emplace_back(u8((row << 4) | column), key_is_modifier(row, column));
+ }
+ 
+ void news_hid_hle_device::key_break(u8 row, u8 column)
+ {
+ 	LOG("key_break row %d col %d\n", row, column);
+ 
+-	push_key(0x80 | (row << 4) | column);
++	m_key_pending.emplace_back(u8(0x80 | (row << 4) | column), key_is_modifier(row, column));
++}
++
++// Emit one scan sweep's buffered key edges into the host FIFO in an order the
++// guest can always read correctly.
++//
++// The base matrix scanner (device_matrix_keyboard_interface) samples the 8
++// ioport rows round-robin, one row per 1200 Hz tick, and reports a changed
++// cell the instant it reaches that row -- i.e. in ROW order, not the order the
++// keys were actually applied. The ctlsock input module (and a real browser
++// typing through it) applies a Shift press and the character press within the
++// same ~6.7 ms full sweep; because L Shift sits on ROW3 while most letters and
++// digits sit on ROW0..ROW2, the character's row is scanned first and the guest
++// receives the character MAKE before the Shift MAKE -- so it registers at the
++// wrong shift level (`The`->`the`, `#`->`3`, `JUMPED`->`JUMpeD`, measured on
++// the newsos station 2026-08-18). It is intermittent because it depends on
++// where the round-robin pointer happens to sit when the two edges land.
++//
++// The sender always applies the modifier press before the character press
++// (and the character release before the modifier release), so it is enough to
++// stabilise the ordering WITHIN a sweep. Emit in four passes:
++//   0: modifier makes   (Shift/Ctrl/Alt down -- level goes up first)
++//   1: character makes   (the shifted keys are now at the right level)
++//   2: character breaks  (release the character while the level still holds)
++//   3: modifier breaks   (level comes down last)
++// Insertion order is preserved within each pass, so independent characters in
++// the same sweep keep their relative order.
++void news_hid_hle_device::flush_keys()
++{
++	if (m_key_pending.empty())
++		return;
++
++	for (int pass = 0; pass < 4; pass++)
++	{
++		for (auto const &e : m_key_pending)
++		{
++			bool const is_break = (e.first & 0x80) != 0;
++			bool const is_mod = e.second;
++			int const cls = is_break ? (is_mod ? 3 : 2) : (is_mod ? 0 : 1);
++			if (cls == pass)
++				push_key(e.first);
++		}
++	}
++
++	m_key_pending.clear();
+ }
+ 
+ void news_hid_hle_device::push_key(u8 code)
+@@ -168,6 +226,9 @@
+ // HACK: abuse the keyboard row scanner to sample the mouse too
+ void news_hid_hle_device::scan_complete()
+ {
++	// flush this sweep's key edges in shift-correct order before sampling mouse
++	flush_keys();
++
+ 	// read mouse state
+ 	s16 const x = m_mouse_x_axis->read();
+ 	s16 const y = m_mouse_y_axis->read();
+--- a/src/mame/sony/news_hid.h
++++ b/src/mame/sony/news_hid.h
+@@ -8,6 +8,9 @@
+ 
+ #include "machine/keyboard.h"
+ 
++#include <utility>
++#include <vector>
++
+ class news_hid_hle_device
+ 	: public device_t
+ 	, public device_matrix_keyboard_interface<8U>
+@@ -41,6 +44,8 @@
+ 
+ private:
+ 	void push_key(u8 code);
++	void flush_keys();
++	static bool key_is_modifier(u8 row, u8 column);
+ 
+ 	template <news_hid_device Device> void out_irq(bool state);
+ 
+@@ -58,10 +63,20 @@
+ 
+ 	devcb_write_line::array<2> m_irq_out_cb;
+ 
+-	util::fifo<u8, 8> m_fifo[2];
++	// The keyboard host FIFO was 8 deep in the stock HLE; a fast typed burst
++	// (up to 4 scancodes per shifted character) overran it and the overflow
++	// was dropped silently (util::fifo WriteWrap=false), so long commands
++	// arrived with chunks missing. Deepen it well past any realistic burst.
++	util::fifo<u8, 256> m_fifo[2];
+ 	bool m_irq_enabled[2];
+ 	bool m_irq_out_state[2];
+ 
++	// One scan sweep's key make/break events, held until scan_complete() so
++	// they can be flushed in a shift-correct order (see flush_keys()). Each
++	// entry is the push_key() scancode (bit7 = break) paired with whether the
++	// key is a modifier (Shift/Control/Alt).
++	std::vector<std::pair<u8, bool>> m_key_pending;
++
+ 	// mouse state
+ 	s16 m_mouse_x;
+ 	s16 m_mouse_y;
