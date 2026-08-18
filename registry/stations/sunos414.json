@@ -27,15 +27,15 @@
     "actionMap": {
       "key": "sunos414",
       "value": {
-        "os": "SunOS 4.1.4 (SPARCstation 5)",
+        "os": "SunOS 4.1.4 (SPARCstation 5, sun4m)",
         "win": "qemu",
         "mouse": "openwindows-desktop",
-        "kbd": "term:cmdtool / telnet exec",
-        "kbd_reset": "Escape",
-        "kbd_note": "keyboard proof = suninstall/console echo and OpenWindows cmdtool; exec proof = labctl exec sunos414 \"uname -a\" over telnet_unix_e",
+        "kbd": "term:exec (labctl exec)",
+        "kbd_reset": null,
+        "kbd_note": "mouse is the OpenLook interaction (workspace menu, File Manager, window drags), framebuffer-proven. Keyboard-in-X does not work under QEMU sun4m (xnews grabs mouse only); use labctl exec sunos414 for captured shell commands.",
         "audio_trigger": null,
         "validated": false,
-        "note": "relative Sun serial mouse: cursor_scale 1.0 UNMEASURED (install phase). Foreign-arch TCG station on /opt/qemu-sparc (kernel-hive fork), like macos753/hpuxvue"
+        "note": "relative Sun serial mouse, cursor_scale 1.0 (operator eyeball pending). Non-priv guest autologs into OpenWindows via a console getty->login->~/.login->gallery-session; xnews must own the console tty (TT=console) or input is dead. Foreign-arch TCG station on /opt/qemu-sparc (kernel-hive fork). exec = telnet_unix_e over in-guest telnetd."
       }
     },
     "labctl": {
@@ -51,7 +51,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54147,
-      "notes": "exec = telnet_unix_e: labctl exec sunos414 runs a captured command over the guest's in-guest in.telnetd (SunOS 4.1.4 predates ssh; inetd runs telnetd, root has no password on a fresh suninstall), reached at 127.0.0.1:5947 via the SLIRP hostfwd the launcher re-adds on every start (client: /root/sunexec.py <- streamhost/guest-agents/sunos414/sunexec.py). No QMP-less exec before that; drive early boot via QMP (qmp-type.py). Requires the guest booted to multiuser: live once the loadvm golden restores the running system; at the bare OpenBIOS prompt there is no telnetd yet."
+      "notes": "OpenWindows 3 desktop as the unprivileged guest, restored via loadvm golden. Mouse works (framebuffer-proven); keyboard-in-X does not under QEMU sun4m. exec = telnet_unix_e: labctl exec sunos414 runs a captured command over the guest's in.telnetd at 127.0.0.1:5947 (launcher re-adds the SLIRP hostfwd each start; client /root/sunexec.py). No absolute pointer device exists on this hardware."
     }
   },
   "render": {
@@ -117,17 +117,12 @@
       "Mail Tool"
     ],
     "blurb": "Sun’s BSD-derived UNIX wearing OpenLook — the beveled, pinnable OpenWindows desktop Sun shipped before CDE won the toolkit war.",
-    "notes": "The other branch of Sun's desktop history next to the CDE solaris station: same vendor, same SPARC, OPEN LOOK instead of Motif. sun4m under TCG on a standalone qemu-system-sparc build."
+    "notes": "The other branch of Sun's desktop history next to the CDE solaris station: same vendor, same SPARC, OPEN LOOK instead of Motif. Auto-logs into OpenWindows as an unprivileged guest user; mouse-driven (keyboard-in-X is a known QEMU sun4m limitation). sun4m under TCG on a standalone qemu-system-sparc build; loadvm golden restore."
   },
   "notes": [
-    "dark launch 2026-08-18: slot 147/UDP 54147, install phase on camera at /os/sunos414",
-    "fsck.technology 'ISO' is a raw 2352-byte BIN — converted to 2048-byte sunos414.iso on the box (assets/sunos414/)"
+    "listed 2026-08-18: OpenWindows desktop as unprivileged guest, loadvm golden, mouse working (keyboard-in-X is a known QEMU sun4m limitation)",
+    "slot 147/UDP 54147; exec telnet_unix_e on 5947; fsck.technology 'ISO' is a raw 2352-byte BIN converted to 2048-byte sunos414.iso (assets/sunos414/)"
   ],
-  "listing": {
-    "state": "hidden",
-    "since": "2026-08-18",
-    "reason": "Dark launch: SunOS 4.1.4 is being installed live on this station from the sun4m install CD (the exhibit currently shows suninstall, not the OpenWindows desktop). List once the install completes, OpenWindows autostarts and the golden checkpoint is baked."
-  },
   "runtime": {
     "stationEnv": {
       "SH_STATION": "sunos414",
@@ -205,10 +200,10 @@
     "stationDir": "sunos414",
     "pointer": "rel",
     "touch": false,
-    "resetMode": "restart",
-    "snapshot": null,
-    "mouse": "UNVERIFIED",
-    "keyboard": "UNVERIFIED",
-    "fixture": "INSTALL PHASE — SunOS 4.1.4 suninstall booted from the sun4m install CD on qemu-system-sparc (SS-5, TCG) over the cg3 framebuffer. resetMode=restart re-runs the launcher only when QEMU is not live (ensure-station-qemu); the install disk is mutated in place, no golden yet. Dark launch: listing=hidden while the install runs on camera."
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "SKIP",
+    "fixture": "OpenWindows 3 desktop on SunOS 4.1.4 as the UNPRIVILEGED guest user (csh prompt sunos414%, File Manager on /export/home/guest): cmdtool console, File Manager, and the 'Introducing Your Sun Desktop' Help Viewer over the cg3 framebuffer at 1024x768x8 (SPARCstation 5 under TCG). Mouse PASS (motion + buttons + OpenLook workspace menu, framebuffer-proven 2026-08-18, survives loadvm restore). Keyboard-in-X is SKIP: xnews grabs the mouse but not the keyboard under QEMU sun4m (keys reach the kernel but not X clients); console + labctl exec keyboard both work. loadvm restores the logged-in desktop instantly; the guest starts frozen until the first visitor."
   }
 }

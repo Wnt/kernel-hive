@@ -76,6 +76,16 @@ License breakdown: CC BY-SA 4.0 (40), CC BY-SA 3.0 (33), CC BY 2.0 (30), CC BY-S
 | `02-atari-520st-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Atari_520ST_Tietokonemuseo.JPG) |
 | `03-atari-520st-2102314521.webp` | vonguard from Oakland, Nmibia | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Atari_520ST_(2102314521).jpg) |
 
+## aux
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-q8002.webp` | GeneralFreddy | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Q8002.jpg) |
+| `02-apple-mac-quadra-800.webp` | Unknown | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Apple_mac_quadra_800.jpg) |
+| `03-quadra-840av-macintosh-16-inch-color-display-appledesign-powered-speakers-apple-extended-keyboard-ii-apple-desktop-bus-mouse-ii.webp` | Gona.eu | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Quadra_840AV_%26_Macintosh_16-inch_Color_Display_%26_AppleDesign_Powered_Speakers_%26_Apple_Extended_Keyboard_II_%26_Apple_Desktop_Bus_Mouse_II.jpg) |
+| `04-macintosh-quadra-840av-logic-board-820-0382-10-661-1700.webp` | Gona.eu | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Macintosh_Quadra_840AV_logic_board_820-0382-10_(661-1700).jpg) |
+| `05-aux-system-manuals.webp` | Bill Woodcock | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:AUX_system_manuals.jpg) |
+
 ## bbcmicro
 
 | Image | Author | License | Source |
