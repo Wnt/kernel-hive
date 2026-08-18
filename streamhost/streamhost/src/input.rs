@@ -205,23 +205,53 @@ const HOME_SETTLE_MS: u64 = 250;
 /// (dx,dy) — no rounding drift, so tracking stays 1:1. A move that already fits
 /// in one step returns a single chunk (empty for a zero move), i.e. the common
 /// pointer-lock small-delta case is byte-identical to a bare `rel_motion`.
+#[cfg(test)]
 fn rel_chunks(dx: i32, dy: i32) -> Vec<(i32, i32)> {
-    if dx.abs() <= MAX_REL_STEP && dy.abs() <= MAX_REL_STEP {
+    rel_chunks_with(dx, dy, MAX_REL_STEP, 0)
+}
+
+/// Round `v` toward zero to a multiple of `q` (`q <= 1` = identity).
+fn quantize(v: i32, q: i32) -> i32 {
+    if q <= 1 {
+        v
+    } else {
+        v - v % q
+    }
+}
+
+/// `rel_chunks` with a per-station chunk cap and an optional QUANTUM: with
+/// `quantum > 1` every chunk delta is a multiple of `quantum` on both axes.
+/// The caller must then pass an already-quantized (dx,dy) — the sum stays exact
+/// because the last chunk absorbs the rounding of the intermediate targets.
+/// This is the A/UX shape: the guest moves exactly trunc(0.75 * units) px per
+/// event and accelerates above ~32 units, so 4-unit multiples in <=32-unit
+/// chunks make every send land where the model says.
+fn rel_chunks_with(dx: i32, dy: i32, max_step: i32, quantum: i32) -> Vec<(i32, i32)> {
+    let max_step = max_step.max(1);
+    if dx.abs() <= max_step && dy.abs() <= max_step {
         return if dx == 0 && dy == 0 {
             Vec::new()
         } else {
             vec![(dx, dy)]
         };
     }
-    let steps = (dx.abs().max(dy.abs()) + MAX_REL_STEP - 1) / MAX_REL_STEP;
+    let steps = (dx.abs().max(dy.abs()) + max_step - 1) / max_step;
     let steps = steps.max(1);
     let mut out = Vec::with_capacity(steps as usize);
     let (mut sent_x, mut sent_y) = (0i32, 0i32);
     for i in 1..=steps {
-        // Cumulative target at chunk i, then the incremental delta. Integer
-        // division here can never make a chunk exceed MAX_REL_STEP.
-        let tx = dx * i / steps;
-        let ty = dy * i / steps;
+        // Cumulative target at chunk i (rounded to the quantum, the final
+        // step being the exact total), then the incremental delta. Integer
+        // division here can never make a chunk exceed max_step by more than
+        // one quantum.
+        let (tx, ty) = if i == steps {
+            (dx, dy)
+        } else {
+            (
+                quantize(dx * i / steps, quantum),
+                quantize(dy * i / steps, quantum),
+            )
+        };
         let (cx, cy) = (tx - sent_x, ty - sent_y);
         sent_x = tx;
         sent_y = ty;
@@ -237,7 +267,13 @@ fn rel_chunks(dx: i32, dy: i32) -> Vec<(i32, i32)> {
 /// QNX / rel-station fix). A small delta is one un-paced send == `rel_motion`, so the
 /// pointer-lock direct-rel (type=4) small-delta path stays exactly 1:1.
 pub async fn rel_motion_bounded(cap: &Capture, dx: i32, dy: i32) {
-    let chunks = rel_chunks(dx, dy);
+    rel_motion_bounded_with(cap, dx, dy, MAX_REL_STEP, 0).await;
+}
+
+/// `rel_motion_bounded` with the station's chunk cap and quantum (see
+/// `rel_chunks_with`); the plain form is the default-station shape.
+pub async fn rel_motion_bounded_with(cap: &Capture, dx: i32, dy: i32, max_step: i32, quantum: i32) {
+    let chunks = rel_chunks_with(dx, dy, max_step, quantum);
     let n = chunks.len();
     for (i, (cx, cy)) in chunks.into_iter().enumerate() {
         rel_motion(cap, cx, cy).await;
@@ -429,6 +465,19 @@ async fn apply_move_abs(
                 st.ly = 0;
                 st.seeded = true;
                 (0, 0)
+            } else if cfg.rel_quantum > 1 {
+                // QUANTIZED bridge (SH_REL_QUANTUM): send only whole quanta and
+                // leave the remainder PENDING in the model — lx/ly advance by
+                // what was actually sent, not to the target — so a guest that
+                // truncates per event (A/UX: trunc(0.75 * units) px) never
+                // loses a fraction the model believed it moved. The residual
+                // is < one quantum (< 3 px on A/UX) and is made up as soon as
+                // the pointer moves on.
+                let dx = quantize(tx - st.lx, cfg.rel_quantum);
+                let dy = quantize(ty - st.ly, cfg.rel_quantum);
+                st.lx += dx;
+                st.ly += dy;
+                (dx, dy)
             } else {
                 let dx = tx - st.lx;
                 let dy = ty - st.ly;
@@ -441,7 +490,7 @@ async fn apply_move_abs(
         // large seed jump (origin -> target) or a fast drag never hits
         // the PS/2 per-send clamp and truncates (the rel-station fix). A
         // (0,0) delta yields no send, so this is a no-op when idle.
-        rel_motion_bounded(cap, dx, dy).await;
+        rel_motion_bounded_with(cap, dx, dy, cfg.rel_max_step, cfg.rel_quantum).await;
     }
 }
 
@@ -654,7 +703,10 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
-    use super::{calibrated_abs, home_pin, newer, rel_chunks, HOME_PIN, MAX_REL_STEP};
+    use super::{
+        calibrated_abs, home_pin, newer, quantize, rel_chunks, rel_chunks_with, HOME_PIN,
+        MAX_REL_STEP,
+    };
 
     // The pin is sent in guest DELTA UNITS but its invariant ("exceed the guest
     // surface") is stated in PIXELS, so it has to scale with the guest's own
@@ -732,6 +784,52 @@ mod tests {
             }
             assert_eq!((sx, sy), (dx, dy), "chunks must sum to the original delta");
         }
+    }
+
+    // Quantized chunking (A/UX): every chunk is a multiple of the quantum on
+    // both axes, no chunk exceeds the cap by more than one quantum, and the
+    // chunks still sum exactly to the (already-quantized) delta.
+    #[test]
+    fn rel_chunks_quantized_are_multiples_and_exact() {
+        for (dx, dy) in [
+            (400, 0),
+            (0, -804),
+            (1152, 868),
+            (-2048, -2048),
+            (36, -8),
+            (33, 0),
+        ] {
+            let chunks = rel_chunks_with(dx, dy, 32, 4);
+            let (mut sx, mut sy) = (0i32, 0i32);
+            for (cx, cy) in &chunks {
+                assert_eq!(cx % 4, 0, "chunk dx {cx} not a quantum multiple");
+                assert_eq!(cy % 4, 0, "chunk dy {cy} not a quantum multiple");
+                assert!(
+                    cx.abs() <= 36 && cy.abs() <= 36,
+                    "chunk ({cx},{cy}) exceeds cap+quantum"
+                );
+                sx += cx;
+                sy += cy;
+            }
+            assert_eq!((sx, sy), (dx, dy));
+        }
+        // quantum 0/1 and the default cap == the historical chunker, byte for byte
+        for (dx, dy) in [(2000, 0), (1000, -37), (5, -3), (0, 0)] {
+            assert_eq!(rel_chunks_with(dx, dy, MAX_REL_STEP, 0), rel_chunks(dx, dy));
+            assert_eq!(rel_chunks_with(dx, dy, MAX_REL_STEP, 1), rel_chunks(dx, dy));
+        }
+    }
+
+    // The quantizer rounds toward zero so the pending remainder always has the
+    // sign of the motion still owed.
+    #[test]
+    fn quantize_rounds_toward_zero() {
+        assert_eq!(quantize(7, 4), 4);
+        assert_eq!(quantize(-7, 4), -4);
+        assert_eq!(quantize(8, 4), 8);
+        assert_eq!(quantize(3, 4), 0);
+        assert_eq!(quantize(9, 0), 9);
+        assert_eq!(quantize(-9, 1), -9);
     }
 
     // ---- cseq: the client's statement of what it sent first ----------------

@@ -4,7 +4,7 @@ subtitle: 1993 · Apple's own System V Unix, wearing the Macintosh Finder
 hero: /posters/aux/desktop.webp
 images:
   - src: /posters/aux/desktop.webp
-    alt: The A/UX 3.0.1 desktop at 1152×870 — a Macintosh menu bar reading File, Edit, Window, Fonts, Commands, Preferences, Keys; a CommandShell window top-left with a "WELCOME TO A/UX" banner, a directory listing of / and a "localhost.root #" prompt; the Unix root "/" and "MacPartition" disk icons top-right; the Trash bottom-right
+    alt: The A/UX 3.0.1 desktop at 1152×870 — a Macintosh menu bar reading File, Edit, Window, Fonts, Commands, Preferences, Keys; a CommandShell window top-left with a "WELCOME TO A/UX" banner, `uname -a`, the date, a fortune and a "localhost.root #" prompt; the Unix root "/" and "MacPartition" disk icons top-right; the Trash bottom-right
     caption: A Unix root prompt in a Macintosh window, with the Unix root directory sitting on the desktop as a disk. That is the whole idea of A/UX in one screen.
 ---
 ## Origins
@@ -21,7 +21,7 @@ The machine is a **Quadra 800** — a 33 MHz 68040 tower from 1993, the same emu
 
 ## What you're looking at
 
-A/UX 3.0.1 booted to its desktop on an emulated Quadra 800 at 1152×870, logged in as root. The window top-left is **CommandShell** — a Bourne shell in a Macintosh window, showing the system's welcome banner and a listing of `/`. The disk icon named `/` top-right *is* the Unix root filesystem, browsable in the Finder like any Macintosh volume; `MacPartition` is the small HFS volume that holds A/UX Startup, the Mac program that boots the Unix kernel. Type into the shell, or open folders in the Finder — it is the same filesystem either way.
+A/UX 3.0.1 booted to its desktop on an emulated Quadra 800 at 1152×870, logged in as root. The window top-left is **CommandShell** — a Bourne shell in a Macintosh window, showing the system's welcome banner, `uname -a` and a fortune (the BSD games are installed, along with QuickTime, the manual pages and networking). The disk icon named `/` top-right *is* the Unix root filesystem, browsable in the Finder like any Macintosh volume; `MacPartition` is the small HFS volume that holds A/UX Startup, the Mac program that boots the Unix kernel. Type into the shell, or open folders in the Finder — it is the same filesystem either way.
 
 ## Legacy
 
