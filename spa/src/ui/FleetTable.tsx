@@ -248,7 +248,7 @@ export function FleetTable() {
           <thead>
             <tr>
               {COLUMNS.map((c) => (
-                <th key={c.key} scope="col" title={c.title} aria-sort={sortKey === c.key ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'}>
+                <th key={c.key} scope="col" className={`fleet-col-${c.key}`} title={c.title} aria-sort={sortKey === c.key ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                   <button type="button" className={`fleet-sort${sortKey === c.key ? ' active' : ''}`} onClick={() => onSort(c.key)}>
                     {c.label}{sortKey === c.key ? (sortDir === 1 ? ' ▲' : ' ▼') : ''}
                   </button>
