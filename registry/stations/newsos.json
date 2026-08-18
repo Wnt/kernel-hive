@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "id": "newsos",
+  "era_year": 1991,
+  "stationDir": "newsos",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 62,
+        "prelude": "",
+        "value": {
+          "key": "newsos",
+          "script": "tiles/newsos.sh",
+          "outputDir": "newsos",
+          "class": "graphical",
+          "estimated": "~2-3h",
+          "automation": "vision",
+          "produces": "host-native MAME nws3260 (news_r3k) + NEWS-OS 4.1R disk image (MO-kit install, X at boot on the 1120x780 LCD)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "newsos",
+      "value": {
+        "os": "NEWS-OS 4.1R (Sony NWS-3260)",
+        "win": "mame",
+        "mouse": "x-desktop",
+        "kbd": "term:xterm",
+        "kbd_reset": "Escape",
+        "kbd_note": "sxdm login on the LCD; xterm from the root menu is the keyboard proof",
+        "audio_trigger": null,
+        "validated": false,
+        "note": "HOST-NATIVE MAME nws3260 (drawshm 1120x780 mono LCD, ctlsock keys via generated keymap). No save-state in the driver: reset=relaunch cold-boots the installed disk. Pointer TBD (hid mouse axes exist; ctlsock ptr path not wired yet)."
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/newsos",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54148,
+      "notes": "HOST-NATIVE: MAME 0.289 nws3260 runs on the host, no QEMU/QMP, no exec channel. Frames drawshm->shm, keys ctlsock + newsos.keymap. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (driver has no save state) reboots the installed NEWS-OS 4.1R disk. DARK LAUNCH: listing=hidden while the install runs on camera; SH_IDLE_PAUSE_SECS=0 until the disk is installed."
+    }
+  },
+  "render": {
+    "stationsManifestOrder": 60,
+    "bindingOrder": 67,
+    "goldenOrder": 60,
+    "bringUpGroup": 7,
+    "signalOrder": 62,
+    "actionMapOrder": 34,
+    "stationsManifestPrelude": "\n# newsos (slot 148) — Sony NEWS-OS 4.1R on an NWS-3260 (MIPS R3000, 1120x780\n#   mono LCD) in HOST-NATIVE MAME 0.289 (news_r3k.cpp; drawshm frames, ctlsock\n#   keys). No save state in the driver: reset=relaunch cold-boots the installed\n#   disk. DARK LAUNCH: listing=hidden while the install runs on camera.\n",
+    "bindingPrelude": ""
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54148,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "mamesock",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 148
+  },
+  "guestDoc": "docs/guests/newsos.md",
+  "credentialsRef": "guest/newsos",
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#7a6f9b",
+    "eraLabel": "1991 · NEWS-OS 4.1R — Sony NWS-3260"
+  },
+  "museum": {
+    "id": "newsos",
+    "displayName": "NEWS-OS 4.1R",
+    "year": 1991,
+    "lineage": "Sony NEWS-OS (4.3BSD-derived Unix)",
+    "arch": "MIPS R3000A, 20 MHz, 16 MB",
+    "ramMB": 16,
+    "era": "1990s",
+    "accent": "#7a6f9b",
+    "eraSoftware": [
+      "NEWS-OS 4.1R (4.3BSD)",
+      "X11R4 + NEWS Desk",
+      "sxdm display manager",
+      "Sony NEWS Japanese input (sj2/3)"
+    ],
+    "periodBrowser": "none — pre-web (Mosaic arrives 1993)",
+    "iconicApps": [
+      "NEWS Desk",
+      "xterm",
+      "twm"
+    ],
+    "blurb": "Sony's NEWS workstations were Japan's answer to Sun: BSD Unix on MIPS with an X11 desktop, sold to universities and research labs across Japan. The NWS-3260 was the portable of the line — a 1120x780 monochrome LCD folded over an R3000.",
+    "notes": "Host-native MAME 0.289 nws3260 (news_r3k.cpp, working driver with a real LCD framebuffer) — chosen over the nws5000x the candidate doc first named, which has no local framebuffer. NEWS-OS 4.1R from the nwf_672rb MO kit (the 4.2.1aRD CD is NWS-5000-only). Sourced media and ROMs recorded in docs/guests/newsos.md."
+  },
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "newsos",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":63",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/newsos/newsos_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/newsos/fb.shm",
+      "SH_PORT": "54148",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/newsos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/newsos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 148,
+    "bringUpOrder": 67,
+    "x11": {
+      "display": ":63",
+      "geometry": "1120x780x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "newsos",
+        "--udp",
+        "54148",
+        "--x11",
+        "--x11-display",
+        ":63",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/newsos/newsos.keymap",
+        "--env-append-file",
+        "$T/newsos/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/newsos/newsos.keymap",
+        "streamhost/stations/newsos/station.env.fixture"
+      ]
+    }
+  },
+  "listing": {
+    "state": "hidden",
+    "since": "2026-08-18",
+    "reason": "Dark launch: NEWS-OS 4.1R is being installed on camera at /os/newsos; the row is hidden from the grid and the hall until the installed disk boots to sxdm and the operator has eyeballed it."
+  },
+  "reset": {
+    "stationDir": "newsos",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "NEWS-OS 4.1R on the NWS-3260 LCD (1120x780 mono) at the sxdm login / X desktop; relaunch cold-boots the installed disk (no save state in the driver). Keyboard PASS = the ROM monitor and the installer TUI answered typed text over ctlsock, framebuffer-proven 2026-08-18."
+  }
+}
