@@ -68,6 +68,19 @@ borrowed daemon), `t.sh <wait> "text\n" | --keys …` (QMP typing + screendump),
    (`sunos 4.1.4 sun4m media`). Form UI: `x` selects, RET ends a text field,
    `^F`/`^B` move; the trailing `[y/n]?` prompt only takes input once the
    cursor is past the last field.
+8. **`Versatec` cannot be extracted from this disc** (`/usr/etc/install/tar/
+   export/exec/sun4_sunos_4_1_4/versatec: cannot extract file`, then an
+   endless "mount volume 1" loop). Both fsck.technology copies are
+   byte-identical, so it is the press, not the transfer. Ctrl-C, re-run
+   `suninstall` (host/disk data survive as `+`), software → edit existing
+   release → choice **own choice** → answer `y` to every category except
+   `Versatec` (a plotter driver nobody misses). Everything else re-extracts.
+9. Station dir on the box created by `box-deploy --apply` (launcher) +
+   `station.env`/`ROLLBACK.md` from a scratch emit of
+   `streamhost/scripts/streamhost-station.sh` with the row's `emitArgs`
+   (`registry/local.env` supplies the real IPs) + `labctl gen`. The unit is
+   left stopped while the sandbox rig owns UDP 54147; the switch happens when
+   the installed disk moves into the station dir.
 
 ## Golden, input, and rollback
 
