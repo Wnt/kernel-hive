@@ -124,6 +124,19 @@ QEMU fork (11.0.2 + fast-poll) into **`/opt/qemu-rhapsody`**, like
     (QEMU `tulip`) is the alternative.
   - Save → the graphical **Install Rhapsody** package picker (Essentials
     104 MB + all Other Packages = 384 MB) → Install.
+- Setup Assistant (after the first disk boot on the final device set): USA
+  keyboard; LAN, manual IP **10.0.2.15/24**, router **10.0.2.2**, DNS
+  **10.0.2.3** (slirp), hostname `rhapsody`; no NetInfo; time zone "Turkey"
+  (the EET band — Helsinki is not in DR2's list); no NTP; date left at the
+  kernel's May-1998 default; local user **guest** with **autologin**; root
+  password set (credentials: `guest/rhapsody` in the private store).
+- Shutdown from the desktop: File → Log Out → **Power Off** ("It's safe to
+  turn off the computer"), then kill QEMU by pidfile. A pristine copy of the
+  installed disk (before any golden) is at
+  `/data/vms/build/Rhapsody/rhapsody-installed-pristine.qcow2`; the three media
+  `.gz` are in the media cache (`media_cache_put`, labels
+  `rhapsody-5.1-{boot-floppy,drivers-floppy,install-cd}`), so the builder's
+  media phase is a cache hit.
 - Pointer facts (measured with QMP `mouse_move` + screendump diffs):
   **1 unit → 0.478 px** in both axes (`SH_CURSOR_SCALE=2.09`); the guest's
   PS/2 driver decodes garbage (sign flips, jumps to the far corner) when
