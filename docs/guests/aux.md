@@ -26,7 +26,7 @@ archived on any reachable hub (archive.org, Macintosh Garden, Macintosh
 Repository all stop at 3.0.1 + the 3.1 updater); the target is therefore
 **3.0.1, then the 3.1 update**.
 
-## Install recipe (what has been proven so far)
+## Install recipe (proven so far — 2026-08-18)
 
 **The CD is not ROM-bootable, and the floppy is not usable.** The ISO's HFS
 volume (`A/UX CDInstall`, blocks 96–41055) has its boot-block header zeroed
@@ -34,49 +34,93 @@ volume (`A/UX CDInstall`, blocks 96–41055) has its boot-block header zeroed
 Descriptor Map lists **zero drivers**, so the Quadra ROM never loads a driver
 from it and shows the blinking floppy. Patching the boot-block header (`LK`,
 `bra +0x86`, `0x4418`) and adding a DDM entry for the `Apple_Driver`
-partition at block 64 did **not** help — that partition entry carries no
-`pmBootAddr`/`pmBootEntry`/checksum, so the ROM rejects the driver. On real
-hardware the answer was the Installation Boot Disk; under QEMU the q800
-`swim-drive` exists but the ROM does not boot from it (still the blinking
-floppy with the raw 1440K image attached).
+partition at block 64 did **not** help (the entry has no
+`pmBootAddr`/`pmBootEntry`/checksum; note the A/UX HD SC Setup itself writes
+DDM `(64, 11, 1)` for the same driver — untested with 11). On real hardware
+the answer was the Installation Boot Disk; under QEMU the q800 `swim-drive`
+exists but the ROM does not boot from it (still the blinking floppy with the
+raw 1440K image attached). The floppy's contents (`strings`) show it is just
+an "A/UX Installer Startup" — A/UX Startup with an `installer#` prompt and
+the CD's `bin:` in its path — so nothing on it is needed once A/UX Startup
+runs from elsewhere.
 
-**What works: a helper Mac OS disk.** A copy of macos753's System 7.5.3 disk
-(`qemu-img convert -U` — the live station holds a write lock, so a backing
-file is refused) at SCSI 5, PRAM boot device 5, target disk at SCSI 6, CD at
-SCSI 3. Mac OS mounts the CD's HFS partition in the Finder; it contains
-`A/UX Startup`, `Apple HD SC Setup` (v3.0.1 A/UX), `bin/`, `System Folder`,
-`MacInstallFiles`.
+**Two more traps, both cost an hour:**
 
-Steps, all driven through QMP with `adb_pointer.py` (select icon by clicking
-its **label**, then Cmd-O; a click on the icon art often does not select):
+- **`A/UX Startup` will not run under System 7.5.3** ("Standalone program
+  space is too small (=5546420) … the system heap is too big"). It needs the
+  minimal System that ships on the CD's HFS volume — so the helper only serves
+  to partition the disk and copy that System Folder + `A/UX Startup` onto
+  `MacPartition`; the machine then boots from `MacPartition` (SCSI 0).
+- **A/UX Startup's standalone SCSI reader hangs on a `scsi-cd`, and on a
+  read-only `scsi-hd`.** `ls (3,0,0)/` and `launch` both hang forever (no
+  I/O, 110 % CPU) with the ISO as `-device scsi-cd` or as
+  `scsi-hd,…,read-only=on`; the SCSI 0 disk reads fine. Presenting the ISO as
+  a **writable `scsi-hd` through a qcow2 overlay**
+  (`qemu-img create -f qcow2 -b AUX_3.0.1_Install.iso -F raw cd-overlay.qcow2`)
+  makes `ls (3,0,0)/` list the CD's Unix root instantly. Recreate the overlay
+  after any unclean kill — the CD root is UFS and fsck otherwise asks
+  `SALVAGE?` for every cylinder group.
 
-1. `Apple HD SC Setup` → `Next` to SCSI Device 6 → `Initialize` → `Init` →
-   volume name `MacPartition` (the A/UX convention). On a **128 MB** image the
-   verify+init took ~4 min. Quit **restarts the machine**.
+**What works** (helper System 7.5.3 disk = `qemu-img convert -U` copy of
+macos753's golden disk — the live station holds a write lock, so a backing
+file is refused; at SCSI 5, PRAM boot device 5; A/UX target at **SCSI 0**;
+CD overlay at SCSI 3). Driven through QMP with `adb_pointer.py` — click the
+icon **label** then Cmd-O (clicks on icon art often do not select), and
+**move the mouse before clicking after typing**: Mac OS hides the cursor
+while you type and the closed-loop tracker then aims blind.
+
+1. Helper Finder: open the CD, `Apple HD SC Setup` (v3.0.1 A/UX) → `Next` to
+   SCSI Device 0 → `Initialize` → `Init` → name `MacPartition`. Do this on a
+   **128 MB** image (~4 min incl. the surface verify); Quit restarts the Mac.
 2. Host-side: grow the qcow2 to 1000 MB and extend the Apple Partition Map
-   (`sbBlkCount`, the `Apple_Free` entry) so HD SC Setup's *Partition…* sees the
-   room — the same trick as macos753, applied **before** the A/UX partitioning
-   so HD SC Setup itself writes the A/UX slices (their block-zero-blocks are
-   not something to hand-craft).
-3. `Partition…` → A/UX layout (root&usr, swap, MacPartition), then
-   `A/UX Startup` from the CD to boot the installer kernel from the CD's
-   `UNIX Root&Usr slice 0` and install.
-
-Steps 2–3 are in progress; see the install log below.
+   (`sbBlkCount`, the `Apple_Free` entry's block count + data count) so
+   HD SC Setup's *Partition…* sees the room — the macos753 trick, applied
+   **before** the A/UX partitioning so HD SC Setup itself writes the A/UX
+   slices and their block-zero-blocks.
+3. `Partition…` → *Custom* → click the gray area → `UNIX Root&Usr slice 0`,
+   900000 K → OK → *Continue* on the "file system will not be created under
+   Mac OS" warning → click the remaining gray → `UNIX Swap slice 1`, the rest
+   (~104469.5 K). Done. Quit.
+4. In the CD window Cmd-A, drag everything into the `MacPartition` window
+   (218 items, ~1 min). Special → Shut Down (QEMU exits). Relaunch booting
+   SCSI 0: the CD's minimal System comes up (the startup-item alias to the CD
+   fails harmlessly — this System has no CD-ROM extension).
+5. Open `A/UX Startup` on MacPartition → `startup#`. `launch -v (3,0,0)/unix`
+   says "Board id 54 not found in slot 9 … does not match the boards present";
+   **`launch -v (3,0,0)/newunix`** (autoconfig kernel) boots A/UX 3.0.1 from
+   the CD's root slice straight to the A/UX Finder (root, no login).
+6. `/mac/bin/CommandShell` → `localhost.root #`. The CD's **slice 6**
+   ("Free UNIX slice 6", `c3d0s6`, 145 MB) is the **pristine A/UX 3.0.1
+   root+usr** (RELEASE_ID 3.0.1, `ARCHIVES/` of optional packages, `syschk`),
+   its `/etc/fstab` naming `/dev/dsk/c0d0s0`. There is no separate installer
+   program on this CD; the install is a copy:
+   `newfs -v /dev/rdsk/c0d0s0 other` (device type from `/etc/disktab`;
+   921.6 MB UFS), `mount /dev/dsk/c3d0s6 /mnt; mkdir /mnt2; mount
+   /dev/dsk/c0d0s0 /mnt2; cd /mnt; find . -print | cpio -pdmu /mnt2`.
+7. (next) verify fstab on the new root, then A/UX Startup on MacPartition:
+   `launch -v` (root device (0,0,0), the default) → first boot from disk;
+   then the 3.1 update, X11/MacX, autologin, checkpoint.
 
 ## Install log
 
 - 2026-08-18 ~09:00Z: rig up, `/os/aux` streaming (overlay). Blinking floppy
   from CD; boot-block/DDM patches and floppy attempts fail (above).
 - ~09:20Z: helper System 7.5.3 disk boots; CD mounts; HD SC Setup initialises
-  SCSI 6 (128 MB) as `MacPartition`.
+  the target (128 MB) as `MacPartition`; grown to 1000 MB host-side; A/UX
+  slices laid out (root&usr 900000 K, swap the rest).
+- ~09:50Z: A/UX Startup refuses under 7.5.3; CD System + Startup copied to
+  MacPartition; boot from it; `launch` hangs (scsi-cd) — 40 min lost.
+- ~10:35Z: writable overlay fixes it; `launch -v (3,0,0)/newunix` boots A/UX
+  3.0.1 to the Finder; kernel console on camera. Disk moved to SCSI 0.
+- ~11:10Z: `newfs` root; cpio of slice 6 running.
 
 ## Device set (station launcher, `streamhost/stations/aux/qemu-streamhost.sh`)
 
-Identical to macos753's, plus `-serial unix:$D/serial.sock` (A/UX can run a
+macos753's device set with the A/UX disk at **SCSI 0** (`c0d0s0` root, `c0d0s1`
+swap, MacPartition boot), plus `-serial unix:$D/serial.sock` (A/UX can run a
 getty on the modem port — the future `labctl exec` channel) and, **install
-phase only**, the helper disk at SCSI 5 and the CD at SCSI 3. The checkpoint
-will be baked without helper and CD.
+phase only**, the helper disk at SCSI 5 and the CD as a writable `scsi-hd`
+overlay at SCSI 3. The checkpoint will be baked without helper and CD.
 
 ## Pointer / keyboard
 

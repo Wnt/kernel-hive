@@ -153,9 +153,9 @@
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
         "-drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd",
-        "-device scsi-hd,scsi-id=6,drive=hd0",
+        "-device scsi-hd,scsi-id=0,drive=hd0",
         "-drive file=$D/aux-golden.qcow2,format=qcow2,cache=writeback,aio=threads,if=none,id=hd0",
-        "INSTALL PHASE ONLY: -device scsi-hd,scsi-id=5 helper.qcow2 (System 7.5.3) + -device scsi-cd,scsi-id=3 AUX_3.0.1_Install.iso",
+        "INSTALL PHASE ONLY: -device scsi-hd,scsi-id=5 helper.qcow2 (System 7.5.3) + -device scsi-hd,scsi-id=3 cd-overlay.qcow2 (writable overlay over AUX_3.0.1_Install.iso; scsi-cd hangs A/UX Startup)",
         "-serial unix:$D/serial.sock,server=on,wait=off",
         "-loadvm golden -S (when the checkpoint exists)",
         "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
@@ -174,7 +174,7 @@
     "snapshot": null,
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "INSTALL PHASE — A/UX 3.0.1 being installed on camera: helper System 7.5.3 disk (SCSI 5) + A/UX install CD (SCSI 3) + 1000M target (SCSI 6) on qemu-system-m68k q800 (TCG). resetMode=restart re-runs the launcher only when QEMU is not live; no golden yet. Dark launch: listing=hidden."
+    "fixture": "INSTALL PHASE — A/UX 3.0.1 being installed on camera: helper System 7.5.3 disk (SCSI 5) + A/UX install CD as a writable scsi-hd overlay (SCSI 3) + 1000M target (SCSI 0) on qemu-system-m68k q800 (TCG). resetMode=restart re-runs the launcher only when QEMU is not live; no golden yet. Dark launch: listing=hidden."
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
