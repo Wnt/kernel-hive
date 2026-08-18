@@ -374,6 +374,13 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'SONY NEWS NWS-3260', spec: 'R3000A 20MHz • NEWS-OS 4.1R • 1991',
     kit: 'workstation',
   },
+  // sunos414: SPARCstation 5 — Sun's light warm-grey pizza box with the
+  // purple Sun badge; the accent is the registry's OPEN LOOK violet.
+  sunos414: {
+    caseTint: '#cfcbc0', accentTint: '#7c3aed', tintMix: 0.28,
+    badge: 'SUN SPARCSTATION 5', spec: 'microSPARC-II 70MHz • SUNOS 4.1.4 • 1994',
+    kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

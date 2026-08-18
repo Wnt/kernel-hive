@@ -1,65 +1,214 @@
 {
   "schemaVersion": 1,
   "id": "sunos414",
-  "era_year": 2026,
+  "era_year": 1994,
   "stationDir": "sunos414",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "lifecycle": "production",
+  "enabled": true,
   "build": {
     "rows": [
       {
-        "order": 62,
+        "order": 63,
         "prelude": "",
         "value": {
           "key": "sunos414",
           "script": "tiles/sunos414.sh",
           "outputDir": "Sunos414",
-          "class": "fast",
-          "estimated": "~2-5m",
-          "automation": "full",
-          "produces": "TODO",
+          "class": "graphical",
+          "estimated": "~2-4h",
+          "automation": "vision",
+          "produces": "sunos414-golden.qcow2 + checkpoint (SunOS 4.1.4 -> OpenWindows 3 desktop over cg3, 1024x768x8)",
           "flags": []
         }
       }
     ]
   },
-  "operator": {},
-  "render": {},
+  "operator": {
+    "actionMap": {
+      "key": "sunos414",
+      "value": {
+        "os": "SunOS 4.1.4 (SPARCstation 5)",
+        "win": "qemu",
+        "mouse": "openwindows-desktop",
+        "kbd": "term:cmdtool",
+        "kbd_reset": "Escape",
+        "kbd_note": "INSTALL PHASE: keyboard proof is suninstall's forms echoing keystrokes; OpenWindows cmdtool once installed",
+        "audio_trigger": null,
+        "validated": false,
+        "note": "relative Sun serial mouse: cursor_scale 1.0 UNMEASURED (install phase). Foreign-arch TCG station on /opt/qemu-sparc (kernel-hive fork), like macos753/hpuxvue"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/sunos414",
+      "qmp": "/data/vms/streamhost/stations/sunos414/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54147,
+      "notes": "INSTALL PHASE (dark launch). No exec channel yet: the installer runs on the cg3 framebuffer; ttya is on the QEMU serial socket for a future getty. Drive it via QMP (qmp-type.py) or the browser."
+    }
+  },
+  "render": {
+    "stationsManifestOrder": 61,
+    "bindingOrder": 68,
+    "goldenOrder": 61,
+    "bringUpGroup": 7,
+    "signalOrder": 63,
+    "actionMapOrder": 35,
+    "stationsManifestPrelude": "\n# sunos414 (slot 147) — SunOS 4.1.4 / OpenWindows 3 on a SPARCstation 5 (sun4m):\n#   qemu-system-sparc from the kernel-hive QEMU fork, installed to /opt/qemu-sparc\n#   (pve-qemu ships no sparc target). TCG only, no KVM. cg3 framebuffer (SunOS\n#   has no TCX driver), 64 MB (256 traps at boot), sd0=SCSI 3, sr0=SCSI 6 with\n#   512-byte CD blocks. RELATIVE Sun serial mouse (dbus-rel). DARK LAUNCH:\n#   listing=hidden while the install runs on camera; SH_IDLE_PAUSE_SECS=0 until\n#   the golden exists.\n",
+    "bindingPrelude": ""
+  },
   "stream": {
-    "transport": "showcase",
+    "transport": "streamhost",
     "udpPort": 54147,
-    "slot": 147,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
     "pointer": {
-      "transport": "none",
-      "method": "none",
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-ps2-relative",
       "absolute": false,
-      "present": false,
-      "device": "none",
+      "present": true,
+      "device": "sun-serial-mouse",
       "scale": 1.0,
       "offset": [
         0,
         0
       ]
-    }
+    },
+    "slot": 147
   },
   "guestDoc": "docs/guests/sunos414.md",
   "credentialsRef": "guest/sunos414",
   "spa": {
     "archetypeId": "sparc-pizzabox",
-    "transport": "showcase",
-    "accentColor": "#64748b",
-    "eraLabel": "TBD · sunos414"
+    "transport": "streamhost",
+    "accentColor": "#7c3aed",
+    "eraLabel": "1994 · SunOS 4.1.4 — OpenWindows",
+    "pointerRel": true
   },
   "museum": {
     "id": "sunos414",
-    "displayName": "sunos414",
-    "year": 2026,
-    "lineage": "TODO",
-    "arch": "TODO",
-    "accent": "#64748b"
+    "displayName": "SunOS 4.1.4 / OpenWindows",
+    "year": 1994,
+    "lineage": "SunOS (BSD Unix)",
+    "arch": "SPARC",
+    "ramMB": 64,
+    "era": "1990s",
+    "accent": "#7c3aed",
+    "eraSoftware": [
+      "OpenWindows 3.0",
+      "olwm",
+      "cmdtool",
+      "File Manager"
+    ],
+    "periodBrowser": "none (pre-web workstation)",
+    "iconicApps": [
+      "OpenWindows Workspace",
+      "cmdtool",
+      "File Manager",
+      "Mail Tool"
+    ],
+    "blurb": "Sun’s BSD-derived UNIX wearing OpenLook — the beveled, pinnable OpenWindows desktop Sun shipped before CDE won the toolkit war.",
+    "notes": "The other branch of Sun's desktop history next to the CDE solaris station: same vendor, same SPARC, OPEN LOOK instead of Motif. sun4m under TCG on a standalone qemu-system-sparc build."
   },
   "notes": [
-    "new-os Tier 1 scaffold; reserved slot 147/UDP 54147",
-    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-  ]
+    "dark launch 2026-08-18: slot 147/UDP 54147, install phase on camera at /os/sunos414",
+    "fsck.technology 'ISO' is a raw 2352-byte BIN — converted to 2048-byte sunos414.iso on the box (assets/sunos414/)"
+  ],
+  "listing": {
+    "state": "hidden",
+    "since": "2026-08-18",
+    "reason": "Dark launch: SunOS 4.1.4 is being installed live on this station from the sun4m install CD (the exhibit currently shows suninstall, not the OpenWindows desktop). List once the install completes, OpenWindows autostarts and the golden checkpoint is baked."
+  },
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "sunos414",
+      "SH_QMP": "/data/vms/streamhost/stations/sunos414/qmp.sock",
+      "SH_PORT": "54147",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/sunos414/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/sunos414/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "bringUpOrder": 68,
+    "vmidLabel": 147,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "sunos414",
+        "--vmid",
+        "147",
+        "--udp",
+        "54147",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/sunos414/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/sunos414/station.env.fixture"
+      ],
+      "deviceSetId": "sunos414-ss5-cg3-64mb",
+      "launcher": "streamhost/stations/sunos414/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/sunos414/station.env.fixture",
+      "binary": "/opt/qemu-sparc/bin/qemu-system-sparc",
+      "machine": "SS-5",
+      "accel": "tcg",
+      "cpu": "sparc",
+      "memoryMB": 64,
+      "smp": 1,
+      "vga": "cg3",
+      "deviceSetSummary": [
+        "/opt/qemu-sparc/bin/qemu-system-sparc -L /opt/qemu-sparc/share/qemu",
+        "-name streamhost-sunos414",
+        "-M SS-5 -accel tcg -m 64 -vga cg3",
+        "-display dbus,p2p=on,audiodev=snd0 -audiodev dbus,id=snd0,...",
+        "-drive if=none,id=hd0,file=$D/sunos414-golden.qcow2,format=qcow2 -device scsi-hd,scsi-id=3,drive=hd0",
+        "-drive if=none,id=cd0,media=cdrom,file=$A/sunos414.iso -device scsi-cd,scsi-id=6,drive=cd0,physical_block_size=512 (always attached; -boot d only in the install shape)",
+        "-net nic,model=lance -net user",
+        "-serial unix:$D/serial.sock,server=on,wait=off",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "install phase: tracked verbatim launcher IS the deployed launcher; the device set is pinned now so the eventual checkpoint is baked with it"
+      }
+    }
+  },
+  "reset": {
+    "stationDir": "sunos414",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "restart",
+    "snapshot": null,
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "INSTALL PHASE — SunOS 4.1.4 suninstall booted from the sun4m install CD on qemu-system-sparc (SS-5, TCG) over the cg3 framebuffer. resetMode=restart re-runs the launcher only when QEMU is not live (ensure-station-qemu); the install disk is mutated in place, no golden yet. Dark launch: listing=hidden while the install runs on camera."
+  }
 }

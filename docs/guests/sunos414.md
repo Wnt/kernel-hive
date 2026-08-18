@@ -40,7 +40,7 @@ borrowed daemon), `t.sh <wait> "text\n" | --keys …` (QMP typing + screendump),
 
 1. **The fsck.technology "ISO" is a raw 2352-byte/sector BIN** (sync + MSF
    header per sector; 160790 × 2352 = 378 178 080). OpenBIOS found no boot
-   block on it. Stripped to 2048-byte sectors → `sunos414.iso` (329 297 920 B);
+   block on it. Stripped to 2048-byte sectors → `sunos414.iso` (329 297 920 B, sha256 `7b9b092a63bf5dde9f09eea25614c6da58e5c065758a8c24b96be1574bcaa0c8`);
    sector 0 then carries a valid Sun label (magic `dabe`): a = whole disc,
    b–f = five 16 MB per-architecture boot/miniroot partitions.
 2. `-m 256` → kernel dies with `Trap 0x29 (Data Access Error)` right after

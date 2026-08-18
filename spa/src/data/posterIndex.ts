@@ -162,6 +162,9 @@ const POSTER_INDEX = {
   "star": {
     "hero": "/posters/star/desktop.webp"
   },
+  "sunos414": {
+    "hero": "/posters/sunos414/desktop.webp"
+  },
   "templeos": {
     "hero": "/posters/templeos/desktop.webp"
   },
