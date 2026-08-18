@@ -150,7 +150,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54145,
-      "notes": "INSTALL PHASE (dark launch). No exec channel yet; the CommandShell/serial (-serial unix:$D/serial.sock) is the future labctl exec channel once A/UX runs a getty on it. Framebuffer + adb_pointer.py against a CLONE meanwhile."
+      "notes": "No exec channel yet: A/UX runs no getty on the serial line (-serial unix:$D/serial.sock is wired for it). Framebuffer + adb_pointer.py against a CLONE; the CommandShell in the checkpoint scene is the keyboard proof."
     },
     "bbcmicro": {
       "dir": "/data/vms/streamhost/stations/bbcmicro",

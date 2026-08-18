@@ -869,8 +869,8 @@ emit sunos414 \
 # aux (slot 145) — A/UX 3.0.1 (Apple's SVR2 Unix under the Mac Finder) on the
 #   same q800/68040 machine as macos753: /opt/qemu-m68k (kernel-hive fork), TCG
 #   only, dbus display 1152x870x8, RELATIVE ADB pointer (dbus-rel), qcow2 PRAM.
-#   DARK LAUNCH: listing=hidden while the install runs on camera from a helper
-#   System 7.5.3 disk + the A/UX CD; SH_IDLE_PAUSE_SECS=0 until the golden.
+#   A/UX disk at SCSI 0 (c0d0s0 root, s1 swap, MacPartition boots A/UX Startup).
+#   Checkpoint 'golden' in the disk+PRAM pair; -loadvm golden -S; idle pause 60.
 emit aux \
   --tile aux --vmid 145 --udp 54145 --pointer rel --input-backend dbus-rel \
   --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 \

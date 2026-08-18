@@ -1,7 +1,8 @@
 # aux — A/UX 3.0.1 (Quadra 800, m68k)
 
-**Status:** INSTALL PHASE, dark-launched (`listing.state=hidden`), streaming at
-`/os/aux` on udp/54145. Same emulated machine and binary as
+**Status:** INSTALLED and LISTED 2026-08-18 — A/UX 3.0.1 boots from its own disk
+to the Finder as root; `golden` checkpoint baked (loadvm proven framebuffer-
+identical); station on udp/54145. Same emulated machine and binary as
 [`macos753`](macos753.md): `qemu-system-m68k -M q800` from `/opt/qemu-m68k`
 (kernel-hive fork, 11.0.2), TCG only, dbus display at 1152x870x8, ADB
 relative pointer. Read that doc first — everything about the machine, the
@@ -97,9 +98,25 @@ while you type and the closed-loop tracker then aims blind.
    `newfs -v /dev/rdsk/c0d0s0 other` (device type from `/etc/disktab`;
    921.6 MB UFS), `mount /dev/dsk/c3d0s6 /mnt; mkdir /mnt2; mount
    /dev/dsk/c0d0s0 /mnt2; cd /mnt; find . -print | cpio -pdmu /mnt2`.
-7. (next) verify fstab on the new root, then A/UX Startup on MacPartition:
-   `launch -v` (root device (0,0,0), the default) → first boot from disk;
-   then the 3.1 update, X11/MacX, autologin, checkpoint.
+7. `sync; umount` both, kill QEMU (a guest `reboot`/Restart HANGS the q800 —
+   known from macos753; kill and relaunch instead). Boot SCSI 0: the copied
+   root's `/mac/sys/Startup System Folder` + `A/UX Startup` are on
+   MacPartition and **auto-launch**; A/UX's own first-boot **Easy Install**
+   ("The system files on MacPartition will be overwritten…" → OK) writes the
+   Startup files, the desktop pattern, Core A/UX docs, then "installation
+   completed" → the Easy Install dialog. *Choose Software…* lists MacX / X11
+   Server / X clients / Games / QuickTime / networking / man pages etc. but
+   its `Install` button is DISABLED: the Installer reads "Available free
+   space: Zero K" on this 900 MB UFS (some 16-bit statfs assumption), so the
+   optional packages are NOT installed yet (`/ARCHIVES/*` are on the disk —
+   install from the shell later). Quit → Restart hangs QEMU → kill/relaunch.
+8. Next boot: autoconfig "kernel has been automatically reconfigured …
+   Reboot" (it relaunches in place, no hardware reset) → A/UX Finder as root.
+   Standalone boot (disk only, no CD/helper) reaches the Finder in ~2.5 min.
+9. Scene + `savevm golden` (vmstate lands in the PRAM qcow2, like macos753);
+   dirty → `loadvm golden` → identical framebuffer md5. `shutdown -y -g0 -i0`
+   loops on "callrpc: Port mapper failure" (no network) — sync and kill
+   instead; the Startup's autorecovery fsck cleans the root on the next boot.
 
 ## Install log
 
@@ -112,7 +129,10 @@ while you type and the closed-loop tracker then aims blind.
   MacPartition; boot from it; `launch` hangs (scsi-cd) — 40 min lost.
 - ~10:35Z: writable overlay fixes it; `launch -v (3,0,0)/newunix` boots A/UX
   3.0.1 to the Finder; kernel console on camera. Disk moved to SCSI 0.
-- ~11:10Z: `newfs` root; cpio of slice 6 running.
+- ~11:10Z: `newfs` root; cpio of slice 6 (5 min guest time).
+- ~11:40Z: first boot from disk → Easy Install finishes MacPartition; kernel
+  autoconfig; A/UX Finder from disk. ~13:05Z: golden baked, loadvm proven,
+  station files installed, listed.
 
 ## Device set (station launcher, `streamhost/stations/aux/qemu-streamhost.sh`)
 
@@ -128,13 +148,16 @@ overlay at SCSI 3. The checkpoint will be baked without helper and CD.
 px/unit on the same hardware; A/UX's Finder and X11 apply their own factors —
 measure with `adb_pointer.py gain` on the installed desktop before listing.
 
-## Blockers / open
+## Open
 
-- Partition growth trick unproven for A/UX slices (step 2).
-- Whether `A/UX Startup` runs from System 7.5.3 (32-bit addressing is ON in
-  the helper) — the real path booted a 7.0.1-based floppy.
-- Save-state on q800 is proven (macos753); whether A/UX's kernel survives
-  `loadvm` (timer/SCSI state) is not.
+- Optional packages (X11 Server, MacX, X clients, Games, QuickTime, man
+  pages, networking): on disk under `/ARCHIVES`, not installed — the Easy
+  Install GUI refuses on the free-space bug; install from the CommandShell.
+- A/UX 3.1 update (`AUX_3.1_Update.iso`, archived) not applied.
+- Pointer scale unmeasured (A/UX Toolbox acceleration); the A/UX Finder
+  drops fast button presses (hold ~0.3 s) — operator eyeball through the
+  browser. Keyboard proof = typing in the CommandShell.
+- No exec channel (no getty on the serial line yet).
 
 ## Rollback
 
