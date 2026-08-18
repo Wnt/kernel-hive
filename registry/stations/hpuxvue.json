@@ -5,11 +5,6 @@
   "stationDir": "hpuxvue",
   "lifecycle": "production",
   "enabled": true,
-  "listing": {
-    "state": "hidden",
-    "since": "2026-08-18",
-    "reason": "Dark launch: HP-UX 10.20 is being installed live on this station from the Install/Core OS CD (the exhibit currently shows the installer, not the HP VUE desktop). List once the install completes, VUE is chosen at login and the golden checkpoint is baked."
-  },
   "build": {
     "rows": [
       {
@@ -37,10 +32,10 @@
         "mouse": "vue-desktop",
         "kbd": "term:hpterm",
         "kbd_reset": "Escape",
-        "kbd_note": "INSTALL PHASE: keyboard proof is the installer TUI echoing keystrokes; VUE front panel once installed",
+        "kbd_note": "hpterm from File Manager Directory>Terminal (Ctrl+T); VUE front panel is the mouse proof",
         "audio_trigger": null,
         "validated": false,
-        "note": "relative LASI PS/2 pointer: cursor_scale 1.0 UNMEASURED (install phase). Foreign-arch TCG station on /opt/qemu-hppa (kernel-hive fork), like macos753"
+        "note": "relative LASI PS/2 pointer, cursor_scale 1.0 (xset m 1 1 baked into the session). Foreign-arch TCG station on /opt/qemu-hppa (kernel-hive fork), like macos753. No exec channel yet."
       }
     },
     "labctl": {
@@ -56,7 +51,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54144,
-      "notes": "INSTALL PHASE (dark launch). No exec channel yet: the installer runs on the Artist framebuffer; a serial console is on the QEMU serial socket only for the builder. Drive it via labctl key/pointer or the browser."
+      "notes": "No exec channel yet: /dev/tty0p0 exists in the guest and QEMU exposes it on serial.sock in the station dir; wire a getty (inittab) + a serialcon-style client to get labctl exec. Until then drive it via QMP sendkey/mouse_move against a CLONE."
     }
   },
   "render": {
@@ -153,14 +148,14 @@
         "-M B160L -accel tcg,thread=multi -smp 1 -m 512 -d nochain",
         "-display dbus,p2p=on",
         "-drive if=scsi,bus=0,index=6,file=$D/hpuxvue-golden.qcow2,format=qcow2,cache=writeback,aio=threads",
-        "-drive if=scsi,bus=0,index=2,media=cdrom,file=$A/disc1.iso (install phase; -boot d)",
+        "-drive if=scsi,bus=0,index=2,media=cdrom,file=$A/disc1.iso (always attached; -boot d only in the install shape)",
         "-net nic,model=tulip -net user",
         "-serial unix:$D/serial.sock,server=on,wait=off",
         "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "install phase: tracked verbatim launcher IS the deployed launcher; the device set is pinned now so the eventual checkpoint is baked with it"
+        "reason": "tracked verbatim launcher IS the deployed launcher; the golden checkpoint was baked 2026-08-18 with this exact device set (CD attached, same ISO) on the standalone /opt/qemu-hppa build"
       }
     }
   },
@@ -168,11 +163,11 @@
     "stationDir": "hpuxvue",
     "pointer": "rel",
     "touch": false,
-    "resetMode": "restart",
-    "snapshot": null,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
     "mouse": "UNVERIFIED",
-    "keyboard": "UNVERIFIED",
-    "fixture": "INSTALL PHASE — HP-UX 10.20 installer booted from the Install/Core OS CD on qemu-system-hppa (B160L, TCG) over the Artist framebuffer. resetMode=restart re-runs the launcher only when QEMU is not live (ensure-station-qemu); the install disk is mutated in place, no golden yet. Dark launch: listing=hidden while the install runs on camera."
+    "keyboard": "PASS",
+    "fixture": "HP VUE 3.0 desktop as root on HP-UX 10.20 at 1280x1024x8 (HP 9000/778 B160L under TCG): front panel with six workspaces, Helpview 'Welcome to Your HP Workstation!' and one File Manager on /. Pointer 1:1 via `xset m 1 1` in /.vue/sessionetc (guest gain was pure X acceleration). Keyboard PASS = installer TUI and hpterm echo, framebuffer-proven 2026-08-18; mouse left to the operator's browser eyeball. loadvm restores the desktop; the guest starts frozen until the first visitor."
   },
   "spa": {
     "archetypeId": "sparc-pizzabox",
@@ -204,6 +199,6 @@
       "SAM"
     ],
     "blurb": "HP’s own Visual User Environment — the Motif desktop that CDE was built from — on the PA-RISC workstation Unix of the HP 9000 line.",
-    "notes": "Install running live on camera (dark launch). Second non-CDE Motif workstation desktop in the hall; PA-RISC under TCG on a standalone qemu-system-hppa build."
+    "notes": "Second non-CDE Motif workstation desktop in the hall (HP VUE 3.0 — what CDE was derived from); PA-RISC under TCG on a standalone qemu-system-hppa build."
   }
 }

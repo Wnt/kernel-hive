@@ -1,7 +1,7 @@
 # hpuxvue guest — HP-UX 10.20 with HP VUE (HP 9000/778, PA-RISC)
 
-Status: **INSTALL PHASE, dark-launched** (production, `listing=hidden`, slot 144 /
-UDP 54144). `/os/hpuxvue` streams the installer live; nothing is baked yet.
+Status: **LISTED — golden checkpoint baked 2026-08-18 03:57** (production, slot 144 /
+UDP 54144). `/os/hpuxvue` restores the VUE desktop from the `golden` snapshot in the station-local disk; the guest starts frozen until the first visitor.
 Research note: [`docs/lab/research/candidate-hpux.md`](../lab/research/candidate-hpux.md).
 
 ## Identity and source
@@ -62,16 +62,59 @@ disk; else boot CD). The device set is identical in all three.
   interaction. FS sizes enlarged up front to dodge the LVM-growth gotcha:
   / 300, /stand 48, swap 512, /home 100, /opt 700, /tmp 100, /usr 1000,
   /var 480 (756 MB spare in vg00). Then unattended: LVM + swinstall.
+- 01:05–01:45 — swinstall loaded 246 filesets (VUE.VUE-RUN etc.), configured
+  ("/etc/inittab modified to start HP VUE at system startup"). The
+  post-install "user specified script" from the media (HP's, not ours) then
+  ran a second `swinstall -x match_target=true -s <CD>` for the ACE bundles and
+  **hung for 40+ min at "Beginning Execution"** with zero disk I/O (loopback
+  RPC to swagentd was already failing: "Connection request rejected
+  (dce / rpc)"). Ctrl-C ended swinstall cleanly; the following `swlist` hung
+  the same way and ignored Ctrl-C. Forced reboot from disk.
+- **The interrupted finale never built the kernel**: `/stand` had ioconfig,
+  bootconf, system, kernrel but no `vmunix` (ISL: "Cannot find /stand/vmunix"),
+  and no `/stand/rootconf`. Fix, from the CD's Support Media shell
+  ("Run a Recovery Shell"): the RAM fs has ~200 KB free so no LVM tool loads;
+  instead `mount /dev/dsk/c0t6d0s1lvm /ROOT` (the boot LV is addressable as
+  the s1lvm section without LVM), write `/ROOT/rootconf` = `deadbeef` +
+  root-LV start + size in 1 K blocks read from the disk's LIF `LABEL`
+  (host: `qemu-io -r -c "read -v 0xd0800 512"`; here 0x0008cb60 / 0x0004b000,
+  i.e. `/` at PE 140, 300 MB), then Recovery MENU → **d. Replace only the
+  kernel** installs the media's generic `vmunix` (7.4 MB) onto the boot LV.
+- 02:25 — boots from disk on that kernel; manual `fsck -y` of lvol6/7/8 at
+  the bcheckrc prompt (dirty from the forced reset); Ctrl-D → **X11 first-boot
+  `set_parms`**: standalone (no network), hostname `hpuxvue`, TZ EET, no root
+  password, no font server. Then **`vuelogin`** (HP greeter) → root → **HP VUE
+  3.0 desktop**: front panel, six workspaces, Helpview welcome, File Manager.
+- Pointer: guest gain measured 50 units → 96 px on both axes = plain X
+  acceleration (2×, threshold 4), i.e. `xset m 1 1` gives 1:1 and
+  `SH_CURSOR_SCALE=1.0` is right. QMP `mouse_move`/`mouse_button` clicks
+  Motif buttons reliably.
 
 ## Golden, input, and rollback
 
-- Reset mode: `restart` during install (re-runs the launcher only when QEMU is
-  not live). Becomes `loadvm golden` once baked; `SH_IDLE_PAUSE_SECS` 0 → 60
-  at the same time.
-- Pointer gain, click/drag proof, keyboard modifiers: TODO after install.
-- Known post-install steps (catalog): copy `/etc/nsswitch.files` →
-  `/etc/nsswitch.conf` or the login manager hangs; grow filesystems with
-  `lvextend`+`extendfs`.
+- Reset mode: `loadvm golden` (baked 03:57 with QMP `savevm`; 98.5 MiB
+  vmstate; restore proven framebuffer-identical bar the front-panel clock, and
+  the guest is live afterwards). `SH_IDLE_PAUSE_SECS=60`, launcher starts the
+  guest `-S` at the checkpoint.
+- Baked into the guest: `/.vue/sessionetc` = `xset m 1 1` (pointer 1:1);
+  `/etc/vue/config/sys.resources` `Vuesession*saverTimeout: 0` and
+  `lockTimeout: 0`; `/etc/vue/config/Xconfig` `Vuelogin*autoLogin: root`
+  (unverified on a cold boot — the checkpoint restores a logged-in desktop);
+  hostname `hpuxvue`, TZ EET, standalone (no network), root without password
+  (recorded in the gitignored credential stores as `guest/hpuxvue`).
+- Kernel is the media's generic recovery `vmunix` (works; `mk_kernel` from
+  `/stand/system` never ran — optional future tidy-up, keep a copy first).
+- Catalog gotchas checked: there is NO `/etc/nsswitch.*` on 10.20 (that fix is
+  11.x); LVM growth stays `lvextend`+`extendfs` (756 MB spare in vg00).
+- Pointer: `SH_CURSOR_SCALE=1.0`, click/drag/wheel and keyboard modifiers left
+  to the operator's browser eyeball (`reset.mouse` = UNVERIFIED on purpose).
+- Exec channel: none yet. `/dev/tty0p0` exists and QEMU exposes it as
+  `serial.sock` in the station dir; a getty in `/etc/inittab` plus a
+  serialcon-style client (see tru64) would give `labctl exec`.
+- Automation path for a future builder: HP's install runs a config from the
+  CD's INSTALLFS (`post_load_cmd`/`post_config_cmd` hooks — the "user
+  specified script" seen on camera is HP's own); patching that config is the
+  scripted-install route instead of driving the TUI.
 - Credentials reference only: `guest/hpuxvue`.
 - Rollback: `systemctl stop streamhost@hpuxvue`; the install disk is a single
   station-local qcow2 — delete it and the launcher re-creates an empty one.
