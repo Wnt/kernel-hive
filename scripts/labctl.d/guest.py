@@ -233,6 +233,23 @@ def cmd_exec(argv):
         # (--timeout).
         r = subprocess.run(["python3", TRU64EXEC, c["dir"], cmdline, *argv[2:]])
         sys.exit(r.returncode)
+    if kind == "serial_getty":
+        # rhapsody: a getty on the guest's COM1 (`<dir>/serial.sock`), one login
+        # session per command, sentinel-framed capture, the guest's exit code.
+        # No agent in the guest; the tile DIRECTORY is the address. Password
+        # from LABCTL_SERIAL_PASSWORD or <dir>/serial-exec.passwd (never the
+        # registry). Extra argv passes through (--timeout).
+        import serialexec
+
+        user = c.get("exec_user") or "root"
+        timeout = serialexec.DEFAULT_TIMEOUT
+        if "--timeout" in argv[2:]:
+            timeout = float(argv[argv.index("--timeout") + 1])
+        code, out, diag = serialexec.run(c["dir"], user, cmdline, timeout)
+        sys.stdout.write(out)
+        if diag:
+            sys.stderr.write("labctl exec: " + diag + "\n")
+        sys.exit(code)
     if kind == "warpd_e" and port:
         # real captured exec over warpd's 'E' verb (gexec.py frames the reply and
         # exits with the guest's exit code)

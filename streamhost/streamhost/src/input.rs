@@ -94,6 +94,26 @@ fn debug_input() -> bool {
     })
 }
 
+/// SH_REL_MAX_STEP (1..=MAX_REL_STEP) / SH_REL_STEP_PACE_MS (<=200): the
+/// per-station override for the rel chunk cap and inter-chunk pace. Defaults
+/// keep every existing rel station byte-identical; a guest that takes only the
+/// first PS/2 packet of a chained move (Rhapsody DR2) lowers the cap. See
+/// docs/guests/rhapsody.md.
+fn rel_max_step() -> i32 {
+    static V: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
+    *V.get_or_init(|| env_num("SH_REL_MAX_STEP", MAX_REL_STEP).clamp(1, MAX_REL_STEP))
+}
+fn rel_step_pace_ms() -> u64 {
+    static V: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
+    *V.get_or_init(|| env_num("SH_REL_STEP_PACE_MS", REL_STEP_PACE_MS).min(200))
+}
+fn env_num<T: std::str::FromStr>(k: &str, default: T) -> T {
+    std::env::var(k)
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(default)
+}
+
 /// Apply per-guest calibration to an absolute client coordinate. The same
 /// transform feeds a real absolute tablet or the absolute-client -> relative
 /// PS/2 bridge; identity settings preserve the previous relative behavior.
@@ -132,14 +152,11 @@ pub async fn rel_motion(cap: &Capture, dx: i32, dy: i32) {
         .await;
 }
 
-/// Max per-send relative delta per axis. QEMU's PS/2 emulation accumulates rel
-/// deltas and clamps/truncates a single large `RelMotion` (measured on QNX: a
-/// lone -8192 is a no-op, -1024 moves only ~500 px), so a big/fast pointer move
-/// sent as ONE event loses distance. Splitting into <=256 px chunks keeps every
-/// send inside the per-injection clamp window.
+/// Default max per-send relative delta per axis, and inter-chunk pace (ms).
+/// QEMU's PS/2 emulation accumulates rel deltas and clamps a single large
+/// `RelMotion` (measured on QNX: a lone -8192 is a no-op), so a big move is
+/// chunked and paced. SH_REL_MAX_STEP / SH_REL_STEP_PACE_MS override per-station.
 const MAX_REL_STEP: i32 = 256;
-/// Pace between chunks (ms). Back-to-back sends re-merge in QEMU's PS/2
-/// accumulator and re-clamp; a small gap lets each chunk drain first.
 const REL_STEP_PACE_MS: u64 = 16;
 
 /// How far the homing corner-pin throws the guest cursor, per axis.
@@ -205,15 +222,15 @@ const HOME_SETTLE_MS: u64 = 250;
 /// (dx,dy) — no rounding drift, so tracking stays 1:1. A move that already fits
 /// in one step returns a single chunk (empty for a zero move), i.e. the common
 /// pointer-lock small-delta case is byte-identical to a bare `rel_motion`.
-fn rel_chunks(dx: i32, dy: i32) -> Vec<(i32, i32)> {
-    if dx.abs() <= MAX_REL_STEP && dy.abs() <= MAX_REL_STEP {
+fn rel_chunks(dx: i32, dy: i32, max_step: i32) -> Vec<(i32, i32)> {
+    if dx.abs() <= max_step && dy.abs() <= max_step {
         return if dx == 0 && dy == 0 {
             Vec::new()
         } else {
             vec![(dx, dy)]
         };
     }
-    let steps = (dx.abs().max(dy.abs()) + MAX_REL_STEP - 1) / MAX_REL_STEP;
+    let steps = (dx.abs().max(dy.abs()) + max_step - 1) / max_step;
     let steps = steps.max(1);
     let mut out = Vec::with_capacity(steps as usize);
     let (mut sent_x, mut sent_y) = (0i32, 0i32);
@@ -237,12 +254,12 @@ fn rel_chunks(dx: i32, dy: i32) -> Vec<(i32, i32)> {
 /// QNX / rel-station fix). A small delta is one un-paced send == `rel_motion`, so the
 /// pointer-lock direct-rel (type=4) small-delta path stays exactly 1:1.
 pub async fn rel_motion_bounded(cap: &Capture, dx: i32, dy: i32) {
-    let chunks = rel_chunks(dx, dy);
+    let chunks = rel_chunks(dx, dy, rel_max_step());
     let n = chunks.len();
     for (i, (cx, cy)) in chunks.into_iter().enumerate() {
         rel_motion(cap, cx, cy).await;
         if i + 1 < n {
-            tokio::time::sleep(std::time::Duration::from_millis(REL_STEP_PACE_MS)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(rel_step_pace_ms())).await;
         }
     }
 }
@@ -654,7 +671,7 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
-    use super::{calibrated_abs, home_pin, newer, rel_chunks, HOME_PIN, MAX_REL_STEP};
+    use super::{calibrated_abs, home_pin, newer, rel_chunks, HOME_PIN};
 
     // The pin is sent in guest DELTA UNITS but its invariant ("exceed the guest
     // surface") is stated in PIXELS, so it has to scale with the guest's own
@@ -705,9 +722,9 @@ mod tests {
     // rel_motion, so the pointer-lock direct-rel path stays exactly 1:1.
     #[test]
     fn rel_chunks_small_is_single() {
-        assert_eq!(rel_chunks(0, 0), vec![]); // zero move: nothing sent
-        assert_eq!(rel_chunks(5, -3), vec![(5, -3)]);
-        assert_eq!(rel_chunks(256, -256), vec![(256, -256)]); // exactly at bound
+        assert_eq!(rel_chunks(0, 0, 256), vec![]); // zero move: nothing sent
+        assert_eq!(rel_chunks(5, -3, 256), vec![(5, -3)]);
+        assert_eq!(rel_chunks(256, -256, 256), vec![(256, -256)]); // exactly at bound
     }
 
     // Large/fast deltas are chunked; every chunk stays within the per-axis clamp
@@ -722,15 +739,21 @@ mod tests {
             (1000, -37),
             (13, 4096),
         ] {
-            let chunks = rel_chunks(dx, dy);
-            let (mut sx, mut sy) = (0i32, 0i32);
-            for (cx, cy) in &chunks {
-                assert!(cx.abs() <= MAX_REL_STEP, "chunk dx {cx} exceeds bound");
-                assert!(cy.abs() <= MAX_REL_STEP, "chunk dy {cy} exceeds bound");
-                sx += cx;
-                sy += cy;
+            // Both the default 256 and a small per-station cap (rhapsody: 24)
+            // must sum exactly and never exceed the cap.
+            for cap in [256, 24] {
+                let chunks = rel_chunks(dx, dy, cap);
+                let (mut sx, mut sy) = (0i32, 0i32);
+                for (cx, cy) in &chunks {
+                    assert!(
+                        cx.abs() <= cap && cy.abs() <= cap,
+                        "chunk exceeds cap {cap}"
+                    );
+                    sx += cx;
+                    sy += cy;
+                }
+                assert_eq!((sx, sy), (dx, dy), "chunks must sum to the delta");
             }
-            assert_eq!((sx, sy), (dx, dy), "chunks must sum to the original delta");
         }
     }
 

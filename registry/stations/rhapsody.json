@@ -41,10 +41,10 @@
         },
         "kbd": "",
         "kbd_reset": "Escape",
-        "kbd_note": "Workspace Manager desktop; type into TextEdit/Terminal (Apple menu) — unverified via UI",
+        "kbd_note": "Workspace Manager desktop; labctl exec gives a root shell over serial. Type into TextEdit/Terminal via labctl keys — unverified via UI",
         "audio_trigger": null,
         "validated": false,
-        "note": "PS/2 relative pointer (dbus-rel), gain 0.478 px/unit -> cursor_scale 2.09 (measured on the 800x600 desktop). Station-specific QEMU at /opt/qemu-rhapsody (i8259 lenient-cascade patch)."
+        "note": "PS/2 relative pointer (dbus-rel), Mouse-Speed pref at slowest = dead-linear 0.478 px/unit -> cursor_scale 2.09; the daemon caps each PS/2 send at one packet (SH_REL_MAX_STEP) so a fast drag can't desync the guest. 1024x768 RGB:555/16 on Cirrus GD5446. Station QEMU /opt/qemu-rhapsody (i8259 lenient-cascade)."
       }
     },
     "labctl": {
@@ -55,12 +55,12 @@
       "warpd_addr": null,
       "ssh_port": null,
       "exec_port": null,
-      "exec_kind": null,
-      "exec_user": null,
+      "exec_kind": "serial_getty",
+      "exec_user": "root",
       "exec_key": null,
       "console": "fb",
       "udp_port": 54146,
-      "notes": "No exec channel: drive it via labctl key/pointer or scripts/dev/qmp-type.py; COM1 -> serial.log. PS/2 deltas mis-decode if the i8042 queue is flooded — pace pointer moves. loadvm golden."
+      "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. PS/2 deltas mis-decode if the i8042 queue is flooded — the daemon paces; SH_REL_MAX_STEP caps each send at one packet. loadvm golden."
     }
   },
   "render": {
@@ -131,7 +131,8 @@
   },
   "notes": [
     "slot 146/UDP 54146 reserved by stations-registry.py new (2026-08-18)",
-    "dark-launched during bring-up via scripts/dev/darklaunch-station.py from sandbox rhapsody"
+    "dark-launched during bring-up via scripts/dev/darklaunch-station.py",
+    "labctl exec via serial getty on COM1 (serial_getty); credentials in gitignored serial-exec.passwd"
   ],
   "listing": {
     "state": "hidden",
@@ -222,7 +223,7 @@
     "snapshot": "golden",
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "Rhapsody 5.1 DR2 Platinum desktop after autologin as guest — Workspace Manager menu bar, guest home window open, disk/home/Applications icons on the right, Trash bottom right; 800x600 RGB:555/16 on Cirrus GD5446 (TCG, /opt/qemu-rhapsody). loadvm golden -S, the daemon resumes."
+    "fixture": "Rhapsody 5.1 DR2 Platinum desktop after autologin as guest at 1024x768 RGB:555/16 (Cirrus GD5446) — Workspace Manager menu bar, guest home window open, disk/home/Applications icons on the right, Trash bottom right. loadvm golden -S, the daemon resumes."
   },
   "migrationExceptions": []
 }
