@@ -69,7 +69,7 @@ qmp_loadvm() {
 import socket,json,sys
 sock,snap=sys.argv[1],sys.argv[2]
 s=socket.socket(socket.AF_UNIX); s.settimeout(30); s.connect(sock)
-buf=b""; stage=0; out=None
+buf=b""; stage=0; out=None; done=False
 def send(o): s.sendall((json.dumps(o)+"\r\n").encode())
 while True:
     d=s.recv(65536)
@@ -83,12 +83,21 @@ while True:
         if stage==0 and "QMP" in m: send({"execute":"qmp_capabilities"}); stage=1
         elif stage==1 and "return" in m:
             send({"execute":"human-monitor-command","arguments":{"command-line":"loadvm %s"%snap}}); stage=2
-        elif stage==2 and "return" in m: out=m["return"]; s.close();
+        elif stage==2 and "return" in m:
+            out=m["return"]
+            txt=(out or "").strip()
+            if txt and ("error" in txt.lower() or "no such" in txt.lower() or "does not" in txt.lower()):
+                print("LOADVMERR:"+txt); sys.exit(1)
+            # The instant-restore golden is saved with the vCPUs STOPPED
+            # (-loadvm golden -S at daemon start), so a runtime `loadvm` restores
+            # them stopped too — a mid-session Restore would otherwise freeze the
+            # whole guest (query-status: prelaunch/running:false), which reads as
+            # "the cursor won't move". `cont` resumes it; it is a no-op on an
+            # already-running guest, so every loadvm station is safe.
+            send({"execute":"cont"}); stage=3
+        elif stage==3 and "return" in m: done=True; s.close()
         elif "error" in m: print("QMPERR:"+json.dumps(m["error"])); sys.exit(1)
-    if out is not None: break
-txt=(out or "").strip()
-if txt and ("error" in txt.lower() or "no such" in txt.lower() or "does not" in txt.lower()):
-    print("LOADVMERR:"+txt); sys.exit(1)
+    if done: break
 print("OK")
 PY
 }
