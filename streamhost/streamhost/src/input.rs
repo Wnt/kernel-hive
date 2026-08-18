@@ -12,6 +12,8 @@
 //                            (wheel-up=btn3 / wheel-down=btn4; horizontal ignored)
 //   type=6 touch          : u8=6, u8 kind(0 begin,1 update,2 end,3 cancel),
 //                            u8 slot, u16 x, u16 y        -> MultiTouch.SendEvent
+//   type=7 re-home hint   : u8=7 (no payload)             -> rel bridge re-home
+//                            (SPA: tab visible / window focus / pointer enter)
 //
 // THE CLIENT OWNS POINTER STATE; `cseq` is how it says so. Moves ride unreliable
 // datagrams and buttons ride a reliable stream — two transports the network may
@@ -52,9 +54,21 @@ pub const I_MTOUCH: &str = "org.qemu.Display1.MultiTouch";
 /// position-carrying clicks and datagram moves feed one continuous last-position.
 #[derive(Default)]
 pub struct MouseState {
-    lx: i32,
-    ly: i32,
-    seeded: bool,
+    /// The dead-reckoning model of the abs->rel bridge: where the guest cursor
+    /// IS (sent) vs where the client wants it (target), plus the re-home and
+    /// edge flags. See `rel_bridge.rs`.
+    pub(crate) rel: crate::rel_bridge::RelModel,
+    /// Wake-ups for the paced sender task (SH_REL_PACED=1); inert otherwise.
+    pub(crate) sig: crate::rel_bridge::SharedSignals,
+    /// Live client button mask (re-home never fires under a held button) and
+    /// the last pointer sample time (the `idle` trigger clock).
+    pub(crate) buttons: u8,
+    pub(crate) last_sample: Option<std::time::Instant>,
+    /// The `idle` trigger fired since the last sample (once per rest).
+    pub(crate) idle_homed: bool,
+    /// The daemon-wide guest epochs this session last homed against.
+    pub(crate) reset_epoch: u64,
+    pub(crate) resume_epoch: u64,
     /// When the last warpd MOTION was sent (hybrid-buttons race guard; see type2).
     last_move: Option<std::time::Instant>,
     /// Highest client stamp (`cseq`) whose POSITION has been applied. An absolute
@@ -73,6 +87,20 @@ pub struct MouseState {
 /// rolling over is a seam rather than a cliff.
 fn newer(a: u32, b: u32) -> bool {
     (a.wrapping_sub(b) as i32) > 0
+}
+
+impl MouseState {
+    /// The newest client stamp applied (telemetry join key with the SPA rows).
+    pub(crate) fn applied_cseq(&self) -> u32 {
+        self.applied_cseq
+    }
+}
+
+impl Drop for MouseState {
+    /// The session is over: wake the pacer so it observes the dead Weak and ends.
+    fn drop(&mut self) {
+        self.sig.wake.notify_one();
+    }
 }
 
 pub type SharedMouse = Arc<Mutex<MouseState>>;
@@ -99,7 +127,7 @@ fn debug_input() -> bool {
 /// keep every existing rel station byte-identical; a guest that takes only the
 /// first PS/2 packet of a chained move (Rhapsody DR2) lowers the cap. See
 /// docs/guests/rhapsody.md.
-fn rel_max_step() -> i32 {
+pub(crate) fn rel_max_step() -> i32 {
     static V: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
     *V.get_or_init(|| env_num("SH_REL_MAX_STEP", MAX_REL_STEP).clamp(1, MAX_REL_STEP))
 }
@@ -110,11 +138,11 @@ fn rel_max_step() -> i32 {
 /// to 32 units, accelerated above) a quantum of 4 (= 3 px exactly) with
 /// SH_REL_MAX_STEP=32 makes every send land on the model: 1:1, no drift.
 /// See docs/guests/aux.md.
-fn rel_quantum() -> i32 {
+pub(crate) fn rel_quantum() -> i32 {
     static V: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
     *V.get_or_init(|| env_num("SH_REL_QUANTUM", 0).clamp(0, MAX_REL_STEP))
 }
-fn rel_step_pace_ms() -> u64 {
+pub(crate) fn rel_step_pace_ms() -> u64 {
     static V: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
     *V.get_or_init(|| env_num("SH_REL_STEP_PACE_MS", REL_STEP_PACE_MS).min(200))
 }
@@ -206,7 +234,7 @@ const HOME_PIN: i32 = 2048;
 /// does NOT generalise to ADB: measured on `macos753`, a 3200-unit pin followed
 /// by a walk is observed as two separate movements at every settle from 250 ms
 /// to 3 s, so `HOME_SETTLE_MS` still covers it.
-fn home_pin(cursor_scale: f64) -> i32 {
+pub(crate) fn home_pin(cursor_scale: f64) -> i32 {
     let scaled = f64::from(HOME_PIN) * cursor_scale.max(1.0);
     // Saturate rather than wrap: a nonsense calibration must not become a
     // negative pin that throws the cursor the wrong way.
@@ -225,7 +253,7 @@ fn home_pin(cursor_scale: f64) -> i32 {
 /// host pointer once per emulated video field and warps it back — measured on
 /// Darkstar at ~45 fields/sec, ~22 ms a field. Paid ONCE per session, on the
 /// very first pointer sample.
-const HOME_SETTLE_MS: u64 = 250;
+pub(crate) const HOME_SETTLE_MS: u64 = 250;
 
 /// Pure chunker for `rel_motion_bounded` (unit-tested). Split (dx,dy) into a
 /// sequence of per-send deltas, each with |axis| <= MAX_REL_STEP, distributed
@@ -408,8 +436,6 @@ async fn apply_move_abs(
         };
         if router.backend() == "warpd" && cfg.warpd_buttons_qemu {
             let mut st = mouse.lock().await;
-            st.lx = x as i32;
-            st.ly = y as i32;
             st.last_move = Some(std::time::Instant::now());
         }
         let _ = router.try_move(x, y, width, height);
@@ -458,52 +484,47 @@ async fn apply_move_abs(
                 cfg.cursor_off_x, cfg.cursor_off_y, cfg.cursor_scale,
             );
         }
+        // The model (rel_bridge::RelModel) tracks what was SENT, never the
+        // target: this sample only re-aims it. Edge trigger: the client target
+        // on a screen edge asks for an over-clamp on that axis once it is
+        // reached (the visitor's corner trick, one axis at a time).
+        let edge = if cfg.rel_home_on.edge {
+            let (w, h) = {
+                let state = cap.state.lock().unwrap();
+                (
+                    state.width.max(state.fb_w).max(1),
+                    state.height.max(state.fb_h).max(1),
+                )
+            };
+            crate::rel_bridge::edge_of(x, y, w, h)
+        } else {
+            (0, 0)
+        };
+        let paced = cfg.rel_paced;
         let (dx, dy) = {
             let mut st = mouse.lock().await;
-            if !st.seeded {
-                // Deliberate over-clamp into the top-left corner: a merge/clamp
-                // is the goal here, not a truncation hazard, and it establishes
-                // a known 0,0 origin.
-                let pin = home_pin(cfg.cursor_scale);
-                rel_motion(cap, -pin, -pin).await;
-                tokio::time::sleep(std::time::Duration::from_millis(HOME_SETTLE_MS)).await;
-                // The seeding sample sends NO motion of its own. It sets the
-                // model to the origin it just pinned and stops; the NEXT sample
-                // (tens of hertz away — one frame, invisible) walks origin ->
-                // target as an ordinary delta.
-                //
-                // Sending the walk from inside this same handler is what broke
-                // the Xerox Star station: pointer MOVES ride unreliable datagrams
-                // and are handled concurrently, so the pin, the seed walk and
-                // the next few deltas raced through the PS/2 queue and the guest
-                // observed only their merged, hugely negative sum. The cursor
-                // parked in the corner while the model believed it was at the
-                // target — a fixed offset for the rest of the session, i.e.
-                // exactly what the pin exists to prevent. Separating the two
-                // costs one sample and removes the race entirely.
-                st.lx = 0;
-                st.ly = 0;
-                st.seeded = true;
+            crate::rel_bridge::note_guest_epochs(&mut st, cfg);
+            st.rel.set_target(tx, ty, edge);
+            if paced {
+                // SH_REL_PACED: the session's pacer task owns every send (pin,
+                // settle, walk, edge pins) — one bounded step per pace tick,
+                // latest target wins. This handler just wakes it.
+                st.sig.wake.notify_one();
+                return;
+            }
+            if st.rel.needs_home() {
+                // Pin -> settle; the homing sample sends NO motion of its own
+                // (see rel_bridge::pin_home for why the walk waits a sample).
+                crate::rel_bridge::pin_home(cap, cfg, &mut st).await;
                 (0, 0)
-            } else if rel_quantum() > 1 {
-                // QUANTIZED bridge (SH_REL_QUANTUM): send only whole quanta and
-                // leave the remainder PENDING in the model — lx/ly advance by
-                // what was actually sent, not to the target — so a guest that
-                // truncates per event (A/UX: trunc(0.75 * units) px) never
-                // loses a fraction the model believed it moved. The residual
-                // is < one quantum (< 3 px on A/UX) and is made up as soon as
-                // the pointer moves on.
-                let q = rel_quantum();
-                let dx = quantize(tx - st.lx, q);
-                let dy = quantize(ty - st.ly, q);
-                st.lx += dx;
-                st.ly += dy;
-                (dx, dy)
             } else {
-                let dx = tx - st.lx;
-                let dy = ty - st.ly;
-                st.lx = tx;
-                st.ly = ty;
+                // Unbounded step = the whole owed delta, quantized toward zero
+                // (SH_REL_QUANTUM: the sub-quantum remainder stays PENDING in
+                // the model — sent advances by what actually went out, so a
+                // guest that truncates per event (A/UX: trunc(0.75 * units)
+                // px) never loses a fraction the model believed it moved).
+                let (dx, dy) = st.rel.next_step(i32::MAX / 4, rel_quantum());
+                st.rel.commit(dx, dy);
                 (dx, dy)
             }
         };
@@ -512,6 +533,13 @@ async fn apply_move_abs(
         // the PS/2 per-send clamp and truncates (the rel-station fix). A
         // (0,0) delta yields no send, so this is a no-op when idle.
         rel_motion_bounded(cap, dx, dy).await;
+        if cfg.rel_home_on.edge {
+            let pins = mouse.lock().await.rel.take_edge_pins();
+            if pins != (0, 0) {
+                let pin = home_pin(cfg.cursor_scale);
+                rel_motion(cap, i32::from(pins.0) * pin, i32::from(pins.1) * pin).await;
+            }
+        }
     }
 }
 
@@ -546,6 +574,8 @@ pub async fn handle(
                     st.applied_cseq = cseq;
                 }
                 st.last_abs = Some((x, y));
+                st.last_sample = Some(std::time::Instant::now());
+                st.idle_homed = false;
             }
             apply_move_abs(cap, cfg, mouse, router, x, y).await;
         }
@@ -553,6 +583,15 @@ pub async fn handle(
             let btn = rec[1] as u32;
             let down = rec[2] != 0;
             crate::input_telemetry::set_button(btn as u8, down);
+            {
+                let mut st = mouse.lock().await;
+                let bit = 1u8 << (btn & 7);
+                if down {
+                    st.buttons |= bit;
+                } else {
+                    st.buttons &= !bit;
+                }
+            }
             // THE CARRIED POSITION. The client states where this edge happens, in
             // the same atomic record as the edge, so the press can no longer be
             // separated from its coordinates by the network. Applied FIRST and in
@@ -623,6 +662,13 @@ pub async fn handle(
             } else {
                 if let Some((x, y, _, _)) = at {
                     apply_move_abs(cap, cfg, mouse, router, x, y).await;
+                }
+                // Paced bridge: the walk to the carried point (or a walk already
+                // in flight) is the pacer's; hold the edge until the cursor is
+                // there, bounded so a stalled guest can never eat a click.
+                if cfg.rel_paced && cfg.input_backend == InputBackend::DbusRel {
+                    crate::rel_bridge::wait_settled(mouse, std::time::Duration::from_millis(600))
+                        .await;
                 }
                 // Hybrid warpd stations (SH_WARPD_BUTTONS=qemu): MOTION rides the (possibly
                 // slow serial) agent channel while BUTTONS ride the instant PS/2 path —
@@ -710,6 +756,11 @@ pub async fn handle(
             } else {
                 wheel(cap, dy).await;
             }
+        }
+        // type=7 re-home HINT (no payload): see `focus_hint`.
+        7 => {
+            let mut st = mouse.lock().await;
+            crate::rel_bridge::focus_hint(&mut st, cfg);
         }
         6 if rec.len() >= 7 => {
             let kind = rec[1] as u32;

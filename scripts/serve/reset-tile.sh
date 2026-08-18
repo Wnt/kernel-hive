@@ -171,6 +171,18 @@ case "$RESETMODE" in
       sleep 0.25
     fi
     if echo "$R" | grep -q '^OK'; then
+      # Relative-pointer stations (dbus-rel): the loadvm just teleported the
+      # guest cursor to the checkpoint's position behind the daemon's
+      # dead-reckoning model. SIGUSR2 = "guest state replaced" -> the bridge
+      # re-homes on the next motion (streamhost rel_bridge.rs; the daemon only
+      # listens when SH_REL_HOME_ON includes `reset`). Best effort, never fatal.
+      if grep -q '^SH_INPUT_BACKEND=dbus-rel$' "$TDIR/station.env" 2>/dev/null; then
+        REL_PID="$(systemctl show -p MainPID --value "streamhost@${TILEDIR}.service" 2>/dev/null)"
+        case "$REL_PID" in
+          '' | 0 | *[!0-9]*) ;;
+          *) kill -USR2 "$REL_PID" 2>/dev/null || true ;;
+        esac
+      fi
       if [ "$POSTKEYS" != "-" ]; then
         # Give the restored guest a moment to re-arm its input stack, then send
         # the registry-declared post-restore chords.

@@ -315,6 +315,7 @@ impl IdlePauser {
             Ok(()) => {
                 if was_paused {
                     eprintln!("[idle] session connected -> guest resumed");
+                    crate::rel_bridge::note_guest_resumed();
                 }
                 st.paused = false;
             }
@@ -380,6 +381,7 @@ impl IdlePauser {
                 Action::Cont => match self.exec(Cmd::Cont).await {
                     Ok(()) => {
                         st.paused = false;
+                        crate::rel_bridge::note_guest_resumed();
                         eprintln!("[idle] session active but guest paused -> resumed");
                     }
                     Err(e) => eprintln!("[idle] resume retry failed ({e}); will retry"),

@@ -1,8 +1,17 @@
-# Relative-pointer stations: auto re-home + paced sends (plan)
+# Relative-pointer stations: auto re-home + paced sends
 
-**Status: plan, 2026-08-18. Nothing implemented.** Operator direction: work on
-the **live stations** directly (canary daemon + `POST /restore/<id>` to put the
-scene back), no clones. Scope: the eleven
+**Status: daemon + SPA + reset hook IMPLEMENTED 2026-08-18** (branch `relptr`
+→ main): `streamhost/streamhost/src/rel_bridge.rs` (model, triggers, pacer,
+tests), `input.rs` (bridge now drives the model), `config/rel_home.rs`
+(`SH_REL_HOME_ON`), SPA type-7 re-home hint + `?ptrrec=1` mouse/wire rows,
+`scripts/serve/reset-tile.sh` SIGUSR2 after a `loadvm`. **Defaults keep every
+station byte-identical**; `macos753` is the canary with the knobs below.
+Still open: the per-station calibration sweep (§Spike), the framebuffer PoC
+(§Steps 3) and the human feel session (§Steps 4) — the operator's eyeball on
+`macos753`, then rollout by measurement.
+
+Operator direction: work on the **live stations** directly (canary daemon +
+`POST /restore/<id>` to put the scene back), no clones. Scope: the eleven
 `dbus-rel` homing-bridge stations (`aux macos753 hpuxvue sunos414 rhapsody
 freedos msdoswin1 star indyr4400 c64 amstradcpc`) plus `beos` for its
 absolute-fallback path. **`nt351` is dropped from this plan**: it is a Win32
@@ -17,6 +26,21 @@ switches and resets — with the guest untouched (no agents, drivers, HW
 cursors or framebuffer readback; those were researched and rejected as too
 much work, see [`candidate-aux.md`](candidate-aux.md) discussion 2026-08-18).
 
+## The knobs (station.env.fixture)
+
+| Knob | Meaning | Default |
+|---|---|---|
+| `SH_REL_HOME_ON` | comma list of re-home triggers beyond the per-session seed: `reset,resume,focus,idle,edge` (`all`) | none |
+| `SH_REL_HOME_IDLE_S` | rest seconds before the `idle` trigger (once per rest, never under a held button; the cursor visibly flicks corner-and-back) | 15 |
+| `SH_REL_PACED` | `1` = the session's pacer task owns every send: one bounded step per tick across all samples, latest target wins; buttons that carry a point wait (≤600 ms) for the walk | off (legacy inline chunking) |
+| `SH_REL_MAX_STEP` / `SH_REL_STEP_PACE_MS` | the step (≤ one guest report: ADB 63, PS/2 255) and the tick (≥ the guest's own sampling period) — pre-existing knobs, now also the pacer's | 256 / 16 |
+| `SH_REL_QUANTUM` | pre-existing; the pacer's steps are quantized the same way | 0 |
+| `SH_INPUT_TELEMETRY=2` | adds `[input-tel rel] cseq= step= sent= pending=` per step and `rehome`/`idle re-home` lines | 0 |
+
+`macos753` canary: `SH_REL_HOME_ON=reset,resume,focus,idle,edge`,
+`SH_REL_HOME_IDLE_S=15`, `SH_REL_PACED=1`, `SH_REL_MAX_STEP=63`,
+`SH_REL_STEP_PACE_MS=12`.
+
 ## What the operator observed
 
 1. Tracking is good **after** the visitor manually chases the cursor into a
@@ -30,11 +54,11 @@ much work, see [`candidate-aux.md`](candidate-aux.md) discussion 2026-08-18).
 
 ## Why it happens (read from the daemon, `streamhost/streamhost/src/input.rs`)
 
-- **The bridge homes exactly once per daemon lifetime.** `MouseState`
-  (`lx, ly, seeded`) is created once in `transport/mod.rs` and shared by every
-  client session. The corner pin (FIX 4) fires on the first-ever sample and
-  never again. Everything that moves the guest cursor behind the model's back
-  therefore leaves a permanent offset until an edge clamp fixes it:
+- **The bridge homed exactly once per session.** `MouseState` is created per
+  WebTransport session in `transport/mod.rs`; the corner pin (FIX 4) fired on
+  the session's first sample and never again. Everything that moves the guest
+  cursor behind the model's back within a session therefore left a permanent
+  offset until an edge clamp fixed it:
   - `loadvm golden` (the reset endpoint, and the launcher's `-loadvm golden -S`
     on daemon restart) teleports the guest cursor to the checkpoint's position;
   - idle-pause / resume, a new visitor arriving after another left, the client
@@ -105,6 +129,21 @@ Sequencing rule (the Xerox Star lesson in the code): pin, settle, walk are one
 serialised sequence under the mouse lock, and the walk goes through the
 rate-capped sender — never a bare burst.
 
+As built: every trigger only raises `RelModel::home_pending`; the next motion
+(legacy path: `input.rs` `apply_move_abs`; paced path: the pacer task) runs
+`rel_bridge::pin_home` and walks from 0,0. `reset` = daemon-wide
+`RESET_EPOCH` bumped by SIGUSR2 (`reset-tile.sh` sends it to `dbus-rel`
+stations after a successful `loadvm`; the listener is installed only when the
+trigger is on); `resume` = `RESUME_EPOCH` bumped by `idle.rs` on every `cont`;
+`focus` = wire record type 7 (no payload) from
+`spa/src/three/streamClient/inputWire.ts` on `visibilitychange`→visible,
+`window` focus and `pointerenter` of the surface; `idle` = the pacer's timer
+(paced mode fires immediately while the pointer rests; legacy mode is
+`session`-style: it flags and the next sample pins); `edge` = `edge_of()` on
+the client target (x==0 / x≥W-2 / y==0 / y≥H-2) → one over-clamp per axis per
+edge visit, sent once the target is reached. `session` is always on and is
+not listed.
+
 ### 2. Paced sends: one step per pace tick, never faster
 
 Motion goes out as **one bounded step per pace tick** (`SH_REL_STEP_PACE_MS`
@@ -153,12 +192,15 @@ ceiling, see §2 — not what this plan fixes). Then **beos** (the drift complai
 
 ## Steps
 
-1. **Daemon**: per-session/reset/resume/idle/edge re-home; `focus` hint
-   record (type 7, no payload) from the SPA; a session-wide paced sender (one
-   bounded step per tick across all samples) with a pending-motion model
-   (`lx/ly` = sent, latest-target-wins). Unit tests for the pacer and the
-   pending model. Defaults keep every station byte-identical (new triggers off
-   except `session`; pacing off unless `SH_REL_MAX_STEP`/pace are set).
+1. **Daemon — DONE 2026-08-18**: reset/resume/focus/idle/edge re-home; `focus`
+   hint record (type 7, no payload) from the SPA; a session-wide paced sender
+   (one bounded step per tick across all samples) with a pending-motion model
+   (`sent` vs `target`, latest-target-wins). Unit tests for the model, the
+   step/quantum arithmetic, the edge detector and the trigger parser
+   (`rel_bridge.rs` tests). Defaults keep every station byte-identical (new
+   triggers off; pacing off unless `SH_REL_PACED=1` — an explicit switch
+   rather than "when the step knobs are set", because aux and rhapsody
+   already set `SH_REL_MAX_STEP` and must not change under this landing).
 2. **Calibration recipe** (documented, per station, ~10 min): gain (existing)
    + the loss knee sweep at the tracking setting baked in the checkpoint;
    record both in the fixture with the measurement. beos: re-bake the golden
@@ -170,18 +212,14 @@ ceiling, see §2 — not what this plan fixes). Then **beos** (the drift complai
    to the top edge then back — model/guest agree afterwards.
 4. **Feel + evidence, on the operator's Mac browser** (not a probe): with
    pointer telemetry ON at both ends —
-   - client: `spa/src/input/pointerRecorder.ts` already rings every
-     pointerdown/up/cancel/move with two clocks and pushes `ptr` rows to
-     `POST /clientlog` every ~2 s (`scripts/serve/pen-trace.py` decodes it);
-     it currently **drops mouse events** (built for the S-Pen investigation).
-     Change: a `?ptrrec=1` switch (and `window.__osgPtrRec`) that keeps mouse
-     rows, and stamp each row with the station id, the mapped guest coordinates
-     and the wire `cseq` so rows join exactly with the daemon side; keep the
-     pen default untouched.
-   - daemon: `SH_INPUT_TELEMETRY=2` on the station (exists: per-inject lines
-     with move sequence, batch length, inject RTT, button transitions) — add
-     the client `cseq` and the bridge's pending/sent model values to the
-     level-2 line.
+   - client — DONE: `?ptrrec=1` (or `window.__osgPtrRec = true`) keeps mouse
+     rows in `spa/src/input/pointerRecorder.ts` and adds one `w` row per
+     absolute move datagram (`w,now,g,<cseq>,<guest x>,<guest y>`; the `tile`
+     field of the clientlog record is the station id); `pen-trace.py --moves`
+     prints them. Pen default untouched.
+   - daemon — DONE: `SH_INPUT_TELEMETRY=2` on a paced station prints
+     `[input-tel rel] cseq=<applied> step=(dx,dy) sent=(x,y) pending=(px,py)`
+     per step plus `rehome pin=… target=…` and `idle re-home` lines.
    Sessions to record: human sweeps at several speeds, Cmd-Tab away and back,
    window drags, edge touches, a reset mid-session. Verdict from the joined
    logs (target vs sent vs framebuffer spot checks) + eyeball on the live
