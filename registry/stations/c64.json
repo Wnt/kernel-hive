@@ -167,6 +167,12 @@
     "blurb": "A full windows-icons-menus desktop (GEOS) running on a 1 MHz, 64 KB home computer — the 8-bit era’s answer to the Macintosh.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs VICE (x64sc) full-screen emulating a C64 that auto-boots the GEOS 2.0 deskTop; streamhost captures the Linux framebuffer + AC97 audio (the C64 SID routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke C64 breadbin + 1541 + CRT). See streamhost/docs/BRIDGE.md. HOST-NATIVE SINCE 2026-08-17 (de-bridging campaign): VICE x64sc runs on the host, headless — no QEMU, no guest Debian, no X — and the scene is restored from a VICE checkpoint rather than a QEMU snapshot. ONE CAPABILITY IS NOT BACK YET: the bridged exhibit had a COMM 1351 mouse on control port 1, and the host-native input path has no pointer verb at all, so this station is KEYBOARD-ONLY for now and the registry declares pointer.present false. GEOS still runs; it is driven from the keyboard. Wiring the mouse is scoped follow-up work (the browser sends absolute coordinates, the 1351 is a proportional device VICE drives from relative host motion). The prose above still describes the retired bridge tile and is rewritten with the other nine."
   },
+  "emulator": {
+    "family": "VICE",
+    "version": "3.10.0",
+    "source": "scripts/build-guests/emulators/build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
+    "driver": "x64sc"
+  },
   "reset": {
     "stationDir": "c64",
     "pointer": "none",

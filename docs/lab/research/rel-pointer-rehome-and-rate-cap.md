@@ -1,9 +1,16 @@
-# Relative-pointer stations: auto re-home, paced steps and step tables (plan)
+# Relative-pointer stations: auto re-home + paced sends (plan)
 
-**Status: plan, 2026-08-18. Nothing implemented.** Scope: the twelve
+**Status: plan, 2026-08-18. Nothing implemented.** Operator direction: work on
+the **live stations** directly (canary daemon + `POST /restore/<id>` to put the
+scene back), no clones. Scope: the eleven
 `dbus-rel` homing-bridge stations (`aux macos753 hpuxvue sunos414 rhapsody
-nt351 freedos msdoswin1 star indyr4400 c64 amstradcpc`; the pointer-lock
-type-4 stations `qnx beos` are a different path and out of scope). Goal: the
+freedos msdoswin1 star indyr4400 c64 amstradcpc`) plus `beos` for its
+absolute-fallback path. **`nt351` is dropped from this plan**: it is a Win32
+guest with TCP/IP, so it gets the win95/win311 route instead — a warpd hybrid
+agent (`SetCursorPos` motion, real PS/2 buttons; port of
+`guest-agents/win9x/warpnet.c` built for the 3.51 subsystem) — which is
+absolute by the guest's own API and needs no bridge. `qnx` (pointer-lock) is
+out of scope. Goal: the
 guest cursor sits under the visitor's browser pointer **without the visitor
 ever chasing it to a corner**, and stays there through fast sweeps, app
 switches and resets — with the guest untouched (no agents, drivers, HW
@@ -48,8 +55,8 @@ much work, see [`candidate-aux.md`](candidate-aux.md) discussion 2026-08-18).
   delivers ±63 per report at the ADB poll rate (~11 ms), so nothing is ever
   lost — the guest just lags. The lag is guest-side bandwidth × the linear but
   slow gain we chose ("Very Slow", 0.36 px/count: 1152 px ≈ 3200 counts ≈ 50
-  reports ≈ 0.5 s). Faster Mac tracking settings are accelerated, which the
-  open-loop model could not follow — until §3 below.
+  reports ≈ 0.5 s). Faster Mac tracking settings are accelerated, so they stay off:
+  the ceiling is the link, see §2 "Speed ceiling".
 - **beos (fast, drifts):** a pointer-lock (type-4) station: raw deltas with
   BeOS's own acceleration on — that is the speed. Under lock there is no
   browser cursor to disagree with; when the lock drops (Cmd-Tab away and back)
@@ -60,6 +67,15 @@ much work, see [`candidate-aux.md`](candidate-aux.md) discussion 2026-08-18).
 The visitor's manual corner chase works because an edge clamp is the one
 event where guest and model agree by construction. The plan below makes the
 daemon do that itself, and stops sending what the guest cannot take.
+
+## Precondition: guest acceleration OFF, baked into every checkpoint
+
+Every station on this path pins its guest to a linear tracking setting in the
+golden (macos753 "Very Slow", aux "Very Slow", hpuxvue `xset m 1 1`, beos —
+acceleration disabled by the operator 2026-08-18, **not yet persisted in its
+golden: re-bake**). With that, px per count is one constant
+(`SH_CURSOR_SCALE` = 1/gain, plus `SH_REL_QUANTUM` where the guest truncates)
+and no acceleration-aware modelling is needed anywhere.
 
 ## Design (two small mechanisms, one shared model)
 
@@ -89,82 +105,94 @@ Sequencing rule (the Xerox Star lesson in the code): pin, settle, walk are one
 serialised sequence under the mouse lock, and the walk goes through the
 rate-capped sender — never a bare burst.
 
-### 2. Rate cap = one step per pace tick
+### 2. Paced sends: one step per pace tick, never faster
 
-Motion is sent as **one step per pace tick** (`SH_REL_STEP_PACE_MS`, exists;
-≥ the guest's own sampling period — Mac OS applies its curve per VBL, so
-≥ 17 ms there), never faster; motion beyond that stays pending against the
-newest target and drains over the next ticks. Nothing is ever pushed into the
-PS/2/ADB accumulator faster than the guest consumes it, so nothing is lost:
-that is the whole anti-drift guarantee, and it is what macos753 gets today by
-accident of ADB queueing. Feel: ordinary sweeps are unchanged; a pathological
-jump (Cmd-Tab return) becomes a fast slide of a few ticks to the pointer.
+Motion goes out as **one bounded step per pace tick** (`SH_REL_STEP_PACE_MS`
+and `SH_REL_MAX_STEP` — both exist since 2026-08-18; the pace must be ≥ the
+guest's own sampling period, e.g. ≥ 17 ms where the guest applies motion per
+VBL, and the step ≤ one report: ADB 63, PS/2 255), across *all* samples of a
+session — not per sample as today. Motion beyond that stays pending against
+the newest target and drains over the next ticks. Nothing is ever pushed into
+the PS/2/ADB accumulator faster than the guest consumes it, so nothing is
+lost — that is the whole anti-drift guarantee, and it is what macos753 gets
+today by accident of ADB queueing. Feel: ordinary sweeps are unchanged; a
+pathological jump (Cmd-Tab return) becomes a fast slide of a few ticks.
 Springiness is bounded to `step × latency`, one-directional (latest target
 wins, no rebound), and measured in the acceptance below.
 
-### 3. Step table — speed WITH acceleration on, still exact
+**Speed ceiling is a guest property, not ours.** With acceleration off, top
+speed = (counts the guest link accepts per second) × (px per count). For
+macos753 that is the emulated ADB link — ±63 counts per report at the guest's
+poll rate — × 0.36 px/count, which is why its cursor "catches up" on fast
+moves even though it never drifts; A/UX at the same setting is 0.75 px/count,
+PS/2 guests carry ±255 per packet at 100 Hz. The daemon cannot raise a guest's
+ceiling; the one cheap avenue for the q800 pair is the ADB poll interval in
+our QEMU fork (`mac_via` autopoll) — a follow-up to measure, outside this
+plan.
 
-The classic accelerators are all functions of the **per-report delta**: Mac OS
-`mcky` tracking tables, A/UX's Toolbox (`trunc(0.75·u)` at Very Slow, more
-above), DOS mouse drivers' mickey thresholds, Windows/OS-2 acceleration
-thresholds, X `xset m N T`, BeOS's speed/acceleration. If the daemon only ever
-sends a small **fixed set of step sizes**, one per tick, the px moved per step
-is a constant per size — a per-station table `SH_REL_STEP_TABLE=1:0.36,4:1.4,
-16:6,63:40` (units → px), measured with the framebuffer sweep — and the model
-(kept in px, pending motion in px) is exact **with acceleration on**. Big
-distances go as the largest step (fast, accelerated — the BeOS feel), the last
-few px as small steps (precise). Constraints to honour: one guest report per
-step (ADB ≤ 63 units, PS/2 ≤ 255), one step per guest sampling period. Where
-the guest is linear the table has one row and this degenerates to
-`SH_CURSOR_SCALE`; where it truncates (A/UX) it subsumes `SH_REL_QUANTUM`.
-Determinism is the thing to **verify by measurement** first (repeat sweeps
-identical?), which is the spike below.
+## Spike first (measurement only, on the LIVE stations, no daemon change)
 
-This resolves the operator's two contradictory wishes: macos753 can move to a
-fast tracking setting (re-bake) and stop lagging; beos can keep its speed and
-stop drifting (it would run this bridge for its absolute-fallback path, and
-arguably instead of pointer lock — same table).
-
-## Spike first (measurement only, clones, no daemon change)
-
-1. **macos753 clone**: step tables at Very Slow *and* at a fast tracking
-   setting — for steps {1,2,4,8,16,32,63}, 20 repeats each, one step per 20 ms:
-   px per step and its variance. Determinism = variance 0. Also the knee: how
-   many px/s the fast table reaches (does it end the "catching up"?).
-2. **beos clone**: same for PS/2 steps {1,4,16,64,128,255} with BeOS
-   acceleration as baked; plus the "lock dropped → abs fallback" reproduction.
-3. Result decides: table-driven bridge (§3) if deterministic; plain cap (§2)
-   + acceleration off if not.
+1. **macos753** (live station; the sweeps are QMP `mouse_move`s + screendumps, and `POST /restore` puts the scene back): the loss knee — send N counts per tick for k ticks
+   (N ∈ {16, 32, 63, 128, 256}, pace ∈ {8, 16, 20 ms}), read the framebuffer;
+   the largest N/pace applied losslessly is the station's `SH_REL_MAX_STEP` /
+   `SH_REL_STEP_PACE_MS`. Also the resulting px/s ceiling, to state the
+   "catching up" number.
+2. **beos** (live, acceleration off — persist it in the golden first): gain (expect 1.0), then the same knee for
+   PS/2 steps {32, 64, 128, 255}; reproduce "lock dropped → abs fallback" drift
+   and confirm it vanishes with the bridge re-homed and paced.
+3. Result: per-station pace/step values, in the fixtures with the measurement.
 
 ## PoC station: **macos753** — then beos, nt351 / rhapsody, then aux
 
 Why macos753 first: the framebuffer measurement tool exists and was built for
 it (`scripts/install-vision/adb_pointer.py`: goto/where/gain), reset is an
 instant `loadvm` so the "cursor teleported by reset" symptom is reproducible
-on demand, its slowness is the operator's concrete complaint, and it is the
-same machine as aux. Then **beos** (the drift complaint; PS/2 + accel, KVM),
-`nt351`/`rhapsody` (plain x86 shapes), `aux`, then the rest by measurement.
+on demand, and it is the same machine as aux (its slowness is a guest-side
+ceiling, see §2 — not what this plan fixes). Then **beos** (the drift complaint; PS/2, acceleration off, KVM),
+`rhapsody` (plain x86 PS/2 shape), `aux`, then the rest by measurement.
 
 ## Steps
 
 1. **Daemon**: per-session/reset/resume/idle/edge re-home; `focus` hint
-   record (type 7, no payload) from the SPA; one-step-per-tick sender with a
-   step table (single-row table == today's scale) and a pending-motion model in
-   px (`lx/ly` = sent, latest-target-wins). Unit tests for the step chooser and
-   the pending model. Defaults keep every station byte-identical (new triggers
-   off except `session`; no table = current behaviour).
-2. **Calibration recipe** (documented, per station, ~10 min): the step sweep
-   at the tracking setting baked in the checkpoint; record the table in the
-   fixture with the measurement. macos753: re-bake at a fast tracking setting
-   once its table is proven.
-3. **PoC on macos753 clone**: (a) reset → first sample lands on target without
+   record (type 7, no payload) from the SPA; a session-wide paced sender (one
+   bounded step per tick across all samples) with a pending-motion model
+   (`lx/ly` = sent, latest-target-wins). Unit tests for the pacer and the
+   pending model. Defaults keep every station byte-identical (new triggers off
+   except `session`; pacing off unless `SH_REL_MAX_STEP`/pace are set).
+2. **Calibration recipe** (documented, per station, ~10 min): gain (existing)
+   + the loss knee sweep at the tracking setting baked in the checkpoint;
+   record both in the fixture with the measurement. beos: re-bake the golden
+   with acceleration off first.
+3. **PoC on macos753** (live station, canary daemon): (a) reset → first sample lands on target without
    an edge visit (framebuffer proof); (b) 2000 px jump lands within one quantum
    of the target after ≤ N frames, no residual; (c) fast scribble of 30 random
    targets ends with `res = 0,0` (the irix acceptance); (d) edge trigger: drag
    to the top edge then back — model/guest agree afterwards.
-4. **Feel** via the CT950 headed-Chrome browser probe
-   ([`browser-probe`](../research/) memory): human sweeps, Cmd-Tab away and
-   back, window drag; operator eyeball on the live station after canary.
+4. **Feel + evidence, on the operator's Mac browser** (not a probe): with
+   pointer telemetry ON at both ends —
+   - client: `spa/src/input/pointerRecorder.ts` already rings every
+     pointerdown/up/cancel/move with two clocks and pushes `ptr` rows to
+     `POST /clientlog` every ~2 s (`scripts/serve/pen-trace.py` decodes it);
+     it currently **drops mouse events** (built for the S-Pen investigation).
+     Change: a `?ptrrec=1` switch (and `window.__osgPtrRec`) that keeps mouse
+     rows, and stamp each row with the station id, the mapped guest coordinates
+     and the wire `cseq` so rows join exactly with the daemon side; keep the
+     pen default untouched.
+   - daemon: `SH_INPUT_TELEMETRY=2` on the station (exists: per-inject lines
+     with move sequence, batch length, inject RTT, button transitions) — add
+     the client `cseq` and the bridge's pending/sent model values to the
+     level-2 line.
+   Sessions to record: human sweeps at several speeds, Cmd-Tab away and back,
+   window drags, edge touches, a reset mid-session. Verdict from the joined
+   logs (target vs sent vs framebuffer spot checks) + eyeball on the live
+   station after the canary.
+   **The same captures become the test harness**: a replay tool feeds recorded
+   `ptr` rows as type-1/type-2 records into the daemon (extend the input-bench
+   loopback, `SH_INPUT_BENCH_ADDR`, to the dbus backends — today it only serves
+   router backends) against the live station, then reads the framebuffer
+   residual; the recorded traces are the fixtures, replayed with the recorded
+   timings.
+
 5. Roll out by measurement to the remaining stations; `docs/IO-PATHS.md`
    homing-bridge row updated.
 
@@ -175,8 +203,8 @@ same machine as aux. Then **beos** (the drift complaint; PS/2 + accel, KVM),
 - 30-target scribble at ≥ 3000 px/s: final residual 0 (framebuffer).
 - Ordinary motion (≤ 1500 px/s) unchanged frame-for-frame vs today (the cap
   never engages: assert from daemon telemetry).
-- Guests with acceleration on stay out of scope until it is turned off in the
-  checkpoint (documented per station).
+- Every station's checkpoint has acceleration off (documented per station);
+  beos re-baked.
 
 ## Risks / open
 
@@ -184,6 +212,8 @@ same machine as aux. Then **beos** (the drift complaint; PS/2 + accel, KVM),
   servers clamp at W-2): use `>= W-2`.
 - Client hint needs a wire-protocol bump (record type 7): SPA + daemon land
   together, old clients simply never send it.
+- Telemetry volume: mouse rows at 60–120 Hz for a few minutes is fine for the
+  rotating `clientlog.jsonl` (~36 h retention), but keep it opt-in per tab.
 - Idle re-home must never fire during a held button (drag) — check
   `last_abs`/button state.
 - TCG stations: the settle after a pin is longer under load; make

@@ -225,6 +225,11 @@
     "blurb": "The C:\\> prompt of MS-DOS 6.22 (1994) with Microsoft’s first Windows 1.0 (1985) layered on top — the tiled-window dawn before the desktop metaphor.",
     "notes": "Live streamhost tile. One combined image: boots MS-DOS 6.22 to C:\\> and launches Windows 1.01 via WIN — presented here as a single exhibit. Archetype: beige-ibm-pc (the boxy DOS-era CRT + IBM-PC fit)."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "msdoswin1",
     "pointer": "rel",

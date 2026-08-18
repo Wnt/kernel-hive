@@ -199,6 +199,12 @@
     "blurb": "The missing ancestor: the minicomputer Unix and C grew up on. Log in as root — there is no password — and the entire operating system's source code is sitting in /usr/src, on a 16-bit machine with four megabytes of memory.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs Open SIMH's pdp11 simulator as a PDP-11/70 (4 MB of core, FP11) booting 2.11BSD off a 1 GB MSCP pack, drawn as green phosphor in a fixed 80x24 xterm; streamhost captures the Linux framebuffer exactly like every other bridge tile. SIMH is NOT in the frozen bridge base and Debian's package is 3.8.1 without SDL video, so the builder compiles Open SIMH from source into this tile's overlay (pin a1f57fa3, ~92 s), the amiga.sh precedent. THREE THINGS FUTURE WORK MUST NOT UNDO: build with `make pdp11 AIO_CCDEFS=` (the default async-I/O build DEADLOCKS across loadvm, both threads in futex_wait, every keystroke lost while the exhibit looks healthy); ship `set throttle 10%` and NOT `set cpu idle` (idle detection rides on a calibrated timer that a snapshot restore destroys permanently — 38-80 s per keystroke afterwards — and the price of avoiding it is 19.7% of a host core instead of 2.4%); and keep the launcher's xdotool focus helper, because with no window manager X's PointerRoot focus parks the pointer at (0,0) outside the terminal and swallows every key. The golden rests at 2.11BSD's own multiuser login prompt, the state an unattended cold boot reaches; root has no password, which the placard and the SPA hint carry because the screen cannot. Keyboard-only exhibit, silent, mono-terminal archetype. See streamhost/docs/BRIDGE.md and docs/guests/pdp11.md."
   },
+  "emulator": {
+    "family": "Open SIMH",
+    "version": "V4.1-0",
+    "source": "Open SIMH @ a1f57fa3 (V4.1-0 Current), pinned in scripts/build-guests/tiles/<id>.sh",
+    "driver": "pdp11"
+  },
   "reset": {
     "stationDir": "pdp11",
     "pointer": "none",

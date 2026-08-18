@@ -236,6 +236,11 @@
     ],
     "blurb": "Windows for Workgroups — the tiled Program Manager era, riding on top of DOS."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "win311",
     "pointer": "rel",

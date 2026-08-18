@@ -9,7 +9,7 @@ import react from '@vitejs/plugin-react';
 // registry/stations/*.json and registry/posters/*.md — save the file, reload the
 // tab — with no bundled copy to go stale and no generated file in the tree. On
 // the box the same bytes arrive the other way, published by serve-https-spa.sh.
-const RUNTIME_DOCUMENTS = ['/gallery-manifest.json', '/poster-docs.json'];
+const RUNTIME_DOCUMENTS = ['/gallery-manifest.json', '/poster-docs.json', '/fleet-table.json'];
 
 function registryDocuments(): Plugin {
   return {

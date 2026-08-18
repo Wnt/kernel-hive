@@ -196,6 +196,11 @@
     "blurb": "A hard-real-time microkernel OS whose Photon microGUI once fit a web browser and a whole desktop onto a single floppy.",
     "notes": "Live streamhost tile with a true 1:1 relative mouse — the guest owns a PS/2 pointer, so under pointer lock the SPA ships raw deltas straight to it. QNX 6.5.0 self-hosting live CD. Archetype: putty-lcd (early-2000s embedded/industrial panel-PC fit)."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "qnx",
     "pointer": "rel",

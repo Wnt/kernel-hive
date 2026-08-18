@@ -235,6 +235,12 @@
     "blurb": "East Germany's flagship school computer, and the one machine here whose operating system introduces itself: CAOS prints its own list of commands on the screen at power-on, because it was designed for a room of fourteen-year-olds who did not yet know the magic word.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs a purpose-built MAME 0.289 (SUBTARGET=kc85, src/mame/ddr/kc.cpp, tag mame0289) emulating the KC 85/4; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The romset is assembled BY SHA1 from a staged merged preservation zip, against the shipping binary's own -listxml: MAME's `basic_c0.854` is stored in that archive under the name `kc85_3/basic_c0.853` and no member called `basic_c0.854` exists, so a filename-driven assembly silently yields a set with no BASIC. -verifyroms is NOT the gate (kc85_4 is BIOS-selectable, so it objects to the absent caos41 alternative); the build asserts the sha1 of the three ROMs the tile pins. The driver is `preliminary`, so the binary carries the skip-warnings patch and ui.ini sets skip_warnings 1 — otherwise the exhibit is a red error panel for ever. The golden is the machine's own untouched CAOS 4.2 power-on screen. German keyboard: keyboard.charMap is derived mechanically from src/mame/ddr/kc_keyb.cpp with scripts/dev/mame-keymap.py, and includes the letter row because this machine's UNSHIFTED letters are CAPITALS. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/kc854.md."
   },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
+    "driver": "kc85"
+  },
   "reset": {
     "stationDir": "kc854",
     "pointer": "none",

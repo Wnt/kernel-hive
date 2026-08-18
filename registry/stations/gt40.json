@@ -197,6 +197,12 @@
     "blurb": "A PDP-11 with a vector processor bolted to it and a light pen on a cord: no pixels, no keyboard worth using, just an electron beam drawing lines exactly where the program tells it. The 1973 Lunar Lander it is running was written to show the machine off, and it still does.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs Open SIMH's pdp11 simulator with the VT11 vector display, executing the original lunar.lda paper tape that ships inside the MIT-licensed Open SIMH tree — no external media, no staged asset, nothing to license. The exhibit is self-sustaining: the LEM falls for about two minutes, crashes, and the program restarts itself, so the golden rests at the first seconds of a fresh descent. THE ONLY POINTER-ONLY EXHIBIT IN THE COLLECTION and the only one where a light pen is the historically correct input device: the telemetry menu, the rotation arrows and the throttle bar are all driven by pointing, and there is no keyboard input of any kind (Open SIMH wires the pen to mouse button 1, so the pen is on the glass only while the button is held). No archetype models a vector CRT with a light pen; mono-terminal is a deliberate fallback, chosen because it is the only monochrome DEC-style CRT in the set. Displayed on the larger VR17 tube (crt=vr17) rather than the GT40's own VR14, because SIMH's VR14 model clips the twelve-item menu mid-word. See streamhost/docs/BRIDGE.md and docs/guests/gt40.md."
   },
+  "emulator": {
+    "family": "Open SIMH",
+    "version": "V4.1-0",
+    "source": "Open SIMH @ a1f57fa3 (V4.1-0 Current), pinned in scripts/build-guests/tiles/<id>.sh",
+    "driver": "pdp11 + VT11 (GT40)"
+  },
   "reset": {
     "stationDir": "gt40",
     "pointer": "abs",

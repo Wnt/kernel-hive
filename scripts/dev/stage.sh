@@ -87,7 +87,7 @@ EOF
 
   local pack="$REPO/build/staging-$name.tar"
   tar -C "$REPO/spa/dist" -cf "$pack" . || die "tar failed"
-  tar -C "$REPO/build/registry" -rf "$pack" gallery-manifest.json poster-docs.json || die "tar manifests failed"
+  tar -C "$REPO/build/registry" -rf "$pack" gallery-manifest.json poster-docs.json fleet-table.json || die "tar manifests failed"
   printf 'session=%s\nsha=%s\nbranch=%s\nwhen=%s\n' "$name" "$(git -C "$REPO" rev-parse --short HEAD)" \
     "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$REPO/build/.staged-rev"
   tar -C "$REPO/build" -rf "$pack" .staged-rev

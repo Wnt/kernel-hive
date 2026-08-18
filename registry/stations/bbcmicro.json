@@ -195,6 +195,12 @@
     "blurb": "The machine the BBC specified and Acorn built, half-funded into every British school, and the only home computer whose BASIC had a 6502 assembler inside it — so the distance from a first program to writing machine code was a pair of square brackets. The team that finished it went on to design the ARM.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs a purpose-built MAME 0.289 `bbcb` (SUBTARGET=bbcb, SOURCES=src/mame/acorn, built in the trixie chroot — which is now the host's own generation, so it buys reproducibility rather than the ABI match it used to); streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. Unlike the VICE tiles this one keeps the base's full 1024x768 X root and runs MAME fullscreen with -keepaspect and -artwork_crop, which drops the driver's keyboard-LED strip. The five ROM dumps are preservation-source with NO authorised URL and are staged by the operator, gated on SHA-1 and assembled into three MAME zips by the builder; MAME's own defaults are shipped, so the Acorn 8271 disc interface is fitted and the banner carries its DFS line. The golden is the machine's own untouched power-on screen. Keyboard-only exhibit; thirteen characters sit on different keys from a PC (keyboard.charMap, derived from the driver's PORT_CHAR table) and CAPS LOCK is on at reset. A sibling exhibit, armeval, will show the ARM Evaluation System on this same driver via `bbcb -tube arm`. See streamhost/docs/BRIDGE.md and docs/guests/bbcmicro.md."
   },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
+    "driver": "bbcb"
+  },
   "reset": {
     "stationDir": "bbcmicro",
     "pointer": "none",

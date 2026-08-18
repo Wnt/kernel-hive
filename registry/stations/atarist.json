@@ -208,6 +208,12 @@
     "blurb": "The 16-bit “Jackintosh” — a 68000 with the GEM windows-icons-menus desktop and built-in MIDI, shown here booting the open-source EmuTOS straight to the classic monochrome GEM desktop.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs the hatari Atari ST emulator full-screen (EmuTOS → GEM desktop); streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke Atari ST wedge). See streamhost/docs/BRIDGE.md."
   },
+  "emulator": {
+    "family": "Hatari",
+    "version": "2.5.0",
+    "source": "apt hatari in the trixie overlay + EmuTOS (scripts/build-guests/tiles/atarist.sh)",
+    "driver": "Atari ST"
+  },
   "reset": {
     "stationDir": "atarist",
     "pointer": "abs",

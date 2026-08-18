@@ -119,6 +119,12 @@
     "blurb": "Sun’s BSD-derived UNIX wearing OpenLook — the beveled, pinnable OpenWindows desktop Sun shipped before CDE won the toolkit war.",
     "notes": "The other branch of Sun's desktop history next to the CDE solaris station: same vendor, same SPARC, OPEN LOOK instead of Motif. Auto-logs into OpenWindows as an unprivileged guest; mouse + keyboard both work (click-to-focus). sun4m under TCG on a standalone qemu-system-sparc build; loadvm golden restore."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "github.com/Wnt/qemu @ kernel-hive (11.0.2 + fast-poll), built to /opt/qemu-sparc",
+    "driver": "SS-5"
+  },
   "notes": [
     "listed 2026-08-18: OpenWindows desktop as unprivileged guest, loadvm golden, mouse + keyboard working",
     "keyboard-in-X fix: SetInput: select (click-to-focus) in guest ~/.Xdefaults + openwin owns console tty; under the default followmouse the keyboard only reached a window under the pointer, reading as dead. Diagnosed by two competing agents (guest-config vs QEMU-escc); escc ruled out, guest-config won.",

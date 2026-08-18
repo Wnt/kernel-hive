@@ -241,6 +241,11 @@
     ],
     "blurb": "Bell Labs’ successor to Unix, still alive — everything is a file, over the network."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "ninefront",
     "pointer": "rel",

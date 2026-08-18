@@ -181,6 +181,12 @@
     "blurb": "The machine that taught Britain to program: £175, forty rubber keys, and a whole BASIC keyword printed on each one — press P and the word PRINT appears. Its eight colours are stored one pair per 8×8 cell, so sprites drag their colours across each other, and a generation grew up calling that attribute clash rather than a fault.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Debian's own MAME 0.251 (`spectrum` driver, `-bios en`) emulating a 48K ZX Spectrum; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The one external input is the 16 KB Sinclair ROM, taken from Debian's `spectrum-roms` package under Amstrad's 1999 emulator permission and never committed (docs/lab/ASSETS-MANIFEST.md). MAME runs fullscreen with -keepaspect on the stock 1024x768 X root, which the 4:3 picture fills exactly. The golden is the machine's own untouched power-on screen. KEYWORD ENTRY is the exhibit and the catch: at the K cursor one keypress enters a whole token, so the registry demoProgram is written as the KEYSTROKES a person presses, not as the listing they produce. The 40-key matrix has no punctuation keys at all — every symbol is SYMBOL SHIFT plus a letter — so the SPA's zxspectrum on-screen keyboard carries CAPS SHIFT / SYMBOL SHIFT latches, EXTENDED MODE, and the symbol chords a type-in cannot reach. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/zxspectrum.md."
   },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
+    "driver": "spectrum"
+  },
   "reset": {
     "stationDir": "zxspectrum",
     "pointer": "none",

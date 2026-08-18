@@ -255,6 +255,11 @@
     ],
     "blurb": "MeeGo’s heir from Jolla — the gesture-driven Nordic take on the smartphone."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "sailfishos",
     "pointer": "abs",

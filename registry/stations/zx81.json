@@ -161,6 +161,12 @@
     "blurb": "The machine that put a computer in a British newsagent: £69.95 in kit form, a Z80, a membrane keyboard, one kilobyte of memory, no sound and no colour — and a million and a half of them sold.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs MAME 0.289 (SUBTARGET=zx81, pinned upstream commit f34f0250, built in the trixie chroot by scripts/build-guests/emulators/build-mame-zx81.sh); streamhost captures the Linux framebuffer + AC97 audio exactly like every other bridge tile. The ROM is the second revision (-bios 2nd, zx81a.rom, sha1 7b143ee9…), which is what almost every shipped ZX81 contained; it is preservation-source material copyright Nine Tiles Networks Ltd, staged on the box and never committed. RAM is pinned to the machine as sold, -ramsize 1K, rather than MAME's 16K default. The golden is the untouched power-on screen — a white field with one inverse K — and readiness is decided GEOMETRICALLY, not by counting bright pixels, because this machine blanks its display while it computes and a photometric test cannot tell that frame from the fixture. Keyboard-only exhibit; the ZX81 has no sound hardware. See streamhost/docs/BRIDGE.md and docs/guests/zx81.md."
   },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
+    "driver": "zx81"
+  },
   "reset": {
     "stationDir": "zx81",
     "pointer": "none",

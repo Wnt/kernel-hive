@@ -181,6 +181,12 @@
     "blurb": "The first computer of any kind to sell a million: 5 KB of memory, 22 columns of blue text on a television set, and William Shatner asking why you would buy just a video game.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (xvic) emulating a PAL VIC-20 that boots its ROM to the CBM BASIC V2 READY prompt; streamhost captures the Linux framebuffer + AC97 audio (the VIC-I sound routed through ALSA) exactly like every other tile. VICE is already in the frozen bridge base (built from source for the c64 tile) and bundles the Commodore ROMs, so this tile needs no external media at all. Keyboard-only exhibit (the machine’s other input was a joystick); uses the beige-tower-crt fallback until a bespoke VIC-20 archetype exists. See streamhost/docs/BRIDGE.md and docs/guests/vic20.md."
   },
+  "emulator": {
+    "family": "VICE",
+    "version": "3.10.0",
+    "source": "scripts/build-guests/emulators/build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
+    "driver": "xvic"
+  },
   "reset": {
     "stationDir": "vic20",
     "pointer": "none",

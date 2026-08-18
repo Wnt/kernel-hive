@@ -172,9 +172,9 @@ tracked `streamhost/stations/soltest-*/` launchers (clone scaffolds that run out
 > `deploy`, by an agent that had been told not to run `manifests`. **With
 > parallel tile work in flight, treat `deploy` as equally forbidden.**
 >
-> **`serve-https-spa.sh manifests` renders and wholesale-replaces all four serve
+> **`serve-https-spa.sh manifests` renders and wholesale-replaces all five serve
 > documents** (`tiles.json`, `gallery-manifest.json`, `poster-docs.json`,
-> `golden-manifest.json`) from the publishing worktree's registry, atomically. It therefore **deletes every tile another
+> `fleet-table.json`, `golden-manifest.json`) from the publishing worktree's registry, atomically. It therefore **deletes every tile another
 > worktree published since yours was branched** — silently, and the tile simply
 > vanishes from the gallery while its service stays `active`, which reads as a
 > tile bug rather than a publish bug.
