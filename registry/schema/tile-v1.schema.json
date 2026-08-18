@@ -191,6 +191,20 @@
       "type": "object",
       "required": ["archetypeId", "transport", "accentColor", "eraLabel"]
     },
+    "emulator": {
+      "type": "object",
+      "description": "WHICH emulator produces this station's pixels, declared once here because nothing else in the repo records it machine-readably (QEMU/MAME/VICE/… versions live in build-script pins and prose). For a Tier-2 bridge station this is the emulator INSIDE the kiosk, not the QEMU that hosts the kiosk (that is runtime.qemu.binary). Required for every production entry; rendered into fleet-table.json for the SPA's /fleet view.",
+      "required": ["family", "version", "source"],
+      "properties": {
+        "family": { "type": "string", "minLength": 1, "description": "Product name: QEMU, MAME, VICE, Hatari, Open SIMH, es40, … `none` for a poster with no runtime." },
+        "version": {
+          "description": "String or null (the schema evaluator has no type unions; validate_rules.validate_emulator enforces it). Release or pin the box actually runs (\"0.289\", \"11.0.2\", a short commit). null = not recorded anywhere in the repo yet — the table shows the gap instead of a guess."
+        },
+        "source": { "type": "string", "minLength": 1, "description": "Where the pin lives / how the binary was built (script path, package, fork)." },
+        "driver": { "type": "string", "minLength": 1, "description": "The emulated machine inside the emulator, where the family alone is ambiguous (MAME driver, VICE binary, QEMU -M)." }
+      },
+      "additionalProperties": false
+    },
     "keyboard": {
       "type": "object",
       "description": "How this MACHINE's keyboard differs from a PC's. Consumed by the SPA typist and by labctl (via SH_KEY_MAP in station.env). Derive it with scripts/dev/mame-keymap.py.",

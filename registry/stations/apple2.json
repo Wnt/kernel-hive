@@ -208,6 +208,12 @@
     "blurb": "A windows-icons-menus desktop (GEOS) with geoWrite & geoPaint running on a 1 MHz Apple //e — the 8-bit era’s Macintosh, on Apple hardware.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Apple //e emulator full-screen booting Apple GEOS; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke platinum Apple //e all-in-one). See streamhost/docs/BRIDGE.md."
   },
+  "emulator": {
+    "family": "LinApple",
+    "version": "2.3.0",
+    "source": "scripts/build-guests/tiles/apple2.sh",
+    "driver": "Apple //e enhanced"
+  },
   "reset": {
     "stationDir": "apple2",
     "pointer": "abs",

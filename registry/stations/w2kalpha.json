@@ -143,6 +143,12 @@
     "blurb": "The Windows that never shipped. Microsoft built Windows 2000 for DEC’s 64-bit Alpha right up to Release Candidate 2 — then Compaq dropped Alpha NT in August 1999 and the port died before release. RC2 build 2128 is the last Windows for Alpha ever built, running here on an AlphaServer ES40.",
     "notes": "Live streamhost tile — the second non-QEMU x11-runtime tile (after irix): the es40 AlphaServer ES40 emulator (fork Wnt/es40: JIT compile-on-2nd-encounter 2.37x interactive throughput, shm framebuffer export, mamectl/1 ctlsock input) runs headless, captured via SH_CAPTURE=shm. resetMode=relaunch restores the golden checkpoint (golden.axp baked from the golden nt.img) in ~3 s; the post-restore partial paint that blocked this until 2026-08-16 was the 8514/A accelerator state missing from es40's savestate (fork a09816d). archetype putty-lcd. See docs/lab/research/w2kalpha-HANDOFF.md."
   },
+  "emulator": {
+    "family": "es40",
+    "version": null,
+    "source": "github.com/Wnt/es40 main — no commit pinned in the repo",
+    "driver": "AlphaServer ES40"
+  },
   "reset": {
     "stationDir": "w2kalpha",
     "pointer": "abs",

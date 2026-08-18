@@ -1,0 +1,74 @@
+/* /fleet — the operator's fleet table. Paper palette from index.css tokens. */
+.fleet-view {
+  position: absolute; inset: 0; z-index: 10;
+  overflow: auto;
+  background: var(--paper);
+  padding: 84px 24px 48px;   /* top clears the fixed app bar */
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+.fleet-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+  margin-bottom: 12px;
+}
+.fleet-search {
+  flex: 1 1 260px; max-width: 420px;
+  padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--line-strong); background: var(--paper-raised); color: var(--ink);
+  font: inherit; font-size: 14px;
+}
+.fleet-search:focus { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.fleet-count { opacity: 0.7; font-variant-numeric: tabular-nums; }
+.fleet-summary { color: var(--ink-muted); font-size: 13px; margin-left: auto; font-variant-numeric: tabular-nums; }
+.fleet-status { color: var(--ink-soft); font-size: 15px; }
+.fleet-status code, .fleet-footnote code { font-family: var(--font-mono); font-size: 0.92em; background: var(--tint-1); padding: 1px 5px; border-radius: 4px; }
+
+.fleet-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--paper-raised); box-shadow: var(--shadow-1);
+}
+.fleet-table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-size: 13px; }
+.fleet-table th, .fleet-table td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.fleet-table thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--paper-sunken); color: var(--ink-soft);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap;
+}
+.fleet-table tbody tr:hover td { background: var(--tint-1); }
+.fleet-table tbody tr:last-child td { border-bottom: 0; }
+.fleet-row--unlisted td { color: var(--ink-muted); }
+.fleet-sort {
+  all: unset; cursor: pointer; padding: 2px 0;
+}
+.fleet-sort:hover, .fleet-sort.active { color: var(--accent-ink); }
+.fleet-sort:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; border-radius: 4px; }
+
+.fleet-col-name { position: sticky; left: 0; z-index: 1; background: var(--paper-raised); min-width: 170px; }
+.fleet-table tbody tr:hover .fleet-col-name { background: var(--paper-sunken); }
+.fleet-name { color: var(--ink); font-weight: 600; text-decoration: none; }
+.fleet-name:hover { color: var(--accent-ink); text-decoration: underline; }
+.fleet-id, .fleet-sub { display: block; color: var(--ink-muted); font-family: var(--font-mono); font-size: 11.5px; margin-top: 2px; }
+.fleet-muted, .fleet-dash { color: var(--ink-muted); }
+.fleet-col-lineage, .fleet-col-arch { max-width: 240px; }
+.fleet-col-emulator { max-width: 260px; }
+
+.fleet-badge {
+  display: inline-block; padding: 1px 7px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; line-height: 1.6; white-space: nowrap;
+  background: var(--tint-2); color: var(--ink-soft); vertical-align: baseline;
+}
+.fleet-badge--ok { background: rgba(29, 122, 76, 0.14); color: var(--ok); }
+.fleet-badge--warn { background: rgba(143, 100, 7, 0.16); color: var(--warn); }
+.fleet-badge--muted { background: var(--tint-1); color: var(--ink-muted); }
+.fleet-tier-1 { background: rgba(47, 109, 156, 0.14); color: var(--info); }
+.fleet-tier-2 { background: rgba(143, 100, 7, 0.16); color: var(--warn); }
+.fleet-tier-3 { background: rgba(29, 122, 76, 0.14); color: var(--ok); }
+.fleet-tier-4 { background: rgba(178, 58, 44, 0.14); color: var(--danger); }
+.fleet-tier-5 { background: var(--tint-1); color: var(--ink-muted); }
+
+.fleet-footnote { margin-top: 12px; color: var(--ink-muted); font-size: 12.5px; max-width: 900px; }
+@media (max-width: 720px) {
+  .fleet-view { padding: 76px 10px 32px; }
+  .fleet-summary { margin-left: 0; }
+}

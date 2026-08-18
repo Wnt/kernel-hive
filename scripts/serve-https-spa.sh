@@ -49,13 +49,14 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SPA_WEB="$REPO/spa"
 DIST="$SPA_WEB/dist"
 LOCAL_PKI="$REPO/scripts/serve/pki"
-# All four published documents are RENDERED, never committed: resolved from
+# All five published documents are RENDERED, never committed: resolved from
 # registry/stations/*.json + registry/posters/*.md on the way out
 # (stations-registry.py rendered()). publish_manifests re-renders before it reads.
 TILES_SRC="$REPO/build/registry/tiles.json"
 GALLERY_MANIFEST_SRC="$REPO/build/registry/gallery-manifest.json"
 POSTER_DOCS_SRC="$REPO/build/registry/poster-docs.json"
 GOLDEN_MANIFEST_SRC="$REPO/build/registry/golden-manifest.json"
+FLEET_TABLE_SRC="$REPO/build/registry/fleet-table.json"
 
 # host-side layout
 SERVE_DIR="/data/vms/streamhost/serve"
@@ -172,7 +173,7 @@ publish_manifests() {
     msg "ERROR: render failed (registry does not validate) — nothing published"
     exit 1
   }
-  for src in "$TILES_SRC" "$GALLERY_MANIFEST_SRC" "$POSTER_DOCS_SRC" "$GOLDEN_MANIFEST_SRC"; do
+  for src in "$TILES_SRC" "$GALLERY_MANIFEST_SRC" "$POSTER_DOCS_SRC" "$GOLDEN_MANIFEST_SRC" "$FLEET_TABLE_SRC"; do
     [ -f "$src" ] || {
       msg "ERROR: render produced no $src"
       exit 1
@@ -186,11 +187,14 @@ publish_manifests() {
   # falling back to its bundled copy, so publishing here is what makes a poster
   # edit live without a Vite build.
   $SSH "set -e; tmp=$WEBROOT/poster-docs.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $WEBROOT/poster-docs.json" <"$POSTER_DOCS_SRC"
+  # The /fleet table (tier, emulator, kiosk, I/O paths per station) is rendered
+  # from the same registry; publish it beside the gallery manifest.
+  $SSH "set -e; tmp=$WEBROOT/fleet-table.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $WEBROOT/fleet-table.json" <"$FLEET_TABLE_SRC"
   # reset-tile.sh reads this to find each station's resetMode, so a station missing
   # here has a dead "Restore to golden" button. It went stale for irix and the
   # box copy simply had no entry, which reads as `unknown osId` at reset time.
   $SSH "set -e; tmp=$SERVE_DIR/golden-manifest.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $SERVE_DIR/golden-manifest.json" <"$GOLDEN_MANIFEST_SRC"
-  msg "published tiles.json + webroot/gallery-manifest.json + webroot/poster-docs.json + golden-manifest.json"
+  msg "published tiles.json + webroot/gallery-manifest.json + webroot/poster-docs.json + webroot/fleet-table.json + golden-manifest.json"
 }
 
 cert() {

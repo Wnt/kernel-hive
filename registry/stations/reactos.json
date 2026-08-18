@@ -226,6 +226,11 @@
     "blurb": "The open-source Windows-2000 — a from-scratch, binary-compatible reimplementation of the NT 5.x kernel and Win32.",
     "notes": "Live streamhost tile. ReactOS 0.4.14 live CD (0.4.15 hangs QEMU 11 kernel init). Archetype: beige-tower-crt (a Windows-2000-era beige tower is the right period fit)."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "reactos",
     "pointer": "abs",

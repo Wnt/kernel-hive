@@ -219,6 +219,11 @@
     ],
     "blurb": "The classic Explorer shell on the NT kernel. The teal desktop that brought the Windows 95 look to enterprise NT."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "/opt/qemu-cirrusfix2: pve-qemu 11.0.2 + cirrus patches 0004/0005 (docs/guests/nt4.md)"
+  },
   "reset": {
     "stationDir": "nt4",
     "pointer": "abs",

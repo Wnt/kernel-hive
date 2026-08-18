@@ -215,6 +215,11 @@
     ],
     "blurb": "Bliss. The green hill and blue taskbar the whole world remembers."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "winxp",
     "pointer": "abs",

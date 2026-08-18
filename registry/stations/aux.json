@@ -208,5 +208,11 @@
     ],
     "blurb": "Apple's own System V Unix in a Macintosh business suit — the Finder is the shell, and /bin/sh, NFS and X11 run underneath it, on the 68040 Quadra 800.",
     "notes": "The only station where a proprietary GUI and a real Unix share one desktop: Mac apps and Unix processes side by side via the A/UX Toolbox. Installed on camera 2026-08-18 by copying the CD's pristine root slice; A/UX's own Easy Install then finished MacPartition and rebuilt the kernel."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "github.com/Wnt/qemu @ kernel-hive (11.0.2 + fast-poll), built to /opt/qemu-m68k",
+    "driver": "q800"
   }
 }

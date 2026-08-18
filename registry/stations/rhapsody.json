@@ -129,6 +129,11 @@
     "blurb": "Apple's Mac OS 8 face grafted onto the NeXT operating system it had just bought — the 1998 developer release where Mac OS X begins.",
     "notes": "Intel build under TCG on a station-specific QEMU (/opt/qemu-rhapsody, i8259 lenient-cascade patch). Sits between the nextstep station and the macos poster."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "github.com/Wnt/qemu @ kernel-hive (11.0.2 + fast-poll), built to /opt/qemu-rhapsody (i8259 lenient-cascade patch)"
+  },
   "notes": [
     "slot 146/UDP 54146 reserved by stations-registry.py new (2026-08-18)",
     "dark-launched during bring-up via scripts/dev/darklaunch-station.py",

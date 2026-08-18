@@ -235,6 +235,11 @@
     "blurb": "IBM’s 1996 \"Merlin\" — the object-oriented Workplace Shell that was famously \"a better DOS than DOS, a better Windows than Windows\".",
     "notes": "Live streamhost tile at 1024x768x64k (IBM GENGRADD on QEMU std VGA). Runs under TCG — it broke under KVM and was reverted — but remains fully interactive. Archetype: beige-tower-crt."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "os2warp",
     "pointer": "rel",

@@ -165,6 +165,12 @@
     "blurb": "Three computers in one case: an 80-column business machine, a Commodore 64, and a CP/M box with a second CPU. The one exhibit here that can show you CP/M — the operating system that ran the office before MS-DOS did.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 13 (trixie) kiosk runs VICE (x128) emulating a PAL C128; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. In VICE's SDL2 build the VDC 80-column output is a SECOND canvas — `-80col` makes it the visible one (and chooses the boot display); `-dualwindow` never becomes visible under a kiosk with no window manager. No -VDCdsize: the 1:1 window is 789x576 and fills the 800x600 X root, where the doubled one is 1578x1152 and is clipped even at 1920x1080. VICE bundles the C128 ROMs but not the CP/M system DISK, which is staged in-guest and attached to drive 8 ~10 s AFTER reset — the KERNAL boots any CP/M disk it finds at power-on, and this tile's fixture is the untouched BASIC 7.0 screen. The visitor types BOOT (one SPA keyboard button) to reach CP/M 3.0. No C64 button: GO64 works but paints the VIC-II while the visible VDC canvas freezes (measured — two byte-identical frames 10 s apart against a blinking-cursor control). Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/c128.md. HOST-NATIVE SINCE 2026-08-17 (de-bridging campaign): VICE x128 runs on the host, headless — no QEMU, no guest Debian, no X, and no in-guest attach helper. The published canvas is CHOSEN (VICE_SHM_CHIP=VDC), because x128 has two and the default would have shipped the 40-column VIC-II screen; the CP/M disk is attached to drive 8 in the same monitor command block as the checkpoint restore, past the KERNAL's boot-sector check. The prose above still describes the retired bridge tile and is rewritten with the other nine."
   },
+  "emulator": {
+    "family": "VICE",
+    "version": "3.10.0",
+    "source": "scripts/build-guests/emulators/build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
+    "driver": "x128"
+  },
   "reset": {
     "stationDir": "c128",
     "pointer": "none",

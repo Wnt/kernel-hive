@@ -242,6 +242,11 @@
     "blurb": "The MIT-licensed, still-maintained successor to BeOS — the iconic yellow window tabs, faithfully reborn.",
     "notes": "Live streamhost tile. Official haiku-r1beta5 anyboot live CD. Archetype: beige-tower-crt; a bespoke BeBox (the dual-CPU BeOS workstation) would be the ideal era-accurate model."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "haiku",
     "pointer": "abs",

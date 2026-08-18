@@ -118,6 +118,12 @@
     "blurb": "Sony's NEWS workstations were Japan's answer to Sun: BSD Unix on MIPS with an X11 desktop, sold to universities and research labs across Japan. The NWS-3260 was the portable of the line — a 1120x780 monochrome LCD folded over an R3000.",
     "notes": "Host-native MAME 0.289 nws3260 (news_r3k.cpp, working driver with a real LCD framebuffer) — chosen over the nws5000x the candidate doc first named, which has no local framebuffer. NEWS-OS 4.1R from the nwf_672rb MO kit (the 4.2.1aRD CD is NWS-5000-only). Sourced media and ROMs recorded in docs/guests/newsos.md."
   },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
+    "driver": "nws3260"
+  },
   "runtime": {
     "stationEnv": {
       "SH_STATION": "newsos",

@@ -183,6 +183,12 @@
     "blurb": "Sinclair's serious machine, launched before it was finished: a 68008 workstation-in-a-wedge announced twelve days before the Macintosh, sold months before it could be delivered, and shipped with firmware that did not fit — the earliest buyers got the missing part on a ROM cartridge hanging out of the back.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs MAME 0.251's `ql` driver; streamhost captures the Linux framebuffer + AC97 audio exactly like every other tile. The romset is a preservation-source set reduced by SHA1 to the four entries the default JS v1.10 BIOS needs, and re-verified at build time against the shipped binary's own -listxml; the QL's hal16l8.ic38 PLD has never been dumped anywhere, so MAME reports it missing on every boot and puts up an imperfect-dump warning, which the builder answers before baking. The golden is the machine's own 80-column monitor-mode screen, one keystroke past the `F1...monitor / F2...TV` chooser it insists on at power-on; the chooser is kept as the poster image. Keyboard-only exhibit; beige-tower-crt fallback archetype. See streamhost/docs/BRIDGE.md and docs/guests/sinclairql.md."
   },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
+    "driver": "ql"
+  },
   "reset": {
     "stationDir": "sinclairql",
     "pointer": "none",

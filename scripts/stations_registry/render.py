@@ -13,6 +13,7 @@ from typing import Any
 from poster_registry import PosterError, load_posters
 
 from .constants import POSTERS, TEMPLATES
+from .fleet_table import emit_fleet_table
 from .loading import RegistryError, is_x11_runtime
 from .validate_rules import is_hidden, validate
 
@@ -336,5 +337,6 @@ def rendered() -> OrderedDict[str, bytes]:
     out["gallery-action-map.json"] = (json.dumps(action, indent=2, ensure_ascii=True) + "\n").encode()
 
     out["mock-manifest.json"] = render_mock(rows)
+    out["fleet-table.json"] = emit_fleet_table(rows)
     out["index.json"] = emit_registry_index(rows)
     return out

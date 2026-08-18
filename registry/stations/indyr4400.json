@@ -199,6 +199,12 @@
     "blurb": "The other Indy. SGI sold the 1993 pizza-box in several MIPS grades, and this is the R4400 — the faster, larger-cache sibling of the R4600 next to it in the hall, and the chip SGI put in the Indigo² and the Challenge servers. Same blue case, same 24-bit XL graphics, same IRIX 6.5 — a different processor inside, and the reason the two sit side by side.",
     "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Iris (techomancer/iris, BSD-3), a userspace Rust SGI Indy emulator, booting IRIX 6.5.22 on a 1280x1024 X root captured 1:1. The DELIBERATE pair to the irix tile: same museum machine, different silicon (R4400 vs R4600) and a different emulator, and unlike MAME — which kernel-panics under a KVM vCPU and forced the irix tile bare-metal — Iris runs happily inside KVM, so this one is an ordinary bridge tile with QEMU pointer, keyboard and loadvm-golden reset. Pointer is RELATIVE (Pointer Lock): Iris grabs on first click and feeds PS/2 deltas. Audio and networking are off in this phase. archetype beige-tower-crt. See streamhost/docs/BRIDGE.md and docs/guests/indyr4400.md."
   },
+  "emulator": {
+    "family": "Iris",
+    "version": "1e05210",
+    "source": "scripts/build-guests/tiles/indyr4400.sh (github.com/techomancer/iris main)",
+    "driver": "SGI Indy R4400"
+  },
   "reset": {
     "stationDir": "indyr4400",
     "pointer": "rel",

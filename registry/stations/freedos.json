@@ -209,6 +209,11 @@
     ],
     "blurb": "The DOS command prompt that never died — C:\\> is still alive and well."
   },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
   "reset": {
     "stationDir": "freedos",
     "pointer": "rel",

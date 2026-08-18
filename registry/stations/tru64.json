@@ -144,6 +144,12 @@
     "blurb": "DEC’s own UNIX on DEC’s own 64-bit iron. Born OSF/1 in 1992, renamed Digital UNIX and finally Tru64, this was the operating system the AlphaServer ES40 was designed around: a fully 64-bit UNIX with the CDE desktop, from the same company that built the processor under it. Version 5.1B of 2003 was the line’s last major release — HP retired Alpha and Tru64 together, and their engineering went on into HP-UX and beyond.",
     "notes": "Live streamhost station — third x11-runtime station (irix, w2kalpha): the es40 AlphaServer ES40 emulator runs headless, captured via SH_CAPTURE=shm, input over the multi-client mamectl/1 ctlsock. SIBLING of w2kalpha on the same emulated machine, SRM boot path instead of ARC/AlphaBIOS. The 5.1B install (115 subsets, AdvFS) was performed live on the station 2026-08-11/12; LISTED 2026-08-16. Scene (since 2026-08-17): a bare CDE desktop at 1280x1024 autologged-in as the UNPRIVILEGED user guest (uid 300) — the operator's seat — with Netscape Navigator 4.76 a click away on the Front Panel, browsing the live web over the guest's own TCP/IP stack (dec21143 at pci0.4 on the veth tru64-h/g, static 172.31.66.2/30, NAT'd OUTBOUND ONLY). Non-root login was gated by the missing OSF-BASE PAK; that is now RESOLVED — an OSF-BASE licence is registered in /var/adm/lmf/ldb (see docs/guests/tru64.md), so the machine is genuinely licensed and lmf list shows OSF-BASE active. Reset restores that whole scene in ~3 s. Pointer absolute and pixel-exact (ES40_POINTER_GAIN=2); labctl exec tru64 runs captured commands over a getty on the emulated com2 (serialcon_e). See docs/guests/tru64.md."
   },
+  "emulator": {
+    "family": "es40",
+    "version": null,
+    "source": "github.com/Wnt/es40 main — no commit pinned in the repo",
+    "driver": "AlphaServer ES40"
+  },
   "reset": {
     "stationDir": "tru64",
     "pointer": "abs",
