@@ -132,6 +132,8 @@ MANIFEST=(
   "hpuxvue        |tiles/hpuxvue.sh              |Hpuxvue           |graphical |~2-4h   |vision   |hpuxvue-golden.qcow2 + checkpoint (HP-UX 10.20 -> HP VUE desktop over Artist fb, 1280x1024)"
   "beos           |tiles/beos.sh                 |Beos              |installed |~20-40m |partial  |beos-r5.qcow2 (BFS on MBR, R5 makebootable) -> tile beos-golden.qcow2 + golden"
   "newsos         |tiles/newsos.sh               |newsos            |graphical |~2-3h   |vision   |host-native MAME nws3260 (news_r3k) + NEWS-OS 4.1R disk image (MO-kit install, X at boot on the 1120x780 LCD)"
+  "sunos414       |tiles/sunos414.sh             |Sunos414          |graphical |~2-4h   |vision   |sunos414-golden.qcow2 + checkpoint (SunOS 4.1.4 -> OpenWindows 3 desktop over cg3, 1024x768x8)"
+  "aux            |tiles/aux.sh                  |Aux               |graphical |~2-4h   |vision   |aux-golden.qcow2 + pram-golden.qcow2 + checkpoint (A/UX 3.0.1 -> Finder/CommandShell desktop, 1152x870x8)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

@@ -30,6 +30,9 @@ const POSTER_INDEX = {
   "atarist": {
     "hero": "/posters/atarist/desktop.webp"
   },
+  "aux": {
+    "hero": "/posters/aux/desktop.webp"
+  },
   "bbcmicro": {
     "hero": "/posters/bbcmicro/desktop.webp"
   },
@@ -161,6 +164,9 @@ const POSTER_INDEX = {
   },
   "star": {
     "hero": "/posters/star/desktop.webp"
+  },
+  "sunos414": {
+    "hero": "/posters/sunos414/desktop.webp"
   },
   "templeos": {
     "hero": "/posters/templeos/desktop.webp"

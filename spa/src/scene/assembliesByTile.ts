@@ -407,5 +407,12 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'lcdA',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // sunos414: SPARCstation 5 — Sun's 1994 pizza box, the same slab family as
+  // the solaris station (pizzaBoxC) under the big workstation tube (crtE); the
+  // Type-4/5 keyboard and three-button mouse are the shared Unix set.
+  sunos414: {
+    kind: 'pizzaBox', body: 'pizzaBoxC', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
 } as const satisfies Record<string, Assembly>;
 

@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (65 of the 67
+//    - transport   : how its LIVE framebuffer texture is obtained (67 of the 69
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -104,7 +104,7 @@ export interface OSBinding {
   bootVideo?: string;
 }
 
-// One entry per OS. 65 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 67 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -188,6 +188,8 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   hpuxvue:     { osId: 'hpuxvue', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#5b7c99', eraLabel: '1996 · HP-UX 10.20 — HP VUE', pointerRel: true },
   beos:        { osId: 'beos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3466a0', eraLabel: '2000 · BeOS R5 Professional', pointerRel: true }, // BeOS<->Haiku pairing
   newsos:      { osId: 'newsos', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#7a6f9b', eraLabel: '1991 · NEWS-OS 4.1R — Sony NWS-3260', pointerRel: false },
+  sunos414:    { osId: 'sunos414', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#7c3aed', eraLabel: '1994 · SunOS 4.1.4 — OpenWindows', pointerRel: true },
+  aux:         { osId: 'aux', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6b7f8e', eraLabel: '1993 · A/UX 3.0.1 — Quadra 800', pointerRel: true },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */
