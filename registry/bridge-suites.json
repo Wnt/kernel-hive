@@ -89,6 +89,7 @@
     "zx81": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
     "oricatmos": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
     "zxspectrum": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
-    "sinclairql": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it"
+    "sinclairql": "HOST-NATIVE (de-bridged 2026-08-12): no bridge suite any more; kiosk overlay kept as overlay.qcow2.debridged-bak until the operator retires it",
+    "nextstep": "2026-08-20 attempt (halted, rolled back): trixie deps, the pinned SDL3 3.4.14 source build and the Previous r1847 checkout+patch all succeeded inside the overlay; the builder then failed at media staging on a transient curl SSL unexpected-EOF from the archival source (rc=1) while the coordinating session had been halted, so the rollback was run by hand: builder QEMU killed by verified pid, bookworm overlay restored, station active and frame-verified against the golden scene. The attempt is kept at overlay.qcow2.trixie-failed. One check for the rerun: a non-fatal 'ERROR: Could not initialize the SDL library:' line right after the sdlscreen.c patch during the Previous build step — confirm that smoke check is headless-by-design before trusting it. Nothing implicates trixie; the station stays mechanical per the wave brief (keep the SDL3 3.4.14 pin)."
   }
 }
