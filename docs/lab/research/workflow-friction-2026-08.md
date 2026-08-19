@@ -112,7 +112,6 @@ Recommended, in this order:
 - `scripts/dev/here.sh`: one screen — `git log -3`, worktree + branch, box deployed rev vs main (P1), staging contents (P2), `labctl who` (P4), `labctl ls` one-line summary, unread messages, memory pointers. Replaces the ~6-command bootstrap every resume pays.
 - Every gate failure prints **the remedy command on its first line** (`FAIL box drift → run: scripts/dev/box-deploy.sh --all`); the third-grep pattern goes away.
 - Long waits leave the turn: `labctl wait-for <cond>` runs on labhost and the session polls with `run_in_background`, not `sleep 1500` inline.
-- Keep the offload rule honest: qwenit only for bounded mechanical tasks with a machine-checkable done-condition; not for anything where "my code vs the platform" has to be judged (documented in `docs/lab/QWENIT.md`).
 
 ### P6 — Small guards for item 9
 
