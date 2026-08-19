@@ -1,14 +1,18 @@
 # Relative-pointer stations: auto re-home + paced sends
 
-**Status: daemon + SPA + reset hook IMPLEMENTED 2026-08-18** (branch `relptr`
-→ main): `streamhost/streamhost/src/rel_bridge.rs` (model, triggers, pacer,
-tests), `input.rs` (bridge now drives the model), `config/rel_home.rs`
-(`SH_REL_HOME_ON`), SPA type-7 re-home hint + `?ptrrec=1` mouse/wire rows,
-`scripts/serve/reset-tile.sh` SIGUSR2 after a `loadvm`. **Defaults keep every
-station byte-identical**; `macos753` is the canary with the knobs below.
-Still open: the per-station calibration sweep (§Spike), the framebuffer PoC
-(§Steps 3) and the human feel session (§Steps 4) — the operator's eyeball on
-`macos753`, then rollout by measurement.
+**Status: BUILT, LANDED, fleet-wide; `macos753` validated PASS.** The
+per-station rollout to the other relative stations is the remaining work —
+**[`rel-pointer-rollout-status.md`](rel-pointer-rollout-status.md) is the
+executable continuation checklist** (state, harness run recipe, per-station
+order, aux re-bake). This doc is the design rationale behind it.
+
+Landed (branch `relptr` → main): `streamhost/streamhost/src/rel_bridge.rs`
+(model, triggers, pacer, tests), `input.rs` (bridge drives the model),
+`config/rel_home.rs` (`SH_REL_HOME_ON`), daemon-wide `MouseState` (survives
+browser reload), SPA type-7 re-home hint + `?ptrrec=1` mouse/wire rows,
+`scripts/serve/reset-tile.sh` SIGUSR2 + `cont` after a `loadvm`, and the QEMU
+fork (ADB button-barrier FIFO + 5 ms autopoll, `github.com/Wnt/qemu`
+`kernel-hive @ 70c62de`). **Defaults keep every station byte-identical.**
 
 Operator direction: work on the **live stations** directly (canary daemon +
 `POST /restore/<id>` to put the scene back), no clones. Scope: the eleven
