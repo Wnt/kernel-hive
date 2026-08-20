@@ -92,6 +92,7 @@ Use `-vga cirrus` for authentic Win9x drivers; `-device sb16` (DOS-era) or `-dev
 | Winamp 2.95 | media | [archive.org/details/winamp295](https://archive.org/details/winamp295) | freeware (Nullsoft) | installer | The definitive 90s MP3 player. Seed royalty-free MP3s so it visibly plays. |
 | Paint Shop Pro 5.x | creative | [WinWorld](https://winworldpc.com/product/paint-shop-pro/5x) | shareware/trial abandonware | installer | The era's go-to affordable image editor. |
 | mIRC | util | [mirc.com/get.html](https://www.mirc.com/get.html) | shareware, free to try | installer | IRC was *the* 90s chat client; authentic "connected desktop." |
+| ICQ 2000b | util | [archive.org/details/icq2000b_202206](https://archive.org/details/icq2000b_202206) | abandonware (Mirabilis/AOL) | installer, then a post-install registry edit (`HKCU\Software\Mirabilis\ICQ\DefaultPrefs` → `Default Server Host`/`Port`, never through the wizard) points it at the lab's gateway | "Uh oh!" — the 90s IM icon, and the retronet PoC's chat client (`docs/lab/RETRONET-BRIEF.md`): the first ICQ generation to speak real OSCAR (TCP 5190), matching the reimplemented server (Retro AIM Server / iserverd) and riding the same port as this tile's AIM story. |
 | WinZip 7–8 | util | WinWorld / vendor trial | shareware evaluation | installer | The universal 90s archiver; you'll want it to unpack the rest. |
 
 **Excluded (commercial and/or GPU-bound):** GLQuake/Direct3D builds, Warcraft II retail, Half-Life retail, Need for Speed, retail AoE.
