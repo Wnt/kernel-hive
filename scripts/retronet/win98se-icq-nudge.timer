@@ -7,7 +7,7 @@ Documentation=file:///data/kernel-hive/docs/lab/retronet/ICQ-STATION.md
 # persona is on a live session, so a steady low cadence just keeps it healed
 # through every reset/wake without racing the ~30 s bot-greet delay.
 OnBootSec=15s
-OnUnitActiveSec=5s
+OnUnitActiveSec=10s
 AccuracySec=1s
 
 [Install]

@@ -2,41 +2,67 @@
 """win98se-icq-nudge — keep the win98se ICQ persona reconnecting after a wake.
 
 THE PROBLEM. ICQ 2000b does not poll the server; it relies on the server pinging
-it. After `loadvm golden` (a `labctl reset`, or the launcher's boot) the guest is
-restored onto its golden BOS socket, which the gateway timed out and dropped long
-ago. Neither side speaks: the guest thinks it is connected, the gateway shows the
-persona offline, and ICQ never notices the half-open zombie. The station would
-wake OFFLINE and never greet. (When the guest is paused on a *live* connection the
-gateway's timeout FIN wakes it on resume — but a reset never leaves a live one.)
+it. After a wake the guest is on a BOS socket the gateway timed out and dropped:
+the guest thinks it is connected, the gateway shows the persona offline, and ICQ
+never notices the half-open zombie. Two ways in:
+  * `loadvm golden` (a `labctl reset`, or the launcher's boot) restores the
+    golden's stale socket outright; and
+  * the daemon resumes an idle-paused guest with `cont`, not `loadvm`, so after a
+    reconnect the guest drifts to a new ephemeral port — the next idle-drop
+    strands *that* one.
+Either way the station wakes OFFLINE and never greets.
 
-THE NUDGE. Elicit the gateway's own RST for that stale socket: send the guest a
-spoofed TCP ACK as if from the gateway (`10.99.0.2:5190 -> 10.99.0.10:<golden
-port>`) with a bad seq. The guest challenge-ACKs the *real* gateway, which has no
-socket for that 4-tuple and RSTs it; ICQ sees the drop and reconnects on a fresh
-port with a clean sign-on — and the bot greets ~30 s later.
+THE NUDGE. Elicit the gateway's own RST for the stale socket: send the guest a
+spoofed TCP ACK as if from the gateway (`10.99.0.2:5190 -> 10.99.0.10:<port>`)
+with a bad seq. The guest challenge-ACKs the *real* gateway, which has no socket
+for that 4-tuple and RSTs it; ICQ sees the drop and reconnects on a fresh port
+with a clean sign-on — and the bot greets ~30 s later.
 
-WHY IT IS SAFE TO FIRE REPEATEDLY. It targets ONLY the golden's fixed ICQ port
-(`GOLDEN_ICQ_PORT`, the port the guest is always restored onto). After a reconnect
-the live session is on a *different, higher* ephemeral port, so the nudge no longer
-matches anything and is inert — it can never reset a healthy connection. It only
-ever un-sticks the golden zombie. If the golden is ever re-captured, update
-GOLDEN_ICQ_PORT to the port the persona shows at capture time (see ICQ-STATION.md).
+PORT-ROBUST + SAFE. It records the persona's live remote port whenever the
+gateway shows it ONLINE, and only ever fires when the gateway shows it OFFLINE —
+targeting that last-known (now-stale) port. So it always hits the real zombie
+whatever it drifted to, and can never reset a healthy connection (there is none
+to reset while offline). Seeds with the golden's port for the first wake.
 
-Run as root (raw socket). Driven by win98se-icq-nudge.timer every few seconds;
-skips when the guest is paused/absent so it never spams a frozen guest.
+Run as root (raw socket + `pct exec` to read the gateway). Driven by
+win98se-icq-nudge.timer; a no-op unless the guest is running AND offline.
 """
 
+import contextlib
 import json
 import os
 import socket
 import struct
+import subprocess
 import sys
 
 GATEWAY = os.environ.get("RN_ICQ_GATEWAY", "10.99.0.2")
 GATEWAY_PORT = int(os.environ.get("RN_ICQ_GATEWAY_PORT", "5190"))
 GUEST = os.environ.get("RN_ICQ_GUEST", "10.99.0.10")
+PERSONA = os.environ.get("RN_ICQ_PERSONA_UIN", "98980")
 GOLDEN_ICQ_PORT = int(os.environ.get("RN_ICQ_GOLDEN_PORT", "1032"))
+CT = os.environ.get("RN_ICQ_CT", "951")
 QMP = os.environ.get("RN_ICQ_QMP", "/data/vms/streamhost/stations/win98se/qmp.sock")
+PORTFILE = os.environ.get("RN_ICQ_PORTFILE", "/run/win98se-icq-port")
+
+
+def persona_port() -> int | None:
+    """Return the persona's live remote port from the gateway, or None if offline."""
+    code = (
+        "import urllib.request,json;"
+        'd=json.loads(urllib.request.urlopen("http://127.0.0.1:8080/session").read());'
+        f'print(next((s["instances"][0]["remote_port"] for s in d["sessions"] if s["screen_name"]=="{PERSONA}"),""))'
+    )
+    try:
+        out = subprocess.run(
+            ["pct", "exec", CT, "--", "python3", "-c", code],
+            capture_output=True,
+            text=True,
+            timeout=8,
+        ).stdout.strip()
+        return int(out) if out else None
+    except (subprocess.SubprocessError, ValueError):
+        return None
 
 
 def guest_running() -> bool:
@@ -65,6 +91,14 @@ def guest_running() -> bool:
         return False
 
 
+def stale_port() -> int:
+    try:
+        with open(PORTFILE) as f:
+            return int(f.read().strip())
+    except (OSError, ValueError):
+        return GOLDEN_ICQ_PORT
+
+
 def _cksum(d: bytes) -> int:
     if len(d) % 2:
         d += b"\0"
@@ -91,18 +125,24 @@ def _ip(payload: bytes) -> bytes:
     return hdr + payload
 
 
-def nudge() -> None:
+def nudge(dport: int) -> None:
     raw = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
     # a spread of seqs so at least one is out-of-window and elicits the challenge-ACK
     for seq in (1, 1000, 100000, 0x40000000, 0x80000000):
-        raw.sendto(_ip(_tcp_ack(GATEWAY_PORT, GOLDEN_ICQ_PORT, seq)), (GUEST, 0))
+        raw.sendto(_ip(_tcp_ack(GATEWAY_PORT, dport, seq)), (GUEST, 0))
     raw.close()
 
 
 def main() -> int:
-    if not guest_running():
+    port = persona_port()
+    if port is not None:
+        # ONLINE — remember the live port for the next wake, and leave it alone.
+        with contextlib.suppress(OSError), open(PORTFILE, "w") as f:
+            f.write(str(port))
         return 0
-    nudge()
+    # OFFLINE — un-stick the stale socket, but only while the guest is actually running.
+    if guest_running():
+        nudge(stale_port())
     return 0
 
 
