@@ -39,12 +39,19 @@ The gateway CT is **951** at **10.99.0.2** on `vmbr-rn` (offline; see
 | Corpus manifest | `/data/retronet/corpus/sites.json` — array of `{host, title, blurb, added}` for known hosts | W2 writes; W1 (known-host list) + W3 (directory) read |
 | **Proxy** | HTTP/1.0 forward proxy, **`10.99.0.2:3128`**. `GET http://<host>/<path>` → the corpus file; miss → period 404 page. NEVER contacts upstream | W1 |
 | Search service | CT-local `127.0.0.1:8090`; the proxy routes reserved hostname(s) (default `search.retronet`) to it | W3 serves; W1 routes |
-| era-press | `scripts/retronet/web/era-press.py` on CT950/labhost: fetch → downgrade → stage → `pct push` into CT 951's corpus | W2 |
+| era-press | `scripts/retronet/web/era-press.py` on CT950/labhost: fetch **`id_` raw bytes (≤ 2000-12-31)** → mirror **as-is** (page + referenced assets/links, bounded depth) → stage → `pct push` into CT 951's corpus | W2 |
 
-**Downgrade target** (era-press output, what era browsers accept): HTML 3.2-ish
-(no scripts, no modern CSS, tables/font tags OK), GIF/JPEG only (transcode PNG),
-Latin-1, size caps, no chunked/gzip. A page is "done" only if it renders in a
-period browser — but see the validation note.
+**Fidelity, not downgrade** (era-press output). Fetch the **raw original bytes**
+via archive.org's `id_` (identity) modifier — `web.archive.org/web/<ts>id_/<url>`,
+which returns the stored response with **no Wayback toolbar and no URL
+rewriting** — and serve them **as-is**: original HTML, scripts, images, charset.
+**No transformation** (no script-stripping, HTML flattening, PNG→GIF or
+re-encoding). **Hard ceiling: nothing past 2000-12-31** — every capture (page and
+asset) is the one closest to the site's target era-date but ≤ 2000; a URL whose
+only captures are post-2000 is skipped. Period JS and images therefore work
+exactly as they did, or **fail exactly as they did** (a resource on a host we
+don't mirror hits the museum miss page — authentic). The proxy's host-mapping
+resolves same-host links for free.
 
 **Why this decouples the streams:** the corpus *format* is fixed here, so W1
 (serve it), W2 (produce it) and W3 (index it) each build to the format against
@@ -56,7 +63,7 @@ proxy↔search seam is one config line (hostname → `127.0.0.1:8090`).
 | Stream | Owner | Deliverable | Acceptance |
 |---|---|---|---|
 | **W1 — proxy** | opus | Corpus-only HTTP proxy on `10.99.0.2:3128` + period miss page + routing reserved hostnames to the search service; systemd unit in the CT; `install-proxy.sh`; reproducible | A proxy client (`curl -x 10.99.0.2:3128 http://<host>/`) serves a corpus page and a period 404 for a miss; **no upstream socket ever opened** (prove it: a request for an uncached host does not touch the network) |
-| **W2 — era-press + starter corpus** | opus | `era-press.py` (fetch a site at a target date from a public web archive → downgrade → stage → push into CT corpus) + a starter set of ~4 landmark 1995–1999 sites + `sites.json` | era-press turns a real archived site into valid downgraded HTML in the corpus; `sites.json` lists them; a period browser (or the render follow-up) shows one |
+| **W2 — era-press + starter corpus** | opus | `era-press.py` (fetch raw `id_` captures ≤ 2000-12-31 → mirror page + referenced assets/links as-is, no transform → push into CT corpus) + a starter set of ~4 landmark ~1996–2000 sites + `sites.json` | era-press mirrors a real archived site untransformed (raw `id_` bytes, all captures ≤ 2000) into the corpus; `sites.json` lists them; same-host assets resolve through the proxy and no post-2000 content appears |
 | **W3 — search engine** | opus | Text index over the corpus + AltaVista-styled results + Yahoo-styled directory (from `sites.json`), served at `127.0.0.1:8090`; systemd unit; `install-search.sh` | A query returns corpus hits linking to pages the proxy serves; the directory lists the known sites; period-styled |
 
 Each stream lands its **own** files under `scripts/retronet/web/` + its own doc

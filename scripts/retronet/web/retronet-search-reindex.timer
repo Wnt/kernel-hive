@@ -1,0 +1,13 @@
+[Unit]
+# Installed in the gateway CT by scripts/retronet/web/install-search.sh.
+# Periodic "on a schedule" reindex; "on demand" is `systemctl reload
+# retronet-search` or GET /reindex. See docs/lab/retronet/WEB-SEARCH.md.
+Description=retronet-search: periodic corpus reindex
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
