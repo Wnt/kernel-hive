@@ -21,7 +21,7 @@ Almost every Unix workstation in this hall is an American machine: Sun's Solaris
 
 And there is a twist of games history buried here. **Early Sony PlayStation development kits were built on NEWS hardware** — the machines that produced one of the best-selling consoles ever made were NEWS Unix workstations with PlayStation graphics hardware bolted on. Nintendo, too, developed its first Super NES titles on Sony NEWS machines. Before Sony made game consoles, it made the workstations the game industry designed them on.
 
-And it is the only *portable* Unix workstation here. The 1120×780 monochrome panel is no downgrade — it is the real hardware: a high-resolution flat panel at a time when flat panels were exotic, driving a full X11 desktop. This is what a mobile engineer's Unix machine looked like in 1991, and there was almost nothing else like it. The panel's 1120-pixel horizon is shared, unbidden, by the NeXTcube's greyscale monitor in this same hall — the same width, 52 lines shorter.
+And it is the only *portable* Unix workstation here. The 1120×780 monochrome panel is no downgrade — it is the real hardware: a high-resolution flat panel at a time when flat panels were exotic, driving a full X11 desktop. This is what a mobile engineer's Unix machine looked like in 1991, and there was almost nothing else like it. The panel's 1120-pixel horizon is shared, unbidden, by the NeXTcube's greyscale monitor in this same hall — the same 1120-pixel width, and the NEWS panel gives up just 52 lines to it.
 
 ## What you're looking at
 
