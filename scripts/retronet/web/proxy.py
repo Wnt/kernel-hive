@@ -72,7 +72,21 @@ CONTENT_TYPES = {
     ".wav": "audio/x-wav",
     ".zip": "application/zip",
     ".pdf": "application/pdf",
+    # Era server-script extensions. In the corpus these are archived RESPONSES —
+    # the HTML the server emitted, not the script — so they render as HTML, not
+    # download. Without this, Space Jam's frame home (/ meta-refreshes to
+    # index.cgi) is served application/octet-stream and downloads. (ERA-PRESS.md;
+    # a bytes-level sniff below catches the ones no extension names.)
+    ".cgi": "text/html",
+    ".shtml": "text/html",
+    ".asp": "text/html",
+    ".phtml": "text/html",
+    ".pl": "text/html",
+    ".cfm": "text/html",
 }
+
+# Markers an archived HTML response opens with, for the octet-stream sniff below.
+HTML_SNIFF_MARKERS = (b"<!doctype html", b"<html", b"<head", b"<title", b"<body", b"<frameset")
 
 # A hostname we are willing to serve as a corpus directory. Anything else is a
 # malformed request, never a filesystem path.
@@ -85,6 +99,17 @@ def content_type(path: str) -> str:
     # own <meta> (or the browser's default) decides, exactly as it did in period.
     ext = os.path.splitext(path)[1].lower()
     return CONTENT_TYPES.get(ext) or mimetypes.guess_type(path)[0] or "application/octet-stream"
+
+
+def looks_like_html(data: bytes) -> bool:
+    # A last-resort sniff for the octet-stream fallback ONLY: an archived RESPONSE
+    # whose extension names nothing (a bare /cmp/pressbox, a .php/.jsp/.dll home)
+    # but whose bytes are plainly HTML should render, not download. It must start
+    # with markup and carry an HTML marker in its first 1 KB — so real binaries,
+    # which almost never begin with '<', are untouched. No bytes are rewritten;
+    # only the header label is corrected.
+    head = data[:1024].lstrip(b"\xef\xbb\xbf \t\r\n").lower()
+    return head.startswith(b"<") and any(m in head for m in HTML_SNIFF_MARKERS)
 
 
 def era_page(title: str, heading: str, paras: list[str]) -> bytes:
@@ -264,8 +289,11 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 "Cannot Read That",
                 ["The museum has this page on file but could not open it."],
             )
+        ctype = content_type(target)
+        if ctype == "application/octet-stream" and looks_like_html(data):
+            ctype = "text/html"
         self.send_response(200)
-        self.send_header("Content-Type", content_type(target))
+        self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Connection", "close")
         self.end_headers()
