@@ -9,7 +9,7 @@ images:
 ---
 ## Origins
 
-HelenOS began at Charles University in Prague around 2005–2006 as an educational and research operating system. It was written from scratch rather than derived from Unix or Linux, and it adopted a microkernel multiserver architecture. The kernel retains scheduling, memory management, and low-level communication, while filesystems, networking, device services, and much of the user environment execute as separate processes.
+HelenOS began at Charles University in Prague around 2005–2006 as an educational and research operating system, grown out of the SPARTAN microkernel that Jakub Jermář had been building on his own since 2001; the first public version, 0.1.0, appeared in November 2005. It was written from scratch rather than derived from Unix or Linux, and it adopted a microkernel multiserver architecture. The kernel retains scheduling, memory management, and low-level communication, while filesystems, networking, device services, and much of the user environment execute as separate processes.
 
 The project grew to support several processor architectures and to include its own C library, build system, command shell, networking stack, filesystems, and graphical toolkit. This breadth matters because a microkernel can be demonstrated with a small kernel alone, but a usable operating system requires the surrounding services to cooperate through well-defined messages.
 
@@ -27,4 +27,4 @@ There is no period web browser because this is a research system rather than a c
 
 ## Legacy
 
-HelenOS continues a long microkernel conversation associated with systems such as Mach, MINIX, QNX, and L4 while retaining its own design and educational purpose. Its achievement is cumulative: kernel, drivers, libraries, servers, and desktop remain understandable as parts of one project. The exhibit presents not a product that conquered a market, but a working argument about how an operating system may be divided.
+HelenOS continues a long microkernel conversation associated with systems such as Mach, MINIX, QNX, and L4 while retaining its own design and educational purpose. The hall's other microkernel is QNX Neutrino, the real-time system Gordon Bell and Dan Dodge started in 1980, which puts HelenOS's academic split into commercial perspective. Its achievement is cumulative: kernel, drivers, libraries, servers, and desktop remain understandable as parts of one project, and in 2025 the project marked its twentieth year with plans for twenty more, still built by a small non-commercial team in Prague. The exhibit presents not a product that conquered a market, but a working argument about how an operating system may be divided.

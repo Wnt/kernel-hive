@@ -11,7 +11,7 @@ images:
 
 Be Inc. developed BeOS in the 1990s for the BeBox and later for PowerPC and x86 personal computers. Its responsive interface, pervasive multithreading, metadata-rich filesystem, and strong multimedia performance attracted an enthusiastic technical community, but the platform did not secure a mass hardware market. Palm acquired Be’s assets in 2001, ending BeOS as an independent commercial system.
 
-The open-source project that became Haiku began that year under the name OpenBeOS. Rather than copying the appearance alone, contributors reimplemented the BeOS R5 interfaces so existing applications could run while the operating system gained a maintainable kernel, drivers, libraries, package system, and native applications. The name Haiku was adopted in 2004. R1/beta5, released in 2024, represents a mature beta in a long compatibility project.
+The open-source project that became Haiku began that year under the name OpenBeOS. Rather than copying the appearance alone, contributors reimplemented the BeOS R5 interfaces so existing applications could run while the operating system gained a maintainable kernel, drivers, libraries, package system, and native applications — it took until April 2002 before Haiku could draw its first window. The name was adopted in 2004 after Palm's lawyers objected to a project carrying Be's name, and it pays a deliberate tribute to NetPositive, BeOS's own browser, whose error messages were genuine haiku. R1/beta5, released in 2024, represents a mature beta in a long compatibility project.
 
 ## Significance
 
@@ -27,4 +27,4 @@ Menus open with Haiku timing, files are managed by Tracker, and applications run
 
 ## Legacy
 
-Haiku has become the principal living continuation of BeOS concepts. It preserves a body of applications, documentation, and interface practice while providing new releases for contemporary hardware. Its endurance complicates the usual account of operating systems as a sequence of market winners: a commercially discontinued design can remain technically fertile when its users rebuild it as common infrastructure.
+Haiku has become the principal living continuation of BeOS concepts. It preserves a body of applications, documentation, and interface practice while providing new releases for contemporary hardware. This hall runs the original, too: the BeOS R5 tile is the system Haiku was built to outlive, frozen exactly where Be Inc. stopped, while its successor is still shipping. Its endurance complicates the usual account of operating systems as a sequence of market winners: a commercially discontinued design can remain technically fertile when its users rebuild it as common infrastructure.

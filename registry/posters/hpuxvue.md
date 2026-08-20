@@ -11,7 +11,7 @@ images:
 
 HP-UX is Hewlett-Packard's System V Unix for the HP 9000 line, and by the mid-1990s it ran on HP's own PA-RISC processors — the architecture HP designed when the 68000-based Series 300 workstations ran out of headroom. Release 10.20, from 1996, is the version that stayed in service longest: it was the last HP-UX many sites ever upgraded, and it was still receiving patches into the 2000s.
 
-The desktop it shipped with tells a story of its own. **HP VUE — the Visual User Environment** — arrived with HP-UX 9.0 in 1992: a Motif front panel with a workspace switcher, a file manager, a help system and a style manager, all drawn in HP's characteristic bevelled grey-and-blue. When HP, IBM, Sun and Novell agreed on a Common Desktop Environment in 1993, VUE was the design they started from; CDE is, to a first approximation, VUE with the HP branding filed off. 10.20 was the release where CDE became the default — but VUE was still on the media and still selectable at the login screen, and that is the desktop this station shows.
+The desktop it shipped with tells a story of its own. **HP VUE — the Visual User Environment** — arrived with HP-UX 9.0 in 1992: a Motif front panel with a workspace switcher, a file manager, a help system and a style manager, all drawn in HP's characteristic bevelled grey-and-blue. And it did not even start at HP: development began in 1988 at Apollo Computer, for Apollo's own Domain/OS, and when HP bought Apollo the following year the desktop rode into HP with the company to be ported on to HP-UX. When HP, IBM, Sun and Novell agreed on a Common Desktop Environment in 1993, VUE was the design they started from; CDE is, to a first approximation, VUE with the HP branding filed off. 10.20 was the release where CDE became the default — but VUE was still on the media and still selectable at the login screen, and that is the desktop this station shows.
 
 ## Significance
 
@@ -25,4 +25,4 @@ HP-UX 10.20 booted from its own disk on an emulated HP 9000/778, logged into an 
 
 ## Legacy
 
-HP-UX outlived VUE by decades: it moved to Itanium, and Hewlett Packard Enterprise still supports it. VUE itself vanished with HP-UX 11.00 in 1997. Its ideas did not — they are the shape of CDE, and CDE's front panel is the shape a whole generation of Unix workstations shared.
+HP-UX outlived VUE by decades: it moved to Itanium, and Hewlett Packard Enterprise still supports it. VUE itself vanished with HP-UX 11.00 in 1997; the release media from 10.10 all the way through 11.00 even shipped a VUEtoCDE converter so a site's workspaces could carry across. Its ideas did not — they are the shape of CDE, and CDE's front panel is the shape a whole generation of Unix workstations shared.
