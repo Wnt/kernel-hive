@@ -19,7 +19,8 @@ That was not what computers were for. A machine of the Alto's cost belonged to a
 department and was rationed out in timeshare slices; the idea that a whole
 processor should sit idle waiting for a single human to think was, on any
 accounting a manager would recognise, absurd. PARC built it anyway, and then
-built about two thousand of them, and never sold one.
+built about two thousand of them, and never sold one. The name is not an
+initialism — just the corner of the map where it was born, Palo Alto.
 
 Nearly everything on the wall of this gallery is descended from what happened
 next. The Alto had overlapping windows and a mouse with buttons. It had a word
@@ -45,7 +46,9 @@ does the whole job of a processor. There is a datapath built out of a few hundre
 ordinary logic parts, and a microcode program that hands that datapath to sixteen
 different *tasks* in priority order. One task repaints the screen straight out of
 main memory, sixty fields a second. One shifts sectors on and off the removable
-disk cartridge. One moves Ethernet packets. The lowest-priority task, running
+disk pack — a fourteen-inch single-platter cartridge holding about two and a
+half megabytes, which in 1973 was a serious amount of paperwork. One moves
+Ethernet packets. The lowest-priority task, running
 only in the gaps the others leave, is the one that executes the instruction set
 the software is written in.
 
@@ -87,7 +90,10 @@ failure. But the Alto's influence did not travel through a product. It travelled
 through visits, and papers, and people leaving: to Apple, where the Lisa and the
 Macintosh made the mouse and the window into things you could buy; to Microsoft,
 where Simonyi rebuilt Bravo as Word; to 3Com, where Metcalfe sold Ethernet to
-everyone.
+everyone. And the line kept running: one of the visitors to this lab, driven out
+of Apple in 1985, went on to found NeXT, and the operating system that company
+built out of the PARC visit is the one still up and running on this museum's
+NeXTSTEP station.
 
 The most quoted line about PARC is Steve Jobs saying that within ten minutes of
 seeing the graphical interface it was obvious that every computer would work this
