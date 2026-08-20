@@ -313,6 +313,19 @@ than media — so "five things in `/opt/bridge/media`" is four blobs plus a READ
 | Arachne 1.99 GPL `a199gpl.zip` | `freedos.sh` | sha256 `ecc820ddc33c2ecbe64113d773b05e8eaac8eedd32f1ac7768bf3091de1b5ac8`, 2 224 788 | GPL; outer zip contains an old solid-RAR DOS SFX, so the builder performs and validates an isolated DOS extraction boot |
 | Netscape 4.x installer | `win95.sh` | — | **optional**, `NETSCAPE_URL` env (WinWorld, no stable URL — left empty by default) |
 
+### `win98se` — retronet ICQ client (stream D)
+
+Not builder-driven yet — installed over the exec channel in retronet wave 2
+(`docs/lab/retronet/POC-PLAN.md`, stream D), not baked by a `build-guests/tiles/`
+script. Staged **only** in the content-addressed media archive (no
+`/data/assets-staging/` copy):
+`/data/media-archive/blobs/9d/9d5574cea30a8a0353d815555c59d589189b0fb98d9de63e74d908c16de3e11f`
+(`media_cache_put`, see `scripts/build-guests/lib/media-cache.sh`).
+
+| file | sha256 | size | source | class / terms |
+|---|---|---|---|---|
+| `icq2000b.exe` (ICQ 2000b, Mirabilis/AOL) | `9d5574cea30a8a0353d815555c59d589189b0fb98d9de63e74d908c16de3e11f` *(locally measured 2026-08-20; matches the file's own archive.org-recorded md5 `ae59de2259f3a109a6d66eb037da2335` and sha1 `4c916525f43d2a789a924cc81bf7b8bee7034645`)* | 5 331 244 | [`archive.org/details/icq2000b_202206`](https://archive.org/details/icq2000b_202206), file `icq2000b.exe` — the exact installer [Retro AIM Server's `CLIENT_ICQ.md`](https://github.com/mk6i/retro-aim-server/blob/main/docs/CLIENT_ICQ.md) links to for its own ICQ-2000b setup guide | **abandonware-URL.** Mirabilis/AOL-copyright, long-discontinued, no redistribution grant; hosted by a preservation archive. Chosen over the older ICQ 98a/99a/99b generation because those speak a *different, non-OSCAR* legacy protocol (UDP v3-v5 on port 4000 — a separate subsystem in Retro AIM Server, `ICQ_LEGACY_ENABLED`); ICQ 2000b is the first ICQ client to speak real OSCAR over TCP 5190 — the same port/protocol family the PoC's AIM support already rides ("one daemon, two nostalgia brands", `docs/lab/RETRONET-BRIEF.md` §5) and the exact port the PoC's network contract fixes (`docs/lab/retronet/POC-PLAN.md`: `10.99.0.2:5190`). iserverd is also an OSCAR-protocol reimplementation, so the same choice holds for the documented fallback. ICQ 2000b also keeps its contact list local to the client (2001+/2002+ store it server-side, and Retro AIM Server's own docs flag them as less reliable to set up). Private preservation exhibit only; never committed, never publicly served — installed into the win98se guest only. |
+
 ## 3. freely-fetchable-pinned — open upstreams
 
 | file | pin | builder | staging path (labhost state) |
