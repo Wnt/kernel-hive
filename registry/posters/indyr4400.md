@@ -11,11 +11,11 @@ images:
 
 Silicon Graphics launched the Indy in July 1993 as its entry-level workstation, and did not sell it as one machine. The blue-violet pizza-box came in several processor grades, and the choice of MIPS chip was the choice of machine. The cheaper end took the R4600, an integer-strong design from Quantum Effect Design that SGI bought in precisely because it was inexpensive. The other end — this exhibit — took the R4400, MIPS Computer Systems' own follow-on to the R4000, with larger primary caches, an off-chip secondary cache, and the floating-point performance the R4600 gave up.
 
-The distinction mattered more than a spec sheet suggests. The R4400 was the processor SGI also put in the Indigo², in the Crimson, and in the Challenge and Onyx servers; it was the chip that carried SGI's graphics reputation upward through the whole line. An R4400 Indy was the same friendly desk object as its cheaper sibling, with the workstation processor inside it.
+The distinction mattered more than a spec sheet suggests. The R4400 was the processor SGI also put in the Indigo², in the Crimson, and in the Challenge and Onyx servers; it was the chip that carried SGI's graphics reputation upward through the whole line. An R4400 Indy was the same friendly desk object as its cheaper sibling, with the workstation processor inside it. And the line kept growing past both: the Indy would later take MIPS's R5000, the first SGI machine to ship one.
 
 ## Significance
 
-What both Indys shared was more interesting than what separated them. Every one shipped with a 24-bit colour framebuffer, digital video capture, and — unusually for 1993 — a camera in the box rather than on the options list. SGI expected people to do video on a desk, and priced the machine so universities, broadcast facilities and design studios could buy them by the dozen. They did.
+What both Indys shared was more interesting than what separated them. They all shipped with digital video capture and — unusually for 1993 — a camera in the box rather than on the options list; the higher models, this one among them, carried 24-bit colour. The camera was the IndyCam and the video inputs the "Vino" — video in, no output — and an Indy was the first computer to ship a webcam as standard equipment. SGI expected people to do video on a desk, and priced the machine so universities, broadcast facilities and design studios could buy them by the dozen. They did.
 
 IRIX was SGI's Unix: System V with BSD extensions, developed over more than a decade, and the source of ideas that outlived the hardware entirely. XFS, written for IRIX in the early 1990s to move large media files quickly, was later released as free software and is still storing files on Linux systems today. OpenGL began at SGI as a generalisation of the company's proprietary IRIS GL and became the interface the rest of the industry standardised on.
 
@@ -31,6 +31,6 @@ This is the second SGI Indy in the hall, and it is here to be compared with the 
 
 ## Legacy
 
-SGI's commercial decline through the 2000s was steep and the workstation line did not survive it, but the influence did. Graphics hardware descends from the pipeline SGI defined, OpenGL and its successors remain the vocabulary of real-time rendering, and XFS still stores files on machines that have never heard of an Indy. For a generation, IRIX was what serious computer graphics looked like.
+SGI's commercial decline through the 2000s was steep and the workstation line did not survive it; the Indy itself was a short run, superseded by the O2 in 1996 and discontinued in 1997. But the influence did. Graphics hardware descends from the pipeline SGI defined, OpenGL and its successors remain the vocabulary of real-time rendering, and XFS still stores files on machines that have never heard of an Indy. For a generation, IRIX was what serious computer graphics looked like.
 
 What is left here is the ordinary texture of it: a teal desktop, a docked menu strip, a column of icons, and a Unix workstation waiting for input.
