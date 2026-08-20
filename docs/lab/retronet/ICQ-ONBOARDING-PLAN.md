@@ -83,6 +83,15 @@ applied per station as they come online.
 - Follow the win98se recipe (`ICQ-STATION.md`) for the bridge swap; do not
   re-derive it. Prove UDP+ICMP + containment (guest reaches `10.99.0.2`, NOT the
   LAN/gallery/internet) exactly as win98se does.
+- **Addressing is DHCP, not per-guest static** (as of the win98se DHCP conversion).
+  Set the guest to obtain IP *and* DNS automatically + no proxy, and add ONE
+  `mac=ip` line to `registry/local.env` `RETRONET_DHCP_RESERVATIONS` +
+  `install-dhcp.sh --apply` on the gateway. That alone gives the station the
+  **seamless web** (type a URL, it renders — no proxy) plus a stable IP for
+  exec-over-bridge, and keeps containment (DHCP hands out **no default gateway**).
+  Each station needs a **unique** guest MAC — see WEB-PROXY.md. Recipe:
+  [`ICQ-STATION.md`](ICQ-STATION.md) §Seamless web. (win2000/nt4/solaris finish on
+  static; the coordinator retrofits them to DHCP + unique MACs later.)
 - No raw host mounts except through `chroot-guard run-private` or with the
   `mount-guard-ok` escape set.
 - Green-before-done for languages touched, or report **BLOCKED**. Report

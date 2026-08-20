@@ -20,8 +20,9 @@ bot does, `10.99.0.2:5190`, and the BOS address it hands back is routable.
 |---|---|
 | NIC | `-device pcnet,netdev=n0` (**unchanged** — the `-device` is what `savevm`/`loadvm` bind to), backend `-netdev tap,id=n0,ifname=win98rn0,script=no,downscript=no` |
 | Tap | `win98rn0`, persistent, enslaved to `vmbr-rn`, created + guarded by `streamhost/stations/win98se/rn-tapnet.sh up` from the launcher on every start |
-| Guest IP | **static `10.99.0.10/24`, NO default route, DNS none** — offline by design (containment Lock 1) |
-| OSCAR server | gateway CT `10.99.0.2:5190` (the one `RN` door; no `guestfwd`, no `:5191`) |
+| Guest IP | **DHCP** — TCP/IP set to "obtain automatically" for IP *and* DNS. `retronet-dhcp` hands out reserved `10.99.0.10/24`, DNS `10.99.0.2`, **and NO default gateway** (containment stays Lock 1: no default route). Reservation keys on the guest MAC `52:54:00:12:34:56` |
+| Seamless web | DNS = `10.99.0.2` (via DHCP) + **no IE5 proxy** → type any URL: the name resolves to the gateway and its `:80` origin serves the corpus. Proven: IE5 renders `http://spacejam.com/` and `http://search.retronet/` (see §Seamless web below) |
+| OSCAR server | gateway CT `10.99.0.2:5190` (the one `RN` door; no `guestfwd`, no `:5191`). ICQ uses the literal IP, so DNS is irrelevant to it |
 | Persona / bot | UIN `98980` (win98se) / UIN `10000` (greeter); passwords in `registry/local.env` `RETRONET_ICQ_*` |
 | ICQ client | ICQ 2000b (`C:\Program Files\ICQ\Icq.exe`), `DefaultPrefs` Host `10.99.0.2` (REG_SZ) Port `dword:00001446` (=5190) |
 | Exec | `labctl exec win98se "<cmd>"` → guest agent `C:\WARPNET.EXE` at **`10.99.0.10:7788` directly over the bridge** (`exec_kind warpd_e`, `exec_host` → `GEXEC_HOST`); no hostfwd |
@@ -61,6 +62,57 @@ Three layers:
 `retronet-fw` runs with `bridge-nf-call-iptables=0`, so guest↔CT traffic is pure
 L2 and never touches these chains — the retronet reaching the retronet, which is
 the whole point.
+
+## Seamless web — DHCP + no proxy, and the onboarding recipe
+
+The station browses the museum's corpus with **nothing configured but DHCP**. The
+guest's TCP/IP is set to **"Obtain an IP address automatically"** and **"Obtain
+DNS server address automatically"** (Win98 defaults), and IE5 has **no proxy**. On
+boot it gets, from `retronet-dhcp`: `10.99.0.10`, mask, **DNS `10.99.0.2`**, and
+**no default gateway**. Then every URL works: the name resolves to the gateway
+(`retronet-dns`), IE5 connects to `10.99.0.2:80`, and the `:80` origin serves the
+corpus by `Host`. **Proven** — `winipcfg` shows the reserved lease with an empty
+gateway, and IE5 renders `http://spacejam.com/` and `http://search.retronet/`.
+Full addressing plane: [`WEB-PROXY.md`](WEB-PROXY.md).
+
+**Onboarding recipe (every future station):** two steps, no per-guest static
+config.
+
+1. **In the guest:** set the network adapter's TCP/IP to obtain the IP *and* DNS
+   automatically (the Win98 default; select "Disable DNS" in the DNS tab — that is
+   how Win9x means "use the DHCP-supplied DNS"), and clear any IE proxy. Reboot.
+2. **On the gateway (once):** add the station's MAC→IP to
+   `registry/local.env` `RETRONET_DHCP_RESERVATIONS` and re-run
+   `install-dhcp.sh --apply`. Keeps the station on a **stable** IP so
+   exec-over-bridge stays at `<ip>:7788`. **Each station needs a UNIQUE guest MAC**
+   — see WEB-PROXY.md "The fleet-shared-MAC caveat".
+
+**Converting win98se's static config to DHCP (what was done here), since the exec
+channel can't create a file:** serve a tiny `.reg` from the CT corpus by IP and
+import it in-guest. It sets both TCP/IP bindings to DHCP and clears the IE proxy:
+
+```
+REGEDIT4
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Class\NetTrans\0000]
+"IPAddress"="0.0.0.0"
+"IPMask"="0.0.0.0"
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Class\NetTrans\0001]
+"IPAddress"="0.0.0.0"
+"IPMask"="0.0.0.0"
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings]
+"ProxyEnable"=dword:00000000
+"ProxyServer"=""
+```
+
+`pct push` it to `corpus/<gateway-ip>/dhcp.reg`, then in the guest **Start > Run >
+`iexplore http://10.99.0.2/dhcp.reg`** (Run resolves `iexplore` via App Paths;
+`COMMAND.COM`/exec does not), **Open** on the download → **Yes** on the import,
+then reboot (QMP `system_reset` — Win98 ACPI restart hangs). Remove the `.reg`
+from the corpus afterward; it is a delivery artifact, not museum content. A **cold
+boot re-runs ICQ's first-run flow** (EULA → "Password incorrect", the saved-
+password bug) — dismiss with the mouse (QMP `input-send-event`; the framebuffer
+never sees the bridge, so it works despite the MAC collision) and re-enter the
+persona password from `local.env`. Recapture the golden once ICQ is back online.
 
 ## The reconnect mechanism — how "open the station" greets you
 
@@ -130,19 +182,21 @@ full-resolution frame before any `savevm`.**
 
 ## Golden lineage & rollback (FULL paths)
 
-- **LIVE golden:** internal snapshot **`golden`** (ID 3, ~106 MiB,
-  2026-08-20 23:46) in `/data/gallery-guests/Win98SE/win98se-kvm.qcow2`
-  (+ games qcow2). **Tap-native**, captured with ICQ connected + the bot in the
-  contact list + a clean 1600×1200 frame. `labctl reset win98se` = `loadvm golden`.
+- **LIVE golden:** internal snapshot **`golden`** (ID 3, ~136 MiB,
+  2026-08-21 02:33) in `/data/gallery-guests/Win98SE/win98se-kvm.qcow2`
+  (+ games qcow2). **Tap-native + DHCP** — captured with TCP/IP on "obtain
+  automatically" (leased `10.99.0.10`, DNS `10.99.0.2`, no gateway), IE5 no-proxy,
+  ICQ connected + the bot in the contact list, a clean 1600×1200 frame.
+  `labctl reset win98se` = `loadvm golden`. Verified: loadvm restores clean, exec
+  works, `ping spacejam.com` resolves to `10.99.0.2`, ICQ (`98980`) reconnects.
 - **`icqinstalled`** (ID 2, slirp-era) is kept as a disk-only fallback. It is
   **not** `loadvm`-able on the tap (see below).
-- **Full-disk byte-copy backup** (QEMU stopped, SHA256-verified) with **both**
-  the pre-swap snapshots:
-  `/data/gallery-guests/Win98SE/golden-backup-netswap-20260820/`
-  (kvm `f751edd4…e353d`, games `f0c485d2…f4be`, `SHA256SUMS` in the dir).
-- Older backups from the slirp waves:
-  `golden-backup-retronet-wave2-20260820/` (exec-only golden) and
-  `golden-backup-retronet-20260820/` (pre-exec).
+- **Full-disk byte-copy backup of the pre-DHCP golden** (QEMU stopped, SHA256):
+  `/data/gallery-guests/Win98SE/golden-backup-predns-20260820/`
+  (kvm `9520d469…c807`, games `3a298bd9…2366`, `SHA256SUMS` in the dir) — the
+  static-IP golden, the rollback for the DHCP conversion.
+- Older backups: `golden-backup-netswap-20260820/` (pre-swap snapshots),
+  `golden-backup-retronet-wave2-20260820/` (exec-only), `golden-backup-retronet-20260820/` (pre-exec).
 
 Full rollback = `systemctl stop streamhost@win98se`, copy both qcow2 back,
 `systemctl start`.

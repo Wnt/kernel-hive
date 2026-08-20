@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
-"""retronet-proxy — the corpus-only HTTP/1.0 forward proxy of the web plane.
+"""retronet-proxy — the corpus HTTP/1.0 server of the web plane, two doors.
 
-Runs INSIDE the gateway CT (951, 10.99.0.2). An era browser sets one thing —
-its HTTP proxy to 10.99.0.2:3128 — and browses a 1990s web served entirely from
-a local corpus, with a search service over it.
+Runs INSIDE the gateway CT (951, 10.99.0.2). It serves the SAME corpus two ways:
+
+  * FORWARD PROXY on :3128 — an era browser sets its HTTP proxy to 10.99.0.2:3128
+    and sends absolute-form requests (`GET http://host/path HTTP/1.0`).
+  * :80 ORIGIN (vhost) — a browser with NO proxy and DNS=10.99.0.2 (handed out by
+    retronet-dhcp; every name resolves to the gateway via retronet-dns) sends an
+    ordinary origin-form request (`GET /path HTTP/1.0` + `Host: host`), which
+    lands here on :80 and is served by Host. This is the "seamless, no-proxy" web:
+    type a URL, it resolves to the gateway, and :80 serves the corpus.
+
+Both doors run the SAME handler over the SAME corpus, search routing, content
+types and miss page — only the request-line form differs (absolute vs origin),
+and resolve_target() already accepts both. An un-mirrored site still resolves to
+the gateway and gets the period miss page on either door — authentic.
 
 THE SECURITY PROPERTY, in one sentence: this program NEVER opens a connection to
 the real internet. There is no upstream fetch, no DNS lookup, no fallback. A
@@ -19,7 +30,8 @@ Content-Length and Connection: close — no chunked transfer, no gzip — which 
 what era browsers (Netscape 4, IE5) expect from a proxy.
 
 Config (systemd EnvironmentFile /etc/retronet/proxy.env, or the environment):
-  RN_PROXY_LISTEN          bind address host:port       (default 10.99.0.2:3128)
+  RN_PROXY_LISTEN          forward-proxy bind host:port (default 10.99.0.2:3128)
+  RN_PROXY_ORIGIN_LISTEN   :80 origin bind host:port    (default 10.99.0.2:80; blank disables)
   RN_PROXY_CORPUS          corpus root                  (default /data/retronet/corpus)
   RN_PROXY_SEARCH_HOSTS    reserved hostnames -> search (default search.retronet)
   RN_PROXY_SEARCH_BACKEND  the search service host:port (default 127.0.0.1:8090)
@@ -42,6 +54,7 @@ from urllib.parse import unquote, urlsplit
 
 # --- defaults (every one overridable from /etc/retronet/proxy.env) -----------
 DEF_LISTEN = "10.99.0.2:3128"
+DEF_ORIGIN_LISTEN = "10.99.0.2:80"
 DEF_CORPUS = "/data/retronet/corpus"
 DEF_SEARCH_HOSTS = "search.retronet"
 DEF_SEARCH_BACKEND = "127.0.0.1:8090"
@@ -409,36 +422,61 @@ def split_hostport(value: str, default_port: int):
 
 def load_config():
     listen = os.environ.get("RN_PROXY_LISTEN", DEF_LISTEN)
+    origin = os.environ.get("RN_PROXY_ORIGIN_LISTEN", DEF_ORIGIN_LISTEN).strip()
     corpus = os.environ.get("RN_PROXY_CORPUS", DEF_CORPUS)
     hosts = os.environ.get("RN_PROXY_SEARCH_HOSTS", DEF_SEARCH_HOSTS)
     backend = os.environ.get("RN_PROXY_SEARCH_BACKEND", DEF_SEARCH_BACKEND)
     bind_host, bind_port = split_hostport(listen, 3128)
+    # The :80 origin door is optional — a blank RN_PROXY_ORIGIN_LISTEN disables it
+    # (e.g. a run where nothing may bind a privileged port).
+    origin_addr = None
+    if origin:
+        origin_host, origin_port = split_hostport(origin, 80)
+        origin_addr = (origin_host, origin_port)
     search_hosts = [h for h in re.split(r"[,\s]+", hosts) if h]
     backend_host, backend_port = split_hostport(backend, 8090)
     return {
         "addr": (bind_host, bind_port),
+        "origin_addr": origin_addr,
         "corpus": corpus,
         "search_hosts": search_hosts,
         "search_backend": (backend_host, backend_port),
     }
 
 
+def make_server(addr, cfg):
+    return ProxyServer(addr, cfg["corpus"], cfg["search_hosts"], cfg["search_backend"])
+
+
 def main():
     cfg = load_config()
     os.makedirs(cfg["corpus"], exist_ok=True)
-    server = ProxyServer(cfg["addr"], cfg["corpus"], cfg["search_hosts"], cfg["search_backend"])
-    host, port = cfg["addr"]
-    hosts = ",".join(sorted(server.search_hosts)) or "(none)"
-    backend = f"{server.search_backend[0]}:{server.search_backend[1]}"
+    # Same handler, same corpus, on both doors: the forward proxy (:3128) and,
+    # when configured, the :80 origin (vhost) that the no-proxy web rides on.
+    servers = [make_server(cfg["addr"], cfg)]
+    if cfg["origin_addr"]:
+        servers.append(make_server(cfg["origin_addr"], cfg))
+    primary = servers[0]
+    hosts = ",".join(sorted(primary.search_hosts)) or "(none)"
+    backend = f"{primary.search_backend[0]}:{primary.search_backend[1]}"
+    doors = "  ".join(f"{s.server_address[0]}:{s.server_address[1]}" for s in servers)
     sys.stderr.write(
-        f"retronet-proxy: listening on {host}:{port}  corpus={server.corpus_root}  search={hosts} -> {backend}\n"
+        f"retronet-proxy: listening on {doors}  corpus={primary.corpus_root}  search={hosts} -> {backend}\n"
     )
+    # Extra door(s) in daemon threads; the primary in the main thread. Each
+    # ProxyServer already threads per-connection, so this just runs two accept
+    # loops over the one shared, immutable config.
+    for srv in servers[1:]:
+        threading.Thread(target=srv.serve_forever, name="origin", daemon=True).start()
     try:
-        server.serve_forever()
+        primary.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
-        server.server_close()
+        for srv in servers[1:]:
+            srv.shutdown()
+        for srv in servers:
+            srv.server_close()
 
 
 if __name__ == "__main__":
