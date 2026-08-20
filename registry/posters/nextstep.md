@@ -11,7 +11,7 @@ images:
 
 **Steve Jobs was forced out of Apple in September 1985 and started NeXT within weeks.** The plan was a workstation for universities: better than a personal computer, cheaper than the Unix machines from Sun and Apollo, and built to a standard nobody in the education market had asked for. The result, unveiled in 1988, was a one-foot magnesium cube finished in matte black, with a 25 MHz Motorola 68030, a digital signal processor, an optical drive instead of a hard disk, and a 17-inch greyscale monitor whose 1120x832 display had square pixels at a time when very few did.
 
-The hardware was late, expensive and strange. The optical drive was too slow to boot from comfortably; the machine arrived at $6,500 in a market that wanted $3,000; the education-only rule was quietly dropped. NeXT sold roughly fifty thousand computers in total and stopped making them in 1993, four and a half years after the launch.
+The hardware was late, expensive and strange. The optical drive was too slow to boot from comfortably; the machine arrived at $6,500 in a market that wanted $3,000; the education-only rule was quietly dropped. NeXT sold roughly fifty thousand computers in total and stopped making them in 1993, half a decade after the launch.
 
 The software was the part that worked. NeXTSTEP put a Mach microkernel and a 4.3BSD Unix userland underneath a windowing system built on Display PostScript — the same page-description language the printer used, so what appeared on the screen and what came out of the LaserWriter were generated from one description. On top of that sat an application framework written in Objective-C, a language NeXT licensed and then made its own, and Interface Builder, which let you assemble a program's windows by dragging objects onto them and wiring their connections with the mouse. In 1989 that was closer to science fiction than to normal practice.
 
@@ -23,7 +23,7 @@ The first is the web. Tim Berners-Lee wrote his proposal for a hypertext system 
 
 The second is everything Apple sells today. When Apple's own attempts at a modern operating system collapsed, it bought NeXT in December 1996 for about $429 million, brought Jobs back with the purchase, and made NeXTSTEP the foundation of Mac OS X. That inheritance is not metaphorical. Cocoa is the NeXTSTEP application framework with a new name, which is why its classes are still called `NSString`, `NSWindow` and `NSObject` — NS for NeXTSTEP, in code written this morning, on iPhones, thirty years after the company that chose the prefix stopped making hardware.
 
-Along the way the Dock, the column of application icons down the right-hand edge of this screen, moved to the bottom of every Mac; the app bundle — a program that is really a folder pretending to be a file — became how Mac software is installed; and Objective-C carried the whole message-passing style of NeXT's frameworks into two decades of Apple development.
+Along the way the Dock, the column of application icons down the right-hand edge of this screen, moved to the bottom of every Mac; the app bundle — a program that is really a folder pretending to be a file — became how Mac software is installed; and Objective-C carried the whole message-passing style of NeXT's frameworks into two decades of Apple development. One tile over in this hall, Rhapsody DR2 wears the classic Mac face over this very Workspace — the two posters are the before and after of that December 1996 purchase.
 
 ## What you're looking at
 
@@ -35,6 +35,6 @@ The greyscale is not a limitation of the exhibit. The original cube's display wa
 
 ## Legacy
 
-NeXT the hardware company is a footnote: fifty thousand machines, most of them in universities and financial-trading rooms, and a final year spent selling the operating system alone for ordinary Intel PCs. NeXTSTEP the software is the most consequential operating system almost nobody used. It is the direct ancestor of macOS, iOS, iPadOS, watchOS and tvOS, which between them run on well over a billion devices; its framework survives class-for-class; and the first thing anyone ever browsed the web with was written on it.
+NeXT the hardware company is a footnote: fifty thousand machines — most of them in universities and financial-trading rooms, and thousands more, quietly, in the National Reconnaissance Office — and a final spell spent selling the operating system alone for ordinary Intel PCs. NeXTSTEP the software is the most consequential operating system almost nobody used. It is the direct ancestor of macOS, iOS, iPadOS, watchOS and tvOS, which between them run on well over a billion devices; its framework survives class-for-class; and the first thing anyone ever browsed the web with was written on it.
 
 The machine here is emulated, but the software is not a reconstruction. It is NeXTSTEP 3.3, the release from 1995, running the same Workspace Manager that Berners-Lee had open while he invented the browser.
