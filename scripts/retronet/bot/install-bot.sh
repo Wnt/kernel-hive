@@ -142,8 +142,8 @@ else
 fi
 do_or_plan systemctl daemon-reload
 do_or_plan systemctl enable retronet-bot.service
-# restart (not merely `enable --now` start) so a re-apply actually LOADS the new
-# bot.py and the new /etc/retronet/bot.env — an already-running unit ignores a
-# plain start, which silently ships stale code and a stale persona roster.
+# restart, not just `enable --now` (a no-op on an already-running unit that left
+# stale code/env live) — so a re-run of --apply actually picks up the new bot.py,
+# llmclient.py and RN_BOT_PERSONAS.
 do_or_plan systemctl restart retronet-bot.service
 [ "$APPLY" = 1 ] && systemctl --no-pager --lines=10 status retronet-bot.service || true

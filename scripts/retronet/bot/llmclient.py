@@ -33,14 +33,41 @@ LOG = logging.getLogger("retronet.llm")
 _THINK = re.compile(r"<think>.*?</think>\s*", re.S | re.I)
 _LEADING_LABEL = re.compile(r"^\s*(?:[A-Za-z0-9_]{1,16}\s*[:>]\s*)")
 
+# 1999 IM clients (ICQ 2000b, climm, Mac AIM) render only their local codepage;
+# the model's "smart" Unicode punctuation shows up as a stray vertical bar. Map
+# the common offenders to ASCII so every era client can display the reply.
+_SMART_PUNCT = str.maketrans(
+    {
+        "…": "...",
+        "–": "-",
+        "—": "-",
+        "−": "-",
+        "‘": "'",
+        "’": "'",
+        "‚": "'",
+        "′": "'",
+        "“": '"',
+        "”": '"',
+        "„": '"',
+        "″": '"',
+        " ": " ",
+        "«": '"',
+        "»": '"',
+        "•": "*",
+    }
+)
+_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
 
 def tidy(text: str, max_chars: int) -> str:
     """Make model output look like something typed into an ICQ box in 1999."""
     text = _THINK.sub("", text or "")
     text = text.strip().strip('"').strip()
     text = _LEADING_LABEL.sub("", text)  # "SmarterChild: hi" -> "hi"
-    text = re.sub(r"\s*\n+\s*", " ", text)  # ICQ message windows are one line
-    text = re.sub(r"[ \t]{2,}", " ", text).strip()
+    text = text.translate(_SMART_PUNCT)  # smart quotes/dashes/ellipsis -> ASCII
+    text = _CONTROL.sub("", text)  # drop stray control chars
+    text = re.sub(r"\s+", " ", text)  # collapse every whitespace kind, incl. line breaks
+    text = text.encode("ascii", "ignore").decode("ascii").strip()  # era-renderable only
     if len(text) <= max_chars:
         return text
     # Cut at the last sentence end that fits, else the last word.
