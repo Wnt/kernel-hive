@@ -9,9 +9,9 @@ images:
 ---
 ## Origins
 
-Sailfish OS emerged from the disruption of Nokia’s Linux mobile work. Maemo had powered internet tablets, while the Intel partnership called MeeGo produced the Nokia N9’s closely related Harmattan environment. After Nokia committed its smartphone business to Windows Phone, former employees founded Jolla and built a new platform on the community-maintained Mer core. The first Jolla phone and Sailfish OS appeared in 2013.
+Sailfish OS emerged from the disruption of Nokia’s Linux mobile work. Maemo had powered internet tablets, while the Intel partnership called MeeGo produced the Nokia N9’s closely related Harmattan environment. After Nokia committed its smartphone business to Windows Phone, former employees founded Jolla and built a new platform on the community-maintained Mer core. Jolla is Finnish for a small sailing dinghy, and the releases follow Finnish water: 1.0 updates named after lakes, 2.0 after rivers. The first Jolla phone and Sailfish OS appeared in 2013.
 
-The system combines a Linux base, Qt application technology, the Lipstick compositor, and the Silica interface toolkit. Navigation relies heavily on edge swipes, peeking gestures, and application “covers” rather than a permanent row of conventional buttons. Ambience themes derive colors and backgrounds from selected imagery. Some commercial editions add a compatibility layer for Android applications.
+The system combines a Linux base, Qt application technology, the Lipstick compositor, and the Silica interface toolkit. Navigation relies heavily on edge swipes, peeking gestures, and application “covers” rather than a permanent row of conventional buttons. Ambience themes derive colors and backgrounds from selected imagery. Some commercial editions add a compatibility layer for Android applications — the museum’s android tile runs the very platform those editions borrow from.
 
 ## Significance
 
