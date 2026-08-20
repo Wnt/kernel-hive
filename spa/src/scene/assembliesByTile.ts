@@ -408,16 +408,32 @@ export const ASSEMBLIES_BY_TILE = {
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
   // sunos414: SPARCstation 5 — Sun's 1994 pizza box, the same slab family as
-  // the solaris station (pizzaBoxC) under the big workstation tube (crtE); the
-  // Type-4/5 keyboard and three-button mouse are the shared Unix set.
+  // the solaris station (pizzaBoxC) with the shared Unix Type-5 keyboard and
+  // three-button mouse. What separates the two Suns is the tube: solaris sits
+  // under the 20-inch crtE, while the SS5 era's desk monitor was the small
+  // 16-inch one (crtD, the shortest tube in the kit) — which is also the
+  // honest match for the 1152x900 cg3 framebuffer this station runs.
   sunos414: {
-    kind: 'pizzaBox', body: 'pizzaBoxC', monitor: 'crtE',
+    kind: 'pizzaBox', body: 'pizzaBoxC', monitor: 'crtD',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // aux: Macintosh Quadra 800 — the same 68040 Quadra as the macos753 station,
+  // so the same Apple kit reads correctly: towerA is the Quadra's upright
+  // mini-tower case, keyboardH the Extended Keyboard II silhouette, and
+  // paramMouseF the one-button Apple mouse (the only two stations in the hall
+  // that take it). It is separated from macos753 by the display: the Mac OS
+  // station holds the big crtE, this one the smaller crtD.
+  aux: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtD',
+    keyboard: 'keyboardH', mouse: 'paramMouseF',
+  },
   // rhapsody: Rhapsody DR2 for Intel — a 1998 beige PC tower (the Intel build
-  // ran on commodity hardware, not a Mac), CRT era, so crtC like beos.
+  // ran on commodity hardware, not a Mac), CRT era, so crtC and the PC
+  // keyboard/mouse set. towerC is the taller beige AT-era tower, which keeps
+  // it off beos's silhouette: beos is the squarer modernTower under the same
+  // crtC, and the two sit next to each other in binding order.
   rhapsody: {
-    kind: 'towerSetup', body: 'modernTower', monitor: 'crtC',
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
     keyboard: 'keyboardG', mouse: 'paramMouseE',
   },
 } as const satisfies Record<string, Assembly>;

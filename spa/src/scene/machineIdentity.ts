@@ -381,6 +381,15 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'SUN SPARCSTATION 5', spec: 'microSPARC-II 70MHz • SUNOS 4.1.4 • 1994',
     kit: 'workstation',
   },
+  // aux: the same platinum Quadra 800 as the macos753 station — Apple's warm
+  // grey, so the same low tintMix applies (the uniform case colour IS the
+  // identity). The accent is the slate of A/UX's X11 chrome rather than the
+  // case mouldings, which is what tells the two Quadras apart on the floor.
+  aux: {
+    caseTint: '#cfccc2', accentTint: '#6f7f8c', tintMix: 0.14,
+    badge: 'MACINTOSH QUADRA 800', spec: '68040 33MHz • A/UX 3.0.1 • 1993',
+    kit: 'workstation',
+  },
   // rhapsody: a plain beige Pentium II tower — Apple's Intel build ran on
   // whatever PC was on the desk. Muted NeXT-ish slate accent.
   rhapsody: {
