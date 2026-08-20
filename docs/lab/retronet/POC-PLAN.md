@@ -14,11 +14,11 @@ alive" moment.
 - **Station:** `win98se` — live production station, driven directly (operator
   authorised: **no VM clones**). Absolute pointer (usb-tablet), clean netdev
   `n0`. Back its golden up before mutating it.
-- **Protocol:** ICQ. **Server:** Retro AIM Server (OSCAR; ICQ UIN support);
-  `iserverd` fallback if RAS can't serve ICQ UINs.
+- **Protocol:** ICQ 2000b. **Server:** `mk6i/open-oscar-server` v0.24.0
+  (formerly Retro AIM Server; native ICQ UINs — no `iserverd` fallback needed).
 - **LLM:** llama.cpp `llama-server`, caged systemd unit on **labhost** for the
   PoC (decoupled from the CT; moving it into the CT later is trivial).
-- **UINs:** bot `1000`, win98se persona `9898`.
+- **UINs:** bot `10000`, win98se persona `98980` (the server reserves every UIN below 10000).
 
 ## The network contract — predecided so streams don't block each other
 
@@ -31,17 +31,18 @@ so they live in committed docs. Only real passwords/keys go to
 |---|---|---|
 | Retronet bridge (labhost, **no WAN uplink**) | `vmbr-rn`, `10.99.0.0/24` | B |
 | Gateway CT | id **951** (claim; next free if taken), static `10.99.0.2`, unprivileged, offline | B |
-| ICQ/OSCAR server | `10.99.0.2:5190` (+ BOS/auth ports as the server needs) | B |
-| Guest-visible server address (win98se) | `10.0.2.100:5190` via slirp `guestfwd` on `n0` → `10.99.0.2:5190` | A wires (wave 2) |
-| In-guest exec agent | guest `:7788`, reached from labhost via `hostfwd=tcp:127.0.0.1:57792-:7788` on `n0` (host-side, guest-invisible → `loadvm`-safe) | A |
+| ICQ/OSCAR server (`mk6i/open-oscar-server` v0.24.0) | bot/labhost door `10.99.0.2:5190`; station/slirp door `10.99.0.2:5191` (two BOS listeners, one DB) | B |
+| Guest-visible server address (win98se) | `10.0.2.100:5190` via `guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191` on `n0` (targets the **:5191** station door) | A wires (wave 2) |
+| In-guest exec agent (warpnet `E` verb, existing `exec_kind: warpd_e`) | guest `:7788`, reached via `hostfwd=tcp:127.0.0.1:57792-:7788` on `n0` (host-side, guest-invisible → `loadvm`-safe) | A |
 | LLM endpoint | `127.0.0.1:8091` (OpenAI-compatible), labhost | C |
-| Bot | labhost systemd unit, outbound only; logs into `10.99.0.2:5190` as UIN 1000, calls LLM at `127.0.0.1:8091` | C |
+| Bot | labhost systemd unit, outbound only; logs into `10.99.0.2:5190` as UIN 10000, calls LLM at `127.0.0.1:8091` | C |
 
 **Why this decouples everything:** A targets fixed loopback `57792` for exec (no
 dependency on B). B stands up the server at a fixed address B controls. C's bot
 targets the fixed `10.99.0.2:5190` and can develop against a local test server
 until B's is up. D sources media independently. Nobody waits on a runtime value
-from anybody.
+from anybody. Credentials live in `registry/local.env` (`RETRONET_ICQ_*`),
+mirrored from the CT.
 
 ## Streams (wave 1 — all parallel)
 
@@ -59,9 +60,13 @@ media rows in the catalog — so there are no shared-file conflicts. **Do not ed
 ## Waves
 
 - **Wave 1:** A, B, C, D in parallel (this).
-- **Wave 2 (integration):** install ICQ on win98se over the exec channel + the
-  framebuffer; add the guest→server `guestfwd`; sign the persona in; recapture
-  golden **with ICQ connected**. Needs A + B + D.
+- **Wave 2 (integration):** install **ICQ 2000b** on win98se over the exec
+  channel + framebuffer (media staged by D); add `guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191`
+  on `n0`; set `HKCU\Software\Mirabilis\ICQ\DefaultPrefs` Host `10.0.2.100`
+  Port `5190` **after install, before the registration wizard** (client bug);
+  sign persona `98980` in (creds `RETRONET_ICQ_PERSONA_*`); then `savevm golden`
+  **with ICQ connected** — live-inject + `savevm`, never offline-inject
+  (`loadvm` discards it). Needs A + B + D.
 - **Wave 3 (the demo):** open win98se → persona auto-reconnects → bot greets
   within ~30 s. Acceptance = the greeting shot. Needs everything + C.
 
