@@ -9,9 +9,9 @@ images:
 ---
 ## Origins
 
-TempleOS was created almost entirely by American programmer Terry A. Davis over roughly a decade and released under that name in 2013. It is a from-scratch, 64-bit operating system with its own compiler, kernel, filesystem, graphics, editor, shell, games, and programming language, HolyC. Davis understood the project in explicitly religious terms and described it as a temple given by God.
+TempleOS was created almost entirely by American programmer Terry A. Davis over roughly a decade and released under that name in 2013 — the same system had earlier gone by SparrowOS, before that LoseThos, and before that J Operating System. It is a from-scratch, 64-bit operating system with its own compiler, kernel, filesystem, graphics, editor, shell, games, and programming language, HolyC. Davis understood the project in explicitly religious terms and described it as a temple given by God.
 
-The system fixes its display at 640 × 480 with sixteen colors, uses a single address space, runs code at the highest processor privilege level, and omits networking. These are intentional design decisions rather than unfinished support. Programs, documentation, command execution, and source editing flow into one another because HolyC is both the system language and an interactive environment.
+The system fixes its display at 640 × 480 with sixteen colors, uses a single address space, runs code at the highest processor privilege level, and omits networking. These are intentional design decisions rather than unfinished support — Davis said the fixed display was itself one of God's specifications, a low resolution he said let children more easily draw pictures for God. Programs, documentation, command execution, and source editing flow into one another because HolyC is both the system language and an interactive environment.
 
 ## Significance
 
@@ -25,4 +25,4 @@ Parts of the display animate continuously. Code entered in the environment can c
 
 ## Legacy
 
-TempleOS remains difficult to place in ordinary product histories. It is at once an operating system, a programming environment, a religious artwork, and the record of sustained individual labor. Its technical choices reject modern security and interoperability, but they produce unusual conceptual unity. Preserved carefully, it expands the history of personal computing beyond commercial platforms and institutional research.
+TempleOS remains difficult to place in ordinary product histories. It is at once an operating system, a programming environment, a religious artwork, and the record of sustained individual labor. Its technical choices reject modern security and interoperability, but they produce unusual conceptual unity — and the hall's other x86 residents show the contrast: where the DOS and Windows machines begin by obeying the IBM PC's 1981 BIOS, TempleOS is the one occupant that skips that contract, booting itself with a sector of its own, straight to ring 0. Davis died in 2018; the system was released into the public domain, and community forks and emulators keep it alive. Preserved carefully, it expands the history of personal computing beyond commercial platforms and institutional research.

@@ -11,11 +11,11 @@ images:
 
 **On 27 April 1981, Xerox announced the 8010 Information System and every idea you are looking at right now arrived at once.** A bitmapped screen you worked on directly. Icons for documents, folders, in-baskets, printers. Overlapping windows. A mouse. Documents that looked on the screen the way they came out of the laser printer at the other end of the Ethernet. Property sheets. Cut, copy, paste, undo. It was not a research prototype — it was a product, with a price list, a sales force and a service contract.
 
-It came out of Xerox PARC, where the Alto had been running these ideas since 1973, but the Star is not an Alto with a nicer coat of paint. The Alto was a personal machine for computer scientists with an operating system you programmed. The Star was designed *for the person doing the work* — the designers spent years on a task analysis of office work first, then built an interface around a single rule: **the screen shows you objects, and you act on them directly.** There is no command language anywhere in it. There is barely any text you have to type that is not the content of your own document.
+It came out of Xerox PARC, where the Alto had been running these ideas since 1973 — the wire to the laser printer was Bob Metcalfe's Ethernet, invented on the Alto tile in this hall — but the Star is not an Alto with a nicer coat of paint. The Alto was a personal machine for computer scientists with an operating system you programmed. The Star was designed *for the person doing the work* — the designers spent years on a task analysis of office work first, then built an interface around a single rule: **the screen shows you objects, and you act on them directly.** There is no command language anywhere in it. There is barely any text you have to type that is not the content of your own document.
 
-The hardware was a bit-slice processor codenamed **Dandelion**, in a cabinet the size of a two-drawer filing cabinet that stood on the floor beside your desk, with an 1024×808 black-and-white display, a keyboard, and a two-button mouse on top of it. One workstation cost about **$16,595**. You could not really use one on its own — the Star was designed as a network of workstations around file, print and mail servers, so a working installation cost several times that.
+The hardware was a bit-slice processor codenamed **Dandelion**, in a cabinet the size of a two-drawer filing cabinet that stood on the floor beside your desk, with an 1024×808 black-and-white display, a keyboard, and a two-button mouse on top of it. One workstation cost about **$16,595**. You could not really use one on its own — the Star was designed as a network of workstations around file, print and mail servers, so a working installation cost several times that — a complete basic system, servers and all, came to about $75,000.
 
-It sold in the low tens of thousands, and Xerox is generally reckoned to have lost the personal-computer industry with it.
+It sold about twenty-five thousand units, and Xerox is generally reckoned to have lost the personal-computer industry with it.
 
 ## Significance
 
@@ -41,8 +41,8 @@ Two things are worth knowing before you touch it.
 
 ## Legacy
 
-Xerox followed the Star with the 6085 "Daybreak" in 1985 — the same environment at a third of the price, in a flat case that fitted under the desk. It is the tile next to this one. ViewPoint systems sold into the 1990s, then the environment was reimplemented in software as GlobalView on Windows 3.1, and discontinued in the late 1990s. That was the end of the line that started with the Alto in 1973.
+Xerox followed the Star with the 6085 "Daybreak" in 1985 — the same environment at a third of the price, $4,995, in a flat case that fitted under the desk. It is the tile next to this one. ViewPoint systems sold into the 1990s, then the environment was reimplemented in software as GlobalView on Windows 3.1; its final release, GlobalView 2.1, came in 1996. That was the end of the line that started with the Alto in 1973.
 
-Steve Jobs saw the ideas at PARC in 1979 and the Macintosh shipped in 1984 at a twentieth of the price. That is the story everyone tells, and it is true, and it is also the smaller half of what happened here. The larger half is that in April 1981 a company shipped a complete, coherent, finished answer to the question of how a person and a computer should divide the work — and then the industry took the icons and the mouse, left the rest on the shelf, and spent forty years not quite getting back to it.
+Steve Jobs saw the ideas at PARC in 1979 and the Macintosh shipped in 1984 at roughly a sixth of the price. That is the story everyone tells, and it is true, and it is also the smaller half of what happened here. The larger half is that in April 1981 a company shipped a complete, coherent, finished answer to the question of how a person and a computer should divide the work — and then the industry took the icons and the mouse, left the rest on the shelf, and spent forty years not quite getting back to it.
 
 This is the machine. It is still on.
