@@ -19,8 +19,8 @@ would collide on the same live golden).
 | **win2000** | ICQ 2000b (already sourced) | **A** — clean copy of win98se; rtl8139 netdev | `20000` |
 | **nt4** | ICQ 2000b | **A** — clean copy; pcnet netdev; peak-1996 era | `40000` |
 | **win95** | ICQ 2000b | **B** — its NIC also carries the **warpnet** pointer agent; the bridge swap must carry that across (do after A proves the plain path) | `95000` |
-| **solaris** | micq/centericq/licq (OSCAR) — media TBD | **C** — needs a Unix OSCAR client sourced/built; e1000 netdev | `30000` |
-| **tru64** | Unix OSCAR client (Alpha binary) — media TBD | **C** — already on a real veth today; Alpha client sourcing is the friction | `64000` |
+| **solaris** | climm 0.6.4 (OSCAR, formerly micq) — **sourced**, build from source | **C** — gcc 3.4.3 confirmed on-box (`/usr/sfw/bin/gcc`); still needs the bridge swap (e1000 → tap on vmbr-rn) | `30000` |
+| **tru64** | climm 0.6.4 (OSCAR, formerly micq) — **sourced**, build from source | **C** — media sourcing is **not** a blocker (native Compaq C already built Lynx on this guest); already on a real veth, needs rehoming onto vmbr-rn | `64000` |
 | **macos753** | Mac ICQ/AIM (OSCAR) — media TBD | **D** — has **no NIC** (device-set change → cold rebuild) + MacTCP; hardest | `75300` |
 
 (Existing: bot `10000` = **HiveBot**, win98se persona `98980`.) Each station's

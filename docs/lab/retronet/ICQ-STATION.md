@@ -64,28 +64,50 @@ the whole point.
 
 ## The reconnect mechanism — how "open the station" greets you
 
-This is the load-bearing behaviour and it is **not** a bare `loadvm`. `loadvm`
-alone does not drop an idle TCP connection: the restored guest and the gateway
-still agree on the sequence numbers, so both sides think the session is live and
-nothing reconnects. The reliable trigger is the station's **idle-pause**:
+This is the make-or-break, and it needed a purpose-built healer:
+`win98se-icq-nudge` (a labhost systemd timer,
+[`scripts/retronet/win98se-icq-nudge.py`](../../../scripts/retronet/win98se-icq-nudge.py)).
 
-1. The golden holds ICQ **connected** (a live BOS session to `10.99.0.2:5190`).
-2. No visitor → the daemon QMP-**pauses** the guest (frozen). It stops answering
-   OSCAR keepalives.
-3. After ~135 s the gateway times the session out and **drops `98980`**, sending
-   a FIN that queues at the frozen guest's NIC.
-4. A visitor opens the station → the daemon QMP-**resumes** (`cont`) → the guest
-   processes the queued FIN, the ICQ socket dies, and the client **reconnects
-   within ~8 s** with a fresh sign-on (a new source port).
-5. The bot sees the fresh presence-ONLINE and greets ~30 s later; ICQ auto-pops
-   the message as a desktop window.
+**Why ICQ 2000b will not do it alone.** ICQ 2000b does not poll the server; it
+waits to be pinged. On any wake the guest is left on a **half-open zombie**
+socket — it believes it is connected while the gateway shows the persona offline
+— and, silent on both sides, it never notices and never reconnects. Two ways in:
 
-Measured end to end from resume: reconnect ~8 s, **greeting at ~32 s**. Proven
-twice, greetings LLM-varied ("oh hey! Windows 98, nice. what are you up to?").
+- `loadvm golden` (a `labctl reset`, or the launcher's boot) restores the
+  golden's BOS socket, which the gateway timed out and dropped long ago; and
+- the daemon resumes an idle-paused guest with **`cont`, not `loadvm`**, so after
+  a reconnect the guest **drifts** to a new ephemeral port, and the next idle-drop
+  strands *that* socket.
 
-**Therefore idle-pause must stay ON (the registry default).** It is not just a
-CPU saver here — it is the machinery that makes the exhibit greet you. `Auto
-Save Password` is ticked in the client so the reconnect is silent.
+There is one self-healing case — if the guest is paused while its connection is
+still **live**, the gateway's ~135 s timeout FIN queues at the frozen NIC and the
+guest processes it on resume (~8 s reconnect). But a reset never leaves a live
+one, so this cannot be relied on.
+
+**The nudge.** The timer elicits the gateway's *own* RST for the stale socket: it
+sends the guest a spoofed TCP ACK as if from the gateway
+(`10.99.0.2:5190 → 10.99.0.10:<port>`) with a bad seq; the guest challenge-ACKs
+the *real* gateway, which has no socket for that 4-tuple and RSTs it; ICQ sees
+the drop and reconnects on a fresh port with a clean sign-on. It is **port-robust
+and safe**: it records the persona's live remote port whenever the gateway shows
+it ONLINE and fires only when it is OFFLINE, at that last-known port — so it
+always hits the real zombie whatever it drifted to, and can never reset a healthy
+connection (there is none to reset while offline). It seeds with the golden's
+port `1032`; **if the golden is re-captured, set `RN_ICQ_GOLDEN_PORT` / clear
+`/run/win98se-icq-port`** so the seed matches the new golden's ICQ port.
+
+End to end from a `labctl reset`: reconnect within ~8 s, **greeting at ~32 s**.
+Proven repeatedly (the greeter's LLM-varied lines: "oh hey! Windows 98, nice.
+what are you up to?", "hey, is that the Windows 98 machine?").
+
+**idle-pause must stay ON (the registry default)** — the bot only greets on a
+fresh presence-ONLINE, so the persona must go offline (gateway timeout while
+paused) and come back for each visitor. `Auto Save Password` is ticked so the
+reconnect is silent. Known rough edge: right after a boot/reset the guest runs
+its idle-pause grace with no visitor, so the healer fires and a greeting window
+can be left open in the first paused frame; a real (long-idle) visitor still gets
+a fresh greeting on open. Making each open pristine would need loadvm-on-resume
+in the daemon, which is out of scope here.
 
 ## The display wedge (VBE/CRTC) — never bake it into the golden
 

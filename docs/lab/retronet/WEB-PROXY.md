@@ -77,7 +77,15 @@ Content-Type by extension and **no imposed charset**. The amended contract is
 *fidelity, not downgrade* — the corpus is the raw `id_` archival bytes — so an
 era page's own `<meta>` (or the browser's default) decides the encoding, exactly
 as it did in period. (Only the proxy's own miss/error pages are Latin-1, and
-they are pure ASCII with numeric entities.) The known-vs-unknown host distinction tailors the 404
+they are pure ASCII with numeric entities.) Because era-press stores each page at
+its real URL, an archived HTML **response** can land under a server-script
+extension — Space Jam's frame home is `index.cgi` (its `/` meta-refreshes to it).
+Those are the HTML the server emitted, not scripts, so `.cgi .shtml .asp .phtml
+.pl .cfm` are mapped to `text/html` (otherwise they download instead of render),
+and a bytes-level sniff catches any archived HTML whose extension names nothing
+(a bare `/cmp/pressbox`, a `.php`/`.dll` home): an octet-stream file that opens
+with HTML markup is relabelled `text/html`. Only the header is corrected — the
+bytes are still served raw. The known-vs-unknown host distinction tailors the 404
 copy: a host with a corpus dir or a `sites.json` entry gets *"this page isn't in
 our copy of X"*; anything else gets *"X isn't part of the museum's internet"*.
 `sites.json` is read best-effort with an mtime cache; its absence is valid (an
