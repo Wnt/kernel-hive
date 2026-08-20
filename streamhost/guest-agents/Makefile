@@ -36,13 +36,21 @@ all: win9x os2 solaris ninefront
 	@echo "== guest-agents: all buildable targets done =="
 
 # ---- Win95 / Win98SE : warpnet.exe -------------------------------------------
-# Proven: i686-w64-mingw32-gcc -O2 -s -mwindows -Wl,--no-insert-timestamp -o warpnet.exe warpnet.c -lwsock32
+# Proven: i686-w64-mingw32-gcc -O2 -s -mwindows -march=pentium -mtune=pentium \
+#           -Wl,--no-insert-timestamp -o warpnet.exe warpnet.c -lwsock32
 #   -mwindows => GUI subsystem (no DOS box in the guest). -s strips. Suppressing
 #   the PE timestamp makes repeated builds byte-identical.
+#   -march=pentium is REQUIRED, not cosmetic: mingw's default i686 target emits
+#   CMOV, which the win95 station (-cpu pentium) does not implement -- the first
+#   warpnet build raised an illegal-operation fault in-guest for exactly this
+#   reason (docs/guests/win9x.md). Pentium code also runs fine on win98se's
+#   -cpu pentium3, so one flag set serves both stations.
+#   Second listener port (e.g. a retronet exec agent that must not collide with
+#   win95's live :7777): add -DWARP_PORT=7788 and name the output accordingly.
 win9x:
 	@if command -v $(MINGW) >/dev/null 2>&1; then \
-	  echo "[win9x] $(MINGW) -O2 -s -mwindows -Wl,--no-insert-timestamp -o warpnet.exe warpnet.c -lwsock32"; \
-	  cd $(HERE)win9x && $(MINGW) -O2 -s -mwindows -Wl,--no-insert-timestamp -o warpnet.exe warpnet.c -lwsock32 && \
+	  echo "[win9x] $(MINGW) -O2 -s -mwindows -march=pentium -mtune=pentium -Wl,--no-insert-timestamp -o warpnet.exe warpnet.c -lwsock32"; \
+	  cd $(HERE)win9x && $(MINGW) -O2 -s -mwindows -march=pentium -mtune=pentium -Wl,--no-insert-timestamp -o warpnet.exe warpnet.c -lwsock32 && \
 	  echo "[win9x] OK -> $(WIN9X_X)" && file warpnet.exe 2>/dev/null || true; \
 	else \
 	  echo "[win9x] MISSING toolchain: $(MINGW)"; \
