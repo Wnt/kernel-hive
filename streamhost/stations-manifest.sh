@@ -250,8 +250,9 @@ emit android \
 # gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses
 # the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.
 # SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.
-# SH_GHID_SOCKET selects its chardev; hostfwd 57790 and the guest warpd agent are
-# retained for rollback/exec only.
+# SH_GHID_SOCKET selects its chardev. RETRONET: net0 is a tap on vmbr-rn (NOT
+# slirp) via rn-tapnet.sh; guest static 10.99.0.14/24 no default route; the guest
+# warpd agent is reached directly at 10.99.0.14:7777 for rollback/exec only.
 emit solaris \
   --tile solaris --vmid 100 --udp 54100 --pointer abs --input-backend \
   gallery-hid --audio on --fps 60 --launcher-file \

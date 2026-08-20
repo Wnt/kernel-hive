@@ -83,6 +83,13 @@ PERSONA_UIN="$(from_local_env RETRONET_ICQ_PERSONA_UIN)"
 RN_BOT_SERVER="${RN_BOT_SERVER:-${ICQ_HOST:-10.99.0.2}:${ICQ_PORT:-5190}}"
 RN_BOT_UIN="${RN_BOT_UIN:-$(from_local_env RETRONET_ICQ_BOT_UIN)}"
 RN_BOT_UIN="${RN_BOT_UIN:-10000}"
+# Preserve a roster that was extended on the box (e.g. an onboarding agent that
+# appended `,30000:solaris` to /etc/retronet/bot.env's RN_BOT_PERSONAS): a plain
+# `--apply` must not silently drop stations. Precedence: explicit env override,
+# then the roster already on the box, then the win98se-only default. So the
+# documented "append to bot.env, then install-bot.sh --apply" flow is idempotent.
+existing_personas() { sed -n 's/^RN_BOT_PERSONAS=//p' /etc/retronet/bot.env 2>/dev/null | tail -1; }
+RN_BOT_PERSONAS="${RN_BOT_PERSONAS:-$(existing_personas)}"
 RN_BOT_PERSONAS="${RN_BOT_PERSONAS:-${PERSONA_UIN:-98980}:win98se}"
 RN_BOT_LLM_URL="${RN_BOT_LLM_URL:-http://127.0.0.1:8091}"
 SERVER_HOST="${RN_BOT_SERVER%%:*}"
@@ -134,5 +141,9 @@ else
   do_or_plan rm -f "$DROPIN"
 fi
 do_or_plan systemctl daemon-reload
-do_or_plan systemctl enable --now retronet-bot.service
+do_or_plan systemctl enable retronet-bot.service
+# restart (not merely `enable --now` start) so a re-apply actually LOADS the new
+# bot.py and the new /etc/retronet/bot.env — an already-running unit ignores a
+# plain start, which silently ships stale code and a stale persona roster.
+do_or_plan systemctl restart retronet-bot.service
 [ "$APPLY" = 1 ] && systemctl --no-pager --lines=10 status retronet-bot.service || true

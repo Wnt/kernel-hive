@@ -22,12 +22,27 @@
 #     patch pve/0049), so this tile runs the fleet /usr/bin/qemu-system-x86_64 and the
 #     hand-built standalone binary is retired (its pc-bios dir is kept only for the
 #     stock BIOS blobs -L points at). VMState restore on the packaged binary verified.
+#   * RETRONET BRIDGE (2026-08-20): net0 is a real bridged NIC on vmbr-rn, NOT slirp.
+#     rn-tapnet.sh (called `up` just below, idempotently, like win98se/rn-tapnet.sh)
+#     creates the persistent tap solrn0, enslaves it to vmbr-rn, and installs a
+#     fail-closed guest-containment chain. The guest is static 10.99.0.14/24 with
+#     NO default route; it shares L2 with the OSCAR gateway CT 10.99.0.2, so the
+#     climm (OSCAR) ICQ client gets working UDP + ICMP + real multi-connection TCP
+#     (what slirp's hostfwd could not carry). The -device is UNCHANGED (e1000,
+#     netdev=net0) — only the netdev backend went user->tap, which is invisible to
+#     savevm/loadvm, so `loadvm golden` stays valid ON A TAP-NATIVE golden. (The
+#     pre-swap slirp golden does NOT loadvm on the tap — a fresh tap-native golden
+#     was baked 2026-08-20; see docs/lab/retronet/ICQ-STATION-solaris.md.)
+#   * EXEC CHANNEL rides the same bridge now: labctl reaches the in-guest warpd
+#     agent (exec_kind warpd_e, host client /root/gexec.py) DIRECTLY at the guest's
+#     bridge IP 10.99.0.14:7777 — no hostfwd, since there is no slirp. warpd is
+#     rollback/exec only here; the live pointer is gallery-hid-pci. See
+#     docs/lab/retronet/ICQ-STATION-solaris.md, ICQ-STATION.md, GATEWAY.md.
 set -euo pipefail
 D="${D:-/data/vms/streamhost/stations/solaris}"
 DISK="${DISK:-$D/solariscde-golden.qcow2}"
 QEMU="${QEMU:-/usr/bin/qemu-system-x86_64}"
 QEMU_DATA="${QEMU_DATA:-/data/vms/streamhost/qemu-gallery-hid/pc-bios}"
-HOSTFWD="${HOSTFWD:-57790}"
 VMID="${VMID:-100}"
 [ -x "$QEMU" ] || {
   echo "missing gallery-hid QEMU: $QEMU" >&2
@@ -48,6 +63,12 @@ qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden || {
   echo "refusing cold boot: golden snapshot missing from $DISK" >&2
   exit 1
 }
+# Retronet link: create/enslave the vmbr-rn tap + arm the guest-containment
+# chain BEFORE QEMU opens it (script=no means QEMU attaches to an existing tap,
+# it does not create one). Idempotent; runs as root under streamhost@ / the
+# bring-up manual path. Fail-closed under `set -e`: if it cannot verify
+# containment it exits non-zero and QEMU never starts.
+bash "$D/rn-tapnet.sh" up
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 nohup "$QEMU" -L "$QEMU_DATA" \
@@ -63,7 +84,7 @@ nohup "$QEMU" -L "$QEMU_DATA" \
   -usb -device usb-tablet \
   -drive file="$DISK",if=ide,index=0,media=disk,format=qcow2 \
   -loadvm golden -S \
-  -netdev user,id=net0,hostfwd=tcp:127.0.0.1:"$HOSTFWD"-10.0.2.15:7777 -device e1000,netdev=net0 \
+  -netdev tap,id=net0,ifname=solrn0,script=no,downscript=no -device e1000,netdev=net0 \
   -chardev socket,id=ghid0,path="$D/gallery-hid.sock",server=on,wait=off \
   -device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e \
   -no-shutdown \
