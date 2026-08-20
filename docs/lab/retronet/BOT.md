@@ -246,8 +246,8 @@ in `registry/local.env` (gitignored, written by the gateway provisioner):
 | `RN_BOT_GREET_DELAY` | `30` | seconds between sign-on and hello |
 | `RN_BOT_MAX_CHARS` | `200` | reply cap |
 | `RN_BOT_LLM_URL` | `http://127.0.0.1:8091` | any OpenAI-compatible endpoint |
-| `RN_BOT_LLM_TIMEOUT` | `20` | wall clock; past it, ELIZA answers |
-| `RN_BOT_LLM_CONCURRENCY` | `1` | in-flight LLM calls; the rest fall back rather than queue |
+| `RN_BOT_LLM_TIMEOUT` | `60` | wall clock; past it, ELIZA answers. Raised from 20 so a cold or slow reply waits for the model rather than falling back |
+| `RN_BOT_LLM_CONCURRENCY` | `2` | in-flight LLM calls; matches the 2 worker threads and llama-server's 2 slots, so two near-simultaneous messages (one visitor across two OSes) both reach the model; a rarer 3rd queues for a worker rather than falling back |
 | `RN_BOT_RATE_BURST` / `_WINDOW` | `8` / `60` | per-peer token bucket |
 | `RN_BOT_TYPE_CPS` / `_BASE` / `_MAX` | `14` / `1.2` / `9` | the pacer |
 | `RN_BOT_BOS_HOST` | unset | force the BOS reconnect host when the advertised one is not routable from here |
@@ -345,9 +345,13 @@ otherwise.
   talks the model out of its persona gets a bot that mentions 2026. The blast
   radius is a message window on an exhibit; the cage is what makes that
   acceptable, not the prompt.
-- **One LLM, one box.** With `--parallel 2` and `CPUQuota=400%`, three
-  simultaneous conversations means the third gets ELIZA. That is the intended
-  degradation, not a bug to fix by raising the quota.
+- **One LLM, one box.** Two worker threads and `--parallel 2` serve two
+  conversations at once; a third *simultaneous* message waits briefly in the job
+  queue for a free worker and is then answered by the model too, not by ELIZA.
+  ELIZA is reserved for a real outage (LLM down) or a reply that blows the 60 s
+  timeout. Sustained heavy concurrency is bounded by `CPUQuota=400%`, not by
+  dropping to ELIZA — a single visitor hopping between OSes stays on the model
+  throughout.
 - **The greeting has never been seen by a guest.** Every number here comes from
   a Python persona. ICQ 2000b on `win98se` is wave 2, and the framebuffer is the
   only proof of it.
