@@ -38,7 +38,7 @@ import sys
 GATEWAY = os.environ.get("RN_ICQ_GATEWAY", "10.99.0.2")
 GATEWAY_PORT = int(os.environ.get("RN_ICQ_GATEWAY_PORT", "5190"))
 GUEST = os.environ.get("RN_ICQ_GUEST", "10.99.0.11")
-GOLDEN_ICQ_PORT = int(os.environ.get("RN_ICQ_GOLDEN_PORT", "1032"))
+GOLDEN_ICQ_PORT = int(os.environ.get("RN_ICQ_GOLDEN_PORT", "1031"))
 QMP = os.environ.get("RN_ICQ_QMP", "/data/vms/streamhost/stations/win2000/qmp.sock")
 
 
