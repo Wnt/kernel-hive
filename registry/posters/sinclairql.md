@@ -17,7 +17,7 @@ It was not finished. Orders were taken from January with a promise of delivery i
 
 Strip away the launch and the QL is a genuinely interesting computer, and it was interesting in ways the rest of 1984 was not.
 
-QDOS multitasked pre-emptively in 48 KB of ROM, at a time when the Macintosh and the IBM PC both ran one program at a time. SuperBASIC, its built-in language, had proper procedures and functions with parameters, local variables and recursion, and no line numbers were required to call any of it — a structured language in the ROM of a home computer. The screen was addressable as two graphics modes and as independently scrolling windows, which is why this exhibit shows three coloured panels rather than one blank page: the QL divides its display before you have typed anything.
+QDOS, designed in-house by Tony Tebby, multitasked pre-emptively in 48 KB of ROM, at a time when the Macintosh and the IBM PC both ran one program at a time. SuperBASIC, its built-in language, had proper procedures and functions with parameters, local variables and recursion, and no line numbers were required to call any of it — a structured language in the ROM of a home computer. The screen was addressable as two graphics modes and as independently scrolling windows, which is why this exhibit shows three coloured panels rather than one blank page: the QL divides its display before you have typed anything.
 
 Its weakness was where its data lived. The Microdrive was Sinclair's answer to the floppy disc: a continuous loop of video tape in a cartridge the size of a matchbox, holding about 100 KB, spinning past a fixed head. It was cheap and it was fast for tape, and it was not reliable enough for work you cared about, which is the single fact most people who owned a QL will mention first.
 
@@ -29,6 +29,6 @@ What is left is a SuperBASIC screen with nothing on it: a white window, a red wi
 
 ## Legacy
 
-Sinclair sold his computer business to Amstrad in April 1986, and the QL — some 150,000 of them made — was discontinued within months. It never became the office machine it was built to be.
+Sinclair sold his computer business to Alan Sugar's Amstrad in April 1986 — the company whose own CPC range has a tile in this museum — and the QL, some 150,000 of them made, was discontinued within months. It never became the office machine it was built to be.
 
-It kept working on people, though. The Psion suite's descendants ran on Psion's own organisers and, through them, on Symbian phones for two decades. And a Finnish student bought a QL in 1987, found QDOS too closed to modify, wrote his own machine-code tools for it, and later described the experience as the reason he wanted an operating system whose source he could change. His next computer was a 386, and what he wrote on it was Linux.
+It kept working on people, though. The Psion suite's descendants ran on Psion's own organisers and, through them, on Symbian phones for two decades. And a Finnish student — who at ten had dabbled on his grandfather's Commodore VIC-20, on its own tile in this museum — bought a QL in 1987 with his savings, found QDOS too closed to modify, wrote his own machine-code tools for it, and later described the experience as the reason he wanted an operating system whose source he could change. His next computer was a 386, and what he wrote on it was Linux.

@@ -9,9 +9,9 @@ images:
 ---
 ## Origins
 
-SerenityOS began in 2018 as Andreas Kling’s personal recovery project: building an operating system from first principles and documenting the work publicly. It grew into a large open-source collaboration with its own kernel, C library, shell, graphical toolkit, window server, filesystems, network stack, development tools, and applications. Although Unix-like in concepts and interfaces, it is not a Linux distribution and does not reuse a conventional Unix userland.
+SerenityOS began in 2018 as Andreas Kling’s personal recovery project: building an operating system from first principles and documenting the work publicly. Kling, a Swedish programmer who had spent years on Qt and six years at Apple working on WebKit, named it after the Serenity Prayer from the addiction recovery he completed that same year. It grew into a large open-source collaboration with its own kernel, C library, shell, graphical toolkit, window server, filesystems, network stack, development tools, and applications. Although Unix-like in concepts and interfaces, it is not a Linux distribution and does not reuse a conventional Unix userland.
 
-The desktop deliberately recalls the late 1990s. Gray controls, beveled borders, patterned wallpapers, a taskbar, and compact applications evoke Windows 95-era visual density. That familiarity provides a stable surface on which independently implemented subsystems can be tested.
+The desktop deliberately recalls the late 1990s. Gray controls, beveled borders, patterned wallpapers, a taskbar, and compact applications evoke Windows 95-era visual density — an era this museum keeps itself, since the Windows 95 tile shows the real taskbar and bevels the look is paying homage to. That familiarity provides a stable surface on which independently implemented subsystems can be tested.
 
 ## Significance
 

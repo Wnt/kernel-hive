@@ -9,9 +9,9 @@ images:
 ---
 ## Origins
 
-Solaris emerged when Sun Microsystems recast its BSD-derived SunOS workstation system around UNIX System V Release 4. The Solaris name encompassed the operating system, networking, and graphical environment; beneath it, SunOS 5 supplied the kernel and command-line foundation. During the early 1990s, Sun workstations became characteristic tools of engineering, scientific visualization, electronic publishing, and the rapidly expanding internet. Their value lay not only in processor performance but in an integrated network culture built around NFS, remote shells, and mature Unix development tools.
+Solaris emerged when Sun Microsystems recast its BSD-derived SunOS workstation system around UNIX System V Release 4. The Solaris name encompassed the operating system, networking, and graphical environment; beneath it, SunOS 5 supplied the kernel and command-line foundation. The museum keeps the other half of that transition: the sunos414 tile runs the BSD-derived SunOS 4.1.4, the very line the SVR4 rewrite replaced. During the early 1990s, Sun workstations became characteristic tools of engineering, scientific visualization, electronic publishing, and the rapidly expanding internet. Their value lay not only in processor performance but in an integrated network culture built around NFS, remote shells, and mature Unix development tools.
 
-The desktop visible here belongs to the Common Desktop Environment, or CDE. Announced through the Common Open Software Environment initiative in 1993 and released later in the decade, CDE combined technologies contributed by Sun, Hewlett-Packard, IBM, and other Unix vendors. It wrapped the Motif toolkit and familiar Unix utilities in a shared visual language: a Front Panel for launching tools, virtual workspaces, File Manager, Style Manager, and the `dtterm` terminal. Solaris 2.6 shipped CDE alongside Sun’s earlier OpenWindows environment, helping make it the recognizable face of late-1990s commercial Unix.
+The desktop visible here belongs to the Common Desktop Environment, or CDE. Announced through the Common Open Software Environment initiative in 1993 and released in 1994, CDE combined technologies contributed by Sun, Hewlett-Packard, IBM, and other Unix vendors. It wrapped the Motif toolkit and familiar Unix utilities in a shared visual language: a Front Panel for launching tools, virtual workspaces, File Manager, Style Manager, and the `dtterm` terminal. Solaris 2.6 shipped CDE alongside Sun’s earlier OpenWindows environment, helping make it the recognizable face of late-1990s commercial Unix.
 
 ## Significance
 
@@ -21,7 +21,7 @@ Its dense panels, small icons, and extensive configuration reflect expensive hig
 
 ## What you're looking at
 
-The CDE session is selected in place of Solaris 10’s newer Java Desktop System. Solaris 10 dates from 2005, but it preserves the mature CDE implementation and System V lineage.
+The CDE session is selected in place of Solaris 10’s newer Java Desktop System. Solaris 10 dates from 2005, and it is the last Solaris that Sun Microsystems itself shipped — Oracle bought the company in 2010 — yet it preserves the mature CDE implementation and System V lineage.
 
 ## Legacy
 
