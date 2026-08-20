@@ -171,7 +171,7 @@
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
         "-drive file=\"$KVM\",format=qcow2,if=ide",
         "-drive file=\"$GAMES\",format=qcow2,if=ide,index=1",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788 -device pcnet,netdev=n0",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788,guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191 -device pcnet,netdev=n0",
         "-usb -device usb-tablet,id=tab0",
         "-qmp unix:$B/qmp.sock,server=on,wait=off",
         "-pidfile $B/qemu.pid"
@@ -195,7 +195,7 @@
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
           "-drive file=\"$KVM\",format=qcow2,if=ide",
           "-drive file=\"$GAMES\",format=qcow2,if=ide,index=1",
-          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788 -device pcnet,netdev=n0",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788,guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191 -device pcnet,netdev=n0",
           "-usb -device usb-tablet,id=tab0",
           "-qmp unix:$B/qmp.sock,server=on,wait=off",
           "-pidfile $B/qemu.pid"

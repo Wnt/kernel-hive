@@ -23,6 +23,14 @@
 #     cold boot. A hostfwd is a netdev BACKEND property, not a -device, so the
 #     emulated device set is unchanged and `loadvm golden` stays valid. Do NOT
 #     renumber n0. See docs/lab/retronet/EXEC-CHANNEL.md.
+#   * ICQ PINHOLE (retronet wave 2, 2026-08-20): guestfwd 10.0.2.100:5190 ->
+#     10.99.0.2:5191 lets the in-guest ICQ 2000b client reach the retronet OSCAR
+#     server (gateway CT 951) through slirp. It targets the :5191 "slirp door",
+#     which advertises BOS as 10.0.2.100:5190 (routable from the guest). Like the
+#     hostfwd, a guestfwd is a netdev BACKEND property, not a -device, so the
+#     device set is unchanged and `loadvm golden` stays valid. The guest's ICQ
+#     DefaultPrefs point at 10.0.2.100:5190. See docs/lab/retronet/ICQ-STATION.md
+#     and docs/lab/retronet/GATEWAY.md.
 # Kill only by pidfile. neko is restored by ROLLBACK.md.
 set -e
 B=/data/vms/streamhost/stations/win98se
@@ -48,7 +56,7 @@ nohup qemu-system-x86_64 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
   -drive file="$KVM",format=qcow2,if=ide \
   -drive file="$GAMES",format=qcow2,if=ide,index=1 \
-  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788 -device pcnet,netdev=n0 \
+  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788,guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191 -device pcnet,netdev=n0 \
   -usb -device usb-tablet,id=tab0 \
   $LOADVM \
   -qmp unix:$B/qmp.sock,server=on,wait=off \
