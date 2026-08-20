@@ -822,17 +822,17 @@
       "dir": "/data/vms/streamhost/stations/solaris",
       "qmp": "/data/vms/streamhost/stations/solaris/qmp.sock",
       "pointer_mode": "abs",
-      "warpd_port": 57790,
-      "warpd_addr": "127.0.0.1:57790",
+      "warpd_port": 7777,
+      "warpd_addr": "10.99.0.14:7777",
       "ssh_port": null,
-      "exec_port": 57790,
-      "exec_host": null,
+      "exec_port": 7777,
+      "exec_host": "10.99.0.14",
       "exec_kind": "warpd_e",
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
       "udp_port": 54100,
-      "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solaris \"<cmd>\""
+      "notes": "RETRONET BRIDGE: net0 is a tap on vmbr-rn (NOT slirp); guest is static 10.99.0.14/24, NO default route (rn-tapnet.sh + fail-closed guard chain SOLRN-IN). gallery-hid-pci is the live pointer device (native GalleryHidSink); the in-guest warpd agent (guest :7777) is reached DIRECTLY over the bridge at 10.99.0.14:7777 for rollback and its 'E' exec verb (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host, no hostfwd). exec: labctl exec solaris \"<cmd>\". climm (OSCAR ICQ) auto-logs in as UIN 30000 to the gateway 10.99.0.2:5190. See docs/lab/retronet/ICQ-STATION-solaris.md"
     },
     "star": {
       "dir": "/data/vms/streamhost/stations/star",
@@ -985,14 +985,14 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": null,
-      "exec_host": null,
-      "exec_kind": null,
+      "exec_port": 7788,
+      "exec_host": "10.99.0.11",
+      "exec_kind": "warpd_e",
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
       "udp_port": 54093,
-      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "exec: labctl exec win2000 \"<cmd>\" runs a command through cmd.exe in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.11:7788 (n0 is a tap on vmbr-rn, NOT slirp — no hostfwd). It is RUNNING inside the golden and restarts from the Startup folder on a cold boot. NT cmd.exe captures stdout only (agent redirects >C:\\WNEXEC.OUT). See docs/lab/retronet/ICQ-STATION-win2000.md, ICQ-STATION.md, EXEC-CHANNEL.md"
     },
     "win311": {
       "dir": "/data/vms/streamhost/stations/win311",

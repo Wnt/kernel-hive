@@ -250,8 +250,9 @@ emit android \
 # gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses
 # the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.
 # SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.
-# SH_GHID_SOCKET selects its chardev; hostfwd 57790 and the guest warpd agent are
-# retained for rollback/exec only.
+# SH_GHID_SOCKET selects its chardev. RETRONET: net0 is a tap on vmbr-rn (NOT
+# slirp) via rn-tapnet.sh; guest static 10.99.0.14/24 no default route; the guest
+# warpd agent is reached directly at 10.99.0.14:7777 for rollback/exec only.
 emit solaris \
   --tile solaris --vmid 100 --udp 54100 --pointer abs --input-backend \
   gallery-hid --audio on --fps 60 --launcher-file \
@@ -263,16 +264,16 @@ emit solaris \
 # ---------------------------------------------------------------------------
 
 # win2000 (VMID 93) — std VGA (VBEMP-NT/framebuf, 1600x1200x32), AC97,
-#   usb-tablet, rtl8139 NIC. GENERIC.
+#   usb-tablet, rtl8139 NIC. VERBATIM LAUNCHER (retronet bridge): n0 is a tap on
+#   vmbr-rn (rn-tapnet.sh up), guest 10.99.0.11/24 no default route, sharing L2
+#   with the OSCAR gateway CT 10.99.0.2 for ICQ 2000b. -device rtl8139 UNCHANGED
+#   (only the netdev backend went user->tap), so loadvm golden stays valid.
 #   Golden fixture: the disk runs WITHOUT -snapshot so the savevm 'golden'
 #   snapshot persists inside win2k-pro.qcow2 (resetMode=loadvm).
 emit win2000 \
-  --tile win2000 --vmid 93 --udp 54093 --pointer abs --audio on --audio-dev \
-  ac97 --input-dev usb --mem 512 --smp 1 --machine pc-i440fx-11.0 --cpu host \
-  --vga std --fps 30 --boot c --extra \
-  "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0" \
-  --env-append-file "$T/win2000/station.env.fixture" --loadvm-launch \
-  /data/gallery-guests/Win2000/win2k-pro.qcow2
+  --tile win2000 --vmid 93 --udp 54093 --pointer abs --audio on --fps 30 \
+  --launcher-file "$T/win2000/qemu-streamhost.sh" --env-append-file \
+  "$T/win2000/station.env.fixture"
 
 # winxp (VMID 94) — boots hdd + attaches the retro-software LiveCD;
 #   -boot order=c,menu=off. AC97 + usb-tablet. VERBATIM LAUNCHER: boots the
