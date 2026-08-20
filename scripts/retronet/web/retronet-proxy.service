@@ -20,6 +20,12 @@ ExecStart=/usr/bin/python3 /opt/retronet-proxy/proxy.py
 Restart=on-failure
 RestartSec=3s
 
+# The :80 origin door is a privileged port; grant exactly the capability that
+# binds it (the :3128 forward proxy never needed one). Works in the unprivileged
+# CT because CAP_NET_BIND_SERVICE is in the container's own bounding set.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
 # --- sandbox (mirrors retronet-oscar.service — the proven in-CT pattern) ------
 # NOTE ON "NO UPSTREAM": the address-level cage (IPAddressAllow/Deny) that the
 # labhost-side units use is deliberately NOT set here. Its eBPF/cgroup filter is

@@ -1,0 +1,60 @@
+[Unit]
+# Installed INSIDE the gateway CT (951) by
+# scripts/retronet/web/install-dhcp.sh. The addressing server of the web plane:
+# it leases IPs (per-MAC reservations + a pool), hands out DNS=10.99.0.2, and
+# DELIBERATELY sends NO router option, so a bridged station gets no default
+# route (containment) yet resolves every name through the gateway. See
+# docs/lab/retronet/WEB-PROXY.md (addressing plane).
+Description=retronet DHCP — leases IPs + DNS, no default gateway (containment)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/WEB-PROXY.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rndhcp
+Group=rndhcp
+EnvironmentFile=/etc/retronet/dhcp.env
+# The DHCP reply is a LIMITED broadcast (255.255.255.255:68) so an IP-less client
+# receives it. This CT has NO default route (containment), so the kernel has no
+# route for 255.255.255.255 and the send would fail ENETUNREACH. Add an explicit
+# host route for it, as root (the '+'), before the unprivileged server starts.
+# Idempotent (replace); a link-local broadcast route, never a WAN path — wan-probe
+# stays clean. Adjust the device if the CT's NIC is not eth0.
+ExecStartPre=+/sbin/ip route replace 255.255.255.255/32 dev eth0
+ExecStart=/usr/bin/python3 /opt/retronet-dhcp/dhcp.py serve
+Restart=on-failure
+RestartSec=3s
+
+# Port 67 is privileged; grant only the capability that binds it. (Sending the
+# broadcast reply to 255.255.255.255:68 uses SO_BROADCAST, a socket option set
+# in code — no extra capability.) Works in the unprivileged CT for the same
+# reason retronet-dns/-proxy do.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# --- sandbox (mirrors retronet-dns.service) ----------------------------------
+# NO UPSTREAM: it never opens an outbound connection — it only answers DISCOVER/
+# REQUEST from config + an in-memory lease table. The CT's no-default-route is
+# the backstop.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_UNIX
+LockPersonality=true
+ReadOnlyPaths=/opt/retronet-dhcp
+
+# --- resource cage ------------------------------------------------------------
+Nice=5
+MemoryMax=96M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

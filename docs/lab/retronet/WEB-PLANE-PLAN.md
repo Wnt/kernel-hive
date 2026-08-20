@@ -11,6 +11,17 @@ gateway — and browses a 1990s web served entirely from a local corpus, with an
 AltaVista/Yahoo-styled search over it. **No guest ever reaches the real
 internet; the proxy has no upstream and never makes one.**
 
+**Update — the seamless, no-proxy web is built and proven (Lane B).** Beyond the
+forward proxy, the gateway now runs a `:80` **origin** door, a **wildcard DNS**
+(`retronet-dns`, every name → the gateway), and a **DHCP** server (`retronet-dhcp`,
+hands out an IP + DNS = the gateway and **no default gateway**). A bridged station
+on DHCP sets *nothing* — it types a URL, the name resolves to the gateway, and
+`:80` serves the corpus by `Host`. **Proven on win98se: IE5 renders `spacejam.com`
+and reaches `search.retronet` with no proxy configured.** As-built + the DHCP
+onboarding recipe: [`WEB-PROXY.md`](WEB-PROXY.md) (now the web **+ addressing**
+plane) and [`ICQ-STATION.md`](ICQ-STATION.md). The proxy `:3128` door stays; both
+serve the same corpus.
+
 ## Principles
 
 - **Corpus-only, offline by construction.** The proxy answers every request
