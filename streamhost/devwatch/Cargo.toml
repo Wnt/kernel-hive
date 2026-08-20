@@ -10,4 +10,4 @@ license = "GPL-2.0-or-later"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 notify = "8"
-notify-debouncer-full = "0.5"
+notify-debouncer-full = "0.7"
