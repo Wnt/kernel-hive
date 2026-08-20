@@ -1,0 +1,14 @@
+[Unit]
+Description=Periodically nudge the win2000 ICQ persona online (retronet)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/ICQ-STATION-win2000.md
+
+[Timer]
+# Fire a few seconds after boot, then every 5 s. The nudge is inert once the
+# persona is on a live session, so a steady low cadence just keeps it healed
+# through every reset/wake without racing the ~30 s bot-greet delay.
+OnBootSec=15s
+OnUnitActiveSec=5s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

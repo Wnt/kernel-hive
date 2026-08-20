@@ -56,19 +56,20 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": null,
-      "exec_kind": null,
+      "exec_port": 7788,
+      "exec_kind": "warpd_e",
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
       "udp_port": 54093,
-      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "exec: labctl exec win2000 \"<cmd>\" runs a command through cmd.exe in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.11:7788 (n0 is a tap on vmbr-rn, NOT slirp — no hostfwd). It is RUNNING inside the golden and restarts from the Startup folder on a cold boot. NT cmd.exe captures stdout only (agent redirects >C:\\WNEXEC.OUT). See docs/lab/retronet/ICQ-STATION-win2000.md, ICQ-STATION.md, EXEC-CHANNEL.md",
+      "exec_host": "10.99.0.11"
     }
   },
   "render": {
     "signalOrder": 6,
     "stationsManifestOrder": 11,
-    "stationsManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP D — Windows NT family (usb-tablet + AC97), abs pointer.\n# ---------------------------------------------------------------------------\n\n# win2000 (VMID 93) — std VGA (VBEMP-NT/framebuf, 1600x1200x32), AC97,\n#   usb-tablet, rtl8139 NIC. GENERIC.\n#   Golden fixture: the disk runs WITHOUT -snapshot so the savevm 'golden'\n#   snapshot persists inside win2k-pro.qcow2 (resetMode=loadvm).\n",
+    "stationsManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP D — Windows NT family (usb-tablet + AC97), abs pointer.\n# ---------------------------------------------------------------------------\n\n# win2000 (VMID 93) — std VGA (VBEMP-NT/framebuf, 1600x1200x32), AC97,\n#   usb-tablet, rtl8139 NIC. VERBATIM LAUNCHER (retronet bridge): n0 is a tap on\n#   vmbr-rn (rn-tapnet.sh up), guest 10.99.0.11/24 no default route, sharing L2\n#   with the OSCAR gateway CT 10.99.0.2 for ICQ 2000b. -device rtl8139 UNCHANGED\n#   (only the netdev backend went user->tap), so loadvm golden stays valid.\n#   Golden fixture: the disk runs WITHOUT -snapshot so the savevm 'golden'\n#   snapshot persists inside win2k-pro.qcow2 (resetMode=loadvm).\n",
     "bringUpGroup": 3,
     "bindingOrder": 6,
     "bindingPrelude": "",
@@ -116,7 +117,7 @@
     },
     "vmidLabel": 93,
     "qemu": {
-      "mode": "generic",
+      "mode": "verbatim",
       "emitArgs": [
         "--tile",
         "win2000",
@@ -128,30 +129,12 @@
         "abs",
         "--audio",
         "on",
-        "--audio-dev",
-        "ac97",
-        "--input-dev",
-        "usb",
-        "--mem",
-        "512",
-        "--smp",
-        "1",
-        "--machine",
-        "pc-i440fx-11.0",
-        "--cpu",
-        "host",
-        "--vga",
-        "std",
         "--fps",
         "30",
-        "--boot",
-        "c",
-        "--extra",
-        "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0",
+        "--launcher-file",
+        "$T/win2000/qemu-streamhost.sh",
         "--env-append-file",
-        "$T/win2000/station.env.fixture",
-        "--loadvm-launch",
-        "/data/gallery-guests/Win2000/win2k-pro.qcow2"
+        "$T/win2000/station.env.fixture"
       ],
       "deviceSetId": "win2000-stdvga-vbemp-1600",
       "machine": "pc-i440fx-11.0",
@@ -159,10 +142,6 @@
       "vga": "std",
       "memoryMB": 512,
       "smp": 1,
-      "audioDevice": "ac97",
-      "inputDevice": "usb",
-      "boot": "c",
-      "extraArgs": "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden",
       "accel": "kvm",
       "binary": "qemu-system-x86_64",
       "deviceSetSummary": [
@@ -175,7 +154,8 @@
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
         "-usb -device usb-tablet",
-        "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden",
+        "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide",
+        "-netdev tap,id=n0,ifname=win2krn0,script=no,downscript=no -device rtl8139,netdev=n0",
         "-qmp unix:/data/vms/streamhost/stations/win2000/qmp.sock,server=on,wait=off",
         "-pidfile /data/vms/streamhost/stations/win2000/qemu.pid"
       ],
@@ -198,15 +178,17 @@
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
           "-usb -device usb-tablet",
-          "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0 -loadvm golden",
+          "-drive file=/data/gallery-guests/Win2000/win2k-pro.qcow2,format=qcow2,if=ide",
+          "-netdev tap,id=n0,ifname=win2krn0,script=no,downscript=no -device rtl8139,netdev=n0",
           "-qmp unix:/data/vms/streamhost/stations/win2000/qmp.sock,server=on,wait=off",
           "-pidfile /data/vms/streamhost/stations/win2000/qemu.pid"
         ]
       },
       "launcherParity": {
         "status": "semantic-identical",
-        "reason": "registry source pins pc-i440fx-11.0, matching the running/golden-compatible QEMU 11 machine"
-      }
+        "reason": "in-repo launcher streamhost/stations/win2000/qemu-streamhost.sh is the deployed verbatim launcher; retronet tap on vmbr-rn, pc-i440fx-11.0 matches the running/golden-compatible QEMU 11 machine"
+      },
+      "launcher": "streamhost/stations/win2000/qemu-streamhost.sh"
     },
     "bringUpOrder": 11
   },
