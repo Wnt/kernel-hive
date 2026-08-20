@@ -16,6 +16,13 @@
 #     it on the fail-safe PnP BIOS with no PCI. usb-tablet -> absolute pointer (SH_POINTER=abs).
 #     No protection error under acpi=on+KVM (verified 3 cold boots). Do NOT re-add
 #     acpi=off/usb=off/-apic/kernel-irqchip=off. See docs/guests/win9x.md.
+#   * EXEC CHANNEL (retronet, 2026-08-20): hostfwd 127.0.0.1:57792 -> guest :7788
+#     reaches C:\WARPNET.EXE, the in-guest warpd agent built -DWARP_PORT=7788, which
+#     serves the 'E' exec verb (exec_kind "warpd_e"; labctl exec win98se "<cmd>").
+#     It is RUNNING inside the golden and re-launches from the StartUp folder on a
+#     cold boot. A hostfwd is a netdev BACKEND property, not a -device, so the
+#     emulated device set is unchanged and `loadvm golden` stays valid. Do NOT
+#     renumber n0. See docs/lab/retronet/EXEC-CHANNEL.md.
 # Kill only by pidfile. neko is restored by ROLLBACK.md.
 set -e
 B=/data/vms/streamhost/stations/win98se
@@ -41,7 +48,7 @@ nohup qemu-system-x86_64 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
   -drive file="$KVM",format=qcow2,if=ide \
   -drive file="$GAMES",format=qcow2,if=ide,index=1 \
-  -netdev user,id=n0 -device pcnet,netdev=n0 \
+  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788 -device pcnet,netdev=n0 \
   -usb -device usb-tablet,id=tab0 \
   $LOADVM \
   -qmp unix:$B/qmp.sock,server=on,wait=off \

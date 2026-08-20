@@ -29,15 +29,31 @@
  *              Byte-identical framing to solaris/warpd.py, so the host client
  *              streamhost/guest-agents/solaris/gexec.py (labctl exec_kind
  *              "warpd_e") drives this agent UNCHANGED.
+ *   V          re-set the display mode (see note 2). Sent automatically after
+ *              every 'E'; also usable on its own to un-wedge a framebuffer.
  *   QUIT       close this connection
  *
  * Two Win9x-specific limits on 'E', both deliberate:
  *   1. COMMAND.COM has no `2>&1` (that is an NT cmd.exe feature), so only
  *      STDOUT is captured. DOS tools write most errors to stdout anyway.
- *   2. The child is started SW_HIDE. This is load-bearing, not cosmetic: a
- *      FULL-SCREEN DOS box wedges the win98se display driver at a 1600x176
- *      framebuffer that only `loadvm golden` recovers (observed 2026-08-20).
- *      A hidden VDM stays windowed and never switches video mode.
+ *   2. Every 'E' ends with a forced display-mode reset, and that is load-bearing.
+ *      MEASURED on the live win98se station 2026-08-20: ANY transient DOS box
+ *      ("COMMAND.COM /c ...") leaves the guest's VBE-miniport display driver
+ *      with a misprogrammed CRTC -- QEMU then reports a garbled 1600x176
+ *      framebuffer instead of the 1600x1200 desktop, and it never comes back on
+ *      its own. It is NOT about hiding the window (SW_HIDE, SW_SHOWMINNOACTIVE
+ *      and a plain visible box all wedge it) and NOT about how it is launched
+ *      (CreateProcess, Start>Run and a .PIF all wedge it): it is the transient
+ *      VDM's video grab. Only a REAL mode program fixes it, so once the child
+ *      is reaped the agent calls ChangeDisplaySettings(NULL, CDS_RESET), which
+ *      re-sets the registry mode even though Windows believes nothing changed.
+ *      The child runs SW_SHOWMINNOACTIVE so it never steals focus from the
+ *      checkpoint fixture.
+ *      Manual recovery, if a display ever wedges anyway: Start > Run > command
+ *      (a PERSISTENT DOS box does not wedge it), then Alt+Enter TWICE -- full
+ *      screen, then back to a window -- then `exit`. `loadvm golden` also works
+ *      but discards everything done since the checkpoint. Or, over the wire:
+ *      printf 'V\n' | nc 127.0.0.1 57792   (the 'V' verb below).
  *
  * Build (host, Debian):
  *   i686-w64-mingw32-gcc -O2 -s -mwindows -Wl,--no-insert-timestamp -o warpnet.exe warpnet.c -lwsock32
@@ -95,6 +111,17 @@ static void click(int n) {
     press(n); Sleep(15); release(n);
 }
 
+/* Force the display driver to program the video mode again. CDS_RESET is the
+ * whole point: without it Windows compares the requested mode against what it
+ * believes is current, finds no difference, and does nothing -- while the VGA
+ * hardware is actually left misprogrammed by a transient DOS VDM. */
+#ifndef CDS_RESET
+#define CDS_RESET 0x40000000
+#endif
+static void video_kick(void) {
+    ChangeDisplaySettingsA(NULL, CDS_RESET);
+}
+
 static void handle(char *line) {
     char *p = line;
     while (*p == ' ' || *p == '\t') p++;
@@ -118,6 +145,7 @@ static void handle(char *line) {
         case 'P': case 'p': if (ni >= 3) { SetCursorPos(nums[1], nums[2]); press(nums[0]); } break;
         case 'R': case 'r': if (ni >= 3) { SetCursorPos(nums[1], nums[2]); release(nums[0]); } break;
         case 'B': case 'b': if (ni >= 3) { SetCursorPos(nums[1], nums[2]); click(nums[0]); } break;
+        case 'V': case 'v': video_kick(); break;
         default: break;
     }
 }
@@ -184,7 +212,9 @@ static int run_exec(const char *cmd, char *out, int outmax, int *rc) {
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
     si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = SW_HIDE;   /* NEVER let the VDM go full screen -- see header */
+    /* MINIMIZED + NOT ACTIVATED. Never SW_HIDE: Win9x answers that by giving the
+     * VDM the whole screen, which wedges the display driver -- see the header. */
+    si.wShowWindow = SW_SHOWMINNOACTIVE;   /* windowed + never steals focus */
     ZeroMemory(&pi, sizeof(pi));
 
     if (!CreateProcessA(NULL, cl, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
@@ -201,6 +231,8 @@ static int run_exec(const char *cmd, char *out, int outmax, int *rc) {
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
     *rc = (int)code;
+
+    video_kick();   /* the VDM has exited: put the CRTC back -- see header note 2 */
 
     h = CreateFileA(EXEC_OUT, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
                     NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);

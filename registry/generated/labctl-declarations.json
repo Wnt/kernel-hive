@@ -969,13 +969,13 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": null,
-      "exec_kind": null,
+      "exec_port": 57792,
+      "exec_kind": "warpd_e",
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
       "udp_port": 54092,
-      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "exec: labctl exec win98se \"<cmd>\" runs a command through COMMAND.COM in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), listening on guest :7788 via the hostfwd 127.0.0.1:57792 on netdev n0; it is RUNNING inside the golden and restarts from the StartUp folder on a cold boot. No stderr (COMMAND.COM has no 2>&1). NEVER launch a full-screen DOS box: it wedges the display driver until loadvm golden. See docs/lab/retronet/EXEC-CHANNEL.md"
     },
     "winxp": {
       "dir": "/data/vms/streamhost/stations/winxp",

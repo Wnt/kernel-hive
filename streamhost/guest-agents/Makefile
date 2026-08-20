@@ -7,6 +7,7 @@
 #
 # Targets:
 #   make win9x      Win95/98SE  : i686-w64-mingw32-gcc  -> win9x/warpnet.exe
+#   make win9x-exec Win98SE     : same source, -DWARP_PORT=7788 -> win9x/warpnet7788.exe
 #   make os2        OS/2 Warp   : OpenWatcom 1.9 wcl386 -> os2/WARPD.EXE
 #   make solaris    Solaris CDE : NO build (python2.6 runs in-guest) — validates only
 #   make ninefront  9front/Plan9: NO host build (6c/6l run in-guest) — prints recipe
@@ -22,17 +23,20 @@
 HERE     := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 WIN9X_C  := $(HERE)win9x/warpnet.c
 WIN9X_X  := $(HERE)win9x/warpnet.exe
+WIN9XE_X := $(HERE)win9x/warpnet7788.exe
 OS2_C    := $(HERE)os2/warpd_os2.c
 OS2_X    := $(HERE)os2/WARPD.EXE
 SOLARIS_PY := $(HERE)solaris/warpd.py
 NINE_C   := $(HERE)ninefront/warpd.c
 
 MINGW    := i686-w64-mingw32-gcc
+# Shared by BOTH win9x recipes so the two can never drift apart.
+W9FLAGS  := -O2 -s -mwindows -march=pentium -mtune=pentium -Wl,--no-insert-timestamp
 WCL386   := wcl386
 
-.PHONY: all check clean win9x os2 solaris ninefront
+.PHONY: all check clean win9x win9x-exec os2 solaris ninefront
 
-all: win9x os2 solaris ninefront
+all: win9x win9x-exec os2 solaris ninefront
 	@echo "== guest-agents: all buildable targets done =="
 
 # ---- Win95 / Win98SE : warpnet.exe -------------------------------------------
@@ -49,14 +53,33 @@ all: win9x os2 solaris ninefront
 #   win95's live :7777): add -DWARP_PORT=7788 and name the output accordingly.
 win9x:
 	@if command -v $(MINGW) >/dev/null 2>&1; then \
-	  echo "[win9x] $(MINGW) -O2 -s -mwindows -march=pentium -mtune=pentium -Wl,--no-insert-timestamp -o warpnet.exe warpnet.c -lwsock32"; \
-	  cd $(HERE)win9x && $(MINGW) -O2 -s -mwindows -march=pentium -mtune=pentium -Wl,--no-insert-timestamp -o warpnet.exe warpnet.c -lwsock32 && \
+	  echo "[win9x] $(MINGW) $(W9FLAGS) -o warpnet.exe warpnet.c -lwsock32"; \
+	  cd $(HERE)win9x && $(MINGW) $(W9FLAGS) -o warpnet.exe warpnet.c -lwsock32 && \
 	  echo "[win9x] OK -> $(WIN9X_X)" && file warpnet.exe 2>/dev/null || true; \
 	else \
 	  echo "[win9x] MISSING toolchain: $(MINGW)"; \
 	  echo "        install on Debian/Proxmox:"; \
 	  echo "          apt-get update && apt-get install -y gcc-mingw-w64-i686"; \
 	  echo "        (provides $(MINGW)); then re-run: make win9x"; \
+	fi
+
+# ---- Win98SE : warpnet7788.exe (retronet exec listener) ----------------------
+# The SAME source and the same flags, rebuilt on WARP_PORT 7788. win98se points
+# with a usb-tablet and needs no pointer agent, so this binary exists only for
+# the 'E' exec verb (labctl exec_kind "warpd_e", host client gexec.py, hostfwd
+# 127.0.0.1:57792 -> guest :7788). A separate port keeps it clear of win95's
+# LIVE pointer listener on :7777, so the two stations can never cross-connect.
+# Deliver + autostart: docs/lab/retronet/EXEC-CHANNEL.md.
+win9x-exec:
+	@if command -v $(MINGW) >/dev/null 2>&1; then \
+	  echo "[win9x-exec] $(MINGW) $(W9FLAGS) -DWARP_PORT=7788 -o warpnet7788.exe warpnet.c -lwsock32"; \
+	  cd $(HERE)win9x && $(MINGW) $(W9FLAGS) -DWARP_PORT=7788 -o warpnet7788.exe warpnet.c -lwsock32 && \
+	  echo "[win9x-exec] OK -> $(WIN9XE_X)" && sha256sum warpnet7788.exe 2>/dev/null || true; \
+	else \
+	  echo "[win9x-exec] MISSING toolchain: $(MINGW)"; \
+	  echo "        install on Debian/Proxmox:"; \
+	  echo "          apt-get update && apt-get install -y gcc-mingw-w64-i686"; \
+	  echo "        (provides $(MINGW)); then re-run: make win9x-exec"; \
 	fi
 
 # ---- OS/2 Warp : WARPD.EXE (32-bit PM EXE) -----------------------------------
@@ -101,10 +124,11 @@ ninefront:
 check:
 	@echo "== guest-agents toolchain check =="
 	@printf 'win9x    (%s): ' "$(MINGW)";  command -v $(MINGW)  >/dev/null 2>&1 && echo present || echo "MISSING -> apt-get install gcc-mingw-w64-i686"
+	@printf 'win9x-exec (%s): ' "$(MINGW)"; command -v $(MINGW) >/dev/null 2>&1 && echo present || echo "MISSING -> apt-get install gcc-mingw-w64-i686"
 	@printf 'os2      (%s): ' "$(WCL386)"; command -v $(WCL386) >/dev/null 2>&1 && echo present || echo "MISSING -> install OpenWatcom 1.9 (make os2 for steps)"
 	@printf 'solaris  (in-guest python2.6): n/a on host\n'
 	@printf 'ninefront(in-guest 6c/6l)   : n/a on host\n'
 
 clean:
-	@rm -f "$(WIN9X_X)" "$(OS2_X)" $(HERE)os2/*.o $(HERE)win9x/*.o
+	@rm -f "$(WIN9X_X)" "$(WIN9XE_X)" "$(OS2_X)" $(HERE)os2/*.o $(HERE)win9x/*.o
 	@echo "[clean] removed built agent artifacts"
