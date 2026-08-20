@@ -9,7 +9,7 @@ images:
 ---
 ## Origins
 
-Red Star OS 3.0 appeared around 2013 as a later generation of North Korea’s domestic Linux distribution. Where version 2.0 displayed a conventional KDE 3-era environment, version 3.0 adopted a strongly Mac-like visual arrangement: a global top bar, centered dock, light window chrome, and carefully controlled desktop imagery. Its foundations still draw from Fedora-era Linux and KDE technologies.
+Red Star OS 3.0 appeared around 2013 as a later generation of North Korea’s domestic Linux distribution. Where version 2.0 displayed a conventional KDE 3-era environment — earlier Red Star versions had imitated the look of Windows XP, also exhibited in this hall — version 3.0 adopted a strongly Mac-like visual arrangement: a global top bar, centered dock, light window chrome, and carefully controlled desktop imagery. The change reportedly followed a 2013 photograph of the country’s leader at his desk beside an iMac. Its foundations still draw from Fedora-era Linux and KDE technologies; forensic studies of leaked copies place them on Fedora 11 packages and a 2011 kernel.
 
 The system includes a localized file manager, preferences, utilities, and Naenara, a Firefox-derived browser. These applications were intended for a computing environment in which software distribution and network access were institutionally bounded. Researchers examining copies of the system have reported mechanisms for marking media files and monitoring activity, features that place ordinary desktop interactions within a larger control system.
 

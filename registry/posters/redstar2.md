@@ -9,9 +9,9 @@ images:
 ---
 ## Origins
 
-Red Star OS is a Linux distribution developed in the Democratic People’s Republic of Korea for domestic computing. Version 2.0 dates from around 2009 and reflects the conventions of Red Hat- and Fedora-derived systems of the period. Its desktop uses KDE 3.5 technology, localized into Korean and packaged with office, media, system, and network applications selected for a nationally managed software environment.
+Red Star OS is a Linux distribution developed in the Democratic People’s Republic of Korea for domestic computing. Version 2.0 was completed in June 2009 and reflects the conventions of Red Hat- and Fedora-derived systems of the period; when it shipped, it was priced at 2,000 North Korean won, roughly fifteen US dollars. Its desktop uses KDE 3.5 technology, localized into Korean and packaged with office, media, system, and network applications selected for a nationally managed software environment.
 
-The distribution’s visible components include Naenara, a Firefox-derived web browser, and the Uri office suite, related to OpenOffice.org. Beneath those applications are recognizable free-software foundations. Their arrangement and modification illustrate how a general Linux ecosystem can be adapted within a state-directed computing policy.
+The distribution’s visible components include Naenara, a Firefox-derived web browser, and the Uri office suite, related to OpenOffice.org. Beneath those applications are recognizable free-software foundations — its kernel is the same Linux that this hall’s postmarketOS exhibit runs on modern phones. Their arrangement and modification illustrate how a general Linux ecosystem can be adapted within a state-directed computing policy. The first copies of the distribution to reach the open internet were leaked by a Russian student studying in Pyongyang.
 
 ## Significance
 
