@@ -46,13 +46,14 @@ DEF_CORPUS = "/data/retronet/corpus"
 DEF_SEARCH_HOSTS = "search.retronet"
 DEF_SEARCH_BACKEND = "127.0.0.1:8090"
 
-# The corpus is downgraded to Latin-1 (see WEB-PLANE-PLAN.md), so text types are
-# labelled accordingly rather than left to a browser's guess.
+# The proxy's OWN notices (the miss/error pages below) are authored in Latin-1
+# with numeric entities. Corpus content is served untouched — see content_type.
 TEXT_CHARSET = "iso-8859-1"
 
-# Era-correct content types by extension. mimetypes fills any gap; the final
-# fallback is application/octet-stream. No modern types are needed — the corpus
-# is HTML 3.2 + GIF/JPEG.
+# Content type by extension. mimetypes fills any gap; the final fallback is
+# application/octet-stream. The corpus is a raw archival mirror (WEB-PLANE-PLAN
+# "fidelity, not downgrade"), so this spans original period types — HTML, GIF,
+# JPEG, PNG, JS, CSS — served exactly as stored, never re-encoded.
 CONTENT_TYPES = {
     ".html": "text/html",
     ".htm": "text/html",
@@ -72,7 +73,6 @@ CONTENT_TYPES = {
     ".zip": "application/zip",
     ".pdf": "application/pdf",
 }
-TEXT_TYPES = {"text/html", "text/plain", "text/css"}
 
 # A hostname we are willing to serve as a corpus directory. Anything else is a
 # malformed request, never a filesystem path.
@@ -80,13 +80,11 @@ HOST_RE = re.compile(r"^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$")
 
 
 def content_type(path: str) -> str:
+    # Fidelity, not downgrade (WEB-PLANE-PLAN.md): the corpus is the raw archived
+    # bytes, so serve the type by extension and impose NO charset — an era page's
+    # own <meta> (or the browser's default) decides, exactly as it did in period.
     ext = os.path.splitext(path)[1].lower()
-    ctype = CONTENT_TYPES.get(ext)
-    if ctype is None:
-        ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
-    if ctype in TEXT_TYPES:
-        ctype += f"; charset={TEXT_CHARSET}"
-    return ctype
+    return CONTENT_TYPES.get(ext) or mimetypes.guess_type(path)[0] or "application/octet-stream"
 
 
 def era_page(title: str, heading: str, paras: list[str]) -> bytes:

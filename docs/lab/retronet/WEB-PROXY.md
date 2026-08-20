@@ -72,8 +72,12 @@ browser sends a proxy (`GET http://host/path HTTP/1.0`), and:
 
 Every response is **HTTP/1.0 with an explicit `Content-Length` and
 `Connection: close` — no chunked transfer, no gzip** — which is what Netscape 4
-and IE5 expect from a proxy. Text types are labelled `charset=iso-8859-1`, the
-corpus's downgrade target. The known-vs-unknown host distinction tailors the 404
+and IE5 expect from a proxy. Corpus files are served **untouched**: a
+Content-Type by extension and **no imposed charset**. The amended contract is
+*fidelity, not downgrade* — the corpus is the raw `id_` archival bytes — so an
+era page's own `<meta>` (or the browser's default) decides the encoding, exactly
+as it did in period. (Only the proxy's own miss/error pages are Latin-1, and
+they are pure ASCII with numeric entities.) The known-vs-unknown host distinction tailors the 404
 copy: a host with a corpus dir or a `sites.json` entry gets *"this page isn't in
 our copy of X"*; anything else gets *"X isn't part of the museum's internet"*.
 `sites.json` is read best-effort with an mtime cache; its absence is valid (an
