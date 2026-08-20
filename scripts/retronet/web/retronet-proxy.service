@@ -1,0 +1,54 @@
+[Unit]
+# Installed INSIDE the gateway CT (951) by
+# scripts/retronet/web/install-proxy.sh. The corpus-only HTTP/1.0 forward proxy:
+# an era browser sets its HTTP proxy to 10.99.0.2:3128 and browses a 1990s web
+# served entirely from /data/retronet/corpus. See docs/lab/retronet/WEB-PROXY.md.
+Description=retronet web proxy — corpus-only HTTP/1.0 forward proxy
+Documentation=file:///data/kernel-hive/docs/lab/retronet/WEB-PROXY.md
+# The CT has no route off its own /24, so network-online.target here means
+# "eth0 is configured", which is all the bind address needs. Nothing routable
+# is waited for — there is nothing routable, by design.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rnproxy
+Group=rnproxy
+EnvironmentFile=/etc/retronet/proxy.env
+ExecStart=/usr/bin/python3 /opt/retronet-proxy/proxy.py
+Restart=on-failure
+RestartSec=3s
+
+# --- sandbox (mirrors retronet-oscar.service — the proven in-CT pattern) ------
+# NOTE ON "NO UPSTREAM": the address-level cage (IPAddressAllow/Deny) that the
+# labhost-side units use is deliberately NOT set here. Its eBPF/cgroup filter is
+# not reliably enforceable inside an unprivileged LXC, so relying on it would be
+# false comfort. The real guarantees are, in order: (1) the proxy code opens a
+# socket in exactly one place, to the fixed CT-local search backend, and never
+# fetches from a request-named host — prove it with strace; (2) the CT has no
+# default route, so a stray packet has nowhere to go (docs/lab/retronet/
+# GATEWAY.md). RestrictAddressFamilies below still bars raw/packet sockets.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+# The proxy only ever reads: the corpus and its own code. It writes nothing to
+# disk (logs go to journald via stdout), so no path is made writable.
+ReadOnlyPaths=/data/retronet/corpus /opt/retronet-proxy
+
+# --- resource cage ------------------------------------------------------------
+Nice=5
+MemoryMax=192M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
