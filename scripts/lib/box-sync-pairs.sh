@@ -254,6 +254,10 @@ box_sync_load_pairs() {
   box_sync_add_pair win98se-icq-nudge scripts/retronet/win98se-icq-nudge.py /usr/local/sbin/win98se-icq-nudge.py exact repo
   box_sync_add_pair win98se-icq-nudge-unit scripts/retronet/win98se-icq-nudge.service /etc/systemd/system/win98se-icq-nudge.service exact repo daemon-reload
   box_sync_add_pair win98se-icq-nudge-timer scripts/retronet/win98se-icq-nudge.timer /etc/systemd/system/win98se-icq-nudge.timer exact repo daemon-reload
+  # nt4's own copy (guest 10.99.0.12, persona 40000). See ICQ-STATION-NT4.md.
+  box_sync_add_pair nt4-icq-nudge scripts/retronet/nt4-icq-nudge.py /usr/local/sbin/nt4-icq-nudge.py exact repo
+  box_sync_add_pair nt4-icq-nudge-unit scripts/retronet/nt4-icq-nudge.service /etc/systemd/system/nt4-icq-nudge.service exact repo daemon-reload
+  box_sync_add_pair nt4-icq-nudge-timer scripts/retronet/nt4-icq-nudge.timer /etc/systemd/system/nt4-icq-nudge.timer exact repo daemon-reload
 
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.

@@ -558,7 +558,7 @@ emit nt351 \
   "$T/nt351/station.env.fixture"
 
 # nt4 (VMID 89) — Windows NT 4.0 Workstation SP6a, accelerated ISA Cirrus
-#   1024x768x65536 colors (16bpp), pcnet device, audio off. VERBATIM launcher:
+#   1024x768x65536 colors (16bpp), pcnet NIC on the retronet bridge vmbr-rn, audio off. VERBATIM launcher:
 #   boots the tile-local nt4-golden.qcow2 without -snapshot; conditional
 #   -loadvm golden. Pins /opt/qemu-cirrusfix2 with patches 0004 (ROP1 fill) and
 #   0005 (ISA Cirrus vmstate substructure restore); rebuild and reverify on a

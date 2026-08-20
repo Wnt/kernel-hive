@@ -569,14 +569,14 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": null,
-      "exec_host": null,
-      "exec_kind": null,
+      "exec_port": 7788,
+      "exec_host": "10.99.0.12",
+      "exec_kind": "warpd_e",
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
       "udp_port": 54089,
-      "notes": "true absolute vmmouse pointer; no exec channel: use labctl keyboard/pointer/framebuffer operations"
+      "notes": "exec: labctl exec nt4 \"<cmd>\" runs a command through cmd.exe in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.12:7788 (n0 is a tap on vmbr-rn, NOT slirp -- no hostfwd). It is RUNNING inside the golden and restarts from the All Users StartUp folder on a cold boot. Also true absolute vmmouse pointer. See docs/lab/retronet/ICQ-STATION-NT4.md."
     },
     "openvms": {
       "dir": "/data/vms/streamhost/stations/openvms",
