@@ -227,6 +227,20 @@ Targets Server-2003-level Win32; still alpha. Prefer 2D/GDI/DirectDraw, treat Di
 
 ---
 
+## Mac OS 7.5.3 (Quadra 800, m68k)
+
+The fleet's only foreign-architecture guest — `qemu-system-m68k -M q800`,
+**TCG only, no KVM path exists for m68k.** No shell, no telnet, no serial
+console: the framebuffer is the only observation surface (`docs/guests/macos753.md`).
+Software must be genuinely **68k-native** (`68020`/`68030`/`68040`); anything
+PowerPC-only or System-8+-only will not run here.
+
+| Title | Type | Source | Legal | Install | Why |
+|---|---|---|---|---|---|
+| AOL Instant Messenger 2.01.617 (68K) | util | [macintoshrepository.org/1213-aol-instant-messenger-2-x-68k-](https://www.macintoshrepository.org/1213-aol-instant-messenger-2-x-68k-) | abandonware (AOL) | `.sit` installer (Installer VISE). **Blocked on networking**: the station ships with no NIC today, and wiring up the onboard SONIC/MacSonic Ethernet + MacTCP-or-OpenTransport is a device-set change needing a cold rebuild — not yet done (`docs/guests/macos753.md`, `docs/lab/ASSETS-MANIFEST.md` `macos753` row) | The retronet ICQ/AIM bridge's hardest leg (Tier D, `docs/lab/retronet/ICQ-ONBOARDING-PLAN.md`). AIM has spoken OSCAR since its 1997 launch, so this — its last 68K-compatible build — is a genuine period OSCAR client for a real 68k Mac, unlike any Mac ICQ build (PowerPC-only from the point ICQ itself adopted OSCAR). The installer's own text confirms System 7.5+ (Thread Manager, built into 7.5.3 — no extra extension needed). |
+
+---
+
 ## macOS Sequoia (macOS 15) — showcase-only; former guest deleted 2026-07-14
 
 If recreated, the no-Metal/no-GPU guest makes virtually all Mac App Store games, Game Porting Toolkit, and the iOS Simulator unusable or slow. Lean toward **apps and desktop polish, not games.** Safari is pre-bundled. Cross-platform picks #1–8 below (Firefox, VLC, VS Code/VSCodium, DOSBox Staging, ScummVM, Wesnoth, OpenTTD) all have macOS builds.
@@ -241,6 +255,20 @@ If recreated, the no-Metal/no-GPU guest makes virtually all Mac App Store games,
 | DOSBox Staging | retro platform | [dosbox-staging.org](https://www.dosbox-staging.org/) | free (GPL) | .dmg | Retro arcade vehicle, software-rendered. |
 | ScummVM + freeware adventures | game platform | [scummvm.org/games](https://www.scummvm.org/games/) | free engine; games freeware | .dmg + add game | Clean-license 2D adventures despite the no-Metal limit. |
 | Battle for Wesnoth / OpenTTD | game | [wesnoth.org](https://www.wesnoth.org/) / [openttd.org](https://www.openttd.org/) | free (GPL) | .dmg | Real full 2D games that run software-rendered. |
+
+---
+
+## Unix workstations — Solaris 10 (CDE) / Tru64 UNIX (retronet ICQ)
+
+Narrower than the sections above: not a general software-stocking list for
+these two tiles, just the one retronet cross-reference. Both run QEMU-TCG /
+es40-TCG with no GPU (same rendering-reality rule as everywhere else in this
+doc), and CDE is already period-correct chrome — the client below opens in a
+`dtterm` on the existing desktop, no new UI surface needed.
+
+| Title | Type | Source | Legal | Install | Why |
+|---|---|---|---|---|---|
+| climm (formerly micq/mICQ) 0.6.4 | util | [SourceForge `climm`](https://sourceforge.net/projects/climm/files/climm/climm-0.6.4/climm-0.6.4.tgz/download) | free (GPLv2 + BSD-ish pre-0.4.9 code, OpenSSL-linking exception) | build from source, `./configure --disable-ssl --disable-tcl --disable-otr --disable-peer2peer && make`; Solaris needs `PATH=/usr/sfw/bin:/usr/ccs/bin:$PATH` for its bundled gcc 3.4.3, Tru64 needs `CONFIG_SHELL=/bin/ksh` for its native Compaq C | the retronet ICQ fleet's Unix-side OSCAR client (`docs/lab/RETRONET-BRIEF.md` §5, `docs/lab/retronet/ICQ-ONBOARDING-PLAN.md` Tier C) — console UI in a `dtterm`, same OSCAR/TCP-5190 protocol family as the Windows stations' ICQ 2000b. Chosen over centericq/licq for buildability (no ncurses/Qt/OpenSSL required). Full sourcing detail, build strategy and the candidate comparison: `docs/lab/ASSETS-MANIFEST.md` §"climm (formerly micq)". |
 
 ---
 
