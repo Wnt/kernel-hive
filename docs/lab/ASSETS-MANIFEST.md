@@ -341,6 +341,95 @@ content-addressed media archive (no `/data/assets-staging/` copy):
 |---|---|---|---|---|
 | `AIM_installer_2.01.617.sit` (AOL Instant Messenger 2.01.617, 1999, StuffIt archive of an Installer VISE package) | `965f5c9c4f6d796e1c3f347fc5ec05693b9aa27848679bda98f2cb3fc4f71cec` *(locally measured 2026-08-20; matches the file's own site-published sha1 `15134f371105475fa4f9f8b6c8e0f80fc73cd9a7`)* | 2 538 648 | [`macintoshrepository.org/1213-aol-instant-messenger-2-x-68k-`](https://www.macintoshrepository.org/1213-aol-instant-messenger-2-x-68k-), file `AIM_installer_2.01.617.sit` (download id 10986) — a vintage-Mac preservation mirror (the WinWorld/archive.org equivalent for classic Mac abandonware) | **abandonware-URL.** AOL-copyright, long-discontinued, no redistribution grant. Chosen over any ICQ-branded Mac client: AIM has spoken OSCAR since its May-1997 launch (OSCAR was literally AIM's internal project codename before it became the wire protocol's name), so every AIM generation — including this, its **last 68K-compatible build** — is a genuine period OSCAR client; Mac ICQ, by contrast, topped out at 68K version 1.7.2 (Macintosh Garden's own version table) and every Mac ICQ build after it (2.0b onward) is PowerPC-only, postdating ICQ's own industry-wide OSCAR migration (~1999–2000) — no 68k-and-OSCAR ICQ-for-Mac build was found and one may not exist. **68K-native and System-7.5-aware by the installer's own hand**: `unar`-extracted, the `InstallAIM` binary's data fork contains the literal string *"The Thead [sic] Manager extension is required to run AIM. It is built into all MacOS computers running system 7.5 or later"* — satisfied by this station's System 7.5.3 with no extra extension; internal CPU-family tags confirm `68K Only` / `68020`/`68030`/`68040` (matches the Quadra 800's 68040). Private preservation exhibit only; never committed, never publicly served — install is blocked on the NIC-add device-set change above. |
 
+### `climm` (formerly micq) — retronet ICQ/OSCAR client for Unix (solaris + tru64, stream C)
+
+Not builder-driven — sourced for the two Tier-C Unix stations in
+`docs/lab/retronet/ICQ-ONBOARDING-PLAN.md` (solaris x86/CDE, tru64/Alpha).
+Staged **only** in the content-addressed media archive (no
+`/data/assets-staging/` copy):
+`/data/media-archive/blobs/c8/c87f17bf52e1b2b29b840ba7994762609d75acd89857560209915d7584d8587b`
+(`media_cache_put`).
+
+| file | sha256 | size | source | class / terms |
+|---|---|---|---|---|
+| `climm-0.6.4.tgz` (climm, formerly micq/mICQ) | `c87f17bf52e1b2b29b840ba7994762609d75acd89857560209915d7584d8587b` *(locally measured 2026-08-20)* | 1 209 914 | [SourceForge `climm` project](https://sourceforge.net/projects/climm/files/climm/climm-0.6.4/climm-0.6.4.tgz/download), file `climm-0.6.4.tgz` (2009-02-22 release; GitHub mirror `github.com/tadu/climm` cross-checked as the same lineage but ships no pre-generated `configure` — the SourceForge tarball is the one to build from) | **freely-fetchable-pinned.** GPLv2 (BSD-ish for the pre-0.4.9 Matt D. Smith code, all v8/OSCAR code GPLv2, `COPYING` carries an explicit OpenSSL-linking exception since 0.4.12) — genuinely open, unlike this subsection's neighbours above. "No-one from the climm project is in any way affiliated with Mirabilis or AOL" (`COPYING`). |
+
+**Why climm over centericq/licq.** All three are OSCAR-capable per
+`ICQ-ONBOARDING-PLAN.md`'s candidate list; climm won on buildability, not
+just protocol support:
+
+- **OSCAR confirmed at the source level, not just by reputation** —
+  `src/oscar_base.c`, `oscar_bos.c` (the BOS redirect `GATEWAY.md`'s "two
+  doors" section describes), `oscar_snac.c`/`oscar_tlv.c`, `oscar_register.c`,
+  `oscar_contact.c` are all present, and the compiled-in default is literally
+  `login.icq.com:5190` (`src/oscar_base.c`, `src/file_util.c`) — the real
+  OSCAR port, matching the gateway's `10.99.0.2:5190` door exactly. README:
+  "login with both the old v6 and the new v8 protocol" (v8 = OSCAR).
+- **Zero hard dependencies beyond libc sockets.** `configure.ac` has exactly
+  two `AC_CHECK_LIB` calls (`nsl`/`inet_ntoa`, `socket`/`getpeername` — the
+  standard SysV-vs-BSD sockets split, present on Solaris and gracefully
+  skipped where already in libc). No ncurses, no Qt, no OpenSSL requirement:
+  SSL, Tcl scripting, OTR and peer-to-peer are all `--disable-*` opt-outs, and
+  XMPP/MSN (the only two `.cpp` files in the tree, `jabber_base.cpp`/
+  `msn_base.cpp`) are opt-**in** (`--enable-xmpp`/`--enable-msn`, both off by
+  default) — a default build never touches a C++ compiler, `AC_PROG_CXX` in
+  `configure.ac` notwithstanding (a harmless unconditional probe).
+- **Ships a pre-generated `./configure` + `Makefile.in`** (`config.guess`,
+  `config.sub`, `install-sh`, `depcomp`, `missing` all present in the
+  tarball) — no autoconf/automake bootstrap needed on either target, which
+  matters because neither box ships a modern autotools. Contrast the GitHub
+  mirror (`tadu/climm`), a raw tree needing `autoconf 2.59+`/`automake 1.9+`
+  and a `build-aux/prepare` bootstrap — kept only as a provenance cross-check,
+  not the staged artifact.
+- **centericq** (last release 4.21.0, 2005, only ever packaged through Debian
+  etch) pulls in its own `libicq2000` OSCAR implementation plus ncurses,
+  OpenSSL and (for some features) gpgme/jpeg — a heavier C++ build with more
+  points of failure on a vendor compiler. **licq** (SourceForge, 1.0.x-1.3.x
+  era) is C++ throughout with a `dlopen`-based plugin loader, and its only
+  graphical UI is Qt — there never was a native Motif plugin, so "graphical
+  licq under CDE" would mean building Qt3/Qt4 from source first, not just
+  Licq itself, out of proportion to this errand. Both remain viable fallbacks
+  if climm's build stalls on either box, but were not sourced here.
+
+**Solaris 10 x86 build strategy — CONFIRMED buildable, gcc already on the
+box.** `labctl exec solaris` (read-only, 2026-08-20): `/usr/sfw/bin/gcc` is
+GCC 3.4.3 for `i386-pc-solaris2.10`
+(`/usr/sfw/bin/i386-pc-solaris2.10-gcc-3.4.3`), and the full binutils set
+(`as`, `ld`, `ar`, `make`, `m4`, `yacc`, `lex`) is present under
+`/usr/ccs/bin` — the station's GA DVD install already carries the `SFWgcc`
+cluster, so **no Companion CD is needed**. Recipe:
+`PATH=/usr/sfw/bin:/usr/ccs/bin:$PATH ./configure --disable-ssl --disable-tcl
+--disable-otr --disable-peer2peer && make`. Not yet run on the guest — that
+is the station-bring-up wave's first checkpoint, not this errand's.
+
+**Tru64/Alpha build strategy — feasible, not a blocker, on the strength of a
+real precedent.** `tru64` has no `gcc`; its native `/usr/bin/cc` is
+**Compaq C V6.5-011** (`cc -V`, 2026-08-20). That compiler has *already*
+built one substantial autoconf-based C project on this exact guest — Lynx
+2.8.9rel.1 (`/usr/local/bin/lynx`, `docs/guests/tru64.md` "The browser"
+section), which needed only `CONFIG_SHELL=/bin/ksh` (Tru64's default
+`/bin/sh` is the legacy Bourne shell and chokes on modern `configure`
+scripts) and ran its ~35 min `configure` + ~45 min `make` on the emulated
+Alpha without incident. climm is architecturally simpler than Lynx (no
+terminal/curses handling, no HTML parser, no SSL requirement once
+`--disable-ssl` is passed) and needs the same one shell workaround.
+**Verdict: NOT a hard blocker.** The station already has `cc`, X11 dev
+headers (`libX11`/`libXtst`, used to build `xptr`), and a network path out
+(the `dec21143` NIC added 2026-08-17). This reverses the onboarding plan's
+framing of tru64 as "Alpha client sourcing is the friction": the friction was
+never sourcing a *binary* — none exists for Alpha/Tru64 regardless of
+client, see below — it is building from source, and this station has already
+proven that path works for software of comparable or greater complexity.
+Recipe: `CONFIG_SHELL=/bin/ksh /bin/ksh ./configure --disable-ssl
+--disable-tcl --disable-otr --disable-peer2peer && make`. Also not yet run —
+same caveat as solaris above.
+
+**No prebuilt binary exists for either target.** The SourceForge release
+carries `.src.rpm`/`.i486.rpm`/`_i386.deb` (Linux x86) and an
+`-AmigaOS.tgz` — nothing for SPARC/x86 Solaris or Alpha/Tru64 was ever built
+by anyone. Source-only is not a fallback here, it is the only option, and it
+is a good one given the above.
+
 ## 3. freely-fetchable-pinned — open upstreams
 
 | file | pin | builder | staging path (labhost state) |

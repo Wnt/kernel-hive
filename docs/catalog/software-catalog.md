@@ -258,6 +258,20 @@ If recreated, the no-Metal/no-GPU guest makes virtually all Mac App Store games,
 
 ---
 
+## Unix workstations — Solaris 10 (CDE) / Tru64 UNIX (retronet ICQ)
+
+Narrower than the sections above: not a general software-stocking list for
+these two tiles, just the one retronet cross-reference. Both run QEMU-TCG /
+es40-TCG with no GPU (same rendering-reality rule as everywhere else in this
+doc), and CDE is already period-correct chrome — the client below opens in a
+`dtterm` on the existing desktop, no new UI surface needed.
+
+| Title | Type | Source | Legal | Install | Why |
+|---|---|---|---|---|---|
+| climm (formerly micq/mICQ) 0.6.4 | util | [SourceForge `climm`](https://sourceforge.net/projects/climm/files/climm/climm-0.6.4/climm-0.6.4.tgz/download) | free (GPLv2 + BSD-ish pre-0.4.9 code, OpenSSL-linking exception) | build from source, `./configure --disable-ssl --disable-tcl --disable-otr --disable-peer2peer && make`; Solaris needs `PATH=/usr/sfw/bin:/usr/ccs/bin:$PATH` for its bundled gcc 3.4.3, Tru64 needs `CONFIG_SHELL=/bin/ksh` for its native Compaq C | the retronet ICQ fleet's Unix-side OSCAR client (`docs/lab/RETRONET-BRIEF.md` §5, `docs/lab/retronet/ICQ-ONBOARDING-PLAN.md` Tier C) — console UI in a `dtterm`, same OSCAR/TCP-5190 protocol family as the Windows stations' ICQ 2000b. Chosen over centericq/licq for buildability (no ncurses/Qt/OpenSSL required). Full sourcing detail, build strategy and the candidate comparison: `docs/lab/ASSETS-MANIFEST.md` §"climm (formerly micq)". |
+
+---
+
 ## Cross-OS notes
 
 - **Recurring free-everywhere staples:** Freedoom + a software Doom port, ScummVM freeware adventures, OpenTTD (+OpenGFX), Battle for Wesnoth, 7-Zip, Notepad++, VLC, Firefox, NetSurf/Dillo, cmatrix/asciiquarium. Deduplicated per tile to the era-appropriate build.
