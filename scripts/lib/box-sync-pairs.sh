@@ -248,6 +248,9 @@ box_sync_load_pairs() {
   # installs it alongside the launcher (not an emit aux file, which deploys on a
   # separate stations-manifest.sh pass). See docs/lab/retronet/ICQ-STATION.md.
   box_sync_add_pair win98se-rn-tapnet streamhost/stations/win98se/rn-tapnet.sh "$BOX_ROOT/stations/win98se/rn-tapnet.sh" exact repo
+  # solaris' retronet bridge-tap lifecycle helper (Tier C, climm/OSCAR), the same
+  # box-authored mirror pair as win98se's above. See ICQ-STATION-solaris.md.
+  box_sync_add_pair solaris-rn-tapnet streamhost/stations/solaris/rn-tapnet.sh "$BOX_ROOT/stations/solaris/rn-tapnet.sh" exact repo
   # win98se ICQ presence healer (labhost): a timer nudges the persona's golden
   # BOS socket so ICQ reconnects after every reset/wake (ICQ 2000b will not on
   # its own). See docs/lab/retronet/ICQ-STATION.md §reconnect.

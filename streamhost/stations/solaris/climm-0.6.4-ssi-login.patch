@@ -1,0 +1,18 @@
+--- a/src/oscar_roster.c	2009-02-22 22:57:14.000000000 +0000
++++ b/src/oscar_roster.c	2026-08-20 22:49:44.923317775 +0000
+@@ -321,7 +321,14 @@
+         *rref = re;
+     }
+     stmp = PacketReadB4 (pak);
+-    if (stmp)
++    /* retronet patch: Retro AIM Server / Open OSCAR Server sends the SSI roster
++     * reply in a single packet with a last-modified timestamp of 0 for a fresh
++     * account. Stock climm only calls CliFinishLogin() when that timestamp is
++     * non-zero (treating 0 as "more roster packets follow"), so sign-on never
++     * completes and the connection times out. Finish login on the roster reply
++     * during sign-on regardless of the timestamp; the original re-queue path is
++     * preserved for post-login (CONNECT_OK) multi-packet roster refreshes. */
++    if (stmp || (~serv->conn->connect & CONNECT_OK))
+     {
+ #if 0
+         if (!roster->import)

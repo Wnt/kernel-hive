@@ -1,6 +1,10 @@
 #!/bin/sh
-# solaris GOLDEN TEST FIXTURE (sourced by /usr/dt/bin/Xsession via Xsession.d).
-# Makes each CDE login deterministic + animation-free and opens a reactive surface.
+# solaris GOLDEN FIXTURE (sourced by /usr/dt/bin/Xsession via Xsession.d).
+# Makes each CDE login animation-free and opens the retronet ICQ surface: a
+# dtterm running climm (the OSCAR client), which auto-logs-in as UIN 30000 to
+# the gateway (10.99.0.2:5190) from /.climm/climmrc and shows HiveBot in its
+# contact list — the authentic "Unix ICQ" look. climm has its own reconnect, so
+# it recovers on wake with no host-side nudge. See ICQ-STATION-solaris.md.
 # Backgrounded so it never blocks login.
 (
   sleep 14
@@ -13,5 +17,5 @@
   /usr/bin/pkill dtfile
   /usr/bin/pkill dthelpview
   sleep 1
-  /usr/dt/bin/dtterm -xrm "Dtterm*blinkRate: 0" -geometry 92x30+140+110 -title GOLDEN-FIXTURE-TERMINAL &
+  /usr/dt/bin/dtterm -xrm "Dtterm*blinkRate: 0" -geometry 100x38+120+90 -title ICQ -e /usr/local/bin/climm &
 ) &

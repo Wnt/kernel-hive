@@ -47,22 +47,23 @@
       "dir": "/data/vms/streamhost/stations/solaris",
       "qmp": "/data/vms/streamhost/stations/solaris/qmp.sock",
       "pointer_mode": "abs",
-      "warpd_port": 57790,
-      "warpd_addr": "127.0.0.1:57790",
+      "warpd_port": 7777,
+      "warpd_addr": "10.99.0.14:7777",
       "ssh_port": null,
-      "exec_port": 57790,
+      "exec_port": 7777,
+      "exec_host": "10.99.0.14",
       "exec_kind": "warpd_e",
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
       "udp_port": 54100,
-      "notes": "gallery-hid-pci is the live pointer device, fed by streamhost's native GalleryHidSink; the warpd agent remains on host port 57790 (guest :7777) for rollback and its 'E' exec verb; exec: labctl exec solaris \"<cmd>\""
+      "notes": "RETRONET BRIDGE: net0 is a tap on vmbr-rn (NOT slirp); guest is static 10.99.0.14/24, NO default route (rn-tapnet.sh + fail-closed guard chain SOLRN-IN). gallery-hid-pci is the live pointer device (native GalleryHidSink); the in-guest warpd agent (guest :7777) is reached DIRECTLY over the bridge at 10.99.0.14:7777 for rollback and its 'E' exec verb (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host, no hostfwd). exec: labctl exec solaris \"<cmd>\". climm (OSCAR ICQ) auto-logs in as UIN 30000 to the gateway 10.99.0.2:5190. See docs/lab/retronet/ICQ-STATION-solaris.md"
     }
   },
   "render": {
     "signalOrder": 16,
     "stationsManifestOrder": 10,
-    "stationsManifestPrelude": "\n# solaris (VMID 100) — Solaris 10 CDE on the standalone\n# gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses\n# the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.\n# SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.\n# SH_GHID_SOCKET selects its chardev; hostfwd 57790 and the guest warpd agent are\n# retained for rollback/exec only.\n",
+    "stationsManifestPrelude": "\n# solaris (VMID 100) — Solaris 10 CDE on the standalone\n# gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses\n# the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.\n# SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.\n# SH_GHID_SOCKET selects its chardev. RETRONET: net0 is a tap on vmbr-rn (NOT\n# slirp) via rn-tapnet.sh; guest static 10.99.0.14/24 no default route; the guest\n# warpd agent is reached directly at 10.99.0.14:7777 for rollback/exec only.\n",
     "bringUpGroup": 2,
     "bindingOrder": 12,
     "bindingPrelude": "",
@@ -89,7 +90,7 @@
         0,
         0
       ],
-      "agentAddress": "127.0.0.1:57790"
+      "agentAddress": "10.99.0.14:7777"
     },
     "slot": 100
   },
@@ -154,7 +155,7 @@
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
         "-usb -device usb-tablet",
         "-drive file=\"$DISK\",if=ide,index=0,media=disk,format=qcow2 -loadvm golden",
-        "-netdev user,id=net0,hostfwd=tcp:127.0.0.1:57790-10.0.2.15:7777 -device e1000,netdev=net0",
+        "-netdev tap,id=net0,ifname=solrn0,script=no,downscript=no -device e1000,netdev=net0",
         "-chardev socket,id=ghid0,path=\"$D/gallery-hid.sock\",server=on,wait=off",
         "-device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e -no-shutdown",
         "-qmp unix:$D/qmp.sock,server=on,wait=off",
@@ -179,7 +180,7 @@
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
           "-usb -device usb-tablet",
           "-drive file=\"$DISK\",if=ide,index=0,media=disk,format=qcow2 -loadvm golden",
-          "-netdev user,id=net0,hostfwd=tcp:127.0.0.1:57790-10.0.2.15:7777 -device e1000,netdev=net0",
+          "-netdev tap,id=net0,ifname=solrn0,script=no,downscript=no -device e1000,netdev=net0",
           "-chardev socket,id=ghid0,path=\"$D/gallery-hid.sock\",server=on,wait=off",
           "-device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e -no-shutdown",
           "-qmp unix:$D/qmp.sock,server=on,wait=off",
