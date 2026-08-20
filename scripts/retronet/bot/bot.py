@@ -46,14 +46,14 @@ GREETINGS: dict[str, list[str]] = {
     "win98se": [
         "hey, is that the Windows 98 machine?",
         "hi! you're on the win98 box right? :)",
-        "oh hey — Windows 98. nice. what are you up to?",
+        "oh hey — you got the Windows 98! nice. what are you up to?",
     ],
-    "win95": ["hey! Windows 95 online again? :)", "hi there, is that the 95 box?"],
+    "win95": ["hey! you got your Windows 95 online again? :)", "hi there, is that the 95 box you have there?"],
     "win2000": ["hey, Windows 2000 just came online — that you?", "hi! nice, the 2000 machine."],
-    "winxp": ["whoa, XP. that's a brand new one :)", "hey! is that the XP box?"],
-    "nt4": ["hey, NT 4 signed on. very serious machine :)", "hi! that's the NT box isn't it?"],
-    "beos": ["hey! BeOS?! that's rare :)", "hi there — is that the Be machine?"],
-    "tru64": ["hey, someone on the Alpha? :)", "hi! Tru64 — nice hardware."],
+    "winxp": ["whoa, you got XP? that's a brand new one :)", "hey! is that the XP box?"],
+    "nt4": ["hey, did you just sign on with the NT 4? very serious machine :)", "hi! that's the NT box isn't it?"],
+    "beos": ["hey! you using BeOS?! that's rare :)", "hi there — are you rocking Be machine?"],
+    "tru64": ["hey, are you the one on the Alpha? :)", "hi! was it you that runs the Tru64 OS? — nice hardware."],
     "_default": ["hey! someone's online :)", "hi there — what machine is that?"],
 }
 
