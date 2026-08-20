@@ -34,6 +34,7 @@ LABCTL_KEYS = (
     "warpd_addr",
     "ssh_port",
     "exec_port",
+    "exec_host",
     "exec_kind",
     "exec_user",
     "exec_key",

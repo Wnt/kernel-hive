@@ -243,6 +243,11 @@ box_sync_load_pairs() {
   box_sync_add_pair amiga-coldboot-unit streamhost/deploy/amiga-coldboot-watch.service /etc/systemd/system/amiga-coldboot-watch.service exact repo daemon-reload
   box_sync_add_pair sailfish-seriald-unit streamhost/deploy/seriald-sailfishos.service /etc/systemd/system/seriald-sailfishos.service exact repo daemon-reload
   box_sync_add_pair sailfish-seriald streamhost/stations/sailfishos/seriald.py "$BOX_ROOT/stations/sailfishos/seriald.py" exact repo
+  # win98se's retronet bridge-tap lifecycle helper, called `up` from its launcher.
+  # A station helper like sailfish-seriald: box-authored mirror pair so box-deploy
+  # installs it alongside the launcher (not an emit aux file, which deploys on a
+  # separate stations-manifest.sh pass). See docs/lab/retronet/ICQ-STATION.md.
+  box_sync_add_pair win98se-rn-tapnet streamhost/stations/win98se/rn-tapnet.sh "$BOX_ROOT/stations/win98se/rn-tapnet.sh" exact repo
 
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.

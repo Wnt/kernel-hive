@@ -263,8 +263,12 @@ def cmd_exec(argv):
         sys.exit(code)
     if kind == "warpd_e" and port:
         # real captured exec over warpd's 'E' verb (gexec.py frames the reply and
-        # exits with the guest's exit code)
-        r = subprocess.run(["python3", GEXEC, str(port), cmdline])
+        # exits with the guest's exit code). exec_host tells gexec.py where warpd
+        # listens: unset -> 127.0.0.1 (solaris' slirp hostfwd); win98se sets it to
+        # the guest's bridge IP (n0 is a real tap on vmbr-rn, reached directly).
+        host = c.get("exec_host")
+        env = {**os.environ, "GEXEC_HOST": host} if host else os.environ
+        r = subprocess.run(["python3", GEXEC, str(port), cmdline], env=env)
         sys.exit(r.returncode)
     if kind == "telnet_e":
         # w2kalpha: captured exec over the guest W2K Telnet Server on the

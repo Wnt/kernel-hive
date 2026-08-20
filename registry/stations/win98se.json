@@ -54,13 +54,14 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": 57792,
+      "exec_port": 7788,
+      "exec_host": "10.99.0.10",
       "exec_kind": "warpd_e",
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
       "udp_port": 54092,
-      "notes": "exec: labctl exec win98se \"<cmd>\" runs a command through COMMAND.COM in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), listening on guest :7788 via the hostfwd 127.0.0.1:57792 on netdev n0; it is RUNNING inside the golden and restarts from the StartUp folder on a cold boot. No stderr (COMMAND.COM has no 2>&1). NEVER launch a full-screen DOS box: it wedges the display driver until loadvm golden. See docs/lab/retronet/EXEC-CHANNEL.md"
+      "notes": "exec: labctl exec win98se \"<cmd>\" runs a command through COMMAND.COM in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.10:7788 (n0 is a tap on vmbr-rn, NOT slirp — no hostfwd). It is RUNNING inside the golden and restarts from the StartUp folder on a cold boot. No stderr (COMMAND.COM has no 2>&1). NEVER launch a full-screen DOS box: it wedges the display driver until loadvm golden. See docs/lab/retronet/ICQ-STATION.md, EXEC-CHANNEL.md"
     }
   },
   "render": {
@@ -171,7 +172,7 @@
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
         "-drive file=\"$KVM\",format=qcow2,if=ide",
         "-drive file=\"$GAMES\",format=qcow2,if=ide,index=1",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788,guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191 -device pcnet,netdev=n0",
+        "-netdev tap,id=n0,ifname=win98rn0,script=no,downscript=no -device pcnet,netdev=n0",
         "-usb -device usb-tablet,id=tab0",
         "-qmp unix:$B/qmp.sock,server=on,wait=off",
         "-pidfile $B/qemu.pid"
@@ -195,7 +196,7 @@
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
           "-drive file=\"$KVM\",format=qcow2,if=ide",
           "-drive file=\"$GAMES\",format=qcow2,if=ide,index=1",
-          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788,guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191 -device pcnet,netdev=n0",
+          "-netdev tap,id=n0,ifname=win98rn0,script=no,downscript=no -device pcnet,netdev=n0",
           "-usb -device usb-tablet,id=tab0",
           "-qmp unix:$B/qmp.sock,server=on,wait=off",
           "-pidfile $B/qemu.pid"

@@ -188,6 +188,7 @@ def main():
             "warpd_addr": "SH_WARPD_ADDR the daemon dials: tcp host:port or unix:<path> serial chardev, or null",
             "ssh_port": "host TCP port fwd to guest sshd :22, or null",
             "exec_port": "port for REAL captured exec (ssh port or warpd port), or null",
+            "exec_host": "host 'labctl exec' dials for this tile (warpd_e: GEXEC_HOST), or null=127.0.0.1",
             "exec_kind": "ssh | warpd_e | serial_e | null — how 'labctl exec' reaches this tile",
             "ctl": "mamectl/1 unix socket of the MAME ctlsock module (SH_MAMECTL_SOCK); "
             "labctl mctl/type/sh/reset route over it — field absent when the tile has none",

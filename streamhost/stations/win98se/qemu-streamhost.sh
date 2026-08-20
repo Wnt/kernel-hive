@@ -16,21 +16,20 @@
 #     it on the fail-safe PnP BIOS with no PCI. usb-tablet -> absolute pointer (SH_POINTER=abs).
 #     No protection error under acpi=on+KVM (verified 3 cold boots). Do NOT re-add
 #     acpi=off/usb=off/-apic/kernel-irqchip=off. See docs/guests/win9x.md.
-#   * EXEC CHANNEL (retronet, 2026-08-20): hostfwd 127.0.0.1:57792 -> guest :7788
-#     reaches C:\WARPNET.EXE, the in-guest warpd agent built -DWARP_PORT=7788, which
-#     serves the 'E' exec verb (exec_kind "warpd_e"; labctl exec win98se "<cmd>").
-#     It is RUNNING inside the golden and re-launches from the StartUp folder on a
-#     cold boot. A hostfwd is a netdev BACKEND property, not a -device, so the
-#     emulated device set is unchanged and `loadvm golden` stays valid. Do NOT
-#     renumber n0. See docs/lab/retronet/EXEC-CHANNEL.md.
-#   * ICQ PINHOLE (retronet wave 2, 2026-08-20): guestfwd 10.0.2.100:5190 ->
-#     10.99.0.2:5191 lets the in-guest ICQ 2000b client reach the retronet OSCAR
-#     server (gateway CT 951) through slirp. It targets the :5191 "slirp door",
-#     which advertises BOS as 10.0.2.100:5190 (routable from the guest). Like the
-#     hostfwd, a guestfwd is a netdev BACKEND property, not a -device, so the
-#     device set is unchanged and `loadvm golden` stays valid. The guest's ICQ
-#     DefaultPrefs point at 10.0.2.100:5190. See docs/lab/retronet/ICQ-STATION.md
-#     and docs/lab/retronet/GATEWAY.md.
+#   * RETRONET BRIDGE (2026-08-20): n0 is a real bridged NIC on vmbr-rn, NOT slirp.
+#     rn-tapnet.sh (called `up` just below, idempotently, like irix/tapnet.sh)
+#     creates the persistent tap win98rn0, enslaves it to vmbr-rn, and installs a
+#     fail-closed guest-containment chain. The guest is static 10.99.0.10/24 with
+#     NO default route; it shares L2 with the OSCAR gateway CT 10.99.0.2, so ICQ
+#     gets working UDP + ICMP + real multi-connection TCP (what slirp's single-
+#     connection guestfwd could not carry). The -device is UNCHANGED (pcnet,
+#     netdev=n0) — only the netdev backend went user->tap, which is invisible to
+#     savevm/loadvm, so `loadvm golden` stays valid. Do NOT renumber n0.
+#   * EXEC CHANNEL rides the same bridge now: labctl reaches C:\WARPNET.EXE (the
+#     in-guest warpd agent, -DWARP_PORT=7788, exec_kind "warpd_e") DIRECTLY at the
+#     guest's bridge IP 10.99.0.10:7788 — no hostfwd, since there is no slirp. The
+#     agent binds 0.0.0.0:7788 and re-launches from the StartUp folder on a cold
+#     boot. See docs/lab/retronet/ICQ-STATION.md, EXEC-CHANNEL.md, GATEWAY.md.
 # Kill only by pidfile. neko is restored by ROLLBACK.md.
 set -e
 B=/data/vms/streamhost/stations/win98se
@@ -42,6 +41,12 @@ rm -f "$B/qmp.sock" "$B/qemu.pid"
 # Boot straight into the fixture if the golden snapshot is already present in C:.
 LOADVM=""
 qemu-img snapshot -l "$KVM" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
+# Retronet link: create/enslave the vmbr-rn tap + arm the guest-containment
+# chain BEFORE QEMU opens it (script=no means QEMU attaches to an existing tap,
+# it does not create one). Idempotent; runs as root under streamhost@ / the
+# golden-bake manual path. Fail-closed: if it cannot verify containment it dies
+# here and QEMU never starts.
+bash "$B/rn-tapnet.sh" up
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
@@ -56,7 +61,7 @@ nohup qemu-system-x86_64 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
   -drive file="$KVM",format=qcow2,if=ide \
   -drive file="$GAMES",format=qcow2,if=ide,index=1 \
-  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57792-:7788,guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191 -device pcnet,netdev=n0 \
+  -netdev tap,id=n0,ifname=win98rn0,script=no,downscript=no -device pcnet,netdev=n0 \
   -usb -device usb-tablet,id=tab0 \
   $LOADVM \
   -qmp unix:$B/qmp.sock,server=on,wait=off \
