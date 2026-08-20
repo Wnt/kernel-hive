@@ -9,9 +9,9 @@ images:
 ---
 ## Origins
 
-**In April 1981 Xerox shipped the 8010 Information System — the Star — and invented the desktop.** Icons for documents and folders, overlapping windows, WYSIWYG editing, property sheets, a two-button mouse, Ethernet, and a laser printer at the end of the wire: the whole vocabulary, in one product, a full three years before the Macintosh. It cost about $16,500 for one workstation and rather more for the file and print servers it needed to be useful, and it sold in the low tens of thousands.
+**In April 1981 Xerox announced the 8010 Information System — the Star — and invented the desktop.** Icons for documents and folders, overlapping windows, WYSIWYG editing, property sheets, a two-button mouse, Ethernet, and a laser printer at the end of the wire: the whole vocabulary, in one product, nearly three years before the Macintosh. It cost about $16,500 for one workstation and rather more for the file and print servers it needed to be useful, and it sold about 25,000 units.
 
-The 6085 is what Xerox did next. Announced in 1985 and built around a new Mesa processor — internally *Daybreak*, sometimes *Dove* — it did the same work as a Star for roughly a third of the money, in a low flat case that fitted under a desk instead of beside it. The software was renamed too: **ViewPoint**, a repackaging of the Star environment where the applications were sold as separately licensed options, so a customer could buy the desktop and the document editor and skip the spreadsheet. It also, unlike the Star, could run MS-DOS on an optional coprocessor board in a window, which tells you exactly what the market had become between 1981 and 1985.
+The 6085 is what Xerox did next. Announced in 1985 and built around a new Mesa processor — internally *Daybreak*, sometimes *Dove* — it did the same work as a Star for roughly a third of the money, in a low flat case that fitted under a desk instead of beside it. The software was renamed too: **ViewPoint**, a repackaging of the Star environment where the applications were sold as separately licensed options, so a customer could buy the desktop and the document editor and skip the spreadsheet. It also, unlike the Star, could run MS-DOS in a window on an optional board carrying an Intel 80186 — the same operating system the Windows 95 tile is built on top of — which tells you exactly what the market had become between 1981 and 1985.
 
 ## Significance
 
@@ -31,6 +31,6 @@ The exhibit answers to the machine's own keys. The on-screen keyboard carries th
 
 ## Legacy
 
-Xerox kept selling ViewPoint systems into the 1990s, then moved the environment onto ordinary PCs as GlobalView — the Mesa machine reimplemented in software, running under Windows 3.1, the last commercial form of a lineage that began at PARC in 1973 with the Alto. GlobalView was discontinued in the late 1990s and that was the end of it.
+Xerox sold the 6085 line until 1989, then moved the environment onto ordinary PCs as GlobalView — the Mesa machine reimplemented in software, running under Windows 3.1, the last commercial form of a lineage that began at PARC in 1973 with the Alto. Its final release shipped in 1996 and that was the end of it.
 
 What survives is everything and nothing. The icons, the folders, the overlapping windows, the mouse and the WYSIWYG page are so completely absorbed into ordinary computing that they are invisible. The rest of it — the property sheet as the universal way to change anything, the message area narrating the system in prose, and above all a keyboard whose keys are the verbs of the interface — was not copied, and looking at this screen is the only way left to see what the alternative felt like.
