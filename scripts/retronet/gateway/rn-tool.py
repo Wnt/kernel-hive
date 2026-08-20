@@ -22,6 +22,7 @@ happens.
 usage:
   rn-tool.py users
   rn-tool.py user-set <screen_name> <password>
+  rn-tool.py user-open <screen_name>
   rn-tool.py wan-probe
   rn-tool.py login <host> <port> <screen_name> <password>
 """
@@ -31,12 +32,14 @@ from __future__ import annotations
 import hashlib
 import json
 import socket
+import sqlite3
 import struct
 import sys
 import urllib.error
 import urllib.request
 
 API = "http://127.0.0.1:8080"
+DB_PATH = "/var/lib/ras/oscar.sqlite"
 
 # --- OSCAR wire format ------------------------------------------------------
 
@@ -245,6 +248,56 @@ def cmd_user_set(screen_name: str, password: str) -> int:
     return 1
 
 
+def cmd_user_open(screen_name: str) -> int:
+    """Clear ICQ "my authorization is required" for one UIN.
+
+    WHY THIS EXISTS, and why the greeting does not work without it. The server
+    creates every ICQ account with `authRequired` set, so adding it as a contact
+    is refused (`BuddyAddBuddies` -> `BuddyRejectNotification`, and the feedbag
+    route the same) until its owner clicks "authorize" in a client. Presence
+    only flows to watchers on the contact list, so with the flag set the bot
+    never learns that the persona signed on and **the greeter never fires** —
+    silently, with a healthy-looking server and a healthy-looking bot.
+
+    On the retronet, authorization is ceremony with nobody to perform it: the
+    persona is an unattended account whose whole job is to be visible, and the
+    bot is the museum's own greeter. Clearing the flag is also the era-accurate
+    setting (ICQ's "My authorization is not required" checkbox), and it is
+    symmetric — the persona's client can then add the bot without a prompt too.
+
+    The management API has no endpoint for ICQ permissions, so this writes the
+    one column directly. SQLite is multi-process safe and the server re-reads
+    the row on every check (no cache), so it takes effect without a restart.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=10)
+    except sqlite3.Error as exc:
+        print(f"{screen_name}: cannot open {DB_PATH}: {exc}")
+        return 1
+    with conn:
+        cur = conn.execute(
+            "UPDATE users SET icq_permissions_authRequired = 0 WHERE identScreenName = ?",
+            (screen_name.lower(),),
+        )
+        changed = cur.rowcount
+    conn.close()
+    if changed < 1:
+        print(f"{screen_name}: no such account (create it first with user-set)")
+        return 1
+    print(f"open    {screen_name} (authorization not required — contacts and presence work unattended)")
+    return 0
+
+
+def cmd_user_is_open(screen_name: str) -> bool:
+    conn = sqlite3.connect(DB_PATH, timeout=10)
+    row = conn.execute(
+        "SELECT icq_permissions_authRequired FROM users WHERE identScreenName = ?",
+        (screen_name.lower(),),
+    ).fetchone()
+    conn.close()
+    return bool(row) and not row[0]
+
+
 # --- no-WAN proof -----------------------------------------------------------
 
 # Three different networks, three different well-known anycast addresses, all
@@ -291,6 +344,10 @@ def main(argv: list[str]) -> int:
         return cmd_users()
     if cmd == "user-set" and len(args) == 2:
         return cmd_user_set(*args)
+    if cmd == "user-open" and len(args) == 1:
+        return cmd_user_open(*args)
+    if cmd == "user-is-open" and len(args) == 1:
+        return 0 if cmd_user_is_open(*args) else 1
     if cmd == "wan-probe":
         return cmd_wan_probe()
     if cmd == "login" and len(args) == 4:

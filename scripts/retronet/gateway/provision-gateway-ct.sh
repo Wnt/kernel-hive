@@ -284,6 +284,12 @@ ensure_user() {
   local uin="$1" pass="$2"
   rntool user-set "$uin" "$pass" | sed 's/^/   /' ||
     die "could not create or update UIN $uin"
+  # New ICQ accounts are created with "my authorization is required", which
+  # refuses contact adds and therefore stops presence reaching watchers. The
+  # greeter is a presence watcher, so without this the exhibit's doorbell never
+  # rings and nothing anywhere reports an error. See rn-tool.py cmd_user_open.
+  rntool user-open "$uin" | sed 's/^/   /' ||
+    die "could not clear authorization-required on UIN $uin"
 }
 
 mirror_key() {
@@ -360,6 +366,11 @@ step_verify() {
   probe "server unit active" ctexec systemctl is-active --quiet retronet-oscar.service
   probe "server unit enabled (starts with the CT)" ctexec systemctl is-enabled --quiet retronet-oscar.service
   probe "CT onboot=1 (starts with the box)" grep -qx 'onboot: 1' "/etc/pve/lxc/$RN_VMID.conf"
+  # Presence is what the greeter runs on, and presence only reaches watchers who
+  # were allowed onto the contact list. An account left with ICQ's
+  # authorization-required flag signs in perfectly and is simply never seen.
+  probe "bot UIN $RN_BOT_UIN accepts contacts unattended" rntool user-is-open "$RN_BOT_UIN"
+  probe "persona UIN $RN_PERSONA_UIN accepts contacts unattended" rntool user-is-open "$RN_PERSONA_UIN"
 
   # The no-WAN proof, run from INSIDE the CT: no default route in the kernel
   # table, and three well-known internet addresses dialled by IP (so a missing

@@ -1,0 +1,86 @@
+# retronet-llm.service — the retronet's local language model.
+#
+# llama.cpp `llama-server` on 127.0.0.1:8091, OpenAI-compatible
+# (/v1/chat/completions), CPU-only, and CAGED — because this box is a GPU-less
+# 8C/16T Xeon D-2146NT that runs a 61-station production fleet, and a chatbot is
+# never allowed to make a station stutter.
+#
+# The cage, and why each bar is there:
+#   CPUQuota=400%   4 of 16 hardware threads' worth. The bench in
+#                   docs/lab/retronet/BOT.md was taken at -t 4 for exactly this
+#                   reason: published throughput must be reachable inside the cage.
+#   CPUWeight=20    under contention the fleet (CPUWeight=100) wins by 5:1.
+#   Nice=10 + idle IO   a token is never more urgent than a frame.
+#   MemoryMax=8G    a 2.3 GiB GGUF plus KV plus mmap headroom. Hard ceiling so a
+#                   runaway context cannot start swapping the fleet out.
+#   IPAddressAllow=localhost / IPAddressDeny=any
+#                   the model can talk to the bot and to nothing else. The
+#                   retronet's first principle is "no path to the internet"; the
+#                   LLM lives on labhost rather than in the offline gateway CT,
+#                   so it gets the same offline guarantee by cgroup instead.
+#
+# Install with scripts/retronet/llm/install-llm.sh (writes /etc/retronet/llm.env).
+
+[Unit]
+Description=retronet local LLM (llama.cpp llama-server, CPU-only, caged)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/BOT.md
+After=network.target
+
+[Service]
+Type=exec
+EnvironmentFile=/etc/retronet/llm.env
+Environment=LD_LIBRARY_PATH=/data/retronet/llm/bin
+Environment=LLAMA_CACHE=/tmp
+ExecStart=/data/retronet/llm/bin/llama-server \
+    --host ${RN_LLM_HOST} \
+    --port ${RN_LLM_PORT} \
+    --model ${RN_LLM_MODEL} \
+    --alias ${RN_LLM_ALIAS} \
+    --threads ${RN_LLM_THREADS} \
+    --threads-batch ${RN_LLM_THREADS} \
+    --ctx-size ${RN_LLM_CTX} \
+    --parallel ${RN_LLM_SLOTS} \
+    --cache-reuse 256 \
+    --no-webui
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=300
+
+# --- resource cage -----------------------------------------------------------
+Nice=10
+CPUWeight=20
+CPUQuota=400%
+MemoryHigh=6G
+MemoryMax=8G
+IOSchedulingClass=idle
+IOWeight=20
+TasksMax=128
+OOMPolicy=continue
+
+# --- sandbox -----------------------------------------------------------------
+DynamicUser=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+ReadOnlyPaths=/data/retronet/llm
+IPAddressAllow=localhost
+IPAddressDeny=any
+
+[Install]
+WantedBy=multi-user.target

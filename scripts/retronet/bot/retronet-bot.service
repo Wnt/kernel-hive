@@ -1,0 +1,71 @@
+# retronet-bot.service — the retronet's greeter and conversation partner.
+#
+# Logs into the gateway's OSCAR server as the bot UIN, watches persona presence,
+# and answers messages through retronet-llm on 127.0.0.1:8091 (ELIZA when the
+# model is busy or down). See docs/lab/retronet/BOT.md.
+#
+# OUTBOUND ONLY, and the cage is what makes that a fact rather than a claim:
+#   IPAddressAllow=localhost + the gateway; IPAddressDeny=any
+#       -> the bot can reach the LLM and the ICQ server and NOTHING else. It
+#          holds an account on a server that era guests also talk to, so it is
+#          the one process on labhost with a foot in the retronet: it gets the
+#          retronet's own "no path to the internet" guarantee by cgroup.
+#   No listening socket exists anywhere in the bot; nothing may connect TO it.
+#   DynamicUser + ProtectSystem=strict -> nothing it can write outside /tmp.
+#
+# Cheap by construction: it is idle between messages, and every reply is bounded
+# by the LLM's own cage. Nice=10 keeps it behind streamhost regardless.
+#
+# Install with scripts/retronet/bot/install-bot.sh (writes /etc/retronet/bot.env
+# from registry/local.env and installs the code under /data/retronet/bot).
+
+[Unit]
+Description=retronet ICQ bot (greeter + LLM conversation partner)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/BOT.md
+After=network.target retronet-llm.service
+Wants=retronet-llm.service
+
+[Service]
+Type=exec
+EnvironmentFile=/etc/retronet/bot.env
+ExecStart=/usr/bin/python3 /data/retronet/bot/bot.py
+Restart=always
+RestartSec=10
+
+# --- resource cage -----------------------------------------------------------
+Nice=10
+CPUWeight=20
+CPUQuota=50%
+MemoryMax=256M
+IOSchedulingClass=idle
+TasksMax=32
+
+# --- sandbox -----------------------------------------------------------------
+DynamicUser=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+ReadOnlyPaths=/data/retronet/bot
+# 10.99.0.2 is the gateway CT (POC-PLAN contract). install-bot.sh adds a drop-in
+# when RN_BOT_SERVER points somewhere else.
+IPAddressAllow=localhost 10.99.0.2
+IPAddressDeny=any
+
+[Install]
+WantedBy=multi-user.target
