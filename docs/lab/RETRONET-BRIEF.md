@@ -6,8 +6,11 @@ the operator are in [§10](#10-operator-decisions).
 The epic: give the 90s stations a **living internet of their era** — popular
 period web pages served in a form Netscape 2–4 and IE 3–5 can actually render,
 plus **ICQ, AIM, MSN Messenger and IRC that work station-to-station**, with a
-few simple chatbots as resident conversation partners. All of it lab-local:
-**no guest ever touches the real internet.**
+few simple chatbots as resident conversation partners. A joined station wakes
+**already signed in**: within ~30 seconds of a visitor opening it, a bot says
+hello and the client's desktop notification leads them to the era's instant
+messaging. All of it lab-local: **stations reach the gateway's local services
+and nothing else — there is no path to the real internet, the proxy included.**
 
 Vocabulary is [`../GLOSSARY.md`](../GLOSSARY.md). The whole assembly — gateway,
 services, corpus, addressing — is the **retronet**.
@@ -16,10 +19,15 @@ services, corpus, addressing — is the **retronet**.
 
 ## 1. Principles
 
-- **Offline by construction.** The retronet has no WAN leg. Content is
-  acquired out-of-band (on CT950, by agents) and synced into the corpus; the
-  gateway serves only local bytes. A guest that escapes the retronet reaches
-  nothing, because there is nothing to reach.
+- **Offline by construction.** The retronet has no WAN leg anywhere: the
+  gateway has no route to the internet, and the proxy has no upstream — it
+  answers from the local corpus or not at all. Content is acquired
+  out-of-band (on CT950, by agents) and synced in. A guest that escapes the
+  retronet reaches nothing, because there is nothing to reach.
+- **The retronet greets you.** Every joined station carries a ready-made
+  persona whose messenger is installed, signed in and **connected when the
+  scene is captured**. A visitor configures nothing and discovers the
+  messaging era because it says hello first.
 - **The framebuffer is the only proof.** "The server works" is not done; done
   is Netscape rendering the page and two stations exchanging an ICQ message,
   shown in shots from both ends.
@@ -42,7 +50,7 @@ block. The precedents worth copying and the trap worth fearing:
 
 | Station | Today | Meaning for retronet |
 |---|---|---|
-| `tru64` | `internet` — dec21143 via pcap on a host-only veth, outbound NAT | The full pattern already works once; Netscape 4.76 is installed. **Day-one client, zero station changes.** |
+| `tru64` | `internet` — dec21143 via pcap on a host-only veth, outbound NAT | The veth pattern to copy, and **the one place a station reaches the real internet today — off-vision now**: joining replaces the NAT with routes to the gateway only. Netscape 4.76 installed; day-one client. |
 | `w2kalpha`, `openvms` | `host-only` veths | Same lane, no NAT — join by routing to the gateway |
 | `hpuxvue` | `nic-only` — tulip on slirp, no IP configured | Join = in-guest IP config + scene recapture. No device change |
 | `win95` | pcnet + slirp, `hostfwd` **carries the warpnet pointer agent** | **THE TRAP: that netdev is load-bearing input infrastructure.** Only ever *add options* to `n0`; never replace or renumber it |
@@ -89,10 +97,11 @@ scene recapture with clients installed/configured, `labctl shot` acceptance.
 
 ## 4. The web plane
 
-**Proxy-first.** Era browsers get one setting — HTTP proxy = gateway — and the
-proxy is the time machine: it resolves every name against the **corpus** and
-serves period-correct bytes. The same corpus is also served as wildcard-DNS
-vhosts on Lane B, so both lanes show the same web.
+**Proxy-first, corpus-only.** Era browsers get one setting — HTTP proxy =
+gateway — and the proxy answers every name from the local **corpus** and from
+nowhere else: no upstream, no pass-through, no live fetch, no exceptions. A
+name the corpus does not hold gets the local miss page. The same corpus is
+also served as wildcard-DNS vhosts on Lane B, so both lanes show the same web.
 
 **Corpus pipeline (`era-press`, the acquisition tool):**
 
@@ -127,39 +136,63 @@ nothing from the corpus is ever committed to this public repo.
 | MSN Messenger | Escargot-class MSNP server reimplementation | MSN 4–7 (win98se/2000/XP) | Heavier eval (license, deps) — **decide in P4, not v1** |
 | Email | SMTP/POP3 (Outlook Express, Netscape Mail) | — | Parking lot — charming, not core |
 
-Accounts: in-client registration where the era client supports it (ICQ's
-"New User" flow, IRC needs none), pre-provisioned per-station personas where it
-does not. Accounts are lab-local; nothing federates.
+**Signed in before the scene is captured.** Accounts are pre-provisioned
+server-side, **one persona per station**; lab-local, nothing federates, and no
+client ever runs a registration flow. Joining a station means: install the
+client, configure the persona with saved credentials and auto-reconnect, sign
+in, arrange the desktop (client running, sound on where the station has
+audio), **then capture the scene** — the checkpoint holds a connected
+messenger.
+
+A restored checkpoint holds a frozen TCP session the gateway no longer knows,
+and pause/resume severs it the same way — and that is exactly the mechanism
+the greeting rides: on resume the client notices the dead link, auto-reconnects
+with its saved credentials, and its fresh sign-on is the event the greeter
+reacts to (§6). Idle pause guarantees a reconnect between visitor sessions, so
+every visitor gets greeted. **Auto-reconnect after `loadvm` is therefore a
+join requirement, verified per client per station** — a client that shrugs and
+sits offline fails the wave.
 
 ## 6. Chatbots
 
-Resident buddies so the retronet is alive even solo:
+The bots are the retronet's staff — and its doorbell:
 
+- **The greeter.** Watches presence on the chat servers; when a station's
+  persona signs on (which every visitor session causes — §5), it waits ~30 s
+  and sends a hello tuned to the station ("hey, is that the Windows 98
+  machine?"). The era client does the rest — message window, sound, tray
+  flash — a real desktop notification that leads the visitor to the
+  messenger. IM toast where the station has an IM client, an IRC query
+  elsewhere. Sign-on-triggered, so back-to-back visitors with no idle pause
+  between them share one greeting; accepted.
+- **The conversation partner.** A SmarterChild homage on ICQ/AIM (and MSN if
+  it lands): backed by the lab's local LLM worker (the same router the qwen
+  agents use), with a tight persona prompt, era-plausible tone, reply length
+  caps, request rate caps, and a canned-ELIZA fallback when the GPU is busy.
+  Typing-delay pacing so it feels like 1999, not an API. Greeter and partner
+  are naturally the same buddy — the greeting is just its opening line.
 - **ELIZA** on IRC (`#lobby`) — period-perfect, zero dependencies, canned logic.
-- **A SmarterChild homage** on ICQ/AIM (and MSN if it lands): backed by the
-  lab's local LLM worker (the same router the qwen agents use), with a tight
-  persona prompt, era-plausible tone, reply length caps, request rate caps,
-  and a canned-ELIZA fallback when the GPU is busy. Typing-delay pacing so it
-  feels like 1999, not an API.
-- Bots connect as ordinary protocol clients to the same servers — no special
-  server hooks, so they prove the client path daily by existing.
 
-Bot memory is per-conversation only; nothing persists, nothing leaves the lab.
+Bots connect as ordinary protocol clients to the same servers — no special
+server hooks, so they prove the client path daily by existing. Bot memory is
+per-conversation only; nothing persists, nothing leaves the lab.
 
 ## 7. Station enablement waves
 
 | Wave | Stations | Cost per station |
 |---|---|---|
-| 1 — already wired | `tru64` (internet today), `hpuxvue` (IP config only) | In-guest config + scene recapture |
-| 2 — options-only | `win98se`, `win95` (mind the warpnet trap), `win2000`, `winxp`, `nt4`, `beos`, `haiku`, `freedos` (Arachne lane) | `guestfwd` pinholes on the existing netdev + clients installed + scene recapture, clone-proven |
+| 1 — already wired | `tru64` (drops its NAT for gateway-only routes), `hpuxvue` (IP config only) | In-guest config + persona signed in + scene recapture |
+| 2 — options-only | `win98se`, `win95` (mind the warpnet trap), `win2000`, `winxp`, `nt4`, `beos`, `haiku`, `freedos` (Arachne lane) | `guestfwd` pinholes on the existing netdev + clients installed + persona signed in, reconnect-after-restore proven on a clone, then scene recapture |
 | 3 — cold recapture | `win311` (Trumpet Winsock lane; carries the interrupts-freeze history — late, careful), `msdoswin1`, `macos753`, `aux`, `sunos414` | NIC added to device set → full checkpoint recapture |
 | 4 — Lane B exotics | `newsos`, MAME-hosted machines with NIC emulation, `w2kalpha`/`openvms` veth joins | Bridge attach + per-emulator networking work |
 
 Waves of 2–3 stations, merged and eyeballed per wave, exactly like every other
 fleet campaign ([`MIGRATION-WAVE-BRIEF.md`](MIGRATION-WAVE-BRIEF.md) is the
-model). Each joined station's registry `network` block gains
-`status: "retronet"` + a note; the fleet table grows the facet; a UI badge on
-station cards is a late-phase nicety.
+model). **A station's acceptance shot is the greeting**: restore from the new
+checkpoint, wait, and the bot's hello lands on screen inside ~30 s. Each
+joined station's registry `network` block gains `status: "retronet"` + a note;
+the fleet table grows the facet; a UI badge on station cards is a late-phase
+nicety.
 
 ## 8. Security
 
@@ -183,8 +216,8 @@ station cards is a late-phase nicety.
 | Phase | Delivers | Exit criterion |
 |---|---|---|
 | **P0 — gateway + first light** | Gateway CT, ngIRCd, proxy serving a hand-made 3-site corpus, reached from `tru64` (no station changes at all) | Netscape 4.76 on tru64 renders a 1996 page via the proxy; joins `#lobby` — shots |
-| **P1 — second station** | `win98se` joins over Lane A pinholes; mIRC + IE5/Netscape4 configured; scene recaptured, clone-proven first | tru64↔win98se IRC conversation, framebuffer-proven both ends |
-| **P2 — ICQ/AIM + first bots** | Retro AIM Server up; ICQ+AIM clients on the wave-2 Windows stations; ELIZA on IRC | Station-to-station ICQ message; a bot answers on AIM |
+| **P1 — second station** | `win98se` joins over Lane A pinholes; mIRC connected as its persona, IE5/Netscape4 proxied; clone-proven first, scene recaptured connected | tru64↔win98se IRC conversation, framebuffer-proven both ends |
+| **P2 — ICQ/AIM + the greeting** | Retro AIM Server up; ICQ+AIM clients with personas signed in on the wave-2 Windows stations, scenes recaptured connected; greeter + ELIZA | Restore `win98se` from its checkpoint: the persona auto-reconnects and the greeting + desktop notification land within ~30 s — shots; plus a station-to-station ICQ message |
 | **P3 — the real corpus** | `era-press` pipeline + ~25-site corpus + local search engine; browser-matrix validation | Search → click → render on three different era browsers |
 | **P4 — MSN decision + smart bot** | MSN server eval (license/effort) and go/no-go; LLM-backed persona buddy with pacing | Persona bot passes the "feels like 1999" eyeball |
 | **P5 — the fleet** | Wave-3 cold recaptures, Lane B bridge + exotics, UI badges, catalog/docs consolidation | Each wave's per-station acceptance shots |
@@ -198,7 +231,8 @@ Rough size: P0 M, P1 S, P2 M, P3 M–L, P4 M, P5 L (ongoing, wave-paced).
    engine's period skin (AltaVista? Yahoo directory? both?).
 3. Chat lineup for v1: IRC + ICQ + AIM (recommended); MSN deferred to P4 —
    agree?
-4. Bot personas and names (one homage buddy + ELIZA to start?).
+4. Persona naming: the greeter/partner buddy's name, and the per-station
+   account handles the visitor sees (one homage buddy + ELIZA to start?).
 5. Wave-2 station order — which two stations after `tru64`/`win98se`?
 6. Lane B address block reservation.
 7. Email: parking lot (recommended) or pull into P5?
