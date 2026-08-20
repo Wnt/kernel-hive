@@ -11,7 +11,7 @@ images:
 
 Microsoft’s disk operating system became the foundation of the IBM PC software market after the IBM Personal Computer appeared in 1981. MS-DOS exposed disks through drive letters, launched one principal program at a time, and made the `C:\>` prompt a defining image of business computing. Version 6.22, released in 1994, was a mature endpoint: it bundled memory managers, disk tools, an editor, QBASIC, and compression-related utilities for a vast installed base.
 
-Windows 1.0 belongs to a much earlier moment. Released in November 1985, it ran above DOS and supplied a mouse-driven graphical environment with tiled windows, menus, the MS-DOS Executive, Paint, Write, Calculator, and other accessories. Applications could share the screen and cooperate within a common interface, but windows did not overlap. Hardware limits and a small software library kept the first release from immediate dominance.
+Windows 1.0 belongs to a much earlier moment. Microsoft had shown a version of it at a November 1983 press event, under the working name *Interface Manager*, so by the time it actually shipped in November 1985 the two-year gap had already earned it a skeptical nickname — vaporware. It ran above DOS and supplied a mouse-driven graphical environment with tiled windows, menus, the MS-DOS Executive, Paint, Write, Calculator, and other accessories. Applications could share the screen and cooperate within a common interface, but windows did not overlap. Hardware limits and a small software library kept the first release from immediate dominance.
 
 ## Significance
 
@@ -26,3 +26,5 @@ Windows 1.01 can be launched from the DOS prompt, replacing the console with its
 ## Legacy
 
 MS-DOS supplied the compatibility bedrock on which the PC industry expanded, while Windows gradually supplied its shared visual language. Their layered relationship shaped application design and user expectations for more than a decade. This combined display preserves the hinge between those histories—the command prompt still sovereign, with the future desktop waiting behind a three-letter command.
+
+DOS 6.22 was the last of the separately sold consumer MS-DOS: in 1994 Microsoft announced that the desktop would no longer ship with a separately supported DOS, and two months after 6.22 shipped, a programmer named Jim Hall proposed the free successor that became FreeDOS — the other DOS in this hall.
