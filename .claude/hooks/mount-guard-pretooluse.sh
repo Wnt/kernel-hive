@@ -27,6 +27,16 @@
 # run-private`; the on-box healer is mount-sentinel (scripts/host/).
 set -uo pipefail
 
+# Operator escape — the same mechanism as .claude/shared-clone-ok (see
+# shared-clone-guard-pretooluse.sh). Lifts this raw-mount tripwire when the
+# operator has explicitly taken responsibility for host mount surgery. It does
+# NOT make the operation safe: labhost's shared:2 mount tree can still propagate
+# an umount onto HOST mounts. `chroot-guard run-private` remains the safe path
+# that trips no guard and needs no escape; prefer it. Set the flag with
+#   touch .claude/mount-guard-ok      (gitignored, per clone; here.sh can show it)
+[ "${KH_ALLOW_HOST_MOUNT:-0}" = 1 ] && exit 0
+[ -e "${CLAUDE_PROJECT_DIR:-.}/.claude/mount-guard-ok" ] && exit 0
+
 # The heredoc below occupies python's stdin, so hand the hook payload over via
 # the environment instead of the pipe.
 MOUNT_GUARD_PAYLOAD="$(cat 2>/dev/null || true)"
