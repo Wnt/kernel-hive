@@ -134,5 +134,9 @@ else
   do_or_plan rm -f "$DROPIN"
 fi
 do_or_plan systemctl daemon-reload
-do_or_plan systemctl enable --now retronet-bot.service
+do_or_plan systemctl enable retronet-bot.service
+# restart, not just `enable --now` (a no-op on an already-running unit that left
+# stale code/env live) — so a re-run of --apply actually picks up the new bot.py,
+# llmclient.py and RN_BOT_PERSONAS.
+do_or_plan systemctl restart retronet-bot.service
 [ "$APPLY" = 1 ] && systemctl --no-pager --lines=10 status retronet-bot.service || true
