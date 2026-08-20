@@ -11,7 +11,7 @@ images:
 
 The Macintosh arrived in 1984 with an idea that had to be argued for: that a computer should show you your work rather than a prompt. By 1991, when System 7 shipped, the argument was over and the details were what mattered. System 7 gave the Mac colour throughout the interface, an alias mechanism that let one file appear in many places, drag-and-drop between applications, and virtual memory — and it did it while staying recognisably the same machine a 1984 user would sit down to.
 
-System 7.5.3, released in March 1996, is where that line reached its most refined and most widely-run form. Apple gave it away free, and it became the version people kept: stable enough for daily work, complete enough that the additions felt optional. The Quadra 800 running it here is a 1993 machine built around Motorola's 68040 — the last and fastest of the 68000 family, the processors every Macintosh had used since the beginning, and the ones the PowerPC transition was already replacing.
+System 7.5.3, released in March 1996, is where that line reached its most refined and most widely-run form. Apple made the upgrade to 7.5.3 free, and it became the version people kept: stable enough for daily work, complete enough that the additions felt optional. The Quadra 800 running it here is a 1993 machine built around Motorola's 68040 — the last and fastest of the 68000 family, the processors every Macintosh had used since the beginning, and the ones the PowerPC transition was already replacing.
 
 ## Significance
 
@@ -21,12 +21,12 @@ Those are real limitations, and they are also the point. The system made a wager
 
 ## What you're looking at
 
-Mac OS 7.5.3 booting from a Quadra 800's hard disk, at 1152×870 — the "Apple 21-inch" display mode, the largest this machine's video hardware offers. The desktop is exactly what the machine presents on startup: one menu bar, the hard disk at the top right, the Trash at the bottom right, and nothing else demanding attention.
+Mac OS 7.5.3 booting from a Quadra 800's hard disk, at 1152×870 — the "Apple 21-inch" display mode, the largest this machine's video hardware offers; the 800's video was the trimmed one, 24-bit colour cut from the board to keep buyers reaching for the pricier 900 and 950. The desktop is exactly what the machine presents on startup: one menu bar, the hard disk at the top right, the Trash at the bottom right, and nothing else demanding attention.
 
 The whole system in the window is 29.5 MB. There is no browser, no updater, no notification. The mouse is an ADB device with no absolute positioning of any kind, which is why the pointer here is tracked rather than teleported, and why the machine's mouse-tracking speed is deliberately pinned to its slowest, most linear setting.
 
 ## Legacy
 
-The 68040 was the end of a line, and so was this operating system. Apple moved the Macintosh to PowerPC, then spent years failing to build System 7's successor before buying NeXT in 1996 — the same year this release shipped — and building Mac OS X on NeXTSTEP's UNIX foundations instead. Protected memory and pre-emptive multitasking finally arrived, along with the command line that Classic Mac OS never had.
+The 68040 was the end of a line, and so was this operating system. Apple moved the Macintosh to PowerPC, then spent years failing to build System 7's successor before buying NeXT in 1996 — the same year this release shipped — and building Mac OS X on NeXTSTEP's UNIX foundations instead. Protected memory and pre-emptive multitasking finally arrived, along with the command line that Classic Mac OS never had. The NeXT that started the purchase has a machine of its own on these walls — the grey NeXTcube desktop, and the column of icons down its right edge where the Mac's Dock was invented.
 
 What survived the transition was the part that was never really about the architecture. Open any Mac today and the menu bar is still pinned to the top of the screen, the Finder is still called the Finder, and files still go in the Trash.

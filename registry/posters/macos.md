@@ -9,9 +9,9 @@ images:
 ---
 ## Origins
 
-macOS descends from NeXTSTEP, the Unix-based system Apple acquired with NeXT in 1996. Mac OS X arrived publicly in 2001, joining the Mach- and BSD-derived Darwin foundation and XNU kernel to the Aqua graphical interface and Macintosh application traditions. Over two decades, that architecture moved from PowerPC to Intel processors and then to Apple-designed ARM64 systems without abandoning the Finder-centered desktop identity.
+macOS descends from NeXTSTEP, the Unix-based system Apple acquired with NeXT in 1996 — the grey NeXTcube desktop that made that system is running elsewhere in this gallery. Mac OS X arrived publicly in 2001, joining the Mach- and BSD-derived Darwin foundation and XNU kernel to the Aqua graphical interface and Macintosh application traditions. Over two decades, that architecture moved from PowerPC to Intel processors and then to Apple-designed ARM64 systems without abandoning the Finder-centered desktop identity.
 
-macOS Sequoia, released in 2024, represents that contemporary Apple-silicon era. Finder, the Dock, Spotlight, Safari, Terminal, and system frameworks coexist with Continuity features that connect Macs to iPhones, iPads, watches, and cloud services. The interface remains recognizably descended from Mac OS X even as its controls and application model increasingly align with Apple’s other platforms.
+macOS Sequoia, released in September 2024, represents that contemporary Apple-silicon era; the name comes from the national park of giant trees, continuing the line of Californian place names Apple moved to with Monterey. Finder, the Dock, Spotlight, Safari, Terminal, and system frameworks coexist with Continuity features that connect Macs to iPhones, iPads, watches, and cloud services. The interface remains recognizably descended from Mac OS X even as its controls and application model increasingly align with Apple’s other platforms.
 
 ## Significance
 
