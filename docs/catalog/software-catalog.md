@@ -227,6 +227,20 @@ Targets Server-2003-level Win32; still alpha. Prefer 2D/GDI/DirectDraw, treat Di
 
 ---
 
+## Mac OS 7.5.3 (Quadra 800, m68k)
+
+The fleet's only foreign-architecture guest — `qemu-system-m68k -M q800`,
+**TCG only, no KVM path exists for m68k.** No shell, no telnet, no serial
+console: the framebuffer is the only observation surface (`docs/guests/macos753.md`).
+Software must be genuinely **68k-native** (`68020`/`68030`/`68040`); anything
+PowerPC-only or System-8+-only will not run here.
+
+| Title | Type | Source | Legal | Install | Why |
+|---|---|---|---|---|---|
+| AOL Instant Messenger 2.01.617 (68K) | util | [macintoshrepository.org/1213-aol-instant-messenger-2-x-68k-](https://www.macintoshrepository.org/1213-aol-instant-messenger-2-x-68k-) | abandonware (AOL) | `.sit` installer (Installer VISE). **Blocked on networking**: the station ships with no NIC today, and wiring up the onboard SONIC/MacSonic Ethernet + MacTCP-or-OpenTransport is a device-set change needing a cold rebuild — not yet done (`docs/guests/macos753.md`, `docs/lab/ASSETS-MANIFEST.md` `macos753` row) | The retronet ICQ/AIM bridge's hardest leg (Tier D, `docs/lab/retronet/ICQ-ONBOARDING-PLAN.md`). AIM has spoken OSCAR since its 1997 launch, so this — its last 68K-compatible build — is a genuine period OSCAR client for a real 68k Mac, unlike any Mac ICQ build (PowerPC-only from the point ICQ itself adopted OSCAR). The installer's own text confirms System 7.5+ (Thread Manager, built into 7.5.3 — no extra extension needed). |
+
+---
+
 ## macOS Sequoia (macOS 15) — showcase-only; former guest deleted 2026-07-14
 
 If recreated, the no-Metal/no-GPU guest makes virtually all Mac App Store games, Game Porting Toolkit, and the iOS Simulator unusable or slow. Lean toward **apps and desktop polish, not games.** Safari is pre-bundled. Cross-platform picks #1–8 below (Firefox, VLC, VS Code/VSCodium, DOSBox Staging, ScummVM, Wesnoth, OpenTTD) all have macOS builds.
