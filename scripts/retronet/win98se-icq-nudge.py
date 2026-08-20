@@ -134,15 +134,19 @@ def nudge(dport: int) -> None:
 
 
 def main() -> int:
+    # Cheap local QMP check FIRST: while the station is idle-paused (most of the
+    # time) do nothing and skip the costly `pct exec` gateway read entirely, so
+    # the healer is idle when the guest is.
+    if not guest_running():
+        return 0
     port = persona_port()
     if port is not None:
         # ONLINE — remember the live port for the next wake, and leave it alone.
         with contextlib.suppress(OSError), open(PORTFILE, "w") as f:
             f.write(str(port))
         return 0
-    # OFFLINE — un-stick the stale socket, but only while the guest is actually running.
-    if guest_running():
-        nudge(stale_port())
+    # OFFLINE + running — un-stick the stale socket.
+    nudge(stale_port())
     return 0
 
 
