@@ -9,9 +9,9 @@ images:
 ---
 ## Origins
 
-The VIC-20 began as a chip nobody wanted to buy. MOS Technology, which Commodore owned, had designed a video interface chip — the VIC — to sell to other manufacturers building terminals and games. The orders did not come. Rather than write the part off, Commodore engineers put a computer around it, and Jack Tramiel, who had been saying for years that the industry should be building computers for the masses and not the classes, priced it accordingly.
+The VIC-20 began as a chip nobody wanted to buy. MOS Technology, which Commodore owned, had designed a video interface chip — the VIC — to sell to other manufacturers building terminals and games. The orders did not come. Rather than write the part off, Commodore engineers put a computer around it, and Jack Tramiel, who had been saying for years that the industry should be building computers for the masses and not the classes, priced it accordingly. The design had already been decided on an engineer's desk: Robert Yannes at MOS had built a home prototype around the chip, the MicroPET, and Tramiel saw it and put it into production.
 
-What the chip could do set the shape of everything else. Twenty-two characters across, twenty-three rows down, sixteen colours, and an output designed to survive the aerial socket of an ordinary television. Around it went a MOS 6502 and five kilobytes of memory, of which BASIC announces 3583 bytes free — the rest is spoken for by the screen, the operating system's working storage, and the colour map.
+What the chip could do set the shape of everything else. Twenty-two characters across, twenty-three rows down, sixteen colours, and an output designed to survive the aerial socket of an ordinary television. Around it went a MOS 6502 — the CPU family the museum's PET 2001 exhibit runs — and five kilobytes of memory, of which BASIC announces 3583 bytes free; the rest is spoken for by the screen, the operating system's working storage, and the colour map.
 
 It reached Japan in 1980 as the VIC-1001, the United States the following year, and Europe as the VC-20. It was sold in department stores and toy shops rather than through computer dealers, and it was advertised on television by William Shatner, who asked why you would buy just a video game.
 
@@ -29,6 +29,6 @@ There is no mouse and nowhere to attach one. The keyboard is the instrument — 
 
 ## Legacy
 
-Commodore discontinued the VIC-20 in January 1985, by which time its own successor had eclipsed it: the Commodore 64, which kept the case, the keyboard and the ports, and replaced everything that mattered inside. Roughly two and a half million VIC-20s were sold.
+Commodore discontinued the VIC-20 in January 1985, by which time its own successor had eclipsed it: the Commodore 64, which started out with the VIC-20's own keyboard before replacing everything that mattered inside — and which has its own exhibit in this museum. Roughly two and a half million VIC-20s were sold.
 
 Its influence is easiest to see in who used it. This was, for an enormous number of people, the first computer in the house — small enough to be bought on a whim, cheap enough to be given to a child, and open enough that the only thing to do with it, once the cartridge games were finished, was to learn to program it.
