@@ -248,6 +248,12 @@ box_sync_load_pairs() {
   # installs it alongside the launcher (not an emit aux file, which deploys on a
   # separate stations-manifest.sh pass). See docs/lab/retronet/ICQ-STATION.md.
   box_sync_add_pair win98se-rn-tapnet streamhost/stations/win98se/rn-tapnet.sh "$BOX_ROOT/stations/win98se/rn-tapnet.sh" exact repo
+  # win98se ICQ presence healer (labhost): a timer nudges the persona's golden
+  # BOS socket so ICQ reconnects after every reset/wake (ICQ 2000b will not on
+  # its own). See docs/lab/retronet/ICQ-STATION.md §reconnect.
+  box_sync_add_pair win98se-icq-nudge scripts/retronet/win98se-icq-nudge.py /usr/local/sbin/win98se-icq-nudge.py exact repo
+  box_sync_add_pair win98se-icq-nudge-unit scripts/retronet/win98se-icq-nudge.service /etc/systemd/system/win98se-icq-nudge.service exact repo daemon-reload
+  box_sync_add_pair win98se-icq-nudge-timer scripts/retronet/win98se-icq-nudge.timer /etc/systemd/system/win98se-icq-nudge.timer exact repo daemon-reload
 
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.

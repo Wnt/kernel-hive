@@ -1,0 +1,8 @@
+[Unit]
+Description=Nudge the win98se ICQ persona back online after a wake (retronet)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/ICQ-STATION.md
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/win98se-icq-nudge.py

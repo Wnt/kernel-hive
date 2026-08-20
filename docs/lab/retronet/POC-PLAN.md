@@ -31,9 +31,9 @@ so they live in committed docs. Only real passwords/keys go to
 |---|---|---|
 | Retronet bridge (labhost, **no WAN uplink**) | `vmbr-rn`, `10.99.0.0/24` | B |
 | Gateway CT | id **951** (claim; next free if taken), static `10.99.0.2`, unprivileged, offline | B |
-| ICQ/OSCAR server (`mk6i/open-oscar-server` v0.24.0) | bot/labhost door `10.99.0.2:5190`; station/slirp door `10.99.0.2:5191` (two BOS listeners, one DB) | B |
-| Guest-visible server address (win98se) | `10.0.2.100:5190` via `guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191` on `n0` (targets the **:5191** station door) | A wires (wave 2) |
-| In-guest exec agent (warpnet `E` verb, existing `exec_kind: warpd_e`) | guest `:7788`, reached via `hostfwd=tcp:127.0.0.1:57792-:7788` on `n0` (host-side, guest-invisible → `loadvm`-safe) | A |
+| ICQ/OSCAR server (`mk6i/open-oscar-server` v0.24.0) | the `RN` door `10.99.0.2:5190` (one BOS listener). ~~station/slirp door `:5191`~~ **retired with the slirp swap** — on the bridge the guest uses the same door as the bot | B |
+| Server address the guest dials (win98se) | **`10.99.0.2:5190` directly** (win98se is now a bridged NIC on `vmbr-rn`, not slirp; see [`ICQ-STATION.md`](ICQ-STATION.md)). ~~`10.0.2.100:5190` via `guestfwd`~~ **gone** — no two-door hack | A (bridge swap) |
+| In-guest exec agent (warpnet `E` verb, `exec_kind: warpd_e`) | guest `:7788`, reached **directly over the bridge at the guest IP `10.99.0.10:7788`** (`exec_host` → `GEXEC_HOST`). ~~`hostfwd 127.0.0.1:57792`~~ **gone with slirp** | A (bridge swap) |
 | LLM endpoint | `127.0.0.1:8091` (OpenAI-compatible), labhost | C |
 | Bot | labhost systemd unit, outbound only; logs into `10.99.0.2:5190` as UIN 10000, calls LLM at `127.0.0.1:8091` | C |
 
@@ -61,8 +61,14 @@ media rows in the catalog — so there are no shared-file conflicts. **Do not ed
 
 - **Wave 1:** A, B, C, D in parallel (this).
 - **Wave 2 (integration):** install **ICQ 2000b** on win98se over the exec
-  channel + framebuffer (media staged by D); add `guestfwd=tcp:10.0.2.100:5190-tcp:10.99.0.2:5191`
-  on `n0`; set `HKCU\Software\Mirabilis\ICQ\DefaultPrefs` Host `10.0.2.100`
+  channel + framebuffer (media staged by D). **The slirp `guestfwd` integration
+  was proven a dead end (single-connection) and superseded by the bridge swap —
+  win98se is now a `tap` on `vmbr-rn` with the guest static at `10.99.0.10`, ICQ
+  `DefaultPrefs` Host `10.99.0.2`, and the golden captured tap-native with ICQ
+  connected. The as-built (containment, exec-over-bridge, the idle-pause reconnect
+  mechanism, the display-wedge recovery) is [`ICQ-STATION.md`](ICQ-STATION.md).**
+  Historical slirp detail below is kept only to explain the retired constants:
+  set `HKCU\Software\Mirabilis\ICQ\DefaultPrefs` Host
   Port `5190` **after install, before the registration wizard** (client bug);
   sign persona `98980` in (creds `RETRONET_ICQ_PERSONA_*`); then `savevm golden`
   **with ICQ connected** — live-inject + `savevm`, never offline-inject
