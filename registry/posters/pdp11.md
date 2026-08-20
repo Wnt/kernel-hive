@@ -22,8 +22,9 @@ could own one outright rather than renting time on someone else's mainframe.
 DEC sold something like 600,000 of them, and kept the line alive until 1997.
 
 The 11/70, announced in 1975, was the top of the range: 22-bit addressing for
-up to four megabytes of memory, a cache, a separate high-speed bus for the big
-disks, and the floating-point processor as standard. It is the machine most
+up to four megabytes of memory, the line's first cache, a separate high-speed
+bus — the Massbus — for the big disks, and, for the first time, a
+floating-point processor built into the CPU package. It is the machine most
 people picture when they picture a PDP-11 — two tall cabinets, a magenta
 console panel, washing-machine disk drives, and a room full of terminals.
 
@@ -45,7 +46,8 @@ later went to Microsoft and led Windows NT. Two of the three great operating
 system families in this gallery start in this cabinet.
 
 What you are looking at runs **2.11BSD**, released from the University of
-California, Berkeley in 1991 and maintained by volunteers ever since. It is the
+California, Berkeley on March 14, 1991, to mark the PDP-11's thirtieth
+birthday, and maintained by volunteers ever since. It is the
 last BSD for the PDP-11: a backport of 4.3BSD's userland, networking and
 development tools onto a machine with a 64 KB address space per process, which
 is an extraordinary piece of engineering in its own right. By 1991 the PDP-11
@@ -75,10 +77,11 @@ line into a 16-bit machine with four megabytes of memory.
 
 The PDP-11 is the most consequential minicomputer ever built, and its
 descendants are all around it in this gallery. Every Unix and Linux tile here —
-Solaris, IRIX, 9front, Alpine, HelenOS, Android, postmarketOS — traces back
+Solaris, IRIX, 9front, Alpine, Android, postmarketOS — traces back
 through a chain of source and ideas to code written on this architecture. So
 does the C in which almost all of them are written. Its own successor, the VAX,
-gave rise to VMS, and VMS to Windows NT.
+gave rise to VMS, and VMS to Windows NT — and the VAX's own descendant,
+OpenVMS, still has a tile of its own in this gallery.
 
 The architecture outlived its own obsolescence in the least glamorous way
 possible: PDP-11s ran nuclear power stations, air traffic control and factory
