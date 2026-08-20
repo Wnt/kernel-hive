@@ -136,16 +136,24 @@ because it needs a live station and win98se is owned by the swap agent.
 The roster's `client` field dispatches the seeder. Only `icq2000b` is
 implemented; the others are designed and print their plan:
 
-- **`unix-oscar`** (solaris, tru64 — micq / centericq / licq): the contact list
-  is plain-text dotfiles in the guest home — `~/.micq/contacts` (a
-  `uin,nick,group` line each), `~/.centericq/<uin>/` (a dir per contact, nick in
-  its `info` file), `~/.licq/users/<uin>.uin` (a file each). Seed by writing them
-  **offline** over the guest home (via `chroot-guard run-private`, never a raw
-  host mount) or by the client's own add. The nickname comes from the **same**
-  server directory this tool sets — `verify-nick` proves it for any client.
-- **`mac-oscar`** (macos753): contacts live in the app Preferences (`System
-  Folder:Preferences`); seed by editing that pref offline (HFS mount) or the
-  client's Add flow.
+- **`unix-oscar`** (solaris, tru64 — **climm 0.6.4**, the ex-mICQ OSCAR client,
+  sourced and built from source): its contact list is plain text under
+  `~/.climm/` in the guest home. Seed it **offline** over the guest home (via
+  `chroot-guard run-private`, never a raw host mount) or by the client's own add.
+  climm is an **ICQ** client, so it fetches the nickname from the **same** server
+  directory this tool sets — `verify-nick` proves it — and `HiveBot` / the station
+  names show with **no local alias** needed. (Exact `~/.climm/` layout is
+  confirmed at build time; the seam is the same either way.)
+- **`mac-oscar`** (macos753 — **Mac AIM 2.01.617**, 68K): its buddy list lives in
+  the app Preferences (`System Folder:Preferences`). An **AIM** client does
+  **not** run the ICQ directory lookup, so here the display name is a
+  **client-local alias** (the AIM buddy alias) the seeder writes — the plan's
+  "where the client needs a local alias, the seeder writes it" clause. Seed the
+  pref offline (HFS mount) or via the client's Add flow.
+
+Both are why the `client` field is a dispatch key, not just a label: the ICQ
+legs (ICQ 2000b, climm) get their name from the server directory; the AIM leg
+gets a local alias. `verify-nick` proves the server half for every ICQ leg today.
 
 ## Operating it
 

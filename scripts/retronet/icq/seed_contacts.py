@@ -277,15 +277,14 @@ def _missing(roster: dict, station: str) -> tuple[dict, list[dict], list[dict]]:
 
 def _print_client_design(client: str) -> None:
     if client == "unix-oscar":
-        print("#   micq:      ~/.micq/contacts        one 'uin,nick,group' line per contact")
-        print("#   centericq: ~/.centericq/<uin>/     a dir per contact; its 'info' file carries the nick")
-        print("#   licq:      ~/.licq/users/<uin>.uin  one file per contact")
-        print("#   seed offline over the guest home (chroot-guard run-private mount) OR the client's own add;")
-        print("#   the nickname comes from the SAME server directory this tool sets (verify-nick proves it).")
+        print("#   climm 0.6.4 (ex-mICQ, an ICQ client): contacts live under ~/.climm/ (config + contact list).")
+        print("#   seed offline over the guest home (chroot-guard run-private mount) OR the client's own add.")
+        print("#   Being an ICQ client it fetches the nickname from the SAME server directory this tool sets")
+        print("#   (verify-nick proves it), so HiveBot / station names show with no local alias needed.")
     elif client == "mac-oscar":
-        print("#   Mac ICQ: contacts live in the app Preferences (System Folder:Preferences).")
-        print("#   seed by editing that pref offline (HFS mount) OR the client's Add flow;")
-        print("#   the nickname comes from the SAME server directory this tool sets.")
+        print("#   Mac AIM 2.01.617 (68K), an AIM client: buddy list lives in the app Preferences (System Folder).")
+        print("#   AIM clients do NOT run the ICQ directory lookup, so the seeder writes a client-local ALIAS")
+        print("#   (the AIM buddy alias) to show 'HiveBot' / station names; seed the pref offline (HFS) or Add flow.")
 
 
 def cmd_plan(roster: dict, args) -> int:

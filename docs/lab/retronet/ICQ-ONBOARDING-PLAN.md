@@ -56,8 +56,9 @@ is [`CONTACT-SEEDER.md`](CONTACT-SEEDER.md). `roster.json` is the single source
    local store is a proprietary per-UIN binary DB with no safe reference to edit,
    and the client itself fetches the nickname + registers the buddies. The
    `icq2000b` input macro is calibrated on the live client (the tool refuses
-   `--apply` until it is). Unix (micq/centericq/licq dotfiles) and Mac (app
-   prefs) seeders are designed, deferred until their media lands.
+   `--apply` until it is). Unix (**climm** dotfiles — an ICQ client, name from the
+   server directory) and Mac (**Mac AIM 2.01.617** prefs — an AIM client, so a
+   client-local alias) seeders are designed, deferred until those stations onboard.
 3. Recapture the golden with the fuller list baked in (safe savevm order).
 
 Idempotency reads the server's `clientSideBuddyList` shadow (skip contacts
