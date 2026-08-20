@@ -23,6 +23,9 @@ usage:
   rn-tool.py users
   rn-tool.py user-set <screen_name> <password>
   rn-tool.py user-open <screen_name>
+  rn-tool.py nick <screen_name> <nickname>
+  rn-tool.py nick-get <screen_name>
+  rn-tool.py buddies <screen_name>
   rn-tool.py wan-probe
   rn-tool.py login <host> <port> <screen_name> <password>
 """
@@ -298,6 +301,62 @@ def cmd_user_is_open(screen_name: str) -> bool:
     return bool(row) and not row[0]
 
 
+def cmd_nick_set(screen_name: str, nickname: str) -> int:
+    """Set an account's ICQ directory nickname — the name a client shows a contact.
+
+    ICQ 2000b keeps its contact list client-local, but the *name* it displays for
+    a UIN is fetched from the server's ICQ directory when the contact is added
+    (an ICQ Meta short-info / search-by-UIN query). So a bare `10000` becomes
+    `HiveBot` the moment this column is set — no client-side change needed for a
+    fresh add. Read-modify-write of the one field via the management API's
+    `PUT /user/<sn>/icq`; idempotent.
+    """
+    status, payload = api("GET", f"/user/{screen_name}/icq")
+    if status != 200:
+        print(f"{screen_name}: GET icq -> {status}: {payload.decode(errors='replace')}")
+        return 1
+    info = json.loads(payload)
+    if info.get("basic_info", {}).get("nickname") == nickname:
+        print(f"nick    {screen_name} already {nickname!r}")
+        return 0
+    info.setdefault("basic_info", {})["nickname"] = nickname
+    status, payload = api("PUT", f"/user/{screen_name}/icq", info)
+    if status not in (200, 204):
+        print(f"{screen_name}: PUT icq -> {status}: {payload.decode(errors='replace')}")
+        return 1
+    print(f"nick    {screen_name} -> {nickname!r} (ICQ directory; a client receives it on add-by-UIN)")
+    return 0
+
+
+def cmd_nick_get(screen_name: str) -> int:
+    status, payload = api("GET", f"/user/{screen_name}/icq")
+    if status != 200:
+        print(f"{screen_name}: {status}: {payload.decode(errors='replace')}")
+        return 1
+    print(json.loads(payload).get("basic_info", {}).get("nickname", ""))
+    return 0
+
+
+def cmd_buddies(screen_name: str) -> int:
+    """List the UINs on an account's client-side buddy list (the server's shadow).
+
+    open-oscar-server records every non-SSI client's buddy list in
+    `clientSideBuddyList` when the client pushes it at sign-on. It does not drive
+    what the client *displays* (that is the client's local store), but it is a
+    reliable server-side record of who a station has already added — the contact
+    seeder reads it to stay idempotent (skip a UIN that is already there).
+    """
+    conn = sqlite3.connect(DB_PATH, timeout=10)
+    rows = conn.execute(
+        "SELECT them FROM clientSideBuddyList WHERE me = ? AND isBuddy = 1 ORDER BY them",
+        (screen_name,),
+    ).fetchall()
+    conn.close()
+    for (them,) in rows:
+        print(them)
+    return 0
+
+
 # --- no-WAN proof -----------------------------------------------------------
 
 # Three different networks, three different well-known anycast addresses, all
@@ -348,6 +407,12 @@ def main(argv: list[str]) -> int:
         return cmd_user_open(*args)
     if cmd == "user-is-open" and len(args) == 1:
         return 0 if cmd_user_is_open(*args) else 1
+    if cmd == "nick" and len(args) == 2:
+        return cmd_nick_set(*args)
+    if cmd == "nick-get" and len(args) == 1:
+        return cmd_nick_get(*args)
+    if cmd == "buddies" and len(args) == 1:
+        return cmd_buddies(*args)
     if cmd == "wan-probe":
         return cmd_wan_probe()
     if cmd == "login" and len(args) == 4:

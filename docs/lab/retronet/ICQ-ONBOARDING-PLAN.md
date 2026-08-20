@@ -35,29 +35,37 @@ SQLite-safe) and stores the password in `registry/local.env` as
 list.** As the fleet grows the roster is the single source; adding a station is
 one row, then re-run the seeder.
 
-- **HiveBot by name.** ICQ 2000b keeps its contact list **client-local** (not
-  server SSI), so the name must land where the client shows it: set the bot
-  account's server-side nickname to `HiveBot`, and where the client needs a
-  local alias, the seeder writes it. Contacts must never read as a bare `10000`.
+- **HiveBot by name — DONE (server side).** ICQ 2000b keeps its contact list
+  **client-local** (not server SSI), but the *name* it shows a UIN comes from the
+  server's ICQ directory, fetched on add-by-UIN. So `10000`'s directory nickname
+  is set to `HiveBot` (`rn-tool.py nick`), and a client-faithful ICQ Meta query
+  proves a client receives it. A contact added *before* its nickname was set (the
+  bot on the existing win98se golden) needs a one-time in-client rename; every
+  station onboarded from here shows the name natively. See
+  [`CONTACT-SEEDER.md`](CONTACT-SEEDER.md).
 
-## Contact-seeding automation (the reusable tool)
+## Contact-seeding automation — BUILT: `scripts/retronet/icq/`
 
-The operator's flow, generalized into `scripts/retronet/web/`… (or
-`scripts/retronet/icq/`) — **roster-driven, idempotent**:
+The reusable tool is landed and its server-side mechanics proven; full write-up
+is [`CONTACT-SEEDER.md`](CONTACT-SEEDER.md). `roster.json` is the single source
+(`seed_contacts.py roster`), the flow is **roster-driven, idempotent**:
 
-1. Station offline: clean-shutdown from golden (or the powered-off seed).
-2. Seed the client's contact list — **method chosen per client for
-   reliability**: offline-mount + edit the contact store (via `chroot-guard
-   run-private` or the `mount-guard-ok` escape — never a raw host mount), **or**
-   drive the client's own Add-Contact flow over the exec channel + framebuffer.
-   (ICQ 2000b's local store is a proprietary DB; the tool agent picks whichever
-   is reliable and documents it.)
-3. Recapture the golden with the fuller list baked in.
+1. Station offline: `labctl reset` from golden (live pass backs the golden up first).
+2. Seed the client's contact list. **Method chosen for ICQ 2000b: drive the
+   client's own Add-Contact flow** over the exec channel + framebuffer — its
+   local store is a proprietary per-UIN binary DB with no safe reference to edit,
+   and the client itself fetches the nickname + registers the buddies. The
+   `icq2000b` input macro is calibrated on the live client (the tool refuses
+   `--apply` until it is). Unix (**climm** dotfiles — an ICQ client, name from the
+   server directory) and Mac (**Mac AIM 2.01.617** prefs — an AIM client, so a
+   client-local alias) seeders are designed, deferred until those stations onboard.
+3. Recapture the golden with the fuller list baked in (safe savevm order).
 
-Adding contacts later = edit the roster + re-run. **This tool does NOT mutate a
-live station during its build** — win98se is owned by the swap agent, the others
-aren't onboarded yet — it is built + proven on a safe copy / dry-run, then
-applied per station as they come online.
+Idempotency reads the server's `clientSideBuddyList` shadow (skip contacts
+already added). Adding a station later = one `roster.json` row + re-run. **This
+tool does NOT mutate a live station during its build** — win98se is owned by the
+swap agent, the others aren't onboarded yet — it is built + proven on the live
+gateway / a golden backup / dry-run, then applied per station as they come online.
 
 ## Waves (sequenced, not blind-parallel)
 
@@ -83,6 +91,15 @@ applied per station as they come online.
 - Follow the win98se recipe (`ICQ-STATION.md`) for the bridge swap; do not
   re-derive it. Prove UDP+ICMP + containment (guest reaches `10.99.0.2`, NOT the
   LAN/gallery/internet) exactly as win98se does.
+- **Addressing is DHCP, not per-guest static** (as of the win98se DHCP conversion).
+  Set the guest to obtain IP *and* DNS automatically + no proxy, and add ONE
+  `mac=ip` line to `registry/local.env` `RETRONET_DHCP_RESERVATIONS` +
+  `install-dhcp.sh --apply` on the gateway. That alone gives the station the
+  **seamless web** (type a URL, it renders — no proxy) plus a stable IP for
+  exec-over-bridge, and keeps containment (DHCP hands out **no default gateway**).
+  Each station needs a **unique** guest MAC — see WEB-PROXY.md. Recipe:
+  [`ICQ-STATION.md`](ICQ-STATION.md) §Seamless web. (win2000/nt4/solaris finish on
+  static; the coordinator retrofits them to DHCP + unique MACs later.)
 - No raw host mounts except through `chroot-guard run-private` or with the
   `mount-guard-ok` escape set.
 - Green-before-done for languages touched, or report **BLOCKED**. Report

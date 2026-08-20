@@ -1,0 +1,55 @@
+[Unit]
+# Installed INSIDE the gateway CT (951) by
+# scripts/retronet/web/install-dns.sh. The wildcard DNS resolver of the web
+# plane: every A query is answered with the gateway's own address (10.99.0.2),
+# so a bridged station with DNS=10.99.0.2 (handed out by retronet-dhcp) and NO
+# proxy can type any URL and reach the museum's :80 origin. See
+# docs/lab/retronet/WEB-PROXY.md (addressing plane).
+Description=retronet wildcard DNS — every A answers with the gateway (10.99.0.2)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/WEB-PROXY.md
+# The CT has no route off its own /24, so network-online.target here means
+# "eth0 is configured", which is all the bind address needs.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rndns
+Group=rndns
+EnvironmentFile=/etc/retronet/dns.env
+ExecStart=/usr/bin/python3 /opt/retronet-dns/dns.py serve
+Restart=on-failure
+RestartSec=3s
+
+# Port 53 is privileged; grant exactly the one capability that binds it and
+# nothing more. Works in the unprivileged CT because CAP_NET_BIND_SERVICE is in
+# the container's own bounding set (same pattern as retronet-proxy for :80).
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# --- sandbox (mirrors retronet-proxy.service) --------------------------------
+# NO UPSTREAM, the strongest form: the `serve` path opens NO outbound socket at
+# all and answers every query from one constant, so no name a guest types can
+# resolve to a real external IP. The CT's no-default-route is the backstop.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+# The resolver only reads its own code; it writes nothing (logs go to journald).
+ReadOnlyPaths=/opt/retronet-dns
+
+# --- resource cage ------------------------------------------------------------
+Nice=5
+MemoryMax=96M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

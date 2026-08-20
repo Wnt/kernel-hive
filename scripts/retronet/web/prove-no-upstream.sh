@@ -42,9 +42,11 @@ cp "$HERE/sample-corpus/sites.json" "$TMP/corpus/"
 
 free_port() { "$PY" -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1]);s.close()'; }
 PORT="$(free_port)"
+ORIGIN_PORT="$(free_port)"  # the :80 origin door, on a local port here (can't bind 80/the CT IP on labhost)
 BACKEND_PORT="$(free_port)" # left CLOSED — the search connect() still shows in the trace
 
 export RN_PROXY_LISTEN="127.0.0.1:$PORT"
+export RN_PROXY_ORIGIN_LISTEN="127.0.0.1:$ORIGIN_PORT"
 export RN_PROXY_CORPUS="$TMP/corpus"
 export RN_PROXY_SEARCH_HOSTS="search.retronet"
 export RN_PROXY_SEARCH_BACKEND="127.0.0.1:$BACKEND_PORT"
@@ -69,11 +71,16 @@ done
   exit 1
 }
 
-# Drive the three request classes through the proxy.
+# Drive the three request classes through the FORWARD proxy, plus a HIT and a
+# MISS through the :80 ORIGIN door (origin-form, Host header) — the no-proxy web
+# path — so the proof covers both doors' request handling.
 px="127.0.0.1:$PORT"
-curl -s -o /dev/null -x "$px" "http://example.museum/" || true         # HIT
-curl -s -o /dev/null -x "$px" "http://nope.invalid/" || true           # MISS (uncached host)
+og="127.0.0.1:$ORIGIN_PORT"
+curl -s -o /dev/null -x "$px" "http://example.museum/" || true         # HIT (proxy)
+curl -s -o /dev/null -x "$px" "http://nope.invalid/" || true           # MISS (proxy)
 curl -s -o /dev/null -x "$px" "http://search.retronet/?q=test" || true # SEARCH -> backend
+curl -s -o /dev/null "http://$og/" -H "Host: example.museum" || true   # HIT (:80 origin)
+curl -s -o /dev/null "http://$og/" -H "Host: nope.invalid" || true     # MISS (:80 origin)
 sleep 0.2                                                              # let strace flush the trace
 
 # --- read the verdict out of the trace --------------------------------------

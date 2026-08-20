@@ -54,6 +54,11 @@ GREETINGS: dict[str, list[str]] = {
     "nt4": ["hey, did you just sign on with the NT 4? very serious machine :)", "hi! that's the NT box isn't it?"],
     "beos": ["hey! you using BeOS?! that's rare :)", "hi there — are you rocking Be machine?"],
     "tru64": ["hey, are you the one on the Alpha? :)", "hi! was it you that runs the Tru64 OS? — nice hardware."],
+    "solaris": [
+        "hey, someone on the Solaris box? :)",
+        "oh nice, a Sun workstation — that you on Solaris?",
+        "hi! is that CDE on Solaris? proper Unix :)",
+    ],
     "_default": ["hey! someone's online :)", "hi there — what machine is that?"],
 }
 
@@ -65,6 +70,7 @@ STATION_BLURB: dict[str, str] = {
     "nt4": "a Windows NT 4 workstation",
     "beos": "a BeOS R5 machine",
     "tru64": "a DEC Alpha running Tru64 UNIX",
+    "solaris": "a Sun workstation running Solaris 10 with the CDE desktop",
 }
 
 SYSTEM_PROMPT = """You are {name}, a chat bot that has lived on the internet since 1999. \
