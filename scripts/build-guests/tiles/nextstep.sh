@@ -452,9 +452,7 @@ if [ "$NEW_OVERLAY" -eq 1 ]; then
     command -v cmake svn 7z xdotool >/dev/null' ||
     die "could not install the build dependencies (see /tmp/apt.log in the guest)"
 
-  # SDL3. Previous 4.4 needs >= 3.2; Debian 12 has SDL2 only. libxtst-dev above
-  # is not optional: cmake aborts with "Couldn't find dependency package for
-  # XTEST" without it.
+  # SDL3. Previous 4.4 needs >= 3.2; Debian 12 has SDL2 only (libxtst-dev above: cmake aborts on XTEST without it).
   log "building SDL3 $SDL3_VER from source in the overlay (~2 min at -j2)"
   guest "set -e
     cd /usr/local/src
@@ -536,11 +534,13 @@ PV
   # NeXT's telnet port. The tablet install needs it; operators do too.
   put "$HERE/../nextstep-nstel.py" /usr/local/bin/nstel.py
   guest "chmod 755 /usr/local/bin/nextstep-kiosk-frame.sh /usr/local/bin/nstel.py"
+  # Before first light: without the cfg, Previous opens its Main menu ("ROM file not found!") instead of this machine.
+  printf '%s\n' "$PREVIOUS_CFG" |
+    guest "cat > /home/bridge/.config/previous/previous.cfg &&
+      chown -R bridge:bridge /home/bridge/.config"
 
-  # First light. NeXTSTEP 3.3 runs its own first-boot Welcome panel (language +
-  # keyboard) exactly once, on the very first boot of this disk image; RETURN
-  # accepts the English/USA defaults and RETURN again confirms the alert. Both
-  # are framebuffer-verified below by the Workspace predicate.
+  # First light: the one-time first-boot Welcome panel. RETURN takes the
+  # English/USA defaults, RETURN again confirms; the Workspace predicate below verifies it.
   guest "pkill -u bridge -x previous 2>/dev/null || true
     pkill -u bridge -f nextstep-kiosk-frame 2>/dev/null || true
     sleep 1; systemctl reset-failed getty@tty1; systemctl restart getty@tty1"
