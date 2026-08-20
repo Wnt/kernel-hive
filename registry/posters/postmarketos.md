@@ -11,7 +11,7 @@ images:
 
 postmarketOS began in 2017 with a deliberately long view of mobile hardware. Conventional smartphones often receive a few years of vendor updates because their kernels, drivers, and Android userspaces are tightly bound to a product release. The project proposed a ten-year lifecycle instead, using Alpine Linux as a compact base and moving devices toward shared, upstream Linux components wherever possible.
 
-The distribution is not one universal phone image. Device packages describe kernels, firmware, boot methods, and hardware support, while users may choose interfaces including Phosh, Plasma Mobile, Sxmo, or lightweight shells. Alpine’s apk package manager and ordinary Linux tools make the phone part of a familiar maintainable system rather than a sealed appliance.
+The distribution is not one universal phone image. Each phone is described by a single device package — kernel, firmware, boot method, hardware quirks — and everything else it runs is shared with every other phone in the project. Users may choose interfaces including Phosh, Plasma Mobile, Sxmo, or lightweight shells. Alpine’s apk package manager and ordinary Linux tools make the phone part of a familiar maintainable system rather than a sealed appliance; the Alpine Linux it is built on has its own tile in this gallery, and here it has been shrunk to fit a pocket.
 
 ## Significance
 
@@ -25,4 +25,4 @@ postmarketOS v26.06 uses Phosh, the GNOME-derived phone shell. Firefox or GNOME 
 
 ## Legacy
 
-postmarketOS helped turn mobile Linux from isolated vendor experiments into a coordinated distribution effort. It supports the wider ecosystem around devices such as the PinePhone and encourages applications that adapt across screen sizes. Its central legacy is still being written, but its museum significance is already clear: it reframes a disposable smartphone as a general computer that ought to remain repairable in software.
+postmarketOS helped turn mobile Linux from isolated vendor experiments into a coordinated distribution effort. It supports the wider ecosystem around devices such as the PinePhone and encourages applications that adapt across screen sizes. Its central legacy is still being written, but its museum significance is already clear: it reframes a disposable smartphone as a general computer that ought to remain repairable in software — the gallery’s answer to the Android tile, which is also Linux under the skin but lets the vendor decide how long the device lives.

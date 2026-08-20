@@ -31,6 +31,6 @@ Press it — or the exhibit's **3-PLUS-1** button — and the suite opens in the
 
 ## Legacy
 
-The 264 series was withdrawn within about a year, and Commodore returned to selling the machine it had tried to replace; the C64 outlived the Plus/4 by nearly a decade. The TED chip's real memorial is the C16, its cheap sibling, which did what the family was designed to do and sold respectably in Europe.
+The 264 series was pulled by 1985 — less for lack of demand than to free the factory for the C64 ahead of the 1985 holiday season — and Commodore returned to selling the machine it had tried to replace; the C64 outlived the Plus/4 by nearly a decade. The Plus/4's designer, Bil Herd, got the C128 as his next machine — it has a tile in this gallery — where he applied the lesson of its incompatibility: a C64 with twice the memory, not a second machine that shares nothing with the bestseller. The TED chip's real memorial is the C16, its cheap sibling, which did what the family was designed to do and sold respectably in Europe.
 
 What survives here is the argument the machine was making. Every computer since has had to answer the question of what should be built in and what should be bought, and the Plus/4 answered it more literally than anything before or since: it put the office in the ROM and sold the whole thing for the price of a games computer.
