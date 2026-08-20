@@ -9,7 +9,7 @@ images:
 ---
 ## Origins
 
-OS/2 began as a joint IBM and Microsoft project intended to carry the personal computer beyond DOS. The partnership fractured as Microsoft concentrated on Windows, leaving IBM to develop OS/2 as its own 32-bit platform. OS/2 2.0 in 1992 introduced the Workplace Shell and strong DOS and Windows compatibility. Warp 4, code-named Merlin and released in 1996, refined that system with updated networking, Java, speech features, and a more polished desktop.
+OS/2 began as a joint IBM and Microsoft project intended to carry the personal computer beyond DOS — the second of the two companies’ operating-system partnerships, the first having produced MS-DOS for the 1981 Personal Computer, the system on the museum’s MS-DOS case. The partnership fractured as Microsoft concentrated on Windows, leaving IBM to develop OS/2 as its own 32-bit platform. OS/2 2.0 in 1992 introduced the Workplace Shell and strong DOS and Windows compatibility. Warp 4, code-named Merlin, was launched in San Francisco on 25 September 1996 and refined that system with updated networking, Java, a speech-dictation system called VoiceType, and a more polished desktop. It was the last major retail release of the line, shipped after IBM had already decided to “de-emphasize” OS/2.
 
 The Workplace Shell was not simply a file manager. It used an object-oriented model in which files, folders, printers, programs, and settings could possess persistent behavior and relationships. Shadows acted as live references rather than ordinary copies, and users could manipulate properties through notebooks and context menus. Beneath it, OS/2 provided pre-emptive multitasking and protected memory.
 
