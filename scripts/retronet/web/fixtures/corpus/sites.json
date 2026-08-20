@@ -1,0 +1,23 @@
+[
+  {
+    "host": "www.retrocomputing.example",
+    "title": "The Retro Computing Page",
+    "blurb": "Classic 1980s and 1990s machines, and the modems that connected them.",
+    "added": "1998-03-14",
+    "category": "Computers and Internet"
+  },
+  {
+    "host": "www.dialup-news.example",
+    "title": "Dial-Up News Daily",
+    "blurb": "Headlines delivered over your modem, updated every day.",
+    "added": "1998-05-02",
+    "category": "News and Media"
+  },
+  {
+    "host": "arcade.geocities.example",
+    "title": "Rob's Arcade & Guestbook",
+    "blurb": "A personal page of arcade flyers -- please sign the guestbook!",
+    "added": "1998-06-20",
+    "category": "Entertainment"
+  }
+]

@@ -1,0 +1,12 @@
+[Unit]
+# Installed in the gateway CT by scripts/retronet/web/install-search.sh, driven
+# by retronet-search-reindex.timer. Rebuilds the search index so a corpus push
+# from era-press (stream W2) is picked up without a restart.
+Description=retronet-search: rebuild the corpus index
+Documentation=file:///data/kernel-hive/docs/lab/retronet/WEB-SEARCH.md
+
+[Service]
+Type=oneshot
+# try-reload = reload only if the service is running; a no-op (not an error)
+# when it is stopped, so the timer never spams failures on a paused CT.
+ExecStart=/usr/bin/systemctl try-reload-or-restart retronet-search.service

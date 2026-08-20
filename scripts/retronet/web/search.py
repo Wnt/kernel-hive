@@ -1,0 +1,293 @@
+#!/usr/bin/env python3
+"""retronet-search — the period search engine for the offline retronet web.
+
+One stdlib process, no dependencies, meant to run INSIDE the gateway CT (951) on
+``127.0.0.1:8090``. The corpus-only proxy (stream W1) routes a reserved hostname
+(``search.retronet``) here; this service never speaks to anything but the local
+corpus on disk. It answers three things, all as period HTML an era browser
+renders:
+
+  /            AltaVista-style front page (a query box)
+  /search?q=   AltaVista-style ranked results, each linking to a corpus URL
+  /dir         Yahoo!-style directory, built from the corpus sites.json
+
+The index is built in memory at start and rebuilt on demand — ``GET /reindex``,
+``systemctl reload retronet-search`` (SIGHUP) or the reindex timer — so a fresh
+corpus push by W2 is picked up without a restart.
+
+Config comes from the environment (systemd EnvironmentFile
+``/etc/retronet/search.env``); see ``install-search.sh``. Run modes:
+
+  search.py serve      run the HTTP service (default)
+  search.py index      build the index once, print stats, exit
+  search.py selftest   build over the bundled fixture, assert, exit
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import signal
+import sys
+import threading
+from dataclasses import dataclass
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlsplit
+
+import rn_render
+from rn_index import Index, build_index, search
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+@dataclass
+class Config:
+    host: str = "127.0.0.1"
+    port: int = 8090
+    corpus: str = "/data/retronet/corpus"
+    sites: str = ""  # defaults to <corpus>/sites.json
+    per_page: int = 10
+    snippet: int = 160
+
+    @classmethod
+    def from_env(cls) -> Config:
+        corpus = os.environ.get("RN_SEARCH_CORPUS", cls.corpus)
+        return cls(
+            host=os.environ.get("RN_SEARCH_HOST", cls.host),
+            port=_int_env("RN_SEARCH_PORT", cls.port),
+            corpus=corpus,
+            sites=os.environ.get("RN_SEARCH_SITES", os.path.join(corpus, "sites.json")),
+            per_page=_int_env("RN_SEARCH_PER_PAGE", cls.per_page),
+            snippet=_int_env("RN_SEARCH_SNIPPET", cls.snippet),
+        )
+
+
+def _int_env(key: str, default: int) -> int:
+    try:
+        return int(os.environ.get(key, str(default)))
+    except ValueError:
+        return default
+
+
+def load_sites(path: str) -> list[dict]:
+    """Read the corpus manifest tolerantly (W2 owns the file; it may be absent).
+
+    Accepts either a bare array or ``{"sites": [...]}``; anything unparseable
+    yields an empty directory rather than a crash.
+    """
+    try:
+        with open(path, "rb") as fh:
+            data = json.loads(fh.read().decode("utf-8", "replace"))
+    except (OSError, ValueError):
+        return []
+    if isinstance(data, dict):
+        data = data.get("sites", [])
+    if not isinstance(data, list):
+        return []
+    return [s for s in data if isinstance(s, dict)]
+
+
+class State:
+    """The live index behind a lock, swapped atomically on a rebuild."""
+
+    def __init__(self, cfg: Config) -> None:
+        self.cfg = cfg
+        self._lock = threading.Lock()
+        self._index: Index = Index(corpus_root=cfg.corpus)
+
+    @property
+    def index(self) -> Index:
+        with self._lock:
+            return self._index
+
+    def reindex(self) -> int:
+        idx = build_index(self.cfg.corpus)
+        with self._lock:
+            self._index = idx
+        return idx.n_docs
+
+
+STATE: State | None = None
+
+
+class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.0"  # era-friendly; one request per connection
+    server_version = "retronet-search/1.0"
+
+    # --- routing ------------------------------------------------------------
+    def do_GET(self) -> None:
+        self._route(head_only=False)
+
+    def do_HEAD(self) -> None:
+        self._route(head_only=True)
+
+    def _route(self, head_only: bool) -> None:
+        assert STATE is not None
+        split = urlsplit(self.path)  # tolerates absolute-form (proxy) and origin-form
+        path = split.path or "/"
+        params = parse_qs(split.query, keep_blank_values=True)
+
+        if path in ("/", "/index.html"):
+            self._html(rn_render.home_page(), head_only)
+        elif path == "/search":
+            self._search(params, head_only)
+        elif path in ("/dir", "/directory", "/dir.html"):
+            sites = load_sites(STATE.cfg.sites)
+            self._html(rn_render.directory_page(sites), head_only)
+        elif path == "/reindex":
+            n = STATE.reindex()
+            body = rn_render.text_page(
+                "retronet-search: reindex",
+                f"Index rebuilt from {STATE.cfg.corpus}: {n} document(s) now indexed.",
+            )
+            self._html(body, head_only)
+        elif path == "/health":
+            self._text(f"OK {STATE.index.n_docs} docs\n", head_only)
+        elif path == "/favicon.ico":
+            self._not_found(head_only, quiet=True)
+        else:
+            self._not_found(head_only)
+
+    def _search(self, params: dict[str, list[str]], head_only: bool) -> None:
+        assert STATE is not None
+        query = (params.get("q") or [""])[0]
+        try:
+            page_no = max(1, int((params.get("pg") or ["1"])[0]))
+        except ValueError:
+            page_no = 1
+        hits = search(STATE.index, query, STATE.cfg.snippet) if query.strip() else []
+        body = rn_render.results_page(query, hits, page_no, STATE.cfg.per_page)
+        self._html(body, head_only)
+
+    # --- responses ----------------------------------------------------------
+    def _html(self, markup: str, head_only: bool, code: int = 200) -> None:
+        self._send(rn_render.to_bytes(markup), f"text/html; charset={rn_render.CHARSET}", head_only, code)
+
+    def _text(self, text: str, head_only: bool, code: int = 200) -> None:
+        self._send(text.encode("latin-1", "replace"), "text/plain; charset=iso-8859-1", head_only, code)
+
+    def _not_found(self, head_only: bool, quiet: bool = False) -> None:
+        if quiet:
+            self._send(b"", "text/plain", head_only, 404)
+            return
+        body = rn_render.text_page(
+            "AltaVista: Not Found",
+            "That page is not part of the search service. Try a search or the directory.",
+        )
+        self._html(body, head_only, code=404)
+
+    def _send(self, body: bytes, ctype: str, head_only: bool, code: int) -> None:
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(body)
+
+    def log_message(self, fmt: str, *args: object) -> None:
+        sys.stderr.write(f"retronet-search {self.address_string()} - {fmt % args}\n")
+
+
+def serve(cfg: Config) -> None:
+    global STATE
+    STATE = State(cfg)
+    n = STATE.reindex()
+    sys.stderr.write(f"retronet-search: indexed {n} document(s) from {cfg.corpus}\n")
+
+    def _on_hup(_signum: int, _frame: object) -> None:
+        # Rebuild off the signal thread so the handler returns immediately.
+        threading.Thread(target=_hup_reindex, daemon=True).start()
+
+    signal.signal(signal.SIGHUP, _on_hup)
+    httpd = ThreadingHTTPServer((cfg.host, cfg.port), Handler)
+    sys.stderr.write(f"retronet-search: listening on {cfg.host}:{cfg.port}\n")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        httpd.server_close()
+
+
+def _hup_reindex() -> None:
+    if STATE is not None:
+        n = STATE.reindex()
+        sys.stderr.write(f"retronet-search: reindexed on SIGHUP, {n} document(s)\n")
+
+
+# --- CLI --------------------------------------------------------------------
+
+
+def cmd_index(cfg: Config) -> int:
+    idx = build_index(cfg.corpus)
+    print(f"corpus:  {cfg.corpus}")
+    print(f"docs:    {idx.n_docs}")
+    print(f"tokens:  {len(idx.postings)}")
+    for doc in idx.docs[:20]:
+        print(f"  - {doc.url}  ({doc.title[:60]})")
+    return 0
+
+
+def cmd_selftest() -> int:
+    """Build over the bundled fixture and assert the acceptance invariants."""
+    fixture = os.path.join(HERE, "fixtures", "corpus")
+    idx = build_index(fixture)
+    assert idx.n_docs >= 3, f"fixture should index >=3 docs, got {idx.n_docs}"
+
+    hits = search(idx, "modem", 160)
+    assert hits, "expected hits for 'modem'"
+    assert all(h.doc.url.startswith("http://") for h in hits), "hits must carry corpus URLs"
+
+    body = rn_render.results_page("modem", hits, 1, 10)
+    raw = rn_render.to_bytes(body)
+    assert b"charset=iso-8859-1" in raw, "results must declare Latin-1"
+    assert b"<script" not in raw.lower(), "results must contain no JavaScript"
+    raw.decode("latin-1")  # must be valid Latin-1
+    assert b"http://" in raw, "results must link to corpus pages"
+
+    # +required / -excluded / "phrase"
+    plus = search(idx, "+guestbook", 160)
+    assert plus, "expected a hit for +guestbook"
+    minus_all = {h.doc.url for h in search(idx, "web", 160)}
+    minus_some = {h.doc.url for h in search(idx, "web -guestbook", 160)}
+    assert minus_some <= minus_all and len(minus_some) < len(minus_all), "-term must remove docs"
+    phrase = search(idx, '"under construction"', 160)
+    assert phrase, 'expected a hit for the phrase "under construction"'
+
+    sites = load_sites(os.path.join(fixture, "sites.json"))
+    assert sites, "fixture sites.json should load"
+    dir_raw = rn_render.to_bytes(rn_render.directory_page(sites))
+    assert b"Yahoo" in dir_raw, "directory must be Yahoo-styled"
+    assert b"charset=iso-8859-1" in dir_raw and b"<script" not in dir_raw.lower()
+    dir_raw.decode("latin-1")
+    first_title = str(sites[0].get("title", "")).encode("latin-1", "xmlcharrefreplace")
+    assert first_title in dir_raw, "directory must list a sites.json entry"
+
+    # empty/absent corpus is tolerated
+    empty = build_index(os.path.join(HERE, "fixtures", "does-not-exist"))
+    assert empty.n_docs == 0 and not search(empty, "anything", 160)
+    rn_render.to_bytes(rn_render.directory_page([]))  # empty directory renders
+
+    print("selftest OK: index, ranking, +/-/phrase, Latin-1, directory, empty-corpus")
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    cmd = argv[1] if len(argv) > 1 else "serve"
+    if cmd in ("serve", "run"):
+        serve(Config.from_env())
+        return 0
+    if cmd == "index":
+        return cmd_index(Config.from_env())
+    if cmd in ("selftest", "--selftest", "test"):
+        return cmd_selftest()
+    if cmd in ("-h", "--help", "help"):
+        print(__doc__)
+        return 0
+    sys.stderr.write(f"search.py: unknown command {cmd!r} (serve|index|selftest)\n")
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

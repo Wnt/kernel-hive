@@ -1,0 +1,48 @@
+[Unit]
+# Installed INSIDE the gateway CT (951) by
+# scripts/retronet/web/install-search.sh. The period search engine over the
+# local corpus: AltaVista-style results + a Yahoo-style directory, served on
+# 127.0.0.1:8090 for the corpus-only proxy to route `search.retronet` to.
+# As-built: docs/lab/retronet/WEB-SEARCH.md.
+Description=retronet period search engine (AltaVista/Yahoo over the local corpus)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/WEB-SEARCH.md
+# Loopback-only, so network.target ("lo is up") is all it needs — and there is
+# nothing routable in this CT to wait for anyway.
+After=network.target
+
+[Service]
+Type=exec
+EnvironmentFile=/etc/retronet/search.env
+ExecStart=/usr/bin/python3 /opt/retronet-search/search.py serve
+# `systemctl reload retronet-search` rebuilds the index in place (the reindex
+# timer and a corpus push both do this) without dropping the listener.
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=3s
+
+# --- sandbox: an unprivileged transient user that only READS the corpus -------
+# It binds 127.0.0.1 and its one caller is the co-located proxy, so localhost is
+# the whole of its world; it writes nothing anywhere. The port is above 1024, so
+# no capability is needed.
+DynamicUser=yes
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_INET AF_UNIX
+LockPersonality=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+ReadOnlyPaths=/opt/retronet-search
+IPAddressAllow=localhost
+IPAddressDeny=any
+
+[Install]
+WantedBy=multi-user.target
