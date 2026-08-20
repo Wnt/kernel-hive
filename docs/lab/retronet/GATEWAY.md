@@ -250,6 +250,12 @@ ssh lab 'pct exec 951 -- journalctl -u retronet-oscar -n 50 --no-pager'
 
 # accounts and who is signed in right now
 ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py users'
+
+# ICQ directory nickname (what a client shows a contact — `10000` -> `HiveBot`)
+# and the client-side buddy-list shadow (who an account has already added)
+ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py nick 10000 HiveBot'
+ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py nick-get 10000'
+ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py buddies 98980'
 ssh lab 'pct exec 951 -- python3 -c "import urllib.request;print(urllib.request.urlopen(\"http://127.0.0.1:8080/session\").read().decode())"'
 
 # does a persona actually sign in? (real OSCAR handshake, not a port check)

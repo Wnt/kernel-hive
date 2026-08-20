@@ -1,0 +1,18 @@
+{
+  "note": "ICQ 2000b 'Add Contact by UIN' macro TEMPLATE for the contact seeder. The seeder plays these labctl steps once per missing contact, substituting {uin}/{nick}/{station}. It is KEYBOARD + EXEC + FRAMEBUFFER only: win98se is a warpd_e QEMU tile, so labctl offers type/key/exec/shot/assert (mctl is ctl-tile-only, no scripted pointer). Each 'assert' is a framebuffer checkpoint — the only proof a step landed. calibrated:false means the exact keys below are NOT yet confirmed on the live client; the seeder REFUSES --apply until an operator calibrates them against the real ICQ 2000b UI (see docs/lab/retronet/CONTACT-SEEDER.md §Calibration) and flips this true.",
+  "client": "icq2000b",
+  "calibrated": false,
+  "settle_s": 4,
+  "steps": [
+    { "verb": "assert", "args": ["--settle"], "note": "wait for the desktop to be idle before touching the UI" },
+    { "verb": "key", "args": ["alt-a"], "note": "OPEN the Add/Find Users panel — CALIBRATE: real accelerator for ICQ 2000b 'Add Users'", "calibrate": true },
+    { "verb": "assert", "args": ["--text", "Find/Add"], "note": "the Find/Add Users wizard is up (CALIBRATE the expected text)", "calibrate": true },
+    { "verb": "type", "args": ["{uin}"], "note": "type the contact's UIN into the focused 'ICQ number' field (CALIBRATE focus)", "calibrate": true },
+    { "verb": "key", "args": ["ret"], "note": "run the server search-by-UIN" },
+    { "verb": "assert", "args": ["--settle"], "note": "let the directory search return (settle_s)" },
+    { "verb": "assert", "args": ["--text", "{nick}"], "note": "the found user shows the server nickname {nick}, not a bare number — proves HiveBot-by-name", "calibrate": true },
+    { "verb": "key", "args": ["ret"], "note": "confirm Add of the found user (CALIBRATE: may be a button, not default)", "calibrate": true },
+    { "verb": "key", "args": ["esc"], "note": "close the wizard back to the contact list" },
+    { "verb": "assert", "args": ["--text", "{nick}"], "note": "the contact list now carries {nick} — the seed for this UIN is proven on the framebuffer" }
+  ]
+}
