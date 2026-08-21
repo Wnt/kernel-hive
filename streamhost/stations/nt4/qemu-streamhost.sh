@@ -81,6 +81,18 @@ bash "$D/rn-tapnet.sh" up
 # falls the healer back to RN_ICQ_GOLDEN_PORT (the golden's port). See
 # scripts/retronet/nt4-icq-nudge.py + docs/lab/retronet/ICQ-STATION-NT4.md.
 rm -f /run/nt4-icq-port
+# Guest NIC MAC. Real per-station MACs are NEVER committed (AGENTS.md); the real
+# value lives in gitignored registry/local.env as RN_NT4_MAC (retronet fleet
+# scheme 52:54:00:52:4e:<last-IP-octet>, "52:4e"=RN, .12 -> ...0c) so every
+# bridged guest is L2-distinct. The golden's vmstate carries the MAC, so this
+# only matters on a COLD (re-)bake; loadvm golden uses the baked MAC regardless.
+# Only the one line is read, never the whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_NT4_MAC="02:00:00:00:00:0c" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_NT4_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
+  [ -n "$_m" ] && RN_NT4_MAC="$_m"
+fi
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 nohup /opt/qemu-cirrusfix2/bin/qemu-system-i386 \
@@ -91,7 +103,7 @@ nohup /opt/qemu-cirrusfix2/bin/qemu-system-i386 \
   -rtc base=localtime \
   -device isa-cirrus-vga,global-vmstate=on \
   -drive file=$D/nt4-golden.qcow2,format=qcow2,if=ide \
-  -netdev tap,id=n0,ifname=nt4rn0,script=no,downscript=no -device pcnet,netdev=n0,mac=52:54:00:99:00:12 \
+  -netdev tap,id=n0,ifname=nt4rn0,script=no,downscript=no -device pcnet,netdev=n0,mac="$RN_NT4_MAC" \
   -display dbus,p2p=on \
   "${LOADVM[@]}" \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
