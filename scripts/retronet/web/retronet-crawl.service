@@ -11,7 +11,7 @@
 # Resumable, per-site byte-capped. Runs unattended for days; the corpus grows in the
 # background and CT 951's proxy reads the shared corpus volume
 # (/data/vms/retronet-corpus) live. See docs/lab/retronet/ERA-PRESS.md.
-Description=retronet corpus crawl — era-press breadth-first (browser fetch strategy, no CDX), gentle slow-drip toward the ~25 GB budget, resumable
+Description=retronet corpus crawl — era-press breadth-first (per-host CDX index, raw id_ fetches over HTTP/1.1), self-pacing toward the ~25 GB budget, resumable
 Documentation=file:///data/kernel-hive/docs/lab/retronet/ERA-PRESS.md
 After=network-online.target
 Wants=network-online.target
