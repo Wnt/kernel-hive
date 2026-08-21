@@ -59,15 +59,24 @@ _SMART_PUNCT = str.maketrans(
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
+def sanitize_ascii(text: str) -> str:
+    """Force text to era-renderable ASCII: smart Unicode punctuation -> ASCII, drop
+    control chars, collapse whitespace. A 1999 IM client (ICQ 2000b/2001b, climm)
+    renders only its local codepage, so any stray Unicode (an em-dash, a smart quote)
+    shows as a stray vertical bar. Applied to EVERY outbound bot message — canned
+    greeting, LLM reply, ELIZA fallback — not just LLM output, so no path can leak one."""
+    text = (text or "").translate(_SMART_PUNCT)  # smart quotes/dashes/ellipsis/bullet -> ASCII
+    text = _CONTROL.sub("", text)  # drop stray control chars
+    text = re.sub(r"\s+", " ", text)  # collapse every whitespace kind, incl. line breaks
+    return text.encode("ascii", "ignore").decode("ascii").strip()  # era-renderable only
+
+
 def tidy(text: str, max_chars: int) -> str:
     """Make model output look like something typed into an ICQ box in 1999."""
     text = _THINK.sub("", text or "")
     text = text.strip().strip('"').strip()
     text = _LEADING_LABEL.sub("", text)  # "SmarterChild: hi" -> "hi"
-    text = text.translate(_SMART_PUNCT)  # smart quotes/dashes/ellipsis -> ASCII
-    text = _CONTROL.sub("", text)  # drop stray control chars
-    text = re.sub(r"\s+", " ", text)  # collapse every whitespace kind, incl. line breaks
-    text = text.encode("ascii", "ignore").decode("ascii").strip()  # era-renderable only
+    text = sanitize_ascii(text)  # smart punct/control/whitespace -> era-renderable ASCII
     if len(text) <= max_chars:
         return text
     # Cut at the last sentence end that fits, else the last word.

@@ -34,7 +34,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import eliza  # noqa: E402
 import oscar  # noqa: E402
-from llmclient import LlmClient  # noqa: E402
+from llmclient import LlmClient, sanitize_ascii  # noqa: E402
 
 LOG = logging.getLogger("retronet.bot")
 
@@ -184,10 +184,18 @@ class Bot:
     def _on_buddy_offline(self, uin: str) -> None:
         self._online.discard(uin)
 
+    def _say(self, uin: str, text: str) -> str:
+        """The ONE outbound choke point: sanitize to era-renderable ASCII, then send.
+        So no path — canned greeting, LLM reply, ELIZA fallback — can emit smart
+        punctuation, which a 1999 ICQ client shows as a stray vertical bar."""
+        text = sanitize_ascii(text)
+        self.client.send_im(uin, text)
+        return text
+
     def _greet(self, uin: str, station: str) -> None:
         line = self._rng.choice(GREETINGS.get(station, GREETINGS["_default"]))
         try:
-            self.client.send_im(uin, line)
+            line = self._say(uin, line)
             self.convo(uin).add("assistant", line)
             LOG.info("GREETED %s (%s)", uin, station)
         except Exception:
@@ -249,7 +257,7 @@ class Bot:
                 wait = self._pace(reply, time.monotonic() - t0)
                 LOG.info("reply via %s in %.1fs (+%.1fs pacing): %s", source, time.monotonic() - t0, wait, reply)
                 time.sleep(wait)
-                self.client.send_im(peer, reply)
+                self._say(peer, reply)
             except Exception:
                 LOG.exception("reply to %s failed", peer)
             finally:
