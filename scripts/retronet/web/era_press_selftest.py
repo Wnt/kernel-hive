@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import threading
 import time
 
 # era_press_core.py + era_crawl.py sit next to this file; run as documented
@@ -281,6 +282,26 @@ def main():
     check("seeds: home is a level-0 start", "http://www.t.example/" in level0, True)
     check("seeds: the seed is a level-0 start too", "http://www.t.example/deep/page.html" in level0, True)
     check("seeds: absent `seeds` key is fine", ec._site_state({"host": "x.example"}, 200)["seeds"], [])
+
+    # 12. the SWEEP: _reconstruct must hand the sweep every page it found on disk, because those pages
+    #     are counted done and never enter the frontier -- which is why their missing images were never
+    #     retried. And _sweep_page must fetch a referenced resource that is absent.
+    with tempfile.TemporaryDirectory() as staging:
+        host = "www.t.example"
+        os.makedirs(os.path.join(staging, host))
+        with open(os.path.join(staging, host, "index.html"), "wb") as fh:
+            fh.write(b'<html><body><img src="logo.gif"></body></html>')
+        st = ec._site_state({"host": host, "depth": 1, "max_pages": 4}, 200)
+        ec._reconstruct(st, staging)
+        check("sweep: the on-disk page is handed to the sweep", st["mirrored"], ["http://www.t.example/"])
+        check("sweep: and it is NOT in the frontier", st["frontier"].get("0", []), [])
+        saved = ef.wayback_raw
+        ef.wayback_raw = lambda url, ts: ("19970104102030", "image/gif", b"GIF89a-swept")
+        try:
+            ec._sweep_page(st, st["home"], staging, set(), threading.Lock(), {"written": 0})
+        finally:
+            ef.wayback_raw = saved
+        check("sweep: the missing image lands", os.path.isfile(os.path.join(staging, host, "logo.gif")), True)
 
     print("era-press selftest: all checks OK (raw mirror, host index, ceiling, frontier, seeds, sweep)")
 

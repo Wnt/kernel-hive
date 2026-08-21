@@ -99,6 +99,7 @@ def _site_state(s, default_mb):
         # starts crawls them to the site's full depth like any other entry point.
         "seeds": [u for u in s.get("seeds", []) if u],
         "seen": [],  # every page URL discovered (a set at run time, a sorted list on disk)
+        "mirrored": [],  # pages found ON DISK by _reconstruct -- what the resource sweep revisits
         "frontier": {},  # "level" -> [page URLs discovered but not yet mirrored]
         "pages": 0,
         "bytes": 0,
@@ -120,7 +121,7 @@ def _reconstruct(st, staging):
     era-sites.json -- continues the even widening exactly where it left off and reaches new levels."""
     host, depth, max_pages = st["host"], st["depth"], st["max_pages"]
     starts = [st["home"]] + [u for u in st["seeds"] if u != st["home"]]
-    seen, frontier, done = set(starts), {}, {}
+    seen, frontier, done, mirrored = set(starts), {}, {}, []
     cur, level, planned = list(starts), 0, len(starts)
     while cur and level <= depth:
         nxt = []
@@ -128,6 +129,7 @@ def _reconstruct(st, staging):
             cached = core._have(staging, core.host_of(url), core.store_rel(url, True))
             if cached:
                 done[level] = done.get(level, 0) + 1
+                mirrored.append(url)  # the resource sweep revisits every page already on disk
                 if level < depth and planned < max_pages:
                     try:
                         links = _extract_page_links(Path(cached).read_bytes(), url, host)
@@ -141,6 +143,7 @@ def _reconstruct(st, staging):
             else:
                 frontier.setdefault(level, []).append(url)
         cur, level = nxt, level + 1
+    st["mirrored"] = mirrored  # run-local (never persisted): input to the resource sweep
     st["seen"] = sorted(seen)
     st["frontier"] = {str(k): v for k, v in frontier.items() if v}
     st["done"] = {str(k): v for k, v in done.items()}
@@ -343,6 +346,28 @@ def _run_level(items, concurrency, worker, on_done, should_stop):
     return n
 
 
+def _sweep_page(st, url, staging, res_seen, lock, budget):
+    """Re-scan ONE page already on disk and mirror every resource it references that is missing.
+
+    Pages on disk are NOT in the frontier -- _reconstruct counts them as done -- so the ordinary crawl
+    never revisits them, and any page stored during a spell of failing fetches keeps its missing images
+    forever. www.sun.com had 4 of its 15 images and www.ibm.com 10 of 24 for exactly that reason. The
+    sweep is the pass that repairs them: a body read and a stat per reference, and a request only for a
+    resource genuinely absent."""
+    dest = core._have(staging, core.host_of(url), core.store_rel(url, True))
+    if not dest:
+        return
+    try:
+        body = Path(dest).read_bytes()
+    except OSError:
+        return
+    if not core.is_html("", body):
+        return
+    for kind, res_ts, orig in core.discover(body, url, st["date"]):
+        if kind == "res":
+            _mirror_resource_mt(orig, res_ts, staging, res_seen, st, lock, budget)
+
+
 def cmd_index(a):
     """Build every site's host index up front, SERIALLY and patiently -- the crawl's bootstrap.
 
@@ -442,6 +467,23 @@ def cmd_crawl(a):
             f"    … {budget['fetches']} fetches, corpus {used / 1e9:.2f} GB (est {used_est() / 1e9:.2f}), "
             f"in-flight limit {fetch._GATE.limit()}",  # AIMD: where archive.org's knee is right now
         )
+
+    if a.sweep:
+        items = _interleave([[(st, u) for u in st["mirrored"]] for st in states])
+        _log(a.log, f"--- SWEEP: re-checking resources on {len(items)} page(s) already on disk")
+
+        def sweep_worker(item):
+            st, url = item
+            try:
+                _sweep_page(st, url, a.staging, res_seen, lock, budget)
+            except (OSError, ValueError) as e:
+                _log(a.log, f"ERROR sweep {st['host']} {url}: {e}")
+            with lock:
+                budget["fetches"] += 1
+
+        _run_level(items, concurrency, sweep_worker, on_done, lambda: budget["stop"])
+        used = _corpus_bytes(a.staging)
+        _log(a.log, f"--- SWEEP done: corpus {used / 1e9:.2f} GB")
 
     level = 0
     for level in range(maxdepth + 1):

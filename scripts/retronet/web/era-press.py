@@ -175,6 +175,9 @@ def main():
     cr.add_argument("--concurrency", type=int, default=era_crawl.CONCURRENCY, dest="concurrency")
     # min-interval is an OPTIONAL global floor between requests; 0 = pace by concurrency + backoff only.
     cr.add_argument("--min-interval", type=float, default=0.0, dest="min_interval")
+    # The resource sweep re-checks pages ALREADY on disk for missing images/scripts. On by default:
+    # a page whose resources failed once is never revisited otherwise. --no-sweep skips it.
+    cr.add_argument("--no-sweep", dest="sweep", action="store_false", default=True)
     cr.add_argument("--state", default=os.path.join(era_crawl.CRAWL_ROOT, "state.json"))
     cr.add_argument("--log", default=os.path.join(era_crawl.CRAWL_ROOT, "progress.log"))
     cr.add_argument("--ct", default=core.CT_DEFAULT)

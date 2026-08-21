@@ -354,6 +354,21 @@ writes on CT 950 appears instantly on CT 951's read side — no `pct push`, no p
 restart. (`press`/`seed` still `pct push`; the crawl writes direct because its
 staging *is* the shared volume, so it runs with push disabled.)
 
+### Depth, `max_pages`, and which one actually binds
+
+`depth` counts **link hops from the site's home page**: level 0 is the home page, level 1 the pages it
+links to, level 2 the pages those link to. `seeds` add extra level-0 entry points for the deep paths a
+1990s OS opens directly — a browser default page, a help-viewer target, a desktop shortcut — which
+ordinary link-following may never reach.
+
+But `depth` is rarely the limit. **`max_pages` is**, and it was set far too tight against its own byte
+cap: the corpus held 110 MB against the 16 GB the per-site byte caps allowed (0.7%), and
+`www.sun.com` stopped at 69 pages of 70 having reached only **depth 2 of 4** — so a press release
+linked off the home page was mirrored while the page *it* linked to never was. Pages average 39 KB, so
+a page cap in the tens is a byte cap in the low megabytes whatever `max_mb` says. The caps are now
+900 pages for the sites a station points at and 400 for the rest, which leaves `max_mb` as the real
+guard — which is what it was always meant to be.
+
 ### The site list — `era-sites.json`
 
 A committed array of `{host, date, depth, max_pages, max_mb, title, category,
