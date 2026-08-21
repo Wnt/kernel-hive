@@ -81,9 +81,16 @@ so a corpus push by W2 is picked up without a restart:
 
 | Trigger | Mechanism |
 |---|---|
-| **On a schedule** | `retronet-search-reindex.timer` (every 30 min) → `systemctl try-reload-or-restart` → SIGHUP |
+| **On a schedule (conditional)** | `retronet-search-reindex.timer` (**every 15 min**) → `search.py reindex`: fingerprint the corpus (file count + total bytes + newest mtime, `sites.json` included) and `systemctl try-reload-or-restart` **only if it changed** → SIGHUP; an unchanged corpus is a no-op, so an idle box never churns |
 | **On demand** | `systemctl reload retronet-search` (`ExecReload=/bin/kill -HUP $MAINPID`) |
 | **On demand (HTTP)** | `GET /reindex` on the loopback service |
+
+The SIGHUP rebuilds the in-memory index **and** re-renders the Yahoo directory
+from the current `sites.json`, so a crawl that adds a site (W2 auto-publishes its
+`sites.json` row as its home lands) shows up in both search and the directory
+within one 15-minute cycle. The conditional gate's fingerprint persists in the
+reindex unit's `StateDirectory`, so a change is seen across timer runs and
+re-fires until the reload actually happens.
 
 An absent or empty corpus is tolerated at every layer: the index simply has no
 documents, `/search` returns a period "No documents match" page, and `/dir`
@@ -93,7 +100,7 @@ renders "the directory is empty" when `sites.json` is missing.
 
 | Path in CT 951 | What |
 |---|---|
-| `/opt/retronet-search/search.py` | HTTP service + CLI (`serve` / `index` / `selftest`) |
+| `/opt/retronet-search/search.py` | HTTP service + CLI (`serve` / `index` / `reindex` / `selftest`) |
 | `/opt/retronet-search/rn_index.py` | corpus walk, extraction, inverted index, query + ranking |
 | `/opt/retronet-search/rn_render.py` | period HTML (AltaVista results, Yahoo directory), Latin-1 |
 | `/etc/retronet/search.env` | rendered knobs (host, port, corpus, sites, per-page, snippet) |
@@ -154,8 +161,8 @@ ssh lab 'pct exec 951 -- python3 /opt/retronet-search/search.py index'
 - **W2 (era-press).** Write pages under `/data/retronet/corpus/<host>/…` (a
   directory served by its `index.html`) and list hosts in `sites.json` as
   `{host, title, blurb, added}` (an optional `category` groups them in the
-  directory). A push is picked up by the next reindex (≤30 min) or immediately
-  with `systemctl reload retronet-search`.
+  directory). A push is picked up by the next reindex (≤15 min, and only if the
+  corpus fingerprint moved) or immediately with `systemctl reload retronet-search`.
 
 ## Known limits
 
@@ -165,5 +172,7 @@ ssh lab 'pct exec 951 -- python3 /opt/retronet-search/search.py index'
 - **Snippets are rough.** Tag boundaries insert spaces, so a snippet can show a
   space before punctuation. Period search snippets looked no better; correctness
   (never gluing two words) is worth the cosmetic seam.
-- **The reindex is time-based, not push-triggered.** W2 can force it with
-  `systemctl reload`; otherwise new corpus pages appear within the timer window.
+- **The reindex is time-based (15 min) and conditional, not push-triggered.** It
+  rebuilds only when the corpus fingerprint changed, so an idle box never churns;
+  W2 can still force it immediately with `systemctl reload`, and new corpus pages
+  otherwise appear within the timer window.

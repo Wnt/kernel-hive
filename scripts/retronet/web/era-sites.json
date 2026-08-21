@@ -2,9 +2,9 @@
   {
     "host": "home.microsoft.com",
     "date": "19980127",
-    "depth": 2,
-    "max_pages": 40,
-    "max_mb": 200,
+    "depth": 5,
+    "max_pages": 100,
+    "max_mb": 340,
     "title": "MSN.com / Microsoft Start (IE default)",
     "category": "Search and Portals",
     "blurb": "The Internet Explorer default start page on win98se, win2000 and nt4."
@@ -12,9 +12,9 @@
   {
     "host": "www.msn.com",
     "date": "19981201",
-    "depth": 2,
-    "max_pages": 40,
-    "max_mb": 250,
+    "depth": 5,
+    "max_pages": 100,
+    "max_mb": 420,
     "title": "MSN",
     "category": "Search and Portals",
     "blurb": "Microsoft Network's portal — the other face of the IE home page."
@@ -22,9 +22,9 @@
   {
     "host": "home.netscape.com",
     "date": "19961223",
-    "depth": 2,
-    "max_pages": 30,
-    "max_mb": 200,
+    "depth": 5,
+    "max_pages": 70,
+    "max_mb": 340,
     "title": "Netscape",
     "category": "Search and Portals",
     "blurb": "Home page of the browser that built the web — the tru64 Netscape default."
@@ -32,9 +32,9 @@
   {
     "host": "www.aol.com",
     "date": "19981212",
-    "depth": 2,
-    "max_pages": 45,
-    "max_mb": 250,
+    "depth": 5,
+    "max_pages": 120,
+    "max_mb": 420,
     "title": "America Online",
     "category": "Search and Portals",
     "blurb": "AOL.com — the front door for most of America's first web users."
@@ -42,9 +42,9 @@
   {
     "host": "www.yahoo.com",
     "date": "19961017",
-    "depth": 2,
-    "max_pages": 60,
-    "max_mb": 300,
+    "depth": 5,
+    "max_pages": 140,
+    "max_mb": 500,
     "title": "Yahoo!",
     "category": "Search and Portals",
     "blurb": "The early web's hand-built directory of links."
@@ -52,9 +52,9 @@
   {
     "host": "www.microsoft.com",
     "date": "19980201",
-    "depth": 2,
-    "max_pages": 60,
-    "max_mb": 300,
+    "depth": 5,
+    "max_pages": 140,
+    "max_mb": 500,
     "title": "Microsoft",
     "category": "Computers and Internet",
     "blurb": "The software giant's sprawling late-90s corporate web."
@@ -62,9 +62,9 @@
   {
     "host": "www.geocities.com",
     "date": "19971210",
-    "depth": 2,
-    "max_pages": 80,
-    "max_mb": 400,
+    "depth": 5,
+    "max_pages": 150,
+    "max_mb": 600,
     "title": "GeoCities",
     "category": "Homepages and Community",
     "blurb": "Themed 'neighborhoods' of millions of personal home pages."
@@ -72,9 +72,9 @@
   {
     "host": "www.excite.com",
     "date": "19981205",
-    "depth": 2,
-    "max_pages": 40,
-    "max_mb": 200,
+    "depth": 5,
+    "max_pages": 100,
+    "max_mb": 340,
     "title": "Excite",
     "category": "Search and Portals",
     "blurb": "A leading search portal of the Excite@Home era."
@@ -82,9 +82,9 @@
   {
     "host": "www.lycos.com",
     "date": "19981205",
-    "depth": 2,
-    "max_pages": 40,
-    "max_mb": 200,
+    "depth": 5,
+    "max_pages": 100,
+    "max_mb": 340,
     "title": "Lycos",
     "category": "Search and Portals",
     "blurb": "Search engine and portal — 'Go Get It'."
@@ -92,9 +92,9 @@
   {
     "host": "www.amazon.com",
     "date": "19991127",
-    "depth": 2,
-    "max_pages": 55,
-    "max_mb": 300,
+    "depth": 5,
+    "max_pages": 140,
+    "max_mb": 500,
     "title": "Amazon.com",
     "category": "Shopping",
     "blurb": "Earth's Biggest Bookstore, mid holiday-1999."
@@ -102,9 +102,9 @@
   {
     "host": "www.ebay.com",
     "date": "19990427",
-    "depth": 2,
-    "max_pages": 45,
-    "max_mb": 220,
+    "depth": 5,
+    "max_pages": 120,
+    "max_mb": 420,
     "title": "eBay",
     "category": "Shopping",
     "blurb": "The person-to-person auction site of the dot-com boom."
@@ -112,9 +112,9 @@
   {
     "host": "www.altavista.com",
     "date": "19981202",
-    "depth": 2,
-    "max_pages": 40,
-    "max_mb": 200,
+    "depth": 5,
+    "max_pages": 100,
+    "max_mb": 340,
     "title": "AltaVista",
     "category": "Search and Portals",
     "blurb": "The fast, comprehensive search engine of the mid-late 90s."
@@ -122,9 +122,9 @@
   {
     "host": "www.infoseek.com",
     "date": "19971210",
-    "depth": 1,
-    "max_pages": 30,
-    "max_mb": 150,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 260,
     "title": "Infoseek",
     "category": "Search and Portals",
     "blurb": "Search engine that became the Go Network."
@@ -132,9 +132,9 @@
   {
     "host": "www.cnn.com",
     "date": "19980610",
-    "depth": 2,
-    "max_pages": 60,
-    "max_mb": 320,
+    "depth": 5,
+    "max_pages": 140,
+    "max_mb": 520,
     "title": "CNN",
     "category": "News and Media",
     "blurb": "Cable News Network online — breaking news, 1998."
@@ -142,9 +142,9 @@
   {
     "host": "www.netscape.com",
     "date": "19981202",
-    "depth": 1,
-    "max_pages": 35,
-    "max_mb": 180,
+    "depth": 4,
+    "max_pages": 100,
+    "max_mb": 300,
     "title": "Netcenter",
     "category": "Computers and Internet",
     "blurb": "Netscape's Netcenter portal."
@@ -152,9 +152,9 @@
   {
     "host": "www.disney.com",
     "date": "19980512",
-    "depth": 1,
-    "max_pages": 30,
-    "max_mb": 160,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 300,
     "title": "Disney.com",
     "category": "Entertainment",
     "blurb": "The Walt Disney Company's family portal."
@@ -162,9 +162,9 @@
   {
     "host": "www.angelfire.com",
     "date": "19990125",
-    "depth": 2,
-    "max_pages": 40,
-    "max_mb": 200,
+    "depth": 5,
+    "max_pages": 100,
+    "max_mb": 340,
     "title": "Angelfire",
     "category": "Homepages and Community",
     "blurb": "Free personal home-page hosting."
@@ -172,9 +172,9 @@
   {
     "host": "www.tripod.com",
     "date": "19990125",
-    "depth": 2,
-    "max_pages": 40,
-    "max_mb": 200,
+    "depth": 5,
+    "max_pages": 100,
+    "max_mb": 340,
     "title": "Tripod",
     "category": "Homepages and Community",
     "blurb": "Free home pages and 'pods' for a young web."
@@ -182,9 +182,9 @@
   {
     "host": "www.hotmail.com",
     "date": "19980701",
-    "depth": 1,
-    "max_pages": 15,
-    "max_mb": 80,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 150,
     "title": "Hotmail",
     "category": "Computers and Internet",
     "blurb": "Free web-based email, before and after the Microsoft buy."
@@ -192,9 +192,9 @@
   {
     "host": "www.askjeeves.com",
     "date": "19990220",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "Ask Jeeves",
     "category": "Search and Portals",
     "blurb": "Ask a question in plain English; a butler answers."
@@ -202,9 +202,9 @@
   {
     "host": "www.goto.com",
     "date": "19990401",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "GoTo.com",
     "category": "Search and Portals",
     "blurb": "Pay-for-placement search, the seed of paid search."
@@ -212,9 +212,9 @@
   {
     "host": "www.looksmart.com",
     "date": "19981205",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "LookSmart",
     "category": "Web Directories",
     "blurb": "A human-edited web directory."
@@ -222,9 +222,9 @@
   {
     "host": "www.bluemountain.com",
     "date": "19990215",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "Blue Mountain Arts",
     "category": "Entertainment",
     "blurb": "Free e-greeting cards — one of the most-visited sites of 1999."
@@ -232,9 +232,9 @@
   {
     "host": "www.mp3.com",
     "date": "19990501",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "MP3.com",
     "category": "Entertainment",
     "blurb": "Downloadable music at the dawn of the MP3."
@@ -242,9 +242,9 @@
   {
     "host": "www.imdb.com",
     "date": "19990428",
-    "depth": 2,
-    "max_pages": 50,
-    "max_mb": 250,
+    "depth": 5,
+    "max_pages": 120,
+    "max_mb": 420,
     "title": "The Internet Movie Database",
     "category": "Entertainment",
     "blurb": "The definitive movie and TV reference."
@@ -252,9 +252,9 @@
   {
     "host": "www.real.com",
     "date": "19990420",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "RealNetworks",
     "category": "Computers and Internet",
     "blurb": "RealPlayer and RealAudio streaming."
@@ -262,9 +262,9 @@
   {
     "host": "www.zdnet.com",
     "date": "19990101",
-    "depth": 1,
-    "max_pages": 30,
-    "max_mb": 150,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 260,
     "title": "ZDNet",
     "category": "Computers and Internet",
     "blurb": "Ziff-Davis tech news, reviews and downloads."
@@ -272,9 +272,9 @@
   {
     "host": "www.cnet.com",
     "date": "19990101",
-    "depth": 1,
-    "max_pages": 30,
-    "max_mb": 150,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 260,
     "title": "CNET",
     "category": "Computers and Internet",
     "blurb": "Technology news and Download.com."
@@ -282,9 +282,9 @@
   {
     "host": "www.mapquest.com",
     "date": "19990125",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "MapQuest",
     "category": "Reference",
     "blurb": "Driving directions and maps for the web."
@@ -292,9 +292,9 @@
   {
     "host": "www.bbc.co.uk",
     "date": "19990220",
-    "depth": 2,
-    "max_pages": 50,
-    "max_mb": 250,
+    "depth": 5,
+    "max_pages": 120,
+    "max_mb": 420,
     "title": "BBC Online",
     "category": "News and Media",
     "blurb": "The British Broadcasting Corporation online."
@@ -302,9 +302,9 @@
   {
     "host": "www.msnbc.com",
     "date": "19990110",
-    "depth": 1,
-    "max_pages": 30,
-    "max_mb": 150,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 260,
     "title": "MSNBC",
     "category": "News and Media",
     "blurb": "The Microsoft-NBC news joint venture."
@@ -312,9 +312,9 @@
   {
     "host": "www.usatoday.com",
     "date": "19990110",
-    "depth": 1,
-    "max_pages": 30,
-    "max_mb": 150,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 260,
     "title": "USA Today",
     "category": "News and Media",
     "blurb": "The colorful national newspaper online."
@@ -322,9 +322,9 @@
   {
     "host": "www.nytimes.com",
     "date": "19990110",
-    "depth": 1,
-    "max_pages": 30,
-    "max_mb": 150,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 260,
     "title": "The New York Times",
     "category": "News and Media",
     "blurb": "The paper of record on the early web."
@@ -332,9 +332,9 @@
   {
     "host": "www.time.com",
     "date": "19980601",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "Time",
     "category": "News and Media",
     "blurb": "Time magazine and the Pathfinder legacy."
@@ -342,9 +342,9 @@
   {
     "host": "www.wired.com",
     "date": "19980101",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "Wired News",
     "category": "News and Media",
     "blurb": "Dispatches from the digital revolution."
@@ -352,9 +352,9 @@
   {
     "host": "slashdot.org",
     "date": "19990301",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "Slashdot",
     "category": "Computers and Internet",
     "blurb": "News for nerds, stuff that matters."
@@ -362,9 +362,9 @@
   {
     "host": "www.apple.com",
     "date": "19980501",
-    "depth": 2,
-    "max_pages": 40,
-    "max_mb": 200,
+    "depth": 5,
+    "max_pages": 100,
+    "max_mb": 340,
     "title": "Apple",
     "category": "Computers and Internet",
     "blurb": "Apple Computer during the iMac renaissance."
@@ -372,9 +372,9 @@
   {
     "host": "www.ibm.com",
     "date": "19980201",
-    "depth": 1,
-    "max_pages": 30,
-    "max_mb": 150,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 260,
     "title": "IBM",
     "category": "Computers and Internet",
     "blurb": "Big Blue's corporate web."
@@ -382,9 +382,9 @@
   {
     "host": "www.sun.com",
     "date": "19980201",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "Sun Microsystems",
     "category": "Computers and Internet",
     "blurb": "The dot in dot-com — Java and Solaris."
@@ -392,9 +392,9 @@
   {
     "host": "www.adobe.com",
     "date": "19980201",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "Adobe",
     "category": "Computers and Internet",
     "blurb": "Photoshop, Acrobat and the PDF."
@@ -402,9 +402,9 @@
   {
     "host": "www.webcrawler.com",
     "date": "19970601",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "WebCrawler",
     "category": "Search and Portals",
     "blurb": "One of the first full-text web search engines."
@@ -412,9 +412,9 @@
   {
     "host": "www.hotbot.com",
     "date": "19980601",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "HotBot",
     "category": "Search and Portals",
     "blurb": "Wired's fast, colorful search engine."
@@ -422,9 +422,9 @@
   {
     "host": "www.dogpile.com",
     "date": "19981201",
-    "depth": 1,
-    "max_pages": 15,
-    "max_mb": 80,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 150,
     "title": "Dogpile",
     "category": "Search and Portals",
     "blurb": "A metasearch engine fetching from all the others."
@@ -432,9 +432,9 @@
   {
     "host": "www.metacrawler.com",
     "date": "19981201",
-    "depth": 1,
-    "max_pages": 15,
-    "max_mb": 80,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 150,
     "title": "MetaCrawler",
     "category": "Search and Portals",
     "blurb": "The original metasearch engine."
@@ -442,9 +442,9 @@
   {
     "host": "www.barnesandnoble.com",
     "date": "19991127",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "Barnes & Noble",
     "category": "Shopping",
     "blurb": "The bookstore chain's answer to Amazon."
@@ -452,9 +452,9 @@
   {
     "host": "www.priceline.com",
     "date": "19990401",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "priceline.com",
     "category": "Shopping",
     "blurb": "Name Your Own Price for airfares and hotels."
@@ -462,9 +462,9 @@
   {
     "host": "www.etrade.com",
     "date": "19990401",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "E*TRADE",
     "category": "Shopping",
     "blurb": "Online stock trading for the day-trader boom."
@@ -472,9 +472,9 @@
   {
     "host": "www.cdnow.com",
     "date": "19980601",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "CDNOW",
     "category": "Shopping",
     "blurb": "Buy music CDs online."
@@ -482,9 +482,9 @@
   {
     "host": "www.theglobe.com",
     "date": "19990110",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "theglobe.com",
     "category": "Homepages and Community",
     "blurb": "The community site behind the biggest IPO pop of 1998."
@@ -492,9 +492,9 @@
   {
     "host": "www.xoom.com",
     "date": "19990201",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "Xoom.com",
     "category": "Homepages and Community",
     "blurb": "Free home pages and community, later NBCi."
@@ -502,9 +502,9 @@
   {
     "host": "www.fortunecity.com",
     "date": "19990201",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "FortuneCity",
     "category": "Homepages and Community",
     "blurb": "Free themed-city home-page hosting."
@@ -512,9 +512,9 @@
   {
     "host": "www.weather.com",
     "date": "19990110",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "The Weather Channel",
     "category": "News and Media",
     "blurb": "Local forecasts on the web."
@@ -522,9 +522,9 @@
   {
     "host": "espn.go.com",
     "date": "19990201",
-    "depth": 1,
-    "max_pages": 30,
-    "max_mb": 150,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 260,
     "title": "ESPN.com",
     "category": "Entertainment",
     "blurb": "The worldwide leader in sports, online."
@@ -532,9 +532,9 @@
   {
     "host": "www.mtv.com",
     "date": "19990201",
-    "depth": 1,
-    "max_pages": 25,
-    "max_mb": 120,
+    "depth": 4,
+    "max_pages": 70,
+    "max_mb": 220,
     "title": "MTV Online",
     "category": "Entertainment",
     "blurb": "Music television on the web."
@@ -542,9 +542,9 @@
   {
     "host": "www.mirabilis.com",
     "date": "19980101",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "Mirabilis ICQ",
     "category": "Computers and Internet",
     "blurb": "The makers of ICQ — the retronet's own instant messenger."
@@ -552,9 +552,9 @@
   {
     "host": "www.icq.com",
     "date": "19990201",
-    "depth": 1,
-    "max_pages": 20,
-    "max_mb": 100,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 180,
     "title": "ICQ",
     "category": "Computers and Internet",
     "blurb": "Uh-oh! The pager-style instant messenger."
@@ -562,9 +562,9 @@
   {
     "host": "www.napster.com",
     "date": "20000401",
-    "depth": 1,
-    "max_pages": 15,
-    "max_mb": 80,
+    "depth": 4,
+    "max_pages": 50,
+    "max_mb": 150,
     "title": "Napster",
     "category": "Entertainment",
     "blurb": "Peer-to-peer music sharing at its 2000 peak."
@@ -572,9 +572,9 @@
   {
     "host": "www.drudgereport.com",
     "date": "19990301",
-    "depth": 1,
-    "max_pages": 10,
-    "max_mb": 50,
+    "depth": 4,
+    "max_pages": 30,
+    "max_mb": 120,
     "title": "Drudge Report",
     "category": "News and Media",
     "blurb": "The one-page news-link site that broke the era's stories."
@@ -582,9 +582,9 @@
   {
     "host": "spacejam.com",
     "date": "19961227",
-    "depth": 2,
-    "max_pages": 16,
-    "max_mb": 60,
+    "depth": 5,
+    "max_pages": 50,
+    "max_mb": 150,
     "title": "Space Jam (1996)",
     "category": "Entertainment",
     "blurb": "The web's most famous untouched 1996 home page."
@@ -592,9 +592,9 @@
   {
     "host": "www.hamsterdance.com",
     "date": "19990420",
-    "depth": 1,
-    "max_pages": 6,
-    "max_mb": 30,
+    "depth": 4,
+    "max_pages": 30,
+    "max_mb": 120,
     "title": "The Hampster Dance (1999)",
     "category": "Entertainment",
     "blurb": "Rows of dancing hamster GIFs."

@@ -139,12 +139,14 @@ in `era-press.py` and re-run `seed`. Handy flags: `--no-push` stages locally
 without touching the CT (inspect the tree first); `--only <host>` restricts
 `seed` to one site; `--staging DIR` relocates the local tree.
 
-## The big corpus — the resumable ~10 GB crawl
+## The big corpus — the resumable, breadth-first ~25 GB crawl
 
-The starter set is four sites; the production corpus is **~10 GB**, built by
-`era-press crawl` over a committed, most-visited-first site list. Because 10 GB
-cannot live on CT 951's 8 GB rootfs, the corpus lives in a **dedicated ZFS
-volume** that is bind-mounted into the CT.
+The starter set is four sites; the production corpus is **~25 GB**, built by
+`era-press crawl` **breadth-first** over a committed 60-site list — widening
+every site together, one depth level at a time (all homes first, then all
+depth-1 links, then all depth-2, …). Because that cannot live on CT 951's 8 GB
+rootfs, the corpus lives in a **dedicated ZFS volume** that is bind-mounted into
+the CT.
 
 ### Storage — one volume, both containers see it
 
@@ -153,7 +155,7 @@ creates it:
 
 | Thing | Value |
 |---|---|
-| ZFS dataset | `data/vms/retronet-corpus` — **20 GB quota** (headroom over the 10 GB budget), on the `data` pool |
+| ZFS dataset | `data/vms/retronet-corpus` — **50 GB quota**, zstd-compressed (headroom over the 25 GB budget), on the `data` pool |
 | labhost / CT 950 path | `/data/vms/retronet-corpus` — CT 950 already bind-mounts `/data/vms` *recursively*, so the crawl writes here **directly, with no CT 950 restart** |
 | CT 951 path | `/data/retronet/corpus` — a `pct set 951 -mp0` bind-mount of the same volume; the proxy reads it **live** |
 
@@ -173,43 +175,58 @@ staging *is* the shared volume, so it runs with push disabled.)
 ### The site list — `era-sites.json`
 
 A committed array of `{host, date, depth, max_pages, max_mb, title, category,
-blurb}`, **ordered most-visited-first** so an early stop still captures the best
-content. The **station browser default home pages come first and are guaranteed
-in**: `home.microsoft.com` (the IE default on win98se/win2000/nt4),
-`www.msn.com`, and `home.netscape.com` (the tru64 Netscape default). Then the top
-web properties of 1996–2000 — AOL, Yahoo, Microsoft, GeoCities, Excite, Lycos,
-Amazon, eBay, AltaVista, CNN, the community hosts (Angelfire, Tripod), search
-engines, news, tech vendors, and era-defining novelty (Space Jam, the Hampster
-Dance). 60 sites at the time of writing.
+blurb}`. Because the crawl is **breadth-first across all sites**, every site's
+home is mirrored in the first pass regardless of list order — a budget stop
+leaves all 60 sites present and evenly deep, not the first few complete and the
+rest missing. The **station browser default home pages** lead the list —
+`home.microsoft.com` (the IE default on win98se/win2000/nt4), `www.msn.com`, and
+`home.netscape.com` (the tru64 Netscape default) — then the top web properties of
+1996–2000: AOL, Yahoo, Microsoft, GeoCities, Excite, Lycos, Amazon, eBay,
+AltaVista, CNN, the community hosts (Angelfire, Tripod), search engines, news,
+tech vendors, and era-defining novelty (Space Jam, the Hampster Dance). 60 sites
+at the time of writing, each crawled to `depth` 4–5.
 
 ### The crawl — `era-press crawl`
 
 Built to be a **polite archive.org citizen** and to run for hours, unattended:
 
-- **Rate-limited.** A single throttle keeps a global minimum gap between requests
-  (`--min-interval`, default 1 s), plus **exponential backoff that honours HTTP
-  429/503** (`Retry-After` when present). One request at a time — no concurrency.
-- **Resumable.** The on-disk corpus **is** the checkpoint: a page or asset
-  already mirrored (non-empty on disk) is never re-fetched, and cached pages are
-  re-read so traversal continues. A `state.json` records completed hosts, so a
-  re-run — after a stop, a crash, or a reboot — **continues, never restarts**.
-- **Budgeted.** A global `--budget-gb` ceiling (default 10), `du`-checked before
-  each site; the crawl stops cleanly when the corpus reaches it.
-- **Per-site capped.** Each site has a `max_mb` byte cap (default 200 MB), and no
-  site may exceed the *remaining* global budget — so one huge site (GeoCities)
-  cannot swallow the whole corpus.
-- **Logged.** Timestamped `START` / `DONE` / `SKIP` / `BUDGET` lines to
-  `progress.log` (and stdout). A `DONE` line reads `Nf Na Nc Nmiss NMB` =
-  pages fetched, assets, cached (skipped), misses, megabytes.
+- **Breadth-first, even widening.** It widens **every site together, one depth
+  level at a time**: pass 0 mirrors every site's home, pass 1 every site's
+  depth-1 links, pass 2 every site's depth-2 links, … round-robining across all
+  sites at each level. So an interrupted or budget-stopped crawl covers **every**
+  site to the same depth — never a few deep and the rest empty.
+- **Parallel, politely throttled.** Each pass fetches `--concurrency` (default
+  **10**) pages at once with a stdlib thread pool (urllib is blocking, so threads
+  are the right primitive; a browser on the Wayback Machine fetches ~10 at once).
+  All workers share **one** pacing gate: an HTTP **429/503** seen by any worker
+  opens a **global** backoff every worker waits out (`Retry-After` when present,
+  else exponential — the whole pool slows/pauses together), plus a little
+  per-request jitter. `--min-interval` (default 0) is an optional global floor.
+- **Resumable from the corpus.** The on-disk corpus **is** the checkpoint: on
+  (re)start each site's per-level frontier is **reconstructed by re-walking its
+  on-disk link graph**, so a stop, a crash, a reboot — or a **deepened
+  `era-sites.json`** — continues the even widening exactly where it left off and
+  reaches new levels. A page/asset already on disk is never re-fetched.
+  `state.json` is an observability snapshot only.
+- **Budgeted.** A global `--budget-gb` ceiling (default **25**), `du`-reconciled
+  as it runs; the crawl stops cleanly when the corpus reaches it.
+- **Per-site capped.** Each site has a `max_mb` byte cap (default 200 MB) and a
+  `max_pages` cap, so one huge site (GeoCities) cannot swallow the corpus.
+- **Directory kept fresh.** As each site's home lands, its `sites.json` row is
+  auto-published, so a newly-crawled site appears in the search directory within
+  one reindex cycle.
+- **Logged.** Timestamped `PASS` / `BUDGET` lines to `progress.log` (and stdout):
+  each pass logs how many sites and pages it queued at that depth and the running
+  corpus size.
 
 ### Running it as a service
 
 `scripts/retronet/web/install-crawl.sh` (run on **CT 950**) deploys a copy of
-`era-press.py` + `era-sites.json` into `/data/vms/retronet-crawl/` — so a worktree
-GC never pulls the code out from under a multi-hour run — and installs
-`retronet-crawl.service`, enabled and started. The unit runs one long resumable
-process that stops itself at the budget; `Restart=on-failure` plus resume covers
-a crash.
+`era-press.py` **+ its modules (`era_press_core.py`, `era_crawl.py`)** +
+`era-sites.json` into `/data/vms/retronet-crawl/` — so a worktree GC never pulls
+the code out from under a multi-hour run — and installs `retronet-crawl.service`,
+enabled and started. The unit runs one long resumable process that stops itself
+at the budget; `Restart=on-failure` plus resume covers a crash.
 
 ```bash
 ssh lab 'pct exec 950 -- systemctl status retronet-crawl'   # is it running
@@ -227,12 +244,11 @@ du -sh /data/vms/retronet-corpus                            # bytes so far
   the proxy's content-type map (map the era's server-script extensions —
   `.cgi .shtml .asp .phtml .pl .cfm` — to `text/html`), not in a rewrite here.
   Flagged to W1.
-- **Corpus size.** The production corpus lives in a dedicated 20 GB ZFS volume
-  (see [The big corpus](#the-big-corpus--the-resumable-10-gb-crawl)), **not** on
-  CT 951's 8 GB rootfs. Fetches are still bounded by `--depth` / `--max-pages`, a
-  per-site `max_mb` cap and the global `--budget-gb`, plus a per-resource 8 MB
-  skip guardrail (oversize resources are skipped whole, never truncated —
-  truncation would corrupt).
+- **Corpus size.** The production corpus lives in a dedicated **50 GB** ZFS
+  volume (zstd-compressed), **not** on CT 951's 8 GB rootfs. Fetches are bounded
+  by per-site `depth` / `max_pages` / `max_mb` and the global **25 GB**
+  `--budget-gb`, plus a per-resource 8 MB skip guardrail (oversize resources are
+  skipped whole, never truncated — truncation would corrupt).
 - **Never committed.** Mirrored bytes are copyright and are a box-only bit, the
   same stance as the [private gallery](../PUBLIC-GALLERY.md). Only this tool and
   the wave's tiny **synthetic** fixtures (`scripts/retronet/web/fixtures/`,
