@@ -82,12 +82,12 @@ absolute/relative URLs are already what we want.
 Every archive.org request — the CDX enumerate and the `id_` pull — goes through
 `era_press_core.http_get`, over a **single process-wide `httpx.Client`** built
 lazily on first use: `http2=True`, `follow_redirects=True` (the `id_` 302 →
-nearest-snapshot redirect is still followed), a real-Chrome User-Agent, a 60 s
-read timeout, and a deliberately **small** pool — `max_connections=4`. It is
-shared by every one of the crawl's ~10 worker threads; HTTP/2 stream-multiplexing
-carries the whole concurrency over that handful of reused connections (measured:
-6 concurrent `id_` fetches complete **4.7× faster** than serial, over ~1
-established connection).
+nearest-snapshot redirect is still followed), the **full browser header set +
+cookie jar** (below), a 60 s read timeout, and a deliberately **small** pool —
+`max_connections=4`. It is shared by every one of the crawl's ~10 worker threads;
+HTTP/2 stream-multiplexing carries the whole concurrency over that handful of
+reused connections (measured: 6 concurrent `id_` fetches complete **4.7× faster**
+than serial, over ~1 established connection).
 
 **Why it is built this way.** The first cut opened a brand-new TCP+TLS connection
 per request (stdlib `urlopen`), ~10 workers wide, plus a CDX query before every
@@ -101,10 +101,30 @@ established-connection count now tracks the pool cap (~1–4), **not** the reque
 count, so the NAT table never fills. `http2=True` matches what Chrome negotiates
 to `web.archive.org`. The pool cap is intentionally small — **do not raise it.**
 
+**Looking like a browser.** archive.org **soft-throttles** requests that don't
+look like a browser (a separate, per-IP signal from the NAT problem — browsing it
+in a real Chrome stays fast). So the client sends **byte-for-byte the box's
+Chrome headers** — `User-Agent`, the full `Accept`, `Accept-Language`,
+`Accept-Encoding`, the `sec-ch-ua*` client hints, the `sec-fetch-*` set,
+`Upgrade-Insecure-Requests`, `Referer`, `Priority` — captured from that Chrome
+over **CDP** (`Network.requestWillBeSentExtraInfo`) and pinned in
+`BROWSER_HEADERS`. It also keeps a **cookie jar**: on first use it primes cookies
+with a GET to `web.archive.org`'s homepage (the server-affinity + donation
+cookies), and httpx resends them on every request — so even the first CDX/`id_`
+fetch carries cookies, exactly like a returning browser. To **refresh** the
+header set after a Chrome upgrade: launch Chrome with `--remote-debugging-port`,
+open a `web.archive.org` tab, attach over CDP and re-read
+`Network.requestWillBeSentExtraInfo` (drop the `cache-control`/`pragma` a reload
+adds), then update `BROWSER_HEADERS`.
+
 `httpx` is a real dependency (not stdlib), so on the PEP-668 box it lives in a
-**venv** beside the deployed code (`install-crawl.sh` builds it; the unit runs
-`venv/bin/python`). The import is **lazy** — `era_press_core` imports with no
-socket and with no `httpx` installed, so `era_press_selftest.py` still runs
+**venv** beside the deployed code (`install-crawl.sh` builds it, pinned:
+`httpx[http2]`, plus `brotli`+`zstandard` so httpx can decode the `br`/`zstd`
+encodings the browser `Accept-Encoding` advertises — whatever archive.org sends
+is stored as the raw decoded original; the `id_` endpoint returns identity
+anyway; the unit runs `venv/bin/python`). The import is **lazy** —
+`era_press_core` imports with no socket and with no `httpx` installed, so
+`era_press_selftest.py` still runs
 offline under the system python. The pacing gate is unchanged: a `429`/`503` from
 any worker opens a **global** backoff every worker waits out (archive.org's own
 soft per-IP rate-limit is handled here, separately from the connection pool);
