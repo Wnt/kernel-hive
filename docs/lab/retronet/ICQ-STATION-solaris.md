@@ -14,6 +14,7 @@ tap/containment wiring is shared), [`GATEWAY.md`](GATEWAY.md), [`BOT.md`](BOT.md
 | | |
 |---|---|
 | NIC | `-device e1000,netdev=net0` (**unchanged** — what `savevm`/`loadvm` bind to), backend went `user`(slirp)→`tap`: `-netdev tap,id=net0,ifname=solrn0,script=no,downscript=no` |
+| MAC | **unique** per-station MAC (the fleet otherwise shares QEMU's default `52:54:00:12:34:56` → one FDB entry, unicast flaps between taps, DHCP-reservation collisions). Real value box-local in `registry/local.env` `RETRONET_ICQ_SOLARIS_MAC` (launcher reads it, scrubbed-placeholder fallback committed). It lives in the golden's device vmstate, so it needed a **cold re-bake** — `loadvm` restores the saved MAC regardless of the launcher `mac=`; verified after `loadvm`, and the bridge FDB maps it to `solrn0`. See `WEB-PROXY.md`. |
 | Tap | `solrn0`, persistent, enslaved to `vmbr-rn`, created + guarded by `streamhost/stations/solaris/rn-tapnet.sh up` from the launcher on every start |
 | Guest IP | **static `10.99.0.14/24`, NO default route, DNS none** — the Solaris way: `/etc/hostname.e1000g1` = `10.99.0.14 netmask 255.255.255.0 up`, no `/etc/defaultrouter` |
 | OSCAR server | gateway CT `10.99.0.2:5190` (the labhost door; advertises BOS `10.99.0.2:5190`, routable from the guest over the bridge) |
