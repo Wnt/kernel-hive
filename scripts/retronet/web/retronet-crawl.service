@@ -1,0 +1,35 @@
+[Unit]
+# Installed INSIDE the dev container CT 950 (which has internet — labhost and the
+# gateway CT 951 do not) by scripts/retronet/web/install-crawl.sh. Drives era-press
+# over era-sites.json toward the ~10 GB corpus budget: rate-limited, resumable,
+# per-site byte-capped. Writes straight into the shared corpus volume
+# (/data/vms/retronet-corpus) that CT 951's proxy reads live. See
+# docs/lab/retronet/ERA-PRESS.md.
+Description=retronet corpus crawl — era-press toward the ~10 GB budget (polite, resumable)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/ERA-PRESS.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wnt
+Group=wnt
+# One long resumable process: it stops ITSELF at the budget or when the site list
+# is exhausted (clean exit 0 -> stays stopped). Restart=on-failure only covers a
+# crash, and resume picks up from the on-disk corpus + state.json. It runs from a
+# DEPLOYED copy under the volume, so a worktree GC never pulls the code out from
+# under a multi-hour run.
+ExecStart=/usr/bin/python3 /data/vms/retronet-crawl/era-press.py crawl \
+    --sites /data/vms/retronet-crawl/era-sites.json \
+    --staging /data/vms/retronet-corpus \
+    --budget-gb 10 --min-interval 1.0 \
+    --state /data/vms/retronet-crawl/state.json \
+    --log /data/vms/retronet-crawl/progress.log
+Restart=on-failure
+RestartSec=30s
+# Be a polite background citizen on the shared box.
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target
