@@ -27,7 +27,7 @@ Group=wnt
 ExecStart=/data/vms/retronet-crawl/venv/bin/python /data/vms/retronet-crawl/era-press.py crawl \
     --sites /data/vms/retronet-crawl/era-sites.json \
     --staging /data/vms/retronet-corpus \
-    --budget-gb 25 --concurrency 3 --min-interval 1.5 \
+    --budget-gb 25 --concurrency 4 --min-interval 0.5 \
     --state /data/vms/retronet-crawl/state.json \
     --log /data/vms/retronet-crawl/progress.log
 Restart=on-failure
