@@ -43,6 +43,7 @@ from collections import namedtuple
 from datetime import date
 
 import era_crawl
+import era_fetch as fetch
 import era_press_core as core
 
 Site = namedtuple("Site", "host date depth max_pages title category blurb")
@@ -98,7 +99,7 @@ def _do(host, target, depth, max_pages, title, category, blurb, a):
     ttl, stats, hosts = core.mirror_site(host, target, depth, max_pages, a.staging)
     print(
         f"  {stats['pages']} pages, {stats['assets']} assets, {stats['misses']} misses, "
-        f"{len(hosts)} host(s), {stats['bytes']} bytes  <= {core.CEILING}"
+        f"{len(hosts)} host(s), {stats['bytes']} bytes  <= {fetch.CEILING}"
     )
     entry = dict(host=core.norm_host(host), title=title or ttl, blurb=blurb, added=date.today().isoformat())
     if category:
@@ -113,7 +114,9 @@ def _do(host, target, depth, max_pages, title, category, blurb, a):
 
 
 def cmd_press(a):
-    print(f"era-press: mirroring {a.host} @ {a.date} (depth {a.depth}, <= {a.max_pages} pages, ceiling {core.CEILING})")
+    print(
+        f"era-press: mirroring {a.host} @ {a.date} (depth {a.depth}, <= {a.max_pages} pages, ceiling {fetch.CEILING})"
+    )
     _do(a.host, a.date, a.depth, a.max_pages, a.title, a.category, a.blurb, a)
 
 

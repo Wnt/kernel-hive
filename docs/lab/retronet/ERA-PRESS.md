@@ -52,148 +52,147 @@ exact noise an earlier downgrade-everything approach was flailing against. With
 links. So there is nothing to undo, and no reason to rewrite: the original
 absolute/relative URLs are already what we want.
 
-era-press uses **both** representations of a page, for two different jobs: the
-`id_` bytes are what it **stores** (the raw original), and that same rewritten page
-it never stores is read **once** to harvest the **exact capture timestamp of every
-resource** — which is what makes the fetch fast. The rewriting is the noise for the
-bytes but the signal for the timestamps.
+## The pipeline
 
-## The pipeline — the browser fetch strategy
-
-era-press fetches a page **the way a browser loads it from the Wayback Machine**,
-which is the whole reason it is fast (see *Why one nearest-search per page* below).
-
-1. **Fetch the page raw.** For each page URL, pull its raw bytes with `id_` at the
-   target era-date. The `id_` redirect resolves the nearest capture cheaply — a
-   single-URL lookup, ~1 s — and its **final URL gives the exact 14-digit capture
-   timestamp**. Bytes and Content-Type are kept as-is. A resolved capture past the
-   2000-12-31 ceiling, or an uncaptured URL, is skipped (an authentic miss).
-2. **Discover exact timestamps.** If the page is HTML, load its **rewritten**
-   Wayback page once (`/web/<page-ts>/http://<url>`, *not* `id_`). Wayback rewrites
-   every same-page resource URL to carry that resource's **exact** capture
-   timestamp — `/web/<ts>im_/…gif`, `/web/<ts>cs_/…css`, `/web/<ts>js_/…js` — and
-   leaves links to resolve (relative, or `/web/<ts>/…`) to the page's own ts. So
-   **one page fetch yields the exact timestamp of every resource it references**,
-   replacing a per-resource CDX nearest-search. The rewritten HTML is used **only**
-   to discover those exact-timestamp URLs; it is **never stored**. Wayback's own
-   injected chrome (toolbar, `wombat.js`, `bundle-playback.js`, `/_static/…` on
-   `web-static.archive.org`, `//archive.org/…` analytics/donation) carries no such
-   wrapper and is dropped — so none of it is ever crawled or stored.
-3. **Fetch each resource raw, direct.** Every discovered resource is pulled with
-   `id_` **at its exact ts** — a direct hit, **no search** — over the shared HTTP/2
-   pool, and written under **its own host** at `/data/retronet/corpus/<host>/<path>`
-   (any host, so a media/CDN host's images land too). The ceiling is checked **twice**:
-   on the discovered ts (skip the fetch outright if already post-2000), and again on
-   the **id_-resolved** ts — because Wayback rewrites a resource it *didn't* capture at
-   the page's date to the **page's** ts, so an `id_` at that ts can resolve to the
-   resource's real, possibly post-2000, capture, which must not be stored. Because the
-   stored markup is the untouched original and the proxy maps by host, the original
-   absolute URLs resolve for free.
-4. **Follow links.** Same-site `<a>`/`<frame>` links — read from the **raw** stored
-   body (original 1996 URLs), so a resume rebuilds the identical frontier — are
-   followed to a bounded `--depth`; cross-host links are left alone (they miss
-   unless that host is crawled separately).
-5. **Stage → push.** Files are staged locally in the same
-   `<host>/<path>` shape, then a tar of the touched host dirs is streamed over
-   `ssh lab` and extracted into CT 951 with `pct push`. No raw host mounts are
-   ever used.
+1. **Price the URL.** Which capture to fetch comes from the site's **host index** — a
+   dict lookup, no network (see *One CDX query per host* below). A URL on a host with
+   no index (a third-party image server) is priced at the site's era-**date** instead,
+   and Wayback's `id_` redirect resolves the nearest capture itself.
+2. **Fetch it raw.** Pull the bytes with `id_` at that exact stamp — a direct hit, no
+   search. Bytes and Content-Type are kept as-is. The final URL gives the **resolved**
+   14-digit capture stamp; a resolved capture past the 2000-12-31 ceiling, or an
+   uncaptured URL, is skipped (an authentic miss). The ceiling is therefore checked
+   **twice** — on the priced stamp and again on the resolved one — because a URL priced
+   at a date can resolve to a post-2000 capture, which must not be stored.
+3. **Discover, read-only.** If the page is HTML, its **raw archived body** is scanned
+   (never rewritten) for the URLs it references — images, scripts, stylesheets,
+   backgrounds, embeds, frames, and `<a>`/`<area>` links, plus `<meta refresh>`. These
+   are the real 1990s URLs; each is priced from the index exactly as in step 1.
+   archive.org's own hosts are dropped, so none of Wayback's infrastructure is crawled.
+4. **Mirror by host.** Every resource is written under **its own host** at
+   `/data/retronet/corpus/<host>/<path>` (any host, so a media/CDN host's images land
+   too). Because the markup is untouched and the proxy maps requests by host, the
+   original absolute URLs resolve for free. Same-site links are followed to a bounded
+   `--depth` — read from the **raw** stored body, so a resume rebuilds the identical
+   frontier; cross-host links are left alone (they miss unless that host is crawled
+   separately).
+5. **Stage → push.** Files are staged locally in the same `<host>/<path>` shape, then a
+   tar of the touched host dirs is streamed over `ssh lab` and extracted into CT 951
+   with `pct push`. No raw host mounts are ever used.
 6. **Manifest.** `sites.json` is upserted (see below).
 
-### Why one nearest-search per page — the CDX bottleneck, removed
+### One CDX query per host — why the crawl was slow, three times over
 
-The first cut enumerated captures through archive.org's **CDX API**
-(`/cdx/search/cdx`) — **once per resource**. That endpoint is archive.org's
-**throttled** one: measured **30–40 s per call**. A single page references dozens of
-resources, so mirroring it meant dozens of 30–40 s nearest-searches back to back —
-the entire **~1 MB/hr** bottleneck. (The `id_` content fetch was never the problem:
-it is ~1 s whether the timestamp is exact or generic, because the redirect resolves
-the nearest capture cheaply for one URL.)
+Picking a capture for a URL is half the work, and **every cheap-looking way to do it
+per-URL is a slow archive.org endpoint.** Measured on this box on 2026-08-21, on cold
+URLs, 8 fetches in flight, HTTP/1.1:
 
-A browser loading that same archived page from the Wayback Machine never calls CDX.
-The **rewritten** page it fetches already carries the **exact capture timestamp of
-every resource**, so the browser pulls each resource directly. era-press now does
-the same. The cost per HTML page goes from
+| Route | Median latency | Throughput | Health |
+|---|---|---|---|
+| `id_` at an **exact 14-digit stamp** | **5.0 s** | **138 MB/hr** | no errors |
+| `id_` at an 8-digit **date** (the 302 resolves it) | 9.5 s | 58 MB/hr | tarpit + 503s |
+| the **rewritten** page, fetched for discovery | 15.7 s | 36 MB/hr | heavy tarpit |
+| **CDX, one query per URL** | 4–40 s | — | the original bottleneck |
 
-| | per page (R resources) | of which throttled CDX |
-|---|---|---|
-| **old** | `(1+R)` CDX + `(1+R)` id_ | **`1+R` × 30–40 s** |
-| **now** | 1 id_ (page) + 1 rewritten + `R` id_ | **0** |
+Both earlier designs picked a route from the bottom three. The first cut called CDX
+**once per resource**; replacing that with the browser's trick — fetch the page's
+**rewritten** HTML, which carries every resource's exact capture stamp — removed
+thousands of CDX calls but bought archive.org's *other* expensive endpoint, one per
+page. Neither is affordable.
 
-For a 30-resource page that is ~31 CDX nearest-searches (≈ **15–20 min** of throttled
-stalls) versus **zero** — replaced by one cheap id_ redirect for the page plus one
-rewritten-page fetch. **Measured** (bounded real crawl over three landmark sites,
-`--concurrency 3 --min-interval 0.5`): **~4.6 MB/hr vs the old ~1 MB/hr (≈4–5×), with
-ZERO CDX calls and zero 429/503 signals** — every request in the fetch log is an
-`id_` pull or a rewritten-page discovery; grep it for `cdx` and nothing matches.
+The way out is that **the same CDX query, asked once for a whole host, answers it for
+every URL on that host.** With `matchType=prefix` one request returns the host's entire
+capture index — measured: **27–40k URLs with exact stamps, ~3 MB, 70–130 s**. Amortised
+over the thousands of objects the crawl pulls from that host, pricing a URL costs a
+**dict lookup and no network at all**, and every fetch is then the top row of that
+table. One query per host is also ~60 CDX calls for the whole 60-site corpus, against
+the tens of thousands the per-URL routes needed — the endpoint's throttle stops
+mattering. Indexes are cached on disk (`<state-dir>/cdx/<host>-<date>.json`), so the
+cost is paid once, not once per restart.
 
-That ~4–5× was measured while the shared IP was **transiently throttled** by the
-back-to-back test runs themselves (per-request replay latency ~4–8 s, vs a ~2 s cold
-baseline). The bottleneck is now **archive.org's per-IP replay throttle, not CDX**:
-at low concurrency the crawl is *latency-bound* (≈0.25 req/s at ~8 s/req), and the
-throttle *creeps latency upward under sustained load* — a wide burst is far worse
-(**~10 concurrent fetches pushed per-request latency from ~2 s to ~17 s here**). So
-the crawl stays a **polite slow-drip**: concurrency **moderate** (3), a
-`--min-interval 0.5` floor (which only binds when the IP is fast, so it self-adapts —
-faster when archive allows, latency-throttled when it doesn't), and the shared
-429/503 backoff. On a **rested** IP the same polite config runs faster (the ~2 s
-baseline latency implies low-teens MB/hr at conc 3); do **not** widen concurrency to
-chase more — a burst tarpits the shared IP and slows every host behind it.
+Only hosts we actually crawl earn an index; a third-party host serving one image is not
+worth a 70 s query and takes the redirect route instead.
 
-### The fetch transport — one shared HTTP/2 client
+### The fetch transport — HTTP/1.1, and an adaptive limiter
 
-Every archive.org request — the `id_` raw pull and the once-per-page rewritten-page
-discovery — goes through
-`era_press_core.http_get`, over a **single process-wide `httpx.Client`** built
-lazily on first use: `http2=True`, `follow_redirects=True` (the `id_` 302 →
-nearest-snapshot redirect is still followed), the **full browser header set +
-cookie jar** (below), a 60 s read timeout, and a deliberately **small** pool —
-`max_connections=4`. It is shared by every one of the crawl's ~10 worker threads;
-HTTP/2 stream-multiplexing carries the whole concurrency over that handful of
-reused connections (measured: 6 concurrent `id_` fetches complete **4.7× faster**
-than serial, over ~1 established connection).
+Every archive.org request goes through `era_fetch.http_get`, over a **single
+process-wide `httpx.Client`** built lazily on first use: `follow_redirects=True` (the
+`id_` 302 → nearest-snapshot redirect must still be followed), the **full browser
+header set + cookie jar** (below), a 60 s read timeout, and a bounded pool of
+persistent keep-alive connections.
 
-**Why it is built this way.** The first cut opened a brand-new TCP+TLS connection
-per request (stdlib `urlopen`), ~10 workers wide, plus a CDX query before every
-`id_` fetch (that per-resource CDX call is **gone** now — see *Why one
-nearest-search per page* — but the connection pool it motivated stays). Thousands
-of new connections per hour **exhausted the LAN router's
-NAT/conntrack table** for this box's flow to the archive edge: ~5 of every 6 new
-connections were RST'd before TLS, the crawl throttled itself to ~MB/hr, and it
-knocked other hosts off `web.archive.org` — while archive.org itself was never the
-limiter (a second box behind the same NAT got HTTP 200 at the same instant).
-Reusing a bounded pool of keep-alive HTTP/2 connections is the cure: the
-established-connection count now tracks the pool cap (~1–4), **not** the request
-count, so the NAT table never fills. `http2=True` matches what Chrome negotiates
-to `web.archive.org`. The pool cap is intentionally small — **do not raise it.**
+**HTTP/1.1, not HTTP/2 — and that is measured.** Chrome negotiates h2 to
+`web.archive.org`, so the first cut did too. But a browser opens a handful of streams
+on that connection and a crawl opens a flood, and archive.org's h2 edge answers a flood
+by queueing it and then shedding it. Same box, same cold URLs, 90 s each:
 
-**Looking like a browser.** archive.org **soft-throttles** requests that don't
-look like a browser (a separate, per-IP signal from the NAT problem — browsing it
-in a real Chrome stays fast). So the client sends **byte-for-byte the box's
-Chrome headers** — `User-Agent`, the full `Accept`, `Accept-Language`,
-`Accept-Encoding`, the `sec-ch-ua*` client hints, the `sec-fetch-*` set,
-`Upgrade-Insecure-Requests`, `Referer`, `Priority` — captured from that Chrome
-over **CDP** (`Network.requestWillBeSentExtraInfo`) and pinned in
-`BROWSER_HEADERS`. It also keeps a **cookie jar**: on first use it primes cookies
-with a GET to `web.archive.org`'s homepage (the server-affinity + donation
-cookies), and httpx resends them on every request — so even the first `id_`
-fetch carries cookies, exactly like a returning browser. To **refresh** the
-header set after a Chrome upgrade: launch Chrome with `--remote-debugging-port`,
-open a `web.archive.org` tab, attach over CDP and re-read
-`Network.requestWillBeSentExtraInfo` (drop the `cache-control`/`pragma` a reload
-adds), then update `BROWSER_HEADERS`.
+| Transport | Throughput | Latency | Health |
+|---|---|---|---|
+| h2, 4 connections, 6 in flight | 0.44 req/s, 58 MB/hr | median 6.0 s, **p90 60 s** | ~50% `RemoteProtocolError` |
+| h1, 6 connections, 6 in flight | 1.71 req/s, 204 MB/hr | median 2.8 s, p90 6.0 s | **0 errors** |
+| **h1, 10 connections, 10 in flight** | **2.27 req/s, 256 MB/hr** | median 2.4 s, p90 6.0 s | **the knee** |
+| h1, 16 connections, 16 in flight | 2.13 req/s, 226 MB/hr | median 2.8 s | **55% of connections refused** |
 
-`httpx` is a real dependency (not stdlib), so on the PEP-668 box it lives in a
-**venv** beside the deployed code (`install-crawl.sh` builds it, pinned:
-`httpx[http2]`, plus `brotli`+`zstandard` so httpx can decode the `br`/`zstd`
-encodings the browser `Accept-Encoding` advertises — whatever archive.org sends
-is stored as the raw decoded original; the `id_` endpoint returns identity
-anyway; the unit runs `venv/bin/python`). The import is **lazy** —
-`era_press_core` imports with no socket and with no `httpx` installed, so
-`era_press_selftest.py` still runs
-offline under the system python. The pacing gate is unchanged: a `429`/`503` from
-any worker opens a **global** backoff every worker waits out (archive.org's own
-soft per-IP rate-limit is handled here, separately from the connection pool);
-`MAX_FETCH` and the hard `≤2000-12-31` ceiling are unchanged.
+Under h2, half of all requests came back `RemoteProtocolError` (the edge resetting
+multiplexed streams); under h1 that failure mode disappears entirely. So: one request
+per connection, and **the thing archive.org actually limits is the number of concurrent
+connections from one IP** — which is exactly what the limiter below controls.
+
+**The adaptive in-flight limiter (AIMD).** archive.org's tolerance is not a constant:
+it moves hour to hour, and the knee is narrow. A hand-set rate is therefore always
+wrong soon after it is set — either it leaves most of the ceiling unused, or it trips
+the tarpit and the crawl spends its life asleep. (Three commits in one morning
+re-tuning `--min-interval` are the evidence.) So `_InFlightGate` **finds** the knee:
+**+1 permit per 25 clean responses, halve on any push-back**, bounded [1, 10]. Worker
+threads park on it, so `--concurrency` is only the pool's upper bound. The current
+limit is printed in every progress line (`in-flight limit 6.0`).
+
+**What a failure MEANS decides what it costs**, and getting that wrong is what made the
+crawl slow. Measured on the deployed crawl (3 workers, 360 s): **115 requests, 13 of
+them successful, and 482 of ~1080 thread-seconds spent asleep** — because every failure,
+whatever it was, drew the same per-thread exponential 2,4,8,16 s sleep and then gave the
+URL up as a permanent miss. They are three different things:
+
+- a **keep-alive reuse race** (`RemoteProtocolError` — the edge closed a pooled
+  connection between our checkout and our write) says nothing about our rate. A browser
+  silently opens a new connection and retries at once; so do we, off the retry budget.
+- a **refused connection** is the edge's per-IP **burst tarpit**: it RSTs every *new*
+  connection for a while, then clears on its own (measured: ~20 s). That is **one outage
+  shared by every worker**, so it gets **one** shared pause plus a halving of the
+  in-flight limit — not N independent exponential ramps.
+- a **429/502/503** is archive.org asking for less: shared backoff, and halve the limit.
+
+**Why a bounded pool at all.** The first cut opened a brand-new TCP+TLS connection per
+request (stdlib `urlopen`), ~10 workers wide. Thousands of new connections per hour
+**exhausted the LAN router's NAT/conntrack table** for this box's flow to the archive
+edge: ~5 of every 6 new connections were RST'd before TLS, and it knocked other hosts
+off `web.archive.org` — while archive.org itself was not the limiter at the time (a
+second box behind the same NAT got HTTP 200 at the same instant). A bounded pool of
+reused keep-alive connections is the cure: the established-connection count tracks the
+pool cap, **not** the request count. The cap is the limiter's ceiling — **do not raise
+it past the measured knee**, where the edge starts refusing connections outright.
+
+**Looking like a browser.** archive.org **soft-throttles** requests that don't look like
+a browser. So the client sends **byte-for-byte the box's Chrome headers** —
+`User-Agent`, the full `Accept`, `Accept-Language`, `Accept-Encoding`, the `sec-ch-ua*`
+client hints, the `sec-fetch-*` set, `Upgrade-Insecure-Requests`, `Referer`, `Priority`
+— captured from that Chrome over **CDP**
+(`Network.requestWillBeSentExtraInfo`) and pinned in `BROWSER_HEADERS`. It also keeps a
+**cookie jar**: on first use it primes cookies with a GET to `web.archive.org`'s
+homepage (the server-affinity + donation cookies), and httpx resends them on every
+request. To **refresh** the header set after a Chrome upgrade: launch Chrome with
+`--remote-debugging-port`, open a `web.archive.org` tab, attach over CDP and re-read
+`Network.requestWillBeSentExtraInfo` (drop the `cache-control`/`pragma` a reload adds),
+then update `BROWSER_HEADERS`.
+
+`httpx` is a real dependency (not stdlib), so on the PEP-668 box it lives in a **venv**
+beside the deployed code (`install-crawl.sh` builds it, plus `brotli`+`zstandard` so
+httpx can decode the `br`/`zstd` encodings the browser `Accept-Encoding` advertises —
+whatever archive.org sends is stored as the raw decoded original; the `id_` endpoint
+returns identity anyway; the unit runs `venv/bin/python`). The import is **lazy** —
+`era_fetch` imports with no socket and with no `httpx` installed, so
+`era_press_selftest.py` still runs offline under the system python. `MAX_FETCH` and the
+hard `≤2000-12-31` ceiling are unchanged.
 
 ### Path mapping (URL → file)
 
@@ -315,18 +314,15 @@ Built to be a **polite archive.org citizen** and to run for hours, unattended:
   depth-1 links, pass 2 every site's depth-2 links, … round-robining across all
   sites at each level. So an interrupted or budget-stopped crawl covers **every**
   site to the same depth — never a few deep and the rest empty.
-- **Parallel, but deliberately MODERATE.** Each pass fetches `--concurrency`
-  pages at once with a thread pool sharing **one `httpx` HTTP/2 client** (a tiny
-  pool of reused connections — see *The fetch transport*). The code default is 10,
-  but **the service runs `--concurrency 3 --min-interval 0.5`** on purpose: this
-  box's replay latency to archive is multi-second and a **wide burst tarpits the
-  shared per-IP** (measured: ~10 concurrent pushed per-request latency ~2 s → ~17 s),
-  which slows every host behind that IP. Three-wide, latency-throttled, is the polite
-  sweet spot; **do not widen it to chase throughput.** All workers share **one**
-  pacing gate: an HTTP **429/503** seen by any worker opens a **global** backoff
-  every worker waits out (`Retry-After` when present, else exponential — the whole
-  pool slows/pauses together), plus per-request jitter. `--min-interval` is a global
-  floor that only binds when the IP is fast (so it self-adapts).
+- **Parallel, and self-pacing.** Each pass runs on a thread pool of `--concurrency`
+  workers sharing **one `httpx` HTTP/1.1 client** (a bounded pool of reused
+  connections — see *The fetch transport*). `--concurrency` is only the pool's
+  **upper bound**: how many requests are really in flight is decided by the **adaptive
+  AIMD limiter**, which climbs while archive.org answers cleanly and halves the moment
+  it pushes back (429/502/503, or a refused connection). That is why there is no
+  hand-set `--min-interval` any more — archive.org's tolerance moves hour to hour, so
+  a fixed rate is always either wasteful or self-tarpitting. The limiter's current
+  value is in every progress line (`in-flight limit 6.0`).
 - **Resumable from the corpus.** The on-disk corpus **is** the checkpoint: on
   (re)start each site's per-level frontier is **reconstructed by re-walking its
   on-disk link graph**, so a stop, a crash, a reboot — or a **deepened
@@ -347,10 +343,10 @@ Built to be a **polite archive.org citizen** and to run for hours, unattended:
 ### Running it as a service
 
 `scripts/retronet/web/install-crawl.sh` (run on **CT 950**) deploys a copy of
-`era-press.py` **+ its modules (`era_press_core.py`, `era_crawl.py`)** +
+`era-press.py` **+ its modules (`era_fetch.py`, `era_press_core.py`, `era_crawl.py`)** +
 `era-sites.json` into `/data/vms/retronet-crawl/` — so a worktree GC never pulls
 the code out from under a multi-hour run — builds a dedicated **venv**
-(`/data/vms/retronet-crawl/venv`, pinned `httpx[http2]`) beside it (Ubuntu 24.04
+(`/data/vms/retronet-crawl/venv`, pinned `httpx`) beside it (Ubuntu 24.04
 is PEP-668 externally-managed, so no system pip), and installs
 `retronet-crawl.service` — whose `ExecStart` runs `venv/bin/python` — enabled and
 started. The unit runs one long resumable process that stops itself at the

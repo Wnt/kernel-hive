@@ -19,6 +19,7 @@ import time
 # era_press_core.py + era_crawl.py sit next to this file; run as documented
 # (`python3 scripts/retronet/web/era_press_selftest.py`) that dir is sys.path[0].
 import era_crawl as ec
+import era_fetch as ef
 import era_press_core as ep
 
 # A synthetic raw archived page (NOT scraped): the shapes era-press must handle.
@@ -33,6 +34,15 @@ FIXTURE = b"""<html><head><title>Test</title>
 <a href="http://other.example/away.html">offsite</a>
 <frame src="frames/nav.html">
 </body></html>"""
+
+
+# A synthetic RAW archived page as fetch_page sees it: original 1990s URLs, one same-host resource,
+# one third-party resource, and one of archive.org's own hosts (which discovery must drop).
+RAW_PAGE = (
+    b'<html><body><img src="logo.gif"><img src="http://ads.example/a.gif">'
+    b'<img src="https://web-static.archive.org/_static/x.gif">'
+    b'<a href="about.html">about</a></body></html>'
+)
 
 
 def check(name, got, want):
@@ -51,8 +61,8 @@ def main():
     check("store_rel query dropped", ep.store_rel("http://h/a.gif?v=2", False), "a.gif")
 
     # 2. host normalisation (www folding, case, port).
-    check("bare www", ep.bare("www.test.example"), "test.example")
-    check("host_of case", ep.host_of("http://Www.X.com:80/p"), "www.x.com")
+    check("bare www", ef.bare("www.test.example"), "test.example")
+    check("host_of case", ef.host_of("http://Www.X.com:80/p"), "www.x.com")
 
     # 3. content sniffing.
     check("is_html by type", ep.is_html("text/html; charset=x", b""), True)
@@ -80,7 +90,7 @@ def main():
     check("discovery is read-only", FIXTURE, FIXTURE)
 
     # 5. the date ceiling is the hard 2000-12-31 the contract fixed.
-    check("ceiling", ep.CEILING, "20001231")
+    check("ceiling", ef.CEILING, "20001231")
 
     # 6. breadth-first frontier reconstruction — the resume + even-widening core, offline. Build a
     #    tiny on-disk corpus and assert _reconstruct marks on-disk pages DONE per depth level and
@@ -119,64 +129,85 @@ def main():
     # 8. the SHARED 429/503 backoff gate (the concurrency circuit-breaker), offline and deterministic:
     #    a rate-limit signal seen by ONE worker opens a GLOBAL deadline every worker waits out via
     #    _pace(); repeats escalate it; a clean response relaxes the streak.
-    ep._backoff_until, ep._backoff_streak = 0.0, 0
-    ep._penalize("2")  # a 429 carrying Retry-After: 2s
-    check("429 opens the streak", ep._backoff_streak, 1)
-    assert ep._backoff_until - time.monotonic() > 1.0, "a 429 must open a future GLOBAL backoff window"
-    armed = ep._backoff_until
-    ep._penalize(None)  # a repeat with no Retry-After escalates exponentially
-    check("repeat escalates the streak", ep._backoff_streak, 2)
-    assert ep._backoff_until >= armed, "repeated rate-limit signals push the shared deadline further out"
-    ep._relax()  # a clean response walks the streak back one notch
-    check("clean response relaxes", ep._backoff_streak, 1)
+    ef._backoff_until, ef._backoff_streak = 0.0, 0
+    ef._penalize("2")  # a 429 carrying Retry-After: 2s
+    check("429 opens the streak", ef._backoff_streak, 1)
+    assert ef._backoff_until - time.monotonic() > 1.0, "a 429 must open a future GLOBAL backoff window"
+    armed = ef._backoff_until
+    ef._penalize(None)  # a repeat with no Retry-After escalates exponentially
+    check("repeat escalates the streak", ef._backoff_streak, 2)
+    assert ef._backoff_until >= armed, "repeated rate-limit signals push the shared deadline further out"
+    ef._relax()  # a clean response walks the streak back one notch
+    check("clean response relaxes", ef._backoff_streak, 1)
     # _pace() must actually BLOCK on the shared window (jitter off so the timing is exact).
-    saved_jitter, ep.JITTER = ep.JITTER, 0.0
-    ep._backoff_until, ep._backoff_streak = time.monotonic() + 0.15, 0
+    saved_jitter, ef.JITTER = ef.JITTER, 0.0
+    ef._backoff_until, ef._backoff_streak = time.monotonic() + 0.15, 0
     t0 = time.monotonic()
-    ep._pace()
+    ef._pace()
     assert time.monotonic() - t0 >= 0.12, "_pace must wait out the shared backoff window all workers see"
-    ep.JITTER, ep._backoff_until, ep._backoff_streak = saved_jitter, 0.0, 0  # leave nothing armed
+    ef.JITTER, ef._backoff_until, ef._backoff_streak = saved_jitter, 0.0, 0  # leave nothing armed
 
-    # 9. the BROWSER fetch strategy, offline: parse a synthetic REWRITTEN Wayback page. Every resource/
-    #    link is returned with its EXACT capture ts (a relative href resolves against the base to the page
-    #    ts); Wayback's own injected chrome (web-static.archive.org, //archive.org) is dropped.
-    pbase = "https://web.archive.org/web/19970104102030/http://www.t.example/"
-    rewritten = (
-        b'<html><head><script src="https://web-static.archive.org/_static/js/wombat.js"></script>'
-        b'<script src="//archive.org/includes/analytics.js"></script></head><body>'
-        b'<img src="/web/19970104102030im_/http://www.t.example/logo.gif">'  # exact-ts resource
-        b'<a href="about.html">rel</a>'  # relative link -> unwraps to the page ts
-        b'<a href="/web/19970104102030/http://www.t.example/news/">abs</a>'
-        b'<a href="/web/19970104102030/https://archive.org/donate">junk</a></body></html>'
-    )
-    disc = ep.extract_wayback_urls(rewritten, pbase)
-    check("discovery: logo.gif exact ts", ("res", "19970104102030", "http://www.t.example/logo.gif") in disc, True)
-    check(
-        "discovery: relative link unwrapped",
-        ("link", "19970104102030", "http://www.t.example/about.html") in disc,
-        True,
-    )
-    check(
-        "discovery: drops archive chrome + wrapped donation",
-        any(ep._is_archive_host(ep.host_of(u)) for _k, _t, u in disc),
-        False,
-    )
-    check("discovery: exactly the 3 site URLs", len(disc), 3)
+    # 9. the HOST INDEX, offline: ONE bulk CDX response per host prices every URL on it, so discovery
+    #    from the RAW page body needs no per-URL search. Index keys are bare-host + path, so the CDX
+    #    original (`http://www.t.example:80/p`) and the page's own reference (`http://t.example/p`)
+    #    land on the same entry; an un-indexed host falls back to the era DATE (the id_ redirect).
+    ef._index.clear()
+    ef._index_building.clear()
+    ef._index_since.clear()
+    ef.register_site("www.t.example", "19970101")
+    saved_get = ef.http_get
+    cdx_calls = []
+
+    def fake_cdx(url, retries=5):
+        cdx_calls.append(url)
+        rows = b'[["original","timestamp"],["http://www.t.example:80/logo.gif","19970104102030"],'
+        rows += b'["http://www.t.example:80/about.html","19970211090000"],'
+        rows += b'["http://www.t.example:80/late.gif","20011231000000"]]'
+        return ("cdx", "application/json", rows)
+
+    ef.http_get = fake_cdx
+    try:
+        ts_of = lambda u: ef.index_ts(u, "19970101")  # noqa: E731 -- terse on purpose, this is a test
+        check("index: exact ts for an indexed resource", ts_of("http://t.example/logo.gif"), "19970104102030")
+        check("index: exact ts for an indexed page", ts_of("http://www.t.example/about.html"), "19970211090000")
+        check("index: post-ceiling row is never indexed", ts_of("http://t.example/late.gif"), "19970101")
+        check("index: un-indexed host -> the era date", ts_of("http://ads.example/a.gif"), "19970101")
+        check("index: ONE CDX query for the whole host", len(cdx_calls), 1)
+    finally:
+        ef.http_get = saved_get
+
+    # discovery now reads the RAW archived body (original 1990s URLs), priced from that index.
+    saved_raw2 = ef.wayback_raw
+    ef.wayback_raw = lambda url, ts: ("19970104102030", "text/html", RAW_PAGE)
+    ef.http_get = fake_cdx
+    try:
+        page_ts, is_page, body, disc = ep.fetch_page("http://www.t.example/", "19970101")
+    finally:
+        ef.wayback_raw, ef.http_get = saved_raw2, saved_get
+    check("fetch_page: raw bytes stored verbatim", body, RAW_PAGE)
+    check("fetch_page: it is a page", (page_ts, is_page), ("19970104102030", True))
+    logo = ("res", "19970104102030", "http://www.t.example/logo.gif")
+    check("fetch_page: logo priced from the index", logo in disc, True)
+    ad = ("res", "19970101", "http://ads.example/a.gif")
+    check("fetch_page: unknown resource priced at the era date", ad in disc, True)
+    archive_leak = any(ef._is_archive_host(ef.host_of(u)) for _k, _t, u in disc)
+    check("fetch_page: drops archive's own hosts", archive_leak, False)
+
     # the RESOLVED-ts ceiling: a resource the rewritten page rewrote to the page's (<=2000) ts can still
     # id_-RESOLVE to its real, post-2000 capture -- mirror_resource must re-check got[0] and NOT store it.
-    saved_raw = ep.wayback_raw
+    saved_raw = ef.wayback_raw
     with tempfile.TemporaryDirectory() as staging:
-        ep.wayback_raw = lambda url, ts: ("20021108105450", "image/gif", b"GIF89a-late")  # resolves post-2000
+        ef.wayback_raw = lambda url, ts: ("20021108105450", "image/gif", b"GIF89a-late")  # resolves post-2000
         st = dict(pages=0, fetched=0, assets=0, misses=0, skipped=0, bytes=0)
         ep.mirror_resource("http://www.t.example/ad.gif", "19970104102030", staging, set(), set(), st)
         check("resolved-ts ceiling: post-2000 resolve NOT stored", (st["assets"], st["misses"]), (0, 1))
-        ep.wayback_raw = lambda url, ts: ("19970104102030", "image/gif", b"GIF89a-ok")  # resolves in-era
+        ef.wayback_raw = lambda url, ts: ("19970104102030", "image/gif", b"GIF89a-ok")  # resolves in-era
         st2 = dict(pages=0, fetched=0, assets=0, misses=0, skipped=0, bytes=0)
         ep.mirror_resource("http://www.t.example/ok.gif", "19970104102030", staging, set(), set(), st2)
         check("resolved-ts <=2000: stored", (st2["assets"], st2["misses"]), (1, 0))
-    ep.wayback_raw = saved_raw
+    ef.wayback_raw = saved_raw
 
-    print("era-press selftest: all checks OK (raw mirror, browser discovery, resolved-ts ceiling, frontier, backoff)")
+    print("era-press selftest: all checks OK (raw mirror, host index, resolved-ts ceiling, frontier, backoff)")
 
 
 if __name__ == "__main__":

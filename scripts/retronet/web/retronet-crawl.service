@@ -3,10 +3,11 @@
 # gateway CT 951 do not) by scripts/retronet/web/install-crawl.sh. Drives era-press
 # breadth-first over era-sites.json toward the ~25 GB corpus budget with the BROWSER
 # fetch strategy: NO per-resource CDX (archive's throttled endpoint, gone), one
-# rewritten-page discovery + raw id_ pulls per page. Still a GENTLE SLOW-DRIP: a few
-# concurrent fetches paced by a min-interval floor + the shared 429/503 backoff —
-# concurrency stays MODERATE because a wide burst still tarpits the shared per-IP
-# (measured: ~10-wide pushed replay latency to ~17s), a steady trickle does not.
+# rewritten-page discovery + raw id_ pulls per page. Pacing is ADAPTIVE, not hand-set:
+# the worker pool is wide and an AIMD in-flight limiter in era_press_core finds
+# archive.org's current knee by itself (+1 permit per 25 clean responses, halved on a
+# 429/502/503 or a refused connection). A hand-tuned --min-interval is therefore no
+# longer set here: it was always either under the ceiling or into the tarpit.
 # Resumable, per-site byte-capped. Runs unattended for days; the corpus grows in the
 # background and CT 951's proxy reads the shared corpus volume
 # (/data/vms/retronet-corpus) live. See docs/lab/retronet/ERA-PRESS.md.
@@ -28,7 +29,7 @@ Group=wnt
 ExecStart=/data/vms/retronet-crawl/venv/bin/python /data/vms/retronet-crawl/era-press.py crawl \
     --sites /data/vms/retronet-crawl/era-sites.json \
     --staging /data/vms/retronet-corpus \
-    --budget-gb 25 --concurrency 3 --min-interval 0.5 \
+    --budget-gb 25 --concurrency 12 \
     --state /data/vms/retronet-crawl/state.json \
     --log /data/vms/retronet-crawl/progress.log
 Restart=on-failure

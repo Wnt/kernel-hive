@@ -6,10 +6,11 @@ at a time: pass 0 mirrors every site's home, pass 1 every site's depth-1 links, 
 depth-2 links, … -- so an interrupted or budget-stopped crawl covers EVERY site to the same depth
 (all homes, then all first levels, …), never a few sites deep and the rest empty.
 
-Each pass is fetched ~CONCURRENCY-wide with a stdlib thread pool (urllib is blocking, so threads are
-the right primitive; a browser on the Wayback Machine fetches ~10 at once, which is polite). All
-workers share ONE archive.org pacing gate in era_press_core: a 429/503 seen by any worker opens a
-GLOBAL backoff every worker waits out, so the whole pool slows/pauses together.
+Each pass runs on a stdlib thread pool (the fetch layer is blocking, so threads are the right
+primitive). How many of those threads are actually in flight is NOT --concurrency: it is the adaptive
+AIMD limiter in era_press_core, which climbs while archive.org answers cleanly and halves the moment it
+signals (429/502/503, or a refused connection). So --concurrency is only the pool's upper bound; the
+limiter finds the real ceiling, which moves hour to hour.
 
 Resume is from the ON-DISK CORPUS, not a state file: _reconstruct re-walks each site's link graph from
 disk to rebuild the per-level frontier, so a restart -- or a deepened era-sites.json -- continues the
@@ -30,13 +31,14 @@ from datetime import date
 from itertools import zip_longest
 from pathlib import Path
 
+import era_fetch as fetch
 import era_press_core as core
 
 SHARED_CORPUS = "/data/vms/retronet-corpus"  # big corpus volume (CT950/labhost path); CT 951 bind-mounts at CORPUS
 CRAWL_ROOT = "/data/vms/retronet-crawl"  # crawl state + log live here (OUTSIDE the corpus; survives a worktree GC)
 BUDGET_GB = 25.0  # default global size budget: the crawl stops cleanly near this (ZFS quota 50 GB backstop)
 SITE_MB = 200  # default per-site byte cap so one big site (GeoCities) cannot eat the whole budget
-CONCURRENCY = 10  # default parallel fetches: ~a browser's worth, throttled by the shared backoff gate
+CONCURRENCY = 12  # thread-pool UPPER bound; era_press_core's AIMD limiter decides how many really fly
 
 
 # --- crawl utilities --------------------------------------------------------
@@ -150,8 +152,9 @@ def _reconstruct(st, staging):
 
 def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
     """Mirror one referenced resource (any host) raw, concurrency-safe. `ts` is the resource's EXACT
-    capture timestamp (discovered from the page's rewritten HTML), so this is a DIRECT id_ hit -- NOT a
-    per-resource CDX search. A ts past the 2000-12-31 ceiling => skip (authentic miss)."""
+    capture stamp from its host index -- a DIRECT id_ hit, no search. For a host with no index (a
+    third-party image server) it is the site's era DATE and the id_ redirect resolves the capture; the
+    RESOLVED stamp is re-checked below. A ts past the 2000-12-31 ceiling => skip (authentic miss)."""
     host = core.host_of(url)
     if not host:
         return
@@ -159,7 +162,7 @@ def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
         if url in res_seen:
             return
         res_seen.add(url)
-    if core._past_ceiling(ts):
+    if fetch._past_ceiling(ts):
         with lock:
             st["misses"] += 1  # discovered ts already after the ceiling -> skip the fetch entirely
         return
@@ -170,10 +173,10 @@ def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
             st["skipped"] += 1
             st["bytes"] += os.path.getsize(dest)
         return
-    got = core.wayback_raw(url, ts)  # id_ at the discovered ts (paced, lockless) -- but may resolve nearer
+    got = fetch.wayback_raw(url, ts)  # id_ at the discovered ts (paced, lockless) -- but may resolve nearer
     # Re-check the RESOLVED ts: a resource the rewritten page rewrote to the PAGE's ts (because it wasn't
     # captured then) can resolve via id_ to its real, possibly post-2000, capture -- which must NOT store.
-    if not got or core._past_ceiling(got[0]) or len(got[2]) > core.MAX_FETCH:
+    if not got or fetch._past_ceiling(got[0]) or len(got[2]) > core.MAX_FETCH:
         with lock:
             st["misses"] += 1  # resolved capture past the ceiling (or a miss / oversize) -> skip
         return
@@ -187,9 +190,10 @@ def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
 def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
     """Mirror ONE page (or reuse it from disk), mirror its resources on a fresh fetch only, and file
     its same-site links under the NEXT depth level. Thread-safe: fetch is lockless, state under `lock`.
-    The BROWSER strategy: fetch_page pulls the raw id_ bytes AND (via the page's rewritten HTML)
-    discovers every resource's EXACT timestamp -- so resources are direct id_ hits, ZERO CDX. Links come
-    from the RAW body (original URLs), identical to _reconstruct, so resume rebuilds the same frontier."""
+    fetch_page pulls the raw id_ bytes at the exact capture stamp the site's host index gives, and
+    discovers resources/links from the RAW body -- so a page and each of its resources is ONE fast fetch
+    and no per-URL search. Links come from that same raw body, identical to _reconstruct, so resume
+    rebuilds the same frontier."""
     host = core.host_of(url)
     cached = core._have(staging, host, core.store_rel(url, True))
     if cached:
@@ -198,7 +202,7 @@ def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
         with lock:
             st["skipped"] += 1
     else:
-        got = core.fetch_page(url, st["date"])  # raw id_ + exact page ts + rewritten discovery -- lockless
+        got = core.fetch_page(url, st["date"])  # raw id_ at the indexed exact ts -- lockless
         if not got:
             with lock:
                 st["misses"] += 1  # uncaptured, oversize, or past the ceiling -> authentic miss
@@ -209,7 +213,7 @@ def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
             st["fetched"] += 1
             st["bytes"] += len(body)
             budget["written"] += len(body)
-        if page:  # each resource at its EXACT ts -- direct id_, no per-resource search (paced) -- lockless
+        if page:  # each resource at its indexed exact ts -- one direct id_ hit, no search -- lockless
             for kind, res_ts, orig in discovered:
                 if kind == "res":
                     _mirror_resource_mt(orig, res_ts, staging, res_seen, st, lock, budget)
@@ -325,10 +329,10 @@ def _run_level(items, concurrency, worker, on_done, should_stop):
 
 def cmd_crawl(a):
     """BREADTH-FIRST + PARALLEL global crawl over era-sites.json: widen every site together, one depth
-    level at a time, ~CONCURRENCY fetches wide, sharing a global 429/503 backoff. Resumable from the
+    level at a time, as wide as the adaptive in-flight limiter allows. Resumable from the
     on-disk corpus (the frontier is reconstructed), per-site max_mb-capped, stops cleanly at the global
     budget. Progress + per-level frontier are logged and in state.json."""
-    core.RATE["min_interval"] = a.min_interval  # 0 for the wide crawl -> concurrency + backoff pace it
+    fetch.RATE["min_interval"] = a.min_interval  # 0 for the wide crawl -> concurrency + backoff pace it
     concurrency = max(1, a.concurrency)
     os.umask(0o022)  # world-readable: CT 951's unprivileged proxy must read what CT 950 writes
     os.makedirs(a.staging, exist_ok=True)
@@ -336,6 +340,9 @@ def cmd_crawl(a):
     cfg = _load_json(a.sites, [])
     if not cfg:
         raise SystemExit(f"era-press crawl: no sites in {a.sites}")
+    fetch.INDEX_DIR = os.path.join(os.path.dirname(a.state) or ".", "cdx")  # host indexes survive restarts
+    for s in cfg:  # every crawled host earns ONE bulk CDX index; resource-only hosts take the redirect
+        fetch.register_site(s["host"], s.get("date", "19970101"))
     states = [_reconstruct(_site_state(s, a.max_mb), a.staging) for s in cfg]
     seen_sets = {st["host"]: set(st["seen"]) for st in states}
     res_seen = set()  # global: a shared resource is mirrored once per run
@@ -383,7 +390,11 @@ def cmd_crawl(a):
             if used >= budget["budget"]:
                 budget["stop"] = True
             _flush_state(a.state, states, level, used)
-        _log(a.log, f"    … {budget['fetches']} fetches, corpus {used / 1e9:.2f} GB (est {used_est() / 1e9:.2f})")
+        _log(
+            a.log,
+            f"    … {budget['fetches']} fetches, corpus {used / 1e9:.2f} GB (est {used_est() / 1e9:.2f}), "
+            f"in-flight limit {fetch._GATE.limit()}",  # AIMD: where archive.org's knee is right now
+        )
 
     level = 0
     for level in range(maxdepth + 1):

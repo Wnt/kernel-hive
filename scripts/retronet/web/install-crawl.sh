@@ -2,7 +2,7 @@
 # install-crawl.sh — deploy the era-press corpus crawl as a systemd unit INSIDE
 # the dev container CT 950 (the only box with internet). Idempotent.
 #
-# It deploys a COPY of era-press.py + its modules (era_press_core.py, era_crawl.py)
+# It deploys a COPY of era-press.py + its modules (era_fetch.py, era_press_core.py, era_crawl.py)
 # + era-sites.json into the shared volume dir so
 # the running crawl never depends on a git worktree that may be GC'd mid-run, then
 # installs, enables and starts retronet-crawl.service. The crawl is resumable, so
@@ -30,16 +30,17 @@ echo "deploying crawl runtime -> $RUN_DIR"
 # the service (User below) can write state.json + progress.log there.
 sudo mkdir -p "$RUN_DIR"
 sudo chown "$(id -un):$(id -gn)" "$RUN_DIR"
-cp "$SRC/era-press.py" "$SRC/era_press_core.py" "$SRC/era_crawl.py" "$SRC/era-sites.json" "$RUN_DIR/"
+cp "$SRC/era-press.py" "$SRC/era_fetch.py" "$SRC/era_press_core.py" "$SRC/era_crawl.py" \
+  "$SRC/era-sites.json" "$RUN_DIR/"
 
 # --- fetch-layer dependency: httpx[http2] in a dedicated venv ------------------
-# era_press_core.http_get speaks HTTP/2 over a SMALL reused connection pool via httpx -- the cure for the
+# era_fetch.http_get speaks HTTP/1.1 over a bounded reused connection pool via httpx -- the cure for the
 # NAT/conntrack exhaustion the old new-connection-per-request transport caused. Ubuntu 24.04 is PEP-668
 # externally-managed, so httpx lives in a venv beside the deployed code (never system pip); the unit's
 # ExecStart runs venv/bin/python. Pinned + idempotent (venv reused if present, pip is a no-op when met).
-# httpx[http2] for the HTTP/2 transport; brotli+zstandard so httpx can decode the br/zstd encodings the
+# httpx for the transport (HTTP/1.1 -- measured 4x faster here than h2, see ERA-PRESS.md); brotli+zstandard so httpx can decode the br/zstd encodings the
 # browser-identical Accept-Encoding advertises (whatever archive.org sends is stored as raw decoded bytes).
-PINS=('httpx[http2]==0.28.1' 'brotli==1.2.0' 'zstandard==0.25.0')
+PINS=('httpx==0.28.1' 'brotli==1.2.0' 'zstandard==0.25.0')
 VENV="$RUN_DIR/venv"
 if ! python3 -c 'import ensurepip' 2>/dev/null; then
   echo "installing python3-venv (needed to build the crawl venv)"
@@ -52,7 +53,7 @@ fi
 echo "ensuring pinned deps in the crawl venv (idempotent): ${PINS[*]}"
 "$VENV/bin/pip" install --quiet --upgrade pip
 "$VENV/bin/pip" install --quiet "${PINS[@]}"
-"$VENV/bin/python" -c 'import httpx, h2, brotli, zstandard; print("  venv httpx", httpx.__version__, "/ h2", h2.__version__, "/ brotli+zstandard OK")'
+"$VENV/bin/python" -c 'import httpx, brotli, zstandard; print("  venv httpx", httpx.__version__, "/ brotli+zstandard OK")'
 
 echo "installing $UNIT"
 sudo cp "$SRC/$UNIT" "/etc/systemd/system/$UNIT"
