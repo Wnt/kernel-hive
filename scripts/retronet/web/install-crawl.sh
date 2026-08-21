@@ -32,6 +32,26 @@ sudo mkdir -p "$RUN_DIR"
 sudo chown "$(id -un):$(id -gn)" "$RUN_DIR"
 cp "$SRC/era-press.py" "$SRC/era_press_core.py" "$SRC/era_crawl.py" "$SRC/era-sites.json" "$RUN_DIR/"
 
+# --- fetch-layer dependency: httpx[http2] in a dedicated venv ------------------
+# era_press_core.http_get speaks HTTP/2 over a SMALL reused connection pool via httpx -- the cure for the
+# NAT/conntrack exhaustion the old new-connection-per-request transport caused. Ubuntu 24.04 is PEP-668
+# externally-managed, so httpx lives in a venv beside the deployed code (never system pip); the unit's
+# ExecStart runs venv/bin/python. Pinned + idempotent (venv reused if present, pip is a no-op when met).
+PIN='httpx[http2]==0.28.1'
+VENV="$RUN_DIR/venv"
+if ! python3 -c 'import ensurepip' 2>/dev/null; then
+  echo "installing python3-venv (needed to build the crawl venv)"
+  sudo apt-get update -qq && sudo apt-get install -y -qq python3-venv
+fi
+if [ ! -x "$VENV/bin/python" ]; then
+  echo "creating crawl venv -> $VENV"
+  python3 -m venv "$VENV"
+fi
+echo "ensuring $PIN in the crawl venv (pinned, idempotent)"
+"$VENV/bin/pip" install --quiet --upgrade pip
+"$VENV/bin/pip" install --quiet "$PIN"
+"$VENV/bin/python" -c 'import httpx, h2; print("  venv httpx", httpx.__version__, "/ h2", h2.__version__)'
+
 echo "installing $UNIT"
 sudo cp "$SRC/$UNIT" "/etc/systemd/system/$UNIT"
 sudo systemctl daemon-reload

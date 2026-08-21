@@ -18,8 +18,9 @@ Group=wnt
 # is exhausted (clean exit 0 -> stays stopped). Restart=on-failure only covers a
 # crash, and resume picks up from the on-disk corpus + state.json. It runs from a
 # DEPLOYED copy under the volume, so a worktree GC never pulls the code out from
-# under a multi-hour run.
-ExecStart=/usr/bin/python3 /data/vms/retronet-crawl/era-press.py crawl \
+# under a multi-hour run. Runs from the deployed venv (httpx[http2]) that install-crawl.sh
+# builds next to the code -- the fetch layer speaks HTTP/2 over a tiny reused connection pool.
+ExecStart=/data/vms/retronet-crawl/venv/bin/python /data/vms/retronet-crawl/era-press.py crawl \
     --sites /data/vms/retronet-crawl/era-sites.json \
     --staging /data/vms/retronet-corpus \
     --budget-gb 25 --concurrency 10 \
