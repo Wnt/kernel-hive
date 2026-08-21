@@ -10,15 +10,18 @@
 #     snapshot yet) cold-boots RUNNING for the bake to drive.
 #   * KVM accel, -machine pc-i440fx-11.0 -cpu host, std VGA (VBEMP-NT framebuf,
 #     1600x1200x32), AC97 audio, usb-tablet (absolute pointer, SH_POINTER=abs),
-#     rtl8139 NIC.  Do NOT change the device set: `loadvm golden` binds to it.
+#     rtl8139 NIC with a UNIQUE mac (see RN_WIN2000_MAC below).  Do NOT change the
+#     device set: `loadvm golden` binds to it.
 #   * RETRONET BRIDGE (2026-08-20): n0 is a real bridged NIC on vmbr-rn, NOT slirp.
 #     rn-tapnet.sh (called `up` just below, idempotently, like win98se/irix) creates
 #     the persistent tap win2krn0, enslaves it to vmbr-rn, and installs a fail-closed
-#     guest-containment chain (WIN2KRN-IN). The guest is static 10.99.0.11/24 with
+#     guest-containment chain (WIN2KRN-IN). The guest is on DHCP (retronet-dhcp
+#     reservation RN_WIN2000_MAC -> 10.99.0.11/24, DNS 10.99.0.2, NO router) with
 #     NO default route; it shares L2 with the OSCAR gateway CT 10.99.0.2, so ICQ
-#     2000b gets working UDP + ICMP + real multi-connection TCP (what slirp's
-#     single-connection guestfwd could not carry). The -device is UNCHANGED
-#     (rtl8139,netdev=n0) — only the netdev backend went user->tap, which is
+#     gets working UDP + ICMP + real multi-connection TCP (what slirp's
+#     single-connection guestfwd could not carry) and browses the corpus by URL
+#     with no proxy. The -device is UNCHANGED (rtl8139,netdev=n0) apart from the
+#     per-station mac= — the netdev backend went user->tap, which is
 #     invisible to savevm/loadvm, so `loadvm golden` stays valid. Do NOT renumber n0.
 #   * EXEC CHANNEL rides the same bridge: labctl reaches C:\WARPNET.EXE (the
 #     in-guest warpd agent, -DWARP_PORT=7788, exec_kind "warpd_e") DIRECTLY at the
@@ -41,6 +44,20 @@ qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm go
 # path. Fail-closed: if it cannot verify containment it dies here and QEMU never
 # starts.
 bash "$B/rn-tapnet.sh" up
+# Guest NIC MAC. Real per-station MACs are NEVER committed (AGENTS.md); the real
+# value lives in gitignored registry/local.env as RN_WIN2000_MAC (retronet fleet
+# scheme 52:54:00:52:4e:<last-IP-octet>, "52:4e"=RN, .11 -> ...0b) so every
+# bridged guest is L2-distinct and per-MAC DHCP reservations do not collide. The
+# golden's vmstate carries the MAC, so this only matters on a COLD (re-)bake;
+# loadvm golden uses the baked MAC regardless, but this mac= must MATCH it (cold
+# boot vs loadvm bind to the same device). Only the one line is read, never the
+# whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_WIN2000_MAC="02:00:00:00:00:0b" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_WIN2000_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
+  [ -n "$_m" ] && RN_WIN2000_MAC="$_m"
+fi
 # streamhost QEMU display-capture fast-poll (pve-qemu 0047 patch): dbus display
 # polls every SH_DBUS_UPDATE_MS ms (default 4; clamp 1..29; 0/unset = stock 30 ms).
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
@@ -56,7 +73,7 @@ nohup qemu-system-x86_64 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0 \
   -usb -device usb-tablet \
   -drive file="$DISK",format=qcow2,if=ide \
-  -netdev tap,id=n0,ifname=win2krn0,script=no,downscript=no -device rtl8139,netdev=n0 \
+  -netdev tap,id=n0,ifname=win2krn0,script=no,downscript=no -device rtl8139,netdev=n0,mac="$RN_WIN2000_MAC" \
   $LOADVM \
   -qmp unix:$B/qmp.sock,server=on,wait=off \
   -pidfile $B/qemu.pid \

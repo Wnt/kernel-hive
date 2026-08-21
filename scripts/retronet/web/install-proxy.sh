@@ -98,7 +98,11 @@ id rnproxy >/dev/null 2>&1 ||
 install -d -o root -g root -m 0755 /opt/retronet-proxy /etc/retronet
 # The corpus is served, public, static content — world-readable so the
 # unprivileged service can traverse and read files era-press pushes here as root.
-install -d -o root -g root -m 0755 /data/retronet /data/retronet/corpus
+install -d -o root -g root -m 0755 /data/retronet
+# /data/retronet/corpus may be a bind-mount from the host corpus volume — an
+# unprivileged CT cannot chown a host-owned mount, so `install -d` on it fails
+# fatally. Create it only on a fresh install (no mount); leave an existing dir as-is.
+[ -d /data/retronet/corpus ] || mkdir -p /data/retronet/corpus
 install -o root -g root -m 0755 /tmp/rnp-proxy.py /opt/retronet-proxy/proxy.py
 install -o root -g root -m 0644 /tmp/rnp-proxy.env /etc/retronet/proxy.env
 install -o root -g root -m 0644 /tmp/rnp-proxy.service /etc/systemd/system/retronet-proxy.service
