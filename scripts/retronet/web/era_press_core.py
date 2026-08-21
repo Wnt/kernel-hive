@@ -21,16 +21,20 @@ import re
 import subprocess
 import threading
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from collections import deque
 from pathlib import Path
 from shutil import which
 
+# NOTE: httpx is imported LAZILY (inside _get_client / http_get), never at module load. The offline
+# self-test imports this module under the system python where httpx is NOT installed, so a top-level
+# import would break it; deferring the import also guarantees no socket opens at import time.
+
 WB = "https://web.archive.org"
 CDX = WB + "/cdx/search/cdx"
-UA = "era-press/1.0 (kernel-hive retronet; offline museum corpus)"
+# A real Chrome UA -- archive.org negotiates HTTP/2 to it exactly as it does to a live browser, and it
+# reads as a browser rather than a bot. The old era-press/1.0 UA is dropped.
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 CORPUS = "/data/retronet/corpus"  # in CT 951 AND the local staging default
 CT_DEFAULT, SSH_DEFAULT = "951", "lab"
 CEILING = "20001231"  # hard date ceiling: never mirror a capture past 2000-12-31
@@ -115,30 +119,80 @@ def _backoff(attempt, retry_after=None):
     time.sleep(min(secs, BACKOFF_MAX))
 
 
+# --- persistent connection reuse: the cure for self-inflicted NAT/conntrack exhaustion -------------
+#
+# The crawl fires thousands of archive.org requests. Opening a BRAND-NEW TCP+TLS connection per request
+# (the old urllib.urlopen-per-call transport), ~10 workers wide, saturated the LAN router's NAT/conntrack
+# table for CT950's flow to the archive edge and got ~5 of every 6 new connections RST'd -- the crawl
+# throttled itself to ~MB/hr and knocked other hosts off web.archive.org. The cure is the fullest browser
+# route: ONE shared httpx.Client speaking HTTP/2 to web.archive.org (exactly what Chrome negotiates), so
+# every worker's request is MULTIPLEXED over a tiny, bounded pool of persistent connections -- a handful
+# total, not thousands, and not even one-per-thread. httpx's sync Client is thread-safe, so all
+# ~CONCURRENCY workers share this single client. It is built LAZILY on first use (double-checked lock),
+# so importing this module opens NO socket AND needs NO httpx installed -- the offline self-test, run
+# under the system python without httpx, still imports and passes.
+
+_client = None  # the one shared httpx.Client (HTTP/2, small bounded pool); created on first http_get
+_client_lock = threading.Lock()
+
+
+def _get_client():
+    """The process-wide shared httpx.Client, created on first use. HTTP/2 multiplexing lets a SMALL pool
+    (max_connections=4) carry the whole ~10-wide crawl, which is the entire NAT fix: established
+    connections track the pool cap (~4), never the request count. Kept small on purpose -- do not raise
+    it. Import is lazy so the offline self-test (system python, no httpx) still imports this module."""
+    global _client
+    if _client is None:
+        with _client_lock:
+            if _client is None:
+                import httpx
+
+                _client = httpx.Client(
+                    http2=True,
+                    follow_redirects=True,  # the id_ 302 -> nearest-snapshot redirect must still be followed
+                    headers={"User-Agent": UA},
+                    timeout=httpx.Timeout(60.0, connect=15.0),  # 60s read timeout, preserved from before
+                    limits=httpx.Limits(max_connections=4, max_keepalive_connections=4, keepalive_expiry=30),
+                )
+    return _client
+
+
 def http_get(url, retries=5):
-    """GET url, following redirects; return (final_url, content_type, body) or None. Passes through the
-    shared pacing gate; a 429/503 backs off the WHOLE crawl pool (globally), other errors retry locally."""
+    """GET url, following redirects, over the shared HTTP/2 client (a handful of reused connections carry
+    the whole crawl -- no new TCP+TLS connection, and no new NAT entry, per request). Return
+    (final_url, content_type, body) or None. Passes through the shared pacing gate; a 429/503 backs off
+    the WHOLE crawl pool (globally), other errors retry locally. Contract unchanged -- callers are too."""
+    import httpx
+
+    client = _get_client()
     for attempt in range(retries):
         _pace()
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=60) as r:
-                data = r.geturl(), (r.headers.get("Content-Type") or ""), r.read()
-            _relax()
-            return data
-        except urllib.error.HTTPError as e:
-            if e.code in (429, 503):
-                _penalize(e.headers.get("Retry-After"))  # shared, whole-pool backoff
-                if attempt >= retries - 1:
-                    return None
-                continue
-            if e.code in (404, 403) or attempt >= retries - 1:
-                return None
-            _backoff(attempt + 1)
-        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            resp = client.get(url)
+        except httpx.HTTPError:
+            # httpx.HTTPError subsumes TimeoutException + TransportError (the transient transport/timeout/
+            # protocol errors) + TooManyRedirects -> local backoff + retry, exactly as urllib's URLError did.
             if attempt >= retries - 1:
                 return None
             _backoff(attempt + 1)
+            continue
+        except (httpx.InvalidURL, ValueError, UnicodeError):
+            return None  # a malformed URL is not transient -> authentic miss (as the old urllib path did)
+        status = resp.status_code
+        if status in (429, 503):
+            _penalize(resp.headers.get("Retry-After"))  # shared, whole-pool backoff
+            if attempt >= retries - 1:
+                return None
+            continue
+        if status in (404, 403):
+            return None
+        if 200 <= status < 300:
+            _relax()
+            return str(resp.url), (resp.headers.get("content-type") or ""), resp.content
+        # any other HTTP status (a 4xx/5xx not special-cased above): treat as transient -> backoff + retry
+        if attempt >= retries - 1:
+            return None
+        _backoff(attempt + 1)
     return None
 
 
