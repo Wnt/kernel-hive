@@ -21,7 +21,7 @@ import threading
 import urllib.parse
 
 import era_fetch
-from era_fetch import CEILING, INDEX_WORKERS, WB, _past_ceiling, bare, host_of
+from era_fetch import CEILING, INDEX_WORKERS, WB, _past_ceiling, bare, host_of, norm_host
 
 # --- the host index: ONE CDX query per HOST, then only exact-ts raw fetches -------------------------
 #
@@ -59,7 +59,10 @@ _index_lock = threading.Lock()
 _index = {}  # bare host -> {index key: exact 14-digit ts}; {} means "indexed, nothing in the window"
 _index_building = set()  # bare hosts whose query is in flight, so N workers trigger ONE of them
 _index_pool_ref = []  # the background query pool (a list so it can be created lazily under the lock)
-_index_since = {}  # bare host -> the site's era date; only registered hosts get an index
+# bare host -> (era date, the EXACT host to query). The key is bare so `www.x.com` and `x.com` share
+# one index, but the QUERY must use the configured host: `url=ibm.com&matchType=prefix` asks
+# archive.org to scan every subdomain of ibm.com and 504s, where `url=www.ibm.com` answers in ~39 s.
+_index_since = {}
 
 
 def _index_pool():
@@ -77,7 +80,7 @@ def register_site(host, since):
     """Declare a host as one we are crawling, so it earns a bulk index (see above). `since` is the
     site's era date: the index holds each URL's first capture on/after it, never past the ceiling."""
     with _index_lock:
-        _index_since[bare(host)] = since
+        _index_since[bare(host)] = (since, norm_host(host))
 
 
 def _index_key(url):
@@ -101,9 +104,9 @@ def _window_end(since, months):
     return min(f"{y:04d}{m:02d}{since[6:8]}", CEILING)
 
 
-def _fetch_index(host, since):
-    """One CDX prefix query -> {index key: exact ts} for every URL on `host` in a window starting at
-    `since`. `collapse=urlkey` keeps one row per URL (the first in the window, i.e. the closest to the
+def _fetch_index(query_host, since):
+    """One CDX prefix query -> {index key: exact ts} for every URL on `query_host` in a window starting
+    at `since`. `collapse=urlkey` keeps one row per URL (the first in the window, i.e. the closest to the
     era date from above). Returns {} if every attempt fails -- an absent index is not an error, it just
     means those URLs take the redirect route.
 
@@ -115,7 +118,8 @@ def _fetch_index(host, since):
     for months in _INDEX_WINDOWS:
         to = CEILING if months is None else _window_end(since, months)
         q = (
-            f"url={urllib.parse.quote(host, '')}&matchType=prefix&collapse=urlkey&filter=statuscode:200"
+            f"url={urllib.parse.quote(query_host, '')}&matchType=prefix&collapse=urlkey"
+            f"&filter=statuscode:200"
             f"&from={since}&to={to}&fl=original,timestamp&limit={CDX_ROWS}&output=json"
         )
         got = era_fetch.http_get(CDX + "?" + q, retries=2, index=True)
@@ -144,9 +148,10 @@ def _read_cached_index(host, since):
     return None
 
 
-def _build_index(host, since):
-    """Query + cache one host's index. Runs on the index pool, NEVER on a fetch worker."""
-    idx = _fetch_index(host, since)
+def _build_index(host, since, query_host=None):
+    """Query + cache one host's index. Runs on the index pool, NEVER on a fetch worker. `host` is the
+    bare key the index is filed under; `query_host` is the exact host asked of CDX."""
+    idx = _fetch_index(query_host or host, since)
     cache = _index_path(host, since)
     # An EMPTY index is cached too, on purpose: a host archive.org will not scan for us is a fact about
     # that host, not a transient error, and re-discovering it costs minutes of 504s on every run.
@@ -176,16 +181,17 @@ def host_index(host):
     with _index_lock:
         if host in _index:
             return _index[host]
-        since = _index_since.get(host)
-        if since is None or host in _index_building:
+        entry = _index_since.get(host)
+        if entry is None or host in _index_building:
             return None  # unregistered host, or its query is already in flight -> redirect route
+        since, query_host = entry
         _index_building.add(host)
     cached = _read_cached_index(host, since)
     if cached is not None:
         with _index_lock:
             _index[host] = cached
         return cached
-    _index_pool().submit(_build_index, host, since)
+    _index_pool().submit(_build_index, host, since, query_host)
     return None
 
 

@@ -199,6 +199,9 @@ def main():
         check("index: post-ceiling row is never indexed", ts_of("http://t.example/late.gif"), "19970101")
         check("index: un-indexed host -> the era date", ts_of("http://ads.example/a.gif"), "19970101")
         check("index: ONE CDX query for the whole host", len(cdx_calls), 1)
+        # the query must name the CONFIGURED host: url=t.example&matchType=prefix would ask
+        # archive.org to scan every subdomain of t.example, which is what 504s on the real thing.
+        check("index: queries the configured host, not the bare one", "url=www.t.example&" in cdx_calls[0], True)
     finally:
         ef.http_get = saved_get
 

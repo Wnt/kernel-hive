@@ -350,7 +350,7 @@ def cmd_index(a):
             cached += 1
             continue
         t0 = time.time()
-        era_index._build_index(host, since)  # writes the disk cache as a side effect
+        era_index._build_index(host, since, core.norm_host(s["host"]))  # writes the disk cache too
         rows = len(era_index._index.get(host) or {})
         built += bool(rows)
         failed += not rows
