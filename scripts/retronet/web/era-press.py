@@ -174,7 +174,11 @@ def cdx_pick(url, target):
         return None
     if len(rows) < 2:
         return None
-    return min(rows[1:], key=lambda r: abs(int(r[1]) - int(target)))[1]
+    # Compare on the FULL 14-digit timestamp: an 8-digit YYYYMMDD target (int 1.9e7) next to
+    # 14-digit capture stamps (int 1.9e13) would otherwise always resolve to the EARLIEST capture,
+    # not the one nearest the era-date. Pad the target to 14 digits so "closest" is truly temporal.
+    t = int(target.ljust(14, "0"))
+    return min(rows[1:], key=lambda r: abs(int(r[1]) - t))[1]
 
 
 def wayback_raw(url, timestamp):
