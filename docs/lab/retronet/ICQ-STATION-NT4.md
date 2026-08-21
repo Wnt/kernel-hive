@@ -1,152 +1,157 @@
-# nt4 ICQ station — the bridge as-built
+# nt4 ICQ station — the bridge as-built (ICQ 2001b / SSI)
 
-**Status: LIVE.** `nt4` (Windows NT 4.0 Workstation SP6a) runs ICQ 2000b against
-the retronet OSCAR gateway over a **real bridged NIC** on `vmbr-rn`. Open the
-station and the persona (UIN `40000`) reconnects and the greeter bot (UIN
-`10000` = **HiveBot**) messages it within ~30 s. This is the second ICQ station,
-built to the win98se recipe ([`ICQ-STATION.md`](ICQ-STATION.md)); read that
-first. This doc is only the **NT4-specific deviations** — and there were several,
-because nt4 was NOT the "clean copy" the plan assumed.
+**Status: LIVE.** `nt4` (Windows NT 4.0 Workstation SP6a) runs **ICQ 2001b
+(build 3659)** against the retronet OSCAR gateway over a **real bridged NIC** on
+`vmbr-rn`, on **DHCP** with a **unique MAC**. Open the station and the persona
+(UIN `40000`) **self-reconnects** and the greeter bot (UIN `10000` = HiveBot)
+messages it within ~30 s. This is the [win2000
+pathfinder](ICQ-STATION-win2000.md) replicated on Windows NT 4.0 — read that (and
+the [win98se original](ICQ-STATION.md)) for the shared design. This doc records
+what is **different** on NT4, and there is a lot: NT4 predates every tool the
+other two lean on (`netsh`, `taskkill`, a CLI HTTP client), and its DHCP switch
+needs a reboot.
+
+## Why 2001b — the SSI contact list, synced server-side
+
+ICQ 2000b keeps its contact list client-local; **ICQ 2001b is the first ICQ with
+a server-stored (SSI/feedbag) roster** — the client signs in and downloads its
+whole roster from the server, no client-UI seeding, no golden recapture to add a
+contact. The server side is seeded by the SSI fabric
+(`scripts/retronet/icq/seed_contacts.py ssi`, roster
+`scripts/retronet/icq/roster.json`).
+
+**Proven on nt4:** signing UIN `40000` in pulled the full roster down and
+rendered it **by name** with no manual adds — **HiveBot, solaris, tru64, win2000,
+win98se**. The client's own 2000b→2001b migration *uploaded* its local list
+(just HiveBot) too, but that **merges** with the fabric-seeded server roster (it
+does not wipe it): `rn-tool.py buddies 40000` = the same 5 before and after.
 
 ## The wiring, at a glance
 
 | | |
 |---|---|
-| NIC | `-device pcnet,netdev=n0,mac="$RN_NT4_MAC"` (**unchanged device**; a UNIQUE mac — see below), backend `-netdev tap,id=n0,ifname=nt4rn0,script=no,downscript=no` |
+| NIC | `-device pcnet,netdev=n0,mac="$RN_NT4_MAC"` (**unchanged device**; a UNIQUE mac — below), backend `-netdev tap,id=n0,ifname=nt4rn0,script=no,downscript=no` |
+| **MAC** | **unique, fleet scheme `52:54:00:52:4e:0c`** (`52:4e`=RN, `.12`→`…0c`). Real value in gitignored `registry/local.env` `RN_NT4_MAC`; the committed launcher carries the scrubbed placeholder `02:00:00:00:00:0c` and reads the one line at boot. Baked in the golden vmstate (this one was already baked — verified in-guest + FDB, no re-bake needed) |
 | Tap | `nt4rn0`, persistent, enslaved to `vmbr-rn`, created + guarded by `streamhost/stations/nt4/rn-tapnet.sh up` from the launcher on every start (chain `NT4RN-IN`) |
-| Guest IP | **static `10.99.0.12/24`, NO default route, DNS none** (a stale `192.168.0.1` NameServer lingers in the registry but is unreachable) |
-| OSCAR server | gateway CT `10.99.0.2:5190` |
+| Guest IP | **DHCP** — TCP/IP set to obtain IP *and* DNS automatically. `retronet-dhcp` reserves `RN_NT4_MAC → 10.99.0.12/24`, DNS `10.99.0.2`, **and NO default gateway** (containment stays Lock 1: no default route) |
+| Seamless web | DNS = `10.99.0.2` (via DHCP) + **no IE proxy** → type any URL: the name resolves to the gateway and its `:80` origin serves the corpus. Proven: IE renders `http://spacejam.com/` by URL with no proxy |
+| OSCAR server | gateway CT `10.99.0.2:5190`. ICQ's **Server → Host** is the literal `10.99.0.2` port `5190` |
 | Persona / bot | UIN `40000` (nt4) / UIN `10000` (HiveBot); passwords in `registry/local.env` `RETRONET_ICQ_NT4_PASS` / `_BOT_PASS` |
-| ICQ client | ICQ 2000b (`C:\Program Files\ICQ\Icq.exe`), `DefaultPrefs` **`Default Server Host`**=`10.99.0.2` (REG_SZ) **`Default Server Port`**=`dword:00001446` (=5190) |
-| Exec | `labctl exec nt4 "<cmd>"` → `C:\WARPNET.EXE` (warpnet7788.exe) at **`10.99.0.12:7788` over the bridge** (`exec_kind warpd_e`, `exec_host`→`GEXEC_HOST`); no hostfwd |
-| RAM | **256 MB** (128 MB thrashed with NT4 + ICQ + a spawned exec `cmd.exe` — exec failed and ICQ could not complete its sign-on) |
+| ICQ client | **ICQ 2001b build 3659** (`C:\Program Files\ICQ\Icq.exe`). Server **Host=`10.99.0.2` Port=`5190`**, **Keep connection alive = ON**, Save password = ON, Launch ICQ on startup = ON |
+| Exec | `labctl exec nt4 "<cmd>"` → guest agent `C:\WARPNET.EXE` at **`10.99.0.12:7788` directly over the bridge** (`exec_kind warpd_e`); no hostfwd |
+| RAM | **256 MB** (128 MB thrashed with NT4 + ICQ + a spawned exec `cmd.exe`) |
+| Launcher | **verbatim** `streamhost/stations/nt4/qemu-streamhost.sh`; pinned `/opt/qemu-cirrusfix2` (isa-cirrus-vga vmstate patch), `-cpu pentium3 -smp 1 -machine …,hpet=off,vmport=on` |
 
-## nt4 was not a clean copy — five NT4-specific fixes
+## The reconnect mechanism — 2001b SELF-HEALS (no nudge)
 
-1. **The NIC driver was disabled, not absent, and mis-parameterised.** The gallery
-   golden already had TCP/IP + NetBT installed and bound to `\Device\AMDPCN1`, and
-   `amdpcn.sys` present — but `HKLM\SYSTEM\CCS\Services\AMDPCN\Start` was `4`
-   (DISABLED) from the "clean desktop" pass, so the adapter never loaded ("service
-   or driver failed during startup"; Event 6005). Re-enabling it (`Start=2`) then
-   surfaced Event 5011 **"AMDPCN1: A required parameter is missing from the
-   Registry"**: `Services\AMDPCN1\Parameters` was empty. NT4's own adapter setup
-   (Control Panel → Network → Adapters → Properties → OK) rewrote the parameter
-   block, but its PCI auto-detect wrote **`BusNumber=2, SlotNumber=0`** — backwards
-   for QEMU's pcnet, which `info pci` shows at **Bus 0, Device 2**. The driver then
-   initialised (got the static IP) but transmitted **zero frames**. The fix is
-   `BusNumber=0, SlotNumber=2` (+ `BusType=5`, `TP=1` = force 10Base-T). All four
-   are set in the golden. Reproduce offline (image mounted via qemu-nbd + ntfs-3g
-   inside `chroot-guard run-private`):
-   `[\ControlSet001\Services\AMDPCN\] "Start"=dword:2` and
-   `[\ControlSet001\Services\AMDPCN1\Parameters] "BusNumber"=dword:0
-   "SlotNumber"=dword:2 "BusType"=dword:5`.
+**This retires the per-station nudge for nt4.** ICQ 2000b sits on a half-open
+zombie socket after a wake and never reconnects, so it needed `nt4-icq-nudge` (a
+labhost timer spoofing the gateway's RST). **ICQ 2001b with `Keep connection
+alive` ON does not:** on a `loadvm golden` wake the restored BOS socket is stale
+(the gateway timed it out while the guest was frozen), the keepalive probe aborts
+the dead 4-tuple, and **2001b reconnects on a fresh port on its own — silently,
+using the saved password — within ~1–2 s**, then HiveBot greets ~30 s later.
 
-2. **MAC collision.** QEMU's default pcnet mac is `52:54:00:12:34:56`, and every
-   retronet Windows guest (`win98se`, `win2000`, `nt4`) was taking it — the bridge
-   `fdb` learned one MAC on one port and blackholed the others. nt4 pins a unique
-   mac on the **fleet scheme `52:54:00:52:4e:<last-IP-octet>`** (`52:4e`=RN, `.12`
-   → `...0c`). Per the never-commit-a-MAC rule the real value lives in gitignored
-   `registry/local.env` as `RN_NT4_MAC` (the committed launcher carries a
-   placeholder and reads that one line at boot); the golden's vmstate carries the
-   MAC, so a MAC change is a **cold re-bake**. **Any further bridged station MUST
-   pin its own mac.**
+- **`Keep connection alive` is load-bearing.** It ships **OFF**
+  (Preferences → Connections → **Server** tab); with it off the wake leaves 2001b
+  passive and its reconnect re-prompts *Password incorrect*.
+- **`nt4-icq-nudge.timer` is DISABLED on the box** (superseded by self-heal). The
+  files stay in the repo only as the fleet's shared 2000b healer until win98se
+  also moves to 2001b.
 
-3. **256 MB, not 128.** With ICQ 2000b resident, 128 MB thrashed: the warpnet exec
-   `cmd.exe` returned `rc=1`/empty and ICQ's sign-on could not allocate. 256 MB is
-   comfortable; the golden is re-baked at that size (so `-m` and the golden agree).
+**Measured acceptance (production `labctl reset nt4` path, 2026-08-21):** reset →
+the guest idle-paused (~45 s) and the gateway dropped `40000` (~180 s) → the
+visitor's wake (`cont`) → **`40000` reconnected in ~2 s, silent, nudge OFF**, the
+SSI roster stayed intact, and HiveBot greeted (*"hey, did you just sign on with
+the NT 4? very serious machine :)"*).
 
-4. **ICQ's server value name is `Default Server Host`, not `Host`.** win98se's
-   as-built shorthand ("`Host`") is wrong for the raw registry: ICQ 2000b creates
-   `Default Server Host`=`login.icq.com` / `Default Server Port`=`0x1446` in
-   `DefaultPrefs` **on first launch**. So set the override **after** ICQ has run
-   once (not before — it overwrites pre-seeded values), while the wizard is closed,
-   then relaunch → *Existing User* → sign in `40000`.
+## Containment — identical to win98se, proven the same way
 
-5. **No display wedge.** NT4's Cirrus is a kernel-mode driver, not a Win9x VBE
-   miniport, so the "garbled 1600×176" DOS-box wedge does not occur; a `cmd.exe`
-   exec leaves the 1024×768 frame clean. The warpnet `V` verb
-   (`ChangeDisplaySettings(NULL, CDS_RESET)`) is still fired before `savevm` as a
-   belt, and it is harmless (re-asserts the current mode).
-
-## Containment — proven identical to win98se
-
-From inside the guest (`labctl exec nt4 "ping -n 2 <ip>"`):
+Layered locks (no default route / `retronet-fw` / the per-station `NT4RN-IN`
+guard chain). On DHCP the reservation withholds option 3 (router), so *the
+addressing itself* keeps the no-WAN posture. Proven from inside the guest:
 
 | From the guest to… | Result | Lock |
 |---|---|---|
-| CT `10.99.0.2` (OSCAR) | **Reply** | intra-bridge L2 (the point) |
-| labhost bridge `10.99.0.1` | **timed out** | `NT4RN-IN` guard chain (Lock 3) |
+| CT `10.99.0.2` (OSCAR + `:80` origin) | **Reply / serves** | intra-bridge L2 (the point) |
+| labhost bridge `10.99.0.1` | **timed out** | the `NT4RN-IN` guard chain |
 | internet `1.1.1.1` (by IP) | **Destination host unreachable** | no default route (Lock 1) |
 
-`route print` shows no `0.0.0.0` default route. UDP works (NetBIOS broadcasts on
-the tap); ICMP works (ping reply). `rn-tapnet.sh` is a byte-for-byte copy of
-win98se's, renamed (`nt4rn0`, `10.99.0.12`, `NT4RN-IN`), fail-closed.
-
-## The reconnect mechanism — how "open the station" greets you
-
-Same as win98se, and it is **not** a bare `loadvm`. `loadvm golden` alone does not
-reconnect (the restored guest and gateway agree on sequence numbers). The trigger
-is the station's **idle-pause**: paused → the gateway times out `40000` after
-~130 s and drops it → on the visitor's resume (`cont`) the guest reconnects on a
-fresh port, and the bot greets ~30 s later. `nt4-icq-nudge` (per-station labhost
-`systemd` timer, every 10 s) is the healer: when the guest is running AND the
-gateway shows `40000` offline it spoofs a gateway→guest ACK on the stale BOS port
-to elicit the RST that ICQ 2000b will not produce on its own.
-
-- **`GOLDEN_ICQ_PORT=1035`** — the source port the persona is restored onto from
-  the golden. **The launcher `rm -f /run/nt4-icq-port` on every start**, so a
-  portfile that drifted to a reconnect's ephemeral port cannot make the first
-  post-`loadvm` nudge miss (it falls back to `GOLDEN_ICQ_PORT`). Recapture the
-  golden ⇒ update `GOLDEN_ICQ_PORT` to the persona's port at capture time.
-- **Idle-pause stays ON** (registry default) — it is the machinery, not just a CPU
-  saver. `Auto Save Password` is ticked so the reconnect is silent.
-
-**Proven twice (2026-08-21), greeting "hi! that's the NT box isn't it?" popped as
-an ICQ message window on the framebuffer:** (A) idle-pause a live guest → drop →
-resume → greet at +30 s; (B) fresh golden (paused) → visitor opens → nudge →
-reconnect ~5 s → greet at +30 s.
+`route print` shows no `0.0.0.0` default route on the DHCP lease.
 
 ## Golden lineage & rollback (FULL paths)
 
-- **LIVE golden:** internal snapshot **`golden`** (~80 MiB, 2026-08-21 03:04, a
-  cold-boot re-bake carrying MAC `52:54:00:52:4e:0c`) in the tile-local
-  `/data/vms/streamhost/stations/nt4/nt4-golden.qcow2`. Tap-native, 256 MB,
-  captured with ICQ **connected** (UIN `40000`, port 1035) + HiveBot in contacts +
-  a clean 1024×768 frame. `labctl reset nt4` = `loadvm golden`.
-- **Pre-change full-disk backup** (QEMU stopped, SHA256-verified):
-  `/data/gallery-guests/Nt4/golden-backup-retronet-nt4-20260820/nt4-golden.qcow2`
-  (`767c7afa…c83a`, `SHA256SUMS` in the dir) — the pre-retronet slirp golden.
-  The pristine gallery image `/data/gallery-guests/Nt4/nt4-golden.qcow2` (128 MB,
-  slirp) is untouched.
+- **LIVE golden:** internal snapshot **`golden`** (~90 MiB VM state, 2026-08-21
+  11:31) in the tile-local `/data/vms/streamhost/stations/nt4/nt4-golden.qcow2`.
+  **Tap-native + DHCP + MAC `52:54:00:52:4e:0c`**, 256 MB, captured with **ICQ
+  2001b connected** (UIN `40000`, Server `10.99.0.2:5190`, Keep-alive ON) + the
+  full SSI roster + a clean 1024×768 frame. `labctl reset nt4` = `loadvm golden`.
+- **Full-disk byte-copy backup of the pre-swap ICQ-2000b golden** (QEMU stopped,
+  SHA256 `f5594e4e…5319`): `/data/gallery-guests/Nt4/golden-backup-preswap2001b-20260821/nt4-golden.qcow2`
+  (`SHA256SUMS` in the dir). This is the rollback for the whole 2001b/DHCP swap —
+  it holds the ICQ 2000b + static-IP golden.
+- Older backup: `golden-backup-retronet-nt4-20260820/` (pre-retronet slirp
+  golden, disk recovery only — not `loadvm`-able on the tap).
 
-Full rollback = `systemctl stop streamhost@nt4`, copy the backup qcow2 over the
-tile-local one, revert the launcher/registry, `systemctl start`.
+Full rollback = `systemctl stop streamhost@nt4`, copy the `preswap2001b` backup
+qcow2 back, revert the launcher/registry/`local.env` reservation, `labctl gen`,
+`systemctl start`.
 
-## Gotchas that cost real time
+## Gotchas that are NT4-specific (and the 2000b→2001b + DHCP swap)
 
-- **The installed launcher is `/usr/local/lib/streamhost/stations/nt4/current`
-  (the streamhost daemon), which reads the QEMU line from
-  `/data/vms/streamhost/stations/nt4/qemu-streamhost.sh`.** A parallel
-  `box-deploy` from `main` reverts that file to the committed version — during
-  bring-up it silently reverted the tap launcher to the old **slirp** one twice,
-  so the guest booted on slirp (`info network` = `type=user`) with an unroutable
-  static IP and 0 tap traffic. Land the launcher to `main` early. After a re-bake
-  the mismatched `-m` also fails `loadvm` ("Size mismatch: pc.ram").
-- **`loadvm` does NOT cross netdev backends** — the old slirp golden could not be
-  `loadvm`'d on the tap. nt4 was cold-booted on the tap (`qemu-img snapshot -a
-  golden` to a clean base, then delvm) and a fresh tap-native golden baked.
-- **File delivery.** The warpnet agent is stdout-only and appends its own
-  `>C:\WNEXEC.OUT`, so `>`-redirects are swallowed. To write a file in-guest,
-  terminate the write command with `&` so the agent's redirect attaches to a
-  trailing no-op (`echo LINE>>C:\f& …& regedit /s C:\f`). Or inject offline.
+- **Shut ICQ 2000b down before installing 2001b.** The installer aborts while
+  2000b is running and NT4 has no `taskkill`; close it from its **tray icon →
+  Shut Down**, then run the installer. It upgrades in place into
+  `C:\Program Files\ICQ`. (The Red Bend unpack phase is slow — ~15 min on this
+  VM; watch qcow2 growth + QEMU CPU to tell "slow" from "hung".)
+- **Installer delivery is TFTP over the exec channel** — NT4 has no CLI HTTP
+  client but ships `TFTP.EXE`. A tiny read-only TFTP server on the gateway CT
+  (`10.99.0.2:69`) + `labctl exec nt4 "tftp -i 10.99.0.2 GET ICQ2001b.exe
+  C:\ICQ2001b.exe"`. TFTP writes to its file *argument* (not a `>` redirect) and
+  exits, so it dodges the WNEXEC-trap that a long-lived GUI child would spring.
+  **Launch the installer from the FRAMEBUFFER** (Start ▸ Run), never the exec
+  channel. Remove `C:\ICQ2001b.exe` afterward.
+- **The migration carries the wrong password.** First 2001b login shows
+  *Password incorrect* (User `40000`); re-enter `RETRONET_ICQ_NT4_PASS` with
+  **Save password** ON. Because 2001b defaults its Server to `login.icq.com` and
+  nt4 has no DNS for it yet, the very first attempt fails *"Can't establish
+  connection"* until you set **Server → Host = `10.99.0.2`** — set it, then
+  Disconnect→Connect.
+- **DHCP is a registry `.reg`, not `netsh` and not the Network applet.** NT4 has
+  no `netsh`, and the Network applet's adapter setup rewrites the pcnet
+  `BusNumber/SlotNumber` **backwards** (the bug §fixed in the golden). So flip it
+  by importing a REGEDIT4 `.reg` (delivered by TFTP, applied `regedit /s`):
+  `[…\Services\AMDPCN1\Parameters\Tcpip] "EnableDHCP"=dword:1`, zero `IPAddress`
+  + `SubnetMask` (REG_MULTI_SZ `"0.0.0.0"`), empty `DefaultGateway` +
+  `DhcpDefaultGateway`. The **DHCP Client service Start is already `2`** (auto);
+  the static `NameServer` is already empty, so the lease's `DhcpNameServer`
+  (10.99.0.2) is used automatically. **NT4 reads adapter config only at boot — a
+  reboot is required** (unlike win2000's live `netsh`).
+- **The DHCP reboot force-killed ICQ, which lost the freshly-saved password.**
+  NT4's clean shutdown couldn't close ICQ (it re-prompts + goes not-responding →
+  *End Task*), and the corrected password is only flushed to the DAT on a **clean
+  ICQ exit**, so the next boot re-prompted *Password incorrect*. **Fix: after
+  re-entering the password, cleanly Shut Down ICQ (tray → Shut Down) to persist
+  it, then relaunch and confirm a truly silent connect** before recapturing.
+  (`loadvm golden` reconnects from the in-RAM state either way; the disk persist
+  is what keeps a *cold* boot silent.)
+- **The guest keyboard is a UK/ISO layout.** Over QMP `send-key`, qcode
+  `backslash` types `#` and qcode **`less`** types `\` — matters for typing
+  `C:\…` paths during the install (the persona password is alphanumeric, so it is
+  layout-safe). `:` and `/` type correctly.
+- **No display wedge.** NT4's Cirrus is a kernel-mode driver, not a Win9x VBE
+  miniport, so a `cmd.exe` exec leaves the 1024×768 frame clean. The warpnet `V`
+  verb (`CDS_RESET`) before `savevm` is belt, not load-bearing.
 
 ## Operating it
 
 ```bash
 ssh lab 'labctl exec nt4 "ver"'                       # exec over the bridge
-ssh lab 'python3 /root/qmp_hmp.py /data/vms/streamhost/stations/nt4/qmp.sock "info network"'  # tap + mac
-ssh lab 'bash /data/vms/streamhost/stations/nt4/rn-tapnet.sh show'   # tap + guard chain
-ssh lab 'systemctl status nt4-icq-nudge.timer --no-pager; cat /run/nt4-icq-port'
-# is the persona online?
+ssh lab 'labctl exec nt4 "ipconfig /all"'             # DHCP lease 10.99.0.12, DNS 10.99.0.2, no gw, MAC …0c
+ssh lab 'bash /data/vms/streamhost/stations/nt4/rn-tapnet.sh show'   # tap + guard chain + FDB
+ssh lab 'labctl reset nt4'                            # loadvm golden → 2001b self-reconnects, greets ~30 s
+# is the persona online? (server-side)
 ssh lab 'pct exec 951 -- python3 -c "import urllib.request,json;print([s[\"screen_name\"] for s in json.loads(urllib.request.urlopen(\"http://127.0.0.1:8080/session\").read())[\"sessions\"]])"'
+# the server-side SSI roster 2001b syncs on login
+ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py buddies 40000'
 ```
