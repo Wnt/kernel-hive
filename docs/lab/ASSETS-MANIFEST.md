@@ -326,6 +326,22 @@ script. Staged **only** in the content-addressed media archive (no
 |---|---|---|---|---|
 | `icq2000b.exe` (ICQ 2000b, Mirabilis/AOL) | `9d5574cea30a8a0353d815555c59d589189b0fb98d9de63e74d908c16de3e11f` *(locally measured 2026-08-20; matches the file's own archive.org-recorded md5 `ae59de2259f3a109a6d66eb037da2335` and sha1 `4c916525f43d2a789a924cc81bf7b8bee7034645`)* | 5 331 244 | [`archive.org/details/icq2000b_202206`](https://archive.org/details/icq2000b_202206), file `icq2000b.exe` — the exact installer [Retro AIM Server's `CLIENT_ICQ.md`](https://github.com/mk6i/retro-aim-server/blob/main/docs/CLIENT_ICQ.md) links to for its own ICQ-2000b setup guide | **abandonware-URL.** Mirabilis/AOL-copyright, long-discontinued, no redistribution grant; hosted by a preservation archive. Chosen over the older ICQ 98a/99a/99b generation because those speak a *different, non-OSCAR* legacy protocol (UDP v3-v5 on port 4000 — a separate subsystem in Retro AIM Server, `ICQ_LEGACY_ENABLED`); ICQ 2000b is the first ICQ client to speak real OSCAR over TCP 5190 — the same port/protocol family the PoC's AIM support already rides ("one daemon, two nostalgia brands", `docs/lab/RETRONET-BRIEF.md` §5) and the exact port the PoC's network contract fixes (`docs/lab/retronet/POC-PLAN.md`: `10.99.0.2:5190`). iserverd is also an OSCAR-protocol reimplementation, so the same choice holds for the documented fallback. ICQ 2000b also keeps its contact list local to the client (2001+/2002+ store it server-side, and Retro AIM Server's own docs flag them as less reliable to set up). Private preservation exhibit only; never committed, never publicly served — installed into the win98se guest only. |
 
+### `win95` — retronet ICQ-2000b runtime prerequisites (stream D)
+
+win95 reuses win98se's **`icq2000b.exe`** (same blob above), but **bare Win95
+OSR2.5 lacks the 2000-era runtime ICQ 2000b assumes** (win98se/win2000/nt4 ship
+it). Two prerequisites were newly sourced from the lab's archival sources,
+verified, and staged **only** in the content-addressed media archive (no
+`/data/assets-staging/` copy); DCOM95 and the full IE5.5 SP2 offline installer
+were already staged on the win95 golden at `C:\IE55SP2\`. See
+[`docs/lab/retronet/ICQ-STATION-win95.md`](retronet/ICQ-STATION-win95.md) §"win95
+needed the modern ICQ-2000b runtime".
+
+| file | sha256 | size | source | class / terms |
+|---|---|---|---|---|
+| `50comupd.exe` (MS Common Controls 5.80 update for Win95/98/NT4) | `e70f9945a7803173cb46c90d014000cbf45e390cce1db2411cbd07e0ffd6b9e9` *(locally measured 2026-08-21)* | 509 984 | Wayback capture (2004-03-20) of the canonical Microsoft URL `download.microsoft.com/download/platformsdk/Comctl32/5.80.2614.3600/W9XNT4/EN-US/50comupd.exe` — a `PE32 … MS CAB-Installer self-extracting archive`. Required: the ICQ 2000b installer aborts on Win95 without it (*"the operating file 50comupd.exe (x86) is required to install ICQ"*). | **freely-redistributable MS runtime component.** Microsoft Common Controls redistributable (Platform SDK 5.80.2614.3600); MS granted redistribution for the comctl32 redist. Private preservation exhibit only; never committed. |
+| `w95ws2setup.exe` (MS Windows Sockets 2.0 Update for Windows 95, v4.71.0030.1) | `48c82825328ef63bce1d471d505f0e243cae94b5b05c66cf2e51b75c6d4d4922` *(locally measured 2026-08-21; sha1 `79912f041dc43d0918452a00019646ccd466f956` matches the archive.org item record)* | 986 400 | [`archive.org/details/w95ws2setup`](https://archive.org/details/w95ws2setup), file `w95ws2setup.exe` — the Microsoft-published Win95 Winsock 2 update (KB Q182108/Q184242). Required: base Win95 ships only Winsock 1.1 (wsock32.dll); ICQ 2000b needs Winsock 2 (`ws2_32.dll`). | **freely-redistributable MS OS update.** Microsoft-published Windows 95 system update, no per-install grant needed; hosted by a preservation archive. Private preservation exhibit only; never committed. |
+
 ### `macos753` — retronet AIM client media (Tier D, media-only so far)
 
 Not builder-driven yet — **networking itself doesn't exist on this station
