@@ -165,12 +165,23 @@ def _have(staging, host, rel):
 
 
 def _write(staging, host, rel, body):
+    """Write one mirrored file. True if it landed, False if this URL cannot be represented on disk.
+
+    A URL namespace is not a filesystem namespace: a site can serve BOTH `/image/44000043/icq` and
+    `/image/44000043/icq/banner.gif`, and a static mirror cannot hold both -- the first makes `icq` a
+    file, the second needs it to be a directory. ads.icq.com does exactly that. It is an authentic
+    limit of mirroring, not a failure, so it is skipped and counted as a miss; raising aborted the rest
+    of that page's resources."""
     dest = _dest(staging, host, rel)
     if not dest:
-        return
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
-    with open(dest, "wb") as f:
-        f.write(body)
+        return False
+    try:
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        with open(dest, "wb") as f:
+            f.write(body)
+    except OSError:
+        return False
+    return True
 
 
 def mirror_resource(url, ts, staging, seen, hosts, stats):
@@ -197,7 +208,9 @@ def mirror_resource(url, ts, staging, seen, hosts, stats):
     if not got or fetch._past_ceiling(got[0]) or len(got[2]) > MAX_FETCH:
         stats["misses"] += 1  # resolved capture past the ceiling (or a miss / oversize) -> skip
         return
-    _write(staging, host, rel, got[2])
+    if not _write(staging, host, rel, got[2]):
+        stats["misses"] += 1  # URL/filesystem namespace collision -> cannot be mirrored
+        return
     hosts.add(host)
     stats["assets"] += 1
     stats["bytes"] += len(got[2])
@@ -229,7 +242,9 @@ def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None):
                 stats["misses"] += 1
                 continue
             _ts, page, body, discovered = got
-            _write(staging, host, store_rel(url, page), body)
+            if not _write(staging, host, store_rel(url, page), body):
+                stats["misses"] += 1
+                continue
             stats["fetched"] += 1
         if page:  # mirror each discovered resource at its EXACT ts -- no per-resource search. Runs for
             for kind, res_ts, orig in discovered:  # a CACHED page too: see the note in era_crawl

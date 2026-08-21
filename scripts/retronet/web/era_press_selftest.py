@@ -303,6 +303,18 @@ def main():
             ef.wayback_raw = saved
         check("sweep: the missing image lands", os.path.isfile(os.path.join(staging, host, "logo.gif")), True)
 
+    # 13. a URL namespace is not a filesystem namespace: a site can serve BOTH /a/icq and /a/icq/b.gif.
+    #     The second cannot be mirrored once the first is a file -- that must be skipped, not raised,
+    #     or it aborts every remaining resource on the page (ads.icq.com does this for real).
+    with tempfile.TemporaryDirectory() as staging:
+        wrote = ep._write(staging, "h.example", "a/icq", b"x")
+        collided = ep._write(staging, "h.example", "a/icq/b.gif", b"y")
+        with open(os.path.join(staging, "h.example", "a", "icq"), "rb") as fh:
+            kept = fh.read()
+        check("write: a plain file lands", wrote, True)
+        check("write: a colliding path is skipped, not raised", collided, False)
+        check("write: the original file survives", kept, b"x")
+
     print("era-press selftest: all checks OK (raw mirror, host index, ceiling, frontier, seeds, sweep)")
 
 

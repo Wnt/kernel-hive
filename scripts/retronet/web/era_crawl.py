@@ -191,7 +191,10 @@ def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
         with lock:
             st["misses"] += 1  # resolved capture past the ceiling (or a miss / oversize) -> skip
         return
-    core._write(staging, host, rel, got[2])
+    if not core._write(staging, host, rel, got[2]):
+        with lock:
+            st["misses"] += 1  # URL/filesystem namespace collision -> cannot be mirrored
+        return
     with lock:
         st["assets"] += 1
         st["bytes"] += len(got[2])
@@ -227,7 +230,10 @@ def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
                 st["misses"] += 1  # uncaptured, oversize, or past the ceiling -> authentic miss
             return
         _page_ts, page, body, discovered = got
-        core._write(staging, host, core.store_rel(url, page), body)  # distinct file -> lockless
+        if not core._write(staging, host, core.store_rel(url, page), body):  # distinct file -> lockless
+            with lock:
+                st["misses"] += 1  # URL/filesystem namespace collision -> cannot be mirrored
+            return
         with lock:
             st["fetched"] += 1
             st["bytes"] += len(body)
@@ -468,6 +474,7 @@ def cmd_crawl(a):
             f"in-flight limit {fetch._GATE.limit()}",  # AIMD: where archive.org's knee is right now
         )
 
+    level = 0  # bound BEFORE the sweep: on_done closes over it and fires every 25 items
     if a.sweep:
         items = _interleave([[(st, u) for u in st["mirrored"]] for st in states])
         _log(a.log, f"--- SWEEP: re-checking resources on {len(items)} page(s) already on disk")
@@ -485,7 +492,6 @@ def cmd_crawl(a):
         used = _corpus_bytes(a.staging)
         _log(a.log, f"--- SWEEP done: corpus {used / 1e9:.2f} GB")
 
-    level = 0
     for level in range(maxdepth + 1):
         with lock:
             per_site = [[(st, u, level) for u in st["frontier"].pop(str(level), [])] for st in states]
