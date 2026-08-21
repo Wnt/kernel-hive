@@ -381,9 +381,9 @@ def cmd_crawl(a):
                 budget["stop"] = True
 
     def on_done(n):
-        """Driver-thread callback after each completed fetch; every 50, reconcile the running byte
+        """Driver-thread callback after each completed fetch; every 25, reconcile the running byte
         estimate against the real corpus size and flush the observable state (locked: workers are live)."""
-        if n % 50:
+        if n % 25:
             return
         used = _corpus_bytes(a.staging)
         with lock:

@@ -147,6 +147,21 @@ def main():
     assert time.monotonic() - t0 >= 0.12, "_pace must wait out the shared backoff window all workers see"
     ef.JITTER, ef._backoff_until, ef._backoff_streak = saved_jitter, 0.0, 0  # leave nothing armed
 
+    # 8b. the AIMD in-flight limiter: halves on push-back, and climbs back on QUIET TIME even when
+    #     almost no responses arrive (the failure that pinned the live crawl at its floor for 15 min).
+    gate = ef._InFlightGate(8, 2, 10)
+    gate.throttled()
+    check("limiter: push-back halves the limit", gate.limit(), 4.0)
+    gate.throttled()
+    gate.throttled()
+    check("limiter: never below the floor", gate.limit(), 2.0)
+    for _ in range(ef._InFlightGate._CLEAN_PER_STEP):
+        gate.clean()
+    check("limiter: clean responses climb it back", gate.limit(), 3.0)
+    gate._last_step -= ef._InFlightGate._QUIET_SECONDS + 1  # pretend a quiet spell passed
+    gate.clean()  # ONE response, but the quiet rule must still grant the step
+    check("limiter: quiet time climbs it with almost no traffic", gate.limit(), 4.0)
+
     # 9. the HOST INDEX, offline: ONE bulk CDX response per host prices every URL on it, so discovery
     #    from the RAW page body needs no per-URL search. Index keys are bare-host + path, so the CDX
     #    original (`http://www.t.example:80/p`) and the page's own reference (`http://t.example/p`)
@@ -168,6 +183,13 @@ def main():
     ef.http_get = fake_cdx
     try:
         ts_of = lambda u: ef.index_ts(u, "19970101")  # noqa: E731 -- terse on purpose, this is a test
+        # Asking for an index NEVER blocks a fetch worker: the first ask falls back to the era date
+        # and kicks the query off in the background; later asks use it once it lands.
+        check("index: first ask falls back, never waits", ts_of("http://t.example/logo.gif"), "19970101")
+        for _ in range(400):
+            if "t.example" in ef._index:
+                break
+            time.sleep(0.01)
         check("index: exact ts for an indexed resource", ts_of("http://t.example/logo.gif"), "19970104102030")
         check("index: exact ts for an indexed page", ts_of("http://www.t.example/about.html"), "19970211090000")
         check("index: post-ceiling row is never indexed", ts_of("http://t.example/late.gif"), "19970101")

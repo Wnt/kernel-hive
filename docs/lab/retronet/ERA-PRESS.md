@@ -113,6 +113,14 @@ cost is paid once, not once per restart.
 Only hosts we actually crawl earn an index; a third-party host serving one image is not
 worth a 70 s query and takes the redirect route instead.
 
+**An index is an optimisation, never a precondition**, so asking for one never blocks: the
+disk cache is read inline, and a missing index is *started in a tiny background pool* while
+the URL is fetched at the era date right now. That matters — when index queries ran on the
+fetch workers themselves, 52 hosts × a 70–130 s query held the in-flight permits and the
+crawl spent its first quarter-hour building indexes at two connections instead of mirroring
+anything. Now the crawl runs at full speed throughout and simply gets faster as each index
+lands.
+
 ### The fetch transport — HTTP/1.1, and an adaptive limiter
 
 Every archive.org request goes through `era_fetch.http_get`, over a **single

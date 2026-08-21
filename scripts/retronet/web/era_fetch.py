@@ -139,13 +139,15 @@ class _InFlightGate:
     can stay wide while the number actually in flight tracks what archive.org will take right now.
     """
 
-    _CLEAN_PER_STEP = 10  # clean responses per +1 permit: climb steadily, retreat fast
+    _CLEAN_PER_STEP = 10  # +1 permit per this many clean responses...
+    _QUIET_SECONDS = 20.0  # ...or after this long with no push-back, whichever comes first
 
     def __init__(self, start, lo, hi):
         self._cv = threading.Condition()
         self._limit, self._lo, self._hi = float(start), float(lo), float(hi)
         self._inflight = 0
         self._clean = 0
+        self._last_step = time.monotonic()
 
     def __enter__(self):
         with self._cv:
@@ -161,18 +163,28 @@ class _InFlightGate:
         return False
 
     def clean(self):
-        """A clean response: additive increase, up to the ceiling."""
+        """A clean response: additive increase, up to the ceiling.
+
+        The step is granted on a clean-response COUNT *or* on quiet TIME, whichever comes first, and
+        the time rule is not decoration -- it is what stops the limiter deadlocking itself. A
+        count-only rule couples the climb to throughput, so a halved limit means fewer responses means
+        a slower climb: the crawl sat at 2 permits for 15 minutes against a completely healthy IP
+        (measured, 2026-08-21) because each 70-130 s host-index query returned so rarely that ten clean
+        responses never accumulated. Quiet time recovers 2 -> 10 in about three minutes regardless."""
         with self._cv:
             self._clean += 1
-            if self._clean >= self._CLEAN_PER_STEP and self._limit < self._hi:
-                self._clean = 0
+            if self._limit >= self._hi:
+                return
+            now = time.monotonic()
+            if self._clean >= self._CLEAN_PER_STEP or now - self._last_step >= self._QUIET_SECONDS:
+                self._clean, self._last_step = 0, now
                 self._limit = min(self._hi, self._limit + 1)
                 self._cv.notify()
 
     def throttled(self):
         """archive.org pushed back: multiplicative decrease, down to the floor."""
         with self._cv:
-            self._clean = 0
+            self._clean, self._last_step = 0, time.monotonic()
             self._limit = max(self._lo, self._limit / 2)
 
     def limit(self):
@@ -423,8 +435,20 @@ INDEX_DIR = None  # set by the crawl to a directory, so host indexes survive a r
 
 _index_lock = threading.Lock()
 _index = {}  # bare host -> {index key: exact 14-digit ts}; {} means "indexed, nothing in the window"
-_index_building = {}  # bare host -> Event, so N workers wanting one host make ONE CDX query
+_index_building = set()  # bare hosts whose query is in flight, so N workers trigger ONE of them
+_index_pool_ref = []  # the background query pool (a list so it can be created lazily under the lock)
 _index_since = {}  # bare host -> the site's era date; only registered hosts get an index
+
+
+def _index_pool():
+    """The background pool that runs host-index queries. Deliberately tiny: an index query is a big,
+    slow request and must never crowd the page fetches out of the in-flight budget it shares."""
+    with _index_lock:
+        if not _index_pool_ref:
+            from concurrent.futures import ThreadPoolExecutor
+
+            _index_pool_ref.append(ThreadPoolExecutor(max_workers=2, thread_name_prefix="cdx-index"))
+        return _index_pool_ref[0]
 
 
 def register_site(host, since):
@@ -469,43 +493,56 @@ def _fetch_index(host, since):
     return idx
 
 
+def _read_cached_index(host, since):
+    """The host's index from disk, or None. Cheap enough to do inline on the calling worker."""
+    cache = _index_path(host, since)
+    if not cache or not os.path.exists(cache):
+        return None
+    with contextlib.suppress(OSError, json.JSONDecodeError), open(cache) as f:
+        return json.load(f)
+    return None
+
+
+def _build_index(host, since):
+    """Query + cache one host's index. Runs on the index pool, NEVER on a fetch worker."""
+    idx = _fetch_index(host, since)
+    cache = _index_path(host, since)
+    if cache and idx:
+        with contextlib.suppress(OSError):
+            os.makedirs(os.path.dirname(cache), exist_ok=True)
+            tmp = cache + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(idx, f)
+            os.replace(tmp, cache)
+    with _index_lock:
+        _index[host] = idx
+
+
 def host_index(host):
-    """The bulk index for `host`, built on first use and then reused by every worker. None for a host
-    that was never registered (a third-party resource host -> the redirect route). Blocking: exactly
-    ONE worker runs the query while the others wait on its Event, so a 40k-row fetch happens once."""
+    """The bulk index for `host` IF it is ready, else None -- never a wait.
+
+    A host index is an optimisation, not a precondition: without one a URL is simply fetched at the era
+    date and Wayback's redirect resolves the capture. So asking for one must never block. It did, at
+    first, and that alone stalled the crawl: 52 hosts each needing a 70-130 s prefix query, run on the
+    fetch workers themselves and holding in-flight permits, meant the crawl spent its first quarter-hour
+    building indexes at 2 connections instead of mirroring anything. Now the disk cache is read inline
+    (cheap) and only the QUERY goes to a tiny background pool, so the crawl runs at full speed the whole
+    time and simply gets faster as each index lands."""
     host = bare(host)
     with _index_lock:
         if host in _index:
             return _index[host]
         since = _index_since.get(host)
-        if since is None:
-            return None
-        event = _index_building.get(host)
-        mine = event is None
-        if mine:
-            event = _index_building[host] = threading.Event()
-    if not mine:
-        event.wait(900)
+        if since is None or host in _index_building:
+            return None  # unregistered host, or its query is already in flight -> redirect route
+        _index_building.add(host)
+    cached = _read_cached_index(host, since)
+    if cached is not None:
         with _index_lock:
-            return _index.get(host)
-    idx = None
-    cache = _index_path(host, since)
-    if cache and os.path.exists(cache):
-        with contextlib.suppress(OSError, json.JSONDecodeError), open(cache) as f:
-            idx = json.load(f)
-    if idx is None:
-        idx = _fetch_index(host, since)
-        if cache and idx:
-            with contextlib.suppress(OSError):
-                os.makedirs(os.path.dirname(cache), exist_ok=True)
-                tmp = cache + ".tmp"
-                with open(tmp, "w") as f:
-                    json.dump(idx, f)
-                os.replace(tmp, cache)
-    with _index_lock:
-        _index[host] = idx
-    event.set()
-    return idx
+            _index[host] = cached
+        return cached
+    _index_pool().submit(_build_index, host, since)
+    return None
 
 
 def index_ts(url, target):
