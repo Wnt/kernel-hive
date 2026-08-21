@@ -1,0 +1,11 @@
+#!/bin/sh
+# retronet ICQ exhibit: launch the climm OSCAR client in a titled dtterm.
+#
+# Reference copy. The live fixture is baked onto the checkpoint DISK at
+# /etc/dt/config/Xsession.d/9999.icq-fixture inside the guest; CDE's Xsession
+# sources it at session start. This is the COLD-BOOT fallback path only: on the
+# normal checkpoint-restore path climm is already running in the baked RAM
+# snapshot and Xsession.d does not run, so this cannot double-launch it. The
+# guest network (tu0 = 10.99.0.15) is up from rc.config before CDE starts, so
+# climm can reach the gateway (10.99.0.2:5190) the moment this runs.
+/usr/dt/bin/dtterm -title ICQ -e /usr/local/bin/climm &
