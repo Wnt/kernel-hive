@@ -14,6 +14,7 @@ offline self-test can all `import era_press_core` (the CLI entry keeps its
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import random
@@ -32,9 +33,33 @@ from shutil import which
 
 WB = "https://web.archive.org"
 CDX = WB + "/cdx/search/cdx"
-# A real Chrome UA -- archive.org negotiates HTTP/2 to it exactly as it does to a live browser, and it
-# reads as a browser rather than a bot. The old era-press/1.0 UA is dropped.
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+# The crawler presents to web.archive.org as EXACTLY the box's real Chrome. These headers were captured
+# from that Chrome over CDP (Network.requestWillBeSentExtraInfo) hitting web.archive.org: archive.org
+# soft-throttles requests that don't look like a browser, and browsing it in Chrome stays fast. HTTP/2
+# pseudo-headers + Host/cookie are added by httpx/the cookie jar. To refresh after a Chrome upgrade,
+# re-read the on-wire headers over CDP (see docs/lab/retronet/ERA-PRESS.md § The fetch transport).
+UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+BROWSER_HEADERS = {
+    "User-Agent": UA,
+    # httpx decodes gzip/deflate natively and br/zstd via brotli+zstandard (in the venv), so whatever
+    # archive.org sends is stored as the raw, decoded original (id_ actually comes back identity anyway).
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,"
+        "image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+    ),
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br, zstd",
+    "sec-ch-ua": '"Not;A=Brand";v="8", "Chromium";v="150", "Google Chrome";v="150"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Linux"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+    "Referer": "https://web.archive.org/",
+    "Priority": "u=0, i",
+}
 CORPUS = "/data/retronet/corpus"  # in CT 951 AND the local staging default
 CT_DEFAULT, SSH_DEFAULT = "951", "lab"
 CEILING = "20001231"  # hard date ceiling: never mirror a capture past 2000-12-31
@@ -140,20 +165,28 @@ def _get_client():
     """The process-wide shared httpx.Client, created on first use. HTTP/2 multiplexing lets a SMALL pool
     (max_connections=4) carry the whole ~10-wide crawl, which is the entire NAT fix: established
     connections track the pool cap (~4), never the request count. Kept small on purpose -- do not raise
-    it. Import is lazy so the offline self-test (system python, no httpx) still imports this module."""
+    it. Sends the full browser header set (BROWSER_HEADERS) and keeps a cookie jar, so archive.org sees a
+    real Chrome. Import is lazy so the offline self-test (system python, no httpx) still imports this."""
     global _client
     if _client is None:
         with _client_lock:
             if _client is None:
                 import httpx
 
-                _client = httpx.Client(
+                c = httpx.Client(
                     http2=True,
                     follow_redirects=True,  # the id_ 302 -> nearest-snapshot redirect must still be followed
-                    headers={"User-Agent": UA},
+                    headers=BROWSER_HEADERS,  # byte-for-byte the box's Chrome (captured over CDP)
                     timeout=httpx.Timeout(60.0, connect=15.0),  # 60s read timeout, preserved from before
                     limits=httpx.Limits(max_connections=4, max_keepalive_connections=4, keepalive_expiry=30),
                 )
+                # Prime the cookie jar like a browser's first visit: archive.org's homepage sets the
+                # server-affinity + donation-identifier cookies, and httpx (which keeps a jar by default)
+                # then resends them on every request -- so even the first CDX/id_ fetch carries cookies,
+                # exactly like the Chrome the operator watched browse archive.org fast. Best-effort.
+                with contextlib.suppress(httpx.HTTPError):
+                    c.get("https://web.archive.org/")
+                _client = c
     return _client
 
 

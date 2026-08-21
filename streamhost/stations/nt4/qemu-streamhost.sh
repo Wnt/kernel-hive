@@ -43,10 +43,12 @@
 #                              n0 is a real bridged NIC on vmbr-rn, NOT slirp. The
 #                              in-guest AMD PCNET driver (amdpcn.sys, Start=2) and
 #                              its TCP/IP binding are enabled in the tap-native
-#                              golden; the guest is static 10.99.0.12/24 with NO
-#                              default route, sharing L2 with the OSCAR gateway CT
-#                              10.99.0.2 so ICQ 2000b gets working UDP + ICMP +
-#                              real multi-connection TCP. Only the netdev BACKEND
+#                              golden; the guest is on DHCP (retronet-dhcp reserv.
+#                              RN_NT4_MAC -> 10.99.0.12/24, DNS 10.99.0.2, NO
+#                              router) with NO default route, sharing L2 with the
+#                              OSCAR gateway CT 10.99.0.2 so ICQ 2001b gets UDP +
+#                              ICMP + real multi-connection TCP and browses the
+#                              corpus by URL with no proxy. Only the netdev BACKEND
 #                              went user->tap, invisible to savevm/loadvm. Do NOT
 #                              renumber n0. See docs/lab/retronet/ICQ-STATION-NT4.md.
 #   * exec channel           : rides the same bridge — labctl reaches C:\WARPNET.EXE
@@ -74,13 +76,11 @@ fi
 # streamhost@ / the golden-bake manual path. Fail-closed: if it cannot verify
 # containment it dies here and QEMU never starts. See rn-tapnet.sh + ICQ-STATION-NT4.md.
 bash "$D/rn-tapnet.sh" up
-# Seed the ICQ nudge's stale-port back to the golden's fixed source port on every
-# (re)start: `-loadvm golden` restores the persona onto the golden's port
-# regardless of any ephemeral port a previous run drifted to, so a stale portfile
-# from a prior reconnect would make the first post-boot nudge miss. Removing it
-# falls the healer back to RN_ICQ_GOLDEN_PORT (the golden's port). See
-# scripts/retronet/nt4-icq-nudge.py + docs/lab/retronet/ICQ-STATION-NT4.md.
-rm -f /run/nt4-icq-port
+# ICQ 2001b self-heals after a loadvm wake (Preferences -> Connections -> Server
+# -> "Keep connection alive" ON: the restored BOS socket is stale, the keepalive
+# probe aborts it, and 2001b reconnects on a fresh port silently with the saved
+# password), so the ICQ 2000b-era nt4-icq-nudge is RETIRED for nt4 -- its labhost
+# timer is DISABLED on the box. See docs/lab/retronet/ICQ-STATION-NT4.md.
 # Guest NIC MAC. Real per-station MACs are NEVER committed (AGENTS.md); the real
 # value lives in gitignored registry/local.env as RN_NT4_MAC (retronet fleet
 # scheme 52:54:00:52:4e:<last-IP-octet>, "52:4e"=RN, .12 -> ...0c) so every

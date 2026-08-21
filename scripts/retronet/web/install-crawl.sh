@@ -37,7 +37,9 @@ cp "$SRC/era-press.py" "$SRC/era_press_core.py" "$SRC/era_crawl.py" "$SRC/era-si
 # NAT/conntrack exhaustion the old new-connection-per-request transport caused. Ubuntu 24.04 is PEP-668
 # externally-managed, so httpx lives in a venv beside the deployed code (never system pip); the unit's
 # ExecStart runs venv/bin/python. Pinned + idempotent (venv reused if present, pip is a no-op when met).
-PIN='httpx[http2]==0.28.1'
+# httpx[http2] for the HTTP/2 transport; brotli+zstandard so httpx can decode the br/zstd encodings the
+# browser-identical Accept-Encoding advertises (whatever archive.org sends is stored as raw decoded bytes).
+PINS=('httpx[http2]==0.28.1' 'brotli==1.2.0' 'zstandard==0.25.0')
 VENV="$RUN_DIR/venv"
 if ! python3 -c 'import ensurepip' 2>/dev/null; then
   echo "installing python3-venv (needed to build the crawl venv)"
@@ -47,10 +49,10 @@ if [ ! -x "$VENV/bin/python" ]; then
   echo "creating crawl venv -> $VENV"
   python3 -m venv "$VENV"
 fi
-echo "ensuring $PIN in the crawl venv (pinned, idempotent)"
+echo "ensuring pinned deps in the crawl venv (idempotent): ${PINS[*]}"
 "$VENV/bin/pip" install --quiet --upgrade pip
-"$VENV/bin/pip" install --quiet "$PIN"
-"$VENV/bin/python" -c 'import httpx, h2; print("  venv httpx", httpx.__version__, "/ h2", h2.__version__)'
+"$VENV/bin/pip" install --quiet "${PINS[@]}"
+"$VENV/bin/python" -c 'import httpx, h2, brotli, zstandard; print("  venv httpx", httpx.__version__, "/ h2", h2.__version__, "/ brotli+zstandard OK")'
 
 echo "installing $UNIT"
 sudo cp "$SRC/$UNIT" "/etc/systemd/system/$UNIT"
