@@ -7,6 +7,9 @@ runs on **CT950 / labhost** (which has internet); the gateway CT 951 never
 fetches anything — it only ever receives files by `pct push`.
 
 ```bash
+# build the big ~10 GB corpus: most-visited-first, resumable, rate-limited, budgeted
+python3 scripts/retronet/web/era-press.py crawl
+
 # mirror the four landmark starter sites into CT 951's corpus
 python3 scripts/retronet/web/era-press.py seed
 
@@ -136,6 +139,84 @@ in `era-press.py` and re-run `seed`. Handy flags: `--no-push` stages locally
 without touching the CT (inspect the tree first); `--only <host>` restricts
 `seed` to one site; `--staging DIR` relocates the local tree.
 
+## The big corpus — the resumable ~10 GB crawl
+
+The starter set is four sites; the production corpus is **~10 GB**, built by
+`era-press crawl` over a committed, most-visited-first site list. Because 10 GB
+cannot live on CT 951's 8 GB rootfs, the corpus lives in a **dedicated ZFS
+volume** that is bind-mounted into the CT.
+
+### Storage — one volume, both containers see it
+
+`scripts/retronet/web/install-corpus-volume.sh` (run on labhost, idempotent)
+creates it:
+
+| Thing | Value |
+|---|---|
+| ZFS dataset | `data/vms/retronet-corpus` — **20 GB quota** (headroom over the 10 GB budget), on the `data` pool |
+| labhost / CT 950 path | `/data/vms/retronet-corpus` — CT 950 already bind-mounts `/data/vms` *recursively*, so the crawl writes here **directly, with no CT 950 restart** |
+| CT 951 path | `/data/retronet/corpus` — a `pct set 951 -mp0` bind-mount of the same volume; the proxy reads it **live** |
+
+Why under `/data/vms` rather than a tidier `/data/retronet-corpus`: CT 950 (this
+session's dev container, and the only box with internet) sees a new host path
+only if it falls under one of its existing bind-mounts — and remaking those needs
+a CT 950 restart, which would kill the session. `/data/vms` is already mounted
+recursively, so a dataset created under it appears in CT 950 instantly.
+
+Setup copies the existing corpus into the volume **before** the bind-mount
+shadows the old rootfs copy (the proxy must never blink to an empty corpus), then
+restarts **CT 951 only** to apply the mount. Thereafter every host dir the crawl
+writes on CT 950 appears instantly on CT 951's read side — no `pct push`, no proxy
+restart. (`press`/`seed` still `pct push`; the crawl writes direct because its
+staging *is* the shared volume, so it runs with push disabled.)
+
+### The site list — `era-sites.json`
+
+A committed array of `{host, date, depth, max_pages, max_mb, title, category,
+blurb}`, **ordered most-visited-first** so an early stop still captures the best
+content. The **station browser default home pages come first and are guaranteed
+in**: `home.microsoft.com` (the IE default on win98se/win2000/nt4),
+`www.msn.com`, and `home.netscape.com` (the tru64 Netscape default). Then the top
+web properties of 1996–2000 — AOL, Yahoo, Microsoft, GeoCities, Excite, Lycos,
+Amazon, eBay, AltaVista, CNN, the community hosts (Angelfire, Tripod), search
+engines, news, tech vendors, and era-defining novelty (Space Jam, the Hampster
+Dance). 60 sites at the time of writing.
+
+### The crawl — `era-press crawl`
+
+Built to be a **polite archive.org citizen** and to run for hours, unattended:
+
+- **Rate-limited.** A single throttle keeps a global minimum gap between requests
+  (`--min-interval`, default 1 s), plus **exponential backoff that honours HTTP
+  429/503** (`Retry-After` when present). One request at a time — no concurrency.
+- **Resumable.** The on-disk corpus **is** the checkpoint: a page or asset
+  already mirrored (non-empty on disk) is never re-fetched, and cached pages are
+  re-read so traversal continues. A `state.json` records completed hosts, so a
+  re-run — after a stop, a crash, or a reboot — **continues, never restarts**.
+- **Budgeted.** A global `--budget-gb` ceiling (default 10), `du`-checked before
+  each site; the crawl stops cleanly when the corpus reaches it.
+- **Per-site capped.** Each site has a `max_mb` byte cap (default 200 MB), and no
+  site may exceed the *remaining* global budget — so one huge site (GeoCities)
+  cannot swallow the whole corpus.
+- **Logged.** Timestamped `START` / `DONE` / `SKIP` / `BUDGET` lines to
+  `progress.log` (and stdout). A `DONE` line reads `Nf Na Nc Nmiss NMB` =
+  pages fetched, assets, cached (skipped), misses, megabytes.
+
+### Running it as a service
+
+`scripts/retronet/web/install-crawl.sh` (run on **CT 950**) deploys a copy of
+`era-press.py` + `era-sites.json` into `/data/vms/retronet-crawl/` — so a worktree
+GC never pulls the code out from under a multi-hour run — and installs
+`retronet-crawl.service`, enabled and started. The unit runs one long resumable
+process that stops itself at the budget; `Restart=on-failure` plus resume covers
+a crash.
+
+```bash
+ssh lab 'pct exec 950 -- systemctl status retronet-crawl'   # is it running
+tail -f /data/vms/retronet-crawl/progress.log               # progress
+du -sh /data/vms/retronet-corpus                            # bytes so far
+```
+
 ## Notes for the other streams
 
 - **`.cgi`/`.asp` home pages need a content-type map.** era-press faithfully
@@ -146,9 +227,12 @@ without touching the CT (inspect the tree first); `--only <host>` restricts
   the proxy's content-type map (map the era's server-script extensions —
   `.cgi .shtml .asp .phtml .pl .cfm` — to `text/html`), not in a rewrite here.
   Flagged to W1.
-- **Corpus size.** CT 951's rootfs is 8 GB. Crawls are bounded by `--depth` /
-  `--max-pages` and a per-resource 8 MB skip guardrail (oversize resources are
-  skipped whole, never truncated — truncation would corrupt).
+- **Corpus size.** The production corpus lives in a dedicated 20 GB ZFS volume
+  (see [The big corpus](#the-big-corpus--the-resumable-10-gb-crawl)), **not** on
+  CT 951's 8 GB rootfs. Fetches are still bounded by `--depth` / `--max-pages`, a
+  per-site `max_mb` cap and the global `--budget-gb`, plus a per-resource 8 MB
+  skip guardrail (oversize resources are skipped whole, never truncated —
+  truncation would corrupt).
 - **Never committed.** Mirrored bytes are copyright and are a box-only bit, the
   same stance as the [private gallery](../PUBLIC-GALLERY.md). Only this tool and
   the wave's tiny **synthetic** fixtures (`scripts/retronet/web/fixtures/`,

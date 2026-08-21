@@ -12,7 +12,7 @@ because nt4 was NOT the "clean copy" the plan assumed.
 
 | | |
 |---|---|
-| NIC | `-device pcnet,netdev=n0,mac=52:54:00:99:00:12` (**unchanged device**; a UNIQUE mac — see below), backend `-netdev tap,id=n0,ifname=nt4rn0,script=no,downscript=no` |
+| NIC | `-device pcnet,netdev=n0,mac="$RN_NT4_MAC"` (**unchanged device**; a UNIQUE mac — see below), backend `-netdev tap,id=n0,ifname=nt4rn0,script=no,downscript=no` |
 | Tap | `nt4rn0`, persistent, enslaved to `vmbr-rn`, created + guarded by `streamhost/stations/nt4/rn-tapnet.sh up` from the launcher on every start (chain `NT4RN-IN`) |
 | Guest IP | **static `10.99.0.12/24`, NO default route, DNS none** (a stale `192.168.0.1` NameServer lingers in the registry but is unreachable) |
 | OSCAR server | gateway CT `10.99.0.2:5190` |
@@ -44,7 +44,12 @@ because nt4 was NOT the "clean copy" the plan assumed.
 2. **MAC collision.** QEMU's default pcnet mac is `52:54:00:12:34:56`, and every
    retronet Windows guest (`win98se`, `win2000`, `nt4`) was taking it — the bridge
    `fdb` learned one MAC on one port and blackholed the others. nt4 pins a unique
-   `mac=52:54:00:99:00:12`. **Any further bridged station MUST pin its own mac.**
+   mac on the **fleet scheme `52:54:00:52:4e:<last-IP-octet>`** (`52:4e`=RN, `.12`
+   → `...0c`). Per the never-commit-a-MAC rule the real value lives in gitignored
+   `registry/local.env` as `RN_NT4_MAC` (the committed launcher carries a
+   placeholder and reads that one line at boot); the golden's vmstate carries the
+   MAC, so a MAC change is a **cold re-bake**. **Any further bridged station MUST
+   pin its own mac.**
 
 3. **256 MB, not 128.** With ICQ 2000b resident, 128 MB thrashed: the warpnet exec
    `cmd.exe` returned `rc=1`/empty and ICQ's sign-on could not allocate. 256 MB is
@@ -88,7 +93,7 @@ fresh port, and the bot greets ~30 s later. `nt4-icq-nudge` (per-station labhost
 gateway shows `40000` offline it spoofs a gateway→guest ACK on the stale BOS port
 to elicit the RST that ICQ 2000b will not produce on its own.
 
-- **`GOLDEN_ICQ_PORT=1040`** — the source port the persona is restored onto from
+- **`GOLDEN_ICQ_PORT=1035`** — the source port the persona is restored onto from
   the golden. **The launcher `rm -f /run/nt4-icq-port` on every start**, so a
   portfile that drifted to a reconnect's ephemeral port cannot make the first
   post-`loadvm` nudge miss (it falls back to `GOLDEN_ICQ_PORT`). Recapture the
@@ -103,10 +108,11 @@ reconnect ~5 s → greet at +30 s.
 
 ## Golden lineage & rollback (FULL paths)
 
-- **LIVE golden:** internal snapshot **`golden`** (~82 MiB, 2026-08-21 02:15) in
-  the tile-local `/data/vms/streamhost/stations/nt4/nt4-golden.qcow2`. Tap-native,
-  256 MB, captured with ICQ **connected** (UIN `40000`, port 1040) + HiveBot in
-  contacts + a clean 1024×768 frame. `labctl reset nt4` = `loadvm golden`.
+- **LIVE golden:** internal snapshot **`golden`** (~80 MiB, 2026-08-21 03:04, a
+  cold-boot re-bake carrying MAC `52:54:00:52:4e:0c`) in the tile-local
+  `/data/vms/streamhost/stations/nt4/nt4-golden.qcow2`. Tap-native, 256 MB,
+  captured with ICQ **connected** (UIN `40000`, port 1035) + HiveBot in contacts +
+  a clean 1024×768 frame. `labctl reset nt4` = `loadvm golden`.
 - **Pre-change full-disk backup** (QEMU stopped, SHA256-verified):
   `/data/gallery-guests/Nt4/golden-backup-retronet-nt4-20260820/nt4-golden.qcow2`
   (`767c7afa…c83a`, `SHA256SUMS` in the dir) — the pre-retronet slirp golden.
