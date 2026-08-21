@@ -85,7 +85,16 @@ Either door then splits the request the same way:
 
 - **corpus host** → serves `/data/retronet/corpus/<host>/<path>`, a directory
   falling through to `index.html`, with a Content-Type from the extension. Miss
-  → the period 404.
+  → the period 404 — the *"Not in the Museum's Internet"* page, which is **not a
+  dead end**: it carries a search box and links to the AltaVista-style search
+  (`/search`) and the Yahoo!-style directory (`/dir`) on the reserved search host.
+- **a modern search-engine host** (Google, Bing, DuckDuckGo, … — a browser's
+  built-in toolbar search) *with a query* → a period **302** to
+  `http://<search host>/search?q=…`, the terms kept. Still local: the target
+  resolves right back to the gateway (wildcard DNS) and is routed to the search
+  backend — never the live internet. Era engines that ARE archived (AltaVista,
+  Yahoo, Lycos, Excite) are deliberately excluded, so they serve their real
+  corpus pages; a bare visit with no query also falls through normally.
 - **reserved search host** (default `search.retronet`) → proxies to the search
   service at `127.0.0.1:8090` (Stream W3). W3 down → a clean period **502**, not
   a hang.

@@ -25,6 +25,11 @@ connection this program can make is to the CT-local search backend
 everything else is local file I/O. The CT also has no default route (see
 docs/lab/retronet/GATEWAY.md), so even a bug here has nowhere to send a packet.
 
+A browser toolbar search (its built-in search box, e.g. a Google query) is
+302-redirected to the reserved search host with the terms kept — still local:
+that host resolves back here and is routed to the search backend, never the
+internet.
+
 HTTP/1.0 by construction: every response is HTTP/1.0 with an explicit
 Content-Length and Connection: close — no chunked transfer, no gzip — which is
 what era browsers (Netscape 4, IE5) expect from a proxy.
@@ -50,7 +55,7 @@ import re
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 # --- defaults (every one overridable from /etc/retronet/proxy.env) -----------
 DEF_LISTEN = "10.99.0.2:3128"
@@ -125,18 +130,82 @@ def looks_like_html(data: bytes) -> bool:
     return head.startswith(b"<") and any(m in head for m in HTML_SNIFF_MARKERS)
 
 
-def era_page(title: str, heading: str, paras: list[str]) -> bytes:
-    """A tiny HTML 3.2 page, Latin-1, in the spirit of a 1990s server notice."""
+def era_page(title: str, heading: str, paras: list[str], extra: str = "") -> bytes:
+    """A tiny HTML 3.2 page, Latin-1, in the spirit of a 1990s server notice.
+
+    `extra` is optional pre-built HTML (e.g. the miss page's search box), placed
+    after the text and before the closing rule. Laid out in one centered,
+    fixed-width column so the notice reads as a page, not a wall of full-width
+    text — all HTML 3.2 a period browser (Netscape 4, IE5) renders."""
     body = "\n".join(f"<P>{p}</P>" for p in paras)
     html = (
         '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">\n'
         f"<HTML><HEAD><TITLE>{title}</TITLE></HEAD>\n"
         '<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000EE" VLINK="#551A8B">\n'
-        f"<H1>{heading}</H1>\n{body}\n<HR>\n"
+        '<TABLE ALIGN="CENTER" WIDTH="560" BORDER="0" CELLPADDING="0" CELLSPACING="0">\n'
+        "<TR><TD>\n"
+        f"<H1>{heading}</H1>\n{body}\n{extra}<HR>\n"
         "<ADDRESS>retronet proxy &#151; an offline museum of the 1990s web. "
-        "No live internet.</ADDRESS>\n</BODY></HTML>\n"
+        "No live internet.</ADDRESS>\n</TD></TR></TABLE>\n</BODY></HTML>\n"
     )
     return html.encode(TEXT_CHARSET, "replace")
+
+
+def search_nav(search_host: str) -> str:
+    """The miss page's search box + directory/search links — turns a dead end into
+    the museum's own search. Points at the reserved search host, which resolves
+    back to this gateway (wildcard DNS) and is routed to the local search backend;
+    no live internet is involved."""
+    base = f"http://{search_host}"
+    return (
+        "<HR>\n"
+        f'<FORM ACTION="{base}/search" METHOD="GET">\n'
+        "<B>Search the museum</B><BR>\n"
+        '<INPUT TYPE="TEXT" NAME="q" SIZE="34"> '
+        '<INPUT TYPE="SUBMIT" VALUE="Search">\n'
+        "</FORM>\n"
+        "<P>Or browse by hand: "
+        f'<A HREF="{base}/search">AltaVista-style search</A> &#149; '
+        f'<A HREF="{base}/dir">Yahoo!-style directory</A></P>\n'
+    )
+
+
+# Modern search engines a browser's built-in search box points at — none of which
+# belong to an era corpus. When such a toolbar search lands here (a query string
+# carrying a `q`/`p`), we 302 it to the museum's own search with the terms kept,
+# instead of a dead 404. Era engines that ARE archived (altavista, yahoo, lycos,
+# excite) are deliberately absent here — they serve their real corpus pages.
+REDIRECT_ENGINES = frozenset(
+    {
+        "google.com",
+        "bing.com",
+        "duckduckgo.com",
+        "ask.com",
+        "dogpile.com",
+        "search.msn.com",
+        "search.aol.com",
+        "search.brave.com",
+    }
+)
+
+
+def is_search_engine(host: str) -> bool:
+    """True for a modern search-engine host whose toolbar query we redirect."""
+    h = host[4:] if host.startswith("www.") else host
+    return h == "google" or h.startswith("google.") or h in REDIRECT_ENGINES
+
+
+def search_query_of(query: str) -> str | None:
+    """The user's terms from a toolbar query string — `q`, or the older
+    `p`/`query`/`search` — or None if there are none to carry over."""
+    if not query:
+        return None
+    qs = parse_qs(query, keep_blank_values=False)
+    for key in ("q", "query", "p", "search"):
+        vals = qs.get(key)
+        if vals and vals[0].strip():
+            return vals[0]
+    return None
 
 
 class ProxyServer(ThreadingHTTPServer):
@@ -150,6 +219,9 @@ class ProxyServer(ThreadingHTTPServer):
         super().__init__(addr, ProxyHandler)
         self.corpus_root = os.path.realpath(corpus_root)
         self.search_hosts = frozenset(h.lower() for h in search_hosts)
+        # The canonical search host (first configured): where the miss-page search
+        # box and redirected toolbar searches point. It resolves back here.
+        self.search_host = next((h.lower() for h in search_hosts), DEF_SEARCH_HOSTS)
         self.search_backend = search_backend  # (host, port)
         self._sites_lock = threading.Lock()
         self._sites_mtime: float | None = None
@@ -247,6 +319,13 @@ class ProxyHandler(BaseHTTPRequestHandler):
         host, path, query = target
         if host in self.server.search_hosts:
             return self.forward_to_search(host, path, query, body=body)
+        # A browser toolbar search (e.g. Google) -> hand it to the museum's own
+        # search with the terms kept, rather than a dead miss. Still local: the
+        # redirect points at the reserved search host, served by this gateway.
+        if is_search_engine(host):
+            terms = search_query_of(query)
+            if terms is not None:
+                return self.send_redirect(f"http://{self.server.search_host}/search?q={quote(terms)}")
         self.serve_corpus(host, path, body=body)
 
     def resolve_target(self):
@@ -351,7 +430,13 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 "been archived into the corpus exist here &#151; nothing is fetched "
                 "from the live internet, because there is none.",
             ]
-        self.send_era(404, "404 Not Found", "Not in the Museum's Internet", paras)
+        self.send_era(
+            404,
+            "404 Not Found",
+            "Not in the Museum's Internet",
+            paras,
+            extra=search_nav(self.server.search_host),
+        )
 
     # -- the ONE outbound path: the CT-local search backend -------------------
     def forward_to_search(self, host, path, query, *, body: bool = True):
@@ -395,9 +480,26 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.wfile.write(data)
 
     # -- helpers --------------------------------------------------------------
-    def send_era(self, code, title, heading, paras):
-        data = era_page(title, heading, paras)
+    def send_era(self, code, title, heading, paras, extra=""):
+        data = era_page(title, heading, paras, extra)
         self.send_response(code)
+        self.send_header("Content-Type", f"text/html; charset={TEXT_CHARSET}")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(data)
+
+    def send_redirect(self, url):
+        """A period 302 to a LOCAL address (the museum search). Carries a small
+        body with a link, for the rare browser that will not auto-follow."""
+        data = era_page(
+            "302 Found",
+            "To the Museum's Search",
+            [f'Handing your search to <A HREF="{url}">the museum&#146;s search desk</A>&#133;'],
+        )
+        self.send_response(302)
+        self.send_header("Location", url)
         self.send_header("Content-Type", f"text/html; charset={TEXT_CHARSET}")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Connection", "close")
