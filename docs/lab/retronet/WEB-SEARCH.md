@@ -41,7 +41,7 @@ the internet" guarantee by cgroup, not by promise.
 |---|---|---|
 | `/` | AltaVista | Front page: a query box and search tips |
 | `/search?q=<term>` | AltaVista | Ranked hits — title link, snippet, the `http://<host>/<path>` corpus URL — paginated (`&pg=N`) |
-| `/dir` | Yahoo! | The directory built from `sites.json`, grouped by an optional `category` |
+| `/dir` | Yahoo! | The directory built from the corpus, grouped by an optional `category` |
 | `/reindex` | — | Rebuild the index now; returns a period confirmation page |
 | `/health` | — | `text/plain` `OK <n> docs` — the install-time probe |
 
@@ -85,16 +85,23 @@ so a corpus push by W2 is picked up without a restart:
 | **On demand** | `systemctl reload retronet-search` (`ExecReload=/bin/kill -HUP $MAINPID`) |
 | **On demand (HTTP)** | `GET /reindex` on the loopback service |
 
-The SIGHUP rebuilds the in-memory index **and** re-renders the Yahoo directory
-from the current `sites.json`, so a crawl that adds a site (W2 auto-publishes its
-`sites.json` row as its home lands) shows up in both search and the directory
-within one 15-minute cycle. The conditional gate's fingerprint persists in the
+The SIGHUP rebuilds the in-memory index **and** re-renders the Yahoo directory,
+so a crawl that adds a site shows up in both search and the directory within one
+15-minute cycle.
+
+**The corpus, not the manifest, decides what the directory lists.** Every host with
+a home page on disk gets a row — `sites.json` supplies the title, blurb and
+category where it has them, but it is not a gate: a host mirrored only because
+something linked to it is just as browsable as a curated one, and hiding it would
+advertise less of the retronet than exists. Conversely a manifest row with nothing
+on disk is dropped, because a directory link that cannot be opened is worse than no
+link. The conditional gate's fingerprint persists in the
 reindex unit's `StateDirectory`, so a change is seen across timer runs and
 re-fires until the reload actually happens.
 
 An absent or empty corpus is tolerated at every layer: the index simply has no
 documents, `/search` returns a period "No documents match" page, and `/dir`
-renders "the directory is empty" when `sites.json` is missing.
+renders "the directory is empty" when nothing is mirrored yet.
 
 ## Files
 
@@ -159,9 +166,10 @@ ssh lab 'pct exec 951 -- python3 /opt/retronet-search/search.py index'
 - **W1 (proxy).** Route the reserved hostname(s) — default `search.retronet` —
   to `127.0.0.1:8090`. One config line; nothing else here depends on the proxy.
 - **W2 (era-press).** Write pages under `/data/retronet/corpus/<host>/…` (a
-  directory served by its `index.html`) and list hosts in `sites.json` as
-  `{host, title, blurb, added}` (an optional `category` groups them in the
-  directory). A push is picked up by the next reindex (≤15 min, and only if the
+  directory served by its `index.html`); a home page there is all it takes to
+  appear in the directory. `sites.json` rows — `{host, title, blurb, added}`, with
+  an optional `category` that groups them — supply the presentation for the
+  curated set. A push is picked up by the next reindex (≤15 min, and only if the
   corpus fingerprint moved) or immediately with `systemctl reload retronet-search`.
 
 ## Known limits

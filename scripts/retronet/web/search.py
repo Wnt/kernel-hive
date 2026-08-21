@@ -9,7 +9,7 @@ renders:
 
   /            AltaVista-style front page (a query box)
   /search?q=   AltaVista-style ranked results, each linking to a corpus URL
-  /dir         Yahoo!-style directory, built from the corpus sites.json
+  /dir         Yahoo!-style directory of every host the corpus can serve
 
 The index is built in memory at start and rebuilt on demand — ``GET /reindex``,
 ``systemctl reload retronet-search`` (SIGHUP) or the reindex timer — so a fresh
@@ -74,21 +74,44 @@ def _int_env(key: str, default: int) -> int:
 
 
 def load_sites(path: str) -> list[dict]:
-    """Read the corpus manifest tolerantly (W2 owns the file; it may be absent).
+    """Every site the corpus can actually serve, as directory rows.
 
-    Accepts either a bare array or ``{"sites": [...]}``; anything unparseable
-    yields an empty directory rather than a crash.
+    The manifest (``sites.json``, owned by era-press) supplies the titles, blurbs and
+    categories for the curated set, but it is NOT the gate: the directory lists **every host
+    with a home page on disk**, manifest entry or not. A host that was mirrored only because
+    something linked to it is just as browsable as a curated one, and hiding it would
+    advertise less of the retronet than exists. Hosts the manifest names but the corpus does
+    not hold are dropped for the same reason -- a directory entry that cannot be opened is
+    worse than no entry.
+
+    The manifest is read tolerantly (it may be absent, a bare array, or ``{"sites": [...]}``);
+    anything unparseable just means an untitled directory, never a crash.
     """
     try:
         with open(path, "rb") as fh:
             data = json.loads(fh.read().decode("utf-8", "replace"))
     except (OSError, ValueError):
-        return []
+        data = []
     if isinstance(data, dict):
         data = data.get("sites", [])
-    if not isinstance(data, list):
-        return []
-    return [s for s in data if isinstance(s, dict)]
+    named = {s["host"]: s for s in data if isinstance(s, dict) and s.get("host")} if isinstance(data, list) else {}
+
+    corpus = os.path.dirname(path) or "."
+    rows = []
+    try:
+        entries = sorted(os.scandir(corpus), key=lambda e: e.name)
+    except OSError:
+        entries = []
+    for entry in entries:
+        if not entry.is_dir(follow_symlinks=False):
+            continue
+        if not os.path.isfile(os.path.join(entry.path, "index.html")):
+            continue  # no home page -> nothing a directory link could open
+        row = dict(named.get(entry.name) or {})
+        row["host"] = entry.name
+        row.setdefault("title", entry.name)
+        rows.append(row)
+    return rows
 
 
 class State:
@@ -240,7 +263,7 @@ def cmd_index(cfg: Config) -> int:
 # total bytes + newest mtime — sites.json included, since it lives under the
 # corpus root): unchanged => skip (no re-walk, no churn once the crawl is idle);
 # changed => SIGHUP the running service to rebuild the in-memory search index, and
-# refresh the Yahoo directory (rendered live from sites.json). The fingerprint
+# refresh the Yahoo directory (rendered live from the corpus). The fingerprint
 # persists in the unit's StateDirectory so a change is seen across timer runs, and
 # it re-fires until the reload actually happens.
 
@@ -328,7 +351,7 @@ def cmd_reindex(cfg: Config) -> int:
     print(
         f"reindex: corpus changed (files {old.get('files', 0)}->{fp['files']}, "
         f"bytes {old.get('bytes', 0)}->{fp['bytes']}) — index reloaded, "
-        f"directory regenerated from sites.json ({n_sites} sites)"
+        f"directory regenerated from the corpus ({n_sites} servable sites)"
     )
     return 0
 
@@ -365,8 +388,21 @@ def cmd_selftest() -> int:
     assert b"Yahoo" in dir_raw, "directory must be Yahoo-styled"
     assert b"charset=iso-8859-1" in dir_raw and b"<script" not in dir_raw.lower()
     dir_raw.decode("latin-1")
-    first_title = str(sites[0].get("title", "")).encode("latin-1", "xmlcharrefreplace")
-    assert first_title in dir_raw, "directory must list a sites.json entry"
+    for site in sites:
+        assert site["host"].encode("latin-1") in dir_raw, f"directory must list {site['host']}"
+
+    # The corpus, not the manifest, decides what the directory lists: a mirrored host with no
+    # manifest row is still browsable and must appear; a manifest row with nothing on disk must
+    # not, because a directory link that cannot be opened is worse than no link.
+    with tempfile.TemporaryDirectory() as tmp:
+        os.makedirs(os.path.join(tmp, "unlisted.example"))
+        with open(os.path.join(tmp, "unlisted.example", "index.html"), "w") as fh:
+            fh.write("<html><body>hi</body></html>")
+        os.makedirs(os.path.join(tmp, "no-home.example"))  # a dir, but nothing to open
+        with open(os.path.join(tmp, "sites.json"), "w") as fh:
+            json.dump([{"host": "vanished.example", "title": "Gone"}, {"host": "no-home.example"}], fh)
+        hosts = {r["host"] for r in load_sites(os.path.join(tmp, "sites.json"))}
+        assert hosts == {"unlisted.example"}, f"corpus decides the directory, got {hosts}"
 
     # empty/absent corpus is tolerated
     empty = build_index(os.path.join(HERE, "fixtures", "does-not-exist"))
