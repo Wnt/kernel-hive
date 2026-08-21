@@ -5,9 +5,9 @@ The CORPUS half of era-press: the URL->file path model, read-only URL discovery,
 the raw mirror, and the stage->`pct push` transport. No transformation happens
 anywhere here -- original bytes, Content-Type and charset are kept as-is.
 
-Talking to archive.org is the other half and lives in `era_fetch` (the connection
-pool, the adaptive in-flight limiter, and the per-host capture index). The
-dependency runs one way: this module imports that one, never the reverse.
+Talking to archive.org is the other half: `era_fetch` (the connection pool and the
+adaptive in-flight limiter) and `era_index` (the per-host capture index). The
+dependency runs one way: this module imports those, never the reverse.
 See docs/lab/retronet/ERA-PRESS.md.
 
 It is a plain underscore-named module so era_crawl.py, era-press.py and the
@@ -27,6 +27,7 @@ from pathlib import Path
 from shutil import which
 
 import era_fetch as fetch
+import era_index
 from era_fetch import bare, host_of, norm_host  # the URL helpers the path model is built on
 
 CORPUS = "/data/retronet/corpus"  # in CT 951 AND the local staging default
@@ -54,7 +55,7 @@ def fetch_page(url, target):
     one from the index, so a page costs one fetch and its resources cost one fetch each. Callers store
     raw_body, mirror the `res` items, and follow same-site links: the serial mirror and the parallel
     crawl share ONE strategy."""
-    got = fetch.wayback_raw(url, fetch.index_ts(url, target))
+    got = fetch.wayback_raw(url, era_index.index_ts(url, target))
     if not got:
         return None
     page_ts, ctype, body = got
@@ -64,7 +65,7 @@ def fetch_page(url, target):
     if not page:
         return page_ts, False, body, []  # a non-HTML "page" (a link to a PDF/image): store as an asset
     discovered = [
-        (kind, fetch.index_ts(u, target), u)
+        (kind, era_index.index_ts(u, target), u)
         for kind, u in extract_urls(body, url)
         if not fetch._is_archive_host(host_of(u))
     ]

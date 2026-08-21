@@ -20,6 +20,7 @@ import time
 # (`python3 scripts/retronet/web/era_press_selftest.py`) that dir is sys.path[0].
 import era_crawl as ec
 import era_fetch as ef
+import era_index as ei
 import era_press_core as ep
 
 # A synthetic raw archived page (NOT scraped): the shapes era-press must handle.
@@ -166,10 +167,13 @@ def main():
     #    from the RAW page body needs no per-URL search. Index keys are bare-host + path, so the CDX
     #    original (`http://www.t.example:80/p`) and the page's own reference (`http://t.example/p`)
     #    land on the same entry; an un-indexed host falls back to the era DATE (the id_ redirect).
-    ef._index.clear()
-    ef._index_building.clear()
-    ef._index_since.clear()
-    ef.register_site("www.t.example", "19970101")
+    check("index window: +6 months", ei._window_end("19990101", 6), "19990701")
+    check("index window: rolls the year", ei._window_end("19981201", 3), "19990301")
+    check("index window: clamps at the ceiling", ei._window_end("20000801", 12), ef.CEILING)
+    ei._index.clear()
+    ei._index_building.clear()
+    ei._index_since.clear()
+    ei.register_site("www.t.example", "19970101")
     saved_get = ef.http_get
     cdx_calls = []
 
@@ -182,12 +186,12 @@ def main():
 
     ef.http_get = fake_cdx
     try:
-        ts_of = lambda u: ef.index_ts(u, "19970101")  # noqa: E731 -- terse on purpose, this is a test
+        ts_of = lambda u: ei.index_ts(u, "19970101")  # noqa: E731 -- terse on purpose, this is a test
         # Asking for an index NEVER blocks a fetch worker: the first ask falls back to the era date
         # and kicks the query off in the background; later asks use it once it lands.
         check("index: first ask falls back, never waits", ts_of("http://t.example/logo.gif"), "19970101")
         for _ in range(400):
-            if "t.example" in ef._index:
+            if "t.example" in ei._index:
                 break
             time.sleep(0.01)
         check("index: exact ts for an indexed resource", ts_of("http://t.example/logo.gif"), "19970104102030")

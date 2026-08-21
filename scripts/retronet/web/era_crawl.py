@@ -32,6 +32,7 @@ from itertools import zip_longest
 from pathlib import Path
 
 import era_fetch as fetch
+import era_index
 import era_press_core as core
 
 SHARED_CORPUS = "/data/vms/retronet-corpus"  # big corpus volume (CT950/labhost path); CT 951 bind-mounts at CORPUS
@@ -336,7 +337,7 @@ def cmd_index(a):
     the regime that provokes the throttling that stops the indexes landing. One serial pass breaks that
     loop -- one heavy query at a time is the shape archive.org tolerates best -- and after it the whole
     crawl runs on the fast exact-stamp path. Idempotent: an index already on disk is left alone."""
-    fetch.INDEX_DIR = a.index_dir
+    era_index.INDEX_DIR = a.index_dir
     cfg = _load_json(a.sites, [])
     if not cfg:
         raise SystemExit(f"era-press index: no sites in {a.sites}")
@@ -344,19 +345,18 @@ def cmd_index(a):
     built = cached = failed = 0
     for i, s in enumerate(cfg, 1):
         host, since = core.bare(s["host"]), s.get("date", "19970101")
-        path = fetch._index_path(host, since)
+        path = era_index._index_path(host, since)
         if os.path.exists(path):
             cached += 1
             continue
         t0 = time.time()
-        fetch._build_index(host, since)  # writes the disk cache as a side effect
-        rows = len(fetch._index.get(host) or {})
-        if rows:
-            built += 1
-        else:
-            failed += 1
-        print(f"  [{i}/{len(cfg)}] {host:28} {rows:6d} urls  {time.time() - t0:5.1f}s", flush=True)
-    print(f"era-press index: {built} built, {cached} already cached, {failed} empty -> {a.index_dir}")
+        era_index._build_index(host, since)  # writes the disk cache as a side effect
+        rows = len(era_index._index.get(host) or {})
+        built += bool(rows)
+        failed += not rows
+        note = "" if rows else "  (archive.org will not scan this host -> redirect route)"
+        print(f"  [{i}/{len(cfg)}] {host:28} {rows:6d} urls  {time.time() - t0:5.1f}s{note}", flush=True)
+    print(f"era-press index: {built} built, {cached} cached, {failed} un-indexable -> {a.index_dir}")
 
 
 def cmd_crawl(a):
@@ -372,9 +372,9 @@ def cmd_crawl(a):
     cfg = _load_json(a.sites, [])
     if not cfg:
         raise SystemExit(f"era-press crawl: no sites in {a.sites}")
-    fetch.INDEX_DIR = os.path.join(os.path.dirname(a.state) or ".", "cdx")  # host indexes survive restarts
+    era_index.INDEX_DIR = os.path.join(os.path.dirname(a.state) or ".", "cdx")  # host indexes survive restarts
     for s in cfg:  # every crawled host earns ONE bulk CDX index; resource-only hosts take the redirect
-        fetch.register_site(s["host"], s.get("date", "19970101"))
+        era_index.register_site(s["host"], s.get("date", "19970101"))
     states = [_reconstruct(_site_state(s, a.max_mb), a.staging) for s in cfg]
     seen_sets = {st["host"]: set(st["seen"]) for st in states}
     res_seen = set()  # global: a shared resource is mirrored once per run

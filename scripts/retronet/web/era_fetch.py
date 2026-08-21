@@ -17,8 +17,6 @@ era_press_core's half, and it imports this one. See docs/lab/retronet/ERA-PRESS.
 from __future__ import annotations
 
 import contextlib
-import json
-import os
 import random
 import re
 import threading
@@ -77,6 +75,13 @@ TARPIT_PAUSE = 20.0
 # not a signal about our rate: a browser silently opens a new connection and retries at once. So do we,
 # this many times, without spending the real retry budget -- see `http_get`.
 PROTOCOL_RACE_RETRIES = 3
+INDEX_WORKERS = 2  # concurrent host-index queries: tiny, and OUTSIDE the fetch gate
+# A host-index query is a prefix scan over archive.org's whole capture index for that host, and on the
+# big sites it legitimately takes minutes: measured 72 s for geocities.com, 127 s for cnn.com, and
+# amazon.com/ebay.com longer still. Against the 60 s read timeout the rest of the fetch layer uses,
+# those queries could NEVER succeed -- the biggest, most valuable indexes failed every time, silently,
+# and their hosts fell back to the slow redirect route forever. Index queries get their own patience.
+INDEX_TIMEOUT = 300.0
 
 
 # --- URL helpers (the fetch layer's own; the corpus path model builds on them) ------
@@ -374,8 +379,8 @@ def http_get(url, retries=5, index=False):
     while attempt < retries:
         _pace(index)
         try:
-            if index:  # an index query is capped by its own 2-thread pool, not the fetch budget
-                resp = client.get(url)
+            if index:  # capped by its own 2-thread pool, not the fetch budget -- and far more patient
+                resp = client.get(url, timeout=httpx.Timeout(INDEX_TIMEOUT, connect=15.0))
             else:
                 with _GATE:
                     resp = client.get(url)
@@ -429,149 +434,3 @@ def wayback_raw(url, timestamp):
     final, ctype, body = got
     m = re.search(r"/web/(\d{14})", final)
     return (m.group(1) if m else timestamp), ctype, body
-
-
-# --- the host index: ONE CDX query per HOST, then only exact-ts raw fetches -------------------------
-#
-# Choosing a capture for a URL is the crawl's other half, and every cheap-looking way to do it per-URL
-# is a slow archive.org endpoint. Measured on cold URLs, 8 in flight, same box, 2026-08-21:
-#
-#     id_ at an EXACT 14-digit stamp   ->  5.0 s median, 138 MB/hr, no errors      <- what we want
-#     id_ at an 8-digit DATE (302)     ->  9.5 s median,  58 MB/hr, tarpit + 503s
-#     the REWRITTEN page for discovery -> 15.7 s median,  36 MB/hr, heavy tarpit
-#     CDX, one query per URL           ->  4-40 s each
-#
-# So neither per-URL route is affordable -- but the SAME CDX query, asked once for a whole host with
-# `matchType=prefix`, returns that host's entire capture index in one response (measured: 27-40k URLs
-# with exact stamps, ~3 MB, 70-130 s). Amortised over the thousands of objects the crawl pulls from that
-# host, choosing a capture costs a DICT LOOKUP and no network at all, and every fetch is then the fast
-# exact-stamp path. One query per host is also ~60 CDX calls for the whole 60-site corpus, against the
-# tens of thousands the per-URL routes needed -- the endpoint's throttle stops mattering.
-#
-# Only hosts we are actually crawling get an index (`register_site`). A third-party resource host --
-# one image from an ad server -- is not worth a 70 s query, so it falls back to the id_ redirect, which
-# resolves the nearest capture itself; `mirror_resource` re-checks the RESOLVED stamp against the
-# ceiling either way.
-
-CDX = WB + "/cdx/search/cdx"
-CDX_ROWS = 40000  # per-host index cap; a bigger site simply falls back to the redirect for the tail
-INDEX_DIR = None  # set by the crawl to a directory, so host indexes survive a restart
-
-_index_lock = threading.Lock()
-_index = {}  # bare host -> {index key: exact 14-digit ts}; {} means "indexed, nothing in the window"
-_index_building = set()  # bare hosts whose query is in flight, so N workers trigger ONE of them
-_index_pool_ref = []  # the background query pool (a list so it can be created lazily under the lock)
-INDEX_WORKERS = 2  # concurrent host-index queries: tiny, and OUTSIDE the fetch gate
-_index_since = {}  # bare host -> the site's era date; only registered hosts get an index
-
-
-def _index_pool():
-    """The background pool that runs host-index queries. Deliberately tiny: an index query is a big,
-    slow request and must never crowd the page fetches out of the in-flight budget it shares."""
-    with _index_lock:
-        if not _index_pool_ref:
-            from concurrent.futures import ThreadPoolExecutor
-
-            _index_pool_ref.append(ThreadPoolExecutor(max_workers=INDEX_WORKERS, thread_name_prefix="cdx-index"))
-        return _index_pool_ref[0]
-
-
-def register_site(host, since):
-    """Declare a host as one we are crawling, so it earns a bulk index (see above). `since` is the
-    site's era date: the index holds each URL's first capture on/after it, never past the ceiling."""
-    with _index_lock:
-        _index_since[bare(host)] = since
-
-
-def _index_key(url):
-    """Index key for a URL: bare host + path, scheme-, port- and query-agnostic. CDX reports originals
-    as `http://www.ibm.com:80/p`, pages reference `http://ibm.com/p`, and the corpus stores by path
-    only -- so all three have to land on one key."""
-    p = urllib.parse.urlsplit(url)
-    return bare(p.hostname or "") + (p.path or "/")
-
-
-def _index_path(host, since):
-    return os.path.join(INDEX_DIR, f"{host}-{since}.json") if INDEX_DIR else None
-
-
-def _fetch_index(host, since):
-    """One CDX prefix query -> {index key: exact ts} for every URL on `host` captured in
-    [since, CEILING]. `collapse=urlkey` keeps one row per URL (the first in the window, i.e. the
-    closest to the era date from above). Returns {} on any failure -- an absent index is not an error,
-    it just means those URLs take the redirect route."""
-    q = (
-        f"url={urllib.parse.quote(host, '')}&matchType=prefix&collapse=urlkey&filter=statuscode:200"
-        f"&from={since}&to={CEILING}&fl=original,timestamp&limit={CDX_ROWS}&output=json"
-    )
-    got = http_get(CDX + "?" + q, retries=3, index=True)
-    if not got or not got[2].strip():
-        return {}
-    try:
-        rows = json.loads(got[2])
-    except json.JSONDecodeError:
-        return {}
-    idx = {}
-    for row in rows[1:]:  # row 0 is the field-name header
-        if len(row) >= 2 and len(row[1]) == 14 and not _past_ceiling(row[1]):
-            idx.setdefault(_index_key(row[0]), row[1])
-    return idx
-
-
-def _read_cached_index(host, since):
-    """The host's index from disk, or None. Cheap enough to do inline on the calling worker."""
-    cache = _index_path(host, since)
-    if not cache or not os.path.exists(cache):
-        return None
-    with contextlib.suppress(OSError, json.JSONDecodeError), open(cache) as f:
-        return json.load(f)
-    return None
-
-
-def _build_index(host, since):
-    """Query + cache one host's index. Runs on the index pool, NEVER on a fetch worker."""
-    idx = _fetch_index(host, since)
-    cache = _index_path(host, since)
-    if cache and idx:
-        with contextlib.suppress(OSError):
-            os.makedirs(os.path.dirname(cache), exist_ok=True)
-            tmp = cache + ".tmp"
-            with open(tmp, "w") as f:
-                json.dump(idx, f)
-            os.replace(tmp, cache)
-    with _index_lock:
-        _index[host] = idx
-
-
-def host_index(host):
-    """The bulk index for `host` IF it is ready, else None -- never a wait.
-
-    A host index is an optimisation, not a precondition: without one a URL is simply fetched at the era
-    date and Wayback's redirect resolves the capture. So asking for one must never block. It did, at
-    first, and that alone stalled the crawl: 52 hosts each needing a 70-130 s prefix query, run on the
-    fetch workers themselves and holding in-flight permits, meant the crawl spent its first quarter-hour
-    building indexes at 2 connections instead of mirroring anything. Now the disk cache is read inline
-    (cheap) and only the QUERY goes to a tiny background pool, so the crawl runs at full speed the whole
-    time and simply gets faster as each index lands."""
-    host = bare(host)
-    with _index_lock:
-        if host in _index:
-            return _index[host]
-        since = _index_since.get(host)
-        if since is None or host in _index_building:
-            return None  # unregistered host, or its query is already in flight -> redirect route
-        _index_building.add(host)
-    cached = _read_cached_index(host, since)
-    if cached is not None:
-        with _index_lock:
-            _index[host] = cached
-        return cached
-    _index_pool().submit(_build_index, host, since)
-    return None
-
-
-def index_ts(url, target):
-    """The exact capture stamp to fetch `url` at: its host index's entry, else `target` (a date, which
-    the id_ redirect resolves for us). Never a per-URL search."""
-    idx = host_index(host_of(url))
-    return (idx or {}).get(_index_key(url)) or target

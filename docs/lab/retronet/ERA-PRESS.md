@@ -366,7 +366,8 @@ Built to be a **polite archive.org citizen** and to run for hours, unattended:
 ### Running it as a service
 
 `scripts/retronet/web/install-crawl.sh` (run on **CT 950**) deploys a copy of
-`era-press.py` **+ its modules (`era_fetch.py`, `era_press_core.py`, `era_crawl.py`)** +
+`era-press.py` **+ its modules (`era_fetch.py`, `era_index.py`, `era_press_core.py`,
+`era_crawl.py`)** +
 `era-sites.json` into `/data/vms/retronet-crawl/` — so a worktree GC never pulls
 the code out from under a multi-hour run — builds a dedicated **venv**
 (`/data/vms/retronet-crawl/venv`, pinned `httpx`) beside it (Ubuntu 24.04
