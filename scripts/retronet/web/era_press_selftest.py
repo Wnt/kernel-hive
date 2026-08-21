@@ -197,9 +197,11 @@ def main():
             time.sleep(0.01)
         check("index: exact ts for an indexed resource", ts_of("http://t.example/logo.gif"), "19970104102030")
         check("index: exact ts for an indexed page", ts_of("http://www.t.example/about.html"), "19970211090000")
-        # a URL the index does NOT list is a MISS with no request at all -- not a redirect-route fetch
-        check("index: post-ceiling row -> miss, not a fetch", ts_of("http://t.example/late.gif"), None)
-        check("index: unlisted URL on an indexed host -> miss", ts_of("http://t.example/nope.html"), None)
+        # A URL the index does not list is NOT proof it is uncaptured: the index window starts at the
+        # site's era date, so an earlier capture is invisible to it. Such a URL must still be tried via
+        # the redirect route -- skipping it once killed most intra-site navigation.
+        check("index: post-ceiling row -> redirect route", ts_of("http://t.example/late.gif"), "19970101")
+        check("index: unlisted URL -> redirect route, not a miss", ts_of("http://t.example/nope.html"), "19970101")
         check("index: un-indexed host -> the era date", ts_of("http://ads.example/a.gif"), "19970101")
         check("index: ONE CDX query for the whole host", len(cdx_calls), 1)
         # the query must name the CONFIGURED host: url=t.example&matchType=prefix would ask

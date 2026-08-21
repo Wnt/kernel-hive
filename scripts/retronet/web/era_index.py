@@ -196,21 +196,17 @@ def host_index(host):
 
 
 def index_ts(url, target):
-    """The exact capture stamp to fetch `url` at, or None meaning "do not fetch it at all".
+    """The exact capture stamp to fetch `url` at: its host index's entry, else `target` (a date, which
+    the id_ redirect resolves). Never a per-URL search.
 
-    Three cases, and the third is why this returns None rather than always falling back:
-
-    * the host has a usable index and the URL is IN it -> its exact stamp (the fast path);
-    * the host has NO usable index (never registered, or archive.org would not scan it) -> `target`,
-      a date, which the id_ redirect resolves;
-    * the host HAS an index and the URL is absent from it -> **None: an authentic miss, fetched zero
-      times.** The index already answered the question, so asking archive.org is a round trip that can
-      only come back 404 -- and it was coming back 404 for 27% of all requests (measured), on a crawl
-      whose whole budget is requests. Absence means "no capture between the site's era date and the
-      2000-12-31 ceiling", which is exactly the range era-press mirrors from; a URL whose only captures
-      predate the site's era date is therefore a miss by the same rule that picks captures.
-    """
+    Absence from the index is NOT evidence that a URL is uncaptured, and treating it as such was a real
+    regression: the index window starts at the site's ERA DATE, so it answers "is there a capture on or
+    after the era date", not "is there a capture at all". `http://www.ibm.com/Global/` is archived --
+    200s through 1996-97 -- but ibm.com's era date is 1998-02-01, so it is absent from that host's
+    index. Skipping it on that basis made most intra-site navigation permanently dead: the home page
+    served, and nearly every link off it 404'd. An unindexed URL therefore falls back to the redirect
+    route, which costs a request but is the only thing that can actually answer the question."""
     idx = host_index(host_of(url))
     if not idx:  # no index, or an empty one for a host archive.org will not scan -> redirect route
         return target
-    return idx.get(_index_key(url))
+    return idx.get(_index_key(url)) or target

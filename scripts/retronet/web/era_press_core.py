@@ -55,10 +55,7 @@ def fetch_page(url, target):
     one from the index, so a page costs one fetch and its resources cost one fetch each. Callers store
     raw_body, mirror the `res` items, and follow same-site links: the serial mirror and the parallel
     crawl share ONE strategy."""
-    ts = era_index.index_ts(url, target)
-    if ts is None:
-        return None  # the host index says there is no capture in range -> authentic miss, no request
-    got = fetch.wayback_raw(url, ts)
+    got = fetch.wayback_raw(url, era_index.index_ts(url, target))
     if not got:
         return None
     page_ts, ctype, body = got
@@ -174,9 +171,6 @@ def mirror_resource(url, ts, staging, seen, hosts, stats):
     if not host or url in seen:
         return
     seen.add(url)
-    if ts is None:
-        stats["misses"] += 1  # the host index says there is no capture in range -> no request at all
-        return
     if fetch._past_ceiling(ts):
         stats["misses"] += 1  # discovered ts already after the ceiling -> skip the fetch entirely
         return

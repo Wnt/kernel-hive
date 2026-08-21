@@ -120,12 +120,14 @@ every window width, at every row limit, and with `collapse` removed — the scan
 how many captures the host has. They take the redirect route too, which is correct, just
 slower, and `era-press index` records that so it is not rediscovered every run.
 
-**An index also answers "no".** For a host that has one, a URL *absent* from it is an
-authentic miss that costs **zero requests** — asking archive.org could only come back 404,
-and it was coming back 404 for **27% of all requests** on a crawl whose entire budget is
-requests. Absence means "no capture between the site's era date and the ceiling", which is
-exactly the range era-press mirrors from, so a URL whose only captures predate the site's
-era date is a miss by the same rule that picks captures.
+**An index cannot answer "no", and assuming it could was a real regression.** The window
+starts at the site's **era date**, so absence means only *"no capture on or after the era
+date"* — not *"not archived"*. `http://www.ibm.com/Global/` is archived, with 200s through
+1996–97, but ibm.com's era date is 1998-02-01, so it is absent from that host's index.
+Treating that as a miss saved 27% of requests and killed most intra-site navigation with it:
+home pages served, and nearly every link off them 404'd. So an unindexed URL still takes the
+redirect route. It costs a request; it is the only thing that can actually answer the
+question.
 
 **Bootstrap the indexes before a cold crawl:**
 
@@ -156,6 +158,10 @@ box, same 60-site list, before and after (2026-08-21):
 |---|---|---|---|---|
 | **before** | ~2 | ~6 MB/hr | **11%** | **45%** |
 | **after** | **~92** | **~46 MB/hr** | ~73% | <1% |
+
+(The "after" row was measured with a since-reverted optimisation that skipped unindexed URLs;
+restoring correctness costs some of that request rate back — see *An index cannot answer
+"no"* below.)
 
 The in-flight limiter sits at its ceiling of 8 with no push-back, which is the sign that the
 crawl is now bounded by archive.org rather than by itself. Corpus growth rises by less than

@@ -163,10 +163,6 @@ def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
         if url in res_seen:
             return
         res_seen.add(url)
-    if ts is None:
-        with lock:
-            st["misses"] += 1  # the host index says there is no capture in range -> no request at all
-        return
     if fetch._past_ceiling(ts):
         with lock:
             st["misses"] += 1  # discovered ts already after the ceiling -> skip the fetch entirely
