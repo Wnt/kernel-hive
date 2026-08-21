@@ -20,6 +20,8 @@ Config comes from the environment (systemd EnvironmentFile
 
   search.py serve      run the HTTP service (default)
   search.py index      build the index once, print stats, exit
+  search.py reindex    conditional reindex for the timer: rebuild + refresh the
+                       directory ONLY if the corpus fingerprint changed, else skip
   search.py selftest   build over the bundled fixture, assert, exit
 """
 
@@ -28,7 +30,9 @@ from __future__ import annotations
 import json
 import os
 import signal
+import subprocess
 import sys
+import tempfile
 import threading
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -229,6 +233,106 @@ def cmd_index(cfg: Config) -> int:
     return 0
 
 
+# --- conditional reindex (the 15-minute reindex timer's target) -------------
+#
+# The timer fires often, but the corpus only changes while W2's crawl is actively
+# writing. So the reindex is GATED on a cheap corpus fingerprint (file count +
+# total bytes + newest mtime — sites.json included, since it lives under the
+# corpus root): unchanged => skip (no re-walk, no churn once the crawl is idle);
+# changed => SIGHUP the running service to rebuild the in-memory search index, and
+# refresh the Yahoo directory (rendered live from sites.json). The fingerprint
+# persists in the unit's StateDirectory so a change is seen across timer runs, and
+# it re-fires until the reload actually happens.
+
+RELOAD_UNIT = "retronet-search.service"
+
+
+def corpus_fingerprint(corpus_root: str) -> dict:
+    """A cheap signature of the corpus: file count, total bytes, newest mtime.
+
+    One os.scandir walk; sites.json sits under the corpus root, so a newly-crawled
+    site (new pages + a rewritten manifest) always moves the fingerprint.
+    """
+    files = total = 0
+    newest = 0.0
+    stack = [corpus_root] if corpus_root and os.path.isdir(corpus_root) else []
+    while stack:
+        try:
+            with os.scandir(stack.pop()) as it:
+                for entry in it:
+                    try:
+                        if entry.is_dir(follow_symlinks=False):
+                            stack.append(entry.path)
+                            continue
+                        st = entry.stat(follow_symlinks=False)
+                    except OSError:
+                        continue
+                    files += 1
+                    total += st.st_size
+                    newest = max(newest, st.st_mtime)
+        except OSError:
+            continue
+    return {"files": files, "bytes": total, "mtime": round(newest, 3)}
+
+
+def _fp_path(name: str = "corpus.fp") -> str:
+    """Where the last-indexed fingerprint lives (systemd StateDirectory, overridable for tests)."""
+    base = os.environ.get("RN_SEARCH_STATE") or os.environ.get("STATE_DIRECTORY") or "/var/lib/retronet-search"
+    return os.path.join(base.split(":")[0], name)  # $STATE_DIRECTORY may be colon-separated
+
+
+def _read_fp(path: str) -> dict:
+    try:
+        with open(path) as fh:
+            got = json.load(fh)
+        return got if isinstance(got, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_fp(path: str, fp: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as fh:
+        json.dump(fp, fh)
+    os.replace(tmp, path)
+
+
+def _reload_index(unit: str = RELOAD_UNIT) -> bool:
+    """SIGHUP the running search service via systemd (try-reload = a no-op if it is stopped)."""
+    try:
+        return subprocess.run(["systemctl", "try-reload-or-restart", unit], capture_output=True).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def cmd_reindex(cfg: Config) -> int:
+    """Conditional reindex for the 15-minute timer: rebuild the index + refresh the directory ONLY
+    when the corpus fingerprint changed; otherwise skip. Prints one line either way, so the journal
+    shows plainly which cycles did real work."""
+    fp = corpus_fingerprint(cfg.corpus)
+    n_sites = len(load_sites(cfg.sites))
+    path = _fp_path()
+    old = _read_fp(path)
+    if old == fp:
+        print(
+            f"reindex: corpus unchanged ({fp['files']} files, {fp['bytes']} bytes, "
+            f"mtime {fp['mtime']}, {n_sites} sites) — skipping"
+        )
+        return 0
+    if not _reload_index():
+        # Leave the stored fingerprint alone so the next cycle retries, never silently skips.
+        print(f"reindex: corpus changed but index reload FAILED — will retry ({fp['files']} files)")
+        return 1
+    _write_fp(path, fp)
+    print(
+        f"reindex: corpus changed (files {old.get('files', 0)}->{fp['files']}, "
+        f"bytes {old.get('bytes', 0)}->{fp['bytes']}) — index reloaded, "
+        f"directory regenerated from sites.json ({n_sites} sites)"
+    )
+    return 0
+
+
 def cmd_selftest() -> int:
     """Build over the bundled fixture and assert the acceptance invariants."""
     fixture = os.path.join(HERE, "fixtures", "corpus")
@@ -269,7 +373,20 @@ def cmd_selftest() -> int:
     assert empty.n_docs == 0 and not search(empty, "anything", 160)
     rn_render.to_bytes(rn_render.directory_page([]))  # empty directory renders
 
-    print("selftest OK: index, ranking, +/-/phrase, Latin-1, directory, empty-corpus")
+    # conditional-reindex fingerprint: sees the fixture, is stable when unchanged,
+    # moves on a change, and is all-zero for an absent corpus.
+    fp = corpus_fingerprint(fixture)
+    assert fp["files"] >= 3 and fp["bytes"] > 0 and fp["mtime"] > 0, "fingerprint should see the fixture"
+    assert corpus_fingerprint(fixture) == fp, "fingerprint must be stable on an unchanged corpus"
+    assert corpus_fingerprint(os.path.join(HERE, "fixtures", "nope")) == {"files": 0, "bytes": 0, "mtime": 0.0}
+    with tempfile.TemporaryDirectory() as td:
+        base = corpus_fingerprint(td)
+        os.makedirs(os.path.join(td, "h"))
+        with open(os.path.join(td, "h", "index.html"), "w") as fh:
+            fh.write("<title>x</title>hello")
+        assert corpus_fingerprint(td) != base, "a new page must change the fingerprint"
+
+    print("selftest OK: index, ranking, +/-/phrase, Latin-1, directory, empty-corpus, reindex-fingerprint")
     return 0
 
 
@@ -280,12 +397,14 @@ def main(argv: list[str]) -> int:
         return 0
     if cmd == "index":
         return cmd_index(Config.from_env())
+    if cmd == "reindex":
+        return cmd_reindex(Config.from_env())
     if cmd in ("selftest", "--selftest", "test"):
         return cmd_selftest()
     if cmd in ("-h", "--help", "help"):
         print(__doc__)
         return 0
-    sys.stderr.write(f"search.py: unknown command {cmd!r} (serve|index|selftest)\n")
+    sys.stderr.write(f"search.py: unknown command {cmd!r} (serve|index|reindex|selftest)\n")
     return 2
 
 

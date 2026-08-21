@@ -2,7 +2,8 @@
 # install-crawl.sh — deploy the era-press corpus crawl as a systemd unit INSIDE
 # the dev container CT 950 (the only box with internet). Idempotent.
 #
-# It deploys a COPY of era-press.py + era-sites.json into the shared volume dir so
+# It deploys a COPY of era-press.py + its modules (era_press_core.py, era_crawl.py)
+# + era-sites.json into the shared volume dir so
 # the running crawl never depends on a git worktree that may be GC'd mid-run, then
 # installs, enables and starts retronet-crawl.service. The crawl is resumable, so
 # re-running (or a reboot) continues from the on-disk corpus + state.json.
@@ -29,7 +30,7 @@ echo "deploying crawl runtime -> $RUN_DIR"
 # the service (User below) can write state.json + progress.log there.
 sudo mkdir -p "$RUN_DIR"
 sudo chown "$(id -un):$(id -gn)" "$RUN_DIR"
-cp "$SRC/era-press.py" "$SRC/era-sites.json" "$RUN_DIR/"
+cp "$SRC/era-press.py" "$SRC/era_press_core.py" "$SRC/era_crawl.py" "$SRC/era-sites.json" "$RUN_DIR/"
 
 echo "installing $UNIT"
 sudo cp "$SRC/$UNIT" "/etc/systemd/system/$UNIT"

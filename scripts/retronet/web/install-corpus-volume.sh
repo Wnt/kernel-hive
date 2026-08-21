@@ -2,7 +2,7 @@
 # install-corpus-volume.sh — create the big retronet web corpus volume and wire
 # it into the gateway CT (951). Idempotent; re-running is the repair path.
 #
-# WHY a volume: CT 951's rootfs is only 8 GB, far too small for a ~10 GB corpus.
+# WHY a volume: CT 951's rootfs is only 8 GB, far too small for a ~25 GB corpus.
 # The corpus instead lives in a ZFS dataset on the `data` pool and is bind-mounted
 # into CT 951 at the proxy's corpus path. It is placed UNDER /data/vms because the
 # dev container CT 950 already bind-mounts /data/vms (recursively), so CT 950 sees
@@ -18,7 +18,7 @@ set -euo pipefail
 
 POOL_DS="${RN_CORPUS_DS:-data/vms/retronet-corpus}" # ZFS dataset name
 VOL="${RN_CORPUS_VOL:-/data/vms/retronet-corpus}"   # labhost/CT 950 path (CT 950 sees it via /data/vms)
-QUOTA="${RN_CORPUS_QUOTA:-20G}"                     # headroom over the ~10 GB crawl budget
+QUOTA="${RN_CORPUS_QUOTA:-50G}"                     # headroom over the ~25 GB crawl budget
 OWNER="${RN_CORPUS_UID:-1000}"                      # CT 950's wnt writes the crawl; world-readable for the proxy
 CT="${RN_VMID:-951}"                                # the gateway CT
 CT_CORPUS="${RN_CT_CORPUS:-/data/retronet/corpus}"  # where CT 951's proxy reads the corpus

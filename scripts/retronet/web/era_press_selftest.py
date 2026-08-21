@@ -12,13 +12,14 @@ that images are NOT transcoded (a .png stays .png in the corpus path). Run it:
 
 from __future__ import annotations
 
-import importlib.util
 import os
+import tempfile
+import time
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_spec = importlib.util.spec_from_file_location("era_press", os.path.join(_HERE, "era-press.py"))
-ep = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(ep)
+# era_press_core.py + era_crawl.py sit next to this file; run as documented
+# (`python3 scripts/retronet/web/era_press_selftest.py`) that dir is sys.path[0].
+import era_crawl as ec
+import era_press_core as ep
 
 # A synthetic raw archived page (NOT scraped): the shapes era-press must handle.
 BASE = "http://www.test.example/dir/page.html"
@@ -81,7 +82,62 @@ def main():
     # 5. the date ceiling is the hard 2000-12-31 the contract fixed.
     check("ceiling", ep.CEILING, "20001231")
 
-    print("era-press selftest: all checks OK (raw mirror, no transform, dir->index.html)")
+    # 6. breadth-first frontier reconstruction — the resume + even-widening core, offline. Build a
+    #    tiny on-disk corpus and assert _reconstruct marks on-disk pages DONE per depth level and
+    #    files the not-yet-mirrored links as pending frontier at their level (so a restart continues
+    #    the even widening, and a deepened config reaches the newly-enabled levels).
+    with tempfile.TemporaryDirectory() as staging:
+        h = "www.t.example"
+        hd = os.path.join(staging, h)
+        os.makedirs(os.path.join(hd, "a"))
+        # home (L0) links a/ (on disk) + b.html (missing) + an offsite link; a/ (L1) links c.html (missing).
+        with open(os.path.join(hd, "index.html"), "w") as f:
+            f.write('<title>T</title><a href="/a/">a</a><a href="/b.html">b</a><a href="http://x.example/o">off</a>')
+        with open(os.path.join(hd, "a", "index.html"), "w") as f:
+            f.write('<a href="/c.html">c</a>')
+        st = ec._reconstruct(ec._site_state({"host": h, "depth": 2, "max_pages": 10}, 200), staging)
+        check("recon pages on disk", st["pages"], 2)  # home + a/
+        check("recon done-by-level", st["done"], {"0": 1, "1": 1})
+        check("recon pending L1 (b.html)", st["frontier"].get("1"), ["http://www.t.example/b.html"])
+        check("recon pending L2 (c.html)", st["frontier"].get("2"), ["http://www.t.example/c.html"])
+    # same-site link discovery is read-only and drops the cross-host link.
+    raw = b'<a href="/x">x</a><a href="http://other.example/y">y</a>'
+    check(
+        "page links same-site only",
+        ec._extract_page_links(raw, "http://h.example/", "h.example"),
+        ["http://h.example/x"],
+    )
+
+    # 7. round-robin interleave — a mid-level budget stop must spread coverage evenly across sites, so
+    #    work is taken one page per site in turn (A0, B0, C0, A1, B1, …), NOT all of A then all of B.
+    check(
+        "interleave round-robins",
+        ec._interleave([["A0", "A1", "A2"], ["B0"], ["C0", "C1"]]),
+        ["A0", "B0", "C0", "A1", "C1", "A2"],
+    )
+
+    # 8. the SHARED 429/503 backoff gate (the concurrency circuit-breaker), offline and deterministic:
+    #    a rate-limit signal seen by ONE worker opens a GLOBAL deadline every worker waits out via
+    #    _pace(); repeats escalate it; a clean response relaxes the streak.
+    ep._backoff_until, ep._backoff_streak = 0.0, 0
+    ep._penalize("2")  # a 429 carrying Retry-After: 2s
+    check("429 opens the streak", ep._backoff_streak, 1)
+    assert ep._backoff_until - time.monotonic() > 1.0, "a 429 must open a future GLOBAL backoff window"
+    armed = ep._backoff_until
+    ep._penalize(None)  # a repeat with no Retry-After escalates exponentially
+    check("repeat escalates the streak", ep._backoff_streak, 2)
+    assert ep._backoff_until >= armed, "repeated rate-limit signals push the shared deadline further out"
+    ep._relax()  # a clean response walks the streak back one notch
+    check("clean response relaxes", ep._backoff_streak, 1)
+    # _pace() must actually BLOCK on the shared window (jitter off so the timing is exact).
+    saved_jitter, ep.JITTER = ep.JITTER, 0.0
+    ep._backoff_until, ep._backoff_streak = time.monotonic() + 0.15, 0
+    t0 = time.monotonic()
+    ep._pace()
+    assert time.monotonic() - t0 >= 0.12, "_pace must wait out the shared backoff window all workers see"
+    ep.JITTER, ep._backoff_until, ep._backoff_streak = saved_jitter, 0.0, 0  # leave nothing armed
+
+    print("era-press selftest: all checks OK (raw mirror, dir->index.html, breadth-first frontier, shared backoff)")
 
 
 if __name__ == "__main__":
