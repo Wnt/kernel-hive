@@ -53,22 +53,23 @@
       "dir": "/data/vms/streamhost/stations/win95",
       "qmp": "/data/vms/streamhost/stations/win95/qmp.sock",
       "pointer_mode": "warpd",
-      "warpd_port": 57791,
-      "warpd_addr": "127.0.0.1:57791",
+      "warpd_port": 7777,
+      "warpd_addr": "10.99.0.13:7777",
       "ssh_port": null,
-      "exec_port": null,
-      "exec_kind": null,
+      "exec_host": "10.99.0.13",
+      "exec_port": 7788,
+      "exec_kind": "warpd_e",
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
       "udp_port": 54091,
-      "notes": "warpd agent on host port 57791 (guest :7777); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "RETRONET (2026-08-21): n0 is a tap on vmbr-rn, guest static 10.99.0.13/24, NO default route, sharing L2 with the OSCAR gateway CT 10.99.0.2. pointer: warpd agent C:\\WARPNET.EXE (guest :7777) reached DIRECTLY over the bridge at 10.99.0.13:7777 (was slirp hostfwd 127.0.0.1:57791); fire-and-forget absolute motion, PS/2 buttons. exec: labctl exec win95 \"<cmd>\" runs a command through COMMAND.COM in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The exec agent is C:\\WARPX.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), a SECOND warpnet build on 0.0.0.0:7788 because the :7777 pointer agent's serial accept loop is monopolised by the daemon's persistent pointer connection. Both agents autostart from WIN.INI load= on a cold boot and are RUNNING inside the golden. See docs/lab/retronet/ICQ-STATION-win95.md."
     }
   },
   "render": {
     "signalOrder": 1,
     "stationsManifestOrder": 14,
-    "stationsManifestPrelude": "\n# win95 (VMID 91) — Win95 OSR2, sb16, pcnet NIC; machine carries accel=kvm.\n#   VERBATIM LAUNCHER: boots the tile-LOCAL win95-golden.qcow2 (gallery\n#   Win95/win95-osr2-kvm.qcow2 stays pristine) WITHOUT -snapshot; conditional\n#   -loadvm golden.\n# POINTER=warpd: usb=off => PS/2 RELATIVE-only mouse + Win9x pointer\n# acceleration make an abs->rel bridge drift. Fix (guest-agents/win9x/\n# warpnet.c): an in-guest Win32 agent SetCursorPos()s absolutely over Winsock\n# TCP :7777, reached via the hostfwd 127.0.0.1:57791 on the launcher's -netdev.\n# BUTTONS ride the real QEMU PS/2 device (--warpd-buttons qemu, 2026-07-14): a\n# warpnet mouse_event click is a WINDOWS-level click that punches through a\n# fullscreen DOS box's input ownership (killed GTA/Duke/Quake with \"VESA\n# function 5h failed\"); PS/2 buttons land in whoever owns the mouse. Motion\n# stays on the agent (absolute, drift-free).\n",
+    "stationsManifestPrelude": "\n# win95 (VMID 91) — Win95 OSR2, sb16, pcnet NIC; machine carries accel=kvm.\n#   VERBATIM LAUNCHER: boots the tile-LOCAL win95-golden.qcow2 (gallery\n#   Win95/win95-osr2-kvm.qcow2 stays pristine) WITHOUT -snapshot; conditional\n#   -loadvm golden.\n# POINTER=warpd: usb=off => PS/2 RELATIVE-only mouse + Win9x pointer\n# acceleration make an abs->rel bridge drift. Fix (guest-agents/win9x/\n# warpnet.c): an in-guest Win32 agent SetCursorPos()s absolutely over Winsock\n# TCP :7777, reached DIRECTLY over the vmbr-rn bridge at 10.99.0.13:7777 (retronet\n# 2026-08-21; was the slirp hostfwd 127.0.0.1:57791 before the ICQ bridge swap).\n# BUTTONS ride the real QEMU PS/2 device (--warpd-buttons qemu, 2026-07-14): a\n# warpnet mouse_event click is a WINDOWS-level click that punches through a\n# fullscreen DOS box's input ownership (killed GTA/Duke/Quake with \"VESA\n# function 5h failed\"); PS/2 buttons land in whoever owns the mouse. Motion\n# stays on the agent (absolute, drift-free).\n",
     "bringUpGroup": 4,
     "bindingOrder": 4,
     "bindingPrelude": "",
@@ -94,7 +95,7 @@
         0,
         0
       ],
-      "agentAddress": "127.0.0.1:57791",
+      "agentAddress": "10.99.0.13:7777",
       "buttons": "qemu"
     },
     "slot": 91
@@ -110,7 +111,7 @@
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "warpd",
-      "SH_WARPD_ADDR": "127.0.0.1:57791",
+      "SH_WARPD_ADDR": "10.99.0.13:7777",
       "SH_WARPD_BUTTONS": "qemu",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
@@ -132,7 +133,7 @@
         "--pointer",
         "warpd",
         "--warpd-addr",
-        "127.0.0.1:57791",
+        "10.99.0.13:7777",
         "--warpd-buttons",
         "qemu",
         "--warpd-pace-ms",
@@ -147,6 +148,8 @@
         "$T/win95/drive.py",
         "--aux-file",
         "$T/win95/golden-bake.sh",
+        "--aux-file",
+        "$T/win95/rn-tapnet.sh",
         "--env-append-file",
         "$T/win95/station.env.fixture"
       ],
@@ -155,7 +158,8 @@
       "envFixture": "streamhost/stations/win95/station.env.fixture",
       "auxFiles": [
         "streamhost/stations/win95/drive.py",
-        "streamhost/stations/win95/golden-bake.sh"
+        "streamhost/stations/win95/golden-bake.sh",
+        "streamhost/stations/win95/rn-tapnet.sh"
       ],
       "binary": "qemu-system-x86_64",
       "machine": "pc-i440fx-11.0,acpi=off,usb=off,kernel-irqchip=off,accel=kvm",
@@ -173,7 +177,7 @@
         "-vga std",
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
-        "-drive file=\"$DISK\",format=qcow2,if=ide -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57791-:7777 -device pcnet,netdev=n0",
+        "-drive file=\"$DISK\",format=qcow2,if=ide -netdev tap,id=n0,ifname=win95rn0,script=no,downscript=no -device pcnet,netdev=n0,mac=$RN_WIN95_MAC",
         "-qmp unix:$D/qmp.sock,server=on,wait=off",
         "-pidfile $D/qemu.pid"
       ],
@@ -194,14 +198,14 @@
           "-vga std",
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
-          "-drive file=\"$DISK\",format=qcow2,if=ide -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57791-:7777 -device pcnet,netdev=n0",
+          "-drive file=\"$DISK\",format=qcow2,if=ide -netdev tap,id=n0,ifname=win95rn0,script=no,downscript=no -device pcnet,netdev=n0,mac=$RN_WIN95_MAC",
           "-qmp unix:$D/qmp.sock,server=on,wait=off",
           "-pidfile $D/qemu.pid"
         ]
       },
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher equals live"
+        "reason": "tracked verbatim launcher equals live; golden re-baked (2026-08-21) on the vmbr-rn tap (retronet) with the same guest-visible device set (pcnet, unique MAC RN_WIN95_MAC) and the warpnet pointer+exec agents baked in"
       }
     },
     "bringUpOrder": 14

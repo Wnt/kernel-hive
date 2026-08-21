@@ -270,6 +270,14 @@ box_sync_load_pairs() {
   box_sync_add_pair win2000-icq-nudge scripts/retronet/win2000-icq-nudge.py /usr/local/sbin/win2000-icq-nudge.py exact repo
   box_sync_add_pair win2000-icq-nudge-unit scripts/retronet/win2000-icq-nudge.service /etc/systemd/system/win2000-icq-nudge.service exact repo daemon-reload
   box_sync_add_pair win2000-icq-nudge-timer scripts/retronet/win2000-icq-nudge.timer /etc/systemd/system/win2000-icq-nudge.timer exact repo daemon-reload
+  # win95 retronet (Tier B): same shape as win98se/nt4 — its bridge-tap lifecycle
+  # helper and its own ICQ presence healer (guest 10.99.0.13, persona 95000). The
+  # warpnet pointer agent (:7777) and a second warpnet build for exec (:7788) both
+  # ride the bridge. See docs/lab/retronet/ICQ-STATION-win95.md.
+  box_sync_add_pair win95-rn-tapnet streamhost/stations/win95/rn-tapnet.sh "$BOX_ROOT/stations/win95/rn-tapnet.sh" exact repo
+  box_sync_add_pair win95-icq-nudge scripts/retronet/win95-icq-nudge.py /usr/local/sbin/win95-icq-nudge.py exact repo
+  box_sync_add_pair win95-icq-nudge-unit scripts/retronet/win95-icq-nudge.service /etc/systemd/system/win95-icq-nudge.service exact repo daemon-reload
+  box_sync_add_pair win95-icq-nudge-timer scripts/retronet/win95-icq-nudge.timer /etc/systemd/system/win95-icq-nudge.timer exact repo daemon-reload
 
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.

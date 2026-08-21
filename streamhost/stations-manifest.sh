@@ -318,7 +318,8 @@ emit win311 \
 # POINTER=warpd: usb=off => PS/2 RELATIVE-only mouse + Win9x pointer
 # acceleration make an abs->rel bridge drift. Fix (guest-agents/win9x/
 # warpnet.c): an in-guest Win32 agent SetCursorPos()s absolutely over Winsock
-# TCP :7777, reached via the hostfwd 127.0.0.1:57791 on the launcher's -netdev.
+# TCP :7777, reached DIRECTLY over the vmbr-rn bridge at 10.99.0.13:7777 (retronet
+# 2026-08-21; was the slirp hostfwd 127.0.0.1:57791 before the ICQ bridge swap).
 # BUTTONS ride the real QEMU PS/2 device (--warpd-buttons qemu, 2026-07-14): a
 # warpnet mouse_event click is a WINDOWS-level click that punches through a
 # fullscreen DOS box's input ownership (killed GTA/Duke/Quake with "VESA
@@ -326,10 +327,10 @@ emit win311 \
 # stays on the agent (absolute, drift-free).
 emit win95 \
   --tile win95 --vmid 91 --udp 54091 --pointer warpd --warpd-addr \
-  127.0.0.1:57791 --warpd-buttons qemu --warpd-pace-ms 30 --audio on --fps \
+  10.99.0.13:7777 --warpd-buttons qemu --warpd-pace-ms 30 --audio on --fps \
   30 --launcher-file "$T/win95/qemu-streamhost.sh" --aux-file \
-  "$T/win95/drive.py" --aux-file "$T/win95/golden-bake.sh" --env-append-file \
-  "$T/win95/station.env.fixture"
+  "$T/win95/drive.py" --aux-file "$T/win95/golden-bake.sh" --aux-file \
+  "$T/win95/rn-tapnet.sh" --env-append-file "$T/win95/station.env.fixture"
 
 # win98se (VMID 92) — Win98SE, sb16, two qcow2 disks (system + games), pcnet,
 #   usb-tablet. VERBATIM LAUNCHER: golden snapshot lives INSIDE the base disks
