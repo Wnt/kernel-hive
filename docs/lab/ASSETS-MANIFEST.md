@@ -326,6 +326,88 @@ script. Staged **only** in the content-addressed media archive (no
 |---|---|---|---|---|
 | `icq2000b.exe` (ICQ 2000b, Mirabilis/AOL) | `9d5574cea30a8a0353d815555c59d589189b0fb98d9de63e74d908c16de3e11f` *(locally measured 2026-08-20; matches the file's own archive.org-recorded md5 `ae59de2259f3a109a6d66eb037da2335` and sha1 `4c916525f43d2a789a924cc81bf7b8bee7034645`)* | 5 331 244 | [`archive.org/details/icq2000b_202206`](https://archive.org/details/icq2000b_202206), file `icq2000b.exe` — the exact installer [Retro AIM Server's `CLIENT_ICQ.md`](https://github.com/mk6i/retro-aim-server/blob/main/docs/CLIENT_ICQ.md) links to for its own ICQ-2000b setup guide | **abandonware-URL.** Mirabilis/AOL-copyright, long-discontinued, no redistribution grant; hosted by a preservation archive. Chosen over the older ICQ 98a/99a/99b generation because those speak a *different, non-OSCAR* legacy protocol (UDP v3-v5 on port 4000 — a separate subsystem in Retro AIM Server, `ICQ_LEGACY_ENABLED`); ICQ 2000b is the first ICQ client to speak real OSCAR over TCP 5190 — the same port/protocol family the PoC's AIM support already rides ("one daemon, two nostalgia brands", `docs/lab/RETRONET-BRIEF.md` §5) and the exact port the PoC's network contract fixes (`docs/lab/retronet/POC-PLAN.md`: `10.99.0.2:5190`). iserverd is also an OSCAR-protocol reimplementation, so the same choice holds for the documented fallback. ICQ 2000b also keeps its contact list local to the client (2001+/2002+ store it server-side, and Retro AIM Server's own docs flag them as less reliable to set up). Private preservation exhibit only; never committed, never publicly served — installed into the win98se guest only. |
 
+### `ICQ 2001b` — retronet ICQ SSI client for the Windows fleet (media-only, upgrade path)
+
+Sourced for the Windows leg of `docs/lab/retronet/ICQ-ONBOARDING-PLAN.md`:
+every Windows ICQ station (win98se, win2000, nt4, win95) runs ICQ 2000b today,
+whose contact list is **client-local** (the row above) — a golden rebuild or
+`labctl reset` shows an empty list until the contact seeder re-drives the
+client's own Add-Contact UI. ICQ 2001b is the first ICQ generation with a
+**server-stored (SSI) contact list**: a client that signs in against the
+gateway populates its list from the server on login, no per-station seeding
+needed. Not builder-driven and not installed on any station yet — this row is
+media-sourcing only, same status as the `macos753` and `climm` rows below; the
+actual client swap is separate future work. Staged **only** in the
+content-addressed media archive (no `/data/assets-staging/` copy):
+`/data/media-archive/blobs/34/3436e607cc2dfde7021f6f50d1f8f20e9da88dcb846d50fa9b88eecb9fa6d511`
+(`media_cache_put`, see `scripts/build-guests/lib/media-cache.sh`).
+
+| file | sha256 | size | source | class / terms |
+|---|---|---|---|---|
+| `ICQ2001b.exe` (ICQ 2001b build 3659, ICQ Ltd./AOL) | `3436e607cc2dfde7021f6f50d1f8f20e9da88dcb846d50fa9b88eecb9fa6d511` *(locally measured 2026-08-21, cross-checked from two independent fetches — CT950 and labhost, byte-identical; matches the file's own archive.org-recorded md5 `0867033819dc7c5293e33344560070d2` and sha1 `01ecd76e1664240b6db8fd662a687fcb82be32f1`)* | 4 312 600 | [`archive.org/details/icq-2001b`](https://archive.org/details/icq-2001b) (identifier `icq-2001b`, uploaded 2022-06-07, curator note "checked for malware"), file `ICQ2001b.exe` | **abandonware-URL.** ICQ Ltd./AOL-copyright, long-discontinued, no redistribution grant; hosted by a preservation archive — same private-collection stance as every row in this section. Private preservation exhibit only; never committed, never publicly served. |
+
+**Why ICQ 2001b, and why over ICQ 2002a and Miranda IM.** The requirement
+(`docs/lab/retronet/ICQ-ONBOARDING-PLAN.md`) is a Windows OSCAR client with a
+genuinely server-stored contact list, not a client-local one that merely looks
+server-driven:
+
+- **First-party confirmation against the exact gateway software this fleet
+  runs.** [Open OSCAR Server's own `CLIENT_ICQ.md`](https://github.com/mk6i/open-oscar-server/blob/main/docs/CLIENT_ICQ.md)
+  (the renamed `retro-aim-server`, the doc the win98se row above cites for ICQ
+  2000b) gives **ICQ 2001 & 2002** a dedicated, tested setup guide and says
+  outright: "Unlike ICQ 2000b, these clients store your contact list on the
+  server rather than locally on the client." That is the SSI/feedbag
+  behaviour confirmed by the server maintainers' own hand, not inferred from
+  version-history trivia. The same doc flags ICQ 2001/2002 as unreliable
+  under WINE ("do not run reliably under WINE — use native Windows") — a
+  non-issue here since every station in this fleet is a real Windows guest
+  under QEMU, never WINE; if anything it rules out an approach we were never
+  taking.
+- **2001b over 2002a: provenance, not protocol.** `CLIENT_ICQ.md` links both
+  as equally valid (`oldversion.com` for each), so the choice came down to
+  sourcing quality. ICQ 2001b has a clean, single-purpose archive.org item
+  (`icq-2001b`, uploaded 2022-06-07 — the same date/batch as this file's
+  `icq2000b_202206` neighbour above) with a curator note "checked for
+  malware" and md5/sha1 recorded in the item's own metadata, which the
+  locally measured hash matches exactly. ICQ 2002a has **no equivalent
+  standalone archive.org item** — `archive.org/metadata/icq-2002a` returns
+  empty, and an advanced-search title query finds it only bundled inside
+  multi-title CD-ROM/magazine cover-disc collections (a Czech PC World disc,
+  a PC Brasil freeware disc) — messier provenance to pin and verify than a
+  dedicated, curated single-file item. ICQ 2001b is also the version that
+  *introduced* SSI (contemporary sources: "from the release of ICQ 2001b, the
+  Contact List is saved on the ICQ servers"), making it the earlier-tested,
+  more conservative choice, and its November-2001 release sits
+  contemporaneously with the win98se/win2000/nt4 fleet's own era rather than
+  a year further out.
+- **Windows 9x/NT/2000 compatibility confirmed independently of the archive
+  listing.** Cross-referenced compatibility listings show ICQ 2001b running
+  on Windows 95, 98, ME, NT 4.0, 2000 and XP — one client covers every
+  station in this fleet (win95, win98se, nt4, win2000).
+- **Genuinely the file, not a mislabeled repack.** The fetched installer's
+  own embedded string self-identifies: `ICQ Installation (Ver 2001b Build
+  3659)` — extracted with `strings` from the downloaded PE, not taken on the
+  archive listing's word alone.
+- **Miranda IM — considered, not chosen.** Miranda IM's ICQ protocol plugin
+  is genuinely SSI-based, and Miranda shipped both an ANSI build (Win95/98/
+  ME) and a Unicode build (NT4/2000/XP/2003) from 0.5 onward, so broad Win9x/
+  NT coverage is plausible. Two things tipped the decision to ICQ 2001b
+  instead: (1) Open OSCAR Server's own client docs don't mention Miranda at
+  all — there is no first-party "this works against our server" the way
+  there is for ICQ 2001/2002, only general corroboration that its ICQ plugin
+  loads a server-side list; (2) pinning the *specific* early Miranda release
+  that both still runs on Win95/98 (pre-Unicode-only NG-fork era) and has a
+  working SSI-capable ICQ plugin would need the kind of source-level dig this
+  manifest did for climm (`oscar_base.c`, compiled-in `login.icq.com:5190`,
+  below) — worthwhile when climm was the *only* Unix OSCAR candidate with no
+  ICQ-branded alternative, but out of proportion here when a genuine,
+  first-party-documented ICQ client already satisfies the requirement
+  cleanly. Kept as a fallback if ICQ 2001b proves unreliable on any of the
+  four Windows stations at bring-up time.
+
+Not yet run against the gateway or installed into any station — that is the
+station bring-up wave's job, same caveat as the `climm` rows below.
+
 ### `macos753` — retronet AIM client media (Tier D, media-only so far)
 
 Not builder-driven yet — **networking itself doesn't exist on this station
