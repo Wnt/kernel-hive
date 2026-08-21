@@ -92,6 +92,12 @@ def _site_state(s, default_mb):
         "blurb": s.get("blurb", ""),
         "category": s.get("category", ""),
         "home": "http://" + host + "/",
+        # Extra depth-0 start URLs. A site's home page is where a *visitor* starts, but it is not
+        # where a 1990s OS starts: browsers, help viewers and desktop shortcuts point at deep,
+        # specific paths (home.netscape.com/home/first.html, www.austin.ibm.com/pspinfo/os2.html)
+        # that ordinary link-following from the home page may never reach. Seeding them as level-0
+        # starts crawls them to the site's full depth like any other entry point.
+        "seeds": [u for u in s.get("seeds", []) if u],
         "seen": [],  # every page URL discovered (a set at run time, a sorted list on disk)
         "frontier": {},  # "level" -> [page URLs discovered but not yet mirrored]
         "pages": 0,
@@ -113,8 +119,9 @@ def _reconstruct(st, staging):
     This IS the resume: the corpus is the authoritative record, so a restart -- or a deepened
     era-sites.json -- continues the even widening exactly where it left off and reaches new levels."""
     host, depth, max_pages = st["host"], st["depth"], st["max_pages"]
-    seen, frontier, done = {st["home"]}, {}, {}
-    cur, level, planned = [st["home"]], 0, 1
+    starts = [st["home"]] + [u for u in st["seeds"] if u != st["home"]]
+    seen, frontier, done = set(starts), {}, {}
+    cur, level, planned = list(starts), 0, len(starts)
     while cur and level <= depth:
         nxt = []
         for url in cur:
@@ -189,17 +196,25 @@ def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
 
 
 def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
-    """Mirror ONE page (or reuse it from disk), mirror its resources on a fresh fetch only, and file
-    its same-site links under the NEXT depth level. Thread-safe: fetch is lockless, state under `lock`.
-    fetch_page pulls the raw id_ bytes at the exact capture stamp the site's host index gives, and
-    discovers resources/links from the RAW body -- so a page and each of its resources is ONE fast fetch
-    and no per-URL search. Links come from that same raw body, identical to _reconstruct, so resume
-    rebuilds the same frontier."""
+    """Mirror ONE page (or reuse it from disk), mirror every resource it references that is not already
+    on disk, and file its same-site links under the NEXT depth level. Thread-safe: fetch is lockless,
+    state under `lock`. fetch_page pulls the raw id_ bytes at the exact capture stamp the site's host
+    index gives, and discovers resources/links from the RAW body -- so a page and each of its resources
+    is ONE fast fetch and no per-URL search. Links come from that same raw body, identical to
+    _reconstruct, so resume rebuilds the same frontier.
+
+    The resource sweep runs for a CACHED page too, and that is not an optimisation detail -- it is the
+    difference between a usable exhibit and a broken one. Resources used to be mirrored only on a FRESH
+    page fetch, so any page stored during a spell of failing fetches kept its missing images forever:
+    the page was on disk, so the crawl never looked at it again. www.sun.com had 4 of 15 images and
+    www.ibm.com 10 of 24 for exactly that reason. Re-sweeping costs a body read and a stat per
+    reference; only a genuinely absent resource costs a request."""
     host = core.host_of(url)
     cached = core._have(staging, host, core.store_rel(url, True))
     if cached:
         body = Path(cached).read_bytes()
         page = core.is_html("", body)
+        discovered = core.discover(body, url, st["date"]) if page else []
         with lock:
             st["skipped"] += 1
     else:
@@ -214,10 +229,10 @@ def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
             st["fetched"] += 1
             st["bytes"] += len(body)
             budget["written"] += len(body)
-        if page:  # each resource at its indexed exact ts -- one direct id_ hit, no search -- lockless
-            for kind, res_ts, orig in discovered:
-                if kind == "res":
-                    _mirror_resource_mt(orig, res_ts, staging, res_seen, st, lock, budget)
+    if page:  # each resource at its indexed exact ts -- one direct id_ hit, no search -- lockless
+        for kind, res_ts, orig in discovered:
+            if kind == "res":
+                _mirror_resource_mt(orig, res_ts, staging, res_seen, st, lock, budget)
     if not page:
         return
     with lock:

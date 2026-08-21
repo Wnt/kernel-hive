@@ -244,7 +244,45 @@ def main():
         check("resolved-ts <=2000: stored", (st2["assets"], st2["misses"]), (1, 0))
     ef.wayback_raw = saved_raw
 
-    print("era-press selftest: all checks OK (raw mirror, host index, resolved-ts ceiling, frontier, backoff)")
+    # 10. a page ALREADY on disk still gets its missing resources swept. Resources used to be mirrored
+    #     only on a FRESH page fetch, so any page stored while fetches were failing kept its missing
+    #     images forever -- the page was cached, so the crawl never looked at it again.
+    with tempfile.TemporaryDirectory() as staging:
+        host = "www.t.example"
+        os.makedirs(os.path.join(staging, host))
+        with open(os.path.join(staging, host, "index.html"), "wb") as fh:
+            fh.write(b'<html><body><img src="logo.gif"><a href="p.html">p</a></body></html>')
+        fetched = []
+
+        def fake_raw(url, ts):
+            fetched.append(url)
+            return ("19970104102030", "image/gif", b"GIF89a-swept")
+
+        saved = ef.wayback_raw
+        ef.wayback_raw = fake_raw
+        try:
+            ep.mirror_site(host, "19970101", 0, 4, staging)
+        finally:
+            ef.wayback_raw = saved
+        gif = os.path.join(staging, host, "logo.gif")
+        check("cached page: its missing resource is swept in", os.path.isfile(gif), True)
+        check("cached page: the page itself is NOT re-fetched", any(u.endswith("index.html") for u in fetched), False)
+
+    # 11. `seeds`: deep entry points a 1990s OS points at directly (a browser default page, a help
+    #     link, a desktop shortcut) start at level 0 alongside the home page, so they are crawled to
+    #     the site's full depth even though nothing on the home page links to them.
+    seeded = ec._site_state(
+        {"host": "www.t.example", "depth": 2, "max_pages": 9, "seeds": ["http://www.t.example/deep/page.html"]},
+        200,
+    )
+    with tempfile.TemporaryDirectory() as staging:
+        ec._reconstruct(seeded, staging)
+    level0 = seeded["frontier"].get("0", [])
+    check("seeds: home is a level-0 start", "http://www.t.example/" in level0, True)
+    check("seeds: the seed is a level-0 start too", "http://www.t.example/deep/page.html" in level0, True)
+    check("seeds: absent `seeds` key is fine", ec._site_state({"host": "x.example"}, 200)["seeds"], [])
+
+    print("era-press selftest: all checks OK (raw mirror, host index, ceiling, frontier, seeds, sweep)")
 
 
 if __name__ == "__main__":

@@ -64,12 +64,22 @@ def fetch_page(url, target):
     page = is_html(ctype, body)
     if not page:
         return page_ts, False, body, []  # a non-HTML "page" (a link to a PDF/image): store as an asset
-    discovered = [
+    return page_ts, True, body, discover(body, url, target)
+
+
+def discover(body, base, target):
+    """Everything a page references, priced for fetching: [(kind, ts, original_url)].
+
+    Read-only over the RAW archived HTML -- the original 1990s URLs, relative refs resolved against the
+    page -- with each URL's capture stamp taken from its host index (or the era date, which the id_
+    redirect resolves). archive.org's own hosts are dropped: none of Wayback's infrastructure is part
+    of the site. Split out of fetch_page because a page ALREADY on disk needs exactly this too -- see
+    the resource sweep in era_crawl."""
+    return [
         (kind, era_index.index_ts(u, target), u)
-        for kind, u in extract_urls(body, url)
+        for kind, u in extract_urls(body, base)
         if not fetch._is_archive_host(host_of(u))
     ]
-    return page_ts, True, body, discovered
 
 
 # --- URL / path model -------------------------------------------------------
@@ -208,9 +218,10 @@ def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None):
         url, d = q.popleft()
         host = host_of(url)
         cached = _have(staging, host, store_rel(url, True))
-        if cached:  # resume: reuse the archived page from disk, still walk its links
+        if cached:  # resume: reuse the archived page from disk, still walk its links AND its resources
             body = Path(cached).read_bytes()
             page = is_html("", body)
+            discovered = discover(body, url, target) if page else []
             stats["skipped"] += 1
         else:
             got = fetch_page(url, target)  # raw id_ bytes + exact page ts + rewritten resource discovery
@@ -220,10 +231,10 @@ def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None):
             _ts, page, body, discovered = got
             _write(staging, host, store_rel(url, page), body)
             stats["fetched"] += 1
-            if page:  # mirror each discovered resource at its EXACT ts -- no per-resource search
-                for kind, res_ts, orig in discovered:
-                    if kind == "res":
-                        mirror_resource(orig, res_ts, staging, seen_res, hosts, stats)
+        if page:  # mirror each discovered resource at its EXACT ts -- no per-resource search. Runs for
+            for kind, res_ts, orig in discovered:  # a CACHED page too: see the note in era_crawl
+                if kind == "res":
+                    mirror_resource(orig, res_ts, staging, seen_res, hosts, stats)
         hosts.add(host)
         stats["bytes"] += len(body)
         if not page:
