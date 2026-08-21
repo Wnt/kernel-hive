@@ -70,12 +70,10 @@ def _log(path, msg):
 
 
 def _extract_page_links(body, base, seed_host):
-    """Same-site <a>/<frame> links in a raw HTML body, absolute and read-only (nothing rewritten)."""
-    return [
-        u
-        for kind, u in core.extract_urls(body, base)
-        if kind in ("link", "frame") and core.bare(core.host_of(u)) == core.bare(seed_host)
-    ]
+    """Same-site <a>/<frame> links in a raw HTML body, absolute and read-only (nothing rewritten).
+    Delegates to core.same_site_links -- ONE implementation shared with the serial mirror and _reconstruct,
+    so the fresh-crawl frontier and the resume-reconstructed frontier are guaranteed identical URL sets."""
+    return core.same_site_links(body, base, seed_host)
 
 
 def _site_state(s, default_mb):
@@ -150,8 +148,10 @@ def _reconstruct(st, staging):
 # so there is never a write conflict.
 
 
-def _mirror_resource_mt(url, target, staging, res_seen, st, lock, budget):
-    """Mirror one referenced resource (any host) raw + date-capped, concurrency-safe."""
+def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
+    """Mirror one referenced resource (any host) raw, concurrency-safe. `ts` is the resource's EXACT
+    capture timestamp (discovered from the page's rewritten HTML), so this is a DIRECT id_ hit -- NOT a
+    per-resource CDX search. A ts past the 2000-12-31 ceiling => skip (authentic miss)."""
     host = core.host_of(url)
     if not host:
         return
@@ -159,6 +159,10 @@ def _mirror_resource_mt(url, target, staging, res_seen, st, lock, budget):
         if url in res_seen:
             return
         res_seen.add(url)
+    if core._past_ceiling(ts):
+        with lock:
+            st["misses"] += 1  # discovered ts already after the ceiling -> skip the fetch entirely
+        return
     rel = core.store_rel(url, False)
     dest = core._have(staging, host, rel)
     if dest:  # resume: already on disk -> no fetch
@@ -166,15 +170,12 @@ def _mirror_resource_mt(url, target, staging, res_seen, st, lock, budget):
             st["skipped"] += 1
             st["bytes"] += os.path.getsize(dest)
         return
-    ts = core.cdx_pick(url, target)  # network (paced) -- lockless
-    if not ts:
+    got = core.wayback_raw(url, ts)  # id_ at the discovered ts (paced, lockless) -- but may resolve nearer
+    # Re-check the RESOLVED ts: a resource the rewritten page rewrote to the PAGE's ts (because it wasn't
+    # captured then) can resolve via id_ to its real, possibly post-2000, capture -- which must NOT store.
+    if not got or core._past_ceiling(got[0]) or len(got[2]) > core.MAX_FETCH:
         with lock:
-            st["misses"] += 1  # only-post-2000 or uncaptured -> authentic miss
-        return
-    got = core.wayback_raw(url, ts)  # network (paced) -- lockless
-    if not got or len(got[2]) > core.MAX_FETCH:
-        with lock:
-            st["misses"] += 1
+            st["misses"] += 1  # resolved capture past the ceiling (or a miss / oversize) -> skip
         return
     core._write(staging, host, rel, got[2])
     with lock:
@@ -185,7 +186,10 @@ def _mirror_resource_mt(url, target, staging, res_seen, st, lock, budget):
 
 def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
     """Mirror ONE page (or reuse it from disk), mirror its resources on a fresh fetch only, and file
-    its same-site links under the NEXT depth level. Thread-safe: fetch is lockless, state under `lock`."""
+    its same-site links under the NEXT depth level. Thread-safe: fetch is lockless, state under `lock`.
+    The BROWSER strategy: fetch_page pulls the raw id_ bytes AND (via the page's rewritten HTML)
+    discovers every resource's EXACT timestamp -- so resources are direct id_ hits, ZERO CDX. Links come
+    from the RAW body (original URLs), identical to _reconstruct, so resume rebuilds the same frontier."""
     host = core.host_of(url)
     cached = core._have(staging, host, core.store_rel(url, True))
     if cached:
@@ -194,27 +198,21 @@ def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
         with lock:
             st["skipped"] += 1
     else:
-        ts = core.cdx_pick(url, st["date"])  # network (paced) -- lockless
-        if not ts:
+        got = core.fetch_page(url, st["date"])  # raw id_ + exact page ts + rewritten discovery -- lockless
+        if not got:
             with lock:
-                st["misses"] += 1  # only-post-2000 or uncaptured -> authentic miss
+                st["misses"] += 1  # uncaptured, oversize, or past the ceiling -> authentic miss
             return
-        got = core.wayback_raw(url, ts)  # network (paced) -- lockless
-        if not got or len(got[2]) > core.MAX_FETCH:
-            with lock:
-                st["misses"] += 1
-            return
-        _, ctype, body = got
-        page = core.is_html(ctype, body)
+        _page_ts, page, body, discovered = got
         core._write(staging, host, core.store_rel(url, page), body)  # distinct file -> lockless
         with lock:
             st["fetched"] += 1
             st["bytes"] += len(body)
             budget["written"] += len(body)
-        if page:
-            for kind, u in core.extract_urls(body, url):
+        if page:  # each resource at its EXACT ts -- direct id_, no per-resource search (paced) -- lockless
+            for kind, res_ts, orig in discovered:
                 if kind == "res":
-                    _mirror_resource_mt(u, st["date"], staging, res_seen, st, lock, budget)
+                    _mirror_resource_mt(orig, res_ts, staging, res_seen, st, lock, budget)
     if not page:
         return
     with lock:

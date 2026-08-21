@@ -52,34 +52,97 @@ exact noise an earlier downgrade-everything approach was flailing against. With
 links. So there is nothing to undo, and no reason to rewrite: the original
 absolute/relative URLs are already what we want.
 
-## The pipeline
+era-press uses **both** representations of a page, for two different jobs: the
+`id_` bytes are what it **stores** (the raw original), and that same rewritten page
+it never stores is read **once** to harvest the **exact capture timestamp of every
+resource** — which is what makes the fetch fast. The rewriting is the noise for the
+bytes but the signal for the timestamps.
 
-1. **Enumerate.** For each URL, the Wayback **CDX API** lists its `200`-status
-   captures with `to=20001231`. The capture whose timestamp is closest to the
-   target date wins; no rows ⇒ skip (an authentic miss).
-2. **Fetch raw.** That exact capture is pulled with `id_`. Bytes and
-   Content-Type are kept as-is. Every fetch (CDX and `id_` alike) rides one
-   **shared `httpx` HTTP/2 client** — a handful of reused, multiplexed
-   connections for the whole crawl (see *The fetch transport* below).
-3. **Discover, read-only.** The raw HTML is scanned (never rewritten) for the
-   URLs it references — images, scripts, stylesheets, backgrounds, embeds,
-   frames, and `<a>`/`<area>` links, plus `<meta refresh>`.
-4. **Mirror by host.** Every resource is written under **its own host** at
-   `/data/retronet/corpus/<host>/<path>`. Because the markup is untouched and
-   the proxy maps requests by host, the original absolute URLs resolve for free.
-   Same-site **links** are followed to a bounded `--depth`; cross-host links are
-   left alone (they miss unless that host is pressed separately). Referenced
-   **resources** are mirrored whatever their host — a captured-≤2000 one lands,
-   an uncaptured or post-2000 one misses.
+## The pipeline — the browser fetch strategy
+
+era-press fetches a page **the way a browser loads it from the Wayback Machine**,
+which is the whole reason it is fast (see *Why one nearest-search per page* below).
+
+1. **Fetch the page raw.** For each page URL, pull its raw bytes with `id_` at the
+   target era-date. The `id_` redirect resolves the nearest capture cheaply — a
+   single-URL lookup, ~1 s — and its **final URL gives the exact 14-digit capture
+   timestamp**. Bytes and Content-Type are kept as-is. A resolved capture past the
+   2000-12-31 ceiling, or an uncaptured URL, is skipped (an authentic miss).
+2. **Discover exact timestamps.** If the page is HTML, load its **rewritten**
+   Wayback page once (`/web/<page-ts>/http://<url>`, *not* `id_`). Wayback rewrites
+   every same-page resource URL to carry that resource's **exact** capture
+   timestamp — `/web/<ts>im_/…gif`, `/web/<ts>cs_/…css`, `/web/<ts>js_/…js` — and
+   leaves links to resolve (relative, or `/web/<ts>/…`) to the page's own ts. So
+   **one page fetch yields the exact timestamp of every resource it references**,
+   replacing a per-resource CDX nearest-search. The rewritten HTML is used **only**
+   to discover those exact-timestamp URLs; it is **never stored**. Wayback's own
+   injected chrome (toolbar, `wombat.js`, `bundle-playback.js`, `/_static/…` on
+   `web-static.archive.org`, `//archive.org/…` analytics/donation) carries no such
+   wrapper and is dropped — so none of it is ever crawled or stored.
+3. **Fetch each resource raw, direct.** Every discovered resource is pulled with
+   `id_` **at its exact ts** — a direct hit, **no search** — over the shared HTTP/2
+   pool, and written under **its own host** at `/data/retronet/corpus/<host>/<path>`
+   (any host, so a media/CDN host's images land too). The ceiling is checked **twice**:
+   on the discovered ts (skip the fetch outright if already post-2000), and again on
+   the **id_-resolved** ts — because Wayback rewrites a resource it *didn't* capture at
+   the page's date to the **page's** ts, so an `id_` at that ts can resolve to the
+   resource's real, possibly post-2000, capture, which must not be stored. Because the
+   stored markup is the untouched original and the proxy maps by host, the original
+   absolute URLs resolve for free.
+4. **Follow links.** Same-site `<a>`/`<frame>` links — read from the **raw** stored
+   body (original 1996 URLs), so a resume rebuilds the identical frontier — are
+   followed to a bounded `--depth`; cross-host links are left alone (they miss
+   unless that host is crawled separately).
 5. **Stage → push.** Files are staged locally in the same
    `<host>/<path>` shape, then a tar of the touched host dirs is streamed over
    `ssh lab` and extracted into CT 951 with `pct push`. No raw host mounts are
    ever used.
 6. **Manifest.** `sites.json` is upserted (see below).
 
+### Why one nearest-search per page — the CDX bottleneck, removed
+
+The first cut enumerated captures through archive.org's **CDX API**
+(`/cdx/search/cdx`) — **once per resource**. That endpoint is archive.org's
+**throttled** one: measured **30–40 s per call**. A single page references dozens of
+resources, so mirroring it meant dozens of 30–40 s nearest-searches back to back —
+the entire **~1 MB/hr** bottleneck. (The `id_` content fetch was never the problem:
+it is ~1 s whether the timestamp is exact or generic, because the redirect resolves
+the nearest capture cheaply for one URL.)
+
+A browser loading that same archived page from the Wayback Machine never calls CDX.
+The **rewritten** page it fetches already carries the **exact capture timestamp of
+every resource**, so the browser pulls each resource directly. era-press now does
+the same. The cost per HTML page goes from
+
+| | per page (R resources) | of which throttled CDX |
+|---|---|---|
+| **old** | `(1+R)` CDX + `(1+R)` id_ | **`1+R` × 30–40 s** |
+| **now** | 1 id_ (page) + 1 rewritten + `R` id_ | **0** |
+
+For a 30-resource page that is ~31 CDX nearest-searches (≈ **15–20 min** of throttled
+stalls) versus **zero** — replaced by one cheap id_ redirect for the page plus one
+rewritten-page fetch. **Measured** (bounded real crawl over three landmark sites,
+`--concurrency 3 --min-interval 0.5`): **~4.6 MB/hr vs the old ~1 MB/hr (≈4–5×), with
+ZERO CDX calls and zero 429/503 signals** — every request in the fetch log is an
+`id_` pull or a rewritten-page discovery; grep it for `cdx` and nothing matches.
+
+That ~4–5× was measured while the shared IP was **transiently throttled** by the
+back-to-back test runs themselves (per-request replay latency ~4–8 s, vs a ~2 s cold
+baseline). The bottleneck is now **archive.org's per-IP replay throttle, not CDX**:
+at low concurrency the crawl is *latency-bound* (≈0.25 req/s at ~8 s/req), and the
+throttle *creeps latency upward under sustained load* — a wide burst is far worse
+(**~10 concurrent fetches pushed per-request latency from ~2 s to ~17 s here**). So
+the crawl stays a **polite slow-drip**: concurrency **moderate** (3), a
+`--min-interval 0.5` floor (which only binds when the IP is fast, so it self-adapts —
+faster when archive allows, latency-throttled when it doesn't), and the shared
+429/503 backoff. On a **rested** IP the same polite config runs faster (the ~2 s
+baseline latency implies low-teens MB/hr at conc 3); do **not** widen concurrency to
+chase more — a burst tarpits the shared IP and slows every host behind it.
+
 ### The fetch transport — one shared HTTP/2 client
 
-Every archive.org request — the CDX enumerate and the `id_` pull — goes through
+Every archive.org request — the `id_` raw pull and the once-per-page rewritten-page
+discovery — goes through
 `era_press_core.http_get`, over a **single process-wide `httpx.Client`** built
 lazily on first use: `http2=True`, `follow_redirects=True` (the `id_` 302 →
 nearest-snapshot redirect is still followed), the **full browser header set +
@@ -91,7 +154,9 @@ than serial, over ~1 established connection).
 
 **Why it is built this way.** The first cut opened a brand-new TCP+TLS connection
 per request (stdlib `urlopen`), ~10 workers wide, plus a CDX query before every
-`id_` fetch. Thousands of new connections per hour **exhausted the LAN router's
+`id_` fetch (that per-resource CDX call is **gone** now — see *Why one
+nearest-search per page* — but the connection pool it motivated stays). Thousands
+of new connections per hour **exhausted the LAN router's
 NAT/conntrack table** for this box's flow to the archive edge: ~5 of every 6 new
 connections were RST'd before TLS, the crawl throttled itself to ~MB/hr, and it
 knocked other hosts off `web.archive.org` — while archive.org itself was never the
@@ -110,7 +175,7 @@ Chrome headers** — `User-Agent`, the full `Accept`, `Accept-Language`,
 over **CDP** (`Network.requestWillBeSentExtraInfo`) and pinned in
 `BROWSER_HEADERS`. It also keeps a **cookie jar**: on first use it primes cookies
 with a GET to `web.archive.org`'s homepage (the server-affinity + donation
-cookies), and httpx resends them on every request — so even the first CDX/`id_`
+cookies), and httpx resends them on every request — so even the first `id_`
 fetch carries cookies, exactly like a returning browser. To **refresh** the
 header set after a Chrome upgrade: launch Chrome with `--remote-debugging-port`,
 open a `web.archive.org` tab, attach over CDP and re-read
@@ -250,15 +315,18 @@ Built to be a **polite archive.org citizen** and to run for hours, unattended:
   depth-1 links, pass 2 every site's depth-2 links, … round-robining across all
   sites at each level. So an interrupted or budget-stopped crawl covers **every**
   site to the same depth — never a few deep and the rest empty.
-- **Parallel, politely throttled.** Each pass fetches `--concurrency` (default
-  **10**) pages at once with a thread pool; every worker shares **one `httpx`
-  HTTP/2 client**, so the ~10-wide concurrency is multiplexed over a tiny pool of
-  reused connections (a browser on the Wayback Machine fetches ~10 at once the
-  same way) — see *The fetch transport*.
-  All workers share **one** pacing gate: an HTTP **429/503** seen by any worker
-  opens a **global** backoff every worker waits out (`Retry-After` when present,
-  else exponential — the whole pool slows/pauses together), plus a little
-  per-request jitter. `--min-interval` (default 0) is an optional global floor.
+- **Parallel, but deliberately MODERATE.** Each pass fetches `--concurrency`
+  pages at once with a thread pool sharing **one `httpx` HTTP/2 client** (a tiny
+  pool of reused connections — see *The fetch transport*). The code default is 10,
+  but **the service runs `--concurrency 3 --min-interval 0.5`** on purpose: this
+  box's replay latency to archive is multi-second and a **wide burst tarpits the
+  shared per-IP** (measured: ~10 concurrent pushed per-request latency ~2 s → ~17 s),
+  which slows every host behind that IP. Three-wide, latency-throttled, is the polite
+  sweet spot; **do not widen it to chase throughput.** All workers share **one**
+  pacing gate: an HTTP **429/503** seen by any worker opens a **global** backoff
+  every worker waits out (`Retry-After` when present, else exponential — the whole
+  pool slows/pauses together), plus per-request jitter. `--min-interval` is a global
+  floor that only binds when the IP is fast (so it self-adapts).
 - **Resumable from the corpus.** The on-disk corpus **is** the checkpoint: on
   (re)start each site's per-level frontier is **reconstructed by re-walking its
   on-disk link graph**, so a stop, a crash, a reboot — or a **deepened

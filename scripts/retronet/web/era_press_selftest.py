@@ -137,7 +137,46 @@ def main():
     assert time.monotonic() - t0 >= 0.12, "_pace must wait out the shared backoff window all workers see"
     ep.JITTER, ep._backoff_until, ep._backoff_streak = saved_jitter, 0.0, 0  # leave nothing armed
 
-    print("era-press selftest: all checks OK (raw mirror, dir->index.html, breadth-first frontier, shared backoff)")
+    # 9. the BROWSER fetch strategy, offline: parse a synthetic REWRITTEN Wayback page. Every resource/
+    #    link is returned with its EXACT capture ts (a relative href resolves against the base to the page
+    #    ts); Wayback's own injected chrome (web-static.archive.org, //archive.org) is dropped.
+    pbase = "https://web.archive.org/web/19970104102030/http://www.t.example/"
+    rewritten = (
+        b'<html><head><script src="https://web-static.archive.org/_static/js/wombat.js"></script>'
+        b'<script src="//archive.org/includes/analytics.js"></script></head><body>'
+        b'<img src="/web/19970104102030im_/http://www.t.example/logo.gif">'  # exact-ts resource
+        b'<a href="about.html">rel</a>'  # relative link -> unwraps to the page ts
+        b'<a href="/web/19970104102030/http://www.t.example/news/">abs</a>'
+        b'<a href="/web/19970104102030/https://archive.org/donate">junk</a></body></html>'
+    )
+    disc = ep.extract_wayback_urls(rewritten, pbase)
+    check("discovery: logo.gif exact ts", ("res", "19970104102030", "http://www.t.example/logo.gif") in disc, True)
+    check(
+        "discovery: relative link unwrapped",
+        ("link", "19970104102030", "http://www.t.example/about.html") in disc,
+        True,
+    )
+    check(
+        "discovery: drops archive chrome + wrapped donation",
+        any(ep._is_archive_host(ep.host_of(u)) for _k, _t, u in disc),
+        False,
+    )
+    check("discovery: exactly the 3 site URLs", len(disc), 3)
+    # the RESOLVED-ts ceiling: a resource the rewritten page rewrote to the page's (<=2000) ts can still
+    # id_-RESOLVE to its real, post-2000 capture -- mirror_resource must re-check got[0] and NOT store it.
+    saved_raw = ep.wayback_raw
+    with tempfile.TemporaryDirectory() as staging:
+        ep.wayback_raw = lambda url, ts: ("20021108105450", "image/gif", b"GIF89a-late")  # resolves post-2000
+        st = dict(pages=0, fetched=0, assets=0, misses=0, skipped=0, bytes=0)
+        ep.mirror_resource("http://www.t.example/ad.gif", "19970104102030", staging, set(), set(), st)
+        check("resolved-ts ceiling: post-2000 resolve NOT stored", (st["assets"], st["misses"]), (0, 1))
+        ep.wayback_raw = lambda url, ts: ("19970104102030", "image/gif", b"GIF89a-ok")  # resolves in-era
+        st2 = dict(pages=0, fetched=0, assets=0, misses=0, skipped=0, bytes=0)
+        ep.mirror_resource("http://www.t.example/ok.gif", "19970104102030", staging, set(), set(), st2)
+        check("resolved-ts <=2000: stored", (st2["assets"], st2["misses"]), (1, 0))
+    ep.wayback_raw = saved_raw
+
+    print("era-press selftest: all checks OK (raw mirror, browser discovery, resolved-ts ceiling, frontier, backoff)")
 
 
 if __name__ == "__main__":

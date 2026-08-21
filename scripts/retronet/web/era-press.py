@@ -4,14 +4,17 @@
 A date-capped `id_` archival mirror, NOT a rewriter. Runs on CT950/labhost (which has
 internet); the gateway CT 951 never fetches.
 
-  1. FETCH RAW. The Wayback CDX API enumerates a URL's captures; each is then pulled
-     with the `id_` (identity) modifier -- https://web.archive.org/web/<ts>id_/<url> --
-     which returns the ORIGINAL stored bytes: no Wayback toolbar, no URL rewriting.
+  1. FETCH RAW, THE BROWSER WAY. Pull the page's raw bytes with the `id_` (identity) modifier
+     -- https://web.archive.org/web/<ts>id_/<url> -- (ORIGINAL bytes: no toolbar, no rewriting),
+     then load its REWRITTEN Wayback HTML ONCE to read the EXACT capture timestamp of every
+     resource it references, and pull each raw at that exact ts. No per-resource CDX search
+     (archive.org's throttled endpoint) -- one cheap nearest-search per PAGE, not per resource.
   2. NO TRANSFORMATION. Original bytes, original Content-Type/charset. Period scripts,
-     PNGs and CSS work exactly as they did in 1998 -- or fail exactly as they did.
-  3. HARD DATE CEILING: nothing past 2000-12-31. For every capture -- the page and each
-     referenced resource -- we pick the capture closest to the target era-date but on or
-     before the ceiling. A URL whose only captures are post-2000 (or absent) is SKIPPED.
+     PNGs and CSS work exactly as they did in 1998 -- or fail exactly as they did. The rewritten
+     HTML is used ONLY to discover exact-ts URLs; it is never stored.
+  3. HARD DATE CEILING: nothing past 2000-12-31. Every resolved 14-digit capture -- the page and
+     each referenced resource -- is checked; a capture past the ceiling (or an uncaptured URL) is
+     SKIPPED.
   4. MIRROR the page + its referenced resources + same-site links to a bounded depth, each
      under its OWN host at /data/retronet/corpus/<host>/<path> (dir -> index.html).
   5. STAGE locally, then `pct push` a tar into CT 951, and upsert sites.json.

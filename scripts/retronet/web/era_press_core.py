@@ -2,10 +2,13 @@
 """era-press core -- the shared, importable library behind era-press.py + era_crawl.py.
 
 The reusable primitives for the date-capped `id_` archival mirror: the polite
-archive.org fetch layer (a shared pacing gate + Wayback CDX/`id_` fetch), the
-URL->file path model, read-only URL discovery, the raw mirror, and the
-stage->`pct push` transport. No transformation happens anywhere here -- original
-bytes, Content-Type and charset are kept as-is. See docs/lab/retronet/ERA-PRESS.md.
+archive.org fetch layer (a shared pacing gate + Wayback `id_` fetch), the BROWSER
+fetch strategy (fetch a page's REWRITTEN Wayback HTML once to discover the EXACT
+capture timestamp of every resource, then pull each raw via `id_` at that exact
+ts -- no per-resource CDX search), the URL->file path model, read-only URL
+discovery, the raw mirror, and the stage->`pct push` transport. No transformation
+happens anywhere here -- original bytes, Content-Type and charset are kept as-is.
+See docs/lab/retronet/ERA-PRESS.md.
 
 It is a plain underscore-named module so era_crawl.py, era-press.py and the
 offline self-test can all `import era_press_core` (the CLI entry keeps its
@@ -32,7 +35,9 @@ from shutil import which
 # import would break it; deferring the import also guarantees no socket opens at import time.
 
 WB = "https://web.archive.org"
-CDX = WB + "/cdx/search/cdx"
+# NO CDX: archive.org's public CDX API is its THROTTLED endpoint (30-40s/call), and the old crawl hit it
+# ONCE PER RESOURCE -- the whole ~1 MB/hr bottleneck. The browser strategy (fetch_page below, full note
+# at "the browser fetch strategy") never touches it. See docs/lab/retronet/ERA-PRESS.md.
 # The crawler presents to web.archive.org as EXACTLY the box's real Chrome. These headers were captured
 # from that Chrome over CDP (Network.requestWillBeSentExtraInfo) hitting web.archive.org: archive.org
 # soft-throttles requests that don't look like a browser, and browsing it in Chrome stays fast. HTTP/2
@@ -182,7 +187,7 @@ def _get_client():
                 )
                 # Prime the cookie jar like a browser's first visit: archive.org's homepage sets the
                 # server-affinity + donation-identifier cookies, and httpx (which keeps a jar by default)
-                # then resends them on every request -- so even the first CDX/id_ fetch carries cookies,
+                # then resends them on every request -- so even the first id_ fetch carries cookies,
                 # exactly like the Chrome the operator watched browse archive.org fast. Best-effort.
                 with contextlib.suppress(httpx.HTTPError):
                     c.get("https://web.archive.org/")
@@ -229,34 +234,100 @@ def http_get(url, retries=5):
     return None
 
 
-def cdx_pick(url, target):
-    """Enumerate 200-status captures of url on/before the ceiling via CDX; return the
-    timestamp closest to target (YYYYMMDD). None => only-post-2000 or uncaptured => skip."""
-    q = f"output=json&filter=statuscode:200&collapse=digest&limit=400&to={CEILING}&url={urllib.parse.quote(url, '')}"
-    got = http_get(CDX + "?" + q)
-    if not got or not got[2].strip():
-        return None
-    try:
-        rows = json.loads(got[2])
-    except json.JSONDecodeError:
-        return None
-    if len(rows) < 2:
-        return None
-    # Compare on the FULL 14-digit timestamp: an 8-digit YYYYMMDD target (int 1.9e7) next to
-    # 14-digit capture stamps (int 1.9e13) would otherwise always resolve to the EARLIEST capture,
-    # not the one nearest the era-date. Pad the target to 14 digits so "closest" is truly temporal.
-    t = int(target.ljust(14, "0"))
-    return min(rows[1:], key=lambda r: abs(int(r[1]) - t))[1]
-
-
 def wayback_raw(url, timestamp):
-    """Fetch the raw (id_) archived bytes of url at timestamp. Return (ts, ctype, body)."""
+    """Fetch the raw (id_) archived bytes of url at timestamp. `timestamp` may be a generic 8-digit
+    YYYYMMDD (the id_ redirect resolves the nearest capture cheaply for a single URL, ~1s) OR an EXACT
+    14-digit stamp (a direct hit, no search). Returns (resolved_14-digit_ts, ctype, body) -- the ts is
+    read back from the redirected final URL, so a generic request still tells us the exact capture."""
     got = http_get(f"{WB}/web/{timestamp}id_/{url}")
     if not got:
         return None
     final, ctype, body = got
     m = re.search(r"/web/(\d{14})", final)
     return (m.group(1) if m else timestamp), ctype, body
+
+
+# --- the browser fetch strategy: one page fetch discovers every resource's EXACT timestamp ----------
+#
+# The old crawl called archive.org's throttled CDX API (30-40s/call) once per resource -- the whole
+# ~1 MB/hr bottleneck. A browser never does that: it loads the page's REWRITTEN Wayback HTML, which
+# already carries the exact capture timestamp of every same-page resource/link, then pulls each raw at
+# that exact ts (a direct id_ hit, ~1s). fetch_page() is that strategy: ONE cheap nearest-search per
+# PAGE (the id_ redirect), then ZERO searches for its resources.
+
+_CEILING_TS = CEILING + "235959"  # 14-digit inclusive upper bound for a full capture stamp (2000-12-31)
+# Unwrap a Wayback replay URL -> (14-digit ts, scheme, rest). Matches /web/<ts><mod>/<scheme>://<rest>
+# for the bare (navigational) form and every 2-letter modifier (id_ im_ cs_ js_ if_ oe_ fw_ …). `/+`
+# tolerates the single-slash `http:/` that urljoin leaves when it resolves a RELATIVE ref against the
+# replay base (it collapses the embedded `//`); the caller rebuilds `scheme://rest`. Injected archive
+# chrome (web-static.archive.org/_static/…, //archive.org/…) carries no such wrapper -> no match -> dropped.
+_WB_UNWRAP = re.compile(r"https?://web\.archive\.org/web/(\d{14})(?:[a-z]{2}_)?/(https?):/+(.+)$", re.I)
+
+
+def _past_ceiling(ts):
+    """True if a 14-digit capture stamp is after the hard 2000-12-31 ceiling. String compare is correct:
+    both operands are equal-width, zero-padded numerals."""
+    return ts > _CEILING_TS
+
+
+def _is_archive_host(h):
+    """archive.org itself (archive.org, web.archive.org, web-static.archive.org, …) -- Wayback's own
+    infrastructure, never part of the mirrored 1990s site."""
+    h = (h or "").lower()
+    return h == "archive.org" or h.endswith(".archive.org")
+
+
+def wayback_rewritten(url, ts):
+    """Fetch the REWRITTEN (browser-facing, NOT id_) Wayback page for url at ts. Its HTML rewrites every
+    same-page resource URL to carry that resource's EXACT capture ts (e.g. /web/<ts>im_/http://h/logo.gif)
+    and resolves links (relative, or /web/<ts>/…) to the page's ts -- so ONE fetch yields exact timestamps
+    for ALL resources, replacing a per-resource CDX search. Used ONLY to DISCOVER exact-ts URLs; these
+    rewritten bytes are NEVER stored (we store raw id_ bytes). Return (final_url, body) or None."""
+    got = http_get(f"{WB}/web/{ts}/{url}")
+    if not got:
+        return None
+    final, _ctype, body = got
+    return final, body
+
+
+def extract_wayback_urls(body, base):
+    """Parse a REWRITTEN Wayback page (fetched at `base`). Return [(kind, exact_ts, original_url)] for
+    every resource/link/frame -- reusing extract_urls for tag/attr classification, then unwrapping the
+    /web/<ts><mod>/<original> prefix (a relative href="index.cgi" resolves against `base` to the page's
+    ts). Wayback's OWN injected chrome (wombat, banner CSS on web-static.archive.org; //archive.org
+    analytics/donation) has no such wrapper (or unwraps to an archive.org host) and is dropped."""
+    out = []
+    for kind, abs_url in extract_urls(body, base):
+        m = _WB_UNWRAP.match(abs_url)
+        if not m:
+            continue  # archive chrome / un-rewritten off-archive absolute -> skip (NO per-resource CDX)
+        ts, original = m.group(1), f"{m.group(2)}://{m.group(3)}"  # rebuild scheme://rest (repairs http:/)
+        if _is_archive_host(host_of(original)):
+            continue  # a wrapped archive.org donation/banner target -> junk
+        out.append((kind, ts, original))
+    return out
+
+
+def fetch_page(url, target):
+    """Fetch ONE page the browser way, ZERO CDX. (1) Pull its RAW id_ bytes at `target` -- the redirect
+    resolves the nearest capture and hands back the EXACT page ts. (2) If HTML, fetch its REWRITTEN page
+    at that ts and discover every resource/link WITH its exact capture ts. Return (page_ts, is_page,
+    raw_body, discovered=[(kind, ts, original_url)]); discovered is empty for a non-HTML page or a failed
+    rewritten fetch. None on an authentic miss (uncaptured, oversize, or past the 2000-12-31 ceiling).
+    Callers store raw_body, mirror the `res` items at their exact ts, and follow same-site links -- so the
+    serial mirror and the parallel crawl share ONE strategy."""
+    got = wayback_raw(url, target)
+    if not got:
+        return None
+    page_ts, ctype, body = got
+    if _past_ceiling(page_ts) or len(body) > MAX_FETCH:
+        return None  # post-ceiling capture or oversize -> authentic miss
+    page = is_html(ctype, body)
+    if not page:
+        return page_ts, False, body, []  # a non-HTML "page" (a link to a PDF/image): store as an asset
+    rw = wayback_rewritten(url, page_ts)
+    discovered = extract_wayback_urls(rw[1], rw[0]) if rw else []
+    return page_ts, True, body, discovered
 
 
 # --- URL / path model -------------------------------------------------------
@@ -329,6 +400,15 @@ def extract_urls(body, base):
     return out
 
 
+def same_site_links(body, base, seed_host):
+    """Same-site <a>/<frame> links in a RAW archived HTML body (original URLs, read-only). Used on the
+    RESUME path, where only the stored raw id_ bytes exist (no rewritten page) -- so a restart rebuilds
+    the exact same frontier the fresh crawl seeded from the raw body. Bare-host match folds www."""
+    return [
+        u for kind, u in extract_urls(body, base) if kind in ("link", "frame") and bare(host_of(u)) == bare(seed_host)
+    ]
+
+
 # --- mirror -----------------------------------------------------------------
 
 
@@ -354,12 +434,17 @@ def _write(staging, host, rel, body):
         f.write(body)
 
 
-def mirror_resource(url, target, staging, seen, hosts, stats):
-    """Mirror one referenced resource (any host) at its own host/path, raw and date-capped."""
+def mirror_resource(url, ts, staging, seen, hosts, stats):
+    """Mirror one referenced resource (any host) at its own host/path, raw. `ts` is the resource's EXACT
+    capture timestamp, already discovered from the page's REWRITTEN HTML -- so this is a DIRECT id_ hit,
+    NOT a CDX search. A ts past the 2000-12-31 ceiling => skip (authentic miss)."""
     host = host_of(url)
     if not host or url in seen:
         return
     seen.add(url)
+    if _past_ceiling(ts):
+        stats["misses"] += 1  # discovered ts already after the ceiling -> skip the fetch entirely
+        return
     rel = store_rel(url, False)
     dest = _have(staging, host, rel)
     if dest:  # resume: already on disk -> no fetch
@@ -367,13 +452,11 @@ def mirror_resource(url, target, staging, seen, hosts, stats):
         stats["skipped"] += 1
         stats["bytes"] += os.path.getsize(dest)
         return
-    ts = cdx_pick(url, target)
-    if not ts:
-        stats["misses"] += 1  # only-post-2000 or uncaptured -> authentic miss
-        return
-    got = wayback_raw(url, ts)
-    if not got or len(got[2]) > MAX_FETCH:
-        stats["misses"] += 1
+    got = wayback_raw(url, ts)  # id_ at the discovered ts -> direct hit, BUT may still resolve nearer
+    # Re-check the RESOLVED ts (got[0]): the rewritten page rewrites a resource it didn't capture to the
+    # PAGE's ts, so an id_ at that ts can resolve to the resource's real (possibly post-2000) capture.
+    if not got or _past_ceiling(got[0]) or len(got[2]) > MAX_FETCH:
+        stats["misses"] += 1  # resolved capture past the ceiling (or a miss / oversize) -> skip
         return
     _write(staging, host, rel, got[2])
     hosts.add(host)
@@ -382,8 +465,11 @@ def mirror_resource(url, target, staging, seen, hosts, stats):
 
 
 def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None):
-    """Crawl+mirror a site into staging. Return (title, stats, hosts_written). RESUMABLE (skips
-    pages/assets already on disk, reusing cached pages to keep traversing) and byte-capped (max_bytes)."""
+    """Crawl+mirror a site into staging the BROWSER way. Return (title, stats, hosts_written). Each page:
+    fetch its raw id_ bytes + discover its resources' EXACT timestamps from its rewritten page (ZERO
+    CDX), mirror those resources at their exact ts, follow same-site links (from the RAW body, so resume
+    rebuilds the same frontier). RESUMABLE (skips pages/assets already on disk, reusing cached pages to
+    keep traversing) and byte-capped (max_bytes)."""
     seed_host = norm_host(seed_host)
     seed_url = "http://" + seed_host + "/"
     seen_pages, seen_res, hosts, title = {seed_url}, set(), set(), ""
@@ -398,18 +484,17 @@ def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None):
             page = is_html("", body)
             stats["skipped"] += 1
         else:
-            ts = cdx_pick(url, target)
-            if not ts:
+            got = fetch_page(url, target)  # raw id_ bytes + exact page ts + rewritten resource discovery
+            if not got:
                 stats["misses"] += 1
                 continue
-            got = wayback_raw(url, ts)
-            if not got or len(got[2]) > MAX_FETCH:
-                stats["misses"] += 1
-                continue
-            _, ctype, body = got
-            page = is_html(ctype, body)
+            _ts, page, body, discovered = got
             _write(staging, host, store_rel(url, page), body)
             stats["fetched"] += 1
+            if page:  # mirror each discovered resource at its EXACT ts -- no per-resource search
+                for kind, res_ts, orig in discovered:
+                    if kind == "res":
+                        mirror_resource(orig, res_ts, staging, seen_res, hosts, stats)
         hosts.add(host)
         stats["bytes"] += len(body)
         if not page:
@@ -420,12 +505,11 @@ def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None):
             mt = re.search(rb"<title[^>]*>(.*?)</title>", body, re.I | re.S)
             if mt:
                 title = re.sub(r"\s+", " ", mt.group(1).decode("latin-1", "replace")).strip()
-        for kind, u in extract_urls(body, url):
-            if kind == "res":
-                mirror_resource(u, target, staging, seen_res, hosts, stats)
-            elif bare(host_of(u)) == bare(seed_host) and u not in seen_pages and d < depth:
-                seen_pages.add(u)  # same-site link/frame -> follow, bounded depth
-                q.append((u, d + 1))
+        if d < depth:  # same-site links from the RAW body (original URLs) -> resume-consistent frontier
+            for u in same_site_links(body, url, seed_host):
+                if u not in seen_pages:
+                    seen_pages.add(u)
+                    q.append((u, d + 1))
     return title or seed_host, stats, hosts
 
 

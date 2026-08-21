@@ -1,15 +1,16 @@
 [Unit]
 # Installed INSIDE the dev container CT 950 (which has internet — labhost and the
 # gateway CT 951 do not) by scripts/retronet/web/install-crawl.sh. Drives era-press
-# breadth-first over era-sites.json toward the ~25 GB corpus budget as a GENTLE
-# SLOW-DRIP: a few concurrent fetches paced by a min-interval floor to stay UNDER
-# archive.org's per-IP rate limit — a burst gets tarpitted (~9s/req, ~0 progress),
-# a steady trickle does not — sharing a global 429/503 backoff, resumable,
-# per-site byte-capped. Runs unattended for days; the corpus grows in the
-# background and CT 951's proxy reads it live. Writes
-# straight into the shared corpus volume (/data/vms/retronet-corpus) that CT 951's
-# proxy reads live. See docs/lab/retronet/ERA-PRESS.md.
-Description=retronet corpus crawl — era-press breadth-first, gentle slow-drip, toward the ~25 GB budget (paced under archive's per-IP throttle, resumable)
+# breadth-first over era-sites.json toward the ~25 GB corpus budget with the BROWSER
+# fetch strategy: NO per-resource CDX (archive's throttled endpoint, gone), one
+# rewritten-page discovery + raw id_ pulls per page. Still a GENTLE SLOW-DRIP: a few
+# concurrent fetches paced by a min-interval floor + the shared 429/503 backoff —
+# concurrency stays MODERATE because a wide burst still tarpits the shared per-IP
+# (measured: ~10-wide pushed replay latency to ~17s), a steady trickle does not.
+# Resumable, per-site byte-capped. Runs unattended for days; the corpus grows in the
+# background and CT 951's proxy reads the shared corpus volume
+# (/data/vms/retronet-corpus) live. See docs/lab/retronet/ERA-PRESS.md.
+Description=retronet corpus crawl — era-press breadth-first (browser fetch strategy, no CDX), gentle slow-drip toward the ~25 GB budget, resumable
 Documentation=file:///data/kernel-hive/docs/lab/retronet/ERA-PRESS.md
 After=network-online.target
 Wants=network-online.target
@@ -27,7 +28,7 @@ Group=wnt
 ExecStart=/data/vms/retronet-crawl/venv/bin/python /data/vms/retronet-crawl/era-press.py crawl \
     --sites /data/vms/retronet-crawl/era-sites.json \
     --staging /data/vms/retronet-corpus \
-    --budget-gb 25 --concurrency 3 --min-interval 1.5 \
+    --budget-gb 25 --concurrency 3 --min-interval 0.5 \
     --state /data/vms/retronet-crawl/state.json \
     --log /data/vms/retronet-crawl/progress.log
 Restart=on-failure
