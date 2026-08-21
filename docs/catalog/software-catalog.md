@@ -272,6 +272,26 @@ doc), and CDE is already period-correct chrome — the client below opens in a
 
 ---
 
+## Windows retronet ICQ fleet — server-stored (SSI) contact-list client (upgrade path)
+
+Narrower than the sections above, like the Unix cross-reference: not a
+general software-stocking list, just the one retronet upgrade path. ICQ
+2000b — the client on win98se/win2000/nt4/win95 today (`docs/lab/
+RETRONET-BRIEF.md` §5) — keeps its contact list **client-local**, so a golden
+rebuild shows an empty list until the roster seeder re-drives the client's
+own Add-Contact UI. ICQ 2001b is the sourced upgrade candidate: the first ICQ
+generation whose contact list lives **server-side (SSI)**, so a client that
+signs in against the gateway's stored roster populates its list on login with
+no per-station seeding at all. Not yet installed on any station — sourcing
+only (`docs/lab/retronet/ICQ-ONBOARDING-PLAN.md`); the client swap itself is
+separate future work.
+
+| Title | Type | Source | Legal | Install | Why |
+|---|---|---|---|---|---|
+| ICQ 2001b (build 3659) | util | [archive.org/details/icq-2001b](https://archive.org/details/icq-2001b) | abandonware (ICQ Ltd./AOL) | installer, then the same post-install `HKCU\Software\Mirabilis\ICQ\DefaultPrefs` registry redirect as ICQ 2000b (never through the wizard); sign in as an **existing user**, let the wizard's default-server connection attempt time out, then set host/port via its "Connection Settings" dialog | [Open OSCAR Server's](https://github.com/mk6i/open-oscar-server/blob/main/docs/CLIENT_ICQ.md) own client setup guide — the exact gateway software this fleet runs — documents ICQ 2001/2002 as the first generations that "store your contact list on the server rather than locally on the client": confirmed SSI, not the client-local list ICQ 2000b keeps. Chosen over ICQ 2002a (the guide's other listed option): archive.org carries a clean, single-purpose, curator-malware-checked item for 2001b (`icq-2001b`) but no equivalent standalone item for 2002a (only bundled inside messy multi-title CD-ROM collections); 2001b is also the version that *introduced* SSI, and its Nov-2001 release sits contemporaneously with the win98se/win2000/nt4 fleet. Confirmed Win95/98/ME/NT4/2000/XP-compatible; internal installer string self-identifies as `ICQ Installation (Ver 2001b Build 3659)`. Considered Miranda IM (lightweight, also SSI-based) but rejected: not documented against this gateway at all, unlike ICQ 2001b/2002a's dedicated tested guide, and pinning the earliest Miranda build with working Win9x + SSI ICQ support would need the kind of source-level dig `docs/lab/ASSETS-MANIFEST.md` did for climm — out of proportion to this errand. Full sourcing detail: `docs/lab/ASSETS-MANIFEST.md` §"ICQ 2001b". |
+
+---
+
 ## Cross-OS notes
 
 - **Recurring free-everywhere staples:** Freedoom + a software Doom port, ScummVM freeware adventures, OpenTTD (+OpenGFX), Battle for Wesnoth, 7-Zip, Notepad++, VLC, Firefox, NetSurf/Dillo, cmatrix/asciiquarium. Deduplicated per tile to the era-appropriate build.

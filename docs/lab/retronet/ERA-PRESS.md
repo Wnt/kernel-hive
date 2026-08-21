@@ -58,7 +58,9 @@ absolute/relative URLs are already what we want.
    captures with `to=20001231`. The capture whose timestamp is closest to the
    target date wins; no rows ⇒ skip (an authentic miss).
 2. **Fetch raw.** That exact capture is pulled with `id_`. Bytes and
-   Content-Type are kept as-is.
+   Content-Type are kept as-is. Every fetch (CDX and `id_` alike) rides one
+   **shared `httpx` HTTP/2 client** — a handful of reused, multiplexed
+   connections for the whole crawl (see *The fetch transport* below).
 3. **Discover, read-only.** The raw HTML is scanned (never rewritten) for the
    URLs it references — images, scripts, stylesheets, backgrounds, embeds,
    frames, and `<a>`/`<area>` links, plus `<meta refresh>`.
@@ -74,6 +76,39 @@ absolute/relative URLs are already what we want.
    `ssh lab` and extracted into CT 951 with `pct push`. No raw host mounts are
    ever used.
 6. **Manifest.** `sites.json` is upserted (see below).
+
+### The fetch transport — one shared HTTP/2 client
+
+Every archive.org request — the CDX enumerate and the `id_` pull — goes through
+`era_press_core.http_get`, over a **single process-wide `httpx.Client`** built
+lazily on first use: `http2=True`, `follow_redirects=True` (the `id_` 302 →
+nearest-snapshot redirect is still followed), a real-Chrome User-Agent, a 60 s
+read timeout, and a deliberately **small** pool — `max_connections=4`. It is
+shared by every one of the crawl's ~10 worker threads; HTTP/2 stream-multiplexing
+carries the whole concurrency over that handful of reused connections (measured:
+6 concurrent `id_` fetches complete **4.7× faster** than serial, over ~1
+established connection).
+
+**Why it is built this way.** The first cut opened a brand-new TCP+TLS connection
+per request (stdlib `urlopen`), ~10 workers wide, plus a CDX query before every
+`id_` fetch. Thousands of new connections per hour **exhausted the LAN router's
+NAT/conntrack table** for this box's flow to the archive edge: ~5 of every 6 new
+connections were RST'd before TLS, the crawl throttled itself to ~MB/hr, and it
+knocked other hosts off `web.archive.org` — while archive.org itself was never the
+limiter (a second box behind the same NAT got HTTP 200 at the same instant).
+Reusing a bounded pool of keep-alive HTTP/2 connections is the cure: the
+established-connection count now tracks the pool cap (~1–4), **not** the request
+count, so the NAT table never fills. `http2=True` matches what Chrome negotiates
+to `web.archive.org`. The pool cap is intentionally small — **do not raise it.**
+
+`httpx` is a real dependency (not stdlib), so on the PEP-668 box it lives in a
+**venv** beside the deployed code (`install-crawl.sh` builds it; the unit runs
+`venv/bin/python`). The import is **lazy** — `era_press_core` imports with no
+socket and with no `httpx` installed, so `era_press_selftest.py` still runs
+offline under the system python. The pacing gate is unchanged: a `429`/`503` from
+any worker opens a **global** backoff every worker waits out (archive.org's own
+soft per-IP rate-limit is handled here, separately from the connection pool);
+`MAX_FETCH` and the hard `≤2000-12-31` ceiling are unchanged.
 
 ### Path mapping (URL → file)
 
@@ -196,8 +231,10 @@ Built to be a **polite archive.org citizen** and to run for hours, unattended:
   sites at each level. So an interrupted or budget-stopped crawl covers **every**
   site to the same depth — never a few deep and the rest empty.
 - **Parallel, politely throttled.** Each pass fetches `--concurrency` (default
-  **10**) pages at once with a stdlib thread pool (urllib is blocking, so threads
-  are the right primitive; a browser on the Wayback Machine fetches ~10 at once).
+  **10**) pages at once with a thread pool; every worker shares **one `httpx`
+  HTTP/2 client**, so the ~10-wide concurrency is multiplexed over a tiny pool of
+  reused connections (a browser on the Wayback Machine fetches ~10 at once the
+  same way) — see *The fetch transport*.
   All workers share **one** pacing gate: an HTTP **429/503** seen by any worker
   opens a **global** backoff every worker waits out (`Retry-After` when present,
   else exponential — the whole pool slows/pauses together), plus a little
@@ -224,9 +261,12 @@ Built to be a **polite archive.org citizen** and to run for hours, unattended:
 `scripts/retronet/web/install-crawl.sh` (run on **CT 950**) deploys a copy of
 `era-press.py` **+ its modules (`era_press_core.py`, `era_crawl.py`)** +
 `era-sites.json` into `/data/vms/retronet-crawl/` — so a worktree GC never pulls
-the code out from under a multi-hour run — and installs `retronet-crawl.service`,
-enabled and started. The unit runs one long resumable process that stops itself
-at the budget; `Restart=on-failure` plus resume covers a crash.
+the code out from under a multi-hour run — builds a dedicated **venv**
+(`/data/vms/retronet-crawl/venv`, pinned `httpx[http2]`) beside it (Ubuntu 24.04
+is PEP-668 externally-managed, so no system pip), and installs
+`retronet-crawl.service` — whose `ExecStart` runs `venv/bin/python` — enabled and
+started. The unit runs one long resumable process that stops itself at the
+budget; `Restart=on-failure` plus resume covers a crash.
 
 ```bash
 ssh lab 'pct exec 950 -- systemctl status retronet-crawl'   # is it running
