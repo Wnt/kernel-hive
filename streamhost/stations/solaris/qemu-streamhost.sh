@@ -69,6 +69,17 @@ qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden || {
 # bring-up manual path. Fail-closed under `set -e`: if it cannot verify
 # containment it exits non-zero and QEMU never starts.
 bash "$D/rn-tapnet.sh" up
+# UNIQUE per-station MAC on vmbr-rn. The whole QEMU fleet otherwise boots QEMU's
+# one default MAC, and two of them on one bridge collapse to a single FDB entry —
+# unicast (exec, ICQ) flaps between taps and per-MAC DHCP reservations collide.
+# The real per-station value is box-local (registry/local.env
+# RETRONET_ICQ_SOLARIS_MAC, gitignored, on the retronet MAC scheme); the committed
+# fallback below is a scrubbed placeholder. The MAC is ALSO baked into the
+# golden's device vmstate — loadvm restores THAT regardless of this mac=, so the
+# golden was cold re-baked with it and this mac= must MATCH (cold boot vs loadvm
+# agreement). See docs/lab/retronet/WEB-PROXY.md.
+RN_MAC="$(sed -n 's/^[[:space:]]*RETRONET_ICQ_SOLARIS_MAC=//p' /data/kernel-hive/registry/local.env 2>/dev/null | tail -1 | tr -d '"'\''')"
+RN_MAC="${RN_MAC:-02:00:00:00:00:0e}"
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 nohup "$QEMU" -L "$QEMU_DATA" \
@@ -84,7 +95,7 @@ nohup "$QEMU" -L "$QEMU_DATA" \
   -usb -device usb-tablet \
   -drive file="$DISK",if=ide,index=0,media=disk,format=qcow2 \
   -loadvm golden -S \
-  -netdev tap,id=net0,ifname=solrn0,script=no,downscript=no -device e1000,netdev=net0 \
+  -netdev tap,id=net0,ifname=solrn0,script=no,downscript=no -device e1000,netdev=net0,mac="$RN_MAC" \
   -chardev socket,id=ghid0,path="$D/gallery-hid.sock",server=on,wait=off \
   -device gallery-hid-pci,id=ghid0,chardev=ghid0,bus=pci.0,addr=0x1e \
   -no-shutdown \
