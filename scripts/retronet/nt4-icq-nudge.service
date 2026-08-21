@@ -1,0 +1,8 @@
+[Unit]
+Description=Nudge the nt4 ICQ persona back online after a wake (retronet)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/ICQ-STATION-NT4.md
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/nt4-icq-nudge.py

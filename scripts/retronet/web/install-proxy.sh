@@ -24,6 +24,7 @@ set -euo pipefail
 
 RN_VMID="${RN_VMID:-951}"
 RN_PROXY_LISTEN="${RN_PROXY_LISTEN:-10.99.0.2:3128}"
+RN_PROXY_ORIGIN_LISTEN="${RN_PROXY_ORIGIN_LISTEN:-10.99.0.2:80}"
 RN_PROXY_CORPUS="${RN_PROXY_CORPUS:-/data/retronet/corpus}"
 RN_PROXY_SEARCH_HOSTS="${RN_PROXY_SEARCH_HOSTS:-search.retronet}"
 RN_PROXY_SEARCH_BACKEND="${RN_PROXY_SEARCH_BACKEND:-127.0.0.1:8090}"
@@ -64,7 +65,7 @@ ctsh() {
 render_env() {
   local out v
   out="$(cat "$HERE/proxy.env.tmpl")"
-  for v in RN_PROXY_LISTEN RN_PROXY_CORPUS RN_PROXY_SEARCH_HOSTS RN_PROXY_SEARCH_BACKEND; do
+  for v in RN_PROXY_LISTEN RN_PROXY_ORIGIN_LISTEN RN_PROXY_CORPUS RN_PROXY_SEARCH_HOSTS RN_PROXY_SEARCH_BACKEND; do
     out="${out//@$v@/${!v}}"
   done
   printf '%s\n' "$out"
@@ -73,7 +74,7 @@ render_env() {
 # --- install ----------------------------------------------------------------
 
 step_install() {
-  say "install proxy into CT $RN_VMID  (listen $RN_PROXY_LISTEN, corpus $RN_PROXY_CORPUS)"
+  say "install proxy into CT $RN_VMID  (proxy $RN_PROXY_LISTEN, origin ${RN_PROXY_ORIGIN_LISTEN:-off}, corpus $RN_PROXY_CORPUS)"
   ct_running || die "CT $RN_VMID is not running — provision the gateway first (GATEWAY.md)"
   if [ "$APPLY" = 0 ]; then
     info "PLAN: create user rnproxy; $OPT_DIR/proxy.py; /etc/retronet/proxy.env;"

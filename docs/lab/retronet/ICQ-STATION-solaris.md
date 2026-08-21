@@ -96,6 +96,18 @@ that has since exited — so climm's first (overdue) keepalive draws an RST from
 the gateway, the socket dies, and climm reconnects on a new port with a fresh
 sign-on. The bot sees the fresh presence and greets ~30 s later.
 
+**Measured (proven twice), `labctl reset solaris`:** the guest running, climm
+re-signs-on ~18–23 s after the reset (climm's own reconnect backoff is
+`10 << attempts` seconds — the first retry is ~10–20 s; `oscar_base.c`), and the
+bot's greeting lands ~30 s after that sign-on (`RN_BOT_GREET_DELAY`). So the
+bot-side "≤~30 s" is met from the reconnect; end-to-end from the reset it is
+~50 s (slower than win98se's ~32 s because climm's backoff dominates, not a
+nudge). **No nudge is used or needed** — unlike ICQ 2000b, climm heals itself.
+Shortening the reconnect base in the patch (`10 <<` → e.g. `3 <<`) would make it
+snappier if wanted, at the cost of a rebuild + re-bake. The wake must find the
+guest **running** (a visitor's resume, or the operator watching during a reset);
+a guest still idle-paused stays frozen and climm cannot fire its keepalive.
+
 > Measured on the bring-up rig, a bare `loadvm golden` where the gateway *still*
 > held the golden's exact session did NOT reconnect (both sides agreed, as with
 > win98se) — that only happens when the golden's own port is still live, i.e.

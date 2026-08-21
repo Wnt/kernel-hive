@@ -42,25 +42,25 @@ speaks. The per-station healer forces the reconnect:
 
 - `scripts/retronet/win2000-icq-nudge.{py,service,timer}` — a labhost systemd timer
   (5 s cadence) that, while the guest is **running**, spoofs a bad-seq TCP ACK from
-  `10.99.0.2:5190` to the guest's **golden ICQ port `1032`**, eliciting the
+  `10.99.0.2:5190` to the guest's **golden ICQ port `1031`**, eliciting the
   gateway's RST → ICQ reconnects on a fresh port → the bot greets ~30 s later.
-- **`GOLDEN_ICQ_PORT=1032`** is the guest's TCP source port to `10.99.0.2:5190`
+- **`GOLDEN_ICQ_PORT=1031`** is the guest's TCP source port to `10.99.0.2:5190`
   captured in the golden (`pct exec 951 -- ss -tn | grep 10.99.0.11` at capture
   time). **If the golden is re-captured, update this** in `win2000-icq-nudge.py`.
 - The nudge is inert once the persona is on a live (higher) ephemeral port, so it
   can never reset a healthy connection.
 
 **Measured acceptance (twice):** frozen station → gateway drops the golden session
-→ `labctl reset win2000` → nudge → reconnect (`1032`→new) within ~5 s → bot
+→ `labctl reset win2000` → nudge → reconnect (`1031`→new) within ~5 s → bot
 **GREETED 20000** at +30 s: *"hi! nice, the 2000 machine."* The greeting is
 delivered to the client and, with the guest running (a visitor present), auto-pops
 an ICQ message window.
 
 ## Golden lineage & rollback (FULL paths)
 
-- **LIVE golden:** internal snapshot **`golden`** (ID 1, 208 MiB, 2026-08-21) in
+- **LIVE golden:** internal snapshot **`golden`** (ID 1, ~190 MiB, 2026-08-21) in
   `/data/gallery-guests/Win2000/win2k-pro.qcow2`. **Tap-native**, captured with ICQ
-  connected (src port 1032) + HiveBot in the contact list + a clean 1600×1200
+  connected (src port 1031) + HiveBot in the contact list + a clean 1600×1200
   frame (warpnet `V`/CDS_RESET immediately before `savevm`). `labctl reset win2000`
   = `loadvm golden`.
 - **Full-disk byte-copy backup** (QEMU stopped, SHA256-verified) of the **pre-swap
@@ -91,6 +91,19 @@ revert the launcher/registry, `labctl gen`, `systemctl start`.
   `(echo LINE)>>C:\x & rem` so the agent's trailing `>WNEXEC.OUT` binds to the
   `rem`, and wrap `echo` in parens so a trailing digit isn't read as a redirect
   handle.
+- **Never launch ICQ (or any long-running app) via the agent's exec — it locks
+  `C:\WNEXEC.OUT`.** The agent runs `cmd /c <cmd> >C:\WNEXEC.OUT`; a long-lived
+  child launched that way keeps the inherited `WNEXEC.OUT` handle open, and every
+  *later* exec then fails with empty output + rc 1 ("cannot access the file … used
+  by another process"). This breaks silently inside a `loadvm golden` that captured
+  such a state. Launch ICQ from the **framebuffer** (Start ▸ Run ▸ `Icq.exe`)
+  instead. Recovery if the golden already has the lock: `system_reset` (a hard
+  reboot clears every handle; the agent auto-restarts from Startup, ICQ does not),
+  relaunch ICQ from Start ▸ Run, re-sign-in (the hard reset can drop ICQ's cached
+  password — re-enter `RETRONET_ICQ_WIN2000_PASS`), then **re-capture**. When
+  capturing, send the `V` verb with a socket that closes cleanly (a Python
+  `send + shutdown + close`, not `nc` held open by a timeout) so the golden does
+  not freeze the agent mid-serve.
 - **IE "URL Location" Save-As quirk.** Saving a download straight into the shell
   `Start Menu\...\Startup` path fails with *"You cannot save in the URL Location
   you specified"*; save to a plain `C:\` path and `copy` it into Startup over exec.

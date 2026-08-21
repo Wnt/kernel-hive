@@ -91,6 +91,24 @@ gateway / a golden backup / dry-run, then applied per station as they come onlin
 - Follow the win98se recipe (`ICQ-STATION.md`) for the bridge swap; do not
   re-derive it. Prove UDP+ICMP + containment (guest reaches `10.99.0.2`, NOT the
   LAN/gallery/internet) exactly as win98se does.
+- **Addressing is DHCP, not per-guest static** (as of the win98se DHCP conversion).
+  Set the guest to obtain IP *and* DNS automatically + no proxy, and add ONE
+  `mac=ip` line to `registry/local.env` `RETRONET_DHCP_RESERVATIONS` +
+  `install-dhcp.sh --apply` on the gateway. That alone gives the station the
+  **seamless web** (type a URL, it renders — no proxy) plus a stable IP for
+  exec-over-bridge, and keeps containment (DHCP hands out **no default gateway**).
+  Recipe: [`ICQ-STATION.md`](ICQ-STATION.md) §Seamless web. (win2000/nt4/solaris
+  finish on static; the coordinator retrofits them to DHCP + unique MACs later.)
+- **Unique MAC per station (required).** Every QEMU guest defaults to
+  `52:54:00:12:34:56`; two on `vmbr-rn` collide at L2 — the bridge FDB flaps, so
+  exec/ICQ break whenever both are active — and it defeats per-MAC DHCP. Assign
+  `52:54:00:52:4e:<last-IP-octet>` (win98se `.10`→…0a, win2000 `.11`→…0b, nt4
+  `.12`→…0c, win95 `.13`→…0d, solaris `.14`→…0e, tru64 `.15`→…0f; macos753's OUI
+  is forced to Apple, so `08:00:07:00:00:10`). The MAC lives in the golden
+  vmstate — `loadvm` restores it regardless of a launcher `mac=` — so bake it via
+  a **cold boot**, then recapture. Real MAC → `local.env`, placeholder in the
+  registry. **Retrofit owed:** win98se / win2000 / solaris were baked on the
+  default MAC; they need a cold re-bake (a dedicated fleet MAC pass).
 - No raw host mounts except through `chroot-guard run-private` or with the
   `mount-guard-ok` escape set.
 - Green-before-done for languages touched, or report **BLOCKED**. Report
