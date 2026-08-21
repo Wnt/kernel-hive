@@ -147,6 +147,22 @@ crawl spent its first quarter-hour building indexes at two connections instead o
 anything. Now the crawl runs at full speed throughout and simply gets faster as each index
 lands.
 
+### What it adds up to — measured end to end
+
+The tables below are per-route benchmarks. The number that matters is the whole crawl, same
+box, same 60-site list, before and after (2026-08-21):
+
+| | pages/min | corpus growth | requests that succeeded | thread-time asleep |
+|---|---|---|---|---|
+| **before** | ~2 | ~6 MB/hr | **11%** | **45%** |
+| **after** | **~92** | **~46 MB/hr** | ~73% | <1% |
+
+The in-flight limiter sits at its ceiling of 8 with no push-back, which is the sign that the
+crawl is now bounded by archive.org rather than by itself. Corpus growth rises by less than
+page rate does because the pages are 1990s pages — a few KB each; the crawl is
+request-bound, which is why every change above is about spending fewer requests per stored
+byte.
+
 ### The fetch transport — HTTP/1.1, and an adaptive limiter
 
 Every archive.org request goes through `era_fetch.http_get`, over a **single
