@@ -19,11 +19,13 @@
 #   * RETRONET BRIDGE (2026-08-20): n0 is a real bridged NIC on vmbr-rn, NOT slirp.
 #     rn-tapnet.sh (called `up` just below, idempotently, like irix/tapnet.sh)
 #     creates the persistent tap win98rn0, enslaves it to vmbr-rn, and installs a
-#     fail-closed guest-containment chain. The guest is static 10.99.0.10/24 with
+#     fail-closed guest-containment chain. The guest is on DHCP (retronet-dhcp
+#     reservation RN_WIN98SE_MAC -> 10.99.0.10/24, DNS 10.99.0.2, NO router) with
 #     NO default route; it shares L2 with the OSCAR gateway CT 10.99.0.2, so ICQ
 #     gets working UDP + ICMP + real multi-connection TCP (what slirp's single-
-#     connection guestfwd could not carry). The -device is UNCHANGED (pcnet,
-#     netdev=n0) — only the netdev backend went user->tap, which is invisible to
+#     connection guestfwd could not carry) and browses the corpus by URL with no
+#     proxy. The -device is UNCHANGED (pcnet, netdev=n0) apart from the per-station
+#     mac= — only the netdev backend went user->tap, which is invisible to
 #     savevm/loadvm, so `loadvm golden` stays valid. Do NOT renumber n0.
 #   * EXEC CHANNEL rides the same bridge now: labctl reaches C:\WARPNET.EXE (the
 #     in-guest warpd agent, -DWARP_PORT=7788, exec_kind "warpd_e") DIRECTLY at the
@@ -47,6 +49,20 @@ qemu-img snapshot -l "$KVM" 2>/dev/null | grep -qw golden && LOADVM="-loadvm gol
 # golden-bake manual path. Fail-closed: if it cannot verify containment it dies
 # here and QEMU never starts.
 bash "$B/rn-tapnet.sh" up
+# Guest NIC MAC. Real per-station MACs are NEVER committed (AGENTS.md); the real
+# value lives in gitignored registry/local.env as RN_WIN98SE_MAC (retronet fleet
+# scheme 52:54:00:52:4e:<last-IP-octet>, "52:4e"=RN, .10 -> ...0a) so every
+# bridged guest is L2-distinct and per-MAC DHCP reservations do not collide. The
+# golden's vmstate carries the MAC, so this only matters on a COLD (re-)bake;
+# loadvm golden uses the baked MAC regardless, but this mac= must MATCH it (cold
+# boot vs loadvm bind to the same device). Only the one line is read, never the
+# whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_WIN98SE_MAC="02:00:00:00:00:0a" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_WIN98SE_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
+  [ -n "$_m" ] && RN_WIN98SE_MAC="$_m"
+fi
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
@@ -61,7 +77,7 @@ nohup qemu-system-x86_64 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
   -drive file="$KVM",format=qcow2,if=ide \
   -drive file="$GAMES",format=qcow2,if=ide,index=1 \
-  -netdev tap,id=n0,ifname=win98rn0,script=no,downscript=no -device pcnet,netdev=n0 \
+  -netdev tap,id=n0,ifname=win98rn0,script=no,downscript=no -device pcnet,netdev=n0,mac="$RN_WIN98SE_MAC" \
   -usb -device usb-tablet,id=tab0 \
   $LOADVM \
   -qmp unix:$B/qmp.sock,server=on,wait=off \
