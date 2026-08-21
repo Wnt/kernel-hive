@@ -124,6 +124,12 @@ _pace_lock = threading.Lock()
 _last_req = 0.0  # monotonic: last request start (the optional min-interval floor)
 _backoff_until = 0.0  # monotonic: shared deadline every worker waits out after a rate-limit signal
 _backoff_streak = 0  # consecutive rate-limit signals -> exponential escalation
+# The CDX index API is a DIFFERENT backend from the replay path, with its own (much smaller) tolerance,
+# and its queries are the heaviest requests the crawl makes. A 503 from one says "that index scan was
+# too big for me", not "your IP is going too fast" -- so it must NOT halve the concurrency of the page
+# fetches. Index queries therefore back off in their own lane. They still observe the SHARED window,
+# because a refused connection or a replay-path 503 is a real IP-wide signal that stops everything.
+_index_backoff_until = 0.0
 
 
 class _InFlightGate:
@@ -196,21 +202,25 @@ class _InFlightGate:
 
 
 # Starts at 4 (a browser's rough parallelism), ceiling 10 -- the measured knee for HTTP/1.1 connections
-# to web.archive.org from one IP (see the transport note below); past it the edge refuses connections
-# outright, so more permits buy refusals, not throughput. The floor is 2, not 1: a host-index query on a
-# big site takes 70-130 s, and with a single permit that one request stalls every worker behind it.
-_GATE = _InFlightGate(4, 2, 10)
+# to web.archive.org from one IP is ~10 connections (see the transport note below), and the 2-thread
+# index pool sits outside this gate -- so the ceiling is 8, and 8 + 2 is the knee. Past it the edge
+# refuses connections outright, so more permits buy refusals, not throughput. The floor is 2, not 1,
+# so one slow request can never stall every worker behind it.
+_GATE = _InFlightGate(4, 2, 8)
 
 
-def _pace():
+def _pace(index=False):
     """Block until it is polite to fire the next request, then jitter. Observed by every worker:
-    (1) wait out any shared backoff window a 429/503 opened, (2) honor the optional min-interval
-    floor, (3) sleep a small random jitter so concurrent workers spread out."""
+    (1) wait out the shared backoff window a tarpit or replay 503 opened -- plus, for a CDX index
+    query, its own lane's window, (2) honor the optional min-interval floor, (3) sleep a small random
+    jitter so concurrent workers spread out."""
     global _last_req
     while True:
         with _pace_lock:
             now = time.monotonic()
             until = max(_backoff_until, _last_req + RATE["min_interval"])
+            if index:
+                until = max(until, _index_backoff_until)
             wait = until - now
             if wait <= 0:
                 _last_req = now  # claim this slot before releasing the lock
@@ -232,6 +242,16 @@ def _penalize(retry_after=None):
         secs = min(secs, BACKOFF_MAX)
         _backoff_until = max(_backoff_until, time.monotonic() + secs)
     return secs
+
+
+def _index_penalize(retry_after=None):
+    """A 429/502/503 on a CDX index query: back off the INDEX lane only. The page fetches are talking
+    to a different backend and keep their concurrency; the index simply lands later, and until it does
+    its host takes the id_ redirect route."""
+    global _index_backoff_until
+    with _pace_lock:
+        secs = float(retry_after) if (retry_after or "").isdigit() else 30.0
+        _index_backoff_until = max(_index_backoff_until, time.monotonic() + min(secs, 120.0))
 
 
 def _tarpit():
@@ -309,7 +329,7 @@ def _get_client():
             if _client is None:
                 import httpx
 
-                pool = _GATE.ceiling()
+                pool = _GATE.ceiling() + INDEX_WORKERS  # fetch permits + the index pool's own lane
                 c = httpx.Client(
                     http2=False,  # measured: h2 multiplexing is 4x SLOWER here and resets streams
                     http1=True,
@@ -328,7 +348,7 @@ def _get_client():
     return _client
 
 
-def http_get(url, retries=5):
+def http_get(url, retries=5, index=False):
     """GET url, following redirects, over the shared HTTP/1.1 client (a handful of reused connections carry
     the whole crawl -- no new TCP+TLS connection, and no new NAT entry, per request). Return
     (final_url, content_type, body) or None. Contract unchanged -- callers are too.
@@ -352,10 +372,13 @@ def http_get(url, retries=5):
     attempt = 0
     races = 0
     while attempt < retries:
-        _pace()
+        _pace(index)
         try:
-            with _GATE:
+            if index:  # an index query is capped by its own 2-thread pool, not the fetch budget
                 resp = client.get(url)
+            else:
+                with _GATE:
+                    resp = client.get(url)
         except (httpx.RemoteProtocolError, httpx.LocalProtocolError, httpx.ReadError, httpx.WriteError):
             races += 1  # connection-reuse race -> new connection, immediately, off the retry budget
             if races > PROTOCOL_RACE_RETRIES:
@@ -376,7 +399,8 @@ def http_get(url, retries=5):
             return None  # a malformed URL is not transient -> authentic miss (as the old urllib path did)
         status = resp.status_code
         if status in (429, 502, 503):
-            _penalize(resp.headers.get("Retry-After"))  # shared, whole-pool backoff + AIMD decrease
+            retry_after = resp.headers.get("Retry-After")
+            _index_penalize(retry_after) if index else _penalize(retry_after)
             attempt += 1
             if attempt >= retries:
                 return None
@@ -437,6 +461,7 @@ _index_lock = threading.Lock()
 _index = {}  # bare host -> {index key: exact 14-digit ts}; {} means "indexed, nothing in the window"
 _index_building = set()  # bare hosts whose query is in flight, so N workers trigger ONE of them
 _index_pool_ref = []  # the background query pool (a list so it can be created lazily under the lock)
+INDEX_WORKERS = 2  # concurrent host-index queries: tiny, and OUTSIDE the fetch gate
 _index_since = {}  # bare host -> the site's era date; only registered hosts get an index
 
 
@@ -447,7 +472,7 @@ def _index_pool():
         if not _index_pool_ref:
             from concurrent.futures import ThreadPoolExecutor
 
-            _index_pool_ref.append(ThreadPoolExecutor(max_workers=2, thread_name_prefix="cdx-index"))
+            _index_pool_ref.append(ThreadPoolExecutor(max_workers=INDEX_WORKERS, thread_name_prefix="cdx-index"))
         return _index_pool_ref[0]
 
 
@@ -479,7 +504,7 @@ def _fetch_index(host, since):
         f"url={urllib.parse.quote(host, '')}&matchType=prefix&collapse=urlkey&filter=statuscode:200"
         f"&from={since}&to={CEILING}&fl=original,timestamp&limit={CDX_ROWS}&output=json"
     )
-    got = http_get(CDX + "?" + q, retries=3)
+    got = http_get(CDX + "?" + q, retries=3, index=True)
     if not got or not got[2].strip():
         return {}
     try:

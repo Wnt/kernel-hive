@@ -173,7 +173,7 @@ def main():
     saved_get = ef.http_get
     cdx_calls = []
 
-    def fake_cdx(url, retries=5):
+    def fake_cdx(url, retries=5, index=False):
         cdx_calls.append(url)
         rows = b'[["original","timestamp"],["http://www.t.example:80/logo.gif","19970104102030"],'
         rows += b'["http://www.t.example:80/about.html","19970211090000"],'

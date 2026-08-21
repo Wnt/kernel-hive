@@ -181,6 +181,15 @@ def main():
     cr.add_argument("--ssh-host", default=core.SSH_DEFAULT)
     cr.set_defaults(fn=era_crawl.cmd_crawl)
 
+    ix = sub.add_parser("index", help="build every site's host capture index (the crawl's bootstrap)")
+    ix.add_argument("--sites", default=os.path.join(_here, "era-sites.json"))
+    ix.add_argument(
+        "--index-dir",
+        default=os.path.join(era_crawl.CRAWL_ROOT, "cdx"),
+        dest="index_dir",
+    )
+    ix.set_defaults(fn=era_crawl.cmd_index)
+
     a = p.parse_args()
     a.fn(a)
 

@@ -17,6 +17,9 @@ python3 scripts/retronet/web/era-press.py seed
 python3 scripts/retronet/web/era-press.py press www.mcdonalds.com --date 19961223 \
     --title "McDonald's (1996)" --category "Entertainment" --blurb "..."
 
+# build every site's capture index first (the crawl's bootstrap; idempotent)
+python3 scripts/retronet/web/era-press.py index
+
 # what's in the manifest
 python3 scripts/retronet/web/era-press.py list
 ```
@@ -112,6 +115,18 @@ cost is paid once, not once per restart.
 
 Only hosts we actually crawl earn an index; a third-party host serving one image is not
 worth a 70 s query and takes the redirect route instead.
+
+**Bootstrap the indexes before a cold crawl:**
+
+```bash
+python3 scripts/retronet/web/era-press.py index      # one serial pass, idempotent, ~1 min/host
+```
+
+The crawl builds indexes in the background as it goes, which is right once it is warm but
+hopeless from cold: 60 heavy queries competing with the fetches leaves the crawl in the slow
+redirect regime, which is exactly the regime that provokes the throttling that stops the
+indexes landing. One serial pass — one heavy query at a time, the shape archive.org tolerates
+best — breaks that loop, and afterwards the whole crawl runs on the fast exact-stamp path.
 
 **An index is an optimisation, never a precondition**, so asking for one never blocks: the
 disk cache is read inline, and a missing index is *started in a tiny background pool* while

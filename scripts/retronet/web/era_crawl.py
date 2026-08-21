@@ -327,6 +327,38 @@ def _run_level(items, concurrency, worker, on_done, should_stop):
     return n
 
 
+def cmd_index(a):
+    """Build every site's host index up front, SERIALLY and patiently -- the crawl's bootstrap.
+
+    The crawl builds indexes in the background as it goes, which is right once it is warm but hopeless
+    from cold: an index query is the heaviest request era-press makes, and 60 of them competing with
+    the fetches means the crawl spends its first hour in the SLOW (redirect) regime, which is exactly
+    the regime that provokes the throttling that stops the indexes landing. One serial pass breaks that
+    loop -- one heavy query at a time is the shape archive.org tolerates best -- and after it the whole
+    crawl runs on the fast exact-stamp path. Idempotent: an index already on disk is left alone."""
+    fetch.INDEX_DIR = a.index_dir
+    cfg = _load_json(a.sites, [])
+    if not cfg:
+        raise SystemExit(f"era-press index: no sites in {a.sites}")
+    os.makedirs(a.index_dir, exist_ok=True)
+    built = cached = failed = 0
+    for i, s in enumerate(cfg, 1):
+        host, since = core.bare(s["host"]), s.get("date", "19970101")
+        path = fetch._index_path(host, since)
+        if os.path.exists(path):
+            cached += 1
+            continue
+        t0 = time.time()
+        fetch._build_index(host, since)  # writes the disk cache as a side effect
+        rows = len(fetch._index.get(host) or {})
+        if rows:
+            built += 1
+        else:
+            failed += 1
+        print(f"  [{i}/{len(cfg)}] {host:28} {rows:6d} urls  {time.time() - t0:5.1f}s", flush=True)
+    print(f"era-press index: {built} built, {cached} already cached, {failed} empty -> {a.index_dir}")
+
+
 def cmd_crawl(a):
     """BREADTH-FIRST + PARALLEL global crawl over era-sites.json: widen every site together, one depth
     level at a time, as wide as the adaptive in-flight limiter allows. Resumable from the
