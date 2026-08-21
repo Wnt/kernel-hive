@@ -25,7 +25,10 @@ if [ ! -d "$CORPUS" ]; then
 fi
 
 echo "deploying crawl runtime -> $RUN_DIR"
-mkdir -p "$RUN_DIR"
+# /data/vms is root-owned; make the runtime dir and hand it to the crawl user so
+# the service (User below) can write state.json + progress.log there.
+sudo mkdir -p "$RUN_DIR"
+sudo chown "$(id -un):$(id -gn)" "$RUN_DIR"
 cp "$SRC/era-press.py" "$SRC/era-sites.json" "$RUN_DIR/"
 
 echo "installing $UNIT"
