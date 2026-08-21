@@ -145,8 +145,16 @@ def already_seeded(station_uin: str) -> set[str]:
 
 
 def _del_user(uin: str) -> None:
+    """Delete a (throwaway) account and its server-side rows.
+
+    The management API's DELETE /user does NOT cascade the SSI feedbag, so a
+    throwaway that was ssi-seeded (verify-ssi) would leak its roster rows on every
+    run. Clear the feedbag first (reliable SQLite), then delete the account.
+    """
     code = (
-        "import sys,json,urllib.request as u;"
+        "import sys,json,sqlite3,urllib.request as u;"
+        "c=sqlite3.connect('/var/lib/ras/oscar.sqlite');"
+        "c.execute('DELETE FROM feedbag WHERE screenName=?',(sys.argv[1],));c.commit();c.close();"
         f"u.urlopen(u.Request('{API}/user',data=json.dumps({{'screen_name':sys.argv[1]}}).encode(),method='DELETE'))"
     )
     ct_py(code, uin)
