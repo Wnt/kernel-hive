@@ -114,7 +114,18 @@ mattering. Indexes are cached on disk (`<state-dir>/cdx/<host>-<date>.json`), so
 cost is paid once, not once per restart.
 
 Only hosts we actually crawl earn an index; a third-party host serving one image is not
-worth a 70 s query and takes the redirect route instead.
+worth a 70 s query and takes the redirect route instead. Nine of the 60 sites (amazon,
+ebay, apple, imdb, wired, …) are **un-indexable**: archive.org 504s on their prefix scan at
+every window width, at every row limit, and with `collapse` removed — the scan is priced by
+how many captures the host has. They take the redirect route too, which is correct, just
+slower, and `era-press index` records that so it is not rediscovered every run.
+
+**An index also answers "no".** For a host that has one, a URL *absent* from it is an
+authentic miss that costs **zero requests** — asking archive.org could only come back 404,
+and it was coming back 404 for **27% of all requests** on a crawl whose entire budget is
+requests. Absence means "no capture between the site's era date and the ceiling", which is
+exactly the range era-press mirrors from, so a URL whose only captures predate the site's
+era date is a miss by the same rule that picks captures.
 
 **Bootstrap the indexes before a cold crawl:**
 

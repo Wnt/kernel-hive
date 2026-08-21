@@ -179,7 +179,8 @@ def main():
 
     def fake_cdx(url, retries=5, index=False):
         cdx_calls.append(url)
-        rows = b'[["original","timestamp"],["http://www.t.example:80/logo.gif","19970104102030"],'
+        rows = b'[["original","timestamp"],["http://www.t.example:80/","19970104102030"],'
+        rows += b'["http://www.t.example:80/logo.gif","19970104102030"],'
         rows += b'["http://www.t.example:80/about.html","19970211090000"],'
         rows += b'["http://www.t.example:80/late.gif","20011231000000"]]'
         return ("cdx", "application/json", rows)
@@ -196,7 +197,9 @@ def main():
             time.sleep(0.01)
         check("index: exact ts for an indexed resource", ts_of("http://t.example/logo.gif"), "19970104102030")
         check("index: exact ts for an indexed page", ts_of("http://www.t.example/about.html"), "19970211090000")
-        check("index: post-ceiling row is never indexed", ts_of("http://t.example/late.gif"), "19970101")
+        # a URL the index does NOT list is a MISS with no request at all -- not a redirect-route fetch
+        check("index: post-ceiling row -> miss, not a fetch", ts_of("http://t.example/late.gif"), None)
+        check("index: unlisted URL on an indexed host -> miss", ts_of("http://t.example/nope.html"), None)
         check("index: un-indexed host -> the era date", ts_of("http://ads.example/a.gif"), "19970101")
         check("index: ONE CDX query for the whole host", len(cdx_calls), 1)
         # the query must name the CONFIGURED host: url=t.example&matchType=prefix would ask
@@ -217,7 +220,7 @@ def main():
     check("fetch_page: it is a page", (page_ts, is_page), ("19970104102030", True))
     logo = ("res", "19970104102030", "http://www.t.example/logo.gif")
     check("fetch_page: logo priced from the index", logo in disc, True)
-    ad = ("res", "19970101", "http://ads.example/a.gif")
+    ad = ("res", "19970101", "http://ads.example/a.gif")  # un-indexed host keeps the redirect route
     check("fetch_page: unknown resource priced at the era date", ad in disc, True)
     archive_leak = any(ef._is_archive_host(ef.host_of(u)) for _k, _t, u in disc)
     check("fetch_page: drops archive's own hosts", archive_leak, False)

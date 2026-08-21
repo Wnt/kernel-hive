@@ -196,7 +196,21 @@ def host_index(host):
 
 
 def index_ts(url, target):
-    """The exact capture stamp to fetch `url` at: its host index's entry, else `target` (a date, which
-    the id_ redirect resolves for us). Never a per-URL search."""
+    """The exact capture stamp to fetch `url` at, or None meaning "do not fetch it at all".
+
+    Three cases, and the third is why this returns None rather than always falling back:
+
+    * the host has a usable index and the URL is IN it -> its exact stamp (the fast path);
+    * the host has NO usable index (never registered, or archive.org would not scan it) -> `target`,
+      a date, which the id_ redirect resolves;
+    * the host HAS an index and the URL is absent from it -> **None: an authentic miss, fetched zero
+      times.** The index already answered the question, so asking archive.org is a round trip that can
+      only come back 404 -- and it was coming back 404 for 27% of all requests (measured), on a crawl
+      whose whole budget is requests. Absence means "no capture between the site's era date and the
+      2000-12-31 ceiling", which is exactly the range era-press mirrors from; a URL whose only captures
+      predate the site's era date is therefore a miss by the same rule that picks captures.
+    """
     idx = host_index(host_of(url))
-    return (idx or {}).get(_index_key(url)) or target
+    if not idx:  # no index, or an empty one for a host archive.org will not scan -> redirect route
+        return target
+    return idx.get(_index_key(url))
