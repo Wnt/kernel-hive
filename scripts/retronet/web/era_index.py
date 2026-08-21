@@ -84,11 +84,18 @@ def register_site(host, since):
 
 
 def _index_key(url):
-    """Index key for a URL: bare host + path, scheme-, port- and query-agnostic. CDX reports originals
-    as `http://www.ibm.com:80/p`, pages reference `http://ibm.com/p`, and the corpus stores by path
-    only -- so all three have to land on one key."""
+    """Index key for a URL: bare host + path, lowercased, scheme-, port- and query-agnostic.
+
+    CDX reports originals as `http://www.ibm.com:80/p`, pages reference `http://ibm.com/p`, and the
+    corpus stores by path only -- so all three have to land on one key. Lowercasing the PATH matters
+    too, and is not cosmetic: `collapse=urlkey` collapses on Wayback's case-normalised urlkey, so which
+    casing survives into the `original` field is arbitrary. ibm.com's index holds `/ibm/` and `/legal/`
+    while its own home page links to `/IBM/` and `/Legal/` -- 3593 of that host's 18852 keys carry
+    uppercase, and case-sensitive lookup missed every one of them, pushing each onto the slow redirect
+    route. Collisions are the price and they are tiny (45 keys of 18852 there), and cost only a
+    possibly-suboptimal timestamp: the fetch still uses the URL as written."""
     p = urllib.parse.urlsplit(url)
-    return bare(p.hostname or "") + (p.path or "/")
+    return (bare(p.hostname or "") + (p.path or "/")).lower()
 
 
 def _index_path(host, since):
@@ -144,7 +151,8 @@ def _read_cached_index(host, since):
     if not cache or not os.path.exists(cache):
         return None
     with contextlib.suppress(OSError, json.JSONDecodeError), open(cache) as f:
-        return json.load(f)
+        # lowercase on load so indexes written before keys were case-folded still match
+        return {k.lower(): v for k, v in json.load(f).items()}
     return None
 
 

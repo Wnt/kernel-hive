@@ -197,6 +197,9 @@ def main():
             time.sleep(0.01)
         check("index: exact ts for an indexed resource", ts_of("http://t.example/logo.gif"), "19970104102030")
         check("index: exact ts for an indexed page", ts_of("http://www.t.example/about.html"), "19970211090000")
+        # CDX collapses on a case-normalised urlkey, so a page linking to /About.html must still hit
+        # the /about.html the index happens to hold -- otherwise it falls to the slow redirect route.
+        check("index: path lookup is case-insensitive", ts_of("http://t.example/About.HTML"), "19970211090000")
         # A URL the index does not list is NOT proof it is uncaptured: the index window starts at the
         # site's era date, so an earlier capture is invisible to it. Such a URL must still be tried via
         # the redirect route -- skipping it once killed most intra-site navigation.

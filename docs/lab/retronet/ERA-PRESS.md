@@ -120,6 +120,13 @@ every window width, at every row limit, and with `collapse` removed — the scan
 how many captures the host has. They take the redirect route too, which is correct, just
 slower, and `era-press index` records that so it is not rediscovered every run.
 
+**Lookups are case-folded.** `collapse=urlkey` collapses on Wayback's case-normalised urlkey,
+so which casing survives into the `original` field is arbitrary — ibm.com's index holds
+`/ibm/` and `/legal/` while its own home page links to `/IBM/` and `/Legal/`. 3593 of that
+host's 18852 keys carry uppercase, and case-sensitive lookup missed every one, pushing each
+onto the slow redirect route. Keys are lowercased on both sides; the handful of collisions
+(45 there) cost only a possibly-suboptimal timestamp, since the fetch uses the URL as written.
+
 **An index cannot answer "no", and assuming it could was a real regression.** The window
 starts at the site's **era date**, so absence means only *"no capture on or after the era
 date"* — not *"not archived"*. `http://www.ibm.com/Global/` is archived, with 200s through
