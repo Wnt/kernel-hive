@@ -102,10 +102,14 @@ fi
 
 step "corpus dir (read-only to the service; W2 fills it)"
 # DynamicUser= runs as a transient uid, so the corpus must be world-traversable
-# or the index silently comes back empty. `pct push` lands 0644 files and mkdir
-# leaves 0755 dirs, so this is usually already true; make it so regardless.
+# or the index silently comes back empty. `pct push` lands 0644 files, mkdir
+# leaves 0755 dirs, and the era-press crawl writes under umask 022 — so this is
+# already true for the content. Once the crawl has filled the corpus, that
+# content is owned by CT 950's uid 1000 on the shared bind-mount, which root in
+# THIS unprivileged CT cannot chmod ("Operation not permitted") and need not.
+# So make the path traversable best-effort and never abort the install on it.
 do_or_plan ctexec mkdir -p "$RN_SEARCH_CORPUS"
-do_or_plan ctexec chmod -R a+rX /data/retronet "$RN_SEARCH_CORPUS"
+do_or_plan ctexec sh -c "chmod -R a+rX /data/retronet '$RN_SEARCH_CORPUS' 2>/dev/null || true"
 
 step "units"
 for u in retronet-search.service retronet-search-reindex.service retronet-search-reindex.timer; do
