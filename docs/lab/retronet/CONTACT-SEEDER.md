@@ -1,9 +1,13 @@
 # The retronet ICQ contact seeder — as built
 
-**Status: BUILT + PROVEN (server-side), live-application DEFERRED.** The reusable
-tool that gives every ICQ station every *other* station + the bot in its contact
-list, with the bot showing as **HiveBot**, not `10000`. Roster-driven and
-idempotent: adding a station is one row in `roster.json`, then re-run. Parent:
+**Status: LIVE (server-side SSI). All 5 live accounts cross-listed 2026-08-21.**
+Every live ICQ station carries every *other* live station + the bot in its
+contact list, with the bot showing as **HiveBot**, not `10000`. The **primary**
+path is now **server-side SSI/feedbag**: one write per account on the gateway
+cross-lists the whole live fleet, and an SSI-aware client (climm; the upgraded
+ICQ) reads it on next login — **no per-client UI automation, no golden
+recapture**. Roster-driven and idempotent: adding a station is one row in
+`roster.json` plus a re-run. Parent:
 [`ICQ-ONBOARDING-PLAN.md`](ICQ-ONBOARDING-PLAN.md); server is
 [`GATEWAY.md`](GATEWAY.md); the pathfinder station is [`ICQ-STATION.md`](ICQ-STATION.md).
 
@@ -11,192 +15,229 @@ Files, all under `scripts/retronet/icq/`:
 
 | File | What |
 |---|---|
-| `roster.json` | the single source — bot + every station's UIN, display nickname, and client kind |
-| `seed_contacts.py` | the tool: roster logic, nicknames, the client-faithful proof, idempotency, plans, the gated live orchestration, an offline `selftest` |
-| `icq2000b-add.macro.json` | the ICQ 2000b Add-by-UIN input macro (labctl steps), **calibrated live** |
+| `roster.json` | the single source — bot + every station's UIN, display nickname, client kind, and `onboarded` (=live) flag |
+| `seed_contacts.py` | the tool: roster logic, the **SSI population + proof**, nicknames, the client-UI fallback, idempotency, an offline `selftest` |
+| `icq2000b-add.macro.json` | the ICQ 2000b Add-by-UIN input macro for the **fallback** client-UI path (uncalibrated) |
 
-The tool runs **on labhost** (invoke via `ssh lab`): it needs `pct exec 951`
-(the gateway's management API is CT-loopback-only), `labctl`, and a socket to the
-gateway. It extends the gateway's own `rn-tool.py` with `nick` / `nick-get` /
-`buddies`.
+The SSI write lives in the gateway's own `rn-tool.py` (`ssi-seed` / `buddies`);
+`seed_contacts.py` orchestrates it across the live fleet. Both run **on labhost**
+(invoke via `ssh lab`): the tool needs `pct exec 951` (the gateway's management
+API and its SQLite are CT-loopback-only) and, for the end-to-end proof, a socket
+to the gateway.
 
-## HiveBot by name — how the name lands, and the proof
+## The primary path — server-side SSI / feedbag (SNAC 0x13)
 
-ICQ 2000b keeps its contact list **client-local** (not server SSI/feedbag —
-`buddyListMode.useFeedbag = 0`). But the *name* it displays for a UIN is not
-local trivia: when you add a contact by number, the client runs an **ICQ Meta
-directory lookup** and caches whatever nickname the server returns. So the bar
-"never a bare `10000`" is met by setting the account's **server-side ICQ
-directory nickname** — and every future add renders it by name for free.
+open-oscar-server stores a **server-side buddy list** (the OSCAR SSI / "feedbag"
+service) per account and serves it to a client on login: the client sends
+SNAC `13,04` "request list" and the server answers `13,06` with every item.
+Writing this list on the gateway is all it takes — the station shows its
+contacts on next sign-on, with the display name carried **in the roster item
+itself**, so there is nothing to drive in the client and nothing to re-bake.
 
-- **Set it:** `rn-tool.py nick <uin> <name>` — a read-modify-write of
-  `basic_info.nickname` via the management API's `PUT /user/<uin>/icq`.
-  Idempotent. Done for the bot: **`10000` → `HiveBot`**.
-- **Proof a client receives it (not just that the DB row is set):**
-  `seed_contacts.py verify-nick 10000` signs in as a throwaway account and issues
-  the **exact** Meta short-info request (SNAC `0x15/0x02`, subcmd `0x04BA`) that
-  ICQ 2000b sends on add-by-UIN, and reads the nickname back from the response
-  (`0x15/0x03`, subcmd `0x0104`). It prints:
+**Which clients read it.** climm (with `climm-0.6.4-ssi-login.patch`, see
+[`ICQ-STATION-solaris.md`](ICQ-STATION-solaris.md)) and the upgraded ICQ client
+are **SSI-aware** and sync the server roster on login. Stock **ICQ 2000b keeps
+its list client-local** (`buddyListMode.useFeedbag = 0`) and ignores SSI — for it
+the client-UI path below stays as the fallback.
 
-  ```
-  UIN 10000: a client receives nickname 'HiveBot'
-  ```
+### The item layout — decoded from the live climm stations
 
-  The throwaway account is created, opened, queried and **deleted** in the one
-  call — the gateway is left with exactly its real accounts.
-
-**The client-local alias, and the one contact that needs it.** Setting the
-server nickname fixes every *future* add. A contact added *before* its nickname
-was set keeps the bare number the client cached — today that is exactly one
-contact: the bot on the **existing** win98se golden, added as `10000`. The fix
-is a client-local rename, not a server change: at win98se's next golden
-recapture the seed pass renames it in-client (ICQ 2000b contact → *Rename* →
-`HiveBot`) or re-adds it. Every station onboarded from here shows `HiveBot`
-natively because the seeder sets nicknames **before** it adds.
-
-## The method for ICQ 2000b — drive the client, do not edit its store
-
-**Chosen: (b) drive ICQ 2000b's own Add-Contact flow over the exec channel +
-framebuffer (`labctl`).** Rejected: (a) offline-mount the disk and edit the
-contact store.
-
-Why, from evidence gathered read-only against a golden *backup*
-(`golden-backup-netswap-…`, extracted per-snapshot with `qemu-img convert -l
-snapshot.name=…`, read with `mtools` on an nbd device — no kernel mount):
-
-- ICQ 2000b's store is a **proprietary, undocumented, per-UIN binary DB** at
-  `C:\Program Files\ICQ\<UIN>\`. That folder **only materialises after a user
-  registers** — in the `icqinstalled` snapshot the client is fully installed but
-  the `UIN\` folder is **empty**.
-- There is **no safe reference copy** to reverse-engineer against: the only
-  populated instance is the **live** golden, which is off-limits. You cannot
-  write a format you cannot test, and a wrong byte corrupts the client's list.
-- The build is version-specific (this "2000b" ships DLLs dated **2001-04-04**);
-  an offline writer would be pinned to one build.
-- Driving the client makes **it** do all three hard things correctly: write its
-  own DB, **fetch the directory nickname** (so the contact shows `HiveBot` /
-  the station name, not a number), and **register the buddies server-side**
-  (`BuddyAddBuddies` → `clientSideBuddyList`) so presence flows. An offline edit
-  would still have to do that last part at login anyway — so it buys nothing and
-  risks everything.
-- The primitives are the proven fleet toolchain: `labctl type` / `key` / `exec`
-  / `shot` / `assert`. win98se is a `warpd_e` QEMU tile, so input is
-  **keyboard + exec + framebuffer** (there is no scripted pointer — `labctl
-  mctl` is ctl-tile-only); the macro is keyboard-first and every step ends in a
-  framebuffer `assert`, which is the lab's only proof a step landed.
-
-## Idempotency — the server's shadow of the client's list
-
-open-oscar-server records every non-SSI client's buddy list in
-`clientSideBuddyList` when the client pushes it at sign-on. It does **not** drive
-what the client *displays* (that is the local store) — but it is a reliable
-server-side record of which UINs a station has **already added**. The seeder
-reads it (`rn-tool.py buddies <uin>`) and skips a contact that is already there,
-so a re-run only adds what is new. Proven:
+The feedbag rows climm itself wrote for solaris (`30000`) and tru64 (`64000`)
+were the reference; the seeder writes byte-identical items:
 
 ```
-$ seed_contacts.py status win98se
-win98se (UIN 98980, icq2000b)
-  HiveBot   UIN 10000  present                                   ← already on the list
-  win2000   UIN 20000  missing (contact account not created yet) ← blocked until onboarded
+PDINFO  classID=4 groupID=0 itemID=nz name=''                    attrs=TLV(0x00CA = pdMode)
+GROUP   classID=1 groupID=G itemID=0  name='contacts-icq8-<uin>' attrs=empty
+BUDDY   classID=0 groupID=G itemID=nz name='<buddyUIN>'          attrs=TLV(0x0131 = nick)
+```
+
+- A feedbag item's **attribute BLOB** is a `uint16` byte-length prefix + a TLV
+  list (`TLV = type u16 | len u16 | value`). open-oscar-server stores it exactly
+  as it goes on the wire, so the DB blob and the `13,06` item body match.
+- The buddy's **display name travels in its `0x0131` "local alias" TLV** — so the
+  SSI roster is self-describing: a client shows `HiveBot` for UIN `10000` with
+  **no ICQ-directory lookup**. (The directory nickname is still set too, for the
+  non-SSI fallback; see below.)
+- `pdMode = 4` ("block deny list" → allow-all with no denies) is climm's default
+  and the museum's intent (everyone sees everyone).
+
+### `ssi-seed` — an idempotent, atomic reconcile
+
+`rn-tool.py ssi-seed <uin> <buddyUIN>=<nick> …` reconciles one account's feedbag
+to exactly the given buddies, in a single SQLite transaction:
+
+- **One contact group.** If the account already has one (climm's), its **groupID
+  and name are kept** so an already-synced client sees a minimal delta; otherwise
+  one is created. Stray extra groups are collapsed into it.
+- **Buddies** are keyed by UIN (the item `name`): present ones are updated
+  in place (item ID preserved), missing ones inserted with a fresh unique item
+  ID, and any not in the list removed.
+- **PDINFO** is created if the account has none, and left alone if it has one.
+
+So a re-run is a no-op, and re-running the whole fleet after a station joins only
+adds the newcomer. Proven on solaris/tru64: the seed **reused** climm's original
+groups (`24676` / `31798`) and its `HiveBot` items, and added the four new
+station buddies — no duplicate `HiveBot`.
+
+**Why a direct SQLite write** (not the management API, not driving a client): the
+management API has no feedbag endpoint, exactly as it has none for ICQ
+permissions — so this writes the table directly, the same pattern as
+`rn-tool.py user-open`. It is safe: SQLite is multi-process safe, and the server
+reads the roster **fresh on each `13,05`/`13,04` request** (no cache), so the
+write takes effect with no restart and does not disturb a client that is already
+signed on — that client simply reads the fuller roster on its next login. This
+is a **server-side** change only: no station VM is touched, no session displaced.
+
+### The proof the server *serves* it — `verify-ssi`
+
+The SSI analogue of `verify-nick`. It creates a **throwaway** account, writes it
+a known roster via the same `ssi-seed` path, signs in as it over real OSCAR,
+requests the list (`13,04`), parses the `13,06` reply, and reads the buddies
+back — then deletes the throwaway. It touches **no real account**, so no live
+climm/ICQ session is displaced. It prints:
+
+```
+server-side SSI proof — throwaway account, real OSCAR sign-in, SNAC 13,04 -> 13,06:
+  a client receives buddy 10000 as 'HiveBot'
   …
+PASS — a directly-written feedbag roster is served on login (3 buddies)
 ```
 
-## The three phases, per station
+That closes the loop the `buddies` DB read leaves open: not just "the row is
+set" but "a signing-in client receives it".
 
-`seed_contacts.py seed <station>` is dry-run (prints the plan); `--apply` is the
-LIVE pass and is **gated** — it refuses until the macro is calibrated.
+### Live state — all 5 accounts populated + verified (2026-08-21)
 
-1. **Stop cleanly from golden.** `labctl reset <station>` restores the known-good
-   golden; the live pass backs the golden up first (per
-   [`ICQ-STATION.md`](ICQ-STATION.md)).
-2. **Seed the missing contacts.** Ensure each contact's server nickname + open
-   flag (`rn-tool.py nick` / `user-open`), then replay `icq2000b-add.macro.json`
-   per missing UIN, each step framebuffer-verified.
-3. **Recapture the golden** with the fuller list baked in. `recapture_golden()`
-   uses a **safe snapshot order** that never deletes the live golden before a
-   copy of the new state exists: `savevm golden-seeding` → `delvm golden` →
-   `savevm golden` → `delvm golden-seeding`.
+`seed_contacts.py ssi --apply` wrote the server-side roster for every live
+account; `rn-tool.py buddies <uin>` shows each carrying the other four + HiveBot:
 
-Adding a station later = one `roster.json` row + `seed <that station>`, and a
-re-run of the already-onboarded stations to pick the newcomer up (its account
-now exists, so it stops being "blocked").
+| Account | UIN | server-side SSI roster |
+|---|---|---|
+| win98se | 98980 | HiveBot, win2000, nt4, solaris, tru64 |
+| win2000 | 20000 | HiveBot, win98se, nt4, solaris, tru64 |
+| nt4     | 40000 | HiveBot, win98se, win2000, solaris, tru64 |
+| solaris | 30000 | HiveBot, win98se, win2000, nt4, tru64 |
+| tru64   | 64000 | HiveBot, win98se, win2000, nt4, solaris |
 
-### Calibration (the one thing that must happen on the live client)
+`win95` (`95000`) and `macos753` (`75300`) are `onboarded: false` in the roster,
+so they are excluded from every list until their stations are live.
 
-`icq2000b-add.macro.json` ships `calibrated: false` and the tool **refuses
-`--apply`** until it is true. Calibration is a one-time pass on a live ICQ 2000b
-station: open the real *Find/Add Users* wizard, confirm each keystroke and each
-`assert` text against the framebuffer (`labctl shot` / `assert --text`), correct
-the `calibrate: true` steps, then set `calibrated: true`. It is deferred here
-because it needs a live station and win98se is owned by the swap agent.
+## Adding a station — the whole flow
 
-## Unix and Mac clients — designed hooks (deferred until media lands)
+1. Add **one row** to `roster.json` with the station, UIN, `nick`, `client`, and
+   `onboarded: true` (an account whose station is not yet finalized stays
+   `false`, so it is kept out of everyone's list until it is live).
+2. Ensure its account exists on the gateway (`rn-tool.py user-set` /
+   `user-open`, done by the station's bring-up agent).
+3. `seed_contacts.py ssi --apply` — populates **every** live account's
+   server-side SSI, picking the newcomer up everywhere and giving it the full
+   list, in one pass. (Dry-run first with no `--apply`.)
+4. Done. **No golden recapture.** Each SSI-aware station syncs the new roster on
+   its **next login** — for climm that is its own ~30 s reconnect on wake
+   ([`ICQ-STATION-solaris.md`](ICQ-STATION-solaris.md) §reconnect); the
+   per-station agents confirm the client-side display.
 
-The roster's `client` field dispatches the seeder. Only `icq2000b` is
-implemented; the others are designed and print their plan:
+That is the entire contact-change workflow now: a `roster.json` edit + one
+re-run. Contrast the old client-UI path (below), which needed a live station, a
+calibrated macro, and a golden recapture per change.
 
-- **`unix-oscar`** (solaris, tru64 — **climm 0.6.4**, the ex-mICQ OSCAR client,
-  sourced and built from source): its contact list is plain text under
-  `~/.climm/` in the guest home. Seed it **offline** over the guest home (via
-  `chroot-guard run-private`, never a raw host mount) or by the client's own add.
-  climm is an **ICQ** client, so it fetches the nickname from the **same** server
-  directory this tool sets — `verify-nick` proves it — and `HiveBot` / the station
-  names show with **no local alias** needed. (Exact `~/.climm/` layout is
-  confirmed at build time; the seam is the same either way.)
-- **`mac-oscar`** (macos753 — **Mac AIM 2.01.617**, 68K): its buddy list lives in
-  the app Preferences (`System Folder:Preferences`). An **AIM** client does
-  **not** run the ICQ directory lookup, so here the display name is a
-  **client-local alias** (the AIM buddy alias) the seeder writes — the plan's
-  "where the client needs a local alias, the seeder writes it" clause. Seed the
-  pref offline (HFS mount) or via the client's Add flow.
+## HiveBot by name — how the name lands
 
-Both are why the `client` field is a dispatch key, not just a label: the ICQ
-legs (ICQ 2000b, climm) get their name from the server directory; the AIM leg
-gets a local alias. `verify-nick` proves the server half for every ICQ leg today.
+- **SSI clients (primary):** the name is in each buddy item's `0x0131` alias TLV,
+  written straight from `roster.json`'s `nick`. `10000` renders as `HiveBot`, and
+  every station renders by its name, with nothing fetched at add time.
+- **Non-SSI ICQ 2000b (fallback):** the name comes from the account's
+  **server-side ICQ directory nickname**, fetched on add-by-UIN.
+  `rn-tool.py nick <uin> <name>` sets it (`10000 → HiveBot`, done);
+  `seed_contacts.py verify-nick <uin>` proves a client receives it via the exact
+  ICQ Meta short-info round-trip (`0x04BA`/`0x0104`).
+  `seed_contacts.py nicknames --apply` sets every account's directory nickname.
+
+## The fallback path — ICQ 2000b, drive the client's own Add flow
+
+For a **non-SSI** client (stock ICQ 2000b on win98se/win2000/nt4, until they are
+upgraded), SSI does not display, so contacts are added by driving the client's
+own *Add-Contact* wizard over the exec channel + framebuffer (`labctl`). This
+path is **not** used once a station runs an SSI-aware client.
+
+Why drive the client rather than edit its store: ICQ 2000b's contact list is a
+**proprietary, undocumented, per-UIN binary DB** (`C:\Program Files\ICQ\<UIN>\`)
+that only materialises after a user registers — there is no safe reference copy
+to reverse-engineer against (the sole populated instance is the live golden,
+off-limits), so an offline write is unprovable and risks corrupting the DB.
+Driving the client makes **it** write its own DB, fetch the directory nickname,
+and register the buddies server-side. The primitives are the fleet toolchain
+(`labctl type`/`key`/`exec`/`shot`/`assert`); win98se is a keyboard+exec+
+framebuffer tile, so the macro is keyboard-first and every step ends in a
+framebuffer `assert`.
+
+- **Idempotency** reads the server's `clientSideBuddyList` shadow — the record
+  open-oscar-server keeps of what a non-SSI client pushed at sign-on —
+  via `rn-tool.py client-buddies <uin>`, skipping a UIN already added.
+- `seed_contacts.py seed <station> --apply` is the LIVE pass and is **gated**: it
+  refuses until `icq2000b-add.macro.json` is calibrated on the real wizard
+  (`calibrated: true`). It runs `labctl reset` from golden, replays the macro per
+  missing UIN (each step framebuffer-verified), then recaptures the golden with a
+  safe snapshot order (`savevm golden-seeding` → `delvm golden` → `savevm golden`
+  → `delvm golden-seeding`). Calibration + the LIVE apply are deferred (need a
+  live, non-contended station).
+- **Mac AIM** (macos753, when it lands) is an **AIM** client — no ICQ directory
+  lookup — so its display name is a client-local **alias**; its buddy list lives
+  in `System Folder:Preferences`. Designed, deferred until media.
+
+Note `buddies` vs `client-buddies`: `rn-tool.py buddies <uin>` shows the
+**SSI/feedbag** roster (primary, `<uin> <nick>` per line); `client-buddies <uin>`
+shows the legacy `clientSideBuddyList` shadow (the fallback idempotency oracle).
 
 ## Operating it
 
 ```bash
-# the roster + every station's contact set
-ssh lab 'python3 /data/kernel-hive/scripts/retronet/icq/seed_contacts.py roster'
+RN=/data/kernel-hive/scripts/retronet/icq/seed_contacts.py
 
-# PROVE a client receives an account's nickname (ephemeral acct + real ICQ Meta query)
-ssh lab 'python3 …/seed_contacts.py verify-nick 10000'
+# the roster + each station's live cross-list
+ssh lab "python3 $RN roster"
 
-# set every existing account's server nickname (10000→HiveBot, 98980→win98se, …)
-ssh lab 'python3 …/seed_contacts.py nicknames --apply'
+# populate every live account's server-side SSI (dry-run, then apply)
+ssh lab "python3 $RN ssi"
+ssh lab "python3 $RN ssi --apply"
+ssh lab "python3 $RN ssi win2000 --apply"     # or scope to one station
 
-# what a station already has / what a seed would do (dry-run)
-ssh lab 'python3 …/seed_contacts.py status  <station>'
-ssh lab 'python3 …/seed_contacts.py plan    <station>'
+# PROVE the server serves a written feedbag (throwaway acct, real 13,04 -> 13,06)
+ssh lab "python3 $RN verify-ssi"
 
-# LIVE seed (gated on a calibrated macro; back the golden up first)
-ssh lab 'python3 …/seed_contacts.py seed <station> --apply'
+# what an account's server-side roster is (the primary contact store)
+ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py buddies 98980'
 
 # offline checks, no gateway needed
 python3 scripts/retronet/icq/seed_contacts.py selftest
 
-# gateway-side, in the CT
-ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py nick 10000 HiveBot'
-ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py buddies 98980'
+# fallback (non-SSI ICQ 2000b): server directory nickname + client-UI drive
+ssh lab "python3 $RN nicknames --apply"
+ssh lab "python3 $RN verify-nick 10000"
+ssh lab "python3 $RN plan win98se"            # client-UI plan (dry-run)
 ```
+
+`rn-tool.py` deploys into the CT with the rest of the gateway via
+`provision-gateway-ct.sh install`.
 
 ## Proven vs deferred
 
-**Proven now** (against the live gateway, no station touched):
+**Proven + live** (server-side, no station touched):
 
-- Bot nickname `10000 → HiveBot` set server-side, and a **client receives it**
-  (ICQ Meta `0x04BA/0x0104` round-trip returns `HiveBot`).
-- `rn-tool.py nick` / `nick-get` / `buddies` (idempotent; `buddies 98980` → `10000`).
-- Roster logic — every station carries the bot + the six others, excludes itself.
-- Idempotency oracle — `status`/`plan` read `clientSideBuddyList` and correctly
-  skip present contacts and block not-yet-created ones.
-- The Meta encode/parse and macro rendering (`selftest`, offline).
+- `ssi-seed` writes byte-identical feedbag items; the reconcile preserves an
+  existing climm group + item IDs, adds/removes buddies, and is idempotent.
+- All 5 live accounts' server-side rosters populated and read back with
+  `buddies` — each carries the other four + `HiveBot`, named.
+- `verify-ssi`: a directly-written feedbag roster is **served** to a signing-in
+  client (real OSCAR `13,04` → `13,06`).
+- Bot nickname `10000 → HiveBot` set server-side; `verify-nick` proves a client
+  receives it.
+- Roster logic + the SSI parser + the live-cross-list rule (`selftest`, offline).
 
-**Deferred to live application** (needs a live, non-contended station):
+**Deferred** (owned by the per-station agents / awaiting media):
 
-- Calibrating `icq2000b-add.macro.json` against the real wizard, and the LIVE
-  `seed --apply` (macro replay + golden recapture).
-- The one-time in-client rename of win98se's existing bare-`10000` bot contact.
-- The `unix-oscar` / `mac-oscar` seeders (implemented as designs; wait on media).
+- Live-client confirmation that each SSI-aware station **displays** the synced
+  roster on next login (climm; the upgraded ICQ) — the framebuffer proof.
+- Calibrating `icq2000b-add.macro.json` and the gated client-UI `seed --apply`,
+  for any station still on stock (non-SSI) ICQ 2000b.
+- The `mac-oscar` (macos753) seeder — designed, waiting on media.

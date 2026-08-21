@@ -1,14 +1,14 @@
 {
-  "note": "Retronet ICQ cross-list roster — the single source for the contact seeder (scripts/retronet/icq/seed_contacts.py). Each station carries every OTHER station + the bot in its contact list. Adding a station is ONE row here, then re-run the seeder for it. UIN/tier table: docs/lab/retronet/ICQ-ONBOARDING-PLAN.md. nick = the account's server-side ICQ directory nickname, which a client displays for the contact (never a bare UIN). client = which seeding driver applies.",
+  "note": "Retronet ICQ cross-list roster — the single source for the contact seeder (scripts/retronet/icq/seed_contacts.py). Each live station carries every OTHER live station + the bot in its contact list. Adding a station is ONE row here, then re-run `seed_contacts.py ssi --apply`. UIN/tier table: docs/lab/retronet/ICQ-ONBOARDING-PLAN.md. nick = the display name (SSI 0x0131 alias TLV in the server-side roster; also the ICQ directory nickname), never a bare UIN. client = which fallback client-UI seeding driver applies. onboarded=true means LIVE: it gates the SSI cross-list (only live stations appear in each other's rosters). Primary path is SSI/feedbag (`ssi`); the client-UI `seed`/`plan` path is the non-SSI ICQ 2000b fallback.",
   "gateway": { "host": "10.99.0.2", "port": 5190 },
   "bot": { "uin": "10000", "nick": "HiveBot" },
   "stations": [
     { "station": "win98se",  "uin": "98980", "nick": "win98se",  "client": "icq2000b",   "onboarded": true },
-    { "station": "win2000",  "uin": "20000", "nick": "win2000",  "client": "icq2000b",   "onboarded": false },
-    { "station": "nt4",      "uin": "40000", "nick": "nt4",      "client": "icq2000b",   "onboarded": false },
+    { "station": "win2000",  "uin": "20000", "nick": "win2000",  "client": "icq2000b",   "onboarded": true },
+    { "station": "nt4",      "uin": "40000", "nick": "nt4",      "client": "icq2000b",   "onboarded": true },
     { "station": "win95",    "uin": "95000", "nick": "win95",    "client": "icq2000b",   "onboarded": false },
-    { "station": "solaris",  "uin": "30000", "nick": "solaris",  "client": "unix-oscar", "onboarded": false },
-    { "station": "tru64",    "uin": "64000", "nick": "tru64",    "client": "unix-oscar", "onboarded": false },
+    { "station": "solaris",  "uin": "30000", "nick": "solaris",  "client": "unix-oscar", "onboarded": true },
+    { "station": "tru64",    "uin": "64000", "nick": "tru64",    "client": "unix-oscar", "onboarded": true },
     { "station": "macos753", "uin": "75300", "nick": "macos753", "client": "mac-oscar",  "onboarded": false }
   ]
 }

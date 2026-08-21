@@ -25,7 +25,9 @@ usage:
   rn-tool.py user-open <screen_name>
   rn-tool.py nick <screen_name> <nickname>
   rn-tool.py nick-get <screen_name>
-  rn-tool.py buddies <screen_name>
+  rn-tool.py ssi-seed <screen_name> <buddyUIN>=<nick> [<buddyUIN>=<nick> ...]
+  rn-tool.py buddies <screen_name>          # the server-side SSI/feedbag roster
+  rn-tool.py client-buddies <screen_name>   # the legacy clientSideBuddyList shadow
   rn-tool.py wan-probe
   rn-tool.py login <host> <port> <screen_name> <password>
 """
@@ -38,6 +40,7 @@ import socket
 import sqlite3
 import struct
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -337,14 +340,161 @@ def cmd_nick_get(screen_name: str) -> int:
     return 0
 
 
-def cmd_buddies(screen_name: str) -> int:
-    """List the UINs on an account's client-side buddy list (the server's shadow).
+# --- SSI / feedbag: the server-side buddy list (SNAC 0x13) ------------------
+#
+# The contact list open-oscar-server stores per account and serves an SSI-aware
+# client on login (client sends SNAC 13,04, server answers 13,06). Writing it
+# here cross-lists a station with NO client-UI drive and NO golden recapture.
+# Item layout mirrors what climm writes (decoded live from solaris/tru64):
+#   PDINFO  classID=4 groupID=0 itemID=nz name=''  attrs=TLV(0x00CA=pdMode)
+#   GROUP   classID=1 groupID=G itemID=0  name='contacts-icq8-<uin>' attrs=empty
+#   BUDDY   classID=0 groupID=G itemID=nz name='<buddyUIN>' attrs=TLV(0x0131=nick)
+# attribute BLOB = uint16 byte-length prefix + TLV list (type u16|len u16|value);
+# the buddy's display name is its 0x0131 alias TLV, so the roster is
+# self-describing. Full write-up: docs/lab/retronet/CONTACT-SEEDER.md.
 
-    open-oscar-server records every non-SSI client's buddy list in
-    `clientSideBuddyList` when the client pushes it at sign-on. It does not drive
-    what the client *displays* (that is the client's local store), but it is a
-    reliable server-side record of who a station has already added — the contact
-    seeder reads it to stay idempotent (skip a UIN that is already there).
+SSI_CLASS_BUDDY = 0x0000
+SSI_CLASS_GROUP = 0x0001
+SSI_CLASS_PDINFO = 0x0004
+SSI_TLV_ALIAS = 0x0131  # a buddy's local display name
+SSI_TLV_PDMODE = 0x00CA  # privacy (permit/deny) mode
+SSI_DEFAULT_PDMODE = 4  # "block deny list" — allow-all with no denies (climm's default)
+
+
+def ssi_tlv(typ: int, val: bytes) -> bytes:
+    return struct.pack(">HH", typ, len(val)) + val
+
+
+def ssi_attrs(tlvs: bytes) -> bytes:
+    """A feedbag item's attribute BLOB: uint16 byte-length prefix + a TLV list."""
+    return struct.pack(">H", len(tlvs)) + tlvs
+
+
+def ssi_alias(attrs: bytes | None) -> str | None:
+    """Pull the 0x0131 local-alias (display name) out of a buddy item's attributes."""
+    if not attrs or len(attrs) < 2:
+        return None
+    (tlvs_len,) = struct.unpack_from(">H", attrs, 0)
+    body = attrs[2 : 2 + tlvs_len]
+    off = 0
+    while off + 4 <= len(body):
+        typ, vlen = struct.unpack_from(">HH", body, off)
+        off += 4
+        val = body[off : off + vlen]
+        off += vlen
+        if typ == SSI_TLV_ALIAS:
+            return val.decode("utf-8", "replace")
+    return None
+
+
+def cmd_ssi_seed(screen_name: str, pairs: list[str]) -> int:
+    """Reconcile an account's server-side SSI/feedbag roster to exactly `pairs`.
+
+    Each pair is `<buddyUIN>=<nick>`. Idempotent and atomic (one transaction):
+    one contact group holds one buddy item per pair; a buddy not listed is
+    removed; the existing group / PDINFO / buddy item IDs are preserved so an
+    already-synced client sees a minimal delta. Direct SQLite write (the mgmt API
+    has no feedbag endpoint), safe like user-open: the server reads the roster
+    fresh on each request, so no restart and no live session is disturbed.
+    """
+    sn = screen_name.lower()
+    desired: dict[str, str] = {}
+    for p in pairs:
+        uin, sep, nick = p.partition("=")
+        if not uin or sep != "=" or not nick:
+            print(f"bad pair {p!r} — want <buddyUIN>=<nick>")
+            return 2
+        desired[uin] = nick
+
+    conn = sqlite3.connect(DB_PATH, timeout=10)
+    try:
+        with conn:
+            rows = conn.execute(
+                "SELECT groupID, itemID, classID, name FROM feedbag WHERE screenName = ?",
+                (sn,),
+            ).fetchall()
+            all_item_ids = {i for _g, i, _c, _n in rows}
+
+            def fresh_item_id() -> int:
+                x = 1
+                while x in all_item_ids:
+                    x += 1
+                all_item_ids.add(x)
+                return x
+
+            ts = int(time.time())
+
+            def put(gid: int, iid: int, cls: int, name: str, attrs: bytes, pd: int = 0) -> None:
+                conn.execute(
+                    "INSERT OR REPLACE INTO feedbag (screenName, groupID, itemID, classID,"
+                    " name, attributes, lastModified, pdMode, authPending) VALUES (?,?,?,?,?,?,?,?,0)",
+                    (sn, gid, iid, cls, name, attrs, ts, pd),
+                )
+
+            # One contact group — reuse the client's existing one (keep its ID and
+            # name) so an already-synced client is not disrupted; else make one.
+            groups = [(g, n) for g, i, c, n in rows if c == SSI_CLASS_GROUP and i == 0 and g != 0]
+            if groups:
+                group_id, group_name = groups[0]
+            else:
+                group_id, taken = 2, {g for g, i, _c, _n in rows if i == 0}
+                while group_id in taken:
+                    group_id += 1
+                group_name = f"contacts-icq8-{sn}"
+            put(group_id, 0, SSI_CLASS_GROUP, group_name, ssi_attrs(b""))
+
+            # PDINFO (privacy) — create if the account has none; keep any it has.
+            if not any(c == SSI_CLASS_PDINFO and g == 0 for g, _i, c, _n in rows):
+                pd_attrs = ssi_attrs(ssi_tlv(SSI_TLV_PDMODE, bytes([SSI_DEFAULT_PDMODE])))
+                put(0, fresh_item_id(), SSI_CLASS_PDINFO, "", pd_attrs, SSI_DEFAULT_PDMODE)
+
+            # Buddies keyed by UIN (the item `name`): (re)write each desired one in
+            # the kept group, preserving its item ID; drop any no longer listed.
+            existing = {n: i for g, i, c, n in rows if c == SSI_CLASS_BUDDY and g == group_id}
+            for uin, nick in sorted(desired.items()):
+                attrs = ssi_attrs(ssi_tlv(SSI_TLV_ALIAS, nick.encode("utf-8")))
+                put(group_id, existing.get(uin) or fresh_item_id(), SSI_CLASS_BUDDY, uin, attrs)
+            for uin, item_id in existing.items():
+                if uin not in desired:
+                    conn.execute(
+                        "DELETE FROM feedbag WHERE screenName=? AND groupID=? AND itemID=?",
+                        (sn, group_id, item_id),
+                    )
+
+            # Collapse any stray extra contact groups (and their buddies) into the
+            # one we kept — every desired buddy was already (re)written above.
+            for g, _n in groups[1:]:
+                conn.execute("DELETE FROM feedbag WHERE screenName=? AND groupID=?", (sn, g))
+    finally:
+        conn.close()
+    print(f"ssi     {screen_name}: server-side roster set to {len(desired)} buddy item(s) in group {group_id}")
+    return 0
+
+
+def cmd_buddies(screen_name: str) -> int:
+    """The account's server-side SSI/feedbag roster: `<buddyUIN> <nick>` per line.
+
+    The primary contact store now — what an SSI-aware client shows after login.
+    The nick is read from each buddy item's 0x0131 alias TLV, so it is exactly
+    what the client displays, not a bare UIN.
+    """
+    conn = sqlite3.connect(DB_PATH, timeout=10)
+    rows = conn.execute(
+        "SELECT name, attributes FROM feedbag WHERE screenName = ? AND classID = ? ORDER BY name",
+        (screen_name.lower(), SSI_CLASS_BUDDY),
+    ).fetchall()
+    conn.close()
+    for name, attrs in rows:
+        print(f"{name} {ssi_alias(attrs) or ''}".rstrip())
+    return 0
+
+
+def cmd_client_buddies(screen_name: str) -> int:
+    """List the UINs on an account's client-side buddy list (the legacy shadow).
+
+    open-oscar-server records a non-SSI client's list in `clientSideBuddyList`
+    when it pushes it at sign-on — the idempotency oracle for the ICQ 2000b
+    client-UI fallback. The SSI path (see `buddies`) supersedes it.
     """
     conn = sqlite3.connect(DB_PATH, timeout=10)
     rows = conn.execute(
@@ -411,8 +561,12 @@ def main(argv: list[str]) -> int:
         return cmd_nick_set(*args)
     if cmd == "nick-get" and len(args) == 1:
         return cmd_nick_get(*args)
+    if cmd == "ssi-seed" and len(args) >= 2:
+        return cmd_ssi_seed(args[0], args[1:])
     if cmd == "buddies" and len(args) == 1:
         return cmd_buddies(*args)
+    if cmd == "client-buddies" and len(args) == 1:
+        return cmd_client_buddies(*args)
     if cmd == "wan-probe":
         return cmd_wan_probe()
     if cmd == "login" and len(args) == 4:

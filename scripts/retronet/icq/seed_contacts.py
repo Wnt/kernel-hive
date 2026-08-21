@@ -23,12 +23,19 @@ except under `seed --apply` (the deferred live-application phase), which refuses
 to run until the input macro is calibrated on the real client.
 
   seed_contacts.py roster                 # the roster + each station's contact set
+  seed_contacts.py ssi [<station>] [--apply]  # populate server-side SSI/feedbag rosters (PRIMARY)
+  seed_contacts.py verify-ssi             # PROVE the server serves a written SSI roster
   seed_contacts.py nicknames [--apply]    # set every account's server ICQ nickname
   seed_contacts.py verify-nick <uin>      # PROVE a client receives the nickname
   seed_contacts.py status <station>       # which contacts a station already has
-  seed_contacts.py plan <station>         # the seeding plan (dry-run)
-  seed_contacts.py seed <station> [--apply]   # dry-run; --apply is LIVE (gated)
+  seed_contacts.py plan <station>         # the client-UI seeding plan (dry-run, fallback path)
+  seed_contacts.py seed <station> [--apply]   # client-UI drive; --apply is LIVE (gated), fallback path
   seed_contacts.py selftest               # offline checks (no gateway needed)
+
+The SSI/feedbag path (`ssi`) is the primary contact store: it writes each live
+account's server-side buddy list, which an SSI-aware client (climm; the upgraded
+ICQ) reads on next login with NO client-UI drive and NO golden recapture. The
+`seed`/`plan` client-UI path stays as a fallback for non-SSI clients (ICQ 2000b).
 """
 
 from __future__ import annotations
@@ -56,6 +63,12 @@ ICQ_EXT = 0x0015
 META_REQ_SHORTINFO = 0x04BA
 META_RESP_SHORTINFO = 0x0104
 META_SUCCESS = 0x0A
+
+SSI_EXT = 0x0013  # feedbag / server-stored buddy list
+SSI_REQ_LIST = 0x0004  # CLI_REQUEST — send me the whole SSI list
+SSI_LIST_REPLY = 0x0006  # SRV_REPLYROSTER — the list
+SSI_CLASS_BUDDY = 0x0000
+SSI_TLV_ALIAS = 0x0131
 
 
 # --- process helpers ---------------------------------------------------------
@@ -101,6 +114,22 @@ def contacts_for(roster: dict, station: str) -> list[dict]:
     return [roster["bot"], *[s for s in roster["stations"] if s["station"] != station]]
 
 
+def live_stations(roster: dict, have: set[str]) -> list[dict]:
+    """The live stations: onboarded in the roster AND with an account on the gateway.
+
+    `have` is existing_uins() (passed in so the whole SSI pass makes one CT call).
+    A station whose account exists but is not yet finalized (roster onboarded=false)
+    is deliberately excluded, so it stays out of everyone's cross-list until it is
+    truly live.
+    """
+    return [s for s in roster["stations"] if s.get("onboarded") and s["uin"] in have]
+
+
+def ssi_contacts_for(roster: dict, station: str, live: list[dict]) -> list[dict]:
+    """One station's server-side SSI cross-list: the bot + every OTHER live station."""
+    return [roster["bot"], *[s for s in live if s["station"] != station]]
+
+
 # --- gateway state -----------------------------------------------------------
 
 
@@ -110,8 +139,9 @@ def existing_uins() -> set[str]:
 
 
 def already_seeded(station_uin: str) -> set[str]:
-    """UINs already on the station's client-side list (server shadow) — the idempotency oracle."""
-    return {ln.strip() for ln in ct("buddies", station_uin).stdout.splitlines() if ln.strip()}
+    """UINs already on the station's client-side list (server shadow) — the idempotency
+    oracle for the ICQ 2000b client-UI fallback path (`clientSideBuddyList`, not SSI)."""
+    return {ln.split()[0] for ln in ct("client-buddies", station_uin).stdout.splitlines() if ln.split()}
 
 
 def _del_user(uin: str) -> None:
@@ -160,6 +190,74 @@ def verify_nick(roster: dict, target_uin: str, timeout: float = 15.0) -> str | N
         _sub, resp = client.bos.wait_snac_sub(ICQ_EXT, (0x0003,), timeout=timeout)
         client.close()
         return parse_meta_nickname(resp)
+    finally:
+        _del_user(uin)
+
+
+# --- SSI / feedbag: the server-side buddy list a client reads on login -------
+
+
+def _wire_ssi_alias(attrs: bytes) -> str:
+    """The 0x0131 local-alias (display name) out of a wire SSI item's TLV block."""
+    off = 0
+    while off + 4 <= len(attrs):
+        typ, vlen = struct.unpack_from(">HH", attrs, off)
+        off += 4
+        if typ == SSI_TLV_ALIAS:
+            return attrs[off : off + vlen].decode("utf-8", "replace")
+        off += vlen
+    return ""
+
+
+def parse_ssi_roster(body: bytes) -> list[tuple[str, str]]:
+    """Buddy (UIN, nick) pairs from a SNAC 13,06 SSI-list reply.
+
+    Wire: u8 version | u16 count | count*item | u32 timestamp, where an item is
+    u16 namelen, name | u16 groupID | u16 itemID | u16 classID | u16 attrslen, attrs.
+    The nick is the buddy item's 0x0131 alias TLV — what the client will display.
+    """
+    out: list[tuple[str, str]] = []
+    (count,) = struct.unpack_from(">H", body, 1)  # skip the 1-byte version
+    off = 3
+    for _ in range(count):
+        (nlen,) = struct.unpack_from(">H", body, off)
+        off += 2
+        name = body[off : off + nlen].decode("cp1252", "replace")
+        off += nlen
+        _gid, _iid, cls, alen = struct.unpack_from(">HHHH", body, off)
+        off += 8
+        attrs = body[off : off + alen]
+        off += alen
+        if cls == SSI_CLASS_BUDDY:
+            out.append((name, _wire_ssi_alias(attrs)))
+    return out
+
+
+def verify_ssi(roster: dict, timeout: float = 15.0) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Prove the server SERVES a directly-written feedbag, end to end.
+
+    Create a throwaway account, write it a known SSI roster via the SAME rn-tool
+    path the fleet uses, sign in as it and request the list (SNAC 13,04 -> 13,06),
+    and read the buddies back — the SSI analogue of verify-nick. Touches NO real
+    account (so no live climm/ICQ session is displaced); the throwaway is created,
+    populated, queried and deleted in the one call. Returns (expected, received).
+    """
+    host, port = roster["gateway"]["host"], int(roster["gateway"]["port"])
+    uin = str(random.randint(1_000_000_000, 1_999_999_999))
+    pw = "".join(random.choices("0123456789abcdef", k=8))
+    expected = [("10000", "HiveBot"), ("20000", "win2000"), ("64000", "tru64")]
+    ct("user-set", uin, pw)
+    ct("user-open", uin)
+    try:
+        ct("ssi-seed", uin, *[f"{u}={n}" for u, n in expected])
+        client = oscar.OscarClient(host, port, uin, pw)
+        client.connect()
+        if client.bos is None:
+            raise RuntimeError("BOS session did not come up")
+        client.bos.send_snac(SSI_EXT, SSI_REQ_LIST, b"")
+        _sub, resp = client.bos.wait_snac_sub(SSI_EXT, (SSI_LIST_REPLY,), timeout=timeout)
+        client.close()
+        return expected, parse_ssi_roster(resp)
     finally:
         _del_user(uin)
 
@@ -229,6 +327,50 @@ def cmd_roster(roster: dict, _args) -> int:
         cs = contacts_for(roster, s["station"])
         print(f"{s['station']:<9} carries {len(cs)}: " + ", ".join(f"{c['nick']}({c['uin']})" for c in cs))
     return 0
+
+
+def cmd_ssi(roster: dict, args) -> int:
+    """Populate each live account's server-side SSI/feedbag roster from the roster.
+
+    The primary contact path: one write per account cross-lists the whole live
+    fleet, and an SSI-aware client (climm; the upgraded ICQ) syncs it on next
+    login — no client-UI drive, no golden recapture. Dry-run by default; --apply
+    writes. Optionally scope to one station.
+    """
+    live = live_stations(roster, existing_uins())
+    targets = [s for s in live if not args.station or s["station"] == args.station]
+    if args.station and not targets:
+        print(f"{args.station}: not a live account (needs roster onboarded=true + an account on the gateway).")
+        return 1
+    if not targets:
+        print("no live accounts (onboarded=true + account on the gateway) — nothing to seed.")
+        return 0
+    rc = 0
+    for s in targets:
+        contacts = ssi_contacts_for(roster, s["station"], live)
+        label = ", ".join(f"{c['nick']}({c['uin']})" for c in contacts)
+        if not args.apply:
+            print(f"would seed SSI {s['station']:<9} UIN {s['uin']:<6} -> {len(contacts)}: {label}")
+            continue
+        r = ct("ssi-seed", s["uin"], *[f"{c['uin']}={c['nick']}" for c in contacts])
+        sys.stdout.write(r.stdout)
+        if r.returncode != 0:
+            sys.stderr.write(r.stderr)
+        rc |= r.returncode
+    if not args.apply:
+        print("# dry-run — re-run with --apply to write the server-side rosters")
+    return rc
+
+
+def cmd_verify_ssi(roster: dict, _args) -> int:
+    expected, received = verify_ssi(roster)
+    got = sorted(received)
+    ok = got == sorted(expected)
+    print("server-side SSI proof — throwaway account, real OSCAR sign-in, SNAC 13,04 -> 13,06:")
+    for uin, nick in got:
+        print(f"  a client receives buddy {uin} as {nick!r}")
+    print(("PASS" if ok else "FAIL") + f" — a directly-written feedbag roster is served on login ({len(got)} buddies)")
+    return 0 if ok else 1
 
 
 def cmd_nicknames(roster: dict, args) -> int:
@@ -360,6 +502,32 @@ def cmd_selftest(roster: dict, _args) -> int:
     assert parse_meta_nickname(b"\x00\x01") is None, "meta parser accepted junk"
     print(f"PASS meta parser: nickname round-trips ({got!r}); junk rejected")
 
+    def _ssi_item(name: str, gid: int, iid: int, cls: int, attrs: bytes) -> bytes:
+        nb = name.encode()
+        return struct.pack(">H", len(nb)) + nb + struct.pack(">HHHH", gid, iid, cls, len(attrs)) + attrs
+
+    def _ssi_alias_tlv(s: str) -> bytes:
+        return struct.pack(">HH", SSI_TLV_ALIAS, len(s)) + s.encode()
+
+    ssi_items = [
+        _ssi_item("", 0, 1, 0x0004, b"\x00\xca\x00\x01\x04"),  # PDINFO
+        _ssi_item("contacts-icq8-20000", 5, 0, 0x0001, b""),  # group
+        _ssi_item("10000", 5, 2, SSI_CLASS_BUDDY, _ssi_alias_tlv("HiveBot")),
+        _ssi_item("40000", 5, 3, SSI_CLASS_BUDDY, _ssi_alias_tlv("nt4")),
+    ]
+    ssi_body = b"\x00" + struct.pack(">H", len(ssi_items)) + b"".join(ssi_items) + struct.pack(">I", 0)
+    parsed = parse_ssi_roster(ssi_body)
+    assert parsed == [("10000", "HiveBot"), ("40000", "nt4")], parsed
+    print(f"PASS ssi parser: {len(parsed)} buddies from a 13,06 reply; group + PDINFO skipped, aliases read")
+
+    fake_live = [s for s in roster["stations"] if s["station"] in {"win98se", "win2000", "nt4"}]
+    for s in fake_live:
+        cs = ssi_contacts_for(roster, s["station"], fake_live)
+        assert s["station"] not in [c.get("station") for c in cs], f"{s['station']} lists itself"
+        assert roster["bot"] in cs, "bot missing from an SSI cross-list"
+        assert len(cs) == len(fake_live), f"{s['station']} SSI set {len(cs)} != {len(fake_live)}"
+    print(f"PASS ssi cross-list: over {len(fake_live)} live stations each carries the bot + the others, self excluded")
+
     macro = load_macro()
     steps = render_macro(macro, "win2000", {"uin": "10000", "nick": "HiveBot"})
     joined = " ".join(" ".join(a) for _v, a, _n in steps)
@@ -374,6 +542,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--roster", default=str(ROSTER))
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("roster")
+    sp_ssi = sub.add_parser("ssi")
+    sp_ssi.add_argument("station", nargs="?")
+    sp_ssi.add_argument("--apply", action="store_true")
+    sub.add_parser("verify-ssi")
     sub.add_parser("nicknames").add_argument("--apply", action="store_true")
     sub.add_parser("verify-nick").add_argument("uin")
     sub.add_parser("status").add_argument("station")
@@ -386,6 +558,8 @@ def main(argv: list[str] | None = None) -> int:
     roster = load_roster(args.roster)
     return {
         "roster": cmd_roster,
+        "ssi": cmd_ssi,
+        "verify-ssi": cmd_verify_ssi,
         "nicknames": cmd_nicknames,
         "verify-nick": cmd_verify,
         "status": cmd_status,
