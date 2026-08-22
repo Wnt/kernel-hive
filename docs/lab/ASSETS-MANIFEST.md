@@ -731,6 +731,122 @@ are now settled; the detail lives in the as-built doc's gotchas):
    sign-in with no keyring and no prompt; value from `registry/local.env`
    `RETRONET_ICQ_SOLARIS_PASS`, never committed.
 
+### `beos` GUI OSCAR client — sourcing recon, BLOCKED without further engineering
+
+Media/feasibility errand for the `beos` retronet ICQ leg (bridged NIC, DHCP
+`10.99.0.16`, gateway `10.99.0.2:5190`), read-only against the live station —
+no code shipped, no golden touched. Full requirement bar:
+[`retronet/ICQ-STATION.md`](retronet/ICQ-STATION.md); the two working
+precedents this recon measured itself against are
+[`retronet/ICQ-STATION-solaris.md`](retronet/ICQ-STATION-solaris.md) (Pidgin,
+already on the disk, zero patches) and
+[`retronet/ICQ-STATION-tru64.md`](retronet/ICQ-STATION-tru64.md) (Gaim 0.59.9,
+one source patch that *un-gates and relocates existing code* — SSI was gated
+off, not absent; auto-reconnect existed as a disabled plugin, just moved into
+the core build).
+
+**No native BeOS GUI client was found that clears the bar as shipped.** The
+BeOS software scene's own preservation trail is mostly dead ends from here:
+`bebits.com` itself and its two would-be live mirrors
+(`bebits.irixnet.org`, `be.wildman-productions.org`) no longer resolve, and
+this environment's `WebFetch` cannot reach `web.archive.org` at all, so the
+BeBits-era catalog could not be searched directly — only via web-search
+summaries, which is why every candidate below was chased to primary
+source/documentation before being trusted (per the brief's "verify at
+source-level, not by reputation" instruction). Two real, source-available
+candidates were found and evaluated at the code level:
+
+**Candidate 1 — IM Kit (`HaikuArchives/IMKit`, `protocols/OSCAR/ICQ.cpp`).**
+A genuine native Be-API multi-protocol IM framework (`im_server` +
+Deskbar-docked buddy list + per-conversation windows + a `preflet`), with a
+real OSCAR implementation shared by its `AIM.cpp` and `ICQ.cpp` front-ends —
+this is the "BeOS port of a multi-protocol GUI client" the brief's fallback
+ladder asks for. Read at the source level (`OSCARManager.cpp`, `ICQ.cpp`,
+`ICQ.h`, `ICQProtocolTemplate.rdef`, `im_server.cpp`, `ProtocolManager.cpp`,
+`ContactManager.cpp`, `SettingsController.cpp` — all fetched from
+`github.com/HaikuArchives/IMKit`, HEAD `9c80ad1`, archived below):
+
+| requirement | verdict | evidence |
+|---|---|---|
+| 1. arbitrary host:port + numeric UIN | **FAILS as shipped** | `ICQ.cpp:139-140`: `fManager->Login("login.icq.com", (uint)5190, fUIN.String(), fPassword.String())` — the server is a **string literal**, not read from any setting. `ICQProtocolTemplate.rdef` (the preflet's own field list) exposes only `uin`/`password`/`profile`/`icon` — no `server`/`port` field exists anywhere in the ICQ preflet, and `ICQProtocol::UpdateSettings()` never reads one. UIN login itself (a plain numeric string into the BUCP login TLV) is fine. **Needs a source patch** to add a server/port setting and thread it into `Login()` — the same *class* of fix as tru64's patch, but there `Login()` was already parameterised; here it genuinely is not. |
+| 2. native BeOS desktop app | **PASSES** | Real Be API windows (buddy list + conversation windows), Deskbar tray icon (`DeskbarIcon.cpp`), driven through `im_server`/`libim`, not a terminal. |
+| 3. server-side SSI/feedbag roster | **PARTIAL — needs a patch, same shape as tru64's** | `OSCARManager::HandleSSI()` fully implements the wire protocol (`ROSTER_CHECKOUT`, item/group parsing, `fHandler->SSIBuddies(contacts)`) — a real feedbag client, not client-local. But the `BUDDY_RECORD` case only reads the item's raw `name` field (the bare screen name/UIN) and then does `reader->OffsetBy(len)` — it **never parses the buddy record's own TLV block**, so the alias/nickname TLV (`0x0131`, the same one tru64's Gaim needed `aim_ssi_getalias()` for) is skipped entirely. Contacts would download correctly but render as bare UINs (`10000`, `20000`, …), not names — functionally the exact gap tru64 hit and patched. |
+| 4. auto sign-in + auto-reconnect | **FAILS, and not a small fix** | Grepped the *entire* client and server tree (`OSCARManager.cpp`, `im_server.cpp`, `ProtocolManager.cpp`, `ContactManager.cpp`, `SettingsController.cpp`) for `reconnect`/`auto-login`/`retry`/`autologin`: **nothing**. `AMAN_CLOSED_CONNECTION` in `OSCARManager.cpp` only does `fHandler->StatusChanged(fOurNick, OSCAR_OFFLINE)` — a dead socket just goes offline and stays there. This is qualitatively different from the tru64 precedent, where auto-reconnect *existed* as a disabled plugin (`plugins/autorecon.c`) and the patch only had to move it into the core build. IM Kit has **no reconnect code to relocate** — it would need to be designed and written from scratch (a connection-state watchdog + backoff + re-`Login()` call, plus something to restore SSI/roster/UI state after), and there is no equivalent of "auto-login on startup" either (nothing in `im_server`/`ProtocolManager` sends the account's `SET_STATUS: ONLINE` message automatically — a human has to open the preflet's status menu after every launch, as best determined from source review alone). |
+| 5. installable on R5 | **UNVERIFIED, and upstream disclaims it** | The current `ReadMe.txt` states outright: *"IM Kit is a kit for Haiku and Zeta (**BeOS R5 is no longer supported**)."* The source still carries live `#ifdef`/`#else … HAIKU_TARGET_PLATFORM_HAIKU` branches (e.g. `AIM.rdef`), so an R5 codepath is not *removed*, but it is explicitly unsupported and untested by the current maintainers — building it with R5's gcc 2.95 was not attempted (no BeOS R5 build environment exists in this sandbox and the live `beos` station was off-limits) and could not be verified against this brief's "buildable with what R5 ships" bar. |
+
+**Verdict: three separate gaps (server override, alias TLV, and — the big
+one — auto-reconnect/auto-login built from nothing) plus an unverified R5
+build, on a codebase upstream has disclaimed for this exact platform. This is
+materially more engineering than either Unix precedent needed and should be
+scoped as its own errand, not folded into the swap agent's normal budget.**
+
+**Candidate 2 — BeAIM (`HaikuArchives/BeAIM`, `Protocol/AIMLogin.cpp` et al.,
+"BeAIM 1.5.6").** Checked as the brief's next fallback rung ("a BeOS port of
+a multi-protocol GUI client") once IM Kit's gaps were found. A dedicated,
+mature native AIM client (`Interface`/`Managers`/`Network`/`Protocol`
+directories, its own windows) with real SSI code
+(`AIMNetManager::ReloadSSIList()`, `GetGroupSSIInfo()`) and, unlike IM Kit, a
+**working host/port override**: `AIMLogin.cpp` reads `prefs->ReadString(
+"AIMHost", …, "login.oscar.aol.com", …)` / `prefs->ReadInt32("AIMPort", 5190,
+…)` — a real preference, not a literal. But it is an **AIM** client: login
+is a free-text "screen name" (TLV `0x01`) rather than an ICQ-flagged numeric
+UIN path, so whether it would sign a purely-numeric UIN into the gateway the
+way BUCP expects is unverified (the source imposes no visible `isdigit`
+gate, but that is not the same as a tested path), and — same as IM Kit — a
+repo-wide grep for `reconnect`/`autologin`/`AutoLogin` (via GitHub code
+search) returned nothing. **Not pursued further**: it trades one gap
+(server override) for keeping two others (auto-reconnect, and now an
+unverified ICQ-UIN-over-AIM login path), so it is not a clear improvement
+over Candidate 1, and BeAIM's own README already flags itself as "not
+perfect" beta-grade software with `AIM_HOST`/local-buddy-list history (a
+recent version reintroduced a *local* buddy-list cache "because SSI doesn't
+allow for rearranging very nicely," which is a bad omen for treating SSI as
+the sole source of truth the way this fleet's contract requires).
+
+**Both source trees fetched and archived** (git clone, working tree only,
+`.git` stripped) so a future errand does not have to re-discover them —
+`media_cache_put`, see `scripts/build-guests/lib/media-cache.sh`:
+
+| candidate | commit | sha256 | size | url |
+|---|---|---|---|---|
+| IM Kit source | `9c80ad110de77481717d855f503d3de6ce65e4d8` (2009-11-27) | `4eb6f38c3417dc6cb99610bd02fd86b32013f938b574d31462e1bb2221bd34e0` | 3 300 733 | [github.com/HaikuArchives/IMKit](https://github.com/HaikuArchives/IMKit) |
+| BeAIM source | `b0d489d9bc762a229cffa1f681ff5822bd6218bf` (BeAIM 1.5.6) | `fb3f2a63dba29943207d124d44e27448814c1ea5abe2edbb876fc16fa6b0cc87` | 415 496 | [github.com/HaikuArchives/BeAIM](https://github.com/HaikuArchives/BeAIM) |
+
+Neither is built, patched, or proven — they are staged as *starting points*
+for whichever candidate a future errand pursues, not as ready media. IM Kit
+is BSD-licensed (`License.txt`, "Copyright (c) 2004-2009 IM Kit Team");
+BeAIM carries no separate license file, only author disclaimers in `Readme`
+(freeware/abandonware posture, same class as every other station's sourced
+client in this manifest).
+
+**R5 networking + dev-environment facts** (documentation-level, not probed
+against the live station — the next agent asked for these):
+
+- **Development toolchain**: R5's stock install ships a full **gcc 2.95.3**
+  GNU toolchain (BeOS-patched, distinct from Metrowerks' commercial BeIDE,
+  which is a separate optional product) with GNU `make`, `binutils`, and
+  headers under `/boot/develop/headers` — enough to build a small
+  sockets/BApplication program from source with nothing extra fetched.
+  Corroborates the brief's own framing (`AGENTS.md`/task description) that a
+  from-source build is realistic on R5.
+- **FTP server**: BeOS ships an FTP daemon enabled through the Networking
+  preferences applet (not installed/running by default, but present in the
+  base install with no extra package). Useful for delivering a built binary
+  or patch to the guest, the same role CT 951's `python -m http.server` /
+  IE's `iexplore http://…` plays on the Windows and es40 stations.
+- **Telnet**: a `telnetd` is present in R5's base networking stack, but R5's
+  `net_server` does **not** implement a classic Unix `inetd` — telnetd/ftpd
+  are standalone services BeOS's own Networking preferences start, not
+  services multiplexed through one super-server the way Tru64's `inetd` is.
+  (BONE, the later BeOS network stack, adds a real `inetd`, but BONE never
+  shipped for R5 — this station is stock R5.) Exec-channel design for this
+  station should assume "each service is its own standalone daemon," not an
+  inetd-style dispatch table.
+
+**Teardown**: no processes started, no guests touched, no golden/checkpoint
+read or written. `wt.sh rm rn-beos-recon` after this branch is pushed
+releases the sandbox claim; nothing else was held.
+
 ## 3. freely-fetchable-pinned — open upstreams
 
 | file | pin | builder | staging path (labhost state) |
