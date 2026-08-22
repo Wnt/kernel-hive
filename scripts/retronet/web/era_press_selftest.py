@@ -24,6 +24,7 @@ import era_crawl as ec
 import era_fetch as ef
 import era_index as ei
 import era_press_core as ep
+import era_requests as er
 
 # A synthetic raw archived page (NOT scraped): the shapes era-press must handle.
 BASE = "http://www.test.example/dir/page.html"
@@ -346,7 +347,38 @@ def main():
         check("vips: 2003 capture allowed under it", ef._past_ceiling("20031225053516", st["ceiling"]), False)
         check("vips: 2003 capture refused by default", ef._past_ceiling("20031225053516"), True)
 
-    print("era-press selftest: all checks OK (raw mirror, host index, ceiling, frontier, seeds, sweep, vips)")
+    # 15. STATION REQUESTS: the proxy journals every miss; a URL asked for twice, at least 15 minutes
+    #     apart, is crawled — most-asked first. One request is noise (a typo, a probe); two spread out
+    #     is someone coming back to the same missing thing.
+    with tempfile.TemporaryDirectory() as tmp:
+        now = int(time.time())
+        with open(os.path.join(tmp, er.MISS_JOURNAL), "w") as fh:
+            for url, when in [
+                ("http://a.example/wanted", now - 3600),  # twice, an hour apart -> due
+                ("http://a.example/wanted", now),
+                ("http://b.example/burst", now),  # twice, one minute apart -> noise
+                ("http://b.example/burst", now - 60),
+                ("http://c.example/typo", now),  # once -> noise
+                ("http://a.example/wanted", now - 1800),  # a third ask -> higher priority
+                ("http://d.example/also", now - 7200),  # twice, spread -> due but less asked
+                ("http://d.example/also", now),
+            ]:
+                fh.write(json.dumps({"url": url, "t": when}) + "\n")
+        state_p = os.path.join(tmp, "requests.json")
+        state, seen = er.ingest(tmp, state_p)
+        check("requests: journal is consumed", seen, 8)
+        check("requests: journal is rotated away", os.path.exists(os.path.join(tmp, er.MISS_JOURNAL)), False)
+        check(
+            "requests: twice-and-spread only, most-asked first",
+            er.due(state),
+            ["http://a.example/wanted", "http://d.example/also"],
+        )
+        er.mark_served(state, "http://a.example/wanted")
+        check("requests: a serviced URL is not retried", "http://a.example/wanted" in er.due(state), False)
+        state["http://a.example/wanted"]["count"] += 1  # asked again after being served
+        check("requests: NEW demand re-queues it", "http://a.example/wanted" in er.due(state), True)
+
+    print("era-press selftest: all checks OK (raw mirror, host index, ceiling, frontier, seeds, sweep, vips, requests)")
 
 
 if __name__ == "__main__":

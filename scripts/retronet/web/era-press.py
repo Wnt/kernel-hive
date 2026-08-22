@@ -181,6 +181,15 @@ def main():
     # The resource sweep re-checks pages ALREADY on disk for missing images/scripts. On by default:
     # a page whose resources failed once is never revisited otherwise. --no-sweep skips it.
     cr.add_argument("--no-sweep", dest="sweep", action="store_false", default=True)
+    # Station requests: URLs the proxy served a miss for, twice, 15+ minutes apart. Folded in every
+    # --requests-interval seconds and crawled most-asked-first. --no-requests turns the loop off.
+    cr.add_argument("--no-requests", dest="requests", action="store_false", default=True)
+    cr.add_argument("--requests-interval", type=int, default=era_crawl.REQUEST_INTERVAL, dest="requests_interval")
+    cr.add_argument(
+        "--requests-state",
+        default=os.path.join(era_crawl.CRAWL_ROOT, "requests.json"),
+        dest="requests_state",
+    )
     cr.add_argument("--state", default=os.path.join(era_crawl.CRAWL_ROOT, "state.json"))
     cr.add_argument("--log", default=os.path.join(era_crawl.CRAWL_ROOT, "progress.log"))
     cr.add_argument("--ct", default=core.CT_DEFAULT)

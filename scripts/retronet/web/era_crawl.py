@@ -34,11 +34,16 @@ from pathlib import Path
 import era_fetch as fetch
 import era_index
 import era_press_core as core
+import era_requests
 
 SHARED_CORPUS = "/data/vms/retronet-corpus"  # big corpus volume (CT950/labhost path); CT 951 bind-mounts at CORPUS
 CRAWL_ROOT = "/data/vms/retronet-crawl"  # crawl state + log live here (OUTSIDE the corpus; survives a worktree GC)
 VIP_DEFAULT_CEILING = "20091231"  # a VIP entry with no explicit ceiling still needs one
 VIP_FIRST_DEPTH = 3  # VIPs are crawled this deep FIRST, then out to their full depth in the normal passes
+REQUEST_INTERVAL = 300  # how often the daemon folds in what stations asked for and could not get
+# A requested URL on a host we do not otherwise crawl has no era date of its own; this is the corpus's
+# centre of gravity, and the id_ redirect resolves the nearest capture to it anyway.
+REQUEST_DEFAULT_DATE = "19990101"
 BUDGET_GB = 25.0  # default global size budget: the crawl stops cleanly near this (ZFS quota 50 GB backstop)
 SITE_MB = 200  # default per-site byte cap so one big site (GeoCities) cannot eat the whole budget
 CONCURRENCY = 12  # thread-pool UPPER bound; era_press_core's AIMD limiter decides how many really fly
@@ -507,6 +512,27 @@ def cmd_crawl(a):
             f"in-flight limit {fetch._GATE.limit()}",  # AIMD: where archive.org's knee is right now
         )
 
+    # --- station requests: what the retronet was asked for and could not answer ---------------------
+    #
+    # The disk scan behind era-sites.json can only find URLs that sit in a guest image as readable
+    # text, and it can never know which of them anyone actually walks to. A miss knows. So the proxy
+    # journals every miss and this thread folds the journal in every REQUEST_INTERVAL, mirroring
+    # whatever has been asked for twice at least 15 minutes apart, most-asked first. It runs for the
+    # whole life of the crawl, alongside the passes, sharing the same paced fetch layer -- so a page a
+    # station wanted five minutes ago does not wait for a multi-hour pass to end.
+    states_by_host = {core.bare(st["host"]): st for st in states}
+    stop_requests = threading.Event()
+    if a.requests:
+        servicer = era_requests.Servicer(states_by_host, a.staging, res_seen, lock, budget, _mirror_resource_mt)
+        threading.Thread(
+            target=era_requests.watch,
+            args=(a.staging, a.requests_state, a.requests_interval, stop_requests, servicer),
+            kwargs={"log": lambda m: _log(a.log, m), "halted": lambda: budget["stop"]},
+            name="requests",
+            daemon=True,
+        ).start()
+        _log(a.log, f"--- REQUESTS: watching for station requests every {a.requests_interval}s")
+
     level = 0  # bound BEFORE the sweep/priority passes: on_done closes over it, firing every 25 items
 
     def run_pass(label, items, active):
@@ -565,6 +591,7 @@ def cmd_crawl(a):
         if budget["stop"]:
             _log(a.log, f"BUDGET reached: {used / 1e9:.2f} GB -- stopping")
             break
+    stop_requests.set()
     _publish_sites(states, a.staging)
     used = _corpus_bytes(a.staging)
     _flush_state(a.state, states, level, used)

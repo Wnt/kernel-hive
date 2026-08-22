@@ -6,7 +6,7 @@
 #   ssh lab '/data/kernel-hive/scripts/retronet/web/install-proxy.sh --apply'
 #
 # Steps, each nameable on the command line, in order:
-#   install  system user, dirs, /opt/retronet-proxy/proxy.py, the rendered
+#   install  system user, dirs, /opt/retronet-proxy/{proxy.py,rn_proxy_pages.py}, the rendered
 #            /etc/retronet/proxy.env, the unit — enabled and started.
 #   seed     push the tiny SYNTHETIC sample corpus (example.museum) into the CT
 #            so the proxy has something to serve on an empty corpus. Opt-in, so
@@ -77,7 +77,7 @@ step_install() {
   say "install proxy into CT $RN_VMID  (proxy $RN_PROXY_LISTEN, origin ${RN_PROXY_ORIGIN_LISTEN:-off}, corpus $RN_PROXY_CORPUS)"
   ct_running || die "CT $RN_VMID is not running — provision the gateway first (GATEWAY.md)"
   if [ "$APPLY" = 0 ]; then
-    info "PLAN: create user rnproxy; $OPT_DIR/proxy.py; /etc/retronet/proxy.env;"
+    info "PLAN: create user rnproxy; $OPT_DIR/{proxy.py,rn_proxy_pages.py}; /etc/retronet/proxy.env;"
     info "PLAN: $RN_PROXY_CORPUS; install+enable+start $UNIT"
     return
   fi
@@ -86,6 +86,7 @@ step_install() {
   rendered="$(mktemp)"
   render_env >"$rendered"
   pct push "$RN_VMID" "$HERE/proxy.py" /tmp/rnp-proxy.py --perms 644
+  pct push "$RN_VMID" "$HERE/rn_proxy_pages.py" /tmp/rnp-proxy-pages.py --perms 644
   pct push "$RN_VMID" "$rendered" /tmp/rnp-proxy.env --perms 644
   pct push "$RN_VMID" "$HERE/$UNIT" /tmp/rnp-proxy.service --perms 644
   rm -f "$rendered"
@@ -104,9 +105,10 @@ install -d -o root -g root -m 0755 /data/retronet
 # fatally. Create it only on a fresh install (no mount); leave an existing dir as-is.
 [ -d /data/retronet/corpus ] || mkdir -p /data/retronet/corpus
 install -o root -g root -m 0755 /tmp/rnp-proxy.py /opt/retronet-proxy/proxy.py
+install -o root -g root -m 0644 /tmp/rnp-proxy-pages.py /opt/retronet-proxy/rn_proxy_pages.py
 install -o root -g root -m 0644 /tmp/rnp-proxy.env /etc/retronet/proxy.env
 install -o root -g root -m 0644 /tmp/rnp-proxy.service /etc/systemd/system/retronet-proxy.service
-rm -f /tmp/rnp-proxy.py /tmp/rnp-proxy.env /tmp/rnp-proxy.service /tmp/.rnp-step.sh
+rm -f /tmp/rnp-proxy.py /tmp/rnp-proxy-pages.py /tmp/rnp-proxy.env /tmp/rnp-proxy.service /tmp/.rnp-step.sh
 systemctl daemon-reload
 systemctl enable --now retronet-proxy.service
 systemctl restart retronet-proxy.service

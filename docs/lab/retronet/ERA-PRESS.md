@@ -354,6 +354,39 @@ writes on CT 950 appears instantly on CT 951's read side — no `pct push`, no p
 restart. (`press`/`seed` still `pct push`; the crawl writes direct because its
 staging *is* the shared volume, so it runs with push disabled.)
 
+### Station requests — the retronet fills its own gaps
+
+The disk scan behind `era-sites.json` can only find URLs that sit in a guest image as readable text,
+and it can never know which of them anyone actually walks to. **A miss knows**: a station asked, and
+the museum had nothing. So the loop closes:
+
+1. the proxy journals **every miss** to `<corpus>/_requests.jsonl` (`proxy.record_miss` — one
+   `open`/`write`/`close` per miss, errors swallowed, because a hint channel must never break serving);
+2. the crawl daemon folds that journal in **every 5 minutes** (`--requests-interval`), on a thread that
+   runs alongside the passes and shares the same paced fetch layer — so a page a station wanted five
+   minutes ago does not wait for a multi-hour pass to end;
+3. a URL asked for **twice, at least 15 minutes apart**, is crawled — page, or asset, plus every
+   resource it references. **More requests, higher priority**: the queue is ordered by count.
+
+The two-and-spread rule is the noise filter. One request is a typo in the address bar, a probe, a
+broken image on a page nobody will revisit; two requests separated by a real gap is a person or a
+station coming back to the same missing thing. After a URL is serviced its count is **banked**, so it
+only returns to the queue on *new* demand — an unarchivable URL is not retried forever.
+
+A request for a host we already crawl is fetched with **that site's** era date and ceiling, so it
+lands exactly as the site's own pages do. A request for an unknown host gets the **default** ceiling:
+a station asking for a post-2000 page does not by itself justify letting the corpus past the era rule.
+If a host should be allowed past it, that is a deliberate decision and its name goes in the VIP list.
+
+The journal is **rotated before reading**, so the proxy keeps appending to a fresh file while a batch
+is processed; state lives in `<crawl-root>/requests.json`. Watch it in the progress log:
+
+```
+--- REQUESTS (station request): 3 URL(s) due, 47 new miss(es) journalled
+    request mirrored: http://www.sgi.com/products/index.html
+    request not-archived: http://intranet.local/foo
+```
+
 ### The VIP list — `era-vips.json`
 
 A handful of sites belong in this museum whatever the era rule says, because they matter to *this*

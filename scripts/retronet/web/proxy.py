@@ -54,8 +54,11 @@ import os
 import re
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, quote, unquote, urlsplit
+from urllib.parse import quote, unquote, urlsplit
+
+from rn_proxy_pages import era_page, is_search_engine, search_nav, search_query_of
 
 # --- defaults (every one overridable from /etc/retronet/proxy.env) -----------
 DEF_LISTEN = "10.99.0.2:3128"
@@ -63,6 +66,22 @@ DEF_ORIGIN_LISTEN = "10.99.0.2:80"
 DEF_CORPUS = "/data/retronet/corpus"
 DEF_SEARCH_HOSTS = "search.retronet"
 DEF_SEARCH_BACKEND = "127.0.0.1:8090"
+# Misses are journalled here, at the corpus root beside sites.json — the one path both containers
+# share. era-press rotates and reads it; see era_requests.py.
+MISS_JOURNAL = "_requests.jsonl"
+
+
+def record_miss(corpus_root: str, host: str, path: str) -> None:
+    """Append one miss to the journal. One open/write/close so the crawler can rotate the file out from
+    under us safely (a short O_APPEND write is atomic); errors are swallowed — a hint channel must
+    never break serving."""
+    try:
+        rec = json.dumps({"url": f"http://{host}{path}", "t": int(time.time())}, ensure_ascii=True)
+        with open(os.path.join(corpus_root, MISS_JOURNAL), "a", encoding="ascii") as fh:
+            fh.write(rec + "\n")
+    except OSError:
+        pass
+
 
 # The proxy's OWN notices (the miss/error pages below) are authored in Latin-1
 # with numeric entities. Corpus content is served untouched — see content_type.
@@ -128,84 +147,6 @@ def looks_like_html(data: bytes) -> bool:
     # only the header label is corrected.
     head = data[:1024].lstrip(b"\xef\xbb\xbf \t\r\n").lower()
     return head.startswith(b"<") and any(m in head for m in HTML_SNIFF_MARKERS)
-
-
-def era_page(title: str, heading: str, paras: list[str], extra: str = "") -> bytes:
-    """A tiny HTML 3.2 page, Latin-1, in the spirit of a 1990s server notice.
-
-    `extra` is optional pre-built HTML (e.g. the miss page's search box), placed
-    after the text and before the closing rule. Laid out in one centered,
-    fixed-width column so the notice reads as a page, not a wall of full-width
-    text — all HTML 3.2 a period browser (Netscape 4, IE5) renders."""
-    body = "\n".join(f"<P>{p}</P>" for p in paras)
-    html = (
-        '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">\n'
-        f"<HTML><HEAD><TITLE>{title}</TITLE></HEAD>\n"
-        '<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000EE" VLINK="#551A8B">\n'
-        '<TABLE ALIGN="CENTER" WIDTH="560" BORDER="0" CELLPADDING="0" CELLSPACING="0">\n'
-        "<TR><TD>\n"
-        f"<H1>{heading}</H1>\n{body}\n{extra}<HR>\n"
-        "<ADDRESS>retronet proxy &#151; an offline museum of the 1990s web. "
-        "No live internet.</ADDRESS>\n</TD></TR></TABLE>\n</BODY></HTML>\n"
-    )
-    return html.encode(TEXT_CHARSET, "replace")
-
-
-def search_nav(search_host: str) -> str:
-    """The miss page's search box + directory/search links — turns a dead end into
-    the museum's own search. Points at the reserved search host, which resolves
-    back to this gateway (wildcard DNS) and is routed to the local search backend;
-    no live internet is involved."""
-    base = f"http://{search_host}"
-    return (
-        "<HR>\n"
-        f'<FORM ACTION="{base}/search" METHOD="GET">\n'
-        "<B>Search the museum</B><BR>\n"
-        '<INPUT TYPE="TEXT" NAME="q" SIZE="34"> '
-        '<INPUT TYPE="SUBMIT" VALUE="Search">\n'
-        "</FORM>\n"
-        "<P>Or browse by hand: "
-        f'<A HREF="{base}/search">AltaVista-style search</A> &#149; '
-        f'<A HREF="{base}/dir">Yahoo!-style directory</A></P>\n'
-    )
-
-
-# Modern search engines a browser's built-in search box points at — none of which
-# belong to an era corpus. When such a toolbar search lands here (a query string
-# carrying a `q`/`p`), we 302 it to the museum's own search with the terms kept,
-# instead of a dead 404. Era engines that ARE archived (altavista, yahoo, lycos,
-# excite) are deliberately absent here — they serve their real corpus pages.
-REDIRECT_ENGINES = frozenset(
-    {
-        "google.com",
-        "bing.com",
-        "duckduckgo.com",
-        "ask.com",
-        "dogpile.com",
-        "search.msn.com",
-        "search.aol.com",
-        "search.brave.com",
-    }
-)
-
-
-def is_search_engine(host: str) -> bool:
-    """True for a modern search-engine host whose toolbar query we redirect."""
-    h = host[4:] if host.startswith("www.") else host
-    return h == "google" or h.startswith("google.") or h in REDIRECT_ENGINES
-
-
-def search_query_of(query: str) -> str | None:
-    """The user's terms from a toolbar query string — `q`, or the older
-    `p`/`query`/`search` — or None if there are none to carry over."""
-    if not query:
-        return None
-    qs = parse_qs(query, keep_blank_values=False)
-    for key in ("q", "query", "p", "search"):
-        vals = qs.get(key)
-        if vals and vals[0].strip():
-            return vals[0]
-    return None
 
 
 class ProxyServer(ThreadingHTTPServer):
@@ -414,7 +355,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
     def send_miss(self, host: str, path: str):
         """A cache miss is a museum notice, never a fetch. If we know the host
         (it has a corpus dir or a manifest entry) the copy says 'this page';
-        otherwise it says 'this host is not on the retronet at all'."""
+        otherwise it says 'this host is not on the retronet at all'. The miss is
+        also RECORDED: it is the most honest signal this system produces about
+        what it lacks — a station asked, and we had nothing. See `record_miss`."""
+        record_miss(self.server.corpus_root, host, path)
         known = os.path.isdir(os.path.join(self.server.corpus_root, host)) or (host in self.server.known_hosts())
         where = f"http://{host}{path}"
         if known:
