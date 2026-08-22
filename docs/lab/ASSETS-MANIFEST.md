@@ -512,6 +512,118 @@ carries `.src.rpm`/`.i486.rpm`/`_i386.deb` (Linux x86) and an
 by anyone. Source-only is not a fallback here, it is the only option, and it
 is a good one given the above.
 
+### GUI OSCAR client for tru64 — recon 2026-08-22, **BLOCKED, ship climm**
+
+The operator asked whether the tru64 station's terminal client (climm 0.6.4,
+above) could be swapped for a desktop-integrated GUI client (Gaim, or an
+equivalent) that still meets all five ICQ-station hard requirements: OSCAR
+against `10.99.0.2:5190` with a host/port override, **server-side SSI/feedbag**
+contacts (not local adds), auto sign-in + auto reconnect, a real X11/CDE
+desktop app (not a `dtterm` TUI), and buildable on Tru64 5.1B/Alpha with
+Compaq C V6.5-011 (no gcc) or installable from a period Freeware/OSIS CD.
+**Verdict: BLOCKED — the toolkit and the protocol requirement point at two
+different, mutually exclusive Gaim generations. climm stays the client.**
+
+**The hard conflict, found in Gaim's own source history, not by reputation.**
+Gaim's `ChangeLog` (`keep.imfreedom.org/gaim/gaim`) dates SSI/feedbag support
+for OSCAR to **exactly one release, 0.60 (2003-04-04)**: *"Server-stored buddy
+lists for ICQ with full support for authorization (Thanks, Mark Doliner)."*
+The same release's own changelog entry reads *"Removed all deprecated GTK
+calls. Now 100% GTK 2"* — 0.60 is the release where Gaim's GTK+1.2 UI was
+retired and GTK+2 became mandatory (foreshadowed at 0.49, 2001-11-29:
+"Can compile against GTK+ 2.0" as an *optional* build). So there is no Gaim
+release that is both SSI-capable and GTK+1.2: **every pre-0.60 Gaim (GTK+1.2,
+the only GTK generation this recon found any path to) predates SSI entirely**,
+and every SSI-capable Gaim (0.60+) requires a GTK+2 stack (glib2, atk, pango,
+cairo, gtk2, plus libxml2/gettext underneath) that does not exist prebuilt for
+Tru64/Alpha anywhere found.
+
+**Requirement 5 (buildable) fails independently, before requirement 2 (SSI)
+is even reached.** Read-only recon on the live guest (`labctl exec tru64`,
+2026-08-22, no changes made):
+- `/usr/local/lib`, `/usr/shlib`, `/usr/lib` carry **no GTK, no glib, no Qt,
+  no KDE** (`ls … | grep -i gtk/glib/gdk` and `… qt/kde` both empty).
+- `/usr/local/bin` holds only what the climm/Lynx build sessions left:
+  `climm`, `httpget`, `httpfetch`, `lynx`, `micq`, `webbrowser`, `xptr` — no
+  GUI IM client of any kind, ever installed here.
+- CDE/Motif is present as **static archives only** (`libXm.a`, `libMrm.a`,
+  `libDtWidget.a`, `libDtSvc.a`, `libDtHelp.a`, `libDtTerm.a`, `libDXm.a` in
+  `/usr/lib`) — real, but this is Motif 1.2/2.1-era C, not a GTK/Qt/GNOME
+  runtime, and no OSCAR client of any generation targets Motif natively (see
+  below).
+- `cc -V` confirms **Compaq C V6.5-011** is still the only compiler; no gcc
+  anywhere on `$PATH`. Building a GTK+2 stack (a C99-leaning, heavily
+  autoconf/libtool-chained set of ~6 packages, each substantially larger than
+  climm) with a vendor C89 compiler that has never been asked to build
+  anything past Lynx/climm's complexity is a different order of task, not an
+  incremental one — realistically weeks, not the ~80 guest-CPU-minutes climm
+  and Lynx each took, with no precedent on this box that it even completes.
+
+**The Freeware/OSIS CD path — obtainable, but does not carry what's needed.**
+A period HP/Compaq Tru64 disc set exists and is on archive.org, item
+[`compaqtru64unix51`](https://archive.org/details/compaqtru64unix51):
+Disc 5 `Open Source Software Collection for Tru64 UNIX v5.1` (`AG-RHAYC-BS.iso`,
+~600 MB) and Disc 6 `Open Source Internet Solutions for Tru64 UNIX v5.4`
+(`AG-QF6MT-BS.iso`, ~435 MB) — both fetchable, sha1-verified on the item page.
+Package contents were cross-checked against Cornell's own install notes for
+this exact collection ([`wiki.classe.cornell.edu/Computing/Tru64Freeware`](https://wiki.classe.cornell.edu/Computing/Tru64Freeware),
+targets Tru64 V5.1/V5.1A, same lineage as Disc 5): it carries **GTK+ 1.2.10 +
+glib 1.2.10 + imlib 1.9.10**, Xaw3d, assorted Motif tools, gcc/autoconf/automake,
+and ~130 packages total — **no GNOME, no Gaim, no Qt, no KDE**. This is
+exactly the GTK generation the SSI conflict above rules out: installing Disc
+5 would give tru64 a Gaim UI, but only a pre-0.60 Gaim with no SSI, failing
+requirement 2 outright and landing back on client-local contact adds — a
+regression from what climm already does today. Disc 6 was not fully
+catalogued (no public package listing found) and targets v5.4, two majors
+ahead of this station's 5.1B; even if compatible, "Internet Solutions" discs
+of this vintage are typically server/security tooling (Apache, OpenSSL,
+Samba) rather than GUI toolkits, and neither GTK+2 nor Qt has been reported
+on any Tru64 freeware disc of this era in the sources checked. **Net: the CD
+path is real and cheap to fetch, but it re-creates the exact conflict found
+in Gaim's own history — it does not resolve it.**
+
+**Alternatives checked against the same five requirements, all rejected:**
+- **GnomeICU** — GTK + full GNOME libs (heavier than Gaim's own GTK+2 stack;
+  same from-source-on-Alpha problem, worse).
+- **Ayttm / Everybuddy** — GTK-based, OSCAR via a libfaim-derived plugin; no
+  evidence found of a build ever targeting Tru64/Alpha, and inherits the same
+  GTK question with no offsetting SSI-history research done (out of
+  proportion to pursue once the GTK+1.2-vs-GTK+2 conflict was confirmed
+  structural, not client-specific).
+- **licq (Qt)** — re-confirms the earlier onboarding-plan rejection: no Qt on
+  the guest, none on the Freeware CD found, so "graphical licq under CDE"
+  still means building Qt3/Qt4 from source first. No change from the original
+  verdict.
+- **A Motif/CDE-native OSCAR client** — none found to exist, published or
+  otherwise, in any search performed. Motif/CDE being present on the guest is
+  necessary but not sufficient; nobody wrote one.
+- **"climm in a nicer terminal"** — explicitly not offered: it does not touch
+  requirement 4 (a real desktop app, not a curses/TUI program in a `dtterm`)
+  no matter how the terminal is dressed, so it is not a pass on the operator's
+  ask, just the status quo redecorated.
+
+**Recommendation: keep climm 0.6.4 in the `dtterm`, as already shipped.** It
+is the only candidate on this box that meets requirements 1/2/3/5 today
+(proven live, `ICQ-STATION-tru64.md`); no path was found to add requirement 4
+(a real GUI) without either giving up requirement 2 (SSI, downgrading to a
+pre-0.60/GTK+1.2 Gaim) or taking on a from-source GTK+2 stack on Alpha/Compaq C
+— a build of a different order of magnitude than anything proven on this
+station, undertaken on the strength of a maybe (nothing confirms Compaq C can
+even compile glib2/pango/cairo's more C99-leaning code, autotools generation
+aside). If the operator wants to spend real time on this anyway, the least-bad
+next step is a **feasibility spike building glib2 alone** (the bottom of the
+GTK+2 stack, smaller and more C89-friendly than the layers above it) on a
+throwaway sandbox clone, before committing to gtk2/pango/cairo/atk on top —
+but that is new work, not this errand's finding, and this recon does not
+recommend spending it: the payoff (a themed window instead of a `dtterm`) is
+small next to the risk of an open-ended, possibly-unfinishable Alpha
+cross-toolchain project.
+
+Nothing was staged in the media archive or `/data/assets-staging/` for this
+recon — no artifact met the bar to be worth fetching. The CD path is recorded
+here (URL + item name) rather than pre-fetched, since it does not change the
+recommendation.
+
 ## 3. freely-fetchable-pinned — open upstreams
 
 | file | pin | builder | staging path (labhost state) |
