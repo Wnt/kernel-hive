@@ -176,6 +176,20 @@ every wake reconnect signs off (destroying the buddy list) and signs back on
 (recreating it here), so the composed layout collapsed into the top-left corner
 on **every** wake. The patch places the window at the saved position directly.
 
+**6. No login prompt on an unattended exhibit.** A reconnect that does not
+succeed on its first attempt is normal — the veth and the gateway may not be
+ready the instant a restored guest resumes. Stock Gaim treats that like a user
+sitting at the machine: it raises a **"Connection Error"** dialog and then the
+**Gaim Login window, with the account's password already filled in**, and both
+stay on the desktop forever because nothing is there to dismiss them. Observed
+exactly once on a real wake, and it survives every subsequent successful
+reconnect, so the exhibit ends up showing a password box next to a working
+buddy list. The patch records that the account has been online at least once
+(`rn_have_been_online`) and, while a drop is reconnectable (`!gc->wants_to_die`),
+suppresses both the dialog and the login window — the auto-reconnect is what
+brings the persona back, and it needs no UI. An explicit sign-off still shows
+them.
+
 ## The build — on the guest, against a Freeware-CD GTK+ 1.2.8
 
 ### The toolkit came off the CD as RPM payloads, never as a package install
@@ -436,8 +450,8 @@ baked from + `rom/`), not a QEMU snapshot. See
   the right with HiveBot online by name, and a chat window carrying the bot's
   greeting. Baked via the serial menu's save-and-exit (option 5), so state and
   disk are an atomic pair.
-  - `tru64.axp` sha256 `1030cc032afda207b6030491c8593cd9064f93cafd520981b38caab39de5637a` (331 762 363 bytes)
-  - `tru64.img` sha256 `23d5d5315de6e60f835ec27f39ea55c18aac770bcb29a75f71d9faf535ea4e60`
+  - `tru64.axp` sha256 `f2a14cdc24cdc4d8f731fc2ab974ffa4f4694d62c61951704ba8bd149ad37659` (311 419 163 bytes)
+  - `tru64.img` sha256 `9cf71c95d001bdd28c9b823aa12e2158f06c80fb33fb6cd82bc716cb33881512`
 - **Pre-Gaim backup** (the climm checkpoint — the rollback for this change):
   `assets/tru64/checkpoint.bak-pregaim-20260822/`, byte-verified against the
   source before anything was touched, with a `SHA256SUMS` beside it.

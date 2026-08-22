@@ -28,8 +28,8 @@ diff -Naur orig/src/buddy.c gaim-0.59.9/src/buddy.c
  	}
 diff -Naur orig/src/multi.c gaim-0.59.9/src/multi.c
 --- orig/src/multi.c	2002-05-31 02:58:07.000000000 +0000
-+++ gaim-0.59.9/src/multi.c	2026-08-22 11:34:06.361104050 +0000
-@@ -1119,8 +1119,69 @@
++++ gaim-0.59.9/src/multi.c	2026-08-22 17:17:20.806991254 +0000
+@@ -1119,8 +1119,79 @@
  		}
  }
  
@@ -54,6 +54,15 @@ diff -Naur orig/src/multi.c gaim-0.59.9/src/multi.c
 +#define RN_RECONNECT_MAX      60000	/* ceiling on the backoff */
 +
 +static GHashTable *rn_reconnect_delay = NULL;
++
++/* Set once this account has been online at least once. After that, a dropped
++ * connection is a transient the auto-reconnect above will heal, so the UI it
++ * would normally raise -- a "Connection Error" dialog and the Login window,
++ * complete with a filled-in password field -- is wrong: this station is an
++ * unattended exhibit with nobody to dismiss a dialog or click Sign on. Both are
++ * suppressed while a reconnect is in flight; an explicit signoff
++ * (gc->wants_to_die) still shows them. */
++static int rn_have_been_online = 0;
 +
 +static gboolean rn_reconnect_signon(gpointer data)
 +{
@@ -96,10 +105,31 @@ diff -Naur orig/src/multi.c gaim-0.59.9/src/multi.c
  void account_online(struct gaim_connection *gc)
  {
 +	rn_reconnect_clear(gc);
++	rn_have_been_online = 1;
  	int i;
  	struct signon_meter *meter = find_signon_meter(gc);
  
-@@ -1438,6 +1499,7 @@
+@@ -1375,8 +1446,17 @@
+ 				       char *prologue)
+ {
+ 	char buf[2048];
+-	struct kick_dlg *k = find_kick_dlg(gc->user);
+-	struct signon_meter *meter = find_signon_meter(gc);
++	struct kick_dlg *k;
++	struct signon_meter *meter;
++
++	/* Retronet: no modal wreckage on the exhibit -- see rn_have_been_online. */
++	if (rn_have_been_online && gc && !gc->wants_to_die) {
++		debug_printf("reconnect: suppressing \"%s\" dialog (%s)\n", title, details);
++		return;
++	}
++
++	k = find_kick_dlg(gc->user);
++	meter = find_signon_meter(gc);
+ 	sprintf(buf, _("%s\n%s: %s"), full_date(), prologue, details);
+ 	if (k)
+ 		gtk_widget_destroy(k->dlg);
+@@ -1438,6 +1518,7 @@
  {
  	/* core stuff */
  	debug_printf("date: %s\n", full_date());
@@ -107,6 +137,20 @@ diff -Naur orig/src/multi.c gaim-0.59.9/src/multi.c
  	plugin_event(event_signoff, gc, 0, 0, 0);
  	system_log(log_signoff, gc, NULL, OPT_LOG_BUDDY_SIGNON | OPT_LOG_MY_SIGNON);
  
+@@ -1473,7 +1554,12 @@
+ 		remove_applet_away();
+ 	}
+ #else
+-	show_login();
++	/* Retronet: the exhibit must never present a login prompt -- the
++	 * auto-reconnect is what brings the persona back. */
++	if (!rn_have_been_online || gc->wants_to_die)
++		show_login();
++	else
++		debug_printf("reconnect: suppressing login window\n");
+ #endif /* USE_APPLET */
+ 	if (misc_options & OPT_MISC_BUDDY_TICKER)
+ 		BuddyTickerSignoff();
 diff -Naur orig/src/protocols/oscar/aim.h gaim-0.59.9/src/protocols/oscar/aim.h
 --- orig/src/protocols/oscar/aim.h	2002-12-21 20:08:19.000000000 +0000
 +++ gaim-0.59.9/src/protocols/oscar/aim.h	2026-08-22 11:13:05.863348567 +0000
