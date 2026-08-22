@@ -257,6 +257,16 @@ greeted ~30 s later (~50 s end-to-end); Pidgin's end-to-end is ~81 s. The extra
 time is autorecon's backoff plus the delay before libpurple gives up on the
 restored socket — no nudge is used, wanted, or needed.
 
+**What a visitor actually sees during that window, and it is not a bug.** For
+roughly the first minute after the wake the Buddy List is *empty* and carries a
+red banner — `30000 disconnected — Lost connection with server: Connection reset
+by peer`, with `Modify Account` / `Reconnect` buttons. That is Pidgin honestly
+reporting the stale socket it woke up holding; autorecon then signs on by
+itself and the five names come back with no interaction. Verified end-to-end
+through `labctl reset solaris`: banner at +25 s, full roster restored and
+`Available` by +100 s, nothing clicked. Do not press `Reconnect` to "fix" it,
+and do not bake a golden from a frame showing it.
+
 Two variants worth knowing, because they look like failures and are not:
 
 - **Kill the gateway-side socket outright** (`ss -K dst 10.99.0.14`) and Pidgin
