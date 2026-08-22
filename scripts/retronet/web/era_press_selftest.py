@@ -12,6 +12,7 @@ that images are NOT transcoded (a .png stays .png in the corpus path). Run it:
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import threading
@@ -315,7 +316,37 @@ def main():
         check("write: a colliding path is skipped, not raised", collided, False)
         check("write: the original file survives", kept, b"x")
 
-    print("era-press selftest: all checks OK (raw mirror, host index, ceiling, frontier, seeds, sweep)")
+    # 14. the VIP list: merged over era-sites.json, carrying a ceiling past the museum's 2000 rule and
+    #     a first_depth priority pass. A VIP promotes an existing host rather than duplicating it.
+    with tempfile.TemporaryDirectory() as tmp:
+        sites_p = os.path.join(tmp, "sites.json")
+        vips_p = os.path.join(tmp, "vips.json")
+        with open(sites_p, "w") as fh:
+            json.dump([{"host": "www.a.example", "depth": 4}, {"host": "www.b.example", "depth": 4}], fh)
+        with open(vips_p, "w") as fh:
+            json.dump(
+                [
+                    {"host": "www.b.example", "date": "20031225"},
+                    {"host": "vip.example", "date": "20020101", "ceiling": "20051231"},
+                ],
+                fh,
+            )
+        merged = {s["host"]: s for s in ec.load_sites(sites_p, vips_p)}
+        check("vips: a new VIP host is added", "vip.example" in merged, True)
+        check("vips: no duplicate for a promoted host", len(merged), 3)
+        check("vips: promotion replaces the plain entry", merged["www.b.example"]["vip"], True)
+        check("vips: default ceiling is the VIP one", merged["www.b.example"]["ceiling"], ec.VIP_DEFAULT_CEILING)
+        check("vips: an explicit ceiling wins", merged["vip.example"]["ceiling"], "20051231")
+        check("vips: priority depth", merged["vip.example"]["first_depth"], ec.VIP_FIRST_DEPTH)
+        check("vips: full depth is still 5", merged["vip.example"]["depth"], 5)
+        check("vips: a plain site is untouched", merged["www.a.example"].get("vip"), None)
+        st = ec._site_state(merged["vip.example"], 200)
+        check("vips: the ceiling reaches the site state", st["ceiling"], "20051231")
+        # and that ceiling is what actually admits a post-2000 capture
+        check("vips: 2003 capture allowed under it", ef._past_ceiling("20031225053516", st["ceiling"]), False)
+        check("vips: 2003 capture refused by default", ef._past_ceiling("20031225053516"), True)
+
+    print("era-press selftest: all checks OK (raw mirror, host index, ceiling, frontier, seeds, sweep, vips)")
 
 
 if __name__ == "__main__":

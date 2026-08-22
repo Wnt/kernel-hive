@@ -354,6 +354,46 @@ writes on CT 950 appears instantly on CT 951's read side — no `pct push`, no p
 restart. (`press`/`seed` still `pct push`; the crawl writes direct because its
 staging *is* the shared volume, so it runs with push disabled.)
 
+### The VIP list — `era-vips.json`
+
+A handful of sites belong in this museum whatever the era rule says, because they matter to *this*
+collection and simply did not exist before 2001. They live in their own small file,
+`scripts/retronet/web/era-vips.json`, merged over `era-sites.json` at load time:
+
+```json
+{
+  "host": "irc-galleria.net",
+  "date": "20031225",
+  "ceiling": "20091231",
+  "title": "IRC-Galleria",
+  "category": "Community",
+  "blurb": "Finland's IRC photo gallery — the social network before social networks.",
+  "seeds": ["http://irc-galleria.net/some/deep/page"]
+}
+```
+
+**Adding one is: edit that file, run one command.**
+
+```bash
+scripts/retronet/web/install-crawl.sh      # deploys the lists + code and restarts the daemon
+```
+
+The crawl is resumable from the on-disk corpus, so the restart re-plans against the new list and
+re-fetches nothing. (For a brand-new host, `era-press index` builds its capture index; the crawl also
+builds it in the background on first use.)
+
+Defaults an entry gets unless it says otherwise: `ceiling` = **2009-12-31** (`VIP_DEFAULT_CEILING`),
+`depth` 5, `first_depth` 3, and 900-page/900 MB caps. A VIP whose host is already in `era-sites.json`
+**replaces** that entry, so a site is promoted by adding it to the VIP list and nothing else.
+
+**Priority.** VIPs are crawled to `first_depth` (3) in dedicated `VIP PASS` rounds *before* the
+ordinary passes begin; whatever they discovered below that stays in the frontier and is picked up by
+the normal level loop out to depth 5. Deep early where it counts, the long tail lazily.
+
+**The ceiling is per-site and explicit, never global drift.** `_past_ceiling` still defaults to
+2000-12-31 for every other site, the index window for a VIP host is widened to *its* ceiling, and both
+the priced stamp and the id_-resolved stamp are checked against it.
+
 ### Depth, `max_pages`, and which one actually binds
 
 `depth` counts **link hops from the site's home page**: level 0 is the home page, level 1 the pages it

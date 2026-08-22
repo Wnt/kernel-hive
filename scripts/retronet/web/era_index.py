@@ -76,11 +76,12 @@ def _index_pool():
         return _index_pool_ref[0]
 
 
-def register_site(host, since):
+def register_site(host, since, ceiling=None):
     """Declare a host as one we are crawling, so it earns a bulk index (see above). `since` is the
-    site's era date: the index holds each URL's first capture on/after it, never past the ceiling."""
+    site's era date: the index holds each URL's first capture on/after it, never past the site's
+    ceiling (CEILING unless the site overrides it -- see era-vips.json)."""
     with _index_lock:
-        _index_since[bare(host)] = (since, norm_host(host))
+        _index_since[bare(host)] = (since, norm_host(host), ceiling or CEILING)
 
 
 def _index_key(url):
@@ -102,16 +103,16 @@ def _index_path(host, since):
     return os.path.join(INDEX_DIR, f"{host}-{since}.json") if INDEX_DIR else None
 
 
-def _window_end(since, months):
-    """`since` (YYYYMMDD) advanced by whole months, clamped to the ceiling. Plain arithmetic on the
-    date parts -- day-of-month is not preserved and does not need to be, this only bounds a scan."""
+def _window_end(since, months, ceiling=None):
+    """`since` (YYYYMMDD) advanced by whole months, clamped to the site's ceiling. Plain arithmetic on
+    the date parts -- day-of-month is not preserved and does not need to be, this only bounds a scan."""
     y, m = int(since[:4]), int(since[4:6])
     m += months
     y, m = y + (m - 1) // 12, (m - 1) % 12 + 1
-    return min(f"{y:04d}{m:02d}{since[6:8]}", CEILING)
+    return min(f"{y:04d}{m:02d}{since[6:8]}", ceiling or CEILING)
 
 
-def _fetch_index(query_host, since):
+def _fetch_index(query_host, since, ceiling=None):
     """One CDX prefix query -> {index key: exact ts} for every URL on `query_host` in a window starting
     at `since`. `collapse=urlkey` keeps one row per URL (the first in the window, i.e. the closest to the
     era date from above). Returns {} if every attempt fails -- an absent index is not an error, it just
@@ -123,7 +124,8 @@ def _fetch_index(query_host, since):
     has to be asking for less. Halving the window in turn buys those hosts a real index covering the
     months nearest their era date, which is the part the crawl actually wants."""
     for months in _INDEX_WINDOWS:
-        to = CEILING if months is None else _window_end(since, months)
+        top = ceiling or CEILING
+        to = top if months is None else _window_end(since, months, top)
         q = (
             f"url={urllib.parse.quote(query_host, '')}&matchType=prefix&collapse=urlkey"
             f"&filter=statuscode:200"
@@ -138,7 +140,7 @@ def _fetch_index(query_host, since):
             continue
         idx = {}
         for row in rows[1:]:  # row 0 is the field-name header
-            if len(row) >= 2 and len(row[1]) == 14 and not _past_ceiling(row[1]):
+            if len(row) >= 2 and len(row[1]) == 14 and not _past_ceiling(row[1], ceiling):
                 idx.setdefault(_index_key(row[0]), row[1])
         if idx:
             return idx
@@ -156,10 +158,10 @@ def _read_cached_index(host, since):
     return None
 
 
-def _build_index(host, since, query_host=None):
+def _build_index(host, since, query_host=None, ceiling=None):
     """Query + cache one host's index. Runs on the index pool, NEVER on a fetch worker. `host` is the
     bare key the index is filed under; `query_host` is the exact host asked of CDX."""
-    idx = _fetch_index(query_host or host, since)
+    idx = _fetch_index(query_host or host, since, ceiling)
     cache = _index_path(host, since)
     # An EMPTY index is cached too, on purpose: a host archive.org will not scan for us is a fact about
     # that host, not a transient error, and re-discovering it costs minutes of 504s on every run.
@@ -192,14 +194,14 @@ def host_index(host):
         entry = _index_since.get(host)
         if entry is None or host in _index_building:
             return None  # unregistered host, or its query is already in flight -> redirect route
-        since, query_host = entry
+        since, query_host, ceiling = entry
         _index_building.add(host)
     cached = _read_cached_index(host, since)
     if cached is not None:
         with _index_lock:
             _index[host] = cached
         return cached
-    _index_pool().submit(_build_index, host, since, query_host)
+    _index_pool().submit(_build_index, host, since, query_host, ceiling)
     return None
 
 

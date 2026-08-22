@@ -37,6 +37,8 @@ import era_press_core as core
 
 SHARED_CORPUS = "/data/vms/retronet-corpus"  # big corpus volume (CT950/labhost path); CT 951 bind-mounts at CORPUS
 CRAWL_ROOT = "/data/vms/retronet-crawl"  # crawl state + log live here (OUTSIDE the corpus; survives a worktree GC)
+VIP_DEFAULT_CEILING = "20091231"  # a VIP entry with no explicit ceiling still needs one
+VIP_FIRST_DEPTH = 3  # VIPs are crawled this deep FIRST, then out to their full depth in the normal passes
 BUDGET_GB = 25.0  # default global size budget: the crawl stops cleanly near this (ZFS quota 50 GB backstop)
 SITE_MB = 200  # default per-site byte cap so one big site (GeoCities) cannot eat the whole budget
 CONCURRENCY = 12  # thread-pool UPPER bound; era_press_core's AIMD limiter decides how many really fly
@@ -92,6 +94,13 @@ def _site_state(s, default_mb):
         "blurb": s.get("blurb", ""),
         "category": s.get("category", ""),
         "home": "http://" + host + "/",
+        # Per-site capture ceiling. None = the museum's hard 2000-12-31 rule; a VIP entry overrides it
+        # because the site matters to this collection and did not exist before 2001 (see era-vips.json).
+        "ceiling": s.get("ceiling"),
+        "vip": bool(s.get("vip")),
+        # VIPs are crawled to `first_depth` ahead of everything else, then extended to `depth` in the
+        # ordinary passes -- high priority early, the long tail lazily.
+        "first_depth": int(s.get("first_depth", s.get("depth", 1))),
         # Extra depth-0 start URLs. A site's home page is where a *visitor* starts, but it is not
         # where a 1990s OS starts: browsers, help viewers and desktop shortcuts point at deep,
         # specific paths (home.netscape.com/home/first.html, www.austin.ibm.com/pspinfo/os2.html)
@@ -173,7 +182,7 @@ def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
         if url in res_seen:
             return
         res_seen.add(url)
-    if fetch._past_ceiling(ts):
+    if fetch._past_ceiling(ts, st["ceiling"]):
         with lock:
             st["misses"] += 1  # discovered ts already after the ceiling -> skip the fetch entirely
         return
@@ -187,7 +196,7 @@ def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
     got = fetch.wayback_raw(url, ts)  # id_ at the discovered ts (paced, lockless) -- but may resolve nearer
     # Re-check the RESOLVED ts: a resource the rewritten page rewrote to the PAGE's ts (because it wasn't
     # captured then) can resolve via id_ to its real, possibly post-2000, capture -- which must NOT store.
-    if not got or fetch._past_ceiling(got[0]) or len(got[2]) > core.MAX_FETCH:
+    if not got or fetch._past_ceiling(got[0], st["ceiling"]) or len(got[2]) > core.MAX_FETCH:
         with lock:
             st["misses"] += 1  # resolved capture past the ceiling (or a miss / oversize) -> skip
         return
@@ -224,7 +233,7 @@ def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
         with lock:
             st["skipped"] += 1
     else:
-        got = core.fetch_page(url, st["date"])  # raw id_ at the indexed exact ts -- lockless
+        got = core.fetch_page(url, st["date"], st["ceiling"])  # raw id_ at the indexed ts -- lockless
         if not got:
             with lock:
                 st["misses"] += 1  # uncaptured, oversize, or past the ceiling -> authentic miss
@@ -374,6 +383,29 @@ def _sweep_page(st, url, staging, res_seen, lock, budget):
             _mirror_resource_mt(orig, res_ts, staging, res_seen, st, lock, budget)
 
 
+def load_sites(sites_path, vips_path):
+    """The crawl's site list: era-sites.json, plus era-vips.json merged on top.
+
+    The VIP list is a small, separate, hand-edited file on purpose -- it is the one place to add a site
+    that matters to this collection regardless of the era rule, and keeping it separate is what makes
+    it obvious what has been let past the ceiling. A VIP entry gets, unless it says otherwise: the
+    VIP ceiling (so it can hold post-2000 captures), depth 5, and a `first_depth` of 3, which is the
+    priority pass. A VIP whose host is already in era-sites.json REPLACES that entry, so a site can be
+    promoted by adding it to the VIP list and nothing else."""
+    sites = _load_json(sites_path, [])
+    vips = _load_json(vips_path, []) if vips_path else []
+    for v in vips:
+        v = dict(v)
+        v["vip"] = True
+        v.setdefault("ceiling", VIP_DEFAULT_CEILING)
+        v.setdefault("depth", 5)
+        v.setdefault("first_depth", VIP_FIRST_DEPTH)
+        v.setdefault("max_pages", 900)
+        v.setdefault("max_mb", 900)
+        sites = [s for s in sites if core.norm_host(s["host"]) != core.norm_host(v["host"])] + [v]
+    return sites
+
+
 def cmd_index(a):
     """Build every site's host index up front, SERIALLY and patiently -- the crawl's bootstrap.
 
@@ -384,19 +416,20 @@ def cmd_index(a):
     loop -- one heavy query at a time is the shape archive.org tolerates best -- and after it the whole
     crawl runs on the fast exact-stamp path. Idempotent: an index already on disk is left alone."""
     era_index.INDEX_DIR = a.index_dir
-    cfg = _load_json(a.sites, [])
+    cfg = load_sites(a.sites, getattr(a, "vips", None))
     if not cfg:
         raise SystemExit(f"era-press index: no sites in {a.sites}")
     os.makedirs(a.index_dir, exist_ok=True)
     built = cached = failed = 0
     for i, s in enumerate(cfg, 1):
         host, since = core.bare(s["host"]), s.get("date", "19970101")
+        era_index.register_site(s["host"], since, s.get("ceiling"))
         path = era_index._index_path(host, since)
         if os.path.exists(path):
             cached += 1
             continue
         t0 = time.time()
-        era_index._build_index(host, since, core.norm_host(s["host"]))  # writes the disk cache too
+        era_index._build_index(host, since, core.norm_host(s["host"]), s.get("ceiling"))  # + disk cache
         rows = len(era_index._index.get(host) or {})
         built += bool(rows)
         failed += not rows
@@ -415,12 +448,12 @@ def cmd_crawl(a):
     os.umask(0o022)  # world-readable: CT 951's unprivileged proxy must read what CT 950 writes
     os.makedirs(a.staging, exist_ok=True)
     os.makedirs(os.path.dirname(a.state) or ".", exist_ok=True)
-    cfg = _load_json(a.sites, [])
+    cfg = load_sites(a.sites, getattr(a, "vips", None))
     if not cfg:
         raise SystemExit(f"era-press crawl: no sites in {a.sites}")
     era_index.INDEX_DIR = os.path.join(os.path.dirname(a.state) or ".", "cdx")  # host indexes survive restarts
     for s in cfg:  # every crawled host earns ONE bulk CDX index; resource-only hosts take the redirect
-        era_index.register_site(s["host"], s.get("date", "19970101"))
+        era_index.register_site(s["host"], s.get("date", "19970101"), s.get("ceiling"))
     states = [_reconstruct(_site_state(s, a.max_mb), a.staging) for s in cfg]
     seen_sets = {st["host"]: set(st["seen"]) for st in states}
     res_seen = set()  # global: a shared resource is mirrored once per run
@@ -474,7 +507,19 @@ def cmd_crawl(a):
             f"in-flight limit {fetch._GATE.limit()}",  # AIMD: where archive.org's knee is right now
         )
 
-    level = 0  # bound BEFORE the sweep: on_done closes over it and fires every 25 items
+    level = 0  # bound BEFORE the sweep/priority passes: on_done closes over it, firing every 25 items
+
+    def run_pass(label, items, active):
+        """One pass of the driver: log it, run it wide, reconcile and log the result."""
+        _log(
+            a.log,
+            f"--- {label}: {active} site(s), {len(items)} page(s) queued "
+            f"(corpus {used_est() / 1e9:.2f} GB, {concurrency}-wide)",
+        )
+        _run_level(items, concurrency, worker, on_done, lambda: budget["stop"])
+        _publish_sites(states, a.staging)
+        _flush_state(a.state, states, level, _corpus_bytes(a.staging))
+
     if a.sweep:
         items = _interleave([[(st, u) for u in st["mirrored"]] for st in states])
         _log(a.log, f"--- SWEEP: re-checking resources on {len(items)} page(s) already on disk")
@@ -492,20 +537,28 @@ def cmd_crawl(a):
         used = _corpus_bytes(a.staging)
         _log(a.log, f"--- SWEEP done: corpus {used / 1e9:.2f} GB")
 
+    vips = [st for st in states if st["vip"]]
+    if vips:
+        # High priority: take the VIPs out to first_depth BEFORE anyone else gets a second level. Their
+        # remaining levels are left in the frontier and picked up by the ordinary passes below -- deep
+        # early where it counts, lazily out to full depth afterwards.
+        for level in range(max(st["first_depth"] for st in vips) + 1):
+            due = [st for st in vips if level <= st["first_depth"]]
+            items = _interleave([[(st, u, level) for u in st["frontier"].pop(str(level), [])] for st in due])
+            if not items:
+                continue
+            run_pass(f"VIP PASS {level}", items, len(due))
+            if budget["stop"]:
+                break
+        done = {st["host"]: st["pages"] for st in vips}
+        _log(a.log, f"--- VIP priority done (to depth {VIP_FIRST_DEPTH}): {done}")
+
     for level in range(maxdepth + 1):
         with lock:
             per_site = [[(st, u, level) for u in st["frontier"].pop(str(level), [])] for st in states]
         items = _interleave(per_site)
-        active = sum(1 for p in per_site if p)
-        _log(
-            a.log,
-            f"--- PASS {level}: {active} site(s), {len(items)} depth-{level} pages queued "
-            f"(corpus {used_est() / 1e9:.2f} GB, {concurrency}-wide)",
-        )
-        _run_level(items, concurrency, worker, on_done, lambda: budget["stop"])
+        run_pass(f"PASS {level}", items, sum(1 for p in per_site if p))
         used = _corpus_bytes(a.staging)
-        _publish_sites(states, a.staging)  # newly-crawled sites appear in the directory as homes land
-        _flush_state(a.state, states, level, used)
         covered = sum(1 for st in states if st["pages"] > 0)
         _log(a.log, f"--- PASS {level} done: {covered}/{len(states)} sites have >=1 page, corpus {used / 1e9:.2f} GB")
         if budget["stop"]:

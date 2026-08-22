@@ -169,6 +169,9 @@ def main():
     _here = os.path.dirname(os.path.abspath(__file__))
     cr = sub.add_parser("crawl", help="breadth-first, parallel, resumable build over era-sites.json")
     cr.add_argument("--sites", default=os.path.join(_here, "era-sites.json"))
+    # The VIP list: sites this collection wants regardless of the era rule. Merged over --sites, with a
+    # per-site ceiling and priority. See docs/lab/retronet/ERA-PRESS.md.
+    cr.add_argument("--vips", default=os.path.join(_here, "era-vips.json"))
     cr.add_argument("--staging", default=era_crawl.SHARED_CORPUS)  # the big shared volume; CT 951 mounts it live
     cr.add_argument("--budget-gb", type=float, default=era_crawl.BUDGET_GB, dest="budget_gb")
     cr.add_argument("--max-mb", type=int, default=era_crawl.SITE_MB, dest="max_mb")
@@ -186,6 +189,7 @@ def main():
 
     ix = sub.add_parser("index", help="build every site's host capture index (the crawl's bootstrap)")
     ix.add_argument("--sites", default=os.path.join(_here, "era-sites.json"))
+    ix.add_argument("--vips", default=os.path.join(_here, "era-vips.json"))
     ix.add_argument(
         "--index-dir",
         default=os.path.join(era_crawl.CRAWL_ROOT, "cdx"),

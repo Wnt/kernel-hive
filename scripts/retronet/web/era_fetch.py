@@ -103,11 +103,16 @@ def host_of(u):
 _CEILING_TS = CEILING + "235959"  # 14-digit inclusive upper bound for a full capture stamp (2000-12-31)
 
 
-def _past_ceiling(ts):
-    """True if a capture stamp is after the hard 2000-12-31 ceiling. Takes either a 14-digit stamp or an
-    8-digit YYYYMMDD date target (an un-indexed URL is fetched at a date), so pad before comparing --
-    zero-padded numerals of equal width compare correctly as strings."""
-    return ts.ljust(14, "0") > _CEILING_TS
+def _past_ceiling(ts, ceiling=None):
+    """True if a capture stamp is after the ceiling -- CEILING (2000-12-31) unless a site overrides it.
+
+    Takes either a 14-digit stamp or an 8-digit YYYYMMDD date target (an un-indexed URL is fetched at a
+    date), so pad before comparing -- zero-padded numerals of equal width compare correctly as strings.
+
+    The override exists for the VIP list (see era-vips.json): a handful of sites the museum wants
+    whatever the era rule says, because they matter to this collection and simply did not exist before
+    2001. The default is unchanged and the ceiling is still per-site explicit, never global drift."""
+    return ts.ljust(14, "0") > ((ceiling or CEILING) + "235959")[:14]
 
 
 def _is_archive_host(h):

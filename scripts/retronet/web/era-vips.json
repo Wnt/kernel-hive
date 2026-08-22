@@ -1,0 +1,45 @@
+[
+  {
+    "host": "irc-galleria.net",
+    "date": "20031225",
+    "ceiling": "20091231",
+    "title": "IRC-Galleria",
+    "category": "Community",
+    "blurb": "Finland's IRC photo gallery — the social network before social networks."
+  },
+  {
+    "host": "www.klubitus.org",
+    "date": "20020328",
+    "ceiling": "20091231",
+    "title": "Klubitus",
+    "category": "Community",
+    "blurb": "The Finnish club and party calendar, and its forums."
+  },
+  {
+    "host": "www.muropaketti.com",
+    "date": "20000105",
+    "ceiling": "20091231",
+    "title": "Muropaketti",
+    "category": "Computers and Internet",
+    "blurb": "Finnish PC hardware news and reviews."
+  },
+  {
+    "host": "murobbs.muropaketti.com",
+    "date": "20021126",
+    "ceiling": "20091231",
+    "title": "MuroBBS",
+    "category": "Community",
+    "blurb": "Muropaketti's forums — where Finnish PC builders argued."
+  },
+  {
+    "host": "www.fillari-lehti.fi",
+    "date": "19990428",
+    "ceiling": "20091231",
+    "title": "Fillari-lehti",
+    "category": "Recreation and Sports",
+    "blurb": "The Finnish mountain-biking magazine and its Ultimate Bulletin Board.",
+    "seeds": [
+      "http://www.fillari-lehti.fi/cgi/Ultimate.cgi"
+    ]
+  }
+]

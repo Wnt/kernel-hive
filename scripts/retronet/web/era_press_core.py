@@ -46,7 +46,7 @@ ATTR_KIND = {
 }
 
 
-def fetch_page(url, target):
+def fetch_page(url, target, ceiling=None):
     """Fetch ONE page: exactly ONE archive.org request, at the exact capture stamp the host index gives.
 
     Returns (page_ts, is_page, raw_body, discovered=[(kind, ts, original_url)]), or None on an authentic
@@ -59,7 +59,7 @@ def fetch_page(url, target):
     if not got:
         return None
     page_ts, ctype, body = got
-    if fetch._past_ceiling(page_ts) or len(body) > MAX_FETCH:
+    if fetch._past_ceiling(page_ts, ceiling) or len(body) > MAX_FETCH:
         return None  # post-ceiling capture or oversize -> authentic miss
     page = is_html(ctype, body)
     if not page:
@@ -184,7 +184,7 @@ def _write(staging, host, rel, body):
     return True
 
 
-def mirror_resource(url, ts, staging, seen, hosts, stats):
+def mirror_resource(url, ts, staging, seen, hosts, stats, ceiling=None):
     """Mirror one referenced resource (any host) at its own host/path, raw. `ts` is the resource's EXACT
     capture timestamp, already discovered from the page's REWRITTEN HTML -- so this is a DIRECT id_ hit,
     NOT a CDX search. A ts past the 2000-12-31 ceiling => skip (authentic miss)."""
@@ -192,7 +192,7 @@ def mirror_resource(url, ts, staging, seen, hosts, stats):
     if not host or url in seen:
         return
     seen.add(url)
-    if fetch._past_ceiling(ts):
+    if fetch._past_ceiling(ts, ceiling):
         stats["misses"] += 1  # discovered ts already after the ceiling -> skip the fetch entirely
         return
     rel = store_rel(url, False)
@@ -205,7 +205,7 @@ def mirror_resource(url, ts, staging, seen, hosts, stats):
     got = fetch.wayback_raw(url, ts)  # id_ at the discovered ts -> direct hit, BUT may still resolve nearer
     # Re-check the RESOLVED ts (got[0]): the rewritten page rewrites a resource it didn't capture to the
     # PAGE's ts, so an id_ at that ts can resolve to the resource's real (possibly post-2000) capture.
-    if not got or fetch._past_ceiling(got[0]) or len(got[2]) > MAX_FETCH:
+    if not got or fetch._past_ceiling(got[0], ceiling) or len(got[2]) > MAX_FETCH:
         stats["misses"] += 1  # resolved capture past the ceiling (or a miss / oversize) -> skip
         return
     if not _write(staging, host, rel, got[2]):
@@ -216,7 +216,7 @@ def mirror_resource(url, ts, staging, seen, hosts, stats):
     stats["bytes"] += len(got[2])
 
 
-def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None):
+def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None, ceiling=None):
     """Crawl+mirror a site into staging the BROWSER way. Return (title, stats, hosts_written). Each page:
     fetch its raw id_ bytes + discover its resources' EXACT timestamps from its rewritten page (ZERO
     CDX), mirror those resources at their exact ts, follow same-site links (from the RAW body, so resume
@@ -237,7 +237,7 @@ def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None):
             discovered = discover(body, url, target) if page else []
             stats["skipped"] += 1
         else:
-            got = fetch_page(url, target)  # raw id_ bytes + exact page ts + rewritten resource discovery
+            got = fetch_page(url, target, ceiling)  # raw id_ bytes at the indexed exact ts
             if not got:
                 stats["misses"] += 1
                 continue
@@ -249,7 +249,7 @@ def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None):
         if page:  # mirror each discovered resource at its EXACT ts -- no per-resource search. Runs for
             for kind, res_ts, orig in discovered:  # a CACHED page too: see the note in era_crawl
                 if kind == "res":
-                    mirror_resource(orig, res_ts, staging, seen_res, hosts, stats)
+                    mirror_resource(orig, res_ts, staging, seen_res, hosts, stats, ceiling)
         hosts.add(host)
         stats["bytes"] += len(body)
         if not page:
