@@ -1,10 +1,21 @@
 #!/bin/sh
 # solaris GOLDEN FIXTURE (sourced by /usr/dt/bin/Xsession via Xsession.d).
-# Makes each CDE login animation-free and opens the retronet ICQ surface: a
-# dtterm running climm (the OSCAR client), which auto-logs-in as UIN 30000 to
-# the gateway (10.99.0.2:5190) from /.climm/climmrc and shows HiveBot in its
-# contact list — the authentic "Unix ICQ" look. climm has its own reconnect, so
-# it recovers on wake with no host-side nudge. See ICQ-STATION-solaris.md.
+# Makes each CDE login animation-free and opens the retronet ICQ surface:
+# Pidgin 2.10.4 (the GTK2 desktop client Oracle ships in the base install as
+# SUNWgnome-im-client), auto-signed-in as UIN 30000 to the gateway
+# (10.99.0.2:5190) from /.purple/accounts.xml, showing the whole fleet in its
+# Buddy List — downloaded from the server-side SSI/feedbag roster, no local
+# adds. libpurple's always-compiled-in `autorecon` core plugin reconnects on
+# wake, so it recovers with no host-side nudge. See ICQ-STATION-solaris.md.
+#
+# Window placement is NOT set here: Pidgin restores the Buddy List geometry
+# from /.purple/prefs.xml (/pidgin/blist x=1470 y=90 380x560 — right-docked on
+# the 1920x1200 CDE desktop, clear of the front panel), which is baked into the
+# golden's disk. A -geometry flag would not survive Pidgin's own save-on-exit.
+#
+# This replaced the climm dtterm on 2026-08-22. climm 0.6.4 and /.climm/ are
+# LEFT INSTALLED on the disk: rollback is this one file plus /.purple, and the
+# climm binary + its SSI patch stay put as the documented fallback.
 # Backgrounded so it never blocks login.
 (
   sleep 14
@@ -17,5 +28,5 @@
   /usr/bin/pkill dtfile
   /usr/bin/pkill dthelpview
   sleep 1
-  /usr/dt/bin/dtterm -xrm "Dtterm*blinkRate: 0" -geometry 100x38+120+90 -title ICQ -e /usr/local/bin/climm &
+  /usr/bin/pidgin &
 ) &

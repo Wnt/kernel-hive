@@ -423,7 +423,14 @@ content-addressed media archive (no `/data/assets-staging/` copy):
 |---|---|---|---|---|
 | `AIM_installer_2.01.617.sit` (AOL Instant Messenger 2.01.617, 1999, StuffIt archive of an Installer VISE package) | `965f5c9c4f6d796e1c3f347fc5ec05693b9aa27848679bda98f2cb3fc4f71cec` *(locally measured 2026-08-20; matches the file's own site-published sha1 `15134f371105475fa4f9f8b6c8e0f80fc73cd9a7`)* | 2 538 648 | [`macintoshrepository.org/1213-aol-instant-messenger-2-x-68k-`](https://www.macintoshrepository.org/1213-aol-instant-messenger-2-x-68k-), file `AIM_installer_2.01.617.sit` (download id 10986) — a vintage-Mac preservation mirror (the WinWorld/archive.org equivalent for classic Mac abandonware) | **abandonware-URL.** AOL-copyright, long-discontinued, no redistribution grant. Chosen over any ICQ-branded Mac client: AIM has spoken OSCAR since its May-1997 launch (OSCAR was literally AIM's internal project codename before it became the wire protocol's name), so every AIM generation — including this, its **last 68K-compatible build** — is a genuine period OSCAR client; Mac ICQ, by contrast, topped out at 68K version 1.7.2 (Macintosh Garden's own version table) and every Mac ICQ build after it (2.0b onward) is PowerPC-only, postdating ICQ's own industry-wide OSCAR migration (~1999–2000) — no 68k-and-OSCAR ICQ-for-Mac build was found and one may not exist. **68K-native and System-7.5-aware by the installer's own hand**: `unar`-extracted, the `InstallAIM` binary's data fork contains the literal string *"The Thead [sic] Manager extension is required to run AIM. It is built into all MacOS computers running system 7.5 or later"* — satisfied by this station's System 7.5.3 with no extra extension; internal CPU-family tags confirm `68K Only` / `68020`/`68030`/`68040` (matches the Quadra 800's 68040). Private preservation exhibit only; never committed, never publicly served — install is blocked on the NIC-add device-set change above. |
 
-### `climm` (formerly micq) — retronet ICQ/OSCAR client for Unix (solaris + tru64, stream C)
+### `climm` (formerly micq) — retronet ICQ/OSCAR client for Unix (tru64; solaris until 2026-08-22, stream C)
+
+> **`solaris` no longer runs climm** — it was replaced by Pidgin 2.10.4 on
+> 2026-08-22 (subsection below; as-built:
+> [`retronet/ICQ-STATION-solaris.md`](retronet/ICQ-STATION-solaris.md)). The climm
+> binary, its SSI patch and `/.climm/` are deliberately left installed on that
+> station's golden as the documented rollback, so everything sourced here stays
+> load-bearing.
 
 Not builder-driven — sourced for the two Tier-C Unix stations in
 `docs/lab/retronet/ICQ-ONBOARDING-PLAN.md` (solaris x86/CDE, tru64/Alpha).
@@ -511,6 +518,126 @@ carries `.src.rpm`/`.i486.rpm`/`_i386.deb` (Linux x86) and an
 `-AmigaOS.tgz` — nothing for SPARC/x86 Solaris or Alpha/Tru64 was ever built
 by anyone. Source-only is not a fallback here, it is the only option, and it
 is a good one given the above.
+
+### `solaris` GUI OSCAR client — Pidgin is ALREADY on the golden disk (no media to stage)
+
+The operator asked for climm (terminal, `dtterm`) to be replaced by a
+desktop-integrated GUI client, "e.g. Gaim," on the `solaris` station. Recon
+(`labctl exec solaris`, read-only, 2026-08-22) found the answer is not a
+build or a download at all — and the swap **shipped the same day**
+(as-built: [`retronet/ICQ-STATION-solaris.md`](retronet/ICQ-STATION-solaris.md)): **Pidgin 2.10.4 / libpurple 2.10.4 already ships
+in the base Solaris 10 x86 install**, as Oracle's own JDS package. Gaim
+itself was renamed Pidgin in 2007; this is that lineage, several major
+versions past anything the media-sourcing brief anticipated needing to fetch.
+
+| what | where |
+|---|---|
+| Package | `SUNWgnome-im-client` — "GNOME Multi-protocol instant messaging client", `pkgchk -l -p /usr/bin/pidgin` confirms ownership, `STATUS: completely installed` |
+| Binary | `/usr/bin/pidgin` (947 548 bytes, Nov 07 2012 build stamp) |
+| Core lib | `/usr/lib/libpurple.so.0.10.4` — `Version: 2.10.4` (`/usr/lib/pkgconfig/purple.pc`) |
+| OSCAR protocol plugin | `/usr/lib/purple-2/liboscar.so.0.0.0` |
+| GTK | GTK+2 already linked and resolving (`ldd` on `pidgin`/`libpurple`/`liboscar` → zero "not found") — no from-source GTK+2 stack needed, the JDS GNOME2 desktop already carries it |
+
+**No artifact to stage.** Nothing in `/data/media-archive` for this
+subsection — the client is part of the golden's own disk image, not a
+download. This section exists to record the discovery and the source-level
+evidence for the swap agent's hard requirements, in place of a normal
+fetch-and-pin entry.
+
+**Hard-requirement evidence, source/binary level (not reputation):**
+
+1. **Explicit OSCAR host+port override.** `liboscar.so` carries the prpl's
+   compiled-in default (`login.oscar.aol.com` / `slogin.oscar.aol.com`
+   strings) plus per-account protocol options literally named `Server` and
+   `Port` in its string table — the standard libpurple oscar prpl
+   `options` list (`server`/`port`/`connectport`) that the account editor
+   exposes; setting them to `10.99.0.2`/`5190` overrides the compiled-in
+   default the same way climm's `climmrc` `host`/`port` lines do.
+2. **Server-side SSI/feedbag roster, confirmed in the binary's own strings**
+   (`strings /usr/lib/purple-2/liboscar.so.0.0.0`): `feedbag`, `ssi:
+   activating server-stored buddy list`, `ssi: syncing local list and
+   server list`, `ssi: adding buddy %s to group %s`. This is libpurple's
+   `oscar.c`/`libaim.c` SSI implementation — a full feedbag client, not a
+   client-local buddy list. It renders roster items by their server-side
+   alias TLV, same mechanism climm and ICQ 2001b both rely on.
+3. **Auto sign-in + auto-reconnect, both present.** `libpurple.so` contains
+   the `auto-login` per-account setting (the standard purple `accounts.xml`
+   `<setting name='auto_login' type='bool'>`), and password save is a core
+   account field (`<password>`, no keyring dependency required — `ldd`
+   shows no unresolved keyring library, so it degrades to the always-present
+   plaintext store, same trust model as climm's `climmrc`/tru64's serial
+   auth). Reconnect is **not an opt-in plugin the swap agent has to enable
+   — it is a core (non-loadable) libpurple plugin**: the string table shows
+   `/plugins/core/autorecon/hide_reconnecting_dialog` and `Network not
+   connected; skipping reconnect`, i.e. `autorecon` is compiled into
+   `libpurple` itself and reconnects with exponential backoff whenever a
+   connection dies — the same class of self-healing climm and ICQ 2001b
+   both already prove in production on this fleet.
+4. **Real desktop app.** `/usr/bin/pidgin` is a GTK2 binary (buddy-list
+   window, chat windows) run directly, not a curses TUI in a terminal — swap
+   climm's `dtterm -e /usr/local/bin/climm` line in
+   `streamhost/stations/solaris/9999.golden-fixture` for a plain `/usr/bin/pidgin &`
+   the same way the fixture already backgrounds climm.
+5. **Buildable/installable — trivially, because it needs neither.** It is
+   already `completely installed` per `pkgchk`; the "build recipe" is: none.
+   Compare to climm, which needed a genuine `gcc 3.4.3` build plus a
+   one-line source patch to finish SSI sign-on (§ above) — Pidgin sidesteps
+   that whole class of risk.
+
+**What still has to be done (not this errand — the swap agent's job):**
+root's `$HOME` is `/` under both plain shell and CDE dtlogin (`getent passwd
+root` → `/`, matching climm's `/.climm/` gotcha), so a first-run Pidgin
+account would live at `/.purple/accounts.xml`; the fastest path is almost
+certainly to **hand-author that XML directly** (protocol `prpl-oscar`, UIN
+`30000`, `server`=`10.99.0.2`, `port`=`5190`, `password`, `auto_login`=`1`)
+rather than driving the account-setup wizard through the framebuffer, then
+edit `9999.golden-fixture` to launch `pidgin` instead of `dtterm … climm`,
+and recapture the golden — the same "fresh sign-on before `savevm`" discipline
+`ICQ-STATION-solaris.md`'s gotchas section already documents for climm's
+SSI roster.
+
+**RISKS as ranked before the swap — and how each one actually landed** (all four
+are now settled; the detail lives in the as-built doc's gotchas):
+1. **`accounts.xml` schema drift.** 2.10.4 is a real, specific libpurple
+   release; the exact XML element/attribute set must match that version's
+   parser (`account.c`) or the account silently fails to load. Mitigate by
+   hand-testing one sign-on through the framebuffer before baking the
+   golden, exactly as climm's SSI patch was proven live first.
+   **REAL: this bit, twice.** The protocol id is **`prpl-icq`**, not
+   `prpl-oscar` (that is the plugin's filename, not a protocol id), and
+   auto-login is **not** an account setting at all — it is
+   `<setting name='auto-login'>` inside a second `<settings ui='gtk-gaim'>`
+   block. Both failure modes are silent. Settled by shipping the exact file
+   libpurple itself re-serialises after a good sign-on.
+2. **Window/desktop geometry.** Pidgin's buddy-list + conversation windows
+   are separate top-level windows (unlike climm's single `dtterm`); the
+   golden capture and any fixed-geometry assumptions in
+   `9999.golden-fixture` (`-geometry 100x38+120+90`) do not apply and must
+   be redesigned for a multi-window GUI app under `dtwm`.
+   **REAL, and the fix is not where you would look:** Pidgin owns its own
+   geometry and rewrites it into `prefs.xml` on exit, so a `-geometry` flag
+   on the fixture is inert. Placement is set in `/.purple/prefs.xml`
+   (`/pidgin/blist` right-docked 1470,90 380x560) and baked into the golden;
+   the fixture just runs the binary. A second, unforeseen prefs trap mattered
+   more: `show_offline_buddies` defaults OFF, which hides four of the five
+   roster names and looks exactly like a failed roster download.
+3. **No GUI-app precedent yet on this station's fixture path** — every
+   other retronet ICQ station launches a terminal client; the swap is the
+   fleet's first fixture that has to manage real GTK toplevel windows under
+   `dtwm`/CDE (focus, stacking, first-paint), which the framebuffer-capture
+   pipeline has not been exercised against here before.
+   **Landed easily** — the Buddy List maps as a normal dtwm toplevel and the
+   capture pipeline shows it correctly at full 1920x1200 with no focus or
+   first-paint work needed. The one exhibit-specific hazard found was
+   behavioural, not graphical: Pidgin auto-aways after 5 idle minutes and
+   paints an "I'm not here right now" box, which a golden bake would freeze
+   in (`away_when_idle=0`, `idle_reporting=none`).
+4. **Password storage is plaintext XML**, same posture as every other
+   station's saved credential — not a new risk, just worth restating since
+   it is now human-readable GTK config instead of a `climmrc` line.
+   **Unchanged as predicted:** the plaintext `<password>` is what buys silent
+   sign-in with no keyring and no prompt; value from `registry/local.env`
+   `RETRONET_ICQ_SOLARIS_PASS`, never committed.
 
 ## 3. freely-fetchable-pinned — open upstreams
 
