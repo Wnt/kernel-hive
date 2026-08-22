@@ -59,7 +59,12 @@ echo "ensuring pinned deps in the crawl venv (idempotent): ${PINS[*]}"
 echo "installing $UNIT"
 sudo cp "$SRC/$UNIT" "/etc/systemd/system/$UNIT"
 sudo systemctl daemon-reload
-sudo systemctl enable --now "$UNIT"
+sudo systemctl enable "$UNIT"
+# RESTART, not `enable --now`: this script is the one command that applies an edit to era-sites.json or
+# era-vips.json, and `--now` is a no-op on an already-running daemon -- so the edit silently would not
+# take. Restarting is cheap and safe here because the crawl is resumable from the on-disk corpus: it
+# re-plans against the new list and re-fetches nothing it already has.
+sudo systemctl restart "$UNIT"
 
 echo "--- status ---"
 systemctl --no-pager --lines=0 status "$UNIT" || true

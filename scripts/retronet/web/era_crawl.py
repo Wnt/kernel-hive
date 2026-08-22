@@ -520,6 +520,23 @@ def cmd_crawl(a):
         _publish_sites(states, a.staging)
         _flush_state(a.state, states, level, _corpus_bytes(a.staging))
 
+    vips = [st for st in states if st["vip"]]
+    if vips:
+        # High priority means FIRST -- ahead of the resource sweep as well as the ordinary passes.
+        # The sweep re-checks thousands of pages already on disk and can run for an hour; a VIP added
+        # five minutes ago should not wait behind it. The VIPs' remaining levels stay in the frontier
+        # and the ordinary passes take them out to full depth -- deep early, long tail lazily.
+        for level in range(max(st["first_depth"] for st in vips) + 1):
+            due = [st for st in vips if level <= st["first_depth"]]
+            items = _interleave([[(st, u, level) for u in st["frontier"].pop(str(level), [])] for st in due])
+            if not items:
+                continue
+            run_pass(f"VIP PASS {level}", items, len(due))
+            if budget["stop"]:
+                break
+        done = {st["host"]: st["pages"] for st in vips}
+        _log(a.log, f"--- VIP priority done (to depth {VIP_FIRST_DEPTH}): {done}")
+
     if a.sweep:
         items = _interleave([[(st, u) for u in st["mirrored"]] for st in states])
         _log(a.log, f"--- SWEEP: re-checking resources on {len(items)} page(s) already on disk")
@@ -536,22 +553,6 @@ def cmd_crawl(a):
         _run_level(items, concurrency, sweep_worker, on_done, lambda: budget["stop"])
         used = _corpus_bytes(a.staging)
         _log(a.log, f"--- SWEEP done: corpus {used / 1e9:.2f} GB")
-
-    vips = [st for st in states if st["vip"]]
-    if vips:
-        # High priority: take the VIPs out to first_depth BEFORE anyone else gets a second level. Their
-        # remaining levels are left in the frontier and picked up by the ordinary passes below -- deep
-        # early where it counts, lazily out to full depth afterwards.
-        for level in range(max(st["first_depth"] for st in vips) + 1):
-            due = [st for st in vips if level <= st["first_depth"]]
-            items = _interleave([[(st, u, level) for u in st["frontier"].pop(str(level), [])] for st in due])
-            if not items:
-                continue
-            run_pass(f"VIP PASS {level}", items, len(due))
-            if budget["stop"]:
-                break
-        done = {st["host"]: st["pages"] for st in vips}
-        _log(a.log, f"--- VIP priority done (to depth {VIP_FIRST_DEPTH}): {done}")
 
     for level in range(maxdepth + 1):
         with lock:

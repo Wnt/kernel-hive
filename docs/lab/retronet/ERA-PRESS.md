@@ -386,8 +386,9 @@ Defaults an entry gets unless it says otherwise: `ceiling` = **2009-12-31** (`VI
 `depth` 5, `first_depth` 3, and 900-page/900 MB caps. A VIP whose host is already in `era-sites.json`
 **replaces** that entry, so a site is promoted by adding it to the VIP list and nothing else.
 
-**Priority.** VIPs are crawled to `first_depth` (3) in dedicated `VIP PASS` rounds *before* the
-ordinary passes begin; whatever they discovered below that stays in the frontier and is picked up by
+**Priority.** VIPs are crawled to `first_depth` (3) in dedicated `VIP PASS` rounds *first* — ahead of
+the resource sweep as well as the ordinary passes, because the sweep re-checks thousands of pages
+already on disk and can run for an hour, and a VIP added five minutes ago should not wait behind it; whatever they discovered below that stays in the frontier and is picked up by
 the normal level loop out to depth 5. Deep early where it counts, the long tail lazily.
 
 **The ceiling is per-site and explicit, never global drift.** `_past_ceiling` still defaults to
