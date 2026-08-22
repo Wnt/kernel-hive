@@ -533,7 +533,7 @@ replaces them.** What follows is the as-built record; the station doc is
 | file | sha256 | size | source | class / terms |
 |---|---|---|---|---|
 | `gaim-0.59.9.tar.gz` | `268b630bfab1096b1cff4e02c97ea6bb2bf22b3be387d3c222cfe0453c86dbd8` | 2 126 466 | [SourceForge `pidgin` project, `OldFiles/`](https://sourceforge.net/projects/pidgin/files/OldFiles/gaim-0.59.9.tar.gz/download) (March 2003 release) | **freely-fetchable-pinned.** GPLv2 (`COPYING`). Staged in the media archive at that hash. |
-| `AG-RHAYC-BS.iso` — Tru64 UNIX v5.1 Disc 5, "Open Source Software Collection" | sha1 `e153fb36c595575ce5c3013e3c3610eec7c131bc` *(the item publishes sha1; verified on download)* | 629 368 832 | [archive.org item `compaqtru64unix51`](https://archive.org/details/compaqtru64unix51) | abandonware (HP/Compaq). Carries **GTK+ 1.2.8 + glib 1.2.8 + gettext 0.10** as Alpha RPMs. Staged at `/data/assets-staging/tru64-disc5/`. |
+| `AG-RHAYC-BS.iso` — Tru64 UNIX v5.1 Disc 5, "Open Source Software Collection" | sha1 `e153fb36c595575ce5c3013e3c3610eec7c131bc` *(the item publishes sha1; verified on download)* | 629 368 832 | [archive.org item `compaqtru64unix51`](https://archive.org/details/compaqtru64unix51) | abandonware (HP/Compaq). Carries **GTK+ 1.2.8 + glib 1.2.8 + gettext 0.10** as Alpha RPMs. **Archived** in the content-addressed media archive at sha256 `1f3cc0f79f902a0776c959b43a3d2b6f039b50a309b3fb16d1d3e2a56c8f21ce` (`media_cache_put`, 2026-08-23; the published sha1 was re-verified against the archived bytes). The `/data/assets-staging/tru64-disc5/` copy is a working copy, not the copy of record. |
 
 **The claim that killed the earlier passes, and why it was wrong.** Both took
 Gaim's own history at face value: SSI/feedbag for ICQ arrived in 0.60, the same

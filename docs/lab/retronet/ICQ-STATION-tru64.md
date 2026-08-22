@@ -197,7 +197,10 @@ them.
 GTK+1.2/glib1.2 for this machine are on the HP/Compaq **"Open Source Software
 Collection for Tru64 UNIX v5.1" Disc 5** — archive.org item `compaqtru64unix51`,
 file `AG-RHAYC-BS.iso`, 629 368 832 bytes, sha1
-`e153fb36c595575ce5c3013e3c3610eec7c131bc` (verified on download).
+`e153fb36c595575ce5c3013e3c3610eec7c131bc` (verified on download). The disc is
+**archived** — media archive sha256
+`1f3cc0f79f902a0776c959b43a3d2b6f039b50a309b3fb16d1d3e2a56c8f21ce` — so this
+build never depends on archive.org still serving it.
 
 The disc is **RPM, not `setld`**, and its own README says every package installs
 under **`/usr/local`** and warns that RPM on Tru64 is unsupported and can
