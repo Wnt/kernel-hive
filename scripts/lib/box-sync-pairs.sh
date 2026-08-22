@@ -251,6 +251,18 @@ box_sync_load_pairs() {
   # solaris' retronet bridge-tap lifecycle helper (Tier C, climm/OSCAR), the same
   # box-authored mirror pair as win98se's above. See ICQ-STATION-solaris.md.
   box_sync_add_pair solaris-rn-tapnet streamhost/stations/solaris/rn-tapnet.sh "$BOX_ROOT/stations/solaris/rn-tapnet.sh" exact repo
+  # tru64's retronet veth lifecycle helper + its es40 launcher. Same box-authored
+  # mirror pair as win98se/solaris above; tru64 has no qemu-streamhost.sh, so the
+  # generic launcher sweep below does not pick its runtime up. Without these the
+  # box copies silently drift from the repo. See ICQ-STATION-tru64.md.
+  box_sync_add_pair tru64-rn-tapnet streamhost/stations/tru64/rn-tapnet.sh "$BOX_ROOT/stations/tru64/rn-tapnet.sh" exact repo
+  box_sync_add_pair tru64-x11-runtime streamhost/stations/tru64/x11-runtime.sh "$BOX_ROOT/stations/tru64/x11-runtime.sh" exact repo
+  # tru64's CDE Xsession.d ICQ fixture. This box copy is the REFERENCE copy; the
+  # live one is baked onto the guest's own disk at
+  # /etc/dt/config/Xsession.d/9999.icq-fixture and only runs on a cold boot.
+  # Tracking it here keeps the reference from claiming the station still runs
+  # climm after the Gaim swap.
+  box_sync_add_pair tru64-icq-fixture streamhost/stations/tru64/9999.icq-fixture "$BOX_ROOT/stations/tru64/9999.icq-fixture" exact repo
   # win98se ICQ presence healer (labhost): a timer nudges the persona's golden
   # BOS socket so ICQ reconnects after every reset/wake (ICQ 2000b will not on
   # its own). See docs/lab/retronet/ICQ-STATION.md §reconnect.
