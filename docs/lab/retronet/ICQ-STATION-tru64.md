@@ -439,6 +439,32 @@ baked-era session genuinely gone first — signing in as the same UIN from the
 gateway (`rn-tool.py login 10.99.0.2 5190 64000 <pass>`) evicts it, which is
 what the numbers above were taken against.
 
+**Two things to know when you verify a restore yourself.**
+
+- **`labctl shot` reads `fb.shm`, which keeps the last painted frame even when
+  es40 is dead.** A screenshot alone is therefore NOT proof the guest is
+  running: a stale frame looks exactly like a healthy restore. Prove liveness
+  with something that must round-trip through the guest — `labctl exec tru64
+  "date"` — or check the emulator pid.
+- **After a bake, `systemctl start` is a no-op.** The unit stays `active`
+  (that is the streamhost daemon, which outlives es40), so starting it again
+  changes nothing and es40 never relaunches; the symptom is the daemon looping
+  on `connect/HELLO … ctl.sock … Connection refused` while `systemctl
+  is-active` cheerfully says `active`. Use `systemctl restart`.
+
+**Measured on a plain production restart (2026-08-22, the final one):**
+`systemctl restart` 20:48:27 -> persona ONLINE **20:48:41 (~14 s)** -> HiveBot
+greeted **20:49:11 (~44 s)**. Faster than the ~36 s reconnect above because the
+gateway had already dropped the baked session, so the sign-on is a fresh one
+rather than a keepalive timeout followed by a retry.
+
+**A cosmetic nit left in place.** When a wake recreates the chat window before
+the SSI roster has repopulated, `set_convo_title()` finds no buddy yet and
+titles the window with the bare UIN (`10000 - Gaim`) instead of `HiveBot`; a
+window opened after the roster lands is titled correctly. The buddy list itself
+always renders names. Not worth another ~40-minute build cycle on the emulated
+Alpha to chase.
+
 ## Golden lineage & rollback (FULL paths)
 
 This station's "golden" is an es40 **checkpoint** (savestate + the disk it was
