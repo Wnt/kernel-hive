@@ -141,7 +141,7 @@ fi
 # captures a host interface with pcap rather than attaching a tap). es40 opens
 # the GUEST end (tru64-g, es40.cfg `adapter =`) with pcap; rn-tapnet.sh enslaves
 # the HOST end (tru64-h) to vmbr-rn, so the guest shares real L2 with the
-# gateway CT (10.99.0.2) for its climm/OSCAR ICQ client — while a fail-closed
+# gateway CT (10.99.0.2) for its Gaim/OSCAR ICQ client — while a fail-closed
 # guard chain (TRU64RN-IN, scoped to the guest's static 10.99.0.15) drops every
 # NEW flow the guest starts toward labhost. This REPLACED the pre-2026-08-21 WAN
 # wiring (172.31.66.0/30 MASQUERADE, the one station with a real internet path);

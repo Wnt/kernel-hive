@@ -14,7 +14,7 @@
 # ingress tru64-h -> the bridge forwards them (to the gateway CT's veth951i0);
 # frames for the guest's MAC leave the bridge on tru64-h -> tru64-g -> es40's
 # pcap -> the guest. That is the same real L2-to-the-gateway the tap gives the
-# QEMU guests (working UDP + ICMP + multi-connection TCP for climm/OSCAR),
+# QEMU guests (working UDP + ICMP + multi-connection TCP for Gaim/OSCAR),
 # reached by a different backend.
 #
 # Before the retronet swap this NIC was NAT'd OUTBOUND to the actual internet

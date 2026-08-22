@@ -519,294 +519,98 @@ carries `.src.rpm`/`.i486.rpm`/`_i386.deb` (Linux x86) and an
 by anyone. Source-only is not a fallback here, it is the only option, and it
 is a good one given the above.
 
-### GUI OSCAR client for tru64 — recon 2026-08-22, **BLOCKED, ship climm**
+### Gaim 0.59.9 — retronet GUI OSCAR client for `tru64` (SHIPPED 2026-08-22)
 
-The operator asked whether the tru64 station's terminal client (climm 0.6.4,
-above) could be swapped for a desktop-integrated GUI client (Gaim, or an
-equivalent) that still meets all five ICQ-station hard requirements: OSCAR
-against `10.99.0.2:5190` with a host/port override, **server-side SSI/feedbag**
-contacts (not local adds), auto sign-in + auto reconnect, a real X11/CDE
-desktop app (not a `dtterm` TUI), and buildable on Tru64 5.1B/Alpha with
-Compaq C V6.5-011 (no gcc) or installable from a period Freeware/OSIS CD.
-**Verdict: BLOCKED — the toolkit and the protocol requirement point at two
-different, mutually exclusive Gaim generations. climm stays the client.**
+**Status: LIVE on `tru64`, replacing climm 0.6.4.** The operator asked for the
+station's terminal client (climm in a `dtterm`) to become a desktop-integrated
+GUI client without giving up the fleet's server-side SSI/feedbag contact list.
+Two earlier passes on this question (branches `rn-gui-recon-tru64` and
+`rn-gaim059-spike`) concluded it could not be done and recommended keeping
+climm. **Both conclusions were wrong on the decisive point, and this section
+replaces them.** What follows is the as-built record; the station doc is
+[`docs/lab/retronet/ICQ-STATION-tru64.md`](retronet/ICQ-STATION-tru64.md).
 
-**The hard conflict, found in Gaim's own source history, not by reputation.**
-Gaim's `ChangeLog` (`keep.imfreedom.org/gaim/gaim`) dates SSI/feedbag support
-for OSCAR to **exactly one release, 0.60 (2003-04-04)**: *"Server-stored buddy
-lists for ICQ with full support for authorization (Thanks, Mark Doliner)."*
-The same release's own changelog entry reads *"Removed all deprecated GTK
-calls. Now 100% GTK 2"* — 0.60 is the release where Gaim's GTK+1.2 UI was
-retired and GTK+2 became mandatory (foreshadowed at 0.49, 2001-11-29:
-"Can compile against GTK+ 2.0" as an *optional* build). So there is no Gaim
-release that is both SSI-capable and GTK+1.2: **every pre-0.60 Gaim (GTK+1.2,
-the only GTK generation this recon found any path to) predates SSI entirely**,
-and every SSI-capable Gaim (0.60+) requires a GTK+2 stack (glib2, atk, pango,
-cairo, gtk2, plus libxml2/gettext underneath) that does not exist prebuilt for
-Tru64/Alpha anywhere found.
+| file | sha256 | size | source | class / terms |
+|---|---|---|---|---|
+| `gaim-0.59.9.tar.gz` | `268b630bfab1096b1cff4e02c97ea6bb2bf22b3be387d3c222cfe0453c86dbd8` | 2 126 466 | [SourceForge `pidgin` project, `OldFiles/`](https://sourceforge.net/projects/pidgin/files/OldFiles/gaim-0.59.9.tar.gz/download) (March 2003 release) | **freely-fetchable-pinned.** GPLv2 (`COPYING`). Staged in the media archive at that hash. |
+| `AG-RHAYC-BS.iso` — Tru64 UNIX v5.1 Disc 5, "Open Source Software Collection" | sha1 `e153fb36c595575ce5c3013e3c3610eec7c131bc` *(the item publishes sha1; verified on download)* | 629 368 832 | [archive.org item `compaqtru64unix51`](https://archive.org/details/compaqtru64unix51) | abandonware (HP/Compaq). Carries **GTK+ 1.2.8 + glib 1.2.8 + gettext 0.10** as Alpha RPMs. Staged at `/data/assets-staging/tru64-disc5/`. |
 
-**Requirement 5 (buildable) fails independently, before requirement 2 (SSI)
-is even reached.** Read-only recon on the live guest (`labctl exec tru64`,
-2026-08-22, no changes made):
-- `/usr/local/lib`, `/usr/shlib`, `/usr/lib` carry **no GTK, no glib, no Qt,
-  no KDE** (`ls … | grep -i gtk/glib/gdk` and `… qt/kde` both empty).
-- `/usr/local/bin` holds only what the climm/Lynx build sessions left:
-  `climm`, `httpget`, `httpfetch`, `lynx`, `micq`, `webbrowser`, `xptr` — no
-  GUI IM client of any kind, ever installed here.
-- CDE/Motif is present as **static archives only** (`libXm.a`, `libMrm.a`,
-  `libDtWidget.a`, `libDtSvc.a`, `libDtHelp.a`, `libDtTerm.a`, `libDXm.a` in
-  `/usr/lib`) — real, but this is Motif 1.2/2.1-era C, not a GTK/Qt/GNOME
-  runtime, and no OSCAR client of any generation targets Motif natively (see
-  below).
-- `cc -V` confirms **Compaq C V6.5-011** is still the only compiler; no gcc
-  anywhere on `$PATH`. Building a GTK+2 stack (a C99-leaning, heavily
-  autoconf/libtool-chained set of ~6 packages, each substantially larger than
-  climm) with a vendor C89 compiler that has never been asked to build
-  anything past Lynx/climm's complexity is a different order of task, not an
-  incremental one — realistically weeks, not the ~80 guest-CPU-minutes climm
-  and Lynx each took, with no precedent on this box that it even completes.
-
-**The Freeware/OSIS CD path — obtainable, but does not carry what's needed.**
-A period HP/Compaq Tru64 disc set exists and is on archive.org, item
-[`compaqtru64unix51`](https://archive.org/details/compaqtru64unix51):
-Disc 5 `Open Source Software Collection for Tru64 UNIX v5.1` (`AG-RHAYC-BS.iso`,
-~600 MB) and Disc 6 `Open Source Internet Solutions for Tru64 UNIX v5.4`
-(`AG-QF6MT-BS.iso`, ~435 MB) — both fetchable, sha1-verified on the item page.
-Package contents were cross-checked against Cornell's own install notes for
-this exact collection ([`wiki.classe.cornell.edu/Computing/Tru64Freeware`](https://wiki.classe.cornell.edu/Computing/Tru64Freeware),
-targets Tru64 V5.1/V5.1A, same lineage as Disc 5): it carries **GTK+ 1.2.10 +
-glib 1.2.10 + imlib 1.9.10**, Xaw3d, assorted Motif tools, gcc/autoconf/automake,
-and ~130 packages total — **no GNOME, no Gaim, no Qt, no KDE**. This is
-exactly the GTK generation the SSI conflict above rules out: installing Disc
-5 would give tru64 a Gaim UI, but only a pre-0.60 Gaim with no SSI, failing
-requirement 2 outright and landing back on client-local contact adds — a
-regression from what climm already does today. Disc 6 was not fully
-catalogued (no public package listing found) and targets v5.4, two majors
-ahead of this station's 5.1B; even if compatible, "Internet Solutions" discs
-of this vintage are typically server/security tooling (Apache, OpenSSL,
-Samba) rather than GUI toolkits, and neither GTK+2 nor Qt has been reported
-on any Tru64 freeware disc of this era in the sources checked. **Net: the CD
-path is real and cheap to fetch, but it re-creates the exact conflict found
-in Gaim's own history — it does not resolve it.**
-
-**Alternatives checked against the same five requirements, all rejected:**
-- **GnomeICU** — GTK + full GNOME libs (heavier than Gaim's own GTK+2 stack;
-  same from-source-on-Alpha problem, worse).
-- **Ayttm / Everybuddy** — GTK-based, OSCAR via a libfaim-derived plugin; no
-  evidence found of a build ever targeting Tru64/Alpha, and inherits the same
-  GTK question with no offsetting SSI-history research done (out of
-  proportion to pursue once the GTK+1.2-vs-GTK+2 conflict was confirmed
-  structural, not client-specific).
-- **licq (Qt)** — re-confirms the earlier onboarding-plan rejection: no Qt on
-  the guest, none on the Freeware CD found, so "graphical licq under CDE"
-  still means building Qt3/Qt4 from source first. No change from the original
-  verdict.
-- **A Motif/CDE-native OSCAR client** — none found to exist, published or
-  otherwise, in any search performed. Motif/CDE being present on the guest is
-  necessary but not sufficient; nobody wrote one.
-- **"climm in a nicer terminal"** — explicitly not offered: it does not touch
-  requirement 4 (a real desktop app, not a curses/TUI program in a `dtterm`)
-  no matter how the terminal is dressed, so it is not a pass on the operator's
-  ask, just the status quo redecorated.
-
-**Recommendation: keep climm 0.6.4 in the `dtterm`, as already shipped.** It
-is the only candidate on this box that meets requirements 1/2/3/5 today
-(proven live, `ICQ-STATION-tru64.md`); no path was found to add requirement 4
-(a real GUI) without either giving up requirement 2 (SSI, downgrading to a
-pre-0.60/GTK+1.2 Gaim) or taking on a from-source GTK+2 stack on Alpha/Compaq C
-— a build of a different order of magnitude than anything proven on this
-station, undertaken on the strength of a maybe (nothing confirms Compaq C can
-even compile glib2/pango/cairo's more C99-leaning code, autotools generation
-aside). If the operator wants to spend real time on this anyway, the least-bad
-next step is a **feasibility spike building glib2 alone** (the bottom of the
-GTK+2 stack, smaller and more C89-friendly than the layers above it) on a
-throwaway sandbox clone, before committing to gtk2/pango/cairo/atk on top —
-but that is new work, not this errand's finding, and this recon does not
-recommend spending it: the payoff (a themed window instead of a `dtterm`) is
-small next to the risk of an open-ended, possibly-unfinishable Alpha
-cross-toolchain project.
-
-Nothing was staged in the media archive or `/data/assets-staging/` for this
-recon — no artifact met the bar to be worth fetching. The CD path is recorded
-here (URL + item name) rather than pre-fetched, since it does not change the
-recommendation.
-### Gaim 0.59.9 on tru64 — feasibility spike 2026-08-22, **NOT VIABLE for SSI, VIABLE only as a local-contact-list downgrade**
-
-Follow-up to the "GUI OSCAR client for tru64" recon on branch
-`rn-gui-recon-tru64` (commit `b630b8b`, unmerged at spike time — read, not
-repeated here). That recon rejected the whole Gaim path from the
-`ChangeLog` alone: SSI/feedbag support for OSCAR is dated to release 0.60
-(2003-04-04), the same release that dropped GTK+1.2 for GTK+2, and Tru64 has
-no path to a GTK+2 stack. This spike answers the operator's actual follow-up
-question — **if the operator accepts a client-local contact list instead of
-SSI, is Gaim 0.59.9 (the last GTK+1.2 release) otherwise viable?** — by
-reading 0.59.9's own source, not by extrapolating from the changelog.
-
-**Bottom line up front: the OSCAR/ICQ auth path works and is source-confirmed
-compatible with our gateway; the SSI gap is real, source-confirmed, and
-narrower than the prior recon implied — 0.59.9 actually ships working SSI
-code, but it is explicitly gated off for ICQ logins.** Building it is
-plausible with a similar profile to the climm/Lynx builds already proven on
-this guest. Whether that's worth doing is an operator call on the local-list
-maintenance tax (below), not a technical blocker.
-
-**1. Source exists and fetches cleanly.** SourceForge (`pidgin` project,
-`OldFiles/`) still serves `gaim-0.59.9.tar.gz` — March 2003 release, GPLv2
-(`COPYING`). Fetched via the SourceForge mirror redirect (`master.dl.sourceforge.net`),
-2026-08-22:
-- URL: `https://sourceforge.net/projects/pidgin/files/OldFiles/gaim-0.59.9.tar.gz/download`
-- File: `gaim-0.59.9.tar.gz`, 2,126,466 bytes
-- sha256: `268b630bfab1096b1cff4e02c97ea6bb2bf22b3be387d3c222cfe0453c86dbd8`
-- **Staged** in the media archive at that hash (`/data/media-archive/blobs/26/268b630b…`).
-
-**2. OSCAR auth: standard, host/port-overridable, ICQ-UIN-aware — confirmed at
-source level.** Read `src/protocols/oscar/oscar.c` and `auth.c` directly:
-- `oscar_user_opts()` (oscar.c ~3655) exposes **"Auth Host:"** (default
-  `login.oscar.aol.com`) and **"Auth Port:"** (default `5190`) as
-  UI-editable per-account fields (`USEROPT_AUTH`/`USEROPT_AUTHPORT`) — not
-  compiled-in constants. Pointing it at `10.99.0.2:5190` is a normal account
-  setup, the same shape climm's `host "10.99.0.2"` override already is.
-- `aim_send_login()` (auth.c:263) does the standard FLAP/SNAC(17,2) OSCAR
-  auth with `aim_encode_password_md5()` — MD5(key + password + AIM magic
-  string), the same auth family climm 0.6.4 and the Windows ICQ 2000b/2001b
-  fleet already use against this gateway. No AOL-specific handshake, no TLS.
-- **ICQ UIN detection is automatic and unconditional:** oscar.c:490-491,
-  `if (isdigit(*user->username)) odata->icq = TRUE;` — a numeric screenname
-  (our UIN `64000`) is recognized as ICQ, not gated behind any separate
-  build flag or config option.
-- This is the same OSCAR generation the gateway (`GATEWAY.md`, Open OSCAR
-  Server / Retro AIM Server lineage) already serves successfully to climm
-  and the ICQ 2000b/2001b Windows fleet — nothing 0.59.9-specific to the
-  handshake was found that would fail against it. **Sign-on should work**,
-  pending an actual build+test (out of scope for this paper spike, per the
-  brief).
-
-**3. What the contact list degrades to — confirmed at source level, and it is
-worse than "just client-local": SSI is present in the code but explicitly
-disabled for ICQ.** `src/protocols/oscar/ssi.c` exists and is compiled in
-(`liboscar_a_SOURCES` in `Makefile.am`), and `oscar.c` wires it up
-(`gaim_ssi_parserights`, `gaim_ssi_parselist`, `aim_ssi_addbuddies` /
-`_movebuddy` / `_delbuddies`) — a real, working feedbag client, not a stub.
-**But it only fires for non-ICQ (AIM) accounts:**
+**The claim that killed the earlier passes, and why it was wrong.** Both took
+Gaim's own history at face value: SSI/feedbag for ICQ arrived in 0.60, the same
+release that made GTK+2 mandatory, therefore no Gaim is both SSI-capable and
+GTK+1.2, therefore the GUI costs the roster. The second pass went further and
+read 0.59.9's source, correctly finding that `ssi.c` is fully wired but
+explicitly skipped for ICQ logins:
 
 ```
 if (!odata->icq) {
-    debug_printf("ssi: requesting ssi list\n");
-    aim_ssi_reqrights(sess, fr->conn);
-    aim_ssi_reqdata(sess, fr->conn, sess->ssi.timestamp, sess->ssi.revision);
+        aim_ssi_reqrights(sess, fr->conn);
+        aim_ssi_reqdata(sess, fr->conn, sess->ssi.timestamp, sess->ssi.revision);
 }
 ```
-(oscar.c, in the post-BOS-rights login continuation.) Since UIN `64000` sets
-`odata->icq = TRUE` unconditionally (see #2), **this branch never runs for
-our persona** — 0.59.9 will never request the server's SSI/feedbag roster on
-this account, regardless of what the gateway offers. This precisely matches
-what the prior recon's `ChangeLog` reading implied ("Server-stored buddy
-lists **for ICQ**" shipped at 0.60) — 0.59.9's SSI is AIM-only, gated by the
-exact `isdigit()` check that also makes ICQ login work. The two are the same
-code path forking in opposite directions: **the thing that makes 0.59.9
-recognize our UIN also disqualifies it from syncing that UIN's roster.**
 
-Instead, the buddy list is a **local flat file**: `src/list.c`
-`bud_list_cache_exists()` / `get_screenname_filename()` →
-`~/.gaim/<UIN>.<protocol-number>.blist`, loaded via `do_import()` at login
-and otherwise untouched by the network. Concretely, for the operator:
-- **Checkpoint restore:** fine, no different from climm today — the file
-  lives in the guest filesystem, baked into the golden RAM/disk snapshot
-  like everything else. A restore shows the same list every time.
-- **A new station joining the fleet:** the roster (HiveBot + peer stations)
-  would need to be **hand-authored into that one `.blist` file** before the
-  golden is captured — there is no `rn-tool.py ssi-seed` equivalent for a
-  0.59.9 ICQ account, because the client never asks the server for one. Any
-  future roster change (a station renamed, a new station onboarded) means
-  editing this file and **re-baking the golden**, on every station running
-  0.59.9 — exactly the maintenance tax `ICQ-STATION-tru64.md` and
-  `ICQ-STATION.md` both note ICQ 2000b/SSI-less clients impose, and exactly
-  what SSI was adopted fleet-wide to eliminate. This is a real regression
-  from climm's current server-synced list, not a wash.
+It then recorded that as a permanent, architectural "no" and recommended
+against the swap. **That gate is a client-side assumption from 2003 about what
+ICQ servers could do — not a limitation of the protocol or of our gateway.**
+Deleting it (and the matching `if (odata->icq) return 1;` at the top of
+`gaim_ssi_parselist()`) makes 0.59.9 request the feedbag on an ICQ login, and
+**our gateway serves it**: the full five-contact roster arrives and syncs.
+Proven live, not reasoned about — the client's own debug log:
 
-**4. Build dependencies — GTK+1.2/glib1.2 class, Compaq C plausible, no
-new hard blockers found.** `configure.in`:
-- `AM_PATH_GLIB(1.2.5,...)`, `AM_PATH_GTK(1.2.5,...)` — Disc 5's GTK+1.2.10 +
-  glib1.2.10 covers both with margin.
-- `AM_GNU_GETTEXT` / `AM_GNU_GETTEXT_VERSION(0.10.40)` — standard
-  gettext-degrades-gracefully macro (no NLS if `msgfmt`/`libintl` are
-  missing); not confirmed present on Disc 5 or native Tru64, but not a hard
-  `AC_MSG_ERROR` gate either, unlike the GTK/glib checks.
-- `--disable-perl` is available (`AC_ARG_ENABLE(perl,...)`, defaults ON but
-  optional) — skip it, same posture as climm's `--disable-tcl
-  --disable-otr`.
-- No `libxml`, no `aspell`, no `imlib`/`gdk_imlib` reference found in
-  `configure.in` or a source grep — narrower dependency surface than the
-  prior recon's GTK+2-stack estimate (which pulls in glib2/pango/cairo/atk).
-- **Compiler: expect Compaq C, not gcc**, by direct analogy to the already-proven
-  climm/Lynx builds on this same guest (`ICQ-STATION-tru64.md` §climm) — GTK+1.2/
-  glib1.2 (1998-2000 vintage, C89-targeted, historically ported to vendor Unix
-  compilers on HP-UX/Solaris/IRIX/Tru64 of this era) is architecturally the same
-  generation of C as climm/Lynx, not the C99-leaning GTK+2 stack the prior recon
-  correctly flagged as a different order of problem. Disc 5's gcc is a fallback,
-  not the expected primary — same `CONFIG_SHELL=/bin/ksh CC=/usr/bin/cc` pattern
-  climm used should apply. **Not proven by an actual build in this spike** (paper
-  recon only, per the brief).
+    ssi: requesting ssi list
+    ssi: activating server-stored buddy list
+    ssi: adding buddy 20000 (win2000) to group contacts-icq8-64000 to local list
+    …HiveBot / win98se / nt4 / solaris likewise…
 
-**5. Disc 5 ISO — reachable, size and checksum confirmed, not downloaded (per
-brief: don't pull 600 MB unless clearly useful — it doesn't change the
-verdict).**
-- archive.org item `compaqtru64unix51`, file `Compaq Tru64 UNIX v5.1 (Disc 5)
-  Open Source Software Collection for Tru64 UNIX v5.1 (AG-RHAYC-BS).iso`
-- SHA1 (item page): `e153fb36c595575ce5c3013e3c3610eec7c131bc`
-- `curl -sIL` on the direct download URL: `content-length: 629368832`
-  (600.2 MiB, matches the item page), `last-modified: 2019-11-12`,
-  `accept-ranges: bytes` — reachable and resumable right now.
+The lesson worth keeping: **"the client refuses to ask" and "the server cannot
+answer" are different claims**, and only the second one is a real blocker. The
+prior passes never tested the first against this gateway. The precedent was
+already on the shelf — `climm-0.6.4-ssi-login.patch` is a one-line SSI fix to
+the sibling client on this same fleet.
 
-**6. Honest effort estimate.** climm 0.6.4 took ~35 min `configure` + ~45 min
-`make` on the emulated Alpha (`ICQ-STATION-tru64.md`). Gaim 0.59.9 is a
-larger codebase (GUI + `libfaim`/oscar + perl/jabber/napster/etc. protocol
-plugins even with most protocols left off) built against an *external*
-prebuilt library stack (GTK+1.2/glib1.2/Xaw3d from Disc 5) rather than
-climm's near-zero-dependency build. Rough shape of the whole path:
-- Install Disc 5's GTK+1.2/glib1.2/imlib Alpha packages (`setld` or
-  equivalent) — untried on this guest, unknown duration, likely tens of
-  minutes plus troubleshooting package-manager quirks on a vendor OS most
-  of the lab's experience is with `cc`/`make`, not `setld`.
-  configure + `make` for a codebase several times climm's size, expect
-  something in the **1.5-3 hour range** on the emulated Alpha, contingent on
-  Compaq C actually swallowing GTK+1.2/glib1.2's C without a gcc fallback.
-- **Total: a half-day-to-a-day spike**, not a same-session build — call it
-  **4-8x climm's wall-clock**, dominated by unknowns (package install,
-  compiler compatibility) rather than proven build time.
+**What shipped:** `streamhost/stations/tru64/gaim-0.59.9-icq-ssi.patch`, five
+changes across `oscar.c`, `ssi.c`, `aim.h`, `multi.c`, `buddy.c` — the two ICQ
+gates removed; a new `aim_ssi_getalias()` that reads the buddy item's display
+name from TLV `0x0131` so contacts render by nickname instead of bare UIN
+(without it, SSI works and the list still shows five numbers); auto-reconnect
+ported from `plugins/autorecon.c` into the core, because the build is
+`--disable-plugins` and 0.59.9 ships that behaviour only as a dlopen'd GModule
+— with `GPOINTER_TO_INT` instead of the plugin's LP64-truncating `(int)` casts
+and `MIN` instead of its `MAX` when doubling the backoff; and a fix for a real
+0.59.9 bug where `move_blist_window()` stores an absolute position into the
+`xoff`/`yoff` fields the placement code treats as frame offsets, so the buddy
+list reappeared at (0,0) after every reconnect.
 
-**Top 3 risks, ranked:**
-1. **The SSI gap is a real, permanent regression, not a temporary gap.**
-   0.59.9's ICQ branch will never sync SSI — this isn't "SSI arrives later
-   in the 0.59 series," it's architecturally absent for UIN logins in every
-   release before 0.60. Shipping it commits the fleet to hand-maintained
-   local buddy lists on tru64 specifically, diverging from every other
-   onboarded ICQ station.
-2. **Disc 5's package format and installer are untested on this guest.**
-   Every build precedent here (climm, Lynx) was a from-source `configure
-   && make`; installing prebuilt Alpha `setld` packages from a mounted ISO
-   is a different, unproven operation on this station — could be trivial or
-   could itself eat the estimate above.
-3. **Compaq C compiling GTK+1.2/glib1.2 is plausible but unverified.**
-   Nothing on this guest has built anything close to a GUI toolkit's C
-   before (climm/Lynx are both protocol/text clients); if Compaq C balks
-   partway through glib1.2 or GTK+1.2 (both prebuilt from Disc 5, so this
-   only bites if *gaim itself* needs the exact same compiler flags/headers
-   the prebuilt libraries were built with — an ABI/header-compat risk more
-   than a raw "can cc parse this C" risk), the fallback is Disc 5's gcc,
-   untried here.
+**Build reality, against the earlier estimate.** The spike guessed 4-8x climm's
+wall clock and flagged three risks. Two evaporated and one was real but not
+where expected:
+- *"Disc 5's package format and installer are untested"* — **void.** Disc 5 is
+  **RPM, not `setld`**, and every package installs under `/usr/local`. No
+  package manager was run on the guest at all: the `glib`/`gtk+`/`gettext`
+  payloads were extracted on labhost (RPM 3.0 with a gzipped SVR4 cpio payload
+  that modern `rpm2cpio` will not read — locate the gzip member by magic and
+  inflate) and delivered as a plain `usr/local`-rooted tarball. Zero collisions
+  with the guest's existing `/usr/local`.
+- *"Compaq C compiling GTK+1.2 is plausible but unverified"* — **settled.**
+  `checking for GLIB - version >= 1.2.5... yes` / `checking for GTK - version
+  >= 1.2.5... yes`: the vendor compiler built **and ran** the toolkit test
+  programs. Disc 5's gcc was never touched.
+- *"The SSI gap is a permanent regression"* — **wrong**, per the above.
 
-**Recommendation stands with the prior recon's spirit but sharper: keep
-climm.** The technical path to a *building* Gaim 0.59.9 looks more tractable
-than the prior recon's GTK+2-stack framing suggested (source-confirmed OSCAR/
-ICQ auth compatibility, a narrower dependency list, a prebuilt GTK+1.2 on
-Disc 5), but the payoff is a strictly worse contact-list story than what
-climm already ships today — trading a self-maintaining server-synced roster
-for a hand-edited local file that must be re-baked into every future golden.
-That is a real GUI window in exchange for a real fleet-maintenance
-regression, and this spike does not resolve which the operator should
-prefer — it only removes the "maybe SSI works after all" uncertainty from
-the prior recon and replaces it with a precise, source-confirmed "no."
+The real costs were elsewhere and are worth knowing before repeating this:
+`configure` runs **~100 minutes** on the emulated Alpha (~300 probes); the link
+fails on `iconv_open`/`iconv`/`iconv_close` because Tru64 keeps iconv in
+`/usr/shlib/libiconv.so` and gaim's configure records no library for it, and
+**Tru64 `make` does not propagate a command-line `LIBS=` override into its
+recursive sub-make**, so the flag must be set before `configure` or written into
+`src/Makefile`; and source files authored off-box arrive with **2026** mtimes on
+a guest whose clock is a period-correct **2003**, which makes `make` rebuild the
+entire tree on every invocation until they are `touch`ed.
+
+Nothing else was staged for this work. climm 0.6.4 and its patch remain
+installed on the tru64 golden as the documented rollback, so the row for it in
+`docs/catalog/software-catalog.md` stays live.
+
 ### `solaris` GUI OSCAR client — Pidgin is ALREADY on the golden disk (no media to stage)
 
 The operator asked for climm (terminal, `dtterm`) to be replaced by a

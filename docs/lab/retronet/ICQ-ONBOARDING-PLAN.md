@@ -20,7 +20,7 @@ would collide on the same live golden).
 | **nt4** | ICQ 2000b | **A** — clean copy; pcnet netdev; peak-1996 era | `40000` |
 | **win95** | ICQ 2000b | **B** — its NIC also carries the **warpnet** pointer agent; the bridge swap must carry that across (do after A proves the plain path) | `95000` |
 | **solaris** | climm 0.6.4 (OSCAR, formerly micq) — **sourced**, build from source | **C** — gcc 3.4.3 confirmed on-box (`/usr/sfw/bin/gcc`); still needs the bridge swap (e1000 → tap on vmbr-rn) | `30000` |
-| **tru64** | climm 0.6.4 (OSCAR, formerly micq) — **sourced**, build from source | **C** — media sourcing is **not** a blocker (native Compaq C already built Lynx on this guest); already on a real veth, needs rehoming onto vmbr-rn | `64000` |
+| **tru64** | **Gaim 0.59.9** (OSCAR, GTK+1.2 desktop client) — LIVE since 2026-08-22; onboarded on climm 0.6.4, which stays installed as the rollback | **C** — media sourcing is **not** a blocker (native Compaq C already built Lynx on this guest); already on a real veth, needs rehoming onto vmbr-rn | `64000` |
 | **macos753** | Mac ICQ/AIM (OSCAR) — media TBD | **D** — has **no NIC** (device-set change → cold rebuild) + MacTCP; hardest | `75300` |
 
 (Existing: bot `10000` = **HiveBot**, win98se persona `98980`.) Each station's

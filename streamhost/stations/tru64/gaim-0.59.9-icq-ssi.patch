@@ -1,3 +1,31 @@
+diff -Naur orig/src/buddy.c gaim-0.59.9/src/buddy.c
+--- orig/src/buddy.c	2002-10-22 22:39:54.000000000 +0000
++++ gaim-0.59.9/src/buddy.c	2026-08-22 16:44:06.545663362 +0000
+@@ -2935,8 +2935,22 @@
+ 
+ 	if (blist_options & OPT_BLIST_SAVED_WINDOWS) {
+ 		if (blist_pos.width != 0) {	/* Sanity check! */
+-			gtk_widget_set_uposition(blist, blist_pos.x - blist_pos.xoff,
+-						 blist_pos.y - blist_pos.yoff);
++			/* Retronet: place at the saved position, NOT at
++			 * (x - xoff, y - yoff).
++			 *
++			 * move_blist_window() below stores the window's ABSOLUTE
++			 * position into xoff/yoff on a size-configure event (it
++			 * assigns xoff = x, yoff = y), so those fields are not the
++			 * frame offsets this arithmetic assumes they are. Once a
++			 * size event has landed at the same place as the last
++			 * position event, x - xoff and y - yoff are both 0 and the
++			 * buddy list reappears in the top-left corner.
++			 *
++			 * That bites this exhibit on every wake: a stale-socket
++			 * reconnect signs off, which destroys the buddy list, and
++			 * the re-signon recreates it here -- so the composed layout
++			 * collapsed into the corner every time the station woke. */
++			gtk_widget_set_uposition(blist, blist_pos.x, blist_pos.y);
+ 			gtk_widget_set_usize(blist, blist_pos.width, blist_pos.height);
+ 		}
+ 	}
 diff -Naur orig/src/multi.c gaim-0.59.9/src/multi.c
 --- orig/src/multi.c	2002-05-31 02:58:07.000000000 +0000
 +++ gaim-0.59.9/src/multi.c	2026-08-22 11:34:06.361104050 +0000
