@@ -1,9 +1,10 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useMuseum } from '../../state/store';
 import { bindingFromManifest } from '../../three/archetypeRegistry';
 import type { EnrichedVM } from '../../types';
 import { posterFor } from '../../data/posterIndex';
+import { matchesQuery, parseQuery, stationTerms } from './stationSearch';
 
 // ============================================================================
 //  GridView — the plain 2D, keyboard-navigable card grid (DEFAULT view)
@@ -17,6 +18,13 @@ import { posterFor } from '../../data/posterIndex';
 //  clean CSS placeholders — no live streams open here; only the OS the user
 //  opens streams (StreamView), never the whole fleet at once. Clicking /
 //  Enter / Space on a card opens that OS full-viewport.
+//
+//  Era sections FOLD. Only the two decades the collection is thickest in open
+//  on a first visit; after that the viewer's own choices are remembered. The
+//  filter (stationSearch.ts) overrides the fold entirely while it is active —
+//  an era holding a match is opened whether the viewer had it shut or not, and
+//  an era holding none disappears. Anything less and the filter looks broken:
+//  you type `irix` and the page answers with a row of closed headers.
 // ============================================================================
 
 function yearNum(v: EnrichedVM): number {
@@ -46,6 +54,37 @@ interface EraGroup {
   era: string;
   minYear: number;
   items: EnrichedVM[];
+}
+
+// Fold state. Open by default on a FIRST visit only: the two decades this
+// collection is thickest in, and the ones a visitor is looking for. Every other
+// era starts shut so the page opens as a readable index rather than 61 cards.
+const DEFAULT_OPEN_ERAS = new Set(['1990s', '2000s']);
+const FOLD_STORAGE_KEY = 'kernelHive.gridEraOpen';
+
+type FoldState = Record<string, boolean>;
+
+// Storage can be absent (SSR-ish contexts), blocked (Safari private mode throws
+// on ACCESS, not just on write) or hold something another version wrote. Any of
+// those is a first visit, which is a perfectly good answer.
+function readFoldState(): FoldState {
+  try {
+    const raw = window.localStorage.getItem(FOLD_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>)
+        .filter((entry): entry is [string, boolean] => typeof entry[1] === 'boolean'),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function writeFoldState(state: FoldState): void {
+  try { window.localStorage.setItem(FOLD_STORAGE_KEY, JSON.stringify(state)); }
+  catch { /* the fold still works for this visit; only the memory is lost */ }
 }
 
 // GridView unmounts while an OS stream route is open. Keep its scroll offset in
@@ -79,10 +118,54 @@ export default function GridView() {
     return out;
   }, [streamable]);
 
+  // ---- filter ----------------------------------------------------------
+  const [query, setQuery] = useState('');
+  const filterRef = useRef<HTMLInputElement>(null);
+
+  // One term set per station, rebuilt only when the lineup itself changes —
+  // never per keystroke.
+  const termsById = useMemo(
+    () => new Map(streamable.map((v) => [v.id, stationTerms(v)])),
+    [streamable],
+  );
+  const parsed = useMemo(() => parseQuery(query), [query]);
+  const filtering = parsed.length > 0;
+
+  // Groups as the page will actually show them: filtered, and emptied eras
+  // dropped so a search never renders a header with nothing under it.
+  const shownGroups = useMemo<EraGroup[]>(() => {
+    if (!filtering) return groups;
+    return groups
+      .map((g) => ({ ...g, items: g.items.filter((v) => matchesQuery(termsById.get(v.id)!, parsed)) }))
+      .filter((g) => g.items.length > 0);
+  }, [groups, filtering, parsed, termsById]);
+
+  const matchCount = shownGroups.reduce((n, g) => n + g.items.length, 0);
+
+  // ---- fold ------------------------------------------------------------
+  const [foldState, setFoldState] = useState<FoldState>(readFoldState);
+
+  // A filter run OVERRIDES the fold rather than replacing it: every era with a
+  // match is open while typing, and clearing the box hands the viewer their own
+  // expand/collapse choices back untouched.
+  const isOpen = useCallback(
+    (era: string) => (filtering ? true : foldState[era] ?? DEFAULT_OPEN_ERAS.has(era)),
+    [filtering, foldState],
+  );
+
+  const toggleEra = useCallback((era: string) => {
+    setFoldState((prev) => {
+      const next = { ...prev, [era]: !(prev[era] ?? DEFAULT_OPEN_ERAS.has(era)) };
+      writeFoldState(next);
+      return next;
+    });
+  }, []);
+
   // Flat DOM order of card refs for roving arrow-key navigation. Cards are now
-  // <Link> anchors, so the ref array is typed for HTMLAnchorElement.
+  // <Link> anchors, so the ref array is typed for HTMLAnchorElement. Only cards
+  // that are actually rendered (open era, matching the filter) get an index.
   const cardRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-  const flatCount = streamable.length;
+  const flatCount = shownGroups.reduce((n, g) => (isOpen(g.era) ? n + g.items.length : n), 0);
 
   // Save from the still-mounted scroll container before the route removes it.
   useLayoutEffect(() => () => {
@@ -96,6 +179,23 @@ export default function GridView() {
       gridRef.current.scrollTop = savedScrollTop;
     }
   }, [vms.length]);
+
+  // Autofocus the filter so the operator can type the moment the page settles —
+  // but only where a keyboard is already present. On a touch device focusing an
+  // input pops the on-screen keyboard over the collection you came to look at.
+  // GridView owns the '/' route alone, so nothing else is competing for focus.
+  useEffect(() => {
+    if (window.matchMedia?.('(pointer: fine)').matches) filterRef.current?.focus();
+  }, []);
+
+  // Escape empties the filter from anywhere on the grid. It is free here: the
+  // Escape the rest of the app protects belongs to an opened station's
+  // StreamView, which is a different route and unmounts this one.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setQuery(''); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const focusCard = (i: number) => {
     if (i < 0 || i >= flatCount) return;
@@ -150,16 +250,59 @@ export default function GridView() {
   return (
     <div ref={gridRef} className="grid-view" role="region" aria-label="Operating system collection">
       <div className="grid-view-inner">
-        {groups.map((g) => (
-          <section className="era-section" key={g.era} aria-label={`Era ${g.era}`}>
-            <header className="era-header">
-              <h2>{g.era}</h2>
-              <span className="era-sub">{ERA_SUBTITLE[g.era] ?? ''}</span>
-              <span className="era-count">{g.items.length}</span>
-            </header>
+        <div className="grid-filter">
+          <input
+            ref={filterRef}
+            className="grid-filter-input"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter — win2k, windows 3, unix, irix, dos…"
+            aria-label="Filter the collection by name, era or family"
+            aria-describedby="grid-filter-status"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {filtering && (
+            <button type="button" className="grid-filter-clear" onClick={() => setQuery('')}>
+              Clear
+            </button>
+          )}
+          <span id="grid-filter-status" className="grid-filter-status" role="status">
+            {filtering ? `${matchCount} of ${streamable.length}` : `${streamable.length} systems · press /`}
+          </span>
+        </div>
 
-            <div className="card-grid" role="list">
-              {g.items.map((v) => {
+        {filtering && matchCount === 0 && (
+          <div className="grid-empty grid-empty--nomatch">
+            Nothing in the collection matches “{query.trim()}”.
+          </div>
+        )}
+
+        {shownGroups.map((g) => {
+          const open = isOpen(g.era);
+          const panelId = `era-panel-${g.era}`;
+          return (
+            <section className="era-section" key={g.era} aria-label={`Era ${g.era}`}>
+              <h2 className="era-header">
+                <button
+                  type="button"
+                  className="era-toggle"
+                  aria-expanded={open}
+                  aria-controls={panelId}
+                  onClick={() => toggleEra(g.era)}
+                >
+                  <span className="era-caret" aria-hidden="true">{open ? '▾' : '▸'}</span>
+                  <span className="era-name">{g.era}</span>
+                  <span className="era-sub">{ERA_SUBTITLE[g.era] ?? ''}</span>
+                  {/* Kept on a collapsed header too: a shut era must never read
+                      as an empty one. */}
+                  <span className="era-count">{g.items.length}</span>
+                </button>
+              </h2>
+
+              <div className="card-grid" id={panelId} role="list" hidden={!open}>
+                {open && g.items.map((v) => {
                 running += 1;
                 const idx = running;
                 const b = bindingFromManifest(v);
@@ -221,14 +364,17 @@ export default function GridView() {
                         <span className="os-chip">{v.arch}</span>
                       </span>
                     </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
         <footer className="grid-foot">
-          {groups.length} eras · {streamable.length} operating systems
+          {filtering
+            ? `${matchCount} matching ${matchCount === 1 ? 'system' : 'systems'} in ${shownGroups.length} ${shownGroups.length === 1 ? 'era' : 'eras'}`
+            : `${groups.length} eras · ${streamable.length} operating systems`}
           {' · '}
           <a
             className="grid-foot-link"

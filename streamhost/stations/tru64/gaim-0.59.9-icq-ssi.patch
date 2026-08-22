@@ -1,0 +1,176 @@
+diff -Naur orig/src/multi.c gaim-0.59.9/src/multi.c
+--- orig/src/multi.c	2002-05-31 02:58:07.000000000 +0000
++++ gaim-0.59.9/src/multi.c	2026-08-22 11:34:06.361104050 +0000
+@@ -1119,8 +1119,69 @@
+ 		}
+ }
+ 
++/* ---------------------------------------------------------------------------
++ * Retronet: auto-reconnect, in the core rather than as a plugin.
++ *
++ * Stock 0.59.9 ships this behaviour only as plugins/autorecon.c, a dlopen'd
++ * GModule. This station builds --disable-plugins (no module loader to trust on
++ * Tru64/Alpha, and one static binary is a smaller thing to keep working), so
++ * the same logic lives here instead. It is what makes the exhibit self-healing:
++ * a restored checkpoint wakes onto a stale BOS socket, OSCAR's keepalive draws
++ * an RST, and this signs the persona straight back on with no operator input.
++ *
++ * Two deliberate differences from the plugin it is ported from:
++ *   - GPOINTER_TO_INT / GINT_TO_POINTER instead of the plugin's (int) casts.
++ *     This is an LP64 machine; casting a gpointer through int truncates.
++ *   - MIN, not the plugin's MAX, when doubling the delay. The plugin's
++ *     MAX(2*del, MAXTIME) jumps to the ceiling on the first retry, which is
++ *     the opposite of a backoff.
++ * ------------------------------------------------------------------------- */
++#define RN_RECONNECT_INITIAL   2000	/* ms before the first retry */
++#define RN_RECONNECT_MAX      60000	/* ceiling on the backoff */
++
++static GHashTable *rn_reconnect_delay = NULL;
++
++static gboolean rn_reconnect_signon(gpointer data)
++{
++	struct aim_user *u = data;
++
++	/* The account may have been deleted while the timer was pending. */
++	if (g_slist_index(aim_users, u) < 0)
++		return FALSE;
++
++	serv_login(u);
++	return FALSE;
++}
++
++/* Schedule a re-signon for a connection that dropped without being asked to. */
++static void rn_reconnect_schedule(struct gaim_connection *gc)
++{
++	int del;
++
++	if (!gc || gc->wants_to_die || !gc->user)
++		return;
++
++	if (!rn_reconnect_delay)
++		rn_reconnect_delay = g_hash_table_new(g_direct_hash, g_direct_equal);
++
++	del = GPOINTER_TO_INT(g_hash_table_lookup(rn_reconnect_delay, gc->user));
++	del = del ? MIN(2 * del, RN_RECONNECT_MAX) : RN_RECONNECT_INITIAL;
++	g_hash_table_insert(rn_reconnect_delay, gc->user, GINT_TO_POINTER(del));
++
++	debug_printf("reconnect: %s dropped, retrying in %d ms\n", gc->username, del);
++	g_timeout_add(del, rn_reconnect_signon, gc->user);
++}
++
++/* Clear the backoff once an account is actually online again. */
++static void rn_reconnect_clear(struct gaim_connection *gc)
++{
++	if (rn_reconnect_delay && gc && gc->user)
++		g_hash_table_remove(rn_reconnect_delay, gc->user);
++}
++
+ void account_online(struct gaim_connection *gc)
+ {
++	rn_reconnect_clear(gc);
+ 	int i;
+ 	struct signon_meter *meter = find_signon_meter(gc);
+ 
+@@ -1438,6 +1499,7 @@
+ {
+ 	/* core stuff */
+ 	debug_printf("date: %s\n", full_date());
++	rn_reconnect_schedule(gc);
+ 	plugin_event(event_signoff, gc, 0, 0, 0);
+ 	system_log(log_signoff, gc, NULL, OPT_LOG_BUDDY_SIGNON | OPT_LOG_MY_SIGNON);
+ 
+diff -Naur orig/src/protocols/oscar/aim.h gaim-0.59.9/src/protocols/oscar/aim.h
+--- orig/src/protocols/oscar/aim.h	2002-12-21 20:08:19.000000000 +0000
++++ gaim-0.59.9/src/protocols/oscar/aim.h	2026-08-22 11:13:05.863348567 +0000
+@@ -1020,6 +1020,9 @@
+ #define AIM_SSI_TYPE_PDINFO        0x0004
+ #define AIM_SSI_TYPE_PRESENCEPREFS 0x0005
+ 
++/* Buddy-item TLV carrying the server-stored display name ("local alias"). */
++#define AIM_SSI_TLV_ALIAS          0x0131
++
+ struct aim_ssi_item {
+ 	char *name;
+ 	fu16_t gid;
+@@ -1043,6 +1046,7 @@
+ faim_export struct aim_ssi_item *aim_ssi_itemlist_findparent(struct aim_ssi_item *list, char *sn);
+ faim_export int aim_ssi_getpermdeny(struct aim_ssi_item *list);
+ faim_export fu32_t aim_ssi_getpresence(struct aim_ssi_item *list);
++faim_export char *aim_ssi_getalias(struct aim_ssi_item *item);
+ faim_export int aim_ssi_cleanlist(aim_session_t *sess, aim_conn_t *conn);
+ faim_export int aim_ssi_addbuddies(aim_session_t *sess, aim_conn_t *conn, char *gn, char **sn, unsigned int num);
+ faim_export int aim_ssi_addmastergroup(aim_session_t *sess, aim_conn_t *conn);
+diff -Naur orig/src/protocols/oscar/oscar.c gaim-0.59.9/src/protocols/oscar/oscar.c
+--- orig/src/protocols/oscar/oscar.c	2003-02-15 17:42:56.000000000 +0000
++++ gaim-0.59.9/src/protocols/oscar/oscar.c	2026-08-22 11:13:05.864348581 +0000
+@@ -2438,11 +2438,13 @@
+ 
+ 	aim_reqservice(sess, fr->conn, AIM_CONN_TYPE_CHATNAV);
+ 
+-	if (!odata->icq) {
+-		debug_printf("ssi: requesting ssi list\n");
+-		aim_ssi_reqrights(sess, fr->conn);
+-		aim_ssi_reqdata(sess, fr->conn, sess->ssi.timestamp, sess->ssi.revision);
+-	}
++	/* Retronet: ask for the server-stored roster on ICQ logins too. Stock
++	 * 0.59.9 gates this on !odata->icq -- a 2003 client-side assumption that
++	 * ICQ servers had no feedbag. Our gateway is feedbag-uniform, so the gate
++	 * costs us the whole server-synced contact list for no protocol reason. */
++	debug_printf("ssi: requesting ssi list\n");
++	aim_ssi_reqrights(sess, fr->conn);
++	aim_ssi_reqdata(sess, fr->conn, sess->ssi.timestamp, sess->ssi.revision);
+ 
+ 	return 1;
+ }
+@@ -3056,8 +3058,8 @@
+ 
+ 	debug_printf("ssi: syncing local list and server list\n");
+ 
+-	if (odata->icq)
+-		return 1;
++	/* Retronet: the matching half of the ungated request above -- stock
++	 * 0.59.9 drops the roster on the floor for ICQ accounts. */
+ 
+ 	/* Activate SSI */
+ 	debug_printf("ssi: activating server-stored buddy list\n");
+@@ -3075,8 +3077,13 @@
+ 					struct aim_ssi_item *curgroup = sess->ssi.items;
+ 					while (curgroup) {
+ 						if ((curgroup->type == 0x0001) && (curgroup->gid == curitem->gid) && (curgroup->name)) {
+-							debug_printf("ssi: adding buddy %s to group %s to local list\n", curitem->name, curgroup->name);
+-							add_buddy(gc, curgroup->name, curitem->name, 0);
++							/* Retronet: show the roster's own display name
++							 * (TLV 0x0131), not the bare UIN. */
++							char *alias = aim_ssi_getalias(curitem);
++							debug_printf("ssi: adding buddy %s (%s) to group %s to local list\n", curitem->name, alias ? alias : "no alias", curgroup->name);
++							add_buddy(gc, curgroup->name, curitem->name, alias);
++							if (alias)
++								free(alias);
+ 							tmp++;
+ 						}
+ 						curgroup = curgroup->next;
+diff -Naur orig/src/protocols/oscar/ssi.c gaim-0.59.9/src/protocols/oscar/ssi.c
+--- orig/src/protocols/oscar/ssi.c	2002-06-22 11:57:57.000000000 +0000
++++ gaim-0.59.9/src/protocols/oscar/ssi.c	2026-08-22 11:13:05.864348581 +0000
+@@ -351,6 +351,21 @@
+  * @param conn The bos connection for this session.
+  * @return Return 0 if no errors, otherwise return the error number.
+  */
++/**
++ * Return a buddy item's server-stored display name, or NULL.
++ *
++ * The feedbag buddy item carries the name the roster owner sees in TLV 0x0131
++ * ("local alias"); the item's own name is the bare screen name / UIN. Stock
++ * 0.59.9 parses the TLV chain into item->data but never reads this one, so an
++ * SSI-synced list renders as bare UINs. Caller frees the returned string.
++ */
++faim_export char *aim_ssi_getalias(struct aim_ssi_item *item)
++{
++	if (!item || !item->data || (item->type != AIM_SSI_TYPE_BUDDY))
++		return NULL;
++	return aim_gettlv_str((aim_tlvlist_t *)item->data, AIM_SSI_TLV_ALIAS, 1);
++}
++
+ faim_export int aim_ssi_deletelist(aim_session_t *sess, aim_conn_t *conn)
+ {
+ 	int num;

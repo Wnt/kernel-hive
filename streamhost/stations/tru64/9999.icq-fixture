@@ -1,11 +1,25 @@
 #!/bin/sh
-# retronet ICQ exhibit: launch the climm OSCAR client in a titled dtterm.
+# retronet ICQ exhibit: launch the Gaim OSCAR client on the CDE desktop.
 #
 # Reference copy. The live fixture is baked onto the checkpoint DISK at
 # /etc/dt/config/Xsession.d/9999.icq-fixture inside the guest; CDE's Xsession
 # sources it at session start. This is the COLD-BOOT fallback path only: on the
-# normal checkpoint-restore path climm is already running in the baked RAM
+# normal checkpoint-restore path Gaim is already running in the baked RAM
 # snapshot and Xsession.d does not run, so this cannot double-launch it. The
 # guest network (tu0 = 10.99.0.15) is up from rc.config before CDE starts, so
-# climm can reach the gateway (10.99.0.2:5190) the moment this runs.
-/usr/dt/bin/dtterm -title ICQ -e /usr/local/bin/climm &
+# Gaim can reach the gateway (10.99.0.2:5190) the moment this runs.
+#
+# Gaim is linked against the GTK+ 1.2.8 / glib 1.2.8 shared libraries under
+# /usr/local/lib (Tru64 Open Source Collection Disc 5). Tru64's loader will not
+# find them without _RLD_ROOT-style help, so the path is exported here rather
+# than relied on from the user's profile — a CDE Xsession.d script inherits
+# almost nothing.
+#
+# Sign-in is silent: the account (UIN 64000) is stored in /home/guest/.gaimrc
+# with OPT_USR_AUTO|OPT_USR_REM_PASS, so gaim's own auto_login() connects at
+# startup with no login window, no wizard and no keystroke. The buddy list
+# window's geometry is pinned in the same file (blist_pos), so the exhibit
+# opens composed instead of wherever dtwm would drop it.
+LD_LIBRARY_PATH=/usr/local/lib
+export LD_LIBRARY_PATH
+/usr/local/bin/gaim &
