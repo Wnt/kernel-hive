@@ -41,5 +41,38 @@
     "seeds": [
       "http://www.fillari-lehti.fi/cgi/Ultimate.cgi"
     ]
+  },
+  {
+    "host": "www.pinballnews.com",
+    "date": "19990101",
+    "ceiling": "20011231",
+    "title": "Pinball News",
+    "category": "Recreation and Sports",
+    "blurb": "The official site of Pinball News",
+    "seeds": [
+      "http://www.pinballnews.com/"
+    ]
+  },
+  {
+    "host": "www.sternpinball.com",
+    "date": "19990101",
+    "ceiling": "20011231",
+    "title": "Stern Pinball",
+    "category": "Recreation and Sports",
+    "blurb": "The official site of Stern Pinball",
+    "seeds": [
+      "http://www.sternpinball.com/"
+    ]
+  },
+  {
+    "host": "www.pinball.org", 
+    "date": "20010301",
+    "ceiling": "20011231",
+    "title": "Pinball.org",
+    "category": "Recreation and Sports",
+    "blurb": "pinball.org",
+    "seeds": [
+      "http://www.pinball.org/"
+    ]
   }
 ]
