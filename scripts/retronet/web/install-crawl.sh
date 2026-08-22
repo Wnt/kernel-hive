@@ -3,8 +3,8 @@
 # the dev container CT 950 (the only box with internet). Idempotent.
 #
 # It deploys a COPY of era-press.py + its modules (era_fetch.py, era_index.py,
-# era_press_core.py, era_crawl.py) + the site lists (era-sites.json, era-vips.json)
-# + era-sites.json into the shared volume dir so
+# era_press_core.py, era_crawl.py, era_requests.py) + the site lists (era-sites.json,
+# era-vips.json) into the shared volume dir so
 # the running crawl never depends on a git worktree that may be GC'd mid-run, then
 # installs, enables and starts retronet-crawl.service. The crawl is resumable, so
 # re-running (or a reboot) continues from the on-disk corpus + state.json.
@@ -32,6 +32,7 @@ echo "deploying crawl runtime -> $RUN_DIR"
 sudo mkdir -p "$RUN_DIR"
 sudo chown "$(id -un):$(id -gn)" "$RUN_DIR"
 cp "$SRC/era-press.py" "$SRC/era_fetch.py" "$SRC/era_index.py" "$SRC/era_press_core.py" "$SRC/era_crawl.py" \
+  "$SRC/era_requests.py" \
   "$SRC/era-sites.json" "$SRC/era-vips.json" "$RUN_DIR/"
 
 # --- fetch-layer dependency: httpx[http2] in a dedicated venv ------------------
@@ -55,6 +56,12 @@ echo "ensuring pinned deps in the crawl venv (idempotent): ${PINS[*]}"
 "$VENV/bin/pip" install --quiet --upgrade pip
 "$VENV/bin/pip" install --quiet "${PINS[@]}"
 "$VENV/bin/python" -c 'import httpx, brotli, zstandard; print("  venv httpx", httpx.__version__, "/ brotli+zstandard OK")'
+
+# Smoke-import the deployed tree with the venv python. era_crawl pulls in every other module, so a module
+# added to the source dir but forgotten in the cp list above fails HERE -- loudly, before the unit is
+# restarted -- instead of becoming a ModuleNotFoundError restart-loop in journalctl (it did, 2026-08-22).
+echo "smoke: importing the deployed crawl modules"
+(cd "$RUN_DIR" && "$VENV/bin/python" -c 'import era_crawl' && echo "  deployed modules import OK")
 
 echo "installing $UNIT"
 sudo cp "$SRC/$UNIT" "/etc/systemd/system/$UNIT"
