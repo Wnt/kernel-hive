@@ -792,8 +792,8 @@ emit w2kalpha \
   "$T/w2kalpha/pumps.py" --env-append-file "$T/w2kalpha/station.env.fixture"
 
 # tru64 — x11 RUNTIME tile, NOT QEMU. es40 (AlphaServer ES40, fork Wnt/es40)
-#   SRM-booting Tru64 UNIX 5.1B — the same emulated machine as w2kalpha with a
-#   different flash.rom lineage (no arc autoboot; SRM boots dka0/dka400), NO
+#   SRM-booting Tru64 UNIX 5.1B — its flash.rom carries no arc autoboot, so SRM
+#   boots the disk directly (dka0/dka400), NO
 #   window and NO X server (SDL_VIDEODRIVER=dummy), captured from the
 #   framebuffer es40 publishes itself: SH_CAPTURE=shm + mamesock input (es40
 #   ctlsock mamectl/1, multi-client). No SH_QMP; media + install disk staged

@@ -202,10 +202,13 @@ W2KTELNETEXEC = os.environ.get("LABCTL_W2KTELNETEXEC", "/root/w2ktelnetexec.py")
 TRU64EXEC = os.environ.get("LABCTL_TRU64EXEC", "/root/tru64exec.py")
 SUNEXEC = os.environ.get("LABCTL_SUNEXEC", "/root/sunexec.py")
 NEWSOSEXEC = os.environ.get("LABCTL_NEWSOSEXEC", "/root/newsosexec.py")
-# w2kalpha's guest telnet server sits on a host-only veth at a fixed static IP
-# (baked into the golden; the host end and the dec21143 pcap adapter are set up
-# by streamhost/stations/w2kalpha/x11-runtime.sh). No per-tile host field is needed.
-W2K_TELNET_HOST = "172.31.64.2"
+# w2kalpha's guest telnet server rides the retronet bridge vmbr-rn at its
+# reserved DHCP address (the host end and the dec21143 pcap adapter are set up by
+# streamhost/stations/w2kalpha/rn-tapnet.sh, called from x11-runtime.sh). labhost
+# dials it over the bridge; the guest only ever replies (ESTABLISHED), so the
+# W2KALPHARN-IN containment chain leaves the exec channel working. No per-tile
+# host field is needed.
+W2K_TELNET_HOST = "10.99.0.17"
 
 
 def cmd_exec(argv):
