@@ -77,3 +77,4 @@ Passwords go in gitignored `registry/local.env` as
 ## Log
 
 Append one line per stream milestone: `YYYY-MM-DDThh:mmZ <stream> <what>`.
+- 2026-08-23 fleet-data: `retronet` registry block + ICQ-roster merge landed — 12 members backfilled, `Retronet` column on /fleet, `stations-registry.py` now fails the gate on address/plane/roster/doc drift.

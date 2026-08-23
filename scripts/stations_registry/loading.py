@@ -9,7 +9,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
-from .constants import REGISTRY, REPO, TILES
+from .constants import ICQ_ROSTER, REGISTRY, REPO, TILES
 
 
 class RegistryError(Exception):
@@ -27,6 +27,23 @@ def is_x11_runtime(row: dict[str, Any]) -> bool:
     involved at all.
     """
     return "x11" in row.get("runtime", {})
+
+
+def icq_roster() -> dict[str, dict[str, Any]]:
+    """The retronet ICQ personas, keyed by station id.
+
+    scripts/retronet/icq/roster.json is the SINGLE source for uin/nick/client/
+    onboarded (the contact seeder reads the same file); the registry never
+    restates them. Returns {} when the roster is absent so a checkout without
+    the retronet tree still renders.
+    """
+    if not ICQ_ROSTER.is_file():
+        return {}
+    try:
+        doc = json.loads(ICQ_ROSTER.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RegistryError(f"cannot load {ICQ_ROSTER}: {exc}") from exc
+    return {row["station"]: row for row in doc.get("stations", [])}
 
 
 def fixture_path(row: dict[str, Any]) -> Path | None:

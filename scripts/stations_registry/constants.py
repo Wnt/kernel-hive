@@ -10,6 +10,13 @@ TILES = REGISTRY / "stations"
 TEMPLATES = REGISTRY / "templates"
 POSTERS = REGISTRY / "posters"
 
+# The retronet ICQ cross-list roster: the SINGLE source for every station's ICQ
+# persona (uin/nick/client/onboarded). The registry's per-station `retronet`
+# block declares bridge membership only and deliberately does NOT restate the
+# persona; fleet_table.py merges the two and stations-registry.py cross-checks
+# them in both directions.
+ICQ_ROSTER = REPO / "scripts/retronet/icq/roster.json"
+
 # Where `render` drops the RENDERED artifacts (see render.rendered()). Gitignored: these
 # documents are resolved from the registry on demand, never committed, so a
 # gallery-visible string has exactly one hit in a tracked file.

@@ -10,7 +10,7 @@ import type { FleetEntry } from '../data/fleetTable';
 
 export type ColKey =
   | 'name' | 'year' | 'tier' | 'emulator' | 'kiosk' | 'ui' | 'screen' | 'depth' | 'arch' | 'lineage'
-  | 'memory' | 'accel' | 'capture' | 'keyboard' | 'pointer' | 'exec' | 'network' | 'idle' | 'golden' | 'stream';
+  | 'memory' | 'accel' | 'capture' | 'keyboard' | 'pointer' | 'exec' | 'network' | 'retronet' | 'idle' | 'golden' | 'stream';
 
 export interface Column {
   key: ColKey;
@@ -27,6 +27,7 @@ const NET_ORDER: Record<string, number> = { internet: 0, 'host-only': 1, isolate
 const NET_BADGE: Record<string, string> = {
   internet: 'fleet-badge--ok', 'host-only': 'fleet-badge--info', isolated: 'fleet-badge--warn', 'nic-only': 'fleet-badge--warn', none: 'fleet-badge--muted',
 };
+const RN_BADGE: Record<string, string> = { web: 'fleet-badge--ok', icq: 'fleet-badge--info' };
 const UI_LABEL: Record<string, string> = {
   desktop: 'graphical desktop', 'text-console': 'text console', 'home-computer': 'home-computer prompt', mobile: 'mobile UI', other: 'other',
 };
@@ -186,6 +187,29 @@ export const FLEET_COLUMNS: Column[] = [
         {e.network.source.startsWith('registry') && <span className="fleet-badge fleet-badge--muted" title="hand-declared in the registry">declared</span>}
         {e.network.source.includes('implicit') && <span className="fleet-badge fleet-badge--muted" title="QEMU default NIC; nothing declares the guest uses it">implicit</span>}
         {e.network.hostfwd.length > 0 && <span className="fleet-sub">{e.network.hostfwd.join(', ')}</span>}
+      </span>
+    ),
+  },
+  {
+    key: 'retronet', label: 'Retronet', title: 'membership of the offline retronet bridge vmbr-rn: registry retronet block + the ICQ roster; hover for address, link and guard \u00b7 facet: on the retronet / plane / ICQ live',
+    sort: (e) => (e.retronet ? Number(e.retronet.address?.split('.').pop() ?? 999) : 1000),
+    facet: (e) => e.retronet
+      ? ['on the retronet', ...e.retronet.planes.map((p) => `${p} plane`), ...(e.retronet.icq ? [e.retronet.icq.live ? 'ICQ live' : 'ICQ pending'] : [])]
+      : ['not on the retronet'],
+    render: (e) => !e.retronet ? dash : (
+      <span title={[
+        e.retronet.address && `${e.retronet.address}${e.retronet.addressing ? ` (${e.retronet.addressing})` : ''}`,
+        e.retronet.link, e.retronet.guard && `guard ${e.retronet.guard}`,
+        e.retronet.joined && `joined ${e.retronet.joined}`,
+      ].filter(Boolean).join(' \u00b7 ')}>
+        {e.retronet.planes.map((p) => (
+          <span key={p} className={`fleet-badge ${RN_BADGE[p] ?? 'fleet-badge--muted'}`}>{p}{' '}</span>
+        ))}
+        {e.retronet.icq && (
+          <span className="fleet-sub" title={`ICQ ${e.retronet.icq.client}${e.retronet.icq.live ? '' : ' \u2014 account not signed in yet'}`}>
+            {`UIN ${e.retronet.icq.uin} \u00b7 ${e.retronet.icq.nick}${e.retronet.icq.live ? '' : ' (pending)'}`}
+          </span>
+        )}
       </span>
     ),
   },

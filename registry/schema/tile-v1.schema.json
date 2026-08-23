@@ -254,6 +254,26 @@
       },
       "additionalProperties": false
     },
+    "retronet": {
+      "type": "object",
+      "description": "OPTIONAL hand-declared membership of the OFFLINE retronet bridge vmbr-rn (docs/lab/RETRONET-BRIEF.md). Present iff the guest's NIC is enslaved to that bridge; absent means 'not on the retronet'. It declares only the BRIDGE facts \u2014 the ICQ persona (uin/nick/client/onboarded) stays single-sourced in scripts/retronet/icq/roster.json and is merged in by fleet_table.py, never duplicated here. Cross-validated by stations-registry.py: addresses are unique and inside 10.99.0.0/24, the icq plane and the roster must agree in BOTH directions, and doc must exist.",
+      "required": ["planes", "link", "doc"],
+      "properties": {
+        "planes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["web", "icq"] },
+          "description": "Which retronet planes this guest participates in. web = a period browser reads the corpus web off the gateway's :80 origin. icq = an OSCAR client signs into the gateway's :5190 ICQ service; declaring it REQUIRES a roster row in scripts/retronet/icq/roster.json (and every onboarded roster row requires this plane)."
+        },
+        "address": { "type": "string", "pattern": "^10\\.99\\.0\\.(?:[3-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-4])$", "description": "The guest's address on the bridge. Unique across the fleet; 10.99.0.2 is the gateway CT and 10.99.0.1 the labhost side, so neither is assignable. Omit if not recorded." },
+        "addressing": { "enum": ["dhcp", "static"], "description": "How the guest gets that address: a retronet-dhcp reservation, or hand-configured in the guest. Omit if not recorded." },
+        "link": { "type": "string", "minLength": 1, "description": "The HOST-side link into the bridge, e.g. 'tap winxprn0 on vmbr-rn' or 'veth tru64-h/tru64-g (pcap) on vmbr-rn'." },
+        "guard": { "type": "string", "pattern": "^[A-Z0-9-]+$", "description": "The per-station fail-closed iptables INPUT chain that contains the guest, e.g. WINXPRN-IN. Omit if not recorded." },
+        "joined": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "description": "The date the station joined the bridge. Omit if not recorded." },
+        "doc": { "type": "string", "minLength": 1, "description": "Repo-relative path of the station's primary retronet doc. Must exist." }
+      },
+      "additionalProperties": false
+    },
     "credentialsRef": { "type": "string", "pattern": "^guest/[a-z0-9-]+$" },
     "guestDoc": { "type": "string" },
     "migrationExceptions": { "type": "array", "items": { "type": "string" } },

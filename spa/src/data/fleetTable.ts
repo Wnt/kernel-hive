@@ -67,6 +67,28 @@ interface FleetNetwork {
   source: string;
 }
 
+interface FleetIcq {
+  uin: string;
+  nick: string;
+  client: string;
+  live: boolean;
+}
+
+// Membership of the offline retronet bridge (vmbr-rn). `null` = not on it.
+// Merged by fleet_table.py from the station's registry `retronet` block (bridge
+// facts) and scripts/retronet/icq/roster.json (the persona) — neither restates
+// the other, and stations-registry.py fails the gate if they drift apart.
+interface FleetRetronet {
+  planes: string[];
+  address: string | null;
+  addressing: 'dhcp' | 'static' | null;
+  link: string | null;
+  guard: string | null;
+  joined: string | null;
+  doc: string | null;
+  icq: FleetIcq | null;
+}
+
 export interface FleetEntry {
   id: string;
   displayName: string;
@@ -96,6 +118,7 @@ export interface FleetEntry {
   golden: FleetGolden | null;
   exec: FleetExec | null;
   network: FleetNetwork | null;
+  retronet: FleetRetronet | null;
   slot: number | null;
   guestDoc: string | null;
 }

@@ -213,5 +213,14 @@
   "network": {
     "status": "host-only",
     "note": "retronet web plane: the tulip is a REAL bridged NIC on vmbr-rn via the persistent tap hpuxrn0 (streamhost/stations/hpuxvue/rn-tapnet.sh), MAC RN_HPUXVUE_MAC, HP-UX driver btlan3 as lan0. Addressed 10.99.0.20/24 with DNS 10.99.0.2 and NO default gateway — static, not DHCP, because the June-1996 dhcpclient cannot enumerate the btlan3 PPA (docs/lab/retronet/WEB-STATION-hpuxvue.md). Contained by the fail-closed HPUXRN-IN chain: reaches the gateway CT only, never labhost, the LAN or the internet."
+  },
+  "retronet": {
+    "planes": ["web"],
+    "address": "10.99.0.20",
+    "addressing": "static",
+    "link": "tap hpuxrn0 on vmbr-rn",
+    "guard": "HPUXRN-IN",
+    "joined": "2026-08-23",
+    "doc": "docs/lab/retronet/WEB-STATION-hpuxvue.md"
   }
 }
