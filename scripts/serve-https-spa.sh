@@ -93,6 +93,18 @@ deploy() {
     msg "ERROR: no built dist; run '$0 build' first"
     exit 1
   }
+  # scripts/dev/stage.sh builds a preview into this SAME dist/ with
+  # vite base=/staging/<name>/, so a deploy that follows a stage ships a bundle
+  # whose asset paths AND router basename point at the staging path — the live
+  # gallery then renders NOTHING. (Done exactly that on 2026-08-23.) The
+  # production build is the only one whose entry script is rooted at /assets/.
+  if ! grep -q 'src="/assets/' "$DIST/index.html"; then
+    msg "ERROR: $DIST was not built for the production base."
+    msg "       Its entry script is: $(grep -o 'src="[^\"]*"' "$DIST/index.html" | head -1)"
+    msg "       A stage.sh preview leaves a staged dist behind. Rebuild first:"
+    msg "         (cd spa && npm run build)"
+    exit 1
+  fi
   msg "deploying dist + server to $HOST:$SERVE_DIR"
   $SSH "mkdir -p $WEBROOT $HOST_PKI"
   # Timestamped safety tar of the current webroot before replacing UI entries;
