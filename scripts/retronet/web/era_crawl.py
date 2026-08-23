@@ -27,7 +27,6 @@ import subprocess
 import threading
 import time
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
-from datetime import date
 from itertools import zip_longest
 from pathlib import Path
 
@@ -35,6 +34,7 @@ import era_fetch as fetch
 import era_index
 import era_press_core as core
 import era_requests
+import era_state
 
 SHARED_CORPUS = "/data/vms/retronet-corpus"  # big corpus volume (CT950/labhost path); CT 951 bind-mounts at CORPUS
 CRAWL_ROOT = "/data/vms/retronet-crawl"  # crawl state + log live here (OUTSIDE the corpus; survives a worktree GC)
@@ -44,7 +44,7 @@ REQUEST_INTERVAL = 300  # how often the daemon folds in what stations asked for 
 # A requested URL on a host we do not otherwise crawl has no era date of its own; this is the corpus's
 # centre of gravity, and the id_ redirect resolves the nearest capture to it anyway.
 REQUEST_DEFAULT_DATE = "19990101"
-BUDGET_GB = 25.0  # default global size budget: the crawl stops cleanly near this (ZFS quota 50 GB backstop)
+BUDGET_GB = 5.0  # default global size budget: the crawl stops cleanly near this (ZFS quota 50 GB backstop)
 SITE_MB = 200  # default per-site byte cap so one big site (GeoCities) cannot eat the whole budget
 CONCURRENCY = 12  # thread-pool UPPER bound; era_press_core's AIMD limiter decides how many really fly
 
@@ -122,6 +122,11 @@ def _site_state(s, default_mb):
         "misses": 0,
         "skipped": 0,
         "done": {},  # "level" -> count of pages already mirrored at that depth (observability)
+        # The 14-digit stamp of the home capture actually chosen (landing completeness selection). This is
+        # the ORIGINAL capture date /dir shows; persisted so it survives a resume (the corpus keeps only
+        # raw bytes, not the stamp). Recovered from the previous state.json in cmd_crawl; empty until the
+        # home is first fetched.
+        "home_ts": "",
     }
 
 
@@ -238,7 +243,9 @@ def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
         with lock:
             st["skipped"] += 1
     else:
-        got = core.fetch_page(url, st["date"], st["ceiling"])  # raw id_ at the indexed ts -- lockless
+        # A landing page (home + section indexes) picks the most COMPLETE capture in the ceiling; a leaf
+        # keeps the fast nearest-date pick. `level` is the page's depth, so the driver decides which it is.
+        got = core.fetch_page(url, st["date"], st["ceiling"], landing=core._is_landing(url, level))
         if not got:
             with lock:
                 st["misses"] += 1  # uncaptured, oversize, or past the ceiling -> authentic miss
@@ -252,6 +259,8 @@ def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
             st["fetched"] += 1
             st["bytes"] += len(body)
             budget["written"] += len(body)
+            if url == st["home"] and page:
+                st["home_ts"] = _page_ts  # the ORIGINAL capture date /dir shows (the chosen landing stamp)
     if page:  # each resource at its indexed exact ts -- one direct id_ hit, no search -- lockless
         for kind, res_ts, orig in discovered:
             if kind == "res":
@@ -270,62 +279,6 @@ def _crawl_page(st, url, level, staging, res_seen, seen_set, lock, budget):
                 if u not in seen_set:
                     seen_set.add(u)
                     st["frontier"].setdefault(str(level + 1), []).append(u)
-
-
-# --- manifest + state snapshots ---------------------------------------------
-
-
-def _publish_sites(states, staging):
-    """Upsert a sites.json row for every site with at least a home page -- so a newly-crawled site
-    appears in the search directory as soon as its home lands. Merge, never replace: keep other
-    streams' rows and each site's original `added` date."""
-    existing = {s.get("host"): s for s in core._read_local_sites(staging)}
-    ours = {}
-    for st in states:
-        if st["pages"] <= 0:
-            continue
-        row = {"host": st["host"], "title": st["title"] or st["host"], "blurb": st["blurb"]}
-        row["added"] = existing.get(st["host"], {}).get("added") or date.today().isoformat()
-        if st["category"]:
-            row["category"] = st["category"]
-        ours[st["host"]] = row
-    merged = [s for s in existing.values() if s.get("host") not in ours] + list(ours.values())
-    merged.sort(key=lambda s: s.get("host", ""))
-    os.makedirs(staging, exist_ok=True)
-    with open(os.path.join(staging, "sites.json"), "wb") as f:
-        f.write(json.dumps(merged, indent=2, ensure_ascii=False).encode("utf-8"))
-
-
-def _flush_state(path, states, level, used):
-    """Persist the global breadth-first frontier: the current depth level, and per site the per-level
-    done/pending counts (which depths are covered) + pages/bytes. The on-disk corpus is the
-    authoritative resume checkpoint; this snapshot makes the even-widening progress observable."""
-    snap = {
-        "mode": "breadth-first",
-        "level": level,
-        "updated": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "corpus_gb": round(used / 1e9, 3),
-        "sites": {},
-    }
-    for st in states:
-        snap["sites"][st["host"]] = {
-            "depth": st["depth"],
-            "max_pages": st["max_pages"],
-            "max_mb": st["max_mb"],
-            "pages": st["pages"],
-            "bytes": st["bytes"],
-            "title": st["title"],
-            "done": st["done"],  # pages mirrored, by depth level
-            "pending": {lvl: len(urls) for lvl, urls in st["frontier"].items() if urls},
-            "fetched": st["fetched"],
-            "assets": st["assets"],
-            "misses": st["misses"],
-            "skipped": st["skipped"],
-        }
-    tmp = path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(snap, f, indent=2, sort_keys=True)
-    os.replace(tmp, path)
 
 
 # --- the parallel breadth-first driver --------------------------------------
@@ -460,6 +413,12 @@ def cmd_crawl(a):
     for s in cfg:  # every crawled host earns ONE bulk CDX index; resource-only hosts take the redirect
         era_index.register_site(s["host"], s.get("date", "19970101"), s.get("ceiling"))
     states = [_reconstruct(_site_state(s, a.max_mb), a.staging) for s in cfg]
+    # Recover each site's chosen home capture stamp from the previous run: a home already on disk is NOT
+    # re-fetched (the corpus is the checkpoint), so without this its original date would be lost on resume.
+    prev_sites = _load_json(a.state, {}).get("sites", {})
+    for st in states:
+        if not st["home_ts"]:
+            st["home_ts"] = prev_sites.get(st["host"], {}).get("home_ts", "")
     seen_sets = {st["host"]: set(st["seen"]) for st in states}
     res_seen = set()  # global: a shared resource is mirrored once per run
     lock = threading.Lock()
@@ -505,7 +464,7 @@ def cmd_crawl(a):
         with lock:
             if used >= budget["budget"]:
                 budget["stop"] = True
-            _flush_state(a.state, states, level, used)
+            era_state.flush_state(a.state, states, level, used)
         _log(
             a.log,
             f"    … {budget['fetches']} fetches, corpus {used / 1e9:.2f} GB (est {used_est() / 1e9:.2f}), "
@@ -543,8 +502,8 @@ def cmd_crawl(a):
             f"(corpus {used_est() / 1e9:.2f} GB, {concurrency}-wide)",
         )
         _run_level(items, concurrency, worker, on_done, lambda: budget["stop"])
-        _publish_sites(states, a.staging)
-        _flush_state(a.state, states, level, _corpus_bytes(a.staging))
+        era_state.publish_sites(states, a.staging)
+        era_state.flush_state(a.state, states, level, _corpus_bytes(a.staging))
 
     vips = [st for st in states if st["vip"]]
     if vips:
@@ -592,9 +551,9 @@ def cmd_crawl(a):
             _log(a.log, f"BUDGET reached: {used / 1e9:.2f} GB -- stopping")
             break
     stop_requests.set()
-    _publish_sites(states, a.staging)
+    era_state.publish_sites(states, a.staging)
     used = _corpus_bytes(a.staging)
-    _flush_state(a.state, states, level, used)
+    era_state.flush_state(a.state, states, level, used)
     tot = sum(st["pages"] for st in states)
     end = "stopped at budget" if budget["stop"] else "complete"
     _log(a.log, f"=== crawl {end}: corpus {used / 1e9:.2f} GB, {tot} pages across {len(states)} sites")

@@ -13,10 +13,24 @@
 #     steady non-blinking caret, screensaver off, taskbar clock hidden, no idle anim).
 #     First-ever bake (no snapshot yet) launches cold -- see golden-bake.sh.
 #   * NEVER delete win95-golden.qcow2 -- it IS the golden snapshot container.
-#   * Wiring is IDENTICAL to the pre-golden pilot launcher (KVM, pc,acpi=off,usb=off,
-#     kernel-irqchip=off, cpu pentium,-apic, vga std, sb16 audio, pcnet user-net,
-#     PS/2 relative kbd+mouse) so the snapshot is portable and the transport is
-#     unchanged. Only the disk (local golden, no -snapshot) differs.
+#   * Wiring matches the pre-golden pilot launcher (KVM, pc,acpi=off,usb=off,
+#     kernel-irqchip=off, cpu pentium,-apic, vga std, sb16 audio, pcnet NIC,
+#     PS/2 relative kbd+mouse) so the snapshot is portable and the display/audio
+#     transport is unchanged. Only the disk (local golden, no -snapshot) differs.
+#
+# RETRONET BRIDGE (2026-08-23, web plane): the pcnet NIC's netdev BACKEND went
+# user->tap on vmbr-rn (invisible to savevm/loadvm; the -device pcnet is
+# UNCHANGED, so the golden still binds). The guest DHCPs from the gateway CT
+# 10.99.0.2 (reserved 10.99.0.13, DNS = the gateway, NO router option => no
+# default route), sharing L2 with it so the browser gets real ICMP + UDP +
+# multi-connection TCP to the corpus origin on :80. The warpnet POINTER agent (guest :7777) that
+# used to be reached over the slirp hostfwd 127.0.0.1:57791 is now reached
+# DIRECTLY over the bridge at 10.99.0.13:7777 (SH_WARPD_ADDR), and a second
+# warpnet build (C:\WARPX.EXE, :7788) gives labctl an EXEC channel at
+# 10.99.0.13:7788 (the :7777 pointer agent's serial accept loop is monopolised by
+# the daemon's persistent pointer connection, so exec needs its own port). A
+# UNIQUE MAC is pinned (see the RN_WIN95_MAC block below). See
+# docs/lab/retronet/WEB-STATION-win95.md.
 set -e
 D=/data/vms/streamhost/stations/win95
 DISK="$D/win95-golden.qcow2"
@@ -25,6 +39,24 @@ sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid"
 LOADVM=""
 qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
+# Retronet link: create/enslave the vmbr-rn tap (win95rn0) + arm the guest-
+# containment chain BEFORE QEMU opens it (script=no means QEMU attaches to an
+# existing tap, it does not create one). Idempotent; runs as root under
+# streamhost@ / the golden-bake manual path. Fail-closed: if it cannot verify
+# containment it dies here and QEMU never starts. See rn-tapnet.sh + WEB-STATION-win95.md.
+bash "$D/rn-tapnet.sh" up
+# Guest NIC MAC. Real per-station MACs are NEVER committed (AGENTS.md); the real
+# value lives in gitignored registry/local.env as RN_WIN95_MAC (retronet fleet
+# scheme 52:54:00:52:4e:<last-IP-octet>, "52:4e"=RN, .13 -> ...0d) so every
+# bridged guest is L2-distinct. The golden's vmstate carries the MAC, so this
+# only matters on a COLD (re-)bake; loadvm golden uses the baked MAC regardless.
+# Only the one line is read, never the whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_WIN95_MAC="02:00:00:00:00:0d" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_WIN95_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
+  [ -n "$_m" ] && RN_WIN95_MAC="$_m"
+fi
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
@@ -37,7 +69,7 @@ nohup qemu-system-x86_64 \
   -vga std \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
-  -drive file="$DISK",format=qcow2,if=ide -netdev user,id=n0,hostfwd=tcp:127.0.0.1:57791-:7777 -device pcnet,netdev=n0 \
+  -drive file="$DISK",format=qcow2,if=ide -netdev tap,id=n0,ifname=win95rn0,script=no,downscript=no -device pcnet,netdev=n0,mac="$RN_WIN95_MAC" \
   $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
   -pidfile $D/qemu.pid \

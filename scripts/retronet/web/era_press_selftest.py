@@ -247,6 +247,58 @@ def main():
         check("resolved-ts <=2000: stored", (st2["assets"], st2["misses"]), (1, 0))
     ef.wayback_raw = saved_raw
 
+    # 9c. LANDING-page completeness selection: the home + section indexes take the MOST COMPLETE capture
+    #     within the ceiling, not the nearest-date one (which can be a broken front page whose images were
+    #     never archived that week -- SGI's www.sgi.com is the real case). Offline + mocked.
+    check("landing: the home is a landing page", ep._is_landing("http://h.example/", 0), True)
+    check("landing: a section index (dir URL) at depth 1 is one too", ep._is_landing("http://h.example/news/", 1), True)
+    check("landing: a leaf file at depth 1 is NOT", ep._is_landing("http://h.example/news/x.html", 1), False)
+    check("landing: nothing past the landing depth is one", ep._is_landing("http://h.example/a/", 2), False)
+
+    # page_captures: distinct-content captures of ONE url, spread across the window and capped, endpoints kept.
+    ei._index.clear()
+    ei._index_building.clear()
+    ei._index_since.clear()
+
+    def fake_ten_caps(url, retries=5, index=False):
+        rows = [["timestamp"]] + [[f"1997{m:02d}01000000"] for m in range(1, 11)]  # ten captures across 1997
+        return ("cdx", "application/json", json.dumps(rows).encode())
+
+    saved_get = ef.http_get
+    ef.http_get = fake_ten_caps
+    try:
+        caps = ei.page_captures("http://h.example/", "19970101", cap=4)
+    finally:
+        ef.http_get = saved_get
+    check("page_captures: capped to `cap`", len(caps), 4)
+    check("page_captures: keeps the earliest (era-nearest)", caps[0], "19970101000000")
+    check("page_captures: keeps the latest (most built-out)", caps[-1], "19971001000000")
+
+    # completeness scoring: a page's OWN resources, priced by pure index lookups; broken scores low.
+    ei._index["h.example"] = {"h.example/logo.gif": "19970101000000", "h.example/pic.gif": "19970101000000"}
+    broken = b'<html><body><img src="missing.gif"></body></html>'  # 0 of 1 present -> 0.0
+    whole = b'<html><body><img src="logo.gif"><img src="pic.gif"></body></html>'  # 2 of 2 -> 1.0
+    check("completeness: a broken page scores 0", ep.landing_completeness(broken, "http://h.example/"), 0.0)
+    check("completeness: a whole page scores 1", ep.landing_completeness(whole, "http://h.example/"), 1.0)
+
+    def cdx_two(url, retries=5, index=False):
+        return ("cdx", "application/json", json.dumps([["timestamp"], ["19970101000000"], ["20000101000000"]]).encode())
+
+    saved_raw3 = ef.wayback_raw
+    ef.http_get = cdx_two
+    try:
+        # 1997 capture is nearer the era date but broken; 2000 capture is complete -> completeness WINS.
+        ef.wayback_raw = lambda url, ts: (ts, "text/html", {"19970101000000": broken, "20000101000000": whole}[ts])
+        picked = ep.best_landing_capture("http://h.example/", "19970101")
+        check("landing: the MORE COMPLETE capture wins over the nearer date", picked[0], "20000101000000")
+        # when completeness ties, the era date breaks it (mild preference for the site's own period).
+        ef.wayback_raw = lambda url, ts: (ts, "text/html", whole)
+        picked2 = ep.best_landing_capture("http://h.example/", "19970101")
+        check("landing: a near-tie breaks toward the era date", picked2[0], "19970101000000")
+    finally:
+        ef.http_get, ef.wayback_raw = saved_get, saved_raw3
+    ei._index.clear()
+
     # 10. a page ALREADY on disk still gets its missing resources swept. Resources used to be mirrored
     #     only on a FRESH page fetch, so any page stored while fetches were failing kept its missing
     #     images forever -- the page was cached, so the crawl never looked at it again.
@@ -378,7 +430,10 @@ def main():
         state["http://a.example/wanted"]["count"] += 1  # asked again after being served
         check("requests: NEW demand re-queues it", "http://a.example/wanted" in er.due(state), True)
 
-    print("era-press selftest: all checks OK (raw mirror, host index, ceiling, frontier, seeds, sweep, vips, requests)")
+    print(
+        "era-press selftest: all checks OK "
+        "(raw mirror, host index, landing completeness, ceiling, frontier, seeds, sweep, vips, requests)"
+    )
 
 
 if __name__ == "__main__":

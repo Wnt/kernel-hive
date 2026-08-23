@@ -34,6 +34,11 @@ CORPUS = "/data/retronet/corpus"  # in CT 951 AND the local staging default
 CT_DEFAULT, SSH_DEFAULT = "951", "lab"
 MAX_FETCH = 8 * 1024 * 1024  # guardrail: skip (do not truncate) a resource bigger than this
 
+# --- landing-page completeness selection (DECISION: home + section indexes get the MOST COMPLETE capture,
+#     not the nearest-date one, which can render broken) -------------------------------------------------
+LANDING_MAX_DEPTH = 1  # completeness selection covers the home (depth 0) + section-index pages at depth 1
+_LANDING_TIE = 0.05  # candidates whose score is within this of the best count as a tie -> era date breaks it
+
 # read-only URL discovery: which (tag, attr) pairs carry which kind of URL
 _RES = (
     "img.src img.lowsrc script.src input.src embed.src bgsound.src object.data source.src "
@@ -46,15 +51,26 @@ ATTR_KIND = {
 }
 
 
-def fetch_page(url, target, ceiling=None):
-    """Fetch ONE page: exactly ONE archive.org request, at the exact capture stamp the host index gives.
+def fetch_page(url, target, ceiling=None, landing=False):
+    """Fetch ONE page. Returns (page_ts, is_page, raw_body, discovered=[(kind, ts, original_url)]), or
+    None on an authentic miss (uncaptured, oversize, or a capture past the 2000-12-31 ceiling). Discovery
+    reads the RAW archived HTML -- the original 1990s URLs, relative refs resolved against the page -- and
+    prices each one from the index, so a page costs one fetch and its resources cost one fetch each.
+    Callers store raw_body, mirror the `res` items, and follow same-site links: the serial mirror and the
+    parallel crawl share ONE strategy.
 
-    Returns (page_ts, is_page, raw_body, discovered=[(kind, ts, original_url)]), or None on an authentic
-    miss (uncaptured, oversize, or a capture past the 2000-12-31 ceiling). Discovery reads the RAW
-    archived HTML -- the original 1990s URLs, relative refs resolved against the page -- and prices each
-    one from the index, so a page costs one fetch and its resources cost one fetch each. Callers store
-    raw_body, mirror the `res` items, and follow same-site links: the serial mirror and the parallel
-    crawl share ONE strategy."""
+    A LEAF is exactly ONE request, at the exact stamp the host index gives (first capture on/after the era
+    date). A LANDING page (`landing=True` -- the home + section indexes) instead gets the MOST COMPLETE
+    capture within the ceiling: best_landing_capture enumerates the page's own captures and scores each by
+    how much of what it references actually survives, because the nearest-date capture is often a broken
+    one (a front page whose images were never archived that week). That costs a handful of extra body
+    fetches, which is why it is reserved for the few landing pages; if it finds nothing to choose between,
+    it returns None here and the leaf path runs, so landing pages never fetch WORSE than before."""
+    if landing:
+        picked = best_landing_capture(url, target, ceiling)
+        if picked:
+            page_ts, _ctype, body = picked  # already verified in-ceiling, in-size and HTML
+            return page_ts, True, body, discover(body, url, target)
     got = fetch.wayback_raw(url, era_index.index_ts(url, target))
     if not got:
         return None
@@ -65,6 +81,74 @@ def fetch_page(url, target, ceiling=None):
     if not page:
         return page_ts, False, body, []  # a non-HTML "page" (a link to a PDF/image): store as an asset
     return page_ts, True, body, discover(body, url, target)
+
+
+def _is_landing(url, depth):
+    """Is this a LANDING page -- the home, or a top-of-site section index -- rather than a deep leaf? Only
+    landing pages earn the costlier completeness selection; leaves keep the nearest-date pick. A section
+    index is a directory URL (path ends in '/') within LANDING_MAX_DEPTH levels of the home."""
+    if depth <= 0:
+        return True
+    if depth > LANDING_MAX_DEPTH:
+        return False
+    return (urllib.parse.urlsplit(url).path or "/").endswith("/")
+
+
+def _datenum(ts):
+    """The YYYYMMDD prefix of a date/stamp as an int, for a nearest-to-era-date comparison."""
+    return int((str(ts)[:8] or "0").ljust(8, "0"))
+
+
+def landing_completeness(body, base):
+    """Fraction of a page's OWN image/script/style resources that have a status-200 capture in the host
+    index -- the landing-page completeness score, in [0, 1]. Only resources on an index-ready host count
+    (the seed host and other crawled hosts); third-party and unindexed hosts are left OUT of the
+    denominator, because the index cannot answer for them without a fetch and this score is pure lookups.
+    So the score measures how much of the page's era-window furniture actually survives -- a broken front
+    page (its images uncaptured that week) scores low, a complete one scores high. 0.0 if nothing is
+    scorable, which makes such pages fall back to the era-date pick."""
+    scorable = present = 0
+    for kind, u in extract_urls(body, base):
+        if kind != "res" or fetch._is_archive_host(host_of(u)):
+            continue
+        if not era_index.index_ready(host_of(u)):
+            continue
+        scorable += 1
+        present += era_index.has_capture(u)
+    return present / scorable if scorable else 0.0
+
+
+def best_landing_capture(url, target, ceiling=None):
+    """The MOST COMPLETE capture of a landing page within the ceiling, as (ts, ctype, body) -- or None to
+    fall back to the ordinary nearest-date pick.
+
+    The default selection takes the capture nearest the era date, which can be a broken one: SGI's
+    www.sgi.com front page nearest its 1997 era date is missing its images, while a 2000 capture renders
+    whole. So for the few landing pages we enumerate the page's own captures from the index
+    (era_index.page_captures, spread across [era date, ceiling]), fetch each one's HTML, and score each by
+    landing_completeness -- pure index lookups, no downloads for the scoring itself. Completeness WINS; the
+    era date only breaks near-ties (within _LANDING_TIE), so a 1997 site can legitimately end up showing a
+    far more complete 2000 capture. The winner's body is returned so the caller does not re-fetch it."""
+    cands = era_index.page_captures(url, target, ceiling)
+    if len(cands) < 2:
+        return None  # nothing to choose between -> the ordinary index_ts / redirect pick is as good
+    scored = []
+    for ts in cands:
+        got = fetch.wayback_raw(url, ts)
+        if not got:
+            continue
+        rts, ctype, body = got
+        if fetch._past_ceiling(rts, ceiling) or len(body) > MAX_FETCH or not is_html(ctype, body):
+            continue
+        scored.append((landing_completeness(body, url), rts, ctype, body))
+    if not scored:
+        return None
+    best = max(s[0] for s in scored)
+    if best <= 0.0:
+        return None  # nothing scorable on any capture -> let the era-date path decide (no basis to prefer)
+    finalists = [s for s in scored if best - s[0] <= _LANDING_TIE]
+    finalists.sort(key=lambda s: abs(_datenum(s[1]) - _datenum(target)))  # near-ties: nearest the era date
+    return finalists[0][1], finalists[0][2], finalists[0][3]
 
 
 def discover(body, base, target):
@@ -237,7 +321,8 @@ def mirror_site(seed_host, target, depth, max_pages, staging, max_bytes=None, ce
             discovered = discover(body, url, target) if page else []
             stats["skipped"] += 1
         else:
-            got = fetch_page(url, target, ceiling)  # raw id_ bytes at the indexed exact ts
+            # landing pages (home + section indexes) pick the most COMPLETE capture; leaves the nearest date
+            got = fetch_page(url, target, ceiling, landing=_is_landing(url, d))
             if not got:
                 stats["misses"] += 1
                 continue

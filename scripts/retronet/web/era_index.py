@@ -47,6 +47,11 @@ from era_fetch import CEILING, INDEX_WORKERS, WB, _past_ceiling, bare, host_of, 
 
 CDX = WB + "/cdx/search/cdx"
 CDX_ROWS = 40000  # per-host index cap; a bigger site simply falls back to the redirect for the tail
+# How many captures of a single LANDING page the completeness selection fetches + scores. Landing pages
+# are few (a home + a handful of section indexes per site), so a per-URL CDX query and a bounded fan of
+# body fetches are affordable here -- the very cost the per-HOST index exists to avoid for the tens of
+# thousands of leaves and resources. See page_captures + era_press_core.best_landing_capture.
+LANDING_CANDIDATES = 8
 # Index window widths to try, in order: the whole era-date-to-ceiling range, then a 6-month one. Just
 # two, because narrowing does NOT rescue the true giants -- amazon.com 504s at every width down to one
 # month (measured), since the CDX prefix scan is priced by how many captures the host has, not by the
@@ -145,6 +150,58 @@ def _fetch_index(query_host, since, ceiling=None):
         if idx:
             return idx
     return {}
+
+
+def page_captures(url, since, ceiling=None, cap=LANDING_CANDIDATES):
+    """Distinct-content captures of ONE url in [since, ceiling], as exact 14-digit stamps, spread across
+    the window and capped at `cap`. The per-URL CDX query the LANDING-page completeness selection rides
+    on -- used only for the few landing pages (home + section indexes), never per leaf or per resource,
+    because a per-URL query is exactly the throttled endpoint the host index exists to avoid everywhere
+    else.
+
+    The window is [since, ceiling] -- the site's era date forward to the ceiling, the same window the
+    host index scores against -- because the point is the most COMPLETE rendering of the site's era, and
+    a later, more-built-out capture is exactly what we want to be allowed to pick (a 1997 site legitimately
+    showing its 2000 front page). `collapse=digest` drops captures whose bytes are identical -- they would
+    score the same -- and the survivors are sampled EVENLY by time (endpoints kept), so a far-but-complete
+    capture is in the running, not just the ones nearest the era date. Returns [] on any failure, so the
+    caller falls back to the ordinary nearest-date pick. Runs on the patient INDEX lane (its own backoff,
+    outside the fetch in-flight gate), so a slow or refused CDX never slows the page fetches."""
+    top = ceiling or CEILING
+    q = (
+        f"url={urllib.parse.quote(url, '')}&collapse=digest&filter=statuscode:200"
+        f"&from={since}&to={top}&fl=timestamp&output=json&limit=1000"
+    )
+    got = era_fetch.http_get(CDX + "?" + q, retries=2, index=True)
+    if not got or not got[2].strip():
+        return []
+    try:
+        rows = json.loads(got[2])
+    except json.JSONDecodeError:
+        return []
+    stamps = sorted({r[0] for r in rows[1:] if r and len(r[0]) == 14 and not _past_ceiling(r[0], ceiling)})
+    if len(stamps) <= cap:
+        return stamps
+    # Even spread across the window, endpoints included: the era-nearest (first) and the most-built-out
+    # (last) are both always candidates, with the rest sampled between them.
+    picks = {round(i * (len(stamps) - 1) / (cap - 1)) for i in range(cap)}
+    return [stamps[i] for i in sorted(picks)]
+
+
+def index_ready(host):
+    """True if `host` has a usable (non-empty) capture index right now -- so a resource on it can be
+    priced by a pure dict lookup. False for an unregistered/third-party host, one still being indexed, or
+    one archive.org will not scan (an empty index). The landing-page completeness score is taken only over
+    resources whose host is ready, because those are the only ones the index can answer for without a
+    fetch -- and asking never blocks (host_index returns None rather than waiting)."""
+    return bool(host_index(host))
+
+
+def has_capture(url):
+    """True if `url` has a status-200 capture in its host's index -- a pure lookup, no network. Meaningful
+    only where index_ready(host_of(url)); this is the per-resource test the completeness score sums over."""
+    idx = host_index(host_of(url))
+    return bool(idx) and _index_key(url) in idx
 
 
 def _read_cached_index(host, since):

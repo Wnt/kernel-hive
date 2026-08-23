@@ -47,7 +47,7 @@ The gateway CT is **951** at **10.99.0.2** on `vmbr-rn` (offline; see
 | Thing | Value | Owner |
 |---|---|---|
 | Corpus root (in CT 951) | `/data/retronet/corpus/<host>/<path>` — static files mirroring each site; dir → `index.html` | W2 writes; W1/W3 read |
-| Corpus manifest | `/data/retronet/corpus/sites.json` — array of `{host, title, blurb, added}` for known hosts | W2 writes; W1 (known-host list) + W3 (directory) read |
+| Corpus manifest | `/data/retronet/corpus/sites.json` — array of `{host, title, blurb, category, captured, pages, depth, bytes}` for known hosts | W2 writes; W1 (known-host list) + W3 (directory) read |
 | **Proxy** | HTTP/1.0 forward proxy, **`10.99.0.2:3128`**. `GET http://<host>/<path>` → the corpus file; miss → period 404 page. NEVER contacts upstream | W1 |
 | Search service | CT-local `127.0.0.1:8090`; the proxy routes reserved hostname(s) (default `search.retronet`) to it | W3 serves; W1 routes |
 | era-press | `scripts/retronet/web/era-press.py` on CT950/labhost: fetch **`id_` raw bytes (≤ 2000-12-31)** → mirror **as-is** (page + referenced assets/links, bounded depth) → stage → `pct push` into CT 951's corpus | W2 |

@@ -67,6 +67,11 @@ qemu-system-x86_64 -name winxp-um-gallery \
   -monitor unix:<dir>/mon.sock,server,nowait \
   -display none
 ```
+These are the **install/build** args. The production station launcher
+(`streamhost/stations/winxp/qemu-streamhost.sh`) differs: it backs `n0` with a real
+bridged tap on the retronet instead of `-netdev user` (slirp). See
+docs/lab/retronet/WEB-STATION-winxp.md.
+
 - Machine `pc` (i440fx), 1 GB RAM, **IDE** disk (XP has no AHCI/virtio driver
   without F6), **rtl8139** NIC (native XP driver), **std** VGA, **AC97** sound.
 - **Install-time only:** add the CD + boot order:
@@ -175,7 +180,7 @@ Working (double-click a Desktop `Play-*.bat`; all three verified in-game):
   (reaches the Quake MAIN menu).
 - DOSBox itself works on std VGA (SDL 1.2) with no env tweaks.
 
-Period browser: **IE6** preinstalled. Firefox 3.6.28 installer also provided.
+Period browser: **Internet Explorer 8** (`8.0.6001.18702`) preinstalled — the image carries IE8, not the IE6 XP shipped with in 2001; read from `HKLM\SOFTWARE\Microsoft\Internet Explorer\Version` in the guest. It is the browser the retronet web plane drives (docs/lab/retronet/WEB-STATION-winxp.md). Firefox 3.6.28 installer also provided.
 
 Staged installers (`C:\RetroApps\Installers\`, run manually — not silent):
 - **Firefox 3.6.28** (Mozilla official archive)
@@ -335,8 +340,9 @@ the **fleet resolution target was raised 1024×768 → 1920×1200** (packed-VBEM
   `-vga std` renders it full-frame; the mode persists across reboot.
 - **Checkpoint scene** (`streamhost/stations/winxp/golden-bake.sh`, resetMode=loadvm):
   station-local `winxp-golden.qcow2` (copy of the pristine `WinXPpro/winxp.qcow2`) with
-  an internal `savevm golden` checkpoint. Notepad open+focused (empty, caret top-left),
-  Bliss, pointer parked right; screensaver OFF, powercfg "Always On" + timeouts 0,
+  an internal `savevm golden` checkpoint. **Internet Explorer 8 maximised on the retronet
+  corpus page `http://home.microsoft.com/`** ("Microsoft Internet Start"), with an Internet
+  Explorer shortcut on the Bliss desktop behind it; screensaver OFF, powercfg "Always On" + timeouts 0,
   tray clock hidden (`HideClock=1`), caret quieted (`CursorBlinkRate=2000000000`),
   Security Center (`wscsvc`) + Automatic Updates (`wuauserv`) disabled. **Two
   no-input frames 3 s apart are byte-identical** (acceptance PASS). The capture does a
@@ -347,4 +353,6 @@ the **fleet resolution target was raised 1024×768 → 1920×1200** (packed-VBEM
   launcher (`qemu-streamhost.sh`) gained the `-loadvm golden` conditional (mirroring
   win95/win311) so `systemctl start` comes up straight in the scene; `labctl reset
   winxp` (loadvm golden) restores it. Verified live: streams 1920×1200, autologon →
-  Notepad scene, reset clean, abs pointer maps across the full 1920×1200 surface.
+  the IE-on-corpus scene, reset clean, abs pointer maps across the full 1920×1200 surface.
+  The NIC is a real bridged tap on the retronet (`winxprn0` on `vmbr-rn`, DHCP 10.99.0.18),
+  **not** slirp — see docs/lab/retronet/WEB-STATION-winxp.md.
