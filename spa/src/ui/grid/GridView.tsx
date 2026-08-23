@@ -6,6 +6,7 @@ import type { EnrichedVM } from '../../types';
 import { posterFor } from '../../data/posterIndex';
 import { matchesQuery, parseQuery, stationTerms } from './stationSearch';
 import { usePullToRefresh } from './usePullToRefresh';
+import { usePwaInstall } from './usePwaInstall';
 
 // ============================================================================
 //  GridView — the plain 2D, keyboard-navigable card grid (DEFAULT view)
@@ -111,6 +112,10 @@ export default function GridView() {
     useCallback(() => { window.location.reload(); }, []),
     vms.length > 0,
   );
+
+  // PWA install affordance for the footer. A standalone/installed app hides it;
+  // an installable browser shows the button; iOS Safari shows Share-sheet help.
+  const install = usePwaInstall();
 
   // Group by era, sort items by year within a group, and groups chronologically.
   const groups = useMemo<EraGroup[]>(() => {
@@ -414,6 +419,19 @@ export default function GridView() {
           >
             Source on GitHub
           </a>
+          {install.canInstall && (
+            <>
+              {' · '}
+              <button type="button" className="grid-foot-install" onClick={install.promptInstall}>
+                ⬇ Install app
+              </button>
+            </>
+          )}
+          {!install.installed && !install.canInstall && install.iosSafari && (
+            <span className="grid-foot-hint">
+              {' · '}To install: tap Share, then “Add to Home Screen”
+            </span>
+          )}
         </footer>
       </div>
     </div>

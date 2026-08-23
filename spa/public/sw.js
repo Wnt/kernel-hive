@@ -57,11 +57,15 @@ self.addEventListener('fetch', (event) => {
     (async () => {
       try {
         const fresh = await fetch(req);
-        try {
-          const cache = await caches.open(SHELL_CACHE);
-          await cache.put(SHELL_KEY, fresh.clone());
-        } catch {
-          // A failed clone/put just keeps the previous shell; not fatal.
+        // Only an OK shell is worth keeping — never cache a 401 login redirect
+        // (the gallery is session-gated) or a 5xx as the offline fallback.
+        if (fresh.ok) {
+          try {
+            const cache = await caches.open(SHELL_CACHE);
+            await cache.put(SHELL_KEY, fresh.clone());
+          } catch {
+            // A failed clone/put just keeps the previous shell; not fatal.
+          }
         }
         return fresh;
       } catch {
