@@ -291,6 +291,10 @@ box_sync_load_pairs() {
   box_sync_add_pair win2000-icq-nudge scripts/retronet/win2000-icq-nudge.py /usr/local/sbin/win2000-icq-nudge.py exact repo
   box_sync_add_pair win2000-icq-nudge-unit scripts/retronet/win2000-icq-nudge.service /etc/systemd/system/win2000-icq-nudge.service exact repo daemon-reload
   box_sync_add_pair win2000-icq-nudge-timer scripts/retronet/win2000-icq-nudge.timer /etc/systemd/system/win2000-icq-nudge.timer exact repo daemon-reload
+  # hpuxvue retronet web plane: bridge-tap lifecycle helper only (no ICQ persona,
+  # no exec channel on this station). Same mirror pair as the helpers above.
+  # See docs/lab/retronet/WEB-STATION-hpuxvue.md.
+  box_sync_add_pair hpuxvue-rn-tapnet streamhost/stations/hpuxvue/rn-tapnet.sh "$BOX_ROOT/stations/hpuxvue/rn-tapnet.sh" exact repo
 
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.
