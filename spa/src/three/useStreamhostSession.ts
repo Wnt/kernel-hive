@@ -6,6 +6,7 @@ import {
   type StreamResolution,
 } from './useStreamControl';
 import { setDebugTile, clearDebugTile } from './clientDebug';
+import { sessionNeedsReconnect, RESUME_GRACE_MS } from './streamClient/resumePolicy';
 import { WebRtcFallbackClient } from './webRtcFallbackClient';
 
 // ============================================================================
@@ -67,16 +68,6 @@ const RELIVE_KEYFRAME_WAIT_MS = 3000;
 const MAX_INITIAL_ATTEMPTS = 4;                  // total pre-live tries before poster fallback
 const RETRY_BACKOFF_MS = [600, 1500, 3000, 6000]; // unexpected-loss retry delays
 const RESTORE_BACKOFF_MS = [250, 500, 1000, 2000]; // host is expected to be briefly unavailable
-// After the tab comes back, let the just-unthrottled tick loop and the network
-// settle this long before judging the session at all.
-const RESUME_GRACE_MS = 800;
-// A frame painted this recently proves liveness outright, no round-trip needed.
-const RESUME_FRESH_PAINT_MS = 1000;
-// Otherwise ASK the transport. Deliberately NOT "has it painted lately": a
-// static desktop paints only on the keyframe heartbeat (~2.5 s), so silence is
-// normal and treating it as death would reconnect a perfectly healthy station
-// every single time the tab came forward.
-const RESUME_PING_TIMEOUT_MS = 600;
 
 export function useStreamhostSession(
   signalEndpoint: string,
@@ -546,14 +537,8 @@ export function useStreamhostSession(
           if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
           const c = client;
           if (!c) return;
-          // Painting right now — nothing to do.
-          if (c.getMsSinceLastFrame() < RESUME_FRESH_PAINT_MS) return;
-          // Otherwise ask the transport directly. An echoed ping means the
-          // session survived the background and is merely showing a still
-          // screen; a timeout means it slept through its own death.
-          const rtt = await c.pingRtt(RESUME_PING_TIMEOUT_MS).catch(() => null);
-          if (cancelled || client !== c) return;
-          if (rtt != null) return;
+          const dead = await sessionNeedsReconnect(c);
+          if (cancelled || client !== c || !dead) return;
           if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
           clearTimers();
           teardownAttempt();

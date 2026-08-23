@@ -100,7 +100,13 @@ exposeKeyRecorder();
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <BrowserRouter>
+      {/* The router base must agree with the VITE base the bundle was built
+          with. Without this a stage.sh preview served under /staging/<name>/
+          treats its own path as an unknown route and redirects to '/', which
+          silently loads the PRODUCTION bundle instead — so every staged
+          preview of anything that routes was really testing live. BASE_URL is
+          '/' for a normal build, leaving production behaviour unchanged. */}
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <App />
       </BrowserRouter>
     </ErrorBoundary>
