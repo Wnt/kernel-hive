@@ -26,7 +26,7 @@ Research note: [`docs/lab/research/candidate-hpux.md`](../lab/research/candidate
 | Display | built-in **Artist** framebuffer, 1280x1024x8, `-display dbus,p2p=on` — hard ceiling, do not raise |
 | Disk | `if=scsi,bus=0,index=6` 4000M qcow2 (`hpuxvue-golden.qcow2` in the station dir) |
 | CD | `if=scsi,bus=0,index=2` `assets/hpuxvue/disc1.iso`, `-boot d` during install |
-| NIC | `tulip` on user-mode net |
+| NIC | `tulip` on a **real bridged tap** (`hpuxrn0` on `vmbr-rn`), per-station MAC from `RN_HPUXVUE_MAC`; HP-UX claims it with `btlan3` as `lan0`. See [`retronet/WEB-STATION-hpuxvue.md`](../lab/retronet/WEB-STATION-hpuxvue.md) |
 | Pointer | LASI PS/2, **relative** (`dbus-rel`); `SH_CURSOR_SCALE=1.0` unmeasured |
 | Audio | none |
 
@@ -82,13 +82,38 @@ disk; else boot CD). The device set is identical in all three.
   kernel** installs the media's generic `vmunix` (7.4 MB) onto the boot LV.
 - 02:25 — boots from disk on that kernel; manual `fsck -y` of lvol6/7/8 at
   the bcheckrc prompt (dirty from the forced reset); Ctrl-D → **X11 first-boot
-  `set_parms`**: standalone (no network), hostname `hpuxvue`, TZ EET, no root
-  password, no font server. Then **`vuelogin`** (HP greeter) → root → **HP VUE
+  `set_parms`**: answered **standalone (no network)** at install time, hostname
+  `hpuxvue`, TZ EET, no root password, no font server. *(That standalone answer
+  was undone on 2026-08-23 when the station joined the retronet — the
+  networking section below is the current truth.)* Then **`vuelogin`** (HP greeter) → root → **HP VUE
   3.0 desktop**: front panel, six workspaces, Helpview welcome, File Manager.
 - Pointer: guest gain measured 50 units → 96 px on both axes = plain X
   acceleration (2×, threshold 4), i.e. `xset m 1 1` gives 1:1 and
   `SH_CURSOR_SCALE=1.0` is right. QMP `mouse_move`/`mouse_button` clicks
   Motif buttons reliably.
+
+## Networking — on the retronet since 2026-08-23
+
+The station is on the retronet **web** plane. Full as-built:
+[`docs/lab/retronet/WEB-STATION-hpuxvue.md`](../lab/retronet/WEB-STATION-hpuxvue.md).
+
+- The `tulip` is a **real bridged NIC**: backend `-netdev tap,ifname=hpuxrn0`
+  on `vmbr-rn`, sharing L2 with the retronet gateway CT `10.99.0.2`. The
+  `-device` is unchanged apart from the per-station `mac=`, which is read from
+  gitignored `registry/local.env` (`RN_HPUXVUE_MAC`).
+- HP-UX claims the card with **`btlan3`** (the PCI 100Base-TX driver) as
+  **`lan0`** at hardware path `8/0/1/0`.
+- Address **`10.99.0.20/24`**, DNS `10.99.0.2`, **no default gateway** — the
+  routing table has exactly `lo0` and `10.99`. It is **static**, not DHCP: the
+  base-1996 `/usr/lbin/dhcpclient` cannot enumerate the 1997 `btlan3` driver's
+  DLPI PPA (`get_ppa_info: Failed to locate lan0 in ppa info`) and never sends a
+  packet; the usual fix is a `PHNE_*` patch, which cannot be installed because
+  SD-UX is broken on this guest. The address is the one the retronet DHCP server
+  reserves for this MAC, so the reservation stays valid and unused.
+- Containment is proven: gateway reachable, `spacejam.com` resolves to the
+  gateway, labhost `10.99.0.1` 100 % loss (the `HPUXRN-IN` guard chain),
+  `1.1.1.1` *Network is unreachable*.
+- **`/etc/rc.config.d/netconf.prern`** is the pre-retronet copy of the config.
 
 ## Golden, input, and rollback
 
@@ -100,17 +125,23 @@ disk; else boot CD). The device set is identical in all three.
   `/etc/vue/config/sys.resources` `Vuesession*saverTimeout: 0` and
   `lockTimeout: 0`; `/etc/vue/config/Xconfig` `Vuelogin*autoLogin: root`
   (unverified on a cold boot — the checkpoint restores a logged-in desktop);
-  hostname `hpuxvue`, TZ EET, standalone (no network), root without password
-  (recorded in the gitignored credential stores as `guest/hpuxvue`).
+  hostname `hpuxvue`, TZ EET, root without password (recorded in the gitignored
+  credential stores as `guest/hpuxvue`).
 - Kernel is the media's generic recovery `vmunix` (works; `mk_kernel` from
   `/stand/system` never ran — optional future tidy-up, keep a copy first).
 - Catalog gotchas checked: there is NO `/etc/nsswitch.*` on 10.20 (that fix is
   11.x); LVM growth stays `lvextend`+`extendfs` (756 MB spare in vg00).
 - Pointer: `SH_CURSOR_SCALE=1.0`, click/drag/wheel and keyboard modifiers left
   to the operator's browser eyeball (`reset.mouse` = UNVERIFIED on purpose).
-- Exec channel: none yet. `/dev/tty0p0` exists and QEMU exposes it as
-  `serial.sock` in the station dir; a getty in `/etc/inittab` plus a
-  serialcon-style client (see tru64) would give `labctl exec`.
+- Exec channel: none over the network, but there **is** a working serial
+  console now. QEMU's `-serial` is the guest's *second* RS-232C port
+  (`ioscan -fnC tty`: `8/0/63`→`tty0p0`, `8/16/4`→**`tty1p0`**), and
+  `/etc/inittab` carries `s1:234:respawn:/usr/sbin/getty -h tty1p0 9600`, so
+  `serial.sock` in the station dir gives a root shell (no password;
+  `/etc/profile` asks for `TERM` — answer `dumb`). Wiring `labctl exec` to it is
+  a small separate job. Two traps: the line editor mangles command lines past
+  ~70 characters, and the QEMU serial socket serves **one client at a time**, so
+  connect momentarily and never hold it.
 - Automation path for a future builder: HP's install runs a config from the
   CD's INSTALLFS (`post_load_cmd`/`post_config_cmd` hooks — the "user
   specified script" seen on camera is HP's own); patching that config is the

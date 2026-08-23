@@ -1007,6 +1007,76 @@ is how ICBM's binary above was retrieved).
 read or written. `wt.sh rm rn-beos-recon` after this branch lands releases the
 sandbox claim; nothing else was held.
 
+### `hpuxvue` — retronet web browser (NCSA Mosaic; Netscape 4.79 sourced but unusable)
+
+Not builder-driven — sourced for the retronet **web** plane's HP-UX 10.20
+station (`docs/lab/retronet/WEB-STATION-hpuxvue.md`). Staged only under the
+sandbox media dir and delivered to the guest on a throwaway ISO through the
+station's EXISTING SCSI cdrom (QMP `change`, so the device set — which `loadvm`
+pins — never changed). Never committed.
+
+| file | sha256 | size | source | class / terms |
+|---|---|---|---|---|
+| `navigator-v479-us.hppa1.1-hp-hpux20.tar.gz` (Netscape **Navigator 4.79** standalone for HP-UX 10.20, **PA-RISC 1.1**) | `590c3c4157d0e3378fd4c07ffa7c7d0778f0f4bb2b25005cb049133c6978a1f2` *(locally measured 2026-08-23)* | 9 998 923 | [`ftp.gwdg.de/pub/misc/netscape/communicator/english/4.79/unix/supported/hpux1020/navigator_standalone/`](https://ftp.gwdg.de/pub/misc/netscape/communicator/english/4.79/unix/supported/hpux1020/navigator_standalone/) — a surviving mirror of the original `ftp.netscape.com` tree | **contested-commercial** (Netscape/AOL; no hobbyist redistribution grant). Private preservation exhibit only; never committed, never served, only executed. |
+| `communicator-v479-us.hppa1.1-hp-hpux20.tar.gz` (the full Communicator suite — mail/news/Composer; kept as the fallback, NOT installed) | `1e931220c18bbc4cb6beadc6b5816176ef923b601b2f378dcf40016330ca6f38` *(locally measured 2026-08-23)* | 14 031 586 | same tree, `complete_install/` | as above |
+| `README-4.79.txt` (the release's own `complete_install/README.txt`) | `03be9b4167511cf56e23c5987c34bce3244d6c6238db473785d5313db7a59e10` | 16 776 | same tree | vendor documentation, kept for the install recipe |
+
+**Why 4.79, and why the plain tarball.** 4.79 is the **last** Netscape build with
+an `hpux1020` directory (4.8 is hpux11-only), and the only surviving mirror that
+still holds the bytes is gwdg — `ftp.icm.edu.pl` advertises itself as the
+historical `ftp.netscape.com` archive and still serves the original `ls-lR.gz`
+index (which is what confirms the filename convention), but its file tree has
+been gutted. These are **not** swinstall depots: each unpacks to a directory of
+`.nif` files (gzip+tar) plus an `ns-install` Bourne script, and the vendor
+`README.install` documents a fully manual install — which is what
+`install-netscape.sh` does, and is ideal for an offline guest whose SD-UX is
+broken.
+
+**Why it runs here.** `file` reports `PA-RISC1.1 shared executable dynamically
+linked` — PA-RISC **1.1**, so it runs on the emulated B160L's PA-7300LC (the
+PA-RISC 2.0 builds are the hpux11 ones and would not). Its shared-library list
+is exactly the HP-UX 10.20 + HP VUE 3.0 runtime — `/usr/lib/Motif1.2/libXm.1`
+and the `/usr/lib/X11R5/` libs VUE itself is built against — so nothing external
+is needed; everything else ships inside the `.nif`s.
+
+**The Netscape builds are NOT what ships.** 4.79 installs and reports its
+version but never opens a window on this unpatched 1996 press — a busy loop, no
+X traffic at all (details in
+[`retronet/WEB-STATION-hpuxvue.md`](retronet/WEB-STATION-hpuxvue.md)). It has
+been removed from the guest. **NCSA Mosaic is the browser the station runs**, and
+its binaries came from the Internet Archive's crawl of the original NCSA FTP
+tree — the live `ftp.ncsa.uiuc.edu` mirrors are all 404, but Wayback's CDX index
+has the whole `Web/Mosaic/Unix/binaries/` directory:
+
+| file | sha256 | size | source | class / terms |
+|---|---|---|---|---|
+| `Mosaic-hp-2.7b5` (**NCSA X Mosaic 2.7b5** for HP, PA-RISC 1.1 — the build the station runs; JPEG + PNG + tables) | `fba962f70c1240277478e671e12398c5b8add18a727616e016597ae1b31e4636` *(locally measured 2026-08-23; `.gz` `e4875caf6d77e99a11bb53d10616164f1c6abcf9e90cf2300e834d8d917685d1`)* | 5 892 348 (1 544 927 packed) | `https://web.archive.org/web/20160619203952id_/ftp://ftp.ncsa.uiuc.edu/Web/Mosaic/Unix/binaries/2.7b/Mosaic-hp-2.7b5.gz` | **preservation-source.** NCSA Mosaic was free for academic/non-commercial use, commercially licensed through Spyglass; no clean modern grant. Private preservation exhibit only; never committed, never served, only executed. |
+| `Mosaic-hp-2.6` (Mosaic 2.6 for HP — installed as a fallback; **no JPEG**) | `b0d2961f08b8608eda1edd24422fbc0aa8fc7be611026ab91e4d594f457da69b` *(locally measured; `.Z` `e4342d72da4b40f89b3f8c3a6679ad5bf5d8cb0da8647482246f79123ab5be3f`)* | 1 716 224 (853 351 packed) | same tree, `binaries/2.6/Mosaic-hp-2.6.Z` | as above |
+| `Mosaic-hp700-2.4` (Mosaic 2.4 for HP 700 — second fallback) | `ebc8171e1ee82f766cd18c8595fdacac6ba8b7e0f9026baceed88b6c51b3277c` *(locally measured; `.gz` `b52e3803cc5cf97b995bf468a326cc2a63bf9a3386b2c875f18e55d2e1e1b8ad`)* | 3 066 504 (900 445 packed) | same tree, `binaries/old/2.4/Mosaic-hp700.gz` | as above |
+| `Mosaic.ad` (NCSA's own `app-defaults.color`, installed as `/usr/lib/X11/app-defaults/Mosaic`) | `6a0b7e2bc20a32eb7b8ca2eb3a0ed478d78a29be8d1c13898baad69e057ef58e` | 6 465 | same tree | as above |
+
+All three are `PA-RISC1.1 shared executable` and link only against libc, X11R5,
+Xt, Xmu and Motif 1.2 — the reason they run where Netscape 4.79 does not.
+
+**Sourcing dead ends, recorded so nobody repeats them.** The HP-UX Porting and
+Archive Centre (`hpux.connect.org.uk`; HTTPS is dead, HTTP works) has been
+pruned of all 10.20 depots — its `Networking/WWW` category now offers PA-RISC
+2.0 / 11.11+ only, its Lynx builds are 11.11+, and it has no Mosaic at all.
+Mosaic looked lost too at first — the `ftp.ncsa.uiuc.edu` mirrors at
+funet/gwdg/icm all 404 and archive.org's Mosaic *items* are Windows/Mac/Amiga
+only — until the **Wayback CDX API** turned up the whole original FTP tree
+(above). That is the lesson: query
+`http://web.archive.org/cdx/search/cdx?url=<host>/<path>/*&output=text` before
+concluding a vintage FTP archive is gone, and fetch hits through the
+`/web/<timestamp>id_/<url>` raw form. Plain `curl` reaches web.archive.org from
+the lab even where `WebFetch` does not.
+
+Still genuinely absent: **Netscape 3.0x for HP-UX** (CDX prefix queries on
+`ftp.netscape.com/pub/navigator/`, `archive.netscape.com`, the icm and funet
+mirrors all return *zero* rows — those FTP trees were never crawled), and
+**Lynx for 10.20** (`hpux.cs.utah.edu` has real archived depot payloads, but
+only `lynx-2.8.5` for 11.00/11.11/11.23 — no 10.20, no 9.x).
+
 ## 3. freely-fetchable-pinned — open upstreams
 
 | file | pin | builder | staging path (labhost state) |

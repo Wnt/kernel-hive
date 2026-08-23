@@ -35,7 +35,7 @@
         "kbd_note": "hpterm from File Manager Directory>Terminal (Ctrl+T); VUE front panel is the mouse proof",
         "audio_trigger": null,
         "validated": false,
-        "note": "relative LASI PS/2 pointer, cursor_scale 1.0 (xset m 1 1 baked into the session). Foreign-arch TCG station on /opt/qemu-hppa (kernel-hive fork), like macos753. No exec channel yet."
+        "note": "relative LASI PS/2 pointer, cursor_scale 1.0 (xset m 1 1 baked into the session). Foreign-arch TCG station on /opt/qemu-hppa (kernel-hive fork), like macos753. No network exec channel, but a serial console getty on tty1p0 gives a root shell on serve/serial.sock (docs/lab/retronet/WEB-STATION-hpuxvue.md)."
       }
     },
     "labctl": {
@@ -167,7 +167,7 @@
     "snapshot": "golden",
     "mouse": "UNVERIFIED",
     "keyboard": "PASS",
-    "fixture": "HP VUE 3.0 desktop as root on HP-UX 10.20 at 1280x1024x8 (HP 9000/778 B160L under TCG): front panel with six workspaces, Helpview 'Welcome to Your HP Workstation!' and one File Manager on /. Pointer 1:1 via `xset m 1 1` in /.vue/sessionetc (guest gain was pure X acceleration). Keyboard PASS = installer TUI and hpterm echo, framebuffer-proven 2026-08-18; mouse left to the operator's browser eyeball. loadvm restores the desktop; the guest starts frozen until the first visitor."
+    "fixture": "HP VUE 3.0 desktop as root on HP-UX 10.20 at 1280x1024x8 (HP 9000/778 B160L under TCG), ON THE RETRONET: front panel with six workspaces, Helpview 'Welcome to Your HP Workstation!', a File Manager on / whose first item is the `Mosaic` launcher icon, and **NCSA X Mosaic 2.7b5 open on http://spacejam.com/**, served by the retronet gateway with no proxy configured. lan0 is up on 10.99.0.20 with no default route. Pointer 1:1 via `xset m 1 1` (applied into the live session before the bake; /.vue/sessionetc carries it but does not take effect on this login path). Keyboard PASS; mouse left to the operator's browser eyeball. Golden re-baked 2026-08-23 15:18 after the slirp->tap swap forced a cold rebuild."
   },
   "spa": {
     "archetypeId": "sparc-pizzabox",
@@ -188,13 +188,15 @@
     "eraSoftware": [
       "HP VUE 3.0",
       "vuewm",
+      "NCSA Mosaic 2.7b5",
       "hpterm",
       "SAM"
     ],
-    "periodBrowser": "Netscape Navigator 3 / Mosaic",
+    "periodBrowser": "NCSA X Mosaic 2.7b5",
     "iconicApps": [
       "VUE Front Panel",
       "File Manager",
+      "NCSA Mosaic",
       "hpterm",
       "SAM"
     ],
