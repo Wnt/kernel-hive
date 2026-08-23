@@ -270,6 +270,7 @@ export const OS_FAMILY: Record<string, Family> = {
   tinycore: 'generic', redstar2: 'generic', redstar3: 'generic', postmarketos: 'generic',
   sailfishos: 'generic', templeos: 'generic', qnx: 'generic', haiku: 'generic',
   beos: 'generic',
+  chokanji: 'generic', // 超漢字 / B-right/V (BTRON3) — menu-driven, Japanese-IME desktop; no PC chord set to profile
   newsos: 'generic', // NEWS-OS 4.1R: sxdm login + twm/xterm — no shell chord set to profile
   openvms: 'generic',
   alpine: 'linux-tty',

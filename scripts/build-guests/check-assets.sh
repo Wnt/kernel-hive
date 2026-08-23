@@ -90,6 +90,10 @@ ROWS=(
   # -- preservation-source media (private lab intake; never committed) --------
   "req-file|redstar3|Red Star OS 3.0 Desktop install ISO|$ASSET_STAGING/redstar3/redstar_desktop3.0_sign.iso|sha256:895ad0e01ae0d35a65e9ac42dd34d0a1d685d6dfa331ce5b4f24bbc753439be3|preservation-source"
   "req-file|redstar2|Red Star OS 2.0 desktop install ISO|$ASSET_STAGING/redstar2/redstar.iso|sha256:69a45d07c302782cb777d03abd39c5b45b4099e5c994a74a77bb71ab5d229997|preservation-source"
+  # chokanji: the whole 超漢字/B-right/V media set (archive.org 'chokanji'); the builder
+  # pulls it via media_cache_require and repacks qemuckj/mc.img -> chokanji.qcow2.
+  # Stored content-addressed in the media archive; opt-file => fetched at build if absent.
+  "opt-file|chokanji|超漢字/Chokanji-V + B-right/V + QEMU-CKJ media set (archive.org 'chokanji'; qemuckj/mc.img = pre-installed B-right/V)|${MEDIA_ARCHIVE_ROOT:-/data/media-archive}/blobs/b8/b8fd99a928d5564e53b58d2b8853b05f799a3fc32ba09cee0714a66c675039df|sha256:b8fd99a928d5564e53b58d2b8853b05f799a3fc32ba09cee0714a66c675039df|preservation-source"
   "req-file|mpf2|Multitech MPF-II Monitor + BASIC ROM|$ASSET_STAGING/mpf2/mpf_ii.rom|sha1:92378b0db561632b58a9b36a85f8fb00796198bb|preservation-source"
   # -- freely fetchable, pinned (the builder fetches + verifies if absent) -------
   # Debian non-free spectrum-roms; its usr/share/doc/spectrum-roms/copyright carries

@@ -396,6 +396,12 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d9d5c9', accentTint: '#7a8fb0', tintMix: 0.4,
     badge: 'Pentium II PC', spec: 'x86 • Rhapsody DR2 • 1998', kit: 'office90',
   },
+  // chokanji: 超漢字 / B-right/V (BTRON3) — a period Japanese beige PC. Blue
+  // accent echoes the kanji-watermark desktop; TRON badge for Sakamura's project.
+  chokanji: {
+    caseTint: '#cbc6b6', accentTint: '#2f6fb0', tintMix: 0.36,
+    badge: 'TRON PC', spec: 'x86 • BTRON3 超漢字 • 2002', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
