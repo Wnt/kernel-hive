@@ -225,7 +225,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "UNVERIFIED",
-    "fixture": "Clean idle BTRON3 desktop at 800x600 (Cirrus GD5446): the 超漢字 real-object window and the 原稿箱：B-right/V virtual-object box open on the blue kanji-watermark wallpaper, hand cursor at rest, no modal dialog."
+    "fixture": "Clean idle BTRON3 desktop at 800x600 (Cirrus GD5446): the 超漢字 real-object window and the 原紙箱：B-right/V virtual-object box open on the blue kanji-watermark wallpaper, hand cursor at rest, no modal dialog."
   },
   "migrationExceptions": []
 }

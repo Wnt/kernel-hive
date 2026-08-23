@@ -82,7 +82,7 @@ the vmmouse trap below.
   confirm it comes up `-loadvm golden -S`. (Operator policy: a restoring golden is
   proof enough; no separate checkpoint-verify ceremony.)
 - Fixture: clean idle BTRON3 desktop — the 超漢字 real-object window and the
-  原稿箱：B-right/V virtual-object box open on the blue kanji-watermark wallpaper,
+  原紙箱：B-right/V virtual-object box open on the blue kanji-watermark wallpaper,
   hand cursor at rest.
 - Input proof: **pointer (relative) PASS** (framebuffer-verified cursor motion).
   Keyboard **UNVERIFIED** — the exhibit is mouse-driven; BTRON keyboard entry is

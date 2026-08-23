@@ -23,7 +23,7 @@ BTRON did not die. Its embedded sibling ITRON, unburdened by any desktop ambitio
 
 ## What you're looking at
 
-This is B-right/V, the BTRON3 kernel under the 超漢字 desktop, running on emulated PC hardware. The blue wallpaper is tiled from the very kanji the system exists to render. The window at upper left is a real-object box — its rows are live objects, not filenames — and the tall panel is the "原稿箱," a tray of paper types: manuscript paper, drawing paper, a spreadsheet, cards, mail, a web browser, script paper, even programming languages. Each is a TAD document you open, not an application you launch — the very distinction BTRON set out to erase. The pointer is a pointing hand, the BTRON signature.
+This is B-right/V, the BTRON3 kernel under the 超漢字 desktop, running on emulated PC hardware. The blue wallpaper is tiled from the very kanji the system exists to render. The window at upper left is a real-object box — its rows are live objects, not filenames — and the tall panel is the 原紙箱, the box of blank stationery — one master sheet for each kind of document: manuscript paper, drawing paper, a spreadsheet, cards, mail, a web browser, script paper, even programming languages. Each is a TAD document you open, not an application you launch — the very distinction BTRON set out to erase. The pointer is a pointing hand, the BTRON signature.
 
 The edition running here is B-right/V 4.202, from the 超漢字4 era. Personal Media's later consumer release, 超漢字V, ships as a Windows-hosted virtual machine rather than a bootable disk of its own — but that is a difference of packaging, not of system: the BTRON3 desktop and the giant character set on show are the same lineage.
 
