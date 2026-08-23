@@ -10,7 +10,11 @@ working TCP/IP stack at all**: the Warp 4.52 upgrade's networking install died
 with error 1608 and an earlier gallery pass cleared the wreckage by *removing*
 things. Read [`ICQ-STATION.md`](ICQ-STATION.md) for the shared bridge/DHCP/
 containment design that this station copies; this doc records what is specific to
-os2warp, and it is mostly about the stack repair.
+os2warp, and it is mostly about the stack repair. The station's **ICQ** half —
+ICQ/2 1.503i as UIN `23000` on the legacy v5 door — is
+[`ICQ-STATION-os2warp.md`](ICQ-STATION-os2warp.md), which also records why the
+full FAT16 root directory noted below now constrains where software can be
+installed at all.
 
 ## The wiring, at a glance
 
