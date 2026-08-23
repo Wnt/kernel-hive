@@ -731,6 +731,230 @@ are now settled; the detail lives in the as-built doc's gotchas):
    sign-in with no keyring and no prompt; value from `registry/local.env`
    `RETRONET_ICQ_SOLARIS_PASS`, never committed.
 
+### `beos` GUI OSCAR client — sourcing recon, revised 2026-08-22 (reopened by coordinator)
+
+Media/feasibility errand for the `beos` retronet ICQ leg (bridged NIC, DHCP
+`10.99.0.16`, DNS-hijacked corpus web, gateway `10.99.0.2:5190`), read-only
+against the live station — no code shipped, no golden touched. Full
+requirement bar: [`retronet/ICQ-STATION.md`](retronet/ICQ-STATION.md); working
+precedents: [`retronet/ICQ-STATION-solaris.md`](retronet/ICQ-STATION-solaris.md)
+(Pidgin, zero patches) and
+[`retronet/ICQ-STATION-tru64.md`](retronet/ICQ-STATION-tru64.md) (Gaim 0.59.9,
+one patch un-gating/relocating existing code — the direct model for the patch
+plan below; its diff is `streamhost/stations/tru64/gaim-0.59.9-icq-ssi.patch`).
+
+**This entry supersedes the first pass of this recon.** Two corrections from
+the coordinator's review, both verified at source level below:
+
+1. **Requirement 1 (host/port override) does not need a client-side setting
+   at all on this fleet.** The gateway's DNS hijack resolves every hostname a
+   bridged, DHCP-configured station looks up to `10.99.0.2` — the same
+   mechanism win98se's own doc names explicitly: *"the DNS hijack of
+   `login.icq.com` also reaches it, but the literal removes the moving
+   part"* ([`ICQ-STATION.md`](retronet/ICQ-STATION.md) row "OSCAR server").
+   A client hardcoded to `login.icq.com:5190` therefore lands on our gateway's
+   real OSCAR door with **zero patching**, the same way win98se's ICQ 2000b/
+   2001b would if its literal-IP setting were reverted. This flips IM Kit's
+   requirement 1 from FAIL to **PASS as shipped**.
+2. **Two named candidates (Scooby, iScribe) are BeOS-era mail clients, not
+   IM/ICQ clients — confirmed and discarded.** Scooby's own SourceForge page
+   (`web.archive.org/web/20010402053146/http://scooby.sourceforge.net:80/`)
+   describes it as *"an open source full featured BeOS native e-mail
+   client"* — no ICQ/OSCAR mention anywhere in its pages or Wayback CDX
+   index. iScribe's archived author page
+   (`web.archive.org/web/20010406102217/http://www.ozemail.com.au/~fret/scribe.html`)
+   headlines it *"i.Scribe (email client)"* — a cross-platform (Win32/BeOS)
+   flat-file mail client with a MIME-viewer plugin interface, nothing
+   IM-related. Neither is a candidate; not pursued further.
+
+**Working around this sandbox's `web.archive.org` block**: `WebFetch` cannot
+reach `web.archive.org`, but plain `curl` from Bash can — this recon used the
+CDX API (`http://web.archive.org/cdx/search/cdx?url=…&output=json`) and direct
+`http://web.archive.org/web/<timestamp>/<url>` fetches throughout, which is
+how the ICBM/BeCQ binary below was retrieved and inspected.
+
+#### Candidate 1 — IM Kit (`HaikuArchives/IMKit`, `protocols/OSCAR/ICQ.cpp`) — re-scored, now the front-runner
+
+Re-read at the source level (`ICQ.cpp`, `OSCARManager.cpp`,
+`utils/ProtocolLoader/main.cpp`, `ProtocolManager.cpp`, `protocols/Jamfile`,
+`protocols/OSCAR/Jamfile`) with the coordinator's priority order (OSCAR →
+native GUI → SSI → reconnect/auto-login → R5-buildable):
+
+| requirement | verdict | evidence |
+|---|---|---|
+| 1. OSCAR to an arbitrary host, numeric UIN | **PASSES (corrected)** | `ICQ.cpp:139-140` hardcodes `Login("login.icq.com", 5190, fUIN, fPassword)` — on the retronet's DNS-hijacked, no-default-route addressing this resolves straight to `10.99.0.2:5190`, our gateway's real BUCP/OSCAR door, with no patch needed. UIN login is a plain numeric TLV, no gate against it. |
+| 2. native BeOS desktop app | **PASSES** | Real Be-API windows (buddy list + per-conversation windows), Deskbar tray (`DeskbarIcon.cpp`), driven by `im_server`/`libim` — not a terminal. |
+| 3. server-side SSI/feedbag roster | **PARTIAL, small precedented patch** | `OSCARManager::HandleSSI()` fully implements `ROSTER_CHECKOUT` (a real feedbag client) but the `BUDDY_RECORD` case (`OSCARManager.cpp` ~L713-720) never parses the buddy item's own TLV block — it just does `reader->OffsetBy(len)`, skipping the alias TLV `0x0131` entirely, so contacts would render as bare UINs. **The fix is already a proven pattern in the same file**: the `GROUP_RECORD` case immediately above (~L685-703) already loops `while (reader->Offset() < end) { TLV tlv(reader); … }` to read a group's own inner TLVs — the identical loop, reading `tlv.Type() == 0x0131` and taking `tlv.Value()` as the alias instead of skipping, is the patch. ~15-20 lines, directly modeled on tru64's `aim_ssi_getalias()` fix for the exact same 0x0131-skipped-on-ICQ gap. |
+| 4. auto-login + auto-reconnect | **FAILS as shipped, but now a concretely scoped patch — see estimate below** | Confirmed no reconnect/auto-login code exists anywhere in the tree, but tracing the actual startup sequence (not done in the first pass) found both hook points are single, well-defined insertion points, not new subsystems. |
+| 5. installable on R5 | **Better than first assessed, still unverified** | `ReadMe.txt`'s git history shows the wording softened from *"BeOS R5 should be supported too, but we don't have developers and testers available"* (as of the earliest commit in this mirror, Oct 2008) to *"BeOS R5 is no longer supported"* on 2009-07-04 (`0e72b02`) — but gcc2/BeOS-ABI build fixes continued for **another two months after that** (`90af677`, 2009-08-28: *"Various SubDirHdrs to SubDirSysHdrs changes to allow gcc2 compilation, tested with gcc4 as well"*). This reads as an untested/unsupported-by-maintainers disclaimer, not a codebase that stopped building for the platform. **Separately, a real blocker was found and appears avoidable**: `protocols/Jamfile` gates the whole OSCAR addon behind `IMKIT_HAVE_OPENSSL` (commit `c7709c1`, "OSCAR requires OpenSSL" — R5 does not ship OpenSSL in the base install, same reason climm needed `--disable-ssl`). Tracing *why* OSCAR needs it: `OSCARManager.cpp` includes `<openssl/md5.h>` and calls `MD5_Init/Update/Final` in exactly one place — hashing an optional **buddy-icon upload** (`OSCARManager.cpp` ~L1782-1787). **Login itself needs no crypto library at all**: `ICQProtocol::RoastPassword()` (`ICQ.cpp` ~L446) is the classic ICQ password-roasting XOR table, pure C, no OpenSSL. A one-line Jamfile change (stop gating `OSCAR` on `IMKIT_HAVE_OPENSSL`, or stub out the icon-hash call — we don't need buddy-icon upload for a museum exhibit) removes the only concrete R5-buildability blocker actually found in the source. Still **not attempted** — no R5 build environment exists in this sandbox and the live `beos` station is off-limits — so this stays "moderate confidence, unverified" rather than resolved. |
+
+**Reconnect + auto-login engineering estimate** (traced to exact hook points,
+not estimated from the outside):
+
+- **Auto-login on launch** (`ICQ.cpp`, ~5 lines). `utils/ProtocolLoader/main.cpp`
+  reads the account's persisted settings (a flattened `BMessage` in the
+  `im_settings` filesystem attribute) and calls `protocol->UpdateSettings(settings)`
+  — which populates `ICQProtocol::fUIN`/`fPassword` — **before**
+  `ProtocolLoaderApplication`'s constructor calls `fProtocol->Init(BMessenger(...))`
+  (`utils/ProtocolLoader/ProtocolLoaderApplication.cpp:61`). So by the time
+  `ICQProtocol::Init()` runs, the credentials are already in hand; today `Init()`
+  only does `fManager->Run()`. Appending one call —
+  `fManager->Login("login.icq.com", 5190, fUIN.String(), fPassword.String())`
+  — at the end of `Init()` is the entire auto-login patch. No new message
+  plumbing, no new persisted state.
+- **Auto-reconnect on a stale/dropped socket** (`OSCARManager.cpp` +
+  `OSCARManager.h`, ~50-70 lines). The hook is `OSCARManager`'s
+  `AMAN_CLOSED_CONNECTION` handler (`OSCARManager.cpp` ~L1167-1195), which today
+  only does `fHandler->StatusChanged(fOurNick, OSCAR_OFFLINE)` when the last BOS
+  connection drops. The patch: when that branch fires, instead of just going
+  offline, schedule a retry — a `BMessageRunner` (Be API's native delayed-message
+  primitive, the idiomatic equivalent of Gaim's `g_timeout_add`) posting a
+  self-message after an exponential-backoff delay, which re-invokes
+  `Login()` with the last-used host/port/UIN/password (`OSCARManager` needs to
+  retain these across the drop — currently they are only passed as `Login()`
+  call arguments, so caching them as members is part of the patch). This is a
+  direct structural port of tru64's `rn_reconnect_schedule`/
+  `rn_reconnect_signon`/`rn_reconnect_clear` (`gaim-0.59.9-icq-ssi.patch`,
+  `multi.c`) into Be API idiom (`BMessageRunner` instead of `g_timeout_add`,
+  a `BMessage` instead of a `GHashTable` for the per-account backoff state).
+  Also needs the tru64 patch's second half: something to suppress
+  `ICQProtocol::Error()`'s notification during an in-flight reconnect (a
+  `rn_have_been_online`-style flag) so an unattended exhibit doesn't surface a
+  transient drop as a user-facing error.
+- **Total estimate: ~70-95 new/changed lines across two files** (`ICQ.cpp`/`.h`
+  for the auto-login call plus the alias-TLV fix, `OSCARManager.cpp`/`.h` for
+  the reconnect timer) — the same order of magnitude as the tru64 Gaim patch
+  actually shipped (`gaim-0.59.9-icq-ssi.patch` is ~150 lines across
+  `buddy.c`/`multi.c`/`oscar.c`/`ssi.c`), not the "build a subsystem from
+  nothing" scale the first pass of this recon implied. The qualitative
+  difference from tru64 is real but smaller than first stated: tru64 relocated
+  an *existing* plugin's logic, IM Kit's patch writes the timer/backoff logic
+  fresh — but the insertion points are single, already-identified functions,
+  not an open-ended design problem.
+
+**Older-revision check (coordinator's ask).** This git mirror
+(`HaikuArchives/IMKit`, cloned in full for this recon) has **no tags** and its
+earliest commit (`076e830`, 2008-10-26, *"Moving code to trunk, creating the
+usual layout"*) is itself an SVN reorg — the true R5-era alpha 4–11 releases
+(referenced in the project's own `eiman.tv/imkit/history.html` changelog,
+approx. 2001-2004) predate this git history entirely and were not recovered
+(BeBits and its mirrors are dead — see below). Within the 280 commits this
+mirror does have (Oct 2008 – 2013), there is no meaningfully "more R5-focused"
+older revision to prefer over HEAD: the R5-targeted build fixes (gcc2 ABI
+compatibility) run *later* in the history (Aug 2009) than the commit that
+hardened the README's R5 disclaimer (Jul 2009), so HEAD is at least as
+R5-buildable as anything else in this mirror, not less. **Recommendation: build
+from HEAD (`9c80ad1`, archived below), not an older commit.**
+
+#### Candidate 2 — ICBM / BeCQ (`icbm.8k.com`) — real client, wrong protocol generation, rejected
+
+New find via the Wayback CDX workaround (`bebits.com`'s own mirrors are dead —
+`bebits.irixnet.org` and `be.wildman-productions.org` both fail to resolve from
+this sandbox). `icbm.8k.com` ("Inter-Continental Ballistic Messenger," formerly
+project "BeCQ") has real archived snapshots
+(`web.archive.org/web/20010330040712/http://icbm.8k.com:80/` and later) and a
+recoverable **compiled R5 x86 binary**: `ICBM.71.zip`
+(`web.archive.org/web/20060109024731/http://icbm.8k.com:80/ICBM.71.zip`, a
+genuine 471,201-byte BeOS PE binary dated 2001-02-10, `ICBM.x86`). Pulled and
+`strings`-inspected directly (the coordinator's "decisive question" first):
+
+- **Protocol: legacy pre-OSCAR ICQ v2-v5 over UDP, NOT OSCAR.** The binary's
+  own symbol table names a `BeCQServer` class with methods like
+  `ConnectToServer`, `SendPacketLoop [Cmd: 0x%04X] [Seq: 0x%lX]`,
+  `SERVER_ACK`, `SERVER_INFO_REPLY`, `Firewall UDP Connection Error`, and the
+  literal string `4000` (the legacy ICQ UDP port) — this is the client/server
+  ACK-and-sequence-number packet family from ICQ's original v2-v5 protocol,
+  not FLAP/SNAC framing. No `FLAP`, `SNAC`, `oscar`, `login.oscar`, or `5190`
+  string anywhere in the binary.
+- **This is a real, if narrow, nuance in the coordinator's framing worth
+  recording**: [`GATEWAY.md`](retronet/GATEWAY.md)'s own port table documents
+  the gateway listening on **`4000/UDP` for exactly this legacy protocol
+  family, "for pre-OSCAR clients on a bridged station"** — and `beos` is a
+  bridged station. So ICBM's packets would very likely reach the gateway; "our
+  gateway is OSCAR-only" slightly overstates GATEWAY.md's own documented
+  surface. **This does not rescue ICBM as a candidate**, though: the legacy
+  v2-v5 protocol **predates the SSI/feedbag concept by roughly two years**
+  (SSI arrived with ICQ 2001b, alongside real OSCAR) — there is no
+  server-authoritative roster to download in this protocol family at all, only
+  a client-side "who's on my list" mechanism (`Server: ContactList, num =
+  %d`/`Server: Received %d contacts:` in the strings dump is this, not SSI).
+  ICBM therefore fails **both** the coordinator's rank-1 gate ("OSCAR-capable")
+  in the strict wire-protocol sense and the rank-3 gate (SSI) on a
+  protocol-generation basis no patch can fix without reimplementing SSI onto a
+  protocol that has no equivalent concept. **Rejected**, but the readme did
+  confirm one thing worth noting for the record: the binary contains a real
+  `autologin` string (*"Automatically login on program launch"*) and its own
+  TCP-peer retry logic (*"TCP connection prematurely closed, retrying..."*),
+  so the client-quality bar itself is fine — the protocol generation is the
+  disqualifier, not the software.
+
+#### Candidate 3 — BeAIM (`HaikuArchives/BeAIM`) — unchanged from first pass, still second-best
+
+Real host/port override (`AIMHost`/`AIMPort` prefs, unlike IM Kit's now-moot
+hardcoding) and real SSI code (`AIMNetManager::ReloadSSIList()`), but it is an
+AIM screen-name client with an unverified numeric-ICQ-UIN login path, and the
+same missing-reconnect gap IM Kit has, with none of IM Kit's now-mapped patch
+points investigated. Not pursued further — IM Kit's requirement-1 gap is now
+free (the DNS hijack), which removes BeAIM's only real advantage.
+
+**Recommendation, in one line: `IM Kit` (`protocols/OSCAR/ICQ.cpp`) is the
+strongest available candidate — OSCAR-capable as shipped, a real desktop app
+as shipped, and needs one scoped ~70-95-line patch (alias-TLV SSI display +
+auto-login-at-`Init()` + a reconnect timer modeled directly on the tru64
+precedent) plus an unattempted-but-de-risked R5 build (the one real blocker
+found, the OpenSSL gate, is avoidable with a one-line Jamfile change since
+login never touches OpenSSL). This is a real, scoped follow-on errand — not
+production-ready today, but no longer "blocked without further engineering"
+in the open-ended sense the first pass of this recon reported.**
+
+**Both source trees remain archived** (unchanged from the first pass —
+git clone, working tree only, `.git` stripped),
+`media_cache_put`/`scripts/build-guests/lib/media-cache.sh`:
+
+| candidate | commit | sha256 | size | url |
+|---|---|---|---|---|
+| IM Kit source | `9c80ad110de77481717d855f503d3de6ce65e4d8` (2009-11-27) | `4eb6f38c3417dc6cb99610bd02fd86b32013f938b574d31462e1bb2221bd34e0` | 3 300 733 | [github.com/HaikuArchives/IMKit](https://github.com/HaikuArchives/IMKit) |
+| BeAIM source | `b0d489d9bc762a229cffa1f681ff5822bd6218bf` (BeAIM 1.5.6) | `fb3f2a63dba29943207d124d44e27448814c1ea5abe2edbb876fc16fa6b0cc87` | 415 496 | [github.com/HaikuArchives/BeAIM](https://github.com/HaikuArchives/BeAIM) |
+
+Neither is built or patched — they remain starting points, now with a concrete
+patch plan attached to IM Kit above. IM Kit is BSD-licensed (`License.txt`,
+"Copyright (c) 2004-2009 IM Kit Team"); BeAIM carries author disclaimers only
+(freeware/abandonware posture, same class as every other sourced client here).
+
+**R5 networking + dev-environment facts** (documentation-level, not probed
+against the live station — the next agent asked for these; unchanged from the
+first pass):
+
+- **Development toolchain**: R5's stock install ships a full **gcc 2.95.3**
+  GNU toolchain (BeOS-patched, distinct from Metrowerks' commercial BeIDE)
+  with GNU `make`, `binutils`, and headers under `/boot/develop/headers` —
+  enough to build a small sockets/BApplication program from source with
+  nothing extra fetched.
+- **FTP server**: BeOS ships an FTP daemon enabled through the Networking
+  preferences applet (not running by default, but present with no extra
+  package) — useful for delivering a built binary/patch into the guest, the
+  same role CT 951's `python -m http.server` / IE's `iexplore http://…` plays
+  on the Windows and es40 stations.
+- **Telnet**: a `telnetd` is present in R5's base networking stack, but R5's
+  `net_server` does **not** implement a classic Unix `inetd` — telnetd/ftpd
+  are standalone services started by BeOS's own Networking preferences, not
+  multiplexed through one super-server the way Tru64's `inetd` is. (BONE, the
+  later BeOS network stack, adds a real `inetd`, but BONE never shipped for
+  R5 — this station is stock R5.) Exec-channel design for this station should
+  assume "each service is its own standalone daemon," not an inetd-style
+  dispatch table.
+
+**Still-dead sourcing infrastructure worth recording**, so the next errand
+doesn't re-try it: `bebits.com` and both would-be live mirrors
+(`bebits.irixnet.org`, `be.wildman-productions.org`) fail to resolve from this
+sandbox; `WebFetch` cannot reach `web.archive.org` directly (works around it:
+plain `curl` from Bash reaches both the CDX API and archived pages fine, which
+is how ICBM's binary above was retrieved).
+
+**Teardown**: no processes started, no guests touched, no golden/checkpoint
+read or written. `wt.sh rm rn-beos-recon` after this branch lands releases the
+sandbox claim; nothing else was held.
+
 ## 3. freely-fetchable-pinned — open upstreams
 
 | file | pin | builder | staging path (labhost state) |
