@@ -145,11 +145,20 @@ pump can never hold the ports.
   `desk.cpl` control-panel drive over the socket, 2026-08-11). Key fields are
   Bochs-style names (`ctlsock.h` `field_to_bxkey`): `Left Win`, `Left Ctrl`,
   `Tab`, `Enter`, `Space`, `Cursor *`, `F1`..`F12`, …
-- **Pointer: open-loop absolute, NOT yet pixel-exact** (`reset.mouse`
-  UNVERIFIED). The guest still runs default Windows pointer acceleration, so
-  injected motion overshoots (observed: MOVEA 522,141 pinned the cursor to the
-  top-left corner). The seed-polish pass (acceleration → None) is what makes
-  MOVEA land 1:1; keyboard is the reliable drive channel until then.
+- **Pointer: open-loop absolute, and NOT usable — the cause is NOT pointer
+  acceleration.** An earlier note here blamed default Windows acceleration and
+  prescribed a seed-polish pass (acceleration → None). That diagnosis is wrong:
+  the guest is **already** configured for 1:1 motion — `HKCU\Control Panel\Mouse`
+  reads `MouseSpeed=0`, `MouseThreshold1=0`, `MouseThreshold2=0`,
+  `MouseSensitivity=10`, exactly what `ctlsock.h`'s open-loop tracking asks for —
+  and `MOVEA` still misses. Measured 2026-08-23 on a cold-booted clone:
+  `MOVEA 1126 341` landed the cursor at ~`765,350`; the same request after a 30 s
+  settle landed at ~`258,262`; a click aimed at a radio button did nothing. So it
+  is neither acceleration nor pacing — the believed position does not track the
+  real one. **Keyboard is the only reliable drive channel on this station**, and
+  the shm framebuffer does not capture the cursor, so there is no readback to
+  calibrate against. This blocks any app whose window cannot be focused by
+  `Alt`+`Tab` (see the ICQ station doc).
 - Client for hand-driving: `/data/vms/sandbox/ALPHA-nt/uibench/ctltest.py
   <ctl.sock> <script>` (`K`/`TYPE`/`MOVEA`/`DOWN1`/`SLEEP` verbs);
   screenshots via `uibench/shmread.py <fb.shm> <out.png>`. **ctltest only types
