@@ -2,6 +2,8 @@
 
 **Status:** LIVE. Built, checkpointed, wired, deployed and streaming; the
 station serves on udp/54142 and its reset endpoint restores the checkpoint.
+**On the retronet web plane since 2026-08-23** — see
+[`../lab/retronet/WEB-STATION-macos753.md`](../lab/retronet/WEB-STATION-macos753.md).
 
 The fleet's **first foreign-architecture QEMU station**. Every other QEMU
 station launches `qemu-system-x86_64` or `qemu-system-i386`; the two non-x86
@@ -21,7 +23,7 @@ by other means. This one runs `qemu-system-m68k -M q800`.
 | Keyboard | ADB. Command reaches the guest as `meta_l` → ADB `0x37`. |
 | Audio | Apple Sound Chip (`asc`) over `-audiodev dbus` |
 | Disk | 1900 MB qcow2, single HFS partition, ~29.5 MB used |
-| Network | none, deliberately |
+| Network | **`dp83932` (SONIC), on the retronet bridge `vmbr-rn` at `10.99.0.23`** (2026-08-23) |
 
 ### Why not pve-qemu
 
@@ -93,6 +95,72 @@ bottom-right, no window open, nothing selected.
   8 MB of the 128 installed.
 - **Disk cache 32K → 7680K**, which matters more than usual because every
   emulated SCSI transaction is TCG work.
+
+## Networking — MacTCP, and four facts that mislead
+
+The station joined the retronet on 2026-08-23. The bridge as-built is in
+[`WEB-STATION-macos753.md`](../lab/retronet/WEB-STATION-macos753.md); these are
+the *guest* facts, which are true of Mac OS 7.5.3 on this machine regardless of
+what it is plugged into.
+
+- **The NIC is not a choice.** `-M q800 -nic model=help` offers exactly one
+  model, `dp8393x` (aka `dp83932`) — the SONIC the real Quadra 800 had on its
+  logic board. Mac OS 7.5.3 drives it with **nothing installed**: MacTCP lists
+  `Ethernet` beside `LocalTalk` on the first cold boot with the card present.
+- **MacTCP 2.0.6 has no DHCP client.** Its "Obtain Address" choices are
+  **Manually**, **Server** (BOOTP/RARP — the 1993 mechanism) and **Dynamically**.
+  There is no DHCP anywhere in it, so this guest is addressed statically. MacTCP
+  stores its settings in the **`MacTCP Prep`** file in the System Folder — on the
+  **disk**, not in PRAM — so they survive a cold boot and are bakeable, and every
+  change demands a guest restart (MacTCP says so itself in an alert).
+- **MacTCP is dormant until an application opens it.** With no TCP/IP app
+  running the stack is inactive and the guest emits nothing at all — not even an
+  ARP reply, so it does not answer ping. **Silence on the wire is the resting
+  state**, never evidence of a broken NIC.
+- **MacTCP does not survive a force-quit** of an application holding it open: the
+  next app to start hangs forever on its first name lookup with nothing on the
+  wire. Only a guest restart clears it.
+
+### Two checkpoint settings that are NOT on the disk
+
+Cold-booting this guest (which a device-set change forces) revealed that two of
+the settings the checkpoint records lived only in the **checkpoint's RAM state**
+and were never written to disk or PRAM. A cold boot brings back the defaults:
+
+- **32-bit addressing OFF**, capping usable RAM at 8 MB of the 128 installed;
+- **disk cache back to 32K**, not the 7680K the fixture records.
+
+Both are in the **Memory** control panel and both need a restart. Any future cold
+re-bake of this station must re-apply them, or the guest comes up with 5.9 MB
+free and most period software will not launch at all.
+
+### Browsers
+
+**Netscape Navigator 3.04 (68K)** is installed (`Macintosh HD:Netscape
+Navigator™ Folder:`) and renders the museum corpus. Two things it needs, both
+learned the hard way:
+
+- **Raise its memory partition** — Get Info → Preferred size **24000K**. At the
+  9000K default it dies at launch with a **type 16** (floating-point) or
+  **type 1** (bus) error, which is classic-Mac heap exhaustion, not an FPU fault.
+- Even at 24000K it is **intermittently unstable** on this emulated 68040 —
+  some launches hang spinning with a blank window. It is the best renderer
+  available for this guest and it does work, but it is not reliable.
+
+**MacWeb 2.0** is also installed and is far lighter, but it sends **no `Host:`
+header**, so it cannot use the retronet's `:80` origin at all (the origin answers
+`400`); it would need the `:3128` forward proxy. The copy sourced is the French
+build.
+
+### Getting files into this guest
+
+It has no shell, no telnet, no serial console — and, before the NIC, no network.
+Files go in **offline** with `hfsutils` against a raw copy of the disk:
+`qemu-img convert` to raw → `hmount` → `hcopy -b` (BinHex `.hqx`) or `hcopy -m`
+(MacBinary `.bin`) → `humount` → convert back to qcow2. **The resource fork is
+the whole point** — a classic Mac application *is* its resource fork, so a plain
+`.zip` of one is useless. The proof it worked is the file appearing in the Finder
+with its real icon.
 
 ## Pointer
 

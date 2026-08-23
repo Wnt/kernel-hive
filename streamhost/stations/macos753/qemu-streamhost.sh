@@ -29,9 +29,27 @@
 # setting the 1:1 pointer calibration depends on; it is fixture state, not
 # scratch, and is restored from the checkpoint like everything else.
 #
-# NO NETWORK CARD. The q800 has a dp83932 and Mac OS would happily drive it,
-# but the exhibit needs no network, and every device omitted is one less thing
-# in the vmstate and one less thing for TCG to emulate.
+# THE RETRONET NIC — dp83932 (SONIC), and there was never a choice to make.
+# `-M q800 -nic model=help` lists exactly ONE model: dp8393x (aka dp83932), the
+# Quadra 800's real built-in Apple Ethernet. So unlike every other station on the
+# bridge this one could not pick a card to suit the guest's driver set — the
+# machine has the card the real machine had, and Mac OS 7.5.3 drives it out of
+# the box: MacTCP's driver list shows "Ethernet" beside LocalTalk on the first
+# cold boot, with nothing installed into the guest.
+#
+# Adding it CHANGED THE DEVICE SET, and `loadvm golden` binds to exactly that
+# set, so the golden was COLD RE-BAKED from scratch on 2026-08-23 (the chokanji
+# pattern). Note this machine keeps its vmstate in the PRAM qcow2, not the disk
+# — see the PRAM paragraph above — so the pair is what carries the checkpoint.
+# The pre-change disk+PRAM pair is kept next to the live images; see
+# docs/lab/retronet/WEB-STATION-macos753.md.
+#
+# STATIC addressing, not DHCP: the guest's stack is MacTCP 2.0.6, whose "Obtain
+# Address" choices are Manually / Server (BOOTP-RARP) / Dynamically — there is no
+# DHCP in it at all. It is configured by hand on its reserved address
+# 10.99.0.23, DNS 10.99.0.2, and its Gateway Address left 0.0.0.0 so the guest
+# has NO default route. The 10.99.0.23 DHCP reservation exists only to keep the
+# address unique on the plane and is never claimed.
 #
 # AUDIO IS NOT OPTIONAL. `-M q800` instantiates the Apple Sound Chip and QEMU
 # REFUSES TO START without an audiodev bound to the machine
@@ -52,6 +70,25 @@
 #     the first visitor arrives. The first-ever bake launches cold.
 set -e
 D=/data/vms/streamhost/stations/macos753
+# Bring the retronet link up BEFORE QEMU opens it (script=no means QEMU attaches
+# to an EXISTING tap, it does not create one). Idempotent, so it runs on every
+# start under streamhost@ and on the manual golden-bake path alike. FAIL-CLOSED:
+# if the containment chain does not verify, this dies here and QEMU never starts.
+bash "$D/rn-tapnet.sh" up
+# Guest NIC MAC. Real per-station MACs are NEVER committed (AGENTS.md); the real
+# value lives in gitignored registry/local.env as RN_MACOS753_MAC. This guest
+# forces the Apple OUI 08:00:07 — the SONIC's address is read back by Mac OS as
+# the machine's Ethernet ID, so the retronet's usual 52:54:00:52:4e:<octet>
+# scheme does not apply here. The golden's vmstate carries the MAC, so this only
+# matters on a COLD (re-)bake, but cold boot and loadvm bind to the same device
+# and this mac= MUST match the baked one. Only the one line is read, never the
+# whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_MACOS753_MAC="02:00:00:00:00:17" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_MACOS753_MAC=//p' "$RN_LOCAL_ENV" | head -1 | tr -d '"')"
+  [ -n "$_m" ] && RN_MACOS753_MAC="$_m"
+fi
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid"
@@ -73,6 +110,7 @@ nohup /opt/qemu-m68k/bin/qemu-system-m68k \
   -drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd \
   -device scsi-hd,scsi-id=6,drive=hd0 \
   -drive file=$D/macos753-golden.qcow2,format=qcow2,cache=writeback,aio=threads,if=none,id=hd0 \
+  -nic tap,ifname=macosrn0,script=no,downscript=no,model=dp83932,mac="$RN_MACOS753_MAC" \
   $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
   -pidfile $D/qemu.pid \

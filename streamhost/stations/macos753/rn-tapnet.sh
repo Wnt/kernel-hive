@@ -1,24 +1,23 @@
 #!/bin/bash
-# rn-tapnet.sh — the chokanji station's link onto the retronet bridge vmbr-rn.
+# rn-tapnet.sh — the macos753 station's link onto the retronet bridge vmbr-rn.
 #
 # Sibling of streamhost/stations/win98se/rn-tapnet.sh (the pathfinder; see
 # docs/lab/retronet/ICQ-STATION.md for the full rationale). Same shape, different
 # tap, chain and guest IP — and one real difference, called out below.
 #
-# The guest is 超漢字 / B-right/V 4.202 (BTRON3), a 2002-era Japanese desktop OS
-# with a TCP/IP stack that has not seen a security update this millennium. A
-# bridged BTRON is real exposure, so containment is layered and does NOT depend
-# on any one thing:
+# The guest is Mac OS 7.5.3 on an emulated Quadra 800 (m68k, TCG). Its TCP/IP is
+# MacTCP 2.0.6 — a 1994 stack with no security model whatsoever, no firewall and
+# no updates in three decades. A bridged classic Mac is real exposure, so
+# containment is layered and does NOT depend on any one thing:
 #
 #   1. TOPOLOGY. The tap is enslaved ONLY to vmbr-rn, a bridge with
 #      `bridge-ports none` and NO uplink. The guest is never on the LAN's L2.
-#   2. ROUTING. B-right/V 4.202 has no DHCP client, so this guest is addressed
-#      STATICALLY and its no-default-route comes from the guest's own config --
-#      the ネットワーク設定 panel's ゲートウェイ「使用する」box left unchecked --
-#      not from a withheld DHCP option 3. The reservation exists only to keep
-#      the address unique fleet-wide. The guest has NO default route and its own
-#      stack cannot form a packet to
-#      anything off 10.99.0.0/24. labhost's `retronet-fw` FORWARD chain drops any
+#   2. ROUTING. MacTCP has no DHCP client, so this guest is addressed STATICALLY
+#      (chokanji's precedent) with its Gateway Address field left at 0.0.0.0 —
+#      the guest therefore has NO default route and its own stack cannot form a
+#      packet to anything off 10.99.0.0/24. The 10.99.0.23 DHCP reservation on
+#      the gateway exists only to keep the address unique on the plane, not to
+#      configure this guest. labhost's `retronet-fw` FORWARD chain drops any
 #      vmbr-rn traffic that tries to route THROUGH the box regardless.
 #   3. FILTER. This station's own fail-closed INPUT chain (below), scoped to the
 #      guest's source IP, drops every NEW connection the guest starts toward
@@ -28,7 +27,8 @@
 #      no-default-route does not close that because 10.99.0.1 is ON the guest's
 #      own subnet.
 #
-# DIFFERENCE FROM win98se: chokanji has NO exec channel — there is no agent in
+# DIFFERENCE FROM win98se: macos753 has NO exec channel and never will — System
+# 7.5.3 has no shell, no telnet and no serial console, so there is no agent in
 # the guest and labhost never dials it. The ESTABLISHED,RELATED RETURN rule is
 # kept anyway so that labhost-initiated probes (a ping from the box while
 # debugging) still get their replies; it grants the guest nothing it can start.
@@ -48,14 +48,12 @@
 #   rn-tapnet.sh show        current state
 set -u
 
-IF="${RN_TAP_IF:-chokanjirn0}"
+IF="${RN_TAP_IF:-macosrn0}"
 BRIDGE="${RN_TAP_BRIDGE:-vmbr-rn}"
-# The guest's statically configured address on vmbr-rn, reserved (but never
-# claimed) in RETRONET_DHCP_RESERVATIONS so nothing else can take it. The guard
-# chain is scoped to it,
+# The guest's DHCP-reserved address on vmbr-rn. The guard chain is scoped to it,
 # so the filter follows the guest, never the whole bridge.
-GUEST_IP="${RN_TAP_GUEST_IP:-10.99.0.21}"
-IN_CHAIN="CHOKANJIRN-IN"
+GUEST_IP="${RN_TAP_GUEST_IP:-10.99.0.23}"
+IN_CHAIN="MACOS753RN-IN"
 # Seconds to wait for the xtables lock (see irix/tapnet.sh for why this is not
 # optional): a lost race brings the tap up with NO fail-closed rules while every
 # message still says "up", which is why install_rules is read back by verify_rules.
