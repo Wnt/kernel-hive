@@ -1,58 +1,63 @@
 import { useEffect, useState } from 'react';
 
-// Runtime release notes. /release-notes.json is generated from `git log` by
-// scripts/release-notes.py (`make release-notes`) alongside README.md's digest
-// and docs/RELEASE-NOTES.md's archive, and it lives in spa/public/ so a plain
-// `npm run build` ships it — it is a build-time artefact of the repo's own
-// history, not a registry-rendered document, so it does NOT travel through
-// serve-https-spa.sh's manifest publish. Same base-URL rule as the other
-// runtime documents, so a staged UI resolves /staging/<session>/release-notes.json.
+// Runtime release notes. /release-notes.json is written by
+// scripts/release-notes.py (`make release-notes`), which only lays out the
+// hand-written registry/release-notes/<end-date>.json files — one per closed
+// week, written by the operator's Sunday Claude Code pass. It lives in
+// spa/public/ so a plain `npm run build` ships it, and it does NOT travel
+// through serve-https-spa.sh's manifest publish, which republishes the STATION
+// registry's documents and knows nothing about this one. Same base-URL rule as
+// the other runtime documents, so a staged UI resolves
+// /staging/<session>/release-notes.json.
 const RUNTIME_BASE: string = (import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
 
-interface ReleaseEntry {
-  /**
-   * What the entry is about: a registry station id for the Stations section,
-   * otherwise the recognised scope token of the commit subject. Null when
-   * nothing in the subject named a scope.
-   */
-  scope: string | null;
-  /**
-   * The commit subject as a bullet. A single-token `scope: ` prefix is stripped
-   * and the opening letter upper-cased, except where the opening word is a name
-   * that owns its spelling (stage.sh, macos753, VICE) -- see recase() in
-   * scripts/release-notes.py. A multi-word scope phrase ("chokanji poster: ")
-   * is kept, because stripping it would throw away the "poster".
-   */
-  text: string;
-  sha: string;
-  date: string;
-}
-
 export interface ReleaseSection {
-  title: string;
-  count: number;
-  entries: ReleaseEntry[];
-  /** Dependencies only: rendered as its count line, entries deliberately empty. */
-  collapsed?: boolean;
+  /** e.g. "New stations" — one of the fixed themes. */
+  theme: string;
+  text: string;
 }
 
 export interface ReleaseWeek {
-  number: number;
+  /** Week ordinal. Week 1 starts at the first public commit; week 0 predates it. */
+  week: number;
+  /** Short editorial headline for the week, e.g. "The retronet signs on". */
+  title: string;
+  /** ISO8601 start/end of the half-open week span, already in Helsinki time. */
   start: string;
   end: string;
+  /** The same two boundaries as bare dates, for display. */
   startDate: string;
   endDate: string;
-  inProgress: boolean;
+  /** Kept as provenance; deliberately NOT displayed — a raw commit count is a
+   *  developer metric, and it made the week the project was published look
+   *  like its quietest. */
   commitCount: number;
-  sections: ReleaseSection[];
+  /** Added lines of hand-written source that week, docs excluded. This is the
+   *  size figure the page shows. */
+  codeLines: number;
+  /**
+   * The week in three fixed themes, in order: what is new to go and see, what
+   * a visitor can now do, and what got better. The themes are the same every
+   * week (week 0 adds a leading "The story so far") and are enforced by
+   * scripts/release-notes.py, so a reader who learns the shape once keeps it.
+   * Each `text` may carry the inline markup releaseNotesMarkup.ts parses.
+   */
+  summary: ReleaseSection[];
+  /** One-line highlights, rendered as a list. */
+  bullets: string[];
+  /**
+   * Present only on a week reconstructed from a history OTHER than this
+   * repository's — today just week 0, summarised from the private `osgallery`
+   * repo the lab was built in before it was published. Its presence, not the
+   * week number, is what makes the view print the "before the repository was
+   * public" note.
+   */
+  source?: string;
 }
 
 export interface ReleaseNotesDoc {
   /** Human-readable statement of the week boundary, e.g. "Sunday 09:00 Europe/Helsinki". */
   cutoff: string;
-  /** ISO8601 timestamp of the first commit in the repo (the open-source release). */
-  epoch: string;
-  generatedFrom: string;
   /** Newest week first. */
   weeks: ReleaseWeek[];
 }
@@ -79,7 +84,7 @@ async function fetchReleaseNotes(): Promise<ReleaseNotesDoc | null> {
 
 let notesPromise: Promise<ReleaseNotesDoc | null> | null = null;
 
-/** The generated release notes; `undefined` while loading, `null` when unavailable. */
+/** The published release notes; `undefined` while loading, `null` when unavailable. */
 export function useReleaseNotes(): ReleaseNotesDoc | null | undefined {
   const [doc, setDoc] = useState<ReleaseNotesDoc | null | undefined>(undefined);
   useEffect(() => {

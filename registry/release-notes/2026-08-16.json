@@ -1,0 +1,42 @@
+{
+  "week": 2,
+  "title": "Twenty-two machines in one week",
+  "start": "2026-08-09T09:00:00+03:00",
+  "end": "2026-08-16T09:00:00+03:00",
+  "commitCount": 281,
+  "codeLines": 46149,
+  "summary": [
+    {
+      "theme": "New stations",
+      "text": "<u>Twenty-two machines joined the floor in a single week</u>, taking the collection to 61 machines, 57 of them open to visitors. Three Xerox machines arrived together: the *1973* [Alto II](station:alto), where the desktop and the mouse began; the *1981* [Star 8010](station:star) *\"Dandelion\"* running **ViewPoint 2.0**; and the *1985* [Xerox 6085](station:daybreak) *\"Daybreak\"*. DEC is here as three different PDP-11s now — **2.11BSD** on a [PDP-11/70](station:pdp11), the oldest lineage in the collection; the *1973* [GT40](station:gt40), a small one wired to a vector display and a light pen, drawing **Lunar Lander**; and a third [PDP-11](station:decos) that lets you pick **RT-11**, **RSX-11M** or **RSTS/E** at the prompt. Seven home computers came in one wave, from the [ZX Spectrum](station:zxspectrum) to the [BBC Micro](station:bbcmicro) and the *68008* [Sinclair QL](station:sinclairql), joined by four more Commodores, a *NeXTcube* running [NeXTSTEP 3.3](station:nextstep), a second [SGI Indy](station:indyr4400), and the [ARM Evaluation System](station:armeval) — the first ARM product ever sold. Two *AlphaServer*s closed the week: [Windows 2000 RC2](station:w2kalpha), the last Windows ever built for *Alpha*, and [Tru64 UNIX 5.1B](station:tru64)."
+    },
+    {
+      "theme": "Major features",
+      "text": "Every machine is now shown as its own screen and nothing else: the emulator's window furniture is out of the picture entirely. The [Alto](station:alto) is the proof. It stands up, in the tall portrait shape of its own display — 606 by 808 dots, the proportions of a sheet of paper — with no letterbox and nothing painted around it. A few machines never had a pointer that could jump straight to where you touch; their cursor drifts toward it instead, and those now say so before you open one, so period behaviour does not read as a fault. And the [ARM Evaluation System](station:armeval), which has no operating system to type into, puts its four commands on screen at one tap each."
+    },
+    {
+      "theme": "Quality improvements",
+      "text": "Machines used to boot when you opened them. Now they are simply left running, held at the moment they were last used, and wake in well under a second — no boot sequence you did not ask to watch. [Windows 2000 on the *Alpha*](station:w2kalpha) picks up exactly where it stopped, its own clock included, and answers in ten seconds where it used to take twenty-five. Pointing at [NeXTSTEP](station:nextstep) finally works the way you expect: the cursor lands where you put it. And typing got honest — hammer a line into the [KC 85/4](station:kc854) or the [Micro-Professor](station:mpf2) and every letter arrives, in order, so \"HELLO\" no longer turns up as \"HLLO\"."
+    }
+  ],
+  "bullets": [
+    "The [PET 2001](station:pet2001) of *1977*: screen, keyboard and cassette deck welded into one sheet-metal trapezoid you could carry home and switch on",
+    "The [CBM 8032](station:cbm8032) is Commodore's office machine — 80 columns of green text, and no colour, no sprites and no sound chip at all",
+    "The [C128](station:c128) is three computers in one case, and the only machine here that can show you **CP/M**, the office system MS-DOS replaced",
+    "The [CBM 610](station:cbm2) says 128 on the screen and is not a C128: Commodore's *1982* try at a business computer, cancelled almost immediately",
+    "The [ZX81](station:zx81): £69.95 in kit form, one kilobyte of memory, no sound and no colour — and a million and a half of them sold",
+    "The [Oric Atmos](station:oricatmos) has a BASIC in which ZAP, PING, SHOOT and EXPLODE each make the noise they are named after",
+    "The Welsh-built [Dragon 32](station:dragon32) runs a *Motorola 6809*, the best *8-bit* processor anyone shipped, and cannot draw a lower-case letter",
+    "The [KC 85/4](station:kc854) was East Germany's school computer, and it prints its own list of commands at power-on so a beginner has somewhere to start",
+    "Each of the [ZX Spectrum](station:zxspectrum)'s forty rubber keys carries a whole BASIC word: press P and PRINT appears",
+    "The [Sinclair QL](station:sinclairql) shipped with firmware that did not fit — the earliest buyers got the missing part on a cartridge hanging out of the back",
+    "The [BBC Micro](station:bbcmicro)'s BASIC has a *6502* assembler inside it, and the team who finished the machine went on to design the *ARM*",
+    "Reaching the [Star](station:star)'s desktop once meant a 22-minute cold boot and six keystrokes; it is now sitting there waiting when you arrive",
+    "Every window on the [6085](station:daybreak) has a named tab instead of a title bar, and a line of prose along the top narrates what the system is doing",
+    "The [GT40](station:gt40) has no pixels at all — an electron beam draws each line exactly where the program says, and nothing in between",
+    "The two [SGI Indys](station:indyr4400) sit side by side on purpose: same blue case, same **IRIX 6.5**, a different *MIPS* chip inside each",
+    "[Tru64](station:tru64) was born *OSF/1* in 1992 and ended with 5.1B in 2003, when HP retired it and *Alpha* together",
+    "Three operating systems on one [PDP-11](station:decos), because in 1975 you bought a computer and then chose one to run on it",
+    "Log into the [PDP-11/70](station:pdp11) as root — there is no password — and the whole operating system's source code is sitting in /usr/src"
+  ]
+}

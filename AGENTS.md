@@ -21,8 +21,12 @@ https://github.com/Wnt/kernel-hive (**public**; this dir is the git root).
 placeholder** (`192.0.2.10`, `labhost`, `example.com`, MAC `02:00:00:00:00:01`,
 serial `EXAMPLE0000000000`). Do not `ssh`/`curl` one expecting it to resolve and
 **do not "fix" one**. Real values live only in gitignored `registry/local.env`.
-**Never commit a real address, hostname, MAC, serial or domain.** Also
-gitignored: SSH keys, PKI, `uptoken`, `unifitoken`,
+**Never commit a real address, hostname, MAC, serial or domain — with ONE
+exception: the public gallery domain `kernelhive.madekivi.fi`,** which is not a
+secret and is committed on purpose (the release notes link every machine to
+`https://kernelhive.madekivi.fi/os/<id>`; inside the SPA the same link is the
+relative `/os/<id>`). Do not "scrub" those links. Everything else in this rule
+still holds. Also gitignored: SSH keys, PKI, `uptoken`, `unifitoken`,
 `spa/src/data/credentials.ts`, `docs/gallery-credentials.md`.
 
 **Labhost.** `ssh lab '<cmd>'` is the one door, as root, from a LAN workstation

@@ -126,6 +126,43 @@ For an ordinary new OS, author one registry entry, its builder, and its guest
 documentation; add a bespoke launcher only when the generic runtime is not
 sufficient. Do not hand-edit generated artifacts.
 
+## Weekly release notes (`registry/release-notes/`)
+
+`registry/release-notes/<end-date>.json` is the other hand-authored thing under
+`registry/`, and it has nothing to do with a station: one file per closed week,
+named after the Sunday the week ended, holding that week's **prose**. It is
+written by a Claude Code pass the operator triggers by hand
+([`docs/lab/RELEASE-NOTES-PROMPT.md`](../docs/lab/RELEASE-NOTES-PROMPT.md)), not
+by any generator, and the schema is locked and validated:
+`week`/`title`/`start`/`end`/`commitCount`/`summary`/`bullets` (plus `source`
+for week 0, which predates this repository), 3 paragraphs of 300-400 words —
+week 0 alone is 4-5 paragraphs of 600-700, a deliberate one-off for the month
+of pre-public history behind it — at most 20 single-line bullets, week numbers
+unique and **contiguous from 0**, and consecutive weeks must abut.
+
+`registry/release-notes/sources.json` sits beside them and is **not** a week:
+it is the hand-written declaration of the commit sources `brief` gathers
+*besides* this repository's git log — the four public emulator forks
+(`Wnt/mame`, `Wnt/es40`, `Wnt/vice`, `Wnt/qemu`), which branch of each the
+builds actually pin, who counts as us (`ourAuthors`), and which branches are
+excluded **with the reason recorded**, so a later reader cannot helpfully
+re-add a trial branch, plus `ourCommitAuthors` — the plain git author names for
+work pushed from the lab box, which reaches GitHub with no account login at
+all. Every branch cites the file that pins it (`pinnedBy`); `check` **parses**
+the pin out of each cited file (a `.gitmodules` `branch =`, a `*FORK_BRANCH=`,
+a station's `emulator.source`) rather than searching it for the branch name,
+and sweeps the same formats across the tree in the other direction, so both a
+repointed build and an undeclared branch go red. Only `brief` reads it for
+commits, and only `brief` touches the network — `render` and `check` stay
+offline. A commit `brief` cannot attribute is never dropped: it is printed
+under a DECIDE BY HAND block.
+
+`scripts/release-notes.py render` (`make release-notes`) lays those files out
+into three generated outputs — README.md's "Release notes" section,
+`docs/RELEASE-NOTES.md` and `spa/public/release-notes.json` — which are never
+hand-edited; `check` re-validates and asserts they match a fresh render. No git
+history is read for content, so the check is deterministic.
+
 ## Taking an exhibit off the floor — the `listing` soft hide
 
 `listing` is the supported way to keep a live exhibit out of the gallery's

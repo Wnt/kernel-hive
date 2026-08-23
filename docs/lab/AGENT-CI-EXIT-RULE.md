@@ -50,7 +50,8 @@ scripts/check-generated-drift.sh --regen
 
 # 4. tests for the language(s) you touched
 ( cd streamhost && cargo test --workspace )   # rust.yml
-( cd spa && npm run build )                   # spa.yml (tsc + vite)
+( cd spa && npm test && npm run build )       # spa.yml (vitest, then tsc + vite)
+python3 -m unittest discover -s scripts -p 'test_*.py'   # quality.yml, beside ruff
 ```
 
 ## Box-sync drift — the one gate CI cannot run

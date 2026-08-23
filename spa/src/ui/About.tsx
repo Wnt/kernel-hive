@@ -1,41 +1,41 @@
 import { Link } from 'react-router-dom';
 import { useReleaseNotes } from '../data/releaseNotes';
-import { releaseWeekViews, type SectionView, type WeekView } from './releaseNotesView';
+import { releaseWeekViews, type WeekView } from './releaseNotesView';
+import { parseMarkup, plainText, stationPath, type MarkupToken } from './releaseNotesMarkup';
 import './About.css';
 
-// /about — what this project is, plus the generated weekly release notes.
+// /about — what this project is, plus the weekly release notes.
 // The prose is sourced from README.md's opening and deliberately states no
 // counts (the lineup changes; /fleet is the live answer). The notes come from
-// /release-notes.json — see scripts/release-notes.py — and each week is a
-// native <details>, so collapsing costs no JS state at all.
+// /release-notes.json, which scripts/release-notes.py LAYS OUT from the
+// hand-written registry/release-notes/*.json — no week's words are generated
+// here or there. Each week is a native <details>, so collapsing costs no JS
+// state at all.
 
 const REPO_URL = 'https://github.com/Wnt/kernel-hive';
 
-function EntrySection({ section }: { section: SectionView }) {
-  if (section.collapsed) {
-    return (
-      <div className="about-section about-section--collapsed">
-        <span className="about-section-title">{section.title}</span>
-        <span className="about-section-count">{section.summary}</span>
-      </div>
-    );
-  }
+// The authored markup, as elements. A station becomes a real link into the
+// gallery; everything the vocabulary does not cover stayed `text` in the parser
+// and renders literally, so no authored string can inject markup here.
+function Markup({ tokens }: { tokens: MarkupToken[] }) {
   return (
-    <details className="about-section" open={section.defaultOpen}>
-      <summary>
-        <span className="about-section-title">{section.title}</span>
-        <span className="about-section-count">{section.summary}</span>
-      </summary>
-      <ul className="about-entries">
-        {section.entries.map((entry) => (
-          <li key={entry.key}>
-            {entry.station && <span className="about-station">{entry.station}</span>}
-            <span className="about-entry-text">{entry.text}</span>
-            <a className="about-sha" href={entry.href} target="_blank" rel="noreferrer">{entry.sha}</a>
-          </li>
-        ))}
-      </ul>
-    </details>
+    <>
+      {tokens.map((token, index) => {
+        const key = `${token.kind}-${index}`;
+        if (token.kind === 'text') return <span key={key}>{token.text}</span>;
+        if (token.kind === 'station') {
+          return (
+            <Link key={key} className="about-station" to={stationPath(token.id)}>
+              {token.text}
+            </Link>
+          );
+        }
+        const children = <Markup tokens={token.children} />;
+        if (token.kind === 'bold') return <strong key={key}>{children}</strong>;
+        if (token.kind === 'italic') return <em key={key}>{children}</em>;
+        return <u key={key}>{children}</u>;
+      })}
+    </>
   );
 }
 
@@ -44,18 +44,31 @@ function WeekBlock({ week }: { week: WeekView }) {
     <details className="about-week" open={week.defaultOpen}>
       <summary>
         <span className="about-week-number">{week.heading}</span>
+        <span className="about-week-title">{week.title}</span>
         <span className="about-week-range">{week.range}</span>
-        {week.inProgress && <span className="about-badge about-badge--live">in progress</span>}
-        <span className="about-week-commits">{week.commits}</span>
+        <span className="about-week-code">{week.code}</span>
       </summary>
       <div className="about-week-body">
-        {week.sections.map((section) => (
-          <EntrySection key={section.title} section={section} />
+        {week.sourceNote && <p className="about-week-source">{week.sourceNote}</p>}
+        {week.summary.map((section) => (
+          <section className="about-section" key={section.theme}>
+            <h3 className="about-theme">{section.theme}</h3>
+            <p className="about-week-para"><Markup tokens={parseMarkup(section.text)} /></p>
+          </section>
         ))}
+        {week.bullets.length > 0 && (
+          <ul className="about-bullets">
+            {week.bullets.map((bullet) => {
+              const tokens = parseMarkup(bullet);
+              return <li key={plainText(tokens).slice(0, 60)}><Markup tokens={tokens} /></li>;
+            })}
+          </ul>
+        )}
       </div>
     </details>
   );
 }
+
 
 function ReleaseNotes() {
   const doc = useReleaseNotes();
@@ -63,16 +76,16 @@ function ReleaseNotes() {
   if (doc === null) {
     return (
       <p className="about-status">
-        No release notes published. Regenerate them with <code>make release-notes</code> (it writes{' '}
-        <code>spa/public/release-notes.json</code> from the repo&rsquo;s git history).
+        No release notes published. Re-render them with <code>make release-notes</code> (it writes{' '}
+        <code>spa/public/release-notes.json</code> from <code>registry/release-notes/*.json</code>).
       </p>
     );
   }
   return (
     <>
       <p className="about-note">
-        One entry per non-merge commit, grouped into weeks that end {doc.cutoff}, starting at the
-        open-source release. Generated at <code>{doc.generatedFrom}</code>.
+        What changed, a week at a time, newest first. A week ends {doc.cutoff}; the newest one is
+        open below, the rest fold out.
       </p>
       <div className="about-weeks">
         {releaseWeekViews(doc).map((week) => <WeekBlock key={week.key} week={week} />)}

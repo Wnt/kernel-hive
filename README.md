@@ -142,57 +142,45 @@ external inputs and the ordered full-box runbook chain.
 <!-- release-notes:start -->
 ## Release notes
 
-### Week 4 · 2026-08-23 09:00 – 2026-08-30 09:00 · in progress
+### Week 3 · The museum gets its own internet · 2026-08-16 09:00 – 2026-08-23 09:00
 
-30 commits — Stations 14, Gallery UI 3, Retronet 11, Tooling & infrastructure 1, Other 1.
+#### New stations
 
-- **hpuxvue** — NCSA Mosaic on the retronet web plane (Netscape 4.79 is a dead end)
-- **spa** — Give the router the same base the bundle was built with
-- Retronet web: drop the charset parameter from our own pages' Content-Type
-- **serve-https-spa** — Refuse to deploy a dist built for a staging base
-- STREAM-DEBUGGING: read timing from clientTs, never srvTs
-- **tru64** — Web browser applied to the live golden + re-baked
-- …and 24 more
+Seven machines joined the floor, each installed from original media the museum tracked down itself. [NEWS-OS](https://kernelhive.madekivi.fi/os/newsos) is Sony's own Unix, running on a *1991* *MIPS* laptop. [A/UX](https://kernelhive.madekivi.fi/os/aux) is Apple's strangest hybrid: a Unix root prompt living inside the Macintosh Finder. [SunOS](https://kernelhive.madekivi.fi/os/sunos414) brings up **OPEN LOOK** and [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) answers with **HP VUE** — two rival visions of what a *1990s* Unix workstation should look like. [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) is the missing link between NeXT and Mac OS X, the NeXT system wearing a Mac face. [BeOS](https://kernelhive.madekivi.fi/os/beos) is the fast, doomed upstart of the late nineties. And [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) runs on emulated *68040* hardware. [Tru64 UNIX](https://kernelhive.madekivi.fi/os/tru64), which arrived last week, got past the licensing wall that kept it shut, so the museum now stands at 68 machines, 65 of them open to visitors.
 
-### Week 3 · 2026-08-16 09:00 – 2026-08-23 09:00
+#### Major features
 
-336 commits — Stations 84, Gallery UI 20, Streaming daemon 13, Retronet 89, Tooling & infrastructure 61, Docs 53, Dependencies 1, Other 15.
+The museum now has <u>a private 1990s internet with no way out</u>. Sign into **ICQ** on [Windows 98 SE](https://kernelhive.madekivi.fi/os/win98se) and you can message someone at a [Solaris](https://kernelhive.madekivi.fi/os/solaris) workstation — or at [Windows 2000](https://kernelhive.madekivi.fi/os/win2000), [NT 4](https://kernelhive.madekivi.fi/os/nt4), the [Tru64](https://kernelhive.madekivi.fi/os/tru64) *Alpha*, or [BeOS](https://kernelhive.madekivi.fi/os/beos). All six carry each other in their contact lists, and a chatbot named HiveBot says hello about thirty seconds after one wakes up. Open **Internet Explorer 5** on that same Windows 98 and you land on 1998 web pages exactly as they were: real archived captures, nothing later than the end of 2000, so period sites work the way they did then, or break the way they did then. There is a period search engine over them too, with **AltaVista**-styled results and a **Yahoo!**-styled directory. BeOS browses the same pages in **NetPositive**. Nothing on that network can reach today's internet.
 
-- **win98se** — Upgrade to ICQ 2001b (SSI), unique MAC + DHCP, silent self-reconnect
-- **grid** — Foldable era sections and a filter that understands shorthand
-- Rel-pointer plan: aux finding — 5ms poll trips A/UX X acceleration (needs accel-off golden)
-- Retronet beos: park the evidence frames where they will survive
-- **box-deploy** — Track tru64's veth helper, es40 launcher and ICQ fixture
-- **docs** — solaris ICQ as-built — note the unique per-station MAC
-- …and 330 more
+#### Quality improvements
 
-### Week 2 · 2026-08-09 09:00 – 2026-08-16 09:00
+Machines that used to make you wait mostly don't any more. The [Tru64](https://kernelhive.madekivi.fi/os/tru64) *Alpha* puts its **CDE** desktop on screen in about six seconds instead of a seven-to-ten-minute boot; [Windows 2000 on *Alpha*](https://kernelhive.madekivi.fi/os/w2kalpha) comes back complete in three seconds instead of eighty; [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) returns in a third of a second, pixel for pixel where you left it. Typing got honest: [Windows 3.11](https://kernelhive.madekivi.fi/os/win311) no longer freezes after a few dozen keystrokes, the [VIC-20](https://kernelhive.madekivi.fi/os/vic20) stopped quietly swallowing letters, and [NEWS-OS](https://kernelhive.madekivi.fi/os/newsos) no longer scrambles a fast-typed line. Dragging on the Apple machines holds all the way to where you let go, and the Commodore machines stopped clicking through the speakers on every reset. Every machine's write-up is now checked against primary sources and linked to its relatives on the floor.
 
-281 commits — Stations 113, Gallery UI 2, Streaming daemon 17, Tooling & infrastructure 69, Docs 60, Dependencies 4, Other 16.
+#### Also this week
 
-- atarist back on the floor: the spike it was hidden for has landed
-- **posters** — Prose becomes runtime data — poster edits need no SPA rebuild
-- **ctlsock** — Per-FIELD key pacing — the global one-edge-per-slot ceiling is gone
-- MAME-native launcher: golden lives in sta/\<driver>/ (MAME nests savestates)
-- **terminology** — MAME_NATIVE_GOLDEN -> MAME_NATIVE_CHECKPOINT (docs/GLOSSARY.md)
-- Arm B boots the ST in 640x400 mono (SM124) — GEM Bench needs high res
-- …and 275 more
+- Ask twice for a page the archive is missing and the museum goes and mirrors it, so its 1990s web grows from what visitors actually try to visit
+- The Unix machines chat in a real window now: **Pidgin** on [Solaris](https://kernelhive.madekivi.fi/os/solaris), **Gaim** on the [Tru64](https://kernelhive.madekivi.fi/os/tru64) *Alpha*, in place of a terminal client
+- [BeOS](https://kernelhive.madekivi.fi/os/beos) signs on through an older, pre-OSCAR door than anything else on the network — the only machine here that still speaks it
+- The collection opens as a folding index by decade, and the filter above it understands the shorthand people actually type
+- [Sony's NEWS portable](https://kernelhive.madekivi.fi/os/newsos) folds a 1120x780 monochrome LCD over its *R3000*: the line was Japan's answer to Sun, sold to its universities
+- [Apple's Unix](https://kernelhive.madekivi.fi/os/aux) arrived with **QuickTime**, man pages and a shelf of Unix games — fortune, wump — sitting under the Finder
+- **HP VUE** is the desktop **CDE** was built from, so [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) now stands beside the CDE machines as their ancestor
+- [SunOS](https://kernelhive.madekivi.fi/os/sunos414) is placed deliberately next to the CDE Solaris machine: same vendor, same *SPARC*, the rival desktop that lost
+- Photographs of the real hardware sit beside the write-ups now — the BeBox, a Quadra 800, an HP 9000 B180L
+- The picture stops dropping to a soft, low-detail mode for no reason: the stream had been reading its own keyframes as a slow connection
+- The space bar on the [Sinclair QL](https://kernelhive.madekivi.fi/os/sinclairql) typed nothing at all. It types now, and a burst-typed line keeps its order
 
-### Week 1 · 2026-08-07 14:37 – 2026-08-09 09:00
+*35,569 lines of code.*
 
-16 commits — Stations 6, Gallery UI 3, Tooling & infrastructure 1, Docs 1, Dependencies 3, Other 2.
+### Earlier weeks
 
-- **plus4** — Bake the golden at the machine's power-on screen, not inside the suite
-- **spa** — Correct 41 gallery captions against the actual photographs, fix EXIF orientation
-- **build** — Auto-load operator LAN/domain values from registry/local.env everywhere
-- **docs** — Research two candidate exhibit families — PDP-11 and the 8/16-bit home computers
-- Add a GitHub source link to the SPA footer and the login page
-- **vic20** — Add the exhibit photo gallery, like its siblings
-- …and 10 more
+- [Week 2 · Twenty-two machines in one week](docs/RELEASE-NOTES.md#week-2) · 2026-08-09 09:00 – 2026-08-16 09:00
+- [Week 1 · The museum opens its source](docs/RELEASE-NOTES.md#week-1) · 2026-08-07 14:37 – 2026-08-09 09:00
+- [Week 0 · The month the museum was built](docs/RELEASE-NOTES.md#week-0) · 2026-07-07 21:39 – 2026-08-07 14:37
 
-Full archive, every commit: [`docs/RELEASE-NOTES.md`](docs/RELEASE-NOTES.md).
+Full archive: [`docs/RELEASE-NOTES.md`](docs/RELEASE-NOTES.md).
 
-Generated by `make release-notes` — do not hand-edit.
+Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 <!-- release-notes:end -->
 
 ## Contributing

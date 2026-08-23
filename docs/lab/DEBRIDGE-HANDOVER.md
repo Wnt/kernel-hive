@@ -450,7 +450,7 @@ checkpoint plane, which is the wave's one real finding.
 | plus4 | `xplus4 -pal -TEDdsize -TEDborders 0` | **768×576** (1 769 536 B) | 300 000 / 200 000 | WHITE page like the VIC-20: 439 036 of 442 368 lit, so the ink floor is the real scene check. `PRINT 3` typed through vicectl and read back off the shm mapping |
 | cbm2 | `xcbm2 -model 610 -pal` | **704×532** (1 498 176 B) | 1 000 / 1 800 | Native size, no `-CRTCdsize` — the kiosk dropped doubling to fit an 800×600 root, and host-native there is no root, so the emulated screen simply IS the stream. Position gate kept |
 | pet2001 | `xpet -model 2001 -CRTCdsize` | **768×432** (1 327 168 B) | 3 500 / 5 000 | NOT the 768×532 SDL window the kiosk sized its root around. `PET/gtk3_grus_sym.vkm` (graphics keyboard) |
-| cbm8032 | `xpet -model 8032 -CRTCdsize` | **1408×1088** (6 127 680 B) | 5 000 / 9 000 | **Retires the fleet's only 1600×1200 X root** — that root existed solely to contain a fixed 1408×1064 SDL window, and streamhost encoded the black margin around it. 36 % fewer pixels, same picture. `PET/gtk3_buuk_sym.vkm` (business-UK keyboard) |
+| cbm8032 | `xpet -model 8032 -CRTCdsize` | **1408×1088** (6 127 680 B) | 5 000 / 9 000 | **Retires the fleet's only 1600×1200 X root** — that root existed solely to contain a fixed 1408×1064 SDL window, and streamhost encoded the black margin around it. 20 % fewer pixels (1 920 000 -> 1 531 904), same picture. `PET/gtk3_buuk_sym.vkm` (business-UK keyboard) |
 
 > **SUPERSEDED 2026-08-17 — the restore bug was found and fixed.** Three of
 > these four now run with their checkpoint again; see

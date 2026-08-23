@@ -1,0 +1,35 @@
+{
+  "week": 3,
+  "title": "The museum gets its own internet",
+  "start": "2026-08-16T09:00:00+03:00",
+  "end": "2026-08-23T09:00:00+03:00",
+  "commitCount": 336,
+  "codeLines": 35569,
+  "summary": [
+    {
+      "theme": "New stations",
+      "text": "Seven machines joined the floor, each installed from original media the museum tracked down itself. [NEWS-OS](station:newsos) is Sony's own Unix, running on a *1991* *MIPS* laptop. [A/UX](station:aux) is Apple's strangest hybrid: a Unix root prompt living inside the Macintosh Finder. [SunOS](station:sunos414) brings up **OPEN LOOK** and [HP-UX](station:hpuxvue) answers with **HP VUE** — two rival visions of what a *1990s* Unix workstation should look like. [Rhapsody](station:rhapsody) is the missing link between NeXT and Mac OS X, the NeXT system wearing a Mac face. [BeOS](station:beos) is the fast, doomed upstart of the late nineties. And [Mac OS 7.5.3](station:macos753) runs on emulated *68040* hardware. [Tru64 UNIX](station:tru64), which arrived last week, got past the licensing wall that kept it shut, so the museum now stands at 68 machines, 65 of them open to visitors."
+    },
+    {
+      "theme": "Major features",
+      "text": "The museum now has <u>a private 1990s internet with no way out</u>. Sign into **ICQ** on [Windows 98 SE](station:win98se) and you can message someone at a [Solaris](station:solaris) workstation — or at [Windows 2000](station:win2000), [NT 4](station:nt4), the [Tru64](station:tru64) *Alpha*, or [BeOS](station:beos). All six carry each other in their contact lists, and a chatbot named HiveBot says hello about thirty seconds after one wakes up. Open **Internet Explorer 5** on that same Windows 98 and you land on 1998 web pages exactly as they were: real archived captures, nothing later than the end of 2000, so period sites work the way they did then, or break the way they did then. There is a period search engine over them too, with **AltaVista**-styled results and a **Yahoo!**-styled directory. BeOS browses the same pages in **NetPositive**. Nothing on that network can reach today's internet."
+    },
+    {
+      "theme": "Quality improvements",
+      "text": "Machines that used to make you wait mostly don't any more. The [Tru64](station:tru64) *Alpha* puts its **CDE** desktop on screen in about six seconds instead of a seven-to-ten-minute boot; [Windows 2000 on *Alpha*](station:w2kalpha) comes back complete in three seconds instead of eighty; [Mac OS 7.5.3](station:macos753) returns in a third of a second, pixel for pixel where you left it. Typing got honest: [Windows 3.11](station:win311) no longer freezes after a few dozen keystrokes, the [VIC-20](station:vic20) stopped quietly swallowing letters, and [NEWS-OS](station:newsos) no longer scrambles a fast-typed line. Dragging on the Apple machines holds all the way to where you let go, and the Commodore machines stopped clicking through the speakers on every reset. Every machine's write-up is now checked against primary sources and linked to its relatives on the floor."
+    }
+  ],
+  "bullets": [
+    "Ask twice for a page the archive is missing and the museum goes and mirrors it, so its 1990s web grows from what visitors actually try to visit",
+    "The Unix machines chat in a real window now: **Pidgin** on [Solaris](station:solaris), **Gaim** on the [Tru64](station:tru64) *Alpha*, in place of a terminal client",
+    "[BeOS](station:beos) signs on through an older, pre-OSCAR door than anything else on the network — the only machine here that still speaks it",
+    "The collection opens as a folding index by decade, and the filter above it understands the shorthand people actually type",
+    "[Sony's NEWS portable](station:newsos) folds a 1120x780 monochrome LCD over its *R3000*: the line was Japan's answer to Sun, sold to its universities",
+    "[Apple's Unix](station:aux) arrived with **QuickTime**, man pages and a shelf of Unix games — fortune, wump — sitting under the Finder",
+    "**HP VUE** is the desktop **CDE** was built from, so [HP-UX](station:hpuxvue) now stands beside the CDE machines as their ancestor",
+    "[SunOS](station:sunos414) is placed deliberately next to the CDE Solaris machine: same vendor, same *SPARC*, the rival desktop that lost",
+    "Photographs of the real hardware sit beside the write-ups now — the BeBox, a Quadra 800, an HP 9000 B180L",
+    "The picture stops dropping to a soft, low-detail mode for no reason: the stream had been reading its own keyframes as a slow connection",
+    "The space bar on the [Sinclair QL](station:sinclairql) typed nothing at all. It types now, and a burst-typed line keeps its order"
+  ]
+}
