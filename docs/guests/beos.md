@@ -265,5 +265,14 @@ lineup (operator decision 2026-08-18: no clone-only proof gate for stations).
   agent, no build, no download — the daemons were already in R5's `Netscript`,
   gated on a settings file the station simply never had. See
   [`STATION-beos.md` §The exec channel](../lab/retronet/STATION-beos.md).
+- **No development tools on the volume.** `/boot/develop` is empty, there is no
+  `gcc` and no Be headers — the file-copy install brought across the Pro CD's
+  runtime system volume but not its development tree. `make` is present. gcc
+  2.95.3 and the headers ARE on the staged disc image
+  (`/data/assets-staging/beos/beos-5.0.3-professional-gobe.bin`); recovering
+  them is a track re-split plus a delivery over the station's ftpd. Blocking for
+  anything that needs to compile on the guest — see
+  [`STATION-beos.md`](../lab/retronet/STATION-beos.md) §The one thing phase 2
+  must fix.
 - **Second/Pro-disc driver coverage**: not investigated — this station uses
   only the one archive.org item; no evidence yet that anything is missing.

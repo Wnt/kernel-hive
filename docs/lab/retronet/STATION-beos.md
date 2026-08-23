@@ -37,7 +37,7 @@ The guest itself: [`docs/guests/beos.md`](../../guests/beos.md).
 | Seamless web | DNS = `10.99.0.2` (via DHCP) + **no proxy** → any URL resolves to the gateway and its `:80` origin serves the corpus by `Host`. §Seamless web |
 | Browser | **NetPositive** (`/boot/apps/NetPositive` → `/boot/beos/apps/NetPositive`), R5's own. Already on the disk; nothing sourced, nothing added to the asset manifest. |
 | Exec | `labctl exec beos "<cmd>"` → **R5's own telnetd at `10.99.0.16:23`, straight over the bridge**. `exec_kind: telnet_unix_e` (the existing kind, shared with sunos414), host client `/root/sunexec.py`. No agent in the guest, no hostfwd, no new protocol. §The exec channel |
-| File transfer | **R5's own ftpd at `10.99.0.16:21`**, same login, enabled by the same checkbox. |
+| File transfer | **R5's own ftpd at `10.99.0.16:21`**, same login, enabled by the same checkbox. §Delivering files into the guest |
 | Audio | still **OFF**, deliberately, and untouched by this work. |
 
 ## The NIC had to change — ne2k_pci → rtl8139
@@ -119,6 +119,8 @@ setting **Login Info…**, and saving is the whole installation.
 | user | `baron` (`exec_user`). R5's traditional single user; `$HOME` is `/boot/home`. |
 | password | `registry/local.env` `RN_BEOS_EXEC_PASS` (gitignored). The launcher republishes it into `<station dir>/telnet-exec.passwd`, mode 0600, on every start, and `labctl` reads it from there — **never from the committed registry**. Same rule and shape as rhapsody's `serial-exec.passwd`. |
 | client | `/root/sunexec.py` (`streamhost/guest-agents/sunos414/sunexec.py`) |
+| shell | `exec_shell: "sh"` in the registry → `SUN_RC=$?`. This has to travel all the way through `LABCTL_KEYS` → `labctl-declarations.json` → `labctl gen` → `stations.json`; a key that is set in the station file but missing from the allowlist is dropped silently and the exit code is then `-1` on every call while the output looks perfect. |
+| wake | the `telnet_unix_e` arm re-issues QMP `cont` every 15 s for as long as the client runs. `ensure_running` only thaws the guest **once**, and the daemon's reconciler re-asserts idle-pause ~60 s after the last visitor — which a telnet login plus one command on a TCG guest outlives. Measured: a `labctl exec beos "uname -a"` against a fully idle-paused station takes **~29 s** end to end and succeeds; without the keepalive it timed out on an empty read. |
 
 Two env knobs were added to that client so one file serves both stations, and
 **both default to sunos414's behaviour**, so that station is byte-for-byte
@@ -141,6 +143,44 @@ Password:
 Welcome to the BeOS shell.
 $
 ```
+
+### Delivering files into the guest — ftpd on `:21`
+
+This is the other half of the handoff, and it is proven, not assumed. R5's ftpd
+is a **standalone daemon**, not an `inetd` service (R5 has no classic `inetd` —
+each service in `Netscript` is its own process), and it is switched on by the
+same **Services** checkbox as telnetd, with the same `baron` login.
+
+From labhost, with `ftplib`:
+
+```
+banner: 220 beos FTP server (Version 5.60) ready.
+login : 230 User baron logged in.
+pwd   : /boot/home
+stor  : 226 Transfer complete.
+round-trip identical: True 6000 bytes
+mkd   : /boot/home/ftp-delivery-testdir
+```
+
+STOR, RETR (byte-identical round trip) and MKD all work, `$HOME` is
+`/boot/home`, and the guest sees the file immediately (`sh` ran it and printed
+its output through `labctl exec`). That is a complete source-tree delivery
+route: `MKD` the tree, `STOR` the files, build over `labctl exec`.
+
+**But a raw FTP (or telnet) client from labhost does NOT wake the guest.** Only
+`labctl` calls `ensure_running`. Against an idle-paused station a bare
+`ftplib.FTP().connect()` fails with `No route to host` and looks like a network
+fault. Two ways round it, and for phase 2 the second is the right one:
+
+- for a one-off transfer, hold the guest awake with a `cont` every ~10 s
+  (momentary connect → `cont` → close on the QMP socket; **never hold the QMP
+  connection open** — this build serves a limited number of concurrent QMP
+  clients and the daemon already holds one, so a persistent extra connection
+  makes `labctl shot` and pointer calls fail with `EAGAIN`);
+- for a **long** session — and a gcc build on a TCG guest is a long session —
+  turn idle-pause off properly: put `SH_IDLE_PAUSE_SECS=0` on its own line in
+  the station's `station.env`, `systemctl restart streamhost@beos`, confirm
+  `idle auto-pause OFF` in the journal, and **remove it when you are done**.
 
 ### Containment: the door opens inward only
 
@@ -203,8 +243,26 @@ through, so R5's own stack refuses every off-subnet packet with *"Network is
 unreachable"* before a firewall is ever consulted.
 
 Proven from inside the guest: `ping spacejam.com` answers **from 10.99.0.2**,
-and NetPositive renders `http://spacejam.com/` and `http://search.retronet/`
-with images, at full 1024×768, with no proxy configured anywhere.
+and NetPositive renders the corpus at full 1024×768 with no proxy configured
+anywhere.
+
+### What NetPositive does with each kind of page — all three PASS
+
+The corpus is late-90s content, so a 2000-era renderer was never the risk there.
+The open question was our **own lab-authored pages**, which are modern HTML/CSS.
+All three were checked on the framebuffer, and NetPositive renders every one of
+them correctly:
+
+| Page | URL | Result |
+|---|---|---|
+| A corpus page | `http://spacejam.com/` | **PASS.** Full colour, every image, the imagemap live (the status bar reports `.../bin/index.map?x,y` on hover). Indistinguishable from the real thing. |
+| The museum search UI + results | `http://search.retronet/`, then `?q=modem` | **PASS.** The front page and the results page both lay out correctly: "Documents 1-10 of about 446", ranked hits with title links, snippets with the query term bolded, corpus URLs in green, `[score N]`, and a working search form. |
+| A deliberate proxy miss | `http://www.nosuchsite-kernelhive.com/` | **PASS.** The "Not in the Museum's Internet" page renders with correct headings, rules and typography, a working search box, and the AltaVista/Yahoo-style entry links. Window title picks up `404 Not Found`. |
+
+So there is **no** finding to hand on here: the lab pages do not out-run this
+renderer, and nothing needs redesigning for BeOS. Shots:
+`prod5/final` (corpus), `nsearch` (results), `nmiss` (miss) under
+`/data/vms/sandbox/rn-beos-net/exp/`.
 
 ## The ready scene, and why it is a boot script
 
@@ -415,12 +473,44 @@ esac
 
 ## What phase 2 inherits
 
-- A real **exec channel** (`labctl exec beos "<cmd>"`) and a real **file
-  transfer** door (ftp on `:21`, same login) — no framebuffer typing needed.
+- A real **exec channel** — `labctl exec beos "<cmd>"`, stdout and the guest's
+  own exit code — and a real **file-delivery door**, ftpd on `:21` with the same
+  `baron` login, STOR/RETR/MKD all proven. No framebuffer typing needed for
+  either.
 - L2 to the gateway CT, with **`10.99.0.2:5190` already proven OPEN** from the
   guest.
 - A **reproducible fixture**: edit `UserBootscript`, reboot, re-bake. No window
   juggling, no hand-arranged golden.
-- A **verified byte-for-byte golden backup** with a documented rollback.
+- A **verified byte-for-byte golden backup** with a documented rollback, and a
+  `loadvm golden` that demonstrably reverts the **disk** as well as RAM — every
+  file this errand put in the guest was gone after one `systemctl restart`. Do
+  the in-guest work and the bake in one uninterrupted session, or script it.
 - The pointer caveats above — budget for closed-loop targeting if any client
   needs GUI configuration, and prefer the exec channel wherever it will do.
+
+### The one thing phase 2 must fix before it can build anything
+
+**There is no compiler on this station.** `/boot/develop` exists and is
+**empty** (2 KB, no entries); `gcc` is `command not found`; there are no BeOS
+headers (`/boot/develop/headers/be` does not exist) and no development
+libraries. `make` is present at `/bin/make`, and that is all.
+
+This is a consequence of how the station was installed: it was built by copying
+the Pro CD's track-2 BFS **system** volume onto a fresh BFS partition (see
+[`docs/guests/beos.md`](../../guests/beos.md) §Install method), and the
+development tree did not come across.
+
+**The tools are recoverable from the media the station was built from**, which
+is still staged on the box at
+`/data/assets-staging/beos/beos-5.0.3-professional-gobe.bin` (772,302,720 bytes,
+sha256 `1889fd6c…0106`, `MANIFEST.sha256` beside it). Grepping that image finds
+`develop/headers`, `SupportDefs.h`, `InterfaceKit.h`, `libbe.so` and the string
+`2.95.3` — so gcc 2.95.3 and the Be headers are on the disc. Recovering them
+means re-splitting the disc's three MODE1/2352 tracks into 2048-byte images (the
+recipe and the splitting script are in `scripts/build-guests/tiles/beos.sh`),
+mounting/reading the track-2 BFS volume, and delivering `develop/` into the
+guest — **over the ftpd door above**, which is exactly what it is for.
+
+Budget for that before budgeting for the IM Kit build itself, and note that a
+gcc build on a TCG guest is a long unattended run: turn idle-pause off for it
+(§Delivering files into the guest) or the vCPU will freeze mid-compile.
