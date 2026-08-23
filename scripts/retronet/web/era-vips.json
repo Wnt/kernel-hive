@@ -74,5 +74,44 @@
     "seeds": [
       "http://www.pinball.org/"
     ]
+  },
+  {
+    "host": "www.icq.com",
+    "date": "20011115",
+    "ceiling": "20011231",
+    "depth": 3,
+    "max_pages": 50,
+    "title": "ICQ",
+    "category": "Chat and Messaging",
+    "blurb": "ICQ.com at the 2001b client era — the SSI-aware ICQ the retronet Windows stations run.",
+    "seeds": [
+      "http://www.icq.com/cf/2001b/new_features.html"
+    ]
+  },
+  {
+    "host": "www.opera.com",
+    "date": "20090616",
+    "ceiling": "20091231",
+    "depth": 3,
+    "max_pages": 50,
+    "title": "Opera",
+    "category": "Computers and Internet",
+    "blurb": "Opera's site around Opera Unite (2009) — the browser-as-a-server experiment.",
+    "seeds": [
+      "http://www.opera.com/unite/start/"
+    ]
+  },
+  {
+    "host": "free.aol.com",
+    "date": "20010101",
+    "ceiling": "20031231",
+    "depth": 3,
+    "max_pages": 50,
+    "title": "AOL Free Trial",
+    "category": "Internet Services",
+    "blurb": "AOL's 'try it free' sign-up funnel — the CD-in-every-mailbox era.",
+    "seeds": [
+      "http://free.aol.com/tryaolfreeindex.adp?159820"
+    ]
   }
 ]
