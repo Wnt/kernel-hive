@@ -12,8 +12,12 @@
 #
 #   1. TOPOLOGY. The tap is enslaved ONLY to vmbr-rn, a bridge with
 #      `bridge-ports none` and NO uplink. The guest is never on the LAN's L2.
-#   2. ROUTING. The guest's DHCP reservation withholds option 3 (router), so the
-#      guest has NO default route and its own stack cannot form a packet to
+#   2. ROUTING. B-right/V 4.202 has no DHCP client, so this guest is addressed
+#      STATICALLY and its no-default-route comes from the guest's own config --
+#      the ネットワーク設定 panel's ゲートウェイ「使用する」box left unchecked --
+#      not from a withheld DHCP option 3. The reservation exists only to keep
+#      the address unique fleet-wide. The guest has NO default route and its own
+#      stack cannot form a packet to
 #      anything off 10.99.0.0/24. labhost's `retronet-fw` FORWARD chain drops any
 #      vmbr-rn traffic that tries to route THROUGH the box regardless.
 #   3. FILTER. This station's own fail-closed INPUT chain (below), scoped to the
@@ -46,7 +50,9 @@ set -u
 
 IF="${RN_TAP_IF:-chokanjirn0}"
 BRIDGE="${RN_TAP_BRIDGE:-vmbr-rn}"
-# The guest's DHCP-reserved address on vmbr-rn. The guard chain is scoped to it,
+# The guest's statically configured address on vmbr-rn, reserved (but never
+# claimed) in RETRONET_DHCP_RESERVATIONS so nothing else can take it. The guard
+# chain is scoped to it,
 # so the filter follows the guest, never the whole bridge.
 GUEST_IP="${RN_TAP_GUEST_IP:-10.99.0.21}"
 IN_CHAIN="CHOKANJIRN-IN"
