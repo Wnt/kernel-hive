@@ -13,6 +13,20 @@ labctl calls:  sunexec.py <host> <port> "<cmd>"   (user from $SUN_USER, default 
 It logs in, quiets the line, runs the command bracketed by unique START/END
 markers (immune to prompt echo / csh-vs-sh), prints the command's stdout+stderr
 as plain text and exits with the guest's exit code. Model: nextstep/nstel.py.
+
+This is the shared client for the `telnet_unix_e` exec kind, not a sunos414
+private: `beos` (BeOS R5, over the retronet bridge at 10.99.0.16:23) is the
+second station on it. Two env knobs carry the differences, and BOTH default to
+sunos414's behaviour so that station is untouched:
+
+  SUN_PASS  password to answer the guest's `Password:` prompt with.
+            Default "" — a fresh suninstall root has none. beos' telnetd does
+            demand one, and labctl reads it from the station dir, never the
+            (committed) registry.
+  SUN_RC    the shell expression that yields the last exit code. Default
+            `$status` — sunos414's login shell is csh. beos' login shell is
+            bash, which spells it `$?`, and a csh-ism there silently reports
+            rc -1 on every command while the output looks perfect.
 """
 import os
 import socket
@@ -21,6 +35,11 @@ import time
 import uuid
 
 IAC, DONT, DO, WONT, WILL, SB, SE = (bytes([c]) for c in (255, 254, 253, 252, 251, 250, 240))
+
+# How the guest's login shell spells "the last exit code". csh (sunos414) and
+# sh/bash (beos) disagree, and getting it wrong costs nothing visible: the
+# output is right and the exit code is silently always -1.
+RC_EXPR = os.environ.get("SUN_RC", "$status")
 
 
 class Telnet:
@@ -82,11 +101,12 @@ class Telnet:
     def send(self, line):
         self.s.sendall(line.encode() + b"\r\n")
 
-    def login(self, user):
+    def login(self, user, password=""):
         self.read_until(b"login:")
         self.send(user)
-        # A fresh suninstall root has no password; if a password prompt appears,
-        # answer it empty so we never hang. Settle on a shell prompt char.
+        # A fresh suninstall root has no password, so the default answer is
+        # empty: answering SOMETHING always beats hanging on the prompt.
+        # Stations that do set one pass it in (beos). Settle on a shell prompt.
         end = time.time() + 15
         while time.time() < end:
             try:
@@ -97,7 +117,8 @@ class Telnet:
                 break
             self.buf += self._negotiate(d)
             if b"Password:" in self.buf:
-                self.send("")
+                self.buf = self.buf.replace(b"Password:", b"")
+                self.send(password)
                 continue
             if b"# " in self.buf or b"% " in self.buf or b"$ " in self.buf:
                 break
@@ -112,7 +133,7 @@ class Telnet:
         s_mark = "_SUNX_S_" + m + "_"
         e_mark = "_SUNX_E_" + m + "_"
         self.buf = b""
-        self.send("echo " + s_mark + "; " + cmd + "; echo " + e_mark + "=$status")
+        self.send("echo " + s_mark + "; " + cmd + "; echo " + e_mark + "=" + RC_EXPR)
         out = self.read_until((e_mark + "=").encode(), deadline)
         rc = -1
         tail = self.read_until(b"\n", 10)
@@ -154,7 +175,7 @@ def main():
     host, port = sys.argv[1], int(sys.argv[2])
     user = os.environ.get("SUN_USER", "root")
     t = Telnet(host, port)
-    t.login(user)
+    t.login(user, os.environ.get("SUN_PASS", ""))
     if sys.argv[3] == "--put":
         t.put(sys.argv[4], sys.stdin.read())
         sys.exit(0)

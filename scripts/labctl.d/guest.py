@@ -282,16 +282,35 @@ def cmd_exec(argv):
         )
         sys.exit(r.returncode)
     if kind == "telnet_unix_e" and port:
-        # sunos414: captured exec over the guest's in-guest telnetd on QEMU's
-        # SLIRP net, reached at 127.0.0.1:<exec_port> via the hostfwd the
-        # launcher (re-)adds on every start. sunexec.py logs in (user from
-        # exec_user, blank password), runs the command bracketed by unique
-        # markers, prints stdout+stderr and exits with the guest's code.
+        # Captured exec over an in-guest UNIX telnetd. sunexec.py logs in (user
+        # from exec_user), runs the command bracketed by unique markers, prints
+        # stdout+stderr and exits with the guest's code. Two stations:
+        #   sunos414 — SLIRP, reached at 127.0.0.1:<exec_port> through the
+        #     hostfwd the launcher (re-)adds on every start; csh; no password.
+        #   beos     — a real tap on vmbr-rn, so exec_host is the guest's own
+        #     bridge IP and exec_port is a plain :23 (no hostfwd, no slirp);
+        #     bash, so the exit code is $?; and its telnetd DOES want a
+        #     password.
+        # The password is read from the STATION DIR (<dir>/telnet-exec.passwd,
+        # written by the launcher from the gitignored registry/local.env), never
+        # from the committed registry — same rule as serial_getty's
+        # serial-exec.passwd. LABCTL_TELNET_PASSWORD overrides for a one-off.
         user = c.get("exec_user") or "root"
-        r = subprocess.run(
-            ["python3", SUNEXEC, "127.0.0.1", str(port), cmdline],
-            env={**os.environ, "SUN_USER": user},
-        )
+        host = c.get("exec_host") or "127.0.0.1"
+        env = {**os.environ, "SUN_USER": user}
+        if c.get("exec_shell") == "sh":
+            env["SUN_RC"] = "$?"
+        pw = os.environ.get("LABCTL_TELNET_PASSWORD")
+        if pw is None:
+            pwfile = os.path.join(c["dir"], "telnet-exec.passwd")
+            try:
+                with open(pwfile) as fh:
+                    pw = fh.read().strip()
+            except OSError:
+                pw = None
+        if pw is not None:
+            env["SUN_PASS"] = pw
+        r = subprocess.run(["python3", SUNEXEC, host, str(port), cmdline], env=env)
         sys.exit(r.returncode)
     if kind == "ssh" and port:
         user = c.get("exec_user") or "root"

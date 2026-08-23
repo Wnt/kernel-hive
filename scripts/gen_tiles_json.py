@@ -190,6 +190,8 @@ def main():
             "exec_port": "port for REAL captured exec (ssh port or warpd port), or null",
             "exec_host": "host 'labctl exec' dials for this tile (warpd_e: GEXEC_HOST), or null=127.0.0.1",
             "exec_kind": "ssh | warpd_e | serial_e | null — how 'labctl exec' reaches this tile",
+            "exec_shell": "sh — the guest login shell spells the exit code $? (telnet_unix_e); "
+            "absent/null means csh's $status, which is the sunos414 default",
             "ctl": "mamectl/1 unix socket of the MAME ctlsock module (SH_MAMECTL_SOCK); "
             "labctl mctl/type/sh/reset route over it — field absent when the tile has none",
             "exec_user": "ssh login user for exec_kind=ssh, else null",

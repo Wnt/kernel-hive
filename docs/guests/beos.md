@@ -4,6 +4,12 @@ Status: **LIVE, listed** (production tile since 2026-08-18). Booted, installed, 
 `/data/vms/sandbox/beos-r5` rig; the two real R5-under-QEMU blockers are
 diagnosed and fixed. What remains open is listed at the bottom.
 
+Since **2026-08-23** the station is also **on the retronet**: a real bridged NIC
+on `vmbr-rn`, DHCP-reserved `10.99.0.16`, no default route, browsing the museum
+corpus in **NetPositive** (R5's own browser), and it has a real **exec channel**
+for the first time — R5's own **telnetd**. The network/browser/exec story is its
+own document: [`docs/lab/retronet/STATION-beos.md`](../lab/retronet/STATION-beos.md).
+
 The deliberate pairing this exhibit exists for: `haiku` is the open-source
 recreation, already live; `beos` is the original it recreates. See
 [`docs/guests/haiku.md`](haiku.md).
@@ -116,7 +122,8 @@ qemu-system-x86_64 -accel tcg -M pc-i440fx-11.0 -cpu pentium3 \
   -m 512 -smp 1 -rtc base=localtime \
   <one IDE raw/qcow2 disk> \
   -vga std \
-  -device ne2k_pci,netdev=n0 -netdev user,id=n0 \
+  -device rtl8139,netdev=n0,mac=<unique> \
+    -netdev tap,id=n0,ifname=beosrn0,script=no,downscript=no \
   <PS/2 keyboard + PS/2 mouse> \
   <no audio device — see Open items>
 ```
@@ -129,8 +136,17 @@ qemu-system-x86_64 -accel tcg -M pc-i440fx-11.0 -cpu pentium3 \
   login — dismissed with **Don't nag** (writes
   `home/config/settings/stop_vga_nagging`). This is cosmetic; the framebuffer
   itself works fine at the configured VESA mode.
-- NIC: `ne2k_pci`. R5 also ships an `rtl8139` driver if a different NIC model
-  is ever needed.
+- NIC: **`rtl8139`**, on a tap on `vmbr-rn`. It was `ne2k_pci` on slirp until
+  2026-08-23, and `ne2k_pci` had to go: R5's `etherpci` driver is fine on an idle
+  link but loses the NE2000 receive ring under real traffic — one corpus page
+  full of images produced **144,683** `etherpci_read: bad next packet!` lines on
+  the serial console, after which the NIC was dead, the guest's MAC had aged out
+  of the bridge FDB and QEMU sat pegged at 100% CPU. It is load-dependent: the
+  same page loaded cleanly on a rig started with `-display none` (more CPU for
+  the guest) and killed the link every time under the production capture path.
+  R5's own `rtl8139` driver carries the same page with **zero** errors. Switching
+  the model is a device-set change and needed a cold re-bake, which the retronet
+  MAC change required anyway.
 - Pointer: **PS/2, relative**. R5 predates broad USB HID/absolute-pointer
   support in its driver stack (unlike Haiku, which has a full USB stack and
   uses `usb-tablet`). BeOS applies its own mouse acceleration on top of the
@@ -156,20 +172,45 @@ These only take effect when the volume is booted as the actual boot disk
 
 ## Ready scene
 
-1024×768×16 blue R5 desktop, Deskbar top-right, Tracker, and a Terminal
-opened automatically by `UserBootscript`. Framebuffer-verified.
+1024×768×16 blue R5 desktop, Deskbar top-right, Tracker, a Terminal, **and
+NetPositive showing the museum corpus page `http://spacejam.com/`** — both
+windows opened automatically by `UserBootscript`, which is tracked at
+`streamhost/stations/beos/UserBootscript`. Framebuffer-verified.
+
+Keeping the scene in a boot script rather than hand-arranging windows before a
+bake is what makes the fixture reproducible from a **cold** boot, not only from
+`loadvm` — which is what made the 2026-08-23 MAC/NIC re-bake repeatable. The
+script waits for a **name** to resolve before opening the browser; waiting only
+for the gateway's IP to answer is not enough, and a NetPositive started too
+early caches the failed lookup and bakes a "Web site not found" page into the
+fixture.
 
 ## Golden / reset
 
 `resetMode: loadvm`, snapshot `golden` inside the standalone
 `/data/vms/streamhost/stations/beos/beos-golden.qcow2` (a copy of the pristine
-`/data/gallery-guests/Beos/beos-r5.qcow2`). Baked 2026-08-18 on the production
-launcher after a zero-input cold boot to the fixture; the launcher then boots
-`-loadvm golden -S` and the restored frame is byte-identical to the running
-one. Same device set required — do not add/remove devices (audio!) without a
-re-bake. Clone-only proof (`checkpoint-verify.sh beos`) still to run.
+`/data/gallery-guests/Beos/beos-r5.qcow2`). **Cold-baked 2026-08-23** on the
+production launcher with the retronet device set (tap on `vmbr-rn`, unique MAC,
+`rtl8139`) after a zero-input cold boot to the fixture; the launcher then boots
+`-loadvm golden -S` and the restored frame matches the pre-bake frame
+everywhere except the Deskbar clock (183 px, x 974–1015 / y 30–36 — the clock
+ticked between the two captures). Same device set required — do not add/remove
+devices (audio!) without a re-bake. Clone-only proof
+(`checkpoint-verify.sh beos`) still to run.
+
+The **MAC lives in the vmstate**, so `loadvm` restores the saved MAC whatever
+the launcher's `mac=` says; changing it is always a cold re-bake. The full
+dance, and the byte-verified backup of the previous golden, are in
+[`STATION-beos.md`](../lab/retronet/STATION-beos.md).
 
 ## Rollback
+
+The **byte-verified backup of the pre-retronet (2026-08-18, hand-baked) golden**
+is `/data/gallery-guests/Beos/golden-backup-rn-netswap-20260822/beos-golden.qcow2`
+(sha256 `f39ae8d6fca8d9071d7818b0a3dcb91f97e9d447fbdd14136f163fdb62d13b0d`,
+`SHA256SUMS` beside it). It still carries its own internal `golden` snapshot, so
+restoring it restores instant-resume with no re-bake. Full sequence:
+[`STATION-beos.md` §Golden lineage & rollback](../lab/retronet/STATION-beos.md).
 
 Standard shape (`/data/vms/streamhost/stations/beos/ROLLBACK.md`): stop only
 `streamhost@beos`, stop its QEMU by the station pidfile, restore the qcow2 —
@@ -197,9 +238,21 @@ lineup (operator decision 2026-08-18: no clone-only proof gate for stations).
 - **Builder automation**: `scripts/build-guests/tiles/beos.sh` encodes the
   recipe above but has not been run end-to-end; its first-boot completion
   signal is a fixed wait (TODO: serial marker).
-- **Registry/labctl declarations vs live**: `mouse`/`keyboard` in `reset` are
-  UNVERIFIED — the visitor input path (pointerRel + Terminal echo) awaits the
-  operator's eyeball at `/os/beos`; then flip `listing`.
+- ~~**Registry/labctl declarations vs live**: `mouse`/`keyboard` UNVERIFIED.~~
+  **Closed 2026-08-23.** Both are now `OK` in `reset`. Keyboard: every command in
+  the retronet bring-up before the exec channel existed was typed into the
+  Terminal through QMP `input-send-event` and read back off the framebuffer,
+  including a password into a masked field. Pointer: R5's Network preferences
+  panel was driven entirely by relative PS/2 deltas — tab switches, radio
+  buttons, checkboxes, text fields and buttons all hit their targets. Two
+  caveats came with it, both recorded in
+  [`STATION-beos.md`](../lab/retronet/STATION-beos.md) §Gotchas: the pointer's
+  gain is **not** a constant (it varies with event rate, so scripted targeting
+  has to be closed-loop), and after a long framebuffer-driven session the **GUI
+  can wedge while the kernel stays healthy** (Deskbar clock frozen 19 minutes
+  behind the guest's own `date`, cursor gone, keys ignored — with `bash`,
+  `net_server` and `ps` all answering normally over the exec channel). A reboot
+  clears it.
 - **KVM MSR question**: which MSR R5's idle-thread path reads that KVM leaves
   unhandled is not identified; TCG sidesteps it but a fix would let this
   station run accelerated like the rest of the fleet.
@@ -207,5 +260,10 @@ lineup (operator decision 2026-08-18: no clone-only proof gate for stations).
   launcher; relaunch with `-loadvm golden -S` restores a byte-identical frame).
   The clone-only proof `scripts/lib/checkpoint-verify.sh beos` (bootrec arm
   present) has not been run yet.
+- **`exec_kind` is no longer null.** `labctl exec beos "<cmd>"` runs over R5's
+  own telnetd at `10.99.0.16:23`; `ftpd` on `:21` is the file-transfer door. No
+  agent, no build, no download — the daemons were already in R5's `Netscript`,
+  gated on a settings file the station simply never had. See
+  [`STATION-beos.md` §The exec channel](../lab/retronet/STATION-beos.md).
 - **Second/Pro-disc driver coverage**: not investigated — this station uses
   only the one archive.org item; no evidence yet that anything is missing.

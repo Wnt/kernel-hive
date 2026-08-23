@@ -1,0 +1,34 @@
+#!/bin/sh
+# /boot/home/config/boot/UserBootscript -- the beos station's ready scene.
+#
+# Tracked here so the fixture is reproducible from a COLD boot, not only from
+# `loadvm golden`. R5 runs this once the desktop is up, after its own Netscript
+# has started net_server, dhcp_client, ftpd and telnetd.
+#
+# The Terminal is the original fixture (it is what made the station drivable
+# before there was an exec channel). NetPositive is the retronet half: R5's own
+# browser, opened on the museum corpus, which the gateway's :80 origin serves
+# for ANY hostname because DHCP points the guest's resolver at 10.99.0.2 and no
+# proxy is configured.
+#
+# The wait matters, and WHAT it waits for matters more. UserBootscript can win
+# the race against dhcp_client, and a NetPositive started too early caches a
+# failed lookup and paints "Web site not found" -- which is then exactly what
+# the cold-booted fixture looks like. Waiting for the gateway IP to answer is
+# NOT enough: that only proves the lease landed, and R5's resolver comes up a
+# little later still (observed: ICMP to 10.99.0.2 fine, the very same boot's
+# browser unable to resolve). So poll until a NAME resolves -- which requires
+# the lease, the DNS server from it, and the resolver, all three -- and only
+# then open the browser. The 120 s ceiling is a giving-up point, not an
+# expected wait: under TCG this is normally satisfied within a few seconds.
+/boot/beos/apps/Terminal &
+(
+  n=0
+  while [ "$n" -lt 60 ]; do
+    ping -c 1 spacejam.com >/dev/null 2>&1 && break
+    sleep 2
+    n=$((n + 1))
+  done
+  sleep 2
+  /boot/apps/NetPositive http://spacejam.com/
+) &
