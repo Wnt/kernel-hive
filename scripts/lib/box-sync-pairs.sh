@@ -248,6 +248,14 @@ box_sync_load_pairs() {
   # installs it alongside the launcher (not an emit aux file, which deploys on a
   # separate stations-manifest.sh pass). See docs/lab/retronet/ICQ-STATION.md.
   box_sync_add_pair win98se-rn-tapnet streamhost/stations/win98se/rn-tapnet.sh "$BOX_ROOT/stations/win98se/rn-tapnet.sh" exact repo
+  # win95 retronet web plane: its bridge-tap lifecycle helper (guest 10.99.0.13 by
+  # DHCP reservation). The warpnet pointer agent (:7777) and a second warpnet
+  # build for exec (:7788) both ride the bridge — docs/lab/retronet/WEB-STATION-win95.md.
+  box_sync_add_pair win95-rn-tapnet streamhost/stations/win95/rn-tapnet.sh "$BOX_ROOT/stations/win95/rn-tapnet.sh" exact repo
+  # winxp's retronet bridge-tap lifecycle helper (web plane: IE6 on the corpus,
+  # guest 10.99.0.18). Same box-authored mirror pair as win98se's above.
+  # See docs/lab/retronet/WEB-STATION-winxp.md.
+  box_sync_add_pair winxp-rn-tapnet streamhost/stations/winxp/rn-tapnet.sh "$BOX_ROOT/stations/winxp/rn-tapnet.sh" exact repo
   # solaris' retronet bridge-tap lifecycle helper (Tier C, climm/OSCAR), the same
   # box-authored mirror pair as win98se's above. See ICQ-STATION-solaris.md.
   box_sync_add_pair solaris-rn-tapnet streamhost/stations/solaris/rn-tapnet.sh "$BOX_ROOT/stations/solaris/rn-tapnet.sh" exact repo
@@ -301,6 +309,15 @@ box_sync_load_pairs() {
   box_sync_add_pair win2000-icq-nudge scripts/retronet/win2000-icq-nudge.py /usr/local/sbin/win2000-icq-nudge.py exact repo
   box_sync_add_pair win2000-icq-nudge-unit scripts/retronet/win2000-icq-nudge.service /etc/systemd/system/win2000-icq-nudge.service exact repo daemon-reload
   box_sync_add_pair win2000-icq-nudge-timer scripts/retronet/win2000-icq-nudge.timer /etc/systemd/system/win2000-icq-nudge.timer exact repo daemon-reload
+  # hpuxvue retronet web plane: bridge-tap lifecycle helper only (no ICQ persona,
+  # no exec channel on this station). Same mirror pair as the helpers above.
+  # See docs/lab/retronet/WEB-STATION-hpuxvue.md.
+  box_sync_add_pair hpuxvue-rn-tapnet streamhost/stations/hpuxvue/rn-tapnet.sh "$BOX_ROOT/stations/hpuxvue/rn-tapnet.sh" exact repo
+
+  # os2warp retronet WEB plane: its bridge-tap lifecycle helper, same mirror-pair
+  # shape as win98se's above. No ICQ nudge — os2warp is a web-only retronet
+  # station (no chat client). See docs/lab/retronet/WEB-STATION-os2warp.md.
+  box_sync_add_pair os2warp-rn-tapnet streamhost/stations/os2warp/rn-tapnet.sh "$BOX_ROOT/stations/os2warp/rn-tapnet.sh" exact repo
 
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.
