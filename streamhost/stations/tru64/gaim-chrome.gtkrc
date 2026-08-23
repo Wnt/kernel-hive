@@ -1,0 +1,45 @@
+# retronet tru64 ICQ station — Gaim (GTK+1.2) chrome colour pin.
+#
+# WHY: the es40 CDE desktop is an 8-bit PseudoColor display (256-cell colormap,
+# one hardware map). Every Gaim wake reconnect destroys and recreates the buddy
+# list (and re-syncs SSI), and each cycle allocates a fresh widget style's worth
+# of colormap cells without releasing the old ones. After ~8 cycles the shared
+# colormap is exhausted; GTK can no longer allocate its neutral widget-background
+# grey and the fallback resolves to the black pixel, so every menubar / toolbar /
+# tab background renders BLACK while the white text areas and the primary chat
+# colours (already allocated) stay correct.
+#
+# THE PIN: bind the widget palette to fixed values via a single rc style applied
+# to the GtkWidget base class. GTK+1.2 caches the realized rc style for the
+# process lifetime (realized_style_ht), and the long-lived conversation window
+# keeps it referenced, so these exact pixels are allocated once at start-up and
+# held. Re-creating the buddy list then re-allocates the SAME rgb values, which
+# XAllocColor satisfies from the already-held cells even when the colormap is
+# otherwise full — so the chrome can never fall back to black.
+#
+# #d7d7d7 is the stock GTK+1.2 widget grey (the correct CDE/Motif look this
+# station shipped with); the derived light/dark/mid shadow shades GTK computes
+# from it are allocated once and held the same way.
+style "cde_motif_chrome" {
+	bg[NORMAL]      = "#d7d7d7"
+	bg[ACTIVE]      = "#c3c3c3"
+	bg[PRELIGHT]    = "#dcdcdc"
+	bg[INSENSITIVE] = "#d7d7d7"
+	bg[SELECTED]    = "#00008b"
+	fg[NORMAL]      = "#000000"
+	fg[ACTIVE]      = "#000000"
+	fg[PRELIGHT]    = "#000000"
+	fg[INSENSITIVE] = "#7f7f7f"
+	fg[SELECTED]    = "#ffffff"
+	base[NORMAL]      = "#ffffff"
+	base[ACTIVE]      = "#c3c3c3"
+	base[PRELIGHT]    = "#ffffff"
+	base[INSENSITIVE] = "#d7d7d7"
+	base[SELECTED]    = "#00008b"
+	text[NORMAL]      = "#000000"
+	text[ACTIVE]      = "#000000"
+	text[PRELIGHT]    = "#000000"
+	text[INSENSITIVE] = "#7f7f7f"
+	text[SELECTED]    = "#ffffff"
+}
+class "GtkWidget" style "cde_motif_chrome"

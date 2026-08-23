@@ -5,9 +5,11 @@
 **Build script:** `scripts/build-guests/tiles/os2warp.sh` (from-scratch, reproducible, `bash -n` clean)
 **Checkpoint image (labhost):** `/data/gallery-guests/OS2Warp/os2.qcow2` → in container `/guests/OS2Warp/os2.qcow2`
 **Proof screenshot:** `/data/gallery-guests/OS2Warp/os2-warp4-desktop.png`
-**Status:** LIVE + framebuffer-verified. Now **Warp 4.52 (MCP2) at 1024×768×64k**
+**Status:** LIVE + framebuffer-verified. **Warp 4.52 (MCP2) at 1024×768×64k**
 on `-vga std` via IBM GENGRADD (2026-07-27) — see "SOLVED" at the end of this doc;
-the 640×480 sections below are historical.
+the 640×480 sections below are historical. **On the retronet since 2026-08-23**
+with a working IBM TCP/IP stack and IBM WebExplorer browsing the local web corpus
+— see [`docs/lab/retronet/WEB-STATION-os2warp.md`](../lab/retronet/WEB-STATION-os2warp.md).
 
 > **Historical (neko-era) wiring below.** OS/2 runs today as the streamhost station
 > **`os2warp`** — see its stanza in `streamhost/stations-manifest.sh`
@@ -467,11 +469,14 @@ bare "update over existing" hits:**
 flip `-boot d` → `-boot c` so phase-2 (the graphical System-Configuration) continues
 from C:. Left on `-boot d` it re-boots the CD into a Welcome loop.
 
-**Post-install fixups (networking install fails, error 1608 → dangling drivers):**
-- `REM` the missing-file lines in CONFIG.SYS (`…\SOCKETSK.SYS`, `AFINETK.SYS`,
+**Post-install fixups (the networking install fails with error 1608):**
+- `REM` the dangling lines in CONFIG.SYS (`…\SOCKETSK.SYS`, `AFINETK.SYS`,
   `VDOSTCP.VDD`, `VDOSCTL.EXE`, `NWCONFIG`) — else SYS1718 "press Enter" prompts on
   every boot. **CRITICAL: CONFIG.SYS must stay CRLF** — writing LF-only from Linux
   makes OS/2 mis-parse every line → `SYS02068` "unable to operate your hard disk".
+  *(This REMming was the 2026-07 stopgap. The stack is now properly repaired and
+  the guest has working TCP/IP — see "Networking" below. Those files were never
+  actually missing: the 1608 install left them in its staging dir `C:\TMPT`.)*
 - Force plain VGA to dodge the VESA-PMI trap (see below): `SET
   VIDEO_DEVICES=VIO_VGA` / `SET VIO_VGA=DEVICE(BVHVGA)` / `VSVGA.SYS`→`VVGA.SYS` /
   `SET C1=VGAGRADD`.
@@ -482,8 +487,14 @@ Boots clean to the 4.52 WPS at **640×480×16**, C: still FAT, ~1.5 GB free.
 
 All curated content survives. Base games/tools **re-installed fresh by MCP2**
 (Klondike/OS2Chess/Mahjongg/EPM/WebExplorer — newer builds); **DOOM**
-(`\GAMES\DOOM`) and **Netscape Navigator** (`\NSC`) preserved bit-for-bit by the
-no-format install; MCP2 also adds **Netscape Communicator 4.61**. `C:\STARTUP.CMD`
+(`\GAMES\DOOM`) preserved bit-for-bit by the no-format install.
+**Correction (verified on-image 2026-08-23): there is no Netscape on this guest.**
+`C:\NSC` is IBM's **Network SignOn Coordinator** (`NSCPM.EXE`, `NSCNDMN.EXE`),
+not Navigator, and `C:\NETSCAPE` holds only a `JAVA11` directory — MCP2's
+Communicator 4.61 never landed, because it was part of the same networking
+install that failed with 1608. The desktop's "Get Netscape Navigator" is a
+`WPUrl` promo shadow. The one real browser is **IBM WebExplorer**
+(`C:\TCPIP\BIN\EXPLORE.EXE`), which is what the registry declares. `C:\STARTUP.CMD`
 (re-creates the 6 custom desktop objects + `start C:\WARPD.EXE`) survived, and the
 old GA desktop is kept as a **"Previous Desktop"** folder. Framebuffer-verified
 **Klondike Solitaire** (PM window, full deal) and **DOOM** (full-screen, live HUD)
@@ -631,7 +642,9 @@ the offline disk surgery and the clone launcher; run it on labhost against a
 - `registry/stations/os2warp.json` retargeted (`deviceSetId` `os2warp-std-1024x768`,
   memory 256, fps **60 → 30** to match every other hi-res station at 2.56× the pixels)
   and regenerated; `labctl gen` re-run.
-- Startup-folder cleanup: the three broken MCP2 startup objects (TCP/IP Startup,
+- Startup-folder cleanup (2026-07; superseded in part by the 2026-08 stack
+  repair, which gave the TCP/IP pieces something real to point at): the three
+  broken MCP2 startup objects (TCP/IP Startup,
   Network Messaging, MFS Setup — all pointing at binaries the failed networking
   install never delivered) were deleted, and the dangling `NWCONFIG`/`IBMEANDI`
   `DEVICE=` lines REMmed, so the boot no longer stops on SYS1718/SYS1201 prompts.
@@ -674,7 +687,8 @@ success while updating hidden objects instead of putting them back in
 
 The reproducible source is
 `scripts/build-guests/assets/os2warp/create-desktop-objects.cmd`. It is a complete
-CRLF `C:\STARTUP.CMD`: start `WARPD.EXE`, wait 60 seconds for WPS to settle,
+`C:\STARTUP.CMD` — stored LF in the repo and CRLF-ified on install by
+`sed 's/$/\r/'`, which every installer of it does: start `WARPD.EXE`, wait 60 seconds for WPS to settle,
 destroy each gallery-owned object ID, and recreate it in `<WP_DESKTOP>` with
 `SysCreateObject` and the `U` flag. The browser entries are gallery-owned
 `WPShadow` objects, so the original system-owned launch data and icons stay
@@ -711,3 +725,49 @@ stopped-QEMU post-reset screendumps were byte-identical.
   — untestable past the kernel trap above, and moot now.
 - **Arca Noae Panorama** (US$49/yr drivers subscription) and an **ArcaOS/eCS seed
   swap** — both unnecessary; the exhibit keeps its OS/2 Warp identity and its apps.
+
+---
+
+## Networking — WORKING (retronet, 2026-08-23)
+
+**This supersedes every "networking is broken / the stack is absent" statement
+above.** os2warp has a working IBM TCP/IP stack and is on the retronet web plane.
+Full as-built: [`docs/lab/retronet/WEB-STATION-os2warp.md`](../lab/retronet/WEB-STATION-os2warp.md).
+
+The MCP2 upgrade's networking install failed with error **1608**, and the 2026-07
+pass cleared the fallout by REMming CONFIG.SYS lines and deleting the three MCP2
+startup objects. That left the guest looking like it had no stack. It did — the
+1608 install had copied **every binary** onto `C:` and died before *configuring*
+any of it:
+
+- `\IBMCOM\PROTOCOL.INI` bound `TCPIP_nif` to `NONETADP_nif` — the NULL adapter.
+  **That was the root cause.**
+- CONFIG.SYS referenced `SOCKETSK.SYS` / `AFINETK.SYS` (the WSeB "kernel"
+  variants, still sitting in the installer's staging dir `C:\TMPT\PROTOCOL`)
+  rather than the ordinary `SOCKETS.SYS` / `AFINET.SYS` that were in
+  `\MPTN\PROTOCOL` all along.
+- `DEVICE=C:\IBMCOM\MACS\PCNTND.OS2` was missing entirely, `NETBIND.EXE` ran
+  before the drivers it binds, and `\MPTN\BIN\SETUP.CMD` was still the zero-byte
+  template `SETUP.$T$`.
+- `LIBPATH`/`NLSPATH` never gained the TCP/IP application paths, so WebExplorer
+  could not find `SETLOC1.DLL` or `EXPLORE.CAT`.
+
+**No install media was needed.** The repair is offline, idempotent and
+self-verifying:
+
+```bash
+scripts/dev/os2-retronet-stack.sh prep /data/gallery-guests/OS2Warp/os2.qcow2
+scripts/dev/os2-retronet-stack.sh show /data/gallery-guests/OS2Warp/os2.qcow2
+```
+
+Current state: MPTS/NDIS + MPTN TCP/IP over the `pcnet` NIC, DHCP-reserved
+`10.99.0.19` on the retronet bridge `vmbr-rn` (DNS from DHCP, **no default
+route**), IBM WebExplorer browsing the corpus through the gateway's proxy door
+`10.99.0.2:3128`. `-vga std` + GENGRADD 1024×768×64k and the warpd COM1 pointer
+are untouched by all of it.
+
+Two things that will bite a future reader, both documented at length in the
+as-built doc: **`IFNDIS.SYS` is required** despite IBM's `readme.mpt` saying MPTS
+6.01 removed it (without it `DHCPCD.EXE` traps at boot), and **WebExplorer sends
+no `Host:` header**, so it must use a proxy — the `:80` origin door can only
+answer `400 Bad Request` to it.
