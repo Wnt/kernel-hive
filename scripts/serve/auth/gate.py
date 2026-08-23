@@ -14,12 +14,20 @@ from __future__ import annotations
 # health probe the deploy scripts poll. Everything else needs a session.
 # /link is open because a device arrives there with nothing but a code — it
 # is the sign-in path for a device that has no passkey yet.
-OPEN_PATHS = frozenset({"/healthz", "/login", "/link", "/favicon.ico"})
+# /manifest.webmanifest and /sw.js are open because a browser judges the app
+# INSTALLABLE by fetching the manifest and its icons WITHOUT credentials (a
+# <link rel="manifest"> and the icon reads carry no session cookie); behind the
+# gated tunnel they would 401 and Chrome would never offer "Install". None of it
+# is private — the app's name, its caching worker, and the museum's mark.
+OPEN_PATHS = frozenset({"/healthz", "/login", "/link", "/favicon.ico", "/manifest.webmanifest", "/sw.js"})
 # /ui/ is the sign-in and people-management page bundle. It is open in full,
 # including admin.js: that file describes an API surface which is documented in
 # the repo anyway, and every call it makes is authorized server-side. Keeping
 # the rule "the login UI is open" simple beats a per-asset list that will drift.
-OPEN_PREFIXES = ("/auth/", "/ui/")
+# /assets/generated/ holds only the generated art + application icons (never the
+# SPA bundle, which stays under /assets/), so opening it publishes the PWA icons
+# for the installability check without exposing any application code.
+OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/generated/")
 
 # Nothing is refused outright any more. The operator plane used to be shut on
 # this listener, which also made it unusable from a PHONE — the one place the

@@ -407,6 +407,18 @@ canvas { display: block; touch-action: none; }
 .grid-foot-link { color: var(--ink-muted); text-decoration: underline; }
 .grid-foot-link:hover { color: var(--accent-ink); }
 
+/* Install-as-app affordance in the footer (usePwaInstall). A small terracotta
+   chip when the browser offers a native prompt; a muted hint on iOS Safari. */
+.grid-foot-install {
+  appearance: none; cursor: pointer;
+  font: inherit; line-height: 1.4;
+  color: var(--accent-ink); background: var(--accent-wash);
+  border: 1px solid var(--accent-line); border-radius: 999px;
+  padding: 2px 10px;
+}
+.grid-foot-install:hover { background: var(--accent-line); color: var(--paper-raised); }
+.grid-foot-hint { color: var(--ink-muted); }
+
 /* ---- StreamView fallback stub (Agent-B ships the real live view) ---- */
 .stream-view { position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; background: var(--paper); }
 .stream-view-bar {

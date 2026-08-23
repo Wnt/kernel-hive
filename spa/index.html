@@ -13,6 +13,30 @@
          and gives an offline shell. Both live in public/ so they publish at the
          webroot root. -->
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // Capture the PWA install prompt as early as possible. Chromium can fire
+      // beforeinstallprompt before the SPA module evaluates (especially on
+      // repeat visits, where the service worker is already active), and the
+      // event is only usable if preventDefault() ran and it was kept. The footer
+      // Install control (usePwaInstall) reads this stash and also listens for
+      // events that arrive after it mounts.
+      (() => {
+        try {
+          window.__kernelHiveInstallPrompt = null;
+          window.addEventListener('beforeinstallprompt', (event) => {
+            event.preventDefault();
+            window.__kernelHiveInstallPrompt = event;
+            try { window.dispatchEvent(new Event('kernelhive:installprompt')); } catch {}
+          });
+          window.addEventListener('appinstalled', () => {
+            window.__kernelHiveInstallPrompt = null;
+            try { window.dispatchEvent(new Event('kernelhive:appinstalled')); } catch {}
+          });
+        } catch {
+          // Install capture is strictly best-effort and must never block boot.
+        }
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
