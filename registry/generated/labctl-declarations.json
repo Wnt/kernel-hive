@@ -274,6 +274,23 @@
       "udp_port": 54109,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/cbm8032/sta/golden.vsf."
     },
+    "chokanji": {
+      "dir": "/data/vms/streamhost/stations/chokanji",
+      "qmp": "/data/vms/streamhost/stations/chokanji/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "console": "fb",
+      "udp_port": 54149,
+      "notes": "BTRON3 / B-right/V (超漢字), Ken Sakamura's TRON. Verbatim launcher. Relative PS/2 mouse — machine pc-i440fx-11.0,vmport=off removes the vmmouse the ex-VMware disk would otherwise bind, so injected motion reaches the guest. No exec channel, no network (no retronet). resetMode=loadvm (golden inside chokanji.qcow2). See docs/guests/chokanji.md."
+    },
     "daybreak": {
       "dir": "/data/vms/streamhost/stations/daybreak",
       "qmp": "/data/vms/streamhost/stations/daybreak/qmp.sock",

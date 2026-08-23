@@ -51,6 +51,9 @@ const POSTER_INDEX = {
   "cbm8032": {
     "hero": "/posters/cbm8032/desktop.webp"
   },
+  "chokanji": {
+    "hero": "/posters/chokanji/desktop.webp"
+  },
   "daybreak": {
     "hero": "/posters/daybreak/desktop.webp"
   },

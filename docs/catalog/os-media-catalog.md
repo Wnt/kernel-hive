@@ -495,6 +495,38 @@ Notable recipes / gotchas:
 
 ---
 
+## 11. TRON / BTRON — Japanese desktop (native QEMU-x86)
+
+| OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
+|---|---|---|---|---|---|---|---|---|
+| 超漢字 / B-right/V (BTRON3) | https://archive.org/details/chokanji (✓, item `chokanji`, `chokanji.zip` sha256 `b8fd99a9…`) | preservation (Personal Media commercial; terms unclear) | zip → nested rar/7z; `qemuckj/mc.img` = pre-installed raw disk | none | 810 MB set | small | **works-known** (LIVE station `chokanji`) | 5 |
+
+**bridgeNeeded:** none — native QEMU-x86, drops straight into the streamhost
+`-display dbus,p2p=on` pipeline.
+
+Ken Sakamura's BTRON3 desktop — the commercial heir to the TRON school-computer
+plan the US **Super-301** trade fight shut down in 1989. The visual hook is the
+"real object / virtual object" desktop and a colossal kanji character set.
+
+Notable recipe / gotchas (station `chokanji`, LIVE):
+- The operator-provided archive.org set bundles a community **QEMU-CKJ** port
+  whose `qemuckj/mc.img` is a **pre-installed, bootable B-right/V Kernel 4.202
+  disk** — no install to automate. Repack it: `unar` the nested `qemuckj.7z`,
+  then `qemu-img convert -S 0 -f raw -O qcow2 mc.img chokanji.qcow2` (use `-S 0`;
+  zero-run detection produced an empty qcow2 on the ZFS store).
+- `qemu-system-x86_64 -enable-kvm -m 256 -machine pc-i440fx-11.0,vmport=off -cpu host -boot c -vga cirrus -drive file=chokanji.qcow2,format=qcow2,if=ide`.
+  **`vmport=off` is essential:** the disk is an ex-VMware guest, so QEMU's default
+  `vmmouse` becomes the current pointer and swallows all injected motion (the hand
+  cursor never moves); disabling it lets the default PS/2 relative mouse through.
+  BTRON has no absolute/tablet driver → **relative** pointer. `-vga std` renders
+  black; the driver is Cirrus-specific. 800×600.
+- The **consumer 超漢字V 4.540** (`ckv-setup.exe` inside `CKV4540.iso`) is a Delphi
+  self-extractor that deploys a VMware VM on Windows; its disk image is **not
+  host-extractable without Windows**, so the exhibit ships the QEMU-CKJ `mc.img`
+  (B-right/V 4.202) instead. Details: `docs/guests/chokanji.md`.
+
+---
+
 ## Coverage vs the current registry lineup
 
 Current streamhost tiles: Windows 1.0/3.11/95/98/2000/XP, MS-DOS (Win 1.0 and

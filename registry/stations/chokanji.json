@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "id": "chokanji",
+  "era_year": 2002,
+  "stationDir": "chokanji",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 66,
+        "prelude": "",
+        "value": {
+          "key": "chokanji",
+          "script": "tiles/chokanji.sh",
+          "outputDir": "Chokanji",
+          "class": "retro",
+          "estimated": "~2-5m",
+          "automation": "full",
+          "produces": "chokanji.qcow2",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "chokanji",
+      "value": {
+        "os": "Chokanji (B-right/V)",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            160
+          ],
+          "b": [
+            600,
+            440
+          ]
+        },
+        "kbd": null,
+        "audio_trigger": null,
+        "validated": false,
+        "note": "800x600 Cirrus GD5446; PS/2 relative mouse (machine vmport=off removes the ex-VMware vmmouse); BTRON3 real/virtual-object desktop"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/chokanji",
+      "qmp": "/data/vms/streamhost/stations/chokanji/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54149,
+      "notes": "BTRON3 / B-right/V (超漢字), Ken Sakamura's TRON. Verbatim launcher. Relative PS/2 mouse — machine pc-i440fx-11.0,vmport=off removes the vmmouse the ex-VMware disk would otherwise bind, so injected motion reaches the guest. No exec channel, no network (no retronet). resetMode=loadvm (golden inside chokanji.qcow2). See docs/guests/chokanji.md."
+    }
+  },
+  "render": {
+    "signalOrder": 66,
+    "stationsManifestOrder": 64,
+    "stationsManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP H — TRON / BTRON (Cirrus VGA, PS/2 relative mouse), rel pointer.\n# ---------------------------------------------------------------------------\n\n# chokanji (VMID 149) — 超漢字 / B-right/V, BTRON3 (Ken Sakamura's TRON project).\n#   Cirrus GD5446 800x600, PS/2 relative mouse. VERBATIM LAUNCHER.\n#   -machine pc-i440fx-11.0,vmport=off is LOAD-BEARING: the disk is an ex-VMware\n#   guest, so QEMU's default vmmouse becomes the current pointer and swallows all\n#   injected motion; vmport=off removes it and the default i8042 PS/2 mouse takes over (BTRON\n#   has no absolute/tablet driver -> relative pointer). qcow2 runs WITHOUT\n#   -snapshot so savevm 'golden' persists inside it (resetMode=loadvm). No NIC.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 71,
+    "bindingPrelude": "",
+    "goldenOrder": 64,
+    "actionMapOrder": 38
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54149,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 149
+  },
+  "guestDoc": "docs/guests/chokanji.md",
+  "credentialsRef": "guest/chokanji",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "chokanji",
+      "SH_QMP": "/data/vms/streamhost/stations/chokanji/qmp.sock",
+      "SH_PORT": "54149",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "rel",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/chokanji/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/chokanji/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 149,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "chokanji",
+        "--vmid",
+        "149",
+        "--udp",
+        "54149",
+        "--pointer",
+        "rel",
+        "--abs-pace-ms",
+        "30",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/chokanji/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/chokanji/station.env.fixture"
+      ],
+      "deviceSetId": "chokanji-cirrus-800-ps2rel",
+      "machine": "pc-i440fx-11.0",
+      "cpu": "host",
+      "vga": "cirrus",
+      "memoryMB": 256,
+      "smp": 1,
+      "accel": "kvm",
+      "binary": "qemu-system-x86_64",
+      "deviceSetSummary": [
+        "-name streamhost-chokanji",
+        "-enable-kvm -m 256 -smp 1",
+        "-machine pc-i440fx-11.0,vmport=off -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga cirrus",
+        "-display dbus,p2p=on",
+        "-drive file=/data/gallery-guests/Chokanji/chokanji.qcow2,format=qcow2,if=ide",
+        "-qmp unix:/data/vms/streamhost/stations/chokanji/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/chokanji/qemu.pid"
+      ],
+      "envFixture": "streamhost/stations/chokanji/station.env.fixture",
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 256,
+        "smp": 1,
+        "vga": "cirrus",
+        "deviceSetSummary": [
+          "-name streamhost-chokanji",
+          "-enable-kvm -m 256 -smp 1",
+          "-machine pc-i440fx-11.0,vmport=off -cpu host",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga cirrus",
+          "-display dbus,p2p=on",
+          "-drive file=/data/gallery-guests/Chokanji/chokanji.qcow2,format=qcow2,if=ide",
+          "-qmp unix:/data/vms/streamhost/stations/chokanji/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/chokanji/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "in-repo launcher streamhost/stations/chokanji/qemu-streamhost.sh is the deployed verbatim launcher; pc-i440fx-11.0,vmport=off + default i8042 PS/2 mouse + -vga cirrus match the running/golden device set"
+      },
+      "launcher": "streamhost/stations/chokanji/qemu-streamhost.sh"
+    },
+    "bringUpOrder": 71
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#2f6fb0",
+    "eraLabel": "2002 · 超漢字 / BTRON3",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "chokanji",
+    "displayName": "Chokanji (超漢字)",
+    "year": 2002,
+    "lineage": "TRON / BTRON3 (Ken Sakamura, Personal Media)",
+    "arch": "i386",
+    "ramMB": 256,
+    "era": "2000s",
+    "accent": "#2f6fb0",
+    "eraSoftware": [
+      "BTRON real/virtual objects",
+      "TAD documents",
+      "GT huge-kanji font",
+      "基本文章編集"
+    ],
+    "periodBrowser": "超漢字ブラウザ",
+    "iconicApps": [
+      "原稿用紙",
+      "画用紙",
+      "表計算",
+      "文字検索"
+    ],
+    "blurb": "The operating system Japan built for the whole world. Ken Sakamura's BTRON desktop — every file a 'real object', a colossal kanji character set at its heart — the commercial heir to the TRON school-computer plan the US Super-301 trade fight shut down."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "chokanji",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "UNVERIFIED",
+    "fixture": "Clean idle BTRON3 desktop at 800x600 (Cirrus GD5446): the 超漢字 real-object window and the 原稿箱：B-right/V virtual-object box open on the blue kanji-watermark wallpaper, hand cursor at rest, no modal dialog."
+  },
+  "migrationExceptions": []
+}
