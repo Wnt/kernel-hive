@@ -29,14 +29,59 @@
 #     cursor on this guest; PS/2 relative works once vmmouse is out of the way.
 #   * -vga cirrus: the BTRON screen driver in this disk drives the Cirrus
 #     GD5446 at 800x600. (std VGA renders black — the driver is Cirrus-specific.)
-#   * NO NIC: this station has no network at all (no retronet, no slirp). BTRON
-#     boots straight to the desktop without one.
+#   * RETRONET BRIDGE (2026-08-23): rtl8139 on vmbr-rn — a real bridged NIC, not
+#     slirp. The model is not a guess: qemuckj/q.bat, the launch script the
+#     original packagers shipped ALONGSIDE this very mc.img, reads
+#     `-net nic,model=rtl8139`, and pxe-rtl8139.bin is the only NIC ROM in that
+#     port. B-right/V's driver set is narrow and this is the card it expects.
+#     Adding the device CHANGED the device set, so the golden was cold re-baked
+#     from scratch on 2026-08-23 (loadvm binds to the exact set); the pre-change
+#     disk+golden pair is kept, see docs/lab/retronet/WEB-STATION-chokanji.md.
+#     rn-tapnet.sh (called `up` just below, idempotently, like win98se's) creates
+#     the persistent tap chokanjirn0, enslaves it to vmbr-rn and installs a
+#     fail-closed containment chain. Adding the PCI NIC did NOT disturb the
+#     vmmouse trap above — PS/2 is still the current pointer (query-mice).
+#     `romfile=` DISABLES the card's PXE option ROM on purpose. It is not
+#     cosmetic: the ROM is a migratable ramblock, and a golden baked with it
+#     present refuses to load on a machine where it is absent
+#     ("Unknown ramblock 0000:00:03.0/rtl8139.rom, cannot accept migration") —
+#     which cost one bake. This guest boots from its IDE disk and never PXE-boots,
+#     so the ROM is dead weight; pinning it off makes the device set the golden
+#     binds to independent of option-ROM discovery. Bake and run MUST agree.
+#   * STATIC addressing, not DHCP: B-right/V 4.202's ネットワーク設定 panel is
+#     static-only (its sole アドレス tab has no DHCP option) and the guest emits
+#     no DISCOVER at boot — this stack has no DHCP client. The guest is configured
+#     by hand on its reserved address 10.99.0.21/24, DNS 10.99.0.2, and the
+#     ゲートウェイ「使用する」box is deliberately left UNCHECKED, which is what
+#     gives it no default route (the same no-WAN posture the DHCP reservation
+#     encodes for the other retronet stations).
 #   * NO audio device yet: the BTRON desktop is effectively silent; SB16 (what
-#     the original QEMU-CKJ q.bat used) is a possible future add.
+#     the original QEMU-CKJ q.bat used, alongside that rtl8139) is a future add.
 # Kill only by pidfile. Full rationale + media provenance: docs/guests/chokanji.md.
 set -e
 B=/data/vms/streamhost/stations/chokanji
 DISK=/data/gallery-guests/Chokanji/chokanji.qcow2
+# Bring the retronet tap up and install the fail-closed guest-containment chain
+# BEFORE QEMU opens it (script=no means QEMU attaches to an EXISTING tap, it does
+# not create one). Idempotent; runs as root under streamhost@ and the manual
+# golden-bake path alike. Fail-closed: if containment does not verify it dies
+# here and QEMU never starts.
+bash "$B/rn-tapnet.sh" up
+# Guest NIC MAC. Real per-station MACs are NEVER committed (AGENTS.md); the real
+# value lives in gitignored registry/local.env as RN_CHOKANJI_MAC (retronet fleet
+# scheme 52:54:00:52:4e:<last-IP-octet>, "52:4e"=RN, .21 -> ...15) so every
+# bridged guest is L2-distinct and per-MAC DHCP reservations do not collide.
+# chokanji is statically addressed in-guest, but it still holds a reservation so
+# nothing else can be handed 10.99.0.21. The golden's vmstate carries the MAC, so
+# this only matters on a COLD (re-)bake; loadvm golden uses the baked MAC
+# regardless, but this mac= must MATCH it (cold boot and loadvm bind to the same
+# device). Only the one line is read, never the whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_CHOKANJI_MAC="02:00:00:00:00:15" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_CHOKANJI_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
+  [ -n "$_m" ] && RN_CHOKANJI_MAC="$_m"
+fi
 [ -f "$B/qemu.pid" ] && kill "$(cat "$B/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$B/qmp.sock" "$B/qemu.pid"
@@ -57,6 +102,8 @@ nohup qemu-system-x86_64 \
   -vga cirrus \
   -display dbus,p2p=on \
   -drive file="$DISK",format=qcow2,if=ide \
+  -netdev tap,id=rn0,ifname=chokanjirn0,script=no,downscript=no \
+  -device rtl8139,netdev=rn0,mac="$RN_CHOKANJI_MAC",romfile= \
   $LOADVM \
   -qmp unix:"$B/qmp.sock",server=on,wait=off \
   -pidfile "$B/qemu.pid" \

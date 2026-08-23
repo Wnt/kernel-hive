@@ -58,7 +58,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54149,
-      "notes": "BTRON3 / B-right/V (超漢字), Ken Sakamura's TRON. Verbatim launcher. Relative PS/2 mouse — machine pc-i440fx-11.0,vmport=off removes the vmmouse the ex-VMware disk would otherwise bind, so injected motion reaches the guest. No exec channel, no network (no retronet). resetMode=loadvm (golden inside chokanji.qcow2). See docs/guests/chokanji.md."
+      "notes": "BTRON3 / B-right/V (超漢字), Ken Sakamura's TRON. Verbatim launcher. Relative PS/2 mouse — machine pc-i440fx-11.0,vmport=off removes the vmmouse the ex-VMware disk would otherwise bind, so injected motion reaches the guest. No exec channel. On the retronet web plane since 2026-08-23: rtl8139 on the persistent tap chokanjirn0 (vmbr-rn), statically addressed in-guest at 10.99.0.21 because BTRON3 has no DHCP client. resetMode=loadvm (golden inside chokanji.qcow2, COLD re-baked 2026-08-23 when the NIC changed the device set). See docs/guests/chokanji.md."
     }
   },
   "render": {
@@ -202,7 +202,7 @@
       "GT huge-kanji font",
       "基本文章編集"
     ],
-    "periodBrowser": "超漢字ブラウザ",
+    "periodBrowser": "基本ブラウザ (BBB) R4.500",
     "iconicApps": [
       "原稿用紙",
       "画用紙",
@@ -217,6 +217,10 @@
     "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
   },
   "ui": "desktop",
+  "network": {
+    "status": "host-only",
+    "note": "rtl8139 on the persistent tap chokanjirn0, enslaved to the OFFLINE retronet bridge vmbr-rn (streamhost/stations/chokanji/rn-tapnet.sh, called `up` from the launcher on every start). The NIC model is the one the original QEMU-CKJ port shipped alongside this very disk (its q.bat reads -net nic,model=rtl8139). STATIC in-guest addressing on the reserved 10.99.0.21/24, DNS 10.99.0.2, with the ネットワーク設定 panel's ゲートウェイ「使用する」box left unchecked so there is no default route - B-right/V 4.202 has no DHCP client, so the reservation exists only to keep the address unique. Behind the fail-closed CHOKANJIRN-IN guard chain it reaches ONLY the gateway CT 10.99.0.2, where the 基本ブラウザ browses the period corpus on :80 seamlessly (wildcard DNS, no proxy configured); never labhost, the LAN, the gallery or the internet. Added 2026-08-23; the station previously had no NIC at all, so the golden was COLD re-baked (docs/lab/retronet/WEB-STATION-chokanji.md)"
+  },
   "reset": {
     "stationDir": "chokanji",
     "pointer": "rel",
