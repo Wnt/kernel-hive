@@ -332,6 +332,14 @@ box_sync_load_pairs() {
   # persona: DR2 has no OSCAR client). See docs/lab/retronet/WEB-STATION-rhapsody.md.
   box_sync_add_pair rhapsody-rn-tapnet streamhost/stations/rhapsody/rn-tapnet.sh "$BOX_ROOT/stations/rhapsody/rn-tapnet.sh" exact repo
 
+  # macos753 retronet WEB plane: the same mirror pair, for the same reason as the
+  # three above — the launcher's FIRST action is `bash "$D/rn-tapnet.sh" up`, so
+  # without this pair the station cannot start at all. This guest is Mac OS 7.5.3
+  # on the q800's built-in dp83932 SONIC, statically addressed via MacTCP (which
+  # has no DHCP client) on 10.99.0.23. Web-only: ICQ is out of scope for this
+  # station. See docs/lab/retronet/WEB-STATION-macos753.md.
+  box_sync_add_pair macos753-rn-tapnet streamhost/stations/macos753/rn-tapnet.sh "$BOX_ROOT/stations/macos753/rn-tapnet.sh" exact repo
+
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.
   box_sync_add_pair tiles-json scripts/tiles.json.sample "$BOX_ROOT/tiles.json" exact box
