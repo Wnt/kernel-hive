@@ -170,6 +170,22 @@ client), DNS `10.99.0.2`, **no default route**, contained by the fail-closed
 and the measurements:
 [`../lab/retronet/WEB-STATION-rhapsody.md`](../lab/retronet/WEB-STATION-rhapsody.md).
 
+## Web browser
+
+DR2 ships **no** web browser — `/Local/Applications` is empty and
+`/System/Applications` holds only Clock, Grab, HelpViewer, MailViewer,
+Preferences, PrintManager, Preview and TextEdit. The registry's
+`periodBrowser: "OmniWeb 3"` was aspiration until **OmniWeb 3.0 final** (Omni
+Group, July 1999, fat i486+ppc, frameworks and licence bundled inside the app)
+was installed into `/Local/Applications`, with a real bundle copy in the `guest`
+home so the open home window carries a one-double-click icon. It browses the
+corpus through the gateway's **`:80` origin door with no proxy** — OmniWeb sends
+a `Host:` header, unlike os2warp's WebExplorer. Installed and verified by
+`scripts/dev/rhapsody-install-browser.sh`; provenance, the raw-second-IDE-disk
+delivery path and the desktop traps (a symlinked `.app` launches as "damaged";
+autolaunched apps start hidden; the Dock is not scriptable):
+[`../lab/retronet/WEB-BROWSER-rhapsody.md`](../lab/retronet/WEB-BROWSER-rhapsody.md).
+
 ## Golden, input, and rollback
 
 - `golden` baked 2026-08-18 on the station itself
