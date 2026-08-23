@@ -714,10 +714,12 @@ measured end to end on the live station:
 | a visitor opens the station | the guest resumes; ICBM's next keepalive (~100 s interval) lands on a server that no longer has the session, and the server silently re-creates it |
 | that arrival is a sign-on | `50000 (beos) signed on — greeting in 30s` → `GREETED 50000 (beos)` |
 
-Measured on 2026-08-23: reaped at 13:43:29, signed on at 13:44:02, greeted at
-13:44:32. So the greeting lands **up to ~2 minutes** after a visitor arrives,
-against ~30 s on the ICQ-2001b stations, and the variable part is which point of
-ICBM's keepalive cycle the wake falls in.
+Measured twice on 2026-08-23, the second time as the acceptance run against the
+deployed commit: reaped 13:43:29 → signed on 13:44:02 → greeted 13:44:32, and
+reaped 14:32:25 → woken the same second → signed on 14:33:25 → greeted 14:33:55.
+So the greeting lands **60–120 s** after a visitor arrives, against ~30 s on the
+ICQ-2001b stations, and the variable part is which point of ICBM's ~100 s
+keepalive cycle the wake falls in.
 
 Two consequences worth stating plainly:
 
@@ -744,6 +746,7 @@ Two consequences worth stating plainly:
 | the visitor can reply | `labctl type` + Enter → `retronet-bot`: `<- 50000: hi! yes, BeOS R5 here` → LLM reply `-> 50000: woah, still running R5? …` back on the framebuffer |
 | survives a pause | 3 m 30 s QMP `stop`/`cont` — session intact, messaging still works afterwards |
 | the golden restores signed on | after `labctl reset beos`: contact list up, HiveBot under **Online**, ICBM in the Deskbar |
+| it stays up | a liveness sampler took the client's process count every ~110 s from 12:35 to 14:21 — **57 consecutive samples, ICBM alive in every one**. The first pass's "exits unattended within minutes" does not reproduce; what it most likely saw was the client sitting disconnected after a teardown it never recovers from, which is what the watchdog now handles |
 
 ### The one thing the gateway does not do
 
