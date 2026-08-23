@@ -50,11 +50,16 @@ ARC clock), `ali` southbridge with `vga_console`, `ali_pmu`, `sym53c810` SCSI
 listens; the tile's `pumps.py` connects and drains — es40 blocks on startup
 until BOTH have a client). SRM/flash/dpr ROMs under `rom/`. `mouse.absolute =
 true`. No `ali_usb` (W2K polls it hot — upstream es40 issues #114/#169).
-**`dec21143` NIC at `pci0.4`** (pcap backend on the host-only veth
-`w2kalpha-g`) — added 2026-08-11 for the guest telnet exec channel (see
-[Telnet exec channel](#telnet-exec-channel)); the guest end is a private
-`172.31.64.0/30` veth that `x11-runtime.sh` brings up, **never bridged to the
-LAN**, so the exhibit is still air-gapped from anything off-labhost.
+**`dec21143` NIC at `pci0.4`** (pcap backend on the veth `w2kalpha-g`) — added
+2026-08-11 for the guest telnet exec channel (see
+[Telnet exec channel](#telnet-exec-channel)); since 2026-08-23 its host end
+`w2kalpha-h` is enslaved to the **OFFLINE retronet bridge `vmbr-rn`**
+(`rn-tapnet.sh`, called from `x11-runtime.sh`), so the guest is a retronet host on
+DHCP (reserved `10.99.0.17`) browsing the period corpus web — contained behind the
+fail-closed `W2KALPHARN-IN` guard chain, **never on the LAN's L2** and with no route
+off `10.99.0.0/24`. The unique `mac=` it now carries lives in the es40 savestate, so
+a `mac=` change needs a **cold-boot re-bake**. See
+[`docs/lab/retronet/w2kalpha-retronet.md`](../lab/retronet/w2kalpha-retronet.md).
 
 Changing the device set does not invalidate the seed (it is a plain disk
 image, not a savestate) but DOES orphan `golden.axp` — **re-bake the
@@ -155,12 +160,17 @@ pump can never hold the ports.
 
 `labctl exec w2kalpha "<cmd>"` runs a command in the guest and returns its
 **captured stdout + exit code** — the same contract as the ssh/warpd/serial
-stations. Wiring (all live 2026-08-11):
+stations. Wiring:
 
-- **Transport:** the `dec21143` NIC (`pci0.4`, pcap backend) on the host-only
-  veth `w2kalpha-h`/`w2kalpha-g` that `x11-runtime.sh` brings up. The guest holds
-  a **static IP `172.31.64.2/30`** (captured into the seed); the host answers on
-  `172.31.64.1`. Nothing bridges to the LAN — reachable only from labhost.
+- **Transport:** the `dec21143` NIC (`pci0.4`, pcap backend) on the veth
+  `w2kalpha-h`/`w2kalpha-g`. Since 2026-08-23 `w2kalpha-h` is enslaved to the
+  retronet bridge `vmbr-rn` (`rn-tapnet.sh`) and the guest is on **DHCP, reserved
+  `10.99.0.17`** (DNS `10.99.0.2`, no default route); labhost dials the telnet
+  server at **`10.99.0.17:23` over the bridge**, and the guest only ever replies
+  toward labhost (ESTABLISHED), so the `W2KALPHARN-IN` guard chain leaves the
+  channel working. (Before 2026-08-23 this was a host-only `172.31.64.0/30` veth,
+  guest static `172.31.64.2`; see
+  [`w2kalpha-retronet.md`](../lab/retronet/w2kalpha-retronet.md).)
 - **Guest side (captured):** the W2K **Telnet Server** is set to auto-start, with
   **NTLM off** so a plain login works, and the Administrator password is blank.
 - **Helper:** `streamhost/guest-agents/w2kalpha/w2ktelnetexec.py` → labhost

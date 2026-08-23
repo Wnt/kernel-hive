@@ -3,7 +3,7 @@
 # es40 BLOCKS on startup until BOTH emulated serial ports have a TCP client, so
 # this connects to both listen ports from es40.cfg the moment it starts.
 #
-#   ser0 (console side)  — drained to ser0-live.log, exactly like w2kalpha.
+#   ser0 (console side)  — drained to ser0-live.log.
 #   ser1 (exec channel)  — drained to ser1-live.log UNTIL a client connects to
 #                          the unix socket serial-exec.sock next to this file;
 #                          then it is a byte pipe between that client and the

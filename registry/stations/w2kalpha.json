@@ -20,7 +20,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54140,
-      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); exec = telnet_e: labctl exec w2kalpha runs a captured command over the guest W2K Telnet Server (blank Administrator, NTLM off) reached at 172.31.64.2:23 on the host-only veth w2kalpha-h/g that x11-runtime.sh brings up; the guest holds a static IP baked into the golden and its dec21143 (pcap backend) is at pci0.4 in es40.cfg; reset = relaunch restoring the golden CHECKPOINT: the launcher reflink-copies the golden nt.img and hands es40 the golden.axp savestate baked from that same image (ES40_RESTORE), pristine desktop ~3 s after exec (~15 s end to end through the unit); rollback = remove assets/w2kalpha/golden.axp and it cold-boots"
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); exec = telnet_e: labctl exec w2kalpha runs a captured command over the guest W2K Telnet Server (blank Administrator, NTLM off) reached at 10.99.0.17:23 over the OFFLINE retronet bridge vmbr-rn that rn-tapnet.sh (called from x11-runtime.sh) enslaves the guest's veth w2kalpha-h onto; the guest is on DHCP (reserved 10.99.0.17/24, DNS 10.99.0.2, NO default route — containment) baked into the golden, its dec21143 (pcap backend) at pci0.4 in es40.cfg carries a unique per-station MAC (scrubbed placeholder 02:00:00:00:00:11; real value RN_W2KALPHA_MAC in registry/local.env, per the fleet scheme in WEB-PROXY.md), and the fail-closed W2KALPHARN-IN guard chain drops every NEW flow the guest starts toward labhost; seamless corpus web on the gateway :80, no proxy; reset = relaunch restoring the golden CHECKPOINT: the launcher reflink-copies the golden nt.img and hands es40 the golden.axp savestate baked from that same image (ES40_RESTORE), pristine desktop ~3 s after exec (~15 s end to end through the unit); rollback = remove assets/w2kalpha/golden.axp and it cold-boots"
     }
   },
   "render": {
@@ -152,7 +152,7 @@
   "ui": "desktop",
   "network": {
     "status": "host-only",
-    "note": "dec21143 at pci0.4 via pcap on the 172.31.64.0/30 veth x11-runtime.sh brings up, never bridged; telnet exec rides it (docs/guests/w2kalpha.md)"
+    "note": "dec21143 at pci0.4 via pcap on the veth w2kalpha-h/w2kalpha-g; w2kalpha-h enslaved to the OFFLINE retronet bridge vmbr-rn (rn-tapnet.sh), guest on DHCP (reserved 10.99.0.17/24, DNS 10.99.0.2, NO default route) behind the fail-closed W2KALPHARN-IN guard chain — reaches only the gateway CT 10.99.0.2 for the period corpus web on :80 (seamless, no proxy configured), never the LAN/gallery/internet. The telnet exec channel rides the new address (labhost dials 10.99.0.17:23). Rehomed 2026-08-23 from the pre-retronet host-only 172.31.64.0/30 veth (docs/lab/retronet/w2kalpha-retronet.md)"
   },
   "reset": {
     "stationDir": "w2kalpha",

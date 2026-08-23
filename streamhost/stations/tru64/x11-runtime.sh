@@ -1,26 +1,23 @@
 #!/bin/bash
 # x11-runtime.sh — the tru64 tile launcher (Tru64 UNIX 5.1B on es40).
 #
-# The THIRD non-QEMU x11-runtime streamhost tile (after IRIX/MAME and
-# w2kalpha) and the SIBLING of w2kalpha: the same es40 AlphaServer ES40
-# emulator (fork Wnt/es40) with the same headless shape — NO window, NO X
-# server (SDL_VIDEODRIVER=dummy), es40 publishes each finished frame into
-# $SH_SHM_PATH itself (SH_CAPTURE=shm, src/gui/shmfb.h) and serves mamectl/1
-# input on $SH_MAMECTL_SOCK (SH_INPUT_BACKEND=mamesock, src/gui/ctlsock.h,
-# MULTI-CLIENT: operator tools may inject beside the attached daemon). What
-# differs from w2kalpha is the boot path: this tile's flash.rom carries NO
-# arc autoboot script — SRM boots the disk/CD directly (dka0 / dka400).
+# A non-QEMU x11-runtime streamhost tile (IRIX/MAME was the first of that
+# kind): the es40 AlphaServer ES40 emulator (fork Wnt/es40) run headless — NO
+# window, NO X server (SDL_VIDEODRIVER=dummy), es40 publishes each finished
+# frame into $SH_SHM_PATH itself (SH_CAPTURE=shm, src/gui/shmfb.h) and serves
+# mamectl/1 input on $SH_MAMECTL_SOCK (SH_INPUT_BACKEND=mamesock,
+# src/gui/ctlsock.h, MULTI-CLIENT: operator tools may inject beside the
+# attached daemon). This tile's flash.rom carries NO arc autoboot script — SRM
+# boots the disk/CD directly (dka0 / dka400).
 #
-# CHECKPOINT PHASE (since 2026-08-16): the install is done and this launcher
-# runs the w2kalpha shape — every launch reflink-copies a read-only disk into
-# a throwaway work dir, so each launch is pristine. With a checkpoint staged
-# (assets/tru64/checkpoint/) it RESTORES an es40 savestate and lands the CDE
-# desktop in ~5 s; without one it cold-boots the seed the long way (~7-10 min).
-# The guest auto-logs into CDE (dtlogin's autoLogin resource in
-# /etc/dt/config/Xconfig + passwordless root), so even the cold path needs no
-# greeter — the Tru64 equivalent of w2kalpha's Windows autologon. The
-# install-era disk img/tru64.img is retained as the seed's lineage; nothing
-# reads it at runtime.
+# CHECKPOINT PHASE (since 2026-08-16): the install is done and every launch
+# reflink-copies a read-only disk into a throwaway work dir, so each launch is
+# pristine. With a checkpoint staged (assets/tru64/checkpoint/) it RESTORES an
+# es40 savestate and lands the CDE desktop in ~5 s; without one it cold-boots
+# the seed the long way (~7-10 min). The guest auto-logs into CDE (dtlogin's
+# autoLogin resource in /etc/dt/config/Xconfig + passwordless root), so even
+# the cold path needs no greeter. The install-era disk img/tru64.img is
+# retained as the seed's lineage; nothing reads it at runtime.
 #
 # Installed byte-for-byte as /data/vms/streamhost/stations/tru64/x11-runtime.sh
 # by scripts/streamhost-station.sh --x11. The shared runtime contract
@@ -41,8 +38,8 @@ CTL="${SH_MAMECTL_SOCK:-$D/ctl.sock}"
 # es40 blocks on startup until BOTH serial ports have a client; pumps.py
 # connects them and drains the consoles. The ports es40 LISTENS on come from
 # es40.cfg — change them there and here together. The listen bind is the
-# tile's atomic claim on the pair (w2kalpha owns 21964/21965; this tile owns
-# 21974/21975): a second es40 fails loudly, never silently.
+# tile's atomic claim on the pair (this tile owns 21974/21975): a second es40
+# fails loudly, never silently.
 SER0="${TRU64_SER0:-21974}"
 SER1="${TRU64_SER1:-21975}"
 
@@ -69,9 +66,9 @@ kill_pidfile() { # $1 = pidfile; kill ONLY the recorded pid, then WAIT for it.
 kill_pidfile "$D/mame.pid"
 kill_pidfile "$D/pumps.pid"
 
-# Per-launch pristine state, the w2kalpha shape: throwaway work dir + reflink
-# disk copy (COW on ZFS — instant; --sparse keeps the fallback cheap). The
-# guest writes to the copy only; the source image is never opened for write.
+# Per-launch pristine state: throwaway work dir + reflink disk copy (COW on
+# ZFS — instant; --sparse keeps the fallback cheap). The guest writes to the
+# copy only; the source image is never opened for write.
 #
 # WHICH disk depends on whether a CHECKPOINT is staged:
 #

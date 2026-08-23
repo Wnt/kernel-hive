@@ -2,8 +2,8 @@
 
 **Status: LIVE AND LISTED (2026-08-16).** `/os/tru64` streams and the
 station appears in the grid and museum hall. Every launch is pristine because
-the launcher reflink-copies a read-only disk, exactly the w2kalpha shape — and
-since the same day it **restores a checkpoint**: the 1280x1024 CDE desktop is
+the launcher reflink-copies a read-only disk — and since the same day it
+**restores a checkpoint**: the 1280x1024 CDE desktop is
 back **~3 s after exec** instead of the ~7-10 min cold boot (see
 [Checkpoint restore](#checkpoint-restore)). The cold path still exists as the
 fallback and still needs no greeter (dtlogin autologin).
@@ -15,7 +15,7 @@ PAK; it is now resolved (see [The licence, and how it was resolved](#the-licence
 Autologin resource is `Dtlogin*autoLogin: guest`; root remains passwordless for
 the serial console (`getty` on tty01) and `su`.
 
-## How boot-to-desktop works (mimics w2kalpha)
+## How boot-to-desktop works
 
 Three pieces, all baked into the seed:
 
@@ -27,8 +27,7 @@ Three pieces, all baked into the seed:
    which is what proved it live.
 2. **Passwordless root.** dtlogin's auto-attempt supplies no password, so
    root's hash was cleared in `/etc/passwd` (`root::0:1:…`). The station is
-   air-gapped (no NIC in `es40.cfg`), so this is console-only exposure —
-   the same trade w2kalpha's blank Administrator makes.
+   air-gapped (no NIC in `es40.cfg`), so this is console-only exposure.
 3. **Clean session.** `/etc/dt/config/C/sys.session` is a copy of
    `/usr/dt/config/C/sys.session` minus the `dtfile` and `dthelpview` lines,
    so the desktop comes up bare (front panel only) instead of with a File
@@ -196,8 +195,8 @@ any pointer claim here.
 
 ## Idle auto-pause and checkpoint restore — the two halves of "instant"
 
-This station is the w2kalpha family, not the QEMU family, and it now gets its
-instant feel the same way its sibling does — from two mechanisms that compose:
+This station runs the es40 emulator, not QEMU, and gets its instant feel from
+two mechanisms that compose:
 
 - **Between visits** the guest stays powered on and SIGSTOPped:
   `SH_IDLE_PAUSE_SECS=60` freezes the emulator at ~0 CPU when no visitor is
@@ -210,7 +209,7 @@ instant feel the same way its sibling does — from two mechanisms that compose:
   `a09816d`, which fixed the savestate defects that made restore unusable
   (8514/A accelerator state missing from the state file, host pointers in the
   NIC's saved state, and the ~30 s SRM decompress that every restore
-  overwrote). See [`w2kalpha.md`](w2kalpha.md) for the full diagnosis.
+  overwrote).
 
 `SH_IDLE_PAUSE_WARMUP_SECS` came down from **540 s to 60 s** with the
 checkpoint: 540 existed only because a cold boot took ~400-450 s to reach CDE
@@ -334,17 +333,17 @@ it is left in place for future work.
 
 The research that selected this OS (candidates, media, licensing, risk):
 [`docs/lab/research/alpha-second-os-candidates.md`](../lab/research/alpha-second-os-candidates.md).
-The sibling station's machinery this one reuses:
+The es40 savestate and headless-capture machinery is written up in
 [`docs/lab/research/w2kalpha-HANDOFF.md`](../lab/research/w2kalpha-HANDOFF.md).
 
 ## Identity
 
 - `osId` = `stationDir` = `tru64`; slot 141, udp 54141; archetype `putty-lcd`.
-- The SIBLING of `w2kalpha`: the identical emulated machine (es40 fork
-  `Wnt/es40`, AlphaServer ES40, Tsunami, 1× EV68 800 MHz, 512 MB, S3 Trio64,
-  sym53c810 SCSI, ALi PS/2, two serial ports) with a DIFFERENT firmware
-  lineage: this station's `flash.rom` has **no `arc` nvram autoboot** — SRM
-  boots UNIX directly. Do not share `rom/` between the two stations.
+- The emulated machine: es40 fork `Wnt/es40` (AlphaServer ES40, Tsunami,
+  1× EV68 800 MHz, 512 MB, S3 Trio64, sym53c810 SCSI, ALi PS/2, two serial
+  ports). This station's `flash.rom` has **no `arc` nvram autoboot** — SRM
+  boots UNIX directly, so its `rom/` lineage is specific to this station: do
+  not share it with another es40 station.
 
 ## Media (verified this session)
 
@@ -368,8 +367,9 @@ archive.org ZIP if layered products are ever wanted.
   base OS license `OSF-BASE` is expected on the media, CDE is a base subset).
 - Keyboard PASS (already proven at SRM), pointer verified or honestly
   UNVERIFIED with keyboard as the drive channel.
-- Checkpoint captured (disk + flash.rom pair), launcher flipped to the w2kalpha
-  reflink shape, reset → pristine CDE, then `listing` lifted.
+- Checkpoint captured (disk + flash.rom pair), launcher flipped to the reflink
+  shape (a read-only disk copied per launch), reset → pristine CDE, then
+  `listing` lifted.
 
 ## What is proven so far (all framebuffer evidence, 2026-08-11)
 
@@ -412,8 +412,7 @@ archive.org ZIP if layered products are ever wanted.
   new es40 before declaring the station up.
 - **ctlsock is MULTI-CLIENT since this station's fork build** (`ES40_TILE_NAME`
   names the HELLO banner): the streamhost daemon stays attached while
-  `ctltest.py` injects keystrokes beside it. w2kalpha carries the same binary
-  since 2026-08-16, so its old single-client caveat is gone too.
+  `ctltest.py` injects keystrokes beside it.
 - **Guest TOY clock**: the cfg pins `time` (es40 knob) so the installer does
   not start from a "preposterous time" 1996 reset. Set before the install's
   first boot; Tru64 has no timebomb, this is date sanity, not license work.
@@ -427,8 +426,8 @@ archive.org ZIP if layered products are ever wanted.
 `streamhost/stations/tru64/{x11-runtime.sh,pumps.py,station.env.fixture}`:
 headless es40 (`SDL_VIDEODRIVER=dummy`, `ES40_SHM_PATH`, `ES40_CTL_SOCK`,
 `ES40_TILE_NAME=tru64`, `ES40_POINTER_GAIN=2`, and `ES40_RESTORE` when a
-checkpoint is staged), serial pair **21974/21975** (w2kalpha owns
-21964/21965) with ser1 lent out as the exec channel, `SH_IDLE_PAUSE_SECS=60`
+checkpoint is staged), serial pair **21974/21975** with ser1 lent out as the
+exec channel, `SH_IDLE_PAUSE_SECS=60`
 with a 60 s warmup, reset=relaunch restoring the checkpoint. Assets:
 `/data/vms/streamhost/assets/tru64/{es40,es40.cfg,rom/,img/,checkpoint/,root/}`
 — every launch reflink-copies a read-only disk into the station's `work/`, so
@@ -445,5 +444,6 @@ stands.
 Stop `streamhost@tru64`, remove the station dir + assets, drop the registry
 entry (+ UI wiring: keyboardProfiles/machines/machineIdentity), regenerate,
 republish the three runtime manifests. The staged ISO under
-`/data/assets-staging/tru64/` and this doc stay as the record. w2kalpha is
-untouched by any of it (separate assets, rom lineage, serial pair, slot).
+`/data/assets-staging/tru64/` and this doc stay as the record. Nothing else on
+the box is touched — tru64's assets, rom lineage, serial pair and slot are all
+its own.

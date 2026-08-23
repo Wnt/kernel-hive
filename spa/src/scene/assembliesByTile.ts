@@ -436,5 +436,13 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
     keyboard: 'keyboardG', mouse: 'paramMouseE',
   },
+  // chokanji: 超漢字 / B-right/V (BTRON3) — a 2002 Japanese desktop PC. The 超漢字
+  // VM shipped to run on commodity PC/AT hardware, so a beige AT-era tower + CRT
+  // (Cirrus 800x600). Shares the towerC/crtC silhouette of the beige-PC era;
+  // its blue TRON accent (machineIdentity) sets it apart.
+  chokanji: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
 } as const satisfies Record<string, Assembly>;
 

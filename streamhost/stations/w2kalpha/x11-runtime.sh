@@ -48,11 +48,24 @@ CTL="${SH_MAMECTL_SOCK:-$D/ctl.sock}"
 SER0="${W2KALPHA_SER0:-21964}"
 SER1="${W2KALPHA_SER1:-21965}"
 
-kill_pidfile() { # $1 = pidfile; kill ONLY the recorded pid
-  local pf="$1" p
+kill_pidfile() { # $1 = pidfile; kill ONLY the recorded pid, then WAIT for it.
+  # The wait matters: resetMode=relaunch restarts THIS station on top of its own
+  # dying predecessor, and es40 re-binds the two serial listen ports
+  # (21964/21965) the instant it starts. Without waiting for the old es40 to
+  # actually leave /proc, the fresh launch races it for those ports and es40's
+  # serial bind can fall back to an ephemeral port — a silent wedge, since
+  # pumps.py then drains the wrong port and the guest blocks on startup (es40
+  # holds until BOTH consoles have a client). Kill, then poll until gone.
+  local pf="$1" p i
   [ -f "$pf" ] || return 0
   p="$(cat "$pf" 2>/dev/null || true)"
-  if [ -n "$p" ] && [ -e "/proc/$p" ]; then kill -9 "$p" 2>/dev/null || true; fi
+  if [ -n "$p" ] && [ -e "/proc/$p" ]; then
+    kill -9 "$p" 2>/dev/null || true
+    for i in $(seq 1 100); do
+      [ -e "/proc/$p" ] || break
+      sleep 0.1
+    done
+  fi
   : >"$pf"
 }
 
@@ -93,30 +106,24 @@ if [ -f "$GOLDEN_AXP" ]; then
   BOOT="restore from golden.axp (~3 s to desktop)"
 fi
 
-# Host-only guest network for the telnet exec channel (labctl exec w2kalpha).
-# es40.cfg's dec21143 uses the pcap backend on the GUEST end of a veth pair; the
-# guest holds a static IP (172.31.64.2/30) baked into the golden, and the host
-# answers on 172.31.64.1. Creating the pair is this tile's atomic claim on the
-# name — a second launcher for the same tile cannot duplicate it — and it is
-# idempotent across relaunches (reuse if present). Host-only by construction:
-# nothing bridges w2kalpha-h to the LAN, so the guest's telnet server (blank
-# Administrator, NTLM off) is reachable ONLY from this box, never off-host.
-NIC_H=w2kalpha-h
-NIC_G=w2kalpha-g
-if ! ip link show "$NIC_G" >/dev/null 2>&1; then
-  ip link add "$NIC_H" type veth peer name "$NIC_G" ||
-    {
-      echo "veth claim failed for $NIC_H/$NIC_G" >&2
-      exit 1
-    }
-fi
-ip addr replace 172.31.64.1/30 dev "$NIC_H"
-ip link set "$NIC_H" up
-ip link set "$NIC_G" up
-# veth TX checksum offload leaves locally-originated packets with unfilled
-# checksums, which es40's pcap capture then sees as corrupt; disable on both ends.
-ethtool -K "$NIC_H" tx off rx off >/dev/null 2>&1 || true
-ethtool -K "$NIC_G" tx off rx off >/dev/null 2>&1 || true
+# Guest network: the OFFLINE retronet bridge vmbr-rn, via this station's own
+# rn-tapnet.sh. es40.cfg's dec21143 uses the pcap backend on the GUEST end of a
+# veth pair (w2kalpha-g); rn-tapnet.sh enslaves the HOST end (w2kalpha-h) to
+# vmbr-rn, so the guest is a retronet host on DHCP (reserved 10.99.0.17, DNS
+# 10.99.0.2, NO default route) sharing real L2 with the gateway CT (10.99.0.2)
+# for the corpus web on :80 — while a fail-closed guard chain (W2KALPHARN-IN,
+# scoped to 10.99.0.17) drops every NEW flow the guest starts toward labhost.
+# The telnet exec channel (labctl exec w2kalpha, blank Administrator/NTLM off)
+# rides the new address: labhost dials 10.99.0.17:23 and the guest only ever
+# REPLIES toward labhost (ESTABLISHED, allowed). This REPLACED the pre-retronet
+# HOST-ONLY wiring (a 172.31.64.1/30 address on w2kalpha-h, guest static
+# 172.31.64.2); rn-tapnet.sh `up` also tears that down. It MUST run before es40
+# (pcap opens w2kalpha-g at boot) and is fail-closed: if the containment chain
+# does not verify, es40 never starts.
+"$D/rn-tapnet.sh" up || {
+  echo "w2kalpha rn-tapnet up failed — refusing to start es40" >&2
+  exit 1
+}
 
 # setsid detaches from this shell but stays inside ensure-station-x11.sh's qcap
 # scope cgroup, so BindsTo= teardown still reaches everything started here.
@@ -132,4 +139,25 @@ if [ ! -e "/proc/$P" ]; then
   cat "$D/es40.log" >&2 || true
   exit 1
 fi
+# The serial pair (21964/21965) is this tile's atomic claim: es40 binds both at
+# startup and pumps.py drains them. Verify BOTH listeners actually belong to our
+# es40 before declaring the tile up — if a relaunch raced its dying predecessor
+# and es40 fell back to an ephemeral serial port, the guest wedges at startup
+# (es40 blocks until both consoles have a client) and a silent "up" would hide
+# it until the first visitor met a black screen.
+for port in "$SER0" "$SER1"; do
+  ok=0
+  for i in $(seq 1 20); do
+    if ss -ltnp 2>/dev/null | grep -q ":$port .*pid=$P,"; then
+      ok=1
+      break
+    fi
+    sleep 0.5
+  done
+  if [ "$ok" != 1 ]; then
+    echo "es40 serial port $port not bound by pid $P — refusing to continue:" >&2
+    ss -ltnp 2>/dev/null | grep ":$port " >&2 || echo "(no listener at all)" >&2
+    exit 1
+  fi
+done
 echo "w2kalpha runtime up: es40 pid=$P pumps=$(cat "$D/pumps.pid") shm=$SHM ctl=$CTL boot=$BOOT"

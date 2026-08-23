@@ -274,6 +274,23 @@
       "udp_port": 54109,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/cbm8032/sta/golden.vsf."
     },
+    "chokanji": {
+      "dir": "/data/vms/streamhost/stations/chokanji",
+      "qmp": "/data/vms/streamhost/stations/chokanji/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "console": "fb",
+      "udp_port": 54149,
+      "notes": "BTRON3 / B-right/V (超漢字), Ken Sakamura's TRON. Verbatim launcher. Relative PS/2 mouse — machine pc-i440fx-11.0,vmport=off removes the vmmouse the ex-VMware disk would otherwise bind, so injected motion reaches the guest. No exec channel, no network (no retronet). resetMode=loadvm (golden inside chokanji.qcow2). See docs/guests/chokanji.md."
+    },
     "daybreak": {
       "dir": "/data/vms/streamhost/stations/daybreak",
       "qmp": "/data/vms/streamhost/stations/daybreak/qmp.sock",
@@ -986,7 +1003,7 @@
       "exec_shell": null,
       "console": "x11",
       "udp_port": 54141,
-      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — the SIBLING of w2kalpha on the same emulated machine, SRM-booting instead of ARC. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim (w2kalpha owns 21964/21965); ser1 doubles as the EXEC channel — exec_kind serialcon_e: the guest runs a getty on /dev/tty01 and the tile's pumps.py lends that line one client at a time over serial-exec.sock in the tile dir, so `labctl exec tru64 <cmd>` returns captured stdout and the guest's exit code with no network device in the machine. Pointer is ABSOLUTE and pixel-exact: the launcher sets ES40_POINTER_GAIN=2 because this guest moves 2 px per injected PS/2 count (odd targets land 1 px short), and the checkpoint carries X acceleration 1/1 threshold 0. Screen is 1280x1024 via -screen on the X server line in /etc/dt/config/Xservers. reset = relaunch restoring the CHECKPOINT: the launcher reflink-copies assets/tru64/checkpoint/tru64.img and restores checkpoint/tru64.axp (ES40_RESTORE), CDE desktop ~3 s after exec instead of the ~7-10 min cold boot; rollback = delete assets/tru64/checkpoint/ and it cold-boots img/tru64-seed.img."
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — SRM-boots the disk directly, no ARC autoboot. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim; ser1 doubles as the EXEC channel — exec_kind serialcon_e: the guest runs a getty on /dev/tty01 and the tile's pumps.py lends that line one client at a time over serial-exec.sock in the tile dir, so `labctl exec tru64 <cmd>` returns captured stdout and the guest's exit code with no network device in the machine. Pointer is ABSOLUTE and pixel-exact: the launcher sets ES40_POINTER_GAIN=2 because this guest moves 2 px per injected PS/2 count (odd targets land 1 px short), and the checkpoint carries X acceleration 1/1 threshold 0. Screen is 1280x1024 via -screen on the X server line in /etc/dt/config/Xservers. reset = relaunch restoring the CHECKPOINT: the launcher reflink-copies assets/tru64/checkpoint/tru64.img and restores checkpoint/tru64.axp (ES40_RESTORE), CDE desktop ~3 s after exec instead of the ~7-10 min cold boot; rollback = delete assets/tru64/checkpoint/ and it cold-boots img/tru64-seed.img."
     },
     "vic20": {
       "dir": "/data/vms/streamhost/stations/vic20",
@@ -1020,7 +1037,7 @@
       "exec_shell": null,
       "console": "x11",
       "udp_port": 54140,
-      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); exec = telnet_e: labctl exec w2kalpha runs a captured command over the guest W2K Telnet Server (blank Administrator, NTLM off) reached at 172.31.64.2:23 on the host-only veth w2kalpha-h/g that x11-runtime.sh brings up; the guest holds a static IP baked into the golden and its dec21143 (pcap backend) is at pci0.4 in es40.cfg; reset = relaunch restoring the golden CHECKPOINT: the launcher reflink-copies the golden nt.img and hands es40 the golden.axp savestate baked from that same image (ES40_RESTORE), pristine desktop ~3 s after exec (~15 s end to end through the unit); rollback = remove assets/w2kalpha/golden.axp and it cold-boots"
+      "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); exec = telnet_e: labctl exec w2kalpha runs a captured command over the guest W2K Telnet Server (blank Administrator, NTLM off) reached at 10.99.0.17:23 over the OFFLINE retronet bridge vmbr-rn that rn-tapnet.sh (called from x11-runtime.sh) enslaves the guest's veth w2kalpha-h onto; the guest is on DHCP (reserved 10.99.0.17/24, DNS 10.99.0.2, NO default route — containment) baked into the golden, its dec21143 (pcap backend) at pci0.4 in es40.cfg carries a unique per-station MAC (scrubbed placeholder 02:00:00:00:00:11; real value RN_W2KALPHA_MAC in registry/local.env, per the fleet scheme in WEB-PROXY.md), and the fail-closed W2KALPHARN-IN guard chain drops every NEW flow the guest starts toward labhost; seamless corpus web on the gateway :80, no proxy; reset = relaunch restoring the golden CHECKPOINT: the launcher reflink-copies the golden nt.img and hands es40 the golden.axp savestate baked from that same image (ES40_RESTORE), pristine desktop ~3 s after exec (~15 s end to end through the unit); rollback = remove assets/w2kalpha/golden.axp and it cold-boots"
     },
     "win11": {
       "dir": "/data/vms/streamhost/stations/win11",

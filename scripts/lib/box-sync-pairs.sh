@@ -257,6 +257,15 @@ box_sync_load_pairs() {
   # box copies silently drift from the repo. See ICQ-STATION-tru64.md.
   box_sync_add_pair tru64-rn-tapnet streamhost/stations/tru64/rn-tapnet.sh "$BOX_ROOT/stations/tru64/rn-tapnet.sh" exact repo
   box_sync_add_pair tru64-x11-runtime streamhost/stations/tru64/x11-runtime.sh "$BOX_ROOT/stations/tru64/x11-runtime.sh" exact repo
+  # w2kalpha's retronet veth lifecycle helper + its es40 launcher. Box-authored
+  # mirror pairs like the rn-tapnet helpers above: the generic launcher sweep
+  # below globs only qemu-streamhost.sh, so an es40 x11-runtime.sh is never picked
+  # up, and rn-tapnet.sh is a launcher-called helper, not an emit aux file — so
+  # without these two the box copies silently drift from the repo. rn-tapnet.sh
+  # re-homes the guest's dec21143 pcap veth onto vmbr-rn (guest 10.99.0.17). See
+  # docs/lab/retronet/w2kalpha-retronet.md.
+  box_sync_add_pair w2kalpha-rn-tapnet streamhost/stations/w2kalpha/rn-tapnet.sh "$BOX_ROOT/stations/w2kalpha/rn-tapnet.sh" exact repo
+  box_sync_add_pair w2kalpha-x11-runtime streamhost/stations/w2kalpha/x11-runtime.sh "$BOX_ROOT/stations/w2kalpha/x11-runtime.sh" exact repo
   # tru64's CDE Xsession.d ICQ fixture. This box copy is the REFERENCE copy; the
   # live one is baked onto the guest's own disk at
   # /etc/dt/config/Xsession.d/9999.icq-fixture and only runs on a cold boot.

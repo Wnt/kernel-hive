@@ -135,6 +135,7 @@ MANIFEST=(
   "sunos414       |tiles/sunos414.sh             |Sunos414          |graphical |~2-4h   |vision   |sunos414-golden.qcow2 + checkpoint (SunOS 4.1.4 -> OpenWindows 3 desktop over cg3, 1024x768x8)"
   "aux            |tiles/aux.sh                  |Aux               |graphical |~2-4h   |vision   |aux-golden.qcow2 + pram-golden.qcow2 + checkpoint (A/UX 3.0.1 -> Finder + CommandShell desktop, 1152x870x8)"
   "rhapsody       |tiles/rhapsody.sh             |Rhapsody          |installed |~1-2h   |partial  |rhapsody-golden.qcow2 (Rhapsody 5.1 DR2 x86 on a 2 GB IDE disk, /opt/qemu-rhapsody) + golden"
+  "chokanji       |tiles/chokanji.sh             |Chokanji          |retro     |~2-5m   |full     |chokanji.qcow2"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
