@@ -324,6 +324,14 @@ box_sync_load_pairs() {
   # station (no chat client). See docs/lab/retronet/WEB-STATION-os2warp.md.
   box_sync_add_pair os2warp-rn-tapnet streamhost/stations/os2warp/rn-tapnet.sh "$BOX_ROOT/stations/os2warp/rn-tapnet.sh" exact repo
 
+  # rhapsody retronet WEB plane: same mirror-pair shape again. The generic
+  # launcher sweep carries qemu-streamhost.sh, but NOT the helper it calls, so
+  # without this pair the box checkout has rn-tapnet.sh and the station dir does
+  # not — and the launcher dies at `bash "$B/rn-tapnet.sh" up` with "No such file
+  # or directory", i.e. the station cannot start at all. Web-only (no ICQ
+  # persona: DR2 has no OSCAR client). See docs/lab/retronet/WEB-STATION-rhapsody.md.
+  box_sync_add_pair rhapsody-rn-tapnet streamhost/stations/rhapsody/rn-tapnet.sh "$BOX_ROOT/stations/rhapsody/rn-tapnet.sh" exact repo
+
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.
   box_sync_add_pair tiles-json scripts/tiles.json.sample "$BOX_ROOT/tiles.json" exact box

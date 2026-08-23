@@ -78,3 +78,9 @@ Passwords go in gitignored `registry/local.env` as
 
 Append one line per stream milestone: `YYYY-MM-DDThh:mmZ <stream> <what>`.
 - 2026-08-23 fleet-data: `retronet` registry block + ICQ-roster merge landed — 12 members backfilled, `Retronet` column on /fleet, `stations-registry.py` now fails the gate on address/plane/roster/doc drift.
+- 2026-08-23T22:50Z icq-winxp: UIN `51000` LIVE on **ICQ 2001b build 3659** (fleet standard, no deviation). Silent self-reconnect at t+17s on the `labctl reset` wake, SSI roster by name, HiveBot greeted. Windows Firewall stays ON — the first-run alert is answered **Keep Blocking** (XP's firewall is inbound-only, so only ICQ's unused P2P listener is blocked). Two findings worth stealing: deliver the installer by **swapping the CD medium** (IE8's download window never paints and winxp has no exec channel), and **idle auto-pause silently DISCARDS QMP input** — send `cont` and the input events back-to-back on one connection, never restart mid-install. `51000:winxp` appended to `RN_BOT_PERSONAS` in `/etc/retronet/bot.env`; roster row flipped. Docs: [`ICQ-STATION-winxp.md`](ICQ-STATION-winxp.md).
+
+2026-08-23T19:49Z coordinator box-deploy --apply → box at main@abb8171 (unblocks rhapsody launcher; no restarts)
+2026-08-23T20:0xZ icq-winxp LIVE — UIN 51000, ICQ 2001b b3659, SSI, greeted
+2026-08-23T2x:xxZ icq-os2warp LIVE — UIN 23000, ICQ/2 1.503i, legacy v5 UDP, client-local roster
+2026-08-23T2x:xxZ coordinator bot.py GREETINGS/STATION_BLURB row for os2warp (w2kalpha row owed)

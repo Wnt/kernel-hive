@@ -53,6 +53,11 @@ GREETINGS: dict[str, list[str]] = {
     "winxp": ["whoa, you got XP? that's a brand new one :)", "hey! is that the XP box?"],
     "nt4": ["hey, did you just sign on with the NT 4? very serious machine :)", "hi! that's the NT box isn't it?"],
     "beos": ["hey! you using BeOS?! that's rare :)", "hi there — are you rocking Be machine?"],
+    "os2warp": [
+        "hey, is that OS/2 Warp? proper multitasking :)",
+        "oh nice — the Warp box. Workplace Shell, right?",
+        "hi! that's the OS/2 machine isn't it?",
+    ],
     "tru64": ["hey, are you the one on the Alpha? :)", "hi! was it you that runs the Tru64 OS? — nice hardware."],
     "solaris": [
         "hey, someone on the Solaris box? :)",
@@ -69,6 +74,7 @@ STATION_BLURB: dict[str, str] = {
     "winxp": "a Windows XP PC",
     "nt4": "a Windows NT 4 workstation",
     "beos": "a BeOS R5 machine",
+    "os2warp": "an IBM OS/2 Warp 4 PC",
     "tru64": "a DEC Alpha running Tru64 UNIX",
     "solaris": "a Sun workstation running Solaris 10 with the CDE desktop",
 }

@@ -11,8 +11,8 @@
     { "station": "tru64",    "uin": "64000", "nick": "tru64",    "client": "unix-oscar", "onboarded": true },
     { "station": "beos",     "uin": "50000", "nick": "beos",     "client": "icbm",       "onboarded": true },
     { "station": "macos753", "uin": "75300", "nick": "macos753", "client": "mac-oscar",  "onboarded": false },
-    { "station": "winxp",    "uin": "51000", "nick": "winxp",    "client": "icq2001b",   "onboarded": false },
+    { "station": "winxp",    "uin": "51000", "nick": "winxp",    "client": "icq2001b",   "onboarded": true },
     { "station": "w2kalpha", "uin": "50010", "nick": "w2kalpha", "client": "icq2001b",   "onboarded": false },
-    { "station": "os2warp",  "uin": "23000", "nick": "os2warp",  "client": "tbd",        "onboarded": false }
+    { "station": "os2warp",  "uin": "23000", "nick": "os2warp",  "client": "icq2-1503i", "onboarded": true  }
   ]
 }

@@ -179,3 +179,40 @@ sync
 
 Then **cold boot** (no `-loadvm`) with `-device tulip,...,mac="$RN_RHAPSODY_MAC"`
 and re-bake the `golden` snapshot from the settled desktop.
+
+That recipe was replayed onto the production disk on 2026-08-23 and the golden
+re-baked from it, so the station's live checkpoint **is** a retronet member: it
+restores with `en0` at `10.99.0.22`, no default route, and OmniWeb 3.0 open on
+the Space Jam corpus page. Verified after the re-bake, from the restored
+checkpoint, on the wire (`tcpdump -i rhaprn0`):
+
+```
+10.99.0.22.1062 > 10.99.0.2.80: GET /index.cgi HTTP/1.0 / Host: spacejam.com
+10.99.0.2.80 > 10.99.0.22.1062: HTTP/1.0 200 OK
+```
+
+## Operating notes — three things that look like faults and are not
+
+**`systemctl stop streamhost@rhapsody` stops the GUEST, not just the daemon.**
+The unit's `ExecStop` runs `stop-station-qemu.sh`, which tears QEMU down by
+pidfile. To detach the daemon while keeping the guest up you cannot use the
+unit; launch `qemu-streamhost.sh` by hand instead. Stopping the unit mid-bake
+costs a boot cycle (the disk is fine — the guest is killed, and DR2 fscks on the
+next boot).
+
+**While the daemon runs it owns `serial.sock`,** so a direct
+`serialexec.run(...)` against the station dir fails with *"could not log in over
+the serial line (no login prompt)"*. That is contention, not a broken getty: use
+`labctl exec rhapsody '<cmd>'`, which goes through the daemon. Direct
+`serialexec` is for a bring-up rig the daemon is not attached to.
+
+**Raw QMP `input-send-event` does not drive the pointer after a `loadvm`
+restore.** Injecting relative deltas straight into QMP works on a cold-booted
+guest (that is how the golden's OmniWeb window was opened), but after a
+checkpoint restore the same events produce no cursor motion and no clicks. The
+production input path is the daemon's abs->rel bridge, which re-homes itself on
+resume (`rel_bridge.rs`, SIGUSR2); raw injection bypasses that and desyncs
+against the restored PS/2 state. **Consequence for evidence:** a post-restore
+*browser* interaction cannot be proven by QMP injection — prove the restored
+network with `labctl exec` plus a wire capture, as above, and leave pointer
+behaviour to the operator eyeball this station is still pending.

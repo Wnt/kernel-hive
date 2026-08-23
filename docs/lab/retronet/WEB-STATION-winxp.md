@@ -13,8 +13,11 @@ This station follows the win98se pathfinder ([`ICQ-STATION.md`](ICQ-STATION.md))
 and its NT-family sibling ([`ICQ-STATION-win2000.md`](ICQ-STATION-win2000.md));
 read those for the shared design. This doc records what is **specific to winxp**.
 
-**Messaging (ICQ/OSCAR, personas, the greeter bot) is deliberately NOT part of
-this station.** winxp is web-only. A later wave does messaging.
+**Messaging arrived on 2026-08-23** and is documented separately in
+[`ICQ-STATION-winxp.md`](ICQ-STATION-winxp.md): ICQ 2001b signs UIN `51000` in to
+the OSCAR gateway over this same link. That wave changed **nothing** described
+here — no NIC, MAC, DHCP reservation, guard chain or proxy setting — so this doc
+remains the authority on the bridge itself.
 
 ## The wiring, at a glance
 
@@ -87,6 +90,11 @@ containment toward labhost or the internet (that is topology + no default route
 + the `WINXPRN-IN` chain). Disabling it would trade a real protection for
 nothing — inbound echo is all the retronet actually wanted. Opening **no TCP
 port** keeps the guest's listeners unreachable from the bridge.
+
+That rule survived the ICQ wave intact: ICQ's first-run *Windows Security Alert*
+was answered **Keep Blocking**, so the client still has no firewall exception and
+no inbound hole — its OSCAR link is outbound-only. See
+[`ICQ-STATION-winxp.md`](ICQ-STATION-winxp.md).
 
 ## Containment — the guest reaches the retronet and nothing else
 
