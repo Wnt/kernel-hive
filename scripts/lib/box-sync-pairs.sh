@@ -292,6 +292,11 @@ box_sync_load_pairs() {
   box_sync_add_pair win2000-icq-nudge-unit scripts/retronet/win2000-icq-nudge.service /etc/systemd/system/win2000-icq-nudge.service exact repo daemon-reload
   box_sync_add_pair win2000-icq-nudge-timer scripts/retronet/win2000-icq-nudge.timer /etc/systemd/system/win2000-icq-nudge.timer exact repo daemon-reload
 
+  # os2warp retronet WEB plane: its bridge-tap lifecycle helper, same mirror-pair
+  # shape as win98se's above. No ICQ nudge — os2warp is a web-only retronet
+  # station (no chat client). See docs/lab/retronet/WEB-STATION-os2warp.md.
+  box_sync_add_pair os2warp-rn-tapnet streamhost/stations/os2warp/rn-tapnet.sh "$BOX_ROOT/stations/os2warp/rn-tapnet.sh" exact repo
+
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.
   box_sync_add_pair tiles-json scripts/tiles.json.sample "$BOX_ROOT/tiles.json" exact box
