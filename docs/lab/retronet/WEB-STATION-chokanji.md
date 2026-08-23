@@ -152,18 +152,20 @@ carried forward — it was **cold re-baked**.
 | | |
 |---|---|
 | Live disk (golden lives inside it) | `/data/gallery-guests/Chokanji/chokanji.qcow2` |
-| **Pre-change backup** (disk + its golden) | `/data/vms/sandbox/rn-web-chokanji/backup/chokanji.qcow2.prern` |
-| Pre-change launcher | `/data/vms/sandbox/rn-web-chokanji/backup/qemu-streamhost.sh.prern` |
+| **Pre-change backup** (disk + its golden) | `/data/gallery-guests/Chokanji/chokanji.qcow2.prern-2026-08-23` |
+| Pre-change launcher | `/data/gallery-guests/Chokanji/qemu-streamhost.sh.prern-2026-08-23` |
 | Pre-change disk sha256 | `cbdd7e2d44dbd557a5336e6cf2fe1f35d11d63333fc3f67c1c06900db5a7f088` |
 
 The backup was taken with QEMU **stopped** and verified byte-identical to the live
-disk before anything was touched.
+disk before anything was touched. It is kept **next to the disk**, not in the
+bring-up sandbox, deliberately: `wt.sh gc` prunes merged sandboxes, and a rollback
+artifact that a routine cleanup can delete is not a rollback artifact.
 
 **Rollback** (returns the station to its pre-retronet exhibit exactly):
 
 ```
 ssh lab 'systemctl stop streamhost@chokanji'
-ssh lab 'cp -a /data/vms/sandbox/rn-web-chokanji/backup/chokanji.qcow2.prern \
+ssh lab 'cp -a /data/gallery-guests/Chokanji/chokanji.qcow2.prern-2026-08-23 \
                 /data/gallery-guests/Chokanji/chokanji.qcow2'
 # revert streamhost/stations/chokanji/qemu-streamhost.sh to its pre-NIC form
 ssh lab 'systemctl start streamhost@chokanji'
