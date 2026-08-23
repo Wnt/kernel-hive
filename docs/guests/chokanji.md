@@ -111,16 +111,21 @@ the vmmouse trap below.
   `generic`.
 - Credentials: none — BTRON boots straight to the desktop, no login. `credentialsRef`
   `guest/chokanji` is a placeholder reference (no values).
-- Rollback: keep the pre-change launcher+golden pair; the disk is reproducible from
-  the archived media via the builder. No live station is touched during bring-up
-  (all work namespaced under `/data/vms/sandbox/chokanji/`).
+- Rollback: the pre-retronet disk (carrying its own pre-change `golden`) and
+  launcher are kept beside the guest as
+  `/data/gallery-guests/Chokanji/chokanji.qcow2.prern-2026-08-23` and
+  `qemu-streamhost.sh.prern-2026-08-23` — copy the disk back over
+  `chokanji.qcow2` and revert the launcher. The disk is *also* reproducible from
+  the archived media via the builder, but that is a rebuild, not a rollback: it
+  would not carry the network configuration, which lives in the disk.
+  Bring-up work is namespaced under `/data/vms/sandbox/`; the live station is
+  touched only to install a proven result.
 
-## Dark launch
+## Listing
 
-`/os/chokanji` on the live origin, via `scripts/dev/darklaunch-station.py publish`
-(listed:false overlay, grid + 3D hall unaffected) — for the operator to eyeball
-before promotion to the grid (publish `gallery-manifest.json`). Re-arm the overlay
-after any `serve-https-spa.sh` manifests deploy (it republishes from the registry).
+Listed on the grid since `890d312` (promoted off dark launch). It is an ordinary
+grid station now: no `darklaunch.d` overlay to re-arm after a
+`serve-https-spa.sh` manifests deploy.
 
 ## Known limitations
 
