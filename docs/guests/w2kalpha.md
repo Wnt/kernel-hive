@@ -183,14 +183,18 @@ stations. Wiring:
   paths, spaces, `%VARS%`, `if exist`, 8.3 short paths — works. Also the server
   is single-threaded, so keep exec calls sequential.
 
-**Interactive-session x86 does NOT work — telnet-session x86 does.** x86 apps
-(FX!32) launch fine from the *telnet* (network-logon) session but fail with "The
-system cannot find the path specified" from the *interactive* auto-logon console
-session — reproducible across a clean reboot, identical PATH, same Administrator
-user. So x86 GUI apps cannot be shown on the framebuffer; they are run once over
-telnet to register them in FX!32, and `x86prog` (a native Alpha app) displays
-the list on the console. Root cause unresolved (leading theory: the FX!32 server
-services x86 launches on a window station the interactive session can't reach).
+**Interactive-session x86 DOES work — from Start ▸ Run.** An earlier note here
+claimed the opposite (that x86 apps launch only from the *telnet* network-logon
+session and fail with "The system cannot find the path specified" from the
+interactive auto-logon console, so x86 GUI apps could never be shown on the
+framebuffer). That was disproved on 2026-08-23: the x86 `C:\Apps\sol.exe`
+launched from **Start ▸ Run** in the interactive session opens Solitaire *on the
+framebuffer*, and the x86 ICQ 2001b installer launched the same way runs its
+full GUI wizard there. Whatever produced the original failure was a property of
+that particular launch path, not of FX!32 in the interactive session. x86 GUI
+apps therefore CAN be exhibited. (`x86prog`, a native Alpha app, still lists what
+FX!32 has translated.) Evidence and the FX!32 inventory:
+[`docs/lab/retronet/ICQ-STATION-w2kalpha.md`](../lab/retronet/ICQ-STATION-w2kalpha.md).
 
 ## Verification (the release gate that was run)
 
