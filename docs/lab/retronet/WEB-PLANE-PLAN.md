@@ -40,6 +40,15 @@ configure the guest by hand to the address you reserved. The registry's
 `retronet.address` is cross-validated for uniqueness too, so the two agree or
 the gate fails.
 
+The two ledgers are deliberately split — `RETRONET_DHCP_RESERVATIONS` is
+gitignored because it holds real MACs, `retronet.address` is committed — so the
+gate can only enforce uniqueness across the committed half; **it can never see
+`local.env`**. They can therefore still drift in one direction: an address
+reserved on the box but never written into a registry `retronet` block is
+invisible to the gate, and nothing will warn you. Reserving first and landing the
+registry block in the same wave is what closes that, which is why the order above
+is the rule and not a preference.
+
 ## Principles
 
 - **Corpus-only, offline by construction.** The proxy answers every request
