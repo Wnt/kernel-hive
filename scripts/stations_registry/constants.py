@@ -38,6 +38,11 @@ LABCTL_KEYS = (
     "exec_kind",
     "exec_user",
     "exec_key",
+    # exec_shell: the guest login shell's family, for exec kinds whose framing
+    # depends on it. Only telnet_unix_e reads it today -- "sh" means the exit
+    # code is $?, absent means csh's $status (sunos414's default). Getting it
+    # wrong is invisible: output is correct and the exit code is always -1.
+    "exec_shell",
     "console",
     "udp_port",
     "notes",

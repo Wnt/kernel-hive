@@ -310,8 +310,25 @@ def cmd_exec(argv):
                 pw = None
         if pw is not None:
             env["SUN_PASS"] = pw
-        r = subprocess.run(["python3", SUNEXEC, host, str(port), cmdline], env=env)
-        sys.exit(r.returncode)
+        # Keep the guest AWAKE for the whole call. ensure_running() above thaws a
+        # guest the daemon idle-paused, but the daemon's reconciler re-asserts
+        # that pause ~60 s after the last visitor -- and on a TCG station a
+        # telnet login plus one command can easily outlive that window, which
+        # looks exactly like a broken exec channel: the socket connects, the
+        # login banner never arrives, and the client times out on an empty read.
+        # So re-issue `cont` while the client runs. Bounded by the client's own
+        # timeouts, and a no-op on a guest that is already running.
+        proc = subprocess.Popen(["python3", SUNEXEC, host, str(port), cmdline], env=env)
+        qmp = c.get("qmp")
+        while True:
+            try:
+                sys.exit(proc.wait(timeout=15))
+            except subprocess.TimeoutExpired:
+                if qmp:
+                    try:
+                        hmp(qmp, "cont", timeout=10)
+                    except Exception:
+                        pass
     if kind == "ssh" and port:
         user = c.get("exec_user") or "root"
         key = c.get("exec_key")
