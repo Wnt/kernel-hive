@@ -84,3 +84,4 @@ Append one line per stream milestone: `YYYY-MM-DDThh:mmZ <stream> <what>`.
 2026-08-23T20:0xZ icq-winxp LIVE — UIN 51000, ICQ 2001b b3659, SSI, greeted
 2026-08-23T2x:xxZ icq-os2warp LIVE — UIN 23000, ICQ/2 1.503i, legacy v5 UDP, client-local roster
 2026-08-23T2x:xxZ coordinator bot.py GREETINGS/STATION_BLURB row for os2warp (w2kalpha row owed)
+2026-08-23T23:5xZ icq-w2kalpha-b: transplant PROVEN — stock x86 ICQ 2001b installed on a throwaway x86 W2K clone and moved onto the Alpha (payload + exact registry delta); UIN 50010 signs into the gateway from w2kalpha, twice, the second time unattended after a power cycle on the saved password. NOT onboarded: Keep-connection-alive lives in ICQ's account DB and needs the Preferences UI, which is blocked by this station's pointer defect (MOVEA does not track; measured, and it is NOT mouse acceleration). Golden bake + reset acceptance still owed. Docs: ICQ-STATION-w2kalpha.md
