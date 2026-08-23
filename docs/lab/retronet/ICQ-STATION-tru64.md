@@ -552,14 +552,28 @@ baked from + `rom/`), not a QEMU snapshot. See
 [`docs/guests/tru64.md`](../../guests/tru64.md#checkpoint-restore).
 
 - **LIVE checkpoint:** `assets/tru64/checkpoint/{tru64.axp,tru64.img,rom/}` —
-  re-baked 2026-08-23 for the **window-chrome fix** (see §window chrome): the
-  disk carries `/home/guest/.gtkrc`, `/usr/local/bin/cmaphold` and a cold-boot
-  fixture that launches cmaphold before Gaim, and the baked RAM holds cmaphold +
-  Gaim running with **grey** chrome, the buddy list composed top-right (HiveBot
-  online by name, 1/5) and a chat window carrying the greeting. Baked via the
-  serial menu's save-and-exit (option 5), so state and disk are an atomic pair.
+  re-baked **2026-08-23 to add the web browser** (a CDE Front-Panel "Web" icon
+  launching Netscape 4.76 on the corpus —
+  [`WEB-BROWSER-tru64.md`](WEB-BROWSER-tru64.md)) on top of the window-chrome fix:
+  the disk carries the browser launcher bits (`RetronetWeb.{dt,fp}`,
+  `/etc/dt/config/C/sys.dtwmrc`, `/usr/local/bin/webbrowser`, guest
+  `.netscape/preferences.js` homed on `http://search.retronet/`) alongside
+  `/home/guest/.gtkrc` + `/usr/local/bin/cmaphold`, and the baked RAM holds
+  cmaphold + Gaim with **grey** chrome, the buddy list composed top-right (HiveBot
+  online by name), the greeting chat window, and the Web icon on the panel. Baked
+  via the serial menu's save-and-exit (option 5), so state and disk are an atomic
+  pair.
+  - `tru64.axp` sha256 `030b726af4a644198741e16d9f1d1ee87fdd5827dd692508d46a6855f7debe2d` (274 641 799 bytes)
+  - `tru64.img` sha256 `14730c97986a585ce2e09b267bc84f7853a2ee70c5e35611adebcc6c2de4dab1`
+- **Pre-browser backup** (the window-chrome-fixed Gaim golden — the rollback for
+  the browser change): `assets/tru64/checkpoint.bak-prebrowser-20260823/`,
+  byte-verified against the source before anything was touched, with a
+  `SHA256SUMS` beside it.
   - `tru64.axp` sha256 `622b9383e60d9c2d5be1e69b42669cf29422b8e16230b7658e78dea360304582` (273 622 947 bytes)
   - `tru64.img` sha256 `d31d820048d283199b39aa662613be249fd7c8f9320ba646d4331d2bc69bb41b`
+  - **Rollback:** `systemctl stop streamhost@tru64`, copy that dir's
+    `tru64.axp`/`tru64.img`/`rom` over `checkpoint/`, `systemctl start
+    streamhost@tru64`.
 - **Pre-chrome-fix backup** (the previous Gaim golden — the rollback for the
   chrome change): `assets/tru64/checkpoint.bak-preblackfix-20260823/`,
   byte-verified against the source before anything was touched, with a

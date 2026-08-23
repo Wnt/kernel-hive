@@ -1,10 +1,13 @@
 # tru64 retronet web browser — Netscape Communicator 4.76, made discoverable
 
-**Status: script written + proven on a sandbox clone (2026-08-23); NOT yet
-applied to the live golden.** The idempotent installer is
+**Status: LIVE — applied to the Gaim-fixed tru64 golden and re-baked
+(2026-08-23).** The idempotent installer is
 [`streamhost/stations/tru64/install-webbrowser.sh`](../../../streamhost/stations/tru64/install-webbrowser.sh).
-It is a coordinated follow-up: apply it to the **Gaim-fixed** tru64 golden, then
-re-bake the checkpoint (see [Applying to the golden](#applying-to-the-golden)).
+It was run in-guest as root over the live serial exec channel and the es40
+checkpoint re-baked; the restored station now shows a CDE Front-Panel "Web" icon
+whose action launches Netscape 4.76 on the corpus, with the Gaim ICQ desktop
+(grey chrome, HiveBot online, SSI roster by name) intact. See
+[Applying to the golden](#applying-to-the-golden) for the as-run record.
 
 ## The browser, and why
 
@@ -104,20 +107,64 @@ channels here — see [`docs/guests/tru64.md`](../../guests/tru64.md) "Pointer")
 A real visitor's mouse click fires the standard CDE `PUSH_ACTION`; the identical
 action was proven via `dtaction`.
 
-## Applying to the golden
+## Applying to the golden — as run (2026-08-23)
 
-A coordinated follow-up **after the Gaim fix lands** (that agent owns the live
-station + golden — this work touched neither). On the live/golden guest:
+Applied to the **Gaim-fixed / black-chrome-fixed** live golden (a coordinated
+follow-up after the two prior tru64 agents). The re-bake **is** the deploy — the
+checkpoint is a box asset — so **no `box-deploy --apply`** was run (the box was
+behind with live win95/winxp/hpuxvue/os2warp onboarding edits; a full apply
+would clobber them). Exact sequence on the LIVE es40 station:
 
-1. deliver + run the script (exec channel or in-guest `httpfetch`), as root:
-   `RN_HOME=http://search.retronet/ /bin/ksh install-webbrowser.sh`;
-2. arrange the scene (open Netscape at the corpus home if the checkpoint should
-   ship with a browser window), then **re-bake the checkpoint** from a session
-   started after the script ran (the standard es40 serial-menu save-and-exit —
-   [`docs/guests/tru64.md`](../../guests/tru64.md) "Checkpoint restore");
-3. `box-deploy` + restart the station; acceptance = the Web icon on the restored
-   panel and Netscape rendering the corpus.
+1. **Back up the golden first** — byte-copy + SHA256 to
+   `assets/tru64/checkpoint.bak-prebrowser-20260823/` (verified identical to the
+   pre-browser golden: `tru64.axp`
+   `622b9383e60d9c2d5be1e69b42669cf29422b8e16230b7658e78dea360304582`, `tru64.img`
+   `d31d820048d283199b39aa662613be249fd7c8f9320ba646d4331d2bc69bb41b`).
+2. `SH_IDLE_PAUSE_SECS=0` in the live `station.env`, `systemctl restart` for a
+   clean running guest that cannot freeze mid-work.
+3. **Deliver over the CT, not labhost.** The guard chain drops guest→labhost, so
+   `pct push` the script to the gateway CT `951` and serve it there
+   (`python3 -m http.server 8099` on `10.99.0.2`), then in-guest
+   `/usr/local/bin/httpfetch 10.99.0.2 /install-webbrowser.sh /tmp/x 8099` and
+   `RN_HOME=http://search.retronet/ /bin/ksh /tmp/x` as root over the serial
+   exec channel.
+4. **Surface the Front-Panel icon** — dtwm only reads `RetronetWeb.fp` /
+   `sys.dtwmrc` at start, so the panel must be reloaded. A full `xlogin`
+   stop/start works but is the CDE **cold-login** path: it re-runs the fixture
+   **and** CDE session-restore, which brings back a *second* gaim plus stale
+   `climm`/`dxconsole` windows from an older saved session. The golden's correct
+   state is **exactly one `gaim` + one `cmaphold`** (the fixture's), so kill the
+   duplicates/leftovers and relaunch the fixture once, as `guest`, with
+   `HOME=/home/guest DISPLAY=:0 XAUTHORITY=/home/guest/.Xauthority`
+   (`su guest -c` sets neither HOME nor DISPLAY — both must be explicit).
+5. **Prove it on the framebuffer** — Web icon on the main panel;
+   `dtaction RetronetWeb` (identical to the panel `PUSH_ACTION`) launches Netscape
+   4.76 at `http://search.retronet/` ("Document: Done"); Gaim chrome still grey,
+   64000 online, roster by name.
+   - **TRAP: never drive Netscape/`dtaction` over the serial exec channel.**
+     `dtaction` blocks on the long-lived browser and wedges the fire-and-forget
+     relay (`tru64exec: could not reach a shell`). Recovery: connect to the LIVE
+     `serial-exec.sock` as an ordinary client and send Ctrl-C (`\x03`) — the tty
+     line discipline delivers SIGINT even to a blocked shell — then log out so the
+     getty returns to a clean `login:`. (Do NOT run a sandbox `pumps.py` at it.)
+6. Close Netscape (ship a clean Gaim desktop + a discoverable icon, not a stale
+   browser window), delete any stray default routes, then **re-bake**: a
+   `Restart=no` systemd drop-in + `daemon-reload`, IAC BREAK (`\xff\xf3`) into
+   `serial-exec.sock` → menu option **5** (save-and-exit), stage
+   `work/{autosave.axp,img/tru64.img,rom/}` into `checkpoint/` (temp-name + `mv`),
+   remove the drop-in, `SH_IDLE_PAUSE_SECS=60`, `systemctl restart`.
 
-Rollback: remove `/etc/dt/appconfig/types/C/RetronetWeb.{dt,fp}` and
-`/etc/dt/config/C/sys.dtwmrc`, restore the previous `webbrowser`/`preferences.js`,
-reload the panel.
+**New golden (LIVE):** `tru64.axp`
+`030b726af4a644198741e16d9f1d1ee87fdd5827dd692508d46a6855f7debe2d` (274 641 799
+bytes), `tru64.img`
+`14730c97986a585ce2e09b267bc84f7853a2ee70c5e35611adebcc6c2de4dab1`.
+Instant restore re-verified: Web icon present, Gaim chrome grey, 64000 online
+with the SSI roster, HiveBot re-greets on wake.
+
+**Rollback:** `systemctl stop streamhost@tru64`, copy
+`checkpoint.bak-prebrowser-20260823/{tru64.axp,tru64.img,rom}` over
+`checkpoint/`, `systemctl start`. (Finer rollback of just the launcher bits:
+remove `/etc/dt/appconfig/types/C/RetronetWeb.{dt,fp}` and
+`/etc/dt/config/C/sys.dtwmrc`, restore the previous `webbrowser` /
+`preferences.js`, reload the panel — but the checkpoint backup is the whole
+rollback.)
