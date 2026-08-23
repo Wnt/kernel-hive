@@ -252,6 +252,10 @@ box_sync_load_pairs() {
   # DHCP reservation). The warpnet pointer agent (:7777) and a second warpnet
   # build for exec (:7788) both ride the bridge — docs/lab/retronet/WEB-STATION-win95.md.
   box_sync_add_pair win95-rn-tapnet streamhost/stations/win95/rn-tapnet.sh "$BOX_ROOT/stations/win95/rn-tapnet.sh" exact repo
+  # winxp's retronet bridge-tap lifecycle helper (web plane: IE6 on the corpus,
+  # guest 10.99.0.18). Same box-authored mirror pair as win98se's above.
+  # See docs/lab/retronet/WEB-STATION-winxp.md.
+  box_sync_add_pair winxp-rn-tapnet streamhost/stations/winxp/rn-tapnet.sh "$BOX_ROOT/stations/winxp/rn-tapnet.sh" exact repo
   # solaris' retronet bridge-tap lifecycle helper (Tier C, climm/OSCAR), the same
   # box-authored mirror pair as win98se's above. See ICQ-STATION-solaris.md.
   box_sync_add_pair solaris-rn-tapnet streamhost/stations/solaris/rn-tapnet.sh "$BOX_ROOT/stations/solaris/rn-tapnet.sh" exact repo
