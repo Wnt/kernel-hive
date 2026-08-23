@@ -243,19 +243,77 @@ def directory_page(sites: list[dict]) -> str:
     return page("Yahoo! - Retronet Directory", body)
 
 
+_MONTHS = (
+    "",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
+
+
+def _month_year(stamp: str) -> str:
+    """A Wayback capture stamp (``YYYYMMDD`` or the full 14-digit form) or an ISO date (``YYYY-MM-DD``)
+    rendered as ``May 2000`` — the ORIGINAL capture date /dir shows. ``''`` if unparseable; the bare year
+    if the month is out of range."""
+    digits = re.sub(r"\D", "", stamp)
+    if len(digits) < 6:
+        return ""
+    year, month = digits[:4], int(digits[4:6])
+    return f"{_MONTHS[month]} {year}" if 1 <= month <= 12 else year
+
+
+def _fmt_size(n: float) -> str:
+    """Human byte size for the directory trailer (decimal, matching the crawl's GB accounting)."""
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f} MB"
+    if n >= 1000:
+        return f"{int(n // 1000)} KB"
+    return f"{int(n)} B"
+
+
+def _dir_meta(site: dict, when: str) -> str:
+    """The compact grey trailer: the capture month-year and the three corpus metrics (HTML pages held,
+    crawl depth reached, total size), whichever are present. One line of size-1 text, so the Yahoo! row
+    stays uncluttered even when a row carries all four."""
+    bits = [esc(when)] if when else []
+    pages = site.get("pages")
+    if isinstance(pages, (int, float)) and pages > 0:
+        bits.append(f"{int(pages)} page{'s' if int(pages) != 1 else ''}")
+    depth = site.get("depth")
+    if isinstance(depth, (int, float)) and depth > 0:
+        bits.append(f"depth {int(depth)}")
+    nbytes = site.get("bytes")
+    if isinstance(nbytes, (int, float)) and nbytes > 0:
+        bits.append(_fmt_size(nbytes))
+    return " &middot; ".join(bits)
+
+
 def _dir_entry(site: dict) -> str:
     host = str(site.get("host") or "").strip()
     title = str(site.get("title") or host or "(untitled)").strip()
     blurb = str(site.get("blurb") or "").strip()
-    added = str(site.get("added") or "").strip()
+    # The ORIGINAL capture date: the chosen home capture's stamp (`captured`); legacy/fixture rows that
+    # predate it carry `added` (our download date) instead, so fall back to that.
+    when = _month_year(str(site.get("captured") or site.get("added") or "").strip())
     url = f"http://{host}/" if host else "#"
     line = '<tr valign="top"><td><font face="Times,serif">\n'
     line += f'<a href="{esc(url)}"><b>{esc(title)}</b></a>'
     if blurb:
         line += f" - {esc(blurb)}"
-    line += f'\n<font size="1" color="#008000">({esc(host)})</font>' if host else ""
-    if added:
-        line += f' <font size="1" color="#cc0000">[added {esc(added)}]</font>'
+    if host:
+        line += f'\n<font size="1" color="#008000">({esc(host)})</font>'
+    meta = _dir_meta(site, when)
+    if meta:
+        line += f'\n<font size="1" color="#888888">{meta}</font>'
     line += "\n</font></td></tr>\n"
     return line
 

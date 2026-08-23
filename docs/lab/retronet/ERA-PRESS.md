@@ -7,7 +7,7 @@ runs on **CT950 / labhost** (which has internet); the gateway CT 951 never
 fetches anything — it only ever receives files by `pct push`.
 
 ```bash
-# build the big ~10 GB corpus: most-visited-first, resumable, rate-limited, budgeted
+# build the big ~5 GB corpus: breadth-first over ~200 sites, resumable, rate-limited, budgeted
 python3 scripts/retronet/web/era-press.py crawl
 
 # mirror the four landmark starter sites into CT 951's corpus
@@ -60,7 +60,10 @@ absolute/relative URLs are already what we want.
 1. **Price the URL.** Which capture to fetch comes from the site's **host index** — a
    dict lookup, no network (see *One CDX query per host* below). A URL on a host with
    no index (a third-party image server) is priced at the site's era-**date** instead,
-   and Wayback's `id_` redirect resolves the nearest capture itself.
+   and Wayback's `id_` redirect resolves the nearest capture itself. A **landing page**
+   (the home, and section-index pages near it) is priced differently — the *most complete*
+   capture within the ceiling, not the nearest-date one, because the nearest-date front
+   page is so often a broken one. See *The landing-page exception* below.
 2. **Fetch it raw.** Pull the bytes with `id_` at that exact stamp — a direct hit, no
    search. Bytes and Content-Type are kept as-is. The final URL gives the **resolved**
    14-digit capture stamp; a resolved capture past the 2000-12-31 ceiling, or an
@@ -108,13 +111,13 @@ every URL on that host.** With `matchType=prefix` one request returns the host's
 capture index — measured: **27–40k URLs with exact stamps, ~3 MB, 70–130 s**. Amortised
 over the thousands of objects the crawl pulls from that host, pricing a URL costs a
 **dict lookup and no network at all**, and every fetch is then the top row of that
-table. One query per host is also ~60 CDX calls for the whole 60-site corpus, against
+table. One query per host is also ~200 CDX calls for the whole ~200-site corpus, against
 the tens of thousands the per-URL routes needed — the endpoint's throttle stops
 mattering. Indexes are cached on disk (`<state-dir>/cdx/<host>-<date>.json`), so the
 cost is paid once, not once per restart.
 
 Only hosts we actually crawl earn an index; a third-party host serving one image is not
-worth a 70 s query and takes the redirect route instead. Nine of the 60 sites (amazon,
+worth a 70 s query and takes the redirect route instead. Several of the biggest sites (amazon,
 ebay, apple, imdb, wired, …) are **un-indexable**: archive.org 504s on their prefix scan at
 every window width, at every row limit, and with `collapse` removed — the scan is priced by
 how many captures the host has. They take the redirect route too, which is correct, just
@@ -155,6 +158,30 @@ fetch workers themselves, 52 hosts × a 70–130 s query held the in-flight perm
 crawl spent its first quarter-hour building indexes at two connections instead of mirroring
 anything. Now the crawl runs at full speed throughout and simply gets faster as each index
 lands.
+
+### The landing-page exception — most complete, not nearest
+
+The default pick for any URL is the capture *nearest the era date* (the first in the index
+window). For most pages that is right, but for a **landing page** it is often wrong in a
+visible way: `www.sgi.com`'s capture nearest its 1997 era date is missing seven of its eleven
+images, and `support.sgi.com`'s nearest-1998 front page has **none** of its four — they render
+as broken boxes, which is the first thing a visitor to that station sees.
+
+So the home page, and section-index pages within one level of it (directory URLs, `.../news/`),
+are selected by **completeness** instead. `era_index.page_captures` runs one per-URL CDX query
+(affordable — landing pages are few, unlike the tens of thousands of leaves and resources) to
+list that page's own distinct-content captures across `[era date, ceiling]`, spread-sampled and
+capped. Each candidate's HTML is fetched and scored by `landing_completeness`: the fraction of
+the image/script/style resources IT references that have a status-200 capture in the host index
+— **pure index lookups, no downloads for the scoring**. The highest score wins; the era date
+only breaks near-ties. On SGI that moves the home from **4/11 → 51/54** images present, and
+support from **0/4 → 15/15**, by choosing 2000 captures over the era-date ones.
+
+This is the **capture-date policy** in one place: a landing page may hold *any* capture on or
+before 2000-12-31, preferring the most complete, and using the era date only as a mild
+tie-break — so a 1997 site legitimately ends up showing a far more complete 2000 front page.
+Leaves are unchanged (nearest-date). The chosen home stamp is remembered (`home_ts`, persisted
+in `state.json`) as the site's **original capture date** for the directory.
 
 ### What it adds up to — measured end to end
 
@@ -275,24 +302,39 @@ content-type note below.
 ## The manifest — `sites.json` (era-press OWNS it)
 
 `/data/retronet/corpus/sites.json` is an array of one object per **known site**
-(not per resource host). era-press is the only writer; the proxy reads it for
-its known-host list and the search engine reads it for the directory.
+(not per resource host). era-press is the only writer (`era_state.publish_sites`);
+the proxy reads it for its known-host list and the search engine reads it for the
+directory.
 
 ```json
 {
-  "host": "spacejam.com",
-  "title": "Space Jam (1996)",
-  "blurb": "The web's most famous untouched 1996 home page.",
-  "added": "2026-08-20",
-  "category": "Entertainment"
+  "host": "www.sgi.com",
+  "title": "Silicon Graphics",
+  "blurb": "SGI's own web -- the vendor estate behind the irix and indyr4400 stations.",
+  "captured": "20000511091920",
+  "pages": 214,
+  "depth": 4,
+  "bytes": 17039360,
+  "category": "Computers and Internet"
 }
 ```
 
 `category` is optional; W3's directory groups by it and defaults absent entries
-to *"Web Sites"*. Upsert is **merge, not replace**: era-press reads the CT's
-current `sites.json` (the authoritative copy), replaces only the row for the
-host it just pressed, sorts by host, and pushes it back — so it never clobbers
-another stream's fixture rows or a hand-edited blurb.
+to *"Web Sites"*. The other four describe **what we actually hold**, and the
+directory renders them (see [WEB-SEARCH](WEB-SEARCH.md)):
+
+- **`captured`** — the **original capture date**: the Wayback stamp of the home
+  capture the crawl actually chose (the completeness pick above), 14- or 8-digit,
+  rendered month-year (*"May 2000"*). This **replaces the old `added`** field,
+  which was merely *our* download date and told a visitor nothing.
+- **`pages`** / **`depth`** / **`bytes`** — the HTML page count, the deepest link
+  level reached, and the total size held, straight from the crawl's `state.json`.
+
+Upsert is **merge, not replace**: era-press reads the CT's current `sites.json`
+(the authoritative copy), rewrites only the rows for sites it crawled, sorts by
+host, and pushes it back — so it never clobbers another stream's fixture rows
+(the synthetic `example.museum`, which keeps its legacy `added`) or a hand-edited
+blurb. The directory falls back to `added` for any such legacy row.
 
 ## The starter corpus
 
@@ -321,14 +363,14 @@ in `era-press.py` and re-run `seed`. Handy flags: `--no-push` stages locally
 without touching the CT (inspect the tree first); `--only <host>` restricts
 `seed` to one site; `--staging DIR` relocates the local tree.
 
-## The big corpus — the resumable, breadth-first ~25 GB crawl
+## The big corpus — the resumable, breadth-first ~5 GB crawl
 
-The starter set is four sites; the production corpus is **~25 GB**, built by
-`era-press crawl` **breadth-first** over a committed 60-site list — widening
+The starter set is four sites; the production corpus targets **~5 GB**, built by
+`era-press crawl` **breadth-first** over a committed ~200-site list — widening
 every site together, one depth level at a time (all homes first, then all
-depth-1 links, then all depth-2, …). Because that cannot live on CT 951's 8 GB
-rootfs, the corpus lives in a **dedicated ZFS volume** that is bind-mounted into
-the CT.
+depth-1 links, then all depth-2, …), and stopping cleanly at the `--budget-gb`
+ceiling. Because that cannot live on CT 951's 8 GB rootfs, the corpus lives in a
+**dedicated ZFS volume** that is bind-mounted into the CT.
 
 ### Storage — one volume, both containers see it
 
@@ -337,7 +379,7 @@ creates it:
 
 | Thing | Value |
 |---|---|
-| ZFS dataset | `data/vms/retronet-corpus` — **50 GB quota**, zstd-compressed (headroom over the 25 GB budget), on the `data` pool |
+| ZFS dataset | `data/vms/retronet-corpus` — **50 GB quota**, zstd-compressed (generous headroom over the ~5 GB budget), on the `data` pool |
 | labhost / CT 950 path | `/data/vms/retronet-corpus` — CT 950 already bind-mounts `/data/vms` *recursively*, so the crawl writes here **directly, with no CT 950 restart** |
 | CT 951 path | `/data/retronet/corpus` — a `pct set 951 -mp0` bind-mount of the same volume; the proxy reads it **live** |
 
@@ -446,16 +488,21 @@ guard — which is what it was always meant to be.
 ### The site list — `era-sites.json`
 
 A committed array of `{host, date, depth, max_pages, max_mb, title, category,
-blurb}`. Because the crawl is **breadth-first across all sites**, every site's
-home is mirrored in the first pass regardless of list order — a budget stop
-leaves all 60 sites present and evenly deep, not the first few complete and the
-rest missing. The **station browser default home pages** lead the list —
-`home.microsoft.com` (the IE default on win98se/win2000/nt4), `www.msn.com`, and
-`home.netscape.com` (the tru64 Netscape default) — then the top web properties of
-1996–2000: AOL, Yahoo, Microsoft, GeoCities, Excite, Lycos, Amazon, eBay,
-AltaVista, CNN, the community hosts (Angelfire, Tripod), search engines, news,
-tech vendors, and era-defining novelty (Space Jam, the Hampster Dance). 60 sites
-at the time of writing, each crawled to `depth` 4–5.
+blurb}` — adding a row is all it takes to widen the corpus. Because the crawl is
+**breadth-first across all sites**, every site's home is mirrored in the first
+pass regardless of list order — a budget stop leaves all ~200 sites present and
+evenly deep, not the first few complete and the rest missing. The **station
+browser default home pages** lead the intent — `home.microsoft.com` (the IE
+default on win98se/win2000/nt4), `www.msn.com`, `home.netscape.com` (the tru64
+Netscape default) — alongside each station's **vendor** (SGI, Sun, Be, Apple,
+IBM, DEC/`digital.com`, HP, Sony, Xerox, Acorn/RISC OS…) and the top web
+properties of 1996–2000: AOL, Yahoo, Microsoft, GeoCities, Excite, Lycos, Amazon,
+eBay, AltaVista, Google, CNN, the community hosts (Angelfire, Tripod, WebRing),
+search/portals, tech media, dot-com shopping, and era-defining novelty (Space
+Jam, the Hampster Dance, Zombo.com). **~200 sites**, each crawled to `depth` 3–5;
+the richest ~15 marquee anchors are **deepened** (depth 6, higher `max_pages`/
+`max_mb`) so breadth-first carries them further before the budget stops it —
+roughly a 60/40 split of effort between new breadth and deepened anchors.
 
 ### The crawl — `era-press crawl`
 
@@ -523,7 +570,7 @@ du -sh /data/vms/retronet-corpus                            # bytes so far
   Flagged to W1.
 - **Corpus size.** The production corpus lives in a dedicated **50 GB** ZFS
   volume (zstd-compressed), **not** on CT 951's 8 GB rootfs. Fetches are bounded
-  by per-site `depth` / `max_pages` / `max_mb` and the global **25 GB**
+  by per-site `depth` / `max_pages` / `max_mb` and the global **~5 GB**
   `--budget-gb`, plus a per-resource 8 MB skip guardrail (oversize resources are
   skipped whole, never truncated — truncation would corrupt).
 - **Never committed.** Mirrored bytes are copyright and are a box-only bit, the

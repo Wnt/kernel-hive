@@ -27,7 +27,7 @@ routes answer with period HTML — all without the CT ever touching the network
 | Listen address | **`127.0.0.1:8090`** inside CT 951 — loopback only; the proxy is the sole client |
 | Reserved hostname | `search.retronet` (the proxy routes it here; W1 owns the routing line) |
 | Corpus root | `/data/retronet/corpus/<host>/<path>` — read-only to this service; W2 fills it |
-| Corpus manifest | `/data/retronet/corpus/sites.json` — `[{host, title, blurb, added}]`; W2 writes it |
+| Corpus manifest | `/data/retronet/corpus/sites.json` — `[{host, title, blurb, category, captured, pages, depth, bytes}]`; W2 writes it |
 
 The service **only reads** the corpus and **only binds loopback**. Its systemd
 unit makes both facts enforceable: `DynamicUser` + `ProtectSystem=strict`
@@ -41,7 +41,7 @@ the internet" guarantee by cgroup, not by promise.
 |---|---|---|
 | `/` | AltaVista | Front page: a query box and search tips |
 | `/search?q=<term>` | AltaVista | Ranked hits — title link, snippet, the `http://<host>/<path>` corpus URL — paginated (`&pg=N`) |
-| `/dir` | Yahoo! | The directory built from the corpus, grouped by an optional `category` |
+| `/dir` | Yahoo! | The directory built from the corpus, grouped by an optional `category`; each entry shows its **original capture date** (month-year) and what we hold — page count, crawl depth, size |
 | `/reindex` | — | Rebuild the index now; returns a period confirmation page |
 | `/health` | — | `text/plain` `OK <n> docs` — the install-time probe |
 
@@ -90,8 +90,9 @@ so a crawl that adds a site shows up in both search and the directory within one
 15-minute cycle.
 
 **The corpus, not the manifest, decides what the directory lists.** Every host with
-a home page on disk gets a row — `sites.json` supplies the title, blurb and
-category where it has them, but it is not a gate: a host mirrored only because
+a home page on disk gets a row — `sites.json` supplies the title, blurb, category
+and the per-site metadata (original capture date, page count, depth, size) where it
+has them, but it is not a gate: a host mirrored only because
 something linked to it is just as browsable as a curated one, and hiding it would
 advertise less of the retronet than exists. Conversely a manifest row with nothing
 on disk is dropped, because a directory link that cannot be opened is worse than no
@@ -167,9 +168,10 @@ ssh lab 'pct exec 951 -- python3 /opt/retronet-search/search.py index'
   to `127.0.0.1:8090`. One config line; nothing else here depends on the proxy.
 - **W2 (era-press).** Write pages under `/data/retronet/corpus/<host>/…` (a
   directory served by its `index.html`); a home page there is all it takes to
-  appear in the directory. `sites.json` rows — `{host, title, blurb, added}`, with
-  an optional `category` that groups them — supply the presentation for the
-  curated set. A push is picked up by the next reindex (≤15 min, and only if the
+  appear in the directory. `sites.json` rows — `{host, title, blurb, category,
+  captured, pages, depth, bytes}` — supply the presentation for the curated set:
+  the blurb, the grouping `category`, the original capture date and the corpus
+  metrics. A push is picked up by the next reindex (≤15 min, and only if the
   corpus fingerprint moved) or immediately with `systemctl reload retronet-search`.
 
 ## Known limits

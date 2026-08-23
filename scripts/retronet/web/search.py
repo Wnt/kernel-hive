@@ -391,6 +391,20 @@ def cmd_selftest() -> int:
     for site in sites:
         assert site["host"].encode("latin-1") in dir_raw, f"directory must list {site['host']}"
 
+    # /dir metadata: the ORIGINAL capture date (month-year) + the three corpus metrics render, uncluttered.
+    assert rn_render._month_year("20000511104630") == "May 2000", "14-digit stamp -> month-year"
+    assert rn_render._month_year("19970412") == "April 1997", "8-digit stamp -> month-year"
+    assert rn_render._month_year("2026-08-22") == "August 2026", "legacy ISO added-date -> month-year"
+    assert rn_render._month_year("2000") == "", "too-short stamp -> blank, never a crash"
+    assert rn_render._fmt_size(3_200_000) == "3.2 MB" and rn_render._fmt_size(812_000) == "812 KB"
+    meta_row = {"host": "www.sgi.com", "title": "SGI", "captured": "20000511104630"}
+    meta_row.update(pages=42, depth=4, bytes=3_200_000)
+    entry = rn_render._dir_entry(meta_row)
+    assert "May 2000" in entry and "42 pages" in entry and "depth 4" in entry and "3.2 MB" in entry, entry
+    assert "[added" not in entry, "the download-date badge is gone; the capture date replaces it"
+    # a bare row (no metrics, e.g. a corpus host with no manifest entry) still renders without them.
+    assert "&middot;" not in rn_render._dir_entry({"host": "x.example", "title": "X"})
+
     # The corpus, not the manifest, decides what the directory lists: a mirrored host with no
     # manifest row is still browsable and must appear; a manifest row with nothing on disk must
     # not, because a directory link that cannot be opened is worse than no link.

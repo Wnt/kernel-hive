@@ -1,7 +1,7 @@
 [Unit]
 # Installed INSIDE the dev container CT 950 (which has internet — labhost and the
 # gateway CT 951 do not) by scripts/retronet/web/install-crawl.sh. Drives era-press
-# breadth-first over era-sites.json toward the ~25 GB corpus budget with the BROWSER
+# breadth-first over era-sites.json toward the ~5 GB corpus budget with the BROWSER
 # fetch strategy: NO per-resource CDX (archive's throttled endpoint, gone), one
 # rewritten-page discovery + raw id_ pulls per page. Pacing is ADAPTIVE, not hand-set:
 # the worker pool is wide and an AIMD in-flight limiter in era_press_core finds
@@ -11,7 +11,7 @@
 # Resumable, per-site byte-capped. Runs unattended for days; the corpus grows in the
 # background and CT 951's proxy reads the shared corpus volume
 # (/data/vms/retronet-corpus) live. See docs/lab/retronet/ERA-PRESS.md.
-Description=retronet corpus crawl — era-press breadth-first (per-host CDX index, raw id_ fetches over HTTP/1.1), self-pacing toward the ~25 GB budget, resumable
+Description=retronet corpus crawl — era-press breadth-first (per-host CDX index, raw id_ fetches over HTTP/1.1), self-pacing toward the ~5 GB budget, resumable
 Documentation=file:///data/kernel-hive/docs/lab/retronet/ERA-PRESS.md
 After=network-online.target
 Wants=network-online.target
@@ -24,12 +24,13 @@ Group=wnt
 # is exhausted (clean exit 0 -> stays stopped). Restart=on-failure only covers a
 # crash, and resume picks up from the on-disk corpus + state.json. It runs from a
 # DEPLOYED copy under the volume, so a worktree GC never pulls the code out from
-# under a multi-hour run. Runs from the deployed venv (httpx[http2]) that install-crawl.sh
-# builds next to the code -- the fetch layer speaks HTTP/2 over a tiny reused connection pool.
+# under a multi-hour run. Runs from the deployed venv (httpx) that install-crawl.sh
+# builds next to the code -- the fetch layer speaks HTTP/1.1 over a tiny reused connection
+# pool (measured 4x faster here than h2, which the edge sheds under a crawl's load).
 ExecStart=/data/vms/retronet-crawl/venv/bin/python /data/vms/retronet-crawl/era-press.py crawl \
     --sites /data/vms/retronet-crawl/era-sites.json \
     --staging /data/vms/retronet-corpus \
-    --budget-gb 25 --concurrency 12 \
+    --budget-gb 5 --concurrency 12 \
     --state /data/vms/retronet-crawl/state.json \
     --log /data/vms/retronet-crawl/progress.log
 Restart=on-failure

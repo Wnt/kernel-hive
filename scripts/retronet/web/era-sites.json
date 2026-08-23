@@ -1,5 +1,15 @@
 [
   {
+    "host": "arstechnica.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Ars Technica",
+    "category": "Computers and Internet",
+    "blurb": "The art of technology -- long-form for the PC nerd."
+  },
+  {
     "host": "babel.altavista.com",
     "date": "20001018",
     "depth": 3,
@@ -40,6 +50,16 @@
     "blurb": "Sun's documentation estate, linked from Solaris CDE."
   },
   {
+    "host": "download.cnet.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Download.com",
+    "category": "Computers and Internet",
+    "blurb": "CNET's download vault -- the era's app store."
+  },
+  {
     "host": "espn.go.com",
     "date": "19990201",
     "depth": 4,
@@ -60,11 +80,21 @@
     "blurb": "The AOL download that came on every era cover disc."
   },
   {
+    "host": "freshmeat.net",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "freshmeat",
+    "category": "Computers and Internet",
+    "blurb": "The changelog of the open-source world -- every release, announced."
+  },
+  {
     "host": "home.microsoft.com",
     "date": "19980127",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "MSN.com / Microsoft Start (IE default)",
     "category": "Search and Portals",
     "blurb": "The Internet Explorer default start page on win98se, win2000 and nt4.",
@@ -75,9 +105,9 @@
   {
     "host": "home.netscape.com",
     "date": "19961223",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "Netscape",
     "category": "Search and Portals",
     "blurb": "Home page of the browser that built the web — the tru64 Netscape default.",
@@ -105,6 +135,26 @@
     "title": "Java by Sun",
     "category": "Computers and Internet",
     "blurb": "Where every 1990s Java applet sent you when the plug-in was missing."
+  },
+  {
+    "host": "magellan.excite.com",
+    "date": "19971101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Magellan",
+    "category": "Web Directories",
+    "blurb": "The reviewed-and-rated web directory, later folded into Excite."
+  },
+  {
+    "host": "members.aol.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "AOL Hometown",
+    "category": "Homepages and Community",
+    "blurb": "The member pages every AOL subscriber got for free."
   },
   {
     "host": "search.icq.com",
@@ -135,6 +185,16 @@
     "title": "Slashdot",
     "category": "Computers and Internet",
     "blurb": "News for nerds, stuff that matters."
+  },
+  {
+    "host": "sourceforge.net",
+    "date": "20000101",
+    "depth": 4,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "SourceForge",
+    "category": "Computers and Internet",
+    "blurb": "Free hosting for open-source projects -- CVS, bug trackers and downloads."
   },
   {
     "host": "spacejam.com",
@@ -207,11 +267,51 @@
     "blurb": "The World Wide Pager -- message someone straight from the web."
   },
   {
+    "host": "www.3com.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "3Com",
+    "category": "Computers and Internet",
+    "blurb": "The NIC in the back of every era PC -- and, for a while, Palm's owner."
+  },
+  {
+    "host": "www.3dfx.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "3dfx Interactive",
+    "category": "Entertainment",
+    "blurb": "Voodoo -- the add-in card that made PC games 3D."
+  },
+  {
+    "host": "www.about.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "About.com",
+    "category": "Search and Portals",
+    "blurb": "The Mining Company -- human guides to every topic."
+  },
+  {
+    "host": "www.acorn.com",
+    "date": "19970601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Acorn Computers",
+    "category": "Computers and Internet",
+    "blurb": "The BBC Micro and Archimedes maker -- ARM's birthplace."
+  },
+  {
     "host": "www.adobe.com",
     "date": "19980201",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "Adobe",
     "category": "Computers and Internet",
     "blurb": "Photoshop, Acrobat and the PDF."
@@ -237,14 +337,54 @@
     "blurb": "The fast, comprehensive search engine of the mid-late 90s."
   },
   {
+    "host": "www.altavista.digital.com",
+    "date": "19970101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "AltaVista (digital.com)",
+    "category": "Search and Portals",
+    "blurb": "AltaVista at its original DEC address, where the index was born."
+  },
+  {
     "host": "www.amazon.com",
     "date": "19991127",
-    "depth": 5,
-    "max_pages": 400,
-    "max_mb": 500,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "Amazon.com",
     "category": "Shopping",
     "blurb": "Earth's Biggest Bookstore, mid holiday-1999."
+  },
+  {
+    "host": "www.amd.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "AMD",
+    "category": "Computers and Internet",
+    "blurb": "The K6 and the Athlon -- Intel's price war."
+  },
+  {
+    "host": "www.amiga.de",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Amiga",
+    "category": "Computers and Internet",
+    "blurb": "The Amiga faithful's vendor home after Commodore -- OS and hardware kept alive."
+  },
+  {
+    "host": "www.anandtech.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "AnandTech",
+    "category": "Computers and Internet",
+    "blurb": "Deep hardware reviews from a teenager who out-tested the magazines."
   },
   {
     "host": "www.angelfire.com",
@@ -259,9 +399,9 @@
   {
     "host": "www.aol.com",
     "date": "19981212",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "America Online",
     "category": "Search and Portals",
     "blurb": "AOL.com — the front door for most of America's first web users."
@@ -269,9 +409,9 @@
   {
     "host": "www.apple.com",
     "date": "19980501",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "Apple",
     "category": "Computers and Internet",
     "blurb": "Apple Computer during the iMac renaissance."
@@ -285,6 +425,16 @@
     "title": "Ask Jeeves",
     "category": "Search and Portals",
     "blurb": "Ask a question in plain English; a butler answers."
+  },
+  {
+    "host": "www.atari.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Atari",
+    "category": "Entertainment",
+    "blurb": "The 2600-to-ST name, by then a game label under Hasbro Interactive."
   },
   {
     "host": "www.austin.ibm.com",
@@ -347,6 +497,16 @@
     "blurb": "The BeOS software archive every Be user lived in."
   },
   {
+    "host": "www.beyond.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Beyond.com",
+    "category": "Shopping",
+    "blurb": "Software, downloaded or shipped."
+  },
+  {
     "host": "www.bluemountain.com",
     "date": "19990215",
     "depth": 4,
@@ -357,6 +517,66 @@
     "blurb": "Free e-greeting cards — one of the most-visited sites of 1999."
   },
   {
+    "host": "www.bolt.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Bolt",
+    "category": "Homepages and Community",
+    "blurb": "The teen community portal of the late 90s."
+  },
+  {
+    "host": "www.boo.com",
+    "date": "20000101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "boo.com",
+    "category": "Shopping",
+    "blurb": "The fashion site whose Flash-heavy launch burned $135M."
+  },
+  {
+    "host": "www.borland.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Borland",
+    "category": "Computers and Internet",
+    "blurb": "Delphi, Turbo Pascal and C++Builder -- the developer's other IDE."
+  },
+  {
+    "host": "www.britannica.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Encyclopaedia Britannica",
+    "category": "Reference",
+    "blurb": "The encyclopaedia went free-to-read online -- and buckled under the traffic."
+  },
+  {
+    "host": "www.broadcast.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "broadcast.com",
+    "category": "Entertainment",
+    "blurb": "Streaming audio and video -- the site that made Mark Cuban a billionaire."
+  },
+  {
+    "host": "www.buy.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Buy.com",
+    "category": "Shopping",
+    "blurb": "The lowest price on the web, and a business model to match."
+  },
+  {
     "host": "www.cdnow.com",
     "date": "19980601",
     "depth": 4,
@@ -365,6 +585,16 @@
     "title": "CDNOW",
     "category": "Shopping",
     "blurb": "Buy music CDs online."
+  },
+  {
+    "host": "www.classmates.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Classmates.com",
+    "category": "Homepages and Community",
+    "blurb": "Find everyone you went to school with."
   },
   {
     "host": "www.cnet.com",
@@ -379,12 +609,32 @@
   {
     "host": "www.cnn.com",
     "date": "19980610",
-    "depth": 5,
-    "max_pages": 400,
-    "max_mb": 520,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "CNN",
     "category": "News and Media",
     "blurb": "Cable News Network online — breaking news, 1998."
+  },
+  {
+    "host": "www.columbiahouse.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Columbia House",
+    "category": "Shopping",
+    "blurb": "12 CDs for a penny -- the mail-order club online."
+  },
+  {
+    "host": "www.compaq.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Compaq",
+    "category": "Computers and Internet",
+    "blurb": "The PC giant that would swallow DEC in 1998."
   },
   {
     "host": "www.connectix.com",
@@ -395,6 +645,96 @@
     "title": "Connectix",
     "category": "Computers and Internet",
     "blurb": "RAM Doubler and Virtual PC -- embedded in the Mac OS 7.5.3 image."
+  },
+  {
+    "host": "www.corel.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Corel",
+    "category": "Computers and Internet",
+    "blurb": "CorelDRAW and WordPerfect -- the office suite's third option."
+  },
+  {
+    "host": "www.creative.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Creative Technology",
+    "category": "Computers and Internet",
+    "blurb": "Sound Blaster -- the card that made the PC talk."
+  },
+  {
+    "host": "www.debian.org",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Debian",
+    "category": "Computers and Internet",
+    "blurb": "The universal operating system, built by a volunteer project."
+  },
+  {
+    "host": "www.deja.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Deja.com",
+    "category": "Search and Portals",
+    "blurb": "Deja News -- the searchable memory of Usenet."
+  },
+  {
+    "host": "www.dell.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Dell Computer",
+    "category": "Computers and Internet",
+    "blurb": "Build-to-order PCs, bought online -- the model that beat the retail box."
+  },
+  {
+    "host": "www.delphi.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Delphi Forums",
+    "category": "Homepages and Community",
+    "blurb": "The text-era online service, reborn as web forums."
+  },
+  {
+    "host": "www.dictionary.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Dictionary.com",
+    "category": "Reference",
+    "blurb": "Look it up, no shelf required."
+  },
+  {
+    "host": "www.digital.com",
+    "date": "19970601",
+    "depth": 4,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Digital Equipment Corporation",
+    "category": "Computers and Internet",
+    "blurb": "DEC's own web -- the vendor behind Tru64 UNIX, OpenVMS, the Alpha and the PDP-11."
+  },
+  {
+    "host": "www.dilbert.com",
+    "date": "19980101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Dilbert Zone",
+    "category": "Entertainment",
+    "blurb": "The cubicle's own comic strip."
   },
   {
     "host": "www.disney.com",
@@ -417,6 +757,16 @@
     "blurb": "A metasearch engine fetching from all the others."
   },
   {
+    "host": "www.drkoop.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "drkoop.com",
+    "category": "Reference",
+    "blurb": "The Surgeon General's health portal -- trust, then bust."
+  },
+  {
     "host": "www.drudgereport.com",
     "date": "19990301",
     "depth": 4,
@@ -437,6 +787,16 @@
     "blurb": "The person-to-person auction site of the dot-com boom."
   },
   {
+    "host": "www.egghead.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Egghead.com",
+    "category": "Shopping",
+    "blurb": "The software retailer that closed its stores to go all-web."
+  },
+  {
     "host": "www.electricarc.com",
     "date": "19990125",
     "depth": 3,
@@ -445,6 +805,26 @@
     "title": "Electric Arc",
     "category": "Computers and Internet",
     "blurb": "An SGI-scene site baked into the IRIX image."
+  },
+  {
+    "host": "www.eonline.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "E! Online",
+    "category": "Entertainment",
+    "blurb": "Celebrity news and the Kristin gossip column."
+  },
+  {
+    "host": "www.epicurious.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Epicurious",
+    "category": "Reference",
+    "blurb": "Conde Nast's recipe box on the web."
   },
   {
     "host": "www.etrade.com",
@@ -467,6 +847,26 @@
     "blurb": "A leading search portal of the Excite@Home era."
   },
   {
+    "host": "www.expage.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "eXpage",
+    "category": "Homepages and Community",
+    "blurb": "One-page free home pages for the impatient."
+  },
+  {
+    "host": "www.expedia.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Expedia",
+    "category": "Shopping",
+    "blurb": "Book your own flights -- Microsoft's travel agency."
+  },
+  {
     "host": "www.fortunecity.com",
     "date": "19990201",
     "depth": 4,
@@ -477,14 +877,74 @@
     "blurb": "Free themed-city home-page hosting."
   },
   {
+    "host": "www.freebsd.org",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "FreeBSD",
+    "category": "Computers and Internet",
+    "blurb": "The BSD UNIX that quietly ran a lot of the early web."
+  },
+  {
+    "host": "www.gap.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Gap",
+    "category": "Shopping",
+    "blurb": "Khakis, swing dancing, and clothes bought online."
+  },
+  {
+    "host": "www.gateway.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Gateway 2000",
+    "category": "Computers and Internet",
+    "blurb": "The cow-spotted-box mail-order PC maker."
+  },
+  {
     "host": "www.geocities.com",
     "date": "19971210",
-    "depth": 5,
-    "max_pages": 400,
-    "max_mb": 600,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "GeoCities",
     "category": "Homepages and Community",
     "blurb": "Themed 'neighborhoods' of millions of personal home pages."
+  },
+  {
+    "host": "www.gnu.org",
+    "date": "19970601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "GNU Project",
+    "category": "Computers and Internet",
+    "blurb": "Free software, the four freedoms, and the tools every UNIX box relied on."
+  },
+  {
+    "host": "www.go.com",
+    "date": "19990601",
+    "depth": 4,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Go Network",
+    "category": "Search and Portals",
+    "blurb": "Disney and Infoseek's portal, traffic-light logo and all."
+  },
+  {
+    "host": "www.google.com",
+    "date": "20000101",
+    "depth": 4,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Google",
+    "category": "Search and Portals",
+    "blurb": "The spartan search box that would eat every portal on this list."
   },
   {
     "host": "www.goto.com",
@@ -505,6 +965,16 @@
     "title": "The Hampster Dance (1999)",
     "category": "Entertainment",
     "blurb": "Rows of dancing hamster GIFs."
+  },
+  {
+    "host": "www.homestead.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Homestead",
+    "category": "Homepages and Community",
+    "blurb": "Drag-and-drop free home pages."
   },
   {
     "host": "www.hotbot.com",
@@ -537,11 +1007,31 @@
     "blurb": "Webmail as the era knew it -- Outlook Express's Hotmail link."
   },
   {
+    "host": "www.hotwired.com",
+    "date": "19961101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "HotWired",
+    "category": "News and Media",
+    "blurb": "Wired's web arm -- the first banner ad ran here in 1994."
+  },
+  {
+    "host": "www.hp.com",
+    "date": "19980401",
+    "depth": 4,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Hewlett-Packard",
+    "category": "Computers and Internet",
+    "blurb": "HP's corporate web -- the vendor behind HP-UX and VUE (the hpuxvue station)."
+  },
+  {
     "host": "www.ibm.com",
     "date": "19980201",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "IBM",
     "category": "Computers and Internet",
     "blurb": "Big Blue's corporate web."
@@ -555,6 +1045,16 @@
     "title": "ICQ",
     "category": "Computers and Internet",
     "blurb": "Uh-oh! The pager-style instant messenger."
+  },
+  {
+    "host": "www.idsoftware.com",
+    "date": "19980101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "id Software",
+    "category": "Entertainment",
+    "blurb": "DOOM and Quake -- the shareware that taught the PC to frag."
   },
   {
     "host": "www.imdb.com",
@@ -587,6 +1087,86 @@
     "blurb": "Directory and people-search, wired into several Windows shells."
   },
   {
+    "host": "www.intel.com",
+    "date": "19980201",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Intel",
+    "category": "Computers and Internet",
+    "blurb": "Intel Inside -- the Pentium era's silicon."
+  },
+  {
+    "host": "www.iomega.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Iomega",
+    "category": "Computers and Internet",
+    "blurb": "The Zip drive -- 100 MB of removable storage, and the click of death."
+  },
+  {
+    "host": "www.iwon.com",
+    "date": "20000101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "iWon",
+    "category": "Search and Portals",
+    "blurb": "The portal that paid you to search -- a daily jackpot."
+  },
+  {
+    "host": "www.jcpenney.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "JCPenney",
+    "category": "Shopping",
+    "blurb": "The department store's catalogue, on the web."
+  },
+  {
+    "host": "www.kernel.org",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "The Linux Kernel Archives",
+    "category": "Computers and Internet",
+    "blurb": "Where the kernel tarballs actually lived."
+  },
+  {
+    "host": "www.landsend.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Lands' End",
+    "category": "Shopping",
+    "blurb": "The catalogue retailer that got the web early."
+  },
+  {
+    "host": "www.launch.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "LAUNCH",
+    "category": "Entertainment",
+    "blurb": "Music discovery and the LAUNCHcast player."
+  },
+  {
+    "host": "www.linux.org",
+    "date": "19980101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Linux Online",
+    "category": "Computers and Internet",
+    "blurb": "The penguin's welcome desk for a curious 1998 newcomer."
+  },
+  {
     "host": "www.looksmart.com",
     "date": "19981205",
     "depth": 4,
@@ -607,6 +1187,26 @@
     "blurb": "Search engine and portal — 'Go Get It'."
   },
   {
+    "host": "www.macromedia.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Macromedia",
+    "category": "Computers and Internet",
+    "blurb": "Flash, Shockwave and Dreamweaver -- the multimedia web's toolmaker."
+  },
+  {
+    "host": "www.mapblast.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "MapBlast",
+    "category": "Reference",
+    "blurb": "Maps and directions -- MapQuest's rival."
+  },
+  {
     "host": "www.mapquest.com",
     "date": "19990125",
     "depth": 4,
@@ -615,6 +1215,16 @@
     "title": "MapQuest",
     "category": "Reference",
     "blurb": "Driving directions and maps for the web."
+  },
+  {
+    "host": "www.mcafee.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "McAfee",
+    "category": "Computers and Internet",
+    "blurb": "VirusScan -- the other name in 1990s PC antivirus."
   },
   {
     "host": "www.metacrawler.com",
@@ -639,9 +1249,9 @@
   {
     "host": "www.microsoft.com",
     "date": "19980201",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "Microsoft",
     "category": "Computers and Internet",
     "blurb": "The software giant's sprawling late-90s corporate web.",
@@ -661,6 +1271,26 @@
     "blurb": "The makers of ICQ — the retronet's own instant messenger."
   },
   {
+    "host": "www.mirc.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "mIRC",
+    "category": "Computers and Internet",
+    "blurb": "The Windows IRC client that ran a generation's chat."
+  },
+  {
+    "host": "www.motorola.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Motorola",
+    "category": "Computers and Internet",
+    "blurb": "The 68k and PowerPC chips behind the Macs, Amigas and NeXTs."
+  },
+  {
     "host": "www.mp3.com",
     "date": "19990501",
     "depth": 4,
@@ -671,11 +1301,21 @@
     "blurb": "Downloadable music at the dawn of the MP3."
   },
   {
+    "host": "www.mrshowbiz.com",
+    "date": "19980101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Mr. Showbiz",
+    "category": "Entertainment",
+    "blurb": "Disney's entertainment-news portal."
+  },
+  {
     "host": "www.msn.com",
     "date": "19981201",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "MSN",
     "category": "Search and Portals",
     "blurb": "Microsoft Network's portal — the other face of the IE home page.",
@@ -714,14 +1354,74 @@
     "blurb": "Peer-to-peer music sharing at its 2000 peak."
   },
   {
+    "host": "www.ncr.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "NCR",
+    "category": "Computers and Internet",
+    "blurb": "The register-and-mainframe house, freshly spun back out of AT&T."
+  },
+  {
     "host": "www.netscape.com",
     "date": "19981202",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "Netcenter",
     "category": "Computers and Internet",
     "blurb": "Netscape's Netcenter portal."
+  },
+  {
+    "host": "www.news.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "CNET News.com",
+    "category": "News and Media",
+    "blurb": "The tech industry's daily wire."
+  },
+  {
+    "host": "www.nintendo.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Nintendo",
+    "category": "Entertainment",
+    "blurb": "The N64 and Pokemon's arrival in the West."
+  },
+  {
+    "host": "www.northernlight.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Northern Light",
+    "category": "Search and Portals",
+    "blurb": "Search with Custom Search Folders -- a researcher's engine."
+  },
+  {
+    "host": "www.novell.com",
+    "date": "19980401",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Novell",
+    "category": "Computers and Internet",
+    "blurb": "NetWare -- the file-and-print server that ran the 1990s office LAN."
+  },
+  {
+    "host": "www.nvidia.com",
+    "date": "20000101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "NVIDIA",
+    "category": "Computers and Internet",
+    "blurb": "The TNT and GeForce -- the GPU arriving just in time for the ceiling."
   },
   {
     "host": "www.nytimes.com",
@@ -742,6 +1442,56 @@
     "title": "Opera Software",
     "category": "Computers and Internet",
     "blurb": "The third browser, and a favourite on low-memory era machines."
+  },
+  {
+    "host": "www.palm.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Palm",
+    "category": "Computers and Internet",
+    "blurb": "The Palm Pilot -- the PDA that briefly organised everyone."
+  },
+  {
+    "host": "www.pathfinder.com",
+    "date": "19970101",
+    "depth": 4,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Pathfinder",
+    "category": "News and Media",
+    "blurb": "Time Warner's sprawling mega-portal -- the walled garden that didn't take."
+  },
+  {
+    "host": "www.pennyarcade.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Penny Arcade",
+    "category": "Entertainment",
+    "blurb": "The gaming webcomic that outlived the magazines."
+  },
+  {
+    "host": "www.pets.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Pets.com",
+    "category": "Shopping",
+    "blurb": "The sock-puppet mascot and the definitive dot-com flameout."
+  },
+  {
+    "host": "www.playstation.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "PlayStation",
+    "category": "Entertainment",
+    "blurb": "Sony's console home as the PS2 loomed."
   },
   {
     "host": "www.priceline.com",
@@ -774,24 +1524,224 @@
     "blurb": "RealPlayer and RealAudio streaming."
   },
   {
+    "host": "www.redhat.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Red Hat",
+    "category": "Computers and Internet",
+    "blurb": "The Linux distribution that made a business of free software."
+  },
+  {
+    "host": "www.reel.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Reel.com",
+    "category": "Shopping",
+    "blurb": "Buy the VHS and DVD, with reviews attached."
+  },
+  {
+    "host": "www.refdesk.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "refdesk.com",
+    "category": "Reference",
+    "blurb": "The reference desk of the web -- one man's link to everything."
+  },
+  {
+    "host": "www.riscos.org",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "RISC OS",
+    "category": "Computers and Internet",
+    "blurb": "Acorn's desktop OS, carried on by RISC OS Ltd and its community."
+  },
+  {
+    "host": "www.rollingstone.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Rolling Stone",
+    "category": "Entertainment",
+    "blurb": "The music magazine's web edition."
+  },
+  {
+    "host": "www.rottentomatoes.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Rotten Tomatoes",
+    "category": "Entertainment",
+    "blurb": "The critics' verdicts, boiled to one number."
+  },
+  {
+    "host": "www.salon.com",
+    "date": "19980101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Salon",
+    "category": "News and Media",
+    "blurb": "The web-native magazine of ideas and politics."
+  },
+  {
+    "host": "www.sco.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "SCO",
+    "category": "Computers and Internet",
+    "blurb": "The Santa Cruz Operation -- UNIX on the PC before Linux took the niche."
+  },
+  {
+    "host": "www.sega.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Sega",
+    "category": "Entertainment",
+    "blurb": "The Dreamcast era -- and SegaNet dial-up gaming."
+  },
+  {
     "host": "www.sgi.com",
     "date": "19970412",
-    "depth": 5,
-    "max_pages": 400,
-    "max_mb": 400,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "Silicon Graphics",
     "category": "Computers and Internet",
     "blurb": "SGI's own web -- the vendor estate behind the irix and indyr4400 stations."
   },
   {
+    "host": "www.shareware.com",
+    "date": "19980101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Shareware.com",
+    "category": "Computers and Internet",
+    "blurb": "CNET's other download index, before Download.com absorbed it."
+  },
+  {
+    "host": "www.shoutcast.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "SHOUTcast",
+    "category": "Entertainment",
+    "blurb": "Anyone's internet radio station, streamed from Winamp."
+  },
+  {
+    "host": "www.sixdegrees.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "SixDegrees.com",
+    "category": "Homepages and Community",
+    "blurb": "The social network before there was a word for it."
+  },
+  {
+    "host": "www.slate.com",
+    "date": "19980101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Slate",
+    "category": "News and Media",
+    "blurb": "Microsoft's web magazine of smart contrarian takes."
+  },
+  {
+    "host": "www.snap.com",
+    "date": "19981101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Snap.com",
+    "category": "Search and Portals",
+    "blurb": "NBC and CNET's portal answer to Yahoo."
+  },
+  {
+    "host": "www.sony.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Sony",
+    "category": "Computers and Internet",
+    "blurb": "The electronics giant -- and the NEWS workstations behind the newsos station."
+  },
+  {
+    "host": "www.starmedia.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "StarMedia",
+    "category": "Search and Portals",
+    "blurb": "The portal for Latin America's arriving web."
+  },
+  {
+    "host": "www.suck.com",
+    "date": "19970101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Suck.com",
+    "category": "News and Media",
+    "blurb": "A daily dose of dot-com cynicism -- the web criticising itself."
+  },
+  {
+    "host": "www.sun.co.jp",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Sun Microsystems Japan",
+    "category": "Computers and Internet",
+    "blurb": "Sun's Japanese estate -- the Solaris and Java world in another language."
+  },
+  {
     "host": "www.sun.com",
     "date": "19980201",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "Sun Microsystems",
     "category": "Computers and Internet",
     "blurb": "The dot in dot-com — Java and Solaris."
+  },
+  {
+    "host": "www.symantec.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Symantec",
+    "category": "Computers and Internet",
+    "blurb": "Norton -- the antivirus and utilities every Windows PC ran."
+  },
+  {
+    "host": "www.talkcity.com",
+    "date": "19981101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Talk City",
+    "category": "Chat and Messaging",
+    "blurb": "Hosted, moderated chat -- a friendlier IRC."
   },
   {
     "host": "www.theglobe.com",
@@ -804,6 +1754,36 @@
     "blurb": "The community site behind the biggest IPO pop of 1998."
   },
   {
+    "host": "www.theonion.com",
+    "date": "19981101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "The Onion",
+    "category": "Entertainment",
+    "blurb": "America's Finest News Source, online."
+  },
+  {
+    "host": "www.theregister.co.uk",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "The Register",
+    "category": "News and Media",
+    "blurb": "Biting the hand that feeds IT."
+  },
+  {
+    "host": "www.thesmokinggun.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "The Smoking Gun",
+    "category": "News and Media",
+    "blurb": "Primary-source documents and mugshots, posted raw."
+  },
+  {
     "host": "www.time.com",
     "date": "19980601",
     "depth": 4,
@@ -812,6 +1792,36 @@
     "title": "Time",
     "category": "News and Media",
     "blurb": "Time magazine and the Pathfinder legacy."
+  },
+  {
+    "host": "www.tomshardware.com",
+    "date": "19990101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Tom's Hardware Guide",
+    "category": "Computers and Internet",
+    "blurb": "Overclocking, benchmarks and the PC enthusiast's bible."
+  },
+  {
+    "host": "www.toysrus.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Toys R Us",
+    "category": "Shopping",
+    "blurb": "The toy giant's rocky first holiday online."
+  },
+  {
+    "host": "www.travelocity.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Travelocity",
+    "category": "Shopping",
+    "blurb": "The other self-serve travel site of the boom."
   },
   {
     "host": "www.tripod.com",
@@ -824,6 +1834,16 @@
     "blurb": "Free home pages and 'pods' for a young web."
   },
   {
+    "host": "www.tucows.com",
+    "date": "19981101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Tucows",
+    "category": "Computers and Internet",
+    "blurb": "The cow-rated shareware library every modem user grazed."
+  },
+  {
     "host": "www.usatoday.com",
     "date": "19990110",
     "depth": 4,
@@ -832,6 +1852,16 @@
     "title": "USA Today",
     "category": "News and Media",
     "blurb": "The colorful national newspaper online."
+  },
+  {
+    "host": "www.userfriendly.org",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "User Friendly",
+    "category": "Computers and Internet",
+    "blurb": "The daily comic strip of the ISP tech-support trenches."
   },
   {
     "host": "www.weather.com",
@@ -844,6 +1874,16 @@
     "blurb": "Local forecasts on the web."
   },
   {
+    "host": "www.weatherunderground.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Weather Underground",
+    "category": "News and Media",
+    "blurb": "Forecasts from a university project, before it was a brand."
+  },
+  {
     "host": "www.webcrawler.com",
     "date": "19970601",
     "depth": 4,
@@ -854,6 +1894,46 @@
     "blurb": "One of the first full-text web search engines."
   },
   {
+    "host": "www.webring.org",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "WebRing",
+    "category": "Homepages and Community",
+    "blurb": "The rings of linked fan sites that stitched the amateur web together."
+  },
+  {
+    "host": "www.webvan.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Webvan",
+    "category": "Shopping",
+    "blurb": "Groceries delivered -- the boom's most expensive lesson."
+  },
+  {
+    "host": "www.winamp.com",
+    "date": "19990601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Winamp",
+    "category": "Entertainment",
+    "blurb": "It really whips the llama's ass -- the MP3 player and its skins."
+  },
+  {
+    "host": "www.winzip.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "WinZip",
+    "category": "Computers and Internet",
+    "blurb": "The archiver everyone ran unregistered for years."
+  },
+  {
     "host": "www.wired.com",
     "date": "19980101",
     "depth": 4,
@@ -862,6 +1942,16 @@
     "title": "Wired News",
     "category": "News and Media",
     "blurb": "Dispatches from the digital revolution."
+  },
+  {
+    "host": "www.xerox.com",
+    "date": "19980601",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Xerox",
+    "category": "Computers and Internet",
+    "blurb": "PARC's parent -- the Alto and the Star began the desktop everyone else copied."
   },
   {
     "host": "www.xoom.com",
@@ -876,9 +1966,9 @@
   {
     "host": "www.yahoo.com",
     "date": "19961017",
-    "depth": 5,
-    "max_pages": 900,
-    "max_mb": 900,
+    "depth": 6,
+    "max_pages": 1500,
+    "max_mb": 1200,
     "title": "Yahoo!",
     "category": "Search and Portals",
     "blurb": "The early web's hand-built directory of links."
@@ -892,5 +1982,15 @@
     "title": "ZDNet",
     "category": "Computers and Internet",
     "blurb": "Ziff-Davis tech news, reviews and downloads."
+  },
+  {
+    "host": "www.zombo.com",
+    "date": "20000101",
+    "depth": 3,
+    "max_pages": 300,
+    "max_mb": 300,
+    "title": "Zombo.com",
+    "category": "Entertainment",
+    "blurb": "You can do anything at Zombo.com. Anything at all."
   }
 ]
