@@ -8,7 +8,11 @@
 #      owned by the sibling quality/{ts,rust,python,bash} branches, so these
 #      steps only go fully green once those land,
 #   2. node scripts/check-file-size.mjs --strict (this branch's file-size budget),
-#   3. the generated-file drift gate (this branch).
+#   3. the generated-file drift gate (this branch),
+#   4. the release-notes freshness check — the committed notes are derived from
+#      git history, so this job checks out full history (fetch-depth: 0);
+#      only CLOSED weeks are compared, so the in-progress week (and any commit
+#      landing after the last regeneration) can never make it red.
 #
 # The per-language test jobs stay in their own workflows: rust.yml (cargo test),
 # spa.yml (tsc+vite build), tile-registry.yml (registry byte-parity).
@@ -31,6 +35,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Release notes are derived from git history; a shallow clone has
+          # none, and scripts/release-notes.py --check would only print SKIP.
+          fetch-depth: 0
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -98,3 +106,7 @@ jobs:
       # ---- 3. generated-file drift ----
       - name: Generated-file drift
         run: ./scripts/check-generated-drift.sh --regen
+
+      # ---- 4. release-notes freshness (closed weeks only) ----
+      - name: Release notes up to date
+        run: make release-notes-check

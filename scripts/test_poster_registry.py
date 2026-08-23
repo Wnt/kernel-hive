@@ -10,19 +10,15 @@ fixture").
 
 from __future__ import annotations
 
-import importlib.machinery
 import json
 import tempfile
 import unittest
 from pathlib import Path
 
 from poster_registry import PosterError, load_gallery, load_posters
+from stations_registry.render import render_poster_docs
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-TILES_REGISTRY = importlib.machinery.SourceFileLoader(
-    "tiles_registry_under_test",
-    str(REPO_ROOT / "scripts" / "stations-registry.py"),
-).load_module()
 
 POSTER_MD = """---
 title: Test Machine
@@ -117,7 +113,9 @@ class AbsentGalleryTest(unittest.TestCase):
             self.assertEqual(warnings, [])
             self.assertNotIn("gallery", posters["widget"])
             # And the generator does not emit a null/absent key either.
-            encoded = TILES_REGISTRY.render_posters(posters).decode()
+            # poster-docs.json is the runtime document the SPA fetches; the
+            # bundle side (posterIndex.ts) carries hero paths only.
+            encoded = render_poster_docs(posters).decode()
             self.assertNotIn('"gallery"', encoded)
 
     def test_poster_without_tile_directory_untouched(self):
@@ -183,10 +181,9 @@ class ValidGalleryRoundTripTest(unittest.TestCase):
             self.assertEqual(gallery["adLinks"][0]["title"].startswith('"Buy'), True)
 
             # Round-trip through the actual generator step.
-            encoded = TILES_REGISTRY.render_posters(posters).decode()
-            self.assertIn("export const POSTERS", encoded)
-            reparsed_src = encoded.split(" = ", 1)[1].rsplit(" as const", 1)[0]
-            reparsed = json.loads(reparsed_src)
+            document = json.loads(render_poster_docs(posters).decode())
+            self.assertIn("DO NOT EDIT", document["_generated"])
+            reparsed = document["posters"]
             self.assertEqual(reparsed["widget"]["gallery"]["images"][0]["licenseId"], "pd")
             self.assertNotIn("sha256", reparsed["widget"]["gallery"]["images"][0])
 

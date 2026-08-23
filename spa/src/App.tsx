@@ -5,6 +5,7 @@ import GridView from './ui/grid/GridView';
 import StreamView from './ui/grid/StreamView';
 import ExhibitPoster from './ui/ExhibitPoster';
 import { FleetTable } from './ui/FleetTable';
+import { About } from './ui/About';
 import { useManifest } from './data/useManifest';
 import { useMuseum } from './state/store';
 import { bindingFromManifest, type OSBinding } from './three/archetypeRegistry';
@@ -58,6 +59,7 @@ export default function App() {
           <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>Grid</NavLink>
           <NavLink to="/museum" className={({ isActive }) => (isActive ? 'active' : '')}>3D Museum (early access)</NavLink>
           <NavLink to="/fleet" className={({ isActive }) => (isActive ? 'active' : '')}>Fleet table</NavLink>
+          <NavLink to="/about" className={({ isActive }) => (isActive ? 'active' : '')}>About</NavLink>
         </div>
       </div>
     </header>
@@ -77,6 +79,9 @@ export default function App() {
 
         {/* ---------- operator fleet table: tier / emulator / kiosk / I/O paths per station ---------- */}
         <Route path="/fleet" element={<>{TopBar}<FleetTable /></>} />
+
+        {/* ---------- about the project + generated weekly release notes ---------- */}
+        <Route path="/about" element={<>{TopBar}<About /></>} />
 
         {/* ---------- 3D museum ---------- */}
         <Route path="/museum" element={<SceneV2 />} />

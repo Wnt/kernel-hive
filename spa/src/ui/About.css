@@ -1,0 +1,97 @@
+/* /about — project blurb + generated weekly release notes. Paper palette from
+   index.css tokens (one theme, no dark branch). html/body/#root are
+   overflow:hidden, so this view owns its own scrolling. */
+.about-view {
+  position: absolute; inset: 0; z-index: 10;
+  overflow-y: auto;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  padding: 76px 24px 48px;   /* top clears the fixed app bar */
+}
+.about-inner { max-width: 860px; margin: 0 auto; }
+
+.about-title { font-size: 22px; font-weight: 700; margin: 12px 0 10px; letter-spacing: -0.01em; }
+.about-title--notes { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); }
+.about-lede { font-size: 15px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 14px; }
+.about-lede a, .about-note a { color: var(--accent-ink); }
+.about-note { color: var(--ink-muted); font-size: 13px; line-height: 1.55; margin: 0 0 14px; max-width: 720px; }
+.about-status { color: var(--ink-soft); font-size: 15px; }
+.about-status code, .about-note code {
+  font-family: var(--font-mono); font-size: 0.92em;
+  background: var(--tint-1); padding: 1px 5px; border-radius: 4px;
+}
+
+.about-weeks { display: flex; flex-direction: column; gap: 10px; }
+.about-week {
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--paper-raised); box-shadow: var(--shadow-1);
+}
+.about-week > summary {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
+  padding: 12px 16px; cursor: pointer; list-style: none;
+  border-radius: 12px;
+}
+.about-week > summary::-webkit-details-marker { display: none; }
+.about-week > summary::before {
+  content: '▸'; color: var(--ink-muted); font-size: 11px; line-height: 1.4;
+}
+.about-week[open] > summary::before { content: '▾'; }
+.about-week > summary:hover { background: var(--tint-1); }
+.about-week > summary:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+.about-week-number { font-weight: 700; font-size: 15px; }
+.about-week-range { color: var(--ink-soft); font-size: 13.5px; }
+.about-week-commits {
+  margin-left: auto; color: var(--ink-muted); font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.about-badge {
+  display: inline-block; padding: 1px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; line-height: 1.6; white-space: nowrap;
+  background: var(--tint-2); color: var(--ink-soft);
+}
+.about-badge--live { background: rgba(29, 122, 76, 0.14); color: var(--ok); }
+
+.about-week-body { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+.about-section { border-top: 1px solid var(--line); }
+.about-section > summary {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 8px 2px; cursor: pointer; list-style: none;
+}
+.about-section > summary::-webkit-details-marker { display: none; }
+.about-section > summary:hover .about-section-title { color: var(--accent-ink); }
+.about-section > summary:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; border-radius: 6px; }
+.about-section--collapsed { display: flex; align-items: baseline; gap: 10px; padding: 8px 2px; }
+.about-section-title { font-weight: 600; font-size: 13.5px; }
+.about-section-count {
+  color: var(--ink-muted); font-size: 12px; font-variant-numeric: tabular-nums;
+}
+
+.about-entries { list-style: none; margin: 0 0 8px; padding: 0; }
+.about-entries li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+  padding: 4px 0 4px 14px; font-size: 13.5px; line-height: 1.5;
+  border-bottom: 1px solid var(--tint-1);
+}
+.about-entries li:last-child { border-bottom: 0; }
+.about-station {
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 600;
+  color: var(--accent-ink); background: var(--accent-wash);
+  border: 1px solid var(--accent-line); border-radius: 999px; padding: 0 7px;
+}
+.about-entry-text { flex: 1 1 320px; color: var(--ink); }
+.about-sha {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-muted);
+  text-decoration: none;
+}
+.about-sha:hover { color: var(--accent-ink); text-decoration: underline; }
+
+/* The app bar's actions wrap under the brand between ~960 and 640 px (a fourth
+   nav link makes that band wider), and below 640 the tagline is hidden so it
+   fits on one line again. Track it so the page never starts under the bar. */
+@media (max-width: 960px) {
+  .about-view { padding: 122px 14px 40px; }
+}
+@media (max-width: 640px) {
+  .about-view { padding: 76px 12px 40px; }
+}

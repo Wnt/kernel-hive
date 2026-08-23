@@ -1,6 +1,7 @@
 .PHONY: station-registry-generate station-registry-check station-registry-validate \
 	gallery-manifest-check check-file-size check-generated-drift quality-gate \
-	poster-gallery-fetch poster-gallery-verify devwatch
+	poster-gallery-fetch poster-gallery-verify devwatch \
+	release-notes release-notes-check
 
 station-registry-generate:
 	python3 scripts/stations-registry.py generate
@@ -30,6 +31,19 @@ poster-gallery-fetch:
 
 poster-gallery-verify:
 	python3 scripts/tools/fetch-poster-gallery.py --verify
+
+# Release notes: README.md's "## Release notes" section, docs/RELEASE-NOTES.md
+# and spa/public/release-notes.json are DERIVED from git history -- regenerate
+# after a MERGE, not only after an edit, and never hand-edit them.
+# release-notes-check is deliberately NOT part of quality-gate and NOT in
+# check-generated-drift.sh's GENERATED_PATHS (that array is cross-validated
+# against the station registry and would break `make station-registry-check`).
+# It compares only CLOSED weeks, so the in-progress week cannot make it red.
+release-notes:
+	python3 scripts/release-notes.py
+
+release-notes-check:
+	python3 scripts/release-notes.py --check
 
 # Cross-cutting quality gates (see docs/lab/AGENT-CI-EXIT-RULE.md).
 check-file-size:

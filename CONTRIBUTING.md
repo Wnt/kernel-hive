@@ -30,6 +30,55 @@ whole-registry `index.json`: `stations-registry.py render` / `emit` resolves the
 on demand, so a gallery-visible string has exactly ONE hit in the tree. The same rule applies to any other
 generated artifact you find a comment marking as such.
 
+## Commit messages become the release notes
+
+`docs/RELEASE-NOTES.md`, the README's "Release notes" section and
+`spa/public/release-notes.json` are **generated from git history** by
+`scripts/release-notes.py` — run `make release-notes` after a merge, never
+hand-edit the output (`make release-notes-check` verifies it). Notes are cut
+into weeks that end **Sunday 09:00 Europe/Helsinki**; the still-open current
+week is deliberately left unverified, so only closed weeks can go stale.
+
+That makes a well-formed `scope: subject` commit message the single thing
+that decides whether a week reads well: the scope picks the section, the
+subject is the bullet. Write the subject as a short statement of what
+changed, not "fix stuff". A scope that is a station id (any
+`registry/stations/*.json` id — `win95`, `irix`, `tru64`, …) files the commit
+under **Stations**; otherwise these scopes are recognised:
+
+- **Gallery UI** — `spa`, `ui`, `gallery`, `posters`, `grid`
+- **Streaming daemon** — `streamhost`, `rust`, `encoder`, `transport`,
+  `ctlsock`, `input`, `keyboard`, `telemetry`, `idle`, …
+- **Retronet** — `retronet`
+- **Tooling & infrastructure** — `registry`, `scripts`, `build`, `ci`,
+  `make`, `dev`, `lint`, `host`, `labctl`, `serve`, `tools`, …
+- **Docs** — `docs`, `readme`, `research`, `playbook`, `terminology`
+- **Dependencies** — Dependabot's own `Bump …` subjects, automatically
+
+Multi-part scopes work (`docs/research`, `retronet-bot`) — the head decides
+the section — and so do `type(scope):` messages (`docs(rel-pointer): …`).
+
+Three subject shapes are read, and only the first one is stripped from the
+bullet:
+
+1. `tru64: fix the Gaim colormap` — a real prefix. The bullet becomes "Fix
+   the Gaim colormap" under **Stations**, labelled `tru64`.
+2. `retronet web: drop the charset parameter` — the scope is the first word
+   of a short phrase. The section comes from `retronet`; the text is kept
+   whole, because "web" is part of what changed.
+3. `chokanji joins the retronet web plane: …` — prose opening with a station
+   id. Recognised for **Stations only**: a station id is distinctive, while
+   "make", "build" and "docs" open ordinary sentences.
+
+**Other** means none of the three matched. Before reaching for
+`_ALIAS_GROUPS` in `scripts/release-notes.py`, check *why*: an alias only
+helps when a scope was parsed and is simply unknown (`accept: …`,
+`commodore: …`). A subject that never named a scope at all — `we need
+pinball sites too`, `tmp` — cannot be reached by any alias, and the fix is
+the next commit message, not the generator. Placeholder subjects (`wip`,
+`tmp`, `fixup`) are kept in the archive but are never chosen as a week's
+README highlights.
+
 ## The quality gate — green before done
 
 Every change that's intended to merge is expected to pass the full CI
