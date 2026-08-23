@@ -245,6 +245,14 @@
     "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
   },
   "ui": "desktop",
+  "retronet": {
+    "planes": ["web", "icq"],
+    "address": "10.99.0.10",
+    "addressing": "dhcp",
+    "link": "tap win98rn0 on vmbr-rn",
+    "guard": "WIN98RN-IN",
+    "doc": "docs/lab/retronet/ICQ-STATION.md"
+  },
   "reset": {
     "stationDir": "win98se",
     "pointer": "rel",

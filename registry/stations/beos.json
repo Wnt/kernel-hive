@@ -136,6 +136,15 @@
     "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
   },
   "ui": "desktop",
+  "retronet": {
+    "planes": ["web", "icq"],
+    "address": "10.99.0.16",
+    "addressing": "dhcp",
+    "link": "tap beosrn0 on vmbr-rn",
+    "guard": "BEOSRN-IN",
+    "joined": "2026-08-23",
+    "doc": "docs/lab/retronet/STATION-beos.md"
+  },
   "notes": [
     "slot 143/UDP 54143 reserved by stations-registry.py new (2026-08-17)",
     "dark-launched during bring-up via scripts/dev/darklaunch-station.py from sandbox beos-r5",

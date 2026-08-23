@@ -221,6 +221,15 @@
     "status": "host-only",
     "note": "rtl8139 on the persistent tap chokanjirn0, enslaved to the OFFLINE retronet bridge vmbr-rn (streamhost/stations/chokanji/rn-tapnet.sh, called `up` from the launcher on every start). The NIC model is the one the original QEMU-CKJ port shipped alongside this very disk (its q.bat reads -net nic,model=rtl8139). STATIC in-guest addressing on the reserved 10.99.0.21/24, DNS 10.99.0.2, with the ネットワーク設定 panel's ゲートウェイ「使用する」box left unchecked so there is no default route - B-right/V 4.202 has no DHCP client, so the reservation exists only to keep the address unique. Behind the fail-closed CHOKANJIRN-IN guard chain it reaches ONLY the gateway CT 10.99.0.2, where the 基本ブラウザ browses the period corpus on :80 seamlessly (wildcard DNS, no proxy configured); never labhost, the LAN, the gallery or the internet. Added 2026-08-23; the station previously had no NIC at all, so the golden was COLD re-baked (docs/lab/retronet/WEB-STATION-chokanji.md)"
   },
+  "retronet": {
+    "planes": ["web"],
+    "address": "10.99.0.21",
+    "addressing": "static",
+    "link": "tap chokanjirn0 on vmbr-rn",
+    "guard": "CHOKANJIRN-IN",
+    "joined": "2026-08-23",
+    "doc": "docs/lab/retronet/WEB-STATION-chokanji.md"
+  },
   "reset": {
     "stationDir": "chokanji",
     "pointer": "rel",

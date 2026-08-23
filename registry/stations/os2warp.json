@@ -255,5 +255,14 @@
   "network": {
     "status": "host-only",
     "note": "pcnet on a persistent tap (os2rn0) enslaved to the OFFLINE retronet bridge vmbr-rn (streamhost/stations/os2warp/rn-tapnet.sh), behind the fail-closed OS2RN-IN guard chain. IBM MPTS/NDIS + TCP/IP 4.3 leases 10.99.0.19 by DHCP from the gateway CT 10.99.0.2, which supplies DNS but deliberately withholds the router option — the guest has NO default route and reaches only the gateway: never labhost, the LAN or the internet. IBM WebExplorer browses the retronet web corpus off the gateway's :80 origin with no proxy, via wildcard DNS. The stack was repaired 2026-08-23 (the MCP2 networking install had failed with error 1608); docs/lab/retronet/WEB-STATION-os2warp.md"
+  },
+  "retronet": {
+    "planes": ["web", "icq"],
+    "address": "10.99.0.19",
+    "addressing": "dhcp",
+    "link": "tap os2rn0 on vmbr-rn",
+    "guard": "OS2RN-IN",
+    "joined": "2026-08-23",
+    "doc": "docs/lab/retronet/WEB-STATION-os2warp.md"
   }
 }

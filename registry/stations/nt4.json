@@ -226,6 +226,15 @@
     "source": "/opt/qemu-cirrusfix2: pve-qemu 11.0.2 + cirrus patches 0004/0005 (docs/guests/nt4.md)"
   },
   "ui": "desktop",
+  "retronet": {
+    "planes": ["web", "icq"],
+    "address": "10.99.0.12",
+    "addressing": "dhcp",
+    "link": "tap nt4rn0 on vmbr-rn",
+    "guard": "NT4RN-IN",
+    "joined": "2026-08-21",
+    "doc": "docs/lab/retronet/ICQ-STATION-NT4.md"
+  },
   "reset": {
     "stationDir": "nt4",
     "pointer": "abs",

@@ -155,6 +155,15 @@
     "status": "host-only",
     "note": "dec21143 at pci0.4 via pcap on the veth tru64-h/tru64-g; tru64-h enslaved to the OFFLINE retronet bridge vmbr-rn (rn-tapnet.sh), guest static 10.99.0.15/24 with NO default route behind the fail-closed TRU64RN-IN guard chain — reaches only the gateway CT 10.99.0.2 for its Gaim/OSCAR ICQ client (UIN 64000), never the LAN/gallery/internet. Rehomed 2026-08-21 from the pre-retronet outbound-NAT internet path (docs/lab/retronet/ICQ-STATION-tru64.md)"
   },
+  "retronet": {
+    "planes": ["web", "icq"],
+    "address": "10.99.0.15",
+    "addressing": "dhcp",
+    "link": "veth tru64-h/tru64-g (pcap) on vmbr-rn",
+    "guard": "TRU64RN-IN",
+    "joined": "2026-08-21",
+    "doc": "docs/lab/retronet/ICQ-STATION-tru64.md"
+  },
   "reset": {
     "stationDir": "tru64",
     "pointer": "abs",
