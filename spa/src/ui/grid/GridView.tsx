@@ -5,6 +5,7 @@ import { bindingFromManifest } from '../../three/archetypeRegistry';
 import type { EnrichedVM } from '../../types';
 import { posterFor } from '../../data/posterIndex';
 import { matchesQuery, parseQuery, stationTerms } from './stationSearch';
+import { usePullToRefresh } from './usePullToRefresh';
 
 // ============================================================================
 //  GridView — the plain 2D, keyboard-navigable card grid (DEFAULT view)
@@ -99,6 +100,17 @@ export default function GridView() {
   const { search } = useLocation();
 
   const streamable = vms;
+
+  // Touch pull-to-refresh. A standalone/installed PWA has no browser chrome and
+  // so no native pull-to-refresh; the grid supplies its own on its scroll box. A
+  // full reload re-fetches the rendered manifest, so a newly-listed (or
+  // just-recaptured) station shows up. `vms.length > 0` gates it because the
+  // loading placeholder below is a different, ref-less element.
+  const pull = usePullToRefresh(
+    gridRef,
+    useCallback(() => { window.location.reload(); }, []),
+    vms.length > 0,
+  );
 
   // Group by era, sort items by year within a group, and groups chronologically.
   const groups = useMemo<EraGroup[]>(() => {
@@ -249,6 +261,24 @@ export default function GridView() {
 
   return (
     <div ref={gridRef} className="grid-view" role="region" aria-label="Operating system collection">
+      {/* Pull-to-refresh affordance — slides out from under the app bar as the
+          list is pulled down, spins once a refresh is committed. Decorative:
+          the reload it triggers is the real feedback. */}
+      <div
+        className={`grid-refresh${pull.armed ? ' is-armed' : ''}`}
+        style={{
+          transform: `translate(-50%, ${Math.round(pull.distance)}px)`,
+          opacity: pull.refreshing || pull.distance > 2 ? 1 : 0,
+        }}
+        aria-hidden="true"
+      >
+        <span
+          className={`grid-refresh-icon${pull.refreshing ? ' is-refreshing' : ''}`}
+          style={pull.refreshing ? undefined : { transform: `rotate(${Math.min(1, pull.distance / 64) * 270}deg)` }}
+        >
+          ↻
+        </span>
+      </div>
       <div className="grid-view-inner">
         <div className="grid-filter">
           <input

@@ -169,6 +169,18 @@ export function StageMenu({
               ⤢ Fullscreen
             </button>
           )}
+
+          {/* Reload the page and reconnect the stream from scratch. A
+              standalone/installed PWA has no browser reload button, so a wedged
+              client needs one here. Distinct from Restore above: that resets the
+              GUEST host-side, this resets the CLIENT. */}
+          <button
+            style={S.menuItem}
+            onClick={run(() => window.location.reload())}
+            title="Reload the page and reconnect the stream"
+          >
+            ⟳ Reload
+          </button>
         </div>
       )}
       </div>

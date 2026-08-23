@@ -106,3 +106,20 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </React.StrictMode>,
 );
+
+// Register the PWA service worker (public/sw.js) so the gallery is installable
+// as a standalone app. Only in a production build, and never from a /staging/
+// preview — a staging page shares the live origin and must not plant a
+// root-scoped worker on it. Deferred to load so it never competes with the
+// first paint or the stream handshake; failure is silent (an uninstalled app is
+// a fine fallback). See sw.js for the deliberately network-first, no-app-cache
+// policy that keeps a box deploy visible on the next load.
+if (
+  'serviceWorker' in navigator
+  && import.meta.env.PROD
+  && !window.location.pathname.startsWith('/staging/')
+) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
