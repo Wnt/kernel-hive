@@ -256,6 +256,11 @@ box_sync_load_pairs() {
   # guest 10.99.0.18). Same box-authored mirror pair as win98se's above.
   # See docs/lab/retronet/WEB-STATION-winxp.md.
   box_sync_add_pair winxp-rn-tapnet streamhost/stations/winxp/rn-tapnet.sh "$BOX_ROOT/stations/winxp/rn-tapnet.sh" exact repo
+  # chokanji's retronet bridge-tap lifecycle helper (web plane: the B-right/V
+  # 基本ブラウザ on the corpus, guest 10.99.0.21 — statically addressed in-guest,
+  # since BTRON3 has no DHCP client). Same box-authored mirror pair as win98se's
+  # above. See docs/lab/retronet/WEB-STATION-chokanji.md.
+  box_sync_add_pair chokanji-rn-tapnet streamhost/stations/chokanji/rn-tapnet.sh "$BOX_ROOT/stations/chokanji/rn-tapnet.sh" exact repo
   # solaris' retronet bridge-tap lifecycle helper (Tier C, climm/OSCAR), the same
   # box-authored mirror pair as win98se's above. See ICQ-STATION-solaris.md.
   box_sync_add_pair solaris-rn-tapnet streamhost/stations/solaris/rn-tapnet.sh "$BOX_ROOT/stations/solaris/rn-tapnet.sh" exact repo
@@ -280,6 +285,16 @@ box_sync_load_pairs() {
   # Tracking it here keeps the reference from claiming the station still runs
   # climm after the Gaim swap.
   box_sync_add_pair tru64-icq-fixture streamhost/stations/tru64/9999.icq-fixture "$BOX_ROOT/stations/tru64/9999.icq-fixture" exact repo
+  # beos retronet: its bridge-tap lifecycle helper, plus the two files that live
+  # INSIDE the guest and whose box copies are the REFERENCE copies (the live ones
+  # are baked onto the guest's own BFS disk, so they only change on a golden
+  # re-bake). beos's rn-tapnet.sh was never in this list, so its box copy could
+  # drift silently the way tru64's did. UserBootscript is the ready scene;
+  # icbm-watchdog.sh is what keeps ICBM signed on to the gateway -- ICBM .71 has
+  # no auto-reconnect of its own. See docs/lab/retronet/STATION-beos.md.
+  box_sync_add_pair beos-rn-tapnet streamhost/stations/beos/rn-tapnet.sh "$BOX_ROOT/stations/beos/rn-tapnet.sh" exact repo
+  box_sync_add_pair beos-bootscript streamhost/stations/beos/UserBootscript "$BOX_ROOT/stations/beos/UserBootscript" exact repo
+  box_sync_add_pair beos-icbm-watchdog streamhost/stations/beos/icbm-watchdog.sh "$BOX_ROOT/stations/beos/icbm-watchdog.sh" exact repo
   # win98se ICQ presence healer (labhost): a timer nudges the persona's golden
   # BOS socket so ICQ reconnects after every reset/wake (ICQ 2000b will not on
   # its own). See docs/lab/retronet/ICQ-STATION.md §reconnect.
@@ -303,6 +318,11 @@ box_sync_load_pairs() {
   # no exec channel on this station). Same mirror pair as the helpers above.
   # See docs/lab/retronet/WEB-STATION-hpuxvue.md.
   box_sync_add_pair hpuxvue-rn-tapnet streamhost/stations/hpuxvue/rn-tapnet.sh "$BOX_ROOT/stations/hpuxvue/rn-tapnet.sh" exact repo
+
+  # os2warp retronet WEB plane: its bridge-tap lifecycle helper, same mirror-pair
+  # shape as win98se's above. No ICQ nudge — os2warp is a web-only retronet
+  # station (no chat client). See docs/lab/retronet/WEB-STATION-os2warp.md.
+  box_sync_add_pair os2warp-rn-tapnet streamhost/stations/os2warp/rn-tapnet.sh "$BOX_ROOT/stations/os2warp/rn-tapnet.sh" exact repo
 
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.

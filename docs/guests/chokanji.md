@@ -1,7 +1,9 @@
 # chokanji guest — 超漢字 / B-right/V (BTRON3)
 
-Status: **LIVE (host-native QEMU-x86), dark-launched for eyeball.** Slot 149,
+Status: **LIVE (host-native QEMU-x86), listed on the grid.** Slot 149,
 UDP 54149, archetype `beige-tower-crt`, `ui: desktop`, relative pointer.
+On the **retronet web plane** since 2026-08-23 (rtl8139 → `vmbr-rn`, static
+`10.99.0.21`); its 基本ブラウザ browses the period corpus with no proxy.
 
 超漢字 (Chokanji) / B-right/V is the commercial **BTRON3** desktop from Ken
 Sakamura's TRON project. The exhibit hook is the TRON story: the operating system
@@ -53,8 +55,9 @@ the vmmouse trap below.
 - Verbatim launcher: `streamhost/stations/chokanji/qemu-streamhost.sh`. Device set:
   `qemu-system-x86_64 -enable-kvm -m 256 -smp 1 -machine pc-i440fx-11.0,vmport=off
   -cpu host -rtc base=localtime -boot c -vga cirrus -display dbus,p2p=on -drive
-  file=…/chokanji.qcow2,format=qcow2,if=ide` (default i8042 PS/2 keyboard+mouse;
-  no NIC; no audio device). `SH_DBUS_UPDATE_MS=4` fast-poll capture.
+  file=…/chokanji.qcow2,format=qcow2,if=ide -netdev tap,id=rn0,ifname=chokanjirn0
+  -device rtl8139,netdev=rn0,mac=…,romfile=` (default i8042 PS/2 keyboard+mouse;
+  no audio device). `SH_DBUS_UPDATE_MS=4` fast-poll capture.
 - **`vmport=off` is load-bearing.** `mc.img` is an ex-VMware guest, so QEMU's
   default VMware I/O port makes the `vmmouse` device the current pointer
   (`query-mice`: vmmouse current, `absolute=false`), and it **swallows all injected
@@ -69,6 +72,21 @@ the vmmouse trap below.
   `qemu-ps2-relative` transport, no extra device).
 - **Display = Cirrus GD5446 @ 800×600.** BTRON's screen driver in this disk is
   Cirrus-specific; `-vga std` renders black. 800×600 is the disk's configured mode.
+- **NIC = RTL8139 on the retronet** (added 2026-08-23). The model was read out of
+  the media, not guessed: `qemuckj/q.bat` — the launch script the original
+  packagers shipped alongside this very `mc.img` — reads `-net nic,model=rtl8139`,
+  and `pxe-rtl8139.bin` is the only NIC option ROM in that port. It worked on the
+  first cold boot with no in-guest driver work. `romfile=` pins the PXE option ROM
+  OFF: the ROM is a migratable ramblock, so a golden baked with it present refuses
+  to load where it is absent (`Unknown ramblock 0000:00:03.0/rtl8139.rom`); this
+  guest boots from its IDE disk and never PXE-boots. Adding the PCI NIC did **not**
+  disturb the vmmouse trap — PS/2 is still the current pointer.
+  The tap `chokanjirn0` (persistent, on `vmbr-rn`) and its fail-closed
+  `CHOKANJIRN-IN` guard chain are brought up by
+  `streamhost/stations/chokanji/rn-tapnet.sh`, called `up` from the launcher on
+  every start. **The guest is addressed statically in-guest** at `10.99.0.21/24`,
+  DNS `10.99.0.2`, with no default route — B-right/V 4.202 has no DHCP client.
+  Full as-built: [`docs/lab/retronet/WEB-STATION-chokanji.md`](../lab/retronet/WEB-STATION-chokanji.md).
 - RAM 256 MB (what this B-right/V build is tuned for; boots in ~40 s).
 
 ## Golden, input, and rollback
@@ -85,20 +103,29 @@ the vmmouse trap below.
   原紙箱：B-right/V virtual-object box open on the blue kanji-watermark wallpaper,
   hand cursor at rest.
 - Input proof: **pointer (relative) PASS** (framebuffer-verified cursor motion).
-  Keyboard **UNVERIFIED** — the exhibit is mouse-driven; BTRON keyboard entry is
-  Japanese-IME/menu-driven, virtual-keyboard profile `generic`.
+  Keyboard **PASS** since 2026-08-23 — ASCII typed over QMP lands cleanly (proven
+  by configuring the network panel by hand). Note the layout is **JIS**: `:` is its
+  own key (where a US board has the apostrophe) and `shift-semicolon` yields `+`,
+  so `scripts/dev/qmp-type.py`'s US map mistypes `:` and `=` on this guest.
+  BTRON text entry is otherwise Japanese-IME/menu-driven, virtual-keyboard profile
+  `generic`.
 - Credentials: none — BTRON boots straight to the desktop, no login. `credentialsRef`
   `guest/chokanji` is a placeholder reference (no values).
-- Rollback: keep the pre-change launcher+golden pair; the disk is reproducible from
-  the archived media via the builder. No live station is touched during bring-up
-  (all work namespaced under `/data/vms/sandbox/chokanji/`).
+- Rollback: the pre-retronet disk (carrying its own pre-change `golden`) and
+  launcher are kept beside the guest as
+  `/data/gallery-guests/Chokanji/chokanji.qcow2.prern-2026-08-23` and
+  `qemu-streamhost.sh.prern-2026-08-23` — copy the disk back over
+  `chokanji.qcow2` and revert the launcher. The disk is *also* reproducible from
+  the archived media via the builder, but that is a rebuild, not a rollback: it
+  would not carry the network configuration, which lives in the disk.
+  Bring-up work is namespaced under `/data/vms/sandbox/`; the live station is
+  touched only to install a proven result.
 
-## Dark launch
+## Listing
 
-`/os/chokanji` on the live origin, via `scripts/dev/darklaunch-station.py publish`
-(listed:false overlay, grid + 3D hall unaffected) — for the operator to eyeball
-before promotion to the grid (publish `gallery-manifest.json`). Re-arm the overlay
-after any `serve-https-spa.sh` manifests deploy (it republishes from the registry).
+Listed on the grid since `890d312` (promoted off dark launch). It is an ordinary
+grid station now: no `darklaunch.d` overlay to re-arm after a
+`serve-https-spa.sh` manifests deploy.
 
 ## Known limitations
 
@@ -113,4 +140,9 @@ after any `serve-https-spa.sh` manifests deploy (it republishes from the registr
 - **Resolution.** 800×600 (the disk's configured Cirrus mode); higher res would
   need reconfiguring BTRON's screen driver in-OS.
 - **Audio.** None wired (the desktop is effectively silent). QEMU-CKJ's `q.bat`
-  used SB16+AdLib — a possible future add.
+  used SB16+AdLib — a possible future add. Adding it would change the device set
+  again and so needs another cold golden re-bake, exactly as the NIC did.
+- **No DHCP.** B-right/V 4.202's ネットワーク環境設定 panel is static-only (one
+  fixed-size アドレス tab, no DHCP option) and the guest sends no DISCOVER at boot.
+  The address lives in the disk, so changing it means editing the guest's own panel
+  and **re-baking the golden** — it is not a launcher flag.

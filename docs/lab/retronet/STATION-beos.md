@@ -1,11 +1,13 @@
-# beos on the retronet — the bridge, the exec channel, NetPositive, and why it has no ICQ client
+# beos on the retronet — the bridge, the exec channel, NetPositive, and ICBM on the pre-OSCAR door
 
-**Status: LIVE, and deliberately retronet-only — there is no ICQ client on this
-station and, on the evidence below, there is no client that can ship today.**
-`beos` (BeOS R5 Professional 5.0.3) joined the retronet on **2026-08-23**. It is on a real bridged NIC on `vmbr-rn` with a unique MAC, on
-**DHCP** (reserved `10.99.0.16`), and it browses the museum corpus in
-**NetPositive** — R5's own browser, no proxy, nothing sourced and nothing
-installed. Open the station and NetPositive is already showing a corpus page.
+**Status: LIVE, fully onboarded.** `beos` (BeOS R5 Professional 5.0.3) joined
+the retronet on **2026-08-23** and got its ICQ client the same day. It is on a
+real bridged NIC on `vmbr-rn` with a unique MAC, on **DHCP** (reserved
+`10.99.0.16`), it browses the museum corpus in **NetPositive** — R5's own
+browser, no proxy — and it is signed in to the gateway as UIN **`50000`** with
+**ICBM .71**, the BeCQ successor, over the pre-OSCAR **UDP 4000** door. Open the
+station and NetPositive is showing a corpus page with ICBM's contact list beside
+it; HiveBot says hello about half a minute after the client signs on.
 
 Two things make this station different from every other one on the retronet,
 and both are wins:
@@ -23,15 +25,14 @@ host-side tap/containment wiring is shared verbatim),
 example), [`GATEWAY.md`](GATEWAY.md), [`WEB-PROXY.md`](WEB-PROXY.md).
 The guest itself: [`docs/guests/beos.md`](../../guests/beos.md).
 
-> **The ICQ question is settled, not open.** Two clients were sourced, installed
-> and measured against the real gateway on 2026-08-23, and both were rejected on
-> evidence — see [§The ICQ client: two candidates, both
-> rejected](#the-icq-client-two-candidates-both-rejected). Do not re-open the
-> search without reading that section: it records what was tried, what the
-> gateway proved it can do, and the one thing that would have to change for a
-> client to ship. A Terminal-based IM client is **not** an acceptable
-> substitute — the operator removed those from two other stations this week, and
-> retronet-only is the better outcome than undoing that.
+> **The one thing to know before touching the ICQ half.** ICBM .71 has no
+> auto-reconnect: when the gateway drops its session the client tears the
+> connection down cleanly and then stays offline for ever. Everything the
+> exhibit does about that lives in one small guest-side loop,
+> [`icbm-watchdog.sh`](../../../streamhost/stations/beos/icbm-watchdog.sh) —
+> see [§The ICQ client](#the-icq-client--icbm-71-becq). A Terminal-based IM
+> client remains out of bounds; ICBM is a native Be-API desktop app, which is
+> the requirement.
 
 ## The wiring, at a glance
 
@@ -45,6 +46,7 @@ The guest itself: [`docs/guests/beos.md`](../../guests/beos.md).
 | Browser | **NetPositive** (`/boot/apps/NetPositive` → `/boot/beos/apps/NetPositive`), R5's own. Already on the disk; nothing sourced, nothing added to the asset manifest. |
 | Exec | `labctl exec beos "<cmd>"` → **R5's own telnetd at `10.99.0.16:23`, straight over the bridge**. `exec_kind: telnet_unix_e` (the existing kind, shared with sunos414), host client `/root/sunexec.py`. No agent in the guest, no hostfwd, no new protocol. §The exec channel |
 | File transfer | **R5's own ftpd at `10.99.0.16:21`**, same login, enabled by the same checkbox. §Delivering files into the guest |
+| ICQ | **ICBM .71** (`/boot/home/apps/ICBM/ICBM.x86`), UIN **`50000`**, auto-login, to `icq.mirabilis.com:4000` — the shipped default hostname, which `retronet-dns` answers with `10.99.0.2`, so no server override is configured anywhere. Kept signed on by `icbm-watchdog.sh`. §The ICQ client |
 | Audio | still **OFF**, deliberately, and untouched by this work. |
 
 ## The NIC had to change — ne2k_pci → rtl8139
@@ -273,7 +275,11 @@ renderer, and nothing needs redesigning for BeOS. §Evidence frames has the shot
 
 `streamhost/stations/beos/UserBootscript` is tracked in the repo and installed
 at `/boot/home/config/boot/UserBootscript`. It launches the Terminal (the
-original fixture) and then NetPositive on a corpus page.
+original fixture), then NetPositive on a corpus page, then
+`icbm-watchdog.sh` — which is what starts ICBM, rather than the boot script
+launching the client directly. That indirection is the point: the same loop that
+brings ICBM up at boot is the one that brings it back after the gateway drops
+it, so there is exactly one place that owns "is the client signed on".
 
 The **wait** in it is load-bearing: `UserBootscript` can win the race against
 `dhcp_client`, and a NetPositive that starts before the lease resolves nothing
@@ -408,10 +414,14 @@ Both verifications passed here.
 ## Golden lineage & rollback (FULL paths)
 
 - **LIVE golden:** internal snapshot **`golden`** in
-  `/data/vms/streamhost/stations/beos/beos-golden.qcow2`. **Tap-native + DHCP +
-  MAC `52:54:00:52:4e:10`**, cold-baked on the production launcher with
-  NetPositive showing a corpus page on a clean 1024×768 frame.
-  `labctl reset beos` = `loadvm golden`.
+  `/data/vms/streamhost/stations/beos/beos-golden.qcow2`, **re-baked
+  2026-08-23** by the ICQ errand (`bridge-bake-golden`, restore-verified;
+  VM_SIZE 168 MiB → 412 MiB). **Tap-native + DHCP + MAC
+  `52:54:00:52:4e:10`**, with NetPositive on a corpus page, ICBM signed on as
+  `50000` with its contact-list window open, and `icbm-watchdog.sh` running.
+  `labctl reset beos` = `loadvm golden`. The MAC and device set are unchanged
+  from the phase-1 cold bake, so this was a warm re-bake of the running
+  station, not a cold boot.
 - **Pre-retronet backup** (the hand-baked 2026-08-18 slirp golden; QEMU stopped,
   full byte copy, SHA256-verified, and it still carries its internal `golden`
   snapshot so it is directly `loadvm`-able once restored):
@@ -426,11 +436,14 @@ Both verifications passed here.
   `/data/gallery-guests/Beos/golden-backup-prephase2-icq-20260823/`
   — `beos-golden.qcow2`, sha256
   `f961bfaa4523ccad439df1f526714d2f6f48186e51922c293d1a7978fafaa9ae`,
-  `SHA256SUMS` in the dir. This is the rollback for the ICQ errand. **In the
-  event it is nothing but insurance: the ICQ errand shipped no golden change at
-  all**, and the live golden is bit-for-bit the one phase 1 baked — everything
-  the errand put in the guest was reverted by one `systemctl restart
-  streamhost@beos`, which is what `loadvm golden` does to the disk.
+  `SHA256SUMS` in the dir. **This is the rollback for the ICQ errand**: it is
+  the last golden without ICBM in it, and it is `loadvm`-able as it stands.
+  Restoring it removes the ICQ client and returns the station to
+  retronet+NetPositive only; the repo-side undo is this document, the registry
+  note, `roster.json` (`onboarded` back to false), the `beos-*` pairs in
+  `box-sync-pairs.sh`, `icbm-watchdog.sh`, the `UserBootscript` line that starts
+  it, and dropping `50000:beos` from `RN_BOT_PERSONAS` in
+  `/etc/retronet/bot.env`.
 - The pristine, never-booted-by-the-station image
   `/data/gallery-guests/Beos/beos-r5.qcow2` remains as the older backstop.
 
@@ -466,15 +479,26 @@ PPMs, 1024x768, `SHA256SUMS` in the dir):
 | `05-prebake-frame.ppm` | the clean frame the golden was baked from |
 | `06-restored-from-golden.ppm` | the same frame after `loadvm` — differs only in the Deskbar clock (183 px) |
 
-From the ICQ errand —
+From the first (abandoned) ICQ pass —
 `/data/gallery-guests/Beos/evidence-rn-beos-icq-20260823/` (PNG, 1024x768,
 `SHA256SUMS` in the dir):
 
 | file | what it shows |
 |---|---|
-| `01-icbm-signed-on-deskbar-green.png` | ICBM signed on as UIN `50000` over legacy UDP 4000 — the Deskbar replicant has gone green, and there is no contact-list window anywhere, which is the rejection in one frame |
+| `01-icbm-signed-on-deskbar-green.png` | ICBM signed on as UIN `50000` over legacy UDP 4000, with **no** contact-list window. Kept because it is the failure mode a wrong first launch produces — set `uin`/`password`/`autologin` before the first run and the window is there (frame `03` below) |
 | `02-toolchain-restored-gui-proof.png` | a titled BeOS window from a `BApplication` compiled **in the guest** with the recovered gcc 2.9-beos, linked against `libbe` |
 | `03-fixture-intact-after-teardown.png` | the phase-1 fixture after teardown — Terminal + NetPositive on the corpus page, unchanged |
+
+From the errand that shipped the client —
+`/data/gallery-guests/Beos/evidence-rn-beos-icbm-20260823/` (PNG, 1024x768,
+`SHA256SUMS` in the dir):
+
+| file | what it shows |
+|---|---|
+| `01-greeting-window-hivebot.png` | HiveBot's greeting, in a chat window ICBM opened **by itself** (`incomingopen`), titled `HiveBot [10000]` — the seeded People file is why it is a name and not `10000 [10000]` |
+| `02-llm-conversation.png` | the full round trip on the framebuffer: greeting, the visitor's typed reply, and the LLM's answer back |
+| `03-ready-scene-signed-on.png` | the shipped ready scene — Terminal, NetPositive on a corpus page, ICBM's contact list with HiveBot under **Online** |
+| `04-restored-from-golden.png` | the same scene after `labctl reset beos`, i.e. what every visitor actually gets |
 
 ## Operating it
 
@@ -488,7 +512,20 @@ ssh lab 'bridge fdb show dev beosrn0'                  # the unique MAC, on the 
 ssh lab 'pct exec 951 -- journalctl -u retronet-dhcp | grep 4e:10'    # the lease
 ssh lab 'labctl shot beos /tmp/beos.png'               # the framebuffer is the only proof
 ssh lab 'labctl reset beos'                            # loadvm golden
+
+# --- the ICQ half ---
+ssh lab 'labctl exec beos "ps | grep ICBM"'            # client + watchdog alive
+ssh lab 'labctl exec beos "tail -40 /boot/home/icbm.log"'   # the packet log; the fastest instrument here
+ssh lab 'labctl exec beos "listattr /boot/home/config/settings/BeCQ-50000/BeCQ-preferences"'
+ssh lab 'pct exec 951 -- python3 -c "import urllib.request,json;print([s[\"id\"] for s in json.load(urllib.request.urlopen(\"http://127.0.0.1:8080/session\"))[\"sessions\"]])"'
+ssh lab 'journalctl -u retronet-bot --since -10min | grep 50000'   # presence + GREETED
+ssh lab 'pct exec 951 -- journalctl -u retronet-oscar -n 50 | grep ICQLegacy'
 ```
+
+Forcing a greeting by hand (what a visitor gets for free): make the persona go
+offline and come back. `systemctl restart retronet-bot` re-reads presence and
+re-greets everything it believes newly online, which is the cheapest way to see
+the whole chain on the framebuffer without waiting for an idle cycle.
 
 The in-guest TCP prober used for the containment table (not left on the golden):
 
@@ -512,247 +549,251 @@ case "$o" in
 esac
 ```
 
-## The ICQ client: two candidates, both rejected
+## The ICQ client — ICBM .71 (BeCQ)
 
-This is the record of the 2026-08-23 attempt to put beos on the ICQ gateway.
-**Nothing shipped.** Both candidates were sourced, installed on the real station
-and measured against the real gateway; each failed for a different, concrete
-reason. The station was returned byte-for-byte to its phase-1 fixture
-afterwards.
+The station signs in to the gateway as UIN **`50000`** with **ICBM .71**, and
+this is the only station on the fleet that reaches the gateway through the
+**pre-OSCAR UDP 4000 door**. Everything else is behind a slirp `guestfwd`, which
+is TCP-only; beos is on a real bridge, so the legacy door is reachable at all.
 
-Read this before spending another agent on the search. The costly part of this
-errand was not finding a client — it was discovering *which* half of the stack
-each candidate breaks on, and both answers are now known.
+**What it is.** *Inter-Continental Ballistic Messenger*, the continuation of the
+open-source **BeCQ** project — a native BeOS ICQ client with a contact list,
+chat windows, history and a Deskbar replicant. **GPL-2.0**, dated
+**2001-02-10**, shipped as a prebuilt `ICBM.x86` for "Intel/PPC R4.5 and R5", so
+it needs no compiler. Era-correct for a 2000 machine. Recovered from
+`icbm.8k.com` via the Wayback Machine (`curl` from Bash; `WebFetch` cannot reach
+`web.archive.org`), archived as sha256
+`c8902f40714ef439a8abf5d8c92982eb144bc10ee0a0fb30f4255e08b8dd2dd1`
+(182 919 bytes, `ICBM.71.zip`). Installed at `/boot/home/apps/ICBM/` with its
+`Readme.txt` and `COPYING-2.0` beside it.
 
-### What the gateway proved it CAN do — the legacy UDP door works
+### The Readme's `NetPacket.h` bug is not in the shipped binary
 
-The most valuable result here is a **positive** one about the gateway, and it
-was not previously verified anywhere.
+This matters because it was the reason a previous pass abandoned ICBM, and it is
+checkable in ten seconds without a guest. ICBM's own Readme warns that R5's
+`add-ons/netserver/NetPacket.h` declares `BStandardPacket::operator new` /
+`operator delete`, that this breaks the client at runtime, and that the remedy
+is to comment those two lines out **and recompile** — which we cannot do,
+because no `.71` source survives.
 
-[`GATEWAY.md`](GATEWAY.md) documents a `4000/UDP` listener for pre-OSCAR ICQ
-(v2–v5), kept enabled "because a Lane-B station (bridged, real L2) could use it,
-and it costs nothing while unused". **beos is that station** — every other ICQ
-station reaches the gateway through a slirp `guestfwd`, which is TCP-only, so
-until beos went onto a real bridge no station could reach that door at all.
+The shipped binary does not need it. `nm -D` on `ICBM.x86` lists
+`__15BStandardPacketUi` (the constructor) and `Base__15BStandardPacket`, and
+**no `__nw__15BStandardPacket…` / `__dl__15BStandardPacket…` import at all** —
+while `__nw__8BMessageUl` and `__nw__10BGameSoundUl` *are* imported, so the
+compiler was plainly emitting class-scoped `new` where a class declared one.
+The author built `.71` with the fix already applied. The Readme is advice for
+people compiling from source, not a description of this artefact.
 
-It works, and it bridges protocol generations:
+```bash
+nm -D ICBM.x86 | grep -E 'StandardPacket|__nw__|__dl__'
+```
 
-| Step | Evidence |
+The binary is also a gift for debugging: it is not stripped of dynamic symbols
+and exports its own class methods with full gcc-2 signatures
+(`HandlePacket__10BeCQServerP10BeCQPacket`, `EncDecV4Packet__10BeCQPacket`,
+`PacketIsDuplicated__10BeCQServerl`, …), and it writes a verbose packet log to
+stdout. That log is the fastest instrument on this station — it prints every
+`ReceivePacket [Cmd: 0x….] [Seq: …]` with a hexdump, so the wire can be read
+without a `tcpdump`.
+
+### Configuration is BFS attributes, so the whole install scripts
+
+There is no config file. `/boot/home/config/settings/BeCQ-preferences` is a
+**zero-byte** file whose *attributes* are the settings, with a per-UIN mirror at
+`…/BeCQ-<UIN>/BeCQ-preferences` and a `contacts/` directory beside it. So the
+client is configured entirely from the exec channel with `addattr`, with no
+pointer work at all:
+
+```sh
+F=/boot/home/config/settings/BeCQ-preferences
+addattr -t int  uin 50000 $F          # NB: the type is "int", not "int32"
+addattr -t string password '<pass>' $F
+addattr -t bool autologin 1 $F        # NB: 1/0 — "true" silently stores 0
+```
+
+Set those **before the first launch** and ICBM comes up already signed in, with
+its contact-list window open. It then writes the full schema on a clean quit
+(`quit application/x-vnd.ICBM`), which is the moment to set the two that matter
+for an exhibit:
+
+| attribute | value | why |
+|---|---|---|
+| `incomingopen` | **1** | an incoming message **opens its chat window by itself**. This is the whole visitor-facing behaviour: HiveBot's greeting arrives and a real window appears, unprompted. Default is 0, and with 0 the greeting lands silently in a collapsed list. |
+| `entertosend` | **1** | Enter sends. A visitor should not have to find the Send button. |
+| `serversend` | 1 (already the default) | route messages through the server instead of ICBM's direct client-to-client TCP. Correct for containment, and the bot has no direct-TCP listener anyway. |
+
+**`mimeset -f` is mandatory after an FTP delivery.** A BeOS application's
+signature lives in its ELF resources, but the roster only sees it once the
+`BEOS:APP_SIG` / `BEOS:TYPE` *attributes* are derived from them, and FTP carries
+no BFS attributes. Before `mimeset`, ICBM runs but never registers; after it,
+`roster` shows `application/x-vnd.ICBM`.
+
+### HiveBot shows as a name, not a number — one seeded contact
+
+An unknown sender shows in the chat window's title bar and From column as a bare
+UIN (`10000 [10000]`), because ICBM never asks the server for a stranger's
+directory nickname. A contact is just a **BeOS People file** at
+`contacts/<uin>`, so seeding the one contact that matters is three lines:
+
+```sh
+C=/boot/home/config/settings/BeCQ-50000/contacts/10000
+touch $C
+addattr -t string BEOS:TYPE application/x-person $C
+addattr -t int    BECQ:uin 10000 $C
+addattr -t string META:name 'HiveBot' $C
+addattr -t string META:nickname 'HiveBot' $C
+addattr -t bool   META:shownick 1 $C
+addattr -t bool   BECQ:authorised 1 $C
+addattr -t bool   BECQ:onlinealert 0 $C
+mimeset -f $C
+```
+
+ICBM reads `contacts/` once at startup (`List: found 1 contacts`), so this needs
+a relaunch, not a golden re-bake of a GUI-driven Add flow. The full attribute
+set it understands is `BECQ:uin`, `BECQ:authorised`, `BECQ:onlinealert`,
+`META:name`, `META:email`, `META:nickname`, `META:shownick`.
+
+**Only HiveBot is seeded.** The other stations are deliberately *not* in ICBM's
+list: the server-side SSI cross-list is written for `50000` like every other
+live station, but ICBM keeps its contacts locally and never reads SSI, so the
+exhibit shows one contact — the one a visitor actually talks to. The reverse
+direction is live: beos is `"onboarded": true` in
+[`roster.json`](../../../scripts/retronet/icq/roster.json) and appears in the
+other five stations' rosters.
+
+### The watchdog, and why the station needs one
+
+**ICBM .71 has no auto-reconnect.** When the gateway drops the session it sends
+`0x00F0`, and ICBM's log reads:
+
+```
+Server:	ReceivePacket	[Cmd: 0x00F0] [Seq: 0x0]
+Server:	Disconnection started
+Server:	Disconnection finished
+Server:	SendPacketLoop	break!
+```
+
+…and then nothing, for ever. It also sends **no `CMD_LOGOUT` (0x03FC)** on quit,
+so a clean exit does not tell the server anything either.
+
+That is fatal on this station in a way it would not be on a workstation: `beos`
+is `loadvm golden` + idle-pause, so every visitor restores a snapshot whose
+in-RAM session the server forgot minutes ago, and the greeter bot only fires on
+a **sign-on**. Sibling stations get the reconnect for free — ICQ 2001b self-heals
+after its zombie socket is nudged, Gaim has autorecon in-core. On BeOS it has to
+be supplied.
+
+[`icbm-watchdog.sh`](../../../streamhost/stations/beos/icbm-watchdog.sh) is the
+supply, and relaunching **is** the reconnect: `autologin` is set, so a fresh
+ICBM signs straight back in. It loops every 10 s and does exactly two things —
+launch ICBM if the process is gone, and quit-and-relaunch it if the last
+`Disconnection finished` in the log is newer than the last `LoginSuccessful`.
+Both markers are ICBM's own, and the log is truncated on every launch, so the
+line numbers are always relative to the current run. It lives at
+`/boot/home/config/boot/icbm-watchdog.sh` and is started by `UserBootscript`.
+
+**Wake detection was tried and deliberately left out.** The obvious refinement —
+notice the guest was paused by watching `date +%s` jump, and force a fresh login
+immediately — does not survive this guest. Under TCG with QEMU's timer catch-up
+the BeOS clock does not merely resume, it *runs fast* to make up the missed
+ticks (measured: 24 m 25 s of guest time across 16 m 42 s of real time), so a
+"the clock jumped, we must have been paused" test also fires while a visitor is
+sitting in front of a running station — and the cost of a false positive is
+their chat window closing mid-conversation. The latency it would have saved is
+described below and is not worth that.
+
+### How a visitor gets greeted, and how long it takes
+
+The cycle is the gateway's session reaper plus ICBM's keepalive, and it was
+measured end to end on the live station:
+
+| | |
 |---|---|
-| A legacy client authenticates | gateway log: `V4 login attempt uin=50000 password_len=8` → `user authenticated successfully version=4` → `created legacy session session_id=…` |
-| The legacy session joins the SAME presence store as OSCAR | management API `/session` returned `['10000', '50000']` — HiveBot (OSCAR) and beos (legacy UDP) side by side |
-| An OSCAR client SEES the legacy client | `retronet-bot` log: `presence: 50000 ONLINE` → `50000 (beos) signed on — greeting in 30s` → `GREETED 50000 (beos)` |
-| The gateway TRANSLATES an OSCAR message down to the legacy wire | gateway: `OSCAR message pump: received SNAC uin=50000 food_group=4 sub_group=7`, and a `tcpdump` on `vmbr-rn` caught the resulting **`10.99.0.2.4000 > 10.99.0.16.49204: UDP, length 61`** at the exact greeting timestamp |
+| station idle-pauses (60 s grace) | ICBM stops sending keepalives with it |
+| ~120 s later | `ICQ_LEGACY_SESSION_TIMEOUT` expires the legacy session and the gateway **does** broadcast the departure — `retronet-bot`: `presence: 50000 offline` |
+| a visitor opens the station | the guest resumes; ICBM's next keepalive (~100 s interval) lands on a server that no longer has the session, and the server silently re-creates it |
+| that arrival is a sign-on | `50000 (beos) signed on — greeting in 30s` → `GREETED 50000 (beos)` |
 
-So a pre-OSCAR client on this station is a *supported* configuration
-server-side. That is a real capability the retronet now has evidence for, and it
-is what a future era-correct client would stand on. **The failure below is
-entirely client-side.**
+Measured twice on 2026-08-23, the second time as the acceptance run against the
+deployed commit: reaped 13:43:29 → signed on 13:44:02 → greeted 13:44:32, and
+reaped 14:32:25 → woken the same second → signed on 14:33:25 → greeted 14:33:55.
+So the greeting lands **60–120 s** after a visitor arrives, against ~30 s on the
+ICQ-2001b stations, and the variable part is which point of ICBM's ~100 s
+keepalive cycle the wake falls in.
 
-Two gateway details worth knowing before the next attempt:
+Two consequences worth stating plainly:
+
+- **Back-to-back visitors share one greeting.** If the station was idle for less
+  than about three minutes the persona never went offline, so there is no new
+  sign-on and no new greeting — `retronet-bot` logs `arrival while already
+  online — duplicate, not greeting again`. [`BOT.md`](BOT.md) already accepts
+  that outcome for the fleet; on beos the window is a little wider.
+- **The way to close the gap is a host-side nudge**, not a guest-side timer: the
+  fleet already has that shape in `win98se-icq-nudge` / `nt4-icq-nudge`. It
+  would have to watch QEMU's run state over momentary QMP connects (never a held
+  connection — see §Gotchas) so that polling does not itself keep the guest
+  awake, and quit ICBM on a paused→running edge. Not built; the exhibit works
+  without it.
+
+### Proven, on the live station
+
+| | evidence |
+|---|---|
+| signs on over legacy UDP 4000 | gateway `V4 login attempt uin=50000` → `user authenticated successfully version=4`; ICBM's own `App: LoginSuccessful`; management API `/session` lists `50000` |
+| the DNS hijack carries the shipped default | `App: Connecting... [icq.mirabilis.com:4000]` — no server override set anywhere |
+| receives an OSCAR-originated message | `Server: SERVER_INSTANT_MESSAGE - 10000, 1` → `ProcessMessage type = 1, uinfrom = 10000`, and the greeting text in the BMessage |
+| the chat window opens by itself | framebuffer: `HiveBot [10000]`, From `HiveBot`, the greeting in the list, a Send box below |
+| the visitor can reply | `labctl type` + Enter → `retronet-bot`: `<- 50000: hi! yes, BeOS R5 here` → LLM reply `-> 50000: woah, still running R5? …` back on the framebuffer |
+| survives a pause | 3 m 30 s QMP `stop`/`cont` — session intact, messaging still works afterwards |
+| the golden restores signed on | after `labctl reset beos`: contact list up, HiveBot under **Online**, ICBM in the Deskbar |
+| it stays up | a liveness sampler took the client's process count every ~110 s from 12:35 to 14:21 — **57 consecutive samples, ICBM alive in every one**. The first pass's "exits unattended within minutes" does not reproduce; what it most likely saw was the client sitting disconnected after a teardown it never recovers from, which is what the watchdog now handles |
+
+### The one thing the gateway does not do
+
+`CMD_ACK_MESSAGES` (0x0442, sent once per login after
+`SRV_END_OF_OFFLINE_MESSAGES` to purge offline messages) is **never ACKed** by
+Open OSCAR Server. ICBM retries it five times and gives up —
+`SendPacketLoop [Cmd: 0x0442] [Seq: 0x7] -- FAILED!`. It is bounded, once per
+login, and has no visible effect; every other command the client sends
+(`CMD_LOGIN`, `CMD_LOGIN_1`, `CMD_LOGIN_2`, `CMD_INFO_REQ`, `CMD_STATUS_CHANGE`,
+`CMD_CONTACT_LIST`, `CMD_KEEP_ALIVE`) is ACKed cleanly. Recorded here so the
+next reader does not mistake it for a fault.
+
+Two gateway details worth knowing before touching the legacy door:
 
 - **ICQ UIN passwords are capped at 6–8 characters** by the server
   (`400 invalid password: invalid password length`). Generate 8, not 14.
-- **`ICQ_LEGACY_SESSION_TIMEOUT` is 120 s and `ICQ_LEGACY_KEEPALIVE_INTERVAL` is
-  also 120 s.** Those are equal, which leaves a client no slack: miss one
-  keepalive and the session is reaped (`cleaning up expired session … last_activity=…`).
-  A client that goes quiet for two minutes disappears. Raise the timeout before
-  blaming a client for dropping.
+- **`ICQ_LEGACY_SESSION_TIMEOUT` and `ICQ_LEGACY_KEEPALIVE_INTERVAL` are both
+  120 s.** Being equal leaves a client no slack, and it is what makes the
+  reap-then-greet cycle above work at all — do not raise the timeout without
+  re-reading that table.
 
-### Candidate A — ICBM .71 (BeCQ), era-correct, killed by a client-side R5 bug
+### IM Kit — measured, and still not the answer
 
-**What it is.** *Inter-Continental Ballistic Messenger*, the continuation of the
-open-source **BeCQ** project — a real, native BeOS ICQ client with a contact
-list, chat windows, history and a Deskbar replicant. **GPL-2.0**, dated
-**2001-02-10**, distributed as a prebuilt `ICBM.x86` for "Intel/PPC R4.5 and R5".
-Era-correct for a 2000 machine in a way IM Kit (a 2005–09 Haiku/Zeta codebase)
-is not, and — decisively — it needs **no compiler**.
+The other candidate, kept because the measurement is worth more than the
+verdict. `github.com/HaikuArchives/IMKit` at `9c80ad1`, archived as sha256
+`4eb6f38c3417dc6cb99610bd02fd86b32013f938b574d31462e1bb2221bd34e0`.
 
-**Recovered** from `icbm.8k.com` via the Wayback Machine (`curl` from Bash;
-`WebFetch` cannot reach `web.archive.org`). Archived in the media cache as
-sha256 `c8902f40714ef439a8abf5d8c92982eb144bc10ee0a0fb30f4255e08b8dd2dd1`
-(182 919 bytes, `ICBM.71.zip`). **The `.72` betas are NOT recoverable** — every
-Wayback snapshot of `ICBM.72-beta{1..4}{,-src}.zip` is a 403 hotlink-protection
-stub, not the archive. `.71` is the only surviving build, and no `.71` source
-exists anywhere.
+**Its entire OSCAR protocol engine compiles on BeOS R5** under
+gcc 2.9-beos-991026: `protocols/OSCAR/OSCARManager.cpp`, 1 842 lines, produced a
+**412 356-byte object file with zero errors**, needing only two trivial shims — a
+`be_prim.h` that includes `<SupportDefs.h>` (ZETA shipped `be_prim.h`; R5's
+equivalent is `SupportDefs.h`), and a declaration-only `openssl/md5.h` (R5 ships
+no OpenSSL; `OSCARManager` touches MD5 in exactly one place, hashing an
+*optional* buddy-icon upload — ICQ login uses plain XOR password roasting and no
+crypto library, so the code path is never reached). That settles the recon's
+biggest open question: the "OSCAR is gated on OpenSSL" blocker really is
+avoidable.
 
-**How far it got — further than expected:**
-
-- Installed by FTP into `/boot/home/apps/ICBM/`, byte-identical on read-back.
-- **`mimeset -f` is mandatory after an FTP delivery.** A BeOS application's
-  signature lives in its ELF resources, but the roster only sees it once the
-  `BEOS:APP_SIG` / `BEOS:TYPE` *attributes* are derived from them, and FTP
-  carries no BFS attributes. Before `mimeset`, ICBM ran but never registered;
-  after it, `roster` showed `application/x-vnd.ICBM`.
-- **It is configured entirely by BFS attributes, with no config file at all.**
-  `/boot/home/config/settings/BeCQ-preferences` is a **zero-byte** file whose
-  attributes are the settings, and there is a per-UIN mirror at
-  `…/BeCQ-<UIN>/BeCQ-preferences` plus a `contacts/` directory. That makes it
-  scriptable from the exec channel with `addattr` — no GUI driving needed:
-
-  ```sh
-  F=/boot/home/config/settings/BeCQ-preferences
-  addattr -t int  uin 50000 $F          # NB: the type is "int", not "int32"
-  addattr -t string password '<pass>' $F
-  addattr -t bool autologin 1 $F        # NB: 1/0 — "true" silently stores 0
-  ```
-
-  The full attribute schema it writes on a clean quit: `allworkspaces`,
-  `inworkspaces`, `alwaysontop`, `autohide`, `snaptoedge`, `entertosend`,
-  `incomingopen`, `replyclose`, `autologin`, `authorizeadd`, `hideip`,
-  `webaware`, `dateshow`, `serversend`, `fw_use`, `encoding_in`, `encoding_out`,
-  `fw_servername`, `fw_serverport`, `fw_authreq`, `fw_authname`,
-  `fw_authpassword`, `uin`, `password`, and (per-UIN) `icq_servername`,
-  `icq_serverport`.
-- **Auto-login worked, unprompted, and the DNS hijack carried it.** Its log:
-  `App: Connecting... [icq.mirabilis.com:4000]` — the shipped default hostname,
-  resolved by `retronet-dns` straight to `10.99.0.2`. No server-override setting
-  was needed, exactly as predicted.
-- **It signed on.** UIN `50000` appeared in the gateway session store and the
-  Deskbar replicant turned green.
-
-**Why it was rejected — three independent, load-bearing failures:**
-
-1. **No contact-list window, ever.** The app installs a Deskbar replicant and
-   nothing else. Single-click, double-click and right-click on the replicant all
-   produce no window (verified by frame diff — only the Deskbar clock changes),
-   with `autohide=0`, `alwaysontop=1` and `allworkspaces=1` set. A desktop
-   buddy list is the whole requirement, and it never appears.
-2. **It never receives messages.** The gateway demonstrably put the greeting on
-   the wire (the 61-byte UDP packet above). ICBM's own log did **not grow by a
-   single line** across delivery — 174 lines before, 174 after — and no
-   "unknown contact" file appeared in `BeCQ-50000/`. Its send loop meanwhile
-   sits retransmitting its own ACK (`SendPacketLoop [Seq: 0x3] [Attempt #1]`).
-3. **The process dies on its own, within minutes.** Repeatedly, from a clean
-   start, with and without `stdin` redirected to `/dev/null` — once in 40 s. An
-   exhibit client that exits unattended is unusable regardless of the other two.
-
-**The cause is almost certainly the one its own Readme warns about**, and it is
-not fixable without a rebuild:
-
-> *"There is a significant bug that causes problems compiling and running ICBM
-> under R5. It is caused by a declaration in the system include file
-> NetPacket.h … `void *operator new(size_t size); void operator delete(void
-> *ptr);`"*
-
-That is a heap `new`/`delete` mismatch in `BStandardPacket` — precisely the
-shape of defect that produces silent thread death, a looper that stops servicing
-its queue, and random exits. The Readme's remedy is to comment those lines out
-**and recompile**. We cannot: `.71` source is not archived, and the only
-surviving artefact is the affected binary.
-
-**Not a launch artefact.** The obvious objection — "your telnet-launched app
-just loses its window" — is disproved on the same station in the same session: a
-`BApplication` compiled in-guest and launched exactly the same way *did* open a
-normal titled window and register in the Deskbar (§Restoring the compiler). The
-environment is fine; ICBM is not.
-
-### Candidate B — IM Kit, buildable at the protocol layer, blocked at the UI
-
-**What it is.** `github.com/HaikuArchives/IMKit` at `9c80ad1`, archived as
-sha256 `4eb6f38c3417dc6cb99610bd02fd86b32013f938b574d31462e1bb2221bd34e0`
-(3 300 733 bytes). A framework — `libim` + an `im_server` daemon + per-protocol
-add-ons (`protocols/OSCAR/ICQ.cpp`) + separate client apps.
-
-**The good news, measured rather than assumed.** With the compiler restored
-(below), **the entire OSCAR protocol engine compiles on BeOS R5 under gcc
-2.9-beos-991026**: `protocols/OSCAR/OSCARManager.cpp`, 1 842 lines, produced a
-**412 356-byte object file with zero errors**. It needs exactly two shim headers,
-both trivial:
-
-```c
-/* be_prim.h — OSCARConstants.h includes this on every non-Haiku target because
- * ZETA shipped it. R5's equivalent is SupportDefs.h. */
-#include <SupportDefs.h>
-```
-
-```c
-/* openssl/md5.h — R5 ships no OpenSSL. OSCARManager touches MD5 in exactly one
- * place: hashing an OPTIONAL buddy-icon upload. Login uses ICQ's plain XOR
- * password roasting and no crypto library at all, so a declaration-only stub is
- * enough to build, and the code path is never reached by this exhibit.
- * The struct tag matters: the source names MD5state_st. */
-#define MD5_DIGEST_LENGTH 16
-typedef struct MD5state_st { unsigned char unused[92]; } MD5_CTX;
-int MD5_Init(MD5_CTX *); int MD5_Update(MD5_CTX *, const void *, unsigned long);
-int MD5_Final(unsigned char *, MD5_CTX *);
-```
-
-That settles the recon's biggest open question — the "OSCAR is gated on OpenSSL"
-blocker really is avoidable, and gcc 2.95 really does swallow this C++.
-
-**The bad news, also measured.** The client that draws the buddy list —
-`clients/im_contact_list` — is written against **Haiku's Layout Kit**, which
-does not exist in BeOS R5 in any form. Compiling `ContactListView.cpp` on the
-station fails at the constructor, not at some detail:
-
-```
-ContactListView.cpp:21: no matching function for call to `BView::BView (const char *&, const uint32 &)'
-  candidates are: BView::BView(BRect, const char *, long unsigned int, long unsigned int)
-ContactListView.cpp:32: implicit declaration of function `int BGroupLayoutBuilder(...)'
-```
-
-R5's `BView` has no layout-aware constructor, no `SetLayout()`, no `MinSize()`/
-`PreferredSize()` virtuals, and R5 has no `BSize`, `BGroupLayout`,
-`BGroupLayoutBuilder`, `BLayoutUtils` or `BControlLook` at all. This is the
-brief's explicit stop condition — a **missing Be API**, not a compiler quirk.
-
-Three further gaps found while measuring, so the next agent does not rediscover
-them:
-
-- **There is no `jam` on BeOS R5.** The Development package ships the GNU
-  toolchain and `make`, but not Jam, and IM Kit's entire build system is Jam.
-  Every component would need a hand-written makefile.
-- **`common/columnlistview` ships only `haiku/` and `zeta/` variants**, no R5
-  one, and the `haiku` one also uses `ControlLook` + `LayoutUtils`.
-- **The SSI alias fix is bigger here than it was on tru64.** The defect is real
-  and exactly where recon said — `OSCARManager::HandleSSI()`'s `BUDDY_RECORD`
-  case does a bare `reader->OffsetBy(len)` and never reads alias TLV `0x0131`,
-  three lines below a `GROUP_RECORD` case that already has the inner-TLV loop to
-  copy. But Gaim's `add_buddy()` already took an alias argument, whereas IM Kit's
-  `OSCARHandler::SSIBuddies(std::list<BString>)` carries **ids only**. The alias
-  would have to be threaded through `OSCARHandler` → `ICQProtocol` → the libim
-  message → `im_server` → the UI. It is not a 15-line change on this codebase.
-  (IM Kit renders contacts from BeOS **People files**, so an alternative is to
-  seed People files instead of patching SSI at all — at the cost of a
-  hand-seeded roster baked into the golden.)
-
-**Verdict.** IM Kit is not a patch job on R5; it is a Haiku→R5 port of a
-multi-component framework — a rewritten build system, a rewritten contact-list
-UI, and only then the three functional patches. That is a different errand from
-the one that was scoped, and it should be scoped honestly before it is started.
-`im_chat` (the chat window) is, for what it is worth, **layout-free classic
-BeOS** and looks portable; the contact list is the hard part.
-
-### What would have to change for a client to ship
-
-In rough order of cost:
-
-1. **Recover ICBM `.72-beta4-src`** from somewhere other than Wayback (every
-   Wayback copy is a 403 stub). With source, the Readme's own `NetPacket.h`
-   fix is a two-line change, the compiler is now restored and proven, and
-   everything else about ICBM — era-correct, GPL, auto-login, native contact
-   list, and a gateway door already proven to serve it — is right.
-2. **Port IM Kit's `im_contact_list` to R5's manual-layout InterfaceKit** and
-   hand-write makefiles for `libim`, `im_server`, `protocols/OSCAR` and
-   `im_chat`. The protocol half is proven to build; this is the UI half.
-3. Anything that puts a **Terminal** IM client on the framebuffer is explicitly
-   out of bounds.
-
-### The persona account is provisioned and proven — leave it
-
-UIN **`50000`** exists on the gateway, is **open for unattended contacts**
-(`rn-tool.py user-open`), has ICQ directory nickname `beos`, and has been proven
-to authenticate over **both** doors — OSCAR (`rn-tool.py login 10.99.0.2 5190`)
-and legacy UDP 4000. Its password is `RETRONET_ICQ_BEOS_PASS` in gitignored
-`registry/local.env` and in the CT's `/etc/ras/accounts.env`.
-
-It is deliberately **not** cross-listed: `scripts/retronet/icq/roster.json`
-carries beos with `"onboarded": false`, so the SSI seeder leaves it out of every
-other station's contact list, and `RN_BOT_PERSONAS` does not include it. That is
-the correct state while no client runs — an onboarded station that is never
-online would show as a permanently-offline contact on five other exhibits.
-**Onboarding beos is two edits and one seeder run** once a client exists.
+**The client that draws the buddy list is not portable.**
+`clients/im_contact_list` is written against **Haiku's Layout Kit**, which does
+not exist in R5 in any form — no layout-aware `BView` constructor, no
+`SetLayout()`, no `BSize`/`BGroupLayout`/`BGroupLayoutBuilder`/`BLayoutUtils`/
+`BControlLook`. There is also **no `jam` on BeOS R5** (the Development package
+ships the GNU toolchain and `make`, not Jam) and IM Kit's whole build system is
+Jam, and `common/columnlistview` ships only `haiku/` and `zeta/` variants. That
+is a Haiku→R5 port of a multi-component framework, not a patch job — and with
+ICBM shipping there is no reason to start it.
 
 ## Restoring the compiler — the reusable recipe
 
@@ -866,25 +907,38 @@ Note also that the Deskbar tray is only clickable if the clock mask is kept
 tight around the clock text — an over-wide mask makes a region where the cursor
 can never be found.
 
-## What a future ICQ errand inherits
+## What is left, and what the next errand inherits
+
+Open, in the order they are worth doing:
+
+1. **A host-side wake nudge**, if the operator wants the greeting inside ~30 s
+   like the ICQ-2001b stations instead of up to ~2 minutes. The shape is
+   `win98se-icq-nudge`; the beos-specific part is that it must detect the
+   paused→running edge over **momentary** QMP connects and must not poll the
+   guest itself (a `labctl exec` poll would hold the station permanently awake
+   and defeat idle-pause). See §How a visitor gets greeted.
+2. **Nothing about the client.** ICBM ships, is era-correct, GPL, needs no
+   compiler, and its `.72` source is not recoverable — every Wayback copy of
+   `ICBM.72-beta{1,4}{,-src}.zip` is a 403 hotlink stub, re-checked 2026-08-23
+   (13 snapshots, all HTML). There is no reason to look for it: the `.71` binary
+   does not carry the defect the source fix was for (§The Readme's
+   `NetPacket.h` bug).
+
+What any further errand on this station inherits:
 
 - A real **exec channel** — `labctl exec beos "<cmd>"`, stdout and the guest's
   own exit code — and a real **file-delivery door**, ftpd on `:21` with the same
   `baron` login, STOR/RETR/MKD all proven. No framebuffer typing needed for
   either.
-- L2 to the gateway CT, with **`10.99.0.2:5190` already proven OPEN** from the
-  guest.
+- L2 to the gateway CT, with `10.99.0.2:5190` and the legacy `4000/UDP` door
+  **both proven end to end**, the second one only from here.
 - A **reproducible fixture**: edit `UserBootscript`, reboot, re-bake. No window
   juggling, no hand-arranged golden.
-- A **verified byte-for-byte golden backup** with a documented rollback, and a
-  `loadvm golden` that demonstrably reverts the **disk** as well as RAM — every
-  file this errand put in the guest was gone after one `systemctl restart`. Do
+- A **verified golden backup** with a documented rollback, and a `loadvm golden`
+  that demonstrably reverts the **disk** as well as RAM — every file an errand
+  puts in the guest is gone after one `systemctl restart` unless it re-bakes. Do
   the in-guest work and the bake in one uninterrupted session, or script it.
-- The pointer caveats above — budget for closed-loop targeting if any client
-  needs GUI configuration, and prefer the exec channel wherever it will do.
+- The pointer caveats above — but note that the entire ICQ install was done with
+  `addattr` over the exec channel and needed the pointer for **nothing**.
 - A **restored, proven compiler recipe** (§Restoring the compiler) and a
   **committed pointer driver** (§Driving the pointer).
-- A gateway **legacy UDP-4000 door proven end to end**, and a persona
-  (UIN `50000`) already provisioned, opened and proven on both doors.
-- Two candidates already eliminated on evidence, with the exact next steps that
-  would revive either one.

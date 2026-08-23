@@ -113,5 +113,29 @@
     "seeds": [
       "http://free.aol.com/tryaolfreeindex.adp?159820"
     ]
+  },
+  {
+    "host": "www.chokanji.com",
+    "date": "20040101",
+    "ceiling": "20091231",
+    "depth": 3,
+    "max_pages": 50,
+    "title": "Chokanji (超漢字)",
+    "category": "Computers and Internet",
+    "blurb": "Personal Media's 超漢字 / B-right/V product site — the BTRON desktop's own home on the web (pairs with the chokanji station).",
+    "seeds": [
+      "http://www.chokanji.com/support.html",
+      "http://www.chokanji.com/ckv/registform.html"
+    ]
+  },
+  {
+    "host": "personal-media.co.jp",
+    "date": "20040101",
+    "ceiling": "20091231",
+    "depth": 3,
+    "max_pages": 50,
+    "title": "Personal Media",
+    "category": "Computers and Internet",
+    "blurb": "Personal Media Corporation — the Tokyo developer/publisher behind 超漢字 and the BTRON desktop."
   }
 ]
