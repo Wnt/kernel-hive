@@ -732,7 +732,17 @@ are now settled; the detail lives in the as-built doc's gotchas):
    sign-in with no keyring and no prompt; value from `registry/local.env`
    `RETRONET_ICQ_SOLARIS_PASS`, never committed.
 
-### `beos` GUI OSCAR client — sourcing recon, revised 2026-08-22 (reopened by coordinator)
+### `beos` GUI ICQ client — sourcing recon, revised 2026-08-22 (reopened by coordinator)
+
+> **Outcome, 2026-08-23: ICBM .71 shipped.** Candidate 2 below is the one that
+> is live on the station. Read this section for how each candidate was *sourced*
+> — that part stands — but not for the verdicts: the scoring below ranked ICBM
+> last because it is pre-OSCAR, and the gateway's legacy UDP-4000 door turned
+> that from a disqualifier into the reason it works. The as-built client, its
+> attribute-based install, its missing auto-reconnect and the watchdog that
+> covers it are in
+> [`docs/lab/retronet/STATION-beos.md`](retronet/STATION-beos.md) §The ICQ
+> client.
 
 Media/feasibility errand for the `beos` retronet ICQ leg (bridged NIC, DHCP
 `10.99.0.16`, DNS-hijacked corpus web, gateway `10.99.0.2:5190`), read-only
@@ -774,7 +784,7 @@ CDX API (`http://web.archive.org/cdx/search/cdx?url=…&output=json`) and direct
 `http://web.archive.org/web/<timestamp>/<url>` fetches throughout, which is
 how the ICBM/BeCQ binary below was retrieved and inspected.
 
-#### Candidate 1 — IM Kit (`HaikuArchives/IMKit`, `protocols/OSCAR/ICQ.cpp`) — re-scored, now the front-runner
+#### Candidate 1 — IM Kit (`HaikuArchives/IMKit`, `protocols/OSCAR/ICQ.cpp`) — the front-runner on paper; NOT shipped (its contact list needs Haiku's Layout Kit, absent from R5)
 
 Re-read at the source level (`ICQ.cpp`, `OSCARManager.cpp`,
 `utils/ProtocolLoader/main.cpp`, `ProtocolManager.cpp`, `protocols/Jamfile`,
@@ -847,7 +857,7 @@ hardened the README's R5 disclaimer (Jul 2009), so HEAD is at least as
 R5-buildable as anything else in this mirror, not less. **Recommendation: build
 from HEAD (`9c80ad1`, archived below), not an older commit.**
 
-#### Candidate 2 — ICBM / BeCQ (`icbm.8k.com`) — real client, wrong protocol generation, rejected
+#### Candidate 2 — ICBM / BeCQ (`icbm.8k.com`) — **SHIPPED**; the "wrong protocol generation" is the gateway's legacy UDP-4000 door, and it works
 
 New find via the Wayback CDX workaround (`bebits.com`'s own mirrors are dead —
 `bebits.irixnet.org` and `be.wildman-productions.org` both fail to resolve from

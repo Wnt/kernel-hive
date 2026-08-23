@@ -242,7 +242,7 @@ in `registry/local.env` (gitignored, written by the gateway provisioner):
 |---|---|---|
 | `RN_BOT_SERVER` | `10.99.0.2:5190` | the **labhost door** (5190). Never 5191 — that door advertises `10.0.2.100` as BOS, which only a slirp guest can route |
 | `RN_BOT_UIN` | `10000` | the bot's account |
-| `RN_BOT_PERSONAS` | `98980:win98se` | comma-separated `uin:station`; adding a wave-2 station is one entry plus a `GREETINGS` row |
+| `RN_BOT_PERSONAS` | `98980:win98se` | comma-separated `uin:station`; adding a wave-2 station is one entry plus a `GREETINGS` row. Live set also carries `20000:win2000`, `30000:solaris`, `40000:nt4`, `64000:tru64`, `95000:win95` and `50000:beos` — the last one is a **legacy UDP-4000** persona rather than an OSCAR one, and the greeter cannot tell the difference |
 | `RN_BOT_GREET_DELAY` | `30` | seconds between sign-on and hello |
 | `RN_BOT_MAX_CHARS` | `200` | reply cap |
 | `RN_BOT_LLM_URL` | `http://127.0.0.1:8091` | any OpenAI-compatible endpoint |
