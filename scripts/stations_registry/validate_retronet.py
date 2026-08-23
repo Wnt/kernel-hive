@@ -12,6 +12,16 @@ from .validate_schema import fail
 RETRONET_PLANES = ("web", "icq")
 RETRONET_KEYS = ("planes", "address", "addressing", "link", "guard", "joined", "doc")
 RETRONET_GATEWAY = "10.99.0.2"
+BOX_SYNC_PAIRS = REPO / "scripts/lib/box-sync-pairs.sh"
+
+
+def _tapnet_pairs() -> tuple[set[str], str]:
+    """Station ids that box-sync-pairs.sh registers an `rn-tapnet` pair for."""
+    rel = str(BOX_SYNC_PAIRS.relative_to(REPO))
+    if not BOX_SYNC_PAIRS.exists():
+        return set(), rel
+    text = BOX_SYNC_PAIRS.read_text(encoding="utf-8")
+    return set(re.findall(r"^\s*box_sync_add_pair\s+([a-z0-9_]+)-rn-tapnet\b", text, re.M)), rel
 
 
 def validate_retronet(rows: list[dict[str, Any]], errors: list[str]) -> None:
@@ -24,9 +34,13 @@ def validate_retronet(rows: list[dict[str, Any]], errors: list[str]) -> None:
     address reused or landing on the gateway, an onboarded roster row whose
     station never declared the icq plane, a station claiming the plane with no
     persona, or a doc path that has been moved away underneath the block.
+
+    It also guards the one deploy-time trap this bridge keeps re-inflicting:
+    a station's `rn-tapnet.sh` that no box-sync pair carries to the box.
     """
     roster = icq_roster()
     roster_rel = ICQ_ROSTER.relative_to(REPO)
+    tapnet_pairs, pairs_rel = _tapnet_pairs()
     addresses: dict[str, str] = {}
     icq_planes: set[str] = set()
     for row in rows:
@@ -61,6 +75,16 @@ def validate_retronet(rows: list[dict[str, Any]], errors: list[str]) -> None:
         doc = block.get("doc")
         if doc and not (REPO / doc).exists():
             fail(errors, row, f"retronet.doc does not exist: {doc}")
+        if (REPO / f"streamhost/stations/{os_id}/rn-tapnet.sh").exists() and os_id not in tapnet_pairs:
+            fail(
+                errors,
+                row,
+                f"streamhost/stations/{os_id}/rn-tapnet.sh has no `box_sync_add_pair {os_id}-rn-tapnet` "
+                f"row in {pairs_rel}. The generic launcher sweep carries qemu-streamhost.sh but NOT the "
+                "helper it calls, so the helper reaches the box checkout and never the station dir, and "
+                'the launcher dies on start at `bash "$B/rn-tapnet.sh" up`. beos, w2kalpha and rhapsody '
+                "each lost a boot cycle to this; register the pair instead of becoming the fourth.",
+            )
         if "icq" in planes:
             icq_planes.add(os_id)
             if os_id not in roster:
