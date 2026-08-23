@@ -58,7 +58,7 @@ round-trip lock-step, not the emulated NIC. So:
 Launch the installer from the **framebuffer**, never the exec channel (the
 long-lived-child trap the win2000 doc describes).
 
-## The install is slow — days, not hours, and that is the blocker
+## The install is slow — and that is the blocker
 
 **This is the finding that decides whether anyone should repeat this route.**
 
@@ -69,30 +69,33 @@ instruction translation, not disk. The installer's **Red Bend unpack phase** (th
 same phase the NT4 doc calls "slow — ~15 min on a QEMU VM") runs for **hours**
 here.
 
-**Measured, so the next person does not have to re-derive it.** Timed readings of
-the unpack staging dir `C:\Program Files (x86)\ICQ\temp`
-(`dir /s` over the exec channel) on the bring-up clone:
+**Measured, so the next person does not have to re-derive it.** Readings of the
+unpack staging dir `C:\Program Files (x86)\ICQ\temp` (`dir /s` over the exec
+channel). Only the last pair has a trustworthy interval — take the earlier rows
+as progress markers, not as a rate:
 
-| Elapsed from installer launch | Files unpacked | Bytes |
+| UTC | Files | Bytes |
 |---|---|---|
-| ~2 h (copy phase done, unpack starting) | — | — |
-| ~5 h | 177 | 46,406,913 |
-| ~7 h | 190 | 47,438,722 |
-| ~7.5 h | 194 | 47,490,714 |
+| (unpack under way) | 177 | 46,406,913 |
+| (unpack under way) | 190 | 47,438,722 |
+| 21:09:29 | 194 | 47,490,714 |
+| 21:12:52 | 198 | 47,652,019 |
 
-That is roughly **5–6 files/hour** in the steady state, against a payload the
-progress bar put only ~40% through. **Projected completion is on the order of
-days, not hours** — and the unpack is only the staging step; the actual install
-into `C:\Program Files (x86)\ICQ` had not begun at all (that directory still
-held nothing but `temp`).
+The timed pair is **4 files in 3 min 23 s — about 70 files/hour, ~2.8 MB/hour**.
+The rate is *very* uneven: small `.emo` resources fly past while a single large
+DLL (`icq.exe` itself) can hold the progress bar still for well over an hour. So
+**do not trust a short sample as an ETA in either direction** — the honest
+statement is that after ~7.5 h the progress bar was around 40%, the staging dir
+held ~47 MB across ~200 files, and the real install into
+`C:\Program Files (x86)\ICQ` had **not started at all** (that directory still
+contained nothing but `temp`).
 
-So: **FX!32 is not the limit — wall clock is.** The route works and is
-architecturally correct; it is simply not affordable as a live install on this
-emulator. If this station is to run ICQ 2001b, prefer transplanting the
-**installed payload** from an x86 Windows sibling (the same offline-copy pattern
-`docs/guests/w2kalpha.md` records for Winamp 2.5e, whose installer likewise
-"will not complete on the Alpha") over running the installer here. What FX!32
-proves is that the **client binary** will execute once it is in place.
+**FX!32 is not the limit — wall clock is.** The route is architecturally correct
+and the client binary demonstrably executes; running the *installer* here is
+merely expensive. If this station is to run ICQ 2001b and the installer has not
+finished, prefer transplanting the **installed payload** from an x86 Windows
+sibling — the same offline-copy pattern `docs/guests/w2kalpha.md` records for
+Winamp 2.5e, whose installer likewise "will not complete on the Alpha".
 
 **Telling "slow" from "hung":** the progress bar can sit visually still for
 40 minutes while the filename underneath it changes. Check the host side instead —
@@ -173,8 +176,9 @@ that, the `_default` opener is used).
 
 **Not done — the station is NOT onboarded.** Its roster row stays
 `onboarded: false`. The blocker is wall clock, not a technical wall: the
-installer had not finished unpacking after 7.5 h and projects to days. The next
-session should **not** simply re-run the installer and wait; pick one of:
+installer had not finished unpacking after 7.5 h, and the rate is too uneven to
+promise a finish time. The next session should **not** simply re-run the
+installer from scratch; pick one of:
 
 1. **Transplant the installed payload** from an x86 Windows sibling (the
    Winamp 2.5e pattern), then do first-run config natively here — FX!32 is
