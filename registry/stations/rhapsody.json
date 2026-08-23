@@ -185,7 +185,7 @@
         "--env-append-file",
         "$T/rhapsody/station.env.fixture"
       ],
-      "deviceSetId": "rhapsody-dr2-tcg-p2-cirrus-800x600",
+      "deviceSetId": "rhapsody-dr2-tcg-p2-cirrus-tulip-1024x768",
       "launcher": "streamhost/stations/rhapsody/qemu-streamhost.sh",
       "envFixture": "streamhost/stations/rhapsody/station.env.fixture",
       "binary": "/opt/qemu-rhapsody/bin/qemu-system-i386",
@@ -212,7 +212,7 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher is the deployed launcher. Joined the retronet web plane 2026-08-23: the netdev went user(slirp) -> tap rhaprn0 on vmbr-rn and the NIC went i82557b -> tulip (DEC 21143), because Apple's Intel82557 driver programs the chip in flexible mode and QEMU's eepro100 model never delivers a received frame (Ipkts stuck at 0). Both the -device change and mac= bind only on a COLD boot, so the golden must be re-baked cold; docs/lab/retronet/WEB-STATION-rhapsody.md"
+        "reason": "tracked verbatim launcher is the deployed launcher. Joined the retronet web plane 2026-08-23: the netdev went user(slirp) -> tap rhaprn0 on vmbr-rn and the NIC went i82557b -> tulip (DEC 21143), because Apple's Intel82557 driver programs the chip in flexible mode and QEMU's eepro100 model never delivers a received frame (Ipkts stuck at 0). Both the -device change and mac= bind only on a COLD boot, so the golden was re-baked cold on this device set 2026-08-23 with OmniWeb 3.0 installed; docs/lab/retronet/WEB-STATION-rhapsody.md"
       }
     }
   },
@@ -224,7 +224,7 @@
     "snapshot": "golden",
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "Rhapsody 5.1 DR2 Platinum desktop after autologin as guest at 1024x768 RGB:555/16 (Cirrus GD5446) — Workspace Manager menu bar, guest home window open, disk/home/Applications icons on the right, Trash bottom right. loadvm golden -S, the daemon resumes."
+    "fixture": "Rhapsody 5.1 DR2 with OmniWeb 3.0 open on the 1996 Space Jam corpus page (retronet gateway :80 origin, no proxy) at 1024x768 RGB:555/16 (Cirrus GD5446) — the guest home window carrying the OmniWeb.app icon behind it, bookmarks panel at the left edge, disk/home/Applications icons on the right, Trash bottom right. loadvm golden -S, the daemon resumes."
   },
   "migrationExceptions": [],
   "network": {
