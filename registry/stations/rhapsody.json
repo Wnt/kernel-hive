@@ -204,7 +204,7 @@
         "-drive file=$D/rhapsody-golden.qcow2,format=qcow2,if=ide,index=0 -boot c",
         "-vga cirrus",
         "-display dbus,p2p=on",
-        "-netdev user,id=n0 -device i82557b,netdev=n0",
+        "-netdev tap,id=n0,ifname=rhaprn0,script=no,downscript=no -device tulip,netdev=n0,mac=\"$RN_RHAPSODY_MAC\"",
         "-serial file:$D/serial.log",
         "$LOADVM",
         "-qmp unix:$D/qmp.sock,server=on,wait=off",
@@ -212,7 +212,7 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher is the deployed launcher; golden baked with this device set on the station 2026-08-18"
+        "reason": "tracked verbatim launcher is the deployed launcher. Joined the retronet web plane 2026-08-23: the netdev went user(slirp) -> tap rhaprn0 on vmbr-rn and the NIC went i82557b -> tulip (DEC 21143), because Apple's Intel82557 driver programs the chip in flexible mode and QEMU's eepro100 model never delivers a received frame (Ipkts stuck at 0). Both the -device change and mac= bind only on a COLD boot, so the golden must be re-baked cold; docs/lab/retronet/WEB-STATION-rhapsody.md"
       }
     }
   },
@@ -226,5 +226,9 @@
     "keyboard": "UNVERIFIED",
     "fixture": "Rhapsody 5.1 DR2 Platinum desktop after autologin as guest at 1024x768 RGB:555/16 (Cirrus GD5446) — Workspace Manager menu bar, guest home window open, disk/home/Applications icons on the right, Trash bottom right. loadvm golden -S, the daemon resumes."
   },
-  "migrationExceptions": []
+  "migrationExceptions": [],
+  "network": {
+    "status": "host-only",
+    "note": "retronet web plane: the Intel EtherExpress PRO/100B (i82557b, the adapter DR2's Configure.app was given at install) is a REAL bridged NIC on vmbr-rn via the persistent tap rhaprn0 (streamhost/stations/rhapsody/rn-tapnet.sh, called `up` from the launcher on every start), MAC RN_RHAPSODY_MAC, driver Intel82557NetworkDriver as en0. Addressed 10.99.0.22/24 with DNS 10.99.0.2 and NO default gateway - STATIC, not DHCP, because Rhapsody DR2 ships no DHCP client at all (only the BOOTP-era bpwhoami), so the reservation exists only to keep the address unique. The address lives in /etc/iftab, the resolver in NetInfo /locations/resolver, and the absent default route in /etc/hostconfig ROUTER=-NO-. Behind the fail-closed RHAPRN-IN guard chain it reaches ONLY the gateway CT 10.99.0.2, where the period browser reads the corpus on :80 seamlessly (wildcard DNS, no proxy configured); never labhost, the LAN, the gallery or the internet. docs/lab/retronet/WEB-STATION-rhapsody.md"
+  }
 }

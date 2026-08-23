@@ -120,13 +120,18 @@ QEMU fork (11.0.2 + fast-poll) into **`/opt/qemu-rhapsody`**, like
     "serial mouse only" was wrong: the serial mouse is what VOM chose, not
     what DR2 requires; the rig now runs without `msmouse`).
   - Network: **Intel EtherExpress PRO/100B PCI LAN Adapter (v5.00)** — QEMU
-    `-device i82557b`. No NE2000/PCnet driver in DR2's list; DEC 21x4x
-    (QEMU `tulip`) is the alternative.
+    `-device i82557b`. No NE2000/PCnet driver in DR2's list. **This pairing is
+    TX-only** and was later replaced by **DEC Generic 21X4X** (QEMU `tulip`)
+    when the station joined the retronet: QEMU's `eepro100` does not implement
+    the flexible receive-buffer-descriptor mode Apple's driver programs, so
+    `Ipkts` never leaves 0 — see
+    [`../lab/retronet/WEB-STATION-rhapsody.md`](../lab/retronet/WEB-STATION-rhapsody.md).
   - Save → the graphical **Install Rhapsody** package picker (Essentials
     104 MB + all Other Packages = 384 MB) → Install.
 - Setup Assistant (after the first disk boot on the final device set): USA
   keyboard; LAN, manual IP **10.0.2.15/24**, router **10.0.2.2**, DNS
-  **10.0.2.3** (slirp), hostname `rhapsody`; no NetInfo; time zone "Turkey"
+  **10.0.2.3** (slirp — all three superseded by the retronet addressing below),
+  hostname `rhapsody`; no NetInfo; time zone "Turkey"
   (the EET band — Helsinki is not in DR2's list); no NTP; date left at the
   kernel's May-1998 default; local user **guest** with **autologin**; root
   password set (credentials: `guest/rhapsody` in the private store).
@@ -151,8 +156,19 @@ QEMU fork (11.0.2 + fast-poll) into **`/opt/qemu-rhapsody`**, like
 - Canonical output: `rhapsody-golden.qcow2` + internal `golden` snapshot
 - QEMU: `/opt/qemu-rhapsody/bin/qemu-system-i386`, `pc-i440fx-11.0`, TCG
   (KVM to be re-tested with the fixed PIC), `pentium2`, 64 MB, `-vga cirrus`
-  (GD5446, 800x600x16), IDE disk 2 GB, `-device i82557b` user-net, PS/2
-  mouse, COM1 to `serial.log`, `-display dbus,p2p=on`.
+  (GD5446, 800x600x16), IDE disk 2 GB, `-device tulip` on the retronet tap
+  `rhaprn0` (was `-device i82557b` user-net), PS/2 mouse, COM1 to
+  `serial.log`, `-display dbus,p2p=on`.
+
+## Networking
+
+On the retronet web plane since 2026-08-23: bridged `tulip` NIC on `vmbr-rn`
+via the persistent tap `rhaprn0`, **static** `10.99.0.22/24` (DR2 has no DHCP
+client), DNS `10.99.0.2`, **no default route**, contained by the fail-closed
+`RHAPRN-IN` chain. The address lives in `/etc/iftab`, the resolver in NetInfo
+`/locations/resolver`, the absent route in `/etc/hostconfig`. As-built, traps
+and the measurements:
+[`../lab/retronet/WEB-STATION-rhapsody.md`](../lab/retronet/WEB-STATION-rhapsody.md).
 
 ## Golden, input, and rollback
 

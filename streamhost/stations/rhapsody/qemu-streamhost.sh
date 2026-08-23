@@ -18,18 +18,52 @@
 #     it: the golden snapshot lives inside it.
 #   * Cirrus GD5446 PCI (-vga cirrus; DR2 ships a "Cirrus Logic GD5446 PCI
 #     Display Adapter (2MB)" driver — configured for 800x600 RGB:555/16 @60),
-#     Intel EtherExpress PRO/100B PCI (-device i82557b) user-net, PS/2 mouse
+#     DEC 21143 "Tulip" PCI (-device tulip) on the retronet (see NETWORK
+#     below), PS/2 mouse
 #     (relative, dead-reckoned to absolute by the daemon's abs->rel bridge,
 #     SH_INPUT_BACKEND=dbus-rel; the guest's Mouse Speed pref is at its slowest
 #     = dead-linear 0.478 px/unit; QEMU splits one big RelMotion into many PS/2
 #     packets of which the guest takes only the first, so SH_REL_MAX_STEP caps
 #     each send at one packet), COM1 = serial.sock (getty on tty00 -> `labctl
 #     exec`, kind serial_getty), COM2 = serial.log.
+#   * NETWORK: on the retronet, over a tap on the bridge vmbr-rn. The NIC is
+#     DEC 21143 "Tulip" (-device tulip), driven by DR2's bundled "DEC Generic
+#     21X4X" driver. This REPLACED the install-time Intel EtherExpress PRO/100B
+#     (-device i82557b): that pairing is TX-only under QEMU — Apple's Intel82557
+#     driver programs the 82557 in flexible mode (RFD + separate receive buffer
+#     descriptors), which QEMU's eepro100 model does not implement, so every
+#     inbound frame produced "Intel82557: more than 1 rbd, frame size 0" and
+#     "en0: resetting adapter" and en0 sat at Ipkts=0 forever. tulip receives.
+#     A -device change like this binds only on a COLD boot, as does mac=, so the
+#     golden MUST be re-baked cold for either to take. Addressing is STATIC
+#     (/etc/iftab): DR2 ships no DHCP client at all, only the BOOTP-era
+#     bpwhoami. 10.99.0.22/24, DNS 10.99.0.2 (NetInfo /locations/resolver), and
+#     ROUTER=-NO- in /etc/hostconfig so there is NO default route.
+#     rn-tapnet.sh is called `up` below on every launch and owns the tap + the
+#     fail-closed RHAPRN-IN guard chain. Nothing else rides this netdev — the
+#     exec getty is on COM1 and the pointer is PS/2. See
+#     docs/lab/retronet/WEB-STATION-rhapsody.md.
 #   * -loadvm golden -S when the snapshot exists (frozen at the checkpoint,
 #     the daemon wakes it); cold disk boot otherwise (install phase / rebake).
 set -e
 D=/data/vms/streamhost/stations/rhapsody
 QEMU=/opt/qemu-rhapsody/bin/qemu-system-i386
+B="$(dirname "$0")"
+# The retronet tap + its fail-closed guard chain. Idempotent, and re-asserted on
+# EVERY launch so a station relaunch or a host reboot cannot leave the guest on
+# the bridge with no containment.
+bash "$B/rn-tapnet.sh" up
+# Per-station retronet MAC. Unique per station (fleet scheme 52:54:00:52:4e:xx);
+# the golden's vmstate carries the MAC, so this only matters on a COLD (re-)bake;
+# loadvm golden uses the baked MAC regardless, but this mac= must MATCH it (cold
+# boot vs loadvm bind to the same device). Only the one line is read, never the
+# whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_RHAPSODY_MAC="02:00:00:00:00:16" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_RHAPSODY_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
+  [ -n "$_m" ] && RN_RHAPSODY_MAC="$_m"
+fi
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid"
@@ -46,7 +80,7 @@ nohup "$QEMU" \
   -drive file=$D/rhapsody-golden.qcow2,format=qcow2,if=ide,index=0 -boot c \
   -vga cirrus \
   -display dbus,p2p=on \
-  -netdev user,id=n0 -device i82557b,netdev=n0 \
+  -netdev tap,id=n0,ifname=rhaprn0,script=no,downscript=no -device tulip,netdev=n0,mac="$RN_RHAPSODY_MAC" \
   -serial unix:$D/serial.sock,server=on,wait=off \
   -serial file:$D/serial.log \
   $LOADVM \
