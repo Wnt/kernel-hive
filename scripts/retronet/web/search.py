@@ -188,10 +188,10 @@ class Handler(BaseHTTPRequestHandler):
 
     # --- responses ----------------------------------------------------------
     def _html(self, markup: str, head_only: bool, code: int = 200) -> None:
-        self._send(rn_render.to_bytes(markup), f"text/html; charset={rn_render.CHARSET}", head_only, code)
+        self._send(rn_render.to_bytes(markup), "text/html", head_only, code)
 
     def _text(self, text: str, head_only: bool, code: int = 200) -> None:
-        self._send(text.encode("latin-1", "replace"), "text/plain; charset=iso-8859-1", head_only, code)
+        self._send(text.encode("latin-1", "replace"), "text/plain", head_only, code)
 
     def _not_found(self, head_only: bool, quiet: bool = False) -> None:
         if quiet:

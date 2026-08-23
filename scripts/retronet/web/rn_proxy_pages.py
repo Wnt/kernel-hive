@@ -17,6 +17,16 @@ from urllib.parse import parse_qs
 TEXT_CHARSET = "iso-8859-1"  # what a period browser assumes, and what these pages declare
 
 
+# These notices are authored in Latin-1 with numeric entities. The charset is
+# declared IN-BAND (a <META HTTP-EQUIV>) and deliberately NOT in the HTTP
+# Content-Type header: era browsers such as NCSA Mosaic 2.7b5 do not parse a
+# parameterised "text/html; charset=..." and fall back to treating the page as
+# an unknown type, offering to save it to disk instead of rendering it. Latin-1
+# is HTTP's default anyway, so nothing is lost. Corpus pages already ship a bare
+# "text/html" for the same reason (proxy.content_type).
+CHARSET = "iso-8859-1"
+
+
 def era_page(title: str, heading: str, paras: list[str], extra: str = "") -> bytes:
     """A tiny HTML 3.2 page, Latin-1, in the spirit of a 1990s server notice.
 
@@ -27,7 +37,9 @@ def era_page(title: str, heading: str, paras: list[str], extra: str = "") -> byt
     body = "\n".join(f"<P>{p}</P>" for p in paras)
     html = (
         '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">\n'
-        f"<HTML><HEAD><TITLE>{title}</TITLE></HEAD>\n"
+        f"<HTML><HEAD><TITLE>{title}</TITLE>\n"
+        f'<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset={CHARSET}">\n'
+        "</HEAD>\n"
         '<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000EE" VLINK="#551A8B">\n'
         '<TABLE ALIGN="CENTER" WIDTH="560" BORDER="0" CELLPADDING="0" CELLSPACING="0">\n'
         "<TR><TD>\n"

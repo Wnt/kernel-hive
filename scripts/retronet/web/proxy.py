@@ -83,10 +83,6 @@ def record_miss(corpus_root: str, host: str, path: str) -> None:
         pass
 
 
-# The proxy's OWN notices (the miss/error pages below) are authored in Latin-1
-# with numeric entities. Corpus content is served untouched — see content_type.
-TEXT_CHARSET = "iso-8859-1"
-
 # Content type by extension. mimetypes fills any gap; the final fallback is
 # application/octet-stream. The corpus is a raw archival mirror (WEB-PLANE-PLAN
 # "fidelity, not downgrade"), so this spans original period types — HTML, GIF,
@@ -400,7 +396,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             conn.request(self.command, selector or "/", body=payload, headers=headers)
             resp = conn.getresponse()
             data = resp.read()
-            ctype = resp.getheader("Content-Type", "text/html; charset=" + TEXT_CHARSET)
+            ctype = resp.getheader("Content-Type", "text/html")
             status = resp.status
             conn.close()
         except OSError:
@@ -427,7 +423,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
     def send_era(self, code, title, heading, paras, extra=""):
         data = era_page(title, heading, paras, extra)
         self.send_response(code)
-        self.send_header("Content-Type", f"text/html; charset={TEXT_CHARSET}")
+        self.send_header("Content-Type", "text/html")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Connection", "close")
         self.end_headers()
@@ -444,7 +440,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         )
         self.send_response(302)
         self.send_header("Location", url)
-        self.send_header("Content-Type", f"text/html; charset={TEXT_CHARSET}")
+        self.send_header("Content-Type", "text/html")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Connection", "close")
         self.end_headers()
