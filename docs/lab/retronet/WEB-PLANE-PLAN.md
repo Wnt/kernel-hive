@@ -22,6 +22,24 @@ onboarding recipe: [`WEB-PROXY.md`](WEB-PROXY.md) (now the web **+ addressing**
 plane) and [`ICQ-STATION.md`](ICQ-STATION.md). The proxy `:3128` door stays; both
 serve the same corpus.
 
+**Pre-DHCP guests are addressed statically, and the reservation is the ledger.**
+Three stations now join this plane without ever sending a DISCOVER, for the same
+structural reason: they predate DHCP. `chokanji` (B-right/V 4.202) has no DHCP
+client; `rhapsody` (Rhapsody 5.1 DR2) ships no DHCP, BOOTP or ipconfig binary
+anywhere on its root filesystem — only `bpwhoami`; `macos753`/MacTCP is the same
+shape. For these the address is hand-configured in the guest (and the guest's own
+config store is wherever that OS keeps it — `/etc/iftab` plus NetInfo on
+Rhapsody, not a `resolv.conf`), and the station declares
+`"addressing": "static"` in its registry `retronet` block.
+
+**Keep the DHCP reservation anyway.** It hands out nothing to a guest that never
+asks, and that is the point: `RETRONET_DHCP_RESERVATIONS` is the plane's single
+**uniqueness ledger** for MAC->address, so a static station that is absent from
+it is an address the next agent can hand to somebody else. Reserve first, then
+configure the guest by hand to the address you reserved. The registry's
+`retronet.address` is cross-validated for uniqueness too, so the two agree or
+the gate fails.
+
 ## Principles
 
 - **Corpus-only, offline by construction.** The proxy answers every request
