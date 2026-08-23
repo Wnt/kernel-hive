@@ -218,6 +218,11 @@ pinning the cursor to the corner) — so **drive ICQ entirely by keyboard**:
   USER` picks up a teal border — so a screendump after each `Tab` tells you where
   you are. From the wizard's first screen it is `Tab` ×2 → `EXISTING USER`.
 - `Space` activates; `Enter` takes the wizard's default (`Next` / `Start`).
+- **The one-time *IMPORTANT NOTICE* blocks every cold boot** until its *"Don't show
+  this message again"* box is ticked, and that box sits at the END of a tab order that
+  is not the visual order: `Quit Session` → `I Agree, Start ICQ` → the notice text →
+  the checkbox. From the dialog's initial focus, **`Shift`+`Tab` lands on the
+  checkbox**; `Space` ticks it, then `Tab` ×2 returns to `I Agree`.
 - **The shm framebuffer does not capture the mouse cursor**, so a screendump can
   never tell you where the pointer is — another reason to ignore it.
 - Budget minutes, not seconds, per step: the first launch of `Icq.exe` took
