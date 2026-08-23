@@ -7,6 +7,16 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/generated/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/generated/favicon-16.png" />
     <link rel="apple-touch-icon" href="/assets/generated/apple-touch-icon.png" />
+    <!-- Installable web app (Android/Chromium "Add to home screen", desktop
+         "Install"). The manifest declares standalone display + the maskable
+         icon; the service worker (registered in main.tsx) makes it installable
+         and gives an offline shell. Both live in public/ so they publish at the
+         webroot root. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Kernel Hive" />
     <!-- One scheme, museum daylight (spa/src/index.css). color-scheme pins the
          UA's own widgets — scrollbars, form controls, the mobile browser bar —
          to light too, so a dark-mode OS cannot paint dark chrome around it. -->

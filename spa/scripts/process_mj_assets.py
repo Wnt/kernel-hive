@@ -6,7 +6,7 @@ Reads   $MJ_OUTPUT_DIR/<slot>/(v1..v4 | job*_v*).png
         (default spa/mj-output/ — gitignored; the raw MJ masters live outside
         the repo)
 Writes  spa/public/assets/generated/hero-backplate.{webp,jpg}, era-90s.jpg,
-        and application favicons
+        application favicons, and the installable-app (PWA) icons
 
 Tooling: Python + Pillow + numpy only (no ImageMagick needed).  sips is used
 elsewhere for spot conversions but everything reproducible lives here.
@@ -120,6 +120,43 @@ def build_era(slot, gain):
     out = u8(a).resize((1600, 900), Image.LANCZOS)
     print(slot, save(out, slot, webp=False, jpg=True))
 
+# Museum-daylight paper (#f3f0e7), the SPA's one page ground and the PWA
+# theme/background colour. PWA icons are composited onto it so the installed app
+# tile reads as an opaque printed chip rather than a bare transparent mark.
+PWA_BG = (243, 240, 231, 255)
+
+
+def _tight(logo):
+    """Crop a transparent-background logo to its opaque bounding box."""
+    bbox = logo.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
+    return logo.crop(bbox) if bbox else logo
+
+
+def _tile(mark, canvas_px, fill_frac, bg=PWA_BG):
+    """Centre `mark` on an opaque square, its long side `fill_frac` of the canvas.
+    `fill_frac` is deliberately small for maskable output so a launcher's circle
+    or squircle mask never clips the artwork (safe zone is the central ~80%)."""
+    out = Image.new("RGBA", (canvas_px, canvas_px), bg)
+    w, h = mark.size
+    scale = (canvas_px * fill_frac) / max(w, h)
+    m = mark.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.LANCZOS)
+    mw, mh = m.size
+    out.paste(m, ((canvas_px - mw) // 2, (canvas_px - mh) // 2), m)
+    return out.convert("RGB")
+
+
+def emit_pwa_icons(logo, out_dir):
+    """Write the installable-app icons from the 512px square mark `logo`:
+    two `purpose:any` tiles (192/512) plus a generously-padded 512 maskable one.
+    Kept separate from the favicons because a PWA tile wants an opaque branded
+    ground and a mask-safe margin, where a favicon wants the bare transparent glyph."""
+    mark = _tight(logo)
+    _tile(mark, 192, 0.80).save(os.path.join(out_dir, "icon-192.png"))
+    _tile(mark, 512, 0.80).save(os.path.join(out_dir, "icon-512.png"))
+    _tile(mark, 512, 0.56).save(os.path.join(out_dir, "icon-maskable-512.png"))
+    print("pwa icons", "-> icon-192.png, icon-512.png, icon-maskable-512.png")
+
+
 def build_mark():
     im = load("mark")
     a = f(im)
@@ -147,6 +184,7 @@ def build_mark():
     ico = os.path.join(OUT, "favicon.ico")
     logo.save(ico, sizes=[(16, 16), (32, 32), (48, 48)])
     print("icons", "-> favicon-16/32.png, apple-touch-icon.png, favicon.ico")
+    emit_pwa_icons(logo, OUT)
 
 def main():
     build_hero()

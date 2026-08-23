@@ -218,6 +218,29 @@ canvas { display: block; touch-action: none; }
     var(--paper);
   -webkit-overflow-scrolling: touch;
 }
+
+/* Pull-to-refresh affordance (usePullToRefresh). A child of .grid-view, so it
+   sits in that stacking context — below the app bar (z-index 30) and above the
+   cards — and appears to slide out from beneath the bar. Position-fixed so it
+   stays pinned to the viewport top; JS drives translate/opacity from the pull. */
+.grid-refresh {
+  position: fixed; top: 8px; left: 50%; z-index: 20;
+  display: grid; place-items: center;
+  width: 40px; height: 40px; border-radius: 999px;
+  background: var(--paper-raised); color: var(--accent-ink);
+  border: 1px solid var(--line); box-shadow: var(--shadow-1);
+  pointer-events: none; will-change: transform, opacity;
+  transition: transform 100ms ease-out, opacity 140ms ease, border-color 140ms ease;
+}
+.grid-refresh.is-armed { border-color: var(--accent-line); }
+.grid-refresh-icon { font-size: 20px; line-height: 1; display: inline-block; }
+.grid-refresh-icon.is-refreshing { animation: grid-refresh-spin 700ms linear infinite; }
+@keyframes grid-refresh-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .grid-refresh { transition: opacity 140ms ease; }
+  .grid-refresh-icon.is-refreshing { animation-duration: 1400ms; }
+}
+
 .grid-view-inner {
   max-width: 1360px; margin: 0 auto;
   padding: 84px 24px 48px;   /* top clears the fixed app bar */
