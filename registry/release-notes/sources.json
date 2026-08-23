@@ -1,0 +1,80 @@
+{
+  "_README": "Hand-written declaration of the commit sources `scripts/release-notes.py brief` gathers a week from BESIDES this repository's own git log. The emulator patches this project lives on are pushed to public forks, so a brief cut from this repo alone silently under-reports the week. One hand-written home per fact: the forks, the branches each build actually pins, who counts as us, and WHY a branch is excluded. `render` and `check` never read this file for prose — it feeds `brief` only.",
+  "ourAuthors": ["Wnt", "jonni-reaktor"],
+  "_ourAuthorsNote": "GitHub author logins. Every other author on these branches is upstream MAME/VICE/QEMU/es40 work this project merely carries — never ours to announce in the notes.",
+  "ourCommitAuthors": ["Kernel Hive lab", "lab@example.com"],
+  "_ourCommitAuthorsNote": "GitHub can only attach a login to a commit whose author email belongs to a GitHub account, so work pushed straight from the lab box arrives with NO login and the `ourAuthors` rule cannot see it (this is how the VICE shared-memory framebuffer nearly went unreported). These are the plain git author names and emails that count as ours anyway, matched case-insensitively and ONLY when GitHub resolved no login. The list is deliberately short: the box's other identity is root@<the machine>, a real hostname that cannot be written down in a public repo, so anything unattributed and undeclared is printed under `brief`'s DECIDE BY HAND block for a human call instead of being dropped.",
+  "experimentalSubjectMarker": "[experimental, not shipped]",
+  "_experimentalMarkerNote": "A commit whose own subject carries this marker is published for the record but is not part of the shipped stack, so it never reaches the brief.",
+  "forks": [
+    {
+      "repo": "Wnt/mame",
+      "what": "MAME patches for the SGI Indy (IRIX) and Microprofessor II stations",
+      "branches": [
+        {
+          "name": "irix",
+          "what": "R4600 DRC, GIO64/Newport shm framebuffer and mamectl input for the IRIX station",
+          "pinnedBy": [".gitmodules"],
+          "pinNote": "the mame-irix submodule IS the pin; scripts/build-guests/emulators/build-mame-irix.sh (and build-mame-macos.sh) build from the checked-out submodule and choose no branch of their own."
+        },
+        {
+          "name": "mpf2",
+          "what": "warning-suppression and boot patches for the Microprofessor II station",
+          "pinnedBy": [".gitmodules"],
+          "pinNote": "the mame-mpf2 submodule IS the pin; scripts/build-guests/emulators/build-mame-mpf2.sh seeds its chroot build from the checked-out submodule and chooses no branch of its own."
+        }
+      ],
+      "excludes": [
+        {
+          "branch": "irix-experimental",
+          "why": "published working patches that are DELIBERATELY not shipped in the default stack (third_party/mame-irix README.md) — the gallery never runs them, so announcing them would claim a capability visitors do not have"
+        }
+      ]
+    },
+    {
+      "repo": "Wnt/es40",
+      "what": "es40 AlphaServer ES40 patches behind the Windows 2000 Alpha and Tru64 UNIX stations",
+      "branches": [
+        {
+          "name": "main",
+          "what": "JIT translation cache, shm framebuffer export, mamectl/1 ctlsock input, savestate fixes",
+          "pinnedBy": ["registry/stations/w2kalpha.json", "registry/stations/tru64.json"],
+          "pinNote": "es40 is built from the fork's `main` outside this repo, so no build script pins a commit; both station registry entries name the branch in `emulator.source`."
+        }
+      ],
+      "excludes": [
+        {
+          "branch": "tlb-hint-experimental",
+          "why": "a trial optimisation branch that never merged to main and never ran a station — trial tests are not interesting from a visitor's perspective"
+        }
+      ]
+    },
+    {
+      "repo": "Wnt/vice",
+      "what": "VICE patches for the Commodore stations (shm framebuffer, checkpoint save/load, keyboard pacing)",
+      "branches": [
+        {
+          "name": "kernel-hive/integrated",
+          "what": "the integrated branch every Commodore station is built from",
+          "pinnedBy": ["scripts/build-guests/emulators/build-vice-native.sh", ".gitmodules"]
+        }
+      ],
+      "excludes": []
+    },
+    {
+      "repo": "Wnt/qemu",
+      "what": "QEMU patches for the foreign-architecture stations (Rhapsody i8259 cascade, Mac OS 7.5.3 m68k) and the host's fast-poll build",
+      "branches": [
+        {
+          "name": "kernel-hive",
+          "what": "the branch the Rhapsody and Mac OS 7.5.3 builders clone",
+          "pinnedBy": ["scripts/build-guests/tiles/rhapsody.sh", ".gitmodules"]
+        }
+      ],
+      "excludes": []
+    }
+  ],
+  "_notInScope": {
+    "Wnt/forwarder": "the public ingress/deploy repo, not an emulator fork: TLS and relay plumbing rather than anything a museum visitor would notice"
+  }
+}

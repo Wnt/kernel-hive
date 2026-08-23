@@ -1,54 +1,37 @@
 import type { ReleaseNotesDoc, ReleaseSection, ReleaseWeek } from '../data/releaseNotes';
 
-// Pure view model for the About page's release-notes list. It lives beside
-// About.tsx rather than inside it so the ordering / badge / collapse rules are
+// Pure view model for the About page's release notes. It lives beside
+// About.tsx rather than inside it so the ordering / range / note rules are
 // testable under vitest's plain-Node environment (vitest.config.ts collects
 // src/**/*.test.ts only, and never renders a DOM).
 //
 // The rules, in one place:
 //   * weeks are PRESENTED newest-first — the generator already emits them that
-//     way, but sorting here means a hand-edited or older document cannot show
-//     week 1 at the top;
-//   * only the newest week is expanded by default (an archive week can carry
-//     300+ bullets, so opening them all would bury the page);
-//   * a "collapsed" section (Dependencies) is a count line only. The generator
-//     deliberately sends it with an empty `entries` list, so the count — not
-//     the list length — is the number to render;
-//   * one row per commit, even when a rebase landed the same subject twice —
-//     each row is its own commit link. docs/RELEASE-NOTES.md, which is prose
-//     read top-to-bottom, merges those into one bullet carrying both shas.
+//     way, but sorting here means a hand-edited or reordered document cannot
+//     show week 1 at the top;
+//   * only the newest week is expanded by default, so the page opens on what
+//     changed this week rather than on a wall of history;
+//   * a week carrying a `source` is one summarised from a DIFFERENT history
+//     than this repository's, and says so. The field's presence is the test,
+//     never the week number — week 0 is today's only such week, but the shape
+//     does not promise it stays that way.
 
-const COMMIT_URL = 'https://github.com/Wnt/kernel-hive/commit/';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-interface EntryView {
-  key: string;
-  /** Station id for the Stations section, so the reader sees which station. */
-  station: string | null;
-  text: string;
-  sha: string;
-  href: string;
-  date: string;
-}
-
-export interface SectionView {
-  title: string;
-  /** "12 changes", or "4 dependency bumps" for the collapsed Dependencies section. */
-  summary: string;
-  collapsed: boolean;
-  defaultOpen: boolean;
-  entries: EntryView[];
-}
 
 export interface WeekView {
   key: string;
   number: number;
+  /** "Week 3" — the ordinal alone; `title` carries the headline. */
   heading: string;
+  title: string;
   range: string;
-  commits: string;
-  inProgress: boolean;
+  /** e.g. "35,569 lines of code" — the week's size, as the page prints it. */
+  code: string;
   defaultOpen: boolean;
-  sections: SectionView[];
+  /** Set when the week came from another repository's history; null otherwise. */
+  sourceNote: string | null;
+  summary: ReleaseSection[];
+  bullets: string[];
 }
 
 /** "2026-08-16" -> "16 Aug 2026"; anything unparseable is passed through. */
@@ -76,45 +59,24 @@ function formatRange(week: ReleaseWeek): string {
   return sameYear ? `${from} – ${to} ${week.endDate.slice(0, 4)}` : `${from} – ${to}`;
 }
 
-function plural(count: number, one: string, many: string): string {
-  return `${count} ${count === 1 ? one : many}`;
-}
-
-function sectionView(section: ReleaseSection, weekIsNewest: boolean): SectionView {
-  const collapsed = section.collapsed === true;
-  return {
-    title: section.title,
-    summary: collapsed
-      ? plural(section.count, 'dependency bump', 'dependency bumps')
-      : plural(section.count, 'change', 'changes'),
-    collapsed,
-    // Only the newest week opens its sections; a collapsed section has nothing
-    // to open, so it never claims to be expanded.
-    defaultOpen: weekIsNewest && !collapsed,
-    entries: collapsed
-      ? []
-      : section.entries.map((entry) => ({
-        key: `${entry.sha}:${entry.text}`,
-        station: section.title === 'Stations' ? entry.scope : null,
-        text: entry.text,
-        sha: entry.sha,
-        href: `${COMMIT_URL}${entry.sha}`,
-        date: entry.date,
-      })),
-  };
+function sourceNote(week: ReleaseWeek): string | null {
+  if (typeof week.source !== 'string' || week.source === '') return null;
+  return `Before the repository was public — summarised from the private ${week.source} history.`;
 }
 
 /** The weeks of a release-notes document, newest first, ready to render. */
 export function releaseWeekViews(doc: ReleaseNotesDoc): WeekView[] {
-  const weeks = [...doc.weeks].sort((a, b) => b.number - a.number);
+  const weeks = [...doc.weeks].sort((a, b) => b.week - a.week);
   return weeks.map((week, index) => ({
-    key: `week-${week.number}`,
-    number: week.number,
-    heading: `Week ${week.number}`,
+    key: `week-${week.week}`,
+    number: week.week,
+    heading: `Week ${week.week}`,
+    title: week.title,
     range: formatRange(week),
-    commits: plural(week.commitCount, 'commit', 'commits'),
-    inProgress: week.inProgress,
+    code: `${week.codeLines.toLocaleString('en-US')} line${week.codeLines === 1 ? '' : 's'} of code`,
     defaultOpen: index === 0,
-    sections: week.sections.map((section) => sectionView(section, index === 0)),
+    sourceNote: sourceNote(week),
+    summary: week.summary,
+    bullets: week.bullets,
   }));
 }

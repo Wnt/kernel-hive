@@ -3,57 +3,47 @@
  * worth pinning down is the transform in releaseNotesView.ts. Three contracts
  * matter to a reader of /about and are easy to regress:
  *   1. weeks are shown NEWEST FIRST regardless of the order in the document,
- *      and only the newest one is expanded by default (older weeks carry
- *      hundreds of bullets);
- *   2. the in-progress week is flagged — it is the week that is still filling
- *      up, and the generator's --check deliberately ignores it;
- *   3. a "collapsed" Dependencies section renders as a count line only. The
- *      generator sends it with an EMPTY entries list, so the count field is the
- *      only source of the number — reading entries.length would silently print 0.
+ *      and only the newest one is expanded by default;
+ *   2. a week carrying a `source` prints the "before the repository was public"
+ *      note, and the trigger is that FIELD, not the week number — week 0 is
+ *      merely today's only such week;
+ *   3. the date range prints both boundary TIMES, because the span is
+ *      half-open and consecutive weeks share their boundary instant.
  */
 import { describe, expect, it } from 'vitest';
-import type { ReleaseNotesDoc, ReleaseSection, ReleaseWeek } from '../data/releaseNotes';
+import type { ReleaseNotesDoc, ReleaseWeek } from '../data/releaseNotes';
 import { releaseWeekViews } from './releaseNotesView';
 
 function week(number: number, overrides: Partial<ReleaseWeek> = {}): ReleaseWeek {
+  const day = (offset: number) => String(2 + number * 7 + offset).padStart(2, '0');
   return {
-    number,
-    start: `2026-08-${String(2 + number * 7).padStart(2, '0')}T09:00:00+03:00`,
-    end: `2026-08-${String(9 + number * 7).padStart(2, '0')}T09:00:00+03:00`,
-    startDate: `2026-08-${String(2 + number * 7).padStart(2, '0')}`,
-    endDate: `2026-08-${String(9 + number * 7).padStart(2, '0')}`,
-    inProgress: false,
+    week: number,
+    title: `Week ${number} happened`,
+    start: `2026-08-${day(0)}T09:00:00+03:00`,
+    end: `2026-08-${day(7)}T09:00:00+03:00`,
+    startDate: `2026-08-${day(0)}`,
+    endDate: `2026-08-${day(7)}`,
     commitCount: 3,
-    sections: [],
+    codeLines: 1234,
+    summary: [
+      { theme: 'New stations', text: 'A machine arrived.' },
+      { theme: 'Major features', text: 'Something new works.' },
+      { theme: 'Quality improvements', text: 'Something got faster.' },
+    ],
+    bullets: ['A thing landed', 'Another thing landed'],
     ...overrides,
   };
 }
 
 function doc(weeks: ReleaseWeek[]): ReleaseNotesDoc {
-  return {
-    cutoff: 'Sunday 09:00 Europe/Helsinki',
-    epoch: '2026-08-07T14:37:08+03:00',
-    generatedFrom: '9ac042b',
-    weeks,
-  };
+  return { cutoff: 'Sunday 09:00 Europe/Helsinki', weeks };
 }
-
-const STATIONS: ReleaseSection = {
-  title: 'Stations',
-  count: 2,
-  entries: [
-    { scope: 'tru64', text: 'Web browser applied to the live golden', sha: 'abcdef1', date: '2026-08-23' },
-    { scope: 'hpuxvue', text: 'NCSA Mosaic on the retronet web plane', sha: '1234567', date: '2026-08-23' },
-  ],
-};
-
-const DEPENDENCIES: ReleaseSection = { title: 'Dependencies', count: 4, entries: [], collapsed: true };
 
 describe('releaseWeekViews', () => {
   it('presents weeks newest-first even when the document is oldest-first', () => {
-    const views = releaseWeekViews(doc([week(1), week(2), week(3)]));
-    expect(views.map((v) => v.number)).toEqual([3, 2, 1]);
-    expect(views.map((v) => v.heading)).toEqual(['Week 3', 'Week 2', 'Week 1']);
+    const views = releaseWeekViews(doc([week(0), week(1), week(2), week(3)]));
+    expect(views.map((v) => v.number)).toEqual([3, 2, 1, 0]);
+    expect(views.map((v) => v.heading)).toEqual(['Week 3', 'Week 2', 'Week 1', 'Week 0']);
   });
 
   it('expands only the newest week', () => {
@@ -61,18 +51,53 @@ describe('releaseWeekViews', () => {
     expect(views.map((v) => v.defaultOpen)).toEqual([true, false, false]);
   });
 
-  it('flags the in-progress week and carries its commit count', () => {
-    const views = releaseWeekViews(doc([week(2, { inProgress: true, commitCount: 26 }), week(1)]));
-    expect(views[0].inProgress).toBe(true);
-    expect(views[0].commits).toBe('26 commits');
-    expect(views[1].inProgress).toBe(false);
-    expect(views[1].commits).toBe('3 commits');
+  it('carries the title, commit count, summary paragraphs and bullets through', () => {
+    const views = releaseWeekViews(doc([week(3, {
+      title: 'The retronet signs on',
+      commitCount: 336,
+      codeLines: 35569,
+      summary: [
+        { theme: 'New stations', text: 'Seven new machines came online.' },
+        { theme: 'Major features', text: 'The museum got its own internet.' },
+        { theme: 'Quality improvements', text: 'Restores got faster.' },
+      ],
+      bullets: ['The retronet gateway is live', 'Seven stations installed from sourced media'],
+    })]));
+    expect(views[0].title).toBe('The retronet signs on');
+    expect(views[0].code).toBe('35,569 lines of code');
+    expect(views[0].summary.map((s) => s.theme)).toEqual([
+      'New stations',
+      'Major features',
+      'Quality improvements',
+    ]);
+    expect(views[0].summary[1].text).toBe('The museum got its own internet.');
+    expect(views[0].bullets).toHaveLength(2);
+  });
+
+  it('formats the code-line count with thousands separators', () => {
+    expect(releaseWeekViews(doc([week(1, { codeLines: 1 })]))[0].code).toBe('1 line of code');
+    expect(releaseWeekViews(doc([week(1, { codeLines: 35569 })]))[0].code).toBe('35,569 lines of code');
+  });
+
+  it('notes a week summarised from another repository, naming that source', () => {
+    const views = releaseWeekViews(doc([week(1), week(0, { source: 'osgallery' })]));
+    expect(views[1].sourceNote).toBe(
+      'Before the repository was public — summarised from the private osgallery history.',
+    );
+  });
+
+  it('leaves a week with no source unnoted — the week NUMBER is never the trigger', () => {
+    // A hypothetical week 0 with no `source` must not claim a provenance it
+    // does not declare, and a sourced week 4 must get the note.
+    const views = releaseWeekViews(doc([week(4, { source: 'elsewhere' }), week(0)]));
+    expect(views[0].sourceNote).toContain('elsewhere');
+    expect(views[1].sourceNote).toBeNull();
   });
 
   it('formats the week range with both boundary TIMES, so the exclusive end is unambiguous', () => {
     // Week N ends and week N+1 starts at the same Sunday 09:00; bare dates made
     // both weeks look like they contained that day.
-    const views = releaseWeekViews(doc([week(1, {
+    const views = releaseWeekViews(doc([week(3, {
       start: '2026-08-16T09:00:00+03:00',
       end: '2026-08-23T09:00:00+03:00',
       startDate: '2026-08-16',
@@ -91,37 +116,13 @@ describe('releaseWeekViews', () => {
     expect(views[0].range).toBe('7 Aug 14:37 – 9 Aug 09:00 2026');
   });
 
-  it('renders a collapsed Dependencies section as a count line with no entries', () => {
-    const views = releaseWeekViews(doc([week(1, { sections: [DEPENDENCIES] })]));
-    const section = views[0].sections[0];
-    expect(section.collapsed).toBe(true);
-    expect(section.summary).toBe('4 dependency bumps');
-    expect(section.entries).toEqual([]);
-    expect(section.defaultOpen).toBe(false);
-  });
-
-  it('labels Stations entries with their station id and links each sha', () => {
-    const views = releaseWeekViews(doc([week(1, { sections: [STATIONS] })]));
-    const section = views[0].sections[0];
-    expect(section.summary).toBe('2 changes');
-    expect(section.defaultOpen).toBe(true);
-    expect(section.entries[0].station).toBe('tru64');
-    expect(section.entries[0].href).toBe('https://github.com/Wnt/kernel-hive/commit/abcdef1');
-    expect(section.entries[0].text).toBe('Web browser applied to the live golden');
-  });
-
-  it('does not label non-Stations entries with a scope pill', () => {
-    const other: ReleaseSection = {
-      title: 'Gallery UI',
-      count: 1,
-      entries: [{ scope: 'spa', text: 'Installable PWA', sha: '9ac042b', date: '2026-08-23' }],
-    };
-    const views = releaseWeekViews(doc([week(1, { sections: [other] })]));
-    expect(views[0].sections[0].entries[0].station).toBeNull();
-  });
-
-  it('sections of an older week stay collapsed', () => {
-    const views = releaseWeekViews(doc([week(2), week(1, { sections: [STATIONS] })]));
-    expect(views[1].sections[0].defaultOpen).toBe(false);
+  it('spells the year on BOTH ends of a range that crosses new year', () => {
+    const views = releaseWeekViews(doc([week(1, {
+      start: '2026-12-27T09:00:00+02:00',
+      end: '2027-01-03T09:00:00+02:00',
+      startDate: '2026-12-27',
+      endDate: '2027-01-03',
+    })]));
+    expect(views[0].range).toBe('27 Dec 2026 09:00 – 3 Jan 2027 09:00');
   });
 });

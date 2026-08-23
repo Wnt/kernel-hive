@@ -1,26 +1,23 @@
 #!/usr/bin/env python3
-"""Focused tests for the release-notes generator (scripts/release-notes.py).
+"""Focused tests for the release-notes renderer (scripts/release-notes.py).
 
 Run directly: `python3 scripts/test_release_notes.py`, or
 `python3 -m unittest discover -s scripts -p 'test_release_notes.py'`.
 
-Covers the parts that are easy to get subtly wrong and expensive to notice: the
-Sunday-09:00-Helsinki week boundary (exclusive end), DST correctness across the
-October fallback, the scope -> section mapping, the Dependencies collapse,
-README marker idempotency -- and the WINDOW, i.e. which commits the weeks are
-cut from. That last one is tested against throwaway git repos built here in a
-temp dir (GitWindowTest): the endpoints used to come from `git log` order, which
-is COMMITTER-date order, while every bucketing decision uses the AUTHOR date, so
-an ordinary rebase silently dropped commits out of the notes. No test depends on
-this repo's actual git history, which changes with every commit.
+The prose is hand-written now, so the expensive mistakes moved: a summary file
+that quietly breaks the locked schema, week 0 (which git knows nothing about)
+being treated as a git week, a README splice that duplicates itself, and a
+render/check round-trip that is not byte-exact. Every test writes its own
+summary files into a temp tree; none depends on this repo's git history or on
+the committed summaries, which change every Sunday.
 """
 
 from __future__ import annotations
 
 import contextlib
-import importlib.machinery
-import os
-import subprocess
+import importlib.util
+import io
+import json
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -28,50 +25,140 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import release_notes_render as RENDER
+import release_notes_schema as SCHEMA
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-RN = importlib.machinery.SourceFileLoader(
-    "release_notes_under_test",
-    str(REPO_ROOT / "scripts" / "release-notes.py"),
-).load_module()
+# `release-notes.py` is not an importable module name (the dash), and
+# load_module() is deprecated and errors under -W error, so build the module
+# from its spec the supported way.
+_SPEC = importlib.util.spec_from_file_location("release_notes_under_test", REPO_ROOT / "scripts" / "release-notes.py")
+RN = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(RN)
 
 TZ = ZoneInfo("Europe/Helsinki")
-STATIONS = {"tru64", "vic20", "w2kalpha", "hpuxvue", "chokanji", "c128", "mpf2"}
 
 
 def helsinki(text: str) -> datetime:
     return datetime.fromisoformat(text).replace(tzinfo=TZ)
 
 
+# The themes live in the schema module, which owns the locked shape.
+NORMAL_THEMES = SCHEMA.NORMAL_THEMES
+WEEK0_THEMES = SCHEMA.WEEK0_THEMES
+
+
+def paragraphs(count: int, words: int, themes: tuple[str, ...] | None = None) -> list[dict]:
+    """`count` themed sections holding `words` words of prose in total.
+
+    The themes default to the real ones for that section count, so a fixture
+    that is not ABOUT the theme rule never trips it; a test that wants a wrong
+    theme list passes its own.
+    """
+    if themes is None:
+        themes = WEEK0_THEMES if count == len(WEEK0_THEMES) else NORMAL_THEMES
+        themes = (
+            themes[:count] if count <= len(themes) else themes + tuple(f"Extra {i}" for i in range(count - len(themes)))
+        )
+    each = [words // count] * count
+    each[0] += words - sum(each)
+    return [{"theme": theme, "text": " ".join(["word"] * n)} for theme, n in zip(themes, each)]
+
+
+def week_doc(number: int = 3, **overrides) -> dict:
+    doc = {
+        "week": number,
+        "title": "Retronet reaches the web",
+        "start": "2026-08-16T09:00:00+03:00",
+        "end": "2026-08-23T09:00:00+03:00",
+        "commitCount": 336,
+        "codeLines": 35569,
+        "summary": paragraphs(3, 350),
+        "bullets": ["A 1994 <u>SGI workstation</u> dialled out to a period web server"],
+    }
+    doc.update(overrides)
+    return doc
+
+
+# Later than every fixture week, so `render` never warns about an unclosed one.
+NOW = datetime(2026, 9, 1, 12, 0, tzinfo=TZ)
+
+
+@contextlib.contextmanager
+def temp_tree(docs: list[dict], readme: str | None = None):
+    """A throwaway repo tree holding only what render touches."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "registry" / "release-notes").mkdir(parents=True)
+        (root / "docs").mkdir()
+        (root / "spa" / "public").mkdir(parents=True)
+        (root / "README.md").write_text(readme or "# Title\n\n## Contributing\n\nSee CONTRIBUTING.\n")
+        (root / "docs" / "RELEASE-NOTES.md").write_text("")
+        # `check` also asserts the fork declaration still matches the build files
+        # it cites (release_notes_forks.pin_errors), so the tree needs both.
+        (root / "registry" / "release-notes" / "sources.json").write_text(
+            json.dumps(
+                {
+                    "ourAuthors": ["Wnt"],
+                    "forks": [
+                        {
+                            "repo": "Wnt/vice",
+                            "what": "VICE patches for the Commodore stations",
+                            "branches": [{"name": "kernel-hive/integrated", "pinnedBy": ["build.sh"]}],
+                        }
+                    ],
+                }
+            )
+        )
+        # A real pin, in the format `check` parses — a comment naming the branch
+        # is deliberately not one.
+        (root / "build.sh").write_text(
+            'VICE_FORK_URL="${VICE_FORK_URL:-https://github.com/Wnt/vice.git}"\nVICE_FORK_BRANCH=kernel-hive/integrated\n'
+        )
+        (root / "spa" / "public" / "release-notes.json").write_text("")
+        for doc in docs:
+            stem = datetime.fromisoformat(doc["end"]).astimezone(TZ).date().isoformat()
+            (root / "registry" / "release-notes" / f"{stem}.json").write_text(json.dumps(doc, indent=2))
+        original = RN.REPO_ROOT
+        RN.REPO_ROOT = root
+        # render/check narrate what they wrote; inside a test that chatter only
+        # buries unittest's own OK/FAILED line.
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                yield root
+        finally:
+            RN.REPO_ROOT = original
+
+
 class BoundaryMathTest(unittest.TestCase):
     def test_first_boundary_is_the_next_sunday_0900(self):
         # 2026-08-07 is a Friday; the release commit is at 14:37 Helsinki.
-        epoch = helsinki("2026-08-07T14:37:08")
-        self.assertEqual(RN.first_boundary(epoch), helsinki("2026-08-09T09:00:00"))
+        self.assertEqual(RN.first_boundary(helsinki("2026-08-07T14:37:08")), helsinki("2026-08-09T09:00:00"))
 
-    def test_epoch_on_a_sunday_before_0900_closes_that_same_morning(self):
-        self.assertEqual(
-            RN.first_boundary(helsinki("2026-08-09T08:59:59")),
-            helsinki("2026-08-09T09:00:00"),
-        )
+    def test_epoch_on_a_sunday_before_0900_runs_on_to_the_next_sunday(self):
+        # Week 0's file is named after the epoch's DATE, so a week 1 closing at
+        # 09:00 that same morning would claim the same file name.
+        epoch = helsinki("2026-08-09T08:59:59")
+        self.assertEqual(RN.first_boundary(epoch), helsinki("2026-08-16T09:00:00"))
+        self.assertNotEqual(RN.week_path(epoch), RN.week_path(RN.first_boundary(epoch)))
 
     def test_epoch_exactly_on_a_boundary_rolls_to_the_following_sunday(self):
         # The boundary is an EXCLUSIVE end, so a 09:00:00 commit starts the
         # next week rather than closing the one it landed in.
-        self.assertEqual(
-            RN.first_boundary(helsinki("2026-08-09T09:00:00")),
-            helsinki("2026-08-16T09:00:00"),
-        )
-
-    def test_commit_exactly_on_a_boundary_belongs_to_the_next_week(self):
-        start, end = helsinki("2026-08-09T09:00:00"), helsinki("2026-08-16T09:00:00")
-        on_boundary = helsinki("2026-08-16T09:00:00")
-        self.assertFalse(start <= on_boundary < end)
-        self.assertTrue(end <= on_boundary < RN.next_boundary(end))
+        self.assertEqual(RN.first_boundary(helsinki("2026-08-09T09:00:00")), helsinki("2026-08-16T09:00:00"))
 
     def test_boundaries_accept_a_non_helsinki_input_timezone(self):
         epoch = datetime.fromisoformat("2026-08-07T11:37:08+00:00")
         self.assertEqual(RN.first_boundary(epoch), helsinki("2026-08-09T09:00:00"))
+
+    def test_closed_spans_stop_before_the_in_progress_week(self):
+        spans = RN.closed_spans(helsinki("2026-08-07T14:37:08"), helsinki("2026-08-20T12:00:00"))
+        self.assertEqual([n for n, _, _ in spans], [1, 2])
+        self.assertEqual(spans[0][1], helsinki("2026-08-07T14:37:08"))
+        self.assertEqual(spans[-1][2], helsinki("2026-08-16T09:00:00"))
+
+    def test_a_week_that_closes_exactly_now_is_closed(self):
+        spans = RN.closed_spans(helsinki("2026-08-07T14:37:08"), helsinki("2026-08-09T09:00:00"))
+        self.assertEqual([n for n, _, _ in spans], [1])
 
 
 class DaylightSavingTest(unittest.TestCase):
@@ -97,142 +184,173 @@ class DaylightSavingTest(unittest.TestCase):
         self.assertEqual(across, helsinki("2027-03-28T09:00:00"))
         self.assertEqual(across.hour, 9)
         self.assertEqual(across.utcoffset(), timedelta(hours=3))
+
+
+class LoadTest(unittest.TestCase):
+    def test_no_summaries_is_not_an_error(self):
+        with temp_tree([]):
+            self.assertEqual(RN.load_weeks(), [])
+
+    def test_weeks_come_back_newest_first_with_derived_dates(self):
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1), week_doc(2, **WEEK2)]):
+            weeks = RN.load_weeks()
+        self.assertEqual([w["week"] for w in weeks], [2, 1, 0])
+        self.assertEqual(weeks[0]["startDate"], "2026-08-09")
+        self.assertEqual(weeks[0]["endDate"], "2026-08-16")
+        self.assertEqual(weeks[-1]["source"], "osgallery")
+
+    def test_a_bad_file_fails_the_load_loudly(self):
+        with temp_tree([week_doc(0, **WEEK0)]) as root:
+            (root / "registry" / "release-notes" / "2026-08-07.json").write_text("{ not json")
+            with self.assertRaises(SystemExit) as caught:
+                RN.load_weeks()
+        self.assertIn("not valid JSON", str(caught.exception))
+
+
+WEEK0 = dict(
+    title="The month the museum was built",
+    start="2026-07-07T21:39:24+03:00",
+    end="2026-08-07T14:37:08+03:00",
+    summary=paragraphs(4, 650),
+    source="osgallery",
+    commitCount=713,
+    codeLines=227784,
+)
+WEEK1 = dict(
+    title="The museum opens its source",
+    start="2026-08-07T14:37:08+03:00",
+    end="2026-08-09T09:00:00+03:00",
+    summary=paragraphs(3, 350),
+    commitCount=16,
+    codeLines=4967,
+)
+# Weeks must ABUT, so a fixture tree holding 0, 1 and 2 needs week 2 to start
+# where week 1 ended. week_doc()'s own defaults are week 3's real span.
+WEEK2 = dict(
+    title="Twenty-two new machines",
+    start="2026-08-09T09:00:00+03:00",
+    end="2026-08-16T09:00:00+03:00",
+    summary=paragraphs(3, 350),
+    commitCount=281,
+    codeLines=46149,
+)
+
+
+class Week0Test(unittest.TestCase):
+    """Week 0 predates the public repo, so nothing may ask git about it."""
+
+    def test_it_renders_without_git_and_carries_its_note(self):
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1)]):
+            RN.run_git = lambda args: self.fail(f"render must not touch git, called with {args}")
+            try:
+                self.assertEqual(RN.cmd_render(NOW), 0)
+                archive = (RN.REPO_ROOT / "docs" / "RELEASE-NOTES.md").read_text()
+            finally:
+                del RN.run_git
+        self.assertIn(RENDER.WEEK0_NOTE, archive)
+        self.assertIn("## Week 0 · The month the museum was built · 2026-07-07 21:39", archive)
+        # ... and the note belongs to week 0 alone.
+        self.assertEqual(archive.count(RENDER.WEEK0_NOTE), 1)
+
+    def test_brief_never_offers_week_0(self):
+        # closed_spans() numbers from 1 at the first PUBLIC commit; week 0 is
+        # not a span it can produce.
+        spans = RN.closed_spans(helsinki("2026-08-07T14:37:08"), helsinki("2026-08-24T12:00:00"))
+        self.assertNotIn(0, [n for n, _, _ in spans])
+
+
+class RenderTest(unittest.TestCase):
+    def test_render_then_check_round_trips(self):
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1), week_doc(2, **WEEK2)]):
+            self.assertEqual(RN.cmd_render(NOW), 0)
+            self.assertEqual(RN.cmd_check(), 0)
+
+    def test_check_is_red_when_an_output_drifted(self):
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1)]) as root:
+            RN.cmd_render(NOW)
+            (root / "docs" / "RELEASE-NOTES.md").write_text("hand-edited\n")
+            self.assertEqual(RN.cmd_check(), 1)
+
+    def test_rendering_twice_changes_nothing(self):
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1)]) as root:
+            RN.cmd_render(NOW)
+            once = {p: p.read_text() for p in root.rglob("*") if p.is_file()}
+            RN.cmd_render(NOW)
+            self.assertEqual({p: p.read_text() for p in root.rglob("*") if p.is_file()}, once)
+
+    def test_a_gap_in_the_weeks_stops_the_render(self):
+        # 0 and 2 with no 1 is a hole in the archive; refuse it outright.
+        with temp_tree([week_doc(0, **WEEK0), week_doc(2)]), self.assertRaises(SystemExit):
+            RN.cmd_render(NOW)
+
+    def test_the_json_carries_the_locked_shape_and_no_sections(self):
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1), week_doc(2, **WEEK2)]) as root:
+            RN.cmd_render(NOW)
+            doc = json.loads((root / "spa" / "public" / "release-notes.json").read_text())
+        self.assertEqual(doc["cutoff"], RN.CUTOFF_LABEL)
+        self.assertEqual([w["week"] for w in doc["weeks"]], [2, 1, 0])
+        self.assertNotIn("sections", doc["weeks"][0])
+        self.assertNotIn("entries", doc["weeks"][0])
         self.assertEqual(
-            across.astimezone(timezone.utc) - before.astimezone(timezone.utc),
-            timedelta(days=7) - timedelta(hours=1),
+            set(doc["weeks"][0]),
+            {"week", "title", "start", "end", "startDate", "endDate", "commitCount", "codeLines", "summary", "bullets"},
         )
+        self.assertEqual(doc["weeks"][-1]["source"], "osgallery")
 
+    def test_the_readme_shows_the_newest_week_in_full_and_links_the_rest(self):
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1), week_doc(2, **WEEK2)]) as root:
+            RN.cmd_render(NOW)
+            readme = (root / "README.md").read_text()
+        self.assertIn("### Week 2 · Twenty-two new machines · 2026-08-09 09:00 – 2026-08-16 09:00", readme)
+        self.assertIn("A 1994 <u>SGI workstation</u> dialled out to a period web server", readme)
+        self.assertIn(f"[Week 1 · The museum opens its source]({RENDER.ARCHIVE_PATH}#week-1)", readme)
+        self.assertIn(f"[Week 0 · The month the museum was built]({RENDER.ARCHIVE_PATH}#week-0)", readme)
+        # The reader-facing pages carry no maintainer scaffolding: no authoring
+        # prompt, no `make release-notes`, no commit count. They point at the
+        # gallery instead, which is the only thing a visitor can act on.
+        self.assertNotIn(RENDER.PROMPT_PATH, readme)
+        self.assertNotIn("make release-notes", readme)
+        self.assertIn("kernelhive.madekivi.fi", readme)
+        self.assertIn("46,149 lines of code", readme)
+        # Highlights get their own heading — emitted bare they render INSIDE
+        # "Quality improvements", which is what shipped in the first draft.
+        self.assertIn("#### Also this week", readme)
+        # An earlier week's prose stays in the archive, not the README.
+        self.assertNotIn("### Week 1 ·", readme)
 
-class ClassificationTest(unittest.TestCase):
-    def classify(self, subject: str, author: str = "Jonni Madekivi"):
-        return RN.classify(subject, author, STATIONS)
+    def test_a_deleted_output_is_stale_not_a_traceback(self):
+        # A bad merge that drops one rendered file must name it, not raise.
+        for output in ("docs/RELEASE-NOTES.md", "spa/public/release-notes.json"):
+            with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1)]) as root:
+                RN.cmd_render(NOW)
+                (root / output).unlink()
+                self.assertEqual(RN.cmd_check(), 1)
 
-    def test_registry_station_id_lands_in_stations(self):
-        self.assertEqual(self.classify("tru64: web browser applied"), ("Stations", "tru64"))
+    def test_a_deleted_readme_says_what_to_restore(self):
+        with temp_tree([week_doc(0, **WEEK0)]) as root:
+            (root / "README.md").unlink()
+            with self.assertRaises(SystemExit) as caught:
+                RN.cmd_check()
+        self.assertIn("README.md is missing", str(caught.exception))
 
-    def test_locked_aliases(self):
-        cases = {
-            "spa: installable PWA": "Gallery UI",
-            "streamhost: paced keyframes": "Streaming daemon",
-            "retronet: bring up the web plane": "Retronet",
-            "docs: rewrite the playbook": "Docs",
-            "registry: one home per value": "Tooling & infrastructure",
-            "scripts: tidy the dev CLIs": "Tooling & infrastructure",
-        }
-        for subject, section in cases.items():
-            self.assertEqual(self.classify(subject)[0], section, subject)
+    def test_a_week_that_has_not_closed_yet_is_called_out(self):
+        # Only closed weeks are published; nothing stops a file dated forward,
+        # so render says so rather than letting it pass in silence.
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1), week_doc(2, **WEEK2)]) as root:
+            with contextlib.redirect_stdout(io.StringIO()) as printed:
+                RN.cmd_render(helsinki("2026-08-12T12:00:00"))
+            printed = printed.getvalue()
+            # It is a warning, not a refusal: the outputs are still written.
+            self.assertTrue((root / "docs" / "RELEASE-NOTES.md").read_text())
+        self.assertIn("WARNING", printed)
+        self.assertIn("week 2", printed)
 
-    def test_multi_part_scopes_fold_onto_their_bucket(self):
-        self.assertEqual(self.classify("docs/research: vom reference")[0], "Docs")
-        self.assertEqual(self.classify("retronet-bot: reconnect")[0], "Retronet")
-        self.assertEqual(self.classify("retronet/web: bare Content-Type")[0], "Retronet")
-        self.assertEqual(self.classify("ctlsock+tools: reset path")[0], "Streaming daemon")
-        self.assertEqual(self.classify("box-sync-push: pair table")[0], "Tooling & infrastructure")
-
-    def test_station_alias_reports_the_current_station_id(self):
-        self.assertEqual(self.classify("alpha-nt: idle profile"), ("Stations", "w2kalpha"))
-
-    def test_unknown_scope_and_prefix_less_subjects_fall_to_other(self):
-        self.assertEqual(self.classify("wibble: something new")[0], "Other")
-        self.assertEqual(self.classify("we need pinball sites too"), ("Other", None))
-        # An uppercase prefix is not a scope token under the locked regex.
-        self.assertEqual(self.classify("HUD: show the tier"), ("Other", None))
-
-    def test_dependabot_author_is_load_bearing(self):
-        # Dependabot writes bare "bump ..." subjects too; only the author says
-        # what they are.
-        self.assertEqual(self.classify("bump @react-three/drei", "dependabot[bot]"), ("Dependencies", None))
-        self.assertEqual(self.classify("bump @react-three/drei")[0], "Other")
-
-    def test_a_deps_scope_is_a_dependency_bump_whoever_wrote_it(self):
-        subject = "build(deps): bump the cargo group in /streamhost with 3 updates"
-        self.assertEqual(self.classify(subject, "dependabot[bot]"), ("Dependencies", None))
-        # A human holding a bump back is still dependency work, not Gallery UI.
-        self.assertEqual(self.classify("deps(spa): hold typescript at 6.0.3"), ("Dependencies", None))
-
-    def test_conventional_commit_type_decides_before_its_inner_scope(self):
-        self.assertEqual(self.classify("docs(rel-pointer): file the brief")[0], "Docs")
-        self.assertEqual(self.classify("feat(tru64): serial exec"), ("Stations", "tru64"))
-
-    def test_bump_the_group_subject_also_counts(self):
-        self.assertEqual(self.classify("Bump the actions group with 2 updates")[0], "Dependencies")
-
-    def test_bullet_text_strips_the_scope_and_upper_cases(self):
-        self.assertEqual(RN.bullet_text("tru64: web browser applied"), "Web browser applied")
-        self.assertEqual(RN.bullet_text("tmp"), "Tmp")
-
-    def test_a_scope_phrase_classifies_but_is_not_stripped(self):
-        # "retronet web: ..." was 21% of the archive falling into Other.
-        self.assertEqual(self.classify("retronet web: bare Content-Type")[0], "Retronet")
-        self.assertEqual(self.classify("chokanji poster: real capture")[0], "Stations")
-        self.assertEqual(self.classify("c128 + c64 fixtures: the four keys"), ("Stations", "c128"))
-        # Stripping it would lose "poster" / "web", so the text stays whole.
-        self.assertEqual(RN.bullet_text("chokanji poster: real capture", STATIONS), "chokanji poster: real capture")
-
-    def test_prose_opening_with_a_station_id_is_station_work(self):
-        self.assertEqual(self.classify("tru64 joins the retronet web plane: rtl8139, static ip"), ("Stations", "tru64"))
-        self.assertEqual(self.classify("hpuxvue + tru64 keymaps from KEYDUMP")[0], "Stations")
-        # ... but a common English word opening a sentence is NOT a scope.
-        self.assertEqual(self.classify("make the gate green before done"), ("Other", None))
-
-    def test_a_stations_label_is_always_a_registry_id(self):
-        # The raw scope would render as an `mpf2/kc854` chip in the SPA, where
-        # every other chip is a station id.
-        self.assertEqual(self.classify("mpf2/kc854: keymaps from KEYDUMP"), ("Stations", "mpf2"))
-
-    def test_recase_keeps_names_that_own_their_spelling(self):
-        self.assertEqual(RN.bullet_text("workflow: stage.sh per-session staging"), "stage.sh per-session staging")
-        self.assertEqual(RN.bullet_text("vice wave: one binary generation"), "VICE wave: one binary generation")
-        self.assertEqual(RN.bullet_text("mame-native launcher: sta/"), "MAME-native launcher: sta/")
-        self.assertEqual(RN.bullet_text("wip: vic20", STATIONS), "vic20")
-        # Everything else still gets a capital.
-        self.assertEqual(RN.bullet_text("docs: rewrite the playbook"), "Rewrite the playbook")
-
-
-class RenderingTest(unittest.TestCase):
-    def data(self) -> dict:
-        week = {
-            "number": 1,
-            "start": "2026-08-07T14:37:08+03:00",
-            "end": "2026-08-09T09:00:00+03:00",
-            "startDate": "2026-08-07",
-            "endDate": "2026-08-09",
-            "inProgress": False,
-            "commitCount": 5,
-            "sections": [
-                {
-                    "title": "Stations",
-                    "count": 1,
-                    "entries": [
-                        {"scope": "vic20", "text": "Add the Commodore VIC-20", "sha": "abcdef1", "date": "2026-08-08"}
-                    ],
-                },
-                {"title": "Dependencies", "count": 4, "entries": [], "collapsed": True},
-            ],
-        }
-        return {
-            "cutoff": RN.CUTOFF_LABEL,
-            "epoch": "2026-08-07T14:37:08+03:00",
-            "generatedFrom": "abcdef1",
-            "weeks": [week],
-        }
-
-    def test_dependencies_render_as_one_collapsed_line(self):
-        archive = RENDER.render_archive(self.data())
-        self.assertIn("4 dependency bumps.", archive)
-        self.assertNotIn("Bump the", archive)
-        self.assertEqual(archive.count("dependency bumps"), 1)
-
-    def test_archive_links_each_bullet_to_its_commit(self):
-        archive = RENDER.render_archive(self.data())
-        self.assertIn(f"[`abcdef1`]({RENDER.COMMIT_URL}abcdef1)", archive)
-        self.assertIn("**vic20** — Add the Commodore VIC-20", archive)
-
-    def test_readme_digest_counts_collapsed_bumps_in_the_and_n_more_tail(self):
-        readme = RENDER.render_readme_section(self.data())
-        self.assertIn("Stations 1, Dependencies 4", readme)
-        # One bullet is rendered; the four collapsed bumps stay in the tail.
-        self.assertIn("…and 4 more", readme)
+    def test_an_empty_tree_renders_a_placeholder_instead_of_crashing(self):
+        with temp_tree([]) as root:
+            self.assertEqual(RN.cmd_render(NOW), 0)
+            self.assertEqual(RN.cmd_check(), 0)
+            readme = (root / "README.md").read_text()
+        self.assertIn("No week has been written up yet", readme)
 
 
 class ReadmeMarkerTest(unittest.TestCase):
@@ -249,8 +367,7 @@ class ReadmeMarkerTest(unittest.TestCase):
     def test_splice_is_idempotent(self):
         readme = "# Title\n\n## Contributing\n\nSee CONTRIBUTING.\n"
         once = RENDER.splice_readme(readme, self.SECTION)
-        twice = RENDER.splice_readme(once, self.SECTION)
-        self.assertEqual(once, twice)
+        self.assertEqual(RENDER.splice_readme(once, self.SECTION), once)
 
     def test_existing_block_is_replaced_not_appended(self):
         readme = "# Title\n\n## Contributing\n\nSee CONTRIBUTING.\n"
@@ -262,12 +379,29 @@ class ReadmeMarkerTest(unittest.TestCase):
 
     def test_a_half_eaten_marker_pair_is_a_loud_failure(self):
         # A merge conflict that eats one marker must not append a SECOND
-        # changelog under a second heading.
+        # release-notes block under a second heading.
         readme = "# Title\n\n## Contributing\n\nSee CONTRIBUTING.\n"
         once = RENDER.splice_readme(readme, self.SECTION)
         for lost in (RENDER.README_START, RENDER.README_END):
             with self.assertRaises(SystemExit):
                 RENDER.splice_readme(once.replace(lost, ""), self.SECTION)
+
+    def test_a_duplicated_block_is_a_loud_failure(self):
+        # `check` compares the README against splice_readme(README, section), so
+        # a splice that touched only the first pair would call this OK forever.
+        readme = "# Title\n\n## Contributing\n\nSee CONTRIBUTING.\n"
+        once = RENDER.splice_readme(readme, self.SECTION)
+        block = RENDER.README_START + once.split(RENDER.README_START, 1)[1].split(RENDER.README_END, 1)[0]
+        twice = once + "\n" + block + RENDER.README_END + "\n"
+        with self.assertRaises(SystemExit) as caught:
+            RENDER.splice_readme(twice, self.SECTION)
+        self.assertIn("duplicated", str(caught.exception))
+
+    def test_reversed_markers_are_a_loud_failure_not_a_traceback(self):
+        readme = f"# Title\n\n{RENDER.README_END}\nbody\n{RENDER.README_START}\n\n## Contributing\n"
+        with self.assertRaises(SystemExit) as caught:
+            RENDER.splice_readme(readme, self.SECTION)
+        self.assertIn("reversed", str(caught.exception))
 
     def test_missing_contributing_heading_is_a_loud_failure(self):
         with self.assertRaises(SystemExit):
@@ -280,85 +414,24 @@ class ReadmeMarkerTest(unittest.TestCase):
         self.assertEqual(RENDER.splice_readme(readme, body), readme)
 
 
-class DigestSelectionTest(unittest.TestCase):
-    """The README digest is a WEEK'S HIGHLIGHTS, not the head of `git log`."""
-
-    def week(self, sections: list[dict], count: int = 40) -> dict:
-        return {"commitCount": count, "sections": sections}
-
-    def section(self, title: str, entries: list[tuple[str | None, str]]) -> dict:
-        return {
-            "title": title,
-            "count": len(entries),
-            "entries": [
-                {"scope": scope, "text": text, "sha": f"sha{i}", "date": "2026-08-23"}
-                for i, (scope, text) in enumerate(entries)
-            ],
-        }
-
-    def test_bullets_are_spread_across_sections_not_taken_from_the_first(self):
-        week = self.week(
-            [
-                self.section("Stations", [("tru64", "One"), ("tru64", "Two"), ("vic20", "Three")]),
-                self.section("Retronet", [("retronet", "Four")]),
-                self.section("Docs", [("docs", "Five")]),
-            ]
-        )
-        picked = RENDER.digest_entries(week, 3)
-        self.assertEqual([e["text"] for e in picked], ["One", "Four", "Five"])
-
-    def test_one_bullet_per_scope_before_a_scope_repeats(self):
-        week = self.week([self.section("Stations", [("tru64", "One"), ("tru64", "Two"), ("vic20", "Three")])])
-        picked = RENDER.digest_entries(week, 2)
-        self.assertEqual([e["scope"] for e in picked], ["tru64", "vic20"])
-
-    def test_a_rebased_duplicate_subject_is_shown_once(self):
-        week = self.week([self.section("Docs", [("docs", "Same"), ("docs", "Same"), ("docs", "Other")])])
-        self.assertEqual([e["text"] for e in RENDER.digest_entries(week, 3)], ["Same", "Other"])
-
-    def test_placeholder_subjects_are_last_in_line(self):
-        week = self.week([self.section("Other", [("wip", "Wip: indyr4400"), (None, "Real work")])])
-        self.assertEqual([e["text"] for e in RENDER.digest_entries(week, 1)], ["Real work"])
-
-    def test_the_tail_counts_every_commit_the_digest_did_not_show(self):
-        week = self.week([self.section("Docs", [("docs", "One"), ("docs", "Two")])], count=40)
-        rendered = RENDER.render_readme_section(
-            {
-                "weeks": [
-                    dict(
-                        week,
-                        number=3,
-                        start="2026-08-16T09:00:00+03:00",
-                        end="2026-08-23T09:00:00+03:00",
-                        startDate="2026-08-16",
-                        endDate="2026-08-23",
-                        inProgress=False,
-                    )
-                ]
-            }
-        )
-        self.assertIn("…and 38 more", rendered)
-
-
-class ArchiveDuplicateTest(unittest.TestCase):
-    def test_the_same_subject_twice_is_one_bullet_with_both_shas(self):
-        entries = [
-            {"scope": "workflow", "text": "stage.sh staging", "sha": "acb1671", "date": "2026-08-15"},
-            {"scope": "workflow", "text": "stage.sh staging", "sha": "7987a5d", "date": "2026-08-15"},
-            {"scope": "workflow", "text": "Something else", "sha": "1111111", "date": "2026-08-15"},
-        ]
-        collapsed = RENDER.collapse_duplicates(entries)
-        self.assertEqual([e["shas"] for e in collapsed], [["acb1671", "7987a5d"], ["1111111"]])
-
-
 class MarkdownEscapingTest(unittest.TestCase):
     def test_angle_bracket_placeholders_survive_githubs_sanitizer(self):
         # "<session>" is a valid CommonMark raw-HTML tag; unescaped, GitHub
-        # deletes it and the bullet renders "/staging//".
+        # deletes it and the line renders "/staging//".
         self.assertEqual(RENDER.md("staging (/staging/<session>/)"), r"staging (/staging/\<session>/)")
+
+    def test_a_line_whose_backticks_do_not_pair_is_still_escaped(self):
+        # An unmatched backtick matches no code span, so the whole line is prose.
+        self.assertEqual(RENDER.md("` and then <session>"), r"` and then \<session>")
 
     def test_code_spans_are_left_alone(self):
         self.assertEqual(RENDER.md("run `a < b` now"), "run `a < b` now")
+
+    def test_authored_prose_is_escaped_everywhere_it_is_placed(self):
+        week = dict(week_doc(0, **WEEK0), bullets=["a <session> dir"], title="A <session> week")
+        rendered = RENDER.render_archive([RN._decorate(week)], RN.CUTOFF_LABEL)
+        self.assertIn(r"a \<session> dir", rendered)
+        self.assertIn(r"A \<session> week", rendered)
 
 
 class PluralTest(unittest.TestCase):
@@ -367,124 +440,10 @@ class PluralTest(unittest.TestCase):
         self.assertEqual(RENDER.plural(0, "commit", "commits"), "0 commits")
 
     def test_week_heading_prints_both_boundary_times(self):
-        week = {
-            "number": 2,
-            "start": "2026-08-09T09:00:00+03:00",
-            "end": "2026-08-16T09:00:00+03:00",
-            "inProgress": False,
-        }
-        self.assertEqual(RENDER.week_heading(week), "Week 2 · 2026-08-09 09:00 – 2026-08-16 09:00")
-
-
-def _git(repo: Path, *args: str, **env: str) -> str:
-    environ = dict(
-        os.environ,
-        GIT_AUTHOR_NAME="T",
-        GIT_AUTHOR_EMAIL="t@example.com",
-        GIT_COMMITTER_NAME="T",
-        GIT_COMMITTER_EMAIL="t@example.com",
-        **env,
-    )
-    done = subprocess.run(
-        ["git", "-C", str(repo), "-c", "commit.gpgsign=false", *args],
-        check=True,
-        capture_output=True,
-        text=True,
-        env=environ,
-    )
-    return done.stdout
-
-
-@contextlib.contextmanager
-def temp_repo():
-    """A throwaway git repo, with RN pointed at it for the duration."""
-    with tempfile.TemporaryDirectory() as tmp:
-        repo = Path(tmp)
-        _git(repo, "init", "-q", "-b", "main")
-        original = RN.REPO_ROOT
-        RN.REPO_ROOT = repo
-        try:
-            yield repo
-        finally:
-            RN.REPO_ROOT = original
-
-
-def add_commit(repo: Path, subject: str, authored: str, committed: str | None = None) -> None:
-    (repo / "log.txt").write_text(subject)
-    _git(repo, "add", "-A")
-    _git(repo, "commit", "-q", "-m", subject, GIT_AUTHOR_DATE=authored, GIT_COMMITTER_DATE=committed or authored)
-
-
-class GitWindowTest(unittest.TestCase):
-    """Every commit read must land in exactly one week.
-
-    The window used to be `commits[-1]` .. `commits[0]` of `git log`, i.e.
-    COMMITTER-date order, while bucketing uses the AUTHOR date. A rebase, a
-    cherry-pick or a skewed clock then put a commit outside the window and it
-    vanished from all three outputs with a clean exit code.
-    """
-
-    NOW = "2026-08-23T12:00:00+03:00"
-
-    def build(self, repo: Path) -> dict:
-        return RN.build(now=datetime.fromisoformat(self.NOW).astimezone(TZ))
-
-    def bucketed(self, data: dict) -> int:
-        return sum(week["commitCount"] for week in data["weeks"])
-
-    def test_a_plain_rebase_reorder_keeps_every_commit(self):
-        # No clock skew at all: `q` was committed after `p` but authored before
-        # it, which is all `git log` needs to sort them the other way round.
-        with temp_repo() as repo:
-            add_commit(repo, "seed", "2026-08-13T10:00:00+03:00")
-            add_commit(repo, "p: after the sunday boundary", "2026-08-16T09:30:00+03:00")
-            add_commit(repo, "q: before it", "2026-08-16T08:50:00+03:00", "2026-08-16T10:00:00+03:00")
-            data = self.build(repo)
-        self.assertEqual(self.bucketed(data), 3)
-        texts = [e["text"] for w in data["weeks"] for s in w["sections"] for e in s["entries"]]
-        self.assertIn("After the sunday boundary", texts)
-        self.assertEqual(len(data["weeks"]), 2)
-
-    def test_an_am_of_an_older_patch_is_kept_and_invents_no_weeks(self):
-        with temp_repo() as repo:
-            add_commit(repo, "seed", "2026-08-13T10:00:00+03:00")
-            add_commit(
-                repo,
-                "old: authored long before the repo existed",
-                "2019-04-01T10:00:00+03:00",
-                "2026-08-14T10:00:00+03:00",
-            )
-            data = self.build(repo)
-        self.assertEqual(self.bucketed(data), 2)
-        self.assertEqual(len(data["weeks"]), 1)
-        self.assertEqual(data["epoch"], "2026-08-13T10:00:00+03:00")
-
-    def test_a_future_author_date_does_not_manufacture_empty_weeks(self):
-        with temp_repo() as repo:
-            add_commit(repo, "seed", "2026-08-13T10:00:00+03:00")
-            add_commit(repo, "skewed: authored months ahead", "2026-11-20T10:00:00+03:00", "2026-08-14T10:00:00+03:00")
-            data = self.build(repo)
-        self.assertEqual(self.bucketed(data), 2)
-        self.assertEqual(len(data["weeks"]), 1)
-
-    def test_a_wholly_skewed_clock_is_pulled_back_to_now(self):
-        # Both stamps ahead: the box's clock is wrong, not just the author date.
-        with temp_repo() as repo:
-            add_commit(repo, "seed", "2026-08-13T10:00:00+03:00")
-            add_commit(repo, "skewed: the whole commit is in the future", "2026-11-20T10:00:00+03:00")
-            data = self.build(repo)
-        self.assertEqual(self.bucketed(data), 2)
-        # Three real weeks between the seed and `now`, and not one more: the
-        # commit sits in the in-progress week, not in a November week of its own.
-        self.assertEqual(len(data["weeks"]), 3)
-        self.assertTrue(data["weeks"][0]["inProgress"])
-        self.assertEqual(data["weeks"][0]["commitCount"], 1)
-
-    def test_the_conservation_guard_fails_loudly(self):
-        weeks = [{"commitCount": 2}, {"commitCount": 1}]
-        RN.assert_conserved(weeks, [{}] * 3)  # conserved: no raise
-        with self.assertRaises(SystemExit):
-            RN.assert_conserved(weeks, [{}] * 4)
+        self.assertEqual(
+            RENDER.heading(week_doc(2, title="Twenty-two new machines")),
+            "Week 2 · Twenty-two new machines · 2026-08-16 09:00 – 2026-08-23 09:00",
+        )
 
 
 if __name__ == "__main__":
