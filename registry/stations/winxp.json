@@ -152,7 +152,8 @@
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
         "-usb -device usb-tablet",
-        "-drive file=$D/winxp-golden.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0",
+        "-drive file=$D/winxp-golden.qcow2,format=qcow2,if=ide",
+        "-netdev tap,id=n0,ifname=winxprn0,script=no,downscript=no -device rtl8139,netdev=n0",
         "-qmp unix:$D/qmp.sock,server=on,wait=off",
         "-pidfile $D/qemu.pid"
       ],
@@ -174,7 +175,8 @@
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
           "-usb -device usb-tablet",
-          "-drive file=$D/winxp-golden.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device rtl8139,netdev=n0",
+          "-drive file=$D/winxp-golden.qcow2,format=qcow2,if=ide",
+          "-netdev tap,id=n0,ifname=winxprn0,script=no,downscript=no -device rtl8139,netdev=n0",
           "-qmp unix:$D/qmp.sock,server=on,wait=off",
           "-pidfile $D/qemu.pid"
         ]
@@ -207,7 +209,7 @@
       "Windows Media Player 8",
       "Movie Maker"
     ],
-    "periodBrowser": "Internet Explorer 6",
+    "periodBrowser": "Internet Explorer 8",
     "iconicApps": [
       "Bliss wallpaper",
       "Pinball",
@@ -221,6 +223,10 @@
     "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
   },
   "ui": "desktop",
+  "network": {
+    "status": "host-only",
+    "note": "rtl8139 on the persistent tap winxprn0, enslaved to the OFFLINE retronet bridge vmbr-rn (streamhost/stations/winxp/rn-tapnet.sh, called `up` from the launcher on every start). Guest on DHCP (reserved 10.99.0.18/24, DNS 10.99.0.2, NO router option -> no default route) behind the fail-closed WINXPRN-IN guard chain - reaches ONLY the gateway CT 10.99.0.2, where IE8 browses the period corpus on :80 seamlessly (wildcard DNS, no proxy configured); never labhost, the LAN, the gallery or the internet. Windows Firewall stays ON with inbound ICMP echo allowed. Swapped 2026-08-23 from the pre-retronet slirp `-netdev user` (docs/lab/retronet/WEB-STATION-winxp.md)"
+  },
   "reset": {
     "stationDir": "winxp",
     "pointer": "abs",
@@ -229,7 +235,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "Windows XP; empty Notepad, caret top-left (Line 1 Col 1), pointer parked right."
+    "fixture": "Windows XP Pro SP3 at 1920x1200; Internet Explorer 8 MAXIMISED on the retronet corpus page http://home.microsoft.com/ (\"Microsoft Internet Start\"), no proxy configured. An Internet Explorer shortcut sits on the desktop behind it. Frame is steady (three shots 4s apart byte-identical)."
   },
   "migrationExceptions": []
 }
