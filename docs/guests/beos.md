@@ -265,14 +265,19 @@ lineup (operator decision 2026-08-18: no clone-only proof gate for stations).
   agent, no build, no download — the daemons were already in R5's `Netscript`,
   gated on a settings file the station simply never had. See
   [`STATION-beos.md` §The exec channel](../lab/retronet/STATION-beos.md).
-- **No development tools on the volume.** `/boot/develop` is empty, there is no
-  `gcc` and no Be headers — the file-copy install brought across the Pro CD's
-  runtime system volume but not its development tree. `make` is present. gcc
-  2.95.3 and the headers ARE on the staged disc image
-  (`/data/assets-staging/beos/beos-5.0.3-professional-gobe.bin`); recovering
-  them is a track re-split plus a delivery over the station's ftpd. Blocking for
-  anything that needs to compile on the guest — see
-  [`STATION-beos.md`](../lab/retronet/STATION-beos.md) §The one thing phase 2
-  must fix.
+- **No development tools on the volume, but they are one mount away.**
+  `/boot/develop` is empty on the shipped golden — the file-copy install brought
+  across the Pro CD's runtime system volume but not its development tree, so
+  there is no `gcc` and no Be headers out of the box (`make` is present). This
+  is **not** the blocker it looks like: the Pro CD carries the toolchain as a
+  ready-made install package at `_packages_/Development` on its track-2 BFS
+  volume, that volume mounts read-only on labhost with the in-tree `befs`
+  module, and delivering it over the station's ftpd gives a working
+  **gcc 2.9-beos-991026** that has been proven to compile and link a real
+  `libbe` GUI application in the guest. Full recipe, including the exec-timeout
+  trap that silently truncates the extraction:
+  [`STATION-beos.md` §Restoring the compiler](../lab/retronet/STATION-beos.md#restoring-the-compiler--the-reusable-recipe).
+  Note it is transient — `loadvm golden` reverts the disk, so bake it or copy
+  the build output back out.
 - **Second/Pro-disc driver coverage**: not investigated — this station uses
   only the one archive.org item; no evidence yet that anything is missing.

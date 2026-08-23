@@ -9,6 +9,7 @@
     { "station": "win95",    "uin": "95000", "nick": "win95",    "client": "icq2000b",   "onboarded": false },
     { "station": "solaris",  "uin": "30000", "nick": "solaris",  "client": "unix-oscar", "onboarded": true },
     { "station": "tru64",    "uin": "64000", "nick": "tru64",    "client": "unix-oscar", "onboarded": true },
+    { "station": "beos",     "uin": "50000", "nick": "beos",     "client": "none",       "onboarded": false },
     { "station": "macos753", "uin": "75300", "nick": "macos753", "client": "mac-oscar",  "onboarded": false }
   ]
 }

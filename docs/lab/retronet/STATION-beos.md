@@ -1,7 +1,8 @@
-# beos on the retronet — the bridge, the exec channel and NetPositive
+# beos on the retronet — the bridge, the exec channel, NetPositive, and why it has no ICQ client
 
-**Status: LIVE.** `beos` (BeOS R5 Professional 5.0.3) joined the retronet on
-**2026-08-23**. It is on a real bridged NIC on `vmbr-rn` with a unique MAC, on
+**Status: LIVE, and deliberately retronet-only — there is no ICQ client on this
+station and, on the evidence below, there is no client that can ship today.**
+`beos` (BeOS R5 Professional 5.0.3) joined the retronet on **2026-08-23**. It is on a real bridged NIC on `vmbr-rn` with a unique MAC, on
 **DHCP** (reserved `10.99.0.16`), and it browses the museum corpus in
 **NetPositive** — R5's own browser, no proxy, nothing sourced and nothing
 installed. Open the station and NetPositive is already showing a corpus page.
@@ -22,9 +23,15 @@ host-side tap/containment wiring is shared verbatim),
 example), [`GATEWAY.md`](GATEWAY.md), [`WEB-PROXY.md`](WEB-PROXY.md).
 The guest itself: [`docs/guests/beos.md`](../../guests/beos.md).
 
-> Phase 2 (an ICQ client on this station) is a separate errand and has not been
-> done. Nothing here installs or presumes one; the sections below are what phase
-> 2 builds on.
+> **The ICQ question is settled, not open.** Two clients were sourced, installed
+> and measured against the real gateway on 2026-08-23, and both were rejected on
+> evidence — see [§The ICQ client: two candidates, both
+> rejected](#the-icq-client-two-candidates-both-rejected). Do not re-open the
+> search without reading that section: it records what was tried, what the
+> gateway proved it can do, and the one thing that would have to change for a
+> client to ship. A Terminal-based IM client is **not** an acceptable
+> substitute — the operator removed those from two other stations this week, and
+> retronet-only is the better outcome than undoing that.
 
 ## The wiring, at a glance
 
@@ -413,6 +420,17 @@ Both verifications passed here.
   `f39ae8d6fca8d9071d7818b0a3dcb91f97e9d447fbdd14136f163fdb62d13b0d`,
   `SHA256SUMS` in the dir. **This is the rollback for the whole swap.** Before
   this errand the hand-baked golden had no verified backup at all.
+- **Pre-ICQ-errand backup** (2026-08-23, taken with QEMU stopped, full byte
+  copy, `cmp`-verified byte-identical against the live file, and it carries its
+  internal `golden` snapshot so it is directly `loadvm`-able):
+  `/data/gallery-guests/Beos/golden-backup-prephase2-icq-20260823/`
+  — `beos-golden.qcow2`, sha256
+  `f961bfaa4523ccad439df1f526714d2f6f48186e51922c293d1a7978fafaa9ae`,
+  `SHA256SUMS` in the dir. This is the rollback for the ICQ errand. **In the
+  event it is nothing but insurance: the ICQ errand shipped no golden change at
+  all**, and the live golden is bit-for-bit the one phase 1 baked — everything
+  the errand put in the guest was reverted by one `systemctl restart
+  streamhost@beos`, which is what `loadvm golden` does to the disk.
 - The pristine, never-booted-by-the-station image
   `/data/gallery-guests/Beos/beos-r5.qcow2` remains as the older backstop.
 
@@ -447,6 +465,16 @@ PPMs, 1024x768, `SHA256SUMS` in the dir):
 | `04-r5-network-preflet.ppm` | R5's Network panel, driven entirely by relative PS/2 deltas |
 | `05-prebake-frame.ppm` | the clean frame the golden was baked from |
 | `06-restored-from-golden.ppm` | the same frame after `loadvm` — differs only in the Deskbar clock (183 px) |
+
+From the ICQ errand —
+`/data/gallery-guests/Beos/evidence-rn-beos-icq-20260823/` (PNG, 1024x768,
+`SHA256SUMS` in the dir):
+
+| file | what it shows |
+|---|---|
+| `01-icbm-signed-on-deskbar-green.png` | ICBM signed on as UIN `50000` over legacy UDP 4000 — the Deskbar replicant has gone green, and there is no contact-list window anywhere, which is the rejection in one frame |
+| `02-toolchain-restored-gui-proof.png` | a titled BeOS window from a `BApplication` compiled **in the guest** with the recovered gcc 2.9-beos, linked against `libbe` |
+| `03-fixture-intact-after-teardown.png` | the phase-1 fixture after teardown — Terminal + NetPositive on the corpus page, unchanged |
 
 ## Operating it
 
@@ -484,7 +512,361 @@ case "$o" in
 esac
 ```
 
-## What phase 2 inherits
+## The ICQ client: two candidates, both rejected
+
+This is the record of the 2026-08-23 attempt to put beos on the ICQ gateway.
+**Nothing shipped.** Both candidates were sourced, installed on the real station
+and measured against the real gateway; each failed for a different, concrete
+reason. The station was returned byte-for-byte to its phase-1 fixture
+afterwards.
+
+Read this before spending another agent on the search. The costly part of this
+errand was not finding a client — it was discovering *which* half of the stack
+each candidate breaks on, and both answers are now known.
+
+### What the gateway proved it CAN do — the legacy UDP door works
+
+The most valuable result here is a **positive** one about the gateway, and it
+was not previously verified anywhere.
+
+[`GATEWAY.md`](GATEWAY.md) documents a `4000/UDP` listener for pre-OSCAR ICQ
+(v2–v5), kept enabled "because a Lane-B station (bridged, real L2) could use it,
+and it costs nothing while unused". **beos is that station** — every other ICQ
+station reaches the gateway through a slirp `guestfwd`, which is TCP-only, so
+until beos went onto a real bridge no station could reach that door at all.
+
+It works, and it bridges protocol generations:
+
+| Step | Evidence |
+|---|---|
+| A legacy client authenticates | gateway log: `V4 login attempt uin=50000 password_len=8` → `user authenticated successfully version=4` → `created legacy session session_id=…` |
+| The legacy session joins the SAME presence store as OSCAR | management API `/session` returned `['10000', '50000']` — HiveBot (OSCAR) and beos (legacy UDP) side by side |
+| An OSCAR client SEES the legacy client | `retronet-bot` log: `presence: 50000 ONLINE` → `50000 (beos) signed on — greeting in 30s` → `GREETED 50000 (beos)` |
+| The gateway TRANSLATES an OSCAR message down to the legacy wire | gateway: `OSCAR message pump: received SNAC uin=50000 food_group=4 sub_group=7`, and a `tcpdump` on `vmbr-rn` caught the resulting **`10.99.0.2.4000 > 10.99.0.16.49204: UDP, length 61`** at the exact greeting timestamp |
+
+So a pre-OSCAR client on this station is a *supported* configuration
+server-side. That is a real capability the retronet now has evidence for, and it
+is what a future era-correct client would stand on. **The failure below is
+entirely client-side.**
+
+Two gateway details worth knowing before the next attempt:
+
+- **ICQ UIN passwords are capped at 6–8 characters** by the server
+  (`400 invalid password: invalid password length`). Generate 8, not 14.
+- **`ICQ_LEGACY_SESSION_TIMEOUT` is 120 s and `ICQ_LEGACY_KEEPALIVE_INTERVAL` is
+  also 120 s.** Those are equal, which leaves a client no slack: miss one
+  keepalive and the session is reaped (`cleaning up expired session … last_activity=…`).
+  A client that goes quiet for two minutes disappears. Raise the timeout before
+  blaming a client for dropping.
+
+### Candidate A — ICBM .71 (BeCQ), era-correct, killed by a client-side R5 bug
+
+**What it is.** *Inter-Continental Ballistic Messenger*, the continuation of the
+open-source **BeCQ** project — a real, native BeOS ICQ client with a contact
+list, chat windows, history and a Deskbar replicant. **GPL-2.0**, dated
+**2001-02-10**, distributed as a prebuilt `ICBM.x86` for "Intel/PPC R4.5 and R5".
+Era-correct for a 2000 machine in a way IM Kit (a 2005–09 Haiku/Zeta codebase)
+is not, and — decisively — it needs **no compiler**.
+
+**Recovered** from `icbm.8k.com` via the Wayback Machine (`curl` from Bash;
+`WebFetch` cannot reach `web.archive.org`). Archived in the media cache as
+sha256 `c8902f40714ef439a8abf5d8c92982eb144bc10ee0a0fb30f4255e08b8dd2dd1`
+(182 919 bytes, `ICBM.71.zip`). **The `.72` betas are NOT recoverable** — every
+Wayback snapshot of `ICBM.72-beta{1..4}{,-src}.zip` is a 403 hotlink-protection
+stub, not the archive. `.71` is the only surviving build, and no `.71` source
+exists anywhere.
+
+**How far it got — further than expected:**
+
+- Installed by FTP into `/boot/home/apps/ICBM/`, byte-identical on read-back.
+- **`mimeset -f` is mandatory after an FTP delivery.** A BeOS application's
+  signature lives in its ELF resources, but the roster only sees it once the
+  `BEOS:APP_SIG` / `BEOS:TYPE` *attributes* are derived from them, and FTP
+  carries no BFS attributes. Before `mimeset`, ICBM ran but never registered;
+  after it, `roster` showed `application/x-vnd.ICBM`.
+- **It is configured entirely by BFS attributes, with no config file at all.**
+  `/boot/home/config/settings/BeCQ-preferences` is a **zero-byte** file whose
+  attributes are the settings, and there is a per-UIN mirror at
+  `…/BeCQ-<UIN>/BeCQ-preferences` plus a `contacts/` directory. That makes it
+  scriptable from the exec channel with `addattr` — no GUI driving needed:
+
+  ```sh
+  F=/boot/home/config/settings/BeCQ-preferences
+  addattr -t int  uin 50000 $F          # NB: the type is "int", not "int32"
+  addattr -t string password '<pass>' $F
+  addattr -t bool autologin 1 $F        # NB: 1/0 — "true" silently stores 0
+  ```
+
+  The full attribute schema it writes on a clean quit: `allworkspaces`,
+  `inworkspaces`, `alwaysontop`, `autohide`, `snaptoedge`, `entertosend`,
+  `incomingopen`, `replyclose`, `autologin`, `authorizeadd`, `hideip`,
+  `webaware`, `dateshow`, `serversend`, `fw_use`, `encoding_in`, `encoding_out`,
+  `fw_servername`, `fw_serverport`, `fw_authreq`, `fw_authname`,
+  `fw_authpassword`, `uin`, `password`, and (per-UIN) `icq_servername`,
+  `icq_serverport`.
+- **Auto-login worked, unprompted, and the DNS hijack carried it.** Its log:
+  `App: Connecting... [icq.mirabilis.com:4000]` — the shipped default hostname,
+  resolved by `retronet-dns` straight to `10.99.0.2`. No server-override setting
+  was needed, exactly as predicted.
+- **It signed on.** UIN `50000` appeared in the gateway session store and the
+  Deskbar replicant turned green.
+
+**Why it was rejected — three independent, load-bearing failures:**
+
+1. **No contact-list window, ever.** The app installs a Deskbar replicant and
+   nothing else. Single-click, double-click and right-click on the replicant all
+   produce no window (verified by frame diff — only the Deskbar clock changes),
+   with `autohide=0`, `alwaysontop=1` and `allworkspaces=1` set. A desktop
+   buddy list is the whole requirement, and it never appears.
+2. **It never receives messages.** The gateway demonstrably put the greeting on
+   the wire (the 61-byte UDP packet above). ICBM's own log did **not grow by a
+   single line** across delivery — 174 lines before, 174 after — and no
+   "unknown contact" file appeared in `BeCQ-50000/`. Its send loop meanwhile
+   sits retransmitting its own ACK (`SendPacketLoop [Seq: 0x3] [Attempt #1]`).
+3. **The process dies on its own, within minutes.** Repeatedly, from a clean
+   start, with and without `stdin` redirected to `/dev/null` — once in 40 s. An
+   exhibit client that exits unattended is unusable regardless of the other two.
+
+**The cause is almost certainly the one its own Readme warns about**, and it is
+not fixable without a rebuild:
+
+> *"There is a significant bug that causes problems compiling and running ICBM
+> under R5. It is caused by a declaration in the system include file
+> NetPacket.h … `void *operator new(size_t size); void operator delete(void
+> *ptr);`"*
+
+That is a heap `new`/`delete` mismatch in `BStandardPacket` — precisely the
+shape of defect that produces silent thread death, a looper that stops servicing
+its queue, and random exits. The Readme's remedy is to comment those lines out
+**and recompile**. We cannot: `.71` source is not archived, and the only
+surviving artefact is the affected binary.
+
+**Not a launch artefact.** The obvious objection — "your telnet-launched app
+just loses its window" — is disproved on the same station in the same session: a
+`BApplication` compiled in-guest and launched exactly the same way *did* open a
+normal titled window and register in the Deskbar (§Restoring the compiler). The
+environment is fine; ICBM is not.
+
+### Candidate B — IM Kit, buildable at the protocol layer, blocked at the UI
+
+**What it is.** `github.com/HaikuArchives/IMKit` at `9c80ad1`, archived as
+sha256 `4eb6f38c3417dc6cb99610bd02fd86b32013f938b574d31462e1bb2221bd34e0`
+(3 300 733 bytes). A framework — `libim` + an `im_server` daemon + per-protocol
+add-ons (`protocols/OSCAR/ICQ.cpp`) + separate client apps.
+
+**The good news, measured rather than assumed.** With the compiler restored
+(below), **the entire OSCAR protocol engine compiles on BeOS R5 under gcc
+2.9-beos-991026**: `protocols/OSCAR/OSCARManager.cpp`, 1 842 lines, produced a
+**412 356-byte object file with zero errors**. It needs exactly two shim headers,
+both trivial:
+
+```c
+/* be_prim.h — OSCARConstants.h includes this on every non-Haiku target because
+ * ZETA shipped it. R5's equivalent is SupportDefs.h. */
+#include <SupportDefs.h>
+```
+
+```c
+/* openssl/md5.h — R5 ships no OpenSSL. OSCARManager touches MD5 in exactly one
+ * place: hashing an OPTIONAL buddy-icon upload. Login uses ICQ's plain XOR
+ * password roasting and no crypto library at all, so a declaration-only stub is
+ * enough to build, and the code path is never reached by this exhibit.
+ * The struct tag matters: the source names MD5state_st. */
+#define MD5_DIGEST_LENGTH 16
+typedef struct MD5state_st { unsigned char unused[92]; } MD5_CTX;
+int MD5_Init(MD5_CTX *); int MD5_Update(MD5_CTX *, const void *, unsigned long);
+int MD5_Final(unsigned char *, MD5_CTX *);
+```
+
+That settles the recon's biggest open question — the "OSCAR is gated on OpenSSL"
+blocker really is avoidable, and gcc 2.95 really does swallow this C++.
+
+**The bad news, also measured.** The client that draws the buddy list —
+`clients/im_contact_list` — is written against **Haiku's Layout Kit**, which
+does not exist in BeOS R5 in any form. Compiling `ContactListView.cpp` on the
+station fails at the constructor, not at some detail:
+
+```
+ContactListView.cpp:21: no matching function for call to `BView::BView (const char *&, const uint32 &)'
+  candidates are: BView::BView(BRect, const char *, long unsigned int, long unsigned int)
+ContactListView.cpp:32: implicit declaration of function `int BGroupLayoutBuilder(...)'
+```
+
+R5's `BView` has no layout-aware constructor, no `SetLayout()`, no `MinSize()`/
+`PreferredSize()` virtuals, and R5 has no `BSize`, `BGroupLayout`,
+`BGroupLayoutBuilder`, `BLayoutUtils` or `BControlLook` at all. This is the
+brief's explicit stop condition — a **missing Be API**, not a compiler quirk.
+
+Three further gaps found while measuring, so the next agent does not rediscover
+them:
+
+- **There is no `jam` on BeOS R5.** The Development package ships the GNU
+  toolchain and `make`, but not Jam, and IM Kit's entire build system is Jam.
+  Every component would need a hand-written makefile.
+- **`common/columnlistview` ships only `haiku/` and `zeta/` variants**, no R5
+  one, and the `haiku` one also uses `ControlLook` + `LayoutUtils`.
+- **The SSI alias fix is bigger here than it was on tru64.** The defect is real
+  and exactly where recon said — `OSCARManager::HandleSSI()`'s `BUDDY_RECORD`
+  case does a bare `reader->OffsetBy(len)` and never reads alias TLV `0x0131`,
+  three lines below a `GROUP_RECORD` case that already has the inner-TLV loop to
+  copy. But Gaim's `add_buddy()` already took an alias argument, whereas IM Kit's
+  `OSCARHandler::SSIBuddies(std::list<BString>)` carries **ids only**. The alias
+  would have to be threaded through `OSCARHandler` → `ICQProtocol` → the libim
+  message → `im_server` → the UI. It is not a 15-line change on this codebase.
+  (IM Kit renders contacts from BeOS **People files**, so an alternative is to
+  seed People files instead of patching SSI at all — at the cost of a
+  hand-seeded roster baked into the golden.)
+
+**Verdict.** IM Kit is not a patch job on R5; it is a Haiku→R5 port of a
+multi-component framework — a rewritten build system, a rewritten contact-list
+UI, and only then the three functional patches. That is a different errand from
+the one that was scoped, and it should be scoped honestly before it is started.
+`im_chat` (the chat window) is, for what it is worth, **layout-free classic
+BeOS** and looks portable; the contact list is the hard part.
+
+### What would have to change for a client to ship
+
+In rough order of cost:
+
+1. **Recover ICBM `.72-beta4-src`** from somewhere other than Wayback (every
+   Wayback copy is a 403 stub). With source, the Readme's own `NetPacket.h`
+   fix is a two-line change, the compiler is now restored and proven, and
+   everything else about ICBM — era-correct, GPL, auto-login, native contact
+   list, and a gateway door already proven to serve it — is right.
+2. **Port IM Kit's `im_contact_list` to R5's manual-layout InterfaceKit** and
+   hand-write makefiles for `libim`, `im_server`, `protocols/OSCAR` and
+   `im_chat`. The protocol half is proven to build; this is the UI half.
+3. Anything that puts a **Terminal** IM client on the framebuffer is explicitly
+   out of bounds.
+
+### The persona account is provisioned and proven — leave it
+
+UIN **`50000`** exists on the gateway, is **open for unattended contacts**
+(`rn-tool.py user-open`), has ICQ directory nickname `beos`, and has been proven
+to authenticate over **both** doors — OSCAR (`rn-tool.py login 10.99.0.2 5190`)
+and legacy UDP 4000. Its password is `RETRONET_ICQ_BEOS_PASS` in gitignored
+`registry/local.env` and in the CT's `/etc/ras/accounts.env`.
+
+It is deliberately **not** cross-listed: `scripts/retronet/icq/roster.json`
+carries beos with `"onboarded": false`, so the SSI seeder leaves it out of every
+other station's contact list, and `RN_BOT_PERSONAS` does not include it. That is
+the correct state while no client runs — an onboarded station that is never
+online would show as a permanently-offline contact on five other exhibits.
+**Onboarding beos is two edits and one seeder run** once a client exists.
+
+## Restoring the compiler — the reusable recipe
+
+Phase 1 recorded that `/boot/develop` is empty on this station and that the
+tools would have to be carved out of the disc image. They do not: the Pro CD
+carries them as a **ready-made install package**, and the whole job is a mount
+and a tar. This works for any BeOS R5 package, not just Development.
+
+**1. Split the CD's tracks into 2048-byte images.** The staged medium is
+`/data/assets-staging/beos/beos-5.0.3-professional-gobe.bin` (MODE1/2352, three
+tracks per the `.cue`). The splitter is already in
+[`scripts/build-guests/tiles/beos.sh`](../../../scripts/build-guests/tiles/beos.sh)
+step 1 — take each track's sectors and keep bytes 16..2064 of each 2352-byte
+sector. Track 1 is `BeOS_Tools` (ISO 9660, bootable); tracks 2 and 3 are BFS
+volumes.
+
+**2. Mount the BFS volume read-only on labhost.** No emulator, no guest:
+
+```bash
+modprobe befs
+mount -t befs -o ro,loop track02.img /mnt/<your-session>/t2
+```
+
+The Proxmox kernel ships `befs.ko` in-tree. It is read-only, which is all this
+needs.
+
+**3. Take the package.** `_packages_/` on the volume holds the installer's own
+package trees — `Development`, `GNU Sources`, `Media`, `Experimental`,
+`us_english`, … `Development` is 63 MB and is laid out exactly as it lands on
+`/boot`:
+
+```
+_packages_/Development/develop/headers/{be,cpp,gnu,posix}
+_packages_/Development/develop/lib/x86/libbe.so
+_packages_/Development/develop/tools/gnupro/bin/{gcc,g++,c++,ld,as,ar,nm,strip,…}
+_packages_/Development/develop/tools/gnupro/lib/gcc-lib/i586-beos/2.9-beos-991026/{cpp,cc1,cc1plus,collect2,crtbegin.o,crtend.o}
+_packages_/Development/beos/bin/{cc,c++,bison,flex,…}
+```
+
+**Take `develop/headers`, `develop/lib`, `develop/etc`, `develop/tools/gnupro`
+and `beos/bin`. Skip `develop/BeIDE` (15.6 MB) and `PackageBuilder`** unless you
+want the IDE — they are most of the bulk and nothing needs them to compile.
+
+**4. Deliver it over the ftp door and untar in the guest** (§Delivering files
+into the guest). Build **separate small tarballs**, one per subtree — see the
+trap below.
+
+**THE TRAP THAT COSTS AN HOUR: a `labctl exec` that outlives its window takes
+your job down with it.** The exec channel's client has a timeout, and when it
+gives up the telnet session closes and **every process started from it dies,
+including one backgrounded with `&` inside a detached subshell**. A single
+`tar` of the whole 19 MB tree gets killed part-way and leaves a tree that looks
+plausible — in this errand it left `develop/tools/gnupro/bin` present and the
+`lib/gcc-lib/…` backends missing, so `gcc` ran and reported
+`installation problem, cannot exec 'cpp'`. Split the work into chunks that each
+finish inside one exec:
+
+```sh
+labctl exec beos "cd /boot && gzip -dc /boot/home/dev-headers.tar.gz | tar xf - && echo OK"
+labctl exec beos "cd /boot && gzip -dc /boot/home/dev-bin.tar.gz     | tar xf - && echo OK"
+labctl exec beos "cd /boot && gzip -dc /boot/home/dev-gnupro.tar.gz  | tar xf - && echo OK"
+```
+
+**5. Prove it, on the framebuffer.** Compiling is not the proof; a window is:
+
+```sh
+labctl exec beos "cd /boot/home && PATH=/boot/develop/tools/gnupro/bin:/boot/beos/bin:\$PATH; \
+  export PATH; gcc -o rnhello rnhello.cpp -lbe && mimeset -f rnhello && ./rnhello < /dev/null &"
+labctl shot beos /tmp/proof.png
+```
+
+This errand did exactly that: `gcc --version` → **`2.9-beos-991026`**, a 24 049-byte
+binary linked against `libbe`, and a titled BeOS window on a clean 1024×768
+frame (`evidence-rn-beos-icq-20260823/02-toolchain-restored-gui-proof.png`).
+
+**Remember it is transient.** The station's launcher restores `loadvm golden`,
+so the whole toolchain vanishes on the next `systemctl restart streamhost@beos`
+— which is exactly why it is safe to do this on a live station, and why anything
+you actually want to keep has to be baked into the golden or copied back out.
+
+## Driving the pointer — `beosptr.py`
+
+Phase 1 described a closed-loop pointer driver but never committed one. It now
+exists at
+[`streamhost/stations/beos/beosptr.py`](../../../streamhost/stations/beos/beosptr.py):
+`where` / `move x y` / `click x y [--double] [--button right]` / `shot out.ppm`,
+talking QMP directly (momentary connect per command — never hold the socket
+open, the daemon already holds one).
+
+It converges to the pixel — measured, `move 500 400` landed `(500,401)` in 6 s —
+and getting there needed three things that are not obvious:
+
+- **R5's acceleration depends on the event RATE, not just the delta size.** A
+  train of 40-unit deltas 12 ms apart travelled the full screen width; the same
+  deltas 50 ms apart moved ~39 px each. So the driver holds magnitude and gap
+  constant and calibrates *pixels per event*, rather than trying to compute a
+  gain from the delta values.
+- **The coarse phase deliberately aims at HALF the residual**, because an
+  overshoot lands in a screen clamp, which destroys the position estimate and
+  costs a re-slam. The last leg is a slow one-unit drip whose multiplier
+  (~2.0 px/unit here) is measured live and divided out.
+- **Locating the cursor by diffing against a reference frame does not work on a
+  live desktop.** Moving across a NetPositive page repaints the status bar with
+  the imagemap URL under the pointer, and a Terminal's caret blinks — both
+  produce large changed regions nowhere near the cursor, and the loop chases
+  them. The driver instead **jiggles the pointer two pixels and diffs those two
+  frames**: hover state does not flip over two pixels, so whatever moved is the
+  cursor. Changed regions larger than a cursor are rejected outright.
+
+Note also that the Deskbar tray is only clickable if the clock mask is kept
+tight around the clock text — an over-wide mask makes a region where the cursor
+can never be found.
+
+## What a future ICQ errand inherits
 
 - A real **exec channel** — `labctl exec beos "<cmd>"`, stdout and the guest's
   own exit code — and a real **file-delivery door**, ftpd on `:21` with the same
@@ -500,30 +882,9 @@ esac
   the in-guest work and the bake in one uninterrupted session, or script it.
 - The pointer caveats above — budget for closed-loop targeting if any client
   needs GUI configuration, and prefer the exec channel wherever it will do.
-
-### The one thing phase 2 must fix before it can build anything
-
-**There is no compiler on this station.** `/boot/develop` exists and is
-**empty** (2 KB, no entries); `gcc` is `command not found`; there are no BeOS
-headers (`/boot/develop/headers/be` does not exist) and no development
-libraries. `make` is present at `/bin/make`, and that is all.
-
-This is a consequence of how the station was installed: it was built by copying
-the Pro CD's track-2 BFS **system** volume onto a fresh BFS partition (see
-[`docs/guests/beos.md`](../../guests/beos.md) §Install method), and the
-development tree did not come across.
-
-**The tools are recoverable from the media the station was built from**, which
-is still staged on the box at
-`/data/assets-staging/beos/beos-5.0.3-professional-gobe.bin` (772,302,720 bytes,
-sha256 `1889fd6c…0106`, `MANIFEST.sha256` beside it). Grepping that image finds
-`develop/headers`, `SupportDefs.h`, `InterfaceKit.h`, `libbe.so` and the string
-`2.95.3` — so gcc 2.95.3 and the Be headers are on the disc. Recovering them
-means re-splitting the disc's three MODE1/2352 tracks into 2048-byte images (the
-recipe and the splitting script are in `scripts/build-guests/tiles/beos.sh`),
-mounting/reading the track-2 BFS volume, and delivering `develop/` into the
-guest — **over the ftpd door above**, which is exactly what it is for.
-
-Budget for that before budgeting for the IM Kit build itself, and note that a
-gcc build on a TCG guest is a long unattended run: turn idle-pause off for it
-(§Delivering files into the guest) or the vCPU will freeze mid-compile.
+- A **restored, proven compiler recipe** (§Restoring the compiler) and a
+  **committed pointer driver** (§Driving the pointer).
+- A gateway **legacy UDP-4000 door proven end to end**, and a persona
+  (UIN `50000`) already provisioned, opened and proven on both doors.
+- Two candidates already eliminated on evidence, with the exact next steps that
+  would revive either one.

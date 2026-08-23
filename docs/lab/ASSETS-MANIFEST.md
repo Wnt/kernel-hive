@@ -915,11 +915,41 @@ git clone, working tree only, `.git` stripped),
 |---|---|---|---|---|
 | IM Kit source | `9c80ad110de77481717d855f503d3de6ce65e4d8` (2009-11-27) | `4eb6f38c3417dc6cb99610bd02fd86b32013f938b574d31462e1bb2221bd34e0` | 3 300 733 | [github.com/HaikuArchives/IMKit](https://github.com/HaikuArchives/IMKit) |
 | BeAIM source | `b0d489d9bc762a229cffa1f681ff5822bd6218bf` (BeAIM 1.5.6) | `fb3f2a63dba29943207d124d44e27448814c1ea5abe2edbb876fc16fa6b0cc87` | 415 496 | [github.com/HaikuArchives/BeAIM](https://github.com/HaikuArchives/BeAIM) |
+| **ICBM .71 beta** (binary, `ICBM.71.zip`) | 2001-02-10 build, recovered `web.archive.org/web/20060109024731/http://icbm.8k.com:80/ICBM.71.zip` | `c8902f40714ef439a8abf5d8c92982eb144bc10ee0a0fb30f4255e08b8dd2dd1` | 182 919 | `icbm.8k.com` (dead; Wayback only) |
 
-Neither is built or patched — they remain starting points, now with a concrete
-patch plan attached to IM Kit above. IM Kit is BSD-licensed (`License.txt`,
-"Copyright (c) 2004-2009 IM Kit Team"); BeAIM carries author disclaimers only
-(freeware/abandonware posture, same class as every other sourced client here).
+IM Kit is BSD-licensed (`License.txt`, "Copyright (c) 2004-2009 IM Kit Team");
+BeAIM carries author disclaimers only (freeware/abandonware posture, same class
+as every other sourced client here); **ICBM ships GPL-2.0** (`COPYING-2.0` in
+the archive).
+
+> **RESOLVED 2026-08-23 — both candidates were built/installed and REJECTED on
+> evidence; do not re-open this search from the recon above.** ICBM was
+> recovered, installed on the live station and *did* sign UIN `50000` on to the
+> gateway over the legacy UDP-4000 door, but it never opens a contact-list
+> window, never processes an inbound message the gateway is proven to have put
+> on the wire, and exits on its own within minutes — the `NetPacket.h`
+> `operator new`/`delete` defect its own Readme warns about, unfixable because
+> no `.71` source is archived (every Wayback copy of the `.72` betas and their
+> sources is a 403 stub). IM Kit's OSCAR engine **does** compile on R5 —
+> `OSCARManager.cpp`, 1 842 lines, a 412 356-byte object under gcc
+> 2.9-beos-991026, with only a `be_prim.h`→`SupportDefs.h` shim and a
+> declaration-only `openssl/md5.h` stub, which confirms the OpenSSL gate really
+> is avoidable — but its contact-list client is written against **Haiku's Layout
+> Kit** (`BGroupLayoutBuilder`, `BLayoutUtils`, `BSize`, layout-aware
+> `BView`/`SetLayout`), none of which exists in R5, and R5 has no `jam` to build
+> with either. Full evidence, both rejections, the gateway capability that WAS
+> proven, and what would have to change:
+> [`retronet/STATION-beos.md` §The ICQ client](retronet/STATION-beos.md#the-icq-client-two-candidates-both-rejected).
+
+> **Correction to the "R5 dev-environment facts" below, from the live station.**
+> The claim that "R5's stock install ships a full gcc 2.95.3 toolchain … under
+> `/boot/develop/headers`" is true of the *medium* and false of *this station*:
+> its file-copy install brought the runtime volume only, and `/boot/develop` is
+> empty. The tools are recoverable in minutes — the Pro CD's track-2 BFS volume
+> mounts read-only on labhost with the in-tree `befs` module and carries the
+> toolchain as a ready-made `_packages_/Development` install package. Proven
+> recipe: [`retronet/STATION-beos.md` §Restoring the
+> compiler](retronet/STATION-beos.md#restoring-the-compiler--the-reusable-recipe).
 
 **R5 networking + dev-environment facts** (documentation-level, not probed
 against the live station — the next agent asked for these; unchanged from the
