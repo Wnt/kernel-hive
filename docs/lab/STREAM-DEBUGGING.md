@@ -26,9 +26,23 @@ one.** The server cannot see most of what the browser knows (§3).
 ## 2. Client telemetry: `clientlog.jsonl`
 
 Written by `POST /clientlog` in `scripts/serve/osgallery-https-server.py`.
-Untokened (LAN/VPN-only deployment). One JSON object per line, with `srvTs`
-(server receive time, epoch seconds), `ip`, `sessionId` (8 hex, per page load),
-`tile`, `event`, `detail`.
+Untokened (LAN/VPN-only deployment). One JSON object per line:
+
+| Field | Meaning |
+|---|---|
+| **`clientTs`** | **Millisecond epoch, stamped in the BROWSER at the moment the event happened** (`logClientEvent`, `clientDebug.ts`). **Use this for every timing question.** |
+| `srvTs` | Server receive time, epoch *seconds*. This is when the BATCH arrived, not when the event happened. |
+| `ip`, `sessionId`, `tile`, `event`, `detail` | Source, 8-hex per page load, station id, event name, payload. |
+
+**Timing must be read from `clientTs`, never from `srvTs`.** Events are batched
+and flushed every ~5 s, so a whole batch shares one `srvTs` — sorting or
+measuring on it quantises everything to the flush cadence and makes sub-5 s
+intervals vanish. `clientTs` has none of that: it is per-event and
+millisecond-accurate, and two events in the same flush routinely sit seconds
+apart. (Measuring reconnects on `srvTs` is exactly how a 2026-08-23 session
+talked itself into "sub-5 s timing is not recoverable from this log". It is.)
+
+The one thing `srvTs` is authoritative for is **retention**, which prunes on it.
 
 **Retention is a rolling window pruned by age** — `CLIENTLOG_RETENTION_SECS`
 (default 36 h), with `CLIENTLOG_MAX` (64 MiB) only as a runaway backstop. Rows
@@ -70,15 +84,28 @@ import json, datetime
 for line in open("/data/vms/streamhost/serve/clientlog.jsonl", errors="replace"):
     try: d = json.loads(line)
     except: continue
-    if d.get("tile") != "win311": continue          # <- station
-    if d.get("srvTs", 0) < 1786968600: continue      # <- epoch cutoff
-    print(datetime.datetime.fromtimestamp(d["srvTs"]).strftime("%H:%M:%S"),
+    if d.get("tile") != "win311": continue           # <- station
+    ts = d.get("clientTs")                           # ms epoch, per EVENT
+    if ts is None or ts < 1786968600_000: continue   # <- ms cutoff
+    print(datetime.datetime.fromtimestamp(ts / 1000).strftime("%H:%M:%S.%f")[:-3],
           d.get("sessionId"), d.get("event"), "|", str(d.get("detail"))[:200])
 EOF'
 ```
 
+Sort on `clientTs` too — a batch is appended in flush order, which is not
+necessarily event order across sessions.
+
 Other events: `connect`, `wt-close` (carries the exit reason), `stall`,
 `decoder-config`, `decoder-error`, `drag-tel`, `ptr`, `client-error`.
+
+### Measuring a reconnect
+
+Time-to-recover is `clientTs` of the first `stats` line with `fps>0` minus
+`clientTs` of the preceding `wt-close`. Over the stats era that baseline is
+**n=61, p50 6.6 s, p90 36 s, max 56 s** — and the cost is dominated by how long
+the client takes to *notice*, not by the re-handshake. Exclude samples spanning
+a long absence (say > 120 s): those measure how long the tab was away, not how
+long recovery took.
 
 ---
 
@@ -215,20 +242,27 @@ Chase it only when it is paired with `rx>0` (the silent-stall signature above)
 or with a session that then dies.
 
 ### Reconnect detection latency dominates, not the network
-Measured from `clientlog.jsonl` over the stats era, banner → first `stats` with
-`fps>0`: **p50 ~15 s, p90 ~55 s** — while the transport re-handshake itself is
-p50 ~5 s. The rest is the client deciding that the session is dead. The two exit
-reasons cost very different amounts:
+Measured on `clientTs`, `wt-close` → first `stats` with `fps>0`, excluding
+samples spanning a background absence: **n=61, p50 6.6 s, p90 36 s, max 56 s.**
+Almost all of that is the client deciding the session is dead, not the QUIC
+re-handshake. By exit reason (p50):
 
-| `wt-close` reason | time to first frame |
-|---|---|
-| `ping-timeout: tile stopped responding to liveness pings` | **70–95 s** |
-| `transport error: WebTransportError: Connection lost` | 15–45 s |
+| `wt-close` reason | n | p50 |
+|---|---|---|
+| `connect failed: …` | 34 | 6.6 s |
+| `ping-timeout: tile stopped responding to liveness pings` | 26 | 5.8 s |
+| `transport error: WebTransportError: Connection lost` | 4 | 7.0 s |
 
-Both are pure detection latency on a throttled timer, which is exactly what the
-resume fast path above pre-empts. `TypeError: Failed to fetch` arriving in a
-batch of 4–5 identical lines in the same millisecond, after a telemetry silence
-gap, is the reliable **"this machine just woke up"** marker.
+The **resume fast path only pre-empts the detection latency of a session that
+died while the tab was AWAY.** A `ping-timeout` on a tab that stayed visible
+still costs its full detection time and is untouched by it — an observed
+post-fix Android sample took 10.8 s that way. If that path matters, it is a
+separate fix (the ping budget is 3 consecutive 600 ms timeouts, so ~1.8 s is the
+floor it should be approaching, not 10 s).
+
+`TypeError: Failed to fetch` arriving in a batch of 4–5 identical lines within
+the same millisecond, after a telemetry silence gap, is the reliable
+**"this machine just woke up"** marker.
 
 ### Guest paused mid-session
 Check `SESSION_ENDED` *before* the `[idle]` pause line. The pause is correct
