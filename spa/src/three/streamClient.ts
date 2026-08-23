@@ -64,6 +64,7 @@ import {
   rebuildPoisonedSessionImpl,
   handleStreamImpl,
   dropStaleSessionImpl,
+  disposeImpl,
 } from './streamClient/transport';
 import {
   handleParamsStreamImpl,
@@ -228,6 +229,15 @@ export class StreamClient {
   lastDecodeOutAt = 0;
   /** last silent-stall decoder rebuild (rate limit for the self-heal). */
   lastStallRebuildAt = 0;
+  /** Consecutive silent-stall decoder rebuilds that produced no output since.
+   *  Reset by the decoder's output callback; bounds the 5-second rebuild loop
+   *  a genuinely wedged decoder used to spin in forever. */
+  stallRebuildsWithoutOutput = 0;
+  /** True when the hook knows this station has ALREADY painted (a reconnect,
+   *  not a cold first connect). Only then may the stall watchdogs measure from
+   *  transport-ready — a cold connect against a slow/idle station legitimately
+   *  takes a while to produce frame #1 and must not be flagged stalled. */
+  warm = false;
   lastAuAt = 0;
 
   // ---- client-local `el` scorer (Section 2.3) EWMA state ----
@@ -554,36 +564,17 @@ export class StreamClient {
   /** Last decoder error message (metrics/HUD/chip), or null. */
   getLastDecodeError(): string | null { return this.lastDecodeError; }
 
-  dispose() {
-    if (this.disposed) return;
-    this.disposed = true;
-    this.wtReady = false;
-    if (this.ffStallTimer) { clearInterval(this.ffStallTimer); this.ffStallTimer = 0; }
-    if (this.noVideoTimer) { clearTimeout(this.noVideoTimer); this.noVideoTimer = 0; }
-    if (this.lifecycleHooksInstalled) {
-      window.removeEventListener('pagehide', this.onPageHide);
-      document.removeEventListener('visibilitychange', this.onVisibilityChange);
-      this.lifecycleHooksInstalled = false;
-    }
-    if (IS_FIREFOX_ANDROID) {
-      const g = globalThis as typeof globalThis & {
-        __kernelHiveStreamDebug?: () => Record<string, unknown>;
-      };
-      if (g.__kernelHiveStreamDebug === this.debugProbe) delete g.__kernelHiveStreamDebug;
-    }
-    this.setState(false, this.stats.lastError);
-    try { this.videoDecoder?.close(); } catch { /* noop */ }
-    this.videoDecoder = null;
-    this.audioPlayer.dispose();
-    try { void this.dgWriter?.close().catch(() => { /* session gone */ }); } catch { /* noop */ }
-    this.dgWriter = null;
-    for (const w of this.inputWriters.values()) {
-      try { void w.close().catch(() => { /* session gone */ }); } catch { /* noop */ }
-    }
-    this.inputWriters.clear();
-    this.pingWaiters.clear();
-    this.submitTimes.clear();
-    try { this.wt?.close(); } catch { /* noop */ }
-    this.wt = null;
+  /** Mark this client as a RECONNECT to a station that has already painted. */
+  markWarm(): void { this.warm = true; }
+
+  /** Milliseconds since the last DECODED frame, or Infinity if this session has
+   *  never decoded one. The resume path asks this to tell a session that merely
+   *  slept from one that came back dead, without waiting on a watchdog. */
+  getMsSinceLastFrame(): number {
+    if (this.lastDecodeOutAt <= 0) return Infinity;
+    return performance.now() - this.lastDecodeOutAt;
   }
+
+  /** Full teardown (impl in ./streamClient/transport — lifecycle plane). */
+  dispose(): void { disposeImpl.call(this); }
 }

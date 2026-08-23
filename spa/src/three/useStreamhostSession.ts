@@ -57,10 +57,26 @@ export interface StreamSessionResult {
 //    - keep retrying after a live session drops or stops producing frames. The
 //      already-painted canvas remains in place until the replacement session's
 //      first frame arrives, avoiding a flash back to the poster during a reboot.
-const KEYFRAME_WAIT_MS = 12000;                 // per-attempt budget for frame #1
+const KEYFRAME_WAIT_MS = 12000;                 // COLD budget for frame #1
+// Once a station has painted once it is proven warm, and the daemon forces an
+// IDR on subscribe on top of priming its freshest cached key — so a RECONNECT
+// that has not painted within this budget is broken, not slow. Spending the
+// cold 12 s here was the single biggest contributor to a long black area after
+// a resume: the replacement attempt sat silent for 12 s before even retrying.
+const RELIVE_KEYFRAME_WAIT_MS = 3000;
 const MAX_INITIAL_ATTEMPTS = 4;                  // total pre-live tries before poster fallback
 const RETRY_BACKOFF_MS = [600, 1500, 3000, 6000]; // unexpected-loss retry delays
 const RESTORE_BACKOFF_MS = [250, 500, 1000, 2000]; // host is expected to be briefly unavailable
+// After the tab comes back, let the just-unthrottled tick loop and the network
+// settle this long before judging the session at all.
+const RESUME_GRACE_MS = 800;
+// A frame painted this recently proves liveness outright, no round-trip needed.
+const RESUME_FRESH_PAINT_MS = 1000;
+// Otherwise ASK the transport. Deliberately NOT "has it painted lately": a
+// static desktop paints only on the keyframe heartbeat (~2.5 s), so silence is
+// normal and treating it as death would reconnect a perfectly healthy station
+// every single time the tab came forward.
+const RESUME_PING_TIMEOUT_MS = 600;
 
 export function useStreamhostSession(
   signalEndpoint: string,
@@ -133,7 +149,7 @@ export function useStreamhostSession(
     // run the /clientcmd poller while it is open. The snapshot hook reads the
     // CURRENT attempt's client (the closure variable is reassigned on retry).
     const debugTile = osId ?? signalEndpoint;
-    setDebugTile(debugTile, {
+    const debugTileOwner = setDebugTile(debugTile, {
       getSnapshot: () => fallback?.getSnapshot() ?? client?.getMetrics() ?? null,
     });
 
@@ -263,7 +279,10 @@ export function useStreamhostSession(
     const cleanup = () => {
       cancelled = true;
       clearTimers();
-      clearDebugTile(debugTile); // stop the cmd poller; events lose the station tag
+      // Token-guarded: an outgoing mount must never wipe the tag a NEW mount of
+      // the same station has already claimed (that is what leaves `tile` empty
+      // on every subsequent event — see clientDebug).
+      clearDebugTile(debugTile, debugTileOwner);
       teardownAttempt();
       setControl(null);
       try { captureTrack?.stop(); } catch { /* noop */ }
@@ -305,6 +324,16 @@ export function useStreamhostSession(
     const startAttempt = () => {
       if (cancelled) return;
       clearTimers();
+      // SERIALIZE. Every caller is supposed to have torn the previous attempt
+      // down first, but a resume/restore/retry arriving together did not, and
+      // the result was measured in the field: up to TWELVE WebTransports open
+      // at once, no closes between them, a different codec negotiated per
+      // attempt, and a canvas wired to whichever one lost. (It is also what
+      // makes the browser throw "close() is called while connecting" — the
+      // retry timer closing whichever handle it last held.) Exactly one
+      // attempt may be in flight; make that true here rather than trusting
+      // every call site.
+      if (client || controller || fallback) teardownAttempt();
       attemptLive = false;
 
       const nextClient = new StreamClient({
@@ -342,6 +371,11 @@ export function useStreamhostSession(
         },
       });
       client = nextClient;
+      // A reconnect to a station that has already painted is WARM: the daemon
+      // forces an IDR on subscribe on top of priming its freshest cached key,
+      // so this attempt is judged on transport-ready rather than waiting for a
+      // first frame that may never come. Cold connects stay untouched.
+      if (liveReached) nextClient.markWarm();
 
       if (wantControl) {
         controller = createStreamController(client, {
@@ -383,7 +417,7 @@ export function useStreamhostSession(
         // Keep its controller/banner mounted; reconnecting cannot add codec support.
         if (nextClient.getBannerState() === 'decoder-unsupported') return;
         if (!attemptLive) scheduleRetry('no keyframe within budget');
-      }, KEYFRAME_WAIT_MS);
+      }, liveReached ? RELIVE_KEYFRAME_WAIT_MS : KEYFRAME_WAIT_MS);
 
       nextClient.connect().catch((e) => {
         if (client === nextClient) scheduleRetry(`connect failed: ${(e as Error).message}`);
@@ -490,12 +524,67 @@ export function useStreamhostSession(
       else startAttempt();
     };
 
+    // ---- RESUME FAST PATH ---------------------------------------------------
+    //  Backgrounding a tab throttles the 100 ms ABR tick to ~1/min and freezes it
+    //  outright in an installed PWA, so NOTHING that normally notices a dead
+    //  session runs while away. On return the recovery used to be purely
+    //  reactive — wait for a tick, wait out the stale threshold, wait out a
+    //  backoff, then spend a cold 12 s keyframe budget — which is the long black
+    //  area the operator sees after the banner clears. Drive it from the resume
+    //  event instead: one grace window to let a session that merely slept prove
+    //  itself, then an IMMEDIATE reconnect with the backoff ladder reset.
+    let resumeTimer = 0;
+    const onResume = () => {
+      if (cancelled || resumeTimer) return;
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      // A cold connect owns its own budget; only a proven-live session resumes.
+      if (!liveReached) return;
+      resumeTimer = window.setTimeout(() => {
+        resumeTimer = 0;
+        void (async () => {
+          if (cancelled || !liveReached) return;
+          if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+          const c = client;
+          if (!c) return;
+          // Painting right now — nothing to do.
+          if (c.getMsSinceLastFrame() < RESUME_FRESH_PAINT_MS) return;
+          // Otherwise ask the transport directly. An echoed ping means the
+          // session survived the background and is merely showing a still
+          // screen; a timeout means it slept through its own death.
+          const rtt = await c.pingRtt(RESUME_PING_TIMEOUT_MS).catch(() => null);
+          if (cancelled || client !== c) return;
+          if (rtt != null) return;
+          if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+          clearTimers();
+          teardownAttempt();
+          attempt = 0; // a resume restarts the ladder; never inherit a 6 s cap
+          setPhase('connecting');
+          setMessage('Reconnecting to tile…');
+          startAttempt(); // no backoff — the whole point is to not wait
+        })();
+      }, RESUME_GRACE_MS);
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onResume);
+      window.addEventListener('pageshow', onResume);
+    }
+    const clearResumeTimer = () => {
+      if (resumeTimer) { clearTimeout(resumeTimer); resumeTimer = 0; }
+    };
+
     setPhase('starting');
     setMessage('Connecting to tile…');
     if (typeof VideoDecoder === 'undefined') void startWebRtcFallback();
     else startAttempt();
 
-    return cleanup;
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onResume);
+        window.removeEventListener('pageshow', onResume);
+      }
+      clearResumeTimer();
+      cleanup();
+    };
   }, [active, signalEndpoint, wantControl, jitterMs, autoJitter, osId]);
 
   useEffect(() => {

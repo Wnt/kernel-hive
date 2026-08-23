@@ -20,6 +20,7 @@ import {
   KIND_PARAMS,
   T_PING,
   IS_FIREFOX,
+  IS_FIREFOX_ANDROID,
   FF_STALL_CHECK_MS,
   FF_STALL_QUIET_MS,
   FF_STALL_MAX_STREAMS,
@@ -295,4 +296,50 @@ export function dropStaleSessionImpl(this: StreamClient, reason: 'ping-timeout' 
   logClientEvent('wt-close', `${reason}: ${detail}`);
   this.setState(false, detail);
   try { this.wt.close(); } catch { /* already gone */ }
+}
+
+// ---- full client teardown (lifecycle plane) ------------------------------
+/** Tear the client down: timers, lifecycle hooks, decoder, audio, writers and
+ *  the transport itself. Lifted out of streamClient.ts for file size; it
+ *  operates on the SAME instance and is the body of StreamClient.dispose(). */
+export function disposeImpl(this: StreamClient): void {
+  if (this.disposed) return;
+  this.disposed = true;
+  // capture BEFORE wtReady is cleared — it decides whether close() is safe
+  const wtReadyForClose = this.wtReady;
+  this.wtReady = false;
+  if (this.ffStallTimer) { clearInterval(this.ffStallTimer); this.ffStallTimer = 0; }
+  if (this.noVideoTimer) { clearTimeout(this.noVideoTimer); this.noVideoTimer = 0; }
+  if (this.lifecycleHooksInstalled) {
+    window.removeEventListener('pagehide', this.onPageHide);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    this.lifecycleHooksInstalled = false;
+  }
+  if (IS_FIREFOX_ANDROID) {
+    const g = globalThis as typeof globalThis & {
+      __kernelHiveStreamDebug?: () => Record<string, unknown>;
+    };
+    if (g.__kernelHiveStreamDebug === this.debugProbe) delete g.__kernelHiveStreamDebug;
+  }
+  this.setState(false, this.stats.lastError);
+  try { this.videoDecoder?.close(); } catch { /* noop */ }
+  this.videoDecoder = null;
+  this.audioPlayer.dispose();
+  try { void this.dgWriter?.close().catch(() => { /* session gone */ }); } catch { /* noop */ }
+  this.dgWriter = null;
+  for (const w of this.inputWriters.values()) {
+    try { void w.close().catch(() => { /* session gone */ }); } catch { /* noop */ }
+  }
+  this.inputWriters.clear();
+  this.pingWaiters.clear();
+  this.submitTimes.clear();
+  // Only close a transport that actually finished its opening handshake.
+  // close()-ing one still connecting throws WebTransportError "close() is
+  // called while connecting", which connectImpl's catch then reports as a
+  // CONNECT FAILURE — turning our own teardown into a phantom fault and
+  // costing the replacement attempt a whole extra retry cycle. connectImpl
+  // holds its own reference and closes it the moment `ready` settles (it
+  // rechecks `this.disposed` there), so nothing is leaked by waiting.
+  if (wtReadyForClose) { try { this.wt?.close(); } catch { /* noop */ } }
+  this.wt = null;
 }

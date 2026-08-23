@@ -141,6 +141,95 @@ loss. If it starts right after an `[abr] tier` change, the reconfig wedged the
 stream. The client eventually gives up (`dropStaleSession`) and reconnects,
 which the operator sees as a freeze-then-recover.
 
+### The tab came back and the picture stayed black
+The complaint is "I resume the session, a Reconnecting screen shows, it goes
+away, and the video area stays black". **Recognise it from one grep** — find the
+telemetry silence gap, then look at what the client did on the far side of it:
+
+```bash
+ssh lab "grep -c '\"tile\": \"\"' /data/vms/streamhost/serve/clientlog.jsonl"
+```
+
+**An empty `tile` on a `connect` is a 100 % predictor of a black stream** — 0 of
+14 such sessions ever decoded a frame. It is not a logging cosmetic; it is the
+fingerprint of two overlapping mounts of the same station, where the outgoing
+one's cleanup wiped the tag the incoming one had just claimed. If the tag is
+gone, so is the guarantee that the canvas is wired to the transport that opened.
+
+Backgrounding a tab throttles the client's 100 ms tick to ~1/min and freezes it
+outright in an installed PWA, so **nothing that normally notices a dead session
+runs while the tab is away**. Two shapes come out of that, and they need
+different fixes:
+
+| | **Mode A — no reconnect at all** | **Mode B — reconnect storm** |
+|---|---|---|
+| Signature | a burst of `T-/crf- -x-@-` banner-state `stats` lines inside ~1 s, then **nothing** | many `connect` lines, **no `wt-close` between them**, `tile` empty, a different codec each attempt |
+| Cause | the frozen 5 s stats timer flushing its backlog on wake; no code path drives a reconnect from the resume event | attempts never serialised — up to 12 WebTransports open at once; the retry timer closes whichever handle it last held |
+| Also emits | — | `connect failed: WebTransportError: close() is called while connecting` |
+
+The banner clears in both because the transport layer reports *something*; the
+canvas stays black because nothing is painting into it.
+
+Both are fixed client-side (see `useStreamhostSession.ts`):
+`visibilitychange`/`pageshow` drive an immediate reconnect after a short grace
+window instead of waiting on a watchdog; `startAttempt` tears down any attempt
+still in flight so exactly one exists; and `clearDebugTile` is guarded by an
+ownership token so a stale unmount cannot blank the tag.
+
+**A reconnect is judged on a different clock than a first connect.** A cold
+connect keeps the 12 s keyframe budget — an idle station legitimately takes a
+while to produce frame #1. Once a station has painted it is marked *warm*, and
+the budget drops to 3 s: the daemon forces an IDR on subscribe on top of priming
+its freshest cached key (`transport/mod.rs`), so a warm reconnect that has not
+painted in 3 s is broken, not slow.
+
+### The decoder is silent and rebuilding it changes nothing
+`stall | decoder rebuild (silent stall: AUs arriving, no output)` repeating every
+5 s, with healthy transport underneath — the giveaway is a `stats` line like
+`rx11.5M fps2 ... rtt3.3/fl2.5/ex0`: **11.5 Mbps of access units arriving and
+almost nothing decoding.** Rare (about 1 % of `fps0` samples also have `rx>0`)
+but terminal when it happens.
+
+The rebuild used to be a **byte-identical no-op**: 123 of 124 field rebuilds
+re-created the exact same codec string, avcC descriptor length and hardware
+preference, so a wedged decoder looped until the session died black. The one
+recorded recovery came only when an ABR tier drop forced a genuinely *new*
+encoder config. Two consequences now in the client:
+
+- a rebuild **demotes to software decode**, and the demotion is
+  page-lifetime (`softwareDecodeLatch.ts`) — `hwDecodeOk`/`hwFellBack` are
+  per-`StreamClient`, so before this every reconnect built a fresh client that
+  probed `prefer-hardware` again and reproduced the identical stall;
+- rebuilds are **bounded** (`MAX_SILENT_STALL_REBUILDS`). Beyond the cap the
+  session is left to `dropStaleSession`, which correctly refuses to act while the
+  page is hidden — that is why a hidden tab could burn 10 rebuilds over 65 s.
+
+### `frame watchdog latched` is mostly NOT a fault
+1610 latches in a 427 h window, and **62 % of them fire more than 5 minutes
+after the last `connect`; only 5 % land within 15 s of one.** They cluster on the
+static-screen low-fps stations (`dbr-arma`, `mpf2`, `atarist`, `c64`) because
+`FRAME_STALL_MS` (2000) is simply below the natural inter-frame interval of a
+still desktop. **74 % of latches are followed by a session that keeps running
+normally.** Do not chase a latch on its own — it is a detector, not a verdict.
+Chase it only when it is paired with `rx>0` (the silent-stall signature above)
+or with a session that then dies.
+
+### Reconnect detection latency dominates, not the network
+Measured from `clientlog.jsonl` over the stats era, banner → first `stats` with
+`fps>0`: **p50 ~15 s, p90 ~55 s** — while the transport re-handshake itself is
+p50 ~5 s. The rest is the client deciding that the session is dead. The two exit
+reasons cost very different amounts:
+
+| `wt-close` reason | time to first frame |
+|---|---|
+| `ping-timeout: tile stopped responding to liveness pings` | **70–95 s** |
+| `transport error: WebTransportError: Connection lost` | 15–45 s |
+
+Both are pure detection latency on a throttled timer, which is exactly what the
+resume fast path above pre-empts. `TypeError: Failed to fetch` arriving in a
+batch of 4–5 identical lines in the same millisecond, after a telemetry silence
+gap, is the reliable **"this machine just woke up"** marker.
+
 ### Guest paused mid-session
 Check `SESSION_ENDED` *before* the `[idle]` pause line. The pause is correct
 behaviour 60 s after the last session ends; the real question is why the session

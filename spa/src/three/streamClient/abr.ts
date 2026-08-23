@@ -16,7 +16,11 @@ import { clampU16 } from './format';
 import { ewma, rawScores } from './scoring';
 import { bankServerSkips, spendSkipCredit } from './skipCredit';
 import { formatStatsLine } from './telemetry';
-import { T_STATS, FRAME_STALL_MS, MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS } from './constants';
+import {
+  T_STATS, FRAME_STALL_MS, FIRST_FRAME_GRACE_MS,
+  MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS, MAX_SILENT_STALL_REBUILDS,
+} from './constants';
+import { latchSoftwareDecode } from './softwareDecodeLatch';
 
 /** Rolling window the REPORTED loss percentage is measured over (ms). */
 const LOSS_WINDOW_MS = 3000;
@@ -140,9 +144,24 @@ export function tickStatsImpl(this: StreamClient): void {
   //  QUIC link + type-9 pings perfectly healthy while zero frames decode. Latch
   //  when no frame has painted for > FRAME_STALL_MS and the transport is still
   //  open. DETECTOR ONLY — surfaced to the HUD/banner; it never triggers reconnect.
+  //  The reference is the last DECODED frame — or, before this session has ever
+  //  decoded one, transport-ready plus FIRST_FRAME_GRACE_MS. Measuring only from
+  //  `lastDecodeOutAt` left a connected-but-never-decoding session (the shape a
+  //  resume produces: every replacement client starts at zero, and a mobile
+  //  app-switch routinely leaves the hardware decoder poisoned) invisible to
+  //  BOTH the silent-stall rebuild and dropStaleSession below — the only
+  //  recovery left was the hook's 12 s keyframe budget, i.e. 12 s of black.
+  //  Gated on `warm`: only a RECONNECT to a station that has already painted may
+  //  be judged on transport-ready. A cold first connect against a slow or idle
+  //  station legitimately takes a while to produce frame #1 and keeps its
+  //  existing behaviour (no stall chip, no drop) — the hook's 12 s cold
+  //  keyframe budget stays that path's only deadline.
+  const decodeRef = this.lastDecodeOutAt > 0
+    ? this.lastDecodeOutAt
+    : (this.warm && this.sessionReadyAt > 0 ? this.sessionReadyAt + FIRST_FRAME_GRACE_MS : 0);
   const stalledNow =
-    !!this.wt && !this.disposed && this.lastDecodeOutAt > 0
-    && (now - this.lastDecodeOutAt > FRAME_STALL_MS);
+    !!this.wt && !this.disposed && decodeRef > 0
+    && (now - decodeRef > FRAME_STALL_MS);
   if (stalledNow && !this.frameStalled) {
     logClientEvent(
       'stall',
@@ -155,10 +174,30 @@ export function tickStatsImpl(this: StreamClient): void {
   // decoder instance itself is the problem: drop it so the next key AU
   // (keyframe heartbeat <= 2.5 s) rebuilds a fresh one via
   // maybeConfigureForKey. Rate-limited; never touches the transport.
+  //  BOUNDED: a wedged decoder used to spin here every 5 s forever (measured: 10
+  //  identical rebuilds over 65 s on a hidden tab, which dropStaleSession below
+  //  cannot rescue because it correctly refuses to act while the page is
+  //  hidden). Three attempts is more than enough to prove a rebuild is not the
+  //  answer; after that stop burning them and leave the session to the stale
+  //  drop the moment the page is visible again.
   if (stalledNow && this.lastAuAt > this.lastDecodeOutAt
+      && this.stallRebuildsWithoutOutput < MAX_SILENT_STALL_REBUILDS
       && now - this.lastStallRebuildAt > 4000) {
     this.lastStallRebuildAt = now;
-    logClientEvent('stall', 'decoder rebuild (silent stall: AUs arriving, no output)');
+    this.stallRebuildsWithoutOutput++;
+    // ESCALATE — a rebuild that re-creates the SAME configuration reproduces the
+    // same silence, which is why this used to repeat until the session died
+    // black. Output-with-no-error is overwhelmingly a hardware decoder left
+    // poisoned by a GPU-context loss (mobile app-switch / tab discard), so the
+    // rebuild also drops the 'prefer-hardware' nudge — the same demotion the
+    // async decoder-error path performs, except this failure mode never
+    // delivers an error to trigger it. The latch is process-wide (below) so the
+    // replacement client a reconnect builds does not go straight back to the
+    // hardware decoder that just failed to emit.
+    latchSoftwareDecode();
+    this.hwFellBack = true;
+    this.hwDecodeOk = false;
+    logClientEvent('stall', `decoder rebuild ${this.stallRebuildsWithoutOutput}/${MAX_SILENT_STALL_REBUILDS} (silent stall: AUs arriving, no output) — demoting to software decode`);
     try { this.videoDecoder?.close(); } catch { /* noop */ }
     this.videoDecoder = null;
     this.videoReady = false;
@@ -175,10 +214,12 @@ export function tickStatsImpl(this: StreamClient): void {
   const keyframeMs = this.encParams?.keyframeMs ?? this.signalVideo?.keyframeMs ?? 2500;
   const staleMs = Math.min(MAX_SESSION_STALE_MS, Math.max(MIN_SESSION_STALE_MS, keyframeMs * 2 + 3000));
   const pageVisible = typeof document === 'undefined' || document.visibilityState === 'visible';
-  if (stalledNow && pageVisible && now - this.lastDecodeOutAt >= staleMs) {
+  if (stalledNow && pageVisible && now - decodeRef >= staleMs) {
     this.dropStaleSession(
       'stream-stalled',
-      `no decoded frame for ${Math.round(now - this.lastDecodeOutAt)}ms (heartbeat ${keyframeMs}ms)`,
+      this.lastDecodeOutAt > 0
+        ? `no decoded frame for ${Math.round(now - this.lastDecodeOutAt)}ms (heartbeat ${keyframeMs}ms)`
+        : `no first frame ${Math.round(now - this.sessionReadyAt)}ms after transport ready (heartbeat ${keyframeMs}ms)`,
     );
     return;
   }

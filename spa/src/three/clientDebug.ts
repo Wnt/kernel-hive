@@ -67,6 +67,10 @@ let flushTimer = 0;
 let verbose = false;
 
 let activeTile: string | null = null;
+/** Opaque identity for the mount that currently owns the station tag. */
+export type DebugTileOwner = number;
+let tileOwner: DebugTileOwner = 0;
+let nextTileOwner = 1;
 let snapshotHook: (() => unknown) | null = null;
 let pollTimer = 0;
 let lastSeq = -1; // -1 → next poll is a BASELINE sync (record seq, execute nothing)
@@ -153,17 +157,28 @@ export function flushNow(_useBeacon = false): void {
  * poller runs (commands execute only when cmd.tile === '*' or matches this
  * station). `getSnapshot` feeds the operator `snapshot` command (full metrics).
  */
-export function setDebugTile(tile: string, hooks: { getSnapshot: () => unknown }): void {
+export function setDebugTile(tile: string, hooks: { getSnapshot: () => unknown }): DebugTileOwner {
   activeTile = tile;
   snapshotHook = hooks.getSnapshot;
+  tileOwner = nextTileOwner++;
   startPoller();
+  return tileOwner;
 }
 
-/** Station closed. A stale unmount (older station) is ignored via the station guard. */
-export function clearDebugTile(tile?: string): void {
+/** Station closed. Pass the token setDebugTile returned: a guard on the tile NAME
+ *  alone cannot tell two overlapping mounts of the SAME station apart, so the
+ *  outgoing mount's cleanup used to wipe the incoming one's tag — after which
+ *  every event it logged carried an EMPTY `tile`. In clientlog.jsonl an empty
+ *  tile on a `connect` is a 100% predictor of a black stream (0 of 14 such
+ *  sessions ever decoded a frame); it is the fingerprint of exactly this
+ *  overlap. The token makes the clear a no-op unless the caller still owns
+ *  the tag. */
+export function clearDebugTile(tile?: string, owner?: DebugTileOwner): void {
   if (tile != null && activeTile !== tile) return;
+  if (owner != null && tileOwner !== owner) return;
   activeTile = null;
   snapshotHook = null;
+  tileOwner = 0;
   stopPoller();
 }
 

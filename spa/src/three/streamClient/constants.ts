@@ -47,6 +47,19 @@ export const FRAME_STALL_MS = 2000;
 // (plus scheduling slack) therefore means the session is stale, not merely idle.
 export const MIN_SESSION_STALE_MS = 8000;
 export const MAX_SESSION_STALE_MS = 25000;
+// A session that CONNECTED but has never decoded a single frame used to be
+// invisible to the watchdogs above (they measured from the last decoded frame,
+// which is 0 on a fresh client) — so a resume, whose replacement client always
+// starts at zero, had no stall detection at all and fell back on the hook's
+// 12 s keyframe budget. The watchdogs now measure from transport-ready plus
+// this grace: the server forces an IDR on subscribe AND primes the freshest
+// cached key, so frame #1 on a warm station lands well inside it.
+export const FIRST_FRAME_GRACE_MS = 2500;
+// Cap on consecutive silent-stall decoder rebuilds that produce no output. The
+// rebuild used to be unbounded AND byte-identical (measured: 123 of 124 field
+// rebuilds re-created the exact same codec + avcC + hw preference), so a wedged
+// decoder simply looped every 5 s until the session died black.
+export const MAX_SILENT_STALL_REBUILDS = 3;
 
 // Firefox detection (Gecko engine, not the "like Gecko" token every WebKit UA
 // carries). Firefox's VideoDecoder isConfigSupported + 'prefer-hardware'

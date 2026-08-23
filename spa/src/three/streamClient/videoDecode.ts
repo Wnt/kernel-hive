@@ -30,6 +30,7 @@ import { logClientEvent, isVerboseDebug } from '../clientDebug';
 import { codecStringFor } from './format';
 import { isStaleAu } from './auGate';
 import { DECODER_FAIL_THRESHOLD, IS_FIREFOX } from './constants';
+import { isSoftwareDecodeLatched, latchSoftwareDecode } from './softwareDecodeLatch';
 
 // ---- server→client encoder params + HUD stats (KIND_PARAMS) --------------
 export async function handleParamsStreamImpl(this: StreamClient, br: ByteReader) {
@@ -105,6 +106,10 @@ export async function handleParamsStreamImpl(this: StreamClient, br: ByteReader)
  *  'prefer-hardware' only when the probe confirmed a HW decoder. */
 export function pickAccelImpl(this: StreamClient): 'prefer-hardware' | 'no-preference' {
   if (IS_FIREFOX) return 'no-preference';
+  // A page-lifetime demotion outranks this client's own (always-fresh) probe:
+  // a reconnect must not walk back into the hardware decoder that an earlier
+  // client already proved silent. See softwareDecodeLatch.
+  if (isSoftwareDecodeLatched()) return 'no-preference';
   return this.hwDecodeOk === true && !this.hwFellBack ? 'prefer-hardware' : 'no-preference';
 }
 
@@ -133,6 +138,7 @@ export function setupVideoDecoderImpl(this: StreamClient) {
       // A real output frame ends any configure/decode failure run.
       this.consecutiveDecodeFails = 0;
       this.decoderFailed = false;
+      this.stallRebuildsWithoutOutput = 0; // real output ends the rebuild run
       const now = performance.now();
       // decode-time diff (Section 2.2): match this frame to its submit time.
       const ts = frame.timestamp;
@@ -174,6 +180,9 @@ export function setupVideoDecoderImpl(this: StreamClient) {
       if (!this.hwFellBack) {
         this.hwFellBack = true;
         this.hwDecodeOk = false;
+        // Page-lifetime too: the replacement client a reconnect builds probes
+        // 'prefer-hardware' from scratch and would repeat this same failure.
+        latchSoftwareDecode();
       }
       try { this.videoDecoder?.close(); } catch { /* already closed */ }
       this.videoDecoder = null;
