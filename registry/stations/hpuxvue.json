@@ -149,7 +149,7 @@
         "-display dbus,p2p=on",
         "-drive if=scsi,bus=0,index=6,file=$D/hpuxvue-golden.qcow2,format=qcow2,cache=writeback,aio=threads",
         "-drive if=scsi,bus=0,index=2,media=cdrom,file=$A/disc1.iso (always attached; -boot d only in the install shape)",
-        "-net nic,model=tulip -net user",
+        "-netdev tap,id=n0,ifname=hpuxrn0,script=no,downscript=no -device tulip,netdev=n0,mac=$RN_HPUXVUE_MAC (retronet bridge vmbr-rn)",
         "-serial unix:$D/serial.sock,server=on,wait=off",
         "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
       ],
@@ -209,7 +209,7 @@
   },
   "ui": "desktop",
   "network": {
-    "status": "nic-only",
-    "note": "tulip on SLIRP user-mode, but set_parms was answered standalone: no IP configured in HP-UX (docs/guests/hpuxvue.md)"
+    "status": "host-only",
+    "note": "retronet web plane: the tulip is a REAL bridged NIC on vmbr-rn via the persistent tap hpuxrn0 (streamhost/stations/hpuxvue/rn-tapnet.sh), MAC RN_HPUXVUE_MAC, HP-UX driver btlan3 as lan0. Addressed 10.99.0.20/24 with DNS 10.99.0.2 and NO default gateway — static, not DHCP, because the June-1996 dhcpclient cannot enumerate the btlan3 PPA (docs/lab/retronet/WEB-STATION-hpuxvue.md). Contained by the fail-closed HPUXRN-IN chain: reaches the gateway CT only, never labhost, the LAN or the internet."
   }
 }

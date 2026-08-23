@@ -23,6 +23,17 @@
 # GRAPHICS: the built-in Artist framebuffer, 1280x1024 HARD CEILING — higher
 # modes crash or leave dtwm/vuewm's pointer unable to reach y>=1146.
 #
+# RETRONET BRIDGE (2026-08-23): n0 is a real bridged NIC on vmbr-rn, NOT slirp.
+# rn-tapnet.sh (called `up` just below, idempotently, like irix/tapnet.sh)
+# creates the persistent tap hpuxrn0, enslaves it to vmbr-rn, and installs a
+# fail-closed guest-containment chain. The guest is on DHCP (retronet-dhcp
+# reservation RN_HPUXVUE_MAC -> 10.99.0.20/24, DNS 10.99.0.2, NO router) with NO
+# default route; it shares L2 with the gateway CT 10.99.0.2, so it gets real
+# ICMP/UDP/multi-connection TCP and browses the corpus by URL with no proxy.
+# The -device is UNCHANGED (tulip, netdev=n0) apart from the per-station mac= —
+# only the netdev backend went user->tap, which is invisible to savevm/loadvm,
+# so `loadvm golden` stays valid. Do NOT renumber n0.
+#
 # POINTER: LASI PS/2, relative only (no USB on this machine, no tablet), so
 # the daemon runs SH_INPUT_BACKEND=dbus-rel. SH_CURSOR_SCALE is 1.0 until
 # measured against the installed desktop (see station.env.fixture).
@@ -56,6 +67,26 @@ elif [ -f "$D/INSTALLED" ]; then
 fi
 # streamhost display fast-poll: dbus poll every SH_DBUS_UPDATE_MS ms (fork
 # patch; its run-state idle gate keeps a paused TCG station at ~0 cost).
+# Retronet link: create/enslave the vmbr-rn tap + arm the guest-containment
+# chain BEFORE QEMU opens it (script=no means QEMU attaches to an existing tap,
+# it does not create one). Idempotent; runs as root under streamhost@ / the
+# golden-bake manual path. Fail-closed: if it cannot verify containment it dies
+# here and QEMU never starts.
+bash "$D/rn-tapnet.sh" up
+# Guest NIC MAC. Real per-station MACs are NEVER committed (AGENTS.md); the real
+# value lives in gitignored registry/local.env as RN_HPUXVUE_MAC (retronet fleet
+# scheme 52:54:00:52:4e:<last-IP-octet>, "52:4e"=RN, .20 -> ...14) so every
+# bridged guest is L2-distinct and per-MAC DHCP reservations do not collide. The
+# golden's vmstate carries the MAC, so this only matters on a COLD (re-)bake;
+# loadvm golden uses the baked MAC regardless, but this mac= must MATCH it (cold
+# boot vs loadvm bind to the same device). Only the one line is read, never the
+# whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_HPUXVUE_MAC="02:00:00:00:00:14" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_HPUXVUE_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
+  [ -n "$_m" ] && RN_HPUXVUE_MAC="$_m"
+fi
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # shellcheck disable=SC2086 # $LOADVM/$BOOT must word-split into flags
 nohup "$QEMU" \
@@ -64,7 +95,7 @@ nohup "$QEMU" \
   -display dbus,p2p=on \
   -drive if=scsi,bus=0,index=6,file=$DISK,format=qcow2,cache=writeback,aio=threads \
   -drive if=scsi,bus=0,index=2,media=cdrom,file=$A/disc1.iso,format=raw,readonly=on \
-  -netdev user,id=n0 -device tulip,netdev=n0 \
+  -netdev tap,id=n0,ifname=hpuxrn0,script=no,downscript=no -device tulip,netdev=n0,mac="$RN_HPUXVUE_MAC" \
   -serial unix:$D/serial.sock,server=on,wait=off \
   $BOOT $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
