@@ -18,7 +18,7 @@ from collections import OrderedDict
 from typing import Any
 
 from .constants import REGISTRY
-from .loading import RegistryError, is_x11_runtime
+from .loading import RegistryError, icq_roster, is_x11_runtime
 from .validate_rules import is_hidden
 
 TIER_LABELS = {
@@ -222,6 +222,39 @@ def _network(row: dict[str, Any], tier: int, env: dict[str, str]) -> dict[str, A
     return _net("none", "no network device declared for this host-native emulator", "station env")
 
 
+def _retronet(row: dict[str, Any], roster: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+    """Retronet membership: the registry block, with the ICQ persona merged in.
+
+    Two hand-written sources, joined here and nowhere else — the station's
+    optional `retronet` block (bridge facts: address, link, guard, planes) and
+    scripts/retronet/icq/roster.json (the persona: uin/nick/client/onboarded).
+    Absent block -> None, which is what "not on the retronet" looks like in the
+    fleet table. `live` is the roster's `onboarded`: a station can declare the
+    icq plane while its account is still being brought up.
+    """
+    block = row.get("retronet")
+    if not block:
+        return None
+    persona = roster.get(row["id"])
+    return OrderedDict(
+        planes=list(block["planes"]),
+        address=block.get("address"),
+        addressing=block.get("addressing"),
+        link=block.get("link"),
+        guard=block.get("guard"),
+        joined=block.get("joined"),
+        doc=block.get("doc"),
+        icq=OrderedDict(
+            uin=persona["uin"],
+            nick=persona["nick"],
+            client=persona["client"],
+            live=bool(persona.get("onboarded")),
+        )
+        if persona and "icq" in block["planes"]
+        else None,
+    )
+
+
 _GEOM_RE = re.compile(r"(?<!\d)(\d{3,4})\s*[x×]\s*(\d{3,4})(?:\s*[x×@]\s*(\d{1,2})(?!\d))?")
 _DEPTH_RE = re.compile(
     r"(\d{1,2})\s*-?\s*bpp|(\d{1,2})-bit\b|(\d{1,2})bit\b|(\d+) colou?rs|(\d+)K colou?rs|True Color|65K", re.I
@@ -279,6 +312,7 @@ def _exec(row: dict[str, Any], tier: int) -> dict[str, Any] | None:
 def emit_fleet_table(rows: list[dict[str, Any]]) -> bytes:
     ledger = _bridge_ledger()
     bridge_tiles = ledger[0]
+    roster = icq_roster()
     entries = []
     for row in sorted(rows, key=lambda r: (r["era_year"], r["id"])):
         tier = _tier(row, bridge_tiles)
@@ -315,6 +349,7 @@ def emit_fleet_table(rows: list[dict[str, Any]]) -> bytes:
                     ("golden", _golden(row, tier, env)),
                     ("exec", _exec(row, tier)),
                     ("network", _network(row, tier, env)),
+                    ("retronet", _retronet(row, roster)),
                     ("slot", row["stream"].get("slot")),
                     ("guestDoc", row.get("guestDoc")),
                 ]

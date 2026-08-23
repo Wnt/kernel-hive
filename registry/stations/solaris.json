@@ -233,6 +233,14 @@
     "source": "streamhost/qemu-patches (upstream 11.0.0 + gallery-hid-pci), built to /data/vms/streamhost/qemu-gallery-hid"
   },
   "ui": "desktop",
+  "retronet": {
+    "planes": ["icq"],
+    "address": "10.99.0.14",
+    "addressing": "dhcp",
+    "link": "tap solrn0 on vmbr-rn",
+    "guard": "SOLRN-IN",
+    "doc": "docs/lab/retronet/ICQ-STATION-solaris.md"
+  },
   "reset": {
     "stationDir": "solaris",
     "pointer": "abs",

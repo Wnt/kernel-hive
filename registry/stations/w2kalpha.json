@@ -154,6 +154,15 @@
     "status": "host-only",
     "note": "dec21143 at pci0.4 via pcap on the veth w2kalpha-h/w2kalpha-g; w2kalpha-h enslaved to the OFFLINE retronet bridge vmbr-rn (rn-tapnet.sh), guest on DHCP (reserved 10.99.0.17/24, DNS 10.99.0.2, NO default route) behind the fail-closed W2KALPHARN-IN guard chain — reaches only the gateway CT 10.99.0.2 for the period corpus web on :80 (seamless, no proxy configured), never the LAN/gallery/internet. The telnet exec channel rides the new address (labhost dials 10.99.0.17:23). Rehomed 2026-08-23 from the pre-retronet host-only 172.31.64.0/30 veth (docs/lab/retronet/w2kalpha-retronet.md)"
   },
+  "retronet": {
+    "planes": ["web", "icq"],
+    "address": "10.99.0.17",
+    "addressing": "dhcp",
+    "link": "veth w2kalpha-h/w2kalpha-g (pcap) on vmbr-rn",
+    "guard": "W2KALPHARN-IN",
+    "joined": "2026-08-23",
+    "doc": "docs/lab/retronet/w2kalpha-retronet.md"
+  },
   "reset": {
     "stationDir": "w2kalpha",
     "pointer": "abs",
