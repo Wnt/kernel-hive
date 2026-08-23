@@ -260,9 +260,7 @@ them correctly:
 | A deliberate proxy miss | `http://www.nosuchsite-kernelhive.com/` | **PASS.** The "Not in the Museum's Internet" page renders with correct headings, rules and typography, a working search box, and the AltaVista/Yahoo-style entry links. Window title picks up `404 Not Found`. |
 
 So there is **no** finding to hand on here: the lab pages do not out-run this
-renderer, and nothing needs redesigning for BeOS. Shots:
-`prod5/final` (corpus), `nsearch` (results), `nmiss` (miss) under
-`/data/vms/sandbox/rn-beos-net/exp/`.
+renderer, and nothing needs redesigning for BeOS. §Evidence frames has the shots.
 
 ## The ready scene, and why it is a boot script
 
@@ -434,6 +432,21 @@ systemctl start streamhost@beos
 
 The backup carries its own `golden` snapshot, so it restores straight into
 instant-resume; no re-bake is needed on rollback.
+
+## Evidence frames
+
+Kept beside the golden backup, not in a sandbox that gets pruned —
+`/data/gallery-guests/Beos/evidence-rn-beos-net-20260823/` (QMP `screendump`
+PPMs, 1024x768, `SHA256SUMS` in the dir):
+
+| file | what it shows |
+|---|---|
+| `01-golden-fixture-corpus-page.ppm` | the shipped golden's fixture, restored by `loadvm` |
+| `02-netpositive-search-results.ppm` | `search.retronet/search?q=modem` — 446 ranked hits |
+| `03-netpositive-proxy-miss.ppm` | the proxy's "Not in the Museum's Internet" page |
+| `04-r5-network-preflet.ppm` | R5's Network panel, driven entirely by relative PS/2 deltas |
+| `05-prebake-frame.ppm` | the clean frame the golden was baked from |
+| `06-restored-from-golden.ppm` | the same frame after `loadvm` — differs only in the Deskbar clock (183 px) |
 
 ## Operating it
 
