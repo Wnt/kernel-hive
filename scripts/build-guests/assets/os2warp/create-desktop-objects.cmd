@@ -35,9 +35,14 @@ call Recreate 'WPProgram', 'OS/2 Window', setup, '<GAL_CMDLINE>'
 
 /* These system-owned targets survive MCP2.  Gallery-owned shadows keep the
  * original WebExplorer and Get Netscape Navigator icons and launch settings. */
-setup = 'SHADOWID=<TCPIP_WEB>;ICONPOS=8,22'
+/* The retronet web plane's headline object.  It sat at ICONPOS 8,22,
+ * which lands on top of the system 'Programs' folder in the desktop's
+ * left-hand column -- a click there opened Programs, not the browser.
+ * Moved to the clear band just under the gallery row, with Get Netscape
+ * beside it, so the two web objects read as one obvious cluster. */
+setup = 'SHADOWID=<TCPIP_WEB>;ICONPOS=8,78'
 call Recreate 'WPShadow', 'WebExplorer', setup, '<GAL_WEBEXPLORER>'
-setup = 'SHADOWID=<URL_GETNETSCAPE>;ICONPOS=20,22'
+setup = 'SHADOWID=<URL_GETNETSCAPE>;ICONPOS=20,78'
 call Recreate 'WPShadow', 'Get Netscape Navigator', setup, '<GAL_GETNETSCAPE>'
 
 'exit'

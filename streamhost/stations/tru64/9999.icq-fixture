@@ -20,6 +20,19 @@
 # startup with no login window, no wizard and no keystroke. The buddy list
 # window's geometry is pinned in the same file (blist_pos), so the exhibit
 # opens composed instead of wherever dtwm would drop it.
+#
+# CHROME COLOUR: this is an 8-bit PseudoColor desktop (256-cell colormap). Gaim
+# leaks ~a full widget style's worth of colormap cells on every wake reconnect,
+# so after ~8 cycles the map is exhausted and GTK's widget-background grey can no
+# longer be allocated — the window chrome (menubars/toolbars/tabs) renders BLACK.
+# Two things fix that, both baked onto the disk:
+#   * /home/guest/.gtkrc pins Gaim's palette to fixed CDE/Motif greys, and
+#   * /usr/local/bin/cmaphold (cmaphold.c) pre-allocates and PERMANENTLY holds
+#     those exact greys (+ derived shades and chat primaries) so Gaim's later
+#     re-allocations share the held cells and can never fall back to black.
+# cmaphold must start BEFORE gaim so the anchor cells exist first.
 LD_LIBRARY_PATH=/usr/local/lib
 export LD_LIBRARY_PATH
+/usr/local/bin/cmaphold >/dev/null 2>&1 &
+sleep 1
 /usr/local/bin/gaim &

@@ -75,7 +75,7 @@ which is also why the version is pinned rather than tracked.
 | **5190** | TCP | `0.0.0.0` | **The retronet door.** Labhost-side clients: the greeter bot, `nc`, lab tooling. Advertises BOS as `10.99.0.2:5190` |
 | **5191** | TCP | `0.0.0.0` | **The slirp door.** The target of a station's `guestfwd`. Advertises BOS as `10.0.2.100:5190` |
 | 9898 | TCP | `0.0.0.0` | TOC, for TiK/Java-era clients. Unused so far; costs nothing. (The number is a coincidence — upstream's default, unrelated to the win98se persona) |
-| 4000 | UDP | `0.0.0.0` | Legacy ICQ (v2–v5), for pre-OSCAR clients on a **bridged** station. Unreachable through slirp |
+| 4000 | UDP | `0.0.0.0` | Legacy ICQ (v2–v5), for pre-OSCAR clients on a **bridged** station. Unreachable through slirp. **In production since 2026-08-23: `beos` / ICBM .71 / UIN `50000`** |
 | 8080 | TCP | `127.0.0.1` | Management API. **Loopback inside the CT only** — it has no authentication of its own, so it must never be a retronet address. Reach it with `pct exec` |
 
 The OSCAR server multiplexes auth, BOS, chat and everything else onto the one
@@ -134,8 +134,28 @@ port 4000**, and QEMU's slirp `guestfwd` forwards **TCP only** — there is no U
 pinhole to give them. A 99b persona on a slirp station cannot reach this server
 by any configuration.
 
-The legacy UDP listener is still enabled, because a Lane-B station (bridged,
-real L2) could use it, and it costs nothing while unused.
+**The legacy UDP listener is no longer a spare — `beos` runs on it.** Since
+2026-08-23 the BeOS station signs in as UIN `50000` with ICBM .71 (a 2001
+BeCQ-derived client that speaks v4), and it is the only station that can: every
+other ICQ station is behind a TCP-only slirp `guestfwd`, and `beos` is on a real
+bridge. The door bridges protocol generations — a legacy session joins the same
+presence store as the OSCAR ones (management API `/session` lists `10000` and
+`50000` side by side), an OSCAR client sees it arrive, and the server translates
+an OSCAR IM down onto the legacy wire. Three behaviours of this path are load-
+bearing and documented with their evidence in
+[`STATION-beos.md`](STATION-beos.md) §The ICQ client:
+
+- **`ICQ_LEGACY_SESSION_TIMEOUT` (120 s) expiring a session is the only thing
+  that broadcasts a legacy user's departure.** A management-API
+  `DELETE /session/<uin>` does not, and a client that quits does not either
+  (ICBM sends no `CMD_LOGOUT`). The greeter bot fires on a sign-on, so this
+  reaper is what makes "open the station and get greeted" work at all — do not
+  raise the timeout without reading that section.
+- **A stale client's keepalive silently re-creates a reaped session**, which is
+  how the station comes back after an idle pause without re-authenticating.
+- **`CMD_ACK_MESSAGES` (0x0442) is never ACKed** by this server. A client that
+  sends it retries and gives up; it is bounded and harmless, but it looks like a
+  fault in a packet log.
 
 Peer-to-peer features — direct chat, file transfer — are **off**
 (`ICQ_LEGACY_DIRECT_CONNECTIONS=` empty). They work by publishing each client's

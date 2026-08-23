@@ -128,7 +128,7 @@
       "SoundPlay"
     ],
     "blurb": "Be Inc.'s BeOS R5 (2000) \u2014 the multithreaded media OS behind Haiku's yellow tabs, running as it shipped.",
-    "notes": "Live streamhost tile. BeOS R5 Professional 5.0.3 installed from the archive.org Pro CD onto an MBR BFS partition; TCG-only (KVM #GP). Archetype: beige-tower-crt; a BeBox would be the ideal model but R5 x86 shipped on commodity PCs. On the retronet since 2026-08-23: rtl8139 on vmbr-rn, DHCP 10.99.0.16, browsing the museum corpus in NetPositive; see docs/lab/retronet/STATION-beos.md."
+    "notes": "Live streamhost tile. BeOS R5 Professional 5.0.3 installed from the archive.org Pro CD onto an MBR BFS partition; TCG-only (KVM #GP). Archetype: beige-tower-crt; a BeBox would be the ideal model but R5 x86 shipped on commodity PCs. On the retronet since 2026-08-23: rtl8139 on vmbr-rn, DHCP 10.99.0.16, browsing the museum corpus in NetPositive, and signed in to the museum's own ICQ gateway as UIN 50000 with ICBM .71 (the BeCQ successor, 2001) over the pre-OSCAR UDP-4000 door \u2014 the only station on the fleet that uses it; HiveBot greets a visitor about half a minute after the client signs on. See docs/lab/retronet/STATION-beos.md."
   },
   "emulator": {
     "family": "QEMU",
@@ -139,7 +139,8 @@
   "notes": [
     "slot 143/UDP 54143 reserved by stations-registry.py new (2026-08-17)",
     "dark-launched during bring-up via scripts/dev/darklaunch-station.py from sandbox beos-r5",
-    "retronet bridge swap + NetPositive + telnet exec channel 2026-08-23 (rn-beos-net); NIC ne2k_pci -> rtl8139 in the same pass, see docs/lab/retronet/STATION-beos.md"
+    "retronet bridge swap + NetPositive + telnet exec channel 2026-08-23 (rn-beos-net); NIC ne2k_pci -> rtl8139 in the same pass, see docs/lab/retronet/STATION-beos.md",
+    "ICQ client shipped 2026-08-23 (rn-beos-icbm): ICBM .71 (BeCQ) on the gateway's pre-OSCAR UDP-4000 door as UIN 50000, kept signed on by icbm-watchdog.sh; golden re-baked. See docs/lab/retronet/STATION-beos.md"
   ],
   "runtime": {
     "stationEnv": {

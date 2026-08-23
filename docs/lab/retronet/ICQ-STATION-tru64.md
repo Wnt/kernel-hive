@@ -283,11 +283,12 @@ session with its config under `/home/guest/`.
 `streamhost/stations/tru64/9999.icq-fixture`) exports
 `LD_LIBRARY_PATH=/usr/local/lib` — Tru64's loader will not find the Disc-5
 shared libraries otherwise, and a CDE `Xsession.d` script inherits almost
-nothing — and launches `/usr/local/bin/gaim &`. This is the **cold-boot
-fallback path only**: on the normal checkpoint-restore path Gaim is already
-running inside the baked RAM snapshot and `Xsession.d` does not run, so it
-cannot double-launch. The previous climm fixture is kept on the guest as
-`9999.icq-fixture.bak-climm`.
+nothing — and launches **`/usr/local/bin/cmaphold &` then `/usr/local/bin/gaim
+&`** (cmaphold first, so the colormap anchor cells exist before Gaim allocates —
+see §window chrome). This is the **cold-boot fallback path only**: on the normal
+checkpoint-restore path both cmaphold and Gaim are already running inside the
+baked RAM snapshot and `Xsession.d` does not run, so it cannot double-launch.
+The previous climm fixture is kept on the guest as `9999.icq-fixture.bak-climm`.
 
 **Silent sign-in** comes from `/home/guest/.gaimrc`, hand-authored to the exact
 byte layout `gaimrc.c` writes (the parser is tab-exact — it compares against
@@ -468,6 +469,82 @@ window opened after the roster lands is titled correctly. The buddy list itself
 always renders names. Not worth another ~40-minute build cycle on the emulated
 Alpha to chase.
 
+## The window chrome — 8-bit colormap exhaustion, pinned and anchored
+
+The es40 CDE desktop is an **8-bit PseudoColor** display: one hardware colormap,
+**256 cells**, `number of colormaps: minimum 1, maximum 1` (`xdpyinfo`, root
+depth 8 planes). Gaim's chat text, smileys and the white text areas allocate
+fine there, but the neutral **widget-background grey** is fragile, and it failed
+in a specific, cumulative way.
+
+**The symptom (operator report, 2026-08-23).** After the station had been open a
+while the Gaim window **chrome rendered solid BLACK** — every menubar, toolbar
+and notebook-tab background on both the buddy list and the conversation window —
+while the white text areas and the coloured chat text stayed correct. A freshly
+restored golden was fine; the black only appeared after the guest had run a long
+time.
+
+**The cause.** Every wake reconnect signs Gaim off and back on, which
+**destroys and recreates the buddy list** and re-syncs SSI. Each cycle leaks
+roughly a full widget style's worth of colormap cells. Once the 256-cell map is
+exhausted, GTK+1.2 can no longer allocate its widget grey and the fallback
+resolves to the **black pixel** — so the chrome goes black. Pure exhaustion, not
+a wrong colour and not a theme. **Reproduced** from a fresh restore by dropping
+Gaim's OSCAR socket on the gateway to force reconnects
+(`pct exec 951 -- ss -K dst 10.99.0.15 sport = 5190`): grey through ~7 cycles,
+solid black by **cycle 8**, total by cycle 16.
+
+**Why pinning the colour is not enough.** A `~/.gtkrc` that pins the widget grey
+to a fixed value does **not** fix it alone: on a full colormap the allocation of
+that (correct) grey still fails and still falls back to black. Proven — pinning
+alone went black at the same ~8-cycle threshold.
+
+**The fix — pin AND anchor.** Two pieces, both baked onto the checkpoint disk:
+
+1. **`/home/guest/.gtkrc`** (reference:
+   `streamhost/stations/tru64/gaim-chrome.gtkrc`) pins Gaim's widget palette to
+   fixed CDE/Motif greys — `bg[NORMAL] #d7d7d7` (the stock GTK+1.2 grey this
+   station shipped with) plus the ACTIVE/PRELIGHT/INSENSITIVE variants and
+   fg/base/text — applied to the `GtkWidget` base class so it reaches every
+   widget. Authored only while Gaim is stopped (the parser is tab-exact and Gaim
+   rewrites the file on exit).
+
+2. **`/usr/local/bin/cmaphold`** (source:
+   `streamhost/stations/tru64/cmaphold.c`) is a tiny X client launched in the
+   CDE session **before** Gaim. It pre-allocates the exact colours the pin names
+   — the greys, the light/dark/mid shadow shades GTK derives from each bg
+   (`LIGHTNESS_MULT 1.3` / `DARKNESS_MULT 0.7`; for a grey the HLS shade reduces
+   to a per-channel scale, so the values are bit-exact with Gaim's), and the
+   red/blue/yellow chat primaries — **read-only and shared**, then never exits.
+   `XAllocColor` of an already-allocated shareable colour returns the existing
+   pixel **without consuming a free cell**, so Gaim's every later
+   (re)allocation of those exact rgb values succeeds even when the colormap is
+   otherwise exhausted. The chrome can no longer fall back to black. It logs
+   `held=19 failed=0` at start.
+
+The pin makes Gaim request the *exact* values `cmaphold` holds (the GTK default
+grey is a hair off `#d7d7d7`, so without the pin the shares miss); `cmaphold`
+keeps those cells alive across Gaim's window churn. **Both are load-bearing —
+either alone regresses.**
+
+**Proven.** With both in place the same `ss -K` reconnect loop that blacked the
+chrome by cycle 8 left it fully grey through **24 cycles** (3× the threshold) on
+both windows, and again through a post-bake stress on the restored golden.
+
+`cmaphold` is built on the guest (native Compaq C,
+`cc -o /usr/local/bin/cmaphold cmaphold.c -lX11`). The cold-boot fixture
+(`9999.icq-fixture`) launches it before Gaim; on the normal restore path both
+are already running in the baked RAM.
+
+**Residual — the leak itself is NOT fixed.** `cmaphold` makes the chrome (and
+the held chat primaries) immune to exhaustion, but Gaim still leaks the rest of
+a style's cells per reconnect, so over a very long unbroken run other, un-held
+colours (a new smiley shade, a status icon) could still degrade. The proper
+long-term fix is to stop the per-reconnect leak in Gaim (init GdkRGB once /
+reuse the buddy-list style instead of re-realising it) — a source change plus a
+~40-min rebuild, recorded here as follow-up. A station relaunch resets the
+colormap to the golden's fresh state, so a periodic reset is the other lever.
+
 ## Golden lineage & rollback (FULL paths)
 
 This station's "golden" is an es40 **checkpoint** (savestate + the disk it was
@@ -475,13 +552,39 @@ baked from + `rom/`), not a QEMU snapshot. See
 [`docs/guests/tru64.md`](../../guests/tru64.md#checkpoint-restore).
 
 - **LIVE checkpoint:** `assets/tru64/checkpoint/{tru64.axp,tru64.img,rom/}` —
-  re-baked 2026-08-22 for **Gaim**: the desktop holds the buddy list composed on
-  the right with HiveBot online by name, and a chat window carrying the bot's
-  greeting. Baked via the serial menu's save-and-exit (option 5), so state and
-  disk are an atomic pair.
+  re-baked **2026-08-23 to add the web browser** (a CDE Front-Panel "Web" icon
+  launching Netscape 4.76 on the corpus —
+  [`WEB-BROWSER-tru64.md`](WEB-BROWSER-tru64.md)) on top of the window-chrome fix:
+  the disk carries the browser launcher bits (`RetronetWeb.{dt,fp}`,
+  `/etc/dt/config/C/sys.dtwmrc`, `/usr/local/bin/webbrowser`, guest
+  `.netscape/preferences.js` homed on `http://search.retronet/`) alongside
+  `/home/guest/.gtkrc` + `/usr/local/bin/cmaphold`, and the baked RAM holds
+  cmaphold + Gaim with **grey** chrome, the buddy list composed top-right (HiveBot
+  online by name), the greeting chat window, and the Web icon on the panel. Baked
+  via the serial menu's save-and-exit (option 5), so state and disk are an atomic
+  pair.
+  - `tru64.axp` sha256 `030b726af4a644198741e16d9f1d1ee87fdd5827dd692508d46a6855f7debe2d` (274 641 799 bytes)
+  - `tru64.img` sha256 `14730c97986a585ce2e09b267bc84f7853a2ee70c5e35611adebcc6c2de4dab1`
+- **Pre-browser backup** (the window-chrome-fixed Gaim golden — the rollback for
+  the browser change): `assets/tru64/checkpoint.bak-prebrowser-20260823/`,
+  byte-verified against the source before anything was touched, with a
+  `SHA256SUMS` beside it.
+  - `tru64.axp` sha256 `622b9383e60d9c2d5be1e69b42669cf29422b8e16230b7658e78dea360304582` (273 622 947 bytes)
+  - `tru64.img` sha256 `d31d820048d283199b39aa662613be249fd7c8f9320ba646d4331d2bc69bb41b`
+  - **Rollback:** `systemctl stop streamhost@tru64`, copy that dir's
+    `tru64.axp`/`tru64.img`/`rom` over `checkpoint/`, `systemctl start
+    streamhost@tru64`.
+- **Pre-chrome-fix backup** (the previous Gaim golden — the rollback for the
+  chrome change): `assets/tru64/checkpoint.bak-preblackfix-20260823/`,
+  byte-verified against the source before anything was touched, with a
+  `SHA256SUMS` beside it. This is the golden that restores grey but degrades to
+  black chrome over a long run.
   - `tru64.axp` sha256 `f2a14cdc24cdc4d8f731fc2ab974ffa4f4694d62c61951704ba8bd149ad37659` (311 419 163 bytes)
   - `tru64.img` sha256 `9cf71c95d001bdd28c9b823aa12e2158f06c80fb33fb6cd82bc716cb33881512`
-- **Pre-Gaim backup** (the climm checkpoint — the rollback for this change):
+  - **Rollback:** `systemctl stop streamhost@tru64`, copy that dir's
+    `tru64.axp`/`tru64.img`/`rom` over `checkpoint/`, `systemctl start
+    streamhost@tru64`.
+- **Pre-Gaim backup** (the climm checkpoint — the rollback for the Gaim change):
   `assets/tru64/checkpoint.bak-pregaim-20260822/`, byte-verified against the
   source before anything was touched, with a `SHA256SUMS` beside it.
   - `tru64.axp` sha256 `e03aa48583a2dd6cb159586bd8e0e2f3c126748c93130f1a22e1504a670edac9`
@@ -530,6 +633,19 @@ back to `60` afterwards.
   guard chain drops guest->labhost, so a throwaway `python3 -m http.server` on
   the CT (`10.99.0.2:8099`) is how the tarballs, the patched sources and the
   config reach the guest, via the guest's own `/usr/local/bin/httpfetch`.
+- **`cmaphold` must be running before Gaim, and must never be killed.** It is the
+  colormap anchor (see §window chrome); if it dies, Gaim's chrome greys are no
+  longer held and the next reconnect storm will black the chrome again. It is in
+  the baked RAM on the restore path and launched first by the cold-boot fixture.
+  Force a Gaim reconnect for testing with
+  `pct exec 951 -- ss -K dst 10.99.0.15 sport = 5190` (dropping its OSCAR socket)
+  — `rn-tool.py login 64000` does **not** evict Gaim, the gateway allows the
+  duplicate.
+- **The buddy list drifts down-right under many rapid reconnects.** A separate,
+  pre-existing cosmetic quirk (each recreate stores a frame-offset-inflated
+  position); harmless at the exhibit's normal reconnect rate but visible after a
+  stress loop. Reset it in `/home/guest/.gaimrc` (`blist_pos { 952 } { 64 } {
+  300 } { 640 } ...`) while Gaim is stopped, then relaunch, before baking.
 
 ## Operating it
 

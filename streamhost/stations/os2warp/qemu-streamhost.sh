@@ -10,9 +10,33 @@
 # RAM snapshot is baked with WARPD.EXE already running, and we boot straight into
 # it (-loadvm golden) so absolute cursor tracking is live from first frame and the
 # OS/2 register nag never reappears. station.env: SH_POINTER=warpd + SH_WARPD_ADDR.
+# NETWORK: on the retronet. The pcnet -device is UNCHANGED (the device set must
+# match the golden bake); only the netdev backend went user(slirp) -> tap on the
+# retronet bridge vmbr-rn, plus a per-station mac=. The guest runs IBM MPTS/NDIS +
+# TCP/IP 4.3 and DHCPs 10.99.0.19 from the gateway CT 10.99.0.2 (reservation
+# withholds the router option, so it has NO default route). rn-tapnet.sh is called
+# `up` below on every launch and owns the tap + the fail-closed OS2RN-IN guard
+# chain. Nothing else rides this netdev — warpd is on COM1. See
+# docs/lab/retronet/WEB-STATION-os2warp.md.
 set -e
 D=/data/vms/streamhost/stations/os2warp
 DISK=/data/gallery-guests/OS2Warp/os2.qcow2
+B="$(dirname "$0")"
+# The retronet tap + its fail-closed guard chain. Idempotent, and re-asserted on
+# EVERY launch so a station relaunch or a host reboot cannot leave the guest on
+# the bridge with no containment.
+bash "$B/rn-tapnet.sh" up
+# Per-station retronet MAC. Unique per station (fleet scheme 52:54:00:52:4e:xx);
+# the golden's vmstate carries the MAC, so this only matters on a COLD (re-)bake;
+# loadvm golden uses the baked MAC regardless, but this mac= must MATCH it (cold
+# boot vs loadvm bind to the same device). Only the one line is read, never the
+# whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_OS2WARP_MAC="02:00:00:00:00:13" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_OS2WARP_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
+  [ -n "$_m" ] && RN_OS2WARP_MAC="$_m"
+fi
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock"
@@ -34,7 +58,7 @@ nohup qemu-system-x86_64 \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
   -chardev socket,id=ser0,path=$D/serial.sock,server=on,wait=off -serial chardev:ser0 \
-  -drive file=$DISK,format=qcow2,if=ide -netdev user,id=n0 -device pcnet,netdev=n0 \
+  -drive file=$DISK,format=qcow2,if=ide -netdev tap,id=n0,ifname=os2rn0,script=no,downscript=no -device pcnet,netdev=n0,mac="$RN_OS2WARP_MAC" \
   $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
   -pidfile $D/qemu.pid \

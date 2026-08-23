@@ -9,7 +9,10 @@
 # before there was an exec channel). NetPositive is the retronet half: R5's own
 # browser, opened on the museum corpus, which the gateway's :80 origin serves
 # for ANY hostname because DHCP points the guest's resolver at 10.99.0.2 and no
-# proxy is configured.
+# proxy is configured. ICBM is the ICQ half -- it is started by its watchdog
+# rather than directly, because ICBM .71 cannot reconnect on its own and the
+# watchdog is what turns a dropped session back into a sign-on (and therefore
+# into a greeting from HiveBot). See icbm-watchdog.sh.
 #
 # The wait matters, and WHAT it waits for matters more. UserBootscript can win
 # the race against dhcp_client, and a NetPositive started too early caches a
@@ -32,3 +35,4 @@
   sleep 2
   /boot/apps/NetPositive http://spacejam.com/
 ) &
+/boot/home/config/boot/icbm-watchdog.sh >/dev/null 2>&1 &
