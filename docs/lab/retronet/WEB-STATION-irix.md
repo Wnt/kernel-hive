@@ -35,8 +35,8 @@ with `-video none`, and three things follow:
 | Guest IP | **static 10.99.0.24/24**, baked in the golden. IRIX 6.5 resolves its primary interface's address by looking its hostname up in `/etc/hosts`, so the address of this machine IS its hosts entry — the same lever every irix network bake has used. A `RETRONET_DHCP_RESERVATIONS` row keeps the address unique fleet-wide without ever leasing it. |
 | Default route | **NONE.** Containment Lock 1, enforced by the guest's own stack: `/etc/config/static-route.options` is removed and `routed` is off, so IRIX cannot form a packet to anything off `10.99.0.0/24`. |
 | Seamless web | `/etc/resolv.conf` = `10.99.0.2` + **no Netscape proxy** → type any URL and the gateway's wildcard DNS resolves it to itself, where the `:80` origin serves the corpus or the museum's miss page |
-| Browser | Netscape Communicator **4.8a**, `network.proxy.type 0`, home page `http://www.sgi.com/` |
-| Golden | `irix65-apps-v10.chd`, md5 `12224ced2202a43d83cf6f9ed27b2653` |
+| Browser | Netscape Communicator **4.8a**, `network.proxy.type 0`, home page `http://www.sgi.com/`, prefs seeded for **every interactive account** ([below](#the-quiet-browser-what-a-visitor-must-not-see)) |
+| Golden | `irix65-apps-v11.chd`, md5 `2308405a14310b29f43be52027ad09c9` (v10 + the quiet-browser fix below) |
 | Exec | **unchanged and non-network**: `labctl exec irix` rides a serial pty (`irixagent.pl` on `/dev/ttyd2`). Nothing about the retronet touches it — which is also why labhost never dials this guest. |
 
 ## Containment — the guest reaches the gateway and nothing else
@@ -118,6 +118,47 @@ Content-Length: 27937
 The framebuffer acceptance — **Netscape rendering that page**, which is the only
 proof that counts ([AGENTS.md](../../../AGENTS.md) rule 9) — is in
 [the shot below](#the-shot).
+
+## The quiet browser — what a visitor must NOT see
+
+Reported by the operator against the first cut of this join, and reproduced on
+the live station: *"netscape always seems to open with the error / warning
+dialogs, and then after a longish wait the real browser window opens."* Two
+separate causes, both now fixed in the golden (v11):
+
+**1. The first-run flow.** The v10 bake seeded `preferences.js` for **root**
+only — following the egress bake before it, which was written when a bake ran
+things as root. But a visitor logs in at the iconlogin chooser as **demos**, and
+`/usr/demos/.netscape` had no `preferences.js`. Netscape 4 reads that as a first
+run: it opens `http://home.netscape.com/home/first.html` ("SmartUpdate"), then
+`http://home.netscape.com/home/su_setup.html` — neither of which is in the
+corpus, so the visitor's first impression of the exhibit is two misses and a
+long wait, and never the SGI home page.
+
+v11 seeds every interactive account — `root`, `demos`, `guest`, `chronic` — and
+**chowns each profile to its account**, because Netscape rewrites
+`preferences.js` on exit and cannot when the file is root-owned.
+
+**2. The lock dialog.** *"Netscape has detected a `.netscape/lock` file. This
+may indicate that another user is running Netscape using your `.netscape`
+files."* The lock is a **symlink** naming `host:pid` (here
+`10.99.0.24:1003`) that Netscape leaves behind whenever it does not exit
+cleanly — a killed process, a station relaunch mid-session. The bake removes it
+from every profile, so no golden carries one.
+
+The prefs also turn off the era's four modal security warnings
+(`security.warn_entering_secure` and friends). On a plane that serves **no
+https at all** these can only ever fire spuriously, and a modal box a visitor
+has to dismiss is the worst thing an exhibit can open with.
+
+**Two shell traps found writing that bake**, both worth knowing before editing
+anything that runs *inside* this guest: IRIX 6.5's `/bin/sh` is a real Bourne
+shell with **no `$(...)` command substitution** — it prints the text literally
+rather than running it, which made the first version silently skip its `chown`
+while every line of its own output claimed success — and **no
+`${var%%pattern}`**. The bake therefore uses a function with explicit arguments
+and no substitution at all. (`grep -E` is absent too; `egrep` is the portable
+spelling here.)
 
 ## The trap this station set: a cold boot with a MISMATCHED address wedges
 
