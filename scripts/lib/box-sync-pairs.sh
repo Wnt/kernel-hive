@@ -357,6 +357,20 @@ box_sync_load_pairs() {
   # station. See docs/lab/retronet/WEB-STATION-macos753.md.
   box_sync_add_pair macos753-rn-tapnet streamhost/stations/macos753/rn-tapnet.sh "$BOX_ROOT/stations/macos753/rn-tapnet.sh" exact repo
 
+  # irix retronet WEB plane, and the first rn-tapnet on an x11-RUNTIME station.
+  # irix is not QEMU: its helpers normally travel as emit `--aux-file`s from the
+  # registry (tapnet.sh does, and has no pair here), so this pair is not the
+  # launcher-cannot-start guarantee it is for the seven above — the emit already
+  # places the file. It is here because it is the LEDGER's requirement
+  # (stations_registry/validate_retronet.py fails any station shipping an
+  # rn-tapnet.sh without one) and because pinning the box copy `exact repo`
+  # catches a hand-edit on the box that the emit would otherwise quietly
+  # reinstate only on the next re-emit. Both paths write the same repo bytes.
+  # This guest is IRIX 6.5 in MAME on the Indy's SEEQ 80C03, statically
+  # addressed in-guest on 10.99.0.24. Web-only: no OSCAR client is built for
+  # IRIX yet. See docs/lab/retronet/WEB-STATION-irix.md.
+  box_sync_add_pair irix-rn-tapnet streamhost/stations/irix/rn-tapnet.sh "$BOX_ROOT/stations/irix/rn-tapnet.sh" exact repo
+
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.
   box_sync_add_pair tiles-json scripts/tiles.json.sample "$BOX_ROOT/tiles.json" exact box

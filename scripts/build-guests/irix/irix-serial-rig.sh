@@ -129,10 +129,39 @@ start_mame() {
   cp --reflink=always -- "$CHD" "$D/disk.chd"
   chmod 644 -- "$D/disk.chd"
   : >"$D/cmd"
-  "${disp[@]}" "IRIX_CMD=$D/cmd" setsid \
+  # Optional networking, for bakes that have to CONFIGURE the guest's network
+  # (the retronet join) rather than just its filesystem. Off unless the caller
+  # names a tap: IRIX_RIG_TAP_IF=<if> — which the caller must have created and
+  # contained itself (streamhost/stations/irix/tapnet.sh for a host-only /30,
+  # rn-tapnet.sh for a vmbr-rn bridge port). The rig deliberately does NOT make
+  # the link: which containment a clone gets is exactly the decision that should
+  # not be defaulted.
+  #
+  # MAME picks its host interface from the machine CFG FILE, not a switch —
+  # `network_manager::config_load` reads <system><network><device> and calls
+  # set_interface() — so the cfg is seeded before every launch, the same way the
+  # production launcher does it (streamhost/stations/irix/x11-runtime.sh).
+  local net=() netenv=()
+  if [ -n "${IRIX_RIG_TAP_IF:-}" ]; then
+    mkdir -p "$D/cfg"
+    cat >"$D/cfg/indy_4610.cfg" <<EOF
+<?xml version="1.0"?>
+<mameconfig version="10">
+    <system name="indy_4610">
+        <network>
+            <device tag=":edlc" interface="0" mac="${IRIX_RIG_TAP_MAC:-08:00:69:12:34:56}" />
+        </network>
+    </system>
+</mameconfig>
+EOF
+    net=(-cfg_directory "$D/cfg" -networkprovider taptun)
+    netenv=("MAME_TAP_IFNAME=$IRIX_RIG_TAP_IF")
+  fi
+  "${disp[@]}" "${netenv[@]}" "IRIX_CMD=$D/cmd" setsid \
     "$MAME_BIN" indy_4610 -bios b10 -rompath "$ASSETS/roms" -gio64_gfx xl24 \
     -hard1 "$D/disk.chd" "${ser[@]}" \
     -nvram_directory "$D/nvram" -inipath "$ASSETS/uicfg" \
+    "${net[@]}" \
     -skip_gameinfo "${vid[@]}" -sound none -frameskip "${IRIX_FRAMESKIP:-6}" \
     -autoboot_script "$D/irixagent.lua" -autoboot_delay 0 \
     </dev/null >"$D/mame.log" 2>&1 &
