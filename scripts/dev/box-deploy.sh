@@ -14,14 +14,24 @@
 # Nothing is restarted. Restarts are per-station decisions:
 # build-deploy.sh (daemon), systemctl restart streamhost@<station> (launcher/env).
 #
+# STEP 1 RUNS ONLY UNDER --apply (or an explicit --sync). Until 2026-08-24 the
+# plan ran it too, so merely LOOKING at what a deploy would touch fast-forwarded
+# the shared checkout — and every live file the new commits touched instantly
+# read as drift to anyone comparing live against the checkout. One agent's
+# read-only inspection could redden a whole wave's pushes, and the only way back
+# to green was to apply. A command that shows you a plan must not move the thing
+# it is planning against; the plan now reports the gap instead of closing it.
+#
 # usage:
-#   box-deploy.sh                 plan: what --apply would change (dry-run)
+#   box-deploy.sh                 plan: what --apply would change (READ-ONLY:
+#                                 it does NOT sync the checkout — see below)
 #   box-deploy.sh --apply         sync + install + stamp
 #   box-deploy.sh --status        deployed rev vs origin/main, one screen
 #   box-deploy.sh LABEL… --apply  only these pair labels (no stamp advance)
 #   box-deploy.sh --stage         (P2) install THIS sandbox's UI + manifests
 #                                 under /staging/<KH_SESSION>/ — see
 #                                 scripts/dev/stage.sh
+#   --sync                        fast-forward the checkout without installing
 #   --no-sync                     skip step 1 (box already at the wanted commit)
 #   --force-overlay               write over an active darklaunch overlay
 # exit: box-install's exit code; 3 labhost unreachable
@@ -34,12 +44,13 @@ BOX_ROOT="${BOX_SYNC_BOX_ROOT:-/data/vms/streamhost}"
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/../lib/kh-session.sh"
 
-APPLY=0 STATUS=0 SYNC=1 FORCE=""
+APPLY=0 STATUS=0 SYNC=auto FORCE=""
 declare -a LABELS=()
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --apply) APPLY=1 ;;
     --status) STATUS=1 ;;
+    --sync) SYNC=1 ;;
     --no-sync) SYNC=0 ;;
     --force-overlay) FORCE="--force-overlay" ;;
     --stage)
@@ -87,11 +98,26 @@ EOF
   exit $?
 fi
 
+# A plan reads; only an apply (or an explicit --sync) moves the checkout.
+[ "$SYNC" = auto ] && SYNC="$APPLY"
 if [ "$SYNC" = 1 ]; then
   "$SCRIPT_DIR/box-repo.sh" sync || {
     echo "box-deploy: box-repo.sh sync refused — fix that first (dirty checkout or diverged)" >&2
     exit 1
   }
+elif [ "$APPLY" != 1 ]; then
+  git fetch -q origin main 2>/dev/null || true
+  want="$(git rev-parse --short origin/main 2>/dev/null || echo '?')"
+  at="$(
+    "$SCRIPT_DIR/labrun" -- "$BOX_REPO" <<'EOF' 2>/dev/null || true
+git -C "$1" rev-parse --short HEAD
+EOF
+  )"
+  if [ -n "$at" ] && [ "$want" != '?' ] && [ "$at" != "$want" ]; then
+    echo "box-deploy: plan is against the CHECKOUT at $at; origin/main is $want."
+    echo "            --apply fast-forwards the checkout first, so it may touch more"
+    echo "            rows than this plan shows. --sync to move the checkout only."
+  fi
 fi
 
 args=(--repo "$BOX_REPO")
