@@ -27,8 +27,8 @@ this into the thing that gets it deleted:
 
   * "Every file in scripts/lib/ must have a pair." This is the tempting rule and
     it is wrong. scripts/lib/ legitimately holds plenty that never ships:
-    build-time-only helpers (labqmp.py), and shell libraries that DO ship but
-    through bespoke pairs to renamed destinations (clone-guard.sh ->
+    build-time-only helpers (xvfb-alloc's callers), and shell libraries that ship
+    only through bespoke pairs to renamed destinations (clone-guard.sh ->
     /usr/local/bin/clone-guard, kh-claim.sh -> /usr/local/bin/kh-claim). A blanket
     rule fires on every one of them, so it would be silenced by the next agent who
     tripped over it and the debt would come straight back. We key on IMPORTS, and

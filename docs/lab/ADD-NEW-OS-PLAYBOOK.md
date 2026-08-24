@@ -392,6 +392,16 @@ restart QEMU with the final production device set and `-loadvm golden`
 repeat the visible input proof
 ```
 
+That sequence is for a **first** capture, on the disposable build artifact, where
+there is no live checkpoint to lose. It is not how you recapture a station that is
+already live: for that, the one command is
+`ssh lab 'checkpoint-guard recapture <station>'` — it backs the disk up, stages the
+new state under `cpg-staging`, proves the restore on the framebuffer *and* that the
+restored guest is running, and only then retires `golden`. Never hand-type
+`delvm golden; savevm golden` on a live station, and never stage under `golden-new`
+(the launcher's `grep -qw golden` probe matches it, and an interrupted run then
+leaves QEMU refusing to start). See [`checkpoint-guard.md`](checkpoint-guard.md).
+
 On a first capture (no tag), the configured cold-boot driver/detector must reach the
 ready scene; on a recapture, the existing tag is the ready seed. Without
 `--bake` the helper refuses to create or replace a snapshot and verifies the

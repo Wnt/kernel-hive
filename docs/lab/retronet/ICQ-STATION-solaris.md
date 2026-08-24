@@ -344,9 +344,18 @@ cp solariscde-golden-goldensnap.qcow2 \
    /data/vms/streamhost/stations/solaris/solariscde-golden.qcow2
 systemctl start streamhost@solaris
 # a flattened backup has NO internal snapshot: it cold-boots into that state.
-# Re-bake instant restore from a clean frame, via drive.py on the station's qmp.sock:
-#   savevm golden-new; querysnap; delvm golden; savevm golden; delvm golden-new
 ```
+
+Instant restore then has to be recaptured from a clean frame. That is one command,
+and never hand-typed snapshot verbs:
+
+```bash
+ssh lab 'checkpoint-guard recapture solaris'
+```
+
+It backs the disk up (guest stopped, SHA256-verified), stages under `cpg-staging`,
+proves the restore on the framebuffer and that the restored guest is **running**,
+then promotes. See [`checkpoint-guard.md`](../checkpoint-guard.md).
 
 ## Gotchas that cost real time
 
@@ -436,7 +445,8 @@ ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py buddies 30000'
 ssh lab 'bash /data/vms/streamhost/stations/solaris/rn-tapnet.sh show'
 # the framebuffer is the only proof it reacted
 ssh lab 'labctl shot solaris /tmp/solaris.png'
-# re-capture the golden — CLEAN, signed-on, full-roster, Available, no chat window.
-# To refresh the roster first RESTART Pidgin (a reset won't re-fetch, see gotchas):
-#   savevm golden-new; querysnap; delvm golden; savevm golden; delvm golden-new
+# re-capture the golden — curate the scene FIRST: CLEAN, signed-on, full-roster,
+# Available, no chat window. To refresh the roster RESTART Pidgin (a reset won't
+# re-fetch, see gotchas). Then, one command — never hand-typed snapshot verbs:
+ssh lab 'checkpoint-guard recapture solaris'
 ```

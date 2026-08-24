@@ -167,6 +167,34 @@ class QMPClient:
             time.sleep(0.05)
         raise QMPError(f"screendump did not create {output}")
 
+    def vm_stop(self) -> None:
+        """Halt the vCPUs.  A stopped guest writes nothing, which is what makes a
+        byte-copy backup of its disk hashable (checkpoint-guard depends on this)."""
+        self.execute("stop")
+
+    def vm_cont(self) -> None:
+        self.execute("cont")
+
+    def vm_status(self) -> str:
+        return str(self.execute("query-status").get("status", "unknown"))
+
+    def block_files(self, drv: str | None = None) -> list[str]:
+        """Image files backing the guest's block devices, newest layer first.
+
+        The launcher is not a reliable source for these: most stations build the
+        path from a shell variable, so only the running QEMU knows it.
+        """
+        files = []
+        for entry in self.execute("query-block") or []:
+            inserted = entry.get("inserted") or {}
+            name = inserted.get("file")
+            if not name:
+                continue
+            if drv and inserted.get("drv") != drv:
+                continue
+            files.append(str(name))
+        return files
+
     def savevm(self, name: str = "golden") -> str:
         return self.hmp(f"savevm {name}")
 
@@ -235,6 +263,23 @@ def run_actions(client: QMPClient, actions: Sequence[str]) -> None:
         elif action == "sleep":
             time.sleep(float(actions[index + 1]))
             index += 2
+        elif action == "blocks":
+            nxt = actions[index + 1] if index + 1 < len(actions) else None
+            # Only swallow the next token when it names a format, so `blocks` can
+            # sit mid-stream without eating the action that follows it.
+            drv = nxt if nxt in {"qcow2", "raw", "file", "vmdk", "qed"} else None
+            for name in client.block_files(drv):
+                print(name)
+            index += 2 if drv else 1
+        elif action == "stop":
+            client.vm_stop()
+            index += 1
+        elif action == "cont":
+            client.vm_cont()
+            index += 1
+        elif action == "status":
+            _emit(client.vm_status())
+            index += 1
         elif action == "savevm":
             _emit(client.savevm(actions[index + 1]))
             index += 2

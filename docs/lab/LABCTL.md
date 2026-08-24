@@ -76,6 +76,10 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
   correct fail-closed behaviour, not a broken station — start the station first.
 - **`labctl reset`** is `loadvm golden`, and refuses stations without a checkpoint
   snapshot (`serenityos`, `toaruos`, `sailfishos`).
+- **Restoring and recapturing are different halves, and agents confuse them.**
+  `labctl reset <station>` RESTORES the checkpoint; `ssh lab 'checkpoint-guard
+  recapture <station>'` RECAPTURES it — the only safe way to replace a `golden`
+  ([`checkpoint-guard.md`](checkpoint-guard.md)).
 - **One station, one name.** A station's registry id, its `stationDir` and its `SH_STATION`
   are the same string, and `stations-registry.py` fails the build if an entry
   breaks that. The last two exceptions — `aros`/`amigaos` and

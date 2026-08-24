@@ -161,6 +161,11 @@ box_sync_load_pairs() {
   box_sync_add_pair kh-session scripts/lib/kh-session.sh /usr/local/lib/kh-session.sh exact repo
   box_sync_add_pair xvfb-alloc scripts/lib/xvfb-alloc.sh /usr/local/bin/xvfb-alloc exact repo
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
+  box_sync_add_pair checkpoint-guard scripts/lib/checkpoint-guard.sh \
+    /usr/local/bin/checkpoint-guard exact repo
+  # checkpoint-guard drives QMP through labqmp, so labqmp has to reach the box too:
+  # the guard runs on labhost (the station qmp.sock files are root-only there).
+  box_sync_add_pair labqmp scripts/lib/labqmp.py /usr/local/lib/labqmp.py exact repo
   # The healer behind chroot-guard: restores host API mounts a rogue teardown
   # stripped (2026-08-10 /dev/pts, 2026-08-17 securityfs). Script + timer-driven
   # oneshot unit, installed live on labhost.
@@ -248,6 +253,11 @@ box_sync_load_pairs() {
   box_sync_add_pair amiga-coldboot-watch scripts/coldboot/amiga-coldboot-watch.sh /usr/local/bin/amiga-coldboot-watch.sh exact repo
   box_sync_add_pair streamhost-unit streamhost/deploy/streamhost@.service /etc/systemd/system/streamhost@.service exact repo daemon-reload
   box_sync_add_pair amiga-coldboot-unit streamhost/deploy/amiga-coldboot-watch.service /etc/systemd/system/amiga-coldboot-watch.service exact repo daemon-reload
+  # openvms is the one station whose ExecStartPre boots a second VM (its Debian
+  # Xorg bridge) before the guest, so it needs a longer start backstop than the
+  # shared template gives every other station. Per-instance drop-in rather than
+  # a template edit; the reasoning is in the .conf itself.
+  box_sync_add_pair openvms-start-timeout streamhost/deploy/streamhost@openvms.service.d/start-timeout.conf /etc/systemd/system/streamhost@openvms.service.d/start-timeout.conf exact repo daemon-reload
   box_sync_add_pair sailfish-seriald-unit streamhost/deploy/seriald-sailfishos.service /etc/systemd/system/seriald-sailfishos.service exact repo daemon-reload
   box_sync_add_pair sailfish-seriald streamhost/stations/sailfishos/seriald.py "$BOX_ROOT/stations/sailfishos/seriald.py" exact repo
   # win98se's retronet bridge-tap lifecycle helper, called `up` from its launcher.
