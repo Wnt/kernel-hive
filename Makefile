@@ -1,5 +1,6 @@
 .PHONY: station-registry-generate station-registry-check station-registry-validate \
 	gallery-manifest-check check-file-size check-generated-drift quality-gate \
+	deploy-pair-imports-check \
 	poster-gallery-fetch poster-gallery-verify devwatch \
 	release-notes release-notes-check release-notes-brief
 
@@ -14,6 +15,7 @@ devwatch:
 station-registry-check:
 	python3 scripts/stations-registry.py --check
 	$(MAKE) gallery-manifest-check
+	$(MAKE) deploy-pair-imports-check
 
 station-registry-validate:
 	python3 scripts/stations-registry.py validate
@@ -55,6 +57,15 @@ release-notes-check:
 # the week up from it would under-report exactly what it exists to catch.
 release-notes-brief:
 	python3 scripts/release-notes.py brief
+
+# Deployed Python vs the box-sync pair table: a paired file importing a
+# scripts/lib/ module that has no pair of its own is DEPLOYED-INVISIBLE and kills
+# the deployed copy on its first import (2026-08-23, guest_wake.py took every
+# labctl verb on the box down). Repo-only and static -- no box access -- and it
+# hangs off station-registry-check rather than quality-gate because that is the
+# target AGENTS.md already puts in every agent's gate list.
+deploy-pair-imports-check:
+	python3 scripts/lint/deploy-pair-imports.py
 
 # Cross-cutting quality gates (see docs/lab/AGENT-CI-EXIT-RULE.md).
 check-file-size:
