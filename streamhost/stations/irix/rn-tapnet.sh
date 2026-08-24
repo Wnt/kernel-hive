@@ -76,7 +76,25 @@ BRIDGE="${RN_TAP_BRIDGE:-vmbr-rn}"
 # leased) in RETRONET_DHCP_RESERVATIONS so nothing else can take it. The guard
 # chain is scoped to it, so the filter follows the guest, never the whole bridge.
 GUEST_IP="${RN_TAP_GUEST_IP:-10.99.0.24}"
-IN_CHAIN="IRIXRN-IN"
+# PER-INTERFACE chain name, and this is not tidiness — it is the containment
+# failure irix's sibling tapnet.sh already paid for once, re-met here on
+# 2026-08-24. A bake or a clone brings up a SECOND tap for the SAME guest
+# address (that is the point: it is this station, on a rig), and because
+# `install_rules` FLUSHES its chain and `remove_rules` DELETES it, tearing the
+# clone's tap down removed the LIVE station's INPUT filter while the exhibit
+# was running and every message still said "down: ok". One chain set per tap.
+#
+# The production interface keeps the bare name so the registry's
+# `retronet.guard` value, the fleet's convention and every doc stay true;
+# anything else gets a suffix. iptables' chain-name limit is 28 characters.
+if [ -n "${RN_TAP_IN_CHAIN:-}" ]; then
+  IN_CHAIN="$RN_TAP_IN_CHAIN"
+elif [ "$IF" = irixrn0 ]; then
+  IN_CHAIN="IRIXRN-IN"
+else
+  IN_CHAIN="IRIXRN-IN-$IF"
+fi
+[ "${#IN_CHAIN}" -le 28 ] || die "chain name longer than 28 chars: $IN_CHAIN"
 # Seconds to wait for the xtables lock (see irix/tapnet.sh for why this is not
 # optional): a lost race brings the tap up with NO fail-closed rules while every
 # message still says "up", which is why install_rules is read back by verify_rules.

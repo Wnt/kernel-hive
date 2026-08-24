@@ -170,6 +170,33 @@ while every line of its own output claimed success — and **no
 and no substitution at all. (`grep -E` is absent too; `egrep` is the portable
 spelling here.)
 
+## The second trap: a clone teardown that disarmed the live exhibit
+
+Met on 2026-08-24, during this join's own teardown, and fixed in
+`rn-tapnet.sh`. Worth reading before you bake anything here again.
+
+The guard chain was scoped to the **guest IP**, not to the interface — and a
+bake brings up a SECOND tap for the same guest address, because it *is* this
+station, on a rig. `install_rules` flushes its chain and `remove_rules` deletes
+it, so `rn-tapnet.sh down` on the CLONE's tap deleted `IRIXRN-IN` and its INPUT
+hook **while the live exhibit was running on the other tap** — leaving the
+station with no containment filter at all, while every message on stdout said
+`down: irixrnc0 removed`. It was caught by re-reading the chain out of the
+kernel after teardown, not by anything the script said.
+
+This is the same failure irix's sibling `tapnet.sh` already paid for once and
+solved the same way (its comment: *"one rig's teardown silently emptied the
+other rig's INPUT filter"*). `rn-tapnet.sh` now derives the chain name from the
+interface: `irixrn0` keeps the bare `IRIXRN-IN` — so the registry's
+`retronet.guard`, the fleet convention and every doc stay true — and any other
+tap gets `IRIXRN-IN-<if>`. Proven: bringing up `irixrnc0` creates a separate
+chain and hook, and tearing it down leaves production's chain **and** its INPUT
+hook intact.
+
+**If you ever tear a tap down by hand, re-read the live chain afterwards** —
+`rn-tapnet.sh show` — and if it is gone, `rn-tapnet.sh up` re-arms it (the
+launcher does this on every start, so a station restart also fixes it).
+
 ## The trap this station set: a cold boot with a MISMATCHED address wedges
 
 Worth knowing before anyone bakes another seed here.
