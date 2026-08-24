@@ -195,9 +195,13 @@ The re-bake must use the guard, never the hand-typed `savevm golden-new`
 `9d5574cea30a8a0353d815555c59d589189b0fb98d9de63e74d908c16de3e11f`, the same
 blob win98se uses (recorded in [`../ASSETS-MANIFEST.md`](../ASSETS-MANIFEST.md)
 §`icq2000b.exe`); found in the media archive at
-`blobs/9d/9d5574cea30a8a03…`. In-guest API tracing used the period SysInternals
-**Filemon** (2000-12) and **Regmon** (2000-11) builds, sourced from the Wayback
-capture of `sysinternals.com/files/` — facts only, **never committed**.
+`blobs/9d/9d5574cea30a8a03…`. The period SysInternals **Filemon** (2000-12) and
+**Regmon** (2000-11) builds were sourced from the Wayback capture of
+`sysinternals.com/files/` and staged into the guest's `C:\TOOLS` for the planned
+in-guest API trace, but the packet capture answered the question outright (the
+client's own DNS + SYN + full OSCAR handshake settled "does it dial out"), so the
+in-guest trace was **not run**. Both tools remain available for any follow-up.
+Facts only, **never committed**.
 
 ## Operating it
 
