@@ -90,9 +90,47 @@ First-capture byte backup kept at
 `macos9-golden.qcow2.cpg-bak-20260824T173938Z` until the operator is happy
 (`checkpoint-guard prune macos9`).
 
-**Warm reset is BROKEN on -M mac99**: `system_reset` hangs the machine at the
-exception vector (NIP=0x4, LR in OpenBIOS). Never use it — reset is `loadvm`,
-cold boot is a fresh QEMU process.
+**THE GOLDEN CAPTURED 2026-08-24 20:39:52 IS POISONED — recapture it.**
+Restoring it paints the fixture desktop correctly and then the guest dies:
+the PC freezes solid (8/8 identical `info registers` samples at one NIP), the
+framebuffer goes byte-identical, the guest's own menubar clock stops, and
+QEMU keeps burning 100 % of a core with `DAR 0x209b75e0 / DSISR 0x40000000`
+— a data-storage fault on an address ~546 MB, past the end of the 512 MB of
+guest RAM. The same `DAR` appeared in every wedge.
+
+Survival time depends on how the checkpoint is entered:
+
+| entry path | outcome |
+|---|---|
+| `loadvm golden` into a running QEMU | dead immediately (2/2, frame frozen 70 s) |
+| fresh process `-loadvm golden -S` + `cont` | ~2 min of guest time, then dead |
+| cold boot, no checkpoint | healthy 7 min+, framebuffer changing throughout |
+
+**The ~2-minute window is why the bring-up proof below passed.** A pointer
+move, a click and a Cmd-O take seconds; the station still dies in the
+operator's hands minutes later. Any future restore proof for this station
+must watch the guest's own menubar clock advance across at least two ticks —
+a single good-looking frame proves nothing here.
+
+`savevm`/`loadvm` itself is NOT broken on this machine: on a sandbox copy
+cold-booted from the same disk, a mid-flight `savevm` → `loadvm` → `cont`
+ran 5 minutes with the PC moving and the framebuffer changing. So a
+recapture is expected to produce a good checkpoint. Recapture from a
+cold-booted, re-curated desktop (`checkpoint-guard recapture macos9`) —
+capturing the wedged guest would only bake the wedge in again.
+
+**Idle auto-pause is NOT implicated.** It fired once (21:15:07, 60 s after
+the previous session) and resumed cleanly at 21:30:29; the guest reacted to
+input afterwards, changing its own screen resolution at 21:31:24. The wedge
+arrived with the restore, not with a pause.
+
+**Warm reset is also BROKEN on -M mac99**: `system_reset` hangs the machine
+at the exception vector (NIP=0x4, LR in OpenBIOS). Never use it.
+
+Note on reading the registers: `MSR 0x00001000` is a NORMAL transient here —
+it shows up repeatedly in a perfectly healthy guest inside exception
+handlers, as does `NIP 0x00f24030`. The wedge signature is the **stuck NIP**
+across repeated samples, not the MSR value.
 
 ## Verification record (framebuffer, 2026-08-24)
 
@@ -102,6 +140,8 @@ cold boot is a fresh QEMU process.
   relative motion, click, drag (rubber-band), menu press-drag-release: PASS.
 - Post-restore: pointer motion + click (icon selection highlight) + Cmd-O
   chord (window opened): PASS on the framebuffer after `loadvm golden`.
+  **This proof is void** — it completed inside the ~2-minute window in which
+  the poisoned checkpoint still runs (see Golden / reset).
 - Reset: `loadvm golden` wiped a dirtied screen back to the fixture.
 - Browser-path (streamhost/WebRTC) input: UNVERIFIED — left for the
   operator's eyeball, like macos753.
@@ -113,8 +153,9 @@ cold boot is a fresh QEMU process.
   suspect: overlapping HMP `sendkey` releases (the playbook §5.1 async
   hold-time trap); after switching to explicit `input-send-event`
   press/release pairs it did not recur through the whole curation, bake and
-  proof sequence. If it recurs in production, `loadvm golden` (reset button)
-  is the recovery; watch for it at the operator eyeball.
+  proof sequence. It is probably the same fault as the poisoned-checkpoint
+  wedge above rather than an input bug: a `loadvm golden` reset does NOT
+  clear it, and neither does relaunching the process.
 - Menus: fine-grained (≤4-unit) relative motion is eaten while the Menu
   Manager tracks a held button; drags through menus need ≥8-unit chunks.
   Sticky menus time out after ~15 s.
