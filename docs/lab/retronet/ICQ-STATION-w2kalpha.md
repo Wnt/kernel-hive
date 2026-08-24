@@ -331,9 +331,15 @@ Scaling 1:1) recording scaling as 2, and its message names "the same doubling
 w2kalpha's pointer showed". The measurement above says the *current* binary
 nonetheless lands 1:1 on this guest, so there is nothing to fix urgently — but the
 two es40 stations are on different builds, which is exactly the kind of coupling
-[`the uncoupling rule`](../../GUEST-TIERS.md) exists to remove. Rebuilding
-w2kalpha's es40 **orphans `golden.axp`** and needs a cold re-bake, so it is its
-own task.
+[`the uncoupling rule`](../../GUEST-TIERS.md) exists to remove.
+
+**Rebuilding w2kalpha's es40 does NOT orphan `golden.axp`** — an earlier note here
+said it forced a cold re-bake, and that was wrong. Proven 2026-08-24 by restoring
+this station's live `golden.axp` on a clone under a `936760c` build. The swap is
+binary-only. The ctlsock drop described above is also **fixed and tested** (on a
+clone, not deployed): see
+[`ES40-FORK-BRIEF.md`](../ES40-FORK-BRIEF.md), which is also where the fork's
+provenance debt and the "should it come into the repo" decision live.
 
 ## Persona
 

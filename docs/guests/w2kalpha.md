@@ -182,8 +182,18 @@ pump can never hold the ports.
   Scaling 1:1 being recorded as 2:1): `strings … | grep -c ES40_POINTER_GAIN` is
   **0** here and **2** for `assets/tru64/es40`. The measurement above shows the
   deployed binary still lands 1:1 on this guest, so nothing is urgent — but the
-  two es40 stations run different builds. Rebuilding **orphans `golden.axp`** and
-  needs a cold re-bake, so treat it as its own task.
+  two es40 stations run different builds.
+
+  **Rebuilding to `936760c` does NOT orphan `golden.axp`** — an earlier note here
+  said it did, and that was wrong. An es40 savestate is a per-component struct
+  dump tied to struct LAYOUT, not to the binary; `936760c` touches only the
+  GUI-layer `ctlsock`, which registers no saved component. Proven 2026-08-24 by
+  restoring this station's live `golden.axp` on a clone under a `936760c` build:
+  full desktop, ICQ signed in, correct in the framebuffer. So the swap is
+  binary-only — but **re-verify the pointer** afterwards, because `936760c` also
+  changed PS/2 `0xe6` (Set Scaling 1:1) handling. A future commit that touches a
+  saved component's struct WILL orphan it, silently: es40 has no binary↔savestate
+  guard. See [`ES40-FORK-BRIEF.md`](../lab/ES40-FORK-BRIEF.md).
 - Client for hand-driving: `/data/vms/sandbox/ALPHA-nt/uibench/ctltest.py
   <ctl.sock> <script>` (`K`/`TYPE`/`MOVEA`/`DOWN1`/`SLEEP` verbs);
   screenshots via `uibench/shmread.py <fb.shm> <out.png>`. **ctltest only types
