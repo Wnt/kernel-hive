@@ -251,7 +251,8 @@ emit android \
 # the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.
 # SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.
 # SH_GHID_SOCKET selects its chardev. RETRONET: net0 is a tap on vmbr-rn (NOT
-# slirp) via rn-tapnet.sh; guest static 10.99.0.14/24 no default route; the guest
+# slirp) via rn-tapnet.sh; guest on DHCP, the reserved
+# 10.99.0.14/24, no default route; the guest
 # warpd agent is reached directly at 10.99.0.14:7777 for rollback/exec only.
 emit solaris \
   --tile solaris --vmid 100 --udp 54100 --pointer abs --input-backend \
@@ -798,8 +799,8 @@ emit w2kalpha \
 #   window and NO X server (SDL_VIDEODRIVER=dummy), captured from the
 #   framebuffer es40 publishes itself: SH_CAPTURE=shm + mamesock input (es40
 #   ctlsock mamectl/1, multi-client). No SH_QMP; media + install disk staged
-#   under /data/vms/streamhost/assets/tru64. DARK LAUNCH: listing=hidden while
-#   the install runs on camera.
+#   under /data/vms/streamhost/assets/tru64. LISTED on the public floor since
+#   2026-08-16.
 emit tru64 \
   --tile tru64 --udp 54141 --x11 --x11-display :42 --capture shm --pointer \
   abs --input-backend mamesock --audio off --fps 30 --x11-runtime-file \
@@ -825,8 +826,8 @@ emit macos753 \
 #   qemu-system-hppa from the kernel-hive QEMU fork, installed to /opt/qemu-hppa
 #   (pve-qemu ships no hppa target). TCG only, no KVM. Artist framebuffer
 #   scanout at 1280x1024 (HARD ceiling: higher crashes / dtwm pointer dead zone).
-#   RELATIVE LASI PS/2 pointer (dbus-rel). DARK LAUNCH: listing=hidden while
-#   the install runs on camera; SH_IDLE_PAUSE_SECS=0 until the golden exists.
+#   RELATIVE LASI PS/2 pointer (dbus-rel). LISTED on the public floor:
+#   reset=loadvm golden, idle auto-pause after SH_IDLE_PAUSE_SECS=60.
 emit hpuxvue \
   --tile hpuxvue --vmid 144 --udp 54144 --pointer rel --input-backend \
   dbus-rel --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
@@ -851,7 +852,8 @@ emit beos \
 # newsos (slot 148) — Sony NEWS-OS 4.1R on an NWS-3260 (MIPS R3000, 1120x780
 #   mono LCD) in HOST-NATIVE MAME 0.289 (news_r3k.cpp; drawshm frames, ctlsock
 #   keys). No save state in the driver: reset=relaunch cold-boots the installed
-#   disk. DARK LAUNCH: listing=hidden while the install runs on camera.
+#   disk (so SH_IDLE_PAUSE_SECS=0 — there is nothing to resume into).
+#   LISTED on the public floor.
 emit newsos \
   --tile newsos --udp 54148 --x11 --x11-display :63 --capture shm --pointer \
   abs --input-backend mamesock --audio off --fps 30 --x11-runtime-file \
@@ -862,9 +864,9 @@ emit newsos \
 #   qemu-system-sparc from the kernel-hive QEMU fork, installed to /opt/qemu-sparc
 #   (pve-qemu ships no sparc target). TCG only, no KVM. cg3 framebuffer (SunOS
 #   has no TCX driver), 64 MB (256 traps at boot), sd0=SCSI 3, sr0=SCSI 6 with
-#   512-byte CD blocks. RELATIVE Sun serial mouse (dbus-rel). DARK LAUNCH:
-#   listing=hidden while the install runs on camera; SH_IDLE_PAUSE_SECS=0 until
-#   the golden exists.
+#   512-byte CD blocks. RELATIVE Sun serial mouse (dbus-rel). LISTED on the
+#   public floor: reset=loadvm golden, idle auto-pause after
+#   SH_IDLE_PAUSE_SECS=60.
 emit sunos414 \
   --tile sunos414 --vmid 147 --udp 54147 --pointer rel --input-backend \
   dbus-rel --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \

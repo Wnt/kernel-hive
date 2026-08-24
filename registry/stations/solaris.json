@@ -57,13 +57,13 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54100,
-      "notes": "RETRONET BRIDGE: net0 is a tap on vmbr-rn (NOT slirp); guest is static 10.99.0.14/24, NO default route (rn-tapnet.sh + fail-closed guard chain SOLRN-IN). gallery-hid-pci is the live pointer device (native GalleryHidSink); the in-guest warpd agent (guest :7777) is reached DIRECTLY over the bridge at 10.99.0.14:7777 for rollback and its 'E' exec verb (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host, no hostfwd). exec: labctl exec solaris \"<cmd>\". Pidgin 2.10.4 (GTK2 desktop OSCAR client, SUNWgnome-im-client) auto-signs-in as UIN 30000 to the gateway 10.99.0.2:5190 from /.purple/accounts.xml and renders the server-side SSI roster in its Buddy List. See docs/lab/retronet/ICQ-STATION-solaris.md"
+      "notes": "RETRONET BRIDGE: net0 is a tap on vmbr-rn (NOT slirp); guest is on DHCP -- the reserved 10.99.0.14/24, NO default route (the lease withholds option 3) (rn-tapnet.sh + fail-closed guard chain SOLRN-IN). gallery-hid-pci is the live pointer device (native GalleryHidSink); the in-guest warpd agent (guest :7777) is reached DIRECTLY over the bridge at 10.99.0.14:7777 for rollback and its 'E' exec verb (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host, no hostfwd). exec: labctl exec solaris \"<cmd>\". Pidgin 2.10.4 (GTK2 desktop OSCAR client, SUNWgnome-im-client) auto-signs-in as UIN 30000 to the gateway 10.99.0.2:5190 from /.purple/accounts.xml and renders the server-side SSI roster in its Buddy List. See docs/lab/retronet/ICQ-STATION-solaris.md"
     }
   },
   "render": {
     "signalOrder": 16,
     "stationsManifestOrder": 10,
-    "stationsManifestPrelude": "\n# solaris (VMID 100) — Solaris 10 CDE on the standalone\n# gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses\n# the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.\n# SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.\n# SH_GHID_SOCKET selects its chardev. RETRONET: net0 is a tap on vmbr-rn (NOT\n# slirp) via rn-tapnet.sh; guest static 10.99.0.14/24 no default route; the guest\n# warpd agent is reached directly at 10.99.0.14:7777 for rollback/exec only.\n",
+    "stationsManifestPrelude": "\n# solaris (VMID 100) — Solaris 10 CDE on the standalone\n# gallery-hid QEMU. The launcher requires -loadvm golden (never cold-boots), uses\n# the VMState golden's two-socket CPU identity, and wires gallery-hid-pci at 0x1e.\n# SH_INPUT_BACKEND=gallery-hid names the native absolute-pointer path directly.\n# SH_GHID_SOCKET selects its chardev. RETRONET: net0 is a tap on vmbr-rn (NOT\n# slirp) via rn-tapnet.sh; guest on DHCP, the reserved\n# 10.99.0.14/24, no default route; the guest\n# warpd agent is reached directly at 10.99.0.14:7777 for rollback/exec only.\n",
     "bringUpGroup": 2,
     "bindingOrder": 12,
     "bindingPrelude": "",

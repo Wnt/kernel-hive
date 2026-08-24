@@ -61,7 +61,7 @@
     "bringUpGroup": 7,
     "signalOrder": 62,
     "actionMapOrder": 34,
-    "stationsManifestPrelude": "\n# newsos (slot 148) — Sony NEWS-OS 4.1R on an NWS-3260 (MIPS R3000, 1120x780\n#   mono LCD) in HOST-NATIVE MAME 0.289 (news_r3k.cpp; drawshm frames, ctlsock\n#   keys). No save state in the driver: reset=relaunch cold-boots the installed\n#   disk. DARK LAUNCH: listing=hidden while the install runs on camera.\n",
+    "stationsManifestPrelude": "\n# newsos (slot 148) — Sony NEWS-OS 4.1R on an NWS-3260 (MIPS R3000, 1120x780\n#   mono LCD) in HOST-NATIVE MAME 0.289 (news_r3k.cpp; drawshm frames, ctlsock\n#   keys). No save state in the driver: reset=relaunch cold-boots the installed\n#   disk (so SH_IDLE_PAUSE_SECS=0 — there is nothing to resume into).\n#   LISTED on the public floor.\n",
     "bindingPrelude": ""
   },
   "stream": {

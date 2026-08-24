@@ -12,6 +12,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 from .constants import LABCTL_KEYS, RENDER_DIR, REPO
+from .facts_live import cmd_facts_live
 from .generate import atomic_write, check_gate_lists, cmd_generate, cmd_new, generated
 from .loading import RegistryError, is_x11_runtime, load
 from .render import rendered
@@ -177,6 +178,7 @@ def main() -> int:
     sub.add_parser("generate")
     sub.add_parser("check")
     sub.add_parser("count")
+    sub.add_parser("facts-live", help="check registry retronet claims against the live box (SKIPs if unreachable)")
     paths = sub.add_parser("paths")
     paths.add_argument(
         "--rendered",
@@ -218,6 +220,8 @@ def main() -> int:
                     f"{counts['showcase']} showcase, {counts['candidate']} candidate)"
                 )
             return 0
+        if command == "facts-live":
+            return cmd_facts_live()
         if command == "generate":
             return cmd_generate()
         if command == "check":

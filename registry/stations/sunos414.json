@@ -61,7 +61,7 @@
     "bringUpGroup": 7,
     "signalOrder": 63,
     "actionMapOrder": 35,
-    "stationsManifestPrelude": "\n# sunos414 (slot 147) — SunOS 4.1.4 / OpenWindows 3 on a SPARCstation 5 (sun4m):\n#   qemu-system-sparc from the kernel-hive QEMU fork, installed to /opt/qemu-sparc\n#   (pve-qemu ships no sparc target). TCG only, no KVM. cg3 framebuffer (SunOS\n#   has no TCX driver), 64 MB (256 traps at boot), sd0=SCSI 3, sr0=SCSI 6 with\n#   512-byte CD blocks. RELATIVE Sun serial mouse (dbus-rel). DARK LAUNCH:\n#   listing=hidden while the install runs on camera; SH_IDLE_PAUSE_SECS=0 until\n#   the golden exists.\n",
+    "stationsManifestPrelude": "\n# sunos414 (slot 147) — SunOS 4.1.4 / OpenWindows 3 on a SPARCstation 5 (sun4m):\n#   qemu-system-sparc from the kernel-hive QEMU fork, installed to /opt/qemu-sparc\n#   (pve-qemu ships no sparc target). TCG only, no KVM. cg3 framebuffer (SunOS\n#   has no TCX driver), 64 MB (256 traps at boot), sd0=SCSI 3, sr0=SCSI 6 with\n#   512-byte CD blocks. RELATIVE Sun serial mouse (dbus-rel). LISTED on the\n#   public floor: reset=loadvm golden, idle auto-pause after\n#   SH_IDLE_PAUSE_SECS=60.\n",
     "bindingPrelude": ""
   },
   "stream": {

@@ -61,7 +61,7 @@
     "bringUpGroup": 7,
     "signalOrder": 60,
     "actionMapOrder": 32,
-    "stationsManifestPrelude": "\n# hpuxvue (slot 144) — HP-UX 10.20 / HP VUE on a PA-RISC HP 9000/778 (B160L):\n#   qemu-system-hppa from the kernel-hive QEMU fork, installed to /opt/qemu-hppa\n#   (pve-qemu ships no hppa target). TCG only, no KVM. Artist framebuffer\n#   scanout at 1280x1024 (HARD ceiling: higher crashes / dtwm pointer dead zone).\n#   RELATIVE LASI PS/2 pointer (dbus-rel). DARK LAUNCH: listing=hidden while\n#   the install runs on camera; SH_IDLE_PAUSE_SECS=0 until the golden exists.\n",
+    "stationsManifestPrelude": "\n# hpuxvue (slot 144) — HP-UX 10.20 / HP VUE on a PA-RISC HP 9000/778 (B160L):\n#   qemu-system-hppa from the kernel-hive QEMU fork, installed to /opt/qemu-hppa\n#   (pve-qemu ships no hppa target). TCG only, no KVM. Artist framebuffer\n#   scanout at 1280x1024 (HARD ceiling: higher crashes / dtwm pointer dead zone).\n#   RELATIVE LASI PS/2 pointer (dbus-rel). LISTED on the public floor:\n#   reset=loadvm golden, idle auto-pause after SH_IDLE_PAUSE_SECS=60.\n",
     "bindingPrelude": ""
   },
   "stream": {

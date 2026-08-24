@@ -9,6 +9,7 @@ from typing import Any
 from .constants import REGISTRY, REPO, TILES
 from .loading import RegistryError, fixture_path, is_x11_runtime, load
 from .validate_emulator import validate_emulator, validate_ui
+from .validate_facts import validate_facts
 from .validate_retronet import validate_retronet
 from .validate_schema import fail, validate_json_schema, validate_schema_shape
 
@@ -376,6 +377,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     validate_demo_pacing(rows, errors)
     validate_fleet_encoder(globals_doc, errors)
     validate_retronet(rows, errors)
+    validate_facts(rows, errors)
     ids: dict[str, str] = {}
     unique: dict[str, dict[Any, str]] = {
         k: {} for k in ("stationDir", "udpPort", "slot", "experimentSlot", "bringUpOrder", "bindingOrder")
