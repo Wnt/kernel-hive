@@ -142,6 +142,14 @@ three ways that happens have very different latencies:
 | Any station whose guest is **running** | on its own | the client's auto-reconnect: seconds to ~a minute |
 | Any station whose guest is **idle-paused** | **not until a visitor wakes it** | the guest is SIGSTOPped; its emulated TCP stack cannot notice the drop, let alone retry |
 
+**A restart is not even needed to produce the symptom.** A guest that
+idle-pauses stops answering, and the server reaps the dead session by TCP
+timeout on its own — measured at **~2.5 minutes** after the freeze
+(`read: connection timed out` → `user disconnected`). So every station goes
+offline a few minutes after its last visitor leaves, and an empty gateway at
+04:00 is the fleet working exactly as designed. A restart only makes the same
+thing happen at once, and for everyone.
+
 **The third row is the one that gets misdiagnosed.** Every station is
 `SH_IDLE_PAUSE_SECS=60`, so outside visiting hours the whole fleet is frozen.
 Restart the gateway at 03:00 and the bot is back before you finish reading the
