@@ -185,20 +185,33 @@ the exact opposite of Netscape's spin.
 `Mosaic.ad`, NCSA's own `app-defaults`, is installed as
 `/usr/lib/X11/app-defaults/Mosaic`; without it Mosaic can come up unusable.
 
-### Two Mosaic quirks worth knowing
+### Mosaic quirks worth knowing
 
 - **2.6 has no JPEG** (NCSA's own README says so), so it offers to *save* Space
   Jam's `.jpg` instead of showing it. **2.7b5 has JPEG, PNG and tables** — that
   is why 2.7b5 is the one wired up.
 - **Mosaic does not parse `Content-Type: text/html; charset=iso-8859-1`.** The
-  corpus is served as a bare `text/html` and renders fine; the **search /
-  directory service adds a `charset` parameter**, and Mosaic treats the whole
-  type as unknown and offers a *"Save Binary File To Local Disk"* dialog
-  instead. So `http://search.retronet/dir` does **not** render in Mosaic, and
-  the browser's home page is deliberately set to a corpus site
-  (`http://spacejam.com/`), not the portal. Making the portal reachable from
-  this station means dropping the `charset` parameter for era clients — a
-  gateway-side change, out of scope here.
+  whole plane now serves a bare `text/html` (the gateway-side charset fix
+  landed 2026-08-23), so **`http://search.retronet/` renders fine in Mosaic**
+  — proven on the framebuffer 2026-08-24. The home page stays a corpus site
+  (`http://spacejam.com/`) as the friendlier opening scene, not because the
+  portal is unreachable. If Mosaic ever offers *"Save Binary File To Local
+  Disk"* for an HTML page again, suspect a `charset` parameter creeping back
+  into some response's `Content-Type`.
+- **`&mdash;` and other HTML 4.0 entities render as literal text** — Mosaic
+  predates them, and ISO-8859-1 has no em dash anyway. The search service
+  writes `--` instead (`rn_render.py`); keep new-page templates to HTML 3.2
+  entities.
+- **Mosaic can be driven without the pointer** (QMP mouse events do not reach
+  this guest; the daemon owns input): NCSA's remote-control interface. From
+  the serial shell, write two lines — `goto` and the URL — into
+  `/tmp/Mosaic.<pid>` and `kill -USR1 <pid>`. Mosaic loads the URL as if
+  typed. This is how the search portal was framebuffer-proven.
+- **`nslookup` on this guest always reports "Default servers are not
+  available"** even when DNS works: it insists on a PTR lookup of the server
+  first and `retronet-dns` answers only A (wildcard) / AAAA (NODATA). The
+  libc resolver Mosaic uses sends plain A queries and is unaffected — test
+  resolution with `telnet <name> 80`, not nslookup.
 - **Do not use `-install`.** A private colormap does fix the false colours you
   get on an 8-bit Artist framebuffer with HP VUE holding most of the palette,
   but it makes the *whole capture* come out wrong (the framebuffer grab sees
@@ -315,6 +328,31 @@ Two failure modes look identical to a hang and are not:
   *"may only execute from /sbin/rc during the initial transition from run level
   'S'"* — network changes need a real reboot to be exercised the way the golden
   will.
+
+## The golden must be network-proven, not just framebuffer-proven
+
+The 2026-08-23 golden restored a guest whose **network stack was wedged from
+second zero**: every DLPI/network syscall (`netstat`, `lanscan`, `arp`, `ping`,
+Mosaic's DNS lookup) hung forever in the kernel, the guest never transmitted a
+single frame, and Mosaic sat in "Looking up" indefinitely — while the desktop
+kept painting and the framebuffer restore-proof passed. The checkpoint had been
+captured with the stack already wedged; the roundtrip itself is innocent (a
+savevm/loadvm of a healthy guest keeps the network healthy — proven 2026-08-24
+with a scratch `nettest` label before the golden was recaptured through
+`checkpoint-guard`).
+
+Two rules fall out of it:
+
+- **After recapturing this station's golden, `labctl reset` and prove the
+  network from the serial shell** (`ping 10.99.0.2 64 2`, then
+  `telnet search.retronet 80`) before calling it done. The framebuffer proof
+  cannot see a wedged stack.
+- **Do not run a screendump poller against the station while a savevm is in
+  flight.** A concurrent `screendump` landing at savevm finalization deadlocked
+  QEMU's whole control plane once (monitor never answered again, display timer
+  frozen, guest still executing) and the half-written snapshot never appeared
+  in the snapshot table. `checkpoint-guard` sequences its own screendumps and
+  is fine; just do not add your own on top.
 
 ## Operating it
 

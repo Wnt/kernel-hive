@@ -71,7 +71,7 @@ def mark_terms(snippet: str, q: Query) -> str:
 
 # --- search UI --------------------------------------------------------------
 
-_TAGLINE = "the retronet search &mdash; every page here lives on our own internet"
+_TAGLINE = "the retronet search -- every page here lives on our own internet"
 
 
 def _searchbox(q: str = "", size: int = 45) -> str:
@@ -202,7 +202,7 @@ def directory_page(sites: list[dict]) -> str:
     head = (
         f"{brand}\n"
         '<br><font size="1" face="Helvetica,Arial" color="#666666">retronet directory '
-        "&mdash; the sites on our internet</font>\n<hr>\n"
+        "-- the sites on our internet</font>\n<hr>\n"
         + '<table border="0" cellpadding="4"><tr><td>\n'
         + _searchbox("", size=40)
         + "</td></tr></table>\n"
@@ -211,7 +211,7 @@ def directory_page(sites: list[dict]) -> str:
     if not sites:
         body = (
             head
-            + '<p><font face="Times,serif">The directory is empty &mdash; no sites have '
+            + '<p><font face="Times,serif">The directory is empty -- no sites have '
             + "been catalogued yet.</font></p>\n"
             + _footer()
         )

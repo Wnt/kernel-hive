@@ -30,9 +30,12 @@
 # reservation RN_HPUXVUE_MAC -> 10.99.0.20/24, DNS 10.99.0.2, NO router) with NO
 # default route; it shares L2 with the gateway CT 10.99.0.2, so it gets real
 # ICMP/UDP/multi-connection TCP and browses the corpus by URL with no proxy.
-# The -device is UNCHANGED (tulip, netdev=n0) apart from the per-station mac= —
-# only the netdev backend went user->tap, which is invisible to savevm/loadvm,
-# so `loadvm golden` stays valid. Do NOT renumber n0.
+# The -device is UNCHANGED (tulip, netdev=n0) apart from the per-station mac=.
+# NOTE the backend swap was NOT invisible to loadvm on this machine: the old
+# golden's vmstate carried a 'slirp' section and refused to load on the tap
+# (docs/lab/retronet/WEB-STATION-hpuxvue.md), so the golden was cold re-baked
+# on the tap. Do NOT renumber n0, and recapture the golden after ANY netdev
+# change here.
 #
 # POINTER: LASI PS/2, relative only (no USB on this machine, no tablet), so
 # the daemon runs SH_INPUT_BACKEND=dbus-rel. SH_CURSOR_SCALE is 1.0 until
