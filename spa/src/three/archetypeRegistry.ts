@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (69 of the 71
+//    - transport   : how its LIVE framebuffer texture is obtained (70 of the 72
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -104,7 +104,7 @@ export interface OSBinding {
   bootVideo?: string;
 }
 
-// One entry per OS. 69 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 70 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -192,6 +192,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   aux:         { osId: 'aux', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6b7f8e', eraLabel: '1993 · A/UX 3.0.1 — Quadra 800', pointerRel: true },
   rhapsody:    { osId: 'rhapsody', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7a8fb0', eraLabel: '1998 · Rhapsody DR2 — Apple/NeXT', pointerRel: true }, // NeXTSTEP -> Rhapsody -> Mac OS X lineage
   chokanji:    { osId: 'chokanji', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2f6fb0', eraLabel: '2002 · 超漢字 / BTRON3', pointerRel: true },
+  macos9:      { osId: 'macos9', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#9a9ad1', eraLabel: '2001 · Mac OS 9.2.2 — Power Mac G4', pointerRel: true },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

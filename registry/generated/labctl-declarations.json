@@ -512,6 +512,23 @@
       "udp_port": 54142,
       "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console — the framebuffer is the only observation surface. Drive it with scripts/install-vision/adb_pointer.py against a CLONE, never this dir."
     },
+    "macos9": {
+      "dir": "/data/vms/streamhost/stations/macos9",
+      "qmp": "/data/vms/streamhost/stations/macos9/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "console": "fb",
+      "udp_port": 54150,
+      "notes": "no exec channel: Mac OS 9 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. NO NIC by operator scope (ordinary station, no retronet). Warm reset is BROKEN on -M mac99 (system_reset hangs at the exception vector, NIP=0x4): reset is loadvm golden, cold boot is a fresh QEMU process, never system_reset."
+    },
     "mpf2": {
       "dir": "/data/vms/streamhost/stations/mpf2",
       "qmp": null,

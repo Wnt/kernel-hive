@@ -420,8 +420,8 @@ export const ASSEMBLIES_BY_TILE = {
   // aux: Macintosh Quadra 800 — the same 68040 Quadra as the macos753 station,
   // so the same Apple kit reads correctly: towerA is the Quadra's upright
   // mini-tower case, keyboardH the Extended Keyboard II silhouette, and
-  // paramMouseF the one-button Apple mouse (the only two stations in the hall
-  // that take it). It is separated from macos753 by the display: the Mac OS
+  // paramMouseF the one-button Apple mouse (shared only by the
+  // Apple-family stations). It is separated from macos753 by the display: the Mac OS
   // station holds the big crtE, this one the smaller crtD.
   aux: {
     kind: 'towerSetup', body: 'towerA', monitor: 'crtD',
@@ -443,6 +443,14 @@ export const ASSEMBLIES_BY_TILE = {
   chokanji: {
     kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
+  // macos9: Power Mac G4 (2001) — Apple's graphite minitower under a big
+  // Studio Display CRT. towerD is the taller rounded tower silhouette, crtE
+  // the large-desktop CRT; keyboardG the compact modern board and paramMouseF
+  // the one-button Apple mouse (the Apple Pro Mouse kept the one-button faith).
+  macos9: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'crtE',
+    keyboard: 'keyboardG', mouse: 'paramMouseF',
   },
 } as const satisfies Record<string, Assembly>;
 

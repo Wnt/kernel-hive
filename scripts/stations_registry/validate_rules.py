@@ -127,6 +127,9 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # ledger must not claim it is: the machine has no PS/2 controller, no USB
     # bus to hang a tablet off, and no absolute pointer path of any kind.
     "qemu-adb-relative": ({"dbus-rel"}, (), ("usb-tablet",)),
+    # mac99 via=pmu has BUILT-IN USB kbd+mouse and Mac OS 9 has no usb-tablet
+    # driver; the launcher must add neither a tablet nor a second usb-mouse.
+    "qemu-usb-hid-relative": ({"dbus-rel"}, (), ("usb-tablet", "-device usb-mouse")),
     "gallery-hid": ({"gallery-hid"}, ("gallery-hid-pci",), ()),
     "warpd-agent": ({"warpd"}, (), ("usb-tablet",)),
     "mame-ioport": ({"mamecmd", "mamesock"}, (), ()),

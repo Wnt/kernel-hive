@@ -402,6 +402,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cbc6b6', accentTint: '#2f6fb0', tintMix: 0.36,
     badge: 'TRON PC', spec: 'x86 • BTRON3 超漢字 • 2002', kit: 'office90',
   },
+  // macos9: Power Mac G4 graphite — the smoke-grey polycarbonate of the 2001
+  // towers, with the platinum-purple accent the registry carries. Moderate
+  // tintMix: the G4's identity is the dark translucent front, not a stripe.
+  macos9: {
+    caseTint: '#9b9ca6', accentTint: '#9a9ad1', tintMix: 0.4,
+    badge: 'POWER MAC G4', spec: 'PowerPC G4 • MAC OS 9.2.2 • 2001',
+    kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

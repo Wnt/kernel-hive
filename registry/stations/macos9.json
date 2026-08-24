@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "id": "macos9",
+  "era_year": 2001,
+  "stationDir": "macos9",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": []
+  },
+  "operator": {
+    "actionMap": {
+      "key": "macos9",
+      "value": {
+        "os": "Mac OS 9.2.2 (Power Mac G4 mac99)",
+        "win": "qemu",
+        "mouse": "finder-desktop",
+        "kbd": "cmd:shift-1",
+        "kbd_reset": "Escape",
+        "kbd_note": "The Finder is the only shell; key proof is a menu, a selection or a dialog, never a prompt. Cmd-O on a selected icon is the cheapest visible chord",
+        "audio_trigger": null,
+        "validated": false,
+        "note": "relative USB HID pointer: cursor_scale 5.5556 (guest gain exactly 0.18 at Mouse tracking 'Very Slow', linear at every chunk size 1..32). No exec channel - classic Mac OS has no shell at all"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/macos9",
+      "qmp": "/data/vms/streamhost/stations/macos9/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54150,
+      "notes": "no exec channel: Mac OS 9 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. NO NIC by operator scope (ordinary station, no retronet). Warm reset is BROKEN on -M mac99 (system_reset hangs at the exception vector, NIP=0x4): reset is loadvm golden, cold boot is a fresh QEMU process, never system_reset."
+    }
+  },
+  "render": {
+    "stationsManifestOrder": 65,
+    "bindingOrder": 72,
+    "goldenOrder": 65,
+    "bringUpGroup": 8,
+    "signalOrder": 67,
+    "actionMapOrder": 39,
+    "stationsManifestPrelude": "\n# macos9 (slot 150) — the fleet's FIRST PowerPC station: qemu-system-ppc\n#   -M mac99,via=pmu (Power Mac G4), Mac OS 9.2.2, from the kernel-hive QEMU\n#   fork installed to /opt/qemu-ppc (pve-qemu ships no ppc target). TCG only.\n#   via=pmu is MANDATORY (via=cuda breaks USB input) and the machine provides\n#   its OWN USB kbd+mouse — adding -device usb-kbd/usb-mouse splits input\n#   routing across two HID mice and clicks go nowhere. NO NIC (-nic none),\n#   deliberately: no retronet, no networking, by operator scope.\n#   RELATIVE USB HID pointer — Mac OS 9 has no usb-tablet driver; tracking\n#   pinned 'Very Slow' = linear 0.18 px/unit, hence SH_CURSOR_SCALE=5.5556.\n",
+    "bindingPrelude": ""
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54150,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-usb-hid-relative",
+      "absolute": false,
+      "present": true,
+      "device": "usb-mouse",
+      "scale": 5.5556,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 150
+  },
+  "guestDoc": "docs/guests/macos9.md",
+  "credentialsRef": "guest/macos9",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "macos9",
+      "SH_QMP": "/data/vms/streamhost/stations/macos9/qmp.sock",
+      "SH_PORT": "54150",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/macos9/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/macos9/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "bringUpOrder": 72,
+    "vmidLabel": 150,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "macos9",
+        "--vmid",
+        "150",
+        "--udp",
+        "54150",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "5.5556",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/macos9/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/macos9/station.env.fixture"
+      ],
+      "deviceSetId": "macos9-mac99-pmu-g4-1024x768x32-nonic",
+      "launcher": "streamhost/stations/macos9/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/macos9/station.env.fixture",
+      "binary": "/opt/qemu-ppc/bin/qemu-system-ppc",
+      "machine": "mac99",
+      "accel": "tcg",
+      "cpu": "g4",
+      "memoryMB": 512,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "/opt/qemu-ppc/bin/qemu-system-ppc",
+        "-name streamhost-macos9",
+        "-accel tcg -m 512",
+        "-M mac99,via=pmu -cpu g4",
+        "-g 1024x768x32",
+        "-display dbus,p2p=on",
+        "-nic none (deliberate: no networking on this station)",
+        "-drive file=$D/macos9-golden.qcow2,format=qcow2,cache=writeback,aio=threads",
+        "-loadvm golden -S (when the checkpoint exists)",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid",
+        "(built-in via=pmu USB keyboard + USB mouse; NO extra -device usb-kbd/usb-mouse)"
+      ],
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher IS the deployed launcher; the golden was captured 2026-08-24 by checkpoint-guard with this exact device set on the standalone /opt/qemu-ppc build (first capture, restore-proven SSIM 0.996)"
+      }
+    }
+  },
+  "reset": {
+    "stationDir": "macos9",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "Quiet Mac OS 9.2.2 Finder desktop at 1024x768, millions of colors (Power Mac G4 mac99 under TCG): Macintosh HD top-right, empty Trash bottom-right, no window open, nothing selected, Control Strip along the bottom, cursor parked dead-centre (512,384). Energy Saver sleep pinned to Never; Mouse tracking pinned to 'Very Slow' (the only non-accelerated setting, linear 0.18 px/unit) and double-click speed slowest so a click pair survives the stream; Setup Assistant quit and disarmed. Captured by checkpoint-guard 2026-08-24, restore-proven on the framebuffer (SSIM 0.996) with the guest running; pointer, click and Cmd-O keyboard chord re-proven on the framebuffer AFTER a loadvm restore."
+  },
+  "spa": {
+    "archetypeId": "apple-studio",
+    "transport": "streamhost",
+    "accentColor": "#9a9ad1",
+    "eraLabel": "2001 · Mac OS 9.2.2 — Power Mac G4",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "macos9",
+    "displayName": "Mac OS 9.2.2",
+    "year": 2001,
+    "lineage": "Classic Mac OS",
+    "arch": "PowerPC",
+    "ramMB": 512,
+    "era": "2000s",
+    "accent": "#9a9ad1",
+    "eraSoftware": [
+      "Finder 9.2",
+      "Sherlock 2",
+      "QuickTime Player",
+      "SimpleText",
+      "Control Strip"
+    ],
+    "periodBrowser": "Internet Explorer 5 / Netscape Communicator",
+    "iconicApps": [
+      "Finder",
+      "Sherlock 2",
+      "QuickTime Player",
+      "AppleScript"
+    ],
+    "blurb": "The last classic Mac OS — the platinum desktop Apple shipped alongside early Mac OS X, still with one menu bar, no protected memory, and the Finder as the whole machine.",
+    "notes": "The lineup's first PowerPC guest, and the end of the line that macos753 begins: the same Finder lineage five years and one architecture later. No networking, deliberately."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "github.com/Wnt/qemu @ kernel-hive (11.0.2 + fast-poll), built to /opt/qemu-ppc",
+    "driver": "mac99"
+  },
+  "ui": "desktop",
+  "network": {
+    "status": "none",
+    "note": "NO NIC AT ALL (-nic none, which suppresses QEMU's default user-mode sungem on mac99). Operator scope for this add: ordinary station first — no retronet, no networking. The guest's TCP/IP and AppleTalk control panels were never configured. The golden is baked with this device set; adding a NIC later means a cold re-bake (chokanji/macos753 pattern)."
+  }
+}
