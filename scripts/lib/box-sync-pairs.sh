@@ -297,6 +297,14 @@ box_sync_load_pairs() {
   # docs/lab/retronet/w2kalpha-retronet.md.
   box_sync_add_pair w2kalpha-rn-tapnet streamhost/stations/w2kalpha/rn-tapnet.sh "$BOX_ROOT/stations/w2kalpha/rn-tapnet.sh" exact repo
   box_sync_add_pair w2kalpha-x11-runtime streamhost/stations/w2kalpha/x11-runtime.sh "$BOX_ROOT/stations/w2kalpha/x11-runtime.sh" exact repo
+  # nextstep's retronet VETH lifecycle helper. Box-authored mirror pair like the
+  # rn-tapnet helpers above. Unlike every other one it creates a private netns as
+  # well as the link, because this station is host-native Previous and has to stay
+  # CRIU-checkpointable — criu can dump a veth it is told about and cannot dump a
+  # foreign tap fd at all. It is also where the pcap checksum-offload fix lives,
+  # without which the guest silently drops every TCP segment labhost sends it. See
+  # docs/lab/retronet/WEB-STATION-nextstep.md.
+  box_sync_add_pair nextstep-rn-tapnet streamhost/stations/nextstep/rn-tapnet.sh "$BOX_ROOT/stations/nextstep/rn-tapnet.sh" exact repo
   # tru64's CDE Xsession.d ICQ fixture. This box copy is the REFERENCE copy; the
   # live one is baked onto the guest's own disk at
   # /etc/dt/config/Xsession.d/9999.icq-fixture and only runs on a cold boot.
