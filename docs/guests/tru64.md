@@ -325,11 +325,16 @@ CDE greeter (checked inside their media 2026-08-17; see
 ## es40 savestates: this station's reset
 
 The station restores an es40 savestate on every launch — see
-[Checkpoint restore](#checkpoint-restore). The deployed binary also carries a
-`SAVEST <path>` ctlsock verb added 2026-08-16 while the checkpoint route was
-being explored; the shipped bake path does not use it (the serial menu's
-save-and-exit is what guarantees the state and the disk cannot disagree), and
-it is left in place for future work.
+[Checkpoint restore](#checkpoint-restore). The bake path is the serial menu's
+save-and-exit, which is what guarantees the state and the disk cannot disagree.
+
+**This binary's HELLO banner advertises `caps=natkbd,savest`, but it does not
+implement `SAVEST`** — it answers `ERR unknownverb`. The banner literal is
+committed; the `SAVEST` handler is an *uncommitted* working-tree hunk that this
+build predates, and it is `w2kalpha`'s binary that actually carries the verb.
+Harmless, because nothing here calls it — but it is a capability claim that is
+not true, and it is tracked with the rest of the fork's provenance debt in
+[`ES40-FORK-BRIEF.md`](../lab/ES40-FORK-BRIEF.md).
 
 The research that selected this OS (candidates, media, licensing, risk):
 [`docs/lab/research/alpha-second-os-candidates.md`](../lab/research/alpha-second-os-candidates.md).
