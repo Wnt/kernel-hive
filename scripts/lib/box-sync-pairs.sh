@@ -161,6 +161,11 @@ box_sync_load_pairs() {
   box_sync_add_pair kh-session scripts/lib/kh-session.sh /usr/local/lib/kh-session.sh exact repo
   box_sync_add_pair xvfb-alloc scripts/lib/xvfb-alloc.sh /usr/local/bin/xvfb-alloc exact repo
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
+  box_sync_add_pair checkpoint-guard scripts/lib/checkpoint-guard.sh \
+    /usr/local/bin/checkpoint-guard exact repo
+  # checkpoint-guard drives QMP through labqmp, so labqmp has to reach the box too:
+  # the guard runs on labhost (the station qmp.sock files are root-only there).
+  box_sync_add_pair labqmp scripts/lib/labqmp.py /usr/local/lib/labqmp.py exact repo
   # The healer behind chroot-guard: restores host API mounts a rogue teardown
   # stripped (2026-08-10 /dev/pts, 2026-08-17 securityfs). Script + timer-driven
   # oneshot unit, installed live on labhost.

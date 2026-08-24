@@ -127,7 +127,9 @@ at the console and via `labctl exec`.
 Applying it needs a re-bake, not just the file: olwm reads SetInput at session
 start and the golden captures the running xnews, so the integration is: set
 `select` in `/export/home/guest/.Xdefaults`, restart openwin (re-login guest at
-the console so olwm re-reads it), then `savevm golden`.
+the console so olwm re-reads it), then recapture the checkpoint with
+`ssh lab 'checkpoint-guard recapture sunos414'` — never hand-typed snapshot verbs
+([`../lab/checkpoint-guard.md`](../lab/checkpoint-guard.md)).
 
 ## labctl exec (telnet_unix_e)
 

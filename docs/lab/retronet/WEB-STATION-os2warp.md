@@ -235,7 +235,8 @@ Then revert `registry/stations/os2warp.json`'s `network` block and drop the
   VGA.vgamem_mb=2`). Any PMI-based alternative traps `c0000005`. The prep script
   never writes a video line and asserts the GENGRADD line survived.
 - **Cold boots re-raise the IBM Software Registration wizard** and open a stray
-  EPM `.Untitled` window. Both must be cleared by hand before `savevm golden`;
+  EPM `.Untitled` window. Both must be cleared by hand before the recapture
+  (`checkpoint-guard recapture` captures the scene exactly as it stands);
   a `loadvm` wake never sees them. (The EPM window's source was not chased — it
   costs one Alt+F4 during a bake. Noted as open.)
 - **The golden was captured on a bring-up rig, then promoted**, the same way the

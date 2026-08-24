@@ -109,13 +109,21 @@ action was proven via `dtaction`.
 
 ## Applying to the golden — as run (2026-08-23)
 
+**`checkpoint-guard` does not cover tru64.** It guards QEMU vmstate stations only.
+tru64's checkpoint is an es40 `.axp` savestate paired with a disk image frozen in
+the same `SIGSTOP` window — not a QMP snapshot — and this binary does not implement
+`SAVEST` at all, so the bake goes through the emulator's **serial menu**:
+[`docs/guests/tru64.md` § Checkpoint restore](../../guests/tru64.md#checkpoint-restore).
+Do not run the guard here; it refuses, loudly, by design
+([`checkpoint-guard.md`](../checkpoint-guard.md)).
+
 Applied to the **Gaim-fixed / black-chrome-fixed** live golden (a coordinated
 follow-up after the two prior tru64 agents). The re-bake **is** the deploy — the
 checkpoint is a box asset — so **no `box-deploy --apply`** was run (the box was
 behind with live win95/winxp/hpuxvue/os2warp onboarding edits; a full apply
 would clobber them). Exact sequence on the LIVE es40 station:
 
-1. **Back up the golden first** — byte-copy + SHA256 to
+1. **Back up the checkpoint first** — byte-copy + SHA256 to
    `assets/tru64/checkpoint.bak-prebrowser-20260823/` (verified identical to the
    pre-browser golden: `tru64.axp`
    `622b9383e60d9c2d5be1e69b42669cf29422b8e16230b7658e78dea360304582`, `tru64.img`

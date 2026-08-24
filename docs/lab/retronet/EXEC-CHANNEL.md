@@ -162,10 +162,15 @@ and SLIRP puts the host at `10.0.2.2`:
 5. **Download complete** → `Alt+O` (Open). That runs the agent for this session;
    the dialog closes itself and the desktop returns to the fixture untouched.
 6. Prove it: `labctl exec win98se "ver"`.
-7. Recapture with the agent running: QMP `delvm golden` then `savevm golden`.
-   Compare the framebuffer against the pre-change checkpoint first — a
-   caret-sized delta (2x15 px at the Notepad caret) is the only allowed
-   difference.
+7. Recapture with the agent running:
+   `ssh lab 'checkpoint-guard recapture win98se'`. Compare the framebuffer against
+   the pre-change checkpoint first — a caret-sized delta (2x15 px at the Notepad
+   caret) is the only allowed difference. Never type `delvm golden; savevm golden`
+   by hand: that order leaves the station with **no** checkpoint for the width of
+   the window between them, and it has already cost one station its golden. The
+   guard backs the disk up, stages under `cpg-staging`, proves the restore on the
+   framebuffer and that the restored guest is running, then promotes —
+   [`checkpoint-guard.md`](../checkpoint-guard.md).
 
 `loadvm golden` is the undo button for every step before 7: it reverts RAM *and*
 disk, so a failed attempt costs one reset and a re-run, not a re-bake. The whole

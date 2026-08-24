@@ -278,8 +278,13 @@ that make the migration real rather than declared.
    `qemu-img create -f qcow2 -b /data/vms/bridge/bridge-base-trixie.qcow2 -F
    qcow2 …` and re-run the tile's builder. Device set must be byte-identical to
    what the golden will be baked with.
-3. **Bake the golden.** `savevm golden` over QMP, then `loadvm golden` to prove
-   the restore, per [`streamhost/docs/BRIDGE.md`](../../streamhost/docs/BRIDGE.md) §3d.
+3. **Bake the checkpoint.** The builder's `--bake` does it on the freshly built
+   overlay (`bridge-bake-golden`: `savevm golden`, assert it landed, `loadvm
+   golden`, assert the restored machine is *running*), per
+   [`streamhost/docs/BRIDGE.md`](../../streamhost/docs/BRIDGE.md) §3d. Once the tile
+   is live, every *later* recapture is
+   `ssh lab 'checkpoint-guard recapture <tile>'` — never hand-typed snapshot verbs
+   ([`checkpoint-guard.md`](checkpoint-guard.md)).
 4. **Framebuffer acceptance.** `ssh lab 'labctl shot <tile>'`, scp it back, and
    **look at it**. The emulator's actual screen, not a boot console, not a black
    frame. A tile that renders black is the exact failure mode the `amiga` Mesa
@@ -361,7 +366,9 @@ It is no longer a copy-paste, though: each of those builders (except
 overlay to `scripts/build-guests/lib/bridge-bake-golden` — drop any stale
 golden, `savevm golden`, **assert the snapshot actually landed**, `loadvm
 golden`, and assert the restored machine is `running` (a golden baked while the
-VM was stopped restores paused, which screenshots perfectly and is dead). Run it
+VM was stopped restores paused, which screenshots perfectly and is dead —
+`checkpoint-guard` re-learns the same assertion on every run). This is the
+build-artifact path; a live station is recaptured with `checkpoint-guard`. Run it
 with the tile up under its own `streamhost/stations/<tile>/qemu-streamhost.sh`:
 the helper snapshots whatever QEMU owns that socket, so the golden is taken
 under the production device set by construction.

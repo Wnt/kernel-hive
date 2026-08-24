@@ -149,10 +149,15 @@ nothing. `rn-tapnet.sh down` removes the tap and the guard chain.)
 ## Gotchas that are winxp-specific
 
 - **The MAC is baked by a COLD boot, not `loadvm`.** To change it: back the
-  golden up (byte copy), ensure the DHCP reservation for the NEW mac is applied,
-  revert the disk to golden (`qemu-img snapshot -a golden`), **delete** the
-  `golden` snapshot so the launcher cold-boots (`qemu-img snapshot -d golden`),
-  boot with the new `mac=`, do the in-guest work, recapture. Verify **in the
+  golden up (byte copy — the change-level rollback), ensure the DHCP reservation
+  for the NEW mac is applied, revert the disk to golden
+  (`qemu-img snapshot -a golden`), **delete** the `golden` snapshot so the
+  launcher cold-boots (`qemu-img snapshot -d golden`), boot with the new `mac=`,
+  do the in-guest work, then recapture with
+  `ssh lab 'checkpoint-guard recapture winxp'` — one crash-safe command (it
+  handles a first capture with no label, and asserts the restored guest is
+  running), never hand-typed snapshot verbs
+  ([`checkpoint-guard.md`](../checkpoint-guard.md)). Verify **in the
   bridge FDB** (`bridge fdb show dev winxprn0`) **and** the DHCP lease
   (`journalctl -u retronet-dhcp` in CT 951 → `…4e:12 → ACK 10.99.0.18`).
 - **A new MAC makes XP enumerate a NEW adapter.** The guest now shows
