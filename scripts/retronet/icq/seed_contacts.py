@@ -30,6 +30,7 @@ to run until the input macro is calibrated on the real client.
   seed_contacts.py status <station>       # which contacts a station already has
   seed_contacts.py plan <station>         # the client-UI seeding plan (dry-run, fallback path)
   seed_contacts.py seed <station> [--apply]   # client-UI drive; --apply is LIVE (gated), fallback path
+  seed_contacts.py personas               # RN_BOT_PERSONAS for the greeter bot (onboarded only)
   seed_contacts.py selftest               # offline checks (no gateway needed)
 
 The SSI/feedbag path (`ssi`) is the primary contact store: it writes each live
@@ -52,8 +53,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "bot"))
 import oscar  # noqa: E402 — the bot's hand-rolled OSCAR client; dir added to sys.path above
+from roster_lib import ROSTER, load_roster, personas_value  # noqa: E402 — same dir as this file
 
-ROSTER = HERE / "roster.json"
 MACRO = HERE / "icq2000b-add.macro.json"
 CT = "951"  # the gateway container
 RN_TOOL = "/opt/ras/rn-tool.py"  # rn-tool.py inside the CT
@@ -89,16 +90,6 @@ def ct_py(code: str, *args: str) -> subprocess.CompletedProcess:
 
 
 # --- roster ------------------------------------------------------------------
-
-
-def load_roster(path: str | Path = ROSTER) -> dict:
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
-    seen: set[str] = set()
-    for e in [data["bot"], *data["stations"]]:
-        if e["uin"] in seen:
-            raise ValueError(f"duplicate UIN in roster: {e['uin']}")
-        seen.add(e["uin"])
-    return data
 
 
 def station_entry(roster: dict, name: str) -> dict:
@@ -337,6 +328,12 @@ def cmd_roster(roster: dict, _args) -> int:
     return 0
 
 
+def cmd_personas(roster: dict, _args) -> int:
+    """What install-bot.sh renders into bot.env — printed here so it is inspectable."""
+    print(personas_value(roster))
+    return 0
+
+
 def cmd_ssi(roster: dict, args) -> int:
     """Populate each live account's server-side SSI/feedbag roster from the roster.
 
@@ -562,6 +559,7 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("station")
     sp.add_argument("--apply", action="store_true")
     sub.add_parser("selftest")
+    sub.add_parser("personas")
     args = p.parse_args(argv)
     roster = load_roster(args.roster)
     return {
@@ -574,6 +572,7 @@ def main(argv: list[str] | None = None) -> int:
         "plan": cmd_plan,
         "seed": cmd_seed,
         "selftest": cmd_selftest,
+        "personas": cmd_personas,
     }[args.cmd](roster, args)
 
 
