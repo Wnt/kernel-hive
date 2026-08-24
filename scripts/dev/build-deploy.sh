@@ -444,25 +444,33 @@ promote_canary() {
   read_canary_gate
   enumerate_live
   is_live "$CANARY_TILE" || die "gated canary tile '$CANARY_TILE' is no longer live"
-  declare -a held=()
+  declare -a held=() done_already=()
   for t in "${LIVE[@]}"; do
     [ "$t" != "$CANARY_TILE" ] || continue
     if is_excluded "$t"; then
       held+=("$t")
       continue
     fi
+    if [ "$DRY_RUN" -eq 0 ] && tile_on_artifact "$t" "$ARTIFACT_NAME"; then
+      done_already+=("$t")
+      continue
+    fi
     promote_targets+=("$t")
   done
   # An --exclude name that is not live is almost always a typo, and a typo here
   # silently promotes the very station the caller meant to protect.
-  for t in "${EXCLUDE[@]}"; do
-    is_live "$t" || warn "--exclude ${t}: not a live tile (nothing to hold back)"
-  done
+  for t in "${EXCLUDE[@]}"; do is_live "$t" || warn "--exclude ${t}: not live"; done
+  [ "${#done_already[@]}" -eq 0 ] ||
+    ok "already on ${ARTIFACT_NAME}, skipped: ${#done_already[@]} tile(s)"
   if [ "${#held[@]}" -gt 0 ]; then
     warn "holding back ${#held[@]} tile(s): ${held[*]}"
     warn "these stay on their current binary; promote them separately once free"
   fi
-  [ "${#promote_targets[@]}" -gt 0 ] || die "no non-canary tiles to promote"
+  if [ "${#promote_targets[@]}" -eq 0 ]; then
+    [ "${#done_already[@]}" -gt 0 ] || die "no non-canary tiles to promote"
+    ok "every promotable tile already runs ${ARTIFACT_NAME}; nothing to do"
+    return
+  fi
 
   if [ "$DRY_RUN" -eq 0 ]; then
     ssh_lab "test -x '${INSTALL_ROOT}/${ARTIFACT_NAME}'" || die "gated artifact is missing"

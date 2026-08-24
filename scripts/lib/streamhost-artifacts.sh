@@ -40,6 +40,17 @@ require_versioned_service() {
     die "streamhost@${tile} still uses the legacy ExecStart; run migrate-to-versioned.sh under supervision"
 }
 
+# True when the station already points at this artifact. Promotion must SKIP
+# such a station rather than switch it: switch_tile would set previous <-
+# current, and with both equal to the target that silently overwrites the tile's
+# only rollback target with the binary it is already running. A --promote resumed
+# after a failed wave re-enumerates every live station, so without this guard the
+# second run destroys N-1 for everything the first run promoted.
+tile_on_artifact() {
+  local tile="$1" artifact="$2"
+  [ "$(ssh_lab "basename \"\$(readlink -f '${INSTALL_ROOT}/stations/${tile}/current')\"" 2>/dev/null)" = "$artifact" ]
+}
+
 switch_tile() {
   local tile="$1" artifact="$2"
   if [ "$DRY_RUN" -eq 1 ]; then
